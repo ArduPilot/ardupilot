@@ -3798,7 +3798,7 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg) const
     char text[text_len] = { 'G','C','S',':'};
     uint8_t offset = strlen(text);
 
-    if (msg.sysid != gcs().sysid_gcs()) {
+    if (!gcs().sysid_is_gcs(msg.sysid)) {
         offset = hal.util->snprintf(text,
                                     max_prefix_len,
                                     "SRC=%u/%u:",
@@ -4104,7 +4104,7 @@ void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
 // control of switch position and RC PWM values.
 void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
 {
-    if(msg.sysid != gcs().sysid_gcs()) {
+    if (!gcs().sysid_is_gcs(msg.sysid)) {
         return; // Only accept control from our gcs
     }
 
@@ -4267,7 +4267,7 @@ void GCS_MAVLINK::handle_heartbeat(const mavlink_message_t &msg)
 {
     // if the heartbeat is from our GCS then we don't failsafe for
     // now...
-    if (msg.sysid == gcs().sysid_gcs()) {
+    if (gcs().sysid_is_gcs(msg.sysid)) {
         sysid_mygcs_seen(AP_HAL::millis());
     }
 }
@@ -7075,7 +7075,7 @@ bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
         return true;
     }
 
-    if (msg.sysid == gcs().sysid_gcs()) {
+    if (gcs().sysid_is_gcs(msg.sysid)) {
         return true;
     }
 
@@ -7327,7 +7327,7 @@ void GCS_MAVLINK::manual_override(RC_Channel *c, int16_t value_in, const uint16_
 
 void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
 {
-    if (msg.sysid != gcs().sysid_gcs()) {
+    if (!gcs().sysid_is_gcs(msg.sysid)) {
         return; // only accept control from our gcs
     }
 
