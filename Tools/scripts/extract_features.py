@@ -306,6 +306,7 @@ class ExtractFeatures(object):
             ('AP_PERIPH_SERIAL_OPTIONS_ENABLED', r'SerialOptions::init'),
             ('AP_PERIPH_BATTERY_ENABLED', r'AP_Periph_FW::can_battery_update'),
             ('AP_PERIPH_RELAY_ENABLED', r'AP_Periph_FW::handle_hardpoint_command'),
+            ('AP_PERIPH_BATTERY_BALANCE_ENABLED', r'AP_Periph_FW::batt_balance_update'),
         ]
 
     def progress(self, msg):
