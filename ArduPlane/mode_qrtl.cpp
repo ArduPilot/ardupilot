@@ -160,7 +160,7 @@ void ModeQRTL::run()
             quadplane.vtol_position_controller();
             if (poscontrol.get_state() > QuadPlane::QPOS_POSITION2) {
                 // change target altitude to home alt
-                plane.next_WP_loc.set_alt_cm(plane.home.alt, Location::AltFrame::ABSOLUTE);
+                plane.next_WP_loc.copy_alt_from(plane.home);
             }
             if (poscontrol.get_state() >= QuadPlane::QPOS_POSITION2) {
                 // start landing logic
@@ -210,7 +210,7 @@ void ModeQRTL::update_target_altitude()
                                    dist,
                                    rad_min, MAX(rad_min, MIN(rad_max, rad_min+sink_dist)));
     Location loc = plane.next_WP_loc;
-    loc.alt += alt*100;
+    loc.offset_up_m(alt);
     plane.set_target_altitude_location(loc);
 }
 

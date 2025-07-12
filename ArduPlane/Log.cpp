@@ -284,7 +284,7 @@ void Plane::Log_Write_Guided(void)
         logger.Write_PID(LOG_PIDG_MSG, g2.guidedHeading.get_pid_info());
     }
 
-    if ( guided_state.target_location.alt != -1 || is_positive(guided_state.target_airspeed_cm) ) {
+    if (!guided_state.target_location_alt_is_minus_one() || is_positive(guided_state.target_airspeed_cm) ) {
         Log_Write_OFG_Guided();
     }
 #endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
