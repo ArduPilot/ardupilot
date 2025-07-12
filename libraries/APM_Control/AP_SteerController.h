@@ -15,7 +15,7 @@ public:
 
     /*
       return a steering servo output from -4500 to 4500 given a
-      desired lateral acceleration rate in m/s/s. Positive lateral
+      desired lateral acceleration rate in m/s². Positive lateral
       acceleration is to the right.
      */
 	int32_t get_steering_out_lat_accel(float desired_accel);

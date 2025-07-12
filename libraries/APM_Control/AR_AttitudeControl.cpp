@@ -271,11 +271,11 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     AP_SUBGROUPINFO(_throttle_speed_pid, "_SPEED_", 2, AR_AttitudeControl, AC_PID),
 
     // @Param: _ACCEL_MAX
-    // @DisplayName: Speed control acceleration (and deceleration) maximum in m/s/s
-    // @Description: Speed control acceleration (and deceleration) maximum in m/s/s.  0 to disable acceleration limiting
+    // @DisplayName: Speed control acceleration (and deceleration) maximum in m/s²
+    // @Description: Speed control acceleration (and deceleration) maximum in m/s².  0 to disable acceleration limiting
     // @Range: 0.0 10.0
     // @Increment: 0.1
-    // @Units: m/s/s
+    // @Units: m/s²
     // @User: Standard
     AP_GROUPINFO("_ACCEL_MAX", 3, AR_AttitudeControl, _throttle_accel_max, AR_ATTCONTROL_THR_ACCEL_MAX),
 
@@ -305,10 +305,10 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _STR_ACC_MAX
     // @DisplayName: Steering control angular acceleration maximum
-    // @Description: Steering control angular acceleration maximum (in deg/s/s).  0 to disable acceleration limiting
+    // @Description: Steering control angular acceleration maximum (in deg/s²).  0 to disable acceleration limiting
     // @Range: 0 1000
     // @Increment: 0.1
-    // @Units: deg/s/s
+    // @Units: deg/s²
     // @User: Standard
     AP_GROUPINFO("_STR_ACC_MAX", 7, AR_AttitudeControl, _steer_accel_max, AR_ATTCONTROL_STEER_ACCEL_MAX),
 
@@ -322,11 +322,11 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     AP_GROUPINFO("_STR_RAT_MAX", 8, AR_AttitudeControl, _steer_rate_max, AR_ATTCONTROL_STEER_RATE_MAX),
 
     // @Param: _DECEL_MAX
-    // @DisplayName: Speed control deceleration maximum in m/s/s
-    // @Description: Speed control and deceleration maximum in m/s/s.  0 to use ATC_ACCEL_MAX for deceleration
+    // @DisplayName: Speed control deceleration maximum in m/s²
+    // @Description: Speed control and deceleration maximum in m/s².  0 to use ATC_ACCEL_MAX for deceleration
     // @Range: 0.0 10.0
     // @Increment: 0.1
-    // @Units: m/s/s
+    // @Units: m/s²
     // @User: Standard
     AP_GROUPINFO("_DECEL_MAX", 9, AR_AttitudeControl, _throttle_decel_max, 0.00f),
 
@@ -567,10 +567,10 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _STR_DEC_MAX
     // @DisplayName: Steering control angular deceleration maximum
-    // @Description: Steering control angular deceleration maximum (in deg/s/s).  0 to disable deceleration limiting
+    // @Description: Steering control angular deceleration maximum (in deg/s²).  0 to disable deceleration limiting
     // @Range: 0 1000
     // @Increment: 0.1
-    // @Units: deg/s/s
+    // @Units: deg/s²
     // @User: Standard
     AP_GROUPINFO("_STR_DEC_MAX", 16, AR_AttitudeControl, _steer_decel_max, AR_ATTCONTROL_STEER_DECEL_MAX),
 
@@ -588,7 +588,7 @@ AR_AttitudeControl::AR_AttitudeControl() :
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-// return a steering servo output from -1.0 to +1.0 given a desired lateral acceleration rate in m/s/s.
+// return a steering servo output from -1.0 to +1.0 given a desired lateral acceleration rate in m/s².
 // positive lateral acceleration is to the right.
 float AR_AttitudeControl::get_steering_out_lat_accel(float desired_accel, bool motor_limit_left, bool motor_limit_right, float dt)
 {
@@ -724,7 +724,7 @@ float AR_AttitudeControl::get_desired_turn_rate() const
     return _desired_turn_rate;
 }
 
-// get latest desired lateral acceleration in m/s/s (recorded during calls to get_steering_out_lat_accel)
+// get latest desired lateral acceleration in m/s² (recorded during calls to get_steering_out_lat_accel)
 float AR_AttitudeControl::get_desired_lat_accel() const
 {
     // return zero if no recent calls to lateral acceleration controller
@@ -734,7 +734,7 @@ float AR_AttitudeControl::get_desired_lat_accel() const
     return _desired_lat_accel;
 }
 
-// get actual lateral acceleration in m/s/s.  returns true on success
+// get actual lateral acceleration in m/s².  returns true on success
 bool AR_AttitudeControl::get_lat_accel(float &lat_accel) const
 {
     float speed;
@@ -745,7 +745,7 @@ bool AR_AttitudeControl::get_lat_accel(float &lat_accel) const
     return true;
 }
 
-// calculate the turn rate in rad/sec given a lateral acceleration (in m/s/s) and speed (in m/s)
+// calculate the turn rate in rad/sec given a lateral acceleration (in m/s²) and speed (in m/s)
 float AR_AttitudeControl::get_turn_rate_from_lat_accel(float lat_accel, float speed) const
 {
     // enforce minimum speed to stop oscillations when first starting to move

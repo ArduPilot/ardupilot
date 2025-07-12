@@ -73,7 +73,7 @@ const AP_Param::GroupInfo AR_PosControl::var_info[] = {
     // @Description: Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
     // @Range: 0 4500
     // @Increment: 10
-    // @Units: cm/s/s
+    // @Units: cm/s²
     // @User: Advanced
 
     // @Param: _VEL_FLTE
@@ -275,7 +275,7 @@ bool AR_PosControl::init()
 
 // adjust position, velocity and acceleration targets smoothly using input shaping
 // pos is the target position as an offset from the EKF origin (in meters)
-// vel is the target velocity in m/s. accel is the target acceleration in m/s/s
+// vel is the target velocity in m/s. accel is the target acceleration in m/s²
 // dt should be the update rate in seconds
 // init should be called once before starting to use these methods
 void AR_PosControl::input_pos_target(const Vector2p &pos, float dt)
@@ -287,7 +287,7 @@ void AR_PosControl::input_pos_target(const Vector2p &pos, float dt)
 
 // adjust position, velocity and acceleration targets smoothly using input shaping
 // pos is the target position as an offset from the EKF origin (in meters)
-// vel is the target velocity in m/s. accel is the target acceleration in m/s/s
+// vel is the target velocity in m/s. accel is the target acceleration in m/s²
 // dt should be the update rate in seconds
 // init should be called once before starting to use these methods
 void AR_PosControl::input_pos_vel_target(const Vector2p &pos, const Vector2f &vel, float dt)
@@ -298,7 +298,7 @@ void AR_PosControl::input_pos_vel_target(const Vector2p &pos, const Vector2f &ve
 
 // adjust position, velocity and acceleration targets smoothly using input shaping
 // pos is the target position as an offset from the EKF origin (in meters)
-// vel is the target velocity in m/s. accel is the target acceleration in m/s/s
+// vel is the target velocity in m/s. accel is the target acceleration in m/s²
 // dt should be the update rate in seconds
 // init should be called once before starting to use these methods
 void AR_PosControl::input_pos_vel_accel_target(const Vector2p &pos, const Vector2f &vel, const Vector2f &accel, float dt)

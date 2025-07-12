@@ -47,7 +47,7 @@ public:
 
     // adjust position, velocity and acceleration targets smoothly using input shaping
     // pos is the target position as an offset from the EKF origin (in meters)
-    // vel is the target velocity in m/s. accel is the target acceleration in m/s/s
+    // vel is the target velocity in m/s. accel is the target acceleration in m/s²
     // dt should be the update rate in seconds
     // init should be called once before starting to use these methods
     void input_pos_target(const Vector2p &pos, float dt);
@@ -101,17 +101,17 @@ private:
 
     // limits
     float _speed_max;               // maximum forward speed in m/s
-    float _accel_max;               // maximum forward/back acceleration in m/s/s
-    float _lat_accel_max;           // lateral acceleration maximum in m/s/s
-    float _jerk_max;                // maximum jerk in m/s/s/s (used for both forward and lateral input shaping)
+    float _accel_max;               // maximum forward/back acceleration in m/s²
+    float _lat_accel_max;           // lateral acceleration maximum in m/s²
+    float _jerk_max;                // maximum jerk in m/s³ (used for both forward and lateral input shaping)
     float _turn_radius;             // vehicle turn radius in meters
 
     // position and velocity targets
     Vector2p _pos_target;           // position target as an offset (in meters) from the EKF origin
     Vector2f _vel_desired;          // desired velocity in m/s in NE frame.  This is the "feed forward" provided by SCurves
     Vector2f _vel_target;           // velocity target in m/s in NE frame
-    Vector2f _accel_desired;        // desired accel in m/s/s in NE frame.  This is the "feed forward" provided by SCurves
-    Vector2f _accel_target;         // accel target in m/s/s in NE frame
+    Vector2f _accel_desired;        // desired accel in m/s² in NE frame.  This is the "feed forward" provided by SCurves
+    Vector2f _accel_target;         // accel target in m/s² in NE frame
     bool _pos_target_valid;         // true if _pos_target is valid
     bool _vel_desired_valid;        // true if _vel_desired is valid
     bool _accel_desired_valid;      // true if _accel_desired is valid
