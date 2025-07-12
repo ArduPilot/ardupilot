@@ -153,7 +153,7 @@ void Helicopter::update(const struct sitl_input &input)
         float tail_rotor_torque = (21.6f * 2.96f * yaw_cmd - 2.96f * gyro.z) * sq(rpm[0]/nominal_rpm);
         float tail_rotor_thrust =  -1.0f * tail_rotor_torque * izz / tr_dist;  //right pedal produces left body accel
 
-        // rotational acceleration, in rad/s/s, in body frame
+        // rotational acceleration, in rad/s², in body frame
         rot_accel.x = _tpp_angle.x * Lb1s + Lv * velocity_air_bf.y;
         rot_accel.y = _tpp_angle.y * Ma1s + Mu * velocity_air_bf.x;
         rot_accel.z = tail_rotor_torque - eng_torque;
@@ -203,7 +203,7 @@ void Helicopter::update(const struct sitl_input &input)
 
         float yaw_cmd = 1.45f * (2.0f * tail_rotor - 1.0f); // convert range to -1 to 1
 
-        // rotational acceleration, in rad/s/s, in body frame
+        // rotational acceleration, in rad/s², in body frame
         rot_accel.x = _tpp_angle.x * Lb1s + Lu * velocity_air_bf.x + Lv * velocity_air_bf.y;
         rot_accel.y = _tpp_angle.y * Ma1s + Mu * velocity_air_bf.x + Mv * velocity_air_bf.y;
         rot_accel.z = Nv * velocity_air_bf.y + Nr * gyro.z + sq(rpm[0]/nominal_rpm) * Nped * yaw_cmd + Nw * velocity_air_bf.z + sq(rpm[0]/nominal_rpm) * Ncol * (coll - 0.5f);
@@ -257,7 +257,7 @@ void Helicopter::update(const struct sitl_input &input)
         thrust_1 = 0.5f * thrust_scale * sq(rpm[0] * 0.104667f) * coll_1;
         thrust_2 = 0.5f * thrust_scale * sq(rpm[0] * 0.104667f) * coll_2;
 
-        // rotational acceleration, in rad/s/s, in body frame
+        // rotational acceleration, in rad/s², in body frame
         rot_accel.x = (_tpp_angle_1.x + _tpp_angle_2.x) * Lb1s + Lv * velocity_air_bf.y;
         rot_accel.y = (_tpp_angle_1.y + _tpp_angle_2.y) * Ma1s + (thrust_1 - thrust_2) * hub_dist / iyy + Mu * velocity_air_bf.x;
         rot_accel.z = (_tpp_angle_1.x * thrust_1 - _tpp_angle_2.x * thrust_2) * hub_dist / (iyy * 2.0f) - 0.5f * gyro.z;
@@ -306,7 +306,7 @@ void Helicopter::update(const struct sitl_input &input)
         float right_thruster_force = -1.0f * right_thruster_torque * izz / (0.5f * tr_dist);
         float left_thruster_force = left_thruster_torque * izz / (0.5f * tr_dist);
 
-        // rotational acceleration, in rad/s/s, in body frame
+        // rotational acceleration, in rad/s², in body frame
         rot_accel.x = _tpp_angle.x * Lb1s + Lv * velocity_air_bf.y;
         rot_accel.y = _tpp_angle.y * Ma1s + Mu * velocity_air_bf.x;
         rot_accel.z = right_thruster_torque + left_thruster_torque - eng_torque;

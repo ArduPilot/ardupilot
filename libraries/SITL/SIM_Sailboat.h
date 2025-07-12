@@ -55,7 +55,7 @@ private:
     // return yaw rate in deg/sec given a steering input (in the range -1 to +1) and speed in m/s
     float get_yaw_rate(float steering, float speed) const;
 
-    // return lateral acceleration in m/s/s given a steering input (in the range -1 to +1) and speed in m/s
+    // return lateral acceleration in m/s² given a steering input (in the range -1 to +1) and speed in m/s
     float get_lat_accel(float steering, float speed) const;
 
     // simulate waves and swell
@@ -73,7 +73,7 @@ private:
 
     Vector3f velocity_ef_water; // m/s
     Vector3f wave_gyro;         // rad/s
-    float wave_heave;           // m/s/s
+    float wave_heave;           // m/s²
     float wave_phase;           // rads
 };
 

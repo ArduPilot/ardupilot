@@ -351,17 +351,17 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @Param: SHOVE_X
     // @DisplayName: Acceleration of shove x
     // @Description: Acceleration of shove to vehicle in x axis
-    // @Units: m/s/s
+    // @Units: m/s²
     AP_GROUPINFO("SHOVE_X",     30, SIM,  shove.x, 0),
     // @Param: SHOVE_Y
     // @DisplayName: Acceleration of shove y
     // @Description: Acceleration of shove to vehicle in y axis
-    // @Units: m/s/s
+    // @Units: m/s²
     AP_GROUPINFO("SHOVE_Y",     31, SIM,  shove.y, 0),
     // @Param: SHOVE_Z
     // @DisplayName: Acceleration of shove z
     // @Description: Acceleration of shove to vehicle in z axis
-    // @Units: m/s/s
+    // @Units: m/s²
     AP_GROUPINFO("SHOVE_Z",     32, SIM,  shove.z, 0),
     // @Param: SHOVE_TIME
     // @DisplayName: Time length for shove
@@ -378,17 +378,17 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @Param: TWIST_X
     // @DisplayName: Twist x
     // @Description: Rotational acceleration of twist x axis
-    // @Units: rad/s/s
+    // @Units: rad/s²
     AP_GROUPINFO("TWIST_X",     37, SIM,  twist.x, 0),
     // @Param: TWIST_Y
     // @DisplayName: Twist y
     // @Description: Rotational acceleration of twist y axis
-    // @Units: rad/s/s
+    // @Units: rad/s²
     AP_GROUPINFO("TWIST_Y",     38, SIM,  twist.y, 0),
     // @Param: TWIST_Z
     // @DisplayName: Twist z
     // @Description: Rotational acceleration of twist z axis
-    // @Units: rad/s/s
+    // @Units: rad/s²
     AP_GROUPINFO("TWIST_Z",     39, SIM,  twist.z, 0),
     // @Param: TWIST_TIME
     // @DisplayName: Twist time
