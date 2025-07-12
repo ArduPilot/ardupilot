@@ -43,7 +43,7 @@ const AP_Param::GroupInfo AP_InertialSensor_Params::var_info[] = {
     // @Param: ACCOFFS_X
     // @DisplayName: Accelerometer offsets of X axis
     // @Description: Accelerometer offsets of X axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: m/s²
     // @Range: -3.5 3.5
     // @User: Advanced
     // @Calibration: 1
@@ -51,7 +51,7 @@ const AP_Param::GroupInfo AP_InertialSensor_Params::var_info[] = {
     // @Param: ACCOFFS_Y
     // @DisplayName: Accelerometer offsets of Y axis
     // @Description: Accelerometer offsets of Y axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: m/s²
     // @Range: -3.5 3.5
     // @User: Advanced
     // @Calibration: 1
@@ -59,7 +59,7 @@ const AP_Param::GroupInfo AP_InertialSensor_Params::var_info[] = {
     // @Param: ACCOFFS_Z
     // @DisplayName: Accelerometer offsets of Z axis
     // @Description: Accelerometer offsets of Z axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: m/s²
     // @Range: -3.5 3.5
     // @User: Advanced
     // @Calibration: 1

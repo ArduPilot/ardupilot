@@ -678,7 +678,7 @@ void AP_InertialSensor_LSM9DS0::_set_accel_scale(accel_scale scale)
         /* the datasheet shows an exception for +-16G */
         _accel_scale = 0.000732f;
     }
-    /* convert to G/LSB to (m/s/s)/LSB */
+    /* convert to G/LSB to (m/s²)/LSB */
     _accel_scale *= GRAVITY_MSS;
 }
 

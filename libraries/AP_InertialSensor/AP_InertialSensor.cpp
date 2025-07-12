@@ -210,7 +210,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Param: _ACCOFFS_X
     // @DisplayName: Accelerometer offsets of X axis
     // @Description: Accelerometer offsets of X axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: m/s²
     // @Range: -3.5 3.5
     // @User: Advanced
     // @Calibration: 1
@@ -218,7 +218,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Param: _ACCOFFS_Y
     // @DisplayName: Accelerometer offsets of Y axis
     // @Description: Accelerometer offsets of Y axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: m/s²
     // @Range: -3.5 3.5
     // @User: Advanced
     // @Calibration: 1
@@ -226,7 +226,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Param: _ACCOFFS_Z
     // @DisplayName: Accelerometer offsets of Z axis
     // @Description: Accelerometer offsets of Z axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: m/s²
     // @Range: -3.5 3.5
     // @User: Advanced
     // @Calibration: 1
@@ -260,7 +260,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Param: _ACC2OFFS_X
     // @DisplayName: Accelerometer2 offsets of X axis
     // @Description: Accelerometer2 offsets of X axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: m/s²
     // @Range: -3.5 3.5
     // @User: Advanced
     // @Calibration: 1
@@ -268,7 +268,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Param: _ACC2OFFS_Y
     // @DisplayName: Accelerometer2 offsets of Y axis
     // @Description: Accelerometer2 offsets of Y axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: m/s²
     // @Range: -3.5 3.5
     // @User: Advanced
     // @Calibration: 1
@@ -276,7 +276,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Param: _ACC2OFFS_Z
     // @DisplayName: Accelerometer2 offsets of Z axis
     // @Description: Accelerometer2 offsets of Z axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: m/s²
     // @Range: -3.5 3.5
     // @User: Advanced
     // @Calibration: 1
@@ -313,7 +313,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Param: _ACC3OFFS_X
     // @DisplayName: Accelerometer3 offsets of X axis
     // @Description: Accelerometer3 offsets of X axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: m/s²
     // @Range: -3.5 3.5
     // @User: Advanced
     // @Calibration: 1
@@ -321,7 +321,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Param: _ACC3OFFS_Y
     // @DisplayName: Accelerometer3 offsets of Y axis
     // @Description: Accelerometer3 offsets of Y axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: m/s²
     // @Range: -3.5 3.5
     // @User: Advanced
     // @Calibration: 1
@@ -329,7 +329,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Param: _ACC3OFFS_Z
     // @DisplayName: Accelerometer3 offsets of Z axis
     // @Description: Accelerometer3 offsets of Z axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: m/s²
     // @Range: -3.5 3.5
     // @User: Advanced
     // @Calibration: 1
@@ -1515,7 +1515,7 @@ bool AP_InertialSensor::get_accel_health_all(void) const
     return (get_accel_count() > 0);
 }
 
-// accel_error_threshold in m/s/s to be consistent
+// accel_error_threshold in m/s² to be consistent
 bool AP_InertialSensor::accels_consistent(float accel_error_threshold) const
 {
     const uint8_t accel_count = get_accel_count();
@@ -1531,7 +1531,7 @@ bool AP_InertialSensor::accels_consistent(float accel_error_threshold) const
         // get next accel vector
         const Vector3f &accel_vec = get_accel(i);
         Vector3f vec_diff = accel_vec - prime_accel_vec;
-        // allow for user-defined difference, threshold m/s/s. Has to pass in last consistent_time_sec seconds
+        // allow for user-defined difference, threshold m/s². Has to pass in last consistent_time_sec seconds
         float threshold = accel_error_threshold;
         if (i >= 2) {
             /*
