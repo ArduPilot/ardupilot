@@ -440,12 +440,14 @@ const char *luaO_pushvfstring (lua_State *L, const char *fmt, va_list argp) {
         pushstr(L, buff, l);
         break;
       }
+#if !defined(ARDUPILOT_BUILD)
       case 'U': {  /* an 'int' as a UTF-8 sequence */
         char buff[UTF8BUFFSZ];
         int l = luaO_utf8esc(buff, cast(long, va_arg(argp, long)));
         pushstr(L, buff + UTF8BUFFSZ - l, l);
         break;
       }
+#endif
       case '%': {
         pushstr(L, "%", 1);
         break;
