@@ -20,9 +20,9 @@ public:
     bool get_oa_wp_destination(Location& destination) const override;
 
     /// set_wp_destination waypoint using position vector (distance from ekf origin in cm)
-    ///     terrain_alt should be true if destination.z is a desired altitude above terrain
+    ///     is_terrain_alt should be true if destination.z is a desired altitude above terrain
     ///     returns false on failure (likely caused by missing terrain data)
-    bool set_wp_destination_NEU_cm(const Vector3f& destination, bool terrain_alt = false) override;
+    bool set_wp_destination_NEU_cm(const Vector3f& destination, bool is_terrain_alt = false) override;
 
     /// get horizontal distance to destination in cm
     /// always returns distance to final destination (i.e. does not use oa adjusted destination)
@@ -48,7 +48,7 @@ protected:
     Vector3f    _origin_oabak_neu_cm;          // backup of _origin_neu_cm so it can be restored when oa completes
     Vector3f    _destination_oabak_neu_cm;     // backup of _destination_neu_cm so it can be restored when oa completes
     Vector3f    _next_destination_oabak_neu_cm;// backup of _next_destination_neu_cm so it can be restored when oa completes
-    bool        _terrain_alt_oabak;     // true if backup origin and destination z-axis are terrain altitudes
+    bool        _is_terrain_alt_oabak;     // true if backup origin and destination z-axis are terrain altitudes
     Location    _oa_destination;        // intermediate destination during avoidance
     Location    _oa_next_destination;   // intermediate next destination during avoidance
 };
