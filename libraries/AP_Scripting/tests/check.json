@@ -9,7 +9,8 @@
         "ffi": "disable",
         "jit": "disable",
         "table.clear": "disable",
-        "table.new": "disable"
+        "table.new": "disable",
+        "utf8": "disable"
       },
     "workspace": {
       // These lua scripts are not for running on AP
