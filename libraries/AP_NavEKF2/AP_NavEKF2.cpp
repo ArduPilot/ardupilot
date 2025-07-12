@@ -357,15 +357,15 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 0.01 1.0
     // @Increment: 0.01
     // @User: Advanced
-    // @Units: m/s/s
+    // @Units: m/s²
     AP_GROUPINFO("ACC_P_NSE", 25, NavEKF2, _accNoise, ACC_P_NSE_DEFAULT),
 
     // @Param: GBIAS_P_NSE
-    // @DisplayName: Rate gyro bias stability (rad/s/s)
+    // @DisplayName: Rate gyro bias stability (rad/s²)
     // @Description: This state  process noise controls growth of the gyro delta angle bias state error estimate. Increasing it makes rate gyro bias estimation faster and noisier.
     // @Range: 0.00001 0.001
     // @User: Advanced
-    // @Units: rad/s/s
+    // @Units: rad/s²
     AP_GROUPINFO("GBIAS_P_NSE", 26, NavEKF2, _gyroBiasProcessNoise, GBIAS_P_NSE_DEFAULT),
 
     // @Param: GSCL_P_NSE
@@ -381,7 +381,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Description: This noise controls the growth of the vertical accelerometer delta velocity bias state error estimate. Increasing it makes accelerometer bias estimation faster and noisier.
     // @Range: 0.00001 0.005
     // @User: Advanced
-    // @Units: m/s/s/s
+    // @Units: m/s³
     AP_GROUPINFO("ABIAS_P_NSE", 28, NavEKF2, _accelBiasProcessNoise, ABIAS_P_NSE_DEFAULT),
 
     // 29 previously used for EK2_MAG_P_NSE parameter that has been replaced with EK2_MAGE_P_NSE and EK2_MAGB_P_NSE
@@ -392,7 +392,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 0.01 1.0
     // @Increment: 0.1
     // @User: Advanced
-    // @Units: m/s/s
+    // @Units: m/s²
     AP_GROUPINFO("WIND_P_NSE", 30, NavEKF2, _windVelProcessNoise, 0.1f),
 
     // @Param: WIND_PSCALE

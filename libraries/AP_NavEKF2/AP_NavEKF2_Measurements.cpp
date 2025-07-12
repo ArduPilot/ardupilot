@@ -1050,11 +1050,11 @@ void NavEKF2_core::learnInactiveBiases(void)
             ftype error = filtered_accel_active - filtered_accel_inactive;
 
             // prevent a single large error from contaminating bias estimate
-            const ftype bias_limit = 1; // m/s/s
+            const ftype bias_limit = 1; // m/s²
             error = constrain_ftype(error, -bias_limit, bias_limit);
 
             // slowly bring the inactive accel in line with the active accel
-            // this learns 0.5m/s/s bias in about 1 minute
+            // this learns 0.5m/s² bias in about 1 minute
             inactiveBias[i].accel_zbias -= error * (1.0e-4f * dtEkfAvg);
         }
     }
