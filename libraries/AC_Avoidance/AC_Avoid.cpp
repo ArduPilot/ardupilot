@@ -98,7 +98,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Param: ACCEL_MAX
     // @DisplayName: Avoidance maximum acceleration
     // @Description: Maximum acceleration with which obstacles will be avoided with. Set zero to disable acceleration limits
-    // @Units: m/s/s
+    // @Units: m/s²
     // @Range: 0 9
     // @User: Standard
     AP_GROUPINFO("ACCEL_MAX", 8, AC_Avoid, _accel_max, 3.0f),
@@ -333,7 +333,7 @@ void AC_Avoid::limit_accel(const Vector3f &original_vel, Vector3f &modified_vel,
 
 // This method is used in most Rover modes and not in Copter
 // adjust desired horizontal speed so that the vehicle stops before the fence or object
-// accel (maximum acceleration/deceleration) is in m/s/s
+// accel (maximum acceleration/deceleration) is in m/s²
 // heading is in radians
 // speed is in m/s
 // kP should be zero for linear response, non-zero for non-linear response

@@ -9,7 +9,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AC_AttitudeControl/AC_AttitudeControl.h> // Attitude controller library for sqrt controller
 
-#define AC_AVOID_ACCEL_CMSS_MAX         100.0f  // maximum acceleration/deceleration in cm/s/s used to avoid hitting fence
+#define AC_AVOID_ACCEL_CMSS_MAX         100.0f  // maximum acceleration/deceleration in cm/s² used to avoid hitting fence
 
 // bit masks for enabled fence types.
 #define AC_AVOID_DISABLED               0       // avoidance disabled
@@ -59,7 +59,7 @@ public:
     void adjust_velocity_fence(float kP, float accel_cmss, Vector3f &desired_vel_cms, Vector3f &backup_vel, float kP_z, float accel_cmss_z, float dt);
 
     // adjust desired horizontal speed so that the vehicle stops before the fence or object
-    // accel (maximum acceleration/deceleration) is in m/s/s
+    // accel (maximum acceleration/deceleration) is in m/s²
     // heading is in radians
     // speed is in m/s
     // kP should be zero for linear response, non-zero for non-linear response
