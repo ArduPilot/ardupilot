@@ -265,12 +265,16 @@ bool Compass::send_mag_cal_progress(const GCS_MAVLINK& link)
 
             next_cal_progress_idx[chan] = compass_id;
 
+            const auto &ahrs = AP::ahrs();
+
             mavlink_msg_mag_cal_progress_send(
                 link.get_chan(),
                 uint8_t(compass_id),
                 _get_cal_mask(),
                 (uint8_t)cal_state.status, cal_state.attempt, cal_state.completion_pct, cal_state.completion_mask,
-                0.0f, 0.0f, 0.0f
+                ahrs.get_roll_rad(),
+                ahrs.get_pitch_rad(),
+                ahrs.get_yaw_rad()
             );
         } else {
             next_cal_progress_idx[chan] = compass_id;
