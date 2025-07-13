@@ -95,31 +95,6 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
     }
 }
 
-
-#if ENABLE_HEAP
-/*
-  realloc implementation thanks to wolfssl, used by ExpandingString
-  and ExpandingArray
- */
-void *Util::std_realloc(void *addr, uint32_t size)
-{
-    if (size == 0) {
-       free(addr);
-       return nullptr;
-    }
-    if (addr == nullptr) {
-        return malloc(size);
-    }
-    void *new_mem = malloc(size);
-    if (new_mem != nullptr) {
-        memcpy(new_mem, addr, chHeapGetSize(addr) > size ? size : chHeapGetSize(addr));
-        free(addr);
-    }
-    return new_mem;
-}
-
-#endif // ENABLE_HEAP
-
 #endif // CH_CFG_USE_HEAP
 
 /*
