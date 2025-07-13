@@ -165,10 +165,6 @@ private:
         LowPassFilterFloat alt_filt;         // altitude filter
     } rangefinder_state = { false, false, 0, 0, 0, 0, 0, 0 };
 
-#if AP_RPM_ENABLED
-    AP_RPM rpm_sensor;
-#endif
-
     // Mission library
     AP_Mission mission{
             FUNCTOR_BIND_MEMBER(&Sub::start_command, bool, const AP_Mission::Mission_Command &),
