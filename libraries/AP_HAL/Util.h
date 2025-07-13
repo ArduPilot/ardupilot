@@ -148,17 +148,6 @@ public:
     virtual void *malloc_type(size_t size, Memory_Type mem_type) { return calloc(1, size); }
     virtual void free_type(void *ptr, size_t size, Memory_Type mem_type) { return free(ptr); }
 
-#if ENABLE_HEAP
-    /*
-      heap functions used by non-scripting
-     */
-#if USE_LIBC_REALLOC
-    virtual void *std_realloc(void *ptr, uint32_t new_size) { return realloc(ptr, new_size); }
-#else
-    virtual void *std_realloc(void *ptr, uint32_t new_size) = 0;
-#endif // USE_LIBC_REALLOC
-#endif
-
     /**
        how much free memory do we have in bytes. If unknown return 4096
      */
