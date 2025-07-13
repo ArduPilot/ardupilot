@@ -152,11 +152,6 @@ void Copter::init_ardupilot()
     g2.beacon.init();
 #endif
 
-#if AP_RPM_ENABLED
-    // initialise AP_RPM library
-    rpm_sensor.init();
-#endif
-
 #if MODE_AUTO_ENABLED
     // initialise mission library
     mode_auto.mission.init();
