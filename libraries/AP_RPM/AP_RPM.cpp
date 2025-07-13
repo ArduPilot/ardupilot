@@ -79,8 +79,6 @@ void AP_RPM::init(void)
         return;
     }
 
-    convert_params();
-
     for (uint8_t i=0; i<RPM_MAX_INSTANCES; i++) {
         switch (_params[i].type) {
 #if AP_RPM_PIN_ENABLED
@@ -129,79 +127,6 @@ void AP_RPM::init(void)
             num_instances = i+1; // num_instances is a high-water-mark
         }
     }
-}
-
-/* 
-PARAMETER_CONVERSION - Added: Aug-2021
-*/
-void AP_RPM::convert_params(void)
-{
-    if (_params[0].type.configured()) {
-        // _params[0].type will always be configured after conversion is done the first time
-        return;
-    }
-
-    // don't do conversion if neither RPM types were set
-    bool type_set;
-    uint8_t rpm_type = 0;
-    uint8_t rpm2_type = 0;
-    type_set = AP_Param::get_param_by_index(this, 0, AP_PARAM_INT8, &rpm_type);
-    type_set |= AP_Param::get_param_by_index(this, 10, AP_PARAM_INT8, &rpm2_type);
-
-    if (!type_set || (rpm_type == 0 && rpm2_type == 0)) {
-        return;
-    }
-
-    struct ConversionTable {
-        uint8_t old_element;
-        uint8_t new_index;
-        uint8_t instance;
-    };
-
-    const struct ConversionTable conversionTable[] = {
-            // RPM 1
-            {0, 0, 0}, // TYPE
-            {1, 1, 0}, // SCALING
-            {2, 2, 0}, // MAX
-            {3, 3, 0}, // MIN
-            {4, 4, 0}, // MIN_QUAL
-            {5, 5, 0}, // PIN
-            {6, 6, 0}, // ESC_MASK
-
-            // RPM 2
-            {10, 0, 1}, // TYPE
-            {11, 1, 1}, // SCALING
-            // MAX (Previous bug meant RPM2_MAX param was never accesible to users. No conversion required.)
-            // MIN (Previous bug meant RPM2_MIN param was never accesible to users. No conversion required.)
-            {4, 4, 1}, // MIN_QUAL (Previously the min quality of the 1st RPM instance was used for all RPM instances.)
-            {12, 5, 1}, // PIN
-            {13, 6, 1}, // ESC_MASK
-    };
-
-    char param_name[17] = {0};
-    AP_Param::ConversionInfo info;
-    info.new_name = param_name;
-
-    if (!AP_Param::find_top_level_key_by_pointer(this, info.old_key)) {
-        _params[0].type.save(true);
-        return; // no conversion is supported on this platform
-    }
-
-    for (uint8_t i = 0; i < ARRAY_SIZE(conversionTable); i++) {
-        uint8_t param_instance = conversionTable[i].instance + 1;
-        uint8_t destination_index = conversionTable[i].new_index;
-        info.old_group_element = conversionTable[i].old_element;
-
-        // The var type of the params has not changed in the conversion so this is ok:
-        info.type = (ap_var_type)AP_RPM_Params::var_info[destination_index].type;
-        hal.util->snprintf(param_name, sizeof(param_name), "RPM%X_%s", param_instance, AP_RPM_Params::var_info[destination_index].name);
-        param_name[sizeof(param_name)-1] = '\0';
-
-        AP_Param::convert_old_parameter(&info, 1.0f, 0);
-    }
-
-    // force _params[0].type into storage to flag that conversion has been done
-    _params[0].type.save(true);
 }
 
 /*
