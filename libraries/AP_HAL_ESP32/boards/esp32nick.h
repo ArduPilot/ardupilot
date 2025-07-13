@@ -115,8 +115,3 @@
 #define HAL_LOGGING_MAVLINK_ENABLED			0
 //TERRAIN
 #define HAL_BOARD_TERRAIN_DIRECTORY "/SDCARD/APM/TERRAIN"
-
-// see boards.py
-#ifndef ENABLE_HEAP
-#define ENABLE_HEAP 1
-#endif
