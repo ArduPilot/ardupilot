@@ -5,10 +5,6 @@
 #include "AP_HAL_Namespace.h"
 #include <AP_Logger/AP_Logger_config.h>
 
-#ifndef ENABLE_HEAP
-#define ENABLE_HEAP 0
-#endif
-
 class ExpandingString;
 
 class AP_HAL::Util {
