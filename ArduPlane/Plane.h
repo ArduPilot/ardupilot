@@ -242,11 +242,6 @@ private:
 
     float get_landing_height(bool &using_rangefinder);
 
-
-#if AP_RPM_ENABLED
-    AP_RPM rpm_sensor;
-#endif
-
     AP_TECS TECS_controller{ahrs, aparm, landing, MASK_LOG_TECS};
     AP_L1_Control L1_controller{ahrs, &TECS_controller};
 
