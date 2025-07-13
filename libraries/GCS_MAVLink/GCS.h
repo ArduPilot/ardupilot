@@ -167,10 +167,6 @@ private:
     static uint32_t last_check_ms;
 };
 
-#if AP_MAVLINK_FTP_ENABLED
-class GCS_FTP;
-#endif
-
 ///
 /// @class	GCS_MAVLINK
 /// @brief	MAVLink transport control class
@@ -980,10 +976,6 @@ private:
     void param_io_timer(void);
 
     uint8_t send_parameter_async_replies();
-
-#if AP_MAVLINK_FTP_ENABLED
-    static GCS_FTP *ftp;
-#endif
 
     void send_distance_sensor(const class AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
 

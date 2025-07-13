@@ -10,10 +10,14 @@
 
 #include "GCS.h"
 
+#ifndef AP_MAVLINK_FTP_MAX_SESSIONS
+#define AP_MAVLINK_FTP_MAX_SESSIONS 5
+#endif
+
 class GCS_FTP {
 public:
-    void handle_file_transfer_protocol(const mavlink_message_t &msg, mavlink_channel_t chan);
-    uint32_t get_last_send_ms(void) const { return last_send_ms; }
+    static void handle_file_transfer_protocol(const mavlink_message_t &msg, mavlink_channel_t chan);
+    static uint32_t get_last_send_ms(mavlink_channel_t chan);
 
 private:
     enum class FTP_OP : uint8_t {
@@ -51,7 +55,7 @@ private:
         FileNotFound = 10,
     };
 
-    struct pending {
+    struct Transaction {
         uint32_t offset;
         mavlink_channel_t chan;        
         uint16_t seq_number;
@@ -70,25 +74,45 @@ private:
         Write,
     };
 
-    ObjectBuffer<pending> requests{5};
+    ObjectBuffer<Transaction> requests{AP_MAVLINK_FTP_MAX_SESSIONS};
 
-    // session specific info, currently only support a single session over all links
     bool initialised;
-    int fd = -1;
-    FTP_FILE_MODE mode; // work around AP_Filesystem not supporting file modes
-    int16_t current_session;
-    uint32_t last_send_ms;
-    uint8_t need_banner_send_mask;
+
+    // session specific info
+    class Session {
+    public:
+        int fd = -1;
+        uint32_t last_send_ms;
+        int16_t session_id;
+        FTP_FILE_MODE mode; // work around AP_Filesystem not supporting file modes
+        mavlink_channel_t chan;
+        uint8_t sysid;
+        uint8_t compid;
+
+        bool check_name_len(const Transaction &request);
+        int gen_dir_entry(char *dest, size_t space, const char * path, const struct dirent * entry); // FTP helper for emitting a dir response
+        void list_dir(Transaction &request, Transaction &response);
+        void push_reply(Transaction &reply);
+        bool handle_request(Transaction &request, Transaction &reply);
+
+        void close(void);
+    };
+    Session sessions[AP_MAVLINK_FTP_MAX_SESSIONS];
 
     bool init(void);
-    void error(struct pending &response, FTP_ERROR error); // FTP helper method for packing a NAK
-    bool check_name_len(const struct pending &request);
-    int gen_dir_entry(char *dest, size_t space, const char * path, const struct dirent * entry); // FTP helper for emitting a dir response
-    void list_dir(struct pending &request, struct pending &response);
 
-    bool send_reply(const pending &reply);
+    static bool send_reply(const Transaction &reply);
+    static void error(Transaction &response, FTP_ERROR error);
+
+    /*
+      setup reply packet to reply to the request
+     */
+    void setup_reply(const Transaction &request, Transaction &reply);
+
     void worker(void);
-    void push_replies(pending &reply);
+
+    // GCS_FTP instance created by static handle_file_transfer_protocol()
+    static GCS_FTP *ftp;
 };
 
 #endif  // AP_MAVLINK_FTP_ENABLED

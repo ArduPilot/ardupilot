@@ -1254,7 +1254,7 @@ uint16_t GCS_MAVLINK::get_reschedule_interval_ms(const deferred_message_bucket_t
         interval_ms *= 4;
     }
 #if AP_MAVLINK_FTP_ENABLED
-    if (ftp != nullptr && AP_HAL::millis() - ftp->get_last_send_ms() < 1000) {
+    if (AP_HAL::millis() - GCS_FTP::get_last_send_ms(chan) < 1000) {
         // we are sending ftp replies
         interval_ms *= 4;
     }
@@ -4330,15 +4330,9 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 #endif
 
 #if AP_MAVLINK_FTP_ENABLED
-    case MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL: {
-        if (ftp == nullptr) {
-            ftp = NEW_NOTHROW GCS_FTP;
-        }
-        if (ftp != nullptr) {
-            ftp->handle_file_transfer_protocol(msg, chan);
-        }
+    case MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL:
+        GCS_FTP::handle_file_transfer_protocol(msg, chan);
         break;
-    }
 #endif
 
 #if AP_CAMERA_ENABLED
