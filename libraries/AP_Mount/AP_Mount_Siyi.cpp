@@ -74,6 +74,12 @@ void AP_Mount_Siyi::update()
 #endif
     }
 
+    if (!_codec_info.main_stream.received || !_codec_info.recording_stream.received) {
+        // Request codec specs at startup
+        request_all_codec_specs();
+        return;
+    }
+
     // request attitude at regular intervals
     if ((now_ms - _last_req_current_angle_rad_ms) >= 50) {
         request_gimbal_attitude();
@@ -567,6 +573,45 @@ void AP_Mount_Siyi::process_packet()
         break;
     }
 
+case SiyiCommandId::CAMERA_CODEC_SPECS: {
+    if (_parsed_msg.data_bytes_received >= 8) {
+        const uint8_t stream_type = _msg_buff[_msg_buff_data_start];
+        
+        // Get pointer to appropriate stream info
+        auto* stream_info = _codec_info.get_stream(stream_type);
+        if (stream_info != nullptr) {
+            stream_info->stream_type = stream_type;
+            stream_info->video_enc_type = _msg_buff[_msg_buff_data_start + 1];
+            stream_info->resolution_width = UINT16_VALUE(_msg_buff[_msg_buff_data_start + 3], _msg_buff[_msg_buff_data_start + 2]);
+            stream_info->resolution_height = UINT16_VALUE(_msg_buff[_msg_buff_data_start + 5], _msg_buff[_msg_buff_data_start + 4]);
+            stream_info->video_bitrate = UINT16_VALUE(_msg_buff[_msg_buff_data_start + 7], _msg_buff[_msg_buff_data_start + 6]);
+            if (_parsed_msg.data_bytes_received >= 9) {
+                stream_info->video_framerate = _msg_buff[_msg_buff_data_start + 8];
+            }
+            stream_info->received = true;
+            stream_info->last_update_ms = AP_HAL::millis();
+            
+            // Log codec information for debugging
+            const char* enc_type_str = (stream_info->video_enc_type == 1) ? "H264" : 
+                                      (stream_info->video_enc_type == 2) ? "H265" : "Unknown";
+            const char* stream_name = (stream_type == 0) ? "Recording" :
+                                     (stream_type == 1) ? "Main" : "Sub";
+                                     
+            debug("Codec[%s]: %s %ux%u %ukbps %ufps", 
+                  stream_name, enc_type_str,
+                  stream_info->resolution_width, stream_info->resolution_height,
+                  stream_info->video_bitrate, stream_info->video_framerate);
+                  
+            // Send status to GCS
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Siyi %s: %s %ux%u@%ufps %ukbps",
+                         stream_name, enc_type_str,
+                         stream_info->resolution_width, stream_info->resolution_height,
+                         stream_info->video_framerate, stream_info->video_bitrate);
+        }
+    }
+    break;
+}
+
     default:
         debug("Unhandled CmdId:%u", (unsigned)_parsed_msg.command_id);
         break;
@@ -913,11 +958,36 @@ SetFocusResult AP_Mount_Siyi::set_focus(FocusType focus_type, float focus_value)
     case FocusType::PCT:
         // not supported
         return SetFocusResult::INVALID_PARAMETERS;
-    case FocusType::AUTO:
-        if (!send_1byte_packet(SiyiCommandId::AUTO_FOCUS, 1)) {
+    case FocusType::AUTO: {
+        // Get the best available resolution from codec info
+        uint16_t res_h = 1920;  // fallback defaults
+        uint16_t res_v = 1080;
+        
+        if (!_codec_info.get_best_resolution(res_h, res_v)) {
+            // Log that we're using defaults
+            debug("Using default resolution 1920x1080 for autofocus");
+        } else {
+            debug("Using actual resolution %ux%u for autofocus", res_h, res_v);
+        }
+        
+        // Calculate center coordinates
+        uint16_t center_x = res_h / 2;
+        uint16_t center_y = res_v / 2;
+        
+        // Pack data according to SIYI protocol
+        uint8_t autofocus_data[5] = {
+            1,                                 // auto_focus: 1 = start autofocus
+            (uint8_t)(center_x & 0xFF),        // touch_x low byte
+            (uint8_t)((center_x >> 8) & 0xFF), // touch_x high byte
+            (uint8_t)(center_y & 0xFF),        // touch_y low byte
+            (uint8_t)((center_y >> 8) & 0xFF)  // touch_y high byte
+        };
+        
+        if (!send_packet(SiyiCommandId::AUTO_FOCUS, autofocus_data, 5)) {
             return SetFocusResult::FAILED;
         }
         return SetFocusResult::ACCEPTED;
+        }
     }
 
     // unsupported focus type
@@ -1307,6 +1377,23 @@ void AP_Mount_Siyi::send_attitude_position(void)
     position.velocity_ned_int32.z = velocity_ned.z * 1000;
 
     send_packet(SiyiCommandId::POSITION_DATA, (const uint8_t *)&position, sizeof(position));
+}
+
+// Request codec specs for specific stream
+bool AP_Mount_Siyi::request_codec_specs(uint8_t stream_type)
+{
+    return send_1byte_packet(SiyiCommandId::CAMERA_CODEC_SPECS, stream_type);
+}
+
+// Request all available codec specs
+void AP_Mount_Siyi::request_all_codec_specs()
+{
+    static uint8_t request_stream = 0;
+    
+    // Request streams sequentially: 0 (recording), 1 (main), 2 (sub)
+    if (request_codec_specs(request_stream)) {
+        request_stream = (request_stream + 1) % 3;
+    }
 }
 
 #endif // HAL_MOUNT_SIYI_ENABLED
