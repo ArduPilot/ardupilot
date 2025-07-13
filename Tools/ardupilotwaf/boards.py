@@ -371,14 +371,6 @@ class Board:
         if cfg.options.bootloader:
             # don't let bootloaders try and pull scripting in
             cfg.options.disable_scripting = True
-            if cfg.options.signed_fw:
-                env.DEFINES.update(
-                    ENABLE_HEAP = 1,
-                )
-        else:
-            env.DEFINES.update(
-                ENABLE_HEAP = 1,
-            )
 
         if cfg.options.enable_math_check_indexes:
             env.CXXFLAGS += ['-DMATH_CHECK_INDEXES']
