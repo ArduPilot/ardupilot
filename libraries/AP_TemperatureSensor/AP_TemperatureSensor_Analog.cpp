@@ -61,7 +61,7 @@ const AP_Param::GroupInfo AP_TemperatureSensor_Analog::var_info[] = {
     // @Description: a5 in polynomial of form temperature in deg = a0 + a1*voltage + a2*voltage^2 + a3*voltage^3 + a4*voltage^4 + a5*voltage^5
     AP_GROUPINFO("A5", 7, AP_TemperatureSensor_Analog, _a[5], 0),
 
-    // This param table is shared between backends, check for index clashes before adding more params!
+    // CHECK/UPDATE INDEX TABLE IN AP_TemperatureSensor_Backend.cpp WHEN CHANGING OR ADDING PARAMETERS
 
     AP_GROUPEND
 };
