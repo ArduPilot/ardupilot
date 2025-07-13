@@ -1228,7 +1228,6 @@ class chibios(Board):
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_CHIBIOS',
             HAVE_STD_NULLPTR_T = 0,
-            USE_LIBC_REALLOC = 0,
         )
 
         env.AP_LIBRARIES += [
@@ -1671,7 +1670,6 @@ class QURT(Board):
             "--wrap=malloc",
             "--wrap=calloc",
             "--wrap=free",
-            "--wrap=realloc",
             "--wrap=printf",
             "--wrap=strdup",
             "--wrap=__stack_chk_fail",
