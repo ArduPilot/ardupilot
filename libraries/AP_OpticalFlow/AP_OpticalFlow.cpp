@@ -98,6 +98,13 @@ const AP_Param::GroupInfo AP_OpticalFlow::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO_FRAME("_HGT_OVR", 6,  AP_OpticalFlow, _height_override,   0.0f, AP_PARAM_FRAME_ROVER),
 
+    // @Param: _OPTIONS
+    // @DisplayName: Optical flow options
+    // @Description: Optical flow options. Bit 0 should be set if the sensor is stabilised (e.g. mounted on a gimbal)
+    // @Bitmask: 0:Roll/Pitch stabilised
+    // @User: Standard
+    AP_GROUPINFO("_OPTIONS", 7,  AP_OpticalFlow, _options,   0),
+
     AP_GROUPEND
 };
 

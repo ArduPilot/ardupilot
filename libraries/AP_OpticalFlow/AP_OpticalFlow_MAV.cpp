@@ -67,8 +67,14 @@ void AP_OpticalFlow_MAV::update(void)
         state.flowRate = { ((float)flow_sum.x / count) * flow_scale_factor_x * dt_used,
                            ((float)flow_sum.y / count) * flow_scale_factor_y * dt_used };
 
-        // copy average body rate to state structure
-        state.bodyRate = { gyro_sum.x / gyro_sum_count, gyro_sum.y / gyro_sum_count };
+        // copy body-rates from gyro or set to zero
+        if (option_is_enabled(Option::Stabilised)) {
+            // if the sensor is stabilised then body rates are always zero
+            state.bodyRate.zero();
+        } else {
+            // copy average body rate to state structure
+            state.bodyRate = { gyro_sum.x / gyro_sum_count, gyro_sum.y / gyro_sum_count };   
+        }
 
         // we only apply yaw to flowRate as body rate comes from AHRS
         _applyYaw(state.flowRate);
