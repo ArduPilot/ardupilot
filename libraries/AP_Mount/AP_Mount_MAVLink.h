@@ -1,11 +1,11 @@
 /*
-  Gremsy mount backend class
+  MAVLink Gimbal Protocol v2 backend class
  */
 #pragma once
 
 #include "AP_Mount_config.h"
 
-#if HAL_MOUNT_GREMSY_ENABLED
+#if HAL_MOUNT_MAVLINK_ENABLED
 
 #include "AP_Mount_Backend.h"
 
@@ -13,7 +13,7 @@
 #include <AP_Common/AP_Common.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-class AP_Mount_Gremsy : public AP_Mount_Backend
+class AP_Mount_MAVLink : public AP_Mount_Backend
 {
 
 public:
@@ -73,4 +73,4 @@ private:
     mavlink_gimbal_device_attitude_status_t _gimbal_device_attitude_status;  // copy of most recently received gimbal status
     uint32_t _last_attitude_status_ms;  // system time last attitude status was received (used for health reporting)
 };
-#endif // HAL_MOUNT_GREMSY_ENABLED
+#endif // HAL_MOUNT_MAVLINK_ENABLED
