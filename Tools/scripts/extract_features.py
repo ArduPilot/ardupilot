@@ -302,6 +302,11 @@ class ExtractFeatures(object):
             ('AP_DDS_ENABLED', r'AP_DDS_Client::start'),
             ('AP_PERIPH_DEVICE_TEMPERATURE_ENABLED', r'AP_Periph_FW::temperature_sensor_update'),
             ('AP_PERIPH_MSP_ENABLED', r'AP_Periph_FW::msp_init'),
+            ('AP_PERIPH_NOTIFY_ENABLED', r'AP_Periph_FW::handle_notify_state'),
+            ('AP_PERIPH_SERIAL_OPTIONS_ENABLED', r'SerialOptions::init'),
+            ('AP_PERIPH_BATTERY_ENABLED', r'AP_Periph_FW::can_battery_update'),
+            ('AP_PERIPH_RELAY_ENABLED', r'AP_Periph_FW::handle_hardpoint_command'),
+            ('AP_PERIPH_BATTERY_BALANCE_ENABLED', r'AP_Periph_FW::batt_balance_update'),
         ]
 
     def progress(self, msg):

@@ -1367,7 +1367,7 @@ uint8_t GCS_MAVLINK_Copter::high_latency_tgt_heading() const
         // return units are deg/2
         const Mode *flightmode = copter.flightmode;
         // need to convert -180->180 to 0->360/2
-        return wrap_360(flightmode->wp_bearing_deg()) / 2;
+        return wrap_360(flightmode->wp_bearing_deg()) * 0.5;
     }
     return 0;     
 }

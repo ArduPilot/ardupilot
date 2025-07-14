@@ -148,7 +148,7 @@ void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, f
 
     // convert our desired attitude to an acceleration vector assuming we are not accelerating vertically
     const Vector3f desired_euler_rad {euler_roll_angle_rad, euler_pitch_angle_rad, _ahrs.yaw};
-    const Vector3f desired_accel_NEU_cmss = _pos_control.lean_angles_to_accel_NEU_cmss(desired_euler_rad);
+    const Vector3f desired_accel_NEU_cmss = _pos_control.lean_angles_rad_to_accel_NEU_cmss(desired_euler_rad);
 
     _desired_accel_ne_cmss.x = desired_accel_NEU_cmss.x;
     _desired_accel_ne_cmss.y = desired_accel_NEU_cmss.y;
@@ -164,7 +164,7 @@ void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, f
 
     // convert our predicted attitude to an acceleration vector assuming we are not accelerating vertically
     const Vector3f predicted_euler_rad {_predicted_euler_angle_rad.x, _predicted_euler_angle_rad.y, _ahrs.yaw};
-    const Vector3f predicted_accel = _pos_control.lean_angles_to_accel_NEU_cmss(predicted_euler_rad);
+    const Vector3f predicted_accel = _pos_control.lean_angles_rad_to_accel_NEU_cmss(predicted_euler_rad);
 
     _predicted_accel_ne_cmss.x = predicted_accel.x;
     _predicted_accel_ne_cmss.y = predicted_accel.y;

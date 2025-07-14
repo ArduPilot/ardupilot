@@ -1,7 +1,9 @@
 --[[
     driver for LTE modems with AT command set
     supported chipsets:
-      - SIM7600
+    - SIM7600
+    - EC200
+    - Air780
 --]]
 
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
@@ -19,7 +21,7 @@ local function bind_add_param(name, idx, default_value)
 end
 
 -- Setup Parameters
-assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 20), 'LTE_modem: could not add param table')
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 30), 'LTE_modem: could not add param table')
 
 --[[
     // @Param: LTE_ENABLE
@@ -100,13 +102,13 @@ local LTE_SERVER_PORT = bind_add_param('SERVER_PORT',  8, 0)
     // @Values: 19200:19200,38400:38400,57600:57600,115200:115200,230400:230400,460800:460800,921600:921600,3686400:3686400
     // @User: Standard
 --]]
-local LTE_BAUD        = bind_add_param('BAUD',  9, 921600)
+local LTE_BAUD        = bind_add_param('BAUD',  9, 115200)
 
 --[[
     // @Param: LTE_TIMEOUT
     // @DisplayName: Timeout
-    // @Description: Timeout in seconds for the LTE connection. If no data is received for this time, the connection will be reset.
-    // @Range: 1 60
+    // @Description: Timeout in seconds for the LTE connection. If no data is received for this time, the connection will be reset. A value of zero disables the timeout
+    // @Range: 0 60
     // @Units: s
     // @User: Standard
 --]]
@@ -115,7 +117,7 @@ local LTE_TIMEOUT     = bind_add_param('TIMEOUT', 10, 10)
 --[[
     // @Param: LTE_PROTOCOL
     // @DisplayName: LTE protocol
-    // @Description: The protocol that we will use in communication with the LTE modem. If this is PPP then the LTE_SERVER parameters are not used and instead a PPP connection will be established and you should use the NET_ parameters to enable network ports. If this is MAVLink2 then the LTE_SERVER parameters are used to create a TCP connection to a single TCP server.
+    // @Description: The protocol that we will use in communication with the LTE modem. If this is PPP then the LTE_SERVER parameters are not used and instead a PPP connection will be established and you should use the NET_ parameters to enable network ports. If this is MAVLink2 then the LTE_SERVER parameters are used to create a TCP or UDP connection to a single server.
     // @Values: 2:MavLink2,48:PPP
     // @User: Standard
 --]]
@@ -125,7 +127,7 @@ local LTE_PROTOCOL     = bind_add_param('PROTOCOL', 11, 48)
     // @Param: LTE_OPTIONS
     // @DisplayName: LTE options
     // @Description: Options to control the LTE modem driver. If VerboseSignalInfoGCS is set then additional NAMED_VALUE_FLOAT values are sent with verbose signal information
-    // @Bitmask: 0:LogAllData,1:VerboseSignalInfoGCS
+    // @Bitmask: 0:LogAllData,1:VerboseSignalInfoGCS,2:DisableMultiplexing,3:DisableSignalQueries,4:UseTCP
     // @User: Standard
 --]]
 local LTE_OPTIONS     = bind_add_param('OPTIONS', 12, 0)
@@ -139,8 +141,166 @@ local LTE_OPTIONS     = bind_add_param('OPTIONS', 12, 0)
 --]]
 local LTE_IBAUD       = bind_add_param('IBAUD', 13, 115200)
 
-local LTE_OPTIONS_LOGALL = (1<<0)
-local LTE_OPTIONS_SIGNALS = (1<<1)
+--[[
+    // @Param: LTE_MCCMNC
+    // @DisplayName: LTE operator selection
+    // @Description: This allows selection of network operator
+    // @Values: -1:NoChange,0:Default,AU-Telstra:50501,AU-Optus:50502,AU-Vodaphone:50503
+    // @User: Standard
+--]]
+local LTE_MCCMNC      = bind_add_param('MCCMNC', 14, -1)
+
+local supports_routing = networking and networking.add_route -- luacheck: ignore 143
+
+if supports_routing then
+    -- add_route() API only on newer firmwares
+    --[[
+        // @Param: LTE_ROUTE_IP0
+        // @DisplayName: custom route IP 0
+        // @Description: First octet of the custom route IP address
+        // @Range: 0 255
+        // @User: Standard
+    --]]
+    LTE_ROUTE_IP0  = bind_add_param('ROUTE_IP0',  15, 0)
+
+    --[[
+        // @Param: LTE_ROUTE_IP1
+        // @DisplayName: custom route IP 1
+        // @Description: Second octet of the custom route IP address
+        // @Range: 0 255
+        // @User: Standard
+    --]]
+    LTE_ROUTE_IP1  = bind_add_param('ROUTE_IP1',  16, 0)
+
+    --[[
+        // @Param: LTE_ROUTE_IP2
+        // @DisplayName: custom route IP 2
+        // @Description: Third octet of the custom route IP address
+        // @Range: 0 255
+        // @User: Standard
+    --]]
+    LTE_ROUTE_IP2  = bind_add_param('ROUTE_IP2',  17, 0)
+
+    --[[
+        // @Param: LTE_ROUTE_IP3
+        // @DisplayName: custom route IP 3
+        // @Description: Fourth octet of the custom route IP address
+        // @Range: 0 255
+        // @User: Standard
+    --]]
+    LTE_ROUTE_IP3  = bind_add_param('ROUTE_IP3',  18, 0)
+
+    --[[
+        // @Param: LTE_ROUTE_MASK
+        // @DisplayName: custom route netmask length
+        // @Description: number of bits in route netmask. Use 32 for a single IP
+        // @Range: 0 32
+        // @User: Standard
+    --]]
+    LTE_ROUTE_MASK  = bind_add_param('ROUTE_MASK',  19, 32)
+end
+
+--[[
+    // @Param: LTE_TX_RATE
+    // @DisplayName: Max transmit rate
+    // @Description: Maximum data transmit rate to the modem in bytes/second. Use zero for unlimited
+    // @User: Standard
+--]]
+local LTE_TX_RATE  = bind_add_param('TX_RATE',  20, 0)
+
+--[[
+    // @Param: LTE_BAND
+    // @DisplayName: LTE band selection
+    // @Description: This allows selection of LTE band. A value of -1 means no band setting change is made. A value of 0 sets all bands. Otherwise the specified band is set.
+    // @Range: -1 50
+    // @User: Standard
+--]]
+local LTE_BAND      = bind_add_param('BAND', 21, -1)
+
+LTE_OPTIONS_LOGALL  = (1<<0)
+LTE_OPTIONS_SIGNALS = (1<<1)
+LTE_OPTIONS_NOMUX   = (1<<2)
+LTE_OPTIONS_NOSIGQUERY = (1<<3)
+LTE_OPTIONS_TCP = (1<<4)
+
+
+--[[
+    AT command mappings for different modem chipsets
+--]]
+local SimCom = { banner = 'SIMCOM',
+                 cmux = 'AT+CMUX=0\r\n',
+                 setbaud = 'AT+IPR=%u\r\n',
+                 pppopen = 'ATD*99#\r',
+                 cpin = 'AT+CPIN?\r\n',
+                 cpsi = 'AT+CPSI?\r\n',
+                 reset = 'AT+CFUN=1,1\r\n',
+                 cipmode = 'AT+CIPMODE=1\r\n',
+                 cipopen_udp = 'AT+CIPOPEN=0,"UDP","%d.%d.%d.%d",%d,6001\r\n',
+                 cipopen_tcp = 'AT+CIPOPEN=0,"TCP","%d.%d.%d.%d",%d\r\n',
+                 --cgact = 'AT+CGACT?\r\n',
+                 cgerep = 'AT+CGEREP=1,1\r\n',
+                 netopen = 'AT+NETOPEN\r\n',
+                 mccmnc = 'AT+COPS=1,2,"%u"\r\n',
+                 setband_mask = 'AT+CNBP=,0x%x\r\n',
+                 setband_all = 'AT+CNBP=,0x480000000000000000000000000000000000000000000042000007FFFFDF3FFF\r\n',
+                }
+local SimCom2 = { banner = 'R1951',
+                 cmux = 'AT+CMUX=0\r\n',
+                 setbaud = 'AT+IPR=%u\r\n',
+                 pppopen = 'ATD*99#\r',
+                 cpin = 'AT+CPIN?\r\n',
+                 cpsi = 'AT+CPSI?\r\n',
+                 cipmode = 'AT+CACID=0\r\n',
+                 cipopen_tcp = 'AT+CAOPEN=0,0,"TCP","%d.%d.%d.%d",%d\r\n',
+                 cipopen_udp = 'AT+CAOPEN=0,0,"UDP","%d.%d.%d.%d",%d\r\n',
+                 cgact = 'AT+CGACT?\r\n',
+                 cgerep = 'AT+CGEREP=1,1\r\n',
+                 reset = 'AT+CFUN=1,1\r\n',
+                 netopen = "AT+CNACT=0,1\r\n",
+                 netclose = "AT+CNACT=0,0\r\n",
+                 cfun = 'AT+CFUN=1\r\n',
+                 reset_not_baudrate = true,
+                 mccmnc = 'AT+COPS=4,2,"%u"\r\n',
+                 caswitch = 'AT+CASWITCH=0,1\r\n',
+                 setband = 'AT+CBANDCFG="CAT-M",%d\r\n',
+                 setband_all = 'AT+CBANDCFG="CAT-M",1,2,3,4,5,8,12,13,14,18,19,20,25,26,27,28,66,85\r\n',
+                }
+local Air780 = { banner = 'AirM2M_780E',
+                 cmux = nil, -- 'AT+CIPMUX=1\r\n',
+                 setbaud = 'AT+IPR=%u\r\n',
+                 cgact = 'AT+CGACT=1,1\r\n',
+                 pppopen = 'ATD*99#\r',
+                 cpin = 'AT+CPIN?\r\n',
+                 reset = 'AT+CFUN=1,1\r\n',
+                 cipmode = 'AT+CIPMODE=1\r\n',
+                }
+local EC200 = { banner = 'EC200',
+                 cmux = 'AT+CMUX=0\r\n',
+--                 setbaud = 'AT+IPR=%u\r\n', AT+IPR not working? gives error
+--                 cgact = 'AT+QIACT=1\r\n',
+                 pppopen = 'ATD*99#\r',
+                 cpsi = 'AT+QENG="servingcell"\r\n',
+                 cipmode = nil,
+                 cpin = 'AT+CPIN?\r\n',
+                 reset = 'AT+CFUN=1,1\r\n',
+                 cipopen_tcp = 'AT+QIOPEN=1,0,"TCP","%d.%d.%d.%d",%d,0,2\r\n',
+                 cipopen_udp = 'AT+QIOPEN=1,0,"UDP","%d.%d.%d.%d",%d,6001,2\r\n',
+                 cipclose = 'AT+QICLOSE=1\r\n',
+                 mccmnc = 'AT+COPS=4,2,"%u"\r\n',
+                 setband_mask = 'AT+QCFG="band",0,0x%x\r\n',
+                 setband_all = 'AT+QCFG="band",0,0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\r\n',
+                }
+
+local default_modem = { reset = 'AT+CFUN=1,1\r\r' }
+
+local modem_list = {
+    ["SimCom"] = SimCom,
+    ["SimCom2"] = SimCom2,
+    ["Air780"] = Air780,
+    ["EC200"] = EC200,
+}
+
+local modem = default_modem
 
 --[[
     return true if an option is enabled
@@ -195,17 +355,34 @@ end
 --]]
 local function uart_read()
     local s = uart:readstring(512)
+    if not s then
+        return ""
+    end
     log_data(s, '<<<')
     stats.bytes_in = stats.bytes_in + #s
     return s
+end
+
+local pending_to_uart = ""
+
+--[[
+    write any pending bytes to the uart
+--]]
+local function uart_write_pending()
+    if #pending_to_uart > 0 then
+        local n = uart:writestring(pending_to_uart)
+        pending_to_uart = pending_to_uart:sub(n+1)
+    end
 end
 
 --[[
     Function to write to the UART and log the command
 --]]
 local function uart_write(s)
-    uart:writestring(s)
-    log_data(s, '>>>')
+    pending_to_uart = pending_to_uart .. s
+    if option_enabled(LTE_OPTIONS_LOGALL) or step ~= "CONNECTED" then
+        log_data(s, '>>>')
+    end
     stats.bytes_out = stats.bytes_out + #s
     return #s
 end
@@ -218,9 +395,15 @@ local SABM = 0x2F
 local EA = 0x01
 local CR_SEND = 0x02
 
+local DLC_AT = 1
+local DLC_DATA = 2
+
 -- CMUX buffer state
 local cmux = {}
-cmux.buffers = {[1] = "", [2] = ""} -- DLC1=AT, DLC2=DATA(PPP or TCP)
+cmux.buffers = {[DLC_AT] = "", [DLC_DATA] = ""} -- DLC1=AT, DLC2=DATA(PPP or TCP)
+
+local last_mccmnc = nil
+local last_band = nil
 
 --[[
     FCS lookup table for polynomial x^8 + x^2 + x^1 + 1 (0x07)
@@ -288,11 +471,28 @@ function cmux.encode_cmux_frame(dlc, dtype, data)
     return string.char(FLAG) .. header .. data .. fcs .. string.char(FLAG)
 end
 
+local found_cmux = false
+
 --[[
-    send an AT command string with CMUX framing
+    return true if we should use CMUX
 --]]
-local function cmux_AT_send(atcmd)
-    local s = cmux.encode_cmux_frame(1, UIH, atcmd)
+local function cmux_enabled()
+    if found_cmux then
+        return true
+    end
+    return modem and modem.cmux and not option_enabled(LTE_OPTIONS_NOMUX)
+end
+
+--[[
+    send an AT command string with possible CMUX framing
+--]]
+local function AT_send(atcmd)
+    local s
+    if cmux_enabled() then
+        s = cmux.encode_cmux_frame(DLC_AT, UIH, atcmd)
+    else
+        s = atcmd
+    end
     return uart_write(s) == #s
 end
 
@@ -300,10 +500,16 @@ end
     send an appropriate data reset for the protocol
 --]]
 local function send_data_reset()
-    if LTE_PROTOCOL:get() == PPP then
-        cmux_AT_send('ATH\r\n')
-    else
-        cmux_AT_send('AT+CRESET\r\n')
+    if modem.reset then
+        AT_send(modem.reset)
+        if not modem.reset_not_baudrate then
+            -- a reset changes the baud rate to the initial baud rate
+            uart:begin(LTE_IBAUD:get())
+        end
+        -- and clears cmux state
+        found_cmux = false
+        gcs:send_text(MAV_SEVERITY.INFO, "LTE_modem: sent reset")
+        return
     end
 end
 
@@ -337,17 +543,27 @@ function cmux.parse_cmux_frame(buf)
     local start_idx = buf:find(string.char(FLAG))
     if not start_idx then
         --gcs:send_text(MAV_SEVERITY.INFO, "no start idx")
+        log_data("NOSTART:" .. buf, "{XXX}")
         return nil, nil, nil
     end
-    local end_idx = buf:find(string.char(FLAG), start_idx + 1)
-    if not end_idx then
-        --gcs:send_text(MAV_SEVERITY.INFO, "no end idx")
+    if #buf < 6 then
+        return nil, nil, nil, "short"
+    end
+    local len_byte = buf:byte(4)
+    if (len_byte & EA) == 0 then
+        log_data("mux multibyte", "{XXX}")
+        return nil, nil, nil -- we don't handle multi-byte length yet
+    end
+    local len = len_byte >> 1
+    local end_idx = 6 + len
+    if buf:byte(end_idx) ~= FLAG then
+        log_data("no end idx", "{XXX}")
         return nil, nil, nil, "short"
     end
 
     local frame = buf:sub(start_idx + 1, end_idx - 1)
     if #frame < 4 then
-        --gcs:send_text(MAV_SEVERITY.INFO, "too short")
+        log_data("too short", "{XXX}")
         return nil, nil, nil
     end
 
@@ -361,23 +577,21 @@ function cmux.parse_cmux_frame(buf)
     end
 
     if (ctrl & 0xef) ~= UIH then
+        --gcs:send_text(MAV_SEVERITY.INFO, "not UIH")
         return nil, nil, nil
     end
 
-    local len_byte = frame:byte(3)
-    if (len_byte & EA) == 0 then
-        gcs:send_text(MAV_SEVERITY.INFO, "mux multibyte")
-        return nil, nil, nil -- we don't handle multi-byte length yet
+    if #frame ~= 3 + len + 1 then
+        log_data("bad flen", "{XXX}")
+        return nil, nil, nil
     end
-    local len = len_byte >> 1
-    if #frame < 3 + len + 1 then return nil, nil, nil end
 
     local data = frame:sub(4, 3 + len)
     local fcs_field = frame:byte(3 + len + 1)
     local header = frame:sub(1, 3)
     local calc_fcs = fcs_calc(header)
     if calc_fcs ~= fcs_field then
-        gcs:send_text(MAV_SEVERITY.INFO, "FCS mismatch")
+        log_data("FCS mismatch", "{XXX}")
         return nil, nil, nil -- FCS mismatch
     end
 
@@ -393,6 +607,7 @@ function cmux.feed_uart_in(raw)
         local dlc, data, rest, err = cmux.parse_cmux_frame(raw)
         if not dlc or not data or not rest then
             if err == "short" then
+                -- gcs:send_text(MAV_SEVERITY.INFO, "short")
                 return raw
             end
             -- discard
@@ -407,28 +622,57 @@ function cmux.feed_uart_in(raw)
 end
 
 --[[
-    send data with CMUX framing
+    send data with possible CMUX framing
 --]]
-local function cmux_data_send(data)
-    local s = cmux.encode_cmux_frame(2, UIH, data)
+local function data_send(data)
+    local s
+    if cmux_enabled() then
+        s = cmux.encode_cmux_frame(DLC_DATA, UIH, data)
+    else
+        s = data
+    end
     return uart_write(s) == #s
 end
 
 --[[
-    send data with CMUX framing when connected (logging only if data
+    send data with possible CMUX framing when connected (logging only if data
     logging enabled)
 --]]
-local function cmux_data_send_connected(data)
-    local s = cmux.encode_cmux_frame(2, UIH, data)
-    if option_enabled(LTE_OPTIONS_LOGALL) then
-        log_data(s, '>>>')
+local function data_send_connected(data)
+    local s
+    if cmux_enabled() then
+        s = cmux.encode_cmux_frame(DLC_DATA, UIH, data)
+    else
+        s = data
     end
-    local n = uart:writestring(s)
+    local n = uart_write(s)
     stats.bytes_out = stats.bytes_out + n
     return n == #s
 end
 
 local ati_sequence = 0
+
+-- reset back to ATI step
+local function reset_to_ATI()
+    send_data_reset()
+    step = "ATI"
+    modem = default_modem
+    found_cmux = false
+end
+
+--[[
+    check an ATI response against modem banner strings to auto-detect
+    modem type
+--]]
+local function check_modem_banner(s)
+    for model in pairs(modem_list) do
+        if s:find(modem_list[model].banner) then
+            modem = modem_list[model]
+            gcs:send_text(MAV_SEVERITY.INFO, "LTE_modem: found modem: " .. model)
+            return
+        end
+    end
+end
 
 --[[
     Function to confirm the connection to the modem
@@ -442,12 +686,11 @@ local ati_sequence = 0
 --]]
 local function step_ATI()
     local s = uart_read()
-    if s and s:find('IMEI: ') then
-        gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: found modem')
-        if cmux.parse_cmux_frame(s) then
-            -- already in CMUX mode
-            cmux.send_sabm()
-            send_data_reset()
+    if s and modem == default_modem then
+        check_modem_banner(s)
+    end
+    if modem ~= default_modem then
+        if not cmux_enabled() then
             step = "BAUD"
         else
             step = "CMUX"
@@ -456,20 +699,26 @@ local function step_ATI()
     end
     if s and #s >= 4 and s:byte(1) == FLAG and s:byte(-1) == FLAG then
         -- already in mux mode
-        send_data_reset()
-        cmux_AT_send('ATI\r\n')
+        found_cmux = true
+        gcs:send_text(MAV_SEVERITY.INFO, "LTE_modem: in CMUX mode")
+        log_data("{INCMUX}", '***')
+        AT_send('ATI\r')
         return
     end
-    if ati_sequence % 2 == 1 then
+    if ati_sequence % 3 == 2 then
         uart_write('+++')
+    elseif ati_sequence % 3 == 1 then
+        uart_write(cmux.encode_cmux_frame(DLC_AT, UIH, "ATI\r"))
     else
-        uart_write('\r\nATI\r\n')
+        uart_write('\rATI\r')
     end
     if ati_sequence % 10 == 5 then
         uart:begin(LTE_BAUD:get())
+        log_data(string.format("{BAUD=%d}", LTE_BAUD:get()), '***')
     end
     if ati_sequence % 10 == 9 then
         uart:begin(LTE_IBAUD:get())
+        log_data(string.format("{BAUD=%d}", LTE_IBAUD:get()), '***')
     end
     ati_sequence = ati_sequence + 1
 end
@@ -480,9 +729,67 @@ local change_baud = nil
     change baud rate
 --]]
 local function step_BAUD()
-    cmux_AT_send(string.format('AT+IPR=%u\r\n', LTE_BAUD:get()))
+    if modem.setbaud and LTE_BAUD:get() ~= LTE_IBAUD:get() then
+        change_baud = LTE_BAUD:get()
+        AT_send(string.format(modem.setbaud, change_baud))
+    end
+    step = "CPIN"
+end
+
+--[[
+    set preferred network using MCC country code and MNC network code
+--]]
+local function set_MCCMNC()
+    if not modem.mccmnc then
+        return
+    end
+    local mccmnc = math.floor(LTE_MCCMNC:get())
+    if mccmnc > 0 then
+        AT_send(string.format(modem.mccmnc, mccmnc))
+    elseif mccmnc == 0 then
+        AT_send("AT+COPS=0\r\n")
+    end
+    last_mccmnc = mccmnc
+end
+
+--[[
+    set preferred LTE band
+--]]
+local function set_BAND()
+    if not modem.setband and not modem.setband_mask then
+        return
+    end
+    local band = math.floor(LTE_BAND:get())
+    if band > 0 then
+       if modem.setband_mask then
+          AT_send(string.format(modem.setband_mask, 1<<(band-1)))
+       else
+          AT_send(string.format(modem.setband, band))
+       end
+    elseif band == 0 then
+        AT_send(modem.setband_all)
+    end
+    last_band = band
+end
+
+--[[
+    configuration step
+--]]
+local function step_CONFIG()
+    set_BAND()
+    set_MCCMNC()
     step = "CREG"
-    change_baud = LTE_BAUD:get()
+end
+
+--[[
+    check for a SIM
+--]]
+local function step_CPIN()
+    local s = uart_read()
+    if s and s:find("READY") then
+        step = "CONFIG"
+    end
+    AT_send('AT+CPIN?\r\n')
 end
 
 --[[
@@ -493,68 +800,51 @@ local function step_CREG()
     if handle_error(s) then
         return
     end
-    if s and s:find('CREG: 0,1\r\n') then
-        gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: CREG OK')
-        if LTE_PROTOCOL:get() == PPP then
-            step = "PPPOPEN"
-        else
-            step = "CIPMODE"
+    if s then
+        if cmux_enabled() and #s > 4 and not cmux.parse_cmux_frame(s) then
+            -- not really in CMUX mode when we should be, try again
+            step = "CMUX"
+            return
         end
-        return
+        local reg = s:match('CREG: %d,(%d+)\r\n')
+        if reg == "1" or reg == "5" then
+            gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: CREG OK')
+            if LTE_PROTOCOL:get() == PPP then
+                if modem.cgact then
+                    step = "CGACT"
+                else
+                    step = "PPPOPEN"
+                end
+            else
+                if modem.cipmode then
+                    step = "CIPMODE"
+                else
+                    step = "CIPOPEN"
+                end
+            end
+            return
+        elseif reg then
+            local status_map = {
+                [0] = "0: not registered, not searching",
+                [1] = "1: registered, home network",
+                [2] = "2: not registered, searching",
+                [3] = "3: registration denied",
+                [4] = "4: unknown",
+                [5] = "5: registered, roaming",
+                [6] = "6: registered for SMS only (home network)",
+                [7] = "7: registered for SMS only (roaming)",
+                [8] = "8: attached for emergency services only",
+                [9] = "9: registered for CSFB not preferred",
+            }
+            local status = status_map[tonumber(reg)] or (tostring(reg) .. ": unknown status")
+            gcs:send_text(MAV_SEVERITY.INFO, "CREG: " .. status)
+            if reg == "0" then
+                AT_send("AT+CFUN=1\r\n")
+                AT_send("AT+COPS?\r\n")
+            end
+        end
     end
-    cmux_AT_send('AT+CREG?\r\n')
-end
-
---[[
-    set the modem to transparent mode
---]]
-local function step_CIPMODE()
-    local s = uart_read()
-    if handle_error(s) then
-        return
-    end
-    if s and s:find('CIPMODE=1\r') and s:find('\r\r\nOK\r') then
-        gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: transparent mode set')
-        step = "NETOPEN"
-        return
-    end
-    cmux_data_send('AT+CIPMODE=1\r\n')
-end
-
---[[
-    setup CMUX multiplexing mode
---]]
-local function step_CMUX()
-    local s = uart_read()
-    if handle_error(s) then
-        return
-    end
-    if s and s:find('CMUX=0\r\r\nOK\r') then
-        gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: CMUX mode set')
-        -- send SABM frames to establish the DLCs
-        send_data_reset()
-        cmux.send_sabm()
-        step = "BAUD"
-        return
-    end
-    uart_write('AT+CMUX=0\r\n')
-end
-
---[[
-    open the network stack
-    needed to be able to open a TCP connection
---]]
-local function step_NETOPEN()
-    local s = uart_read()
-    if handle_error(s) then
-        return
-    end
-    if s and s:find('NETOPEN\r') and s:find('\r\r\nOK\r\n') then
-        gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: network opened')
-        step = "CIPOPEN"
-        return
-    end
-    cmux_data_send('AT+NETOPEN\r\n')
+    AT_send('AT+CREG?\r\n')
 end
 
 local last_data_ms = millis()
@@ -563,28 +853,139 @@ local pending_to_fc = ""
 local pending_to_parse = ""
 
 --[[
-    open PPP mode
+    reset connection buffers
 --]]
-local function step_PPPOPEN()
+local function reset_buffers()
+    last_data_ms = millis()
+    pending_to_modem = ""
+    pending_to_fc = ""
+    pending_to_parse = ""
+    cmux.buffers[DLC_AT] = ""
+    cmux.buffers[DLC_DATA] = ""
+    while ser_device:available() > 0 do
+        ser_device:readstring(512)
+    end
+end
+
+--[[
+    activate network
+--]]
+local function step_CGACT()
     local s = uart_read()
     if handle_error(s) then
         return
     end
-
-    if s and s:find('CONNECT ') then
-        gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: connected')
-        last_data_ms = millis()
-        pending_to_modem = ""
-        pending_to_fc = ""
-        pending_to_parse = ""
-        step = "CONNECTED"
+    if s and s:find('\r\nOK\r\n') then
+        gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: CGACT OK')
+        if LTE_PROTOCOL:get() == PPP then
+            step = "PPPOPEN"
+            last_data_ms = millis()
+        else
+            step = "CIPMODE"
+        end
         return
     end
-    cmux_data_send('AT+CGDATA="PPP",1\r\n')
+    data_send(modem.cgact)
+    if modem.cfun then
+        data_send(modem.cfun)
+    end
 end
 
 --[[
-    open a TCP connection to the server
+    set the modem to transparent mode
+--]]
+local function step_CIPMODE()
+    local s = uart_read()
+    if s:find('AT+CACID=0,0') then
+        gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: network context set')
+        step = "NETOPEN"
+        return
+    end
+    if handle_error(s) then
+        return
+    end
+    if s:find('\r\r\nOK\r') then
+        gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: transparent mode set')
+        step = "NETOPEN"
+        return
+    end
+    data_send(modem.cipmode)
+end
+
+--[[
+    setup CMUX multiplexing mode
+--]]
+local function step_CMUX()
+    local s = uart_read()
+    if s then
+        if s:find("CME ERROR") then
+            AT_send('AT+CFUN=1\r\n')
+        elseif #s >= 4 and (cmux.parse_cmux_frame(s) or s:find('CMUX=0\r\r\nOK\r')) then
+            gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: CMUX mode set')
+            -- send SABM frames to establish the DLCs
+            cmux.send_sabm()
+            step = "BAUD"
+            return
+        end
+    end
+    AT_send(modem.cmux)
+end
+
+--[[
+    open the network stack
+    needed to be able to open a TCP or UDP connection
+--]]
+local function step_NETOPEN()
+    if not modem.netopen then
+        step = "CIPOPEN"
+        return
+    end
+    local s = uart_read()
+    if s:find("AT+CNACT=0,1") and s:find("ERROR") and modem.netclose then
+        data_send(modem.netclose)
+        return
+    end
+    if handle_error(s) then
+        return
+    end
+    if s and (s:find('NETOPEN\r') or s:find('ACTIVE\r')) and s:find('OK\r') then
+        gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: network opened')
+        step = "CIPOPEN"
+        return
+    end
+    data_send(modem.netopen)
+end
+
+--[[
+    open PPP mode
+--]]
+local function step_PPPOPEN()
+    local s = uart_read()
+    if s and modem.cgact and s:find("\r\nNO CARRIER\r\n") then
+        send_data_reset()
+        step = "ATI"
+        return
+    end
+    if s and s:find("CME ERROR:") then
+        send_data_reset()
+        step = "ATI"
+        return
+    end
+    if handle_error(s) then
+        return
+    end
+
+    if s and s:find('CONNECT') then
+        gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: connected')
+        reset_buffers()
+        step = "CONNECTED"
+        return
+    end
+    data_send(modem.pppopen)
+end
+
+--[[
+    open a TCP or UDP connection to the server
     the server IP and port are defined in the parameters
 --]]
 local function step_CIPOPEN()
@@ -593,29 +994,41 @@ local function step_CIPOPEN()
         return
     end
 
-    if s and s:find('CONNECT ') then
-        gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: connected')
-        last_data_ms = millis()
-        pending_to_modem = ""
-        pending_to_fc = ""
-        pending_to_parse = ""
-        step = "CONNECTED"
-        return
+    if s then
+        if s == "" and modem.cipclose then
+            -- possibly need to close an old connection after restarting
+            AT_send(modem.cipclose)
+        end
+        if s:find('+CAOPEN: 0,0') and s:find('OK\r') and modem.caswitch then
+            data_send(modem.caswitch)
+            return
+        end
+        if s:find('CONNECT') or (s:find('+CAOPEN: 0,0') and s:find('OK\r')) then
+            gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: connected')
+            reset_buffers()
+            step = "CONNECTED"
+            return
+        end
     end
     if LTE_SERVER_PORT:get() <= 0 then
         gcs:send_text(MAV_SEVERITY.ERROR, "Must set LTE_SERVER_PORT")
         return
     end
-    cmux_data_send(string.format('AT+CIPOPEN=0,"TCP","%d.%d.%d.%d",%d\r\n',
-                                 LTE_SERVER_IP0:get(), LTE_SERVER_IP1:get(), LTE_SERVER_IP2:get(), LTE_SERVER_IP3:get(),
-                                 LTE_SERVER_PORT:get()))
+    local cipopen
+    if option_enabled(LTE_OPTIONS_TCP) then
+        cipopen = modem.cipopen_tcp
+    else
+        cipopen = modem.cipopen_udp
+    end
+    data_send(string.format(cipopen,
+                            LTE_SERVER_IP0:get(), LTE_SERVER_IP1:get(), LTE_SERVER_IP2:get(), LTE_SERVER_IP3:get(),
+                            LTE_SERVER_PORT:get()))
 end
 
 --[[
-    handle AT replies in CMUX mode
+    check for CSQ reply
 --]]
-local function handle_AT_reply(s)
-    -- check for CSQ reply
+local function check_CSQ(s)
     local rssi_raw, ber_raw = s:match("%+CSQ:%s*(%d+),(%d+)")
     if rssi_raw then
         gcs:send_named_float('LTE_RSSI', rssi_raw)
@@ -625,12 +1038,40 @@ local function handle_AT_reply(s)
                      stats.bytes_in,
                      stats.bytes_out)
         -- gcs:send_text(MAV_SEVERITY.INFO, string.format("RSSI:%d BER:%d", rssi_raw, ber_raw))
-        return
+        return true
     end
-    -- check for CSPI reply
-    -- example: +CPSI: LTE,Online,505-02,0xCBE8,36519691,101,EUTRAN-BAND3,1800,5,5,-147,-1143,-764,11
+    return false
+end
+
+--[[
+    check for CGACT reply
+--]]
+local function check_CGACT(s)
+    local ctx, active = s:match("%+CGACT:%s*(%d+),(%d+)")
+    if ctx then
+        ctx = tonumber(ctx) or 0
+        active = tonumber(active) or 0
+        gcs:send_text(MAV_SEVERITY.INFO, string.format("CGACT: %d,%d", ctx, active))
+        return true
+    end
+    return false
+end
+
+--[[
+    check for CPSI reply
+--]]
+local function check_CPSI(s)
+    -- example1: +CPSI: LTE,Online,505-02,0xCBE8,36519691,101,EUTRAN-BAND3,1800,5,5,-147,-1143,-764,11
+    -- example2: +CPSI: LTE CAT-M1,Online,505-01,0x2036,134523149,238,EUTRAN-BAND28,9410,5,5,-20,-116,-82,6
+
+    if not s:find("+CPSI") then
+        return false
+    end
+
+    logger:write("LTER","R1,R2",'ZZ', s:sub(1,64), s:sub(65,128))
+
     local system_mode, operation_mode, mcc_mnc, tac_str, scell_id_str, pcid_str, earfcn_band, ul_freq_str, dl_freq_str, tdd_cfg_str, rsrp_str, rsrq_str, rssi_str, sinr_str =
-    s:match("%+CPSI:%s*([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([%-]?%d+),([%-]?%d+),([%-]?%d+),([%-]?%d+)")
+    s:match("+CPSI:%s*([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([%-]?%d+),([%-]?%d+),([%-]?%d+),([%-]?%d+)")
 
     if system_mode then
         -- Convert strings to numbers
@@ -645,17 +1086,82 @@ local function handle_AT_reply(s)
         local rssi = tonumber(rssi_str) or 0
         local sinr = tonumber(sinr_str) or 0
         local band = earfcn_band:match("[^%d]+(%d+)") or -1
-        logger:write("LTES",'Md,Op,MCC,TAC,CID,PID,BND,F,DF,TDD,RP,RQ,RS,SR','nNNIIINHhhhhhh',
+        logger:write("LTES",'Md,Op,MCC,TAC,CID,PID,BND,F,DF,TDD,RP,RQ,RS,SR','NNNIIINHhhhhhh',
                      system_mode, operation_mode, mcc_mnc, tac, scell_id, pcid, earfcn_band,
                      ul_freq, dl_freq, tdd_cfg, rsrp, rsrq, rssi, sinr)
         if option_enabled(LTE_OPTIONS_SIGNALS) then
             gcs:send_named_float('LTE_RSRP', rsrp)
             gcs:send_named_float('LTE_RSRQ', rsrq)
-            gcs:send_named_float('LTE_SINR', sinr)
             gcs:send_named_float('LTE_BAND', band)
-            gcs:send_named_float('LTE_FREQ', ul_freq)
-            gcs:send_named_float('LTE_CID', scell_id)
+            -- shift to remove antenna selection within tower
+            gcs:send_named_float('LTE_CID', scell_id>>8)
+            local mcc, mnc = mcc_mnc:match("(%d+)-(%d+)")
+            if mcc and mnc then
+                gcs:send_named_float('LTE_MCCMNC', mcc*100+mnc)
+            end
         end
+        return true
+    end
+    return false
+end
+
+--[[
+    check for QENG reply
+--]]
+local function check_QENG(s)
+    -- Example1: +QENG: "servingcell","NOCONN","LTE","FDD",505,02,12AED4A,445,3750,8,3,3,CBE8,-99,-14,-71,53,30
+    -- Example2: +QENG: "servingcell","NOCONN","LTE","FDD",505,02,22D3F32,271,9260,28,3,3,CBE8,-109,-15,-78,38,20
+    -- +QENG:"servingcell",<state>,"LTE",<is_tdd>,<mcc>,<mnc>,<cellid>,<pcid>,<earfcn>,<freq_band_ind>,<ul_bandwidth>,<dl_bandwidth>,<tac>,<rsrp>,<rsrq>,<rssi>,<sinr>,<srxlev>
+    if not s:find("+QENG") then
+        return false
+    end
+
+    logger:write("LTER","R1,R2",'ZZ', s:sub(1,64), s:sub(65,128))
+
+    local mcc_str, mnc_str, cid_hex, pcid_str, earfcn_str, band_str, tac_hex, rsrp_str, rsrq_str, rssi_str, sinr_str =
+        s:match('+QENG:%s+"servingcell","[^"]+","LTE","[^"]+",(%d+),(%d+),([%x]+),(%d+),(%d+),(%d+),%d+,%d+,([%x]+),([%-]?%d+),([%-]?%d+),([%-]?%d+)')
+
+    if mcc_str then
+        local tac = tonumber(tac_hex, 16) or 0
+        local cid = tonumber(cid_hex, 16) or 0
+        local pcid = tonumber(pcid_str) or 0
+        local earfcn = tonumber(earfcn_str) or 0
+        local rsrp = tonumber(rsrp_str) or 0
+        local rsrq = tonumber(rsrq_str) or 0
+        local rssi = tonumber(rssi_str) or 0
+        local sinr = tonumber(sinr_str) or 0
+        local band = tonumber(band_str) or -1
+        local mcc = tonumber(mcc_str) or 0
+        local mnc = tonumber(mnc_str) or 0
+
+        logger:write("LTES", 'MCC,MNC,TAC,CID,PID,EF,RSRP,RSRQ,RSSI,SINR', 'iiiiiiiiii',
+                     mcc, mnc, tac, cid, pcid, earfcn, rsrp, rsrq, rssi, sinr)
+
+        if option_enabled(LTE_OPTIONS_SIGNALS) then
+            gcs:send_named_float('LTE_RSRP', rsrp)
+            gcs:send_named_float('LTE_RSRQ', rsrq)
+            gcs:send_named_float('LTE_BAND', band)
+            -- shift to remove antenna selection within tower
+            gcs:send_named_float('LTE_CID', cid>>8)
+            gcs:send_named_float('LTE_MCCMNC', mcc*100+mnc)
+        end
+        return true
+    end
+    return false
+end
+
+--[[
+    handle AT replies in CMUX mode
+--]]
+local function handle_AT_reply(s)
+    check_CSQ(s)
+    if check_CPSI(s) then
+        return
+    end
+    if check_QENG(s) then
+        return
+    end
+    if check_CGACT(s) then
         return
     end
 
@@ -667,6 +1173,8 @@ end
 local last_CSQ_ms = millis()
 local last_CSQ_reply_ms = uint32_t(0)
 local last_parse_ms = uint32_t(0)
+local last_route_ms = uint32_t(0)
+local last_send_data_ms = uint32_t(0)
 
 --[[
     handle data while connected
@@ -689,27 +1197,32 @@ local function step_CONNECTED()
     end
     local now_ms = millis()
     if s and #s > 0 then
-        pending_to_parse = pending_to_parse .. s
-        pending_to_parse = cmux.feed_uart_in(pending_to_parse)
-        if now_ms - last_parse_ms > 1000 then
-            pending_to_parse = ""
-        end
-        if #cmux.buffers[1] > 0 then
-            last_parse_ms = now_ms
-            --gcs:send_text(MAV_SEVERITY.INFO, string.format("AT reply %d", #cmux.buffers[1]))
-            handle_AT_reply(cmux.buffers[1])
-            cmux.buffers[1] = ""
-        end
-        if #cmux.buffers[2] > 0 then
+        if not cmux_enabled() then
+            pending_to_fc = pending_to_fc .. s
             last_data_ms = now_ms
-            -- gcs:send_text(MAV_SEVERITY.INFO, string.format("data input %d", #cmux.buffers[2]))
-            last_parse_ms = now_ms
-            pending_to_fc = pending_to_fc .. cmux.buffers[2]
-            cmux.buffers[2] = ""
+        else
+            pending_to_parse = pending_to_parse .. s
+            pending_to_parse = cmux.feed_uart_in(pending_to_parse)
+            if now_ms - last_parse_ms > 1000 then
+                pending_to_parse = ""
+            end
+            if #cmux.buffers[DLC_AT] > 0 then
+                last_parse_ms = now_ms
+                --gcs:send_text(MAV_SEVERITY.INFO, string.format("AT reply %d", #cmux.buffers[DLC_AT]))
+                handle_AT_reply(cmux.buffers[DLC_AT])
+                cmux.buffers[DLC_AT] = ""
+            end
+            if #cmux.buffers[DLC_DATA] > 0 then
+                last_data_ms = now_ms
+                -- gcs:send_text(MAV_SEVERITY.INFO, string.format("data input %d", #cmux.buffers[DLC_DATA]))
+                last_parse_ms = now_ms
+                pending_to_fc = pending_to_fc .. cmux.buffers[DLC_DATA]
+                cmux.buffers[DLC_DATA] = ""
+            end
         end
-    elseif now_ms - last_data_ms > uint32_t(LTE_TIMEOUT:get() * 1000) then
+    elseif LTE_TIMEOUT:get() > 0 and now_ms - last_data_ms > uint32_t(LTE_TIMEOUT:get() * 1000) then
         gcs:send_text(MAV_SEVERITY.ERROR, 'LTE_modem: timeout')
-        step = "ATI"
+        reset_to_ATI()
         return
     end
     s = ser_device:readstring(512)
@@ -728,17 +1241,36 @@ local function step_CONNECTED()
     if #pending_to_fc > buffer_limit then
         pending_to_fc = ""
     end
-    
+
+    local quota = 0
+    if LTE_TX_RATE:get() > 0 then
+        local dt = (now_ms - last_send_data_ms):tofloat()*0.001
+        quota = math.floor(dt * LTE_TX_RATE:get())
+    end
+
+    local data_sent = 0
     while #pending_to_modem > 0 do
         local n = #pending_to_modem
-        if n > 127 then
-            n = 127
+        if n > 100 then
+            n = 100
         end
+        if quota > 0 and quota - data_sent < n then
+            n = quota - data_sent
+        end
+        local data = pending_to_modem:sub(1, n)
+
+        data_sent = data_sent + #data
+        last_send_data_ms = now_ms
+
         -- gcs:send_text(MAV_SEVERITY.INFO, string.format("data output %d", n))
-        if not cmux_data_send_connected(pending_to_modem:sub(1, n)) then
+        if not data_send_connected(data) then
             break
         end
         pending_to_modem = pending_to_modem:sub(n + 1)
+
+        if quota > 0 and data_sent >= quota then
+            break
+        end
     end
     if #pending_to_fc > 0 then
         local nwritten = ser_device:writestring(pending_to_fc)
@@ -746,26 +1278,50 @@ local function step_CONNECTED()
             pending_to_fc = pending_to_fc:sub(nwritten + 1)
         end
     end
-    -- request CSQ signal strength at 1Hz
-    if now_ms - last_CSQ_ms > 1000 then
-        last_CSQ_ms = now_ms
-        cmux_AT_send("AT+CSQ\r\n")
-        cmux_AT_send("AT+CPSI?\r\n")
+    if cmux_enabled() and not option_enabled(LTE_OPTIONS_NOSIGQUERY) then
+        -- if we support CMUX then request CSQ signal strength at 1Hz
+        if now_ms - last_CSQ_ms > 1000 then
+            last_CSQ_ms = now_ms
+            AT_send("AT+CSQ\r\n")
+            if modem.cpsi then
+                AT_send(modem.cpsi)
+            end
+        end
+        if now_ms - last_CSQ_reply_ms > 5000 then
+            last_CSQ_reply_ms = now_ms
+            gcs:send_named_float('LTE_RSSI', -1)
+        end
+        if LTE_MCCMNC:get() ~= last_mccmnc and modem.mccmnc then
+            set_MCCMNC()
+            gcs:send_text(MAV_SEVERITY.INFO, string.format("LTE_modem: set MCCMNC=%d", last_mccmnc))
+            step = "CREG"
+        end
+        if LTE_BAND:get() ~= last_band and (modem.setband or modem.setband_mask) then
+            set_BAND()
+            if last_band ~= 0 then
+                step = "CREG"
+            end
+            gcs:send_text(MAV_SEVERITY.INFO, string.format("LTE_modem: set BAND=%d", last_band))
+        end
     end
-    if now_ms - last_CSQ_reply_ms > 5000 then
-        last_CSQ_reply_ms = now_ms
-        gcs:send_named_float('LTE_RSSI', -1)
+
+    -- newer firmware allows for multiple PPP interfaces and custom routing
+    if supports_routing and now_ms - last_route_ms > 1000 then
+        last_route_ms = now_ms
+        local dest = uint32_t(LTE_ROUTE_IP0:get())<<24
+        dest = dest | uint32_t(LTE_ROUTE_IP1:get())<<16
+        dest = dest | uint32_t(LTE_ROUTE_IP2:get())<<8
+        dest = dest | uint32_t(LTE_ROUTE_IP3:get())
+        if dest ~= uint32_t(0) then
+            networking:add_route(0, 1, dest, math.floor(LTE_ROUTE_MASK:get())) -- luacheck: ignore 143
+        end
     end
 end
 
 local step_count = 0
 local last_step = nil
 
-local function update()
-    if LTE_ENABLE:get() == 0 then
-        return update, 500
-    end
-
+local function run_step()
     if change_baud then
         uart:begin(change_baud)
         change_baud = nil
@@ -775,7 +1331,7 @@ local function update()
         -- run the connected step at 200Hz
         step_CONNECTED()
         step_count = 0
-        return update, 5
+        return 5
     end
 
     -- prevent getting stuck
@@ -783,7 +1339,7 @@ local function update()
         step_count = step_count + 1
         if step_count > 50 then
             gcs:send_text(MAV_SEVERITY.INFO, "LTE_modem: step reset")
-            step = "ATI"
+            reset_to_ATI()
         end
     else
         step_count = 0
@@ -794,46 +1350,70 @@ local function update()
 
     if step == "ATI" then
         step_ATI()
-        return update, 1100
+        return 1100
     end
 
     if step == "BAUD" then
         step_BAUD()
-        return update, 200
+        return 500
     end
 
     if step == "CREG" then
         step_CREG()
-        return update, 500
+        return 1000
+    end
+
+    if step == "CGACT" then
+        step_CGACT()
+        return 500
     end
     
     if step == "CIPMODE" then
         step_CIPMODE()
-        return update, 200
+        return 200
     end
 
     if step == "NETOPEN" then
         step_NETOPEN()
-        return update, 200
+        return 200
     end
 
+    if step == "CONFIG" then
+        step_CONFIG()
+        return 200
+    end
+    
     if step == "CMUX" then
         step_CMUX()
-        return update, 200
+        return 200
     end
 
+    if step == "CPIN" then
+        step_CPIN()
+        return 500
+    end
+    
     if step == "PPPOPEN" then
         step_PPPOPEN()
-        return update, 200
+        return 200
     end
     
     if step == "CIPOPEN" then
         step_CIPOPEN()
-        return update, 200
+        return 200
     end
 
     gcs:send_text(MAV_SEVERITY.ERROR, string.format("LTE_modem: bad step %s", step))
-    step = "ATI"
+    reset_to_ATI()
+end
+
+local function update()
+    if LTE_ENABLE:get() == 0 then
+        return update, 500
+    end
+    local delay = run_step()
+    uart_write_pending()
+    return update, delay
 end
 
 gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: starting')
