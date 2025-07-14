@@ -362,6 +362,11 @@ void AP_Scheduler::loop()
     } else {
         _last_loop_time_s = (sample_time_us - _loop_timer_start_us) * 1.0e-6;
     }
+    
+    if (_active_loop_rate_hz == 0) {
+        _active_loop_rate_hz = _loop_rate_hz;
+    }
+
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     {
