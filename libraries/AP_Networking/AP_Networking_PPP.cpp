@@ -14,6 +14,10 @@
 #include <lwip/tcpip.h>
 #include <stdio.h>
 
+#if AP_NETWORKING_CAPTURE_ENABLED
+#include <AP_Filesystem/AP_Filesystem.h>
+#endif
+
 // PPP protocol
 #ifndef PPP_BUFSIZE_RX
 #define PPP_BUFSIZE_RX 4096
@@ -40,6 +44,11 @@ extern const AP_HAL::HAL& hal;
 #define PPP_LINK_TIMEOUT_MS 15000U
 #endif
 
+// each PPP frame has a 0x7E at start and end, which needs
+// to be stripped for network capture
+#define PPP_FRAME_BYTE 0x7E
+#define PPP_ESCAPE_BYTE 0x7D
+
 /*
   output some data to the uart
  */
@@ -47,7 +56,6 @@ uint32_t AP_Networking_PPP::ppp_output_cb(ppp_pcb *pcb, const void *data, uint32
 {
     auto &driver = *(AP_Networking_PPP::PPP_Instance *)ctx;
     LWIP_UNUSED_ARG(pcb);
-    uint32_t remaining = len;
     const uint8_t *ptr = (const uint8_t *)data;
 
     if (pcb->phase == PPP_PHASE_TERMINATE) {
@@ -55,7 +63,7 @@ uint32_t AP_Networking_PPP::ppp_output_cb(ppp_pcb *pcb, const void *data, uint32
         return 0;
     }
 
-    if (driver.uart->txspace() < remaining) {
+    if (driver.uart->txspace() < len) {
         /*
           if we can't send the whole frame then don't send any of it. This
           minimises issues with the PPP state machine
@@ -63,13 +71,74 @@ uint32_t AP_Networking_PPP::ppp_output_cb(ppp_pcb *pcb, const void *data, uint32
         return 0;
     }
 
-    return driver.uart->write(ptr, remaining);
+
+#if AP_NETWORKING_CAPTURE_ENABLED
+    /*
+      capture outgoing data
+     */
+    if (driver.backend->frontend.option_is_set(AP_Networking::OPTION::CAPTURE_PACKETS)) {
+        driver.capture_data(ptr, len);
+    }
+#endif
+
+    return driver.uart->write(ptr, len);
 }
+
+#if AP_NETWORKING_CAPTURE_ENABLED
+/*
+  capture a outgoing data packet
+ */
+void AP_Networking_PPP::PPP_Instance::capture_data(const uint8_t *ptr, uint32_t len)
+{
+    WITH_SEMAPHORE(capture.sem);
+    if (capture.fd == -1) {
+        return;
+    }
+    if (len >= 2 && ptr[0] == PPP_FRAME_BYTE) {
+        // strip framing flags
+        ptr++;
+        len -= 2;
+    }
+    /*
+      for PPP outgoing we need to unescape the data, but we
+      need the length for the header, which means we need to
+      walk the data twice
+    */
+    uint32_t dlen = 0;
+    for (uint32_t i = 0; i < len; i++) {
+        if (ptr[i] == PPP_ESCAPE_BYTE) {
+            i++;
+        }
+        dlen++;
+    }
+    auto &fs = AP::FS();
+    backend->capture_header(capture.fd, dlen+1); // +1 for direction byte
+    const uint8_t direction = 0; // direction out
+    fs.write(capture.fd, &direction, 1);
+
+    uint8_t buf[32];
+    uint32_t buflen = 0;
+    for (uint32_t i = 0; i < len; i++) {
+        if (ptr[i] == PPP_ESCAPE_BYTE && i + 1 < len) {
+            buf[buflen++] = ptr[++i] ^ 0x20;
+        } else {
+            buf[buflen++] = ptr[i];
+        }
+        if (buflen == sizeof(buf)) {
+            fs.write(capture.fd, buf, buflen);
+            buflen = 0;
+        }
+    }
+    if (buflen > 0) {
+        fs.write(capture.fd, buf, buflen);
+    }
+}
+#endif // AP_NETWORKING_CAPTURE_ENABLED
 
 /*
   callback on link status change
  */
-void AP_Networking_PPP::ppp_status_callback(struct ppp_pcb_s *pcb, int code, void *ctx)
+void AP_Networking_PPP::ppp_status_callback(ppp_pcb *pcb, int code, void *ctx)
 {
     auto &driver = *(AP_Networking_PPP::PPP_Instance *)ctx;
     struct netif *pppif = ppp_netif(pcb);
@@ -192,6 +261,59 @@ static void netif_promote(struct netif *iface)
 }
 #endif
 
+#if AP_NETWORKING_CAPTURE_ENABLED
+// start a pcap network capture
+void AP_Networking_PPP::start_capture(void)
+{
+    for (auto &inst : iface) {
+        if (inst.uart == nullptr) {
+            continue;
+        }
+        auto &capture = inst.capture;
+        if (capture.fd != -1) {
+            // called at 1Hz, flush the file
+            AP::FS().fsync(capture.fd);
+            continue;
+        }
+        struct pcap_hdr {
+            uint32_t magic_number;   // 0xa1b2c3d4
+            uint16_t version_major;  // 2
+            uint16_t version_minor;  // 4
+            int32_t  thiszone;       // GMT to local
+            uint32_t sigfigs;
+            uint32_t snaplen;
+            uint32_t network;        // DLT = 204 DLT_PPP_WITH_DIR
+        } hdr {
+            0xa1b2c3d4, 2, 4, 0, 0, UINT16_MAX, 204
+        };
+        char fname[] = "pppN.cap";
+        fname[3] = '0' + inst.idx;
+        WITH_SEMAPHORE(capture.sem);
+        capture.fd = AP::FS().open(fname, O_WRONLY|O_CREAT|O_TRUNC);
+        if (capture.fd != -1) {
+            AP::FS().write(capture.fd, (const void *)&hdr, sizeof(hdr));
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Capturing to %s", fname);
+        }
+    }
+}
+
+// stop a pcap network capture
+void AP_Networking_PPP::stop_capture(void)
+{
+    for (auto &inst : iface) {
+        if (inst.uart == nullptr) {
+            continue;
+        }
+        auto &capture = inst.capture;
+        if (capture.fd != -1) {
+            int fd = capture.fd;
+            capture.fd = -1;
+            AP::FS().close(fd);
+        }
+    }
+}
+#endif
+
 /*
   main loop for PPP
  */
@@ -230,6 +352,14 @@ void AP_Networking_PPP::ppp_loop(void)
         if (!read_data) {
             // ensure we give up some time
             hal.scheduler->delay_microseconds(200);
+
+#if AP_NETWORKING_CAPTURE_ENABLED
+            if (frontend.option_is_set(AP_Networking::OPTION::CAPTURE_PACKETS)) {
+                start_capture();
+            } else {
+                stop_capture();
+            }
+#endif
         }
     }
 }
@@ -300,6 +430,77 @@ void AP_Networking_PPP::restart_instance(const uint8_t idx)
     LWIP_TCPIP_UNLOCK();
 
     inst.last_read_ms = AP_HAL::millis();
+}
+
+#if AP_NETWORKING_CAPTURE_ENABLED
+/*
+  hook for capturing all incoming PPP packets
+ */
+void AP_Networking_PPP::PPP_Instance::capture_hook(const struct pbuf *pb)
+{
+    WITH_SEMAPHORE(capture.sem);
+    if (capture.fd == -1) {
+        return;
+    }
+    /*
+      calculate length with trimming of frame bytes
+    */
+    uint32_t len = pb->tot_len;
+    bool need_trim = false;
+    if (len >= 2 && pb->len > 0 && *(uint8_t*)pb->payload == PPP_FRAME_BYTE) {
+        len -= 2;
+        need_trim = true;
+    }
+    auto &fs = AP::FS();
+    backend->capture_header(capture.fd, len+1); // +1 for direction byte
+    const uint8_t direction = 1; // direction In
+    fs.write(capture.fd, &direction, 1);
+    /*
+      copy the pbuf segments, trimming the framing bytes as needed
+    */
+    for (auto *pp = pb; pp; pp = pp->next) {
+        const uint8_t *data = (const uint8_t *)pp->payload;
+        auto plen = pp->len;
+        if (need_trim && pp == pb) {
+            data++;
+            plen--;
+        }
+        if (need_trim && pp->next == nullptr) {
+            plen--;
+        }
+        fs.write(capture.fd, data, plen);
+    }
+}
+
+/*
+  hook for capturing all incoming PPP packets
+ */
+void AP_Networking_PPP::capture_hook(const ppp_pcb *pcb, const struct pbuf *pb)
+{
+    auto &frontend = AP::network();
+    if (!frontend.option_is_set(AP_Networking::OPTION::CAPTURE_PACKETS)) {
+        return;
+    }
+    AP_Networking_Backend *driver = frontend.backend;
+#if AP_NETWORKING_PPP_GATEWAY_ENABLED
+    if (frontend.backend_PPP != nullptr) {
+        driver = frontend.backend_PPP;
+    }
+#endif
+    for (auto &inst : ((AP_Networking_PPP*)driver)->iface) {
+        if (inst.uart != nullptr && inst.ppp == pcb) {
+            inst.capture_hook(pb);
+            break;
+        }
+    }
+}
+#endif // AP_NETWORKING_CAPTURE_ENABLED
+
+void ap_ppp_capture_hook(const struct ppp_pcb_s *pcb, const struct pbuf *pb)
+{
+#if AP_NETWORKING_CAPTURE_ENABLED
+    AP_Networking_PPP::capture_hook(pcb, pb);
+#endif
 }
 
 /*
