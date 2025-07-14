@@ -316,6 +316,8 @@ AP_HW_SPEDIXH743                     1196
 AP_HW_SPEDIXF405                     1197
 AP_HW_AEDROXH7                       1198
 
+AP_HW_BCUBEF745V2                    1199
+
 AP_HW_JFB200                         1200
 
 AP_HW_ESP32_PERIPH                   1205
