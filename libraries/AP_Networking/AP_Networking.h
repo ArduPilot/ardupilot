@@ -173,6 +173,9 @@ public:
 #endif
         PPP_TIMEOUT_DISABLE=(1U<<5),
         PPP_ECHO_LIMIT_DISABLE=(1U<<6),
+#if AP_NETWORKING_CAPTURE_ENABLED
+        CAPTURE_PACKETS=(1U<<7),
+#endif
     };
     bool option_is_set(OPTION option) const {
         return (param.options.get() & int32_t(option)) != 0;
