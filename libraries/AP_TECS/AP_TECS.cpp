@@ -291,6 +291,14 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("HDEM_TCONST", 33, AP_TECS, _hgt_dem_tconst, 3.0f),
 
+    // @Param: THR_DN_RATE
+    // @DisplayName: Forward throttle down rate limit
+    // @Description: The throttle demand will not be reduced faster than this rate. Will be used for all phases of flight if set including landing. Set to 0 to use the rate set by THR_SLEWRATE whch will result in the same rate limit being applied up and down.
+    // @Units: %/s
+    // @Range: 0 32768
+    // @User: Advanced
+    AP_GROUPINFO("THR_DN_RATE", 34, AP_TECS, _thr_dn_pct_rate_lim, 0),
+
     AP_GROUPEND
 };
 
@@ -806,11 +814,13 @@ void AP_TECS::_update_throttle_with_airspeed(void)
         }
 
         if (throttle_slewrate != 0) {
-            const float thrRateIncr = _DT * (_THRmaxf - THRminf_clipped_to_zero) * throttle_slewrate * 0.01f;
+            const float scale_factor = _DT * (_THRmaxf - THRminf_clipped_to_zero) * 0.01f;
+            const float thrRateIncrUp = throttle_slewrate * scale_factor;
+            const float thrRateIncrDn = (_thr_dn_pct_rate_lim > 0) ? _thr_dn_pct_rate_lim * scale_factor : thrRateIncrUp;
 
             _throttle_dem = constrain_float(_throttle_dem,
-                                            _last_throttle_dem - thrRateIncr,
-                                            _last_throttle_dem + thrRateIncr);
+                                            _last_throttle_dem - thrRateIncrDn,
+                                            _last_throttle_dem + thrRateIncrUp);
             _last_throttle_dem = _throttle_dem;
         }
 
