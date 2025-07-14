@@ -5,7 +5,7 @@ MCU STM32L431 STM32L431xx
 OSCILLATOR_HZ 8000000
 
 # board ID for firmware load
-APJ_BOARD_ID 6100
+APJ_BOARD_ID AP_HW_MFE_PDB_CAN
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
