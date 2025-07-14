@@ -3234,20 +3234,16 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
         return false;
     }
 
+    // Get param object
+    AP_Float *pvalues = const_cast<AP_Float *>((const AP_Float *)info.ptr);
+    AP_Float &p = pvalues[param_num];
+
     // Check for conflicting name
     enum ap_var_type existingType;
-    ParamToken existingToken;
-    if (find_by_name(fullName, &existingType, &existingToken) != nullptr) {
-        // Param with this name already exists, check if it is the parameter were trying to add from a previous script run
-        if (existingToken.key != (_num_vars_base + i)) {
-            // Found param is not in this table, can't be this one
-            return false;
-        }
-        if (existingToken.group_element != param_num) {
-            // Index does not match, two params with the same name in the same table?
-            return false;
-        }
-        // Existing param is the same as this one, must be a scripting restart
+    AP_Param* existingParam = find(fullName, &existingType);
+    if ((existingParam != nullptr) && ((existingType != AP_PARAM_FLOAT) || ((AP_Float*)existingParam != &p))) {
+        // There is a existing parameter with this name (which is not this parameter from a previous script run)
+        return false;
     }
 
     // fill in idx of any gaps, leaving them hidden, this allows
@@ -3281,8 +3277,6 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
     invalidate_count();
 
     // load from storage if available
-    AP_Float *pvalues = const_cast<AP_Float *>((const AP_Float *)info.ptr);
-    AP_Float &p = pvalues[param_num];
     p.set_default(default_value);
     p.load();
 
