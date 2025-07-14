@@ -1,20 +1,19 @@
 #include "AP_Mount_config.h"
 
-#if HAL_MOUNT_GREMSY_ENABLED
+#if HAL_MOUNT_MAVLINK_ENABLED
 
-#include "AP_Mount_Gremsy.h"
+#include "AP_Mount_MAVLink.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
-#define AP_MOUNT_GREMSY_RESEND_MS  1000     // resend angle targets to gimbal at least once per second
-#define AP_MOUNT_GREMSY_SEARCH_MS  60000    // search for gimbal for 1 minute after startup
-#define AP_MOUNT_GREMSY_ATTITUDE_INTERVAL_US    20000  // send ATTITUDE and AUTOPILOT_STATE_FOR_GIMBAL_DEVICE at 50hz
+#define AP_MOUNT_MAVLINK_SEARCH_MS  60000    // search for gimbal for 1 minute after startup
+#define AP_MOUNT_MAVLINK_ATTITUDE_INTERVAL_US    20000  // send ATTITUDE and AUTOPILOT_STATE_FOR_GIMBAL_DEVICE at 50hz
 
 // update mount position
-void AP_Mount_Gremsy::update()
+void AP_Mount_MAVLink::update()
 {
     AP_Mount_Backend::update();
 
@@ -94,7 +93,7 @@ void AP_Mount_Gremsy::update()
 }
 
 // return true if healthy
-bool AP_Mount_Gremsy::healthy() const
+bool AP_Mount_MAVLink::healthy() const
 {
     // unhealthy until gimbal has been found and replied with device info
     if (_link == nullptr || !_got_device_info) {
@@ -122,14 +121,14 @@ bool AP_Mount_Gremsy::healthy() const
 }
 
 // get attitude as a quaternion.  returns true on success
-bool AP_Mount_Gremsy::get_attitude_quaternion(Quaternion& att_quat)
+bool AP_Mount_MAVLink::get_attitude_quaternion(Quaternion& att_quat)
 {
     att_quat = _gimbal_device_attitude_status.q;
     return true;
 }
 
 // search for gimbal in GCS_MAVLink routing table
-void AP_Mount_Gremsy::find_gimbal()
+void AP_Mount_MAVLink::find_gimbal()
 {
     // do not look for gimbal for first 10 seconds so user may see banner
     uint32_t now_ms = AP_HAL::millis();
@@ -138,7 +137,7 @@ void AP_Mount_Gremsy::find_gimbal()
     }
 
     // search for gimbal for 60 seconds or until armed
-    if ((now_ms > AP_MOUNT_GREMSY_SEARCH_MS) && hal.util->get_soft_armed()) {
+    if ((now_ms > AP_MOUNT_MAVLINK_SEARCH_MS) && hal.util->get_soft_armed()) {
         return;
     }
 
@@ -171,7 +170,7 @@ void AP_Mount_Gremsy::find_gimbal()
 }
 
 // handle GIMBAL_DEVICE_INFORMATION message
-void AP_Mount_Gremsy::handle_gimbal_device_information(const mavlink_message_t &msg)
+void AP_Mount_MAVLink::handle_gimbal_device_information(const mavlink_message_t &msg)
 {
     // exit immediately if this is not our message
     if (msg.sysid != _sysid || msg.compid != _compid) {
@@ -213,7 +212,7 @@ void AP_Mount_Gremsy::handle_gimbal_device_information(const mavlink_message_t &
 }
 
 // handle GIMBAL_DEVICE_ATTITUDE_STATUS message
-void AP_Mount_Gremsy::handle_gimbal_device_attitude_status(const mavlink_message_t &msg)
+void AP_Mount_MAVLink::handle_gimbal_device_attitude_status(const mavlink_message_t &msg)
 {
     // exit immediately if this is not our message
     if (msg.sysid != _sysid || msg.compid != _compid) {
@@ -226,7 +225,7 @@ void AP_Mount_Gremsy::handle_gimbal_device_attitude_status(const mavlink_message
 }
 
 // request GIMBAL_DEVICE_INFORMATION message
-void AP_Mount_Gremsy::request_gimbal_device_information() const
+void AP_Mount_MAVLink::request_gimbal_device_information() const
 {
     if (_link == nullptr) {
         return;
@@ -250,21 +249,21 @@ void AP_Mount_Gremsy::request_gimbal_device_information() const
 }
 
 // start sending ATTITUDE and AUTOPILOT_STATE_FOR_GIMBAL_DEVICE to gimbal
-bool AP_Mount_Gremsy::start_sending_attitude_to_gimbal()
+bool AP_Mount_MAVLink::start_sending_attitude_to_gimbal()
 {
     // better safe than sorry:
     if (_link == nullptr) {
         return false;
     }
     // send AUTOPILOT_STATE_FOR_GIMBAL_DEVICE
-    const MAV_RESULT res = _link->set_message_interval(MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE, AP_MOUNT_GREMSY_ATTITUDE_INTERVAL_US);
+    const MAV_RESULT res = _link->set_message_interval(MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE, AP_MOUNT_MAVLINK_ATTITUDE_INTERVAL_US);
 
     // return true on success
     return (res == MAV_RESULT_ACCEPTED);
 }
 
 // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to command gimbal to retract (aka relax)
-void AP_Mount_Gremsy::send_gimbal_device_retract() const
+void AP_Mount_MAVLink::send_gimbal_device_retract() const
 {
     const mavlink_gimbal_device_set_attitude_t pkt {
         {NAN, NAN, NAN, NAN},  // attitude
@@ -281,7 +280,7 @@ void AP_Mount_Gremsy::send_gimbal_device_retract() const
 
 // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to control rate
 // earth_frame should be true if yaw_rads target is an earth frame rate, false if body_frame
-void AP_Mount_Gremsy::send_gimbal_device_set_rate(float roll_rads, float pitch_rads, float yaw_rads, bool earth_frame) const
+void AP_Mount_MAVLink::send_gimbal_device_set_rate(float roll_rads, float pitch_rads, float yaw_rads, bool earth_frame) const
 {
     // prepare flags
     const uint16_t flags = earth_frame ? (GIMBAL_DEVICE_FLAGS_ROLL_LOCK | GIMBAL_DEVICE_FLAGS_PITCH_LOCK | GIMBAL_DEVICE_FLAGS_YAW_LOCK) : 0;
@@ -301,7 +300,7 @@ void AP_Mount_Gremsy::send_gimbal_device_set_rate(float roll_rads, float pitch_r
 
 // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to control attitude
 // earth_frame should be true if yaw_rad target is in earth frame angle, false if body_frame
-void AP_Mount_Gremsy::send_gimbal_device_set_attitude(float roll_rad, float pitch_rad, float yaw_rad, bool earth_frame) const
+void AP_Mount_MAVLink::send_gimbal_device_set_attitude(float roll_rad, float pitch_rad, float yaw_rad, bool earth_frame) const
 {
     // exit immediately if not initialised
     if (!_initialised) {
@@ -328,4 +327,4 @@ void AP_Mount_Gremsy::send_gimbal_device_set_attitude(float roll_rad, float pitc
     _link->send_message(MAVLINK_MSG_ID_GIMBAL_DEVICE_SET_ATTITUDE, (const char*)&pkt);
 }
 
-#endif // HAL_MOUNT_GREMSY_ENABLED
+#endif // HAL_MOUNT_MAVLINK_ENABLED

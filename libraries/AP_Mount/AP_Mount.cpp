@@ -12,7 +12,7 @@
 #include "AP_Mount_Alexmos.h"
 #include "AP_Mount_SToRM32.h"
 #include "AP_Mount_SToRM32_serial.h"
-#include "AP_Mount_Gremsy.h"
+#include "AP_Mount_MAVLink.h"
 #include "AP_Mount_Siyi.h"
 #include "AP_Mount_Scripting.h"
 #include "AP_Mount_Xacti.h"
@@ -112,13 +112,13 @@ void AP_Mount::init()
             break;
 #endif
 
-#if HAL_MOUNT_GREMSY_ENABLED
-        // check for Gremsy mounts
-        case Type::Gremsy:
-            _backends[instance] = NEW_NOTHROW AP_Mount_Gremsy(*this, _params[instance], instance);
+#if HAL_MOUNT_MAVLINK_ENABLED
+        // check for MAVLink mounts
+        case Type::MAVLink:
+            _backends[instance] = NEW_NOTHROW AP_Mount_MAVLink(*this, _params[instance], instance);
             _num_instances++;
             break;
-#endif // HAL_MOUNT_GREMSY_ENABLED
+#endif // HAL_MOUNT_MAVLINK_ENABLED
 
 #if HAL_MOUNT_SERVO_ENABLED
         // check for BrushlessPWM mounts (uses Servo backend)

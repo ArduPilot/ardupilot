@@ -42,7 +42,7 @@ class AP_Mount_SoloGimbal;
 class AP_Mount_Alexmos;
 class AP_Mount_SToRM32;
 class AP_Mount_SToRM32_serial;
-class AP_Mount_Gremsy;
+class AP_Mount_MAVLink;
 class AP_Mount_Siyi;
 class AP_Mount_Scripting;
 class AP_Mount_Xacti;
@@ -65,7 +65,7 @@ class AP_Mount
     friend class AP_Mount_Alexmos;
     friend class AP_Mount_SToRM32;
     friend class AP_Mount_SToRM32_serial;
-    friend class AP_Mount_Gremsy;
+    friend class AP_Mount_MAVLink;
     friend class AP_Mount_Siyi;
     friend class AP_Mount_Scripting;
     friend class AP_Mount_Xacti;
@@ -102,8 +102,8 @@ public:
 #if HAL_MOUNT_STORM32SERIAL_ENABLED
         SToRM32_serial = 5,  /// SToRM32 mount using custom serial protocol
 #endif
-#if HAL_MOUNT_GREMSY_ENABLED
-        Gremsy = 6,          /// Gremsy gimbal using MAVLink v2 Gimbal protocol
+#if HAL_MOUNT_MAVLINK_ENABLED
+        MAVLink = 6,         /// MAVLink v2 Gimbal protocol
 #endif
 #if HAL_MOUNT_SERVO_ENABLED
         BrushlessPWM = 7,    /// Brushless (stabilized) gimbal using PWM protocol
