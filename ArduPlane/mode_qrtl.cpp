@@ -33,7 +33,7 @@ bool ModeQRTL::_enter()
         const bool use_terrain = false;
 #endif
 
-        const float dist_to_climb = target_alt - plane.relative_ground_altitude(plane.g.rangefinder_landing, use_terrain);
+        const float dist_to_climb = target_alt - plane.relative_ground_altitude(RangeFinderUse::CLIMB, use_terrain);
         if (is_positive(dist_to_climb)) {
             // climb before returning, only next waypoint altitude is used
             submode = SubMode::climb;
