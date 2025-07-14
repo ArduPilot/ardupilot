@@ -2067,7 +2067,7 @@ void AP_Param::convert_old_parameters_scaled(const struct ConversionInfo *conver
 // is_top_level: Is true if the class had its own top level key, param_key. It is false if the class was a subgroup
 void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
                                     const struct AP_Param::GroupInfo *group_info,
-                                    uint16_t old_index, bool is_top_level)
+                                    uint16_t old_index, bool is_top_level, bool recurse_sub_groups)
 {
     const uint8_t group_shift = is_top_level ? 0 : 6;
 
@@ -2081,6 +2081,15 @@ void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
         if (group_shift != 0 && idx == 0) {
             // Note: Index 0 is treated as 63 for group bit shifting purposes. See group_id()
             idx = 63;
+        }
+
+        if (info.type == AP_PARAM_GROUP) {
+            // Convert subgroups if enabled
+            if (recurse_sub_groups) {
+                // Only recurse once
+                convert_class(param_key, (uint8_t *)object_pointer + group_info[i].offset, get_group_info(group_info[i]), idx, false, false);
+            }
+            continue;
         }
 
         info.old_group_element = (idx << group_shift) + old_index;
