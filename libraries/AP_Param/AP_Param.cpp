@@ -980,8 +980,14 @@ AP_Param* AP_Param::find_by_name(const char* name, enum ap_var_type *ptype, Para
     for (ap = AP_Param::first(token, ptype);
          ap && *ptype != AP_PARAM_GROUP && *ptype != AP_PARAM_NONE;
          ap = AP_Param::next_scalar(token, ptype)) {
-        int32_t ret = strncasecmp(name, var_info(token->key).name, AP_MAX_NAME_SIZE);
-        if (ret >= 0) {
+        const auto nlen = strlen(var_info(token->key).name);
+        /*
+          the name must either match the token name (if a non-group top level param)
+          or match up to the length (if a group).
+          This check avoids us traversing down into most groups, saving a lot of calls to copy_name_token()
+         */
+        int32_t ret = strncasecmp(name, var_info(token->key).name, nlen);
+        if (ret == 0) {
             char buf[AP_MAX_NAME_SIZE];
             ap->copy_name_token(*token, buf, AP_MAX_NAME_SIZE);
             if (strncasecmp(name, buf, AP_MAX_NAME_SIZE) == 0) {
