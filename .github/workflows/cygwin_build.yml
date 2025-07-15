@@ -158,7 +158,7 @@ jobs:
           NAME_DASHED=${WORKFLOWNAME//+( )/_}
           echo "cache-key=${NAME_DASHED}" >> $GITHUB_OUTPUT
 
-      - uses: cygwin/cygwin-install-action@v5
+      - uses: cygwin/cygwin-install-action@v6
         with:
           packages: cygwin64 gcc-g++=10.2.0-1 ccache python39 python39-future python39-lxml python39-pip python39-setuptools python39-wheel git procps gettext
           add-to-path: false
@@ -214,7 +214,7 @@ jobs:
 
       - name: Check build files
         id: check_files
-        uses: andstor/file-existence-action@v2
+        uses: andstor/file-existence-action@v3
         with:
           files: "artifacts/*"
           fail: true
