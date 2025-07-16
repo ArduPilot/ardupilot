@@ -126,9 +126,9 @@ FLASH_RESERVE_START_KB 48
 IMU BMI270 SPI:bmi270 ROTATION_ROLL_180
 
 # built-in barometer
-BARO SPL06  I2C:0:0x76
+BARO BMP280  I2C:2:0x76
 define AP_BARO_BACKEND_DEFAULT_ENABLED 0
-define AP_BARO_SPL06_ENABLED 1
+define AP_BARO_BMP280_ENABLED 1
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
