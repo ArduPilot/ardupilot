@@ -129,6 +129,7 @@ IMU BMI270 SPI:bmi270 ROTATION_ROLL_180
 BARO BMP280  I2C:0:0x76
 define AP_BARO_BACKEND_DEFAULT_ENABLED 0
 define AP_BARO_BMP280_ENABLED 1
+define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
