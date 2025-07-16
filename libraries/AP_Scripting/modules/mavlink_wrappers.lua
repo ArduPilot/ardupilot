@@ -23,7 +23,7 @@
 
 local MAVLink = {}
 
-MAVLink.SCRIPT_VERSION = "4.7.0-001"
+MAVLink.SCRIPT_VERSION = "4.7.0-002"
 MAVLink.SCRIPT_NAME = "MAVLink wrappers"
 MAVLink.SCRIPT_NAME_SHORT = "MAVwrappers"
 
@@ -57,28 +57,31 @@ function MAVLink.set_vehicle_speed(speed)
     local speed_type = speed.type or MAV_SPEED_TYPE.AIRSPEED
     local throttle = speed.throttle or 0.0
     local slew = speed.slew or 0.0
+    local vehicle_mode = vehicle:get_mode()
 
-    if new_speed == MAVLink.previous_speed then
+    if new_speed == MAVLink.previous_speed or new_speed <= 0 then
         return
     end
     MAVLink.previous_speed = new_speed
     if FWVersion:type() == 3 and vehicle_mode == MAVLink.PLANE_FLIGHT_MODE.GUIDED and
        speed_type == MAVLink.SPEED_TYPE.AIRSPEED and speed.slew ~= 0 then
+        --gcs:send_text(MAVLink.SEVERITY.ERROR, MAVLink.SCRIPT_NAME_SHORT .. string.format(": MAVLink GUIDED_CHANGE_SPEED set %.1f", new_speed))
         local mavlink_result = gcs:run_command_int(MAVLink.CMD_INT.GUIDED_CHANGE_SPEED, { frame = MAVLink.FRAME.GLOBAL,
                                   p1 = speed_type,
                                   p2 = new_speed,
                                   p3 = slew })
         if mavlink_result > 0 then
-            gcs:send_text(MAVLink.SEVERITY.ERROR, MAVLink.SCRIPT_NAME_SHORT .. string.format(": MAVLink GUIDED_CHANGE_SPEED returned %d", mavlink_result))
+            gcs:send_text(MAVLink.SEVERITY.ERROR, MAVLink.SCRIPT_NAME_SHORT .. string.format(": MAVLink GUIDED_CHANGE_SPEED returned %d", mavlink_result, vehicle_mode))
             return false
         end
     else
+        -- gcs:send_text(MAVLink.SEVERITY.ERROR, MAVLink.SCRIPT_NAME_SHORT .. string.format(": MAVLink DO_CHANGE_SPEED set %.1f", new_speed))
         local mavlink_result = gcs:run_command_int(MAVLink.CMD_INT.DO_CHANGE_SPEED, { frame = MAVLink.FRAME.GLOBAL,
                                   p1 = speed_type,
                                   p2 = new_speed,
                                   p3 = throttle })
         if mavlink_result > 0 then
-            gcs:send_text(MAVLink.SEVERITY.ERROR, MAVLink.SCRIPT_NAME_SHORT .. string.format(": MAVLink DO_CHANGE_SPEED returned %d", mavlink_result))
+            gcs:send_text(MAVLink.SEVERITY.ERROR, MAVLink.SCRIPT_NAME_SHORT .. string.format(": MAVLink DO_CHANGE_SPEED returned %d mode %d", mavlink_result, vehicle_mode))
             return false
         end
     end
