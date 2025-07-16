@@ -22,6 +22,18 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 
 /*
+  All backends use the same parameter table and set of indices. Therefore, two
+  backends must not use the same index. The list of used indices and
+  corresponding backends is below.
+
+    1:   AP_TemperatureSensor_DroneCAN.cpp, note there is a clash with analog, but due to different param types we get away with it
+    1-7: AP_TemperatureSensor_Analog.cpp
+    8-9: AP_TemperatureSensor_MAX31865.cpp
+
+  Usage does not need to be contiguous. The maximum possible index is 63.
+*/
+
+/*
     base class constructor.
     This incorporates initialisation as well.
 */
