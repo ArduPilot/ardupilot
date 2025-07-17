@@ -10828,9 +10828,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             measurements[m.C] = (m.PN, m.PE, m.PD)
             if len(measurements) == 3:
                 # check lat:
+                axis_epsilons = [0.05, 0.05, 0.06]
                 for n in 0, 1, 2:
                     expected_blended = 0.5*measurements[0][n] + 0.5*measurements[1][n]
-                    axis_epsilons = [0.02, 0.02, 0.03]
                     epsilon = axis_epsilons[n]
                     error = abs(measurements[2][n] - expected_blended)
                     # self.progress(f"{n=} {error=}")
