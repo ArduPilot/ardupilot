@@ -1981,7 +1981,7 @@ void ModeAuto::do_set_home(const AP_Mission::Mission_Command& cmd)
 // TO-DO: add support for other features of MAV_CMD_DO_SET_ROI including pointing at a given waypoint
 void ModeAuto::do_roi(const AP_Mission::Mission_Command& cmd)
 {
-    auto_yaw.set_roi(cmd.content.location);
+    auto_yaw.set_roi(cmd.p1, cmd.content.location);
 }
 
 #if HAL_MOUNT_ENABLED

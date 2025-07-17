@@ -333,6 +333,7 @@ public:
 
         // set_roi(...): set a "look at" location:
         void set_roi(const Location &roi_location);
+        void set_roi(uint8_t instance, const Location &roi_location);
 
         void set_fixed_yaw_rad(float angle_rad,
                                float turn_rate_rads,

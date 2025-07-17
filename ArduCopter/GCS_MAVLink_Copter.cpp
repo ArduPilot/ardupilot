@@ -444,12 +444,12 @@ MAV_RESULT GCS_MAVLINK_Copter::_handle_command_preflight_calibration(const mavli
 }
 
 
-MAV_RESULT GCS_MAVLINK_Copter::handle_command_do_set_roi(const Location &roi_loc)
+MAV_RESULT GCS_MAVLINK_Copter::handle_command_do_set_roi(uint8_t instance, const Location &roi_loc)
 {
     if (!roi_loc.check_latlng()) {
         return MAV_RESULT_FAILED;
     }
-    copter.flightmode->auto_yaw.set_roi(roi_loc);
+    copter.flightmode->auto_yaw.set_roi(instance, roi_loc);
     return MAV_RESULT_ACCEPTED;
 }
 
