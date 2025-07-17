@@ -1180,9 +1180,9 @@ local function update()
             if cmtc_height_m <= 0 then
                 cmtc_height_m = pitch_down_min
             end
-            cmtc_rad_m = TA_CMTC_RAD:get() or wp_loiter_rad
+            cmtc_rad_m = TA_CMTC_RAD:get() or wp_loiter_rad_m
             if cmtc_rad_m <= 0 then
-                cmtc_rad_m = wp_loiter_rad
+                cmtc_rad_m = wp_loiter_rad_m
             end
         end
 
