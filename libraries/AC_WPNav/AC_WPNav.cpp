@@ -400,40 +400,6 @@ bool AC_WPNav::set_wp_destination_next_NED_m(const Vector3f& destination_NED_m)
     return set_wp_destination_next_NEU_cm(Vector3f(destination_NED_m.x * 100.0f, destination_NED_m.y * 100.0f, -destination_NED_m.z * 100.0f), false);
 }
 
-/// shifts the origin and destination horizontally to the current position
-///     used to reset the track when taking off without horizontal position control
-///     relies on set_wp_destination_NEU_cm or set_wp_origin_and_destination having been called first
-void AC_WPNav::shift_wp_origin_and_destination_to_current_pos_NE()
-{
-    // Reset position controller to current location
-    _pos_control.init_NE_controller();
-
-    // shift origin and destination horizontally
-    _origin_neu_cm.xy() = _pos_control.get_pos_estimate_NEU_cm().xy().tofloat();
-    _destination_neu_cm.xy() = _pos_control.get_pos_estimate_NEU_cm().xy().tofloat();
-}
-
-/// shifts the origin and destination horizontally to the achievable stopping point
-///     used to reset the track when horizontal navigation is enabled after having been disabled (see Copter's wp_navalt_min)
-///     relies on set_wp_destination_NEU_cm or set_wp_origin_and_destination having been called first
-void AC_WPNav::shift_wp_origin_and_destination_to_stopping_point_NE()
-{
-    // relax position control in xy axis
-    // removing velocity error also impacts stopping point calculation
-    _pos_control.relax_velocity_controller_NE();
-
-    // get current and target locations
-    Vector2f stopping_point_ne_cm;
-    get_wp_stopping_point_NE_cm(stopping_point_ne_cm);
-
-    // shift origin and destination horizontally
-    _origin_neu_cm.xy() = stopping_point_ne_cm;
-    _destination_neu_cm.xy() = stopping_point_ne_cm;
-
-    // move pos controller target horizontally
-    _pos_control.set_pos_desired_NE_cm(stopping_point_ne_cm);
-}
-
 /// get_wp_stopping_point_NE_cm - returns vector to stopping point based on a horizontal position and velocity
 void AC_WPNav::get_wp_stopping_point_NE_cm(Vector2f& stopping_point_ne_cm) const
 {
