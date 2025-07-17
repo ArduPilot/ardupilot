@@ -3685,7 +3685,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
         angle_boost         : attitude_control->angle_boost(),
         throttle_out        : motors->get_throttle(),
         throttle_hover      : motors->get_throttle_hover(),
-        desired_alt         : des_alt_m,
+        desired_alt         : des_alt_m * 100.0,
         inav_alt            : inertial_nav.get_position_z_up_cm() * 0.01f,
         baro_alt            : int32_t(plane.barometer.get_altitude() * 100),
         target_climb_rate   : int16_t(target_climb_rate_ms * 100.0),
