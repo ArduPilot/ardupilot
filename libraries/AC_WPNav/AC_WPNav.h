@@ -124,16 +124,6 @@ public:
     bool set_wp_destination_NED_m(const Vector3f& destination_NED_m);
     bool set_wp_destination_next_NED_m(const Vector3f& destination_NED_m);
 
-    /// shifts the origin and destination horizontally to the current position
-    ///     used to reset the track when taking off without horizontal position control
-    ///     relies on set_wp_destination_NEU_cm or set_wp_origin_and_destination having been called first
-    void shift_wp_origin_and_destination_to_current_pos_NE(); // todo: Not used
-
-    /// shifts the origin and destination horizontally to the achievable stopping point
-    ///     used to reset the track when horizontal navigation is enabled after having been disabled (see Copter's wp_navalt_min)
-    ///     relies on set_wp_destination_NEU_cm or set_wp_origin_and_destination having been called first
-    void shift_wp_origin_and_destination_to_stopping_point_NE(); // todo: Not used
-
     /// get_wp_stopping_point_cm - calculates stopping point based on current position, velocity, waypoint acceleration
     ///		results placed in stopping_position vector
     void get_wp_stopping_point_NE_cm(Vector2f& stopping_point_NE_cm) const;
