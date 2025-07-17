@@ -161,12 +161,12 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_ROI:
         if (cmd.content.location.alt == 0 && cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
             // switch off the camera tracking if enabled
-            if (camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
-                camera_mount.set_mode_to_default();
+            if (camera_mount.get_mode(cmd.p1) == MAV_MOUNT_MODE_GPS_POINT) {
+                camera_mount.set_mode_to_default(cmd.p1);
             }
         } else {
             // set mount's target location
-            camera_mount.set_roi_target(cmd.content.location);
+            camera_mount.set_roi_target(cmd.p1,cmd.content.location);
         }
         break;
 
