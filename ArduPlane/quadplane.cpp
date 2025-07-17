@@ -3638,10 +3638,10 @@ bool QuadPlane::verify_vtol_land(void)
 void QuadPlane::Log_Write_QControl_Tuning()
 {
     float des_alt_m = 0.0f;
-    int16_t target_climb_rate_cms = 0;
+    float target_climb_rate_ms = 0;
     if (plane.control_mode != &plane.mode_qstabilize) {
-        des_alt_m = pos_control->get_pos_desired_U_cm() * 0.01f;
-        target_climb_rate_cms = pos_control->get_vel_target_U_cms();
+        des_alt_m = pos_control->get_pos_desired_U_m();
+        target_climb_rate_ms = pos_control->get_vel_target_U_ms();
     }
 
     // Assemble assistance bitmask, definition here is used to generate log documentation
@@ -3688,7 +3688,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
         desired_alt         : des_alt_m,
         inav_alt            : inertial_nav.get_position_z_up_cm() * 0.01f,
         baro_alt            : int32_t(plane.barometer.get_altitude() * 100),
-        target_climb_rate   : target_climb_rate_cms,
+        target_climb_rate   : int16_t(target_climb_rate_ms * 100.0),
         climb_rate          : int16_t(inertial_nav.get_velocity_z_up_cms()),
         throttle_mix        : attitude_control->get_throttle_mix(),
         transition_state    : transition->get_log_transition_state(),
