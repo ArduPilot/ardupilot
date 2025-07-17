@@ -55,7 +55,7 @@ void ModeQLoiter::run()
         // we have an active landing target override
         Vector2f rel_origin;
         if (plane.next_WP_loc.get_vector_xy_from_origin_NE_cm(rel_origin)) {
-            quadplane.pos_control->set_pos_desired_NE_cm(rel_origin);
+            quadplane.pos_control->set_pos_desired_NE_m(rel_origin * 0.01);
             last_target_loc_set_ms = 0;
         }
     }
@@ -64,8 +64,8 @@ void ModeQLoiter::run()
     if (last_vel_set_ms != 0 && now - last_vel_set_ms < precland_timeout_ms) {
         // we have an active landing velocity override
         Vector2f target_accel;
-        Vector2f target_speed_xy_cms{quadplane.poscontrol.velocity_match_ms.x*100, quadplane.poscontrol.velocity_match_ms.y*100};
-        quadplane.pos_control->input_vel_accel_NE_cm(target_speed_xy_cms, target_accel);
+        Vector2f target_speed_xy_ms{quadplane.poscontrol.velocity_match_ms.x, quadplane.poscontrol.velocity_match_ms.y};
+        quadplane.pos_control->input_vel_accel_NE_m(target_speed_xy_ms, target_accel);
         quadplane.poscontrol.last_velocity_match_ms = 0;
     }
 #endif // AC_PRECLAND_ENABLED
@@ -164,7 +164,7 @@ void ModeQLoiter::run()
             ahrs.set_touchdown_expected(true);
         }
 
-        pos_control->land_at_climb_rate_cm(-descent_rate_cms, descent_rate_cms>0);
+        pos_control->land_at_climb_rate_m(-descent_rate_cms * 0.01, descent_rate_cms>0);
         quadplane.check_land_complete();
     } else if (plane.control_mode == &plane.mode_guided && quadplane.guided_takeoff) {
         quadplane.set_climb_rate_ms(0);
