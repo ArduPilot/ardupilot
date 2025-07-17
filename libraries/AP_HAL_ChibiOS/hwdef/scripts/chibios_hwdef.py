@@ -2789,6 +2789,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
             r'INPUT', r'OUTPUT', r'TIM\d+', r'USART\d+', r'UART\d+', r'ADC\d+',
             r'SPI\d+', r'OTG\d+', r'SWD', r'CAN\d?', r'I2C\d+', r'CS',
             r'SDMMC\d+', r'SDIO', r'QUADSPI\d', r'OCTOSPI\d', r'ETH\d', r'RCC',
+            r'GPIO\(\d+\)', r'PWM\(\d+\)',
         ]
         matches = False
         for p in patterns:
