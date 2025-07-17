@@ -461,6 +461,23 @@ float RC_Channel::norm_input_ignore_trim() const
     return constrain_float(ret, -1.0f, 1.0f);
 }
 
+
+bool RC_Channel::norm_input_ignore_trim(float &norm_in) const
+{
+    if (!rc().has_valid_input()) {
+        return false;
+    }
+    if (radio_in == 0) {
+        return false;
+    }
+    if (radio_max <= radio_min) {
+        // sanity check min and max to avoid divide by zero
+        return false;
+    }
+    norm_in = norm_input_ignore_trim();
+    return true;
+}
+
 /*
   get percentage input from 0 to 100. This ignores the trim value.
  */
