@@ -387,7 +387,7 @@ void ModeAuto::set_yaw_rate(float turn_rate_dps)
 }
 
 // set_auto_yaw_roi - sets the yaw to look at roi for auto mode
-void ModeAuto::set_auto_yaw_roi(const Location &roi_location)
+void ModeAuto::set_auto_yaw_roi(uint8_t instance, const Location &roi_location)
 {
     // if location is zero lat, lon and altitude turn off ROI
     if (roi_location.alt == 0 && roi_location.lat == 0 && roi_location.lng == 0) {
@@ -395,18 +395,18 @@ void ModeAuto::set_auto_yaw_roi(const Location &roi_location)
         set_auto_yaw_mode(get_default_auto_yaw_mode(false));
 #if HAL_MOUNT_ENABLED
         // switch off the camera tracking if enabled
-        sub.camera_mount.clear_roi_target();
+        sub.camera_mount.clear_roi_target(instance);
 #endif  // HAL_MOUNT_ENABLED
     } else {
 #if HAL_MOUNT_ENABLED
         // check if mount type requires us to rotate the sub
-        if (!sub.camera_mount.has_pan_control()) {
+        if (!sub.camera_mount.has_pan_control(instance)) {
             if (roi_location.get_vector_from_origin_NEU_cm(sub.roi_WP)) {
                 set_auto_yaw_mode(AUTO_YAW_ROI);
             }
         }
         // send the command to the camera mount
-        sub.camera_mount.set_roi_target(roi_location);
+        sub.camera_mount.set_roi_target(instance, roi_location);
 
         // TO-DO: expand handling of the do_nav_roi to support all modes of the MAVLink.  Currently we only handle mode 4 (see below)
         //      0: do nothing
