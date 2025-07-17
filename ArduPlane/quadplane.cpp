@@ -1059,9 +1059,9 @@ void QuadPlane::check_yaw_reset(void)
     }
 }
 
-void QuadPlane::set_climb_rate_cms(float target_climb_rate_cms)
+void QuadPlane::set_climb_rate_ms(float target_climb_rate_ms)
 {
-    pos_control->input_vel_accel_U_cm(target_climb_rate_cms, 0, false);
+    pos_control->input_vel_accel_U_m(target_climb_rate_ms, 0, false);
 }
 
 /*
@@ -1079,7 +1079,7 @@ void QuadPlane::hold_hover(float target_climb_rate_cms)
     multicopter_attitude_rate_update(get_desired_yaw_rate_cds(false));
 
     // call position controller
-    set_climb_rate_cms(target_climb_rate_cms);
+    set_climb_rate_ms(target_climb_rate_cms * 0.01);
 
     run_z_controller();
 }
@@ -2828,7 +2828,7 @@ void QuadPlane::vtol_position_controller(void)
             float zero = 0;
             pos_control->input_pos_vel_accel_U_cm(target_z, zero, 0);
         } else {
-            set_climb_rate_cms(0);
+            set_climb_rate_ms(0);
         }
         break;
     }
@@ -2843,7 +2843,7 @@ void QuadPlane::vtol_position_controller(void)
             }
         }
         if (poscontrol.get_state() == QPOS_LAND_ABORT) {
-            set_climb_rate_cms(wp_nav->get_default_speed_up_cms());
+            set_climb_rate_ms(wp_nav->get_default_speed_up_cms() * 0.01);
             break;
         }
         const float descent_rate_cms = landing_descent_rate_cms(height_above_ground);
@@ -3178,10 +3178,10 @@ void QuadPlane::takeoff_controller(void)
             vel_z = 0;
             pos_control->input_pos_vel_accel_U_cm(pos_z, vel_z, 0);
         } else {
-            set_climb_rate_cms(vel_z);
+            set_climb_rate_ms(vel_z_ms);
         }
     } else {
-        set_climb_rate_cms(vel_z);
+        set_climb_rate_ms(vel_z_ms);
     }
 
     run_z_controller();
@@ -3227,7 +3227,7 @@ void QuadPlane::waypoint_controller(void)
                                                        true);
 
     // climb based on altitude error
-    set_climb_rate_cms(assist_climb_rate_cms());
+    set_climb_rate_ms(assist_climb_rate_cms() * 0.01);
     run_z_controller();
 }
 

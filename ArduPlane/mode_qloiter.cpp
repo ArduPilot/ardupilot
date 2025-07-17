@@ -167,10 +167,10 @@ void ModeQLoiter::run()
         pos_control->land_at_climb_rate_cm(-descent_rate_cms, descent_rate_cms>0);
         quadplane.check_land_complete();
     } else if (plane.control_mode == &plane.mode_guided && quadplane.guided_takeoff) {
-        quadplane.set_climb_rate_cms(0);
+        quadplane.set_climb_rate_ms(0);
     } else {
         // update altitude target and call position controller
-        quadplane.set_climb_rate_cms(quadplane.get_pilot_desired_climb_rate_cms());
+        quadplane.set_climb_rate_ms(quadplane.get_pilot_desired_climb_rate_cms() * 0.01);
     }
     quadplane.run_z_controller();
 
