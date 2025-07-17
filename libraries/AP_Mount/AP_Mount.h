@@ -147,6 +147,9 @@ public:
     Type get_mount_type() const { return get_mount_type(_primary); }
     Type get_mount_type(uint8_t instance) const;
 
+    // get_backend - gets backend based on instance number
+    AP_Mount_Backend* get_backend(uint8_t instance) const;
+
     // has_pan_control - returns true if the mount has yaw control (required for copters)
     bool has_pan_control() const { return has_pan_control(_primary); }
     bool has_pan_control(uint8_t instance) const;
@@ -183,11 +186,11 @@ public:
 
     // set_roi_target - sets target location that mount should attempt to point towards
     void set_roi_target(const Location &target_loc) { set_roi_target(_primary,target_loc); }
-    void set_roi_target(uint8_t instance, const Location &target_loc);
+    bool set_roi_target(uint8_t instance, const Location &target_loc);
 
     // clear_roi_target - clears target location that mount should attempt to point towards
     void clear_roi_target() { clear_roi_target(_primary); }
-    void clear_roi_target(uint8_t instance);
+    bool clear_roi_target(uint8_t instance);
 
     // point at system ID sysid
     void set_target_sysid(uint8_t sysid) { set_target_sysid(_primary, sysid); }
