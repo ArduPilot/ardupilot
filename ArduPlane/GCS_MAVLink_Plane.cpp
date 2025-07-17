@@ -211,18 +211,18 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
     if (quadplane.show_vtol_view() && quadplane.using_wp_nav()) {
         const Vector3f &targets = quadplane.attitude_control->get_att_target_euler_cd();
 
-        const Vector2f& curr_pos = quadplane.inertial_nav.get_position_xy_cm();
-        const Vector2f& target_pos = quadplane.pos_control->get_pos_target_NEU_cm().xy().tofloat();
-        const Vector2f error = (target_pos - curr_pos) * 0.01;
+        const Vector2f& curr_pos_m = quadplane.inertial_nav.get_position_xy_cm() * 0.01;
+        const Vector2f& target_pos_m = quadplane.pos_control->get_pos_target_NEU_m().xy().tofloat();
+        const Vector2f error_m = (target_pos_m - curr_pos_m);
 
         mavlink_msg_nav_controller_output_send(
             chan,
             targets.x * 0.01,
             targets.y * 0.01,
             targets.z * 0.01,
-            degrees(error.angle()),
-            MIN(error.length(), UINT16_MAX),
-            (plane.control_mode != &plane.mode_qstabilize) ? quadplane.pos_control->get_pos_error_U_cm() * 0.01 : 0,
+            degrees(error_m.angle()),
+            MIN(error_m.length(), UINT16_MAX),
+            (plane.control_mode != &plane.mode_qstabilize) ? quadplane.pos_control->get_pos_error_U_m() : 0,
             plane.airspeed_error * 100,  // incorrect units; see PR#7933
             quadplane.wp_nav->crosstrack_error_m());
         return;
@@ -1232,7 +1232,7 @@ int16_t GCS_MAVLINK_Plane::high_latency_target_altitude() const
     const QuadPlane &quadplane = plane.quadplane;
     //return units are m
     if (quadplane.show_vtol_view()) {
-        return (plane.control_mode != &plane.mode_qstabilize) ? 0.01 * (global_position_current.alt + quadplane.pos_control->get_pos_error_U_cm()) : 0;
+        return (plane.control_mode != &plane.mode_qstabilize) ? (global_position_current.alt * 0.01 + quadplane.pos_control->get_pos_error_U_m()) : 0;
     }
 #endif
     return 0.01 * (global_position_current.alt + plane.calc_altitude_error_cm());
