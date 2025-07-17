@@ -522,6 +522,8 @@ public:
 
     AP_Int32 flight_options;
 
+    AP_Int16 waypoint_climb_slope_height_min;
+
     AP_Int8 takeoff_throttle_accel_count;
     AP_Int8 takeoff_timeout;
 
