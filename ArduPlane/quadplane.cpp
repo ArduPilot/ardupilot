@@ -1020,7 +1020,7 @@ void QuadPlane::run_z_controller(void)
     }
     if ((now - last_pidz_active_ms) > 20 || !pos_control->is_active_U()) {
         // set vertical speed and acceleration limits
-        pos_control->set_max_speed_accel_U_cm(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up*100, pilot_accel_z*100);
+        pos_control->set_max_speed_accel_U_cm(-get_pilot_velocity_z_max_dn() * 100, pilot_speed_z_max_up*100, pilot_accel_z*100);
 
         // initialise the vertical position controller
         if (!tailsitter.enabled()) {
@@ -1073,7 +1073,7 @@ void QuadPlane::hold_hover(float target_climb_rate_cms)
     set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up*100, pilot_accel_z*100);
+    pos_control->set_max_speed_accel_U_cm(-get_pilot_velocity_z_max_dn() * 100, pilot_speed_z_max_up*100, pilot_accel_z*100);
 
     // call attitude controller
     multicopter_attitude_rate_update(get_desired_yaw_rate_cds(false));
@@ -1295,7 +1295,7 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
         (!plane.control_mode->does_auto_throttle() || motors->limit.throttle_lower) &&
         plane.arming.get_rudder_arming_type() == AP_Arming::RudderArming::ARMDISARM &&
         rudder_in < 0 &&
-        fabsf(inertial_nav.get_velocity_z_up_cms()) < 0.5 * get_pilot_velocity_z_max_dn()) {
+        fabsf(inertial_nav.get_velocity_z_up_cms()) < (0.5 * get_pilot_velocity_z_max_dn()) * 100) {
         // the user may be trying to disarm, disable pilot yaw control
         return 0;
     }
@@ -1359,7 +1359,7 @@ float QuadPlane::get_pilot_desired_climb_rate_cms(void) const
     uint16_t dead_zone = plane.channel_throttle->get_dead_zone();
     uint16_t trim = (plane.channel_throttle->get_radio_max() + plane.channel_throttle->get_radio_min())/2;
     const float throttle_request = plane.channel_throttle->pwm_to_angle_dz_trim(dead_zone, trim) *0.01f;
-    return throttle_request * (throttle_request > 0.0f ? pilot_speed_z_max_up*100 : get_pilot_velocity_z_max_dn());
+    return throttle_request * (throttle_request > 0.0f ? pilot_speed_z_max_up : get_pilot_velocity_z_max_dn()) * 100;
 }
 
 
@@ -3073,8 +3073,8 @@ void QuadPlane::setup_target_position(void)
     poscontrol.target_cm.z = plane.next_WP_loc.alt - origin.alt;
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up*100, pilot_accel_z*100);
-    pos_control->set_correction_speed_accel_U_cmss(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up*100, pilot_accel_z*100);
+    pos_control->set_max_speed_accel_U_cm(-get_pilot_velocity_z_max_dn() * 100, pilot_speed_z_max_up*100, pilot_accel_z*100);
+    pos_control->set_correction_speed_accel_U_cmss(-get_pilot_velocity_z_max_dn() * 100, pilot_speed_z_max_up*100, pilot_accel_z*100);
 }
 
 /*
@@ -3324,8 +3324,8 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     throttle_wait = false;
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up*100, pilot_accel_z*100);
-    pos_control->set_correction_speed_accel_U_cmss(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up*100, pilot_accel_z*100);
+    pos_control->set_max_speed_accel_U_cm(-get_pilot_velocity_z_max_dn() * 100, pilot_speed_z_max_up*100, pilot_accel_z*100);
+    pos_control->set_correction_speed_accel_U_cmss(-get_pilot_velocity_z_max_dn() * 100, pilot_speed_z_max_up*100, pilot_accel_z*100);
 
     // initialise the vertical position controller
     pos_control->init_U_controller();
@@ -4241,9 +4241,9 @@ bool SLT_Transition::show_vtol_view() const
 uint16_t QuadPlane::get_pilot_velocity_z_max_dn() const
 {
     if (is_zero(pilot_speed_z_max_dn)) {
-        return abs(pilot_speed_z_max_up*100);
+        return abs(pilot_speed_z_max_up);
     }
-    return abs(pilot_speed_z_max_dn*100);
+    return abs(pilot_speed_z_max_dn);
 }
 
 /*
