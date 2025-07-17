@@ -78,6 +78,11 @@ public:
     // ignores trim and deadzone
     float       norm_input_ignore_trim() const;
 
+    // return a normalised input for a channel, in range -1 to 1 (in
+    // return parameter).  Ignores trim and deadzone.  Returns false
+    // if a current value is not available (eg. in RC failsafe)
+    bool       norm_input_ignore_trim(float &norm_in) const;
+
     // returns true if input is within deadzone of min
     bool        in_min_dz() const;
 
