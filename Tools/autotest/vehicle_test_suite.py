@@ -7053,19 +7053,14 @@ class TestSuite(ABC):
             raise NotAchievedException("AutoPilot has feature %s (when it shouldn't)" % (name,))
 
     def get_autopilot_capabilities(self):
-        # Cannot use run_cmd otherwise the respond is lost during the wait for ACK
-        self.mav.mav.command_long_send(self.sysid_thismav(),
-                                       1,
-                                       mavutil.mavlink.MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES,
-                                       0,  # confirmation
-                                       1,  # 1: Request autopilot version
-                                       0,
-                                       0,
-                                       0,
-                                       0,
-                                       0,
-                                       0)
-        m = self.assert_receive_message('AUTOPILOT_VERSION', timeout=10)
+        self.context_push()
+        self.context_collect('AUTOPILOT_VERSION')
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES,
+            p1=1,  # 1: Request autopilot version
+        )
+        m = self.assert_receive_message('AUTOPILOT_VERSION', timeout=10, check_context=True)
+        self.context_pop()
         return m.capabilities
 
     def decode_flight_sw_version(self, flight_sw_version: int):
@@ -9598,6 +9593,16 @@ Also, ignores heartbeats not from our target system'''
     def home_position_as_mav_location(self):
         m = self.poll_home_position()
         return mavutil.location(m.latitude*1.0e-7, m.longitude*1.0e-7, m.altitude*1.0e-3, 0)
+
+    def assert_home_position_at(self, lat, lng, alt):
+        '''assert home is at specified lat/lng/alt, deg/deg/metres'''
+        home = self.home_position_as_mav_location()
+        if home.lat != lat:
+            raise NotAchievedException("Bad lat")
+        if home.lng != lng:
+            raise NotAchievedException("Bad lng")
+        if home.alt != alt:
+            raise NotAchievedException("Bad alt")
 
     def offset_location_ne(self, location, metres_north, metres_east):
         '''return a new location offset from passed-in location'''
