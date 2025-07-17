@@ -380,6 +380,9 @@
 #ifndef AP_RELAY_ENABLED
 #define AP_RELAY_ENABLED AP_PERIPH_RELAY_ENABLED
 #endif
+#ifndef HAL_PROXIMITY_ENABLED
+#define HAL_PROXIMITY_ENABLED AP_PERIPH_PROXIMITY_ENABLED
+#endif
 
 /*
  * GPS Backends - we selectively turn backends on.
