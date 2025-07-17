@@ -522,6 +522,10 @@ void AP_Vehicle::setup()
     }
 #endif
 
+#if HAL_WITH_ESC_TELEM
+    esc_telem.init();
+#endif
+
     // invalidate count in case an enable parameter changed during
     // initialisation
     AP_Param::invalidate_count();

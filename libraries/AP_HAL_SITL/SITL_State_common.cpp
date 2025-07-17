@@ -209,6 +209,22 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         sitl_model->set_volz(&_sitl->volz_sim);
         return &_sitl->volz_sim;
 #endif  // AP_SIM_VOLZ_ENABLED
+    } else if (!strncmp(name, "hobbywing_platinum_pro_v3", strlen("hobbywing_platinum_pro_v3"))) {
+        const uint8_t x = atoi(arg);
+        return sitl_model->hwing_escs.create(x);
+#if AP_SIM_TMOTOR_DATALINK_ENABLED
+    } else if (!strncmp(name, "tmotordatalink", sizeof("tmotordatalink"))) {
+        if (tmotordatalink != nullptr) {
+            AP_HAL::panic("Only one TMotorDataLink at a time");
+        }
+        tmotordatalink = new SITL::TMotorDataLink();
+        if (tmotordatalink == nullptr) {
+            AP_HAL::panic("Failed to create TMotorDataLink");
+        }
+        tmotordatalink->set_motors(arg);
+        sitl_model->set_tmotordatalink(tmotordatalink);
+        return tmotordatalink;
+#endif  // AP_SIM_TMOTOR_DATALINK_ENABLED
     } else if (streq(name, "megasquirt")) {
         if (efi_ms != nullptr) {
             AP_HAL::panic("Only one megasquirt at a time");

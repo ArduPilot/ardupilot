@@ -14,6 +14,7 @@
 #include <SITL/SIM_ADSB_Sagetech_MXS.h>
 #include <SITL/SIM_EFI_Hirth.h>
 #include <SITL/SIM_Vicon.h>
+#include <SITL/SIM_TMotorDataLink.h>
 #include <SITL/SIM_VectorNav.h>
 #include <SITL/SIM_MicroStrain.h>
 #include <SITL/SIM_InertialLabs.h>
@@ -139,6 +140,11 @@ public:
 
 #if AP_SIM_PS_TERARANGERTOWER_ENABLED
     SITL::PS_TeraRangerTower *terarangertower;
+#endif
+
+#if AP_SIM_TMOTOR_DATALINK_ENABLED
+    // simulated TMotorDataLink
+    SITL::TMotorDataLink *tmotordatalink;
 #endif
 
 #if AP_SIM_CRSF_ENABLED
