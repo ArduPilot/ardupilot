@@ -56,6 +56,18 @@ repos:
       hooks:
       -   id: flake8
 
+  -   repo: https://github.com/pycqa/flake8
+      rev: 7.3.0
+      hooks:
+      -   id: flake8
+          additional_dependencies:
+          -   flake8-blind-except
+          -   flake8-bugbear
+          args:
+          -   --disable-noqa
+          -   --select=B006,B008,B901,B902
+          -   --statistics
+
 # # Use to sort python imports by name and put system import first.
 #   -   repo: https://github.com/pycqa/isort
 #       rev: 5.12.0
