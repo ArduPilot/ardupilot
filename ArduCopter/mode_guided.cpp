@@ -1154,7 +1154,7 @@ float ModeGuided::crosstrack_error() const
     case SubMode::Accel:
     case SubMode::VelAccel:
     case SubMode::PosVelAccel:
-        return pos_control->crosstrack_error();
+        return pos_control->crosstrack_error_m();
     case SubMode::Angle:
         // no track to have a crosstrack to
         return 0;
