@@ -5,11 +5,11 @@
 #include <AP_Math/AP_Math.h>
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
 
-// loiter maximum velocities and accelerations
-#define AC_CIRCLE_RADIUS_DEFAULT    1000.0f     // radius of the circle in cm that the vehicle will fly
-#define AC_CIRCLE_RATE_DEFAULT      20.0f       // turn rate in deg/sec.  Positive to turn clockwise, negative for counter clockwise
-#define AC_CIRCLE_ANGULAR_ACCEL_MIN 2.0f        // angular acceleration should never be less than 2deg/sec
-#define AC_CIRCLE_RADIUS_MAX_M      2000.0      // maximum allowed circle radius of 2km
+// Circle mode default and limit constants
+#define AC_CIRCLE_RADIUS_DEFAULT     1000.0f   // Default circle radius in cm (10 meters).
+#define AC_CIRCLE_RATE_DEFAULT       20.0f     // Default circle turn rate in degrees per second. Positive = clockwise, negative = counter-clockwise.
+#define AC_CIRCLE_ANGULAR_ACCEL_MIN  2.0f      // Minimum angular acceleration in deg/s² (used to avoid sluggish yaw transitions).
+#define AC_CIRCLE_RADIUS_MAX_M       2000.0    // Maximum allowed circle radius in meters (2000 m = 2 km).
 
 class AC_Circle
 {
@@ -145,33 +145,33 @@ private:
     AC_PosControl&              _pos_control;
 
     enum CircleOptions {
-        MANUAL_CONTROL           = 1U << 0,
-        FACE_DIRECTION_OF_TRAVEL = 1U << 1,
-        INIT_AT_CENTER           = 1U << 2, // true then the circle center will be the current location, false and the center will be 1 radius ahead
-        ROI_AT_CENTER            = 1U << 3, // true when the mount roi is at circle center
+        MANUAL_CONTROL           = 1U << 0, // Enables pilot stick input to adjust circle radius and turn rate.
+        FACE_DIRECTION_OF_TRAVEL = 1U << 1, // Yaw aligns with direction of travel (tangent to circle path).
+        INIT_AT_CENTER           = 1U << 2, // Initializes circle with center at current position (instead of radius ahead).
+        ROI_AT_CENTER            = 1U << 3, // Sets camera mount ROI to circle center during circle mode.
     };
 
     // parameters
-    AP_Float    _radius_parm_cm;    // radius of circle in cm loaded from params
-    AP_Float    _rate_parm_degs;    // rotation speed in deg/sec
-    AP_Int16    _options;           // stick control enable/disable
+    AP_Float _radius_parm_cm;     // Circle radius in centimeters, loaded from parameters.
+    AP_Float _rate_parm_degs;     // Circle rotation rate in degrees per second, loaded from parameters.
+    AP_Int16 _options;            // Bitmask of CircleOptions (e.g. manual control, ROI at center, etc.).
 
     // internal variables
-    Vector3p    _center_neu_m;              // center of circle in cm from home
-    float       _radius_m;                  // radius of circle in cm
-    float       _rotation_rate_max_rads;    // rotation speed of circle in rad/sec. +ve for cw turn
-    float       _yaw_rad;                   // yaw heading (normally towards circle center)
-    float       _angle_rad;                 // current angular position around circle in radians (0=directly north of the center of the circle)
-    float       _angle_total_rad;           // total angle traveled in radians
-    float       _angular_vel_rads;          // angular velocity in radians/sec
-    float       _angular_vel_max_rads;      // maximum velocity in radians/sec
-    float       _angular_accel_radss;       // angular acceleration in radians/sec/sec
-    uint32_t    _last_update_ms;            // system time of last update
-    float       _last_radius_param_cm;      // last value of radius param, used to update radius on param change
+    Vector3p _center_neu_m;              // Center of the circle in meters from EKF origin (NEU frame).
+    float    _radius_m;                  // Current circle radius in meters.
+    float    _rotation_rate_max_rads;    // Requested circle turn rate in rad/s (+ve = CW, -ve = CCW).
+    float    _yaw_rad;                   // Desired yaw heading in radians (typically toward circle center or tangent).
+    float    _angle_rad;                 // Current angular position around the circle in radians (0 = due north of center).
+    float    _angle_total_rad;          // Accumulated angle travelled in radians (used for full rotations).
+    float    _angular_vel_rads;         // Current angular velocity in rad/s.
+    float    _angular_vel_max_rads;     // Maximum allowed angular velocity in rad/s.
+    float    _angular_accel_radss;      // Angular acceleration limit in rad/s².
+    uint32_t _last_update_ms;           // Timestamp (in milliseconds) of the last update() call.
+    float    _last_radius_param_cm;     // Cached copy of radius parameter (cm) to detect parameter changes.
 
     // terrain following variables
-    bool        _is_terrain_alt;                // true if _center_neu_m.z is alt-above-terrain, false if alt-above-ekf-origin
-    bool        _rangefinder_available;         // true if range finder could be used
-    bool        _rangefinder_healthy;           // true if range finder is healthy
-    float       _rangefinder_terrain_offset_m;  // latest rangefinder based terrain offset (e.g. terrain's height above EKF origin)
+    bool  _is_terrain_alt;               // True if _center_neu_m.z is relative to terrain height; false if relative to EKF origin.
+    bool  _rangefinder_available;        // True if rangefinder is available and enabled.
+    bool  _rangefinder_healthy;          // True if rangefinder reading is within valid operating range.
+    float _rangefinder_terrain_offset_m; // Terrain height above EKF origin (meters), from rangefinder or terrain database.
 };
