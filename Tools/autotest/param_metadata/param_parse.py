@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''Generates parameter metadata files suitable for consumption by
   ground control stations and various web services

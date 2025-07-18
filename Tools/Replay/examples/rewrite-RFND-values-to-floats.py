@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
 '''In ArduPilot 4.7 the distance values were moved to float to
 facilitate supporting rangefinders with more than 327m of range.
 
