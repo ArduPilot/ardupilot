@@ -24,6 +24,12 @@
 #define HAL_ADSB_UCP_ENABLED HAL_ADSB_BACKEND_DEFAULT_ENABLED
 #endif
 
+#ifndef HAL_ADSB_UCP_SET_CONFIG
+    // NOTE: this feature is disabled by default because it is only meant to be used only by certified aircraft maintenance
+    // personnel and not by your typical pilot. If used incorrectly this may void the TSO certification of the hardware
+    #define HAL_ADSB_UCP_SET_CONFIG 0
+#endif
+
 #ifndef HAL_ADSB_SAGETECH_MXS_ENABLED
     // this feature is only enabled by default by select hardware
     #define HAL_ADSB_SAGETECH_MXS_ENABLED HAL_ADSB_BACKEND_DEFAULT_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL
