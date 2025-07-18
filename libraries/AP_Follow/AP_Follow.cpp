@@ -954,6 +954,7 @@ bool AP_Follow::have_target(void) const
     }
 
     // check for timeout
+    // if ((_last_location_update_ms == 0) || (((AP_HAL::millis() - _last_location_update_ms) * 0.001f) > _timeout)) {
     if ((_last_location_update_ms == 0) || (((AP_HAL::millis() - _last_location_update_ms) * 0.001f) > _timeout)) {
         return false;
     }
