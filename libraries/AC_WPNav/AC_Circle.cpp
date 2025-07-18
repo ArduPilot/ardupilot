@@ -76,7 +76,7 @@ void AC_Circle::init()
 {
     // initialize radius and rate from params
     _radius_cm = _radius_parm_cm;
-    _last_radius_param = _radius_parm_cm;
+    _last_radius_param_cm = _radius_parm_cm;
     _rate_degs = _rate_parm_degs;
 
     // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
@@ -84,10 +84,10 @@ void AC_Circle::init()
     _pos_control.init_U_controller_stopping_point();
 
     // get stopping point
-    const Vector3p& stopping_point = _pos_control.get_pos_desired_NEU_cm();
+    const Vector3p& stopping_point_neu_cm = _pos_control.get_pos_desired_NEU_cm();
 
     // set circle center to circle_radius ahead of stopping point
-    _center_neu_cm = stopping_point;
+    _center_neu_cm = stopping_point_neu_cm;
     if ((_options.get() & CircleOptions::INIT_AT_CENTER) == 0) {
         _center_neu_cm.x += _radius_cm * _ahrs.cos_yaw();
         _center_neu_cm.y += _radius_cm * _ahrs.sin_yaw();
@@ -168,35 +168,35 @@ bool AC_Circle::update_cms(float climb_rate_cms)
     }
 
     // update the target angle and total angle travelled
-    float angle_change = _angular_vel_rads * dt;
-    _angle_rad += angle_change;
+    float angle_change_rad = _angular_vel_rads * dt;
+    _angle_rad += angle_change_rad;
     _angle_rad = wrap_PI(_angle_rad);
-    _angle_total_rad += angle_change;
+    _angle_total_rad += angle_change_rad;
 
     // calculate terrain adjustments
-    float terr_offset = 0.0f;
-    if (_is_terrain_alt && !get_terrain_offset_cm(terr_offset)) {
+    float terr_offset_cm = 0.0f;
+    if (_is_terrain_alt && !get_terrain_offset_cm(terr_offset_cm)) {
         return false;
     }
 
     // calculate z-axis target
     float target_z_cm;
     if (_is_terrain_alt) {
-        target_z_cm = _center_neu_cm.z + terr_offset;
+        target_z_cm = _center_neu_cm.z + terr_offset_cm;
     } else {
         target_z_cm = _pos_control.get_pos_desired_U_cm();
     }
 
     // if the circle_radius is zero we are doing panorama so no need to update loiter target
-    Vector3p target {
+    Vector3p target_neu_cm {
         _center_neu_cm.x,
         _center_neu_cm.y,
         target_z_cm
     };
     if (!is_zero(_radius_cm)) {
         // calculate target position
-        target.x += _radius_cm * cosf(-_angle_rad);
-        target.y += - _radius_cm * sinf(-_angle_rad);
+        target_neu_cm.x += _radius_cm * cosf(-_angle_rad);
+        target_neu_cm.y += - _radius_cm * sinf(-_angle_rad);
 
         // heading is from vehicle to center of circle
         _yaw_cd = get_bearing_cd(_pos_control.get_pos_desired_NEU_cm().xy().tofloat(), _center_neu_cm.xy().tofloat());
@@ -212,12 +212,12 @@ bool AC_Circle::update_cms(float climb_rate_cms)
     }
 
     // update position controller target
-    Vector2f zero;
-    _pos_control.input_pos_vel_accel_NE_cm(target.xy(), zero, zero);
+    Vector2f zero_ne;
+    _pos_control.input_pos_vel_accel_NE_cm(target_neu_cm.xy(), zero_ne, zero_ne);
     if (_is_terrain_alt) {
-        float zero2 = 0;
-        float target_zf = target.z;
-        _pos_control.input_pos_vel_accel_U_cm(target_zf, zero2, 0);
+        float zero_u = 0;
+        float target_u_cm = target_neu_cm.z;
+        _pos_control.input_pos_vel_accel_U_cm(target_u_cm, zero_u, 0);
     } else {
         _pos_control.set_pos_target_U_from_climb_rate_cm(climb_rate_cms);
     }
@@ -233,38 +233,38 @@ bool AC_Circle::update_cms(float climb_rate_cms)
 
 // get_closest_point_on_circle_NEU_cm - returns closest point on the circle
 //      circle's center should already have been set
-//      closest point on the circle will be placed in result_NEU_cm, dist_cm will be updated with the 3D distance to the center
-//      result_NEU_cm's altitude (i.e. z) will be set to the circle_center's altitude
+//      closest point on the circle will be placed in result_neu_cm, dist_cm will be updated with the 3D distance to the center
+//      result_neu_cm's altitude (i.e. z) will be set to the circle_center's altitude
 //      if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
-void AC_Circle::get_closest_point_on_circle_NEU_cm(Vector3f& result_NEU_cm, float& dist_cm) const
+void AC_Circle::get_closest_point_on_circle_NEU_cm(Vector3f& result_neu_cm, float& dist_cm) const
 {
     // get current position
-    Vector3p stopping_point;
-    _pos_control.get_stopping_point_NE_cm(stopping_point.xy());
-    _pos_control.get_stopping_point_U_cm(stopping_point.z);
+    Vector3p stopping_point_neu_cm;
+    _pos_control.get_stopping_point_NE_cm(stopping_point_neu_cm.xy());
+    _pos_control.get_stopping_point_U_cm(stopping_point_neu_cm.z);
 
     // calc vector from stopping point to circle center
-    Vector3f vec = (stopping_point - _center_neu_cm).tofloat();
-    dist_cm = vec.length();
+    Vector3f vec_to_center_neu_cm = (stopping_point_neu_cm - _center_neu_cm).tofloat();
+    dist_cm = vec_to_center_neu_cm.length();
 
     // return center if radius is zero
     if (!is_positive(_radius_cm)) {
-        result_NEU_cm = _center_neu_cm.tofloat();
+        result_neu_cm = _center_neu_cm.tofloat();
         return;
     }
 
     // if current location is exactly at the center of the circle return edge directly behind vehicle
     if (is_zero(dist_cm)) {
-        result_NEU_cm.x = _center_neu_cm.x - _radius_cm * _ahrs.cos_yaw();
-        result_NEU_cm.y = _center_neu_cm.y - _radius_cm * _ahrs.sin_yaw();
-        result_NEU_cm.z = _center_neu_cm.z;
+        result_neu_cm.x = _center_neu_cm.x - _radius_cm * _ahrs.cos_yaw();
+        result_neu_cm.y = _center_neu_cm.y - _radius_cm * _ahrs.sin_yaw();
+        result_neu_cm.z = _center_neu_cm.z;
         return;
     }
 
     // calculate closest point on edge of circle
-    result_NEU_cm.x = _center_neu_cm.x + vec.x / dist_cm * _radius_cm;
-    result_NEU_cm.y = _center_neu_cm.y + vec.y / dist_cm * _radius_cm;
-    result_NEU_cm.z = _center_neu_cm.z;
+    result_neu_cm.x = _center_neu_cm.x + vec_to_center_neu_cm.x / dist_cm * _radius_cm;
+    result_neu_cm.y = _center_neu_cm.y + vec_to_center_neu_cm.y / dist_cm * _radius_cm;
+    result_neu_cm.z = _center_neu_cm.z;
 }
 
 // calc_velocities - calculate angular velocity max and acceleration based on radius and rate
@@ -313,13 +313,13 @@ void AC_Circle::init_start_angle(bool use_heading)
         _angle_rad = wrap_PI(_ahrs.yaw-M_PI);
     } else {
         // if we are exactly at the center of the circle, init angle to directly behind vehicle (so vehicle will backup but not change heading)
-        // curr_pos_desired is the position before we add offsets and terrain
-        const Vector3f &curr_pos_desired= _pos_control.get_pos_desired_NEU_cm().tofloat();
-        if (is_equal(curr_pos_desired.x,float(_center_neu_cm.x)) && is_equal(curr_pos_desired.y,float(_center_neu_cm.y))) {
+        // curr_pos_desired_neu_cm is the position before we add offsets and terrain
+        const Vector3f &curr_pos_desired_neu_cm = _pos_control.get_pos_desired_NEU_cm().tofloat();
+        if (is_equal(curr_pos_desired_neu_cm.x, float(_center_neu_cm.x)) && is_equal(curr_pos_desired_neu_cm.y, float(_center_neu_cm.y))) {
             _angle_rad = wrap_PI(_ahrs.yaw-M_PI);
         } else {
             // get bearing from circle center to vehicle in radians
-            float bearing_rad = atan2f(curr_pos_desired.y-_center_neu_cm.y, curr_pos_desired.x-_center_neu_cm.x);
+            float bearing_rad = atan2f(curr_pos_desired_neu_cm.y - _center_neu_cm.y, curr_pos_desired_neu_cm.x - _center_neu_cm.x);
             _angle_rad = wrap_PI(bearing_rad);
         }
     }
@@ -375,8 +375,8 @@ bool AC_Circle::get_terrain_offset_cm(float& offset_cm)
 
 void AC_Circle::check_param_change()
 {
-    if (!is_equal(_last_radius_param,_radius_parm_cm.get())) {
+    if (!is_equal(_last_radius_param_cm,_radius_parm_cm.get())) {
         _radius_cm = _radius_parm_cm;
-        _last_radius_param = _radius_parm_cm;
+        _last_radius_param_cm = _radius_parm_cm;
     }
 }
