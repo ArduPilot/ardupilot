@@ -1,5 +1,5 @@
 """
-Ensure that "python3 -m pip install " is used consistantly in GitHub Actions.
+Ensure that "python3 -m pip install " is used consistently in GitHub Actions.
 
 Find all .yml files in the .github/workflows directory and find all lines that contain
 " pip install " and ensure that they also contain "python3 -m pip install ".
