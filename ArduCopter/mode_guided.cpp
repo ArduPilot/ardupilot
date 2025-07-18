@@ -1144,11 +1144,11 @@ float ModeGuided::wp_bearing_deg() const
     return 0.0;
 }
 
-float ModeGuided::crosstrack_error() const
+float ModeGuided::crosstrack_error_m() const
 {
     switch (guided_mode) {
     case SubMode::WP:
-        return wp_nav->crosstrack_error();
+        return wp_nav->crosstrack_error_m();
     case SubMode::Pos:
     case SubMode::TakeOff:
     case SubMode::Accel:
