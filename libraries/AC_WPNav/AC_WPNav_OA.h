@@ -45,10 +45,10 @@ protected:
 
     // oa path planning variables
     AP_OAPathPlanner::OA_RetState _oa_state;    // state of object avoidance, if OA_SUCCESS we use _oa_destination to avoid obstacles
-    Vector3f    _origin_oabak_neu_cm;          // backup of _origin_neu_cm so it can be restored when oa completes
-    Vector3f    _destination_oabak_neu_cm;     // backup of _destination_neu_cm so it can be restored when oa completes
-    Vector3f    _next_destination_oabak_neu_cm;// backup of _next_destination_neu_cm so it can be restored when oa completes
-    bool        _is_terrain_alt_oabak;     // true if backup origin and destination z-axis are terrain altitudes
+    Vector3f    _origin_oabak_neu_cm;           // backup of _origin_neu_m so it can be restored when oa completes
+    Vector3f    _destination_oabak_neu_cm;      // backup of _destination_neu_m so it can be restored when oa completes
+    Vector3f    _next_destination_oabak_neu_cm; // backup of _next_destination_neu_m so it can be restored when oa completes
+    bool        _is_terrain_alt_oabak;  // true if backup origin and destination z-axis are terrain altitudes
     Location    _oa_destination;        // intermediate destination during avoidance
     Location    _oa_next_destination;   // intermediate next destination during avoidance
 };
