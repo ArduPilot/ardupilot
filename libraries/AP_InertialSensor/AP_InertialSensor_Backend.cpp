@@ -16,6 +16,12 @@
 #define AP_HEATER_IMU_INSTANCE 0
 #endif
 
+#if HAL_HAVE_IMU_HEATER2
+#ifndef AP_HEATER2_IMU_INSTANCE
+#error "AP_HEATER2_IMU_INSTANCE must be defined when HAL_HAVE_IMU_HEATER2 is enabled"
+#endif
+#endif
+
 #define PRIMARY_UPDATE_TIMEOUT_US 200000UL    // continue to notify the primary at 5Hz
 
 const extern AP_HAL::HAL& hal;
@@ -768,10 +774,18 @@ void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float tem
 
 #if HAL_HAVE_IMU_HEATER
     /* give the temperature to the control loop in order to keep it constant*/
-    if (instance == AP_HEATER_IMU_INSTANCE) {
+    if ((instance == AP_HEATER_IMU_INSTANCE)
+#if HAL_HAVE_IMU_HEATER2
+        || (instance == AP_HEATER2_IMU_INSTANCE)
+#endif
+    ) {
         AP_BoardConfig *bc = AP::boardConfig();
         if (bc) {
-            bc->set_imu_temp(temperature);
+#if HAL_HAVE_IMU_HEATER2
+            bc->set_imu_temp(temperature, ((instance == AP_HEATER_IMU_INSTANCE) ? 0 : 1));
+#else
+            bc->set_imu_temp(temperature, 0);
+#endif
         }
     }
 #endif

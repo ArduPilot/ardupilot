@@ -31,81 +31,32 @@ extern const AP_HAL::HAL& hal;
 #define HAL_HEATER_GPIO_ON 1
 #endif
 
-void AP_BoardConfig::set_imu_temp(float current)
+#if HAL_HAVE_IMU_HEATER2
+#ifndef HAL_HEATER2_GPIO_ON
+#define HAL_HEATER2_GPIO_ON 1
+#endif
+#endif
+
+void AP_BoardConfig::set_imu_temp(float current, uint8_t heater_instance)
 {
-    int8_t target = heater.imu_target_temperature.get();
-    // pass to HAL for Linux
-    hal.util->set_imu_target_temp((int8_t *)&heater.imu_target_temperature);
-    hal.util->set_imu_temp(current);
+    int8_t target;
+    if (heater_instance == 0) {
+        target = heater.imu_target_temperature.get();
 
-    if (target == -1) {
-        // nothing to do, make sure heater is left off
-#if defined(HAL_HEATER_GPIO_PIN)
-        hal.gpio->write(HAL_HEATER_GPIO_PIN, !HAL_HEATER_GPIO_ON);
-#endif
-#if defined(HAL_HEATER2_GPIO_PIN)
-        hal.gpio->write(HAL_HEATER2_GPIO_PIN, !HAL_HEATER_GPIO_ON);
-#endif
+        // pass to HAL for Linux
+        hal.util->set_imu_target_temp((int8_t *)&heater.imu_target_temperature);
+        hal.util->set_imu_temp(current);
+
+        heater_update_and_log(heater, current, target);
+    }
+#if HAL_HAVE_IMU_HEATER2
+    else if (heater_instance == 1) {
+        target = heater2.imu_target_temperature.get();
+
+        heater_update_and_log(heater2, current, target);
         return;
     }
-
-
-    // limit to 65 degrees to prevent damage
-    target = constrain_int16(target, -1, 65);
-    
-    // average over temperatures to remove noise
-    heater.count++;
-    heater.sum += current;
-
-    // update at 10Hz
-    uint32_t now = AP_HAL::millis();
-    if (now - heater.last_update_ms < 100) {
-#if defined(HAL_HEATER_GPIO_PIN)
-        // output as duty cycle to local pin. Use a random sequence to
-        // prevent a periodic change to magnetic field
-        bool heater_on = (get_random16() < uint32_t(heater.output) * 0xFFFFU / 100U);
-        hal.gpio->write(HAL_HEATER_GPIO_PIN, heater_on?HAL_HEATER_GPIO_ON : !HAL_HEATER_GPIO_ON);
-#if defined(HAL_HEATER2_GPIO_PIN)
-        hal.gpio->write(HAL_HEATER2_GPIO_PIN, heater_on?HAL_HEATER_GPIO_ON : !HAL_HEATER_GPIO_ON);
 #endif
-#endif
-        return;
-    }
-    float dt = (now - heater.last_update_ms) * 0.001;
-    dt = constrain_float(dt, 0, 0.5);
-
-    heater.last_update_ms = now;
-
-    heater.temperature = heater.sum / heater.count;
-    heater.sum = 0;
-    heater.count = 0;
-
-    if (target < 0) {
-        heater.output = 0;
-    } else {
-        heater.output = heater.pi_controller.update(heater.temperature, target, dt);
-        heater.output = constrain_float(heater.output, 0, 100);
-    }
-
-#if HAL_LOGGING_ENABLED
-    if (now - heater.last_log_ms >= 1000) {
-// @LoggerMessage: HEAT
-// @Description: IMU Heater data
-// @Field: TimeUS: Time since system startup
-// @Field: Temp: Current IMU temperature
-// @Field: Targ: Target IMU temperature
-// @Field: P: Proportional portion of response
-// @Field: I: Integral portion of response
-// @Field: Out: Controller output to heating element
-        AP::logger().WriteStreaming("HEAT", "TimeUS,Temp,Targ,P,I,Out", "Qfbfff",
-                           AP_HAL::micros64(),
-                           heater.temperature, target,
-                           heater.pi_controller.get_P(),
-                           heater.pi_controller.get_I(),
-                           heater.output);
-        heater.last_log_ms = now;
-    }
-#endif // HAL_LOGGING_ENABLED
 
 #if 0
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Heater: Out=%.1f Temp=%.1f",
@@ -124,6 +75,106 @@ void AP_BoardConfig::set_imu_temp(float current)
 #endif
 }
 
+/**
+ * @param instance IMU heater instance
+ * @param current IMU temperature in degrees Celsius
+ * @param target IMU heater target temperature in degrees Celsius
+ */
+void AP_BoardConfig::heater_update_and_log(struct imu_heater &instance, float current, int8_t target)
+{
+    if (target == -1) {
+        // nothing to do, make sure heater is left off
+        if (&instance == &heater) {
+#if defined(HAL_HEATER_GPIO_PIN)
+            hal.gpio->write(HAL_HEATER_GPIO_PIN, !HAL_HEATER_GPIO_ON);
+#endif
+#if defined(HAL_HEATER_GPIO_PIN2)
+            hal.gpio->write(HAL_HEATER_GPIO_PIN2, !HAL_HEATER_GPIO_ON);
+#endif
+        }
+#if HAL_HAVE_IMU_HEATER2
+        else if (&instance == &heater2) {
+#if defined(HAL_HEATER2_GPIO_PIN)
+            hal.gpio->write(HAL_HEATER2_GPIO_PIN, !HAL_HEATER2_GPIO_ON);
+#endif
+        }
+#endif // HAL_HAVE_IMU_HEATER2
+        return;
+    }
+
+    // limit to 65 degrees to prevent damage
+    target = constrain_int16(target, -1, 65);
+    
+    // average over temperatures to remove noise
+    instance.count++;
+    instance.sum += current;
+
+    // update at 10Hz
+    uint32_t now = AP_HAL::millis();
+    if (now - instance.last_update_ms < 100) {
+        // output as duty cycle to local pin. Use a random sequence to
+        // prevent a periodic change to magnetic field
+        if (&instance == &heater) {
+#if defined(HAL_HEATER_GPIO_PIN)
+            bool heater_on = (get_random16() < uint32_t(instance.output) * 0xFFFFU / 100U);
+            hal.gpio->write(HAL_HEATER_GPIO_PIN, heater_on?HAL_HEATER_GPIO_ON : !HAL_HEATER_GPIO_ON);
+#if defined(HAL_HEATER_GPIO_PIN2)
+            hal.gpio->write(HAL_HEATER_GPIO_PIN2, heater_on?HAL_HEATER_GPIO_ON : !HAL_HEATER_GPIO_ON);
+#endif
+#endif
+        }
+#if HAL_HAVE_IMU_HEATER2
+        else if (&instance == &heater2) {
+#if defined(HAL_HEATER2_GPIO_PIN)
+            bool heater_on = (get_random16() < uint32_t(instance.output) * 0xFFFFU / 100U);
+            hal.gpio->write(HAL_HEATER2_GPIO_PIN, heater_on?HAL_HEATER2_GPIO_ON : !HAL_HEATER2_GPIO_ON);
+#endif
+        }
+#endif // HAL_HAVE_IMU_HEATER2
+        return;
+    }
+    float dt = (now - instance.last_update_ms) * 0.001;
+    dt = constrain_float(dt, 0, 0.5);
+
+    instance.last_update_ms = now;
+
+    instance.temperature = instance.sum / instance.count;
+    instance.sum = 0;
+    instance.count = 0;
+
+    if (target < 0) {
+        instance.output = 0;
+    } else {
+        instance.output = instance.pi_controller.update(instance.temperature, target, dt);
+        instance.output = constrain_float(instance.output, 0, 100);
+    }
+
+#if HAL_LOGGING_ENABLED
+    if (now - instance.last_log_ms >= 1000) {
+// @LoggerMessage: HEAT
+// @Description: IMU Heater data
+// @Field: TimeUS: Time since system startup
+// @Field: Id: IMU Heater instance number
+// @Field: Temp: Current IMU temperature
+// @Field: Targ: Target IMU temperature
+// @Field: P: Proportional portion of response
+// @Field: I: Integral portion of response
+// @Field: Out: Controller output to heating element
+        AP::logger().WriteStreaming("HEAT",
+                           "TimeUS,Id,Temp,Targ,P,I,Out",
+                           "s#OO--%",
+                           "F-00---",
+                           "QBfbfff",
+                           AP_HAL::micros64(), ((&instance == &heater) ? 0 : 1),
+                           instance.temperature, target,
+                           instance.pi_controller.get_P(),
+                           instance.pi_controller.get_I(),
+                           instance.output);
+        instance.last_log_ms = now;
+    }
+#endif // HAL_LOGGING_ENABLED
+}
+
 // getter for current temperature, return false if heater disabled
 bool AP_BoardConfig::get_board_heater_temperature(float &temperature) const
 {
@@ -137,10 +188,10 @@ bool AP_BoardConfig::get_board_heater_temperature(float &temperature) const
 // getter for min arming temperature, return false if heater disabled or min check disabled
 bool AP_BoardConfig::get_board_heater_arming_temperature(int8_t &temperature) const
 {
-    if ((heater.imu_target_temperature == -1) || (heater.imu_arming_temperature_margin_low == 0)) {
+    if ((heater.imu_target_temperature == -1) || (imu_arming_temperature_margin_low == 0)) {
         return false; // heater or temperature check disabled
     }
-    temperature = heater.imu_target_temperature - heater.imu_arming_temperature_margin_low;
+    temperature = heater.imu_target_temperature - imu_arming_temperature_margin_low;
     return true;
 }
 
