@@ -75,7 +75,7 @@ void AP_InertialSensor_NONE::generate_accel()
         float zAccel = 0.01;
 
         // minimum noise levels are 2 bits, but averaged over many
-        // samples, giving around 0.01 m/s/s
+        // samples, giving around 0.01 m/s²
         float accel_noise = 0.01f;
         float noise_variation = 0.05f;
         // this smears the individual motor peaks somewhat emulating physical motors
@@ -87,8 +87,8 @@ void AP_InertialSensor_NONE::generate_accel()
 
         bool motors_on = 1; 
 
-        // on a real 180mm copter gyro noise varies between 0.8-4 m/s/s for throttle 0.2-0.8
-        // giving a accel noise variation of 5.33 m/s/s over the full throttle range
+        // on a real 180mm copter gyro noise varies between 0.8-4 m/s² for throttle 0.2-0.8
+        // giving a accel noise variation of 5.33 m/s² over the full throttle range
         if (motors_on) {
             // add extra noise when the motors are on
             accel_noise = 0;

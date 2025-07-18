@@ -100,7 +100,7 @@ void Blimp::calculate_forces(const struct sitl_input &input, Vector3f &body_acc,
     F_BF.z = F_BF.z + fin[i].Fz;
   }
 
-  body_acc.x = F_BF.x/mass; //mass in kg, thus accel in m/s/s
+  body_acc.x = F_BF.x/mass; //mass in kg, thus accel in m/s²
   body_acc.y = F_BF.y/mass;
   body_acc.z = F_BF.z/mass;
 

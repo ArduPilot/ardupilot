@@ -106,8 +106,8 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: TKOFF_THR_MINACC
     // @DisplayName: Takeoff throttle min acceleration
-    // @Description: Minimum forward acceleration in m/s/s before arming the ground speed check in auto-takeoff. This is meant to be used for hand launches. Setting this value to 0 disables the acceleration test which means the ground speed check will always be armed which could allow GPS velocity jumps to start the engine. For hand launches and bungee launches this should be set to around 15. Also see TKOFF_ACCEL_CNT parameter for control of full "shake to arm".
-    // @Units: m/s/s
+    // @Description: Minimum forward acceleration in m/s² before arming the ground speed check in auto-takeoff. This is meant to be used for hand launches. Setting this value to 0 disables the acceleration test which means the ground speed check will always be armed which could allow GPS velocity jumps to start the engine. For hand launches and bungee launches this should be set to around 15. Also see TKOFF_ACCEL_CNT parameter for control of full "shake to arm".
+    // @Units: m/s²
     // @Range: 0 30
     // @Increment: 0.1
     // @User: Standard
@@ -735,7 +735,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: CRASH_ACC_THRESH
     // @DisplayName: Crash Deceleration Threshold
     // @Description: X-Axis deceleration threshold to notify the crash detector that there was a possible impact which helps disarm the motor quickly after a crash. This value should be much higher than normal negative x-axis forces during normal flight, check flight log files to determine the average IMU.x values for your aircraft and motor type. Higher value means less sensitive (triggers on higher impact). For electric planes that don't vibrate much during fight a value of 25 is good (that's about 2.5G). For petrol/nitro planes you'll want a higher value. Set to 0 to disable the collision detector.
-    // @Units: m/s/s
+    // @Units: m/s²
     // @Range: 10 127
     // @Increment: 1
     // @User: Advanced

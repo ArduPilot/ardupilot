@@ -154,7 +154,7 @@ private:
     static constexpr float _ki = 0.0087f;
     static constexpr float _ki_yaw = 0.01f;
 
-    // accelerometer values in the earth frame in m/s/s
+    // accelerometer values in the earth frame in m/s²
     Vector3f        _accel_ef;
 
     // Methods

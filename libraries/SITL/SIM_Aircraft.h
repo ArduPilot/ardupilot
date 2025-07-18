@@ -211,7 +211,7 @@ protected:
     Vector3d position;                   // meters, NED from origin
     float mass;                          // kg
     float external_payload_mass;         // kg
-    Vector3f accel_body{0.0f, 0.0f, -GRAVITY_MSS}; // m/s/s NED, body frame
+    Vector3f accel_body{0.0f, 0.0f, -GRAVITY_MSS}; // m/s² NED, body frame
     float airspeed;                      // m/s, EAS airspeed
     float airspeed_pitot;                // m/s, EAS airspeed, as seen by fwd pitot tube
     float battery_voltage;

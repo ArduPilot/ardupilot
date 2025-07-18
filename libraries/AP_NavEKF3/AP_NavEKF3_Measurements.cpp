@@ -1341,13 +1341,13 @@ void NavEKF3_core::learnInactiveBiases(void)
             Vector3F error = filtered_accel_active - filtered_accel_inactive;
 
             // prevent a single large error from contaminating bias estimate
-            const ftype bias_limit = 1.0; // m/s/s
+            const ftype bias_limit = 1.0; // m/s²
             error.x = constrain_ftype(error.x, -bias_limit, bias_limit);
             error.y = constrain_ftype(error.y, -bias_limit, bias_limit);
             error.z = constrain_ftype(error.z, -bias_limit, bias_limit);
 
             // slowly bring the inactive accel in line with the active
-            // accel. This corrects a 0.5 m/s/s accel bias error in
+            // accel. This corrects a 0.5 m/s² accel bias error in
             // around 1 minute
             inactiveBias[i].accel_bias -= error * (1.0e-4f * dtEkfAvg);
         }

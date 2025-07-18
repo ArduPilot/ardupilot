@@ -79,7 +79,7 @@ void SingleCopter::update(const struct sitl_input &input)
     }
     }        
     
-    // rotational acceleration, in rad/s/s, in body frame
+    // rotational acceleration, in rad/s², in body frame
     Vector3f rot_accel(roll_thrust * roll_rate_max,
                        pitch_thrust * pitch_rate_max,
                        yaw_thrust * yaw_rate_max);

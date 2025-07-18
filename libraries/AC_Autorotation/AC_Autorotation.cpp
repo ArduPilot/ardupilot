@@ -64,8 +64,8 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
 
     // @Param: XY_ACC_MAX
     // @DisplayName: Body Frame XY Acceleration Limit
-    // @Description: Maximum body frame acceleration allowed in the in speed controller. This limit defines a circular constraint in accel. Minimum used is 0.5 m/s/s.
-    // @Units: m/s/s
+    // @Description: Maximum body frame acceleration allowed in the in speed controller. This limit defines a circular constraint in accel. Minimum used is 0.5 m/s².
+    // @Units: m/s²
     // @Range: 0.5 8.0
     // @Increment: 0.1
     // @User: Standard
@@ -315,7 +315,7 @@ void AC_Autorotation::update_forward_speed_controller(float pilot_accel_norm)
     _target_vel_ms = constrain_float(_desired_vel_ms, min_vel_ms, max_vel_ms); // (m/s)
 
     // Calculate acceleration target
-    const float fwd_accel_target_mss  = _fwd_speed_pid.update_all(_target_vel_ms, get_speed_forward_ms(), _dt, _limit_accel); // (m/s/s)
+    const float fwd_accel_target_mss  = _fwd_speed_pid.update_all(_target_vel_ms, get_speed_forward_ms(), _dt, _limit_accel); // (m/s²)
 
     // Build the body frame XY accel vector.
     // Pilot can request as much as 1/2 of the max accel laterally to perform a turn.

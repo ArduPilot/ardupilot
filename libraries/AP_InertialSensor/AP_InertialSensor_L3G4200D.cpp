@@ -82,7 +82,7 @@ const extern AP_HAL::HAL& hal;
 
 
 // ADXL345 accelerometer scaling
-// Result will be scaled to 1m/s/s
+// Result will be scaled to 1m/s²
 // ADXL345 in Full resolution mode (any g scaling) is 256 counts/g, so scale by 9.81/256 = 0.038320312
 #define ADXL345_ACCELEROMETER_SCALE_M_S    (GRAVITY_MSS / 256.0f)
 
@@ -339,7 +339,7 @@ void AP_InertialSensor_L3G4200D::_accumulate_accel (void)
                                            (uint8_t *)buffer[i], sizeof(buffer[0])))
             {
                 Vector3f accel = Vector3f(buffer[i][0], -buffer[i][1], -buffer[i][2]);
-                // Adjust for chip scaling to get m/s/s
+                // Adjust for chip scaling to get m/s²
                 accel *= ADXL345_ACCELEROMETER_SCALE_M_S;
                 _rotate_and_correct_accel(accel_instance, accel);
                 _notify_new_accel_raw_sample(accel_instance, accel);

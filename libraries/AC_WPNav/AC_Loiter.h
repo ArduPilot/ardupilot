@@ -84,9 +84,9 @@ protected:
     // parameters
     AP_Float    _angle_max_deg;         // maximum pilot commanded angle in degrees. Set to zero for 2/3 Angle Max
     AP_Float    _speed_max_ne_cms;      // maximum horizontal speed in cm/s while in loiter
-    AP_Float    _accel_max_ne_cmss;     // loiter's max acceleration in cm/s/s
-    AP_Float    _brake_accel_max_cmss;  // loiter's maximum acceleration during braking in cm/s/s
-    AP_Float    _brake_jerk_max_cmsss;  // loiter's maximum jerk during braking in cm/s/s
+    AP_Float    _accel_max_ne_cmss;     // loiter's max acceleration in cm/s²
+    AP_Float    _brake_accel_max_cmss;  // loiter's maximum acceleration during braking in cm/s²
+    AP_Float    _brake_jerk_max_cmsss;  // loiter's maximum jerk during braking in cm/s²
     AP_Float    _brake_delay_s;         // delay (in seconds) before loiter braking begins after sticks are released
 
     // loiter controller internal variables

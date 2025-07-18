@@ -81,26 +81,26 @@ known_units = {
              'km'      : 'kilometers'                , # metre is the SI unit name, meter is the american spelling of it
              'm'       : 'meters'                    , # metre is the SI unit name, meter is the american spelling of it
              'm/s'     : 'meters per second'         , # metre is the SI unit name, meter is the american spelling of it
-             'm/s/s'   : 'meters per square second'  , # metre is the SI unit name, meter is the american spelling of it
-             'm/s/s/s' : 'meters per cubic second'   , # metre is the SI unit name, meter is the american spelling of it
+             'm/s²'    : 'meters per square second'  , # metre is the SI unit name, meter is the american spelling of it
+             'm/s³'    : 'meters per cubic second'   , # metre is the SI unit name, meter is the american spelling of it
              'cm'      : 'centimeters'               , # metre is the SI unit name, meter is the american spelling of it
              'cm/s'    : 'centimeters per second'    , # metre is the SI unit name, meter is the american spelling of it
-             'cm/s/s'  : 'centimeters per square second', # metre is the SI unit name, meter is the american spelling of it
-             'cm/s/s/s': 'centimeters per cubic second' , # metre is the SI unit name, meter is the american spelling of it
+             'cm/s²'   : 'centimeters per square second', # metre is the SI unit name, meter is the american spelling of it
+             'cm/s³'   : 'centimeters per cubic second' , # metre is the SI unit name, meter is the american spelling of it
              'mm'      : 'millimeters'               , # metre is the SI unit name, meter is the american spelling of it
 # temperature
              'degC'    : 'degrees Celsius'       ,     # Not SI, but Kelvin is too cumbersome for most users
 # angle
              'deg'     : 'degrees'               ,     # Not SI, but is some situations more user-friendly than radians
              'deg/s'   : 'degrees per second'    ,     # Not SI, but is some situations more user-friendly than radians
-             'deg/s/s' : 'degrees per square second',  # Not SI, but is some situations more user-friendly than radians
-             'deg/s/s/s' : 'degrees per cube second',  # Not SI, but is some situations more user-friendly than radians
+             'deg/s²'  : 'degrees per square second',  # Not SI, but is some situations more user-friendly than radians
+             'deg/s³'  : 'degrees per cube second',  # Not SI, but is some situations more user-friendly than radians
              'cdeg'    : 'centidegrees'          ,     # Not SI, but is some situations more user-friendly than radians
              'cdeg/s'  : 'centidegrees per second',    # Not SI, but is some situations more user-friendly than radians
-             'cdeg/s/s': 'centidegrees per square second' , # Not SI, but is some situations more user-friendly than radians
+             'cdeg/s²' : 'centidegrees per square second' , # Not SI, but is some situations more user-friendly than radians
              'rad'     : 'radians'               ,
              'rad/s'   : 'radians per second'    ,
-             'rad/s/s' : 'radians per square second' ,
+             'rad/s²'  : 'radians per square second' ,
 # electricity
              'A'       : 'ampere'                ,
              'V'       : 'volt'                  ,
@@ -122,7 +122,7 @@ known_units = {
              'kB'      : 'kilobytes'               ,
              'KiB'     : 'kibibytes',
              'MB'      : 'megabyte'                ,
-             'm.m/s/s' : 'square meter per square second',
+             'm.m/s²' : 'square meter per square second',
              'deg/m/s' : 'degrees per meter per second'  ,
              'm/s/m'   : 'meters per second per meter'   , # Why not use Hz here ????
              'mGauss/A': 'milligauss per ampere' ,

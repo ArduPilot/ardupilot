@@ -252,7 +252,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: PILOT_ACCEL_Z
     // @DisplayName: Pilot vertical acceleration
     // @Description: The vertical acceleration used when pilot is controlling the altitude
-    // @Units: cm/s/s
+    // @Units: cm/s²
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard

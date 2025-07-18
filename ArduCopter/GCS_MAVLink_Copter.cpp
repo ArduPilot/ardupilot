@@ -168,19 +168,19 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
         type_mask = POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE; // ignore everything except position, velocity & acceleration
         target_pos = copter.mode_guided.get_target_pos().tofloat() * 0.01; // convert to metres
         target_vel = copter.mode_guided.get_target_vel() * 0.01f; // convert to metres/s
-        target_accel = copter.mode_guided.get_target_accel() * 0.01f; // convert to metres/s/s
+        target_accel = copter.mode_guided.get_target_accel() * 0.01f; // convert to metres/s²
         break;
     case ModeGuided::SubMode::VelAccel:
         type_mask = POSITION_TARGET_TYPEMASK_X_IGNORE | POSITION_TARGET_TYPEMASK_Y_IGNORE | POSITION_TARGET_TYPEMASK_Z_IGNORE |
                     POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE; // ignore everything except velocity & acceleration
         target_vel = copter.mode_guided.get_target_vel() * 0.01f; // convert to metres/s
-        target_accel = copter.mode_guided.get_target_accel() * 0.01f; // convert to metres/s/s
+        target_accel = copter.mode_guided.get_target_accel() * 0.01f; // convert to metres/s²
         break;
     case ModeGuided::SubMode::Accel:
         type_mask = POSITION_TARGET_TYPEMASK_X_IGNORE | POSITION_TARGET_TYPEMASK_Y_IGNORE | POSITION_TARGET_TYPEMASK_Z_IGNORE |
                     POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
                     POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE; // ignore everything except velocity & acceleration
-        target_accel = copter.mode_guided.get_target_accel() * 0.01f; // convert to metres/s/s
+        target_accel = copter.mode_guided.get_target_accel() * 0.01f; // convert to metres/s²
         break;
     }
 
@@ -195,9 +195,9 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
         target_vel.x,   // vx in m/s
         target_vel.y,   // vy in m/s
         -target_vel.z,  // vz in m/s NED frame
-        target_accel.x, // afx in m/s/s
-        target_accel.y, // afy in m/s/s
-        -target_accel.z,// afz in m/s/s NED frame
+        target_accel.x, // afx in m/s²
+        target_accel.y, // afy in m/s²
+        -target_accel.z,// afz in m/s² NED frame
         0.0f, // yaw
         0.0f); // yaw_rate
 #endif
@@ -916,7 +916,7 @@ void GCS_MAVLINK_Copter::handle_manual_control_axes(const mavlink_manual_control
 bool GCS_MAVLINK_Copter::sane_vel_or_acc_vector(const Vector3f &vec) const
 {
     for (uint8_t i=0; i<3; i++) {
-        // consider velocity invalid if any component nan or >1000(m/s or m/s/s)
+        // consider velocity invalid if any component nan or >1000(m/s or m/s²)
         if (isnan(vec[i]) || fabsf(vec[i]) > 1000) {
             return false;
         }

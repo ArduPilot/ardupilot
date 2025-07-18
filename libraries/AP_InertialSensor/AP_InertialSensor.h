@@ -128,7 +128,7 @@ public:
 
     /// Fetch the current accelerometer values
     ///
-    /// @returns	vector of current accelerations in m/s/s
+    /// @returns	vector of current accelerations in m/s²
     ///
     const Vector3f     &get_accel(uint8_t i) const { return _accel[i]; }
     const Vector3f     &get_accel(void) const { return get_accel(_first_usable_accel); }
@@ -171,7 +171,7 @@ public:
     uint16_t get_raw_gyro_rate_hz(uint8_t instance) const { return _gyro_raw_sample_rates[_first_usable_gyro]; }
     uint16_t get_raw_gyro_rate_hz() const { return get_raw_gyro_rate_hz(_first_usable_gyro); }
     bool set_gyro_window_size(uint16_t size);
-    // get accel offsets in m/s/s
+    // get accel offsets in m/s²
     const Vector3f &get_accel_offsets(uint8_t i) const { return _accel_offset(i); }
     const Vector3f &get_accel_offsets(void) const { return get_accel_offsets(_first_usable_accel); }
 
@@ -196,7 +196,7 @@ public:
      */
     float get_delta_time() const { return MIN(_delta_time, _loop_delta_t_max); }
 
-    // return the maximum gyro drift rate in radians/s/s. This
+    // return the maximum gyro drift rate in radians/s². This
     // depends on what gyro chips are being used
     float get_gyro_drift_rate(void) const { return radians(0.5f/60); }
 

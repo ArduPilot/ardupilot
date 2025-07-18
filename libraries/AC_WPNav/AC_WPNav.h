@@ -12,7 +12,7 @@
 #include <AC_Avoidance/AC_Avoid.h>                 // Stop at fence library
 
 // maximum velocities and accelerations
-#define WPNAV_ACCELERATION              250.0f      // maximum horizontal acceleration in cm/s/s that wp navigation will request
+#define WPNAV_ACCELERATION              250.0f      // maximum horizontal acceleration in cm/s² that wp navigation will request
 
 class AC_WPNav
 {
@@ -80,13 +80,13 @@ public:
     /// get default target descent rate in cm/s during missions.  Note: always positive
     float get_default_speed_down_cms() const { return fabsf(_wp_speed_down_cms); }
 
-    /// get_accel_U_cmss - returns vertical acceleration in cm/s/s during missions.  Note: always positive
+    /// get_accel_U_cmss - returns vertical acceleration in cm/s² during missions.  Note: always positive
     float get_accel_U_cmss() const { return _wp_accel_z_cmss; }
 
-    /// get_wp_acceleration - returns acceleration in cm/s/s during missions
+    /// get_wp_acceleration - returns acceleration in cm/s² during missions
     float get_wp_acceleration_cmss() const { return (is_positive(_wp_accel_cmss)) ? _wp_accel_cmss : WPNAV_ACCELERATION; }
 
-    /// get_corner_acceleration_cmss - returns maximum acceleration in cm/s/s used during cornering in missions
+    /// get_corner_acceleration_cmss - returns maximum acceleration in cm/s² used during cornering in missions
     float get_corner_acceleration_cmss() const { return (is_positive(_wp_accel_c_cmss)) ? _wp_accel_c_cmss : 2.0 * get_wp_acceleration_cmss(); }
 
     /// get_wp_destination_NEU_cm waypoint using position vector
@@ -261,10 +261,10 @@ protected:
     AP_Float    _wp_speed_up_cms;   // default maximum climb rate in cm/s
     AP_Float    _wp_speed_down_cms; // default maximum descent rate in cm/s
     AP_Float    _wp_radius_cm;      // distance from a waypoint in cm that, when crossed, indicates the wp has been reached
-    AP_Float    _wp_accel_cmss;     // horizontal acceleration in cm/s/s during missions
-    AP_Float    _wp_accel_c_cmss;   // cornering acceleration in cm/s/s during missions
-    AP_Float    _wp_accel_z_cmss;   // vertical acceleration in cm/s/s during missions
-    AP_Float    _wp_jerk_msss;      // maximum jerk used to generate scurve trajectories in m/s/s/s
+    AP_Float    _wp_accel_cmss;     // horizontal acceleration in cm/s² during missions
+    AP_Float    _wp_accel_c_cmss;   // cornering acceleration in cm/s² during missions
+    AP_Float    _wp_accel_z_cmss;   // vertical acceleration in cm/s² during missions
+    AP_Float    _wp_jerk_msss;      // maximum jerk used to generate scurve trajectories in m/s³
     AP_Float    _terrain_margin_m;  // terrain following altitude margin. vehicle will stop if distance from target altitude is larger than this margin
 
     // WPNAV_SPEED param change checker
@@ -277,7 +277,7 @@ protected:
     SCurve _scurve_prev_leg;        // previous scurve trajectory used to blend with current scurve trajectory
     SCurve _scurve_this_leg;        // current scurve trajectory
     SCurve _scurve_next_leg;        // next scurve trajectory used to blend with current scurve trajectory
-    float _scurve_jerk_max_msss;    // scurve jerk max in m/s/s/s
+    float _scurve_jerk_max_msss;    // scurve jerk max in m/s³
     float _scurve_snap_max_mssss;   // scurve snap in m/s/s/s/s
 
     // spline curves

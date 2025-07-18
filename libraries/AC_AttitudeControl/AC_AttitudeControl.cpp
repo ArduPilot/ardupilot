@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Param: ACCEL_Y_MAX
     // @DisplayName: Acceleration Max for Yaw
     // @Description: Maximum acceleration in yaw axis
-    // @Units: cdeg/s/s
+    // @Units: cdeg/s²
     // @Range: 0 72000
     // @Values: 0:Disabled, 9000:VerySlow, 18000:Slow, 36000:Medium, 54000:Fast
     // @Increment: 1000
@@ -55,7 +55,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Param: ACCEL_R_MAX
     // @DisplayName: Acceleration Max for Roll
     // @Description: Maximum acceleration in roll axis
-    // @Units: cdeg/s/s
+    // @Units: cdeg/s²
     // @Range: 0 180000
     // @Increment: 1000
     // @Values: 0:Disabled, 30000:VerySlow, 72000:Slow, 108000:Medium, 162000:Fast
@@ -65,7 +65,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Param: ACCEL_P_MAX
     // @DisplayName: Acceleration Max for Pitch
     // @Description: Maximum acceleration in pitch axis
-    // @Units: cdeg/s/s
+    // @Units: cdeg/s²
     // @Range: 0 180000
     // @Increment: 1000
     // @Values: 0:Disabled, 30000:VerySlow, 72000:Slow, 108000:Medium, 162000:Fast

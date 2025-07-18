@@ -85,7 +85,7 @@ float SimRover::calc_yaw_rate(float steering, float speed)
 }
 
 /*
-  return lateral acceleration in m/s/s
+  return lateral acceleration in m/s²
 */
 float SimRover::calc_lat_accel(float steering_angle, float speed)
 {
@@ -187,7 +187,7 @@ void SimRover::update_ackermann_or_skid(const struct sitl_input &input, float de
     // target speed with current throttle
     float target_speed = throttle * max_speed;
 
-    // linear acceleration in m/s/s - very crude model
+    // linear acceleration in m/s² - very crude model
     float accel = max_accel * (target_speed - speed) / max_speed;
 
     gyro = Vector3f(0,0,radians(yaw_rate));
@@ -258,7 +258,7 @@ void SimRover::update_omni3(const struct sitl_input &input, float delta_time)
     // speed in m/s in body frame
     Vector3f velocity_body = dcm.transposed() * velocity_ef;
 
-    // linear acceleration in m/s/s - very crude model
+    // linear acceleration in m/s² - very crude model
     float accel_x = omni3_max_accel * (twist.x - velocity_body.x) / omni3_max_speed;
     float accel_y = omni3_max_accel * (twist.y - velocity_body.y) / omni3_max_speed;
 

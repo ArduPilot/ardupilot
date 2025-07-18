@@ -355,15 +355,15 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.01 1.0
     // @Increment: 0.01
     // @User: Advanced
-    // @Units: m/s/s
+    // @Units: m/s²
     AP_GROUPINFO("ACC_P_NSE", 25, NavEKF3, _accNoise, ACC_P_NSE_DEFAULT),
 
     // @Param: GBIAS_P_NSE
-    // @DisplayName: Rate gyro bias stability (rad/s/s)
+    // @DisplayName: Rate gyro bias stability (rad/s²)
     // @Description: This state  process noise controls growth of the gyro delta angle bias state error estimate. Increasing it makes rate gyro bias estimation faster and noisier.
     // @Range: 0.00001 0.001
     // @User: Advanced
-    // @Units: rad/s/s
+    // @Units: rad/s²
     AP_GROUPINFO("GBIAS_P_NSE", 26, NavEKF3, _gyroBiasProcessNoise, GBIAS_P_NSE_DEFAULT),
 
     // 27 previously used for EK2_GSCL_P_NSE parameter that has been removed
@@ -373,7 +373,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This noise controls the growth of the vertical accelerometer delta velocity bias state error estimate. Increasing it makes accelerometer bias estimation faster and noisier.
     // @Range: 0.00001 0.02
     // @User: Advanced
-    // @Units: m/s/s/s
+    // @Units: m/s³
     AP_GROUPINFO("ABIAS_P_NSE", 28, NavEKF3, _accelBiasProcessNoise, ABIAS_P_NSE_DEFAULT),
 
     // 29 previously used for EK2_MAG_P_NSE parameter that has been replaced with EK3_MAGE_P_NSE and EK3_MAGB_P_NSE
@@ -384,7 +384,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.01 2.0
     // @Increment: 0.1
     // @User: Advanced
-    // @Units: m/s/s
+    // @Units: m/s²
     AP_GROUPINFO("WIND_P_NSE", 30, NavEKF3, _windVelProcessNoise, WIND_P_NSE_DEFAULT),
 
     // @Param: WIND_PSCALE
@@ -537,7 +537,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.5 2.5
     // @Increment: 0.1
     // @User: Advanced
-    // @Units: m/s/s
+    // @Units: m/s²
     AP_GROUPINFO("ACC_BIAS_LIM", 48, NavEKF3, _accBiasLim, 1.0f),
 
     // @Param: MAG_MASK
@@ -684,12 +684,12 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @Range: 0.1 2.0
     // @Increment: 0.1
     // @User: Advanced
-    // @Units: m/s/s
+    // @Units: m/s²
     AP_GROUPINFO("DRAG_M_NSE", 4, NavEKF3, _dragObsNoise, 0.5f),
 
     // @Param: DRAG_MCOEF
     // @DisplayName: Momentum coefficient for propeller drag
-    // @Description: This parameter is used to predict the drag produced by the rotors when flying a multi-copter, enabling estimation of wind drift. The drag produced by this effect scales with speed not speed squared and is produced because some of the air velocity normal to the rotors axis of rotation is lost when passing through the rotor disc which changes the momentum of the airflow causing drag. For unducted rotors the effect is roughly proportional to the area of the propeller blades when viewed side on and changes with different propellers. It is higher for ducted rotors. For example if flying at 15 m/s at sea level conditions produces a rotor induced drag acceleration of 1.5 m/s/s, then EK3_DRAG_MCOEF would be set to 0.1 = (1.5/15.0). Set EK3_MCOEF to a positive value to enable wind estimation using this drag effect. To account for the drag produced by the body which scales with speed squared, see documentation for the EK3_DRAG_BCOEF_X and EK3_DRAG_BCOEF_Y parameters.
+    // @Description: This parameter is used to predict the drag produced by the rotors when flying a multi-copter, enabling estimation of wind drift. The drag produced by this effect scales with speed not speed squared and is produced because some of the air velocity normal to the rotors axis of rotation is lost when passing through the rotor disc which changes the momentum of the airflow causing drag. For unducted rotors the effect is roughly proportional to the area of the propeller blades when viewed side on and changes with different propellers. It is higher for ducted rotors. For example if flying at 15 m/s at sea level conditions produces a rotor induced drag acceleration of 1.5 m/s², then EK3_DRAG_MCOEF would be set to 0.1 = (1.5/15.0). Set EK3_MCOEF to a positive value to enable wind estimation using this drag effect. To account for the drag produced by the body which scales with speed squared, see documentation for the EK3_DRAG_BCOEF_X and EK3_DRAG_BCOEF_Y parameters.
     // @Range: 0.0 1.0
     // @Increment: 0.01
     // @Units: 1/s
@@ -1273,7 +1273,7 @@ void NavEKF3::getGyroBias(int8_t instance, Vector3f &gyroBias) const
     }
 }
 
-// return accelerometer bias estimate in m/s/s
+// return accelerometer bias estimate in m/s²
 void NavEKF3::getAccelBias(int8_t instance, Vector3f &accelBias) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
