@@ -12,7 +12,7 @@
 #include <AC_Avoidance/AC_Avoid.h>                 // Stop at fence library
 
 // maximum velocities and accelerations
-#define WPNAV_ACCELERATION_MS           2.5        // maximum horizontal acceleration in cm/s/s that wp navigation will request
+#define WPNAV_ACCELERATION_MS           2.5        // default horizontal acceleration limit for waypoint navigation (m/s²)
 
 class AC_WPNav
 {
@@ -21,16 +21,22 @@ public:
     /// Constructor
     AC_WPNav(const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
 
-    /// provide rangefinder based terrain offset
-    /// terrain offset is the terrain's height above the EKF origin
+    // Sets terrain offset in cm from EKF origin using rangefinder.
+    // See set_rangefinder_terrain_offset_m() for full details.
     void set_rangefinder_terrain_offset_cm(bool use, bool healthy, float terrain_offset_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_terrain_offset_m = terrain_offset_cm * 0.01;}
+
+    // Sets terrain offset in meters from EKF origin using rangefinder data.
+    // This value is used to determine alt-above-terrain for terrain following.
     void set_rangefinder_terrain_offset_m(bool use, bool healthy, float terrain_offset_m) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_terrain_offset_m = terrain_offset_m;}
 
-    // return true if range finder may be used for terrain following
+    // Returns true if rangefinder is enabled and may be used for terrain following.
     bool rangefinder_used() const { return _rangefinder_use; }
+
+    // Returns true if rangefinder is enabled and currently healthy.
     bool rangefinder_used_and_healthy() const { return _rangefinder_use && _rangefinder_healthy; }
 
-    // get expected source of terrain data if alt-above-terrain command is executed (used by Copter's ModeRTL)
+    // Returns the expected source of terrain data when using alt-above-terrain commands.
+    // Used by systems like ModeRTL to determine which terrain provider is active.
     enum class TerrainSource {
         TERRAIN_UNAVAILABLE,
         TERRAIN_FROM_RANGEFINDER,
@@ -38,214 +44,328 @@ public:
     };
     AC_WPNav::TerrainSource get_terrain_source() const;
 
-    // get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
+    // Returns terrain offset in cm above the EKF origin at the current position.
+    // See get_terrain_offset_m() for full details.
     bool get_terrain_offset_cm(float& offset_cm);
+
+    // Returns terrain offset in meters above the EKF origin at the current position.
+    // Positive values mean terrain lies above the EKF origin altitude.
+    // Source may be rangefinder or terrain database depending on availability.
     bool get_terrain_offset_m(float& offset_m);
 
-    // return terrain following altitude margin.  vehicle will stop if distance from target altitude is larger than this margin
+    // Returns the terrain following altitude margin in meters.
+    // Vehicle will stop if distance from target altitude exceeds this margin.
     float get_terrain_margin_m() const { return MAX(_terrain_margin_m, 0.1); }
 
-    // convert location to vector from ekf origin.  is_terrain_alt is set to true if resulting vector's z-axis should be treated as alt-above-terrain
-    //      returns false if conversion failed (likely because terrain data was not available)
+    // Converts a Location to a NEU position vector in cm from the EKF origin.
+    // See get_vector_NEU_m() for full details.
     bool get_vector_NEU_cm(const Location &loc, Vector3f &pos_from_origin_NEU_cm, bool &is_terrain_alt);
+
+    // Converts a Location to a NEU position vector in meters from the EKF origin.
+    // Sets `is_terrain_alt` to true if the resulting Z position is relative to terrain.
+    // Returns false if terrain data is unavailable or conversion fails.
     bool get_vector_NEU_m(const Location &loc, Vector3f &pos_from_origin_NEU_m, bool &is_terrain_alt);
 
     ///
     /// waypoint controller
     ///
 
-    /// wp_and_spline_init_cm - initialise straight line and spline waypoint controllers
-    ///     speed_cms is the desired max speed to travel between waypoints.  should be a positive value or omitted to use the default speed
-    ///     updates target roll, pitch targets and I terms based on vehicle lean angles
-    ///     should be called once before the waypoint controller is used but does not need to be called before subsequent updates to destination
+    // Initializes waypoint and spline controllers using inputs in cm.
+    // See wp_and_spline_init_m() for full details.
     void wp_and_spline_init_cm(float speed_cms = 0.0f, Vector3f stopping_point = Vector3f{});
+
+    // Initializes waypoint and spline navigation using inputs in meters.
+    // Sets speed and acceleration limits, calculates jerk constraints,
+    // and initializes spline or S-curve leg with a defined starting point.
     void wp_and_spline_init_m(float speed_ms = 0.0f, Vector3f stopping_point = Vector3f{});
 
-    /// set current target horizontal speed during wp navigation
+    // Sets the target horizontal speed in cm/s during waypoint navigation.
+    // See set_speed_NE_ms() for full details.
     void set_speed_NE_cms(float speed_cms);
+
+    // Sets the target horizontal speed in m/s during waypoint navigation.
+    // Also updates internal velocity offsets and path shaping limits.
     void set_speed_NE_ms(float speed_ms);
 
-    /// set pause or resume during wp navigation
+    // Pauses progression along the waypoint track.
     void set_pause() { _paused = true; }
+
+    // Resumes waypoint navigation after a pause. Track advancement continues from the current position.
     void set_resume() { _paused = false; }
 
-    /// get paused status
+    // Returns true if waypoint navigation is currently paused via set_pause().
     bool paused() { return _paused; }
 
-    /// set current target climb or descent rate during wp navigation
+    // Sets the climb speed for waypoint navigation in cm/s.
+    // See set_speed_up_ms() for full details.
     void set_speed_up_cms(float speed_up_cms);
+
+    // Sets the climb speed for waypoint navigation in m/s.
+    // Updates the vertical controller with the new ascent rate limit.
     void set_speed_up_ms(float speed_up_ms);
+
+    // Sets the descent speed for waypoint navigation in cm/s.
+    // See set_speed_down_ms() for full details.
     void set_speed_down_cms(float speed_down_cms);
+
+    // Sets the descent speed for waypoint navigation in m/s.
+    // Updates the vertical controller with the new descent rate limit.
     void set_speed_down_ms(float speed_down_ms);
 
-    /// get default target horizontal velocity during wp navigation
+    // Returns the default horizontal speed in cm/s used during waypoint navigation.
+    // See get_default_speed_NE_ms() for full details.
     float get_default_speed_NE_cms() const { return get_default_speed_NE_ms() * 100.0; }
+
+    // Returns the default horizontal speed in m/s used during waypoint navigation.
+    // Derived from the WPNAV_SPEED parameter.
     float get_default_speed_NE_ms() const { return _wp_speed_cms * 0.01; }
 
-    /// get default target climb speed in cm/s during missions
+    // Returns the default climb speed in cm/s used during waypoint navigation.
+    // See get_default_speed_up_ms() for full details.
     float get_default_speed_up_cms() const { return get_default_speed_up_ms() * 100.0; }
+
+    // Returns the default climb speed in m/s used during waypoint navigation.
+    // Derived from the WPNAV_SPEED_UP parameter.
     float get_default_speed_up_ms() const { return _wp_speed_up_cms * 0.01; }
 
-    /// get default target descent rate in cm/s during missions.  Note: always positive
+    // Returns the default descent rate in cm/s used during waypoint navigation.
+    // Always positive. See get_default_speed_down_ms() for full details.
     float get_default_speed_down_cms() const { return get_default_speed_down_ms() * 100.0; }
+
+    // Returns the default descent rate in m/s used during waypoint navigation.
+    // Derived from the WPNAV_SPEED_DN parameter. Always positive.
     float get_default_speed_down_ms() const { return fabsf(_wp_speed_down_cms * 0.01); }
 
-    /// get_accel_U_cmss - returns vertical acceleration in cm/s/s during missions.  Note: always positive
+    // Returns the vertical acceleration in cm/s² used during waypoint navigation.
+    // Always positive. See get_accel_U_mss() for full details.
     float get_accel_U_cmss() const { return get_accel_U_mss() * 100.0; }
+
+    // Returns the vertical acceleration in m/s² used during waypoint navigation.
+    // Derived from the WPNAV_ACCEL_Z parameter. Always positive.
     float get_accel_U_mss() const { return _wp_accel_z_cmss * 0.01; }
 
-    /// get_wp_acceleration - returns acceleration in cm/s/s during missions
+    // Returns the horizontal acceleration in cm/s² used during waypoint navigation.
+    // See get_wp_acceleration_mss() for full details.
     float get_wp_acceleration_cmss() const { return get_wp_acceleration_mss() * 100.0; }
+
+    // Returns the horizontal acceleration in m/s² used during waypoint navigation.
+    // Derived from the WPNAV_ACCEL parameter. Falls back to a default if unset.
     float get_wp_acceleration_mss() const { return (is_positive(_wp_accel_cmss)) ? _wp_accel_cmss * 0.01 : WPNAV_ACCELERATION_MS; }
 
-    /// get_corner_acceleration_mss - returns maximum acceleration in m/s/s used during cornering in missions
+    // Returns the maximum lateral acceleration in m/s² used during waypoint cornering.
+    // Derived from WPNAV_ACCEL_C or defaults to 2x WPNAV_ACCEL if unset.
     float get_corner_acceleration_mss() const { return (is_positive(_wp_accel_c_cmss)) ? _wp_accel_c_cmss * 0.01 : 2.0 * get_wp_acceleration_mss(); }
 
-    /// get_wp_destination_NEU_cm waypoint using position vector
-    /// x,y are distance from ekf origin in cm
-    /// z may be cm above ekf origin or terrain (see origin_and_destination_are_is_terrain_alt method)
+    // Returns the destination waypoint vector in NEU frame, in centimeters from EKF origin.
+    // See get_wp_destination_NEU_m() for full details.
     const Vector3f get_wp_destination_NEU_cm() const { return get_wp_destination_NEU_m() * 100.0; }
+
+    // Returns the destination waypoint vector in NEU frame, in meters from EKF origin.
+    // Z is relative to terrain or EKF origin, depending on _is_terrain_alt.
     const Vector3f &get_wp_destination_NEU_m() const { return _destination_neu_m; }
 
-    /// get origin using position vector (distance from ekf origin in cm)
+    // Returns the origin waypoint vector in NEU frame, in centimeters from EKF origin.
+    // See get_wp_origin_NEU_m() for full details.
     const Vector3f get_wp_origin_NEU_cm() const { return get_wp_origin_NEU_m() * 100.0; }
+
+    // Returns the origin waypoint vector in NEU frame, in meters from EKF origin.
+    // This marks the start of the current waypoint leg.
     const Vector3f &get_wp_origin_NEU_m() const { return _origin_neu_m; }
 
-    /// true if origin.z and destination.z are alt-above-terrain, false if alt-above-ekf-origin
+    // Returns true if origin.z and destination.z are specified as altitudes above terrain.
+    // Returns false if altitudes are relative to the EKF origin.
     bool origin_and_destination_are_terrain_alt() const { return _is_terrain_alt; }
 
-    /// set_wp_destination_NEU_cm waypoint using location class
-    ///     provide the next_destination if known
-    ///     returns false if conversion from location to vector from ekf origin cannot be calculated
+    // Sets the current waypoint destination using a Location object.
+    // Converts global coordinates to NEU position and sets destination.
+    // Returns false if conversion fails (e.g. missing terrain data).
     bool set_wp_destination_loc(const Location& destination);
+
+    // Sets the next waypoint destination using a Location object.
+    // Converts global coordinates to NEU position and preloads the trajectory.
+    // Returns false if conversion fails or terrain data is unavailable.
     bool set_wp_destination_next_loc(const Location& destination);
 
-    // get destination as a location.  Altitude frame will be absolute (AMSL) or above terrain
-    // returns false if unable to return a destination (for example if origin has not yet been set)
+    // Gets the current waypoint destination as a Location object.
+    // Altitude frame will be ABOVE_TERRAIN or ABOVE_ORIGIN depending on path configuration.
+    // Returns false if origin is not set or coordinate conversion fails.
     bool get_wp_destination_loc(Location& destination) const;
 
-    // returns object avoidance adjusted destination which is always the same as get_wp_destination_NEU_cm
-    // having this function unifies the AC_WPNav_OA and AC_WPNav interfaces making vehicle code simpler
+    // Returns the waypoint destination adjusted for object avoidance.
+    // In the base class this is identical to get_wp_destination_loc().
+    // Used to unify the AC_WPNav and AC_WPNav_OA interfaces.
     virtual bool get_oa_wp_destination(Location& destination) const { return get_wp_destination_loc(destination); }
 
-    /// set_wp_destination_NEU_cm waypoint using position vector (distance from ekf origin in cm)
-    ///     is_terrain_alt should be true if destination.z is a desired altitude above terrain
+    // Sets waypoint destination using NEU position vector in centimeters from EKF origin.
+    // See set_wp_destination_NEU_m() for full details.
     virtual bool set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt = false);
+
+    // Sets waypoint destination using NEU position vector in meters from EKF origin.
+    // If `is_terrain_alt` is true, altitude is interpreted as height above terrain.
+    // Reinitializes the current leg if interrupted, updates origin, and computes trajectory.
+    // Returns false if terrain offset cannot be determined when required.
     virtual bool set_wp_destination_NEU_m(const Vector3f& destination_neu_m, bool is_terrain_alt = false);
+
+    // Sets the next waypoint destination using a NEU position vector in centimeters.
+    // See set_wp_destination_next_NEU_m() for full details.
     bool set_wp_destination_next_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt = false);
+
+    // Sets the next waypoint destination using a NEU position vector in meters.
+    // Only updates if terrain frame matches current leg.
+    // Calculates trajectory preview for smoother transition into next segment.
+    // Updates velocity handoff if previous leg is a spline.
     bool set_wp_destination_next_NEU_m(const Vector3f& destination_neu_m, bool is_terrain_alt = false);
 
-    /// set waypoint destination using NED position vector from ekf origin in meters
-    ///     provide next_destination_NED if known
+    // Sets waypoint destination using a NED position vector in meters from EKF origin.
+    // Converts internally to NEU. Terrain following is not used.
     bool set_wp_destination_NED_m(const Vector3f& destination_NED_m);
+
+    // Sets the next waypoint destination using a NED position vector in meters from EKF origin.
+    // Converts to NEU internally. Terrain following is not applied.
     bool set_wp_destination_next_NED_m(const Vector3f& destination_NED_m);
 
-    /// get_wp_stopping_point_cm - calculates stopping point based on current position, velocity, waypoint acceleration
-    ///		results placed in stopping_position vector
+    // Computes the horizontal stopping point in NE frame, returned in centimeters.
+    // See get_wp_stopping_point_NE_m() for full details.
     void get_wp_stopping_point_NE_cm(Vector2f& stopping_point_ne_cm) const;
+
+    // Computes the horizontal stopping point in NE frame, in meters, based on current velocity and configured acceleration.
+    // This is the point where the vehicle would come to a stop if decelerated using the configured limits.
     void get_wp_stopping_point_NE_m(Vector2f& stopping_point_ne_m) const;
+
+    // Computes the full 3D NEU stopping point vector in centimeters based on current kinematics.
+    // See get_wp_stopping_point_NEU_m() for full details.
     void get_wp_stopping_point_NEU_cm(Vector3f& stopping_point_neu_cm) const;
+
+    // Computes the full 3D NEU stopping point in meters based on current velocity and configured acceleration in all axes.
+    // Represents where the vehicle will stop if decelerated from current velocity using configured limits.
     void get_wp_stopping_point_NEU_m(Vector3f& stopping_point_neu_m) const;
 
-    /// get_wp_distance_to_destination - get horizontal distance to destination in cm
+    // Returns the horizontal distance to the destination waypoint in centimeters.
+    // See get_wp_distance_to_destination_m() for full details.
     virtual float get_wp_distance_to_destination_cm() const;
+
+    // Returns the horizontal distance in meters between the current position and the destination waypoint.
     virtual float get_wp_distance_to_destination_m() const;
 
-    /// get_bearing_to_destination - get bearing to next waypoint in centi-degrees
+    // Returns the bearing to the current waypoint destination in centidegrees.
+    // See get_wp_bearing_to_destination_rad() for full details.
     virtual int32_t get_wp_bearing_to_destination_cd() const;
 
-    /// get_bearing_to_destination - get bearing to next waypoint in radians
+    // Returns the bearing to the current waypoint destination in radians.
+    // The bearing is measured clockwise from North, with 0 = North.
     virtual float get_wp_bearing_to_destination_rad() const;
 
-    /// reached_destination - true when we have come within RADIUS cm of the waypoint
+    // Returns true if the vehicle has reached the waypoint destination.
+    // A waypoint is considered reached when the vehicle comes within the defined radius threshold.
     virtual bool reached_wp_destination() const { return _flags.reached_destination; }
 
-    // reached_wp_destination_NE - true if within RADIUS_CM of waypoint in x/y
+    // Returns true if the vehicle's horizontal (NE) distance to the waypoint is less than the waypoint radius.
+    // Uses the waypoint radius in meters for comparison.
     bool reached_wp_destination_NE() const {
         return get_wp_distance_to_destination_m() < _wp_radius_cm * 0.01;
     }
 
-    // get wp_radius parameter value in cm
+    // Returns the waypoint acceptance radius in centimeters.
+    // See get_wp_radius_m() for full details.
     float get_wp_radius_cm() const { return get_wp_radius_m() * 100.0; }
+
+    // Returns the waypoint acceptance radius in meters.
+    // This radius defines the distance from the target waypoint within which the vehicle is considered to have arrived.
     float get_wp_radius_m() const { return _wp_radius_cm * 0.01; }
 
-    /// update_wpnav - run the wp controller - should be called at 100hz or higher
+    // Runs the waypoint navigation controller.
+    // Advances the target position and updates the position controller.
+    // Should be called at 100 Hz or higher for accurate tracking.
     virtual bool update_wpnav();
 
-    // returns true if update_wpnav has been run very recently
+    // Returns true if update_wpnav() has been called within the last 200 ms.
+    // Used to check if waypoint navigation is currently active.
     bool is_active() const;
 
-    // force stopping at next waypoint.  Used by Dijkstra's object avoidance when path from destination to next destination is not clear
-    // only affects regular (e.g. non-spline) waypoints
-    // returns true if this had any affect on the path
+    // Forces a stop at the next waypoint instead of continuing to the subsequent one.
+    // Used by Dijkstra’s object avoidance when the future path is obstructed.
+    // Only affects regular (non-spline) waypoints.
+    // Returns true if the stop behavior was newly enforced.
     bool force_stop_at_next_wp();
 
     ///
     /// spline methods
     ///
 
-    /// set_spline_destination_NEU_cm waypoint using location class
-    ///     returns false if conversion from location to vector from ekf origin cannot be calculated
-    ///     next_destination should be the next segment's destination
-    ///     next_is_spline should be true if next_destination is a spline segment
+    // Sets the current spline waypoint using global coordinates.
+    // Converts `destination` and `next_destination` to NEU position vectors and sets up a spline between them.
+    // Returns false if conversion from location to vector fails.
     bool set_spline_destination_loc(const Location& destination, const Location& next_destination, bool next_is_spline);
 
-    /// set next destination (e.g. the one after the current destination) as a spline segment specified as a location
-    ///     returns false if conversion from location to vector from ekf origin cannot be calculated
-    ///     next_next_destination should be the next segment's destination
-    ///     next_next_is_spline should be true if next_next_destination is a spline segment
+    // Sets the next spline segment using global coordinates.
+    // Converts the next and next-next destinations to NEU position vectors and initializes the spline transition.
+    // Returns false if any conversion from location to vector fails.
     bool set_spline_destination_next_loc(const Location& next_destination, const Location& next_next_destination, bool next_next_is_spline);
 
-    /// set_spline_destination_NEU_cm waypoint using position vector (distance from ekf origin in cm)
-    ///     is_terrain_alt should be true if destination.z is a desired altitude above terrain (false if its desired altitudes above ekf origin)
-    ///     next_destination is the next segment's destination
-    ///     next_is_terrain_alt should be true if next_destination.z is a desired altitude above terrain (false if its desired altitudes above ekf origin)
-    ///     next_destination.z must be in the same "frame" as destination.z (i.e. if destination is a alt-above-terrain, next_destination must be too)
-    ///     next_is_spline should be true if next_destination is a spline segment
+    // Sets the current spline segment using position vectors in centimeters.
+    // See set_spline_destination_NEU_m() for full details.
     bool set_spline_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt, const Vector3f& next_destination_neu_cm, bool next_terrain_alt, bool next_is_spline);
+
+    // Sets the current spline waypoint using NEU position vectors in meters.
+    // Initializes a spline path from `destination_neu_m` to `next_destination_neu_m`, respecting terrain altitude framing.
+    // Both waypoints must use the same altitude frame (either above terrain or above origin).
+    // Returns false if terrain altitude cannot be determined when required.
     bool set_spline_destination_NEU_m(const Vector3f& destination_neu_m, bool is_terrain_alt, const Vector3f& next_destination_neu_m, bool next_terrain_alt, bool next_is_spline);
 
-    /// set next destination (e.g. the one after the current destination) as an offset (in cm, NEU frame) from the EKF origin
-    ///     next_is_terrain_alt should be true if next_destination.z is a desired altitude above terrain (false if its desired altitudes above ekf origin)
-    ///     next_next_destination is the next segment's destination
-    ///     next_next_is_terrain_alt should be true if next_next_destination.z is a desired altitude above terrain (false if it is desired altitude above ekf origin)
-    ///     next_next_destination.z must be in the same "frame" as destination.z (i.e. if next_destination is a alt-above-terrain, next_next_destination must be too)
-    ///     next_next_is_spline should be true if next_next_destination is a spline segment
+    // Sets the next spline segment using NEU position vectors in centimeters.
+    // See set_spline_destination_next_NEU_m() for full details.
     bool set_spline_destination_next_NEU_cm(const Vector3f& next_destination_neu_cm, bool next_is_terrain_alt, const Vector3f& next_next_destination_neu_cm, bool next_next_is_terrain_alt, bool next_next_is_spline);
+
+    // Sets the next spline segment using NEU position vectors in meters.
+    // Creates a spline path from the current destination to `next_destination_neu_m`, and prepares transition toward `next_next_destination_neu_m`.
+    // All waypoints must use the same altitude frame (above terrain or origin).
+    // Returns false if terrain data is missing and required.
     bool set_spline_destination_next_NEU_m(const Vector3f& next_destination_neu_m, bool next_is_terrain_alt, const Vector3f& next_next_destination_neu_m, bool next_next_is_terrain_alt, bool next_next_is_spline);
 
     ///
     /// shared methods
     ///
 
-    /// Returns the desired roll angle in radians from the position controller.
+    // Returns the desired roll angle in radians from the position controller.
+    // This value is passed to the attitude controller to achieve lateral motion.
     float get_roll_rad() const { return _pos_control.get_roll_rad(); }
 
-    /// Returns the desired pitch angle in radians from the position controller.
+    // Returns the desired pitch angle in radians from the position controller.
+    // This angle controls forward or backward acceleration.
     float get_pitch_rad() const { return _pos_control.get_pitch_rad(); }
 
-    /// Returns the desired yaw target in radians from the position controller.
+    // Returns the desired yaw angle in radians from the position controller.
+    // Used to align the vehicle heading with track direction or command input.
     float get_yaw_rad() const { return _pos_control.get_yaw_rad(); }
 
-    /// Returns the desired thrust direction vector for tilt control from the position controller.
+    // Returns the desired 3D unit vector representing the commanded thrust direction.
+    // Used to calculate tilt angles for the attitude controller.
     Vector3f get_thrust_vector() const { return _pos_control.get_thrust_vector(); }
 
-    /// Returns the desired roll angle in centidegrees from the position controller.
+    // Returns the desired roll angle in centidegrees from the position controller.
+    // See get_roll_rad() for full details.
     float get_roll() const { return _pos_control.get_roll_cd(); }
 
-    /// Returns the desired pitch angle in centidegrees from the position controller.
+    // Returns the desired pitch angle in centidegrees from the position controller.
+    // See get_pitch_rad() for full details.
     float get_pitch() const { return _pos_control.get_pitch_cd(); }
 
-    /// Returns the desired yaw target in centidegrees from the position controller.
+    // Returns the desired yaw angle in centidegrees from the position controller.
+    // See get_yaw_rad() for full details.
     float get_yaw() const { return _pos_control.get_yaw_cd(); }
 
-    /// advance_wp_target_along_track - move target location along track from origin to destination
+    // Advances the target location along the current path segment.
+    // Updates target position, velocity, and acceleration based on jerk-limited profile (or spline).
+    // Returns true if the update succeeded (e.g., terrain data was available).
     bool advance_wp_target_along_track(float dt);
 
-    /// recalculate path with update speed and/or acceleration limits
+    // Updates the current and next path segment to reflect new speed and acceleration limits.
+    // Should be called after modifying NE/U controller limits or vehicle configuration.
     void update_track_with_speed_accel_limits();
 
-    /// return the crosstrack_error - horizontal error of the actual position vs the desired position
+    // Returns lateral (cross-track) position error in meters.
+    // Computed as the perpendicular distance between current position and the planned path.
+    // Used to assess horizontal deviation from the trajectory.
     float crosstrack_error() const { return _pos_control.crosstrack_error();}
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -259,11 +379,11 @@ protected:
         uint8_t wp_yaw_set              : 1;    // true if yaw target has been set
     } _flags;
 
-    // helper function to calculate scurve jerk and jerk_time values
-    // updates _scurve_jerk_max_msss and _scurve_snap_max_mssss
+    // Calculates s-curve jerk and snap limits based on attitude controller capabilities.
+    // Updates _scurve_jerk_max_msss and _scurve_snap_max_mssss with constrained values.
     void calc_scurve_jerk_and_snap();
 
-    // references and pointers to external libraries
+    // References to shared sensor fusion, position, and attitude control subsystems.
     const AP_AHRS_View&     _ahrs;
     AC_PosControl&          _pos_control;
     const AC_AttitudeControl& _attitude_control;
