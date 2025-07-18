@@ -78,7 +78,7 @@ public:
     //      closest point on the circle will be placed in result, dist_cm will be updated with the distance to the center
     //      result's altitude (i.e. z) will be set to the circle_center's altitude
     //      if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
-    void get_closest_point_on_circle_NEU_cm(Vector3f& result_NEU_cm, float& dist_cm) const;
+    void get_closest_point_on_circle_NEU_cm(Vector3f& result_neu_cm, float& dist_cm) const;
 
     /// get horizontal distance to loiter target in cm
     float get_distance_to_target_cm() const { return _pos_control.get_pos_error_NE_cm(); }
@@ -157,7 +157,7 @@ private:
     float       _angular_vel_max_rads;  // maximum velocity in radians/sec
     float       _angular_accel_radss;   // angular acceleration in radians/sec/sec
     uint32_t    _last_update_ms;        // system time of last update
-    float       _last_radius_param;     // last value of radius param, used to update radius on param change
+    float       _last_radius_param_cm;  // last value of radius param, used to update radius on param change
 
     // terrain following variables
     bool        _is_terrain_alt;                // true if _center_neu_cm.z is alt-above-terrain, false if alt-above-ekf-origin
