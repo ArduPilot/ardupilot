@@ -872,7 +872,7 @@ bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
     }
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_mode()) {
-        xtrack_error = quadplane.using_wp_nav() ? quadplane.wp_nav->crosstrack_error() : 0;
+        xtrack_error = quadplane.using_wp_nav() ? quadplane.wp_nav->crosstrack_error_m() : 0;
         return true;
     }
 #endif
