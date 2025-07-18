@@ -3,14 +3,14 @@
 
 extern const AP_HAL::HAL& hal;
 
-// maximum velocities and accelerations
-#define WPNAV_WP_SPEED_CMS             1000.0f      // default horizontal speed between waypoints in cm/s
-#define WPNAV_WP_SPEED_MIN_MS            0.01f      // minimum horizontal speed between waypoints in cm/s
-#define WPNAV_WP_RADIUS_CM              200.0f      // default waypoint radius in cm
-#define WPNAV_WP_RADIUS_MIN_CM            5.0f      // minimum waypoint radius in cm
-#define WPNAV_WP_SPEED_UP_CMS           250.0f      // default maximum climb velocity
-#define WPNAV_WP_SPEED_DOWN_CMS         150.0f      // default maximum descent velocity
-#define WPNAV_WP_ACCEL_Z_DEFAULT_CMSS   100.0f      // default vertical acceleration between waypoints in cm/s/s
+// Default waypoint navigation constraints
+#define WPNAV_WP_SPEED_CMS             1000.0f     // default horizontal speed between waypoints (cm/s)
+#define WPNAV_WP_SPEED_MIN_MS             0.01f    // minimum horizontal speed allowed (m/s)
+#define WPNAV_WP_RADIUS_CM              200.0f     // default radius within which a waypoint is considered reached (cm)
+#define WPNAV_WP_RADIUS_MIN_CM            5.0f     // minimum allowable waypoint radius (cm)
+#define WPNAV_WP_SPEED_UP_CMS           250.0f     // default maximum climb speed (cm/s)
+#define WPNAV_WP_SPEED_DOWN_CMS         150.0f     // default maximum descent speed (cm/s)
+#define WPNAV_WP_ACCEL_Z_DEFAULT_CMSS   100.0f     // default vertical acceleration limit (cm/s²)
 
 const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // index 0 was used for the old orientation matrix
