@@ -19,7 +19,7 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
 
     // @Param: RATE
     // @DisplayName: Circle rate
-    // @Description: Circle mode's turn rate in deg/sec.  Positive to turn clockwise, negative for counter clockwise. Circle rate must be less than ATC_SLEW_YAW parameter.
+    // @Description: Circle mode's maximum turn rate in deg/sec.  Positive to turn clockwise, negative for counter clockwise. Final circle rate is also limited by speed and acceleration settings.
     // @Units: deg/s
     // @Range: -90 90
     // @Increment: 1
@@ -47,7 +47,7 @@ AC_Circle::AC_Circle(const AP_AHRS_View& ahrs, AC_PosControl& pos_control) :
 
     // init flags
     _flags.panorama = false;
-    _rate_degs = _rate_parm_degs;
+    _rotation_rate_max_rads = radians(_rate_parm_degs);
 }
 
 /// init - initialise circle controller setting center specifically
@@ -57,7 +57,7 @@ void AC_Circle::init_NEU_cm(const Vector3p& center_neu_cm, bool is_terrain_alt, 
 {
     _center_neu_cm = center_neu_cm;
     _is_terrain_alt = is_terrain_alt;
-    _rate_degs = rate_degs;
+    _rotation_rate_max_rads = radians(rate_degs);
 
     // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
     _pos_control.init_NE_controller_stopping_point();
@@ -77,7 +77,7 @@ void AC_Circle::init()
     // initialize radius and rate from params
     _radius_cm = _radius_parm_cm;
     _last_radius_param_cm = _radius_parm_cm;
-    _rate_degs = _rate_parm_degs;
+    _rotation_rate_max_rads = radians(_rate_parm_degs);
 
     // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
     _pos_control.init_NE_controller_stopping_point();
@@ -131,9 +131,7 @@ void AC_Circle::set_center(const Location& center)
 /// set_circle_rate - set circle rate in degrees per second
 void AC_Circle::set_rate_degs(float rate_degs)
 {
-    if (!is_equal(rate_degs, _rate_degs)) {
-        _rate_degs = rate_degs;
-    }
+    _rotation_rate_max_rads = radians(rate_degs);
 }
 
 /// set_circle_rate - set circle rate in degrees per second
@@ -202,7 +200,7 @@ bool AC_Circle::update_cms(float climb_rate_cms)
         _yaw_rad = get_bearing_rad(_pos_control.get_pos_desired_NEU_cm().xy().tofloat(), _center_neu_cm.xy().tofloat());
 
         if ((_options.get() & CircleOptions::FACE_DIRECTION_OF_TRAVEL) != 0) {
-            _yaw_rad += is_positive(_rate_degs) ? -radians(90.0) : radians(90.0);
+            _yaw_rad += is_positive(_rotation_rate_max_rads) ? -radians(90.0) : radians(90.0);
             _yaw_rad = wrap_PI(_yaw_rad);
         }
 
@@ -274,15 +272,15 @@ void AC_Circle::calc_velocities(bool init_velocity)
 {
     // if we are doing a panorama set the circle_angle to the current heading
     if (_radius_cm <= 0) {
-        _angular_vel_max_rads = radians(_rate_degs);
-        _angular_accel_radss = MAX(fabsf(_angular_vel_max_rads),radians(AC_CIRCLE_ANGULAR_ACCEL_MIN));  // reach maximum yaw velocity in 1 second
+        _angular_vel_max_rads = _rotation_rate_max_rads;
+        _angular_accel_radss = MAX(fabsf(_angular_vel_max_rads), radians(AC_CIRCLE_ANGULAR_ACCEL_MIN));  // reach maximum yaw velocity in 1 second
     }else{
         // calculate max velocity based on waypoint speed ensuring we do not use more than half our max acceleration for accelerating towards the center of the circle
         float vel_max_cms = MIN(_pos_control.get_max_speed_NE_cms(), safe_sqrt(0.5f*_pos_control.get_max_accel_NE_cmss()*_radius_cm));
 
         // angular_velocity in radians per second
         _angular_vel_max_rads = vel_max_cms/_radius_cm;
-        _angular_vel_max_rads = constrain_float(radians(_rate_degs),-_angular_vel_max_rads,_angular_vel_max_rads);
+        _angular_vel_max_rads = constrain_float(_rotation_rate_max_rads, -_angular_vel_max_rads, _angular_vel_max_rads);
 
         // angular_velocity in radians per second
         _angular_accel_radss = MAX(_pos_control.get_max_accel_NE_cmss()/_radius_cm, radians(AC_CIRCLE_ANGULAR_ACCEL_MIN));
@@ -290,7 +288,7 @@ void AC_Circle::calc_velocities(bool init_velocity)
 
     // initialise angular velocity
     if (init_velocity) {
-        _angular_vel_rads = 0;
+        _angular_vel_rads = 0.0;
     }
 }
 
@@ -300,7 +298,7 @@ void AC_Circle::calc_velocities(bool init_velocity)
 void AC_Circle::init_start_angle(bool use_heading)
 {
     // initialise angle total
-    _angle_total_rad = 0;
+    _angle_total_rad = 0.0;
 
     // if the radius is zero we are doing panorama so init angle to the current heading
     if (_radius_cm <= 0) {
@@ -310,13 +308,13 @@ void AC_Circle::init_start_angle(bool use_heading)
 
     // if use_heading is true
     if (use_heading) {
-        _angle_rad = wrap_PI(_ahrs.yaw-M_PI);
+        _angle_rad = wrap_PI(_ahrs.yaw - M_PI);
     } else {
         // if we are exactly at the center of the circle, init angle to directly behind vehicle (so vehicle will backup but not change heading)
         // curr_pos_desired_neu_cm is the position before we add offsets and terrain
         const Vector3f &curr_pos_desired_neu_cm = _pos_control.get_pos_desired_NEU_cm().tofloat();
         if (is_equal(curr_pos_desired_neu_cm.x, float(_center_neu_cm.x)) && is_equal(curr_pos_desired_neu_cm.y, float(_center_neu_cm.y))) {
-            _angle_rad = wrap_PI(_ahrs.yaw-M_PI);
+            _angle_rad = wrap_PI(_ahrs.yaw - M_PI);
         } else {
             // get bearing from circle center to vehicle in radians
             float bearing_rad = atan2f(curr_pos_desired_neu_cm.y - _center_neu_cm.y, curr_pos_desired_neu_cm.x - _center_neu_cm.x);
