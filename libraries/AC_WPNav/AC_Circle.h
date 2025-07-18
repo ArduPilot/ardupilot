@@ -18,112 +18,169 @@ public:
     /// Constructor
     AC_Circle(const AP_AHRS_View& ahrs, AC_PosControl& pos_control);
 
-    /// init - initialise circle controller setting center specifically
-    ///     set is_terrain_alt to true if center_neu_cm.z should be interpreted as an alt-above-terrain. Rate should be +ve in deg/sec for cw turn
-    ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
+    // Initializes circle flight using a center position in centimeters relative to the EKF origin.
+    // See init_NEU_m() for full details.
     void init_NEU_cm(const Vector3p& center_neu_cm, bool is_terrain_alt, float rate_degs);
+
+    // Initializes circle flight mode using a specified center position in meters.
+    // Parameters:
+    //  - center_neu_m: Center of the circle in NEU frame (meters, relative to EKF origin)
+    //  - is_terrain_alt: If true, center.z is interpreted as height above terrain; otherwise, above EKF origin
+    //  - rate_degs: Desired turn rate in degrees per second (positive = clockwise, negative = counter-clockwise)
+    // Caller must preconfigure the position controller's speed and acceleration settings before calling.
     void init_NEU_m(const Vector3p& center_neu_m, bool is_terrain_alt, float rate_degs);
 
-    /// init - initialise circle controller setting center using stopping point and projecting out based on the copter's heading
-    ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
+    // Initializes the circle flight mode using the current stopping point as a reference.
+    // If the INIT_AT_CENTER option is not set, the circle center is projected one radius ahead along the vehicle's heading.
+    // Caller must configure position controller speeds and accelerations beforehand.
     void init();
 
-    /// set circle center to a Location
+    // Sets the circle center using a Location object.
+    // Automatically determines whether the location uses terrain-relative or origin-relative altitude.
+    // If conversion fails, defaults to current position and logs a navigation error.
     void set_center(const Location& center);
 
-    /// set_circle_center as a vector from ekf origin
-    ///     is_terrain_alt should be true if center.z is alt is above terrain
+    // Sets the circle center using a NEU position vector in centimeters from the EKF origin.
+    // See set_center_NEU_m() for full details.
     void set_center_NEU_cm(const Vector3f& center_neu_cm, bool is_terrain_alt) { _center_neu_m = center_neu_cm.topostype() * 0.01; _is_terrain_alt = is_terrain_alt; }
+
+    // Sets the circle center using a NEU position vector in meters from the EKF origin.
+    // If `is_terrain_alt` is true, the Z component is treated as altitude above terrain; otherwise, above EKF origin.
     void set_center_NEU_m(const Vector3f& center_neu_m, bool is_terrain_alt) { _center_neu_m = center_neu_m.topostype(); _is_terrain_alt = is_terrain_alt; }
 
-    /// get_circle_center in cm from home
+    // Returns the circle center in centimeters from the EKF origin.
+    // See get_center_NEU_m() for full details.
     const Vector3p get_center_NEU_cm() const { return get_center_NEU_m()  * 100.0; }
+
+    // Returns the circle center in meters from the EKF origin.
+    // Altitude frame is determined by `center_is_terrain_alt()`.
     const Vector3p& get_center_NEU_m() const { return _center_neu_m; }
 
-    /// returns true if using terrain altitudes
+    // Returns true if the circle center altitude is relative to terrain height.
     bool center_is_terrain_alt() const { return _is_terrain_alt; }
 
-    /// get_radius - returns radius of circle in cm
+    // Returns the circle radius in centimeters.
+    // See get_radius_m() for full details.
     float get_radius_cm() const { return get_radius_m() * 100.0; }
+
+    // Returns the circle radius in meters.
+    // If `_radius_m` is non-positive, falls back to the RADIUS parameter.
     float get_radius_m() const { return is_positive(_radius_m)?_radius_m:_radius_parm_cm * 0.01; }
 
-    /// set_radius_cm - sets circle radius in cm
+    // Sets the circle radius in centimeters.
+    // See set_radius_m() for full details.
     void set_radius_cm(float radius_cm);
+
+    // Sets the circle radius in meters.
+    // Radius is constrained to AC_CIRCLE_RADIUS_MAX_M.
     void set_radius_m(float radius_m);
 
-    /// get_rate_degs - returns target rate in deg/sec held in RATE parameter
+    // Returns the configured circle turn rate in degrees per second from the RATE parameter.
     float get_rate_degs() const { return _rate_parm_degs; }
 
-    /// get_rate_current - returns actual calculated rate target in deg/sec, which may be less than _rotation_rate_max
+    // Returns the current angular velocity in degrees per second.
+    // May be lower than the configured maximum due to ramp constraints.
     float get_rate_current() const { return degrees(_angular_vel_rads); }
 
-    /// set_rate - set circle rate in degrees per second
+    // Sets the target circle rate in degrees per second.
+    // Positive values result in clockwise rotation; negative for counter-clockwise.
     void set_rate_degs(float rate_degs);
 
-    /// get_angle_total_rad - return total angle in radians that vehicle has circled
+    // Returns the total angle, in radians, that the vehicle has traveled along the circular path.
     float get_angle_total_rad() const { return _angle_total_rad; }
 
-    /// update - update circle controller
-    ///     returns false on failure which indicates a terrain failsafe
+    // Updates the circle controller using a climb rate in cm/s.
+    // See update_ms() for full implementation details.
     bool update_cms(float climb_rate_cms = 0.0f) WARN_IF_UNUSED;
+
+    // Updates the circle controller using a climb rate in m/s.
+    // Computes new angular position, yaw, and vertical trajectory, then updates the position controller.
+    // Returns false if terrain data is required but unavailable.
     bool update_ms(float climb_rate_ms = 0.0f) WARN_IF_UNUSED;
 
-    /// get desired roll, pitch which should be fed into stabilize controllers
+    // Returns the desired roll angle in centidegrees from the position controller.
+    // Should be passed to the attitude controller as a stabilization input.
     float get_roll_cd() const { return _pos_control.get_roll_cd(); }
+
+    // Returns the desired pitch angle in centidegrees from the position controller.
+    // Should be passed to the attitude controller as a stabilization input.
     float get_pitch_cd() const { return _pos_control.get_pitch_cd(); }
-    Vector3f get_thrust_vector() const { return _pos_control.get_thrust_vector(); }
+
+    // Returns the desired yaw angle in centidegrees computed by the circle controller.
+    // May be oriented toward the circle center or along the path depending on configuration.
     float get_yaw_cd() const { return rad_to_cd(_yaw_rad); }
+
+    // Returns the desired thrust vector (unit vector in body frame) from the position controller.
+    // Can be used by the attitude controller to align thrust direction.
+    Vector3f get_thrust_vector() const { return _pos_control.get_thrust_vector(); }
+
+    // Returns the desired yaw angle in radians.
+    // Used for directional control based on circle configuration.
     float get_yaw_rad() const { return _yaw_rad; }
 
-    /// returns true if update has been run recently
-    /// used by vehicle code to determine if get_yaw() is valid
+    // Returns true if the circle controller's update() function has run recently.
+    // Used by vehicle code to determine if yaw and position outputs are valid.
     bool is_active() const;
 
-    // get_closest_point_on_circle_NEU_cm - returns closest point on the circle
-    //      circle's center should already have been set
-    //      closest point on the circle will be placed in result, dist_cm will be updated with the distance to the center
-    //      result's altitude (i.e. z) will be set to the circle_center's altitude
-    //      if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
+    // Returns the closest point on the circle to the vehicle's current position in centimeters.
+    // See get_closest_point_on_circle_NEU_m() for full details.
     void get_closest_point_on_circle_NEU_cm(Vector3f& result_NEU_cm, float& dist_cm) const;
+
+    // Returns the closest point on the circle to the vehicle's current position in meters.
+    // The result vector is updated with the NEU position of the closest point on the circle.
+    // The altitude (z) is set to match the circle center's altitude.
+    // dist_m is updated with the horizontal distance to the circle center.
+    // If the vehicle is at the center, the point directly behind the vehicle (based on yaw) is returned.
     void get_closest_point_on_circle_NEU_m(Vector3f& result_NEU_m, float& dist_m) const;
 
-    /// get horizontal distance to loiter target in cm
+    // Returns the horizontal distance to the circle target in centimeters.
+    // See get_distance_to_target_m() for full details.
     float get_distance_to_target_cm() const { return get_distance_to_target_m() * 100.0; }
+
+    // Returns the horizontal distance to the circle target in meters.
+    // Calculated using the position controller’s NE position error norm.
     float get_distance_to_target_m() const { return _pos_control.get_pos_error_NE_m(); }
 
-    /// get bearing to target in degrees
+    // Returns the bearing from the vehicle to the circle target in radians.
+    // Bearing is measured clockwise from North (0 = North).
     float get_bearing_to_target_rad() const { return _pos_control.get_bearing_to_target_rad(); }
 
-    /// true if pilot control of radius and turn rate is enabled
+    // Returns true if pilot stick control of circle radius and rate is enabled.
+    // See pilot_control_enabled() for flag logic.
     bool pilot_control_enabled() const { return (_options.get() & CircleOptions::MANUAL_CONTROL) != 0; }
 
-    /// true if mount roi is at circle center
+    // Returns true if the mount ROI is fixed at the circle center.
+    // See roi_at_center() for flag logic.
     bool roi_at_center() const { return (_options.get() & CircleOptions::ROI_AT_CENTER) != 0; }
 
-    /// provide rangefinder based terrain offset
-    /// terrain offset is the terrain's height above the EKF origin
+    // Sets rangefinder terrain offset (in centimeters) above EKF origin.
+    // See set_rangefinder_terrain_offset_m() for full details.
     void set_rangefinder_terrain_offset_cm(bool use, bool healthy, float terrain_offset_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_terrain_offset_m = terrain_offset_cm * 0.01;}
+
+    // Sets rangefinder terrain offset (in meters) above EKF origin.
+    // Used for terrain-relative altitude tracking during circular flight.
     void set_rangefinder_terrain_offset_m(bool use, bool healthy, float terrain_offset_m) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_terrain_offset_m = terrain_offset_m;}
 
-    /// check for a change in the radius params
+    // Checks if the circle radius parameter has changed.
+    // If so, updates internal `_radius_m` and stores the new parameter value.
     void check_param_change();
 
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
 
-    // calc_velocities - calculate angular velocity max and acceleration based on radius and rate
-    //      this should be called whenever the radius or rate are changed
-    //      initialises the yaw and current position around the circle
-    //      init_velocity should be set true if vehicle is just starting circle
+    // Calculates angular velocity and acceleration limits based on the configured radius and rate.
+    // Should be called whenever radius or rate changes.
+    // If `init_velocity` is true, resets angular velocity to zero (used on controller startup).
     void calc_velocities(bool init_velocity);
 
-    // init_start_angle - sets the starting angle around the circle and initialises the angle_total
-    //      if use_heading is true the vehicle's heading will be used to init the angle causing minimum yaw movement
-    //      if use_heading is false the vehicle's position from the center will be used to initialise the angle
+    // Sets the initial angle around the circle and resets the accumulated angle.
+    // If `use_heading` is true, uses vehicle heading to initialize angle for minimal yaw motion.
+    // If false, uses position relative to circle center to set angle.
     void init_start_angle(bool use_heading);
 
-    // get expected source of terrain data
+    // Returns the expected source of terrain data for the circle controller.
+    // Used to determine whether terrain offset comes from rangefinder, terrain database, or is unavailable.
     enum class TerrainSource {
         TERRAIN_UNAVAILABLE,
         TERRAIN_FROM_RANGEFINDER,
@@ -131,8 +188,13 @@ private:
     };
     AC_Circle::TerrainSource get_terrain_source() const;
 
-    // get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
+    // Returns terrain offset in centimeters above the EKF origin at the current position.
+    // See get_terrain_offset_m() for full details.
     bool get_terrain_offset_cm(float& offset_cm);
+
+    // Returns terrain offset in meters above the EKF origin at the current position.
+    // Positive values indicate terrain is above the EKF origin altitude.
+    // Terrain source may be rangefinder or terrain database.
     bool get_terrain_offset_m(float& offset_m);
 
     // flags structure
