@@ -825,7 +825,7 @@ bool QuadPlane::setup(void)
     }
 
     // init wp_nav variables after defaults are setup
-    wp_nav->wp_and_spline_init_cm();
+    wp_nav->wp_and_spline_init_m();
 
     transition->force_transition_complete();
 
@@ -1248,8 +1248,8 @@ float QuadPlane::landing_descent_rate_ms(float height_above_ground_m)
         // when in final use descent rate for final even if alt has climbed again
         height_above_ground_m = MIN(height_above_ground_m, land_final_alt_m);
     }
-    const float max_climb_speed_ms = wp_nav->get_default_speed_up_cms() * 0.01;
-    float ret_ms = linear_interpolate(land_final_speed_ms, wp_nav->get_default_speed_down_cms() * 0.01,
+    const float max_climb_speed_ms = wp_nav->get_default_speed_up_ms();
+    float ret_ms = linear_interpolate(land_final_speed_ms, wp_nav->get_default_speed_down_ms(),
                                    height_above_ground_m,
                                    land_final_alt_m, land_final_alt_m + 6);
 
@@ -1411,7 +1411,7 @@ float QuadPlane::assist_climb_rate_cms(void) const
         climb_rate_cms = plane.g.flybywire_climb_rate * (plane.nav_pitch_cd / (plane.aparm.pitch_limit_max * 100));
         climb_rate_cms *= plane.get_throttle_input();
     }
-    climb_rate_cms = constrain_float(climb_rate_cms, -wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms());
+    climb_rate_cms = constrain_float(climb_rate_cms, -wp_nav->get_default_speed_down_ms() * 100.0, wp_nav->get_default_speed_up_ms() * 100.0);
 
     // bring in the demanded climb rate over 2 seconds
     const uint32_t ramp_up_time_ms = 2000;
@@ -2148,7 +2148,7 @@ void QuadPlane::update_land_positioning(void)
     float pitch_in = plane.channel_pitch->get_control_in() * scale;
 
     // limit correction speed to accel with stopping time constant of 0.5s
-    const float speed_max_ms = wp_nav->get_wp_acceleration_cmss() * 0.01 * 0.5;
+    const float speed_max_ms = wp_nav->get_wp_acceleration_mss() * 0.5;
     const float dt = plane.scheduler.get_loop_period_s();
 
     poscontrol.target_vel_ms = Vector3f(-pitch_in, roll_in, 0) * speed_max_ms;
@@ -2168,12 +2168,12 @@ void QuadPlane::update_land_positioning(void)
  */
 void QuadPlane::run_xy_controller(float accel_limit_mss)
 {
-    float accel_mss = wp_nav->get_wp_acceleration_cmss() * 0.01;
+    float accel_mss = wp_nav->get_wp_acceleration_mss();
     if (is_positive(accel_limit_mss)) {
         // allow for accel limit override
         accel_mss = MAX(accel_mss, accel_limit_mss);
     }
-    const float speed_ms = wp_nav->get_default_speed_NE_cms() * 0.01;
+    const float speed_ms = wp_nav->get_default_speed_NE_ms();
     pos_control->set_max_speed_accel_NE_m(speed_ms, accel_mss);
     pos_control->set_correction_speed_accel_NE_m(speed_ms, accel_mss);
     if (!pos_control->is_active_NE()) {
@@ -2547,7 +2547,7 @@ void QuadPlane::vtol_position_controller(void)
         float approach_speed_ms = stopping_speed_ms;
 
         // maximum configured VTOL speed
-        const float wp_speed_ms = MAX(1.0, wp_nav->get_default_speed_NE_cms() * 0.01);
+        const float wp_speed_ms = MAX(1.0, wp_nav->get_default_speed_NE_ms());
         const float scaled_wp_speed = get_scaled_wp_speed(degrees(wp_distance_ne_m.angle()));
 
         // limit target speed to a the pos1 speed limit, which starts out at the initial speed
@@ -2844,7 +2844,7 @@ void QuadPlane::vtol_position_controller(void)
             }
         }
         if (poscontrol.get_state() == QPOS_LAND_ABORT) {
-            set_climb_rate_ms(wp_nav->get_default_speed_up_cms() * 0.01);
+            set_climb_rate_ms(wp_nav->get_default_speed_up_ms());
             break;
         }
         const float descent_rate_ms = landing_descent_rate_ms(height_above_ground_m);
@@ -3041,7 +3041,7 @@ void QuadPlane::assign_tilt_to_fwd_thr(void)
 float QuadPlane::get_scaled_wp_speed(float target_bearing_deg) const
 {
     const float yaw_difference = fabsf(wrap_180(degrees(plane.ahrs.get_yaw_rad()) - target_bearing_deg));
-    const float wp_speed_ms = wp_nav->get_default_speed_NE_cms() * 0.01;
+    const float wp_speed_ms = wp_nav->get_default_speed_NE_ms();
     if (yaw_difference > 20) {
         // this gives a factor of 2x reduction in max speed when
         // off by 90 degrees, and 3x when off by 180 degrees
@@ -3166,7 +3166,7 @@ void QuadPlane::takeoff_controller(void)
                                                                   plane.nav_pitch_cd,
                                                                   get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
 
-    float vel_u_ms = wp_nav->get_default_speed_up_cms() * 0.01;
+    float vel_u_ms = wp_nav->get_default_speed_up_ms();
     if (plane.control_mode == &plane.mode_guided && guided_takeoff) {
         // for guided takeoff we aim for a specific height with zero
         // velocity at that height
@@ -3199,7 +3199,7 @@ void QuadPlane::waypoint_controller(void)
     const uint32_t now = AP_HAL::millis();
     if (!loc.same_loc_as(last_auto_target) ||
         now - last_loiter_ms > 500) {
-        wp_nav->set_wp_destination_NEU_cm(poscontrol.target_neu_m.tofloat() * 100);
+        wp_nav->set_wp_destination_NEU_m(poscontrol.target_neu_m.tofloat());
         last_auto_target = loc;
     }
     last_loiter_ms = now;
@@ -3783,7 +3783,7 @@ float QuadPlane::forward_throttle_pct()
     // add in a component from our current pitch demand. This tends to
     // move us to zero pitch. Assume that LIM_PITCH would give us the
     // WP nav speed.
-    fwd_vel_error_ms -= (wp_nav->get_default_speed_NE_cms() * 0.01f) * plane.nav_pitch_cd / (plane.aparm.pitch_limit_max * 100);
+    fwd_vel_error_ms -= (wp_nav->get_default_speed_NE_ms()) * plane.nav_pitch_cd / (plane.aparm.pitch_limit_max * 100);
 
     if (should_relax() && vel_ned_ms.length() < 1) {
         // we may be landed
