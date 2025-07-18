@@ -170,7 +170,7 @@ public:
     virtual bool get_wp(Location &loc) const { return false; };
     virtual float wp_bearing_deg() const { return 0; }
     virtual float wp_distance_m() const { return 0.0f; }
-    virtual float crosstrack_error() const { return 0.0f;}
+    virtual float crosstrack_error_m() const { return 0.0f;}
 
     // functions to support MAV_CMD_DO_CHANGE_SPEED
     virtual bool set_speed_xy_cms(float speed_xy_cms) {return false;}
@@ -621,7 +621,7 @@ protected:
 
     float wp_distance_m() const override;
     float wp_bearing_deg() const override;
-    float crosstrack_error() const override { return wp_nav->crosstrack_error();}
+    float crosstrack_error_m() const override { return wp_nav->crosstrack_error_m();}
     bool get_wp(Location &loc) const override;
 
 private:
@@ -1171,7 +1171,7 @@ protected:
 
     float wp_distance_m() const override;
     float wp_bearing_deg() const override;
-    float crosstrack_error() const override;
+    float crosstrack_error_m() const override;
 
 private:
 
@@ -1343,7 +1343,7 @@ protected:
 
     float wp_distance_m() const override;
     float wp_bearing_deg() const override;
-    float crosstrack_error() const override { return pos_control->crosstrack_error();}
+    float crosstrack_error_m() const override { return pos_control->crosstrack_error_m();}
 
 #if AC_PRECLAND_ENABLED
     bool do_precision_loiter();
@@ -1512,7 +1512,7 @@ protected:
     // for reporting to GCS
     float wp_distance_m() const override;
     float wp_bearing_deg() const override;
-    float crosstrack_error() const override { return wp_nav->crosstrack_error();}
+    float crosstrack_error_m() const override { return wp_nav->crosstrack_error_m();}
 
     void descent_start();
     void descent_run();
@@ -1603,7 +1603,7 @@ protected:
     bool get_wp(Location &loc) const override;
     float wp_distance_m() const override;
     float wp_bearing_deg() const override;
-    float crosstrack_error() const override { return wp_nav->crosstrack_error();}
+    float crosstrack_error_m() const override { return wp_nav->crosstrack_error_m();}
 
 private:
 
@@ -1984,7 +1984,7 @@ protected:
     const char *name4() const override { return "ZIGZ"; }
     float wp_distance_m() const override;
     float wp_bearing_deg() const override;
-    float crosstrack_error() const override;
+    float crosstrack_error_m() const override;
 
 private:
 
