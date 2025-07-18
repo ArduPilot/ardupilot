@@ -25,7 +25,7 @@
    FOLLP_TURN_DEG - if the target is more than this many degrees left or right, assume it's turning
 --]]
 
-SCRIPT_VERSION = "4.7.0-066"
+SCRIPT_VERSION = "4.7.0-067"
 SCRIPT_NAME = "Plane Follow"
 SCRIPT_NAME_SHORT = "PFollow"
 
@@ -349,7 +349,6 @@ local crosstrackpid = {}
 crosstrackpid.__index = crosstrackpid
 
 function crosstrackpid.new(kp, ki, kd, max_correction, integral_limit)
-      --local self = setmetatable({}, crosstrackpid)
    local self = {}
    setmetatable(self, { __index = crosstrackpid })
 
@@ -366,10 +365,10 @@ function crosstrackpid.new(kp, ki, kd, max_correction, integral_limit)
 end
 
 -- reset integrator to an initial value
-function crosstrackpid:reset()
-   local instance = setmetatable({}, crosstrackpid)
-   instance.integral = 0
-   instance.last_error = 0
+function crosstrackpid.reset()
+   self = setmetatable({}, { __index = crosstrackpid })
+   self.integral = 0
+   self.last_error = 0
 end
 
 function crosstrackpid:compute(desired_track_heading, cross_track_error, dt)
