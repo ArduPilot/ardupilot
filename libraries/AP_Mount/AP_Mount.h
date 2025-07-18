@@ -42,7 +42,7 @@ class AP_Mount_SoloGimbal;
 class AP_Mount_Alexmos;
 class AP_Mount_SToRM32;
 class AP_Mount_SToRM32_serial;
-class AP_Mount_Gremsy;
+class AP_Mount_MAVLink;
 class AP_Mount_Siyi;
 class AP_Mount_Scripting;
 class AP_Mount_Xacti;
@@ -65,7 +65,7 @@ class AP_Mount
     friend class AP_Mount_Alexmos;
     friend class AP_Mount_SToRM32;
     friend class AP_Mount_SToRM32_serial;
-    friend class AP_Mount_Gremsy;
+    friend class AP_Mount_MAVLink;
     friend class AP_Mount_Siyi;
     friend class AP_Mount_Scripting;
     friend class AP_Mount_Xacti;
@@ -128,6 +128,9 @@ public:
 #endif
 #if HAL_MOUNT_XFROBOT_ENABLED
         XFRobot = 14,        /// XFRobot gimbal using a custom serial protocol
+#endif
+#if HAL_MOUNT_AVT_ENABLED
+        AVT = 15,            /// AVT gimbal using MAVLink v2 Gimbal protocol
 #endif
     };
 
