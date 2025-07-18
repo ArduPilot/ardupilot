@@ -218,7 +218,7 @@ local function update()
       return
    end
 
-   if xy_dist > PLND_XY_DIST_MAX:get() then
+   if PLND_XY_DIST_MAX:get() > 0 and xy_dist > PLND_XY_DIST_MAX:get() then
       -- pause descent till we are within the given radius
       vehicle:set_land_descent_rate(0)
    end
