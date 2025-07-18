@@ -60,6 +60,9 @@ public:
         _use_yaw_rate = use_yaw_rate;
         _yaw_rate_rads = yaw_rate_rads;
     }
+    Quaternion get_attitude_target_quat() { return _target_att; }
+    bool get_attitude_target_use_yaw_rate() { return _use_yaw_rate; }
+    float get_attitude_target_yaw_rate_rads() { return _yaw_rate_rads; }
 
 private:
     Quaternion _target_att;
