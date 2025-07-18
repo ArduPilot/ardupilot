@@ -288,7 +288,7 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
             break;
 #endif // AP_RANGEFINDER_ENABLED
 
-#if MODE_ACRO_ENABLED
+#if MODE_ACRO_ENABLED || MODE_RATE_ACRO_ENABLED
         case AUX_FUNC::ACRO_TRAINER:
             switch(ch_flag) {
                 case AuxSwitchPos::LOW:
@@ -531,6 +531,12 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
             break;
 #endif
 
+#if MODE_RATE_ACRO_ENABLED
+        case AUX_FUNC::RATE_ACRO:
+            do_aux_function_change_mode(Mode::Number::RATE_ACRO, ch_flag);
+            break;
+#endif
+
 #if MODE_FLOWHOLD_ENABLED
         case AUX_FUNC::FLOWHOLD:
             do_aux_function_change_mode(Mode::Number::FLOWHOLD, ch_flag);
@@ -613,7 +619,7 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
 
         case AUX_FUNC::AIRMODE:
             do_aux_function_change_air_mode(ch_flag);
-#if MODE_ACRO_ENABLED && FRAME_CONFIG != HELI_FRAME
+#if (MODE_ACRO_ENABLED || MODE_RATE_ACRO_ENABLED) && FRAME_CONFIG != HELI_FRAME
             copter.mode_acro.air_mode_aux_changed();
 #endif
             break;

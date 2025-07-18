@@ -467,13 +467,13 @@ public:
 
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
 
-#if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
+#if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED || MODE_RATE_ACRO_ENABLED
     // Acro parameters
     AP_Float                acro_balance_roll;
     AP_Float                acro_balance_pitch;
 #endif
 
-#if MODE_ACRO_ENABLED
+#if MODE_ACRO_ENABLED || MODE_RATE_ACRO_ENABLED
     // Acro parameters
     AP_Int8                 acro_trainer;
 #endif
@@ -541,7 +541,7 @@ public:
     // developer options
     AP_Int32 dev_options;
 
-#if MODE_ACRO_ENABLED
+#if MODE_ACRO_ENABLED || MODE_RATE_ACRO_ENABLED
     AP_Float acro_thr_mid;
 #endif
 
@@ -624,11 +624,11 @@ public:
 #endif
 
     // command model parameters
-#if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
+#if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED || MODE_RATE_ACRO_ENABLED
     AC_CommandModel command_model_acro_rp;
 #endif
 
-#if MODE_ACRO_ENABLED || MODE_DRIFT_ENABLED
+#if MODE_ACRO_ENABLED || MODE_DRIFT_ENABLED || MODE_RATE_ACRO_ENABLED
     AC_CommandModel command_model_acro_y;
 #endif
 
