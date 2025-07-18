@@ -54,6 +54,7 @@ AC_Circle::AC_Circle(const AP_AHRS_View& ahrs, AC_PosControl& pos_control) :
 // See init_NEU_m() for full details.
 void AC_Circle::init_NEU_cm(const Vector3p& center_neu_cm, bool is_terrain_alt, float rate_degs)
 {
+    // Convert input from cm to meters and delegate to meter-based initializer
     init_NEU_m(center_neu_cm * 0.01, is_terrain_alt, rate_degs);
 }
 
@@ -65,18 +66,21 @@ void AC_Circle::init_NEU_cm(const Vector3p& center_neu_cm, bool is_terrain_alt, 
 // Caller must preconfigure the position controller's speed and acceleration settings before calling.
 void AC_Circle::init_NEU_m(const Vector3p& center_neu_m, bool is_terrain_alt, float rate_degs)
 {
+    // Store circle center and frame reference
     _center_neu_m = center_neu_m;
     _is_terrain_alt = is_terrain_alt;
+
+    // Convert desired turn rate from degrees to radians
     _rotation_rate_max_rads = radians(rate_degs);
 
-    // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
+    // Initialise position controller using current lean angles
     _pos_control.init_NE_controller_stopping_point();
     _pos_control.init_U_controller_stopping_point();
 
-    // calculate velocities
+    // Calculate velocity and acceleration limits based on circle configuration
     calc_velocities(true);
 
-    // set start angle from position
+    // Use position-based angle initialization (avoids sharp yaw discontinuity)
     init_start_angle(false);
 }
 
@@ -85,30 +89,34 @@ void AC_Circle::init_NEU_m(const Vector3p& center_neu_m, bool is_terrain_alt, fl
 // Caller must configure position controller speeds and accelerations beforehand.
 void AC_Circle::init()
 {
-    // initialize radius and rate from params
+    // Load radius and rate from parameters
     _radius_m = _radius_parm_cm * 0.01;
     _last_radius_param_cm = _radius_parm_cm;
     _rotation_rate_max_rads = radians(_rate_parm_degs);
 
-    // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
+    // Initialise position controller using current lean angles
     _pos_control.init_NE_controller_stopping_point();
     _pos_control.init_U_controller_stopping_point();
 
-    // get stopping point
+    // Get stopping point as initial reference for center
     const Vector3p& stopping_point_neu_m = _pos_control.get_pos_desired_NEU_m();
 
-    // set circle center to circle_radius ahead of stopping point
+    // By default, set center to stopping point
     _center_neu_m = stopping_point_neu_m;
+
+    // If INIT_AT_CENTER is not set, project center forward by radius in heading direction
     if ((_options.get() & CircleOptions::INIT_AT_CENTER) == 0) {
         _center_neu_m.x += _radius_m * _ahrs.cos_yaw();
         _center_neu_m.y += _radius_m * _ahrs.sin_yaw();
     }
+
+    // Circle altitude is relative to EKF origin by default
     _is_terrain_alt = false;
 
-    // calculate velocities
+    // Calculate velocity and acceleration constraints
     calc_velocities(true);
 
-    // set starting angle from vehicle heading
+    // Initialize angle using vehicle heading
     init_start_angle(true);
 }
 
@@ -117,26 +125,31 @@ void AC_Circle::init()
 // If conversion fails, defaults to current position and logs a navigation error.
 void AC_Circle::set_center(const Location& center)
 {
+    // Check if the location uses terrain-relative altitude
     if (center.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) {
         // convert Location with terrain altitude
         Vector2f center_ne_m;
         float terr_alt_m;
+
+        // Attempt to convert XY and Z to NEU frame with terrain altitude
         if (center.get_vector_xy_from_origin_NE_m(center_ne_m) && 
         center.get_alt_m(Location::AltFrame::ABOVE_TERRAIN, terr_alt_m)) {
             set_center_NEU_m(Vector3f(center_ne_m.x, center_ne_m.y, terr_alt_m), true);
         } else {
-            // failed to convert location so set to current position and log error
+            // Conversion failed: fall back to current position and log error
             set_center_NEU_m(_pos_control.get_pos_estimate_NEU_m().tofloat(), false);
             LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
         }
     } else {
-        // convert Location with alt-above-home, alt-above-origin or absolute alt
+        // Handle alt-above-origin, alt-above-home, or absolute altitudes
         Vector3f circle_center_neu_m;
         if (!center.get_vector_from_origin_NEU_m(circle_center_neu_m)) {
-            // default to current position and log error
+            // Conversion failed: fall back to current position and log error
             circle_center_neu_m = _pos_control.get_pos_estimate_NEU_m().tofloat();
             LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
         }
+
+        // Apply converted center and mark it as origin-relative
         set_center_NEU_m(circle_center_neu_m, false);
     }
 }
@@ -145,6 +158,7 @@ void AC_Circle::set_center(const Location& center)
 // Positive values result in clockwise rotation; negative for counter-clockwise.
 void AC_Circle::set_rate_degs(float rate_degs)
 {
+    // Convert the rate from degrees/sec to radians/sec
     _rotation_rate_max_rads = radians(rate_degs);
 }
 
@@ -152,6 +166,7 @@ void AC_Circle::set_rate_degs(float rate_degs)
 // See set_radius_m() for full details.
 void AC_Circle::set_radius_cm(float radius_cm)
 {
+    // Convert input from cm to meters and call set_radius_m()
     set_radius_m(radius_cm * 0.01);
 }
 
@@ -159,6 +174,7 @@ void AC_Circle::set_radius_cm(float radius_cm)
 // Radius is constrained to AC_CIRCLE_RADIUS_MAX_M.
 void AC_Circle::set_radius_m(float radius_m)
 {
+    // Constrain the radius to prevent unsafe or invalid circle sizes
     _radius_m = constrain_float(radius_m, 0, AC_CIRCLE_RADIUS_MAX_M);
 }
 
@@ -166,6 +182,7 @@ void AC_Circle::set_radius_m(float radius_m)
 // Used by vehicle code to determine if yaw and position outputs are valid.
 bool AC_Circle::is_active() const
 {
+    // Consider the controller active if the last update occurred within the past 200 milliseconds
     return (AP_HAL::millis() - _last_update_ms < 200);
 }
 
@@ -173,6 +190,7 @@ bool AC_Circle::is_active() const
 // See update_ms() for full implementation details.
 bool AC_Circle::update_cms(float climb_rate_cms)
 {
+    // Convert climb rate from cm/s to m/s and call the meter-based update
     return update_ms(climb_rate_cms * 0.01);
 }
 
@@ -181,6 +199,7 @@ bool AC_Circle::update_cms(float climb_rate_cms)
 // Returns false if terrain data is required but unavailable.
 bool AC_Circle::update_ms(float climb_rate_ms)
 {
+    // Recalculate angular velocities based on the current radius and rate
     calc_velocities(false);
 
     // calculate dt
@@ -216,20 +235,21 @@ bool AC_Circle::update_ms(float climb_rate_ms)
         target_z_m = _pos_control.get_pos_desired_U_m();
     }
 
-    // if the circle_radius is zero we are doing panorama so no need to update loiter target
+    // Construct target position centered on the circle center
     Vector3p target_neu_m {
         _center_neu_m.x,
         _center_neu_m.y,
         target_z_m
     };
     if (!is_zero(_radius_m)) {
-        // calculate target position
+        // Calculate position on the circle edge based on current angle
         target_neu_m.x += _radius_m * cosf(-_angle_rad);
         target_neu_m.y += - _radius_m * sinf(-_angle_rad);
 
-        // heading is from vehicle to center of circle
+        // Compute yaw toward the circle center
         _yaw_rad = get_bearing_rad(_pos_control.get_pos_desired_NEU_m().xy().tofloat(), _center_neu_m.xy().tofloat());
 
+        // Optionally adjust yaw to face direction of travel
         if ((_options.get() & CircleOptions::FACE_DIRECTION_OF_TRAVEL) != 0) {
             _yaw_rad += is_positive(_rotation_rate_max_rads) ? -radians(90.0) : radians(90.0);
             _yaw_rad = wrap_PI(_yaw_rad);
@@ -264,9 +284,14 @@ bool AC_Circle::update_ms(float climb_rate_ms)
 // See get_closest_point_on_circle_NEU_m() for full details.
 void AC_Circle::get_closest_point_on_circle_NEU_cm(Vector3f& result_neu_cm, float& dist_cm) const
 {
+    // Convert input arguments from cm to meters
     Vector3f result_neu_m = result_neu_cm * 0.01;
     float dist_m = dist_cm * 0.01;
+
+    // Compute closest point in meters
     get_closest_point_on_circle_NEU_m(result_neu_m, dist_m);
+
+    // Convert results back to centimeters
     result_neu_cm = result_neu_m * 100.0;
     dist_cm = dist_m * 100.0;
 }
@@ -278,22 +303,22 @@ void AC_Circle::get_closest_point_on_circle_NEU_cm(Vector3f& result_neu_cm, floa
 // If the vehicle is at the center, the point directly behind the vehicle (based on yaw) is returned.
 void AC_Circle::get_closest_point_on_circle_NEU_m(Vector3f& result_neu_m, float& dist_m) const
 {
-    // get current position
+    // Get vehicle stopping point from the position controller (in NEU frame, meters)
     Vector3p stopping_point_neu_m;
     _pos_control.get_stopping_point_NE_m(stopping_point_neu_m.xy());
     _pos_control.get_stopping_point_U_m(stopping_point_neu_m.z);
 
-    // calc vector from stopping point to circle center
+    // Compute vector from stopping point to the circle center
     Vector3f vec_to_center_neu_m = (stopping_point_neu_m - _center_neu_m).tofloat();
     dist_m = vec_to_center_neu_m.length();
 
-    // return center if radius is zero
+    // Return circle center if radius is zero (vehicle orbits in place)
     if (!is_positive(_radius_m)) {
         result_neu_m = _center_neu_m.tofloat();
         return;
     }
 
-    // if current location is exactly at the center of the circle return edge directly behind vehicle
+    // Handle edge case: vehicle is at the exact center of the circle
     if (is_zero(dist_m)) {
         result_neu_m.x = _center_neu_m.x - _radius_m * _ahrs.cos_yaw();
         result_neu_m.y = _center_neu_m.y - _radius_m * _ahrs.sin_yaw();
@@ -301,7 +326,7 @@ void AC_Circle::get_closest_point_on_circle_NEU_m(Vector3f& result_neu_m, float&
         return;
     }
 
-    // calculate closest point on edge of circle
+    // Calculate the closest point on the circle's edge by projecting out from center
     result_neu_m.x = _center_neu_m.x + vec_to_center_neu_m.x / dist_m * _radius_m;
     result_neu_m.y = _center_neu_m.y + vec_to_center_neu_m.y / dist_m * _radius_m;
     result_neu_m.z = _center_neu_m.z;
@@ -312,23 +337,25 @@ void AC_Circle::get_closest_point_on_circle_NEU_m(Vector3f& result_neu_m, float&
 // If `init_velocity` is true, resets angular velocity to zero (used on controller startup).
 void AC_Circle::calc_velocities(bool init_velocity)
 {
-    // if we are doing a panorama set the circle_angle to the current heading
+    // If performing a panorama (radius is zero), use current yaw rate and enforce minimum acceleration
     if (_radius_m <= 0) {
         _angular_vel_max_rads = _rotation_rate_max_rads;
         _angular_accel_radss = MAX(fabsf(_angular_vel_max_rads), radians(AC_CIRCLE_ANGULAR_ACCEL_MIN));  // reach maximum yaw velocity in 1 second
     }else{
-        // calculate max velocity based on waypoint speed ensuring we do not use more than half our max acceleration for accelerating towards the center of the circle
+        // Limit max horizontal speed based on radius and available acceleration
         float vel_max_ms = MIN(_pos_control.get_max_speed_NE_ms(), safe_sqrt(0.5f*_pos_control.get_max_accel_NE_mss()*_radius_m));
 
-        // angular_velocity in radians per second
+        // Convert linear speed to angular velocity (rad/s)
         _angular_vel_max_rads = vel_max_ms/_radius_m;
+
+        // Constrain to requested circle rate
         _angular_vel_max_rads = constrain_float(_rotation_rate_max_rads, -_angular_vel_max_rads, _angular_vel_max_rads);
 
-        // angular_velocity in radians per second
+        // Derive maximum angular acceleration
         _angular_accel_radss = MAX(_pos_control.get_max_accel_NE_mss() / _radius_m, radians(AC_CIRCLE_ANGULAR_ACCEL_MIN));
     }
 
-    // initialise angular velocity
+    // Reset angular velocity to zero at initialization if requested
     if (init_velocity) {
         _angular_vel_rads = 0.0;
     }
@@ -339,10 +366,10 @@ void AC_Circle::calc_velocities(bool init_velocity)
 // If false, uses position relative to circle center to set angle.
 void AC_Circle::init_start_angle(bool use_heading)
 {
-    // initialise angle total
+    // Reset the accumulated angle traveled around the circle
     _angle_total_rad = 0.0;
 
-    // if the radius is zero we are doing panorama so init angle to the current heading
+    // If radius is zero, we're doing a panorama—set angle to current yaw heading
     if (_radius_m <= 0) {
         _angle_rad = _ahrs.yaw;
         return;
@@ -350,15 +377,15 @@ void AC_Circle::init_start_angle(bool use_heading)
 
     // if use_heading is true
     if (use_heading) {
+        // Initialize angle directly behind current heading to minimize yaw motion
         _angle_rad = wrap_PI(_ahrs.yaw - M_PI);
     } else {
-        // if we are exactly at the center of the circle, init angle to directly behind vehicle (so vehicle will backup but not change heading)
-        // curr_pos_desired_neu_m is the position before we add offsets and terrain
+        // If vehicle is exactly at the center, init angle behind vehicle (prevent undefined bearing)
         const Vector3f &curr_pos_desired_neu_m = _pos_control.get_pos_desired_NEU_m().tofloat();
         if (is_equal(curr_pos_desired_neu_m.x, float(_center_neu_m.x)) && is_equal(curr_pos_desired_neu_m.y, float(_center_neu_m.y))) {
             _angle_rad = wrap_PI(_ahrs.yaw - M_PI);
         } else {
-            // get bearing from circle center to vehicle in radians
+            // Calculate bearing from circle center to current position
             float bearing_rad = atan2f(curr_pos_desired_neu_m.y - _center_neu_m.y, curr_pos_desired_neu_m.x - _center_neu_m.x);
             _angle_rad = wrap_PI(bearing_rad);
         }
@@ -369,11 +396,12 @@ void AC_Circle::init_start_angle(bool use_heading)
 // Used to determine whether terrain offset comes from rangefinder, terrain database, or is unavailable.
 AC_Circle::TerrainSource AC_Circle::get_terrain_source() const
 {
-    // use range finder if connected
+    // Use rangefinder if available and enabled
     if (_rangefinder_available) {
         return AC_Circle::TerrainSource::TERRAIN_FROM_RANGEFINDER;
     }
 #if AP_TERRAIN_AVAILABLE
+    // Fallback to terrain database if available and enabled
     const AP_Terrain *terrain = AP_Terrain::get_singleton();
     if ((terrain != nullptr) && terrain->enabled()) {
         return AC_Circle::TerrainSource::TERRAIN_FROM_TERRAINDATABASE;
@@ -381,6 +409,7 @@ AC_Circle::TerrainSource AC_Circle::get_terrain_source() const
         return AC_Circle::TerrainSource::TERRAIN_UNAVAILABLE;
     }
 #else
+    // Terrain unavailable if no valid source
     return AC_Circle::TerrainSource::TERRAIN_UNAVAILABLE;
 #endif
 }
@@ -389,8 +418,11 @@ AC_Circle::TerrainSource AC_Circle::get_terrain_source() const
 // See get_terrain_offset_m() for full details.
 bool AC_Circle::get_terrain_offset_cm(float& offset_cm)
 {
+    // Convert input value to meters for internal processing
     float offset_m = offset_cm * 0.01;
+    // Retrieve terrain offset in meters
     bool terrain_valid = get_terrain_offset_m(offset_m);
+    // Convert result back to centimeters
     offset_cm = offset_m * 100.0;
     return terrain_valid;
 }
@@ -400,12 +432,13 @@ bool AC_Circle::get_terrain_offset_cm(float& offset_cm)
 // Terrain source may be rangefinder or terrain database.
 bool AC_Circle::get_terrain_offset_m(float& offset_m)
 {
-    // calculate offset based on source (rangefinder or terrain database)
+    // Determine terrain source and calculate offset accordingly
     switch (get_terrain_source()) {
     case AC_Circle::TerrainSource::TERRAIN_UNAVAILABLE:
         return false;
     case AC_Circle::TerrainSource::TERRAIN_FROM_RANGEFINDER:
         if (_rangefinder_healthy) {
+            // Use last known healthy rangefinder terrain offset
             offset_m = _rangefinder_terrain_offset_m;
             return true;
         }
@@ -415,6 +448,7 @@ bool AC_Circle::get_terrain_offset_m(float& offset_m)
         float terr_alt_m = 0.0f;
         AP_Terrain *terrain = AP_Terrain::get_singleton();
         if (terrain != nullptr && terrain->height_above_terrain(terr_alt_m, true)) {
+            // Calculate offset from EKF origin altitude to terrain altitude
             offset_m = _pos_control.get_pos_estimate_NEU_m().z - terr_alt_m;
             return true;
         }
@@ -422,7 +456,7 @@ bool AC_Circle::get_terrain_offset_m(float& offset_m)
         return false;
     }
 
-    // we should never get here but just in case
+    // This fallback should never be reached
     return false;
 }
 
@@ -430,8 +464,11 @@ bool AC_Circle::get_terrain_offset_m(float& offset_m)
 // If so, updates internal `_radius_m` and stores the new parameter value.
 void AC_Circle::check_param_change()
 {
+    // Check if the stored radius param has changed
     if (!is_equal(_last_radius_param_cm, _radius_parm_cm.get())) {
+        // Convert radius from cm to meters and update internal radius
         _radius_m = _radius_parm_cm * 0.01;
+        // Store new parameter value to detect future changes
         _last_radius_param_cm = _radius_parm_cm;
     }
 }
