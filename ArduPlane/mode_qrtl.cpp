@@ -116,7 +116,7 @@ void ModeQRTL::run()
                                                                           quadplane.get_weathervane_yaw_rate_cds());
 
             // climb at full WP nav speed
-            quadplane.set_climb_rate_ms(quadplane.wp_nav->get_default_speed_up_cms() * 0.01);
+            quadplane.set_climb_rate_ms(quadplane.wp_nav->get_default_speed_up_ms());
             quadplane.run_z_controller();
 
             // Climb done when stopping point reaches target altitude
