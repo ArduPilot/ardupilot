@@ -663,7 +663,8 @@ bool AC_WPNav::get_terrain_offset_cm(float& offset_cm)
             offset_cm = _rangefinder_terrain_offset_cm;
             return true;
         }
-        return false;
+        // If the rangefinder isn't healthy then use terrain data if available
+        FALLTHROUGH;
     case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
 #if AP_TERRAIN_AVAILABLE
         float terrain_alt_m = 0.0f;

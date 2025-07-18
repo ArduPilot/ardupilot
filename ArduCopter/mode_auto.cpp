@@ -1564,7 +1564,7 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     const Location target_loc = loc_from_cmd(cmd, default_loc);
 
     if (!wp_start(target_loc)) {
-        // failure to set next destination can only be because of missing terrain data
+        // failure to set next destination can be because of missing terrain data or unhealthy rangefinder
         copter.failsafe_terrain_on_event();
         return;
     }

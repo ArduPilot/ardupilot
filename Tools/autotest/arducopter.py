@@ -156,11 +156,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.hover()
         self.progress("TAKEOFF COMPLETE")
 
-    def land_and_disarm(self, timeout=60):
+    def land_and_disarm(self, timeout=60, min_alt=6):
         """Land the quad."""
         self.progress("STARTING LANDING")
         self.change_mode("LAND")
-        self.wait_landed_and_disarmed(timeout=timeout)
+        self.wait_landed_and_disarmed(timeout=timeout, min_alt=min_alt)
 
     def wait_landed_and_disarmed(self, min_alt=6, timeout=60):
         """Wait to be landed and disarmed"""
@@ -168,7 +168,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         alt = m.relative_alt / 1000.0 # mm -> m
         if alt > min_alt:
             self.wait_altitude(min_alt-1, min_alt+5, relative=True, timeout=timeout)
-#        self.wait_statustext("SIM Hit ground", timeout=timeout)
         self.wait_disarmed()
 
     def hover(self, hover_throttle=1500):
@@ -4352,7 +4351,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "rangefinder/global position int mismatch %0.2f vs %0.2f" %
                 (m_r.distance, m_p.relative_alt/1000))
 
-        self.land_and_disarm()
+        self.land_and_disarm(min_alt=0)
 
         if not self.current_onboard_log_contains_message("RFND"):
             raise NotAchievedException("Did not see expected RFND message")
