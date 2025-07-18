@@ -47,9 +47,9 @@ public:
     void set_radius_cm(float radius_cm);
 
     /// get_rate_degs - returns target rate in deg/sec held in RATE parameter
-    float get_rate_degs() const { return _rate_degs; }
+    float get_rate_degs() const { return degrees(_rotation_rate_max_rads); }
 
-    /// get_rate_current - returns actual calculated rate target in deg/sec, which may be less than _rate_degs
+    /// get_rate_current - returns actual calculated rate target in deg/sec, which may be less than _rotation_rate_max
     float get_rate_current() const { return degrees(_angular_vel_rads); }
 
     /// set_rate - set circle rate in degrees per second
@@ -147,17 +147,17 @@ private:
     AP_Int16    _options;           // stick control enable/disable
 
     // internal variables
-    Vector3p    _center_neu_cm;         // center of circle in cm from home
-    float       _radius_cm;             // radius of circle in cm
-    float       _rate_degs;             // rotation speed of circle in deg/sec. +ve for cw turn
-    float       _yaw_rad;               // yaw heading (normally towards circle center)
-    float       _angle_rad;             // current angular position around circle in radians (0=directly north of the center of the circle)
-    float       _angle_total_rad;       // total angle traveled in radians
-    float       _angular_vel_rads;      // angular velocity in radians/sec
-    float       _angular_vel_max_rads;  // maximum velocity in radians/sec
-    float       _angular_accel_radss;   // angular acceleration in radians/sec/sec
-    uint32_t    _last_update_ms;        // system time of last update
-    float       _last_radius_param_cm;  // last value of radius param, used to update radius on param change
+    Vector3p    _center_neu_cm;             // center of circle in cm from home
+    float       _radius_cm;                 // radius of circle in cm
+    float       _rotation_rate_max_rads;    // rotation speed of circle in rad/sec. +ve for cw turn
+    float       _yaw_rad;                   // yaw heading (normally towards circle center)
+    float       _angle_rad;                 // current angular position around circle in radians (0=directly north of the center of the circle)
+    float       _angle_total_rad;           // total angle traveled in radians
+    float       _angular_vel_rads;          // angular velocity in radians/sec
+    float       _angular_vel_max_rads;      // maximum velocity in radians/sec
+    float       _angular_accel_radss;       // angular acceleration in radians/sec/sec
+    uint32_t    _last_update_ms;            // system time of last update
+    float       _last_radius_param_cm;      // last value of radius param, used to update radius on param change
 
     // terrain following variables
     bool        _is_terrain_alt;                // true if _center_neu_cm.z is alt-above-terrain, false if alt-above-ekf-origin
