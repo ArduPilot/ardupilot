@@ -5360,7 +5360,8 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
 }
 #endif  // AP_MAVLINK_COMMAND_LONG_ENABLED
 
-MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const Location &roi_loc)
+
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(uint8_t instance, const Location &roi_loc)
 {
 #if HAL_MOUNT_ENABLED
     AP_Mount *mount = AP::mount();
@@ -5372,18 +5373,23 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const Location &roi_loc)
     if (!roi_loc.check_latlng()) {
         return MAV_RESULT_FAILED;
     }
+    
+    bool success = true;
 
     if (roi_loc.lat == 0 && roi_loc.lng == 0 && roi_loc.alt == 0) {
-        mount->clear_roi_target();
+        success = mount->clear_roi_target(instance);
     } else {
-        mount->set_roi_target(roi_loc);
+        success = mount->set_roi_target(instance, roi_loc);
+    }
+
+    if(!success){
+        return MAV_RESULT_FAILED;
     }
     return MAV_RESULT_ACCEPTED;
 #else
     return MAV_RESULT_UNSUPPORTED;
 #endif
 }
-
 
 void GCS_MAVLINK::handle_landing_target(const mavlink_message_t &msg)
 {
@@ -5503,7 +5509,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &p
     if (!location_from_command_t(packet, roi_loc)) {
         return MAV_RESULT_DENIED;
     }
-    return handle_command_do_set_roi(roi_loc);
+    return handle_command_do_set_roi(packet.param1, roi_loc);
 }
 
 #if AP_FILESYSTEM_FORMAT_ENABLED
@@ -5658,7 +5664,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 
     case MAV_CMD_DO_SET_ROI_NONE: {
         const Location zero_loc;
-        return handle_command_do_set_roi(zero_loc);
+        return handle_command_do_set_roi(packet.param1, zero_loc);
     }
 
     case MAV_CMD_DO_SET_ROI:

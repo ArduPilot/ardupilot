@@ -28,7 +28,7 @@ protected:
     void send_position_target_global_int() override;
     void send_position_target_local_ned() override;
 
-    MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;
+    MAV_RESULT handle_command_do_set_roi(uint8_t instance, const Location &roi_loc) override;
     MAV_RESULT handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
 #if HAL_MOUNT_ENABLED
     MAV_RESULT handle_command_mount(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;

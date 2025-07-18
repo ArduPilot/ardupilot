@@ -227,7 +227,7 @@ MAV_RESULT GCS_MAVLINK_Blimp::_handle_command_preflight_calibration(const mavlin
 }
 
 
-MAV_RESULT GCS_MAVLINK_Blimp::handle_command_do_set_roi(const Location &roi_loc)
+MAV_RESULT GCS_MAVLINK_Blimp::handle_command_do_set_roi(uint8_t instance, const Location &roi_loc)
 {
     if (!roi_loc.check_latlng()) {
         return MAV_RESULT_FAILED;

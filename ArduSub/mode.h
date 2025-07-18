@@ -321,7 +321,7 @@ public:
     void auto_circle_movetoedge_start(const Location &circle_center, float radius_m, bool ccw_turn);
     void auto_circle_start();
     void auto_nav_guided_start();
-    void set_auto_yaw_roi(const Location &roi_location);
+    void set_auto_yaw_roi(uint8_t instance, const Location &roi_location);
     void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, uint8_t relative_angle);
     void set_yaw_rate(float turn_rate_dps);
     bool auto_terrain_recover_start();
