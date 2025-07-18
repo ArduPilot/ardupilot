@@ -366,7 +366,7 @@ public:
     // Returns lateral (cross-track) position error in meters.
     // Computed as the perpendicular distance between current position and the planned path.
     // Used to assess horizontal deviation from the trajectory.
-    float crosstrack_error() const { return _pos_control.crosstrack_error_m();}
+    float crosstrack_error_m() const { return _pos_control.crosstrack_error_m();}
 
     static const struct AP_Param::GroupInfo var_info[];
 
