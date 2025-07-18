@@ -47,7 +47,7 @@ public:
     void set_radius_cm(float radius_cm);
 
     /// get_rate_degs - returns target rate in deg/sec held in RATE parameter
-    float get_rate_degs() const { return degrees(_rotation_rate_max_rads); }
+    float get_rate_degs() const { return _rate_parm_degs; }
 
     /// get_rate_current - returns actual calculated rate target in deg/sec, which may be less than _rotation_rate_max
     float get_rate_current() const { return degrees(_angular_vel_rads); }
