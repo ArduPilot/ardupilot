@@ -309,6 +309,7 @@ class ExtractFeatures(object):
             ('AP_PERIPH_BATTERY_BALANCE_ENABLED', r'AP_Periph_FW::batt_balance_update'),
             ('AP_PERIPH_BATTERY_TAG_ENABLED', r'BatteryTag::update'),
             ('AP_PERIPH_PROXIMITY_ENABLED', r'AP_Periph_FW::can_proximity_update'),
+            ('AP_PERIPH_GPS_ENABLED', 'AP_Periph_FW::can_gps_update'),
         ]
 
     def progress(self, msg):
