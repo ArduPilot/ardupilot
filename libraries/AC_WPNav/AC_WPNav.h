@@ -233,8 +233,9 @@ public:
     /// recalculate path with update speed and/or acceleration limits
     void update_track_with_speed_accel_limits();
 
-    /// return the crosstrack_error - horizontal error of the actual position vs the desired position
-    float crosstrack_error() const { return _pos_control.crosstrack_error_m();}
+    /// Returns lateral distance to closest point on active trajectory in meters.
+    /// Used to assess horizontal deviation from path.
+    float crosstrack_error_m() const { return _pos_control.crosstrack_error_m();}
 
     static const struct AP_Param::GroupInfo var_info[];
 
