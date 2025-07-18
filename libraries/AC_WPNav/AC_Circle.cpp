@@ -39,7 +39,6 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
 // Default constructor.
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
-//
 AC_Circle::AC_Circle(const AP_AHRS_View& ahrs, AC_PosControl& pos_control) :
     _ahrs(ahrs),
     _pos_control(pos_control)
@@ -233,10 +232,10 @@ bool AC_Circle::update_cms(float climb_rate_cms)
 }
 
 // get_closest_point_on_circle_NEU_cm - returns closest point on the circle
-//  circle's center should already have been set
-//  closest point on the circle will be placed in result_NEU_cm, dist_cm will be updated with the 3D distance to the center
-//  result_NEU_cm's altitude (i.e. z) will be set to the circle_center's altitude
-//  if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
+//      circle's center should already have been set
+//      closest point on the circle will be placed in result_NEU_cm, dist_cm will be updated with the 3D distance to the center
+//      result_NEU_cm's altitude (i.e. z) will be set to the circle_center's altitude
+//      if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
 void AC_Circle::get_closest_point_on_circle_NEU_cm(Vector3f& result_NEU_cm, float& dist_cm) const
 {
     // get current position
@@ -296,8 +295,8 @@ void AC_Circle::calc_velocities(bool init_velocity)
 }
 
 // init_start_angle - sets the starting angle around the circle and initialises the angle_total
-//  if use_heading is true the vehicle's heading will be used to init the angle causing minimum yaw movement
-//  if use_heading is false the vehicle's position from the center will be used to initialise the angle
+//      if use_heading is true the vehicle's heading will be used to init the angle causing minimum yaw movement
+//      if use_heading is false the vehicle's position from the center will be used to initialise the angle
 void AC_Circle::init_start_angle(bool use_heading)
 {
     // initialise angle total
