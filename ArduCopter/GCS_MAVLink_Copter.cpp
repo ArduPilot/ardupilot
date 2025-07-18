@@ -217,9 +217,9 @@ void GCS_MAVLINK_Copter::send_nav_controller_output() const
         degrees(targets_rad.z),
         flightmode->wp_bearing_deg(),
         MIN(flightmode->wp_distance_m(), UINT16_MAX),
-        copter.pos_control->get_pos_error_U_cm() * 1.0e-2f,
+        copter.pos_control->get_pos_error_U_cm() * 0.01,
         0,
-        flightmode->crosstrack_error() * 1.0e-2f);
+        flightmode->crosstrack_error_m() * 0.01);
 }
 
 float GCS_MAVLINK_Copter::vfr_hud_airspeed() const
