@@ -66,8 +66,8 @@ public:
     float get_roll_cd() const { return _pos_control.get_roll_cd(); }
     float get_pitch_cd() const { return _pos_control.get_pitch_cd(); }
     Vector3f get_thrust_vector() const { return _pos_control.get_thrust_vector(); }
-    float get_yaw_cd() const { return _yaw_cd; }
-    float get_yaw_rad() const { return cd_to_rad(_yaw_cd); }
+    float get_yaw_cd() const { return rad_to_cd(_yaw_rad); }
+    float get_yaw_rad() const { return _yaw_rad; }
 
     /// returns true if update has been run recently
     /// used by vehicle code to determine if get_yaw() is valid
@@ -150,7 +150,7 @@ private:
     Vector3p    _center_neu_cm;         // center of circle in cm from home
     float       _radius_cm;             // radius of circle in cm
     float       _rate_degs;             // rotation speed of circle in deg/sec. +ve for cw turn
-    float       _yaw_cd;                // yaw heading (normally towards circle center)
+    float       _yaw_rad;               // yaw heading (normally towards circle center)
     float       _angle_rad;             // current angular position around circle in radians (0=directly north of the center of the circle)
     float       _angle_total_rad;       // total angle traveled in radians
     float       _angular_vel_rads;      // angular velocity in radians/sec

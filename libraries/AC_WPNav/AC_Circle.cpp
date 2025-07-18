@@ -199,16 +199,16 @@ bool AC_Circle::update_cms(float climb_rate_cms)
         target_neu_cm.y += - _radius_cm * sinf(-_angle_rad);
 
         // heading is from vehicle to center of circle
-        _yaw_cd = get_bearing_cd(_pos_control.get_pos_desired_NEU_cm().xy().tofloat(), _center_neu_cm.xy().tofloat());
+        _yaw_rad = get_bearing_rad(_pos_control.get_pos_desired_NEU_cm().xy().tofloat(), _center_neu_cm.xy().tofloat());
 
         if ((_options.get() & CircleOptions::FACE_DIRECTION_OF_TRAVEL) != 0) {
-            _yaw_cd += is_positive(_rate_degs)?-9000.0f:9000.0f;
-            _yaw_cd = wrap_360_cd(_yaw_cd);
+            _yaw_rad += is_positive(_rate_degs) ? -radians(90.0) : radians(90.0);
+            _yaw_rad = wrap_PI(_yaw_rad);
         }
 
     } else {
         // heading is same as _angle_rad but converted to centi-degrees
-        _yaw_cd = rad_to_cd(_angle_rad);
+        _yaw_rad = _angle_rad;
     }
 
     // update position controller target
