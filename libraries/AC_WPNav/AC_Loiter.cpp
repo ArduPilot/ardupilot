@@ -5,15 +5,15 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define LOITER_SPEED_DEFAULT_CM             1250.0  // default loiter speed in cm/s
-#define LOITER_SPEED_MIN_CMS                20.0    // minimum loiter speed in cm/s
-#define LOITER_ACCEL_MAX_DEFAULT_CMSS       500.0   // default acceleration in loiter mode
-#define LOITER_BRAKE_ACCEL_DEFAULT_CMSS     250.0   // minimum acceleration in loiter mode
-#define LOITER_BRAKE_JERK_DEFAULT_CMSSS     500.0   // maximum jerk in cm/s/s/s in loiter mode
-#define LOITER_BRAKE_START_DELAY_DEFAULT_S  1.0     // delay (in seconds) before loiter braking begins after sticks are released
-#define LOITER_VEL_CORRECTION_MAX_MS        2.0     // max speed in m/s used to correct position errors in loiter
-#define LOITER_POS_CORRECTION_MAX_CM        200.0   // max position error in loiter
-#define LOITER_ACTIVE_TIMEOUT_MS            200     // loiter controller is considered active if it has been called within the past 200ms (0.2 seconds)
+#define LOITER_SPEED_DEFAULT_CM             1250.0  // Default horizontal loiter speed in cm/s.
+#define LOITER_SPEED_MIN_CMS                20.0    // Minimum allowed horizontal loiter speed in cm/s.
+#define LOITER_ACCEL_MAX_DEFAULT_CMSS       500.0   // Default maximum horizontal acceleration in loiter mode (cm/s²).
+#define LOITER_BRAKE_ACCEL_DEFAULT_CMSS     250.0   // Default maximum braking acceleration when sticks are released (cm/s²).
+#define LOITER_BRAKE_JERK_DEFAULT_CMSSS     500.0   // Default maximum jerk applied during braking transitions (cm/s³).
+#define LOITER_BRAKE_START_DELAY_DEFAULT_S  1.0     // Delay (in seconds) before braking begins after sticks are released.
+#define LOITER_VEL_CORRECTION_MAX_MS        2.0     // Maximum speed (in m/s) used for correcting position errors in loiter.
+#define LOITER_POS_CORRECTION_MAX_CM        200.0   // Maximum horizontal position error allowed before correction (cm).
+#define LOITER_ACTIVE_TIMEOUT_MS            200     // Loiter is considered active if updated within the past 200 ms.
 
 const AP_Param::GroupInfo AC_Loiter::var_info[] = {
 
