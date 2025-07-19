@@ -106,7 +106,7 @@ bool VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
         alt_error.reset();
 
     } else {
-        const float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+        const float height_above_ground = plane.relative_ground_altitude(RangeFinderUse::ASSIST);
         if (alt_error.update(height_above_ground < alt, now_ms, tigger_delay_ms, clear_delay_ms)) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Alt assist %.1fm", height_above_ground);
         }
