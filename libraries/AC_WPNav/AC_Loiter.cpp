@@ -87,13 +87,16 @@ AC_Loiter::AC_Loiter(const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-/// initialise loiter target to a position in cm from ekf origin
+// Sets the initial loiter target position in centimeters from the EKF origin.
+// See init_target_m() for full details.
 void AC_Loiter::init_target_cm(const Vector2f& position_ne_cm)
 {
     init_target_m(position_ne_cm * 100.0);
 }
 
-/// initialise loiter target to a position in m from ekf origin
+// Sets the initial loiter target position in meters from the EKF origin.
+// - position_neu_m: horizontal position in the NE frame, in meters.
+// - Initializes internal control state including acceleration targets and feed-forward planning.
 void AC_Loiter::init_target_m(const Vector2f& position_ne_m)
 {
     sanity_check_params();
@@ -114,7 +117,8 @@ void AC_Loiter::init_target_m(const Vector2f& position_ne_m)
     _pos_control.set_pos_desired_NE_m(position_ne_m);
 }
 
-/// initialize's position and feed-forward velocity from current pos and velocity
+// Initializes the loiter controller using the current position and velocity.
+// Updates feed-forward velocity, predicted acceleration, and resets control state.
 void AC_Loiter::init_target()
 {
     sanity_check_params();
@@ -133,20 +137,24 @@ void AC_Loiter::init_target()
     _brake_accel_mss = 0.0f;
 }
 
-/// reduce response for landing
+// Reduces loiter responsiveness for smoother descent during landing.
+// Internally softens horizontal control gains.
 void AC_Loiter::soften_for_landing()
 {
     _pos_control.soften_for_landing_NE();
 }
 
-/// set pilot desired acceleration in centidegrees
+// Sets pilot desired acceleration using Euler angles in centidegrees.
+// See set_pilot_desired_acceleration_rad() for full details.
 void AC_Loiter::set_pilot_desired_acceleration_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd)
 {
     set_pilot_desired_acceleration_rad(cd_to_rad(euler_roll_angle_cd), cd_to_rad(euler_pitch_angle_cd));
 }
 
-/// set pilot desired acceleration in radians
-//   dt_s should be the time (in seconds) since the last call to this function
+// Sets pilot desired acceleration using Euler angles in radians.
+// - Internally computes a smoothed acceleration vector based on predictive rate shaping.
+// - Inputs: `euler_roll_angle_rad`, `euler_pitch_angle_rad` in radians.
+// - Applies internal shaping using the current attitude controller dt.
 void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad)
 {
     const float dt_s = _attitude_control.get_dt_s();
@@ -175,7 +183,9 @@ void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, f
     _predicted_accel_ne_mss.y = predicted_accel_neu_m.y;
 }
 
-/// get vector to stopping point based on a horizontal position and velocity
+// Calculates the expected stopping point based on current velocity and position in the NE frame.
+// Result is returned in centimeters.
+// See get_stopping_point_NE_m() for full details.
 void AC_Loiter::get_stopping_point_NE_cm(Vector2f& stopping_point_ne_cm) const
 {
     Vector2f stop_ne_m;
@@ -183,7 +193,9 @@ void AC_Loiter::get_stopping_point_NE_cm(Vector2f& stopping_point_ne_cm) const
     stopping_point_ne_cm = stop_ne_m * 100.0;
 }
 
-/// get vector to stopping point based on a horizontal position and velocity
+// Calculates the expected stopping point based on current velocity and position in the NE frame.
+// Result is returned in meters.
+// Uses the position controller’s deceleration model.
 void AC_Loiter::get_stopping_point_NE_m(Vector2f& stopping_point_ne_m) const
 {
     Vector2p stop_ne_m;
@@ -191,7 +203,16 @@ void AC_Loiter::get_stopping_point_NE_m(Vector2f& stopping_point_ne_m) const
     stopping_point_ne_m = stop_ne_m.tofloat();
 }
 
-/// get maximum lean angle when using loiter
+// Returns the maximum pilot-commanded lean angle in centidegrees.
+// See get_angle_max_rad() for full details.
+float AC_Loiter::get_angle_max_cd() const
+{
+    return rad_to_cd(get_angle_max_rad());
+}
+
+// Returns the maximum pilot-commanded lean angle in radians.
+// - If `_angle_max_deg` is zero, this returns 2/3 of the limiting PSC angle.
+// - Otherwise, returns the minimum of `_angle_max_deg` and PSC’s configured angle limit.
 float AC_Loiter::get_angle_max_rad() const
 {
     if (!is_positive(_angle_max_deg)) {
@@ -199,37 +220,41 @@ float AC_Loiter::get_angle_max_rad() const
     }
     return MIN(radians(_angle_max_deg), _pos_control.get_lean_angle_max_rad());
 }
-float AC_Loiter::get_angle_max_cd() const
-{
-    return rad_to_cd(get_angle_max_rad());
-}
 
-/// run the loiter controller
+// Runs the loiter control loop, computing desired acceleration and updating position control.
+// If `avoidance_on` is true, velocity is adjusted using avoidance logic before being applied.
 void AC_Loiter::update(bool avoidance_on)
 {
     calc_desired_velocity(avoidance_on);
     _pos_control.update_NE_controller();
 }
 
-//set maximum horizontal speed
+// Sets the maximum allowed horizontal loiter speed in cm/s.
+// See set_speed_max_NE_ms() for full details.
 void AC_Loiter::set_speed_max_NE_cms(float speed_max_ne_cms)
 {
     set_speed_max_NE_ms(speed_max_ne_cms * 0.01);
 }
+
+// Sets the maximum allowed horizontal loiter speed in m/s.
+// Internally converts to cm/s and clamps to a minimum of LOITER_SPEED_MIN_CMS.
 void AC_Loiter::set_speed_max_NE_ms(float speed_max_ne_ms)
 {
     _speed_max_ne_cms.set(MAX(speed_max_ne_ms * 100.0, LOITER_SPEED_MIN_CMS));
 }
 
-// sanity check parameters
+// Ensures internal parameters are within valid safety limits.
+// Applies min/max constraints on speed and acceleration settings.
 void AC_Loiter::sanity_check_params()
 {
     _speed_max_ne_cms.set(MAX(_speed_max_ne_cms, LOITER_SPEED_MIN_CMS));
     _accel_max_ne_cmss.set(MIN(_accel_max_ne_cmss, GRAVITY_MSS * 100.0f * tanf(_attitude_control.lean_angle_max_rad())));
 }
 
-/// calc_desired_velocity - updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance
-///		updated velocity sent directly to position controller
+// Updates feed-forward velocity using pilot-requested acceleration and braking logic.
+// - Applies drag and braking forces when sticks are released.
+// - Velocity is adjusted for fence/avoidance if enabled.
+// - Resulting velocity and acceleration are sent to the position controller.
 void AC_Loiter::calc_desired_velocity(bool avoidance_on)
 {
     float ekfGndSpdLimit_ms, ahrsControlScaleXY;
