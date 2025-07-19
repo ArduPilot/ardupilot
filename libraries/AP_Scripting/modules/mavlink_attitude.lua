@@ -19,11 +19,13 @@
 
 local MAVLinkAttitude = {}
 
-MAVLinkAttitude.SCRIPT_VERSION = "4.7.0-007"
+MAVLinkAttitude.SCRIPT_VERSION = "4.7.0-009"
 MAVLinkAttitude.SCRIPT_NAME = "MAVLink Attitude"
 MAVLinkAttitude.SCRIPT_NAME_SHORT = "MAVATT"
 
 ATTITUDE_MESSAGE = "ATTITUDE"
+
+MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 
 --[[
    a lua implementation of the jitter correction algorithm from libraries/AP_RTC
@@ -107,11 +109,11 @@ function MAVLinkAttitude.mavlink_attitude_receiver()
     local jitter_correction = MAVLinkAttitude.JitterCorrection(5000, 100)
 
     -- initialise mavlink rx with  buffer depth and number of messages
-    mavlink.init(10, 1)
+    mavlink:init(10, 1)
 
     -- register message id to receive
     --mavlink.register_rx_msgid(ATTITUDE_msgid)
-    mavlink.register_rx_msgid(ATTITUDE_map.id)
+    mavlink:register_rx_msgid(ATTITUDE_map.id)
 
     function self.decode(message, message_map)
         local result, offset = mavlink_msgs.decode_header(message)
@@ -132,18 +134,19 @@ function MAVLinkAttitude.mavlink_attitude_receiver()
        get an ATTITUDE incoming message from the target vehicle, handling jitter correction
     --]]
     function self.get_attitude(target_sysid)
-       local msg,_,timestamp_ms = mavlink.receive_chan()
+       local msg,_,timestamp_ms = mavlink:receive_chan()
        if msg then
           local parsed_msg = self.decode(msg, ATTITUDE_map)
 
           if (parsed_msg ~= nil) and (parsed_msg.msgid == ATTITUDE_map.id) then
-             local sysid = parsed_msg.sysid
+               local sysid = parsed_msg.sysid
              local attitude = {}
              attitude.timestamp_ms = jitter_correction.correct_offboard_timestamp_msec(parsed_msg.time_boot_ms, timestamp_ms:toint())
              if attitude.timestamp_ms == nil  -- not sure why this can happen but it can, so need to let the caller know to not use the results
                or attitude.timestamp_ms < last_timestamp then -- if we received a message older than the last most recent message ignore it
                   return nil
              end
+             last_timestamp = attitude.timestamp_ms
              attitude.delay_ms = millis():tofloat() - attitude.timestamp_ms   -- the latency/delay from when the message was sent
              attitude.roll = parsed_msg.roll
              attitude.pitch = parsed_msg.pitch
@@ -152,11 +155,11 @@ function MAVLinkAttitude.mavlink_attitude_receiver()
              attitude.pitchspeed = parsed_msg.pitchspeed
              attitude.yawspeed = parsed_msg.yawspeed
              if sysid == target_sysid then
-               -- Log ATI = Attitude In
-               -- Time = Timestamp received in ms
-               -- TimeJC = Timestamp received with Jitter Correction
-               -- Delay = Delay between message sent and received in ms
-               logger:write("ZATI",'Time,TimeJC,Delay,roll,ptch,yaw,rollspd,ptchspd,yawspd','iiiffffff','---rrrEEE','---------',
+                -- Log ATI = Attitude In
+                -- Time = Timestamp received in ms
+                -- TimeJC = Timestamp received with Jitter Correction
+                -- Delay = Delay between message sent and received in ms
+                logger:write("ZATI",'Time,TimeJC,Delay,roll,ptch,yaw,rollspd,ptchspd,yawspd','iiiffffff','---rrrEEE','---------',
                         parsed_msg.time_boot_ms,
                         attitude.timestamp_ms,
                         attitude.delay_ms,
@@ -167,7 +170,9 @@ function MAVLinkAttitude.mavlink_attitude_receiver()
                         attitude.pitchspeed,
                         attitude.yawspeed
                      )
-                 return attitude
+                if attitude.delay_ms <= 600 then
+                   return attitude
+                end
              end
           end
        end

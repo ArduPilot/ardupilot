@@ -25,7 +25,7 @@
    FOLLP_TURN_DEG - if the target is more than this many degrees left or right, assume it's turning
 --]]
 
-SCRIPT_VERSION = "4.7.0-067"
+SCRIPT_VERSION = "4.7.0-068"
 SCRIPT_NAME = "Plane Follow"
 SCRIPT_NAME_SHORT = "PFollow"
 
@@ -235,13 +235,13 @@ FOLLP_SIM_TLF_FN = bind_add_param("SIM_TlF_FN", 17, 302)
 FOLLP_SR_CH = bind_add_param("SR_CH", 18, -1)
 
 --[[
-    // @Param: FOLLP_SR_INT
+    // @Param: FOLLP_SR_HZ
     // @DisplayName: Plane Follow Stream Rate Interval
-    // @Description: This is the stream rate (milliseconds between messages) that the chase plane will request from the lead plane for GLOBAL_POSITION_INT and ATTITUDE telemetry. Set to -1 to disable.
+    // @Description: This is the stream rate that the chase plane will request from the lead plane for GLOBAL_POSITION_INT and ATTITUDE telemetry. Set to -1 to disable.
     // @Range: 25 500
     // @Units: ms
 --]]
-FOLLP_SR_INT = bind_add_param("SR_INT", 19, 50)
+FOLLP_SR_HZ = bind_add_param("SR_HZ", 19, 10)
 
 --[[
     // @Param: FOLLP_XT_P
@@ -680,15 +680,15 @@ local function calculate_track_distance(P_f, P_l)
     return along_track_distance, -cross_track_distance
 end
 
--- if enabled - request telemetry from the lead vehicle at FOLLP_SR_INT rate (milliseconds between messages)
+-- if enabled - request telemetry from the lead vehicle at FOLLP_SR_HZ rate 
 local function request_telemetry_from_target()
    -- we send a new request every 10 seconds, just to make sure the message gets through
    if (now - now_telemetry_request) > 10 then
-      local stream_interval = FOLLP_SR_INT:get() or 50
-      if stream_interval > 0 then
+      local stream_hz = FOLLP_SR_HZ:get() or 10
+      if stream_hz > 0 then
          -- we'd like to get GLOBAL_POSITION_INT and ATTITUDE messages from the target vehicle at 20Hz = every 50ms
-         mavlink_command_int.request_message_interval(target_serial_channel, {sysid = foll_sysid, message_id = MAV_CMD_INT.ATTITUDE, interval_ms = stream_interval})
-         mavlink_command_int.request_message_interval(target_serial_channel, {sysid = foll_sysid, message_id = MAV_CMD_INT.GLO, interval_ms = stream_interval})
+         mavlink_command_int.request_message_interval(target_serial_channel, {sysid = foll_sysid, message_id = MAV_CMD_INT.ATTITUDE, interval_ms = 1000.0 / stream_hz})
+         mavlink_command_int.request_message_interval(target_serial_channel, {sysid = foll_sysid, message_id = MAV_CMD_INT.GLO, interval_ms = 1000.0 / stream_hz})
          now_telemetry_request = now
       end
    end
