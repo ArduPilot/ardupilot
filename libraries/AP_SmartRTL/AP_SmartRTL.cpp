@@ -344,7 +344,15 @@ bool AP_SmartRTL::add_point(const Vector3f& point)
 
     // add point to path
     _path[_path_points_count++] = point;
+    if(_path_points_count > _path_points_max - 20){
+        // urgent clean up before the buffer is full
+        if(_prune.complete){
+            restart_pruning(_path_points_count);
+        }
+        run_background_cleanup();
+    }
     log_action(Action::POINT_ADD, point);
+
 
     _path_sem.give();
     return true;
