@@ -8765,6 +8765,9 @@ Also, ignores heartbeats not from our target system'''
     def script_applet_source_path(self, scriptname):
         return os.path.join(self.rootdir(), "libraries", "AP_Scripting", "applets", scriptname)
 
+    def script_modules_source_path(self, scriptname):
+        return os.path.join(self.rootdir(), "libraries", "AP_Scripting", "modules", scriptname)
+
     def installed_script_path(self, scriptname):
         return os.path.join("scripts", os.path.basename(scriptname))
 
