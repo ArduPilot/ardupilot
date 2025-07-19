@@ -219,6 +219,8 @@ public:
         k_actuator4             = 187,
         k_actuator5             = 188,
         k_actuator6             = 189,
+        k_elevator_hf           = 190, // high frequency elevator
+        k_elevator_lf           = 191, // low frequency elevator
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Function;
 
