@@ -856,6 +856,9 @@ private:
     // rudder mixing gain for differential thrust (0 - 1)
     float rudder_dt;
 
+    // low pass filtered elevator
+    LowPassFilter2pFloat elevator_lpf;
+
     // soaring mode-change timer
     uint32_t soaring_mode_timer_ms;
 
@@ -1169,6 +1172,7 @@ private:
     void dspoiler_update(void);
     void airbrake_update(void);
     void landing_neutral_control_surface_servos(void);
+    void update_high_freq_elevator(void);
     void servos_output(void);
     void servos_auto_trim(void);
     void servos_twin_engine_mix();

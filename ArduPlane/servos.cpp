@@ -208,8 +208,9 @@ void Plane::flaperon_update()
      */
     float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
     float flap_percent = SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap_auto);
-    float flaperon_left  = constrain_float(aileron + flap_percent * 45, -4500, 4500);
-    float flaperon_right = constrain_float(aileron - flap_percent * 45, -4500, 4500);
+    float elevator_hf = 0.01f * (float)g.hf_elev_flap_mix_gain_pct *  SRV_Channels::get_output_scaled(SRV_Channel::k_elevator_hf);
+    float flaperon_left  = constrain_float(aileron + elevator_hf + flap_percent * 45, -4500, 4500);
+    float flaperon_right = constrain_float(aileron - elevator_hf - flap_percent * 45, -4500, 4500);
     SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_left, flaperon_left);
     SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_right, flaperon_right);
 }
@@ -906,6 +907,9 @@ void Plane::set_servos(void)
     // Warn AHRS if we might take off soon
     set_takeoff_expected();
 
+    // filter elevator and send to high and low frequency channels
+    update_high_freq_elevator();
+
     // setup flap outputs
     set_servos_flaps();
 
@@ -991,6 +995,37 @@ void Plane::landing_neutral_control_surface_servos(void)
             }
     }
  
+}
+
+/*
+ Applies a second order cross over filter to the elevator and sends to low and high frequency channels
+*/
+void Plane::update_high_freq_elevator(void)
+{
+    if ((float)g.hf_elevator_pct < 1) {
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator_lf, SRV_Channels::get_output_scaled(SRV_Channel::k_elevator));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator_hf, 0.0f);
+        elevator_lpf.reset();
+        return;
+    }
+    float elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
+
+    if (!is_equal((float)elevator_lpf.get_cutoff_freq(), (float)g.hf_elevator_freq)) {
+        elevator_lpf.set_cutoff_frequency(plane.scheduler.get_loop_rate_hz(), (float)g.hf_elevator_freq);
+    }
+
+    float elevator_lf = elevator_lpf.apply(elevator);
+    float elevator_hf = elevator - elevator_lf;
+
+    // The allocation of the HF signal between high and low frequency elevators is adjustable to allow
+    // some of the high freqency sactivity to be sent to the low frequency elevator. This enables the
+    // actuator workoad to be balanced between the two channels.
+    const float hf_fraction = 0.01f * (float)g.hf_elevator_pct;
+    elevator_lf += elevator_hf * (1.0f - hf_fraction);
+    elevator_hf *= hf_fraction;
+
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator_lf, elevator_lf);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator_hf, elevator_hf);
 }
 
 /*

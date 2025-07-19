@@ -86,9 +86,9 @@ public:
         k_param_takeoff_throttle_min_accel,
         k_param_takeoff_heading_hold, // unused
         k_param_level_roll_limit,
-        k_param_hil_servos_unused,  // unused
-        k_param_vtail_output, // unused
-        k_param_nav_controller, // unused
+        k_param_hf_elevator_freq,
+        k_param_hf_elevator_pct,
+        k_param_hf_elev_flap_mix_gain_pct,
         k_param_elevon_output, // unused
         k_param_att_controller, // unused
         k_param_mixing_gain,
@@ -456,6 +456,9 @@ public:
     AP_Enum<StickMixing> stick_mixing;
     AP_Float takeoff_throttle_min_speed;
     AP_Float takeoff_throttle_min_accel;
+    AP_Float hf_elevator_freq;
+    AP_Int8 hf_elevator_pct;
+    AP_Int8 hf_elev_flap_mix_gain_pct;
     AP_Int8 takeoff_throttle_delay;
     AP_Int8 takeoff_tdrag_elevator;
     AP_Float takeoff_tdrag_speed1;
