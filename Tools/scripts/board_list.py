@@ -1,41 +1,30 @@
 #!/usr/bin/env python3
 
+import os
+import re
+import fnmatch
+from collections.abc import Collection
+
 '''
 list of boards for build_binaries.py and custom build server
 
 AP_FLAKE8_CLEAN
 '''
 
-import os
-import re
-import sys
-import fnmatch
-from collections.abc import Collection
-from typing import Optional
-
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL/hwdef/scripts'))
-import hwdef  # noqa:E402
-
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ChibiOS/hwdef/scripts'))
-import chibios_hwdef  # noqa:E402
-
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_Linux/hwdef/scripts'))
-import linux_hwdef  # noqa:E402
-
 
 class Board(object):
-    def __init__(self, name : str, directory : str = None) -> None:
+    def __init__(self, name):
         self.name = name
         self.is_ap_periph = False
         self.toolchain = 'arm-none-eabi'  # FIXME: try to remove this?
         self.autobuild_targets = [
-            'antennatracker',
-            'blimp',
-            'copter',
-            'heli',
-            'plane',
-            'rover',
-            'sub',
+            'Tracker',
+            'Blimp',
+            'Copter',
+            'Heli',
+            'Plane',
+            'Rover',
+            'Sub',
         ]
         SITL_toolchain = {
             "SITL_x86_64_linux_gnu": "x86_64-linux-gnu",
@@ -43,111 +32,6 @@ class Board(object):
         }
         if name in SITL_toolchain:
             self.toolchain = SITL_toolchain[name]
-        self.directory = directory
-
-    def __repr__(self) -> str:
-        return f"Board({self.name})"
-
-    def get_HWDef(self) -> Optional[hwdef.HWDef]:
-        '''return a HWDef object for the board'''
-        if self.directory is None:
-            # eg. SITL_x86_64_linux_gnu - to be fixed!
-            return
-        hwdef_filepath = os.path.join(self.directory, "hwdef.dat")
-        if not os.path.exists(hwdef_filepath):
-            return None
-
-        cls = self.hwdef_class()
-        hwdef = cls(hwdef=[hwdef_filepath], quiet=True)
-        hwdef.process_hwdefs()
-        return hwdef
-
-    def hwdef_class(self) -> type:
-        if "AP_HAL_ChibiOS" in self.directory:
-            return chibios_hwdef.ChibiOSHWDef
-        if "AP_HAL_Linux" in self.directory:
-            return linux_hwdef.LinuxHWDef
-        raise ValueError(f"Unknown hwdef dir {self.directory}")
-
-    def assert_ok_no_bootloader_hwdef_for_board(self) -> None:
-        cls = self.hwdef_class()
-        if cls == linux_hwdef.LinuxHWDef:
-            # Linux boards don't have bootloaders
-            return
-
-        non_bootloader_hwdef = self.get_HWDef()
-        if non_bootloader_hwdef is None:
-            raise ValueError("Must have either bootloader hwdef or main hwdef file or we shouldn't get here")
-        other = non_bootloader_hwdef.get_config(
-            "USE_BOOTLOADER_FROM_BOARD",
-            default=None,
-            required=False,
-        )
-        if other is None:
-            if self.name in BoardList().bootloader_blacklist:
-                # it's OK we don't have a bootloader for this board
-                return
-            raise ValueError(f"Unable to find bootloader in hwdef {self.directory}")
-        if self.name in BoardList().bootloader_blacklist:
-            raise ValueError(f"{self.name} is not supposed to have a bootloader but does (via USE_BOOTLOADER_FROM_BOARD)")
-
-        # make sure that other board has a bootloader:
-        other_board = BoardList().boards_by_name[other]
-
-        # recurse; this assumes get_HWDef_bootloader does the same
-        # assertion we are in.
-        other_board.get_HWDef_bootloader()
-
-    def get_HWDef_bootloader(self) -> Optional[hwdef.HWDef]:
-        '''return a HWDef object for the board - bootloader edition!'''
-        if self.directory is None:
-            # eg. SITL_x86_64_linux_gnu - to be fixed!
-            return
-        hwdef_filepath = os.path.join(self.directory, "hwdef-bl.dat")
-        if not os.path.exists(hwdef_filepath):
-            self.assert_ok_no_bootloader_hwdef_for_board()
-            return None
-        if self.name in BoardList().bootloader_blacklist:
-            raise ValueError(f"Able to get bootloader hwdef for board {self.name} in blacklist")
-
-        cls = self.hwdef_class()
-        hwdef = cls(hwdef=[hwdef_filepath], quiet=True)
-        hwdef.process_hwdefs()
-        return hwdef
-
-    def uses_hwdef(self, filepath) -> bool:
-        if self.directory is None:
-            return False
-        try:
-            hwdef = self.get_HWDef()
-        except FileNotFoundError:
-            return False
-        return hwdef.uses_filepath(filepath)
-
-    def uses_hwdef_bootloader(self, filepath) -> bool:
-        if self.directory is None:
-            return False
-        try:
-            non_bootloader_hwdef = self.get_HWDef()
-        except FileNotFoundError:
-            return False
-        if isinstance(non_bootloader_hwdef, linux_hwdef.LinuxHWDef):
-            # this can be removed once we move get_config to HWDef!
-            return False
-        other = non_bootloader_hwdef.get_config(
-            "USE_BOOTLOADER_FROM_BOARD",
-            default=None,
-            required=False,
-        )
-        if other is not None:
-            bl = BoardList()
-            for b in bl.boards:
-                if b.name == other:
-                    return b.uses_hwdef_bootloader(filepath)
-            raise ValueError(f"Bad USE_BOOTLOADER_FROM_BOARD {other} {sorted(bl.boards, key=lambda x : x.name)}")
-
-        hwdef = self.get_HWDef_bootloader()
-        return hwdef.uses_filepath(filepath)
 
 
 def in_boardlist(boards : Collection[str], board : str) -> bool:
@@ -199,33 +83,8 @@ class BoardList(object):
             Board("SITL_arm_linux_gnueabihf"),
         ]
 
-        # TODO: move this information into hwdefs:
-        self.bootloader_blacklist = set([
-            'CubeOrange-SimOnHardWare',
-            'CubeOrangePlus-SimOnHardWare',
-            'CubeRedSecondary-IO',
-            'fmuv2',  # no hwdef-bl.dat
-            'iomcu',
-            'iomcu-dshot',
-            'iomcu-f103',
-            'iomcu-f103-dshot',
-            'iomcu-f103-8MHz-dshot',
-            'iomcu_f103_8MHz',
-            'luminousbee4',  # no hwdef-bl.dat
-            'skyviper-v2450',  # no hwdef-bl.dat
-            'skyviper-f412-rev1',  # no hwdef-bl.dat
-            'skyviper-journey',  # no hwdef-bl.dat
-            'Pixhawk1-1M-bdshot',  # no hwdef-bl.dat
-            'RADIX2HD',  # closed-source bootloader
-            'kha_eth',  # no hwdef-bl.dat
-        ])
-
         for hwdef_dir in self.hwdef_dir:
             self.add_hwdefs_from_hwdef_dir(hwdef_dir)
-
-        self.boards_by_name = {}
-        for board in self.boards:
-            self.boards_by_name[board.name] = board
 
     def add_hwdefs_from_hwdef_dir(self, hwdef_dir):
         for adir in os.listdir(hwdef_dir):
@@ -235,19 +94,17 @@ class BoardList(object):
                 continue
             if adir in ["scripts", "common", "STM32CubeConf"]:
                 continue
-            directory = os.path.join(hwdef_dir, adir)
-            filepath = os.path.join(directory, "hwdef.dat")
+            filepath = os.path.join(hwdef_dir, adir, "hwdef.dat")
             if not os.path.exists(filepath):
-                filepath = os.path.join(directory, "hwdef-bl.dat")
-                if not os.path.exists(filepath):
-                    continue
+                continue
+            filepath = os.path.join(hwdef_dir, adir, "hwdef.dat")
 
             # FIXME: we really should be using hwdef.py to parse
             # these, but it's too slow.  We use board_list in some
             # places we can't afford to be slow.
             text = self.read_hwdef(filepath)
 
-            board = Board(adir, directory=directory)
+            board = Board(adir)
             self.boards.append(board)
             board_toolchain_set = False
             for line in text:

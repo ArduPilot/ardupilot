@@ -615,7 +615,7 @@ is bob we will attempt to checkout bob-AVR'''
         '''build Tracker binaries'''
         self.build_vehicle(tag,
                            "AntennaTracker",
-                           self.board_list.find_autobuild_boards('AntennaTracker')[:],
+                           self.board_list.find_autobuild_boards('Tracker')[:],
                            "AntennaTracker",
                            "antennatracker")
 

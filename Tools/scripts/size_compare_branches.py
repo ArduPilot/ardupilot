@@ -101,7 +101,9 @@ class SizeCompareBranches(object):
         if self.bin_dir is None:
             self.bin_dir = self.find_bin_dir()
 
-        self.boards_by_name = board_list.BoardList().boards_by_name
+        self.boards_by_name = {}
+        for board in board_list.BoardList().boards:
+            self.boards_by_name[board.name] = board
 
         # map from vehicle names to binary names
         self.vehicle_map = {
@@ -145,13 +147,87 @@ class SizeCompareBranches(object):
                 new_self_board.append(board_name)
         self.board = new_self_board
 
-        self.have_bootloader_hwdef = set()
-        self.have_vehicle_hwdef = set()
-        for board in self.board:
-            if self.boards_by_name[board].get_HWDef_bootloader():
-                self.have_bootloader_hwdef.add(board)
-            if self.boards_by_name[board].get_HWDef():
-                self.have_vehicle_hwdef.add(board)
+        # some boards we don't have a -bl.dat for, so skip them.
+        # TODO: find a way to get this information from board_list:
+        self.bootloader_blacklist = set([
+            'CubeOrange-SimOnHardWare',
+            'CubeOrangePlus-SimOnHardWare',
+            'CubeRedSecondary-IO',
+            'fmuv2',
+            'fmuv3-bdshot',
+            'iomcu',
+            'iomcu-dshot',
+            'iomcu-f103',
+            'iomcu-f103-dshot',
+            'iomcu-f103-8MHz-dshot',
+            'iomcu_f103_8MHz',
+            'luminousbee4',
+            'skyviper-v2450',
+            'skyviper-f412-rev1',
+            'skyviper-journey',
+            'Pixhawk1-1M-bdshot',
+            'Pixhawk1-bdshot',
+            'SITL_arm_linux_gnueabihf',
+            'RADIX2HD',
+            'canzero',
+            'CUAV-Pixhack-v3',  # uses USE_BOOTLOADER_FROM_BOARD
+            'kha_eth',  # no hwdef-bl.dat
+            'TBS-L431-Airspeed',  # uses USE_BOOTLOADER_FROM_BOARD
+            'TBS-L431-BattMon',  # uses USE_BOOTLOADER_FROM_BOARD
+            'TBS-L431-CurrMon',  # uses USE_BOOTLOADER_FROM_BOARD
+            'TBS-L431-PWM',  # uses USE_BOOTLOADER_FROM_BOARD
+            'ARKV6X-bdshot',  # uses USE_BOOTLOADER_FROM_BOARD
+        ])
+
+        # blacklist all linux boards for bootloader build:
+        self.bootloader_blacklist.update(self.linux_board_names())
+        # ... and esp32 boards:
+        self.bootloader_blacklist.update(self.esp32_board_names())
+
+    def linux_board_names(self):
+        '''return a list of all Linux board names; FIXME: get this dynamically'''
+        # grep 'class.*[(]linux' Tools/ardupilotwaf/boards.py  | perl -pe "s/class (.*)\(linux\).*/            '\\1',/"
+        return [
+            'navigator',
+            'navigator64',
+            'erleboard',
+            'navio',
+            'navio2',
+            'edge',
+            'zynq',
+            'ocpoc_zynq',
+            'bbbmini',
+            'blue',
+            'pocket',
+            'pxf',
+            'bebop',
+            'vnav',
+            'disco',
+            'erlebrain2',
+            'bhat',
+            'dark',
+            'pxfmini',
+            'aero',
+            'rst_zynq',
+            'obal',
+            'SITL_x86_64_linux_gnu',
+            'canzero',
+            'linux',
+            'pilotpi',
+        ]
+
+    def esp32_board_names(self):
+        return [
+            'esp32buzz',
+            'esp32empty',
+            'esp32tomte76',
+            'esp32nick',
+            'esp32s3devkit',
+            'esp32s3empty',
+            'esp32s3m5stampfly',
+            'esp32icarous',
+            'esp32diy',
+        ]
 
     def find_bin_dir(self):
         '''attempt to find where the arm-none-eabi tools are'''
@@ -300,13 +376,10 @@ class SizeCompareBranches(object):
         if jobs is not None:
             waf_configure_args.extend(["-j", str(jobs)])
 
-        if board in self.have_vehicle_hwdef or self.force_build_vehicles(board):
-            self.run_waf(waf_configure_args, show_output=False, source_dir=source_dir)
+        self.run_waf(waf_configure_args, show_output=False, source_dir=source_dir)
         # we can't run `./waf copter blimp plane` without error, so do
         # them one-at-a-time:
         for v in vehicle:
-            if board not in self.have_vehicle_hwdef and not self.force_build_vehicles(board):
-                continue
             if v == 'bootloader':
                 # need special configuration directive
                 continue
@@ -314,7 +387,7 @@ class SizeCompareBranches(object):
         for v in vehicle:
             if v != 'bootloader':
                 continue
-            if board not in self.have_bootloader_hwdef:
+            if board in self.bootloader_blacklist:
                 continue
             # need special configuration directive
             bootloader_waf_configure_args = copy.copy(waf_configure_args)
@@ -705,17 +778,6 @@ class SizeCompareBranches(object):
 
             self.vehicle = {}
 
-    def force_build_vehicles(self, board) -> bool:
-        '''we don't have hwdefs for these but configure/build still
-        works, so until we have hwdefs for SITL targets we force them
-        here:'''
-
-        no_hwdef_targets = frozenset([
-            "SITL_x86_64_linux_gnu",
-            "SITL_arm_linux_gnueabihf",
-        ])
-        return board in no_hwdef_targets
-
     def gather_results_for_task(self, task) -> Result:
         result = SizeCompareBranches.Result(
             task.board,
@@ -726,12 +788,8 @@ class SizeCompareBranches(object):
         have_source_trees = self.parallel_copies is not None and len(self.tasks) <= self.parallel_copies
 
         for vehicle in task.vehicles_to_build:
-            if vehicle == 'bootloader':
-                if task.board not in self.have_bootloader_hwdef:
-                    continue
-            else:
-                if task.board not in self.have_vehicle_hwdef and not self.force_build_vehicles(task.board):
-                    continue
+            if vehicle == 'bootloader' and task.board in self.bootloader_blacklist:
+                continue
 
             result.vehicle[vehicle] = {}
             v = result.vehicle[vehicle]
