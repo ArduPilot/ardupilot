@@ -86,12 +86,12 @@ bool AC_WPNav_OA::update_wpnav()
     Location current_loc;
     if ((oa_ptr != nullptr) && AP::ahrs().get_location(current_loc)) {
 
-        // backup _origin and _destination_neu_cm when not doing oa
+        // backup _origin and _destination_neu_m when not doing oa
         if (_oa_state == AP_OAPathPlanner::OA_NOT_REQUIRED) {
-            _origin_oabak_neu_cm = _origin_neu_cm;
-            _destination_oabak_neu_cm = _destination_neu_cm;
+            _origin_oabak_neu_cm = _origin_neu_m * 100.0;
+            _destination_oabak_neu_cm = _destination_neu_m * 100.0;
             _is_terrain_alt_oabak = _is_terrain_alt;
-            _next_destination_oabak_neu_cm = _next_destination_neu_cm;
+            _next_destination_oabak_neu_cm = _next_destination_neu_m * 100.0;
         }
 
         // convert origin, destination and next_destination to Locations and pass into oa

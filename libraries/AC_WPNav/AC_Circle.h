@@ -74,10 +74,10 @@ public:
     bool is_active() const;
 
     // get_closest_point_on_circle_NEU_cm - returns closest point on the circle
-    //  circle's center should already have been set
-    //  closest point on the circle will be placed in result, dist_cm will be updated with the distance to the center
-    //  result's altitude (i.e. z) will be set to the circle_center's altitude
-    //  if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
+    //      circle's center should already have been set
+    //      closest point on the circle will be placed in result, dist_cm will be updated with the distance to the center
+    //      result's altitude (i.e. z) will be set to the circle_center's altitude
+    //      if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
     void get_closest_point_on_circle_NEU_cm(Vector3f& result_NEU_cm, float& dist_cm) const;
 
     /// get horizontal distance to loiter target in cm
@@ -110,8 +110,8 @@ private:
     void calc_velocities(bool init_velocity);
 
     // init_start_angle - sets the starting angle around the circle and initialises the angle_total
-    //  if use_heading is true the vehicle's heading will be used to init the angle causing minimum yaw movement
-    //  if use_heading is false the vehicle's position from the center will be used to initialise the angle
+    //      if use_heading is true the vehicle's heading will be used to init the angle causing minimum yaw movement
+    //      if use_heading is false the vehicle's position from the center will be used to initialise the angle
     void init_start_angle(bool use_heading);
 
     // get expected source of terrain data
@@ -142,26 +142,26 @@ private:
     };
 
     // parameters
-    AP_Float    _radius_parm_cm;   // radius of circle in cm loaded from params
-    AP_Float    _rate_parm_degs;     // rotation speed in deg/sec
-    AP_Int16    _options;       // stick control enable/disable
+    AP_Float    _radius_parm_cm;    // radius of circle in cm loaded from params
+    AP_Float    _rate_parm_degs;    // rotation speed in deg/sec
+    AP_Int16    _options;           // stick control enable/disable
 
     // internal variables
-    Vector3p    _center_neu_cm;        // center of circle in cm from home
-    float       _radius_cm;        // radius of circle in cm
-    float       _rate_degs;          // rotation speed of circle in deg/sec. +ve for cw turn
-    float       _yaw_cd;           // yaw heading (normally towards circle center)
-    float       _angle_rad;         // current angular position around circle in radians (0=directly north of the center of the circle)
-    float       _angle_total_rad;   // total angle traveled in radians
-    float       _angular_vel_rads;   // angular velocity in radians/sec
-    float       _angular_vel_max_rads;   // maximum velocity in radians/sec
-    float       _angular_accel_radss; // angular acceleration in radians/sec/sec
-    uint32_t    _last_update_ms;    // system time of last update
-    float       _last_radius_param; // last value of radius param, used to update radius on param change
+    Vector3p    _center_neu_cm;         // center of circle in cm from home
+    float       _radius_cm;             // radius of circle in cm
+    float       _rate_degs;             // rotation speed of circle in deg/sec. +ve for cw turn
+    float       _yaw_cd;                // yaw heading (normally towards circle center)
+    float       _angle_rad;             // current angular position around circle in radians (0=directly north of the center of the circle)
+    float       _angle_total_rad;       // total angle traveled in radians
+    float       _angular_vel_rads;      // angular velocity in radians/sec
+    float       _angular_vel_max_rads;  // maximum velocity in radians/sec
+    float       _angular_accel_radss;   // angular acceleration in radians/sec/sec
+    uint32_t    _last_update_ms;        // system time of last update
+    float       _last_radius_param;     // last value of radius param, used to update radius on param change
 
     // terrain following variables
-    bool        _is_terrain_alt;           // true if _center_neu_cm.z is alt-above-terrain, false if alt-above-ekf-origin
-    bool        _rangefinder_available; // true if range finder could be used
-    bool        _rangefinder_healthy;   // true if range finder is healthy
+    bool        _is_terrain_alt;                // true if _center_neu_cm.z is alt-above-terrain, false if alt-above-ekf-origin
+    bool        _rangefinder_available;         // true if range finder could be used
+    bool        _rangefinder_healthy;           // true if range finder is healthy
     float       _rangefinder_terrain_offset_cm; // latest rangefinder based terrain offset (e.g. terrain's height above EKF origin)
 };
