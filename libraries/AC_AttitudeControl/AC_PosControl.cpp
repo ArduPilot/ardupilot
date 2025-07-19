@@ -1635,7 +1635,7 @@ void AC_PosControl::write_log()
 
 // Returns lateral distance to closest point on active trajectory in meters.
 // Used to assess horizontal deviation from path.
-float AC_PosControl::crosstrack_error() const
+float AC_PosControl::crosstrack_error_m() const
 {
     const Vector2f pos_error = (_pos_target_neu_m.xy() - _pos_estimate_neu_m.xy()).tofloat();
     if (is_zero(_vel_desired_neu_ms.xy().length_squared())) {
