@@ -15,32 +15,42 @@ public:
     /// Constructor
     AC_WPNav_OA(const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
 
-    // returns object avoidance adjusted wp location using location class
-    // returns false if unable to convert from target vector to global coordinates
+    // Returns the object-avoidance-adjusted waypoint location (in global coordinates).
+    // Falls back to original destination if OA is not active.
     bool get_oa_wp_destination(Location& destination) const override;
 
-    /// set_wp_destination waypoint using position vector (distance from ekf origin in cm)
-    ///     is_terrain_alt should be true if destination.z is a desired altitude above terrain
-    ///     returns false on failure (likely caused by missing terrain data)
+    // Sets the waypoint destination using NEU coordinates in centimeters.
+    // See set_wp_destination_NEU_m() for full details.
     bool set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt = false) override;
+
+    // Sets the waypoint destination using NEU coordinates in meters.
+    // - destination_neu_m: NEU offset from EKF origin in meters.
+    // - is_terrain_alt: true if the Z component represents altitude above terrain.
+    // - Resets OA state on success.
     bool set_wp_destination_NEU_m(const Vector3f& destination_neu_m, bool is_terrain_alt = false) override;
 
-    /// get horizontal distance to destination in cm
-    /// always returns distance to final destination (i.e. does not use oa adjusted destination)
+    // Returns the horizontal distance to the final destination in centimeters.
+    // See get_wp_distance_to_destination_m() for full details.
     float get_wp_distance_to_destination_cm() const override;
+
+    // Returns the horizontal distance to the final destination in meters.
+    // Ignores OA-adjusted targets and always measures to the original final destination.
     float get_wp_distance_to_destination_m() const override;
 
-    /// get bearing to next waypoint in centi-degrees
-    /// always returns bearing to final destination (i.e. does not use oa adjusted destination)
+    // Returns the bearing to the final destination in centidegrees.
+    // See get_wp_bearing_to_destination_rad() for full details.
     int32_t get_wp_bearing_to_destination_cd() const override;
 
-    /// get_bearing_to_destination - get bearing to next waypoint in radians
+    // Returns the bearing to the final destination in radians.
+    // Ignores OA-adjusted targets and always calculates from original final destination.
     virtual float get_wp_bearing_to_destination_rad() const override;
 
-    /// true when we have come within RADIUS cm of the final destination
+    // Returns true if the vehicle has reached the final destination within radius threshold.
+    // Ignores OA-adjusted intermediate destinations.
     bool reached_wp_destination() const override;
 
-    /// run the wp controller
+    // Runs the waypoint navigation update loop, including OA path planning logic.
+    // Delegates to parent class if OA is not active or not required.
     bool update_wpnav() override;
 
 protected:
