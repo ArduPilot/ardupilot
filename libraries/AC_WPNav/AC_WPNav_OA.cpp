@@ -150,11 +150,11 @@ bool AC_WPNav_OA::update_wpnav()
             // by setting the oa_destination to a stopping point
             if ((_oa_state != AP_OAPathPlanner::OA_PROCESSING) && (_oa_state != AP_OAPathPlanner::OA_ERROR)) {
                 // calculate stopping point
-                Vector3f stopping_point;
-                get_wp_stopping_point_NEU_cm(stopping_point);
-                _oa_destination = Location(stopping_point, Location::AltFrame::ABOVE_ORIGIN);
+                Vector3f stopping_point_neu_cm;
+                get_wp_stopping_point_NEU_cm(stopping_point_neu_cm);
+                _oa_destination = Location(stopping_point_neu_cm, Location::AltFrame::ABOVE_ORIGIN);
                 _oa_next_destination.zero();
-                if (set_wp_destination_NEU_cm(stopping_point, false)) {
+                if (set_wp_destination_NEU_cm(stopping_point_neu_cm, false)) {
                     _oa_state = oa_retstate;
                 }
             }
@@ -208,26 +208,26 @@ bool AC_WPNav_OA::update_wpnav()
                 target_alt_loc.linearly_interpolate_alt(origin_loc, destination_loc);
 
                 // correct target_alt_loc's alt-above-ekf-origin if using terrain altitudes
-                // positive terr_offset means terrain below vehicle is above ekf origin's altitude
-                float terr_offset = 0;
-                if (_is_terrain_alt_oabak && !get_terrain_offset_cm(terr_offset)) {
+                // positive terr_offset_cm means terrain below vehicle is above ekf origin's altitude
+                float terr_offset_cm = 0;
+                if (_is_terrain_alt_oabak && !get_terrain_offset_cm(terr_offset_cm)) {
                     // trigger terrain failsafe
                     return false;
                 }
 
                 // calculate final destination as an offset from EKF origin in NEU
-                Vector2f dest_NE;
-                if (!_oa_destination.get_vector_xy_from_origin_NE_cm(dest_NE)) {
+                Vector2f destination_ne_cm;
+                if (!_oa_destination.get_vector_xy_from_origin_NE_cm(destination_ne_cm)) {
                     // this should never happen because we can only get here if we have an EKF origin
                     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                     return false;
                 }
                 int32_t target_alt_loc_alt_cm = 0;
                 UNUSED_RESULT(target_alt_loc.get_alt_cm(target_alt_loc.get_alt_frame(), target_alt_loc_alt_cm));
-                Vector3p dest_NEU{dest_NE.x, dest_NE.y, (float)target_alt_loc_alt_cm};
+                Vector3p desination_neu_cm{destination_ne_cm.x, destination_ne_cm.y, (float)target_alt_loc_alt_cm};
 
                 // pass the desired position directly to the position controller
-                _pos_control.input_pos_NEU_cm(dest_NEU, terr_offset, 1000.0);
+                _pos_control.input_pos_NEU_cm(desination_neu_cm, terr_offset_cm, 1000.0);
 
                 // update horizontal position controller (vertical is updated in vehicle code)
                 _pos_control.update_NE_controller();
@@ -241,16 +241,16 @@ bool AC_WPNav_OA::update_wpnav()
                 _oa_destination = oa_destination_new;
 
                 // calculate final destination as an offset from EKF origin in NEU
-                Vector3f dest_NEU;
-                if (!_oa_destination.get_vector_from_origin_NEU_cm(dest_NEU)) {
+                Vector3f desination_neu_cm;
+                if (!_oa_destination.get_vector_from_origin_NEU_cm(desination_neu_cm)) {
                     // this should never happen because we can only get here if we have an EKF origin
                     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                     return false;
                 }
 
                 // pass the desired position directly to the position controller as an offset from EKF origin in NEU
-                Vector3p dest_NEU_p{dest_NEU.x, dest_NEU.y, dest_NEU.z};
-                _pos_control.input_pos_NEU_cm(dest_NEU_p, 0, 1000.0);
+                Vector3p desination_neu_cm_p{desination_neu_cm.x, desination_neu_cm.y, desination_neu_cm.z};
+                _pos_control.input_pos_NEU_cm(desination_neu_cm_p, 0, 1000.0);
 
                 // update horizontal position controller (vertical is updated in vehicle code)
                 _pos_control.update_NE_controller();
