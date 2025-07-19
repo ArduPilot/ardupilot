@@ -366,7 +366,9 @@ end
 
 -- reset integrator to an initial value
 function crosstrackpid.reset(self)
-   -- self = setmetatable({}, { __index = crosstrackpid })
+   if self == nil then
+      self = setmetatable({}, { __index = crosstrackpid })
+   end
    self.integral = 0
    self.last_error = 0
 end
