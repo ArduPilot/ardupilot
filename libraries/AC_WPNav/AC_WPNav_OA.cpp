@@ -11,8 +11,8 @@ AC_WPNav_OA::AC_WPNav_OA(const AP_AHRS_View& ahrs, AC_PosControl& pos_control, c
 {
 }
 
-// returns object avoidance adjusted wp location using location class
-// returns false if unable to convert from target vector to global coordinates
+// Returns the object-avoidance-adjusted waypoint location (in global coordinates).
+// Falls back to original destination if OA is not active.
 bool AC_WPNav_OA::get_oa_wp_destination(Location& destination) const
 {
     // if oa inactive return unadjusted location
@@ -25,14 +25,17 @@ bool AC_WPNav_OA::get_oa_wp_destination(Location& destination) const
     return true;
 }
 
-/// set_wp_destination_NEU_cm waypoint using position vector (distance from ekf origin in cm)
-///     is_terrain_alt should be true if destination.z is a desired altitude above terrain
-///     returns false on failure (likely caused by missing terrain data)
+// Sets the waypoint destination using NEU coordinates in centimeters.
+// See set_wp_destination_NEU_m() for full details.
 bool AC_WPNav_OA::set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt)
 {
     return set_wp_destination_NEU_m(destination_neu_cm * 0.01, is_terrain_alt);
 }
 
+// Sets the waypoint destination using NEU coordinates in meters.
+// - destination_neu_m: NEU offset from EKF origin in meters.
+// - is_terrain_alt: true if the Z component represents altitude above terrain.
+// - Resets OA state on success.
 bool AC_WPNav_OA::set_wp_destination_NEU_m(const Vector3f& destination_neu_m, bool is_terrain_alt)
 {
     const bool ret = AC_WPNav::set_wp_destination_NEU_m(destination_neu_m, is_terrain_alt);
@@ -45,12 +48,15 @@ bool AC_WPNav_OA::set_wp_destination_NEU_m(const Vector3f& destination_neu_m, bo
     return ret;
 }
 
-/// get_wp_distance_to_destination - get horizontal distance to destination in cm
-/// always returns distance to final destination (i.e. does not use oa adjusted destination)
+// Returns the horizontal distance to the final destination in centimeters.
+// See get_wp_distance_to_destination_m() for full details.
 float AC_WPNav_OA::get_wp_distance_to_destination_cm() const
 {
     return get_wp_distance_to_destination_m() * 100.0;
 }
+
+// Returns the horizontal distance to the final destination in meters.
+// Ignores OA-adjusted targets and always measures to the original final destination.
 float AC_WPNav_OA::get_wp_distance_to_destination_m() const
 {
     if (_oa_state == AP_OAPathPlanner::OA_NOT_REQUIRED) {
@@ -60,14 +66,15 @@ float AC_WPNav_OA::get_wp_distance_to_destination_m() const
     return get_horizontal_distance(_pos_control.get_pos_estimate_NEU_m().xy().tofloat(), _destination_oabak_neu_m.xy());
 }
 
-/// get_wp_bearing_to_destination - get bearing to next waypoint in centi-degrees
-/// always returns bearing to final destination (i.e. does not use oa adjusted destination)
+// Returns the bearing to the final destination in centidegrees.
+// See get_wp_bearing_to_destination_rad() for full details.
 int32_t AC_WPNav_OA::get_wp_bearing_to_destination_cd() const
 {
     return rad_to_cd(get_wp_bearing_to_destination_rad());
 }
 
-/// get_wp_bearing_to_destination_cd - get bearing to next waypoint in centi-degrees
+// Returns the bearing to the final destination in radians.
+// Ignores OA-adjusted targets and always calculates from original final destination.
 float AC_WPNav_OA::get_wp_bearing_to_destination_rad() const
 {
     if (_oa_state == AP_OAPathPlanner::OA_NOT_REQUIRED) {
@@ -77,13 +84,15 @@ float AC_WPNav_OA::get_wp_bearing_to_destination_rad() const
     return get_bearing_rad(_pos_control.get_pos_estimate_NEU_m().xy().tofloat(), _destination_oabak_neu_m.xy());
 }
 
-/// true when we have come within RADIUS cm of the waypoint
+// Returns true if the vehicle has reached the final destination within radius threshold.
+// Ignores OA-adjusted intermediate destinations.
 bool AC_WPNav_OA::reached_wp_destination() const
 {
     return (_oa_state == AP_OAPathPlanner::OA_NOT_REQUIRED) && AC_WPNav::reached_wp_destination();
 }
 
-/// update_wpnav - run the wp controller - should be called at 100hz or higher
+// Runs the waypoint navigation update loop, including OA path planning logic.
+// Delegates to parent class if OA is not active or not required.
 bool AC_WPNav_OA::update_wpnav()
 {
     // run path planning around obstacles
