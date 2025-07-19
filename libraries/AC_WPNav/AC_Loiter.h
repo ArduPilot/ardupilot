@@ -15,70 +15,115 @@ public:
     /// Constructor
     AC_Loiter(const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
 
-    /// initialise loiter target to a position in cm from ekf origin
+    // Sets the initial loiter target position in centimeters from the EKF origin.
+    // See init_target_m() for full details.
     void init_target_cm(const Vector2f& position_neu_cm);
+
+    // Sets the initial loiter target position in meters from the EKF origin.
+    // - position_neu_m: horizontal position in the NE frame, in meters.
+    // - Initializes internal control state including acceleration targets and feed-forward planning.
     void init_target_m(const Vector2f& position_neu_m);
 
-    /// initialize's position and feed-forward velocity from current pos and velocity
+    // Initializes the loiter controller using the current position and velocity.
+    // Updates feed-forward velocity, predicted acceleration, and resets control state.
     void init_target();
 
-    /// reduce response for landing
+    // Reduces loiter responsiveness for smoother descent during landing.
+    // Internally softens horizontal control gains.
     void soften_for_landing();
 
-    /// set pilot desired acceleration in radians
-    //   dt should be the time (in seconds) since the last call to this function
-    void set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad);
-
-    /// set pilot desired acceleration in centidegrees
+    // Sets pilot desired acceleration using Euler angles in centidegrees.
+    // See set_pilot_desired_acceleration_rad() for full details.
     void set_pilot_desired_acceleration_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd);
 
-    /// gets pilot desired acceleration in the earth frame
+    // Sets pilot desired acceleration using Euler angles in radians.
+    // - Internally computes a smoothed acceleration vector based on predictive rate shaping.
+    // - Inputs: `euler_roll_angle_rad`, `euler_pitch_angle_rad` in radians.
+    // - Applies internal shaping using the current attitude controller dt.
+    void set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad);
+
+    // Returns pilot-requested horizontal acceleration in the NE frame in cm/s².
+    // See get_pilot_desired_acceleration_NE_mss() for full details.
     Vector2f get_pilot_desired_acceleration_NE_cmss() const { return get_pilot_desired_acceleration_NE_mss() * 100.0; }
+
+    // Returns pilot-requested horizontal acceleration in the NE frame in m/s².
+    // This is the internally computed and smoothed acceleration vector applied by the loiter controller.
     Vector2f get_pilot_desired_acceleration_NE_mss() const { return _desired_accel_ne_mss; }
 
-    /// clear pilot desired acceleration
-    void clear_pilot_desired_acceleration() {
-        set_pilot_desired_acceleration_rad(0.0, 0.0);
-    }
+    // Clears any pilot-requested acceleration by setting roll and pitch inputs to zero.
+    void clear_pilot_desired_acceleration() { set_pilot_desired_acceleration_rad(0.0, 0.0); }
 
-    /// get vector to stopping point based on a horizontal position and velocity
+    // Calculates the expected stopping point based on current velocity and position in the NE frame.
+    // Result is returned in centimeters.
+    // See get_stopping_point_NE_m() for full details.
     void get_stopping_point_NE_cm(Vector2f& stopping_point_ne_cm) const;
+
+    // Calculates the expected stopping point based on current velocity and position in the NE frame.
+    // Result is returned in meters.
+    // Uses the position controller’s deceleration model.
     void get_stopping_point_NE_m(Vector2f& stopping_point_ne_m) const;
 
-    /// get horizontal distance to loiter target in cm
+    // Returns the horizontal distance to the loiter target in centimeters.
+    // See get_distance_to_target_m() for full details.
     float get_distance_to_target_cm() const { return get_distance_to_target_m() * 100.0; }
+
+    // Returns the horizontal distance to the loiter target in meters.
+    // Computed using the NE position error from the position controller.
     float get_distance_to_target_m() const { return _pos_control.get_pos_error_NE_cm(); }
 
-    /// get bearing to target in centi-degrees
+    // Returns the bearing from current position to the loiter target in radians.
+    // Bearing is relative to true north, using the NE frame.
     float get_bearing_to_target_rad() const { return _pos_control.get_bearing_to_target_rad(); }
 
-    /// get maximum lean angle when using loiter
-    float get_angle_max_rad() const;
+    // Returns the maximum pilot-commanded lean angle in centidegrees.
+    // See get_angle_max_rad() for full details.
     float get_angle_max_cd() const;
 
-    /// run the loiter controller
+    // Returns the maximum pilot-commanded lean angle in radians.
+    // - If `_angle_max_deg` is zero, this returns 2/3 of the limiting PSC angle.
+    // - Otherwise, returns the minimum of `_angle_max_deg` and PSC’s configured angle limit.
+    float get_angle_max_rad() const;
+
+    // Runs the loiter control loop, computing desired acceleration and updating position control.
+    // If `avoidance_on` is true, velocity is adjusted using avoidance logic before being applied.
     void update(bool avoidance_on = true);
 
-    //set maximum horizontal speed
+    // Sets the maximum allowed horizontal loiter speed in cm/s.
+    // See set_speed_max_NE_ms() for full details.
     void set_speed_max_NE_cms(float speed_max_NE_cms);
+
+    // Sets the maximum allowed horizontal loiter speed in m/s.
+    // Internally converts to cm/s and clamps to a minimum of LOITER_SPEED_MIN_CMS.
     void set_speed_max_NE_ms(float speed_max_NE_ms);
 
-    /// get desired roll, pitch which should be fed into stabilize controllers
-    float get_roll_rad() const { return _pos_control.get_roll_rad(); }
-    float get_pitch_rad() const { return _pos_control.get_pitch_rad(); }
+    // Returns the desired roll angle in centidegrees from the loiter controller.
     float get_roll_cd() const { return _pos_control.get_roll_cd(); }
+
+    // Returns the desired pitch angle in centidegrees from the loiter controller.
     float get_pitch_cd() const { return _pos_control.get_pitch_cd(); }
+
+    // Returns the desired roll angle in radians from the loiter controller.
+    float get_roll_rad() const { return _pos_control.get_roll_rad(); }
+
+    // Returns the desired pitch angle in radians from the loiter controller.
+    float get_pitch_rad() const { return _pos_control.get_pitch_rad(); }
+
+    // Returns the desired 3D thrust vector from the loiter controller for attitude control.
+    // Directional only; magnitude is handled by the attitude controller.
     Vector3f get_thrust_vector() const { return _pos_control.get_thrust_vector(); }
 
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
 
-    // sanity check parameters
+    // Ensures internal parameters are within valid safety limits.
+    // Applies min/max constraints on speed and acceleration settings.
     void sanity_check_params();
 
-    /// updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance
-    ///		updated velocity sent directly to position controller
+    // Updates feed-forward velocity using pilot-requested acceleration and braking logic.
+    // - Applies drag and braking forces when sticks are released.
+    // - Velocity is adjusted for fence/avoidance if enabled.
+    // - Resulting velocity and acceleration are sent to the position controller.
     void calc_desired_velocity(bool avoidance_on = true);
 
     // references and pointers to external libraries
