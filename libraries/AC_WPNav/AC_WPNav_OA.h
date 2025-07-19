@@ -23,10 +23,12 @@ public:
     ///     is_terrain_alt should be true if destination.z is a desired altitude above terrain
     ///     returns false on failure (likely caused by missing terrain data)
     bool set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt = false) override;
+    bool set_wp_destination_NEU_m(const Vector3f& destination_neu_m, bool is_terrain_alt = false) override;
 
     /// get horizontal distance to destination in cm
     /// always returns distance to final destination (i.e. does not use oa adjusted destination)
     float get_wp_distance_to_destination_cm() const override;
+    float get_wp_distance_to_destination_m() const override;
 
     /// get bearing to next waypoint in centi-degrees
     /// always returns bearing to final destination (i.e. does not use oa adjusted destination)
@@ -45,9 +47,9 @@ protected:
 
     // oa path planning variables
     AP_OAPathPlanner::OA_RetState _oa_state;    // state of object avoidance, if OA_SUCCESS we use _oa_destination to avoid obstacles
-    Vector3f    _origin_oabak_neu_cm;           // backup of _origin_neu_m so it can be restored when oa completes
-    Vector3f    _destination_oabak_neu_cm;      // backup of _destination_neu_m so it can be restored when oa completes
-    Vector3f    _next_destination_oabak_neu_cm; // backup of _next_destination_neu_m so it can be restored when oa completes
+    Vector3f    _origin_oabak_neu_m;            // backup of _origin_neu_m so it can be restored when oa completes
+    Vector3f    _destination_oabak_neu_m;       // backup of _destination_neu_m so it can be restored when oa completes
+    Vector3f    _next_destination_oabak_neu_m;  // backup of _next_destination_neu_m so it can be restored when oa completes
     bool        _is_terrain_alt_oabak;  // true if backup origin and destination z-axis are terrain altitudes
     Location    _oa_destination;        // intermediate destination during avoidance
     Location    _oa_next_destination;   // intermediate next destination during avoidance
