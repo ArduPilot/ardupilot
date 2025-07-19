@@ -40,7 +40,7 @@ public:
     }
 
     /// get vector to stopping point based on a horizontal position and velocity
-    void get_stopping_point_NE_cm(Vector2f& stopping_point) const;
+    void get_stopping_point_NE_cm(Vector2f& stopping_point_ne_cm) const;
 
     /// get horizontal distance to loiter target in cm
     float get_distance_to_target_cm() const { return _pos_control.get_pos_error_NE_cm(); }
