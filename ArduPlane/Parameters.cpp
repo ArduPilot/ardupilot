@@ -131,6 +131,15 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(hf_elevator_pct, "HF_ELEV_PCT", 0),
 
+    // @Param: HF_ELEV_FLAP_MIX
+    // @DisplayName: Gain from high frequency elevator to flap
+    // @Description: Percentage of the high pass filtered elevator signal sent to the flap channel. set to 0 to disable.
+    // @Units: pct
+    // @Range: -100 100
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(hf_elev_flap_mix_gain_pct, "HF_ELEV_FLAP_MIX", 0),
+
     // @Param: TKOFF_THR_DELAY
     // @DisplayName: Takeoff throttle delay
     // @Description: This parameter sets the time delay (in 1/10ths of a second) that the ground speed check is delayed after the forward acceleration check controlled by TKOFF_THR_MINACC has passed. For hand launches with pusher propellers it is essential that this is set to a value of no less than 2 (0.2 seconds) to ensure that the aircraft is safely clear of the throwers arm before the motor can start. For bungee launches a larger value can be used (such as 30) to give time for the bungee to release from the aircraft before the motor is started.
