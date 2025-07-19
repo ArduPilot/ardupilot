@@ -626,6 +626,14 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
         return false;
     }
 
+    // apply jitter-corrected timestamp to this update
+    uint32_t location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
+    if (location_update_ms < _last_location_update_ms) {
+        // ignore if the new update is older than the most recent one received
+        return false;
+    }
+    _last_location_update_ms = location_update_ms;
+
     Location _target_location;
     _target_location.lat = packet.lat;
     _target_location.lng = packet.lon;
@@ -686,9 +694,6 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
         _target_heading_rate_degs = 0.0f;
     }
 
-    // apply jitter-corrected timestamp to this update
-    _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
-
     // if sysid not yet set, adopt sender’s sysid and enable automatic sysid tracking
     if (_sysid == 0) {
         _sysid.set(msg.sysid);
@@ -716,6 +721,15 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
     if ((packet.est_capabilities & (1<<0)) == 0) {
         return false;
     }
+
+    // apply jitter-corrected timestamp to this update
+    uint32_t location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.timestamp, AP_HAL::millis());
+    if (location_update_ms < _last_location_update_ms) {
+        // ignore if the new update is older than the most recent one received
+        return false;
+    }
+    _last_location_update_ms = location_update_ms;
+
 
     // build Location object from latitude, longitude, and altitude (alt in meters)
     const Location _target_location {
@@ -783,7 +797,7 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
     }
 
     // apply jitter-corrected timestamp to this update
-    _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.timestamp, AP_HAL::millis());
+    //_last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.timestamp, AP_HAL::millis());
 
     // if sysid not yet assigned, adopt sender's sysid and enable automatic sysid tracking
     if (_sysid == 0) {
