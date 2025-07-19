@@ -17,6 +17,7 @@ public:
 
     /// initialise loiter target to a position in cm from ekf origin
     void init_target_cm(const Vector2f& position_neu_cm);
+    void init_target_m(const Vector2f& position_neu_m);
 
     /// initialize's position and feed-forward velocity from current pos and velocity
     void init_target();
@@ -32,7 +33,8 @@ public:
     void set_pilot_desired_acceleration_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd);
 
     /// gets pilot desired acceleration in the earth frame
-    Vector2f get_pilot_desired_acceleration_NE_cmss() const { return Vector2f{_desired_accel_ne_cmss.x, _desired_accel_ne_cmss.y}; }
+    Vector2f get_pilot_desired_acceleration_NE_cmss() const { return get_pilot_desired_acceleration_NE_mss() * 100.0; }
+    Vector2f get_pilot_desired_acceleration_NE_mss() const { return _desired_accel_ne_mss; }
 
     /// clear pilot desired acceleration
     void clear_pilot_desired_acceleration() {
@@ -41,9 +43,11 @@ public:
 
     /// get vector to stopping point based on a horizontal position and velocity
     void get_stopping_point_NE_cm(Vector2f& stopping_point_ne_cm) const;
+    void get_stopping_point_NE_m(Vector2f& stopping_point_ne_m) const;
 
     /// get horizontal distance to loiter target in cm
-    float get_distance_to_target_cm() const { return _pos_control.get_pos_error_NE_cm(); }
+    float get_distance_to_target_cm() const { return get_distance_to_target_m() * 100.0; }
+    float get_distance_to_target_m() const { return _pos_control.get_pos_error_NE_cm(); }
 
     /// get bearing to target in centi-degrees
     float get_bearing_to_target_rad() const { return _pos_control.get_bearing_to_target_rad(); }
@@ -57,6 +61,7 @@ public:
 
     //set maximum horizontal speed
     void set_speed_max_NE_cms(float speed_max_NE_cms);
+    void set_speed_max_NE_ms(float speed_max_NE_ms);
 
     /// get desired roll, pitch which should be fed into stabilize controllers
     float get_roll_rad() const { return _pos_control.get_roll_rad(); }
@@ -90,10 +95,10 @@ protected:
     AP_Float    _brake_delay_s;         // delay (in seconds) before loiter braking begins after sticks are released
 
     // loiter controller internal variables
-    Vector2f    _desired_accel_ne_cmss;     // slewed pilot's desired acceleration in lat/lon frame
-    Vector2f    _predicted_accel_ne_cmss;   // predicted acceleration in lat/lon frame based on pilot's desired acceleration
+    Vector2f    _desired_accel_ne_mss;     // slewed pilot's desired acceleration in lat/lon frame
+    Vector2f    _predicted_accel_ne_mss;   // predicted acceleration in lat/lon frame based on pilot's desired acceleration
     Vector2f    _predicted_euler_angle_rad; // predicted roll/pitch angles in radians based on pilot's desired acceleration
     Vector2f    _predicted_euler_rate;      // predicted roll/pitch rates in radians/sec based on pilot's desired acceleration
     uint32_t    _brake_timer_ms;            // system time that brake was initiated
-    float       _brake_accel_cmss;          // acceleration due to braking from previous iteration (used for jerk limiting)
+    float       _brake_accel_mss;          // acceleration due to braking from previous iteration (used for jerk limiting)
 };
