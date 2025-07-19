@@ -31,7 +31,16 @@ public:
 
     // hook for custom routes
     virtual struct netif *routing_hook(uint32_t dest) { return nullptr; }
-    
+
+#if AP_NETWORKING_CAPTURE_ENABLED
+    /*
+      write a header for the start of a new capture packet
+      a capture semaphore should be taken before the header is output
+      and held for the whole packet
+     */
+    void capture_header(int fd, uint32_t len);
+#endif
+
 protected:
     AP_Networking &frontend;
 
