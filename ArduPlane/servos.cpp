@@ -206,12 +206,20 @@ void Plane::flaperon_update()
       percentage of flaps. Flap input can come from a manual channel
       or from auto flaps.
      */
-    float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
-    float flap_percent = SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap_auto);
-    float flaperon_left  = constrain_float(aileron + flap_percent * 45, -4500, 4500);
-    float flaperon_right = constrain_float(aileron - flap_percent * 45, -4500, 4500);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_left, flaperon_left);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_right, flaperon_right);
+    const float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
+    const float flap_percent = SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap_auto);
+    float flaperon_left  = aileron + flap_percent * 45;
+    float flaperon_right = aileron - flap_percent * 45;
+
+#if AP_PLANE_HF_ELEVATOR_ENABLED
+    // optional mixing of elevator into flaperons
+    const float elev_flaperon_mix = HF_elevator.flaperon_output();
+    flaperon_left += elev_flaperon_mix;
+    flaperon_right -= elev_flaperon_mix;
+#endif
+
+    SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_left,  constrain_float(flaperon_left,  -4500, 4500));
+    SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_right, constrain_float(flaperon_right, -4500, 4500));
 }
 
 
@@ -905,6 +913,11 @@ void Plane::set_servos(void)
 
     // Warn AHRS if we might take off soon
     set_takeoff_expected();
+
+#if AP_PLANE_HF_ELEVATOR_ENABLED
+    // filter elevator and send to high and low frequency channels
+    HF_elevator.update();
+#endif
 
     // setup flap outputs
     set_servos_flaps();

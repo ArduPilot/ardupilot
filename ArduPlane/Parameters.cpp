@@ -996,6 +996,12 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(_gcs,           "MAV",  GCS),
 #endif
 
+#if AP_PLANE_HF_ELEVATOR_ENABLED
+    // @Group:
+    // @Path: hf_elevator.cpp
+    GOBJECT(HF_elevator, "HF_ELEV_",  Plane::HighFreqElevator),
+#endif
+    
     AP_VAREND
 };
 
