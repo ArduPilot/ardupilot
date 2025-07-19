@@ -161,6 +161,7 @@ public:
         k_param_fs_crash_check,
         k_param_fs_ekf_action,
         k_param_fs_ekf_thresh,  // 187
+        k_param_fs_leak_enabled,
 
         // obstacle control
         k_param_sonar_enabled = 190,  // deprecated, can be removed
@@ -263,6 +264,7 @@ public:
     AP_Int8     fs_crash_check;
     AP_Int8     fs_ekf_action;
     AP_Float    fs_ekf_thresh;
+    AP_Int8     fs_leak_enabled;
 
     // driving modes
     //
@@ -428,6 +430,11 @@ public:
     AP_Float fs_gcs_timeout;
 
     class ModeCircle mode_circle;
+
+#if AP_LEAKDETECTOR_ENABLED
+    // Leak detector
+    AP_LeakDetector leak_detector;
+#endif
 };
 
 extern const AP_Param::Info var_info[];
