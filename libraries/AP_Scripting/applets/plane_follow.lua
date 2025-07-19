@@ -365,7 +365,7 @@ function crosstrackpid.new(kp, ki, kd, max_correction, integral_limit)
 end
 
 -- reset integrator to an initial value
-function crosstrackpid.reset()
+function crosstrackpid.reset(self)
    self = setmetatable({}, { __index = crosstrackpid })
    self.integral = 0
    self.last_error = 0
