@@ -113,6 +113,24 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(takeoff_throttle_min_accel,     "TKOFF_THR_MINACC",  0),
 
+    // @Param: HF_ELEV_FREQ
+    // @DisplayName: High frequency elevator frequency
+    // @Description: Cutoff frequency of the high pass filter applied to the high frequency elevator demand.
+    // @Units: Hz
+    // @Range: 1.0 10.0
+    // @Increment: 0.1
+    // @User: Standard
+    GSCALAR(hf_elevator_freq, "HF_ELEV_FREQ", 2.0f),
+
+    // @Param: HF_ELEV_PCT
+    // @DisplayName: High frequency elevator percentage
+    // @Description: Percentage of the high pass filtered elevator signal sent to the high frequency elevator. The remainder will be sent to he low frequency elevator.
+    // @Units: pct
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(hf_elevator_pct, "HF_ELEV_PCT", 0),
+
     // @Param: TKOFF_THR_DELAY
     // @DisplayName: Takeoff throttle delay
     // @Description: This parameter sets the time delay (in 1/10ths of a second) that the ground speed check is delayed after the forward acceleration check controlled by TKOFF_THR_MINACC has passed. For hand launches with pusher propellers it is essential that this is set to a value of no less than 2 (0.2 seconds) to ensure that the aircraft is safely clear of the throwers arm before the motor can start. For bungee launches a larger value can be used (such as 30) to give time for the bungee to release from the aircraft before the motor is started.
