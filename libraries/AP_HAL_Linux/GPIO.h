@@ -47,4 +47,6 @@ private:
 #elif HAL_LINUX_GPIO_PILOTPI_ENABLED
 #define HAL_LINUX_GPIO_SYSFS_ENABLED 1
 #include "GPIO_PilotPi.h"
+#elif HAL_LINUX_GPIO_PB2_ENABLED
+#include "GPIO_PB2.h"
 #endif
