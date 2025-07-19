@@ -210,7 +210,7 @@ void Plane::flaperon_update()
     float flap_percent = SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap_auto);
     float elevator_hf = 0.01f * (float)g.hf_elev_flap_mix_gain_pct *  SRV_Channels::get_output_scaled(SRV_Channel::k_elevator_hf);
     float flaperon_left  = constrain_float(aileron + elevator_hf + flap_percent * 45, -4500, 4500);
-    float flaperon_right = constrain_float(aileron + elevator_hf  - flap_percent * 45, -4500, 4500);
+    float flaperon_right = constrain_float(aileron - elevator_hf - flap_percent * 45, -4500, 4500);
     SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_left, flaperon_left);
     SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_right, flaperon_right);
 }
