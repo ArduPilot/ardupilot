@@ -199,7 +199,7 @@ void ModeAuto::auto_circle_movetoedge_start(const Location &circle_center, float
         Location circle_edge(circle_edge_neu, Location::AltFrame::ABOVE_ORIGIN);
 
         // convert altitude to same as command
-        circle_edge.set_alt_cm(circle_center.alt, circle_center.get_alt_frame());
+        circle_edge.copy_alt_from(circle_center);
 
         // initialise wpnav to move to edge of circle
         if (!sub.wp_nav.set_wp_destination_loc(circle_edge)) {
@@ -390,7 +390,7 @@ void ModeAuto::set_yaw_rate(float turn_rate_dps)
 void ModeAuto::set_auto_yaw_roi(const Location &roi_location)
 {
     // if location is zero lat, lon and altitude turn off ROI
-    if (roi_location.alt == 0 && roi_location.lat == 0 && roi_location.lng == 0) {
+    if (!roi_location.initialised()) {
         // set auto yaw mode back to default assuming the active command is a waypoint command.  A more sophisticated method is required to ensure we return to the proper yaw control for the active command
         set_auto_yaw_mode(get_default_auto_yaw_mode(false));
 #if HAL_MOUNT_ENABLED

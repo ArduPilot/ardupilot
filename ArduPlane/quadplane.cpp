@@ -3370,8 +3370,7 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
 
     plane.set_next_WP(cmd.content.location);
     // initially aim for current altitude
-    plane.next_WP_loc.set_alt_cm(plane.current_loc.alt,
-                                 Location::AltFrame::ABSOLUTE);
+    plane.next_WP_loc.copy_alt_from(plane.current_loc);
 
     // initialise the position controller
     pos_control->init_NE_controller();
@@ -3591,8 +3590,7 @@ bool QuadPlane::verify_vtol_land(void)
                 plane.set_next_WP(plane.mission.get_current_nav_cmd().content.location);
             } else {
                 plane.set_next_WP(plane.next_WP_loc);
-                plane.next_WP_loc.set_alt_cm(ahrs.get_home().alt,
-                                             Location::AltFrame::ABSOLUTE);
+                plane.next_WP_loc.copy_alt_from(ahrs.get_home());
             }
         }
     }
@@ -3964,7 +3962,7 @@ bool QuadPlane::do_user_takeoff(float takeoff_altitude)
     plane.auto_state.vtol_loiter = true;
     plane.prev_WP_loc = plane.current_loc;
     plane.next_WP_loc = plane.current_loc;
-    plane.next_WP_loc.alt += takeoff_altitude*100;
+    plane.next_WP_loc.offset_up_m(takeoff_altitude);
     set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     guided_start();
     guided_takeoff = true;
