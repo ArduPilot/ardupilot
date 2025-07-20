@@ -114,6 +114,13 @@ const AP_Param::GroupInfo AP_VisualOdom::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_QUAL_MIN", 8, AP_VisualOdom, _quality_min, 0),
 
+    // @Param: _OPTIONS
+    // @DisplayName: Visual odometry options
+    // @Description: Visual odometry options
+    // @Bitmask: 0:Allow arming even if VO is not healthy
+    // @User: Advanced
+    AP_GROUPINFO("_OPTIONS", 9, AP_VisualOdom, _options, 0),
+
     AP_GROUPEND
 };
 
@@ -288,7 +295,7 @@ bool AP_VisualOdom::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) co
     }
 
     // check healthy
-    if (!healthy()) {
+    if (!healthy() && !option_enabled(ViconOptionsMask::ALLOW_ARMING_IF_UNHEALTHY)) {
         hal.util->snprintf(failure_msg, failure_msg_len, "not healthy");
         return false;
     }

@@ -122,6 +122,14 @@ public:
         return _type;
     }
 
+    enum class ViconOptionsMask : uint8_t {
+        ALLOW_ARMING_IF_UNHEALTHY = (1 << 0), // allow arming even if VO is not healthy
+    };
+
+    bool option_enabled(ViconOptionsMask option) const {
+        return (_options.get() & (uint8_t)option) != 0;
+    }
+
 private:
 
     static AP_VisualOdom *_singleton;
@@ -136,6 +144,7 @@ private:
     AP_Float _pos_noise;        // position measurement noise in meters
     AP_Float _yaw_noise;        // yaw measurement noise in radians
     AP_Int8 _quality_min;       // positions and velocities will only be sent to EKF if over this value.  if 0 all values sent to EKF
+    AP_Int8 _options;           // visual odometry options, see ViconOptionsMask
 
     // reference to backends
     AP_VisualOdom_Backend *_driver;
