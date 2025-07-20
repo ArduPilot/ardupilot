@@ -83,6 +83,7 @@ public:
     AC_P& get_angle_roll_p() { return _p_angle_roll; }
     AC_P& get_angle_pitch_p() { return _p_angle_pitch; }
     AC_P& get_angle_yaw_p() { return _p_angle_yaw; }
+    AP_Float& get_angle_pitch_d() {return _d_angle_pitch;}
     virtual AC_PID& get_rate_roll_pid() = 0;
     virtual AC_PID& get_rate_pitch_pid() = 0;
     virtual AC_PID& get_rate_yaw_pid() = 0;
