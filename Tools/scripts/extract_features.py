@@ -311,6 +311,7 @@ class ExtractFeatures(object):
             ('AP_PERIPH_PROXIMITY_ENABLED', r'AP_Periph_FW::can_proximity_update'),
             ('AP_PERIPH_GPS_ENABLED', r'AP_Periph_FW::can_gps_update'),
             ('AP_PERIPH_ADSB_ENABLED', r'AP_Periph_FW::adsb_update'),
+            ('AP_PERIPH_MAG_ENABLED', r'AP_Periph_FW::can_mag_update'),
         ]
 
     def progress(self, msg):
