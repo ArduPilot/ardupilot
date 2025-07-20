@@ -12,7 +12,7 @@ protected:
 
     MAV_RESULT handle_flight_termination(const mavlink_command_int_t &packet) override;
 
-    MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;
+    MAV_RESULT handle_command_do_set_roi(uint8_t instance, const Location &roi_loc) override;
     MAV_RESULT _handle_command_preflight_calibration_baro(const mavlink_message_t &msg) override;
     MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
 

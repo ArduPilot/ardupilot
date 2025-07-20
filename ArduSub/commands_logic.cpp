@@ -689,7 +689,7 @@ void Sub::do_set_home(const AP_Mission::Mission_Command& cmd)
 //  TO-DO: add support for other features of MAV_CMD_DO_SET_ROI including pointing at a given waypoint
 void Sub::do_roi(const AP_Mission::Mission_Command& cmd)
 {
-    sub.mode_auto.set_auto_yaw_roi(cmd.content.location);
+    sub.mode_auto.set_auto_yaw_roi(cmd.p1, cmd.content.location);
 }
 
 // point the camera to a specified angle

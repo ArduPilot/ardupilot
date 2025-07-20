@@ -242,10 +242,23 @@ AP_Mount::Type AP_Mount::get_mount_type(uint8_t instance) const
     return (Type)_params[instance].type.get();
 }
 
+AP_Mount_Backend* AP_Mount::get_backend(uint8_t instance) const
+{
+    AP_Mount_Backend *backend;
+
+    if (instance == 0) {
+        backend = get_primary();
+    } else {
+        backend = get_instance(instance - 1);
+    }
+
+    return backend;
+}
+
 // has_pan_control - returns true if the mount has yaw control (required for copters)
 bool AP_Mount::has_pan_control(uint8_t instance) const
 {
-    const auto *backend = get_instance(instance);
+    const auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return false;
     }
@@ -257,7 +270,8 @@ bool AP_Mount::has_pan_control(uint8_t instance) const
 // get_mode - returns current mode of mount (i.e. Retracted, Neutral, RC_Targeting, GPS Point)
 MAV_MOUNT_MODE AP_Mount::get_mode(uint8_t instance) const
 {
-    const auto *backend = get_instance(instance);
+    const auto *backend = get_backend(instance);
+
     if (backend == nullptr) {
         return MAV_MOUNT_MODE_RETRACT;
     }
@@ -270,7 +284,8 @@ MAV_MOUNT_MODE AP_Mount::get_mode(uint8_t instance) const
 //      this operation requires 60us on a Pixhawk/PX4
 void AP_Mount::set_mode_to_default(uint8_t instance)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
+
     if (backend == nullptr) {
         return;
     }
@@ -280,7 +295,7 @@ void AP_Mount::set_mode_to_default(uint8_t instance)
 // set_mode - sets mount's mode
 void AP_Mount::set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return;
     }
@@ -293,7 +308,7 @@ void AP_Mount::set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode)
 // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
 void AP_Mount::set_yaw_lock(uint8_t instance, bool yaw_lock)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return;
     }
@@ -307,7 +322,7 @@ void AP_Mount::set_yaw_lock(uint8_t instance, bool yaw_lock)
 // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
 void AP_Mount::set_angle_target(uint8_t instance, float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return;
     }
@@ -320,7 +335,7 @@ void AP_Mount::set_angle_target(uint8_t instance, float roll_deg, float pitch_de
 // yaw_lock should be true if the yaw rate is earth-frame, false if body-frame (e.g. rotates with body of vehicle)
 void AP_Mount::set_rate_target(uint8_t instance, float roll_degs, float pitch_degs, float yaw_degs, bool yaw_lock)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return;
     }
@@ -359,11 +374,7 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
     // check gimbal device id.  0 is primary, 1 is 1st gimbal, 2 is
     // 2nd gimbal, etc
     const uint8_t instance = packet.z;
-    if (instance == 0) {
-        backend = get_primary();
-    } else {
-        backend = get_instance(instance - 1);
-    }
+    backend = get_backend(instance);
 
     if (backend == nullptr) {
         return MAV_RESULT_FAILED;
@@ -415,11 +426,8 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_configure(const mavlink_co
 
     // check gimbal device id.  0 is primary, 1 is 1st gimbal, 2 is 2nd gimbal, etc
     const uint8_t instance = packet.z;
-    if (instance == 0) {
-        backend = get_primary();
-    } else {
-        backend = get_instance(instance - 1);
-    }
+    backend = get_backend(instance);
+    
 
     if (backend == nullptr) {
         return MAV_RESULT_FAILED;
@@ -437,11 +445,7 @@ void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg) 
     // check gimbal device id.  0 is primary, 1 is 1st gimbal, 2 is
     // 2nd gimbal, etc
     const uint8_t instance = packet.gimbal_device_id;
-    if (instance == 0) {
-        backend = get_primary();
-    } else {
-        backend = get_instance(instance - 1);
-    }
+    backend = get_backend(instance);
 
     if (backend == nullptr) {
         return;
@@ -503,15 +507,7 @@ void AP_Mount::handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
     // check gimbal device id.  0 is primary, 1 is 1st gimbal, 2 is
     // 2nd gimbal, etc
     const uint8_t instance = packet.gimbal_device_id;
-    if (instance == 0) {
-        backend = get_primary();
-    } else {
-        backend = get_instance(instance - 1);
-    }
-
-    if (backend == nullptr) {
-        return;
-    }
+    backend = get_backend(instance);
 
     // check flags for change to RETRACT
     uint32_t flags = (uint32_t)packet.flags;
@@ -633,7 +629,7 @@ void AP_Mount::send_gimbal_manager_status(mavlink_channel_t chan)
 // get poi information.  Returns true on success and fills in gimbal attitude, location and poi location
 bool AP_Mount::get_poi(uint8_t instance, Quaternion &quat, Location &loc, Location &poi_loc) const
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return false;
     }
@@ -646,7 +642,7 @@ bool AP_Mount::get_poi(uint8_t instance, Quaternion &quat, Location &loc, Locati
 // yaw is in body-frame.
 bool AP_Mount::get_attitude_quaternion(uint8_t instance, Quaternion& att_quat)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return false;
     }
@@ -702,7 +698,7 @@ bool AP_Mount::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
 // get target rate in deg/sec. returns true on success
 bool AP_Mount::get_rate_target(uint8_t instance, float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return false;
     }
@@ -712,7 +708,7 @@ bool AP_Mount::get_rate_target(uint8_t instance, float& roll_degs, float& pitch_
 // get target angle in deg. returns true on success
 bool AP_Mount::get_angle_target(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return false;
     }
@@ -722,7 +718,7 @@ bool AP_Mount::get_angle_target(uint8_t instance, float& roll_deg, float& pitch_
 // accessors for scripting backends and logging
 bool AP_Mount::get_location_target(uint8_t instance, Location& target_loc)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return false;
     }
@@ -731,7 +727,7 @@ bool AP_Mount::get_location_target(uint8_t instance, Location& target_loc)
 
 void AP_Mount::set_attitude_euler(uint8_t instance, float roll_deg, float pitch_deg, float yaw_bf_deg)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return;
     }
@@ -752,7 +748,7 @@ void AP_Mount::write_log()
 
 void AP_Mount::write_log(uint8_t instance, uint64_t timestamp_us)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return;
     }
@@ -763,7 +759,7 @@ void AP_Mount::write_log(uint8_t instance, uint64_t timestamp_us)
 // point at system ID sysid
 void AP_Mount::set_target_sysid(uint8_t instance, uint8_t sysid)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return;
     }
@@ -772,23 +768,28 @@ void AP_Mount::set_target_sysid(uint8_t instance, uint8_t sysid)
 }
 
 // set_roi_target - sets target location that mount should attempt to point towards
-void AP_Mount::set_roi_target(uint8_t instance, const Location &target_loc)
+bool AP_Mount::set_roi_target(uint8_t instance, const Location &target_loc)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
-        return;
+        return false;
     }
+
     backend->set_roi_target(target_loc);
+    return true;
 }
 
 // clear_roi_target - clears target location that mount should attempt to point towards
-void AP_Mount::clear_roi_target(uint8_t instance)
+bool AP_Mount::clear_roi_target(uint8_t instance)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
+
     if (backend == nullptr) {
-        return;
+        return false;
     }
+
     backend->clear_roi_target();
+    return true;
 }
 
 //
@@ -798,7 +799,7 @@ void AP_Mount::clear_roi_target(uint8_t instance)
 // take a picture.  returns true on success
 bool AP_Mount::take_picture(uint8_t instance)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return false;
     }
@@ -809,7 +810,7 @@ bool AP_Mount::take_picture(uint8_t instance)
 // set start_recording = true to start record, false to stop recording
 bool AP_Mount::record_video(uint8_t instance, bool start_recording)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return false;
     }
@@ -819,7 +820,7 @@ bool AP_Mount::record_video(uint8_t instance, bool start_recording)
 // set zoom specified as a rate or percentage
 bool AP_Mount::set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return false;
     }
@@ -830,7 +831,7 @@ bool AP_Mount::set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value)
 // focus in = -1, focus hold = 0, focus out = 1
 SetFocusResult AP_Mount::set_focus(uint8_t instance, FocusType focus_type, float focus_value)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return SetFocusResult::FAILED;
     }
@@ -842,7 +843,7 @@ SetFocusResult AP_Mount::set_focus(uint8_t instance, FocusType focus_type, float
 // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
 bool AP_Mount::set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return false;
     }
@@ -852,7 +853,7 @@ bool AP_Mount::set_tracking(uint8_t instance, TrackingType tracking_type, const 
 // set camera lens as a value from 0 to 5
 bool AP_Mount::set_lens(uint8_t instance, uint8_t lens)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return false;
     }
@@ -864,7 +865,7 @@ bool AP_Mount::set_lens(uint8_t instance, uint8_t lens)
 // primary and secondary sources use the AP_Camera::CameraSource enum cast to uint8_t
 bool AP_Mount::set_camera_source(uint8_t instance, uint8_t primary_source, uint8_t secondary_source)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return false;
     }
@@ -875,7 +876,7 @@ bool AP_Mount::set_camera_source(uint8_t instance, uint8_t primary_source, uint8
 // send camera information message to GCS
 void AP_Mount::send_camera_information(uint8_t instance, mavlink_channel_t chan) const
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return;
     }
@@ -885,7 +886,7 @@ void AP_Mount::send_camera_information(uint8_t instance, mavlink_channel_t chan)
 // send camera settings message to GCS
 void AP_Mount::send_camera_settings(uint8_t instance, mavlink_channel_t chan) const
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return;
     }
@@ -895,7 +896,7 @@ void AP_Mount::send_camera_settings(uint8_t instance, mavlink_channel_t chan) co
 // send camera capture status message to GCS
 void AP_Mount::send_camera_capture_status(uint8_t instance, mavlink_channel_t chan) const
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return;
     }
@@ -906,7 +907,7 @@ void AP_Mount::send_camera_capture_status(uint8_t instance, mavlink_channel_t ch
 // send camera thermal range message to GCS
 void AP_Mount::send_camera_thermal_range(uint8_t instance, mavlink_channel_t chan) const
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return;
     }
@@ -918,7 +919,7 @@ void AP_Mount::send_camera_thermal_range(uint8_t instance, mavlink_channel_t cha
 // setting values from AP_Camera::Setting enum
 bool AP_Mount::change_setting(uint8_t instance, CameraSetting setting, float value)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return false;
     }
@@ -928,7 +929,7 @@ bool AP_Mount::change_setting(uint8_t instance, CameraSetting setting, float val
 // get rangefinder distance.  Returns true on success
 bool AP_Mount::get_rangefinder_distance(uint8_t instance, float& distance_m) const
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return false;
     }
@@ -938,7 +939,7 @@ bool AP_Mount::get_rangefinder_distance(uint8_t instance, float& distance_m) con
 // enable/disable rangefinder.  Returns true on success
 bool AP_Mount::set_rangefinder_enable(uint8_t instance, bool enable)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_backend(instance);
     if (backend == nullptr) {
         return false;
     }
