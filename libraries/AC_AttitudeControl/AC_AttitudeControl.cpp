@@ -1309,7 +1309,7 @@ Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(const Vector3f
     float d_term_pitch = -_d_angle_pitch * actual_pitch_rate_rads;
     float pd_output_pitch;
     const float angleP_pitch = _p_angle_pitch.kP() * _angle_P_scale.y;
-    
+
     if (_use_sqrt_controller && !is_zero(get_accel_pitch_max_radss())) {
         pd_output_pitch = sqrt_controller(attitude_error_rot_vec_rad.y, angleP_pitch, constrain_float(get_accel_pitch_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS), _dt_s);
         pd_output_pitch += d_term_pitch;
@@ -1434,6 +1434,12 @@ bool AC_AttitudeControl::pre_arm_checks(const char *param_prefix,
             hal.util->snprintf(failure_msg, failure_msg_len, "%s_%s_P must be > 0", param_prefix, ps[i].pid_name);
             return false;
         }
+    }
+
+    if(!is_positive(get_angle_pitch_d()))
+    {
+        hal.util->snprintf(failure_msg, failure_msg_len, "%s_ANG_PIT_D must be > 0", param_prefix);
+        return false;
     }
 
     // validate AC_PID members:
