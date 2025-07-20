@@ -602,7 +602,7 @@ protected:
     AC_P                _p_angle_roll;
     AC_P                _p_angle_pitch;
     AC_P                _p_angle_yaw;
-    AC_P                _d_angle_pitch;
+    AP_Float            _d_angle_pitch;
 
     // Angle limit time constant (to maintain altitude)
     AP_Float            _angle_limit_tc;
