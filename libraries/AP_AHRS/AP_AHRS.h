@@ -584,6 +584,7 @@ public:
     float get_roll_rad() const { return roll; }
     float get_pitch_rad() const { return pitch; }
     float get_yaw_rad() const { return yaw; }
+    void get_rpy_rad(Vector3f &rpy) const { rpy.x = roll; rpy.y = pitch; rpy.z = yaw; }
 
     // roll/pitch/yaw euler angles, all in degrees
     float get_roll_deg() const { return rpy_deg[0]; }
