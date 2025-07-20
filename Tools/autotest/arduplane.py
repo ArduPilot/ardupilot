@@ -6737,6 +6737,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.takeoff(30, mode='TAKEOFF')
         self.assert_parameter_value("COMPASS_OFS_X", 20, epsilon=30)
+        # fly straight and level for a bit to let GSF converge for accurate learning
+        self.change_mode("FBWB") # not "CRUISE" to avoid heading track with bad compass
+        self.wait_distance(200, accuracy=20)
         old_compass_ofs_x = self.get_parameter('COMPASS_OFS_X')
         self.set_parameters({
             "COMPASS_OFS_X": 1100,
