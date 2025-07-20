@@ -605,6 +605,7 @@ protected:
     AC_P                _p_angle_yaw;
     AP_Float            _d_angle_pitch;
 
+    float               cal_d_term;   // for logging
     // Angle limit time constant (to maintain altitude)
     AP_Float            _angle_limit_tc;
 
