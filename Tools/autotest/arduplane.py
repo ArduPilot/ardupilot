@@ -7425,10 +7425,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "RC7_OPTION": 301,
         })
 
-        self.reboot_sitl()
         self.context_collect("STATUSTEXT")
-        self.scripting_restart()
-        self.wait_text("Scripting: restarted", check_context=True)
+
+        self.reboot_sitl()
 
         self.wait_text("Plane Follow .* script loaded", regex=True, check_context=True)
 
