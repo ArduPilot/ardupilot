@@ -10,6 +10,7 @@
 #include "PosVelEKF.h"
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AC_PrecLand/AC_PrecLand_StateMachine.h>
+#include <AP_VisualOdom/AP_VisualOdom.h>
 
 // declare backend classes
 class AC_PrecLand_Backend;
@@ -188,6 +189,13 @@ private:
 
     // get 3D vector from vehicle to target and frame.  returns true on success, false on failure
     bool retrieve_los_meas(Vector3f& target_vec_unit, VectorFrame& frame);
+
+#if AP_VISUALODOM_PRECLAND_ENABLED
+    // When using a static landing target and downward-facing target detector,
+    // the vehicle's position in world (target) frame is the inverse of the target's pose relative to the vehicle.
+    // This can thus be used as a position measurement for the vehicle by EKF via the visual odometry library.
+    void send_pos_viso(const Vector3f& current_pos_NED);
+#endif // AP_VISUALODOM_PRECLAND_ENABLED
 
     // calculate target's position and velocity relative to the vehicle (used as input to position controller)
     // results are stored in_target_pos_rel_out_NE, _target_vel_rel_out_NE
