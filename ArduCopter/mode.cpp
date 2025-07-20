@@ -601,8 +601,9 @@ float Mode::get_alt_above_ground_m(void) const
     if (copter.get_rangefinder_height_interpolated_m(alt_above_ground_m)) {
         return alt_above_ground_m;
     }
-    if (!pos_control->is_active_NE()) {
-        return copter.current_loc.alt;
+    if (!copter.current_loc.initialised()) {
+        // current loc uninitialised during startup, return zero
+        return 0;
     }
     if (copter.current_loc.get_alt_m(Location::AltFrame::ABOVE_TERRAIN, alt_above_ground_m)) {
         return alt_above_ground_m;
