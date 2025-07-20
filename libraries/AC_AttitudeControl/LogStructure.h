@@ -173,6 +173,7 @@ struct PACKED log_ANG {
     float control_yaw;
     float yaw;
     float sensor_dt;
+    float pitch_ad;
 };
 
 #define PSCx_FMT "Qfffffffff"
@@ -201,4 +202,4 @@ struct PACKED log_ANG {
     { LOG_RATE_MSG, sizeof(log_Rate), \
         "RATE", "Qfffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut,AOutSlew", "skk-kk-kk-oo--", "F?????????BB--" , true }, \
     { LOG_ANG_MSG, sizeof(log_ANG),\
-        "ANG", "Qfffffff", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,Dt", "sddddhhs", "F0000000" , true }
+        "ANG", "Qffffffff", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,Dt,PitchAD", "sddddhhsr", "F00000000" , true }

@@ -22,7 +22,8 @@ void AC_AttitudeControl::Write_ANG() const
         pitch           : degrees(_ahrs.pitch),
         control_yaw     : wrap_360(targets.z),
         yaw             : wrap_360(degrees(_ahrs.yaw)),
-        sensor_dt       : AP::scheduler().get_last_loop_time_s()
+        sensor_dt       : AP::scheduler().get_last_loop_time_s(),
+        pitch_ad        : cal_d_term
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }

@@ -1307,6 +1307,7 @@ Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(const Vector3f
 
     float actual_pitch_rate_rads = _ahrs.get_gyro().y;
     float d_term_pitch = -_d_angle_pitch * actual_pitch_rate_rads;
+    cal_d_term = d_term_pitch;
     float pd_output_pitch;
     const float angleP_pitch = _p_angle_pitch.kP() * _angle_P_scale.y;
 
