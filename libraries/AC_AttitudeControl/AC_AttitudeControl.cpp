@@ -173,6 +173,15 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LAND_Y_MULT", 23, AC_AttitudeControl, _land_yaw_mult, 1.0),
 
+    // @Param: ANG_PIT_D
+    // @DisplayName: Pitch axis angle controller D gain
+    // @Description: Provides damping to pitch angle response.
+    // @Units: s
+    // @Range: 0.000 1.000
+    // @Increment: 0.005
+    // @User: Standard
+    AP_GROUPINFO("ANG_PIT_D", 24, AC_AttitudeControl, _d_angle_pitch, 0.0f),
+
     AP_GROUPEND
 };
 
