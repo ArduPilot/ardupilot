@@ -10,19 +10,19 @@
 --
 -- Thanks to @yuri_rage and Peter Barker for help with the Lua and Autotests
 
-SCRIPT_VERSION = "4.7.0-016"
+SCRIPT_VERSION = "4.7.0-017"
 SCRIPT_NAME = "Arming Checks"
 SCRIPT_NAME_SHORT = "ArmCk"
 
 REFRESH_RATE = 500      -- wait this many milliseconds between each update loop (while not armed)
 INITIAL_DELAY = 20000   -- wait 20 seconds for the AP to settle down before starting to show messages
 
-GLOBAL_PARAM_TABLE_BASE = 160
+GLOBAL_PARAM_TABLE_BASE = 170
 VALUES_PARAM_TABLE_KEY = GLOBAL_PARAM_TABLE_BASE + 9
 VALUES_PARAM_TABLE_PREFIX = "ARM_V_"
 
 FIRMWARE = {GLOBAL = 0, ROVER = 1, COPTER = 2, PLANE = 3, ANTENNA = 4, SUB = 7, BLIMP = 12, HELI = 13 }
-local VEHICLE = {
+VEHICLE = {
     [FIRMWARE.GLOBAL]   = {prefix = "ARM_", key = GLOBAL_PARAM_TABLE_BASE, index = 1},
     [FIRMWARE.ROVER]    = {prefix = "ARM_R_", key = GLOBAL_PARAM_TABLE_BASE + 1, index = 1},
     [FIRMWARE.COPTER]   = {prefix = "ARM_C_", key = GLOBAL_PARAM_TABLE_BASE + 2, index = 1},
@@ -49,14 +49,14 @@ PLANE_MODE = { AUTO = 10, TAKEOFF = 13}
 local param_idx = 1
 
 -- create parameter table for general/global ARM_ parameters that will be created below. 
-assert(param:add_table(VEHICLE[FIRMWARE.GLOBAL].key, VEHICLE[FIRMWARE.GLOBAL].prefix, 25), 'could not add param table: '..VEHICLE[FIRMWARE.GLOBAL].prefix)
--- create parameter table for ARM_ parameters for plane that will be created below. 
-assert(param:add_table(VEHICLE[FIRMWARE.COPTER].key, VEHICLE[FIRMWARE.COPTER].prefix, 10), 'could not add param table:'..VEHICLE[FIRMWARE.COPTER].prefix)
--- create parameter table for ARM_ parameters for plane that will be created below. 
-assert(param:add_table(VEHICLE[FIRMWARE.PLANE].key, VEHICLE[FIRMWARE.PLANE].prefix, 10), 'could not add param table:'..VEHICLE[FIRMWARE.PLANE].prefix)
+assert(param:add_table(VEHICLE[FIRMWARE.GLOBAL].key, VEHICLE[FIRMWARE.GLOBAL].prefix, 20), string.format('could not add param table: (%d) %s ', VEHICLE[FIRMWARE.GLOBAL].key, VEHICLE[FIRMWARE.GLOBAL].prefix))
+-- create parameter table for ARM_C_ parameters for copter that will be created below. 
+assert(param:add_table(VEHICLE[FIRMWARE.COPTER].key, VEHICLE[FIRMWARE.COPTER].prefix, 10), string.format('could not add param table: (%d) %s ', VEHICLE[FIRMWARE.COPTER].key, VEHICLE[FIRMWARE.COPTER].prefix))
+-- create parameter table for ARM_P_ parameters for plane that will be created below. 
+assert(param:add_table(VEHICLE[FIRMWARE.PLANE].key, VEHICLE[FIRMWARE.PLANE].prefix, 10), string.format('could not add param table: (%d) %s ', VEHICLE[FIRMWARE.PLANE].key, VEHICLE[FIRMWARE.PLANE].prefix))
 
--- create parameter table for VALUE parameters which are "reference values" used by the parameter methods
-assert(param:add_table(VALUES_PARAM_TABLE_KEY, VALUES_PARAM_TABLE_PREFIX, 10), 'could not add param table:'..VALUES_PARAM_TABLE_PREFIX)
+-- create parameter table for ARM_V_ VALUE parameters which are "reference values" used by the parameter methods
+assert(param:add_table(VALUES_PARAM_TABLE_KEY, VALUES_PARAM_TABLE_PREFIX, 15),  string.format('could not add param table: (%d) %s ', VALUES_PARAM_TABLE_KEY, VALUES_PARAM_TABLE_PREFIX))
 
 local arm_auth_id = arming:get_aux_auth_id()
 if arm_auth_id == nil then
@@ -100,13 +100,14 @@ ARM_V_ALT_LEGAL = Parameter()
 local alt_legal_max = 120.0
 ARM_V_RALLY_MAX = Parameter()
 
--- other parameters used by various checks
 FENCE_TYPE = Parameter("FENCE_TYPE")
 FENCE_TOTAL = Parameter("FENCE_TOTAL")
 FENCE_ENABLE = Parameter("FENCE_ENABLE")
 FENCE_AUTOENABLE = Parameter("FENCE_AUTOENABLE")
 FOLL_ENABLE = Parameter("FOLL_ENABLE")
 FOLL_SYSID = Parameter("FOLL_SYSID")
+RALLY_LIMIT_KM = Parameter("RALLY_LIMIT_KM")
+
 if FWVersion:type() == FIRMWARE.COPTER then -- Copter specific paramters
     RTL_ALT = Parameter("RTL_ALT")
 elseif FWVersion:type() == FIRMWARE.PLANE then -- Plane specific Parameters
@@ -333,17 +334,25 @@ end
 
 -- check if any rally point is too far away
 local function rally_ok()
+    if rally == Nil then
+        return true -- rally library not loaded so we pass
+    end
     local home_location = ahrs:get_home()
-    local rally_distance_max_m = ARM_V_RALLY_MAX:get() or 0
+    local rally_distance_max_m = (RALLY_LIMIT_KM:get() or 0.0) * 1000.0
     local rally_points = rally:get_rally_total()
     if rally_points == 0 or rally_distance_max_m <= 0 then
+--        gcs:send_text(MAV_SEVERITY.ERROR, string.format('%s: %s: %s', SCRIPT_NAME_SHORT,"rally",
+--             "no points:"..rally_distance_max_m))
         return true
     end
     local rally_location
+    local rally_distance_m = 0
+--        gcs:send_text(MAV_SEVERITY.ERROR, string.format('%s: %s: %s', SCRIPT_NAME_SHORT,"rally",
+--             "points:"..rally_points))
     for i = 0, rally_points-1 do
         rally_location = rally:get_rally_location_with_index(i)
         if rally_location ~= Nil then
-            local rally_distance_m = home_location:get_distance(rally_location)
+            rally_distance_m = home_location:get_distance(rally_location)
             if rally_distance_m > rally_distance_max_m then
                 return false
             end
@@ -554,19 +563,6 @@ local function initialize()
     assert(param:add_param(VALUES_PARAM_TABLE_KEY, param_idx, "ALT_LEGAL", 120.0),
                         string.format('could not add param %s', VALUES_PARAM_TABLE_PREFIX.."ALT_LEGAL"))
     param_idx = param_idx + 1
-
--- special case for the ARV_RALLY_MAX parameter which ideally should be a "regular" parameter
---[[
-    // @Param: ARM_V_RALLY_MAX
-    // @DisplayName: Max distanct to rally
-    // @Description: The maximum distance to a rally point from home
-    // @Units: m
-    // @User: Standard
---]]
-    assert(param:add_param(VALUES_PARAM_TABLE_KEY, param_idx, "RALLY_MAX", 1000.0),
-                        string.format('could not add param %s', VALUES_PARAM_TABLE_PREFIX.."RALLY_MAX"))
-    param_idx = param_idx + 1
-    ARM_V_RALLY_MAX:init(VALUES_PARAM_TABLE_PREFIX.."RALLY_MAX")
 
     for _, check in pairs(arming_checks) do
         local param_name = VEHICLE[check.firmware].prefix..check.param_name
