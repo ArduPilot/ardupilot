@@ -7452,6 +7452,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_text("warn: MNTx_SYSID != FOLL", check_context=True)
 
         self.start_subsubtest("ArmCk: Fence must be enabled or autoenabled (warning)")
+        self.progress("rebooting to enable MNT1")
+        self.reboot_sitl() # to handle MNT_TYPE changing
+        self.wait_ekf_happy()
         self.load_fence("CMAC-fence.txt")
         self.wait_statustext("warn: Fence not enabled", check_context=True)
         self.set_parameter("FENCE_ENABLE", 1)
