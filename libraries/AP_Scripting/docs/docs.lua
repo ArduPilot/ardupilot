@@ -4002,20 +4002,24 @@ function fence:get_margin_breaches() end
 ---@return number -- distance
 function fence:get_breach_distance(fence_type) end
 
+-- RallyLocation is a userdata object that holds Rally Points expressed as latitude, longitude, altitude.
+-- Used by the AP_Rally library
+--@class (exact) RallyLocation_ud
+local RallyLocation_ud = {}
 
 -- Returns the number of rally points
 ---@return integer -- count of rally points
-function get_rally_total() end
+function rally:get_rally_total() end
 
 -- Returns a specic rally by index as a RallyLocation
 ---@param index integer
 ---@param rally_location RallyLocation_ud
 ---@return number -- count of rally points
-function get_rally_point_with_index(index, rally_location) end
+function rally:get_rally_point_with_index(index, rally_location) end
 
--- Returns a specic rally by index as a Location
+-- Returns a specic rally by index as a Location (i.e NOT as a RallyLocation, a regular Location)
 ---@param index integer
----@param rally_location Location_ud
+---@param rally:rally_location Location_ud
 ---@return number -- count of rally points
 function get_rally_location_with_index(index, rally_location) end
 
