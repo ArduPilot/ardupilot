@@ -6,12 +6,16 @@ on:
       - 'libraries/AP_Scripting/tests/docs_check.py'
       - 'libraries/AP_Scripting/generator/**'
       - '**.lua'
+      - 'Tools/scripts/run_lua_language_check.py'
+      - 'Tools/scripts/run_luacheck.sh'
 
   pull_request:
     paths: # only run for scripting changes
       - 'libraries/AP_Scripting/tests/docs_check.py'
       - 'libraries/AP_Scripting/generator/**'
       - '**.lua'
+      - 'Tools/scripts/run_lua_language_check.py'
+      - 'Tools/scripts/run_luacheck.sh'
 
   workflow_dispatch:
 
@@ -50,7 +54,7 @@ jobs:
         shell: bash
         run: |
           python3 -m pip install github-release-downloader
-          python3 ./Tools/scripts/run_lua_language_check.py
+          python3 ./Tools/scripts/run_lua_language_check.py --debugLogging
 
       - name: Remove problem matchers
         run: |
