@@ -482,6 +482,10 @@ bool AP_AIS::payload_decode(const char *payload)
         case 5: // Static and Voyage Related Data
             return decode_static_and_voyage_data(payload);
 
+        case 18: // Standard Class B CS Position Report
+        case 19: // Extended Class B CS Position Report
+            return decode_class_B_position_report(payload, type);
+
         default:
             return false;
     }
@@ -566,63 +570,21 @@ bool AP_AIS::decode_position_report(const char *payload, uint8_t type)
         return true;
     }
 
-    // mask of flags that we update in this message
-    const uint16_t mask = ~(AIS_FLAGS_POSITION_ACCURACY | AIS_FLAGS_VALID_COG | AIS_FLAGS_VALID_VELOCITY | AIS_FLAGS_VALID_TURN_RATE | AIS_FLAGS_TURN_RATE_SIGN_ONLY);
-    uint16_t flags = _list[index].info.flags & mask; // clear all flags that will be updated
-
     // Position accuracy
-    if (pos_acc) {
-        flags |= AIS_FLAGS_POSITION_ACCURACY;
-    }
+    _list[index].set_pos_acc(pos_acc);
 
     // Course over ground
-    if (cog < 36000) {
-        flags |= AIS_FLAGS_VALID_COG;
-    } else {
-        // zero for invalid
-        cog = 0;
-    }
+    _list[index].set_cog(cog);
 
     // Speed over ground
-    uint16_t sog_cms = 0;
-    if (sog < 1023) {
-        flags |= AIS_FLAGS_VALID_VELOCITY;
-        // Convert 0.1 knots to cm/s
-        sog_cms = sog * 0.1 * KNOTS_TO_M_PER_SEC * 100.0;
-
-        // More than 102.2 knots, don't know by how much
-        if (sog == 1022) {
-            flags |= AIS_FLAGS_HIGH_VELOCITY;
-        }
-    }
+    _list[index].set_sog(sog);
 
     // Rate of turn
-    if (rot <= -128) {
-        // Invalid
-        rot = 0;
-
-    } else {
-        // Valid value
-        flags |= AIS_FLAGS_VALID_TURN_RATE;
-        const int8_t sign = rot > 0 ? 1 : -1;
-        if (rot == 127 || rot == -127) {
-            flags |= AIS_FLAGS_TURN_RATE_SIGN_ONLY;
-            rot = sign;
-
-        } else {
-            // Apply expo formula and convert from deg per min to cdeg per second
-            // constrain to avoid overflow, probably need to change the units or increase to int16
-            rot = sign * MIN(sq(rot / 4.733) * (100.0 / 60.0), INT8_MAX - 1);
-        }
-    }
+    _list[index].set_rot(rot);
 
     _list[index].info.lat = lat; // int32_t [degE7] Latitude
     _list[index].info.lon = lon; // int32_t [degE7] Longitude
-    _list[index].info.COG = cog; // uint16_t [cdeg] Course over ground
     _list[index].info.heading = head; // uint16_t [cdeg] True heading
-    _list[index].info.velocity = sog_cms; // uint16_t [cm/s] Speed over ground
-    _list[index].info.flags = flags; // uint16_t Bitmask to indicate various statuses including valid data fields
-    _list[index].info.turn_rate = rot; // int8_t [cdeg/s] Turn rate
     _list[index].info.navigational_status = nav; // uint8_t Navigational status
     _list[index].last_update_ms = AP_HAL::millis();
 
@@ -780,41 +742,154 @@ bool AP_AIS::decode_static_and_voyage_data(const char *payload)
         return true;
     }
 
-    // mask of flags that we receive in this message
-    const uint16_t mask = ~(AIS_FLAGS_VALID_DIMENSIONS | AIS_FLAGS_LARGE_BOW_DIMENSION | AIS_FLAGS_LARGE_STERN_DIMENSION | AIS_FLAGS_LARGE_STARBOARD_DIMENSION | AIS_FLAGS_VALID_CALLSIGN | AIS_FLAGS_VALID_NAME);
-    uint16_t flags = _list[index].info.flags & mask; // clear all flags that will be updated
-    if (bow_dim != 0 && stern_dim != 0 && port_dim != 0 && star_dim != 0) {
-        flags |= AIS_FLAGS_VALID_DIMENSIONS;
-        if (bow_dim == 511) {
-            flags |= AIS_FLAGS_LARGE_BOW_DIMENSION;
-        }
-        if (stern_dim == 511) {
-            flags |= AIS_FLAGS_LARGE_STERN_DIMENSION;
-        }
-        if (port_dim == 63) {
-            flags |= AIS_FLAGS_LARGE_PORT_DIMENSION;
-        }
-        if (star_dim == 63) {
-            flags |= AIS_FLAGS_LARGE_STARBOARD_DIMENSION;
-        }
-    }
-    if (strlen(call_sign) != 0) {
-        flags |= AIS_FLAGS_VALID_CALLSIGN;
-    }
-    if (strlen(name) != 0) {
-        flags |= AIS_FLAGS_VALID_NAME;
-    }
+    // Apply dimensions to vessel object
+    _list[index].set_dimensions(bow_dim, stern_dim, port_dim, star_dim);
 
-    _list[index].info.dimension_bow = bow_dim; // uint16_t [m] Distance from lat/lon location to bow
-    _list[index].info.dimension_stern = stern_dim; // uint16_t [m] Distance from lat/lon location to stern
-    _list[index].info.flags = flags; // uint16_t Bitmask to indicate various statuses including valid data fields
+    // Set call sign and name
+    _list[index].set_callsign(call_sign);
+    _list[index].set_name(name);
+
     _list[index].info.type = vessel_type; // uint8_t Type of vessels
-    _list[index].info.dimension_port = port_dim; // uint8_t [m] Distance from lat/lon location to port side
-    _list[index].info.dimension_starboard = star_dim; // uint8_t [m] Distance from lat/lon location to starboard side
-    memcpy(_list[index].info.callsign,call_sign,sizeof(_list[index].info.callsign)); // char The vessel callsign
-    memcpy(_list[index].info.name,name,sizeof(_list[index].info.name)); // char The vessel name
 
     // note that the last contact time is not updated, this message does not provide a location for a valid vessel a location must be received
+    return true;
+}
+
+// Standard Class B CS Position Report
+bool AP_AIS::decode_class_B_position_report(const char *payload, uint8_t type)
+{
+    const size_t len = strlen(payload);
+
+    switch (type) {
+    case 18: // Standard Class B CS Position Report
+        if (len != 28) {
+            return false;
+        }
+        break;
+
+    case 19: // Extended Class B CS Position Report
+        if (len != 52) {
+            return false;
+        }
+        break;
+
+    default: // Should never happen
+        return false;
+    }
+
+    // Common felids between types 18 and 19
+    uint8_t repeat     = get_bits(payload, 6, 7);
+    uint32_t mmsi      = get_bits(payload, 8, 37);
+    // 38 - 45: Regional Reserved
+    uint16_t sog       = get_bits(payload, 46, 55);
+    bool pos_acc       = get_bits(payload, 56, 56);
+    int32_t lon = scale_lat_lon(get_bits_signed(payload, 57, 84));
+    int32_t lat = scale_lat_lon(get_bits_signed(payload, 85, 111));
+    uint16_t cog       = get_bits(payload, 112, 123) * 10;  // convert from 0.1 deg to centi-deg
+    uint16_t head      = get_bits(payload, 124, 132) * 100; // convert from deg to centi-deg
+    uint8_t sec_utc    = get_bits(payload, 133, 138);
+
+    // From bit 139 onwards the standard and extended messages differ
+    bool raim = false;
+    uint32_t radio = 0;
+
+    switch (type) {
+    case 18: // Standard Class B CS Position Report
+        // 139 - 140: Regional reserved
+        // 141 - 141: CS Unit
+        // 142 - 142: Display flag
+        // 143 - 143: DSC flag
+        // 144 - 144: Band flag
+        // 145 - 145: Message 22 flag
+        // 146 - 146: Assigned mode flag
+        raim  = get_bits(payload, 147, 147);
+        radio = get_bits(payload, 148, 167);
+        break;
+
+    case 19: // Extended Class B CS Position Report
+        // 139 - 142: Regional reserved
+        // 143 - 262: Name
+        // 263 - 270: vessel type
+        // 271 - 279: bow dim
+        // 280 - 288: stern dim
+        // 289 - 294: port dim
+        // 295 - 300: star dim
+        // 301 - 304: fix
+        raim = get_bits(payload, 305, 305);
+        // 306 - 306: Assigned mode flag
+        // 308 - 311: Spare
+        break;
+    }
+
+#if HAL_LOGGING_ENABLED
+    // log the raw infomation
+    if ((_log_options & AIS_OPTIONS_LOG_DECODED) != 0) {
+        const struct log_AIS_msg1 pkt{
+            LOG_PACKET_HEADER_INIT(LOG_AIS_MSG1),
+            time_us      : AP_HAL::micros64(),
+            type         : type,
+            repeat       : repeat,
+            mmsi         : mmsi,
+            nav          : 0,
+            rot          : 0,
+            sog          : sog,
+            pos_acc      : pos_acc,
+            lon          : lon,
+            lat          : lat,
+            cog          : cog,
+            head         : head,
+            sec_utc      : sec_utc,
+            maneuver     : 0,
+            raim         : raim,
+            radio        : radio
+        };
+        AP::logger().WriteBlock(&pkt, sizeof(pkt));
+    }
+#else
+    (void)repeat;
+    (void)sec_utc;
+    (void)raim;
+    (void)radio;
+#endif
+
+    uint16_t index;
+    if (!get_vessel_index(mmsi, index, lat, lon)) {
+        // no room in the vessel list
+        return true;
+    }
+
+    // Position accuracy
+    _list[index].set_pos_acc(pos_acc);
+
+    // Course over ground
+    _list[index].set_cog(cog);
+
+    // Speed over ground
+    _list[index].set_sog(sog);
+
+    if (type == 19) {
+        // Felids only available in the extended message
+        char name[21];
+        get_char(payload, name, 143, 262);
+        _list[index].set_name(name);
+
+        _list[index].info.type = get_bits(payload, 263, 270); // uint8_t Type of vessels
+
+        // Dimensions
+        _list[index].set_dimensions(get_bits(payload, 271, 279),
+                                    get_bits(payload, 280, 288),
+                                    get_bits(payload, 289, 294),
+                                    get_bits(payload, 295, 300));
+    }
+
+    _list[index].info.lat = lat;
+    _list[index].info.lon = lon;
+    _list[index].info.heading = head;
+    _list[index].last_update_ms = AP_HAL::millis();
+
+#if AP_OADATABASE_ENABLED
+    send_to_object_avoidance_database(_list[index]);
+#endif
 
     return true;
 }
