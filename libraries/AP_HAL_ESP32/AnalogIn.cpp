@@ -347,6 +347,7 @@ void AnalogSource::_add_value()
    */
 void AnalogIn::init()
 {
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AnalogIn::_timer_tick, void));
 }
 
 /*
