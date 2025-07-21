@@ -270,6 +270,9 @@ void AC_PrecLand::init(uint16_t update_rate_hz)
 
     _approach_vector_body.x = 1;
     _approach_vector_body.rotate(_orient);
+
+    // used with RC_OPTIONS
+    _active = true;
 }
 
 // update - give chance to driver to get updates from sensor
