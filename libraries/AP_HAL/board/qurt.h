@@ -90,7 +90,7 @@
 #define HAL_BATT_VOLT_SCALE 1
 #define HAL_BATT_CURR_SCALE 1
 
-#define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+#define AP_COMPASS_PROBING_ENABLED 1
 
 /*
   compass list
