@@ -7452,9 +7452,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_text("warn: MNTx_SYSID != FOLL", check_context=True)
 
         self.start_subsubtest("ArmCk: Fence must be enabled or autoenabled (warning)")
-        self.progress("rebooting to enable MNT1")
-        self.reboot_sitl() # to handle MNT_TYPE changing
+        self.reboot_sitl()
         self.wait_ekf_happy()
+        self.wait_text("ArduPilot Ready", check_context=True)
+        self.wait_text("Arming Checks .* loaded", timeout=30, check_context=True, regex=True)
         self.load_fence("CMAC-fence.txt")
         self.wait_statustext("warn: Fence not enabled", check_context=True)
         self.set_parameter("FENCE_ENABLE", 1)
@@ -7534,11 +7535,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         })
 
         self.start_subsubtest("ArmCk: Rally Point must be < ARM_V_RALLY_MAX meters away")
-        self.progress("Currently ARM_V_RALLY_MAX is %f" % self.get_parameter('ARM_V_RALLY_MAX'))
-        loc = self.home_relative_loc_ne(1500, -50)
+        self.progress("Currently RALLY_LIMIT_KM is %f" % self.get_parameter('RALLY_LIMIT_KM'))
+        loc = self.home_relative_loc_ne(6500, -50)
         self.upload_rally_points_from_locations([loc])
         self.wait_text("warn: Rally too far", check_context=True)
-        self.set_parameter("ARM_V_RALLY_MAX", 2000)
+        self.set_parameter("RALLY_LIMIT_KM", 7)
         self.wait_text("clear: Rally too far", check_context=True)
 
     def tests(self):
