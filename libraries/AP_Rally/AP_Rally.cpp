@@ -81,6 +81,16 @@ bool AP_Rally::get_rally_point_with_index(uint8_t i, RallyLocation &ret) const
     return true; 
 }
 
+bool AP_Rally::get_rally_point_with_index(uint8_t i, Location &ret) const
+{
+    RallyLocation rally_loc;
+    if (!get_rally_point_with_index(i, rally_loc)) {
+        return false;
+    }
+    ret = rally_location_to_location(rally_loc);
+    return true;
+}
+
 void AP_Rally::truncate(uint8_t num)
 {
     if (num > _rally_point_total_count) {
