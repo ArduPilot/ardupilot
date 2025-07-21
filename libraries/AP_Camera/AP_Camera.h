@@ -8,6 +8,7 @@
 
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/ap_message.h>
 #include "AP_Camera_Params.h"
 #include "AP_Camera_shareddefs.h"
