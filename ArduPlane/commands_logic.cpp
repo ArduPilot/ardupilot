@@ -1130,7 +1130,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
 
                 // check if we should move on to the next waypoint
                 Location breakout_stopping_loc = cmd.content.location;
-                breakout_stopping_loc.offset_bearing(vtol_approach_s.approach_direction_deg + 180, quadplane.stopping_distance());
+                breakout_stopping_loc.offset_bearing(vtol_approach_s.approach_direction_deg + 180, quadplane.stopping_distance_m());
                 const bool past_finish_line = current_loc.past_interval_finish_line(start, breakout_stopping_loc);
 
                 Location breakout_loc = cmd.content.location;

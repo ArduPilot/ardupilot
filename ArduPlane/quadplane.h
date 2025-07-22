@@ -149,7 +149,7 @@ public:
     // is throttle controlled landing descent active?
     bool thr_ctrl_land;
 
-    uint16_t get_pilot_velocity_z_max_dn() const;
+    uint16_t get_pilot_velocity_z_max_dn_cm() const;
     
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
@@ -304,9 +304,9 @@ private:
     void setup_defaults(void);
 
     // calculate a stopping distance for fixed-wing to vtol transitions
-    float stopping_distance(float ground_speed_squared) const;
+    float stopping_distance_m(float ground_speed_squared_m) const;
     float accel_needed(float stop_distance, float ground_speed_squared) const;
-    float stopping_distance(void);
+    float stopping_distance_m(void);
 
     // distance below which we don't do approach, based on stopping
     // distance for cruise speed
@@ -692,7 +692,7 @@ private:
     /*
       get the airspeed for landing approach
      */
-    float get_land_airspeed(void);
+    float get_land_airspeed_ms(void);
 
     /*
       setup for landing approach
@@ -703,12 +703,12 @@ private:
       calculate our closing velocity vector on the landing
       point. Takes account of the landing point having a velocity
      */
-    Vector2f landing_closing_velocity();
+    Vector2f landing_closing_velocity_NE_ms();
 
     /*
       calculate our desired closing velocity vector on the landing point.
     */
-    Vector2f landing_desired_closing_velocity();
+    Vector2f landing_desired_closing_velocity_NE_ms();
 
     /*
       change spool state, providing easy hook for catching changes in debug

@@ -153,7 +153,7 @@ bool ModeRTL::switch_QRTL()
 
     if (plane.nav_controller->reached_loiter_target() ||
          plane.current_loc.past_interval_finish_line(plane.prev_WP_loc, plane.next_WP_loc) ||
-         plane.auto_state.wp_distance < MAX(qrtl_radius, plane.quadplane.stopping_distance())) {
+         plane.auto_state.wp_distance < MAX(qrtl_radius, plane.quadplane.stopping_distance_m())) {
         /*
           for a quadplane in RTL mode we switch to QRTL when we
           are within the maximum of the stopping distance and the
