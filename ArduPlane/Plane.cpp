@@ -957,7 +957,7 @@ bool Plane::set_velocity_match(const Vector2f &velocity)
 {
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_mode() || quadplane.in_vtol_land_sequence()) {
-        quadplane.poscontrol.velocity_match = velocity;
+        quadplane.poscontrol.velocity_match_ms = velocity;
         quadplane.poscontrol.last_velocity_match_ms = AP_HAL::millis();
         return true;
     }
@@ -971,7 +971,7 @@ bool Plane::set_land_descent_rate(float descent_rate)
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_land_descent() ||
         control_mode == &mode_qland) {
-        quadplane.poscontrol.override_descent_rate = descent_rate;
+        quadplane.poscontrol.override_descent_rate_ms = descent_rate;
         quadplane.poscontrol.last_override_descent_ms = AP_HAL::millis();
         return true;
     }
