@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 echo "---------- $0 start ----------"
 set -e
+
+# CHANGED: Added `PIP_CONSTRAINTS_FILE` variable to allow providing a custom constraints file for reproducible builds.
+if [[ -z "${PIP_CONSTRAINTS_FILE:-}" ]]; then
+    echo "Must set PIP_CONSTRAINTS_FILE environment variable to a valid constraints file."
+    exit 1
+fi
+echo "Using PIP_CONSTRAINTS_FILE: $PIP_CONSTRAINTS_FILE"
 set -x
 
 if [ $EUID == 0 ]; then
@@ -162,7 +169,8 @@ fi
 
 # Lists of packages to install
 BASE_PKGS="build-essential ccache g++ gawk git make wget valgrind screen"
-PYTHON_PKGS="future lxml pymavlink pyserial MAVProxy pexpect geocoder empy==3.3.4 ptyprocess dronecan"
+# CHANGED: Don't install MAVProxy - we have our own version installed through `eagle_cmd`.
+PYTHON_PKGS="future lxml pymavlink pyserial pexpect geocoder empy==3.3.4 ptyprocess dronecan"
 PYTHON_PKGS="$PYTHON_PKGS flake8 junitparser"
 
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
@@ -414,7 +422,7 @@ if [ ${RELEASE_CODENAME} == 'bookworm' ] ||
     $PIP install $PIP_USER_ARGUMENT -U attrdict3
 fi
 
-$PIP install $PIP_USER_ARGUMENT -U $PYTHON_PKGS
+$PIP install $PIP_USER_ARGUMENT -U $PYTHON_PKGS -c $PIP_CONSTRAINTS_FILE
 
 if [[ -z "${DO_AP_STM_ENV}" ]] && maybe_prompt_user "Install ArduPilot STM32 toolchain [N/y]?" ; then
     DO_AP_STM_ENV=1
