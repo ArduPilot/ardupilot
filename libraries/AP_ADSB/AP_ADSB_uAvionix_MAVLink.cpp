@@ -230,8 +230,8 @@ void AP_ADSB_uAvionix_MAVLink::send_configure(const mavlink_channel_t chan)
             (const char*)callsign,
             (uint8_t)_frontend.out_state.cfg.emitterType,
             (uint8_t)_frontend.out_state.cfg.lengthWidth,
-            (uint8_t)_frontend.out_state.cfg.gpsOffsetLat,
-            (uint8_t)_frontend.out_state.cfg.gpsOffsetLon,
+            (uint8_t)_frontend.out_state.cfg.pos_x,
+            (uint8_t)_frontend.out_state.cfg.pos_y,
             _frontend.out_state.cfg.stall_speed_cm,
             (uint8_t)_frontend.out_state.cfg.rfSelect);
 }
