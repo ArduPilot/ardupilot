@@ -103,7 +103,10 @@ public:
     // bodyRate - returns the IMU-adjusted movement in rad/s
     const Vector2f& bodyRate() const { return _state.bodyRate; }
 
-    // last_update() - returns system time of last sensor update
+    // groundDistance - returns the ground distance
+    float groundDistance() const { return _state.groundDistance; }
+
+    // last_update() - returns system time of last sensor update9
     uint32_t last_update() const { return _last_update_ms; }
 
     // get_height_override() - returns the user-specified height of sensor above ground
@@ -113,6 +116,7 @@ public:
         uint8_t  surface_quality;   // image quality (below TBD you can't trust the dx,dy values returned)
         Vector2f flowRate;          // optical flow angular rate in rad/sec measured about the X and Y body axis. A RH rotation about a sensor axis produces a positive rate.
         Vector2f bodyRate;          // body inertial angular rate in rad/sec measured about the X and Y body axis. A RH rotation about a sensor axis produces a positive rate.
+        float groundDistance = 0.0f;       // positive relative distance from flow sensor to the ground.
     };
 
     // return a 3D vector defining the position offset of the sensors focal point in metres relative to the body frame origin

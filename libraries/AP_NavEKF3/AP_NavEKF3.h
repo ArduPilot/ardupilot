@@ -195,7 +195,7 @@ public:
     // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
     // posOffset is the XYZ flow sensor position in the body frame in m
     // heightOverride is the fixed height of the sensor above ground in m, when on rover vehicles. 0 if not used
-    void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride);
+    void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const float rawGroundDistance, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride);
 
     // retrieve latest corrected optical flow samples (used for calibration)
     bool getOptFlowSample(uint32_t& timeStamp_ms, Vector2f& flowRate, Vector2f& bodyRate, Vector2f& losPred) const;
@@ -436,6 +436,7 @@ private:
     AP_Float _visOdmVelErrMin;      // Observation 1-STD velocity error assumed for visual odometry sensor at highest reported quality (m/s)
     AP_Float _wencOdmVelErr;        // Observation 1-STD velocity error assumed for wheel odometry sensor (m/s)
     AP_Int8  _flowUse;              // Controls if the optical flow data is fused into the main navigation estimator and/or the terrain estimator.
+    AP_Int8  _flowHgtSrc;          // Controls the source of height used by the optical flow sensor
     AP_Float _hrt_filt_freq;        // frequency of output observer height rate complementary filter in Hz
     AP_Int16 _mag_ef_limit;         // limit on difference between WMM tables and learned earth field.
     AP_Int8 _gsfRunMask;            // mask controlling which EKF3 instances run a separate EKF-GSF yaw estimator
@@ -468,6 +469,10 @@ private:
 #define FLOW_USE_NONE    0
 #define FLOW_USE_NAV     1
 #define FLOW_USE_TERRAIN 2
+
+// Height source options for Optical Flow
+#define FLOW_HGT_SRC_DEFAULT 0
+#define FLOW_HGT_SRC_MAVLINK 1
 
     // Tuning parameters
     const float gpsNEVelVarAccScale = 0.05f;       // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
