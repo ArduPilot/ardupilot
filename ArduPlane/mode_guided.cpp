@@ -16,7 +16,7 @@ bool ModeGuided::_enter()
           if using Q_GUIDED_MODE then project forward by the stopping distance
         */
         loc.offset_bearing(degrees(ahrs.groundspeed_vector().angle()),
-                           plane.quadplane.stopping_distance());
+                           plane.quadplane.stopping_distance_m());
     }
 #endif
 

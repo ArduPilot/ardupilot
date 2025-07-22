@@ -1021,7 +1021,7 @@ void QuadPlane::run_z_controller(void)
     }
     if ((now - last_pidz_active_ms) > 20 || !pos_control->is_active_U()) {
         // set vertical speed and acceleration limits
-        pos_control->set_max_speed_accel_U_cm(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up_ms*100, pilot_accel_z_mss*100);
+        pos_control->set_max_speed_accel_U_cm(-get_pilot_velocity_z_max_dn_cm(), pilot_speed_z_max_up_ms*100, pilot_accel_z_mss*100);
 
         // initialise the vertical position controller
         if (!tailsitter.enabled()) {
@@ -1074,7 +1074,7 @@ void QuadPlane::hold_hover(float target_climb_rate_cms)
     set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up_ms*100, pilot_accel_z_mss*100);
+    pos_control->set_max_speed_accel_U_cm(-get_pilot_velocity_z_max_dn_cm(), pilot_speed_z_max_up_ms*100, pilot_accel_z_mss*100);
 
     // call attitude controller
     multicopter_attitude_rate_update(get_desired_yaw_rate_cds(false));
@@ -1296,7 +1296,7 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
         (!plane.control_mode->does_auto_throttle() || motors->limit.throttle_lower) &&
         plane.arming.get_rudder_arming_type() == AP_Arming::RudderArming::ARMDISARM &&
         rudder_in < 0 &&
-        fabsf(inertial_nav.get_velocity_z_up_cms()) < 0.5 * get_pilot_velocity_z_max_dn()) {
+        fabsf(inertial_nav.get_velocity_z_up_cms()) < 0.5 * get_pilot_velocity_z_max_dn_cm()) {
         // the user may be trying to disarm, disable pilot yaw control
         return 0;
     }
@@ -1360,7 +1360,7 @@ float QuadPlane::get_pilot_desired_climb_rate_cms(void) const
     uint16_t dead_zone = plane.channel_throttle->get_dead_zone();
     uint16_t trim = (plane.channel_throttle->get_radio_max() + plane.channel_throttle->get_radio_min())/2;
     const float throttle_request = plane.channel_throttle->pwm_to_angle_dz_trim(dead_zone, trim) *0.01f;
-    return throttle_request * (throttle_request > 0.0f ? pilot_speed_z_max_up_ms*100 : get_pilot_velocity_z_max_dn());
+    return throttle_request * (throttle_request > 0.0f ? pilot_speed_z_max_up_ms*100 : get_pilot_velocity_z_max_dn_cm());
 }
 
 
@@ -2210,7 +2210,7 @@ void QuadPlane::poscontrol_init_approach(void)
                 gcs().send_text(MAV_SEVERITY_INFO,"VTOL airbrake v=%.1f d=%.0f sd=%.0f h=%.1f",
                                 plane.ahrs.groundspeed(),
                                 dist,
-                                stopping_distance(),
+                                stopping_distance_m(),
                                 plane.relative_ground_altitude(RangeFinderUse::TAKEOFF_LANDING));
                 poscontrol.set_state(QPOS_AIRBRAKE);
             }
@@ -2357,8 +2357,8 @@ void QuadPlane::vtol_position_controller(void)
 
     case QPOS_AIRBRAKE: {
         float aspeed;
-        const Vector2f closing_vel = landing_closing_velocity();
-        const Vector2f desired_closing_vel = landing_desired_closing_velocity();
+        const Vector2f closing_vel = landing_closing_velocity_NE_ms();
+        const Vector2f desired_closing_vel = landing_desired_closing_velocity_NE_ms();
         const float groundspeed = plane.ahrs.groundspeed();
         const float distance = plane.auto_state.wp_distance;
         const float closing_speed = closing_vel.length();
@@ -2405,7 +2405,7 @@ void QuadPlane::vtol_position_controller(void)
         // distance to stop, plus some margin for the time it takes to
         // change the accel (jerk limit) plus the min time in airbrake
         // mode. For simplicity we assume 2 seconds margin
-        const float stop_distance = stopping_distance() + 2*closing_speed;
+        const float stop_distance = stopping_distance_m() + 2*closing_speed;
 
         if (!suppress_z_controller && poscontrol.get_state() == QPOS_AIRBRAKE) {
             hold_hover(0);
@@ -2531,7 +2531,7 @@ void QuadPlane::vtol_position_controller(void)
 
         const Vector2f diff_wp = plane.current_loc.get_distance_NE(loc);
         const float distance = diff_wp.length();
-        const Vector2f rel_groundspeed_vector = landing_closing_velocity();
+        const Vector2f rel_groundspeed_vector = landing_closing_velocity_NE_ms();
         const float rel_groundspeed_sq = rel_groundspeed_vector.length_squared();
         float closing_groundspeed = 0;
 
@@ -2602,7 +2602,7 @@ void QuadPlane::vtol_position_controller(void)
                 target_speed = linear_interpolate(position2_target_speed, wp_speed,
                                                   distance,
                                                   position2_dist_threshold*1.5,
-                                                  2*position2_dist_threshold + stopping_distance(rel_groundspeed_sq));
+                                                  2*position2_dist_threshold + stopping_distance_m(rel_groundspeed_sq));
 
                 target_speed_xy_cms = diff_wp_norm * target_speed * 100;
                 have_target_yaw = true;
@@ -3074,8 +3074,8 @@ void QuadPlane::setup_target_position(void)
     poscontrol.target_cm.z = plane.next_WP_loc.alt - origin.alt;
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up_ms*100, pilot_accel_z_mss*100);
-    pos_control->set_correction_speed_accel_U_cmss(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up_ms*100, pilot_accel_z_mss*100);
+    pos_control->set_max_speed_accel_U_cm(-get_pilot_velocity_z_max_dn_cm(), pilot_speed_z_max_up_ms*100, pilot_accel_z_mss*100);
+    pos_control->set_correction_speed_accel_U_cmss(-get_pilot_velocity_z_max_dn_cm(), pilot_speed_z_max_up_ms*100, pilot_accel_z_mss*100);
 }
 
 /*
@@ -3325,8 +3325,8 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     throttle_wait = false;
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up_ms*100, pilot_accel_z_mss*100);
-    pos_control->set_correction_speed_accel_U_cmss(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up_ms*100, pilot_accel_z_mss*100);
+    pos_control->set_max_speed_accel_U_cm(-get_pilot_velocity_z_max_dn_cm(), pilot_speed_z_max_up_ms*100, pilot_accel_z_mss*100);
+    pos_control->set_correction_speed_accel_U_cmss(-get_pilot_velocity_z_max_dn_cm(), pilot_speed_z_max_up_ms*100, pilot_accel_z_mss*100);
 
     // initialise the vertical position controller
     pos_control->init_U_controller();
@@ -4039,12 +4039,12 @@ bool QuadPlane::in_frwd_transition(void) const
 /*
   calculate current stopping distance for a quadplane in fixed wing flight
  */
-float QuadPlane::stopping_distance(float ground_speed_squared) const
+float QuadPlane::stopping_distance_m(float ground_speed_squared_m) const
 {
     // use v^2/(2*accel). This is only quite approximate as the drag
     // varies with pitch, but it gives something for the user to
     // control the transition distance in a reasonable way
-    return ground_speed_squared / (2 * transition_decel_mss);
+    return ground_speed_squared_m / (2 * transition_decel_mss);
 }
 
 /*
@@ -4058,9 +4058,9 @@ float QuadPlane::accel_needed(float stop_distance, float ground_speed_squared) c
 /*
   calculate current stopping distance for a quadplane in fixed wing flight
  */
-float QuadPlane::stopping_distance(void)
+float QuadPlane::stopping_distance_m(void)
 {
-    return stopping_distance(plane.ahrs.groundspeed_vector().length_squared());
+    return stopping_distance_m(plane.ahrs.groundspeed_vector().length_squared());
 }
 
 /*
@@ -4070,7 +4070,7 @@ float QuadPlane::stopping_distance(void)
 float QuadPlane::transition_threshold(void)
 {
     // 1.5 times stopping distance for cruise speed
-    return 1.5 * stopping_distance(sq(plane.aparm.airspeed_cruise));
+    return 1.5 * stopping_distance_m(sq(plane.aparm.airspeed_cruise));
 }
 
 #define LAND_CHECK_ANGLE_ERROR_DEG  30.0f       // maximum angle error to be considered landing
@@ -4237,12 +4237,12 @@ bool SLT_Transition::show_vtol_view() const
   return the PILOT_VELZ_MAX_DN value if non zero, otherwise returns the PILOT_VELZ_MAX value.
   return is in cm/s
 */
-uint16_t QuadPlane::get_pilot_velocity_z_max_dn() const
+uint16_t QuadPlane::get_pilot_velocity_z_max_dn_cm() const
 {
     if (is_zero(pilot_speed_z_max_dn_ms)) {
-        return abs(pilot_speed_z_max_up_ms*100);
+        return abs(pilot_speed_z_max_up_ms * 100);
     }
-    return abs(pilot_speed_z_max_dn_ms*100);
+    return abs(pilot_speed_z_max_dn_ms * 100);
 }
 
 /*
@@ -4281,7 +4281,7 @@ bool QuadPlane::use_fw_attitude_controllers(void) const
   calculate our closing velocity vector on the landing point, taking
   into account target velocity
 */
-Vector2f QuadPlane::landing_closing_velocity()
+Vector2f QuadPlane::landing_closing_velocity_NE_ms()
 {
     Vector2f landing_velocity;
     if (AP_HAL::millis() - poscontrol.last_velocity_match_ms < 1000) {
@@ -4293,7 +4293,7 @@ Vector2f QuadPlane::landing_closing_velocity()
 /*
   calculate our desired closing velocity vector on the landing point.
 */
-Vector2f QuadPlane::landing_desired_closing_velocity()
+Vector2f QuadPlane::landing_desired_closing_velocity_NE_ms()
 {
     if (poscontrol.get_state() >= QPOS_LAND_DESCEND) {
         return Vector2f(0,0);
@@ -4328,7 +4328,7 @@ Vector2f QuadPlane::landing_desired_closing_velocity()
 /*
   get target airspeed for landing, for use by TECS
 */
-float QuadPlane::get_land_airspeed(void)
+float QuadPlane::get_land_airspeed_ms(void)
 {
     const auto qstate = poscontrol.get_state();
     if (qstate == QPOS_APPROACH ||
@@ -4344,7 +4344,7 @@ float QuadPlane::get_land_airspeed(void)
             // airspeed when on the approach
             approach_speed = 0.5*(cruise_speed+plane.aparm.airspeed_min);
         }
-        const float time_to_pos1 = (plane.auto_state.wp_distance - stopping_distance(sq(approach_speed))) / MAX(approach_speed, 5);
+        const float time_to_pos1 = (plane.auto_state.wp_distance - stopping_distance_m(sq(approach_speed))) / MAX(approach_speed, 5);
         /*
           slow down to landing approach speed as we get closer to landing
         */
@@ -4360,7 +4360,7 @@ float QuadPlane::get_land_airspeed(void)
     }
     
     // calculate speed based on landing desired velocity
-    Vector2f vel = landing_desired_closing_velocity();
+    Vector2f vel = landing_desired_closing_velocity_NE_ms();
     const Vector2f wind = plane.ahrs.wind_estimate().xy();
     const float eas2tas = plane.ahrs.get_EAS2TAS();
     vel -= wind;
