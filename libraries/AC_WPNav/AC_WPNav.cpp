@@ -186,7 +186,7 @@ void AC_WPNav::wp_and_spline_init_m(float speed_ms, Vector3f stopping_point_neu_
 
     // calculate jerk limit if not explicitly set by parameter
     if (!is_positive(_wp_jerk_msss)) {
-        _wp_jerk_msss.set(get_wp_acceleration_mss() * 100.0);
+        _wp_jerk_msss.set(get_wp_acceleration_mss());
     }
     calc_scurve_jerk_and_snap();
 
