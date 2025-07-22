@@ -11,7 +11,7 @@ void ModeAcro::run()
 {
     // convert the input to the desired body frame rate
     float target_roll_rads, target_pitch_rads, target_yaw_rads;
-    get_pilot_desired_rates_rads(channel_roll->norm_input_dz(), channel_pitch->norm_input_dz(), channel_yaw->norm_input_dz(), target_roll_rads, target_pitch_rads, target_yaw_rads);
+    get_pilot_desired_rates_rads(target_roll_rads, target_pitch_rads, target_yaw_rads);
 
     if (!motors->armed()) {
         // Motors should be Stopped
@@ -102,11 +102,15 @@ float ModeAcro::throttle_hover() const
     return Mode::throttle_hover();
 }
 
-// Transform normalized pilot inputs (-1 to 1) into desired angular rates (centidegrees/second)
-void ModeAcro::get_pilot_desired_rates_rads(float roll_in_norm, float pitch_in_norm, float yaw_in_norm, float &roll_out_rads, float &pitch_out_rads, float &yaw_out_rads)
+// return desired angular rates (radians/second) created from pilot inputs
+void ModeAcro::get_pilot_desired_rates_rads(float &roll_out_rads, float &pitch_out_rads, float &yaw_out_rads)
 {
     float rate_delta_max_rads;
     Vector3f rate_ef_level_rads, rate_bf_level_rads, rate_bf_request_rads;
+
+    float roll_in_norm = channel_roll->norm_input_dz();
+    float pitch_in_norm = channel_pitch->norm_input_dz();
+    const float yaw_in_norm = channel_yaw->norm_input_dz();
 
     // apply circular limit to pitch and roll inputs
     float norm_in_length = norm(pitch_in_norm, roll_in_norm);

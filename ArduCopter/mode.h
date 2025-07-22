@@ -444,8 +444,8 @@ protected:
     const char *name4() const override { return "ACRO"; }
 
     // get_pilot_desired_rates_rads - transform pilot's normalised roll pitch and yaw input into a desired lean angle rates
-    // inputs are -1 to 1 and the function returns desired angle rates in centi-degrees-per-second
-    void get_pilot_desired_rates_rads(float roll_in_norm, float pitch_in_norm, float yaw_in_norm, float &roll_out_rads, float &pitch_out_rads, float &yaw_out_rads);
+    // the function returns desired angle rates in radians-per-second
+    void get_pilot_desired_rates_rads(float &roll_out_rads, float &pitch_out_rads, float &yaw_out_rads);
 
     float throttle_hover() const override;
 

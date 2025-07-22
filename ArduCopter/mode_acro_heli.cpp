@@ -69,7 +69,7 @@ void ModeAcro_Heli::run()
 
     if (!motors->has_flybar()){
         // convert the input to the desired body frame rate
-        get_pilot_desired_rates_rads(channel_roll->norm_input_dz(), channel_pitch->norm_input_dz(), channel_yaw->norm_input_dz(), target_roll_rads, target_pitch_rads, target_yaw_rads);
+        get_pilot_desired_rates_rads(target_roll_rads, target_pitch_rads, target_yaw_rads);
         // only mimic flybar response when trainer mode is disabled
         if ((Trainer)g.acro_trainer.get() == Trainer::OFF) {
             // while landed always leak off target attitude to current attitude
