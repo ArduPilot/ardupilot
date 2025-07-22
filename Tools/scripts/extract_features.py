@@ -317,6 +317,7 @@ class ExtractFeatures(object):
             ('AP_PERIPH_BARO_ENABLED', r'AP_Periph_FW::can_baro_update'),
             ('AP_PERIPH_RANGEFINDER_ENABLED', r'AP_Periph_FW::can_rangefinder_update'),
             ('AP_PERIPH_IMU_ENABLED', r'AP_Periph_FW::can_imu_update'),
+            ('AP_PERIPH_RC_OUT_ENABLED', r'AP_Periph_FW::sim_update_actuator'),
         ]
 
     def progress(self, msg):
