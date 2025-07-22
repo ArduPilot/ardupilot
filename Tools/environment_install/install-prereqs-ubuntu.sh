@@ -524,7 +524,7 @@ grep -Fxq "$exportline" ~/$SHELL_LOGIN 2>/dev/null || {
 }
 fi
 
-exportline2="export \"PATH=$ARDUPILOT_ROOT/$ARDUPILOT_TOOLS:\$PATH\"";
+exportline2="export PATH=\"$ARDUPILOT_ROOT/$ARDUPILOT_TOOLS:\"\$PATH";
 grep -Fxq "$exportline2" ~/$SHELL_LOGIN 2>/dev/null || {
     if maybe_prompt_user "Add $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to your PATH [N/y]?" ; then
         echo "$exportline2" >> ~/$SHELL_LOGIN
