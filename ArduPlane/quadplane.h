@@ -219,11 +219,11 @@ private:
     AC_Loiter *loiter_nav;
     
     // maximum vertical velocity the pilot may request
-    AP_Float pilot_speed_z_max_up;
-    AP_Float pilot_speed_z_max_dn;
+    AP_Float pilot_speed_z_max_up_ms;
+    AP_Float pilot_speed_z_max_dn_ms;
 
     // vertical acceleration the pilot may request
-    AP_Float pilot_accel_z;
+    AP_Float pilot_accel_z_mss;
 
     // air mode state: OFF, ON, ASSISTED_FLIGHT_ONLY
     AirMode air_mode;
@@ -316,7 +316,7 @@ private:
     AP_Int16 back_trans_pitch_limit_ms;
 
     // transition deceleration, m/s/s
-    AP_Float transition_decel;
+    AP_Float transition_decel_mss;
 
     // transition failure handling
     struct TRANS_FAIL {
@@ -335,7 +335,7 @@ private:
     float _last_ahrs_trim_pitch;
 
     // fw landing approach radius
-    AP_Float fw_land_approach_radius;
+    AP_Float fw_land_approach_radius_m;
 
     AP_Int16 rc_speed;
 
@@ -343,15 +343,15 @@ private:
     VTOL_Assist assist {*this};
 
     // landing speed in m/s
-    AP_Float land_final_speed;
+    AP_Float land_final_speed_ms;
 
     // QRTL start altitude, meters
-    AP_Int16 qrtl_alt;
-    AP_Int16 qrtl_alt_min;
+    AP_Int16 qrtl_alt_m;
+    AP_Int16 qrtl_alt_min_m;
     
     // alt to switch to QLAND_FINAL
-    AP_Float land_final_alt;
-    AP_Float vel_forward_alt_cutoff;
+    AP_Float land_final_alt_m;
+    AP_Float vel_forward_alt_cutoff_m;
     
     AP_Int8 enable;
     AP_Int8 transition_pitch_max;
@@ -614,10 +614,10 @@ private:
     }
 
     // minimum distance to be from destination to use approach logic
-    AP_Float approach_distance;
+    AP_Float approach_distance_m;
 
     AP_Float takeoff_failure_scalar;
-    AP_Float maximum_takeoff_airspeed;
+    AP_Float maximum_takeoff_airspeed_ms;
     uint32_t takeoff_start_time_ms;
     uint32_t takeoff_time_limit_ms;
 
@@ -627,7 +627,7 @@ private:
     float land_descend_start_alt;
 
     // min alt for navigation in takeoff
-    AP_Float takeoff_navalt_min;
+    AP_Float takeoff_navalt_min_m;
     uint32_t takeoff_last_run_ms;
     float takeoff_start_alt;
 

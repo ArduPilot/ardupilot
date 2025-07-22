@@ -14,7 +14,7 @@ bool ModeQRTL::_enter()
     submode = SubMode::RTL;
     plane.prev_WP_loc = plane.current_loc;
 
-    int32_t RTL_alt_abs_cm = plane.home.alt + quadplane.qrtl_alt*100UL;
+    int32_t RTL_alt_abs_cm = plane.home.alt + quadplane.qrtl_alt_m*100UL;
     if (quadplane.motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
         // VTOL motors are active, either in VTOL flight or assisted flight
         Location destination = plane.calc_best_rally_or_home_location(plane.current_loc, RTL_alt_abs_cm);
@@ -23,8 +23,8 @@ bool ModeQRTL::_enter()
 
         // Climb at least to a cone around home of height of QRTL alt and radius of radius
         // Always climb up to at least Q_RTL_ALT_MIN, constrain Q_RTL_ALT_MIN between Q_LAND_FINAL_ALT and Q_RTL_ALT
-        const float min_climb = constrain_float(quadplane.qrtl_alt_min, quadplane.land_final_alt, quadplane.qrtl_alt);
-        const float target_alt = MAX(quadplane.qrtl_alt * (dist / MAX(radius, dist)), min_climb);
+        const float min_climb = constrain_float(quadplane.qrtl_alt_min_m, quadplane.land_final_alt_m, quadplane.qrtl_alt_m);
+        const float target_alt = MAX(quadplane.qrtl_alt_m * (dist / MAX(radius, dist)), min_climb);
 
 
 #if AP_TERRAIN_AVAILABLE
@@ -130,7 +130,7 @@ void ModeQRTL::run()
                 submode = SubMode::RTL;
                 plane.prev_WP_loc = plane.current_loc;
 
-                int32_t RTL_alt_abs_cm = plane.home.alt + quadplane.qrtl_alt*100UL;
+                int32_t RTL_alt_abs_cm = plane.home.alt + quadplane.qrtl_alt_m*100UL;
                 Location destination = plane.calc_best_rally_or_home_location(plane.current_loc, RTL_alt_abs_cm);
                 const float dist = plane.current_loc.get_distance(destination);
                 const float radius = get_VTOL_return_radius();
@@ -200,7 +200,7 @@ void ModeQRTL::update_target_altitude()
       giving time to lose speed before we transition
      */
     const float radius = MAX(fabsf(float(plane.aparm.loiter_radius)), fabsf(float(plane.g.rtl_radius)));
-    const float rtl_alt_delta = MAX(0, plane.g.RTL_altitude - plane.quadplane.qrtl_alt);
+    const float rtl_alt_delta = MAX(0, plane.g.RTL_altitude - plane.quadplane.qrtl_alt_m);
     const float sink_time = rtl_alt_delta / MAX(0.6*plane.TECS_controller.get_max_sinkrate(), 1);
     const float sink_dist = plane.aparm.airspeed_cruise * sink_time;
     const float dist = plane.auto_state.wp_distance;

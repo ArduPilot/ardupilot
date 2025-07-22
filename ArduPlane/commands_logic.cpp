@@ -1055,7 +1055,7 @@ void Plane::exit_mission_callback()
 #if HAL_QUADPLANE_ENABLED
 bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
 {
-    const float radius = is_zero(quadplane.fw_land_approach_radius)? aparm.loiter_radius : quadplane.fw_land_approach_radius;
+    const float radius = is_zero(quadplane.fw_land_approach_radius_m)? aparm.loiter_radius : quadplane.fw_land_approach_radius_m;
     const int8_t direction = is_negative(radius) ? -1 : 1;
     const float abs_radius = fabsf(radius);
 
@@ -1068,7 +1068,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 nav_controller->update_loiter(cmd.content.location, abs_radius, direction);
                 if (plane.reached_loiter_target()) {
                     // descend to Q RTL alt
-                    plane.do_RTL(plane.home.alt + plane.quadplane.qrtl_alt*100UL);
+                    plane.do_RTL(plane.home.alt + plane.quadplane.qrtl_alt_m*100UL);
                     plane.loiter_angle_reset();
                     vtol_approach_s.approach_stage = VTOLApproach::Stage::LOITER_TO_ALT;
                 }
