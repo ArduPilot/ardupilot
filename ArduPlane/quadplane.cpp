@@ -1463,11 +1463,11 @@ void SLT_Transition::update()
         quadplane.assisted_flight = true;
         // update transition state for vehicles using airspeed wait
         if (!in_forced_transition) {
-            const bool show_message = transition_state != TRANSITION_AIRSPEED_WAIT || transition_start_ms == 0;
+            const bool show_message = transition_state != State::AIRSPEED_WAIT || transition_start_ms == 0;
             if (show_message) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Transition started airspeed %.1f", (double)aspeed);
             }
-            transition_state = TRANSITION_AIRSPEED_WAIT;
+            transition_state = State::AIRSPEED_WAIT;
             if (transition_start_ms == 0) {
                 transition_start_ms = now;
             }
@@ -1480,8 +1480,8 @@ void SLT_Transition::update()
     // if rotors are fully forward then we are not transitioning,
     // unless we are waiting for airspeed to increase (in which case
     // the tilt will decrease rapidly)
-    if (quadplane.tiltrotor.fully_fwd() && transition_state != TRANSITION_AIRSPEED_WAIT) {
-        if (transition_state == TRANSITION_TIMER) {
+    if (quadplane.tiltrotor.fully_fwd() && transition_state != State::AIRSPEED_WAIT) {
+        if (transition_state == State::TIMER) {
             float throttle;
             if (plane.quadplane.tiltrotor.get_forward_throttle(throttle)) {
                 // Reset the TECS minimum throttle to match throttle of forward thrust motors
@@ -1492,12 +1492,12 @@ void SLT_Transition::update()
             }
             gcs().send_text(MAV_SEVERITY_INFO, "Transition FW done");
         }
-        transition_state = TRANSITION_DONE;
+        transition_state = State::DONE;
         transition_start_ms = 0;
         transition_low_airspeed_ms = 0;
     }
 
-    if (transition_state < TRANSITION_DONE) {
+    if (transition_state != State::DONE) {
         // during transition we ask TECS to use a synthetic
         // airspeed. Otherwise the pitch limits will throw off the
         // throttle calculation which is driven by pitch
@@ -1505,7 +1505,7 @@ void SLT_Transition::update()
     }
     
     switch (transition_state) {
-    case TRANSITION_AIRSPEED_WAIT: {
+    case State::AIRSPEED_WAIT: {
         quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         // we hold in hover until the required airspeed is reached
         if (transition_start_ms == 0) {
@@ -1513,7 +1513,7 @@ void SLT_Transition::update()
             transition_start_ms = now;
         }
 
-        // check if we have failed to transition while in TRANSITION_AIRSPEED_WAIT
+        // check if we have failed to transition while in State::AIRSPEED_WAIT
         if (transition_start_ms != 0 &&
         (quadplane.transition_failure.timeout > 0) &&
         ((now - transition_start_ms) > ((uint32_t)quadplane.transition_failure.timeout * 1000))) {
@@ -1525,7 +1525,7 @@ void SLT_Transition::update()
             // tiltrotors will immediately transition
             const bool tiltrotor_with_ground_speed = quadplane.tiltrotor.enabled() && (plane.ahrs.groundspeed() > plane.aparm.airspeed_min * 0.5);
             if (quadplane.option_is_set(QuadPlane::Option::TRANS_FAIL_TO_FW) && tiltrotor_with_ground_speed) {
-                transition_state = TRANSITION_TIMER;
+                transition_state = State::TIMER;
                 in_forced_transition = true;
             } else {
                 switch (QuadPlane::TRANS_FAIL::ACTION(quadplane.transition_failure.action)) {
@@ -1548,7 +1548,7 @@ void SLT_Transition::update()
 
         transition_low_airspeed_ms = now;
         if (have_airspeed && aspeed > plane.aparm.airspeed_min && !quadplane.assisted_flight) {
-            transition_state = TRANSITION_TIMER;
+            transition_state = State::TIMER;
             airspeed_reached_tilt = quadplane.tiltrotor.current_tilt;
             gcs().send_text(MAV_SEVERITY_INFO, "Transition airspeed reached %.1f", (double)aspeed);
         }
@@ -1588,8 +1588,8 @@ void SLT_Transition::update()
         quadplane.attitude_control->set_throttle_mix_max(1.0f);
         break;
     }
-        
-    case TRANSITION_TIMER: {
+
+    case State::TIMER: {
         quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         // after airspeed is reached we degrade throttle over the transition time, but continue
         // to stabilize and wait for any required forward tilt to complete and the timer to expire
@@ -1597,7 +1597,7 @@ void SLT_Transition::update()
         const float trans_time_ms = constrain_float(quadplane.transition_time_ms,500,30000);
         const bool tilt_fwd_complete = !quadplane.tiltrotor.enabled() || quadplane.tiltrotor.tilt_angle_achieved();
         if (transition_timer_ms > unsigned(trans_time_ms) && tilt_fwd_complete) {
-            transition_state = TRANSITION_DONE;
+            transition_state = State::DONE;
             in_forced_transition = false;
             transition_start_ms = 0;
             transition_low_airspeed_ms = 0;
@@ -1644,7 +1644,7 @@ void SLT_Transition::update()
         break;
     }
 
-    case TRANSITION_DONE:
+    case State::DONE:
         quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
         motors->output();
         set_last_fw_pitch();
@@ -1666,12 +1666,12 @@ void SLT_Transition::VTOL_update()
     transition_low_airspeed_ms = 0;
     if (quadplane.throttle_wait && !plane.is_flying()) {
         in_forced_transition = false;
-        transition_state = TRANSITION_DONE;
+        transition_state = State::DONE;
     } else {
         /*
           setup for airspeed wait for later
         */
-        transition_state = TRANSITION_AIRSPEED_WAIT;
+        transition_state = State::AIRSPEED_WAIT;
     }
     last_throttle = motors->get_throttle();
 
@@ -4406,7 +4406,7 @@ QuadPlane *QuadPlane::_singleton = nullptr;
 
 bool SLT_Transition::set_FW_roll_limit(int32_t& roll_limit_cd)
 {
-    if (quadplane.assisted_flight && (transition_state == TRANSITION_AIRSPEED_WAIT || transition_state == TRANSITION_TIMER) &&
+    if (quadplane.assisted_flight && (transition_state == State::AIRSPEED_WAIT || transition_state == State::TIMER) &&
         quadplane.option_is_set(QuadPlane::Option::LEVEL_TRANSITION)) {
         // the user wants transitions to be kept level to within LEVEL_ROLL_LIMIT
         roll_limit_cd = MIN(roll_limit_cd, plane.g.level_roll_limit*100);
@@ -4418,7 +4418,7 @@ bool SLT_Transition::set_FW_roll_limit(int32_t& roll_limit_cd)
 bool SLT_Transition::allow_update_throttle_mix() const
 {
     // transition is directly managing throttle mix in these cases
-    return !(quadplane.assisted_flight && (transition_state == TRANSITION_AIRSPEED_WAIT || transition_state == TRANSITION_TIMER));
+    return !(quadplane.assisted_flight && (transition_state == State::AIRSPEED_WAIT || transition_state == State::TIMER));
 }
 
 bool SLT_Transition::active_frwd() const
@@ -4428,7 +4428,7 @@ bool SLT_Transition::active_frwd() const
         return false;
     }
     // ... and a transition must be active...
-    if (!((transition_state == TRANSITION_AIRSPEED_WAIT) || (transition_state == TRANSITION_TIMER))) {
+    if (!((transition_state == State::AIRSPEED_WAIT) || (transition_state == State::TIMER))) {
         return false;
     }
     // ... but not executing a QPOS_AIRBRAKE maneuver during an automated landing.
@@ -4550,7 +4550,7 @@ void SLT_Transition::set_last_fw_pitch()
 
 void SLT_Transition::force_transition_complete()
 {
-    transition_state = TRANSITION_DONE;
+    transition_state = State::DONE;
     in_forced_transition = false;
     transition_start_ms = 0;
     transition_low_airspeed_ms = 0;
@@ -4571,13 +4571,13 @@ MAV_VTOL_STATE SLT_Transition::get_mav_vtol_state() const
     }
 
     switch (transition_state) {
-        case TRANSITION_AIRSPEED_WAIT:
-        case TRANSITION_TIMER:
+        case State::AIRSPEED_WAIT:
+        case State::TIMER:
             // we enter this state during assisted flight, not just
             // during a forward transition.
             return MAV_VTOL_STATE_TRANSITION_TO_FW;
 
-        case TRANSITION_DONE:
+        case State::DONE:
             return MAV_VTOL_STATE_FW;
     }
 
@@ -4592,7 +4592,7 @@ void SLT_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_
         return;
     }
 
-    if (transition_state == TRANSITION_DONE) {
+    if (transition_state == State::DONE) {
         // transition complete, nothing to do
         return;
     }
@@ -4603,7 +4603,7 @@ void SLT_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_
     }
 
     float max_pitch;
-    if (transition_state < TRANSITION_TIMER) {
+    if (transition_state < State::TIMER) {
         if (plane.ahrs.groundspeed() < 3.0) {
             // until we have some ground speed limit to zero pitch
             max_pitch = 0.0;
