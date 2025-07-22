@@ -318,7 +318,7 @@ void Tiltrotor::continuous_update(void)
     }
 
     if (quadplane.assisted_flight &&
-        transition->transition_state >= Tiltrotor_Transition::TRANSITION_TIMER) {
+        transition->transition_state >= Tiltrotor_Transition::State::TIMER) {
         // we are transitioning to fixed wing - tilt the motors all
         // the way forward
         slew(get_forward_flight_tilt());
@@ -748,7 +748,17 @@ void Tiltrotor::update_yaw_target(void)
  */
 bool Tiltrotor_Transition::use_multirotor_control_in_fwd_transition() const
 {
-    return tiltrotor.is_vectored() && transition_state <= TRANSITION_TIMER;
+    if (!tiltrotor.is_vectored()) {
+        return false;
+    }
+    switch (transition_state) {
+    case State::AIRSPEED_WAIT:
+    case State::TIMER:
+        return true;
+    case State::DONE:
+        return false;
+    }
+    return false;
 }
 
 bool Tiltrotor_Transition::update_yaw_target(float& yaw_target_cd)
@@ -766,7 +776,7 @@ bool Tiltrotor_Transition::show_vtol_view() const
 {
     bool show_vtol = quadplane.in_vtol_mode();
 
-    if (!show_vtol && tiltrotor.is_vectored() && transition_state <= TRANSITION_TIMER) {
+    if (!show_vtol && tiltrotor.is_vectored() && transition_state <= State::TIMER) {
         // we use multirotor controls during fwd transition for
         // vectored yaw vehicles
         return true;
