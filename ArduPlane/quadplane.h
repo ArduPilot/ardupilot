@@ -288,7 +288,7 @@ private:
     void motors_output(bool run_rate_controller = true);
     void Log_Write_QControl_Tuning();
     void log_QPOS(void);
-    float landing_descent_rate_cms(float height_above_ground);
+    float landing_descent_rate_cms(float height_above_ground_m);
     
     // setup correct aux channels for frame class
     void setup_default_channels(uint8_t num_motors);
@@ -299,7 +299,7 @@ private:
     void update_throttle_suppression(void);
 
     void run_z_controller(void);
-    void run_xy_controller(float accel_limit=0.0);
+    void run_xy_controller(float accel_limit_mss = 0.0);
 
     void setup_defaults(void);
 
@@ -310,7 +310,7 @@ private:
 
     // distance below which we don't do approach, based on stopping
     // distance for cruise speed
-    float transition_threshold(void);
+    float transition_threshold_m(void);
 
     AP_Int16 transition_time_ms;
     AP_Int16 back_trans_pitch_limit_ms;
@@ -486,7 +486,7 @@ private:
         float vpos_start_m;
 
         // landing detection threshold in meters
-        AP_Float detect_alt_change;
+        AP_Float detect_alt_change_m;
     } landing_detect;
 
     // throttle mix acceleration filter
@@ -515,8 +515,8 @@ private:
         uint32_t time_since_state_start_ms() const {
             return AP_HAL::millis() - last_state_change_ms;
         }
-        Vector3p target_cm;
-        Vector2f xy_correction;
+        Vector3p target_neu_cm;
+        Vector2f correction_ne_m;
         Vector3f target_vel_cms;
         bool slow_descent:1;
         bool pilot_correction_active;
@@ -525,16 +525,16 @@ private:
         uint32_t last_log_ms;
         bool reached_wp_speed;
         uint32_t last_run_ms;
-        float pos1_speed_limit;
+        float pos1_speed_limit_ms;
         bool done_accel_init;
-        Vector2f velocity_match;
+        Vector2f velocity_match_ms;
         uint32_t last_velocity_match_ms;
-        float target_speed;
-        float target_accel;
+        float target_speed_ms;
+        float target_accel_mss;
         uint32_t last_pos_reset_ms;
         bool overshoot;
 
-        float override_descent_rate;
+        float override_descent_rate_ms;
         uint32_t last_override_descent_ms;
     private:
         uint32_t last_state_change_ms;
@@ -621,15 +621,15 @@ private:
     uint32_t takeoff_start_time_ms;
     uint32_t takeoff_time_limit_ms;
 
-    float last_land_final_agl;
+    float last_land_final_agl_m;
 
     // AHRS alt for land abort and package place, meters
-    float land_descend_start_alt;
+    float land_descend_start_alt_m;
 
     // min alt for navigation in takeoff
     AP_Float takeoff_navalt_min_m;
     uint32_t takeoff_last_run_ms;
-    float takeoff_start_alt;
+    float takeoff_start_alt_m;
 
     // oneshot with duration ARMING_DELAY_MS used by quadplane to delay spoolup after arming:
     // ignored unless OPTION_DELAY_ARMING or OPTION_TILT_DISARMED is set

@@ -64,7 +64,7 @@ void ModeQLoiter::run()
     if (last_vel_set_ms != 0 && now - last_vel_set_ms < precland_timeout_ms) {
         // we have an active landing velocity override
         Vector2f target_accel;
-        Vector2f target_speed_xy_cms{quadplane.poscontrol.velocity_match.x*100, quadplane.poscontrol.velocity_match.y*100};
+        Vector2f target_speed_xy_cms{quadplane.poscontrol.velocity_match_ms.x*100, quadplane.poscontrol.velocity_match_ms.y*100};
         quadplane.pos_control->input_vel_accel_NE_cm(target_speed_xy_cms, target_accel);
         quadplane.poscontrol.last_velocity_match_ms = 0;
     }
