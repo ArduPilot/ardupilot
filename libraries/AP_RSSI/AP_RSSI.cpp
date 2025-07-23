@@ -135,6 +135,12 @@ void AP_RSSI::init()
 // 0.0 represents weakest signal, 1.0 represents maximum signal.
 float AP_RSSI::read_receiver_rssi()
 {
+
+    // check if an rc input was received recently (does not consider rc overrides)
+    if ((AP_HAL::millis() - rc().last_rc_receiver_input_ms()) > rc().get_fs_timeout_ms()) {
+        return 0.0f;
+    }
+
     switch (RssiType(rssi_type.get())) {
         case RssiType::TYPE_DISABLED:
             return 0.0f;
