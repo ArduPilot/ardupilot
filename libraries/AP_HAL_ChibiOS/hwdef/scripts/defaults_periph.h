@@ -383,6 +383,9 @@
 #ifndef HAL_PROXIMITY_ENABLED
 #define HAL_PROXIMITY_ENABLED AP_PERIPH_PROXIMITY_ENABLED
 #endif
+#ifndef HAL_EFI_ENABLED
+#define HAL_EFI_ENABLED AP_PERIPH_EFI_ENABLED
+#endif
 
 /*
  * GPS Backends - we selectively turn backends on.
