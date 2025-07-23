@@ -2330,9 +2330,9 @@ void QuadPlane::vtol_position_controller(void)
     // and tilt is more than tilt max
     bool suppress_z_controller = false;
 
-    Vector2f landing_velocity_ms;
+    Vector2f landing_velocity_ne_ms;
     if (now_ms - poscontrol.last_velocity_match_ms < 1000) {
-        landing_velocity_ms = poscontrol.velocity_match_ms;
+        landing_velocity_ne_ms = poscontrol.velocity_match_ms;
     }
 
     // horizontal position control
@@ -2611,13 +2611,13 @@ void QuadPlane::vtol_position_controller(void)
                 // we want assuming no speed scaling due to direction
                 const Vector2f wind_ms = plane.ahrs.wind_estimate().xy();
                 const float gnd_speed_ms = plane.ahrs.groundspeed();
-                Vector2f target_speed_xy = landing_velocity_ms + diff_wp_norm * gnd_speed_ms - wind_ms;
+                Vector2f target_speed_xy = landing_velocity_ne_ms + diff_wp_norm * gnd_speed_ms - wind_ms;
                 target_yaw_deg = degrees(target_speed_xy.angle());
             }
         }
         const float target_speed_ms = target_speed_ne_ms.length();
 
-        target_speed_ne_ms += landing_velocity_ms;
+        target_speed_ne_ms += landing_velocity_ne_ms;
         poscontrol.target_speed_ms = target_speed_ms;
         poscontrol.target_accel_mss = approach_accel_mss;
 
@@ -2694,9 +2694,9 @@ void QuadPlane::vtol_position_controller(void)
          */
         Vector2f zero;
         Vector2f vel_ne_ms = poscontrol.target_vel_cms.xy() * 0.01 + landing_velocity_ne_ms;
-        Vector2p target_m = poscontrol.target_neu_cm.xy() * 0.01;
-        pos_control->input_pos_vel_accel_NE_m(target_m, vel_ne_ms, zero);
-        poscontrol.target_neu_cm.xy() = target_m * 100.0;
+        Vector2p target_ne_m = poscontrol.target_neu_cm.xy() * 0.01;
+        pos_control->input_pos_vel_accel_NE_m(target_ne_m, vel_ne_ms, zero);
+        poscontrol.target_neu_cm.xy() = target_ne_m * 100.0;
 
         // also run fixed wing navigation
         plane.nav_controller->update_waypoint(plane.current_loc, loc);
@@ -2731,7 +2731,7 @@ void QuadPlane::vtol_position_controller(void)
             pos_control->relax_velocity_controller_NE();
         } else {
             Vector2f zero;
-            Vector2f vel_ms = poscontrol.target_vel_cms.xy() * 0.01 + landing_velocity_ms;
+            Vector2f vel_ne_ms = poscontrol.target_vel_cms.xy() * 0.01 + landing_velocity_ne_ms;
             Vector2f rpos;
             const uint32_t last_reset_ms = plane.ahrs.getLastPosNorthEastReset(rpos);
             /* we use velocity control when we may be touching the
@@ -2742,12 +2742,12 @@ void QuadPlane::vtol_position_controller(void)
             if (motors->limit.throttle_lower ||
                 motors->get_throttle() < 0.5*motors->get_throttle_hover() ||
                 last_reset_ms != poscontrol.last_pos_reset_ms) {
-                pos_control->input_vel_accel_NE_m(vel_ms, zero);
+                pos_control->input_vel_accel_NE_m(vel_ne_ms, zero);
             } else {
                 // otherwise use full pos control
-                Vector2p target_m = poscontrol.target_neu_cm.xy() * 0.01;
-                pos_control->input_pos_vel_accel_NE_m(target_m, vel_ms, zero);
-                poscontrol.target_neu_cm.xy() = target_m * 100.0;
+                Vector2p target_ne_m = poscontrol.target_neu_cm.xy() * 0.01;
+                pos_control->input_pos_vel_accel_NE_m(target_ne_m, vel_ne_ms, zero);
+                poscontrol.target_neu_cm.xy() = target_ne_m * 100.0;
             }
         }
 
@@ -3129,9 +3129,9 @@ void QuadPlane::takeoff_controller(void)
 
     // set position control target and update
 
-    Vector2f vel_ms, zero;
+    Vector2f vel_ne_ms, zero;
     if (AP_HAL::millis() - poscontrol.last_velocity_match_ms < 1000) {
-        vel_ms = poscontrol.velocity_match_ms;
+        vel_ne_ms = poscontrol.velocity_match_ms;
     }
 
     /*
@@ -3154,7 +3154,7 @@ void QuadPlane::takeoff_controller(void)
     if (no_navigation) {
         pos_control->relax_velocity_controller_NE();
     } else {
-        pos_control->input_vel_accel_NE_m(vel_ms, zero);
+        pos_control->input_vel_accel_NE_m(vel_ne_ms, zero);
 
         // nav roll and pitch are controller by position controller
         plane.nav_roll_cd = pos_control->get_roll_cd();
