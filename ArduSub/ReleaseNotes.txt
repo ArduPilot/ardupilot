@@ -1,5 +1,8 @@
 APM:Sub Release Notes:
 
+Sub-4.5.4
+ - Allow setting absolute camera zoom/focus via MAVLink
+
 Sub-4.5.3 18-March-2025
  - Fix range on Servo Camera servos not being set
 
