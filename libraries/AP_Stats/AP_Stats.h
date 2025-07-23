@@ -19,6 +19,7 @@ public:
     uint32_t runtime; // total wallclock time spent running ArduPilot (seconds)
     uint32_t reset;   // last time AP_Stats parameters were reset (in seconds since AP_Stats Jan 1st 2016)
     uint32_t flttime_boot; // seconds in flight (or driving), at boot
+    uint32_t fltcount; // total number of takeoffs
     
     void init();
 
@@ -55,6 +56,7 @@ private:
         AP_Int32 flttime;
         AP_Int32 runtime;
         AP_Int32 reset;
+        AP_Int32 fltcount;
     } params;
 
     void copy_variables_from_parameters();
