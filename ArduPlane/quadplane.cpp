@@ -2693,10 +2693,10 @@ void QuadPlane::vtol_position_controller(void)
           for final land repositioning and descent we run the position controller
          */
         Vector2f zero;
-        Vector2f vel_ms = poscontrol.target_vel_cms.xy() * 0.01 + landing_velocity_ms;
-        Vector2p target_m = poscontrol.target_vel_cms.xy() * 0.01;
-        pos_control->input_pos_vel_accel_NE_m(target_m, vel_ms, zero);
-        poscontrol.target_vel_cms.xy() = target_m * 100.0;
+        Vector2f vel_ne_ms = poscontrol.target_vel_cms.xy() * 0.01 + landing_velocity_ne_ms;
+        Vector2p target_m = poscontrol.target_neu_cm.xy() * 0.01;
+        pos_control->input_pos_vel_accel_NE_m(target_m, vel_ne_ms, zero);
+        poscontrol.target_neu_cm.xy() = target_m * 100.0;
 
         // also run fixed wing navigation
         plane.nav_controller->update_waypoint(plane.current_loc, loc);
