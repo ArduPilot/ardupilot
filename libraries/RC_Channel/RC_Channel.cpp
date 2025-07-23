@@ -301,7 +301,13 @@ bool RC_Channel::get_reverse(void) const
 bool RC_Channel::update(void)
 {
     if (has_override() && !rc().option_is_enabled(RC_Channels::Option::IGNORE_OVERRIDES)) {
-        radio_in = override_value;
+        // if the channel is reversed we still want overrides to go through as if not reversed 
+        // so an override of 1800 arrives as 1800 rather than 1200
+        if (reversed) {
+            radio_in = radio_max - (override_value - radio_min);
+        } else {
+            radio_in = override_value;
+        }
     } else if (rc().has_had_rc_receiver() && !rc().option_is_enabled(RC_Channels::Option::IGNORE_RECEIVER)) {
         radio_in = hal.rcin->read(ch_in);
     } else {
