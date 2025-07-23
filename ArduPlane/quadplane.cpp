@@ -1235,12 +1235,12 @@ bool QuadPlane::is_flying_vtol(void) const
   smooth out descent rate for landing to prevent a jerk as we get to
   land_final_alt_m. 
  */
-float QuadPlane::landing_descent_rate_cms(float height_above_ground_m)
+float QuadPlane::landing_descent_rate_ms(float height_above_ground_m)
 {
     if (poscontrol.last_override_descent_ms != 0) {
         const uint32_t now = AP_HAL::millis();
         if (now - poscontrol.last_override_descent_ms < 1000) {
-            return poscontrol.override_descent_rate_ms * 100;
+            return poscontrol.override_descent_rate_ms;
         }
     }
 
@@ -1248,8 +1248,8 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground_m)
         // when in final use descent rate for final even if alt has climbed again
         height_above_ground_m = MIN(height_above_ground_m, land_final_alt_m);
     }
-    const float max_climb_speed_cms = wp_nav->get_default_speed_up_cms();
-    float ret = linear_interpolate(land_final_speed_ms * 100, wp_nav->get_default_speed_down_cms(),
+    const float max_climb_speed_ms = wp_nav->get_default_speed_up_cms() * 0.01;
+    float ret_ms = linear_interpolate(land_final_speed_ms, wp_nav->get_default_speed_down_cms() * 0.01,
                                    height_above_ground_m,
                                    land_final_alt_m, land_final_alt_m + 6);
 
@@ -1266,22 +1266,22 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground_m)
             const float scaling = 1.0 / (0.5 - dz);
             if (thr_in > thresh1) {
                 // start climbing
-                ret = -(thr_in - thresh1) * scaling * max_climb_speed_cms;
+                ret_ms = -(thr_in - thresh1) * scaling * max_climb_speed_ms;
             } else if (thr_in > thresh2) {
                 // hold height
-                ret = 0;
+                ret_ms = 0;
             } else {
-                ret *= (thresh2 - thr_in) * scaling;
+                ret_ms *= (thresh2 - thr_in) * scaling;
             }
         }    
     }
 
     if (poscontrol.pilot_correction_active) {
         // stop descent when repositioning
-        ret = MIN(0, ret);
+        ret_ms = MIN(0, ret_ms);
     }
 
-    return ret;
+    return ret_ms;
 }
 
 /*
@@ -2851,7 +2851,7 @@ void QuadPlane::vtol_position_controller(void)
             set_climb_rate_ms(wp_nav->get_default_speed_up_cms() * 0.01);
             break;
         }
-        const float descent_rate_ms = landing_descent_rate_cms(height_above_ground_m) * 0.01;
+        const float descent_rate_ms = landing_descent_rate_ms(height_above_ground_m);
         pos_control->land_at_climb_rate_m(-descent_rate_ms, descent_rate_ms > 0);
         break;
     }
