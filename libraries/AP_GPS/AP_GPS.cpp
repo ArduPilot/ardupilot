@@ -42,7 +42,7 @@
 #include "AP_GPS_MSP.h"
 #include "AP_GPS_ExternalAHRS.h"
 #include "GPS_Backend.h"
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
 #include "AP_GPS_SITL.h"
 #endif
 
@@ -239,7 +239,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _DRV_OPTIONS
     // @DisplayName: driver options
     // @Description: Additional backend specific options
-    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL, 5:Override GPS satellite health of L5 band from L1 health, 6:Enable RTCM full parse even for a single channel, 7:Disable automatic full RTCM parsing when RTCM seen on more than one channel
+    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200 on ublox,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL, 5:Override GPS satellite health of L5 band from L1 health, 6:Enable RTCM full parse even for a single channel, 7:Disable automatic full RTCM parsing when RTCM seen on more than one channel
     // @User: Advanced
     AP_GROUPINFO("_DRV_OPTIONS", 22, AP_GPS, _driver_options, 0),
 
@@ -561,9 +561,9 @@ void AP_GPS::send_blob_start(uint8_t instance)
 #if AP_GPS_NOVA_ENABLED
     case GPS_TYPE_NOVA:
 #endif //AP_GPS_NOVA_ENABLED
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
     case GPS_TYPE_SITL:
-#endif  // HAL_SIM_GPS_ENABLED
+#endif  // AP_SIM_GPS_ENABLED
         // none of these GPSs have initialisation blobs
         break;
     default:
@@ -734,10 +734,10 @@ AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
         return NEW_NOTHROW AP_GPS_NOVA(*this, params[instance], state[instance], port);
 #endif //AP_GPS_NOVA_ENABLED
 
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
     case GPS_TYPE_SITL:
         return NEW_NOTHROW AP_GPS_SITL(*this, params[instance], state[instance], port);
-#endif  // HAL_SIM_GPS_ENABLED
+#endif  // AP_SIM_GPS_ENABLED
 
     default:
         break;

@@ -904,9 +904,9 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_attitude(sbuf_t *dst)
         int16_t pitch;
         int16_t yaw;
     } attitude {
-        roll : int16_t(ahrs.roll_sensor * 0.1),     // centidegress to decidegrees
-        pitch : int16_t(ahrs.pitch_sensor * 0.1),   // centidegress to decidegrees
-        yaw : int16_t(ahrs.yaw_sensor * 0.01)       // centidegress to degrees
+        roll : int16_t(ahrs.get_roll_deg() * 10),     // degress to decidegrees
+        pitch : int16_t(ahrs.get_pitch_deg() * 10),   // degress to decidegrees
+        yaw : int16_t(ahrs.get_yaw_deg())
     };
 
     sbuf_write_data(dst, &attitude, sizeof(attitude));

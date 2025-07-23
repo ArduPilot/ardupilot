@@ -11,6 +11,7 @@ import shutil
 import tempfile
 import time
 import numpy
+import pathlib
 
 from pymavlink import quaternion
 from pymavlink import mavutil
@@ -28,7 +29,7 @@ from vehicle_test_suite import MAV_POS_TARGET_TYPE_MASK
 from vehicle_test_suite import WaitAndMaintainArmed
 from vehicle_test_suite import WaitModeTimeout
 
-from pymavlink.rotmat import Vector3
+from pymavlink.rotmat import Vector3, Matrix3
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -2969,6 +2970,77 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if ogains[g] != ngains[g]:
                 raise NotAchievedException(f"AUTOTUNE gains not discarded {ogains=} {ngains=}")
 
+    def EKF3SRCPerCore(self):
+        '''Check SP/SH values in XKF4 for GPS (core 0) vs VICON (core 1) with targeted glitches.'''
+        self.set_parameters({
+            "EK3_ENABLE": 1,
+            "AHRS_EKF_TYPE": 3,
+            "VISO_TYPE": 2,
+            "SERIAL5_PROTOCOL": 2,
+            "EK3_SRC2_POSXY": 6,
+            "EK3_SRC2_VELXY": 6,
+            "EK3_SRC2_POSZ": 6,
+            "EK3_SRC2_VELZ": 6,
+            "EK3_SRC2_YAW": 6,
+            "EK3_SRC_OPTIONS": 8  # bitmask: enable multiple EKF cores
+        })
+
+        self.customise_SITL_commandline(["--serial5=sim:vicon"])
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm()
+        self.takeoff(3)
+        self.delay_sim_time(5)
+
+        self.progress("Injecting VICON glitch")
+        self.set_parameter("SIM_VICON_GLIT_X", 100)
+        self.set_parameter("SIM_VICON_GLIT_Y", 100)
+        self.delay_sim_time(5)
+        self.set_parameter("SIM_VICON_GLIT_X", 0)
+        self.set_parameter("SIM_VICON_GLIT_Y", 0)
+
+        self.progress("Injecting BARO glitch")
+        self.set_parameter("SIM_BARO_GLITCH", 10)
+        self.delay_sim_time(5)
+        self.set_parameter("SIM_BARO_GLITCH", 0)
+
+        self.do_RTL()
+        self.wait_disarmed(timeout=100)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+
+        max_SP_core0 = 0
+        max_SP_core1 = 0
+        max_SH_core0 = 0
+        max_SH_core1 = 0
+
+        while True:
+            m = dfreader.recv_match(type="XKF4")
+            if m is None:
+                break
+            if not hasattr(m, "C"):
+                continue
+            if m.C == 0:
+                max_SP_core0 = max(max_SP_core0, m.SP)
+                max_SH_core0 = max(max_SH_core0, m.SH)
+            elif m.C == 1:
+                max_SP_core1 = max(max_SP_core1, m.SP)
+                max_SH_core1 = max(max_SH_core1, m.SH)
+
+        self.progress(f"Core 0 (GPS): SP={max_SP_core0:.2f}, SH={max_SH_core0:.2f}")
+        self.progress(f"Core 1 (VICON): SP={max_SP_core1:.2f}, SH={max_SH_core1:.2f}")
+
+        # Validate: horizontal glitch only on core 1, vertical glitch only on core 0
+        if max_SP_core0 > 0.1:
+            raise NotAchievedException("Unexpected high SP in core 0 (GPS) during VICON glitch")
+        if max_SP_core1 < 0.9:
+            raise NotAchievedException("VICON glitch did not raise SP in core 1")
+
+        if max_SH_core1 > 0.5:
+            raise NotAchievedException("Unexpected high SH in core 1 (VICON) during BARO glitch")
+        if max_SH_core0 < 0.9:
+            raise NotAchievedException("BARO glitch did not raise SH in core 0")
+
     def AutoTuneSwitch(self):
         """Test autotune on a switch with gains being saved"""
 
@@ -3036,22 +3108,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if "AutoTune: Success" in m.text:
                 self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
                 post_gains = get_roll_gains("post")
-                if gains_same(original_gains, post_gains):
-                    raise NotAchievedException("AUTOTUNE gains not changed")
-
-                # because of the way AutoTune works, once autotune is
-                # complete we return the original parameters via
-                # parameter-fetching, but fly on the tuned parameters
-                # (both sets with the I term scaled down).  This test
-                # makes sure that's still the case.  It would be nice
-                # if the PIDs parameters were `set` on success, but
-                # they aren't...  Note that if we use the switch to
-                # restore the original gains and then start testing
-                # again (with the switch) then we see the new gains!
-
-                # gains are scaled during the testing phase:
-                if not gains_same(scaled_original_gains, post_gains):
-                    raise NotAchievedException("AUTOTUNE gains were reported as just original gains in test-mode.  If you're fixing this, good!")  # noqa
+                self.progress("Check original gains are used after tuning finished")
+                if not gains_same(original_gains, post_gains):
+                    raise NotAchievedException("AUTOTUNE original gains not restored")
 
                 self.progress("Check original gains are re-instated by switch")
                 self.set_rc(8, 1100)
@@ -3070,6 +3129,119 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     raise NotAchievedException("AUTOTUNE tuned gains same as scaled pre gains")
 
                 self.progress("land without changing mode")
+                self.set_rc(3, 1000)
+                self.wait_altitude(-1, 5, relative=True)
+                self.wait_disarmed()
+                self.progress("Check gains are still there after disarm")
+                disarmed_gains = get_roll_gains("post-disarm")
+                if not gains_same(tuned_gains, disarmed_gains):
+                    raise NotAchievedException("AUTOTUNE gains not present on disarm")
+
+                self.reboot_sitl()
+                self.progress("Check gains are still there after reboot")
+                reboot_gains = get_roll_gains("post-reboot")
+                if not gains_same(tuned_gains, reboot_gains):
+                    raise NotAchievedException("AUTOTUNE gains not present on reboot")
+                self.progress("Check FLTT is unchanged")
+                if pre_rllt != self.get_parameter("ATC_RAT_RLL_FLTT"):
+                    raise NotAchievedException("AUTOTUNE FLTT was modified")
+                return
+
+        raise NotAchievedException("AUTOTUNE failed (%u seconds)" %
+                                   (self.get_sim_time() - tstart))
+
+    def AutoTuneAux(self):
+        """Test autotune with gains being tested using the Aux function"""
+
+        # autotune changes a set of parameters on the vehicle which
+        # are not in our context.  That changes the flight
+        # characteristics, which we can't afford between runs.  So
+        # completely reset the simulated vehicle after the run is
+        # complete by "customising" the commandline here:
+        self.customise_SITL_commandline([])
+
+        self.set_parameters({
+            "RC8_OPTION": 180,
+            "ATC_RAT_RLL_FLTT": 20,
+        })
+
+        self.takeoff(10, mode='LOITER')
+
+        def print_gains(name, gains):
+            self.progress(f"AUTOTUNE {name} gains are P:%f I:%f D:%f" % (
+                gains["ATC_RAT_RLL_P"],
+                gains["ATC_RAT_RLL_I"],
+                gains["ATC_RAT_RLL_D"]
+            ))
+
+        def get_roll_gains(name):
+            ret = self.get_parameters([
+                "ATC_RAT_RLL_D",
+                "ATC_RAT_RLL_I",
+                "ATC_RAT_RLL_P",
+            ], verbose=False)
+            print_gains(name, ret)
+            return ret
+
+        def gains_same(gains1, gains2):
+            for c in 'P', 'I', 'D':
+                p_name = f"ATC_RAT_RLL_{c}"
+                if abs(gains1[p_name] - gains2[p_name]) > 0.00001:
+                    return False
+            return True
+
+        self.progress("Take a copy of original gains")
+        original_gains = get_roll_gains("pre-tuning")
+        scaled_original_gains = copy.copy(original_gains)
+        scaled_original_gains["ATC_RAT_RLL_I"] *= 0.1
+
+        pre_rllt = self.get_parameter("ATC_RAT_RLL_FLTT")
+
+        # hold position in loiter and run autotune
+        self.change_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        sim_time_expected = 5000
+        deadline = tstart + sim_time_expected
+        while self.get_sim_time_cached() < deadline:
+            now = self.get_sim_time_cached()
+            m = self.mav.recv_match(type='STATUSTEXT',
+                                    blocking=True,
+                                    timeout=1)
+            if m is None:
+                continue
+            self.progress("STATUSTEXT (%u<%u): %s" % (now, deadline, m.text))
+            if "Determination Failed" in m.text:
+                break
+            if "AutoTune: Success" in m.text:
+                self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+                post_gains = get_roll_gains("post")
+                self.progress("Check original gains are used after tuning finished")
+                if not gains_same(original_gains, post_gains):
+                    raise NotAchievedException("AUTOTUNE original gains not restored")
+
+                self.change_mode('LOITER')
+                self.wait_mode('LOITER')
+
+                self.progress("Use autotuned gains")
+                self.set_rc(8, 1850)
+                self.delay_sim_time(1)
+                tuned_gains = get_roll_gains("tuned")
+                if gains_same(tuned_gains, original_gains):
+                    raise NotAchievedException("AUTOTUNE tuned gains same as pre gains")
+                if gains_same(tuned_gains, scaled_original_gains):
+                    raise NotAchievedException("AUTOTUNE tuned gains same as scaled pre gains")
+
+                self.progress("Check original gains are re-instated by switch")
+                self.set_rc(8, 1100)
+                self.delay_sim_time(1)
+                current_gains = get_roll_gains("set-original")
+                if not gains_same(original_gains, current_gains):
+                    raise NotAchievedException("AUTOTUNE original gains not restored")
+
+                self.progress("land using Autotune Gains")
+                self.set_rc(8, 1850)
+                self.delay_sim_time(1)
                 self.set_rc(3, 1000)
                 self.wait_altitude(-1, 5, relative=True)
                 self.wait_disarmed()
@@ -5245,9 +5417,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         #        print("r=%s" % str(r))
         return r * vector
 
-    def precision_loiter_to_pos(self, x, y, z, timeout=40):
+    def precision_loiter_to_pos(self, x, y, z, send_bf=True, timeout=40):
         '''send landing_target messages at vehicle until it arrives at
-        location to x, y, z from origin (in metres), z is *up*'''
+        location to x, y, z from origin (in metres), z is *up*
+        if send_bf is True then targets sent in body-frame, if False then sent in local FRD frame'''
         dest_ned = rotmat.Vector3(x, y, -z)
         tstart = self.get_sim_time()
         success_start = -1
@@ -5277,22 +5450,38 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             else:
                 success_start = -1
 
-            delta_bf = self.earth_to_body(delta_ef)
-            #            print("delta_bf=%s" % str(delta_bf))
-            angle_x = math.atan2(delta_bf.y, delta_bf.z)
-            angle_y = -math.atan2(delta_bf.x, delta_bf.z)
-            distance = math.sqrt(delta_bf.x * delta_bf.x +
-                                 delta_bf.y * delta_bf.y +
-                                 delta_bf.z * delta_bf.z)
-            #            att = self.mav.messages["ATTITUDE"]
-            #            print("r=%f p=%f y=%f" % (math.degrees(att.roll), math.degrees(att.pitch), math.degrees(att.yaw)))
-            #            print("angle_x=%s angle_y=%s" % (str(math.degrees(angle_x)), str(math.degrees(angle_y))))
-            #            print("distance=%s" % str(distance))
+            mav_frame = None
+            if send_bf:
+                # rotate delta_ef from NED to body frame FRD
+                delta_bf = self.earth_to_body(delta_ef)
+                print("delta_bf=%s" % str(delta_bf))
+                angle_x = math.atan2(delta_bf.y, delta_bf.z)
+                angle_y = -math.atan2(delta_bf.x, delta_bf.z)
+                distance = math.sqrt(delta_bf.x * delta_bf.x +
+                                     delta_bf.y * delta_bf.y +
+                                     delta_bf.z * delta_bf.z)
+                mav_frame = mavutil.mavlink.MAV_FRAME_BODY_FRD
+            else:
+                # rotate delta_ef from NED to Local FRD
+                rotmat_yaw = Matrix3()
+                rotmat_yaw.rotate_yaw(self.mav.messages["ATTITUDE"].yaw)
+                delta_local_frd = rotmat_yaw * delta_ef
+                angle_x = math.atan2(delta_local_frd.y, delta_local_frd.z)
+                angle_y = -math.atan2(delta_local_frd.x, delta_local_frd.z)
+                distance = math.sqrt(delta_local_frd.x * delta_local_frd.x +
+                                     delta_local_frd.y * delta_local_frd.y +
+                                     delta_local_frd.z * delta_local_frd.z)
+                mav_frame = mavutil.mavlink.MAV_FRAME_LOCAL_FRD
+
+            # att = self.mav.messages["ATTITUDE"]
+            # print("r=%f p=%f y=%f" % (math.degrees(att.roll), math.degrees(att.pitch), math.degrees(att.yaw)))
+            # print("angle_x=%s angle_y=%s" % (str(math.degrees(angle_x)), str(math.degrees(angle_y))))
+            # print("distance=%s" % str(distance))
 
             self.mav.mav.landing_target_send(
                 0, # time_usec
                 1, # target_num
-                mavutil.mavlink.MAV_FRAME_GLOBAL, # frame; AP ignores
+                mav_frame, # frame
                 angle_x, # angle x (radians)
                 angle_y, # angle y (radians)
                 distance, # distance to target
@@ -7678,11 +7867,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(7, 2000)
 
         # try to drag aircraft to a position 5 metres north-east-east:
-        self.precision_loiter_to_pos(start.x + 5, start.y + 10, start.z + 10)
+        self.precision_loiter_to_pos(start.x + 5, start.y + 10, start.z + 10, True)
         self.wait_statustext("PrecLand: Target Found", check_context=True, timeout=10)
         self.wait_statustext("PrecLand: Init Complete", check_context=True, timeout=10)
         # .... then northwest
-        self.precision_loiter_to_pos(start.x + 5, start.y - 10, start.z + 10)
+        self.precision_loiter_to_pos(start.x + 5, start.y - 10, start.z + 10, True)
+
+        # repeat using earth-frame targets
+        self.precision_loiter_to_pos(start.x + 5, start.y - 10, start.z + 10, False)
 
         self.disarm_vehicle(force=True)
 
@@ -8861,7 +9053,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.set_parameters({
             "SERIAL5_PROTOCOL": 2,    # mavlink
-            "SERIAL5_OPTIONS": 1024,  # private
+            "MAV3_OPTIONS": 2,        # private
             "GEN_TYPE": 4,            # loweheiser
             "EFI_TYPE": 4,            # loweheiser
             "SIM_EFI_TYPE": 2,        # loweheiser sim
@@ -10236,6 +10428,75 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if ex is not None:
             raise ex
 
+    def EK3_EXT_NAV_vel_without_vert(self):
+        '''Test that EK3 External Navigation velocity works without vertical velocity.'''
+
+        # Setup Vicon system and EKF3 parameters
+        self.set_parameters({
+            "VISO_TYPE": 2,      # Enable Vicon system
+            "SERIAL5_PROTOCOL": 2,
+            "EK3_ENABLE": 1,      # Enable EKF3
+            "EK3_SRC2_POSXY": 6,  # External Navigation for horizontal position
+            "EK3_SRC2_POSZ": 1,   # Use Barometer for altitude
+            "EK3_SRC2_VELXY": 6,  # External Navigation for horizontal velocity
+            "EK3_SRC2_VELZ": 0,   # No vertical velocity input
+            "EK3_SRC2_YAW": 1,    # Use Compass for yaw
+            "EK3_SRC_OPTIONS": 0,  # Dont fuse all velocity sources
+            "RC8_OPTION": 90,     # RC aux switch 8 set to EKF source selector
+            "AHRS_EKF_TYPE": 3,   # Enable EKF3
+        })
+
+        # Customize SITL command line for Vicon simulation
+        self.customise_SITL_commandline(["--serial5=sim:vicon:"])
+
+        # Switch to use Vicon
+        self.set_rc(8, 1500)
+
+        # Take off
+        self.progress("Moving")
+        self.takeoffAndMoveAway()
+
+        # Increase Vicon vertical velocity error
+        self.set_parameter("SIM_VICON_VGLI_Z", 1)
+
+        # Set innovation limit
+        innov_limit = 0.1  # Threshold for velocity variance
+
+        max_variance = 0.0
+        tstart = self.get_sim_time()
+        while True:
+            msg = self.assert_receive_message(type="EKF_STATUS_REPORT")
+            variance = msg.velocity_variance
+            max_variance = max(max_variance, variance)
+            if variance > innov_limit:
+                raise NotAchievedException(
+                    f"Velocity variance too high {variance:.2f} > {innov_limit:.2f}"
+                )
+            if self.get_sim_time_cached() - tstart > 10:
+                break
+        print(f"Max variance before enabling vertical velocity fusion: {max_variance:.2f}")
+
+        # Now enable vertical velocity fusion and check for innovation spike
+        self.set_parameter("EK3_SRC2_VELZ", 6)
+
+        spike_detected = False
+        max_variance = 0.0
+        tstart = self.get_sim_time()
+        while True:
+            msg = self.assert_receive_message(type="EKF_STATUS_REPORT")
+            variance = msg.velocity_variance
+            max_variance = max(max_variance, variance)
+            if variance > innov_limit:
+                spike_detected = True
+            if self.get_sim_time_cached() - tstart > 10:
+                break
+        print(f"Max variance after enabling vertical velocity fusion: {max_variance:.2f}")
+
+        if not spike_detected:
+            raise NotAchievedException("Velocity variance did not spike as expected after enabling vertical velocity fusion.")
+
+        self.disarm_vehicle(force=True)
+
     def test_replay_gps_bit(self):
         self.set_parameters({
             "LOG_REPLAY": 1,
@@ -10567,9 +10828,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             measurements[m.C] = (m.PN, m.PE, m.PD)
             if len(measurements) == 3:
                 # check lat:
+                axis_epsilons = [0.05, 0.05, 0.06]
                 for n in 0, 1, 2:
                     expected_blended = 0.5*measurements[0][n] + 0.5*measurements[1][n]
-                    axis_epsilons = [0.02, 0.02, 0.03]
                     epsilon = axis_epsilons[n]
                     error = abs(measurements[2][n] - expected_blended)
                     # self.progress(f"{n=} {error=}")
@@ -12026,6 +12287,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.FenceMargin,
              self.FenceUpload_MissionItem,
              self.AutoTuneSwitch,
+             self.AutoTuneAux,
              self.GPSGlitchLoiter,
              self.GPSGlitchLoiter2,
              self.GPSGlitchAuto,
@@ -12329,33 +12591,21 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
-    def turn_safety_x(self, value):
-        self.mav.mav.set_mode_send(
-            self.mav.target_system,
-            mavutil.mavlink.MAV_MODE_FLAG_DECODE_POSITION_SAFETY,
-            value)
-
-    def turn_safety_off(self):
-        self.turn_safety_x(0)
-
-    def turn_safety_on(self):
-        self.turn_safety_x(1)
-
     def SafetySwitch(self):
         '''test safety switch behaviour'''
         self.wait_ready_to_arm()
 
-        self.turn_safety_on()
+        self.set_safetyswitch_on()
         self.assert_prearm_failure("safety switch")
 
-        self.turn_safety_off()
+        self.set_safetyswitch_off()
         self.wait_ready_to_arm()
 
         self.takeoff(2, mode='LOITER')
-        self.turn_safety_on()
+        self.set_safetyswitch_on()
 
         self.wait_servo_channel_value(1, 0)
-        self.turn_safety_off()
+        self.set_safetyswitch_off()
 
         self.change_mode('LAND')
         self.wait_disarmed()
@@ -12794,6 +13044,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "AUTO_OPTIONS": 3,
         })
         self.set_rc(6, 2000)
+        self.reboot_sitl()
 
         self.upload_simple_relhome_mission([
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
@@ -12829,6 +13080,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "AUTO_OPTIONS": 3,
         })
         self.set_rc(6, 2000)
+        self.reboot_sitl()
 
         self.takeoff(mode='LOITER')
 
@@ -12848,6 +13100,67 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(2, 1500)
 
         self.do_RTL()
+
+    def DualTuningChannels(self):
+        '''check tuning channel options work independently'''
+        RC6_MIN = 1100    # yes, this is strange!
+        RC6_MAX = 1200    # yes, this is strange!
+        TUNE_MIN = 25      # cm/s
+        TUNE_MAX = 1000   # cm/s
+
+        RC7_MIN = 1000
+        RC7_MAX = 2000
+        TUNE2_MIN = 100  # cm/s
+        TUNE2_MAX = 500  # cm/s
+        self.set_parameters({
+            "RC6_OPTION": 219,  # RC6 used for tuning
+            "RC6_MIN": RC6_MIN,
+            "RC6_MAX": RC6_MAX,
+            "TUNE": 60,         # 60 is x/y loiter speed
+            "TUNE_MIN": TUNE_MIN,
+            "TUNE_MAX": TUNE_MAX,
+
+            "RC7_OPTION": 220,  # RC7 used for second param tuning
+            "RC7_MIN": RC7_MIN,
+            "RC7_MAX": RC7_MAX,
+            "TUNE2": 28,        # PSC_VELXY_I
+            "TUNE2_MIN":  TUNE2_MIN,
+            "TUNE2_MAX":  TUNE2_MAX,
+        })
+
+        self.reboot_sitl()
+
+        self.set_rc(6, RC6_MIN)
+        self.delay_sim_time(1)
+        self.assert_parameter_value("LOIT_SPEED", TUNE_MIN)
+
+        self.set_rc(6, RC6_MAX)
+        self.delay_sim_time(1)
+        self.assert_parameter_value("LOIT_SPEED", TUNE_MAX)
+
+        self.set_rc(6, RC6_MIN)
+        self.delay_sim_time(1)
+        self.assert_parameter_value("LOIT_SPEED", TUNE_MIN)
+
+        self.set_rc(6, int((RC6_MIN+RC6_MAX)/2))
+        self.delay_sim_time(1)
+        # note that this check is also used below ("RC6 is unaffected")
+        self.assert_parameter_value("LOIT_SPEED", int((TUNE_MIN+TUNE_MAX)/2), epsilon=1)
+
+        self.set_rc(7, RC7_MIN)
+        self.delay_sim_time(1)
+        self.assert_parameter_value("PSC_VELXY_I", TUNE2_MIN)
+
+        self.set_rc(7, RC7_MAX)
+        self.delay_sim_time(1)
+        self.assert_parameter_value("PSC_VELXY_I", TUNE2_MAX)
+
+        # make sure RC6 is unaffected:
+        self.assert_parameter_value("LOIT_SPEED", int((TUNE_MIN+TUNE_MAX)/2), epsilon=1)
+
+        self.set_rc(7, int((RC7_MIN+RC7_MAX)/2))
+        self.delay_sim_time(1)
+        self.assert_parameter_value("PSC_VELXY_I", int((TUNE2_MIN+TUNE2_MAX)/2), epsilon=1)
 
     def PILOT_THR_BHV(self):
         '''test the PILOT_THR_BHV parameter'''
@@ -13594,6 +13907,28 @@ RTL_ALT 111
         # Test done
         self.land_and_disarm()
 
+    def ScriptingFlyVelocity(self):
+        '''test flying a velocity vector using scripting'''
+
+        # enable scripting and install set-target-velocity script
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+        })
+        self.install_example_script_context('set-target-velocity.lua')
+        self.reboot_sitl()
+
+        # Should be allowed to enter from alt hold
+        self.change_mode("ALT_HOLD")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(6, 2000)
+
+        # Should return to previous mode after flipping
+        self.wait_mode("RTL", timeout=120)
+
+        # Test done
+        self.land_and_disarm()
+
     def RTLYaw(self):
         '''test that vehicle yaws to original heading on RTL'''
         # 0 is WP_YAW_BEHAVIOR_NONE
@@ -13665,6 +14000,40 @@ RTL_ALT 111
         self.assert_parameter_value("COMPASS_OFS_X", new_compass_ofs_x, epsilon=30)
         self.reboot_sitl()
         self.assert_parameter_value("COMPASS_OFS_X", new_compass_ofs_x, epsilon=30)
+
+    def RudderDisarmMidair(self):
+        '''check disarm behaviour mid-air'''
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.change_mode('STABILIZE')
+
+        # Set home current location, this gives a large home vs orgin difference
+        self.set_home(self.mav.location())
+
+        self.set_rc(4, 2000)
+        self.wait_armed()
+        self.set_rc(4, 1500)
+        self.set_rc(3, 2000)
+        self.wait_altitude(300, 20000, relative=True, timeout=10000)
+        self.hover()
+        self.set_rc(4, 1000)
+        self.delay_sim_time(11)
+        self.progress("Checking we are still armed")
+        self.assert_armed()
+
+        self.set_rc(3, 2000)
+        self.wait_altitude(300, 20000, relative=True)
+        self.set_rc(3, 1000)
+        self.set_rc(4, 1000)
+        self.delay_sim_time(11)
+        self.progress("Checking we disarm")
+        self.wait_disarmed(timeout=5)
+        self.set_rc(4, 1500)
+        self.arm_vehicle()
+        self.set_rc(3, 1600)
+        self.delay_sim_time(10)
+
+        self.do_RTL(timeout=600)
 
     def AHRSAutoTrim(self):
         '''calibrate AHRS trim using RC input'''
@@ -13795,6 +14164,30 @@ RTL_ALT 111
         self.change_mode('LOITER')
         self.do_RTL()
 
+    def ModeAllowsEntryWhenNoPilotInput(self):
+        '''test we can't enter modes when no RC input'''
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+            "FS_THR_ENABLE": 4,  # continue in auto
+        })
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_current_waypoint(2)
+        self.context_collect('STATUSTEXT')
+        self.set_rc(3, 200)
+        self.wait_statustext('Radio Failsafe', check_context=True)
+        self.send_cmd_do_set_mode('STABILIZE')
+        self.wait_statustext('in RC failsafe', check_context=True)
+        self.hover()
+        self.wait_statustext('Radio Failsafe Cleared', check_context=True)
+        self.do_RTL()
+
     def RCOverridesNoRCReceiver(self):
         '''test RC override timeout with no RC receiver present'''
         self.set_parameters({
@@ -13923,6 +14316,120 @@ RTL_ALT 111
         self.change_mode('LAND')
         self.wait_disarmed()
 
+    def PeriphMultiUARTTunnel(self):
+        '''test peripheral multi-uart tunneling'''
+
+        speedup = 1
+
+        self.progress("Building Periph")
+        periph_board = 'sitl_periph_can_to_serial'
+        periph_builddir = util.reltopdir('build-periph')
+        util.build_SITL(
+            'bin/AP_Periph',
+            board=periph_board,
+            clean=False,
+            configure=True,
+            debug=True,
+            extra_configure_args=[
+                '--out', periph_builddir,
+            ],
+            # extra_defines={
+            # },
+        )
+
+        binary_path = ""
+
+        self.progress("Starting Periph simulation")
+        binary_path = pathlib.Path(periph_builddir, periph_board, 'bin', 'AP_Periph')
+        periph_rundir = util.reltopdir('run-periph')
+        if not os.path.exists(periph_rundir):
+            os.mkdir(periph_rundir)
+        periph_exp = util.start_SITL(
+            binary_path,
+            cwd=periph_rundir,
+            stdout_prefix="periph",
+            gdb=self.gdb,
+            valgrind=self.valgrind,
+            customisations=[
+                '-I', str(1),
+                '--serial0', 'mcast:',
+                '--serial1', 'tcp:2',
+                '--serial2', 'tcp:3',
+            ],
+            param_defaults={
+                "SIM_SPEEDUP": speedup,
+            },
+        )
+        self.expect_list_add(periph_exp)
+
+        self.progress("Reconfiguring for multicast")
+        self.customise_SITL_commandline([
+            "--serial5=mcast:",
+        ],
+            model="octa-quad:@ROMFS/models/Callisto.json",
+            defaults_filepath=self.model_defaults_filepath('Callisto'),
+            wipe=True,
+        )
+
+        self.set_parameters({
+            'SERIAL5_PROTOCOL': 2,
+            "CAN_P1_DRIVER": 1,  # needed for multicast state!
+        })
+        self.reboot_sitl()
+        self.set_parameters({
+            "CAN_D1_UC_SER_EN": 1, # enable serial
+            "CAN_D1_UC_S1_IDX": 1,  # serial port number on CAN device
+            "CAN_D1_UC_S1_NOD": 125,  # FIXME: set this explicitly
+            "CAN_D1_UC_S1_PRO": 2,  # protocol to set on remote node
+
+            "CAN_D1_UC_S2_IDX": 2,  # serial port number on CAN device
+            "CAN_D1_UC_S2_NOD": 125,  # FIXME: set this explicitly
+            "CAN_D1_UC_S2_PRO": 2,  # protocol to set on remote node
+        })
+
+        self.reboot_sitl()
+
+        # must be done after the reboot:
+        self.set_parameters({
+            'SIM_SPEEDUP': speedup,
+        })
+
+        # uncomment this if you just want the test scenario set up for you:
+        # self.delay_sim_time(100000)
+
+        self.progress("Connect to the serial port on the peripheral, which should be talking mavlink")
+        self.drain_mav()
+        mav2 = mavutil.mavlink_connection(
+            "tcp:localhost:5772",
+            robust_parsing=True,
+            source_system=9,
+            source_component=9,
+        )
+        self.assert_receive_message("HEARTBEAT", mav=mav2, very_verbose=True, timeout=5)
+        self.drain_mav()
+
+        self.progress("Connect to the other serial port on the peripheral, which should also be talking mavlink")
+        self.drain_mav()
+        mav3 = mavutil.mavlink_connection(
+            "tcp:localhost:5773",
+            robust_parsing=True,
+            source_system=10,
+            source_component=10,
+        )
+        self.assert_receive_message("HEARTBEAT", mav=mav3, very_verbose=True, timeout=5)
+        self.drain_mav()
+
+        # make sure we continue to get heartbeats:
+        tstart = self.get_sim_time()
+        while True:
+            now = self.get_sim_time()
+            if now - tstart > 30:
+                break
+            self.assert_receive_message('HEARTBEAT', mav=mav2, verbose=2)
+            self.drain_mav()
+            self.assert_receive_message('HEARTBEAT', mav=mav3, verbose=2)
+            self.drain_mav()
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -13965,6 +14472,7 @@ RTL_ALT 111
             Test(self.DataFlashErase, attempts=8),
             self.Callisto,
             self.PerfInfo,
+            self.ModeAllowsEntryWhenNoPilotInput,
             self.Replay,
             self.FETtecESC,
             self.ProximitySensors,
@@ -14002,6 +14510,7 @@ RTL_ALT 111
             self.AHRSTrimLand,
             self.IBus,
             self.GuidedYawRate,
+            self.RudderDisarmMidair,
             self.NoArmWithoutMissionItems,
             self.DO_CHANGE_SPEED_in_guided,
             self.ArmSwitchAfterReboot,
@@ -14017,6 +14526,7 @@ RTL_ALT 111
             self.MAV_CMD_NAV_TAKEOFF,
             self.MAV_CMD_NAV_TAKEOFF_command_int,
             self.Ch6TuningWPSpeed,
+            self.DualTuningChannels,
             self.PILOT_THR_BHV,
             self.GPSForYawCompassLearn,
             self.CameraLogMessages,
@@ -14040,12 +14550,16 @@ RTL_ALT 111
             self.CommonOrigin,
             self.TestTetherStuck,
             self.ScriptingFlipMode,
+            self.ScriptingFlyVelocity,
+            self.EK3_EXT_NAV_vel_without_vert,
             self.CompassLearnCopyFromEKF,
             self.AHRSAutoTrim,
             self.Ch6TuningLoitMaxXYSpeed,
             self.TestEKF3CompassFailover,
             self.test_EKF3_option_disable_lane_switch,
-            self.PLDNoParameters
+            self.PLDNoParameters,
+            self.PeriphMultiUARTTunnel,
+            self.EKF3SRCPerCore,
         ])
         return ret
 

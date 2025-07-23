@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#if AP_ADSB_AVOIDANCE_ENABLED
+
 /*
  * control_avoid.cpp - init and run calls for AP_Avoidance's AVOID flight mode
  *
@@ -36,3 +38,5 @@ void ModeAvoidADSB::run()
     //       position and velocity requests will be ignored while the vehicle is not in guided mode
     ModeGuided::run();
 }
+
+#endif  // AP_ADSB_AVOIDANCE_ENABLED

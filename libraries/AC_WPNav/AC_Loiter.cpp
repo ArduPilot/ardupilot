@@ -123,8 +123,8 @@ void AC_Loiter::init_target()
 
     // initialise predicted acceleration and angles from the position controller
     _predicted_accel_ne_cmss = _pos_control.get_accel_target_NEU_cmss().xy();
-    _predicted_euler_angle_rad.x = cd_to_rad(_pos_control.get_roll_cd());
-    _predicted_euler_angle_rad.y = cd_to_rad(_pos_control.get_pitch_cd());
+    _predicted_euler_angle_rad.x = _pos_control.get_roll_rad();
+    _predicted_euler_angle_rad.y = _pos_control.get_pitch_rad();
     _brake_accel_cmss = 0.0f;
 }
 
@@ -134,18 +134,21 @@ void AC_Loiter::soften_for_landing()
     _pos_control.soften_for_landing_NE();
 }
 
-/// set pilot desired acceleration in centi-degrees
-//   dt should be the time (in seconds) since the last call to this function
+/// set pilot desired acceleration in centidegrees
 void AC_Loiter::set_pilot_desired_acceleration_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd)
 {
-    const float dt = _attitude_control.get_dt();
-    // Convert from centidegrees on public interface to radians
-    const float euler_roll_angle_rad = cd_to_rad(euler_roll_angle_cd);
-    const float euler_pitch_angle_rad = cd_to_rad(euler_pitch_angle_cd);
+    set_pilot_desired_acceleration_rad(cd_to_rad(euler_roll_angle_cd), cd_to_rad(euler_pitch_angle_cd));
+}
+
+/// set pilot desired acceleration in radians
+//   dt should be the time (in seconds) since the last call to this function
+void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad)
+{
+    const float dt = _attitude_control.get_dt_s();
 
     // convert our desired attitude to an acceleration vector assuming we are not accelerating vertically
     const Vector3f desired_euler_rad {euler_roll_angle_rad, euler_pitch_angle_rad, _ahrs.yaw};
-    const Vector3f desired_accel_NEU_cmss = _pos_control.lean_angles_to_accel_NEU_cmss(desired_euler_rad);
+    const Vector3f desired_accel_NEU_cmss = _pos_control.lean_angles_rad_to_accel_NEU_cmss(desired_euler_rad);
 
     _desired_accel_ne_cmss.x = desired_accel_NEU_cmss.x;
     _desired_accel_ne_cmss.y = desired_accel_NEU_cmss.y;
@@ -161,7 +164,7 @@ void AC_Loiter::set_pilot_desired_acceleration_cd(float euler_roll_angle_cd, flo
 
     // convert our predicted attitude to an acceleration vector assuming we are not accelerating vertically
     const Vector3f predicted_euler_rad {_predicted_euler_angle_rad.x, _predicted_euler_angle_rad.y, _ahrs.yaw};
-    const Vector3f predicted_accel = _pos_control.lean_angles_to_accel_NEU_cmss(predicted_euler_rad);
+    const Vector3f predicted_accel = _pos_control.lean_angles_rad_to_accel_NEU_cmss(predicted_euler_rad);
 
     _predicted_accel_ne_cmss.x = predicted_accel.x;
     _predicted_accel_ne_cmss.y = predicted_accel.y;
@@ -176,12 +179,16 @@ void AC_Loiter::get_stopping_point_NE_cm(Vector2f& stopping_point_ne_cm) const
 }
 
 /// get maximum lean angle when using loiter
-float AC_Loiter::get_angle_max_cd() const
+float AC_Loiter::get_angle_max_rad() const
 {
     if (!is_positive(_angle_max_deg)) {
-        return MIN(_attitude_control.lean_angle_max_cd(), _pos_control.get_lean_angle_max_cd()) * (2.0f / 3.0f);
+        return MIN(_attitude_control.lean_angle_max_rad(), _pos_control.get_lean_angle_max_rad()) * (2.0f / 3.0f);
     }
-    return MIN(_angle_max_deg*100.0f, _pos_control.get_lean_angle_max_cd());
+    return MIN(radians(_angle_max_deg), _pos_control.get_lean_angle_max_rad());
+}
+float AC_Loiter::get_angle_max_cd() const
+{
+    return rad_to_cd(get_angle_max_rad());
 }
 
 /// run the loiter controller
@@ -201,7 +208,7 @@ void AC_Loiter::set_speed_max_NE_cms(float speed_max_ne_cms)
 void AC_Loiter::sanity_check_params()
 {
     _speed_max_ne_cms.set(MAX(_speed_max_ne_cms, LOITER_SPEED_MIN));
-    _accel_max_ne_cmss.set(MIN(_accel_max_ne_cmss, GRAVITY_MSS * 100.0f * tanf(cd_to_rad(_attitude_control.lean_angle_max_cd()))));
+    _accel_max_ne_cmss.set(MIN(_accel_max_ne_cmss, GRAVITY_MSS * 100.0f * tanf(_attitude_control.lean_angle_max_rad())));
 }
 
 /// calc_desired_velocity - updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance
@@ -211,14 +218,14 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
     float ekfGndSpdLimit, ahrsControlScaleXY;
     AP::ahrs().getControlLimits(ekfGndSpdLimit, ahrsControlScaleXY);
 
-    const float dt = _pos_control.get_dt();
+    const float dt = _pos_control.get_dt_s();
 
     // calculate a loiter speed limit which is the minimum of the value set by the LOITER_SPEED
     // parameter and the value set by the EKF to observe optical flow limits
     float gnd_speed_limit_cms = MIN(_speed_max_ne_cms, ekfGndSpdLimit * 100.0f);
     gnd_speed_limit_cms = MAX(gnd_speed_limit_cms, LOITER_SPEED_MIN);
 
-    float pilot_acceleration_max = angle_to_accel(get_angle_max_cd() * 0.01) * 100;
+    float pilot_acceleration_max = angle_rad_to_accel_mss(get_angle_max_rad()) * 100;
 
     // range check dt
     if (is_negative(dt)) {
@@ -242,13 +249,13 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
         // calculate a braking acceleration if sticks are at zero
         float loiter_brake_accel = 0.0f;
         if (_desired_accel_ne_cmss.is_zero()) {
-            if ((AP_HAL::millis() - _brake_timer) > _brake_delay_s * 1000.0f) {
+            if ((AP_HAL::millis() - _brake_timer_ms) > _brake_delay_s * 1000.0f) {
                 float brake_gain = _pos_control.get_vel_NE_pid().kP() * 0.5f;
                 loiter_brake_accel = constrain_float(sqrt_controller(desired_speed, brake_gain, _brake_jerk_max_cmsss, dt), 0.0f, _brake_accel_max_cmss);
             }
         } else {
             loiter_brake_accel = 0.0f;
-            _brake_timer = AP_HAL::millis();
+            _brake_timer_ms = AP_HAL::millis();
         }
         _brake_accel_cmss += constrain_float(loiter_brake_accel - _brake_accel_cmss, -_brake_jerk_max_cmsss * dt, _brake_jerk_max_cmsss * dt);
         loiter_accel_brake = desired_vel_norm * _brake_accel_cmss;

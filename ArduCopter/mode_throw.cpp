@@ -158,7 +158,7 @@ void ModeThrow::run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // demand a level roll/pitch attitude with zero yaw rate
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(0.0f, 0.0f, 0.0f);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(0.0f, 0.0f, 0.0f);
 
         // output 50% throttle and turn off angle boost to maximise righting moment
         attitude_control->set_throttle_out(0.5f, false, g.throttle_filt);
@@ -171,7 +171,7 @@ void ModeThrow::run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(0.0f, 0.0f, 0.0f);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(0.0f, 0.0f, 0.0f);
 
         // call height controller
         pos_control->set_pos_target_U_from_climb_rate_cm(0.0f);
@@ -191,7 +191,7 @@ void ModeThrow::run()
         pos_control->update_NE_controller();
 
         // call attitude controller
-        attitude_control->input_thrust_vector_rate_heading_cds(pos_control->get_thrust_vector(), 0.0f);
+        attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), 0.0f);
 
         // call height controller
         pos_control->set_pos_target_U_from_climb_rate_cm(0.0f);

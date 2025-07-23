@@ -40,6 +40,15 @@ local BTAG_ENABLE = bind_add_param('ENABLE',  1, 1)
 --]]
 local BTAG_MAX_CYCLES = bind_add_param('MAX_CYCLES',  2, 400)
 
+--[[
+  // @Param: BTAG_CUR_CYCLES
+  // @DisplayName: current battery cycles
+  // @Description: this is the highest value for battery cycles for all connected batteries
+  // @Range: 0 10000
+  // @User: Advanced
+--]]
+local BTAG_CUR_CYCLES = bind_add_param('CUR_CYCLES',  3, 0)
+
 if BTAG_ENABLE:get() == 0 then
     return
 end
@@ -56,6 +65,14 @@ local auth_id = arming:get_aux_auth_id()
 
 local highest_cycles = 0
 
+local node_cycles = {}
+
+local gcs_connect_time = nil
+local sent_report = false
+
+-- report battery tags to GCS at 30s after first GCS connection
+local GCS_REPORT_TIME_S = 30
+
 --[[
     check for BatteryTag messages
 --]]
@@ -69,7 +86,14 @@ local function check_batterytag()
         return
     end
 
-    highest_cycles = math.max(num_cycles, highest_cycles)
+    if num_cycles > highest_cycles then
+        highest_cycles = num_cycles
+        BTAG_CUR_CYCLES:set_and_save(highest_cycles)
+    end
+    if not node_cycles[nodeid] then
+       gcs:send_text(MAV_SEVERITY.INFO, string.format("BatteryTag: Node %d, Cycles %d", nodeid, num_cycles))
+    end
+    node_cycles[nodeid] = num_cycles
 
     -- log battery information
     logger:write("BTAG",
@@ -116,10 +140,31 @@ local function check_globaltime()
     globaltime_handle:broadcast(payload7)
 end
 
+--[[
+   update GCS connection status
+--]]
+local function check_GCS()
+   if not gcs_connect_time then
+      local last_seen = gcs:last_seen()
+      if last_seen ~= 0 then
+         gcs_connect_time = last_seen
+      end
+   elseif not sent_report and #node_cycles and
+      millis() - gcs_connect_time >= GCS_REPORT_TIME_S*1000
+   then
+      -- report battery tags at GCS_REPORT_TIME_S seconds
+      sent_report = true
+      for nodeid, cycles in pairs(node_cycles) do
+         gcs:send_text(MAV_SEVERITY.INFO, string.format("BatteryTag: Node %d, Cycles %d", nodeid, cycles))
+      end
+   end
+end
+
 local function update()
     if BTAG_ENABLE:get() ~= 0 then
         check_batterytag()
         check_globaltime()
+        check_GCS()
     end
     return update, 200
 end

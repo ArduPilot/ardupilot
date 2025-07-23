@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 script to determine what features have been built into an ArduPilot binary
@@ -98,6 +98,7 @@ class ExtractFeatures(object):
 
             ('AP_BARO_{type}_ENABLED', r'AP_Baro_(?P<type>.*)::(_calculate|update)\b',),
 
+            ('AP_MOTORS_TRI_ENABLED', 'AP_MotorsTri::set_frame_class_and_type'),
             ('AP_MOTORS_FRAME_{type}_ENABLED', r'AP_MotorsMatrix::setup_(?P<type>.*)_matrix\b',),
 
             ('HAL_MSP_ENABLED', r'AP_MSP::init\b',),
@@ -249,6 +250,7 @@ class ExtractFeatures(object):
             ('AP_CAN_SLCAN_ENABLED', 'SLCAN::CANIface::var_info'),
             ('AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT', 'AC_PolyFence_loader::handle_msg_fetch_fence_point'),
             ('AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED', 'GCS_MAVLINK::handle_common_rally_message'),
+            ('AP_ADSB_AVOIDANCE_ENABLED', 'AP_Avoidance::init'),
 
             ('AP_SDCARD_STORAGE_ENABLED', 'StorageAccess::attach_file'),
             ('AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED', 'GCS_MAVLINK::handle_send_autopilot_version'),
@@ -298,6 +300,24 @@ class ExtractFeatures(object):
             ('AP_CAN_LOGGING_ENABLED', r'AP_CANManager::can_logging_callback'),
             ('AP_PLANE_SYSTEMID_ENABLED', r'AP_SystemID::start'),
             ('AP_DDS_ENABLED', r'AP_DDS_Client::start'),
+            ('AP_RC_TRANSMITTER_TUNING_ENABLED',  r'Copter::tuning'),
+
+            ('AP_PERIPH_DEVICE_TEMPERATURE_ENABLED', r'AP_Periph_FW::temperature_sensor_update'),
+            ('AP_PERIPH_MSP_ENABLED', r'AP_Periph_FW::msp_init'),
+            ('AP_PERIPH_NOTIFY_ENABLED', r'AP_Periph_FW::handle_notify_state'),
+            ('AP_PERIPH_SERIAL_OPTIONS_ENABLED', r'SerialOptions::init'),
+            ('AP_PERIPH_BATTERY_ENABLED', r'AP_Periph_FW::can_battery_update'),
+            ('AP_PERIPH_RELAY_ENABLED', r'AP_Periph_FW::handle_hardpoint_command'),
+            ('AP_PERIPH_BATTERY_BALANCE_ENABLED', r'AP_Periph_FW::batt_balance_update'),
+            ('AP_PERIPH_BATTERY_TAG_ENABLED', r'BatteryTag::update'),
+            ('AP_PERIPH_PROXIMITY_ENABLED', r'AP_Periph_FW::can_proximity_update'),
+            ('AP_PERIPH_GPS_ENABLED', r'AP_Periph_FW::can_gps_update'),
+            ('AP_PERIPH_ADSB_ENABLED', r'AP_Periph_FW::adsb_update'),
+            ('AP_PERIPH_MAG_ENABLED', r'AP_Periph_FW::can_mag_update'),
+            ('AP_PERIPH_BARO_ENABLED', r'AP_Periph_FW::can_baro_update'),
+            ('AP_PERIPH_RANGEFINDER_ENABLED', r'AP_Periph_FW::can_rangefinder_update'),
+            ('AP_PERIPH_IMU_ENABLED', r'AP_Periph_FW::can_imu_update'),
+            ('AP_PERIPH_RC_OUT_ENABLED', r'AP_Periph_FW::sim_update_actuator'),
         ]
 
     def progress(self, msg):
@@ -311,6 +331,7 @@ class ExtractFeatures(object):
         whitelist = frozenset([
             'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF',  # this define changes single method body, hard to detect?
             'AP_PLANE_BLACKBOX_LOGGING', # no visible signature
+            'AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED',  # no visible signature
         ])
         for option in build_options.BUILD_OPTIONS:
             if option.define in whitelist:

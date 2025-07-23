@@ -221,7 +221,7 @@ function update()
   pitch_speed = math.max(pitch_speed_target, pitch_speed - roll_pitch_speed_chg_max, -roll_pitch_speed_max)
 
   -- convert targets from body to earth frame and send to guided mode velocity controller
-  local yaw_rad = ahrs:get_yaw()
+  local yaw_rad = ahrs:get_yaw_rad()
   yaw_cos = math.cos(yaw_rad)
   yaw_sin = math.sin(yaw_rad)
   local target_vel_ned = Vector3f()

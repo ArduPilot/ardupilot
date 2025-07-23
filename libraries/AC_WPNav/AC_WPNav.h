@@ -43,9 +43,9 @@ public:
     // return terrain following altitude margin.  vehicle will stop if distance from target altitude is larger than this margin
     float get_terrain_margin_m() const { return MAX(_terrain_margin_m, 0.1); }
 
-    // convert location to vector from ekf origin.  terrain_alt is set to true if resulting vector's z-axis should be treated as alt-above-terrain
+    // convert location to vector from ekf origin.  is_terrain_alt is set to true if resulting vector's z-axis should be treated as alt-above-terrain
     //      returns false if conversion failed (likely because terrain data was not available)
-    bool get_vector_NEU_cm(const Location &loc, Vector3f &pos_from_origin_NEU_cm, bool &terrain_alt);
+    bool get_vector_NEU_cm(const Location &loc, Vector3f &pos_from_origin_NEU_cm, bool &is_terrain_alt);
 
     ///
     /// waypoint controller
@@ -98,7 +98,7 @@ public:
     const Vector3f &get_wp_origin_NEU_cm() const { return _origin_neu_cm; }
 
     /// true if origin.z and destination.z are alt-above-terrain, false if alt-above-ekf-origin
-    bool origin_and_destination_are_terrain_alt() const { return _terrain_alt; }
+    bool origin_and_destination_are_terrain_alt() const { return _is_terrain_alt; }
 
     /// set_wp_destination_NEU_cm waypoint using location class
     ///     provide the next_destination if known
@@ -115,14 +115,14 @@ public:
     virtual bool get_oa_wp_destination(Location& destination) const { return get_wp_destination_loc(destination); }
 
     /// set_wp_destination_NEU_cm waypoint using position vector (distance from ekf origin in cm)
-    ///     terrain_alt should be true if destination.z is a desired altitude above terrain
-    virtual bool set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, bool terrain_alt = false);
-    bool set_wp_destination_next_NEU_cm(const Vector3f& destination_neu_cm, bool terrain_alt = false);
+    ///     is_terrain_alt should be true if destination.z is a desired altitude above terrain
+    virtual bool set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt = false);
+    bool set_wp_destination_next_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt = false);
 
     /// set waypoint destination using NED position vector from ekf origin in meters
     ///     provide next_destination_NED if known
-    bool set_wp_destination_NED_cm(const Vector3f& destination_NED_cm);
-    bool set_wp_destination_next_NED_cm(const Vector3f& destination_NED_cm);
+    bool set_wp_destination_NED_m(const Vector3f& destination_NED_m);
+    bool set_wp_destination_next_NED_m(const Vector3f& destination_NED_m);
 
     /// shifts the origin and destination horizontally to the current position
     ///     used to reset the track when taking off without horizontal position control
@@ -144,6 +144,9 @@ public:
 
     /// get_bearing_to_destination - get bearing to next waypoint in centi-degrees
     virtual int32_t get_wp_bearing_to_destination_cd() const;
+
+    /// get_bearing_to_destination - get bearing to next waypoint in radians
+    virtual float get_wp_bearing_to_destination_rad() const;
 
     /// reached_destination - true when we have come within RADIUS cm of the waypoint
     virtual bool reached_wp_destination() const { return _flags.reached_destination; }
@@ -184,32 +187,46 @@ public:
     bool set_spline_destination_next_loc(const Location& next_destination, const Location& next_next_destination, bool next_next_is_spline);
 
     /// set_spline_destination_NEU_cm waypoint using position vector (distance from ekf origin in cm)
-    ///     terrain_alt should be true if destination.z is a desired altitude above terrain (false if its desired altitudes above ekf origin)
+    ///     is_terrain_alt should be true if destination.z is a desired altitude above terrain (false if its desired altitudes above ekf origin)
     ///     next_destination is the next segment's destination
-    ///     next_terrain_alt should be true if next_destination.z is a desired altitude above terrain (false if its desired altitudes above ekf origin)
+    ///     next_is_terrain_alt should be true if next_destination.z is a desired altitude above terrain (false if its desired altitudes above ekf origin)
     ///     next_destination.z must be in the same "frame" as destination.z (i.e. if destination is a alt-above-terrain, next_destination must be too)
     ///     next_is_spline should be true if next_destination is a spline segment
-    bool set_spline_destination_NEU_cm(const Vector3f& destination_neu_cm, bool terrain_alt, const Vector3f& next_destination_neu_cm, bool next_terrain_alt, bool next_is_spline);
+    bool set_spline_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt, const Vector3f& next_destination_neu_cm, bool next_is_terrain_alt, bool next_is_spline);
 
     /// set next destination (e.g. the one after the current destination) as an offset (in cm, NEU frame) from the EKF origin
-    ///     next_terrain_alt should be true if next_destination.z is a desired altitude above terrain (false if its desired altitudes above ekf origin)
+    ///     next_is_terrain_alt should be true if next_destination.z is a desired altitude above terrain (false if its desired altitudes above ekf origin)
     ///     next_next_destination is the next segment's destination
-    ///     next_next_terrain_alt should be true if next_next_destination.z is a desired altitude above terrain (false if it is desired altitude above ekf origin)
+    ///     next_next_is_terrain_alt should be true if next_next_destination.z is a desired altitude above terrain (false if it is desired altitude above ekf origin)
     ///     next_next_destination.z must be in the same "frame" as destination.z (i.e. if next_destination is a alt-above-terrain, next_next_destination must be too)
     ///     next_next_is_spline should be true if next_next_destination is a spline segment
-    bool set_spline_destination_next_NEU_cm(const Vector3f& next_destination_neu_cm, bool next_terrain_alt, const Vector3f& next_next_destination_neu_cm, bool next_next_terrain_alt, bool next_next_is_spline);
+    bool set_spline_destination_next_NEU_cm(const Vector3f& next_destination_neu_cm, bool next_is_terrain_alt, const Vector3f& next_next_destination_neu_cm, bool next_next_is_terrain_alt, bool next_next_is_spline);
 
     ///
     /// shared methods
     ///
 
-    /// get desired roll, pitch which should be fed into stabilize controllers
-    float get_roll() const { return _pos_control.get_roll_cd(); }
-    float get_pitch() const { return _pos_control.get_pitch_cd(); }
+    /// Returns the desired roll angle in radians from the position controller.
+    float get_roll_rad() const { return _pos_control.get_roll_rad(); }
+
+    /// Returns the desired pitch angle in radians from the position controller.
+    float get_pitch_rad() const { return _pos_control.get_pitch_rad(); }
+
+    /// Returns the desired yaw target in radians from the position controller.
+    float get_yaw_rad() const { return _pos_control.get_yaw_rad(); }
+
+    /// Returns the desired thrust direction vector for tilt control from the position controller.
     Vector3f get_thrust_vector() const { return _pos_control.get_thrust_vector(); }
 
-    // get target yaw in centi-degrees
+    /// Returns the desired roll angle in centidegrees from the position controller.
+    float get_roll() const { return _pos_control.get_roll_cd(); }
+
+    /// Returns the desired pitch angle in centidegrees from the position controller.
+    float get_pitch() const { return _pos_control.get_pitch_cd(); }
+
+    /// Returns the desired yaw target in centidegrees from the position controller.
     float get_yaw() const { return _pos_control.get_yaw_cd(); }
+
     /// advance_wp_target_along_track - move target location along track from origin to destination
     bool advance_wp_target_along_track(float dt);
 
@@ -277,13 +294,13 @@ protected:
     Vector3f    _origin_neu_cm;             // starting point of trip to next waypoint in cm from ekf origin
     Vector3f    _destination_neu_cm;        // target destination in cm from ekf origin
     Vector3f    _next_destination_neu_cm;   // next target destination in cm from ekf origin
-    float       _track_scalar_dt;           // time compression multiplier to slow the progress along the track
+    float       _track_dt_scalar;           // time compression multiplier to slow the progress along the track
     float       _offset_vel_cms;            // horizontal velocity reference used to slow the aircraft for pause and to ensure the aircraft can maintain height above terrain
     float       _offset_accel_cmss;         // horizontal acceleration reference used to slow the aircraft for pause and to ensure the aircraft can maintain height above terrain
     bool        _paused;                    // flag for pausing waypoint controller
 
     // terrain following variables
-    bool        _terrain_alt;                   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin
+    bool        _is_terrain_alt;                // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin
     bool        _rangefinder_available;         // true if rangefinder is enabled (user switch can turn this true/false)
     AP_Int8     _rangefinder_use;               // parameter that specifies if the range finder should be used for terrain following commands
     bool        _rangefinder_healthy;           // true if rangefinder distance is healthy (i.e. between min and maximum)

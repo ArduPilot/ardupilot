@@ -209,7 +209,7 @@ bool AP_PitchController::is_underspeed(const float aspeed) const
 float AP_PitchController::_get_coordination_rate_offset(const float &aspeed, bool &inverted) const
 {
     float rate_offset;
-    float bank_angle = AP::ahrs().get_roll();
+    float bank_angle = AP::ahrs().get_roll_rad();
 
     // limit bank angle between +- 80 deg if right way up
     if (fabsf(bank_angle) < radians(90))	{
@@ -228,7 +228,7 @@ float AP_PitchController::_get_coordination_rate_offset(const float &aspeed, boo
         // don't do turn coordination handling when at very high pitch angles
         rate_offset = 0;
     } else {
-        rate_offset = cosf(_ahrs.get_pitch())*fabsf(degrees((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()), MAX(aparm.airspeed_min, 1))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
+        rate_offset = cosf(_ahrs.get_pitch_rad())*fabsf(degrees((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()), MAX(aparm.airspeed_min, 1))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
     }
     if (inverted) {
         rate_offset = -rate_offset;

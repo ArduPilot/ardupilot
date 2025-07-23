@@ -140,9 +140,6 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #if HAL_LOGGING_ENABLED
     SCHED_TASK_CLASS(AP_Scheduler,        &sub.scheduler,    update_logging,     0.1,  75,  63),
 #endif
-#if AP_RPM_ENABLED
-    SCHED_TASK_CLASS(AP_RPM,              &sub.rpm_sensor,   update,              10, 200,  66),
-#endif
     SCHED_TASK(terrain_update,        10,    100,  72),
 #if AP_STATS_ENABLED
     SCHED_TASK(stats_update,           1,    200,  76),
@@ -179,9 +176,9 @@ constexpr int8_t Sub::_failsafe_priorities[5];
 void Sub::run_rate_controller()
 {
     const float last_loop_time_s = AP::scheduler().get_last_loop_time_s();
-    motors.set_dt(last_loop_time_s);
-    attitude_control.set_dt(last_loop_time_s);
-    pos_control.set_dt(last_loop_time_s);
+    motors.set_dt_s(last_loop_time_s);
+    attitude_control.set_dt_s(last_loop_time_s);
+    pos_control.set_dt_s(last_loop_time_s);
 
     //don't run rate controller in manual or motordetection modes
     if (control_mode != Mode::Number::MANUAL && control_mode != Mode::Number::MOTOR_DETECT) {
@@ -204,6 +201,7 @@ void Sub::fifty_hz_loop()
 #if !AP_SUB_RC_ENABLED
     rc().read_input();
 #endif
+    g2.actuators.update_actuators();
 }
 
 // update_batt_compass - read battery and compass

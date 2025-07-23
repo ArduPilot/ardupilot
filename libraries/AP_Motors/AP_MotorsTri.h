@@ -2,6 +2,10 @@
 /// @brief	Motor control class for Tricopters
 #pragma once
 
+#include "AP_Motors_config.h"
+
+#if AP_MOTORS_TRI_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include "AP_MotorsMulticopter.h"
@@ -83,3 +87,5 @@ protected:
     bool _pitch_reversed;
     bool _have_tail_servo;
 };
+
+#endif  // AP_MOTORS_TRI_ENABLED

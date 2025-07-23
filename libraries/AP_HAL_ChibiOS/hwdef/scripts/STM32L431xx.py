@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+# flake8: noqa
 '''
 these tables are generated from the STM32 datasheet stm32l431rc.pdf
 '''

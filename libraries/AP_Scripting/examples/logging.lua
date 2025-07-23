@@ -40,9 +40,9 @@ end
 function update()
 
   -- get some interesting data
-  interesting_data[roll] = math.deg(ahrs:get_roll())
-  interesting_data[pitch] = math.deg(ahrs:get_pitch())
-  interesting_data[yaw] = math.deg(ahrs:get_yaw())
+  interesting_data[roll] = math.deg(ahrs:get_roll_rad())
+  interesting_data[pitch] = math.deg(ahrs:get_pitch_rad())
+  interesting_data[yaw] = math.deg(ahrs:get_yaw_rad())
 
   -- write to then new file the SD card
   write_to_file()

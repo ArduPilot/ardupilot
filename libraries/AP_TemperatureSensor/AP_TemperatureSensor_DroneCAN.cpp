@@ -35,6 +35,10 @@ const AP_Param::GroupInfo AP_TemperatureSensor_DroneCAN::var_info[] = {
     // @Range: 0 65535
     AP_GROUPINFO("MSG_ID", 1, AP_TemperatureSensor_DroneCAN, _ID, 0),
 
+    // CHECK/UPDATE INDEX TABLE IN AP_TemperatureSensor_Backend.cpp WHEN CHANGING OR ADDING PARAMETERS
+    // MSG_ID here clashes with pin in the analog backed,
+    // but because there different types (AP_Int8 vs AP_Int32) we get away with it.
+
     AP_GROUPEND
 };
 

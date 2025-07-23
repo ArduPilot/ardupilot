@@ -11,7 +11,7 @@ STORAGE_FLASH_PAGE 23
 define HAL_STORAGE_SIZE 800
 
 # board ID. See Tools/AP_Bootloader/board_types.txt
-APJ_BOARD_ID 1000
+APJ_BOARD_ID AP_HW_F103_PERIPH
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -102,8 +102,6 @@ I2C_ORDER I2C1
 define HAL_I2C_CLEAR_ON_TIMEOUT 0
 
 define HAL_DEVICE_THREAD_STACK 256
-
-define AP_PARAM_MAX_EMBEDDED_PARAM 0
 
 define HAL_I2C_INTERNAL_MASK 0
 

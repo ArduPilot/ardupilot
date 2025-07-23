@@ -272,8 +272,8 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 #if HAL_HAVE_SERIAL1_PARAMS
     // @Param: 1_OPTIONS
     // @DisplayName: Telem1 options
-    // @Description: Control over UART options. The InvertRX option controls invert of the receive pin. The InvertTX option controls invert of the transmit pin. The HalfDuplex option controls half-duplex (onewire) mode, where both transmit and receive is done on the transmit wire. The Swap option allows the RX and TX pins to be swapped on STM32F7 based boards.
-    // @Bitmask: 0:InvertRX, 1:InvertTX, 2:HalfDuplex, 3:SwapTXRX, 4: RX_PullDown, 5: RX_PullUp, 6: TX_PullDown, 7: TX_PullUp, 8: RX_NoDMA, 9: TX_NoDMA, 10: Don't forward mavlink to/from, 11: DisableFIFO, 12: Ignore Streamrate
+    // @Description: Control over UART options. The InvertRX option controls invert of the receive pin. The InvertTX option controls invert of the transmit pin. The HalfDuplex option controls half-duplex (onewire) mode, where both transmit and receive is done on the transmit wire. The Swap option allows the RX and TX pins to be swapped on STM32F7 based boards.  NOTE that two bits have moved from this parameter into MAVn_OPTIONS!
+    // @Bitmask: 0:InvertRX, 1:InvertTX, 2:HalfDuplex, 3:SwapTXRX, 4: RX_PullDown, 5: RX_PullUp, 6: TX_PullDown, 7: TX_PullUp, 8: RX_NoDMA, 9: TX_NoDMA, 10: Don't forward mavlink to/from (moved to MAVn_OPTIONS >4.7), 11: DisableFIFO, 12: Ignore Streamrate (moved to MAVn_OPTIONS >4.7)
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("1_OPTIONS",  14, AP_SerialManager, state[1].options, DEFAULT_SERIAL1_OPTIONS),
@@ -323,15 +323,15 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 
     // @Param: _PASS2
     // @DisplayName: Serial passthru second port
-    // @Description: This sets one side of pass-through between two serial ports. Once both sides are set then all data received on either port will be passed to the other port
+    // @Description: This sets one side of pass-through between two serial ports. Once both sides are set then all data received on either port will be passed to the other port. This parameter is normally reset to -1 on reboot, disabling passthrough. If SERIAL_PASSTIMO is set to -1 then it is not reset on reboot.
     // @Values: -1:Disabled,0:Serial0,1:Serial1,2:Serial2,3:Serial3,4:Serial4,5:Serial5,6:Serial6
     // @User: Advanced
     AP_GROUPINFO("_PASS2",  21, AP_SerialManager, passthru_port2, -1),
 
     // @Param: _PASSTIMO
     // @DisplayName: Serial passthru timeout
-    // @Description: This sets a timeout for serial pass-through in seconds. When the pass-through is enabled by setting the SERIAL_PASS1 and SERIAL_PASS2 parameters then it remains in effect until no data comes from the first port for SERIAL_PASSTIMO seconds. This allows the port to revent to its normal usage (such as MAVLink connection to a GCS) when it is no longer needed. A value of 0 means no timeout.
-    // @Range: 0 120
+    // @Description: This sets a timeout for serial pass-through in seconds. When the pass-through is enabled by setting the SERIAL_PASS1 and SERIAL_PASS2 parameters then it remains in effect until no data comes from the first port for SERIAL_PASSTIMO seconds. This allows the port to revent to its normal usage (such as MAVLink connection to a GCS) when it is no longer needed. A value of 0 means no timeout. A value of -1 means no timeout and the SERIAL_PASS2 parameter is not reset on reboot.
+    // @Range: -1 120
     // @Units: s
     // @User: Advanced
     AP_GROUPINFO("_PASSTIMO",  22, AP_SerialManager, passthru_timeout, 15),
@@ -424,8 +424,12 @@ void AP_SerialManager::init_console()
 // init - // init - initialise serial ports
 void AP_SerialManager::init()
 {
-    // always reset passthru port2 on boot
-    passthru_port2.set_and_save_ifchanged(-1);
+    convert_parameters();
+
+    // reset passthru port2 on boot if timeout is not -1
+    if (passthru_timeout != -1) {
+        passthru_port2.set_and_save_ifchanged(-1);
+    }
 
 #ifdef HAL_OTG1_CONFIG
     /*
@@ -572,9 +576,6 @@ void AP_SerialManager::init()
 #endif
 #if AP_NETWORKING_BACKEND_PPP
                 case SerialProtocol_PPP:
-                    uart->begin(state[i].baudrate(),
-                                         AP_SERIALMANAGER_PPP_BUFSIZE_RX,
-                                         AP_SERIALMANAGER_PPP_BUFSIZE_TX);
                     break;
 #endif
                 case SerialProtocol_IOMCU:
@@ -587,6 +588,12 @@ void AP_SerialManager::init()
     }
 }
 
+void AP_SerialManager::convert_parameters()
+{
+    for (auto &_state : state) {
+        _state.options.convert_parameter_width(AP_PARAM_INT16);
+    }
+}
 
 const AP_SerialManager::UARTState *AP_SerialManager::find_protocol_instance(enum SerialProtocol protocol, uint8_t instance) const
 {
@@ -830,6 +837,26 @@ void AP_SerialManager::set_protocol_and_baud(uint8_t sernum, enum SerialProtocol
         state[sernum].protocol.set_and_default(protocol);
         state[sernum].baud.set_and_default(baudrate);
     }
+}
+bool AP_SerialManager::pre_arm_checks(char *failure_msg, const uint8_t failure_msg_len)
+{
+    // PARAMETER_CONVERSION - Added May 2028 for ArduPilot-4.7
+    // ArduPilot 4.7 pre-arm fails if either bit is set when conversion should have nuked them
+    // ArduPilot 4.8 pre-arm fails if either bit is set when conversion should have nuked them
+    // ArduPilot 4.9 pre-arm fails if either bit is set when conversion should have nuked them
+    // ArduPilot 4.9++ removes the pre-arm failure
+    for (uint8_t i=0; i<ARRAY_SIZE(state); i++) {
+        const auto &_state = state[i];
+        if (_state.options & AP_HAL::UARTDriver::Option::OPTION_MAVLINK_NO_FORWARD_old) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "SERIAL%u_OPTIONS bit 10 ('no forward mavlink') must not be set; use MAVn_OPTIONS bit 1 instead", unsigned(i));
+            return false;
+        }
+        if (_state.options & AP_HAL::UARTDriver::Option::OPTION_NOSTREAMOVERRIDE_old) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "SERIAL%u_OPTIONS bit 12 ('no stream overrides') must not be set; use MAVn_OPTIONS bit 2 instead", unsigned(i));
+            return false;
+        }
+    }
+    return true;
 }
 
 #if AP_SERIALMANAGER_REGISTER_ENABLED

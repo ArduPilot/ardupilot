@@ -4,8 +4,6 @@
 
 MCU STM32F4xx STM32F405xx
 
-HAL_CHIBIOS_ARCH_F405 1
-
 # board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_AIRBOTF4
 

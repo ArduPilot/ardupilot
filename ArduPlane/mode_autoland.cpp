@@ -162,7 +162,7 @@ bool ModeAutoLand::_enter()
 #else
         const bool use_terrain = false;
 #endif
-        const float dist_to_climb = terrain_alt_min - plane.relative_ground_altitude(plane.g.rangefinder_landing, use_terrain);
+        const float dist_to_climb = terrain_alt_min - plane.relative_ground_altitude(RangeFinderUse::CLIMB, use_terrain);
         if (is_positive(dist_to_climb)) {
             // Copy loiter and update target altitude to current altitude plus climb altitude
             cmd_climb = cmd_loiter;
@@ -301,7 +301,7 @@ bool ModeAutoLand::landing_lined_up(void)
 void ModeAutoLand::arm_check(void)
 {
     if (plane.ahrs.use_compass() && autoland_option_is_set(ModeAutoLand::AutoLandOption::AUTOLAND_DIR_ON_ARM)) {
-        set_autoland_direction(plane.ahrs.yaw_sensor * 0.01);
+        set_autoland_direction(plane.ahrs.get_yaw_deg());
     }
 }
 

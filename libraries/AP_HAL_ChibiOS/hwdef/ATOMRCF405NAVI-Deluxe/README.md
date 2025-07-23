@@ -64,7 +64,7 @@ tbd
 # Default UART order
 
 - SERIAL0 = console = USB
-- SERIAL1 = RF Module = USART1(MAVLink2), not useable by AP GCS
+- SERIAL1 = RF Module = USART1(MAVLink2), not usable by AP GCS
 - SERIAL2 = RCinput, DMA capable = USART2 (RX2 connected to SBUS pins via inverter for SBUS receivers)
 - SERIAL3 = USER = USART3
 - SERIAL4 = GPS2 = UART4

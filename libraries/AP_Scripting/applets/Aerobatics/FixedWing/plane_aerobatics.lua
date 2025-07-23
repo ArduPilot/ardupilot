@@ -1703,7 +1703,7 @@ function rudder_over(direction, min_speed)
 
       -- use user set throttle for achieving the stall
       local throttle = AEROM_STALL_THR:get()
-      local pitch_deg = math.deg(ahrs:get_pitch())
+      local pitch_deg = math.deg(ahrs:get_pitch_rad())
       if reached_speed and not kick_started and math.abs(math.deg(ahrs_gyro:z())) > ACRO_YAW_RATE:get()/3 then
          kick_started = true
       end
@@ -1824,7 +1824,7 @@ function takeoff_controller(distance, thr_slew)
    local start_time = 0
    local start_pos = nil
    local all_done = false
-   local initial_yaw_deg = math.deg(ahrs:get_yaw())
+   local initial_yaw_deg = math.deg(ahrs:get_yaw_rad())
    local yaw_correction_tconst = 1.0
    gcs:send_text(MAV_SEVERITY.INFO,string.format("Takeoff init"))
 
@@ -1845,7 +1845,7 @@ function takeoff_controller(distance, thr_slew)
       end
       local throttle = constrain(thr_slew * (now - start_time), 0, 100)
 
-      local yaw_deg = math.deg(ahrs:get_yaw())
+      local yaw_deg = math.deg(ahrs:get_yaw_rad())
       local yaw_err_deg = wrap_180(yaw_deg - initial_yaw_deg)
       local targ_yaw_rate = -yaw_err_deg / yaw_correction_tconst
 

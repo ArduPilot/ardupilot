@@ -8,7 +8,7 @@ OSCILLATOR_HZ 24000000
 define STM32_HSE_BYPASS
 
 # board ID for firmware load
-APJ_BOARD_ID 1407 
+APJ_BOARD_ID AP_HW_VIMDRONES_PERIPH
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

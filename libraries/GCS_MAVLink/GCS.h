@@ -297,6 +297,9 @@ public:
 
     uint32_t        last_heartbeat_time; // milliseconds
 
+    // called when valid traffic has been seen from our GCS
+    void sysid_mygcs_seen(uint32_t seen_time_ms);
+
     static uint32_t last_radio_status_remrssi_ms() {
         return last_radio_status.remrssi_ms;
     }
@@ -511,7 +514,7 @@ protected:
     // saveable rate of each stream
     AP_Int16        streamRates[NUM_STREAMS];
 
-    void handle_heartbeat(const mavlink_message_t &msg) const;
+    void handle_heartbeat(const mavlink_message_t &msg);
 
     virtual bool persist_streamrates() const { return false; }
     void handle_request_data_stream(const mavlink_message_t &msg);
@@ -519,10 +522,20 @@ protected:
     AP_Int16 options;
     enum class Option : uint16_t {
         MAVLINK2_SIGNING_DISABLED = (1U << 0),
+        // first bit is reserved for: MAVLINK2_SIGNING_DISABLED = (1U << 0),
+        NO_FORWARD                = (1U << 1),  // don't forward MAVLink data to or from this device
+        NOSTREAMOVERRIDE          = (1U << 2),  // ignore REQUEST_DATA_STREAM messages (eg. from GCSs)
     };
     bool option_enabled(Option option) const {
         return options & static_cast<uint16_t>(option);
     }
+    void enable_option(Option option) {
+        options.set_and_save(static_cast<uint16_t>(options) | static_cast<uint16_t>(option));
+    }
+    void disable_option(Option option) {
+        options.set_and_save(static_cast<uint16_t>(options) & (~ static_cast<uint16_t>(option)));
+    }
+    AP_Int8 options_were_converted;
 
     virtual void handle_command_ack(const mavlink_message_t &msg);
     void handle_set_mode(const mavlink_message_t &msg);
@@ -799,6 +812,11 @@ private:
     uint32_t last_deprecation_warning_send_time_ms;
     const char *last_deprecation_message;
 
+    // time we last saw traffic from our GCS.  Note that there is an
+    // identically named field in GCS:: which is the most recent of
+    // each of the GCS_MAVLINK backends
+    uint32_t _sysid_gcs_last_seen_time_ms;
+
     void service_statustext(void);
 
     MAV_RESULT handle_servorelay_message(const mavlink_command_int_t &packet);
@@ -1024,6 +1042,7 @@ private:
     static struct ftp_state ftp;
 
     static void ftp_error(struct pending_ftp &response, FTP_ERROR error); // FTP helper method for packing a NAK
+    static bool ftp_check_name_len(const struct pending_ftp &request);
     static int gen_dir_entry(char *dest, size_t space, const char * path, const struct dirent * entry); // FTP helper for emitting a dir response
     static void ftp_list_dir(struct pending_ftp &request, struct pending_ftp &response);
 
@@ -1198,7 +1217,8 @@ public:
     uint32_t sysid_mygcs_last_seen_time_ms() const {
         return _sysid_gcs_last_seen_time_ms;
     }
-    // called when valid traffic has been seen from our GCS
+    // called when valid traffic has been seen from our GCS.  This is
+    // usually only called from GCS_MAVLINK::sysid_mygcs_seen(..)!
     void sysid_mygcs_seen(uint32_t seen_time_ms) {
         _sysid_gcs_last_seen_time_ms = seen_time_ms;
     }
@@ -1331,6 +1351,7 @@ protected:
 
     virtual GCS_MAVLINK *new_gcs_mavlink_backend(AP_HAL::UARTDriver &uart) = 0;
 
+    HAL_Semaphore control_sensors_sem; // protects the three bitmasks
     uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
@@ -1363,7 +1384,9 @@ private:
 
     void update_sensor_status_flags();
 
-    // time we last saw traffic from our GCS
+    // time we last saw traffic from our GCS.  Note that there is an
+    // identically named field in GCS_MAVLINK:: which is the most
+    // recent time that backend saw traffic from MAV_GCS_SYSID
     uint32_t _sysid_gcs_last_seen_time_ms;
 
     void service_statustext(void);

@@ -240,7 +240,7 @@ function update()
   -- State TRIGGERED actions
   if fs_state == "TRIGGERED" then
     -- Get the heading angle
-    hdg = math.floor(math.deg(ahrs:get_yaw()))
+    hdg = math.floor(math.deg(ahrs:get_yaw_rad()))
 
     -- Get wind direction. Function wind_estimate returns x and y for direction wind blows in, add pi to get true wind dir
     wind = ahrs:wind_estimate()

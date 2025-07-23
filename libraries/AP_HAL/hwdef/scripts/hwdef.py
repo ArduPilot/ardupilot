@@ -41,6 +41,8 @@ class HWDef:
 
         # boolean indicating whether we have read and processed self.hwdef
         self.processed_hwdefs = False
+        # a set of files which have been processed to populate this object:
+        self.loaded_files = set()
 
         # sensor lists
         self.imu_list = []
@@ -74,11 +76,19 @@ class HWDef:
             ret.append(line)
         return ret
 
+    def uses_filepath(self, filepath : str) -> bool:
+        return os.path.abspath(filepath) in self.loaded_files
+
+    def running_in_CI(self):
+        return os.getenv("GITHUB_ACTIONS") == "true"
+
     def get_numeric_board_id(self):
         '''return a numeric board ID, which may require mapping a string to a
         number via board_list.txt'''
         some_id = self.get_config('APJ_BOARD_ID')
         if some_id.isnumeric():
+            if self.running_in_CI():
+                raise ValueError(f"Numeric board ID found ({some_id}).  Your APJ_BOARD_ID must not use a number.  Change the number to be the name of the board used in Tools/AP_Bootloader/board_types.txt")  # noqa:E501
             return some_id
 
         board_types_filename = "board_types.txt"
@@ -154,9 +164,13 @@ class HWDef:
 
     def process_file(self, filename, depth=0):
         '''process a hwdef.dat file'''
+        self.progress(f"Processing {filename}")
+        self.loaded_files.add(os.path.abspath(filename))
         try:
             f = open(filename, "r")
-        except Exception:
+        except Exception as e:
+            if False:
+                raise e
             self.error("Unable to open file %s" % filename)
         for line in f.readlines():
             line = line.split('#')[0] # ensure we discard the comments
@@ -170,7 +184,6 @@ class HWDef:
                     dir = os.path.dirname(filename)
                     include_file = os.path.normpath(
                         os.path.join(dir, include_file))
-                self.progress("Including %s" % include_file)
                 self.process_file(include_file, depth+1)
             else:
                 self.process_line(line, depth)

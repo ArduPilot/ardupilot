@@ -646,7 +646,7 @@ void NavEKF3_core::readGpsData()
     }
 
     // Check if GPS can output vertical velocity, vertical velocity use is permitted and set GPS fusion mode accordingly
-    if (gpsDataNew.have_vz && frontend->sources.useVelZSource(AP_NavEKF_Source::SourceZ::GPS)) {
+    if (gpsDataNew.have_vz && frontend->sources.useVelZSource(AP_NavEKF_Source::SourceZ::GPS, core_index)) {
         useGpsVertVel = true;
     } else {
         useGpsVertVel = false;

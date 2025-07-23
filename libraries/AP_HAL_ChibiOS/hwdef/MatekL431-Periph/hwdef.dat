@@ -80,6 +80,7 @@ PB1 BATT2_CURRENT_SENS ADC1 SCALE(1)
 # -------------------- Buzzer+NeoPixels --------------d------
 define AP_PERIPH_RC_OUT_ENABLED 1
 define AP_PERIPH_NOTIFY_ENABLED 1
+define AP_SERIALLED_ENABLED 1
 
 
 define HAL_SERIAL_ESC_COMM_ENABLED 1

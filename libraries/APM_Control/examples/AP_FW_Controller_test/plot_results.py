@@ -1,9 +1,10 @@
-
 # Plot the results of a controller test run
 # For example run test with:
 # ./build/linux/examples/AP_FW_Controller_test > results.csv
 # The plot with:
 # python3 libraries/APM_Control/examples/AP_FW_Controller_test/plot_results.py results.csv
+
+# flake8: noqa
 
 import csv
 from argparse import ArgumentParser

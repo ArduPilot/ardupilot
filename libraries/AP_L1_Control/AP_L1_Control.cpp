@@ -56,9 +56,9 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
 float AP_L1_Control::get_yaw() const
 {
     if (_reverse) {
-        return wrap_PI(M_PI + _ahrs.get_yaw());
+        return wrap_PI(M_PI + _ahrs.get_yaw_rad());
     }
-    return _ahrs.get_yaw();
+    return _ahrs.get_yaw_rad();
 }
 
 /*
@@ -88,7 +88,7 @@ int32_t AP_L1_Control::nav_roll_cd(void) const
 		Made changes to avoid zero division as proposed by Andrew Tridgell: https://github.com/ArduPilot/ardupilot/pull/24331#discussion_r1267798397		 
 	*/
 	float pitchLimL1 = radians(60); // Suggestion: constraint may be modified to pitch limits if their absolute values are less than 90 degree and more than 60 degrees.
-	float pitchL1 = constrain_float(_ahrs.get_pitch(),-pitchLimL1,pitchLimL1);
+	float pitchL1 = constrain_float(_ahrs.get_pitch_rad(),-pitchLimL1,pitchLimL1);
     ret = degrees(atanf(_latAccDem * (1.0f/(GRAVITY_MSS * cosf(pitchL1))))) * 100.0f;
     ret = constrain_float(ret, -9000, 9000);
     return ret;
@@ -399,7 +399,7 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
         A_air_unit = A_air.normalized();
     } else {
         if (_groundspeed_vector.length() < 0.1f) {
-            A_air_unit = Vector2f(cosf(_ahrs.get_yaw()), sinf(_ahrs.get_yaw()));
+            A_air_unit = Vector2f(cosf(_ahrs.get_yaw_rad()), sinf(_ahrs.get_yaw_rad()));
         } else {
             A_air_unit = _groundspeed_vector.normalized();
         }
@@ -533,7 +533,7 @@ void AP_L1_Control::update_level_flight(void)
 {
     // copy to _target_bearing_cd and _nav_bearing
     _target_bearing_cd = _ahrs.yaw_sensor;
-    _nav_bearing = _ahrs.get_yaw();
+    _nav_bearing = _ahrs.get_yaw_rad();
     _bearing_error = 0;
     _crosstrack_error = 0;
 

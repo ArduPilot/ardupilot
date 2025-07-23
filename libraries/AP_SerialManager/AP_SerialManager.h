@@ -101,6 +101,8 @@ public:
     // init - initialise serial ports
     void init();
 
+    bool pre_arm_checks(char *failure_msg, const uint8_t failure_msg_len);
+
     // find_serial - searches available serial ports that allows the given protocol
     //  instance should be zero if searching for the first instance, 1 for the second, etc
     //  returns uart on success, nullptr if a serial port cannot be found
@@ -153,7 +155,7 @@ public:
             return AP_SerialManager::SerialProtocol(protocol.get());
         }
         AP_Int32 baud;
-        AP_Int16 options;
+        AP_Int32 options;
         AP_Int8 protocol;
 
         // serial index number
@@ -174,6 +176,14 @@ public:
     // mavlink1 protocol instances.
     const UARTState *find_protocol_instance(enum SerialProtocol protocol,
                                             uint8_t instance) const;
+
+    // disable an option on a serial port:
+    void disable_option(uint8_t instance, uint32_t option) {
+        if (instance >= ARRAY_SIZE(state)) {
+            return;
+        }
+        state[instance].options.set_and_notify(state[instance].options & ~option);
+    }
 
 #if AP_SERIALMANAGER_REGISTER_ENABLED
     /*
@@ -221,6 +231,8 @@ private:
     void set_options(uint16_t i);
 
     bool init_console_done;
+
+    void convert_parameters();
 };
 
 namespace AP {

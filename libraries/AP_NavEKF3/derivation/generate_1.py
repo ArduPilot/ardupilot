@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # Copied from https://github.com/PX4/ecl/commit/264c8c4e8681704e4719d0a03b848df8617c0863
 # and modified for ArduPilot
+
+# flake8: noqa
 from sympy import __version__ as __sympy__version__
 from sympy import *
 from code_gen import *

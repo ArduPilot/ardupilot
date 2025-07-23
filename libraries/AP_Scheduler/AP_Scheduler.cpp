@@ -113,6 +113,11 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint
         _loop_rate_hz.set(2000);
     }
     _last_loop_time_s = 1.0 / _loop_rate_hz;
+    // at least on SITL the lazy initialization of these gets called early
+    // make sure they reflect the current values of _loop_rate_hz
+    _loop_period_us = 1000000UL / _loop_rate_hz;
+    _loop_period_s = 1.0f / _loop_rate_hz;
+    _active_loop_rate_hz = _loop_rate_hz;
 
     _vehicle_tasks = tasks;
     _num_vehicle_tasks = num_tasks;

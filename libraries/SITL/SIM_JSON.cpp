@@ -16,9 +16,11 @@
     Simulator Connector for JSON based interfaces
 */
 
-#include "SIM_JSON.h"
+#include "SIM_config.h"
 
-#if HAL_SIM_JSON_ENABLED
+#if AP_SIM_JSON_ENABLED
+
+#include "SIM_JSON.h"
 
 #include <stdio.h>
 #include <arpa/inet.h>
@@ -470,4 +472,4 @@ void JSON::update(const struct sitl_input &input)
 #endif
 }
 
-#endif  // HAL_SIM_JSON_ENABLED
+#endif  // AP_SIM_JSON_ENABLED

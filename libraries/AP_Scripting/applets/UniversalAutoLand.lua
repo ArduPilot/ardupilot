@@ -3,7 +3,7 @@
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 
 local PARAM_TABLE_KEY = 80
-local PARAM_TABLE_PREFIX = "AUTOLAND_"
+local PARAM_TABLE_PREFIX = "ALAND_"
 assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 4), 'could not add param table')
 
 -- add a parameter and bind it to a variable
@@ -13,9 +13,9 @@ function bind_add_param(name, idx, default_value)
 end
 
 --[[
-  // @Param: AUTOLAND_ENABLE
-  // @DisplayName: AUTOLAND ENABLE
-  // @Description: enable AUTOLAND script action
+  // @Param: ALAND_ENABLE
+  // @DisplayName: Auto land enable
+  // @Description: enable Auto land script action
   // @Values: 0:Disabled,1:Enabled
   // @User: Standard
 --]]
@@ -23,7 +23,7 @@ local AULND_ENABLE = bind_add_param('ENABLE', 1, 1)
 local enable = AULND_ENABLE:get()
 
 --[[
-  // @Param: AUTOLAND_WP_ALT
+  // @Param: ALAND_WP_ALT
   // @DisplayName: Final approach waypoint alt
   // @Description: Altitude of final approach waypoint created by script
   // @Range: 1 100
@@ -33,9 +33,9 @@ local enable = AULND_ENABLE:get()
 local AULND_ALT = bind_add_param('WP_ALT', 2, 0)
 local final_wp_alt = AULND_ALT:get()
 --[[
-  // @Param: AUTOLAND_WP_DIST
+  // @Param: ALAND_WP_DIST
   // @DisplayName: Final approach waypoint distance
-  // @Description: Distance from landng point (HOME) to final approach waypoint created by script in the opposite direction of initial takeoff
+  // @Description: Distance from landing point (HOME) to final approach waypoint created by script in the opposite direction of initial takeoff
   // @Range: 0 1000
   // @Units: m
   // @User: Standard

@@ -25,9 +25,11 @@
   based on AP_ADSB,  Tom Pittenger, November 2015
 */
 
-#include <AP_ADSB/AP_ADSB.h>
+#include "AP_Avoidance_config.h"
 
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
+
+#include <AP_ADSB/AP_ADSB.h>
 
 #define AP_AVOIDANCE_STATE_RECOVERY_TIME_MS                 2000    // we will not downgrade state any faster than this (2 seconds)
 
@@ -231,5 +233,4 @@ namespace AP {
     AP_Avoidance *ap_avoidance();
 };
 
-#endif
-
+#endif  // AP_ADSB_AVOIDANCE_ENABLED

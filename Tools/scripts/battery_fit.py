@@ -1,4 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+# flake8: noqa
+
 '''
 fit coefficients for battery percentate from resting voltage
 

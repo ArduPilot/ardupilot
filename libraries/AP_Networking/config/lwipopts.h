@@ -118,6 +118,12 @@ extern "C"
 
 #define USE_PPP 1
 
+// generate a regular LCP echo to keep link up
+#define LCP_ECHOINTERVAL                1
+
+// on 5 failed echos terminate link
+#define LCP_MAXECHOFAILS                5
+
 #define LWIP_TIMEVAL_PRIVATE 0
 #define LWIP_FD_SET_PRIVATE 0
 
@@ -340,6 +346,11 @@ a lot of data that needs to be copied, this should be set high. */
 
 /* ---------- NETBIOS options ---------- */
 #define LWIP_NETBIOS_RESPOND_NAME_QUERY 0
+
+/* routing hook */
+#define LWIP_HOOK_IP4_ROUTE ap_networking_routing_hook
+struct ip4_addr;
+struct netif *ap_networking_routing_hook(const struct ip4_addr *dest);
 
 /* ---------- PPP options ---------- */
 

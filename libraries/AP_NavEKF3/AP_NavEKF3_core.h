@@ -1100,7 +1100,8 @@ private:
     Vector6 innovVelPos;            // innovation output for a group of measurements
     Vector6 varInnovVelPos;         // innovation variance output for a group of measurements
     Vector6 velPosObs;              // observations for combined velocity and positon group of measurements (3x1 m , 3x1 m/s)
-    bool fuseVelData;               // this boolean causes the velNED measurements to be fused
+    bool fuseVelData;               // this boolean causes the velNE measurements to be fused
+    bool fuseVelVertData;           // this boolean causes the velD measurement to be fused
     bool fusePosData;               // this boolean causes the posNE measurements to be fused
     bool fuseHgtData;               // this boolean causes the hgtMea measurements to be fused
     Vector3F innovMag;              // innovation output from fusion of X,Y,Z compass measurements

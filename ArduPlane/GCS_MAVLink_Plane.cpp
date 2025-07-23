@@ -132,9 +132,9 @@ void GCS_MAVLINK_Plane::send_attitude() const
 {
     const AP_AHRS &ahrs = AP::ahrs();
 
-    float r = ahrs.get_roll();
-    float p = ahrs.get_pitch();
-    float y = ahrs.get_yaw();
+    float r = ahrs.get_roll_rad();
+    float p = ahrs.get_pitch_rad();
+    float y = ahrs.get_yaw_rad();
 
     if (!(plane.flight_option_enabled(FlightOptions::GCS_REMOVE_TRIM_PITCH))) {
         p -= radians(plane.g.pitch_trim);
@@ -511,7 +511,7 @@ void GCS_MAVLINK_Plane::handle_change_alt_request(Location &location)
     plane.fix_terrain_WP(location, __LINE__);
 
     if (location.terrain_alt) {
-        plane.next_WP_loc.set_alt_cm(location.alt, Location::AltFrame::ABOVE_TERRAIN);
+        plane.next_WP_loc.copy_alt_from(location);
     } else {
         // convert to absolute alt
         float abs_alt_m;
@@ -545,7 +545,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_preflight_calibration(const mavlink
 void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
                                        const mavlink_message_t &msg)
 {
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
     plane.avoidance_adsb.handle_msg(msg);
 #endif
     GCS_MAVLINK::packetReceived(status, msg);
@@ -888,7 +888,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_DO_CHANGE_SPEED(const mavlink_comma
             return MAV_RESULT_FAILED;
         }
 
-        if (plane.do_change_speed(packet.param1, packet.param2, packet.param3)) {
+        if (plane.do_change_speed((SPEED_TYPE)packet.param1, packet.param2, packet.param3)) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;

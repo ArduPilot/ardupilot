@@ -159,7 +159,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Param: EKF_TYPE
     // @DisplayName: Use NavEKF Kalman filter for attitude and position estimation
     // @Description: This controls which NavEKF Kalman filter version is used for attitude and position estimation
-    // @Values: 0:Disabled,2:Enable EKF2,3:Enable EKF3,11:ExternalAHRS
+    // @Values: 0:Disabled,2:Enable EKF2,3:Enable EKF3, 10:Sim, 11:ExternalAHRS
     // @User: Advanced
     AP_GROUPINFO("EKF_TYPE",  14, AP_AHRS, _ekf_type, HAL_AHRS_EKF_TYPE_DEFAULT),
 
@@ -922,7 +922,7 @@ float AP_AHRS::wind_alignment(const float heading_deg) const
  */
 float AP_AHRS::head_wind(void) const
 {
-    const float alignment = wind_alignment(yaw_sensor*0.01f);
+    const float alignment = wind_alignment(get_yaw_deg());
     return alignment * wind_estimate().xy().length();
 }
 
@@ -3018,7 +3018,7 @@ bool AP_AHRS::set_home(const Location &loc)
 {
     WITH_SEMAPHORE(_rsem);
     // check location is valid
-    if (loc.lat == 0 && loc.lng == 0 && loc.alt == 0) {
+    if (!loc.initialised()) {
         return false;
     }
     if (!loc.check_latlng()) {

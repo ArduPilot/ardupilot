@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+# flake8: noqa
+
 """
 Waf tool for ChibiOS build
 """
@@ -432,7 +434,10 @@ def chibios_firmware(self):
     cleanup_task = self.create_task('build_normalized_bins', src=bin_target)
     cleanup_task.set_run_after(generate_apj_task)
 
-    bootloader_bin = self.bld.srcnode.make_node("Tools/bootloaders/%s_bl.bin" % self.env.BOARD)
+    bootloader_board = self.env.BOARD
+    if self.bld.env.USE_BOOTLOADER_FROM_BOARD:
+        bootloader_board = self.bld.env.USE_BOOTLOADER_FROM_BOARD
+    bootloader_bin = self.bld.srcnode.make_node("Tools/bootloaders/%s_bl.bin" % bootloader_board)
     if self.bld.env.HAVE_INTEL_HEX:
         if os.path.exists(bootloader_bin.abspath()):
             if int(self.bld.env.FLASH_RESERVE_START_KB) > 0:
@@ -756,7 +761,7 @@ def build(bld):
 
     # list of functions that we will give a link error for if they are
     # used. This is to prevent accidental use of these functions
-    blacklist = ['_sbrk', '_sbrk_r', '_malloc_r', '_calloc_r', '_free_r', 'ftell',
+    blacklist = ['_sbrk', '_sbrk_r', '_malloc_r', '_calloc_r', '_free_r', 'ftell', 'realloc',
                  'fopen', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
                  'clearerr', 'fseek', 'ferror', 'fclose', 'tmpfile', 'getc', 'ungetc', 'feof',
                 'ftell', 'freopen', 'remove', 'vfprintf', 'vfprintf_r', 'fscanf',

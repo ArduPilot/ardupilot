@@ -131,6 +131,8 @@ void GCS::get_sensor_status_flags(uint32_t &present,
 ASSERT_STORAGE_SIZE(GCS::statustext_t, 58);
 #endif
 
+    WITH_SEMAPHORE(control_sensors_sem);
+
     update_sensor_status_flags();
 
     present = control_sensors_present;
@@ -267,6 +269,9 @@ bool GCS::install_alternative_protocol(mavlink_channel_t c, GCS_MAVLINK::protoco
     return true;
 }
 
+// note that control_sensors_present and friends are protected by
+// control_sensors_sem.  There is currently only one caller to this
+// method, and it does the protection for us.
 void GCS::update_sensor_status_flags()
 {
     control_sensors_present = 0;

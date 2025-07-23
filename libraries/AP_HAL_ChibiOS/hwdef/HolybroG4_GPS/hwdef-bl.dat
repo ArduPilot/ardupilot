@@ -13,7 +13,7 @@ APP_START_OFFSET_KB 4
 FLASH_SIZE_KB 512
 
 # board ID. See Tools/AP_Bootloader/board_types.txt
-APJ_BOARD_ID AP_HW_CarbonixL496
+APJ_BOARD_ID AP_HW_HolybroG4_GPS
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

@@ -480,7 +480,7 @@ function HLSatcom()
             hl2.failure_flags = hl2.failure_flags + 256 -- HL_FAILURE_FLAG_RC_RECEIVER
         end
 
-        hl2.heading = math.floor(wrap_360(math.deg(ahrs:get_yaw())) / 2)
+        hl2.heading = math.floor(wrap_360(math.deg(ahrs:get_yaw_rad())) / 2)
         hl2.throttle = math.floor(gcs:get_hud_throttle())
         if ahrs:airspeed_estimate() ~= nil then
             hl2.airspeed = math.abs(math.floor(ahrs:airspeed_estimate() * 5))

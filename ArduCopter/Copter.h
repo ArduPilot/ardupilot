@@ -65,6 +65,7 @@
 #include <AC_AutoTune/AC_AutoTune_Heli.h>   // ArduCopter autotune library. support for autotune of helicopters.
 #include <AP_Parachute/AP_Parachute.h>      // ArduPilot parachute release library
 #include <AC_Sprayer/AC_Sprayer.h>          // Crop sprayer library
+#include <AP_Avoidance/AP_Avoidance.h>      // "ADSB" avoidance library
 #include <AP_ADSB/AP_ADSB.h>                // ADS-B RF based collision avoidance module library
 #include <AP_Proximity/AP_Proximity.h>      // ArduPilot proximity sensor library
 #include <AC_PrecLand/AC_PrecLand_config.h>
@@ -251,6 +252,12 @@ private:
     RC_Channel *channel_throttle;
     RC_Channel *channel_yaw;
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
+    // channel which is being used to tune a parameter value:
+    RC_Channel *rc_tuning;
+    RC_Channel *rc_tuning2;
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
+
     // flight modes convenience array
     AP_Int8 *flight_modes;
     const uint8_t num_flight_modes = 6;
@@ -296,10 +303,6 @@ private:
         bool valid_for_logging;     // true if we have a desired target altitude
         bool reset_target;          // true if target should be reset because of change in surface being tracked
     } surface_tracking;
-#endif
-
-#if AP_RPM_ENABLED
-    AP_RPM rpm_sensor;
 #endif
 
     // Inertial Navigation EKF - different viewpoint
@@ -449,7 +452,7 @@ private:
     float super_simple_sin_yaw;
 
     // Stores initial bearing when armed - initial simple bearing is modified in super simple mode so not suitable
-    int32_t initial_armed_bearing;
+    float initial_armed_bearing_rad;
 
     // Battery Sensors
     AP_BattMonitor battery{MASK_LOG_CURRENT,
@@ -545,7 +548,9 @@ private:
 
 #if HAL_ADSB_ENABLED
     AP_ADSB adsb;
+#endif  // HAL_ADSB_ENABLED
 
+#if AP_ADSB_AVOIDANCE_ENABLED
     // avoidance of adsb enabled vehicles (normally manned vehicles)
     AP_Avoidance_Copter avoidance_adsb{adsb};
 #endif
@@ -561,11 +566,6 @@ private:
     AP_Param param_loader;
 
 #if FRAME_CONFIG == HELI_FRAME
-    // Mode filter to reject RC Input glitches.  Filter size is 5, and it draws the 4th element, so it can reject 3 low glitches,
-    // and 1 high glitch.  This is because any "off" glitches can be highly problematic for a helicopter running an ESC
-    // governor.  Even a single "off" frame can cause the rotor to slow dramatically and take a long time to restart.
-    ModeFilterInt16_Size5 rotor_speed_deglitch_filter {4};
-
     // Tradheli flags
     typedef struct {
         uint8_t dynamic_flight          : 1;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
@@ -760,10 +760,10 @@ private:
     // avoidance.cpp
     void low_alt_avoidance();
 
-#if HAL_ADSB_ENABLED
+#if HAL_ADSB_ENABLED || AP_ADSB_AVOIDANCE_ENABLED
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);
-#endif
+#endif  // HAL_ADSB_ENABLED || AP_ADSB_AVOIDANCE_ENABLED
 
     // baro_ground_effect.cpp
     void update_ground_effect_detector(void);
@@ -910,7 +910,7 @@ private:
     void Log_Write_Data(LogDataID id, int16_t value);
     void Log_Write_Data(LogDataID id, uint16_t value);
     void Log_Write_Data(LogDataID id, float value);
-    void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max);
+    void Log_Write_PTUN(uint8_t param, float tuning_val, float tune_min, float tune_max, float norm_in);
     void Log_Video_Stabilisation();
     void Log_Write_Guided_Position_Target(ModeGuided::SubMode submode, const Vector3f& pos_target, bool terrain_alt, const Vector3f& vel_target, const Vector3f& accel_target);
     void Log_Write_Guided_Attitude_Target(ModeGuided::SubMode target_type, float roll, float pitch, float yaw, const Vector3f &ang_vel, float thrust, float climb_rate);
@@ -945,7 +945,6 @@ private:
     void motor_test_stop();
 
     // motors.cpp
-    void arm_motors_check();
     void auto_disarm_check();
     void motors_output(bool full_push = true);
     void motors_output_main();
@@ -1007,8 +1006,12 @@ private:
     void terrain_update();
     void terrain_logging();
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
     // tuning.cpp
     void tuning();
+    void tuning(const class RC_Channel *tuning_ch, int8_t tuning_param, float tuning_min, float tuning_max);
+    bool being_tuned(int8_t tuning_param) const;
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
     // UserCode.cpp
     void userhook_init();
@@ -1078,9 +1081,9 @@ private:
 #if MODE_SYSTEMID_ENABLED
     ModeSystemId mode_systemid;
 #endif
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
     ModeAvoidADSB mode_avoid_adsb;
-#endif
+#endif  // AP_ADSB_AVOIDANCE_ENABLED
 #if MODE_THROW_ENABLED
     ModeThrow mode_throw;
 #endif

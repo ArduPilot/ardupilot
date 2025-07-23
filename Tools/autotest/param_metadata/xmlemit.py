@@ -1,3 +1,5 @@
+# flake8: noqa
+
 from lxml import etree
 
 from emit import Emit

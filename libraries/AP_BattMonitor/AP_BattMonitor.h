@@ -11,11 +11,6 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_BattMonitor_Params.h"
 
-// maximum number of battery monitors
-#ifndef AP_BATT_MONITOR_MAX_INSTANCES
-#define AP_BATT_MONITOR_MAX_INSTANCES       9
-#endif
-
 // first monitor is always the primary monitor
 #define AP_BATT_PRIMARY_INSTANCE            0
 
@@ -280,8 +275,6 @@ private:
     AP_BattMonitor_Backend *drivers[AP_BATT_MONITOR_MAX_INSTANCES];
     uint32_t    _log_battery_bit;
     uint8_t     _num_instances;                                     /// number of monitors
-
-    void convert_dynamic_param_groups(uint8_t instance);
 
     /// returns the failsafe state of the battery
     Failsafe check_failsafe(const uint8_t instance);

@@ -24,7 +24,7 @@ float Plane::calc_speed_scaler(void)
         speed_scaler = constrain_float(speed_scaler, scale_min, scale_max);
 
 #if HAL_QUADPLANE_ENABLED
-        if (quadplane.in_vtol_mode() && arming.is_armed_and_safety_off()) {
+        if ((quadplane.in_vtol_mode() || quadplane.in_assisted_flight()) && arming.is_armed_and_safety_off()) {
             // when in VTOL modes limit surface movement at low speed to prevent instability
             float threshold = airspeed_min * 0.5;
             if (aspeed < threshold) {
@@ -133,7 +133,7 @@ float Plane::stabilize_roll_get_roll_out()
         const auto &pid_info = quadplane.attitude_control->get_rate_roll_pid().get_pid_info();
 
         // scale FF to angle P
-        if (quadplane.option_is_set(QuadPlane::OPTION::SCALE_FF_ANGLE_P)) {
+        if (quadplane.option_is_set(QuadPlane::Option::SCALE_FF_ANGLE_P)) {
             const float mc_angR = quadplane.attitude_control->get_angle_roll_p().kP()
                 * quadplane.attitude_control->get_last_angle_P_scale().x;
             if (is_positive(mc_angR)) {
@@ -186,7 +186,7 @@ float Plane::stabilize_pitch_get_pitch_out()
         const auto &pid_info = quadplane.attitude_control->get_rate_pitch_pid().get_pid_info();
 
         // scale FF to angle P
-        if (quadplane.option_is_set(QuadPlane::OPTION::SCALE_FF_ANGLE_P)) {
+        if (quadplane.option_is_set(QuadPlane::Option::SCALE_FF_ANGLE_P)) {
             const float mc_angP = quadplane.attitude_control->get_angle_pitch_p().kP()
                 * quadplane.attitude_control->get_last_angle_P_scale().y;
             if (is_positive(mc_angP)) {
@@ -280,12 +280,10 @@ void Plane::stabilize_stick_mixing_fbw()
         control_mode == &mode_training) {
         return;
     }
-    // do FBW style stick mixing. We don't treat it linearly
-    // however. For inputs up to half the maximum, we use linear
-    // addition to the nav_roll and nav_pitch. Above that it goes
-    // non-linear and ends up as 2x the maximum, to ensure that
-    // the user can direct the plane in any direction with stick
-    // mixing.
+    // do FBW style roll stick mixing. We don't treat it linearly however. For
+    // inputs up to half the maximum, we use linear addition to the nav_roll.
+    // Above that it goes non-linear and ends up as 2x the maximum, to ensure
+    // that the user can direct the plane in any direction with stick mixing.
     float roll_input = channel_roll->norm_input_dz();
     if (roll_input > 0.5f) {
         roll_input = (3*roll_input - 1);
@@ -295,6 +293,9 @@ void Plane::stabilize_stick_mixing_fbw()
     nav_roll_cd += roll_input * roll_limit_cd;
     nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
 
+    if (plane.g.stick_mixing == StickMixing::FBW_NO_PITCH) {
+        return;
+    }
     if ((control_mode == &mode_loiter) && (plane.flight_option_enabled(FlightOptions::ENABLE_LOITER_ALT_CONTROL))) {
         // loiter is using altitude control based on the pitch stick, don't use it again here
         return;

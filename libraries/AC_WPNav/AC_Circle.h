@@ -19,9 +19,9 @@ public:
     AC_Circle(const AP_AHRS_View& ahrs, AC_PosControl& pos_control);
 
     /// init - initialise circle controller setting center specifically
-    ///     set terrain_alt to true if center_neu_cm.z should be interpreted as an alt-above-terrain. Rate should be +ve in deg/sec for cw turn
+    ///     set is_terrain_alt to true if center_neu_cm.z should be interpreted as an alt-above-terrain. Rate should be +ve in deg/sec for cw turn
     ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
-    void init_NEU_cm(const Vector3p& center_neu_cm, bool terrain_alt, float rate_degs);
+    void init_NEU_cm(const Vector3p& center_neu_cm, bool is_terrain_alt, float rate_degs);
 
     /// init - initialise circle controller setting center using stopping point and projecting out based on the copter's heading
     ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
@@ -31,14 +31,14 @@ public:
     void set_center(const Location& center);
 
     /// set_circle_center as a vector from ekf origin
-    ///     terrain_alt should be true if center.z is alt is above terrain
-    void set_center_NEU_cm(const Vector3f& center_neu_cm, bool terrain_alt) { _center_neu_cm = center_neu_cm.topostype(); _terrain_alt = terrain_alt; }
+    ///     is_terrain_alt should be true if center.z is alt is above terrain
+    void set_center_NEU_cm(const Vector3f& center_neu_cm, bool is_terrain_alt) { _center_neu_cm = center_neu_cm.topostype(); _is_terrain_alt = is_terrain_alt; }
 
     /// get_circle_center in cm from home
     const Vector3p& get_center_NEU_cm() const { return _center_neu_cm; }
 
     /// returns true if using terrain altitudes
-    bool center_is_terrain_alt() const { return _terrain_alt; }
+    bool center_is_terrain_alt() const { return _is_terrain_alt; }
 
     /// get_radius - returns radius of circle in cm
     float get_radius_cm() const { return is_positive(_radius_cm)?_radius_cm:_radius_parm_cm; }
@@ -67,6 +67,7 @@ public:
     float get_pitch_cd() const { return _pos_control.get_pitch_cd(); }
     Vector3f get_thrust_vector() const { return _pos_control.get_thrust_vector(); }
     float get_yaw_cd() const { return _yaw_cd; }
+    float get_yaw_rad() const { return cd_to_rad(_yaw_cd); }
 
     /// returns true if update has been run recently
     /// used by vehicle code to determine if get_yaw() is valid
@@ -82,8 +83,8 @@ public:
     /// get horizontal distance to loiter target in cm
     float get_distance_to_target_cm() const { return _pos_control.get_pos_error_NE_cm(); }
 
-    /// get bearing to target in centi-degrees
-    int32_t get_bearing_to_target_cd() const { return _pos_control.get_bearing_to_target_cd(); }
+    /// get bearing to target in degrees
+    float get_bearing_to_target_rad() const { return _pos_control.get_bearing_to_target_rad(); }
 
     /// true if pilot control of radius and turn rate is enabled
     bool pilot_control_enabled() const { return (_options.get() & CircleOptions::MANUAL_CONTROL) != 0; }
@@ -159,7 +160,7 @@ private:
     float       _last_radius_param; // last value of radius param, used to update radius on param change
 
     // terrain following variables
-    bool        _terrain_alt;           // true if _center_neu_cm.z is alt-above-terrain, false if alt-above-ekf-origin
+    bool        _is_terrain_alt;           // true if _center_neu_cm.z is alt-above-terrain, false if alt-above-ekf-origin
     bool        _rangefinder_available; // true if range finder could be used
     bool        _rangefinder_healthy;   // true if range finder is healthy
     float       _rangefinder_terrain_offset_cm; // latest rangefinder based terrain offset (e.g. terrain's height above EKF origin)

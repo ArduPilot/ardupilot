@@ -33,9 +33,15 @@ include AP_AHRS/AP_AHRS.h
 singleton AP_AHRS rename ahrs
 singleton AP_AHRS depends AP_AHRS_ENABLED
 singleton AP_AHRS semaphore
+singleton AP_AHRS method get_roll_rad float
 singleton AP_AHRS method get_roll float
+singleton AP_AHRS method get_roll deprecate Use get_roll_rad
+singleton AP_AHRS method get_pitch_rad float
 singleton AP_AHRS method get_pitch float
+singleton AP_AHRS method get_pitch deprecate Use get_pitch_rad
+singleton AP_AHRS method get_yaw_rad float
 singleton AP_AHRS method get_yaw float
+singleton AP_AHRS method get_yaw deprecate Use get_yaw_rad
 singleton AP_AHRS method get_location boolean Location'Null
 singleton AP_AHRS method get_location alias get_position
 singleton AP_AHRS method get_home Location
@@ -148,6 +154,7 @@ singleton AP_GPS method get_antenna_offset Vector3f uint8_t 0 ud->num_sensors()
 singleton AP_GPS method first_unconfigured_gps boolean uint8_t'Null
 singleton AP_GPS method gps_yaw_deg boolean uint8_t 0 ud->num_sensors() float'Null float'Null uint32_t'Null
 singleton AP_GPS method time_epoch_usec uint64_t uint8_t 0 ud->num_sensors()
+singleton AP_GPS manual inject_data lua_gps_inject_data 1 0
 
 include AP_Math/AP_Math.h
 
@@ -430,6 +437,8 @@ include AP_Scripting/AP_Scripting_SerialAccess.h
 -- don't let user create access objects
 userdata AP_Scripting_SerialAccess creation null -1
 userdata AP_Scripting_SerialAccess method begin void uint32_t 1U UINT32_MAX
+userdata AP_Scripting_SerialAccess method configure_parity void uint8_t 0 2
+userdata AP_Scripting_SerialAccess method set_stop_bits void uint8_t 1 2
 userdata AP_Scripting_SerialAccess method write uint32_t uint8_t'skip_check
 userdata AP_Scripting_SerialAccess manual writestring lua_serial_writestring 1 1
 userdata AP_Scripting_SerialAccess method read int16_t
@@ -1071,6 +1080,7 @@ singleton AP_Networking method get_ip_active uint32_t
 singleton AP_Networking method get_netmask_active uint32_t
 singleton AP_Networking method get_gateway_active uint32_t
 singleton AP_Networking method address_to_str string uint32_t'skip_check
+singleton AP_Networking method add_route boolean uint8_t'skip_check uint8_t'skip_check uint32_t'skip_check uint8_t'skip_check
 
 include AP_VisualOdom/AP_VisualOdom.h
 singleton AP_VisualOdom depends HAL_VISUALODOM_ENABLED

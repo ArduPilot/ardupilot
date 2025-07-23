@@ -4,6 +4,8 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Networking/AP_Networking_Config.h>
 #include <AP_VisualOdom/AP_VisualOdom_config.h>
+#include <RC_Channel/RC_Channel_config.h>
+#include <AP_RSSI/AP_RSSI_config.h>
 
 #ifndef AP_DDS_ENABLED
 #define AP_DDS_ENABLED 1
@@ -89,7 +91,7 @@
 #endif
 
 #ifndef AP_DDS_RC_PUB_ENABLED
-#define AP_DDS_RC_PUB_ENABLED 1
+#define AP_DDS_RC_PUB_ENABLED (AP_RSSI_ENABLED && AP_RC_CHANNEL_ENABLED)
 #endif
 
 #ifndef AP_DDS_DELAY_RC_TOPIC_MS

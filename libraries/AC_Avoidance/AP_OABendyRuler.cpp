@@ -114,7 +114,7 @@ bool AP_OABendyRuler::update(const Location& current_loc, const Location& destin
     float ground_course_deg;
     if (ground_speed_vec.length_squared() < OA_BENDYRULER_LOW_SPEED_SQUARED) {
         // with zero ground speed use vehicle's heading
-        ground_course_deg = AP::ahrs().yaw_sensor * 0.01f;
+        ground_course_deg = AP::ahrs().get_yaw_deg();
     } else {
         ground_course_deg = degrees(ground_speed_vec.angle());
     }

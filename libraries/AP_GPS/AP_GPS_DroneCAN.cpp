@@ -419,15 +419,14 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
                 interim_state.have_speed_accuracy = false;
             }
         }
-
-        interim_state.num_sats = msg.sats_used;
     } else {
         interim_state.have_vertical_velocity = false;
         interim_state.have_vertical_accuracy = false;
         interim_state.have_horizontal_accuracy = false;
         interim_state.have_speed_accuracy = false;
-        interim_state.num_sats = 0;
     }
+
+    interim_state.num_sats = msg.sats_used;
 
     if (!seen_aux) {
         // if we haven't seen an Aux message then populate vdop and
@@ -550,7 +549,11 @@ void AP_GPS_DroneCAN::handle_moving_baseline_msg(const ardupilot_gnss_MovingBase
 {
     WITH_SEMAPHORE(sem);
     if (role != AP_GPS::GPS_ROLE_MB_BASE) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Incorrect Role set for DroneCAN GPS, %d should be Base", node_id);
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - last_base_warning_ms > 5000) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Incorrect Role set for DroneCAN GPS, %d should be Base", node_id);
+            last_base_warning_ms = now_ms;
+        }
         return;
     }
 

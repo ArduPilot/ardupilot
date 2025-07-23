@@ -232,8 +232,7 @@ void Plane::crash_detection_update(void)
             // Declare a crash if we are oriented more that 60deg in pitch or roll
             if (!crash_state.checkedHardLanding && // only check once
                 been_auto_flying &&
-                (labs(ahrs.roll_sensor) > 6000 || labs(ahrs.pitch_sensor) > 6000)) {
-                
+                (fabsf(ahrs.get_roll_deg()) > 60 || fabsf(ahrs.get_pitch_deg()) > 60)) {
                 crashed = true;
 
                 // did we "crash" within 75m of the landing location? Probably just a hard landing

@@ -426,7 +426,7 @@ void Copter::rate_controller_set_rates(uint8_t rate_decimation, RateControllerRa
     const uint32_t attitude_rate = ins.get_raw_gyro_rate_hz() / rate_decimation;
     attitude_control->set_notch_sample_rate(attitude_rate);
     hal.rcout->set_dshot_rate(SRV_Channels::get_dshot_rate(), attitude_rate);
-    motors->set_dt(1.0f / attitude_rate);
+    motors->set_dt_s(1.0f / attitude_rate);
     gcs().send_text(warn_cpu_high ? MAV_SEVERITY_WARNING : MAV_SEVERITY_INFO,
                     "Rate CPU %s, rate set to %uHz",
                     warn_cpu_high ? "high" : "normal", (unsigned) attitude_rate);

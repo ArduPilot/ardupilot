@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+# flake8: noqa
+
 """
 Adds support for building littlefs as part of a Waf build
 """

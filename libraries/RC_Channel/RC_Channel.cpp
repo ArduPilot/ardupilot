@@ -461,6 +461,23 @@ float RC_Channel::norm_input_ignore_trim() const
     return constrain_float(ret, -1.0f, 1.0f);
 }
 
+
+bool RC_Channel::norm_input_ignore_trim(float &norm_in) const
+{
+    if (!rc().has_valid_input()) {
+        return false;
+    }
+    if (radio_in == 0) {
+        return false;
+    }
+    if (radio_max <= radio_min) {
+        // sanity check min and max to avoid divide by zero
+        return false;
+    }
+    norm_in = norm_input_ignore_trim();
+    return true;
+}
+
 /*
   get percentage input from 0 to 100. This ignores the trim value.
  */
@@ -1030,9 +1047,9 @@ void RC_Channel::do_aux_function_armdisarm(const AuxSwitchPos ch_flag)
     }
 }
 
+#if AP_ADSB_AVOIDANCE_ENABLED
 void RC_Channel::do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag)
 {
-#if HAL_ADSB_ENABLED
     AP_Avoidance *avoidance = AP::ap_avoidance();
     if (avoidance == nullptr) {
         return;
@@ -1057,8 +1074,8 @@ void RC_Channel::do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag)
     avoidance->disable();
     LOGGER_WRITE_EVENT(LogEvent::AVOIDANCE_ADSB_DISABLE);
     GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ADSB Avoidance Disabled");
-#endif
 }
+#endif  // AP_ADSB_AVOIDANCE_ENABLED
 
 void RC_Channel::do_aux_function_avoid_proximity(const AuxSwitchPos ch_flag)
 {
@@ -1522,11 +1539,11 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         break;
 #endif
 
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
     case AUX_FUNC::AVOID_ADSB:
         do_aux_function_avoid_adsb(ch_flag);
         break;
-#endif
+#endif  // AP_ADSB_AVOIDANCE_ENABLED
 
     case AUX_FUNC::FFT_NOTCH_TUNE:
         do_aux_function_fft_notch_tune(ch_flag);
@@ -1656,6 +1673,7 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         break;
 #endif
 
+#if AP_AHRS_ENABLED
     case AUX_FUNC::EKF_SOURCE_SET: {
         AP_NavEKF_Source::SourceSetSelection source_set = AP_NavEKF_Source::SourceSetSelection::PRIMARY;
         switch (ch_flag) {
@@ -1676,6 +1694,7 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Using EKF Source Set %u", uint8_t(source_set)+1);
         break;
     }
+#endif  // AP_AHRS_ENABLED
 
 #if AP_OPTICALFLOW_CALIBRATOR_ENABLED
     case AUX_FUNC::OPTFLOW_CAL: {
@@ -1824,6 +1843,7 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
     }
 #endif
 
+#if AP_ARMING_ENABLED
     case AUX_FUNC::ARM_EMERGENCY_STOP: {
         switch (ch_flag) {
         case AuxSwitchPos::HIGH:
@@ -1842,6 +1862,7 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         }
         break;
     }
+#endif  // AP_ARMING_ENABLED
 
 #if AP_AHRS_ENABLED
     case AUX_FUNC::EKF_LANE_SWITCH:

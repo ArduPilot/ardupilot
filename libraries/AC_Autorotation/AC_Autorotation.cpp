@@ -42,7 +42,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Range: 8 20
     // @Increment: 0.5
     // @User: Standard
-    AP_GROUPINFO("FWD_SP_TARG", 4, AC_Autorotation, _param_target_speed, 11),
+    AP_GROUPINFO("FWD_SP_TARG", 4, AC_Autorotation, _param_target_speed_ms, 11),
 
     // @Param: COL_FILT_E
     // @DisplayName: Entry Phase Collective Filter
@@ -69,7 +69,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Range: 0.5 8.0
     // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("XY_ACC_MAX", 7, AC_Autorotation, _param_accel_max, 2.0),
+    AP_GROUPINFO("XY_ACC_MAX", 7, AC_Autorotation, _param_accel_max_mss, 2.0),
 
     // @Param: HS_SENSOR
     // @DisplayName: Main Rotor RPM Sensor 
@@ -178,8 +178,8 @@ void AC_Autorotation::init_entry(void)
     _motors_heli->set_throttle_filter_cutoff(2.0);
 
     // Set speed target to maintain the current speed whilst we enter the autorotation
-    _desired_vel = _param_target_speed.get();
-    _target_vel = get_speed_forward();
+    _desired_vel_ms = _param_target_speed_ms.get();
+    _target_vel_ms = get_speed_forward_ms();
 
     // Reset I term of velocity PID
     _fwd_speed_pid.reset_filter();
@@ -187,7 +187,7 @@ void AC_Autorotation::init_entry(void)
 }
 
 // The entry controller just a special case of the glide controller with head speed target slewing
-void AC_Autorotation::run_entry(float pilot_norm_accel)
+void AC_Autorotation::run_entry(float pilot_accel_norm)
 {
     // Slowly change the target head speed until the target head speed matches the parameter defined value
     float head_speed_norm;
@@ -201,7 +201,7 @@ void AC_Autorotation::run_entry(float pilot_norm_accel)
     const float max_change = _hs_accel * _dt;
     _target_head_speed = constrain_float(HEAD_SPEED_TARGET_RATIO, _target_head_speed - max_change, _target_head_speed + max_change);
 
-    run_glide(pilot_norm_accel);
+    run_glide(pilot_accel_norm);
 }
 
 // Functions and config that are only to be done once at the beginning of the glide
@@ -216,15 +216,15 @@ void AC_Autorotation::init_glide(void)
     _target_head_speed = HEAD_SPEED_TARGET_RATIO;
 
     // Ensure desired forward speed target is set to param value
-    _desired_vel = _param_target_speed.get();
+    _desired_vel_ms = _param_target_speed_ms.get();
 }
 
 // Maintain head speed and forward speed as we glide to the ground
-void AC_Autorotation::run_glide(float pilot_norm_accel)
+void AC_Autorotation::run_glide(float pilot_accel_norm)
 {
     update_headspeed_controller();
 
-    update_forward_speed_controller(pilot_norm_accel);
+    update_forward_speed_controller(pilot_accel_norm);
 }
 
 void AC_Autorotation::update_headspeed_controller(void)
@@ -307,53 +307,53 @@ bool AC_Autorotation::get_norm_head_speed(float& norm_rpm) const
 }
 
 // Update speed controller
-void AC_Autorotation::update_forward_speed_controller(float pilot_norm_accel)
+void AC_Autorotation::update_forward_speed_controller(float pilot_accel_norm)
 {
     // Limiting the desired velocity based on the max acceleration limit to get an update target
-    const float min_vel = _target_vel - get_accel_max() * _dt;
-    const float max_vel = _target_vel + get_accel_max() * _dt;
-    _target_vel = constrain_float(_desired_vel, min_vel, max_vel); // (m/s)
+    const float min_vel_ms = _target_vel_ms - get_accel_max_mss() * _dt;
+    const float max_vel_ms = _target_vel_ms + get_accel_max_mss() * _dt;
+    _target_vel_ms = constrain_float(_desired_vel_ms, min_vel_ms, max_vel_ms); // (m/s)
 
     // Calculate acceleration target
-    const float fwd_accel_target  = _fwd_speed_pid.update_all(_target_vel, get_speed_forward(), _dt, _limit_accel); // (m/s/s)
+    const float fwd_accel_target_mss  = _fwd_speed_pid.update_all(_target_vel_ms, get_speed_forward_ms(), _dt, _limit_accel); // (m/s/s)
 
     // Build the body frame XY accel vector.
     // Pilot can request as much as 1/2 of the max accel laterally to perform a turn.
     // We only allow up to half as we need to prioritize building/maintaining airspeed.
-    Vector2f bf_accel_target = {fwd_accel_target, pilot_norm_accel * get_accel_max() * 0.5};
+    Vector2f bf_accel_target_mss = {fwd_accel_target_mss, pilot_accel_norm * get_accel_max_mss() * 0.5};
 
     // Ensure we do not exceed the accel limit
-    _limit_accel = bf_accel_target.limit_length(get_accel_max());
+    _limit_accel = bf_accel_target_mss.limit_length(get_accel_max_mss());
 
     // Calculate roll and pitch targets from angles, negative accel for negative pitch (pitch forward)
-    Vector2f angle_target = { accel_to_angle(-bf_accel_target.x), // Pitch
-                              accel_to_angle(bf_accel_target.y)}; // Roll
+    Vector2f angle_target_rad = { accel_mss_to_angle_rad(-bf_accel_target_mss.x), // Pitch
+                                  accel_mss_to_angle_rad(bf_accel_target_mss.y)}; // Roll
 
     // Ensure that the requested angles do not exceed angle max
-    _limit_accel |= angle_target.limit_length(_attitude_control->lean_angle_max_cd());
+    _limit_accel |= angle_target_rad.limit_length(_attitude_control->lean_angle_max_rad());
 
     // we may have scaled the lateral accel in the angle limit scaling, so we need to
     // back calculate the resulting accel from this constrained angle for the yaw rate calc
-    const float bf_lat_accel_target = angle_to_accel(angle_target.y);
+    const float bf_lat_accel_target_mss = angle_rad_to_accel_mss(angle_target_rad.y);
 
     // Calc yaw rate from desired body-frame accels
     // this seems suspiciously simple, but it is correct
     // accel = r * w^2, r = radius and w = angular rate
     // radius can be calculated as the distance traveled in the time it takes to do 360 deg
     // One rotation takes: (2*pi)/w seconds
-    // Distance traveled in that time: (s*2*pi)/w
-    // radius for that distance: ((s*2*pi)/w) / (2*pi)
-    // r = s / w
-    // accel = (s / w) * w^2
-    // accel = s * w
-    // w = accel / s
-    float yaw_rate_cds = 0.0;
-    if (!is_zero(_target_vel)) {
-        yaw_rate_cds = degrees(bf_lat_accel_target / _target_vel) * 100.0;
+    // Distance traveled in that time: (vel*2*pi)/w
+    // radius for that distance: ((vel*2*pi)/w) / (2*pi)
+    // r = vel / w
+    // accel = (vel / w) * w^2
+    // accel = vel * w
+    // w = accel / vel
+    float yaw_rate_rads = 0.0;
+    if (!is_zero(_target_vel_ms)) {
+        yaw_rate_rads = bf_lat_accel_target_mss / _target_vel_ms;
     }
 
     // Output to attitude controller
-    _attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(angle_target.y * 100.0, angle_target.x * 100.0, yaw_rate_cds);
+    _attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(angle_target_rad.y, angle_target_rad.x, yaw_rate_rads);
 
 #if HAL_LOGGING_ENABLED
     // @LoggerMessage: ARSC
@@ -378,7 +378,7 @@ void AC_Autorotation::update_forward_speed_controller(float pilot_norm_accel)
                                 "F0000000-00",
                                 "QfffffffBff",
                                 AP_HAL::micros64(),
-                                _desired_vel,
+                                _desired_vel_ms,
                                 pid_info.target,
                                 pid_info.actual,
                                 pid_info.P,
@@ -386,20 +386,20 @@ void AC_Autorotation::update_forward_speed_controller(float pilot_norm_accel)
                                 pid_info.D,
                                 pid_info.FF,
                                 uint8_t(_limit_accel),
-                                bf_accel_target.x,
-                                bf_accel_target.y);
+                                bf_accel_target_mss.x,
+                                bf_accel_target_mss.y);
 #endif
 }
 
 // smoothly zero velocity and accel
 void AC_Autorotation::run_landed(void)
 {
-    _desired_vel *= 0.95;
+    _desired_vel_ms *= 0.95;
     update_forward_speed_controller(0.0);
 }
 
 // Determine the body frame forward speed
-float AC_Autorotation::get_speed_forward(void) const
+float AC_Autorotation::get_speed_forward_ms(void) const
 {
     Vector3f vel_NED = {0,0,0};
     const AP_AHRS &ahrs = AP::ahrs();

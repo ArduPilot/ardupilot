@@ -244,10 +244,10 @@ void SITL_State::_fdm_input_local(void)
     // construct servos structure for FDM
     _simulator_servos(input);
 
-#if HAL_SIM_JSON_MASTER_ENABLED
+#if AP_SIM_JSON_MASTER_ENABLED
     // read servo inputs from ride along flight controllers
     ride_along.receive(input);
-#endif
+#endif  // AP_SIM_JSON_MASTER_ENABLED
 
     // replace outputs from multicast
     multicast_servo_update(input);
@@ -265,10 +265,10 @@ void SITL_State::_fdm_input_local(void)
     }
 #endif
 
-#if HAL_SIM_JSON_MASTER_ENABLED
+#if AP_SIM_JSON_MASTER_ENABLED
     // output JSON state to ride along flight controllers
     ride_along.send(_sitl->state,sitl_model->get_position_relhome());
-#endif
+#endif  // AP_SIM_JSON_MASTER_ENABLED
 
     sim_update();
 
@@ -445,9 +445,13 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
             throttle = hover_throttle;
         }
     } else if (_vehicle == Rover) {
-        input.servos[2] = static_cast<uint16_t>(constrain_int16(input.servos[2], 1000, 2000));
+        if (input.servos[2] != 0) {
+            input.servos[2] = static_cast<uint16_t>(constrain_int16(input.servos[2], 1000, 2000));
+            throttle = fabsf((input.servos[2] - 1500) / 500.0f);
+        } else {
+            throttle = 0;
+        }
         input.servos[0] = static_cast<uint16_t>(constrain_int16(input.servos[0], 1000, 2000));
-        throttle = fabsf((input.servos[2] - 1500) / 500.0f);
     } else {
         // run checks on each motor
         uint8_t running_motors = 0;

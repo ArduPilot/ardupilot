@@ -34,7 +34,7 @@ local function send_HAGL()
       return
    end
    local rangefinder_dist = rangefinder:distance_orient(RANGEFINDER_ORIENT)
-   local correction = math.cos(ahrs:get_roll())*math.cos(ahrs:get_pitch())
+   local correction = math.cos(ahrs:get_roll_rad())*math.cos(ahrs:get_pitch_rad())
    local rangefinder_corrected = rangefinder_dist * correction
    if RANGEFINDER_ORIENT == ROTATION_PITCH_90 then
       rangefinder_corrected = -rangefinder_corrected

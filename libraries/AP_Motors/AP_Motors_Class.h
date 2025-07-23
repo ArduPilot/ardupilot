@@ -1,5 +1,7 @@
 #pragma once
 
+#include "AP_Motors_config.h"
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <Filter/Filter.h>         // filter library
@@ -41,57 +43,6 @@
 #define AP_MOTORS_MOT_30 29U
 #define AP_MOTORS_MOT_31 30U
 #define AP_MOTORS_MOT_32 31U
-
-#ifndef AP_MOTORS_MAX_NUM_MOTORS
-#if AP_SCRIPTING_ENABLED
-#define AP_MOTORS_MAX_NUM_MOTORS 32
-#else
-#define AP_MOTORS_MAX_NUM_MOTORS 12
-#endif
-
-// doesn't make sense to have more motors than servo channels, so clamp:
-#if NUM_SERVO_CHANNELS < AP_MOTORS_MAX_NUM_MOTORS
-#undef AP_MOTORS_MAX_NUM_MOTORS
-#define AP_MOTORS_MAX_NUM_MOTORS NUM_SERVO_CHANNELS
-#endif
-
-// various Motors backends will not compile if we don't have 16 motors
-// available (eg. AP_Motors6DOF).  Until we stop compiling those
-// backends in when there aren't enough motors to support those
-// backends we will support a minimum of 12 motors, the limit before
-// we moved to 32 motor support:
-#if AP_MOTORS_MAX_NUM_MOTORS < 12
-#undef AP_MOTORS_MAX_NUM_MOTORS
-#define AP_MOTORS_MAX_NUM_MOTORS 12
-#endif
-
-#endif  // defined (AP_MOTORS_MAX_NUM_MOTORS)
-
-#ifndef AP_MOTORS_FRAME_DEFAULT_ENABLED
-#define AP_MOTORS_FRAME_DEFAULT_ENABLED 1
-#endif
-
-#ifndef AP_MOTORS_FRAME_QUAD_ENABLED
-#define AP_MOTORS_FRAME_QUAD_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
-#ifndef AP_MOTORS_FRAME_HEXA_ENABLED
-#define AP_MOTORS_FRAME_HEXA_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
-#ifndef AP_MOTORS_FRAME_OCTA_ENABLED
-#define AP_MOTORS_FRAME_OCTA_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
-#ifndef AP_MOTORS_FRAME_DECA_ENABLED
-#define AP_MOTORS_FRAME_DECA_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
-#ifndef AP_MOTORS_FRAME_DODECAHEXA_ENABLED
-#define AP_MOTORS_FRAME_DODECAHEXA_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
-#ifndef AP_MOTORS_FRAME_Y6_ENABLED
-#define AP_MOTORS_FRAME_Y6_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
-#ifndef AP_MOTORS_FRAME_OCTAQUAD_ENABLED
-#define AP_MOTORS_FRAME_OCTAQUAD_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
 
 // motor update rate
 #define AP_MOTORS_SPEED_DEFAULT     490 // default output rate to the motors
@@ -236,11 +187,11 @@ public:
     // get_spool_state - get current spool state
     enum SpoolState  get_spool_state(void) const { return _spool_state; }
 
-    // set_dt / get_dt - dt is the time since the last time the motor mixers were updated
+    // set_dt_s / get_dt_s - dt is the time since the last time (in seconds) the motor mixers were updated
     //   _dt should be set based on the time of the last IMU read used by these controllers
     //   the motor mixers should run on each loop to ensure normal operation
-    void set_dt(float dt) { _dt = dt; }
-    float get_dt() const { return _dt; }
+    void set_dt_s(float dt_s) { _dt_s = dt_s; }
+    float get_dt_s() const { return _dt_s; }
 
     // structure for holding motor limit flags
     struct AP_Motors_limit {
@@ -357,7 +308,7 @@ protected:
     virtual void save_params_on_disarm() {}
 
     // internal variables
-    float               _dt;                        // time difference (in seconds) since the last loop time
+    float               _dt_s;                      // time difference (in seconds) since the last loop time
     uint16_t            _speed_hz;                  // speed in hz to send updates to motors
     float               _roll_in;                   // desired roll control from attitude controllers, -1 ~ +1
     float               _roll_in_ff;                // desired roll feed forward control from attitude controllers, -1 ~ +1

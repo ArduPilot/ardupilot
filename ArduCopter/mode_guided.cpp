@@ -16,10 +16,8 @@ struct {
     uint32_t update_time_ms;
     Quaternion attitude_quat;
     Vector3f ang_vel_body;
-    float yaw_rate_cds;
     float climb_rate_cms;   // climb rate in cms.  Used if use_thrust is false
     float thrust;           // thrust from -1 to 1.  Used if use_thrust is true
-    bool use_yaw_rate;
     bool use_thrust;
 } static guided_angle_state;
 
@@ -219,7 +217,7 @@ void ModeGuided::wp_control_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // initialise position controller
@@ -289,7 +287,7 @@ bool ModeGuided::is_taking_off() const
     return guided_mode == SubMode::TakeOff && !takeoff_complete;
 }
 
-bool ModeGuided::set_speed_xy(float speed_xy_cms)
+bool ModeGuided::set_speed_xy_cms(float speed_xy_cms)
 {
     // initialise horizontal speed, acceleration
     pos_control->set_max_speed_accel_NE_cm(speed_xy_cms, wp_nav->get_wp_acceleration_cmss());
@@ -297,7 +295,7 @@ bool ModeGuided::set_speed_xy(float speed_xy_cms)
     return true;
 }
 
-bool ModeGuided::set_speed_up(float speed_up_cms)
+bool ModeGuided::set_speed_up_cms(float speed_up_cms)
 {
     // initialize vertical speeds and acceleration
     pos_control->set_max_speed_accel_U_cm(wp_nav->get_default_speed_down_cms(), speed_up_cms, wp_nav->get_accel_U_cmss());
@@ -305,7 +303,7 @@ bool ModeGuided::set_speed_up(float speed_up_cms)
     return true;
 }
 
-bool ModeGuided::set_speed_down(float speed_down_cms)
+bool ModeGuided::set_speed_down_cms(float speed_down_cms)
 {
     // initialize vertical speeds and acceleration
     pos_control->set_max_speed_accel_U_cm(speed_down_cms, wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
@@ -333,14 +331,12 @@ void ModeGuided::angle_control_start()
     guided_angle_state.attitude_quat.from_euler(Vector3f(0.0, 0.0, attitude_control->get_att_target_euler_rad().z));
     guided_angle_state.ang_vel_body.zero();
     guided_angle_state.climb_rate_cms = 0.0f;
-    guided_angle_state.yaw_rate_cds = 0.0f;
-    guided_angle_state.use_yaw_rate = false;
 }
 
 // set_destination - sets guided mode's target destination
 // Returns true if the fence is enabled and guided waypoint is within the fence
 // else return false if the waypoint is outside the fence
-bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool terrain_alt)
+bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool terrain_alt)
 {
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
@@ -360,7 +356,7 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
         }
 
         // set yaw state
-        set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+        set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
         // no need to check return status because terrain data is not used
         wp_nav->set_wp_destination_NEU_cm(destination, terrain_alt);
@@ -398,7 +394,7 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
     }
 
     // set yaw state
-    set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+    set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
     // set position target and zero velocity and acceleration
     guided_pos_target_cm = destination.topostype();
@@ -439,7 +435,7 @@ bool ModeGuided::get_wp(Location& destination) const
 // sets guided mode's target from a Location object
 // returns false if destination could not be set (probably caused by missing terrain data)
 // or if the fence is enabled and guided waypoint is outside the fence
-bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw)
 {
 #if AP_FENCE_ENABLED
     // reject destination outside the fence.
@@ -465,7 +461,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         }
 
         // set yaw state
-        set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+        set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
 #if HAL_LOGGING_ENABLED
         // log target
@@ -490,7 +486,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
     }
 
     // set yaw state
-    set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+    set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
     // initialise terrain following if needed
     if (terrain_alt) {
@@ -527,7 +523,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 }
 
 // set_velaccel - sets guided mode's target velocity and acceleration
-void ModeGuided::set_accel(const Vector3f& acceleration, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool log_request)
+void ModeGuided::set_accel(const Vector3f& acceleration, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool log_request)
 {
     // check we are in acceleration control mode
     if (guided_mode != SubMode::Accel) {
@@ -535,7 +531,7 @@ void ModeGuided::set_accel(const Vector3f& acceleration, bool use_yaw, float yaw
     }
 
     // set yaw state
-    set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+    set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
     // set velocity and acceleration targets and zero position
     guided_pos_target_cm.zero();
@@ -553,13 +549,13 @@ void ModeGuided::set_accel(const Vector3f& acceleration, bool use_yaw, float yaw
 }
 
 // set_velocity - sets guided mode's target velocity
-void ModeGuided::set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool log_request)
+void ModeGuided::set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool log_request)
 {
-    set_velaccel(velocity, Vector3f(), use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw, log_request);
+    set_velaccel(velocity, Vector3f(), use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw, log_request);
 }
 
 // set_velaccel - sets guided mode's target velocity and acceleration
-void ModeGuided::set_velaccel(const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool log_request)
+void ModeGuided::set_velaccel(const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool log_request)
 {
     // check we are in velocity and acceleration control mode
     if (guided_mode != SubMode::VelAccel) {
@@ -567,7 +563,7 @@ void ModeGuided::set_velaccel(const Vector3f& velocity, const Vector3f& accelera
     }
 
     // set yaw state
-    set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+    set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
     // set velocity and acceleration targets and zero position
     guided_pos_target_cm.zero();
@@ -585,13 +581,13 @@ void ModeGuided::set_velaccel(const Vector3f& velocity, const Vector3f& accelera
 }
 
 // set_destination_posvel - set guided mode position and velocity target
-bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw)
 {
-    return set_destination_posvelaccel(destination, velocity, Vector3f(), use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+    return set_destination_posvelaccel(destination, velocity, Vector3f(), use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 }
 
 // set_destination_posvelaccel - set guided mode position, velocity and acceleration target
-bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw)
 {
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
@@ -609,7 +605,7 @@ bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const 
     }
 
     // set yaw state
-    set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+    set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
     update_time_ms = millis();
     guided_pos_target_cm = destination.topostype();
@@ -750,7 +746,7 @@ void ModeGuided::pos_control_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // velaccel_control_run - runs the guided velocity controller
@@ -795,7 +791,7 @@ void ModeGuided::accel_control_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // velaccel_control_run - runs the guided velocity and acceleration controller
@@ -850,7 +846,7 @@ void ModeGuided::velaccel_control_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // pause_control_run - runs the guided mode pause controller
@@ -880,7 +876,7 @@ void ModeGuided::pause_control_run()
     pos_control->update_U_controller();
 
     // call attitude controller
-    attitude_control->input_thrust_vector_rate_heading_cds(pos_control->get_thrust_vector(), 0.0);
+    attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), 0.0);
 }
 
 // posvelaccel_control_run - runs the guided position, velocity and acceleration controller
@@ -939,7 +935,7 @@ void ModeGuided::posvelaccel_control_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // angle_control_run - runs the guided angle controller
@@ -952,7 +948,7 @@ void ModeGuided::angle_control_run()
         climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms());
 
         // get avoidance adjusted climb rate
-        climb_rate_cms = get_avoidance_adjusted_climbrate(climb_rate_cms);
+        climb_rate_cms = get_avoidance_adjusted_climbrate_cms(climb_rate_cms);
     }
 
     // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
@@ -998,7 +994,7 @@ void ModeGuided::angle_control_run()
 
     // call attitude controller
     if (guided_angle_state.attitude_quat.is_zero()) {
-        attitude_control->input_rate_bf_roll_pitch_yaw_cds(degrees(guided_angle_state.ang_vel_body.x) * 100.0f, degrees(guided_angle_state.ang_vel_body.y) * 100.0f, degrees(guided_angle_state.ang_vel_body.z) * 100.0f);
+        attitude_control->input_rate_bf_roll_pitch_yaw_rads(guided_angle_state.ang_vel_body.x, guided_angle_state.ang_vel_body.y, guided_angle_state.ang_vel_body.z);
     } else {
         attitude_control->input_quaternion(guided_angle_state.attitude_quat, guided_angle_state.ang_vel_body);
     }
@@ -1013,16 +1009,16 @@ void ModeGuided::angle_control_run()
 }
 
 // helper function to set yaw state and targets
-void ModeGuided::set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle)
+void ModeGuided::set_yaw_state_rad(bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_angle)
 {
     if (use_yaw && relative_angle) {
-        auto_yaw.set_fixed_yaw(yaw_cd * 0.01f, 0.0f, 0, relative_angle);
+        auto_yaw.set_fixed_yaw_rad(yaw_rad, 0.0f, 0, relative_angle);
     } else if (use_yaw && use_yaw_rate) {
-        auto_yaw.set_yaw_angle_rate(yaw_cd * 0.01f, yaw_rate_cds * 0.01f);
+        auto_yaw.set_yaw_angle_and_rate_rad(yaw_rad, yaw_rate_rads);
     } else if (use_yaw && !use_yaw_rate) {
-        auto_yaw.set_yaw_angle_rate(yaw_cd * 0.01f, 0.0f);
+        auto_yaw.set_yaw_angle_and_rate_rad(yaw_rad, 0.0f);
     } else if (use_yaw_rate) {
-        auto_yaw.set_rate(yaw_rate_cds);
+        auto_yaw.set_rate_rad(yaw_rate_rads);
     } else {
         auto_yaw.set_mode_to_default(false);
     }
@@ -1089,7 +1085,7 @@ bool ModeGuided::limit_check()
 
     // check if we have gone beyond horizontal limit
     if (guided_limit.horiz_max_cm > 0.0f) {
-        const float horiz_move = get_horizontal_distance_cm(guided_limit.start_pos.xy(), curr_pos.xy());
+        const float horiz_move = get_horizontal_distance(guided_limit.start_pos.xy(), curr_pos.xy());
         if (horiz_move > guided_limit.horiz_max_cm) {
             return true;
         }
@@ -1120,7 +1116,7 @@ float ModeGuided::wp_distance_m() const
     case SubMode::WP:
         return wp_nav->get_wp_distance_to_destination_cm() * 0.01f;
     case SubMode::Pos:
-        return get_horizontal_distance_cm(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), guided_pos_target_cm.xy().tofloat()) * 0.01f;
+        return get_horizontal_distance(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), guided_pos_target_cm.xy().tofloat()) * 0.01f;
     case SubMode::PosVelAccel:
         return pos_control->get_pos_error_NE_cm() * 0.01f;
     default:
@@ -1128,15 +1124,15 @@ float ModeGuided::wp_distance_m() const
     }
 }
 
-int32_t ModeGuided::wp_bearing() const
+float ModeGuided::wp_bearing_deg() const
 {
     switch(guided_mode) {
     case SubMode::WP:
-        return wp_nav->get_wp_bearing_to_destination_cd();
+        return degrees(wp_nav->get_wp_bearing_to_destination_rad());
     case SubMode::Pos:
-        return get_bearing_cd(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), guided_pos_target_cm.xy().tofloat());
+        return degrees(get_bearing_rad(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), guided_pos_target_cm.xy().tofloat()));
     case SubMode::PosVelAccel:
-        return pos_control->get_bearing_to_target_cd();
+        return degrees(pos_control->get_bearing_to_target_rad());
     case SubMode::TakeOff:
     case SubMode::Accel:
     case SubMode::VelAccel:

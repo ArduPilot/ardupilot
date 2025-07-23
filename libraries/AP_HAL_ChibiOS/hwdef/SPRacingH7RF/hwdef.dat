@@ -170,11 +170,6 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 1
 # one BARO
 BARO BMP388 I2C:1:0x76
 
-# setup for OSD
-#define OSD_ENABLED 1
-#define HAL_OSD_TYPE_DEFAULT 1
-#ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
-
 define HAL_OS_FATFS_IO 1
 
 define BOARD_PWM_COUNT_DEFAULT 9

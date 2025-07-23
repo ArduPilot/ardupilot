@@ -513,6 +513,14 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "param-file-validation" ]; then
+        echo "Testing param check script"
+        ./Tools/scripts/param_check_unittests.py
+        echo "Validating parameter files"
+        ./Tools/scripts/param_check_all.py
+        continue
+    fi
+
     if [ "$t" == "configure-all" ]; then
         echo "Checking configure of all boards"
         ./Tools/scripts/configure_all.py

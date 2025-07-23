@@ -1,3 +1,5 @@
+# flake8: noqa
+
 import os
 import json
 import shutil

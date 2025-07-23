@@ -820,7 +820,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def QAssist(self):
         '''QuadPlane Assist tests'''
-        self.takeoff(10, mode="QHOVER")
+        self.takeoff(50, mode="QHOVER", timeout=120)
         self.set_rc(3, 1800)
         self.change_mode("FBWA")
 
@@ -829,6 +829,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         thr_min_pwm = self.get_parameter("Q_M_PWM_MIN")
         lim_roll_deg = self.get_parameter("ROLL_LIMIT_DEG")
+        lim_pitch_down_deg = self.get_parameter("PTCH_LIM_MIN_DEG")
+        lim_pitch_up_deg = self.get_parameter("PTCH_LIM_MAX_DEG")
         self.progress("Waiting for motors to stop (transition completion)")
         self.wait_servo_channel_value(5,
                                       thr_min_pwm,
@@ -852,12 +854,13 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                                       comparator=operator.eq)
         self.set_rc(3, 1300)
 
-        # Test angle assist
+        self.start_subtest("Test angle assist (roll)")
         self.context_push()
+        self.context_collect('STATUSTEXT')
         self.progress("Rolling over to %.0f degrees" % -lim_roll_deg)
         self.set_rc(1, 1000)
         self.wait_roll(-lim_roll_deg, 5)
-        self.progress("Killing servo outputs to force qassist to help")
+        self.progress("Killing aileron servo output to force qassist to help")
         self.set_parameter("SERVO1_MIN", 1480)
         self.set_parameter("SERVO1_MAX", 1480)
         self.set_parameter("SERVO1_TRIM", 1480)
@@ -865,9 +868,89 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_rc(1, 2000)
         self.progress("Waiting for qassist (angle) to kick in")
         self.wait_servo_channel_value(5, 1100, timeout=30, comparator=operator.gt)
+        self.wait_statustext('Angle assist', check_context=True)
         self.wait_roll(lim_roll_deg, 5)
         self.context_pop()
         self.set_rc(1, 1500)
+        self.progress("Checking qassist stops")
+        # we must push RC3 here or the translational drag from the
+        # motors keeps us at ~17m/s, below the airspeed assist speed!
+        self.set_rc(3, 1800)
+        self.wait_servo_channel_value(
+            5,
+            thr_min_pwm,
+            timeout=60,
+            comparator=operator.eq,
+        )
+        self.set_rc(3, 1300)
+
+        self.start_subtest("Test angle assist (pitch-down)")
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.progress("Pitching down to %.0f degrees" % lim_pitch_down_deg)
+        self.set_rc(2, 1000)
+        self.wait_pitch(lim_pitch_down_deg, accuracy=5)
+        self.progress("Killing elevator servo output to force qassist to help")
+        self.set_parameters({
+            "SERVO2_MIN": 1480,
+            "SERVO2_MAX": 1480,
+            "SERVO2_TRIM": 1480,
+        })
+        self.progress("Trying to pitch up hard")
+        self.set_rc(2, 2000)
+        self.progress("Waiting for qassist (angle) to kick in")
+        self.wait_servo_channel_value(5, 1100, timeout=30, comparator=operator.gt)
+        self.wait_statustext('Angle assist', check_context=True)
+        self.set_rc(2, 1500)
+        self.wait_pitch(0, accuracy=5)
+        self.context_pop()
+        self.progress("Checking qassist stops")
+        # we must push RC3 here or the translational drag from the
+        # motors keeps us at ~17m/s, below the airspeed assist speed!
+        self.set_rc(3, 1800)
+        self.wait_servo_channel_value(
+            5,
+            thr_min_pwm,
+            timeout=30,
+            comparator=operator.eq,
+        )
+        self.set_rc(3, 1300)
+
+        self.start_subtest("Test angle assist (pitch-up)")
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.progress("Pitching up to %.0f degrees" % lim_pitch_up_deg)
+        self.set_rc(3, 2000)
+        self.delay_sim_time(5)
+        self.change_mode('MANUAL')
+        self.set_rc(2, 1700)
+        self.wait_pitch(lim_pitch_up_deg+15, accuracy=5)
+        self.progress("Killing elevator servo output to force qassist to help")
+        self.set_parameters({
+            "SERVO2_MIN": 1480,
+            "SERVO2_MAX": 1480,
+            "SERVO2_TRIM": 1480,
+        })
+        self.change_mode('FBWA')
+        self.progress("Trying to pitch down hard")
+        self.set_rc(2, 1000)
+        self.progress("Waiting for qassist (angle) to kick in")
+        self.wait_servo_channel_value(5, 1100, timeout=30, comparator=operator.gt)
+        self.wait_statustext('Angle assist', check_context=True)
+        self.set_rc(2, 1500)
+        self.wait_pitch(0, accuracy=5)
+        self.context_pop()
+        self.progress("Checking qassist stops")
+        # we must push RC3 here or the translational drag from the
+        # motors keeps us at ~17m/s, below the airspeed assist speed!
+        self.set_rc(3, 1800)
+        self.wait_servo_channel_value(
+            5,
+            thr_min_pwm,
+            timeout=30,
+            comparator=operator.eq,
+        )
+        self.set_rc(3, 1300)
 
         # Test alt assist, climb to 60m and set assist alt to 50m
         self.context_push()
@@ -875,7 +958,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         guided_loc.alt = 60
         self.change_mode("GUIDED")
         self.send_do_reposition(guided_loc)
-        self.wait_altitude(58, 62, relative=True)
+        self.wait_altitude(58, 62, relative=True, timeout=120)
         self.set_parameter("Q_ASSIST_ALT", 50)
 
         # Try and descent to 40m
@@ -2632,6 +2715,43 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.mav.motors_disarmed_wait()
         self.reset_SITL_commandline()
 
+    def RudderArmedTakeoffRequiresNeutralThrottle(self):
+        '''check rudder must be neutral before VTOL takeoff allowed'''
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF, 0, 0, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_VTOL_LAND, 0, 0, 0),
+        ])
+        self.upload_simple_relhome_mission
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.set_rc(4, 2000)
+        self.wait_armed()
+        self.wait_altitude(-1, 1, relative=True, minimum_duration=10)
+        self.set_rc(4, 1500)
+        self.wait_altitude(5, 1000, relative=True)
+        self.zero_throttle()
+        self.wait_disarmed(timeout=60)
+
+    def RudderArmingWithARMING_CHECK_THROTTLEUnset(self) -> None:
+        '''check arming behaviour with ARMING_CHECK_THROTTLE unset'''
+        self.wait_ready_to_arm()
+
+        self.start_subtest("Should not be able to arm with mid-stick throttle")
+        self.set_rc(3, 1500)
+        self.set_rc(4, 2000)
+        w = vehicle_test_suite.WaitAndMaintainDisarmed(self, minimum_duration=10)
+        w.run()
+        self.set_rc(4, 1500)
+        self.disarm_vehicle()
+
+        self.clear_parameter_bit("RC_OPTIONS", 5)
+        self.start_subtest("Should be able to arm with mid-stick throttle")
+        self.set_rc(3, 1500)
+        self.set_rc(4, 2000)
+        self.wait_armed()
+        self.set_rc(4, 1500)
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
 
@@ -2689,5 +2809,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.QLoiterRecovery,
             self.FastInvertedRecovery,
             self.CruiseRecovery,
+            self.RudderArmedTakeoffRequiresNeutralThrottle,
+            self.RudderArmingWithARMING_CHECK_THROTTLEUnset,
         ])
         return ret

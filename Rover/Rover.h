@@ -140,11 +140,6 @@ private:
     AP_Int8 *modes;
     const uint8_t num_modes = 6;
 
-#if AP_RPM_ENABLED
-    // AP_RPM Module
-    AP_RPM rpm_sensor;
-#endif
-
     // Arming/Disarming management class
     AP_Arming_Rover arming;
 
@@ -229,9 +224,6 @@ private:
 #if HAL_LOGGING_ENABLED
     static const LogStructure log_structure[];
 #endif
-
-    // time that rudder/steering arming has been running
-    uint32_t rudder_arm_timer;
 
     // latest wheel encoder values
     float wheel_encoder_last_distance_m[WHEELENCODER_MAX_INSTANCES];    // total distance recorded by wheel encoder (for reporting to GCS)
@@ -367,7 +359,6 @@ private:
     // radio.cpp
     void set_control_channels(void) override;
     void init_rc_in();
-    void rudder_arm_disarm_check();
     void read_radio();
     void radio_failsafe_check(uint16_t pwm);
 

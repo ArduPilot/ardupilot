@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# flake8: noqa
+
 """
 Downloads image and video files from an XFRobot camera connected via ethernet
 """

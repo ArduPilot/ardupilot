@@ -1288,6 +1288,14 @@ local AP_Scripting_SerialAccess_ud = {}
 ---@param baud_rate uint32_t_ud|integer|number
 function AP_Scripting_SerialAccess_ud:begin(baud_rate) end
 
+-- Set UART parity (no effect for device ports)
+---@param parity integer 0=None, 1=Odd, 2=Even
+function AP_Scripting_SerialAccess_ud:configure_parity(parity) end
+
+-- Set UART stop bits (no effect for device ports)
+---@param stop_bits integer 1 or 2
+function AP_Scripting_SerialAccess_ud:set_stop_bits(stop_bits) end
+
 -- Writes a single byte
 ---@param value integer -- byte to write
 ---@return uint32_t_ud -- 1 if success else 0
@@ -3447,6 +3455,10 @@ function gps:primary_sensor() end
 ---@return integer -- number of sensors
 function gps:num_sensors() end
 
+-- Inject a packet of raw binary to a GPS (e.g., RTCM3)
+---@param data string -- binary data to inject
+function gps:inject_data(data) end
+
 -- desc
 ---@class (exact) BattMonitorScript_State_ud
 local BattMonitorScript_State_ud = {}
@@ -3785,15 +3797,30 @@ function ahrs:get_position() end
 
 -- Returns the current vehicle euler yaw angle in radians.
 ---@return number -- yaw angle in radians.
+---@deprecated -- get_yaw_rad
 function ahrs:get_yaw() end
 
 -- Returns the current vehicle euler pitch angle in radians.
 ---@return number -- pitch angle in radians.
+---@deprecated -- get_pitch_rad
 function ahrs:get_pitch() end
 
 -- Returns the current vehicle euler roll angle in radians.
 ---@return number -- roll angle in radians
+---@deprecated -- get_roll_rad
 function ahrs:get_roll() end
+
+-- Returns the current vehicle euler yaw angle in radians.
+---@return number -- yaw angle in radians (0 to 2*Pi).
+function ahrs:get_yaw_rad() end
+
+-- Returns the current vehicle euler pitch angle in radians.
+---@return number -- pitch angle in radians.
+function ahrs:get_pitch_rad() end
+
+-- Returns the current vehicle euler roll angle in radians.
+---@return number -- roll angle in radians
+function ahrs:get_roll_rad() end
 
 -- desc
 AC_AttitudeControl = {}
@@ -4070,6 +4097,14 @@ function networking:get_netmask_active() end
 -- desc
 ---@return uint32_t_ud
 function networking:get_ip_active() end
+
+-- add a custom ipv4 route
+---@param backend_idx integer -- backend index
+---@param iface_idx integer -- interface index
+---@param dest_ip uint32_t_ud|integer|number -- desttination IP address
+---@param mask_len integer -- network mask bit length
+---@return boolean
+function networking:add_route(backend_idx, iface_idx, dest_ip, mask_len) end
 
 -- visual odometry object
 visual_odom = {}

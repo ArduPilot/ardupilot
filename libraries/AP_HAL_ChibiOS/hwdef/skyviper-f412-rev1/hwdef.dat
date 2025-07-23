@@ -102,8 +102,6 @@ SPIDEV icm20789   SPI2 DEVID4 MPU_CS   MODE3 1*MHZ 8*MHZ
 # reserve 16k for bootloader and 32k for storage
 FLASH_RESERVE_START_KB 48
 
-define HAL_CHIBIOS_ARCH_F412 1
-
 IMU Invensense SPI:icm20789 ROTATION_NONE
 
 # radio IRQ is on GPIO(100)

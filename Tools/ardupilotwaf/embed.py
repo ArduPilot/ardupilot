@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+# flake8: noqa
 
 '''
 script to create ap_romfs_embedded.h from a set of static files
@@ -65,6 +67,8 @@ def crc32(bytes, crc=0):
 def create_embedded_h(filename, files, uncompressed=False):
     '''create a ap_romfs_embedded.h file'''
 
+    done = set()
+
     out = open(filename, "wb")
     write_encode(out, '''// generated embedded files for AP_ROMFS\n\n''')
 
@@ -74,6 +78,10 @@ def create_embedded_h(filename, files, uncompressed=False):
     decompressed_size = {}
     for i in range(len(files)):
         (name, filename) = files[i]
+        if name in done:
+            print("Duplicate ROMFS file %s" % name)
+            sys.exit(1)
+        done.add(name)
         try:
             crc[filename], decompressed_size[filename] = embed_file(out, filename, i, name, uncompressed)
         except Exception as e:

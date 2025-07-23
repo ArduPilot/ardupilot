@@ -24,8 +24,11 @@ public:
     /// reduce response for landing
     void soften_for_landing();
 
-    /// set pilot desired acceleration in centi-degrees
+    /// set pilot desired acceleration in radians
     //   dt should be the time (in seconds) since the last call to this function
+    void set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad);
+
+    /// set pilot desired acceleration in centidegrees
     void set_pilot_desired_acceleration_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd);
 
     /// gets pilot desired acceleration in the earth frame
@@ -33,7 +36,7 @@ public:
 
     /// clear pilot desired acceleration
     void clear_pilot_desired_acceleration() {
-        set_pilot_desired_acceleration_cd(0, 0);
+        set_pilot_desired_acceleration_rad(0.0, 0.0);
     }
 
     /// get vector to stopping point based on a horizontal position and velocity
@@ -43,9 +46,10 @@ public:
     float get_distance_to_target_cm() const { return _pos_control.get_pos_error_NE_cm(); }
 
     /// get bearing to target in centi-degrees
-    int32_t get_bearing_to_target_cd() const { return _pos_control.get_bearing_to_target_cd(); }
+    float get_bearing_to_target_rad() const { return _pos_control.get_bearing_to_target_rad(); }
 
     /// get maximum lean angle when using loiter
+    float get_angle_max_rad() const;
     float get_angle_max_cd() const;
 
     /// run the loiter controller
@@ -55,6 +59,8 @@ public:
     void set_speed_max_NE_cms(float speed_max_NE_cms);
 
     /// get desired roll, pitch which should be fed into stabilize controllers
+    float get_roll_rad() const { return _pos_control.get_roll_rad(); }
+    float get_pitch_rad() const { return _pos_control.get_pitch_rad(); }
     float get_roll_cd() const { return _pos_control.get_roll_cd(); }
     float get_pitch_cd() const { return _pos_control.get_pitch_cd(); }
     Vector3f get_thrust_vector() const { return _pos_control.get_thrust_vector(); }
@@ -88,6 +94,6 @@ protected:
     Vector2f    _predicted_accel_ne_cmss;   // predicted acceleration in lat/lon frame based on pilot's desired acceleration
     Vector2f    _predicted_euler_angle_rad; // predicted roll/pitch angles in radians based on pilot's desired acceleration
     Vector2f    _predicted_euler_rate;      // predicted roll/pitch rates in radians/sec based on pilot's desired acceleration
-    uint32_t    _brake_timer;               // system time that brake was initiated
+    uint32_t    _brake_timer_ms;            // system time that brake was initiated
     float       _brake_accel_cmss;          // acceleration due to braking from previous iteration (used for jerk limiting)
 };

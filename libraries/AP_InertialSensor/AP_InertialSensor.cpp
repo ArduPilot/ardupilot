@@ -575,6 +575,18 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Path: ../Filter/HarmonicNotchFilter.cpp
     AP_SUBGROUPINFO(harmonic_notches[1].params, "_HNTC2_",  53, AP_InertialSensor, HarmonicNotchFilterParams),
 #endif
+
+#if HAL_INS_NUM_HARMONIC_NOTCH_FILTERS > 2
+    // @Group: _HNTC3_
+    // @Path: ../Filter/HarmonicNotchFilter.cpp
+    AP_SUBGROUPINFO(harmonic_notches[2].params, "_HNTC3_",  57, AP_InertialSensor, HarmonicNotchFilterParams),
+#endif
+
+#if HAL_INS_NUM_HARMONIC_NOTCH_FILTERS > 3
+    // @Group: _HNTC4_
+    // @Path: ../Filter/HarmonicNotchFilter.cpp
+    AP_SUBGROUPINFO(harmonic_notches[3].params, "_HNTC4_",  58, AP_InertialSensor, HarmonicNotchFilterParams),
+#endif
 #endif
 
     // @Param: _GYRO_RATE
@@ -683,6 +695,8 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Bitmask: 0:Log primary gyro only, 1:Log all gyros, 2:Post filter, 3: Pre and post filter
     // @User: Advanced
     AP_GROUPINFO("_RAW_LOG_OPT", 56, AP_InertialSensor, raw_logging_options, 0),
+
+    // indexes 57 and 58 used by INS_HNTC3 and INS_HNTC4
 
     /*
       NOTE: parameter indexes have gaps above. When adding new
@@ -1250,18 +1264,6 @@ AP_InertialSensor::detect_backends(void)
                                                     hal.spi->get_device("bmi055_g"),
                                                     ROTATION_ROLL_180_YAW_90));
         break;
-        
-    case AP_BoardConfig::PX4_BOARD_SP01:
-        _fast_sampling_mask.set_default(1);
-        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_EXT_NAME), ROTATION_NONE));
-        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), ROTATION_NONE));
-        break;
-        
-    case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
-        _fast_sampling_mask.set_default(3);
-        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_ICM20608_NAME), ROTATION_ROLL_180_YAW_90));
-        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), ROTATION_ROLL_180_YAW_90));
-        break;		
 
     case AP_BoardConfig::PX4_BOARD_PHMINI:
         // PHMINI uses ICM20608 on the ACCEL_MAG device and a MPU9250 on the old MPU6000 CS line
@@ -1285,38 +1287,6 @@ AP_InertialSensor::detect_backends(void)
     case AP_BoardConfig::PX4_BOARD_AEROFC:
         _fast_sampling_mask.set_default(1);
         ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU6500_NAME), ROTATION_YAW_270));
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_MINDPXV2:
-        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU6500_NAME), ROTATION_NONE));
-        ADD_BACKEND(AP_InertialSensor_LSM9DS0::probe(*this,
-                                                      hal.spi->get_device(HAL_INS_LSM9DS0_G_NAME),
-                                                      hal.spi->get_device(HAL_INS_LSM9DS0_A_NAME),
-                                                      ROTATION_YAW_90,
-                                                      ROTATION_YAW_90,
-                                                      ROTATION_YAW_90));
-        break;
-        
-    case AP_BoardConfig::VRX_BOARD_BRAIN54:
-        _fast_sampling_mask.set_default(7);
-        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME), ROTATION_YAW_180));
-        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_EXT_NAME), ROTATION_YAW_180));
-#ifdef HAL_INS_MPU60x0_IMU_NAME
-        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_IMU_NAME), ROTATION_YAW_180));
-#endif
-        break;
-
-    case AP_BoardConfig::VRX_BOARD_BRAIN51:
-    case AP_BoardConfig::VRX_BOARD_BRAIN52:
-    case AP_BoardConfig::VRX_BOARD_BRAIN52E:
-    case AP_BoardConfig::VRX_BOARD_CORE10:
-    case AP_BoardConfig::VRX_BOARD_UBRAIN51:
-    case AP_BoardConfig::VRX_BOARD_UBRAIN52:
-        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME), ROTATION_YAW_180));
-        break;
-        
-    case AP_BoardConfig::PX4_BOARD_PCNC1:
-        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME), ROTATION_ROLL_180));
         break;
 
     default:
@@ -1375,7 +1345,7 @@ bool AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, Vector3f &
     if (view != nullptr) {
         // Use pitch to guess which axis the user is trying to trim
         // 5 deg buffer to favor normal AHRS and avoid floating point funny business
-        if (fabsf(view->pitch) < (fabsf(AP::ahrs().get_pitch())+radians(5)) ) {
+        if (fabsf(view->pitch) < (fabsf(AP::ahrs().get_pitch_rad())+radians(5)) ) {
             // user is trying to calibrate view
             rotation = view->get_rotation();
             if (!is_zero(view->get_pitch_trim())) {

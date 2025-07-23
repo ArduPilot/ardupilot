@@ -78,9 +78,6 @@
 #define AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) || AP_PERIPH_NCP5623_LED_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_NCP5623_BGR_LED_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_TOSHIBA_LED_WITHOUT_NOTIFY_ENABLED)
 
 #if AP_PERIPH_NOTIFY_ENABLED
-    #if !AP_PERIPH_RC_OUT_ENABLED && !defined(HAL_PERIPH_NOTIFY_WITHOUT_RCOUT)
-        #error "AP_PERIPH_NOTIFY_ENABLED requires AP_PERIPH_RC_OUT_ENABLED"
-    #endif
     #if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED
         #error "You cannot enable AP_PERIPH_NOTIFY_ENABLED and AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED at the same time. Notify already includes it"
     #endif
@@ -364,6 +361,13 @@ public:
     uint32_t last_esc_raw_command_ms;
     uint8_t  last_esc_num_channels;
 
+    // Track channels that have been output to by actuator commands
+    // Note there is a single timeout, channels are not tracked individually
+    struct {
+        uint32_t last_command_ms;
+        uint32_t mask;
+    } actuator;
+
     void rcout_init();
     void rcout_init_1Hz();
     void rcout_esc(int16_t *rc, uint8_t num_channels);
@@ -533,7 +537,7 @@ public:
     void send_serial_monitor_data();
     int8_t get_default_tunnel_serial_port(void) const;
 
-    struct {
+    struct UARTMonitor {
         ByteBuffer *buffer;
         uint32_t last_request_ms;
         AP_HAL::UARTDriver *uart;
@@ -542,7 +546,8 @@ public:
         uint8_t protocol;
         uint32_t baudrate;
         bool locked;
-    } uart_monitor;
+    } uart_monitors[SERIALMANAGER_MAX_PORTS];
+    void send_serial_monitor_data_instance(UARTMonitor &monitor);
 #endif
 
     // handlers for incoming messages

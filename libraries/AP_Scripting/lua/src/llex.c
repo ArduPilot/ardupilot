@@ -328,7 +328,7 @@ static int readhexaesc (LexState *ls) {
   return r;
 }
 
-
+#if !defined(ARDUPILOT_BUILD)
 static unsigned long readutf8esc (LexState *ls) {
   unsigned long r;
   int i = 4;  /* chars to be removed: '\', 'u', '{', and first digit */
@@ -353,7 +353,7 @@ static void utf8esc (LexState *ls) {
   for (; n > 0; n--)  /* add 'buff' to string */
     save(ls, buff[UTF8BUFFSZ - n]);
 }
-
+#endif
 
 static int readdecesc (LexState *ls) {
   int i;
@@ -391,7 +391,9 @@ static void read_string (LexState *ls, int del, SemInfo *seminfo) {
           case 't': c = '\t'; goto read_save;
           case 'v': c = '\v'; goto read_save;
           case 'x': c = readhexaesc(ls); goto read_save;
+#if !defined(ARDUPILOT_BUILD)
           case 'u': utf8esc(ls);  goto no_save;
+#endif
           case '\n': case '\r':
             inclinenumber(ls); c = '\n'; goto only_save;
           case '\\': case '\"': case '\'':

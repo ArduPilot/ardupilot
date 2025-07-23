@@ -172,7 +172,7 @@ MAV_RESULT Copter::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t
             // disable throttle and gps failsafe
             g.failsafe_throttle.set(FS_THR_DISABLED);
             g.failsafe_gcs.set(FS_GCS_DISABLED);
-            g.fs_ekf_action.set(0);
+            g.fs_ekf_action.set(FS_EKF_ACTION_REPORT_ONLY);
 
             // turn on notify leds
             AP_Notify::flags.esc_calibration = true;

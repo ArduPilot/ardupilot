@@ -39,7 +39,7 @@ void AC_AutoTune_FreqResp::init(InputType input_type, ResponseType response_type
 void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp, float tgt_freq)
 {
 
-    uint32_t now = AP_HAL::millis();
+    uint32_t now_ms = AP_HAL::millis();
     float dt = 0.0025;
     uint32_t half_cycle_time_ms = 0;
     uint32_t cycle_time_ms = 0;
@@ -54,7 +54,7 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
     }
 
     if (input_start_time_ms == 0) {
-        input_start_time_ms = now;
+        input_start_time_ms = now_ms;
         if (response == ANGLE) {
             prev_tgt_resp = tgt_resp;
             prev_meas_resp = meas_resp;
@@ -140,9 +140,9 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
     // Indicates when the target(input) is positive or negative half of the cycle to notify when the max or min should be sought
     if (((response == ANGLE && is_positive(prev_target) && !is_positive(target_rate))
         || (response == RATE && !is_positive(prev_target) && is_positive(target_rate)))
-        && !new_target && now > new_tgt_time_ms) {
+        && !new_target && now_ms > new_tgt_time_ms) {
         new_target = true;
-        new_tgt_time_ms = now + half_cycle_time_ms;
+        new_tgt_time_ms = now_ms + half_cycle_time_ms;
         // reset max_target
         max_target = 0.0f;
         max_target_cnt++;
@@ -160,9 +160,9 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
 
     } else if (((response == ANGLE && !is_positive(prev_target) && is_positive(target_rate))
                || (response == RATE && is_positive(prev_target) && !is_positive(target_rate)))
-               && new_target && now > new_tgt_time_ms && max_target_cnt > 0) {
+               && new_target && now_ms > new_tgt_time_ms && max_target_cnt > 0) {
         new_target = false;
-        new_tgt_time_ms = now + half_cycle_time_ms;
+        new_tgt_time_ms = now_ms + half_cycle_time_ms;
         min_target_cnt++;
         temp_max_target = max_target;
         min_target = 0.0f;
@@ -171,9 +171,9 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
     // Indicates when the measured value (output) is positive or negative half of the cycle to notify when the max or min should be sought
     if (((response == ANGLE && is_positive(prev_meas) && !is_positive(measured_rate))
          || (response == RATE && !is_positive(prev_meas) && is_positive(measured_rate)))
-         && !new_meas && now > new_meas_time_ms && max_target_cnt > 0) {
+         && !new_meas && now_ms > new_meas_time_ms && max_target_cnt > 0) {
         new_meas = true;
-        new_meas_time_ms = now + half_cycle_time_ms;
+        new_meas_time_ms = now_ms + half_cycle_time_ms;
         // reset max_meas
         max_meas = 0.0f;
         max_meas_cnt++;
@@ -205,9 +205,9 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
         } 
     } else if (((response == ANGLE && !is_positive(prev_meas) && is_positive(measured_rate))
                 || (response == RATE && is_positive(prev_meas) && !is_positive(measured_rate)))
-                && new_meas && now > new_meas_time_ms && max_meas_cnt > 0) {
+                && new_meas && now_ms > new_meas_time_ms && max_meas_cnt > 0) {
         new_meas = false;
-        new_meas_time_ms = now + half_cycle_time_ms;
+        new_meas_time_ms = now_ms + half_cycle_time_ms;
         min_meas_cnt++;
         temp_max_meas = max_meas;
         min_meas = 0.0f;
@@ -216,7 +216,7 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
     if (new_target) {
         if (tgt_resp > max_target) {
             max_target = tgt_resp;
-            max_tgt_time = now;
+            max_tgt_time = now_ms;
         }
     } else {
         if (tgt_resp < min_target) {
@@ -227,7 +227,7 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
     if (new_meas) {
         if (meas_resp > max_meas) {
             max_meas = meas_resp;
-            max_meas_time = now;
+            max_meas_time = now_ms;
         }
     } else {
         if (meas_resp < min_meas) {
@@ -236,7 +236,7 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
     }
 
     if (response == ANGLE) {
-        if (now > (uint32_t)(input_start_time_ms + 7.0f * cycle_time_ms) && now < (uint32_t)(input_start_time_ms + 9.0f * cycle_time_ms)) {
+        if (now_ms > (uint32_t)(input_start_time_ms + 7.0f * cycle_time_ms) && now_ms < (uint32_t)(input_start_time_ms + 9.0f * cycle_time_ms)) {
             if (measured_rate > max_meas_rate) {
                 max_meas_rate = measured_rate;
             }

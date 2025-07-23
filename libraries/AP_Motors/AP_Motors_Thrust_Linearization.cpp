@@ -170,7 +170,7 @@ void Thrust_Linearization::update_lift_max_from_batt_voltage()
 
     if (!motors.has_option(AP_Motors::MotorOptions::BATT_RAW_VOLTAGE)) {
         // filter at 0.5 Hz
-        batt_voltage_filt.apply(_batt_voltage / batt_voltage_max, motors.get_dt());
+        batt_voltage_filt.apply(_batt_voltage / batt_voltage_max, motors.get_dt_s());
     } else {
         // reset is equivalent to no filtering
         batt_voltage_filt.reset(_batt_voltage / batt_voltage_max);

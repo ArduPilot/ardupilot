@@ -75,16 +75,8 @@ public:
 
     // returns a unique number specific to this mode
     virtual Mode::Number number() const = 0;
-
-    // functions for reporting to GCS
-    virtual bool get_wp(Location &loc) { return false; }
-    virtual int32_t wp_bearing() const { return 0; }
-    virtual float wp_distance_m() const { return 0.0f; }
-    virtual float crosstrack_error() const { return 0.0f; }
-
   
     // pilot input processing
-    void get_pilot_desired_accelerations(float &right_out, float &front_out) const;
     void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
 
 
@@ -119,66 +111,6 @@ protected:
     float &G_Dt;
 
 public:
-    // Navigation Yaw control
-    class AutoYaw
-    {
-
-    public:
-        // mode(): current method of determining desired yaw:
-        autopilot_yaw_mode mode() const
-        {
-            return (autopilot_yaw_mode)_mode;
-        }
-        void set_mode_to_default(bool rtl);
-        void set_mode(autopilot_yaw_mode new_mode);
-        autopilot_yaw_mode default_mode(bool rtl) const;
-
-        void set_rate(float new_rate_cds);
-
-        // set_roi(...): set a "look at" location:
-        void set_roi(const Location &roi_location);
-
-        void set_fixed_yaw(float angle_deg,
-                           float turn_rate_dps,
-                           int8_t direction,
-                           bool relative_angle);
-
-    private:
-
-        // yaw_cd(): main product of AutoYaw; the heading:
-        float yaw_cd();
-
-        // rate_cds(): desired yaw rate in centidegrees/second:
-        float rate_cds();
-
-        float look_ahead_yaw();
-        float roi_yaw();
-
-        // auto flight mode's yaw mode
-        uint8_t _mode = AUTO_YAW_LOOK_AT_NEXT_WP;
-
-        // Yaw will point at this location if mode is set to AUTO_YAW_ROI
-        Vector3f roi;
-
-        // bearing from current location to the ROI
-        float _roi_yaw;
-
-        // yaw used for YAW_FIXED yaw_mode
-        int32_t _fixed_yaw;
-
-        // Deg/s we should turn
-        int16_t _fixed_yaw_slewrate;
-
-        // heading when in yaw_look_ahead_yaw
-        float _look_ahead_yaw;
-
-        // used to reduce update rate to 100hz:
-        uint8_t roi_yaw_counter;
-
-        GuidedSubMode guided_mode;
-
-    };
-    static AutoYaw auto_yaw;
 
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base

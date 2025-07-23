@@ -213,24 +213,26 @@ void Copter::Log_Write_Data(LogDataID id, float value)
     }
 }
 
-struct PACKED log_ParameterTuning {
+struct PACKED log_PTUN {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint8_t  parameter;     // parameter we are tuning, e.g. 39 is CH6_CIRCLE_RATE
     float    tuning_value;  // normalized value used inside tuning() function
     float    tuning_min;    // tuning minimum value
     float    tuning_max;    // tuning maximum value
+    float    norm_in;       // normalized control input (-1 to 1)
 };
 
-void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max)
+void Copter::Log_Write_PTUN(uint8_t param, float tuning_val, float tune_min, float tune_max, float norm_in)
 {
-    struct log_ParameterTuning pkt_tune = {
+    const struct log_PTUN pkt_tune {
         LOG_PACKET_HEADER_INIT(LOG_PARAMTUNE_MSG),
         time_us        : AP_HAL::micros64(),
         parameter      : param,
         tuning_value   : tuning_val,
         tuning_min     : tune_min,
-        tuning_max     : tune_max
+        tuning_max     : tune_max,
+        norm_in        : norm_in
     };
 
     logger.WriteBlock(&pkt_tune, sizeof(pkt_tune));
@@ -355,25 +357,25 @@ struct PACKED log_Rate_Thread_Dt {
 };
 
 // Write a Guided mode position target
-// pos_target is lat, lon, alt OR offset from ekf origin in cm
-// terrain should be 0 if pos_target.z is alt-above-ekf-origin, 1 if alt-above-terrain
-// vel_target is cm/s
-void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode target_type, const Vector3f& pos_target, bool terrain_alt, const Vector3f& vel_target, const Vector3f& accel_target)
+// pos_target_cm is lat, lon, alt OR offset from ekf origin in cm
+// terrain should be 0 if pos_target_cm.z is alt-above-ekf-origin, 1 if alt-above-terrain
+// vel_target_cms is cm/s
+void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode target_type, const Vector3f& pos_target_cm, bool terrain_alt, const Vector3f& vel_target_cms, const Vector3f& accel_target_cmss)
 {
     const log_Guided_Position_Target pkt {
         LOG_PACKET_HEADER_INIT(LOG_GUIDED_POSITION_TARGET_MSG),
         time_us         : AP_HAL::micros64(),
         type            : (uint8_t)target_type,
-        pos_target_x    : pos_target.x,
-        pos_target_y    : pos_target.y,
-        pos_target_z    : pos_target.z,
+        pos_target_x    : pos_target_cm.x * 0.01f,
+        pos_target_y    : pos_target_cm.y * 0.01f,
+        pos_target_z    : pos_target_cm.z * 0.01f,
         terrain         : terrain_alt,
-        vel_target_x    : vel_target.x,
-        vel_target_y    : vel_target.y,
-        vel_target_z    : vel_target.z,
-        accel_target_x  : accel_target.x,
-        accel_target_y  : accel_target.y,
-        accel_target_z  : accel_target.z
+        vel_target_x    : vel_target_cms.x * 0.01f,
+        vel_target_y    : vel_target_cms.y * 0.01f,
+        vel_target_z    : vel_target_cms.z * 0.01f,
+        accel_target_x  : accel_target_cmss.x * 0.01f,
+        accel_target_y  : accel_target_cmss.y * 0.01f,
+        accel_target_z  : accel_target_cmss.z * 0.01f
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -430,9 +432,10 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: TunVal: Normalized value used inside tuning() function
 // @Field: TunMin: Tuning minimum limit
 // @Field: TunMax: Tuning maximum limit
+// @Field: NIn: normalaised control input (normalised -1 to 1 value)
 
-    { LOG_PARAMTUNE_MSG, sizeof(log_ParameterTuning),
-      "PTUN", "QBfff",         "TimeUS,Param,TunVal,TunMin,TunMax", "s----", "F----" },
+    { LOG_PARAMTUNE_MSG, sizeof(log_PTUN),
+      "PTUN", "QBffff",         "TimeUS,Param,TunVal,TunMin,TunMax,NIn", "s#----", "F-----" },
 
 // @LoggerMessage: CTUN
 // @Description: Control Tuning information
@@ -540,7 +543,7 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: aZ: Target acceleration, Z-Axis
 
     { LOG_GUIDED_POSITION_TARGET_MSG, sizeof(log_Guided_Position_Target),
-      "GUIP",  "QBfffbffffff",    "TimeUS,Type,pX,pY,pZ,Terrain,vX,vY,vZ,aX,aY,aZ", "s-mmm-nnnooo", "F-BBB-BBBBBB" , true },
+      "GUIP",  "QBfffbffffff",    "TimeUS,Type,pX,pY,pZ,Terrain,vX,vY,vZ,aX,aY,aZ", "s-mmm-nnnooo", "F-000-000000" , true },
 
 // @LoggerMessage: GUIA
 // @Description: Guided mode attitude target information

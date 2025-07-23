@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+
+# flake8: noqa
 '''
 generate field tables from IGRF13. Note that this requires python3
 '''

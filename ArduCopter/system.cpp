@@ -152,11 +152,6 @@ void Copter::init_ardupilot()
     g2.beacon.init();
 #endif
 
-#if AP_RPM_ENABLED
-    // initialise AP_RPM library
-    rpm_sensor.init();
-#endif
-
 #if MODE_AUTO_ENABLED
     // initialise mission library
     mode_auto.mission.init();
@@ -330,7 +325,7 @@ void Copter::update_auto_armed()
             return;
         }
         // if in stabilize or acro flight mode and throttle is zero, auto-armed should become false
-        if(flightmode->has_manual_throttle() && ap.throttle_zero && !failsafe.radio) {
+        if (flightmode->has_manual_throttle() && ap.throttle_zero && rc().has_valid_input()) {
             set_auto_armed(false);
         }
 
@@ -381,11 +376,13 @@ void Copter::allocate_motors(void)
             motors = NEW_NOTHROW AP_MotorsMatrix(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsMatrix::var_info;
             break;
+#if AP_MOTORS_TRI_ENABLED
         case AP_Motors::MOTOR_FRAME_TRI:
             motors = NEW_NOTHROW AP_MotorsTri(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsTri::var_info;
             AP_Param::set_frame_type_flags(AP_PARAM_FRAME_TRICOPTER);
             break;
+#endif  // AP_MOTORS_TRI_ENABLED
         case AP_Motors::MOTOR_FRAME_SINGLE:
             motors = NEW_NOTHROW AP_MotorsSingle(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsSingle::var_info;

@@ -1,4 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+# flake8: noqa
+
 '''
 run Replay over a set of logs to check for code regressions
 '''

@@ -63,7 +63,7 @@ void Variometer::update(const float thermal_bank)
     float smoothed_climb_rate = _climb_filter.apply(raw_climb_rate, dt);
 
     // Compute still-air sinkrate
-    float roll = _ahrs.get_roll();
+    float roll = _ahrs.get_roll_rad();
     float sinkrate = calculate_aircraft_sinkrate(roll);
 
     reading = raw_climb_rate + dsp_cor*_aspd_filt_constrained/GRAVITY_MSS + sinkrate;

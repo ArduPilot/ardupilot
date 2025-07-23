@@ -38,7 +38,7 @@ typedef float ftype;
 #define cosF(x) cosf(x)
 #define tanF(x) tanf(x)
 #define atanF(x) atanf(x)
-#define atan2F(x,y) atan2f(x,y)
+#define atan2F(y,x) atan2f(y,x)
 #define sqrtF(x) sqrtf(x)
 #define fmaxF(x,y) fmaxf(x,y)
 #define powF(x,y) powf(x,y)

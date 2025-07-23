@@ -102,11 +102,6 @@
 #define AP_COMPASS_ENABLE_DEFAULT 0
 #define ALLOW_ARM_NO_COMPASS
 
-//See boards.py
-#ifndef ENABLE_HEAP
-#define ENABLE_HEAP 1
-#endif
-
 //WIFI
 #define HAL_ESP32_WIFI 1  //1-TCP, 2-UDP, comment this line = without wifi
 #define WIFI_SSID "ardupilot-esp32"

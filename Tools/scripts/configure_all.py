@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+# flake8: noqa
 
 """
 script to run configure for all hwdef.dat, to check for syntax errors

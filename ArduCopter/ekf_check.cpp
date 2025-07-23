@@ -174,19 +174,31 @@ void Copter::failsafe_ekf_event()
         return;
     }
 
+    // set true if ekf failsafe is triggered
+    AP_Notify::flags.failsafe_ekf = true;
+
+    // True if no action should be taken
+    const bool report_only = g.fs_ekf_action == FS_EKF_ACTION_REPORT_ONLY;
+
     // sometimes LAND *does* require GPS so ensure we are in non-GPS land
-    if (flightmode->mode_number() == Mode::Number::LAND && landing_with_GPS()) {
+    const bool landing_with_position = landing_with_GPS();
+    if (landing_with_position && !report_only) {
         mode_land.do_not_use_GPS();
-        return;
     }
 
     // does this mode require position?
-    if (!copter.flightmode->requires_GPS() && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_STABILIZE)) {
+    const bool no_action_in_current_mode = !copter.flightmode->requires_GPS() && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_STABILIZE);
+
+    if (report_only || landing_with_position || no_action_in_current_mode) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF Failsafe");
         return;
     }
 
     // take action based on fs_ekf_action parameter
     switch (g.fs_ekf_action) {
+        case FS_EKF_ACTION_REPORT_ONLY:
+            // Should have early returned above
+            break;
         case FS_EKF_ACTION_ALTHOLD:
             // AltHold
             if (failsafe.radio || !set_mode(Mode::Number::ALT_HOLD, ModeReason::EKF_FAILSAFE)) {
@@ -200,8 +212,6 @@ void Copter::failsafe_ekf_event()
             break;
     }
 
-    // set true if ekf action is triggered
-    AP_Notify::flags.failsafe_ekf = true;
     gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF Failsafe: changed to %s Mode", flightmode->name());
 }
 

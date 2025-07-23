@@ -719,7 +719,7 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
 
     auto &ahrs = AP::ahrs();
 
-    copter.initial_armed_bearing = ahrs.yaw_sensor;
+    copter.initial_armed_bearing_rad = ahrs.get_yaw_rad();
 
     if (!ahrs.home_is_set()) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
@@ -799,6 +799,12 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
         AP_Arming::method_is_GCS(method) &&
         !copter.ap.land_complete) {
         return false;
+    }
+
+    if (method == AP_Arming::Method::RUDDER) {
+        if (!copter.flightmode->has_manual_throttle() && !copter.ap.land_complete) {
+            return false;
+        }
     }
 
     if (!AP_Arming::disarm(method, do_disarm_checks)) {

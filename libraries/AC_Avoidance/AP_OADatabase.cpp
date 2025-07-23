@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AP_OADatabase::var_info[] = {
     // @DisplayName: OADatabase item timeout
     // @Description: OADatabase item timeout. The time an item will linger without any updates before it expires. Zero means never expires which is useful for a sent-once static environment but terrible for dynamic ones.
     // @Units: s
-    // @Range: 0 127
+    // @Range: 0 500
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("EXPIRE", 2, AP_OADatabase, _database_expiry_seconds, AP_OADATABASE_TIMEOUT_SECONDS_DEFAULT),
@@ -76,7 +76,7 @@ const AP_Param::GroupInfo AP_OADatabase::var_info[] = {
 
     // @Param: BEAM_WIDTH
     // @DisplayName: OADatabase beam width
-    // @Description: Beam width of incoming lidar data
+    // @Description: Beam width of incoming lidar data, used to calculate a object radius if none is provided by the data source.
     // @Units: deg
     // @Range: 1 10
     // @User: Advanced
@@ -122,6 +122,9 @@ AP_OADatabase::AP_OADatabase()
 
 void AP_OADatabase::init()
 {
+    // PARAMETER_CONVERSION - Added: JUN-2025
+    _database_expiry_seconds.convert_parameter_width(AP_PARAM_INT8);
+
     init_database();
     init_queue();
 
@@ -146,8 +149,15 @@ void AP_OADatabase::update()
     database_items_remove_all_expired();
 }
 
-// push a location into the database
-void AP_OADatabase::queue_push(const Vector3f &pos, uint32_t timestamp_ms, float distance)
+// Push an object into the database. Pos is the offset in meters from the EKF origin, measurement timestamp in ms, distance in meters
+void AP_OADatabase::queue_push(const Vector3f &pos, const uint32_t timestamp_ms, const float distance, const OA_DbItem::Source source, const uint32_t id)
+{
+    // Push with radius calculated from beam width
+    queue_push(pos, timestamp_ms, distance, distance * dist_to_radius_scalar, source, id);
+}
+
+// Push an object into the database. Pos is the offset in meters from the EKF origin, measurement timestamp in ms, distance in meters, radius in meters
+void AP_OADatabase::queue_push(const Vector3f &pos, const uint32_t timestamp_ms, const float distance, float radius, const OA_DbItem::Source source, const uint32_t id)
 {
     if (!healthy()) {
         return;
@@ -170,13 +180,19 @@ void AP_OADatabase::queue_push(const Vector3f &pos, uint32_t timestamp_ms, float
         }
     }
 #endif
-    
-    // ignore objects that are far away
-    if ((_dist_max > 0.0f) && (distance > _dist_max)) {
-        return;
+
+    // Apply min radius parameter
+    radius = MAX(_radius_min, radius);
+
+    // ignore objects that outside of the max distance
+    if (is_positive(_dist_max)) {
+        const float closest_point = distance - radius;
+        if (closest_point > _dist_max) {
+            return;
+        }
     }
 
-    const OA_DbItem item = {pos, timestamp_ms, MAX(_radius_min, distance * dist_to_radius_scalar), 0, AP_OADatabase::OA_DbItemImportance::Normal};
+    const OA_DbItem item = {pos, timestamp_ms, radius, id, 0, AP_OADatabase::OA_DbItemImportance::Normal, source};
     {
         WITH_SEMAPHORE(_queue.sem);
         _queue.items->push(item);
@@ -210,7 +226,7 @@ void AP_OADatabase::init_database()
 
 // get bitmask of gcs channels item should be sent to based on its importance
 // returns 0xFF (send to all channels) if should be sent, 0 if it should not be sent
-uint8_t AP_OADatabase::get_send_to_gcs_flags(const OA_DbItemImportance importance)
+uint8_t AP_OADatabase::get_send_to_gcs_flags(const OA_DbItemImportance importance) const
 {
     switch (importance) {
     case OA_DbItemImportance::Low:
@@ -232,6 +248,28 @@ uint8_t AP_OADatabase::get_send_to_gcs_flags(const OA_DbItemImportance importanc
         break;
     }
     return 0x0;
+}
+
+// Return true if item A is likely the same as item B
+bool AP_OADatabase::item_match(const OA_DbItem& A, const OA_DbItem& B) const
+{
+    // Items must be from the same source to match
+    if (A.source != B.source) {
+        return false;
+    }
+
+    switch (A.source) {
+        case OA_DbItem::Source::AIS:
+            // Check IDs
+            return A.id == B.id;
+
+        case OA_DbItem::Source::proximity:
+            // Check if close
+            const float distance_sq = (A.pos - B.pos).length_squared();
+            return distance_sq < sq(MAX(A.radius, B.radius));
+    }
+
+    return false;
 }
 
 // returns true when there's more work in the queue to do
@@ -268,8 +306,8 @@ bool AP_OADatabase::process_queue()
         // compare item to all items in database. If found a similar item, update the existing, else add it as a new one
         bool found = false;
         for (uint16_t i=0; i<_database.count; i++) {
-            if (is_close_to_item_in_database(i, item)) {
-                database_item_refresh(i, item.timestamp_ms, item.radius);
+            if (item_match(_database.items[i], item)) {
+                database_item_refresh(_database.items[i], item);
                 found = true;
                 break;
             }
@@ -315,23 +353,23 @@ void AP_OADatabase::database_item_remove(const uint16_t index)
     }
 }
 
-void AP_OADatabase::database_item_refresh(const uint16_t index, const uint32_t timestamp_ms, const float radius)
+void AP_OADatabase::database_item_refresh(OA_DbItem &current_item, const OA_DbItem &new_item) const
 {
-    if (index >= _database.count) {
-        // index out of range
-        return;
-    }
-
     const bool is_different =
-            (!is_equal(_database.items[index].radius, radius)) ||
-            (timestamp_ms - _database.items[index].timestamp_ms >= 500);
+            (!is_equal(current_item.radius, new_item.radius)) ||
+            (new_item.timestamp_ms - current_item.timestamp_ms >= 500);
 
     if (is_different) {
         // update timestamp and radius on close object so it stays around longer
         // and trigger resending to GCS
-        _database.items[index].timestamp_ms = timestamp_ms;
-        _database.items[index].radius = radius;
-        _database.items[index].send_to_gcs = get_send_to_gcs_flags(_database.items[index].importance);
+        current_item.timestamp_ms = new_item.timestamp_ms;
+        current_item.radius = new_item.radius;
+        current_item.send_to_gcs = get_send_to_gcs_flags(current_item.importance);
+
+        if (current_item.source == OA_DbItem::Source::AIS) {
+            // Update position for AIS items, these tend to be large and update slowly
+            current_item.pos = new_item.pos;
+        }
     }
 }
 
@@ -355,18 +393,6 @@ void AP_OADatabase::database_items_remove_all_expired()
             index++;
         }
     }
-}
-
-// returns true if a similar object already exists in database. When true, the object timer is also reset
-bool AP_OADatabase::is_close_to_item_in_database(const uint16_t index, const OA_DbItem &item) const
-{
-    if (index >= _database.count) {
-        // index out of range
-        return false;
-    }
-
-    const float distance_sq = (_database.items[index].pos - item.pos).length_squared();
-    return ((distance_sq < sq(item.radius)) || (distance_sq < sq(_database.items[index].radius)));
 }
 
 #if HAL_GCS_ENABLED
