@@ -1267,6 +1267,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(systemid, "SID", 38, ParametersG2, AP_SystemID),
 #endif
     
+    // @Param: CLIMB_SLOPE_HGT
+    // @DisplayName: Climb slope mininum height
+    // @Description: Sets the minimum height above home at which the aircraft will apply a climb slope between waypoints. Below it, the aircraft will ascend immediately, and will only resume the requested trajectory upon reaching this height. This prevents unsafe behavior such as attempting to slowly gain altitude near obstacles. The default value ensures safe operations in most environments, but it can be adjusted based on specific terrain or operational needs.
+    // @Units: m
+    // @Range: 0 50
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("CLIMB_SLOPE_HGT", 39, ParametersG2, waypoint_climb_slope_height_min, 25),
+
     AP_GROUPEND
 };
 
