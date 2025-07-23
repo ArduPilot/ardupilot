@@ -158,13 +158,13 @@ void ModeQLoiter::run()
 #endif  // AP_ICENGINE_ENABLED
         }
         float height_above_ground = plane.relative_ground_altitude(RangeFinderUse::TAKEOFF_LANDING);
-        float descent_rate_cms = quadplane.landing_descent_rate_cms(height_above_ground);
+        float descent_rate_ms = quadplane.landing_descent_rate_ms(height_above_ground);
 
         if (poscontrol.get_state() == QuadPlane::QPOS_LAND_FINAL && !quadplane.option_is_set(QuadPlane::Option::DISABLE_GROUND_EFFECT_COMP)) {
             ahrs.set_touchdown_expected(true);
         }
 
-        pos_control->land_at_climb_rate_m(-descent_rate_cms * 0.01, descent_rate_cms>0);
+        pos_control->land_at_climb_rate_m(-descent_rate_ms, descent_rate_ms>0);
         quadplane.check_land_complete();
     } else if (plane.control_mode == &plane.mode_guided && quadplane.guided_takeoff) {
         quadplane.set_climb_rate_ms(0);
