@@ -1494,6 +1494,23 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("Changed throttle output on mode change to QHOVER")
         self.disarm_vehicle()
 
+    def TailsitterTransition(self):
+        '''simple transition for tailsitter'''
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath('plane-tailsitter'),
+            model="plane-tailsitter",
+            wipe=True,
+        )
+        self.reboot_sitl()
+
+        self.takeoff(30, mode='GUIDED')
+        self.set_rc(3, 2000)
+        self.change_mode('FBWA')
+        self.wait_groundspeed(5, 300)
+        self.change_mode('QRTL')
+        self.wait_disarmed(timeout=600)
+
     def CopterTailsitterTransition(self):
         '''simple transition for copter tailsitter'''
         self.customise_SITL_commandline(
@@ -4674,6 +4691,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.Weathervane,
             self.GyroFFT,
             self.Tailsitter,
+            self.TailsitterTransition,
             self.ICEngineRPMGovernor,
             self.MidAirDisarmDisallowed,
             self.GUIDEDToAUTO,
