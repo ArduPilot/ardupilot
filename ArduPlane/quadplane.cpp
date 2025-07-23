@@ -2140,7 +2140,7 @@ void QuadPlane::update_land_positioning(void)
     if (!option_is_set(QuadPlane::Option::REPOSITION_LANDING)) {
         // not enabled
         poscontrol.pilot_correction_active = false;
-        poscontrol.target_vel_cms.zero();
+        poscontrol.target_vel_ms.zero();
         return;
     }
     const float scale = 1.0 / 4500;
@@ -2148,14 +2148,14 @@ void QuadPlane::update_land_positioning(void)
     float pitch_in = plane.channel_pitch->get_control_in() * scale;
 
     // limit correction speed to accel with stopping time constant of 0.5s
-    const float speed_max_cms = wp_nav->get_wp_acceleration_cmss() * 0.5;
+    const float speed_max_ms = wp_nav->get_wp_acceleration_cmss() * 0.01 * 0.5;
     const float dt = plane.scheduler.get_loop_period_s();
 
-    poscontrol.target_vel_cms = Vector3f(-pitch_in, roll_in, 0) * speed_max_cms;
-    poscontrol.target_vel_cms.rotate_xy(ahrs_view->yaw);
+    poscontrol.target_vel_ms = Vector3f(-pitch_in, roll_in, 0) * speed_max_ms;
+    poscontrol.target_vel_ms.rotate_xy(ahrs_view->yaw);
 
     // integrate our corrected position
-    poscontrol.correction_ne_m += poscontrol.target_vel_cms.xy() * dt * 0.01;
+    poscontrol.correction_ne_m += poscontrol.target_vel_ms.xy() * dt;
 
     poscontrol.pilot_correction_active = (!is_zero(roll_in) || !is_zero(pitch_in));
     if (poscontrol.pilot_correction_active) {
@@ -2693,10 +2693,8 @@ void QuadPlane::vtol_position_controller(void)
           for final land repositioning and descent we run the position controller
          */
         Vector2f zero;
-        Vector2f vel_ne_ms = poscontrol.target_vel_cms.xy() * 0.01 + landing_velocity_ne_ms;
-        Vector2p target_ne_m = poscontrol.target_neu_cm.xy() * 0.01;
-        pos_control->input_pos_vel_accel_NE_m(target_ne_m, vel_ne_ms, zero);
-        poscontrol.target_neu_cm.xy() = target_ne_m * 100.0;
+        Vector2f vel_ne_ms = poscontrol.target_vel_ms.xy() + landing_velocity_ne_ms;
+        pos_control->input_pos_vel_accel_NE_m(poscontrol.target_neu_m.xy(), vel_ne_ms, zero);
 
         // also run fixed wing navigation
         plane.nav_controller->update_waypoint(plane.current_loc, loc);
@@ -2731,7 +2729,7 @@ void QuadPlane::vtol_position_controller(void)
             pos_control->relax_velocity_controller_NE();
         } else {
             Vector2f zero;
-            Vector2f vel_ne_ms = poscontrol.target_vel_cms.xy() * 0.01 + landing_velocity_ne_ms;
+            Vector2f vel_ne_ms = poscontrol.target_vel_ms.xy() + landing_velocity_ne_ms;
             Vector2f rpos;
             const uint32_t last_reset_ms = plane.ahrs.getLastPosNorthEastReset(rpos);
             /* we use velocity control when we may be touching the
@@ -2745,9 +2743,7 @@ void QuadPlane::vtol_position_controller(void)
                 pos_control->input_vel_accel_NE_m(vel_ne_ms, zero);
             } else {
                 // otherwise use full pos control
-                Vector2p target_ne_m = poscontrol.target_neu_cm.xy() * 0.01;
-                pos_control->input_pos_vel_accel_NE_m(target_ne_m, vel_ne_ms, zero);
-                poscontrol.target_neu_cm.xy() = target_ne_m * 100.0;
+                pos_control->input_pos_vel_accel_NE_m(poscontrol.target_neu_m.xy(), vel_ne_ms, zero);
             }
         }
 
@@ -3073,9 +3069,9 @@ void QuadPlane::setup_target_position(void)
 
     Vector2f diff2d = origin.get_distance_NE(loc);
     diff2d += poscontrol.correction_ne_m;
-    poscontrol.target_neu_cm.x = diff2d.x * 100;
-    poscontrol.target_neu_cm.y = diff2d.y * 100;
-    poscontrol.target_neu_cm.z = plane.next_WP_loc.alt - origin.alt;
+    poscontrol.target_neu_m.x = diff2d.x;
+    poscontrol.target_neu_m.y = diff2d.y;
+    poscontrol.target_neu_m.z = (plane.next_WP_loc.alt - origin.alt) * 0.01;
 
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_U_m(-get_pilot_velocity_z_max_dn_m(), pilot_speed_z_max_up_ms, pilot_accel_z_mss);
@@ -3203,7 +3199,7 @@ void QuadPlane::waypoint_controller(void)
     const uint32_t now = AP_HAL::millis();
     if (!loc.same_loc_as(last_auto_target) ||
         now - last_loiter_ms > 500) {
-        wp_nav->set_wp_destination_NEU_cm(poscontrol.target_neu_cm.tofloat());
+        wp_nav->set_wp_destination_NEU_cm(poscontrol.target_neu_m.tofloat() * 100);
         last_auto_target = loc;
     }
     last_loiter_ms = now;
@@ -3567,7 +3563,7 @@ bool QuadPlane::verify_vtol_land(void)
         if (poscontrol.pilot_correction_done) {
             reached_position = !poscontrol.pilot_correction_active;
         } else {
-            const float dist_m = (inertial_nav.get_position_neu_cm().topostype() - poscontrol.target_neu_cm).xy().length() * 0.01;
+            const float dist_m = (inertial_nav.get_position_neu_cm().topostype() * 0.01 - poscontrol.target_neu_m).xy().length();
             reached_position = dist_m < descend_dist_threshold_m;
         }
         Vector2f approach_vel_ne_ms;
@@ -4650,7 +4646,7 @@ void QuadPlane::mode_enter(void)
     // Clear any pilot corrections
     poscontrol.pilot_correction_done = false;
     poscontrol.pilot_correction_active = false;
-    poscontrol.target_vel_cms.zero();
+    poscontrol.target_vel_ms.zero();
 
     // clear guided takeoff wait on any mode change, but remember the
     // state for special behaviour

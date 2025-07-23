@@ -515,9 +515,9 @@ private:
         uint32_t time_since_state_start_ms() const {
             return AP_HAL::millis() - last_state_change_ms;
         }
-        Vector3p target_neu_cm;
+        Vector3p target_neu_m;
         Vector2f correction_ne_m;
-        Vector3f target_vel_cms;
+        Vector3f target_vel_ms;
         bool slow_descent:1;
         bool pilot_correction_active;
         bool pilot_correction_done;
