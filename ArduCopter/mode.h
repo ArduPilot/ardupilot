@@ -101,6 +101,7 @@ public:
         AUTOROTATE =   26,  // Autonomous autorotation
         AUTO_RTL =     27,  // Auto RTL, this is not a true mode, AUTO will report as this mode if entered to perform a DO_LAND_START Landing sequence
         TURTLE =       28,  // Flip over after crash
+        RATE_ACRO =    29,  // Betaflight-style rate acro
 
         // Mode number 30 reserved for "offboard" for external/lua control.
 
@@ -446,11 +447,32 @@ protected:
     // get_pilot_desired_rates_rads - transform pilot's normalised roll pitch and yaw input into a desired lean angle rates
     // the function returns desired angle rates in radians-per-second
     void get_pilot_desired_rates_rads(float &roll_out_rads, float &pitch_out_rads, float &yaw_out_rads);
+    void get_desired_rates(float& target_roll_rads, float& target_pitch_rads, float& target_yaw_rads, float& pilot_desired_throttle);
 
     float throttle_hover() const override;
 
-private:
     bool disable_air_mode_reset;
+};
+#endif
+
+#if MODE_RATE_ACRO_ENABLED
+class ModeRateAcro : public ModeAcro {
+
+public:
+    // inherit constructor
+    using ModeAcro::ModeAcro;
+    Number mode_number() const override { return Number::RATE_ACRO; }
+
+    virtual void run() override;
+    bool init(bool ignore_checks) override;
+    void exit() override;
+    // Called when air mode is enabled via AUX switch; prevents automatic reset to default air_mode state
+    void air_mode_aux_changed();
+
+protected:
+
+    const char *name() const override { return "ACRR"; }
+    const char *name4() const override { return "RATEACRO"; }
 };
 #endif
 

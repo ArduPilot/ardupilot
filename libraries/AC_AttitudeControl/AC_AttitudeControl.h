@@ -430,6 +430,9 @@ public:
     // Return throttle increase applied for tilt compensation
     float angle_boost() const { return _angle_boost; }
 
+    // convert angle P to I for rate only control
+    void convert_angle_P_to_I(bool enable = true) { _convert_angle_P_to_I = enable; }
+
     // Returns maximum allowable tilt angle (in radians) for pilot input when in altitude hold mode.
     // Used to limit lean angle based on available thrust margin, prioritising altitude stability.
     virtual float get_althold_lean_angle_max_rad() const;
@@ -555,6 +558,12 @@ public:
     // purposes
     void set_PD_scale_mult(const Vector3f &pd_scale) { _pd_scale *= pd_scale; }
 
+    // setup a one loop I scale multiplier, multiplying by any
+    // previously applied scale from this loop. This allows for more
+    // than one type of scale factor to be applied for different
+    // purposes
+    void set_I_scale_mult(const Vector3f &i_scale) { _i_scale *= i_scale; }
+
     // write RATE message
     void Write_Rate(const AC_PosControl &pos_control) const;
 
@@ -574,6 +583,9 @@ protected:
     // Returns the most recent angular velocity reading (rad/s) for the rate controller.
     // Ensures minimum latency when rate control is run before or after attitude control.
     const Vector3f get_latest_gyro() const;
+
+    // scale I to represent the control given by angle P
+    void scale_I_to_angle_P();
 
     // Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
     AP_Float            _slew_yaw_cds;
@@ -703,7 +715,14 @@ protected:
     Vector3f            _pd_scale{1,1,1};
 
     // Proportional-Derivative gains this loop (for logging/debugging)
-    Vector3f            _pd_scale_used;
+     Vector3f            _pd_scale_used;
+
+    // Integrator gains applied dynamically per axis
+    Vector3f            _i_scale{1,1,1};
+
+    // Integrator gains this loop (for logging/debugging)
+    Vector3f            _i_scale_used;
+    bool                _convert_angle_P_to_I;
 
     // Ratio of normal to reduced rate controller gain when landed to suppress ground resonance
     float               _landed_gain_ratio;

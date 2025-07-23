@@ -393,7 +393,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Advanced
     GSCALAR(rc_speed, "RC_SPEED",              RC_FAST_SPEED),
 
-#if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
+#if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED || MODE_RATE_ACRO_ENABLED
     // @Param: ACRO_BAL_ROLL
     // @DisplayName: Acro Balance Roll
     // @Description: rate at which roll angle returns to level in acro and sport mode.  A higher value causes the vehicle to return to level faster. For helicopter sets the decay rate of the virtual flybar in the roll axis. A higher value causes faster decay of desired to actual attitude.
@@ -413,7 +413,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // ACRO_RP_EXPO moved to Command Model class
 
-#if MODE_ACRO_ENABLED
+#if MODE_ACRO_ENABLED || MODE_RATE_ACRO_ENABLED
     // @Param: ACRO_TRAINER
     // @DisplayName: Acro Trainer
     // @Description: Type of trainer used in acro mode
@@ -759,7 +759,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // ACRO_Y_EXPO (9) moved to Command Model Class
 
-#if MODE_ACRO_ENABLED
+#if MODE_ACRO_ENABLED || MODE_RATE_ACRO_ENABLED
     // @Param: ACRO_THR_MID
     // @DisplayName: Acro Thr Mid
     // @Description: Acro Throttle Mid
@@ -1012,7 +1012,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("FS_DR_TIMEOUT", 53, ParametersG2, failsafe_dr_timeout, 30),
 
-#if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
+#if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED || MODE_RATE_ACRO_ENABLED
     // @Param: ACRO_RP_RATE
     // @DisplayName: Acro Roll and Pitch Rate
     // @Description: Acro mode maximum roll and pitch rate.  Higher values mean faster rate of rotation
@@ -1038,7 +1038,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(command_model_acro_rp, "ACRO_RP_", 54, ParametersG2, AC_CommandModel),
 #endif
 
-#if MODE_ACRO_ENABLED || MODE_DRIFT_ENABLED
+#if MODE_ACRO_ENABLED || MODE_DRIFT_ENABLED || MODE_RATE_ACRO_ENABLED
     // @Param: ACRO_Y_RATE
     // @DisplayName: Acro Yaw Rate
     // @Description: Acro mode maximum yaw rate.  Higher value means faster rate of rotation
@@ -1275,11 +1275,11 @@ ParametersG2::ParametersG2(void) :
 #if MODE_ZIGZAG_ENABLED
     ,mode_zigzag_ptr(&copter.mode_zigzag)
 #endif
-#if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
+#if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED || MODE_RATE_ACRO_ENABLED
     ,command_model_acro_rp(ACRO_RP_RATE_DEFAULT, ACRO_RP_EXPO_DEFAULT, 0.0f)
 #endif
 
-#if MODE_ACRO_ENABLED || MODE_DRIFT_ENABLED
+#if MODE_ACRO_ENABLED || MODE_DRIFT_ENABLED || MODE_RATE_ACRO_ENABLED
     ,command_model_acro_y(ACRO_Y_RATE_DEFAULT, ACRO_Y_EXPO_DEFAULT, 0.0f)
 #endif
 
