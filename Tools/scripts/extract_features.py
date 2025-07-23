@@ -294,6 +294,7 @@ class ExtractFeatures(object):
             ('AP_COPTER_AHRS_AUTO_TRIM_ENABLED', r'RC_Channels_Copter::auto_trim_run'),
 
             ('AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED', r'GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands'),
+            ('AP_PLANE_HF_ELEVATOR_ENABLED', r'Plane::HighFreqElevator::update'),
             ('AP_SERIALMANAGER_REGISTER_ENABLED', r'AP_SerialManager::register_port'),
             ('AP_QUICKTUNE_ENABLED', r'AP_Quicktune::update'),
             ('AP_FILTER_ENABLED', r'AP_Filters::update'),
