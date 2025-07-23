@@ -128,7 +128,7 @@ public:
     virtual bool requires_GPS() const = 0;
     virtual bool has_manual_throttle() const = 0;
     virtual bool allows_arming(AP_Arming::Method method) const = 0;
-    virtual bool is_autopilot() const { return false; }
+    virtual bool is_autopilot() const = 0;
     virtual bool has_user_takeoff(bool must_navigate) const { return false; }
     virtual bool in_guided_mode() const { return false; }
     virtual bool logs_attitude() const { return false; }
@@ -854,7 +854,7 @@ public:
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return false; };
-    bool is_autopilot() const override { return false; }
+    bool is_autopilot() const override { return true; }
 
     void timeout_to_loiter_ms(uint32_t timeout_ms);
 
