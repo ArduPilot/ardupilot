@@ -892,6 +892,7 @@ private:
     // Attitude.cpp
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
+    void apply_load_factor_roll_limits(void);
     void adjust_altitude_target();
     void setup_alt_slope(void);
     int32_t get_RTL_altitude_cm() const;
