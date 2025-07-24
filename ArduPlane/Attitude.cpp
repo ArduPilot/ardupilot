@@ -631,9 +631,7 @@ void Plane::adjust_nav_pitch_throttle(void)
 
 
 /*
-  calculate a new aerodynamic_load_factor and limit nav_roll_cd to
-  ensure that the load factor does not take us below the sustainable
-  airspeed
+  calculate a new aerodynamic_load_factor
  */
 void Plane::update_load_factor(void)
 {
@@ -646,6 +644,15 @@ void Plane::update_load_factor(void)
     // loadFactor = liftForce / gravityForce, where gravityForce = liftForce * cos(roll) on balanced horizontal turn
     aerodynamic_load_factor = 1.0f / cosf(radians(demanded_roll));
 
+    apply_load_factor_roll_limits();
+}
+
+/*
+  limit nav_roll_cd to ensure that the load factor does not take us below the
+  sustainable airspeed
+ */
+void Plane::apply_load_factor_roll_limits(void)
+{
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.available() && quadplane.transition->set_FW_roll_limit(roll_limit_cd)) {
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
