@@ -6,6 +6,7 @@ void ModeFBWA::update()
     // set nav_roll and nav_pitch using sticks
     plane.nav_roll_cd  = plane.channel_roll->norm_input() * plane.roll_limit_cd;
     plane.update_load_factor();
+    plane.apply_load_factor_roll_limits();
     float pitch_input = plane.channel_pitch->norm_input();
     if (pitch_input > 0) {
         plane.nav_pitch_cd = pitch_input * plane.aparm.pitch_limit_max*100;

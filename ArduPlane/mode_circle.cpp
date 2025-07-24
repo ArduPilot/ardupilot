@@ -17,6 +17,7 @@ void ModeCircle::update()
     // switched into the mode
     plane.nav_roll_cd  = plane.roll_limit_cd / 3;
     plane.update_load_factor();
+    plane.apply_load_factor_roll_limits();
     plane.calc_nav_pitch();
     plane.calc_throttle();
 }
