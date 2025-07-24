@@ -63,6 +63,16 @@
 #define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 0 // disabled
 #endif
 
+#if HAL_HAVE_IMU_HEATER2
+#if !HAL_HAVE_IMU_HEATER
+#error "Use HAL_HAVE_IMU_HEATER instead of HAL_HAVE_IMU_HEATER2"
+#endif
+
+#ifndef HAL_IMU_TEMP2_DEFAULT
+#define HAL_IMU_TEMP2_DEFAULT      -1 // disabled
+#endif
+#endif
+
 #ifndef BOARD_SAFETY_OPTION_DEFAULT
 #  define BOARD_SAFETY_OPTION_DEFAULT (BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF|BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)
 #endif
@@ -99,6 +109,9 @@ AP_BoardConfig::AP_BoardConfig()
     // initialise heater PI controller. Note we do this in the cpp file
     // for ccache efficiency
     : heater{{HAL_IMUHEAT_P_DEFAULT, HAL_IMUHEAT_I_DEFAULT, 70},}
+#if HAL_HAVE_IMU_HEATER2
+    , heater2{{HAL_IMUHEAT2_P_DEFAULT, HAL_IMUHEAT2_I_DEFAULT, 70},}
+#endif
 #endif
 {
     _singleton = this;
@@ -390,7 +403,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Range: 0 20
     // @Units: degC
     // @User: Advanced
-    AP_GROUPINFO("HEAT_LOWMGN", 23, AP_BoardConfig, heater.imu_arming_temperature_margin_low, HAL_IMU_TEMP_MARGIN_LOW_DEFAULT),
+    AP_GROUPINFO("HEAT_LOWMGN", 23, AP_BoardConfig, imu_arming_temperature_margin_low, HAL_IMU_TEMP_MARGIN_LOW_DEFAULT),
 #endif
 
 #if AP_SDCARD_STORAGE_ENABLED
@@ -429,6 +442,39 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // index 30 used by SER6_RTSCTS
     // index 31 used by SER7_RTSCTS
     // index 32 used by SER8_RTSCTS
+
+#if HAL_HAVE_IMU_HEATER2
+    // @Param: HEAT_TARG2
+    // @DisplayName: Board heater2 temperature target
+    // @Description: Board heater2 target temperature for boards with controllable heating units. Set to -1 to disable the heater, please reboot after setting to -1.
+    // @Range: -1 80
+    // @Units: degC
+    // @User: Advanced
+    AP_GROUPINFO("HEAT2_TARG", 33, AP_BoardConfig, heater2.imu_target_temperature, HAL_IMU_TEMP2_DEFAULT),
+
+    // @Param: HEAT2_P
+    // @DisplayName: Board Heater2 P gain
+    // @Description: Board Heater2 P gain
+    // @Range: 1 500
+    // @Increment: 1
+    // @User: Advanced
+
+    // @Param: HEAT2_I
+    // @DisplayName: Board Heater2 I gain
+    // @Description: Board Heater2 integrator gain
+    // @Range: 0 1
+    // @Increment: 0.1
+    // @User: Advanced
+
+    // @Param: HEAT2_IMAX
+    // @DisplayName: Board Heater2 IMAX
+    // @Description: Board Heater2 integrator maximum
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Advanced
+    AP_SUBGROUPINFO(heater2.pi_controller, "HEAT2_",  34, AP_BoardConfig, AC_PI),
+#endif
+
     AP_GROUPEND
 };
 
