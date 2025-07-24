@@ -82,6 +82,17 @@ void AP_GPS_ExternalAHRS::handle_external(const AP_ExternalAHRS::gps_data_messag
 
     state.last_gps_time_ms = AP_HAL::millis();
 
+    if (pkt.have_heading) {
+        state.gps_yaw = pkt.heading;
+        state.gps_yaw_time_ms = state.last_gps_time_ms;
+        state.gps_yaw_configured = true;
+
+        if (pkt.have_heading_acc) {
+            state.have_gps_yaw_accuracy = true;
+            state.gps_yaw_accuracy = pkt.heading_accuracy;
+        }
+    }
+
     new_data = true;
 }
 
