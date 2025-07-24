@@ -25,7 +25,7 @@ template <typename Arithmetic1, typename Arithmetic2>
 typename std::enable_if<std::is_floating_point<typename std::common_type<Arithmetic1, Arithmetic2>::type>::value, bool>::type
 is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2)
 {
-#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
     typedef typename std::common_type<Arithmetic1, Arithmetic2>::type common_type;
     typedef typename std::remove_cv<common_type>::type common_type_nonconst;
     if (std::is_same<double, common_type_nonconst>::value) {
@@ -169,7 +169,7 @@ T wrap_180_cd(const T angle)
 template int wrap_180<int>(const int angle);
 template short wrap_180<short>(const short angle);
 template float wrap_180<float>(const float angle);
-#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 template double wrap_180<double>(const double angle);
 #endif
 
@@ -177,7 +177,7 @@ template int wrap_180_cd<int>(const int angle);
 template long wrap_180_cd<long>(const long angle);
 template short wrap_180_cd<short>(const short angle);
 template float wrap_180_cd<float>(const float angle);
-#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 template double wrap_180_cd<double>(const double angle);
 #endif
 
@@ -190,7 +190,7 @@ float wrap_360(const float angle)
     return res;
 }
 
-#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 double wrap_360(const double angle)
 {
     double res = fmod(angle, 360.0);
@@ -219,7 +219,7 @@ float wrap_360_cd(const float angle)
     return res;
 }
 
-#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 double wrap_360_cd(const double angle)
 {
     double res = fmod(angle, 36000.0);
