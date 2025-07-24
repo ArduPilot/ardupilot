@@ -154,6 +154,7 @@ BUILD_OPTIONS = [
     Feature('AP_Periph', 'PERIPH_IMU', 'AP_PERIPH_IMU_ENABLED', 'Emit DroneCAN ahrs_RawIMU Messages ', 0, None),
     Feature('AP_Periph', 'PERIPH_RC_OUT', 'AP_PERIPH_RC_OUT_ENABLED', 'Emit DroneCAN actuator_Status Messages', 0, None),
     Feature('AP_Periph', 'PERIPH_EFI', 'AP_PERIPH_EFI_ENABLED', 'Emit DroneCAN ice_reciprocating_Status Messages', 0, 'EFI'),
+    Feature('AP_Periph', 'PERIPH_RCIN', 'AP_PERIPH_RCIN_ENABLED', 'Emit DroneCAN RCInput Messages', 0, 'RC_Protocol'),
 
     Feature('Camera', 'Camera', 'AP_CAMERA_ENABLED', 'Enable Camera trigger', 0, None),
     Feature('Camera', 'Camera_MAVLink', 'AP_CAMERA_MAVLINK_ENABLED', 'Enable MAVLink camera ', 0, 'Camera'),
