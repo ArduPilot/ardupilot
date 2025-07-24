@@ -1,11 +1,9 @@
-#define ALLOW_DOUBLE_MATH_FUNCTIONS
+#define AP_MATH_ALLOW_DOUBLE_FUNCTIONS 1
 
 #include "AP_GSOF_config.h"
 #include "AP_GSOF.h"
 
 #if AP_GSOF_ENABLED
-
-
 
 #include <AP_Logger/AP_Logger.h>
 #include <AP_HAL/utility/sparse-endian.h>
