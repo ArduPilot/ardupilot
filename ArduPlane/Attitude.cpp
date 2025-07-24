@@ -689,34 +689,34 @@ void Plane::apply_load_factor_roll_limits(void)
         flight_option_enabled(FlightOptions::ENABLE_FULL_AERO_LF_ROLL_LIMITS) &&
         ahrs.using_airspeed_sensor() && is_positive(aparm.airspeed_stall);
 
-    const int32_t level_roll_limit_cd = g.level_roll_limit * 100;
-    int32_t lf_roll_limit_cd = aparm.roll_limit * 100;
+    const float level_roll_limit_deg = g.level_roll_limit;
+    float lf_roll_limit_deg = aparm.roll_limit;
     if (max_load_factor <= 1) {
         if (enforce_full_roll_limit) {
-            lf_roll_limit_cd = level_roll_limit_cd;
+            lf_roll_limit_deg = level_roll_limit_deg;
         } else {
             // 25° limit to ensure maneuverability if airspeed estimate is wrong
-            lf_roll_limit_cd = 2500;
+            lf_roll_limit_deg = 25;
         }
     } else if (max_load_factor < aerodynamic_load_factor) {
         // the demanded nav_roll would take us past the aerodynamic
         // load limit. Limit our roll to a bank angle that will keep
         // the load within what the airframe can handle.
-        lf_roll_limit_cd = degrees(acosf(1.0f / max_load_factor))*100;
+        lf_roll_limit_deg = degrees(acosf(1.0f / max_load_factor));
 
         // unless enforcing full limits, allow at least 25 degrees of roll to
         // ensure the aircraft can be manoeuvered with a bad airspeed estimate.
         // At 25 degrees the load factor is 1.1 (10%)
-        if (!enforce_full_roll_limit && lf_roll_limit_cd < 2500) {
-            lf_roll_limit_cd = 2500;
+        if (!enforce_full_roll_limit && lf_roll_limit_deg < 25) {
+            lf_roll_limit_deg = 25;
         }
 
         // always allow at least the wings level threshold to prevent flyaways
-        if (lf_roll_limit_cd < level_roll_limit_cd) {
-            lf_roll_limit_cd = level_roll_limit_cd;
+        if (lf_roll_limit_deg < level_roll_limit_deg) {
+            lf_roll_limit_deg = level_roll_limit_deg;
         }
     }
 
-    nav_roll_cd = constrain_int32(nav_roll_cd, -lf_roll_limit_cd, lf_roll_limit_cd);
-    roll_limit_cd = MIN(roll_limit_cd, lf_roll_limit_cd);
+    nav_roll_cd = constrain_int32(nav_roll_cd, -lf_roll_limit_deg * 100, lf_roll_limit_deg * 100);
+    roll_limit_cd = MIN(roll_limit_cd, lf_roll_limit_deg * 100);
 }
