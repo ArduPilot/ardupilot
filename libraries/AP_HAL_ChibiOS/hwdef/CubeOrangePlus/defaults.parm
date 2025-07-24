@@ -5,7 +5,34 @@ BATT_AMP_PERVLT 39.877
 BATT_VOLT_MULT 12.02
 BATT2_AMP_PERVLT 39.877
 BATT2_VOLT_MULT 12.02
-# setup ADSB
+
+#Setup RFD-900X on Telem1 -> Serial1
+SERIAL1_PROTOCOL 2
+SERIAL1_BAUD 57
+SERIAL1_OPTIONS 0
+
+#Setup HDZero Freestyle VTX V2 on Telem2 -> Serial2
+SERIAL2_PROTOCOL 32
+SERIAL2_BAUD 115
+MSP_OPTIONS 0
+OSD_TYPE 3
+
+#Setup GPS on GPS1 -> Serial3 - A bug seems to exist and this must stay as GPS. I have not been able to run any other protocol other than GPS on Serial3.
+SERIAL3_PROTOCOL 5
+
+#Setup Remote ID on GPS2 -> Serial4
+SERIAL4_PROTOCOL 2
+SERIAL4_BAUD 57
+DID_ENABLE 1
+DID_CANDRIVER 0
+DID_MAVPORT 4
+
+#Setup ADSB on Serial5
 ADSB_TYPE 1
 SERIAL5_BAUD 57
 SERIAL5_PROTOCOL 1
+
+
+
+
+
