@@ -360,6 +360,12 @@ struct netif *ap_networking_routing_hook(const struct ip4_addr *dest);
 
 #if PPP_SUPPORT
 
+// support PPP network capture
+struct pbuf;
+struct ppp_pcb_s;
+void ap_ppp_capture_hook(const struct ppp_pcb_s *pcb, const struct pbuf *pb);
+#define LWIP_PPP_CAPTURE_HOOK ap_ppp_capture_hook
+
 #define NUM_PPP                 1      /* Max PPP sessions. */
 
 
