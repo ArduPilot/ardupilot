@@ -1,0 +1,37 @@
+#!/usr/bin/env python3
+
+def configure(cfg):
+
+    cfg.define('AP_MATH_ALLOW_DOUBLE_FUNCTIONS', 1)
+
+    cfg.env.CFLAGS += [
+        '-Wno-error=float-equal',
+        '-Wno-error',
+    ]
+
+    extra_src = [
+        'modules/sbgECom/common/*.c',
+        'modules/sbgECom/common/crc/*.c',
+        'modules/sbgECom/common/interfaces/sbgInterface.c',
+        'modules/sbgECom/src/*.c',
+        'modules/sbgECom/src/defs/*.c',
+        'modules/sbgECom/src/logs/*.c',
+        'modules/sbgECom/src/protocol/*.c',
+    ]
+
+    extra_src.extend(['libraries/AP_ExternalAHRS/sbgECom_hal/*.cpp'])
+
+    extra_src_inc = [
+        'modules/sbgECom/common/',
+        'modules/sbgECom/src/',
+        'modules/sbgECom/src/defs/',
+    ]
+
+    cfg.env.AP_LIB_EXTRA_SOURCES['AP_ExternalAHRS'] = []
+    for pattern in extra_src:
+        s = cfg.srcnode.ant_glob(pattern, dir=False, src=True)
+        for x in s:
+            cfg.env.AP_LIB_EXTRA_SOURCES['AP_ExternalAHRS'].append(str(x))
+
+    for inc in extra_src_inc:
+        cfg.env.INCLUDES += [str(cfg.srcnode.make_node(inc))]
