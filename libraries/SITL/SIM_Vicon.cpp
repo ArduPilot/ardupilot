@@ -140,6 +140,13 @@ const AP_Param::GroupInfo SIM::ViconParms::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("RATE",  10, ViconParms,  rate_hz, 50),
 
+    // @Param: OPTION
+    // @DisplayName: SITL vicon options
+    // @Description: SITL vicon options
+    // @Bitmask: 0:Do not send attitude(MAVLink messages will have NaN attitude values)
+    // @User: Advanced
+    AP_GROUPINFO("OPTION", 11, ViconParms,  options, 0),
+
     AP_GROUPEND
 };
 
@@ -308,6 +315,12 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     pose_cov[6]  = pos_variance;   // y
     pose_cov[11] = pos_variance;   // z
 
+    bool send_attitude = true;
+    if (_sitl->vicon.options.get() & (uint8_t)ViconOptionsMask::SEND_ATTITUDE_AS_NAN) {
+        // if SEND_ATTITUDE_AS_NAN is set, send attitude as NaN
+        send_attitude = false;
+    }
+
     // send vision position estimate message
     uint8_t msg_buf_index;
     if (should_send(ViconTypeMask::VISION_POSITION_ESTIMATE) && get_free_msg_buf_index(msg_buf_index)) {
@@ -316,9 +329,9 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
         x: float(pos_corrected.x),
         y: float(pos_corrected.y),
         z: float(pos_corrected.z),
-        roll: roll,
-        pitch: pitch,
-        yaw: yaw
+        roll: send_attitude ? roll : NaNf,
+        pitch: send_attitude ? pitch : NaNf,
+        yaw: send_attitude ? yaw : NaNf,
         };
         memcpy(vision_position_estimate.covariance, pose_cov, sizeof(pose_cov));
 
@@ -339,9 +352,9 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
         x: float(pos_corrected.x),
         y: float(pos_corrected.y),
         z: float(pos_corrected.z),
-        roll: roll,
-        pitch: pitch,
-        yaw: yaw
+        roll: send_attitude ? roll : NaNf,
+        pitch: send_attitude ? pitch : NaNf,
+        yaw: send_attitude ? yaw : NaNf,
         };
         mavlink_msg_vicon_position_estimate_encode_status(
             system_id,
@@ -391,12 +404,14 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
         vel_cov[6] = vel_variance;   // y
         vel_cov[11] = vel_variance;   // z
 
+        const Quaternion attitude_quat = send_attitude ? attitude: Quaternion(NaNf, NaNf, NaNf, NaNf);
+
         mavlink_odometry_t odometry{
         time_usec: now_us + time_offset_us,
         x: float(pos_corrected.x),
         y: float(pos_corrected.y),
         z: float(pos_corrected.z),
-        q: {attitude[0], attitude[1], attitude[2], attitude[3]},
+        q: {attitude_quat[0], attitude_quat[1], attitude_quat[2], attitude_quat[3]},
         vx: vel_corrected_frd.x,
         vy: vel_corrected_frd.y,
         vz: vel_corrected_frd.z,

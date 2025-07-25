@@ -344,6 +344,7 @@ public:
         AP_Int8 type_mask;    // vicon message type mask (bit0:vision position estimate, bit1:vision speed estimate, bit2:vicon position estimate)
         AP_Vector3f vel_glitch;   // velocity glitch in m/s in vicon's local frame
         AP_Int16 rate_hz;     // vicon data rate in Hz
+        AP_Int8 options;      // vicon options, see ViconOptionsMask
     };
     ViconParms vicon;
 

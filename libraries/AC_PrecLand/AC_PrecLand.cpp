@@ -647,6 +647,32 @@ bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit, VectorFrame& fram
     return false;
 }
 
+#if AP_VISUALODOM_PRECLAND_ENABLED
+// When using a static landing target and downward-facing target detector,
+// the vehicle's position in world (target) frame is the inverse of the target's pose relative to the vehicle.
+// This can thus be used as a position measurement for the vehicle by EKF via the visual odometry library.
+void AC_PrecLand::send_pos_viso(const Vector3f& current_pos_NED)
+{
+
+    AP_VisualOdom *visual_odom = AP::visualodom();
+    if (visual_odom != nullptr) {
+        if (visual_odom->get_type() != AP_VisualOdom::VisualOdom_Type::PrecLand) {
+            // this is not a precision land visual odometry, return
+            return;
+        }
+        if (_options & PLND_OPTION_MOVING_TARGET) {
+            // this is a moving target, we cannot send the position estimate to visual odometry
+            return;
+        }
+        // we do not have a attitude estimate, so we will use NaN quaternion. This is done to avoid changing the existing AP_VisualOdom interface
+        // EKF will not use this quaternion, but it will use the position estimate
+        Quaternion Q{NaNf, NaNf, NaNf, NaNf};
+        visual_odom->handle_pose_estimate(AP_HAL::millis(), AP_HAL::millis(), current_pos_NED.x, current_pos_NED.y, current_pos_NED.z , Q, 0, 0, 0, 0);
+    }
+    return;
+}
+#endif // AP_VISUALODOM_PRECLAND_ENABLED
+
 // If a new measurement was retrieved, sets _target_pos_rel_meas_NED and returns true
 bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, bool rangefinder_alt_valid)
 {
@@ -710,6 +736,11 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
                 _last_target_pos_rel_origin_NED.z = pos_NED.z;
                 _last_vehicle_pos_NED = pos_NED;
             }
+
+#if AP_VISUALODOM_PRECLAND_ENABLED
+            // possibly update the visual odometry libary
+            send_pos_viso(-_target_pos_rel_meas_NED);
+#endif // AP_VISUALODOM_PRECLAND_ENABLED
             return true;
         }
     }

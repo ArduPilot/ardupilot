@@ -60,6 +60,11 @@ private:
         ODOMETRY                    = (1 << 4),
     };
 
+    // SIM_VICON_OPTIONS parameter bit values
+    enum class ViconOptionsMask : uint8_t {
+        SEND_ATTITUDE_AS_NAN        = (1 << 0), // send atttude as NaN
+    };
+
     // return true if the given message type should be sent
     bool should_send(ViconTypeMask type_mask) const { return (((uint8_t)type_mask & _sitl->vicon.type_mask.get()) > 0); }
 
