@@ -1,4 +1,4 @@
-# QuickShots
+# QuickShots for Copter
 Script creates a Dronie, Rocket or Helix mission.
 This is triggered by QGroundControl custom actions.
 
