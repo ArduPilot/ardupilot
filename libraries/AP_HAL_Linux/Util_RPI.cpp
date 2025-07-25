@@ -44,7 +44,7 @@ void UtilRPI::_get_board_type_using_peripheral_base() {
     DIR *dir = opendir(base_path);
     if (!dir) {
         printf("device-tree directory not found \r\n");
-        return
+        return;
     };
 
     struct dirent *entry;
