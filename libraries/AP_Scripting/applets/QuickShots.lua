@@ -1,4 +1,4 @@
--- QuickShots
+-- QuickShots for Copter
 -- Dronie, Rocket, Helix
 --
 -- triggered by MAVLink MAV_CMD_USER_1 (31010)
