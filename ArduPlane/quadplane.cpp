@@ -2548,7 +2548,7 @@ void QuadPlane::vtol_position_controller(void)
 
         // maximum configured VTOL speed
         const float wp_speed_ms = MAX(1.0, wp_nav->get_default_speed_NE_ms());
-        const float scaled_wp_speed = get_scaled_wp_speed(degrees(wp_distance_ne_m.angle()));
+        const float scaled_wp_speed_ms = get_scaled_wp_speed(degrees(wp_distance_ne_m.angle()));
 
         // limit target speed to a the pos1 speed limit, which starts out at the initial speed
         // but is adjusted if we start putting our nose down. We always allow at least twice
@@ -2557,14 +2557,14 @@ void QuadPlane::vtol_position_controller(void)
 
         if (poscontrol.reached_wp_speed ||
             rel_groundspeed_sq < sq(wp_speed_ms) ||
-            wp_speed_ms > 1.35*scaled_wp_speed) {
+            wp_speed_ms > 1.35*scaled_wp_speed_ms) {
             // once we get below the Q_WP_SPEED then we don't want to
             // speed up again. At that point we should fly within the
             // limits of the configured VTOL controller we also apply
             // this limit when we are more than 45 degrees off the
             // target in yaw, which is when we start to become
             // unstable
-            approach_speed_ms = MIN(approach_speed_ms, scaled_wp_speed);
+            approach_speed_ms = MIN(approach_speed_ms, scaled_wp_speed_ms);
             poscontrol.reached_wp_speed = true;
         }
 
@@ -3773,7 +3773,7 @@ float QuadPlane::forward_throttle_pct()
         return 0;
     }
     // get component of velocity error in fwd body frame direction
-    Vector3f vel_error_body_ms = ahrs.get_rotation_body_to_ned().transposed() * ((desired_velocity_ned_ms) - vel_ned_ms);
+    Vector3f vel_error_body_ms = ahrs.get_rotation_body_to_ned().transposed() * (desired_velocity_ned_ms - vel_ned_ms);
 
     float fwd_vel_error_ms = vel_error_body_ms.x;
 
@@ -3783,7 +3783,7 @@ float QuadPlane::forward_throttle_pct()
     // add in a component from our current pitch demand. This tends to
     // move us to zero pitch. Assume that LIM_PITCH would give us the
     // WP nav speed.
-    fwd_vel_error_ms -= (wp_nav->get_default_speed_NE_ms()) * plane.nav_pitch_cd / (plane.aparm.pitch_limit_max * 100);
+    fwd_vel_error_ms -= wp_nav->get_default_speed_NE_ms() * plane.nav_pitch_cd / (plane.aparm.pitch_limit_max * 100);
 
     if (should_relax() && vel_ned_ms.length() < 1) {
         // we may be landed
