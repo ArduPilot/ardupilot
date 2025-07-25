@@ -78,6 +78,11 @@ public:
     // ignores trim and deadzone
     float       norm_input_ignore_trim() const;
 
+    // return a normalised input for a channel, in range -1 to 1 (in
+    // return parameter).  Ignores trim and deadzone.  Returns false
+    // if a current value is not available (eg. in RC failsafe)
+    bool       norm_input_ignore_trim(float &norm_in) const;
+
     // returns true if input is within deadzone of min
     bool        in_min_dz() const;
 
@@ -385,7 +390,10 @@ public:
 #if HAL_GENERATOR_ENABLED
         LOWEHEISER_THROTTLE= 218, // allows for throttle on slider
 #endif  // HAL_GENERATOR_ENABLED
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
         TRANSMITTER_TUNING = 219, // use a transmitter knob or slider for in-flight tuning
+        TRANSMITTER_TUNING2 = 220, // use another transmitter knob or slider for in-flight tuning
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
         // inputs 248-249 are reserved for the Skybrush fork at
         // https://github.com/skybrush-io/ardupilot
@@ -408,10 +416,11 @@ public:
         SCRIPTING_14 =       313,
         SCRIPTING_15 =       314,
         SCRIPTING_16 =       315,
+        STOP_RESTART_SCRIPTING =     316,   // emergency scripting disablement
 #endif  // AP_SCRIPTING_ENABLED
 
         // this must be higher than any aux function above
-        AUX_FUNCTION_MAX =   316,
+        AUX_FUNCTION_MAX =   317,
     };
 
     // auxiliary switch handling (n.b.: we store this as 2-bits!):
@@ -749,6 +758,8 @@ public:
     RC_Channel &get_forward_channel() const;
     RC_Channel &get_lateral_channel() const;
 
+    bool seen_neutral_rudder() const { return have_seen_neutral_rudder; }
+
 protected:
 
     void new_override_received() {
@@ -792,6 +803,15 @@ private:
 #endif
 
     RC_Channel &get_rcmap_channel_nonnull(uint8_t rcmap_number) const;
+
+    // time that rudder arming has been running
+    uint32_t rudder_arm_timer;
+    // true if we have seen a neutral rudder control input after
+    // arming via rudder-input:
+    bool have_seen_neutral_rudder;
+    // check for arm/disarm command based on rudder stick position:
+    void rudder_arm_disarm_check();
+
 };
 
 RC_Channels &rc();

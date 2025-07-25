@@ -8,7 +8,7 @@
 
 #include "SIM_GPS.h"
 
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
 
 #include <time.h>
 #include <sys/time.h>
@@ -164,7 +164,7 @@ GPS_Backend::GPS_Backend(GPS &_front, uint8_t _instance) :
 {
     _sitl = AP::sitl();
 
-#if HAL_SIM_GPS_ENABLED && AP_SIM_MAX_GPS_SENSORS > 0
+#if AP_SIM_GPS_ENABLED && AP_SIM_MAX_GPS_SENSORS > 0
     // default the first backend to enabled:
     if (_instance == 0 && !_sitl->gps[0].enabled.configured()) {
         _sitl->gps[0].enabled.set(1);
@@ -615,4 +615,4 @@ float GPS_Data::speed_2d() const
     return velocity.length();
 }
 
-#endif  // HAL_SIM_GPS_ENABLED
+#endif  // AP_SIM_GPS_ENABLED

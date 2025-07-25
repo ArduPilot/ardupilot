@@ -509,7 +509,7 @@ fi
 
 heading "Adding ArduPilot Tools to environment"
 
-SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
+SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
 
 if [[ $DO_AP_STM_ENV -eq 1 ]]; then

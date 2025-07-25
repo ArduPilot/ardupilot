@@ -251,9 +251,6 @@ void lua_scripts::create_sandbox(lua_State *L) {
     lua_pushstring(L, "io");
     luaopen_io(L);
     lua_settable(L, -3);
-    lua_pushstring(L, "utf8");
-    luaopen_utf8(L);
-    lua_settable(L, -3);
     lua_pushstring(L, "package");
     luaopen_package(L);
     lua_settable(L, -3);

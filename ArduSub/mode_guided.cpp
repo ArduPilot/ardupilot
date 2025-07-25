@@ -634,7 +634,7 @@ void ModeGuided::guided_posvel_control_run()
     }
 
     // advance position target using velocity target
-    posvel_pos_target_cm += (posvel_vel_target_cms * position_control->get_dt()).topostype();
+    posvel_pos_target_cm += (posvel_vel_target_cms * position_control->get_dt_s()).topostype();
 
     // send position and velocity targets to position controller
     position_control->input_pos_vel_accel_NE_cm(posvel_pos_target_cm.xy(), posvel_vel_target_cms.xy(), Vector2f());
@@ -874,7 +874,7 @@ bool ModeGuided::guided_limit_check()
 
     // check if we have gone beyond horizontal limit
     if (guided_limit.horiz_max_cm > 0.0f) {
-        const float horiz_move = get_horizontal_distance_cm(guided_limit.start_pos.xy(), curr_pos.xy());
+        const float horiz_move = get_horizontal_distance(guided_limit.start_pos.xy(), curr_pos.xy());
         if (horiz_move > guided_limit.horiz_max_cm) {
             return true;
         }

@@ -10,8 +10,8 @@ bool ModeQLoiter::_enter()
     loiter_nav->init_target();
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_speed_z_max_up*100, quadplane.pilot_accel_z*100);
-    pos_control->set_correction_speed_accel_U_cmss(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_speed_z_max_up*100, quadplane.pilot_accel_z*100);
+    pos_control->set_max_speed_accel_U_cm(-quadplane.get_pilot_velocity_z_max_dn_cm(), quadplane.pilot_speed_z_max_up_ms*100, quadplane.pilot_accel_z_mss*100);
+    pos_control->set_correction_speed_accel_U_cmss(-quadplane.get_pilot_velocity_z_max_dn_cm(), quadplane.pilot_speed_z_max_up_ms*100, quadplane.pilot_accel_z_mss*100);
 
     quadplane.init_throttle_wait();
 
@@ -64,7 +64,7 @@ void ModeQLoiter::run()
     if (last_vel_set_ms != 0 && now - last_vel_set_ms < precland_timeout_ms) {
         // we have an active landing velocity override
         Vector2f target_accel;
-        Vector2f target_speed_xy_cms{quadplane.poscontrol.velocity_match.x*100, quadplane.poscontrol.velocity_match.y*100};
+        Vector2f target_speed_xy_cms{quadplane.poscontrol.velocity_match_ms.x*100, quadplane.poscontrol.velocity_match_ms.y*100};
         quadplane.pos_control->input_vel_accel_NE_cm(target_speed_xy_cms, target_accel);
         quadplane.poscontrol.last_velocity_match_ms = 0;
     }
@@ -107,7 +107,7 @@ void ModeQLoiter::run()
     quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_speed_z_max_up*100, quadplane.pilot_accel_z*100);
+    pos_control->set_max_speed_accel_U_cm(-quadplane.get_pilot_velocity_z_max_dn_cm(), quadplane.pilot_speed_z_max_up_ms*100, quadplane.pilot_accel_z_mss*100);
 
     // process pilot's roll and pitch input
     float target_roll_cd, target_pitch_cd;
@@ -157,10 +157,10 @@ void ModeQLoiter::run()
             }
 #endif  // AP_ICENGINE_ENABLED
         }
-        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+        float height_above_ground = plane.relative_ground_altitude(RangeFinderUse::TAKEOFF_LANDING);
         float descent_rate_cms = quadplane.landing_descent_rate_cms(height_above_ground);
 
-        if (poscontrol.get_state() == QuadPlane::QPOS_LAND_FINAL && !quadplane.option_is_set(QuadPlane::OPTION::DISABLE_GROUND_EFFECT_COMP)) {
+        if (poscontrol.get_state() == QuadPlane::QPOS_LAND_FINAL && !quadplane.option_is_set(QuadPlane::Option::DISABLE_GROUND_EFFECT_COMP)) {
             ahrs.set_touchdown_expected(true);
         }
 

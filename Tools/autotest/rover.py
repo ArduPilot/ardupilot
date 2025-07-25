@@ -6861,6 +6861,30 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
+    def SafetySwitch(self):
+        '''check safety switch works'''
+        self.start_subtest("Make sure we don't start moving when safety switch enabled")
+        self.wait_ready_to_arm()
+        self.set_rc(1, 2000)
+        self.wait_armed()
+        self.set_rc(1, 1500)
+        self.set_safetyswitch_on()
+        self.wait_groundspeed(0, 0.1, minimum_duration=2)
+        self.set_safetyswitch_off()
+        self.disarm_vehicle()
+
+        self.start_subtest("Make sure we stop moving when safety switch enabled")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(3, 1700)
+        self.wait_groundspeed(5, 100, minimum_duration=2)
+        self.set_safetyswitch_on()
+        self.wait_groundspeed(0, 0.1, minimum_duration=2)
+        self.set_safetyswitch_off()
+        self.wait_groundspeed(5, 100, minimum_duration=2)
+        self.set_rc(3, 1500)
+        self.disarm_vehicle()
+
     def GetMessageInterval(self):
         '''check that the two methods for requesting a MESSAGE_INTERVAL message are equivalent'''
         target_msg = mavutil.mavlink.MAVLINK_MSG_ID_HOME_POSITION
@@ -6988,6 +7012,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.BatteryInvalid,
             self.REQUIRE_LOCATION_FOR_ARMING,
             self.GetMessageInterval,
+            self.SafetySwitch,
             self.ThrottleFailsafe,
         ])
         return ret

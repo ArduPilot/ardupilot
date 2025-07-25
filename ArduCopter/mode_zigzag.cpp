@@ -568,13 +568,13 @@ float ModeZigZag::wp_distance_m() const
 {
     return is_auto ? wp_nav->get_wp_distance_to_destination_cm() * 0.01f : 0.0f;
 }
-int32_t ModeZigZag::wp_bearing() const
+float ModeZigZag::wp_bearing_deg() const
 {
-    return is_auto ? wp_nav->get_wp_bearing_to_destination_cd() : 0;
+    return is_auto ? degrees(wp_nav->get_wp_bearing_to_destination_rad()) : 0;
 }
-float ModeZigZag::crosstrack_error() const
+float ModeZigZag::crosstrack_error_m() const
 {
-    return is_auto ? wp_nav->crosstrack_error() : 0;
+    return is_auto ? wp_nav->crosstrack_error_m() : 0;
 }
 
 #endif // MODE_ZIGZAG_ENABLED

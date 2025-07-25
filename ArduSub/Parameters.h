@@ -233,7 +233,7 @@ public:
         k_param_acro_balance_pitch,
 
         // RPM Sensor
-        k_param_rpm_sensor = 232, // Disabled
+        k_param_rpm_sensor_old = 232, // unused - moved to vehicle
 
         // RC_Mapper Library
         k_param_rcmap, // Disabled

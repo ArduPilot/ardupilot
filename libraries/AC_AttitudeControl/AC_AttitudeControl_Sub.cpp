@@ -361,7 +361,7 @@ void AC_AttitudeControl_Sub::update_althold_lean_angle_max(float throttle_in)
     }
 
     float althold_lean_angle_max = acosf(constrain_float(throttle_in/(AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX * thr_max), 0.0f, 1.0f));
-    _althold_lean_angle_max_rad = _althold_lean_angle_max_rad + (_dt/(_dt+_angle_limit_tc))*(althold_lean_angle_max-_althold_lean_angle_max_rad);
+    _althold_lean_angle_max_rad = _althold_lean_angle_max_rad + (_dt_s/(_dt_s+_angle_limit_tc))*(althold_lean_angle_max-_althold_lean_angle_max_rad);
 }
 
 void AC_AttitudeControl_Sub::set_throttle_out(float throttle_in, bool apply_angle_boost, float filter_cutoff)
@@ -410,10 +410,10 @@ void AC_AttitudeControl_Sub::update_throttle_rpy_mix()
     // slew _throttle_rpy_mix to _throttle_rpy_mix_desired
     if (_throttle_rpy_mix < _throttle_rpy_mix_desired) {
         // increase quickly (i.e. from 0.1 to 0.9 in 0.4 seconds)
-        _throttle_rpy_mix += MIN(2.0f*_dt, _throttle_rpy_mix_desired-_throttle_rpy_mix);
+        _throttle_rpy_mix += MIN(2.0f*_dt_s, _throttle_rpy_mix_desired-_throttle_rpy_mix);
     } else if (_throttle_rpy_mix > _throttle_rpy_mix_desired) {
         // reduce more slowly (from 0.9 to 0.1 in 1.6 seconds)
-        _throttle_rpy_mix -= MIN(0.5f*_dt, _throttle_rpy_mix-_throttle_rpy_mix_desired);
+        _throttle_rpy_mix -= MIN(0.5f*_dt_s, _throttle_rpy_mix-_throttle_rpy_mix_desired);
     }
     _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, AC_ATTITUDE_CONTROL_MAX);
 }
@@ -426,9 +426,9 @@ void AC_AttitudeControl_Sub::rate_controller_run()
     _rate_gyro_rads = _ahrs.get_gyro_latest();
     _rate_gyro_time_us = AP_HAL::micros64();
 
-    _motors.set_roll(get_rate_roll_pid().update_all(_ang_vel_body_rads.x, _rate_gyro_rads.x, _dt, _motors.limit.roll));
-    _motors.set_pitch(get_rate_pitch_pid().update_all(_ang_vel_body_rads.y, _rate_gyro_rads.y, _dt, _motors.limit.pitch));
-    _motors.set_yaw(get_rate_yaw_pid().update_all(_ang_vel_body_rads.z, _rate_gyro_rads.z, _dt, _motors.limit.yaw));
+    _motors.set_roll(get_rate_roll_pid().update_all(_ang_vel_body_rads.x, _rate_gyro_rads.x, _dt_s, _motors.limit.roll));
+    _motors.set_pitch(get_rate_pitch_pid().update_all(_ang_vel_body_rads.y, _rate_gyro_rads.y, _dt_s, _motors.limit.pitch));
+    _motors.set_yaw(get_rate_yaw_pid().update_all(_ang_vel_body_rads.z, _rate_gyro_rads.z, _dt_s, _motors.limit.yaw));
 }
 
 // sanity check parameters.  should be called once before takeoff

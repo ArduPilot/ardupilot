@@ -479,18 +479,24 @@ bool GCS_MAVLINK_Rover::handle_guided_request(AP_Mission::Mission_Command &cmd)
 
 MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
-    if (packet.y == 1) {
+    switch (packet.y) { 
+    case 1:
         if (rover.g2.windvane.start_direction_calibration()) {
             return MAV_RESULT_ACCEPTED;
         } else {
             return MAV_RESULT_FAILED;
         }
-    } else if (packet.y == 2) {
+
+    case 2:
         if (rover.g2.windvane.start_speed_calibration()) {
             return MAV_RESULT_ACCEPTED;
         } else {
             return MAV_RESULT_FAILED;
         }
+
+    default:
+        break;
+
     }
 
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet, msg);
@@ -501,8 +507,18 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_in
     switch (packet.command) {
 
     case MAV_CMD_DO_CHANGE_SPEED:
-        // param1 : unused
+        // param1 : type
         // param2 : new speed in m/s
+        switch (SPEED_TYPE(packet.param1)) {
+            case SPEED_TYPE_CLIMB_SPEED:
+            case SPEED_TYPE_DESCENT_SPEED:
+            case SPEED_TYPE_ENUM_END:
+                return MAV_RESULT_DENIED;
+
+            case SPEED_TYPE_AIRSPEED: // Airspeed is treated as ground speed for GCS compatibility
+            case SPEED_TYPE_GROUNDSPEED:
+                break;
+        }
         if (!rover.control_mode->set_desired_speed(packet.param2)) {
             return MAV_RESULT_FAILED;
         }

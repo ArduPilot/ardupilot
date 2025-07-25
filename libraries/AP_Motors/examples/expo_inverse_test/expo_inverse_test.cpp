@@ -66,7 +66,7 @@ void setup(void)
     float max_diff_expo = 0;
 
     float expo = -1.0;
-    motors.set_dt(1);
+    motors.set_dt_s(1);
     while (expo < 1.0+expo_step*0.5) {
         hal.console->printf("expo: %0.4f\n",expo);
         motors.set_expo(expo);

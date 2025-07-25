@@ -45,7 +45,7 @@ extern const AP_HAL::HAL& hal;
  */
 uint32_t AP_Networking_PPP::ppp_output_cb(ppp_pcb *pcb, const void *data, uint32_t len, void *ctx)
 {
-    auto &driver = *(AP_Networking_PPP *)ctx;
+    auto &driver = *(AP_Networking_PPP::PPP_Instance *)ctx;
     LWIP_UNUSED_ARG(pcb);
     uint32_t remaining = len;
     const uint8_t *ptr = (const uint8_t *)data;
@@ -55,27 +55,6 @@ uint32_t AP_Networking_PPP::ppp_output_cb(ppp_pcb *pcb, const void *data, uint32
         return 0;
     }
 
-#if PPP_DEBUG_TX
-    bool flag_end = false;
-    if (ptr[len-1] == 0x7E) {
-        flag_end = true;
-        remaining--;
-    }
-    if (ptr[0] == 0x7E) {
-        // send byte size
-        if (pkt_size > 0) {
-            printf("PPP: tx[%lu] %u\n", tx_index++,  pkt_size);
-        }
-        // dump the packet
-        if (!(tx_index % 10)) {
-            for (uint32_t i = 0; i < pkt_size; i++) {
-                printf(" %02X", tx_bytes[i]);
-            }
-            printf("\n");
-        }
-        pkt_size = 0;
-    }
-#endif
     if (driver.uart->txspace() < remaining) {
         /*
           if we can't send the whole frame then don't send any of it. This
@@ -83,25 +62,8 @@ uint32_t AP_Networking_PPP::ppp_output_cb(ppp_pcb *pcb, const void *data, uint32
          */
         return 0;
     }
-    auto ret = driver.uart->write(ptr, remaining);
 
-#if PPP_DEBUG_TX
-    memcpy(&tx_bytes[pkt_size], data, len);
-    pkt_size += len;
-    if (flag_end) {
-        driver.uart->write(0x7E);
-        printf("PPP: tx[%lu] %u\n", tx_index++,  pkt_size);
-        // dump the packet
-        if (!(tx_index % 10)) {
-            for (uint32_t i = 0; i < pkt_size; i++) {
-                printf(" %02X", tx_bytes[i]);
-            }
-            printf("\n");
-        }
-        pkt_size = 0;
-    }
-#endif
-    return ret;
+    return driver.uart->write(ptr, remaining);
 }
 
 /*
@@ -109,22 +71,22 @@ uint32_t AP_Networking_PPP::ppp_output_cb(ppp_pcb *pcb, const void *data, uint32
  */
 void AP_Networking_PPP::ppp_status_callback(struct ppp_pcb_s *pcb, int code, void *ctx)
 {
-    auto &driver = *(AP_Networking_PPP *)ctx;
+    auto &driver = *(AP_Networking_PPP::PPP_Instance *)ctx;
     struct netif *pppif = ppp_netif(pcb);
 
     switch (code) {
     case PPPERR_NONE:
         // got new addresses for the link
 #if AP_NETWORKING_PPP_GATEWAY_ENABLED
-        if (driver.frontend.option_is_set(AP_Networking::OPTION::PPP_ETHERNET_GATEWAY)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP: got addresses");
+        if (driver.backend->frontend.option_is_set(AP_Networking::OPTION::PPP_ETHERNET_GATEWAY)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP[%u]: got addresses", unsigned(driver.idx));
         } else
 #endif
         {
-            driver.activeSettings.ip = ntohl(netif_ip4_addr(pppif)->addr);
-            driver.activeSettings.gw = ntohl(netif_ip4_gw(pppif)->addr);
-            driver.activeSettings.nm = ntohl(netif_ip4_netmask(pppif)->addr);
-            driver.activeSettings.last_change_ms = AP_HAL::millis();
+            driver.backend->activeSettings.ip = ntohl(netif_ip4_addr(pppif)->addr);
+            driver.backend->activeSettings.gw = ntohl(netif_ip4_gw(pppif)->addr);
+            driver.backend->activeSettings.nm = ntohl(netif_ip4_netmask(pppif)->addr);
+            driver.backend->activeSettings.last_change_ms = AP_HAL::millis();
         }
         break;
 
@@ -141,7 +103,7 @@ void AP_Networking_PPP::ppp_status_callback(struct ppp_pcb_s *pcb, int code, voi
         break;
 
     default:
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP: error %d", code);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP[%u]: error %d", unsigned(driver.idx), code);
         break;
     }
 }
@@ -153,42 +115,56 @@ void AP_Networking_PPP::ppp_status_callback(struct ppp_pcb_s *pcb, int code, voi
 bool AP_Networking_PPP::init()
 {
     auto &sm = AP::serialmanager();
-    uart = sm.find_serial(AP_SerialManager::SerialProtocol_PPP, 0);
-    if (uart == nullptr) {
-        return false;
-    }
+    bool need_thread = false;
 
-    pppif = NEW_NOTHROW netif;
-    if (pppif == nullptr) {
-        return false;
-    }
+    for (uint8_t i=0; i<AP_NETWORKING_PPP_NUM_INTERFACES; i++) {
+        auto &inst = iface[i];
 
-    const bool ethernet_gateway = frontend.option_is_set(AP_Networking::OPTION::PPP_ETHERNET_GATEWAY);
-    if (!ethernet_gateway) {
-        // initialise TCP/IP thread
-        LWIP_TCPIP_LOCK();
-        tcpip_init(NULL, NULL);
-        LWIP_TCPIP_UNLOCK();
-    }
+        inst.backend = this;
+        inst.idx = i;
 
-    hal.scheduler->delay(100);
+        auto *uart = sm.find_serial(AP_SerialManager::SerialProtocol_PPP, i);
+        if (uart == nullptr) {
+            break;
+        }
+
+        inst.pppif = NEW_NOTHROW netif;
+        if (inst.pppif == nullptr) {
+            break;
+        }
+
+        const bool ethernet_gateway = frontend.option_is_set(AP_Networking::OPTION::PPP_ETHERNET_GATEWAY);
+        if (!ethernet_gateway && !need_thread) {
+            // initialise TCP/IP thread
+            LWIP_TCPIP_LOCK();
+            tcpip_init(NULL, NULL);
+            LWIP_TCPIP_UNLOCK();
+        }
+
+        hal.scheduler->delay(100);
     
-    // create ppp connection
-    LWIP_TCPIP_LOCK();
+        // create ppp connection
+        LWIP_TCPIP_LOCK();
+        inst.ppp = pppos_create(inst.pppif, ppp_output_cb, ppp_status_callback, &inst);
+        if (inst.ppp == nullptr) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP[%u]: failed to create link", unsigned(i));
+            break;
+        }
+        LWIP_TCPIP_UNLOCK();
 
-    ppp = pppos_create(pppif, ppp_output_cb, ppp_status_callback, this);
-    if (ppp == nullptr) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP: failed to create link");
-        return false;
+        inst.uart = uart;
+
+        need_thread = true;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP[%u]: started", unsigned(i));
     }
-    LWIP_TCPIP_UNLOCK();
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP: started");
-    hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Networking_PPP::ppp_loop, void),
-                                 "ppp",
-                                 2048, AP_HAL::Scheduler::PRIORITY_NET, 0);
-
-    return true;
+    if (need_thread) {
+        hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Networking_PPP::ppp_loop, void),
+                                     "ppp",
+                                     2048, AP_HAL::Scheduler::PRIORITY_NET, 0);
+        return true;
+    }
+    return false;
 }
 
 #if AP_NETWORKING_PPP_GATEWAY_ENABLED
@@ -230,134 +206,170 @@ void AP_Networking_PPP::ppp_loop(void)
         AP::network().startup_wait();
     }
 
-    // ensure this thread owns the uart
-    // use a larger buffer space for TX to allow for large downloads (eg. MAVFTP)
-    uart->begin(AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_PPP, 0), PPP_BUFSIZE_RX, PPP_BUFSIZE_TX);
-    uart->set_unbuffered_writes(true);
+    // ensure this thread owns the uarts
+    for (uint8_t i=0; i<AP_NETWORKING_PPP_NUM_INTERFACES; i++) {
+        auto &inst = iface[i];
+        if (inst.uart == nullptr) {
+            continue;
+        }
+        // use a larger buffer space for TX to allow for large downloads (eg. MAVFTP)
+        inst.uart->begin(AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_PPP, i), PPP_BUFSIZE_RX, PPP_BUFSIZE_TX);
+        inst.uart->set_unbuffered_writes(true);
+
+        restart_instance(i);
+    }
 
     while (true) {
-        uint8_t buf[1024];
+        bool read_data = false;
 
-        // connect and set as default route
-        LWIP_TCPIP_LOCK();
-
-#if AP_NETWORKING_PPP_GATEWAY_ENABLED
-        if (ppp_gateway) {
-            /*
-              when bridging setup the ppp interface with the same IP
-              as the ethernet interface, and set the remote IP address
-              as the local address + 1
-             */
-            ip4_addr_t our_ip, his_ip;
-            const uint32_t ip = frontend.get_ip_active();
-            uint32_t rem_ip = frontend.param.remote_ppp_ip.get_uint32();
-            if (rem_ip == 0) {
-                // use ethernet IP +1 by default
-                rem_ip = ip+1;
-            }
-            our_ip.addr = htonl(ip);
-            his_ip.addr = htonl(rem_ip);
-            ppp_set_ipcp_ouraddr(ppp, &our_ip);
-            ppp_set_ipcp_hisaddr(ppp, &his_ip);
-            if (netif_list != nullptr) {
-                const uint32_t nmask = frontend.get_netmask_param();
-                if ((ip & nmask) == (rem_ip & nmask)) {
-                    // remote PPP IP is on the same subnet as the
-                    // local ethernet IP, so enable proxyarp to avoid
-                    // users having to setup routes in all devices
-                    netif_set_proxyarp(netif_list, &his_ip);
-                }
+        for (auto &inst : iface) {
+            if (inst.uart != nullptr) {
+                read_data |= update_instance(inst.idx);
             }
         }
+        if (!read_data) {
+            // ensure we give up some time
+            hal.scheduler->delay_microseconds(200);
+        }
+    }
+}
 
-        // connect to the remote end
-        ppp_connect(ppp, 0);
+/*
+  restart link on an instance
+ */
+void AP_Networking_PPP::restart_instance(const uint8_t idx)
+{
+    auto &inst = iface[idx];
+    // connect and set as default route
+    LWIP_TCPIP_LOCK();
 
+#if AP_NETWORKING_PPP_GATEWAY_ENABLED
+    // assume PPP/ethernet gateway is first instance only
+    const bool ppp_gateway = idx == 0 && frontend.option_is_set(AP_Networking::OPTION::PPP_ETHERNET_GATEWAY);
+    if (ppp_gateway) {
+        /*
+          when bridging setup the ppp interface with the same IP
+          as the ethernet interface, and set the remote IP address
+          as the local address + 1
+        */
+        ip4_addr_t our_ip, his_ip;
+        const uint32_t ip = frontend.get_ip_active();
+        uint32_t rem_ip = frontend.param.remote_ppp_ip.get_uint32();
+        if (rem_ip == 0) {
+            // use ethernet IP +1 by default
+            rem_ip = ip+1;
+        }
+        our_ip.addr = htonl(ip);
+        his_ip.addr = htonl(rem_ip);
+        ppp_set_ipcp_ouraddr(inst.ppp, &our_ip);
+        ppp_set_ipcp_hisaddr(inst.ppp, &his_ip);
+        if (netif_list != nullptr) {
+            const uint32_t nmask = frontend.get_netmask_param();
+            if ((ip & nmask) == (rem_ip & nmask)) {
+                // remote PPP IP is on the same subnet as the
+                // local ethernet IP, so enable proxyarp to avoid
+                // users having to setup routes in all devices
+                netif_set_proxyarp(netif_list, &his_ip);
+            }
+        }
+    }
+
+    // connect to the remote end
+    ppp_connect(inst.ppp, 0);
+
+    if (idx == 0) {
         if (ppp_gateway) {
             /*
               when we are setup as a PPP gateway we want the pppif to be
               first in the list so routing works if it is on the same
               subnet
             */
-            netif_promote(pppif);
+            netif_promote(inst.pppif);
         } else {
-            netif_set_default(pppif);
+            netif_set_default(inst.pppif);
         }
-#else
-        // normal PPP link, connect to the remote end and set as the
-        // default route
-        ppp_connect(ppp, 0);
-        netif_set_default(pppif);
-#endif // AP_NETWORKING_PPP_GATEWAY_ENABLED
-
-        LWIP_TCPIP_UNLOCK();
-
-        need_restart = false;
-
-        uint32_t last_read_ms = AP_HAL::millis();
-
-        while (!need_restart) {
-            const uint32_t now_ms = AP_HAL::millis();
-            auto n = uart->read(buf, sizeof(buf));
-            if (n > 0) {
-                LWIP_TCPIP_LOCK();
-                pppos_input(ppp, buf, n);
-                LWIP_TCPIP_UNLOCK();
-                if (ppp->if4_up) {
-                    // only consider the link active if IPv4 is up
-                    // so we will restart PPP negotiation if we
-                    // are out of sync with the other side
-                    last_read_ms = now_ms;
-                }
-#if PPP_LINK_TIMEOUT_MS
-            } else if (!frontend.option_is_set(AP_Networking::OPTION::PPP_TIMEOUT_DISABLE) &&
-                       now_ms - last_read_ms > PPP_LINK_TIMEOUT_MS) {
-                break;
-#endif
-            } else {
-                hal.scheduler->delay_microseconds(200);
-            }
-            if (ppp->err_code == PPPERR_PEERDEAD ||
-                ppp->phase == PPP_PHASE_TERMINATE) {
-                // reached LCP echo failure threshold LCP_MAXECHOFAILS
-                break;
-            }
-#if PPP_DEBUG_RX
-            auto pppos = (pppos_pcb *)ppp->link_ctx_cb;
-            for (uint32_t i = 0; i < n; i++) {
-                if (buf[i] == 0x7E && last_ppp_frame_size != 1) {
-                    // dump the packet
-                    if (pppos->bad_pkt) {
-                        printf("PPP: rx[%lu] %u\n", rx_index, last_ppp_frame_size);
-                        for (uint32_t j = 0; j < last_ppp_frame_size; j++) {
-                            printf("0x%02X,", rx_bytes[j]);
-                        }
-                        printf("\n");
-                        hal.scheduler->delay(1);
-                    }
-                    rx_index++;
-                    last_ppp_frame_size = 0;
-                }
-                rx_bytes[last_ppp_frame_size++] = buf[i];
-            }
-#endif
-
-            // allow the echo timeout to be disabled
-            if (frontend.option_is_set(AP_Networking::OPTION::PPP_ECHO_LIMIT_DISABLE)) {
-                ppp->settings.lcp_echo_fails = 0;
-            } else {
-                ppp->settings.lcp_echo_fails = LCP_MAXECHOFAILS;
-            }
-        }
-
-        // close with carrier loss, tear down the interface and
-        // re-create to restart link
-        LWIP_TCPIP_LOCK();
-        ppp->phase = 0;
-        ppp_close(ppp, 1);
-        LWIP_TCPIP_UNLOCK();
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP: reconnecting");
     }
+#else
+    // normal PPP link, connect to the remote end and set as the
+    // default route
+    ppp_connect(inst.ppp, 0);
+    if (idx == 0) {
+        netif_set_default(inst.pppif);
+    }
+#endif // AP_NETWORKING_PPP_GATEWAY_ENABLED
+    LWIP_TCPIP_UNLOCK();
+
+    inst.last_read_ms = AP_HAL::millis();
+}
+
+/*
+  update an instance, return true if we have read some data from the uart
+ */
+bool AP_Networking_PPP::update_instance(const uint8_t idx)
+{
+    auto &inst = iface[idx];
+    uint8_t buf[1024];
+
+    if (inst.need_restart) {
+        inst.need_restart = false;
+
+        LWIP_TCPIP_LOCK();
+        inst.ppp->phase = 0;
+        ppp_close(inst.ppp, 1);
+        LWIP_TCPIP_UNLOCK();
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP[%u]: reconnecting", unsigned(idx));
+
+        restart_instance(idx);
+    }
+
+    const uint32_t now_ms = AP_HAL::millis();
+    auto n = inst.uart->read(buf, sizeof(buf));
+    if (n > 0) {
+        LWIP_TCPIP_LOCK();
+        pppos_input(inst.ppp, buf, n);
+        LWIP_TCPIP_UNLOCK();
+        if (inst.ppp->if4_up) {
+            // only consider the link active if IPv4 is up
+            // so we will restart PPP negotiation if we
+            // are out of sync with the other side
+            inst.last_read_ms = now_ms;
+        }
+#if PPP_LINK_TIMEOUT_MS
+    } else if (!frontend.option_is_set(AP_Networking::OPTION::PPP_TIMEOUT_DISABLE) &&
+               now_ms - inst.last_read_ms > PPP_LINK_TIMEOUT_MS) {
+        inst.need_restart = true;
+    }
+#endif
+
+    if (inst.ppp->err_code == PPPERR_PEERDEAD ||
+        inst.ppp->phase == PPP_PHASE_TERMINATE) {
+        // reached LCP echo failure threshold LCP_MAXECHOFAILS
+        inst.need_restart = true;
+    }
+
+    // allow the echo timeout to be disabled
+    if (frontend.option_is_set(AP_Networking::OPTION::PPP_ECHO_LIMIT_DISABLE)) {
+        inst.ppp->settings.lcp_echo_fails = 0;
+    } else {
+        inst.ppp->settings.lcp_echo_fails = LCP_MAXECHOFAILS;
+    }
+
+    return n > 0;
+}
+
+// hook for custom routes
+struct netif *AP_Networking_PPP::routing_hook(uint32_t dest)
+{
+    for (uint8_t i=0; i<AP_NETWORKING_MAX_ROUTES; i++) {
+        auto &r = routes[i];
+        if (r.enabled && (r.dest_ip & r.netmask) == (dest & r.netmask)) {
+            if (r.iface_idx >= AP_NETWORKING_PPP_NUM_INTERFACES) {
+                continue;
+            }
+            return iface[r.iface_idx].pppif;
+        }
+    }
+    return nullptr;
 }
 
 #endif // AP_NETWORKING_BACKEND_PPP

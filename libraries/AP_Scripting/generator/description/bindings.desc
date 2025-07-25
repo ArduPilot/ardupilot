@@ -1080,6 +1080,7 @@ singleton AP_Networking method get_ip_active uint32_t
 singleton AP_Networking method get_netmask_active uint32_t
 singleton AP_Networking method get_gateway_active uint32_t
 singleton AP_Networking method address_to_str string uint32_t'skip_check
+singleton AP_Networking method add_route boolean uint8_t'skip_check uint8_t'skip_check uint32_t'skip_check uint8_t'skip_check
 
 include AP_VisualOdom/AP_VisualOdom.h
 singleton AP_VisualOdom depends HAL_VISUALODOM_ENABLED

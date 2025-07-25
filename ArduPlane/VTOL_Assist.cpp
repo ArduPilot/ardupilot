@@ -92,7 +92,7 @@ bool VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
     // assistance due to Q_ASSIST_SPEED
     // if option bit is enabled only allow assist with real airspeed sensor
     speed_assist = (have_airspeed && aspeed < speed) && 
-       (!quadplane.option_is_set(QuadPlane::OPTION::DISABLE_SYNTHETIC_AIRSPEED_ASSIST) || plane.ahrs.using_airspeed_sensor());
+       (!quadplane.option_is_set(QuadPlane::Option::DISABLE_SYNTHETIC_AIRSPEED_ASSIST) || plane.ahrs.using_airspeed_sensor());
 
     const uint32_t now_ms = AP_HAL::millis();
     const uint32_t tigger_delay_ms = delay * 1000;
@@ -106,7 +106,7 @@ bool VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
         alt_error.reset();
 
     } else {
-        const float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+        const float height_above_ground = plane.relative_ground_altitude(RangeFinderUse::ASSIST);
         if (alt_error.update(height_above_ground < alt, now_ms, tigger_delay_ms, clear_delay_ms)) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Alt assist %.1fm", height_above_ground);
         }

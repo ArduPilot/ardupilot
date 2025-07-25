@@ -195,9 +195,9 @@ float ModeLoiter::wp_distance_m() const
     return loiter_nav->get_distance_to_target_cm() * 0.01f;
 }
 
-int32_t ModeLoiter::wp_bearing() const
+float ModeLoiter::wp_bearing_deg() const
 {
-    return loiter_nav->get_bearing_to_target_cd();
+    return degrees(loiter_nav->get_bearing_to_target_rad());
 }
 
 #endif

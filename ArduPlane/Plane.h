@@ -226,6 +226,7 @@ private:
     Rotation rangefinder_orientation(void) const {
         return Rotation(g2.rangefinder_land_orient.get());
     }
+
 #endif
 
 #if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
@@ -240,11 +241,6 @@ private:
 #endif // AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
 
     float get_landing_height(bool &using_rangefinder);
-
-
-#if AP_RPM_ENABLED
-    AP_RPM rpm_sensor;
-#endif
 
     AP_TECS TECS_controller{ahrs, aparm, landing, MASK_LOG_TECS};
     AP_L1_Control L1_controller{ahrs, &TECS_controller};
@@ -437,6 +433,7 @@ private:
     // The amount current ground speed is below min ground speed.  Centimeters per second
     int32_t groundspeed_undershoot;
     bool groundspeed_undershoot_is_valid;
+    float last_groundspeed_undershoot_offset;
 
     // speed scaler for control surfaces, updated at 10Hz
     float surface_speed_scaler = 1.0;
@@ -581,7 +578,7 @@ private:
     } nav_scripting;
 #endif
 
-    struct {
+    struct GuidedState {
         // roll pitch yaw commanded from external controller in centidegrees
         Vector3l forced_rpy_cd;
         // last time we heard from the external controller
@@ -599,6 +596,9 @@ private:
 
         // altitude adjustments
         Location target_location;
+        // target_location altitude is uses to hold some flag values:
+        bool target_location_alt_is_minus_one() const;
+
         float target_alt_rate;
         uint32_t target_alt_time_ms = 0;
         uint8_t target_mav_frame = -1;
@@ -839,12 +839,6 @@ private:
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
 
-    // time that rudder arming has been running
-    uint32_t rudder_arm_timer;
-
-    // have we seen neutral rudder since arming with rudder?
-    bool seen_neutral_rudder;
-
 #if HAL_QUADPLANE_ENABLED
     // support for quadcopter-plane
     QuadPlane quadplane{ahrs};
@@ -901,8 +895,9 @@ private:
     void adjust_altitude_target();
     void setup_alt_slope(void);
     int32_t get_RTL_altitude_cm() const;
-    float relative_ground_altitude(bool use_rangefinder_if_available);
-    float relative_ground_altitude(bool use_rangefinder_if_available, bool use_terrain_if_available);
+    bool rangefinder_use(enum RangeFinderUse rangefinder_use) const;
+    float relative_ground_altitude(enum RangeFinderUse rangefinder_use);
+    float relative_ground_altitude(enum RangeFinderUse rangefinder_use, bool use_terrain_if_available);
     void set_target_altitude_current(void);
     void set_target_altitude_location(const Location &loc);
     int32_t relative_target_altitude_cm(void);
@@ -1019,7 +1014,7 @@ private:
 
     bool is_land_command(uint16_t cmd) const;
 
-    bool do_change_speed(uint8_t speedtype, float speed_target_ms, float rhtottle_pct);
+    bool do_change_speed(SPEED_TYPE speedtype, float speed_target_ms, float rhtottle_pct);
     /*
       return true if in a specific AUTO mission command
     */
@@ -1124,7 +1119,6 @@ private:
     void init_rc_in();
     void init_rc_out_main();
     void init_rc_out_aux();
-    void rudder_arm_disarm_check();
     void read_radio();
     int16_t rudder_input(void);
     void control_failsafe();
@@ -1219,6 +1213,7 @@ private:
     bool have_reverse_thrust(void) const;
     float get_throttle_input(bool no_deadzone=false) const;
     float get_adjusted_throttle_input(bool no_deadzone=false) const;
+    bool reverse_thrust_enabled(UseReverseThrust use_reverse_thrust_option) const;
 
 #if AP_SCRIPTING_ENABLED
     // support for NAV_SCRIPT_TIME mission command

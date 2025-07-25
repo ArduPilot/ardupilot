@@ -1,7 +1,7 @@
 #include "AP_MultiHeap.h"
 #include <AP_HAL/AP_HAL_Boards.h>
 
-#if ENABLE_HEAP && CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
 
 /*
   on systems other than chibios we map the allocation to the system
@@ -116,4 +116,4 @@ void MultiHeap::heap_free(void *ptr)
     free(header);
 }
 
-#endif // ENABLE_HEAP && CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
+#endif // CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS

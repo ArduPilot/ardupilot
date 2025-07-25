@@ -25,7 +25,7 @@ param set SERIAL5_PROTOCOL 5
 
 #include "SIM_config.h"
 
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
 
 #include <sys/time.h>
 #include "SIM_SerialDevice.h"
@@ -179,4 +179,4 @@ private:
 
 }
 
-#endif  // HAL_SIM_GPS_ENABLED
+#endif  // AP_SIM_GPS_ENABLED

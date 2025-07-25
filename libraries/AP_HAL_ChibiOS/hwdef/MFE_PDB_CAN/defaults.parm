@@ -1,0 +1,6 @@
+#Default Parameters for the MFE_PDB_CAN
+
+BATT_AMP_OFFSET 0.01
+BATT_CAPACITY 22000
+
+

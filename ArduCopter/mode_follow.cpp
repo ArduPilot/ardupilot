@@ -149,7 +149,7 @@ float ModeFollow::wp_distance_m() const
     return g2.follow.get_distance_to_target_m();
 }
 
-int32_t ModeFollow::wp_bearing() const
+float ModeFollow::wp_bearing_deg() const
 {
     return g2.follow.get_bearing_to_target_deg() * 100;
 }

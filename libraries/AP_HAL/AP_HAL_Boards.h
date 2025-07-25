@@ -48,7 +48,7 @@
 #define HAL_BOARD_SUBTYPE_LINUX_OBAL_V1    1025
 #define HAL_BOARD_SUBTYPE_LINUX_CANZERO    1026
 #define HAL_BOARD_SUBTYPE_LINUX_PILOTPI    1027
-
+#define HAL_BOARD_SUBTYPE_LINUX_POCKET2    1028
 /* HAL CHIBIOS sub-types, starting at 5000
 
    NOTE!! Do not add more subtypes unless they are really needed. Most
@@ -278,10 +278,6 @@
 #else
 #define AP_CAN_SLCAN_ENABLED 0
 #endif
-#endif
-
-#ifndef USE_LIBC_REALLOC
-#define USE_LIBC_REALLOC 1
 #endif
 
 #ifndef AP_HAL_SHARED_DMA_ENABLED

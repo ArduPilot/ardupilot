@@ -68,8 +68,12 @@ void ModeCircle::run()
         }
 
         // update the orbicular rate target based on pilot roll stick inputs
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
         // skip if using transmitter based tuning knob for circle rate
-        if (g.radio_tuning != TUNING_CIRCLE_RATE) {
+        if (!copter.being_tuned(TUNING_CIRCLE_RATE)) {
+#else
+        {
+#endif
             const float roll_stick = channel_roll->norm_input_dz();         // roll stick normalized -1 to 1
 
             if (is_zero(roll_stick)) {
@@ -131,9 +135,9 @@ float ModeCircle::wp_distance_m() const
     return copter.circle_nav->get_distance_to_target_cm() * 0.01f;
 }
 
-int32_t ModeCircle::wp_bearing() const
+float ModeCircle::wp_bearing_deg() const
 {
-    return copter.circle_nav->get_bearing_to_target_cd();
+    return degrees(copter.circle_nav->get_bearing_to_target_rad());
 }
 
 #endif

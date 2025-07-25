@@ -103,8 +103,6 @@ define HAL_I2C_CLEAR_ON_TIMEOUT 0
 
 define HAL_DEVICE_THREAD_STACK 256
 
-define AP_PARAM_MAX_EMBEDDED_PARAM 0
-
 define HAL_I2C_INTERNAL_MASK 0
 
 # disable dual GPS and GPS blending to save flash space

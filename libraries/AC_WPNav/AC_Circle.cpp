@@ -39,7 +39,6 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
 // Default constructor.
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
-//
 AC_Circle::AC_Circle(const AP_AHRS_View& ahrs, AC_PosControl& pos_control) :
     _ahrs(ahrs),
     _pos_control(pos_control)
@@ -52,12 +51,12 @@ AC_Circle::AC_Circle(const AP_AHRS_View& ahrs, AC_PosControl& pos_control) :
 }
 
 /// init - initialise circle controller setting center specifically
-///     set terrain_alt to true if center_neu_cm.z should be interpreted as an alt-above-terrain. Rate should be +ve in deg/sec for cw turn
+///     set is_terrain_alt to true if center_neu_cm.z should be interpreted as an alt-above-terrain. Rate should be +ve in deg/sec for cw turn
 ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
-void AC_Circle::init_NEU_cm(const Vector3p& center_neu_cm, bool terrain_alt, float rate_degs)
+void AC_Circle::init_NEU_cm(const Vector3p& center_neu_cm, bool is_terrain_alt, float rate_degs)
 {
     _center_neu_cm = center_neu_cm;
-    _terrain_alt = terrain_alt;
+    _is_terrain_alt = is_terrain_alt;
     _rate_degs = rate_degs;
 
     // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
@@ -93,7 +92,7 @@ void AC_Circle::init()
         _center_neu_cm.x += _radius_cm * _ahrs.cos_yaw();
         _center_neu_cm.y += _radius_cm * _ahrs.sin_yaw();
     }
-    _terrain_alt = false;
+    _is_terrain_alt = false;
 
     // calculate velocities
     calc_velocities(true);
@@ -156,7 +155,7 @@ bool AC_Circle::update_cms(float climb_rate_cms)
     calc_velocities(false);
 
     // calculate dt
-    const float dt = _pos_control.get_dt();
+    const float dt = _pos_control.get_dt_s();
 
     // ramp angular velocity to maximum
     if (_angular_vel_rads < _angular_vel_max_rads) {
@@ -176,13 +175,13 @@ bool AC_Circle::update_cms(float climb_rate_cms)
 
     // calculate terrain adjustments
     float terr_offset = 0.0f;
-    if (_terrain_alt && !get_terrain_offset_cm(terr_offset)) {
+    if (_is_terrain_alt && !get_terrain_offset_cm(terr_offset)) {
         return false;
     }
 
     // calculate z-axis target
     float target_z_cm;
-    if (_terrain_alt) {
+    if (_is_terrain_alt) {
         target_z_cm = _center_neu_cm.z + terr_offset;
     } else {
         target_z_cm = _pos_control.get_pos_desired_U_cm();
@@ -215,7 +214,7 @@ bool AC_Circle::update_cms(float climb_rate_cms)
     // update position controller target
     Vector2f zero;
     _pos_control.input_pos_vel_accel_NE_cm(target.xy(), zero, zero);
-    if (_terrain_alt) {
+    if (_is_terrain_alt) {
         float zero2 = 0;
         float target_zf = target.z;
         _pos_control.input_pos_vel_accel_U_cm(target_zf, zero2, 0);
@@ -233,10 +232,10 @@ bool AC_Circle::update_cms(float climb_rate_cms)
 }
 
 // get_closest_point_on_circle_NEU_cm - returns closest point on the circle
-//  circle's center should already have been set
-//  closest point on the circle will be placed in result_NEU_cm, dist_cm will be updated with the 3D distance to the center
-//  result_NEU_cm's altitude (i.e. z) will be set to the circle_center's altitude
-//  if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
+//      circle's center should already have been set
+//      closest point on the circle will be placed in result_NEU_cm, dist_cm will be updated with the 3D distance to the center
+//      result_NEU_cm's altitude (i.e. z) will be set to the circle_center's altitude
+//      if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
 void AC_Circle::get_closest_point_on_circle_NEU_cm(Vector3f& result_NEU_cm, float& dist_cm) const
 {
     // get current position
@@ -296,8 +295,8 @@ void AC_Circle::calc_velocities(bool init_velocity)
 }
 
 // init_start_angle - sets the starting angle around the circle and initialises the angle_total
-//  if use_heading is true the vehicle's heading will be used to init the angle causing minimum yaw movement
-//  if use_heading is false the vehicle's position from the center will be used to initialise the angle
+//      if use_heading is true the vehicle's heading will be used to init the angle causing minimum yaw movement
+//      if use_heading is false the vehicle's position from the center will be used to initialise the angle
 void AC_Circle::init_start_angle(bool use_heading)
 {
     // initialise angle total

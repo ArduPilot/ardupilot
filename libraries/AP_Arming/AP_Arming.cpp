@@ -1801,6 +1801,17 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
         return false;
     }
 
+    if (method == Method::RUDDER) {
+        switch (get_rudder_arming_type()) {
+        case AP_Arming::RudderArming::IS_DISABLED:
+            //parameter disallows rudder arming/disabling
+            return false;
+        case AP_Arming::RudderArming::ARMONLY:
+        case AP_Arming::RudderArming::ARMDISARM:
+            break;
+        }
+    }
+
     running_arming_checks = true;  // so we show Arm: rather than Disarm: in messages
 
     if ((!do_arming_checks && mandatory_checks(true)) || (pre_arm_checks(true) && arm_checks(method))) {
@@ -1864,6 +1875,17 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 {
     if (!armed) { // already disarmed
         return false;
+    }
+    if (method == AP_Arming::Method::RUDDER) {
+        // if throttle is not down, then pilot cannot rudder arm/disarm
+        if (rc().get_throttle_channel().get_control_in() > 0) {
+            return false;
+        }
+        // option must be enabled:
+        if (get_rudder_arming_type() != AP_Arming::RudderArming::ARMDISARM) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Disarm: rudder disarm disabled");
+            return false;
+        }
     }
     armed = false;
     _last_disarm_method = method;
@@ -2057,6 +2079,7 @@ void AP_Arming::check_forced_logging(const AP_Arming::Method method)
             return;
 
         case Method::RUDDER:
+        case Method::TOYMODE:
         case Method::MAVLINK:
         case Method::AUXSWITCH:
         case Method::MOTORTEST:

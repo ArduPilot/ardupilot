@@ -489,6 +489,9 @@ class WaitAndMaintain(object):
         self.last_progress_print = 0
         self.progress_print_interval = progress_print_interval
         self.comparator = comparator
+        if self.minimum_duration is not None:
+            if self.timeout < self.minimum_duration:
+                raise ValueError("timeout less than min duration")
 
         self.fn = fn
         self.fn_interval = fn_interval
@@ -700,6 +703,17 @@ class WaitAndMaintainArmed(WaitAndMaintain):
 
     def announce_start_text(self):
         return "Ensuring vehicle remains armed"
+
+
+class WaitAndMaintainDisarmed(WaitAndMaintain):
+    def get_current_value(self):
+        return self.test_suite.armed()
+
+    def get_target_value(self):
+        return False
+
+    def announce_start_text(self):
+        return "Ensuring vehicle remains disarmed"
 
 
 class WaitAndMaintainServoChannelValue(WaitAndMaintain):
@@ -2429,6 +2443,10 @@ class TestSuite(ABC):
             self.assert_simstate_location_is_at_startup_location(dist_max=startup_location_dist_max)
         if mark_context:
             self.context_get().reboot_sitl_was_done = True
+
+    def assert_armed(self):
+        if not self.armed():
+            raise NotAchievedException("Not armed")
 
     def reboot_sitl_mavproxy(self, required_bootcount=None):
         """Reboot SITL instance using MAVProxy and wait for it to reconnect."""
@@ -5108,9 +5126,8 @@ class TestSuite(ABC):
 
         if not match_comments:
             # strip comments from all lines
-            lines1 = [re.sub(r"\s*#.*", "", x, re.DOTALL) for x in lines1]
-            lines2 = [re.sub(r"\s*#.*", "", x, re.DOTALL) for x in lines2]
-            # FIXME: because DOTALL doesn't seem to work as expected:
+            lines1 = [re.sub(r"\s*#.*", "", x) for x in lines1]
+            lines2 = [re.sub(r"\s*#.*", "", x) for x in lines2]
             lines1 = [x.rstrip() for x in lines1]
             lines2 = [x.rstrip() for x in lines2]
             # remove now-empty lines:
@@ -6295,6 +6312,18 @@ class TestSuite(ABC):
                           "WENC_TYPE"]:
             return True
         return False
+
+    def set_parameter_bit(self, name : str, bit_offset : int) -> None:
+        '''set bit in parameter to true, preserving values of other bits'''
+        value = int(self.get_parameter(name))
+        value |= 1 << bit_offset
+        self.set_parameter(name, value)
+
+    def clear_parameter_bit(self, name : str, bit_offset : int) -> None:
+        '''set bit in parameter to true, preserving values of other bits'''
+        value = int(self.get_parameter(name))
+        value &= ~(1 << bit_offset)
+        self.set_parameter(name, value)
 
     def send_set_parameter_direct(self, name, value):
         self.mav.mav.param_set_send(self.sysid_thismav(),

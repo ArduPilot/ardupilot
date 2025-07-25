@@ -801,6 +801,12 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
         return false;
     }
 
+    if (method == AP_Arming::Method::RUDDER) {
+        if (!copter.flightmode->has_manual_throttle() && !copter.ap.land_complete) {
+            return false;
+        }
+    }
+
     if (!AP_Arming::disarm(method, do_disarm_checks)) {
         return false;
     }

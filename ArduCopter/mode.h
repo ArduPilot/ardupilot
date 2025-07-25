@@ -138,6 +138,9 @@ public:
     virtual bool allows_flip() const { return false; }
     virtual bool crash_check_enabled() const { return true; }
 
+    // "no pilot input" here means eg. in RC failsafe
+    virtual bool allows_entry_in_rc_failsafe() const { return true; }
+
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     // Return the type of this mode for use by advanced failsafe
     virtual AP_AdvancedFailsafe_Copter::control_mode afs_mode() const { return AP_AdvancedFailsafe_Copter::control_mode::AFS_STABILIZED; }
@@ -165,14 +168,14 @@ public:
 
     // functions for reporting to GCS
     virtual bool get_wp(Location &loc) const { return false; };
-    virtual int32_t wp_bearing() const { return 0; }
+    virtual float wp_bearing_deg() const { return 0; }
     virtual float wp_distance_m() const { return 0.0f; }
-    virtual float crosstrack_error() const { return 0.0f;}
+    virtual float crosstrack_error_m() const { return 0.0f;}
 
     // functions to support MAV_CMD_DO_CHANGE_SPEED
-    virtual bool set_speed_xy(float speed_xy_cms) {return false;}
-    virtual bool set_speed_up(float speed_xy_cms) {return false;}
-    virtual bool set_speed_down(float speed_xy_cms) {return false;}
+    virtual bool set_speed_xy_cms(float speed_xy_cms) {return false;}
+    virtual bool set_speed_up_cms(float speed_xy_cms) {return false;}
+    virtual bool set_speed_down_cms(float speed_xy_cms) {return false;}
 
     virtual int32_t get_alt_above_ground_cm(void) const;
 
@@ -326,17 +329,17 @@ public:
         void set_mode(Mode new_mode);
         Mode default_mode(bool rtl) const;
 
-        void set_rate(float new_rate_cds);
+        void set_rate_rad(float turn_rate_rads);
 
         // set_roi(...): set a "look at" location:
         void set_roi(const Location &roi_location);
 
-        void set_fixed_yaw(float angle_deg,
-                           float turn_rate_degs,
-                           int8_t direction,
-                           bool relative_angle);
+        void set_fixed_yaw_rad(float angle_rad,
+                               float turn_rate_rads,
+                               int8_t direction,
+                               bool relative_angle);
 
-        void set_yaw_angle_and_rate_deg(float yaw_angle_deg, float yaw_rate_degs);
+        void set_yaw_angle_and_rate_rad(float yaw_angle_rad, float yaw_rate_rads);
 
         void set_yaw_angle_offset_deg(const float yaw_angle_offset_deg);
 
@@ -359,7 +362,7 @@ public:
         // Returns the yaw angle (in radians) representing the direction of horizontal motion.
         float look_ahead_yaw_rad();
 
-        float roi_yaw() const;
+        float roi_yaw_rad() const;
 
         // auto flight mode's yaw mode
         Mode _mode = Mode::LOOK_AT_NEXT_WP;
@@ -433,6 +436,7 @@ public:
     bool allows_save_trim() const override { return true; }
     bool allows_flip() const override { return true; }
     bool crash_check_enabled() const override { return false; }
+    bool allows_entry_in_rc_failsafe() const override { return false; }
 
 protected:
 
@@ -440,8 +444,8 @@ protected:
     const char *name4() const override { return "ACRO"; }
 
     // get_pilot_desired_rates_rads - transform pilot's normalised roll pitch and yaw input into a desired lean angle rates
-    // inputs are -1 to 1 and the function returns desired angle rates in centi-degrees-per-second
-    void get_pilot_desired_rates_rads(float roll_in_norm, float pitch_in_norm, float yaw_in_norm, float &roll_out_rads, float &pitch_out_rads, float &yaw_out_rads);
+    // the function returns desired angle rates in radians-per-second
+    void get_pilot_desired_rates_rads(float &roll_out_rads, float &pitch_out_rads, float &yaw_out_rads);
 
     float throttle_hover() const override;
 
@@ -570,9 +574,9 @@ public:
     bool is_taking_off() const override;
     bool use_pilot_yaw() const override;
 
-    bool set_speed_xy(float speed_xy_cms) override;
-    bool set_speed_up(float speed_up_cms) override;
-    bool set_speed_down(float speed_down_cms) override;
+    bool set_speed_xy_cms(float speed_xy_cms) override;
+    bool set_speed_up_cms(float speed_up_cms) override;
+    bool set_speed_down_cms(float speed_down_cms) override;
 
     bool requires_terrain_failsafe() const override { return true; }
 
@@ -616,8 +620,8 @@ protected:
     const char *name4() const override { return auto_RTL? "ARTL" : "AUTO"; }
 
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
-    float crosstrack_error() const override { return wp_nav->crosstrack_error();}
+    float wp_bearing_deg() const override;
+    float crosstrack_error_m() const override { return wp_nav->crosstrack_error_m();}
     bool get_wp(Location &loc) const override;
 
 private:
@@ -888,7 +892,7 @@ protected:
     const char *name4() const override { return "CIRC"; }
 
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
+    float wp_bearing_deg() const override;
 
 private:
 
@@ -911,6 +915,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
+    bool allows_entry_in_rc_failsafe() const override { return false; }
 
 protected:
 
@@ -1095,14 +1100,14 @@ public:
     //             IF false: climb_rate_cms_or_thrust represents climb_rate (cm/s)
     void set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel, float climb_rate_cms_or_thrust, bool use_thrust);
 
-    bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool terrain_alt = false);
-    bool set_destination(const Location& dest_loc, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
+    bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool terrain_alt = false);
+    bool set_destination(const Location& dest_loc, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
     bool get_wp(Location &loc) const override;
-    void set_accel(const Vector3f& acceleration, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
-    void set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
-    void set_velaccel(const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
-    bool set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
-    bool set_destination_posvelaccel(const Vector3f& destination, const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
+    void set_accel(const Vector3f& acceleration, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
+    void set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
+    void set_velaccel(const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
+    bool set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
+    bool set_destination_posvelaccel(const Vector3f& destination, const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
 
     // get position, velocity and acceleration targets
     const Vector3p& get_target_pos() const;
@@ -1122,9 +1127,9 @@ public:
 
     bool is_taking_off() const override;
     
-    bool set_speed_xy(float speed_xy_cms) override;
-    bool set_speed_up(float speed_up_cms) override;
-    bool set_speed_down(float speed_down_cms) override;
+    bool set_speed_xy_cms(float speed_xy_cms) override;
+    bool set_speed_up_cms(float speed_up_cms) override;
+    bool set_speed_down_cms(float speed_down_cms) override;
 
     // initialises position controller to implement take-off
     // takeoff_alt_cm is interpreted as alt-above-home (in cm) or alt-above-terrain if a rangefinder is available
@@ -1165,8 +1170,8 @@ protected:
     const char *name4() const override { return "GUID"; }
 
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
-    float crosstrack_error() const override;
+    float wp_bearing_deg() const override;
+    float crosstrack_error_m() const override;
 
 private:
 
@@ -1200,7 +1205,7 @@ private:
     void velaccel_control_run();
     void pause_control_run();
     void posvelaccel_control_run();
-    void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
+    void set_yaw_state_rad(bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_angle);
 
     // controls which controller is run (pos or vel):
     static SubMode guided_mode;
@@ -1337,8 +1342,8 @@ protected:
     const char *name4() const override { return "LOIT"; }
 
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
-    float crosstrack_error() const override { return pos_control->crosstrack_error();}
+    float wp_bearing_deg() const override;
+    float crosstrack_error_m() const override { return pos_control->crosstrack_error_m();}
 
 #if AC_PRECLAND_ENABLED
     bool do_precision_loiter();
@@ -1470,9 +1475,9 @@ public:
 
     bool use_pilot_yaw() const override;
 
-    bool set_speed_xy(float speed_xy_cms) override;
-    bool set_speed_up(float speed_up_cms) override;
-    bool set_speed_down(float speed_down_cms) override;
+    bool set_speed_xy_cms(float speed_xy_cms) override;
+    bool set_speed_up_cms(float speed_up_cms) override;
+    bool set_speed_down_cms(float speed_down_cms) override;
 
     // RTL states
     enum class SubMode : uint8_t {
@@ -1506,8 +1511,8 @@ protected:
 
     // for reporting to GCS
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
-    float crosstrack_error() const override { return wp_nav->crosstrack_error();}
+    float wp_bearing_deg() const override;
+    float crosstrack_error_m() const override { return wp_nav->crosstrack_error_m();}
 
     void descent_start();
     void descent_run();
@@ -1597,8 +1602,8 @@ protected:
     // for reporting to GCS
     bool get_wp(Location &loc) const override;
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
-    float crosstrack_error() const override { return wp_nav->crosstrack_error();}
+    float wp_bearing_deg() const override;
+    float crosstrack_error_m() const override { return wp_nav->crosstrack_error_m();}
 
 private:
 
@@ -1664,6 +1669,7 @@ public:
     bool allows_auto_trim() const override { return true; }
     bool allows_autotune() const override { return true; }
     bool allows_flip() const override { return true; }
+    bool allows_entry_in_rc_failsafe() const override { return false; }
 
 protected:
 
@@ -1846,6 +1852,7 @@ public:
     bool is_autopilot() const override { return false; }
     void change_motor_direction(bool reverse);
     void output_to_motors() override;
+    bool allows_entry_in_rc_failsafe() const override { return false; }
 
 protected:
     const char *name() const override { return "TURTLE"; }
@@ -1921,7 +1928,7 @@ protected:
     // for reporting to GCS
     bool get_wp(Location &loc) const override;
     float  wp_distance_m() const override;
-    int32_t wp_bearing() const override;
+    float wp_bearing_deg() const override;
 
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
 };
@@ -1976,8 +1983,8 @@ protected:
     const char *name() const override { return "ZIGZAG"; }
     const char *name4() const override { return "ZIGZ"; }
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
-    float crosstrack_error() const override;
+    float wp_bearing_deg() const override;
+    float crosstrack_error_m() const override;
 
 private:
 
