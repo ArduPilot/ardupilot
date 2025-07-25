@@ -47,10 +47,13 @@ float AP_FW_Controller::_get_rate_out(float desired_rate, float scaler, bool dis
         limit_I = true;
     }
 
-    // the P and I elements are scaled by sq(scaler). To use an
-    // unmodified AC_PID object we scale the inputs and calculate FF separately
-    //
-    // note that we run AC_PID in radians so that the normal scaling
+	// Scale both the desired and actual rates by scaler^2 (~1/dynamic pressure) before passing to AC_PID.
+	// This maintains consistent P and I behavior across varying airspeeds, while using an unmodified AC_PID object.
+	//
+	// The FF term is scaled separately, as it depends linearly on control effectiveness (~scaler / EAS2TAS),
+	// unlike the P and I terms which scale with control authority (~scaler^2).
+
+    // Note that we run AC_PID in radians so that the normal scaling
     // range for IMAX in AC_PID applies (usually an IMAX value less than 1.0)
     rate_pid.update_all(radians(desired_rate) * scaler * scaler, rate * scaler * scaler, dt, limit_I);
 
