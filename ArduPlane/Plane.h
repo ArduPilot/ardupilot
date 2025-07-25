@@ -373,9 +373,6 @@ private:
         // number of low throttle values
         uint8_t throttle_counter;
 
-        // A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
-        uint32_t short_timer_ms;
-
         uint32_t last_valid_rc_ms;
 
         //keeps track of the last valid rc as it relates to the AFS system
@@ -1054,9 +1051,9 @@ private:
     bool autotuning;
 
     // events.cpp
-    void failsafe_short_on_event(enum failsafe_state fstype, ModeReason reason);
+    void rc_failsafe_short_on_event();
     void failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason);
-    void failsafe_short_off_event(ModeReason reason);
+    void rc_failsafe_short_off_event();
     void failsafe_long_off_event(ModeReason reason);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
     bool failsafe_in_landing_sequence() const;  // returns true if the vehicle is in landing sequence.  Intended only for use in failsafe code.
@@ -1137,7 +1134,7 @@ private:
     bool set_mode(const uint8_t mode, const ModeReason reason) override;
     bool set_mode_by_number(const Mode::Number new_mode_number, const ModeReason reason);
     void check_long_failsafe();
-    void check_short_failsafe();
+    void check_short_rc_failsafe();
     void startup_INS(void);
     bool should_log(uint32_t mask);
     int8_t throttle_percentage(void);
