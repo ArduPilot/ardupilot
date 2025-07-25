@@ -41,6 +41,7 @@ void ModeGuided::update()
             millis() - plane.guided_state.last_forced_rpy_ms.x < 3000) {
         plane.nav_roll_cd = constrain_int32(plane.guided_state.forced_rpy_cd.x, -plane.roll_limit_cd, plane.roll_limit_cd);
         plane.update_load_factor();
+        plane.apply_load_factor_roll_limits();
 
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     // guided_state.target_heading is radians at this point between -pi and pi ( defaults to -4 )
@@ -69,6 +70,7 @@ void ModeGuided::update()
 
         plane.nav_roll_cd = constrain_int32(desired, -bank_limit, bank_limit);
         plane.update_load_factor();
+        plane.apply_load_factor_roll_limits();
 
 #endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     } else {

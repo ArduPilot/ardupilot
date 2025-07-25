@@ -1082,6 +1082,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Bitmask: 13: Indicate takeoff waiting for neutral rudder with flight control surfaces
     // @Bitmask: 14: In AUTO - climb to next waypoint altitude immediately instead of linear climb
     // @Bitmask: 15: Use minimum of target and actual speed for flap setting
+    // @Bitmask: 16: Enable full aerodynamic load factor-based roll limits. This should be enabled when an accurate and well calibrated airspeed sensor is used to impose the correct FBW roll limits when the aircraft is turning. Requires an enabled airspeed sensor and AIRSPEED_STALL set. WARNING - If your airspeed sensor is very inaccurate or fails, having this enabled may result in almost no roll maneuverability in FBW modes.
     // @User: Advanced
     AP_GROUPINFO("FLIGHT_OPTIONS", 13, ParametersG2, flight_options, 0),
 

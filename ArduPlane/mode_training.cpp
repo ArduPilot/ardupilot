@@ -6,6 +6,7 @@ void ModeTraining::update()
     plane.training_manual_roll = false;
     plane.training_manual_pitch = false;
     plane.update_load_factor();
+    plane.apply_load_factor_roll_limits();
 
     // if the roll is past the set roll limit, then
     // we set target roll to the limit

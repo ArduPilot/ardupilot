@@ -18,6 +18,7 @@ void ModeFBWB::update()
     // Thanks to Yury MonZon for the altitude limit code!
     plane.nav_roll_cd = plane.channel_roll->norm_input() * plane.roll_limit_cd;
     plane.update_load_factor();
+    plane.apply_load_factor_roll_limits();
     plane.update_fbwb_speed_height();
 
 }
