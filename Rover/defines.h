@@ -8,6 +8,7 @@
 // types of failsafe events
 #define FAILSAFE_EVENT_THROTTLE (1<<0)
 #define FAILSAFE_EVENT_GCS      (1<<1)
+#define FAILSAFE_EVENT_LEAK     (1<<2)
 
 //  Logging parameters - only 32 messages are available to the vehicle here.
 enum LoggingParameters {
