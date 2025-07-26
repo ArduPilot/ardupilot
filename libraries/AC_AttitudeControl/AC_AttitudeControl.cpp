@@ -173,6 +173,15 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LAND_Y_MULT", 23, AC_AttitudeControl, _land_yaw_mult, 1.0),
 
+    // @Param: ANG_PIT_D
+    // @DisplayName: Pitch axis angle controller D gain
+    // @Description: Provides damping to pitch angle response.
+    // @Units: s
+    // @Range: 0.000 1.000
+    // @Increment: 0.005
+    // @User: Standard
+    AP_GROUPINFO("ANG_PIT_D", 24, AC_AttitudeControl, _d_angle_pitch, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -1296,13 +1305,20 @@ Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(const Vector3f
         rate_target_ang_vel.x = angleP_roll * attitude_error_rot_vec_rad.x;
     }
 
-    // Compute the pitch angular velocity demand from the pitch angle error
+    float actual_pitch_rate_rads = _ahrs.get_gyro().y;
+    float d_term_pitch = -_d_angle_pitch * actual_pitch_rate_rads;
+    cal_d_term = d_term_pitch;
+    float pd_output_pitch;
     const float angleP_pitch = _p_angle_pitch.kP() * _angle_P_scale.y;
+
     if (_use_sqrt_controller && !is_zero(get_accel_pitch_max_radss())) {
-        rate_target_ang_vel.y = sqrt_controller(attitude_error_rot_vec_rad.y, angleP_pitch, constrain_float(get_accel_pitch_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS), _dt_s);
+        pd_output_pitch = sqrt_controller(attitude_error_rot_vec_rad.y, angleP_pitch, constrain_float(get_accel_pitch_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS), _dt_s);
+        pd_output_pitch += d_term_pitch;
     } else {
-        rate_target_ang_vel.y = angleP_pitch * attitude_error_rot_vec_rad.y;
+        pd_output_pitch = angleP_pitch * attitude_error_rot_vec_rad.y;
+        pd_output_pitch += d_term_pitch;
     }
+    rate_target_ang_vel.y = pd_output_pitch;
 
     // Compute the yaw angular velocity demand from the yaw angle error
     const float angleP_yaw = _p_angle_yaw.kP() * _angle_P_scale.z;
@@ -1419,6 +1435,12 @@ bool AC_AttitudeControl::pre_arm_checks(const char *param_prefix,
             hal.util->snprintf(failure_msg, failure_msg_len, "%s_%s_P must be > 0", param_prefix, ps[i].pid_name);
             return false;
         }
+    }
+
+    if(!is_positive(get_angle_pitch_d()))
+    {
+        hal.util->snprintf(failure_msg, failure_msg_len, "%s_ANG_PIT_D must be > 0", param_prefix);
+        return false;
     }
 
     // validate AC_PID members:
