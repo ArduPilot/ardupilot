@@ -494,7 +494,7 @@ bootloader(unsigned timeout)
     }
 
     while (true) {
-        volatile int c;
+        int c;
         int arg;
         static union {
             uint8_t		c[256];
