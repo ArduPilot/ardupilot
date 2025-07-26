@@ -364,14 +364,24 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
         }
 
         if (interim_state.status == AP_GPS::GPS_Status::GPS_OK_FIX_3D) {
-            if (msg.mode == UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_DGPS) {
+            switch (msg.mode) {
+            case UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_DGPS:
                 interim_state.status = AP_GPS::GPS_Status::GPS_OK_FIX_3D_DGPS;
-            } else if (msg.mode == UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_RTK) {
-                if (msg.sub_mode == UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_RTK_FLOAT) {
+                break;
+            case UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_RTK:
+                switch (msg.sub_mode) {
+                case UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_RTK_FLOAT:
                     interim_state.status = AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FLOAT;
-                } else if (msg.sub_mode == UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_RTK_FIXED) {
+                    break;
+                case UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_RTK_FIXED:
                     interim_state.status = AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FIXED;
+                    break;
+                default:
+                    break;
                 }
+                break;
+            default:
+                break;
             }
         }
     }
@@ -844,17 +854,26 @@ bool AP_GPS_DroneCAN::handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan
 {
     Debug("AP_GPS_DroneCAN: param set/get response from %d %s %ld\n", node_id, name, value);
     if (((strcmp(name, "GPS_TYPE") == 0) || (strcmp(name, "GPS1_TYPE") == 0)) && (cfg_step == STEP_SET_TYPE)) {
-        if (role == AP_GPS::GPS_ROLE_MB_BASE && value != AP_GPS::GPS_TYPE_UBLOX_RTK_BASE) {
-            value = (int32_t)AP_GPS::GPS_TYPE_UBLOX_RTK_BASE;
-            requires_save_and_reboot = true;
-            return true;
-        } else if (role == AP_GPS::GPS_ROLE_MB_ROVER && value != AP_GPS::GPS_TYPE_UBLOX_RTK_ROVER) {
-            value = (int32_t)AP_GPS::GPS_TYPE_UBLOX_RTK_ROVER;
-            requires_save_and_reboot = true;
-            return true;
-        } else {
-            cfg_step++;
+        switch (role) {
+        case AP_GPS::GPS_ROLE_MB_BASE:
+            if (value != AP_GPS::GPS_TYPE_UBLOX_RTK_BASE) {
+                value = (int32_t)AP_GPS::GPS_TYPE_UBLOX_RTK_BASE;
+                requires_save_and_reboot = true;
+                return true;
+            }
+            break;
+        case AP_GPS::GPS_ROLE_MB_ROVER:
+            if (value != AP_GPS::GPS_TYPE_UBLOX_RTK_ROVER) {
+                value = (int32_t)AP_GPS::GPS_TYPE_UBLOX_RTK_ROVER;
+                requires_save_and_reboot = true;
+                return true;
+            }
+            break;
+        default:
+            break;
         }
+
+        cfg_step++;
     }
 
     if (strcmp(name, "GPS_MB_ONLY_PORT") == 0 && cfg_step == STEP_SET_MB_CAN_TX) {
