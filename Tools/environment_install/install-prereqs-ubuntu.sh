@@ -60,7 +60,7 @@ fi
 # Checking Ubuntu release to adapt software version to install
 RELEASE_CODENAME=$(lsb_release -c -s)
 
-RELEASE_DISTRIBUTOR=$(lsb_release -i -s)
+RELEASE_DISTRIBUTOR=$(lsb_release -i -s | tr '[:upper:]' '[:lower:]')
 case ${RELEASE_DISTRIBUTOR} in
     elementary)
         case ${RELEASE_CODENAME} in
@@ -69,7 +69,7 @@ case ${RELEASE_DISTRIBUTOR} in
                 ;;
         esac
         ;;
-    LinuxMint)
+    linuxmint)
         # translate Mint-codenames to Ubuntu-codenames based on https://www.linuxmint.com/download_all.php
         case ${RELEASE_CODENAME} in
             wilma | xia)
