@@ -161,9 +161,7 @@ void AP_MotorsMatrix_6DoF_Scripting::output_armed_stabilizing()
 
     // set limit flags if output is being scaled
     if (rpy_ratio < 1) {
-        limit.roll = true;
-        limit.pitch = true;
-        limit.yaw = true;
+        limit.set_rpy(true);
     }
 
     // scale back rotations evenly so it will all fit
