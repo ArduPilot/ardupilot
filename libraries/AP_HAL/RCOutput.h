@@ -397,9 +397,9 @@ public:
      * 8/3/6, 37/75 <-- this is the preferred duty cycle and has some support on the interwebs
      */
     // bitwidths: 8/3/6 == 37%/75%
-    static constexpr uint32_t DSHOT_BIT_WIDTH_TICKS_DEFAULT = 8;
-    static constexpr uint32_t DSHOT_BIT_0_TICKS_DEFAULT = 3;
-    static constexpr uint32_t DSHOT_BIT_1_TICKS_DEFAULT = 6;
+    static constexpr uint32_t DSHOT_BIT_WIDTH_TICKS_DEFAULT = 10;
+    static constexpr uint32_t DSHOT_BIT_0_TICKS_DEFAULT = 4;
+    static constexpr uint32_t DSHOT_BIT_1_TICKS_DEFAULT = 7;
     // bitwidths: 11/4/8 == 36%/72%
     static constexpr uint32_t DSHOT_BIT_WIDTH_TICKS_S = 11;
     static constexpr uint32_t DSHOT_BIT_0_TICKS_S = 4;
@@ -409,9 +409,10 @@ public:
     static uint32_t DSHOT_BIT_0_TICKS;
     static uint32_t DSHOT_BIT_1_TICKS;
 
-    // See WS2812B spec for expected pulse widths
-    static constexpr uint32_t NEOP_BIT_WIDTH_TICKS = 8;
-    static constexpr uint32_t NEOP_BIT_0_TICKS = 2;
+    // See WS2812B spec for expected pulse widths/
+    //Stable with Treedix 10x10 WS2812B 5050 RGB LED
+    static constexpr uint32_t NEOP_BIT_WIDTH_TICKS = 7;
+    static constexpr uint32_t NEOP_BIT_0_TICKS = 3;
     static constexpr uint32_t NEOP_BIT_1_TICKS = 6;
     // neopixel does not use pulse widths at all
     static constexpr uint32_t PROFI_BIT_0_TICKS = 7;
