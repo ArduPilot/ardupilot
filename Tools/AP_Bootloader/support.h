@@ -22,7 +22,7 @@ extern struct boardinfo board_info;
 void init_uarts(void);
 int16_t cin(unsigned timeout_ms);
 int cin_word(uint32_t *wp, unsigned timeout_ms);
-void cout(uint8_t *data, uint32_t len);
+void cout(const uint8_t *data, uint32_t len);
 void port_setbaud(uint32_t baudrate);
 #if defined(BOOTLOADER_FORWARD_OTG2_SERIAL)
 bool update_otg2_serial_forward(void);
