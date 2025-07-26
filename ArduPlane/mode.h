@@ -170,8 +170,11 @@ public:
 #endif
 
 #if AP_PLANE_SYSTEMID_ENABLED
-    // does this mode support systemid?
-    virtual bool supports_systemid() const { return false; }
+    // does this mode support quadplane vtol systemid?
+    virtual bool supports_vtol_systemid() const { return false; }
+
+    // does this mode support plane or quadplane fixed wing systemid?
+    virtual bool supports_fw_systemid() const { return false; }
 #endif
     
 protected:
@@ -434,6 +437,11 @@ public:
     
     bool mode_allows_autotuning() const override { return true; }
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support fixed wing systemid?
+    bool supports_fw_systemid() const override { return true; }
+#endif
+
 protected:
 
     bool _enter() override;
@@ -532,6 +540,11 @@ public:
 
     void run() override;
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support fixed wing systemid?
+    bool supports_fw_systemid() const override { return true; }
+#endif
+
 #if MODE_AUTOLAND_ENABLED   
     // true if mode allows landing direction to be set on first takeoff after arm in this mode 
     bool allows_autoland_direction_capture() const override { return true; }
@@ -598,6 +611,11 @@ public:
 
     void run() override;
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support fixed wing systemid?
+    bool supports_fw_systemid() const override { return true; }
+#endif
+
 #if MODE_AUTOLAND_ENABLED   
     // true if mode allows landing direction to be set on first takeoff after arm in this mode 
     bool allows_autoland_direction_capture() const override { return true; }
@@ -653,6 +671,11 @@ public:
     bool does_auto_throttle() const override { return true; }
 
     void update_target_altitude() override {};
+
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support fixed wing systemid?
+    bool supports_fw_systemid() const override { return true; }
+#endif
 
 protected:
 
@@ -710,8 +733,8 @@ public:
     void run() override;
 
 #if AP_PLANE_SYSTEMID_ENABLED
-    // does this mode support systemid?
-    bool supports_systemid() const override { return true; }
+    // does this mode support quadplane vtol systemid?
+    bool supports_vtol_systemid() const override { return true; }
 #endif
     
 protected:
@@ -739,8 +762,8 @@ public:
     void run() override;
 
 #if AP_PLANE_SYSTEMID_ENABLED
-    // does this mode support systemid?
-    bool supports_systemid() const override { return true; }
+    // does this mode support quadplane vtol systemid?
+    bool supports_vtol_systemid() const override { return true; }
 #endif
     
 protected:
@@ -772,8 +795,8 @@ public:
     void run() override;
 
 #if AP_PLANE_SYSTEMID_ENABLED
-    // does this mode support systemid?
-    bool supports_systemid() const override { return true; }
+    // does this mode support quadplane vtol systemid?
+    bool supports_vtol_systemid() const override { return true; }
 #endif
     
 protected:
