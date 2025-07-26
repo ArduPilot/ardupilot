@@ -2515,6 +2515,22 @@ void AP_AHRS::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeSt
 #endif
 }
 
+// set the terrain SRTM altitude in meters above sea level
+// only used by optical flow when out of rangefinder range
+// Write terrain (derived from SRTM) altitude in meters above sea level
+void AP_AHRS::writeTerrainAMSL(float alt_amsl_m)
+{
+#if EK3_FEATURE_OPTFLOW_SRTM
+    // return immediately if EKF origin has not been set
+    if (!state.origin_ok) {
+        return;
+    }
+    // convert from amsl alt to alt above EKF origin
+    const float alt_above_origin_m = alt_amsl_m - (state.origin.alt * 0.01f);
+    EKF3.writeTerrainData(alt_above_origin_m);
+#endif
+}
+
 // get speed limit and XY navigation gain scale factor
 void AP_AHRS::getControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {

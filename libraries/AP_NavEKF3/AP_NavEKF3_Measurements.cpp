@@ -1,6 +1,7 @@
 #include "AP_NavEKF3_core.h"
 
 #include "AP_NavEKF3.h"
+#include "AP_NavEKF3_feature.h"
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
@@ -1152,6 +1153,18 @@ void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t t
     storedExtNavVel.push(extNavVelNew);
 #endif // EK3_FEATURE_EXTERNAL_NAV
 }
+
+/*
+ * Write terrain altitude (derived from SRTM) in meters above the origin
+ * only used by optical flow when out of rangefinder range
+ */
+#if EK3_FEATURE_OPTFLOW_SRTM
+void NavEKF3_core::writeTerrainData(float alt_m)
+{
+    terrain_srtm_alt = alt_m;
+    terrain_srtm_alt_ms = imuSampleTime_ms;
+}
+#endif
 
 /*
   update the GPS selection
