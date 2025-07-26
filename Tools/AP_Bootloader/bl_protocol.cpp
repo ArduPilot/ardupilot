@@ -354,7 +354,7 @@ exit:
 static void
 sync_response(void)
 {
-    uint8_t data[] = {
+    static const uint8_t data[] = {
         PROTO_INSYNC,	// "in sync"
         PROTO_OK	// "OK"
     };
@@ -365,7 +365,7 @@ sync_response(void)
 static void
 invalid_response(void)
 {
-    uint8_t data[] = {
+    static const uint8_t data[] = {
         PROTO_INSYNC,	// "in sync"
         PROTO_INVALID	// "invalid command"
     };
@@ -376,7 +376,7 @@ invalid_response(void)
 static void
 failure_response(void)
 {
-    uint8_t data[] = {
+    static const uint8_t data[] = {
         PROTO_INSYNC,	// "in sync"
         PROTO_FAILED	// "command failed"
     };
