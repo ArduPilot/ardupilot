@@ -6,6 +6,10 @@
   macros to allow code to build on multiple platforms more easily
  */
 
+#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+#error ALLOW_DOUBLE_MATH_FUNCTIONS has been replaced with AP_MATH_ALLOW_DOUBLE_FUNCTIONS (which must be defined).  So replace "define ALLOW_DOUBLE_MATH_FUNCTIONS" with "define AP_MATH_ALLOW_DOUBLE_FUNCTIONS 1"
+#endif  // ALLOW_DOUBLE_MATH_FUNCTIONS
+
 #ifndef AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 /*
   allow double maths on Linux and SITL to avoid problems with system headers
