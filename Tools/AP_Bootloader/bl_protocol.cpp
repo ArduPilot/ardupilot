@@ -55,8 +55,6 @@
 #endif
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 
-// #pragma GCC optimize("O0")
-
 
 // bootloader flash update protocol.
 //
