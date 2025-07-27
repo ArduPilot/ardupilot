@@ -3290,6 +3290,7 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
     }
     ginfo.offset = param_num*sizeof(float);
     ginfo.idx = param_num;
+    ginfo.flags = 0;  // clear the hidden flag if set
     float *def_value = const_cast<float *>(&ginfo.def_value);
     *def_value = default_value;
     ginfo.type = AP_PARAM_FLOAT;
