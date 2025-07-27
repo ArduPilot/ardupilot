@@ -410,6 +410,17 @@ void Plane::three_hz_loop()
  */
 void Plane::airspeed_ratio_update(void)
 {
+    // check if any airspeed sensor has ARSPD_USE set to 2 (UseWhenZeroThrottle)
+    for (uint8_t i = 0; i < AIRSPEED_MAX_SENSORS; i++) {
+        if (airspeed.get_param(i)->use == 2) {
+            // if ARSPD_USE is 2, check if throttle is active
+            if (!is_zero(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle))) {
+                // Throttle is active, so we must not calibrate.
+                return;
+            }
+        }
+    }
+
     if (!hal.util->get_soft_armed() ||
         !ahrs.get_fly_forward() ||
         !is_flying() ||
