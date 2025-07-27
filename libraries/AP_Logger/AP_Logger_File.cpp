@@ -47,7 +47,7 @@ extern const AP_HAL::HAL& hal;
 /*
   constructor
  */
-AP_Logger_File::AP_Logger_File(AP_Logger &front,
+AP_Logger_File::AP_Logger_File(AP_LoggerThread &front,
                                LoggerMessageWriter_DFLogStart *writer) :
     AP_Logger_Backend(front, writer),
     _log_directory(HAL_BOARD_LOG_DIRECTORY)
@@ -732,25 +732,7 @@ void AP_Logger_File::PrepForArming_start_logging()
         return;
     }
 
-    uint32_t start_ms = AP_HAL::millis();
-    const uint32_t open_limit_ms = 1000;
-
-    /*
-      log open happens in the io_timer thread. We allow for a maximum
-      of 1s to complete the open
-     */
-    start_new_log_pending = true;
-    EXPECT_DELAY_MS(1000);
-    while (AP_HAL::millis() - start_ms < open_limit_ms) {
-        if (logging_started()) {
-            break;
-        }
-#if !APM_BUILD_TYPE(APM_BUILD_Replay) && AP_AHRS_ENABLED
-        // keep the EKF ticking over
-        AP::ahrs().update();
-#endif
-        hal.scheduler->delay(1);
-    }
+    start_new_log();
 }
 
 /*
@@ -849,7 +831,7 @@ void AP_Logger_File::start_new_log(void)
     write_fd_semaphore.give();
 
     // now update lastlog.txt with the new log number
-    last_log_is_marked_discard = _front._params.log_disarmed == AP_Logger::LogDisarmed::LOG_WHILE_DISARMED_DISCARD;
+    last_log_is_marked_discard = _front._params.log_disarmed == LogDisarmed::LOG_WHILE_DISARMED_DISCARD;
     if (!write_lastlog_file(log_num)) {
         _open_error_ms = AP_HAL::millis();
     }
