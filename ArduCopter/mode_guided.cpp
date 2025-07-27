@@ -336,11 +336,11 @@ void ModeGuided::angle_control_start()
 // set_destination - sets guided mode's target destination
 // Returns true if the fence is enabled and guided waypoint is within the fence
 // else return false if the waypoint is outside the fence
-bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool terrain_alt)
+bool ModeGuided::set_pos_neu_cm(const Vector3f& pos_neu_cm, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool terrain_alt)
 {
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
-    const Location dest_loc(destination, terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+    const Location dest_loc(pos_neu_cm, terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
     if (!copter.fence.check_destination_within_fence(dest_loc)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
@@ -359,11 +359,11 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
         set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
         // no need to check return status because terrain data is not used
-        wp_nav->set_wp_destination_NEU_cm(destination, terrain_alt);
+        wp_nav->set_wp_destination_NEU_cm(pos_neu_cm, terrain_alt);
 
 #if HAL_LOGGING_ENABLED
         // log target
-        copter.Log_Write_Guided_Position_Target(guided_mode, destination, terrain_alt, Vector3f(), Vector3f());
+        copter.Log_Write_Guided_Position_Target(guided_mode, pos_neu_cm, terrain_alt, Vector3f(), Vector3f());
 #endif
         send_notification = true;
         return true;
@@ -397,7 +397,7 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
     set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
     // set position target and zero velocity and acceleration
-    guided_pos_target_cm = destination.topostype();
+    guided_pos_target_cm = pos_neu_cm.topostype();
     guided_pos_terrain_alt = terrain_alt;
     guided_vel_target_cms.zero();
     guided_accel_target_cmss.zero();
@@ -522,8 +522,8 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
     return true;
 }
 
-// set_velaccel - sets guided mode's target velocity and acceleration
-void ModeGuided::set_accel(const Vector3f& acceleration, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool log_request)
+// set_vel_accel_neu_cm - sets guided mode's target velocity and acceleration
+void ModeGuided::set_accel_neu_cmss(const Vector3f& accel_neu_cm, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool log_request)
 {
     // check we are in acceleration control mode
     if (guided_mode != SubMode::Accel) {
@@ -537,7 +537,7 @@ void ModeGuided::set_accel(const Vector3f& acceleration, bool use_yaw, float yaw
     guided_pos_target_cm.zero();
     guided_pos_terrain_alt = false;
     guided_vel_target_cms.zero();
-    guided_accel_target_cmss = acceleration;
+    guided_accel_target_cmss = accel_neu_cm;
     update_time_ms = millis();
 
 #if HAL_LOGGING_ENABLED
@@ -548,14 +548,14 @@ void ModeGuided::set_accel(const Vector3f& acceleration, bool use_yaw, float yaw
 #endif
 }
 
-// set_velocity - sets guided mode's target velocity
-void ModeGuided::set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool log_request)
+// set_vel_neu_cms - sets guided mode's target velocity
+void ModeGuided::set_vel_neu_cms(const Vector3f& vel_neu_cm, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool log_request)
 {
-    set_velaccel(velocity, Vector3f(), use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw, log_request);
+    set_vel_accel_neu_cm(vel_neu_cm, Vector3f(), use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw, log_request);
 }
 
-// set_velaccel - sets guided mode's target velocity and acceleration
-void ModeGuided::set_velaccel(const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool log_request)
+// set_vel_accel_neu_cm - sets guided mode's target velocity and acceleration
+void ModeGuided::set_vel_accel_neu_cm(const Vector3f& vel_neu_cm, const Vector3f& accel_neu_cm, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool log_request)
 {
     // check we are in velocity and acceleration control mode
     if (guided_mode != SubMode::VelAccel) {
@@ -568,8 +568,8 @@ void ModeGuided::set_velaccel(const Vector3f& velocity, const Vector3f& accelera
     // set velocity and acceleration targets and zero position
     guided_pos_target_cm.zero();
     guided_pos_terrain_alt = false;
-    guided_vel_target_cms = velocity;
-    guided_accel_target_cmss = acceleration;
+    guided_vel_target_cms = vel_neu_cm;
+    guided_accel_target_cmss = accel_neu_cm;
     update_time_ms = millis();
 
 #if HAL_LOGGING_ENABLED
@@ -580,18 +580,18 @@ void ModeGuided::set_velaccel(const Vector3f& velocity, const Vector3f& accelera
 #endif
 }
 
-// set_destination_posvel - set guided mode position and velocity target
-bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw)
+// set_pos_vel_neu_cm - set guided mode position and velocity target
+bool ModeGuided::set_pos_vel_neu_cm(const Vector3f& pos_neu_cm, const Vector3f& vel_neu_cm, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw)
 {
-    return set_destination_posvelaccel(destination, velocity, Vector3f(), use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
+    return set_pos_vel_accel_neu_cm(pos_neu_cm, vel_neu_cm, Vector3f(), use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 }
 
-// set_destination_posvelaccel - set guided mode position, velocity and acceleration target
-bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw)
+// set_pos_vel_accel_neu_cm - set guided mode position, velocity and acceleration target
+bool ModeGuided::set_pos_vel_accel_neu_cm(const Vector3f& pos_neu_cm, const Vector3f& vel_neu_cm, const Vector3f& accel_neu_cm, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw)
 {
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
-    const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
+    const Location dest_loc(pos_neu_cm, Location::AltFrame::ABOVE_ORIGIN);
     if (!copter.fence.check_destination_within_fence(dest_loc)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
@@ -608,10 +608,10 @@ bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const 
     set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
     update_time_ms = millis();
-    guided_pos_target_cm = destination.topostype();
+    guided_pos_target_cm = pos_neu_cm.topostype();
     guided_pos_terrain_alt = false;
-    guided_vel_target_cms = velocity;
-    guided_accel_target_cmss = acceleration;
+    guided_vel_target_cms = vel_neu_cm;
+    guided_accel_target_cmss = accel_neu_cm;
 
 #if HAL_LOGGING_ENABLED
     // log target
