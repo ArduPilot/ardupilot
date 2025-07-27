@@ -461,11 +461,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // Stop mode defaults
 //
-#ifndef BRAKE_MODE_SPEED_Z
- # define BRAKE_MODE_SPEED_Z     250 // z-axis speed in cm/s in Brake Mode
+#ifndef BRAKE_MODE_SPEED_Z_MS
+ # define BRAKE_MODE_SPEED_Z_MS       2.50 // z-axis speed in m/s in Brake Mode
 #endif
-#ifndef BRAKE_MODE_DECEL_RATE
- # define BRAKE_MODE_DECEL_RATE  750 // acceleration rate in cm/s/s in Brake Mode
+#ifndef BRAKE_MODE_DECEL_RATE_MSS
+ # define BRAKE_MODE_DECEL_RATE_MSS   7.50 // acceleration rate in m/s/s in Brake Mode
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
