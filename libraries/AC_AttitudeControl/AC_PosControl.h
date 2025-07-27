@@ -222,12 +222,12 @@ public:
 
     // Sets vertical correction velocity and acceleration limits (cm/s, cm/s²).
     // Should only be called during initialization to avoid discontinuities.
-    // See set_correction_speed_accel_U_mss() for full details.
-    void set_correction_speed_accel_U_cmss(float speed_down_cms, float speed_up_cms, float accel_cmss);
+    // See set_correction_speed_accel_U_m() for full details.
+    void set_correction_speed_accel_U_cm(float speed_down_cms, float speed_up_cms, float accel_cmss);
 
     // Sets vertical correction velocity and acceleration limits (m/s, m/s²).
     // These values constrain the correction output of the PID controller.
-    void set_correction_speed_accel_U_mss(float speed_down_ms, float speed_up_ms, float accel_mss);
+    void set_correction_speed_accel_U_m(float speed_down_ms, float speed_up_ms, float accel_mss);
 
     // Returns maximum vertical acceleration in cm/s².
     // See get_max_accel_U_mss() for full details.

@@ -818,15 +818,15 @@ void AC_PosControl::set_max_speed_accel_U_m(float speed_down_ms, float speed_up_
 
 // Sets vertical correction velocity and acceleration limits (cm/s, cm/s²).
 // Should only be called during initialization to avoid discontinuities.
-// See set_correction_speed_accel_U_mss() for full details.
-void AC_PosControl::set_correction_speed_accel_U_cmss(float speed_down_cms, float speed_up_cms, float accel_cmss)
+// See set_correction_speed_accel_U_m() for full details.
+void AC_PosControl::set_correction_speed_accel_U_cm(float speed_down_cms, float speed_up_cms, float accel_cmss)
 {
-    set_correction_speed_accel_U_mss(speed_down_cms * 0.01, speed_up_cms * 0.01, accel_cmss * 0.01);
+    set_correction_speed_accel_U_m(speed_down_cms * 0.01, speed_up_cms * 0.01, accel_cmss * 0.01);
 }
 
 // Sets vertical correction velocity and acceleration limits (m/s, m/s²).
 // These values constrain the correction output of the PID controller.
-void AC_PosControl::set_correction_speed_accel_U_mss(float speed_down_ms, float speed_up_ms, float accel_mss)
+void AC_PosControl::set_correction_speed_accel_U_m(float speed_down_ms, float speed_up_ms, float accel_mss)
 {
     // define maximum position error and maximum first and second differential limits
     _p_pos_u_m.set_limits(-fabsf(speed_down_ms), speed_up_ms, accel_mss, 0.0f);
