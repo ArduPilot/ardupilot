@@ -18,7 +18,7 @@ bool ModePoshold::init(bool ignore_checks)
     position_control->set_max_speed_accel_NE_cm(g.pilot_speed, g.pilot_accel_z);
     position_control->set_correction_speed_accel_NE_cm(g.pilot_speed, g.pilot_accel_z);
     position_control->set_max_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    position_control->set_correction_speed_accel_U_cmss(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->set_correction_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // initialise position and desired velocity
     position_control->init_NE_controller_stopping_point();
