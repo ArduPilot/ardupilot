@@ -1,0 +1,34 @@
+{
+    "version":    1,
+    "fileType":   "MavlinkActions",
+    "actions":
+[
+{
+    "label":        "Dronie",
+    "description":  "Dronie Mission",
+    "mavCmd":       31010,
+    "param1":       1,
+    "param2":       50,
+    "param3":       30,
+    "param4":       8
+},
+{
+    "label":        "Rocket",
+    "description":  "Rocket Mission",
+    "mavCmd":       31010,
+    "param1":       2,
+    "param2":       0,
+    "param3":       30,
+    "param4":       8
+},
+{
+    "label":        "Helix",
+    "description":  "Helix Mission",
+    "mavCmd":       31010,
+    "param1":       3,
+    "param2":       50,
+    "param3":       30,
+    "param4":       8
+}
+]
+}
