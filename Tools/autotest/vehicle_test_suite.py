@@ -6456,6 +6456,25 @@ class TestSuite(ABC):
 
         self.progress("%s: (%f) check passed %f%% error less than %f%%" % (name, value, error_percent, max_error_percent))
 
+    def fetch_all_parameters(self):
+        self.mav.mav.param_request_list_send(self.sysid_thismav(), 1)
+        tstart = self.get_sim_time_cached()
+        ret = {}
+        param_count = 0
+        while True:
+            if param_count > 100 and len(ret) == param_count:
+                break
+            if self.get_sim_time_cached() - tstart > 5:
+                raise NotAchievedException("Did not get all params")
+            m = self.mav.recv_match(type='PARAM_VALUE', blocking=True, timeout=0.1)
+            if m is None:
+                continue
+            if param_count is None or m.param_count > param_count:
+                param_count = m.param_count
+            ret[m.param_id] = m.param_value
+
+        return ret
+
     def get_parameter(self, *args, **kwargs):
         return self.get_parameter_direct(*args, **kwargs)
 
