@@ -20,12 +20,12 @@ bool ModeThrow::init(bool ignore_checks)
     nextmode_attempted = false;
 
     // initialise pos controller speed and acceleration
-    pos_control->set_max_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), BRAKE_MODE_DECEL_RATE);
-    pos_control->set_correction_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), BRAKE_MODE_DECEL_RATE);
+    pos_control->set_max_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), BRAKE_MODE_DECEL_RATE_MSS * 100.0);
+    pos_control->set_correction_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), BRAKE_MODE_DECEL_RATE_MSS * 100.0);
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z, BRAKE_MODE_DECEL_RATE);
-    pos_control->set_correction_speed_accel_U_cm(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z, BRAKE_MODE_DECEL_RATE);
+    pos_control->set_max_speed_accel_U_cm(BRAKE_MODE_SPEED_Z_MS * 100.0, BRAKE_MODE_SPEED_Z_MS * 100.0, BRAKE_MODE_DECEL_RATE_MSS * 100.0);
+    pos_control->set_correction_speed_accel_U_cm(BRAKE_MODE_SPEED_Z_MS * 100.0, BRAKE_MODE_SPEED_Z_MS * 100.0, BRAKE_MODE_DECEL_RATE_MSS * 100.0);
 
     return true;
 }
