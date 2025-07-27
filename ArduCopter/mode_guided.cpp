@@ -229,7 +229,7 @@ void ModeGuided::pva_control_start()
 
     // initialize vertical speeds and acceleration
     pos_control->set_max_speed_accel_U_cm(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
-    pos_control->set_correction_speed_accel_U_cmss(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
+    pos_control->set_correction_speed_accel_U_cm(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
 
     // initialise velocity controller
     pos_control->init_U_controller();
@@ -299,7 +299,7 @@ bool ModeGuided::set_speed_up_cms(float speed_up_cms)
 {
     // initialize vertical speeds and acceleration
     pos_control->set_max_speed_accel_U_cm(wp_nav->get_default_speed_down_cms(), speed_up_cms, wp_nav->get_accel_U_cmss());
-    pos_control->set_correction_speed_accel_U_cmss(wp_nav->get_default_speed_down_cms(), speed_up_cms, wp_nav->get_accel_U_cmss());
+    pos_control->set_correction_speed_accel_U_cm(wp_nav->get_default_speed_down_cms(), speed_up_cms, wp_nav->get_accel_U_cmss());
     return true;
 }
 
@@ -307,7 +307,7 @@ bool ModeGuided::set_speed_down_cms(float speed_down_cms)
 {
     // initialize vertical speeds and acceleration
     pos_control->set_max_speed_accel_U_cm(speed_down_cms, wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
-    pos_control->set_correction_speed_accel_U_cmss(speed_down_cms, wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
+    pos_control->set_correction_speed_accel_U_cm(speed_down_cms, wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
     return true;
 }
 
@@ -319,7 +319,7 @@ void ModeGuided::angle_control_start()
 
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_U_cm(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
-    pos_control->set_correction_speed_accel_U_cmss(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
+    pos_control->set_correction_speed_accel_U_cm(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
 
     // initialise the vertical position controller
     if (!pos_control->is_active_U()) {
