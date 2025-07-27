@@ -122,7 +122,7 @@ bool ModeSystemId::init(bool ignore_checks)
 
         // set vertical speed and acceleration limits
         pos_control->set_max_speed_accel_U_cm(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
-        pos_control->set_correction_speed_accel_U_cmss(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
+        pos_control->set_correction_speed_accel_U_cm(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
 
         // initialise the vertical position controller
         if (!pos_control->is_active_U()) {
