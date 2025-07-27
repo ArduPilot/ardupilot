@@ -11,6 +11,7 @@ import errno
 import glob
 import math
 import os
+import pathlib
 import re
 import shutil
 import signal
@@ -5061,6 +5062,13 @@ class TestSuite(ABC):
         if isinstance(hook, TestSuite.MessageHook):
             hook.hook_removed()
 
+    def install_script_content_context(self, scriptname, content):
+        '''installs an example script with content which will be
+        removed when the context goes away
+        '''
+        self.install_script_content(scriptname, content)
+        self.context_get().installed_scripts.append(scriptname)
+
     def install_example_script_context(self, scriptname):
         '''installs an example script which will be removed when the context goes
         away'''
@@ -8807,6 +8815,14 @@ Also, ignores heartbeats not from our target system'''
                                          "message_definitions", "v1.0", "ardupilotmega.xml")
         mavgen.mavgen(mavgen.Opts(output=dest, wire_protocol='2.0', language='Lua'), [ardupilotmega_xml])
         self.progress("Installed mavlink module")
+
+    def install_script_content(self, scriptname, content):
+        dest = self.installed_script_path(scriptname)
+        destdir = os.path.dirname(dest)
+        if not os.path.exists(destdir):
+            os.mkdir(destdir)
+        destPath = pathlib.Path(dest)
+        destPath.write_text(content)
 
     def install_example_script(self, scriptname):
         source = self.script_example_source_path(scriptname)
