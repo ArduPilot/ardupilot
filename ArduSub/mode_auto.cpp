@@ -459,7 +459,7 @@ bool ModeAuto::auto_terrain_recover_start()
 
     // initialize vertical maximum speeds and acceleration
     position_control->set_max_speed_accel_U_cm(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
-    position_control->set_correction_speed_accel_U_cmss(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
+    position_control->set_correction_speed_accel_U_cm(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
 
     gcs().send_text(MAV_SEVERITY_WARNING, "Attempting auto failsafe recovery");
     return true;
