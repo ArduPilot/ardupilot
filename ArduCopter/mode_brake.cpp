@@ -10,15 +10,15 @@
 bool ModeBrake::init(bool ignore_checks)
 {
     // initialise pos controller speed and acceleration
-    pos_control->set_max_speed_accel_NE_cm(pos_control->get_vel_estimate_NEU_cms().length(), BRAKE_MODE_DECEL_RATE);
-    pos_control->set_correction_speed_accel_NE_cm(pos_control->get_vel_estimate_NEU_cms().length(), BRAKE_MODE_DECEL_RATE);
+    pos_control->set_max_speed_accel_NE_cm(pos_control->get_vel_estimate_NEU_cms().length(), BRAKE_MODE_DECEL_RATE_MSS * 100.0);
+    pos_control->set_correction_speed_accel_NE_cm(pos_control->get_vel_estimate_NEU_cms().length(), BRAKE_MODE_DECEL_RATE_MSS * 100.0);
 
     // initialise position controller
     pos_control->init_NE_controller();
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z, BRAKE_MODE_DECEL_RATE);
-    pos_control->set_correction_speed_accel_U_cm(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z, BRAKE_MODE_DECEL_RATE);
+    pos_control->set_max_speed_accel_U_cm(BRAKE_MODE_SPEED_Z_MS * 100.0, BRAKE_MODE_SPEED_Z_MS * 100.0, BRAKE_MODE_DECEL_RATE_MSS * 100.0);
+    pos_control->set_correction_speed_accel_U_cm(BRAKE_MODE_SPEED_Z_MS * 100.0, BRAKE_MODE_SPEED_Z_MS * 100.0, BRAKE_MODE_DECEL_RATE_MSS * 100.0);
 
     // initialise the vertical position controller
     if (!pos_control->is_active_U()) {
