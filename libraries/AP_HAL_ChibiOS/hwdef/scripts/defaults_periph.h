@@ -439,6 +439,10 @@
 #define AP_SIM_GPS_ENABLED (AP_SIM_ENABLED && AP_GPS_ENABLED)
 #endif
 
+#ifndef AP_SIM_VICON_ENABLED
+#define AP_SIM_VICON_ENABLED 0
+#endif  // AP_SIM_VICON_ENABLED
+
 /*
  * Airspeed Backends - we selectively turn backends *off*
  */
