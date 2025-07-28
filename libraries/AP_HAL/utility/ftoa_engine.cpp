@@ -146,6 +146,12 @@ int16_t ftoa_engine(float val, char *buf, uint8_t precision, uint8_t maxDecimals
 
     do {
         char digit = '0';
+        if(decimal == 0) {
+            // Abnormal case, can't ever add enough digits to exit the loop,
+            // bail out. This will happen for subnormals with frac <= 7 and
+            // precision == 7.
+            break;
+        }
         while(1) {// find the first nonzero digit or any of the next digits.
             while ((prod -= decimal) >= 0)
                 digit++;
