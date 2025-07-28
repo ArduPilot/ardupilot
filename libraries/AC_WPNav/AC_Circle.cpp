@@ -254,9 +254,8 @@ bool AC_Circle::update_ms(float climb_rate_ms)
             _yaw_rad += is_positive(_rotation_rate_max_rads) ? -radians(90.0) : radians(90.0);
             _yaw_rad = wrap_PI(_yaw_rad);
         }
-
     } else {
-        // heading is same as _angle_rad but converted to centi-degrees
+        // set heading be the same as the angle for zero radius
         _yaw_rad = _angle_rad;
     }
 
