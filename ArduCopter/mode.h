@@ -399,7 +399,6 @@ public:
     bool set_mode(Mode::Number mode, ModeReason reason);
     void set_land_complete(bool b);
     GCS_Copter &gcs();
-    uint16_t get_pilot_speed_dn(void);
     float get_pilot_speed_up_ms(void);
     float get_pilot_speed_dn_ms(void);
     float get_pilot_accel_mss(void);
