@@ -104,10 +104,10 @@ void ModeCircle::run()
     }
 
     // get pilot desired climb rate (or zero if in radio failsafe)
-    float target_climb_rate_cms = get_pilot_desired_climb_rate_cms();
+    float target_climb_rate_ms = get_pilot_desired_climb_rate_ms();
 
     // get avoidance adjusted climb rate
-    target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
+    target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
 
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
@@ -123,7 +123,7 @@ void ModeCircle::run()
     copter.surface_tracking.update_surface_offset();
 #endif
 
-    copter.failsafe_terrain_set_status(copter.circle_nav->update_cms(target_climb_rate_cms));
+    copter.failsafe_terrain_set_status(copter.circle_nav->update_ms(target_climb_rate_ms));
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw

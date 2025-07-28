@@ -81,7 +81,7 @@ void ModeLoiter::run()
 {
     float target_roll_rad, target_pitch_rad;
     float target_yaw_rate_rads = 0.0f;
-    float target_climb_rate_cms = 0.0f;
+    float target_climb_rate_ms = 0.0f;
 
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_U_m(-get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
@@ -99,8 +99,8 @@ void ModeLoiter::run()
     target_yaw_rate_rads = get_pilot_desired_yaw_rate_rads();
 
     // get pilot desired climb rate
-    target_climb_rate_cms = get_pilot_desired_climb_rate_cms();
-    target_climb_rate_cms = constrain_float(target_climb_rate_cms, -get_pilot_speed_dn_ms() * 100.0, get_pilot_speed_up_ms() * 100.0);
+    target_climb_rate_ms = get_pilot_desired_climb_rate_ms();
+    target_climb_rate_ms = constrain_float(target_climb_rate_ms, -get_pilot_speed_dn_ms(), get_pilot_speed_up_ms());
 
     // relax loiter target if we might be landed
     if (copter.ap.land_complete_maybe) {
@@ -108,7 +108,7 @@ void ModeLoiter::run()
     }
 
     // Loiter State Machine Determination
-    AltHoldModeState loiter_state = get_alt_hold_state(target_climb_rate_cms);
+    AltHoldModeState loiter_state = get_alt_hold_state(target_climb_rate_ms);
 
     // Loiter State Machine
     switch (loiter_state) {
@@ -137,10 +137,10 @@ void ModeLoiter::run()
         }
 
         // get avoidance adjusted climb rate
-        target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
+        target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
 
         // set position controller targets adjusted for pilot input
-        takeoff.do_pilot_takeoff_cms(target_climb_rate_cms);
+        takeoff.do_pilot_takeoff_ms(target_climb_rate_ms);
 
         // run loiter controller
         loiter_nav->update();
@@ -172,7 +172,7 @@ void ModeLoiter::run()
 
 
         // get avoidance adjusted climb rate
-        target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
+        target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
 
 #if AP_RANGEFINDER_ENABLED
         // update the vertical offset based on the surface measurement
@@ -180,7 +180,7 @@ void ModeLoiter::run()
 #endif
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cms);
+        pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_ms);
         break;
     }
 
