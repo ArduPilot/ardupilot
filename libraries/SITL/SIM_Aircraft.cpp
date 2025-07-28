@@ -1393,9 +1393,11 @@ bool Aircraft::set_pose(uint8_t instance, const Location &loc, const Quaternion 
     WITH_SEMAPHORE(aircraft.pose_sem);
 
     quat.rotation_matrix(aircraft.dcm);
+    aircraft.home = loc;
+    aircraft.origin = loc;
     aircraft.velocity_ef = velocity_ef;
     aircraft.location = loc;
-    aircraft.position = aircraft.home.get_distance_NED_double(loc);
+    aircraft.position = Vector3d(0, 0, 0);
     aircraft.smoothing.position = aircraft.position;
     aircraft.smoothing.rotation_b2e = aircraft.dcm;
     aircraft.smoothing.velocity_ef = velocity_ef;
