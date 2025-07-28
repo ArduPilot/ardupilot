@@ -70,6 +70,21 @@ struct dirent {
 
 #include "AP_Filesystem_backend.h"
 
+/*
+  structure for stdio-like APIs, fopen() etc
+ */
+typedef struct apfs_file {
+    int fd;
+    bool error;
+    bool eof;
+    int16_t unget;
+    char *tmpfile_name;
+    uint8_t *writebuf;
+    uint32_t writebuf_used;
+    uint32_t total_written;
+    HAL_Semaphore sem;
+} APFS_FILE;
+
 class AP_Filesystem {
 private:
     struct DirHandle {
@@ -88,6 +103,14 @@ public:
     int fsync(int fd);
     int32_t lseek(int fd, int32_t offset, int whence);
     int stat(const char *pathname, struct stat *stbuf);
+
+#if AP_FILESYSTEM_FILE_WRITING_ENABLED
+    // stdio-like functions
+    APFS_FILE *fopen(const char *pathname, const char *mode);
+    size_t fwrite(const void *ptr, size_t size, size_t nmemb, APFS_FILE *stream);
+    int fflush(APFS_FILE *stream);
+    int fclose(APFS_FILE *stream);
+#endif
 
     // stat variant for scripting
     typedef struct Stat {
