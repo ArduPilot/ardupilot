@@ -187,7 +187,7 @@ public:
 
     // returns climb target_rate reduced to avoid obstacles and
     // altitude fence
-    float get_avoidance_adjusted_climbrate_cms(float target_rate_cms);
+    float get_avoidance_adjusted_climbrate_ms(float target_rate_cms);
 
     // send output to the motors, can be overridden by subclasses
     virtual void output_to_motors();
