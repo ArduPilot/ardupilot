@@ -19,20 +19,20 @@ class GCS_Copter;
 class _AutoTakeoff {
 public:
     void run();
-    void start_cm(float complete_alt_cm, bool is_terrain_alt);
-    bool get_completion_pos_neu_cm(Vector3p& pos_neu_cm);
+    void start_m(float complete_alt_m, bool is_terrain_alt);
+    bool get_completion_pos_neu_m(Vector3p& pos_neu_m);
 
     bool complete;          // true when takeoff is complete
 
 private:
     // altitude above-ekf-origin below which auto takeoff does not control horizontal position
     bool no_nav_active;
-    float no_nav_alt_cm;
+    float no_nav_alt_m;
 
     // auto takeoff variables
-    float complete_alt_cm;          // completion altitude expressed in cm above ekf origin or above terrain (depending upon auto_takeoff_terrain_alt)
+    float complete_alt_m;          // completion altitude expressed in m above ekf origin or above terrain (depending upon auto_takeoff_terrain_alt)
     bool is_terrain_alt;            // true if altitudes are above terrain
-    Vector3p complete_pos_neu_cm;   // target takeoff position as offset from ekf origin in cm
+    Vector3p complete_pos_neu_m;   // target takeoff position as offset from ekf origin in m
 };
 
 #if AC_PAYLOAD_PLACE_ENABLED
@@ -284,21 +284,21 @@ protected:
     // user-takeoff support; takeoff state is shared across all mode instances
     class _TakeOff {
     public:
-        void start_cm(float alt_cm);
+        void start_m(float alt_m);
         void stop();
-        void do_pilot_takeoff_cms(float& pilot_climb_rate_cms);
-        bool triggered_cms(float target_climb_rate_cms) const;
+        void do_pilot_takeoff_ms(float& pilot_climb_rate_ms);
+        bool triggered_ms(float target_climb_rate_ms) const;
 
         bool running() const { return _running; }
     private:
         bool _running;
-        float take_off_start_alt_cm;
-        float take_off_complete_alt_cm;
+        float take_off_start_alt_m;
+        float take_off_complete_alt_m;
     };
 
     static _TakeOff takeoff;
 
-    virtual bool do_user_takeoff_start(float takeoff_alt_cm);
+    virtual bool do_user_takeoff_start(float takeoff_alt_m);
 
     static _AutoTakeoff auto_takeoff;
 
