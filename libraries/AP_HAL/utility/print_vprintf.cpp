@@ -43,6 +43,7 @@
 #include <string.h>
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 
 #include "ftoa_engine.h"
 #include "xtoa_fast.h"
@@ -205,6 +206,11 @@ flt_oper:
                     ndigs = 0;
                 }
                 memset(buf, 0, sizeof(buf));
+                // ftoa_engine has had problems with very small
+                // numbers; clamp the input to ftoa_engine:
+                if (fabsf(value) < FLT_MIN) {
+                    value = 0.0f;
+                }
                 exp = ftoa_engine(value, (char *)buf, vtype, ndigs);
                 vtype = buf[0];
 
