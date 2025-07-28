@@ -102,7 +102,8 @@ hwdef_write(open(sohw_path(extra_hwdef_base), "r").read() + "\n")
 defaults_write(open(sohw_path(defaults_base), "r").read() + "\n")
 
 if args.defaults:
-    defaults_write(open(args.defaults, "r").read() + "\n")
+    for d in args.defaults.split(","):
+        defaults_write(open(d, "r").read() + "\n")
 
 if args.simclass:
     if args.simclass == 'Glider':
