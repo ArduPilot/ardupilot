@@ -110,13 +110,13 @@ public:
     // May be oriented toward the circle center or along the path depending on configuration.
     float get_yaw_cd() const { return rad_to_cd(_yaw_rad); }
 
-    // Returns the desired thrust vector (unit vector in body frame) from the position controller.
-    // Can be used by the attitude controller to align thrust direction.
-    Vector3f get_thrust_vector() const { return _pos_control.get_thrust_vector(); }
-
     // Returns the desired yaw angle in radians.
     // Used for directional control based on circle configuration.
     float get_yaw_rad() const { return _yaw_rad; }
+
+    // Returns the desired thrust vector (unit vector in body frame) from the position controller.
+    // Can be used by the attitude controller to align thrust direction.
+    Vector3f get_thrust_vector() const { return _pos_control.get_thrust_vector(); }
 
     // Returns true if the circle controller's update() function has run recently.
     // Used by vehicle code to determine if yaw and position outputs are valid.
@@ -219,11 +219,11 @@ private:
     AP_Int16 _options;            // Bitmask of CircleOptions (e.g. manual control, ROI at center, etc.).
 
     // internal variables
-    Vector3p _center_neu_m;              // Center of the circle in meters from EKF origin (NEU frame).
-    float    _radius_m;                  // Current circle radius in meters.
-    float    _rotation_rate_max_rads;    // Requested circle turn rate in rad/s (+ve = CW, -ve = CCW).
-    float    _yaw_rad;                   // Desired yaw heading in radians (typically toward circle center or tangent).
-    float    _angle_rad;                 // Current angular position around the circle in radians (0 = due north of center).
+    Vector3p _center_neu_m;             // Center of the circle in meters from EKF origin (NEU frame).
+    float    _radius_m;                 // Current circle radius in meters.
+    float    _rotation_rate_max_rads;   // Requested circle turn rate in rad/s (+ve = CW, -ve = CCW).
+    float    _yaw_rad;                  // Desired yaw heading in radians (typically toward circle center or tangent).
+    float    _angle_rad;                // Current angular position around the circle in radians (0 = due north of center).
     float    _angle_total_rad;          // Accumulated angle travelled in radians (used for full rotations).
     float    _angular_vel_rads;         // Current angular velocity in rad/s.
     float    _angular_vel_max_rads;     // Maximum allowed angular velocity in rad/s.
