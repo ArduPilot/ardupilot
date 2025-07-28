@@ -62,4 +62,13 @@ TEST(vsnprintf_Test, Basic)
     }
 }
 
+TEST(vsnprintf_Test, LargeNegativeExponent)
+{
+    char output[256];
+    const float x{1e-44};
+    hal.util->snprintf(output, ARRAY_SIZE(output), "%.99f", x);
+    EXPECT_STREQ("0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", output);
+}
+
+
 AP_GTEST_MAIN()
