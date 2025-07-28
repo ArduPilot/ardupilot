@@ -61,7 +61,7 @@ bool AP_Logger_MAVLink::logging_failed() const
 }
 
 uint32_t AP_Logger_MAVLink::bufferspace_available() {
-    return (_blockcount_free * 200 + remaining_space_in_current_block());
+    return (_blockcount_free * MAVLINK_MSG_REMOTE_LOG_DATA_BLOCK_FIELD_DATA_LEN + remaining_space_in_current_block());
 }
 
 uint8_t AP_Logger_MAVLink::remaining_space_in_current_block() const {
@@ -255,6 +255,7 @@ void AP_Logger_MAVLink::handle_ack(const GCS_MAVLINK &link,
             start_new_log_reset_variables();
             _last_response_time = AP_HAL::millis();
             Debug("Target: (%u/%u)", _target_system_id, _target_component_id);
+            _dropped_message_counter = 0;
         }
         return;
     }
@@ -324,7 +325,20 @@ void AP_Logger_MAVLink::stats_reset() {
     stats.state_sent = 0;
     stats.state_sent_min = -1; // unsigned wrap
     stats.state_sent_max = 0;
+    stats.state_dropped = 0;
+    stats.state_dropped_min = 0;
+    stats.state_dropped_max = 0;
     stats.collection_count = 0;
+
+    if (!semaphore.take_nonblocking()) {
+        return;
+    }
+    uint32_t sent_total = _blocks_sent.sent_count;
+    uint32_t dropped_total = _dropped;
+    semaphore.give();
+
+    stats.sent_count = sent_total;
+    stats.dropped_count = dropped_total;
 }
 
 void AP_Logger_MAVLink::Write_DMS(AP_Logger_MAVLink &logger_mav)
@@ -362,8 +376,8 @@ void AP_Logger_MAVLink::stats_log()
     }
     Write_DMS(*this);
 #if REMOTE_LOG_DEBUGGING
-    printf("D:%d Retry:%d Resent:%d SF:%d/%d/%d SP:%d/%d/%d SS:%d/%d/%d SR:%d/%d/%d\n",
-           _dropped,
+    printf("D:%d Retry:%d Resent:%d SF:%d/%d/%d SP:%d/%d/%d SS:%d/%d/%d SR:%d/%d/%d SD:%d/%d/%d\n",
+           stats.dropped_count,
            _blocks_retry.sent_count,
            stats.resends,
            stats.state_free_min,
@@ -377,7 +391,10 @@ void AP_Logger_MAVLink::stats_log()
            stats.state_sent/stats.collection_count,
            stats.state_retry_min,
            stats.state_retry_max,
-           stats.state_retry/stats.collection_count
+           stats.state_retry/stats.collection_count,
+           stats.state_dropped_min,
+           stats.state_dropped_max,
+           stats.state_dropped/stats.collection_count
         );
 #endif
     stats_reset();
@@ -405,7 +422,8 @@ void AP_Logger_MAVLink::stats_collect()
         return;
     }
     uint8_t pending = queue_size(_blocks_pending);
-    uint8_t sent = queue_size(_blocks_sent);
+    uint32_t sent_total = _blocks_sent.sent_count;
+    uint32_t dropped_total = _dropped;
     uint8_t retry = queue_size(_blocks_retry);
     uint8_t sfree = stack_size(_blocks_free);
 
@@ -415,7 +433,8 @@ void AP_Logger_MAVLink::stats_collect()
     semaphore.give();
 
     stats.state_pending += pending;
-    stats.state_sent += sent;
+    stats.state_sent = sent_total - stats.sent_count;
+    stats.state_dropped = dropped_total - stats.dropped_count;
     stats.state_free += sfree;
     stats.state_retry += retry;
 
@@ -431,11 +450,17 @@ void AP_Logger_MAVLink::stats_collect()
     if (retry > stats.state_retry_max) {
         stats.state_retry_max = retry;
     }
-    if (sent < stats.state_sent_min) {
-        stats.state_sent_min = sent;
+    if (stats.state_sent < stats.state_sent_min) {
+        stats.state_sent_min = stats.state_sent;
     }
-    if (sent > stats.state_sent_max) {
-        stats.state_sent_max = sent;
+    if (stats.state_sent > stats.state_sent_max) {
+        stats.state_sent_max = stats.state_sent;
+    }
+    if (stats.state_dropped < stats.state_dropped_min) {
+        stats.state_dropped_min = stats.state_dropped;
+    }
+    if (stats.state_dropped > stats.state_dropped_max) {
+        stats.state_dropped_max = stats.state_dropped;
     }
     if (sfree < stats.state_free_min) {
         stats.state_free_min = sfree;
@@ -464,6 +489,7 @@ bool AP_Logger_MAVLink::send_log_blocks_from_queue(dm_block_queue_t &queue)
         struct AP_Logger_MAVLink::dm_block *tmp = dequeue_seqno(queue,queue.oldest->seqno);
         if (tmp != nullptr) { // should never be nullptr
             enqueue_block(_blocks_sent, tmp);
+            _blocks_sent.sent_count++;
         } else {
             INTERNAL_ERROR(AP_InternalError::error_t::logger_dequeue_failure);
         }
@@ -549,6 +575,15 @@ void AP_Logger_MAVLink::periodic_1Hz()
         Debug("Client timed out");
         _sending_to_client = false;
         return;
+    }
+    // warn user if we can't process the logs quickly enough
+    uint8_t percent_dropped = 0;
+    if (stats.state_dropped > 0) {
+        percent_dropped = (stats.state_dropped * 100) / (stats.state_sent + stats.state_dropped);
+    }
+    if (_dropped_message_counter++ > 5 && percent_dropped > 10) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "MAVLink dataflash logging is dropping blocks (%u%% dropped). Reduce SCHED_LOOP_RATE or LOG_BITMASK.", percent_dropped);
+        _dropped_message_counter = 0;
     }
     stats_log();
 }
