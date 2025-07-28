@@ -1018,11 +1018,6 @@ GCS_Copter &Mode::gcs()
     return copter.gcs();
 }
 
-uint16_t Mode::get_pilot_speed_dn()
-{
-    return copter.get_pilot_speed_dn();
-}
-
 float Mode::get_pilot_speed_up_ms()
 {
     return g.pilot_speed_up * 0.01;
