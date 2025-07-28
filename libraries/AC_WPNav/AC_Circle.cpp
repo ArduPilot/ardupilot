@@ -132,8 +132,7 @@ void AC_Circle::set_center(const Location& center)
         float terr_alt_m;
 
         // Attempt to convert XY and Z to NEU frame with terrain altitude
-        if (center.get_vector_xy_from_origin_NE_m(center_ne_m) && 
-        center.get_alt_m(Location::AltFrame::ABOVE_TERRAIN, terr_alt_m)) {
+        if (center.get_vector_xy_from_origin_NE_m(center_ne_m) && center.get_alt_m(Location::AltFrame::ABOVE_TERRAIN, terr_alt_m)) {
             set_center_NEU_m(Vector3f(center_ne_m.x, center_ne_m.y, terr_alt_m), true);
         } else {
             // Conversion failed: fall back to current position and log error
@@ -252,7 +251,7 @@ bool AC_Circle::update_ms(float climb_rate_ms)
         // Optionally adjust yaw to face direction of travel
         if ((_options.get() & CircleOptions::FACE_DIRECTION_OF_TRAVEL) != 0) {
             _yaw_rad += is_positive(_rotation_rate_max_rads) ? -radians(90.0) : radians(90.0);
-            _yaw_rad = wrap_PI(_yaw_rad);
+            _yaw_rad = wrap_2PI(_yaw_rad);
         }
     } else {
         // set heading be the same as the angle for zero radius
