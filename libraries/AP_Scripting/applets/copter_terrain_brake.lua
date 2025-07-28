@@ -109,7 +109,7 @@ local function run_checks()
    end
 
    if vehicle:set_mode(MODE_BRAKE) then
-      gcs:send_text(MAV_SEVERITY.EMERGENCY, string.format("Terrain %.1fm - BRAKE", hagl))
+      gcs:send_text(MAV_SEVERITY.EMERGENCY, string.format("@Terrain %.1fm - BRAKE", hagl))
    end
 end
 
