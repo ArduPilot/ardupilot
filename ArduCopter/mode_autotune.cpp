@@ -58,12 +58,12 @@ void AutoTune::run()
  */
 float AutoTune::get_pilot_desired_climb_rate_cms(void) const
 {
-    float target_climb_rate_cms = copter.get_pilot_desired_climb_rate_cms();
+    float target_climb_rate_ms = copter.get_pilot_desired_climb_rate_ms();
 
     // get avoidance adjusted climb rate
-    target_climb_rate_cms = copter.mode_autotune.get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
+    target_climb_rate_ms = copter.mode_autotune.get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
 
-    return target_climb_rate_cms;
+    return target_climb_rate_ms * 100.0;
 }
 
 /*
