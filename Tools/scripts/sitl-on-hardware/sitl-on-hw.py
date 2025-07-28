@@ -43,6 +43,7 @@ parser.add_argument("-f", "--frame", default=None, help="frame type")
 parser.add_argument("--simclass", default=None, help="simulation class")
 parser.add_argument("--defaults", default=None, help="extra defaults file")
 parser.add_argument("--upload", action='store_true', default=False, help="upload firmware")
+parser.add_argument("--debug", action='store_true', default=False, help="create debug build")
 
 args, unknown_args = parser.parse_known_args()
 
@@ -150,6 +151,9 @@ configure_args = ["./waf", "configure",
                   "--board=%s" % args.board,
                   "--extra-hwdef=%s" % extra_hwdef.name,
                   "--default-param=%s" % extra_defaults.name]
+if args.debug:
+    configure_args.append("--debug")
+
 configure_args.extend(unknown_args)
 run_program(configure_args)
 
