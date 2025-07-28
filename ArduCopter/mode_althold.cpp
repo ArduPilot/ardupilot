@@ -39,11 +39,11 @@ void ModeAltHold::run()
     float target_yaw_rate_rads = get_pilot_desired_yaw_rate_rads();
 
     // get pilot desired climb rate
-    float target_climb_rate_cms = get_pilot_desired_climb_rate_cms();
-    target_climb_rate_cms = constrain_float(target_climb_rate_cms, -get_pilot_speed_dn_ms() * 100.0, get_pilot_speed_up_ms() * 100.0);
+    float target_climb_rate_ms = get_pilot_desired_climb_rate_ms();
+    target_climb_rate_ms = constrain_float(target_climb_rate_ms, -get_pilot_speed_dn_ms(), get_pilot_speed_up_ms());
 
     // Alt Hold State Machine Determination
-    AltHoldModeState althold_state = get_alt_hold_state(target_climb_rate_cms);
+    AltHoldModeState althold_state = get_alt_hold_state(target_climb_rate_ms);
 
     // Alt Hold State Machine
     switch (althold_state) {
@@ -70,10 +70,10 @@ void ModeAltHold::run()
         }
 
         // get avoidance adjusted climb rate
-        target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
+        target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
 
         // set position controller targets adjusted for pilot input
-        takeoff.do_pilot_takeoff_cms(target_climb_rate_cms);
+        takeoff.do_pilot_takeoff_ms(target_climb_rate_ms);
         break;
 
     case AltHoldModeState::Flying:
@@ -85,7 +85,7 @@ void ModeAltHold::run()
 #endif
 
         // get avoidance adjusted climb rate
-        target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
+        target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
 
 #if AP_RANGEFINDER_ENABLED
         // update the vertical offset based on the surface measurement
@@ -93,7 +93,7 @@ void ModeAltHold::run()
 #endif
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cms);
+        pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_ms);
         break;
     }
 

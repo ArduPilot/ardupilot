@@ -1186,15 +1186,15 @@ void ModeAuto::loiter_to_alt_run()
 
     // Compute a vertical velocity demand such that the vehicle
     // approaches the desired altitude.
-    float target_climb_rate_cms = sqrt_controller(
-        -alt_error_cm,
+    float target_climb_rate_ms = sqrt_controller(
+        -alt_error_cm * 0.01,
         pos_control->get_pos_U_p().kP(),
-        pos_control->get_max_accel_U_cmss(),
+        pos_control->get_max_accel_U_mss(),
         G_Dt);
-    target_climb_rate_cms = constrain_float(target_climb_rate_cms, pos_control->get_max_speed_down_cms(), pos_control->get_max_speed_up_cms());
+    target_climb_rate_ms = constrain_float(target_climb_rate_ms, pos_control->get_max_speed_down_ms(), pos_control->get_max_speed_up_ms());
 
     // get avoidance adjusted climb rate
-    target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
+    target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
 
 #if AP_RANGEFINDER_ENABLED
     // update the vertical offset based on the surface measurement
@@ -1202,7 +1202,7 @@ void ModeAuto::loiter_to_alt_run()
 #endif
 
     // Send the commanded climb rate to the position controller
-    pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cms);
+    pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_ms);
 
     pos_control->update_U_controller();
 }
@@ -1217,10 +1217,10 @@ void ModeAuto::nav_attitude_time_run()
     }
 
     // constrain climb rate
-    float target_climb_rate_cms = constrain_float(nav_attitude_time.climb_rate * 100.0, pos_control->get_max_speed_down_cms(), pos_control->get_max_speed_up_cms());
+    float target_climb_rate_ms = constrain_float(nav_attitude_time.climb_rate, pos_control->get_max_speed_down_ms(), pos_control->get_max_speed_up_ms());
 
     // get avoidance adjusted climb rate
-    target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
+    target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
 
     // limit and scale lean angles
     // todo: change euler magnitiude limit to lean angle limit
@@ -1232,7 +1232,7 @@ void ModeAuto::nav_attitude_time_run()
     attitude_control->input_euler_angle_roll_pitch_yaw_rad(target_rp_rad.x, target_rp_rad.y, radians(nav_attitude_time.yaw_deg), true);
 
     // Send the commanded climb rate to the position controller
-    pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cms);
+    pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_ms);
 
     pos_control->update_U_controller();
 }

@@ -920,7 +920,7 @@ void Mode::output_to_motors()
     motors->output();
 }
 
-Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
+Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_ms)
 {
     // Alt Hold State Machine Determination
     if (!motors->armed()) {
@@ -940,14 +940,14 @@ Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
             return AltHoldModeState::Landed_Pre_Takeoff;
         }
 
-    } else if (takeoff.running() || takeoff.triggered_ms(target_climb_rate_cms * 0.01)) {
+    } else if (takeoff.running() || takeoff.triggered_ms(target_climb_rate_ms)) {
         // the aircraft is currently landed or taking off, asking for a positive climb rate and in THROTTLE_UNLIMITED
         // the aircraft should progress through the take off procedure
         return AltHoldModeState::Takeoff;
 
     } else if (!copter.ap.auto_armed || copter.ap.land_complete) {
         // the aircraft is armed and landed
-        if (target_climb_rate_cms < 0.0f && !copter.ap.using_interlock) {
+        if (target_climb_rate_ms < 0.0f && !copter.ap.using_interlock) {
             // the aircraft should move to a ground idle state
             motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
 

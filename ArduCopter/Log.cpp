@@ -34,10 +34,10 @@ void Copter::Log_Write_Control_Tuning()
     }
 #endif
     float des_alt_m = 0.0f;
-    int16_t target_climb_rate_cms = 0;
+    float target_climb_rate_ms = 0;
     if (!flightmode->has_manual_throttle()) {
-        des_alt_m = pos_control->get_pos_target_U_cm() * 0.01f;
-        target_climb_rate_cms = pos_control->get_vel_target_U_cms();
+        des_alt_m = pos_control->get_pos_target_U_m();
+        target_climb_rate_ms = pos_control->get_vel_target_U_ms();
     }
 
     float desired_rangefinder_alt;
@@ -67,7 +67,7 @@ void Copter::Log_Write_Control_Tuning()
         rangefinder_alt     : AP::logger().quiet_nanf(),
 #endif
         terr_alt            : terr_alt,
-        target_climb_rate   : target_climb_rate_cms,
+        target_climb_rate   : int16_t(target_climb_rate_ms * 100.0),
         climb_rate          : int16_t(pos_control->get_vel_estimate_NEU_cms().z) // float -> int16_t
     };
     logger.WriteBlock(&pkt, sizeof(pkt));

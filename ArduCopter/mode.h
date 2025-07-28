@@ -255,7 +255,7 @@ protected:
         Landed_Pre_Takeoff,
         Flying
     };
-    AltHoldModeState get_alt_hold_state(float target_climb_rate_cms);
+    AltHoldModeState get_alt_hold_state(float target_climb_rate_ms);
 
     // convenience references to avoid code churn in conversion:
     Parameters &g;

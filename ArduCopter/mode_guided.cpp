@@ -948,7 +948,7 @@ void ModeGuided::angle_control_run()
         climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms());
 
         // get avoidance adjusted climb rate
-        climb_rate_cms = get_avoidance_adjusted_climbrate_cms(climb_rate_cms);
+        climb_rate_cms = get_avoidance_adjusted_climbrate_ms(climb_rate_cms);
     }
 
     // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
