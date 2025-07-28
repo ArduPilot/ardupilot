@@ -133,7 +133,7 @@ void ModeLoiter::run()
     case AltHoldModeState::Takeoff:
         // initiate take-off
         if (!takeoff.running()) {
-            takeoff.start_cm(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+            takeoff.start_m(constrain_float(g.pilot_takeoff_alt * 0.01, 0.0, 10.0));
         }
 
         // get avoidance adjusted climb rate
