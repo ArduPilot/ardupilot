@@ -297,7 +297,7 @@ void SITL_State_Common::sim_update(void)
         adsb->update(*sitl_model);
     }
 #endif  // AP_SIM_ADSB_ENABLED
-#if !defined(HAL_BUILD_AP_PERIPH)
+#if AP_SIM_VICON_ENABLED
     if (vicon != nullptr) {
         Quaternion attitude;
         sitl_model->get_attitude(attitude);
@@ -306,7 +306,7 @@ void SITL_State_Common::sim_update(void)
                       sitl_model->get_velocity_ef(),
                       attitude);
     }
-#endif
+#endif  // AP_SIM_VICON_ENABLED
     for (uint8_t i=0; i<num_serial_rangefinders; i++) {
         serial_rangefinders[i]->update(sitl_model->rangefinder_range());
     }
