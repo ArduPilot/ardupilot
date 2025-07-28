@@ -393,7 +393,7 @@ public:
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base
     // class.
-    float get_pilot_desired_climb_rate_cms() const;
+    float get_pilot_desired_climb_rate_ms() const;
     float get_non_takeoff_throttle() const;
     void update_simple_mode();
     bool set_mode(Mode::Number mode, ModeReason reason);
