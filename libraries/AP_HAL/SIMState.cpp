@@ -141,6 +141,7 @@ void SIMState::fdm_input_local(void)
         adsb->update();
     }
 #endif  // AP_SIM_ADSB_ENABLED
+#if AP_SIM_VICON_ENABLED
     if (vicon != nullptr) {
         Quaternion attitude;
         sitl_model->get_attitude(attitude);
@@ -149,6 +150,7 @@ void SIMState::fdm_input_local(void)
                       sitl_model->get_velocity_ef(),
                       attitude);
     }
+#endif  // AP_SIM_VICON_ENABLED
     if (benewake_tf02 != nullptr) {
         benewake_tf02->update(sitl_model->rangefinder_range());
     }
