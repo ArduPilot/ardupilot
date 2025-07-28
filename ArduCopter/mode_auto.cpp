@@ -413,7 +413,7 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
     pos_control->init_U_controller();
 
     // initialise alt for WP_NAVALT_MIN and set completion alt
-    auto_takeoff.start_cm(alt_target_cm, alt_target_terrain);
+    auto_takeoff.start_m(alt_target_cm * 0.01, alt_target_terrain);
 
     // set submode
     set_submode(SubMode::TAKEOFF);
@@ -426,9 +426,9 @@ bool ModeAuto::wp_start(const Location& dest_loc)
     if (!wp_nav->is_active()) {
         Vector3f stopping_point_neu_cm;
         if (_mode == SubMode::TAKEOFF) {
-            Vector3p takeoff_complete_pos_neu_cm;
-            if (auto_takeoff.get_completion_pos_neu_cm(takeoff_complete_pos_neu_cm)) {
-                stopping_point_neu_cm = takeoff_complete_pos_neu_cm.tofloat();
+            Vector3p takeoff_complete_pos_neu_m;
+            if (auto_takeoff.get_completion_pos_neu_m(takeoff_complete_pos_neu_m)) {
+                stopping_point_neu_cm = takeoff_complete_pos_neu_m.tofloat() * 100.0;
             }
         }
         float des_speed_xy_cms = is_positive(desired_speed_override_ms.xy) ? (desired_speed_override_ms.xy * 100) : 0;

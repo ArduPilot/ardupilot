@@ -507,13 +507,13 @@ Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
     return vel;
 }
 
-bool Mode::_TakeOff::triggered_cms(const float target_climb_rate_cms) const
+bool Mode::_TakeOff::triggered_ms(const float target_climb_rate_ms) const
 {
     if (!copter.ap.land_complete) {
         // can't take off if we're already flying
         return false;
     }
-    if (target_climb_rate_cms <= 0.0f) {
+    if (target_climb_rate_ms <= 0.0f) {
         // can't takeoff unless we want to go up...
         return false;
     }
@@ -940,7 +940,7 @@ Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
             return AltHoldModeState::Landed_Pre_Takeoff;
         }
 
-    } else if (takeoff.running() || takeoff.triggered_cms(target_climb_rate_cms)) {
+    } else if (takeoff.running() || takeoff.triggered_ms(target_climb_rate_cms * 0.01)) {
         // the aircraft is currently landed or taking off, asking for a positive climb rate and in THROTTLE_UNLIMITED
         // the aircraft should progress through the take off procedure
         return AltHoldModeState::Takeoff;
