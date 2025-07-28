@@ -146,6 +146,11 @@ int16_t ftoa_engine(float val, char *buf, uint8_t precision, uint8_t maxDecimals
     do {
         char digit = '0';
         while(1) {// find the first nonzero digit or any of the next digits.
+            if (decimal == 0) {
+                // we don't do anything nice if this happens, but at
+                // least we don't loop infinitely:
+                break;
+            }
             while ((prod -= decimal) >= 0)
                 digit++;
             // Now we got too low. Fix it by adding again, once.
