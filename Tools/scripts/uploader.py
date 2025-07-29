@@ -953,6 +953,11 @@ class uploader(object):
         self.__reboot()
         self.port.close()
 
+    def reboot(self):
+        print("\nRebooting out of bootloader.\n")
+        self.__reboot()
+        self.port.close()
+
     def __next_baud_flightstack(self):
         self.baudrate_flightstack_idx = self.baudrate_flightstack_idx + 1
         if self.baudrate_flightstack_idx >= len(self.baudrate_flightstack):
@@ -1138,18 +1143,22 @@ def main():
     parser.add_argument('--erase-extflash', type=lambda x: int(x, 0), default=None,
                         help="Erase sectors containing specified amount of bytes from ext flash")
     parser.add_argument('--force-erase', action="store_true", help="Do not check for pre cleared flash, always erase the chip")
+    parser.add_argument('--reboot', action="store_true", help="Reboot the board and boot into application")
     parser.add_argument('firmware', nargs="?", action="store", default=None, help="Firmware file to be uploaded")
     args = parser.parse_args()
 
     # warn people about ModemManager which interferes badly with Pixhawk
     modemmanager_check()
 
-    if args.firmware is None and not args.identify and not args.erase_extflash:
+    # some commands do not need firmware specified
+    needs_fw = not (args.identify or args.erase_extflash is not None or args.reboot)
+
+    if needs_fw and args.firmware is None:
         parser.error("Firmware filename required for upload or download")
         sys.exit(1)
 
     # Load the firmware file
-    if not args.download and not args.identify and not args.erase_extflash:
+    if not args.download and needs_fw:
         fw = firmware(args.firmware)
         print("Loaded firmware for %x,%x, size: %d bytes, waiting for the bootloader..." %
               (fw.property('board_id'), fw.property('board_revision'), fw.property('image_size')))
@@ -1202,6 +1211,8 @@ def main():
                     elif args.erase_extflash:
                         up.erase_extflash('Erase ExtF', args.erase_extflash)
                         print("\nExtF Erase Finished")
+                    elif args.reboot:
+                        up.reboot()
                     else:
                         up.upload(fw, force=args.force, boot_delay=args.boot_delay)
 
