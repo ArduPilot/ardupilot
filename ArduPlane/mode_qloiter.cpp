@@ -11,7 +11,7 @@ bool ModeQLoiter::_enter()
 
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_U_m(-quadplane.get_pilot_velocity_z_max_dn_m(), quadplane.pilot_speed_z_max_up_ms, quadplane.pilot_accel_z_mss);
-    pos_control->set_correction_speed_accel_U_mss(-quadplane.get_pilot_velocity_z_max_dn_m(), quadplane.pilot_speed_z_max_up_ms, quadplane.pilot_accel_z_mss);
+    pos_control->set_correction_speed_accel_U_m(-quadplane.get_pilot_velocity_z_max_dn_m(), quadplane.pilot_speed_z_max_up_ms, quadplane.pilot_accel_z_mss);
 
     quadplane.init_throttle_wait();
 

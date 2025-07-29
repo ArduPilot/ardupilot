@@ -3075,7 +3075,7 @@ void QuadPlane::setup_target_position(void)
 
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_U_m(-get_pilot_velocity_z_max_dn_m(), pilot_speed_z_max_up_ms, pilot_accel_z_mss);
-    pos_control->set_correction_speed_accel_U_mss(-get_pilot_velocity_z_max_dn_m(), pilot_speed_z_max_up_ms, pilot_accel_z_mss);
+    pos_control->set_correction_speed_accel_U_m(-get_pilot_velocity_z_max_dn_m(), pilot_speed_z_max_up_ms, pilot_accel_z_mss);
 }
 
 /*
@@ -3326,7 +3326,7 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
 
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_U_m(-get_pilot_velocity_z_max_dn_m(), pilot_speed_z_max_up_ms, pilot_accel_z_mss);
-    pos_control->set_correction_speed_accel_U_mss(-get_pilot_velocity_z_max_dn_m(), pilot_speed_z_max_up_ms, pilot_accel_z_mss);
+    pos_control->set_correction_speed_accel_U_m(-get_pilot_velocity_z_max_dn_m(), pilot_speed_z_max_up_ms, pilot_accel_z_mss);
 
     // initialise the vertical position controller
     pos_control->init_U_controller();
