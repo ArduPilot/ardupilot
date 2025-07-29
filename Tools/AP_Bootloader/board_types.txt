@@ -315,8 +315,9 @@ AP_HW_SEQUREH743                     1195
 AP_HW_SPEDIXH743                     1196
 AP_HW_SPEDIXF405                     1197
 AP_HW_AEDROXH7                       1198
-
+AP_HW_NarinX3                        1199
 AP_HW_JFB200                         1200
+AP_HW_SKYSTARSF405V2                 1201
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
@@ -378,9 +379,6 @@ AP_HW_SakuraRC-H743                  2714
 
 # IDs 4000-4009 reserved for Karshak Drones
 AP_HW_KRSHKF7_MINI                   4000
-
-# IDs 4010-4019 reserved for Aerium
-AP_HW_AERIUM_RADIANF405              4010
 
 # IDs 4200-4220 reserved for HAKRC
 AP_HW_HAKRC_F405                     4200

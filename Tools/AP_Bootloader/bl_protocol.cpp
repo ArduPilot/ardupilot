@@ -55,8 +55,6 @@
 #endif
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 
-// #pragma GCC optimize("O0")
-
 
 // bootloader flash update protocol.
 //
@@ -354,7 +352,7 @@ exit:
 static void
 sync_response(void)
 {
-    uint8_t data[] = {
+    static const uint8_t data[] = {
         PROTO_INSYNC,	// "in sync"
         PROTO_OK	// "OK"
     };
@@ -365,7 +363,7 @@ sync_response(void)
 static void
 invalid_response(void)
 {
-    uint8_t data[] = {
+    static const uint8_t data[] = {
         PROTO_INSYNC,	// "in sync"
         PROTO_INVALID	// "invalid command"
     };
@@ -376,7 +374,7 @@ invalid_response(void)
 static void
 failure_response(void)
 {
-    uint8_t data[] = {
+    static const uint8_t data[] = {
         PROTO_INSYNC,	// "in sync"
         PROTO_FAILED	// "command failed"
     };
@@ -399,7 +397,7 @@ wait_for_eoc(unsigned timeout)
 static void
 cout_word(uint32_t val)
 {
-    cout((uint8_t *)&val, 4);
+    cout((uint8_t *)&val, sizeof(uint32_t));
 }
 
 #define TEST_FLASH 0
@@ -494,7 +492,7 @@ bootloader(unsigned timeout)
     }
 
     while (true) {
-        volatile int c;
+        int c;
         int arg;
         static union {
             uint8_t		c[256];
@@ -573,34 +571,31 @@ bootloader(unsigned timeout)
 
             switch (arg) {
             case PROTO_DEVICE_BL_REV: {
-                uint32_t bl_proto_rev = BL_PROTOCOL_VERSION;
-                cout((uint8_t *)&bl_proto_rev, sizeof(bl_proto_rev));
+                cout_word(BL_PROTOCOL_VERSION);
                 break;
             }
 
             case PROTO_DEVICE_BOARD_ID:
-                cout((uint8_t *)&board_info.board_type, sizeof(board_info.board_type));
+                cout_word(board_info.board_type);
                 break;
 
             case PROTO_DEVICE_BOARD_REV:
-                cout((uint8_t *)&board_info.board_rev, sizeof(board_info.board_rev));
+                cout_word(board_info.board_rev);
                 break;
 
             case PROTO_DEVICE_FW_SIZE:
-                cout((uint8_t *)&board_info.fw_size, sizeof(board_info.fw_size));
+                cout_word(board_info.fw_size);
                 break;
 
             case PROTO_DEVICE_VEC_AREA:
                 for (unsigned p = 7; p <= 10; p++) {
-                    uint32_t bytes = flash_func_read_word(p * 4);
-
-                    cout((uint8_t *)&bytes, sizeof(bytes));
+                    cout_word(flash_func_read_word(p * 4));
                 }
 
                 break;
 
             case PROTO_DEVICE_EXTF_SIZE:
-                cout((uint8_t *)&board_info.extf_size, sizeof(board_info.extf_size));
+                cout_word(board_info.extf_size);
                 break;
 
             default:

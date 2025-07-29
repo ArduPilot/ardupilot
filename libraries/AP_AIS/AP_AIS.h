@@ -104,7 +104,7 @@ private:
     void buffer_shift(uint8_t i);
 
     // find vessel index in existing list, if not then return new index if possible, returns true if index is valid
-    bool get_vessel_index(uint32_t mmsi, uint16_t &index, uint32_t lat = 0, uint32_t lon = 0) WARN_IF_UNUSED;
+    bool get_vessel_index(uint32_t mmsi, uint16_t &index, int32_t lat = 0, int32_t lon = 0) WARN_IF_UNUSED;
     void clear_list_item(uint16_t index);
 
     // decode the payload

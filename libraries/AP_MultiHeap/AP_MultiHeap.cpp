@@ -6,7 +6,6 @@
 
 #include "AP_MultiHeap.h"
 
-#if ENABLE_HEAP
 #include <AP_Math/AP_Math.h>
 #include <stdio.h>
 
@@ -202,5 +201,3 @@ void *MultiHeap::change_size(void *ptr, uint32_t old_size, uint32_t new_size)
     deallocate(ptr);
     return newp;
 }
-
-#endif // ENABLE_HEAP

@@ -133,7 +133,7 @@ float Plane::stabilize_roll_get_roll_out()
         const auto &pid_info = quadplane.attitude_control->get_rate_roll_pid().get_pid_info();
 
         // scale FF to angle P
-        if (quadplane.option_is_set(QuadPlane::OPTION::SCALE_FF_ANGLE_P)) {
+        if (quadplane.option_is_set(QuadPlane::Option::SCALE_FF_ANGLE_P)) {
             const float mc_angR = quadplane.attitude_control->get_angle_roll_p().kP()
                 * quadplane.attitude_control->get_last_angle_P_scale().x;
             if (is_positive(mc_angR)) {
@@ -186,7 +186,7 @@ float Plane::stabilize_pitch_get_pitch_out()
         const auto &pid_info = quadplane.attitude_control->get_rate_pitch_pid().get_pid_info();
 
         // scale FF to angle P
-        if (quadplane.option_is_set(QuadPlane::OPTION::SCALE_FF_ANGLE_P)) {
+        if (quadplane.option_is_set(QuadPlane::Option::SCALE_FF_ANGLE_P)) {
             const float mc_angP = quadplane.attitude_control->get_angle_pitch_p().kP()
                 * quadplane.attitude_control->get_last_angle_P_scale().y;
             if (is_positive(mc_angP)) {

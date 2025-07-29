@@ -13,10 +13,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  simple particle sensor simulation
+  VICON (visual positioning) simulation
 */
 
 #pragma once
+
+#include "SIM_config.h"
+
+#if AP_SIM_VICON_ENABLED
 
 #include "SIM_Aircraft.h"
 
@@ -82,3 +86,5 @@ private:
 };
 
 }
+
+#endif  // AP_SIM_VICON_ENABLED

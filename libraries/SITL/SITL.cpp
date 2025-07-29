@@ -641,11 +641,13 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Group: VOLZ_
     // @Path: ./SIM_Volz.cpp
     AP_SUBGROUPINFO(volz_sim, "VOLZ_", 55, SIM, Volz),
-#endif
+#endif  //  AP_SIM_VOLZ_ENABLED
 
+#if AP_SIM_VICON_ENABLED
     // @Group: VICON_
     // @Path: ./SIM_Vicon.cpp
     AP_SUBGROUPINFO(vicon, "VICON_", 56, SIM, ViconParms),
+#endif  // AP_SIM_VICON_ENABLED
 
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),

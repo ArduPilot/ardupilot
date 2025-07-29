@@ -371,14 +371,6 @@ class Board:
         if cfg.options.bootloader:
             # don't let bootloaders try and pull scripting in
             cfg.options.disable_scripting = True
-            if cfg.options.signed_fw:
-                env.DEFINES.update(
-                    ENABLE_HEAP = 1,
-                )
-        else:
-            env.DEFINES.update(
-                ENABLE_HEAP = 1,
-            )
 
         if cfg.options.enable_math_check_indexes:
             env.CXXFLAGS += ['-DMATH_CHECK_INDEXES']
@@ -1228,7 +1220,6 @@ class chibios(Board):
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_CHIBIOS',
             HAVE_STD_NULLPTR_T = 0,
-            USE_LIBC_REALLOC = 0,
         )
 
         env.AP_LIBRARIES += [
@@ -1671,7 +1662,6 @@ class QURT(Board):
             "--wrap=malloc",
             "--wrap=calloc",
             "--wrap=free",
-            "--wrap=realloc",
             "--wrap=printf",
             "--wrap=strdup",
             "--wrap=__stack_chk_fail",

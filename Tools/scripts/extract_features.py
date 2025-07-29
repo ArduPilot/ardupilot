@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 script to determine what features have been built into an ArduPilot binary
@@ -300,6 +300,8 @@ class ExtractFeatures(object):
             ('AP_CAN_LOGGING_ENABLED', r'AP_CANManager::can_logging_callback'),
             ('AP_PLANE_SYSTEMID_ENABLED', r'AP_SystemID::start'),
             ('AP_DDS_ENABLED', r'AP_DDS_Client::start'),
+            ('AP_RC_TRANSMITTER_TUNING_ENABLED',  r'Copter::tuning'),
+
             ('AP_PERIPH_DEVICE_TEMPERATURE_ENABLED', r'AP_Periph_FW::temperature_sensor_update'),
             ('AP_PERIPH_MSP_ENABLED', r'AP_Periph_FW::msp_init'),
             ('AP_PERIPH_NOTIFY_ENABLED', r'AP_Periph_FW::handle_notify_state'),
@@ -307,6 +309,17 @@ class ExtractFeatures(object):
             ('AP_PERIPH_BATTERY_ENABLED', r'AP_Periph_FW::can_battery_update'),
             ('AP_PERIPH_RELAY_ENABLED', r'AP_Periph_FW::handle_hardpoint_command'),
             ('AP_PERIPH_BATTERY_BALANCE_ENABLED', r'AP_Periph_FW::batt_balance_update'),
+            ('AP_PERIPH_BATTERY_TAG_ENABLED', r'BatteryTag::update'),
+            ('AP_PERIPH_PROXIMITY_ENABLED', r'AP_Periph_FW::can_proximity_update'),
+            ('AP_PERIPH_GPS_ENABLED', r'AP_Periph_FW::can_gps_update'),
+            ('AP_PERIPH_ADSB_ENABLED', r'AP_Periph_FW::adsb_update'),
+            ('AP_PERIPH_MAG_ENABLED', r'AP_Periph_FW::can_mag_update'),
+            ('AP_PERIPH_BARO_ENABLED', r'AP_Periph_FW::can_baro_update'),
+            ('AP_PERIPH_RANGEFINDER_ENABLED', r'AP_Periph_FW::can_rangefinder_update'),
+            ('AP_PERIPH_IMU_ENABLED', r'AP_Periph_FW::can_imu_update'),
+            ('AP_PERIPH_RC_OUT_ENABLED', r'AP_Periph_FW::sim_update_actuator'),
+            ('AP_PERIPH_EFI_ENABLED', r'AP_Periph_FW::can_efi_update'),
+            ('AP_PERIPH_RCIN_ENABLED', r'AP_Periph_FW::rcin_update'),
         ]
 
     def progress(self, msg):

@@ -306,7 +306,7 @@
 #define AP_PERIPH_EFI_ENABLED 0
 #endif
 #ifndef AP_PERIPH_RTC_ENABLED
-#define AP_PERIPH_RTC_ENABLED 0
+#define AP_PERIPH_RTC_ENABLED AP_PERIPH_BATTERY_TAG_ENABLED
 #endif
 #ifndef AP_PERIPH_RTC_GLOBALTIME_ENABLED
 #define AP_PERIPH_RTC_GLOBALTIME_ENABLED 0
@@ -380,6 +380,12 @@
 #ifndef AP_RELAY_ENABLED
 #define AP_RELAY_ENABLED AP_PERIPH_RELAY_ENABLED
 #endif
+#ifndef HAL_PROXIMITY_ENABLED
+#define HAL_PROXIMITY_ENABLED AP_PERIPH_PROXIMITY_ENABLED
+#endif
+#ifndef HAL_EFI_ENABLED
+#define HAL_EFI_ENABLED AP_PERIPH_EFI_ENABLED
+#endif
 
 /*
  * GPS Backends - we selectively turn backends on.
@@ -432,6 +438,10 @@
 #ifndef AP_SIM_GPS_ENABLED
 #define AP_SIM_GPS_ENABLED (AP_SIM_ENABLED && AP_GPS_ENABLED)
 #endif
+
+#ifndef AP_SIM_VICON_ENABLED
+#define AP_SIM_VICON_ENABLED 0
+#endif  // AP_SIM_VICON_ENABLED
 
 /*
  * Airspeed Backends - we selectively turn backends *off*

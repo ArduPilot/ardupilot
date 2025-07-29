@@ -126,7 +126,7 @@ float Plane::mode_auto_target_airspeed_cm()
         return aparm.airspeed_cruise*100;
     }
     if (quadplane.in_vtol_land_approach()) {
-        return quadplane.get_land_airspeed() * 100;
+        return quadplane.get_land_airspeed_ms() * 100;
     }
 #endif
 
@@ -235,7 +235,7 @@ void Plane::calc_airspeed_errors()
         target_airspeed_cm = mode_auto_target_airspeed_cm();
 #if HAL_QUADPLANE_ENABLED
     } else if (control_mode == &mode_qrtl && quadplane.in_vtol_land_approach()) {
-        target_airspeed_cm = quadplane.get_land_airspeed() * 100;
+        target_airspeed_cm = quadplane.get_land_airspeed_ms() * 100;
 #endif
     } else {
         // Normal airspeed target for all other cases

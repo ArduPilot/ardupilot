@@ -1085,7 +1085,7 @@ bool ModeGuided::limit_check()
 
     // check if we have gone beyond horizontal limit
     if (guided_limit.horiz_max_cm > 0.0f) {
-        const float horiz_move = get_horizontal_distance_cm(guided_limit.start_pos.xy(), curr_pos.xy());
+        const float horiz_move = get_horizontal_distance(guided_limit.start_pos.xy(), curr_pos.xy());
         if (horiz_move > guided_limit.horiz_max_cm) {
             return true;
         }
@@ -1116,7 +1116,7 @@ float ModeGuided::wp_distance_m() const
     case SubMode::WP:
         return wp_nav->get_wp_distance_to_destination_cm() * 0.01f;
     case SubMode::Pos:
-        return get_horizontal_distance_cm(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), guided_pos_target_cm.xy().tofloat()) * 0.01f;
+        return get_horizontal_distance(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), guided_pos_target_cm.xy().tofloat()) * 0.01f;
     case SubMode::PosVelAccel:
         return pos_control->get_pos_error_NE_cm() * 0.01f;
     default:
@@ -1144,17 +1144,17 @@ float ModeGuided::wp_bearing_deg() const
     return 0.0;
 }
 
-float ModeGuided::crosstrack_error() const
+float ModeGuided::crosstrack_error_m() const
 {
     switch (guided_mode) {
     case SubMode::WP:
-        return wp_nav->crosstrack_error();
+        return wp_nav->crosstrack_error_m();
     case SubMode::Pos:
     case SubMode::TakeOff:
     case SubMode::Accel:
     case SubMode::VelAccel:
     case SubMode::PosVelAccel:
-        return pos_control->crosstrack_error();
+        return pos_control->crosstrack_error_m();
     case SubMode::Angle:
         // no track to have a crosstrack to
         return 0;

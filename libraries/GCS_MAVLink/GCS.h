@@ -1210,7 +1210,10 @@ public:
         return _statustext_queue;
     }
 
-    uint8_t sysid_gcs() const { return uint8_t(mav_gcs_sysid); }
+    /*
+      return true if a MAVLink system ID is a GCS
+     */
+    bool sysid_is_gcs(uint8_t sysid) const;
 
     // last time traffic was seen from my designated GCS.  traffic
     // includes heartbeats and some manual control messages.
@@ -1364,6 +1367,7 @@ protected:
     // parameters
     AP_Int16                 sysid;
     AP_Int16                 mav_gcs_sysid;
+    AP_Int16                 mav_gcs_sysid_high;
     AP_Enum16<Option>        mav_options;
     AP_Int8                  mav_telem_delay;
 

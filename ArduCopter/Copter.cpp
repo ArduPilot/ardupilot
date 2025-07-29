@@ -225,9 +225,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if HAL_LOGGING_ENABLED
     SCHED_TASK_CLASS(AP_Scheduler,         &copter.scheduler,           update_logging, 0.1,  75, 126),
 #endif
-#if AP_RPM_ENABLED
-    SCHED_TASK_CLASS(AP_RPM,               &copter.rpm_sensor,          update,          40, 200, 129),
-#endif
 #if AP_TEMPCALIBRATION_ENABLED
     SCHED_TASK_CLASS(AP_TempCalibration,   &copter.g2.temp_calibration, update,          10, 100, 135),
 #endif
@@ -738,8 +735,10 @@ void Copter::three_hz_loop()
     // check for deadreckoning failsafe
     failsafe_deadreckon_check();
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
     //update transmitter based in flight tuning
     tuning();
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
     // check if avoidance should be enabled based on alt
     low_alt_avoidance();
@@ -945,7 +944,7 @@ bool Copter::get_wp_bearing_deg(float &bearing) const
 bool Copter::get_wp_crosstrack_error_m(float &xtrack_error) const
 {
     // see GCS_MAVLINK_Copter::send_nav_controller_output()
-    xtrack_error = flightmode->crosstrack_error() * 0.01;
+    xtrack_error = flightmode->crosstrack_error_m() * 0.01;
     return true;
 }
 

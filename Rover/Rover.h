@@ -140,11 +140,6 @@ private:
     AP_Int8 *modes;
     const uint8_t num_modes = 6;
 
-#if AP_RPM_ENABLED
-    // AP_RPM Module
-    AP_RPM rpm_sensor;
-#endif
-
     // Arming/Disarming management class
     AP_Arming_Rover arming;
 

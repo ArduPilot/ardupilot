@@ -299,12 +299,14 @@ const AP_Param::Info Copter::var_info[] = {
     // @Values: 0:Normal Start-up, 1:Start-up in ESC Calibration mode if throttle high, 2:Start-up in ESC Calibration mode regardless of throttle, 3:Start-up and automatically calibrate ESCs, 9:Disabled
     GSCALAR(esc_calibrate, "ESC_CALIBRATION",       0),
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
     // @Param: TUNE
     // @DisplayName: Tuning Parameter
     // @Description: Selects parameter (normally a PID gain) that is being tuned with an RC transmitter's knob. The RC input channel used is assigned by setting RCx_OPTION to 219.
     // @User: Standard
     // @Values: 0:None,1:Stab Roll/Pitch kP,4:Rate Roll/Pitch kP,5:Rate Roll/Pitch kI,21:Rate Roll/Pitch kD,3:Stab Yaw kP,6:Rate Yaw kP,26:Rate Yaw kD,56:Rate Yaw Filter,55:Motor Yaw Headroom,14:AltHold kP,7:Throttle Rate kP,34:Throttle Accel kP,35:Throttle Accel kI,36:Throttle Accel kD,12:Loiter Pos kP,22:Velocity XY kP,28:Velocity XY kI,10:WP Speed,25:Acro Roll/Pitch deg/s,40:Acro Yaw deg/s,45:RC Feel,13:Heli Ext Gyro,38:Declination,39:Circle Rate,46:Rate Pitch kP,47:Rate Pitch kI,48:Rate Pitch kD,49:Rate Roll kP,50:Rate Roll kI,51:Rate Roll kD,52:Rate Pitch FF,53:Rate Roll FF,54:Rate Yaw FF,58:SysID Magnitude,59:PSC Angle Max,60:Loiter Speed
     GSCALAR(rc_tuning_param, "TUNE",                   0),
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
     // @Param: FRAME_TYPE
     // @DisplayName: Frame Type (+, X, V, etc)
@@ -607,12 +609,6 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(precland, "PLND_", AC_PrecLand),
 #endif
 
-#if AP_RPM_ENABLED
-    // @Group: RPM
-    // @Path: ../libraries/AP_RPM/AP_RPM.cpp
-    GOBJECT(rpm_sensor, "RPM", AP_RPM),
-#endif
-
 #if HAL_ADSB_ENABLED
     // @Group: ADSB_
     // @Path: ../libraries/AP_ADSB/AP_ADSB.cpp
@@ -701,8 +697,8 @@ const AP_Param::Info Copter::var_info[] = {
 const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: WP_NAVALT_MIN
-    // @DisplayName: Minimum navigation altitude
-    // @Description: This is the altitude in meters above which for navigation can begin. This applies in auto takeoff and auto landing.
+    // @DisplayName: Waypoint navigation altitude minimum
+    // @Description: Altitude in meters above which navigation will begin during auto takeoff
     // @Range: 0 5
     // @User: Standard
     AP_GROUPINFO("WP_NAVALT_MIN", 1, ParametersG2, wp_navalt_min, 0),
@@ -864,17 +860,19 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // 30 was AP_Scripting
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
     // @Param: TUNE_MIN
     // @DisplayName: Tuning minimum
     // @Description: Transmitter Tuning minum value. The parameter being tuned will have its value set to this minimum value when the tuning knob is at its lowest position
     // @User: Standard
-    AP_GROUPINFO("TUNE_MIN", 31, ParametersG2, tuning_min, 0),
+    AP_GROUPINFO("TUNE_MIN", 31, ParametersG2, rc_tuning_min, 0),
 
     // @Param: TUNE_MAX
     // @DisplayName: Tuning maximum
     // @Description: Transmitter Tuning maximum value. The parameter being tuned will have its value set to this maximum value when the tuning knob is at its highest position
     // @User: Standard
-    AP_GROUPINFO("TUNE_MAX", 32, ParametersG2, tuning_max, 0),
+    AP_GROUPINFO("TUNE_MAX", 32, ParametersG2, rc_tuning_max, 0),
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
 #if AP_OAPATHPLANNER_ENABLED
     // @Group: OA_
@@ -1208,6 +1206,26 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("FSTRATE_DIV", 10, ParametersG2, att_decimation, 1),
 #endif
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
+    // @Param: TUNE2_MIN
+    // @DisplayName: Tuning minimum
+    // @Description: Minimum value that the parameter currently being tuned with the transmitter's TRANSMITTER_TUNING2 knob will be set to
+    // @User: Standard
+    AP_GROUPINFO("TUNE2_MIN", 11, ParametersG2, rc_tuning2_min, 0),
+
+    // @Param: TUNE2_MAX
+    // @DisplayName: Tuning maximum
+    // @Description: Maximum value that the parameter currently being tuned with the transmitter's TRANSMITTER2_TUNING knob will be set to
+    // @User: Standard
+    AP_GROUPINFO("TUNE2_MAX", 12, ParametersG2, rc_tuning2_max, 0),
+
+    // @Param: TUNE2
+    // @CopyFieldsFrom: TUNE
+    // @DisplayName: Tuning Parameter for TRANSMITTER_TUNE2
+    // @Description: Selects parameter (normally a PID gain) that is being tuned with an RC transmitter's knob. The RC input channel used is assigned by setting RCx_OPTION to 220.
+    AP_GROUPINFO("TUNE2", 13, ParametersG2, rc_tuning2_param, 0),
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
@@ -1287,6 +1305,11 @@ void Copter::load_parameters(void)
     // PARAMETER_CONVERSION - Added: Mar-2022
 #if AP_FENCE_ENABLED
     AP_Param::convert_class(g.k_param_fence_old, &fence, fence.var_info, 0, true);
+#endif
+
+    // PARAMETER_CONVERSION - Added: July-2025 for ArduPilot-4.7
+#if AP_RPM_ENABLED
+    AP_Param::convert_class(g.k_param_rpm_sensor_old, &rpm_sensor, rpm_sensor.var_info, 0, true, true);
 #endif
 
     static const AP_Param::G2ObjectConversion g2_conversions[] {

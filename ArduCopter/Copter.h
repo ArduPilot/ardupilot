@@ -252,8 +252,11 @@ private:
     RC_Channel *channel_throttle;
     RC_Channel *channel_yaw;
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
     // channel which is being used to tune a parameter value:
     RC_Channel *rc_tuning;
+    RC_Channel *rc_tuning2;
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
     // flight modes convenience array
     AP_Int8 *flight_modes;
@@ -300,10 +303,6 @@ private:
         bool valid_for_logging;     // true if we have a desired target altitude
         bool reset_target;          // true if target should be reset because of change in surface being tracked
     } surface_tracking;
-#endif
-
-#if AP_RPM_ENABLED
-    AP_RPM rpm_sensor;
 #endif
 
     // Inertial Navigation EKF - different viewpoint
@@ -911,7 +910,7 @@ private:
     void Log_Write_Data(LogDataID id, int16_t value);
     void Log_Write_Data(LogDataID id, uint16_t value);
     void Log_Write_Data(LogDataID id, float value);
-    void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max);
+    void Log_Write_PTUN(uint8_t param, float tuning_val, float tune_min, float tune_max, float norm_in);
     void Log_Video_Stabilisation();
     void Log_Write_Guided_Position_Target(ModeGuided::SubMode submode, const Vector3f& pos_target, bool terrain_alt, const Vector3f& vel_target, const Vector3f& accel_target);
     void Log_Write_Guided_Attitude_Target(ModeGuided::SubMode target_type, float roll, float pitch, float yaw, const Vector3f &ang_vel, float thrust, float climb_rate);
@@ -1007,8 +1006,12 @@ private:
     void terrain_update();
     void terrain_logging();
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
     // tuning.cpp
     void tuning();
+    void tuning(const class RC_Channel *tuning_ch, int8_t tuning_param, float tuning_min, float tuning_max);
+    bool being_tuned(int8_t tuning_param) const;
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
     // UserCode.cpp
     void userhook_init();

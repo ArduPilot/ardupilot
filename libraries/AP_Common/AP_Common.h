@@ -189,3 +189,4 @@ template <typename T> void BIT_CLEAR (T& value, uint8_t bitnumber) noexcept {
 #define NEW_NOTHROW new(std::nothrow)
 #endif
 
+void * WEAK mem_realloc(void *ptr, size_t old_size, size_t new_size);

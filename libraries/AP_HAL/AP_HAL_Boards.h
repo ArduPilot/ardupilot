@@ -280,10 +280,6 @@
 #endif
 #endif
 
-#ifndef USE_LIBC_REALLOC
-#define USE_LIBC_REALLOC 1
-#endif
-
 #ifndef AP_HAL_SHARED_DMA_ENABLED
 #define AP_HAL_SHARED_DMA_ENABLED 1
 #endif
