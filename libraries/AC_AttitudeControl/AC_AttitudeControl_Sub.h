@@ -9,6 +9,8 @@
 // default angle controller PID gains
 // (Sub-specific defaults for parent class)
 #define AC_ATC_SUB_ANGLE_P             6.0f
+#define AC_ATC_SUB_ANGLE_D             1.0f
+#define AC_ATC_SUB_ANGLE_ALPHA         0.8f
 #define AC_ATC_SUB_ACCEL_Y_MAX         110000.0f
 
 // default rate controller PID gains

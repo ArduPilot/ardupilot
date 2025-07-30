@@ -418,12 +418,12 @@ void AC_AutoTune_Heli::backup_gains_and_initialise()
     orig_pitch_rff = attitude_control->get_rate_pitch_pid().ff();
     orig_pitch_fltt = attitude_control->get_rate_pitch_pid().filt_T_hz();
     orig_pitch_smax = attitude_control->get_rate_pitch_pid().slew_limit();
-    orig_pitch_sp = attitude_control->get_angle_pitch_p().kP();
+    orig_pitch_sp = attitude_control->get_angle_pitch_pd().get_kP();
     orig_pitch_accel = attitude_control->get_accel_pitch_max_cdss();
     tune_pitch_rp = attitude_control->get_rate_pitch_pid().kP();
     tune_pitch_rd = attitude_control->get_rate_pitch_pid().kD();
     tune_pitch_rff = attitude_control->get_rate_pitch_pid().ff();
-    tune_pitch_sp = attitude_control->get_angle_pitch_p().kP();
+    tune_pitch_sp = attitude_control->get_angle_pitch_pd().get_kP();
     tune_pitch_accel = attitude_control->get_accel_pitch_max_cdss();
 
     orig_yaw_rp = attitude_control->get_rate_yaw_pid().kP();
@@ -572,7 +572,7 @@ void AC_AutoTune_Heli::load_gain_set(AxisType s_axis, float rate_p, float rate_i
         attitude_control->get_rate_pitch_pid().ff(rate_ff);
         attitude_control->get_rate_pitch_pid().filt_T_hz(rate_fltt);
         attitude_control->get_rate_pitch_pid().slew_limit(smax);
-        attitude_control->get_angle_pitch_p().kP(angle_p);
+        attitude_control->get_angle_pitch_pd().set_kP(angle_p);
         attitude_control->set_accel_pitch_max_cdss(max_accel);
         break;
     case YAW:
@@ -629,14 +629,14 @@ void AC_AutoTune_Heli::save_tuning_gains()
         attitude_control->get_rate_pitch_pid().save_gains();
 
         // save stabilize pitch
-        attitude_control->get_angle_pitch_p().save_gains();
+        attitude_control->get_angle_pitch_pd().save_gains();
 
         // resave pids to originals in case the autotune is run again
         orig_pitch_rp = attitude_control->get_rate_pitch_pid().kP();
         orig_pitch_ri = attitude_control->get_rate_pitch_pid().kI();
         orig_pitch_rd = attitude_control->get_rate_pitch_pid().kD();
         orig_pitch_rff = attitude_control->get_rate_pitch_pid().ff();
-        orig_pitch_sp = attitude_control->get_angle_pitch_p().kP();
+        orig_pitch_sp = attitude_control->get_angle_pitch_pd().get_kP();
         orig_pitch_accel = attitude_control->get_accel_pitch_max_cdss();
     }
 

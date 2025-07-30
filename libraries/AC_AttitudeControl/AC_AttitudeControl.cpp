@@ -93,7 +93,22 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Range: 3.000 12.000
     // @Range{Sub}: 0.0 12.000
     // @User: Standard
-    AP_SUBGROUPINFO(_p_angle_pitch, "ANG_PIT_", 14, AC_AttitudeControl, AC_P),
+    
+    // @Param: ANG_PIT_D
+    // @DisplayName: Pitch axis angle controller D gain
+    // @Description: Pitch axis angle controller D gain.  Converts desired picth error rate to a desired pitch rate
+    // @Range: 0.1000 10.000
+    // @Range{Sub}: 0.01 10.000
+    // @User: Standard
+
+    // @Param: ANG_PIT_ALPHA
+    // @DisplayName: Pitch axis angle controller D alpha
+    // @Description: Pitch axis angle controller D alpha.  Low-pass filter applied to the derivative term
+    // @Range: 0.0001 0.9999
+    // @Range{Sub}: 0.0001 0.9999
+    // @User: Standard
+    // @Range: 0.0001 0.9999
+    AP_SUBGROUPINFO(_pd_angle_pitch, "ANG_PIT_",14,AC_AttitudeControl, AC_PD),
 
     // @Param: ANG_YAW_P
     // @DisplayName: Yaw axis angle controller P gain
@@ -1022,11 +1037,12 @@ Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(const Vector3f
     }
 
     // Compute the pitch angular velocity demand from the pitch angle error
-    const float angleP_pitch = _p_angle_pitch.kP() * _angle_P_scale.y;
+    const float angleP_pitch = get_angle_pitch_pd().kP() * _angle_P_scale.y;
     if (_use_sqrt_controller && !is_zero(get_accel_pitch_max_radss())) {
         rate_target_ang_vel.y = sqrt_controller(attitude_error_rot_vec_rad.y, angleP_pitch, constrain_float(get_accel_pitch_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS), _dt);
     } else {
-        rate_target_ang_vel.y = angleP_pitch * attitude_error_rot_vec_rad.y;
+        rate_target_ang_vel.y = get_angle_pitch_pd().update(attitude_error_rot_vec_rad.y, _dt); // Coustom PD controller for pitch
+        pd_log_data_update(attitude_error_rot_vec_rad.y);
     }
 
     // Compute the yaw angular velocity demand from the yaw angle error
@@ -1128,7 +1144,7 @@ bool AC_AttitudeControl::pre_arm_checks(const char *param_prefix,
     } ps[] = {
         { "ANG_PIT", get_angle_pitch_p() },
         { "ANG_RLL", get_angle_roll_p() },
-        { "ANG_YAW", get_angle_yaw_p() }
+        { "ANG_YAW", get_angle_yaw_p() },
     };
     for (uint8_t i=0; i<ARRAY_SIZE(ps); i++) {
         // all AC_P's must have a positive P value:
@@ -1136,6 +1152,10 @@ bool AC_AttitudeControl::pre_arm_checks(const char *param_prefix,
             hal.util->snprintf(failure_msg, failure_msg_len, "%s_%s_P must be > 0", param_prefix, ps[i].pid_name);
             return false;
         }
+    }
+    if(!is_positive(get_angle_pitch_d().kD())) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "%s_ANG_PIT_D must be > 0", param_prefix);
+        return false;
     }
 
     // validate AC_PID members:
@@ -1191,4 +1211,18 @@ void AC_AttitudeControl::get_rpy_srate(float &roll_srate, float &pitch_srate, fl
     roll_srate = get_rate_roll_pid().get_pid_info().slew_rate;
     pitch_srate = get_rate_pitch_pid().get_pid_info().slew_rate;
     yaw_srate = get_rate_yaw_pid().get_pid_info().slew_rate;
+}
+#if HAL_LOGGING_ENABLED
+void AC_AttitudeControl::pd_log_data_update(float error)
+{
+    // update the pitch PD controller log data
+    AP::logger().WriteStreaming("ATPD", "TimeUS,Error,Derivative,P,D,Output",
+        "sd----", // seconds, degrees
+        "F00000", // micro (1e-6), no mult (1e0)
+        "Qfffff", // uint64_t, float
+        AP_HAL::micros64(),
+        error,get_angle_pitch_pd().get_Derivative(), 
+        get_angle_pitch_pd().get_D(), 
+        get_angle_pitch_pd().get_P()+ get_angle_pitch_pd().get_D());
+    
 }
