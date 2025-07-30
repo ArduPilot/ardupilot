@@ -42,7 +42,11 @@ float Plane::calc_speed_scaler(void)
     } else if (arming.is_armed_and_safety_off()) {
         // scale assumed surface movement using throttle output
         float throttle_out = MAX(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), 1);
-        speed_scaler = sqrtf(THROTTLE_CRUISE / throttle_out);
+        // we use a fixed value here as changing the trim throttle
+        // value is often done at runtime - and changing that
+        // shouldn't change the speed scaler here (it will change the
+        // effective PID values)
+        speed_scaler = sqrtf(AP_PLANE_TRIM_THROTTLE_DEFAULT / throttle_out);
         // This case is constrained tighter as we don't have real speed info
         speed_scaler = constrain_float(speed_scaler, 0.6f, 1.67f);
     } else {
