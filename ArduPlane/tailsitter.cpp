@@ -1065,6 +1065,10 @@ bool Tailsitter_Transition::allow_weathervane()
 #else
 // stub implementations for when tailsitter support is not compiled
 // in.  Fine-grained defines throughout the code are intrusive.
+const AP_Param::GroupInfo Tailsitter::var_info[] = {
+    AP_GROUPEND
+};
+
 Tailsitter::Tailsitter(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors):quadplane(_quadplane),motors(_motors) { }
 bool Tailsitter::active(void) { return false; }
 bool Tailsitter::is_in_fw_flight(void) const { return false; }

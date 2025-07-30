@@ -709,7 +709,7 @@ void Plane::apply_load_factor_roll_limits(void)
         // no roll limits when inverted
         return;
     }
-#if HAL_QUADPLANE_ENABLED
+#if AP_PLANE_TAILSITTER_ENABLED
     if (quadplane.tailsitter.active()) {
         // no limits while hovering
         return;
