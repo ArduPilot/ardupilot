@@ -361,6 +361,16 @@ public:
     // get the first compass marked for use by COMPASSx_USE
     uint8_t get_first_usable(void) const { return _first_usable; }
 
+    /// Directly sets the initial location used to get declination
+    ///
+    /// @param  latitude             GPS Latitude.
+    /// @param  longitude            GPS Longitude.
+    ///
+    void set_initial_location(float latitude, float longitude);
+
+    /// Invalidate the initial location setup flag to auto-set the declination
+    void unset_initial_location() { _initial_location_set = false; }
+
 private:
     static Compass *_singleton;
 
@@ -651,11 +661,7 @@ private:
     CompassLearn *learn;
     bool learn_allocated;
 
-    /// Sets the initial location used to get declination
-    ///
-    /// @param  latitude             GPS Latitude.
-    /// @param  longitude            GPS Longitude.
-    ///
+    /// Sets the initial location used to get declination if not already set
     void try_set_initial_location();
     bool _initial_location_set;
 
