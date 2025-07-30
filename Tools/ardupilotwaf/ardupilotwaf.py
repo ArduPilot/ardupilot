@@ -162,7 +162,7 @@ def set_double_precision_flags(flags):
                 flags.remove(opt)
             except ValueError:
                 break
-    flags.append("-DALLOW_DOUBLE_MATH_FUNCTIONS")
+    flags.append("-DAP_MATH_ALLOW_DOUBLE_FUNCTIONS=1")
 
     return flags
 

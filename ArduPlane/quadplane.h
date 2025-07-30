@@ -149,7 +149,7 @@ public:
     // is throttle controlled landing descent active?
     bool thr_ctrl_land;
 
-    uint16_t get_pilot_velocity_z_max_dn_cm() const;
+    uint16_t get_pilot_velocity_z_max_dn_m() const;
     
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
@@ -248,7 +248,7 @@ private:
     void hold_stabilize(float throttle_in);
 
     // set climb rate in position controller
-    void set_climb_rate_cms(float target_climb_rate_cms);
+    void set_climb_rate_ms(float target_climb_rate_ms);
 
     // get pilot desired yaw rate in cd/s
     float get_pilot_input_yaw_rate_cds(void) const;
@@ -288,7 +288,7 @@ private:
     void motors_output(bool run_rate_controller = true);
     void Log_Write_QControl_Tuning();
     void log_QPOS(void);
-    float landing_descent_rate_cms(float height_above_ground_m);
+    float landing_descent_rate_ms(float height_above_ground_m);
     
     // setup correct aux channels for frame class
     void setup_default_channels(uint8_t num_motors);
@@ -515,9 +515,9 @@ private:
         uint32_t time_since_state_start_ms() const {
             return AP_HAL::millis() - last_state_change_ms;
         }
-        Vector3p target_neu_cm;
+        Vector3p target_neu_m;
         Vector2f correction_ne_m;
-        Vector3f target_vel_cms;
+        Vector3f target_vel_ms;
         bool slow_descent:1;
         bool pilot_correction_active;
         bool pilot_correction_done;

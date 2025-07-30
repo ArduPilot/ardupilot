@@ -944,7 +944,7 @@ bool Copter::get_wp_bearing_deg(float &bearing) const
 bool Copter::get_wp_crosstrack_error_m(float &xtrack_error) const
 {
     // see GCS_MAVLINK_Copter::send_nav_controller_output()
-    xtrack_error = flightmode->crosstrack_error() * 0.01;
+    xtrack_error = flightmode->crosstrack_error_m() * 0.01;
     return true;
 }
 

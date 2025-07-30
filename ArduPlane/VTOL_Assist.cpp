@@ -174,7 +174,7 @@ bool VTOL_Assist::check_VTOL_recovery(void)
             quadplane.force_fw_control_recovery = false;
             quadplane.attitude_control->reset_target_and_rate(false);
 
-            if (ahrs.groundspeed() > quadplane.wp_nav->get_default_speed_NE_cms()*0.01) {
+            if (ahrs.groundspeed() > quadplane.wp_nav->get_default_speed_NE_ms()) {
                 /* if moving at high speed also reset position
                    controller and height controller
 

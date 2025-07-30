@@ -43,6 +43,7 @@ parser.add_argument("-f", "--frame", default=None, help="frame type")
 parser.add_argument("--simclass", default=None, help="simulation class")
 parser.add_argument("--defaults", default=None, help="extra defaults file")
 parser.add_argument("--upload", action='store_true', default=False, help="upload firmware")
+parser.add_argument("--debug", action='store_true', default=False, help="create debug build")
 
 args, unknown_args = parser.parse_known_args()
 
@@ -101,7 +102,8 @@ hwdef_write(open(sohw_path(extra_hwdef_base), "r").read() + "\n")
 defaults_write(open(sohw_path(defaults_base), "r").read() + "\n")
 
 if args.defaults:
-    defaults_write(open(args.defaults, "r").read() + "\n")
+    for d in args.defaults.split(","):
+        defaults_write(open(d, "r").read() + "\n")
 
 if args.simclass:
     if args.simclass == 'Glider':
@@ -150,6 +152,9 @@ configure_args = ["./waf", "configure",
                   "--board=%s" % args.board,
                   "--extra-hwdef=%s" % extra_hwdef.name,
                   "--default-param=%s" % extra_defaults.name]
+if args.debug:
+    configure_args.append("--debug")
+
 configure_args.extend(unknown_args)
 run_program(configure_args)
 

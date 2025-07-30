@@ -734,7 +734,7 @@ public:
 
     // Returns lateral distance to closest point on active trajectory in meters.
     // Used to assess horizontal deviation from path.
-    float crosstrack_error() const;
+    float crosstrack_error_m() const;
 
     // Resets NEU position controller state to prevent transients when exiting standby.
     // Zeros I-terms and aligns targets to current position.
