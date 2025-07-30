@@ -15,7 +15,7 @@ bool Mode::do_user_takeoff_start(float takeoff_alt_m)
 }
 
 // initiate user takeoff - called when MAVLink TAKEOFF command is received
-bool Mode::do_user_takeoff(float takeoff_alt_m, bool must_navigate)
+bool Mode::do_user_takeoff_m(float takeoff_alt_m, bool must_navigate)
 {
     if (!copter.motors->armed()) {
         return false;

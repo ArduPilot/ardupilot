@@ -157,7 +157,7 @@ public:
     virtual const char *name() const = 0;
     virtual const char *name4() const = 0;
 
-    bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
+    bool do_user_takeoff_m(float takeoff_alt_cm, bool must_navigate);
     virtual bool is_taking_off() const;
     static void takeoff_stop() { takeoff.stop(); }
 
@@ -173,9 +173,9 @@ public:
     virtual float crosstrack_error_m() const { return 0.0f;}
 
     // functions to support MAV_CMD_DO_CHANGE_SPEED
-    virtual bool set_speed_xy_cms(float speed_xy_cms) {return false;}
-    virtual bool set_speed_up_cms(float speed_xy_cms) {return false;}
-    virtual bool set_speed_down_cms(float speed_xy_cms) {return false;}
+    virtual bool set_speed_xy_ms(float speed_xy_cms) {return false;}
+    virtual bool set_speed_up_ms(float speed_xy_cms) {return false;}
+    virtual bool set_speed_down_ms(float speed_xy_cms) {return false;}
 
     virtual int32_t get_alt_above_ground_cm(void) const;
 
@@ -576,9 +576,9 @@ public:
     bool is_taking_off() const override;
     bool use_pilot_yaw() const override;
 
-    bool set_speed_xy_cms(float speed_xy_cms) override;
-    bool set_speed_up_cms(float speed_up_cms) override;
-    bool set_speed_down_cms(float speed_down_cms) override;
+    bool set_speed_xy_ms(float speed_xy_cms) override;
+    bool set_speed_up_ms(float speed_up_cms) override;
+    bool set_speed_down_ms(float speed_down_cms) override;
 
     bool requires_terrain_failsafe() const override { return true; }
 
@@ -1097,24 +1097,24 @@ public:
     // attitude_quat: IF zero: ang_vel (angular velocity) must be provided even if all zeroes
     //                IF non-zero: attitude_control is performed using both the attitude quaternion and angular velocity
     // ang_vel: angular velocity (rad/s)
-    // climb_rate_cms_or_thrust: represents either the climb_rate (cm/s) or thrust scaled from [0, 1], unitless
-    // use_thrust: IF true: climb_rate_cms_or_thrust represents thrust
-    //             IF false: climb_rate_cms_or_thrust represents climb_rate (cm/s)
-    void set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel, float climb_rate_cms_or_thrust, bool use_thrust);
+    // climb_rate_ms_or_thrust: represents either the climb_rate (m/s) or thrust scaled from [0, 1], unitless
+    // use_thrust: IF true: climb_rate_ms_or_thrust represents thrust
+    //             IF false: climb_rate_ms_or_thrust represents climb_rate (m/s)
+    void set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel, float climb_rate_ms_or_thrust, bool use_thrust);
 
-    bool set_pos_neu_cm(const Vector3f& pos_neu_cm, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool is_terrain_alt = false);
+    bool set_pos_neu_m(const Vector3f& pos_neu_m, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool is_terrain_alt = false);
     bool set_destination(const Location& dest_loc, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
     bool get_wp(Location &loc) const override;
-    void set_accel_neu_cmss(const Vector3f& accel_neu_cm, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
-    void set_vel_neu_cms(const Vector3f& vel_neu_cm, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
-    void set_vel_accel_neu_cm(const Vector3f& vel_neu_cm, const Vector3f& accel_neu_cm, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
-    bool set_pos_vel_neu_cm(const Vector3f& pos_neu_cm, const Vector3f& vel_neu_cm, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
-    bool set_pos_vel_accel_neu_cm(const Vector3f& pos_neu_cm, const Vector3f& vel_neu_cm, const Vector3f& accel_neu_cm, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
+    void set_accel_neu_mss(const Vector3f& accel_neu_m, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
+    void set_vel_neu_ms(const Vector3f& vel_neu_m, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
+    void set_vel_accel_neu_m(const Vector3f& vel_neu_m, const Vector3f& accel_neu_m, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
+    bool set_pos_vel_neu_m(const Vector3f& pos_neu_m, const Vector3f& vel_neu_m, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
+    bool set_pos_vel_accel_neu_m(const Vector3f& pos_neu_m, const Vector3f& vel_neu_m, const Vector3f& accel_neu_m, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
 
     // get position, velocity and acceleration targets
-    const Vector3p& get_target_pos_neu_cm() const;
-    const Vector3f& get_target_vel_neu_cms() const;
-    const Vector3f& get_target_accel_neu_cmss() const;
+    const Vector3p& get_target_pos_neu_m() const;
+    const Vector3f& get_target_vel_neu_ms() const;
+    const Vector3f& get_target_accel_neu_mss() const;
 
     // returns true if GUIDED_OPTIONS param suggests SET_ATTITUDE_TARGET's "thrust" field should be interpreted as thrust instead of climb rate
     bool set_attitude_target_provides_thrust() const;
@@ -1124,18 +1124,18 @@ public:
 
     void limit_clear();
     void limit_init_time_and_pos();
-    void limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
+    void limit_set(uint32_t timeout_ms, float alt_min_m, float alt_max_m, float horiz_max_m);
     bool limit_check();
 
     bool is_taking_off() const override;
     
-    bool set_speed_xy_cms(float speed_xy_cms) override;
-    bool set_speed_up_cms(float speed_up_cms) override;
-    bool set_speed_down_cms(float speed_down_cms) override;
+    bool set_speed_xy_ms(float speed_xy_ms) override;
+    bool set_speed_up_ms(float speed_up_ms) override;
+    bool set_speed_down_ms(float speed_down_ms) override;
 
     // initialises position controller to implement take-off
-    // takeoff_alt_cm is interpreted as alt-above-home (in cm) or alt-above-terrain if a rangefinder is available
-    bool do_user_takeoff_start(float takeoff_alt_cm) override;
+    // takeoff_alt_m is interpreted as alt-above-home (in m) or alt-above-terrain if a rangefinder is available
+    bool do_user_takeoff_start(float takeoff_alt_m) override;
 
     enum class SubMode {
         TakeOff,
@@ -1477,9 +1477,9 @@ public:
 
     bool use_pilot_yaw() const override;
 
-    bool set_speed_xy_cms(float speed_xy_cms) override;
-    bool set_speed_up_cms(float speed_up_cms) override;
-    bool set_speed_down_cms(float speed_down_cms) override;
+    bool set_speed_xy_ms(float speed_xy_cms) override;
+    bool set_speed_up_ms(float speed_up_cms) override;
+    bool set_speed_down_ms(float speed_down_cms) override;
 
     // RTL states
     enum class SubMode : uint8_t {

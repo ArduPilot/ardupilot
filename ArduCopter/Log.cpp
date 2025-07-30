@@ -357,46 +357,46 @@ struct PACKED log_Rate_Thread_Dt {
 };
 
 // Write a Guided mode position target
-// pos_target_cm is lat, lon, alt OR offset from ekf origin in cm
-// terrain should be 0 if pos_target_cm.z is alt-above-ekf-origin, 1 if alt-above-terrain
-// vel_target_cms is cm/s
-void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode target_type, const Vector3f& pos_target_cm, bool terrain_alt, const Vector3f& vel_target_cms, const Vector3f& accel_target_cmss)
+// pos_target_m is lat, lon, alt OR offset from ekf origin in m
+// terrain should be 0 if pos_target_m.z is alt-above-ekf-origin, 1 if alt-above-terrain
+// vel_target_ms is m/s
+void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode target_type, const Vector3f& pos_target_m, bool terrain_alt, const Vector3f& vel_target_ms, const Vector3f& accel_target_mss)
 {
     const log_Guided_Position_Target pkt {
         LOG_PACKET_HEADER_INIT(LOG_GUIDED_POSITION_TARGET_MSG),
         time_us         : AP_HAL::micros64(),
         type            : (uint8_t)target_type,
-        pos_target_x    : pos_target_cm.x * 0.01f,
-        pos_target_y    : pos_target_cm.y * 0.01f,
-        pos_target_z    : pos_target_cm.z * 0.01f,
+        pos_target_x    : pos_target_m.x,
+        pos_target_y    : pos_target_m.y,
+        pos_target_z    : pos_target_m.z,
         terrain         : terrain_alt,
-        vel_target_x    : vel_target_cms.x * 0.01f,
-        vel_target_y    : vel_target_cms.y * 0.01f,
-        vel_target_z    : vel_target_cms.z * 0.01f,
-        accel_target_x  : accel_target_cmss.x * 0.01f,
-        accel_target_y  : accel_target_cmss.y * 0.01f,
-        accel_target_z  : accel_target_cmss.z * 0.01f
+        vel_target_x    : vel_target_ms.x,
+        vel_target_y    : vel_target_ms.y,
+        vel_target_z    : vel_target_ms.z,
+        accel_target_x  : accel_target_mss.x,
+        accel_target_y  : accel_target_mss.y,
+        accel_target_z  : accel_target_mss.z
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Write a Guided mode attitude target
-// roll, pitch and yaw are in radians
-// ang_vel: angular velocity, [roll rate, pitch_rate, yaw_rate] in radians/sec
+// roll_rad, pitch_rad and yaw_rad are in radians
+// ang_vel_rads: angular velocity, [roll rate, pitch_rate, yaw_rate] in radians/sec
 // thrust is between 0 to 1
 // climb_rate is in (m/s)
-void Copter::Log_Write_Guided_Attitude_Target(ModeGuided::SubMode target_type, float roll, float pitch, float yaw, const Vector3f &ang_vel, float thrust, float climb_rate)
+void Copter::Log_Write_Guided_Attitude_Target(ModeGuided::SubMode target_type, float roll_rad, float pitch_rad, float yaw_rad, const Vector3f &ang_vel_rads, float thrust, float climb_rate)
 {
     const log_Guided_Attitude_Target pkt {
         LOG_PACKET_HEADER_INIT(LOG_GUIDED_ATTITUDE_TARGET_MSG),
         time_us         : AP_HAL::micros64(),
         type            : (uint8_t)target_type,
-        roll            : degrees(roll),       // rad to deg
-        pitch           : degrees(pitch),      // rad to deg
-        yaw             : degrees(yaw),        // rad to deg
-        roll_rate       : degrees(ang_vel.x),  // rad/s to deg/s
-        pitch_rate      : degrees(ang_vel.y),  // rad/s to deg/s
-        yaw_rate        : degrees(ang_vel.z),  // rad/s to deg/s
+        roll            : degrees(roll_rad),       // rad to deg
+        pitch           : degrees(pitch_rad),      // rad to deg
+        yaw             : degrees(yaw_rad),        // rad to deg
+        roll_rate       : degrees(ang_vel_rads.x),  // rad/s to deg/s
+        pitch_rate      : degrees(ang_vel_rads.y),  // rad/s to deg/s
+        yaw_rate        : degrees(ang_vel_rads.z),  // rad/s to deg/s
         thrust          : thrust,
         climb_rate      : climb_rate
     };
