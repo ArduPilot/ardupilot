@@ -241,6 +241,8 @@ libraries = list(libraries)
 
 alllibs = libraries[:]
 
+def all_vehicles(vehicle_list:list) -> bool:
+    return len(vehicle_list) and vehicle_list[0].lower() == "all-vehicles"
 
 def process_library(vehicle, library, pathprefix=None):
     '''process one library'''
@@ -275,7 +277,8 @@ def process_library(vehicle, library, pathprefix=None):
                 for only_vehicle in only_vehicles_list:
                     if only_vehicle not in valid_truenames:
                         raise ValueError("Invalid only_vehicle %s" % only_vehicle)
-                if vehicle.name not in only_vehicles_list:
+                if (vehicle.name not in only_vehicles_list
+                    and not all_vehicles(only_vehicles_list)):
                     continue
             p = Parameter(library.name+param_name, current_file)
             debug(p.name + ' ')
@@ -317,22 +320,25 @@ def process_library(vehicle, library, pathprefix=None):
                                                                 field[2].strip())
                 only_for_vehicles = only_for_vehicles.split(",")
                 only_for_vehicles = [some_vehicle.strip() for some_vehicle in only_for_vehicles]
-                delta = set(only_for_vehicles) - set(truename_map.values())
-                if len(delta):
-                    error("Unknown vehicles (%s)" % delta)
+                if not all_vehicles(only_for_vehicles):
+                    delta = set(only_for_vehicles) - set(truename_map.values())
+                    if len(delta):
+                        error("Unknown vehicles (%s)" % delta)
                 debug("field_name=%s vehicle=%s field[1]=%s only_for_vehicles=%s\n" %
                       (field_name, vehicle.name, field[1], str(only_for_vehicles)))
                 if field_name not in known_param_fields:
                     error(f"tagged param: unknown parameter metadata field '{field_name}'")
                     continue
-                if vehicle.name not in only_for_vehicles:
+                if (vehicle.name not in only_for_vehicles
+                    and not all_vehicles(only_for_vehicles)):
                     if len(only_for_vehicles) and field_name in documentation_tags_which_are_comma_separated_nv_pairs:
                         seen_values_or_bitmask_for_other_vehicle = True
                     continue
 
                 append_value = False
                 if field_name in documentation_tags_which_are_comma_separated_nv_pairs:
-                    if vehicle.name in only_for_vehicles:
+                    if (vehicle.name in only_for_vehicles
+                        or all_vehicles(only_for_vehicles)):
                         if seen_values_or_bitmask_for_this_vehicle:
                             append_value = hasattr(p, field_name)
                         seen_values_or_bitmask_for_this_vehicle = True
