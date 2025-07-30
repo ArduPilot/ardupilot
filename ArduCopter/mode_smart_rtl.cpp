@@ -13,7 +13,7 @@ bool ModeSmartRTL::init(bool ignore_checks)
 {
     if (g2.smart_rtl.is_active()) {
         // initialise waypoint and spline controller
-        wp_nav->wp_and_spline_init_cm();
+        wp_nav->wp_and_spline_init_m();
 
         // set current target to a reasonable stopping point
         Vector3p stopping_point;

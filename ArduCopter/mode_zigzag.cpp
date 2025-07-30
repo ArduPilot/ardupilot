@@ -190,7 +190,7 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
             Vector3f next_dest;
             bool terr_alt_cm;
             if (calculate_next_dest(ab_dest, stage == AUTO, next_dest, terr_alt_cm)) {
-                wp_nav->wp_and_spline_init_cm();
+                wp_nav->wp_and_spline_init_m();
                 if (wp_nav->set_wp_destination_NEU_cm(next_dest, terr_alt_cm)) {
                     stage = AUTO;
                     auto_stage = AutoState::AB_MOVING;
@@ -216,7 +216,7 @@ void ModeZigZag::move_to_side()
         Vector3f next_dest;
         bool terr_alt;
         if (calculate_side_dest(next_dest, terr_alt)) {
-            wp_nav->wp_and_spline_init_cm();
+            wp_nav->wp_and_spline_init_m();
             if (wp_nav->set_wp_destination_NEU_cm(next_dest, terr_alt)) {
                 stage = AUTO;
                 auto_stage = AutoState::SIDEWAYS;
@@ -518,7 +518,7 @@ void ModeZigZag::run_auto()
             line_count--;
             save_or_move_to_destination(ab_dest_stored);
         } else if (auto_stage == AutoState::SIDEWAYS) {
-            wp_nav->wp_and_spline_init_cm();
+            wp_nav->wp_and_spline_init_m();
             if (wp_nav->set_wp_destination_NEU_cm(current_dest, current_terr_alt)) {
                 stage = AUTO;
                 reach_wp_time_ms = 0;
