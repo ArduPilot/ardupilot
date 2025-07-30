@@ -12,6 +12,7 @@
 #include <AC_PID/AC_P.h>
 #include <AC_PID/AC_PD.h>
 #include <AP_Vehicle/AP_MultiCopter.h>
+#include <AP_Logger/AP_Logger.h>
 
 #define AC_ATTITUDE_CONTROL_ANGLE_P                     4.5f             // default angle P gain for roll, pitch and yaw
 #define AC_ATTITUDE_CONTROL_ANGLE_D                     0.1f            // default angle D gain for pitch

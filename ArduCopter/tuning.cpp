@@ -37,7 +37,7 @@ void Copter::tuning()
     // Roll, Pitch tuning
     case TUNING_STABILIZE_ROLL_PITCH_KP:
         attitude_control->get_angle_roll_p().kP(tuning_value);
-        attitude_control->get_angle_pitch_p().kP(tuning_value);
+        attitude_control->get_angle_pitch_pd().set_kP(tuning_value);
         break;
 
     case TUNING_RATE_ROLL_PITCH_KP:

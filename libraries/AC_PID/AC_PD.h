@@ -48,6 +48,10 @@ public:
     float get_kP() const {
         return kP;
     }
+    float get_kD() const {
+        return kD;
+    }
+    AP_Float& get_kP_ref() { return kP; }
     void set_kP(const float v) { kP.set(v); }
 
 protected:

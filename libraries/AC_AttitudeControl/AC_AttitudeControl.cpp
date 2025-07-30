@@ -887,7 +887,7 @@ void AC_AttitudeControl::input_shaping_rate_predictor(const Vector2f &error_angl
         target_ang_vel.y = input_shaping_angle(wrap_PI(error_angle.y), _input_tc, get_accel_pitch_max_radss(), target_ang_vel.y, dt);
     } else {
         const float angleP_roll = _p_angle_roll.kP() * _angle_P_scale.x;
-        const float angleP_pitch = _p_angle_pitch.kP() * _angle_P_scale.y;
+        const float angleP_pitch = _pd_angle_pitch.get_kP() * _angle_P_scale.y;
         target_ang_vel.x = angleP_roll * wrap_PI(error_angle.x);
         target_ang_vel.y = angleP_pitch * wrap_PI(error_angle.y);
     }
@@ -1037,7 +1037,7 @@ Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(const Vector3f
     }
 
     // Compute the pitch angular velocity demand from the pitch angle error
-    const float angleP_pitch = get_angle_pitch_pd().kP() * _angle_P_scale.y;
+    const float angleP_pitch = get_angle_pitch_pd().get_kP() * _angle_P_scale.y;
     if (_use_sqrt_controller && !is_zero(get_accel_pitch_max_radss())) {
         rate_target_ang_vel.y = sqrt_controller(attitude_error_rot_vec_rad.y, angleP_pitch, constrain_float(get_accel_pitch_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS), _dt);
     } else {
@@ -1142,7 +1142,6 @@ bool AC_AttitudeControl::pre_arm_checks(const char *param_prefix,
         const char *pid_name;
         AC_P &p;
     } ps[] = {
-        { "ANG_PIT", get_angle_pitch_p() },
         { "ANG_RLL", get_angle_roll_p() },
         { "ANG_YAW", get_angle_yaw_p() },
     };
@@ -1153,8 +1152,12 @@ bool AC_AttitudeControl::pre_arm_checks(const char *param_prefix,
             return false;
         }
     }
-    if(!is_positive(get_angle_pitch_d().kD())) {
+    if(!is_positive(get_angle_pitch_pd().get_kD())) {
         hal.util->snprintf(failure_msg, failure_msg_len, "%s_ANG_PIT_D must be > 0", param_prefix);
+        return false;
+    }
+    if(!is_positive(get_angle_pitch_pd().get_kP())) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "%s_ANG_PIT_P must be > 0", param_prefix);
         return false;
     }
 
@@ -1226,3 +1229,4 @@ void AC_AttitudeControl::pd_log_data_update(float error)
         get_angle_pitch_pd().get_P()+ get_angle_pitch_pd().get_D());
     
 }
+#endif

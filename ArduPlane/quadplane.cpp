@@ -4718,7 +4718,7 @@ bool QuadPlane::landing_with_fixed_wing_spiral_approach(void) const
 void QuadPlane::setup_rp_fw_angle_gains(void)
 {
     const float mc_angR = attitude_control->get_angle_roll_p().kP();
-    const float mc_angP = attitude_control->get_angle_pitch_p().kP();
+    const float mc_angP = attitude_control->get_angle_pitch_pd().get_kP();
     const float fw_angR = 1.0/plane.rollController.tau();
     const float fw_angP = 1.0/plane.pitchController.tau();
 

@@ -199,7 +199,7 @@ float Plane::stabilize_pitch_get_pitch_out()
 
         // scale FF to angle P
         if (quadplane.option_is_set(QuadPlane::OPTION::SCALE_FF_ANGLE_P)) {
-            const float mc_angP = quadplane.attitude_control->get_angle_pitch_p().kP()
+            const float mc_angP = quadplane.attitude_control->get_angle_pitch_pd().get_kP()
                 * quadplane.attitude_control->get_last_angle_P_scale().y;
             if (is_positive(mc_angP)) {
                 pitchController.set_ff_scale(MIN(1.0, 1.0 / (mc_angP * pitchController.tau())));

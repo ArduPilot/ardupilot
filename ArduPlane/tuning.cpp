@@ -154,7 +154,7 @@ AP_Float *AP_Tuning_Plane::get_param_pointer(uint8_t parm)
         return &plane.quadplane.attitude_control->get_angle_roll_p().kP();
 
     case TUNING_ANG_PITCH_P:
-        return &plane.quadplane.attitude_control->get_angle_pitch_p().kP();
+        return &plane.quadplane.attitude_control->get_angle_pitch_pd().get_kP_ref();;
 
     case TUNING_ANG_YAW_P:
         return &plane.quadplane.attitude_control->get_angle_yaw_p().kP();
