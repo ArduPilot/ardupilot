@@ -55,7 +55,7 @@ All channels can also be used for GPIO.
 
 ## Battery Monitoring
 
-The board has a builting voltage and current sensor. The current
+The board has a built-in voltage and current sensor. The current
 sensor can read up to 130 Amps. The voltage sensor can handle up to 6S
 LiPo batteries.
 

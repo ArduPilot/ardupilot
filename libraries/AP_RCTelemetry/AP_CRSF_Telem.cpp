@@ -113,7 +113,14 @@ void AP_CRSF_Telem::setup_custom_telemetry()
         return;
     }
 
+    // we need crossfire firmware version
+    if (_crsf_version.pending) {
+        return;
+    }
+
     if (!rc().option_is_enabled(RC_Channels::Option::CRSF_CUSTOM_TELEMETRY)) {
+       _custom_telem.init_done = true;
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"%s: bootstrap complete, fw %d.%02d", get_protocol_string(), _crsf_version.major, _crsf_version.minor);
         return;
     }
 
@@ -123,11 +130,6 @@ void AP_CRSF_Telem::setup_custom_telemetry()
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s: passthrough telemetry conflict on SERIAL%d", get_protocol_string(), frsky_port);
        _custom_telem.init_done = true;
        return;
-    }
-
-    // we need crossfire firmware version
-    if (_crsf_version.pending) {
-        return;
     }
 
     AP_Frsky_SPort_Passthrough* passthrough = AP::frsky_passthrough_telem();
@@ -980,7 +982,7 @@ int8_t AP_CRSF_Telem::get_vertical_speed_packed()
     float vspeed = get_vspeed_ms();
     float vertical_speed_cm_s = vspeed * 100.0f;
     const int16_t Kl = 100; // linearity constant;
-    const float Kr = .026f; // range constant;
+    const float Kr = 0.026f; // range constant;
     int8_t vspeed_packed = int8_t(logf(fabsf(vertical_speed_cm_s)/Kl + 1)/Kr);
     return vspeed_packed * (is_negative(vertical_speed_cm_s) ? -1 : 1);
 }
@@ -1014,7 +1016,7 @@ void AP_CRSF_Telem::calc_gps()
 
     _telem.bcast.gps.latitude = htobe32(loc.lat);
     _telem.bcast.gps.longitude = htobe32(loc.lng);
-    _telem.bcast.gps.groundspeed = htobe16(roundf(AP::gps().ground_speed() * 100000 / 3600));
+    _telem.bcast.gps.groundspeed = htobe16(roundf(AP::gps().ground_speed() * 36.0f));
     _telem.bcast.gps.altitude = htobe16(constrain_int16(loc.alt / 100, 0, 5000) + 1000);
     _telem.bcast.gps.gps_heading = htobe16(roundf(AP::gps().ground_course() * 100.0f));
     _telem.bcast.gps.satellites = AP::gps().num_sats();
@@ -1033,9 +1035,9 @@ void AP_CRSF_Telem::calc_attitude()
 
     const int16_t INT_PI = 31415;
     // units are radians * 10000
-    _telem.bcast.attitude.roll_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_roll()) * 10000.0f), -INT_PI, INT_PI));
-    _telem.bcast.attitude.pitch_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_pitch()) * 10000.0f), -INT_PI, INT_PI));
-    _telem.bcast.attitude.yaw_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_yaw()) * 10000.0f), -INT_PI, INT_PI));
+    _telem.bcast.attitude.roll_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_roll_rad()) * 10000.0f), -INT_PI, INT_PI));
+    _telem.bcast.attitude.pitch_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_pitch_rad()) * 10000.0f), -INT_PI, INT_PI));
+    _telem.bcast.attitude.yaw_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_yaw_rad()) * 10000.0f), -INT_PI, INT_PI));
 
     _telem_size = sizeof(AP_CRSF_Telem::AttitudeFrame);
     _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_ATTITUDE;
@@ -1329,8 +1331,8 @@ void AP_CRSF_Telem::calc_parameter() {
         AP_Int8* p = (AP_Int8*)setting->_param;
         _telem.ext.param_entry.payload[1] = ParameterType::INT8;
         _telem.ext.param_entry.payload[idx] = p->get();  // value
-        _telem.ext.param_entry.payload[idx+1] = int8_t(setting->_param_min);  // min
-        _telem.ext.param_entry.payload[idx+2] = int8_t(setting->_param_max); // max
+        _telem.ext.param_entry.payload[idx+1] = int8_t(setting->_param_min.get());  // min
+        _telem.ext.param_entry.payload[idx+2] = int8_t(setting->_param_max.get()); // max
         _telem.ext.param_entry.payload[idx+3] = int8_t(0);  // default
         idx += 4;
         break;
@@ -1339,8 +1341,8 @@ void AP_CRSF_Telem::calc_parameter() {
         AP_Int16* p = (AP_Int16*)setting->_param;
         _telem.ext.param_entry.payload[1] = ParameterType::INT16;
         put_be16_ptr(&_telem.ext.param_entry.payload[idx], p->get());  // value
-        put_be16_ptr(&_telem.ext.param_entry.payload[idx+2], setting->_param_min);  // min
-        put_be16_ptr(&_telem.ext.param_entry.payload[idx+4], setting->_param_max); // max
+        put_be16_ptr(&_telem.ext.param_entry.payload[idx+2], setting->_param_min.get());  // min
+        put_be16_ptr(&_telem.ext.param_entry.payload[idx+4], setting->_param_max.get()); // max
         put_be16_ptr(&_telem.ext.param_entry.payload[idx+6], 0);  // default
         idx += 8;
         break;
@@ -1668,9 +1670,10 @@ bool AP_CRSF_Telem::send_write_response(uint8_t length, const char* data)
         switch (spw.type) {
         case ScriptedParameterEvents::PARAMETER_READ:
             // respond with parameter entry updated with the new data
-            spw.param->data = (const char*)hal.util->std_realloc((char*)spw.param->data, length);
+            // we don't care about old data so old length of 0 is fine
+            spw.param->data = (const char*)mem_realloc((char*)spw.param->data, 0, length);
             if (spw.param->data == nullptr) {
-                return false;
+                return false; // old data is untouched
             }
             memcpy((char*)spw.param->data, data, length);
             spw.param->length = length;
@@ -1716,7 +1719,9 @@ AP_CRSF_Telem::ScriptedParameter* AP_CRSF_Telem::ScriptedMenu::find_parameter(ui
 
 AP_CRSF_Telem::ScriptedParameter* AP_CRSF_Telem::ScriptedMenu::add_parameter(uint8_t length, const char* data)
 {
-    ScriptedParameter* new_params = (ScriptedParameter*)hal.util->std_realloc(params, sizeof(ScriptedParameter) * (num_params+1));
+    ScriptedParameter* new_params = (ScriptedParameter*)mem_realloc(params,
+        sizeof(ScriptedParameter) * num_params,
+        sizeof(ScriptedParameter) * (num_params+1));
     if (new_params == nullptr) {
         return nullptr;
     }

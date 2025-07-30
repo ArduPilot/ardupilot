@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 setup board.h for chibios
 
@@ -684,6 +684,12 @@ class ChibiOSHWDef(hwdef.HWDef):
             line = "0"
         return line
 
+    def disable_can(self, f):
+        '''setup for a non-CAN enabled board'''
+        f.write("#define HAL_NUM_CAN_IFACES 0\n")
+        f.write("#undef HAL_ENABLE_DRONECAN_DRIVERS\n")
+        f.write("#define HAL_ENABLE_DRONECAN_DRIVERS 0\n")
+
     def enable_can(self, f):
         '''setup for a CAN enabled board'''
         if self.mcu_series.startswith("STM32H7") or self.mcu_series.startswith("STM32G4"):
@@ -949,7 +955,6 @@ class ChibiOSHWDef(hwdef.HWDef):
 #define STM32_ETH_BUFFERS_EXTERN
 
 ''')
-
         defines = self.get_mcu_config('DEFINES', False)
         if defines is not None:
             for d in defines.keys():
@@ -1011,6 +1016,8 @@ class ChibiOSHWDef(hwdef.HWDef):
 
         if self.have_type_prefix('CAN') and not using_chibios_can:
             self.enable_can(f)
+        else:
+            self.disable_can(f)
         flash_size = self.get_config('FLASH_SIZE_KB', type=int)
         f.write('#define BOARD_FLASH_SIZE %u\n' % flash_size)
         self.env_vars['BOARD_FLASH_SIZE'] = flash_size
@@ -1057,6 +1064,8 @@ class ChibiOSHWDef(hwdef.HWDef):
                 # storage at end of flash - leave room
                 if offset > bl_offset:
                     flash_reserve_end = flash_size - offset
+            if self.is_bootloader_fw():
+                f.write('#define STORAGE_FLASH_START_PAGE %u\n' % storage_flash_page)
 
         crashdump_enabled = bool(self.intdefines.get('AP_CRASHDUMP_ENABLED', (flash_size >= 2048 and not self.is_bootloader_fw())))  # noqa
         # lets pick a flash sector for Crash log
@@ -1225,6 +1234,9 @@ class ChibiOSHWDef(hwdef.HWDef):
 #define CH_CFG_USE_DYNAMIC FALSE
 #endif
 #define STM32_FLASH_DISABLE_ISR 0
+#ifndef PAL_USE_CALLBACKS
+#define PAL_USE_CALLBACKS FALSE
+#endif
 ''')
             # get bootloader flash space, if larger than 128k we can enable Heap
             flash_size = self.get_config('FLASH_USE_MAX_KB', type=int, default=0)
@@ -1720,7 +1732,7 @@ INCLUDE common.ld
                 self.error("Need io_firmware.bin in ROMFS for IOMCU")
 
             self.write_defaulting_define(f, 'HAL_WITH_IO_MCU', 1)
-            
+
             if self.config['IOMCU_UART'][0]:
                 # get index of serial port in serial_list
                 index = serial_list.index(self.config['IOMCU_UART'][0])
@@ -1729,7 +1741,7 @@ INCLUDE common.ld
                     '#define HAL_UART_IO_DRIVER constexpr ChibiOS::UARTDriver &uart_io = serial%sDriver;\n' % (index)
                 )
 
-            f.write('#define HAL_HAVE_SERVO_VOLTAGE 1\n') # make the assumption that IO gurantees servo monitoring
+            f.write('#define HAL_HAVE_SERVO_VOLTAGE 1\n') # make the assumption that IO guarantees servo monitoring
             # all IOMCU capable boards have SBUS out
             f.write('#define AP_FEATURE_SBUS_OUT 1\n')
         else:
@@ -1822,9 +1834,9 @@ INCLUDE common.ld
                 # USB endpoint ID, not used
                 f.write("0, ")
 
-                # Find and add RTS alt fuction number if avalable
+                # Find and add RTS alt function number if available
                 def get_RTS_alt_function():
-                    # Typicaly we do software RTS control, so there is
+                    # Typically we do software RTS control, so there is
                     # no requirement for the pin to have valid UART
                     # RTS alternative function
                     # If it does this enables hardware flow control for RS-485
@@ -2303,7 +2315,7 @@ INCLUDE common.ld
                 gpioset.add(gpio)
                 port = p.port
                 pin = p.pin
-                # aux config disabled by defualt
+                # aux config disabled by default
                 gpios.append((gpio, pwm, port, pin, p, 'false'))
         gpios = sorted(gpios)
         for (gpio, pwm, port, pin, p, enabled) in gpios:
@@ -2333,7 +2345,7 @@ INCLUDE common.ld
         this_dir = os.path.realpath(__file__)
         rootdir = os.path.relpath(os.path.join(this_dir, "../../../../.."))
         hwdef_dirname = os.path.basename(os.path.dirname(self.hwdef[0]))
-        # allow re-using of bootloader from different build:
+        # allow reusing of bootloader from different build:
         use_bootloader_from_board = self.get_config('USE_BOOTLOADER_FROM_BOARD', default=None, required=False)
         if use_bootloader_from_board is not None:
             hwdef_dirname = use_bootloader_from_board
@@ -2920,7 +2932,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
             for dev in self.spidev:
                 if u == dev[0]:
                     self.spidev.remove(dev)
-            # also remove all occurences of defines in previous lines if any
+            # also remove all occurrences of defines in previous lines if any
             for line in self.alllines[:]:
                 if line.startswith('STM32_') and u == line.split()[0]:
                     self.alllines.remove(line)
@@ -2949,29 +2961,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
             raise ValueError("AP_PERIPH may only have value 1")
 
         super(ChibiOSHWDef, self).process_line_env(line, depth, a)
-
-    def process_file(self, filename, depth=0):
-        '''process a hwdef.dat file'''
-        try:
-            f = open(filename, "r")
-        except Exception:
-            self.error("Unable to open file %s" % filename)
-        for line in f.readlines():
-            line = line.split('#')[0] # ensure we discard the comments
-            line = line.strip()
-            if len(line) == 0 or line[0] == '#':
-                continue
-            a = shlex.split(line)
-            if a[0] == "include" and len(a) > 1:
-                include_file = a[1]
-                if include_file[0] != '/':
-                    dir = os.path.dirname(filename)
-                    include_file = os.path.normpath(
-                        os.path.join(dir, include_file))
-                self.progress("Including %s" % include_file)
-                self.process_file(include_file, depth+1)
-            else:
-                self.process_line(line, depth)
 
     def add_apperiph_defaults(self, f):
         '''add default defines for peripherals'''
@@ -3107,6 +3096,12 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         self.mcu_type = self.get_config('MCU', 1)
         self.progress("Setup for MCU %s" % self.mcu_type)
+
+        # put USE_BOOTLOADER_FROM_BOARD into the environment so the
+        # build process can use it when generating hex files:
+        use_bootloader_from_board = self.get_config('USE_BOOTLOADER_FROM_BOARD', default=None, required=False)
+        if use_bootloader_from_board is not None:
+            self.env_vars['USE_BOOTLOADER_FROM_BOARD'] = use_bootloader_from_board
 
         # build a list for peripherals for DMA resolver
         self.periph_list = self.build_peripheral_list()

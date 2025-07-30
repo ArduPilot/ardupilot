@@ -15,16 +15,14 @@
         },
         {
             "owner": "Lua-language-server-problem-matcher",
+            "fileLocation": [ "relative", "${GITHUB_WORKSPACE}" ],
             "pattern": [
                 {
-                    "regexp": "^(.+.lua):(\\d+):(\\d+)",
+                    "regexp": "^(.+\\.lua):(\\d+):(\\d+)(.*)$",
                     "file": 1,
                     "line": 2,
-                    "column": 3
-                },
-                {
-                    "regexp": "^(.*)",
-                    "message": 1
+                    "column": 3,
+                    "message": 4
                 }
             ]
         }

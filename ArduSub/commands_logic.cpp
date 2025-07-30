@@ -238,7 +238,7 @@ void Sub::do_nav_wp(const AP_Mission::Mission_Command& cmd)
             target_loc.set_alt_cm(curr_alt, target_loc.get_alt_frame());
         } else {
             // default to current altitude as alt-above-home
-            target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
+            target_loc.copy_alt_from(current_loc);
         }
     }
 
@@ -303,7 +303,7 @@ void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
     if (target_loc.lat == 0 && target_loc.lng == 0) {
         // To-Do: make this simpler
         Vector3f temp_pos;
-        wp_nav.get_wp_stopping_point_xy(temp_pos.xy());
+        wp_nav.get_wp_stopping_point_NE_cm(temp_pos.xy());
         const Location temp_loc(temp_pos, Location::AltFrame::ABOVE_ORIGIN);
         target_loc.lat = temp_loc.lat;
         target_loc.lng = temp_loc.lng;
@@ -323,7 +323,7 @@ void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
             target_loc.set_alt_cm(curr_alt, target_loc.get_alt_frame());
         } else {
             // default to current altitude as alt-above-home
-            target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
+            target_loc.copy_alt_from(current_loc);
         }
     }
 
@@ -344,14 +344,14 @@ void Sub::do_circle(const AP_Mission::Mission_Command& cmd)
     }
 
     // default target altitude to current altitude if not provided
-    if (circle_center.alt == 0) {
+    if (circle_center.alt_is_zero()) {
         int32_t curr_alt;
         if (current_loc.get_alt_cm(circle_center.get_alt_frame(),curr_alt)) {
             // circle altitude uses frame from command
             circle_center.set_alt_cm(curr_alt,circle_center.get_alt_frame());
         } else {
             // default to current altitude above origin
-            circle_center.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
+            circle_center.copy_alt_from(current_loc);
             LOGGER_WRITE_ERROR(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
         }
     }
@@ -525,7 +525,7 @@ bool Sub::verify_circle(const AP_Mission::Mission_Command& cmd)
     if (auto_mode == Auto_CircleMoveToEdge) {
         if (wp_nav.reached_wp_destination()) {
             Vector3f circle_center;
-            UNUSED_RESULT(cmd.content.location.get_vector_from_origin_NEU(circle_center));
+            UNUSED_RESULT(cmd.content.location.get_vector_from_origin_NEU_cm(circle_center));
 
             // set target altitude if not provided
             if (is_zero(circle_center.z)) {
@@ -545,7 +545,7 @@ bool Sub::verify_circle(const AP_Mission::Mission_Command& cmd)
     const float turns = cmd.get_loiter_turns();
 
     // check if we have completed circling
-    return fabsf(sub.circle_nav.get_angle_total()/M_2PI) >= turns;
+    return fabsf(sub.circle_nav.get_angle_total_rad()/M_2PI) >= turns;
 }
 
 #if NAV_GUIDED
@@ -584,7 +584,7 @@ void Sub::do_wait_delay(const AP_Mission::Mission_Command& cmd)
 
 void Sub::do_within_distance(const AP_Mission::Mission_Command& cmd)
 {
-    condition_value  = cmd.content.distance.meters * 100;
+    condition_value  = cmd.content.distance.meters;
 }
 
 void Sub::do_yaw(const AP_Mission::Mission_Command& cmd)
@@ -612,7 +612,7 @@ bool Sub::verify_wait_delay()
 
 bool Sub::verify_within_distance()
 {
-    if (wp_nav.get_wp_distance_to_destination() < (uint32_t)MAX(condition_value,0)) {
+    if (wp_nav.get_wp_distance_to_destination_cm() < (uint32_t)MAX(condition_value,0)) {
         condition_value = 0;
         return true;
     }
@@ -666,13 +666,13 @@ bool Sub::do_guided(const AP_Mission::Mission_Command& cmd)
 void Sub::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.content.speed.target_ms > 0) {
-        wp_nav.set_speed_xy(cmd.content.speed.target_ms * 100.0f);
+        wp_nav.set_speed_NE_cms(cmd.content.speed.target_ms * 100.0f);
     }
 }
 
 void Sub::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
-    if (cmd.p1 == 1 || (cmd.content.location.lat == 0 && cmd.content.location.lng == 0 && cmd.content.location.alt == 0)) {
+    if (cmd.p1 == 1 || !cmd.content.location.initialised()) {
         if (!set_home_to_current_location(false)) {
             // silently ignore this failure
         }

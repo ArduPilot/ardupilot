@@ -20,7 +20,7 @@
 
 // set a parameter that is an ENABLE param
 template<typename T, ap_var_type PT>
-void AP_ParamT<T, PT>::set_enable(const T &v) {
+void AP_ParamTBase<T, PT>::set_enable(const T &v) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-equal"
     if (v != _value) {
@@ -32,7 +32,7 @@ void AP_ParamT<T, PT>::set_enable(const T &v) {
 
 // Sets if the parameter is unconfigured
 template<typename T, ap_var_type PT>
-void AP_ParamT<T, PT>::set_default(const T &v) {
+void AP_ParamTBase<T, PT>::set_default(const T &v) {
 #if AP_PARAM_DEFAULTS_ENABLED
     add_default(this, (float)v);
 #endif
@@ -43,7 +43,7 @@ void AP_ParamT<T, PT>::set_default(const T &v) {
 
 // Sets parameter and default
 template<typename T, ap_var_type PT>
-void AP_ParamT<T, PT>::set_and_default(const T &v) {
+void AP_ParamTBase<T, PT>::set_and_default(const T &v) {
 #if AP_PARAM_DEFAULTS_ENABLED
     add_default(this, (float)v);
 #endif
@@ -52,7 +52,7 @@ void AP_ParamT<T, PT>::set_and_default(const T &v) {
 
 // Value setter - set value, tell GCS
 template<typename T, ap_var_type PT>
-void AP_ParamT<T, PT>::set_and_notify(const T &v) {
+void AP_ParamTBase<T, PT>::set_and_notify(const T &v) {
 // We do want to compare each value, even floats, since it being the same here
 // is the result of previously setting it.
 #pragma GCC diagnostic push
@@ -66,7 +66,7 @@ void AP_ParamT<T, PT>::set_and_notify(const T &v) {
 
 // Combined set and save
 template<typename T, ap_var_type PT>
-void AP_ParamT<T, PT>::set_and_save(const T &v) {
+void AP_ParamTBase<T, PT>::set_and_save(const T &v) {
     bool force = fabsf((float)(_value - v)) < FLT_EPSILON;
     set(v);
     save(force);
@@ -78,7 +78,7 @@ void AP_ParamT<T, PT>::set_and_save(const T &v) {
 // value separately, as otherwise the value in EEPROM won't be
 // updated correctly.
 template<typename T, ap_var_type PT>
-void AP_ParamT<T, PT>::set_and_save_ifchanged(const T &v) {
+void AP_ParamTBase<T, PT>::set_and_save_ifchanged(const T &v) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-equal"
     if (v == _value) {
@@ -89,16 +89,16 @@ void AP_ParamT<T, PT>::set_and_save_ifchanged(const T &v) {
     save(true);
 }
 
-// AP_ParamT types can implement AP_Param::cast_to_float
+// AP_ParamTBase types can implement AP_Param::cast_to_float
 template<typename T, ap_var_type PT>
-float AP_ParamT<T, PT>::cast_to_float(void) const {
+float AP_ParamTBase<T, PT>::cast_to_float(void) const {
     return (float)_value;
 }
 
-template class AP_ParamT<float, AP_PARAM_FLOAT>;
-template class AP_ParamT<int8_t, AP_PARAM_INT8>;
-template class AP_ParamT<int16_t, AP_PARAM_INT16>;
-template class AP_ParamT<int32_t, AP_PARAM_INT32>;
+template class AP_ParamTBase<float, AP_PARAM_FLOAT>;
+template class AP_ParamTBase<int8_t, AP_PARAM_INT8>;
+template class AP_ParamTBase<int16_t, AP_PARAM_INT16>;
+template class AP_ParamTBase<int32_t, AP_PARAM_INT32>;
 
 // Value setter - set value, tell GCS
 template<typename T, ap_var_type PT>

@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+# flake8: noqa
 '''
 extra DMA mapping tables from a stm32 datasheet
 
@@ -45,7 +47,7 @@ def error(str):
 
 def check_full_table(table):
     '''check the table is not missing rows or columns
-       we should have at least one entry in every row and one entry in every colum of each dma table
+       we should have at least one entry in every row and one entry in every column of each dma table
     '''
     stream_mask = [0,0]
     channel_mask = [0,0]

@@ -230,7 +230,7 @@ void ToyMode::update()
     uint16_t ch6_in = RC_Channels::get_radio_in(CH_6);
     uint16_t ch7_in = RC_Channels::get_radio_in(CH_7);
 
-    if (copter.failsafe.radio || ch5_in < 900) {
+    if (!rc().has_valid_input() || ch5_in < 900) {
         // failsafe handling is outside the scope of toy mode, it does
         // normal failsafe actions, just setup a blink pattern
         green_blink_pattern = BLINK_NO_RX;
@@ -693,7 +693,7 @@ bool ToyMode::set_and_remember_mode(Mode::Number mode, ModeReason reason)
  */
 void ToyMode::trim_update(void)
 {
-    if (hal.util->get_soft_armed() || copter.failsafe.radio) {
+    if (hal.util->get_soft_armed() || !rc().has_valid_input()) {
         // only when disarmed and with RC link
         trim.start_ms = 0;
         return;
@@ -803,7 +803,7 @@ void ToyMode::action_arm(void)
         // we want GPS and checks are passing, arm and enable fence
         copter.fence.enable(true, AC_FENCE_ALL_FENCES);
 #endif
-        copter.arming.arm(AP_Arming::Method::RUDDER);
+        copter.arming.arm(AP_Arming::Method::TOYMODE);
         if (!copter.motors->armed()) {
             AP_Notify::events.arming_failed = true;
             gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: GPS arming failed");
@@ -819,7 +819,7 @@ void ToyMode::action_arm(void)
         // non-GPS mode
         copter.fence.enable(false, AC_FENCE_ALL_FENCES);
 #endif
-        copter.arming.arm(AP_Arming::Method::RUDDER);
+        copter.arming.arm(AP_Arming::Method::TOYMODE);
         if (!copter.motors->armed()) {
             AP_Notify::events.arming_failed = true;
             gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: non-GPS arming failed");
@@ -846,17 +846,37 @@ void ToyMode::throttle_adjust(float &throttle_control)
     }
 
     // limit descent rate close to the ground
-    float height = copter.inertial_nav.get_position_z_up_cm() * 0.01 - copter.arming_altitude_m;
-    if (throttle_control < 500 &&
-        height < TOY_DESCENT_SLOW_HEIGHT + TOY_DESCENT_SLOW_RAMP &&
-        copter.motors->armed() && !copter.ap.land_complete) {
-        float limit = linear_interpolate(TOY_DESCENT_SLOW_MIN, 0, height,
-                                         TOY_DESCENT_SLOW_HEIGHT, TOY_DESCENT_SLOW_HEIGHT+TOY_DESCENT_SLOW_RAMP);
-        if (throttle_control < limit) {
-            // limit descent rate close to the ground
-            throttle_control = limit;
-        }
-    }
+    float pos_d_m;  
+    if (AP::ahrs().get_relative_position_D_origin_float(pos_d_m)) {  
+        // we do not know how high we are, let alone where the ground is  
+        return;  
+    }  
+    if (throttle_control >= 500) {  
+        // user wants to climb - don't play with throttle  
+        return;  
+    }  
+    const float height = -pos_d_m - copter.arming_altitude_m;  
+    if (height >= TOY_DESCENT_SLOW_HEIGHT + TOY_DESCENT_SLOW_RAMP) {  
+        // vehicle is above ramp-adjusted slow-down height  
+        return;  
+    }  
+    if (!copter.motors->armed()) {  
+        // vehicle isn't armed, so don't play with throttle  
+        return;  
+    }  
+    if (copter.ap.land_complete) {  
+        // we're landed, don't play with throttle  
+        return;  
+    }  
+    const float limit = linear_interpolate(TOY_DESCENT_SLOW_MIN, 0, height,  
+                                            TOY_DESCENT_SLOW_HEIGHT,  
+                                            TOY_DESCENT_SLOW_HEIGHT+TOY_DESCENT_SLOW_RAMP);  
+    if (throttle_control >= limit) {  
+        // vehicle is above the now-calculated throttle-decrease height  
+        return;  
+    }  
+    // limit descent rate close to the ground  
+    throttle_control = limit; 
 }
 
 

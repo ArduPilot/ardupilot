@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
 '''In ArduPilot 4.7 the distance values were moved to float to
 facilitate supporting rangefinders with more than 327m of range.
 
@@ -27,10 +28,11 @@ class Rewrite():
         self.rewrite_fmtu = rewrite_fmtu
         self.rewrite_instance = rewrite_instance
 
+    @staticmethod
     def format_to_struct(fmt):
         ret = bytes("<", 'ascii')
         for c in fmt:
-            (s, mul, type) = DFReader.FORMAT_TO_STRUCT[c]
+            (s, _mul, _type) = DFReader.FORMAT_TO_STRUCT[c]
             ret += bytes(s, 'ascii')
         return bytes(ret)
 

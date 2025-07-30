@@ -434,7 +434,7 @@ void AP_MotorsHeli::output_logic()
 // update the throttle input filter
 void AP_MotorsHeli::update_throttle_filter()
 {
-    _throttle_filter.apply(_throttle_in,  _dt);
+    _throttle_filter.apply(_throttle_in,  _dt_s);
 
     // constrain filtered throttle
     if (_throttle_filter.get() < 0.0f) {

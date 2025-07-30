@@ -148,12 +148,24 @@ void SimRover::update_ackermann_or_skid(const struct sitl_input &input, float de
     // if in skid steering mode the steering and throttle values are used for motor1 and motor2
     if (skid_steering) {
         float motor1 = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
+        if (input.servos[0] == 0) {
+            // eg. safety switch in "safe" mode
+            motor1 = 0;
+        }
         float motor2 = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
+        if (input.servos[2] == 0) {
+            // eg. safety switch in "safe" mode
+            motor2 = 0;
+        }
         steering = motor1 - motor2;
         throttle = 0.5*(motor1 + motor2);
     } else {
         steering = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
         throttle = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
+        if (input.servos[2] == 0) {
+            // eg. safety switch in "safe" mode
+            throttle = 0;
+        }
 
         // vectored thrust conversion
         if (vectored_thrust) {

@@ -100,6 +100,8 @@ private:
     ReplayVehicle &_vehicle;
 
     LogReader reader{_vehicle.log_structure, _vehicle.ekf2, _vehicle.ekf3};
+    bool show_progress = false;  // Flag to determine if progress bar should be shown
+    uint32_t last_progress_update = 0; // Last time progress was displayed
 
     void _parse_command_line(uint8_t argc, char * const argv[]);
 

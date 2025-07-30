@@ -41,14 +41,16 @@ void GCS_Sub::update_vehicle_sensor_status_flags()
     }
 
     // override the parent class's values for ABSOLUTE_PRESSURE to
-    // only check internal barometer:
+    // only honour water-pressure sensors
+    control_sensors_present &= ~MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
+    control_sensors_enabled &= ~MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
+    control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
     if (sub.ap.depth_sensor_present) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
-    }
-    control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE; // check the internal barometer only
-    if (sub.sensor_health.depth) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
+        if (sub.sensor_health.depth) {
+            control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
+        }
     }
 
 #if AP_TERRAIN_AVAILABLE

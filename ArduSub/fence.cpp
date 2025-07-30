@@ -6,7 +6,7 @@
 
 // fence_check - ask fence library to check for breaches and initiate the response
 // async fence checking io callback at 1Khz
-void Sub::fence_run_checks()
+void Sub::fence_checks_async()
 {
     const uint32_t now = AP_HAL::millis();
     // ignore any fence activity when not armed
@@ -25,7 +25,7 @@ void Sub::fence_run_checks()
 
     // if the user wants some kind of response and motors are armed
     if (new_breaches) {
-        if (fence.get_action() != AC_FENCE_ACTION_REPORT_ONLY) {
+        if (fence.get_action() != AC_Fence::Action::REPORT_ONLY) {
             //
             //            // disarm immediately if we think we are on the ground or in a manual flight mode with zero throttle
             //            // don't disarm if the high-altitude fence has been broken because it's likely the user has pulled their throttle to zero to bring it down

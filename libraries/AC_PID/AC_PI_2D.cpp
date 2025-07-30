@@ -130,6 +130,7 @@ void AC_PI_2D::reset_I()
     _integrator.zero();
 }
 
+// Loads controller configuration from EEPROM, including gains and filter frequencies. (not used)
 void AC_PI_2D::load_gains()
 {
     _kp.load();
@@ -142,7 +143,7 @@ void AC_PI_2D::load_gains()
     calc_filt_alpha();
 }
 
-// save_gains - save gains to eeprom
+// Saves controller configuration from EEPROM, including gains and filter frequencies. (not used)
 void AC_PI_2D::save_gains()
 {
     _kp.save();

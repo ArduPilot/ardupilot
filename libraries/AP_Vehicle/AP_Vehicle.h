@@ -71,6 +71,7 @@
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <Filter/AP_Filter.h>
 #include <AP_Stats/AP_Stats.h>              // statistics library
+#include <AP_DDS/AP_DDS_config.h>
 #if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
 #endif
@@ -78,6 +79,11 @@
 #include <AP_Gripper/AP_Gripper_config.h>
 #if AP_GRIPPER_ENABLED
 #include <AP_Gripper/AP_Gripper.h>
+#endif
+
+#include <AP_RPM/AP_RPM_config.h>
+#if AP_RPM_ENABLED
+#include <AP_RPM/AP_RPM.h>
 #endif
 
 #include <AP_IBus_Telem/AP_IBus_Telem.h>
@@ -428,7 +434,7 @@ protected:
     AP_Generator generator;
 #endif
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     AP_ExternalAHRS externalAHRS;
 #endif
 
@@ -480,7 +486,7 @@ protected:
     } fence_breaches;
 
     void fence_init();
-    virtual void fence_run_checks() {};
+    virtual void fence_checks_async() {};
 #endif
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
@@ -489,6 +495,10 @@ protected:
 
 #if AP_SCRIPTING_ENABLED
     AP_Scripting scripting;
+#endif
+
+#if AP_RPM_ENABLED
+    AP_RPM rpm_sensor;
 #endif
 
     static const struct AP_Param::GroupInfo var_info[];

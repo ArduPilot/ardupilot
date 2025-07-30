@@ -51,14 +51,6 @@
 //#define HAL_INS_ICM20XXX_I2C_BUS 0
 //#define HAL_INS_ICM20XXX_I2C_ADDR (0x68)
 
-// BARO choices:
-#define HAL_BARO_DEFAULT HAL_BARO_BMP280_I2C
-#define HAL_BARO_BMP280_NAME "BMP280"
-// or one of these:
-//#define HAL_BARO_DEFAULT HAL_BARO_MS5837_I2C
-// or: GPIO 34
-//#define HAL_BARO_ANALOG_PIN (6)
-
 // MAG/COMPASS choices:
 #define HAL_COMPASS_DEFAULT HAL_COMPASS_AK8963_MPU9250
 // or others:
@@ -131,11 +123,6 @@
 //LOG_DISARMED 1
 //SERIAL0_PROTOCOL 0
 
-
-// see boards.py
-#ifndef ENABLE_HEAP
-#define ENABLE_HEAP 1
-#endif
 
 #define WIFI_SSID "ardupilot123"
 #define WIFI_PWD "ardupilot123"

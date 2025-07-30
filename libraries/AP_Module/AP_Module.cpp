@@ -167,9 +167,9 @@ void AP_Module::call_hook_AHRS_update(const AP_AHRS &ahrs)
     state.quat[2] = q[2];
     state.quat[3] = q[3];
 
-    state.eulers[0] = ahrs.get_roll();
-    state.eulers[1] = ahrs.get_pitch();
-    state.eulers[2] = ahrs.get_yaw();
+    state.eulers[0] = ahrs.get_roll_rad();
+    state.eulers[1] = ahrs.get_pitch_rad();
+    state.eulers[2] = ahrs.get_yaw_rad();
 
     Location loc;
     if (ahrs.get_origin(loc)) {
@@ -187,7 +187,7 @@ void AP_Module::call_hook_AHRS_update(const AP_AHRS &ahrs)
     }
     
     Vector3f pos;
-    if (ahrs.get_relative_position_NED_origin(pos)) {
+    if (ahrs.get_relative_position_NED_origin_float(pos)) {
         state.relative_position[0] = pos[0];
         state.relative_position[1] = pos[1];
         state.relative_position[2] = pos[2];

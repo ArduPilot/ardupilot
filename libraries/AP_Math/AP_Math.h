@@ -141,7 +141,7 @@ T wrap_180_cd(const T angle);
  * 100 == centi.
  */
 float wrap_360(const float angle);
-#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 double wrap_360(const double angle);
 #endif
 int wrap_360(const int angle);
@@ -149,7 +149,7 @@ int wrap_360(const int angle);
 int wrap_360_cd(const int angle);
 long wrap_360_cd(const long angle);
 float wrap_360_cd(const float angle);
-#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 double wrap_360_cd(const double angle);
 #endif
 
@@ -225,6 +225,18 @@ static inline constexpr float radians(float deg)
 static inline constexpr float radians(int deg)
 {
     return deg * DEG_TO_RAD;
+}
+
+// centidegrees -> radians
+static inline constexpr float cd_to_rad(float cdeg)
+{
+    return cdeg * CDEG_TO_RAD;
+}
+
+// radians -> centidegrees
+static inline constexpr float rad_to_cd(float rad)
+{
+    return rad * RAD_TO_CDEG;
 }
 
 // radians -> degrees

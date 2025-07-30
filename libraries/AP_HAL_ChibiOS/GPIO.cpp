@@ -77,9 +77,6 @@ static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num, bool check_enabled=tr
     return NULL;
 }
 
-static void pal_interrupt_cb(void *arg);
-static void pal_interrupt_cb_functor(void *arg);
-
 GPIO::GPIO()
 {}
 
@@ -300,6 +297,11 @@ AP_HAL::DigitalSource* GPIO::channel(uint16_t pin)
 
 extern const AP_HAL::HAL& hal;
 
+#if PAL_USE_CALLBACKS == TRUE // then ChibiOS PAL event funcs/types are declared
+
+static void pal_interrupt_cb(void *arg);
+static void pal_interrupt_cb_functor(void *arg);
+
 /*
    Attach an interrupt handler to a GPIO pin number. The pin number
    must be one specified with a GPIO() marker in hwdef.dat
@@ -391,6 +393,8 @@ bool GPIO::_attach_interrupt(ioline_t line, palcallback_t cb, void *p, uint8_t m
     return ret;
 }
 
+#endif // PAL_USE_CALLBACKS == TRUE
+
 bool GPIO::usb_connected(void)
 {
     return _usb_connected;
@@ -436,6 +440,8 @@ void IOMCU_DigitalSource::toggle()
 }
 #endif // HAL_WITH_IO_MCU
 
+#if PAL_USE_CALLBACKS == TRUE // then ChibiOS PAL event funcs/types are declared
+
 static void pal_interrupt_cb(void *arg)
 {
     if (arg != nullptr) {
@@ -472,6 +478,8 @@ static void pal_interrupt_cb_functor(void *arg)
     }
     (g->fn)(g->pin_num, palReadLine(g->pal_line), now);
 }
+
+#endif // PAL_USE_CALLBACKS == TRUE
 
 /*
   handle interrupt from pin change for wait_pin()

@@ -70,6 +70,9 @@ public:
     // always return true if not enabled or not a continuous type
     bool tilt_angle_achieved() const { return !enabled() || (type != TILT_TYPE_CONTINUOUS) || angle_achieved; }
 
+    // throttle of tilting motors used for forward flight
+    bool get_forward_throttle(float &throttle) const;
+
     // Write tiltrotor specific log
     void write_log();
 
@@ -123,7 +126,7 @@ private:
     // with slow tilt rates the tilt angle can lag
     bool angle_achieved;
 
-    // refences for convenience
+    // references for convenience
     QuadPlane& quadplane;
     AP_MotorsMulticopter*& motors;
 

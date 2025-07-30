@@ -415,7 +415,7 @@ function HLSatcom()
     -- if mode 1 and there's been no mavlink traffic for 5000 ms, enable high latency
     if hl_mode == 1 then
         -- link lost time = boot time - GCS last seen time
-        link_lost_for = millis():toint() - gcs:last_seen()
+        link_lost_for = (millis()- gcs:last_seen()):toint()
         -- gcs:last_seen() is set to millis() during boot (on plane). 0 on rover/copter
         -- So if it's less than 10000 assume no GCS packet received since boot
         if link_lost_for > 5000 and not gcs:get_high_latency_status() and gcs:last_seen() > 10000 then
@@ -480,7 +480,7 @@ function HLSatcom()
             hl2.failure_flags = hl2.failure_flags + 256 -- HL_FAILURE_FLAG_RC_RECEIVER
         end
 
-        hl2.heading = math.floor(wrap_360(math.deg(ahrs:get_yaw())) / 2)
+        hl2.heading = math.floor(wrap_360(math.deg(ahrs:get_yaw_rad())) / 2)
         hl2.throttle = math.floor(gcs:get_hud_throttle())
         if ahrs:airspeed_estimate() ~= nil then
             hl2.airspeed = math.abs(math.floor(ahrs:airspeed_estimate() * 5))

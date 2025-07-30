@@ -70,8 +70,8 @@ The PWM is in 5 groups:
 
 ## Battery Monitoring
 
-The board has a builting voltage and current sensors. The current
-sensor can read up to 90A continuosly, 215 Amps peak. The voltage sensor can handle up to 6S
+The board has a built-in voltage and current sensors. The current
+sensor can read up to 90A continuously, 215 Amps peak. The voltage sensor can handle up to 6S
 LiPo batteries.
 
 The correct battery setting parameters are set by default and are:

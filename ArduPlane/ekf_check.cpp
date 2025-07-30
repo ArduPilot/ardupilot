@@ -167,7 +167,7 @@ void Plane::failsafe_ekf_event()
         // the pilot is not controlling via sticks so switch to QLAND
         plane.set_mode(mode_qland, ModeReason::EKF_FAILSAFE);
     } else {
-        // the pilot is controlling via sticks so fallbacl to QHOVER
+        // the pilot is controlling via sticks so fallback to QHOVER
         plane.set_mode(mode_qhover, ModeReason::EKF_FAILSAFE);
     }
 #endif

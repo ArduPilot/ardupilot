@@ -546,7 +546,7 @@ is bob we will attempt to checkout bob-AVR'''
                         if not os.path.exists(tdir):
                             self.mkpath(tdir)
                         # must addfwversion even if path already
-                        # exists as we re-use the "beta" directories
+                        # exists as we reuse the "beta" directories
                         self.addfwversion(tdir, vehicle)
                         features_filepath = os.path.join(tdir, "features.txt")
                         if features_text is not None:
@@ -593,7 +593,7 @@ is bob we will attempt to checkout bob-AVR'''
         '''build Copter binaries'''
 
         boards = []
-        boards.extend(["aerofc-v1", "bebop"])
+        boards.extend(["aerofc-v1"])
         boards.extend(self.board_list.find_autobuild_boards('Copter'))
         self.build_vehicle(tag,
                            "ArduCopter",
@@ -605,7 +605,6 @@ is bob we will attempt to checkout bob-AVR'''
     def build_arduplane(self, tag):
         '''build Plane binaries'''
         boards = self.board_list.find_autobuild_boards('Plane')[:]
-        boards.append("disco")
         self.build_vehicle(tag,
                            "ArduPlane",
                            boards,

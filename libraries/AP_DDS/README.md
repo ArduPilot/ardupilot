@@ -82,7 +82,7 @@ Run the simulator with the following command. If using UDP, the only parameter y
 ```console
 # Wipe params till you see "AP: ArduPilot Ready"
 # Select your favorite vehicle type
-sim_vehicle.py -w -v ArduPlane --console -DG --enable-dds
+sim_vehicle.py -w -v ArduPlane --console -DG --enable-DDS
 
 # Only set this for Serial, which means 115200 baud
 param set SERIAL1_BAUD 115
@@ -115,7 +115,7 @@ Next, follow the associated section for your chosen transport, and finally you c
   ```
 - Run SITL (remember to kill any terminals running ardupilot SITL beforehand)
   ```console
-  sim_vehicle.py -v ArduPlane -DG --console --enable-dds
+  sim_vehicle.py -v ArduPlane -DG --console --enable-DDS
   ```
 
 ### Serial
@@ -136,7 +136,7 @@ Next, follow the associated section for your chosen transport, and finally you c
 - Run SITL (remember to kill any terminals running ardupilot SITL beforehand)
   ```console
   # assuming we are using /dev/pts/1 for Ardupilot SITL
-  sim_vehicle.py -v ArduPlane -DG --console --enable-dds -A "--serial1=uart:/dev/pts/1"
+  sim_vehicle.py -v ArduPlane -DG --console --enable-DDS -A "--serial1=uart:/dev/pts/1"
   ```
 
 ## Use ROS 2 CLI
@@ -153,7 +153,7 @@ Depending on what's configured, you will see something similar to this:
 ```bash
 $ ros2 topic list -v
 Published topics:
- * /ap/airspeed [geometry_msgs/msg/Vector3] 1 publisher
+ * /ap/airspeed [ardupilot_msgs/msg/Airspeed] 1 publisher
  * /ap/battery [sensor_msgs/msg/BatteryState] 1 publisher
  * /ap/clock [rosgraph_msgs/msg/Clock] 1 publisher
  * /ap/geopose/filtered [geographic_msgs/msg/GeoPoseStamped] 1 publisher
@@ -161,6 +161,8 @@ Published topics:
  * /ap/imu/experimental/data [sensor_msgs/msg/Imu] 1 publisher
  * /ap/navsat [sensor_msgs/msg/NavSatFix] 1 publisher
  * /ap/pose/filtered [geometry_msgs/msg/PoseStamped] 1 publisher
+ * /ap/rc [ardupilot_msgs/msg/Rc] 1 publisher
+ * /ap/status [ardupilot_msgs/msg/Status] 1 publisher
  * /ap/tf_static [tf2_msgs/msg/TFMessage] 1 publisher
  * /ap/time [builtin_interfaces/msg/Time] 1 publisher
  * /ap/twist/filtered [geometry_msgs/msg/TwistStamped] 1 publisher
@@ -316,7 +318,7 @@ mkdir -p libraries/AP_DDS/Idl/builtin_interfaces/msg/
 # Copy the IDL
 cp /opt/ros/humble/share/builtin_interfaces/msg/Time.idl libraries/AP_DDS/Idl/builtin_interfaces/msg/
 
-# Build the code again with the `--enable-dds` flag as described above
+# Build the code again with the `--enable-DDS` flag as described above
 ```
 
 If the message is custom for ardupilot, first create the ROS message in `Tools/ros2/ardupilot_msgs/msg/GlobalPosition.msg`.
@@ -404,7 +406,7 @@ SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 UART4 USART3 OTG2
 
 For example, build, flash, and set up OTG2 for DDS
 ```bash
-./waf configure --board Pixhawk6X --enable-dds
+./waf configure --board Pixhawk6X --enable-DDS
 ./waf plane --upload
 mavproxy.py --console
 param set DDS_ENABLE 1

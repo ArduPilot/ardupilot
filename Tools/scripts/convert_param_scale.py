@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+
+# flake8: noqa
+
 '''
 tool to convert parameter names and scales, useful for conversion for cm -> m and cdeg -> deg
 

@@ -1,5 +1,9 @@
+'''
+AP_FLAKE8_CLEAN
+'''
 from lxml import etree
 import emitter
+
 
 class XMLEmitter(emitter.Emitter):
     def preface(self):
@@ -56,7 +60,7 @@ class XMLEmitter(emitter.Emitter):
                     for entry in enum.entries:
                         xml_enum_entry = etree.SubElement(xml_enum, xmlentrytag, name=entry.name)
                         xml_enum_entry_value = etree.SubElement(xml_enum_entry, 'value')
-                        xml_enum_entry_value.text =  str(entry.value)
+                        xml_enum_entry_value.text = str(entry.value)
                         if entry.comment is not None:
                             xml_enum_entry_comment = etree.SubElement(xml_enum_entry, 'description')
                             xml_enum_entry_comment.text = entry.comment

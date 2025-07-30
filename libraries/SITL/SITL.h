@@ -33,6 +33,7 @@
 #include "SIM_DroneCANDevice.h"
 #include "SIM_ADSB_Sagetech_MXS.h"
 #include "SIM_Volz.h"
+#include "SIM_AIS.h"
 
 namespace SITL {
 
@@ -116,7 +117,7 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
         AP_Param::setup_object_defaults(this, var_info2);
         AP_Param::setup_object_defaults(this, var_info3);
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
         AP_Param::setup_object_defaults(this, var_gps);
 #endif
         AP_Param::setup_object_defaults(this, var_mag);
@@ -168,7 +169,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Param::GroupInfo var_info2[];
     static const struct AP_Param::GroupInfo var_info3[];
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
     static const struct AP_Param::GroupInfo var_gps[];
 #endif
     static const struct AP_Param::GroupInfo var_mag[];
@@ -321,8 +322,32 @@ public:
         AP_Float accuracy;
         AP_Vector3f vel_err; // Velocity error offsets in NED (x = N, y = E, z = D)
         AP_Int8 jam; // jamming simulation enable
+        AP_Float heading_offset; // heading offset in degrees
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
+
+#if AP_SIM_VICON_ENABLED
+    class ViconParms {
+    public:
+        ViconParms(void) {
+            AP_Param::setup_object_defaults(this, var_info);
+        }
+        static const struct AP_Param::GroupInfo var_info[];
+
+        // vicon parameters
+        AP_Vector3f pos_offset;   // XYZ position of the vicon sensor relative to the body frame origin (m)
+        AP_Vector3f glitch;   // glitch in meters in vicon's local NED frame
+        AP_Float pos_stddev;       // noise in meters in vicon's local NED frame
+        AP_Float vel_stddev;       // noise in m/s in vicon's local NED frame
+        AP_Int8 fail;         // trigger vicon failure
+        AP_Int16 yaw;         // vicon local yaw in degrees
+        AP_Int16 yaw_error;   // vicon yaw error in degrees (added to reported yaw sent to vehicle)
+        AP_Int8 type_mask;    // vicon message type mask (bit0:vision position estimate, bit1:vision speed estimate, bit2:vicon position estimate)
+        AP_Vector3f vel_glitch;   // velocity glitch in m/s in vicon's local frame
+        AP_Int16 rate_hz;     // vicon data rate in Hz
+    };
+    ViconParms vicon;
+#endif  // AP_SIM_VICON_ENABLED
 
     // physics model parameters
     class ModelParm {
@@ -346,6 +371,9 @@ public:
 #if AP_SIM_FLIGHTAXIS_ENABLED
         FlightAxis *flightaxis_ptr;
 #endif
+#if AP_SIM_AIS_ENABLED
+        class AIS *ais_ptr;
+#endif  // AP_SIM_AIS_ENABLED
     };
     ModelParm models;
     
@@ -399,7 +427,6 @@ public:
     AP_Vector3f imu_pos_offset;     // XYZ position of the IMU accelerometer relative to the body frame origin (m)
     AP_Vector3f rngfnd_pos_offset;  // XYZ position of the range finder zero range datum relative to the body frame origin (m)
     AP_Vector3f optflow_pos_offset; // XYZ position of the optical flow sensor focal point relative to the body frame origin (m)
-    AP_Vector3f vicon_pos_offset;   // XYZ position of the vicon sensor relative to the body frame origin (m)
 
     // barometer temperature control
     AP_Float temp_start;            // [deg C] Barometer start temperature
@@ -537,14 +564,6 @@ public:
     } led;
 
     AP_Int8 led_layout;
-
-    // vicon parameters
-    AP_Vector3f vicon_glitch;   // glitch in meters in vicon's local NED frame
-    AP_Int8 vicon_fail;         // trigger vicon failure
-    AP_Int16 vicon_yaw;         // vicon local yaw in degrees
-    AP_Int16 vicon_yaw_error;   // vicon yaw error in degrees (added to reported yaw sent to vehicle)
-    AP_Int8 vicon_type_mask;    // vicon message type mask (bit0:vision position estimate, bit1:vision speed estimate, bit2:vicon position estimate)
-    AP_Vector3f vicon_vel_glitch;   // velocity glitch in m/s in vicon's local frame
 
     // get the rangefinder reading for the desired instance, returns -1 for no data
     float get_rangefinder(uint8_t instance);

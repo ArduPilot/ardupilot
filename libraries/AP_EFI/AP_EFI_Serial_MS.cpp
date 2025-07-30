@@ -92,7 +92,7 @@ bool AP_EFI_Serial_MS::read_incoming_realtime_data()
         float temp_float;
         switch (offset) {
             case PW1_MSB:
-                internal_state.cylinder_status.injection_time_ms = (float)((data << 8) + read_byte_CRC32())/1000.0f;
+                internal_state.cylinder_status.injection_time_ms = (float)((data << 8) + read_byte_CRC32())*0.001f;
                 offset++;  // increment the counter because we read a byte in the previous line
                 break;
             case RPM_MSB:

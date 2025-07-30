@@ -13,8 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  support for autotune of multirotors. Based on original autotune code from ArduCopter, written by Leonard Hall
-  Converted to a library by Andrew Tridgell
+  Multirotor implementation of AutoTune. Based on the original ArduCopter
+  autotune code by Leonard Hall.
  */
 
 #pragma once
@@ -28,172 +28,188 @@
 class AC_AutoTune_Multi : public AC_AutoTune
 {
 public:
-    // constructor
+    // Constructor
     AC_AutoTune_Multi();
 
-    // save gained, called on disarm
+    // Saves tuned gains to EEPROM on disarm
     void save_tuning_gains() override;
 
-    // var_info for holding Parameter information
+    // Parameter group for AP_Param registration
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
     //
-    // methods to load and save gains
+    // Gain management and initialization
     //
 
-    // backup original gains and prepare for start of tuning
+    // Backs up original gains and resets tuning state
     void backup_gains_and_initialise() override;
 
-    // switch to use original gains
+    // Loads original pre-tune gains
     void load_orig_gains() override;
 
-    // switch to gains found by last successful autotune
+    // Loads gains from the last successful autotune session
     void load_tuned_gains() override;
 
-    // load gains used between tests. called during testing mode's update-gains step to set gains ahead of return-to-level step
+    // Loads conservative gains used between twitch tests
     void load_intra_test_gains() override;
 
-    // load test gains
+    // Loads current test gains before executing a twitch
     void load_test_gains() override;
 
-    // reset the test variables for multi
+    // Resets vehicle-specific test state (not used in multirotor)
     void reset_vehicle_test_variables() override {};
 
-    // reset the update gain variables for multi
+    // Resets vehicle-specific gain tracking state (not used in multirotor)
     void reset_update_gain_variables() override {};
 
+    // Maximum/Minimum target angles for the current axis (in centidegrees)
     float target_angle_max_rp_cd() const override;
-
     float target_angle_max_y_cd() const override;
-
     float target_angle_min_rp_cd() const override;
-
     float target_angle_min_y_cd() const override;
 
+    // Absolute and negative angle abort limits for twitch safety (in centidegrees)
     float angle_lim_max_rp_cd() const override;
-
     float angle_lim_neg_rpy_cd() const override;
 
+    // Prepares state and targets for a new twitch test
     void test_init() override;
+
+    // Executes one twitch step for the specified axis and direction
     void test_run(AxisType test_axis, const float dir_sign) override;
 
-    // send intermittent updates to user on status of tune
+    // Sends regular status messages to the ground station
     void do_gcs_announcements() override;
 
-    // send post test updates to user
+    // (Unused) Placeholder for post-test announcements
     void do_post_test_gcs_announcements() override {};
 
-    // report final gains for a given axis to GCS
+    // Reports final tuned gains to the ground station
     void report_final_gains(AxisType test_axis) const override;
 
-    // update gains for the rate P up tune type
+    // Update functions for each TuneType
     void updating_rate_p_up_all(AxisType test_axis) override;
-
-    // update gains for the rate D up tune type
     void updating_rate_d_up_all(AxisType test_axis) override;
-
-    // update gains for the rate D down tune type
     void updating_rate_d_down_all(AxisType test_axis) override;
-
-    // update gains for the rate ff up tune type
-    void updating_rate_ff_up_all(AxisType test_axis) override {
-        // this should never happen
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-    }
-
-    // update gains for the angle P up tune type
     void updating_angle_p_up_all(AxisType test_axis) override;
-
-    // update gains for the angle P down tune type
     void updating_angle_p_down_all(AxisType test_axis) override;
 
-    // update gains for the max gain tune type
-    void updating_max_gains_all(AxisType test_axis) override {
-        // this should never happen
+    // These tune types are not used in multirotors
+    void updating_rate_ff_up_all(AxisType) override {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    }
+    void updating_max_gains_all(AxisType) override {
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     }
 
-    // set gains post tune for the tune type
-    void set_gains_post_tune(AxisType test_axis) override;
+    // Applies gain margin (backoff) at the end of a TuneType
+    void set_tuning_gains_with_backoff(AxisType test_axis) override;
 
-    // reverse direction for twitch test
-    bool twitch_reverse_direction() override { return !positive_direction; }
+    // reverse the direction of the next test
+    bool reverse_test_direction() override { return !positive_direction; }
 
 #if HAL_LOGGING_ENABLED
     void Log_AutoTune() override;
     void Log_AutoTuneDetails() override;
     void Log_AutoTuneSweep() override {
-        // this should never happen
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     }
-    void Log_Write_AutoTune(AxisType axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
+
+    void Log_Write_AutoTune(AxisType axis, TuneType tune_step,
+                            float meas_target, float meas_min, float meas_max,
+                            float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
 #endif
 
+    // Defines the sequence of tuning steps (P, D, etc.)
     void set_tune_sequence() override {
-        tune_seq[0] = RD_UP;
-        tune_seq[1] = RD_DOWN;
-        tune_seq[2] = RP_UP;
-        tune_seq[3] = SP_DOWN;
-        tune_seq[4] = SP_UP;
-        tune_seq[5] = TUNE_COMPLETE;
+        tune_seq[0] = TuneType::RATE_D_UP;
+        tune_seq[1] = TuneType::RATE_D_DOWN;
+        tune_seq[2] = TuneType::RATE_P_UP;
+        tune_seq[3] = TuneType::ANGLE_P_DOWN;
+        tune_seq[4] = TuneType::ANGLE_P_UP;
+        tune_seq[5] = TuneType::TUNE_COMPLETE;
     }
 
-    // get_axis_bitmask accessor
+    // Axis tuning mask accessor
     uint8_t get_axis_bitmask() const override { return axis_bitmask; }
 
-    // get_testing_step_timeout_ms accessor
+    // Timeout for a single twitch test
     uint32_t get_testing_step_timeout_ms() const override;
 
 private:
-    // twitch test functions for multicopter
-    void twitch_test_init();
-    void twitch_test_run(AxisType test_axis, const float dir_sign);
+    // Helpers for twitch-based test monitoring
+    
+    void twitching_test_rate(float angle, float rate, float rate_target,
+                             float &meas_rate_min, float &meas_rate_max, float &meas_angle_min);
 
-    void twitching_test_rate(float angle, float rate, float rate_target, float &meas_rate_min, float &meas_rate_max, float &meas_angle_min);
-    void twitching_abort_rate(float angle, float rate, float angle_max, float meas_rate_min, float angle_min);
-    void twitching_test_angle(float angle, float rate, float angle_target, float &meas_angle_min, float &meas_angle_max, float &meas_rate_min, float &meas_rate_max);
+    void twitching_abort_rate(float angle, float rate, float angle_max,
+                              float meas_rate_min, float angle_min);
 
-    // measure acceleration during twitch test
+    void twitching_test_angle(float angle, float rate, float angle_target,
+                              float &meas_angle_min, float &meas_angle_max,
+                              float &meas_rate_min, float &meas_rate_max);
+
+    // Calculates average acceleration during twitch
     void twitching_measure_acceleration(float &accel_average, float rate, float &rate_max) const;
 
-    // updating_rate_d_up - increase D and adjust P to optimize the D term for a little bounce back
-    // optimize D term while keeping the maximum just below the target by adjusting P
-    void updating_rate_d_up(float &tune_d, float tune_d_min, float tune_d_max, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max);
+// Gain update routines
 
-    // updating_rate_d_down - decrease D and adjust P to optimize the D term for no bounce back
-    // optimize D term while keeping the maximum just below the target by adjusting P
-    void updating_rate_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max);
+// Increases D and adjusts P to produce controlled bounce-back behavior.
+// Seeks to bring the response peak just below the target rate while inducing
+// a small overshoot (bounce) for evaluating D influence.
+void updating_rate_d_up(float &tune_d, float tune_d_min, float tune_d_max, float tune_d_step_ratio,
+                        float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio,
+                        float rate_target, float meas_rate_min, float meas_rate_max);
 
-    // updating_rate_p_up_d_down - increase P to ensure the target is reached while checking bounce back isn't increasing
-    // P is increased until we achieve our target within a reasonable time while reducing D if bounce back increases above the threshold
-    void updating_rate_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max, bool fail_min_d = true);
+// Decreases D and adjusts P to eliminate bounce-back in the response.
+// Aims to achieve a clean response just below the target rate with no overshoot.
+void updating_rate_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio,
+                          float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio,
+                          float rate_target, float meas_rate_min, float meas_rate_max);
 
-    // updating_angle_p_down - decrease P until we don't reach the target before time out
-    // P is decreased to ensure we are not overshooting the target
-    void updating_angle_p_down(float &tune_p, float tune_p_min, float tune_p_step_ratio, float angle_target, float meas_angle_max, float meas_rate_min, float meas_rate_max);
+// Increases P to ensure the target rate is reached quickly, while reducing D
+// if bounce-back exceeds the aggressiveness threshold.
+// Fails if D hits minimum and clean response is not achievable (optional).
+void updating_rate_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio,
+                                float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio,
+                                float rate_target, float meas_rate_min, float meas_rate_max,
+                                bool fail_min_d = true);
 
-    // updating_angle_p_up - increase P to ensure the target is reached
-    // P is increased until we achieve our target within a reasonable time
-    void updating_angle_p_up(float &tune_p, float tune_p_max, float tune_p_step_ratio, float angle_target, float meas_angle_max, float meas_rate_min, float meas_rate_max);
+// Decreases angle P gain to reduce overshoot until the target is no longer reached before timeout.
+// Used to back off from aggressive behavior in angle control.
+void updating_angle_p_down(float &tune_p, float tune_p_min, float tune_p_step_ratio,
+                           float angle_target, float meas_angle_max,
+                           float meas_rate_min, float meas_rate_max);
 
-    // report gain formatting helper
-    void report_axis_gains(const char* axis_string, float rate_P, float rate_I, float rate_D, float angle_P, float max_accel) const;
+// Increases angle P gain to ensure the target is reached within a reasonable time.
+// Stops increasing once target response is consistently achieved without overshoot.
+void updating_angle_p_up(float &tune_p, float tune_p_max, float tune_p_step_ratio,
+                         float angle_target, float meas_angle_max,
+                         float meas_rate_min, float meas_rate_max);
 
-    // parameters
-    AP_Int8  axis_bitmask;      // axes to be tuned
-    AP_Float aggressiveness;    // aircraft response aggressiveness to be tuned
-    AP_Float min_d;             // minimum rate d gain allowed during tuning
-    bool     ignore_next;       // ignore the results of the next test when true
-    float    target_angle;      // target angle for the test
-    float    target_rate;       // target rate for the test
-    float    angle_abort;       // Angle that test is aborted
-    float    test_rate_min;     // the minimum angular rate achieved during TESTING_RATE
-    float    test_rate_max;     // the maximum angular rate achieved during TESTING_RATE
-    float    test_angle_min;    // the minimum angle achieved during TESTING_ANGLE
-    float    test_angle_max;    // the maximum angle achieved during TESTING_ANGLE
-    float    accel_measure_rate_max; // the maximum rate used to measure average acceleration during twitch
+    // Formats and sends gain reports
+    void report_axis_gains(const char* axis_string, float rate_P, float rate_I,
+                           float rate_D, float angle_P, float max_accel) const;
+
+    // Parameters
+    AP_Int8  axis_bitmask;      // Axis enable mask
+    AP_Float aggressiveness;    // Target overshoot ratio (D tuning sensitivity)
+    AP_Float min_d;             // Minimum allowed D gain
+    bool     ignore_next;       // Skip next result (used for rate overshoot handling)
+
+    // Measurement and target values for each test step
+    float target_angle;
+    float target_rate;
+    float angle_abort;
+
+    float test_rate_min;
+    float test_rate_max;
+    float test_angle_min;
+    float test_angle_max;
+
+    float accel_measure_rate_max;
 };
 
-#endif  // AC_AUTOTUNE_ENABLED
+#endif // AC_AUTOTUNE_ENABLED

@@ -181,7 +181,7 @@ RC input is configured on the RX6 (UART6_RX) pin. It supports all RC protocols e
 - SBUS/DSM/SRXL connects to the RX6 pin.
 - FPort requires connection to TX6 and :ref:`SERIAL6_OPTIONS<SERIAL2_OPTIONS>` be set to “7”.
 - CRSF also requires a TX6 connection, in addition to RX6, and automatically provides telemetry. Set :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>`
-- SRXL2 requires a connecton to TX6 and automatically provides telemetry. Set :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` to “4”. =3.
+- SRXL2 requires a connection to TX6 and automatically provides telemetry. Set :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` to “4”. =3.
 
 ## Battery Monitoring
 

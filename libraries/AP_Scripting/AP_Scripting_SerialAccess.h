@@ -14,6 +14,9 @@ public:
 
     void begin(uint32_t baud);
 
+    void configure_parity(uint8_t parity);
+    void set_stop_bits(uint8_t stop_bits);
+
     size_t write(uint8_t c);
     size_t write(const uint8_t *buffer, size_t size);
 

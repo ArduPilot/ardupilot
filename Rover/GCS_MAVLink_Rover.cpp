@@ -155,7 +155,7 @@ int16_t GCS_MAVLINK_Rover::vfr_hud_throttle() const
     return rover.g2.motors.get_throttle();
 }
 
-#if AP_RANGEFINDER_ENABLED
+#if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
 void GCS_MAVLINK_Rover::send_rangefinder() const
 {
     float distance = 0;
@@ -185,7 +185,9 @@ void GCS_MAVLINK_Rover::send_rangefinder() const
         distance,
         voltage);
 }
+#endif  // AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
 
+#if AP_RANGEFINDER_ENABLED
 void GCS_MAVLINK_Rover::send_water_depth()
 {
     if (!HAVE_PAYLOAD_SPACE(chan, WATER_DEPTH)) {
@@ -242,9 +244,9 @@ void GCS_MAVLINK_Rover::send_water_depth()
             loc.lat,            // latitude of vehicle
             loc.lng,            // longitude of vehicle
             loc.alt * 0.01f,    // altitude of vehicle (MSL)
-            ahrs.get_roll(),    // roll in radians
-            ahrs.get_pitch(),   // pitch in radians
-            ahrs.get_yaw(),     // yaw in radians
+            ahrs.get_roll_rad(),    // roll in radians
+            ahrs.get_pitch_rad(),   // pitch in radians
+            ahrs.get_yaw_rad(),     // yaw in radians
             s->distance(),    // distance in meters
             temp_C);            // temperature in degC
 
@@ -477,18 +479,24 @@ bool GCS_MAVLINK_Rover::handle_guided_request(AP_Mission::Mission_Command &cmd)
 
 MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
-    if (packet.y == 1) {
+    switch (packet.y) { 
+    case 1:
         if (rover.g2.windvane.start_direction_calibration()) {
             return MAV_RESULT_ACCEPTED;
         } else {
             return MAV_RESULT_FAILED;
         }
-    } else if (packet.y == 2) {
+
+    case 2:
         if (rover.g2.windvane.start_speed_calibration()) {
             return MAV_RESULT_ACCEPTED;
         } else {
             return MAV_RESULT_FAILED;
         }
+
+    default:
+        break;
+
     }
 
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet, msg);
@@ -499,8 +507,18 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_in
     switch (packet.command) {
 
     case MAV_CMD_DO_CHANGE_SPEED:
-        // param1 : unused
+        // param1 : type
         // param2 : new speed in m/s
+        switch (SPEED_TYPE(packet.param1)) {
+            case SPEED_TYPE_CLIMB_SPEED:
+            case SPEED_TYPE_DESCENT_SPEED:
+            case SPEED_TYPE_ENUM_END:
+                return MAV_RESULT_DENIED;
+
+            case SPEED_TYPE_AIRSPEED: // Airspeed is treated as ground speed for GCS compatibility
+            case SPEED_TYPE_GROUNDSPEED:
+                break;
+        }
         if (!rover.control_mode->set_desired_speed(packet.param2)) {
             return MAV_RESULT_FAILED;
         }
@@ -675,6 +693,14 @@ void GCS_MAVLINK_Rover::handle_set_attitude_target(const mavlink_message_t &msg)
     }
 }
 
+// if we receive a message where the user has not masked out
+// acceleration from the input packet we send a curt message
+// informing them:
+void GCS_MAVLINK_Rover::send_acc_ignore_must_be_set_message(const char *msgname)
+{
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Ignoring %s; set ACC_IGNORE in mask", msgname);
+}
+
 void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_message_t &msg)
 {
     // decode packet
@@ -757,7 +783,7 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
 
     // consume yaw heading
     if (!yaw_ignore) {
-        target_yaw_cd = ToDeg(packet.yaw) * 100.0f;
+        target_yaw_cd = degrees(packet.yaw) * 100.0f;
         // rotate target yaw if provided in body-frame
         if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
             target_yaw_cd = wrap_180_cd(target_yaw_cd + rover.ahrs.yaw_sensor);
@@ -766,7 +792,7 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
     // consume yaw rate
     float target_turn_rate_cds = 0.0f;
     if (!yaw_rate_ignore) {
-        target_turn_rate_cds = ToDeg(packet.yaw_rate) * 100.0f;
+        target_turn_rate_cds = degrees(packet.yaw_rate) * 100.0f;
     }
 
     // handling case when both velocity and either yaw or yaw-rate are provided
@@ -780,6 +806,12 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
         }
     }
 
+    if (!acc_ignore) {
+        // ignore any command where acceleration is not ignored
+        send_acc_ignore_must_be_set_message("SET_POSITION_TARGET_LOCAL_NED");
+        return;
+    }
+
     // set guided mode targets
     if (!pos_ignore) {
         // consume position target
@@ -787,19 +819,22 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
             // GCS will need to monitor desired location to
             // see if they are having an effect.
         }
-    } else if (!vel_ignore && acc_ignore && yaw_ignore && yaw_rate_ignore) {
+        return;
+    }
+
+    if (!vel_ignore && yaw_ignore && yaw_rate_ignore) {
         // consume velocity
         rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, speed_dir * target_speed);
-    } else if (!vel_ignore && acc_ignore && yaw_ignore && !yaw_rate_ignore) {
+    } else if (!vel_ignore && yaw_ignore && !yaw_rate_ignore) {
         // consume velocity and turn rate
         rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, speed_dir * target_speed);
-    } else if (!vel_ignore && acc_ignore && !yaw_ignore && yaw_rate_ignore) {
+    } else if (!vel_ignore && !yaw_ignore && yaw_rate_ignore) {
         // consume velocity and heading
         rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, speed_dir * target_speed);
-    } else if (vel_ignore && acc_ignore && !yaw_ignore && yaw_rate_ignore) {
+    } else if (vel_ignore && !yaw_ignore && yaw_rate_ignore) {
         // consume just target heading (probably only skid steering vehicles can do this)
         rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, 0.0f);
-    } else if (vel_ignore && acc_ignore && yaw_ignore && !yaw_rate_ignore) {
+    } else if (vel_ignore && yaw_ignore && !yaw_rate_ignore) {
         // consume just turn rate (probably only skid steering vehicles can do this)
         rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, 0.0f);
     }
@@ -861,13 +896,13 @@ void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_mess
 
     // consume yaw heading
     if (!yaw_ignore) {
-        target_yaw_cd = ToDeg(packet.yaw) * 100.0f;
+        target_yaw_cd = degrees(packet.yaw) * 100.0f;
     }
 
     // consume yaw rate
     float target_turn_rate_cds = 0.0f;
     if (!yaw_rate_ignore) {
-        target_turn_rate_cds = ToDeg(packet.yaw_rate) * 100.0f;
+        target_turn_rate_cds = degrees(packet.yaw_rate) * 100.0f;
     }
 
     // handling case when both velocity and either yaw or yaw-rate are provided
@@ -881,6 +916,12 @@ void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_mess
         }
     }
 
+    if (!acc_ignore) {
+        // ignore any command where acceleration is not ignored
+        send_acc_ignore_must_be_set_message("SET_POSITION_TARGET_GLOBAL_INT");
+        return;
+    }
+
     // set guided mode targets
     if (!pos_ignore) {
         // consume position target
@@ -888,19 +929,22 @@ void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_mess
             // GCS will just need to look at desired location
             // outputs to see if it having an effect.
         }
-    } else if (!vel_ignore && acc_ignore && yaw_ignore && yaw_rate_ignore) {
+        return;
+    }
+
+    if (!vel_ignore && yaw_ignore && yaw_rate_ignore) {
         // consume velocity
         rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, speed_dir * target_speed);
-    } else if (!vel_ignore && acc_ignore && yaw_ignore && !yaw_rate_ignore) {
+    } else if (!vel_ignore && yaw_ignore && !yaw_rate_ignore) {
         // consume velocity and turn rate
         rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, speed_dir * target_speed);
-    } else if (!vel_ignore && acc_ignore && !yaw_ignore && yaw_rate_ignore) {
+    } else if (!vel_ignore && !yaw_ignore && yaw_rate_ignore) {
         // consume velocity
         rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, speed_dir * target_speed);
-    } else if (vel_ignore && acc_ignore && !yaw_ignore && yaw_rate_ignore) {
+    } else if (vel_ignore && !yaw_ignore && yaw_rate_ignore) {
         // consume just target heading (probably only skid steering vehicles can do this)
         rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, 0.0f);
-    } else if (vel_ignore && acc_ignore && yaw_ignore && !yaw_rate_ignore) {
+    } else if (vel_ignore && yaw_ignore && !yaw_rate_ignore) {
         // consume just turn rate(probably only skid steering vehicles can do this)
         rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, 0.0f);
     }

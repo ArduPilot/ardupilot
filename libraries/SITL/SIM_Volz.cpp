@@ -66,6 +66,13 @@ const AP_Param::GroupInfo Volz::var_info[] = {
     AP_GROUPEND
 };
 
+// this isn't in the header as inlcuding sparse_endian in the header
+// causes compilation issues with redefinition of bswap16
+void Volz::Command::update_checksum()
+{
+    crc = htobe16(calculate_checksum());
+}
+
 Volz::Volz() : SerialDevice::SerialDevice()
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -244,6 +251,16 @@ void Volz::update_sitl_input_pwm(struct sitl_input &input)
 #if HAL_LOGGING_ENABLED
 void Volz::log_Servo(const Volz::Servo &servo, const uint32_t now_us)
 {
+    // @LoggerMessage: SMVZ
+    // @Description: Simulated Volz servo information
+    // @Field: TimeUS: Time since system startup
+    // @Field: Id: Volz servo ID
+    // @Field: Pos: Current Simulated Position
+    // @Field: DesPos: Desired Simulated Position
+    // @Field: V: simulated servo voltage
+    // @Field: A: simulated servo current
+    // @Field: PCBT: simulated PCB Temperature
+    // @Field: MotT: simulated motor Temperature
     AP::logger().WriteStreaming(
         "SMVZ",
         "TimeUS," "Id," "Pos," "DesPos," "V," "A," "PCBT," "MotT" ,

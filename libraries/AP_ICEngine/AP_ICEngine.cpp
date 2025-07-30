@@ -377,7 +377,7 @@ void AP_ICEngine::update(void)
         Vector3f pos;
         if (!should_run) {
             state = ICE_OFF;
-        } else if (AP::ahrs().get_relative_position_NED_origin(pos)) {
+        } else if (AP::ahrs().get_relative_position_NED_origin_float(pos)) {
             if (height_pending) {
                 height_pending = false;
                 initial_height = -pos.z;
@@ -447,7 +447,7 @@ void AP_ICEngine::update(void)
         if (state == ICE_START_HEIGHT_DELAY) {
             // when disarmed we can be waiting for takeoff
             Vector3f pos;
-            if (AP::ahrs().get_relative_position_NED_origin(pos)) {
+            if (AP::ahrs().get_relative_position_NED_origin_float(pos)) {
                 // reset initial height while disarmed
                 initial_height = -pos.z;
             }

@@ -8,60 +8,32 @@ It generates a json report that this then parses to make it look nicer
 AP_FLAKE8_CLEAN
 '''
 
-import optparse
+import argparse
 import sys
 import os
 import pathlib
-import json
 import shutil
 import platform
-from urllib.parse import unquote
 import subprocess
 import re
-
-
-def print_failures(file_name, fails, original_name):
-    file_name = unquote(file_name)
-    file_path = pathlib.Path(file_name[5:])
-
-    if (original_name is not None) and (original_name.name == file_path.name):
-        file_path = original_name
-
-    for fail in fails:
-        start = fail['range']['start']
-
-        # These seem to be off by one, not sure why
-        line = start['line'] + 1
-        character = start['character'] + 1
-
-        print("%s:%i:%i" % (file_path, line, character))
-
-        print("\tCode: %s" % fail['code'])
-        message = fail['message'].split("\n")
-        for line in message:
-            print("\t%s" % line)
-
-    print()
-    return len(fails)
-
+import logging
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser(__file__)
+    parser = argparse.ArgumentParser(__file__)
+    parser.add_argument('--debugLogging', action='store_true', help='turn on some extra logging to debug the auto installer')
+    parser.add_argument('check_path', default="./", help='optional input file or directory name', nargs='?')
 
-    opts, args = parser.parse_args()
+    args = parser.parse_args()
 
-    if len(args) > 1:
-        print('Usage: %s "check path"' % parser.usage)
-        sys.exit(0)
-
-    check_path = "./"
-    if len(args) > 0:
-        check_path = args[0]
-    check_path = pathlib.Path(check_path)
+    check_path = pathlib.Path(args.check_path)
 
     if not os.path.exists(check_path):
         raise Exception("Path invalid: %s" % check_path)
+
+    # This allows us to see debug logging from github_release_downloader which sometimes fails in CI
+    if args.debugLogging:
+        logging.basicConfig(level=logging.DEBUG)
 
     # Work out full path to config file
     ap_root = (pathlib.Path(__file__) / "../../../").resolve()
@@ -145,6 +117,22 @@ if __name__ == '__main__':
             elif checked_files != count:
                 raise Exception("Checked files error expected: %i got: %i" % (checked_files, count))
 
+    # Grab the summary line to so we can error out for errors
+    summary = None
+    summary_re = re.compile(r"^Diagnosis (?:complete|completed), (\d+|no) problems found")
+    for line in result:
+        match = summary_re.search(line)
+        if match is not None:
+            summary = match
+
+    if summary is None:
+        raise Exception("Could not complete Diagnosis")
+
+    # Get number of errors
+    errors = 0
+    if summary.group(1) != "no":
+        errors = int(summary.group(1))
+
     if tmp_check_dir is not None:
         # Remove test directory
         shutil.rmtree(tmp_check_dir)
@@ -152,20 +140,6 @@ if __name__ == '__main__':
     elif docs_copy is not None:
         # remove copy of docs
         os.remove(docs_copy)
-
-    # Read output
-    errors = 0
-    result = (logs / "check.json").resolve()
-    if os.path.exists(result):
-        # File only created if there are errors
-        f = open((logs / "check.json").resolve())
-        data = json.load(f)
-        f.close()
-
-        if len(data) > 0:
-            # Print output if there are any errors
-            for key, value in data.items():
-                errors += print_failures(key, value, original_name)
 
     # Remove output
     shutil.rmtree(logs)

@@ -9,6 +9,10 @@
 
 #include "AP_BattMonitor_Sum.h"
 
+#if AP_BATT_MONITOR_MAX_INSTANCES < 2
+#error "AP_BATT_MONITOR_MAX_INSTANCES must be at least three for AP_BATTERY_SUM_ENABLED"
+#endif  // AP_BATT_MONITOR_MAX_INSTANCES < 2
+
 /*
   battery monitor that is the sum of other battery monitors after this one
 

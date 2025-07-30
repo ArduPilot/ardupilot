@@ -28,6 +28,76 @@
 
 #include "AP_Airspeed_Backend.h"
 
+class AUAV_Pressure_sensor
+{
+public:
+    enum class Type {
+        Differential,
+        Absolute,
+    };
+
+    AUAV_Pressure_sensor(AP_HAL::I2CDevice *&_dev, Type _type);
+
+    // start a measurement
+    // Return true if successful
+    bool measure() WARN_IF_UNUSED;
+
+    enum class Status {
+        Normal, // Happy, valid reading
+        Busy, // Busy, try reading again later
+        Fault, // Something bad has happened
+    };
+
+    // read the values from the sensor
+    // Return status
+    // pressure corrected but not scaled to the correct units
+    // temperature in degrees centigrade
+    Status collect(float &PComp, float &temperature) WARN_IF_UNUSED;
+
+    // Read coefficients in stages
+    enum class CoefficientStage {
+        A_high,
+        A_low,
+        B_high,
+        B_low,
+        C_high,
+        C_low,
+        D_high,
+        D_low,
+        E_high,
+        E_low,
+        Done,
+    } stage;
+
+    // Read extended compensation coefficients from sensor
+    void read_coefficients();
+
+    // Read 4 bytes compensation coefficient
+    bool read_register(uint8_t cmd, uint16_t &result);
+
+private:
+    AP_HAL::I2CDevice *&dev;
+
+    Type type;
+
+    // Extended compensation coefficients
+    // Theses are read from the sensor in read_coefficients
+    float LIN_A;
+    float LIN_B;
+    float LIN_C;
+    float LIN_D;
+    float Es;
+    float TC50H;
+    float TC50L;
+
+    // Step of reading coefficients, request must be made before read.
+    enum class CoefficientStep {
+        request,
+        read,
+    } coefficient_step;
+
+};
+
 class AP_Airspeed_AUAV : public AP_Airspeed_Backend
 {
 public:
@@ -47,25 +117,15 @@ public:
 
 private:
     bool probe(uint8_t bus, uint8_t address);
-    void _measure();
-    void _collect();
     void _timer();
-    bool _read_coefficients();
-    uint32_t _read_register(uint8_t cmd);
 
     uint32_t last_sample_time_ms;
-    uint32_t measurement_started_ms;
+    bool measurement_requested;
     AP_HAL::I2CDevice *_dev;
 
-    float DLIN_A;
-    float DLIN_B;
-    float DLIN_C;
-    float DLIN_D;
-    float D_Es;
-    float D_TC50H;
-    float D_TC50L; // Diff coeffs
+    AUAV_Pressure_sensor sensor { _dev, AUAV_Pressure_sensor::Type::Differential };
 
-    float pressure_digital;
+    float pressure;
     float temp_C;
     const float range_inH2O;
 };

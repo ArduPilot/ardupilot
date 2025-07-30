@@ -34,11 +34,6 @@ public:
     void *malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type) override;
     void free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type) override;
 
-#if ENABLE_HEAP
-    // heap functions, note that a heap once alloc'd cannot be dealloc'd
-    virtual void *std_realloc(void *ptr, uint32_t new_size) override;
-#endif // ENABLE_HEAP
-
     /*
       return state of safety switch, if applicable
      */

@@ -102,11 +102,6 @@
 #define AP_COMPASS_ENABLE_DEFAULT 0
 #define ALLOW_ARM_NO_COMPASS
 
-//See boards.py
-#ifndef ENABLE_HEAP
-#define ENABLE_HEAP 1
-#endif
-
 //WIFI
 #define HAL_ESP32_WIFI 1  //1-TCP, 2-UDP, comment this line = without wifi
 #define WIFI_SSID "ardupilot-esp32"
@@ -148,3 +143,7 @@
 #define HAL_LOGGING_BACKENDS_DEFAULT 1
 
 #define AP_RCPROTOCOL_ENABLED 0
+
+// disable all frames for sim on hw except quad to save DRAM .bss
+#define AP_MOTORS_FRAME_DEFAULT_ENABLED 0
+#define AP_MOTORS_FRAME_QUAD_ENABLED 1

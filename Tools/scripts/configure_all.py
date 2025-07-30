@@ -1,7 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+# flake8: noqa
 
 """
-script to run configre for all hwdef.dat, to check for syntax errors
+script to run configure for all hwdef.dat, to check for syntax errors
 """
 
 import os
@@ -36,7 +38,7 @@ done = []
 board_list = []
 
 def get_board_list():
-    '''add boards based on existance of hwdef-bl.dat in subdirectories for ChibiOS'''
+    '''add boards based on existence of hwdef-bl.dat in subdirectories for ChibiOS'''
     board_list = []
     # these are base builds, and don't build directly
     omit = []
@@ -70,7 +72,7 @@ if args.start is not None:
 
 def is_ap_periph(board):
     hwdef = os.path.join('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % board)
-    ch = chibios_hwdef.ChibiOSHWDef(hwdef)
+    ch = chibios_hwdef.ChibiOSHWDef(hwdef=[hwdef], quiet=True)
     ch.process_hwdefs()
     return ch.is_periph_fw()
 

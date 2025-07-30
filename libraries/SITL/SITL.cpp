@@ -227,8 +227,8 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @DisplayName: Sim Speedup
     // @Description: Runs the simulation at multiples of normal speed. Do not use if realtime physics, like RealFlight, is being used
     // @Range: 1 10
-    // @User: Advanced    
-    AP_GROUPINFO("SPEEDUP",       52, SIM,  speedup, -1),
+    // @User: Advanced
+    AP_GROUPINFO("SPEEDUP",       52, SIM,  speedup, 1),
     // @Param: IMU_POS
     // @DisplayName: IMU Offsets
     // @Description: XYZ position of the IMU accelerometer relative to the body frame origin
@@ -255,7 +255,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPINFO("ENGINE_FAIL",   58, SIM,  engine_fail,  0),
     AP_SUBGROUPINFO(models, "",   59, SIM, SIM::ModelParm),
     AP_SUBGROUPEXTENSION("",      60, SIM,  var_mag),
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
     AP_SUBGROUPEXTENSION("",      61, SIM,  var_gps),
 #endif
     AP_SUBGROUPEXTENSION("",      62, SIM,  var_info3),
@@ -533,98 +533,8 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Description: Scenario for thermalling simulation, for soaring
     AP_GROUPINFO("THML_SCENARI",  12, SIM,  thermal_scenario, 0),
 
-    // @Param: VICON_POS_X
-    // @DisplayName: SITL vicon position on vehicle in Forward direction
-    // @Description: SITL vicon position on vehicle in Forward direction
-    // @Units: m
-    // @Range: 0 10
-    // @User: Advanced
-
-    // @Param: VICON_POS_Y
-    // @DisplayName: SITL vicon position on vehicle in Right direction
-    // @Description: SITL vicon position on vehicle in Right direction
-    // @Units: m
-    // @Range: 0 10
-    // @User: Advanced
-
-    // @Param: VICON_POS_Z
-    // @DisplayName: SITL vicon position on vehicle in Down direction
-    // @Description: SITL vicon position on vehicle in Down direction
-    // @Units: m
-    // @Range: 0 10
-    // @User: Advanced    
-    AP_GROUPINFO("VICON_POS",     14, SIM,  vicon_pos_offset, 0),
-
     // Buyoancy for submarines
     AP_GROUPINFO_FRAME("BUOYANCY", 15, SIM, buoyancy, 1, AP_PARAM_FRAME_SUB),
-
-    // @Param: VICON_GLIT_X
-    // @DisplayName: SITL vicon position glitch North
-    // @Description: SITL vicon position glitch North
-    // @Units: m
-    // @User: Advanced
-
-    // @Param: VICON_GLIT_Y
-    // @DisplayName: SITL vicon position glitch East
-    // @Description: SITL vicon position glitch East
-    // @Units: m
-    // @User: Advanced
-
-    // @Param: VICON_GLIT_Z
-    // @DisplayName: SITL vicon position glitch Down
-    // @Description: SITL vicon position glitch Down
-    // @Units: m
-    // @User: Advanced
-    AP_GROUPINFO("VICON_GLIT",    16, SIM,  vicon_glitch, 0),
-
-    // @Param: VICON_FAIL
-    // @DisplayName: SITL vicon failure
-    // @Description: SITL vicon failure
-    // @Values: 0:Vicon Healthy, 1:Vicon Failed
-    // @User: Advanced
-    AP_GROUPINFO("VICON_FAIL",    17, SIM,  vicon_fail, 0),
-
-    // @Param: VICON_YAW
-    // @DisplayName: SITL vicon yaw angle in earth frame
-    // @Description: SITL vicon yaw angle in earth frame
-    // @Units: deg
-    // @Range: 0 360
-    // @User: Advanced
-    AP_GROUPINFO("VICON_YAW",     18, SIM,  vicon_yaw, 0),
-
-    // @Param: VICON_YAWERR
-    // @DisplayName: SITL vicon yaw error
-    // @Description: SITL vicon yaw added to reported yaw sent to vehicle
-    // @Units: deg
-    // @Range: -180 180
-    // @User: Advanced
-    AP_GROUPINFO("VICON_YAWERR",  19, SIM,  vicon_yaw_error, 0),
-
-    // @Param: VICON_TMASK
-    // @DisplayName: SITL vicon type mask
-    // @Description: SITL vicon messages sent
-    // @Bitmask: 0:VISION_POSITION_ESTIMATE, 1:VISION_SPEED_ESTIMATE, 2:VICON_POSITION_ESTIMATE, 3:VISION_POSITION_DELTA, 4:ODOMETRY
-    // @User: Advanced
-    AP_GROUPINFO("VICON_TMASK",   20, SIM,  vicon_type_mask, 3),
-
-    // @Param: VICON_VGLI_X
-    // @DisplayName: SITL vicon velocity glitch North
-    // @Description: SITL vicon velocity glitch North
-    // @Units: m/s
-    // @User: Advanced
-
-    // @Param: VICON_VGLI_Y
-    // @DisplayName: SITL vicon velocity glitch East
-    // @Description: SITL vicon velocity glitch East
-    // @Units: m/s
-    // @User: Advanced
-
-    // @Param: VICON_VGLI_Z
-    // @DisplayName: SITL vicon velocity glitch Down
-    // @Description: SITL vicon velocity glitch Down
-    // @Units: m/s
-    // @User: Advanced
-    AP_GROUPINFO("VICON_VGLI",    21, SIM,  vicon_vel_glitch, 0),
 
     // @Param: RATE_HZ
     // @DisplayName: Loop rate
@@ -731,7 +641,13 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Group: VOLZ_
     // @Path: ./SIM_Volz.cpp
     AP_SUBGROUPINFO(volz_sim, "VOLZ_", 55, SIM, Volz),
-#endif
+#endif  //  AP_SIM_VOLZ_ENABLED
+
+#if AP_SIM_VICON_ENABLED
+    // @Group: VICON_
+    // @Path: ./SIM_Vicon.cpp
+    AP_SUBGROUPINFO(vicon, "VICON_", 56, SIM, ViconParms),
+#endif  // AP_SIM_VICON_ENABLED
 
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
@@ -741,7 +657,7 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
 };
 
 
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
 // GPS SITL parameters
 const AP_Param::GroupInfo SIM::var_gps[] = {
     //  1 was GPS_DISABLE
@@ -820,7 +736,7 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
 
    AP_GROUPEND
 };
-#endif  // HAL_SIM_GPS_ENABLED
+#endif  // AP_SIM_GPS_ENABLED
 
 // Mag SITL parameters
 const AP_Param::GroupInfo SIM::var_mag[] = {
@@ -1401,9 +1317,15 @@ const AP_Param::GroupInfo SIM::ModelParm::var_info[] = {
     AP_SUBGROUPINFO(tether_sim, "TETH_", 6, SIM::ModelParm, TetherSim),
 #endif
 
+#if AP_SIM_AIS_ENABLED
+    // @Group: AIS_
+    // @Path: ./SIM_AIS.cpp
+    AP_SUBGROUPPTR(ais_ptr, "AIS_", 7, SIM::ModelParm, AIS),
+#endif  // AP_SIM_AIS_ENABLED
+
     AP_GROUPEND
 };
-    
+
 const Location post_origin {
     518752066,
     146487830,
@@ -1428,9 +1350,9 @@ void SIM::simstate_send(mavlink_channel_t chan) const
     }
 
     mavlink_msg_simstate_send(chan,
-                              ToRad(state.rollDeg),
-                              ToRad(state.pitchDeg),
-                              ToRad(yaw),
+                              radians(state.rollDeg),
+                              radians(state.pitchDeg),
+                              radians(yaw),
                               state.xAccel,
                               state.yAccel,
                               state.zAccel,
@@ -1460,9 +1382,9 @@ void SIM::sim_state_send(mavlink_channel_t chan) const
             state.quaternion.q2,
             state.quaternion.q3,
             state.quaternion.q4,
-            ToRad(state.rollDeg),
-            ToRad(state.pitchDeg),
-            ToRad(yaw),
+            radians(state.rollDeg),
+            radians(state.pitchDeg),
+            radians(yaw),
             state.xAccel,
             state.yAccel,
             state.zAccel,
@@ -1521,11 +1443,11 @@ void SIM::convert_body_frame(double rollDeg, double pitchDeg,
 {
     double phi, theta, phiDot, thetaDot, psiDot;
 
-    phi = ToRad(rollDeg);
-    theta = ToRad(pitchDeg);
-    phiDot = ToRad(rollRate);
-    thetaDot = ToRad(pitchRate);
-    psiDot = ToRad(yawRate);
+    phi = radians(rollDeg);
+    theta = radians(pitchDeg);
+    phiDot = radians(rollRate);
+    thetaDot = radians(pitchRate);
+    psiDot = radians(yawRate);
 
     *p = phiDot - psiDot*sin(theta);
     *q = cos(phi)*thetaDot + sin(phi)*psiDot*cos(theta);
@@ -1569,7 +1491,7 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
 {
     // should we populate state.rangefinder_m[...] from this?
     Vector2f vehicle_pos_cm;
-    if (!location.get_vector_xy_from_origin_NE(vehicle_pos_cm)) {
+    if (!location.get_vector_xy_from_origin_NE_cm(vehicle_pos_cm)) {
         // should probably use SITL variables...
         return 0.0f;
     }
@@ -1597,7 +1519,7 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
     Location location2 = location;
     location2.offset_bearing(wrap_180(angle + state.yawDeg), 200);
     Vector2f ray_endpos_cm;
-    if (!location2.get_vector_xy_from_origin_NE(ray_endpos_cm)) {
+    if (!location2.get_vector_xy_from_origin_NE_cm(ray_endpos_cm)) {
         // should probably use SITL variables...
         return 0.0f;
     }
@@ -1634,9 +1556,10 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
             }
 #endif
             Vector2f post_position_cm;
-            if (!post_location.get_vector_xy_from_origin_NE(post_position_cm)) {
+            if (!post_location.get_vector_xy_from_origin_NE_cm(post_position_cm)) {
                 // should probably use SITL variables...
-                return 0.0f;
+                min_dist_cm = 0;
+                goto OUT;
             }
             Vector2f intersection_point_cm;
             if (Vector2f::circle_segment_intersection(ray_endpos_cm, vehicle_pos_cm, post_position_cm, radius_cm, intersection_point_cm)) {
@@ -1658,6 +1581,8 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
             }
         }
     }
+
+OUT:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (postfile != nullptr) {
         fclose(postfile);

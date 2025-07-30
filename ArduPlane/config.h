@@ -9,7 +9,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #ifdef CONFIG_APM_HARDWARE
-#error CONFIG_APM_HARDWARE option is depreated! use CONFIG_HAL_BOARD instead.
+#error CONFIG_APM_HARDWARE option is deprecated! use CONFIG_HAL_BOARD instead.
 #endif
 
 #ifndef MAV_SYSTEM_ID

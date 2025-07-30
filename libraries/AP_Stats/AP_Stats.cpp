@@ -39,6 +39,13 @@ const AP_Param::GroupInfo AP_Stats::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_RESET",    3, AP_Stats, params.reset, 1),
 
+    // @Param: _FLTCNT
+    // @DisplayName: Total Flight Count
+    // @Description: Total number of flights
+    // @ReadOnly: True
+    // @User: Standard
+    AP_GROUPINFO("_FLTCNT",    4, AP_Stats, params.fltcount, 0),
+
     AP_GROUPEND
 };
 
@@ -57,6 +64,7 @@ void AP_Stats::copy_variables_from_parameters()
     runtime = params.runtime;
     reset = params.reset;
     flttime_boot = flttime;
+    fltcount = params.fltcount;
 }
 
 void AP_Stats::init()
@@ -72,6 +80,7 @@ void AP_Stats::flush()
 {
     params.flttime.set_and_save_ifchanged(flttime);
     params.runtime.set_and_save_ifchanged(runtime);
+    params.fltcount.set_and_save_ifchanged(fltcount);
     last_flush_ms = AP_HAL::millis();
 }
 
@@ -107,12 +116,13 @@ void AP_Stats::update()
     if (params_reset == 0) {
         // Only reset statistics if the user explicitly sets AP_STATS_RESET parameter to zero.
         // This allows users to load parameter files (in MP, MAVProxy or any other GCS) without
-        // accidentally reseting the statistics, because the AP_STATS_RESET value contained in
+        // accidentally resetting the statistics, because the AP_STATS_RESET value contained in
         // the parameter file will be ignored (unless it is zero and it is usually not zero).
         // The other statistics parameters are read-only, and the GCS should be clever enough to not set those.
         params.bootcount.set_and_save_ifchanged(0);
         params.flttime.set_and_save_ifchanged(0);
         params.runtime.set_and_save_ifchanged(0);
+        params.fltcount.set_and_save_ifchanged(0);
         uint32_t system_clock = 0; // in seconds
 #if AP_RTC_ENABLED
         uint64_t rtc_clock_us;
@@ -133,6 +143,7 @@ void AP_Stats::set_flying(const bool is_flying)
 {
     if (is_flying) {
         if (!_flying_ms) {
+            fltcount += 1;
             _flying_ms = AP_HAL::millis();
         }
     } else {

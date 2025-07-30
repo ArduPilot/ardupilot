@@ -180,12 +180,18 @@ void AP_Mount_Gremsy::handle_gimbal_device_information(const mavlink_message_t &
     mavlink_msg_gimbal_device_information_decode(&msg, &info);
 
     // set parameter defaults from gimbal information
-    _params.roll_angle_min.set_default(degrees(info.roll_min));
-    _params.roll_angle_max.set_default(degrees(info.roll_max));
-    _params.pitch_angle_min.set_default(degrees(info.pitch_min));
-    _params.pitch_angle_max.set_default(degrees(info.pitch_max));
-    _params.yaw_angle_min.set_default(degrees(info.yaw_min));
-    _params.yaw_angle_max.set_default(degrees(info.yaw_max));
+    if (!isnan(info.roll_min) && !isnan(info.roll_max)) {
+        _params.roll_angle_min.set_default(degrees(info.roll_min));
+        _params.roll_angle_max.set_default(degrees(info.roll_max));
+    }
+    if (!isnan(info.pitch_min) && !isnan(info.pitch_max)) {
+        _params.pitch_angle_min.set_default(degrees(info.pitch_min));
+        _params.pitch_angle_max.set_default(degrees(info.pitch_max));
+    }
+    if (!isnan(info.yaw_min) && !isnan(info.yaw_max)) {
+        _params.yaw_angle_min.set_default(degrees(info.yaw_min));
+        _params.yaw_angle_max.set_default(degrees(info.yaw_max));
+    }
 
     const uint8_t fw_ver_major = info.firmware_version & 0x000000FF;
     const uint8_t fw_ver_minor = (info.firmware_version & 0x0000FF00) >> 8;

@@ -14,7 +14,7 @@ SERVO3_FUNCTION 35
 SERVO4_FUNCTION 36
 Q_OPTIONS 128
 
-#Second IMU seems to give better results on this board
+# Second IMU seems to give better results on this board
 EK3_PRIMARY 1
 
 # RC input is SBUS on serial4 TX pin
@@ -46,7 +46,7 @@ ROLL_LIMIT_DEG 40.00
 
 # the HWing can become unstable at high speeds. Limit pitch angle
 # to prevent overspeed
-PTCH_LIM_MAX_DEG 45.00
+PTCH_LIM_MAX_DEG 40.00
 PTCH_LIM_MIN_DEG -15.00
 
 # setup left 3-pos switch for QHOVER, QLOITER and FBWA
@@ -69,8 +69,6 @@ INS_HNTCH_REF          0.4560
 # no rudder mixing
 KFF_RDDRMIX 0
 
-# reasonable attitude limits
-PTCH_LIM_MAX_DEG 40.00
 LOG_FILE_DSRMROT 1
 
 # lower logging rate a bit to make logs faster to fetch
@@ -80,8 +78,6 @@ LOG_FILE_RATEMAX 50
 # tuning
 RLL2SRV_TCONST 0.25
 PTCH2SRV_TCONST 0.5
-Q_A_ACCEL_P_MAX    40000
-Q_A_ACCEL_R_MAX    20000
 Q_A_ANG_PIT_P          8
 Q_A_ANG_RLL_P          8
 Q_A_RAT_PIT_D          0.01
@@ -135,6 +131,3 @@ TECS_LAND_ARSPD 8
 # 16 m/s target airspeed in auto modes
 AIRSPEED_CRUISE 16.00
 TRIM_THROTTLE 29
-
-# 2nd lane tends to be better
-EK3_PRIMARY 1

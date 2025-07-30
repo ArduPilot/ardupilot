@@ -9,12 +9,16 @@
  * LOCATION
  */
 
-// return horizontal distance between two positions in cm
+// Computes straight-line distance in the horizontal plane between two positions.
+// Input units (e.g., meters, centimeters) must match; no unit conversion is performed.
 template <typename T>
-float get_horizontal_distance_cm(const Vector2<T> &origin, const Vector2<T> &destination)
+float get_horizontal_distance(const Vector2<T> &origin, const Vector2<T> &destination)
 {
     return (destination - origin).length();
 }
+
+// return bearing in radians between two positions
+float        get_bearing_rad(const Vector2f &origin, const Vector2f &destination);
 
 // return bearing in centi-degrees between two positions
 float        get_bearing_cd(const Vector2f &origin, const Vector2f &destination);

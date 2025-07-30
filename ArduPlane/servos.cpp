@@ -114,7 +114,7 @@ bool Plane::suppress_throttle(void)
         if (is_flying() &&
             millis() - started_flying_ms > MAX(launch_duration_ms, 5000U) && // been flying >5s in any mode
             adjusted_relative_altitude_cm() > 500 && // are >5m above AGL/home
-            labs(ahrs.pitch_sensor) < 3000 && // not high pitch, which happens when held before launch
+            fabsf(ahrs.get_pitch_deg()) < 30 && // not high pitch, which happens when held before launch
             gps_movement) { // definite gps movement
             // we're already flying, do not suppress the throttle. We can get
             // stuck in this condition if we reset a mission and cmd 1 is takeoff
@@ -685,10 +685,23 @@ void Plane::set_servos_flaps(void)
         manual_flap_percent = channel_flap->percent_input();
     }
 
-    if (control_mode->does_auto_throttle()) {
+    const auto flap_actual_speed = flight_option_enabled(FlightOptions::FLAP_ACTUAL_SPEED);
+    const bool has_target_airspeed = control_mode->does_auto_throttle();
+    if (has_target_airspeed || flap_actual_speed) {
         int16_t flapSpeedSource = 0;
-        if (ahrs.using_airspeed_sensor()) {
+        float est_airspeed;
+        bool have_airspeed = ahrs.airspeed_estimate(est_airspeed);
+        if (has_target_airspeed && ahrs.using_airspeed_sensor()) {
             flapSpeedSource = target_airspeed_cm * 0.01f;
+            if (flap_actual_speed) {
+                // if we have a target and also want to use actual
+                // speed then use the minimum of the two so we bring
+                // flaps in early when deliberately slowing down
+                flapSpeedSource = MIN(flapSpeedSource, est_airspeed);
+            }
+        } else if (flap_actual_speed && have_airspeed) {
+            // use actual speed directly
+            flapSpeedSource = est_airspeed;
         } else {
             flapSpeedSource = aparm.throttle_cruise;
         }

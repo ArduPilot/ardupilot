@@ -62,8 +62,6 @@
 
 #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(BMI270, "bmi270", ROTATION_ROLL_180_YAW_90)
 
-#define HAL_BARO_DEFAULT        HAL_BARO_BMP280_I2C
-#define HAL_BARO_BMP085_NAME        "bmp280"
 #define HAL_BARO_PROBE_LIST         PROBE_BARO_I2C(BMP280, 0, 0x76)
 
 #define AP_COMPASS_ENABLE_DEFAULT 0
@@ -84,11 +82,6 @@
 
 // 2 use udp, 1 use tcp...  for udp,client needs to connect as UDPCL in missionplanner etc to 192.168.4.1 port 14550
 #define HAL_ESP32_WIFI 2
-
-// see boards.py
-#ifndef ENABLE_HEAP
-#define ENABLE_HEAP 1
-#endif
 
 #define WIFI_SSID "ardupilot123"
 #define WIFI_PWD "ardupilot123"

@@ -71,7 +71,7 @@ Channels within the same group need to use the same output rate. If any channel 
 
 ## Battery Monitoring
 
-The board has a builting voltage and current sensor. The voltage sensor can handle up
+The board has a built-in voltage and current sensor. The voltage sensor can handle up
 to 12S LiPo batteries.
 
 ### The power A is onboard voltage sensor

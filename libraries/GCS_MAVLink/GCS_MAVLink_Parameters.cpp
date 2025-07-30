@@ -96,7 +96,7 @@ static const uint8_t default_rates[] {
     AP_MAV_DEFAULT_STREAM_RATE_PARAMS,
     AP_MAV_DEFAULT_STREAM_RATE_ADSB,
 };
-static_assert(ARRAY_SIZE(default_rates) == GCS_MAVLINK::NUM_STREAMS);
+static_assert(ARRAY_SIZE(default_rates) == GCS_MAVLINK::NUM_STREAMS, "enough default rates for all streams");
 
 #define DRATE(x) (float(default_rates[x]))
 
@@ -202,6 +202,24 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("_ADSB",   10, GCS_MAVLINK, streamRates[GCS_MAVLINK::STREAM_ADSB], DRATE(GCS_MAVLINK::STREAM_ADSB)),
+
+    // ------------
+    // IMPORTANT: Add new stream rates *before* the _OPTIONS parameter.
+    // ------------
+
+    // @Param: _OPTIONS
+    // @DisplayName: Bitmask for configuring this telemetry channel
+    // @Description: Bitmask for configuring this telemetry channel. For having effect on all channels, set the relevant mask in all MAVx_OPTIONS parameters. Keep in mind that part of the flags may require a reboot to take action.
+    // @RebootRequired: True
+    // @User: Standard
+    // @Bitmask: 1:Don't forward mavlink to/from, 2:Ignore Streamrate
+    AP_GROUPINFO("_OPTIONS",   20, GCS_MAVLINK, options, 0),
+
+    // PARAMETER_CONVERSION - Added: May-2025 for ArduPilot-4.7
+    // Hidden param used as a flag for param conversion
+    // This allows one time conversion while allowing user to flash between versions with and without converted params
+    AP_GROUPINFO_FLAGS("_OPTIONSCNV",   21, GCS_MAVLINK, options_were_converted, 0, AP_PARAM_FLAG_HIDDEN),
+
     AP_GROUPEND
 };
 #undef DRATE
@@ -323,12 +341,12 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
 #endif  // AP_AHRS_ENABLED
     MSG_WIND,
-#if AP_RANGEFINDER_ENABLED
+#if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
     MSG_RANGEFINDER,
-#if APM_BUILD_TYPE(APM_BUILD_Rover)
+#endif  // AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
+#if AP_RANGEFINDER_ENABLED && APM_BUILD_TYPE(APM_BUILD_Rover)
     MSG_WATER_DEPTH,
-#endif  // APM_BUILD_TYPE(APM_BUILD_Rover)
-#endif
+#endif  // AP_RANGEFINDER_ENABLED && APM_BUILD_TYPE(APM_BUILD_Rover)
     MSG_DISTANCE_SENSOR,
     MSG_SYSTEM_TIME,
 #if AP_TERRAIN_AVAILABLE

@@ -361,13 +361,21 @@
 //
 
 // Acro Mode
-#ifndef ACRO_LEVEL_MAX_ANGLE
- # define ACRO_LEVEL_MAX_ANGLE      3000 // maximum lean angle in trainer mode measured in centidegrees
+#ifndef ACRO_LEVEL_MAX_ANGLE_RAD
+ # define ACRO_LEVEL_MAX_ANGLE_RAD      radians(30.0)   // maximum lean angle in trainer mode measured in radians
 #endif
 
-#ifndef ACRO_LEVEL_MAX_OVERSHOOT
- # define ACRO_LEVEL_MAX_OVERSHOOT  1000 // maximum overshoot angle in trainer mode when full roll or pitch stick is held in centidegrees
+#ifdef ACRO_LEVEL_MAX_ANGLE
+#error "Please update your hwdef to use ACRO_LEVEL_MAX_ANGLE_RAD, not ACRO_LEVEL_MAX_ANGLE"
+#endif // ACRO_LEVEL_MAX_ANGLE
+
+#ifndef ACRO_LEVEL_MAX_OVERSHOOT_RAD
+ # define ACRO_LEVEL_MAX_OVERSHOOT_RAD  radians(10.0) // maximum overshoot angle in trainer mode when full roll or pitch stick is held in radians
 #endif
+
+#ifdef ACRO_LEVEL_MAX_OVERSHOOT
+#error "Please update your hwdef to use ACRO_LEVEL_MAX_OVERSHOOT_RAD, not ACRO_LEVEL_MAX_OVERSHOOT"
+#endif // ACRO_LEVEL_MAX_OVERSHOOT
 
 #ifndef ACRO_BALANCE_ROLL
  #define ACRO_BALANCE_ROLL          1.0f
@@ -465,6 +473,7 @@
 //
 #ifndef POSHOLD_BRAKE_RATE_DEFAULT
  # define POSHOLD_BRAKE_RATE_DEFAULT    8       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
+ # define POSHOLD_BRAKE_RATE_MIN        4       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
 #endif
 #ifndef POSHOLD_BRAKE_ANGLE_DEFAULT
  # define POSHOLD_BRAKE_ANGLE_DEFAULT   3000    // default POSHOLD_BRAKE_ANGLE param value.  Max lean angle during braking in centi-degrees

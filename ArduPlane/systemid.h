@@ -68,7 +68,7 @@ private:
     AP_Float time_fade_in;      // Time to reach maximum amplitude of chirp
     AP_Float time_record;       // Time taken to complete the chirp waveform
     AP_Float time_fade_out;     // Time to reach zero amplitude after chirp finishes
-    AP_Float xy_control_mul;    // multipler for VTOL XY control
+    AP_Float xy_control_mul;    // multiplier for VTOL XY control
 
     struct {
         bool att_bf_feedforward;    // Setting of attitude_control->get_bf_feedforward
@@ -81,7 +81,7 @@ private:
     uint32_t last_loop_time_ms;   // time in milliseconds of last loop
 
     Vector2f target_vel;        // target velocity for position controller modes
-    Vector2f target_pos;       // target positon
+    Vector2f target_pos;       // target position
     Vector2f input_vel_last;    // last cycle input velocity
 
     // current attitude offset

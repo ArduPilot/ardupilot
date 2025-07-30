@@ -1,0 +1,46 @@
+# hw definition file for processing by chibios_pins.py
+# for Brahma F405 bootloader
+#File Author shadow.walker.8642@gmail.com
+
+USB_STRING_MANUFACTURER "DM"
+USB_STRING_PRODUCT "BRAHMAf4"
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_BrahmaF4
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 1024
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# LEDs
+PA8 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 48
+
+
+# order of UARTs
+SERIAL_ORDER OTG1
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+
+PA10 USART1_RX USART1 HIGH PULLUP
+PA1 UART4_RX UART4 NODMA HIGH PULLUP
+PC7 USART6_RX USART6 HIGH PULLUP
+
+# Add CS pins to ensure they are high in bootloader
+PB12 FLASH_CS CS
+PA4 OSD_CS CS
+PB3 GYRO_CS CS

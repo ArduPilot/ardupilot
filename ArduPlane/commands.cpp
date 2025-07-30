@@ -32,8 +32,8 @@ void Plane::set_next_WP(const Location &loc)
         next_WP_loc.lat = current_loc.lat;
         next_WP_loc.lng = current_loc.lng;
         // additionally treat zero altitude as current altitude
-        if (next_WP_loc.alt == 0) {
-            next_WP_loc.set_alt_cm(current_loc.alt, Location::AltFrame::ABSOLUTE);
+        if (next_WP_loc.alt_is_zero()) {
+            next_WP_loc.copy_alt_from(current_loc);
         }
     }
 
@@ -140,7 +140,8 @@ bool Plane::update_home()
             // altitude or we can end up perpetuating a bias in
             // altitude, as AHRS alt depends on home alt, which means
             // we would have a circular dependency
-            loc.alt = gps.location().alt;
+            loc.set_alt_cm(gps.location().alt,
+                           Location::AltFrame::ABSOLUTE);
             ret = AP::ahrs().set_home(loc);
         }
     }

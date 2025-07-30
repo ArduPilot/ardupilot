@@ -49,7 +49,6 @@
 #include <AP_Motors/AP_Motors.h>            // AP Motors library
 #include <Filter/Filter.h>                  // Filter library
 #include <AP_Vehicle/AP_Vehicle.h>          // needed for AHRS build
-#include <AP_InertialNav/AP_InertialNav.h>  // inertial navigation library
 #include <AC_WPNav/AC_WPNav.h>              // ArduCopter waypoint navigation library
 #include <AC_WPNav/AC_Loiter.h>             // ArduCopter Loiter Mode Library
 #include <AC_WPNav/AC_Circle.h>             // circle navigation library
@@ -66,6 +65,7 @@
 #include <AC_AutoTune/AC_AutoTune_Heli.h>   // ArduCopter autotune library. support for autotune of helicopters.
 #include <AP_Parachute/AP_Parachute.h>      // ArduPilot parachute release library
 #include <AC_Sprayer/AC_Sprayer.h>          // Crop sprayer library
+#include <AP_Avoidance/AP_Avoidance.h>      // "ADSB" avoidance library
 #include <AP_ADSB/AP_ADSB.h>                // ADS-B RF based collision avoidance module library
 #include <AP_Proximity/AP_Proximity.h>      // ArduPilot proximity sensor library
 #include <AC_PrecLand/AC_PrecLand_config.h>
@@ -252,12 +252,18 @@ private:
     RC_Channel *channel_throttle;
     RC_Channel *channel_yaw;
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
+    // channel which is being used to tune a parameter value:
+    RC_Channel *rc_tuning;
+    RC_Channel *rc_tuning2;
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
+
     // flight modes convenience array
     AP_Int8 *flight_modes;
     const uint8_t num_flight_modes = 6;
 
-    AP_SurfaceDistance rangefinder_state {ROTATION_PITCH_270, inertial_nav, 0U};
-    AP_SurfaceDistance rangefinder_up_state {ROTATION_PITCH_90, inertial_nav, 1U};
+    AP_SurfaceDistance rangefinder_state {ROTATION_PITCH_270, 0U};
+    AP_SurfaceDistance rangefinder_up_state {ROTATION_PITCH_90, 1U};
 
     // helper function to get inertially interpolated rangefinder height.
     bool get_rangefinder_height_interpolated_cm(int32_t& ret) const;
@@ -270,7 +276,7 @@ private:
         //   measured ground or ceiling level measured using the range finder.
         void update_surface_offset();
 
-        // target has already been set by terrain following so do not initalise again
+        // target has already been set by terrain following so do not initialise again
         // this should be called by flight modes when switching from terrain following to surface tracking (e.g. ZigZag)
         void external_init();
 
@@ -297,10 +303,6 @@ private:
         bool valid_for_logging;     // true if we have a desired target altitude
         bool reset_target;          // true if target should be reset because of change in surface being tracked
     } surface_tracking;
-#endif
-
-#if AP_RPM_ENABLED
-    AP_RPM rpm_sensor;
 #endif
 
     // Inertial Navigation EKF - different viewpoint
@@ -450,7 +452,7 @@ private:
     float super_simple_sin_yaw;
 
     // Stores initial bearing when armed - initial simple bearing is modified in super simple mode so not suitable
-    int32_t initial_armed_bearing;
+    float initial_armed_bearing_rad;
 
     // Battery Sensors
     AP_BattMonitor battery{MASK_LOG_CURRENT,
@@ -471,9 +473,6 @@ private:
     // 3D Location vectors
     // Current location of the vehicle (altitude is relative to home)
     Location current_loc;
-
-    // Inertial Navigation
-    AP_InertialNav inertial_nav;
 
     // Attitude, Position and Waypoint navigation objects
     // To-Do: move inertial nav up or other navigation variables down here
@@ -549,7 +548,9 @@ private:
 
 #if HAL_ADSB_ENABLED
     AP_ADSB adsb;
+#endif  // HAL_ADSB_ENABLED
 
+#if AP_ADSB_AVOIDANCE_ENABLED
     // avoidance of adsb enabled vehicles (normally manned vehicles)
     AP_Avoidance_Copter avoidance_adsb{adsb};
 #endif
@@ -565,11 +566,6 @@ private:
     AP_Param param_loader;
 
 #if FRAME_CONFIG == HELI_FRAME
-    // Mode filter to reject RC Input glitches.  Filter size is 5, and it draws the 4th element, so it can reject 3 low glitches,
-    // and 1 high glitch.  This is because any "off" glitches can be highly problematic for a helicopter running an ESC
-    // governor.  Even a single "off" frame can cause the rotor to slow dramatically and take a long time to restart.
-    ModeFilterInt16_Size5 rotor_speed_deglitch_filter {4};
-
     // Tradheli flags
     typedef struct {
         uint8_t dynamic_flight          : 1;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
@@ -732,7 +728,7 @@ private:
 
     // Attitude.cpp
     void update_throttle_hover();
-    float get_pilot_desired_climb_rate(float throttle_control);
+    float get_pilot_desired_climb_rate();
     float get_non_takeoff_throttle();
     void set_accel_throttle_I_from_pilot_throttle();
     void rotate_body_frame_to_NE(float &x, float &y);
@@ -764,10 +760,10 @@ private:
     // avoidance.cpp
     void low_alt_avoidance();
 
-#if HAL_ADSB_ENABLED
+#if HAL_ADSB_ENABLED || AP_ADSB_AVOIDANCE_ENABLED
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);
-#endif
+#endif  // HAL_ADSB_ENABLED || AP_ADSB_AVOIDANCE_ENABLED
 
     // baro_ground_effect.cpp
     void update_ground_effect_detector(void);
@@ -840,7 +836,7 @@ private:
     // fence.cpp
 #if AP_FENCE_ENABLED
     void fence_check();
-    void fence_run_checks() override;
+    void fence_checks_async() override;
 #endif
 
     // heli.cpp
@@ -914,7 +910,7 @@ private:
     void Log_Write_Data(LogDataID id, int16_t value);
     void Log_Write_Data(LogDataID id, uint16_t value);
     void Log_Write_Data(LogDataID id, float value);
-    void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max);
+    void Log_Write_PTUN(uint8_t param, float tuning_val, float tune_min, float tune_max, float norm_in);
     void Log_Video_Stabilisation();
     void Log_Write_Guided_Position_Target(ModeGuided::SubMode submode, const Vector3f& pos_target, bool terrain_alt, const Vector3f& vel_target, const Vector3f& accel_target);
     void Log_Write_Guided_Attitude_Target(ModeGuided::SubMode target_type, float roll, float pitch, float yaw, const Vector3f &ang_vel, float thrust, float climb_rate);
@@ -949,7 +945,6 @@ private:
     void motor_test_stop();
 
     // motors.cpp
-    void arm_motors_check();
     void auto_disarm_check();
     void motors_output(bool full_push = true);
     void motors_output_main();
@@ -1011,8 +1006,12 @@ private:
     void terrain_update();
     void terrain_logging();
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
     // tuning.cpp
     void tuning();
+    void tuning(const class RC_Channel *tuning_ch, int8_t tuning_param, float tuning_min, float tuning_max);
+    bool being_tuned(int8_t tuning_param) const;
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
     // UserCode.cpp
     void userhook_init();
@@ -1082,9 +1081,9 @@ private:
 #if MODE_SYSTEMID_ENABLED
     ModeSystemId mode_systemid;
 #endif
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
     ModeAvoidADSB mode_avoid_adsb;
-#endif
+#endif  // AP_ADSB_AVOIDANCE_ENABLED
 #if MODE_THROW_ENABLED
     ModeThrow mode_throw;
 #endif

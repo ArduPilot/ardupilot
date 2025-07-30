@@ -63,6 +63,12 @@ int luaO_fb2int (int x) {
 ** Computes ceil(log2(x))
 */
 int luaO_ceillog2 (unsigned int x) {
+#if defined(ARDUPILOT_BUILD) && (defined(__GNUC__) || defined(__clang__))
+  const int bitwidth = CHAR_BIT*sizeof(x);
+  x--; // 0 is outside function domain
+  const int clz = x ? __builtin_clz(x) : bitwidth; // clz(0) is undefined
+  return bitwidth-clz;
+#else
   static const lu_byte log_2[256] = {  /* log_2[i] = ceil(log2(i - 1)) */
     0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
     6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
@@ -77,6 +83,7 @@ int luaO_ceillog2 (unsigned int x) {
   x--;
   while (x >= 256) { l += 8; x >>= 8; }
   return l + log_2[x];
+#endif
 }
 
 
@@ -440,12 +447,14 @@ const char *luaO_pushvfstring (lua_State *L, const char *fmt, va_list argp) {
         pushstr(L, buff, l);
         break;
       }
+#if !defined(ARDUPILOT_BUILD)
       case 'U': {  /* an 'int' as a UTF-8 sequence */
         char buff[UTF8BUFFSZ];
         int l = luaO_utf8esc(buff, cast(long, va_arg(argp, long)));
         pushstr(L, buff + UTF8BUFFSZ - l, l);
         break;
       }
+#endif
       case '%': {
         pushstr(L, "%", 1);
         break;

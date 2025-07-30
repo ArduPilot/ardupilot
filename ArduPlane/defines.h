@@ -56,6 +56,7 @@ enum class StickMixing {
     FBW      = 1,
     DIRECT_REMOVED = 2,
     VTOL_YAW = 3,
+    FBW_NO_PITCH = 4,
 };
 
 // values for RTL_AUTOLAND
@@ -124,24 +125,23 @@ enum {
     // note: next enum will be (1<<1), then (1<<2), then (1<<3)
 };
 
-enum {
-    USE_REVERSE_THRUST_NEVER                    = 0,
-    USE_REVERSE_THRUST_AUTO_ALWAYS              = (1<<0),
-    USE_REVERSE_THRUST_AUTO_LAND_APPROACH       = (1<<1),
-    USE_REVERSE_THRUST_AUTO_LOITER_TO_ALT       = (1<<2),
-    USE_REVERSE_THRUST_AUTO_LOITER_ALL          = (1<<3),
-    USE_REVERSE_THRUST_AUTO_WAYPOINT            = (1<<4),
-    USE_REVERSE_THRUST_LOITER                   = (1<<5),
-    USE_REVERSE_THRUST_RTL                      = (1<<6),
-    USE_REVERSE_THRUST_CIRCLE                   = (1<<7),
-    USE_REVERSE_THRUST_CRUISE                   = (1<<8),
-    USE_REVERSE_THRUST_FBWB                     = (1<<9),
-    USE_REVERSE_THRUST_GUIDED                   = (1<<10),
-    USE_REVERSE_THRUST_AUTO_LANDING_PATTERN     = (1<<11),
-    USE_REVERSE_THRUST_FBWA                   = (1<<12),
-    USE_REVERSE_THRUST_ACRO                   = (1<<13),
-    USE_REVERSE_THRUST_STABILIZE            = (1<<14),
-    USE_REVERSE_THRUST_THERMAL             = (1<<15),
+enum class UseReverseThrust {
+    AUTO_ALWAYS          = (1<<0),
+    AUTO_LAND_APPROACH   = (1<<1),
+    AUTO_LOITER_TO_ALT   = (1<<2),
+    AUTO_LOITER_ALL      = (1<<3),
+    AUTO_WAYPOINT        = (1<<4),
+    LOITER               = (1<<5),
+    RTL                  = (1<<6),
+    CIRCLE               = (1<<7),
+    CRUISE               = (1<<8),
+    FBWB                 = (1<<9),
+    GUIDED               = (1<<10),
+    AUTO_LANDING_PATTERN = (1<<11),
+    FBWA                 = (1<<12),
+    ACRO                 = (1<<13),
+    STABILIZE            = (1<<14),
+    THERMAL              = (1<<15),
 };
 
 enum FlightOptions {
@@ -160,6 +160,7 @@ enum FlightOptions {
     ENABLE_LOITER_ALT_CONTROL = (1<<12),
     INDICATE_WAITING_FOR_RUDDER_NEUTRAL = (1<<13),
     IMMEDIATE_CLIMB_IN_AUTO = (1<<14),
+    FLAP_ACTUAL_SPEED = (1<<15),
 };
 
 enum CrowFlapOptions {
@@ -188,3 +189,15 @@ enum class FenceAutoEnable : uint8_t {
     AutoDisableFloorOnly=2,
     WhenArmed=3
 };
+
+/*
+  bitmask of options for RGFND_LANDING
+ */
+enum class RangeFinderUse : uint8_t {
+    NONE    = 0U,
+    ALL     = (1U<<0),
+    TAKEOFF_LANDING = (1U<<1),
+    ASSIST  = (1U<<2),
+    CLIMB   = (1U<<3),
+};
+

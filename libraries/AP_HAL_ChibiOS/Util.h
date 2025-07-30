@@ -48,10 +48,6 @@ public:
     void *malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type) override;
     void free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type) override;
 
-#if ENABLE_HEAP
-    void *std_realloc(void *ptr, uint32_t new_size) override;
-#endif // ENABLE_HEAP
-
     /*
       return state of safety switch, if applicable
      */
@@ -164,9 +160,6 @@ private:
 #if HAL_UART_STATS_ENABLED
     struct uart_stats {
         AP_HAL::UARTDriver::StatsTracker serial[HAL_UART_NUM_SERIAL_PORTS];
-#if HAL_WITH_IO_MCU
-        AP_HAL::UARTDriver::StatsTracker io;
-#endif
         uint32_t last_ms;
     };
     uart_stats sys_uart_stats;

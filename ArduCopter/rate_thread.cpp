@@ -166,7 +166,8 @@ static inline bool run_decimated_callback(uint8_t decimation_rate, uint8_t& deci
 */
 void Copter::rate_controller_thread()
 {
-    uint8_t target_rate_decimation = constrain_int16(g2.att_decimation.get(), 1, DIV_ROUND_INT(ins.get_raw_gyro_rate_hz(), 400));
+    uint8_t target_rate_decimation = constrain_int16(g2.att_decimation.get(), 1,
+                                                     DIV_ROUND_INT(ins.get_raw_gyro_rate_hz(), AP::scheduler().get_loop_rate_hz()));
     uint8_t rate_decimation = target_rate_decimation;
 
     // set up the decimation rates
@@ -214,7 +215,7 @@ void Copter::rate_controller_thread()
 #endif
 
         // allow changing option at runtime
-        if (get_fast_rate_type() == FastRateType::FAST_RATE_DISABLED || ap.motor_test) {
+        if (get_fast_rate_type() == FastRateType::FAST_RATE_DISABLED) {
             if (was_using_rate_thread) {
                 disable_fast_rate_loop(rates);
                 was_using_rate_thread = false;
@@ -322,7 +323,8 @@ void Copter::rate_controller_thread()
         now_ms = AP_HAL::millis();
 
         // make sure we have the latest target rate
-        target_rate_decimation = constrain_int16(g2.att_decimation.get(), 1, DIV_ROUND_INT(ins.get_raw_gyro_rate_hz(), 400));
+        target_rate_decimation = constrain_int16(g2.att_decimation.get(), 1,
+                                                 DIV_ROUND_INT(ins.get_raw_gyro_rate_hz(), AP::scheduler().get_loop_rate_hz()));
         if (now_ms - last_notch_sample_ms >= 1000 || !was_using_rate_thread) {
             // update the PID notch sample rate at 1Hz if we are
             // enabled at runtime
@@ -424,7 +426,7 @@ void Copter::rate_controller_set_rates(uint8_t rate_decimation, RateControllerRa
     const uint32_t attitude_rate = ins.get_raw_gyro_rate_hz() / rate_decimation;
     attitude_control->set_notch_sample_rate(attitude_rate);
     hal.rcout->set_dshot_rate(SRV_Channels::get_dshot_rate(), attitude_rate);
-    motors->set_dt(1.0f / attitude_rate);
+    motors->set_dt_s(1.0f / attitude_rate);
     gcs().send_text(warn_cpu_high ? MAV_SEVERITY_WARNING : MAV_SEVERITY_INFO,
                     "Rate CPU %s, rate set to %uHz",
                     warn_cpu_high ? "high" : "normal", (unsigned) attitude_rate);

@@ -18,13 +18,9 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
+#include "SIM_config.h"
 
-#ifndef HAL_SIM_SCRIMMAGE_ENABLED
-#define HAL_SIM_SCRIMMAGE_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
-#endif
-
-#if HAL_SIM_SCRIMMAGE_ENABLED
+#if AP_SIM_SCRIMMAGE_ENABLED
 
 #include <string>
 
@@ -90,4 +86,4 @@ private:
 
 } // namespace SITL
 
-#endif  // HAL_SIM_SCRIMMAGE_ENABLED
+#endif  // AP_SIM_SCRIMMAGE_ENABLED

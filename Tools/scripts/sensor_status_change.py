@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Parses a log file and shows how the SENSOR_STATUS flags changed over time

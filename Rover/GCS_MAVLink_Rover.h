@@ -52,14 +52,20 @@ private:
 
     void send_servo_out();
 
+    // if we receive a message where the user has not masked out
+    // acceleration from the input packet we send a curt message
+    // informing them:
+    void send_acc_ignore_must_be_set_message(const char *msgname);
     uint8_t base_mode() const override;
     MAV_STATE vehicle_system_status() const override;
 
     int16_t vfr_hud_throttle() const override;
 
-#if AP_RANGEFINDER_ENABLED
+#if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
     void send_rangefinder() const override;
+#endif  // AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
 
+#if AP_RANGEFINDER_ENABLED
     // send WATER_DEPTH - metres and temperature
     void send_water_depth();
     // state variable for the last rangefinder we sent a WATER_DEPTH

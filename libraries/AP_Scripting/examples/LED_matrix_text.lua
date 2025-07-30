@@ -242,7 +242,7 @@ function update_LEDs()
     -- start with the stuff off the right edge of the display
     offset = 8
 
-    text_string = tostring(math.floor(math.deg(ahrs:get_yaw())))
+    text_string = tostring(math.floor(math.deg(ahrs:get_yaw_rad())))
   end
 
   return update_LEDs, 100

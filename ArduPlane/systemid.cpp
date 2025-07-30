@@ -6,7 +6,7 @@
 #include "Plane.h"
 
 /*
-  handle systemid via an auxillary switch
+  handle systemid via an auxiliary switch
  */
 
 const AP_Param::GroupInfo AP_SystemID::var_info[] = {
@@ -157,13 +157,13 @@ void AP_SystemID::stop()
 
         auto *attitude_control = plane.quadplane.attitude_control;
         attitude_control->bf_feedforward(restore.att_bf_feedforward);
-        attitude_control->rate_bf_roll_sysid(0);
-        attitude_control->rate_bf_pitch_sysid(0);
-        attitude_control->rate_bf_yaw_sysid(0);
-        plane.quadplane.pos_control->set_xy_control_scale_factor(1);
+        attitude_control->rate_bf_roll_sysid_rads(0);
+        attitude_control->rate_bf_pitch_sysid_rads(0);
+        attitude_control->rate_bf_yaw_sysid_rads(0);
+        plane.quadplane.pos_control->set_NE_control_scale_factor(1);
 
         // re-initialise the XY controller so we take current position as target
-        plane.quadplane.pos_control->init_xy_controller();
+        plane.quadplane.pos_control->init_NE_controller();
 
         gcs().send_text(MAV_SEVERITY_INFO, "SystemID stopped");
     }
@@ -216,13 +216,13 @@ void AP_SystemID::update()
             attitude_control->bf_feedforward(false);
             break;
         case AxisType::RATE_ROLL:
-            attitude_control->rate_bf_roll_sysid(radians(waveform_sample));
+            attitude_control->rate_bf_roll_sysid_rads(radians(waveform_sample));
             break;
         case AxisType::RATE_PITCH:
-            attitude_control->rate_bf_pitch_sysid(radians(waveform_sample));
+            attitude_control->rate_bf_pitch_sysid_rads(radians(waveform_sample));
             break;
         case AxisType::RATE_YAW:
-            attitude_control->rate_bf_yaw_sysid(radians(waveform_sample));
+            attitude_control->rate_bf_yaw_sysid_rads(radians(waveform_sample));
             break;
         case AxisType::MIX_ROLL:
             attitude_control->actuator_roll_sysid(waveform_sample);
@@ -239,7 +239,7 @@ void AP_SystemID::update()
     }
 
     // reduce control in XY axis when in position controlled modes
-    plane.quadplane.pos_control->set_xy_control_scale_factor(xy_control_mul);
+    plane.quadplane.pos_control->set_NE_control_scale_factor(xy_control_mul);
 
     if (log_subsample <= 0) {
         log_data();

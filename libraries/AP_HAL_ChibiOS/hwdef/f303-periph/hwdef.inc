@@ -11,7 +11,7 @@ STORAGE_FLASH_PAGE 11
 define HAL_STORAGE_SIZE 800
 
 # board ID. See Tools/AP_Bootloader/board_types.txt
-APJ_BOARD_ID 1004
+APJ_BOARD_ID AP_HW_F303_PERIPH
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

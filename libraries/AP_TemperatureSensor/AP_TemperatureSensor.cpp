@@ -61,6 +61,10 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // @Group: 1_
     // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 1_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 1_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
     AP_SUBGROUPVARPTR(drivers[0], "1_", 19, AP_TemperatureSensor, backend_var_info[0]),
 
 #if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 2
@@ -70,6 +74,10 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // @Group: 2_
     // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 2_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 2_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
     AP_SUBGROUPVARPTR(drivers[1], "2_", 20, AP_TemperatureSensor, backend_var_info[1]),
 #endif
 
@@ -80,6 +88,10 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // @Group: 3_
     // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 3_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 3_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
     AP_SUBGROUPVARPTR(drivers[2], "3_", 21, AP_TemperatureSensor, backend_var_info[2]),
 #endif
 
@@ -90,6 +102,10 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // @Group: 4_
     // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 4_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 4_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
     AP_SUBGROUPVARPTR(drivers[3], "4_", 22, AP_TemperatureSensor, backend_var_info[3]),
 #endif
 
@@ -100,6 +116,10 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // @Group: 5_
     // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 5_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 5_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
     AP_SUBGROUPVARPTR(drivers[4], "5_", 23, AP_TemperatureSensor, backend_var_info[4]),
 #endif
 
@@ -110,6 +130,10 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // @Group: 6_
     // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 6_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 6_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
     AP_SUBGROUPVARPTR(drivers[5], "6_", 24, AP_TemperatureSensor, backend_var_info[5]),
 #endif
 
@@ -120,6 +144,10 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // @Group: 7_
     // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 7_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 7_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
     AP_SUBGROUPVARPTR(drivers[6], "7_", 25, AP_TemperatureSensor, backend_var_info[6]),
 #endif
 
@@ -130,6 +158,10 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // @Group: 8_
     // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 8_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 8_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
     AP_SUBGROUPVARPTR(drivers[7], "8_", 26, AP_TemperatureSensor, backend_var_info[7]),
 #endif
 
@@ -140,6 +172,10 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // @Group: 9_
     // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 9_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 9_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
     AP_SUBGROUPVARPTR(drivers[8], "9_", 27, AP_TemperatureSensor, backend_var_info[8]),
 #endif
 
@@ -189,7 +225,8 @@ void AP_TemperatureSensor::init()
                 break;
 #endif
 #if AP_TEMPERATURE_SENSOR_MAX31865_ENABLED
-            case AP_TemperatureSensor_Params::Type::MAX31865:
+            case AP_TemperatureSensor_Params::Type::MAX31865_2_or_4_wire:
+            case AP_TemperatureSensor_Params::Type::MAX31865_3_wire:
                 drivers[instance] = NEW_NOTHROW AP_TemperatureSensor_MAX31865(*this, _state[instance], _params[instance]);
                 break;
 #endif

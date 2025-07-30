@@ -216,7 +216,7 @@ void GPS_UBlox::publish(const GPS_Data *d)
     velned.ned_down  = 100.0f * d->speedD;
     velned.speed_2d = norm(d->speedN, d->speedE) * 100;
     velned.speed_3d = norm(d->speedN, d->speedE, d->speedD) * 100;
-    velned.heading_2d = ToDeg(atan2f(d->speedE, d->speedN)) * 100000.0f;
+    velned.heading_2d = degrees(atan2f(d->speedE, d->speedN)) * 100000.0f;
     if (velned.heading_2d < 0.0f) {
         velned.heading_2d += 360.0f * 100000.0f;
     }
@@ -263,7 +263,7 @@ void GPS_UBlox::publish(const GPS_Data *d)
     pvt.velE = 1000.0f * d->speedE;
     pvt.velD = 1000.0f * d->speedD;
     pvt.gspeed = norm(d->speedN, d->speedE) * 1000;
-    pvt.head_mot = ToDeg(atan2f(d->speedE, d->speedN)) * 1.0e5;
+    pvt.head_mot = degrees(atan2f(d->speedE, d->speedN)) * 1.0e5;
     pvt.s_acc = velned.speed_accuracy;
     pvt.head_acc = 38 * 1.0e5;
     pvt.p_dop = 65535;

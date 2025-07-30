@@ -20,10 +20,6 @@
 #define HAL_INS_MPU60x0_NAME "MPU6000"
 #define TRUE 1
 
-#define HAL_BARO_DEFAULT HAL_BARO_BMP280_I2C
-#define HAL_BARO_BMP280_BUS 0
-#define HAL_BARO_BMP280_I2C_ADDR  (0x76)
-
 #define ALLOW_ARM_NO_COMPASS
 
 #define HAL_ESP32_SDCARD //after enabled, uncomment one of below

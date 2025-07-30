@@ -5,6 +5,7 @@
 #include <AP_MSP/msp.h>
 #include <AP_AHRS/AP_AHRS_config.h>
 #include <AP_GPS/AP_GPS_config.h>
+#include <AP_InertialSensor/AP_InertialSensor_config.h>
 
 #ifndef AP_COMPASS_ENABLED
 #define AP_COMPASS_ENABLED 1
@@ -31,7 +32,7 @@
 #endif
 
 #ifndef AP_COMPASS_EXTERNALAHRS_ENABLED
-#define AP_COMPASS_EXTERNALAHRS_ENABLED (AP_COMPASS_BACKEND_DEFAULT_ENABLED && HAL_EXTERNAL_AHRS_ENABLED)
+#define AP_COMPASS_EXTERNALAHRS_ENABLED (AP_COMPASS_BACKEND_DEFAULT_ENABLED && AP_EXTERNAL_AHRS_ENABLED)
 #endif
 
 #ifndef AP_COMPASS_MSP_ENABLED
@@ -67,15 +68,6 @@
 #define AP_COMPASS_BMM150_ENABLED AP_COMPASS_I2C_BACKEND_DEFAULT_ENABLED
 #endif
 
-// this define dictates whether we iterate over the external i2c
-// busses looking for BMM150.  Ordinarily this should be true, but
-// SkyViper specifies its BMM150 and thus does not need to probe.
-// This is an interim arrangement until PCNC1 is eliminated as an
-// auto-detect board.
-#ifndef AP_COMPASS_BMM150_DETECT_BACKENDS_ENABLED
-#define AP_COMPASS_BMM150_DETECT_BACKENDS_ENABLED AP_COMPASS_BMM150_ENABLED
-#endif
-
 #ifndef AP_COMPASS_BMM350_ENABLED
 #define AP_COMPASS_BMM350_ENABLED AP_COMPASS_I2C_BACKEND_DEFAULT_ENABLED
 #endif
@@ -85,7 +77,7 @@
 #endif
 
 #ifndef AP_COMPASS_ICM20948_ENABLED
-#define AP_COMPASS_ICM20948_ENABLED AP_COMPASS_I2C_BACKEND_DEFAULT_ENABLED
+#define AP_COMPASS_ICM20948_ENABLED AP_COMPASS_I2C_BACKEND_DEFAULT_ENABLED && AP_INERTIALSENSOR_ENABLED
 #endif
 
 #ifndef AP_COMPASS_IIS2MDC_ENABLED

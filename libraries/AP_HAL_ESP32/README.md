@@ -87,7 +87,7 @@ cd ../../../..
 
 If you want to make changes to sdkconfig (sdkconfig is in the build dir) permanent and to commit them back in git, you should edit sdkconfig.defaults manually or use ninja save-defconfig tool after menuconfig and replace sdkconfig.defaults with defconfig.
 
-5. Recommanded way to flash the firmware :
+5. Recommended way to flash the firmware :
 ```
 ESPBAUD=921600 ./waf plane --upload
 ```
@@ -149,7 +149,7 @@ The ardupilot.elf contains all symbol. The cmake provide a stripped version as a
 ## Test hardware
 Currently esp32 dev board with connected gy-91 10dof sensor board is supported. Pinout (consult UARTDriver.cpp and SPIDevice.cpp for reference):
 
-### Uart connecion/s
+### Uart connection/s
 Internally connected on most devboards, just for reference.
 
 After flashing the esp32 , u can connect with a terminal app of your preference to the same COM port  ( eg /dev/ttyUSB0) at a baud rate of 115200, software flow control, 8N1 common uart settings, and get to see the output from hal.console->printf("...") and other console messages.
@@ -320,10 +320,10 @@ Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a
 - [x] TCP mavlink over wifi (choose tcp or udp at compile time , not both)
 - [x] parameter storage in a esp32 flash partition area
 - [x] Custom boards build
-- [x] Perfomance optimization
+- [x] Performance optimization
 - [x] SdCard mounts but ardupilot logging to SD does not
 - [x] waf can upload to your board with --upload now
-- [X] PWM output driver works, but it appears that throttle supression when disarmed does not.
+- [X] PWM output driver works, but it appears that throttle suppression when disarmed does not.
 - [X] AnalogIn driver - partial progress not really tested or documented
 - [X] Finish waf commands to build seamlessly and wrap all function of esp-idf without command voodoo
 
@@ -389,7 +389,7 @@ parttool.py --partition-table-file partitions.csv get_partition_info --partition
 # then backup ardupilot 'storage' area (its a partition, see partitions.csv) to a file on disk:
 esptool.py read_flash 0x3e0000 0x20000 storage.bin
 
-# restore the storage.bin to your device... basiclly the same flash command as used in esp32.py but different offset and file:
+# restore the storage.bin to your device... basically the same flash command as used in esp32.py but different offset and file:
 esptool.py --chip esp32 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect 0x3e0000 storage.bin
 
 

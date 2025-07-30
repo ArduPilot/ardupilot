@@ -37,9 +37,6 @@
 //INS choices: 
 #define HAL_INS_DEFAULT HAL_INS_MPU60XX_I2C
 #define HAL_INS_MPU6000_NAME "Invensense"
-// BARO choices:
-#define HAL_BARO_DEFAULT HAL_BARO_BMP280_I2C
-#define HAL_BARO_BMP280_NAME "BMP280"
 
 // IMU probing:
 #define HAL_INS_PROBE_LIST PROBE_IMU_I2C(Invensense, 0, 0x68, ROTATION_NONE)
@@ -78,11 +75,6 @@
 
 // 2 use udp, 1 use tcp...  for udp,client needs to connect as UDP in missionplanner etc to 192.168.4.1 port 14550
 #define HAL_ESP32_WIFI 1
-
-// see boards.py
-#ifndef ENABLE_HEAP
-#define ENABLE_HEAP 1
-#endif
 
 #define WIFI_SSID "ardupilot123"
 #define WIFI_PWD "ardupilot123"

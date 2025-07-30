@@ -58,7 +58,7 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, const char* type_str, bool o
     }
     if (failsafe.triggered != 0 && failsafe.bits == 0) {
         // a failsafe event has ended
-        gcs().send_text(MAV_SEVERITY_INFO, "%s Failsafe Cleared", type_str);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Failsafe Cleared", type_str);
     }
 
     failsafe.triggered &= failsafe.bits;
@@ -69,7 +69,7 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, const char* type_str, bool o
         (control_mode != &mode_rtl) &&
         ((control_mode != &mode_hold || (g2.fs_options & (uint32_t)Failsafe_Options::Failsafe_Option_Active_In_Hold)))) {
         failsafe.triggered = failsafe.bits;
-        gcs().send_text(MAV_SEVERITY_WARNING, "%s Failsafe", type_str);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Failsafe", type_str);
 
         // clear rc overrides
         RC_Channels::clear_overrides();
@@ -78,7 +78,7 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, const char* type_str, bool o
             ((failsafe_type == FAILSAFE_EVENT_THROTTLE && g.fs_throttle_enabled == FS_THR_ENABLED_CONTINUE_MISSION) ||
              (failsafe_type == FAILSAFE_EVENT_GCS && g.fs_gcs_enabled == FS_GCS_ENABLED_CONTINUE_MISSION))) {
             // continue with mission in auto mode
-            gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe - Continuing Auto Mode");
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failsafe - Continuing Auto Mode");
         } else {
             switch ((FailsafeAction)g.fs_action.get()) {
             case FailsafeAction::None:
@@ -98,6 +98,11 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, const char* type_str, bool o
                 break;
             case FailsafeAction::SmartRTL_Hold:
                 if (!set_mode(mode_smartrtl, ModeReason::FAILSAFE)) {
+                    set_mode(mode_hold, ModeReason::FAILSAFE);
+                }
+                break;
+            case FailsafeAction::Loiter_Hold:
+                if (!set_mode(mode_loiter, ModeReason::FAILSAFE)) {
                     set_mode(mode_hold, ModeReason::FAILSAFE);
                 }
                 break;
@@ -126,6 +131,11 @@ void Rover::handle_battery_failsafe(const char* type_str, const int8_t action)
                 FALLTHROUGH;
             case FailsafeAction::Hold:
                 set_mode(mode_hold, ModeReason::BATTERY_FAILSAFE);
+                break;
+            case FailsafeAction::Loiter_Hold:
+                if (!set_mode(mode_loiter, ModeReason::BATTERY_FAILSAFE)) {
+                    set_mode(mode_hold, ModeReason::BATTERY_FAILSAFE);
+                }
                 break;
             case FailsafeAction::SmartRTL_Hold:
                 if (!set_mode(mode_smartrtl, ModeReason::BATTERY_FAILSAFE)) {

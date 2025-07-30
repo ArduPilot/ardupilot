@@ -74,6 +74,9 @@ SECTIONS
         *(.ap_romfs*)
         /* moving GCS_MAVLink to ext_flash */
         lib/lib*.a:GCS*.*(.text* .rodata*)
+        lib/lib*.a:AP_OSD*.*(.text* .rodata*)
+        lib/lib*.a:AP_TempCalibration*.*(.text* .rodata*)
+        lib/lib*.a:AP_AccelCal*.*(.text* .rodata*)
         *(.extflash)
     } > ext_flash
 

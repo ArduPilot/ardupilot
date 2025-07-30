@@ -140,11 +140,13 @@ void CANIface::_pollWrite()
     }
     while (_hasReadyTx()) {
         WITH_SEMAPHORE(sem);
-        const CanTxItem tx = *_tx_queue[0];
+        const CanTxItem *tx = _tx_queue[0];
+        if (tx == nullptr) {
+            break;
+        }
         const uint64_t curr_time = AP_HAL::micros64();
-        if (tx.deadline >= curr_time) {
-            // hal.console->printf("%x TDEAD: %lu CURRT: %lu DEL: %lu\n",tx.frame.id,  tx.deadline, curr_time, tx.deadline-curr_time);
-            bool ok = transport->send(tx.frame);
+        if (tx->deadline >= curr_time) {
+            bool ok = transport->send(tx->frame);
             if (ok) {
                 stats.tx_success++;
                 stats.last_transmit_us = curr_time;

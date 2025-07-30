@@ -3,7 +3,7 @@
   Andrew Tridgell September 2011
 */
 
-#define ALLOW_DOUBLE_MATH_FUNCTIONS
+#define AP_MATH_ALLOW_DOUBLE_FUNCTIONS 1
 
 #include <cmath>
 

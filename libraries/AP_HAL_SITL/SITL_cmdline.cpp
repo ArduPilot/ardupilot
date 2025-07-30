@@ -125,7 +125,9 @@ static const struct {
     Aircraft *(*constructor)(const char *frame_str);
 } model_constructors[] = {
     { "quadplane",          QuadPlane::create },
+#if AP_SIM_XPLANE_ENABLED
     { "xplane",             XPlane::create },
+#endif  // AP_SIM_XPLANE_ENABLED
     { "firefly",            QuadPlane::create },
     { "+",                  MultiCopter::create },
     { "quad",               MultiCopter::create },
@@ -161,11 +163,21 @@ static const struct {
     { "balancebot",         BalanceBot::create },
     { "sailboat",           Sailboat::create },
     { "motorboat",          MotorBoat::create },
+#if AP_SIM_CRRCSIM_ENABLED
     { "crrcsim",            CRRCSim::create },
+#endif  // AP_SIM_CRRCSIM_ENABLED
+#if AP_SIM_JSBSIM_ENABLED
     { "jsbsim",             JSBSim::create },
+#endif  // AP_SIM_JSBSIM_ENABLED
+#if AP_SIM_FLIGHTAXIS_ENABLED
     { "flightaxis",         FlightAxis::create },
+#endif  // AP_SIM_FLIGHTAXIS_ENABLED
+#if AP_SIM_GAZEBO_ENABLED
     { "gazebo",             Gazebo::create },
+#endif  // AP_SIM_GAZEBO_ENABLED
+#if AP_SIM_LAST_LETTER_ENABLED
     { "last_letter",        last_letter::create },
+#endif  // AP_SIM_LAST_LETTER_ENABLED
     { "tracker",            Tracker::create },
     { "balloon",            Balloon::create },
     { "glider",             Glider::create },
@@ -173,13 +185,25 @@ static const struct {
     { "calibration",        Calibration::create },
     { "vectored",           Submarine::create },
     { "vectored_6dof",      Submarine::create },
+#if AP_SIM_SILENTWINGS_ENABLED
     { "silentwings",        SilentWings::create },
+#endif  // AP_SIM_SILENTWINGS_ENABLED
+#if AP_SIM_MORSE_ENABLED
     { "morse",              Morse::create },
+#endif  // AP_SIM_MORSE_ENABLED
+#if AP_SIM_AIRSIM_ENABLED
     { "airsim",             AirSim::create},
+#endif  // AP_SIM_AIRSIM_ENABLED
+#if AP_SIM_SCRIMMAGE_ENABLED
     { "scrimmage",          Scrimmage::create },
+#endif  // AP_SIM_SCRIMMAGE_ENABLED
     { "webots-python",      WebotsPython::create },
+#if AP_SIM_WEBOTS_ENABLED
     { "webots",             Webots::create },
+#endif  // AP_SIM_WEBOTS_ENABLED
+#if AP_SIM_JSON_ENABLED
     { "JSON",               JSON::create },
+#endif  // AP_SIM_JSON_ENABLED
     { "blimp",              Blimp::create },
     { "novehicle",          NoVehicle::create },
 #if AP_SIM_STRATOBLIMP_ENABLED
@@ -540,12 +564,12 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             _usage();
             exit(0);
         case CMDLINE_SLAVE: {
-#if HAL_SIM_JSON_MASTER_ENABLED
+#if AP_SIM_JSON_MASTER_ENABLED
             const int32_t slaves = atoi(gopt.optarg);
             if (slaves > 0) {
                 ride_along.init(slaves);
             }
-#endif
+#endif  // AP_SIM_JSON_MASTER_ENABLED
             break;
         }
         default:

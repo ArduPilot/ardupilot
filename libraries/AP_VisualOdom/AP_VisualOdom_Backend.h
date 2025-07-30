@@ -72,12 +72,30 @@ protected:
     void Write_VisualVelocity(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter, bool ignored, int8_t quality);
 #endif
 
+    // align position with ahrs position by updating _pos_correction
+    // sensor_pos should be the position directly from the sensor with only scaling applied (i.e. no yaw or position corrections)
+    bool align_position_to_ahrs(const Vector3f &sensor_pos, bool align_xy, bool align_z);
+
+    // align position with a new position by updating _pos_correction
+    // sensor_pos should be the position directly from the sensor with only scaling applied (i.e. no yaw or position corrections)
+    // new_pos should be a NED position offset from the EKF origin
+    void align_position(const Vector3f &sensor_pos, const Vector3f &new_pos, bool align_xy, bool align_z);
+
+    // apply rotation and correction to position
+    void rotate_and_correct_position(Vector3f &position) const;
+
     AP_VisualOdom &_frontend;   // reference to frontend
     uint32_t _last_update_ms;   // system time of last update from sensor (used by health checks)
 
     // reset counter handling
     uint8_t _last_reset_counter;    // last sensor reset counter received
     uint32_t _reset_timestamp_ms;   // time reset counter was received
+
+    bool _align_posxy;              // true if sensor xy position should be aligned to AHRS
+    bool _align_posz;               // true if sensor z position should be aligned to AHRS
+    bool _use_posvel_rotation;      // true if _posvel_rotation should be applied to sensor's position and/or velocity data
+    Matrix3f _posvel_rotation;                  // rotation to align position and/or velocity from sensor to earth frame.  use when _use_posvel_rotation is true
+    Vector3f _pos_correction;                   // position correction that should be added to position reported from sensor
 
     // quality
     int8_t _quality;                // last recorded quality

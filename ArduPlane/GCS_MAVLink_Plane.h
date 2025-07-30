@@ -54,8 +54,9 @@ private:
 
     void handle_message(const mavlink_message_t &msg) override;
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;
-    void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override;
+    void handle_change_alt_request(Location &location) override;
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_int_DO_CHANGE_ALTITUDE(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_int_guided_slew_commands(const mavlink_command_int_t &packet);
     MAV_RESULT handle_MAV_CMD_DO_AUTOTUNE_ENABLE(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_DO_CHANGE_SPEED(const mavlink_command_int_t &packet);

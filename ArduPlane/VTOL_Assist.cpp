@@ -67,8 +67,8 @@ bool VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
     if (!quadplane.tailsitter.enabled() && !( (plane.control_mode->does_auto_throttle() && !plane.throttle_suppressed)
                                                                       || is_positive(plane.get_throttle_input()) 
                                                                       || plane.is_flying() ) ) {
-        // not in a flight mode and condition where it would be safe to turn on vertial lift motors
-        // skip this check for tailsitters because the forward and vertial motors are the same and are controled directly by throttle imput unlike other quadplanes
+        // not in a flight mode and condition where it would be safe to turn on vertical lift motors
+        // skip this check for tailsitters because the forward and vertical motors are the same and are controlled directly by throttle input unlike other quadplanes
         reset();
         return false;
     }
@@ -92,7 +92,7 @@ bool VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
     // assistance due to Q_ASSIST_SPEED
     // if option bit is enabled only allow assist with real airspeed sensor
     speed_assist = (have_airspeed && aspeed < speed) && 
-       (!quadplane.option_is_set(QuadPlane::OPTION::DISABLE_SYNTHETIC_AIRSPEED_ASSIST) || plane.ahrs.using_airspeed_sensor());
+       (!quadplane.option_is_set(QuadPlane::Option::DISABLE_SYNTHETIC_AIRSPEED_ASSIST) || plane.ahrs.using_airspeed_sensor());
 
     const uint32_t now_ms = AP_HAL::millis();
     const uint32_t tigger_delay_ms = delay * 1000;
@@ -106,7 +106,7 @@ bool VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
         alt_error.reset();
 
     } else {
-        const float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+        const float height_above_ground = plane.relative_ground_altitude(RangeFinderUse::ASSIST);
         if (alt_error.update(height_above_ground < alt, now_ms, tigger_delay_ms, clear_delay_ms)) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Alt assist %.1fm", height_above_ground);
         }
@@ -121,19 +121,22 @@ bool VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
         /*
         now check if we should provide assistance due to attitude error
         */
-        const uint16_t allowed_envelope_error_cd = 500U;
-        const bool inside_envelope = (labs(plane.ahrs.roll_sensor) <= (plane.aparm.roll_limit*100 + allowed_envelope_error_cd)) &&
-                                     (plane.ahrs.pitch_sensor < (plane.aparm.pitch_limit_max*100 + allowed_envelope_error_cd)) &&
-                                     (plane.ahrs.pitch_sensor > (plane.aparm.pitch_limit_min*100 - allowed_envelope_error_cd));
+        const auto ahrs_roll_deg = plane.ahrs.get_roll_deg();
+        const auto ahrs_pitch_deg = plane.ahrs.get_pitch_deg();
+        constexpr float allowed_envelope_error_deg = 5.0;
+        const bool inside_envelope =
+            (fabsf(ahrs_roll_deg) <= (plane.aparm.roll_limit + allowed_envelope_error_deg)) &&
+            (ahrs_pitch_deg < (plane.aparm.pitch_limit_max + allowed_envelope_error_deg)) &&
+            (ahrs_pitch_deg > (plane.aparm.pitch_limit_min - allowed_envelope_error_deg));
 
-        const int32_t max_angle_cd = 100U*angle;
-        const bool inside_angle_error = (labs(plane.ahrs.roll_sensor - plane.nav_roll_cd) < max_angle_cd) &&
-                                        (labs(plane.ahrs.pitch_sensor - plane.nav_pitch_cd) < max_angle_cd);
+        const bool inside_angle_error =
+            (fabsf(ahrs_roll_deg - plane.nav_roll_cd*0.01) < angle) &&
+            (fabsf(ahrs_pitch_deg - plane.nav_pitch_cd*0.01) < angle);
 
         if (angle_error.update(!inside_envelope && !inside_angle_error, now_ms, tigger_delay_ms, clear_delay_ms)) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Angle assist r=%d p=%d",
-                                         (int)(plane.ahrs.roll_sensor/100),
-                                         (int)(plane.ahrs.pitch_sensor/100));
+                            (int)ahrs_roll_deg,
+                            (int)ahrs_pitch_deg);
         }
     }
 
@@ -171,7 +174,7 @@ bool VTOL_Assist::check_VTOL_recovery(void)
             quadplane.force_fw_control_recovery = false;
             quadplane.attitude_control->reset_target_and_rate(false);
 
-            if (ahrs.groundspeed() > quadplane.wp_nav->get_default_speed_xy()*0.01) {
+            if (ahrs.groundspeed() > quadplane.wp_nav->get_default_speed_NE_ms()) {
                 /* if moving at high speed also reset position
                    controller and height controller
 
@@ -179,8 +182,8 @@ bool VTOL_Assist::check_VTOL_recovery(void)
                    controller may limit pitch after a strong
                    acceleration event
                 */
-                quadplane.pos_control->init_z_controller();
-                quadplane.pos_control->init_xy_controller();
+                quadplane.pos_control->init_U_controller();
+                quadplane.pos_control->init_NE_controller();
             }
         }
     }
@@ -194,7 +197,7 @@ bool VTOL_Assist::check_VTOL_recovery(void)
             fabsf(gyro.x) > radians(30) &&
             fabsf(gyro.y) > radians(30) &&
             gyro.x * gyro.z < 0 &&
-            plane.ahrs.pitch_sensor < -4500;
+            plane.ahrs.get_pitch_deg() < -45;
     } else {
         quadplane.in_spin_recovery = false;
     }

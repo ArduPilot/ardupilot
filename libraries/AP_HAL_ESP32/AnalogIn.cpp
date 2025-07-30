@@ -390,7 +390,7 @@ int8_t AnalogIn::find_pinconfig(int16_t ardupin)
             return j;
         }
     }
-    // can't find a match in definitons
+    // can't find a match in definitions
     return -1;
 
 }

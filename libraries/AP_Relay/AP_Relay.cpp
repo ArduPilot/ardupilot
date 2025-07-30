@@ -400,11 +400,21 @@ void AP_Relay::set_pin_by_instance(uint8_t instance, bool value)
     if (initial_value != value) {
         set_pin(pin, value);
 #if HAL_LOGGING_ENABLED
-        AP::logger().Write("RELY", "TimeUS,Instance,State", "s#-", "F--", "QBB",
-                            AP_HAL::micros64(),
-                            instance,
-                            value);
-#endif
+// @LoggerMessage: RELY
+// @Description: Relay state
+// @Field: TimeUS: Time since system startup
+// @Field: Instance: relay instance number
+// @Field: State: current state
+        AP::logger().Write(
+            "RELY",
+            "TimeUS," "Instance," "State",
+            "s"       "#"         "-",
+            "F"       "-"         "-",
+            "Q"       "B"         "B",
+            AP_HAL::micros64(),
+            instance,
+            value);
+#endif  // HAL_LOGGING_ENABLED
     }
 }
 

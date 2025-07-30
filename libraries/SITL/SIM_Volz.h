@@ -44,8 +44,6 @@ param fetch
 
 #include "SIM_SerialDevice.h"
 
-#include <AP_HAL/utility/sparse-endian.h>
-
 namespace SITL {
 
 class Volz : public SerialDevice {
@@ -91,9 +89,7 @@ private:
         uint16_t calculate_checksum() const {
             return crc_crc16_ibm(0xffff, (uint8_t*)this, 4);
         }
-        void update_checksum() {
-            crc = htobe16(calculate_checksum());
-        }
+        void update_checksum();
     };
 
     // reading-from-autopilot support:

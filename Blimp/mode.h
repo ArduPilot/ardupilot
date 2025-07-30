@@ -76,9 +76,9 @@ public:
     {
         return 0;
     }
-    virtual uint32_t wp_distance() const
+    virtual float wp_distance_m() const
     {
-        return 0;
+        return 0.0f;
     }
     virtual float crosstrack_error() const
     {

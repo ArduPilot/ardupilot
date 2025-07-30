@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Parses a log file and shows how the solution status changed over time
@@ -47,7 +47,7 @@ class SolutionStatusChange(object):
             "using_gps": 13,
             "gps_glitching": 14,
             "gps_quality_good": 15,
-            "initalized": 16,
+            "initialized": 16,
             "rejecting_airspeed": 17,
             "deadreckoning": 18,
         }

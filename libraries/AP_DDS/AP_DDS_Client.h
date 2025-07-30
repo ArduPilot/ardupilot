@@ -42,8 +42,11 @@
 #include "geographic_msgs/msg/GeoPointStamped.h"
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 #if AP_DDS_AIRSPEED_PUB_ENABLED
-#include "geometry_msgs/msg/Vector3Stamped.h"
+#include "ardupilot_msgs/msg/Airspeed.h"
 #endif // AP_DDS_AIRSPEED_PUB_ENABLED
+#if AP_DDS_RC_PUB_ENABLED
+#include "ardupilot_msgs/msg/Rc.h"
+#endif // AP_DDS_RC_PUB_ENABLED
 #if AP_DDS_GEOPOSE_PUB_ENABLED
 #include "geographic_msgs/msg/GeoPoseStamped.h"
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
@@ -153,13 +156,22 @@ private:
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
 
 #if AP_DDS_AIRSPEED_PUB_ENABLED
-    geometry_msgs_msg_Vector3Stamped tx_local_airspeed_topic;
+    ardupilot_msgs_msg_Airspeed tx_local_airspeed_topic;
     // The last ms timestamp AP_DDS wrote a airspeed message
     uint64_t last_airspeed_time_ms;
     //! @brief Serialize the current local airspeed and publish to the IO stream(s)
     void write_tx_local_airspeed_topic();
-    static bool update_topic(geometry_msgs_msg_Vector3Stamped& msg);
+    static bool update_topic(ardupilot_msgs_msg_Airspeed& msg);
 #endif //AP_DDS_AIRSPEED_PUB_ENABLED
+
+#if AP_DDS_RC_PUB_ENABLED
+    ardupilot_msgs_msg_Rc tx_local_rc_topic;
+    // The last ms timestamp AP_DDS wrote a rc message
+    uint64_t last_rc_time_ms;
+    //! @brief Serialize the current local rc and publish to the IO stream(s)
+    void write_tx_local_rc_topic();
+    static bool update_topic(ardupilot_msgs_msg_Rc& msg);
+#endif //AP_DDS_RC_PUB_ENABLED
 
 #if AP_DDS_BATTERY_STATE_PUB_ENABLED
     sensor_msgs_msg_BatteryState battery_state_topic;

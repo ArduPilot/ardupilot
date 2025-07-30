@@ -1,10 +1,21 @@
 #!/usr/bin/env python3
 
+# flake8: noqa
 
 import pathlib
+from dataclasses import dataclass
+from collections import defaultdict
+
+CONTAINER_PREALLOC_SIZE = 8
 
 
 def configure(cfg):
+    if cfg.env.OPTIONS.get('enable_DDS', False) is False:
+        return
+
+    # check for microxrceddsgen
+    cfg.find_program('microxrceddsgen', mandatory=True)
+
     extra_src = [
         'modules/Micro-XRCE-DDS-Client/src/c/core/session/stream/*.c',
         'modules/Micro-XRCE-DDS-Client/src/c/core/session/*.c',
@@ -38,6 +49,9 @@ def configure(cfg):
 
 
 def build(bld):
+    if bld.env.OPTIONS.get('enable_DDS', False) is False:
+        return
+
     config_h_in = [
         'modules/Micro-XRCE-DDS-Client/include/uxr/client/config.h.in',
         'modules/Micro-CDR/include/ucdr/config.h.in',
@@ -55,9 +69,9 @@ def build(bld):
         bld.env.INCLUDES += [bld.bldnode.find_or_declare(inc).abspath()]
 
     for i in range(len(config_h_nodes)):
-        print(f"building {config_h_nodes[i].abspath()}")
+        print(f"Building {config_h_nodes[i].abspath()}")
         bld(
-            # build config.h file
+            # Generate config.h file
             source=config_h_in_nodes[i],
             target=config_h_nodes[i],
             rule="%s %s/%s %s %s"
@@ -75,25 +89,51 @@ def build(bld):
     idl_files = bld.srcnode.ant_glob('libraries/AP_DDS/Idl/**/*.idl')
     idl_include_path = bld.srcnode.make_node(str(pathlib.PurePath(gen_path, "Idl"))).abspath()
 
-    for idl in idl_files:
-        container_prealloc_size = 8
+    @dataclass
+    class IdlGenerator:
+        # The name of the IDL (without the .idl)
+        name: str
+        # The name of the .h
+        h_name: str
+        # The name of the .c
+        c_name: str
+        # The name of the .idl
+        idl_abspath: pathlib.PurePath
 
-        idl_path = pathlib.PurePath(idl.abspath())
-        b = idl_path.name
-
-        gen_h = idl_path.with_suffix('.h').name
-        gen_c = idl_path.with_suffix('.c').name
-
+    folder_to_files = defaultdict(list)
+    for f in idl_files:
+        idl_path = pathlib.PurePath(f.abspath())
         idl_folder = idl_path.parts[-3:-1]
-        dst_dir = pathlib.PurePath(gen_path, "generated", *idl_folder)
-        gen = [bld.bldnode.find_or_declare(str(dst_dir / name)) for name in [gen_h, gen_c]]
-        gen_cmd = f"{bld.env.MICROXRCEDDSGEN[0]} -cs -replace -default-container-prealloc-size {container_prealloc_size} -d {dst_dir} -I {idl_include_path} {idl}"
+        idl_gen = IdlGenerator(
+            name=idl_path.name,
+            h_name=idl_path.with_suffix('.h').name,
+            c_name=idl_path.with_suffix('.c').name,
+            idl_abspath=idl_path,
+        )
+        folder_to_files[pathlib.PurePath(*idl_folder)].append(idl_gen)
+
+    for idl_folder, idl_gen_list in folder_to_files.items():
+        dst_dir = pathlib.PurePath(gen_path, "generated", idl_folder)
+        idl_abspaths_str = " ".join([str(idl_gen.idl_abspath) for idl_gen in idl_gen_list])
+        idl_list = [str(idl_folder / idl_gen.name) for idl_gen in idl_gen_list]
+
+        gen_targets = []
+        extra_sources = []
+        for idl_gen in idl_gen_list:
+            gen_targets.extend(
+                [bld.bldnode.find_or_declare(str(dst_dir / name)) for name in [idl_gen.h_name, idl_gen.c_name]]
+            )
+            extra_sources.extend([bld.bldnode.find_or_declare(str(dst_dir / name)) for name in [idl_gen.c_name]])
+
+        # microxrceddsgen expects a space-seperated list of *.idl files
+        gen_cmd = f"{bld.env.MICROXRCEDDSGEN[0]} -cs -replace -default-container-prealloc-size {CONTAINER_PREALLOC_SIZE} -d {dst_dir} -I {idl_include_path} {idl_abspaths_str}"
+
+        # waf expects a space-separated list of .h and .c files
         bld(
-            # build IDL file
-            source=idl,
-            target=gen,
+            source=idl_list,
+            target=gen_targets,
             rule=gen_cmd,
             group='dynamic_sources',
+            path=bld.bldnode.find_or_declare(str(bld.path) + '/Idl'),
         )
-
-        bld.env.AP_LIB_EXTRA_SOURCES['AP_DDS'] += [str(gen[1])]
+        bld.env.AP_LIB_EXTRA_SOURCES['AP_DDS'] += [str(src) for src in extra_sources]

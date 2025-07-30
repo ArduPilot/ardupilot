@@ -455,9 +455,11 @@ static uint32_t last_erase_ms;
 #if defined(STM32H7)
 
 /*
-    corrupt a flash to trigger ECC fault
+    Corrupt flash to trigger ECC fault.
+    If double_bit is false, generate a single-bit error (correctable).
+    If double_bit is true, generate a double-bit error (uncorrectable).
 */
-void stm32_flash_corrupt(uint32_t addr)
+void stm32_flash_corrupt(uint32_t addr, bool double_bit)
 {
     stm32_flash_unlock();
 
@@ -476,11 +478,12 @@ void stm32_flash_corrupt(uint32_t addr)
     *CCR = ~0;
     *CR |= FLASH_CR_PG;
 
-    for (uint32_t i=0; i<2; i++) {
-        while (*SR & (FLASH_SR_BSY|FLASH_SR_QW)) ;
-        putreg32(0xAAAA5555, addr);
+    const uint32_t pattern1 = double_bit? 0xAAAAAAAA : 0xAAAA5555;
+    const uint32_t pattern2 = double_bit? 0xAAAAAAA9 : 0x5555AAAA;
+    for (uint32_t i = 0; i < 2; i++) {
+        while (*SR & (FLASH_SR_BSY | FLASH_SR_QW)) ;
+        putreg32(pattern1, addr);
         if (*SR & FLASH_SR_INCERR) {
-            // clear the error
             *SR &= ~FLASH_SR_INCERR;
         }
         addr += 4;
@@ -489,11 +492,10 @@ void stm32_flash_corrupt(uint32_t addr)
     *CR |= FLASH_CR_FW;  // force write
     stm32_flash_wait_idle();
 
-    for (uint32_t i=0; i<2; i++) {
-        while (*SR & (FLASH_SR_BSY|FLASH_SR_QW)) ;
-        putreg32(0x5555AAAA, addr);
+    for (uint32_t i = 0; i < 2; i++) {
+        while (*SR & (FLASH_SR_BSY | FLASH_SR_QW)) ;
+        putreg32(pattern2, addr);  // overwrite previous location
         if (*SR & FLASH_SR_INCERR) {
-            // clear the error
             *SR &= ~FLASH_SR_INCERR;
         }
         addr += 4;
@@ -509,7 +511,7 @@ void stm32_flash_corrupt(uint32_t addr)
 
     stm32_flash_lock();
 }
-#endif
+#endif // STM32H7
 
 /*
   erase a page
@@ -685,9 +687,8 @@ static bool stm32_flash_write_h7(uint32_t addr, const void *buf, uint32_t count)
     bool success = true;
 
     while (count >= 32) {
-        const uint8_t *b2 = (const uint8_t *)addr;
         // if the bytes already match then skip this chunk
-        if (memcmp(b, b2, 32) != 0) {
+        if (memcmp((void*)addr, b, 32) != 0) {
             // check for erasure
             if (!stm32h7_check_all_ones(addr, 8)) {
                 return false;
@@ -707,7 +708,8 @@ static bool stm32_flash_write_h7(uint32_t addr, const void *buf, uint32_t count)
                 success = false;
                 goto failed;
             }
-            // check contents
+            // check contents after invalidating so we see what actually got written
+            SCB_InvalidateDCache_by_Addr((void*)addr, 32);
             if (memcmp((void*)addr, b, 32) != 0) {
                 success = false;
                 goto failed;

@@ -163,19 +163,17 @@ void AP_LandingGear::deploy()
         return;
     }
 
-    // set servo PWM to deployed position
-    SRV_Channels::set_output_limit(SRV_Channel::k_landing_gear_control, SRV_Channel::Limit::MAX);
-
-    // send message only if output has been configured
+    // set servo and send message only if output has been configured and not already deployed
     if (!_deployed &&
         SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control)) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "LandingGear: DEPLOY");
+        // set deployed flag
+        _deployed = true;
+        _have_changed = true;
+        LOGGER_WRITE_EVENT(LogEvent::LANDING_GEAR_DEPLOYED);
+        // set servo PWM to deployed position
+        SRV_Channels::set_output_limit(SRV_Channel::k_landing_gear_control, SRV_Channel::Limit::MAX);
     }
-
-    // set deployed flag
-    _deployed = true;
-    _have_changed = true;
-    LOGGER_WRITE_EVENT(LogEvent::LANDING_GEAR_DEPLOYED);
 }
 
 /// retract - retract landing gear
@@ -184,18 +182,17 @@ void AP_LandingGear::retract()
     if (!_enable) {
         return;
     }
-
-    // set servo PWM to retracted position
-    SRV_Channels::set_output_limit(SRV_Channel::k_landing_gear_control, SRV_Channel::Limit::MIN);
-
-    // reset deployed flag
-    _deployed = false;
-    _have_changed = true;
-    LOGGER_WRITE_EVENT(LogEvent::LANDING_GEAR_RETRACTED);
-
-    // send message only if output has been configured
-    if (SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control)) {
+    
+    // set servo and send message only if output has been configured and already deployed
+    if ((_deployed || !_have_changed ) &&
+        SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control)) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "LandingGear: RETRACT");
+        // reset deployed flag
+        _deployed = false;
+        _have_changed = true;
+        LOGGER_WRITE_EVENT(LogEvent::LANDING_GEAR_RETRACTED);
+        // set servo PWM to retracted position
+        SRV_Channels::set_output_limit(SRV_Channel::k_landing_gear_control, SRV_Channel::Limit::MIN);
     }
 }
 
@@ -286,18 +283,17 @@ void AP_LandingGear::update(float height_above_ground_m)
 
     if (hal.util->get_soft_armed()) {
         // only do height based triggering when armed
-        if ((!_deployed || !_have_changed) &&
+        if (!_deployed  &&
             _deploy_alt > 0 &&
             alt_m <= _deploy_alt &&
             _last_height_above_ground > _deploy_alt) {
             deploy();
-        }
-        if ((_deployed || !_have_changed) &&
-            _retract_alt > 0 &&
-            _retract_alt >= _deploy_alt &&
-            alt_m >= _retract_alt &&
-            _last_height_above_ground < _retract_alt) {
-            retract();
+        } else if ((_deployed || !_have_changed)&&
+                _retract_alt > 0 &&
+                 _retract_alt >= _deploy_alt &&
+                alt_m >= _retract_alt &&
+                _last_height_above_ground < _retract_alt) {
+                retract();
         }
     }
 

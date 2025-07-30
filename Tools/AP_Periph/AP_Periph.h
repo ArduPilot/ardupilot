@@ -40,6 +40,7 @@
 #include <AP_RCProtocol/AP_RCProtocol_config.h>
 #include "rc_in.h"
 #include "batt_balance.h"
+#include "battery_tag.h"
 #include "networking.h"
 #include "serial_options.h"
 #if AP_SIM_ENABLED
@@ -77,9 +78,6 @@
 #define AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) || AP_PERIPH_NCP5623_LED_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_NCP5623_BGR_LED_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_TOSHIBA_LED_WITHOUT_NOTIFY_ENABLED)
 
 #if AP_PERIPH_NOTIFY_ENABLED
-    #if !AP_PERIPH_RC_OUT_ENABLED && !defined(HAL_PERIPH_NOTIFY_WITHOUT_RCOUT)
-        #error "AP_PERIPH_NOTIFY_ENABLED requires AP_PERIPH_RC_OUT_ENABLED"
-    #endif
     #if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED
         #error "You cannot enable AP_PERIPH_NOTIFY_ENABLED and AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED at the same time. Notify already includes it"
     #endif
@@ -103,9 +101,13 @@
 #define HAL_PERIPH_CAN_MIRROR 0
 #endif
 
+#ifndef AP_SIM_PARAM_ENABLED
+#define AP_SIM_PARAM_ENABLED AP_SIM_ENABLED
+#endif
+
 #if defined(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT) && !defined(HAL_DEBUG_BUILD) && !defined(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_NON_DEBUG)
 /* this checking for reboot can lose bytes on GPS modules and other
- * serial devices. It is really only relevent on a debug build if you
+ * serial devices. It is really only relevant on a debug build if you
  * really want it for non-debug build then define
  * HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_NON_DEBUG in hwdef.dat
  */
@@ -359,6 +361,13 @@ public:
     uint32_t last_esc_raw_command_ms;
     uint8_t  last_esc_num_channels;
 
+    // Track channels that have been output to by actuator commands
+    // Note there is a single timeout, channels are not tracked individually
+    struct {
+        uint32_t last_command_ms;
+        uint32_t mask;
+    } actuator;
+
     void rcout_init();
     void rcout_init_1Hz();
     void rcout_esc(int16_t *rc, uint8_t num_channels);
@@ -383,6 +392,10 @@ public:
     BattBalance battery_balance;
 #endif
 
+#if AP_PERIPH_BATTERY_TAG_ENABLED
+    BatteryTag battery_tag;
+#endif
+    
 #if AP_PERIPH_SERIAL_OPTIONS_ENABLED
     SerialOptions serial_options;
 #endif
@@ -524,7 +537,7 @@ public:
     void send_serial_monitor_data();
     int8_t get_default_tunnel_serial_port(void) const;
 
-    struct {
+    struct UARTMonitor {
         ByteBuffer *buffer;
         uint32_t last_request_ms;
         AP_HAL::UARTDriver *uart;
@@ -533,7 +546,8 @@ public:
         uint8_t protocol;
         uint32_t baudrate;
         bool locked;
-    } uart_monitor;
+    } uart_monitors[SERIALMANAGER_MAX_PORTS];
+    void send_serial_monitor_data_instance(UARTMonitor &monitor);
 #endif
 
     // handlers for incoming messages
@@ -552,6 +566,7 @@ public:
     void handle_lightscommand(CanardInstance* canard_instance, CanardRxTransfer* transfer);
     void handle_notify_state(CanardInstance* canard_instance, CanardRxTransfer* transfer);
     void handle_hardpoint_command(CanardInstance* canard_instance, CanardRxTransfer* transfer);
+    void handle_globaltime(CanardInstance* canard_instance, CanardRxTransfer* transfer);
 
     void process1HzTasks(uint64_t timestamp_usec);
     void processTx(void);

@@ -67,6 +67,8 @@ local OTHER_PARAMS = { "INS_GYRO_FILTER", "INS_ACCEL_FILTER", "PTCH2SRV_TCONST",
 -- TECS params
 TECS_PARAMS = { "TECS_APPR_SMAX", "TECS_CLMB_MAX", "TECS_FLARE_HGT", "TECS_HDEM_TCONST", "TECS_HGT_OMEGA", "TECS_INTEG_GAIN", "TECS_LAND_ARSPD", "TECS_LAND_DAMP", "TECS_LAND_IGAIN", "TECS_LAND_PDAMP", "TECS_LAND_PMAX", "TECS_LAND_SINK", "TECS_LAND_SPDWGT", "TECS_LAND_SRC", "TECS_LAND_TCONST", "TECS_LAND_TDAMP", "TECS_LAND_THR", "TECS_OPTIONS", "TECS_PITCH_MAX", "TECS_PITCH_MIN", "TECS_PTCH_DAMP", "TECS_PTCH_FF_K", "TECS_PTCH_FF_V0", "TECS_RLL2THR", "TECS_SINK_MAX", "TECS_SINK_MIN", "TECS_SPDWEIGHT", "TECS_SPD_OMEGA", "TECS_SYNAIRSPEED", "TECS_THR_DAMP", "TECS_TIME_CONST", "TECS_TKOFF_IGAIN", "TECS_VERT_ACC" }
 
+local INS_HNTCH_PREFIX = { "INS_HNTCH_", "INS_HNTC2_" }
+local INS_NOTCH_PARMS = { "ENABLE", "ATT", "FREQ", "BW", "OPTS", "REF", "FM_RAT", "MODE" }
 
 if PREV_ENABLE:get() == 0 then
    return
@@ -126,6 +128,13 @@ for _, p in ipairs(TECS_PARAMS) do
    add_param(p)
 end
 
+-- add notch parameters
+for _, ins_notch in ipairs(INS_HNTCH_PREFIX) do
+   for _, p in ipairs(INS_NOTCH_PARMS) do
+      add_param(ins_notch .. p)
+   end
+end
+
 -- add in other parameters
 for _, p in ipairs(OTHER_PARAMS) do
    add_param(p)
@@ -175,8 +184,7 @@ function protected_wrapper()
      gcs:send_text(MAV_SEVERITY.EMERGENCY, "Internal Error: " .. err)
      -- when we fault we run the update function again after 1s, slowing it
      -- down a bit so we don't flood the console with errors
-     --return protected_wrapper, 1000
-     return
+     return protected_wrapper, 1000
   end
   return protected_wrapper, 1000/UPDATE_RATE_HZ
 end

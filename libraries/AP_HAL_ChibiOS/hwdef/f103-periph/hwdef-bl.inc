@@ -10,7 +10,7 @@ FLASH_BOOTLOADER_LOAD_KB 23
 APP_START_OFFSET_KB 2
 
 # board ID. See Tools/AP_Bootloader/board_types.txt
-APJ_BOARD_ID 1000
+APJ_BOARD_ID AP_HW_F103_PERIPH
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

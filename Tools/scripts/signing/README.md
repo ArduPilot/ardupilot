@@ -174,7 +174,7 @@ gives you commands for:
 
  - generating a session key for remote update
  - fetching the current public keys
- - setting new public keys as additonal or replacement keys
+ - setting new public keys as additional or replacement keys
  - removing all public keys
 
 It is expected that future versions of MissionPlanner will include a

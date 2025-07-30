@@ -85,6 +85,7 @@ PD9 USART3_RX USART3
 # used for RC SBUS
 PC6 USART6_TX USART6
 PC7 USART6_RX USART6
+define DEFAULT_SERIAL8_PROTOCOL SerialProtocol_RCIN
 
 # Uncomment this line for carriers boards with an IO MCU
 # IOMCU_UART USART6

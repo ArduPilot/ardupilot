@@ -71,9 +71,6 @@ void AP_SurfaceDistance::update()
     // tilt corrected but unfiltered, not glitch protected alt
     alt_cm = tilt_correction * rangefinder->distance_orient(rotation)*100;
 
-    // remember inertial alt to allow us to interpolate rangefinder
-    inertial_alt_cm = inertial_nav.get_position_z_up_cm();
-
     // glitch handling.  rangefinder readings more than RANGEFINDER_GLITCH_ALT_CM from the last good reading
     // are considered a glitch and glitch_count becomes non-zero
     // glitches clear after RANGEFINDER_GLITCH_NUM_SAMPLES samples in a row.
@@ -113,6 +110,12 @@ void AP_SurfaceDistance::update()
         last_healthy_ms = now;
     }
 
+    // remember inertial alt to allow us to interpolate rangefinder
+    float pos_d_m;
+    if (AP::ahrs().get_relative_position_D_origin_float(pos_d_m)) {
+        inertial_alt_cm = -pos_d_m * 100.0f; // convert from m to cm
+    }
+
     // handle reset of terrain offset
     if (reset_terrain_offset) {
         if (rotation == ROTATION_PITCH_90) {
@@ -139,8 +142,15 @@ bool AP_SurfaceDistance::get_rangefinder_height_interpolated_cm(int32_t& ret) co
     if (!enabled_and_healthy()) {
         return false;
     }
+
+    // get inertial alt
+    float pos_d_m;
+    if (!AP::ahrs().get_relative_position_D_origin_float(pos_d_m)) {
+        return false;
+    }
+
     ret = alt_cm_filt.get();
-    ret += inertial_nav.get_position_z_up_cm() - inertial_alt_cm;
+    ret += (-pos_d_m * 100.0) - inertial_alt_cm;
     return true;
 }
 

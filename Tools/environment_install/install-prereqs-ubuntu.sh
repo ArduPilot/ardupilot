@@ -60,22 +60,37 @@ fi
 # Checking Ubuntu release to adapt software version to install
 RELEASE_CODENAME=$(lsb_release -c -s)
 
-# translate Mint-codenames to Ubuntu-codenames based on https://www.linuxmint.com/download_all.php
-case ${RELEASE_CODENAME} in
-    wilma | xia)
-        RELEASE_CODENAME='noble'
+RELEASE_DISTRIBUTOR=$(lsb_release -i -s | tr '[:upper:]' '[:lower:]')
+case ${RELEASE_DISTRIBUTOR} in
+    elementary)
+        case ${RELEASE_CODENAME} in
+            jolnir)
+                RELEASE_CODENAME='focal'
+                ;;
+        esac
         ;;
-    vanessa | vera | victoria | virginia)
-        RELEASE_CODENAME='jammy'
-        ;;
-    una | uma | ulyssa | ulyana | jolnir)
-        RELEASE_CODENAME='focal'
-        ;;
-    tricia | tina | tessa | tara)
-        RELEASE_CODENAME='bionic'
-        ;;
-    elsie)
-        RELEASE_CODENAME='bullseye'
+    linuxmint)
+        # translate Mint-codenames to Ubuntu-codenames based on https://www.linuxmint.com/download_all.php
+        case ${RELEASE_CODENAME} in
+            wilma | xia)
+                RELEASE_CODENAME='noble'
+                ;;
+            vanessa | vera | victoria | virginia)
+                RELEASE_CODENAME='jammy'
+                ;;
+            una | uma | ulyssa | ulyana)
+                RELEASE_CODENAME='focal'
+                ;;
+            tricia | tina | tessa | tara)
+                RELEASE_CODENAME='bionic'
+                ;;
+            elsie)
+                RELEASE_CODENAME='bullseye'
+                ;;
+            *)
+                echo "Unable to map ${RELEASE_CODENAME} to an Ubuntu release.  Please patch this script and submit a pull request, or report at https://github.com/ArduPilot/ardupilot/issues"
+                exit 1
+        esac
         ;;
 esac
 
@@ -121,6 +136,11 @@ elif [ ${RELEASE_CODENAME} == 'oracular' ]; then
     SITLCFML_VERSION="2.6"
     PYTHON_V="python3"
     PIP=pip3
+elif [ ${RELEASE_CODENAME} == 'plucky' ]; then
+    SITLFML_VERSION="2.6"
+    SITLCFML_VERSION="2.6"
+    PYTHON_V="python3"
+    PIP="python3 -m pip"
 elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
          [ ${RELEASE_CODENAME} == 'bullseye' ]; then
     SITLFML_VERSION="2.5"
@@ -178,7 +198,9 @@ if [ ${RELEASE_CODENAME} == 'bookworm' ] ||
    [ ${RELEASE_CODENAME} == 'lunar' ] ||
    [ ${RELEASE_CODENAME} == 'mantic' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
-   [ ${RELEASE_CODENAME} == 'oracular' ]; then
+   [ ${RELEASE_CODENAME} == 'oracular' ] ||
+   [ ${RELEASE_CODENAME} == 'plucky' ] ||
+   false; then
     # on Lunar (and presumably later releases), we install in venv, below
     PYTHON_PKGS+=" numpy pyparsing psutil"
     SITL_PKGS="python3-dev"
@@ -192,7 +214,9 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
        [ ${RELEASE_CODENAME} == 'lunar' ] ||
        [ ${RELEASE_CODENAME} == 'mantic' ] ||
        [ ${RELEASE_CODENAME} == 'noble' ] ||
-       [ ${RELEASE_CODENAME} == 'oracular' ]; then
+       [ ${RELEASE_CODENAME} == 'oracular' ] ||
+       [ ${RELEASE_CODENAME} == 'plucky' ] ||
+       false; then
         PYTHON_PKGS+=" matplotlib scipy opencv-python pyyaml"
         SITL_PKGS+=" xterm xfonts-base libcsfml-dev libcsfml-audio${SITLCFML_VERSION} libcsfml-dev libcsfml-graphics${SITLCFML_VERSION} libcsfml-network${SITLCFML_VERSION} libcsfml-system${SITLCFML_VERSION} libcsfml-window${SITLCFML_VERSION} libsfml-audio${SITLFML_VERSION} libsfml-dev libsfml-graphics${SITLFML_VERSION} libsfml-network${SITLFML_VERSION} libsfml-system${SITLFML_VERSION} libsfml-window${SITLFML_VERSION}"
   else
@@ -284,9 +308,15 @@ elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
 elif [ ${RELEASE_CODENAME} == 'lunar' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} != 'mantic' ] &&
-     [ ${RELEASE_CODENAME} != 'noble' ] && 
-     [ ${RELEASE_CODENAME} != 'oracular' ]; then
-    SITL_PKGS+=" python-argparse"
+     [ ${RELEASE_CODENAME} != 'noble' ] &&
+     [ ${RELEASE_CODENAME} != 'oracular' ] &&
+     [ ${RELEASE_CODENAME} != 'plucky' ] &&
+     true; then
+    if apt-cache search python-argparse | grep argp; then
+        SITL_PKGS+=" python-argparse"
+    elif apt-cache search python3-argparse | grep argp; then
+        SITL_PKGS+=" python3-argparse"
+    fi
 fi
 
 # Check for graphical package for MAVProxy
@@ -307,6 +337,9 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
     # see below
   elif [ ${RELEASE_CODENAME} == 'oracular' ]; then
+    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
+    # see below
+  elif [ ${RELEASE_CODENAME} == 'plucky' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
     # see below
   elif apt-cache search python-wxgtk3.0 | grep wx; then
@@ -330,7 +363,9 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   elif [ ${RELEASE_CODENAME} == 'mantic' ] ||
        [ ${RELEASE_CODENAME} == 'noble' ] ||
-       [ ${RELEASE_CODENAME} == 'oracular' ]; then
+       [ ${RELEASE_CODENAME} == 'oracular' ] ||
+       [ ${RELEASE_CODENAME} == 'plucky' ] ||
+       false; then
       PYTHON_PKGS+=" wxpython opencv-python"
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
@@ -392,6 +427,8 @@ elif [ ${RELEASE_CODENAME} == 'noble' ]; then
     PYTHON_VENV_PACKAGE=python3.12-venv
 elif [ ${RELEASE_CODENAME} == 'oracular' ]; then
     PYTHON_VENV_PACKAGE=python3.12-venv
+elif [ ${RELEASE_CODENAME} == 'plucky' ]; then
+    PYTHON_VENV_PACKAGE=python3-venv
 fi
 
 if [ -n "$PYTHON_VENV_PACKAGE" ]; then
@@ -429,7 +466,9 @@ if [ ${RELEASE_CODENAME} == 'bookworm' ] ||
    [ ${RELEASE_CODENAME} == 'lunar' ] ||
    [ ${RELEASE_CODENAME} == 'mantic' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
-   [ ${RELEASE_CODENAME} == 'oracular' ]; then
+   [ ${RELEASE_CODENAME} == 'oracular' ] ||
+   [ ${RELEASE_CODENAME} == 'plucky' ] ||
+   false; then
     # must do this ahead of wxPython pip3 run :-/
     $PIP install $PIP_USER_ARGUMENT -U attrdict3
 fi
@@ -437,8 +476,18 @@ fi
 # install Python packages one-at-a-time so it is clear which package
 # is causing problems:
 for PACKAGE in $PYTHON_PKGS; do
-    $PIP install $PIP_USER_ARGUMENT -U $PACKAGE
+    if [ "$PACKAGE" == "wxpython" ]; then
+        echo "##### $PACKAGE takes a *VERY* long time to install (~30 minutes).  Be patient."
+    fi
+    time $PIP install $PIP_USER_ARGUMENT -U $PACKAGE
 done
+
+# somehow Plucky really wants Pillow reinstalled or MAVProxy's map
+# won't load (version mismatch between "Core" and "Pillow")
+if [ ${RELEASE_CODENAME} == 'plucky' ] ||
+       false; then
+    $PIP install --force-reinstall pillow
+fi
 
 if [[ -z "${DO_AP_STM_ENV}" ]] && maybe_prompt_user "Install ArduPilot STM32 toolchain [N/y]?" ; then
     DO_AP_STM_ENV=1
@@ -460,37 +509,37 @@ fi
 
 heading "Adding ArduPilot Tools to environment"
 
-SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
+SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
 
 if [[ $DO_AP_STM_ENV -eq 1 ]]; then
 exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
 grep -Fxq "$exportline" ~/$SHELL_LOGIN 2>/dev/null || {
     if maybe_prompt_user "Add $OPT/$ARM_ROOT/bin to your PATH [N/y]?" ; then
-        echo $exportline >> ~/$SHELL_LOGIN
-        eval $exportline
+        echo "$exportline" >> ~/$SHELL_LOGIN
+        eval "$exportline"
     else
         echo "Skipping adding $OPT/$ARM_ROOT/bin to PATH."
     fi
 }
 fi
 
-exportline2="export PATH=$ARDUPILOT_ROOT/$ARDUPILOT_TOOLS:\$PATH";
+exportline2="export PATH=\"$ARDUPILOT_ROOT/$ARDUPILOT_TOOLS:\"\$PATH";
 grep -Fxq "$exportline2" ~/$SHELL_LOGIN 2>/dev/null || {
     if maybe_prompt_user "Add $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to your PATH [N/y]?" ; then
-        echo $exportline2 >> ~/$SHELL_LOGIN
-        eval $exportline2
+        echo "$exportline2" >> ~/$SHELL_LOGIN
+        eval "$exportline2"
     else
         echo "Skipping adding $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to PATH."
     fi
 }
 
 if [[ $SKIP_AP_COMPLETION_ENV -ne 1 ]]; then
-exportline3="source $ARDUPILOT_ROOT/Tools/completion/completion.bash";
+exportline3="source \"$ARDUPILOT_ROOT/Tools/completion/completion.bash\"";
 grep -Fxq "$exportline3" ~/$SHELL_LOGIN 2>/dev/null || {
     if maybe_prompt_user "Add ArduPilot Bash Completion to your bash shell [N/y]?" ; then
-        echo $exportline3 >> ~/.bashrc
-        eval $exportline3
+        echo "$exportline3" >> ~/.bashrc
+        eval "$exportline3"
     else
         echo "Skipping adding ArduPilot Bash Completion."
     fi
@@ -500,8 +549,8 @@ fi
 exportline4="export PATH=/usr/lib/ccache:\$PATH";
 grep -Fxq "$exportline4" ~/$SHELL_LOGIN 2>/dev/null || {
     if maybe_prompt_user "Append CCache to your PATH [N/y]?" ; then
-        echo $exportline4 >> ~/$SHELL_LOGIN
-        eval $exportline4
+        echo "$exportline4" >> ~/$SHELL_LOGIN
+        eval "$exportline4"
     else
         echo "Skipping appending CCache to PATH."
     fi
@@ -511,7 +560,7 @@ echo "Done!"
 if [[ $SKIP_AP_GIT_CHECK -ne 1 ]]; then
   if [ -d ".git" ]; then
     heading "Update git submodules"
-    cd $ARDUPILOT_ROOT
+    cd "$ARDUPILOT_ROOT"
     git submodule update --init --recursive
     echo "Done!"
   fi

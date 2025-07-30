@@ -66,17 +66,17 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Description: Function assigned to this servo. Setting this to Disabled(0) will setup this output for control by auto missions or MAVLink servo set commands. any other value will enable the corresponding function
     // @SortValues: AlphabeticalZeroAtTop
     // @Values: -1:GPIO
-    // @Values{Plane, Copter, Rover}: -1:GPIO
+    // @Values{Plane, Copter, Rover, Sub}: -1:GPIO
     // @Values: 0:Disabled
-    // @Values{Plane, Copter, Rover}: 0:Disabled
+    // @Values{Plane, Copter, Rover, Sub}: 0:Disabled
     // @Values: 1:RCPassThru
-    // @Values{Plane, Copter, Rover}: 1:RCPassThru
+    // @Values{Plane, Copter, Rover, Sub}: 1:RCPassThru
     // @Values: 2:Flap, 3:FlapAuto
     // @Values{Plane}: 2:Flap,3:FlapAuto
     // @Values: 4:Aileron
     // @Values{Plane}: 4:Aileron
     // @Values: 6:Mount1Yaw,7:Mount1Pitch,8:Mount1Roll,9:Mount1Retract
-    // @Values{Plane, Copter, Rover}: 6:Mount1Yaw,7:Mount1Pitch,8:Mount1Roll,9:Mount1Retract
+    // @Values{Plane, Copter, Rover, Sub}: 6:Mount1Yaw,7:Mount1Pitch,8:Mount1Roll,9:Mount1Retract
     // @Values: 10:CameraTrigger
     // @Values{Plane, Copter, Rover}: 10:CameraTrigger
     // @Values: 12:Mount2Yaw,13:Mount2Pitch,14:Mount2Roll,15:Mount2Retract
@@ -96,7 +96,7 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Values: 27:Parachute
     // @Values{Plane, Copter}: 27:Parachute
     // @Values: 28:Gripper
-    // @Values{Plane, Copter, Rover}: 28:Gripper
+    // @Values{Plane, Copter, Rover, Sub}: 28:Gripper
     // @Values: 29:LandingGear
     // @Values{Plane, Copter}: 29:LandingGear
     // @Values: 30:EngineRunEnable
@@ -105,12 +105,13 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Values{Copter}: 31:HeliRSC,32:HeliTailRSC
     // @Values: 33:Motor1,34:Motor2,35:Motor3,36:Motor4,37:Motor5,38:Motor6,39:Motor7,40:Motor8
     // @Values{Plane}: 33:Motor1,34:Motor2,35:Motor3,36:Motor4,37:Motor5,38:Motor6,39:Motor7/TailTiltServo,40:Motor8
-    // @Values{Copter}: 33:Motor1,34:Motor2,35:Motor3,36:Motor4,37:Motor5,38:Motor6,39:Motor7,40:Motor8
+    // @Values{Copter, Sub}: 33:Motor1,34:Motor2,35:Motor3,36:Motor4,37:Motor5,38:Motor6,39:Motor7,40:Motor8
     // @Values{Rover}: 33:Motor1,34:Motor2,35:Motor3,36:Motor4
     // @Values: 41:TiltMotorsFront,45:TiltMotorsRear,46:TiltMotorRearLeft,47:TiltMotorRearRight
     // @Values{Plane}: 41:TiltMotorsFront,45:TiltMotorsRear,46:TiltMotorRearLeft,47:TiltMotorRearRight
     // @Values: 51:RCIN1,52:RCIN2,53:RCIN3,54:RCIN4,55:RCIN5,56:RCIN6,57:RCIN7,58:RCIN8,59:RCIN9,60:RCIN10,61:RCIN11,62:RCIN12,63:RCIN13,64:RCIN14,65:RCIN15,66:RCIN16
     // @Values{Plane, Copter, Rover}: 51:RCIN1,52:RCIN2,53:RCIN3,54:RCIN4,55:RCIN5,56:RCIN6,57:RCIN7,58:RCIN8,59:RCIN9,60:RCIN10,61:RCIN11,62:RCIN12,63:RCIN13,64:RCIN14,65:RCIN15,66:RCIN16
+    // @Values{Sub}: 51:RCIN1/Pitch,52:RCIN2/Roll,53:RCIN3/HeaveVertical,54:RCIN4/YawTurn,55:RCIN5/SurgeForward,56:RCIN6/SwayLateral,57:RCIN7/CameraPan,58:RCIN8/CameraTilt,59:RCIN9,60:RCIN10,61:RCIN11,62:RCIN12,63:RCIN13,64:RCIN14,65:RCIN15,66:RCIN16
     // @Values: 67:Ignition,69:Starter
     // @Values{Plane}: 67:Ignition,69:Starter
     // @Values: 70:Throttle
@@ -127,20 +128,20 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Values: 81:BoostThrottle
     // @Values{Copter}: 81:BoostThrottle
     // @Values: 82:Motor9,83:Motor10,84:Motor11,85:Motor12
-    // @Values{Plane, Copter}: 82:Motor9,83:Motor10,84:Motor11,85:Motor12
+    // @Values{Plane, Copter, Sub}: 82:Motor9,83:Motor10,84:Motor11,85:Motor12
     // @Values: 86:DifferentialSpoilerLeft2,87:DifferentialSpoilerRight2
     // @Values{Plane}: 86:DifferentialSpoilerLeft2,87:DifferentialSpoilerRight2
     // @Values: 88:Winch
-    // @Values{Copter, Rover}: 88:Winch
+    // @Values{Copter, Rover, Sub}: 88:Winch
     // @Values: 89:Main Sail
     // @Values{Rover}: 89:Main Sail
     // @Values: 90:CameraISO,91:CameraAperture,92:CameraFocus,93:CameraShutterSpeed
-    // @Values{Plane, Copter, Rover}: 90:CameraISO,91:CameraAperture,92:CameraFocus,93:CameraShutterSpeed
+    // @Values{Plane, Copter, Rover, Sub}: 90:CameraISO,91:CameraAperture,92:CameraFocus,93:CameraShutterSpeed
     // @Values: 94:Script1,95:Script2,96:Script3,97:Script4,98:Script5,99:Script6,100:Script7,101:Script8,102:Script9,103:Script10,104:Script11,105:Script12,106:Script13,107:Script14,108:Script15,109:Script16
-    // @Values{Plane, Copter, Rover}: 94:Script1,95:Script2,96:Script3,97:Script4,98:Script5,99:Script6,100:Script7,101:Script8,102:Script9,103:Script10,104:Script11,105:Script12,106:Script13,107:Script14,108:Script15,109:Script16
+    // @Values{Plane, Copter, Rover, Sub}: 94:Script1,95:Script2,96:Script3,97:Script4,98:Script5,99:Script6,100:Script7,101:Script8,102:Script9,103:Script10,104:Script11,105:Script12,106:Script13,107:Script14,108:Script15,109:Script16
     // @Values{Plane}: 110:Airbrakes
     // @Values: 120:NeoPixel1,121:NeoPixel2,122:NeoPixel3,123:NeoPixel4
-    // @Values{Plane, Copter, Rover}: 120:NeoPixel1,121:NeoPixel2,122:NeoPixel3,123:NeoPixel4
+    // @Values{Plane, Copter, Rover, Sub}: 120:NeoPixel1,121:NeoPixel2,122:NeoPixel3,123:NeoPixel4
     // @Values: 124:RateRoll,125:RatePitch,126:RateThrust,127:RateYaw
     // @Values{Plane, Copter}: 124:RateRoll,125:RatePitch,126:RateThrust,127:RateYaw
     // @Values: 128:WingSailElevator
@@ -150,7 +151,7 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Values: 133:Winch Clutch
     // @Values{Copter, Rover}: 133:Winch Clutch
     // @Values: 134:SERVOn_MIN,135:SERVOn_TRIM,136:SERVOn_MAX
-    // @Values{Plane, Copter, Rover}: 134:SERVOn_MIN,135:SERVOn_TRIM,136:SERVOn_MAX
+    // @Values{Plane, Copter, Rover, Sub}: 134:SERVOn_MIN,135:SERVOn_TRIM,136:SERVOn_MAX
     // @Values: 137:SailMastRotation
     // @Values{Rover}: 137:SailMastRotation
     // @Values: 138:Alarm,139:Alarm Inverted
@@ -162,6 +163,10 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Values{Plane, Copter}: 168:Motor21,169:Motor22,170:Motor23,171:Motor24
     // @Values{Plane, Copter}: 172:Motor25,173:Motor26,174:Motor27,175:Motor28
     // @Values{Plane, Copter}: 176:Motor29,177:Motor30,178:Motor31,179:Motor32
+    // @Values: 180:CameraZoom
+    // @Values{Sub}: 181:Lights1,182:Lights2
+    // @Values{Sub}: 183:VideoSwitch
+    // @Values{Sub}: 184:Actuator1,185:Actuator2,186:Actuator3,187:Actuator4,188:Actuator5,189:Actuator6
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("FUNCTION",  5, SRV_Channel, function, 0),
