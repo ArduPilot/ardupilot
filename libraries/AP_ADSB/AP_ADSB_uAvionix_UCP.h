@@ -53,6 +53,10 @@ private:
     uint16_t gdl90Transmit(GDL90_TX_MESSAGE &message, const uint16_t length);
     static bool parseByte(const uint8_t data, GDL90_RX_MESSAGE &msg, GDL90_RX_STATUS &status);
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    uint32_t set_IdentActive_ms;
+#endif
+
     struct {
         uint32_t last_msg_ms;
         GDL90_RX_MESSAGE msg;

@@ -130,6 +130,56 @@ void AP_ADSB_uAvionix_UCP::update()
         && (now_ms - run_state.last_packet_Transponder_Ownship_ms >= 10000)) {
         _frontend.out_state.tx_status.fault |= UAVIONIX_ADSB_OUT_STATUS_FAULT_STATUS_MESSAGE_UNAVAIL;
     }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // simulate the device being attached by copying the out_state.ctrl (what we WANT it to be)
+    // to the various packets that populate out_state.tx_status (sent via MAVLink to GCS)
+    if (run_state.request_Transponder_Id_tries >= 5 && now_ms - run_state.last_packet_Transponder_Heartbeat_ms >= 1000) {
+
+        {
+        // sending this keeps last_packet_Transponder_Heartbeat_ms alive so we don't timeout and set a fault
+        // and its 1Hz timer is also used to trigger all other packets that we expect from real hardware at 1Hz
+        GDL90_HEARTBEAT msg_hb {};
+        msg_hb.messageId = GDL90_ID_HEARTBEAT;
+        // TODO: add user-selectable simulated faults
+        handle_msg((const GDL90_RX_MESSAGE&)msg_hb);
+        }
+
+        {
+        GDL90_IDENTIFICATION_V3 msg_id {};
+        msg_id.messageId = GDL90_ID_IDENTIFICATION;
+        msg_id.protocolVersion = 3;
+        msg_id.primary.hwId = 0x2F; // Ping200X
+        msg_id.primary.fwMajorVersion = 1;
+        msg_id.primary.fwMinorVersion = 2;
+        msg_id.primary.fwBuildVersion = 3;
+        msg_id.primary.serialNumber = 456789;
+        strcpy((char*)msg_id.primaryFwPartNumber, "SITL");
+        handle_msg((GDL90_RX_MESSAGE&)msg_id);
+        }
+
+        {
+        GDL90_OWNSHIP_REPORT msg_ownship {};
+        msg_ownship.messageId = GDL90_ID_OWNSHIP_REPORT;
+        memcpy(msg_ownship.report.callsign, _frontend.out_state.ctrl.callsign, sizeof(msg_ownship.report.callsign));
+        handle_msg((const GDL90_RX_MESSAGE&)msg_ownship);
+        }
+
+        {
+        GDL90_TRANSPONDER_STATUS_MSG_V3 msg_status {};
+        msg_status.messageId = GDL90_ID_TRANSPONDER_STATUS;
+        msg_status.version = 3;
+        msg_status.modeAEnabled = _frontend.out_state.ctrl.modeAEnabled;
+        msg_status.modeCEnabled = _frontend.out_state.ctrl.modeCEnabled;
+        msg_status.modeSEnabled = _frontend.out_state.ctrl.modeSEnabled;
+        msg_status.es1090TxEnabled = _frontend.out_state.ctrl.es1090TxEnabled;
+        msg_status.squawkCode = _frontend.out_state.ctrl.squawkCode;
+        msg_status.temperature = 30;
+        msg_status.identActive = (set_IdentActive_ms > 0) && (now_ms - set_IdentActive_ms < 20000); // ADSB spec says to hold ident for several seconds
+        handle_msg((const GDL90_RX_MESSAGE&)msg_status); // this will also send mavlink MSG_UAVIONIX_ADSB_OUT_STATUS
+        }
+    }
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
 }
 
 
@@ -408,6 +458,10 @@ void AP_ADSB_uAvionix_UCP::send_Transponder_Control()
 
     msg.baroCrossChecked = ADSB_NIC_BARO_UNVERIFIED;
     msg.identActive = _frontend.out_state.ctrl.identActive;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // if active, cache this moment so we hold it for many seconds just like real HW would
+    if (_frontend.out_state.ctrl.identActive) { set_IdentActive_ms = AP_HAL::millis(); }
+#endif
     _frontend.out_state.ctrl.identActive = false; // only send identButtonActive once per request
     msg.modeAEnabled = _frontend.out_state.ctrl.modeAEnabled;
     msg.modeCEnabled = _frontend.out_state.ctrl.modeCEnabled;
