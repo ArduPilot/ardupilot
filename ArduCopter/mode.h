@@ -56,15 +56,15 @@ public:
 
     // these are set by the Mission code:
     State state = State::Descent_Start; // records state of payload place
-    float descent_max_cm;
+    float descent_max_m;
 
 private:
 
     uint32_t descent_established_time_ms; // milliseconds
     uint32_t place_start_time_ms; // milliseconds
     float descent_thrust_level;
-    float descent_start_altitude_cm;
-    float descent_speed_cms;
+    float descent_start_altitude_m;
+    float descent_speed_ms;
 };
 #endif
 
@@ -731,7 +731,7 @@ private:
         bool reached_destination_xy : 1;
         bool loiter_start_done : 1;
         bool reached_alt : 1;
-        float alt_error_cm;
+        float alt_error_m;
         int32_t alt;
     } loiter_to_alt;
 
