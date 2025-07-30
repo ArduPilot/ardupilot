@@ -312,6 +312,12 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
             pwm_output[0] = pwm_output[1] = pwm_output[2] = pwm_output[3] =
                     pwm_output[4] = pwm_output[5] = pwm_output[6] = pwm_output[7] = 1500;
         }
+        // if SIM_PWM_ZERO is enabled, mark all channels to be zeroed.
+        if (_sitl->pwm_zero_on_init) {
+            for (uint8_t i=0; i<SITL_NUM_CHANNELS; i++) {
+                pwm_output[i] = 0xFFFF;
+            }
+        }
     }
 
     // output at chosen framerate
@@ -409,17 +415,21 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
 
     // apply engine multiplier to motor defined by the SIM_ENGINE_FAIL parameter
     for (uint8_t i=0; i<ARRAY_SIZE(input.servos); i++) {
-        if (engine_fail & (1<<i)) {
+        if (engine_fail & (1<<i) && (output_ready || !_sitl->pwm_zero_on_init)) {
             if (_vehicle != Rover) {
                 input.servos[i] = ((input.servos[i]-1000) * engine_mul) + 1000;
             } else {
+                //! @todo should apply to any vehicle with reversible motors
                 input.servos[i] = static_cast<uint16_t>(((input.servos[i] - 1500) * engine_mul) + 1500);
             }
         }
     }
 
     float throttle = 0.0f;
-    if (_vehicle == ArduPlane) {
+    if (!output_ready && _sitl->pwm_zero_on_init) {
+        // skip throttle estimate and overrides while not ready
+        throttle = 0.0f;
+    } else if (_vehicle == ArduPlane) {
         float forward_throttle = constrain_float((input.servos[2] - 1000) / 1000.0f, 0.0f, 1.0f);
         // do a little quadplane dance
         float hover_throttle = 0.0f;
