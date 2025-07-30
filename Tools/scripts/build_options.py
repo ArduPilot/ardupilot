@@ -156,6 +156,7 @@ BUILD_OPTIONS = [
     Feature('AP_Periph', 'PERIPH_EFI', 'AP_PERIPH_EFI_ENABLED', 'Emit DroneCAN ice_reciprocating_Status Messages', 0, 'EFI'),
     Feature('AP_Periph', 'PERIPH_RCIN', 'AP_PERIPH_RCIN_ENABLED', 'Emit DroneCAN RCInput Messages', 0, 'RC_Protocol'),
     Feature('AP_Periph', 'PERIPH_RPM', 'AP_PERIPH_RPM_ENABLED', 'Emit DroneCAN RPM messages for AP_RPM sensors', 0, 'RPM'),
+    Feature('AP_Periph', 'PERIPH_AIRSPEED', 'AP_PERIPH_AIRSPEED_ENABLED', 'Emit DroneCAN air_data_RawAirData messages for AP_Airspeed sensors', 0, 'AIRSPEED'), # noqa
 
     Feature('Camera', 'Camera', 'AP_CAMERA_ENABLED', 'Enable Camera trigger', 0, None),
     Feature('Camera', 'Camera_MAVLink', 'AP_CAMERA_MAVLINK_ENABLED', 'Enable MAVLink camera ', 0, 'Camera'),
