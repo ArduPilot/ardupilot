@@ -112,25 +112,31 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
         xTot = x + xTrim;
     }
 
-    RC_Channels::set_override(0, constrain_int16(s + pitchTrim + rpyCenter,1100,1900), tnow); // pitch
-    RC_Channels::set_override(1, constrain_int16(t + rollTrim  + rpyCenter,1100,1900), tnow); // roll
+    channel_pitch->set_override(constrain_int16(s + pitchTrim + rpyCenter,1100,1900), tnow);
+    channel_roll->set_override(constrain_int16(t + rollTrim  + rpyCenter,1100,1900), tnow);
 
-    RC_Channels::set_override(2, constrain_int16((zTot)*throttleScale+throttleBase,1100,1900), tnow); // throttle
-    RC_Channels::set_override(3, constrain_int16(r*rpyScale+rpyCenter,1100,1900), tnow);                 // yaw
+    channel_throttle->set_override(constrain_int16((zTot)*throttleScale+throttleBase,1100,1900), tnow);
+    channel_yaw->set_override(constrain_int16(r*rpyScale+rpyCenter,1100,1900), tnow);
 
     // maneuver mode:
     if (roll_pitch_flag == 0) {
         // adjust forward and lateral with joystick input instead of roll and pitch
-        RC_Channels::set_override(4, constrain_int16((xTot)*rpyScale+rpyCenter,1100,1900), tnow); // forward for ROV
-        RC_Channels::set_override(5, constrain_int16((yTot)*rpyScale+rpyCenter,1100,1900), tnow); // lateral for ROV
+        channel_forward->set_override(constrain_int16((xTot)*rpyScale+rpyCenter,1100,1900), tnow);
+        channel_lateral->set_override(constrain_int16((yTot)*rpyScale+rpyCenter,1100,1900), tnow);
     } else {
         // neutralize forward and lateral input while we are adjusting roll and pitch
-        RC_Channels::set_override(4, constrain_int16(xTrim*rpyScale+rpyCenter,1100,1900), tnow); // forward for ROV
-        RC_Channels::set_override(5, constrain_int16(yTrim*rpyScale+rpyCenter,1100,1900), tnow); // lateral for ROV
+        channel_forward->set_override(constrain_int16(xTrim*rpyScale+rpyCenter,1100,1900), tnow);
+        channel_lateral->set_override(constrain_int16(yTrim*rpyScale+rpyCenter,1100,1900), tnow);
     }
 
-    RC_Channels::set_override(6, cam_pan, tnow);       // camera pan
-    RC_Channels::set_override(7, cam_tilt, tnow);      // camera tilt
+    RC_Channel *cam_pan_chan = rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOUNT1_YAW);
+    if (cam_pan_chan != nullptr) {
+        cam_pan_chan->set_override(cam_pan, tnow);
+    }
+    RC_Channel *cam_tilt_chan = rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOUNT1_PITCH);
+    if (cam_tilt_chan != nullptr) {
+        cam_tilt_chan->set_override(cam_tilt, tnow);
+    }
 
     // Store old x, y, z values for use in input hold logic
     x_last = x;
