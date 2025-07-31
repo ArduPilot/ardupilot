@@ -368,6 +368,8 @@ AP_HW_SULILGH7-P1-P2                 2005
 
 AP_HW_AET-H743-Basic                 2024
 
+AP_HW_BOTWINGF405                    2501
+
 AP_HW_SakuraRC-H743                  2714
 
 # IDs 4000-4009 reserved for Karshak Drones
