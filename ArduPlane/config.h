@@ -138,8 +138,11 @@
 #ifndef THROTTLE_MIN
  # define THROTTLE_MIN                   0 // percent
 #endif
-#ifndef THROTTLE_CRUISE
- # define THROTTLE_CRUISE                45
+#ifdef THROTTLE_CRUISE
+#error THROTTLE_CRUISE was renamed to AP_PLANE_TRIM_THROTTLE_DEFAULT
+#endif
+#ifndef AP_PLANE_TRIM_THROTTLE_DEFAULT
+ # define AP_PLANE_TRIM_THROTTLE_DEFAULT                45
 #endif
 #ifndef THROTTLE_MAX
  # define THROTTLE_MAX                   100
