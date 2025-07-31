@@ -6,8 +6,10 @@
 
 // Anonymous namespace to hold variables used only in this file
 namespace {
+#if HAL_MOUNT_ENABLED
 float cam_tilt = 1500.0;
 float cam_pan = 1500.0;
+#endif  // HAL_MOUNT_ENABLED
 float lights1 = 0;
 float lights2 = 0;
 int16_t rollTrim = 0;
@@ -62,9 +64,11 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 
     bool shift = false;
 
+#if HAL_MOUNT_ENABLED
     // Neutralize camera tilt and pan speed setpoint
     cam_tilt = 1500;
     cam_pan = 1500;
+#endif  // HAL_MOUNT_ENABLED
 
     uint32_t all_buttons = buttons | (buttons2 << 16);
     // Detect if any shift button is pressed
@@ -112,25 +116,33 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
         xTot = x + xTrim;
     }
 
-    RC_Channels::set_override(0, constrain_int16(s + pitchTrim + rpyCenter,1100,1900), tnow); // pitch
-    RC_Channels::set_override(1, constrain_int16(t + rollTrim  + rpyCenter,1100,1900), tnow); // roll
+    channel_pitch->set_override(constrain_int16(s + pitchTrim + rpyCenter,1100,1900), tnow);
+    channel_roll->set_override(constrain_int16(t + rollTrim  + rpyCenter,1100,1900), tnow);
 
-    RC_Channels::set_override(2, constrain_int16((zTot)*throttleScale+throttleBase,1100,1900), tnow); // throttle
-    RC_Channels::set_override(3, constrain_int16(r*rpyScale+rpyCenter,1100,1900), tnow);                 // yaw
+    channel_throttle->set_override(constrain_int16((zTot)*throttleScale+throttleBase,1100,1900), tnow);
+    channel_yaw->set_override(constrain_int16(r*rpyScale+rpyCenter,1100,1900), tnow);
 
     // maneuver mode:
     if (roll_pitch_flag == 0) {
         // adjust forward and lateral with joystick input instead of roll and pitch
-        RC_Channels::set_override(4, constrain_int16((xTot)*rpyScale+rpyCenter,1100,1900), tnow); // forward for ROV
-        RC_Channels::set_override(5, constrain_int16((yTot)*rpyScale+rpyCenter,1100,1900), tnow); // lateral for ROV
+        channel_forward->set_override(constrain_int16((xTot)*rpyScale+rpyCenter,1100,1900), tnow);
+        channel_lateral->set_override(constrain_int16((yTot)*rpyScale+rpyCenter,1100,1900), tnow);
     } else {
         // neutralize forward and lateral input while we are adjusting roll and pitch
-        RC_Channels::set_override(4, constrain_int16(xTrim*rpyScale+rpyCenter,1100,1900), tnow); // forward for ROV
-        RC_Channels::set_override(5, constrain_int16(yTrim*rpyScale+rpyCenter,1100,1900), tnow); // lateral for ROV
+        channel_forward->set_override(constrain_int16(xTrim*rpyScale+rpyCenter,1100,1900), tnow);
+        channel_lateral->set_override(constrain_int16(yTrim*rpyScale+rpyCenter,1100,1900), tnow);
     }
 
-    RC_Channels::set_override(6, cam_pan, tnow);       // camera pan
-    RC_Channels::set_override(7, cam_tilt, tnow);      // camera tilt
+#if HAL_MOUNT_ENABLED
+    RC_Channel *cam_pan_chan = rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOUNT1_YAW);
+    if (cam_pan_chan != nullptr) {
+        cam_pan_chan->set_override(cam_pan, tnow);
+    }
+    RC_Channel *cam_tilt_chan = rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOUNT1_PITCH);
+    if (cam_tilt_chan != nullptr) {
+        cam_tilt_chan->set_override(cam_tilt, tnow);
+    }
+#endif  // HAL_MOUNT_ENABLED
 
     // Store old x, y, z values for use in input hold logic
     x_last = x;
@@ -185,13 +197,11 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
         set_mode(Mode::Number::SURFTRAK, ModeReason::RC_COMMAND);
         break;
 #endif
-
-    case JSButton::button_function_t::k_mount_center:
 #if HAL_MOUNT_ENABLED
+    case JSButton::button_function_t::k_mount_center:
         camera_mount.set_angle_target(0, 0, 0, false);
         // for some reason the call to set_angle_targets changes the mode to mavlink targeting!
         camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
-#endif
         break;
     case JSButton::button_function_t::k_mount_tilt_up:
         cam_tilt = 1900;
@@ -199,6 +209,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
     case JSButton::button_function_t::k_mount_tilt_down:
         cam_tilt = 1100;
         break;
+#endif  // HAL_MOUNT_ENABLED
     case JSButton::button_function_t::k_camera_trigger:
         break;
     case JSButton::button_function_t::k_camera_source_toggle:
@@ -214,12 +225,14 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
             }
         }
         break;
+#if HAL_MOUNT_ENABLED
     case JSButton::button_function_t::k_mount_pan_right:
         cam_pan = 1900;
         break;
     case JSButton::button_function_t::k_mount_pan_left:
         cam_pan = 1100;
         break;
+#endif  // HAL_MOUNT_ENABLED
     case JSButton::button_function_t::k_lights1_cycle:
         if (!held) {
             static bool increasing = true;
