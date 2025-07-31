@@ -607,6 +607,12 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @User: Advanced
     AP_GROUPINFO("UART_LOSS", 42, SIM,  uart_byte_loss_pct, 0),
 
+    // @Param: PWM_ZERO
+    // @DisplayName: PWM zero on initialise
+    // @Description: Sets PWM outputs to zero while initialising
+    // @User: Advanced
+    AP_GROUPINFO("PWM_ZERO", 43, SIM,  pwm_zero_on_init, 0),
+
     // @Group: ARSPD_
     // @Path: ./SITL_Airspeed.cpp
     AP_SUBGROUPINFO(airspeed[0], "ARSPD_", 50, SIM, AirspeedParm),
