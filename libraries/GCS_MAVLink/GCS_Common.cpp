@@ -73,6 +73,8 @@
 #include "MissionItemProtocol_Rally.h"
 #include "MissionItemProtocol_Fence.h"
 
+#include <AP_CANManager/AP_MAVLinkCAN.h>
+
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Vehicle/AP_Vehicle_config.h>
 
@@ -4198,13 +4200,13 @@ MAV_RESULT GCS_MAVLINK::handle_command_mag_cal(const mavlink_command_int_t &pack
 }
 #endif  // COMPASS_CAL_ENABLED
 
-#if HAL_CANMANAGER_ENABLED
+#if AP_MAVLINKCAN_ENABLED
 /*
   handle MAV_CMD_CAN_FORWARD
  */
 MAV_RESULT GCS_MAVLINK::handle_can_forward(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
-    return AP::can().handle_can_forward(chan, packet, msg) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+    return AP_MAVLinkCAN::handle_can_forward(chan, packet, msg) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
 }
 
 /*
@@ -4212,9 +4214,9 @@ MAV_RESULT GCS_MAVLINK::handle_can_forward(const mavlink_command_int_t &packet, 
  */
 void GCS_MAVLINK::handle_can_frame(const mavlink_message_t &msg) const
 {
-    AP::can().handle_can_frame(msg);
+    AP_MAVLinkCAN::handle_can_frame(msg);
 }
-#endif  // HAL_CANMANAGER_ENABLED
+#endif  // AP_MAVLINKCAN_ENABLED
 
 void GCS_MAVLINK::handle_distance_sensor(const mavlink_message_t &msg)
 {
@@ -4571,11 +4573,11 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         break;
 #endif
 
-#if HAL_CANMANAGER_ENABLED
+#if AP_MAVLINKCAN_ENABLED
     case MAVLINK_MSG_ID_CAN_FILTER_MODIFY:
-        AP::can().handle_can_filter_modify(msg);
+        AP_MAVLinkCAN::handle_can_filter_modify(msg);
         break;
-#endif
+#endif  // AP_MAVLINKCAN_ENABLED
 
 #if AP_OPENDRONEID_ENABLED
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_ARM_STATUS:
@@ -5587,10 +5589,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_battery_reset(packet);
 #endif
 
-#if HAL_CANMANAGER_ENABLED
+#if AP_MAVLINKCAN_ENABLED
     case MAV_CMD_CAN_FORWARD:
         return handle_can_forward(packet, msg);
-#endif
+#endif  // AP_MAVLINKCAN_ENABLED
 
 #if HAL_HIGH_LATENCY2_ENABLED
     case MAV_CMD_CONTROL_HIGH_LATENCY:
