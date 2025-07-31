@@ -554,6 +554,9 @@ public:
     // RPM when motors are armed
     AP_Float esc_rpm_armed;
 
+    // PWM output 
+    AP_Int8 pwm_zero_on_init;
+
     struct {
         // LED state, for serial LED emulation
         struct {
