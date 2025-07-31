@@ -132,7 +132,9 @@ void AP_Generator_Cortex::send_generator_status(const GCS_MAVLINK &channel)
             }
             break;
         case CORTEX_MODE_RUNNING:
-            status_flags |= MAV_GENERATOR_STATUS_FLAG_GENERATING;
+                if (telemetry.generator.current <= 0.05f) {
+                    status_flags |= MAV_GENERATOR_STATUS_FLAG_GENERATING;
+                }
             break;
         default:
             break;
@@ -140,10 +142,6 @@ void AP_Generator_Cortex::send_generator_status(const GCS_MAVLINK &channel)
 
     if (status.readyToRun) {
         status_flags |= MAV_GENERATOR_STATUS_FLAG_READY;
-    }
-
-    if (telemetry.generator.current <= 0.05f) {
-        status_flags |= MAV_GENERATOR_STATUS_FLAG_GENERATING;
     }
 
     if (telemetry.battery.current <= 0.05f) {
