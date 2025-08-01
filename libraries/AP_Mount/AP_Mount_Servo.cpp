@@ -83,8 +83,16 @@ void AP_Mount_Servo::update()
             }
             break;
 
-        default:
-            //do nothing
+        case MAV_MOUNT_MODE_WPNEXT_OFFSET:
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+            if (get_angle_target_to_wpnext_offset(mnt_target.angle_rad)) {
+                mnt_target.target_type = MountTargetType::ANGLE;
+            }
+#endif
+            break;
+
+        case MAV_MOUNT_MODE_ENUM_END:
+            // can't get here
             break;
     }
 
