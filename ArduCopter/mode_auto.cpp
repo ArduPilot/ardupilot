@@ -42,7 +42,7 @@ bool ModeAuto::init(bool ignore_checks)
         wp_nav->wp_and_spline_init_cm();
 
         // initialise desired speed overrides
-        desired_speed_override = {0, 0, 0};
+        desired_speed_override_ms = {0, 0, 0};
 
         // set flag to start mission
         waiting_to_start = true;
@@ -340,11 +340,11 @@ bool ModeAuto::loiter_start()
     _mode = SubMode::LOITER;
 
     // calculate stopping point
-    Vector3f stopping_point;
-    wp_nav->get_wp_stopping_point_NEU_cm(stopping_point);
+    Vector3f stopping_point_neu_cm;
+    wp_nav->get_wp_stopping_point_NEU_cm(stopping_point_neu_cm);
 
     // initialise waypoint controller target to stopping point
-    wp_nav->set_wp_destination_NEU_cm(stopping_point);
+    wp_nav->set_wp_destination_NEU_cm(stopping_point_neu_cm);
 
     // hold yaw at current heading
     auto_yaw.set_mode(AutoYaw::Mode::HOLD);
@@ -379,10 +379,10 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
     int32_t alt_target_cm;
     bool alt_target_terrain = false;
     float current_alt_cm = pos_control->get_pos_estimate_NEU_cm().z;
-    float terrain_offset;   // terrain's altitude in cm above the ekf origin
-    if ((dest_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) && wp_nav->get_terrain_offset_cm(terrain_offset)) {
+    float terrain_offset_cm;   // terrain's altitude in cm above the ekf origin
+    if ((dest_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) && wp_nav->get_terrain_offset_cm(terrain_offset_cm)) {
         // subtract terrain offset to convert vehicle's alt-above-ekf-origin to alt-above-terrain
-        current_alt_cm -= terrain_offset;
+        current_alt_cm -= terrain_offset_cm;
 
         // specify alt_target_cm as alt-above-terrain
         alt_target_cm = dest_loc.alt;
@@ -424,22 +424,22 @@ bool ModeAuto::wp_start(const Location& dest_loc)
 {
     // init wpnav and set origin if transitioning from takeoff
     if (!wp_nav->is_active()) {
-        Vector3f stopping_point;
+        Vector3f stopping_point_neu_cm;
         if (_mode == SubMode::TAKEOFF) {
-            Vector3p takeoff_complete_pos;
-            if (auto_takeoff.get_completion_pos(takeoff_complete_pos)) {
-                stopping_point = takeoff_complete_pos.tofloat();
+            Vector3p takeoff_complete_pos_neu_cm;
+            if (auto_takeoff.get_completion_pos(takeoff_complete_pos_neu_cm)) {
+                stopping_point_neu_cm = takeoff_complete_pos_neu_cm.tofloat();
             }
         }
-        float des_speed_xy_cm = is_positive(desired_speed_override.xy) ? (desired_speed_override.xy * 100) : 0;
-        wp_nav->wp_and_spline_init_cm(des_speed_xy_cm, stopping_point);
+        float des_speed_xy_cms = is_positive(desired_speed_override_ms.xy) ? (desired_speed_override_ms.xy * 100) : 0;
+        wp_nav->wp_and_spline_init_cm(des_speed_xy_cms, stopping_point_neu_cm);
 
         // override speeds up and down if necessary
-        if (is_positive(desired_speed_override.up)) {
-            wp_nav->set_speed_up_cms(desired_speed_override.up * 100.0);
+        if (is_positive(desired_speed_override_ms.up)) {
+            wp_nav->set_speed_up_cms(desired_speed_override_ms.up * 100.0);
         }
-        if (is_positive(desired_speed_override.down)) {
-            wp_nav->set_speed_down_cms(desired_speed_override.down * 100.0);
+        if (is_positive(desired_speed_override_ms.down)) {
+            wp_nav->set_speed_down_cms(desired_speed_override_ms.down * 100.0);
         }
     }
 
@@ -516,14 +516,14 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
     copter.circle_nav->set_rate_degs(current_rate);
 
     // check our distance from edge of circle
-    Vector3f circle_edge_neu;
-    float dist_to_edge;
-    copter.circle_nav->get_closest_point_on_circle_NEU_cm(circle_edge_neu, dist_to_edge);
+    Vector3f circle_edge_neu_cm;
+    float dist_to_edge_cm;
+    copter.circle_nav->get_closest_point_on_circle_NEU_cm(circle_edge_neu_cm, dist_to_edge_cm);
 
     // if more than 3m then fly to edge
-    if (dist_to_edge > 300.0f) {
-        // convert circle_edge_neu to Location
-        Location circle_edge(circle_edge_neu, Location::AltFrame::ABOVE_ORIGIN);
+    if (dist_to_edge_cm > 300.0f) {
+        // convert circle_edge_neu_cm to Location
+        Location circle_edge(circle_edge_neu_cm, Location::AltFrame::ABOVE_ORIGIN);
 
         // convert altitude to same as command
         circle_edge.copy_alt_from(circle_center);
@@ -535,11 +535,11 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
         }
 
         // if we are outside the circle, point at the edge, otherwise hold yaw
-        const float dist_to_center = get_horizontal_distance(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), copter.circle_nav->get_center_NEU_cm().xy().tofloat());
+        const float dist_to_center_cm = get_horizontal_distance(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), copter.circle_nav->get_center_NEU_cm().xy().tofloat());
         // initialise yaw
         // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
         if (auto_yaw.mode() != AutoYaw::Mode::ROI) {
-            if (dist_to_center > copter.circle_nav->get_radius_cm() && dist_to_center > 500) {
+            if (dist_to_center_cm > copter.circle_nav->get_radius_cm() && dist_to_center_cm > 500) {
                 auto_yaw.set_mode_to_default(false);
             } else {
                 // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
@@ -650,21 +650,21 @@ bool ModeAuto::use_pilot_yaw(void) const
 bool ModeAuto::set_speed_xy_cms(float speed_xy_cms)
 {
     copter.wp_nav->set_speed_NE_cms(speed_xy_cms);
-    desired_speed_override.xy = speed_xy_cms * 0.01;
+    desired_speed_override_ms.xy = speed_xy_cms * 0.01;
     return true;
 }
 
 bool ModeAuto::set_speed_up_cms(float speed_up_cms)
 {
     copter.wp_nav->set_speed_up_cms(speed_up_cms);
-    desired_speed_override.up = speed_up_cms * 0.01;
+    desired_speed_override_ms.up = speed_up_cms * 0.01;
     return true;
 }
 
 bool ModeAuto::set_speed_down_cms(float speed_down_cms)
 {
     copter.wp_nav->set_speed_down_cms(speed_down_cms);
-    desired_speed_override.down = speed_down_cms * 0.01;
+    desired_speed_override_ms.down = speed_down_cms * 0.01;
     return true;
 }
 
@@ -1423,8 +1423,8 @@ void PayloadPlace::run()
         // distance from the target altitude stopping distance from
         // vel_threshold_fraction * max velocity
         const float vel_threshold_fraction = 0.1;
-        const float stop_distance = 0.5 * sq(vel_threshold_fraction * copter.pos_control->get_max_speed_up_cms()) / copter.pos_control->get_max_accel_U_cmss();
-        bool reached_altitude = pos_control->get_pos_desired_U_cm() >= descent_start_altitude_cm - stop_distance;
+        const float stop_distance_cm = 0.5 * sq(vel_threshold_fraction * copter.pos_control->get_max_speed_up_cms()) / copter.pos_control->get_max_accel_U_cmss();
+        bool reached_altitude = pos_control->get_pos_desired_U_cm() >= descent_start_altitude_cm - stop_distance_cm;
         if (reached_altitude) {
             state = State::Done;
         }
@@ -1533,9 +1533,9 @@ Location ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Lo
     if (ret.alt == 0) {
         // set to default_loc's altitude but in command's alt frame
         // note that this may use the terrain database
-        int32_t default_alt;
-        if (default_loc.get_alt_cm(ret.get_alt_frame(), default_alt)) {
-            ret.set_alt_cm(default_alt, ret.get_alt_frame());
+        int32_t default_alt_cm;
+        if (default_loc.get_alt_cm(ret.get_alt_frame(), default_alt_cm)) {
+            ret.set_alt_cm(default_alt_cm, ret.get_alt_frame());
         } else {
             // default to default_loc's altitude and frame
             ret.copy_alt_from(default_loc);
@@ -1947,16 +1947,16 @@ void ModeAuto::do_change_speed(const AP_Mission::Mission_Command& cmd)
         switch (cmd.content.speed.speed_type) {
         case SPEED_TYPE_CLIMB_SPEED:
             copter.wp_nav->set_speed_up_cms(cmd.content.speed.target_ms * 100.0f);
-            desired_speed_override.up = cmd.content.speed.target_ms;
+            desired_speed_override_ms.up = cmd.content.speed.target_ms;
             break;
         case SPEED_TYPE_DESCENT_SPEED:
             copter.wp_nav->set_speed_down_cms(cmd.content.speed.target_ms * 100.0f);
-            desired_speed_override.down = cmd.content.speed.target_ms;
+            desired_speed_override_ms.down = cmd.content.speed.target_ms;
             break;
         case SPEED_TYPE_AIRSPEED:
         case SPEED_TYPE_GROUNDSPEED:
             copter.wp_nav->set_speed_NE_cms(cmd.content.speed.target_ms * 100.0f);
-            desired_speed_override.xy = cmd.content.speed.target_ms;
+            desired_speed_override_ms.xy = cmd.content.speed.target_ms;
             break;
         }
     }

@@ -782,7 +782,7 @@ private:
         float xy;     // desired speed horizontally in m/s. 0 if unset
         float up;     // desired speed upwards in m/s. 0 if unset
         float down;   // desired speed downwards in m/s. 0 if unset
-    } desired_speed_override;
+    } desired_speed_override_ms;
 
     float circle_last_num_complete;
 };
