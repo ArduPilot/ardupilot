@@ -13,6 +13,7 @@ TARGET_HW_PX4_FMU_V6                   52
 TARGET_HW_PX4_FMU_V6X                  53
 TARGET_HW_PX4_FMU_V6C                  56
 TARGET_HW_ARK_FMU_V6X                  57
+TARGET_HW_ARK_PI6X                     58
 TARGET_HW_ARK_FPV                      59
 TARGET_HW_MINDPX_V2                    88
 TARGET_HW_PX4_FLOW_V1                   6
