@@ -14,7 +14,7 @@
   support for MicroStrain CX5/GX5-45 serially connected AHRS Systems
  */
 
-#define ALLOW_DOUBLE_MATH_FUNCTIONS
+#define AP_MATH_ALLOW_DOUBLE_FUNCTIONS 1
 
 #include "AP_ExternalAHRS_config.h"
 

@@ -82,7 +82,7 @@ void ModeTakeoff::update()
     const float dist = target_dist;
     if (!takeoff_mode_setup) {
         plane.auto_state.takeoff_altitude_rel_cm = alt * 100;
-        const uint16_t altitude = plane.relative_ground_altitude(false,true);
+        const uint16_t altitude = plane.relative_ground_altitude(RangeFinderUse::NONE,true);
         const Vector2f &groundspeed2d = ahrs.groundspeed_vector();
         const float direction = wrap_360(degrees(groundspeed2d.angle()));
         const float groundspeed = groundspeed2d.length();
@@ -98,7 +98,7 @@ void ModeTakeoff::update()
                 gcs().send_text(MAV_SEVERITY_INFO, "Climbing to TKOFF alt then loitering");
                 start_loc = plane.current_loc;
                 plane.next_WP_loc = plane.current_loc;
-                plane.next_WP_loc.alt += ((alt - altitude) *100);
+                plane.next_WP_loc.offset_up_m(alt - altitude);
                 plane.next_WP_loc.offset_bearing(direction, dist);
                 takeoff_mode_setup = true;
                 plane.set_flight_stage(AP_FixedWing::FlightStage::TAKEOFF);
@@ -109,7 +109,7 @@ void ModeTakeoff::update()
             start_loc = plane.current_loc;
             plane.prev_WP_loc = plane.current_loc;
             plane.next_WP_loc = plane.current_loc;
-            plane.next_WP_loc.alt += alt*100.0;
+            plane.next_WP_loc.offset_up_m(alt);
             plane.next_WP_loc.offset_bearing(direction, dist);
 
             plane.crash_state.is_crashed = false;
@@ -155,7 +155,7 @@ void ModeTakeoff::update()
         const float direction = start_loc.get_bearing_to(plane.current_loc) * 0.01;
         plane.next_WP_loc = start_loc;
         plane.next_WP_loc.offset_bearing(direction, dist);
-        plane.next_WP_loc.alt += alt*100.0;
+        plane.next_WP_loc.offset_up_m(alt);
         plane.steer_state.hold_course_cd = wrap_360_cd(direction*100); // Necessary to allow Plane::takeoff_calc_roll() to function.
     }
         

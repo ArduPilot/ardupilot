@@ -332,6 +332,11 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
     }
 #endif
 
+    if (rc().in_rc_failsafe() && !new_flightmode->allows_entry_in_rc_failsafe()) {
+        mode_change_failed(new_flightmode, "in RC failsafe");
+        return false;
+    }
+
     if (!new_flightmode->init(ignore_checks)) {
         mode_change_failed(new_flightmode, "init failed");
         return false;
@@ -746,27 +751,6 @@ void Mode::land_run_horizontal_control()
     pos_control->update_NE_controller();
     Vector3f thrust_vector = pos_control->get_thrust_vector();
 
-    if (g2.wp_navalt_min > 0) {
-        // user has requested an altitude below which navigation
-        // attitude is limited. This is used to prevent commanded roll
-        // over on landing, which particularly affects helicopters if
-        // there is any position estimate drift after touchdown. We
-        // limit attitude to 7 degrees below this limit and linearly
-        // interpolate for 1m above that
-        const float attitude_limit_rad = linear_interpolate(radians(7), attitude_control->lean_angle_max_rad(), get_alt_above_ground_cm(),
-                                                     g2.wp_navalt_min*100U, (g2.wp_navalt_min+1)*100U);
-        const float thrust_vector_max = sinf(attitude_limit_rad) * GRAVITY_MSS * 100.0f;
-        const float thrust_vector_mag = thrust_vector.xy().length();
-        if (thrust_vector_mag > thrust_vector_max) {
-            float ratio = thrust_vector_max / thrust_vector_mag;
-            thrust_vector.x *= ratio;
-            thrust_vector.y *= ratio;
-
-            // tell position controller we are applying an external limit
-            pos_control->set_externally_limited_NE();
-        }
-    }
-
     // call attitude controller
     attitude_control->input_thrust_vector_heading(thrust_vector, auto_yaw.get_heading());
 
@@ -1042,8 +1026,8 @@ uint16_t Mode::get_pilot_speed_dn()
 // Return stopping point as a location with above origin alt frame
 Location Mode::get_stopping_point() const
 {
-    Vector3p stopping_point_NEU;
-    copter.pos_control->get_stopping_point_NE_cm(stopping_point_NEU.xy());
-    copter.pos_control->get_stopping_point_U_cm(stopping_point_NEU.z);
-    return Location { stopping_point_NEU.tofloat(), Location::AltFrame::ABOVE_ORIGIN };
+    Vector3p stopping_point_neu_cm;
+    copter.pos_control->get_stopping_point_NE_cm(stopping_point_neu_cm.xy());
+    copter.pos_control->get_stopping_point_U_cm(stopping_point_neu_cm.z);
+    return Location { stopping_point_neu_cm.tofloat(), Location::AltFrame::ABOVE_ORIGIN };
 }

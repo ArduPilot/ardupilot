@@ -12,7 +12,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_OSD/AP_OSD.h>
-#include <AP_RPM/AP_RPM.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Motors/AP_Motors.h>
 #include <AR_Motors/AP_MotorsUGV.h>
@@ -284,6 +283,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(serial_manager, "SERIAL", 31, AP_Vehicle, AP_SerialManager),
 #endif
 
+#if AP_RPM_ENABLED
+    // @Group: RPM
+    // @Path: ../AP_RPM/AP_RPM.cpp
+    AP_SUBGROUPINFO(rpm_sensor, "RPM", 32, AP_Vehicle, AP_RPM),
+#endif
+
     AP_GROUPEND
 };
 
@@ -522,6 +527,10 @@ void AP_Vehicle::setup()
     }
 #endif
 
+#if AP_RPM_ENABLED
+    rpm_sensor.init();
+#endif
+
     // invalidate count in case an enable parameter changed during
     // initialisation
     AP_Param::invalidate_count();
@@ -645,6 +654,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if AP_NETWORKING_ENABLED
     SCHED_TASK_CLASS(AP_Networking, &vehicle.networking,    update,                   10,  50, 238),
+#endif
+#if AP_RPM_ENABLED
+    SCHED_TASK_CLASS(AP_RPM, &vehicle.rpm_sensor, update,                             50, 100, 239),
 #endif
 #if OSD_ENABLED
     SCHED_TASK(publish_osd_info, 1, 10, 240),
@@ -844,10 +856,9 @@ void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
 #if AP_RPM_ENABLED
         case HarmonicNotchDynamicMode::UpdateRPM: // rpm sensor based tracking
         case HarmonicNotchDynamicMode::UpdateRPM2: {
-            const auto *rpm_sensor = AP::rpm();
             uint8_t sensor = (notch.params.tracking_mode()==HarmonicNotchDynamicMode::UpdateRPM?0:1);
             float rpm;
-            if (rpm_sensor != nullptr && rpm_sensor->get_rpm(sensor, rpm)) {
+            if (rpm_sensor.get_rpm(sensor, rpm)) {
                 // set the harmonic notch filter frequency from the main rotor rpm
                 notch.update_freq_hz(rpm * ref * (1.0/60));
             } else {

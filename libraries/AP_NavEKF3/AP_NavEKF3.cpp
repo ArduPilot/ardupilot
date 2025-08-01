@@ -302,14 +302,14 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // Optical flow measurement parameters
 
-    // @Param: MAX_FLOW
-    // @DisplayName: Maximum valid optical flow rate
-    // @Description: This sets the magnitude maximum optical flow rate in rad/sec that will be accepted by the filter
+    // @Param: FLOW_MAX
+    // @DisplayName: Optical flow rate maximum
+    // @Description: The maximum optical flow rate in rad/sec that will be accepted by the filter.  Flow rates above this value will not be fused.
     // @Range: 1.0 4.0
     // @Increment: 0.1
     // @User: Advanced
     // @Units: rad/s
-    AP_GROUPINFO("MAX_FLOW", 20, NavEKF3, _maxFlowRate, 2.5f),
+    AP_GROUPINFO("FLOW_MAX", 20, NavEKF3, _maxFlowRate, 2.5f),
 
     // @Param: FLOW_M_NSE
     // @DisplayName: Optical flow measurement noise (rad/s)

@@ -593,7 +593,7 @@ is bob we will attempt to checkout bob-AVR'''
         '''build Copter binaries'''
 
         boards = []
-        boards.extend(["aerofc-v1", "bebop"])
+        boards.extend(["aerofc-v1"])
         boards.extend(self.board_list.find_autobuild_boards('Copter'))
         self.build_vehicle(tag,
                            "ArduCopter",
@@ -605,7 +605,6 @@ is bob we will attempt to checkout bob-AVR'''
     def build_arduplane(self, tag):
         '''build Plane binaries'''
         boards = self.board_list.find_autobuild_boards('Plane')[:]
-        boards.append("disco")
         self.build_vehicle(tag,
                            "ArduPlane",
                            boards,

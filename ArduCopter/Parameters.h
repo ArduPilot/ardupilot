@@ -299,9 +299,9 @@ public:
         k_param_failsafe_throttle_value,
         k_param_throttle_trim,          // remove
         k_param_esc_calibrate,
-        k_param_radio_tuning,
-        k_param_radio_tuning_high_old,   // unused
-        k_param_radio_tuning_low_old,    // unused
+        k_param_rc_tuning_param,
+        k_param_rc_tuning_param_high_old,   // unused
+        k_param_rc_tuning_param_low_old,    // unused
         k_param_rc_speed = 192,
         k_param_failsafe_battery_enabled, // unused - moved to AP_BattMonitor
         k_param_throttle_mid,           // remove
@@ -371,7 +371,7 @@ public:
         k_param_pi_vel_xy,              // remove
         k_param_fs_ekf_action,
         k_param_rtl_climb_min,
-        k_param_rpm_sensor,
+        k_param_rpm_sensor_old, // remove
         k_param_autotune_min_d, // remove
         k_param_arming, // 252  - AP_Arming
         k_param_logger = 253, // 253 - Logging Group
@@ -446,7 +446,9 @@ public:
     //
     AP_Int32        log_bitmask;
     AP_Int8         esc_calibrate;
-    AP_Int8         radio_tuning;
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
+    AP_Int8         rc_tuning_param;
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
     AP_Int8         frame_type;
     AP_Int8         disarm_delay;
 
@@ -594,8 +596,10 @@ public:
     void *autotune_ptr;
 #endif
 
-    AP_Float tuning_min;
-    AP_Float tuning_max;
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
+    AP_Float rc_tuning_min;
+    AP_Float rc_tuning_max;
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
 #if AP_OAPATHPLANNER_ENABLED
     // object avoidance path planning
@@ -690,6 +694,13 @@ public:
 
     AP_Int8 att_enable;
     AP_Int8 att_decimation;
+
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
+    // second transmitter channel for tuning:
+    AP_Int8 rc_tuning2_param;
+    AP_Float rc_tuning2_min;
+    AP_Float rc_tuning2_max;
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 };
 
 extern const AP_Param::Info        var_info[];

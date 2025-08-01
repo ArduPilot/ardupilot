@@ -8,6 +8,7 @@ import copy
 import math
 import os
 import signal
+import time
 
 from pymavlink import quaternion
 from pymavlink import mavutil
@@ -5625,9 +5626,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
         self.wait_text("Loaded UniversalAutoLand.lua", check_context=True)
         self.set_parameters({
-             "AUTOLAND_ENABLE" : 1,
-             "AUTOLAND_WP_ALT" : 55,
-             "AUTOLAND_WP_DIST" : 400
+             "ALAND_ENABLE" : 1,
+             "ALAND_WP_ALT" : 55,
+             "ALAND_WP_DIST" : 400
             })
         self.wait_ready_to_arm()
         self.scripting_restart()
@@ -6737,6 +6738,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.takeoff(30, mode='TAKEOFF')
         self.assert_parameter_value("COMPASS_OFS_X", 20, epsilon=30)
+        # fly straight and level for a bit to let GSF converge for accurate learning
+        self.change_mode("FBWB") # not "CRUISE" to avoid heading track with bad compass
+        self.wait_distance(200, accuracy=20)
         old_compass_ofs_x = self.get_parameter('COMPASS_OFS_X')
         self.set_parameters({
             "COMPASS_OFS_X": 1100,
@@ -6866,6 +6870,17 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_altitude(450, 475, relative=True, timeout=600)
         self.wait_altitude(75, 125, relative=True, timeout=600)
         self.wait_current_waypoint(4)
+        self.fly_home_land_and_disarm()
+
+    def RudderArmedTakeoffRequiresNeutralThrottle(self):
+        '''auto-takeoff should not occur while rudder continues to be held over'''
+        self.change_mode('TAKEOFF')
+        self.wait_ready_to_arm()
+        self.set_rc(4, 1000)
+        self.wait_armed()
+        self.wait_groundspeed(0, 1, minimum_duration=10)
+        self.set_rc(4, 1500)
+        self.wait_groundspeed(5, 100)
         self.fly_home_land_and_disarm()
 
     def VolzMission(self):
@@ -7120,6 +7135,23 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameter("SIM_ARSPD_FAIL", 0)
         self.fly_home_land_and_disarm()
 
+    def RudderArmingWithArmingChecksZero(self):
+        '''check we can't arm with rudder even if checks are disabled'''
+        self.set_parameters({
+            "ARMING_RUDDER": 0,
+            "ARMING_CHECK": 0,
+            "RC4_REVERSED": 0,
+        })
+        self.reboot_sitl()
+        self.delay_sim_time(5)
+        self.set_rc(4, 2000)
+        w = vehicle_test_suite.WaitAndMaintainDisarmed(
+            self,
+            minimum_duration=30,
+            timeout=60,
+        )
+        w.run()
+
     def Volz(self):
         '''test Volz serially-connected'''
         volz_motor_mask = ((1 << 0) | (1 << 1) | (1 << 3) | (1 << 8) | (1 << 9) | (1 << 11))
@@ -7303,6 +7335,80 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.fly_home_land_and_disarm()
 
+    class ValidateVFRHudClimbAgainstSimState(vehicle_test_suite.TestSuite.MessageHook):
+        '''monitors VFR_HUD to make sure reported climbrate is in-line with SIM_STATE.vd'''
+        def __init__(self, suite, max_allowed_divergence=5):
+            super(AutoTestPlane.ValidateVFRHudClimbAgainstSimState, self).__init__(suite)
+            self.max_allowed_divergence = max_allowed_divergence  # m/s
+            self.max_divergence = 0
+            self.vfr_hud = None
+            self.sim_state = None
+            self.last_print = 0
+            self.min_print_interval = 1  # seconds
+            self.instafail = True
+            self.failed = False
+
+        def progress_prefix(self):
+            return "VVHCASS: "
+
+        def process(self, mav, m):
+            if m.get_type() == 'VFR_HUD':
+                self.vfr_hud = m
+            elif m.get_type() == 'SIM_STATE':
+                self.sim_state = m
+            if self.vfr_hud is None:
+                return
+            if self.sim_state is None:
+                return
+
+            vfr_hud_climb = self.vfr_hud.climb
+            sim_state_climb = -self.sim_state.vd
+            divergence = abs(vfr_hud_climb - sim_state_climb)
+            if (time.time() - self.last_print > self.min_print_interval or
+                    divergence > self.max_divergence):
+                self.progress(f"climb delta is {divergence}")
+                self.last_print = time.time()
+            if divergence > self.max_divergence:
+                self.max_divergence = divergence
+            if divergence > self.max_allowed_divergence:
+                msg = f"VFR_HUD.climb diverged from SIM_STATE.vd by {divergence}m/s (max={self.max_allowed_divergence}m/s"
+                if self.instafail:
+                    raise NotAchievedException(msg)
+                else:
+                    self.failed = True
+                    self.progress(msg)
+
+        def hook_removed(self):
+            if self.vfr_hud is None:
+                raise ValueError("Did not receive VFR_HUD")
+            if self.sim_state is None:
+                raise ValueError("Did not receive SIM_STATE")
+            msg = f"Maximum divergence was {self.max_divergence}m/s (max={self.max_allowed_divergence}m/s)"
+            if self.failed:
+                raise NotAchievedException(msg)
+
+            self.progress(msg)
+
+    def SoaringClimbRate(self):
+        '''test displayed climb rate when soaring'''
+        self.set_parameters({
+            'RC16_OPTION': 88,  # soaring enable
+            'SOAR_ENABLE': 1,
+        })
+        self.set_rc(16, 1000)  # disable soaring
+        self.reboot_sitl()
+        self.set_message_rate_hz('SIM_STATE', 10)
+        self.install_message_hook_context(AutoTestPlane.ValidateVFRHudClimbAgainstSimState(self))
+        self.takeoff(20)
+        self.change_mode('FBWB')
+        self.set_rc(2, 1000)  # full climb
+        self.delay_sim_time(10)
+        self.set_rc(16, 2000)  # enable soaring
+        self.delay_sim_time(10)
+
+        self.set_rc(2, 1500)
+        self.fly_home_land_and_disarm()
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -7320,6 +7426,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.ThrottleFailsafe,
             self.NeedEKFToArm,
             self.ThrottleFailsafeFence,
+            self.SoaringClimbRate,
             self.TestFlaps,
             self.DO_CHANGE_SPEED,
             self.DO_REPOSITION,
@@ -7432,6 +7539,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             Test(self.GCSFailsafe, speedup=8),
             self.SDCardWPTest,
             self.NoArmWithoutMissionItems,
+            self.RudderArmedTakeoffRequiresNeutralThrottle,
             self.MODE_SWITCH_RESET,
             self.ExternalPositionEstimate,
             self.SagetechMXS,
@@ -7469,6 +7577,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.DO_CHANGE_ALTITUDE,
             self.SET_POSITION_TARGET_GLOBAL_INT_for_altitude,
             self.MAV_CMD_NAV_LOITER_TURNS_zero_turn,
+            self.RudderArmingWithArmingChecksZero,
         ]
 
     def disabled_tests(self):
@@ -7476,6 +7585,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "LandingDrift": "Flapping test. See https://github.com/ArduPilot/ardupilot/issues/20054",
             "InteractTest": "requires user interaction",
             "ClimbThrottleSaturation": "requires https://github.com/ArduPilot/ardupilot/pull/27106 to pass",
+            "SoaringClimbRate": "very bad sink rate",
         }
 
 

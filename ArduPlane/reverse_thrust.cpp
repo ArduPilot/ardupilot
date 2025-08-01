@@ -17,17 +17,24 @@
  */
 #include "Plane.h"
 
+// Check USE_REV_THRUST paramater for the given reverse thrust option
+bool Plane::reverse_thrust_enabled(UseReverseThrust use_reverse_thrust_option) const
+{
+    return (g.use_reverse_thrust.get() & int32_t(use_reverse_thrust_option)) != 0;
+}
+
 /*
   see if reverse thrust should be allowed in the current flight state
  */
 bool Plane::allow_reverse_thrust(void) const
 {
-    // check if we should allow reverse thrust
-    bool allow = false;
-
-    if (g.use_reverse_thrust == USE_REVERSE_THRUST_NEVER || !have_reverse_thrust()) {
+    // Reverse thrust is not configured, so it should never be allowed
+    if (!have_reverse_thrust()) {
         return false;
     }
+
+    // check if we should allow reverse thrust
+    bool allow = false;
 
     switch (control_mode->mode_number()) {
     case Mode::Number::AUTO:
@@ -40,67 +47,67 @@ bool Plane::allow_reverse_thrust(void) const
         }
 
         // always allow regardless of mission item
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_ALWAYS);
+        allow |= reverse_thrust_enabled(UseReverseThrust::AUTO_ALWAYS);
 
         // landing
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_LAND_APPROACH) &&
+        allow |= reverse_thrust_enabled(UseReverseThrust::AUTO_LAND_APPROACH) &&
                 (nav_cmd == MAV_CMD_NAV_LAND);
 
         // LOITER_TO_ALT
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_LOITER_TO_ALT) &&
+        allow |= reverse_thrust_enabled(UseReverseThrust::AUTO_LOITER_TO_ALT) &&
                 (nav_cmd == MAV_CMD_NAV_LOITER_TO_ALT);
 
         // any Loiter (including LOITER_TO_ALT)
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_LOITER_ALL) &&
+        allow |= reverse_thrust_enabled(UseReverseThrust::AUTO_LOITER_ALL) &&
                     (nav_cmd == MAV_CMD_NAV_LOITER_TIME ||
                      nav_cmd == MAV_CMD_NAV_LOITER_TO_ALT ||
                      nav_cmd == MAV_CMD_NAV_LOITER_TURNS ||
                      nav_cmd == MAV_CMD_NAV_LOITER_UNLIM);
 
         // waypoints
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_WAYPOINT) &&
+        allow |= reverse_thrust_enabled(UseReverseThrust::AUTO_WAYPOINT) &&
                     (nav_cmd == MAV_CMD_NAV_WAYPOINT ||
                      nav_cmd == MAV_CMD_NAV_SPLINE_WAYPOINT);
 
         // we are on a landing pattern
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_LANDING_PATTERN) &&
+        allow |= reverse_thrust_enabled(UseReverseThrust::AUTO_LANDING_PATTERN) &&
                 mission.get_in_landing_sequence_flag();
         }
         break;
 
     case Mode::Number::LOITER:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_LOITER);
+        allow |= reverse_thrust_enabled(UseReverseThrust::LOITER);
         break;
     case Mode::Number::RTL:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_RTL);
+        allow |= reverse_thrust_enabled(UseReverseThrust::RTL);
         break;
     case Mode::Number::CIRCLE:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_CIRCLE);
+        allow |= reverse_thrust_enabled(UseReverseThrust::CIRCLE);
         break;
     case Mode::Number::CRUISE:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_CRUISE);
+        allow |= reverse_thrust_enabled(UseReverseThrust::CRUISE);
         break;
     case Mode::Number::FLY_BY_WIRE_B:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_FBWB);
+        allow |= reverse_thrust_enabled(UseReverseThrust::FBWB);
         break;
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_GUIDED);
+        allow |= reverse_thrust_enabled(UseReverseThrust::GUIDED);
         break;
     case Mode::Number::TAKEOFF:
         allow = false;
         break;
     case Mode::Number::FLY_BY_WIRE_A:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_FBWA);
+        allow |= reverse_thrust_enabled(UseReverseThrust::FBWA);
         break;
     case Mode::Number::ACRO:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_ACRO);
+        allow |= reverse_thrust_enabled(UseReverseThrust::ACRO);
         break;
     case Mode::Number::STABILIZE:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_STABILIZE);
+        allow |= reverse_thrust_enabled(UseReverseThrust::STABILIZE);
         break;
     case Mode::Number::THERMAL:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_THERMAL);
+        allow |= reverse_thrust_enabled(UseReverseThrust::THERMAL);
         break;
     default:
         // all other control_modes allow independent of mask(MANUAL)
@@ -108,8 +115,7 @@ bool Plane::allow_reverse_thrust(void) const
         break;
     }
 
-    // cope with bitwise ops above
-    return allow != false;
+    return allow;
 }
 
 /*

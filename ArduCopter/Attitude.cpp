@@ -11,11 +11,11 @@ void Copter::run_rate_controller_main()
 {
     // set attitude and position controller loop time
     const float last_loop_time_s = AP::scheduler().get_last_loop_time_s();
-    pos_control->set_dt(last_loop_time_s);
-    attitude_control->set_dt(last_loop_time_s);
+    pos_control->set_dt_s(last_loop_time_s);
+    attitude_control->set_dt_s(last_loop_time_s);
 
     if (!using_rate_thread) {
-        motors->set_dt(last_loop_time_s);
+        motors->set_dt_s(last_loop_time_s);
         // only run the rate controller if we are not using the rate thread
         attitude_control->rate_controller_run();
     }
@@ -56,8 +56,8 @@ void Copter::update_throttle_hover()
     float throttle = motors->get_throttle();
 
     // calc average throttle if we are in a level hover.  accounts for heli hover roll trim
-    if (throttle > 0.0f && fabsf(vel_d_ms) < 0.6 &&
-        fabsf(ahrs.roll_sensor-attitude_control->get_roll_trim_cd()) < 500 && labs(ahrs.pitch_sensor) < 500) {
+    if ((throttle > 0.0f) && (fabsf(vel_d_ms) < 0.6) &&
+        (fabsf(ahrs.get_roll_rad() - attitude_control->get_roll_trim_rad()) < radians(5)) && (labs(ahrs.get_pitch_rad()) < radians(5))) {
         // Can we set the time constant automatically
         motors->update_throttle_hover(0.01f);
 #if HAL_GYROFFT_ENABLED

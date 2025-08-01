@@ -107,6 +107,14 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
 
 bool AP_Arming_Rover::arm_checks(AP_Arming::Method method)
 {
+    if (method == AP_Arming::Method::RUDDER) {
+        // check if arming/disarming allowed from this mode
+        if (!rover.control_mode->allows_arming_from_transmitter()) {
+            check_failed(true, "Mode not rudder-armable");
+            return false;
+        }
+    }
+
     //are arming checks disabled?
     if (checks_to_perform == 0) {
         return true;
@@ -154,6 +162,14 @@ bool AP_Arming_Rover::arm(AP_Arming::Method method, const bool do_arming_checks)
  */
 bool AP_Arming_Rover::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 {
+    if (method == AP_Arming::Method::RUDDER) {
+        if (rover.g2.motors.active()) {
+            // can't emit a message here as full-rudder while driving
+            // is not uncommon
+            return false;
+        }
+    }
+
     if (!AP_Arming::disarm(method, do_disarm_checks)) {
         return false;
     }

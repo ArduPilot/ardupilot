@@ -4098,6 +4098,14 @@ function networking:get_netmask_active() end
 ---@return uint32_t_ud
 function networking:get_ip_active() end
 
+-- add a custom ipv4 route
+---@param backend_idx integer -- backend index
+---@param iface_idx integer -- interface index
+---@param dest_ip uint32_t_ud|integer|number -- desttination IP address
+---@param mask_len integer -- network mask bit length
+---@return boolean
+function networking:add_route(backend_idx, iface_idx, dest_ip, mask_len) end
+
 -- visual odometry object
 visual_odom = {}
 

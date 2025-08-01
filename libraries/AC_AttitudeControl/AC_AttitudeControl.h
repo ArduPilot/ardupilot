@@ -74,10 +74,10 @@ public:
 
     // Sets the internal controller timestep (in seconds).
     // This is the elapsed time since the last controller update and is used in rate and smoothing calculations.
-    void set_dt(float dt) { _dt = dt; }
+    void set_dt_s(float dt_s) { _dt_s = dt_s; }
 
     // Returns the internal controller timestep (in seconds).
-    float get_dt() const { return _dt; }
+    float get_dt_s() const { return _dt_s; }
 
     // pid accessors
     AC_P& get_angle_roll_p() { return _p_angle_roll; }
@@ -507,6 +507,10 @@ public:
     // tail rotor thrust in hover. Overloaded by AC_Attitude_Heli to return angle.
     virtual float get_roll_trim_cd() { return 0;}
 
+    // Return angle in radians to be added to roll angle. Used by heli to counteract
+    // tail rotor thrust in hover. Overloaded by AC_Attitude_Heli to return angle.
+    float get_roll_trim_rad() { return cd_to_rad(get_roll_trim_cd()); }
+
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
     // this assumes a maximum deflection rate of 45 degrees per second or pi/4 rad/s.
     void passthrough_bf_roll_pitch_rate_yaw_cds(float roll_passthrough_cds, float pitch_passthrough_cds, float yaw_rate_bf_cds);
@@ -567,10 +571,6 @@ protected:
     // Update rate_target_ang_vel using attitude_error_rot_vec_rad
     Vector3f update_ang_vel_target_from_att_error(const Vector3f &attitude_error_rot_vec_rad);
 
-    // Return angle in radians to be added to roll angle. Used by heli to counteract
-    // tail rotor thrust in hover. Overloaded by AC_Attitude_Heli to return angle.
-    virtual float get_roll_trim_rad() { return 0;}
-
     // Returns the most recent angular velocity reading (rad/s) for the rate controller.
     // Ensures minimum latency when rate control is run before or after attitude control.
     const Vector3f get_latest_gyro() const;
@@ -621,7 +621,7 @@ protected:
     uint64_t            _rate_gyro_time_us;
 
     // Intersampling period in seconds
-    float               _dt;
+    float               _dt_s;
 
     // This represents a 321-intrinsic rotation in NED frame to the target (setpoint)
     // attitude used in the attitude controller, in radians.

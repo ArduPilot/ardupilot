@@ -29,7 +29,7 @@ bool ModeRTL::_enter()
         if (vtol_landing && (quadplane.motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED)) {
             int32_t alt_cm;
             if ((plane.current_loc.get_distance(plane.next_WP_loc) < plane.mode_qrtl.get_VTOL_return_radius()) &&
-                plane.current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_cm) && (alt_cm < plane.quadplane.qrtl_alt*100)) {
+                plane.current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_cm) && (alt_cm < plane.quadplane.qrtl_alt_m*100)) {
                 plane.set_mode(plane.mode_qrtl, ModeReason::QRTL_INSTEAD_OF_RTL);
                 return true;
             }
@@ -153,7 +153,7 @@ bool ModeRTL::switch_QRTL()
 
     if (plane.nav_controller->reached_loiter_target() ||
          plane.current_loc.past_interval_finish_line(plane.prev_WP_loc, plane.next_WP_loc) ||
-         plane.auto_state.wp_distance < MAX(qrtl_radius, plane.quadplane.stopping_distance())) {
+         plane.auto_state.wp_distance < MAX(qrtl_radius, plane.quadplane.stopping_distance_m())) {
         /*
           for a quadplane in RTL mode we switch to QRTL when we
           are within the maximum of the stopping distance and the

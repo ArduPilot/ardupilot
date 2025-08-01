@@ -465,7 +465,7 @@ void AP_Mount_XFRobot::send_target_angles(const MountTarget& angle_target_rad)
     const Vector3f &accel_ef = AP::ahrs().get_accel_ef();
     set_attitude_packet.content.main.accel_north = htole16(constrain_int16(accel_ef.x * 100, -INT16_MAX, INT16_MAX));
     set_attitude_packet.content.main.accel_east = htole16(constrain_int16(accel_ef.y * 100, -INT16_MAX, INT16_MAX));
-    set_attitude_packet.content.main.accel_up = htole16(constrain_int16(accel_ef.z * 100, -INT16_MAX, INT16_MAX));
+    set_attitude_packet.content.main.accel_up = htole16(constrain_int16(-(accel_ef.z + GRAVITY_MSS) * 100, -INT16_MAX, INT16_MAX));
 
     // byte 24~25: North speed of vehicle (int16, decimeter/s)
     // byte 26~27: East speed of vehicle (int16, decimeter/s)

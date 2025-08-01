@@ -72,10 +72,6 @@
 #define TRUE 1
 #define HAL_USE_ADC TRUE
 
-#ifndef ENABLE_HEAP
-#define ENABLE_HEAP 0
-#endif
-
 // the pin number, the gain/multiplier associated with it, the ardupilot name for the pin in parameter/s.
 #define HAL_ESP32_ADC_PINS {\
 	{ADC1_GPIO36_CHANNEL, 11, 1},\

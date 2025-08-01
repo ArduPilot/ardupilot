@@ -16,7 +16,7 @@ bool ModeGuided::_enter()
           if using Q_GUIDED_MODE then project forward by the stopping distance
         */
         loc.offset_bearing(degrees(ahrs.groundspeed_vector().angle()),
-                           plane.quadplane.stopping_distance());
+                           plane.quadplane.stopping_distance_m());
     }
 #endif
 
@@ -158,11 +158,21 @@ void ModeGuided::set_radius_and_direction(const float radius, const bool directi
     plane.loiter.direction = direction_is_ccw ? -1 : 1;
 }
 
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
+bool Plane::GuidedState::target_location_alt_is_minus_one() const
+{
+    int32_t target_location_alt = 0;
+    UNUSED_RESULT(target_location.get_alt_cm(target_location.get_alt_frame(), target_location_alt));
+    return target_location_alt == -1;
+}
+#endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
+
 void ModeGuided::update_target_altitude()
 {
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     // target altitude can be negative (e.g. flying below home altitude from the top of a mountain)
-    if (((plane.guided_state.target_alt_time_ms != 0) || plane.guided_state.target_location.alt != -1 )) { // target_alt now defaults to -1, and _time_ms defaults to zero.
+    if ((plane.guided_state.target_alt_time_ms != 0) ||
+        !plane.guided_state.target_location_alt_is_minus_one()) { // target_alt now defaults to -1, and _time_ms defaults to zero.
         // offboard altitude demanded
         uint32_t now = AP_HAL::millis();
         float delta = 1e-3f * (now - plane.guided_state.target_alt_time_ms);

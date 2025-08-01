@@ -76,11 +76,6 @@
 // 2 use udp, 1 use tcp...  for udp,client needs to connect as UDP in missionplanner etc to 192.168.4.1 port 14550
 #define HAL_ESP32_WIFI 1
 
-// see boards.py
-#ifndef ENABLE_HEAP
-#define ENABLE_HEAP 1
-#endif
-
 #define WIFI_SSID "ardupilot123"
 #define WIFI_PWD "ardupilot123"
 

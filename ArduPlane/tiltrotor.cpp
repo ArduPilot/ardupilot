@@ -224,7 +224,7 @@ void Tiltrotor::continuous_update(void)
         // a forward motor
 
         // option set then if disarmed move to VTOL position to prevent ground strikes, allow tilt forward in manual mode for testing
-        const bool disarmed_tilt_up = !plane.arming.is_armed_and_safety_off() && (plane.control_mode != &plane.mode_manual) && quadplane.option_is_set(QuadPlane::OPTION::DISARMED_TILT_UP);
+        const bool disarmed_tilt_up = !plane.arming.is_armed_and_safety_off() && (plane.control_mode != &plane.mode_manual) && quadplane.option_is_set(QuadPlane::Option::DISARMED_TILT_UP);
         slew(disarmed_tilt_up ? 0.0 : get_forward_flight_tilt());
 
         max_change = tilt_max_change(false);
@@ -318,7 +318,7 @@ void Tiltrotor::continuous_update(void)
     }
 
     if (quadplane.assisted_flight &&
-        transition->transition_state >= Tiltrotor_Transition::TRANSITION_TIMER) {
+        transition->transition_state >= Tiltrotor_Transition::State::TIMER) {
         // we are transitioning to fixed wing - tilt the motors all
         // the way forward
         slew(get_forward_flight_tilt());
@@ -562,7 +562,7 @@ void Tiltrotor::vectoring(void)
     // Wait TILT_DELAY_MS after disarming to allow props to spin down first.
     constexpr uint32_t TILT_DELAY_MS = 3000;
     uint32_t now = AP_HAL::millis();
-    if (!plane.arming.is_armed_and_safety_off() && plane.quadplane.option_is_set(QuadPlane::OPTION::DISARMED_TILT)) {
+    if (!plane.arming.is_armed_and_safety_off() && plane.quadplane.option_is_set(QuadPlane::Option::DISARMED_TILT)) {
         // this test is subject to wrapping at ~49 days, but the consequences are insignificant
         if ((now - hal.util->get_last_armed_change()) > TILT_DELAY_MS) {
             if (quadplane.in_vtol_mode()) {
@@ -748,7 +748,17 @@ void Tiltrotor::update_yaw_target(void)
  */
 bool Tiltrotor_Transition::use_multirotor_control_in_fwd_transition() const
 {
-    return tiltrotor.is_vectored() && transition_state <= TRANSITION_TIMER;
+    if (!tiltrotor.is_vectored()) {
+        return false;
+    }
+    switch (transition_state) {
+    case State::AIRSPEED_WAIT:
+    case State::TIMER:
+        return true;
+    case State::DONE:
+        return false;
+    }
+    return false;
 }
 
 bool Tiltrotor_Transition::update_yaw_target(float& yaw_target_cd)
@@ -766,7 +776,7 @@ bool Tiltrotor_Transition::show_vtol_view() const
 {
     bool show_vtol = quadplane.in_vtol_mode();
 
-    if (!show_vtol && tiltrotor.is_vectored() && transition_state <= TRANSITION_TIMER) {
+    if (!show_vtol && tiltrotor.is_vectored() && transition_state <= State::TIMER) {
         // we use multirotor controls during fwd transition for
         // vectored yaw vehicles
         return true;

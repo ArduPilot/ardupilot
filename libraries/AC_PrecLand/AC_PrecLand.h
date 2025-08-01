@@ -13,7 +13,7 @@
 
 // declare backend classes
 class AC_PrecLand_Backend;
-class AC_PrecLand_Companion;
+class AC_PrecLand_MAVLink;
 class AC_PrecLand_IRLock;
 class AC_PrecLand_SITL_Gazebo;
 class AC_PrecLand_SITL;
@@ -23,7 +23,7 @@ class AC_PrecLand
 {
     // declare backends as friends
     friend class AC_PrecLand_Backend;
-    friend class AC_PrecLand_Companion;
+    friend class AC_PrecLand_MAVLink;
     friend class AC_PrecLand_IRLock;
     friend class AC_PrecLand_SITL_Gazebo;
     friend class AC_PrecLand_SITL;
@@ -141,8 +141,8 @@ private:
     // types of precision landing (used for PRECLAND_TYPE parameter)
     enum class Type : uint8_t {
         NONE = 0,
-#if AC_PRECLAND_COMPANION_ENABLED
-        COMPANION = 1,
+#if AC_PRECLAND_MAVLINK_ENABLED
+        MAVLINK = 1,
 #endif
 #if AC_PRECLAND_IRLOCK_ENABLED
         IRLOCK = 2,
@@ -160,6 +160,12 @@ private:
         PLND_OPTION_MOVING_TARGET = (1 << 0),
         PLND_OPTION_PRECLAND_AFTER_REPOSITION = (1 << 1),
         PLND_OPTION_FAST_DESCEND = (1 << 2),
+    };
+
+    // frames for vectors from vehicle to target
+    enum class VectorFrame : uint8_t {
+        BODY_FRD = 0,     // body frame, forward-right-down relative to the vehicle's attitude
+        LOCAL_FRD = 1,    // forward-right-down where forward is aligned with front of the vehicle in the horizontal plane
     };
 
     // check the status of the target
@@ -180,8 +186,8 @@ private:
     // If a new measurement was retrieved, sets _target_pos_rel_meas_NED and returns true
     bool construct_pos_meas_using_rangefinder(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
-    // get vehicle body frame 3D vector from vehicle to target.  returns true on success, false on failure
-    bool retrieve_los_meas(Vector3f& target_vec_unit_body);
+    // get 3D vector from vehicle to target and frame.  returns true on success, false on failure
+    bool retrieve_los_meas(Vector3f& target_vec_unit, VectorFrame& frame);
 
     // calculate target's position and velocity relative to the vehicle (used as input to position controller)
     // results are stored in_target_pos_rel_out_NE, _target_vel_rel_out_NE

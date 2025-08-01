@@ -8,6 +8,10 @@
 
 class AP_Networking;
 
+#ifndef AP_NETWORKING_MAX_ROUTES
+#define AP_NETWORKING_MAX_ROUTES 4
+#endif
+
 class AP_Networking_Backend
 {
 public:
@@ -21,6 +25,13 @@ public:
     virtual bool init() = 0;
     virtual void update() {};
 
+    // add a new route for an interface
+    // Returns true if the route is added or the route already exists
+    bool add_route(uint8_t iface_idx, uint32_t dest_ip, uint8_t mask_len);
+
+    // hook for custom routes
+    virtual struct netif *routing_hook(uint32_t dest) { return nullptr; }
+    
 protected:
     AP_Networking &frontend;
 
@@ -32,6 +43,13 @@ protected:
         uint8_t macaddr[6];
         uint32_t last_change_ms;
     } activeSettings;
+
+    struct {
+        bool enabled;
+        uint8_t iface_idx;
+        uint32_t dest_ip;
+        uint32_t netmask;
+    } routes[AP_NETWORKING_MAX_ROUTES];
 };
 
 #endif // AP_NETWORKING_ENABLED

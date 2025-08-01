@@ -65,7 +65,17 @@ protected:
 
     // get ADDR parameter value
     uint8_t get_address(void) const { return frontend._address; }
-    
+
+    // options parameter values
+    enum class Option : uint16_t {
+        Stabilised = (1 << 0U)      // sensor is stabilised (e.g. mounted on a gimbal)
+    };
+
+    // returns true if an option is enabled
+    bool option_is_enabled(Option option) const {
+        return ((uint8_t)frontend._options.get() & (uint16_t)option) != 0;
+    }
+
     // semaphore for access to shared frontend data
     HAL_Semaphore _sem;
 };

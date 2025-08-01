@@ -378,7 +378,7 @@ void AP_AIS::buffer_shift(uint8_t i)
 // Functions related to the vessel list
 
 // find vessel index in existing list, if not then return new index if possible, returns true if index is valid
-bool AP_AIS::get_vessel_index(uint32_t mmsi, uint16_t &index, uint32_t lat, uint32_t lon)
+bool AP_AIS::get_vessel_index(uint32_t mmsi, uint16_t &index, int32_t lat, int32_t lon)
 {
     const uint16_t list_size = _list.max_items();
 

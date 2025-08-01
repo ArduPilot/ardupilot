@@ -17,3 +17,8 @@ Allow for enable/disable of the script
 
 Maximum number of battery cycles to allow arming
 
+## BTAG_CUR_CYCLES
+
+Current maximum of number of cycles from all active BatteryTag
+nodes. This can be used by other scripts to adjust battery percentage
+estimation at boot based on age of the battery.

@@ -132,6 +132,7 @@ private:
 #if GPS_MOVING_BASELINE
     // RTCM3 parser for when in moving baseline base mode
     RTCM3_Parser *rtcm3_parser;
+    uint32_t last_base_warning_ms;
 #endif
     // the role set from GPS_TYPE
     AP_GPS::GPS_Role role;

@@ -103,10 +103,10 @@ public:
     SITL::ADSB_Sagetech_MXS *sagetech_mxs;
 #endif
 
-#if !defined(HAL_BUILD_AP_PERIPH)
+#if AP_SIM_VICON_ENABLED
     // simulated vicon system:
     SITL::Vicon *vicon;
-#endif
+#endif  // AP_SIM_VICON_ENABLED
 
     SITL::SerialRangeFinder *serial_rangefinders[16];
     uint8_t num_serial_rangefinders;

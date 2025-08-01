@@ -159,7 +159,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_ROI_LOCATION:
     case MAV_CMD_DO_SET_ROI_NONE:
     case MAV_CMD_DO_SET_ROI:
-        if (cmd.content.location.alt == 0 && cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
+        if (!cmd.content.location.initialised()) {
             // switch off the camera tracking if enabled
             if (camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
                 camera_mount.set_mode_to_default();
@@ -361,9 +361,12 @@ Location Plane::calc_best_rally_or_home_location(const Location &_current_loc, f
 #if HAL_RALLY_ENABLED
     return plane.rally.calc_best_rally_or_home_location(_current_loc, rtl_home_alt_amsl_cm);
 #else
-    Location destination = plane.home;
-    destination.set_alt_cm(rtl_home_alt_amsl_cm, Location::AltFrame::ABSOLUTE);
-    return destination;
+    return Location {
+        plane.home.lat,
+        plane.home.lng,
+        int32_t(rtl_home_alt_amsl_cm),
+        Location::AltFrame::ABSOLUTE
+    };
 #endif
 }
 
@@ -505,8 +508,7 @@ void Plane::do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
     }
 
     if (cmd.content.location.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) {
-        next_WP_loc.set_alt_cm(cmd.content.location.alt,
-                               Location::AltFrame::ABOVE_TERRAIN);
+        next_WP_loc.copy_alt_from(cmd.content.location);
     } else {
         int32_t alt_abs_cm;
         // if this fails we don't change alt
@@ -960,16 +962,16 @@ void Plane::do_loiter_at_location()
 bool Plane::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
     return do_change_speed(
-        (uint8_t)cmd.content.speed.speed_type,
+        (SPEED_TYPE)cmd.content.speed.speed_type,
         cmd.content.speed.target_ms,
          cmd.content.speed.throttle_pct
         );
 }
 
-bool Plane::do_change_speed(uint8_t speedtype, float speed_target_ms, float throttle_pct)
+bool Plane::do_change_speed(SPEED_TYPE speedtype, float speed_target_ms, float throttle_pct)
 {
     switch (speedtype) {
-    case 0:             // Airspeed
+    case SPEED_TYPE_AIRSPEED:
         if (is_equal(speed_target_ms, -2.0f)) {
             new_airspeed_cm = -1; // return to default airspeed
             return true;
@@ -980,10 +982,15 @@ bool Plane::do_change_speed(uint8_t speedtype, float speed_target_ms, float thro
             return true;
         }
         break;
-    case 1:             // Ground speed
+    case SPEED_TYPE_GROUNDSPEED:
         gcs().send_text(MAV_SEVERITY_INFO, "Set groundspeed %u", (unsigned)speed_target_ms);
         aparm.min_groundspeed.set(speed_target_ms);
         return true;
+
+    case SPEED_TYPE_CLIMB_SPEED:
+    case SPEED_TYPE_DESCENT_SPEED:
+    case SPEED_TYPE_ENUM_END:
+        break;
     }
 
     if (throttle_pct > 0 && throttle_pct <= 100) {
@@ -1048,7 +1055,7 @@ void Plane::exit_mission_callback()
 #if HAL_QUADPLANE_ENABLED
 bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
 {
-    const float radius = is_zero(quadplane.fw_land_approach_radius)? aparm.loiter_radius : quadplane.fw_land_approach_radius;
+    const float radius = is_zero(quadplane.fw_land_approach_radius_m)? aparm.loiter_radius : quadplane.fw_land_approach_radius_m;
     const int8_t direction = is_negative(radius) ? -1 : 1;
     const float abs_radius = fabsf(radius);
 
@@ -1061,7 +1068,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 nav_controller->update_loiter(cmd.content.location, abs_radius, direction);
                 if (plane.reached_loiter_target()) {
                     // descend to Q RTL alt
-                    plane.do_RTL(plane.home.alt + plane.quadplane.qrtl_alt*100UL);
+                    plane.do_RTL(plane.home.alt + plane.quadplane.qrtl_alt_m*100UL);
                     plane.loiter_angle_reset();
                     vtol_approach_s.approach_stage = VTOLApproach::Stage::LOITER_TO_ALT;
                 }
@@ -1123,7 +1130,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
 
                 // check if we should move on to the next waypoint
                 Location breakout_stopping_loc = cmd.content.location;
-                breakout_stopping_loc.offset_bearing(vtol_approach_s.approach_direction_deg + 180, quadplane.stopping_distance());
+                breakout_stopping_loc.offset_bearing(vtol_approach_s.approach_direction_deg + 180, quadplane.stopping_distance_m());
                 const bool past_finish_line = current_loc.past_interval_finish_line(start, breakout_stopping_loc);
 
                 Location breakout_loc = cmd.content.location;
@@ -1190,7 +1197,7 @@ float Plane::get_wp_radius() const
 {
 #if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.in_vtol_mode()) {
-        return plane.quadplane.wp_nav->get_wp_radius_cm() * 0.01;
+        return plane.quadplane.wp_nav->get_wp_radius_m();
     }
 #endif
     return g.waypoint_radius;

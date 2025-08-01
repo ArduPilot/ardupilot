@@ -1042,6 +1042,7 @@ private:
     static struct ftp_state ftp;
 
     static void ftp_error(struct pending_ftp &response, FTP_ERROR error); // FTP helper method for packing a NAK
+    static bool ftp_check_name_len(const struct pending_ftp &request);
     static int gen_dir_entry(char *dest, size_t space, const char * path, const struct dirent * entry); // FTP helper for emitting a dir response
     static void ftp_list_dir(struct pending_ftp &request, struct pending_ftp &response);
 
@@ -1209,7 +1210,10 @@ public:
         return _statustext_queue;
     }
 
-    uint8_t sysid_gcs() const { return uint8_t(mav_gcs_sysid); }
+    /*
+      return true if a MAVLink system ID is a GCS
+     */
+    bool sysid_is_gcs(uint8_t sysid) const;
 
     // last time traffic was seen from my designated GCS.  traffic
     // includes heartbeats and some manual control messages.
@@ -1363,6 +1367,7 @@ protected:
     // parameters
     AP_Int16                 sysid;
     AP_Int16                 mav_gcs_sysid;
+    AP_Int16                 mav_gcs_sysid_high;
     AP_Enum16<Option>        mav_options;
     AP_Int8                  mav_telem_delay;
 

@@ -168,14 +168,14 @@ public:
 
     void force_transition_complete() override;
 
-    bool complete() const override { return transition_state == TRANSITION_DONE; }
+    bool complete() const override { return transition_state == State::DONE; }
 
     // setup for the transition back to fixed wing
     void restart() override;
 
     uint8_t get_log_transition_state() const override { return static_cast<uint8_t>(transition_state); }
 
-    bool active_frwd() const override { return transition_state == TRANSITION_ANGLE_WAIT_FW; }
+    bool active_frwd() const override { return transition_state == State::ANGLE_WAIT_FW; }
 
     bool show_vtol_view() const override;
 
@@ -191,10 +191,10 @@ public:
 
 private:
 
-    enum {
-        TRANSITION_ANGLE_WAIT_FW,
-        TRANSITION_ANGLE_WAIT_VTOL,
-        TRANSITION_DONE
+    enum class State {
+        ANGLE_WAIT_FW   = 0,
+        ANGLE_WAIT_VTOL = 1,
+        DONE            = 2,
     } transition_state;
 
     // for transition to VTOL flight

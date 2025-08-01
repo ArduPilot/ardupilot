@@ -137,11 +137,6 @@ void Sub::init_ardupilot()
     init_rangefinder();
 #endif
 
-    // initialise AP_RPM library
-#if AP_RPM_ENABLED
-    rpm_sensor.init();
-#endif
-
     // initialise mission library
     mission.init();
 #if HAL_LOGGING_ENABLED

@@ -326,6 +326,7 @@ public:
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
 
+#if AP_SIM_VICON_ENABLED
     class ViconParms {
     public:
         ViconParms(void) {
@@ -346,6 +347,7 @@ public:
         AP_Int16 rate_hz;     // vicon data rate in Hz
     };
     ViconParms vicon;
+#endif  // AP_SIM_VICON_ENABLED
 
     // physics model parameters
     class ModelParm {

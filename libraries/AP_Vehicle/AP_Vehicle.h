@@ -81,6 +81,11 @@
 #include <AP_Gripper/AP_Gripper.h>
 #endif
 
+#include <AP_RPM/AP_RPM_config.h>
+#if AP_RPM_ENABLED
+#include <AP_RPM/AP_RPM.h>
+#endif
+
 #include <AP_IBus_Telem/AP_IBus_Telem.h>
 
 class AP_DDS_Client;
@@ -490,6 +495,10 @@ protected:
 
 #if AP_SCRIPTING_ENABLED
     AP_Scripting scripting;
+#endif
+
+#if AP_RPM_ENABLED
+    AP_RPM rpm_sensor;
 #endif
 
     static const struct AP_Param::GroupInfo var_info[];
