@@ -91,7 +91,7 @@ private:
     float generatorVoltage(void) const { return telemetry.generator.voltage; }
     float generatorPower(void) const { return generatorCurrent() * generatorVoltage(); }
 
-    float loadCurrent(void) const { return batteryCurrent() + generatorCurrent(); }
+    float loadCurrent(void) const { return batteryCurrent() - generatorCurrent(); }
 
     // Last telemetry reading from the generator
     uint32_t last_reading_ms;
