@@ -168,7 +168,7 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
     pos_control->init_U_controller();
 
     // initialise alt for WP_NAVALT_MIN and set completion alt
-    auto_takeoff.start(alt_target_cm, alt_target_terrain);
+    auto_takeoff.start_cm(alt_target_cm, alt_target_terrain);
 
     // record takeoff has not completed
     takeoff_complete = false;
