@@ -46,6 +46,7 @@ public:
     enum WheelEncoder_Type : uint8_t {
         WheelEncoder_TYPE_NONE             =   0,
         WheelEncoder_TYPE_QUADRATURE       =   1,
+        WheelEncoder_TYPE_PULSE            =   2,
         WheelEncoder_TYPE_SITL_QUADRATURE  =  10,
     };
 
