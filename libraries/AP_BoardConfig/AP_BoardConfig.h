@@ -212,7 +212,7 @@ public:
     bool safety_button_handle_pressed(uint8_t press_count);
 
 #if HAL_HAVE_IMU_HEATER
-    void set_imu_temp(float current_temp_c);
+    void set_imu_temp(float current_temp_c, uint8_t heater_instance);
 
     // heater duty cycle is as a percentage (0 to 100)
     float get_heater_duty_cycle(void) const {
@@ -287,7 +287,7 @@ private:
     static bool _in_error_loop;
 
 #if HAL_HAVE_IMU_HEATER
-    struct {
+    struct imu_heater {
         AC_PI pi_controller;
         AP_Int8 imu_target_temperature;
         uint32_t last_update_ms;
@@ -296,8 +296,15 @@ private:
         float output;
         uint32_t last_log_ms;
         float temperature;
-        AP_Int8 imu_arming_temperature_margin_low;
     } heater;
+
+    void heater_update_and_log(struct imu_heater &instance, float current, int8_t target);
+
+#if HAL_HAVE_IMU_HEATER2
+    struct imu_heater heater2;
+#endif
+
+    AP_Int8 imu_arming_temperature_margin_low;
 #endif
 
 #if AP_RADIO_ENABLED
