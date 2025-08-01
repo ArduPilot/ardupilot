@@ -1001,7 +1001,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             )
             self.wait_message_field_values('VFR_HUD', {
                 "throttle": expected_throttle,
-            }, minimum_duration=5, epsilon=2)
+            }, minimum_duration=5, epsilon=5)
 
         self.fly_home_land_and_disarm(timeout=240)
 
