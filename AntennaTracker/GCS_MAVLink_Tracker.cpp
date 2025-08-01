@@ -72,7 +72,7 @@ void GCS_MAVLINK_Tracker::send_nav_controller_output() const
         0,
         tracker.nav_status.pitch,
         tracker.nav_status.bearing,
-        tracker.nav_status.bearing,
+        tracker.nav_status.bearing_to_target,
         MIN(tracker.nav_status.distance, UINT16_MAX),
         alt_diff,
         0,

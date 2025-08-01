@@ -52,11 +52,7 @@ void Tracker::update_bearing_and_distance()
     }
 
     // calculate bearing to vehicle
-    // To-Do: remove need for check of control_mode
-    if (mode != &mode_scan && !nav_status.manual_control_yaw) {
-        nav_status.bearing  = current_loc.get_bearing_to(vehicle.location_estimate) * 0.01f;
-    }
-
+    nav_status.bearing_to_target  = current_loc.get_bearing_to(vehicle.location_estimate) * 0.01f;
     // calculate distance to vehicle
     nav_status.distance = current_loc.get_distance(vehicle.location_estimate);
 
@@ -69,13 +65,10 @@ void Tracker::update_bearing_and_distance()
     }
 
     // calculate pitch to vehicle
-    // To-Do: remove need for check of control_mode
-    if (mode->number() != Mode::Number::SCAN && !nav_status.manual_control_pitch) {
-    	if (g.alt_source == ALT_SOURCE_BARO) {
-    	    nav_status.pitch = degrees(atan2f(nav_status.alt_difference_baro, nav_status.distance));
-    	} else {
-            nav_status.pitch = degrees(atan2f(nav_status.alt_difference_gps, nav_status.distance));
-    	}
+    if (g.alt_source == ALT_SOURCE_BARO) {
+        nav_status.pitch_to_target = degrees(atan2f(nav_status.alt_difference_baro, nav_status.distance));
+    } else {
+        nav_status.pitch_to_target = degrees(atan2f(nav_status.alt_difference_gps, nav_status.distance));
     }
 }
 
@@ -187,7 +180,6 @@ void Tracker::tracking_manual_control(const mavlink_manual_control_t &msg)
 {
     nav_status.bearing = msg.x;
     nav_status.pitch   = msg.y;
-    nav_status.distance = 0.0;
     nav_status.manual_control_yaw   = (msg.x != 0x7FFF);
     nav_status.manual_control_pitch = (msg.y != 0x7FFF);
     // z, r and buttons are not used
