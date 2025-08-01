@@ -3946,8 +3946,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         else:
             raise NotAchievedException("Detected peak %.1f Hz %.2f dB" % (freq, peakdB))
 
-    def VisionPosition(self):
+    def VisionPosition(self, send_attitude=True):
         """Disable GPS navigation, enable Vicon input."""
+        self.progress(f"Running VICON vision test (attitude={'enabled' if send_attitude else 'disabled'})")
         # scribble down a location we can set origin to:
 
         self.customise_SITL_commandline(["--serial5=sim:vicon:"])
@@ -3975,6 +3976,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SERIAL5_PROTOCOL": 1,
         })
         self.reboot_sitl()
+
+        if not send_attitude:
+            self.set_parameters({
+                "SIM_VICON_OPTION": 1,  # don't send attitude
+            })
+
         # without a GPS or some sort of external prompting, AP
         # doesn't send system_time messages.  So prompt it:
         self.mav.mav.system_time_send(int(time.time() * 1000000), 0)
@@ -3997,9 +4004,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         tstart = self.get_sim_time()
         while True:
             vicon_pos = self.assert_receive_message('VISION_POSITION_ESTIMATE')
-            # print("vpe=%s" % str(vicon_pos))
-            # gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
-            # self.progress("gpi=%s" % str(gpi))
+            # Check for NaN attitude values
+            has_nan_att = any(math.isnan(x) for x in [vicon_pos.roll, vicon_pos.pitch, vicon_pos.yaw])
+
+            if send_attitude and has_nan_att:
+                raise AutoTestTimeoutException("Attitude was expected but roll/pitch/yaw are NaN")
+            if not send_attitude and not has_nan_att:
+                raise AutoTestTimeoutException("Attitude was not expected but roll/pitch/yaw are populated")
+
             if vicon_pos.x > 40:
                 break
 
@@ -4014,6 +4026,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         tstart = self.get_sim_time()
         # self.install_messageprinter_handlers_context(['SIMSTATE', 'GLOBAL_POSITION_INT'])
         self.wait_disarmed(timeout=200)
+
+    def VisionPositionWithoutAttitude(self):
+        """Disable GPS navigation, enable VICON input without attitude."""
+        self.VisionPosition(send_attitude=False)
 
     def BodyFrameOdom(self):
         """Disable GPS navigation, enable input of VISION_POSITION_DELTA."""
@@ -12310,6 +12326,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.TestLocalHomePosition,
              self.TestGripperMission,
              self.VisionPosition,
+             self.VisionPositionWithoutAttitude,
              self.ATTITUDE_FAST,
              self.BaseLoggingRates,
              self.BodyFrameOdom,
