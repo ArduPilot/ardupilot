@@ -25,7 +25,7 @@ bool AP_ExternalControl_Copter::set_linear_velocity_and_yaw_rate(const Vector3f 
         linear_velocity.y,
         -linear_velocity.z };
     Vector3f velocity_up_cms = velocity_NEU_ms * 100;
-    copter.mode_guided.set_velocity(velocity_up_cms, false, 0, !isnan(yaw_rate_rads), checked_yaw_rate_rad);
+    copter.mode_guided.set_vel_neu_cms(velocity_up_cms, false, 0, !isnan(yaw_rate_rads), checked_yaw_rate_rad);
     return true;
 }
 
