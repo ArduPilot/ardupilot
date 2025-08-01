@@ -1991,9 +1991,9 @@ private:
     void auto_control();
     void manual_control();
     bool reached_destination();
-    bool calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Vector3f& next_dest, bool& terrain_alt) const;
+    bool calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Vector3f& next_dest, bool& is_terrain_alt) const;
     void spray(bool b);
-    bool calculate_side_dest(Vector3f& next_dest, bool& terrain_alt) const;
+    bool calculate_side_dest(Vector3f& next_dest, bool& is_terrain_alt) const;
     void move_to_side();
 
     Vector2f dest_A_ne_cm;    // in NEU frame in cm relative to ekf origin
