@@ -1,0 +1,50 @@
+# Blade 360 model
+
+{
+    # simulate a Blade 360 helicopter.  This model was taken from the following reference.
+    # Walker, J, Tishler, M, Identification and Control Design of a Sub-Scale Flybarless Helicopter,
+    # Vertical Flight Society’s 77th Annual Forum & Technology Display, Virtual, May 10-14, 2021.
+
+    # General Aircraft Data
+    "hover_lean": 3.2,
+    "nominal_rpm": 2100,
+    "coll_max": 12,
+    "coll_min": -2,
+    "coll_hover": 5,
+
+    # Stability and Control Derivatives
+    "Ma1s": 796.7,
+    "Lb1s": 5115.2,
+    "Xa1s": -9.81,
+    "Yb1s": 9.81,
+    "Mu": 2.7501,
+    "Mv": -2.3039,
+    "Lu": -28.7796,
+    "Lv": -5.5376,
+    "Xu": -0.2270,
+    "Yv": -0.1852,
+    "Yp": 0.2303,
+    "Zw": -0.5910,
+    "Nr": -2.0131,
+    "Nw": 5.7574,
+    "Nv": 1.7258,
+    "Ncol": -32.4616,
+    "Nped": 63.0040,
+    "Zcol": -22.3239,
+
+    # rotor derivatives
+    "tf": 0.0353,
+    "Lfa1s": 1.0477,
+    "Mfb1s": -1.0057,
+    "Lflt": 0.2375,
+    "Lflg": -0.0286,
+    "Mflt": 0.0344,
+    "Mflg": 0.2292,
+
+
+    # Time Delay
+    "time_delay_rp" : 40,
+    "time_delay_ped" : 40,
+    "time_delay_col" : 40
+
+}
