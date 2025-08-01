@@ -427,7 +427,7 @@ bool ModeAuto::wp_start(const Location& dest_loc)
         Vector3f stopping_point_neu_cm;
         if (_mode == SubMode::TAKEOFF) {
             Vector3p takeoff_complete_pos_neu_cm;
-            if (auto_takeoff.get_completion_pos(takeoff_complete_pos_neu_cm)) {
+            if (auto_takeoff.get_completion_pos_neu_cm(takeoff_complete_pos_neu_cm)) {
                 stopping_point_neu_cm = takeoff_complete_pos_neu_cm.tofloat();
             }
         }
