@@ -2907,6 +2907,11 @@ gcs = {}
 ---@param value number -- value to send
 function gcs:send_named_float(name, value) end
 
+-- send named string value using NAMED_VALUE_STRING message
+---@param name string -- up to 10 chars long
+---@param value string -- value to send, up to 64 chars long
+function gcs:send_named_string(name, value) end
+
 -- set message interval for a given serial port and message id
 ---@param port_num integer -- serial port number
 ---@param msg_id uint32_t_ud|integer|number -- MAVLink message id
