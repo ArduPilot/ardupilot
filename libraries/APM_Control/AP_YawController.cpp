@@ -314,8 +314,8 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
         limit_I = true;
     }
 
-    // the P and I elements are scaled by sq(scaler). To use an
-    // unmodified AC_PID object we scale the inputs and calculate FF separately
+    // the PID elements are scaled by sq(scaler). To use an
+    // unmodified AC_PID object we scale the inputs (target and measurement)
     //
     // note that we run AC_PID in radians so that the normal scaling
     // range for IMAX in AC_PID applies (usually an IMAX value less than 1.0)
@@ -326,10 +326,11 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
         rate_pid.set_integrator(old_I);
     }
 
-    // FF should be scaled by scaler/eas2tas, but since we have scaled
+    // FF and DFF should be scaled by scaler/eas2tas, but since we have scaled
     // the AC_PID target above by scaler*scaler we need to instead
     // divide by scaler*eas2tas to get the right scaling
-    const float ff = degrees(rate_pid.get_ff() / (scaler * eas2tas));
+    const float ff = degrees(rate_pid.get_ff_component() / (scaler * eas2tas));
+    const float dff = degrees(rate_pid.get_dff_component() / (scaler * eas2tas));
 
     if (disable_integrator) {
         rate_pid.reset_I();
@@ -344,7 +345,7 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
     pinfo.P *= deg_scale;
     pinfo.I *= deg_scale;
     pinfo.D *= deg_scale;
-    pinfo.DFF *= deg_scale;
+    pinfo.DFF = dff;
     pinfo.limit = limit_I;
 
     // fix the logged target and actual values to not have the scalers applied

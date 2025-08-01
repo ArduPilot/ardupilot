@@ -369,6 +369,16 @@ float AC_PID::get_ff() const
     return  _pid_info.FF + _pid_info.DFF;
 }
 
+float AC_PID::get_ff_component() const
+{
+    return  _pid_info.FF;
+}
+
+float AC_PID::get_dff_component() const
+{
+    return  _pid_info.DFF;
+}
+
 // Used to fully zero the I term between mode changes or initialization
 void AC_PID::reset_I()
 {
