@@ -162,25 +162,25 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
         type_mask = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
                     POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
                     POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE; // ignore everything except position
-        target_pos_neu_m = copter.mode_guided.get_target_pos().tofloat() * 0.01; // convert to metres
+        target_pos_neu_m = copter.mode_guided.get_target_pos_neu_cm().tofloat() * 0.01; // convert to metres
         break;
     case ModeGuided::SubMode::PosVelAccel:
         type_mask = POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE; // ignore everything except position, velocity & acceleration
-        target_pos_neu_m = copter.mode_guided.get_target_pos().tofloat() * 0.01; // convert to metres
-        target_vel_neu_ms = copter.mode_guided.get_target_vel() * 0.01f; // convert to metres/s
-        target_accel_neu_mss = copter.mode_guided.get_target_accel() * 0.01f; // convert to metres/s/s
+        target_pos_neu_m = copter.mode_guided.get_target_pos_neu_cm().tofloat() * 0.01; // convert to metres
+        target_vel_neu_ms = copter.mode_guided.get_target_vel_neu_cms() * 0.01f; // convert to metres/s
+        target_accel_neu_mss = copter.mode_guided.get_target_accel_neu_cmss() * 0.01f; // convert to metres/s/s
         break;
     case ModeGuided::SubMode::VelAccel:
         type_mask = POSITION_TARGET_TYPEMASK_X_IGNORE | POSITION_TARGET_TYPEMASK_Y_IGNORE | POSITION_TARGET_TYPEMASK_Z_IGNORE |
                     POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE; // ignore everything except velocity & acceleration
-        target_vel_neu_ms = copter.mode_guided.get_target_vel() * 0.01f; // convert to metres/s
-        target_accel_neu_mss = copter.mode_guided.get_target_accel() * 0.01f; // convert to metres/s/s
+        target_vel_neu_ms = copter.mode_guided.get_target_vel_neu_cms() * 0.01f; // convert to metres/s
+        target_accel_neu_mss = copter.mode_guided.get_target_accel_neu_cmss() * 0.01f; // convert to metres/s/s
         break;
     case ModeGuided::SubMode::Accel:
         type_mask = POSITION_TARGET_TYPEMASK_X_IGNORE | POSITION_TARGET_TYPEMASK_Y_IGNORE | POSITION_TARGET_TYPEMASK_Z_IGNORE |
                     POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
                     POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE; // ignore everything except velocity & acceleration
-        target_accel_neu_mss = copter.mode_guided.get_target_accel() * 0.01f; // convert to metres/s/s
+        target_accel_neu_mss = copter.mode_guided.get_target_accel_neu_cmss() * 0.01f; // convert to metres/s/s
         break;
     }
 
@@ -1128,13 +1128,13 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
 
     // send request
     if (!pos_ignore && !vel_ignore) {
-        copter.mode_guided.set_destination_posvelaccel(pos_neu_cm, vel_neu_cms, accel_neu_cmss, !yaw_ignore, yaw_rad, !yaw_rate_ignore, yaw_rate_rads, yaw_relative);
+        copter.mode_guided.set_pos_vel_accel_neu_cm(pos_neu_cm, vel_neu_cms, accel_neu_cmss, !yaw_ignore, yaw_rad, !yaw_rate_ignore, yaw_rate_rads, yaw_relative);
     } else if (pos_ignore && !vel_ignore) {
-        copter.mode_guided.set_velaccel(vel_neu_cms, accel_neu_cmss, !yaw_ignore, yaw_rad, !yaw_rate_ignore, yaw_rate_rads, yaw_relative);
+        copter.mode_guided.set_vel_accel_neu_cm(vel_neu_cms, accel_neu_cmss, !yaw_ignore, yaw_rad, !yaw_rate_ignore, yaw_rate_rads, yaw_relative);
     } else if (pos_ignore && vel_ignore && !acc_ignore) {
-        copter.mode_guided.set_accel(accel_neu_cmss, !yaw_ignore, yaw_rad, !yaw_rate_ignore, yaw_rate_rads, yaw_relative);
+        copter.mode_guided.set_accel_neu_cmss(accel_neu_cmss, !yaw_ignore, yaw_rad, !yaw_rate_ignore, yaw_rate_rads, yaw_relative);
     } else if (!pos_ignore && vel_ignore && acc_ignore) {
-        copter.mode_guided.set_destination(pos_neu_cm, !yaw_ignore, yaw_rad, !yaw_rate_ignore, yaw_rate_rads, yaw_relative, false);
+        copter.mode_guided.set_pos_neu_cm(pos_neu_cm, !yaw_ignore, yaw_rad, !yaw_rate_ignore, yaw_rate_rads, yaw_relative, false);
     } else {
         // input is not valid so stop
         copter.mode_guided.init(true);
@@ -1231,11 +1231,11 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_global_int(const mav
             copter.mode_guided.init(true);
             return;
         }
-        copter.mode_guided.set_destination_posvel(pos_neu_cm, vel_neu_cms, !yaw_ignore, yaw_rad, !yaw_rate_ignore, yaw_rate_rads);
+        copter.mode_guided.set_pos_vel_neu_cm(pos_neu_cm, vel_neu_cms, !yaw_ignore, yaw_rad, !yaw_rate_ignore, yaw_rate_rads);
     } else if (pos_ignore && !vel_ignore) {
-        copter.mode_guided.set_velaccel(vel_neu_cms, accel_neu_cmss, !yaw_ignore, yaw_rad, !yaw_rate_ignore, yaw_rate_rads);
+        copter.mode_guided.set_vel_accel_neu_cm(vel_neu_cms, accel_neu_cmss, !yaw_ignore, yaw_rad, !yaw_rate_ignore, yaw_rate_rads);
     } else if (pos_ignore && vel_ignore && !acc_ignore) {
-        copter.mode_guided.set_accel(accel_neu_cmss, !yaw_ignore, yaw_rad, !yaw_rate_ignore, yaw_rate_rads);
+        copter.mode_guided.set_accel_neu_cmss(accel_neu_cmss, !yaw_ignore, yaw_rad, !yaw_rate_ignore, yaw_rate_rads);
     } else if (!pos_ignore && vel_ignore && acc_ignore) {
         copter.mode_guided.set_destination(loc, !yaw_ignore, yaw_rad, !yaw_rate_ignore, yaw_rate_rads);
     } else {
