@@ -26,7 +26,7 @@ bool ModeAvoidADSB::set_velocity(const Vector3f& velocity_neu)
     }
 
     // re-use guided mode's velocity controller
-    ModeGuided::set_velocity(velocity_neu);
+    ModeGuided::set_vel_neu_cms(velocity_neu);
     return true;
 }
 

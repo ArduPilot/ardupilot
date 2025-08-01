@@ -24,8 +24,8 @@ struct Guided_Limit {
     float alt_min_cm;   // lower altitude limit in cm above home (0 = no limit)
     float alt_max_cm;   // upper altitude limit in cm above home (0 = no limit)
     float horiz_max_cm; // horizontal position limit in cm from where guided mode was initiated (0 = no limit)
-    uint32_t start_time;// system time in milliseconds that control was handed to the external computer
-    Vector3f start_pos; // start position as a distance from home in cm.  used for checking horiz_max limit
+    uint32_t start_time_ms;// system time in milliseconds that control was handed to the external computer
+    Vector3f start_pos_neu_cm; // start position as a distance from home in cm.  used for checking horiz_max limit
 } guided_limit;
 
 // guided_init - initialise guided controller
@@ -844,10 +844,10 @@ void ModeGuided::guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float a
 void ModeGuided::guided_limit_init_time_and_pos()
 {
     // initialise start time
-    guided_limit.start_time = AP_HAL::millis();
+    guided_limit.start_time_ms = AP_HAL::millis();
 
     // initialise start position from current position
-    guided_limit.start_pos = inertial_nav.get_position_neu_cm();
+    guided_limit.start_pos_neu_cm = inertial_nav.get_position_neu_cm();
 }
 
 // guided_limit_check - returns true if guided mode has breached a limit
@@ -855,7 +855,7 @@ void ModeGuided::guided_limit_init_time_and_pos()
 bool ModeGuided::guided_limit_check()
 {
     // check if we have passed the timeout
-    if ((guided_limit.timeout_ms > 0) && (AP_HAL::millis() - guided_limit.start_time >= guided_limit.timeout_ms)) {
+    if ((guided_limit.timeout_ms > 0) && (AP_HAL::millis() - guided_limit.start_time_ms >= guided_limit.timeout_ms)) {
         return true;
     }
 
@@ -874,7 +874,7 @@ bool ModeGuided::guided_limit_check()
 
     // check if we have gone beyond horizontal limit
     if (guided_limit.horiz_max_cm > 0.0f) {
-        const float horiz_move = get_horizontal_distance(guided_limit.start_pos.xy(), curr_pos.xy());
+        const float horiz_move = get_horizontal_distance(guided_limit.start_pos_neu_cm.xy(), curr_pos.xy());
         if (horiz_move > guided_limit.horiz_max_cm) {
             return true;
         }
