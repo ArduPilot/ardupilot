@@ -404,8 +404,8 @@ bool ModeZigZag::reached_destination()
 
 // calculate next destination according to vector A-B and current position
 // use_wpnav_alt should be true if waypoint controller's altitude target should be used, false for position control or current altitude target
-// terrain_alt is returned as true if the next_dest should be considered a terrain alt
-bool ModeZigZag::calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Vector3f& next_dest_neu_cm, bool& terrain_alt) const
+// is_terrain_alt is returned as true if the next_dest should be considered a terrain alt
+bool ModeZigZag::calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Vector3f& next_dest_neu_cm, bool& is_terrain_alt) const
 {
     // define start_pos_ne_cm as either destination A or B
     Vector2f start_pos_ne_cm = (ab_dest == Destination::A) ? dest_A_ne_cm : dest_B_ne_cm;
@@ -440,12 +440,12 @@ bool ModeZigZag::calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Ve
 
     if (use_wpnav_alt) {
         // get altitude target from waypoint controller
-        terrain_alt = wp_nav->origin_and_destination_are_terrain_alt();
+        is_terrain_alt = wp_nav->origin_and_destination_are_terrain_alt();
         next_dest_neu_cm.z = wp_nav->get_wp_destination_NEU_cm().z;
     } else {
-        terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
+        is_terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
         next_dest_neu_cm.z = pos_control->get_pos_desired_U_cm();
-        if (!terrain_alt) {
+        if (!is_terrain_alt) {
             next_dest_neu_cm.z += pos_control->get_pos_terrain_U_cm();
         }
     }
@@ -454,8 +454,8 @@ bool ModeZigZag::calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Ve
 }
 
 // calculate side destination according to vertical vector A-B and current position
-// terrain_alt is returned as true if the next_dest should be considered a terrain alt
-bool ModeZigZag::calculate_side_dest(Vector3f& next_dest_neu_cm, bool& terrain_alt) const
+// is_terrain_alt is returned as true if the next_dest should be considered a terrain alt
+bool ModeZigZag::calculate_side_dest(Vector3f& next_dest_neu_cm, bool& is_terrain_alt) const
 {
     // calculate vector from A to B
     Vector2f AB_diff_ne_cm = dest_B_ne_cm - dest_A_ne_cm;
@@ -491,7 +491,7 @@ bool ModeZigZag::calculate_side_dest(Vector3f& next_dest_neu_cm, bool& terrain_a
     next_dest_neu_cm.xy() = curr_pos_ne_cm + (AB_side_ne_cm * scalar);
 
     // if we have a downward facing range finder then use terrain altitude targets
-    terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
+    is_terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
     next_dest_neu_cm.z = pos_control->get_pos_desired_U_cm();
 
     return true;
