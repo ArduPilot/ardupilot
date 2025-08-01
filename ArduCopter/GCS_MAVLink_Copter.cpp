@@ -631,9 +631,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_NAV_TAKEOFF(const mavlink_command_
         // param6 : longitude   (not supported)
         // param7 : altitude [metres]
 
-        float takeoff_alt = packet.z * 100;      // Convert m to cm
+        float takeoff_alt_cm = packet.z * 100;      // Convert m to cm
 
-        if (!copter.flightmode->do_user_takeoff(takeoff_alt, is_zero(packet.param3))) {
+        if (!copter.flightmode->do_user_takeoff(takeoff_alt_cm, is_zero(packet.param3))) {
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;

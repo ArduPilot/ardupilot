@@ -499,7 +499,7 @@ public:
     static const struct AP_Param::GroupInfo var_info2[];
 
     // altitude at which nav control can start in takeoff
-    AP_Float wp_navalt_min;
+    AP_Float wp_navalt_min_m;
 
     // unused_integer simply exists so that the constructor for
     // ParametersG2 can be created with a relatively easy syntax in

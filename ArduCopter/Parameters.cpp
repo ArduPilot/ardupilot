@@ -699,9 +699,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: WP_NAVALT_MIN
     // @DisplayName: Waypoint navigation altitude minimum
     // @Description: Altitude in meters above which navigation will begin during auto takeoff
+    // @Units: m
     // @Range: 0 5
     // @User: Standard
-    AP_GROUPINFO("WP_NAVALT_MIN", 1, ParametersG2, wp_navalt_min, 0),
+    AP_GROUPINFO("WP_NAVALT_MIN", 1, ParametersG2, wp_navalt_min_m, 0),
 
 #if HAL_BUTTON_ENABLED
     // @Group: BTN_
