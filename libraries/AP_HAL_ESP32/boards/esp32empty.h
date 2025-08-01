@@ -145,5 +145,7 @@
 #define AP_RCPROTOCOL_ENABLED 0
 
 // disable all frames for sim on hw except quad to save DRAM .bss
+#define AP_MOTORSMULTI_BACKEND_DEFAULT_ENABLED 0
+#define AP_MOTORS_MATRIX_ENABLED 1
 #define AP_MOTORS_FRAME_DEFAULT_ENABLED 0
 #define AP_MOTORS_FRAME_QUAD_ENABLED 1

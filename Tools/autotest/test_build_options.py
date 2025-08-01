@@ -209,6 +209,7 @@ class TestBuildOptions(object):
                     'AP_PROXIMITY_MR72_ENABLED',    # this shares symbols with AP_PROXIMITY_HEXSOONRADAR_ENABLED
                     'AP_RANGEFINDER_NRA24_CAN_ENABLED',
                     'AP_RANGEFINDER_HEXSOONRADAR_ENABLED',
+                    'AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED',  # no symbol in code
                 ])
                 if define in compiled_in_feature_defines:
                     error = f"feature gated by {define} still compiled into ({target}); extract_features.py bug?"
@@ -279,6 +280,7 @@ class TestBuildOptions(object):
             'AP_COMPASS_AK8963_ENABLED',  # probed on a board-by-board basis, not on CubeOrange for example
             'AP_COMPASS_LSM303D_ENABLED',  # probed on a board-by-board basis, not on CubeOrange for example
             'AP_BARO_THST_COMP_ENABLED',  # compiler is optimising this symbol away
+            'AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED',  # no symbol in code
         ])
         if target.lower() != "copter":
             feature_define_whitelist.add('MODE_ZIGZAG_ENABLED')
@@ -301,6 +303,8 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED')
             feature_define_whitelist.add('AP_COPTER_AHRS_AUTO_TRIM_ENABLED')
             feature_define_whitelist.add('AP_RC_TRANSMITTER_TUNING_ENABLED')
+            feature_define_whitelist.add(r'AP_MOTORS_COAX_ENABLED')
+            feature_define_whitelist.add(r'AP_MOTORS_SINGLE_ENABLED')
 
         if target.lower() in ['antennatracker', 'blimp', 'sub', 'plane', 'copter']:
             # plane has a dependency for AP_Follow which is not
@@ -336,6 +340,7 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('HAL_PARACHUTE_ENABLED')
             # only Plane and Copter have AP_Motors:
             feature_define_whitelist.add(r'AP_MOTORS_TRI_ENABLED')
+            feature_define_whitelist.add(r'AP_MOTORS_TAILSITTER_ENABLED')
 
         if target.lower() not in ["rover", "copter"]:
             # only Plane and Copter instantiate Beacon

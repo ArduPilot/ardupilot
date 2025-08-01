@@ -596,12 +596,14 @@ singleton Sub method get_rangefinder_target_cm depends AP_RANGEFINDER_ENABLED
 singleton Sub method set_rangefinder_target_cm boolean float'skip_check
 singleton Sub method set_rangefinder_target_cm depends AP_RANGEFINDER_ENABLED
 
-include AP_Motors/AP_MotorsMatrix.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
+include AP_Motors/AP_MotorsMatrix.h depends (APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI)
 singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AP_MotorsMatrix rename MotorsMatrix
 singleton AP_MotorsMatrix method init boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
+singleton AP_MotorsMatrix method init depends (AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED || AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED || AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED)
 singleton AP_MotorsMatrix method add_motor_raw void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float'skip_check float'skip_check float'skip_check uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix method set_throttle_factor boolean int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float 0 FLT_MAX
+singleton AP_MotorsMatrix method set_throttle_factor depends AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED
 singleton AP_MotorsMatrix method get_lost_motor uint8_t
 singleton AP_MotorsMatrix method get_thrust_boost boolean
 
@@ -612,7 +614,7 @@ singleton AP_Frsky_SPort method sport_telemetry_push boolean uint8_t'skip_check 
 singleton AP_Frsky_SPort method prep_number uint16_t int32_t'skip_check uint8_t'skip_check uint8_t'skip_check
 
 include AC_AttitudeControl/AC_AttitudeControl_Multi_6DoF.h depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-singleton AC_AttitudeControl_Multi_6DoF depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+singleton AC_AttitudeControl_Multi_6DoF depends APM_BUILD_TYPE(APM_BUILD_ArduCopter) && AP_MOTORS_FRAME_6DOF_ENABLED
 singleton AC_AttitudeControl_Multi_6DoF rename attitude_control
 singleton AC_AttitudeControl_Multi_6DoF method set_lateral_enable void boolean
 singleton AC_AttitudeControl_Multi_6DoF method set_forward_enable void boolean
@@ -620,7 +622,7 @@ singleton AC_AttitudeControl_Multi_6DoF method set_offset_roll_pitch void float'
 
 
 include AP_Motors/AP_MotorsMatrix_6DoF_Scripting.h  depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-singleton AP_MotorsMatrix_6DoF_Scripting depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+singleton AP_MotorsMatrix_6DoF_Scripting depends APM_BUILD_TYPE(APM_BUILD_ArduCopter) && AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED
 singleton AP_MotorsMatrix_6DoF_Scripting rename Motors_6DoF
 singleton AP_MotorsMatrix_6DoF_Scripting method init boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix_6DoF_Scripting method add_motor void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float'skip_check float'skip_check float'skip_check float'skip_check float'skip_check float'skip_check boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
@@ -687,13 +689,13 @@ singleton hal.analogin method mcu_voltage float
 singleton hal.analogin method mcu_voltage depends HAL_WITH_MCU_MONITORING
 
 include AP_Motors/AP_MotorsMatrix_Scripting_Dynamic.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
-singleton AP_MotorsMatrix_Scripting_Dynamic depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
+singleton AP_MotorsMatrix_Scripting_Dynamic depends (APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI) && AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED
 singleton AP_MotorsMatrix_Scripting_Dynamic rename Motors_dynamic
 singleton AP_MotorsMatrix_Scripting_Dynamic method init boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix_Scripting_Dynamic method add_motor void uint8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix_Scripting_Dynamic method load_factors void AP_MotorsMatrix_Scripting_Dynamic::factor_table
 
-userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
+userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table depends (APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI) && AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table rename motor_factor_table
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field roll'array AP_MOTORS_MAX_NUM_MOTORS float'skip_check read write
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field pitch'array AP_MOTORS_MAX_NUM_MOTORS float'skip_check read write
