@@ -212,7 +212,8 @@ bool Copter::gcs_mode_enabled(const Mode::Number mode_num)
         (uint8_t)Mode::Number::SYSTEMID,
         (uint8_t)Mode::Number::AUTOROTATE,
         (uint8_t)Mode::Number::AUTO_RTL,
-        (uint8_t)Mode::Number::TURTLE
+        (uint8_t)Mode::Number::TURTLE,
+        (uint8_t)Mode::Number::RATE_ACRO
     };
 
     if (!block_GCS_mode_change((uint8_t)mode_num, mode_list, ARRAY_SIZE(mode_list))) {
@@ -233,7 +234,7 @@ bool Copter::gcs_mode_enabled(const Mode::Number mode_num)
 // set_mode - change flight mode and perform any necessary initialisation
 // optional force parameter used to force the flight mode change (used only first time mode is set)
 // returns true if mode was successfully set
-// ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
+// ACRO, RATE_ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
 bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 {
     // update last reason
@@ -439,7 +440,7 @@ void Copter::exit_mode(Mode *&old_flightmode,
 
 #if FRAME_CONFIG == HELI_FRAME
     // firmly reset the flybar passthrough to false when exiting acro mode.
-    if (old_flightmode == &mode_acro) {
+    if (old_flightmode == &mode_acro || old_flightmode == &mode_rate_acro) {
         attitude_control->use_flybar_passthrough(false, false);
         motors->set_acro_tail(false);
     }
@@ -450,7 +451,7 @@ void Copter::exit_mode(Mode *&old_flightmode,
     if (!old_flightmode->has_manual_throttle()){
         if (new_flightmode == &mode_stabilize){
             input_manager.set_stab_col_ramp(1.0);
-        } else if (new_flightmode == &mode_acro){
+        } else if (new_flightmode == &mode_acro || new_flightmode == &mode_rate_acro){
             input_manager.set_stab_col_ramp(0.0);
         }
     }
