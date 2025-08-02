@@ -312,12 +312,12 @@ public:
 
     // Descends at a given rate (cm/s) using jerk-limited shaping for landing.
     // If `ignore_descent_limit` is true, descent output is not limited by the configured max.
-    // See land_at_climb_rate_m() for full details.
-    void land_at_climb_rate_cm(float vel_u_cms, bool ignore_descent_limit);
+    // See land_at_climb_rate_ms() for full details.
+    void land_at_climb_rate_cms(float vel_u_cms, bool ignore_descent_limit);
 
     // Descends at a given rate (m/s) using jerk-limited shaping for landing.
     // Used during final descent phase to ensure smooth touchdown.
-    void land_at_climb_rate_m(float vel_u_ms, bool ignore_descent_limit);
+    void land_at_climb_rate_ms(float vel_u_ms, bool ignore_descent_limit);
 
     // Sets vertical position, velocity, and acceleration in cm using jerk-limited shaping.
     // See input_pos_vel_accel_U_m() for full details.
