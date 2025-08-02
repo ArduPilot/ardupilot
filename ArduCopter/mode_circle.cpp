@@ -104,7 +104,7 @@ void ModeCircle::run()
     }
 
     // get pilot desired climb rate (or zero if in radio failsafe)
-    float target_climb_rate_cms = get_pilot_desired_climb_rate();
+    float target_climb_rate_cms = get_pilot_desired_climb_rate_cms();
 
     // get avoidance adjusted climb rate
     target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);

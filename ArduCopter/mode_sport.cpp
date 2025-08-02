@@ -64,7 +64,7 @@ void ModeSport::run()
     }
 
     // get pilot desired climb rate
-    float target_climb_rate_cms = get_pilot_desired_climb_rate();
+    float target_climb_rate_cms = get_pilot_desired_climb_rate_cms();
     target_climb_rate_cms = constrain_float(target_climb_rate_cms, -get_pilot_speed_dn(), g.pilot_speed_up);
 
     // Sport State Machine Determination
