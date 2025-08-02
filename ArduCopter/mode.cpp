@@ -614,28 +614,28 @@ int32_t Mode::get_alt_above_ground_cm(void) const
 
 void Mode::land_run_vertical_control(bool pause_descent)
 {
-    float cmb_rate = 0;
+    float climb_rate_cms = 0;
     bool ignore_descent_limit = false;
     if (!pause_descent) {
 
         // do not ignore limits until we have slowed down for landing
         ignore_descent_limit = (MAX(g2.land_alt_low,100) > get_alt_above_ground_cm()) || copter.ap.land_complete_maybe;
 
-        float max_land_descent_velocity;
+        float max_land_descent_vel_d_cms;
         if (g.land_speed_high > 0) {
-            max_land_descent_velocity = -g.land_speed_high;
+            max_land_descent_vel_d_cms = -g.land_speed_high;
         } else {
-            max_land_descent_velocity = pos_control->get_max_speed_down_cms();
+            max_land_descent_vel_d_cms = pos_control->get_max_speed_down_cms();
         }
 
         // Don't speed up for landing.
-        max_land_descent_velocity = MIN(max_land_descent_velocity, -abs(g.land_speed));
+        max_land_descent_vel_d_cms = MIN(max_land_descent_vel_d_cms, -abs(g.land_speed));
 
         // Compute a vertical velocity demand such that the vehicle approaches g2.land_alt_low. Without the below constraint, this would cause the vehicle to hover at g2.land_alt_low.
-        cmb_rate = sqrt_controller(MAX(g2.land_alt_low,100)-get_alt_above_ground_cm(), pos_control->get_pos_U_p().kP(), pos_control->get_max_accel_U_cmss(), G_Dt);
+        climb_rate_cms = sqrt_controller(MAX(g2.land_alt_low,100)-get_alt_above_ground_cm(), pos_control->get_pos_U_p().kP(), pos_control->get_max_accel_U_cmss(), G_Dt);
 
         // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
-        cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
+        climb_rate_cms = constrain_float(climb_rate_cms, max_land_descent_vel_d_cms, -abs(g.land_speed));
 
 #if AC_PRECLAND_ENABLED
         const bool navigating = pos_control->is_active_NE();
@@ -643,42 +643,42 @@ void Mode::land_run_vertical_control(bool pause_descent)
 
         if (doing_precision_landing) {
             // prec landing is active
-            Vector2f target_pos;
+            Vector2f target_pos_ne_cm;
             float target_error_cm = 0.0f;
-            if (copter.precland.get_target_position_cm(target_pos)) {
-                const Vector2f current_pos = pos_control->get_pos_estimate_NEU_cm().xy().tofloat();
+            if (copter.precland.get_target_position_cm(target_pos_ne_cm)) {
+                const Vector2f current_pos_ne_cm = pos_control->get_pos_estimate_NEU_cm().xy().tofloat();
                 // target is this many cm away from the vehicle
-                target_error_cm = (target_pos - current_pos).length();
+                target_error_cm = (target_pos_ne_cm - current_pos_ne_cm).length();
             }
             // check if we should descend or not
             const float max_horiz_pos_error_cm = copter.precland.get_max_xy_error_before_descending_cm();
-            Vector3f target_pos_meas;
-            copter.precland.get_target_position_measurement_cm(target_pos_meas);
+            Vector3f target_pos_meas_ned_cm;
+            copter.precland.get_target_position_measurement_cm(target_pos_meas_ned_cm);
             if (target_error_cm > max_horiz_pos_error_cm && !is_zero(max_horiz_pos_error_cm)) {
                 // doing precland but too far away from the obstacle
                 // do not descend
-                cmb_rate = 0.0f;
-            } else if (target_pos_meas.z > 35.0f && target_pos_meas.z < 200.0f && !copter.precland.do_fast_descend()) {
+                climb_rate_cms = 0.0f;
+            } else if (target_pos_meas_ned_cm.z > 35.0f && target_pos_meas_ned_cm.z < 200.0f && !copter.precland.do_fast_descend()) {
                 // very close to the ground and doing prec land, lets slow down to make sure we land on target
                 // compute desired descent velocity
                 const float precland_acceptable_error_cm = 15.0f;
                 const float precland_min_descent_speed_cms = 10.0f;
                 const float max_descent_speed_cms = abs(g.land_speed)*0.5f;
-                const float land_slowdown = MAX(0.0f, target_error_cm*(max_descent_speed_cms/precland_acceptable_error_cm));
-                cmb_rate = MIN(-precland_min_descent_speed_cms, -max_descent_speed_cms+land_slowdown);
+                const float land_slowdown_cms = MAX(0.0f, target_error_cm * (max_descent_speed_cms / precland_acceptable_error_cm));
+                climb_rate_cms = MIN(-precland_min_descent_speed_cms, -max_descent_speed_cms + land_slowdown_cms);
             }
         }
 #endif
     }
 
     // update altitude target and call position controller
-    pos_control->land_at_climb_rate_cms(cmb_rate, ignore_descent_limit);
+    pos_control->land_at_climb_rate_cms(climb_rate_cms, ignore_descent_limit);
     pos_control->update_U_controller();
 }
 
 void Mode::land_run_horizontal_control()
 {
-    Vector2f vel_correction;
+    Vector2f vel_correction_cms;
 
     // relax loiter target if we might be landed
     if (copter.ap.land_complete_maybe) {
@@ -702,11 +702,11 @@ void Mode::land_run_horizontal_control()
             // convert pilot input to reposition velocity
             // use half maximum acceleration as the maximum velocity to ensure aircraft will
             // stop from full reposition speed in less than 1 second.
-            const float max_pilot_vel = wp_nav->get_wp_acceleration_cmss() * 0.5;
-            vel_correction = get_pilot_desired_velocity(max_pilot_vel);
+            const float max_pilot_vel_cms = wp_nav->get_wp_acceleration_cmss() * 0.5;
+            vel_correction_cms = get_pilot_desired_velocity(max_pilot_vel_cms);
 
             // record if pilot has overridden roll or pitch
-            if (!vel_correction.is_zero()) {
+            if (!vel_correction_cms.is_zero()) {
                 if (!copter.ap.land_repo_active) {
                     LOGGER_WRITE_EVENT(LogEvent::LAND_REPO_ACTIVE);
                 }
@@ -728,23 +728,23 @@ void Mode::land_run_horizontal_control()
     copter.ap.prec_land_active = !copter.ap.land_repo_active && copter.precland.target_acquired();
     // run precision landing
     if (copter.ap.prec_land_active) {
-        Vector2f target_pos, target_vel;
-        if (!copter.precland.get_target_position_cm(target_pos)) {
-            target_pos = pos_control->get_pos_estimate_NEU_cm().xy().tofloat();
+        Vector2f target_pos_ne_cm, target_vel_ne_cms;
+        if (!copter.precland.get_target_position_cm(target_pos_ne_cm)) {
+            target_pos_ne_cm = pos_control->get_pos_estimate_NEU_cm().xy().tofloat();
         }
          // get the velocity of the target
-        copter.precland.get_target_velocity_cms(pos_control->get_vel_estimate_NEU_cms().xy(), target_vel);
+        copter.precland.get_target_velocity_cms(pos_control->get_vel_estimate_NEU_cms().xy(), target_vel_ne_cms);
 
-        Vector2f zero;
-        Vector2p landing_pos = target_pos.topostype();
+        Vector2f accel_zero;
+        Vector2p landing_pos_ne_cm = target_pos_ne_cm.topostype();
         // target vel will remain zero if landing target is stationary
-        pos_control->input_pos_vel_accel_NE_cm(landing_pos, target_vel, zero);
+        pos_control->input_pos_vel_accel_NE_cm(landing_pos_ne_cm, target_vel_ne_cms, accel_zero);
     }
 #endif
 
     if (!copter.ap.prec_land_active) {
         Vector2f accel;
-        pos_control->input_vel_accel_NE_cm(vel_correction, accel);
+        pos_control->input_vel_accel_NE_cm(vel_correction_cms, accel);
     }
 
     // run pos controller
@@ -778,7 +778,7 @@ void Mode::land_run_normal_or_precland(bool pause_descent)
 #if AC_PRECLAND_ENABLED
 // Go towards a position commanded by prec land state machine in order to retry landing
 // The passed in location is expected to be NED and in m
-void Mode::precland_retry_position(const Vector3f &retry_pos)
+void Mode::precland_retry_position(const Vector3f &retry_pos_ned_m)
 {
     if (rc().has_valid_input()) {
         if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
@@ -808,10 +808,10 @@ void Mode::precland_retry_position(const Vector3f &retry_pos)
         }
     }
 
-    Vector3p retry_pos_NEU{retry_pos.x, retry_pos.y, retry_pos.z * -1.0f};
+    Vector3p retry_pos_NEU_cm{retry_pos_ned_m.x, retry_pos_ned_m.y, retry_pos_ned_m.z * -1.0};
     // pos controller expects input in NEU cm's
-    retry_pos_NEU = retry_pos_NEU * 100.0f;
-    pos_control->input_pos_NEU_cm(retry_pos_NEU, 0.0f, 1000.0f);
+    retry_pos_NEU_cm = retry_pos_NEU_cm * 100.0f;
+    pos_control->input_pos_NEU_cm(retry_pos_NEU_cm, 0.0f, 1000.0f);
 
     // run position controllers
     pos_control->update_NE_controller();
@@ -828,12 +828,12 @@ void Mode::precland_run()
     // if user is taking control, we will not run the statemachine, and simply land (may or may not be on target)
     if (!copter.ap.land_repo_active) {
         // This will get updated later to a retry pos if needed
-        Vector3f retry_pos;
+        Vector3f retry_pos_ned_m;
 
-        switch (copter.precland_statemachine.update(retry_pos)) {
+        switch (copter.precland_statemachine.update(retry_pos_ned_m)) {
         case AC_PrecLand_StateMachine::Status::RETRYING:
             // we want to retry landing by going to another position
-            precland_retry_position(retry_pos);
+            precland_retry_position(retry_pos_ned_m);
             break;
 
         case AC_PrecLand_StateMachine::Status::FAILSAFE: {
