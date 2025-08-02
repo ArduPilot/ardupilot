@@ -301,7 +301,7 @@ void ModeZigZag::manual_control()
     target_yaw_rate_rads = get_pilot_desired_yaw_rate_rads();
 
     // get pilot desired climb rate
-    target_climb_rate_cms = get_pilot_desired_climb_rate();
+    target_climb_rate_cms = get_pilot_desired_climb_rate_cms();
     // make sure the climb rate is in the given range, prevent floating point errors
     target_climb_rate_cms = constrain_float(target_climb_rate_cms, -get_pilot_speed_dn(), g.pilot_speed_up);
 
