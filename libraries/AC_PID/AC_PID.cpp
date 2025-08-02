@@ -264,7 +264,7 @@ float AC_PID::update_all(float target, float measurement, float dt, bool limit, 
 
     // Integrate error (with wind-up protection if limit is active)
     // If limit is active, allow I-term to shrink but not grow
-    update_i(dt, limit);
+    update_i(dt, limit, i_scale);
 
     float P_out = (_error * _kp);
     float D_out = (_derivative * _kd);
@@ -281,8 +281,6 @@ float AC_PID::update_all(float target, float measurement, float dt, bool limit, 
     // scale pd output if required
     P_out *= pd_scale;
     D_out *= pd_scale;
-    // scale i output if required
-    I_out *= i_scale;
 
     _pid_info.PD_limit = false;
     // Apply PD sum limit if enabled
@@ -338,12 +336,12 @@ float AC_PID::update_error(float error, float dt, bool limit)
 
 // Updates the integrator based on current error and dt.
 // If `limit` is true, the integrator is only allowed to shrink to avoid wind-up.
-void AC_PID::update_i(float dt, bool limit)
+void AC_PID::update_i(float dt, bool limit, float i_scale)
 {
     if (!is_zero(_ki) && is_positive(dt)) {
         // Allow integrator growth only if not limited, or if error opposes the integrator direction
         if (!limit || ((is_positive(_integrator) && is_negative(_error)) || (is_negative(_integrator) && is_positive(_error)))) {
-            _integrator += ((float)_error * _ki) * dt;
+            _integrator += ((float)_error * _ki) * i_scale * dt;
             _integrator = constrain_float(_integrator, -_kimax, _kimax);
         }
     } else {

@@ -157,7 +157,7 @@ protected:
 
     // Updates the integrator based on current error and dt.
     // If `limit` is true, the integrator is only allowed to shrink to avoid wind-up.
-    void update_i(float dt, bool limit);
+    void update_i(float dt, bool limit, float i_scale = 1.0f);
 
     // parameters
     AP_Float _kp;
