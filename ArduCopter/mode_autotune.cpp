@@ -82,8 +82,8 @@ void AutoTune::get_pilot_desired_rp_yrate_rad(float &des_roll_rad, float &des_pi
 void AutoTune::init_z_limits()
 {
     // set vertical speed and acceleration limits
-    copter.pos_control->set_max_speed_accel_U_cm(-copter.get_pilot_speed_dn(), copter.g.pilot_speed_up, copter.g.pilot_accel_z);
-    copter.pos_control->set_correction_speed_accel_U_cm(-copter.get_pilot_speed_dn(), copter.g.pilot_speed_up, copter.g.pilot_accel_z);
+    copter.pos_control->set_max_speed_accel_U_m(-copter.flightmode->get_pilot_speed_dn_ms(), copter.flightmode->get_pilot_speed_up_ms(), copter.flightmode->get_pilot_accel_mss());
+    copter.pos_control->set_correction_speed_accel_U_m(-copter.flightmode->get_pilot_speed_dn_ms(), copter.flightmode->get_pilot_speed_up_ms(), copter.flightmode->get_pilot_accel_mss());
 }
 
 #if HAL_LOGGING_ENABLED
