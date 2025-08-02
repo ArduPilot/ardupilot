@@ -2848,7 +2848,7 @@ void QuadPlane::vtol_position_controller(void)
             break;
         }
         const float descent_rate_ms = landing_descent_rate_ms(height_above_ground_m);
-        pos_control->land_at_climb_rate_m(-descent_rate_ms, descent_rate_ms > 0);
+        pos_control->land_at_climb_rate_ms(-descent_rate_ms, descent_rate_ms > 0);
         break;
     }
 

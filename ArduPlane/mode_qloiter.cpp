@@ -164,7 +164,7 @@ void ModeQLoiter::run()
             ahrs.set_touchdown_expected(true);
         }
 
-        pos_control->land_at_climb_rate_m(-descent_rate_ms, descent_rate_ms>0);
+        pos_control->land_at_climb_rate_ms(-descent_rate_ms, descent_rate_ms>0);
         quadplane.check_land_complete();
     } else if (plane.control_mode == &plane.mode_guided && quadplane.guided_takeoff) {
         quadplane.set_climb_rate_ms(0);
