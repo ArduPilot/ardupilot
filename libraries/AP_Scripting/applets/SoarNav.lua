@@ -889,7 +889,8 @@ local function stop_and_record_thermal()
         max_strength = max_strength,
         consistency = consistency,
         duration = (timestamp_saved:toint() - SoarNavGlobals.current_thermal_stats.start_time:toint()) / 1000,
-        wind_vec = wind_vec
+        wind_vec = wind_vec,
+		failed_attempts = 0,
     }
     local new_cell = get_cell_index_from_location(hotspot_loc)
     if not new_cell then
@@ -1608,11 +1609,21 @@ update_body = function()
                     log_gcs(MAV_SEVERITY.INFO, 1, "Waypoint reached.")
                     if SoarNavGlobals.current_selected_hotspot
                        and string.find(SoarNavGlobals.g_waypoint_source_info, "Drifting Thermal") then
+                        local hotspot_to_check
                         for i, hotspot in ipairs(SoarNavGlobals.thermal_hotspots) do
                             if hotspot.timestamp == SoarNavGlobals.current_selected_hotspot.timestamp then
-                                table.remove(SoarNavGlobals.thermal_hotspots, i)
-                                log_gcs(MAV_SEVERITY.INFO, 1, "Unreachable thermal hotspot removed.")
+                                hotspot_to_check = hotspot
                                 break
+                            end
+                        end
+                        
+                        if hotspot_to_check then
+                            hotspot_to_check.failed_attempts = (hotspot_to_check.failed_attempts or 0) + 1
+                            if hotspot_to_check.failed_attempts >= 2 then
+                                table.remove(SoarNavGlobals.thermal_hotspots, i)
+                                log_gcs(MAV_SEVERITY.INFO, 1, string.format("Thermal removed (failed attempts: %d).", hotspot_to_check.failed_attempts))
+                            else
+                                log_gcs(MAV_SEVERITY.INFO, 1, string.format("Thermal not found, retrying (attempt %d).", hotspot_to_check.failed_attempts))
                             end
                         end
                         SoarNavGlobals.current_selected_hotspot = nil
