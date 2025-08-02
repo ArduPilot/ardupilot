@@ -300,14 +300,13 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
      * to change */
 
     if (last_update_usec == 0 || !output_ready) {
-        for (uint8_t i=0; i<SITL_NUM_CHANNELS; i++) {
-            pwm_output[i] = 1000;
+        if (_vehicle == ArduPlane || _vehicle == ArduSub || _vehicle == ArduCopter || _vehicle == Blimp) {
+            for (uint8_t i=0; i<SITL_NUM_CHANNELS; i++) {
+                pwm_output[i] = 1000;
+            }
         }
         if (_vehicle == ArduPlane) {
             pwm_output[0] = pwm_output[1] = pwm_output[3] = 1500;
-        }
-        if (_vehicle == Rover) {
-            pwm_output[0] = pwm_output[1] = pwm_output[2] = pwm_output[3] = 1500;
         }
         if (_vehicle == ArduSub) {
             pwm_output[0] = pwm_output[1] = pwm_output[2] = pwm_output[3] =
@@ -447,12 +446,11 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         }
     } else if (_vehicle == Rover) {
         if (input.servos[2] != 0) {
-            input.servos[2] = static_cast<uint16_t>(constrain_int16(input.servos[2], 1000, 2000));
-            throttle = fabsf((input.servos[2] - 1500) / 500.0f);
+            const uint16_t servo2 = static_cast<uint16_t>(constrain_int16(input.servos[2], 1000, 2000));
+            throttle = fabsf((servo2 - 1500) / 500.0f);
         } else {
             throttle = 0;
         }
-        input.servos[0] = static_cast<uint16_t>(constrain_int16(input.servos[0], 1000, 2000));
     } else {
         // run checks on each motor
         uint8_t running_motors = 0;
