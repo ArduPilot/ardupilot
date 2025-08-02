@@ -148,7 +148,7 @@ public:
         USE_ACTUATOR_PWM          = (1U<<4),
         SEND_GNSS                 = (1U<<5),
         USE_HIMARK_SERVO          = (1U<<6),
-        USE_HOBBYWING_ESC         = (1U<<7),
+        //USE_HOBBYWING_ESC         = (1U<<7), removed, available for future use
         ENABLE_STATS              = (1U<<8),
         ENABLE_FLEX_DEBUG         = (1U<<9),
     };
