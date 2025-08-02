@@ -133,7 +133,7 @@ bool GCS_MAVLINK_Sub::send_info()
 
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
     send_named_float("TetherTrn",
-                     sub.quarter_turn_count/4);
+                     (float)sub.quarter_turn_count / 4);
 
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
     send_named_float("Lights1",
