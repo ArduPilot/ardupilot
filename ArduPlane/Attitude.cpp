@@ -305,6 +305,10 @@ void Plane::stabilize_stick_mixing_fbw()
         return;
     }
 
+    // do FBW-A style pitch stick mixing. Use the same non-linear approach as
+    // roll, but based on the pitch range rather than the limits to ensure full
+    // stick deflection can override either limit regardless of current
+    // attitude.
     float pitch_input = channel_pitch->norm_input_dz();
     if (pitch_input > 0.5f) {
         pitch_input = (3*pitch_input - 1);
@@ -314,11 +318,8 @@ void Plane::stabilize_stick_mixing_fbw()
     if (fly_inverted()) {
         pitch_input = -pitch_input;
     }
-    if (pitch_input > 0) {
-        nav_pitch_cd += pitch_input * aparm.pitch_limit_max*100;
-    } else {
-        nav_pitch_cd += -(pitch_input * pitch_limit_min*100);
-    }
+    const float pitch_range = aparm.pitch_limit_max.get() - pitch_limit_min;
+    nav_pitch_cd += pitch_input * (pitch_range / 2.0f) * 100;
     nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min*100, aparm.pitch_limit_max.get()*100);
 }
 
