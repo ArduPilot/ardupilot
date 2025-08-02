@@ -245,7 +245,7 @@ void ModeFlowHold::run()
 
     // get pilot desired climb rate
     float target_climb_rate_cms = copter.get_pilot_desired_climb_rate_cms();
-    target_climb_rate_cms = constrain_float(target_climb_rate_cms, -get_pilot_speed_dn(), copter.g.pilot_speed_up);
+    target_climb_rate_cms = constrain_float(target_climb_rate_cms, -get_pilot_speed_dn_ms() * 100.0, get_pilot_speed_up_ms() * 100.0);
 
     // get pilot's desired yaw rate
     float target_yaw_rate_cds = rad_to_cd(get_pilot_desired_yaw_rate_rads());
