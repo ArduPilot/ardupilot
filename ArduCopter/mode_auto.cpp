@@ -463,8 +463,8 @@ bool ModeAuto::wp_start(const Location& dest_loc)
 void ModeAuto::land_start()
 {
     // set horizontal speed and acceleration limits
-    pos_control->set_max_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), wp_nav->get_wp_acceleration_cmss());
-    pos_control->set_correction_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), wp_nav->get_wp_acceleration_cmss());
+    pos_control->set_max_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+    pos_control->set_correction_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
 
     // initialise the vertical position controller
     if (!pos_control->is_active_NE()) {
@@ -472,8 +472,8 @@ void ModeAuto::land_start()
     }
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
-    pos_control->set_correction_speed_accel_U_cm(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
+    pos_control->set_max_speed_accel_U_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_U_mss());
+    pos_control->set_correction_speed_accel_U_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_U_mss());
 
     // initialise the vertical position controller
     if (!pos_control->is_active_U()) {
@@ -614,8 +614,8 @@ void PayloadPlace::start_descent()
     auto *wp_nav = copter.wp_nav;
 
     // set horizontal speed and acceleration limits
-    pos_control->set_max_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), wp_nav->get_wp_acceleration_cmss());
-    pos_control->set_correction_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), wp_nav->get_wp_acceleration_cmss());
+    pos_control->set_max_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+    pos_control->set_correction_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
 
     // initialise the vertical position controller
     if (!pos_control->is_active_NE()) {
@@ -623,8 +623,8 @@ void PayloadPlace::start_descent()
     }
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
-    pos_control->set_correction_speed_accel_U_cm(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
+    pos_control->set_max_speed_accel_U_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_U_mss());
+    pos_control->set_correction_speed_accel_U_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_U_mss());
 
     // initialise the vertical position controller
     if (!pos_control->is_active_U()) {
@@ -1162,8 +1162,8 @@ void ModeAuto::loiter_to_alt_run()
 
     if (!loiter_to_alt.loiter_start_done) {
         // set horizontal speed and acceleration limits
-        pos_control->set_max_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), wp_nav->get_wp_acceleration_cmss());
-        pos_control->set_correction_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), wp_nav->get_wp_acceleration_cmss());
+        pos_control->set_max_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+        pos_control->set_correction_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
 
         if (!pos_control->is_active_NE()) {
             pos_control->init_NE_controller();
@@ -1765,8 +1765,8 @@ void ModeAuto::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
     loiter_to_alt.alt_error_cm = 0;
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
-    pos_control->set_correction_speed_accel_U_cm(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
+    pos_control->set_max_speed_accel_U_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_U_mss());
+    pos_control->set_correction_speed_accel_U_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_U_mss());
 
     // set submode
     set_submode(SubMode::LOITER_TO_ALT);

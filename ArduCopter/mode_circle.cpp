@@ -13,10 +13,10 @@ bool ModeCircle::init(bool ignore_checks)
     speed_changing = false;
 
     // set speed and acceleration limits
-    pos_control->set_max_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), wp_nav->get_wp_acceleration_cmss());
-    pos_control->set_correction_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), wp_nav->get_wp_acceleration_cmss());
-    pos_control->set_max_speed_accel_U_cm(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    pos_control->set_correction_speed_accel_U_cm(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control->set_max_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+    pos_control->set_correction_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+    pos_control->set_max_speed_accel_U_m(-get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_mss());
+    pos_control->set_correction_speed_accel_U_m(-get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_mss());
 
     // initialise circle controller including setting the circle center based on vehicle speed
     copter.circle_nav->init();
@@ -47,8 +47,8 @@ bool ModeCircle::init(bool ignore_checks)
 void ModeCircle::run()
 {
     // set speed and acceleration limits
-    pos_control->set_max_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), wp_nav->get_wp_acceleration_cmss());
-    pos_control->set_max_speed_accel_U_cm(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control->set_max_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+    pos_control->set_max_speed_accel_U_m(-get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_mss());
 
     // Check for any change in params and update in real time
     copter.circle_nav->check_param_change();
