@@ -11,6 +11,7 @@ import errno
 import glob
 import math
 import os
+import pathlib
 import re
 import shutil
 import signal
@@ -5061,6 +5062,13 @@ class TestSuite(ABC):
         if isinstance(hook, TestSuite.MessageHook):
             hook.hook_removed()
 
+    def install_script_content_context(self, scriptname, content):
+        '''installs an example script with content which will be
+        removed when the context goes away
+        '''
+        self.install_script_content(scriptname, content)
+        self.context_get().installed_scripts.append(scriptname)
+
     def install_example_script_context(self, scriptname):
         '''installs an example script which will be removed when the context goes
         away'''
@@ -6447,6 +6455,25 @@ class TestSuite(ABC):
                 error_percent))
 
         self.progress("%s: (%f) check passed %f%% error less than %f%%" % (name, value, error_percent, max_error_percent))
+
+    def fetch_all_parameters(self):
+        self.mav.mav.param_request_list_send(self.sysid_thismav(), 1)
+        tstart = self.get_sim_time_cached()
+        ret = {}
+        param_count = 0
+        while True:
+            if param_count > 100 and len(ret) == param_count:
+                break
+            if self.get_sim_time_cached() - tstart > 5:
+                raise NotAchievedException("Did not get all params")
+            m = self.mav.recv_match(type='PARAM_VALUE', blocking=True, timeout=0.1)
+            if m is None:
+                continue
+            if param_count is None or m.param_count > param_count:
+                param_count = m.param_count
+            ret[m.param_id] = m.param_value
+
+        return ret
 
     def get_parameter(self, *args, **kwargs):
         return self.get_parameter_direct(*args, **kwargs)
@@ -8806,6 +8833,14 @@ Also, ignores heartbeats not from our target system'''
                                          "message_definitions", "v1.0", "ardupilotmega.xml")
         mavgen.mavgen(mavgen.Opts(output=dest, wire_protocol='2.0', language='Lua'), [ardupilotmega_xml])
         self.progress("Installed mavlink module")
+
+    def install_script_content(self, scriptname, content):
+        dest = self.installed_script_path(scriptname)
+        destdir = os.path.dirname(dest)
+        if not os.path.exists(destdir):
+            os.mkdir(destdir)
+        destPath = pathlib.Path(dest)
+        destPath.write_text(content)
 
     def install_example_script(self, scriptname):
         source = self.script_example_source_path(scriptname)
