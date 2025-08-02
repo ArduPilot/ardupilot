@@ -58,7 +58,7 @@ void Copter::Log_Write_Control_Tuning()
         throttle_out        : motors->get_throttle(),
         throttle_hover      : motors->get_throttle_hover(),
         desired_alt         : des_alt_m,
-        inav_alt            : float(pos_control->get_pos_estimate_NEU_cm().z) * 0.01,
+        inav_alt            : float(pos_control->get_pos_estimate_NEU_m().z),
         baro_alt            : baro_alt,
         desired_rangefinder_alt : desired_rangefinder_alt,
 #if AP_RANGEFINDER_ENABLED
