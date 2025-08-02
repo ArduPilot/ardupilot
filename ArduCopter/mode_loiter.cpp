@@ -28,7 +28,7 @@ bool ModeLoiter::init(bool ignore_checks)
 
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_U_cm(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    pos_control->set_correction_speed_accel_U_cmss(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control->set_correction_speed_accel_U_cm(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
 #if AC_PRECLAND_ENABLED
     _precision_loiter_active = false;
@@ -99,7 +99,7 @@ void ModeLoiter::run()
     target_yaw_rate_rads = get_pilot_desired_yaw_rate_rads();
 
     // get pilot desired climb rate
-    target_climb_rate_cms = get_pilot_desired_climb_rate();
+    target_climb_rate_cms = get_pilot_desired_climb_rate_cms();
     target_climb_rate_cms = constrain_float(target_climb_rate_cms, -get_pilot_speed_dn(), g.pilot_speed_up);
 
     // relax loiter target if we might be landed
@@ -133,14 +133,14 @@ void ModeLoiter::run()
     case AltHoldModeState::Takeoff:
         // initiate take-off
         if (!takeoff.running()) {
-            takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+            takeoff.start_cm(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
         }
 
         // get avoidance adjusted climb rate
         target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
 
         // set position controller targets adjusted for pilot input
-        takeoff.do_pilot_takeoff(target_climb_rate_cms);
+        takeoff.do_pilot_takeoff_cms(target_climb_rate_cms);
 
         // run loiter controller
         loiter_nav->update();

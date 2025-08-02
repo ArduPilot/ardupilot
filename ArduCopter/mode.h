@@ -19,8 +19,8 @@ class GCS_Copter;
 class _AutoTakeoff {
 public:
     void run();
-    void start(float complete_alt_cm, bool terrain_alt);
-    bool get_completion_pos(Vector3p& pos_neu_cm);
+    void start_cm(float complete_alt_cm, bool is_terrain_alt);
+    bool get_completion_pos_neu_cm(Vector3p& pos_neu_cm);
 
     bool complete;          // true when takeoff is complete
 
@@ -30,9 +30,9 @@ private:
     float no_nav_alt_cm;
 
     // auto takeoff variables
-    float complete_alt_cm;  // completion altitude expressed in cm above ekf origin or above terrain (depending upon auto_takeoff_terrain_alt)
-    bool terrain_alt;       // true if altitudes are above terrain
-    Vector3p complete_pos;  // target takeoff position as offset from ekf origin in cm
+    float complete_alt_cm;          // completion altitude expressed in cm above ekf origin or above terrain (depending upon auto_takeoff_terrain_alt)
+    bool is_terrain_alt;            // true if altitudes are above terrain
+    Vector3p complete_pos_neu_cm;   // target takeoff position as offset from ekf origin in cm
 };
 
 #if AC_PAYLOAD_PLACE_ENABLED
@@ -284,16 +284,16 @@ protected:
     // user-takeoff support; takeoff state is shared across all mode instances
     class _TakeOff {
     public:
-        void start(float alt_cm);
+        void start_cm(float alt_cm);
         void stop();
-        void do_pilot_takeoff(float& pilot_climb_rate);
-        bool triggered(float target_climb_rate) const;
+        void do_pilot_takeoff_cms(float& pilot_climb_rate_cms);
+        bool triggered_cms(float target_climb_rate_cms) const;
 
         bool running() const { return _running; }
     private:
         bool _running;
-        float take_off_start_alt;
-        float take_off_complete_alt;
+        float take_off_start_alt_cm;
+        float take_off_complete_alt_cm;
     };
 
     static _TakeOff takeoff;
@@ -393,7 +393,7 @@ public:
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base
     // class.
-    float get_pilot_desired_climb_rate();
+    float get_pilot_desired_climb_rate_cms();
     float get_non_takeoff_throttle(void);
     void update_simple_mode(void);
     bool set_mode(Mode::Number mode, ModeReason reason);
@@ -782,7 +782,7 @@ private:
         float xy;     // desired speed horizontally in m/s. 0 if unset
         float up;     // desired speed upwards in m/s. 0 if unset
         float down;   // desired speed downwards in m/s. 0 if unset
-    } desired_speed_override;
+    } desired_speed_override_ms;
 
     float circle_last_num_complete;
 };
@@ -1100,19 +1100,19 @@ public:
     //             IF false: climb_rate_cms_or_thrust represents climb_rate (cm/s)
     void set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel, float climb_rate_cms_or_thrust, bool use_thrust);
 
-    bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool terrain_alt = false);
+    bool set_pos_neu_cm(const Vector3f& pos_neu_cm, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool is_terrain_alt = false);
     bool set_destination(const Location& dest_loc, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
     bool get_wp(Location &loc) const override;
-    void set_accel(const Vector3f& acceleration, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
-    void set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
-    void set_velaccel(const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
-    bool set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
-    bool set_destination_posvelaccel(const Vector3f& destination, const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
+    void set_accel_neu_cmss(const Vector3f& accel_neu_cm, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
+    void set_vel_neu_cms(const Vector3f& vel_neu_cm, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
+    void set_vel_accel_neu_cm(const Vector3f& vel_neu_cm, const Vector3f& accel_neu_cm, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
+    bool set_pos_vel_neu_cm(const Vector3f& pos_neu_cm, const Vector3f& vel_neu_cm, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
+    bool set_pos_vel_accel_neu_cm(const Vector3f& pos_neu_cm, const Vector3f& vel_neu_cm, const Vector3f& accel_neu_cm, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
 
     // get position, velocity and acceleration targets
-    const Vector3p& get_target_pos() const;
-    const Vector3f& get_target_vel() const;
-    const Vector3f& get_target_accel() const;
+    const Vector3p& get_target_pos_neu_cm() const;
+    const Vector3f& get_target_vel_neu_cms() const;
+    const Vector3f& get_target_accel_neu_cmss() const;
 
     // returns true if GUIDED_OPTIONS param suggests SET_ATTITUDE_TARGET's "thrust" field should be interpreted as thrust instead of climb rate
     bool set_attitude_target_provides_thrust() const;
@@ -1991,9 +1991,9 @@ private:
     void auto_control();
     void manual_control();
     bool reached_destination();
-    bool calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Vector3f& next_dest, bool& terrain_alt) const;
+    bool calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Vector3f& next_dest, bool& is_terrain_alt) const;
     void spray(bool b);
-    bool calculate_side_dest(Vector3f& next_dest, bool& terrain_alt) const;
+    bool calculate_side_dest(Vector3f& next_dest, bool& is_terrain_alt) const;
     void move_to_side();
 
     Vector2f dest_A_ne_cm;    // in NEU frame in cm relative to ekf origin
