@@ -417,18 +417,23 @@ class Board:
                 '-Wcast-align=strict',
             ]
 
+        # handle passing through DEBUG status into waf env:
         if cfg.env.DEBUG:
-            env.CFLAGS += [
-                '-g',
-                '-O0',
-            ]
             env.DEFINES.update(
                 HAL_DEBUG_BUILD = 1,
             )
-        elif cfg.options.debug_symbols:
+
+        # handle setting of include-debug-symbols in CFLAGS:
+        if cfg.env.DEBUG or cfg.options.debug_symbols:
             env.CFLAGS += [
                 '-g',
             ]
+        # adjust compiler optimisation when debugging:
+        if cfg.env.DEBUG:
+            env.CFLAGS += [
+                '-O0',
+            ]
+
         if cfg.options.bootloader:
             # don't let bootloaders try and pull scripting in
             cfg.options.disable_scripting = True
@@ -591,9 +596,14 @@ class Board:
             env.CFLAGS += errors
             env.CXXFLAGS += errors
 
-        if cfg.env.DEBUG:
+        # handle setting of include-debug-symbols in CXXFLAGS:
+        if cfg.env.DEBUG or cfg.options.debug_symbols:
             env.CXXFLAGS += [
                 '-g',
+            ]
+        # adjust compiler optimisation when debugging:
+        if cfg.env.DEBUG:
+            env.CXXFLAGS += [
                 '-O0',
             ]
 
