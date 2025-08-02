@@ -199,7 +199,7 @@ void AP_MotorsHeli::output_min()
     update_motor_control(AP_MotorsHeli_RSC::RotorControlState::STOP);
 
     // override limits flags
-    set_limit_flag_pitch_roll_yaw(true);
+    limit.set_rpy(true);
     limit.throttle_lower = true;
     limit.throttle_upper = false;
 }
@@ -332,11 +332,7 @@ void AP_MotorsHeli::output_logic()
             // Servos set to their trim values or in a test condition.
 
             // set limits flags
-            if (!using_leaky_integrator()) {
-                set_limit_flag_pitch_roll_yaw(true);
-            } else {
-                set_limit_flag_pitch_roll_yaw(false);
-            }
+            limit.set_all(true);
 
             // make sure the motors are spooling in the correct direction
             if (_spool_desired != DesiredSpoolState::SHUT_DOWN) {
@@ -347,13 +343,10 @@ void AP_MotorsHeli::output_logic()
             break;
 
         case SpoolState::GROUND_IDLE: {
-            // Motors should be stationary or at ground idle.
-            // set limits flags
-            if (_heliflags.land_complete && !using_leaky_integrator()) {
-                set_limit_flag_pitch_roll_yaw(true);
-            } else {
-                set_limit_flag_pitch_roll_yaw(false);
-            }
+            // We get to ground idle when interlock is low. RSC output should therefore be at idle.
+
+            // Set limits flags. We may still be flying if we are in an autorotation.
+            limit.set_all(!in_autorotation());
 
             // Servos should be moving to correct the current attitude.
             if (_spool_desired == DesiredSpoolState::SHUT_DOWN){
@@ -367,15 +360,11 @@ void AP_MotorsHeli::output_logic()
             break;
         }
         case SpoolState::SPOOLING_UP:
-            // Maximum throttle should move from minimum to maximum.
-            // Servos should exhibit normal flight behavior.
+            // RSC should be increasing head speed. We do not want I-terms building if we are on the ground.
+            // We could be in an autorotation in which case we do not want the motor limits to be set true here.
 
-            // set limits flags
-            if (_heliflags.land_complete && !using_leaky_integrator()) {
-                set_limit_flag_pitch_roll_yaw(true);
-            } else {
-                set_limit_flag_pitch_roll_yaw(false);
-            }
+            // Set limits flags. We may still be flying if we are in an autorotation.
+            limit.set_all(!in_autorotation());
 
             // make sure the motors are spooling in the correct direction
             if (_spool_desired != DesiredSpoolState::THROTTLE_UNLIMITED ){
@@ -392,12 +381,8 @@ void AP_MotorsHeli::output_logic()
             // Throttle should exhibit normal flight behavior.
             // Servos should exhibit normal flight behavior.
 
-            // set limits flags
-            if (_heliflags.land_complete && !using_leaky_integrator()) {
-                set_limit_flag_pitch_roll_yaw(true);
-            } else {
-                set_limit_flag_pitch_roll_yaw(false);
-            }
+            // Set limits flags in normal flight always reset the limit flags here. They will be reset to true, as appropriate, in move_actuators()
+            limit.set_all(false);
 
             // make sure the motors are spooling in the correct direction
             if (_spool_desired != DesiredSpoolState::THROTTLE_UNLIMITED) {
@@ -405,19 +390,14 @@ void AP_MotorsHeli::output_logic()
                 break;
             }
 
-
             break;
 
         case SpoolState::SPOOLING_DOWN:
-            // Maximum throttle should move from maximum to minimum.
-            // Servos should exhibit normal flight behavior.
+            // RSC should be reducing head speed. We do not want I-terms building if we are on the ground.
+            // We could be in an autorotation in which case we do not want the motor limits to be set true here.
 
-            // set limits flags
-            if (_heliflags.land_complete && !using_leaky_integrator()) {
-                set_limit_flag_pitch_roll_yaw(true);
-            } else {
-                set_limit_flag_pitch_roll_yaw(false);
-            }
+            // Set limits flags. We may still be flying if we are in an autorotation.
+            limit.set_all(!in_autorotation());
 
             // make sure the motors are spooling in the correct direction
             if (_spool_desired == DesiredSpoolState::THROTTLE_UNLIMITED) {
