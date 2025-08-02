@@ -129,7 +129,7 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Param: OPTION
     // @DisplayName: DroneCAN options
     // @Description: Option flags
-    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS,6:UseHimarkServo,7:HobbyWingESC,8:EnableStats,9:EnableFlexDebug
+    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS,6:UseHimarkServo,7:HobbyWingESC,8:EnableStats,9:EnableFlexDebug,10:SecondaryAllowExtendedFrames
     // @User: Advanced
     AP_GROUPINFO("OPTION", 5, AP_DroneCAN, _options, 0),
     
@@ -2012,8 +2012,9 @@ bool AP_DroneCAN::add_11bit_driver(CANSensor *sensor)
 // handler for outgoing frames for auxillary drivers
 bool AP_DroneCAN::write_aux_frame(AP_HAL::CANFrame &out_frame, const uint32_t timeout_us)
 {
-    if (out_frame.isExtended()) {
-        // don't allow extended frames to be sent by auxillary driver
+    if (out_frame.isExtended() && !option_is_set(Options::ALLOW_EXTENDED_AUX)) {
+        // don't allow extended frames to be sent by auxillary driver unless
+        // the user has specifically allowed it
         return false;
     }
     return canard_iface.write_aux_frame(out_frame, timeout_us);
