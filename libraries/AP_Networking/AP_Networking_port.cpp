@@ -33,7 +33,7 @@ const AP_Param::GroupInfo AP_Networking::Port::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Port type
     // @Description: Port type for network serial port. For the two client types a valid destination IP address must be set. For the two server types either 0.0.0.0 or a local address can be used. The UDP client type will use broadcast if the IP is set to 255.255.255.255 and will use UDP multicast if the IP is in the multicast address range.
-    // @Values: 0:Disabled, 1:UDP client, 2:UDP server, 3:TCP client, 4:TCP server
+    // @Values: 0:Disabled, 1:UDP client, 2:UDP server, 3:TCP client, 4:TCP server, 5: UDP server multi-client
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO_FLAGS("TYPE", 1,  AP_Networking::Port, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -78,6 +78,7 @@ void AP_Networking::ports_init(void)
             p.udp_client_init();
             break;
         case NetworkPortType::UDP_SERVER:
+        case NetworkPortType::UDP_SERVER_MULTI_CLIENT:
             p.udp_server_init();
             break;
         case NetworkPortType::TCP_SERVER:
@@ -217,12 +218,29 @@ void AP_Networking::Port::udp_server_loop(void)
     }
     sock->reuseaddress();
 
+#if AP_NETWORKING_UDP_SERVER_MULTI_CLIENT_ENABLED
+    if (type == NetworkPortType::UDP_SERVER_MULTI_CLIENT) {
+        udp_server_multi_client = NEW_NOTHROW UDP_Server_Multi_Client(sock, state.idx);
+        if (udp_server_multi_client == nullptr) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UDP[%u]: Failed to init multi-clients", (unsigned)state.idx);
+            delete sock;
+            sock = nullptr;
+            return;
+        }
+    }
+#endif // AP_NETWORKING_UDP_SERVER_MULTI_CLIENT_ENABLED
+
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UDP[%u]: bound to %s:%u", (unsigned)state.idx, addr, unsigned(port.get()));
 
     bool active = false;
     while (true) {
         if (!active) {
             hal.scheduler->delay_microseconds(100);
+#if AP_NETWORKING_UDP_SERVER_MULTI_CLIENT_ENABLED
+            if (type == NetworkPortType::UDP_SERVER_MULTI_CLIENT) {
+                connected = udp_server_multi_client->update();
+            }
+#endif // AP_NETWORKING_UDP_SERVER_MULTI_CLIENT_ENABLED
         }
         active = send_receive();
     }
@@ -339,6 +357,12 @@ bool AP_Networking::Port::send_receive(void)
             return false;
         }
         if (ret > 0) {
+#if AP_NETWORKING_UDP_SERVER_MULTI_CLIENT_ENABLED
+            if (type == NetworkPortType::UDP_SERVER_MULTI_CLIENT) {
+                connected = true;
+                udp_server_multi_client->on_recv();
+            }
+#endif // AP_NETWORKING_UDP_SERVER_MULTI_CLIENT_ENABLED
             WITH_SEMAPHORE(sem);
             readbuffer->write(buf, ret);
 
@@ -410,6 +434,10 @@ bool AP_Networking::Port::send_receive(void)
             if(last_udp_connect_address != 0 && last_udp_connect_port != 0) {
                 ret = sock->sendto(buf, n, last_udp_connect_address, last_udp_connect_port);
             }
+#if AP_NETWORKING_UDP_SERVER_MULTI_CLIENT_ENABLED
+        } else if (type == NetworkPortType::UDP_SERVER_MULTI_CLIENT) {
+            ret = udp_server_multi_client->send_to_all_clients(buf, n);
+#endif // AP_NETWORKING_UDP_SERVER_MULTI_CLIENT_ENABLED
         } else {
             // TCP Server and Client and UDP Client use send
             ret = sock->send(buf, n);
@@ -433,6 +461,87 @@ bool AP_Networking::Port::send_receive(void)
 
     return active;
 }
+
+#if AP_NETWORKING_UDP_SERVER_MULTI_CLIENT_ENABLED
+ssize_t AP_Networking::Port::UDP_Server_Multi_Client::send_to_all_clients(const uint8_t* buf, const uint32_t len)
+{
+    ssize_t ret = 0;
+    for (uint8_t i=0; i<ARRAY_SIZE(clients); i++) {
+        if (clients[i].connected()) {
+            ret = sock->sendto(buf, len, clients[i].ip, clients[i].port);
+        }
+    }
+
+    // we're sending to multiple clients so we ave multiple responses:
+    // - sent nothing if no one is connected
+    // - report what we sent what if there's only one connected client
+    // - assume we sent everything to everyone when multiple clients
+    return (client_count <= 1) ? ret : len;
+}
+
+void AP_Networking::Port::UDP_Server_Multi_Client::on_recv()
+{
+    uint32_t last_ip;
+    uint16_t last_port = 0;
+    if (!sock->last_recv_address(last_ip, last_port)) {
+        return;
+    }
+
+    // check if we know this address+port already, and if not determine what index we can use to treat it as a new client
+    uint8_t client_index = UINT8_MAX;
+    for (uint8_t i=0; i<ARRAY_SIZE(clients); i++) {
+        if (!clients[i].connected()) {
+            if (client_index == UINT8_MAX) {
+                client_index = i; // first empty slot
+            }
+        } else if (clients[i].ip == last_ip && clients[i].port == last_port) {
+            // port and ip matches: this data is from a client that is already in our list
+            clients[i].last_rx_ms = AP_HAL::millis();
+            return;
+        }
+    }
+
+    if (client_index < ARRAY_SIZE(clients)) {
+        // - it wasn't a client we already knew
+        // - we're not full
+        // - client_index is populated with an index of an available client slot
+
+        clients[client_index].connect(last_ip, last_port);
+        client_count++;
+
+        char last_ip_str[IP4_STR_LEN];
+        sock->inet_addr_to_str(last_ip, last_ip_str, sizeof(last_ip_str));
+
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UDP[%u] client %u connected %s:%u ", (unsigned)state_idx, (unsigned)client_index+1, last_ip_str, (unsigned)last_port);
+    }
+}
+
+bool AP_Networking::Port::UDP_Server_Multi_Client::update()
+{
+    if (client_count == 0) {
+        // nothing to do
+        return false;
+    }
+
+    // - disconnect clients who time out
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_update_ms < 100) {
+        return client_count > 0;
+    }
+    last_update_ms = now_ms;
+
+    for (uint8_t i=0; i<ARRAY_SIZE(clients); i++) {
+        if (clients[i].connected() && now_ms - clients[i].last_rx_ms >= 10000) {
+            char ip_str[IP4_STR_LEN];
+            sock->inet_addr_to_str(clients[i].ip, ip_str, sizeof(ip_str));
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UDP[%u] %s:%u client %u disconnected", unsigned(state_idx), ip_str, (unsigned)clients[i].port, (unsigned)i+1);
+            clients[i].disconnect();
+            client_count--;
+        }
+    }
+    return client_count > 0;
+}
+#endif // AP_NETWORKING_UDP_SERVER_MULTI_CLIENT_ENABLED
 
 /*
   available space in outgoing buffer
@@ -513,6 +622,7 @@ enum AP_HAL::UARTDriver::flow_control AP_Networking::Port::get_flow_control(void
         return AP_HAL::UARTDriver::FLOW_CONTROL_ENABLE;
     case NetworkPortType::UDP_CLIENT:
     case NetworkPortType::UDP_SERVER:
+    case NetworkPortType::UDP_SERVER_MULTI_CLIENT:
     case NetworkPortType::NONE:
         break;
     }
