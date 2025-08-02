@@ -535,7 +535,7 @@ void AP_Mount_Backend::calculate_poi()
         // iteratively move test_loc forward until its alt-above-sea-level is below terrain-alt-above-sea-level
         const float dist_increment_m = MAX(terrain->get_grid_spacing(), 10);
         const float mount_pitch_deg = degrees(quat.get_euler_pitch());
-        const float mount_yaw_ef_deg = wrap_180(degrees(quat.get_euler_yaw()) + degrees(ahrs.get_yaw_rad()));
+        const float mount_yaw_ef_deg = wrap_180(degrees(quat.get_euler_yaw()) + ahrs.get_yaw_deg());
         float total_dist_m = 0;
         bool get_terrain_alt_success = true;
         float prev_terrain_amsl_m = terrain_amsl_m;
