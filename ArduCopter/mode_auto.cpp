@@ -1446,7 +1446,7 @@ void PayloadPlace::run()
     case State::Descent:
         copter.flightmode->land_run_horizontal_control();
         // update altitude target and call position controller
-        pos_control->land_at_climb_rate_cm(-descent_speed_cms, true);
+        pos_control->land_at_climb_rate_cms(-descent_speed_cms, true);
         break;
     case State::Release:
     case State::Releasing:
@@ -1454,7 +1454,7 @@ void PayloadPlace::run()
     case State::Ascent_Start:
         copter.flightmode->land_run_horizontal_control();
         // update altitude target and call position controller
-        pos_control->land_at_climb_rate_cm(0.0, false);
+        pos_control->land_at_climb_rate_cms(0.0, false);
         break;
     case State::Ascent:
     case State::Done:
