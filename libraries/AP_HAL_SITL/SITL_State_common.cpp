@@ -265,6 +265,12 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         }
         inertiallabs = NEW_NOTHROW SITL::InertialLabs();
         return inertiallabs;
+    } else if (streq(name, "Xsens")) {
+        if (xsens != nullptr) {
+            AP_HAL::panic("Only one Xsens at a time");
+        }
+        xsens = NEW_NOTHROW SITL::Xsens();
+        return xsens;
 
 #if AP_SIM_AIS_ENABLED
     } else if (streq(name, "AIS")) {
@@ -406,6 +412,9 @@ void SITL_State_Common::sim_update(void)
     }
     if (inertiallabs != nullptr) {
         inertiallabs->update();
+    }
+    if (xsens != nullptr) {
+        xsens->update();
     }
 
 #if AP_SIM_AIS_ENABLED
