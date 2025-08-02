@@ -2021,10 +2021,11 @@ class TestSuite(ABC):
         self.last_sim_time_cached = 0
         self.last_sim_time_cached_wallclock = 0
 
-        # to autopilot we do not want to go to the internet for tiles,
+        # to autotest we do not want to go to the internet for tiles,
         # usually.  Set this to False to gather tiles from internet in
-        # the cae there are new tiles required, then add them to the
+        # the case there are new tiles required, then add them to the
         # repo and set this back to false:
+        # the files will likely be downloaded to ~/.tilecache/SRTM3
         self.terrain_in_offline_mode = True
         self.elevationmodel = mp_elevation.ElevationModel(
             cachedir=util.reltopdir("Tools/autotest/tilecache/srtm"),
@@ -8830,6 +8831,9 @@ Also, ignores heartbeats not from our target system'''
     def script_applet_source_path(self, scriptname):
         return os.path.join(self.rootdir(), "libraries", "AP_Scripting", "applets", scriptname)
 
+    def script_modules_source_path(self, scriptname):
+        return os.path.join(self.rootdir(), "libraries", "AP_Scripting", "modules", scriptname)
+
     def installed_script_path(self, scriptname):
         return os.path.join("scripts", os.path.basename(scriptname))
 
@@ -11586,6 +11590,7 @@ Also, ignores heartbeats not from our target system'''
         die if the data is not available - but
         self.terrain_in_offline_mode can be set to true in the
         constructor to change this behaviour
+        this should be called at the very top of your test context!
         '''
 
         def check_terrain_requests(mav, m):
