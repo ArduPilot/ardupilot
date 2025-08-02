@@ -1,6 +1,6 @@
 --[[
 SoarNav: an advanced feature for hunting thermals by Marco Robustini.
--- Version 0.9.41 - 2025/08/01
+-- Version 0.9.5 - 2025/08/02
 
 In early versions of SOAR mode in Ardupilot, which I collaborated on with
 the author, when the glider exited THERMAL mode the heading pointed
@@ -69,6 +69,13 @@ Key Features
   it initiates an automatic maneuver. It temporarily flies
   to an upwind position to then approach the original target from a more
   favorable trajectory.
+  
+- **Mid-flight Tactical Re-route**:
+  To introduce strategic unpredictability, the script can change target mid-flight.
+  When halfway to a destination, it checks if the path is long (e.g., over half the
+  area's max diameter) and the grid is not almost fully explored. If these conditions
+  are met, there is a random chance the script will abandon the current
+  target (returning it to the unvisited list) and navigate to a new unexplored cell.
 
 - **Adaptive Waypoint Timeout**:
   The script intelligently adjusts the maximum time allowed to reach a waypoint
@@ -130,6 +137,8 @@ Script Parameters (SNAV_*)
 ================================================================================
 CHANGELOG / DEVELOPER NOTES
 ================================================================================
+- v0.9.5 (2025/08/02): Added Mid-flight Tactical Re-route feature, shortened all
+  GCS log messages, minor cosmetic fix.
 - v0.9.41 (2025/08/01): Fixed a critical logic bug in the anti-stuck feature
   where the script would not re-engage the original waypoint after completing
   an upwind repositioning maneuver.
@@ -292,6 +301,8 @@ local SoarNavConstants = {
     ROLL_GESTURE_COUNT_TARGET = 4,
     ROLL_GESTURE_THRESHOLD = 0.5,
     ROLL_GESTURE_TIMEOUT_MS = 2000,
+    
+    mid_flight_reroute_chance = 33,
 
     rc_thresh_high = 1500,
     rc_opt_soaring_active = 88,
@@ -363,7 +374,10 @@ local SoarNavGlobals = {
     manual_override_active = false,
     force_grid_after_reset = false,
     cached_wind = nil,
-    wind_cache_time = 0
+    wind_cache_time = 0,
+    max_operational_distance = 0,
+    initial_distance_to_wp = -1,
+    reroute_check_armed = false
 }
 
 -- Checks if a Location object is inside the defined polygon using a ray-casting algorithm.
@@ -397,9 +411,7 @@ local function calculate_bearing(lat1, lon1, lat2, lon2)
     lat1 = tonumber(lat1); lon1 = tonumber(lon1)
     lat2 = tonumber(lat2); lon2 = tonumber(lon2)
     if not lat1 or not lon1 or not lat2 or not lon2 then
-        log_gcs(MAV_SEVERITY.NOTICE, 0,
-            string.format("calculate_bearing: invalid params lat1=%s lon1=%s lat2=%s lon2=%s",
-                          tostring(lat1), tostring(lon1), tostring(lat2), tostring(lon2)))
+        log_gcs(MAV_SEVERITY.NOTICE, 0, string.format("Bearing invalid params: %s %s %s %s.", tostring(lat1), tostring(lon1), tostring(lat2), tostring(lon2)))
         return 0
     end
     lat1 = math.rad(lat1)
@@ -473,7 +485,7 @@ local function validate_params()
     end
     local roll_limit = p_roll_limit:get()
     if roll_limit < 10 or roll_limit > 50 then
-        log_gcs(MAV_SEVERITY.WARNING, 1, "SNAV_ROLL_LIMIT is outside recommended range (10-50).")
+        log_gcs(MAV_SEVERITY.WARNING, 1, "SNAV_ROLL_LIMIT out of range (10-50).")
     end
     return all_valid
 end
@@ -524,9 +536,9 @@ end
 local function log_thermal_event(hotspot)
     local wind = get_wind_vector()
     if wind then
-        log_gcs(MAV_SEVERITY.INFO, 1, string.format("Thermal@%.5f,%.5f: %.1fm/s (max %.1fm/s, %s) Wind:%.1fm/s@%d", hotspot.loc:lat()/1e7, hotspot.loc:lng()/1e7, hotspot.avg_strength, hotspot.max_strength, hotspot.consistency, wind:length(), math.floor((math.deg(math.atan(wind:y(), wind:x())) + 360) % 360)))
+        log_gcs(MAV_SEVERITY.INFO, 1, string.format("Thermal: %.1fm/s (max %.1f, %s) W:%.1f@%d.", hotspot.avg_strength, hotspot.max_strength, hotspot.consistency, wind:length(), math.floor((math.deg(math.atan(wind:y(), wind:x())) + 360) % 360)))
     else
-        log_gcs(MAV_SEVERITY.INFO, 1, string.format("Thermal@%.5f,%.5f: %.1fm/s (max %.1fm/s, %s) Wind:N/A", hotspot.loc:lat()/1e7, hotspot.loc:lng()/1e7, hotspot.avg_strength, hotspot.max_strength, hotspot.consistency))
+        log_gcs(MAV_SEVERITY.INFO, 1, string.format("Thermal: %.1fm/s (max %.1f, %s) W:N/A.", hotspot.avg_strength, hotspot.max_strength, hotspot.consistency))
     end
 end
 
@@ -607,7 +619,7 @@ local function check_pitch_gesture()
     end
 
     if SoarNavGlobals.pitch_gesture_count >= SoarNavConstants.PITCH_GESTURE_COUNT_TARGET then
-        log_gcs(MAV_SEVERITY.NOTICE, 1, "Stick CMD: SoarNav area re-centered.")
+        log_gcs(MAV_SEVERITY.NOTICE, 1, "Stick CMD: Area re-centered.")
         SoarNavGlobals.dynamic_center_location = ahrs:get_location():copy()
         SoarNavGlobals.target_loc = nil
         SoarNavGlobals.grid_initialized = false
@@ -652,9 +664,9 @@ local function check_roll_gesture()
     if SoarNavGlobals.roll_gesture_count >= SoarNavConstants.ROLL_GESTURE_COUNT_TARGET then
         SoarNavGlobals.manual_override_active = not SoarNavGlobals.manual_override_active
         if SoarNavGlobals.manual_override_active then
-            log_gcs(MAV_SEVERITY.NOTICE, 1, "Stick CMD: Manual override activated (persistent).")
+            log_gcs(MAV_SEVERITY.NOTICE, 1, "Stick CMD: Manual override ON.")
         else
-            log_gcs(MAV_SEVERITY.NOTICE, 1, "Stick CMD: Manual override deactivated. Script will resume if sticks centered.")
+            log_gcs(MAV_SEVERITY.NOTICE, 1, "Stick CMD: Manual override OFF.")
         end
         SoarNavGlobals.roll_gesture_state = "idle"
         SoarNavGlobals.roll_gesture_count = 0
@@ -675,7 +687,8 @@ local function initialize_grid()
     SoarNavGlobals.grid_rows = 0
     SoarNavGlobals.grid_cols = 0
     SoarNavGlobals.grid_bounds = nil
-    log_gcs(MAV_SEVERITY.INFO, 1, "Starting grid initialization process...")
+    SoarNavGlobals.max_operational_distance = 0
+    log_gcs(MAV_SEVERITY.INFO, 1, "Grid init started...")
 end
 
 -- Manages the multi-step, non-blocking grid generation and validation.
@@ -683,27 +696,48 @@ local function manage_grid_initialization()
     if not SoarNavGlobals.is_initializing then return end
     local active_center = get_active_center_location()
     if not active_center then
-        log_gcs(MAV_SEVERITY.ERROR, 0, "Grid init failed: active center not available.")
+        log_gcs(MAV_SEVERITY.ERROR, 0, "Grid init failed: no active center.")
         SoarNavGlobals.is_initializing = false
         SoarNavGlobals.grid_init_step = 0
         return
     end
 
     if SoarNavGlobals.grid_init_step == 1 then
+        local height_m = 0
+        local width_m = 0
+
         if SoarNavGlobals.use_polygon_area and SoarNavGlobals.polygon_bounds then
             SoarNavGlobals.grid_bounds = SoarNavGlobals.polygon_bounds
+            local max_dist_sq = 0
+            local poly_pts = SoarNavGlobals.polygon_points
+            if poly_pts and #poly_pts > 1 then
+                for i = 1, #poly_pts do
+                    for j = i + 1, #poly_pts do
+                        local dist = poly_pts[i]:get_distance(poly_pts[j])
+                        local dist_sq = dist * dist
+                        if dist_sq > max_dist_sq then
+                            max_dist_sq = dist_sq
+                        end
+                    end
+                end
+                SoarNavGlobals.max_operational_distance = math.sqrt(max_dist_sq)
+                log_gcs(MAV_SEVERITY.INFO, 2, string.format("Polygon max distance calculated: %.0fm.", SoarNavGlobals.max_operational_distance))
+            end
         else
             local max_dist = p_max_dist:get()
             local corner_dist = max_dist * 1.4142
-            local sw_corner_loc = active_center:copy()
-            sw_corner_loc:offset_bearing(225, corner_dist)
-            local ne_corner_loc = active_center:copy()
-            ne_corner_loc:offset_bearing(45, corner_dist)
+            local sw_corner_loc_calc = active_center:copy()
+            sw_corner_loc_calc:offset_bearing(225, corner_dist)
+            local ne_corner_loc_calc = active_center:copy()
+            ne_corner_loc_calc:offset_bearing(45, corner_dist)
             SoarNavGlobals.grid_bounds = {
-                min_lat = sw_corner_loc:lat(), max_lat = ne_corner_loc:lat(),
-                min_lon = sw_corner_loc:lng(), max_lon = ne_corner_loc:lng()
+                min_lat = sw_corner_loc_calc:lat(), max_lat = ne_corner_loc_calc:lat(),
+                min_lon = sw_corner_loc_calc:lng(), max_lon = ne_corner_loc_calc:lng()
             }
+            SoarNavGlobals.max_operational_distance = (max_dist or 0) * 2
+            log_gcs(MAV_SEVERITY.INFO, 2, string.format("Radius max diameter calculated: %.0fm.", SoarNavGlobals.max_operational_distance))
         end
+        
         local sw_corner_loc = active_center:copy()
         sw_corner_loc:lat(SoarNavGlobals.grid_bounds.min_lat)
         sw_corner_loc:lng(SoarNavGlobals.grid_bounds.min_lon)
@@ -711,20 +745,23 @@ local function manage_grid_initialization()
         ne_corner_loc:lat(SoarNavGlobals.grid_bounds.max_lat)
         ne_corner_loc:lng(SoarNavGlobals.grid_bounds.max_lon)
         local xy = sw_corner_loc:get_distance_NE(ne_corner_loc)
-        local height_m = xy:x()
-        local width_m = xy:y()
+        height_m = xy:x()
+        width_m = xy:y()
+
         if height_m < 1 or width_m < 1 then
-            log_gcs(MAV_SEVERITY.ERROR, 0, "Grid area is too small. Initialization aborted.")
+            log_gcs(MAV_SEVERITY.ERROR, 0, "Grid area too small. Init aborted.")
             SoarNavGlobals.is_initializing = false
             SoarNavGlobals.grid_init_step = 0
             return
         end
+
         local area_m2 = height_m * width_m
         local approx_cell_size_m = math.sqrt(area_m2 / SoarNavConstants.max_total_grid_cells)
         local final_cell_size_m = math.max(SoarNavConstants.min_cell_size_m, approx_cell_size_m)
         SoarNavGlobals.grid_rows = math.max(1, math.floor(height_m / final_cell_size_m))
         SoarNavGlobals.grid_cols = math.max(1, math.floor(width_m / final_cell_size_m))
         SoarNavGlobals.grid_init_step = 2
+
     elseif SoarNavGlobals.grid_init_step == 2 then
         local total_cells = SoarNavGlobals.grid_rows * SoarNavGlobals.grid_cols
         local cells_processed = 0
@@ -790,7 +827,7 @@ local function manage_grid_initialization()
             for _, v in ipairs(SoarNavGlobals.valid_cell_indices) do
                 table.insert(SoarNavGlobals.unvisited_cell_indices, v)
             end
-            log_gcs(MAV_SEVERITY.INFO, 1, string.format("Grid validation done: %d valid cells.", #SoarNavGlobals.valid_cell_indices))
+            log_gcs(MAV_SEVERITY.INFO, 1, string.format("Grid validated: %d cells.", #SoarNavGlobals.valid_cell_indices))
             log_gcs(MAV_SEVERITY.NOTICE, 1, "Exploration grid ready.")
         end
     end
@@ -837,7 +874,7 @@ end
 local function stop_and_record_thermal()
     SoarNavGlobals.is_monitoring_thermal = false
     if not SoarNavGlobals.current_thermal_stats or not SoarNavGlobals.current_thermal_stats.entry_location or SoarNavGlobals.current_thermal_stats.sample_count == 0 then
-        log_gcs(MAV_SEVERITY.WARNING, 1, "Thermal exit detected, but no valid data sampled.")
+        log_gcs(MAV_SEVERITY.WARNING, 1, "Thermal exit: no data sampled.")
         return
     end
     local avg_strength = SoarNavGlobals.current_thermal_stats.total_strength / SoarNavGlobals.current_thermal_stats.sample_count
@@ -894,14 +931,14 @@ local function stop_and_record_thermal()
     }
     local new_cell = get_cell_index_from_location(hotspot_loc)
     if not new_cell then
-       log_gcs(MAV_SEVERITY.INFO, 1, "Cell index fail, fallback")
+       log_gcs(MAV_SEVERITY.INFO, 1, "Cell index fail, fallback.")
        new_cell = -1
     end
     new_hotspot.cell = new_cell
     for _, existing in ipairs(SoarNavGlobals.thermal_hotspots) do
         local existing_cell = get_cell_index_from_location(existing.loc)
         if existing_cell == new_cell then
-            log_gcs(MAV_SEVERITY.INFO, 1, string.format("Thermal ignored: duplicate in cell %d", new_cell))
+            log_gcs(MAV_SEVERITY.INFO, 1, string.format("Thermal ignored: duplicate in cell %d.", new_cell))
             SoarNavGlobals.current_thermal_stats = {}
             return
         end
@@ -910,10 +947,10 @@ local function stop_and_record_thermal()
     SoarNavGlobals.last_used_hotspot_timestamp = timestamp_saved
     if #SoarNavGlobals.thermal_hotspots > SoarNavConstants.max_hotspots then
         table.sort(SoarNavGlobals.thermal_hotspots, function(a, b)
-            return (a.avg_strength or 0) < (b.avg_strength or 0)
+            return (a.avg_strength or 0) < (a.avg_strength or 0)
         end)
         table.remove(SoarNavGlobals.thermal_hotspots, 1)
-        log_gcs(MAV_SEVERITY.INFO, 2, "Weakest thermal removed from memory.")
+        log_gcs(MAV_SEVERITY.INFO, 2, "Weakest thermal removed.")
     end
     log_thermal_event(new_hotspot)
     SoarNavGlobals.current_thermal_stats = {}
@@ -942,7 +979,7 @@ end
 local function start_thermal_monitoring()
     local loc = ahrs:get_location()
     if not loc then
-        log_gcs(MAV_SEVERITY.WARNING, 1, "Cannot start thermal monitoring, location unavailable.")
+        log_gcs(MAV_SEVERITY.WARNING, 1, "Can't monitor thermal: no location.")
         return
     end
     SoarNavGlobals.is_monitoring_thermal = true
@@ -978,7 +1015,7 @@ end
 local function read_polygon_file(filename)
     local f = io.open(filename, "r")
     if not f then
-        log_gcs(MAV_SEVERITY.ERROR, 0, string.format("Could not open polygon file %s.", filename))
+        log_gcs(MAV_SEVERITY.ERROR, 0, string.format("Can't open polygon file %s.", filename))
         return nil
     end
 
@@ -986,7 +1023,7 @@ local function read_polygon_file(filename)
     SoarNavGlobals.polygon_bounds = {min_lat = 91 * 1e7, max_lat = -91 * 1e7, min_lon = 181 * 1e7, max_lon = -181 * 1e7}
     local home = ahrs:get_home()
     if not home then
-        log_gcs(MAV_SEVERITY.ERROR, 0, "Could not read polygon file, home not set.")
+        log_gcs(MAV_SEVERITY.ERROR, 0, "Can't read polygon: home not set.")
         f:close()
         return nil
     end
@@ -1013,7 +1050,7 @@ local function read_polygon_file(filename)
     f:close()
 
     if #SoarNavGlobals.polygon_points < 3 then
-        log_gcs(MAV_SEVERITY.ERROR, 0, string.format("Polygon file %s has less than 3 valid points. Reverting to radial.", filename))
+        log_gcs(MAV_SEVERITY.ERROR, 0, string.format("Poly file %s < 3 pts. Using radius.", filename))
         SoarNavGlobals.polygon_bounds = nil
         return nil
     end
@@ -1027,7 +1064,7 @@ local function read_polygon_file(filename)
             log_gcs(MAV_SEVERITY.INFO, 2, "Auto-closed polygon.")
         end
     end
-    log_gcs(MAV_SEVERITY.NOTICE, 1, string.format("Polygon loaded: %d points", #SoarNavGlobals.polygon_points))
+    log_gcs(MAV_SEVERITY.NOTICE, 1, string.format("Polygon loaded: %d points.", #SoarNavGlobals.polygon_points))
     prepare_polygon_xy_cache()
     return true
 end
@@ -1058,15 +1095,9 @@ end
 -- Formats and logs the details for a newly generated waypoint.
 local function log_new_waypoint(dist_to_wp)
     local d = tonumber(dist_to_wp) or 0
-    log_gcs(MAV_SEVERITY.NOTICE, 1,
-        string.format("New WP: %s | Dist: %.0fm",
-                      SoarNavGlobals.g_waypoint_source_info,
-                      d))
+    log_gcs(MAV_SEVERITY.NOTICE, 1, string.format("New WP: %s | Dist: %.0fm.", SoarNavGlobals.g_waypoint_source_info, d))
     if SoarNavGlobals.target_loc ~= nil then
-        log_gcs(MAV_SEVERITY.NOTICE, 2,
-        string.format(" > Target: %.5f, %.5f",
-                      SoarNavGlobals.target_loc:lat()/1e7,
-                      SoarNavGlobals.target_loc:lng()/1e7))
+        log_gcs(MAV_SEVERITY.NOTICE, 2, string.format(" > Target: %.5f, %.5f.", SoarNavGlobals.target_loc:lat()/1e7, SoarNavGlobals.target_loc:lng()/1e7))
     end
 end
 
@@ -1136,14 +1167,14 @@ local function select_best_thermal_waypoint()
 
     if is_valid_target then
         if drift_dist > 0 then
-            log_gcs(MAV_SEVERITY.INFO, 1, string.format("LOW ENERGY: Best thermal drifted %.0fm. Targeting new pos.", drift_dist))
+            log_gcs(MAV_SEVERITY.INFO, 1, string.format("LOW ENERGY: Best thermal drifted %.0fm.", drift_dist))
         end
         SoarNavGlobals.target_loc = drifted_loc
-        SoarNavGlobals.g_waypoint_source_info = string.format("Best Thermal (Drifted, %.1fm/s)", best_hotspot.avg_strength)
+        SoarNavGlobals.g_waypoint_source_info = string.format("BestThrm(Drift, +%.1f)", best_hotspot.avg_strength)
         SoarNavGlobals.last_used_hotspot_timestamp = best_hotspot.timestamp
         return true
     else
-        log_gcs(MAV_SEVERITY.INFO, 1, "Best thermal is outside current flight area. Ignoring.")
+        log_gcs(MAV_SEVERITY.INFO, 1, "Best thermal out of area. Ignoring.")
         return false
     end
 end
@@ -1156,10 +1187,10 @@ local function search_for_new_waypoint()
     local energy_status = assess_energy_state()
 
     if energy_status == "LOW" or energy_status == "CRITICAL" then
-        log_gcs(MAV_SEVERITY.INFO, 2, string.format("Energy State: %s. Evaluating options...", energy_status))
+        log_gcs(MAV_SEVERITY.INFO, 2, string.format("Energy State: %s. Evaluating...", energy_status))
         local valid_hotspots = clean_and_get_hotspots()
         if #valid_hotspots > 0 and select_best_thermal_waypoint() then
-            log_gcs(MAV_SEVERITY.INFO, 2, "Select best thermal waypoint SUCCESS.")
+            log_gcs(MAV_SEVERITY.INFO, 2, "Best thermal selected.")
             SoarNavGlobals.waypoint_start_time_ms = millis()
             SoarNavGlobals.waypoint_search_in_progress = false
             SoarNavGlobals.last_commanded_roll_deg = 0
@@ -1168,18 +1199,20 @@ local function search_for_new_waypoint()
             if loc then
                 local dist_to_wp = loc:get_distance(SoarNavGlobals.target_loc)
                 log_new_waypoint(dist_to_wp)
+                SoarNavGlobals.initial_distance_to_wp = dist_to_wp
+                SoarNavGlobals.reroute_check_armed = true
             end
             return
         else
             if #valid_hotspots > 0 then
-                log_gcs(MAV_SEVERITY.INFO, 1, "Thermal selection failed, emergency search.")
+                log_gcs(MAV_SEVERITY.INFO, 1, "Thermal select failed, emergency grid.")
             else
-                log_gcs(MAV_SEVERITY.INFO, 2, "No thermals, emergency exploration.")
+                log_gcs(MAV_SEVERITY.INFO, 2, "No thermals, emergency grid.")
             end
-            SoarNavGlobals.g_waypoint_source_info = string.format("Grid (%s Alt)", energy_status)
+            SoarNavGlobals.g_waypoint_source_info = string.format("Grid (Alt: %s)", energy_status)
         end
     else
-        log_gcs(MAV_SEVERITY.INFO, 2, "Altitude OK. Engaging standard search.")
+        log_gcs(MAV_SEVERITY.INFO, 2, "Alt OK. Standard search.")
     end
 
     local now_ms = millis()
@@ -1212,7 +1245,7 @@ local function search_for_new_waypoint()
             end
             if #valid_hotspots == 0 and #valid_hotspots_raw > 0 then
                 valid_hotspots = valid_hotspots_raw
-                log_gcs(MAV_SEVERITY.INFO, 2, "Only one hotspot available, allowing re-selection.")
+                log_gcs(MAV_SEVERITY.INFO, 2, "Only one hotspot, re-selection OK.")
             end
         else
             valid_hotspots = valid_hotspots_raw
@@ -1221,7 +1254,7 @@ local function search_for_new_waypoint()
         if #valid_hotspots > 0 and math.random(1, 100) <= dynamic_tmem_chance and not SoarNavGlobals.force_grid_after_reset then
             use_hotspot_logic = true
         elseif #valid_hotspots == 0 and #valid_hotspots_raw > 0 and not SoarNavGlobals.logged_ignore_message then
-            log_gcs(MAV_SEVERITY.INFO, 1, "Ignoring last thermal, using grid.")
+            log_gcs(MAV_SEVERITY.INFO, 1, "Last thermal ignored, using grid.")
             SoarNavGlobals.logged_ignore_message = true
         end
     end
@@ -1281,22 +1314,22 @@ local function search_for_new_waypoint()
                 end
 
                 if is_valid_target then
-                    log_gcs(MAV_SEVERITY.INFO, 2, string.format("Targeting hotspot: avg %.1fm/s", selected_hotspot.avg_strength or 0))
-                    log_gcs(MAV_SEVERITY.INFO, 2, string.format("Drift prediction. Age: %.1fs, Dist: %.1fm", age_seconds, drift_dist))
+                    log_gcs(MAV_SEVERITY.INFO, 2, string.format("Targeting hotspot: avg %.1fm/s.", selected_hotspot.avg_strength or 0))
+                    log_gcs(MAV_SEVERITY.INFO, 2, string.format("Drift prediction. Age: %.1fs, Dist: %.1fm.", age_seconds, drift_dist))
                     SoarNavGlobals.current_selected_hotspot = selected_hotspot
                     SoarNavGlobals.target_loc = candidate_loc
                     new_wp_found = true
-                    source_for_log = string.format("Drifting Thermal (Avg: %.1fm/s)", selected_hotspot.avg_strength or 0)
+                    source_for_log = string.format("DriftThrm(+%.1f)", selected_hotspot.avg_strength or 0)
                 end
             end
         elseif selected_hotspot then
-            log_gcs(MAV_SEVERITY.WARNING, 1, "Selected hotspot has nil timestamp, skipping.")
+            log_gcs(MAV_SEVERITY.WARNING, 1, "Selected hotspot has no timestamp.")
         end
     end
 
     if not new_wp_found then
         if not SoarNavGlobals.grid_initialized or not SoarNavGlobals.valid_cell_indices or #SoarNavGlobals.valid_cell_indices == 0 then
-            log_gcs(MAV_SEVERITY.WARNING, 1, "Grid not ready or no valid cells, using random fallback.")
+            log_gcs(MAV_SEVERITY.WARNING, 1, "Grid not ready, using random WP.")
             source_for_log = "Random Fallback"
             local center_point_loc = get_active_center_location()
             if center_point_loc then
@@ -1310,7 +1343,7 @@ local function search_for_new_waypoint()
             end
         else
             if #SoarNavGlobals.unvisited_cell_indices == 0 then
-                log_gcs(MAV_SEVERITY.NOTICE, 1, "Exploration complete, resetting.")
+                log_gcs(MAV_SEVERITY.NOTICE, 1, "Exploration complete. Resetting grid.")
                 for _, cell_idx in ipairs(SoarNavGlobals.valid_cell_indices) do
                     if cell_idx and cell_idx > 0 and cell_idx <= #SoarNavGlobals.grid_cells and SoarNavGlobals.grid_cells[cell_idx] then
                         SoarNavGlobals.grid_cells[cell_idx].visit_count = 0
@@ -1344,7 +1377,7 @@ local function search_for_new_waypoint()
                 new_wp_found = true
                 source_for_log = string.format("Cell: %d", chosen_cell_index)
             else
-                log_gcs(MAV_SEVERITY.INFO, 2, "No unexplored valid cells found. Waiting for new conditions.")
+                log_gcs(MAV_SEVERITY.INFO, 2, "No unexplored cells found.")
                 return
             end
         end
@@ -1363,6 +1396,8 @@ local function search_for_new_waypoint()
         if loc and SoarNavGlobals.target_loc then
             local dist_to_wp = loc:get_distance(SoarNavGlobals.target_loc)
             log_new_waypoint(dist_to_wp)
+            SoarNavGlobals.initial_distance_to_wp = dist_to_wp
+            SoarNavGlobals.reroute_check_armed = true
         end
     end
 end
@@ -1387,7 +1422,7 @@ update_body = function()
     local current_snav_max_dist = p_max_dist:get()
 
     if current_snav_max_dist ~= SoarNavGlobals.last_snav_max_dist_value then
-        log_gcs(MAV_SEVERITY.INFO, 1, string.format("SNAV_MAX_DIST changed from %.0f to %.0f. Re-initializing grid.", SoarNavGlobals.last_snav_max_dist_value, current_snav_max_dist))
+        log_gcs(MAV_SEVERITY.INFO, 1, string.format("SNAV_MAX_DIST changed from %.0f to %.0f. Re-init grid.", SoarNavGlobals.last_snav_max_dist_value, current_snav_max_dist))
         SoarNavGlobals.target_loc = nil
         SoarNavGlobals.is_initializing = false
         SoarNavGlobals.grid_initialized = false
@@ -1396,7 +1431,7 @@ update_body = function()
             SoarNavGlobals.use_polygon_area = false
             SoarNavGlobals.polygon_points = {}
             SoarNavGlobals.polygon_bounds = nil
-            log_gcs(MAV_SEVERITY.NOTICE, 1, string.format("Radius Mode: %.0fm", current_snav_max_dist))
+            log_gcs(MAV_SEVERITY.NOTICE, 1, string.format("Radius Mode: %.0fm.", current_snav_max_dist))
             if SoarNavGlobals.last_snav_max_dist_value == 0 then
                 SoarNavGlobals.dynamic_center_location = ahrs:get_location():copy()
                 if SoarNavGlobals.dynamic_center_location then
@@ -1443,7 +1478,7 @@ update_body = function()
         SoarNavGlobals.rc4_max = param:get('RC4_MAX') or 2000
         SoarNavGlobals.rc4_trim = param:get('RC4_TRIM') or 1500
         SoarNavGlobals.rc_limits_read = true
-        log_gcs(MAV_SEVERITY.INFO, 1, string.format("RC1/RC2/RC4 limits read."))
+        log_gcs(MAV_SEVERITY.INFO, 1, "RC1/RC2/RC4 limits read.")
     end
 
     local loc = ahrs:get_location()
@@ -1482,7 +1517,7 @@ update_body = function()
     local pitch_ch_obj = rc:get_channel(pitch_ch)
     local yaw_ch_obj   = rc:get_channel(yaw_ch)
     if not roll_ch_obj or not pitch_ch_obj or not yaw_ch_obj then
-        log_gcs(MAV_SEVERITY.ERROR, 0, "Invalid RC channel mapping")
+        log_gcs(MAV_SEVERITY.ERROR, 0, "Invalid RC channel mapping.")
         return update, 100
     end
 
@@ -1580,27 +1615,93 @@ update_body = function()
     if SoarNavGlobals.script_state == SCRIPT_STATE.NAVIGATING then
         if not SoarNavGlobals.target_loc then
             if not SoarNavGlobals.waypoint_search_in_progress then
-                log_gcs(MAV_SEVERITY.INFO, 1, "Searching for a new waypoint...")
+                log_gcs(MAV_SEVERITY.INFO, 1, "Searching for new waypoint...")
                 SoarNavGlobals.waypoint_search_in_progress = true
             end
             search_for_new_waypoint()
         else
+            SoarNavGlobals.distance_to_wp = loc:get_distance(SoarNavGlobals.target_loc)
+
+            if SoarNavGlobals.reroute_check_armed and SoarNavGlobals.initial_distance_to_wp > 0 and SoarNavGlobals.distance_to_wp <= (SoarNavGlobals.initial_distance_to_wp / 2) then
+                SoarNavGlobals.reroute_check_armed = false
+
+                local function check_tactical_reroute_conditions()
+                    local min_path_for_reroute = SoarNavGlobals.max_operational_distance / 2
+                    if SoarNavGlobals.initial_distance_to_wp <= min_path_for_reroute then
+                        log_gcs(MAV_SEVERITY.INFO, 2, string.format("Reroute skipped: path < %.0fm.", min_path_for_reroute))
+                        return false
+                    end
+
+                    local total_valid_cells = #SoarNavGlobals.valid_cell_indices
+                    if total_valid_cells == 0 then return false end
+                    local unvisited_count = #SoarNavGlobals.unvisited_cell_indices
+                    
+                    if unvisited_count <= 1 then
+                        log_gcs(MAV_SEVERITY.INFO, 2, "Reroute skipped: no cells remain.")
+                        return false
+                    end
+
+                    local explored_ratio = (total_valid_cells - unvisited_count) / total_valid_cells
+                    if explored_ratio >= 0.9 then
+                        log_gcs(MAV_SEVERITY.INFO, 2, "Reroute skipped: grid >90% explored.")
+                        return false
+                    end
+
+                    if math.random(1, 100) > SoarNavConstants.mid_flight_reroute_chance then
+                        log_gcs(MAV_SEVERITY.INFO, 2, string.format("Reroute skipped: probability check (%d%%).", SoarNavConstants.mid_flight_reroute_chance))
+                        return false
+                    end
+                    
+                    return true
+                end
+
+                if check_tactical_reroute_conditions() then
+                    log_gcs(MAV_SEVERITY.NOTICE, 1, "Tactical reroute engaged.")
+            
+                    local old_target_cell = get_cell_index_from_location(SoarNavGlobals.target_loc)
+                    if old_target_cell and SoarNavGlobals.grid_cells[old_target_cell] then
+                        local already_in_list = false
+                        for _, cell in ipairs(SoarNavGlobals.unvisited_cell_indices) do
+                            if cell == old_target_cell then
+                                already_in_list = true
+                                break
+                            end
+                        end
+                        if not already_in_list then
+                           table.insert(SoarNavGlobals.unvisited_cell_indices, old_target_cell)
+                           log_gcs(MAV_SEVERITY.INFO, 2, string.format("Cell %d returned to unvisited list.", old_target_cell))
+                        end
+                    end
+            
+                    SoarNavGlobals.target_loc = nil
+                    SoarNavGlobals.waypoint_search_in_progress = true
+                    SoarNavGlobals.initial_distance_to_wp = -1
+            
+                    return update, 200
+                end
+            end
+
             local time_on_current_wp = current_time_ms:toint() - SoarNavGlobals.waypoint_start_time_ms:toint()
             if SoarNavGlobals.waypoint_start_time_ms:toint() > 0 and time_on_current_wp > get_wp_timeout() then
-                log_gcs(MAV_SEVERITY.WARNING, 1, "Waypoint timeout. Generating new WP.")
+                log_gcs(MAV_SEVERITY.WARNING, 1, "WP Timeout. New WP.")
                 SoarNavGlobals.target_loc = nil
                 SoarNavGlobals.waypoint_search_in_progress = true
                 SoarNavGlobals.is_repositioning = false
                 return update, 200
             end
 
-            if SoarNavGlobals.distance_to_wp ~= -1 and SoarNavGlobals.distance_to_wp < (p_wp_radius:get()) then
+            if SoarNavGlobals.distance_to_wp < (p_wp_radius:get()) then
                 if SoarNavGlobals.is_repositioning then
-                    log_gcs(MAV_SEVERITY.INFO, 1, "Repositioned. Re-engaging original target.")
+                    log_gcs(MAV_SEVERITY.INFO, 1, "Repositioned. Re-engaging target.")
                     SoarNavGlobals.target_loc = SoarNavGlobals.original_target_loc
                     SoarNavGlobals.is_repositioning = false
                     SoarNavGlobals.original_target_loc = nil
                     SoarNavGlobals.waypoint_start_time_ms = millis()
+                    local current_loc = ahrs:get_location()
+                    if current_loc and SoarNavGlobals.target_loc then
+                       SoarNavGlobals.initial_distance_to_wp = current_loc:get_distance(SoarNavGlobals.target_loc)
+                       SoarNavGlobals.reroute_check_armed = true
+                    end
                     SoarNavGlobals.distance_to_wp = -1
                     SoarNavGlobals.stuck_counter = 0
                     SoarNavGlobals.last_progress_check_ms = 0
@@ -1608,7 +1709,7 @@ update_body = function()
                 else
                     log_gcs(MAV_SEVERITY.INFO, 1, "Waypoint reached.")
                     if SoarNavGlobals.current_selected_hotspot
-                       and string.find(SoarNavGlobals.g_waypoint_source_info, "Drifting Thermal") then
+                       and string.find(SoarNavGlobals.g_waypoint_source_info, "DriftThrm") then
                         local hotspot_to_check
                         for i, hotspot in ipairs(SoarNavGlobals.thermal_hotspots) do
                             if hotspot.timestamp == SoarNavGlobals.current_selected_hotspot.timestamp then
@@ -1621,9 +1722,9 @@ update_body = function()
                             hotspot_to_check.failed_attempts = (hotspot_to_check.failed_attempts or 0) + 1
                             if hotspot_to_check.failed_attempts >= 2 then
                                 table.remove(SoarNavGlobals.thermal_hotspots, i)
-                                log_gcs(MAV_SEVERITY.INFO, 1, string.format("Thermal removed (failed attempts: %d).", hotspot_to_check.failed_attempts))
+                                log_gcs(MAV_SEVERITY.INFO, 1, string.format("Thermal removed (attempts: %d).", hotspot_to_check.failed_attempts))
                             else
-                                log_gcs(MAV_SEVERITY.INFO, 1, string.format("Thermal not found, retrying (attempt %d).", hotspot_to_check.failed_attempts))
+                                log_gcs(MAV_SEVERITY.INFO, 1, string.format("Thermal not found (attempt %d).", hotspot_to_check.failed_attempts))
                             end
                         end
                         SoarNavGlobals.current_selected_hotspot = nil
@@ -1642,7 +1743,7 @@ update_body = function()
                         local progress_made = SoarNavGlobals.distance_at_last_check - SoarNavGlobals.distance_to_wp
                         if progress_made < SoarNavConstants.STUCK_MIN_PROGRESS_M then
                             SoarNavGlobals.stuck_counter = SoarNavGlobals.stuck_counter + 1
-                            log_gcs(MAV_SEVERITY.INFO, 2, string.format("Stuck counter: %d", SoarNavGlobals.stuck_counter))
+                            log_gcs(MAV_SEVERITY.INFO, 2, string.format("Stuck counter: %d.", SoarNavGlobals.stuck_counter))
                         else
                             SoarNavGlobals.stuck_counter = 0
                         end
@@ -1661,7 +1762,7 @@ update_body = function()
                 local current_loc = ahrs:get_location()
                 if wind_vec and current_loc then
                     local repo_dist_m = math.max(150, math.min(700, wind_speed * 60))
-                    log_gcs(MAV_SEVERITY.INFO, 1, string.format("Stuck detected. Repositioning upwind, adaptive distance: %.0fm", repo_dist_m))
+                    log_gcs(MAV_SEVERITY.INFO, 1, string.format("Stuck. Repositioning upwind %.0fm.", repo_dist_m))
                     local wind_heading_rad = wind_vec:xy():angle()
                     local upwind_bearing = (math.deg(wind_heading_rad) + 180 + 360) % 360
                     local repo_loc = current_loc:copy()
@@ -1671,7 +1772,9 @@ update_body = function()
                     SoarNavGlobals.stuck_counter = 0
                     SoarNavGlobals.last_progress_check_ms = 0
                     SoarNavGlobals.distance_at_last_check = -1
-                    log_gcs(MAV_SEVERITY.INFO, 1, "New tactical WP set upwind.")
+                    SoarNavGlobals.initial_distance_to_wp = -1
+                    SoarNavGlobals.reroute_check_armed = false
+                    log_gcs(MAV_SEVERITY.INFO, 1, "Tactical upwind WP set.")
                 else
                     SoarNavGlobals.is_repositioning = false
                     SoarNavGlobals.target_loc = nil
@@ -1685,7 +1788,6 @@ update_body = function()
             local heading_error = (target_heading - current_heading + 540) % 360 - 180
             if SoarNavGlobals.last_grid_update_ms == 0 or (current_time_ms:toint() - SoarNavGlobals.last_grid_update_ms) > SoarNavConstants.grid_update_interval_ms then
                 update_visited_cell()
-                SoarNavGlobals.distance_to_wp =  loc:get_distance(SoarNavGlobals.target_loc)
                 SoarNavGlobals.last_grid_update_ms = current_time_ms:toint()
                 if (p_log_lvl:get()) >= 2 then
                     local roll_limit_for_log = p_roll_limit:get()
