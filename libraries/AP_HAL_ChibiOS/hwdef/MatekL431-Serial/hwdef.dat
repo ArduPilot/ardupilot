@@ -17,3 +17,4 @@ define HAL_USE_ADC FALSE
 # make the UARTn numbers in parameters match the silkscreen
 undef SERIAL_ORDER
 SERIAL_ORDER EMPTY USART1 USART2 USART3
+USE_BOOTLOADER_FROM_BOARD MatekL431
