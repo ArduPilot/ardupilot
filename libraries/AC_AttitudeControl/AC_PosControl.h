@@ -222,12 +222,12 @@ public:
 
     // Sets vertical correction velocity and acceleration limits (cm/s, cm/s²).
     // Should only be called during initialization to avoid discontinuities.
-    // See set_correction_speed_accel_U_mss() for full details.
-    void set_correction_speed_accel_U_cmss(float speed_down_cms, float speed_up_cms, float accel_cmss);
+    // See set_correction_speed_accel_U_m() for full details.
+    void set_correction_speed_accel_U_cm(float speed_down_cms, float speed_up_cms, float accel_cmss);
 
     // Sets vertical correction velocity and acceleration limits (m/s, m/s²).
     // These values constrain the correction output of the PID controller.
-    void set_correction_speed_accel_U_mss(float speed_down_ms, float speed_up_ms, float accel_mss);
+    void set_correction_speed_accel_U_m(float speed_down_ms, float speed_up_ms, float accel_mss);
 
     // Returns maximum vertical acceleration in cm/s².
     // See get_max_accel_U_mss() for full details.
@@ -312,12 +312,12 @@ public:
 
     // Descends at a given rate (cm/s) using jerk-limited shaping for landing.
     // If `ignore_descent_limit` is true, descent output is not limited by the configured max.
-    // See land_at_climb_rate_m() for full details.
-    void land_at_climb_rate_cm(float vel_u_cms, bool ignore_descent_limit);
+    // See land_at_climb_rate_ms() for full details.
+    void land_at_climb_rate_cms(float vel_u_cms, bool ignore_descent_limit);
 
     // Descends at a given rate (m/s) using jerk-limited shaping for landing.
     // Used during final descent phase to ensure smooth touchdown.
-    void land_at_climb_rate_m(float vel_u_ms, bool ignore_descent_limit);
+    void land_at_climb_rate_ms(float vel_u_ms, bool ignore_descent_limit);
 
     // Sets vertical position, velocity, and acceleration in cm using jerk-limited shaping.
     // See input_pos_vel_accel_U_m() for full details.

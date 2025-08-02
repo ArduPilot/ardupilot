@@ -58,7 +58,7 @@ void AutoTune::run()
  */
 float AutoTune::get_pilot_desired_climb_rate_cms(void) const
 {
-    float target_climb_rate_cms = copter.get_pilot_desired_climb_rate();
+    float target_climb_rate_cms = copter.get_pilot_desired_climb_rate_cms();
 
     // get avoidance adjusted climb rate
     target_climb_rate_cms = copter.mode_autotune.get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
@@ -83,7 +83,7 @@ void AutoTune::init_z_limits()
 {
     // set vertical speed and acceleration limits
     copter.pos_control->set_max_speed_accel_U_cm(-copter.get_pilot_speed_dn(), copter.g.pilot_speed_up, copter.g.pilot_accel_z);
-    copter.pos_control->set_correction_speed_accel_U_cmss(-copter.get_pilot_speed_dn(), copter.g.pilot_speed_up, copter.g.pilot_accel_z);
+    copter.pos_control->set_correction_speed_accel_U_cm(-copter.get_pilot_speed_dn(), copter.g.pilot_speed_up, copter.g.pilot_accel_z);
 }
 
 #if HAL_LOGGING_ENABLED

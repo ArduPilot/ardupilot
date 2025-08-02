@@ -818,15 +818,15 @@ void AC_PosControl::set_max_speed_accel_U_m(float speed_down_ms, float speed_up_
 
 // Sets vertical correction velocity and acceleration limits (cm/s, cm/s²).
 // Should only be called during initialization to avoid discontinuities.
-// See set_correction_speed_accel_U_mss() for full details.
-void AC_PosControl::set_correction_speed_accel_U_cmss(float speed_down_cms, float speed_up_cms, float accel_cmss)
+// See set_correction_speed_accel_U_m() for full details.
+void AC_PosControl::set_correction_speed_accel_U_cm(float speed_down_cms, float speed_up_cms, float accel_cmss)
 {
-    set_correction_speed_accel_U_mss(speed_down_cms * 0.01, speed_up_cms * 0.01, accel_cmss * 0.01);
+    set_correction_speed_accel_U_m(speed_down_cms * 0.01, speed_up_cms * 0.01, accel_cmss * 0.01);
 }
 
 // Sets vertical correction velocity and acceleration limits (m/s, m/s²).
 // These values constrain the correction output of the PID controller.
-void AC_PosControl::set_correction_speed_accel_U_mss(float speed_down_ms, float speed_up_ms, float accel_mss)
+void AC_PosControl::set_correction_speed_accel_U_m(float speed_down_ms, float speed_up_ms, float accel_mss)
 {
     // define maximum position error and maximum first and second differential limits
     _p_pos_u_m.set_limits(-fabsf(speed_down_ms), speed_up_ms, accel_mss, 0.0f);
@@ -984,15 +984,15 @@ void AC_PosControl::set_pos_target_U_from_climb_rate_m(float vel_u_ms)
 
 // Descends at a given rate (cm/s) using jerk-limited shaping for landing.
 // If `ignore_descent_limit` is true, descent output is not limited by the configured max.
-// See land_at_climb_rate_m() for full details.
-void AC_PosControl::land_at_climb_rate_cm(float vel_u_cms, bool ignore_descent_limit)
+// See land_at_climb_rate_ms() for full details.
+void AC_PosControl::land_at_climb_rate_cms(float vel_u_cms, bool ignore_descent_limit)
 {
-    land_at_climb_rate_m(vel_u_cms * 0.01, ignore_descent_limit);
+    land_at_climb_rate_ms(vel_u_cms * 0.01, ignore_descent_limit);
 }
 
 // Descends at a given rate (m/s) using jerk-limited shaping for landing.
 // Used during final descent phase to ensure smooth touchdown.
-void AC_PosControl::land_at_climb_rate_m(float vel_u_ms, bool ignore_descent_limit)
+void AC_PosControl::land_at_climb_rate_ms(float vel_u_ms, bool ignore_descent_limit)
 {
     if (ignore_descent_limit) {
         // turn off limits in the negative z direction

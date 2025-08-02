@@ -66,9 +66,9 @@ void Copter::update_throttle_hover()
     }
 }
 
-// get_pilot_desired_climb_rate - transform pilot's throttle input to climb rate in cm/s
+// get_pilot_desired_climb_rate_cms - transform pilot's throttle input to climb rate in cm/s
 // without any deadzone at the bottom
-float Copter::get_pilot_desired_climb_rate()
+float Copter::get_pilot_desired_climb_rate_cms()
 {
     // throttle failsafe check
     if (!rc().has_valid_input()) {
