@@ -66,9 +66,9 @@ void Copter::update_throttle_hover()
     }
 }
 
-// get_pilot_desired_climb_rate - transform pilot's throttle input to climb rate in cm/s
+// get_pilot_desired_climb_rate_ms - transform pilot's throttle input to climb rate in cm/s
 // without any deadzone at the bottom
-float Copter::get_pilot_desired_climb_rate()
+float Copter::get_pilot_desired_climb_rate_ms()
 {
     // throttle failsafe check
     if (!rc().has_valid_input()) {
@@ -91,7 +91,7 @@ float Copter::get_pilot_desired_climb_rate()
     // ensure a reasonable deadzone
     g.throttle_deadzone.set(constrain_int16(g.throttle_deadzone, 0, 400));
 
-    float desired_rate = 0.0f;
+    float desired_rate_ms = 0.0f;
     const float mid_stick = get_throttle_mid();
     const float deadband_top = mid_stick + g.throttle_deadzone;
     const float deadband_bottom = mid_stick - g.throttle_deadzone;
@@ -99,16 +99,16 @@ float Copter::get_pilot_desired_climb_rate()
     // check throttle is above, below or in the deadband
     if (throttle_control < deadband_bottom) {
         // below the deadband
-        desired_rate = get_pilot_speed_dn() * (throttle_control-deadband_bottom) / deadband_bottom;
+        desired_rate_ms = get_pilot_speed_dn() * 0.01 * (throttle_control-deadband_bottom) / deadband_bottom;
     } else if (throttle_control > deadband_top) {
         // above the deadband
-        desired_rate = g.pilot_speed_up * (throttle_control-deadband_top) / (1000.0f-deadband_top);
+        desired_rate_ms = g.pilot_speed_up * 0.01 * (throttle_control-deadband_top) / (1000.0f-deadband_top);
     } else {
         // must be in the deadband
-        desired_rate = 0.0f;
+        desired_rate_ms = 0.0f;
     }
 
-    return desired_rate;
+    return desired_rate_ms;
 }
 
 // get_non_takeoff_throttle - a throttle somewhere between min and mid throttle which should not lead to a takeoff
