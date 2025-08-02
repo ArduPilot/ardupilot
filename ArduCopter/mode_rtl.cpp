@@ -18,7 +18,7 @@ bool ModeRTL::init(bool ignore_checks)
         }
     }
     // initialise waypoint and spline controller
-    wp_nav->wp_and_spline_init_cm(g.rtl_speed_cms);
+    wp_nav->wp_and_spline_init_m(g.rtl_speed_cms * 0.01);
     _state = SubMode::STARTING;
     _state_complete = true; // see run() method below
     terrain_following_allowed = !copter.failsafe.terrain;
@@ -320,8 +320,8 @@ void ModeRTL::land_start()
     _state_complete = false;
 
     // set horizontal speed and acceleration limits
-    pos_control->set_max_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), wp_nav->get_wp_acceleration_cmss());
-    pos_control->set_correction_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), wp_nav->get_wp_acceleration_cmss());
+    pos_control->set_max_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+    pos_control->set_correction_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
 
     // initialise loiter target destination
     if (!pos_control->is_active_NE()) {
@@ -550,21 +550,21 @@ bool ModeRTL::use_pilot_yaw(void) const
     return allow_yaw_option || land_repositioning || final_landing;
 }
 
-bool ModeRTL::set_speed_xy_cms(float speed_xy_cms)
+bool ModeRTL::set_speed_xy_ms(float speed_xy_cms)
 {
     copter.wp_nav->set_speed_NE_cms(speed_xy_cms);
     return true;
 }
 
-bool ModeRTL::set_speed_up_cms(float speed_up_cms)
+bool ModeRTL::set_speed_up_ms(float speed_up_cms)
 {
-    copter.wp_nav->set_speed_up_cms(speed_up_cms);
+    copter.wp_nav->set_speed_up_ms(speed_up_cms);
     return true;
 }
 
-bool ModeRTL::set_speed_down_cms(float speed_down_cms)
+bool ModeRTL::set_speed_down_ms(float speed_down_cms)
 {
-    copter.wp_nav->set_speed_down_cms(speed_down_cms);
+    copter.wp_nav->set_speed_down_ms(speed_down_cms);
     return true;
 }
 
