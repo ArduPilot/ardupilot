@@ -123,7 +123,7 @@ void AC_Loiter::init_target()
 {
     sanity_check_params();
 
-    // Configure correction speed and acceleration limits (in m/s and m/s²)
+    // Configure correction speed and acceleration limits (in m/s and m/s/s)
     _pos_control.set_correction_speed_accel_NE_m(LOITER_VEL_CORRECTION_MAX_MS, _accel_max_ne_cmss * 0.01);
     _pos_control.set_pos_error_max_NE_m(LOITER_POS_CORRECTION_MAX_M);
 
@@ -262,7 +262,7 @@ void AC_Loiter::sanity_check_params()
     // Enforce minimum loiter speed
     _speed_max_ne_cms.set(MAX(_speed_max_ne_cms, LOITER_SPEED_MIN_CMS));
 
-    // Clamp horizontal accel to lean-angle-limited max (converted to cm/s²)
+    // Clamp horizontal accel to lean-angle-limited max (converted to cm/s/s)
     _accel_max_ne_cmss.set(MIN(_accel_max_ne_cmss, GRAVITY_MSS * 100.0f * tanf(_attitude_control.lean_angle_max_rad())));
 }
 

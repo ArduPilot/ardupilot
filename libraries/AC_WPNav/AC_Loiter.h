@@ -42,11 +42,11 @@ public:
     // - Applies internal shaping using the current attitude controller dt.
     void set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad);
 
-    // Returns pilot-requested horizontal acceleration in the NE frame in cm/s².
+    // Returns pilot-requested horizontal acceleration in the NE frame in cm/s/s.
     // See get_pilot_desired_acceleration_NE_mss() for full details.
     Vector2f get_pilot_desired_acceleration_NE_cmss() const { return get_pilot_desired_acceleration_NE_mss() * 100.0; }
 
-    // Returns pilot-requested horizontal acceleration in the NE frame in m/s².
+    // Returns pilot-requested horizontal acceleration in the NE frame in m/s/s.
     // This is the internally computed and smoothed acceleration vector applied by the loiter controller.
     const Vector2f& get_pilot_desired_acceleration_NE_mss() const { return _desired_accel_ne_mss; }
 

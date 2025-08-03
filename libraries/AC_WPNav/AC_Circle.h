@@ -227,7 +227,7 @@ private:
     float    _angle_total_rad;          // Accumulated angle travelled in radians (used for full rotations).
     float    _angular_vel_rads;         // Current angular velocity in rad/s.
     float    _angular_vel_max_rads;     // Maximum allowed angular velocity in rad/s.
-    float    _angular_accel_radss;      // Angular acceleration limit in rad/s².
+    float    _angular_accel_radss;      // Angular acceleration limit in rad/s/s.
     uint32_t _last_update_ms;           // Timestamp (in milliseconds) of the last update() call.
     float    _last_radius_param_cm;     // Cached copy of radius parameter (cm) to detect parameter changes.
 

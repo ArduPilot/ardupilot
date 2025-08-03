@@ -136,23 +136,23 @@ public:
     // Derived from the WPNAV_SPEED_DN parameter. Always positive.
     float get_default_speed_down_ms() const { return fabsf(_wp_speed_down_cms * 0.01); }
 
-    // Returns the vertical acceleration in cm/s² used during waypoint navigation.
+    // Returns the vertical acceleration in cm/s/s used during waypoint navigation.
     // Always positive. See get_accel_U_mss() for full details.
     float get_accel_U_cmss() const { return get_accel_U_mss() * 100.0; }
 
-    // Returns the vertical acceleration in m/s² used during waypoint navigation.
+    // Returns the vertical acceleration in m/s/s used during waypoint navigation.
     // Derived from the WPNAV_ACCEL_Z parameter. Always positive.
     float get_accel_U_mss() const { return _wp_accel_z_cmss * 0.01; }
 
-    // Returns the horizontal acceleration in cm/s² used during waypoint navigation.
+    // Returns the horizontal acceleration in cm/s/s used during waypoint navigation.
     // See get_wp_acceleration_mss() for full details.
     float get_wp_acceleration_cmss() const { return get_wp_acceleration_mss() * 100.0; }
 
-    // Returns the horizontal acceleration in m/s² used during waypoint navigation.
+    // Returns the horizontal acceleration in m/s/s used during waypoint navigation.
     // Derived from the WPNAV_ACCEL parameter. Falls back to a default if unset.
     float get_wp_acceleration_mss() const { return (is_positive(_wp_accel_cmss)) ? _wp_accel_cmss * 0.01 : WPNAV_ACCELERATION_MS; }
 
-    // Returns the maximum lateral acceleration in m/s² used during waypoint cornering.
+    // Returns the maximum lateral acceleration in m/s/s used during waypoint cornering.
     // Derived from WPNAV_ACCEL_C or defaults to 2x WPNAV_ACCEL if unset.
     float get_corner_acceleration_mss() const { return (is_positive(_wp_accel_c_cmss)) ? _wp_accel_c_cmss * 0.01 : 2.0 * get_wp_acceleration_mss(); }
 
