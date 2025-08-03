@@ -626,7 +626,7 @@ float input_expo(float input, float expo)
     return input;
 }
 
-// Converts a lean angle (radians) to horizontal acceleration in m/s².
+// Converts a lean angle (radians) to horizontal acceleration in m/s/s.
 // Assumes flat Earth and small angle approximation: a = g * tan(θ)
 float angle_rad_to_accel_mss(float angle_rad)
 {
@@ -634,14 +634,14 @@ float angle_rad_to_accel_mss(float angle_rad)
     return GRAVITY_MSS * tanf(angle_rad);
 }
 
-// Converts a lean angle (degrees) to horizontal acceleration in m/s².
+// Converts a lean angle (degrees) to horizontal acceleration in m/s/s.
 float angle_deg_to_accel_mss(float angle_deg)
 {
     // Convert degrees to radians, then to acceleration
     return angle_rad_to_accel_mss(radians(angle_deg));
 }
 
-// Converts a horizontal acceleration (m/s²) to lean angle in radians.
+// Converts a horizontal acceleration (m/s/s) to lean angle in radians.
 // Assumes: angle = atan(a / g)
 float accel_mss_to_angle_rad(float accel_mss)
 {
@@ -649,7 +649,7 @@ float accel_mss_to_angle_rad(float accel_mss)
     return atanf(accel_mss/GRAVITY_MSS);
 }
 
-// Converts a horizontal acceleration (m/s²) to lean angle in degrees.
+// Converts a horizontal acceleration (m/s/s) to lean angle in degrees.
 float accel_mss_to_angle_deg(float accel_mss)
 {
     // Convert result of radian-based conversion to degrees
