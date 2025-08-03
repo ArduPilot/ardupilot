@@ -72,9 +72,9 @@ void ModeThrow::run()
         // initialise the demanded height below/above the throw height from user parameters
         // this allows for rapidly clearing surrounding obstacles
         if (g2.throw_type == ThrowType::Drop) {
-            pos_control->set_pos_desired_U_cm(pos_control->get_pos_estimate_NEU_cm().z - g.throw_altitude_descend * 100.0f);
+            pos_control->set_pos_desired_U_m(pos_control->get_pos_estimate_NEU_m().z - g.throw_altitude_descend);
         } else {
-            pos_control->set_pos_desired_U_cm(pos_control->get_pos_estimate_NEU_cm().z + g.throw_altitude_ascend * 100.0f);
+            pos_control->set_pos_desired_U_m(pos_control->get_pos_estimate_NEU_m().z + g.throw_altitude_ascend);
         }
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
@@ -174,7 +174,7 @@ void ModeThrow::run()
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(0.0f, 0.0f, 0.0f);
 
         // call height controller
-        pos_control->set_pos_target_U_from_climb_rate_cm(0.0f);
+        pos_control->set_pos_target_U_from_climb_rate_m(0.0f);
         pos_control->update_U_controller();
 
         break;
@@ -185,16 +185,16 @@ void ModeThrow::run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // use position controller to stop
-        Vector2f vel;
-        Vector2f accel;
-        pos_control->input_vel_accel_NE_cm(vel, accel);
+        Vector2f vel_zero;
+        Vector2f accel_zero;
+        pos_control->input_vel_accel_NE_m(vel_zero, accel_zero);
         pos_control->update_NE_controller();
 
         // call attitude controller
         attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), 0.0f);
 
         // call height controller
-        pos_control->set_pos_target_U_from_climb_rate_cm(0.0f);
+        pos_control->set_pos_target_U_from_climb_rate_m(0.0f);
         pos_control->update_U_controller();
 
         break;
@@ -280,16 +280,16 @@ bool ModeThrow::throw_detected()
     bool no_throw_action = copter.ins.get_accel().length() < 1.0f * GRAVITY_MSS;
 
     // fetch the altitude above home
-    float altitude_above_home;  // Use altitude above home if it is set, otherwise relative to EKF origin
+    float altitude_above_home_m;  // Use altitude above home if it is set, otherwise relative to EKF origin
     if (ahrs.home_is_set()) {
-        ahrs.get_relative_position_D_home(altitude_above_home);
-        altitude_above_home = -altitude_above_home; // altitude above home is returned as negative
+        ahrs.get_relative_position_D_home(altitude_above_home_m);
+        altitude_above_home_m = -altitude_above_home_m; // altitude above home is returned as negative
     } else {
-        altitude_above_home = pos_control->get_pos_estimate_NEU_cm().z * 0.01f; // centimeters to meters
+        altitude_above_home_m = pos_control->get_pos_estimate_NEU_m().z;
     }
 
     // Check that the altitude is within user defined limits
-    const bool height_within_params = (g.throw_altitude_min == 0 || altitude_above_home > g.throw_altitude_min) && (g.throw_altitude_max == 0 || (altitude_above_home < g.throw_altitude_max));
+    const bool height_within_params = (g.throw_altitude_min == 0 || altitude_above_home_m > g.throw_altitude_min) && (g.throw_altitude_max == 0 || (altitude_above_home_m < g.throw_altitude_max));
 
     // High velocity or free-fall combined with increasing height indicate a possible air-drop or throw release  
     bool possible_throw_detected = (free_falling || high_speed) && changing_height && no_throw_action && height_within_params;
@@ -318,13 +318,13 @@ bool ModeThrow::throw_attitude_good() const
 bool ModeThrow::throw_height_good() const
 {
     // Check that we are within 0.5m of the demanded height
-    return (pos_control->get_pos_error_U_cm() < 50.0f);
+    return (pos_control->get_pos_error_U_m() < 0.5);
 }
 
 bool ModeThrow::throw_position_good() const
 {
     // check that our horizontal position error is within 50cm
-    return (pos_control->get_pos_error_NE_cm() < 50.0f);
+    return (pos_control->get_pos_error_NE_m() < 0.50);
 }
 
 #endif
