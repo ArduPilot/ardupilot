@@ -380,7 +380,8 @@ bool GCS_MAVLINK_Copter::handle_guided_request(AP_Mission::Mission_Command &cmd)
 #endif
 }
 
-void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
+void GCS_MAVLINK_Copter::packetReceived(uint8_t framing_status,
+                                        const mavlink_status_t &status,
                                         const mavlink_message_t &msg)
 {
     // we handle these messages here to avoid them being blocked by mavlink routing code
@@ -390,7 +391,7 @@ void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
         copter.avoidance_adsb.handle_msg(msg);
     }
 #endif
-    GCS_MAVLINK::packetReceived(status, msg);
+    GCS_MAVLINK::packetReceived(framing_status, status, msg);
 }
 
 bool GCS_MAVLINK_Copter::params_ready() const
