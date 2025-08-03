@@ -71,7 +71,8 @@ public:
     AP_Int8 xpos;
     AP_Int8 ypos;
 
-    AP_OSD_Setting(bool enabled = 0, uint8_t x = 0, uint8_t y = 0);
+    AP_OSD_Setting(bool enabled = 0, uint8_t x = 0, uint8_t y = 0,
+                   uint8_t x_hd = 0, uint8_t y_hd = 0);
 
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -80,6 +81,10 @@ private:
     const float default_enabled;
     const float default_xpos;
     const float default_ypos;
+#if HAL_WITH_MSP_DISPLAYPORT
+    const float default_xpos_hd;
+    const float default_ypos_hd;
+#endif
 };
 
 class AP_OSD;
@@ -100,11 +105,21 @@ public:
 
 protected:
     bool check_option(uint32_t option);
+    virtual uint8_t get_msg_visible_width() const { return 26; }
 #if HAL_WITH_MSP_DISPLAYPORT
+
+    enum TextResolution {
+        SCALE_30x16=0,
+        SCALE_50x18=1,
+    };
+
     virtual uint8_t get_txt_resolution() const {
         return 0;
     }
     virtual uint8_t get_font_index() const {
+        return 0;
+    }
+    virtual uint8_t get_txt_scale() const {
         return 0;
     }
 #endif
@@ -120,6 +135,9 @@ protected:
 
     char u_icon(enum unit_type unit);
     float u_scale(enum unit_type unit, float value);
+
+    uint8_t scale_x(uint8_t x) const;
+    uint8_t scale_y(uint8_t x) const;
 
     AP_OSD_Backend *backend;
     AP_OSD *osd;
@@ -154,13 +172,18 @@ public:
     uint8_t get_font_index() const override {
         return font_index;
     }
+    uint8_t get_txt_scale() const override {
+        return txt_scale;
+    }
+    uint8_t get_msg_visible_width() const override {
+        return (txt_scale.get() && txt_resolution == SCALE_50x18) ? MIN(50-scale_x(message.xpos), 46) : 26;
+    }
 #endif
 private:
     friend class AP_MSP;
     friend class AP_MSP_Telem_Backend;
     friend class AP_MSP_Telem_DJI;
 
-    static const uint8_t message_visible_width = 26;
     static const uint8_t message_scroll_time_ms = 200;
     static const uint8_t message_scroll_delay = 5;
 
@@ -175,29 +198,29 @@ private:
         RESTING_CELL,
     };
 
-    AP_OSD_Setting altitude{true, 23, 8};
-    AP_OSD_Setting bat_volt{true, 24, 1};
-    AP_OSD_Setting rssi{true, 1, 1};
+    AP_OSD_Setting altitude{true, 23, 8, 38, 9};
+    AP_OSD_Setting bat_volt{true, 24, 1, 40, 1};
+    AP_OSD_Setting rssi{true, 1, 1, 1, 1};
     AP_OSD_Setting link_quality{false,1,1};
     AP_OSD_Setting restvolt{false, 24, 2};
     AP_OSD_Setting avgcellvolt{false, 24, 3};
     AP_OSD_Setting avgcellrestvolt{false, 24, 4};
-    AP_OSD_Setting current{true, 25, 2};
-    AP_OSD_Setting batused{true, 23, 3};
-    AP_OSD_Setting sats{true, 1, 3};
-    AP_OSD_Setting fltmode{true, 2, 8};
-    AP_OSD_Setting message{true, 2, 6};
-    AP_OSD_Setting gspeed{true, 2, 14};
-    AP_OSD_Setting horizon{true, 14, 8};
-    AP_OSD_Setting home{true, 14, 1};
-    AP_OSD_Setting throttle{true, 24, 11};
-    AP_OSD_Setting heading{true, 13, 2};
-    AP_OSD_Setting compass{true, 15, 3};
+    AP_OSD_Setting current{true, 25, 2, 42, 2};
+    AP_OSD_Setting batused{true, 23, 3, 38, 3};
+    AP_OSD_Setting sats{true, 1, 3, 2, 3};
+    AP_OSD_Setting fltmode{true, 2, 8, 3, 9};
+    AP_OSD_Setting message{true, 2, 6, 3, 7};
+    AP_OSD_Setting gspeed{true, 2, 14, 3, 16};
+    AP_OSD_Setting horizon{true, 14, 8, 23, 9};
+    AP_OSD_Setting home{true, 14, 1, 23, 1};
+    AP_OSD_Setting throttle{true, 24, 11, 40, 12};
+    AP_OSD_Setting heading{true, 13, 2, 22, 1};
+    AP_OSD_Setting compass{true, 15, 3, 25, 3};
     AP_OSD_Setting wind{false, 2, 12};
     AP_OSD_Setting aspeed{false, 2, 13};
     AP_OSD_Setting aspd1;
     AP_OSD_Setting aspd2;
-    AP_OSD_Setting vspeed{true, 24, 9};
+    AP_OSD_Setting vspeed{true, 24, 9, 40, 10};
 #if AP_RPM_ENABLED
     AP_OSD_Setting rrpm{false, 2, 2};
 #endif
@@ -206,8 +229,8 @@ private:
     AP_OSD_Setting esc_rpm{false, 22, 12};
     AP_OSD_Setting esc_amps{false, 24, 14};
 #endif
-    AP_OSD_Setting gps_latitude{true, 9, 13};
-    AP_OSD_Setting gps_longitude{true, 9, 14};
+    AP_OSD_Setting gps_latitude{true, 9, 13, 15, 14};
+    AP_OSD_Setting gps_longitude{true, 9, 14, 15, 16};
     AP_OSD_Setting roll_angle;
     AP_OSD_Setting pitch_angle;
     AP_OSD_Setting temp;

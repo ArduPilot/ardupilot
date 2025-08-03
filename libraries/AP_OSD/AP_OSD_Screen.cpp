@@ -1183,8 +1183,8 @@ uint8_t AP_OSD_AbstractScreen::symbols_lookup_table[AP_OSD_NUM_SYMBOLS];
 // Symbol indexes to acces _symbols[index][set]
 #define SYM_M 0
 #define SYM_KM 1
-#define SYM_FT 2
 #define SYM_MI 3
+#define SYM_FT 2
 #define SYM_ALT_M 4
 #define SYM_ALT_FT 5
 #define SYM_BATT_FULL 6
@@ -1640,6 +1640,7 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
             }
 
             int16_t start_position = 0;
+            const uint8_t message_visible_width = MIN(get_msg_visible_width(), int(sizeof(buffer)-1));
             //scroll if required
             //scroll pattern: wait, scroll to the left, wait, scroll to the right
             if (len > message_visible_width) {
