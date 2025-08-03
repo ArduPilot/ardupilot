@@ -11,6 +11,8 @@
 // update mount position - should be called periodically
 void AP_Mount_SToRM32_serial::update()
 {
+    AP_Mount_Backend::update();
+
     // exit immediately if not initialised
     if (!_initialised) {
         return;
