@@ -24,9 +24,9 @@ bool ModeCircle::init(bool ignore_checks)
 #if HAL_MOUNT_ENABLED
     // Check if the CIRCLE_OPTIONS parameter have roi_at_center
     if (copter.circle_nav->roi_at_center()) {
-        const Vector3p &pos { copter.circle_nav->get_center_NEU_cm() };
+        const Vector3p &pos_neu_m { copter.circle_nav->get_center_NEU_m() };
         Location circle_center;
-        if (!AP::ahrs().get_location_from_origin_offset_NED(circle_center, pos * 0.01)) {
+        if (!AP::ahrs().get_location_from_origin_offset_NED(circle_center, pos_neu_m)) {
             return false;
         }
         // point at the ground:
@@ -57,14 +57,14 @@ void ModeCircle::run()
     // skip if in radio failsafe
     if (rc().has_valid_input() && copter.circle_nav->pilot_control_enabled()) {
         // update the circle controller's radius target based on pilot pitch stick inputs
-        const float radius_current_cm = copter.circle_nav->get_radius_cm();           // circle controller's radius target, which begins as the circle_radius parameter
-        const float pitch_stick_norm = channel_pitch->norm_input_dz();               // pitch stick normalized -1 to 1
-        const float nav_speed_cms = copter.wp_nav->get_default_speed_NE_cms();          // copter WP_NAV parameter speed
-        const float radius_pilot_change_cm = (pitch_stick_norm * nav_speed_cms) * G_Dt;     // rate of change (pitch stick up reduces the radius, as in moving forward)
-        const float radius_new_cm = MAX(radius_current_cm + radius_pilot_change_cm,0);   // new radius target
+        const float radius_current_m = copter.circle_nav->get_radius_m();               // circle controller's radius target, which begins as the circle_radius parameter
+        const float pitch_stick_norm = channel_pitch->norm_input_dz();                  // pitch stick normalized -1 to 1
+        const float nav_speed_ms = copter.wp_nav->get_default_speed_NE_ms();            // copter WP_NAV parameter speed
+        const float radius_pilot_change_m = (pitch_stick_norm * nav_speed_ms) * G_Dt;   // rate of change (pitch stick up reduces the radius, as in moving forward)
+        const float radius_new_m = MAX(radius_current_m + radius_pilot_change_m,0);     // new radius target
 
-        if (!is_equal(radius_current_cm, radius_new_cm)) {
-            copter.circle_nav->set_radius_cm(radius_new_cm);
+        if (!is_equal(radius_current_m, radius_new_m)) {
+            copter.circle_nav->set_radius_m(radius_new_m);
         }
 
         // update the orbicular rate target based on pilot roll stick inputs
@@ -132,7 +132,7 @@ void ModeCircle::run()
 
 float ModeCircle::wp_distance_m() const
 {
-    return copter.circle_nav->get_distance_to_target_cm() * 0.01f;
+    return copter.circle_nav->get_distance_to_target_m();
 }
 
 float ModeCircle::wp_bearing_deg() const

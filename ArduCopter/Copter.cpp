@@ -468,7 +468,7 @@ AP_Vehicle::custom_mode_state* Copter::register_custom_mode(const uint8_t num, c
 // circle mode controls
 bool Copter::get_circle_radius(float &radius_m)
 {
-    radius_m = circle_nav->get_radius_cm() * 0.01f;
+    radius_m = circle_nav->get_radius_m();
     return true;
 }
 
