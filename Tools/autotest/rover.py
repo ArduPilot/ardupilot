@@ -318,14 +318,14 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
     #################################################
     # AUTOTEST ALL
     #################################################
-    def drive_mission(self, filename, strict=True):
+    def drive_mission(self, filename, strict=True, ignore_MANUAL_mode_change=False):
         """Drive a mission from a file."""
         self.progress("Driving mission %s" % filename)
         wp_count = self.load_mission(filename, strict=strict)
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.change_mode('AUTO')
-        self.wait_waypoint(1, wp_count-1, max_dist=5)
+        self.wait_waypoint(1, wp_count-1, max_dist=5, ignore_MANUAL_mode_change=ignore_MANUAL_mode_change)
         self.wait_statustext("Mission Complete", timeout=600)
         self.disarm_vehicle()
         self.progress("Mission OK")
@@ -6950,7 +6950,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 "SIM_WIND_SPD": 10,
             })
             self.arm_vehicle()
-            self.drive_mission(mission_file, strict=False)
+            self.drive_mission(mission_file, strict=False, ignore_MANUAL_mode_change=True)
             self.wait_mode('MANUAL')
 
             if self.distance_to_home() > 2:

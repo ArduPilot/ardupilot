@@ -8289,7 +8289,9 @@ class TestSuite(ABC):
                       allow_skip=True,
                       max_dist=2,
                       timeout=400,
-                      ignore_RTL_mode_change=False):
+                      ignore_RTL_mode_change=False,
+                      ignore_MANUAL_mode_change=False,
+                      ):
         """Wait for waypoint ranges."""
         tstart = self.get_sim_time()
         # this message arrives after we set the current WP
@@ -8314,7 +8316,11 @@ class TestSuite(ABC):
             # if we changed mode, fail
             if not self.mode_is('AUTO'):
                 self.progress(f"{self.mav.flightmode} vs {self.get_mode_from_mode_mapping(mode)}")
-                if not ignore_RTL_mode_change or not self.mode_is('RTL', cached=True):
+                ignore_mode_change = (
+                    (ignore_RTL_mode_change and self.mode_is('RTL', cached=True)) or
+                    (ignore_MANUAL_mode_change and self.mode_is('MANUAL', cached=True))
+                )
+                if not ignore_mode_change:
                     new_mode_str = self.get_mode_string_for_mode(self.get_mode())
                     raise WaitWaypointTimeout(f'Exited {mode} mode to {new_mode_str} ignore={ignore_RTL_mode_change}')
 
