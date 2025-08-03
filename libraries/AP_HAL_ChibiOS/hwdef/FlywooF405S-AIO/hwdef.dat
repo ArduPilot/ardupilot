@@ -152,5 +152,9 @@ define DEFAULT_NTF_LED_TYPES 257
 
 # save some flash space
 include ../include/minimize_fpv_osd.inc
-AUTOBUILD_TARGETS Copter
 
+# defines to transition minimize-fpv-osd boards to parachute-not-compiled-in:
+define HAL_PARACHUTE_ENABLED 0
+define AP_PARACHUTE_UNAVAILABLE_ENABLED 1
+
+AUTOBUILD_TARGETS Copter

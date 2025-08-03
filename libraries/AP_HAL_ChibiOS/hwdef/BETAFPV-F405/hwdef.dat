@@ -159,3 +159,7 @@ define AP_BARO_THST_COMP_ENABLED 1
 
 include ../include/minimize_fpv_osd.inc
 AUTOBUILD_TARGETS Copter
+
+# defines to transition minimize-fpv-osd boards to parachute-not-compiled-in:
+define HAL_PARACHUTE_ENABLED 0
+define AP_PARACHUTE_UNAVAILABLE_ENABLED 1

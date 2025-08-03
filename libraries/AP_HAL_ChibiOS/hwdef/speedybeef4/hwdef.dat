@@ -148,5 +148,10 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 # minimal drivers to reduce flash usage
 include ../include/minimize_fpv_osd.inc
 include ../include/no_bootloader_DFU.inc
+
 undef AP_BATTERY_SYNTHETIC_CURRENT_ENABLED
 define AP_BATTERY_SYNTHETIC_CURRENT_ENABLED 0
+
+# defines to transition minimize-fpv-osd boards to parachute-not-compiled-in:
+define HAL_PARACHUTE_ENABLED 0
+define AP_PARACHUTE_UNAVAILABLE_ENABLED 1
