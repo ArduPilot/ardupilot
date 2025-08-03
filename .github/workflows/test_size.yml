@@ -161,6 +161,7 @@ jobs:
           # export some environment variables designed to get
           #            repeatable builds from the same source:
           export CHIBIOS_GIT_VERSION="12345678"
+          export GIT_VERSION_EXTENDED="0123456789abcdef"
           export GIT_VERSION="abcdef"
           export GIT_VERSION_INT="15"
 
@@ -237,6 +238,7 @@ jobs:
           # export some environment variables designed to get
           #            repeatable builds from the same source:
           export CHIBIOS_GIT_VERSION="12345678"
+          export GIT_VERSION_EXTENDED="0123456789abcdef"
           export GIT_VERSION="abcdef"
           export GIT_VERSION_INT="15"
 
