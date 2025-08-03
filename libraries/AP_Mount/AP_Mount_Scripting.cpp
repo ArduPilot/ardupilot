@@ -18,6 +18,8 @@ extern const AP_HAL::HAL& hal;
 // update mount position - should be called periodically
 void AP_Mount_Scripting::update()
 {
+    AP_Mount_Backend::update();
+
     // change to RC_TARGETING mode if RC input has changed
     set_rctargeting_on_rcinput_change();
 

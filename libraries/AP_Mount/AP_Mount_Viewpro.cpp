@@ -34,6 +34,8 @@ const char* AP_Mount_Viewpro::send_text_prefix = "Viewpro:";
 // update mount position - should be called periodically
 void AP_Mount_Viewpro::update()
 {
+    AP_Mount_Backend::update();
+
     // exit immediately if not initialised
     if (!_initialised) {
         return;

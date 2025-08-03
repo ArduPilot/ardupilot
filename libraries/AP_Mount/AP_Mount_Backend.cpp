@@ -38,6 +38,14 @@ void AP_Mount_Backend::set_dev_id(uint32_t id)
     _params.dev_id.set_and_save(int32_t(id));
 }
 
+// base implementation should be called from derived classes for common functionality
+void AP_Mount_Backend::update()
+{
+    // move mount to a "retracted position" into the fuselage or out of it
+    const bool mount_open = (_mode == MAV_MOUNT_MODE_RETRACT);
+    SRV_Channels::move_servo(_open_idx, mount_open, 0, 1);
+}
+
 // return true if this mount accepts roll targets
 bool AP_Mount_Backend::has_roll_control() const
 {

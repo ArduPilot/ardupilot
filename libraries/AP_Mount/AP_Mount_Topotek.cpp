@@ -57,6 +57,8 @@ const char* AP_Mount_Topotek::send_message_prefix = "Mount: Topotek";
 // update mount position - should be called periodically
 void AP_Mount_Topotek::update()
 {
+    AP_Mount_Backend::update();
+
     // exit immediately if not initialised
     if (!_initialised) {
         return;
