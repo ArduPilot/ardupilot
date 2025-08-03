@@ -1266,6 +1266,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: systemid.cpp
     AP_SUBGROUPINFO(systemid, "SID", 38, ParametersG2, AP_SystemID),
 #endif
+
+    // @Group: MIX_
+    // @Path: mixing.cpp
+    AP_SUBGROUPINFO(mixing, "MIX_", 39, ParametersG2, AP_Mixing),
     
     // @Param: CLIMB_SLOPE_HGT
     // @DisplayName: Climb slope mininum height
@@ -1287,6 +1291,7 @@ ParametersG2::ParametersG2(void) :
 #if HAL_SOARING_ENABLED
     ,soaring_controller(plane.TECS_controller, plane.aparm)
 #endif
+    ,mixing()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
