@@ -5,6 +5,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+# define AC_ATTITUDE_HELI_LOIT_TO_STAB_TC                0.16f
+
 const AP_Param::GroupInfo AC_InputManager_Heli::var_info[] = {
 
     // parameters from parent vehicle
@@ -114,9 +116,19 @@ float AC_InputManager_Heli::get_pilot_desired_collective(int16_t control_in)
     }
     _stab_col_ramp = constrain_float(_stab_col_ramp, 0.0f, 1.0f);
 
+    // ramp factor from non-manual to manual collective
+    if (_im_flags_heli.trans_to_manual){
+        float dt = 1/(float)_loop_rate;
+        _man_trans_ramp = _man_trans_ramp - _man_trans_ramp * (dt / (dt + AC_ATTITUDE_HELI_LOIT_TO_STAB_TC));
+    }
+
+    _man_trans_ramp = constrain_float(_man_trans_ramp, 0.0f, 1.0f);
+
     // scale collective output smoothly between acro and stab col
     float collective_out;
-    collective_out = (float)((1.0f-_stab_col_ramp)*acro_col_out + _stab_col_ramp*stab_col_out);
+
+    collective_out = (_man_trans_ramp) * _last_auto_coll + (1.0 - _man_trans_ramp) * (float)((1.0f - _stab_col_ramp) * acro_col_out + _stab_col_ramp * stab_col_out);
+
     collective_out = constrain_float(collective_out, 0.0f, 1.0f);
 
     return collective_out;
