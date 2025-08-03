@@ -501,6 +501,10 @@ void Plane::update_control_mode(void)
     takeoff_state.throttle_lim_max = 100.0f;
     takeoff_state.throttle_lim_min = -100.0f;
 
+    // Preemptively set demanded pitch to NaN, so that it properly doesn't
+    // get logged. Modes ovewriting it (most modes do) will change it.
+    demanded_pitch_logged = logger.quiet_nanf();
+
     update_fly_forward();
 
     control_mode->update();
