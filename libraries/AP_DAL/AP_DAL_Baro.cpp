@@ -1,3 +1,7 @@
+#include <AP_Baro/AP_Baro_config.h>
+
+#if AP_BARO_ENABLED
+
 #include "AP_DAL_Baro.h"
 
 #include <AP_Logger/AP_Logger.h>
@@ -33,3 +37,5 @@ void AP_DAL_Baro::update_calibration()
 {
     AP::baro().update_calibration();
 }
+
+#endif  // AP_BARO_ENABLED

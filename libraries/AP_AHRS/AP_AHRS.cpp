@@ -1932,7 +1932,11 @@ void AP_AHRS::get_relative_position_D_home(float &posD) const
     if (!_home_is_set) {
         // fall back to an altitude derived from barometric pressure
         // differences vs a calibrated ground pressure:
+#if AP_BARO_ENABLED
         posD = -AP::baro().get_altitude();
+#else
+        posD = 0;
+#endif
         return;
     }
 
@@ -1947,8 +1951,11 @@ void AP_AHRS::get_relative_position_D_home(float &posD) const
             posD = (_home.alt - gps.location().alt) * 0.01;
             return;
         }
-#endif
+#elif AP_BARO_ENABLED
         posD = -AP::baro().get_altitude();
+#else
+        posD = 0.0;
+#endif
         return;
     }
 

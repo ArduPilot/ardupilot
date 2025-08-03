@@ -67,7 +67,9 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.lat = _home.lat;
     _RFRN.lng = _home.lng;
     _RFRN.alt = _home.alt;
+#if AP_BARO_ENABLED
     _RFRN.EAS2TAS = ahrs.get_EAS2TAS();
+#endif
     _RFRN.vehicle_class = (uint8_t)ahrs.get_vehicle_class();
     _RFRN.fly_forward = ahrs.get_fly_forward();
     _RFRN.takeoff_expected = ahrs.get_takeoff_expected();
@@ -86,7 +88,9 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _rotation_vehicle_body_to_autopilot_body = ahrs.get_rotation_vehicle_body_to_autopilot_body();
 
     _ins.start_frame();
+#if AP_BARO_ENABLED
     _baro.start_frame();
+#endif
     _gps.start_frame();
     _compass.start_frame();
     if (_airspeed) {
