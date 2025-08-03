@@ -9,4 +9,19 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
+      with:
+        python-version: 3.x
     - uses: pre-commit/action@v3.0.1
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - uses: actions/setup-python@v5
+      with:
+        python-version: 3.x
+    - run: python3 -m pip install --upgrade pip
+    - run: python3 -m pip install MAVProxy mock numpy pexpect pytest requests
+    - run: python3 -m pip install --editable modules/mavlink/pymavlink
+    - run: pytest --config-file=tests/pytest-whole-repo.toml  # 53 passed in 2.41s
