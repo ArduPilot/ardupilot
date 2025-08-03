@@ -130,7 +130,7 @@ void AP_DroneCAN_Serial::handle_tunnel_targetted(AP_DroneCAN *dronecan,
     }
     auto &s = *serial[driver_index];
     for (auto &p : s.ports) {
-        if (p.idx == msg.serial_id && transfer.source_node_id == p.node) {
+        if (p.idx == msg.serial_id && msg.target_node == dronecan->get_canard_iface().get_node_id()) {
             WITH_SEMAPHORE(p.sem);
             if (p.readbuffer != nullptr) {
                 const uint32_t written = p.readbuffer->write(msg.buffer.data, msg.buffer.len);
