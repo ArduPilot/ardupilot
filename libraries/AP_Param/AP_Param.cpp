@@ -934,6 +934,8 @@ AP_Param::find(const char *name, enum ap_var_type *ptype, uint16_t *flags)
                     ap->find_var_info(&group_element, ginfo, group_nesting, &idx);
                     if (ginfo != nullptr) {
                         *flags = ginfo->flags;
+                    } else {
+                        *flags = 0;
                     }
                 }
                 return ap;
@@ -946,6 +948,9 @@ AP_Param::find(const char *name, enum ap_var_type *ptype, uint16_t *flags)
             ptrdiff_t base;
             if (!get_base(info, base)) {
                 return nullptr;
+            }
+            if (flags != nullptr) {
+                *flags = 0;
             }
             return (AP_Param *)base;
         }
