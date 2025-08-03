@@ -740,12 +740,17 @@ void AP_MotorsMulticopter::set_throttle_passthrough_for_esc_calibration(float th
 // output a thrust to all motors that match a given motor mask. This
 // is used to control tiltrotor motors in forward flight. Thrust is in
 // the range 0 to 1
-void AP_MotorsMulticopter::output_motor_mask(float thrust, uint32_t mask, float rudder_dt)
+void AP_MotorsMulticopter::output_motor_mask(float thrust, uint32_t mask, float rudder_dt, const float slew_limit)
 {
     const int16_t pwm_min = get_pwm_output_min();
     const int16_t pwm_range = get_pwm_output_max() - pwm_min;
 
     _motor_mask_override = mask;
+
+    // Convert from percentage per second to change per loop.
+    // Negative or zero is disabled
+    const float max_change = slew_limit * 0.01 * _dt;
+    const bool apply_slew_limit = is_positive(max_change);
 
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i] && (mask & (1U << i)) != 0) {
@@ -755,8 +760,22 @@ void AP_MotorsMulticopter::output_motor_mask(float thrust, uint32_t mask, float 
                  copter frame roll is plane frame yaw as this only
                  apples to either tilted motors or tailsitters
                  */
-                float diff_thrust = get_roll_factor(i) * rudder_dt * 0.5f;
+                const float diff_thrust = get_roll_factor(i) * rudder_dt * 0.5;
+
+                // Apply slew limiting, this is the lower of the motors slew limiting and the slew limit passed in.
+                const float last = _actuator[i];
+
+                // Apply motor slew limits
                 set_actuator_with_slew(_actuator[i], thrust + diff_thrust);
+
+                // Apply passed in slew limit
+                if (apply_slew_limit) {
+                    const float lower = MAX(0.0, last - max_change);
+                    const float upper = MIN(1.0, last + max_change);
+
+                    _actuator[i] = constrain_float(_actuator[i], lower, upper);
+                }
+
             } else {
                 // zero throttle
                 _actuator[i] = 0.0;
