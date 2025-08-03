@@ -1764,15 +1764,15 @@ private:
     AP_Float time_record;       // Time taken to complete the chirp waveform
     AP_Float time_fade_out;     // Time to reach zero amplitude after chirp finishes
 
-    bool att_bf_feedforward;    // Setting of attitude_control->get_bf_feedforward
-    float waveform_time;        // Time reference for waveform
-    float waveform_sample;      // Current waveform sample
-    float waveform_freq_rads;   // Instantaneous waveform frequency
-    float time_const_freq;      // Time at constant frequency before chirp starts
-    int8_t log_subsample;       // Subsample multiple for logging.
-    Vector2f target_vel;        // target velocity for position controller modes
-    Vector2f target_pos;       // target position
-    Vector2f input_vel_last;    // last cycle input velocity
+    bool att_bf_feedforward;        // Setting of attitude_control->get_bf_feedforward
+    float waveform_time;            // Time reference for waveform
+    float waveform_sample;          // Current waveform sample
+    float waveform_freq_rads;       // Instantaneous waveform frequency
+    float time_const_freq;          // Time at constant frequency before chirp starts
+    int8_t log_subsample;           // Subsample multiple for logging.
+    Vector2f target_vel_ne_ms;      // target velocity for position controller modes
+    Vector2f target_pos_ne_m;       // target position
+    Vector2f input_vel_last_ne_ms;  // last cycle input velocity
     // System ID states
     enum class SystemIDModeState {
         SYSTEMID_STATE_STOPPED,
