@@ -300,17 +300,13 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
      * to change */
 
     if (last_update_usec == 0 || !output_ready) {
-        if (_vehicle == ArduPlane || _vehicle == ArduSub || _vehicle == ArduCopter || _vehicle == Blimp) {
+        if (_vehicle == ArduPlane || _vehicle == ArduCopter || _vehicle == Blimp) {
             for (uint8_t i=0; i<SITL_NUM_CHANNELS; i++) {
                 pwm_output[i] = 1000;
             }
         }
         if (_vehicle == ArduPlane) {
             pwm_output[0] = pwm_output[1] = pwm_output[3] = 1500;
-        }
-        if (_vehicle == ArduSub) {
-            pwm_output[0] = pwm_output[1] = pwm_output[2] = pwm_output[3] =
-                    pwm_output[4] = pwm_output[5] = pwm_output[6] = pwm_output[7] = 1500;
         }
     }
 
