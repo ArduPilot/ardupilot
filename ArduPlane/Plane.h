@@ -1228,31 +1228,31 @@ private:
     bool nav_scripting_enable(uint8_t mode) override;
 #endif
  
-    enum Failsafe_Action {
-        Failsafe_Action_None      = 0,
-        Failsafe_Action_RTL       = 1,
-        Failsafe_Action_Land      = 2,
-        Failsafe_Action_Terminate = 3,
+    enum class FailsafeAction : int8_t {
+        None      = 0,
+        RTL       = 1,
+        Land      = 2,
+        Terminate = 3,
 #if HAL_QUADPLANE_ENABLED
-        Failsafe_Action_QLand     = 4,
+        QLand     = 4,
 #endif
-        Failsafe_Action_Parachute = 5,
+        Parachute = 5,
 #if HAL_QUADPLANE_ENABLED
-        Failsafe_Action_Loiter_alt_QLand = 6,
+        Loiter_alt_QLand = 6,
 #endif
-        Failsafe_Action_AUTOLAND_OR_RTL = 7,
+        AUTOLAND_OR_RTL = 7,
     };
 
     // list of priorities, highest priority first
     static constexpr int8_t _failsafe_priorities[] = {
-                                                      Failsafe_Action_Terminate,
-                                                      Failsafe_Action_Parachute,
+                                                      int8_t(FailsafeAction::Terminate),
+                                                      int8_t(FailsafeAction::Parachute),
 #if HAL_QUADPLANE_ENABLED
-                                                      Failsafe_Action_QLand,
+                                                      int8_t(FailsafeAction::QLand),
 #endif
-                                                      Failsafe_Action_Land,
-                                                      Failsafe_Action_RTL,
-                                                      Failsafe_Action_None,
+                                                      int8_t(FailsafeAction::Land),
+                                                      int8_t(FailsafeAction::RTL),
+                                                      int8_t(FailsafeAction::None),
                                                       -1 // the priority list must end with a sentinel of -1
                                                      };
     static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,
