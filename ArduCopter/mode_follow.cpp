@@ -75,21 +75,21 @@ void ModeFollow::run()
     Vector3f vel_ofs_ned_ms;  // velocity of lead vehicle + offset
     Vector3f accel_ofs_ned_mss;  // accel of lead vehicle + offset
     if (g2.follow.get_ofs_pos_vel_accel_NED_m(pos_ofs_ned_m, vel_ofs_ned_ms, accel_ofs_ned_mss)) {
-        Vector2p pos_ofs_ne_cm = pos_ofs_ned_m.xy() * 100.0;
-        Vector2f vel_ofs_ne_cms = vel_ofs_ned_ms.xy() * 100.0;
-        Vector2f accel_ofs_ne_cmss = accel_ofs_ned_mss.xy() * 100.0;
+        Vector2p pos_ofs_ne_m = pos_ofs_ned_m.xy();
+        Vector2f vel_ofs_ne_ms = vel_ofs_ned_ms.xy();
+        Vector2f accel_ofs_ne_mss = accel_ofs_ned_mss.xy();
 
         float target_heading_deg = 0.0f;
         float target_heading_rate_degs = 0.0f;
         g2.follow.get_target_heading_deg(target_heading_deg);
         g2.follow.get_target_heading_rate_degs(target_heading_rate_degs);
 
-        pos_control->input_pos_vel_accel_NE_cm(pos_ofs_ne_cm, vel_ofs_ne_cms, accel_ofs_ne_cmss, false);
+        pos_control->input_pos_vel_accel_NE_m(pos_ofs_ne_m, vel_ofs_ne_ms, accel_ofs_ne_mss, false);
 
-        float pos_ofs_u_cm = -pos_ofs_ned_m.z * 100.0;
-        float vel_ofs_u_cms = -vel_ofs_ned_ms.z * 100.0;
-        float accel_ofs_u_cmss = -accel_ofs_ned_mss.z * 100.0;
-        pos_control->input_pos_vel_accel_U_cm(pos_ofs_u_cm, vel_ofs_u_cms, accel_ofs_u_cmss, false);
+        float pos_ofs_u_m = -pos_ofs_ned_m.z;
+        float vel_ofs_u_ms = -vel_ofs_ned_ms.z;
+        float accel_ofs_u_mss = -accel_ofs_ned_mss.z;
+        pos_control->input_pos_vel_accel_U_m(pos_ofs_u_m, vel_ofs_u_ms, accel_ofs_u_mss, false);
 
         // Determine desired yaw behavior based on configured follow mode
         switch (g2.follow.get_yaw_behave()) {
@@ -100,7 +100,7 @@ void ModeFollow::run()
                 Vector3f accel_ned_mss;  // accel of lead vehicle
                 if (g2.follow.get_target_pos_vel_accel_NED_m(pos_ned_m, vel_ned_ms, accel_ned_mss))
                 if (pos_ned_m.xy().length_squared() > 1.0) {
-                    yaw_rad = (pos_ned_m.xy() - pos_control->get_pos_target_NEU_cm().xy()).tofloat().angle();
+                    yaw_rad = (pos_ned_m.xy() - pos_control->get_pos_target_NEU_m().xy()).tofloat().angle();
                 }
                 break;
             }
@@ -114,8 +114,8 @@ void ModeFollow::run()
 
             case AP_Follow::YAW_BEHAVE_DIR_OF_FLIGHT: {
                 // Face the direction of travel
-                if (vel_ofs_ne_cms.length_squared() > (100.0 * 100.0)) {
-                    yaw_rad = vel_ofs_ne_cms.angle();
+                if (vel_ofs_ne_ms.length_squared() > (100.0 * 100.0)) {
+                    yaw_rad = vel_ofs_ne_ms.angle();
                 }
                 break;
             }
@@ -130,9 +130,9 @@ void ModeFollow::run()
         // Target data is invalid; hold position using zero velocity and acceleration inputs
         Vector2f vel_zero;
         Vector2f accel_zero;
-        pos_control->input_vel_accel_NE_cm(vel_zero, accel_zero, false);
+        pos_control->input_vel_accel_NE_m(vel_zero, accel_zero, false);
         float velz = 0.0;
-        pos_control->input_vel_accel_U_cm(velz, 0.0, false);
+        pos_control->input_vel_accel_U_m(velz, 0.0, false);
         yaw_rate_rads = 0.0f;
     }
 
@@ -151,7 +151,7 @@ float ModeFollow::wp_distance_m() const
 
 float ModeFollow::wp_bearing_deg() const
 {
-    return g2.follow.get_bearing_to_target_deg() * 100;
+    return g2.follow.get_bearing_to_target_deg();
 }
 
 // Returns target location with offset applied, for MAVLink reporting
