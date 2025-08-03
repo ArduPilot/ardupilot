@@ -134,16 +134,16 @@ protected:
     // parameters
     AP_Float    _angle_max_deg;         // Maximum pilot-commanded lean angle in degrees. Set to zero to default to 2/3 of PSC_ANGLE_MAX (or Q_ANGLE_MAX for QuadPlane).
     AP_Float    _speed_max_ne_cms;      // Maximum horizontal speed in cm/s while in loiter mode. Used to limit both user and internal trajectory velocities.
-    AP_Float    _accel_max_ne_cmss;     // Maximum horizontal acceleration (in cm/s²) applied during normal loiter corrections.
-    AP_Float    _brake_accel_max_cmss;  // Maximum braking acceleration (in cm/s²) applied when pilot sticks are released.
-    AP_Float    _brake_jerk_max_cmsss;  // Maximum braking jerk (in cm/s³) applied during braking transitions after pilot release.
+    AP_Float    _accel_max_ne_cmss;     // Maximum horizontal acceleration (in cm/s/s) applied during normal loiter corrections.
+    AP_Float    _brake_accel_max_cmss;  // Maximum braking acceleration (in cm/s/s) applied when pilot sticks are released.
+    AP_Float    _brake_jerk_max_cmsss;  // Maximum braking jerk (in cm/s/s/s) applied during braking transitions after pilot release.
     AP_Float    _brake_delay_s;         // Delay in seconds before braking begins after sticks are centered. Prevents premature deceleration during brief pauses.
 
     // loiter controller internal variables
-    Vector2f    _desired_accel_ne_mss;      // Pilot-requested horizontal acceleration in m/s² (after smoothing), in the NE (horizontal) frame.
-    Vector2f    _predicted_accel_ne_mss;    // Predicted acceleration in m/s² based on internal rate shaping of pilot input.
+    Vector2f    _desired_accel_ne_mss;      // Pilot-requested horizontal acceleration in m/s/s (after smoothing), in the NE (horizontal) frame.
+    Vector2f    _predicted_accel_ne_mss;    // Predicted acceleration in m/s/s based on internal rate shaping of pilot input.
     Vector2f    _predicted_euler_angle_rad; // Predicted roll/pitch angles (in radians) used for rate shaping of pilot input.
     Vector2f    _predicted_euler_rate;      // Predicted roll/pitch angular rates (in rad/s) for pilot acceleration shaping.
     uint32_t    _brake_timer_ms;            // Timestamp (in ms) when braking logic was last triggered (sticks released).
-    float       _brake_accel_mss;           // Current braking acceleration in m/s², updated using jerk limits over time.
+    float       _brake_accel_mss;           // Current braking acceleration in m/s/s, updated using jerk limits over time.
 };
