@@ -16,8 +16,8 @@
 #include <AP_Logger/LogStructure.h>
 
 // position controller default definitions
-#define POSCONTROL_ACCEL_NE_MSS                 1.0f    // default horizontal acceleration in m/s². This is overwritten by waypoint and loiter controllers
-#define POSCONTROL_JERK_NE_MSSS                 5.0f    // default horizontal jerk m/s³
+#define POSCONTROL_ACCEL_NE_MSS                 1.0f    // default horizontal acceleration in m/s/s. This is overwritten by waypoint and loiter controllers
+#define POSCONTROL_JERK_NE_MSSS                 5.0f    // default horizontal jerk m/s/s/s
 
 #define POSCONTROL_STOPPING_DIST_UP_MAX_M       3.0f    // max stopping distance (in m) vertically while climbing
 #define POSCONTROL_STOPPING_DIST_DOWN_MAX_M     2.0f    // max stopping distance (in m) vertically while descending
@@ -26,8 +26,8 @@
 #define POSCONTROL_SPEED_DOWN_MS                -1.5f   // default descent rate in m/s
 #define POSCONTROL_SPEED_UP_MS                  2.5f    // default climb rate in m/s
 
-#define POSCONTROL_ACCEL_U_MSS                  2.5f    // default vertical acceleration in m/s²
-#define POSCONTROL_JERK_U_MSSS                  5.0f    // default vertical jerk m/s³
+#define POSCONTROL_ACCEL_U_MSS                  2.5f    // default vertical acceleration in m/s/s
+#define POSCONTROL_JERK_U_MSSS                  5.0f    // default vertical jerk m/s/s/s
 
 #define POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ      2.0f    // low-pass filter on acceleration error (unit: Hz)
 
@@ -862,13 +862,13 @@ protected:
 
     // parameters
     AP_Float        _lean_angle_max_deg;    // Maximum autopilot commanded angle (in degrees). Set to zero for Angle Max
-    AP_Float        _shaping_jerk_ne_msss;  // Jerk limit of the ne kinematic path generation in m/s³ used to determine how quickly the aircraft varies the acceleration target
-    AP_Float        _shaping_jerk_u_msss;   // Jerk limit of the u kinematic path generation in m/s³ used to determine how quickly the aircraft varies the acceleration target
+    AP_Float        _shaping_jerk_ne_msss;  // Jerk limit of the ne kinematic path generation in m/s/s/s used to determine how quickly the aircraft varies the acceleration target
+    AP_Float        _shaping_jerk_u_msss;   // Jerk limit of the u kinematic path generation in m/s/s/s used to determine how quickly the aircraft varies the acceleration target
     AC_P_2D         _p_pos_ne_m;            // XY axis position controller to convert target distance (cm) to target velocity (cm/s)
     AC_P_1D         _p_pos_u_m;             // Z axis position controller to convert target altitude (cm) to target climb rate (cm/s)
-    AC_PID_2D       _pid_vel_ne_cm;         // XY axis velocity controller to convert target velocity (cm/s) to target acceleration (cm/s²)
-    AC_PID_Basic    _pid_vel_u_cm;          // Z axis velocity controller to convert target climb rate (cm/s) to target acceleration (cm/s²)
-    AC_PID          _pid_accel_u_cm_to_kt;  // Z axis acceleration controller to convert target acceleration (cm/s²) to throttle output (0 to 1000)
+    AC_PID_2D       _pid_vel_ne_cm;         // XY axis velocity controller to convert target velocity (cm/s) to target acceleration (cm/s/s)
+    AC_PID_Basic    _pid_vel_u_cm;          // Z axis velocity controller to convert target climb rate (cm/s) to target acceleration (cm/s/s)
+    AC_PID          _pid_accel_u_cm_to_kt;  // Z axis acceleration controller to convert target acceleration (cm/s/s) to throttle output (0 to 1000)
 
     // internal variables
     float       _dt_s;                     // time difference (in seconds) since the last loop time
@@ -877,10 +877,10 @@ protected:
     float       _vel_max_ne_ms;            // max horizontal speed in m/s used for kinematic shaping
     float       _vel_max_up_ms;            // max climb rate in m/s used for kinematic shaping
     float       _vel_max_down_ms;          // max descent rate in m/s used for kinematic shaping
-    float       _accel_max_ne_mss;         // max horizontal acceleration in m/s² used for kinematic shaping
-    float       _accel_max_u_mss;          // max vertical acceleration in m/s² used for kinematic shaping
-    float       _jerk_max_ne_msss;         // Jerk limit of the ne kinematic path generation in m/s³ used to determine how quickly the aircraft varies the acceleration target
-    float       _jerk_max_u_msss;          // Jerk limit of the z kinematic path generation in m/s³ used to determine how quickly the aircraft varies the acceleration target
+    float       _accel_max_ne_mss;         // max horizontal acceleration in m/s/s used for kinematic shaping
+    float       _accel_max_u_mss;          // max vertical acceleration in m/s/s used for kinematic shaping
+    float       _jerk_max_ne_msss;         // Jerk limit of the ne kinematic path generation in m/s/s/s used to determine how quickly the aircraft varies the acceleration target
+    float       _jerk_max_u_msss;          // Jerk limit of the z kinematic path generation in m/s/s/s used to determine how quickly the aircraft varies the acceleration target
     float       _vel_u_control_ratio = 2.0f;    // confidence that we have control in the vertical axis
     Vector2f    _disturb_pos_ne_m;         // position disturbance generated by system ID mode
     Vector2f    _disturb_vel_ne_ms;        // velocity disturbance generated by system ID mode
@@ -899,8 +899,8 @@ protected:
     Vector3f    _vel_estimate_neu_ms;
     Vector3f    _vel_desired_neu_ms;       // desired velocity in NEU m/s
     Vector3f    _vel_target_neu_ms;        // velocity target in NEU m/s calculated by pos_to_rate step
-    Vector3f    _accel_desired_neu_mss;    // desired acceleration in NEU m/s² (feed forward)
-    Vector3f    _accel_target_neu_mss;     // acceleration target in NEU m/s²
+    Vector3f    _accel_desired_neu_mss;    // desired acceleration in NEU m/s/s (feed forward)
+    Vector3f    _accel_target_neu_mss;     // acceleration target in NEU m/s/s
     // todo: seperate the limit vector into ne and u. ne is based on acceleration while u is set +-1 based on throttle saturation. Together they don't form a direction vector because the units are different.
     Vector3f    _limit_vector_neu;         // the direction that the position controller is limited, zero when not limited
 
@@ -908,15 +908,15 @@ protected:
     float    _pos_terrain_target_u_m;    // position terrain target in m relative to the EKF origin in NEU frame
     float    _pos_terrain_u_m;           // position terrain in m from the EKF origin in NEU frame. This terrain moves towards _pos_terrain_target_u_m
     float    _vel_terrain_u_ms;          // velocity terrain in NEU m/s calculated by pos_to_rate step. This terrain moves towards _vel_terrain_target
-    float    _accel_terrain_u_mss;       // acceleration terrain in NEU m/s²
+    float    _accel_terrain_u_mss;       // acceleration terrain in NEU m/s/s
 
     // offset handling variables
     Vector3p    _pos_offset_target_neu_m;      // position offset target in m relative to the EKF origin in NEU frame
     Vector3p    _pos_offset_neu_m;             // position offset in m from the EKF origin in NEU frame. This offset moves towards _pos_offset_target_neu_m
     Vector3f    _vel_offset_target_neu_ms;     // velocity offset target in m/s in NEU frame
     Vector3f    _vel_offset_neu_ms;            // velocity offset in NEU m/s calculated by pos_to_rate step. This offset moves towards _vel_offset_target_neu_ms
-    Vector3f    _accel_offset_target_neu_mss;  // acceleration offset target in m/s² in NEU frame
-    Vector3f    _accel_offset_neu_mss;         // acceleration offset in NEU m/s²
+    Vector3f    _accel_offset_target_neu_mss;  // acceleration offset target in m/s/s in NEU frame
+    Vector3f    _accel_offset_neu_mss;         // acceleration offset in NEU m/s/s
     uint32_t    _posvelaccel_offset_target_ne_ms;   // system time that pos, vel, accel targets were set (used to implement timeouts)
     uint32_t    _posvelaccel_offset_target_u_ms;    // system time that pos, vel, accel targets were set (used to implement timeouts)
 
