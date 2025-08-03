@@ -195,7 +195,7 @@ void AC_WPNav::wp_and_spline_init_m(float speed_ms, Vector3f stopping_point_neu_
     _scurve_next_leg.init();
     _track_dt_scalar = 1.0f;
 
-    _flags.reached_destination = true;
+    _flags.reached_destination = false;
     _flags.fast_waypoint = false;
 
     // determine initial origin and destination; fallback to current stopping point if not provided
