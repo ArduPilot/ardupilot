@@ -106,7 +106,7 @@ bool ModeFlowHold::init(bool ignore_checks)
     flow_pi_xy.set_dt(1.0/copter.scheduler.get_loop_rate_hz());
 
     // start with INS height
-    last_ins_height_m = pos_control->get_pos_estimate_NEU_cm().z * 0.01;
+    last_ins_height_m = pos_control->get_pos_estimate_NEU_m().z;
     height_offset_m = 0;
 
     return true;
@@ -130,7 +130,7 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles_cd, bool stick_inp
     Vector2f sensor_flow = flow_filter.apply(raw_flow);
 
     // scale by height estimate, limiting it to height_min_m to height_max
-    float ins_height_m = pos_control->get_pos_estimate_NEU_cm().z * 0.01;
+    float ins_height_m = pos_control->get_pos_estimate_NEU_m().z;
     float height_estimate_m = ins_height_m + height_offset_m;
 
     // compensate for height, this converts to (approx) m/s
@@ -357,7 +357,7 @@ void ModeFlowHold::run()
  */
 void ModeFlowHold::update_height_estimate(void)
 {
-    float ins_height_m = copter.pos_control->get_pos_estimate_NEU_cm().z * 0.01;
+    float ins_height_m = copter.pos_control->get_pos_estimate_NEU_m().z;
 
 #if 1
     // assume on ground when disarmed, or if we have only just started spooling the motors up
