@@ -36,6 +36,10 @@
 
 #define debug(fmt, args ...)  do {printf(fmt, ## args); } while(0)
 
+#define bright        0
+#define lowlight      1
+#define superlowlight 2
+
 extern const AP_HAL::HAL& hal;
 
 #define PIXART_REG_PRODUCT_ID  0x00
@@ -120,16 +124,21 @@ bool AP_OpticalFlow_Pixart::setup_sensor(void)
     // check product ID
     uint8_t id1 = reg_read(PIXART_REG_PRODUCT_ID);
     uint8_t id2;
+    uint8_t id3 = reg_read(PIXART_REG_REVISION_ID);
+
     if (id1 == 0x3f) {
         id2 = reg_read(PIXART_REG_INV_PROD_ID);
     } else {
         id2 = reg_read(PIXART_REG_INV_PROD_ID2);
     }
+
     debug("id1=0x%02x id2=0x%02x ~id1=0x%02x\n", id1, id2, uint8_t(~id1));
     if (id1 == 0x3F && id2 == uint8_t(~id1)) {
         model = PIXART_3900;
-    } else if (id1 == 0x49 && id2 == uint8_t(~id1)) {
+    } else if (id1 == 0x49 && id2 == uint8_t(~id1) && id3 == 0x00) {
         model = PIXART_3901;
+    } else if (id1 == 0x49 && id2 == uint8_t(~id1) && id3 == 0x01) {
+        model = PIXART_3903;  
     } else {
         debug("Not a recognised device\n");
         return false;
@@ -156,12 +165,19 @@ bool AP_OpticalFlow_Pixart::setup_sensor(void)
 
     if (model == PIXART_3900) {
         load_configuration(init_data_3900, ARRAY_SIZE(init_data_3900));
-    } else {
+    } else  if (model == PIXART_3901){
         load_configuration(init_data_3901_1, ARRAY_SIZE(init_data_3901_1));
         hal.scheduler->delay(100);
         load_configuration(init_data_3901_2, ARRAY_SIZE(init_data_3901_2));
+        hal.scheduler->delay(100);
+    } else  if (model == PIXART_3903){
+        load_configuration(init_data_3903_1_LowLight, ARRAY_SIZE(init_data_3903_1_LowLight));
+        hal.scheduler->delay(100);
+        load_configuration(init_data_3903_2_LowLight, ARRAY_SIZE(init_data_3903_2_LowLight));
+        hal.scheduler->delay(25);
+        load_configuration(init_data_3903_3_LowLight, ARRAY_SIZE(init_data_3903_3_LowLight));
+        _mode = lowlight;
     }
-
     hal.scheduler->delay(50);
 
     debug("Pixart %s ready\n", model==PIXART_3900?"3900":"3901");
@@ -326,6 +342,70 @@ void AP_OpticalFlow_Pixart::timer(void)
 #endif
 }
 
+// set mode
+void AP_OpticalFlow_Pixart::changeMode(uint8_t mode)
+{
+    if(mode == _mode) return;
+
+    reg_write(PIXART_REG_POWER_RST, 0x5A); //software reset 
+    hal.scheduler->delay(50);
+
+    _mode = mode;
+    switch(mode){
+        case 0:
+        brightMode();
+        break;
+        case 1:
+        lowlightMode();
+        break;
+        case 2:
+        superlowlightMode();
+        break;
+    }
+    _bright_to_low_count = 0;
+    _low_to_superlow_count = 0;
+    _low_to_bright_count = 0;
+    _superlow_to_low_count = 0;
+
+}
+
+// light modes fo paw3902/3
+void AP_OpticalFlow_Pixart::brightMode()
+{
+    if (model == PIXART_3903){
+        load_configuration(init_data_3903_1_Bright, ARRAY_SIZE(init_data_3903_1_Bright));
+        hal.scheduler->delay(100);
+        load_configuration(init_data_3903_2_Bright, ARRAY_SIZE(init_data_3903_2_Bright));
+        hal.scheduler->delay(25);
+        load_configuration(init_data_3903_3_Bright, ARRAY_SIZE(init_data_3903_3_Bright));
+    }
+    hal.scheduler->delay(50);   
+}
+
+void AP_OpticalFlow_Pixart::lowlightMode()
+{
+    if (model == PIXART_3903){
+        load_configuration(init_data_3903_1_LowLight, ARRAY_SIZE(init_data_3903_1_LowLight));
+        hal.scheduler->delay(100);
+        load_configuration(init_data_3903_2_LowLight, ARRAY_SIZE(init_data_3903_2_LowLight));
+        hal.scheduler->delay(25);
+        load_configuration(init_data_3903_3_LowLight, ARRAY_SIZE(init_data_3903_3_LowLight));
+    }
+    hal.scheduler->delay(50);   
+}
+
+void AP_OpticalFlow_Pixart::superlowlightMode()
+{
+    if (model == PIXART_3903){
+        load_configuration(init_data_3903_1_SuperLowLight, ARRAY_SIZE(init_data_3903_1_SuperLowLight));
+        hal.scheduler->delay(100);
+        load_configuration(init_data_3903_2_SuperLowLight, ARRAY_SIZE(init_data_3903_2_SuperLowLight));
+        hal.scheduler->delay(25);
+        load_configuration(init_data_3903_3_SuperLowLight, ARRAY_SIZE(init_data_3903_3_SuperLowLight));
+    }
+    hal.scheduler->delay(50);   
+}
+
 // update - read latest values from sensor and fill in x,y and totals.
 void AP_OpticalFlow_Pixart::update(void)
 {
@@ -338,26 +418,101 @@ void AP_OpticalFlow_Pixart::update(void)
     struct AP_OpticalFlow::OpticalFlow_state state;
     state.surface_quality = burst.squal;
 
+    const uint16_t shutter = (burst.shutter_upper < 8) | burst.shutter_lower;
+    bool dataValid = (burst.squal > 0);
+
+    if (model == PIXART_3903) {    
+        switch (_mode) {
+            case bright:
+
+                if ((burst.squal < 0x19) && (shutter >= 0x1FF0)) {
+                    dataValid = false;
+                }
+
+                if ((shutter >= 0x1FFE) && (burst.rawdata_sum < 0x3C)) {
+                    _bright_to_low_count++;
+
+                    if(_bright_to_low_count >= 10) {
+                        changeMode(lowlight);
+                    }
+                } else {
+                    _bright_to_low_count = 0;
+                }
+
+            break;
+
+            case lowlight:
+
+                if ((burst.squal < 0x46) && (shutter >= 0x1FF0)) {
+                    dataValid = false;
+                }
+
+                if ((shutter >= 0x1FFE) && (burst.rawdata_sum < 0x5A)) {
+                    _bright_to_low_count = 0;
+                    _low_to_superlow_count++;
+
+                    if(_low_to_superlow_count >= 10) {
+                        changeMode(superlowlight);
+                    }
+                } else if (shutter < 0x0BB8){
+                    _low_to_bright_count++;
+                    _low_to_superlow_count = 0;
+
+                    if(_low_to_superlow_count >= 10) {
+                        changeMode(bright);
+                    }
+                 } else {
+                    _low_to_bright_count = 0;
+                    _low_to_superlow_count = 0;
+                }
+
+            break;
+            case superlowlight:
+
+                if ((burst.squal < 0x55) && (shutter >= 0x0BC0)) {
+                    dataValid = false;
+                }
+
+                if (shutter < 0x01F4) {
+                    _superlow_to_low_count++;
+
+                    if(_superlow_to_low_count >= 10) {
+                        changeMode(lowlight);
+                    }
+                } else if (shutter < 0x03E8){
+                    _superlow_to_low_count++;;
+                    if(_superlow_to_low_count >= 10) {
+                        changeMode(lowlight);
+                    }
+                } else {
+                    _superlow_to_low_count = 0;
+                }    
+
+            break;                
+        }
+    }
+
     if (integral.sum_us > 0) {
         WITH_SEMAPHORE(_sem);
+        if (dataValid) {
+            const Vector2f flowScaler = _flowScaler();
+            float flowScaleFactorX = 1.0f + 0.001f * flowScaler.x;
+            float flowScaleFactorY = 1.0f + 0.001f * flowScaler.y;
+            float dt = integral.sum_us * 1.0e-6;
 
-        const Vector2f flowScaler = _flowScaler();
-        float flowScaleFactorX = 1.0f + 0.001f * flowScaler.x;
-        float flowScaleFactorY = 1.0f + 0.001f * flowScaler.y;
-        float dt = integral.sum_us * 1.0e-6;
-
-        state.flowRate = Vector2f(integral.sum.x * flowScaleFactorX,
-                                  integral.sum.y * flowScaleFactorY);
-        state.flowRate *= flow_pixel_scaling / dt;
+            state.flowRate = Vector2f(integral.sum.x * flowScaleFactorX,
+                                      integral.sum.y * flowScaleFactorY);
+            state.flowRate *= flow_pixel_scaling / dt;
 
         // we only apply yaw to flowRate as body rate comes from AHRS
-        _applyYaw(state.flowRate);
+            _applyYaw(state.flowRate);
 
-        state.bodyRate = integral.gyro / dt;
+            state.bodyRate = integral.gyro / dt;
 
-        integral.sum.zero();
-        integral.sum_us = 0;
-        integral.gyro.zero();
+            integral.sum.zero();
+            integral.sum_us = 0;
+            integral.gyro.zero();
+	   }
     } else {
         state.flowRate.zero();
         state.bodyRate.zero();
