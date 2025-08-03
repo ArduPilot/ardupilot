@@ -1,4 +1,5 @@
 #include "ExtendedKalmanFilter.h"
+#include "AP_Math/AP_Math.h"
 #include "AP_Math/matrixN.h"
 
 
@@ -29,7 +30,7 @@ void ExtendedKalmanFilter::reset(const VectorN<float,N> &x, const MatrixN<float,
 }
 
 
-void ExtendedKalmanFilter::update(float z, float Px, float Py, float driftX, float driftY)
+void ExtendedKalmanFilter::update(float z, float Px, float Py, float driftX, float driftY, float min_radius)
 {
     MatrixN<float,N> tempM;
     VectorN<float,N> H;
@@ -69,7 +70,7 @@ void ExtendedKalmanFilter::update(float z, float Px, float Py, float driftX, flo
     X += K * (z - z1);
 
     // Make sure X[1] stays positive.
-    X[1] = X[1]>40.0 ? X[1]: 40.0;
+    X[1] = MAX(min_radius, X[1]);
 
     // Correct the covariance too.
     // LINE 46
