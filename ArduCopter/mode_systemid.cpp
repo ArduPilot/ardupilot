@@ -128,9 +128,7 @@ bool ModeSystemId::init(bool ignore_checks)
         if (!pos_control->is_active_U()) {
             pos_control->init_U_controller();
         }
-        Vector3f curr_pos;
-        curr_pos = pos_control->get_pos_estimate_NEU_cm().tofloat();
-        target_pos = curr_pos.xy();
+        target_pos_ne_m = pos_control->get_pos_estimate_NEU_m().tofloat().xy();
     }
 
     att_bf_feedforward = attitude_control->get_bf_feedforward();
@@ -166,7 +164,7 @@ void ModeSystemId::run()
     float target_yaw_rate_rads = 0.0f;
     float pilot_throttle_scaled = 0.0f;
     float target_climb_rate_ms = 0.0f;
-    Vector2f input_vel;
+    Vector2f input_vel_ne_ms;
 
     if (!is_poscontrol_axis_type()) {
 
@@ -311,37 +309,37 @@ void ModeSystemId::run()
                     break;
                 case AxisType::DISTURB_POS_LAT:
                     disturb_state.x = 0.0f;
-                    disturb_state.y = waveform_sample * 100.0f;
+                    disturb_state.y = waveform_sample;
                     disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
-                    pos_control->set_disturb_pos_NE_cm(disturb_state);
+                    pos_control->set_disturb_pos_NE_m(disturb_state);
                     break;
                 case AxisType::DISTURB_POS_LONG:
-                    disturb_state.x = waveform_sample * 100.0f;
+                    disturb_state.x = waveform_sample;
                     disturb_state.y = 0.0f;
                     disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
-                    pos_control->set_disturb_pos_NE_cm(disturb_state);
+                    pos_control->set_disturb_pos_NE_m(disturb_state);
                     break;
                 case AxisType::DISTURB_VEL_LAT:
                     disturb_state.x = 0.0f;
-                    disturb_state.y = waveform_sample * 100.0f;
+                    disturb_state.y = waveform_sample;
                     disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
-                    pos_control->set_disturb_vel_NE_cms(disturb_state);
+                    pos_control->set_disturb_vel_NE_ms(disturb_state);
                     break;
                 case AxisType::DISTURB_VEL_LONG:
-                    disturb_state.x = waveform_sample * 100.0f;
+                    disturb_state.x = waveform_sample;
                     disturb_state.y = 0.0f;
                     disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
-                    pos_control->set_disturb_vel_NE_cms(disturb_state);
+                    pos_control->set_disturb_vel_NE_ms(disturb_state);
                     break;
                 case AxisType::INPUT_VEL_LAT:
-                    input_vel.x = 0.0f;
-                    input_vel.y = waveform_sample * 100.0f;
-                    input_vel.rotate(attitude_control->get_att_target_euler_rad().z);
+                    input_vel_ne_ms.x = 0.0f;
+                    input_vel_ne_ms.y = waveform_sample;
+                    input_vel_ne_ms.rotate(attitude_control->get_att_target_euler_rad().z);
                     break;
                 case AxisType::INPUT_VEL_LONG:
-                    input_vel.x = waveform_sample * 100.0f;
-                    input_vel.y = 0.0f;
-                    input_vel.rotate(attitude_control->get_att_target_euler_rad().z);
+                    input_vel_ne_ms.x = waveform_sample;
+                    input_vel_ne_ms.y = 0.0f;
+                    input_vel_ne_ms.rotate(attitude_control->get_att_target_euler_rad().z);
                     break;
             }
             break;
@@ -362,13 +360,13 @@ void ModeSystemId::run()
             pos_control->soften_for_landing_NE();
         }
 
-        Vector2f accel;
-        target_pos += input_vel * G_Dt;
+        Vector2f accel_ne_mss;
+        target_pos_ne_m += input_vel_ne_ms * G_Dt;
         if (is_positive(G_Dt)) {
-            accel = (input_vel - input_vel_last) / G_Dt;
-            input_vel_last = input_vel;
+            accel_ne_mss = (input_vel_ne_ms - input_vel_last_ne_ms) / G_Dt;
+            input_vel_last_ne_ms = input_vel_ne_ms;
         }
-        pos_control->set_pos_vel_accel_NE_cm(target_pos.topostype(), input_vel, accel);
+        pos_control->set_pos_vel_accel_NE_m(target_pos_ne_m.topostype(), input_vel_ne_ms, accel_ne_mss);
 
         // run pos controller
         pos_control->update_NE_controller();
