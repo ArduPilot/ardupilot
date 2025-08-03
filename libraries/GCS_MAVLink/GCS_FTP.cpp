@@ -519,14 +519,14 @@ void GCS_MAVLINK::ftp_worker(void) {
                                 break;
                             }
 
-                            if (read_bytes != sizeof(reply.data)) {
-                                // don't send any old data
-                                memset(reply.data + read_bytes, 0, sizeof(reply.data) - read_bytes);
-                            }
-
                             if (read_bytes == 0) {
                                 ftp_error(reply, FTP_ERROR::EndOfFile);
                                 break;
+                            }
+                            
+                            if (read_bytes != sizeof(reply.data)) {
+                                // don't send any old data
+                                memset(reply.data + read_bytes, 0, sizeof(reply.data) - read_bytes);
                             }
 
                             reply.opcode = FTP_OP::Ack;
