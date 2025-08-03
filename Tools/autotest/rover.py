@@ -3572,17 +3572,16 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def GCSMission(self):
         '''check MAVProxy's waypoint handling of missions'''
-
+        # vehicle with state may have non-zero MISSION_CURRENT.seq, so reboot
+        self.reboot_sitl()
         target_system = 1
         target_component = 1
         mavproxy = self.start_mavproxy()
         mavproxy.send('wp clear\n')
-        self.delay_sim_time(1)
-        if self.get_parameter("MIS_TOTAL") != 0:
-            raise NotAchievedException("Failed to clear mission")
-        m = self.assert_receive_message('MISSION_CURRENT', timeout=5, verbose=True)
-        if m.seq != 0:
-            raise NotAchievedException("Bad mission current")
+        self.wait_parameter_value('MIS_TOTAL', 0)
+        self.assert_received_message_field_values('MISSION_CURRENT', {
+            "seq": 0,
+        }, timeout=5, verbose=True)
         self.load_mission_using_mavproxy(mavproxy, "rover-gripper-mission.txt")
         set_wp = 1
         mavproxy.send('wp set %u\n' % set_wp)
@@ -3703,6 +3702,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
         self.check_mission_waypoint_items_same(items_with_split_in,
                                                downloaded_items)
+
+        mavproxy.send('wp clear\n')
+        self.wait_parameter_value('MIS_TOTAL', 0)
 
         self.stop_mavproxy(mavproxy)
 
