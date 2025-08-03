@@ -57,14 +57,14 @@ void ModeCircle::run()
     // skip if in radio failsafe
     if (rc().has_valid_input() && copter.circle_nav->pilot_control_enabled()) {
         // update the circle controller's radius target based on pilot pitch stick inputs
-        const float radius_current = copter.circle_nav->get_radius_cm();           // circle controller's radius target, which begins as the circle_radius parameter
-        const float pitch_stick = channel_pitch->norm_input_dz();               // pitch stick normalized -1 to 1
-        const float nav_speed = copter.wp_nav->get_default_speed_NE_cms();          // copter WP_NAV parameter speed
-        const float radius_pilot_change = (pitch_stick * nav_speed) * G_Dt;     // rate of change (pitch stick up reduces the radius, as in moving forward)
-        const float radius_new = MAX(radius_current + radius_pilot_change,0);   // new radius target
+        const float radius_current_cm = copter.circle_nav->get_radius_cm();           // circle controller's radius target, which begins as the circle_radius parameter
+        const float pitch_stick_norm = channel_pitch->norm_input_dz();               // pitch stick normalized -1 to 1
+        const float nav_speed_cms = copter.wp_nav->get_default_speed_NE_cms();          // copter WP_NAV parameter speed
+        const float radius_pilot_change_cm = (pitch_stick_norm * nav_speed_cms) * G_Dt;     // rate of change (pitch stick up reduces the radius, as in moving forward)
+        const float radius_new_cm = MAX(radius_current_cm + radius_pilot_change_cm,0);   // new radius target
 
-        if (!is_equal(radius_current, radius_new)) {
-            copter.circle_nav->set_radius_cm(radius_new);
+        if (!is_equal(radius_current_cm, radius_new_cm)) {
+            copter.circle_nav->set_radius_cm(radius_new_cm);
         }
 
         // update the orbicular rate target based on pilot roll stick inputs
@@ -74,31 +74,31 @@ void ModeCircle::run()
 #else
         {
 #endif
-            const float roll_stick = channel_roll->norm_input_dz();         // roll stick normalized -1 to 1
+            const float roll_stick_norm = channel_roll->norm_input_dz();         // roll stick normalized -1 to 1
 
-            if (is_zero(roll_stick)) {
+            if (is_zero(roll_stick_norm)) {
                 // no speed change, so reset speed changing flag
                 speed_changing = false;
             } else {
-                const float rate = copter.circle_nav->get_rate_degs();           // circle controller's rate target, which begins as the circle_rate parameter
-                const float rate_current = copter.circle_nav->get_rate_current(); // current adjusted rate target, which is probably different from _rate_degs
-                const float rate_pilot_change = (roll_stick * G_Dt);        // rate of change from 0 to 1 degrees per second
-                float rate_new = rate_current;                              // new rate target
-                if (is_positive(rate)) {
+                const float rate_degs = copter.circle_nav->get_rate_degs();           // circle controller's rate target, which begins as the circle_rate parameter
+                const float rate_current_degs = copter.circle_nav->get_rate_current(); // current adjusted rate target, which is probably different from _rate_degs
+                const float rate_pilot_change_degs = (roll_stick_norm * G_Dt);        // rate of change from 0 to 1 degrees per second
+                float rate_new_degs = rate_current_degs;                              // new rate target
+                if (is_positive(rate_degs)) {
                     // currently moving clockwise, constrain 0 to 90
-                    rate_new = constrain_float(rate_current + rate_pilot_change, 0, 90);
+                    rate_new_degs = constrain_float(rate_current_degs + rate_pilot_change_degs, 0, 90);
 
-                } else if (is_negative(rate)) {
+                } else if (is_negative(rate_degs)) {
                     // currently moving counterclockwise, constrain -90 to 0
-                    rate_new = constrain_float(rate_current + rate_pilot_change, -90, 0);
+                    rate_new_degs = constrain_float(rate_current_degs + rate_pilot_change_degs, -90, 0);
 
-                } else if (is_zero(rate) && !speed_changing) {
+                } else if (is_zero(rate_degs) && !speed_changing) {
                     // Stopped, pilot has released the roll stick, and pilot now wants to begin moving with the roll stick
-                    rate_new = rate_pilot_change;
+                    rate_new_degs = rate_pilot_change_degs;
                 }
 
                 speed_changing = true;
-                copter.circle_nav->set_rate_degs(rate_new);
+                copter.circle_nav->set_rate_degs(rate_new_degs);
             }
         }
     }
