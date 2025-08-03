@@ -805,12 +805,13 @@ void Tailsitter::write_log()
         return;
     }
 
-    struct log_tailsitter pkt = {
+    struct log_TSIT pkt = {
         LOG_PACKET_HEADER_INIT(LOG_TSIT_MSG),
         time_us             : AP_HAL::micros64(),
         throttle_scaler     : log_data.throttle_scaler,
         speed_scaler        : log_data.speed_scaler,
         min_throttle        : log_data.min_throttle,
+        transition_state    : uint8_t(transition->transition_state),
     };
     plane.logger.WriteBlock(&pkt, sizeof(pkt));
 }
