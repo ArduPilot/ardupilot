@@ -47,6 +47,7 @@
 
 class AP_GPS_Backend;
 class RTCM3_Parser;
+class AP_GPS_SBF;
 
 /// @class AP_GPS
 /// GPS driver main class
@@ -140,7 +141,9 @@ public:
 #if GPS_MOVING_BASELINE
         MovingBase mb_params;
 #endif // GPS_MOVING_BASELINE
-
+#if AP_GPS_SBF_ENABLED
+        AP_GPS_SBF *sbf_backend;
+#endif
         static const struct AP_Param::GroupInfo var_info[];
     };
 

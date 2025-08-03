@@ -19,6 +19,7 @@
 #if AP_GPS_ENABLED
 
 #include "AP_GPS.h"
+#include "AP_GPS_SBF.h"
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_GPS::Params::var_info[] = {
@@ -111,6 +112,12 @@ const AP_Param::GroupInfo AP_GPS::Params::var_info[] = {
     // @Description: GPS Node id for GPS. If 0 the gps will be automatically selected on a first-come-first-GPS basis.
     // @User: Advanced
     AP_GROUPINFO("CAN_OVRIDE", 9, AP_GPS::Params, override_node_id, 0),
+#endif
+
+#if AP_GPS_SBF_ENABLED
+    // @Group:
+    // @Path: ./SIM_GPS_SBF.cpp
+    AP_SUBGROUPPTR(sbf_backend, "",  10, AP_GPS::Params, AP_GPS_SBF),
 #endif
 
     AP_GROUPEND
