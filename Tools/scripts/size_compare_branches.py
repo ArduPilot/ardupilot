@@ -324,6 +324,7 @@ class SizeCompareBranches(object):
         consistent_build_envs = {
             "CHIBIOS_GIT_VERSION": "12345678",
             "GIT_VERSION": "abcdef",
+            "GIT_VERSION_EXTENDED": "0123456789abcdef",
             "GIT_VERSION_INT": "15",
         }
         for (n, v) in consistent_build_envs.items():
