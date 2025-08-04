@@ -309,48 +309,48 @@ bool Copter::start_takeoff(const float alt)
 #if AP_SCRIPTING_ENABLED
 #if MODE_GUIDED_ENABLED
 // set target position (for use by scripting)
-bool Copter::set_target_pos_NED(const Vector3f& target_pos, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool terrain_alt)
+bool Copter::set_target_pos_NED(const Vector3f& target_pos_ned_m, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool terrain_alt)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!flightmode->in_guided_mode()) {
         return false;
     }
 
-    const Vector3f pos_neu_cm(target_pos.x * 100.0f, target_pos.y * 100.0f, -target_pos.z * 100.0f);
+    const Vector3f pos_neu_cm(target_pos_ned_m.x * 100.0f, target_pos_ned_m.y * 100.0f, -target_pos_ned_m.z * 100.0f);
 
     return mode_guided.set_pos_neu_cm(pos_neu_cm, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), yaw_relative, terrain_alt);
 }
 
 // set target position and velocity (for use by scripting)
-bool Copter::set_target_posvel_NED(const Vector3f& target_pos, const Vector3f& target_vel)
+bool Copter::set_target_posvel_NED(const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!flightmode->in_guided_mode()) {
         return false;
     }
 
-    const Vector3f pos_neu_cm(target_pos.x * 100.0f, target_pos.y * 100.0f, -target_pos.z * 100.0f);
-    const Vector3f vel_neu_cms(target_vel.x * 100.0f, target_vel.y * 100.0f, -target_vel.z * 100.0f);
+    const Vector3f pos_neu_cm(target_pos_ned_m.x * 100.0f, target_pos_ned_m.y * 100.0f, -target_pos_ned_m.z * 100.0f);
+    const Vector3f vel_neu_cms(target_vel_ned_ms.x * 100.0f, target_vel_ned_ms.y * 100.0f, -target_vel_ned_ms.z * 100.0f);
 
     return mode_guided.set_pos_vel_accel_neu_cm(pos_neu_cm, vel_neu_cms, Vector3f());
 }
 
 // set target position, velocity and acceleration (for use by scripting)
-bool Copter::set_target_posvelaccel_NED(const Vector3f& target_pos, const Vector3f& target_vel, const Vector3f& target_accel, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative)
+bool Copter::set_target_posvelaccel_NED(const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms, const Vector3f& target_accel_ned_mss, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!flightmode->in_guided_mode()) {
         return false;
     }
 
-    const Vector3f pos_neu_cm(target_pos.x * 100.0f, target_pos.y * 100.0f, -target_pos.z * 100.0f);
-    const Vector3f vel_neu_cms(target_vel.x * 100.0f, target_vel.y * 100.0f, -target_vel.z * 100.0f);
-    const Vector3f accel_neu_cms(target_accel.x * 100.0f, target_accel.y * 100.0f, -target_accel.z * 100.0f);
+    const Vector3f pos_neu_cm(target_pos_ned_m.x * 100.0f, target_pos_ned_m.y * 100.0f, -target_pos_ned_m.z * 100.0f);
+    const Vector3f vel_neu_cms(target_vel_ned_ms.x * 100.0f, target_vel_ned_ms.y * 100.0f, -target_vel_ned_ms.z * 100.0f);
+    const Vector3f accel_neu_cmss(target_accel_ned_mss.x * 100.0f, target_accel_ned_mss.y * 100.0f, -target_accel_ned_mss.z * 100.0f);
 
-    return mode_guided.set_pos_vel_accel_neu_cm(pos_neu_cm, vel_neu_cms, accel_neu_cms, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), yaw_relative);
+    return mode_guided.set_pos_vel_accel_neu_cm(pos_neu_cm, vel_neu_cms, accel_neu_cmss, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), yaw_relative);
 }
 
-bool Copter::set_target_velocity_NED(const Vector3f& vel_ned)
+bool Copter::set_target_velocity_NED(const Vector3f& target_vel_ned_ms)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!flightmode->in_guided_mode()) {
@@ -358,13 +358,13 @@ bool Copter::set_target_velocity_NED(const Vector3f& vel_ned)
     }
 
     // convert vector to neu in cm
-    const Vector3f vel_neu_cms(vel_ned.x * 100.0f, vel_ned.y * 100.0f, -vel_ned.z * 100.0f);
+    const Vector3f vel_neu_cms(target_vel_ned_ms.x * 100.0f, target_vel_ned_ms.y * 100.0f, -target_vel_ned_ms.z * 100.0f);
     mode_guided.set_vel_neu_cms(vel_neu_cms);
     return true;
 }
 
 // set target velocity and acceleration (for use by scripting)
-bool Copter::set_target_velaccel_NED(const Vector3f& target_vel, const Vector3f& target_accel, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool relative_yaw)
+bool Copter::set_target_velaccel_NED(const Vector3f& target_vel_ned_ms, const Vector3f& target_accel_ned_mss, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool relative_yaw)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!flightmode->in_guided_mode()) {
@@ -372,10 +372,10 @@ bool Copter::set_target_velaccel_NED(const Vector3f& target_vel, const Vector3f&
     }
 
     // convert vector to neu in cm
-    const Vector3f vel_neu_cms(target_vel.x * 100.0f, target_vel.y * 100.0f, -target_vel.z * 100.0f);
-    const Vector3f accel_neu_cms(target_accel.x * 100.0f, target_accel.y * 100.0f, -target_accel.z * 100.0f);
+    const Vector3f vel_neu_cms(target_vel_ned_ms.x * 100.0f, target_vel_ned_ms.y * 100.0f, -target_vel_ned_ms.z * 100.0f);
+    const Vector3f accel_neu_cmss(target_accel_ned_mss.x * 100.0f, target_accel_ned_mss.y * 100.0f, -target_accel_ned_mss.z * 100.0f);
 
-    mode_guided.set_vel_accel_neu_cm(vel_neu_cms, accel_neu_cms, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), relative_yaw);
+    mode_guided.set_vel_accel_neu_cm(vel_neu_cms, accel_neu_cmss, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), relative_yaw);
     return true;
 }
 
