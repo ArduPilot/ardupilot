@@ -860,22 +860,22 @@ bool ModeGuided::guided_limit_check()
     }
 
     // get current location
-    const Vector3f& curr_pos = inertial_nav.get_position_neu_cm();
+    const Vector3f& curr_pos_neu_cm = inertial_nav.get_position_neu_cm();
 
     // check if we have gone below min alt
-    if (!is_zero(guided_limit.alt_min_cm) && (curr_pos.z < guided_limit.alt_min_cm)) {
+    if (!is_zero(guided_limit.alt_min_cm) && (curr_pos_neu_cm.z < guided_limit.alt_min_cm)) {
         return true;
     }
 
     // check if we have gone above max alt
-    if (!is_zero(guided_limit.alt_max_cm) && (curr_pos.z > guided_limit.alt_max_cm)) {
+    if (!is_zero(guided_limit.alt_max_cm) && (curr_pos_neu_cm.z > guided_limit.alt_max_cm)) {
         return true;
     }
 
     // check if we have gone beyond horizontal limit
     if (guided_limit.horiz_max_cm > 0.0f) {
-        const float horiz_move = get_horizontal_distance(guided_limit.start_pos_neu_cm.xy(), curr_pos.xy());
-        if (horiz_move > guided_limit.horiz_max_cm) {
+        const float horiz_move_cm = get_horizontal_distance(guided_limit.start_pos_neu_cm.xy(), curr_pos_neu_cm.xy());
+        if (horiz_move_cm > guided_limit.horiz_max_cm) {
             return true;
         }
     }
