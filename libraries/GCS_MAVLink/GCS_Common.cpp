@@ -5152,7 +5152,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_set_ekf_source_set(const mavlink_command_
 #endif
 
 #if AP_GRIPPER_ENABLED
-MAV_RESULT GCS_MAVLINK::handle_command_do_gripper(const mavlink_command_int_t &packet)
+class CommandDoGripperHandler : public CommandIntHandler {
+    using CommandIntHandler::CommandIntHandler;
+
+    MAV_RESULT _run() override;
+    uint8_t used_param_mask() const override { return 0b00000011; }
+};
+
+MAV_RESULT CommandDoGripperHandler::_run()
 {
     AP_Gripper &gripper = AP::gripper();
 
@@ -5181,7 +5188,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_gripper(const mavlink_command_int_t &p
 #endif  // AP_GRIPPER_ENABLED
 
 #if HAL_SPRAYER_ENABLED
-MAV_RESULT GCS_MAVLINK::handle_command_do_sprayer(const mavlink_command_int_t &packet)
+class CommandDoSprayerHandler : public CommandIntHandler {
+    using CommandIntHandler::CommandIntHandler;
+
+    MAV_RESULT _run() override;
+    uint8_t used_param_mask() const override { return 0b00000001; }
+};
+
+MAV_RESULT CommandDoSprayerHandler::_run()
 {
     AC_Sprayer *sprayer = AP::sprayer();
     if (sprayer == nullptr) {
@@ -5671,8 +5685,95 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_follow(const mavlink_command_int_t &pa
 }
 #endif  // AP_MAVLINK_FOLLOW_HANDLING_ENABLED
 
+CommandIntHandler *new_command_int_handler(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+CommandIntHandler *new_command_int_handler(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+{
+    switch (packet.command) {
+#if HAL_SPRAYER_ENABLED
+    case MAV_CMD_DO_SPRAYER:
+        return NEW_NOTHROW CommandDoSprayerHandler(packet, msg);
+#endif  // HAL_SPRAYER_ENABLED
+#if AP_GRIPPER_ENABLED
+    case MAV_CMD_DO_GRIPPER:
+        return NEW_NOTHROW CommandDoGripperHandler(packet, msg);
+#endif  // AP_GRIPPER_ENABLED
+    default:
+        break;
+    }
+    return nullptr;
+}
+
+bool CommandIntHandler::check_float_param(uint8_t ofs, float value, MAV_RESULT &ret) const {
+    // if a value is NaN then handler is expected to check or it is unused
+    if (isnan(value)) {
+        // nan is always a good value; either it is unused and thus
+        // must be NaN, or it is marked as used by the command and
+        // thus the command handler must handle handle the NaN case.
+        return true;
+    }
+    // see if the value is used:
+    if (((used_param_mask() & (1U<<ofs)) != 0)) {
+        // value is used; handler must check for nan!
+        return true;
+    }
+    // parameter is unused and not-NaN
+
+    // compatability code with older clients:
+    // if (is_zero(packet.param2)) {
+    //     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Non-NaN value received in unused field");
+    //     return true;
+    // }
+
+    ret = MAV_RESULT_DENIED;
+    return false;
+}
+bool CommandIntHandler::check_int_param(uint8_t ofs, int32_t value, MAV_RESULT &ret) const {
+    // if a value is INT32_MAX then handler is expected to check or it is unused
+    if (value == INT32_MAX) {
+        return true;
+    }
+    // if a value is NaN then handler is expected to check
+    if (((used_param_mask() & (1U<<ofs)) != 0)) {
+        // int32_max is always a good value; either it is unused and thus
+        // must be Int32_Max, or it is marked as used by the command and
+        // thus the command handler must handle handle the Int32_Max case.
+        return true;
+    }
+    // parameter is unused and not-INT32_MAX
+
+    // compatability code with older clients:
+    // if (is_zero(packet.param2)) {
+    //     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Non-NaN value received in unused field");
+    //     return true;
+    // }
+
+    ret = MAV_RESULT_DENIED;
+    return false;
+}
+
+MAV_RESULT CommandIntHandler::run()
+{
+    MAV_RESULT ret;
+    if (!check_float_param(0, packet.param1, ret)) { return ret; }
+    if (!check_float_param(1, packet.param2, ret)) { return ret; }
+    if (!check_float_param(2, packet.param3, ret)) { return ret; }
+    if (!check_float_param(3, packet.param4, ret)) { return ret; }
+    if (!check_int_param(4, packet.x, ret)) { return ret; }
+    if (!check_int_param(5, packet.y, ret)) { return ret; }
+    if (!check_float_param(6, packet.z, ret)) { return ret; }
+
+    return _run();
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
+    auto *handler = new_command_int_handler(packet, msg);
+    if (handler != nullptr) {
+        const MAV_RESULT ret = handler->run();
+        delete handler;
+        return ret;
+    }
+
     switch (packet.command) {
 
 #if HAL_INS_ACCELCAL_ENABLED
@@ -5729,11 +5830,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_DO_FLIGHTTERMINATION:
         return handle_flight_termination(packet);
 
-#if AP_GRIPPER_ENABLED
-    case MAV_CMD_DO_GRIPPER:
-        return handle_command_do_gripper(packet);
-#endif
-
 #if AP_MISSION_ENABLED
     case MAV_CMD_DO_JUMP_TAG:
         return handle_command_do_jump_tag(packet);
@@ -5744,11 +5840,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 
     case MAV_CMD_DO_SET_MODE:
         return handle_command_do_set_mode(packet);
-
-#if HAL_SPRAYER_ENABLED
-    case MAV_CMD_DO_SPRAYER:
-        return handle_command_do_sprayer(packet);
-#endif
 
 #if AP_CAMERA_ENABLED
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
