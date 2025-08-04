@@ -230,17 +230,6 @@ void Sub::do_nav_wp(const AP_Mission::Mission_Command& cmd)
         target_loc.lat = current_loc.lat;
         target_loc.lng = current_loc.lng;
     }
-    // use current altitude if not provided
-    if (target_loc.alt == 0) {
-        // set to current altitude but in command's alt frame
-        int32_t curr_alt;
-        if (current_loc.get_alt_cm(target_loc.get_alt_frame(),curr_alt)) {
-            target_loc.set_alt_cm(curr_alt, target_loc.get_alt_frame());
-        } else {
-            // default to current altitude as alt-above-home
-            target_loc.copy_alt_from(current_loc);
-        }
-    }
 
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
@@ -307,24 +296,6 @@ void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
         const Location temp_loc(temp_pos, Location::AltFrame::ABOVE_ORIGIN);
         target_loc.lat = temp_loc.lat;
         target_loc.lng = temp_loc.lng;
-    }
-
-    // In mavproxy misseditor: Abs = 0 = ALT_FRAME_ABSOLUTE
-    //                         Rel = 1 = ALT_FRAME_ABOVE_HOME
-    //                         AGL = 3 = ALT_FRAME_ABOVE_TERRAIN
-    //    2 = ALT_FRAME_ABOVE_ORIGIN, not an option in mavproxy misseditor
-
-    // use current altitude if not provided
-    // To-Do: use z-axis stopping point instead of current alt
-    if (target_loc.alt == 0) {
-        // set to current altitude but in command's alt frame
-        int32_t curr_alt;
-        if (current_loc.get_alt_cm(target_loc.get_alt_frame(),curr_alt)) {
-            target_loc.set_alt_cm(curr_alt, target_loc.get_alt_frame());
-        } else {
-            // default to current altitude as alt-above-home
-            target_loc.copy_alt_from(current_loc);
-        }
     }
 
     // start way point navigator and provide it the desired location
