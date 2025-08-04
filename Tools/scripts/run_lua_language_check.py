@@ -8,7 +8,7 @@ It generates a json report that this then parses to make it look nicer
 AP_FLAKE8_CLEAN
 '''
 
-import optparse
+import argparse
 import sys
 import os
 import pathlib
@@ -16,24 +16,24 @@ import shutil
 import platform
 import subprocess
 import re
+import logging
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser(__file__)
+    parser = argparse.ArgumentParser(__file__)
+    parser.add_argument('--debugLogging', action='store_true', help='turn on some extra logging to debug the auto installer')
+    parser.add_argument('check_path', default="./", help='optional input file or directory name', nargs='?')
 
-    opts, args = parser.parse_args()
+    args = parser.parse_args()
 
-    if len(args) > 1:
-        print('Usage: %s "check path"' % parser.usage)
-        sys.exit(0)
-
-    check_path = "./"
-    if len(args) > 0:
-        check_path = args[0]
-    check_path = pathlib.Path(check_path)
+    check_path = pathlib.Path(args.check_path)
 
     if not os.path.exists(check_path):
         raise Exception("Path invalid: %s" % check_path)
+
+    # This allows us to see debug logging from github_release_downloader which sometimes fails in CI
+    if args.debugLogging:
+        logging.basicConfig(level=logging.DEBUG)
 
     # Work out full path to config file
     ap_root = (pathlib.Path(__file__) / "../../../").resolve()

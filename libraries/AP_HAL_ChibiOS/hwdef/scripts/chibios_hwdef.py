@@ -1234,6 +1234,9 @@ class ChibiOSHWDef(hwdef.HWDef):
 #define CH_CFG_USE_DYNAMIC FALSE
 #endif
 #define STM32_FLASH_DISABLE_ISR 0
+#ifndef PAL_USE_CALLBACKS
+#define PAL_USE_CALLBACKS FALSE
+#endif
 ''')
             # get bootloader flash space, if larger than 128k we can enable Heap
             flash_size = self.get_config('FLASH_USE_MAX_KB', type=int, default=0)

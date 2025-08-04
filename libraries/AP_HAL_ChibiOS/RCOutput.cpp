@@ -844,6 +844,13 @@ void RCOutput::push_local(void)
 
 uint16_t RCOutput::read(uint8_t chan)
 {
+#if AP_SIM_ENABLED
+    // FIXME: if on_hardware_output_enable_mask then read from hardware etc
+    if (chan < ARRAY_SIZE(hal.simstate->pwm_output)) {
+        return hal.simstate->pwm_output[chan];
+    }
+    return 0;
+#endif  // AP_SIM_ENABLED
     if (chan >= max_channels) {
         return 0;
     }
@@ -861,6 +868,13 @@ void RCOutput::read(uint16_t* period_us, uint8_t len)
     if (len > max_channels) {
         len = max_channels;
     }
+#if AP_SIM_ENABLED
+    // FIXME: if on_hardware_output_enable_mask then read from hardware etc
+    for (uint8_t i=0; i<MIN(len, ARRAY_SIZE(hal.simstate->pwm_output)); i++) {
+        period_us[i] = hal.simstate->pwm_output[i];
+    }
+    return;
+#endif  // AP_SIM_ENABLED
 #if HAL_WITH_IO_MCU
     for (uint8_t i=0; i<MIN(len, chan_offset); i++) {
         period_us[i] = iomcu.read_channel(i);
