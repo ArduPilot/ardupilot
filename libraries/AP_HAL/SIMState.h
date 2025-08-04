@@ -119,7 +119,9 @@ private:
 #endif  // AP_SIM_ADSB_ENABLED
 
     // simulated vicon system:
+#if AP_SIM_VICON_ENABLED
     SITL::Vicon *vicon;
+#endif  // AP_SIM_VICON_ENABLED
 
     // simulated Benewake tf02 rangefinder:
     SITL::RF_Benewake_TF02 *benewake_tf02;

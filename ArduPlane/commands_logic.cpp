@@ -1197,7 +1197,7 @@ float Plane::get_wp_radius() const
 {
 #if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.in_vtol_mode()) {
-        return plane.quadplane.wp_nav->get_wp_radius_cm() * 0.01;
+        return plane.quadplane.wp_nav->get_wp_radius_m();
     }
 #endif
     return g.waypoint_radius;

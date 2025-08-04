@@ -383,6 +383,9 @@
 #ifndef HAL_PROXIMITY_ENABLED
 #define HAL_PROXIMITY_ENABLED AP_PERIPH_PROXIMITY_ENABLED
 #endif
+#ifndef HAL_EFI_ENABLED
+#define HAL_EFI_ENABLED AP_PERIPH_EFI_ENABLED
+#endif
 
 /*
  * GPS Backends - we selectively turn backends on.
@@ -435,6 +438,10 @@
 #ifndef AP_SIM_GPS_ENABLED
 #define AP_SIM_GPS_ENABLED (AP_SIM_ENABLED && AP_GPS_ENABLED)
 #endif
+
+#ifndef AP_SIM_VICON_ENABLED
+#define AP_SIM_VICON_ENABLED 0
+#endif  // AP_SIM_VICON_ENABLED
 
 /*
  * Airspeed Backends - we selectively turn backends *off*

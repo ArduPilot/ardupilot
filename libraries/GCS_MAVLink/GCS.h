@@ -175,6 +175,9 @@ class GCS_MAVLINK
 {
 public:
     friend class GCS;
+#if AP_MAVLINK_FTP_ENABLED
+    friend class GCS_FTP;
+#endif
 
     GCS_MAVLINK(AP_HAL::UARTDriver &uart);
     virtual ~GCS_MAVLINK() {}
@@ -974,85 +977,6 @@ private:
 
     uint8_t send_parameter_async_replies();
 
-#if AP_MAVLINK_FTP_ENABLED
-    enum class FTP_OP : uint8_t {
-        None = 0,
-        TerminateSession = 1,
-        ResetSessions = 2,
-        ListDirectory = 3,
-        OpenFileRO = 4,
-        ReadFile = 5,
-        CreateFile = 6,
-        WriteFile = 7,
-        RemoveFile = 8,
-        CreateDirectory = 9,
-        RemoveDirectory = 10,
-        OpenFileWO = 11,
-        TruncateFile = 12,
-        Rename = 13,
-        CalcFileCRC32 = 14,
-        BurstReadFile = 15,
-        Ack = 128,
-        Nack = 129,
-    };
-
-    enum class FTP_ERROR : uint8_t {
-        None = 0,
-        Fail = 1,
-        FailErrno = 2,
-        InvalidDataSize = 3,
-        InvalidSession = 4,
-        NoSessionsAvailable = 5,
-        EndOfFile = 6,
-        UnknownCommand = 7,
-        FileExists = 8,
-        FileProtected = 9,
-        FileNotFound = 10,
-    };
-
-    struct pending_ftp {
-        uint32_t offset;
-        mavlink_channel_t chan;        
-        uint16_t seq_number;
-        FTP_OP opcode;
-        FTP_OP req_opcode;
-        bool  burst_complete;
-        uint8_t size;
-        uint8_t session;
-        uint8_t sysid;
-        uint8_t compid;
-        uint8_t data[239];
-    };
-
-    enum class FTP_FILE_MODE {
-        Read,
-        Write,
-    };
-
-    struct ftp_state {
-        ObjectBuffer<pending_ftp> *requests;
-
-        // session specific info, currently only support a single session over all links
-        int fd = -1;
-        FTP_FILE_MODE mode; // work around AP_Filesystem not supporting file modes
-        int16_t current_session;
-        uint32_t last_send_ms;
-        uint8_t need_banner_send_mask;
-    };
-    static struct ftp_state ftp;
-
-    static void ftp_error(struct pending_ftp &response, FTP_ERROR error); // FTP helper method for packing a NAK
-    static bool ftp_check_name_len(const struct pending_ftp &request);
-    static int gen_dir_entry(char *dest, size_t space, const char * path, const struct dirent * entry); // FTP helper for emitting a dir response
-    static void ftp_list_dir(struct pending_ftp &request, struct pending_ftp &response);
-
-    bool ftp_init(void);
-    void handle_file_transfer_protocol(const mavlink_message_t &msg);
-    bool send_ftp_reply(const pending_ftp &reply);
-    void ftp_worker(void);
-    void ftp_push_replies(pending_ftp &reply);
-#endif  // AP_MAVLINK_FTP_ENABLED
-
     void send_distance_sensor(const class AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
 
     virtual bool handle_guided_request(AP_Mission::Mission_Command &cmd) { return false; };
@@ -1210,7 +1134,10 @@ public:
         return _statustext_queue;
     }
 
-    uint8_t sysid_gcs() const { return uint8_t(mav_gcs_sysid); }
+    /*
+      return true if a MAVLink system ID is a GCS
+     */
+    bool sysid_is_gcs(uint8_t sysid) const;
 
     // last time traffic was seen from my designated GCS.  traffic
     // includes heartbeats and some manual control messages.
@@ -1364,6 +1291,7 @@ protected:
     // parameters
     AP_Int16                 sysid;
     AP_Int16                 mav_gcs_sysid;
+    AP_Int16                 mav_gcs_sysid_high;
     AP_Enum16<Option>        mav_options;
     AP_Int8                  mav_telem_delay;
 

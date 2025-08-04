@@ -97,7 +97,7 @@ void ModeQRTL::run()
         case SubMode::climb: {
             // request zero velocity
             Vector2f vel, accel;
-            pos_control->input_vel_accel_NE_cm(vel, accel);
+            pos_control->input_vel_accel_NE_m(vel, accel);
             quadplane.run_xy_controller();
 
             // nav roll and pitch are controller by position controller
@@ -116,13 +116,13 @@ void ModeQRTL::run()
                                                                           quadplane.get_weathervane_yaw_rate_cds());
 
             // climb at full WP nav speed
-            quadplane.set_climb_rate_cms(quadplane.wp_nav->get_default_speed_up_cms());
+            quadplane.set_climb_rate_ms(quadplane.wp_nav->get_default_speed_up_ms());
             quadplane.run_z_controller();
 
             // Climb done when stopping point reaches target altitude
             Vector3p stopping_point;
-            pos_control->get_stopping_point_U_cm(stopping_point.z);
-            Location stopping_loc = Location(stopping_point.tofloat(), Location::AltFrame::ABOVE_ORIGIN);
+            pos_control->get_stopping_point_U_m(stopping_point.z);
+            Location stopping_loc = Location(stopping_point.tofloat() * 100.0, Location::AltFrame::ABOVE_ORIGIN);
 
             ftype alt_diff;
             if (!stopping_loc.get_height_above(plane.next_WP_loc, alt_diff) || is_positive(alt_diff)) {

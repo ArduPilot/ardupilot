@@ -38,8 +38,6 @@ static uint8_t last_uart;
 #define BOOTLOADER_BAUDRATE 115200
 #endif
 
-// #pragma GCC optimize("O0")
-
 static bool cin_data(uint8_t *data, uint8_t len, unsigned timeout_ms)
 {
     for (uint8_t i=0; i<ARRAY_SIZE(uarts); i++) {
@@ -72,7 +70,7 @@ int cin_word(uint32_t *wp, unsigned timeout_ms)
 }
 
 
-void cout(uint8_t *data, uint32_t len)
+void cout(const uint8_t *data, uint32_t len)
 {
     chnWriteTimeout(uarts[last_uart], data, len, chTimeMS2I(100));
 }

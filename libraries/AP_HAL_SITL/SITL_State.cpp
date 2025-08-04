@@ -96,6 +96,7 @@ void SITL_State::_sitl_setup()
         sitl_model->set_dronecan_device(&_sitl->dronecan_sim);
 #endif
         if (_use_fg_view) {
+            fprintf(stdout, "FGView: %s:%u\n", _fg_address, _fg_view_port);
             fg_socket.connect(_fg_address, _fg_view_port);
         }
 
