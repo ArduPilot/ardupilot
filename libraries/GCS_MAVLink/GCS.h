@@ -29,6 +29,8 @@
 #include <AP_Arming/AP_Arming_config.h>
 #include <AP_Airspeed/AP_Airspeed_config.h>
 #include <AP_Follow/AP_Follow.h>
+#include <AP_Gripper/AP_Gripper_config.h>
+#include <AC_Sprayer/AC_Sprayer_config.h>
 
 #include "ap_message.h"
 
@@ -1399,6 +1401,45 @@ private:
     // Sent in AVAILABLE_MODES_MONITOR msg
     uint8_t available_modes_sequence;
 };
+
+class CommandIntHandler {
+public:
+    CommandIntHandler(const mavlink_command_int_t &_packet, const mavlink_message_t &_msg) :
+        packet{_packet},
+        msg{_msg}
+        { }
+    virtual ~CommandIntHandler() { }
+
+    const mavlink_command_int_t &packet;
+    const mavlink_message_t &msg;
+
+    MAV_RESULT run();
+    virtual MAV_RESULT _run() = 0;
+
+    virtual uint8_t used_param_mask() const = 0;
+
+    bool check_float_param(uint8_t ofs, float value, MAV_RESULT &ret) const;
+    bool check_int_param(uint8_t ofs, int32_t value, MAV_RESULT &ret) const;
+};
+
+#if AP_GRIPPER_ENABLED
+class CommandDoGripperHandler : public CommandIntHandler {
+    using CommandIntHandler::CommandIntHandler;
+
+    MAV_RESULT _run() override;
+    uint8_t used_param_mask() const override { return 0b00000011; }
+};
+#endif  // AP_GRIPPER_ENABLED
+
+#if HAL_SPRAYER_ENABLED
+class CommandDoSprayerHandler : public CommandIntHandler {
+    using CommandIntHandler::CommandIntHandler;
+
+    MAV_RESULT _run() override;
+    uint8_t used_param_mask() const override { return 0b00000001; }
+};
+#endif  // HAL_SPRAYER_ENABLED
+
 
 GCS &gcs();
 
