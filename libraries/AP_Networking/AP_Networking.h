@@ -240,7 +240,8 @@ private:
         Port() {}
 
         static const struct AP_Param::GroupInfo var_info[];
-        AP_Enum<NetworkPortType> type;
+        AP_Enum<NetworkPortType> type_param;
+        NetworkPortType type;
         AP_Networking_IPV4 ip {"0.0.0.0"};
         AP_Int32 port;
         SocketAPM *sock;
