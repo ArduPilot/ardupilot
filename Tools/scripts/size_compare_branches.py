@@ -181,6 +181,7 @@ class SizeCompareBranches(object):
             'MatekL431-ADSB',  # uses USE_BOOTLOADER_FROM_BOARD
             'MatekL431-Airspeed',  # uses USE_BOOTLOADER_FROM_BOARD
             'MatekL431-APDTelem',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-AUAV',  # uses USE_BOOTLOADER_FROM_BOARD
             'MatekL431-BatteryTag',  # uses USE_BOOTLOADER_FROM_BOARD
             'MatekL431-BattMon',  # uses USE_BOOTLOADER_FROM_BOARD
             'MatekL431-bdshot',  # uses USE_BOOTLOADER_FROM_BOARD
