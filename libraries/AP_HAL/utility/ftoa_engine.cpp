@@ -85,7 +85,7 @@ static const uint32_t factorTable[32] = {
     1038459372UL
 };
 
-int16_t ftoa_engine(float val, char *buf, uint8_t precision, uint8_t maxDecimals) 
+int16_t ftoa_engine(float val, char *buf, uint8_t precision, uint8_t maxDecimals)
 {
     uint8_t flags;
 
@@ -98,27 +98,39 @@ int16_t ftoa_engine(float val, char *buf, uint8_t precision, uint8_t maxDecimals
     x.v = val;
     uint32_t frac = x.u & 0x007fffffUL;
 
-    if (precision>7) precision=7;
+    if (precision > 7) {
+        precision=7;
+    }
 
     // Read the sign, shift the exponent in place and delete it from frac.
-    if (valbits[3] & (1<<7)) flags = FTOA_MINUS; else flags = 0;
+    if (valbits[3] & (1<<7)) {
+        flags = FTOA_MINUS;
+    } else {
+        flags = 0;
+    }
     uint8_t exp = valbits[3]<<1;
-    if(valbits[2] & (1<<7)) exp++;
+    if (valbits[2] & (1<<7)) {
+        exp++;
+    }
 
     // Test for easy cases
-    if(exp==0) { // Zero or subnormal
-        if(frac == 0) { // Zero
+    if (exp == 0) { // Zero or subnormal
+        if (frac == 0) { // Zero
             buf[0] = flags | FTOA_ZERO;
             uint8_t i;
-            for(i=0; i<=precision; i++) {
+            for (i = 0; i <= precision; i++) {
                 buf[i+1] = '0';
             }
             return 0;
         } else { // Subnormal
             exp = 1; // Subnormal mantissa has same significance as exp=1
         }
-    } else if(exp==0xff) { // Infinity or NaN
-        if(frac==0) flags |= FTOA_INF; else flags |= FTOA_NAN;
+    } else if (exp == 0xff) { // Infinity or NaN
+        if (frac == 0) {
+            flags |= FTOA_INF;
+        } else {
+            flags |= FTOA_NAN;
+        }
     } else { // Normal number
         frac |= (1UL<<23); // The implicit leading 1 is made explicit
     }
@@ -146,15 +158,16 @@ int16_t ftoa_engine(float val, char *buf, uint8_t precision, uint8_t maxDecimals
 
     do {
         char digit = '0';
-        if(decimal == 0) {
+        if (decimal == 0) {
             // Abnormal case, can't ever add enough digits to exit the loop,
             // bail out. This will happen for subnormals with frac <= 7 and
             // precision == 7.
             break;
         }
-        while(1) {// find the first nonzero digit or any of the next digits.
-            while ((prod -= decimal) >= 0)
+        while (1) { // find the first nonzero digit or any of the next digits.
+            while ((prod -= decimal) >= 0) {
                 digit++;
+            }
             // Now we got too low. Fix it by adding again, once.
             // it might appear more efficient to check before subtract, or
             // to save and restore last nonnegative value - but in fact
@@ -163,11 +176,13 @@ int16_t ftoa_engine(float val, char *buf, uint8_t precision, uint8_t maxDecimals
             decimal /= 10;
 
             // If already found a leading nonzero digit, accept zeros.
-            if (hadNonzeroDigit) break;
+            if (hadNonzeroDigit) {
+                break;
+            }
 
             // Else, don't return results with a leading zero! Instead
             // skip those and decrement exp10 accordingly.
-            if(digit == '0') {
+            if (digit == '0') {
                 exp10--;
                 continue;
             }
@@ -175,9 +190,11 @@ int16_t ftoa_engine(float val, char *buf, uint8_t precision, uint8_t maxDecimals
             hadNonzeroDigit = 1;
 
             // Compute how many digits N to output.
-            if(maxDecimals != 0) {                        // If limiting decimals...
+            if (maxDecimals != 0) {                       // If limiting decimals...
                 int8_t beforeDP = exp10+1;                // Digits before point
-                if (beforeDP < 1) beforeDP = 1;            // Numbers < 1 should also output at least 1 digit.
+                if (beforeDP < 1) {
+                    beforeDP = 1;    // Numbers < 1 should also output at least 1 digit.
+                }
                 /*
                  * Below a simpler version of this:
                 int8_t afterDP = outputNum - beforeDP;
@@ -186,8 +203,9 @@ int16_t ftoa_engine(float val, char *buf, uint8_t precision, uint8_t maxDecimals
                 outputNum = beforeDP + afterDP;
                 */
                 maxDecimals = maxDecimals+beforeDP-1;
-                if (precision > maxDecimals)
+                if (precision > maxDecimals) {
                     precision = maxDecimals;
+                }
 
             } else {
                 precision++;                            // Output one more digit than the param value.
@@ -198,39 +216,41 @@ int16_t ftoa_engine(float val, char *buf, uint8_t precision, uint8_t maxDecimals
 
         // Now have a digit.
         outputIdx++;
-        if(digit < '0' + 10) // normal case.
+        if (digit < '0' + 10) { // normal case.
             buf[outputIdx] = digit;
-        else {
+        } else {
             // Abnormal case, write 9s and bail.
             // We might as well abuse hadNonzeroDigit as counter, it will not be used again.
-            for(hadNonzeroDigit=outputIdx; hadNonzeroDigit>0; hadNonzeroDigit--)
+            for (hadNonzeroDigit = outputIdx; hadNonzeroDigit > 0; hadNonzeroDigit--) {
                 buf[hadNonzeroDigit] = '9';
+            }
             goto roundup; // this is ugly but it _is_ code derived from assembler :)
         }
-    } while (outputIdx<precision);
+    } while (outputIdx < precision);
 
     // Rounding:
     decimal *= 10;
 
     if (prod - (decimal >> 1) >= 0) {
 
-    roundup:
+roundup:
         // Increment digit, cascade
-        while(outputIdx != 0) {
-            if(++buf[outputIdx] == '0' + 10) {
-                if(outputIdx == 1) {
+        while (outputIdx != 0) {
+            if (++buf[outputIdx] == '0' + 10) {
+                if (outputIdx == 1) {
                     buf[outputIdx] = '1';
                     exp10++;
                     flags |= FTOA_CARRY;
                     break;
-                } else
-                    buf[outputIdx--] = '0'; // and the loop continues, carrying to next digit.
+                } else {
+                    buf[outputIdx--] = '0';    // and the loop continues, carrying to next digit.
+                }
+            } else {
+                break;
             }
-            else break;
         }
     }
 
     buf[0] = flags;
     return exp10;
 }
-
