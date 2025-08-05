@@ -313,20 +313,6 @@ void Sub::do_circle(const AP_Mission::Mission_Command& cmd)
         circle_center.lat = current_loc.lat;
         circle_center.lng = current_loc.lng;
     }
-
-    // default target altitude to current altitude if not provided
-    if (circle_center.alt_is_zero()) {
-        int32_t curr_alt;
-        if (current_loc.get_alt_cm(circle_center.get_alt_frame(),curr_alt)) {
-            // circle altitude uses frame from command
-            circle_center.set_alt_cm(curr_alt,circle_center.get_alt_frame());
-        } else {
-            // default to current altitude above origin
-            circle_center.copy_alt_from(current_loc);
-            LOGGER_WRITE_ERROR(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
-        }
-    }
-
     // calculate radius
     uint16_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
     if (cmd.type_specific_bits & (1U << 0)) {
@@ -497,11 +483,6 @@ bool Sub::verify_circle(const AP_Mission::Mission_Command& cmd)
         if (wp_nav.reached_wp_destination()) {
             Vector3f circle_center;
             UNUSED_RESULT(cmd.content.location.get_vector_from_origin_NEU_cm(circle_center));
-
-            // set target altitude if not provided
-            if (is_zero(circle_center.z)) {
-                circle_center.z = inertial_nav.get_position_z_up_cm();
-            }
 
             // set lat/lon position if not provided
             if (cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
