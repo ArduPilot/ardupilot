@@ -8,7 +8,7 @@
 // Circle mode default and limit constants
 #define AC_CIRCLE_RADIUS_DEFAULT     1000.0f   // Default circle radius in cm (10 meters).
 #define AC_CIRCLE_RATE_DEFAULT       20.0f     // Default circle turn rate in degrees per second. Positive = clockwise, negative = counter-clockwise.
-#define AC_CIRCLE_ANGULAR_ACCEL_MIN  2.0f      // Minimum angular acceleration in deg/s² (used to avoid sluggish yaw transitions).
+#define AC_CIRCLE_ANGULAR_ACCEL_MIN  2.0f      // Minimum angular acceleration in deg/s/s (used to avoid sluggish yaw transitions).
 #define AC_CIRCLE_RADIUS_MAX_M       2000.0    // Maximum allowed circle radius in meters (2000 m = 2 km).
 
 class AC_Circle
@@ -227,7 +227,7 @@ private:
     float    _angle_total_rad;          // Accumulated angle travelled in radians (used for full rotations).
     float    _angular_vel_rads;         // Current angular velocity in rad/s.
     float    _angular_vel_max_rads;     // Maximum allowed angular velocity in rad/s.
-    float    _angular_accel_radss;      // Angular acceleration limit in rad/s².
+    float    _angular_accel_radss;      // Angular acceleration limit in rad/s/s.
     uint32_t _last_update_ms;           // Timestamp (in milliseconds) of the last update() call.
     float    _last_radius_param_cm;     // Cached copy of radius parameter (cm) to detect parameter changes.
 
