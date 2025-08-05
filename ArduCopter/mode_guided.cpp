@@ -30,13 +30,7 @@ struct Guided_Limit {
     Vector3p start_pos_ned_m;   // start position as an offset from home in m. used for checking horiz_max limit
 } static guided_limit;
 
-// controls which controller is run (pos or vel):
-ModeGuided::SubMode ModeGuided::guided_mode = SubMode::TakeOff;
-bool ModeGuided::send_notification;     // used to send one time notification to ground station
 bool ModeGuided::takeoff_complete;      // true once takeoff has completed (used to trigger retracting of landing gear)
-
-// guided mode is paused or not
-bool ModeGuided::_paused;
 
 // init - initialise guided controller
 bool ModeGuided::init(bool ignore_checks)

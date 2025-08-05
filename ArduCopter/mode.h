@@ -1224,12 +1224,13 @@ private:
     void set_yaw_state_rad(bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_angle);
 
     // controls which controller is run (pos or vel):
-    static SubMode guided_mode;
-    static bool send_notification;     // used to send one time notification to ground station
+    SubMode guided_mode = SubMode::TakeOff;
+     // used to send one time notification to ground station:
+    bool send_notification;
     static bool takeoff_complete;      // true once takeoff has completed (used to trigger retracting of landing gear)
 
     // guided mode is paused or not
-    static bool _paused;
+    bool _paused;
 };
 
 #if AP_SCRIPTING_ENABLED
