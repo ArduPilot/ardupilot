@@ -4805,14 +4805,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_in
 }
 #endif  // AP_BOOTLOADER_FLASHING_ENABLED
 
-MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro(const mavlink_message_t &msg)
+MAV_RESULT CommandPreflightCalibration::_run_baro()
 {
     // fast barometer calibration
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Updating barometer calibration");
     AP::baro().update_calibration();
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer calibration complete");
 
-#if AP_AIRSPEED_ENABLED
+#if AP_AIRSPEED_ENABLED && 0  // FIXME!
 
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
     if (airspeed != nullptr && airspeed->enabled()) {
@@ -4828,12 +4828,12 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro(const mavlink
     return MAV_RESULT_ACCEPTED;
 }
 
-MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+MAV_RESULT CommandPreflightCalibration::_run_main()
 {
     MAV_RESULT ret = MAV_RESULT_UNSUPPORTED;
 
     EXPECT_DELAY_MS(30000);
-    if (is_equal(packet.param1,1.0f)) {
+    if (param_is_equal(packet.param1, 1.0f)) {
 #if AP_INERTIALSENSOR_ENABLED
         if (!AP::ins().calibrate_gyros()) {
             return MAV_RESULT_FAILED;
@@ -4844,12 +4844,12 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
         return MAV_RESULT_ACCEPTED;
     }
 
-    if (is_equal(packet.param3,1.0f)) {
-        return _handle_command_preflight_calibration_baro(msg);
+    if (param_is_equal(packet.param3, 1.0f)) {
+        return _run_baro();
     }
 
 #if AP_RC_CHANNEL_ENABLED
-    rc().calibrating(is_positive(packet.param4));
+    rc().calibrating(!isnan(packet.param4) && is_positive(packet.param4));
 #endif
 
 #if HAL_INS_ACCELCAL_ENABLED
@@ -4860,7 +4860,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
         }
         // start accel cal
         AP::ins().acal_init();
-        AP::ins().get_acal()->start(this, msg.sysid, msg.compid);
+        AP::ins().get_acal()->start(&link, msg.sysid, msg.compid);
         return MAV_RESULT_ACCEPTED;
     }
 #endif
@@ -4890,7 +4890,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
 #endif  // AP_INERTIALSENSOR_ENABLED
 
 #if AP_COMPASS_ENABLED
-    if (is_equal(packet.param2,76.0f)) {
+    if (!isnan(packet.param2) && is_equal(packet.param2, 76.0f)) {
         // force existing compass calibration to be accepted as valid
         AP::compass().force_save_calibration();
         ret = MAV_RESULT_ACCEPTED;
@@ -4900,7 +4900,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
     return ret;
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+MAV_RESULT CommandPreflightCalibration::_run()
 {
     if (hal.util->get_soft_armed()) {
         // *preflight*, remember?
@@ -4908,7 +4908,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_calibration(const mavlink_comma
         return MAV_RESULT_FAILED;
     }
     // now call subclass methods:
-    return _handle_command_preflight_calibration(packet, msg);
+    return _run_main();
 }
 
 #if AP_ARMING_ENABLED
@@ -5062,7 +5062,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_set_ekf_source_set(const mavlink_command_
 #endif
 
 #if AP_GRIPPER_ENABLED
-MAV_RESULT GCS_MAVLINK::handle_command_do_gripper(const mavlink_command_int_t &packet)
+MAV_RESULT CommandDoGripperHandler::_run()
 {
     AP_Gripper &gripper = AP::gripper();
 
@@ -5091,7 +5091,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_gripper(const mavlink_command_int_t &p
 #endif  // AP_GRIPPER_ENABLED
 
 #if HAL_SPRAYER_ENABLED
-MAV_RESULT GCS_MAVLINK::handle_command_do_sprayer(const mavlink_command_int_t &packet)
+MAV_RESULT CommandDoSprayerHandler::_run()
 {
     AC_Sprayer *sprayer = AP::sprayer();
     if (sprayer == nullptr) {
@@ -5156,14 +5156,17 @@ MAV_RESULT GCS_MAVLINK::handle_command_mount(const mavlink_command_int_t &packet
 #endif  // HAL_MOUNT_ENABLED
 
 #if AP_ARMING_ENABLED
-MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_command_int_t &packet)
+MAV_RESULT CommandComponentArmDisarm::_run()
 {
+    static constexpr const float magic_force_arm_value = 2989.0f;
+    static constexpr const float magic_force_arm_disarm_value = 21196.0f;
+
     if (is_equal(packet.param1,1.0f)) {
         if (AP::arming().is_armed()) {
             return MAV_RESULT_ACCEPTED;
         }
         // run pre_arm_checks and arm_checks and display failures
-        const bool do_arming_checks = !is_equal(packet.param2,magic_force_arm_value) && !is_equal(packet.param2,magic_force_arm_disarm_value);
+        const bool do_arming_checks = !param_is_equal(packet.param2, magic_force_arm_value) && !param_is_equal(packet.param2, magic_force_arm_disarm_value);
         if (AP::arming().arm(AP_Arming::Method::MAVLINK, do_arming_checks)) {
             return MAV_RESULT_ACCEPTED;
         }
@@ -5173,7 +5176,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_comman
         if (!AP::arming().is_armed()) {
             return MAV_RESULT_ACCEPTED;
         }
-        const bool forced = is_equal(packet.param2, magic_force_arm_disarm_value);
+        const bool forced = param_is_equal(packet.param2, magic_force_arm_disarm_value);
         // note disarm()'s second parameter is "do_disarm_checks"
         if (AP::arming().disarm(AP_Arming::Method::MAVLINK, !forced)) {
             return MAV_RESULT_ACCEPTED;
@@ -5192,7 +5195,7 @@ bool GCS_MAVLINK::location_from_command_t(const mavlink_command_int_t &in, Locat
     }
 
     // integer storage imposes limits on the altitudes we can accept:
-    if (isnan(in.z) || fabsf(in.z) > LOCATION_ALT_MAX_M) {
+    if (isnan(in.x) || isnan(in.y) || isnan(in.z) || fabsf(in.z) > LOCATION_ALT_MAX_M) {
         return false;
     }
 
@@ -5268,27 +5271,15 @@ MAV_RESULT GCS_MAVLINK::try_command_long_as_command_int(const mavlink_command_lo
 
     // convert and run the command
     mavlink_command_int_t command_int;
-    convert_COMMAND_LONG_to_COMMAND_INT(packet, command_int, frame);
+    MAV_RESULT conversion_result = convert_COMMAND_LONG_to_COMMAND_INT(packet, command_int, frame);
+    if (conversion_result != MAV_RESULT_ACCEPTED) {
+        return conversion_result;
+    }
 
     return handle_command_int_packet(command_int, msg);
 }
 
-// returns a value suitable for COMMAND_INT.x or y based on a value
-// coming in from COMMAND_LONG.p5 or p6:
-static int32_t convert_COMMAND_LONG_loc_param(float param, bool stores_location)
-{
-    if (isnan(param)) {
-        return 0;
-    }
-
-    if (stores_location) {
-        return param *1e7;
-    }
-
-    return param;
-}
-
-void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame)
+MAV_RESULT GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame)
 {
     out = {};
     out.target_system = in.target_system;
@@ -5301,10 +5292,41 @@ void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long
     out.param2 = in.param2;
     out.param3 = in.param3;
     out.param4 = in.param4;
-    const bool stores_location = command_long_stores_location((MAV_CMD)in.command);
-    out.x = convert_COMMAND_LONG_loc_param(in.param5, stores_location);
-    out.y = convert_COMMAND_LONG_loc_param(in.param6, stores_location);
+
+    // Spec calls for NaN in COMMAND_LONG for invalid, INT32_T-max in
+    // COMMAND_INT:
+
+    if (command_long_stores_location((MAV_CMD)in.command)) {
+        // check parameters are valid latitude/longitude:
+        if (!isfinite(in.param5) || !isfinite(in.param6)) {
+            return MAV_RESULT_DENIED;
+        }
+        if (!check_lat(in.param5) || !check_lng(in.param6)) {
+            return MAV_RESULT_DENIED;
+        }
+
+        out.x = in.param5 * 1e7;
+        out.y = in.param6 * 1e7;
+    } else {
+        if (isnan(in.param5)) {
+            out.x = INT32_MAX;
+        } else if (isfinite(in.param5)) {
+            out.x = in.param5;
+        } else {
+            return MAV_RESULT_DENIED;
+        }
+        if (isnan(in.param6)) {
+            out.y = INT32_MAX;
+        } else if (isfinite(in.param5)) {
+            out.y = in.param6;
+            out.x = in.param5;
+        } else {
+            return MAV_RESULT_DENIED;
+        }
+    }
+
     out.z = in.param7;
+    return MAV_RESULT_ACCEPTED;
 }
 
 void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
@@ -5417,24 +5439,30 @@ bool GCS_MAVLINK::set_home(const Location& loc, bool _lock) {
 #endif  // AP_HOME_ENABLED
 
 #if AP_HOME_ENABLED
-MAV_RESULT GCS_MAVLINK::handle_command_do_set_home(const mavlink_command_int_t &packet)
+MAV_RESULT CommandSetHome::_run()
 {
-    if (is_equal(packet.param1, 1.0f) || (packet.x == 0 && packet.y == 0)) {
+    if (param_is_equal(packet.param1, 1.0f) ||
+        (param_is_equal(packet.x, 0) && param_is_equal(packet.y, 0))) {
         // param1 is 1 (or both lat and lon are zero); use current location
-        if (!set_home_to_current_location(true)) {
+        if (!link.set_home_to_current_location(true)) {
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
     }
-    // ensure param1 is zero
-    if (!is_zero(packet.param1)) {
-        return MAV_RESULT_FAILED;
+    // COMPATABILITY code for where p1 is not supplied
+    if (isnan(packet.param1)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "param1 must be supplied for MAV_CMD_DO_SET_HOME");
+    } else {
+        // ensure param1 is zero
+        if (!is_zero(packet.param1)) {
+            return MAV_RESULT_DENIED;
+        }
     }
     Location new_home_loc;
-    if (!location_from_command_t(packet, new_home_loc)) {
+    if (!GCS_MAVLINK::location_from_command_t(packet, new_home_loc)) {
         return MAV_RESULT_DENIED;
     }
-    if (!set_home(new_home_loc, true)) {
+    if (!link.set_home(new_home_loc, true)) {
         return MAV_RESULT_FAILED;
     }
     return MAV_RESULT_ACCEPTED;
@@ -5562,8 +5590,119 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_follow(const mavlink_command_int_t &pa
 }
 #endif  // AP_MAVLINK_FOLLOW_HANDLING_ENABLED
 
+CommandIntHandler *GCS_MAVLINK::new_command_int_handler(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+{
+    switch (packet.command) {
+#if AP_ARMING_ENABLED
+    case MAV_CMD_COMPONENT_ARM_DISARM:
+        return NEW_NOTHROW CommandComponentArmDisarm(packet, msg, *this);
+#endif  // AP_ARMING_ENABLED
+#if HAL_SPRAYER_ENABLED
+    case MAV_CMD_DO_SPRAYER:
+        return NEW_NOTHROW CommandDoSprayerHandler(packet, msg, *this);
+#endif  // HAL_SPRAYER_ENABLED
+#if AP_GRIPPER_ENABLED
+    case MAV_CMD_DO_GRIPPER:
+        return NEW_NOTHROW CommandDoGripperHandler(packet, msg, *this);
+#endif  // AP_GRIPPER_ENABLED
+    case MAV_CMD_PREFLIGHT_CALIBRATION:
+        return NEW_NOTHROW CommandPreflightCalibration(packet, msg, *this);
+#if AP_HOME_ENABLED
+    case MAV_CMD_DO_SET_HOME:
+        return NEW_NOTHROW CommandSetHome(packet, msg, *this);
+#endif  // AP_HOME_ENABLED
+    default:
+        break;
+    }
+    return nullptr;
+}
+
+// no used parameter can be NaN.  Unused parameters must be NaN
+bool CommandIntHandler::check_float_param(uint8_t ofs, float value, MAV_RESULT &ret) const
+{
+    const bool is_used = ((used_param_mask() & (1U<<ofs)) != 0);
+    if (is_used) {
+        if (!isnan(value)) {  // the most common case
+            return true;
+        }
+        // so it is NaN.  Is that OK?
+        const bool nanable = ((unsupplied_ok_used_param_mask() & (1U<<ofs)) != 0);
+        if (nanable) {
+            return true;
+        }
+        ret = MAV_RESULT_DENIED;
+        return false;
+    }
+
+    if (isnan(value)) {
+        return true;
+    }
+
+    // compatability code with older clients:
+    if (is_zero(value)) {
+        // FIXME: rate-limit this:
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Non-NaN value received in unused field");
+        return true;
+    }
+
+    ret = MAV_RESULT_DENIED;
+    return false;
+}
+// no used parameter can be INT32_MAX.  Unused parameters must be INT32_MAX
+bool CommandIntHandler::check_int_param(uint8_t ofs, int32_t value, MAV_RESULT &ret) const
+{
+    const bool is_used = ((used_param_mask() & (1U<<ofs)) != 0);
+
+    if (is_used) {
+        if (value != INT32_MAX) {  // the most common case
+            return true;
+        }
+        // so it is INT32_MAX.  Is that OK?
+        const bool int32maxable = ((unsupplied_ok_used_param_mask() & (1U<<ofs)) != 0);
+        if (int32maxable) {
+            return true;
+        }
+        ret = MAV_RESULT_DENIED;
+        return false;
+    }
+    if (value == INT32_MAX) {
+        return true;
+    }
+
+    // compatability code with older clients:
+    if (value == 0) {
+        // FIXME: rate-limit this:
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Non-NaN value received in unused field");
+        return true;
+    }
+
+    ret = MAV_RESULT_DENIED;
+    return false;
+}
+
+MAV_RESULT CommandIntHandler::run()
+{
+    MAV_RESULT ret;
+    if (!check_float_param(0, packet.param1, ret)) { return ret; }
+    if (!check_float_param(1, packet.param2, ret)) { return ret; }
+    if (!check_float_param(2, packet.param3, ret)) { return ret; }
+    if (!check_float_param(3, packet.param4, ret)) { return ret; }
+    if (!check_int_param(4, packet.x, ret)) { return ret; }
+    if (!check_int_param(5, packet.y, ret)) { return ret; }
+    if (!check_float_param(6, packet.z, ret)) { return ret; }
+
+    return _run();
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
+    auto *handler = new_command_int_handler(packet, msg);
+    if (handler != nullptr) {
+        const MAV_RESULT ret = handler->run();
+        delete handler;
+        return ret;
+    }
+
     switch (packet.command) {
 
 #if HAL_INS_ACCELCAL_ENABLED
@@ -5620,11 +5759,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_DO_FLIGHTTERMINATION:
         return handle_flight_termination(packet);
 
-#if AP_GRIPPER_ENABLED
-    case MAV_CMD_DO_GRIPPER:
-        return handle_command_do_gripper(packet);
-#endif
-
 #if AP_MISSION_ENABLED
     case MAV_CMD_DO_JUMP_TAG:
         return handle_command_do_jump_tag(packet);
@@ -5635,11 +5769,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 
     case MAV_CMD_DO_SET_MODE:
         return handle_command_do_set_mode(packet);
-
-#if HAL_SPRAYER_ENABLED
-    case MAV_CMD_DO_SPRAYER:
-        return handle_command_do_sprayer(packet);
-#endif
 
 #if AP_CAMERA_ENABLED
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
@@ -5680,11 +5809,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         send_banner();
         return MAV_RESULT_ACCEPTED;
 
-#if AP_HOME_ENABLED
-    case MAV_CMD_DO_SET_HOME:
-        return handle_command_do_set_home(packet);
-#endif
-
 #if AP_AHRS_POSITION_RESET_ENABLED
     case MAV_CMD_EXTERNAL_POSITION_ESTIMATE:
         return handle_command_int_external_position_estimate(packet);
@@ -5692,10 +5816,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 #if AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
     case MAV_CMD_EXTERNAL_WIND_ESTIMATE:
         return handle_command_int_external_wind_estimate(packet);
-#endif
-#if AP_ARMING_ENABLED
-    case MAV_CMD_COMPONENT_ARM_DISARM:
-        return handle_command_component_arm_disarm(packet);
 #endif
 #if AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
     case MAV_CMD_FIXED_MAG_CAL_YAW:
@@ -5717,9 +5837,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_GET_HOME_POSITION:
         return handle_command_get_home_position(packet);
 #endif
-
-    case MAV_CMD_PREFLIGHT_CALIBRATION:
-        return handle_command_preflight_calibration(packet, msg);
 
     case MAV_CMD_PREFLIGHT_STORAGE:
         if (is_equal(packet.param1, 2.0f)) {
