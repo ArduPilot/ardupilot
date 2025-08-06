@@ -59,6 +59,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_ICEngine/AP_ICEngine.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -167,7 +168,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Arming options
     // @Description: Options that can be applied to change arming behaviour
-    // @Bitmask: 0:Disable prearm display,1:Do not send status text on state change
+    // @Bitmask: 0:Disable prearm display,1:Do not send status text on state change,2:Skip IMU consistency checks when ICE motor running
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 9,   AP_Arming, _arming_options, 0),
 
@@ -488,16 +489,34 @@ bool AP_Arming::ins_checks(bool report)
             return false;
         }
 
-        // check all accelerometers point in roughly same direction
-        if (!ins_accels_consistent(ins)) {
-            check_failed(Check::INS, report, "Accels inconsistent");
-            return false;
+        bool run_imu_consistency_check = true;
+#if AP_ICENGINE_ENABLED
+        if (option_enabled(Option::SKIP_IMU_CONSISTENCY_ICE_RUNNING)) {
+            // ICE motors can greatly disturb the IMU, so we get arming failures
+            // due to gyro (and sometimes accel) inconsistency. Allow this check to be
+            // disabled while the motor is running
+            auto ice = AP::ice();
+            if (ice != nullptr) {
+                const auto ice_state = ice->get_state();
+                if (ice_state == AP_ICEngine::ICE_STARTING || ice_state == AP_ICEngine::ICE_RUNNING) {
+                    run_imu_consistency_check = false;
+                }
+            }
         }
+#endif
 
-        // check all gyros are giving consistent readings
-        if (!ins_gyros_consistent(ins)) {
-            check_failed(Check::INS, report, "Gyros inconsistent");
-            return false;
+        if (run_imu_consistency_check) {
+            // check all accelerometers point in roughly same direction
+            if (!ins_accels_consistent(ins)) {
+                check_failed(Check::INS, report, "Accels inconsistent");
+                return false;
+            }
+
+            // check all gyros are giving consistent readings
+            if (!ins_gyros_consistent(ins)) {
+                check_failed(Check::INS, report, "Gyros inconsistent");
+                return false;
+            }
         }
 
         // no arming while doing temp cal
