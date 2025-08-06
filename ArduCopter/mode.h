@@ -393,15 +393,15 @@ public:
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base
     // class.
-    float get_pilot_desired_climb_rate_cms();
-    float get_non_takeoff_throttle(void);
-    void update_simple_mode(void);
+    float get_pilot_desired_climb_rate_cms() const;
+    float get_non_takeoff_throttle() const;
+    void update_simple_mode();
     bool set_mode(Mode::Number mode, ModeReason reason);
     void set_land_complete(bool b);
-    GCS_Copter &gcs();
-    float get_pilot_speed_up_ms(void);
-    float get_pilot_speed_dn_ms(void);
-    float get_pilot_accel_mss(void);
+    GCS_Copter &gcs() const;
+    float get_pilot_speed_up_ms() const;
+    float get_pilot_speed_dn_ms() const;
+    float get_pilot_accel_U_mss() const;
     // end pass-through functions
 };
 
