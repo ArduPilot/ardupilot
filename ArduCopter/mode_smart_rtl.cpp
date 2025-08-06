@@ -153,12 +153,12 @@ void ModeSmartRTL::pre_land_position_run()
 {
     // if we are close to 2m above start point, we are ready to land.
     if (wp_nav->reached_wp_destination()) {
-        // choose descend and hold, or land based on user parameter rtl_alt_final
-        if (g.rtl_alt_final <= 0 || copter.failsafe.radio) {
+        // choose descend and hold, or land based on user parameter rtl_alt_final_cm
+        if (g.rtl_alt_final_cm <= 0 || copter.failsafe.radio) {
             land_start();
             smart_rtl_state = SubMode::LAND;
         } else {
-            set_descent_target_alt(copter.g.rtl_alt_final);
+            set_descent_target_alt(copter.g.rtl_alt_final_cm);
             descent_start();
             smart_rtl_state = SubMode::DESCEND;
         }

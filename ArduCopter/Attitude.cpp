@@ -86,7 +86,7 @@ float Copter::get_pilot_desired_climb_rate_ms()
 #endif
 
     // ensure a reasonable throttle value
-    throttle_control = constrain_float(throttle_control,0.0f,1000.0f);
+    throttle_control = constrain_float(throttle_control, 0.0f, 1000.0f);
 
     // ensure a reasonable deadzone
     g.throttle_deadzone.set(constrain_int16(g.throttle_deadzone, 0, 400));
@@ -99,10 +99,10 @@ float Copter::get_pilot_desired_climb_rate_ms()
     // check throttle is above, below or in the deadband
     if (throttle_control < deadband_bottom) {
         // below the deadband
-        desired_rate_ms = get_pilot_speed_dn() * 0.01 * (throttle_control-deadband_bottom) / deadband_bottom;
+        desired_rate_ms = get_pilot_speed_dn() * 0.01 * (throttle_control - deadband_bottom) / deadband_bottom;
     } else if (throttle_control > deadband_top) {
         // above the deadband
-        desired_rate_ms = g.pilot_speed_up * 0.01 * (throttle_control-deadband_top) / (1000.0f-deadband_top);
+        desired_rate_ms = g.pilot_speed_up_cms * 0.01 * (throttle_control - deadband_top) / (1000.0 - deadband_top);
     } else {
         // must be in the deadband
         desired_rate_ms = 0.0f;
@@ -114,23 +114,23 @@ float Copter::get_pilot_desired_climb_rate_ms()
 // get_non_takeoff_throttle - a throttle somewhere between min and mid throttle which should not lead to a takeoff
 float Copter::get_non_takeoff_throttle()
 {
-    return MAX(0,motors->get_throttle_hover()/2.0f);
+    return MAX(0,motors->get_throttle_hover() / 2.0);
 }
 
 // set_accel_throttle_I_from_pilot_throttle - smoothes transition from pilot controlled throttle to autopilot throttle
 void Copter::set_accel_throttle_I_from_pilot_throttle()
 {
     // get last throttle input sent to attitude controller
-    float pilot_throttle = constrain_float(attitude_control->get_throttle_in(), 0.0f, 1.0f);
+    float pilot_throttle = constrain_float(attitude_control->get_throttle_in(), 0.0, 1.0);
     // shift difference between pilot's throttle and hover throttle into accelerometer I
-    pos_control->get_accel_U_pid().set_integrator((pilot_throttle-motors->get_throttle_hover()) * 1000.0f);
+    pos_control->get_accel_U_pid().set_integrator((pilot_throttle-motors->get_throttle_hover()) * 1000.0);
 }
 
 // rotate vector from vehicle's perspective to North-East frame
 void Copter::rotate_body_frame_to_NE(float &x, float &y)
 {
-    float ne_x = x*ahrs.cos_yaw() - y*ahrs.sin_yaw();
-    float ne_y = x*ahrs.sin_yaw() + y*ahrs.cos_yaw();
+    float ne_x = x * ahrs.cos_yaw() - y * ahrs.sin_yaw();
+    float ne_y = x * ahrs.sin_yaw() + y * ahrs.cos_yaw();
     x = ne_x;
     y = ne_y;
 }
@@ -138,9 +138,9 @@ void Copter::rotate_body_frame_to_NE(float &x, float &y)
 // It will return the PILOT_SPEED_DN value if non zero, otherwise if zero it returns the PILOT_SPEED_UP value.
 uint16_t Copter::get_pilot_speed_dn() const
 {
-    if (g2.pilot_speed_dn == 0) {
-        return abs(g.pilot_speed_up);
+    if (g2.pilot_speed_dn_cms == 0) {
+        return abs(g.pilot_speed_up_cms);
     } else {
-        return abs(g2.pilot_speed_dn);
+        return abs(g2.pilot_speed_dn_cms);
     }
 }

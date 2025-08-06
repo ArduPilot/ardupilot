@@ -102,7 +102,7 @@ public:
         k_param_throttle_accel_enabled,     // deprecated - remove
         k_param_wp_yaw_behavior,
         k_param_acro_trainer,
-        k_param_pilot_speed_up,         // renamed from k_param_pilot_velocity_z_max
+        k_param_pilot_speed_up_cms,         // renamed from k_param_pilot_velocity_z_max
         k_param_circle_rate,            // deprecated - remove
         k_param_rangefinder_gain,       // deprecated - remove
         k_param_ch8_option_old,         // deprecated
@@ -122,7 +122,7 @@ public:
         k_param_rally,
         k_param_poshold_brake_rate_degs,
         k_param_poshold_brake_angle_max,
-        k_param_pilot_accel_z,
+        k_param_pilot_accel_u_cmss,
         k_param_serial0_baud,           // deprecated - remove
         k_param_serial1_baud,           // deprecated - remove
         k_param_serial2_baud,           // deprecated - remove
@@ -138,7 +138,7 @@ public:
         k_param_cli_enabled_old,        // deprecated - remove
         k_param_throttle_filt,
         k_param_throttle_behavior,
-        k_param_pilot_takeoff_alt, // 64
+        k_param_pilot_takeoff_alt_cm, // 64
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -259,10 +259,10 @@ public:
         //
         // 160: Navigation parameters
         //
-        k_param_rtl_altitude = 160,
+        k_param_rtl_altitude_cm = 160,
         k_param_crosstrack_gain,    // deprecated - remove with next eeprom number change
         k_param_rtl_loiter_time,
-        k_param_rtl_alt_final,
+        k_param_rtl_alt_final_cm,
         k_param_tilt_comp, // 164 deprecated - remove with next eeprom number change
 
 
@@ -334,10 +334,10 @@ public:
         k_param_waypoint_radius,     // remove
         k_param_circle_radius,       // remove
         k_param_waypoint_speed_max,  // remove
-        k_param_land_speed,
+        k_param_land_speed_cms,
         k_param_auto_velocity_z_min, // remove
         k_param_auto_velocity_z_max, // remove - 219
-        k_param_land_speed_high,
+        k_param_land_speed_high_cms,
 
         //
         // 220: PI/D Controllers
@@ -370,7 +370,7 @@ public:
         k_param_autotune_aggressiveness, // remove
         k_param_pi_vel_xy,              // remove
         k_param_fs_ekf_action,
-        k_param_rtl_climb_min,
+        k_param_rtl_climb_min_cm,
         k_param_rpm_sensor_old, // remove
         k_param_autotune_min_d, // remove
         k_param_arming, // 252  - AP_Arming
@@ -393,14 +393,14 @@ public:
 
     AP_Float        throttle_filt;
     AP_Int16        throttle_behavior;
-    AP_Float        pilot_takeoff_alt;
+    AP_Float        pilot_takeoff_alt_cm;
 
 #if MODE_RTL_ENABLED
-    AP_Int32        rtl_altitude;
+    AP_Int32        rtl_altitude_cm;
     AP_Int16        rtl_speed_cms;
     AP_Float        rtl_cone_slope;
-    AP_Int16        rtl_alt_final;
-    AP_Int16        rtl_climb_min;              // rtl minimum climb in cm
+    AP_Int16        rtl_alt_final_cm;
+    AP_Int16        rtl_climb_min_cm;              // rtl minimum climb in cm
     AP_Int32        rtl_loiter_time;
     AP_Enum<ModeRTL::RTLAltType> rtl_alt_type;
 #endif
@@ -419,10 +419,10 @@ public:
 
     // Waypoints
     //
-    AP_Int16        land_speed;
-    AP_Int16        land_speed_high;
-    AP_Int16        pilot_speed_up;    // maximum vertical ascending velocity the pilot may request
-    AP_Int16        pilot_accel_z;               // vertical acceleration the pilot may request
+    AP_Int16        land_speed_cms;
+    AP_Int16        land_speed_high_cms;
+    AP_Int16        pilot_speed_up_cms;         // maximum vertical ascending velocity the pilot may request
+    AP_Int16        pilot_accel_u_cmss;         // vertical acceleration the pilot may request
 
     // Throttle
     //
@@ -567,10 +567,10 @@ public:
 #endif
 
     // Additional pilot velocity items
-    AP_Int16    pilot_speed_dn;
+    AP_Int16    pilot_speed_dn_cms;
 
     // Land alt final stage
-    AP_Int16 land_alt_low;
+    AP_Int16 land_alt_low_cm;
 
 #if TOY_MODE_ENABLED
     ToyMode toy_mode;
