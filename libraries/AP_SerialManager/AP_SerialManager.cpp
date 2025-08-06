@@ -856,6 +856,28 @@ bool AP_SerialManager::pre_arm_checks(char *failure_msg, const uint8_t failure_m
             return false;
         }
     }
+
+    // check each serial port's protocol is a compiled-in protocol
+    for (uint8_t i=0; i<SERIALMANAGER_NUM_PORTS; i++) {
+        const auto &uart = state[i];
+        if (uart.get_protocol() == SerialProtocol_None) {
+            continue;
+        }
+        // if DDS is not enabled then we cannot have DDS protocol on a serial port
+#if !AP_DDS_ENABLED
+        if (uart.get_protocol() == SerialProtocol_DDS_XRCE) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "SERIAL%u_PROTOCOL: DDS is not supported by this build", unsigned(i));
+            return false;
+        }
+#endif
+        // same for ppp
+#if !AP_NETWORKING_BACKEND_PPP
+        if (uart.get_protocol() == SerialProtocol_PPP) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "SERIAL%u_PROTOCOL: PPP is not supported by this build", unsigned(i));
+            return false;
+        }
+#endif
+    }
     return true;
 }
 
