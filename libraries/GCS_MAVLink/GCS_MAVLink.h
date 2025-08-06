@@ -70,7 +70,12 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len);
 uint16_t comm_get_txspace(mavlink_channel_t chan);
 
 #define MAVLINK_USE_CONVENIENCE_FUNCTIONS
+
+#pragma GCC diagnostic push
+// mavlink relies on strncpy() supporting deliberate truncation
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
 #include "include/mavlink/v2.0/all/mavlink.h"
+#pragma GCC diagnostic pop
 
 // lock and unlock a channel, for multi-threaded mavlink send
 void comm_send_lock(mavlink_channel_t chan, uint16_t size);
