@@ -301,6 +301,11 @@ void Plane::update_logging25(void)
             AP::ins().write_notch_log_messages();
         }
 #endif
+#if HAL_WITH_ESC_TELEM
+        if (!should_log(MASK_LOG_NOTCH_FULLRATE)) {
+            AP::esc_telem().write_log();
+        }
+#endif
 #if HAL_GYROFFT_ENABLED
         gyro_fft.write_log_messages();
 #endif
