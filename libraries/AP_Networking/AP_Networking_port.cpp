@@ -107,7 +107,13 @@ void AP_Networking::Port::thread_create(AP_HAL::MemberProc proc)
         return;
     }
 
-    if (!hal.scheduler->thread_create(proc, thread_name, AP_NETWORKING_PORT_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_UART, 0)) {
+    uint32_t thread_stack_size = AP_NETWORKING_PORT_STACK_SIZE;
+    if (type == NetworkPortType::UDP_SERVER_MULTI_CLIENT) {
+        // UDP Server multi-client needs more stack RAM
+        thread_stack_size *= 2;
+    }
+
+    if (!hal.scheduler->thread_create(proc, thread_name, thread_stack_size, AP_HAL::Scheduler::PRIORITY_UART, 0)) {
         AP_BoardConfig::allocation_error("Failed to allocate %s client thread", thread_name);
     }
 }
