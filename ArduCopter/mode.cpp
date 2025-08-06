@@ -989,12 +989,12 @@ float Mode::get_pilot_desired_yaw_rate_rads() const
 // pass-through functions to reduce code churn on conversion;
 // these are candidates for moving into the Mode base
 // class.
-float Mode::get_pilot_desired_climb_rate_cms()
+float Mode::get_pilot_desired_climb_rate_cms() const
 {
     return copter.get_pilot_desired_climb_rate_cms();
 }
 
-float Mode::get_non_takeoff_throttle()
+float Mode::get_non_takeoff_throttle() const
 {
     return copter.get_non_takeoff_throttle();
 }
@@ -1013,22 +1013,22 @@ void Mode::set_land_complete(bool b)
     return copter.set_land_complete(b);
 }
 
-GCS_Copter &Mode::gcs()
+GCS_Copter &Mode::gcs() const
 {
     return copter.gcs();
 }
 
-float Mode::get_pilot_speed_up_ms()
+float Mode::get_pilot_speed_up_ms() const
 {
     return g.pilot_speed_up * 0.01;
 }
 
-float Mode::get_pilot_speed_dn_ms()
+float Mode::get_pilot_speed_dn_ms() const
 {
     return copter.get_pilot_speed_dn() * 0.01;
 }
 
-float Mode::get_pilot_accel_mss()
+float Mode::get_pilot_accel_U_mss() const
 {
     return g.pilot_accel_z * 0.01;
 }
