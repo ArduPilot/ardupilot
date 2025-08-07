@@ -1217,7 +1217,7 @@ void ModeAuto::nav_attitude_time_run()
     }
 
     // constrain climb rate
-    float target_climb_rate_ms = constrain_float(nav_attitude_time.climb_rate, pos_control->get_max_speed_down_ms(), pos_control->get_max_speed_up_ms());
+    float target_climb_rate_ms = constrain_float(nav_attitude_time.climb_rate_ms, pos_control->get_max_speed_down_ms(), pos_control->get_max_speed_up_ms());
 
     // get avoidance adjusted climb rate
     target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
@@ -1908,7 +1908,7 @@ void ModeAuto::do_nav_attitude_time(const AP_Mission::Mission_Command& cmd)
     nav_attitude_time.roll_deg = cmd.content.nav_attitude_time.roll_deg;
     nav_attitude_time.pitch_deg = cmd.content.nav_attitude_time.pitch_deg;
     nav_attitude_time.yaw_deg = cmd.content.nav_attitude_time.yaw_deg;
-    nav_attitude_time.climb_rate = cmd.content.nav_attitude_time.climb_rate;
+    nav_attitude_time.climb_rate_ms = cmd.content.nav_attitude_time.climb_rate;
     nav_attitude_time.start_ms = AP_HAL::millis();
     set_submode(SubMode::NAV_ATTITUDE_TIME);
 }
