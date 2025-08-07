@@ -1,5 +1,6 @@
 #pragma once
 
+#include <hwdef.h>
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_DIY
 #include "esp32diy.h" // Charles
