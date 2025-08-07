@@ -1206,6 +1206,13 @@ class esp32s3(esp32):
     abstract = True
     toolchain = 'xtensa-esp32s3-elf'
 
+    def configure_env(self, cfg, env):
+        if hasattr(self, 'hwdef'):
+            cfg.env.HWDEF = self.hwdef
+        super(esp32, self).configure_env(cfg, env)
+
+        cfg.load('esp32')
+
 class chibios(Board):
     abstract = True
     toolchain = 'arm-none-eabi'
