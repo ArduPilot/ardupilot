@@ -678,7 +678,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_CHANGE_SPEED(const mavlink_comm
         return MAV_RESULT_DENIED;
     }
 
-    const float speed_cms = packet.param2 * 100.0;
+    const float speed_ms = packet.param2;
 
     bool success = false;
     switch (SPEED_TYPE(packet.param1)) {
@@ -687,15 +687,15 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_CHANGE_SPEED(const mavlink_comm
 
         case SPEED_TYPE_AIRSPEED: // Airspeed is treated as ground speed for GCS compatibility
         case SPEED_TYPE_GROUNDSPEED:
-            success = copter.flightmode->set_speed_xy_cms(speed_cms);
+            success = copter.flightmode->set_speed_NE_ms(speed_ms);
             break;
 
         case SPEED_TYPE_CLIMB_SPEED:
-            success = copter.flightmode->set_speed_up_cms(speed_cms);
+            success = copter.flightmode->set_speed_up_ms(speed_ms);
             break;
 
         case SPEED_TYPE_DESCENT_SPEED:
-            success = copter.flightmode->set_speed_down_cms(speed_cms);
+            success = copter.flightmode->set_speed_down_ms(speed_ms);
             break;
     }
 
