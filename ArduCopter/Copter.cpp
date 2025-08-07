@@ -290,7 +290,7 @@ bool Copter::set_target_location(const Location& target_loc)
 }
 
 // start takeoff to given altitude (for use by scripting)
-bool Copter::start_takeoff(const float alt)
+bool Copter::start_takeoff(const float alt_m)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!flightmode->in_guided_mode()) {
