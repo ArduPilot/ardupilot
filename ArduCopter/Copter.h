@@ -673,7 +673,7 @@ private:
 #if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 #if MODE_GUIDED_ENABLED
     bool set_target_location(const Location& target_loc) override;
-    bool start_takeoff(const float alt) override;
+    bool start_takeoff(const float alt_m) override;
 #endif // MODE_GUIDED_ENABLED
 #endif // AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 
