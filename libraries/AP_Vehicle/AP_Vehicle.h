@@ -179,7 +179,7 @@ public:
 
 #if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
     // Method to takeoff for use by external control
-    virtual bool start_takeoff(const float alt) { return false; }
+    virtual bool start_takeoff(const float alt_m) { return false; }
     // Method to control vehicle position for use by external control
     virtual bool set_target_location(const Location& target_loc) { return false; }
     // Get target location for use by external control
