@@ -100,7 +100,7 @@ void ModePosHold::run()
     }
 
     // Pos Hold State Machine Determination
-    AltHoldModeState poshold_state = get_alt_hold_state(target_climb_rate_ms);
+    AltHoldModeState poshold_state = get_alt_hold_state_U_ms(target_climb_rate_ms);
 
     // state machine
     switch (poshold_state) {

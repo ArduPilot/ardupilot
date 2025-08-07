@@ -311,7 +311,7 @@ void ModeZigZag::manual_control()
     }
 
     // Loiter State Machine Determination
-    AltHoldModeState althold_state = get_alt_hold_state(target_climb_rate_ms);
+    AltHoldModeState althold_state = get_alt_hold_state_U_ms(target_climb_rate_ms);
 
     // althold state machine
     switch (althold_state) {

@@ -977,7 +977,7 @@ void ModeGuided::angle_control_run()
         return;
     }
 
-    // TODO: use get_alt_hold_state
+    // TODO: use get_alt_hold_state_U_ms
     // landed with positive desired climb rate or thrust, takeoff
     if (copter.ap.land_complete && positive_thrust_or_climbrate) {
         zero_throttle_and_relax_ac();
