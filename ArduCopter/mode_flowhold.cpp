@@ -251,7 +251,7 @@ void ModeFlowHold::run()
     float target_yaw_rate_cds = rad_to_cd(get_pilot_desired_yaw_rate_rads());
 
     // Flow Hold State Machine Determination
-    AltHoldModeState flowhold_state = get_alt_hold_state(target_climb_rate_ms);
+    AltHoldModeState flowhold_state = get_alt_hold_state_U_ms(target_climb_rate_ms);
 
     if (copter.optflow.healthy()) {
         const float filter_constant = 0.95;

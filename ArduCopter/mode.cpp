@@ -920,7 +920,7 @@ void Mode::output_to_motors()
     motors->output();
 }
 
-Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_ms)
+Mode::AltHoldModeState Mode::get_alt_hold_state_U_ms(float target_climb_rate_ms)
 {
     // Alt Hold State Machine Determination
     if (!motors->armed()) {

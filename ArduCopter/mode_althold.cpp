@@ -43,7 +43,7 @@ void ModeAltHold::run()
     target_climb_rate_ms = constrain_float(target_climb_rate_ms, -get_pilot_speed_dn_ms(), get_pilot_speed_up_ms());
 
     // Alt Hold State Machine Determination
-    AltHoldModeState althold_state = get_alt_hold_state(target_climb_rate_ms);
+    AltHoldModeState althold_state = get_alt_hold_state_U_ms(target_climb_rate_ms);
 
     // Alt Hold State Machine
     switch (althold_state) {

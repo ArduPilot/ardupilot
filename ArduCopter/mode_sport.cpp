@@ -68,7 +68,7 @@ void ModeSport::run()
     target_climb_rate_ms = constrain_float(target_climb_rate_ms, -get_pilot_speed_dn_ms(), get_pilot_speed_up_ms());
 
     // Sport State Machine Determination
-    AltHoldModeState sport_state = get_alt_hold_state(target_climb_rate_ms);
+    AltHoldModeState sport_state = get_alt_hold_state_U_ms(target_climb_rate_ms);
 
     // State Machine
     switch (sport_state) {
