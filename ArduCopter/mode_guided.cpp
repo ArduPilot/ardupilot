@@ -287,27 +287,27 @@ bool ModeGuided::is_taking_off() const
     return guided_mode == SubMode::TakeOff && !takeoff_complete;
 }
 
-bool ModeGuided::set_speed_xy_cms(float speed_xy_cms)
+bool ModeGuided::set_speed_NE_ms(float speed_xy_ms)
 {
     // initialise horizontal speed, acceleration
-    pos_control->set_max_speed_accel_NE_m(speed_xy_cms * 0.01, wp_nav->get_wp_acceleration_mss());
-    pos_control->set_correction_speed_accel_NE_m(speed_xy_cms * 0.01, wp_nav->get_wp_acceleration_mss());
+    pos_control->set_max_speed_accel_NE_m(speed_xy_ms, wp_nav->get_wp_acceleration_mss());
+    pos_control->set_correction_speed_accel_NE_m(speed_xy_ms, wp_nav->get_wp_acceleration_mss());
     return true;
 }
 
-bool ModeGuided::set_speed_up_cms(float speed_up_cms)
+bool ModeGuided::set_speed_up_ms(float speed_up_ms)
 {
     // initialize vertical speeds and acceleration
-    pos_control->set_max_speed_accel_U_m(wp_nav->get_default_speed_down_ms(), speed_up_cms * 0.01, wp_nav->get_accel_U_mss());
-    pos_control->set_correction_speed_accel_U_m(wp_nav->get_default_speed_down_ms(), speed_up_cms * 0.01, wp_nav->get_accel_U_mss());
+    pos_control->set_max_speed_accel_U_m(wp_nav->get_default_speed_down_ms(), speed_up_ms, wp_nav->get_accel_U_mss());
+    pos_control->set_correction_speed_accel_U_m(wp_nav->get_default_speed_down_ms(), speed_up_ms, wp_nav->get_accel_U_mss());
     return true;
 }
 
-bool ModeGuided::set_speed_down_cms(float speed_down_cms)
+bool ModeGuided::set_speed_down_ms(float speed_down_ms)
 {
     // initialize vertical speeds and acceleration
-    pos_control->set_max_speed_accel_U_m(speed_down_cms * 0.01, wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_U_mss());
-    pos_control->set_correction_speed_accel_U_m(speed_down_cms * 0.01, wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_U_mss());
+    pos_control->set_max_speed_accel_U_m(speed_down_ms, wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_U_mss());
+    pos_control->set_correction_speed_accel_U_m(speed_down_ms, wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_U_mss());
     return true;
 }
 
