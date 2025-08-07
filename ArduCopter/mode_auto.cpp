@@ -436,10 +436,10 @@ bool ModeAuto::wp_start(const Location& dest_loc)
 
         // override speeds up and down if necessary
         if (is_positive(desired_speed_override_ms.up)) {
-            wp_nav->set_speed_up_cms(desired_speed_override_ms.up * 100.0);
+            wp_nav->set_speed_up_ms(desired_speed_override_ms.up);
         }
         if (is_positive(desired_speed_override_ms.down)) {
-            wp_nav->set_speed_down_cms(desired_speed_override_ms.down * 100.0);
+            wp_nav->set_speed_down_ms(desired_speed_override_ms.down);
         }
     }
 
@@ -647,24 +647,24 @@ bool ModeAuto::use_pilot_yaw(void) const
     return allow_yaw_option || rtl_allow_yaw || landing;
 }
 
-bool ModeAuto::set_speed_xy_cms(float speed_xy_cms)
+bool ModeAuto::set_speed_NE_ms(float speed_xy_ms)
 {
-    copter.wp_nav->set_speed_NE_cms(speed_xy_cms);
-    desired_speed_override_ms.xy = speed_xy_cms * 0.01;
+    copter.wp_nav->set_speed_NE_ms(speed_xy_ms);
+    desired_speed_override_ms.xy = speed_xy_ms;
     return true;
 }
 
-bool ModeAuto::set_speed_up_cms(float speed_up_cms)
+bool ModeAuto::set_speed_up_ms(float speed_up_ms)
 {
-    copter.wp_nav->set_speed_up_cms(speed_up_cms);
-    desired_speed_override_ms.up = speed_up_cms * 0.01;
+    copter.wp_nav->set_speed_up_ms(speed_up_ms);
+    desired_speed_override_ms.up = speed_up_ms;
     return true;
 }
 
-bool ModeAuto::set_speed_down_cms(float speed_down_cms)
+bool ModeAuto::set_speed_down_ms(float speed_down_ms)
 {
-    copter.wp_nav->set_speed_down_cms(speed_down_cms);
-    desired_speed_override_ms.down = speed_down_cms * 0.01;
+    copter.wp_nav->set_speed_down_ms(speed_down_ms);
+    desired_speed_override_ms.down = speed_down_ms;
     return true;
 }
 
@@ -1946,11 +1946,11 @@ void ModeAuto::do_change_speed(const AP_Mission::Mission_Command& cmd)
     if (cmd.content.speed.target_ms > 0) {
         switch (cmd.content.speed.speed_type) {
         case SPEED_TYPE_CLIMB_SPEED:
-            copter.wp_nav->set_speed_up_cms(cmd.content.speed.target_ms * 100.0f);
+            copter.wp_nav->set_speed_up_ms(cmd.content.speed.target_ms);
             desired_speed_override_ms.up = cmd.content.speed.target_ms;
             break;
         case SPEED_TYPE_DESCENT_SPEED:
-            copter.wp_nav->set_speed_down_cms(cmd.content.speed.target_ms * 100.0f);
+            copter.wp_nav->set_speed_down_ms(cmd.content.speed.target_ms);
             desired_speed_override_ms.down = cmd.content.speed.target_ms;
             break;
         case SPEED_TYPE_AIRSPEED:
