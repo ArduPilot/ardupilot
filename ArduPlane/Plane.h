@@ -854,6 +854,34 @@ private:
     // rudder mixing gain for differential thrust (0 - 1)
     float rudder_dt;
 
+#if AP_PLANE_HF_ELEVATOR_ENABLED
+    class HighFreqElevator {
+    public:
+        // update outputs
+        void update(void);
+
+        // output to add to flaperons
+        float flaperon_output() const {
+            return flaperon_mix;
+        }
+
+        static const AP_Param::GroupInfo var_info[];
+
+    private:
+        AP_Int8 enable;
+        AP_Float hf_elevator_freq;
+        AP_Int8 hf_elevator_pct;
+        AP_Int8 hf_elev_flap_mix_gain_pct;
+        AP_Int8 lf_elev_flap_mix_gain_pct;
+
+        // low pass filtered elevator
+        LowPassFilter2pFloat lpf;
+
+        float flaperon_mix;
+    } HF_elevator;
+#endif // AP_PLANE_HF_ELEVATOR_ENABLED
+
+
     // soaring mode-change timer
     uint32_t soaring_mode_timer_ms;
 
