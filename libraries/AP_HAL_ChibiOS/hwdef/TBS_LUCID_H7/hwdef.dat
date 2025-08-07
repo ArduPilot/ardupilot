@@ -206,6 +206,9 @@ IMU Invensensev3 SPI:imu1 ROTATION_YAW_270
 IMU Invensensev3 SPI:imu2 ROTATION_YAW_180
 define HAL_DEFAULT_INS_FAST_SAMPLE 3
 
+# Betaflight motor order
+define HAL_FRAME_TYPE_DEFAULT 12
+
 # DPS310 integrated on I2C2 bus
 BARO DPS310 I2C:0:0x76
 
