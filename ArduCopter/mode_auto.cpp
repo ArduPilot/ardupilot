@@ -1853,9 +1853,9 @@ void ModeAuto::do_guided_limits(const AP_Mission::Mission_Command& cmd)
 {
     copter.mode_guided.limit_set(
         cmd.p1 * 1000, // convert seconds to ms
-        cmd.content.guided_limits.alt_min * 100.0f,    // convert meters to cm
-        cmd.content.guided_limits.alt_max * 100.0f,    // convert meters to cm
-        cmd.content.guided_limits.horiz_max * 100.0f); // convert meters to cm
+        cmd.content.guided_limits.alt_min,
+        cmd.content.guided_limits.alt_max,
+        cmd.content.guided_limits.horiz_max);
 }
 #endif  // AC_NAV_GUIDED
 
