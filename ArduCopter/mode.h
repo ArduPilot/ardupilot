@@ -772,11 +772,11 @@ private:
 
     // nav attitude time command variables
     struct {
-        int16_t roll_deg;   // target roll angle in degrees.  provided by mission command
-        int8_t pitch_deg;   // target pitch angle in degrees.  provided by mission command
-        int16_t yaw_deg;    // target yaw angle in degrees.  provided by mission command
-        float climb_rate;   // climb rate in m/s. provided by mission command
-        uint32_t start_ms;  // system time that nav attitude time command was received (used for timeout)
+        int16_t roll_deg;       // target roll angle in degrees.  provided by mission command
+        int8_t pitch_deg;       // target pitch angle in degrees.  provided by mission command
+        int16_t yaw_deg;        // target yaw angle in degrees.  provided by mission command
+        float climb_rate_ms;    // climb rate in m/s. provided by mission command
+        uint32_t start_ms;      // system time that nav attitude time command was received (used for timeout)
     } nav_attitude_time;
 
     // desired speeds
