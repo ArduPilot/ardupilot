@@ -1013,8 +1013,8 @@ bool Plane::is_taking_off() const
 }
 
 #if HAL_QUADPLANE_ENABLED
-bool Plane::start_takeoff(const float alt) {
-    return plane.quadplane.available() && quadplane.do_user_takeoff(alt);
+bool Plane::start_takeoff(const float alt_m) {
+    return plane.quadplane.available() && quadplane.do_user_takeoff(alt_m);
 }
 #endif
 
