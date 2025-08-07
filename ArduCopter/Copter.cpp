@@ -635,6 +635,12 @@ void Copter::loop_rate_logging()
         AP::ins().write_notch_log_messages();
     }
 #endif
+#if HAL_WITH_ESC_TELEM
+    // associate full rate ESC data with full rate notch data
+    if (should_log(MASK_LOG_MOTBATT) && should_log(MASK_LOG_FTN_FAST)) {
+        AP::esc_telem().write_log();
+    }
+#endif
     if (should_log(MASK_LOG_IMU_FAST)) {
         AP::ins().Write_IMU();
     }
@@ -718,6 +724,11 @@ void Copter::twentyfive_hz_logging()
 #if HAL_GYROFFT_ENABLED
     if (should_log(MASK_LOG_FTN_FAST)) {
         gyro_fft.write_log_messages();
+    }
+#endif
+#if HAL_WITH_ESC_TELEM
+    if (should_log(MASK_LOG_MOTBATT) && !should_log(MASK_LOG_FTN_FAST)) {
+        AP::esc_telem().write_log();
     }
 #endif
 }
