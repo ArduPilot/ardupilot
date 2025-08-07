@@ -157,7 +157,7 @@ public:
     virtual const char *name() const = 0;
     virtual const char *name4() const = 0;
 
-    bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
+    bool do_user_takeoff_U_m(float takeoff_alt_m, bool must_navigate);
     virtual bool is_taking_off() const;
     static void takeoff_stop() { takeoff.stop(); }
 

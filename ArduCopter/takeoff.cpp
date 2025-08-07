@@ -15,7 +15,7 @@ bool Mode::do_user_takeoff_start(float takeoff_alt_m)
 }
 
 // initiate user takeoff - called when MAVLink TAKEOFF command is received
-bool Mode::do_user_takeoff(float takeoff_alt_m, bool must_navigate)
+bool Mode::do_user_takeoff_U_m(float takeoff_alt_m, bool must_navigate)
 {
     if (!copter.motors->armed()) {
         return false;
@@ -28,7 +28,7 @@ bool Mode::do_user_takeoff(float takeoff_alt_m, bool must_navigate)
         // this mode doesn't support user takeoff
         return false;
     }
-    if (takeoff_alt_m <= copter.current_loc.alt) {
+    if (takeoff_alt_m <= copter.current_loc.alt * 0.01) {
         // can't takeoff downwards...
         return false;
     }
@@ -39,7 +39,7 @@ bool Mode::do_user_takeoff(float takeoff_alt_m, bool must_navigate)
         return false;
     }
 
-    if (!do_user_takeoff_start(takeoff_alt_m)) {
+    if (!do_user_takeoff_start(takeoff_alt_m * 100.0)) {
         return false;
     }
 

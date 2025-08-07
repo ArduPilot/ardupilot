@@ -631,9 +631,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_NAV_TAKEOFF(const mavlink_command_
         // param6 : longitude   (not supported)
         // param7 : altitude [metres]
 
-        float takeoff_alt_cm = packet.z * 100;      // Convert m to cm
+        float takeoff_alt_m = packet.z;
 
-        if (!copter.flightmode->do_user_takeoff(takeoff_alt_cm, is_zero(packet.param3))) {
+        if (!copter.flightmode->do_user_takeoff_U_m(takeoff_alt_m, is_zero(packet.param3))) {
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
@@ -810,7 +810,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_SOLO_BTN_FLY_HOLD(const mavlink_co
         } else if (copter.ap.land_complete) {
             // if armed and landed, takeoff
             if (copter.set_mode(Mode::Number::LOITER, ModeReason::GCS_COMMAND)) {
-                copter.flightmode->do_user_takeoff(packet.param1*100, true);
+                copter.flightmode->do_user_takeoff_U_m(packet.param1, true);
             }
         } else {
             // if flying, land
