@@ -6,28 +6,28 @@
  * Init and run calls for guided flight mode
  */
 
-static Vector3p guided_pos_target_neu_cm;       // position target (used by posvel controller only)
-static bool guided_is_terrain_alt;              // true if guided_pos_target_neu_cm.z is an alt above terrain
-static Vector3f guided_vel_target_neu_cms;      // velocity target (used by pos_vel_accel controller and vel_accel controller)
-static Vector3f guided_accel_target_neu_cmss;   // acceleration target (used by pos_vel_accel controller vel_accel controller and accel controller)
+static Vector3p guided_pos_target_neu_m;        // position target (used by posvel controller only)
+static bool guided_is_terrain_alt;              // true if guided_pos_target_neu_m.z is an alt above terrain
+static Vector3f guided_vel_target_neu_ms;       // velocity target (used by pos_vel_accel controller and vel_accel controller)
+static Vector3f guided_accel_target_neu_mss;    // acceleration target (used by pos_vel_accel controller vel_accel controller and accel controller)
 static uint32_t update_time_ms;                 // system time of last target update to pos_vel_accel, vel_accel or accel controller
 
 struct {
     uint32_t update_time_ms;
     Quaternion attitude_quat;
     Vector3f ang_vel_body;
-    float climb_rate_cms;       // climb rate in cms.  Used if use_thrust is false
-    float thrust_norm;          // thrust from -1 to 1.  Used if use_thrust is true
+    float climb_rate_ms;    // climb rate in ms.  Used if use_thrust is false
+    float thrust_norm;      // thrust from -1 to 1.  Used if use_thrust is true
     bool use_thrust;
 } static guided_angle_state;
 
 struct Guided_Limit {
-    uint32_t timeout_ms;        // timeout (in seconds) from the time that guided is invoked
-    float alt_min_cm;           // lower altitude limit in cm above home (0 = no limit)
-    float alt_max_cm;           // upper altitude limit in cm above home (0 = no limit)
-    float horiz_max_cm;         // horizontal position limit in cm from where guided mode was initiated (0 = no limit)
-    uint32_t start_time_ms;     // system time in milliseconds that control was handed to the external computer
-    Vector3f start_pos_neu_cm;  // start position as a distance from home in cm.  used for checking horiz_max limit
+    uint32_t timeout_ms;    // timeout (in seconds) from the time that guided is invoked
+    float alt_min_m;        // lower altitude limit in m above home (0 = no limit)
+    float alt_max_m;        // upper altitude limit in m above home (0 = no limit)
+    float horiz_max_m;      // horizontal position limit in m from where guided mode was initiated (0 = no limit)
+    uint32_t start_time_ms; // system time in milliseconds that control was handed to the external computer
+    Vector3f start_pos_neu_m;     // start position as a distance from home in m.  used for checking horiz_max limit
 } static guided_limit;
 
 // controls which controller is run (pos or vel):
@@ -43,8 +43,8 @@ bool ModeGuided::init(bool ignore_checks)
 {
     // start in velaccel control mode
     velaccel_control_start();
-    guided_vel_target_neu_cms.zero();
-    guided_accel_target_neu_cmss.zero();
+    guided_vel_target_neu_ms.zero();
+    guided_accel_target_neu_mss.zero();
     send_notification = false;
 
     // clear pause state when entering guided mode
@@ -128,32 +128,32 @@ bool ModeGuided::allows_weathervaning() const
 #endif
 
 // initialises position controller to implement take-off
-// takeoff_alt_cm is interpreted as alt-above-home (in cm) or alt-above-terrain if a rangefinder is available
-bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
+// takeoff_alt_m is interpreted as alt-above-home (in m) or alt-above-terrain if a rangefinder is available
+bool ModeGuided::do_user_takeoff_start_m(float takeoff_alt_m)
 {
     // calculate target altitude and frame (either alt-above-ekf-origin or alt-above-terrain)
-    int32_t alt_target_cm;
+    float alt_target_m;
     bool alt_target_terrain = false;
 #if AP_RANGEFINDER_ENABLED
     if (wp_nav->rangefinder_used_and_healthy() &&
         wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER &&
-        takeoff_alt_cm < copter.rangefinder.max_distance_orient(ROTATION_PITCH_270)*100) {
+        takeoff_alt_m < copter.rangefinder.max_distance_orient(ROTATION_PITCH_270)) {
         // can't takeoff downwards
-        if (takeoff_alt_cm <= copter.rangefinder_state.alt_cm) {
+        if (takeoff_alt_m <= copter.rangefinder_state.alt_cm * 0.01) {
             return false;
         }
         // provide target altitude as alt-above-terrain
-        alt_target_cm = takeoff_alt_cm;
+        alt_target_m = takeoff_alt_m;
         alt_target_terrain = true;
     } else
 #endif
     {
         // interpret altitude as alt-above-home
         Location target_loc = copter.current_loc;
-        target_loc.set_alt_cm(takeoff_alt_cm, Location::AltFrame::ABOVE_HOME);
+        target_loc.set_alt_m(takeoff_alt_m, Location::AltFrame::ABOVE_HOME);
 
         // provide target altitude as alt-above-ekf-origin
-        if (!target_loc.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN, alt_target_cm)) {
+        if (!target_loc.get_alt_m(Location::AltFrame::ABOVE_ORIGIN, alt_target_m)) {
             // this should never happen but we reject the command just in case
             return false;
         }
@@ -168,7 +168,7 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
     pos_control->init_U_controller();
 
     // initialise alt for WP_NAVALT_MIN and set completion alt
-    auto_takeoff.start_m(alt_target_cm * 0.01, alt_target_terrain);
+    auto_takeoff.start_m(alt_target_m, alt_target_terrain);
 
     // record takeoff has not completed
     takeoff_complete = false;
@@ -183,12 +183,12 @@ void ModeGuided::wp_control_start()
     guided_mode = SubMode::WP;
 
     // initialise waypoint and spline controller
-    wp_nav->wp_and_spline_init_cm();
+    wp_nav->wp_and_spline_init_m();
 
     // initialise wpnav to stopping point
     Vector3f stopping_point;
-    wp_nav->get_wp_stopping_point_NEU_cm(stopping_point);
-    if (!wp_nav->set_wp_destination_NEU_cm(stopping_point, false)) {
+    wp_nav->get_wp_stopping_point_NEU_m(stopping_point);
+    if (!wp_nav->set_wp_destination_NEU_m(stopping_point, false)) {
         // this should never happen because terrain data is not used
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     }
@@ -330,17 +330,17 @@ void ModeGuided::angle_control_start()
     guided_angle_state.update_time_ms = millis();
     guided_angle_state.attitude_quat.from_euler(Vector3f(0.0, 0.0, attitude_control->get_att_target_euler_rad().z));
     guided_angle_state.ang_vel_body.zero();
-    guided_angle_state.climb_rate_cms = 0.0f;
+    guided_angle_state.climb_rate_ms = 0.0f;
 }
 
 // set_pos_neu_cm - sets guided mode's target pos_neu_cm
 // Returns true if the fence is enabled and guided waypoint is within the fence
 // else return false if the waypoint is outside the fence
-bool ModeGuided::set_pos_neu_cm(const Vector3f& pos_neu_cm, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool is_terrain_alt)
+bool ModeGuided::set_pos_NEU_m(const Vector3f& pos_neu_m, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool is_terrain_alt)
 {
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
-    const Location dest_loc(pos_neu_cm, is_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+    const Location dest_loc(pos_neu_m, is_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
     if (!copter.fence.check_destination_within_fence(dest_loc)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
@@ -359,11 +359,11 @@ bool ModeGuided::set_pos_neu_cm(const Vector3f& pos_neu_cm, bool use_yaw, float 
         set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
         // no need to check return status because terrain data is not used
-        wp_nav->set_wp_destination_NEU_cm(pos_neu_cm, is_terrain_alt);
+        wp_nav->set_wp_destination_NEU_m(pos_neu_m, is_terrain_alt);
 
 #if HAL_LOGGING_ENABLED
         // log target
-        copter.Log_Write_Guided_Position_Target(guided_mode, pos_neu_cm, is_terrain_alt, Vector3f(), Vector3f());
+        copter.Log_Write_Guided_Position_Target(guided_mode, pos_neu_m, is_terrain_alt, Vector3f(), Vector3f());
 #endif
         send_notification = true;
         return true;
@@ -378,8 +378,8 @@ bool ModeGuided::set_pos_neu_cm(const Vector3f& pos_neu_cm, bool use_yaw, float 
     // initialise terrain following if needed
     if (is_terrain_alt) {
         // get current alt above terrain
-        float origin_terr_offset_cm;
-        if (!wp_nav->get_terrain_offset_cm(origin_terr_offset_cm)) {
+        float origin_terr_offset_m;
+        if (!wp_nav->get_terrain_offset_m(origin_terr_offset_m)) {
             // if we don't have terrain altitude then stop
             init(true);
             return false;
@@ -387,25 +387,25 @@ bool ModeGuided::set_pos_neu_cm(const Vector3f& pos_neu_cm, bool use_yaw, float 
         // convert origin to alt-above-terrain if necessary
         if (!guided_is_terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
-            pos_control->init_pos_terrain_U_cm(origin_terr_offset_cm);
+            pos_control->init_pos_terrain_U_m(origin_terr_offset_m);
         }
     } else {
-        pos_control->init_pos_terrain_U_cm(0.0);
+        pos_control->init_pos_terrain_U_m(0.0);
     }
 
     // set yaw state
     set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
     // set position target and zero velocity and acceleration
-    guided_pos_target_neu_cm = pos_neu_cm.topostype();
+    guided_pos_target_neu_m = pos_neu_m.topostype();
     guided_is_terrain_alt = is_terrain_alt;
-    guided_vel_target_neu_cms.zero();
-    guided_accel_target_neu_cmss.zero();
+    guided_vel_target_neu_ms.zero();
+    guided_accel_target_neu_mss.zero();
     update_time_ms = millis();
 
 #if HAL_LOGGING_ENABLED
     // log target
-    copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_cm.tofloat(), guided_is_terrain_alt, guided_vel_target_neu_cms, guided_accel_target_neu_cmss);
+    copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_m.tofloat(), guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
 #endif
 
     send_notification = true;
@@ -419,7 +419,7 @@ bool ModeGuided::get_wp(Location& destination) const
     case SubMode::WP:
         return wp_nav->get_oa_wp_destination(destination);
     case SubMode::Pos:
-        destination = Location(guided_pos_target_neu_cm.tofloat(), guided_is_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+        destination = Location(guided_pos_target_neu_m.tofloat(), guided_is_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
         return true;
     case SubMode::Angle:
     case SubMode::TakeOff:
@@ -473,9 +473,9 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
     }
 
     // set position target and zero velocity and acceleration
-    Vector3f pos_target_neu_cm;
+    Vector3f pos_target_neu_m;
     bool is_terrain_alt;
-    if (!wp_nav->get_vector_NEU_cm(dest_loc, pos_target_neu_cm, is_terrain_alt)) {
+    if (!wp_nav->get_vector_NEU_m(dest_loc, pos_target_neu_m, is_terrain_alt)) {
         return false;
     }
 
@@ -491,8 +491,8 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
     // initialise terrain following if needed
     if (is_terrain_alt) {
         // get current alt above terrain
-        float origin_terr_offset_cm;
-        if (!wp_nav->get_terrain_offset_cm(origin_terr_offset_cm)) {
+        float origin_terr_offset_m;
+        if (!wp_nav->get_terrain_offset_m(origin_terr_offset_m)) {
             // if we don't have terrain altitude then stop
             init(true);
             return false;
@@ -500,21 +500,21 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         // convert origin to alt-above-terrain if necessary
         if (!guided_is_terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
-            pos_control->init_pos_terrain_U_cm(origin_terr_offset_cm);
+            pos_control->init_pos_terrain_U_m(origin_terr_offset_m);
         }
     } else {
-        pos_control->init_pos_terrain_U_cm(0.0);
+        pos_control->init_pos_terrain_U_m(0.0);
     }
 
-    guided_pos_target_neu_cm = pos_target_neu_cm.topostype();
+    guided_pos_target_neu_m = pos_target_neu_m.topostype();
     guided_is_terrain_alt = is_terrain_alt;
-    guided_vel_target_neu_cms.zero();
-    guided_accel_target_neu_cmss.zero();
+    guided_vel_target_neu_ms.zero();
+    guided_accel_target_neu_mss.zero();
     update_time_ms = millis();
 
     // log target
 #if HAL_LOGGING_ENABLED
-    copter.Log_Write_Guided_Position_Target(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt), guided_is_terrain_alt, guided_vel_target_neu_cms, guided_accel_target_neu_cmss);
+    copter.Log_Write_Guided_Position_Target(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt), guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
 #endif
 
     send_notification = true;
@@ -522,8 +522,8 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
     return true;
 }
 
-// set_vel_accel_neu_cm - sets guided mode's target velocity and acceleration
-void ModeGuided::set_accel_neu_cmss(const Vector3f& accel_neu_cmss, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool log_request)
+// set_vel_accel_NEU_m - sets guided mode's target velocity and acceleration
+void ModeGuided::set_accel_NEU_mss(const Vector3f& accel_neu_mss, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool log_request)
 {
     // check we are in acceleration control mode
     if (guided_mode != SubMode::Accel) {
@@ -534,28 +534,28 @@ void ModeGuided::set_accel_neu_cmss(const Vector3f& accel_neu_cmss, bool use_yaw
     set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
     // set velocity and acceleration targets and zero position
-    guided_pos_target_neu_cm.zero();
+    guided_pos_target_neu_m.zero();
     guided_is_terrain_alt = false;
-    guided_vel_target_neu_cms.zero();
-    guided_accel_target_neu_cmss = accel_neu_cmss;
+    guided_vel_target_neu_ms.zero();
+    guided_accel_target_neu_mss = accel_neu_mss;
     update_time_ms = millis();
 
 #if HAL_LOGGING_ENABLED
     // log target
     if (log_request) {
-        copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_cm.tofloat(), guided_is_terrain_alt, guided_vel_target_neu_cms, guided_accel_target_neu_cmss);
+        copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_m.tofloat(), guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
     }
 #endif
 }
 
-// set_vel_neu_cms - sets guided mode's target velocity
-void ModeGuided::set_vel_neu_cms(const Vector3f& vel_neu_cms, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool log_request)
+// set_vel_NEU_ms - sets guided mode's target velocity
+void ModeGuided::set_vel_NEU_ms(const Vector3f& vel_neu_ms, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool log_request)
 {
-    set_vel_accel_neu_cm(vel_neu_cms, Vector3f(), use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw, log_request);
+    set_vel_accel_NEU_m(vel_neu_ms, Vector3f(), use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw, log_request);
 }
 
-// set_vel_accel_neu_cm - sets guided mode's target velocity and acceleration
-void ModeGuided::set_vel_accel_neu_cm(const Vector3f& vel_neu_cms, const Vector3f& accel_neu_cmss, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool log_request)
+// set_vel_accel_NEU_m - sets guided mode's target velocity and acceleration
+void ModeGuided::set_vel_accel_NEU_m(const Vector3f& vel_neu_ms, const Vector3f& accel_neu_mss, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool log_request)
 {
     // check we are in velocity and acceleration control mode
     if (guided_mode != SubMode::VelAccel) {
@@ -566,32 +566,32 @@ void ModeGuided::set_vel_accel_neu_cm(const Vector3f& vel_neu_cms, const Vector3
     set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
     // set velocity and acceleration targets and zero position
-    guided_pos_target_neu_cm.zero();
+    guided_pos_target_neu_m.zero();
     guided_is_terrain_alt = false;
-    guided_vel_target_neu_cms = vel_neu_cms;
-    guided_accel_target_neu_cmss = accel_neu_cmss;
+    guided_vel_target_neu_ms = vel_neu_ms;
+    guided_accel_target_neu_mss = accel_neu_mss;
     update_time_ms = millis();
 
 #if HAL_LOGGING_ENABLED
     // log target
     if (log_request) {
-        copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_cm.tofloat(), guided_is_terrain_alt, guided_vel_target_neu_cms, guided_accel_target_neu_cmss);
+        copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_m.tofloat(), guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
     }
 #endif
 }
 
-// set_pos_vel_neu_cm - set guided mode position and velocity target
-bool ModeGuided::set_pos_vel_neu_cm(const Vector3f& pos_neu_cm, const Vector3f& vel_neu_cms, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw)
+// set_pos_vel_NEU_m - set guided mode position and velocity target
+bool ModeGuided::set_pos_vel_NEU_m(const Vector3f& pos_neu_m, const Vector3f& vel_neu_ms, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw)
 {
-    return set_pos_vel_accel_neu_cm(pos_neu_cm, vel_neu_cms, Vector3f(), use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
+    return set_pos_vel_accel_NEU_m(pos_neu_m, vel_neu_ms, Vector3f(), use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 }
 
-// set_pos_vel_accel_neu_cm - set guided mode position, velocity and acceleration target
-bool ModeGuided::set_pos_vel_accel_neu_cm(const Vector3f& pos_neu_cm, const Vector3f& vel_neu_cms, const Vector3f& accel_neu_cmss, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw)
+// set_pos_vel_accel_NEU_m - set guided mode position, velocity and acceleration target
+bool ModeGuided::set_pos_vel_accel_NEU_m(const Vector3f& pos_neu_m, const Vector3f& vel_neu_ms, const Vector3f& accel_neu_mss, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw)
 {
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
-    const Location dest_loc(pos_neu_cm, Location::AltFrame::ABOVE_ORIGIN);
+    const Location dest_loc(pos_neu_m, Location::AltFrame::ABOVE_ORIGIN);
     if (!copter.fence.check_destination_within_fence(dest_loc)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
@@ -608,14 +608,14 @@ bool ModeGuided::set_pos_vel_accel_neu_cm(const Vector3f& pos_neu_cm, const Vect
     set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
     update_time_ms = millis();
-    guided_pos_target_neu_cm = pos_neu_cm.topostype();
+    guided_pos_target_neu_m = pos_neu_m.topostype();
     guided_is_terrain_alt = false;
-    guided_vel_target_neu_cms = vel_neu_cms;
-    guided_accel_target_neu_cmss = accel_neu_cmss;
+    guided_vel_target_neu_ms = vel_neu_ms;
+    guided_accel_target_neu_mss = accel_neu_mss;
 
 #if HAL_LOGGING_ENABLED
     // log target
-    copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_cm.tofloat(), guided_is_terrain_alt, guided_vel_target_neu_cms, guided_accel_target_neu_cmss);
+    copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_m.tofloat(), guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
 #endif
     return true;
 }
@@ -627,13 +627,13 @@ bool ModeGuided::set_attitude_target_provides_thrust() const
 }
 
 // returns true if GUIDED_OPTIONS param specifies position should be controlled (when velocity and/or acceleration control is active)
-bool ModeGuided::stabilizing_pos_xy() const
+bool ModeGuided::stabilizing_pos_NE() const
 {
     return !option_is_enabled(Option::DoNotStabilizePositionXY);
 }
 
 // returns true if GUIDED_OPTIONS param specifies velocity should  be controlled (when acceleration control is active)
-bool ModeGuided::stabilizing_vel_xy() const
+bool ModeGuided::stabilizing_vel_NE() const
 {
     return !option_is_enabled(Option::DoNotStabilizeVelocityXY);
 }
@@ -648,10 +648,10 @@ bool ModeGuided::use_wpnav_for_position_control() const
 // attitude_quat: IF zero: ang_vel_body (body frame angular velocity) must be provided even if all zeroes
 //                IF non-zero: attitude_control is performed using both the attitude quaternion and body frame angular velocity
 // ang_vel_body: body frame angular velocity (rad/s)
-// climb_rate_cms_or_thrust: represents either the climb_rate (cm/s) or thrust scaled from [0, 1], unitless
-// use_thrust: IF true: climb_rate_cms_or_thrust represents thrust
-//             IF false: climb_rate_cms_or_thrust represents climb_rate (cm/s)
-void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel_body, float climb_rate_cms_or_thrust, bool use_thrust)
+// climb_rate_ms_or_thrust: represents either the climb_rate (m/s) or thrust scaled from [0, 1], unitless
+// use_thrust: IF true: climb_rate_ms_or_thrust represents thrust
+//             IF false: climb_rate_ms_or_thrust represents climb_rate (m/s)
+void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel_body, float climb_rate_ms_or_thrust, bool use_thrust)
 {
     // check we are in velocity control mode
     if (guided_mode != SubMode::Angle) {
@@ -666,11 +666,11 @@ void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_
 
     guided_angle_state.use_thrust = use_thrust;
     if (use_thrust) {
-        guided_angle_state.thrust_norm = climb_rate_cms_or_thrust;
-        guided_angle_state.climb_rate_cms = 0.0f;
+        guided_angle_state.thrust_norm = climb_rate_ms_or_thrust;
+        guided_angle_state.climb_rate_ms = 0.0f;
     } else {
         guided_angle_state.thrust_norm = 0.0f;
-        guided_angle_state.climb_rate_cms = climb_rate_cms_or_thrust;
+        guided_angle_state.climb_rate_ms = climb_rate_ms_or_thrust;
     }
 
     guided_angle_state.update_time_ms = millis();
@@ -681,7 +681,7 @@ void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_
 
 #if HAL_LOGGING_ENABLED
     // log target
-    copter.Log_Write_Guided_Attitude_Target(guided_mode, roll_rad, pitch_rad, yaw_rad, ang_vel_body, guided_angle_state.thrust_norm, guided_angle_state.climb_rate_cms * 0.01);
+    copter.Log_Write_Guided_Attitude_Target(guided_mode, roll_rad, pitch_rad, yaw_rad, ang_vel_body, guided_angle_state.thrust_norm, guided_angle_state.climb_rate_ms);
 #endif
 }
 
@@ -714,8 +714,8 @@ void ModeGuided::pos_control_run()
     }
 
     // calculate terrain adjustments
-    float terr_offset_cm = 0.0f;
-    if (guided_is_terrain_alt && !wp_nav->get_terrain_offset_cm(terr_offset_cm)) {
+    float terr_offset_m = 0.0f;
+    if (guided_is_terrain_alt && !wp_nav->get_terrain_offset_m(terr_offset_m)) {
         // failure to set destination can only be because of missing terrain data
         copter.failsafe_terrain_on_event();
         return;
@@ -725,8 +725,8 @@ void ModeGuided::pos_control_run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // send position and velocity targets to position controller
-    guided_accel_target_neu_cmss.zero();
-    guided_vel_target_neu_cms.zero();
+    guided_accel_target_neu_mss.zero();
+    guided_vel_target_neu_ms.zero();
 
     // stop rotating if no updates received within timeout_ms
     if (millis() - update_time_ms > get_timeout_ms()) {
@@ -735,11 +735,11 @@ void ModeGuided::pos_control_run()
         }
     }
 
-    float pos_offset_z_buffer_cm = 0.0; // Vertical buffer size in m
+    float pos_offset_z_buffer_m = 0.0; // Vertical buffer size in m
     if (guided_is_terrain_alt) {
-        pos_offset_z_buffer_cm = MIN(copter.wp_nav->get_terrain_margin_m() * 100.0, 0.5 * fabsF(guided_pos_target_neu_cm.z));
+        pos_offset_z_buffer_m = MIN(copter.wp_nav->get_terrain_margin_m(), 0.5 * fabsF(guided_pos_target_neu_m.z));
     }
-    pos_control->input_pos_NEU_cm(guided_pos_target_neu_cm, terr_offset_cm, pos_offset_z_buffer_cm);
+    pos_control->input_pos_NEU_m(guided_pos_target_neu_m, terr_offset_m, pos_offset_z_buffer_m);
 
     // run position controllers
     pos_control->update_NE_controller();
@@ -766,24 +766,24 @@ void ModeGuided::accel_control_run()
     // set velocity to zero and stop rotating if no updates received for 3 seconds
     uint32_t tnow = millis();
     if (tnow - update_time_ms > get_timeout_ms()) {
-        guided_vel_target_neu_cms.zero();
-        guided_accel_target_neu_cmss.zero();
+        guided_vel_target_neu_ms.zero();
+        guided_accel_target_neu_mss.zero();
         if ((auto_yaw.mode() == AutoYaw::Mode::RATE) || (auto_yaw.mode() == AutoYaw::Mode::ANGLE_RATE)) {
             auto_yaw.set_mode(AutoYaw::Mode::HOLD);
         }
-        pos_control->input_vel_accel_NE_cm(guided_vel_target_neu_cms.xy(), guided_accel_target_neu_cmss.xy(), false);
-        pos_control->input_vel_accel_U_cm(guided_vel_target_neu_cms.z, guided_accel_target_neu_cmss.z, false);
+        pos_control->input_vel_accel_NE_m(guided_vel_target_neu_ms.xy(), guided_accel_target_neu_mss.xy(), false);
+        pos_control->input_vel_accel_U_m(guided_vel_target_neu_ms.z, guided_accel_target_neu_mss.z, false);
     } else {
         // update position controller with new target
-        pos_control->input_accel_NE_cm(guided_accel_target_neu_cmss);
-        if (!stabilizing_vel_xy()) {
+        pos_control->input_accel_NE_m(guided_accel_target_neu_mss);
+        if (!stabilizing_vel_NE()) {
             // set position and velocity errors to zero
             pos_control->stop_vel_NE_stabilisation();
-        } else if (!stabilizing_pos_xy()) {
+        } else if (!stabilizing_pos_NE()) {
             // set position errors to zero
             pos_control->stop_pos_NE_stabilisation();
         }
-        pos_control->input_accel_U_cm(guided_accel_target_neu_cmss.z);
+        pos_control->input_accel_U_m(guided_accel_target_neu_mss.z);
     }
 
     // call velocity controller which includes z axis controller
@@ -811,8 +811,8 @@ void ModeGuided::velaccel_control_run()
     // set velocity to zero and stop rotating if no updates received for 3 seconds
     uint32_t tnow = millis();
     if (tnow - update_time_ms > get_timeout_ms()) {
-        guided_vel_target_neu_cms.zero();
-        guided_accel_target_neu_cmss.zero();
+        guided_vel_target_neu_ms.zero();
+        guided_accel_target_neu_mss.zero();
         if ((auto_yaw.mode() == AutoYaw::Mode::RATE) || (auto_yaw.mode() == AutoYaw::Mode::ANGLE_RATE)) {
             auto_yaw.set_mode(AutoYaw::Mode::HOLD);
         }
@@ -821,25 +821,25 @@ void ModeGuided::velaccel_control_run()
     bool do_avoid = false;
 #if AP_AVOIDANCE_ENABLED
     // limit the velocity for obstacle/fence avoidance
-    copter.avoid.adjust_velocity(guided_vel_target_neu_cms, pos_control->get_pos_NE_p().kP(), pos_control->get_max_accel_NE_cmss(), pos_control->get_pos_U_p().kP(), pos_control->get_max_accel_U_cmss(), G_Dt);
+    copter.avoid.adjust_velocity(guided_vel_target_neu_ms, pos_control->get_pos_NE_p().kP(), pos_control->get_max_accel_NE_mss(), pos_control->get_pos_U_p().kP(), pos_control->get_max_accel_U_mss(), G_Dt);
     do_avoid = copter.avoid.limits_active();
 #endif
 
     // update position controller with new target
 
-    if (!stabilizing_vel_xy() && !do_avoid) {
+    if (!stabilizing_vel_NE() && !do_avoid) {
         // set the current commanded xy vel to the desired vel
-        guided_vel_target_neu_cms.xy() = pos_control->get_vel_desired_NEU_cms().xy();
+        guided_vel_target_neu_ms.xy() = pos_control->get_vel_desired_NEU_ms().xy();
     }
-    pos_control->input_vel_accel_NE_cm(guided_vel_target_neu_cms.xy(), guided_accel_target_neu_cmss.xy(), false);
-    if (!stabilizing_vel_xy() && !do_avoid) {
+    pos_control->input_vel_accel_NE_m(guided_vel_target_neu_ms.xy(), guided_accel_target_neu_mss.xy(), false);
+    if (!stabilizing_vel_NE() && !do_avoid) {
         // set position and velocity errors to zero
         pos_control->stop_vel_NE_stabilisation();
-    } else if (!stabilizing_pos_xy() && !do_avoid) {
+    } else if (!stabilizing_pos_NE() && !do_avoid) {
         // set position errors to zero
         pos_control->stop_pos_NE_stabilisation();
     }
-    pos_control->input_vel_accel_U_cm(guided_vel_target_neu_cms.z, guided_accel_target_neu_cmss.z, false);
+    pos_control->input_vel_accel_U_m(guided_vel_target_neu_ms.z, guided_accel_target_neu_mss.z, false);
 
     // call velocity controller which includes z axis controller
     pos_control->update_NE_controller();
@@ -865,11 +865,11 @@ void ModeGuided::pause_control_run()
 
     // set the horizontal velocity and acceleration targets to zero
     Vector2f vel_xy, accel_xy;
-    pos_control->input_vel_accel_NE_cm(vel_xy, accel_xy, false);
+    pos_control->input_vel_accel_NE_m(vel_xy, accel_xy, false);
 
     // set the vertical velocity and acceleration targets to zero
     float vel_z = 0.0;
-    pos_control->input_vel_accel_U_cm(vel_z, 0.0, false);
+    pos_control->input_vel_accel_U_m(vel_z, 0.0, false);
 
     // call velocity controller which includes z axis controller
     pos_control->update_NE_controller();
@@ -896,27 +896,27 @@ void ModeGuided::posvelaccel_control_run()
     // set velocity to zero and stop rotating if no updates received for 3 seconds
     uint32_t tnow = millis();
     if (tnow - update_time_ms > get_timeout_ms()) {
-        guided_vel_target_neu_cms.zero();
-        guided_accel_target_neu_cmss.zero();
+        guided_vel_target_neu_ms.zero();
+        guided_accel_target_neu_mss.zero();
         if ((auto_yaw.mode() == AutoYaw::Mode::RATE) || (auto_yaw.mode() == AutoYaw::Mode::ANGLE_RATE)) {
             auto_yaw.set_mode(AutoYaw::Mode::HOLD);
         }
     }
 
     // send position and velocity targets to position controller
-    if (!stabilizing_vel_xy()) {
+    if (!stabilizing_vel_NE()) {
         // set the current commanded xy pos to the target pos and xy vel to the desired vel
-        guided_pos_target_neu_cm.xy() = pos_control->get_pos_desired_NEU_cm().xy();
-        guided_vel_target_neu_cms.xy() = pos_control->get_vel_desired_NEU_cms().xy();
-    } else if (!stabilizing_pos_xy()) {
+        guided_pos_target_neu_m.xy() = pos_control->get_pos_desired_NEU_m().xy();
+        guided_vel_target_neu_ms.xy() = pos_control->get_vel_desired_NEU_ms().xy();
+    } else if (!stabilizing_pos_NE()) {
         // set the current commanded xy pos to the target pos
-        guided_pos_target_neu_cm.xy() = pos_control->get_pos_desired_NEU_cm().xy();
+        guided_pos_target_neu_m.xy() = pos_control->get_pos_desired_NEU_m().xy();
     }
-    pos_control->input_pos_vel_accel_NE_cm(guided_pos_target_neu_cm.xy(), guided_vel_target_neu_cms.xy(), guided_accel_target_neu_cmss.xy(), false);
-    if (!stabilizing_vel_xy()) {
+    pos_control->input_pos_vel_accel_NE_m(guided_pos_target_neu_m.xy(), guided_vel_target_neu_ms.xy(), guided_accel_target_neu_mss.xy(), false);
+    if (!stabilizing_vel_NE()) {
         // set position and velocity errors to zero
         pos_control->stop_vel_NE_stabilisation();
-    } else if (!stabilizing_pos_xy()) {
+    } else if (!stabilizing_pos_NE()) {
         // set position errors to zero
         pos_control->stop_pos_NE_stabilisation();
     }
@@ -926,9 +926,9 @@ void ModeGuided::posvelaccel_control_run()
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     }
 
-    float pz = guided_pos_target_neu_cm.z;
-    pos_control->input_pos_vel_accel_U_cm(pz, guided_vel_target_neu_cms.z, guided_accel_target_neu_cmss.z, false);
-    guided_pos_target_neu_cm.z = pz;
+    float pz = guided_pos_target_neu_m.z;
+    pos_control->input_pos_vel_accel_U_m(pz, guided_vel_target_neu_ms.z, guided_accel_target_neu_mss.z, false);
+    guided_pos_target_neu_m.z = pz;
 
     // run position controllers
     pos_control->update_NE_controller();
@@ -942,13 +942,13 @@ void ModeGuided::posvelaccel_control_run()
 // called from guided_run
 void ModeGuided::angle_control_run()
 {
-    float climb_rate_cms = 0.0f;
+    float climb_rate_ms = 0.0f;
     if (!guided_angle_state.use_thrust) {
         // constrain climb rate
-        climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms());
+        climb_rate_ms = constrain_float(guided_angle_state.climb_rate_ms, -wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms());
 
         // get avoidance adjusted climb rate
-        climb_rate_cms = get_avoidance_adjusted_climbrate_ms(climb_rate_cms);
+        climb_rate_ms = get_avoidance_adjusted_climbrate_ms(climb_rate_ms);
     }
 
     // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
@@ -956,7 +956,7 @@ void ModeGuided::angle_control_run()
     if (tnow - guided_angle_state.update_time_ms > get_timeout_ms()) {
         guided_angle_state.attitude_quat.from_euler(Vector3f(0.0, 0.0, attitude_control->get_att_target_euler_rad().z));
         guided_angle_state.ang_vel_body.zero();
-        climb_rate_cms = 0.0f;
+        climb_rate_ms = 0.0f;
         if (guided_angle_state.use_thrust) {
             // initialise vertical velocity controller
             pos_control->init_U_controller();
@@ -965,7 +965,7 @@ void ModeGuided::angle_control_run()
     }
 
     // interpret positive climb rate or thrust as triggering take-off
-    const bool positive_thrust_or_climbrate = is_positive(guided_angle_state.use_thrust ? guided_angle_state.thrust_norm : climb_rate_cms);
+    const bool positive_thrust_or_climbrate = is_positive(guided_angle_state.use_thrust ? guided_angle_state.thrust_norm : climb_rate_ms);
     if (motors->armed() && positive_thrust_or_climbrate) {
         copter.set_auto_armed(true);
     }
@@ -1003,7 +1003,7 @@ void ModeGuided::angle_control_run()
     if (guided_angle_state.use_thrust) {
         attitude_control->set_throttle_out(guided_angle_state.thrust_norm, true, copter.g.throttle_filt);
     } else {
-        pos_control->set_pos_target_U_from_climb_rate_cm(climb_rate_cms);
+        pos_control->set_pos_target_U_from_climb_rate_m(climb_rate_ms);
         pos_control->update_U_controller();
     }
 }
@@ -1036,18 +1036,18 @@ bool ModeGuided::use_pilot_yaw(void) const
 void ModeGuided::limit_clear()
 {
     guided_limit.timeout_ms = 0;
-    guided_limit.alt_min_cm = 0.0f;
-    guided_limit.alt_max_cm = 0.0f;
-    guided_limit.horiz_max_cm = 0.0f;
+    guided_limit.alt_min_m = 0.0f;
+    guided_limit.alt_max_m = 0.0f;
+    guided_limit.horiz_max_m = 0.0f;
 }
 
 // limit_set - set guided timeout and movement limits
-void ModeGuided::limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm)
+void ModeGuided::limit_set(uint32_t timeout_ms, float alt_min_m, float alt_max_m, float horiz_max_m)
 {
     guided_limit.timeout_ms = timeout_ms;
-    guided_limit.alt_min_cm = alt_min_cm;
-    guided_limit.alt_max_cm = alt_max_cm;
-    guided_limit.horiz_max_cm = horiz_max_cm;
+    guided_limit.alt_min_m = alt_min_m;
+    guided_limit.alt_max_m = alt_max_m;
+    guided_limit.horiz_max_m = horiz_max_m;
 }
 
 // limit_init_time_and_pos - initialise guided start time and position as reference for limit checking
@@ -1058,7 +1058,7 @@ void ModeGuided::limit_init_time_and_pos()
     guided_limit.start_time_ms = AP_HAL::millis();
 
     // initialise start position from current position
-    guided_limit.start_pos_neu_cm = pos_control->get_pos_estimate_NEU_cm().tofloat();
+    guided_limit.start_pos_neu_m = pos_control->get_pos_estimate_NEU_m().tofloat();
 }
 
 // limit_check - returns true if guided mode has breached a limit
@@ -1071,22 +1071,22 @@ bool ModeGuided::limit_check()
     }
 
     // get current location
-    const Vector3f& curr_pos_neu_cm = pos_control->get_pos_estimate_NEU_cm().tofloat();
+    const Vector3f& curr_pos_neu_m = pos_control->get_pos_estimate_NEU_m().tofloat();
 
     // check if we have gone below min alt
-    if (!is_zero(guided_limit.alt_min_cm) && (curr_pos_neu_cm.z < guided_limit.alt_min_cm)) {
+    if (!is_zero(guided_limit.alt_min_m) && (curr_pos_neu_m.z < guided_limit.alt_min_m)) {
         return true;
     }
 
     // check if we have gone above max alt
-    if (!is_zero(guided_limit.alt_max_cm) && (curr_pos_neu_cm.z > guided_limit.alt_max_cm)) {
+    if (!is_zero(guided_limit.alt_max_m) && (curr_pos_neu_m.z > guided_limit.alt_max_m)) {
         return true;
     }
 
     // check if we have gone beyond horizontal limit
-    if (guided_limit.horiz_max_cm > 0.0f) {
-        const float horiz_offset_cm = get_horizontal_distance(guided_limit.start_pos_neu_cm.xy(), curr_pos_neu_cm.xy());
-        if (horiz_offset_cm > guided_limit.horiz_max_cm) {
+    if (guided_limit.horiz_max_m > 0.0f) {
+        const float horiz_offset_m = get_horizontal_distance(guided_limit.start_pos_neu_m.xy(), curr_pos_neu_m.xy());
+        if (horiz_offset_m > guided_limit.horiz_max_m) {
             return true;
         }
     }
@@ -1095,30 +1095,30 @@ bool ModeGuided::limit_check()
     return false;
 }
 
-const Vector3p &ModeGuided::get_target_pos_neu_cm() const
+const Vector3p &ModeGuided::get_target_pos_NEU_m() const
 {
-    return guided_pos_target_neu_cm;
+    return guided_pos_target_neu_m;
 }
 
-const Vector3f& ModeGuided::get_target_vel_neu_cms() const
+const Vector3f& ModeGuided::get_target_vel_NEU_ms() const
 {
-    return guided_vel_target_neu_cms;
+    return guided_vel_target_neu_ms;
 }
 
-const Vector3f& ModeGuided::get_target_accel_neu_cmss() const
+const Vector3f& ModeGuided::get_target_accel_NEU_mss() const
 {
-    return guided_accel_target_neu_cmss;
+    return guided_accel_target_neu_mss;
 }
 
 float ModeGuided::wp_distance_m() const
 {
     switch(guided_mode) {
     case SubMode::WP:
-        return wp_nav->get_wp_distance_to_destination_cm() * 0.01f;
+        return wp_nav->get_wp_distance_to_destination_m();
     case SubMode::Pos:
-        return get_horizontal_distance(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), guided_pos_target_neu_cm.xy().tofloat()) * 0.01f;
+        return get_horizontal_distance(pos_control->get_pos_estimate_NEU_m().xy().tofloat(), guided_pos_target_neu_m.xy().tofloat());
     case SubMode::PosVelAccel:
-        return pos_control->get_pos_error_NE_cm() * 0.01f;
+        return pos_control->get_pos_error_NE_m();
     default:
         return 0.0f;
     }
@@ -1130,7 +1130,7 @@ float ModeGuided::wp_bearing_deg() const
     case SubMode::WP:
         return degrees(wp_nav->get_wp_bearing_to_destination_rad());
     case SubMode::Pos:
-        return degrees(get_bearing_rad(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), guided_pos_target_neu_cm.xy().tofloat()));
+        return degrees(get_bearing_rad(pos_control->get_pos_estimate_NEU_m().xy().tofloat(), guided_pos_target_neu_m.xy().tofloat()));
     case SubMode::PosVelAccel:
         return degrees(pos_control->get_bearing_to_target_rad());
     case SubMode::TakeOff:

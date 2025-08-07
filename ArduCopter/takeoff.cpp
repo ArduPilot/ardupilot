@@ -8,7 +8,7 @@ _AutoTakeoff Mode::auto_takeoff;
 //   A safe takeoff speed is calculated and used to calculate a time_ms
 //   the pos_control target is then slowly increased until time_ms expires
 
-bool Mode::do_user_takeoff_start(float takeoff_alt_m)
+bool Mode::do_user_takeoff_start_m(float takeoff_alt_m)
 {
     copter.flightmode->takeoff.start_m(takeoff_alt_m);
     return true;
@@ -39,7 +39,7 @@ bool Mode::do_user_takeoff_U_m(float takeoff_alt_m, bool must_navigate)
         return false;
     }
 
-    if (!do_user_takeoff_start(takeoff_alt_m * 100.0)) {
+    if (!do_user_takeoff_start_m(takeoff_alt_m)) {
         return false;
     }
 
