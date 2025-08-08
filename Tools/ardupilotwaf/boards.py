@@ -1224,7 +1224,7 @@ class esp32s3(esp32):
 
         if hasattr(self, 'hwdef'):
             cfg.env.HWDEF = self.hwdef
-        super(esp32, self).configure_env(cfg, env)
+        super(esp32s3, self).configure_env(cfg, env)
 
         cfg.load('esp32')
 
