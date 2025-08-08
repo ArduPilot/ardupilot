@@ -814,5 +814,8 @@ void Util::set_soft_armed(const bool b)
 #ifdef HAL_GPIO_PIN_nARMED
     palWriteLine(HAL_GPIO_PIN_nARMED, !b);
 #endif
+#ifdef HAL_GPIO_PIN_ARMED
+    palWriteLine(HAL_GPIO_PIN_ARMED, b);
+#endif
 }
 
