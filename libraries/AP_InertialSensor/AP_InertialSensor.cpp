@@ -1102,8 +1102,10 @@ AP_InertialSensor::init(uint16_t loop_rate)
     /*
       see if user has setup for on-boot enable of temperature learning
      */
-    if (temperature_cal_running()) {
-        tcal_learning = true;
+    if (externally_temperature_calibrated == false){
+        if (temperature_cal_running()) {
+            tcal_learning = true;
+        }
     }
 #endif
 }
@@ -1735,8 +1737,10 @@ AP_InertialSensor::_init_gyro()
     // has just been powered on, so the temperature may be changing
     // rapidly. We use the average between start and end temperature
     // as the calibration temperature to minimise errors
-    for (uint8_t k=0; k<num_gyros; k++) {
-        start_temperature[k] = get_temperature(k);
+    if (externally_temperature_calibrated == false){
+        for (uint8_t k=0; k<num_gyros; k++) {
+            start_temperature[k] = get_temperature(k);
+        }
     }
 #endif
 
@@ -1825,7 +1829,9 @@ AP_InertialSensor::_init_gyro()
             _gyro_cal_ok[k] = true;
             _gyro_offset(k).set(new_gyro_offset[k]);
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-            caltemp_gyro(k).set(0.5 * (get_temperature(k) + start_temperature[k]));
+            if (externally_temperature_calibrated == false){
+                caltemp_gyro(k).set(0.5 * (get_temperature(k) + start_temperature[k]));
+            }
 #endif
         }
     }
@@ -1848,14 +1854,18 @@ void AP_InertialSensor::_save_gyro_calibration()
         _gyro_offset(i).save();
         _gyro_id(i).save();
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-        caltemp_gyro(i).save();
+        if (externally_temperature_calibrated == false){
+            caltemp_gyro(i).save();
+        }
 #endif
     }
     for (uint8_t i=_gyro_count; i<INS_MAX_INSTANCES; i++) {
         _gyro_offset(i).set_and_save(Vector3f());
         _gyro_id(i).set_and_save(0);
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-        caltemp_gyro(i).set_and_save_ifchanged(-300);
+        if (externally_temperature_calibrated == false){
+            caltemp_gyro(i).set_and_save_ifchanged(-300);
+        }
 #endif
     }
 }
@@ -1982,11 +1992,13 @@ void AP_InertialSensor::update(void)
     _have_sample = false;
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-    if (tcal_learning && !temperature_cal_running()) {
+    if (externally_temperature_calibrated == false){
+        if (tcal_learning && !temperature_cal_running()) {
         AP_Notify::flags.temp_cal_running = false;
         AP_Notify::events.temp_cal_saved = 1;
         tcal_learning = false;
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL finished all IMUs");
+        }
     }
 #endif
 #if AP_SERIALMANAGER_IMUOUT_ENABLED
@@ -2296,9 +2308,11 @@ bool AP_InertialSensor::calibrating() const
 bool AP_InertialSensor::temperature_cal_running() const
 {
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-        if (tcal(i).enable == AP_InertialSensor_TCal::Enable::LearnCalibration) {
-            return true;
+    if (externally_temperature_calibrated == false){
+        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+            if (tcal(i).enable == AP_InertialSensor_TCal::Enable::LearnCalibration) {
+                return true;
+            }
         }
     }
 #endif
@@ -2394,13 +2408,17 @@ void AP_InertialSensor::_acal_save_calibrations()
             _accel_id(i).save();
             _accel_id_ok[i] = true;
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-            caltemp_accel(i).set_and_save(get_temperature(i));
+            if (externally_temperature_calibrated == false){
+                caltemp_accel(i).set_and_save(get_temperature(i));
+            }
 #endif
         } else {
             _accel_offset(i).set_and_save(Vector3f());
             _accel_scale(i).set_and_save(Vector3f());
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-            caltemp_accel(i).set_and_save(-300);
+            if (externally_temperature_calibrated == false){
+                caltemp_accel(i).set_and_save(-300);
+            }
 #endif
         }
     }
@@ -2411,7 +2429,9 @@ void AP_InertialSensor::_acal_save_calibrations()
         _accel_offset(i).set_and_save(Vector3f());
         _accel_scale(i).set_and_save(Vector3f());
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-        caltemp_accel(i).set_and_save_ifchanged(-300);
+        if (externally_temperature_calibrated == false){
+            caltemp_accel(i).set_and_save_ifchanged(-300);
+        }
 #endif
     }
     
@@ -2664,7 +2684,9 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
             _accel_id(k).save();
             _accel_id_ok[k] = true;
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-            caltemp_accel(k).set_and_save(get_temperature(k));
+            if (externally_temperature_calibrated == false){
+                caltemp_accel(k).set_and_save(get_temperature(k));
+            }
 #endif
         }
         for (uint8_t k=num_accels; k<INS_MAX_INSTANCES; k++) {
@@ -2795,6 +2817,10 @@ void AP_InertialSensor::send_uart_data(void)
 #if AP_EXTERNAL_AHRS_ENABLED
 void AP_InertialSensor::handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt)
 {
+    TempCalibration = pkt.TempCalibration;
+    if(TempCalibration == AP_ExternalAHRS::TempCal::IsTempCalibrated){
+        externally_temperature_calibrated = true;
+    }
     for (uint8_t i = 0; i < _backend_count; i++) {
         _backends[i]->handle_external(pkt);
     }
