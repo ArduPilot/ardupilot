@@ -820,7 +820,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def QAssist(self):
         '''QuadPlane Assist tests'''
-        self.takeoff(50, mode="QHOVER", timeout=120)
+        self.takeoff(100, mode="QHOVER", timeout=120)
         self.set_rc(3, 1800)
         self.change_mode("FBWA")
 
