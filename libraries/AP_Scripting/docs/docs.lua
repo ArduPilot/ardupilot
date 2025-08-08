@@ -4106,6 +4106,35 @@ function networking:get_ip_active() end
 ---@return boolean
 function networking:add_route(backend_idx, iface_idx, dest_ip, mask_len) end
 
+
+-- Manages a crop sprayer with a spinner and pump; both controlled by pwm
+---@class sprayer
+sprayer = {}
+
+-- Allow (true) or disallow (false) spraying to occur
+---@param param1 boolean
+function sprayer:run(param1) end
+
+-- Returns true if spraying is currently permitted
+---@return boolean
+function sprayer:running() end
+
+-- Returns true if spraying is actually happening
+---@return boolean
+function sprayer:spraying() end
+
+-- If set to true, turns on pump as if traveling at 1 m/s (as a test)
+---@param param1 boolean
+function sprayer:test_pump(param1) end
+
+-- Sets desired quantity of spray when traveling at 1 m/s as a percentage of maximum pump rate
+---@param param1 number
+function sprayer:set_pump_rate(param1) end
+
+-- Adjusts servo positions based on speed an requested quantity
+function sprayer:update() end
+
+
 -- visual odometry object
 visual_odom = {}
 

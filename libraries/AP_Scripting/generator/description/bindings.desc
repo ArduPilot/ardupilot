@@ -829,6 +829,16 @@ singleton AC_PosControl method get_posvelaccel_offset boolean Vector3f'Null Vect
 singleton AC_PosControl method get_vel_target boolean Vector3f'Null
 singleton AC_PosControl method get_accel_target boolean Vector3f'Null
 
+include AC_Sprayer/AC_Sprayer.h depends APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_Rover)
+singleton AC_Sprayer depends APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_Rover)
+singleton AC_Sprayer rename sprayer
+singleton AC_Sprayer method run void boolean
+singleton AC_Sprayer method running boolean
+singleton AC_Sprayer method spraying boolean
+singleton AC_Sprayer method test_pump void boolean
+singleton AC_Sprayer method set_pump_rate void float 0 100
+singleton AC_Sprayer method update void
+
 include APM_Control/AR_AttitudeControl.h depends APM_BUILD_TYPE(APM_BUILD_Rover)
 singleton AR_AttitudeControl depends APM_BUILD_TYPE(APM_BUILD_Rover)
 singleton AR_AttitudeControl method get_srate void float'Ref float'Ref
