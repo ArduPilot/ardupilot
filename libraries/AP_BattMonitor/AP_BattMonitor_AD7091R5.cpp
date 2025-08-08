@@ -45,6 +45,7 @@ const AP_Param::GroupInfo AP_BattMonitor_AD7091R5::var_info[] = {
     // @DisplayName: Battery Voltage sensing pin on the AD7091R5 Ic
     // @Description: Sets the analog input pin that should be used for voltage monitoring on AD7091R5.
     // @Values: -1:Disabled
+    // @Range: -1 127
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("VOLT_PIN", 56, AP_BattMonitor_AD7091R5, _volt_pin, 0),
@@ -53,6 +54,7 @@ const AP_Param::GroupInfo AP_BattMonitor_AD7091R5::var_info[] = {
     // @DisplayName: Battery Current sensing pin
     // @Description: Sets the analog input pin that should be used for Current monitoring on AD7091R5.
     // @Values: -1:Disabled
+    // @Range: -1 127
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("CURR_PIN", 57, AP_BattMonitor_AD7091R5, _curr_pin, 0),
