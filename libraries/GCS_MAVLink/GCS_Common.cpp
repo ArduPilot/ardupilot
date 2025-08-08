@@ -120,13 +120,13 @@ extern AP_IOMCU iomcu;
 extern const AP_HAL::HAL& hal;
 
 struct GCS_MAVLINK::LastRadioStatus GCS_MAVLINK::last_radio_status;
-uint8_t GCS_MAVLINK::mavlink_active = 0;
-uint8_t GCS_MAVLINK::chan_is_streaming = 0;
+mavlink_channel_mask_t GCS_MAVLINK::mavlink_active = 0;
+mavlink_channel_mask_t GCS_MAVLINK::chan_is_streaming = 0;
 uint32_t GCS_MAVLINK::reserve_param_space_start_ms;
 
 // private channels are ones used for point-to-point protocols, and
 // don't get broadcasts or fwded packets
-uint8_t GCS_MAVLINK::mavlink_private = 0;
+mavlink_channel_mask_t GCS_MAVLINK::mavlink_private = 0;
 
 GCS *GCS::_singleton = nullptr;
 
@@ -2511,7 +2511,7 @@ void GCS_MAVLINK::send_ahrs()
 /*
     send a statustext text string to specific MAVLink bitmask
 */
-void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t dest_bitmask)
+void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, mavlink_channel_mask_t dest_bitmask)
 {
     char first_piece_of_text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1]{};
 
@@ -2676,7 +2676,7 @@ void GCS_MAVLINK::service_statustext(void)
 {
     GCS::StatusTextQueue &_statustext_queue = gcs().statustext_queue();
 
-    const uint8_t chan_bit = (1U<<chan);
+    const mavlink_channel_mask_t chan_bit = (1U<<chan);
     // note the lack of idx++ here.  We may remove the iteration item
     // from the queue as the last thing we do, in which case we don't
     // want to move idx.
