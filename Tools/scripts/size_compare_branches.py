@@ -251,7 +251,7 @@ class SizeCompareBranches(object):
         '''attempt to find where the arm-none-eabi tools are'''
         binary = shutil.which("arm-none-eabi-g++")
         if binary is None:
-            raise Exception("No arm-none-eabi-g++?")
+            return None
         return os.path.dirname(binary)
 
     # vast amounts of stuff copied into here from build_binaries.py
