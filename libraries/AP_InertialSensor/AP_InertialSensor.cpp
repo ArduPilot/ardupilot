@@ -2796,6 +2796,9 @@ void AP_InertialSensor::send_uart_data(void)
 void AP_InertialSensor::handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt)
 {
     for (uint8_t i = 0; i < _backend_count; i++) {
+        if(pkt.TempCalibration == AP_ExternalAHRS::TempCal::IsTempCalibrated){
+            tcal(i).enable.set_and_save_ifchanged(int8_t(AP_InertialSensor_TCal::Enable::Disabled));
+        }
         _backends[i]->handle_external(pkt);
     }
 }
