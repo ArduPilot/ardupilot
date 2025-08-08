@@ -8,6 +8,7 @@ const AP_Param::GroupInfo AP_LeakDetector::var_info[] = {
     // @DisplayName: Pin that leak detector is connected to
     // @Description: Pin that the leak detector is connected to
     // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6,13:Pixhawk 3.3ADC1,14:Pixhawk 3.3ADC2,15:Pixhawk 6.6ADC,27:Navigator Built-In
+    // @Range: -1 127
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("1_PIN", 1, AP_LeakDetector, _pin[0], -1),
@@ -32,6 +33,7 @@ const AP_Param::GroupInfo AP_LeakDetector::var_info[] = {
     // @DisplayName: Pin that leak detector is connected to
     // @Description: Pin that the leak detector is connected to
     // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6,13:Pixhawk 3.3ADC1,14:Pixhawk 3.3ADC2,15:Pixhawk 6.6ADC,27:Navigator Leak1
+    // @Range: -1 127
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("2_PIN", 3, AP_LeakDetector, _pin[1], -1),
@@ -57,6 +59,7 @@ const AP_Param::GroupInfo AP_LeakDetector::var_info[] = {
     // @DisplayName: Pin that leak detector is connected to
     // @Description: Pin that the leak detector is connected to
     // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6,13:Pixhawk 3.3ADC1,14:Pixhawk 3.3ADC2,15:Pixhawk 6.6ADC,27:Navigator Leak1
+    // @Range: -1 127
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("3_PIN", 5, AP_LeakDetector, _pin[2], -1),
