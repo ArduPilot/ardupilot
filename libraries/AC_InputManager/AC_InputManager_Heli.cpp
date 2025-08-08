@@ -16,6 +16,7 @@ const AP_Param::GroupInfo AC_InputManager_Heli::var_info[] = {
     // @DisplayName: Acro Mode Collective Expo
     // @Description: Used to soften collective pitch inputs near center point in Acro mode.
     // @Values: 0:Disabled,0.1:Very Low,0.2:Low,0.3:Medium,0.4:High,0.5:Very High
+    // @Range: -0.5 0.95
     // @User: Advanced
     AP_GROUPINFO("ACRO_COL_EXP",    5, AC_InputManager_Heli, _acro_col_expo, 0),
 
