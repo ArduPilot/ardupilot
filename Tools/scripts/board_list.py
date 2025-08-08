@@ -71,7 +71,7 @@ class BoardList(object):
         )
 
         self.hwdef_dir = []
-        for haldir in 'AP_HAL_ChibiOS', 'AP_HAL_Linux':
+        for haldir in 'AP_HAL_ChibiOS', 'AP_HAL_Linux', 'AP_HAL_ESP32':
             self.hwdef_dir.append(os.path.join(realpath, haldir, "hwdef"))
 
     def __init__(self):
@@ -137,6 +137,8 @@ class BoardList(object):
                     board.toolchain = 'arm-linux-gnueabihf'
                 elif "ChibiOS" in hwdef_dir:
                     board.toolchain = 'arm-none-eabi'
+                elif "ESP32" in hwdef_dir:
+                    board.toolchain = 'xtensa-esp32-elf'
                 else:
                     raise ValueError(f"Unable to determine toolchain for {adir}")
 
