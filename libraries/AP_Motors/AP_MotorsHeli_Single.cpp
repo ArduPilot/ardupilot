@@ -159,6 +159,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @DisplayName: DDFP Tail Rotor Battery compensation index
     // @Description: Which battery monitor should be used for doing compensation
     // @Values: 0:First battery, 1:Second battery
+    // @Range: 0 15
     // @User: Standard
 
     // @Param: DDFP_BAT_V_MAX
