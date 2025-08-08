@@ -16,7 +16,9 @@
 #define MAVLINK_END_UART_SEND(chan, size) comm_send_unlock(chan)
 
 #ifndef MAVLINK_COMM_NUM_BUFFERS
-#if HAL_PROGRAM_SIZE_LIMIT_KB > 1024
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#define MAVLINK_COMM_NUM_BUFFERS 16
+#elif HAL_PROGRAM_SIZE_LIMIT_KB > 1024
 // allow 8 telemetry ports, allowing for extra networking or CAN ports
 #define MAVLINK_COMM_NUM_BUFFERS 8
 #else
