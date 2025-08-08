@@ -1,0 +1,5 @@
+# the stampfly does not have an Airspeed sensor:
+define AP_AIRSPEED_ENABLED 0
+
+# This is a board that's not really intended for anything other than copter
+AUTOBUILD_TARGETS Copter
