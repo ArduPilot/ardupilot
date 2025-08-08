@@ -73,7 +73,9 @@ uint16_t comm_get_txspace(mavlink_channel_t chan);
 
 #pragma GCC diagnostic push
 // mavlink relies on strncpy() supporting deliberate truncation
+#if !defined(__clang__)  // avoid -Wunknown-warning-option
 #pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif  // clang
 #include "include/mavlink/v2.0/all/mavlink.h"
 #pragma GCC diagnostic pop
 
