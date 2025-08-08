@@ -7,7 +7,7 @@ The SequreH743 and SequreH743v2 are flight controllers designed and produced by 
 
  - MCU - STM32H743xx 32-bit processor running at 480 MHz
  - IMU - MPU6000, ICM42688 (V2 version)
- - Barometer - BMP280
+ - Barometer - BMP280 (DPS368 and DPS310 on rev 2)
  - OSD - AT7456E
  - 6x UARTs
  - 9x PWM Outputs (8 Motor Output, 1 LED)
