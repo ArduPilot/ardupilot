@@ -4152,9 +4152,6 @@ function sprayer:test_pump(param1) end
 ---@param param1 number
 function sprayer:set_pump_rate(param1) end
 
--- Adjusts servo positions based on speed an requested quantity
-function sprayer:update() end
-
 
 -- visual odometry object
 visual_odom = {}
