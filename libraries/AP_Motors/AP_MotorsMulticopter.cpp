@@ -55,6 +55,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @DisplayName: Motor Spin maximum
     // @Description: Point at which the thrust saturates expressed as a number from 0 to 1 in the entire output range
     // @Values: 0.9:Low, 0.95:Default, 1.0:High
+    // @Range: 0.9 1.0
     // @User: Advanced
     AP_GROUPINFO("SPIN_MAX", 9, AP_MotorsMulticopter, thr_lin.spin_max, AP_MOTORS_SPIN_MAX_DEFAULT),
 
@@ -112,6 +113,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @DisplayName: Motor Spin minimum
     // @Description: Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range.  Should be higher than MOT_SPIN_ARM.
     // @Values: 0.0:Low, 0.15:Default, 0.25:High
+    // @Range: 0.0 0.25
     // @User: Advanced
     AP_GROUPINFO("SPIN_MIN", 18, AP_MotorsMulticopter, thr_lin.spin_min, AP_MOTORS_SPIN_MIN_DEFAULT),
 
@@ -119,6 +121,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @DisplayName: Motor Spin armed
     // @Description: Point at which the motors start to spin expressed as a number from 0 to 1 in the entire output range.  Should be lower than MOT_SPIN_MIN.
     // @Values: 0.0:Low, 0.1:Default, 0.2:High
+    // @Range: 0.0 0.2
     // @User: Advanced
     AP_GROUPINFO("SPIN_ARM", 19, AP_MotorsMulticopter, _spin_arm, AP_MOTORS_SPIN_ARM_DEFAULT),
 
