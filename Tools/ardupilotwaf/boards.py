@@ -1102,6 +1102,15 @@ class sitl_periph_can_to_serial(sitl_periph):
 class esp32(Board):
     abstract = True
     toolchain = 'xtensa-esp32-elf'
+
+    def configure(self, cfg):
+        super(esp32, self).configure(cfg)
+        if cfg.env.TOOLCHAIN:
+            self.toolchain = cfg.env.TOOLCHAIN
+        else:
+            # default tool-chain for esp32-based boards:
+            self.toolchain = 'xtensa-esp32-elf'
+
     def configure_env(self, cfg, env):
         env.BOARD_CLASS = "ESP32"
 
@@ -1207,6 +1216,12 @@ class esp32s3(esp32):
     toolchain = 'xtensa-esp32s3-elf'
 
     def configure_env(self, cfg, env):
+        if cfg.env.TOOLCHAIN:
+            self.toolchain = cfg.env.TOOLCHAIN
+        else:
+            # default tool-chain for esp32-based boards:
+            self.toolchain = 'xtensa-esp32s3-elf'
+
         if hasattr(self, 'hwdef'):
             cfg.env.HWDEF = self.hwdef
         super(esp32, self).configure_env(cfg, env)
