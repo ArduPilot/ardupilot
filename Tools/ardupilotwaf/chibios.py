@@ -18,6 +18,8 @@ import struct
 import base64
 import subprocess
 
+import hal_common
+
 _dynamic_env_data = {}
 def _load_dynamic_env_data(bld):
     bldnode = bld.bldnode.make_node('modules/ChibiOS')
@@ -507,34 +509,19 @@ def setup_canperiph_build(cfg):
         ]
 
     cfg.get_board().with_can = True
-    
+
+def load_env_vars_handle_kv_pair(env, kv_pair):
+    '''handle a key/value pair out of the pickled environment dictionary'''
+    (k, v) = kv_pair
+    if k == 'ROMFS_FILES':
+        env.ROMFS_FILES += v
+        return
+    hal_common.load_env_vars_handle_kv_pair(env, kv_pair)
+
 def load_env_vars(env):
     '''optionally load extra environment variables from env.py in the build directory'''
-    print("Checking for env.py")
-    env_py = os.path.join(env.BUILDROOT, 'env.py')
-    if not os.path.exists(env_py):
-        print("No env.py found")
-        return
-    e = pickle.load(open(env_py, 'rb'))
-    for k in e.keys():
-        v = e[k]
-        if k == 'ROMFS_FILES':
-            env.ROMFS_FILES += v
-            continue
-        if k in env:
-            if isinstance(env[k], dict):
-                a = v.split('=')
-                env[k][a[0]] = '='.join(a[1:])
-                print("env updated %s=%s" % (k, v))
-            elif isinstance(env[k], list):
-                env[k].append(v)
-                print("env appended %s=%s" % (k, v))
-            else:
-                env[k] = v
-                print("env added %s=%s" % (k, v))
-        else:
-            env[k] = v
-            print("env set %s=%s" % (k, v))
+    hal_common.load_env_vars(env, kv_handler=load_env_vars_handle_kv_pair)
+
     if env.DEBUG or env.DEBUG_SYMBOLS:
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_DEBUG_SYMBOLS=yes'
     if env.ENABLE_ASSERTS:
