@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Motors_config.h"
+
+#if AP_MOTORS_ENABLED
+
 #include "AP_Motors_Class.h"
 #include <AP_HAL/AP_HAL.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -331,3 +335,5 @@ namespace AP {
         return AP_Motors::get_singleton();
     }
 }
+
+#endif  // AP_MOTORS_ENABLED

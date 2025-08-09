@@ -2,6 +2,10 @@
 /// @brief	Motor control class for Multicopters
 #pragma once
 
+#include "AP_Motors_config.h"
+
+#if AP_MOTORSMULTI_ENABLED
+
 #include "AP_Motors_Class.h"
 #include "AP_Motors_Thrust_Linearization.h"
 
@@ -208,3 +212,5 @@ protected:
     // mask of overridden motors (used by quadplane tiltrotors)
     uint32_t _motor_mask_override;
 };
+
+#endif  // AP_MOTORSMULTI_ENABLED
