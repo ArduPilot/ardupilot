@@ -1171,14 +1171,14 @@ void ModeAuto::loiter_to_alt_run()
 
         loiter_to_alt.loiter_start_done = true;
     }
-    const float alt_error_cm = copter.current_loc.alt - loiter_to_alt.alt;
-    if (fabsf(alt_error_cm) < 5.0) { // random numbers R US
+    const float alt_error_m = copter.current_loc.alt * 0.01 - loiter_to_alt.alt_m;
+    if (fabsf(alt_error_m) < 0.05) { // random numbers R US
         loiter_to_alt.reached_alt = true;
-    } else if (alt_error_cm * loiter_to_alt.alt_error_m < 0) {
+    } else if (alt_error_m * loiter_to_alt.alt_error_m < 0) {
         // we were above and are now below, or vice-versa
         loiter_to_alt.reached_alt = true;
     }
-    loiter_to_alt.alt_error_m = alt_error_cm * 0.01;
+    loiter_to_alt.alt_error_m = alt_error_m;
 
     // loiter...
 
@@ -1187,7 +1187,7 @@ void ModeAuto::loiter_to_alt_run()
     // Compute a vertical velocity demand such that the vehicle
     // approaches the desired altitude.
     float target_climb_rate_ms = sqrt_controller(
-        -alt_error_cm * 0.01,
+        -alt_error_m,
         pos_control->get_pos_U_p().kP(),
         pos_control->get_max_accel_U_mss(),
         G_Dt);
