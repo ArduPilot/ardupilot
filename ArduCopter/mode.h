@@ -177,7 +177,7 @@ public:
     virtual bool set_speed_up_ms(float speed_up_ms) {return false;}
     virtual bool set_speed_down_ms(float speed_down_ms) {return false;}
 
-    virtual int32_t get_alt_above_ground_cm(void) const;
+    virtual float get_alt_above_ground_m(void) const;
 
     // pilot input processing
     void get_pilot_desired_lean_angles_rad(float &roll_out_rad, float &pitch_out_rad, float angle_max_rad, float angle_limit_rad) const;
@@ -614,7 +614,7 @@ public:
 #endif
 
     // Get height above ground, uses landing height if available
-    int32_t get_alt_above_ground_cm() const override;
+    float get_alt_above_ground_m() const override;
 
 protected:
 
