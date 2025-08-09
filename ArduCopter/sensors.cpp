@@ -5,7 +5,7 @@ void Copter::read_barometer(void)
 {
     barometer.update();
 
-    baro_alt = barometer.get_altitude() * 100.0f;
+    baro_alt_m = barometer.get_altitude();
 }
 
 #if AP_RANGEFINDER_ENABLED

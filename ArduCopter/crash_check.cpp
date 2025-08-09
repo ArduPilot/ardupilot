@@ -243,7 +243,7 @@ void Copter::yaw_imbalance_check()
 void Copter::parachute_check()
 {
     static uint16_t control_loss_count; // number of iterations we have been out of control
-    static int32_t baro_alt_start;
+    static float baro_alt_start_m;
 
     // exit immediately if parachute is not enabled
     if (!parachute.enabled()) {
@@ -312,10 +312,10 @@ void Copter::parachute_check()
 
     // record baro alt if we have just started losing control
     if (control_loss_count == 1) {
-        baro_alt_start = baro_alt;
+        baro_alt_start_m = baro_alt_m;
 
     // exit if baro altitude change indicates we are not falling
-    } else if (baro_alt >= baro_alt_start) {
+    } else if (baro_alt_m >= baro_alt_start_m) {
         control_loss_count = 0;
         return;
 

@@ -464,7 +464,7 @@ private:
 #endif
 
     // Altitude
-    int32_t baro_alt;            // barometer altitude in cm above home
+    float baro_alt_m;                         // barometer altitude in cm above home
     LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
 
     // filtered pilot's throttle input used to cancel landing if throttle held high

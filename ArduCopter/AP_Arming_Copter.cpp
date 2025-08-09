@@ -141,7 +141,7 @@ bool AP_Arming_Copter::barometer_checks(bool display_failure)
         float pos_d_m = 0;
         UNUSED_RESULT(AP::ahrs().get_relative_position_D_origin_float(pos_d_m));
         if (using_baro_ref) {
-            if (fabsf(-pos_d_m * 100.0 - copter.baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
+            if (fabsf(-pos_d_m - copter.baro_alt_m) > PREARM_MAX_ALT_DISPARITY_M) {
                 check_failed(Check::BARO, display_failure, "Altitude disparity");
                 ret = false;
             }
