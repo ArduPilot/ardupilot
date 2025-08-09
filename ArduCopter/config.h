@@ -93,8 +93,8 @@
 #endif
 
 // pre-arm baro vs inertial nav max alt disparity
-#ifndef PREARM_MAX_ALT_DISPARITY_CM
- # define PREARM_MAX_ALT_DISPARITY_CM       100     // barometer and inertial nav altitude must be within this many centimeters
+#ifndef PREARM_MAX_ALT_DISPARITY_M
+ # define PREARM_MAX_ALT_DISPARITY_M    1.0      // barometer and inertial nav altitude must be within this many centimeters
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

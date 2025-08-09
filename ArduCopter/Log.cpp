@@ -15,7 +15,7 @@ struct PACKED log_Control_Tuning {
     float    throttle_hover;
     float    desired_alt;
     float    inav_alt;
-    int32_t  baro_alt;
+    float    baro_alt;
     float    desired_rangefinder_alt;
     float    rangefinder_alt;
     float    terr_alt;
@@ -40,14 +40,14 @@ void Copter::Log_Write_Control_Tuning()
         target_climb_rate_ms = pos_control->get_vel_target_U_ms();
     }
 
-    float desired_rangefinder_alt;
+    float desired_rangefinder_alt_m;
 #if AP_RANGEFINDER_ENABLED
-    if (!surface_tracking.get_target_dist_for_logging(desired_rangefinder_alt)) {
-        desired_rangefinder_alt = AP::logger().quiet_nan();
+    if (!surface_tracking.get_target_dist_for_logging(desired_rangefinder_alt_m)) {
+        desired_rangefinder_alt_m = AP::logger().quiet_nan();
     }
 #else
     // get surface tracking alts
-    desired_rangefinder_alt = AP::logger().quiet_nan();
+    desired_rangefinder_alt_m = AP::logger().quiet_nan();
 #endif
 
     struct log_Control_Tuning pkt = {
@@ -59,8 +59,8 @@ void Copter::Log_Write_Control_Tuning()
         throttle_hover      : motors->get_throttle_hover(),
         desired_alt         : des_alt_m,
         inav_alt            : float(pos_control->get_pos_estimate_NEU_m().z),
-        baro_alt            : baro_alt,
-        desired_rangefinder_alt : desired_rangefinder_alt,
+        baro_alt            : baro_alt_m,
+        desired_rangefinder_alt : desired_rangefinder_alt_m,
 #if AP_RANGEFINDER_ENABLED
         rangefinder_alt     : surface_tracking.get_dist_for_logging(),
 #else
