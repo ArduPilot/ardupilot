@@ -241,3 +241,26 @@ void Tracker::update_yaw_cr_servo(float yaw)
     const float yaw_out = constrain_float(-g.pidYaw2Srv.update_error(nav_status.angle_error_yaw, G_Dt), -g.yaw_range * 100/2, g.yaw_range * 100/2);
     SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_yaw, yaw_out);
 }
+
+
+/**
+   stop the servo movement
+   called for:
+    - disarmed state
+    - auto mode without a valid target and scan disabled
+    - auto mode when the target is too close
+  */
+void Tracker::stop_servos()
+{
+    switch ((PWMDisarmed)g.disarm_pwm.get()) {
+        case PWMDisarmed::TRIM:
+            SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_yaw, 0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_pitch, 0);
+            break;
+        default:
+        case PWMDisarmed::ZERO:
+            SRV_Channels::set_output_pwm(SRV_Channel::k_tracker_yaw, 0);
+            SRV_Channels::set_output_pwm(SRV_Channel::k_tracker_pitch, 0);
+            break;
+        }
+}

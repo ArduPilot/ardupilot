@@ -6,12 +6,17 @@
 void ModeGuided::update()
 {
     static uint32_t last_debug;
-    const uint32_t now = AP_HAL::millis();
     float target_roll, target_pitch, target_yaw;
     _target_att.to_euler(target_roll, target_pitch, target_yaw);
-    if (now - last_debug > 5000) {
-        last_debug = now;
-        gcs().send_text(MAV_SEVERITY_INFO, "target_yaw=%f target_pitch=%f", degrees(target_yaw), degrees(target_pitch));
+    // Announce the angles if there was a change or if it's a first run
+    if (_last_set_angle_ms > last_debug || _last_set_angle_ms == 0) {
+        last_debug = AP_HAL::millis();
+        gcs().send_text(MAV_SEVERITY_INFO, "Tracker target_yaw=%f target_pitch=%f", degrees(target_yaw), degrees(target_pitch));
+
+        // Mark as having announced
+        if (_last_set_angle_ms == 0) {
+            _last_set_angle_ms = last_debug;
+        }
     }
     calc_angle_error(degrees(target_pitch)*100, degrees(target_yaw)*100, false);
     float bf_pitch;
