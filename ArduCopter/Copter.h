@@ -266,7 +266,7 @@ private:
     AP_SurfaceDistance rangefinder_up_state {ROTATION_PITCH_90, 1U};
 
     // helper function to get inertially interpolated rangefinder height.
-    bool get_rangefinder_height_interpolated_cm(int32_t& ret) const;
+    bool get_rangefinder_height_interpolated_m(float& ret) const;
 
 #if AP_RANGEFINDER_ENABLED
     class SurfaceTracking {
