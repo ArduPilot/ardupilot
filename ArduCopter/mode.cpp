@@ -1036,8 +1036,8 @@ float Mode::get_pilot_accel_U_mss() const
 // Return stopping point as a location with above origin alt frame
 Location Mode::get_stopping_point() const
 {
-    Vector3p stopping_point_neu_cm;
-    copter.pos_control->get_stopping_point_NE_cm(stopping_point_neu_cm.xy());
-    copter.pos_control->get_stopping_point_U_cm(stopping_point_neu_cm.z);
-    return Location { stopping_point_neu_cm.tofloat(), Location::AltFrame::ABOVE_ORIGIN };
+    Vector3p stopping_point_neu_m;
+    copter.pos_control->get_stopping_point_NE_m(stopping_point_neu_m.xy());
+    copter.pos_control->get_stopping_point_U_m(stopping_point_neu_m.z);
+    return Location { stopping_point_neu_m.tofloat() * 100.0, Location::AltFrame::ABOVE_ORIGIN };
 }
