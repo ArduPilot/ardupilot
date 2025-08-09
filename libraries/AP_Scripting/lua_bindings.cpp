@@ -325,7 +325,7 @@ int AP_Logger_Write(lua_State *L) {
     char multipliers_cat[LS_FORMAT_SIZE];
 
     uint8_t field_start = 4;
-    struct AP_Logger::log_write_fmt *f;
+    struct AP_LoggerThread::log_write_fmt *f;
     if (!have_units) {
         // ask for a mesage type
         f = AP_logger->msg_fmt_for_name(name, label_cat, nullptr, nullptr, fmt_cat, true, true);

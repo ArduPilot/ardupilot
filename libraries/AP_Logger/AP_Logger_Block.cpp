@@ -19,7 +19,7 @@ const extern AP_HAL::HAL& hal;
 // this if (and only if!) the low level format changes
 #define DF_LOGGING_FORMAT    0x1901201B
 
-AP_Logger_Block::AP_Logger_Block(AP_Logger &front, LoggerMessageWriter_DFLogStart *writer) :
+AP_Logger_Block::AP_Logger_Block(AP_LoggerThread &front, LoggerMessageWriter_DFLogStart *writer) :
     AP_Logger_Backend(front, writer),
     writebuf(0)
 {
