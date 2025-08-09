@@ -7502,6 +7502,38 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_rc(2, 1500)
         self.fly_home_land_and_disarm()
 
+    def PlaneFollowAppletSanity(self):
+        '''PLane Follow Sanity Check, not a detailed test'''
+        self.start_subtest("Plane Follow Script Load and Start")
+
+        self.install_applet_script_context("plane_follow.lua")
+        self.install_script_module(self.script_modules_source_path("speedpid.lua"), "speedpid.lua")
+        self.install_script_module(self.script_modules_source_path("mavlink_attitude.lua"), "mavlink_attitude.lua")
+        self.install_mavlink_module()
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SIM_SPEEDUP": 20, # need to give some cycles to lua
+            "RC7_OPTION": 301,
+        })
+
+        self.context_collect("STATUSTEXT")
+
+        self.reboot_sitl()
+
+        self.wait_text("Plane Follow .* script loaded", regex=True, check_context=True)
+
+        self.wait_ready_to_arm()
+        self.set_rc(7, 2000)
+        self.wait_text("PFollow: must be armed", check_context=True)
+        self.set_rc(7, 1000)
+        self.arm_vehicle()
+        self.set_rc(7, 2000)
+        self.wait_text("PFollow: enabled", check_context=True)
+        self.set_rc(7, 1000)
+        self.wait_text("PFollow: disabled", check_context=True)
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -7674,6 +7706,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.RudderArmingWithArmingChecksZero,
             self.TerrainLoiterToCircle,
             self.FenceDoubleBreach,
+            self.PlaneFollowAppletSanity,
         ]
 
     def disabled_tests(self):
