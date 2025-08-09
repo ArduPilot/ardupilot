@@ -9,9 +9,10 @@ AP_FLAKE8_CLEAN
 from waflib.TaskGen import after_method, before_method, feature
 
 import os
-import pickle
 import sys
 import traceback
+
+import hal_common
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_Linux/hwdef/scripts'))
 import linux_hwdef  # noqa:501
@@ -38,28 +39,7 @@ def linux_firmware(self):
 
 def load_env_vars(env):
     '''optionally load extra environment variables from env.py in the build directory'''
-    print("Checking for env.py")
-    env_py = os.path.join(env.BUILDROOT, 'env.py')
-    if not os.path.exists(env_py):
-        print("No env.py found")
-        return
-    e = pickle.load(open(env_py, 'rb'))
-    for k in e.keys():
-        v = e[k]
-        if k in env:
-            if isinstance(env[k], dict):
-                a = v.split('=')
-                env[k][a[0]] = '='.join(a[1:])
-                print("env updated %s=%s" % (k, v))
-            elif isinstance(env[k], list):
-                env[k].append(v)
-                print("env appended %s=%s" % (k, v))
-            else:
-                env[k] = v
-                print("env added %s=%s" % (k, v))
-        else:
-            env[k] = v
-            print("env set %s=%s" % (k, v))
+    hal_common.load_env_vars(env)
 
 
 def configure(cfg):
