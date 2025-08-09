@@ -21,7 +21,7 @@ bool ModeAuto::init(bool ignore_checks) {
     }
 
     // initialise waypoint controller
-    sub.wp_nav.wp_and_spline_init_cm();
+    sub.wp_nav.wp_and_spline_init_m();
 
     // clear guided limits
     guided_limit_clear();
@@ -113,7 +113,7 @@ void ModeAuto::auto_wp_run()
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
-        sub.wp_nav.wp_and_spline_init_cm();                                                // Reset xy target
+        sub.wp_nav.wp_and_spline_init_m();                                                // Reset xy target
         return;
     }
 
@@ -305,7 +305,7 @@ void ModeAuto::auto_loiter_run()
         attitude_control->set_throttle_out(0,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
 
-        sub.wp_nav.wp_and_spline_init_cm();                                                // Reset xy target
+        sub.wp_nav.wp_and_spline_init_m();                                                // Reset xy target
         return;
     }
 

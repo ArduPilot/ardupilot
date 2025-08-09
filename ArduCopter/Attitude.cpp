@@ -42,7 +42,7 @@ void Copter::update_throttle_hover()
     }
 
     // do not update while climbing or descending
-    if (!is_zero(pos_control->get_vel_desired_NEU_cms().z)) {
+    if (!is_zero(pos_control->get_vel_desired_NEU_ms().z)) {
         return;
     }
 

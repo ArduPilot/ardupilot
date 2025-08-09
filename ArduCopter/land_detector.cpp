@@ -86,7 +86,7 @@ void Copter::update_land_detector()
 #if MODE_AUTOROTATE_ENABLED
                                     || (flightmode->mode_number() == Mode::Number::AUTOROTATE && motors->get_below_land_min_coll())
 #endif
-                                    || ((!get_force_flying() || landing) && motors->limit.throttle_lower && pos_control->get_vel_desired_NEU_cms().z < 0.0f);
+                                    || ((!get_force_flying() || landing) && motors->limit.throttle_lower && pos_control->get_vel_desired_NEU_ms().z < 0.0f);
         bool throttle_mix_at_min = true;
 #else
         // check that the average throttle output is near minimum (less than 12.5% hover throttle)
@@ -131,7 +131,7 @@ void Copter::update_land_detector()
         SET_LOG_FLAG(descent_rate_low, LandDetectorLoggingFlag::DESCENT_RATE_LOW);
 
         // if we have a healthy rangefinder only allow landing detection below 2 meters
-        bool rangefinder_check = (!rangefinder_alt_ok() || rangefinder_state.alt_cm_filt.get() < LAND_RANGEFINDER_MIN_ALT_CM);
+        bool rangefinder_check = (!rangefinder_alt_ok() || rangefinder_state.alt_m_filt.get() < LAND_RANGEFINDER_MIN_ALT_M);
         SET_LOG_FLAG(rangefinder_check, LandDetectorLoggingFlag::RANGEFINDER_BELOW_2M);
 
         // if we have weight on wheels (WoW) or ambiguous unknown. never no WoW
@@ -309,7 +309,7 @@ void Copter::update_throttle_mix()
         const bool accel_moving = (land_accel_ef_filter.get().length() > LAND_CHECK_ACCEL_MOVING);
 
         // check for requested descent
-        bool descent_not_demanded = pos_control->get_vel_desired_NEU_cms().z >= 0.0f;
+        bool descent_not_demanded = pos_control->get_vel_desired_NEU_ms().z >= 0.0f;
 
         // check if landing
         const bool landing = flightmode->is_landing();

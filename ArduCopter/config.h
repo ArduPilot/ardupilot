@@ -93,8 +93,8 @@
 #endif
 
 // pre-arm baro vs inertial nav max alt disparity
-#ifndef PREARM_MAX_ALT_DISPARITY_CM
- # define PREARM_MAX_ALT_DISPARITY_CM       100     // barometer and inertial nav altitude must be within this many centimeters
+#ifndef PREARM_MAX_ALT_DISPARITY_M
+ # define PREARM_MAX_ALT_DISPARITY_M    1.0      // barometer and inertial nav altitude must be within this many centimeters
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -330,8 +330,8 @@
 #ifndef LAND_CANCEL_TRIGGER_THR
  # define LAND_CANCEL_TRIGGER_THR   700     // land is cancelled by input throttle above 700
 #endif
-#ifndef LAND_RANGEFINDER_MIN_ALT_CM
-#define LAND_RANGEFINDER_MIN_ALT_CM 200
+#ifndef LAND_RANGEFINDER_MIN_ALT_M
+#define LAND_RANGEFINDER_MIN_ALT_M  2.0
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -414,8 +414,8 @@
  # define RTL_ALT                   1500    // default alt to return to home in cm, 0 = Maintain current altitude
 #endif
 
-#ifndef RTL_ALT_MIN
- # define RTL_ALT_MIN               30     // min height above ground for RTL (i.e 30cm)
+#ifndef RTL_ALT_MIN_M
+ # define RTL_ALT_MIN_M             0.30     // min height above ground for RTL (i.e 0.3 m)
 #endif
 
 #ifndef RTL_CLIMB_MIN_DEFAULT
@@ -439,8 +439,8 @@
  # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL
 #endif
 
-#ifndef YAW_LOOK_AHEAD_MIN_SPEED
- # define YAW_LOOK_AHEAD_MIN_SPEED  100             // minimum ground speed in cm/s required before copter is aimed at ground course
+#ifndef YAW_LOOK_AHEAD_MIN_SPEED_MS
+ # define YAW_LOOK_AHEAD_MIN_SPEED_MS 1     // minimum ground speed in m/s required before copter is aimed at ground course
 #endif
 
 // Super Simple mode

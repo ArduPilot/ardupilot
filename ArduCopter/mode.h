@@ -56,15 +56,15 @@ public:
 
     // these are set by the Mission code:
     State state = State::Descent_Start; // records state of payload place
-    float descent_max_cm;
+    float descent_max_m;
 
 private:
 
     uint32_t descent_established_time_ms; // milliseconds
     uint32_t place_start_time_ms; // milliseconds
     float descent_thrust_level;
-    float descent_start_altitude_cm;
-    float descent_speed_cms;
+    float descent_start_altitude_m;
+    float descent_speed_ms;
 };
 #endif
 
@@ -173,11 +173,11 @@ public:
     virtual float crosstrack_error_m() const { return 0.0f;}
 
     // functions to support MAV_CMD_DO_CHANGE_SPEED
-    virtual bool set_speed_xy_cms(float speed_xy_cms) {return false;}
-    virtual bool set_speed_up_cms(float speed_xy_cms) {return false;}
-    virtual bool set_speed_down_cms(float speed_xy_cms) {return false;}
+    virtual bool set_speed_NE_ms(float speed_xy_ms) {return false;}
+    virtual bool set_speed_up_ms(float speed_xy_ms) {return false;}
+    virtual bool set_speed_down_ms(float speed_xy_ms) {return false;}
 
-    virtual int32_t get_alt_above_ground_cm(void) const;
+    virtual float get_alt_above_ground_m(void) const;
 
     // pilot input processing
     void get_pilot_desired_lean_angles_rad(float &roll_out_rad, float &pitch_out_rad, float angle_max_rad, float angle_limit_rad) const;
@@ -187,7 +187,7 @@ public:
 
     // returns climb target_rate reduced to avoid obstacles and
     // altitude fence
-    float get_avoidance_adjusted_climbrate_ms(float target_rate_cms);
+    float get_avoidance_adjusted_climbrate_ms(float target_rate_ms);
 
     // send output to the motors, can be overridden by subclasses
     virtual void output_to_motors();
@@ -298,7 +298,7 @@ protected:
 
     static _TakeOff takeoff;
 
-    virtual bool do_user_takeoff_start(float takeoff_alt_m);
+    virtual bool do_user_takeoff_start_m(float takeoff_alt_m);
 
     static _AutoTakeoff auto_takeoff;
 
@@ -312,7 +312,7 @@ public:
         enum class Mode {
             HOLD =             0,   // hold zero yaw rate
             LOOK_AT_NEXT_WP =  1,   // point towards next waypoint (no pilot input accepted)
-            ROI =              2,   // point towards a location held in roi (no pilot input accepted)
+            ROI =              2,   // point towards a location held in roi_ne_m (no pilot input accepted)
             FIXED =            3,   // point towards a particular angle (no pilot input accepted)
             LOOK_AHEAD =       4,   // point in the direction the copter is moving
             RESET_TO_ARMED_YAW = 5, // point towards heading at time motors were armed
@@ -369,7 +369,7 @@ public:
         Mode _last_mode;
 
         // Yaw will point at this location if mode is set to Mode::ROI
-        Vector3f roi;
+        Vector3f roi_ne_m;
 
         // yaw used for YAW_FIXED yaw_mode
         float _fixed_yaw_offset_rad;
@@ -576,9 +576,9 @@ public:
     bool is_taking_off() const override;
     bool use_pilot_yaw() const override;
 
-    bool set_speed_xy_cms(float speed_xy_cms) override;
-    bool set_speed_up_cms(float speed_up_cms) override;
-    bool set_speed_down_cms(float speed_down_cms) override;
+    bool set_speed_NE_ms(float speed_xy_ms) override;
+    bool set_speed_up_ms(float speed_up_ms) override;
+    bool set_speed_down_ms(float speed_down_ms) override;
 
     bool requires_terrain_failsafe() const override { return true; }
 
@@ -614,7 +614,7 @@ public:
 #endif
 
     // Get height above ground, uses landing height if available
-    int32_t get_alt_above_ground_cm() const override;
+    float get_alt_above_ground_m() const override;
 
 protected:
 
@@ -731,8 +731,8 @@ private:
         bool reached_destination_xy : 1;
         bool loiter_start_done : 1;
         bool reached_alt : 1;
-        float alt_error_cm;
-        int32_t alt;
+        float alt_error_m;
+        float alt_m;
     } loiter_to_alt;
 
     // Delay the next navigation command
@@ -1097,45 +1097,45 @@ public:
     // attitude_quat: IF zero: ang_vel (angular velocity) must be provided even if all zeroes
     //                IF non-zero: attitude_control is performed using both the attitude quaternion and angular velocity
     // ang_vel: angular velocity (rad/s)
-    // climb_rate_cms_or_thrust: represents either the climb_rate (cm/s) or thrust scaled from [0, 1], unitless
-    // use_thrust: IF true: climb_rate_cms_or_thrust represents thrust
-    //             IF false: climb_rate_cms_or_thrust represents climb_rate (cm/s)
-    void set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel, float climb_rate_cms_or_thrust, bool use_thrust);
+    // climb_rate_ms_or_thrust: represents either the climb_rate (m/s) or thrust scaled from [0, 1], unitless
+    // use_thrust: IF true: climb_rate_ms_or_thrust represents thrust
+    //             IF false: climb_rate_ms_or_thrust represents climb_rate (m/s)
+    void set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel, float climb_rate_ms_or_thrust, bool use_thrust);
 
-    bool set_pos_neu_cm(const Vector3f& pos_neu_cm, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool is_terrain_alt = false);
+    bool set_pos_NEU_m(const Vector3f& pos_neu_m, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool is_terrain_alt = false);
     bool set_destination(const Location& dest_loc, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
     bool get_wp(Location &loc) const override;
-    void set_accel_neu_cmss(const Vector3f& accel_neu_cmss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
-    void set_vel_neu_cms(const Vector3f& vel_neu_cms, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
-    void set_vel_accel_neu_cm(const Vector3f& vel_neu_cms, const Vector3f& accel_neu_cmss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
-    bool set_pos_vel_neu_cm(const Vector3f& pos_neu_cm, const Vector3f& vel_neu_cms, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
-    bool set_pos_vel_accel_neu_cm(const Vector3f& pos_neu_cm, const Vector3f& vel_neu_cms, const Vector3f& accel_neu_cmss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
+    void set_accel_NEU_mss(const Vector3f& accel_neu_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
+    void set_vel_NEU_ms(const Vector3f& vel_neu_ms, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
+    void set_vel_accel_NEU_m(const Vector3f& vel_neu_ms, const Vector3f& accel_neu_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
+    bool set_pos_vel_NEU_m(const Vector3f& pos_neu_m, const Vector3f& vel_neu_ms, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
+    bool set_pos_vel_accel_NEU_m(const Vector3f& pos_neu_m, const Vector3f& vel_neu_ms, const Vector3f& accel_neu_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
 
     // get position, velocity and acceleration targets
-    const Vector3p& get_target_pos_neu_cm() const;
-    const Vector3f& get_target_vel_neu_cms() const;
-    const Vector3f& get_target_accel_neu_cmss() const;
+    const Vector3p& get_target_pos_NEU_m() const;
+    const Vector3f& get_target_vel_NEU_ms() const;
+    const Vector3f& get_target_accel_NEU_mss() const;
 
     // returns true if GUIDED_OPTIONS param suggests SET_ATTITUDE_TARGET's "thrust" field should be interpreted as thrust instead of climb rate
     bool set_attitude_target_provides_thrust() const;
-    bool stabilizing_pos_xy() const;
-    bool stabilizing_vel_xy() const;
+    bool stabilizing_pos_NE() const;
+    bool stabilizing_vel_NE() const;
     bool use_wpnav_for_position_control() const;
 
     void limit_clear();
     void limit_init_time_and_pos();
-    void limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
+    void limit_set(uint32_t timeout_ms, float alt_min_m, float alt_max_m, float horiz_max_m);
     bool limit_check();
 
     bool is_taking_off() const override;
     
-    bool set_speed_xy_cms(float speed_xy_cms) override;
-    bool set_speed_up_cms(float speed_up_cms) override;
-    bool set_speed_down_cms(float speed_down_cms) override;
+    bool set_speed_NE_ms(float speed_xy_ms) override;
+    bool set_speed_up_ms(float speed_up_ms) override;
+    bool set_speed_down_ms(float speed_down_ms) override;
 
     // initialises position controller to implement take-off
-    // takeoff_alt_cm is interpreted as alt-above-home (in cm) or alt-above-terrain if a rangefinder is available
-    bool do_user_takeoff_start(float takeoff_alt_cm) override;
+    // takeoff_alt_m is interpreted as alt-above-home (in m) or alt-above-terrain if a rangefinder is available
+    bool do_user_takeoff_start_m(float takeoff_alt_m) override;
 
     enum class SubMode {
         TakeOff,
@@ -1477,9 +1477,9 @@ public:
 
     bool use_pilot_yaw() const override;
 
-    bool set_speed_xy_cms(float speed_xy_cms) override;
-    bool set_speed_up_cms(float speed_up_cms) override;
-    bool set_speed_down_cms(float speed_down_cms) override;
+    bool set_speed_NE_ms(float speed_xy_ms) override;
+    bool set_speed_up_ms(float speed_up_ms) override;
+    bool set_speed_down_ms(float speed_down_ms) override;
 
     // RTL states
     enum class SubMode : uint8_t {
@@ -1764,15 +1764,15 @@ private:
     AP_Float time_record;       // Time taken to complete the chirp waveform
     AP_Float time_fade_out;     // Time to reach zero amplitude after chirp finishes
 
-    bool att_bf_feedforward;    // Setting of attitude_control->get_bf_feedforward
-    float waveform_time;        // Time reference for waveform
-    float waveform_sample;      // Current waveform sample
-    float waveform_freq_rads;   // Instantaneous waveform frequency
-    float time_const_freq;      // Time at constant frequency before chirp starts
-    int8_t log_subsample;       // Subsample multiple for logging.
-    Vector2f target_vel;        // target velocity for position controller modes
-    Vector2f target_pos;       // target position
-    Vector2f input_vel_last;    // last cycle input velocity
+    bool att_bf_feedforward;        // Setting of attitude_control->get_bf_feedforward
+    float waveform_time;            // Time reference for waveform
+    float waveform_sample;          // Current waveform sample
+    float waveform_freq_rads;       // Instantaneous waveform frequency
+    float time_const_freq;          // Time at constant frequency before chirp starts
+    int8_t log_subsample;           // Subsample multiple for logging.
+    Vector2f target_vel_ne_ms;      // target velocity for position controller modes
+    Vector2f target_pos_ne_m;       // target position
+    Vector2f input_vel_last_ne_ms;  // last cycle input velocity
     // System ID states
     enum class SystemIDModeState {
         SYSTEMID_STATE_STOPPED,
