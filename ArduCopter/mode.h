@@ -732,7 +732,7 @@ private:
         bool loiter_start_done : 1;
         bool reached_alt : 1;
         float alt_error_m;
-        int32_t alt;
+        float alt_m;
     } loiter_to_alt;
 
     // Delay the next navigation command
