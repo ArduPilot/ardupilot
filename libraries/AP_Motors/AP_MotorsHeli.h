@@ -133,9 +133,6 @@ public:
     // true if the autorotation functionality within the rsc has been enabled
     bool rsc_autorotation_enabled(void) const { return _main_rotor.autorotation.enabled(); }
 
-    // set land complete flag
-    void set_land_complete(bool landed) { _heliflags.land_complete = landed; }
-
     // function to calculate and set the normalised collective position given a desired blade pitch angle (deg)
     void set_coll_from_ang(float col_ang_deg);
 
@@ -255,7 +252,6 @@ protected:
         uint8_t init_targets_on_arming  : 1;    // 0 if targets were initialized, 1 if targets were not initialized after arming
         uint8_t save_rsc_mode           : 1;    // used to determine the rsc mode needs to be saved while disarmed
         uint8_t servo_test_running      : 1;    // true if servo_test is running
-        uint8_t land_complete           : 1;    // true if aircraft is landed
         uint8_t takeoff_collective      : 1;    // true if collective is above 30% between H_COL_MID and H_COL_MAX
         uint8_t below_land_min_coll     : 1;    // true if collective is below H_COL_LAND_MIN
         uint8_t rotor_spooldown_complete : 1;    // true if the rotors have spooled down completely

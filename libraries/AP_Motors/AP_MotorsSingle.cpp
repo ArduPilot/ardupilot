@@ -198,9 +198,7 @@ void AP_MotorsSingle::output_armed_stabilizing()
     _throttle_out = _thrust_out / compensation_gain;
 
     if (is_zero(_thrust_out)) {
-        limit.roll = true;
-        limit.pitch = true;
-        limit.yaw = true;
+        limit.set_rpy(true);
     }
 
     // limit thrust out for calculation of actuator gains
@@ -215,9 +213,7 @@ void AP_MotorsSingle::output_armed_stabilizing()
     if (actuator_max > thrust_out_actuator && !is_zero(actuator_max)) {
         // roll, pitch and yaw request can not be achieved at full servo defection
         // reduce roll, pitch and yaw to reduce the requested defection to maximum
-        limit.roll = true;
-        limit.pitch = true;
-        limit.yaw = true;
+        limit.set_rpy(true);
         rp_scale = thrust_out_actuator / actuator_max;
     } else {
         rp_scale = 1.0f;
