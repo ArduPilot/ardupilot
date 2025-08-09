@@ -300,7 +300,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
      * to change */
 
     if (last_update_usec == 0 || !output_ready) {
-        if (_vehicle == ArduPlane || _vehicle == Blimp) {
+        if (_vehicle == ArduPlane) {
             for (uint8_t i=0; i<SITL_NUM_CHANNELS; i++) {
                 pwm_output[i] = 1000;
             }
