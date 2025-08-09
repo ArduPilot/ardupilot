@@ -503,6 +503,7 @@ def run_step(step):
         "gdb": opts.gdb,
         "gdb_no_tui": opts.gdb_no_tui,
         "lldb": opts.lldb,
+        "strace": opts.strace,
         "gdbserver": opts.gdbserver,
         "breakpoints": opts.breakpoint,
         "disable_breakpoints": opts.disable_breakpoints,
@@ -992,6 +993,10 @@ if __name__ == "__main__":
                          default=False,
                          action='store_true',
                          help='run ArduPilot binaries under lldb')
+    group_sim.add_option("", "--strace",
+                         action='store_true',
+                         default=False,
+                         help="strace the ArduPilot binary")
     group_sim.add_option("-B", "--breakpoint",
                          type='string',
                          action="append",

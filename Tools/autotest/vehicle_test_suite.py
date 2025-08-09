@@ -1920,6 +1920,7 @@ class TestSuite(ABC):
                  params=None,
                  gdbserver=False,
                  lldb=False,
+                 strace=False,
                  breakpoints=[],
                  disable_breakpoints=False,
                  viewerip=None,
@@ -1950,6 +1951,7 @@ class TestSuite(ABC):
         self.gdb = gdb
         self.gdb_no_tui = gdb_no_tui
         self.lldb = lldb
+        self.strace = strace
         self.frame = frame
         self.params = params
         self.gdbserver = gdbserver
@@ -9289,6 +9291,7 @@ Also, ignores heartbeats not from our target system'''
             "gdb_no_tui": self.gdb_no_tui,
             "gdbserver": self.gdbserver,
             "lldb": self.lldb,
+            "strace": self.strace,
             "home": sitl_home,
             "speedup": self.speedup,
             "valgrind": self.valgrind,
@@ -9353,6 +9356,7 @@ Also, ignores heartbeats not from our target system'''
             "gdb_no_tui": self.gdb_no_tui,
             "gdbserver": self.gdbserver,
             "lldb": self.lldb,
+            "strace": self.strace,
             "home": self.sitl_home(),
             "speedup": self.speedup,
             "valgrind": self.valgrind,
