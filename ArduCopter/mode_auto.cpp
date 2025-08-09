@@ -1475,12 +1475,12 @@ bool ModeAuto::shift_alt_to_current_alt(Location& target_loc) const
     // if terrain alt using rangefinder is being used then set alt to current rangefinder altitude
     if ((target_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) &&
         (wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER)) {
-        int32_t curr_rngfnd_alt_cm;
-        if (copter.get_rangefinder_height_interpolated_cm(curr_rngfnd_alt_cm)) {
+        float curr_rngfnd_alt_m;
+        if (copter.get_rangefinder_height_interpolated_m(curr_rngfnd_alt_m)) {
             // subtract position offset (if any)
-            curr_rngfnd_alt_cm -= pos_control->get_pos_offset_U_m() * 100.0;
+            curr_rngfnd_alt_m -= pos_control->get_pos_offset_U_m();
             // wp_nav is using rangefinder so use current rangefinder alt
-            target_loc.set_alt_m(MAX(curr_rngfnd_alt_cm * 0.01, 2.0), Location::AltFrame::ABOVE_TERRAIN);
+            target_loc.set_alt_m(MAX(curr_rngfnd_alt_m, 2.0), Location::AltFrame::ABOVE_TERRAIN);
             return true;
         }
         return false;
@@ -2376,9 +2376,9 @@ float ModeAuto::get_alt_above_ground_m() const
     // Only override if in landing submode
     if (_mode == SubMode::LAND) {
         // Rangefinder takes priority
-        int32_t alt_above_ground_cm;
-        if (copter.get_rangefinder_height_interpolated_cm(alt_above_ground_cm)) {
-            return alt_above_ground_cm * 0.01;
+        float alt_above_ground_m;
+        if (copter.get_rangefinder_height_interpolated_m(alt_above_ground_m)) {
+            return alt_above_ground_m;
         }
 
         // Take land altitude from command

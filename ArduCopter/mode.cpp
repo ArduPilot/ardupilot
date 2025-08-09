@@ -597,19 +597,19 @@ void Mode::make_safe_ground_handling(bool force_throttle_unlimited)
  */
 float Mode::get_alt_above_ground_m(void) const
 {
-    int32_t alt_above_ground_cm;
-    if (copter.get_rangefinder_height_interpolated_cm(alt_above_ground_cm)) {
-        return alt_above_ground_cm * 0.01;
+    float alt_above_ground_m;
+    if (copter.get_rangefinder_height_interpolated_m(alt_above_ground_m)) {
+        return alt_above_ground_m;
     }
     if (!pos_control->is_active_NE()) {
         return copter.current_loc.alt;
     }
-    if (copter.current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, alt_above_ground_cm)) {
-        return alt_above_ground_cm * 0.01;
+    if (copter.current_loc.get_alt_m(Location::AltFrame::ABOVE_TERRAIN, alt_above_ground_m)) {
+        return alt_above_ground_m;
     }
 
     // Assume the Earth is flat:
-    return copter.current_loc.alt;
+    return copter.current_loc.alt * 0.01;
 }
 
 void Mode::land_run_vertical_control(bool pause_descent)
