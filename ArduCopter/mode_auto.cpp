@@ -1454,7 +1454,7 @@ void PayloadPlace::run()
     case State::Ascent_Start:
         copter.flightmode->land_run_horizontal_control();
         // update altitude target and call position controller
-        pos_control->land_at_climb_rate_cms(0.0, false);
+        pos_control->land_at_climb_rate_ms(0.0, false);
         break;
     case State::Ascent:
     case State::Done:
@@ -1533,9 +1533,9 @@ Location ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Lo
     if (ret.alt == 0) {
         // set to default_loc's altitude but in command's alt frame
         // note that this may use the terrain database
-        int32_t default_alt_cm;
-        if (default_loc.get_alt_cm(ret.get_alt_frame(), default_alt_cm)) {
-            ret.set_alt_cm(default_alt_cm, ret.get_alt_frame());
+        float default_alt_m;
+        if (default_loc.get_alt_m(ret.get_alt_frame(), default_alt_m)) {
+            ret.set_alt_m(default_alt_m, ret.get_alt_frame());
         } else {
             // default to default_loc's altitude and frame
             ret.copy_alt_from(default_loc);

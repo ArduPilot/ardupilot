@@ -68,7 +68,7 @@ void Copter::Log_Write_Control_Tuning()
 #endif
         terr_alt            : terr_alt,
         target_climb_rate   : int16_t(target_climb_rate_ms * 100.0),
-        climb_rate          : int16_t(pos_control->get_vel_estimate_NEU_cms().z) // float -> int16_t
+        climb_rate          : int16_t(pos_control->get_vel_estimate_NEU_ms().z * 100.0) // float -> int16_t
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
