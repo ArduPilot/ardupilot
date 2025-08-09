@@ -21,14 +21,7 @@ import linux_hwdef  # noqa:501
 @feature('linux_ap_library', 'linux_ap_program')
 @before_method('process_source')
 def linux_dynamic_env(self):
-    # The generated files from configuration possibly don't exist if it's just
-    # a list command (TODO: figure out a better way to address that).
-    if self.bld.cmd == 'list':
-        return
-
-    def exec_command(self, cmd, **kw):
-        kw['stdout'] = sys.stdout
-        return super(exec_command, self).exec_command(cmd, **kw)
+    hal_common.common_dynamic_env(self)
 
 
 @feature('linux_ap_program')
