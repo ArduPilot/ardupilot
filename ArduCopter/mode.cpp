@@ -595,17 +595,17 @@ void Mode::make_safe_ground_handling(bool force_throttle_unlimited)
 /*
   get a height above ground estimate for landing
  */
-int32_t Mode::get_alt_above_ground_cm(void) const
+float Mode::get_alt_above_ground_m(void) const
 {
     int32_t alt_above_ground_cm;
     if (copter.get_rangefinder_height_interpolated_cm(alt_above_ground_cm)) {
-        return alt_above_ground_cm;
+        return alt_above_ground_cm * 0.01;
     }
     if (!pos_control->is_active_NE()) {
         return copter.current_loc.alt;
     }
     if (copter.current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, alt_above_ground_cm)) {
-        return alt_above_ground_cm;
+        return alt_above_ground_cm * 0.01;
     }
 
     // Assume the Earth is flat:
@@ -619,7 +619,7 @@ void Mode::land_run_vertical_control(bool pause_descent)
     if (!pause_descent) {
 
         // do not ignore limits until we have slowed down for landing
-        ignore_descent_limit = (MAX(g2.land_alt_low_cm, 100) > get_alt_above_ground_cm()) || copter.ap.land_complete_maybe;
+        ignore_descent_limit = (MAX(g2.land_alt_low_cm, 100) > get_alt_above_ground_m() * 100.0) || copter.ap.land_complete_maybe;
 
         float max_land_descent_vel_d_cms;
         if (g.land_speed_high_cms > 0) {
@@ -632,7 +632,7 @@ void Mode::land_run_vertical_control(bool pause_descent)
         max_land_descent_vel_d_cms = MIN(max_land_descent_vel_d_cms, -abs(g.land_speed_cms));
 
         // Compute a vertical velocity demand such that the vehicle approaches g2.land_alt_low_cm. Without the below constraint, this would cause the vehicle to hover at g2.land_alt_low_cm.
-        climb_rate_cms = sqrt_controller(MAX(g2.land_alt_low_cm, 100) - get_alt_above_ground_cm(), pos_control->get_pos_U_p().kP(), pos_control->get_max_accel_U_cmss(), G_Dt);
+        climb_rate_cms = sqrt_controller(MAX(g2.land_alt_low_cm, 100) - get_alt_above_ground_m() * 100.0, pos_control->get_pos_U_p().kP(), pos_control->get_max_accel_U_cmss(), G_Dt);
 
         // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
         climb_rate_cms = constrain_float(climb_rate_cms, max_land_descent_vel_d_cms, -abs(g.land_speed_cms));

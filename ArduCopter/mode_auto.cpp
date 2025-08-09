@@ -2371,14 +2371,14 @@ bool ModeAuto::paused() const
 /*
   get a height above ground estimate for landing
  */
-int32_t ModeAuto::get_alt_above_ground_cm() const
+float ModeAuto::get_alt_above_ground_m() const
 {
     // Only override if in landing submode
     if (_mode == SubMode::LAND) {
         // Rangefinder takes priority
         int32_t alt_above_ground_cm;
         if (copter.get_rangefinder_height_interpolated_cm(alt_above_ground_cm)) {
-            return alt_above_ground_cm;
+            return alt_above_ground_cm * 0.01;
         }
 
         // Take land altitude from command
@@ -2388,9 +2388,9 @@ int32_t ModeAuto::get_alt_above_ground_cm() const
         case MAV_CMD_NAV_LAND: {
             if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
                 // If land location is valid return height above it
-                ftype dist;
-                if (copter.current_loc.get_height_above(cmd.content.location, dist)) {
-                    return dist * 100.0;
+                ftype dist_m;
+                if (copter.current_loc.get_height_above(cmd.content.location, dist_m)) {
+                    return dist_m;
                 }
             }
             break;
@@ -2403,7 +2403,7 @@ int32_t ModeAuto::get_alt_above_ground_cm() const
     }
 
     // Use default method
-    return Mode::get_alt_above_ground_cm();
+    return Mode::get_alt_above_ground_m();
 }
 
 #endif

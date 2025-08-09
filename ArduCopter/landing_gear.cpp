@@ -11,7 +11,7 @@ void Copter::landinggear_update()
     }
 
     // support height based triggering using rangefinder or altitude above ground
-    int32_t height_cm = flightmode->get_alt_above_ground_cm();
+    int32_t height_cm = flightmode->get_alt_above_ground_m() * 100.0;
 
     // use rangefinder if available
 #if AP_RANGEFINDER_ENABLED
