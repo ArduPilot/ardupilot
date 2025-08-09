@@ -312,7 +312,7 @@ public:
         enum class Mode {
             HOLD =             0,   // hold zero yaw rate
             LOOK_AT_NEXT_WP =  1,   // point towards next waypoint (no pilot input accepted)
-            ROI =              2,   // point towards a location held in roi (no pilot input accepted)
+            ROI =              2,   // point towards a location held in roi_ne_m (no pilot input accepted)
             FIXED =            3,   // point towards a particular angle (no pilot input accepted)
             LOOK_AHEAD =       4,   // point in the direction the copter is moving
             RESET_TO_ARMED_YAW = 5, // point towards heading at time motors were armed
@@ -369,7 +369,7 @@ public:
         Mode _last_mode;
 
         // Yaw will point at this location if mode is set to Mode::ROI
-        Vector3f roi;
+        Vector3f roi_ne_m;
 
         // yaw used for YAW_FIXED yaw_mode
         float _fixed_yaw_offset_rad;
