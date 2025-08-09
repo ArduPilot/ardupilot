@@ -259,7 +259,7 @@ void ModeRTL::descent_start()
 //      called by rtl_run at 100hz or more
 void ModeRTL::descent_run()
 {
-    Vector2f vel_correction;
+    Vector2f vel_correction_ms;
 
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
@@ -282,10 +282,10 @@ void ModeRTL::descent_run()
             update_simple_mode();
 
             // convert pilot input to reposition velocity
-            vel_correction = get_pilot_desired_velocity(wp_nav->get_wp_acceleration_cmss() * 0.5);
+            vel_correction_ms = get_pilot_desired_velocity(wp_nav->get_wp_acceleration_mss() * 0.5);
 
             // record if pilot has overridden roll or pitch
-            if (!vel_correction.is_zero()) {
+            if (!vel_correction_ms.is_zero()) {
                 if (!copter.ap.land_repo_active) {
                     LOGGER_WRITE_EVENT(LogEvent::LAND_REPO_ACTIVE);
                 }
@@ -298,19 +298,19 @@ void ModeRTL::descent_run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     Vector2f accel;
-    pos_control->input_vel_accel_NE_cm(vel_correction, accel);
+    pos_control->input_vel_accel_NE_m(vel_correction_ms, accel);
     pos_control->update_NE_controller();
 
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle
-    pos_control->set_alt_target_with_slew_cm(rtl_path.descent_target.alt);
+    pos_control->set_alt_target_with_slew_m(rtl_path.descent_target.alt * 0.01);
     pos_control->update_U_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if we've reached within 20cm of final altitude
-    _state_complete = labs(rtl_path.descent_target.alt - pos_control->get_pos_estimate_NEU_cm().z) < 20;
+    _state_complete = labs(rtl_path.descent_target.alt * 0.01 - pos_control->get_pos_estimate_NEU_m().z) < 0.2;
 }
 
 // land_start - initialise controllers to loiter over home
@@ -437,7 +437,7 @@ void ModeRTL::compute_return_target()
             // subtract position controller offset
             curr_alt_m -= pos_offset_u_m;
             // set return_target.alt
-            rtl_path.return_target.set_alt_m(MAX(curr_alt_m + MAX(0, g.rtl_climb_min_cm) * 0.01, MAX(g.rtl_altitude_cm, RTL_ALT_MIN) * 0.01), Location::AltFrame::ABOVE_TERRAIN);
+            rtl_path.return_target.set_alt_m(MAX(curr_alt_m + MAX(0.0, g.rtl_climb_min_cm * 0.01), MAX(g.rtl_altitude_cm * 0.01, RTL_ALT_MIN_M)), Location::AltFrame::ABOVE_TERRAIN);
         } else {
             // fallback to relative alt and warn user
             alt_type = ReturnTargetAltType::RELATIVE;
@@ -478,7 +478,7 @@ void ModeRTL::compute_return_target()
     float target_alt_m = MAX(rtl_path.return_target.alt, 0) * 0.01;
 
     // increase target to maximum of current altitude + climb_min and rtl altitude
-    const float min_rtl_alt_m = MAX(RTL_ALT_MIN * 0.01, curr_alt_m + MAX(0.0, g.rtl_climb_min_cm * 0.01));
+    const float min_rtl_alt_m = MAX(RTL_ALT_MIN_M, curr_alt_m + MAX(0.0, g.rtl_climb_min_cm * 0.01));
     target_alt_m = MAX(target_alt_m, MAX(g.rtl_altitude_cm * 0.01, min_rtl_alt_m));
 
     // reduce climb if close to return target
@@ -533,7 +533,7 @@ bool ModeRTL::get_wp(Location& destination) const
 
 float ModeRTL::wp_distance_m() const
 {
-    return wp_nav->get_wp_distance_to_destination_cm() * 0.01f;
+    return wp_nav->get_wp_distance_to_destination_m();
 }
 
 float ModeRTL::wp_bearing_deg() const
