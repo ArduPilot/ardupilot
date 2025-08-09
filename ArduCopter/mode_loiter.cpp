@@ -47,7 +47,7 @@ bool ModeLoiter::do_precision_loiter()
         return false;        // don't move on the ground
     }
     // if the pilot *really* wants to move the vehicle, let them....
-    if (loiter_nav->get_pilot_desired_acceleration_NE_cmss().length() > 50.0f) {
+    if (loiter_nav->get_pilot_desired_acceleration_NE_mss().length() > 0.5) {
         return false;
     }
     if (!copter.precland.target_acquired()) {

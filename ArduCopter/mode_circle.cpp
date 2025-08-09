@@ -30,7 +30,7 @@ bool ModeCircle::init(bool ignore_checks)
             return false;
         }
         // point at the ground:
-        circle_center.set_alt_cm(0, Location::AltFrame::ABOVE_TERRAIN);
+        circle_center.set_alt_m(0, Location::AltFrame::ABOVE_TERRAIN);
         AP_Mount *s = AP_Mount::get_singleton();
         s->set_roi_target(circle_center);
     }
