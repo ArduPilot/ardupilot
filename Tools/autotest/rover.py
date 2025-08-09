@@ -6920,7 +6920,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         vinfo_options = vinfo.options[self.vehicleinfo_key()]
         known_broken_frames = {
             "balancebot": "needs special stay-upright code",
-            "motorboat-skid": "gets stuck between waypoints 2 and 3",
         }
         for frame in sorted(vinfo_options["frames"].keys()):
             self.start_subtest("Testing frame (%s)" % str(frame))
