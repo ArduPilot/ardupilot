@@ -8355,6 +8355,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if ex is not None:
             raise ex
 
+    def mav_location_from_message_cache(self) -> mavutil.location:
+        return mavutil.location(
+            self.mav.messages['GPS_RAW_INT'].lat*1.0e-7,
+            self.mav.messages['GPS_RAW_INT'].lon*1.0e-7,
+            self.mav.messages['VFR_HUD'].alt,  # relative alt only
+            self.mav.messages['VFR_HUD'].heading
+        )
+
     def ModeFollow(self):
         '''Fly follow mode'''
         foll_ofs_x = 30 # metres
@@ -8408,7 +8416,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 gpi.pack(self.mav.mav)
                 self.mav.mav.send(gpi)
             self.assert_receive_message('GLOBAL_POSITION_INT')
-            pos = self.mav.location()
+            pos = self.mav_location_from_message_cache()
             delta = self.get_distance(expected_loc, pos)
             max_delta = 3
             self.progress("position delta=%f (want <%f)" % (delta, max_delta))
@@ -8452,7 +8460,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 gpi.pack(self.mav.mav)
                 self.mav.mav.send(gpi)
             self.assert_receive_message('GLOBAL_POSITION_INT')
-            pos = self.mav.location()
+            pos = self.mav_location_from_message_cache()
             delta = self.get_distance(expected_loc, pos)
             max_delta = 3
             self.progress("position delta=%f (want <%f)" % (delta, max_delta))
