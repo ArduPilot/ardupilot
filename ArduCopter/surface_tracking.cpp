@@ -37,7 +37,7 @@ void Copter::SurfaceTracking::update_surface_offset()
         // reset position controller offsets if surface tracking is inactive
         // flag target should be reset when/if it next becomes active
         if (timeout && !reset_target) {
-            copter.pos_control->init_pos_terrain_U_cm(0);
+            copter.pos_control->init_pos_terrain_U_m(0);
             valid_for_logging = false;
             reset_target = true;
         }
@@ -54,14 +54,14 @@ void Copter::SurfaceTracking::external_init()
     }
 }
 
-bool Copter::SurfaceTracking::get_target_dist_for_logging(float &target_dist) const
+bool Copter::SurfaceTracking::get_target_dist_for_logging(float &target_dist_m) const
 {
     if (!valid_for_logging || (surface == Surface::NONE)) {
         return false;
     }
 
     const float dir = (surface == Surface::GROUND) ? 1.0f : -1.0f;
-    target_dist = dir * copter.pos_control->get_pos_desired_U_cm() * 0.01f;
+    target_dist_m = dir * copter.pos_control->get_pos_desired_U_m();
     return true;
 }
 

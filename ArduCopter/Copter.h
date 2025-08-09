@@ -281,7 +281,7 @@ private:
         void external_init();
 
         // get target and actual distances (in m) for logging purposes
-        bool get_target_dist_for_logging(float &target_dist) const;
+        bool get_target_dist_for_logging(float &target_dist_m) const;
         float get_dist_for_logging() const;
         void invalidate_for_logging() { valid_for_logging = false; }
 
@@ -298,7 +298,7 @@ private:
 
     private:
         Surface surface;
-        uint32_t last_update_ms;    // system time of last update to target_alt_cm
+        uint32_t last_update_ms;    // system time of last update to target_alt_m
         uint32_t last_glitch_cleared_ms;    // system time of last handle glitch recovery
         bool valid_for_logging;     // true if we have a desired target altitude
         bool reset_target;          // true if target should be reset because of change in surface being tracked
