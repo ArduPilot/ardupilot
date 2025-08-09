@@ -22,10 +22,10 @@ void Copter::read_inertia()
     }
 
     // current_loc.alt is alt-above-home, converted from AHRS's alt-above-ekf-origin
-    const int32_t alt_above_origin_cm = -pos_d_m * 100.0;
-    current_loc.set_alt_cm(alt_above_origin_cm, Location::AltFrame::ABOVE_ORIGIN);
+    const float alt_above_origin_m = -pos_d_m;
+    current_loc.set_alt_m(alt_above_origin_m, Location::AltFrame::ABOVE_ORIGIN);
     if (!ahrs.home_is_set() || !current_loc.change_alt_frame(Location::AltFrame::ABOVE_HOME)) {
         // if home has not been set yet we treat alt-above-origin as alt-above-home
-        current_loc.set_alt_cm(alt_above_origin_cm, Location::AltFrame::ABOVE_HOME);
+        current_loc.set_alt_m(alt_above_origin_m, Location::AltFrame::ABOVE_HOME);
     }
 }
