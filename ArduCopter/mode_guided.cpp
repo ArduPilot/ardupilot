@@ -139,7 +139,7 @@ bool ModeGuided::do_user_takeoff_start_m(float takeoff_alt_m)
         wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER &&
         takeoff_alt_m < copter.rangefinder.max_distance_orient(ROTATION_PITCH_270)) {
         // can't takeoff downwards
-        if (takeoff_alt_m <= copter.rangefinder_state.alt_cm * 0.01) {
+        if (takeoff_alt_m <= copter.rangefinder_state.alt_m) {
             return false;
         }
         // provide target altitude as alt-above-terrain
