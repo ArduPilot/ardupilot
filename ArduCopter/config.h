@@ -414,8 +414,8 @@
  # define RTL_ALT                   1500    // default alt to return to home in cm, 0 = Maintain current altitude
 #endif
 
-#ifndef RTL_ALT_MIN
- # define RTL_ALT_MIN               30     // min height above ground for RTL (i.e 30cm)
+#ifndef RTL_ALT_MIN_M
+ # define RTL_ALT_MIN_M             0.30     // min height above ground for RTL (i.e 0.3 m)
 #endif
 
 #ifndef RTL_CLIMB_MIN_DEFAULT
