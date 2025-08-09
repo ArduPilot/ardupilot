@@ -2,12 +2,12 @@
 
 Mode::AutoYaw Mode::auto_yaw;
 
-// roi_yaw_rad - returns heading towards location held in roi
+// roi_yaw_rad - returns heading towards location held in roi_ne_m
 float Mode::AutoYaw::roi_yaw_rad() const
 {
     Vector2f pos_ne_m;
     if (AP::ahrs().get_relative_position_NE_origin_float(pos_ne_m)){
-        return get_bearing_rad(pos_ne_m * 100.0, roi.xy());
+        return get_bearing_rad(pos_ne_m, roi_ne_m.xy());
     }
     return copter.attitude_control->get_att_target_euler_rad().z;
 }
@@ -18,8 +18,8 @@ float Mode::AutoYaw::look_ahead_yaw_rad()
     // Commanded Yaw to automatically look ahead.
     Vector3f vel_ned_ms;
     if (copter.position_ok() && AP::ahrs().get_velocity_NED(vel_ned_ms)) {
-        const float speed_sq = vel_ned_ms.xy().length_squared() * 10000.0;
-        if (speed_sq > (YAW_LOOK_AHEAD_MIN_SPEED * YAW_LOOK_AHEAD_MIN_SPEED)) {
+        const float speed_ms_sq = vel_ned_ms.xy().length_squared();
+        if (speed_ms_sq > (YAW_LOOK_AHEAD_MIN_SPEED_MS * YAW_LOOK_AHEAD_MIN_SPEED_MS)) {
             _look_ahead_yaw_rad = atan2f(vel_ned_ms.y,vel_ned_ms.x);
         }
     }
@@ -168,7 +168,7 @@ void Mode::AutoYaw::set_yaw_angle_offset_deg(const float yaw_angle_offset_deg)
     set_mode(Mode::ANGLE_RATE);
 }
 
-// set_roi - sets the yaw to look at roi for auto mode
+// set_roi - sets the yaw to look at roi_ne_m for auto mode
 void Mode::AutoYaw::set_roi(const Location &roi_location)
 {
     // if location is zero lat, lon and altitude turn off ROI
@@ -183,7 +183,7 @@ void Mode::AutoYaw::set_roi(const Location &roi_location)
 #if HAL_MOUNT_ENABLED
         // check if mount type requires us to rotate the quad
         if (!copter.camera_mount.has_pan_control()) {
-            if (roi_location.get_vector_from_origin_NEU_cm(roi)) {
+            if (roi_location.get_vector_from_origin_NEU_m(roi_ne_m)) {
                 auto_yaw.set_mode(Mode::ROI);
             }
         }
@@ -198,7 +198,7 @@ void Mode::AutoYaw::set_roi(const Location &roi_location)
         //      4: point at a target given a target id (can't be implemented)
 #else
         // if we have no camera mount aim the quad at the location
-        if (roi_location.get_vector_from_origin_NEU_cm(roi)) {
+        if (roi_location.get_vector_from_origin_NEU_m(roi_ne_m)) {
             auto_yaw.set_mode(Mode::ROI);
         }
 #endif  // HAL_MOUNT_ENABLED
@@ -235,7 +235,7 @@ float Mode::AutoYaw::yaw_rad()
     switch (_mode) {
 
     case Mode::ROI:
-        // point towards a location held in roi
+        // point towards a location held in roi_ne_m
         _yaw_angle_rad = roi_yaw_rad();
         break;
 
