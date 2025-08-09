@@ -20,7 +20,7 @@ public:
     bool enabled_and_healthy(void) const;
 
     // get inertially interpolated rangefinder height
-    bool get_rangefinder_height_interpolated_cm(int32_t& ret) const;
+    bool get_rangefinder_height_interpolated_m(float& height_m) const;
 
     bool enabled;                          // not to be confused with rangefinder enabled, this state is to be set by the vehicle.
     bool alt_healthy;                      // true if we can trust the altitude from the rangefinder

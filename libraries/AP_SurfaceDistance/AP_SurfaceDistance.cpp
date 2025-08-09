@@ -137,7 +137,7 @@ void AP_SurfaceDistance::update()
   difference between the inertial height at that time and the current
   inertial height to give us interpolation of height from rangefinder
  */
-bool AP_SurfaceDistance::get_rangefinder_height_interpolated_cm(int32_t& ret) const
+bool AP_SurfaceDistance::get_rangefinder_height_interpolated_m(float& height_m) const
 {
     if (!enabled_and_healthy()) {
         return false;
@@ -149,8 +149,8 @@ bool AP_SurfaceDistance::get_rangefinder_height_interpolated_cm(int32_t& ret) co
         return false;
     }
 
-    ret = alt_cm_filt.get();
-    ret += (-pos_d_m * 100.0) - inertial_alt_cm;
+    height_m = alt_cm_filt.get() * 0.01;
+    height_m += -pos_d_m - inertial_alt_cm * 0.01;
     return true;
 }
 
