@@ -581,7 +581,7 @@ private:
         bool takeoff_expected;
         bool touchdown_expected;
         uint32_t takeoff_time_ms;
-        float takeoff_alt_cm;
+        float takeoff_alt_m;
     } gndeffect_state;
 
     bool standby_active;
