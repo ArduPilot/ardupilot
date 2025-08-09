@@ -1753,7 +1753,7 @@ void ModeAuto::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
         target_loc.lng = copter.current_loc.lng;
     }
 
-    if (!target_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, loiter_to_alt.alt)) {
+    if (!target_loc.get_alt_m(Location::AltFrame::ABOVE_HOME, loiter_to_alt.alt_m)) {
         loiter_to_alt.reached_destination_xy = true;
         loiter_to_alt.reached_alt = true;
         gcs().send_text(MAV_SEVERITY_INFO, "bad do_loiter_to_alt");
