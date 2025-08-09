@@ -808,10 +808,8 @@ void Mode::precland_retry_position(const Vector3f &retry_pos_ned_m)
         }
     }
 
-    Vector3p retry_pos_NEU_cm{retry_pos_ned_m.x, retry_pos_ned_m.y, retry_pos_ned_m.z * -1.0};
-    // pos controller expects input in NEU cm's
-    retry_pos_NEU_cm = retry_pos_NEU_cm * 100.0f;
-    pos_control->input_pos_NEU_cm(retry_pos_NEU_cm, 0.0f, 1000.0f);
+    Vector3p retry_pos_neu_m{retry_pos_ned_m.x, retry_pos_ned_m.y, -retry_pos_ned_m.z};
+    pos_control->input_pos_NEU_m(retry_pos_neu_m, 0.0f, 10.0);
 
     // run position controllers
     pos_control->update_NE_controller();

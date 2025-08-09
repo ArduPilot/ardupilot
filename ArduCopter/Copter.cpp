@@ -290,14 +290,14 @@ bool Copter::set_target_location(const Location& target_loc)
 }
 
 // start takeoff to given altitude (for use by scripting)
-bool Copter::start_takeoff(const float alt)
+bool Copter::start_takeoff(const float alt_m)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!flightmode->in_guided_mode()) {
         return false;
     }
 
-    if (mode_guided.do_user_takeoff_start(alt * 100.0f)) {
+    if (mode_guided.do_user_takeoff_start_m(alt_m)) {
         copter.set_auto_armed(true);
         return true;
     }
@@ -316,9 +316,9 @@ bool Copter::set_target_pos_NED(const Vector3f& target_pos_ned_m, bool use_yaw, 
         return false;
     }
 
-    const Vector3f pos_neu_cm(target_pos_ned_m.x * 100.0f, target_pos_ned_m.y * 100.0f, -target_pos_ned_m.z * 100.0f);
+    const Vector3f pos_neu_m(target_pos_ned_m.x, target_pos_ned_m.y, -target_pos_ned_m.z);
 
-    return mode_guided.set_pos_neu_cm(pos_neu_cm, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), yaw_relative, terrain_alt);
+    return mode_guided.set_pos_NEU_m(pos_neu_m, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), yaw_relative, terrain_alt);
 }
 
 // set target position and velocity (for use by scripting)
@@ -329,10 +329,10 @@ bool Copter::set_target_posvel_NED(const Vector3f& target_pos_ned_m, const Vecto
         return false;
     }
 
-    const Vector3f pos_neu_cm(target_pos_ned_m.x * 100.0f, target_pos_ned_m.y * 100.0f, -target_pos_ned_m.z * 100.0f);
-    const Vector3f vel_neu_cms(target_vel_ned_ms.x * 100.0f, target_vel_ned_ms.y * 100.0f, -target_vel_ned_ms.z * 100.0f);
+    const Vector3f pos_neu_m(target_pos_ned_m.x, target_pos_ned_m.y, -target_pos_ned_m.z);
+    const Vector3f vel_neu_ms(target_vel_ned_ms.x, target_vel_ned_ms.y, -target_vel_ned_ms.z);
 
-    return mode_guided.set_pos_vel_accel_neu_cm(pos_neu_cm, vel_neu_cms, Vector3f());
+    return mode_guided.set_pos_vel_accel_NEU_m(pos_neu_m, vel_neu_ms, Vector3f());
 }
 
 // set target position, velocity and acceleration (for use by scripting)
@@ -343,11 +343,11 @@ bool Copter::set_target_posvelaccel_NED(const Vector3f& target_pos_ned_m, const 
         return false;
     }
 
-    const Vector3f pos_neu_cm(target_pos_ned_m.x * 100.0f, target_pos_ned_m.y * 100.0f, -target_pos_ned_m.z * 100.0f);
-    const Vector3f vel_neu_cms(target_vel_ned_ms.x * 100.0f, target_vel_ned_ms.y * 100.0f, -target_vel_ned_ms.z * 100.0f);
-    const Vector3f accel_neu_cmss(target_accel_ned_mss.x * 100.0f, target_accel_ned_mss.y * 100.0f, -target_accel_ned_mss.z * 100.0f);
+    const Vector3f pos_neu_m(target_pos_ned_m.x, target_pos_ned_m.y, -target_pos_ned_m.z);
+    const Vector3f vel_neu_ms(target_vel_ned_ms.x, target_vel_ned_ms.y, -target_vel_ned_ms.z);
+    const Vector3f accel_neu_mss(target_accel_ned_mss.x, target_accel_ned_mss.y, -target_accel_ned_mss.z);
 
-    return mode_guided.set_pos_vel_accel_neu_cm(pos_neu_cm, vel_neu_cms, accel_neu_cmss, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), yaw_relative);
+    return mode_guided.set_pos_vel_accel_NEU_m(pos_neu_m, vel_neu_ms, accel_neu_mss, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), yaw_relative);
 }
 
 bool Copter::set_target_velocity_NED(const Vector3f& target_vel_ned_ms)
@@ -357,9 +357,8 @@ bool Copter::set_target_velocity_NED(const Vector3f& target_vel_ned_ms)
         return false;
     }
 
-    // convert vector to neu in cm
-    const Vector3f vel_neu_cms(target_vel_ned_ms.x * 100.0f, target_vel_ned_ms.y * 100.0f, -target_vel_ned_ms.z * 100.0f);
-    mode_guided.set_vel_neu_cms(vel_neu_cms);
+    const Vector3f vel_neu_ms(target_vel_ned_ms.x, target_vel_ned_ms.y, -target_vel_ned_ms.z);
+    mode_guided.set_vel_NEU_ms(vel_neu_ms);
     return true;
 }
 
@@ -371,11 +370,10 @@ bool Copter::set_target_velaccel_NED(const Vector3f& target_vel_ned_ms, const Ve
         return false;
     }
 
-    // convert vector to neu in cm
-    const Vector3f vel_neu_cms(target_vel_ned_ms.x * 100.0f, target_vel_ned_ms.y * 100.0f, -target_vel_ned_ms.z * 100.0f);
-    const Vector3f accel_neu_cmss(target_accel_ned_mss.x * 100.0f, target_accel_ned_mss.y * 100.0f, -target_accel_ned_mss.z * 100.0f);
+    const Vector3f vel_neu_ms(target_vel_ned_ms.x, target_vel_ned_ms.y, -target_vel_ned_ms.z);
+    const Vector3f accel_neu_mss(target_accel_ned_mss.x, target_accel_ned_mss.y, -target_accel_ned_mss.z);
 
-    mode_guided.set_vel_accel_neu_cm(vel_neu_cms, accel_neu_cmss, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), relative_yaw);
+    mode_guided.set_vel_accel_NEU_m(vel_neu_ms, accel_neu_mss, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), relative_yaw);
     return true;
 }
 
@@ -470,7 +468,7 @@ AP_Vehicle::custom_mode_state* Copter::register_custom_mode(const uint8_t num, c
 // circle mode controls
 bool Copter::get_circle_radius(float &radius_m)
 {
-    radius_m = circle_nav->get_radius_cm() * 0.01f;
+    radius_m = circle_nav->get_radius_m();
     return true;
 }
 
@@ -482,9 +480,9 @@ bool Copter::set_circle_rate(float rate_degs)
 #endif
 
 // set desired speed (m/s). Used for scripting.
-bool Copter::set_desired_speed(float speed)
+bool Copter::set_desired_speed(float speed_ms)
 {
-    return flightmode->set_speed_xy_cms(speed * 100.0f);
+    return flightmode->set_speed_NE_ms(speed_ms);
 }
 
 #if MODE_AUTO_ENABLED
