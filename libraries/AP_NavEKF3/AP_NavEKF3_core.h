@@ -599,6 +599,7 @@ private:
 
     struct baro_elements : EKF_obs_element_t {
         ftype       hgt;            // height of the pressure sensor in local NED earth frame (m)
+        bool       corrected;      // true when the height have been corrected for sensor position
     };
 
     struct range_elements : EKF_obs_element_t {
@@ -1013,6 +1014,9 @@ private:
 
     // correct GPS data for antenna position
     void CorrectGPSForAntennaOffset(gps_elements &gps_data) const;
+
+    // correct Baro data for position offset relative to the IMU
+    void CorrectBaroOffset(baro_elements &baro_data) const;
 
     // correct external navigation earth-frame position using sensor body-frame offset
     void CorrectExtNavForSensorOffset(ext_nav_elements &ext_nav_data);
