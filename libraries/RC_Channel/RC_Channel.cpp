@@ -1414,9 +1414,17 @@ void RC_Channel::do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const
     if (mount == nullptr) {
         return;
     }
+
+    // determine the switch polarity:
+    // - if the default mode is not "retracted", low switch is the default mode, high switch is retracted
+    // - if the default mode is "retracted", low switch is retracted mode (aka default), high switch is RC targeting,
+    //  because we have no clear default and the user is sending an RC channel and not a MAVLink command
+    const auto default_mode = mount->get_default_mode(instance);
+    const auto mode_high = (default_mode != MAV_MOUNT_MODE_RETRACT)? MAV_MOUNT_MODE_RETRACT : MAV_MOUNT_MODE_RC_TARGETING;
+
     switch (ch_flag) {
     case AuxSwitchPos::HIGH:
-        mount->set_mode(instance,MAV_MOUNT_MODE_RETRACT);
+        mount->set_mode(instance, mode_high);
         break;
     case AuxSwitchPos::MIDDLE:
         // nothing
