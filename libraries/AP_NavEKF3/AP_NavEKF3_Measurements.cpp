@@ -689,6 +689,9 @@ void NavEKF3_core::readGpsData()
         if (inFlight) {
             gpsloc_fieldelevation.alt += (int32_t)(100.0f * stateStruct.position.z);
         }
+        if (frontend->option_is_enabled(NavEKF3::Option::ForceZeroAltOrigin)) {
+            gpsloc_fieldelevation.alt = 0;
+        }
 
         if (!setOrigin(gpsloc_fieldelevation)) {
             // set an error as an attempt was made to set the origin more than once
