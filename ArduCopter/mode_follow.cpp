@@ -114,7 +114,7 @@ void ModeFollow::run()
 
             case AP_Follow::YAW_BEHAVE_DIR_OF_FLIGHT: {
                 // Face the direction of travel
-                if (vel_ofs_ne_ms.length_squared() > (100.0 * 100.0)) {
+                if (vel_ofs_ne_ms.length_squared() > 1.0) {
                     yaw_rad = vel_ofs_ne_ms.angle();
                 }
                 break;
