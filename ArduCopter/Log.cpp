@@ -385,7 +385,7 @@ void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode submode, const
 // ang_vel_rads: angular velocity, [roll rate, pitch_rate, yaw_rate] in radians/sec
 // thrust is between 0 to 1
 // climb_rate is in (m/s)
-void Copter::Log_Write_Guided_Attitude_Target(ModeGuided::SubMode submode, float roll_rad, float pitch_rad, float yaw_rad, const Vector3f &ang_vel_rads, float thrust, float climb_rate)
+void Copter::Log_Write_Guided_Attitude_Target(ModeGuided::SubMode submode, float roll_rad, float pitch_rad, float yaw_rad, const Vector3f &ang_vel_rads, float thrust, float climb_rate_ms)
 {
     const log_Guided_Attitude_Target pkt {
         LOG_PACKET_HEADER_INIT(LOG_GUIDED_ATTITUDE_TARGET_MSG),
@@ -398,7 +398,7 @@ void Copter::Log_Write_Guided_Attitude_Target(ModeGuided::SubMode submode, float
         pitch_rate      : degrees(ang_vel_rads.y),  // rad/s to deg/s
         yaw_rate        : degrees(ang_vel_rads.z),  // rad/s to deg/s
         thrust          : thrust,
-        climb_rate      : climb_rate
+        climb_rate      : climb_rate_ms
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }

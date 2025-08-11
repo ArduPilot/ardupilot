@@ -431,7 +431,7 @@ bool ModeAuto::wp_start(const Location& dest_loc)
                 stopping_point_neu_m = takeoff_complete_pos_neu_m.tofloat();
             }
         }
-        float des_speed_xy_ms = is_positive(desired_speed_override_ms.xy) ? (desired_speed_override_ms.xy) : 0;
+        float des_speed_xy_ms = is_positive(desired_speed_override_ms.xy) ? desired_speed_override_ms.xy : 0;
         wp_nav->wp_and_spline_init_m(des_speed_xy_ms, stopping_point_neu_m);
 
         // override speeds up and down if necessary
