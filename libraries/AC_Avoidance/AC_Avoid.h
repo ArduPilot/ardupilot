@@ -53,6 +53,12 @@ public:
         bool backing_up = false;
         adjust_velocity(desired_vel_cms, backing_up, kP, accel_cmss, kP_z, accel_cmss_z, dt);
     }
+    void adjust_velocity_m(Vector3f &desired_vel_ms, float kP, float accel_mss, float kP_z, float accel_mss_z, float dt) {
+        bool backing_up = false;
+        Vector3f desired_vel_cms = desired_vel_ms * 100.0;
+        adjust_velocity(desired_vel_cms, backing_up, kP, accel_mss * 100.0, kP_z, accel_mss_z * 100.0, dt);
+        desired_vel_ms = desired_vel_cms * 0.01;
+    }
 
     // This method limits velocity and calculates backaway velocity from various supported fences
     // Also limits vertical velocity using adjust_velocity_z method
