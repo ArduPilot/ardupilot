@@ -4090,6 +4090,14 @@ class TestSuite(abc.ABC):
     #################################################
     # SIM UTILITIES
     #################################################
+    SIM_TIME_MESSAGES = [
+        'SYSTEM_TIME',
+        'ATTITUDE',
+        'RC_CHANNELS',
+        'SET_POSITION_TARGET_GLOBAL_INT',
+        'SCALED_IMU2',
+    ]
+
     def get_sim_time(self, timeout=60, drain_mav=True):
         """Get SITL time in seconds."""
         if drain_mav:
@@ -4098,9 +4106,9 @@ class TestSuite(abc.ABC):
         while True:
             self.drain_all_pexpects()
             if time.time() - tstart > timeout:
-                raise AutoTestTimeoutException("Did not get SYSTEM_TIME message after %f seconds" % timeout)
+                raise AutoTestTimeoutException("Did not get boot-time-containing message after %f seconds" % timeout)
 
-            m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True, timeout=0.1)
+            m = self.mav.recv_match(type=self.SIM_TIME_MESSAGES, blocking=True, timeout=0.1)
             if m is None:
                 continue
 
@@ -4108,10 +4116,16 @@ class TestSuite(abc.ABC):
 
     def get_sim_time_cached(self):
         """Get SITL time in seconds."""
-        x = self.mav.messages.get("SYSTEM_TIME", None)
-        if x is None:
+        time_boot_ms = 0
+        for t in self.SIM_TIME_MESSAGES:
+            m = self.mav.messages.get(t, None)
+            if m is None:
+                continue
+            if m.time_boot_ms > time_boot_ms:
+                time_boot_ms = m.time_boot_ms
+        if time_boot_ms == 0:
             raise NotAchievedException("No cached time available (%s)" % (self.mav.sysid,))
-        ret = x.time_boot_ms * 1.0e-3
+        ret = time_boot_ms * 1.0e-3
         if ret != self.last_sim_time_cached:
             self.last_sim_time_cached = ret
             self.last_sim_time_cached_wallclock = time.time()
