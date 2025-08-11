@@ -8238,6 +8238,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('LOITER')
         self.wait_ekf_happy()
 
+        self.set_parameter("SIM_SPEEDUP", 20)
+
         tstart = self.get_sim_time()
         while True:
             if self.armed():
