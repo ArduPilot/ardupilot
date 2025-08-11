@@ -380,6 +380,11 @@ void AP_AHRS::update_state(void)
     state.secondary_attitude_ok = _get_secondary_attitude(state.secondary_attitude);
     state.secondary_quat_ok = _get_secondary_quaternion(state.secondary_quat);
     state.location_ok = _get_location(state.location);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (state.location_ok && !state.location.initialised()) {
+        AP_HAL::panic("uninitialised location returned by _get_location");
+    }
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
     state.secondary_pos_ok = _get_secondary_position(state.secondary_pos);
     state.ground_speed_vec = _groundspeed_vector();
     state.ground_speed = _groundspeed();
