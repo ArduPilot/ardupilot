@@ -550,9 +550,9 @@ bool ModeRTL::use_pilot_yaw(void) const
     return allow_yaw_option || land_repositioning || final_landing;
 }
 
-bool ModeRTL::set_speed_NE_ms(float speed_xy_ms)
+bool ModeRTL::set_speed_NE_ms(float speed_ne_ms)
 {
-    copter.wp_nav->set_speed_NE_ms(speed_xy_ms);
+    copter.wp_nav->set_speed_NE_ms(speed_ne_ms);
     return true;
 }
 
