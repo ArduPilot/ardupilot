@@ -2049,7 +2049,7 @@ void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
         // initialise placing controller
         payload_place.start_descent();
     }
-    payload_place.descent_max_m = cmd.p1;
+    payload_place.descent_max_m = cmd.p1 * 0.01;
 
     // set submode
     set_submode(SubMode::NAV_PAYLOAD_PLACE);
