@@ -4,7 +4,7 @@
 
 // Code to detect a crash main ArduCopter code
 #define LAND_CHECK_ANGLE_ERROR_DEG  30.0f       // maximum angle error to be considered landing
-#define LAND_CHECK_LARGE_ANGLE_CD   1500.0f     // maximum angle target to be considered landing
+#define LAND_CHECK_LARGE_ANGLE_RAD   radians(15.0f)     // maximum angle target to be considered landing
 #define LAND_CHECK_ACCEL_MOVING     3.0f        // maximum acceleration after subtracting gravity
 
 
@@ -112,7 +112,7 @@ void Copter::update_land_detector()
 
         // check for aggressive flight requests - requested roll or pitch angle below 15 degrees
         const Vector3f& angle_target_rad = attitude_control->get_att_target_euler_rad();
-        bool large_angle_request = angle_target_rad.xy().length() > cd_to_rad(LAND_CHECK_LARGE_ANGLE_CD);
+        bool large_angle_request = angle_target_rad.xy().length_squared() > sq(LAND_CHECK_LARGE_ANGLE_RAD);
         SET_LOG_FLAG(large_angle_request, LandDetectorLoggingFlag::LARGE_ANGLE_REQUEST);
 
         // check for large external disturbance - angle error over 30 degrees
@@ -299,7 +299,7 @@ void Copter::update_throttle_mix()
 
         // check for aggressive flight requests - requested roll or pitch angle below 15 degrees
         const Vector3f& angle_target_rad = attitude_control->get_att_target_euler_rad();
-        bool large_angle_request = angle_target_rad.xy().length() > cd_to_rad(LAND_CHECK_LARGE_ANGLE_CD);
+        bool large_angle_request = angle_target_rad.xy().length_squared() > sq(LAND_CHECK_LARGE_ANGLE_RAD);
 
         // check for large external disturbance - angle error over 30 degrees
         const float angle_error = attitude_control->get_att_error_angle_deg();
