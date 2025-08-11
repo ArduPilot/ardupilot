@@ -309,7 +309,7 @@ bool Copter::start_takeoff(const float alt_m)
 #if AP_SCRIPTING_ENABLED
 #if MODE_GUIDED_ENABLED
 // set target position (for use by scripting)
-bool Copter::set_target_pos_NED(const Vector3f& target_pos_ned_m, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool terrain_alt)
+bool Copter::set_target_pos_NED(const Vector3f& target_pos_ned_m, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool is_terrain_alt)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!flightmode->in_guided_mode()) {
@@ -318,7 +318,7 @@ bool Copter::set_target_pos_NED(const Vector3f& target_pos_ned_m, bool use_yaw, 
 
     const Vector3f pos_neu_m(target_pos_ned_m.x, target_pos_ned_m.y, -target_pos_ned_m.z);
 
-    return mode_guided.set_pos_NEU_m(pos_neu_m, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), yaw_relative, terrain_alt);
+    return mode_guided.set_pos_NEU_m(pos_neu_m, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), yaw_relative, is_terrain_alt);
 }
 
 // set target position and velocity (for use by scripting)

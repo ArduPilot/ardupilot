@@ -360,7 +360,7 @@ struct PACKED log_Rate_Thread_Dt {
 // pos_target_m is lat, lon, alt OR offset from ekf origin in m
 // terrain should be 0 if pos_target_m.z is alt-above-ekf-origin, 1 if alt-above-terrain
 // vel_target_ms is m/s
-void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode submode, const Vector3f& pos_target_m, bool terrain_alt, const Vector3f& vel_target_ms, const Vector3f& accel_target_mss)
+void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode submode, const Vector3f& pos_target_m, bool is_terrain_alt, const Vector3f& vel_target_ms, const Vector3f& accel_target_mss)
 {
     const log_Guided_Position_Target pkt {
         LOG_PACKET_HEADER_INIT(LOG_GUIDED_POSITION_TARGET_MSG),
@@ -369,7 +369,7 @@ void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode submode, const
         pos_target_x    : pos_target_m.x,
         pos_target_y    : pos_target_m.y,
         pos_target_z    : pos_target_m.z,
-        terrain         : terrain_alt,
+        terrain         : is_terrain_alt,
         vel_target_x    : vel_target_ms.x,
         vel_target_y    : vel_target_ms.y,
         vel_target_z    : vel_target_ms.z,
