@@ -39,8 +39,6 @@
 
 #include <GCS_MAVLink/GCS.h>
 
-#include <version/sbgVersion.h>
-
 extern const AP_HAL::HAL &hal;
 uint32_t last_packet_received_time_ms;
 uint32_t last_sending_time_ms;

@@ -45,6 +45,3 @@
 [submodule "modules/littlefs"]
 	path = modules/littlefs
 	url = https://github.com/ArduPilot/littlefs.git
-[submodule "modules/sbgECom"]
-	path = modules/sbgECom
-	url = https://github.com/SBG-Systems/sbgECom.git

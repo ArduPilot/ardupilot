@@ -24,7 +24,7 @@
 
 #include "AP_ExternalAHRS_backend.h"
 
-#include <sbgEComLib.h>
+#include <sbgECom.h>
 
 class AP_ExternalAHRS_sbgECom : public AP_ExternalAHRS_backend
 {

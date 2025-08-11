@@ -4,27 +4,31 @@ def configure(cfg):
 
     cfg.define('AP_MATH_ALLOW_DOUBLE_FUNCTIONS', 1)
 
-    cfg.env.CFLAGS += [
-        '-Wno-error=float-equal',
-        '-Wno-error',
-    ]
+    # cfg.env.CFLAGS += [
+    #     '-Wno-error=float-equal',
+    #     '-Wno-error',
+    # ]
 
     extra_src = [
-        'modules/sbgECom/common/*.c',
-        'modules/sbgECom/common/crc/*.c',
-        'modules/sbgECom/common/interfaces/sbgInterface.c',
-        'modules/sbgECom/src/*.c',
-        'modules/sbgECom/src/defs/*.c',
-        'modules/sbgECom/src/logs/*.c',
-        'modules/sbgECom/src/protocol/*.c',
+        'libraries/AP_ExternalAHRS/sbgECom/common/sbgErrorCodes.c',
+        'libraries/AP_ExternalAHRS/sbgECom/common/crc/sbgCrc.c',
+        'libraries/AP_ExternalAHRS/sbgECom/common/interfaces/sbgInterface.c',
+        'libraries/AP_ExternalAHRS/sbgECom/common/platform/sbgPlatform.cpp',
+        'libraries/AP_ExternalAHRS/sbgECom/src/sbgECom.c',
+        'libraries/AP_ExternalAHRS/sbgECom/src/logs/sbgEComLog.c',
+        'libraries/AP_ExternalAHRS/sbgECom/src/logs/sbgEComLogAirData.c',
+        'libraries/AP_ExternalAHRS/sbgECom/src/logs/sbgEComLogEkf.c',
+        'libraries/AP_ExternalAHRS/sbgECom/src/logs/sbgEComLogGnssPos.c',
+        'libraries/AP_ExternalAHRS/sbgECom/src/logs/sbgEComLogGnssVel.c',
+        'libraries/AP_ExternalAHRS/sbgECom/src/logs/sbgEComLogImu.c',
+        'libraries/AP_ExternalAHRS/sbgECom/src/logs/sbgEComLogMag.c',
+        'libraries/AP_ExternalAHRS/sbgECom/src/protocol/sbgEComProtocol.c',
     ]
 
-    extra_src.extend(['libraries/AP_ExternalAHRS/sbgECom_hal/*.cpp'])
-
     extra_src_inc = [
-        'modules/sbgECom/common/',
-        'modules/sbgECom/src/',
-        'modules/sbgECom/src/defs/',
+        'libraries/AP_ExternalAHRS/sbgECom/',
+        'libraries/AP_ExternalAHRS/sbgECom/common/',
+        'libraries/AP_ExternalAHRS/sbgECom/src/',
     ]
 
     cfg.env.AP_LIB_EXTRA_SOURCES['AP_ExternalAHRS'] = []
