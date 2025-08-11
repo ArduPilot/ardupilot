@@ -71,7 +71,7 @@ jobs:
           esac
 
       # git checkout the PR
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
             submodules: 'recursive'
       - name: test install environment ${{matrix.os}}.${{matrix.name}}
@@ -152,7 +152,7 @@ jobs:
           TZ: Europe/Paris
         run: |
           apk update && apk add --no-cache git
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: 'recursive'
       - name: test install environment alpine
