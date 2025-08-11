@@ -162,25 +162,25 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
         type_mask = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
                     POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
                     POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE; // ignore everything except position
-        target_pos_neu_m = copter.mode_guided.get_target_pos_NEU_m().tofloat(); // convert to metres
+        target_pos_neu_m = copter.mode_guided.get_target_pos_NEU_m().tofloat();
         break;
     case ModeGuided::SubMode::PosVelAccel:
         type_mask = POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE; // ignore everything except position, velocity & acceleration
-        target_pos_neu_m = copter.mode_guided.get_target_pos_NEU_m().tofloat(); // convert to metres
-        target_vel_neu_ms = copter.mode_guided.get_target_vel_NEU_ms(); // convert to metres/s
-        target_accel_neu_mss = copter.mode_guided.get_target_accel_NEU_mss(); // convert to metres/s/s
+        target_pos_neu_m = copter.mode_guided.get_target_pos_NEU_m().tofloat();
+        target_vel_neu_ms = copter.mode_guided.get_target_vel_NEU_ms();
+        target_accel_neu_mss = copter.mode_guided.get_target_accel_NEU_mss();
         break;
     case ModeGuided::SubMode::VelAccel:
         type_mask = POSITION_TARGET_TYPEMASK_X_IGNORE | POSITION_TARGET_TYPEMASK_Y_IGNORE | POSITION_TARGET_TYPEMASK_Z_IGNORE |
                     POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE; // ignore everything except velocity & acceleration
-        target_vel_neu_ms = copter.mode_guided.get_target_vel_NEU_ms(); // convert to metres/s
-        target_accel_neu_mss = copter.mode_guided.get_target_accel_NEU_mss(); // convert to metres/s/s
+        target_vel_neu_ms = copter.mode_guided.get_target_vel_NEU_ms();
+        target_accel_neu_mss = copter.mode_guided.get_target_accel_NEU_mss();
         break;
     case ModeGuided::SubMode::Accel:
         type_mask = POSITION_TARGET_TYPEMASK_X_IGNORE | POSITION_TARGET_TYPEMASK_Y_IGNORE | POSITION_TARGET_TYPEMASK_Z_IGNORE |
                     POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
                     POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE; // ignore everything except velocity & acceleration
-        target_accel_neu_mss = copter.mode_guided.get_target_accel_NEU_mss(); // convert to metres/s/s
+        target_accel_neu_mss = copter.mode_guided.get_target_accel_NEU_mss();
         break;
     }
 
@@ -1005,26 +1005,26 @@ void GCS_MAVLINK_Copter::handle_message_set_attitude_target(const mavlink_messag
     // check if the message's thrust field should be interpreted as a climb rate or as thrust
     const bool use_thrust = copter.mode_guided.set_attitude_target_provides_thrust();
 
-    float climb_rate_or_thrust;
+    float climb_rate_ms_or_thrust;
     if (use_thrust) {
         // interpret thrust as thrust
-        climb_rate_or_thrust = constrain_float(packet.thrust, -1.0f, 1.0f);
+        climb_rate_ms_or_thrust = constrain_float(packet.thrust, -1.0f, 1.0f);
     } else {
         // convert thrust to climb rate
         packet.thrust = constrain_float(packet.thrust, 0.0f, 1.0f);
         if (is_equal(packet.thrust, 0.5f)) {
-            climb_rate_or_thrust = 0.0f;
+            climb_rate_ms_or_thrust = 0.0f;
         } else if (packet.thrust > 0.5f) {
             // climb at up to WPNAV_SPEED_UP
-            climb_rate_or_thrust = (packet.thrust - 0.5f) * 2.0f * copter.wp_nav->get_default_speed_up_ms();
+            climb_rate_ms_or_thrust = (packet.thrust - 0.5f) * 2.0f * copter.wp_nav->get_default_speed_up_ms();
         } else {
             // descend at up to WPNAV_SPEED_DN
-            climb_rate_or_thrust = (0.5f - packet.thrust) * 2.0f * -copter.wp_nav->get_default_speed_down_ms();
+            climb_rate_ms_or_thrust = (0.5f - packet.thrust) * 2.0f * -copter.wp_nav->get_default_speed_down_ms();
         }
     }
 
     copter.mode_guided.set_angle(attitude_quat, ang_vel_body,
-            climb_rate_or_thrust, use_thrust);
+            climb_rate_ms_or_thrust, use_thrust);
 }
 
 void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavlink_message_t &msg)
