@@ -173,9 +173,9 @@ public:
     virtual float crosstrack_error_m() const { return 0.0f;}
 
     // functions to support MAV_CMD_DO_CHANGE_SPEED
-    virtual bool set_speed_NE_ms(float speed_xy_ms) {return false;}
-    virtual bool set_speed_up_ms(float speed_xy_ms) {return false;}
-    virtual bool set_speed_down_ms(float speed_xy_ms) {return false;}
+    virtual bool set_speed_NE_ms(float speed_ne_ms) {return false;}
+    virtual bool set_speed_up_ms(float speed_up_ms) {return false;}
+    virtual bool set_speed_down_ms(float speed_down_ms) {return false;}
 
     virtual int32_t get_alt_above_ground_cm(void) const;
 
@@ -576,7 +576,7 @@ public:
     bool is_taking_off() const override;
     bool use_pilot_yaw() const override;
 
-    bool set_speed_NE_ms(float speed_xy_ms) override;
+    bool set_speed_NE_ms(float speed_ne_ms) override;
     bool set_speed_up_ms(float speed_up_ms) override;
     bool set_speed_down_ms(float speed_down_ms) override;
 
@@ -1129,7 +1129,7 @@ public:
 
     bool is_taking_off() const override;
     
-    bool set_speed_NE_ms(float speed_xy_ms) override;
+    bool set_speed_NE_ms(float speed_ne_ms) override;
     bool set_speed_up_ms(float speed_up_ms) override;
     bool set_speed_down_ms(float speed_down_ms) override;
 
@@ -1477,7 +1477,7 @@ public:
 
     bool use_pilot_yaw() const override;
 
-    bool set_speed_NE_ms(float speed_xy_ms) override;
+    bool set_speed_NE_ms(float speed_ne_ms) override;
     bool set_speed_up_ms(float speed_up_ms) override;
     bool set_speed_down_ms(float speed_down_ms) override;
 

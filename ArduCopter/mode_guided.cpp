@@ -287,11 +287,11 @@ bool ModeGuided::is_taking_off() const
     return guided_mode == SubMode::TakeOff && !takeoff_complete;
 }
 
-bool ModeGuided::set_speed_NE_ms(float speed_xy_ms)
+bool ModeGuided::set_speed_NE_ms(float speed_ne_ms)
 {
     // initialise horizontal speed, acceleration
-    pos_control->set_max_speed_accel_NE_m(speed_xy_ms, wp_nav->get_wp_acceleration_mss());
-    pos_control->set_correction_speed_accel_NE_m(speed_xy_ms, wp_nav->get_wp_acceleration_mss());
+    pos_control->set_max_speed_accel_NE_m(speed_ne_ms, wp_nav->get_wp_acceleration_mss());
+    pos_control->set_correction_speed_accel_NE_m(speed_ne_ms, wp_nav->get_wp_acceleration_mss());
     return true;
 }
 
