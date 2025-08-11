@@ -8242,7 +8242,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         tstart = self.get_sim_time()
         while True:
-            if self.armed():
+            if self.armed(cached=True):
                 break
             if self.get_sim_time_cached() - tstart > 60:
                 raise AutoTestTimeoutException("Did not arm")
@@ -8257,6 +8257,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 255  # covariance
             )
             self.send_mavlink_arm_command()
+            # make a minimal effort to not do ridiculous amounts of
+            # mavlink to the autopilot:
+            self.do_timesync_roundtrip()
 
         self.takeoff(15, mode='LOITER')
         self.progress("Poking vehicle; should avoid")

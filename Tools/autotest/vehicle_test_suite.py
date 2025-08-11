@@ -5931,9 +5931,13 @@ class TestSuite(ABC):
             timeout=30
         )
 
-    def armed(self):
+    def armed(self, cached=False):
         """Return True if vehicle is armed and safetyoff"""
-        m = self.wait_heartbeat()
+        m = None
+        if cached:
+            m = self.mav.messages.get("HEARTBEAT", None)
+        if m is None:
+            m = self.wait_heartbeat()
         return (m.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED) != 0
 
     def send_mavlink_arm_command(self):
