@@ -360,12 +360,12 @@ struct PACKED log_Rate_Thread_Dt {
 // pos_target_m is lat, lon, alt OR offset from ekf origin in m
 // terrain should be 0 if pos_target_m.z is alt-above-ekf-origin, 1 if alt-above-terrain
 // vel_target_ms is m/s
-void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode target_type, const Vector3f& pos_target_m, bool terrain_alt, const Vector3f& vel_target_ms, const Vector3f& accel_target_mss)
+void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode submode, const Vector3f& pos_target_m, bool terrain_alt, const Vector3f& vel_target_ms, const Vector3f& accel_target_mss)
 {
     const log_Guided_Position_Target pkt {
         LOG_PACKET_HEADER_INIT(LOG_GUIDED_POSITION_TARGET_MSG),
         time_us         : AP_HAL::micros64(),
-        type            : (uint8_t)target_type,
+        type            : (uint8_t)submode,
         pos_target_x    : pos_target_m.x,
         pos_target_y    : pos_target_m.y,
         pos_target_z    : pos_target_m.z,
@@ -385,12 +385,12 @@ void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode target_type, c
 // ang_vel_rads: angular velocity, [roll rate, pitch_rate, yaw_rate] in radians/sec
 // thrust is between 0 to 1
 // climb_rate is in (m/s)
-void Copter::Log_Write_Guided_Attitude_Target(ModeGuided::SubMode target_type, float roll_rad, float pitch_rad, float yaw_rad, const Vector3f &ang_vel_rads, float thrust, float climb_rate)
+void Copter::Log_Write_Guided_Attitude_Target(ModeGuided::SubMode submode, float roll_rad, float pitch_rad, float yaw_rad, const Vector3f &ang_vel_rads, float thrust, float climb_rate)
 {
     const log_Guided_Attitude_Target pkt {
         LOG_PACKET_HEADER_INIT(LOG_GUIDED_ATTITUDE_TARGET_MSG),
         time_us         : AP_HAL::micros64(),
-        type            : (uint8_t)target_type,
+        type            : (uint8_t)submode,
         roll            : degrees(roll_rad),       // rad to deg
         pitch           : degrees(pitch_rad),      // rad to deg
         yaw             : degrees(yaw_rad),        // rad to deg
