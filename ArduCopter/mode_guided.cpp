@@ -591,7 +591,7 @@ bool ModeGuided::set_pos_vel_accel_NEU_m(const Vector3f& pos_neu_m, const Vector
 {
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
-    const Location dest_loc(pos_neu_m, Location::AltFrame::ABOVE_ORIGIN);
+    const Location dest_loc(pos_neu_m * 100.0, Location::AltFrame::ABOVE_ORIGIN);
     if (!copter.fence.check_destination_within_fence(dest_loc)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
