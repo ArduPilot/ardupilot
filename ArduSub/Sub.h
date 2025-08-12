@@ -121,6 +121,7 @@ public:
     friend class ModeCircle;
     friend class ModeSurface;
     friend class ModeMotordetect;
+    friend class CommandPreflightCalibration_Sub;
 
     Sub(void);
 

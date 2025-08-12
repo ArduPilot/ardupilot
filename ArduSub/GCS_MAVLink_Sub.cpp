@@ -269,7 +269,7 @@ bool GCS_MAVLINK_Sub::handle_guided_request(AP_Mission::Mission_Command &cmd)
     return sub.do_guided(cmd);
 }
 
-MAV_RESULT GCS_MAVLINK_Sub::_handle_command_preflight_calibration_baro(const mavlink_message_t &msg)
+MAV_RESULT CommandPreflightCalibration_Sub::_run_baro()
 {
     if (sub.motors.armed()) {
         gcs().send_text(MAV_SEVERITY_INFO, "Disarm before calibration.");
@@ -284,7 +284,7 @@ MAV_RESULT GCS_MAVLINK_Sub::_handle_command_preflight_calibration_baro(const mav
     return MAV_RESULT_ACCEPTED;
 }
 
-MAV_RESULT GCS_MAVLINK_Sub::_handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+MAV_RESULT CommandPreflightCalibration_Sub::_run()
 {
     if (packet.y == 1) {
         // compassmot calibration
@@ -293,7 +293,7 @@ MAV_RESULT GCS_MAVLINK_Sub::_handle_command_preflight_calibration(const mavlink_
         return MAV_RESULT_UNSUPPORTED;
     }
 
-    return GCS_MAVLINK::_handle_command_preflight_calibration(packet, msg);
+    return CommandPreflightCalibration::_run();
 }
 
 MAV_RESULT GCS_MAVLINK_Sub::handle_command_do_set_roi(const Location &roi_loc)
@@ -826,4 +826,15 @@ uint8_t GCS_MAVLINK_Sub::send_available_mode(uint8_t index) const
     );
 
     return mode_count;
+}
+
+CommandIntHandler *GCS_MAVLINK_Sub::new_command_int_handler(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+{
+    switch (packet.command) {
+    case MAV_CMD_PREFLIGHT_CALIBRATION:
+        return NEW_NOTHROW CommandPreflightCalibration_Sub(packet, msg, *this);
+    default:
+        break;
+    }
+    return GCS_MAVLINK::new_command_int_handler(packet, msg);
 }

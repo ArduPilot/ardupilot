@@ -13,8 +13,6 @@ protected:
     MAV_RESULT handle_flight_termination(const mavlink_command_int_t &packet) override;
 
     MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;
-    MAV_RESULT _handle_command_preflight_calibration_baro(const mavlink_message_t &msg) override;
-    MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
 
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
@@ -35,6 +33,8 @@ protected:
     // Send the mode with the given index (not mode number!) return the total number of modes
     // Index starts at 1
     uint8_t send_available_mode(uint8_t index) const override;
+
+    class CommandIntHandler *new_command_int_handler(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
 
 private:
 
@@ -63,4 +63,12 @@ private:
     uint16_t high_latency_tgt_dist() const override;
     uint8_t high_latency_tgt_airspeed() const override;
 #endif // HAL_HIGH_LATENCY2_ENABLED
+};
+
+class CommandPreflightCalibration_Sub : public CommandPreflightCalibration {
+    using CommandPreflightCalibration::CommandPreflightCalibration;
+
+    MAV_RESULT _run() override;
+    MAV_RESULT _run_main() override;
+    MAV_RESULT _run_baro() override;
 };
