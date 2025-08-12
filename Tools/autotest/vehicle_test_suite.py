@@ -3050,12 +3050,27 @@ class TestSuite(abc.ABC):
         if len(missing) > 0:
             raise NotAchievedException("Documented messages (%s) not in code" % missing)
 
+    def delay_until_boot_age_past(self, boot_time_seconds : float) -> None:
+        '''do not return until the autopilot uptime shows a certain vintage'''
+        while self.get_sim_time() < boot_time_seconds:
+            pass
+
     def initialise_after_reboot_sitl(self):
 
         # after reboot stream-rates may be zero.  Request streams.
         self.drain_mav()
         self.wait_heartbeat()
         self.set_streamrate(self.sitl_streamrate())
+        # it takes some time for the autopilot to debounce the RC mode
+        # channel.  If we return straight away then the caller can
+        # change mode using a mavlink command and then the autopilot
+        # processes the debounced RC flight-mode channel, meaning the
+        # mode is changed from underneath the caller.  Wait for some
+        # RC messages to come in - that means we are running the main
+        # loop, at least.  Note that the "set_streamrate" call above
+        # can be handled in a delay callback.
+        for i in range(0, 3):
+            self.assert_receive_message('RC_CHANNELS')
         self.progress("Reboot complete")
 
     def customise_SITL_commandline(self,
