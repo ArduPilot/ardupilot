@@ -7,7 +7,11 @@
 extern const AP_HAL::HAL& hal;
 
 #ifndef AP_BARO_DATA_CHANGE_TIMEOUT_MS
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#define AP_BARO_DATA_CHANGE_TIMEOUT_MS     20000    // timeout in ms since last successful read that involved temperature of pressure changing
+#else
 #define AP_BARO_DATA_CHANGE_TIMEOUT_MS     2000    // timeout in ms since last successful read that involved temperature of pressure changing
+#endif  // APM_BUILD_ArduSub
 #endif  // ifndef(AP_BARO_DATA_CHANGE_TIMEOUT_MS)
 
 // constructor
