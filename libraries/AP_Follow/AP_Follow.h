@@ -203,12 +203,12 @@ private:
     AC_P        _p_pos;             // Position error P-controller for optional altitude following
     AP_Int16    _options;           // Bitmask of follow behavior options (e.g., mount follow, etc.)
 
-    AP_Float    _accel_max_ne_mss;  // Max horizontal acceleration for kinematic shaping (m/s²)
-    AP_Float    _jerk_max_ne_msss;  // Max horizontal jerk for kinematic shaping (m/s³)
-    AP_Float    _accel_max_d_mss;   // Max vertical acceleration for kinematic shaping (m/s²)
-    AP_Float    _jerk_max_d_msss;   // Max vertical jerk for kinematic shaping (m/s³)
-    AP_Float    _accel_max_h_degss; // Max angular acceleration for heading shaping (deg/s²)
-    AP_Float    _jerk_max_h_degsss; // Max angular jerk for heading shaping (deg/s³)
+    AP_Float    _accel_max_ne_mss;  // Max horizontal acceleration for kinematic shaping (m/s/s)
+    AP_Float    _jerk_max_ne_msss;  // Max horizontal jerk for kinematic shaping (m/s/s/s)
+    AP_Float    _accel_max_d_mss;   // Max vertical acceleration for kinematic shaping (m/s/s)
+    AP_Float    _jerk_max_d_msss;   // Max vertical jerk for kinematic shaping (m/s/s/s)
+    AP_Float    _accel_max_h_degss; // Max angular acceleration for heading shaping (deg/s/s)
+    AP_Float    _jerk_max_h_degsss; // Max angular jerk for heading shaping (deg/s/s/s)
 
     //==========================================================================
     // Internal State Variables
@@ -219,17 +219,17 @@ private:
 
     Vector3p    _target_pos_ned_m;              // Latest received target position (NED frame, meters)
     Vector3f    _target_vel_ned_ms;             // Latest received target velocity (NED frame, m/s)
-    Vector3f    _target_accel_ned_mss;          // Latest received target acceleration (NED frame, m/s²)
+    Vector3f    _target_accel_ned_mss;          // Latest received target acceleration (NED frame, m/s/s)
     float       _target_heading_deg;            // Latest received target heading (degrees, 0 = North)
     float       _target_heading_rate_degs;      // Latest received target yaw rate (deg/s)
 
     bool        _estimate_valid;                // True if internal estimate is valid and in sync with updates
     Vector3p    _estimate_pos_ned_m;            // Estimated target position (NED frame, meters)
     Vector3f    _estimate_vel_ned_ms;           // Estimated target velocity (NED frame, m/s)
-    Vector3f    _estimate_accel_ned_mss;        // Estimated target acceleration (NED frame, m/s²)
+    Vector3f    _estimate_accel_ned_mss;        // Estimated target acceleration (NED frame, m/s/s)
     float       _estimate_heading_rad;          // Estimated heading (radians, range -PI to PI)
     float       _estimate_heading_rate_rads;    // Estimated heading rate (rad/s)
-    float       _estimate_heading_accel_radss;  // Estimated heading acceleration (rad/s²)
+    float       _estimate_heading_accel_radss;  // Estimated heading acceleration (rad/s/s)
 
     Vector3p    _ofs_estimate_pos_ned_m;        // Estimated position with offsets applied (NED frame)
     Vector3f    _ofs_estimate_vel_ned_ms;       // Estimated velocity with offsets applied (NED frame)
