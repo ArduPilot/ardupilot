@@ -404,10 +404,10 @@ void AC_AttitudeControl_Multi::update_throttle_gain_boost()
     // Boost PD and Angle P on very rapid throttle changes
     if (_motors.get_throttle_slew_rate() > AC_ATTITUDE_CONTROL_THR_G_BOOST_THRESH) {
         const float pd_boost = constrain_float(_throttle_gain_boost + 1.0f, 1.0, 2.0);
-        set_PD_scale_mult(Vector3f(pd_boost, pd_boost, 1.0f));
+        set_PD_scale_mult(Vector3f{pd_boost, pd_boost, 1.0f});
 
         const float angle_p_boost = constrain_float((_throttle_gain_boost + 1.0f) * (_throttle_gain_boost + 1.0f), 1.0, 4.0);
-        set_angle_P_scale_mult(Vector3f(angle_p_boost, angle_p_boost, 1.0f));
+        set_angle_P_scale_mult(Vector3f{angle_p_boost, angle_p_boost, 1.0f});
     }
 }
 
