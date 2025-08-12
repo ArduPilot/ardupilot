@@ -173,7 +173,7 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_one_reading(float &reading_m)
 }
 
 #if AP_RANGEFINDER_AINSTEIN_LR_D1_SHOW_MALFUNCTIONS
-void AP_RangeFinder_Ainstein_LR_D1::report_malfunction(const uint8_t _malfunction_alert_, const uint8_t _malfunction_alert_prev_)
+void AP_RangeFinder_Ainstein_LR_D1::report_malfunction(const uint16_t _malfunction_alert_, const uint16_t _malfunction_alert_prev_)
 {
     static const struct {
         MalfunctionAlert bit;
