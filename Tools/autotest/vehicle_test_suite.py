@@ -12858,6 +12858,7 @@ switch value'''
             self.set_parameters({
                 "AFS_ENABLE": 1,
                 "MAV_GCS_SYSID": self.mav.source_system,
+                "RTL_AUTOLAND": 2,
             })
             self.drain_mav()
             self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION)
@@ -12896,6 +12897,7 @@ switch value'''
                 self.do_fence_disable()
 
             self.start_subtest("GPS Failure")
+            self.wait_ready_to_arm()
             self.context_push()
             self.context_collect("STATUSTEXT")
             self.set_parameters({
