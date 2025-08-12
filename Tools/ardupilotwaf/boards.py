@@ -558,7 +558,6 @@ class Board:
         if cfg.options.consistent_builds:
             # if symbols are renamed we don't want them to affect the output:
             env.CXXFLAGS += ['-fno-rtti']
-            env.CFLAGS += ['-fno-rtti']
             # stop including a unique ID in the headers.  More useful
             # when trying to find binary differences as the build-id
             # appears to be a hash of the output products
