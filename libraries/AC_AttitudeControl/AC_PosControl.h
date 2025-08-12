@@ -443,7 +443,7 @@ public:
     const Vector3f get_pos_error_NEU_cm() const { return get_pos_error_NEU_m() * 100.0; }
 
     // Returns NEU position error vector in meters between current and target positions.
-    const Vector3f get_pos_error_NEU_m() const { return Vector3f(_p_pos_ne_m.get_error().x, _p_pos_ne_m.get_error().y, _p_pos_u_m.get_error()); }
+    const Vector3f get_pos_error_NEU_m() const { return Vector3f{_p_pos_ne_m.get_error().x, _p_pos_ne_m.get_error().y, _p_pos_u_m.get_error()}; }
 
     // Returns total NE-plane position error magnitude in centimeters.
     // See get_pos_error_NE_m() for full details.

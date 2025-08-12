@@ -276,7 +276,7 @@ void AC_AttitudeControl::landed_gain_reduction(bool landed)
     } else {
         _landed_gain_ratio = landed ? 1.0 : 0.0;
     }
-    Vector3f scale_mult = VECTORF_111 * (1.0 - _landed_gain_ratio) + Vector3f(_land_roll_mult, _land_pitch_mult, _land_yaw_mult) * _landed_gain_ratio;
+    Vector3f scale_mult = VECTORF_111 * (1.0 - _landed_gain_ratio) + Vector3f{_land_roll_mult, _land_pitch_mult, _land_yaw_mult} * _landed_gain_ratio;
     set_PD_scale_mult(scale_mult);
     set_angle_P_scale_mult(scale_mult);
 }
