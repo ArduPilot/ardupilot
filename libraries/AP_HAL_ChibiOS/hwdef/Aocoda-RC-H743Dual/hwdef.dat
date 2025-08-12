@@ -217,3 +217,4 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # enable logging to dataflash
 DATAFLASH littlefs:w25nxx
+define DEFAULT_NTF_LED_TYPES 455
