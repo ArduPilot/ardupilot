@@ -3093,6 +3093,16 @@ class TestSuite(abc.ABC):
         self.drain_mav()
         self.wait_heartbeat()
         self.set_streamrate(self.sitl_streamrate())
+        # it takes some time for the autopilot to debounce the RC mode
+        # channel.  If we return straight away then the caller can
+        # change mode using a mavlink command and then the autopilot
+        # processes the debounced RC flight-mode channel, meaning the
+        # mode is changed from underneath the caller.  Wait for some
+        # RC messages to come in - that means we are running the main
+        # loop, at least.  Note that the "set_streamrate" call above
+        # can be handled in a delay callback.
+        for i in range(0, 3):
+            self.assert_receive_message('RC_CHANNELS')
         self.progress("Reboot complete")
 
     def customise_SITL_commandline(self,
@@ -3129,7 +3139,11 @@ class TestSuite(abc.ABC):
         else:
             self.set_streamrate(self.sitl_streamrate())
 
-        self.assert_receive_message('RC_CHANNELS', timeout=15)
+        # mode switch needs to be debounced; waiting for more
+        # RC_CHANNELS doesn't necessarily mean we have done that, but
+        # it won't hurt
+        for i in range(0, 3):
+            self.assert_receive_message('RC_CHANNELS')
 
         # stash our arguments in case we need to preserve them in
         # reboot_sitl with Valgrind active:
