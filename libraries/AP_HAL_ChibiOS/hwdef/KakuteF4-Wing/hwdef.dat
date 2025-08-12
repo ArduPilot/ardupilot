@@ -154,3 +154,4 @@ define HAL_FRAME_TYPE_DEFAULT 12
 
 # minimal drivers to reduce flash usage
 include ../include/minimize_fpv_osd.inc
+define DEFAULT_NTF_LED_TYPES 455
