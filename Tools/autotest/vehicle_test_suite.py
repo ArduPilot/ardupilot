@@ -4111,6 +4111,8 @@ class TestSuite(abc.ABC):
             m = self.mav.recv_match(type=self.SIM_TIME_MESSAGES, blocking=True, timeout=0.1)
             if m is None:
                 continue
+            if m.get_srcSystem() != self.sysid_thismav():
+                continue
 
             return m.time_boot_ms * 1.0e-3
 
