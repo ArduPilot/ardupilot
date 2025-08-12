@@ -1066,7 +1066,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
     Vector3f pos_neu_m;
     if (!pos_ignore) {
         // convert to m
-        pos_neu_m = Vector3f(packet.x, packet.y, -packet.z);
+        pos_neu_m = Vector3f{packet.x, packet.y, -packet.z};
         // rotate to body-frame if necessary
         if (packet.coordinate_frame == MAV_FRAME_BODY_NED ||
             packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
@@ -1105,7 +1105,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
     // prepare acceleration
     Vector3f accel_neu_mss;
     if (!acc_ignore) {
-        accel_neu_mss = Vector3f(packet.afx, packet.afy, -packet.afz);
+        accel_neu_mss = Vector3f{packet.afx, packet.afy, -packet.afz};
         // rotate to body-frame if necessary
         if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
             copter.rotate_body_frame_to_NE(accel_neu_mss.x, accel_neu_mss.y);
@@ -1199,7 +1199,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_global_int(const mav
     // prepare acceleration
     Vector3f accel_neu_mss;
     if (!acc_ignore) {
-        accel_neu_mss = Vector3f(packet.afx, packet.afy, -packet.afz);
+        accel_neu_mss = Vector3f{packet.afx, packet.afy, -packet.afz};
     }
 
     // prepare yaw

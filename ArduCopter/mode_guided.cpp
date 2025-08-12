@@ -328,7 +328,7 @@ void ModeGuided::angle_control_start()
 
     // initialise targets
     guided_angle_state.update_time_ms = millis();
-    guided_angle_state.attitude_quat.from_euler(Vector3f(0.0, 0.0, attitude_control->get_att_target_euler_rad().z));
+    guided_angle_state.attitude_quat.from_euler(Vector3f{0.0, 0.0, attitude_control->get_att_target_euler_rad().z});
     guided_angle_state.ang_vel_body.zero();
     guided_angle_state.climb_rate_ms = 0.0f;
 }
@@ -954,7 +954,7 @@ void ModeGuided::angle_control_run()
     // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
     uint32_t tnow = millis();
     if (tnow - guided_angle_state.update_time_ms > get_timeout_ms()) {
-        guided_angle_state.attitude_quat.from_euler(Vector3f(0.0, 0.0, attitude_control->get_att_target_euler_rad().z));
+        guided_angle_state.attitude_quat.from_euler(Vector3f{0.0, 0.0, attitude_control->get_att_target_euler_rad().z});
         guided_angle_state.ang_vel_body.zero();
         climb_rate_ms = 0.0f;
         if (guided_angle_state.use_thrust) {
