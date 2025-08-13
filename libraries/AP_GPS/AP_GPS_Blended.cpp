@@ -386,6 +386,13 @@ void AP_GPS_Blended::calc_state(void)
         gps.Write_GPS(GPS_BLENDED_INSTANCE);
     }
 #endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // sanity checks
+    if (state.status > AP_GPS::NO_FIX && !state.location.initialised()) {
+        AP_HAL::panic("status is >NO_FIX but location is zero");
+    }
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
 }
 
 bool AP_GPS_Blended::get_lag(float &lag_sec) const

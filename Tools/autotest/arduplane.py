@@ -6878,6 +6878,31 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Did not find NVF message")
         self.progress(f"Received NVF with value {m.Value}")
 
+    def LoggedNamedValueString(self):
+        '''ensure that sent named value strings are logged'''
+        self.context_push()
+        self.install_example_script_context('simple_named_string.lua')
+        self.set_parameters({
+            'SCR_ENABLE': 1,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        m = self.assert_received_message_field_values('NAMED_VALUE_STRING', {
+            "name": "Lua String",
+            "value": "Lua String Value",
+        })
+        dfreader = self.dfreader_for_current_onboard_log()
+        self.context_pop()
+
+        m = dfreader.recv_match(type='NVS')
+        if m is None:
+            raise NotAchievedException("Did not find NVS message")
+        self.progress(f"Received NVS with value {m.Value}")
+        if m.Name != 'Lua String':
+            raise NotAchievedException("Unexpected name in NVS")
+        if m.Value != 'Lua String Value':
+            raise NotAchievedException("Unexpected value in NVS")
+
     def GliderPullup(self):
         '''test pullup of glider after ALTITUDE_WAIT'''
         self.start_subtest("test glider pullup")
@@ -7641,6 +7666,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.mavlink_AIRSPEED,
             self.Volz,
             self.LoggedNamedValueFloat,
+            self.LoggedNamedValueString,
             self.AdvancedFailsafeBadBaro,
             self.DO_CHANGE_ALTITUDE,
             self.SET_POSITION_TARGET_GLOBAL_INT_for_altitude,

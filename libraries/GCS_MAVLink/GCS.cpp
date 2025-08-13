@@ -243,6 +243,37 @@ void GCS::send_named_float(const char *name, float value) const
 #endif  // HAL_LOGGING_ENABLED
 }
 
+void GCS::send_named_string(const char *name, const char *value) const
+{
+    mavlink_named_value_string_t packet {};
+    packet.time_boot_ms = AP_HAL::millis();
+    strncpy_noterm(packet.name, name, ARRAY_SIZE(packet.name));
+    strncpy_noterm(packet.value, value, ARRAY_SIZE(packet.value));
+
+    gcs().send_to_active_channels(MAVLINK_MSG_ID_NAMED_VALUE_STRING,
+                                  (const char *)&packet);
+
+#if HAL_LOGGING_ENABLED
+// NVS is also emitted in GCS_Common.cpp
+// @LoggerMessage: NVS
+// @Description: Named Value String messages; messages sent to GCS via NAMED_VALUE_STRING
+// @Field: TimeUS: Time since system startup
+// @Field: Name: Name of string
+// @Field: Value: Value of string
+    AP::logger().WriteStreaming(
+        "NVS",
+        "TimeUS," "Name," "Value",
+        "s"       "#"     "-",
+        "F"       "-"     "-",
+        "Q"       "N"     "Z",
+        AP_HAL::micros64(),
+        name,
+        value
+    );
+#endif  // HAL_LOGGING_ENABLED
+}
+
+
 #if HAL_HIGH_LATENCY2_ENABLED
 void GCS::enable_high_latency_connections(bool enabled)
 {

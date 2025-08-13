@@ -63,6 +63,87 @@ MAV_STATE GCS_MAVLINK_Tracker::vehicle_system_status() const
     return MAV_STATE_ACTIVE;
 }
 
+void GCS_MAVLINK_Tracker::send_attitude_target()
+{
+    Quaternion quat;
+    bool use_yaw_rate = false;
+    float yaw_rate_rads = 0.0;
+    bool use_pitch_rate = false;
+    float pitch_rate_rads = 0.0;
+    float quat_out[4] {0.0, 0.0, 0.0, 0.0};
+    uint16_t typemask = ATTITUDE_TARGET_TYPEMASK_BODY_ROLL_RATE_IGNORE |
+                        ATTITUDE_TARGET_TYPEMASK_THROTTLE_IGNORE;
+
+    if (tracker.mode->number() == Mode::Number::GUIDED) {
+        quat = tracker.mode_guided.get_attitude_target_quat();
+        use_yaw_rate = tracker.mode_guided.get_attitude_target_use_yaw_rate();
+        use_pitch_rate = tracker.mode_guided.get_attitude_target_use_pitch_rate();
+        quat_out[0] = quat.q1;
+        quat_out[1] = quat.q2;
+        quat_out[2] = quat.q3;
+        quat_out[3] = quat.q4;
+        if (!use_yaw_rate) {
+            typemask |= ATTITUDE_TARGET_TYPEMASK_BODY_YAW_RATE_IGNORE;
+        } else {
+            yaw_rate_rads = tracker.mode_guided.get_attitude_target_yaw_rate_rads();
+        }
+        if (!use_pitch_rate) {
+            typemask |= ATTITUDE_TARGET_TYPEMASK_BODY_PITCH_RATE_IGNORE;
+        } else {
+            pitch_rate_rads = tracker.mode_guided.get_attitude_target_pitch_rate_rads();
+        }
+
+    } else if (tracker.mode->number() == Mode::Number::AUTO) {
+        float yaw = tracker.mode_auto.get_auto_target_yaw_deg();
+        float pitch = tracker.mode_auto.get_auto_target_pitch_deg();
+        quat.from_euler(0, radians(pitch), radians(yaw));
+        quat_out[0] = quat.q1;
+        quat_out[1] = quat.q2;
+        quat_out[2] = quat.q3;
+        quat_out[3] = quat.q4;
+
+        typemask |=
+            ATTITUDE_TARGET_TYPEMASK_BODY_YAW_RATE_IGNORE |
+            ATTITUDE_TARGET_TYPEMASK_BODY_PITCH_RATE_IGNORE |
+            ATTITUDE_TARGET_TYPEMASK_BODY_ROLL_RATE_IGNORE |
+            ATTITUDE_TARGET_TYPEMASK_THROTTLE_IGNORE;
+
+    } else if (tracker.mode->number() == Mode::Number::SCAN) {
+        struct Tracker::NavStatus &nav_status = tracker.nav_status;
+        Parameters &g = tracker.g;
+
+        if (!nav_status.manual_control_yaw) {
+            yaw_rate_rads = radians(g.scan_speed_yaw);
+        } else {
+            typemask |= ATTITUDE_TARGET_TYPEMASK_BODY_YAW_RATE_IGNORE;
+        }
+
+        if (!nav_status.manual_control_pitch) {
+            pitch_rate_rads = radians(g.scan_speed_pitch);
+        } else {
+            typemask |= ATTITUDE_TARGET_TYPEMASK_BODY_PITCH_RATE_IGNORE;
+        }
+
+        typemask |= ATTITUDE_TARGET_TYPEMASK_ATTITUDE_IGNORE;
+
+    } else if (tracker.mode->number() == Mode::Number::STOP) {
+        typemask |= ATTITUDE_TARGET_TYPEMASK_ATTITUDE_IGNORE;
+
+    } else {
+        return;
+    }
+
+    mavlink_msg_attitude_target_send(
+        chan,
+        AP_HAL::millis(), // time since boot (ms)
+        typemask,         // Bitmask that tells the system what control dimensions should be ignored by the vehicle
+        quat_out,         // Attitude quaternion [w, x, y, z] order, zero-rotation is [1, 0, 0, 0], unit-length
+        0,                // roll rate (rad/s)
+        pitch_rate_rads,  // pitch rate (rad/s)
+        yaw_rate_rads,    // yaw rate (rad/s)
+        0);               // Collective thrust
+}
+
 void GCS_MAVLINK_Tracker::send_nav_controller_output() const
 {
 	float alt_diff = (tracker.g.alt_source == ALT_SOURCE_BARO) ? tracker.nav_status.alt_difference_baro : tracker.nav_status.alt_difference_gps;
@@ -94,29 +175,33 @@ void GCS_MAVLINK_Tracker::handle_set_attitude_target(const mavlink_message_t &ms
     if (!is_zero(packet.body_roll_rate)) {
         return;
     }
-    if (!(packet.type_mask & (1<<0))) {
+    if (!(packet.type_mask & ATTITUDE_TARGET_TYPEMASK_BODY_ROLL_RATE_IGNORE)) {
         // not told to ignore body roll rate
         return;
     }
-    if (!(packet.type_mask & (1<<6))) {
+    if (!(packet.type_mask & ATTITUDE_TARGET_TYPEMASK_THROTTLE_IGNORE)) {
         // not told to ignore throttle
         return;
     }
-    if (packet.type_mask & (1<<7)) {
+    if (packet.type_mask & ATTITUDE_TARGET_TYPEMASK_ATTITUDE_IGNORE) {
         // told to ignore attitude (we don't allow continuous motion yet)
         return;
     }
-    if ((packet.type_mask & (1<<3)) && (packet.type_mask&(1<<4))) {
+    if ((packet.type_mask & ATTITUDE_TARGET_TYPEMASK_BODY_PITCH_RATE_IGNORE) &&
+        (packet.type_mask & ATTITUDE_TARGET_TYPEMASK_BODY_YAW_RATE_IGNORE)) {
         // told to ignore both pitch and yaw rates - nothing to do?!
         return;
     }
 
-    const bool use_yaw_rate = !(packet.type_mask & (1<<2));
+    const bool use_yaw_rate = !(packet.type_mask & ATTITUDE_TARGET_TYPEMASK_BODY_YAW_RATE_IGNORE);
+    const bool use_pitch_rate = !(packet.type_mask & ATTITUDE_TARGET_TYPEMASK_BODY_PITCH_RATE_IGNORE);
 
     tracker.mode_guided.set_angle(
         Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]),
         use_yaw_rate,
-        packet.body_yaw_rate);
+        packet.body_yaw_rate,
+        use_pitch_rate,
+        packet.body_pitch_rate);
 }
 
 /*

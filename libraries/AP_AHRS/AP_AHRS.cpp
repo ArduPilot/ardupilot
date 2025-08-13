@@ -380,6 +380,11 @@ void AP_AHRS::update_state(void)
     state.secondary_attitude_ok = _get_secondary_attitude(state.secondary_attitude);
     state.secondary_quat_ok = _get_secondary_quaternion(state.secondary_quat);
     state.location_ok = _get_location(state.location);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (state.location_ok && !state.location.initialised()) {
+        AP_HAL::panic("uninitialised location returned by _get_location");
+    }
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
     state.secondary_pos_ok = _get_secondary_position(state.secondary_pos);
     state.ground_speed_vec = _groundspeed_vector();
     state.ground_speed = _groundspeed();
@@ -2512,6 +2517,22 @@ void AP_AHRS::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeSt
 #endif
 #if HAL_NAVEKF3_AVAILABLE
     EKF3.writeExtNavVelData(vel, err, timeStamp_ms, delay_ms);
+#endif
+}
+
+// set the terrain SRTM altitude in meters above sea level
+// only used by optical flow when out of rangefinder range
+// Write terrain (derived from SRTM) altitude in meters above sea level
+void AP_AHRS::writeTerrainAMSL(float alt_amsl_m)
+{
+#if EK3_FEATURE_OPTFLOW_SRTM
+    // return immediately if EKF origin has not been set
+    if (!state.origin_ok) {
+        return;
+    }
+    // convert from amsl alt to alt above EKF origin
+    const float alt_above_origin_m = alt_amsl_m - (state.origin.alt * 0.01f);
+    EKF3.writeTerrainData(alt_above_origin_m);
 #endif
 }
 

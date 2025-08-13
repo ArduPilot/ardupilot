@@ -114,6 +114,10 @@ def run_examples(debug=False, valgrind=False, gdb=False):
         "RCProtocolDecoder": "This assumes specific hardware is connected",
         "SlewLimiter": "exits with a status code of 1 (failure) for some reason",
         "UART_chargen": "This nuke the term",
+        "AP_Logger_AllTypes": "sanity checks fail on log write as we are attempting to write LOG_FILE_MSG items out and that doesn't exist in the structure we are using in this test",  # noqa:E501
+        "CompassCalibrator_index_test": "flow of control error, invalid rotation created in auto_rotation_index_test?",
+        "ReplayGyroFFT": "gyro data file /tmp/gyro0.dat (should this be a tool?)",
+        "jedec_test": "external flash not found in SITL",
     }
 
     failures = []

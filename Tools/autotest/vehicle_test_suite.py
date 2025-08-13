@@ -1920,6 +1920,7 @@ class TestSuite(ABC):
                  params=None,
                  gdbserver=False,
                  lldb=False,
+                 strace=False,
                  breakpoints=[],
                  disable_breakpoints=False,
                  viewerip=None,
@@ -1950,6 +1951,7 @@ class TestSuite(ABC):
         self.gdb = gdb
         self.gdb_no_tui = gdb_no_tui
         self.lldb = lldb
+        self.strace = strace
         self.frame = frame
         self.params = params
         self.gdbserver = gdbserver
@@ -5929,9 +5931,13 @@ class TestSuite(ABC):
             timeout=30
         )
 
-    def armed(self):
+    def armed(self, cached=False):
         """Return True if vehicle is armed and safetyoff"""
-        m = self.wait_heartbeat()
+        m = None
+        if cached:
+            m = self.mav.messages.get("HEARTBEAT", None)
+        if m is None:
+            m = self.wait_heartbeat()
         return (m.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED) != 0
 
     def send_mavlink_arm_command(self):
@@ -9289,6 +9295,7 @@ Also, ignores heartbeats not from our target system'''
             "gdb_no_tui": self.gdb_no_tui,
             "gdbserver": self.gdbserver,
             "lldb": self.lldb,
+            "strace": self.strace,
             "home": sitl_home,
             "speedup": self.speedup,
             "valgrind": self.valgrind,
@@ -9353,6 +9360,7 @@ Also, ignores heartbeats not from our target system'''
             "gdb_no_tui": self.gdb_no_tui,
             "gdbserver": self.gdbserver,
             "lldb": self.lldb,
+            "strace": self.strace,
             "home": self.sitl_home(),
             "speedup": self.speedup,
             "valgrind": self.valgrind,

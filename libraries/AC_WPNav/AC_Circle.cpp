@@ -133,7 +133,7 @@ void AC_Circle::set_center(const Location& center)
 
         // Attempt to convert XY and Z to NEU frame with terrain altitude
         if (center.get_vector_xy_from_origin_NE_m(center_ne_m) && center.get_alt_m(Location::AltFrame::ABOVE_TERRAIN, terr_alt_m)) {
-            set_center_NEU_m(Vector3f(center_ne_m.x, center_ne_m.y, terr_alt_m), true);
+            set_center_NEU_m(Vector3f{center_ne_m.x, center_ne_m.y, terr_alt_m}, true);
         } else {
             // Conversion failed: fall back to current position and log error
             set_center_NEU_m(_pos_control.get_pos_estimate_NEU_m().tofloat(), false);
