@@ -504,6 +504,7 @@ AP_HW_SVehicle-E2                    6110
 
 # IDs 7000-7099 reserved for CUAV
 AP_HW_CUAV-7-NANO                    7000
+AP_HW_CUAV-V6X-V2                    7001
 AP_HW_CUAV-X25-EVO                   7002
 
 # IDs 7100-7109 reserved for V-UAV
