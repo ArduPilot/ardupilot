@@ -71,7 +71,7 @@ void AP_SurfaceDistance::update()
     // tilt corrected but unfiltered, not glitch protected alt
     alt_m = tilt_correction * rangefinder->distance_orient(rotation);
 
-    // glitch handling.  rangefinder readings more than RANGEFINDER_GLITCH_ALT_CM from the last good reading
+    // Glitch Handling. Rangefinder readings more than RANGEFINDER_GLITCH_ALT_M from the last good reading
     // are considered a glitch and glitch_count becomes non-zero
     // glitches clear after RANGEFINDER_GLITCH_NUM_SAMPLES samples in a row.
     // glitch_cleared_ms is set so surface tracking (or other consumers) can trigger a target reset
