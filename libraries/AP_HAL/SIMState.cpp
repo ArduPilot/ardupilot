@@ -1,6 +1,6 @@
 #include "SIMState.h"
 
-#if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
+#if AP_SIM_ENABLED
 
 /*
  *  This is a very-much-cut-down AP_HAL_SITL object.  We should make
@@ -25,6 +25,8 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include <AP_Baro/AP_Baro.h>
+
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -73,6 +75,7 @@ using namespace AP_HAL;
 #endif
 
 
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
 void SIMState::update()
 {
     static bool init_done;
@@ -424,4 +427,6 @@ void SIMState::set_height_agl(void)
     }
 }
 
-#endif  // AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
+#endif  // CONFIG_HAL_BOARD != HAL_BOARD_SITL
+
+#endif  // AP_SIM_ENABLED

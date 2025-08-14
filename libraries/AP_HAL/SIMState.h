@@ -52,6 +52,7 @@
 class AP_HAL::SIMState {
 public:
 
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     // simulated airspeed, sonar and battery monitor
     uint16_t sonar_pin_value;    // pin 0
     uint16_t airspeed_pin_value[2]; // pin 1
@@ -67,8 +68,10 @@ public:
 #endif
 
     uint16_t pwm_output[32];  // was SITL_NUM_CHANNELS
+#endif  // CONFIG_HAL_BOARD != HAL_BOARD_SITL
 
 private:
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     void _set_param_default(const char *parm);
     void _sitl_setup(const char *home_str);
     void _setup_timer(void);
@@ -231,6 +234,8 @@ private:
     // simulated GPS devices
     SITL::GPS *gps[2];  // constrained by # of parameter sets
 #endif
+
+#endif  // CONFIG_HAL_BOARD != HAL_BOARD_SITL
 };
 
 #endif // AP_SIM_ENABLED
