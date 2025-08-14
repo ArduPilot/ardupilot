@@ -273,37 +273,43 @@ void SIMState::fdm_input_local(void)
 
     _update_count++;
 }
+#endif  // CONFIG_HAL_BOARD != HAL_BOARD_SITL
 
-/*
-  create sitl_input structure for sending to FDM
- */
-void SIMState::_simulator_servos(struct sitl_input &input)
+#if AP_SIM_WIND_SIMULATION_ENABLED
+void SIMState::update_simulated_wind(struct sitl_input &input)
 {
-    if (_sitl == nullptr) {
-        return;
-    }
-
-    // output at chosen framerate
-    uint32_t now = AP_HAL::micros();
-
-    // find the barometer object if it exists
-    const auto *_barometer = AP_Baro::get_singleton();
-
-    float altitude = _barometer?_barometer->get_altitude():0;
     float wind_speed = 0;
     float wind_direction = 0;
     float wind_dir_z = 0;
 
+    uint32_t now = AP_HAL::micros();
+
+    if (_sitl == nullptr)  {
+        _sitl = AP::sitl();
+    }
     // give 5 seconds to calibrate airspeed sensor at 0 wind speed
     if (wind_start_delay_micros == 0) {
         wind_start_delay_micros = now;
     } else if ((now - wind_start_delay_micros) > 5000000) {
         // The EKF does not like step inputs so this LPF keeps it happy.
-        wind_speed =     _sitl->wind_speed_active     = (0.95f*_sitl->wind_speed_active)     + (0.05f*_sitl->wind_speed);
-        wind_direction = _sitl->wind_direction_active = (0.95f*_sitl->wind_direction_active) + (0.05f*_sitl->wind_direction);
-        wind_dir_z =     _sitl->wind_dir_z_active     = (0.95f*_sitl->wind_dir_z_active)     + (0.05f*_sitl->wind_dir_z);
-        
+        uint32_t dt_us = now - last_wind_update_us;
+        if (dt_us > 1000) {
+            last_wind_update_us = now;
+            // slew wind based on the configured time constant
+            const float dt = dt_us * 1.0e-6;
+            const float tc = MAX(_sitl->wind_change_tc, 0.1);
+            const float alpha = calc_lowpass_alpha_dt(dt, 1.0/tc);
+            _sitl->wind_speed_active     += (_sitl->wind_speed - _sitl->wind_speed_active) * alpha;
+            _sitl->wind_direction_active += (wrap_180(_sitl->wind_direction - _sitl->wind_direction_active)) * alpha;
+            _sitl->wind_dir_z_active     += (_sitl->wind_dir_z - _sitl->wind_dir_z_active) * alpha;
+            _sitl->wind_direction_active = wrap_180(_sitl->wind_direction_active);
+        }
+        wind_speed =     _sitl->wind_speed_active;
+        wind_direction = _sitl->wind_direction_active;
+        wind_dir_z =     _sitl->wind_dir_z_active;
+
         // pass wind into simulators using different wind types via param SIM_WIND_T*.
+        const float altitude = _sitl->state.height_agl;
         switch (_sitl->wind_type) {
         case SITL::SIM::WIND_TYPE_SQRT:
             if (altitude < _sitl->wind_type_alt) {
@@ -328,6 +334,20 @@ void SIMState::_simulator_servos(struct sitl_input &input)
     input.wind.direction = wind_direction;
     input.wind.turbulence = _sitl->wind_turbulance;
     input.wind.dir_z = wind_dir_z;
+}
+#endif  // AP_SIM_WIND_SIMULATION_ENABLED
+
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
+/*
+  create sitl_input structure for sending to FDM
+ */
+void SIMState::_simulator_servos(struct sitl_input &input)
+{
+    if (_sitl == nullptr) {
+        return;
+    }
+
+    update_simulated_wind(input);
 
     for (uint8_t i=0; i<ARRAY_SIZE(pwm_output); i++) {
         if (pwm_output[i] == 0xFFFF) {
