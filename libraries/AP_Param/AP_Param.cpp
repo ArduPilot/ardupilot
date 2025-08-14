@@ -3244,18 +3244,22 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
     }
     ginfo.offset = param_num*sizeof(float);
     ginfo.idx = param_num;
-    ginfo.flags = 0;  // clear the hidden flag if set
     float *def_value = const_cast<float *>(&ginfo.def_value);
     *def_value = default_value;
     ginfo.type = AP_PARAM_FLOAT;
 
-    invalidate_count();
-
-    // load from storage if available
+    // load from storage if available, the param is hidden during this
+    // load so the param is not visible to MAVLink until after it is
+    // loaded
     AP_Float *pvalues = const_cast<AP_Float *>((const AP_Float *)info.ptr);
     AP_Float &p = pvalues[param_num];
     p.set_default(default_value);
     p.load();
+
+    // clear the hidden flag if set and invalidate the count
+    // so we recount the parameters
+    ginfo.flags = 0;
+    invalidate_count();
 
     return true;
 }
