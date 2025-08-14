@@ -4,6 +4,11 @@
 
 #if AP_SIM_ENABLED
 
+// this might move elsewhere?
+#ifndef AP_SIM_WIND_SIMULATION_ENABLED
+#define AP_SIM_WIND_SIMULATION_ENABLED 1
+#endif
+
 #include <AP_HAL/AP_HAL.h>
 
 #include <SITL/SITL_Input.h>
@@ -70,7 +75,15 @@ public:
     uint16_t pwm_output[32];  // was SITL_NUM_CHANNELS
 #endif  // CONFIG_HAL_BOARD != HAL_BOARD_SITL
 
+#if AP_SIM_WIND_SIMULATION_ENABLED
+    uint32_t last_wind_update_us;
+    uint32_t wind_start_delay_micros;
+    void update_simulated_wind(struct sitl_input &input);
+#endif  // AP_SIM_WIND_SIMULATION_ENABLED
+
 private:
+    SITL::SIM *_sitl;
+
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     void _set_param_default(const char *parm);
     void _sitl_setup(const char *home_str);
@@ -96,7 +109,6 @@ private:
     pid_t _parent_pid;
     uint32_t _update_count;
 
-    SITL::SIM *_sitl;
     uint16_t _rcin_port;
     uint16_t _fg_view_port;
     uint16_t _irlock_port;
@@ -227,8 +239,6 @@ private:
     const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;
 
     const char *_home_str;
-
-    uint32_t wind_start_delay_micros;
 
 #if AP_SIM_GPS_ENABLED
     // simulated GPS devices
