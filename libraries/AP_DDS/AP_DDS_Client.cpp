@@ -1227,6 +1227,17 @@ void AP_DDS_Client::main_loop(void)
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s transport invalid, exiting", msg_prefix);
             return;
         }
+        // If using UDP, check if the network is active before proceeding
+#if AP_DDS_UDP_ENABLED
+        if (!is_using_serial) {
+            const auto &network = AP::network();
+            if (network.get_ip_active() == 0) {
+                hal.scheduler->delay(1000);
+                continue;
+            }
+
+        }
+#endif
 
         // check ping
         if (ping_max_retry == 0) {
