@@ -94,8 +94,8 @@ private:
     AP_Int8     _pin_deployed_polarity;
     AP_Int8     _pin_weight_on_wheels;
     AP_Int8     _pin_weight_on_wheels_polarity;
-    AP_Float    _deploy_alt_m;
-    AP_Float    _retract_alt_m;
+    AP_Int16    _deploy_alt_m;
+    AP_Int16    _retract_alt_m;
     AP_Int16    _options;
 
     // bitmask of options
