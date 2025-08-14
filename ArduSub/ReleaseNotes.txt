@@ -1,5 +1,10 @@
 APM:Sub Release Notes:
 
+Sub-4.5.5
+ - Implement Actuator support
+ - Untie Lights control from RCIN channels
+ - Bum waf submodule for easier building
+
 Sub-4.5.4
  - Allow setting absolute camera zoom/focus via MAVLink
 
