@@ -369,6 +369,7 @@ AP_HW_StellarF4V2                    1504
 AP_HW_HGLRCF405V4                    1524
 
 AP_HW_F4BY_F427                      1530
+AP_HW_F4BY_H743                      1531
 
 # IDs 1800-1809 reserved for Aerium Systems
 AP_HW_AERIUM_RADIAN_F405             1800
