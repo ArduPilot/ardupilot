@@ -358,10 +358,6 @@ void AP_MotorsHeli_Single::update_motor_control(AP_MotorsHeli_RSC::RotorControlS
 //
 void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out)
 {
-    // initialize limits flag
-    limit.throttle_lower = false;
-    limit.throttle_upper = false;
-
     // rescale roll_out and pitch_out into the min and max ranges to provide linear motion
     // across the input range instead of stopping when the input hits the constrain value
     // these calculations are based on an assumption of the user specified cyclic_max

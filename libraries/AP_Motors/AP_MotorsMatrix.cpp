@@ -372,9 +372,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     float thr_adj = throttle_thrust - throttle_thrust_best_rpy;
     if (rpy_scale < 1.0f) {
         // Full range is being used by roll, pitch, and yaw.
-        limit.roll = true;
-        limit.pitch = true;
-        limit.yaw = true;
+        limit.set_rpy(true);
         if (thr_adj > 0.0f) {
             limit.throttle_upper = true;
         }
