@@ -333,7 +333,7 @@ void ModeGuided::angle_control_start()
     guided_angle_state.climb_rate_ms = 0.0f;
 }
 
-// set_pos_neu_cm - sets guided mode's target pos_neu_cm
+// set_pos_neu_m - sets guided mode's target pos_neu_m
 // Returns true if the fence is enabled and guided waypoint is within the fence
 // else return false if the waypoint is outside the fence
 bool ModeGuided::set_pos_NEU_m(const Vector3f& pos_neu_m, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool is_terrain_alt)

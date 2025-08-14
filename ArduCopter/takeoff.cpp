@@ -47,7 +47,7 @@ bool Mode::do_user_takeoff_U_m(float takeoff_alt_m, bool must_navigate)
     return true;
 }
 
-// start takeoff to specified altitude above home in centimeters
+// start takeoff to specified altitude above home in meters
 void Mode::_TakeOff::start_m(float alt_m)
 {
     // initialise takeoff state
