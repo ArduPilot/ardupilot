@@ -335,6 +335,30 @@ void NavEKF2_core::CorrectGPSForAntennaOffset(gps_elements &gps_data) const
     gps_data.hgt += posOffsetEarth.z;
 }
 
+/*
+  correct Baro data for position offset relative to the IMU
+ */
+void NavEKF2_core::CorrectBaroOffset(baro_elements &baro_data) const
+{
+    // return immediately if already corrected
+    if (baro_data.corrected) {
+        return;
+    }
+    baro_data.corrected = true;
+
+    const Vector3F posOffsetBody = dal.baro().get_baro_pos_offset().toftype() - accelPosOffset;
+    if (posOffsetBody.is_zero()) {
+        return;
+    }
+
+    
+    // get a rotation matrix following DCM conventions (body to earth)
+    Vector3F posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
+    // correct the altitude at the sensor
+    // the reference altitude at home is offseted by posOffsetBody.z which is why we substract it here
+    baro_data.hgt += posOffsetEarth.z/prevTnb.c.z-posOffsetBody.z;
+}
+
 // correct external navigation earth-frame position using sensor body-frame offset
 void NavEKF2_core::CorrectExtNavForSensorOffset(Vector3F &ext_position) const
 {
@@ -1034,6 +1058,7 @@ void NavEKF2_core::selectHeightForFusion()
         // filtered baro data used to provide a reference for takeoff
         // it is is reset to last height measurement on disarming in performArmingChecks()
         if (!dal.get_takeoff_expected()) {
+            CorrectBaroOffset(baroDataDelayed);
             const ftype gndHgtFiltTC = 0.5f;
             const ftype dtBaro = frontend->hgtAvg_ms*1.0e-3;
             ftype alpha = constrain_ftype(dtBaro / (dtBaro+gndHgtFiltTC),0.0f,1.0f);
@@ -1088,6 +1113,7 @@ void NavEKF2_core::selectHeightForFusion()
         }
     } else if (baroDataToFuse && (activeHgtSource == HGT_SOURCE_BARO)) {
         // using Baro data
+        CorrectBaroOffset(baroDataDelayed);
         hgtMea = baroDataDelayed.hgt - baroHgtOffset;
         // enable fusion
         velPosObs[5] = -hgtMea;
