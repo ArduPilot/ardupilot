@@ -6,7 +6,7 @@
 * Init and run calls for zigzag flight mode
 */
 
-#define ZIGZAG_WP_RADIUS_CM 300
+#define ZIGZAG_WP_RADIUS_M 3.0
 #define ZIGZAG_LINE_INFINITY -1
 
 const AP_Param::GroupInfo ModeZigZag::var_info[] = {
@@ -90,8 +90,8 @@ bool ModeZigZag::init(bool ignore_checks)
 
     // initialise waypoint state
     stage = STORING_POINTS;
-    dest_A_ne_cm.zero();
-    dest_B_ne_cm.zero();
+    dest_A_ne_m.zero();
+    dest_B_ne_m.zero();
 
     // initialize zigzag auto
     init_auto();
@@ -157,7 +157,7 @@ void ModeZigZag::run()
 void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
 {
     // get current position as an offset from EKF origin
-    const Vector2f curr_pos_neu_cm = pos_control->get_pos_desired_NEU_m().xy().tofloat() * 100.0;
+    const Vector2f curr_pos_neu_m = pos_control->get_pos_desired_NEU_m().xy().tofloat();
 
     // handle state machine changes
     switch (stage) {
@@ -165,20 +165,20 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
         case STORING_POINTS:
             if (ab_dest == Destination::A) {
                 // store point A
-                dest_A_ne_cm = curr_pos_neu_cm;
+                dest_A_ne_m = curr_pos_neu_m;
                 gcs().send_text(MAV_SEVERITY_INFO, "%s: point A stored", name());
                 LOGGER_WRITE_EVENT(LogEvent::ZIGZAG_STORE_A);
             } else {
                 // store point B
-                dest_B_ne_cm = curr_pos_neu_cm;
+                dest_B_ne_m = curr_pos_neu_m;
                 gcs().send_text(MAV_SEVERITY_INFO, "%s: point B stored", name());
                 LOGGER_WRITE_EVENT(LogEvent::ZIGZAG_STORE_B);
             }
             // if both A and B have been stored advance state
-            if (!dest_A_ne_cm.is_zero() && !dest_B_ne_cm.is_zero() && !is_zero((dest_B_ne_cm - dest_A_ne_cm).length_squared())) {
+            if (!dest_A_ne_m.is_zero() && !dest_B_ne_m.is_zero() && !is_zero((dest_B_ne_m - dest_A_ne_m).length_squared())) {
                 stage = MANUAL_REGAIN;
                 spray(false);
-            } else if (!dest_A_ne_cm.is_zero() || !dest_B_ne_cm.is_zero()) {
+            } else if (!dest_A_ne_m.is_zero() || !dest_B_ne_m.is_zero()) {
                 // if only A or B have been stored, spray on
                 spray(true);
             }
@@ -187,11 +187,11 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
         case AUTO:
         case MANUAL_REGAIN:
             // A and B have been defined, move vehicle to destination A or B
-            Vector3f next_dest;
-            bool terr_alt_cm;
-            if (calculate_next_dest(ab_dest, stage == AUTO, next_dest, terr_alt_cm)) {
+            Vector3f next_dest_neu_m;
+            bool is_terrain_alt;
+            if (calculate_next_dest_m(ab_dest, stage == AUTO, next_dest_neu_m, is_terrain_alt)) {
                 wp_nav->wp_and_spline_init_m();
-                if (wp_nav->set_wp_destination_NEU_cm(next_dest, terr_alt_cm)) {
+                if (wp_nav->set_wp_destination_NEU_m(next_dest_neu_m, is_terrain_alt)) {
                     stage = AUTO;
                     auto_stage = AutoState::AB_MOVING;
                     ab_dest_stored = ab_dest;
@@ -212,16 +212,16 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
 
 void ModeZigZag::move_to_side()
 {
-    if (!dest_A_ne_cm.is_zero() && !dest_B_ne_cm.is_zero() && !is_zero((dest_B_ne_cm - dest_A_ne_cm).length_squared())) {
-        Vector3f next_dest;
-        bool terr_alt;
-        if (calculate_side_dest(next_dest, terr_alt)) {
+    if (!dest_A_ne_m.is_zero() && !dest_B_ne_m.is_zero() && !is_zero((dest_B_ne_m - dest_A_ne_m).length_squared())) {
+        Vector3f next_dest_neu_m;
+        bool is_terrain_alt;
+        if (calculate_side_dest_m(next_dest_neu_m, is_terrain_alt)) {
             wp_nav->wp_and_spline_init_m();
-            if (wp_nav->set_wp_destination_NEU_cm(next_dest, terr_alt)) {
+            if (wp_nav->set_wp_destination_NEU_m(next_dest_neu_m, is_terrain_alt)) {
                 stage = AUTO;
                 auto_stage = AutoState::SIDEWAYS;
-                current_dest = next_dest;
-                current_terr_alt = terr_alt;
+                current_dest_neu_m = next_dest_neu_m;
+                current_is_terr_alt = is_terrain_alt;
                 reach_wp_time_ms = 0;
                 char const *dir[] = {"forward", "right", "backward", "left"};
                 gcs().send_text(MAV_SEVERITY_INFO, "%s: moving to %s", name(), dir[(uint8_t)zigzag_direction]);
@@ -238,8 +238,8 @@ void ModeZigZag::return_to_manual_control(bool maintain_target)
         spray(false);
         loiter_nav->clear_pilot_desired_acceleration();
         if (maintain_target) {
-            const Vector3f& wp_dest = wp_nav->get_wp_destination_NEU_cm();
-            loiter_nav->init_target_cm(wp_dest.xy());
+            const Vector3f& wp_dest_neu_m = wp_nav->get_wp_destination_NEU_m();
+            loiter_nav->init_target_m(wp_dest_neu_m.xy());
 #if AP_RANGEFINDER_ENABLED
             if (copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy()) {
                 copter.surface_tracking.external_init();
@@ -253,7 +253,7 @@ void ModeZigZag::return_to_manual_control(bool maintain_target)
     }
 }
 
-// fly the vehicle to closest point on line perpendicular to dest_A_ne_cm or dest_B_ne_cm
+// fly the vehicle to closest point on line perpendicular to dest_A_ne_m or dest_B_ne_m
 void ModeZigZag::auto_control()
 {
     // process pilot's yaw input
@@ -390,7 +390,7 @@ bool ModeZigZag::reached_destination()
     }
 
     // check distance to destination
-    if (wp_nav->get_wp_distance_to_destination_cm() > ZIGZAG_WP_RADIUS_CM) {
+    if (wp_nav->get_wp_distance_to_destination_m() > ZIGZAG_WP_RADIUS_M) {
         return false;
     }
 
@@ -404,49 +404,49 @@ bool ModeZigZag::reached_destination()
 
 // calculate next destination according to vector A-B and current position
 // use_wpnav_alt should be true if waypoint controller's altitude target should be used, false for position control or current altitude target
-// is_terrain_alt is returned as true if the next_dest should be considered a terrain alt
-bool ModeZigZag::calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Vector3f& next_dest_neu_cm, bool& is_terrain_alt) const
+// is_terrain_alt is returned as true if the next_dest_neu_m should be considered a terrain alt
+bool ModeZigZag::calculate_next_dest_m(Destination ab_dest, bool use_wpnav_alt, Vector3f& next_dest_neu_m, bool& is_terrain_alt) const
 {
-    // define start_pos_ne_cm as either destination A or B
-    Vector2f start_pos_ne_cm = (ab_dest == Destination::A) ? dest_A_ne_cm : dest_B_ne_cm;
+    // define start_pos_ne_m as either destination A or B
+    Vector2f start_pos_ne_m = (ab_dest == Destination::A) ? dest_A_ne_m : dest_B_ne_m;
 
     // calculate vector from A to B
-    Vector2f AB_diff_ne_cm = dest_B_ne_cm - dest_A_ne_cm;
+    Vector2f AB_diff_ne_m = dest_B_ne_m - dest_A_ne_m;
 
     // check distance between A and B
-    if (is_zero(AB_diff_ne_cm.length_squared())) {
+    if (is_zero(AB_diff_ne_m.length_squared())) {
         return false;
     }
 
-    // get distance from vehicle to start_pos_ne_cm
-    const Vector2f curr_pos_ne_cm = pos_control->get_pos_desired_NEU_m().xy().tofloat() * 100.0;
-    Vector2f veh_to_start_pos = curr_pos_ne_cm - start_pos_ne_cm;
+    // get distance from vehicle to start_pos_ne_m
+    const Vector2f curr_pos_ne_m = pos_control->get_pos_desired_NEU_m().xy().tofloat();
+    Vector2f veh_to_start_pos_ne_m = curr_pos_ne_m - start_pos_ne_m;
 
-    // lengthen AB_diff_ne_cm so that it is at least as long as vehicle is from start point
+    // lengthen AB_diff_ne_m so that it is at least as long as vehicle is from start point
     // we need to ensure that the lines perpendicular to AB are long enough to reach the vehicle
     float scalar = 1.0f;
-    if (veh_to_start_pos.length_squared() > AB_diff_ne_cm.length_squared()) {
-        scalar = veh_to_start_pos.length() / AB_diff_ne_cm.length();
+    if (veh_to_start_pos_ne_m.length_squared() > AB_diff_ne_m.length_squared()) {
+        scalar = veh_to_start_pos_ne_m.length() / AB_diff_ne_m.length();
     }
 
-    // create a line perpendicular to AB but originating at start_pos_ne_cm
-    Vector2f perp1 = start_pos_ne_cm + Vector2f(-AB_diff_ne_cm[1] * scalar, AB_diff_ne_cm[0] * scalar);
-    Vector2f perp2 = start_pos_ne_cm + Vector2f(AB_diff_ne_cm[1] * scalar, -AB_diff_ne_cm[0] * scalar);
+    // create a line perpendicular to AB but originating at start_pos_ne_m
+    Vector2f perp1 = start_pos_ne_m + Vector2f(-AB_diff_ne_m[1] * scalar, AB_diff_ne_m[0] * scalar);
+    Vector2f perp2 = start_pos_ne_m + Vector2f(AB_diff_ne_m[1] * scalar, -AB_diff_ne_m[0] * scalar);
 
     // find the closest point on the perpendicular line
-    const Vector2f closest2d = Vector2f::closest_point(curr_pos_ne_cm, perp1, perp2);
-    next_dest_neu_cm.x = closest2d.x;
-    next_dest_neu_cm.y = closest2d.y;
+    const Vector2f closest2d_ne_m = Vector2f::closest_point(curr_pos_ne_m, perp1, perp2);
+    next_dest_neu_m.x = closest2d_ne_m.x;
+    next_dest_neu_m.y = closest2d_ne_m.y;
 
     if (use_wpnav_alt) {
         // get altitude target from waypoint controller
         is_terrain_alt = wp_nav->origin_and_destination_are_terrain_alt();
-        next_dest_neu_cm.z = wp_nav->get_wp_destination_NEU_cm().z;
+        next_dest_neu_m.z = wp_nav->get_wp_destination_NEU_m().z;
     } else {
         is_terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
-        next_dest_neu_cm.z = pos_control->get_pos_desired_U_m() * 100.0;
+        next_dest_neu_m.z = pos_control->get_pos_desired_U_m();
         if (!is_terrain_alt) {
-            next_dest_neu_cm.z += pos_control->get_pos_terrain_U_m() * 100.0;
+            next_dest_neu_m.z += pos_control->get_pos_terrain_U_m();
         }
     }
 
@@ -454,45 +454,45 @@ bool ModeZigZag::calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Ve
 }
 
 // calculate side destination according to vertical vector A-B and current position
-// is_terrain_alt is returned as true if the next_dest should be considered a terrain alt
-bool ModeZigZag::calculate_side_dest(Vector3f& next_dest_neu_cm, bool& is_terrain_alt) const
+// is_terrain_alt is returned as true if the next_dest_neu_m should be considered a terrain alt
+bool ModeZigZag::calculate_side_dest_m(Vector3f& next_dest_neu_m, bool& is_terrain_alt) const
 {
     // calculate vector from A to B
-    Vector2f AB_diff_ne_cm = dest_B_ne_cm - dest_A_ne_cm;
+    Vector2f AB_diff_ne_m = dest_B_ne_m - dest_A_ne_m;
 
     // calculate a vertical right or left vector for AB from the current yaw direction
-    Vector2f AB_side_ne_cm;
+    Vector2f AB_side_ne_m;
     if (zigzag_direction == Direction::RIGHT || zigzag_direction == Direction::LEFT) {
-        float yaw_ab_sign = (-ahrs.sin_yaw() * AB_diff_ne_cm[1]) + (ahrs.cos_yaw() * -AB_diff_ne_cm[0]);
+        float yaw_ab_sign = (-ahrs.sin_yaw() * AB_diff_ne_m[1]) + (ahrs.cos_yaw() * -AB_diff_ne_m[0]);
         if (is_positive(yaw_ab_sign * (zigzag_direction == Direction::RIGHT ? 1 : -1))) {
-            AB_side_ne_cm = Vector2f(AB_diff_ne_cm[1], -AB_diff_ne_cm[0]);
+            AB_side_ne_m = Vector2f(AB_diff_ne_m[1], -AB_diff_ne_m[0]);
         } else {
-            AB_side_ne_cm = Vector2f(-AB_diff_ne_cm[1], AB_diff_ne_cm[0]);
+            AB_side_ne_m = Vector2f(-AB_diff_ne_m[1], AB_diff_ne_m[0]);
         }
     } else {
-        float yaw_ab_sign = (ahrs.cos_yaw() * AB_diff_ne_cm[1]) + (ahrs.sin_yaw() * -AB_diff_ne_cm[0]);
+        float yaw_ab_sign = (ahrs.cos_yaw() * AB_diff_ne_m[1]) + (ahrs.sin_yaw() * -AB_diff_ne_m[0]);
         if (is_positive(yaw_ab_sign * (zigzag_direction == Direction::FORWARD ? 1 : -1))) {
-            AB_side_ne_cm = Vector2f(AB_diff_ne_cm[1], -AB_diff_ne_cm[0]);
+            AB_side_ne_m = Vector2f(AB_diff_ne_m[1], -AB_diff_ne_m[0]);
         } else {
-            AB_side_ne_cm = Vector2f(-AB_diff_ne_cm[1], AB_diff_ne_cm[0]);
+            AB_side_ne_m = Vector2f(-AB_diff_ne_m[1], AB_diff_ne_m[0]);
         }
     }
 
     // check distance the vertical vector between A and B
-    if (is_zero(AB_side_ne_cm.length_squared())) {
+    if (is_zero(AB_side_ne_m.length_squared())) {
         return false;
     }
 
-    // adjust AB_side_ne_cm length to zigzag_side_dist
-    float scalar = constrain_float(_side_dist_m, 0.1f, 100.0f) * 100 / safe_sqrt(AB_side_ne_cm.length_squared());
+    // adjust AB_side_ne_m length to zigzag_side_dist
+    float scalar = constrain_float(_side_dist_m, 0.1, 100.0) / AB_side_ne_m.length();
 
-    // get distance from vehicle to start_pos_ne_cm
-    const Vector2f curr_pos_ne_cm = pos_control->get_pos_desired_NEU_m().xy().tofloat() * 100.0;
-    next_dest_neu_cm.xy() = curr_pos_ne_cm + (AB_side_ne_cm * scalar);
+    // get distance from vehicle to start_pos_ne_m
+    const Vector2f curr_pos_ne_m = pos_control->get_pos_desired_NEU_m().xy().tofloat();
+    next_dest_neu_m.xy() = curr_pos_ne_m + (AB_side_ne_m * scalar);
 
     // if we have a downward facing range finder then use terrain altitude targets
     is_terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
-    next_dest_neu_cm.z = pos_control->get_pos_desired_U_m() * 100.0;
+    next_dest_neu_m.z = pos_control->get_pos_desired_U_m();
 
     return true;
 }
@@ -519,7 +519,7 @@ void ModeZigZag::run_auto()
             save_or_move_to_destination(ab_dest_stored);
         } else if (auto_stage == AutoState::SIDEWAYS) {
             wp_nav->wp_and_spline_init_m();
-            if (wp_nav->set_wp_destination_NEU_cm(current_dest, current_terr_alt)) {
+            if (wp_nav->set_wp_destination_NEU_m(current_dest_neu_m, current_is_terr_alt)) {
                 stage = AUTO;
                 reach_wp_time_ms = 0;
                 char const *dir[] = {"forward", "right", "backward", "left"};
@@ -566,7 +566,7 @@ void ModeZigZag::spray(bool b)
 
 float ModeZigZag::wp_distance_m() const
 {
-    return is_auto ? wp_nav->get_wp_distance_to_destination_cm() * 0.01f : 0.0f;
+    return is_auto ? wp_nav->get_wp_distance_to_destination_m() : 0.0f;
 }
 float ModeZigZag::wp_bearing_deg() const
 {
