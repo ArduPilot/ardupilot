@@ -285,7 +285,39 @@ local EC200 = { banner = 'EC200',
                  reset = 'AT+CFUN=1,1\r\n',
                  cipopen_tcp = 'AT+QIOPEN=1,0,"TCP","%d.%d.%d.%d",%d,0,2\r\n',
                  cipopen_udp = 'AT+QIOPEN=1,0,"UDP","%d.%d.%d.%d",%d,6001,2\r\n',
-                 cipclose = 'AT+QICLOSE=1\r\n',
+                 cipclose = 'AT+QICLOSE=0\r\n',
+                 mccmnc = 'AT+COPS=4,2,"%u"\r\n',
+                 setband_mask = 'AT+QCFG="band",0,0x%x\r\n',
+                 setband_all = 'AT+QCFG="band",0,0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\r\n',
+                }
+local BG95 = { banner = 'BG95',
+                 cmux = 'AT+CMUX=0\r\n',
+                 --setbaud = 'AT+IPR=%u\r\n',
+--                 cgact = 'AT+QIACT=1\r\n',
+                 pppopen = 'ATD*99#\r',
+                 cpsi = 'AT+QENG="servingcell"\r\n',
+                 cipmode = nil,
+                 cpin = 'AT+CPIN?\r\n',
+                 reset = 'AT+CFUN=1,1\r\n',
+                 cipopen_tcp = 'AT+QIOPEN=1,0,"TCP","%d.%d.%d.%d",%d,0,2\r\n',
+                 cipopen_udp = 'AT+QIOPEN=1,0,"UDP","%d.%d.%d.%d",%d,6001,2\r\n',
+                 cipclose = 'AT+QICLOSE=0\r\n',
+                 mccmnc = 'AT+COPS=4,2,"%u"\r\n',
+                 setband_mask = 'AT+QCFG="band",0,0x%x\r\n',
+                 setband_all = 'AT+QCFG="band",0,0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\r\n',
+                }
+local EG800Q = { banner = 'EG800Q',
+                 cmux = 'AT+CMUX=0\r\n',
+                 --setbaud = 'AT+IPR=%u\r\n',
+--                 cgact = 'AT+QIACT=1\r\n',
+                 pppopen = 'ATD*99#\r',
+                 cpsi = 'AT+QENG="servingcell"\r\n',
+                 cipmode = nil,
+                 cpin = 'AT+CPIN?\r\n',
+                 reset = 'AT+CFUN=1,1\r\n',
+                 cipopen_tcp = 'AT+QIOPEN=1,0,"TCP","%d.%d.%d.%d",%d,0,2\r\n',
+                 cipopen_udp = 'AT+QIOPEN=1,0,"UDP","%d.%d.%d.%d",%d,6001,2\r\n',
+                 cipclose = 'AT+QICLOSE=0\r\n',
                  mccmnc = 'AT+COPS=4,2,"%u"\r\n',
                  setband_mask = 'AT+QCFG="band",0,0x%x\r\n',
                  setband_all = 'AT+QCFG="band",0,0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\r\n',
@@ -298,6 +330,8 @@ local modem_list = {
     ["SimCom2"] = SimCom2,
     ["Air780"] = Air780,
     ["EC200"] = EC200,
+    ["BG95"] = BG95,
+    ["EG800Q"] = EG800Q,
 }
 
 local modem = default_modem
@@ -928,7 +962,7 @@ local function step_CMUX()
             return
         end
     end
-    AT_send(modem.cmux)
+    uart_write(modem.cmux)
 end
 
 --[[
@@ -1110,7 +1144,9 @@ end
 --]]
 local function check_QENG(s)
     -- Example1: +QENG: "servingcell","NOCONN","LTE","FDD",505,02,12AED4A,445,3750,8,3,3,CBE8,-99,-14,-71,53,30
-    -- Example2: +QENG: "servingcell","NOCONN","LTE","FDD",505,02,22D3F32,271,9260,28,3,3,CBE8,-109,-15,-78,38,20
+   -- Example2: +QENG: "servingcell","NOCONN","LTE","FDD",505,02,22D3F32,271,9260,28,3,3,CBE8,-109,-15,-78,38,20
+   -- Example3: +QENG: "servingcell","CONNECT","eMTC","FDD",505,01,804A90D,238,9410,28,5,5,2036,-114,-18,-82,6
+
     -- +QENG:"servingcell",<state>,"LTE",<is_tdd>,<mcc>,<mnc>,<cellid>,<pcid>,<earfcn>,<freq_band_ind>,<ul_bandwidth>,<dl_bandwidth>,<tac>,<rsrp>,<rsrq>,<rssi>,<sinr>,<srxlev>
     if not s:find("+QENG") then
         return false
@@ -1119,7 +1155,7 @@ local function check_QENG(s)
     logger:write("LTER","R1,R2",'ZZ', s:sub(1,64), s:sub(65,128))
 
     local mcc_str, mnc_str, cid_hex, pcid_str, earfcn_str, band_str, tac_hex, rsrp_str, rsrq_str, rssi_str, sinr_str =
-        s:match('+QENG:%s+"servingcell","[^"]+","LTE","[^"]+",(%d+),(%d+),([%x]+),(%d+),(%d+),(%d+),%d+,%d+,([%x]+),([%-]?%d+),([%-]?%d+),([%-]?%d+)')
+        s:match('+QENG:%s+"servingcell","[^"]+","[^"]+","[^"]+",(%d+),(%d+),([%x]+),(%d+),(%d+),(%d+),%d+,%d+,([%x]+),([%-]?%d+),([%-]?%d+),([%-]?%d+)')
 
     if mcc_str then
         local tac = tonumber(tac_hex, 16) or 0
