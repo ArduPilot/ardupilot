@@ -157,7 +157,7 @@ void ModeZigZag::run()
 void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
 {
     // get current position as an offset from EKF origin
-    const Vector2f curr_pos_neu_cm = pos_control->get_pos_desired_NEU_cm().xy().tofloat();
+    const Vector2f curr_pos_neu_cm = pos_control->get_pos_desired_NEU_m().xy().tofloat() * 100.0;
 
     // handle state machine changes
     switch (stage) {
@@ -419,7 +419,7 @@ bool ModeZigZag::calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Ve
     }
 
     // get distance from vehicle to start_pos_ne_cm
-    const Vector2f curr_pos_ne_cm = pos_control->get_pos_desired_NEU_cm().xy().tofloat();
+    const Vector2f curr_pos_ne_cm = pos_control->get_pos_desired_NEU_m().xy().tofloat() * 100.0;
     Vector2f veh_to_start_pos = curr_pos_ne_cm - start_pos_ne_cm;
 
     // lengthen AB_diff_ne_cm so that it is at least as long as vehicle is from start point
@@ -444,9 +444,9 @@ bool ModeZigZag::calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Ve
         next_dest_neu_cm.z = wp_nav->get_wp_destination_NEU_cm().z;
     } else {
         is_terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
-        next_dest_neu_cm.z = pos_control->get_pos_desired_U_cm();
+        next_dest_neu_cm.z = pos_control->get_pos_desired_U_m() * 100.0;
         if (!is_terrain_alt) {
-            next_dest_neu_cm.z += pos_control->get_pos_terrain_U_cm();
+            next_dest_neu_cm.z += pos_control->get_pos_terrain_U_m() * 100.0;
         }
     }
 
@@ -487,12 +487,12 @@ bool ModeZigZag::calculate_side_dest(Vector3f& next_dest_neu_cm, bool& is_terrai
     float scalar = constrain_float(_side_dist_m, 0.1f, 100.0f) * 100 / safe_sqrt(AB_side_ne_cm.length_squared());
 
     // get distance from vehicle to start_pos_ne_cm
-    const Vector2f curr_pos_ne_cm = pos_control->get_pos_desired_NEU_cm().xy().tofloat();
+    const Vector2f curr_pos_ne_cm = pos_control->get_pos_desired_NEU_m().xy().tofloat() * 100.0;
     next_dest_neu_cm.xy() = curr_pos_ne_cm + (AB_side_ne_cm * scalar);
 
     // if we have a downward facing range finder then use terrain altitude targets
     is_terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
-    next_dest_neu_cm.z = pos_control->get_pos_desired_U_cm();
+    next_dest_neu_cm.z = pos_control->get_pos_desired_U_m() * 100.0;
 
     return true;
 }

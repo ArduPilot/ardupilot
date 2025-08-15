@@ -67,7 +67,7 @@ void ModePosHold::run()
     const uint32_t now_ms = AP_HAL::millis();
     float controller_to_pilot_roll_mix; // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
     float controller_to_pilot_pitch_mix;    // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
-    const Vector3f& vel_neu_cms = pos_control->get_vel_estimate_NEU_cms();
+    const Vector3f& vel_neu_cms = pos_control->get_vel_estimate_NEU_ms() * 100.0;
 
     // enforce minimum allowed value for poshold_brake_rate_degs
     if (g.poshold_brake_rate_degs < POSHOLD_BRAKE_RATE_MIN) {
@@ -384,7 +384,7 @@ void ModePosHold::run()
         pitch_mode = RPMode::BRAKE_TO_LOITER;
         brake.loiter_transition_start_time_ms = now_ms;
         // init loiter controller
-        loiter_nav->init_target_cm((pos_control->get_pos_estimate_NEU_cm().xy() - pos_control->get_pos_offset_NEU_cm().xy()).tofloat());
+        loiter_nav->init_target_cm((pos_control->get_pos_estimate_NEU_m().xy() - pos_control->get_pos_offset_NEU_m().xy()).tofloat() * 100.0);
         // set delay to start of wind compensation estimate updates
         wind_comp_start_time_ms = now_ms;
     }
@@ -564,12 +564,12 @@ void ModePosHold::update_wind_comp_estimate()
     }
 
     // check horizontal velocity is low
-    if (pos_control->get_vel_estimate_NEU_cms().xy().length() > POSHOLD_WIND_COMP_ESTIMATE_SPEED_MAX) {
+    if (pos_control->get_vel_estimate_NEU_ms().xy().length() > POSHOLD_WIND_COMP_ESTIMATE_SPEED_MAX * 0.01) {
         return;
     }
 
     // get position controller accel target
-    const Vector3f& accel_target_neu_cmss = pos_control->get_accel_target_NEU_cmss();
+    const Vector3f& accel_target_neu_cmss = pos_control->get_accel_target_NEU_mss() * 100.0;
 
     // update wind compensation in earth-frame lean angles
     if (is_zero(wind_comp_ef.x)) {

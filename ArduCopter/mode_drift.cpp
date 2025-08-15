@@ -51,7 +51,7 @@ void ModeDrift::run()
     float target_pitch_cd = rad_to_cd(target_pitch_rad);
 
     // Grab inertial velocity
-    const Vector3f& vel_NEU_cms = pos_control->get_vel_estimate_NEU_cms();
+    const Vector3f& vel_NEU_cms = pos_control->get_vel_estimate_NEU_ms() * 100.0;
 
     // rotate roll, pitch input from north facing to vehicle's perspective
     float vel_right_cms =  vel_NEU_cms.y * ahrs.cos_yaw() - vel_NEU_cms.x * ahrs.sin_yaw(); // body roll vel_NEU_cms
