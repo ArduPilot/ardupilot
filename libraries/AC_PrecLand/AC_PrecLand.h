@@ -10,6 +10,7 @@
 #include "PosVelEKF.h"
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AC_PrecLand/AC_PrecLand_StateMachine.h>
+#include <AP_VisualOdom/AP_VisualOdom.h>
 
 // declare backend classes
 class AC_PrecLand_Backend;
@@ -189,6 +190,16 @@ private:
     // get 3D vector from vehicle to target and frame.  returns true on success, false on failure
     bool retrieve_los_meas(Vector3f& target_vec_unit, VectorFrame& frame);
 
+#if AP_VISUALODOM_PRECLAND_ENABLED
+    // get the user-set landing position in NED frame relative to EKF origin
+    bool get_user_set_landing_position(Vector3f &landing_pos_neu) const;
+
+    // When using a static landing target and downward-facing target detector,
+    // the vehicle's position in world (target) frame is the inverse of the target's pose relative to the vehicle.
+    // This can thus be used as a position measurement for the vehicle by EKF via the visual odometry library.
+    void send_pos_viso(const Vector3f& current_pos_NED);
+#endif // AP_VISUALODOM_PRECLAND_ENABLED
+
     // calculate target's position and velocity relative to the vehicle (used as input to position controller)
     // results are stored in_target_pos_rel_out_NE, _target_vel_rel_out_NE
     void run_output_prediction();
@@ -235,6 +246,11 @@ private:
     Vector2f                    _target_pos_rel_out_NE; // target's position relative to the camera, fed into position controller
     Vector2f                    _target_vel_rel_out_NE; // target's velocity relative to the CG, fed into position controller
     Vector3f                    _last_veh_velocity_NED_ms; // AHRS velocity at last estimate
+#if AP_VISUALODOM_PRECLAND_ENABLED
+    AP_Float                    _landing_loc_lat; // landing location latitude in degrees
+    AP_Float                    _landing_loc_lon; // landing location longitude in degrees
+    AP_Float                    _landing_loc_alt; // landing location altitude in meters
+#endif // AP_VISUALODOM_PRECLAND_ENABLED
 
     TargetState                 _current_target_state;  // Current status of the landing target
 
