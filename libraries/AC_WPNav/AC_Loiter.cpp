@@ -341,7 +341,7 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
         AC_Avoid *_avoid = AP::ac_avoid();
         if (_avoid != nullptr) {
             Vector3f avoidance_vel_neu_cms{desired_vel_ne_ms.x * 100.0, desired_vel_ne_ms.y * 100.0, 0.0f};
-            _avoid->adjust_velocity(avoidance_vel_neu_cms, _pos_control.get_pos_NE_p().kP(), _accel_max_ne_cmss, _pos_control.get_pos_U_p().kP(), _pos_control.get_max_accel_U_cmss(), dt_s);
+            _avoid->adjust_velocity(avoidance_vel_neu_cms, _pos_control.get_pos_NE_p().kP(), _accel_max_ne_cmss, _pos_control.get_pos_U_p().kP(), _pos_control.get_max_accel_U_mss() * 100.0, dt_s);
             desired_vel_ne_ms = avoidance_vel_neu_cms.xy() * 0.01;
         }
     }
