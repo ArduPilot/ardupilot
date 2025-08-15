@@ -98,7 +98,7 @@ class Board:
             # need to check the hwdef.h file for the board to see if dds is enabled
             # the issue here is that we need to configure the env properly to include
             # the DDS library, but the definition is the the hwdef file
-            # and can be overriden by the commandline options
+            # and can be overridden by the commandline options
             with open(env.BUILDROOT + "/hwdef.h", 'r', encoding="utf8") as file:
                 if "#define AP_DDS_ENABLED 1" in file.read():
                     # Enable DDS if the hwdef file has it enabled

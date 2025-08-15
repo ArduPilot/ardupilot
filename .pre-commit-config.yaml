@@ -16,7 +16,7 @@ exclude: |
 
 repos:
   -   repo: https://github.com/pre-commit/pre-commit-hooks
-      rev: v5.0.0
+      rev: v6.0.0
       hooks:
         #-   id: trailing-whitespace
         #-   id: end-of-file-fixer
@@ -55,6 +55,16 @@ repos:
       rev: 7.3.0
       hooks:
       -   id: flake8
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell # See pyproject.toml for args
+        types_or: [python]
+        args:
+          - --ignore-words-list=afile,bodgy,chek,commitish,edn,empy,finis,fram,mot,ned,parm,releas,parms,rin,ser,sitl,siz
+        additional_dependencies:
+          - tomli
 
 # # Use to sort python imports by name and put system import first.
 #   -   repo: https://github.com/pycqa/isort
