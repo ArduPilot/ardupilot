@@ -3139,22 +3139,23 @@ bool AP_Param::add_table(uint8_t _key, const char *prefix, uint8_t num_params)
             info.name = _empty_string;
             return false;
         }
-        // fill in footer for all entries
-        for (uint8_t gi=1; gi<num_params+2; gi++) {
-            auto &ginfo = const_cast<GroupInfo*>(info.group_info)[gi];
-            ginfo.name = _empty_string;
-            ginfo.idx = 0xff;
-        }
-        // hidden first parameter containing AP_Int32 crc
-        auto &hinfo = const_cast<GroupInfo*>(info.group_info)[0];
-        hinfo.flags = AP_PARAM_FLAG_HIDDEN;
-        hinfo.name = _empty_string;
-        hinfo.idx = 0;
-        hinfo.offset = 0;
-        hinfo.type = AP_PARAM_INT32;
-        // fill in default value with the CRC. Relies on sizeof crc == sizeof float
-        memcpy((uint8_t *)&hinfo.def_value, (const uint8_t *)&crc, sizeof(crc));
     }
+    // fill in footer for all entries
+    for (uint8_t gi=1; gi<num_params+2; gi++) {
+        auto &ginfo = const_cast<GroupInfo*>(info.group_info)[gi];
+        ginfo.name = _empty_string;
+        ginfo.idx = 0xff;
+        ginfo.flags = AP_PARAM_FLAG_HIDDEN;
+    }
+    // hidden first parameter containing AP_Int32 crc
+    auto &hinfo = const_cast<GroupInfo*>(info.group_info)[0];
+    hinfo.flags = AP_PARAM_FLAG_HIDDEN;
+    hinfo.name = _empty_string;
+    hinfo.idx = 0;
+    hinfo.offset = 0;
+    hinfo.type = AP_PARAM_INT32;
+    // fill in default value with the CRC. Relies on sizeof crc == sizeof float
+    memcpy((uint8_t *)&hinfo.def_value, (const uint8_t *)&crc, sizeof(crc));
 
     // remember the table size
     if (_dynamic_table_sizes[i] == 0) {
@@ -3294,12 +3295,17 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
     *def_value = default_value;
     ginfo.type = AP_PARAM_FLOAT;
 
-    invalidate_count();
-
-    // load from storage if available
+    // load from storage if available, the param is hidden during this
+    // load so the param is not visible to MAVLink until after it is
+    // loaded
     p.set_default(default_value);
     p.load();
 
+    // clear the hidden flag if set and invalidate the count
+    // so we recount the parameters
+    ginfo.flags = 0;
+    invalidate_count();
+    
     return true;
 }
 #endif

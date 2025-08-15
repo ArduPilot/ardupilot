@@ -229,6 +229,7 @@ class ExtractFeatures(object):
             ('EK3_FEATURE_EXTERNAL_NAV', r'NavEKF3_core::CorrectExtNavVelForSensorOffset'),
             ('EK3_FEATURE_DRAG_FUSION', r'NavEKF3_core::FuseDragForces'),
             ('EK3_FEATURE_OPTFLOW_FUSION', r'NavEKF3_core::FuseOptFlow'),
+            ('EK3_FEATURE_OPTFLOW_SRTM', r'NavEKF3_core::writeTerrainData'),
 
             ('AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED', r'RC_Channel::lookuptable',),
             ('AP_SCRIPTING_ENABLED', r'AP_Scripting::init',),
@@ -261,7 +262,7 @@ class ExtractFeatures(object):
             ('AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED', 'GCS_MAVLINK::handle_serial_control'),
             ('AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED', r'GCS_MAVLINK::handle_mission_request\b'),
             ('AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED', r'GCS_MAVLINK::send_rc_channels_raw\b'),
-            ('AP_MAVLINK_FTP_ENABLED', 'GCS_MAVLINK::ftp_worker'),
+            ('AP_MAVLINK_FTP_ENABLED', 'GCS_MAVLINK::init'),
             ('AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED', 'Plane::handle_external_hagl'),
             ('AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED', 'AP_Camera::send_video_stream_information'),
             ('AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED', 'GCS_MAVLINK::send_flight_information'),
@@ -276,6 +277,8 @@ class ExtractFeatures(object):
             ('AP_NETWORKING_ENABLED', 'AP_Networking::init'),
             ('AP_NETWORKING_BACKEND_PPP', 'AP_Networking_PPP::init'),
             ('AP_NETWORKING_CAN_MCAST_ENABLED', 'AP_Networking_CAN::start'),
+            ('AP_NETWORKING_CAPTURE_ENABLED', 'AP_Networking_Backend::capture_pbuf'),
+
             ('FORCE_APJ_DEFAULT_PARAMETERS', 'AP_Param::param_defaults_data'),
             ('HAL_BUTTON_ENABLED', 'AP_Button::update'),
             ('HAL_LOGGING_ENABLED', 'AP_Logger::init'),

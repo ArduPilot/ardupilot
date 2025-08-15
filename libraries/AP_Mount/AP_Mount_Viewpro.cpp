@@ -34,6 +34,8 @@ const char* AP_Mount_Viewpro::send_text_prefix = "Viewpro:";
 // update mount position - should be called periodically
 void AP_Mount_Viewpro::update()
 {
+    AP_Mount_Backend::update();
+
     // exit immediately if not initialised
     if (!_initialised) {
         return;
@@ -684,7 +686,7 @@ bool AP_Mount_Viewpro::send_m_ahrs()
     uint16_t gps_vdop = AP::gps().get_vdop();
 
     // get vehicle yaw in the range 0 to 360
-    const uint16_t veh_yaw_deg = wrap_360(degrees(AP::ahrs().get_yaw_rad()));
+    const uint16_t veh_yaw_deg = AP::ahrs().get_yaw_deg();
 
     // fill in packet
     const M_AHRSPacket mahrs_packet {
@@ -692,8 +694,8 @@ bool AP_Mount_Viewpro::send_m_ahrs()
             frame_id: FrameId::M_AHRS,
             data_type: 0x07,                        // Bit0: Attitude, Bit1: GPS, Bit2 Gyro
             unused2to8 : {0, 0, 0, 0, 0, 0, 0},
-            roll_be: htobe16(degrees(AP::ahrs().get_roll_rad()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),      // vehicle roll angle.  1bit=360deg/65536
-            pitch_be: htobe16(-degrees(AP::ahrs().get_pitch_rad()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),   // vehicle pitch angle.  1bit=360deg/65536
+            roll_be: htobe16(AP::ahrs().get_roll_deg() * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),      // vehicle roll angle.  1bit=360deg/65536
+            pitch_be: htobe16(-AP::ahrs().get_pitch_deg() * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),   // vehicle pitch angle.  1bit=360deg/65536
             yaw_be: htobe16(veh_yaw_deg * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),                          // vehicle yaw angle.  1bit=360deg/65536
             date_be: htobe16(date),                 // bit0~6:year, bit7~10:month, bit11~15:day
             seconds_utc: {uint8_t((second_hundredths & 0xFF0000ULL) >> 16), // seconds * 100 MSB.  1bit = 0.01sec

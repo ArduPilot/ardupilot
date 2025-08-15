@@ -373,9 +373,6 @@ private:
         // number of low throttle values
         uint8_t throttle_counter;
 
-        // A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
-        uint32_t short_timer_ms;
-
         uint32_t last_valid_rc_ms;
 
         //keeps track of the last valid rc as it relates to the AFS system
@@ -892,6 +889,7 @@ private:
     // Attitude.cpp
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
+    void apply_load_factor_roll_limits(void);
     void adjust_altitude_target();
     void setup_alt_slope(void);
     int32_t get_RTL_altitude_cm() const;
@@ -1001,7 +999,7 @@ private:
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
 #if HAL_QUADPLANE_ENABLED
     // vtol takeoff from AP_Vehicle for quadplane.
-    bool start_takeoff(const float alt) override;
+    bool start_takeoff(const float alt_m) override;
     bool verify_landing_vtol_approach(const AP_Mission::Mission_Command& cmd);
 #endif
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
@@ -1054,9 +1052,9 @@ private:
     bool autotuning;
 
     // events.cpp
-    void failsafe_short_on_event(enum failsafe_state fstype, ModeReason reason);
+    void rc_failsafe_short_on_event();
     void failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason);
-    void failsafe_short_off_event(ModeReason reason);
+    void rc_failsafe_short_off_event();
     void failsafe_long_off_event(ModeReason reason);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
     bool failsafe_in_landing_sequence() const;  // returns true if the vehicle is in landing sequence.  Intended only for use in failsafe code.
@@ -1137,7 +1135,7 @@ private:
     bool set_mode(const uint8_t mode, const ModeReason reason) override;
     bool set_mode_by_number(const Mode::Number new_mode_number, const ModeReason reason);
     void check_long_failsafe();
-    void check_short_failsafe();
+    void check_short_rc_failsafe();
     void startup_INS(void);
     bool should_log(uint32_t mask);
     int8_t throttle_percentage(void);

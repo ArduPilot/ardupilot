@@ -38,7 +38,8 @@
     LOG_RSLL_MSG, \
     LOG_REVH_MSG, \
     LOG_RWOH_MSG, \
-    LOG_RBOH_MSG
+    LOG_RBOH_MSG, \
+    LOG_RTER_MSG
 
 // @LoggerMessage: RFRH
 // @Description: Replay FRame Header
@@ -580,6 +581,14 @@ struct log_RBOH {
     uint8_t _end;
 };
 
+// @LoggerMessage: RTER
+// @Description: Replay Terrain SRTM Altitude
+// @Field: Alt: altitude above origin in meters
+struct log_RTER {
+    float alt_m;
+    uint8_t _end;
+};
+
 #define RLOG_SIZE(sname) 3+offsetof(struct log_ ##sname,_end)
 
 #define LOG_STRUCTURE_FROM_DAL        \
@@ -646,4 +655,6 @@ struct log_RBOH {
     { LOG_RWOH_MSG, RLOG_SIZE(RWOH),                                   \
       "RWOH", "ffIffff", "DA,DT,TS,PX,PY,PZ,R", "-------", "-------" }, \
     { LOG_RBOH_MSG, RLOG_SIZE(RBOH),                                   \
-      "RBOH", "ffffffffIfffH", "Q,DPX,DPY,DPZ,DAX,DAY,DAZ,DT,TS,OX,OY,OZ,D", "-------------", "-------------" },
+      "RBOH", "ffffffffIfffH", "Q,DPX,DPY,DPZ,DAX,DAY,DAZ,DT,TS,OX,OY,OZ,D", "-------------", "-------------" }, \
+    { LOG_RTER_MSG, RLOG_SIZE(RTER),                                   \
+      "RTER", "f", "Alt", "m", "0" },

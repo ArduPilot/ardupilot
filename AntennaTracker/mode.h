@@ -46,6 +46,17 @@ public:
     const char* name() const override { return "Auto"; }
     bool requires_armed_servos() const override { return true; }
     void update() override;
+
+    void set_target(float target_yaw_deg, float target_pitch_deg) {
+        _target_yaw_deg = target_yaw_deg;
+        _target_pitch_deg = target_pitch_deg;
+    }
+    float get_auto_target_yaw_deg() const { return _target_yaw_deg; }
+    float get_auto_target_pitch_deg() const { return _target_pitch_deg; }
+
+private:
+    float _target_yaw_deg;
+    float _target_pitch_deg;
 };
 
 class ModeGuided : public Mode {
@@ -55,16 +66,27 @@ public:
     bool requires_armed_servos() const override { return true; }
     void update() override;
 
-    void set_angle(const Quaternion &target_att, bool use_yaw_rate, float yaw_rate_rads) {
+    void set_angle(const Quaternion &target_att,
+                   bool use_yaw_rate, float yaw_rate_rads,
+                   bool use_pitch_rate, float pitch_rate_rads) {
         _target_att = target_att;
         _use_yaw_rate = use_yaw_rate;
         _yaw_rate_rads = yaw_rate_rads;
+        _use_pitch_rate = use_pitch_rate;
+        _pitch_rate_rads = pitch_rate_rads;
     }
+    Quaternion get_attitude_target_quat() { return _target_att; }
+    bool get_attitude_target_use_yaw_rate() const { return _use_yaw_rate; }
+    float get_attitude_target_yaw_rate_rads() const { return _yaw_rate_rads; }
+    bool get_attitude_target_use_pitch_rate() const { return _use_pitch_rate; }
+    float get_attitude_target_pitch_rate_rads() const { return _pitch_rate_rads; }
 
 private:
     Quaternion _target_att;
     bool _use_yaw_rate;
     float _yaw_rate_rads;
+    bool _use_pitch_rate;
+    float _pitch_rate_rads;
 };
 
 class ModeInitialising : public Mode {

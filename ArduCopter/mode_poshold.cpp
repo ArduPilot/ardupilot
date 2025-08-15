@@ -25,8 +25,8 @@
 bool ModePosHold::init(bool ignore_checks)
 {
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    pos_control->set_correction_speed_accel_U_cmss(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control->set_max_speed_accel_U_m(-get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
+    pos_control->set_correction_speed_accel_U_m(-get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
 
     // initialise the vertical position controller
     if (!pos_control->is_active_U()) {
@@ -75,7 +75,7 @@ void ModePosHold::run()
     }
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control->set_max_speed_accel_U_m(-get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
     loiter_nav->clear_pilot_desired_acceleration();
 
     // apply SIMPLE mode transform to pilot inputs
@@ -91,8 +91,8 @@ void ModePosHold::run()
     float target_yaw_rate_cds = rad_to_cd(get_pilot_desired_yaw_rate_rads());
 
     // get pilot desired climb rate (for alt-hold mode and take-off)
-    float target_climb_rate_cms = get_pilot_desired_climb_rate();
-    target_climb_rate_cms = constrain_float(target_climb_rate_cms, -get_pilot_speed_dn(), g.pilot_speed_up);
+    float target_climb_rate_ms = get_pilot_desired_climb_rate_ms();
+    target_climb_rate_ms = constrain_float(target_climb_rate_ms, -get_pilot_speed_dn_ms(), get_pilot_speed_up_ms());
 
     // relax loiter target if we might be landed
     if (copter.ap.land_complete_maybe) {
@@ -100,7 +100,7 @@ void ModePosHold::run()
     }
 
     // Pos Hold State Machine Determination
-    AltHoldModeState poshold_state = get_alt_hold_state(target_climb_rate_cms);
+    AltHoldModeState poshold_state = get_alt_hold_state_U_ms(target_climb_rate_ms);
 
     // state machine
     switch (poshold_state) {
@@ -139,14 +139,14 @@ void ModePosHold::run()
     case AltHoldModeState::Takeoff:
         // initiate take-off
         if (!takeoff.running()) {
-            takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+            takeoff.start_m(constrain_float(g.pilot_takeoff_alt_cm * 0.01, 0.0, 10.0));
         }
 
         // get avoidance adjusted climb rate
-        target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
+        target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
 
         // set position controller targets adjusted for pilot input
-        takeoff.do_pilot_takeoff(target_climb_rate_cms);
+        takeoff.do_pilot_takeoff_ms(target_climb_rate_ms);
 
         // init and update loiter although pilot is controlling lean angles
         loiter_nav->clear_pilot_desired_acceleration();
@@ -161,7 +161,7 @@ void ModePosHold::run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // get avoidance adjusted climb rate
-        target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
+        target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
 
 #if AP_RANGEFINDER_ENABLED
         // update the vertical offset based on the surface measurement
@@ -169,7 +169,7 @@ void ModePosHold::run()
 #endif
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cms);
+        pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_ms);
         break;
     }
 

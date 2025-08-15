@@ -89,8 +89,8 @@ bool ModeFlowHold::init(bool ignore_checks)
     }
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    pos_control->set_correction_speed_accel_U_cmss(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control->set_max_speed_accel_U_m(-get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
+    pos_control->set_correction_speed_accel_U_m(-get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
 
     // initialise the vertical position controller
     if (!copter.pos_control->is_active_U()) {
@@ -106,7 +106,7 @@ bool ModeFlowHold::init(bool ignore_checks)
     flow_pi_xy.set_dt(1.0/copter.scheduler.get_loop_rate_hz());
 
     // start with INS height
-    last_ins_height_m = pos_control->get_pos_estimate_NEU_cm().z * 0.01;
+    last_ins_height_m = pos_control->get_pos_estimate_NEU_m().z;
     height_offset_m = 0;
 
     return true;
@@ -130,7 +130,7 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles_cd, bool stick_inp
     Vector2f sensor_flow = flow_filter.apply(raw_flow);
 
     // scale by height estimate, limiting it to height_min_m to height_max
-    float ins_height_m = pos_control->get_pos_estimate_NEU_cm().z * 0.01;
+    float ins_height_m = pos_control->get_pos_estimate_NEU_m().z;
     float height_estimate_m = ins_height_m + height_offset_m;
 
     // compensate for height, this converts to (approx) m/s
@@ -233,7 +233,7 @@ void ModeFlowHold::run()
     update_height_estimate();
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control->set_max_speed_accel_U_m(-get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
 
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
@@ -244,14 +244,14 @@ void ModeFlowHold::run()
     }
 
     // get pilot desired climb rate
-    float target_climb_rate_cms = copter.get_pilot_desired_climb_rate();
-    target_climb_rate_cms = constrain_float(target_climb_rate_cms, -get_pilot_speed_dn(), copter.g.pilot_speed_up);
+    float target_climb_rate_ms = copter.get_pilot_desired_climb_rate_ms();
+    target_climb_rate_ms = constrain_float(target_climb_rate_ms, -get_pilot_speed_dn_ms(), get_pilot_speed_up_ms());
 
     // get pilot's desired yaw rate
     float target_yaw_rate_cds = rad_to_cd(get_pilot_desired_yaw_rate_rads());
 
     // Flow Hold State Machine Determination
-    AltHoldModeState flowhold_state = get_alt_hold_state(target_climb_rate_cms);
+    AltHoldModeState flowhold_state = get_alt_hold_state_U_ms(target_climb_rate_ms);
 
     if (copter.optflow.healthy()) {
         const float filter_constant = 0.95;
@@ -277,14 +277,14 @@ void ModeFlowHold::run()
 
         // initiate take-off
         if (!takeoff.running()) {
-            takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+            takeoff.start_m(constrain_float(g.pilot_takeoff_alt_cm * 0.01, 0.0, 10.0));
         }
 
         // get avoidance adjusted climb rate
-        target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
+        target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
 
         // set position controller targets adjusted for pilot input
-        takeoff.do_pilot_takeoff(target_climb_rate_cms);
+        takeoff.do_pilot_takeoff_ms(target_climb_rate_ms);
         break;
 
     case AltHoldModeState::Landed_Ground_Idle:
@@ -300,7 +300,7 @@ void ModeFlowHold::run()
         copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // get avoidance adjusted climb rate
-        target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
+        target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
 
 #if AP_RANGEFINDER_ENABLED
         // update the vertical offset based on the surface measurement
@@ -308,7 +308,7 @@ void ModeFlowHold::run()
 #endif
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cms);
+        pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_ms);
         break;
     }
 
@@ -357,7 +357,7 @@ void ModeFlowHold::run()
  */
 void ModeFlowHold::update_height_estimate(void)
 {
-    float ins_height_m = copter.pos_control->get_pos_estimate_NEU_cm().z * 0.01;
+    float ins_height_m = copter.pos_control->get_pos_estimate_NEU_m().z;
 
 #if 1
     // assume on ground when disarmed, or if we have only just started spooling the motors up

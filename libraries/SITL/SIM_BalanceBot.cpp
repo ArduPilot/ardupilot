@@ -73,8 +73,8 @@ void BalanceBot::update(const struct sitl_input &input)
     const float gear_ratio = 50.0f;
 
     // balance bot uses skid steering
-    const float motor1 = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
-    const float motor2 = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
+    float motor1 = input.servos[0] ? normalise_servo_input(input.servos[0]) : 0;
+    float motor2 = input.servos[2] ? normalise_servo_input(input.servos[2]) : 0;
     const float steering = motor1 - motor2;
     const float throttle = 0.5 * (motor1 + motor2);
 

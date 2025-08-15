@@ -36,7 +36,7 @@ const AP_Param::GroupInfo AP_Networking::Port::var_info[] = {
     // @Values: 0:Disabled, 1:UDP client, 2:UDP server, 3:TCP client, 4:TCP server
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("TYPE", 1,  AP_Networking::Port, type, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("TYPE", 1,  AP_Networking::Port, type_param, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: PROTOCOL
     // @DisplayName: Protocol
@@ -69,9 +69,9 @@ void AP_Networking::ports_init(void)
 {
     for (uint8_t i=0; i<ARRAY_SIZE(ports); i++) {
         auto &p = ports[i];
-        NetworkPortType ptype = (NetworkPortType)p.type;
+        p.type = (NetworkPortType)p.type_param;
         p.state.idx = AP_SERIALMANAGER_NET_PORT_1 + i;
-        switch (ptype) {
+        switch (p.type) {
         case NetworkPortType::NONE:
             break;
         case NetworkPortType::UDP_CLIENT:

@@ -22,9 +22,15 @@ set -ex
 c_compiler=${CC:-gcc}
 cxx_compiler=${CXX:-g++}
 
+# we want processes to exit in CI.  If we don't end up calling
+# alarm_handler and not getting the binaries in the failure archive on
+# github.
+export SITL_PANIC_EXIT=1
+
 export BUILDROOT=/tmp/ci.build
 rm -rf $BUILDROOT
 export GIT_VERSION="abcdef"
+export GIT_VERSION_EXTENDED="0123456789abcdef"
 export GIT_VERSION_INT="15"
 export CHIBIOS_GIT_VERSION="12345667"
 export CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime"

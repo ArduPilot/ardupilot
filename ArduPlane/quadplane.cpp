@@ -2581,7 +2581,7 @@ void QuadPlane::vtol_position_controller(void)
             target_speed_ne_ms = diff_wp_norm * approach_speed_ms;
             target_accel_ne_mss = diff_wp_norm * (-approach_accel_mss);
             target_yaw_deg = degrees(diff_wp_norm.angle());
-            const float yaw_err_deg = wrap_180(target_yaw_deg - degrees(plane.ahrs.get_yaw_rad()));
+            const float yaw_err_deg = wrap_180(target_yaw_deg - plane.ahrs.get_yaw_deg());
             bool overshoot = (closing_groundspeed_ms < 0 || fabsf(yaw_err_deg) > 60);
             if (overshoot && !poscontrol.overshoot) {
                 gcs().send_text(MAV_SEVERITY_INFO,"VTOL Overshoot d=%.1f cs=%.1f yerr=%.1f",
@@ -2848,7 +2848,7 @@ void QuadPlane::vtol_position_controller(void)
             break;
         }
         const float descent_rate_ms = landing_descent_rate_ms(height_above_ground_m);
-        pos_control->land_at_climb_rate_m(-descent_rate_ms, descent_rate_ms > 0);
+        pos_control->land_at_climb_rate_ms(-descent_rate_ms, descent_rate_ms > 0);
         break;
     }
 
@@ -3040,7 +3040,7 @@ void QuadPlane::assign_tilt_to_fwd_thr(void)
 */
 float QuadPlane::get_scaled_wp_speed(float target_bearing_deg) const
 {
-    const float yaw_difference = fabsf(wrap_180(degrees(plane.ahrs.get_yaw_rad()) - target_bearing_deg));
+    const float yaw_difference = fabsf(wrap_180(plane.ahrs.get_yaw_deg() - target_bearing_deg));
     const float wp_speed_ms = wp_nav->get_default_speed_NE_ms();
     if (yaw_difference > 20) {
         // this gives a factor of 2x reduction in max speed when
@@ -3075,7 +3075,7 @@ void QuadPlane::setup_target_position(void)
 
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_U_m(-get_pilot_velocity_z_max_dn_m(), pilot_speed_z_max_up_ms, pilot_accel_z_mss);
-    pos_control->set_correction_speed_accel_U_mss(-get_pilot_velocity_z_max_dn_m(), pilot_speed_z_max_up_ms, pilot_accel_z_mss);
+    pos_control->set_correction_speed_accel_U_m(-get_pilot_velocity_z_max_dn_m(), pilot_speed_z_max_up_ms, pilot_accel_z_mss);
 }
 
 /*
@@ -3326,7 +3326,7 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
 
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_U_m(-get_pilot_velocity_z_max_dn_m(), pilot_speed_z_max_up_ms, pilot_accel_z_mss);
-    pos_control->set_correction_speed_accel_U_mss(-get_pilot_velocity_z_max_dn_m(), pilot_speed_z_max_up_ms, pilot_accel_z_mss);
+    pos_control->set_correction_speed_accel_U_m(-get_pilot_velocity_z_max_dn_m(), pilot_speed_z_max_up_ms, pilot_accel_z_mss);
 
     // initialise the vertical position controller
     pos_control->init_U_controller();

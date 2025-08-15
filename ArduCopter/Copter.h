@@ -266,7 +266,7 @@ private:
     AP_SurfaceDistance rangefinder_up_state {ROTATION_PITCH_90, 1U};
 
     // helper function to get inertially interpolated rangefinder height.
-    bool get_rangefinder_height_interpolated_cm(int32_t& ret) const;
+    bool get_rangefinder_height_interpolated_m(float& ret) const;
 
 #if AP_RANGEFINDER_ENABLED
     class SurfaceTracking {
@@ -281,7 +281,7 @@ private:
         void external_init();
 
         // get target and actual distances (in m) for logging purposes
-        bool get_target_dist_for_logging(float &target_dist) const;
+        bool get_target_dist_for_logging(float &target_dist_m) const;
         float get_dist_for_logging() const;
         void invalidate_for_logging() { valid_for_logging = false; }
 
@@ -298,7 +298,7 @@ private:
 
     private:
         Surface surface;
-        uint32_t last_update_ms;    // system time of last update to target_alt_cm
+        uint32_t last_update_ms;    // system time of last update to target_alt_m
         uint32_t last_glitch_cleared_ms;    // system time of last handle glitch recovery
         bool valid_for_logging;     // true if we have a desired target altitude
         bool reset_target;          // true if target should be reset because of change in surface being tracked
@@ -464,7 +464,7 @@ private:
 #endif
 
     // Altitude
-    int32_t baro_alt;            // barometer altitude in cm above home
+    float baro_alt_m;                           // barometer altitude in meters above home
     LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
 
     // filtered pilot's throttle input used to cancel landing if throttle held high
@@ -581,7 +581,7 @@ private:
         bool takeoff_expected;
         bool touchdown_expected;
         uint32_t takeoff_time_ms;
-        float takeoff_alt_cm;
+        float takeoff_alt_m;
     } gndeffect_state;
 
     bool standby_active;
@@ -673,7 +673,7 @@ private:
 #if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 #if MODE_GUIDED_ENABLED
     bool set_target_location(const Location& target_loc) override;
-    bool start_takeoff(const float alt) override;
+    bool start_takeoff(const float alt_m) override;
 #endif // MODE_GUIDED_ENABLED
 #endif // AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 
@@ -681,7 +681,7 @@ private:
 #if MODE_GUIDED_ENABLED
     bool get_target_location(Location& target_loc) override;
     bool update_target_location(const Location &old_loc, const Location &new_loc) override;
-    bool set_target_pos_NED(const Vector3f& target_pos, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool terrain_alt) override;
+    bool set_target_pos_NED(const Vector3f& target_pos, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool is_terrain_alt) override;
     bool set_target_posvel_NED(const Vector3f& target_pos, const Vector3f& target_vel) override;
     bool set_target_posvelaccel_NED(const Vector3f& target_pos, const Vector3f& target_vel, const Vector3f& target_accel, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) override;
     bool set_target_velocity_NED(const Vector3f& vel_ned) override;
@@ -728,7 +728,7 @@ private:
 
     // Attitude.cpp
     void update_throttle_hover();
-    float get_pilot_desired_climb_rate();
+    float get_pilot_desired_climb_rate_ms();
     float get_non_takeoff_throttle();
     void set_accel_throttle_I_from_pilot_throttle();
     void rotate_body_frame_to_NE(float &x, float &y);
@@ -912,8 +912,8 @@ private:
     void Log_Write_Data(LogDataID id, float value);
     void Log_Write_PTUN(uint8_t param, float tuning_val, float tune_min, float tune_max, float norm_in);
     void Log_Video_Stabilisation();
-    void Log_Write_Guided_Position_Target(ModeGuided::SubMode submode, const Vector3f& pos_target, bool terrain_alt, const Vector3f& vel_target, const Vector3f& accel_target);
-    void Log_Write_Guided_Attitude_Target(ModeGuided::SubMode target_type, float roll, float pitch, float yaw, const Vector3f &ang_vel, float thrust, float climb_rate);
+    void Log_Write_Guided_Position_Target(ModeGuided::SubMode submode, const Vector3f& pos_target_m, bool is_terrain_alt, const Vector3f& vel_target_ms, const Vector3f& accel_target_mss);
+    void Log_Write_Guided_Attitude_Target(ModeGuided::SubMode submode, float roll, float pitch, float yaw, const Vector3f &ang_vel, float thrust, float climb_rate);
     void Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out);
     void Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z);
     void Log_Write_Vehicle_Startup_Messages();
