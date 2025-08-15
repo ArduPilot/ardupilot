@@ -1993,15 +1993,15 @@ private:
     void auto_control();
     void manual_control();
     bool reached_destination();
-    bool calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Vector3f& next_dest, bool& is_terrain_alt) const;
+    bool calculate_next_dest_m(Destination ab_dest, bool use_wpnav_alt, Vector3f& next_dest, bool& is_terrain_alt) const;
     void spray(bool b);
-    bool calculate_side_dest(Vector3f& next_dest, bool& is_terrain_alt) const;
+    bool calculate_side_dest_m(Vector3f& next_dest, bool& is_terrain_alt) const;
     void move_to_side();
 
-    Vector2f dest_A_ne_cm;    // in NEU frame in cm relative to ekf origin
-    Vector2f dest_B_ne_cm;    // in NEU frame in cm relative to ekf origin
-    Vector3f current_dest; // current target destination (use for resume after suspending)
-    bool current_terr_alt;
+    Vector2f dest_A_ne_m;    // in NEU frame in cm relative to ekf origin
+    Vector2f dest_B_ne_m;    // in NEU frame in cm relative to ekf origin
+    Vector3f current_dest_neu_m; // current target destination (use for resume after suspending)
+    bool current_is_terr_alt;
 
     // parameters
     AP_Int8  _auto_enabled;    // top level enable/disable control
