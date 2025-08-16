@@ -295,8 +295,8 @@ private:
     AP_Float max_sweep_freq;    // maximum sweep frequency
     AP_Float max_resp_gain;     // maximum response gain
     AP_Float vel_hold_gain;     // gain for velocity hold
-    AP_Float accel_max;         // maximum autotune angular acceleration
-    AP_Float rate_max;          // maximum autotune angular rate
+    AP_Float accel_max_degss;         // maximum autotune angular acceleration
+    AP_Float rate_max_degs;          // maximum autotune angular rate
 
     // freqresp object for the frequency response tests
     AC_AutoTune_FreqResp freqresp_mtr; // frequency response of output to motor mixer input
