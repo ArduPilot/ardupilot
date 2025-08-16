@@ -346,7 +346,7 @@ void ModeFlowHold::run()
 #endif
 
     // call attitude controller
-    copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(bf_angles_cd.x, bf_angles_cd.y, target_yaw_rate_cds);
+    copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(cd_to_rad(bf_angles_cd.x), cd_to_rad(bf_angles_cd.y), cd_to_rad(target_yaw_rate_cds));
 
     // run the vertical position controller and set output throttle
     pos_control->update_U_controller();

@@ -120,7 +120,7 @@ void ModeDrift::run()
     }
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(cd_to_rad(target_roll_cd), cd_to_rad(target_pitch_cd), cd_to_rad(target_yaw_rate_cds));
 
     // output pilot's throttle with angle boost
     const float assisted_throttle = get_throttle_assist(vel_NEU_cms.z, get_pilot_desired_throttle());

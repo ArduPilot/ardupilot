@@ -491,7 +491,7 @@ void ModePosHold::run()
     pitch_cd = constrain_float(pitch_cd, -angle_max_cd, angle_max_cd);
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(roll_cd, pitch_cd, target_yaw_rate_cds);
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(cd_to_rad(roll_cd), cd_to_rad(pitch_cd), cd_to_rad(target_yaw_rate_cds));
 
     // run the vertical position controller and set output throttle
     pos_control->update_U_controller();
