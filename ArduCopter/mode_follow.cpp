@@ -2,6 +2,7 @@
 
 #if MODE_FOLLOW_ENABLED == ENABLED
 
+#include<AP_Camera/AP_Camera_Tracking.h>
 /*
  * mode_follow.cpp - follow another mavlink-enabled vehicle by system id
  *
@@ -128,7 +129,49 @@ void ModeFollow::run()
                 }
                 break;
             }
-
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+            case AP_Follow::YAW_BEHAVE_OBJECT_FOLLOW: {
+                AP_Mount *mount = AP_Mount::get_singleton();
+                float yaw_max, pitch_max;
+                float yaw_min, pitch_min;
+                mount->get_mount_yaw_limits(yaw_min,yaw_max);
+                mount->get_mount_pitch_limits(pitch_min,pitch_max);
+                // Get gimbal attitude
+                float roll, pitch, yaw;
+                if (!mount->get_attitude_euler(mount->get_primary_instance(), roll, pitch, yaw)) {
+                    break; 
+                }
+                float last_yaw_tobe_pointed_to;
+                bool last_yaw_tobe_pointed_to_isvalid = AP_Follow::get_singleton()->get_yaw_under_gimbal_limit_to_point_to(last_yaw_tobe_pointed_to);
+                
+                bool cond1 = yaw > (yaw_max - g2.follow.get_object_follow_yaw_reset());
+                bool cond2 = yaw < (yaw_min + g2.follow.get_object_follow_yaw_reset());
+                bool cond3 = !last_yaw_tobe_pointed_to_isvalid;
+                bool cond4 = pitch < (pitch_min + g2.follow.get_object_follow_pitch_reset());
+                
+                if (cond1 || cond2 || cond3 || cond4) {
+                    // gcs().send_text(MAV_SEVERITY_INFO, "Reset: y=%.1f p=%.1f c1=%d c2=%d c3=%d c4=%d", yaw, pitch, cond1, cond2, cond3, cond4);
+                    
+                    if (dist_vec.xy().length_squared() > 1.0) {
+                        yaw_cd = get_bearing_cd(Vector2f{}, dist_vec.xy());
+                        AP_Follow::get_singleton()->set_yaw_under_gimbal_limit_to_point_to(yaw_cd);
+                        use_yaw = true;
+                    } else {
+                        // code this
+                        // Its when your object is going (slowly or by some way) such that you can't get the distance vector less than 1 and
+                        // You have achieved your yaw and pitch limits
+                    }
+                }
+                last_yaw_tobe_pointed_to_isvalid = AP_Follow::get_singleton()->get_yaw_under_gimbal_limit_to_point_to(last_yaw_tobe_pointed_to);
+                if (last_yaw_tobe_pointed_to_isvalid) {
+                    yaw_cd = last_yaw_tobe_pointed_to;
+                    use_yaw = true;
+                } else {
+                    // code this
+                }
+                break;
+            }
+#endif
             case AP_Follow::YAW_BEHAVE_NONE:
             default:
                 // do nothing
