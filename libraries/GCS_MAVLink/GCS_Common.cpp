@@ -74,6 +74,7 @@
 
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Vehicle/AP_Vehicle_config.h>
+#include <AP_Camera/AP_Camera_config.h>
 
 #include <stdio.h>
 
@@ -1060,6 +1061,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_CAMERA_SETTINGS,       MSG_CAMERA_SETTINGS},
         { MAVLINK_MSG_ID_CAMERA_FOV_STATUS,     MSG_CAMERA_FOV_STATUS},
         { MAVLINK_MSG_ID_CAMERA_CAPTURE_STATUS, MSG_CAMERA_CAPTURE_STATUS},
+        { MAVLINK_MSG_ID_CAMERA_TRACKING_IMAGE_STATUS, MSG_CAMERA_TRACKING_IMAGE_STATUS},
 #endif
 #if HAL_MOUNT_ENABLED
         { MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS, MSG_GIMBAL_DEVICE_ATTITUDE_STATUS},
@@ -4122,6 +4124,7 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
     case MAVLINK_MSG_ID_GOPRO_HEARTBEAT: // heartbeat from a GoPro in Solo gimbal
     case MAVLINK_MSG_ID_CAMERA_INFORMATION:
+    case MAVLINK_MSG_ID_CAMERA_TRACKING_IMAGE_STATUS:
         {
             AP_Camera *camera = AP::camera();
             if (camera == nullptr) {
@@ -6108,6 +6111,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 #if AP_CAMERA_SEND_FOV_STATUS_ENABLED
     case MSG_CAMERA_FOV_STATUS:
 #endif
+    case MSG_CAMERA_TRACKING_IMAGE_STATUS:
     case MSG_CAMERA_CAPTURE_STATUS:
         {
             AP_Camera *camera = AP::camera();
