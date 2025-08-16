@@ -70,6 +70,10 @@ extern "C" {
 
 #endif // HAL_CHIBIOS_ENABLE_ASSERTS
 
+#if !defined(HAL_USE_LOAD_MEASURE)
+#define HAL_USE_LOAD_MEASURE TRUE
+#endif
+
 #if HAL_ENABLE_THREAD_STATISTICS
 #define CH_DBG_STATISTICS TRUE
 #else
@@ -762,6 +766,8 @@ extern "C" {
  */
 #define CH_CFG_IDLE_ENTER_HOOK() {                                          \
   /* Idle-enter code here.*/                                                \
+  extern void sysIdleEnterMeasure(void);                                    \
+  sysIdleEnterMeasure();                                                    \
 }
 
 /**
@@ -772,6 +778,8 @@ extern "C" {
  */
 #define CH_CFG_IDLE_LEAVE_HOOK() {                                          \
   /* Idle-leave code here.*/                                                \
+  extern void sysIdleLeaveMeasure(void);                                    \
+  sysIdleLeaveMeasure();                                                    \
 }
 
 /**

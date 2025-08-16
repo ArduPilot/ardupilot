@@ -20,6 +20,7 @@
 #include <hal.h>
 #include "Util.h"
 #include <ch.h>
+#include <sysperf.h>
 #include "RCOutput.h"
 #include "UARTDriver.h"
 #include "hwdef/common/stm32_util.h"
@@ -380,14 +381,19 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
 #endif
     // a header to allow for machine parsers to determine format
     const uint32_t isr_stack_size = uint32_t((const uint8_t *)&__main_stack_end__ - (const uint8_t *)&__main_stack_base__);
+#if HAL_USE_LOAD_MEASURE
+    str.printf("%-13.13s LOAD=%4.1f%% PEAK=%4.1f%%\n", "ThreadsV3", (sysGetCPUAverageLoad() / 100.0f), (sysGetCPUPeakLoad() / 100.0f));
+#else
+    str.printf("ThreadsV2\n");
+#endif
 #if HAL_ENABLE_THREAD_STATISTICS
-    str.printf("ThreadsV2\nISR           PRI=255 sp=%p STACK=%u/%u LOAD=%4.1f%%\n",
+    str.printf("ISR           PRI=255 sp=%p STACK=%u/%u LOAD=%4.1f%%\n",
                 &__main_stack_base__,
                 unsigned(stack_free(&__main_stack_base__)),
                 unsigned(isr_stack_size), 100.0f * float(currcore->kernel_stats.m_crit_isr.cumulative) / float(cumulative_cycles));
     currcore->kernel_stats.m_crit_isr.cumulative = 0U;
 #else
-    str.printf("ThreadsV2\nISR           PRI=255 sp=%p STACK=%u/%u\n",
+    str.printf("ISR           PRI=255 sp=%p STACK=%u/%u\n",
                 &__main_stack_base__,
                 unsigned(stack_free(&__main_stack_base__)),
                 unsigned(isr_stack_size));
@@ -430,6 +436,10 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
                     unsigned(stack_free(tp->wabase)), unsigned(total_stack));
 #endif
     }
+#if HAL_USE_LOAD_MEASURE
+    sysStopLoadMeasure();
+    sysStartLoadMeasure();
+#endif
 }
 #endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
 
