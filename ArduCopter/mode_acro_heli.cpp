@@ -115,7 +115,7 @@ void ModeAcro_Heli::run()
         }
 
         // run attitude controller
-        attitude_control->passthrough_bf_roll_pitch_rate_yaw_cds(roll_in_cds, pitch_in_cds, yaw_in_cds);
+        attitude_control->passthrough_bf_roll_pitch_rate_yaw_norm(roll_in_cds / 4500.0, pitch_in_cds / 4500.0, yaw_in_cds / 4500.0);
     }
 
     // get pilot's desired throttle
