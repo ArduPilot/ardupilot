@@ -14,5 +14,15 @@ struct sitl_input {
         float turbulence;
         float dir_z;	  //degrees -90..90
     } wind;
+
+    // see if the servos have been initialised
+    bool initialised(void) const {
+        for (uint8_t i=0; i<ARRAY_SIZE(servos); i++) {
+            if (servos[i] != 0) {
+                return true;
+            }
+        }
+        return false;
+    }
 };
 

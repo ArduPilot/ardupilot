@@ -109,6 +109,13 @@ void SimRover::update(const struct sitl_input &input)
         update_ackermann_or_skid(input, delta_time);
     }
 
+    if (!input.initialised()) {
+        // outputs are not yet initialised, prevent unintended
+        // movement
+        accel_body.zero();
+        velocity_ef.zero();
+    }
+
     // common to all rovers
 
     // now in earth frame
