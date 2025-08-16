@@ -51,7 +51,7 @@ void ModeDrift::run()
     float target_pitch_cd = rad_to_cd(target_pitch_rad);
 
     // Grab inertial velocity
-    const Vector3f& vel_NEU_cms = pos_control->get_vel_estimate_NEU_cms();
+    const Vector3f& vel_NEU_cms = pos_control->get_vel_estimate_NEU_ms() * 100.0;
 
     // rotate roll, pitch input from north facing to vehicle's perspective
     float vel_right_cms =  vel_NEU_cms.y * ahrs.cos_yaw() - vel_NEU_cms.x * ahrs.sin_yaw(); // body roll vel_NEU_cms
@@ -120,7 +120,7 @@ void ModeDrift::run()
     }
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(cd_to_rad(target_roll_cd), cd_to_rad(target_pitch_cd), cd_to_rad(target_yaw_rate_cds));
 
     // output pilot's throttle with angle boost
     const float assisted_throttle = get_throttle_assist(vel_NEU_cms.z, get_pilot_desired_throttle());

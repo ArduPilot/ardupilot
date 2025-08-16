@@ -206,8 +206,8 @@ void ModeThrow::run()
     if ((stage != prev_stage) || (now - last_log_ms) > 100) {
         prev_stage = stage;
         last_log_ms = now;
-        const float velocity = pos_control->get_vel_estimate_NEU_cms().length();
-        const float velocity_z = pos_control->get_vel_estimate_NEU_cms().z;
+        const float velocity_cms = pos_control->get_vel_estimate_NEU_ms().length() * 100.0;
+        const float velocity_z_cms = pos_control->get_vel_estimate_NEU_ms().z * 100.0;
         const float accel = copter.ins.get_accel().length();
         const float ef_accel_z = ahrs.get_accel_ef().z;
         const bool throw_detect = (stage > Throw_Detecting) || throw_detected();
@@ -237,8 +237,8 @@ void ModeThrow::run()
             "QBffffbbbb",
             AP_HAL::micros64(),
             (uint8_t)stage,
-            (double)velocity,
-            (double)velocity_z,
+            (double)velocity_cms,
+            (double)velocity_z_cms,
             (double)accel,
             (double)ef_accel_z,
             throw_detect,
@@ -263,14 +263,14 @@ bool ModeThrow::throw_detected()
     }
 
     // Check for high speed (>500 cm/s)
-    bool high_speed = pos_control->get_vel_estimate_NEU_cms().length_squared() > (THROW_HIGH_SPEED * THROW_HIGH_SPEED);
+    bool high_speed = pos_control->get_vel_estimate_NEU_ms().length_squared() * 100.0 * 100.0 > (THROW_HIGH_SPEED * THROW_HIGH_SPEED);
 
     // check for upwards or downwards trajectory (airdrop) of 50cm/s
     bool changing_height;
     if (g2.throw_type == ThrowType::Drop) {
-        changing_height = pos_control->get_vel_estimate_NEU_cms().z < -THROW_VERTICAL_SPEED;
+        changing_height = pos_control->get_vel_estimate_NEU_ms().z * 100.0 < -THROW_VERTICAL_SPEED;
     } else {
-        changing_height = pos_control->get_vel_estimate_NEU_cms().z > THROW_VERTICAL_SPEED;
+        changing_height = pos_control->get_vel_estimate_NEU_ms().z * 100.0 > THROW_VERTICAL_SPEED;
     }
 
     // Check the vertical acceleration is greater than 0.25g
@@ -298,11 +298,11 @@ bool ModeThrow::throw_detected()
     // Record time and vertical velocity when we detect the possible throw
     if (possible_throw_detected && ((AP_HAL::millis() - free_fall_start_ms) > 500)) {
         free_fall_start_ms = AP_HAL::millis();
-        free_fall_start_velz = pos_control->get_vel_estimate_NEU_cms().z;
+        free_fall_start_velz = pos_control->get_vel_estimate_NEU_ms().z * 100.0;
     }
 
     // Once a possible throw condition has been detected, we check for 2.5 m/s of downwards velocity change in less than 0.5 seconds to confirm
-    bool throw_condition_confirmed = ((AP_HAL::millis() - free_fall_start_ms < 500) && ((pos_control->get_vel_estimate_NEU_cms().z - free_fall_start_velz) < -250.0f));
+    bool throw_condition_confirmed = ((AP_HAL::millis() - free_fall_start_ms < 500) && ((pos_control->get_vel_estimate_NEU_ms().z * 100.0 - free_fall_start_velz) < -250.0f));
 
     // start motors and enter the control mode if we are in continuous freefall
     return throw_condition_confirmed;

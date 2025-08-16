@@ -319,7 +319,7 @@ void AC_AutoTune::run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // Update vertical position controller with pilot climb rate input
-    pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cms);
+    pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_cms * 0.01);
     pos_control->update_U_controller();
 }
 
@@ -706,7 +706,7 @@ void AC_AutoTune::get_poshold_attitude_rad(float &roll_out_rad, float &pitch_out
 
     if (!have_position) {
         have_position = true;
-        start_position = pos_control->get_pos_estimate_NEU_cm().tofloat();
+        start_position = pos_control->get_pos_estimate_NEU_m().tofloat() * 100.0;
     }
 
     // don't go past 10 degrees, as autotune result would deteriorate too much
@@ -719,7 +719,7 @@ void AC_AutoTune::get_poshold_attitude_rad(float &roll_out_rad, float &pitch_out
     // target position. That corresponds to a lean angle of 2.5 degrees
     const float yaw_dist_limit_cm = 500;
 
-    Vector3f pos_error_neu_cm = pos_control->get_pos_estimate_NEU_cm().tofloat() - start_position;
+    Vector3f pos_error_neu_cm = pos_control->get_pos_estimate_NEU_m().tofloat() * 100.0 - start_position;
     pos_error_neu_cm.z = 0;
     float dist_cm = pos_error_neu_cm.length();
     if (dist_cm < 10) {
