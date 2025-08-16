@@ -29,7 +29,7 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Camera/AP_Camera_shareddefs.h>
 #include "AP_Mount.h"
-
+#include <AP_Camera/AP_Camera_config.h>
 class AP_Mount_Backend
 {
 public:
@@ -178,7 +178,7 @@ public:
     // set tracking to none, point or rectangle (see TrackingType enum)
     // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
     // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
-    virtual bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2) { return false; }
+    virtual bool set_tracking(TrackingType tracking_type, const Vector2f& top_left, const Vector2f& bottom_right) { return false; }
 
     // set camera lens as a value from 0 to 5
     virtual bool set_lens(uint8_t lens) { return false; }
@@ -213,6 +213,11 @@ public:
     // enable/disable rangefinder.  Returns true on success
     virtual bool set_rangefinder_enable(bool enable) { return false; }
 
+    // get mount yaw limits
+    void get_mount_yaw_limits(float &yaw_min, float &yaw_max);
+
+    // get mount yaw limits
+    void get_mount_pitch_limits(float &pitch_min, float &pitch_max);
 protected:
 
     enum class MountTargetType {
@@ -262,6 +267,12 @@ protected:
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
     // calculate the Location that the gimbal is pointing at
     void calculate_poi();
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+    // Calculate object direction based on camera characteristics and object position
+    bool calculate_object_direction_offset(const Vector2f& obj_frame_pos, Vector3f& angle_offset_rad);
+    // Get object position within camera frame from tracking system
+    bool get_object_position_in_frame(Vector2f& normalized_pos, float& confidence);
+#endif // AP_CAMERA_OFFBOARD_TRACKING_ENABLED
 #endif
 
     // change to RC_TARGETTING mode if rc inputs have changed by more than the dead zone

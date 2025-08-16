@@ -156,6 +156,14 @@ public:
     void set_mode_to_default() { set_mode_to_default(_primary); }
     void set_mode_to_default(uint8_t instance);
 
+    // gets mount's min and max yaw limits
+    void get_mount_yaw_limits(float &yaw_min, float &yaw_max) { return get_mount_yaw_limits(_primary, yaw_min, yaw_max); }
+    void get_mount_yaw_limits(uint8_t instance, float &yaw_min, float &yaw_max);
+
+    // gets mount's min and max pitch limits
+    void get_mount_pitch_limits(float &pitch_min, float &pitch_max) { return get_mount_pitch_limits(_primary, pitch_min, pitch_max); }
+    void get_mount_pitch_limits(uint8_t instance, float &pitch_min, float &pitch_max);
+
     // set yaw_lock used in RC_TARGETING mode.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
     // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
     void set_yaw_lock(bool yaw_lock) { set_yaw_lock(_primary, yaw_lock); }
@@ -251,7 +259,7 @@ public:
     // set tracking to none, point or rectangle (see TrackingType enum)
     // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
     // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
-    bool set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
+    bool set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& top_left, const Vector2f& bottom_right);
 
     // set camera lens as a value from 0 to 5
     bool set_lens(uint8_t instance, uint8_t lens);
