@@ -16,8 +16,18 @@ public:
 
     void convert_pid();
 
+    /*
+      set the in_recovery flag, which is used during a VTOL upset recovery
+      this flag only lasts one loop
+    */
+    void set_in_recovery(void) {
+        in_recovery = true;
+    }
+
 private:
     float get_airspeed() const override;
     bool is_underspeed(const float aspeed) const override;
     float get_measured_rate() const override;
+
+    bool in_recovery;
 };
