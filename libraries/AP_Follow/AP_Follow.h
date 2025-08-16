@@ -25,6 +25,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AC_PID/AC_P.h>
 #include <AP_RTC/JitterCorrection.h>
+#include <AP_Camera/AP_Camera_config.h>
 
 class AP_Follow
 {
@@ -33,7 +34,10 @@ public:
 
     // enum for FOLLOW_OPTIONS parameter
     enum class Option {
-        MOUNT_FOLLOW_ON_ENTER = 1
+        MOUNT_FOLLOW_ON_ENTER = 1,
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+        OBJECT_FOLLOW_ON_ENTER = 2
+#endif
     };
 
     // enum for YAW_BEHAVE parameter
@@ -41,7 +45,10 @@ public:
         YAW_BEHAVE_NONE = 0,
         YAW_BEHAVE_FACE_LEAD_VEHICLE = 1,
         YAW_BEHAVE_SAME_AS_LEAD_VEHICLE = 2,
-        YAW_BEHAVE_DIR_OF_FLIGHT = 3
+        YAW_BEHAVE_DIR_OF_FLIGHT = 3,
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+        YAW_BEHAVE_OBJECT_FOLLOW = 4
+#endif
     };
 
     // constructor
@@ -69,10 +76,10 @@ public:
     bool have_target() const;
 
     // get target's estimated location and velocity (in NED)
-    bool get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const;
+    bool get_target_location_and_velocity(Location &loc, Vector3f &vel_ned);
 
     // get target's estimated location and velocity (in NED), with offsets added
-    bool get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned) const;
+    bool get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned);
     
     // get distance vector to target (in meters), target plus offsets, and target's velocity all in NED frame
     bool get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned);
@@ -89,6 +96,24 @@ public:
 
     // get user defined yaw behaviour
     YawBehave get_yaw_behave() const { return (YawBehave)_yaw_behave.get(); }
+
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+    // get object follow yaw reset 
+    float get_object_follow_yaw_reset() {float ret = _object_follow_yaw_reset.get(); return ret; }
+
+    // get object follow pitch reset 
+    float get_object_follow_pitch_reset() {float ret = _object_follow_pitch_reset.get(); return ret; }
+
+    // Get the last safe yaw value such that the gimbal wont acheve its limits during the object follow
+    bool get_yaw_under_gimbal_limit_to_point_to(float &yaw) { 
+        if (yaw_under_gimbal_limit_to_point_to_is_valid) {
+            yaw = yaw_under_gimbal_limit_to_point_to;
+            return true;
+        }
+        return false; 
+    }
+    void set_yaw_under_gimbal_limit_to_point_to(float yaw_cd) { yaw_under_gimbal_limit_to_point_to = yaw_cd; yaw_under_gimbal_limit_to_point_to_is_valid = true; }
+#endif
 
     // get target's heading in degrees (0 = north, 90 = east)
     bool get_target_heading_deg(float &heading) const;
@@ -153,6 +178,12 @@ private:
     AP_Int8     _alt_type;          // altitude source for follow mode
     AC_P        _p_pos;             // position error P controller
     AP_Int16    _options;           // options for mount behaviour follow mode
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+    AP_Float    _object_follow_margin; // object follow margin from the center of the frame
+    AP_Float    _poi_delay;
+    AP_Float    _object_follow_yaw_reset;
+    AP_Float    _object_follow_pitch_reset;
+#endif
 
     // local variables
     uint32_t _last_location_update_ms;  // system time of last position update
@@ -165,6 +196,13 @@ private:
     float _dist_to_target;          // latest distance to target in meters (for reporting purposes)
     float _bearing_to_target;       // latest bearing to target in degrees (for reporting purposes)
     bool _offsets_were_zero;        // true if offsets were originally zero and then initialised to the offset from lead vehicle
+    Location _last_object_location; // last location of the object
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+    bool _last_location_valid = false;
+    uint32_t _last_poi_update_ms;       // system time of last POI update
+    float yaw_under_gimbal_limit_to_point_to;
+    bool yaw_under_gimbal_limit_to_point_to_is_valid = false;
+#endif
 
     // setup jitter correction with max transport lag of 3s
     JitterCorrection _jitter{3000};

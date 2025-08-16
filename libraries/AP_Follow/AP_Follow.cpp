@@ -26,6 +26,8 @@
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Mount/AP_Mount.h>
+#include <AP_Camera/AP_Camera.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -137,9 +139,43 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Param: _OPTIONS
     // @DisplayName: Follow options
     // @Description: Follow options bitmask
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+    // @Values: 0:None,1: Mount Follows lead vehicle on mode enter, 2: Follows object tracked by the gimbal target.
+#else
     // @Values: 0:None,1: Mount Follows lead vehicle on mode enter
+#endif
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 11, AP_Follow, _options, 0),
+
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+    // @Param: _OBJ_FOLL_M
+    // @DisplayName: Object follow margin
+    // @Description: Object follow margin with respect to the frame (if the object is outside margin it will not be followed)
+    // @User: Standard
+    // @Range: 0.0 0.5
+    AP_GROUPINFO("_OBJ_FOLL_M", 12, AP_Follow, _object_follow_margin, 0.05),
+
+    // @Param: _POI_DELAY
+    // @DisplayName: Point of interest delay
+    // @Description: It's how much time we wait before using the current tracked object's lat-lon-alt as the setpoint (Set this to high if the fps of the tracking is low)
+    // @User: Standard
+    // @Units: Seconds
+    AP_GROUPINFO("_POI_DELAY", 13, AP_Follow, _poi_delay, 1),
+
+    // @Param: _OBJ_Y_RST
+    // @DisplayName: Object Follow Yaw Reset
+    // @Description: At how much yaw angle of the mount (gimbal) the vehicle's yaw will reset (face towards the object), helps when gimbal's yaw is reaching its limit and can't go further while the objecting is moving out of the frame
+    // @User: Standard
+    // @Units: Degrees
+    AP_GROUPINFO("_OBJ_Y_RST", 14, AP_Follow, _object_follow_yaw_reset, 90),
+
+    // @Param: _OBJ_P_RST
+    // @DisplayName: Object Follow Pitch Reset
+    // @Description: At how much pitch angle of the mount (gimbal) the vehicle's yaw will reset (face towards the object), helps when gimbal's pitch is reaching its limit and can't go further while the objecting is moving out of the frame
+    // @User: Standard
+    // @Units: Degrees
+    AP_GROUPINFO("_OBJ_P_RST", 15, AP_Follow, _object_follow_pitch_reset, 90),
+#endif
 
     AP_GROUPEND
 };
@@ -166,7 +202,7 @@ void AP_Follow::clear_offsets_if_required()
 }
 
 // get target's estimated location
-bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const
+bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ned)
 {
     // exit immediately if not enabled
     if (!_enabled) {
@@ -175,24 +211,65 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
 
     // check for timeout
     if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
-        return false;
+        if (option_is_enabled(Option::MOUNT_FOLLOW_ON_ENTER)) {
+            return false;
+        }
     }
 
     // calculate time since last actual position update
     const float dt = (AP_HAL::millis() - _last_location_update_ms) * 0.001f;
 
     // get velocity estimate
-    if (!get_velocity_ned(vel_ned, dt)) {
-        return false;
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+    if (option_is_enabled(Option::OBJECT_FOLLOW_ON_ENTER)) {
+        vel_ned = {0,0,0};
+    } else {
+#endif
+        if (!get_velocity_ned(vel_ned, dt)) {
+            return false;
+        }
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
     }
+#endif
 
     // project the vehicle position
-    Location last_loc = _target_location;
-    last_loc.offset(vel_ned.x * dt, vel_ned.y * dt);
-    last_loc.alt -= vel_ned.z * 100.0f * dt; // convert m/s to cm/s, multiply by dt.  minus because NED
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+    if (option_is_enabled(Option::OBJECT_FOLLOW_ON_ENTER)) {
+        uint8_t instance = 0;
+        Quaternion quat;
+        Location poi_loc;
+        if (AP_Camera::get_singleton()->is_tracking_object_visible(0)) {
+            float obj_foll_margin = _object_follow_margin;
+            if (AP_Camera::get_singleton()->is_tracking_object_visible_near_center(0, obj_foll_margin)) {
+                if (AP_Mount::get_singleton()->get_poi(instance,quat,loc,poi_loc)) {
+                    uint32_t now_ms = AP_HAL::millis();
+                    if (now_ms - _last_poi_update_ms > _poi_delay*1000.0f) {  // Only update if POI is more than 2 seconds old
+                        poi_loc.change_alt_frame(_last_object_location.get_alt_frame());
+                        _last_object_location = poi_loc;
+                        _last_poi_update_ms = now_ms;
+                        _last_location_valid = true;
+                    } else {
+                        // Use cached location if POI is fresh
+                    }
+                } else {
+                    return false;
+                }
+            }
+        } else {
+            printf("No object detected");
+            return false;
+        }
+    } else
+#endif
+    if (option_is_enabled(Option::MOUNT_FOLLOW_ON_ENTER)) {
+        _last_object_location = _target_location;
+    }
+
+    _last_object_location.offset(vel_ned.x * dt, vel_ned.y * dt);
+    _last_object_location.alt -= vel_ned.z * 100.0f * dt; // convert m/s to cm/s, multiply by dt.  minus because NED
 
     // return latest position estimate
-    loc = last_loc;
+    loc = _last_object_location;
     return true;
 }
 
@@ -538,7 +615,7 @@ void AP_Follow::clear_dist_and_bearing_to_target()
 }
 
 // get target's estimated location and velocity (in NED), with offsets added
-bool AP_Follow::get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned) const
+bool AP_Follow::get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned)
 {
     Vector3f ofs;
     if (!get_offsets_ned(ofs) ||
