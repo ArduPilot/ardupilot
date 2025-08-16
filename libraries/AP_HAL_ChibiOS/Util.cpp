@@ -443,6 +443,20 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
 }
 #endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
 
+// get the system load
+bool Util::get_system_load(float& avg_load, float& peak_load) const
+{
+#if HAL_USE_LOAD_MEASURE
+    avg_load = sysGetCPUAverageLoad() / 100.0f;
+    peak_load = sysGetCPUPeakLoad() / 100.0f;
+
+    return true;
+#else
+    return false;
+#endif
+}
+
+
 #if CH_CFG_USE_SEMAPHORES
 // request information on dma contention
 void Util::dma_info(ExpandingString &str)
