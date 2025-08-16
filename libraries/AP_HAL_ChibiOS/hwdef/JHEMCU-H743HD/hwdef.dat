@@ -178,3 +178,4 @@ define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 define HAL_DEFAULT_INS_FAST_SAMPLE 3
 # Motor order implies Betaflight/X for standard ESCs
 define HAL_FRAME_TYPE_DEFAULT 12
+define DEFAULT_NTF_LED_TYPES 455

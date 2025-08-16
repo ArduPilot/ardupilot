@@ -181,3 +181,4 @@ define AP_BARO_MS5637_ENABLED 1
 # need to probe external baros even 'though we're minimised to allow custom build options:
 undef AP_BARO_PROBE_EXTERNAL_I2C_BUSES
 define AP_BARO_PROBE_EXTERNAL_I2C_BUSES 1
+define DEFAULT_NTF_LED_TYPES 455
