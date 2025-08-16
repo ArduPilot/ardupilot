@@ -141,8 +141,17 @@ public:
     // set tracking to none, point or rectangle (see TrackingType enum)
     // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
     // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
-    bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
-    bool set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
+    bool set_tracking(TrackingType tracking_type, const Vector2f& top_left, const Vector2f& bottom_right);
+    bool set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& top_left, const Vector2f& bottom_right);
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+    bool is_tracking_object_visible(uint8_t instance);
+    bool get_tracked_object_position(uint8_t instance, Vector2f& normalized_pos, float& confidence);
+    bool is_tracking_object_visible_near_center(uint8_t instance, float _object_follow_margin);
+#endif
+
+    // The Horizontal and Vertical FOV can be accessed by these functions outside the camera library
+    bool get_hfov(uint8_t instance, float& hfov);
+    bool get_vfov(uint8_t instance, float& vfov);
 
 #if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
     // set camera lens as a value from 0 to 5, instance starts from 0
@@ -236,6 +245,9 @@ private:
 
     // send camera capture status message to GCS
     void send_camera_capture_status(mavlink_channel_t chan);
+
+    // send camera tracking image status message
+    void send_camera_tracking_image_status(mavlink_channel_t chan);
 
     HAL_Semaphore _rsem;                // semaphore for multi-thread access
     AP_Camera_Backend *primary;         // primary camera backed

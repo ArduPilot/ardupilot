@@ -26,6 +26,10 @@
 #include <AP_Common/Location.h>
 #include <AP_Logger/LogStructure.h>
 
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+#include <AP_Camera/AP_Camera_Tracking.h>
+#endif
+
 class AP_Camera_Backend
 {
 public:
@@ -45,7 +49,7 @@ public:
     }
 
     // init - performs any required initialisation
-    virtual void init() {};
+    void init();
 
     // update - should be called at 50hz
     virtual void update();
@@ -83,7 +87,67 @@ public:
     // set tracking to none, point or rectangle (see TrackingType enum)
     // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
     // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
-    virtual bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2) { return false; }
+    bool set_tracking(TrackingType tracking_type, const Vector2f& top_left, const Vector2f& bottom_right);
+
+    // default tracking supported by camera
+    virtual bool set_tracking_internal(TrackingType tracking_type, const Vector2f& top_left, const Vector2f& bottom_right) { return false; }
+
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+    // returns true if the object to be tracked is visible in the frame
+    bool is_tracking_object_visible() {
+        if (camera_settings._cam_tracking_status.tracking_status & CAMERA_TRACKING_STATUS_FLAGS_ACTIVE) {
+            return true;
+        }
+        return false;
+    }
+
+    // Returns if the tracked object is into certain vicinity of the frame decided by a margin (0.0-0.5)
+    // if margin is 0.5 this means full frame
+    bool is_tracking_object_visible_near_center(float object_follow_margin) {
+        if (camera_settings._cam_tracking_status.tracking_status & CAMERA_TRACKING_STATUS_FLAGS_ACTIVE) {
+            float center_x =  (camera_settings._cam_tracking_status.rec_bottom_x + camera_settings._cam_tracking_status.rec_top_x)/2.0f;
+            float center_y =  (camera_settings._cam_tracking_status.rec_bottom_y + camera_settings._cam_tracking_status.rec_top_y)/2.0f;
+            if (center_x >= (0.5f - object_follow_margin) && center_x <= (0.5f + object_follow_margin) && center_y >= (0.5f - object_follow_margin) && center_y <= (0.5f + object_follow_margin)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // gets the tracked object position in 0.0 - 1.0 range , x and y axis both
+    bool get_tracked_object_position(Vector2f& normalized_pos, float& confidence) {
+        if (camera_settings._cam_tracking_status.tracking_status & CAMERA_TRACKING_STATUS_FLAGS_ACTIVE) {
+            float center_x =  (camera_settings._cam_tracking_status.rec_bottom_x + camera_settings._cam_tracking_status.rec_top_x)/2.0f;
+            float center_y =  (camera_settings._cam_tracking_status.rec_bottom_y + camera_settings._cam_tracking_status.rec_top_y)/2.0f;
+            normalized_pos.x = center_x;
+            normalized_pos.y = center_y;
+            confidence = 1.0; // fix this confidence, if we support a better tracker with confidence values in future
+            return true;
+        }
+        return false;
+    }
+
+    // Onboard controller specific tracking
+    bool set_tracking_external(TrackingType tracking_type, const Vector2f& top_left, const Vector2f& bottom_right);
+#endif
+
+    // get horizontal FOV of the Camera
+    bool get_hfov(float &hfov) {
+        hfov = horizontal_fov();
+        if (iszero(hfov)) {
+            return false;
+        }
+        return true;
+    }
+
+    // get vertical FOV of the Camera
+    bool get_vfov(float &vfov) {
+        vfov = vertical_fov();
+        if (iszero(vfov)) {
+            return false;
+        }
+        return true;
+    }
 
     // set camera lens as a value from 0 to 5
     virtual bool set_lens(uint8_t lens) { return false; }
@@ -98,7 +162,16 @@ public:
     float vertical_fov() const { return MAX(0, _params.vfov); }
 
     // handle MAVLink messages from the camera
-    virtual void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg) {}
+    // child classes must call the parent's i.e. AP_Camera_Backend's handle_message also
+    virtual void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg);
+
+    // handle camera information message
+    void handle_message_camera_information(mavlink_channel_t chan, const mavlink_message_t &msg);
+
+    // handle image tracking status messages
+    void handle_message_camera_tracking_image_status(mavlink_channel_t chan, const mavlink_message_t &msg);
+    // send camera tracking image status message to GCS 
+    void send_camera_tracking_image_status(mavlink_channel_t chan) const;
 
     // configure camera
     virtual void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, int32_t exposure_type, int32_t cmd_id, float engine_cutoff_time) {}
@@ -137,6 +210,9 @@ protected:
     // references
     AP_Camera &_frontend;       // reference to the front end which holds parameters
     AP_Camera_Params &_params;  // parameters for this backend
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+    AP_Camera_Tracking* tracker; // reference to the camera tracking object
+#endif
 
     // feedback pin related methods
     void setup_feedback_callback();
@@ -186,6 +262,16 @@ protected:
     Location last_location;         // Location that last picture was taken at (used for trigg_dist calculation)
     uint16_t image_index;           // number of pictures taken since boot
     bool last_is_armed;             // stores last arm/disarm state. true if it was armed lastly
+
+private:
+    struct {
+        bool _got_camera_info;      // true once camera has provided CAMERA_INFORMATION
+        mavlink_camera_information_t _cam_info {}; // latest camera information received from camera
+        mavlink_camera_tracking_image_status_t _cam_tracking_status {}; // current camera tracking status
+        uint8_t _sysid_camera;      // sysid of camera
+        uint8_t _compid_camera;     // component id of gimbal
+    } camera_settings;
+
 };
 
 #endif // AP_CAMERA_ENABLED
