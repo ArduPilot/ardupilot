@@ -36,6 +36,7 @@
 // Application dependencies
 #include <AP_Logger/AP_Logger.h>          // ArduPilot Mega Flash Memory Library
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
+#include <AP_Math/SCurve.h>
 // #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 // #include <AP_InertialSensor/AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
 #include <AP_AHRS/AP_AHRS.h>
@@ -46,12 +47,13 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Scripting/AP_Scripting.h>
-#include <AC_PID/AC_PID_2D.h>
-#include <AC_PID/AC_PID_Basic.h>
 #include <AC_PID/AC_PID.h>
 #include <AP_Vehicle/AP_MultiCopter.h>
 
 #include <Filter/NotchFilter.h>
+
+#include <AP_Mission/AP_Mission.h>                              // Mission command library
+#include <AP_Mission/AP_Mission_ChangeDetector.h>               // Mission command change detection
 
 // Configuration
 #include "defines.h"
@@ -92,6 +94,9 @@ public:
     friend class ModeVelocity;
     friend class ModeLoiter;
     friend class ModeRTL;
+    friend class ModeAuto;
+    friend class ModeHold;
+    friend class ModeLevel;
 
     friend class Fins;
     friend class Loiter;
@@ -218,21 +223,13 @@ private:
     Vector3f pos_ned;
     float vel_yaw;
     float vel_yaw_filtd;
-    NotchFilterVector2f vel_xy_filter;
+    NotchFilterFloat vel_x_filter;
+    NotchFilterFloat vel_y_filter;
     NotchFilterFloat vel_z_filter;
     NotchFilterFloat vel_yaw_filter;
 
     // Inertial Navigation
     AP_InertialNav inertial_nav;
-
-    // Vel & pos PIDs
-    AC_PID_2D pid_vel_xy{3, 0.2, 0, 0, 0.2, 3, 3}; //These are the defaults - P I D FF IMAX FiltHz FiltDHz DT
-    AC_PID_Basic pid_vel_z{7, 1.5, 0, 0, 1, 3, 3};
-    AC_PID_Basic pid_vel_yaw{3, 0.4, 0, 0, 0.2, 3, 3};
-
-    AC_PID_2D pid_pos_xy{1, 0.05, 0, 0, 0.1, 3, 3};
-    AC_PID_Basic pid_pos_z{0.7, 0, 0, 0, 0, 3, 3};
-    AC_PID pid_pos_yaw{1.2, 0.5, 0, 0, 2, 3, 3, 3}; //p, i, d, ff, imax, filt_t, filt_e, filt_d, dt, opt srmax, opt srtau
 
     // System Timers
     // --------------
@@ -427,6 +424,9 @@ private:
     ModeVelocity mode_velocity;
     ModeLoiter mode_loiter;
     ModeRTL mode_rtl;
+    ModeAuto mode_auto;
+    ModeHold mode_hold;
+    ModeLevel mode_level;
 
     // mode.cpp
     Mode *mode_from_mode_num(const Mode::Number mode);
