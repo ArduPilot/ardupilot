@@ -91,61 +91,49 @@ public:
     virtual const AC_PID& get_rate_yaw_pid() const = 0;
 
     // get the roll acceleration limit in centidegrees/s/s or radians/s/s
-    float get_accel_roll_max_cdss() const { return _accel_roll_max_cdss; }
     float get_accel_roll_max_radss() const { return cd_to_rad(_accel_roll_max_cdss); }
 
     // Sets the roll acceleration limit in centidegrees/s/s
-    void set_accel_roll_max_cdss(float accel_roll_max) { _accel_roll_max_cdss.set(accel_roll_max); }
+    void set_accel_roll_max_radss(float accel_roll_max_radss) { _accel_roll_max_cdss.set(rad_to_cd(accel_roll_max_radss)); }
 
     // Sets and saves the roll acceleration limit in centidegrees/s/s
-    void save_accel_roll_max_cdss(float accel_roll_max) { _accel_roll_max_cdss.set_and_save(accel_roll_max); }
+    void save_accel_roll_max_radss(float accel_roll_max_radss) { _accel_roll_max_cdss.set_and_save(rad_to_cd(accel_roll_max_radss)); }
 
     // get the pitch acceleration limit in centidegrees/s/s or radians/s/s
-    float get_accel_pitch_max_cdss() const { return _accel_pitch_max_cdss; }
     float get_accel_pitch_max_radss() const { return cd_to_rad(_accel_pitch_max_cdss); }
 
     // Sets the pitch acceleration limit in centidegrees/s/s
-    void set_accel_pitch_max_cdss(float accel_pitch_max) { _accel_pitch_max_cdss.set(accel_pitch_max); }
+    void set_accel_pitch_max_radss(float accel_pitch_max_radss) { _accel_pitch_max_cdss.set(rad_to_cd(accel_pitch_max_radss)); }
 
     // Sets and saves the pitch acceleration limit in centidegrees/s/s
-    void save_accel_pitch_max_cdss(float accel_pitch_max) { _accel_pitch_max_cdss.set_and_save(accel_pitch_max); }
+    void save_accel_pitch_max_radss(float accel_pitch_max_radss) { _accel_pitch_max_cdss.set_and_save(rad_to_cd(accel_pitch_max_radss)); }
 
     // get the yaw acceleration limit in centidegrees/s/s or radians/s/s
-    float get_accel_yaw_max_cdss() const { return _accel_yaw_max_cdss; }
     float get_accel_yaw_max_radss() const { return cd_to_rad(_accel_yaw_max_cdss); }
 
     // Sets the yaw acceleration limit in centidegrees/s/s
-    void set_accel_yaw_max_cdss(float accel_yaw_max) { _accel_yaw_max_cdss.set(accel_yaw_max); }
+    void set_accel_yaw_max_radss(float accel_yaw_max_radss) { _accel_yaw_max_cdss.set(rad_to_cd(accel_yaw_max_radss)); }
 
     // Sets and saves the yaw acceleration limit in centidegrees/s/s
-    void save_accel_yaw_max_cdss(float accel_yaw_max) { _accel_yaw_max_cdss.set_and_save(accel_yaw_max); }
+    void save_accel_yaw_max_radss(float accel_yaw_max_radss) { _accel_yaw_max_cdss.set_and_save(rad_to_cd(accel_yaw_max_radss)); }
 
     // get the roll angular velocity limit in radians/s
     float get_ang_vel_roll_max_rads() const { return radians(_ang_vel_roll_max_degs); }
-    // get the roll angular velocity limit in degrees/s
-    float get_ang_vel_roll_max_degs() const { return _ang_vel_roll_max_degs; }
 
-    // set the roll angular velocity limit in degrees/s
-    void set_ang_vel_roll_max_degs(float vel_roll_max) { _ang_vel_roll_max_degs.set(vel_roll_max); }
+    // set the roll angular velocity limit in rad/s
+    void set_ang_vel_roll_max_rads(float vel_roll_max_rads) { _ang_vel_roll_max_degs.set(degrees(vel_roll_max_rads)); }
 
-    // get the pitch angular velocity limit in radians/s
+    // get the pitch angular velocity limit in rad/s
     float get_ang_vel_pitch_max_rads() const { return radians(_ang_vel_pitch_max_degs); }
-    // get the pitch angular velocity limit in degrees/s
-    float get_ang_vel_pitch_max_degs() const { return _ang_vel_pitch_max_degs; }
 
-    // set the pitch angular velocity limit in degrees/s
-    void set_ang_vel_pitch_max_degs(float vel_pitch_max) { _ang_vel_pitch_max_degs.set(vel_pitch_max); }
+    // set the pitch angular velocity limit in rad/s
+    void set_ang_vel_pitch_max_rads(float vel_pitch_max_rads) { _ang_vel_pitch_max_degs.set(degrees(vel_pitch_max_rads)); }
 
-    // get the yaw angular velocity limit in radians/s
+    // get the yaw angular velocity limit in rad/s
     float get_ang_vel_yaw_max_rads() const { return radians(_ang_vel_yaw_max_degs); }
-    // get the yaw angular velocity limit in degrees/s
-    float get_ang_vel_yaw_max_degs() const { return _ang_vel_yaw_max_degs; }
 
-    // set the yaw angular velocity limit in degrees/s
-    void set_ang_vel_yaw_max_degs(float vel_yaw_max) { _ang_vel_yaw_max_degs.set(vel_yaw_max); }
-
-    // get the slew yaw rate limit in deg/s
-    float get_slew_yaw_max_degs() const;
+    // set the yaw angular velocity limit in rad/s
+    void set_ang_vel_yaw_max_rads(float vel_yaw_max_rads) { _ang_vel_yaw_max_degs.set(degrees(vel_yaw_max_rads)); }
 
     // get the slew yaw rate limit in rad/s
     float get_slew_yaw_max_rads() const;
@@ -278,17 +266,9 @@ public:
     // dictates VTOL rates. No smoothing or shaping is applied.
     void input_rate_bf_roll_pitch_yaw_no_shaping_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads);
 
-    // Applies a one-time angular offset in body-frame roll/pitch/yaw angles (in centidegrees).
-    // See input_angle_step_bf_roll_pitch_yaw_rad() for full details.
-    void input_angle_step_bf_roll_pitch_yaw_cd(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd);
-
     // Applies a one-time angular offset in body-frame roll/pitch/yaw angles (in radians).
     // Used for initiating step responses during autotuning or manual test inputs.
     virtual void input_angle_step_bf_roll_pitch_yaw_rad(float roll_angle_step_bf_rad, float pitch_angle_step_bf_rad, float yaw_angle_step_bf_rad);
-
-    // Applies a one-time angular velocity offset in body-frame roll/pitch/yaw (in centidegrees/s).
-    // See input_rate_step_bf_roll_pitch_yaw_rads() for full details.
-    void input_rate_step_bf_roll_pitch_yaw_cds(float roll_rate_step_bf_cds, float pitch_rate_step_bf_cds, float yaw_rate_step_bf_cds);
     
     // Applies a one-time angular velocity offset in body-frame roll/pitch/yaw (in radians/s).
     // Used to apply discrete disturbances or step inputs for system identification.
