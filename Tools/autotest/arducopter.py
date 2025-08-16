@@ -14312,6 +14312,7 @@ RTL_ALT 111
         self.assert_parameter_value('DISARM_DELAY', 111)
 
         # very bad things happen if we don't turn things off at the end..
+        self.delay_sim_time(1, "allow param-set parameter values to initialise")
         self.set_parameter("PARAM_SET_ENABLE", 0)
 
     def do_land(self):
