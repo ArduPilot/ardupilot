@@ -32,8 +32,17 @@ void Copter::takeoff_check()
     const bool telem_active = AP::esc_telem().is_telemetry_active(motor_mask);
     const bool rpm_adequate = AP::esc_telem().are_motors_running(motor_mask, g2.takeoff_rpm_min, g2.takeoff_rpm_max);
 
+    // Check system load
+    float avg_load, peak_load;
+    bool load_adequate = true;
+    if (hal.util->get_system_load(avg_load, peak_load)) {
+        if (avg_load > 95.0f || peak_load > 99.5f) {
+            load_adequate = false;
+        }
+    }
+
     // if RPM is at the expected level clear block
-    if (telem_active && rpm_adequate) {
+    if (telem_active && rpm_adequate && load_adequate) {
         motors->set_spoolup_block(false);
         return;
     }
@@ -50,6 +59,8 @@ void Copter::takeoff_check()
             gcs().send_text(MAV_SEVERITY_CRITICAL, "%s waiting for ESC RPM", prefix_str);
         } else if (!rpm_adequate) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "%s ESC RPM out of range", prefix_str);
+        } else if (!load_adequate) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "%s CPU overload (%4.1f%%)", prefix_str, avg_load);
         }
     }
 #endif
