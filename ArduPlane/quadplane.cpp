@@ -4272,6 +4272,11 @@ bool QuadPlane::use_fw_attitude_controllers(void) const
         }
     }
 
+    if (force_fw_control_recovery) {
+        // tell the roll controller not to apply roll rate limits
+        plane.rollController.set_in_recovery();
+    }
+
     return true;
 }
 
