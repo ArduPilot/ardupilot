@@ -706,23 +706,23 @@ void AC_AutoTune::get_poshold_attitude_rad(float &roll_out_rad, float &pitch_out
 
     if (!have_position) {
         have_position = true;
-        start_position = pos_control->get_pos_estimate_NEU_m().tofloat() * 100.0;
+        start_position_neu_m = pos_control->get_pos_estimate_NEU_m().tofloat();
     }
 
     // don't go past 10 degrees, as autotune result would deteriorate too much
     const float angle_max_rad = radians(10.0);
 
     // hit the 10 degree limit at 20 meters position error
-    const float dist_limit_cm = 2000;
+    const float dist_limit_m = 20.00;
 
     // we only start adjusting yaw if we are more than 5m from the
     // target position. That corresponds to a lean angle of 2.5 degrees
-    const float yaw_dist_limit_cm = 500;
+    const float yaw_dist_limit_m = 5.0;
 
-    Vector3f pos_error_neu_cm = pos_control->get_pos_estimate_NEU_m().tofloat() * 100.0 - start_position;
-    pos_error_neu_cm.z = 0;
-    float dist_cm = pos_error_neu_cm.length();
-    if (dist_cm < 10) {
+    Vector3f pos_error_neu_m = pos_control->get_pos_estimate_NEU_m().tofloat() - start_position_neu_m;
+    pos_error_neu_m.z = 0;
+    float dist_m = pos_error_neu_m.length();
+    if (dist_m < 0.10) {
         // don't do anything within 10cm
         return;
     }
@@ -730,26 +730,26 @@ void AC_AutoTune::get_poshold_attitude_rad(float &roll_out_rad, float &pitch_out
     /*
       very simple linear controller
      */
-    float scaling = constrain_float(angle_max_rad * dist_cm / dist_limit_cm, 0, angle_max_rad);
-    Vector2f angle_ne(pos_error_neu_cm.x, pos_error_neu_cm.y);
-    angle_ne *= scaling / dist_cm;
+    float scaling = constrain_float(angle_max_rad * dist_m / dist_limit_m, 0, angle_max_rad);
+    Vector2f angle_ne(pos_error_neu_m.x, pos_error_neu_m.y);
+    angle_ne *= scaling / dist_m;
 
     // rotate into body frame
     pitch_out_rad = angle_ne.x * ahrs_view->cos_yaw() + angle_ne.y * ahrs_view->sin_yaw();
     roll_out_rad  = angle_ne.x * ahrs_view->sin_yaw() - angle_ne.y * ahrs_view->cos_yaw();
 
-    if (dist_cm < yaw_dist_limit_cm) {
+    if (dist_m < yaw_dist_limit_m) {
         // no yaw adjustment
         return;
     }
 
     /*
       also point so that test occurs perpendicular to the wind,
-      if we have drifted more than yaw_dist_limit_cm from the desired
+      if we have drifted more than yaw_dist_limit_m from the desired
       position. This ensures that autotune doesn't have to deal with
       more than 2.5 degrees of attitude on the axis it is tuning
      */
-    float target_yaw_rad = atan2f(pos_error_neu_cm.y, pos_error_neu_cm.x);
+    float target_yaw_rad = atan2f(pos_error_neu_m.y, pos_error_neu_m.x);
     if (axis == AxisType::PITCH) {
         // for roll and yaw tuning we point along the wind, for pitch
         // we point across the wind
