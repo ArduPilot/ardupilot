@@ -30,9 +30,14 @@ static bool remount_needed;
 #define FATFS_W (S_IWUSR | S_IWGRP | S_IWOTH)	/*< FatFs Write perms */
 #define FATFS_X (S_IXUSR | S_IXGRP | S_IXOTH)	/*< FatFs Execute perms */
 
+// these values need to match the write buffer in AP_Logger_File
+#if defined(STM32H7)
+#define MAX_IO_SIZE 32768
+#else
 // don't write more than 4k at a time to prevent needing too much
 // DMAable memory
 #define MAX_IO_SIZE 4096
+#endif
 
 // use a semaphore to ensure that only one filesystem operation is
 // happening at a time. A recursive semaphore is used to cope with the
