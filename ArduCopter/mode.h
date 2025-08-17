@@ -1378,7 +1378,7 @@ public:
     bool is_autopilot() const override { return false; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool allows_autotune() const override { return true; }
-    bool allows_auto_trim() const override { return true;}
+    bool allows_auto_trim() const override { return true; }
 
 protected:
 
@@ -1387,12 +1387,12 @@ protected:
 
 private:
 
-    void update_pilot_lean_angle_cd(float &lean_angle_filtered, float &lean_angle_raw);
+    void update_pilot_lean_angle_rad(float &lean_angle_filtered_rad, float &lean_angle_raw_rad);
     float mix_controls(float mix_ratio, float first_control, float second_control);
-    void update_brake_angle_from_velocity(float &brake_angle_cd, float velocity_cms);
+    void update_brake_angle_from_velocity(float &brake_angle_rad, float velocity_ms);
     void init_wind_comp_estimate();
     void update_wind_comp_estimate();
-    void get_wind_comp_lean_angles(float &roll_angle_cd, float &pitch_angle_cd);
+    void get_wind_comp_lean_angles_rad(float &roll_angle_rad, float &pitch_angle_rad);
     void roll_controller_to_pilot_override();
     void pitch_controller_to_pilot_override();
 
@@ -1409,41 +1409,41 @@ private:
     RPMode pitch_mode;
 
     // pilot input related variables
-    float pilot_roll_cd;  // filtered roll lean angle commanded by the pilot. Slowly returns to zero when stick is released
-    float pilot_pitch_cd; // filtered pitch lean angle commanded by the pilot. Slowly returns to zero when stick is released
+    float pilot_roll_rad;   // filtered roll lean angle commanded by the pilot. Slowly returns to zero when stick is released
+    float pilot_pitch_rad;  // filtered pitch lean angle commanded by the pilot. Slowly returns to zero when stick is released
 
 
     // braking related variables
     struct {
-        bool  time_updated_roll;            // true if braking timeout on roll axis has been re-estimated
-        bool  time_updated_pitch;           // true if braking timeout on pitch axis has been re-estimated
-        float gain;                         // braking gain used to convert velocity to lean angle
-        float roll_cd;                      // braking roll angle in centidegrees
-        float pitch_cd;                     // braking pitch angle in centidegrees
-        uint32_t start_time_roll_ms;        // time (ms) when braking on roll axis begins
-        uint32_t start_time_pitch_ms;       // time (ms) when braking on pitch axis begins
-        float angle_max_roll_cd;            // peak roll angle (deg x100) during braking, used to detect vehicle flattening
-        float angle_max_pitch_cd;           // peak pitch angle (deg x100) during braking, used to detect vehicle flattening
-        uint32_t loiter_transition_start_time_ms;   // time (ms) when transition from brake to loiter started
+        bool  time_updated_roll;                    // true if braking timeout (roll) has been re-estimated
+        bool  time_updated_pitch;                   // true if braking timeout (pitch) has been re-estimated
+        float gain;                                 // braking gain converting velocity (m/s) -> lean angle (rad)
+        float roll_rad;                             // braking roll angle (rad)
+        float pitch_rad;                            // braking pitch angle (rad)
+        uint32_t start_time_roll_ms;                // time (ms) when braking on roll axis begins
+        uint32_t start_time_pitch_ms;               // time (ms) when braking on pitch axis begins
+        float angle_max_roll_rad;                   // peak roll angle (rad) during braking, used to detect vehicle flattening
+        float angle_max_pitch_rad;                  // peak pitch angle (rad) during braking, used to detect vehicle flattening
+        uint32_t loiter_transition_start_time_ms;   // time (ms) when transition from brake to loiter startedd
     } brake;
 
+    // loiter transition timing (ms)
+    uint32_t controller_to_pilot_start_time_roll_ms;    // time (ms) when transition from controller to pilot roll input began
+    uint32_t controller_to_pilot_start_time_pitch_ms;   // time (ms) when transition from controller to pilot pitch input began
 
-    // loiter related variables
-    uint32_t controller_to_pilot_start_time_roll_ms;   // time (ms) when transition from controller to pilot roll input began
-    uint32_t controller_to_pilot_start_time_pitch_ms;  // time (ms) when transition from controller to pilot pitch input began
-
-    float controller_final_roll_cd;   // final roll output (deg x100) from controller before transition to pilot input
-    float controller_final_pitch_cd;  // final pitch output (deg x100) from controller before transition to pilot input
+    // cached controller outputs for mix during transition (radians)
+    float controller_final_roll_rad;    // final roll output (rad) from controller before transition to pilot input
+    float controller_final_pitch_rad;   // final pitch output (rad) from controller before transition to pilot input
 
     // wind compensation related variables
-    Vector2f wind_comp_ef;              // wind compensation acceleration vector (earth frame), low-pass filtered
-    float wind_comp_roll_cd;            // roll angle (deg x100) to counter wind based on earth-frame lean
-    float wind_comp_pitch_cd;           // pitch angle (deg x100) to counter wind based on earth-frame lean
+    Vector2f wind_comp_neu_mss;              // earth-frame accel estimate (N,E), m/s^2, low-pass filtered
+    float wind_comp_roll_rad;           // roll angle (rad) to counter wind
+    float wind_comp_pitch_rad;          // pitch angle (rad) to counter wind
     uint32_t wind_comp_start_time_ms;   // time (ms) when wind compensation updates are started
 
-    // final output
-    float roll_cd;   // final roll angle sent to attitude controller
-    float pitch_cd;  // final pitch angle sent to attitude controller
+    // final outputs (radians)
+    float roll_rad;     // final roll angle sent to attitude controller
+    float pitch_rad;    // final pitch angle sent to attitude controller
 };
 
 
