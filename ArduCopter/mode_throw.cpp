@@ -206,8 +206,8 @@ void ModeThrow::run()
     if ((stage != prev_stage) || (now - last_log_ms) > 100) {
         prev_stage = stage;
         last_log_ms = now;
-        const float velocity_cms = pos_control->get_vel_estimate_NEU_ms().length() * 100.0;
-        const float velocity_z_cms = pos_control->get_vel_estimate_NEU_ms().z * 100.0;
+        const float velocity_ms = pos_control->get_vel_estimate_NEU_ms().length();
+        const float velocity_z_ms = pos_control->get_vel_estimate_NEU_ms().z;
         const float accel = copter.ins.get_accel().length();
         const float ef_accel_z = ahrs.get_accel_ef().z;
         const bool throw_detect = (stage > Throw_Detecting) || throw_detected();
@@ -226,8 +226,8 @@ void ModeThrow::run()
 // @Field: AccEfZ: Vertical earth frame accelerometer value
 // @Field: Throw: True if a throw has been detected since entering this mode
 // @Field: AttOk: True if the vehicle is upright 
-// @Field: HgtOk: True if the vehicle is within 50cm of the demanded height
-// @Field: PosOk: True if the vehicle is within 50cm of the demanded horizontal position
+// @Field: HgtOk: True if the vehicle is within 0.5 m of the demanded height
+// @Field: PosOk: True if the vehicle is within 0.5 m of the demanded horizontal position
 
         AP::logger().WriteStreaming(
             "THRO",
@@ -237,8 +237,8 @@ void ModeThrow::run()
             "QBffffbbbb",
             AP_HAL::micros64(),
             (uint8_t)stage,
-            (double)velocity_cms,
-            (double)velocity_z_cms,
+            (double)velocity_ms,
+            (double)velocity_z_ms,
             (double)accel,
             (double)ef_accel_z,
             throw_detect,
@@ -262,10 +262,10 @@ bool ModeThrow::throw_detected()
         return false;
     }
 
-    // Check for high speed (>500 cm/s)
+    // Check for high speed ( >5 m/s)
     bool high_speed = pos_control->get_vel_estimate_NEU_ms().length_squared() * 100.0 * 100.0 > (THROW_HIGH_SPEED * THROW_HIGH_SPEED);
 
-    // check for upwards or downwards trajectory (airdrop) of 50cm/s
+    // check for upwards or downwards trajectory (airdrop) of 0.50 m/s
     bool changing_height;
     if (g2.throw_type == ThrowType::Drop) {
         changing_height = pos_control->get_vel_estimate_NEU_ms().z * 100.0 < -THROW_VERTICAL_SPEED;
@@ -323,7 +323,7 @@ bool ModeThrow::throw_height_good() const
 
 bool ModeThrow::throw_position_good() const
 {
-    // check that our horizontal position error is within 50cm
+    // check that our horizontal position error is within 0.5 m
     return (pos_control->get_pos_error_NE_m() < 0.50);
 }
 
