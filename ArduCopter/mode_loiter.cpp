@@ -59,16 +59,15 @@ bool ModeLoiter::do_precision_loiter()
 void ModeLoiter::precision_loiter_xy()
 {
     loiter_nav->clear_pilot_desired_acceleration();
-    Vector2f target_pos_ne_cm, target_vel_ne_cms;
-    if (!copter.precland.get_target_position_cm(target_pos_ne_cm)) {
-        target_pos_ne_cm = pos_control->get_pos_estimate_NEU_m().xy().tofloat() * 100.0;
+    Vector2f target_pos_ne_m, target_vel_ne_ms;
+    if (!copter.precland.get_target_position_m(target_pos_ne_m)) {
+        target_pos_ne_m = pos_control->get_pos_estimate_NEU_m().xy().tofloat();
     }
     // get the velocity of the target
-    copter.precland.get_target_velocity_cms(pos_control->get_vel_estimate_NEU_ms().xy() * 100.0, target_vel_ne_cms);
+    copter.precland.get_target_velocity_ms(pos_control->get_vel_estimate_NEU_ms().xy(), target_vel_ne_ms);
 
     Vector2f zero;
-    Vector2p landing_pos_ne_m = target_pos_ne_cm.topostype() * 0.01;
-    Vector2f target_vel_ne_ms = target_vel_ne_cms * 0.01;
+    Vector2p landing_pos_ne_m = target_pos_ne_m.topostype();
     // target vel will remain zero if landing target is stationary
     pos_control->input_pos_vel_accel_NE_m(landing_pos_ne_m, target_vel_ne_ms, zero);
     // run pos controller
