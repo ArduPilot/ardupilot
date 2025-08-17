@@ -643,22 +643,22 @@ void Mode::land_run_vertical_control(bool pause_descent)
 
         if (doing_precision_landing) {
             // prec landing is active
-            Vector2f target_pos_ne_cm;
+            Vector2f target_pos_ne_m;
             float target_error_m = 0.0f;
-            if (copter.precland.get_target_position_cm(target_pos_ne_cm)) {
+            if (copter.precland.get_target_position_m(target_pos_ne_m)) {
                 const Vector2f current_pos_ne_m = pos_control->get_pos_estimate_NEU_m().xy().tofloat();
-                // target is this many cm away from the vehicle
-                target_error_m = (target_pos_ne_cm * 0.01 - current_pos_ne_m).length();
+                // target is this many m away from the vehicle
+                target_error_m = (target_pos_ne_m - current_pos_ne_m).length();
             }
             // check if we should descend or not
-            const float max_horiz_pos_error_cm = copter.precland.get_max_xy_error_before_descending_cm();
-            Vector3f target_pos_meas_ned_cm;
-            copter.precland.get_target_position_measurement_cm(target_pos_meas_ned_cm);
-            if (target_error_m > max_horiz_pos_error_cm * 0.01 && !is_zero(max_horiz_pos_error_cm)) {
+            const float max_horiz_pos_error_m = copter.precland.get_max_xy_error_before_descending_m();
+            Vector3f target_pos_meas_ned_m;
+            copter.precland.get_target_position_measurement_m(target_pos_meas_ned_m);
+            if (target_error_m > max_horiz_pos_error_m && !is_zero(max_horiz_pos_error_m)) {
                 // doing precland but too far away from the obstacle
                 // do not descend
                 climb_rate_ms = 0.0f;
-            } else if (target_pos_meas_ned_cm.z > 35.0f && target_pos_meas_ned_cm.z < 200.0f && !copter.precland.do_fast_descend()) {
+            } else if (target_pos_meas_ned_m.z > 0.35 && target_pos_meas_ned_m.z < 2.0 && !copter.precland.do_fast_descend()) {
                 // very close to the ground and doing prec land, lets slow down to make sure we land on target
                 // compute desired descent velocity
                 const float precland_acceptable_error_m = 0.15;
@@ -728,16 +728,15 @@ void Mode::land_run_horizontal_control()
     copter.ap.prec_land_active = !copter.ap.land_repo_active && copter.precland.target_acquired();
     // run precision landing
     if (copter.ap.prec_land_active) {
-        Vector2f target_pos_ne_cm, target_vel_ne_cms;
-        if (!copter.precland.get_target_position_cm(target_pos_ne_cm)) {
-            target_pos_ne_cm = pos_control->get_pos_estimate_NEU_m().xy().tofloat() * 100.0;
+        Vector2f target_pos_ne_m, target_vel_ne_ms;
+        if (!copter.precland.get_target_position_m(target_pos_ne_m)) {
+            target_pos_ne_m = pos_control->get_pos_estimate_NEU_m().xy().tofloat();
         }
          // get the velocity of the target
-        copter.precland.get_target_velocity_cms(pos_control->get_vel_estimate_NEU_ms().xy() * 100.0, target_vel_ne_cms);
+        copter.precland.get_target_velocity_ms(pos_control->get_vel_estimate_NEU_ms().xy(), target_vel_ne_ms);
 
         Vector2f accel_zero;
-        Vector2p landing_pos_ne_m = target_pos_ne_cm.topostype() * 0.01;
-        Vector2f target_vel_ne_ms = target_vel_ne_cms * 0.01;
+        Vector2p landing_pos_ne_m = target_pos_ne_m.topostype();
         // target vel will remain zero if landing target is stationary
         pos_control->input_pos_vel_accel_NE_m(landing_pos_ne_m, target_vel_ne_ms, accel_zero);
     }
