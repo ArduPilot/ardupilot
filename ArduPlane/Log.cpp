@@ -531,4 +531,65 @@ void Plane::Log_Write_Vehicle_Startup_Messages()
     gps.Write_AP_Logger_Log_Startup_messages();
 }
 
+#if AP_PLANE_BLACKBOX_LOGGING
+/*
+  logging for blackbox recording. Split across two messages but with
+  the same timestamp
+ */
+void Plane::Log_Write_Blackbox(void)
+{
+    const uint64_t now_us = AP_HAL::micros64();
+    // @LoggerMessage: BBX1
+    // @Description: BlackBox data1
+    // @Field: TimeUS: Time since system startup
+    // @Field: Lat: Latitude
+    // @Field: Lon: Longitude
+    // @Field: Alt: altitude above sea level
+    // @Field: Roll: euler roll
+    // @Field: Pitch: euler pitch
+    // @Field: Yaw: euler yaw
+    // @Field: VN: velocity north
+    // @Field: VE: velocity east
+    // @Field: VD: velocity down
+    Location loc;
+    Vector3f vel;
+    float alt;
+    if (!ahrs.get_location(loc) ||
+        !ahrs.get_velocity_NED(vel) ||
+        !loc.get_alt_m(Location::AltFrame::ABSOLUTE, alt)) {
+        return;
+    }
+
+    AP::logger().WriteStreaming("BBX1", "TimeUS,Lat,Lon,Alt,Roll,Pitch,Yaw,VN,VE,VD",
+                                "sDUmdddnnn",
+                                "FGG-------",
+                                "QLLfffffff",
+                                now_us,
+                                loc.lat, loc.lng, alt,
+                                degrees(ahrs.get_roll_rad()),
+                                degrees(ahrs.get_pitch_rad()),
+                                degrees(ahrs.get_yaw_rad()),
+                                vel.x, vel.y, vel.z);
+
+    // @LoggerMessage: BBX2
+    // @Description: BlackBox data2
+    // @Field: TimeUS: Time since system startup
+    // @Field: GyrX: X axis gyro
+    // @Field: GyrY: Y axis gyro
+    // @Field: GyrZ: Z axis gyro
+    // @Field: AccX: accel X axis (front)
+    // @Field: AccY: accel Y axis (right)
+    // @Field: AccZ: accel Z axis (down)
+    const auto &gyro = ahrs.get_gyro();
+    const auto &accel = ahrs.get_accel();
+    AP::logger().WriteStreaming("BBX2", "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ",
+                                "skkkooo",
+                                "F------",
+                                "Qffffff",
+                                now_us,
+                                degrees(gyro.x), degrees(gyro.y), degrees(gyro.z),
+                                accel.x, accel.y, accel.z);
+}
+#endif // AP_PLANE_BLACKBOX_LOGGING
+
 #endif // HAL_LOGGING_ENABLED
