@@ -5,7 +5,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-# define AC_ATTITUDE_HELI_LOIT_TO_STAB_TC                0.16f
+# define COLL_TRANSITION_TC                0.2f
 
 const AP_Param::GroupInfo AC_InputManager_Heli::var_info[] = {
 
@@ -108,26 +108,33 @@ float AC_InputManager_Heli::get_pilot_desired_collective(int16_t control_in)
     }
     acro_col_out = constrain_float(acro_col_out, 0.0f, 1.0f);
 
-    // ramp to and from stab col over 1/2 second
-    if (_im_flags_heli.use_stab_col && (_stab_col_ramp < 1.0f)){
-        _stab_col_ramp += 2.0f/(float)_loop_rate;
-    } else if(!_im_flags_heli.use_stab_col && (_stab_col_ramp > 0.0f)){
-        _stab_col_ramp -= 2.0f/(float)_loop_rate;
-    }
-    _stab_col_ramp = constrain_float(_stab_col_ramp, 0.0f, 1.0f);
-
-    // ramp factor from non-manual to manual collective
-    if (_im_flags_heli.trans_to_manual){
+    // ramp function
+    if (transition){
         float dt = 1/(float)_loop_rate;
-        _man_trans_ramp = _man_trans_ramp - _man_trans_ramp * (dt / (dt + AC_ATTITUDE_HELI_LOIT_TO_STAB_TC));
+        _transition_ramp = _transition_ramp - _transition_ramp * (dt / (dt + COLL_TRANSITION_TC));
+        if(is_zero(_transition_ramp) ){
+            transition = false;
+        }
     }
 
-    _man_trans_ramp = constrain_float(_man_trans_ramp, 0.0f, 1.0f);
+    _transition_ramp = constrain_float(_transition_ramp, 0.0f, 1.0f);
 
-    // scale collective output smoothly between acro and stab col
+    if (update_collective) {
+        old_flightmode_col_output = _last_coll;
+        update_collective = false;
+        transition = true;
+    }
+
+    if(_im_flags_heli.use_stab_col){
+        new_flightmode_col_output = stab_col_out;
+    } else {
+        new_flightmode_col_output = acro_col_out;
+    }
+
+    // scale collective output smoothly between previous and current mode output
     float collective_out;
 
-    collective_out = (_man_trans_ramp) * _last_auto_coll + (1.0 - _man_trans_ramp) * (float)((1.0f - _stab_col_ramp) * acro_col_out + _stab_col_ramp * stab_col_out);
+    collective_out = new_flightmode_col_output * (1.0 - _transition_ramp) + (_transition_ramp) * old_flightmode_col_output;
 
     collective_out = constrain_float(collective_out, 0.0f, 1.0f);
 
