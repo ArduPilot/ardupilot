@@ -181,7 +181,7 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles_rad, bool stick_in
             float &velocity = sensor_flow_ms[i];
             float abs_vel_ms = fabsf(velocity);
             const float brake_gain = (15.0f * brake_rate_dps.get() + 95.0f) * 0.01f;
-            float lean_angle_rad = radians(1.0f) * brake_gain * abs_vel_ms * (1.0f + 5.0f/(abs_vel_ms + 0.60f));
+            float lean_angle_rad = radians(brake_gain * abs_vel_ms * (1.0f + 5.0f/(abs_vel_ms + 0.60f)));
             if (velocity < 0) {
                 lean_angle_rad = -lean_angle_rad;
             }
@@ -191,7 +191,7 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles_rad, bool stick_in
     }
 
     ef_output += xy_I;
-    Vector2f ef_output_rad = ef_output * cd_to_rad(copter.aparm.angle_max);
+    Vector2f ef_output_rad = ef_output * angle_max_rad;
 
     // convert to body frame
     bf_angles_rad += copter.ahrs.earth_to_body2D(ef_output_rad);
