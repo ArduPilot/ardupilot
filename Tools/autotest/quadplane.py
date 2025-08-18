@@ -1966,8 +1966,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_rc(3, 1000)
         self.wait_climbrate(-5, -0.5, timeout=10)
 
-        # Force disarm
-        self.disarm_vehicle(force=True)
+        # reboot SITL
+        self.reboot_sitl(force=True)
 
     def RTL_AUTOLAND_1(self):
         '''test behaviour when RTL_AUTOLAND==1'''
