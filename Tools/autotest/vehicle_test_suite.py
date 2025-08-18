@@ -7320,16 +7320,16 @@ class TestSuite(ABC):
 
     def guided_achieve_heading(self, heading, accuracy=None):
         tstart = self.get_sim_time()
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+            p1=heading,  # target angle
+            p2=10,  # degrees/second
+            p3=1,  # -1 is counter-clockwise, 1 clockwise
+            p4=0,  # 1 for relative, 0 for absolute
+        )
         while True:
             if self.get_sim_time_cached() - tstart > 200:
                 raise NotAchievedException("Did not achieve heading")
-            self.run_cmd(
-                mavutil.mavlink.MAV_CMD_CONDITION_YAW,
-                p1=heading,  # target angle
-                p2=10,  # degrees/second
-                p3=1,  # -1 is counter-clockwise, 1 clockwise
-                p4=0,  # 1 for relative, 0 for absolute
-            )
             m = self.assert_receive_message('VFR_HUD')
             self.progress("heading=%d want=%d" % (m.heading, int(heading)))
             if accuracy is not None:
