@@ -13002,16 +13002,16 @@ switch value'''
     def tf_validate_gps(self, value): # shared by proto 4 and proto 10
         self.progress("validating gps (0x%02x)" % value)
         lat = value
-        gpi = self.mav.recv_match(
-            type='GLOBAL_POSITION_INT',
+        gri = self.mav.recv_match(
+            type='GPS_RAW_INT',
             blocking=True,
             timeout=1
         )
-        if gpi is None:
-            raise NotAchievedException("Did not get GLOBAL_POSITION_INT message")
-        gpi_lat = self.tf_encode_gps_latitude(gpi.lat)
-        self.progress("GLOBAL_POSITION_INT lat==%f frsky==%f" % (gpi_lat, lat))
-        if gpi_lat == lat:
+        if gri is None:
+            raise NotAchievedException("Did not get GPS_RAW_INT message")
+        gri_lat = self.tf_encode_gps_latitude(gri.lat)
+        self.progress("GPS_RAW_INT lat==%f frsky==%f" % (gri_lat, lat))
+        if gri_lat == lat:
             return True
         return False
 
