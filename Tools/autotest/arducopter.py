@@ -2978,6 +2978,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # hold position in loiter
         self.change_mode('AUTOTUNE')
 
+        # fail-fast if any determination fails:
+        self.install_message_hook_context(vehicle_test_suite.TestSuite.FailFastStatusText(
+            self, "determination failed"
+        ))
         self.wait_statustext("AutoTune: Success", timeout=5000)
         now = self.get_sim_time()
         self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
