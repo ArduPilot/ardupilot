@@ -13172,10 +13172,10 @@ switch value'''
     def tf_validate_gps(self, value): # shared by proto 4 and proto 10
         self.progress("validating gps (0x%02x)" % value)
         lat = value
-        gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
-        gpi_lat = self.tf_encode_gps_latitude(gpi.lat)
-        self.progress("GLOBAL_POSITION_INT lat==%f frsky==%f" % (gpi_lat, lat))
-        if gpi_lat == lat:
+        gri = self.assert_receive_message('GPS_RAW_INT')
+        gri_lat = self.tf_encode_gps_latitude(gri.lat)
+        self.progress("GLOBAL_POSITION_INT lat==%f frsky==%f" % (gri_lat, lat))
+        if gri_lat == lat:
             return True
         return False
 
