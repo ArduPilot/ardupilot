@@ -9,8 +9,8 @@
 // Coupling from lateral speed error (m/s) to roll command (rad):
 //   Original was 8 cd/(cm/s).
 //   Converted: 8 [cd/(cm/s)] * (π/18000 rad/cd) * (100 cm/m) = 0.13962634 rad/(m/s)
-#ifndef DRIFT_SPEEDGAIN
- # define DRIFT_SPEEDGAIN 0.13962634f
+#ifndef DRIFT_SPEEDGAIN_RAD
+ # define DRIFT_SPEEDGAIN_RAD 0.13962634f
 #endif
 
 // Speed limits and scheduling thresholds converted from cm/s
@@ -27,7 +27,7 @@
 #endif
 
 #ifndef DRIFT_THR_ASSIST_MAX
- # define DRIFT_THR_ASSIST_MAX  0.3f      // unchanged
+ # define DRIFT_THR_ASSIST_MAX  0.3f      // maximum assistance throttle assist will provide
 #endif
 
 #ifndef DRIFT_THR_MIN
@@ -68,8 +68,8 @@ void ModeDrift::run()
     // yaw-rate schedule:
     //   original: target_yaw_rate_cds = target_roll_cd * (1 - v/5000) * R / 45
     //   new:      target_yaw_rate_rads = (target_roll_rad / radians(45)) * radians(R) * (1 - v/50)
-    const float yaw_rate_max_rad_s = radians(g2.command_model_acro_y.get_rate());
-    const float target_yaw_rate_rad_s = (target_roll_rad / radians(45.0f)) * yaw_rate_max_rad_s * (1.0f - (vel_forward_2_ms / 50.0f));
+    const float yaw_rate_max_rads = radians(g2.command_model_acro_y.get_rate());
+    const float target_yaw_rate_rads = (target_roll_rad / radians(45.0f)) * yaw_rate_max_rads * (1.0f - (vel_forward_2_ms / 50.0f));
 
     // Constrain body velocities
     vel_right_ms   = constrain_float(vel_right_ms,   -DRIFT_SPEEDLIMIT_MS, DRIFT_SPEEDLIMIT_MS);
@@ -83,12 +83,12 @@ void ModeDrift::run()
     // convert user input into desired roll velocity term (m/s equivalent)
     // original: vel_right_cms - (roll_input_cd / SPEEDGAIN)
     // new:      vel_right_ms  - (roll_input_rad / SPEEDGAIN)  [since SPEEDGAIN now rad/(m/s)]
-    float roll_vel_error_ms = vel_right_ms - (roll_input_rad / DRIFT_SPEEDGAIN);
+    float roll_vel_error_ms = vel_right_ms - (roll_input_rad / DRIFT_SPEEDGAIN_RAD);
 
     // roll velocity is fed into roll angle to minimize slip
     // original: target_roll_cd = roll_vel_error_cms * -SPEEDGAIN
     // new:      target_roll_rad = roll_vel_error_ms * -SPEEDGAIN
-    target_roll_rad = roll_vel_error_ms * -DRIFT_SPEEDGAIN;
+    target_roll_rad = roll_vel_error_ms * -DRIFT_SPEEDGAIN_RAD;
 
     // constrain to ±45 deg
     target_roll_rad = constrain_float(target_roll_rad, -radians(45.0f), radians(45.0f));
@@ -98,7 +98,7 @@ void ModeDrift::run()
         // 0.14 / (0.03 * 100) timing comment (call frequency) still applies to "braker" rise;
         // Clamp to the same coupling constant, now in rad/(m/s)
         braker += 0.03f;
-        braker = MIN(braker, DRIFT_SPEEDGAIN);
+        braker = MIN(braker, DRIFT_SPEEDGAIN_RAD);
         target_pitch_rad = vel_forward_ms * braker;
     } else {
         braker = 0.0f;
@@ -136,7 +136,7 @@ void ModeDrift::run()
 
     // call attitude controller (already expects radians)
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(
-        target_roll_rad, target_pitch_rad, target_yaw_rate_rad_s);
+        target_roll_rad, target_pitch_rad, target_yaw_rate_rads);
 
     // output pilot's throttle with angle boost (velz now m/s)
     const float assisted_throttle = get_throttle_assist(vel_NEU_ms.z, get_pilot_desired_throttle());
@@ -144,7 +144,7 @@ void ModeDrift::run()
 }
 
 // get_throttle_assist - return throttle output (range 0 ~ 1) based on pilot input and z-axis velocity
-float ModeDrift::get_throttle_assist(float velz_ms, float pilot_throttle_scaled)
+float ModeDrift::get_throttle_assist(float vel_u_ms, float pilot_throttle_scaled)
 {
     // throttle assist - adjusts throttle to slow the vehicle's vertical velocity
     //      Only active when pilot's throttle is between 0.213 ~ 0.787
@@ -153,7 +153,7 @@ float ModeDrift::get_throttle_assist(float velz_ms, float pilot_throttle_scaled)
     if (pilot_throttle_scaled > DRIFT_THR_MIN && pilot_throttle_scaled < DRIFT_THR_MAX) {
         // calculate throttle assist gain
         thr_assist = 1.2f - ((float)fabsf(pilot_throttle_scaled - 0.5f) / 0.24f);
-        thr_assist = constrain_float(thr_assist, 0.0f, 1.0f) * -DRIFT_THR_ASSIST_GAIN * velz_ms;
+        thr_assist = constrain_float(thr_assist, 0.0f, 1.0f) * -DRIFT_THR_ASSIST_GAIN * vel_u_ms;
 
         // ensure throttle assist never adjusts the throttle by more than 0.3 (≈300 pwm)
         thr_assist = constrain_float(thr_assist, -DRIFT_THR_ASSIST_MAX, DRIFT_THR_ASSIST_MAX);
