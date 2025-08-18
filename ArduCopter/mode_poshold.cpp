@@ -38,7 +38,7 @@ bool ModePosHold::init(bool ignore_checks)
     pilot_pitch_rad = 0.0f;
 
     // compute brake_gain in rad/(m/s); original (cd/(cm/s)) × (π/180) -> rad/(m/s)
-    brake.gain = ((15.0f * (float)g.poshold_brake_rate_degs + 95.0f) * 0.01f) * radians(1.0f);
+    brake.gain = radians((15.0f * (float)g.poshold_brake_rate_degs + 95.0f) * 0.01f);
 
     if (copter.ap.land_complete) {
         // if landed begin in loiter mode
@@ -85,7 +85,7 @@ void ModePosHold::run()
     float target_roll_rad, target_pitch_rad;
     get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
 
-    // ● pilot desired yaw rate already rad/s
+    // pilot desired yaw rate already rad/s
     float target_yaw_rate_rads = get_pilot_desired_yaw_rate_rads();
 
     // pilot desired climb rate (m/s)
@@ -160,23 +160,23 @@ void ModePosHold::run()
         // avoidance-adjusted climb
         target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
 
-    #if AP_RANGEFINDER_ENABLED
+#if AP_RANGEFINDER_ENABLED
         // update the vertical offset based on the surface measurement
         copter.surface_tracking.update_surface_offset();
-    #endif
+#endif
 
         // Send the commanded climb rate to the position controller
         pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_ms);
         break;
     }
 
-    // ● convert earth-frame velocities to body-frame (m/s)
+    // convert earth-frame velocities to body-frame (m/s)
     float vel_fw_ms    = vel_neu_ms.x * ahrs.cos_yaw() + vel_neu_ms.y * ahrs.sin_yaw();
     float vel_right_ms = -vel_neu_ms.x * ahrs.sin_yaw() + vel_neu_ms.y * ahrs.cos_yaw();
 
-    // ● If not in LOITER, retrieve latest wind compensation lean angles (radians) related to current yaw
+    // If not in LOITER, retrieve latest wind compensation lean angles (radians) related to current yaw
     if (roll_mode != RPMode::LOITER || pitch_mode != RPMode::LOITER) {
-        get_wind_comp_lean_angles_rad(wind_comp_roll_rad, wind_comp_pitch_rad); // defined in Part 4
+        get_wind_comp_lean_angles_rad(wind_comp_roll_rad, wind_comp_pitch_rad);
     }
 
     // Roll state machine
@@ -292,11 +292,11 @@ void ModePosHold::run()
             // NOTE: preserve original behavior (cd vs deg quirk) => 0.02 * deg threshold, then to radians
             if (is_zero(target_pitch_rad) && (fabsf(pilot_pitch_rad) < radians(2 * g.poshold_brake_rate_degs))) {
                 // initialise BRAKE mode
-                pitch_mode = RPMode::BRAKE;
-                brake.pitch_rad = 0.0f;
-                brake.angle_max_pitch_rad = 0.0f;
-                brake.start_time_pitch_ms = now_ms;
-                brake.time_updated_pitch = false;
+                pitch_mode = RPMode::BRAKE;         // set brake pitch mode
+                brake.pitch_rad = 0.0f;             // initialise braking angle to zero
+                brake.angle_max_pitch_rad = 0.0f;   // reset brake_angle_max so we can detect when vehicle begins to flatten out during braking
+                brake.start_time_pitch_ms = now_ms; // timestamp (ms) marking the start of pitch-axis 
+                brake.time_updated_pitch = false;   // flag the braking time can be re-estimated
             }
 
             // final lean angle = pilot input + wind compensation
@@ -379,7 +379,7 @@ void ModePosHold::run()
         pitch_mode = RPMode::BRAKE_TO_LOITER;
         brake.loiter_transition_start_time_ms = now_ms;
         // init loiter controller
-        loiter_nav->init_target_cm((pos_control->get_pos_estimate_NEU_m().xy() - pos_control->get_pos_offset_NEU_m().xy()).tofloat() * 100.0f);
+        loiter_nav->init_target_m((pos_control->get_pos_estimate_NEU_m().xy() - pos_control->get_pos_offset_NEU_m().xy()).tofloat());
         // set delay to start of wind compensation estimate updates
         wind_comp_start_time_ms = now_ms;
     }
@@ -538,14 +538,14 @@ void ModePosHold::update_brake_angle_from_velocity(float &brake_angle_rad, float
     brake_angle_rad = constrain_float(lean_angle_rad, brake_angle_rad - brake_delta_rad, brake_angle_rad + brake_delta_rad);
 
     // constrain final brake_angle
-    const float brake_angle_max_rad = radians(0.01f * (float)g.poshold_brake_angle_max);
+    const float brake_angle_max_rad = cd_to_rad(g.poshold_brake_angle_max);
     brake_angle_rad = constrain_float(brake_angle_rad, -brake_angle_max_rad, brake_angle_max_rad);
 }
 
 // initialise wind compensation estimate back to zero
 void ModePosHold::init_wind_comp_estimate()
 {
-    wind_comp_neu_mss.zero();
+    wind_comp_ne_mss.zero();
     wind_comp_roll_rad = 0.0f;
     wind_comp_pitch_rad = 0.0f;
 }
@@ -569,26 +569,26 @@ void ModePosHold::update_wind_comp_estimate()
     const Vector3f& accel_target_neu_mss = pos_control->get_accel_target_NEU_mss();
 
     // update wind compensation in earth-frame lean angles
-    if (is_zero(wind_comp_neu_mss.x)) {
+    if (is_zero(wind_comp_ne_mss.x)) {
         // if wind compensation has not been initialised set it immediately to the pos controller's desired accel in north direction
-        wind_comp_neu_mss.x = accel_target_neu_mss.x;
+        wind_comp_ne_mss.x = accel_target_neu_mss.x;
     } else {
         // low pass filter the position controller's lean angle output
-        wind_comp_neu_mss.x = (1.0f - TC_WIND_COMP) * wind_comp_neu_mss.x + TC_WIND_COMP * accel_target_neu_mss.x;
+        wind_comp_ne_mss.x = (1.0f - TC_WIND_COMP) * wind_comp_ne_mss.x + TC_WIND_COMP * accel_target_neu_mss.x;
     }
-    if (is_zero(wind_comp_neu_mss.y)) {
+    if (is_zero(wind_comp_ne_mss.y)) {
         // if wind compensation has not been initialised set it immediately to the pos controller's desired accel in north direction
-        wind_comp_neu_mss.y = accel_target_neu_mss.y;
+        wind_comp_ne_mss.y = accel_target_neu_mss.y;
     } else {
         // low pass filter the position controller's lean angle output
-        wind_comp_neu_mss.y = (1.0f - TC_WIND_COMP) * wind_comp_neu_mss.y + TC_WIND_COMP * accel_target_neu_mss.y;
+        wind_comp_ne_mss.y = (1.0f - TC_WIND_COMP) * wind_comp_ne_mss.y + TC_WIND_COMP * accel_target_neu_mss.y;
     }
 
     // limit acceleration
-    const float accel_lim_mss = tanf(cd_to_rad(POSHOLD_WIND_COMP_LEAN_PCT_MAX * copter.aparm.angle_max)) * (GRAVITY_MSS);
-    const float wind_comp_ef_len = wind_comp_neu_mss.length();
+    const float accel_lim_mss = tanf(cd_to_rad(POSHOLD_WIND_COMP_LEAN_PCT_MAX * copter.aparm.angle_max)) * GRAVITY_MSS;
+    const float wind_comp_ef_len = wind_comp_ne_mss.length();
     if (!is_zero(accel_lim_mss) && (wind_comp_ef_len > accel_lim_mss)) {
-        wind_comp_neu_mss *= accel_lim_mss / wind_comp_ef_len;
+        wind_comp_ne_mss *= accel_lim_mss / wind_comp_ef_len;
     }
 }
 
@@ -597,8 +597,8 @@ void ModePosHold::update_wind_comp_estimate()
 void ModePosHold::get_wind_comp_lean_angles_rad(float &roll_angle_rad, float &pitch_angle_rad)
 {
     // convert earth frame desired accelerations to body frame roll and pitch lean angles
-    roll_angle_rad = atanf((-wind_comp_neu_mss.x * ahrs.sin_yaw() + wind_comp_neu_mss.y * ahrs.cos_yaw()) / (GRAVITY_MSS));
-    pitch_angle_rad = atanf(-(wind_comp_neu_mss.x * ahrs.cos_yaw() + wind_comp_neu_mss.y * ahrs.sin_yaw()) / (GRAVITY_MSS));
+    roll_angle_rad = atanf((-wind_comp_ne_mss.x * ahrs.sin_yaw() + wind_comp_ne_mss.y * ahrs.cos_yaw()) / GRAVITY_MSS);
+    pitch_angle_rad = atanf(-(wind_comp_ne_mss.x * ahrs.cos_yaw() + wind_comp_ne_mss.y * ahrs.sin_yaw()) / GRAVITY_MSS);
 }
 
 // roll_controller_to_pilot_override - initialises transition from a controller submode (brake or loiter) to a pilot override on roll axis

@@ -1424,7 +1424,7 @@ private:
         uint32_t start_time_pitch_ms;               // time (ms) when braking on pitch axis begins
         float angle_max_roll_rad;                   // peak roll angle (rad) during braking, used to detect vehicle flattening
         float angle_max_pitch_rad;                  // peak pitch angle (rad) during braking, used to detect vehicle flattening
-        uint32_t loiter_transition_start_time_ms;   // time (ms) when transition from brake to loiter startedd
+        uint32_t loiter_transition_start_time_ms;   // time (ms) when transition from brake to loiter started
     } brake;
 
     // loiter transition timing (ms)
@@ -1436,7 +1436,7 @@ private:
     float controller_final_pitch_rad;   // final pitch output (rad) from controller before transition to pilot input
 
     // wind compensation related variables
-    Vector2f wind_comp_neu_mss;              // earth-frame accel estimate (N,E), m/s^2, low-pass filtered
+    Vector2f wind_comp_ne_mss;              // earth-frame accel estimate (N,E), m/s^2, low-pass filtered
     float wind_comp_roll_rad;           // roll angle (rad) to counter wind
     float wind_comp_pitch_rad;          // pitch angle (rad) to counter wind
     uint32_t wind_comp_start_time_ms;   // time (ms) when wind compensation updates are started
