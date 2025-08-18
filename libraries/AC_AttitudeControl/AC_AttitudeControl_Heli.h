@@ -45,7 +45,7 @@ public:
     const AC_PID& get_rate_yaw_pid() const override { return _pid_rate_yaw; }
 
     // passthrough_bf_roll_pitch_rate_yaw_norm - roll and pitch are passed through directly, body-frame rate target for yaw
-    void passthrough_bf_roll_pitch_rate_yaw_norm(float roll_passthrough_rads, float pitch_passthrough_rads, float yaw_rate_bf_rads) override;
+    void passthrough_bf_roll_pitch_rate_yaw_norm(float roll_passthrough_norm, float pitch_passthrough_norm, float yaw_passthrough_norm) override;
 
     // subclass non-passthrough too, for external gyro, no flybar
     void input_rate_bf_roll_pitch_yaw_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads) override;

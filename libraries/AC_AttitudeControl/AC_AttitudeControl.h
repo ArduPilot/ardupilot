@@ -492,7 +492,7 @@ public:
     float get_roll_trim_rad() { return cd_to_rad(get_roll_trim_cd()); }
 
     // passthrough_bf_roll_pitch_rate_yaw_norm - roll, pitch and yaw passed through directly to the motor mixers
-    virtual void passthrough_bf_roll_pitch_rate_yaw_norm(float roll_passthrough_rads, float pitch_passthrough_rads, float yaw_rate_bf_rads) {};
+    virtual void passthrough_bf_roll_pitch_rate_yaw_norm(float roll_passthrough_norm, float pitch_passthrough_norm, float yaw_passthrough_norm) {};
 
     // provide feedback on whether arming would be a good idea right now:
     bool pre_arm_checks(const char *param_prefix,
