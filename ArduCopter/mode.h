@@ -1995,7 +1995,7 @@ private:
     bool reached_destination();
     bool calculate_next_dest_m(Destination ab_dest, bool use_wpnav_alt, Vector3f& next_dest, bool& is_terrain_alt) const;
     void spray(bool b);
-    bool calculate_side_dest_m(Vector3f& next_dest, bool& is_terrain_alt) const;
+    bool calculate_side_dest_m(Vector3f& next_dest_neu_m, bool& is_terrain_alt) const;
     void move_to_side();
 
     Vector2f dest_A_ne_m;    // in NEU frame in cm relative to ekf origin
