@@ -926,7 +926,7 @@ protected:
 
 private:
 
-    float get_throttle_assist(float velz, float pilot_throttle_scaled);
+    float get_throttle_assist(float vel_u_ms, float pilot_throttle_scaled);
 
 };
 
