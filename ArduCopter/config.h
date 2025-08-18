@@ -509,11 +509,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // Throw mode configuration
 //
-#ifndef THROW_HIGH_SPEED
-# define THROW_HIGH_SPEED       500.0f  // vehicle much reach this total 3D speed in cm/s (or be free falling)
+#ifndef THROW_HIGH_SPEED_MS
+# define THROW_HIGH_SPEED_MS      5.0   // vehicle much reach this total 3D speed in cm/s (or be free falling)
 #endif
-#ifndef THROW_VERTICAL_SPEED
-# define THROW_VERTICAL_SPEED   50.0f   // motors start when vehicle reaches this total 3D speed in cm/s
+#ifndef THROW_VERTICAL_SPEED_MS
+# define THROW_VERTICAL_SPEED_MS  0.5   // motors start when vehicle reaches this total 3D speed in cm/s
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
