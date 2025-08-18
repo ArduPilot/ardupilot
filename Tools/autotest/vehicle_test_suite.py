@@ -3491,6 +3491,34 @@ class TestSuite(ABC):
             string = self.progress_prefix() + string
             self.suite.progress(string)
 
+        def hook_removed(self):
+            pass
+
+    class FailFastStatusText(MessageHook):
+        '''watches STATUSTEXT message; any message matching passed-in
+        patterns causes a NotAchievedException to be thrown'''
+        def __init__(self, suite, texts, regex : bool = False):
+            super(TestSuite.FailFastStatusText, self).__init__(suite)
+            if isinstance(texts, str):
+                texts = [texts]
+            self.texts = texts
+            self.regex = regex
+
+        def progress_prefix(self):
+            return "FFST: "
+
+        def process(self, mav, m):
+            if m.get_type() != 'STATUSTEXT':
+                return
+
+            for text in self.texts:
+                if self.regex:
+                    found = re.match(text, m.text)
+                else:
+                    found = text.lower() in m.text.lower()
+                if found:
+                    raise NotAchievedException(f"Fail-fast text found: {m.text}")
+
     class ValidateIntPositionAgainstSimState(MessageHook):
         '''monitors a message containing a position containing lat/lng in 1e7,
         makes sure it stays close to SIMSTATE'''
