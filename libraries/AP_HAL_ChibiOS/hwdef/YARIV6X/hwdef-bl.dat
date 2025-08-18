@@ -8,7 +8,7 @@ MCU STM32H7xx STM32H743xx
 OSCILLATOR_HZ 16000000
 
 # board ID for firmware load
-APJ_BOARD_ID 1234
+APJ_BOARD_ID AP_HW_YARIV6X
 
 # bootloader is installed at zero offset
 FLASH_RESERVE_START_KB 0
@@ -18,8 +18,6 @@ FLASH_BOOTLOADER_LOAD_KB 128
 
 # flash size
 FLASH_SIZE_KB 2048
-
-env OPTIMIZE -Os
 
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 UART7 UART5 USART3
