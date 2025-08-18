@@ -911,7 +911,7 @@ protected:
     float apply_slowdown(float desired_speed);
 
     // calculate position of dock relative to the vehicle
-    bool calc_dock_pos_rel_vehicle_NE_m(Vector2f &dock_pos_rel_vehicle) const;
+    bool calc_dock_pos_rel_vehicle_NE_m(Vector2f &dock_pos_rel_vehicle_m) const;
 
     // we force the vehicle to use real dock target vector when this much close to the docking station
     const float _force_real_target_limit_m = 3.0f;
