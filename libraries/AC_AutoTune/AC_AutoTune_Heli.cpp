@@ -591,7 +591,7 @@ void AC_AutoTune_Heli::load_test_gains()
 }
 
 // load gains
-void AC_AutoTune_Heli::load_gain_set(AxisType s_axis, float rate_p, float rate_i, float rate_d, float rate_ff, float angle_p, float max_accel_radss, float rate_fltt, float rate_flte, float smax, float max_rate)
+void AC_AutoTune_Heli::load_gain_set(AxisType s_axis, float rate_p, float rate_i, float rate_d, float rate_ff, float angle_p, float max_accel_radss, float rate_fltt, float rate_flte, float smax, float max_rate_rads)
 {
     switch (s_axis) {
     case AxisType::ROLL:
@@ -603,7 +603,7 @@ void AC_AutoTune_Heli::load_gain_set(AxisType s_axis, float rate_p, float rate_i
         attitude_control->get_rate_roll_pid().set_slew_limit(smax);
         attitude_control->get_angle_roll_p().set_kP(angle_p);
         attitude_control->set_accel_roll_max_radss(max_accel_radss);
-        attitude_control->set_ang_vel_roll_max_rads(max_rate);
+        attitude_control->set_ang_vel_roll_max_rads(max_rate_rads);
         break;
     case AxisType::PITCH:
         attitude_control->get_rate_pitch_pid().set_kP(rate_p);
@@ -614,7 +614,7 @@ void AC_AutoTune_Heli::load_gain_set(AxisType s_axis, float rate_p, float rate_i
         attitude_control->get_rate_pitch_pid().set_slew_limit(smax);
         attitude_control->get_angle_pitch_p().set_kP(angle_p);
         attitude_control->set_accel_pitch_max_radss(max_accel_radss);
-        attitude_control->set_ang_vel_pitch_max_rads(max_rate);
+        attitude_control->set_ang_vel_pitch_max_rads(max_rate_rads);
         break;
     case AxisType::YAW:
     case AxisType::YAW_D:
@@ -627,7 +627,7 @@ void AC_AutoTune_Heli::load_gain_set(AxisType s_axis, float rate_p, float rate_i
         attitude_control->get_rate_yaw_pid().set_filt_E_hz(rate_flte);
         attitude_control->get_angle_yaw_p().set_kP(angle_p);
         attitude_control->set_accel_yaw_max_radss(max_accel_radss);
-        attitude_control->set_ang_vel_yaw_max_rads(max_rate);
+        attitude_control->set_ang_vel_yaw_max_rads(max_rate_rads);
         break;
     }
 }
@@ -1577,8 +1577,8 @@ void AC_AutoTune_Heli::Log_Write_AutoTune(AxisType _axis, TuneType tune_step, fl
     AP::logger().Write(
         "ATNH",
         "TimeUS,Axis,TuneStep,Freq,Gain,Phase,RFF,RP,RD,SP,ACC",
-        "s--E-d-----",
-        "F--000-----",
+        "s--E-d----e",
+        "F--000----0",
         "QBBffffffff",
         AP_HAL::micros64(),
         (uint8_t)axis,
@@ -1590,7 +1590,7 @@ void AC_AutoTune_Heli::Log_Write_AutoTune(AxisType _axis, TuneType tune_step, fl
         new_gain_rp,
         new_gain_rd,
         new_gain_sp,
-        max_accel_radss);
+        degrees(max_accel_radss));
 }
 
 // Write an Autotune detailed data packet

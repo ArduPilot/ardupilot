@@ -50,7 +50,7 @@ protected:
     void backup_gains_and_initialise() override;
 
     // load gains
-    void load_gain_set(AxisType s_axis, float rate_p, float rate_i, float rate_d, float rate_ff, float angle_p, float max_accel, float rate_fltt, float rate_flte, float smax, float max_rate);
+    void load_gain_set(AxisType s_axis, float rate_p, float rate_i, float rate_d, float rate_ff, float angle_p, float max_accel_radss, float rate_fltt, float rate_flte, float smax, float max_rate_rads);
 
     // switch to use original gains
     void load_orig_gains() override;
@@ -210,7 +210,7 @@ private:
     bool exceeded_freq_range(float frequency);
 
     // report gain formatting helper
-    void report_axis_gains(const char* axis_string, float rate_P, float rate_I, float rate_D, float rate_ff, float angle_P, float max_accel) const;
+    void report_axis_gains(const char* axis_string, float rate_P, float rate_I, float rate_D, float rate_ff, float angle_P, float max_accel_radss) const;
 
     // define input type as Dwell or Sweep.  Used through entire class
     AC_AutoTune_FreqResp::InputType input_type;
@@ -289,13 +289,13 @@ private:
     const float sweep_time_ms = 23000;
 
     // parameters
-    AP_Int8  axis_bitmask;        // axes to be tuned
+    AP_Int8  axis_bitmask;      // axes to be tuned
     AP_Int8  seq_bitmask;       // tuning sequence bitmask
     AP_Float min_sweep_freq;    // minimum sweep frequency
     AP_Float max_sweep_freq;    // maximum sweep frequency
     AP_Float max_resp_gain;     // maximum response gain
     AP_Float vel_hold_gain;     // gain for velocity hold
-    AP_Float accel_max_degss;         // maximum autotune angular acceleration
+    AP_Float accel_max_degss;   // maximum autotune angular acceleration
     AP_Float rate_max_degs;          // maximum autotune angular rate
 
     // freqresp object for the frequency response tests
