@@ -421,24 +421,37 @@ void AP_SystemID::log_data() const
 // @Field: Rll: Roll Angle
 // @Field: DPit: Desired Pitch Angle
 // @Field: Pit: Pitch Angle
+// @Field: rdes: Desired Roll Rate
+// @Field: r: Measured Roll Rate
+// @Field: pdes: Desired Pitch Rate
+// @Field: p: Measured Pitch Rate
 // @Field: Aile: Aileron
 // @Field: Elev: Elevator
-// @Field: Rudd: Rudder
+// @Field: aspd: Speed_Scalar
+// @Field: eastas: EAS2TAS
 
 void AP_SystemID::log_plane_data() const
 {
 #if HAL_LOGGING_ENABLED
-    int16_t pitch = plane.ahrs.pitch_sensor - plane.g.pitch_trim * 100;
-    AP::logger().WriteStreaming("SIDP", "TimeUS,DRll,Rll,DPit,Pit,Aile,Elev,Rudd",
-                                "sooooooo", "F-------", "Qfffffff",
+   // int16_t pitch = plane.ahrs.pitch_sensor - plane.g.pitch_trim * 100;
+    float speed_scaler = plane.get_speed_scaler();
+    int16_t demanded_pitch = plane.nav_pitch_cd + int32_t(plane.g.pitch_trim * 100.0) + SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * plane.g.kff_throttle_to_pitch;
+    AP::logger().WriteStreaming("SIDP", "TimeUS,DRll,Rll,DPit,Pit,rdes,r,pdes,p,Aile,Elev,aspd,eastas",
+                                "soooooooooooo", "F------------", "Qffffffffffff",
                                 AP_HAL::micros64(),
                                 plane.nav_roll_cd * 0.01f,
                                 plane.ahrs.roll_sensor * 0.01f,
-                                pitch * 0.01f,
+                                demanded_pitch * 0.01f,
                                 plane.ahrs.pitch_sensor * 0.01f,
+                                plane.rollController.get_desired_rate(),
+                                degrees(plane.ahrs.get_gyro().x),
+                                plane.pitchController.get_desired_rate(),
+                                degrees(plane.ahrs.get_gyro().y),
                                 SRV_Channels::get_output_scaled(SRV_Channel::k_aileron) * 0.01f,
                                 SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) * 0.01f,
-                                SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) * 0.01f);
+                                //SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) * 0.01f,
+                                speed_scaler,
+                                plane.ahrs.get_EAS2TAS());
 
 #endif // HAL_LOGGING_ENABLED
 }
