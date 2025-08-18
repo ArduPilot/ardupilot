@@ -479,12 +479,13 @@ bool ModeZigZag::calculate_side_dest_m(Vector3f& next_dest_neu_m, bool& is_terra
     }
 
     // check distance the vertical vector between A and B
-    if (is_zero(AB_side_ne_m.length_squared())) {
+    float AB_side_ne_m_length = AB_side_ne_m.length();
+    if (is_zero(AB_side_ne_m_length)) {
         return false;
     }
 
     // adjust AB_side_ne_m length to zigzag_side_dist
-    float scalar = constrain_float(_side_dist_m, 0.1, 100.0) / AB_side_ne_m.length();
+    float scalar = constrain_float(_side_dist_m, 0.1, 100.0) / AB_side_ne_m_length;
 
     // get distance from vehicle to start_pos_ne_m
     const Vector2f curr_pos_ne_m = pos_control->get_pos_desired_NEU_m().xy().tofloat();
