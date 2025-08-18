@@ -2728,10 +2728,21 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def AutoTune(self):
         """Test autotune mode"""
 
+        # autotune changes a set of parameters on the vehicle which
+        # are not in our context.  That changes the flight
+        # characteristics, which we can't afford between runs.  So
+        # completely reset the simulated vehicle after the run is
+        # complete by "customising" the commandline here:
+        self.customise_SITL_commandline([])
+
+        self.set_parameters({
+            "ATC_RAT_RLL_SMAX": 1,
+            "AUTOTUNE_MIN_D": 0.0004,
+        })
+
         rlld = self.get_parameter("ATC_RAT_RLL_D")
         rlli = self.get_parameter("ATC_RAT_RLL_I")
         rllp = self.get_parameter("ATC_RAT_RLL_P")
-        self.set_parameter("ATC_RAT_RLL_SMAX", 1)
         self.takeoff(10)
 
         # hold position in loiter
@@ -2766,11 +2777,22 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def AutoTuneYawD(self):
         """Test autotune mode"""
 
+        # autotune changes a set of parameters on the vehicle which
+        # are not in our context.  That changes the flight
+        # characteristics, which we can't afford between runs.  So
+        # completely reset the simulated vehicle after the run is
+        # complete by "customising" the commandline here:
+        self.customise_SITL_commandline([])
+
+        self.set_parameters({
+            "ATC_RAT_RLL_SMAX": 1,
+            "AUTOTUNE_AXES": 15,
+            "AUTOTUNE_MIN_D": 0.0004,
+        })
+
         rlld = self.get_parameter("ATC_RAT_RLL_D")
         rlli = self.get_parameter("ATC_RAT_RLL_I")
         rllp = self.get_parameter("ATC_RAT_RLL_P")
-        self.set_parameter("ATC_RAT_RLL_SMAX", 1)
-        self.set_parameter("AUTOTUNE_AXES", 15)
         self.takeoff(10)
 
         # hold position in loiter
@@ -2815,6 +2837,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "RC8_OPTION": 17,
             "ATC_RAT_RLL_FLTT": 20,
+            "AUTOTUNE_MIN_D": 0.0004,
         })
 
         self.takeoff(10, mode='LOITER')
