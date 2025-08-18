@@ -119,15 +119,16 @@ void Mode::AutoYaw::set_fixed_yaw_rad(float yaw_rad, float yaw_rate_rads, int8_t
     // calculate final angle as relative to vehicle heading or absolute
     if (relative_angle) {
         if (_mode == Mode::HOLD) {
-            _yaw_angle_rad = copter.ahrs.get_yaw_rad();
+            _yaw_angle_rad = copter.attitude_control->get_att_target_euler_rad().z;
         }
         _fixed_yaw_offset_rad = angle_rad * (direction >= 0 ? 1.0 : -1.0);
     } else {
         // absolute angle
         _fixed_yaw_offset_rad = wrap_PI(angle_rad - _yaw_angle_rad);
-        if (direction < 0 && is_positive(_fixed_yaw_offset_rad)) {
+        // Always use the direct path if less than 1.0 degree.
+        if (direction < 0 && is_positive(_fixed_yaw_offset_rad - radians(1.0))) {
             _fixed_yaw_offset_rad -= M_2PI;
-        } else if (direction > 0 && is_negative(_fixed_yaw_offset_rad)) {
+        } else if (direction > 0 && is_negative(_fixed_yaw_offset_rad + radians(1.0))) {
             _fixed_yaw_offset_rad += M_2PI;
         }
     }
