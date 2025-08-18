@@ -1324,11 +1324,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_push()
 
         self.start_test("Test zero bias")
+        self.delay_sim_time(2)
         dfreader_tstart = self.assert_dataflash_message_field_level_at(
             "XKF2",
             "AZ",
             0.0,
             condition="XKF2.C==1",
+            maintain=1,
         )
 
         # Add 2m/s/s bias to the second IMU
