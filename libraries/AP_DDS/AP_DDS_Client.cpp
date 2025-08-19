@@ -83,7 +83,8 @@ static constexpr uint16_t DELAY_GOAL_TOPIC_MS = AP_DDS_DELAY_GOAL_TOPIC_MS ;
 static constexpr uint16_t DELAY_CLOCK_TOPIC_MS =AP_DDS_DELAY_CLOCK_TOPIC_MS;
 #endif // AP_DDS_CLOCK_PUB_ENABLED
 #if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
-static constexpr uint16_t DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS = AP_DDS_DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS;
+static constexpr uint16_t DELAY_GPS_GLOBAL_ORIGIN_TOPIC_HEALTHY_MS = AP_DDS_DELAY_GPS_GLOBAL_ORIGIN_TOPIC_HEALTHY_MS;
+static constexpr uint16_t DELAY_GPS_GLOBAL_ORIGIN_TOPIC_UNHEALTHY_MS = AP_DDS_DELAY_GPS_GLOBAL_ORIGIN_TOPIC_UNHEALTHY_MS;
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 static constexpr uint16_t DELAY_PING_MS = 500;
 #if AP_DDS_STATUS_PUB_ENABLED
@@ -687,7 +688,7 @@ void AP_DDS_Client::update_topic(rosgraph_msgs_msg_Clock& msg)
 #endif // AP_DDS_CLOCK_PUB_ENABLED
 
 #if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
-void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPointStamped& msg)
+bool AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPointStamped& msg)
 {
     update_topic(msg.header.stamp);
     STRCPY(msg.header.frame_id, BASE_LINK_FRAME_ID);
@@ -698,11 +699,19 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPointStamped& msg)
     Location ekf_origin;
     // LLA is WGS-84 geodetic coordinate.
     // Altitude converted from cm to m.
+    bool is_gps_available {false};
     if (ahrs.get_origin(ekf_origin)) {
         msg.position.latitude = ekf_origin.lat * 1E-7;
         msg.position.longitude = ekf_origin.lng * 1E-7;
         msg.position.altitude = ekf_origin.alt * 0.01;
+        is_gps_available = true;
+    } else {
+        msg.position.latitude = NAN;
+        msg.position.longitude = NAN;
+        msg.position.altitude = NAN;
     }
+
+    return is_gps_available;
 }
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 
@@ -1806,10 +1815,16 @@ void AP_DDS_Client::update()
     }
 #endif // AP_DDS_CLOCK_PUB_ENABLED
 #if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
-    if (cur_time_ms - last_gps_global_origin_time_ms > DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS) {
-        update_topic(gps_global_origin_topic);
-        last_gps_global_origin_time_ms = cur_time_ms;
-        write_gps_global_origin_topic();
+    if (cur_time_ms - last_gps_global_origin_time_ms > DELAY_GPS_GLOBAL_ORIGIN_TOPIC_HEALTHY_MS) {
+        if (update_topic(gps_global_origin_topic)) {
+            write_gps_global_origin_topic();
+            last_gps_global_origin_time_ms = cur_time_ms;
+        } else {
+            if (cur_time_ms - last_gps_global_origin_time_ms > DELAY_GPS_GLOBAL_ORIGIN_TOPIC_UNHEALTHY_MS) {
+                write_gps_global_origin_topic();
+                last_gps_global_origin_time_ms = cur_time_ms;
+            }
+        }
     }
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 #if AP_DDS_GOAL_PUB_ENABLED
