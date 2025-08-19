@@ -17,6 +17,11 @@
  *       APM_Baro.cpp - barometer driver
  *
  */
+
+#include "AP_Baro_config.h"
+
+#if AP_BARO_ENABLED
+
 #include "AP_Baro.h"
 
 #include <utility>
@@ -56,7 +61,6 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 #if AP_BARO_THST_COMP_ENABLED
 #include <AP_Motors/AP_Motors.h>
 #endif
@@ -913,6 +917,7 @@ bool AP_Baro::healthy(uint8_t instance) const {
 }
 #endif
 
+#if AP_AHRS_ENABLED
 /*
   update field elevation value
  */
@@ -952,6 +957,7 @@ void AP_Baro::update_field_elevation(void)
     }
 #endif
 }
+#endif
 
 #if AP_BARO_THST_COMP_ENABLED
 // scale the baro linearly with thrust
@@ -1071,3 +1077,5 @@ AP_Baro &baro()
 }
 
 };
+
+#endif  // AP_BARO_ENABLED
