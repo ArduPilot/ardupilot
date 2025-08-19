@@ -6738,15 +6738,17 @@ class TestSuite(ABC):
                 mission_type
         )
 
+    INT32_MAX = 2147483647
+
     def run_cmd_int(self,
                     command,
-                    p1=0,
-                    p2=0,
-                    p3=0,
-                    p4=0,
-                    x=0,
-                    y=0,
-                    z=0,
+                    p1=float("NaN"),
+                    p2=float("NaN"),
+                    p3=float("NaN"),
+                    p4=float("NaN"),
+                    x=INT32_MAX,
+                    y=INT32_MAX,
+                    z=float("NaN"),
                     want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
                     timeout=10,
                     target_sysid=None,
@@ -6864,13 +6866,13 @@ class TestSuite(ABC):
 
     def run_cmd(self,
                 command,
-                p1=0,
-                p2=0,
-                p3=0,
-                p4=0,
-                p5=0,
-                p6=0,
-                p7=0,
+                p1=float("NaN"),
+                p2=float("NaN"),
+                p3=float("NaN"),
+                p4=float("NaN"),
+                p5=float("NaN"),
+                p6=float("NaN"),
+                p7=float("NaN"),
                 want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
                 target_sysid=None,
                 target_compid=None,
@@ -9676,6 +9678,16 @@ Also, ignores heartbeats not from our target system'''
         m = self.poll_home_position()
         return mavutil.location(m.latitude*1.0e-7, m.longitude*1.0e-7, m.altitude*1.0e-3, 0)
 
+    def assert_home_position_at(self, lat, lng, alt):
+        '''assert home is at specified lat/lng/alt, deg/deg/metres'''
+        home = self.home_position_as_mav_location()
+        if home.lat != lat:
+            raise NotAchievedException("Bad lat")
+        if home.lng != lng:
+            raise NotAchievedException("Bad lng")
+        if home.alt != alt:
+            raise NotAchievedException("Bad alt")
+
     def offset_location_ne(self, location, metres_north, metres_east):
         '''return a new location offset from passed-in location'''
         (target_lat, target_lng) = mavextra.gps_offset(location.lat,
@@ -9763,6 +9775,7 @@ Also, ignores heartbeats not from our target system'''
         print("new home: %s %s %s" % (str(new_x), str(new_y), str(new_z)))
         self.run_cmd_int(
             mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+            p1=0,
             p5=new_x,
             p6=new_y,
             p7=new_z/1000.0, # mm => m
