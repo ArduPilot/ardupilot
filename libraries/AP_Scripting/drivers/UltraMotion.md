@@ -18,8 +18,9 @@ the 2nd scripting CAN driver set this to 2 and set CAN_Dx_PROTOCOL=12.
 
 ## UM_RATE_HZ
 
-This sets the update rate of the script in Hz (how often it checks for
-new data from the ECU). A value of 200 is reasonable.
+This sets the update rate of the script in Hz (how often it sends
+commands and checks for new data from the actuator). A value of 200 is
+reasonable.
 
 ## UM_OPTIONS
 
@@ -43,8 +44,26 @@ to ensure the script gets sufficient priority.
 then the flight controller should rebooted and parameters should be
 refreshed.
 
-# Telemetry Support
+# UltraMotion Settings
+The following settings need to be changed using the CLI or CONFIG.TXT
+  - unitID should be set to the servo number (1-indexed)
+  - pMin to 1000
+  - pMax to 2000
 
-To use telemetry you need to setup the servos with a specific txData
-format. The code currently assumes txData is pABCDEFS
+If using telemetry (remember to set UM_OPTIONS bit 2), the following 
+should also be set:
+  - txID should be set to match unitID
+  - txData should be set to ABCGHEFY
+  - txIvl should be set according to your desired telemetry rate
+    (e.g., 100 milliseconds for 10Hz)
 
+Commands, assuming you are setting up servo 7, and a telemetry rate of
+10Hz
+```
+id 7
+pn 1000
+px 2000
+ni 7
+dt ABCGHEFY
+it 100
+```
