@@ -12,18 +12,31 @@
 #ifndef DRIFT_SPEEDGAIN_RAD
  # define DRIFT_SPEEDGAIN_RAD 0.13962634f
 #endif
+#ifdef DRIFT_SPEEDGAIN
+    #error please convert to radians and use DRIFT_SPEEDGAIN_RAD
+#endif
 
 // Speed limits and scheduling thresholds converted from cm/s
-#ifndef DRIFT_SPEEDLIMIT
+#ifndef DRIFT_SPEEDLIMIT_MS
  # define DRIFT_SPEEDLIMIT_MS 5.60f       // 560 cm/s -> 5.60 m/s
 #endif
-#ifndef DRIFT_VEL_FORWARD_MIN
+#ifdef DRIFT_SPEEDLIMIT
+    #error please convert to meters per second and use DRIFT_SPEEDLIMIT_MS
+#endif
+
+#ifndef DRIFT_VEL_FORWARD_MIN_MS
  # define DRIFT_VEL_FORWARD_MIN_MS 20.0f  // 2000 cm/s -> 20.0 m/s
+#endif
+#ifdef DRIFT_VEL_FORWARD_MIN
+    #error please convert to meters per second and use DRIFT_VEL_FORWARD_MIN_MS
 #endif
 
 // Throttle assist (velz changed from cm/s to m/s, so gain ×100)
-#ifndef DRIFT_THR_ASSIST_GAIN
- # define DRIFT_THR_ASSIST_GAIN 0.18f     // was 0.0018 with cm/s
+#ifndef DRIFT_THR_ASSIST_GAIN_MS
+ # define DRIFT_THR_ASSIST_GAIN_MS 0.18f     // was 0.0018 with cm/s
+#endif
+#ifdef DRIFT_THR_ASSIST_GAIN
+    #error please convert to meters per second and use DRIFT_THR_ASSIST_GAIN_MS
 #endif
 
 #ifndef DRIFT_THR_ASSIST_MAX
@@ -153,7 +166,7 @@ float ModeDrift::get_throttle_assist(float vel_u_ms, float pilot_throttle_scaled
     if (pilot_throttle_scaled > DRIFT_THR_MIN && pilot_throttle_scaled < DRIFT_THR_MAX) {
         // calculate throttle assist gain
         thr_assist = 1.2f - ((float)fabsf(pilot_throttle_scaled - 0.5f) / 0.24f);
-        thr_assist = constrain_float(thr_assist, 0.0f, 1.0f) * -DRIFT_THR_ASSIST_GAIN * vel_u_ms;
+        thr_assist = constrain_float(thr_assist, 0.0f, 1.0f) * -DRIFT_THR_ASSIST_GAIN_MS * vel_u_ms;
 
         // ensure throttle assist never adjusts the throttle by more than 0.3 (≈300 pwm)
         thr_assist = constrain_float(thr_assist, -DRIFT_THR_ASSIST_MAX, DRIFT_THR_ASSIST_MAX);

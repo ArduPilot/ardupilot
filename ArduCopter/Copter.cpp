@@ -886,7 +886,7 @@ void Copter::update_super_simple_bearing(bool force_update)
 
     // check the bearing to home has changed by at least 5 degrees
     // todo: consider updating this continuously
-    if (labs(super_simple_last_bearing_rad - bearing_rad) < radians(5.0)) {
+    if (fabsf(wrap_PI(super_simple_last_bearing_rad - bearing_rad)) < radians(5.0)) {
         return;
     }
 
