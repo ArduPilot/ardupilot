@@ -138,6 +138,7 @@ private:
         SET_THERMAL_RAW_DATA = 0x34,
         SET_THERMAL_GAIN = 0x38,
         POSITION_DATA = 0x3e,
+        CAMERA_CODEC_SPECS = 0x20,
     };
 
     // Function Feedback Info packet info_type values
@@ -381,6 +382,68 @@ private:
 
     // count of SET_TIME packets, we send 5 times to cope with packet loss
     uint8_t sent_time_count;
-};
 
+    // Camera codec information structure
+    struct CodecInfo {
+        struct StreamInfo {
+            uint8_t stream_type = 0;          // 0:Recording, 1:Main, 2:Sub
+            uint8_t video_enc_type = 0;       // 1:H264, 2:H265
+            uint16_t resolution_width = 0;    // Resolution in pixels (width)
+            uint16_t resolution_height = 0;   // Resolution in pixels (height)
+            uint16_t video_bitrate = 0;       // Video bitrate in Kbps
+            uint8_t video_framerate = 0;      // Video frame rate
+            bool received = false;            // Flag indicating valid data
+            uint32_t last_update_ms = 0;      // Timestamp of last update
+        };
+        
+        StreamInfo recording_stream;          // Stream type 0
+        StreamInfo main_stream;               // Stream type 1  
+        StreamInfo sub_stream;                // Stream type 2 (ZT30/ZT6 only)
+        
+        // Helper functions
+        StreamInfo* get_stream(uint8_t stream_type) {
+            switch (stream_type) {
+                case 0: return &recording_stream;
+                case 1: return &main_stream;
+                case 2: return &sub_stream;
+                default: return nullptr;
+            }
+        }
+        
+        const StreamInfo* get_stream(uint8_t stream_type) const {
+            switch (stream_type) {
+                case 0: return &recording_stream;
+                case 1: return &main_stream;
+                case 2: return &sub_stream;
+                default: return nullptr;
+            }
+        }
+        
+        // Get the best available resolution (prefer main > recording > sub)
+        bool get_best_resolution(uint16_t& width, uint16_t& height) const {
+            if (main_stream.received && main_stream.resolution_width > 0) {
+                width = main_stream.resolution_width;
+                height = main_stream.resolution_height;
+                return true;
+            }
+            if (recording_stream.received && recording_stream.resolution_width > 0) {
+                width = recording_stream.resolution_width;
+                height = recording_stream.resolution_height;
+                return true;
+            }
+            if (sub_stream.received && sub_stream.resolution_width > 0) {
+                width = sub_stream.resolution_width;
+                height = sub_stream.resolution_height;
+                return true;
+            }
+            return false;
+        }
+    } _codec_info;
+
+        // Request codec specs for specific stream
+    bool request_codec_specs(uint8_t stream_type);
+
+    // Request all available codec specs
+    void request_all_codec_specs();
+};
 #endif // HAL_MOUNT_SIYI_ENABLED
