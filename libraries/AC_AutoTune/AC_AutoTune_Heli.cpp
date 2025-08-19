@@ -117,6 +117,7 @@ const AP_Param::GroupInfo AC_AutoTune_Heli::var_info[] = {
     // @Description: maximum angular acceleration in deg/s/s allowed during autotune maneuvers
     // @Range: 1 4000
     // @User: Standard
+    // @Units: deg/s/s
     AP_GROUPINFO("ACC_MAX", 7, AC_AutoTune_Heli, accel_max_degss, 0.0f),
 
     // @Param: RAT_MAX
@@ -124,6 +125,7 @@ const AP_Param::GroupInfo AC_AutoTune_Heli::var_info[] = {
     // @Description: maximum angular rate in deg/s allowed during autotune maneuvers
     // @Range: 0 500
     // @User: Standard
+    // @Units: deg/s
     AP_GROUPINFO("RAT_MAX", 8, AC_AutoTune_Heli, rate_max_degs, 0.0f),
 
     AP_GROUPEND
