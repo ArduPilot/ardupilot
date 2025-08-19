@@ -1226,4 +1226,38 @@ int lua_gps_inject_data(lua_State *L)
 
 #endif  // AP_GPS_ENABLED
 
+#if AP_VEHICLE_ENABLED
+int lua_AP_Vehicle_set_target_velocity_NED(lua_State *L)
+{
+    const int args = lua_gettop(L);
+
+    if (args > 3) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_Vehicle * ud = check_AP_Vehicle(L);
+    Vector3f & data_2 = *check_Vector3f(L, 2);
+
+    bool yaw_to_target = false;
+
+    if (args == 3) {
+        yaw_to_target = static_cast<bool>(lua_toboolean(L, 3));
+    }
+#if AP_SCHEDULER_ENABLED
+    AP::scheduler().get_semaphore().take_blocking();
+#endif
+    const bool data = static_cast<bool>(ud->set_target_velocity_NED(
+            data_2,
+            yaw_to_target));
+
+#if AP_SCHEDULER_ENABLED
+    AP::scheduler().get_semaphore().give();
+#endif
+    lua_pushboolean(L, data);
+    return 1;
+}
+#endif // AP_VEHICLE_ENABLED
+
 #endif  // AP_SCRIPTING_ENABLED
