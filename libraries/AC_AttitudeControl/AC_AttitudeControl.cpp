@@ -352,6 +352,10 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_cd(float eu
     input_euler_angle_roll_pitch_euler_rate_yaw_rad(euler_roll_angle_rad, euler_pitch_angle_rad, euler_yaw_rate_rads);
 }
 
+
+// Sets desired roll and pitch angles (in radians) and yaw rate (in radians/s).
+// Used when roll/pitch stabilization is needed with manual or autonomous yaw rate control.
+// Applies acceleration-limited input shaping for smooth transitions and computes body-frame angular velocity targets.
 void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad, float euler_yaw_rate_rads)
 {
     // update attitude target
