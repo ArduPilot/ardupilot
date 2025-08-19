@@ -379,18 +379,22 @@ def run_specific_test(step, *args, **kwargs):
     if t is None:
         return []
     (testname, test) = t
+    tests = set()
+    tests.update(test.split(","))
 
     tester_class = tester_class_map[testname]
     global tester
     tester = tester_class(*args, **kwargs)
 
     # print("Got %s" % str(tester))
+    run = []
     for a in tester.tests():
         if not isinstance(a, Test):
             a = Test(a)
         print("Got %s" % (a.name))
-        if a.name == test:
-            return tester.autotest(tests=[a], allow_skips=False, step_name=step), tester
+        if a.name in tests:
+            run.append(a)
+    return tester.autotest(tests=run, allow_skips=False, step_name=step), tester
     print("Failed to find test %s on %s" % (test, testname))
     sys.exit(1)
 
