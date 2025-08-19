@@ -198,6 +198,7 @@ AP_HW_AEROFOX_AIRSPEED               1077
 AP_HW_ATOMRCF405                     1078
 AP_HW_CUBENODE                       1079
 AP_HW_AEROFOX_PMU                    1080
+AP_HW_NUCLEO_H753ZI                  1081
 AP_HW_JHEMCUGF16F405                 1081
 AP_HW_SPEEDYBEEF4V3                  1082
 AP_HW_PixPilot-V6                    1083
