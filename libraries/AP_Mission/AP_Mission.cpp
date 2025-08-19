@@ -18,6 +18,8 @@
 #include <RC_Channel/RC_Channel_config.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Parachute/AP_Parachute.h>
+#include <AC_Sprayer/AC_Sprayer.h> 
 
 const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
@@ -379,9 +381,13 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+#if HAL_PARACHUTE_ENABLED
     case MAV_CMD_DO_PARACHUTE:
+#endif
     case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
+#if HAL_SPRAYER_ENABLED
     case MAV_CMD_DO_SPRAYER:
+#endif
     case MAV_CMD_DO_AUX_FUNCTION:
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
@@ -470,12 +476,16 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     case MAV_CMD_DO_FENCE_ENABLE:
         return start_command_fence(cmd);
 #endif
+#if HAL_PARACHUTE_ENABLED
     case MAV_CMD_DO_PARACHUTE:
         return start_command_parachute(cmd);
+#endif
     case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
         return start_command_do_scripting(cmd);
+#if HAL_SPRAYER_ENABLED
     case MAV_CMD_DO_SPRAYER:
         return start_command_do_sprayer(cmd);
+#endif
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
         return command_do_set_repeat_dist(cmd);
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
