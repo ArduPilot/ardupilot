@@ -13,7 +13,7 @@
 class AP_Airspeed_External : public AP_Airspeed_Backend
 {
 public:
-    AP_Airspeed_External(AP_Airspeed &airspeed, uint8_t instance);
+    AP_Airspeed_External(AP_Airspeed &airspeed, class AP_Airspeed::airspeed_state &state, class AP_Airspeed_Params &params);
 
     bool init(void) override {
         return true;
