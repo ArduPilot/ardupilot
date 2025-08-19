@@ -356,7 +356,7 @@ public:
         // yaw_rad(): main product of AutoYaw; the heading:
         float yaw_rad();
 
-        // rate_rads(): desired yaw rate in centidegrees/second:
+        // rate_rads(): desired yaw rate in radians/second:
         float rate_rads();
 
         // Returns the yaw angle (in radians) representing the direction of horizontal motion.
