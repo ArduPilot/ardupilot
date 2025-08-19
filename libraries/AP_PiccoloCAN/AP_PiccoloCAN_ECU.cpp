@@ -15,9 +15,11 @@
  * Author: Oliver Walters / Currawong Engineering Pty Ltd
  */
 
-#include "AP_PiccoloCAN_ECU.h"
+#include "AP_PiccoloCAN_config.h"
 
-#if HAL_PICCOLO_CAN_ENABLE
+#if AP_PICCOLOCAN_ENABLED
+
+#include "AP_PiccoloCAN_ECU.h"
 
 // Protocol files for the ECU
 #include <AP_PiccoloCAN/piccolo_protocol/ECUProtocol.h>
@@ -91,4 +93,4 @@ uint32_t getECUPacketID(const void* pkt)
     return (uint32_t) ((frame->id >> 16) & 0xFF);
 }
 
-#endif // HAL_PICCOLO_CAN_ENABLE
+#endif // AP_PICCOLOCAN_ENABLED
