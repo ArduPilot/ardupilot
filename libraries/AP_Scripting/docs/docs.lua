@@ -4028,6 +4028,30 @@ function fence:get_margin_breach_time() end
 ---| 8 # Minimum altitude
 function fence:get_breaches() end
 
+-- Returns minimum safe altitude in meters above home alt frame (i.e. alt_min + margin)
+---@return number 
+function fence:get_safe_alt_min() end
+
+-- Returns maximum safe altitude in meters above home alt frame (i.e. alt_max - margin)
+---@return number 
+function fence:get_safe_alt_max() end
+
+-- Returns configured fences
+---@return integer fence_type bitmask
+---| 1 # Maximim altitude
+---| 2 # Circle
+---| 4 # Polygon
+---| 8 # Minimum altitude
+function fence:present() end
+
+-- Returns enabled fences
+---@return integer fence_type bitmask
+---| 1 # Maximim altitude
+---| 2 # Circle
+---| 4 # Polygon
+---| 8 # Minimum altitude
+function fence:get_enabled_fences() end
+
 -- Returns the type bitmask of any fence whose margins have been crossed
 ---@return integer fence_type bitmask
 ---| 1 # Maximim altitude
