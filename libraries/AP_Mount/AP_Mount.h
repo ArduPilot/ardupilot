@@ -227,6 +227,14 @@ public:
     // run pre-arm check.  returns false on failure and fills in failure_msg
     // any failure_msg returned will not include a prefix
     bool pre_arm_checks(char *failure_msg, uint8_t failure_msg_len);
+    // gets mount's min and max yaw limits
+
+    void get_mount_yaw_limits(float &yaw_min, float &yaw_max) { return get_mount_yaw_limits(_primary, yaw_min, yaw_max); }
+    void get_mount_yaw_limits(uint8_t instance, float &yaw_min, float &yaw_max);
+
+    // gets mount's min and max pitch limits
+    void get_mount_pitch_limits(float &pitch_min, float &pitch_max) { return get_mount_pitch_limits(_primary, pitch_min, pitch_max); }
+    void get_mount_pitch_limits(uint8_t instance, float &pitch_min, float &pitch_max);
 
     // get target rate in deg/sec. returns true on success
     bool get_rate_target(uint8_t instance, float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame);
