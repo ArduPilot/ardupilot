@@ -139,6 +139,10 @@ void AP_Logger::handle_log_request_data(GCS_MAVLINK &link, const mavlink_message
 
         uint32_t end;
         get_log_boundaries(packet.id, _log_data_page, end);
+    } else if (transfer_activity == TransferActivity::SENDING &&
+               _log_data_remaining) {
+        // ignore any request for different data while we have blocks to send
+        return;
     }
 
     _log_data_offset = packet.ofs;
