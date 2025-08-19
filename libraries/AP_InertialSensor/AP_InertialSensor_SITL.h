@@ -47,6 +47,7 @@ private:
 
     uint64_t next_gyro_sample;
     uint64_t next_accel_sample;
+    uint64_t frame_num;
     float gyro_time;
     float accel_time;
     float gyro_motor_phase[32];
