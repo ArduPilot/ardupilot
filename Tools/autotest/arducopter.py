@@ -10088,36 +10088,86 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.reboot_sitl()
             self.fly_rangefinder_drivers_fly([x.name for x in do_drivers])
 
-    def RangeFinderDriversMaxAlt(self):
+    def RangeFinderDriversMaxAlt_FlyDriver(self,
+                                           name : str,
+                                           rngfnd_type : int,
+                                           simname : str,
+                                           maxalt : float,
+                                           sqalt : float = None,
+                                           sq_at_sqalt : float = None,
+                                           ):
         '''test max-height behaviour'''
         # lightwareserial goes to 130m when out of range
+        self.progress(f"Flying {name}")
         self.set_parameters({
             "SERIAL4_PROTOCOL": 9,
-            "RNGFND1_TYPE": 8,
+            "RNGFND1_TYPE": rngfnd_type,
             "WPNAV_SPEED_UP": 1000,  # cm/s
         })
         self.customise_SITL_commandline([
-            "--serial4=sim:lightwareserial",
+            f"--serial4=sim:{simname}",
         ])
-        self.takeoff(95, mode='GUIDED', timeout=240, max_err=0.5)
-        self.assert_rangefinder_distance_between(90, 100)
+        takeoff_alt = sqalt
+        if sqalt is None:
+            takeoff_alt = maxalt
+        self.takeoff(takeoff_alt, mode='GUIDED', timeout=240, max_err=0.5)
+        self.assert_rangefinder_distance_between(takeoff_alt-5, takeoff_alt+5)
 
-        self.wait_rangefinder_distance(90, 100)
+        self.wait_rangefinder_distance(takeoff_alt-5, takeoff_alt+5)
 
         rf_bit = mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION
 
         self.assert_sensor_state(rf_bit, present=True, enabled=True, healthy=True)
-        self.assert_distance_sensor_quality(100)
+        if sq_at_sqalt is not None:
+            self.assert_distance_sensor_quality(sq_at_sqalt)
 
         self.progress("Moving higher to be out of max rangefinder range")
-        self.fly_guided_move_local(0, 0, 150)
+        self.fly_guided_move_local(0, 0, takeoff_alt + 50)
 
         # sensor remains healthy even out-of-range
         self.assert_sensor_state(rf_bit, present=True, enabled=True, healthy=True)
 
         self.assert_distance_sensor_quality(1)
 
-        self.do_RTL()
+        # life's too short for soft landings:
+        self.disarm_vehicle(force=True)
+
+    def RangeFinderDriversMaxAlt_LightwareSerial(self) -> None:
+        '''test max-height behaviour - LightwareSerial'''
+        self.RangeFinderDriversMaxAlt_FlyDriver(
+            name="LightwareSerial",
+            rngfnd_type=8,
+            simname='lightwareserial',
+            maxalt=100,
+            sqalt=95,
+            sq_at_sqalt=100,
+        )
+
+    def RangeFinderDriversMaxAlt_AinsteinLRD1(self) -> None:
+        '''test max-height behaviour - Ainstein LRD1 - pre v19.0.0 firmware'''
+        self.context_collect('STATUSTEXT')
+        self.RangeFinderDriversMaxAlt_FlyDriver(
+            name="Ainstein-LR-D1",
+            rngfnd_type=42,
+            simname='ainsteinlrd1',
+            maxalt=500,
+            sqalt=495,
+            sq_at_sqalt=39,
+        )
+        self.wait_text("Rangefinder: Temperature alert", check_context=True)
+
+    def RangeFinderDriversMaxAlt_AinsteinLRD1_v19(self) -> None:
+        '''test max-height behaviour - Ainstein LRD1 - v19.0.0 firmware'''
+        self.context_collect('STATUSTEXT')
+        self.RangeFinderDriversMaxAlt_FlyDriver(
+            name="Ainstein-LR-D1-v19",
+            rngfnd_type=42,
+            simname='ainsteinlrd1_v19',
+            maxalt=500,
+            sqalt=495,
+            sq_at_sqalt=39,
+        )
+        self.wait_text("Rangefinder: MCU Temperature alert", check_context=True)
 
     def RangeFinderDriversLongRange(self):
         '''test rangefinder above 327m'''
@@ -12362,7 +12412,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.RangeFinderDrivers,
              self.FlyRangeFinderMAVlink,
              self.FlyRangeFinderSITL,
-             self.RangeFinderDriversMaxAlt,
+             self.RangeFinderDriversMaxAlt_LightwareSerial,
+             self.RangeFinderDriversMaxAlt_AinsteinLRD1,
+             self.RangeFinderDriversMaxAlt_AinsteinLRD1_v19,
              self.RangeFinderDriversLongRange,
              self.RangeFinderSITLLongRange,
              self.MaxBotixI2CXL,

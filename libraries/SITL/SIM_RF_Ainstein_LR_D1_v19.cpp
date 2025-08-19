@@ -13,14 +13,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  Simulator for the Ainstein LR-D1 Serial rangefinder
+  Simulator for the Ainstein LR-D1 Serial rangefinder - with v19.0.0 firmware
 */
 
-#include "SIM_RF_Ainstein_LR_D1.h"
+#include "SIM_RF_Ainstein_LR_D1_v19.h"
 
 using namespace SITL;
 
-uint32_t RF_Ainstein_LR_D1::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
+uint32_t RF_Ainstein_LR_D1_v19::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
 {
     const uint8_t PACKET_LEN = 32;
 
@@ -28,9 +28,10 @@ uint32_t RF_Ainstein_LR_D1::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uin
         return 0;
     }
 
-    uint8_t malfunction_alert = 0;
+    uint16_t malfunction_alert = 0;
 
-    uint8_t snr = (alt_cm == 0xFFFF) ? 0 : 100;
+    uint8_t snr = 100;
+    uint8_t altitude_valid = 1;
     if (alt_cm > 52500) {
         // overheats at 525 metres:
         malfunction_alert |= 1U << 0;
@@ -39,20 +40,22 @@ uint32_t RF_Ainstein_LR_D1::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uin
         // out of range @500m
         snr = 0;
         alt_cm = 146;  // bogus flag value
+        altitude_valid = 0;
     }
 
     buffer[0] = 0xEB;  // packet header msb
     buffer[1] = 0x90;  // packet header lsb
     buffer[2] = 0;  // device_id
     buffer[3] = 28;  // length
-    buffer[4] = malfunction_alert;
-    buffer[5] = 1;  // object count
+    buffer[4] = HIGHBYTE(malfunction_alert);
+    buffer[5] = LOWBYTE(malfunction_alert);  // object count
     buffer[6] = HIGHBYTE(alt_cm);
     buffer[7] = LOWBYTE(alt_cm);
     buffer[8] = snr;
     buffer[9] = 0;  // speed high
     buffer[10] = 0;  // speed low
     memset(&buffer[11], 0xff, 20); // unused
+    buffer[11] = altitude_valid;
     buffer[31] = crc_sum_of_bytes(&buffer[3], PACKET_LEN-4); // minus headerMSB, headerLSB, device_id and checksum
 
     return PACKET_LEN;
