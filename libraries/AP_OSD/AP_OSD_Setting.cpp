@@ -49,10 +49,15 @@ const AP_Param::GroupInfo AP_OSD_Setting::var_info[] = {
 };
 
 // constructor
-AP_OSD_Setting::AP_OSD_Setting(bool _enabled, uint8_t x, uint8_t y) :
+AP_OSD_Setting::AP_OSD_Setting(bool _enabled, uint8_t x, uint8_t y,
+                               uint8_t x_hd, uint8_t y_hd) :
     default_enabled(_enabled),
     default_xpos(x),
     default_ypos(y)
+#if HAL_WITH_MSP_DISPLAYPORT
+    ,default_xpos_hd(x_hd),
+    default_ypos_hd(y_hd)
+#endif
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
