@@ -27,6 +27,7 @@
 #include "MAVLink_routing.h"
 
 #include <AP_ADSB/AP_ADSB.h>
+#include <AP_AIS/AP_AIS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -141,6 +142,16 @@ bool MAVLink_routing::check_and_forward(GCS_MAVLINK &in_link, const mavlink_mess
         }
     }
 #endif
+
+#if AP_AIS_ENABLED
+    if (msg.msgid == MAVLINK_MSG_ID_AIS_VESSEL) {
+        // if enabled AIS packets are not forwarded, they have their own stream rate
+        const AP_AIS *ais = AP_AIS::get_singleton();
+        if ((ais != nullptr) && (ais->enabled())) {
+            return true;
+        }
+    }
+#endif // AP_AIS_ENABLED
 
     // extract the targets for this packet
     int16_t target_system = -1;
