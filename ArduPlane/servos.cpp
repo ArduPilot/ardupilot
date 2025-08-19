@@ -538,11 +538,6 @@ float Plane::apply_throttle_limits(float throttle_in)
     int8_t min_throttle = aparm.throttle_min.get();
     int8_t max_throttle = aparm.throttle_max.get();
 
-#if AP_ICENGINE_ENABLED
-    // Apply idle governor.
-    g2.ice_control.update_idle_governor(min_throttle);
-#endif
-
     // If reverse thrust is enabled not allowed right now, the minimum throttle must not fall below 0.
     if (min_throttle < 0 && !allow_reverse_thrust()) {
         // reverse thrust is available but inhibited.
@@ -952,6 +947,12 @@ void Plane::set_servos(void)
     if (g2.ice_control.throttle_override(override_pct, base_throttle)) {
         // the ICE controller wants to override the throttle for starting, idle, or redline
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, override_pct);
+        // Inform TECS if we raised or lowered the throttle
+        if(override_pct < base_throttle) {
+            TECS_controller.set_throttle_max(override_pct);
+        } else if(override_pct > base_throttle) {
+            TECS_controller.set_throttle_min(override_pct);
+        }
 #if HAL_QUADPLANE_ENABLED
         quadplane.vel_forward.integrator = 0;
 #endif

@@ -64,9 +64,6 @@ public:
     // handle DO_ENGINE_CONTROL messages via MAVLink or mission
     bool engine_control(float start_control, float cold_start, float height_delay, uint32_t flags);
 
-    // update min throttle for idle governor
-    void update_idle_governor(int8_t &min_throttle);
-
     // do we have throttle while disarmed enabled?
     bool allow_throttle_while_disarmed(void) const;
 
@@ -85,6 +82,7 @@ private:
 
     void set_ignition(bool on);
     void set_starter(bool on);
+    void update_idle_governor(int8_t &min_throttle);
 
     enum ICE_State state;
 
