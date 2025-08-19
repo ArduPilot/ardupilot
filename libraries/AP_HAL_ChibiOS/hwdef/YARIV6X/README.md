@@ -66,14 +66,16 @@ Carrier Board
 | SERIAL3 | GPS1            | USART1            |
 | SERIAL4 | GPS2            | UART8             |
 | SERIAL5 | Telem3          | USART2 (RTS/CTS)  |
-| SERIAL6 | UART4, I2C      | UART4            |
+| SERIAL6 | UART4, I2C      | UART4             |
 | SERIAL7 | Debug Console   | USART3            |
 | SERIAL8 | IO/RC           | USART6            |
 
-### PWM Output
-The YARI V6X supports up to 16 PWM outputs. All 16 outputs support all normal PWM output formats. All FMU outputs support DShot, except 7 and 8.
+All UARTs have DMA capability
 
-The 8 FMU PWM outputs are in 4 groups:
+### PWM Output
+The YARI V6X supports up to 16 PWM outputs (M1-8 and A1-8). All 16 outputs support all normal PWM output formats. All outputs support DShot and BiDir DShot, except A7 and A8 which only support PWM.
+
+The 8 FMU PWM outputs (A1-8) are in 4 groups:
 - Outputs 1, 2, 3 and 4 in group1
 - Outputs 5 and 6 in group2
 - Outputs 7 and 8 in group3
@@ -81,24 +83,24 @@ The 8 FMU PWM outputs are in 4 groups:
 FMU outputs within the same group need to use the same output rate and protocol. If any output in a group uses DShot then all channels in that group need to use DShot.
 
 ### RC Input
-The PPM pin, which by default is mapped to a timer input, can be used for all ArduPilot supported receiver protocols, except CRSF/ELRS and SRXL2 which require a true UART connection. However, FPort, when connected in this manner, will only provide RC without telemetry.
+The PPM pin, which by default is mapped to a timer input, can be used for all ArduPilot supported unidirectional receiver protocols,. Half-Duplex and bi-directional protocols, such as CRSF/ELRS, Fport, and SRXL2) require a true UART connection (see below). FPort when connected to PPM will only provide RC without telemetry.
 
-To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, a full UART, such as SERIAL6 (UART4) would need to be used for receiver connections. Below are setups using Serial5.
+To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, a full UART, such as SERIAL6 (UART4) would need to be used for receiver connections. Below are setups using SERIAL6.
 
-- [SERIAL5_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial5-protocol) should be set to “23”.
-- FPort would require [SERIAL5_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial5-options) be set to “15”.
-- CRSF/ELRS would require [SERIAL5_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial5-options) be set to “0”.
-- SRXL2 would require [SERIAL5_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial5-options) be set to “4” and connects only the TX pin.
+- :ref:`SERIAL6_PROTOCOL<SERIAL6_PROTOCOL>` should be set to “23”.
+- FPort would require :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` be set to “15”.
+- CRSF/ELRS would require :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` be set to “0”.
+- SRXL2 would require :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` be set to “4” and connects only the TX pin.
 
 Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See [Radio Control Systems](https://ardupilot.org/copter/docs/common-rc-systems.html#common-rc-systems) for details.
 
 ### Battery Monitor
 The default battery parameters for use with a digital power module (with INA2xx) connected to Power1 port:
-- BATT_I2C_BUS = 1
-- BATT_I2C_ADDR = 0
-- BATT_MONITOR = 21
+- :ref:`BATT_I2C_BUS<BATT_I2C_BUS>` = 1
+- :ref:`BATT_I2C_ADDR<BATT_I2C_ADDR>` = 0
+- :ref:`BATT_MONITOR<BATT_MONITOR>` = 21
 
-For use with Power2 port update `BATT_I2C_BUS = 2`
+For use with Power2 port update :ref:`BATT_I2C_BUS<BATT_I2C_BUS>` = 2
 
 ### Compass
 The YARI V6X autopilot has a built-in compass. Due to potential interference, the autopilot is usually used with an external I2C compass as part of a GPS/Compass combination.
@@ -107,14 +109,14 @@ The YARI V6X autopilot has a built-in compass. Due to potential interference, th
 The 8 FMU outputs can be used as GPIOs (relays, buttons, RPM etc). To use them you need to set the output’s `SERVOx_FUNCTION` to -1. See [GPIOs](https://ardupilot.org/copter/docs/common-gpios.html#common-gpios) page for more information.
 
 The numbering of the GPIOs for PIN variables in ArduPilot is:
-- PWM1 50
-- PWM2 51
-- PWM3 52
-- PWM4 53
-- PWM5 54
-- PWM6 55
-- PWM7 56
-- PWM8 57
+- A1 50
+- A2 51
+- A3 52
+- A4 53
+- A5 54
+- A6 55
+- A7 56
+- A8 57
 
 Additional GPIOs:
 - FMU_CAP1 58
@@ -124,14 +126,12 @@ Additional GPIOs:
 The YARI V6X has 2 analog inputs, one 6V tolerant and one 3.3V tolerant
 - ADC Pin12 -> ADC 6.6V Sense
 - ADC Pin13 -> ADC 3.3V Sense
-- Analog 3.3V RSSI input pin = 103
+- Analog 3.3V RSSI input pin = 103 . To use analog RSSI, set :ref:`RSSI_TYPE<RSSI_TYPE>` = 1 and :ref:`RSSI_ANA_PIN<RSSI_ANA_PIN>` = 103.
 
 ### Loading Firmware
 The board comes pre-installed with an ArduPilot compatible bootloader, allowing the loading of xxxxxx.apj firmware files with any ArduPilot compatible ground station.
 
 Firmware for YARI V6X can be found [here](https://firmware.ardupilot.org) in sub-folders labeled “YARIV6X”.
-
-Bi-Directional DShot firmware variations are available also providing BDShot capability on FMU (AUX) outputs 1-6.
 
 Subsequently, you can update firmware with Mission Planner or QGroundcontrol.
 
