@@ -160,7 +160,11 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Param: _OPTIONS
     // @DisplayName: Follow options
     // @Description: Follow options bitmask
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+    // @Values: 0:None,1: Mount Follows lead vehicle on mode enter, 2: Mount and vehicle both follow the target object using tracking.
+#else
     // @Values: 0:None,1: Mount Follows lead vehicle on mode enter
+#endif
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 11, AP_Follow, _options, 0),
 
@@ -212,6 +216,35 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_JERK_H", 17, AP_Follow, _jerk_max_h_degsss, 360.0),
 
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+    // @Param: _OBJ_FOLL_M
+    // @DisplayName: Object follow margin
+    // @Description: Object follow margin with respect to the frame (if the object is outside margin it will not be followed), 0.5 means till the end of the frame
+    // @User: Standard
+    // @Range: 0.0 0.5
+    AP_GROUPINFO("_OBJ_FOLL_M", 18, AP_Follow, _object_follow_margin, 0.05),
+
+    // @Param: _POI_DELAY
+    // @DisplayName: Point of interest delay
+    // @Description: It's how much time we wait before using the current tracked object's lat-lon-alt as the setpoint (Set this to high if the fps of the tracking is low)
+    // @User: Standard
+    // @Units: ms
+    AP_GROUPINFO("_POI_DELAY", 19, AP_Follow, _poi_delay, 2000.0),
+
+    // @Param: _OBJ_Y_RST
+    // @DisplayName: Object Follow Yaw Reset
+    // @Description: At how much yaw angle of the mount (gimbal) the vehicle's yaw will reset (face towards the object), helps when gimbal's yaw is reaching its limit and can't go further while the objecting is moving out of the frame
+    // @User: Standard
+    // @Units: Degrees
+    AP_GROUPINFO("_OBJ_Y_RST", 20, AP_Follow, _object_follow_yaw_reset, 30.0),
+
+    // @Param: _OBJ_P_RST
+    // @DisplayName: Object Follow Pitch Reset
+    // @Description: At how much pitch angle of the mount (gimbal) the vehicle's yaw will reset (face towards the object), helps when gimbal's pitch is reaching its limit and can't go further while the objecting is moving out of the frame
+    // @User: Standard
+    // @Units: Degrees
+    AP_GROUPINFO("_OBJ_P_RST", 21, AP_Follow, _object_follow_pitch_reset, 30.0),
+#endif
 
     AP_GROUPEND
 };
