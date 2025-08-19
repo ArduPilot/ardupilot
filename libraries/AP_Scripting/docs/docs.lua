@@ -2700,10 +2700,23 @@ function vehicle:set_target_angle_and_climbrate(roll_deg, pitch_deg, yaw_deg, cl
 ---@return boolean -- true if successful
 function vehicle:set_target_rate_and_throttle(roll_rate_dps, pitch_rate_dps, yaw_rate_dps, throttle) end
 
+-- Set vehicle's roll, pitch, and yaw angles and rates with throttle in guided mode
+---@param roll_deg number -- roll angle in degrees
+---@param pitch_deg number -- pitch angle in degrees
+---@param yaw_deg number -- yaw angle in degrees
+---@param roll_rate_dps number -- roll rate in degrees per second
+---@param pitch_rate_dps number -- pitch rate in degrees per second
+---@param yaw_rate_dps number -- yaw rate in degrees per second
+---@param throttle number -- throttle demand 0.0 to 1.0
+---@return boolean -- true on success
+function vehicle:set_target_angle_and_rate_and_throttle(roll_deg, pitch_deg, yaw_deg, roll_rate_dps, pitch_rate_dps, yaw_rate_dps, throttle) end
+
+-- desc
 -- Sets the target velocity using a Vector3f object in a guided mode.
 ---@param vel_ned Vector3f_ud -- North, East, Down meters / second
+---@param align_yaw_to_target? boolean -- optionally align the yaw to the target
 ---@return boolean -- true on success
-function vehicle:set_target_velocity_NED(vel_ned) end
+function vehicle:set_target_velocity_NED(vel_ned, align_yaw_to_target) end
 
 -- desc
 ---@param target_vel Vector3f_ud
