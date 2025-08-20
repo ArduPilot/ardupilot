@@ -918,7 +918,7 @@ protected:
     // acceptable lateral error in vehicle's position with respect to dock. This is used while slowing down the vehicle
     const float _acceptable_pos_error_m = 0.2f;
 
-    Vector2f _dock_pos_rel_origin_m;   // position vector towards docking target relative to ekf origin
+    Vector2p _dock_pos_rel_origin_m;   // position vector towards docking target relative to ekf origin
     Vector2f _desired_heading_NE;       // unit vector in desired direction of docking
     bool _docking_complete = false;     // flag to mark docking complete when we are close enough to the dock
     bool _loitering = false; // true if we are loitering after mission completion
