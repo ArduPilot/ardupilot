@@ -64,7 +64,7 @@ public:
     // Converts a Location to a NEU position vector in meters from the EKF origin.
     // Sets `is_terrain_alt` to true if the resulting Z position is relative to terrain.
     // Returns false if terrain data is unavailable or conversion fails.
-    bool get_vector_NEU_m(const Location &loc, Vector3f &pos_from_origin_NEU_m, bool &is_terrain_alt);
+    bool get_vector_NEU_m(const Location &loc, Vector3p &pos_from_origin_NEU_m, bool &is_terrain_alt);
 
     ///
     /// waypoint controller
@@ -77,7 +77,7 @@ public:
     // Initializes waypoint and spline navigation using inputs in meters.
     // Sets speed and acceleration limits, calculates jerk constraints,
     // and initializes spline or S-curve leg with a defined starting point.
-    void wp_and_spline_init_m(float speed_ms = 0.0f, Vector3f stopping_point_neu_m = Vector3f{});
+    void wp_and_spline_init_m(float speed_ms = 0.0f, Vector3p stopping_point_neu_m = Vector3p{});
 
     // Sets the target horizontal speed in cm/s during waypoint navigation.
     // See set_speed_NE_ms() for full details.
@@ -158,19 +158,19 @@ public:
 
     // Returns the destination waypoint vector in NEU frame, in centimeters from EKF origin.
     // See get_wp_destination_NEU_m() for full details.
-    const Vector3f get_wp_destination_NEU_cm() const { return get_wp_destination_NEU_m() * 100.0; }
+    const Vector3f get_wp_destination_NEU_cm() const { return get_wp_destination_NEU_m().tofloat() * 100.0; }
 
     // Returns the destination waypoint vector in NEU frame, in meters from EKF origin.
     // Z is relative to terrain or EKF origin, depending on _is_terrain_alt.
-    const Vector3f &get_wp_destination_NEU_m() const { return _destination_neu_m; }
+    const Vector3p &get_wp_destination_NEU_m() const { return _destination_neu_m; }
 
     // Returns the origin waypoint vector in NEU frame, in centimeters from EKF origin.
     // See get_wp_origin_NEU_m() for full details.
-    const Vector3f get_wp_origin_NEU_cm() const { return get_wp_origin_NEU_m() * 100.0; }
+    const Vector3f get_wp_origin_NEU_cm() const { return get_wp_origin_NEU_m().tofloat() * 100.0; }
 
     // Returns the origin waypoint vector in NEU frame, in meters from EKF origin.
     // This marks the start of the current waypoint leg.
-    const Vector3f &get_wp_origin_NEU_m() const { return _origin_neu_m; }
+    const Vector3p &get_wp_origin_NEU_m() const { return _origin_neu_m; }
 
     // Returns true if origin.z and destination.z are specified as altitudes above terrain.
     // Returns false if altitudes are relative to the EKF origin.
@@ -204,7 +204,7 @@ public:
     // If `is_terrain_alt` is true, altitude is interpreted as height above terrain.
     // Reinitializes the current leg if interrupted, updates origin, and computes trajectory.
     // Returns false if terrain offset cannot be determined when required.
-    virtual bool set_wp_destination_NEU_m(const Vector3f& destination_neu_m, bool is_terrain_alt = false);
+    virtual bool set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt = false);
 
     // Sets the next waypoint destination using a NEU position vector in centimeters.
     // See set_wp_destination_next_NEU_m() for full details.
@@ -214,15 +214,15 @@ public:
     // Only updates if terrain frame matches current leg.
     // Calculates trajectory preview for smoother transition into next segment.
     // Updates velocity handoff if previous leg is a spline.
-    bool set_wp_destination_next_NEU_m(const Vector3f& destination_neu_m, bool is_terrain_alt = false);
+    bool set_wp_destination_next_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt = false);
 
     // Sets waypoint destination using a NED position vector in meters from EKF origin.
     // Converts internally to NEU. Terrain following is not used.
-    bool set_wp_destination_NED_m(const Vector3f& destination_NED_m);
+    bool set_wp_destination_NED_m(const Vector3p& destination_NED_m);
 
     // Sets the next waypoint destination using a NED position vector in meters from EKF origin.
     // Converts to NEU internally. Terrain following is not applied.
-    bool set_wp_destination_next_NED_m(const Vector3f& destination_NED_m);
+    bool set_wp_destination_next_NED_m(const Vector3p& destination_NED_m);
 
     // Computes the horizontal stopping point in NE frame, returned in centimeters.
     // See get_wp_stopping_point_NE_m() for full details.
@@ -230,7 +230,7 @@ public:
 
     // Computes the horizontal stopping point in NE frame, in meters, based on current velocity and configured acceleration.
     // This is the point where the vehicle would come to a stop if decelerated using the configured limits.
-    void get_wp_stopping_point_NE_m(Vector2f& stopping_point_ne_m) const;
+    void get_wp_stopping_point_NE_m(Vector2p& stopping_point_ne_m) const;
 
     // Computes the full 3D NEU stopping point vector in centimeters based on current kinematics.
     // See get_wp_stopping_point_NEU_m() for full details.
@@ -238,7 +238,7 @@ public:
 
     // Computes the full 3D NEU stopping point in meters based on current velocity and configured acceleration in all axes.
     // Represents where the vehicle will stop if decelerated from current velocity using configured limits.
-    void get_wp_stopping_point_NEU_m(Vector3f& stopping_point_neu_m) const;
+    void get_wp_stopping_point_NEU_m(Vector3p& stopping_point_neu_m) const;
 
     // Returns the horizontal distance to the destination waypoint in centimeters.
     // See get_wp_distance_to_destination_m() for full details.
@@ -310,7 +310,7 @@ public:
     // Initializes a spline path from `destination_neu_m` to `next_destination_neu_m`, respecting terrain altitude framing.
     // Both waypoints must use the same altitude frame (either above terrain or above origin).
     // Returns false if terrain altitude cannot be determined when required.
-    bool set_spline_destination_NEU_m(const Vector3f& destination_neu_m, bool is_terrain_alt, const Vector3f& next_destination_neu_m, bool next_terrain_alt, bool next_is_spline);
+    bool set_spline_destination_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt, const Vector3p& next_destination_neu_m, bool next_terrain_alt, bool next_is_spline);
 
     // Sets the next spline segment using NEU position vectors in centimeters.
     // See set_spline_destination_next_NEU_m() for full details.
@@ -320,7 +320,7 @@ public:
     // Creates a spline path from the current destination to `next_destination_neu_m`, and prepares transition toward `next_next_destination_neu_m`.
     // All waypoints must use the same altitude frame (above terrain or origin).
     // Returns false if terrain data is missing and required.
-    bool set_spline_destination_next_NEU_m(const Vector3f& next_destination_neu_m, bool next_is_terrain_alt, const Vector3f& next_next_destination_neu_m, bool next_next_is_terrain_alt, bool next_next_is_spline);
+    bool set_spline_destination_next_NEU_m(const Vector3p& next_destination_neu_m, bool next_is_terrain_alt, const Vector3p& next_next_destination_neu_m, bool next_next_is_terrain_alt, bool next_next_is_spline);
 
     ///
     /// shared methods
@@ -423,9 +423,9 @@ protected:
     // waypoint navigation state
     uint32_t _wp_last_update_ms;         // timestamp of the last update_wpnav() call (milliseconds)
     float _wp_desired_speed_ne_ms;       // desired horizontal speed in m/s for the current segment
-    Vector3f _origin_neu_m;              // origin of the current leg in meters (NEU frame)
-    Vector3f _destination_neu_m;         // destination of the current leg in meters (NEU frame)
-    Vector3f _next_destination_neu_m;    // destination of the next leg in meters (NEU frame)
+    Vector3p _origin_neu_m;              // origin of the current leg in meters (NEU frame)
+    Vector3p _destination_neu_m;         // destination of the current leg in meters (NEU frame)
+    Vector3p _next_destination_neu_m;    // destination of the next leg in meters (NEU frame)
     float _track_dt_scalar;              // scalar to reduce or increase the advancement along the track (0.0–1.0)
     float _offset_vel_ms;                // filtered horizontal speed target (used for terrain following or pause handling)
     float _offset_accel_mss;             // filtered horizontal acceleration target (used for terrain following or pause handling)

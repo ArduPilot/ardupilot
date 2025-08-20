@@ -46,7 +46,7 @@ public:
 
     // Sets the circle center using a NEU position vector in meters from the EKF origin.
     // If `is_terrain_alt` is true, the Z component is treated as altitude above terrain; otherwise, above EKF origin.
-    void set_center_NEU_m(const Vector3f& center_neu_m, bool is_terrain_alt) { _center_neu_m = center_neu_m.topostype(); _is_terrain_alt = is_terrain_alt; }
+    void set_center_NEU_m(const Vector3p& center_neu_m, bool is_terrain_alt) { _center_neu_m = center_neu_m; _is_terrain_alt = is_terrain_alt; }
 
     // Returns the circle center in centimeters from the EKF origin.
     // See get_center_NEU_m() for full details.
@@ -131,7 +131,7 @@ public:
     // The altitude (z) is set to match the circle center's altitude.
     // dist_m is updated with the horizontal distance to the circle center.
     // If the vehicle is at the center, the point directly behind the vehicle (based on yaw) is returned.
-    void get_closest_point_on_circle_NEU_m(Vector3f& result_NEU_m, float& dist_m) const;
+    void get_closest_point_on_circle_NEU_m(Vector3p& result_NEU_m, float& dist_m) const;
 
     // Returns the horizontal distance to the circle target in centimeters.
     // See get_distance_to_target_m() for full details.
