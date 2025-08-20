@@ -68,7 +68,7 @@ public:
     void update(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
     // returns target position relative to the EKF origin
-    bool get_target_position_m(Vector2f& ret);
+    bool get_target_position_m(Vector2p& ret);
 
     // returns target relative position as 3D vector
     void get_target_position_measurement_m(Vector3f& ret);
@@ -103,10 +103,10 @@ public:
     TargetState get_target_state() const { return _current_target_state; }
 
     // return the last known landing position in Earth Frame NED meters.
-    void get_last_detected_landing_pos(Vector3f &pos) const { pos = _last_target_pos_rel_origin_NED; }
+    void get_last_detected_landing_pos(Vector3p &pos) const { pos = _last_target_pos_rel_origin_NED; }
 
     // return the last known postion of the vehicle when the target was detected in Earth Frame NED meters.
-    void get_last_vehicle_pos_when_target_detected(Vector3f &pos) const { pos = _last_vehicle_pos_NED; }
+    void get_last_vehicle_pos_when_target_detected(Vector3p &pos) const { pos = _last_vehicle_pos_NED; }
 
     // Parameter getters
     AC_PrecLand_StateMachine::RetryStrictness get_retry_strictness() const { return static_cast<AC_PrecLand_StateMachine::RetryStrictness>(_strict.get()); }
@@ -227,8 +227,8 @@ private:
     Vector3f                    _target_pos_rel_meas_NED; // target's relative position as 3D vector
     Vector3f                    _approach_vector_body;   // unit vector in landing approach direction (in body frame)
 
-    Vector3f                    _last_target_pos_rel_origin_NED;  // stores the last known location of the target horizontally, and the height of the vehicle where it detected this target in meters NED
-    Vector3f                    _last_vehicle_pos_NED;            // stores the position of the vehicle when landing target was last detected in m and NED
+    Vector3p                    _last_target_pos_rel_origin_NED;  // stores the last known location of the target horizontally, and the height of the vehicle where it detected this target in meters NED
+    Vector3p                    _last_vehicle_pos_NED;            // stores the position of the vehicle when landing target was last detected in m and NED
     Vector2f                    _target_pos_rel_est_NE; // target's position relative to the IMU, not compensated for lag
     Vector2f                    _target_vel_rel_est_NE; // target's velocity relative to the IMU, not compensated for lag
 
