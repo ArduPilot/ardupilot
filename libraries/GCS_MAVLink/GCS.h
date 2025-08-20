@@ -405,6 +405,8 @@ public:
     void send_flight_information();
 #endif
 
+    void send_component_information() const;
+
     // lock a channel, preventing use by MAVLink
     void lock(bool _lock) {
         _locked = _lock;
