@@ -126,23 +126,23 @@ void AC_Circle::set_center(const Location& center)
     // Check if the location uses terrain-relative altitude
     if (center.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) {
         // convert Location with terrain altitude
-        Vector2f center_ne_m;
+        Vector2p center_ne_m;
         float terr_alt_m;
 
         // Attempt to convert XY and Z to NEU frame with terrain altitude
         if (center.get_vector_xy_from_origin_NE_m(center_ne_m) && center.get_alt_m(Location::AltFrame::ABOVE_TERRAIN, terr_alt_m)) {
-            set_center_NEU_m(Vector3f{center_ne_m.x, center_ne_m.y, terr_alt_m}, true);
+            set_center_NEU_m(Vector3p{center_ne_m.x, center_ne_m.y, terr_alt_m}, true);
         } else {
             // Conversion failed: fall back to current position and log error
-            set_center_NEU_m(_pos_control.get_pos_estimate_NEU_m().tofloat(), false);
+            set_center_NEU_m(_pos_control.get_pos_estimate_NEU_m(), false);
             LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
         }
     } else {
         // Handle alt-above-origin, alt-above-home, or absolute altitudes
-        Vector3f circle_center_neu_m;
+        Vector3p circle_center_neu_m;
         if (!center.get_vector_from_origin_NEU_m(circle_center_neu_m)) {
             // Conversion failed: fall back to current position and log error
-            circle_center_neu_m = _pos_control.get_pos_estimate_NEU_m().tofloat();
+            circle_center_neu_m = _pos_control.get_pos_estimate_NEU_m();
             LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
         }
 
@@ -281,14 +281,14 @@ bool AC_Circle::update_ms(float climb_rate_ms)
 void AC_Circle::get_closest_point_on_circle_NEU_cm(Vector3f& result_neu_cm, float& dist_cm) const
 {
     // Convert input arguments from cm to meters
-    Vector3f result_neu_m = result_neu_cm * 0.01;
+    Vector3p result_neu_m = result_neu_cm.topostype() * 0.01;
     float dist_m = dist_cm * 0.01;
 
     // Compute closest point in meters
     get_closest_point_on_circle_NEU_m(result_neu_m, dist_m);
 
     // Convert results back to centimeters
-    result_neu_cm = result_neu_m * 100.0;
+    result_neu_cm = result_neu_m.tofloat() * 100.0;
     dist_cm = dist_m * 100.0;
 }
 
@@ -297,7 +297,7 @@ void AC_Circle::get_closest_point_on_circle_NEU_cm(Vector3f& result_neu_cm, floa
 // The altitude (z) is set to match the circle center's altitude.
 // dist_m is updated with the horizontal distance to the circle center.
 // If the vehicle is at the center, the point directly behind the vehicle (based on yaw) is returned.
-void AC_Circle::get_closest_point_on_circle_NEU_m(Vector3f& result_neu_m, float& dist_m) const
+void AC_Circle::get_closest_point_on_circle_NEU_m(Vector3p& result_neu_m, float& dist_m) const
 {
     // Get vehicle stopping point from the position controller (in NEU frame, meters)
     Vector3p stopping_point_neu_m;
@@ -310,7 +310,7 @@ void AC_Circle::get_closest_point_on_circle_NEU_m(Vector3f& result_neu_m, float&
 
     // Return circle center if radius is zero (vehicle orbits in place)
     if (!is_positive(_radius_m)) {
-        result_neu_m = _center_neu_m.tofloat();
+        result_neu_m = _center_neu_m;
         return;
     }
 
@@ -377,8 +377,8 @@ void AC_Circle::init_start_angle(bool use_heading)
         _angle_rad = wrap_PI(_ahrs.yaw - M_PI);
     } else {
         // If vehicle is exactly at the center, init angle behind vehicle (prevent undefined bearing)
-        const Vector3f &curr_pos_desired_neu_m = _pos_control.get_pos_desired_NEU_m().tofloat();
-        if (is_equal(curr_pos_desired_neu_m.x, float(_center_neu_m.x)) && is_equal(curr_pos_desired_neu_m.y, float(_center_neu_m.y))) {
+        const Vector3p &curr_pos_desired_neu_m = _pos_control.get_pos_desired_NEU_m();
+        if (is_equal(curr_pos_desired_neu_m.x, _center_neu_m.x) && is_equal(curr_pos_desired_neu_m.y, _center_neu_m.y)) {
             _angle_rad = wrap_PI(_ahrs.yaw - M_PI);
         } else {
             // Calculate bearing from circle center to current position
