@@ -1093,6 +1093,7 @@ AP_PARAMDEF(float, Float, AP_PARAM_FLOAT);    // defines AP_Float, requires spec
 AP_PARAMDEF(int8_t, Int8, AP_PARAM_INT8);     // defines AP_Int8
 AP_PARAMDEF(int16_t, Int16, AP_PARAM_INT16);  // defines AP_Int16
 AP_PARAMDEF(int32_t, Int32, AP_PARAM_INT32);  // defines AP_Int32
+AP_PARAMDEF(uint32_t, UInt32, AP_PARAM_INT32);  // defines AP_UInt32
 
 // declare a non-scalar type
 // this is used in AP_Math.h
