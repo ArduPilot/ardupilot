@@ -39,28 +39,28 @@ public:
     uint16_t get_num_points() const;
 
     // get a point on the path
-    const Vector3f& get_point(uint16_t index) const { return _path[index]; }
+    const Vector3p& get_point(uint16_t index) const { return _path[index]; }
 
     // add point to end of path. returns true on success, false on failure (due to failure to take the semaphore)
-    bool add_point(const Vector3f& point);
+    bool add_point(const Vector3p& point);
 
     // get next point on the path to home, returns true on success
-    bool pop_point(Vector3f& point);
+    bool pop_point(Vector3p& point);
 
     // peek at next point on the path without removing it form the path. Returns true on success
     // this may fail if the IO thread has taken the path semaphore
-    bool peek_point(Vector3f& point);
+    bool peek_point(Vector3p& point);
 
     // clear return path and set return location if position_ok is true.  This should be called as part of the arming procedure
     // if position_ok is false, SmartRTL will not be available.
     // example sketches use the method that allows providing vehicle position directly
     void set_home(bool position_ok);
-    void set_home(bool position_ok, const Vector3f& current_pos);
+    void set_home(bool position_ok, const Vector3p& current_pos);
 
     // call this at 3hz (or higher) regardless of what mode the vehicle is in
     // example sketches use method that allows providing vehicle position directly
     void update(bool position_ok, bool save_position);
-    void update(bool position_ok, const Vector3f& current_pos);
+    void update(bool position_ok, const Vector3p& current_pos);
 
     // enum for argument passed to request_through_cleanup
     enum ThoroughCleanupType {
@@ -159,25 +159,25 @@ private:
     //  returns true if loop added successfully, false on failure (because loop array is full)
     //  checks if loop overlaps with an existing loop, keeps only the longer loop
     //  example: segment_a(point2~point3) overlaps with segment_b (point5~point6), add_loop(3,5,midpoint)
-    bool add_loop(uint16_t start_index, uint16_t end_index, const Vector3f& midpoint);
+    bool add_loop(uint16_t start_index, uint16_t end_index, const Vector3p& midpoint);
 
     // dist_point holds the closest distance reached between 2 line segments, and the point exactly between them
     typedef struct {
         float distance;
-        Vector3f midpoint;
+        Vector3p midpoint;
     } dist_point;
 
     // get the closest distance between 2 line segments and the point midway between the closest points
-    static dist_point segment_segment_dist(const Vector3f& p1, const Vector3f& p2, const Vector3f& p3, const Vector3f& p4);
+    static dist_point segment_segment_dist(const Vector3p& p1, const Vector3p& p2, const Vector3p& p3, const Vector3p& p4);
 
     // de-activate SmartRTL, send warning to GCS and logger
     void deactivate(Action action, const char *reason);
 
 #if HAL_LOGGING_ENABLED
     // logging
-    void log_action(Action action, const Vector3f &point = Vector3f()) const;
+    void log_action(Action action, const Vector3p &point = Vector3p()) const;
 #else
-    void log_action(Action action, const Vector3f &point = Vector3f()) const {}
+    void log_action(Action action, const Vector3p &point = Vector3p()) const {}
 #endif
 
     // parameters
@@ -197,7 +197,7 @@ private:
     ThoroughCleanupType _thorough_clean_type;   // used by example sketch to test simplify and prune separately
 
     // path variables
-    Vector3f* _path;    // points are stored in meters from EKF origin in NED
+    Vector3p* _path;    // points are stored in meters from EKF origin in NED
     uint16_t _path_points_max;  // after the array has been allocated, we will need to know how big it is. We can't use the parameter, because a user could change the parameter in-flight
     uint16_t _path_points_count;// number of points in the path array
     uint16_t _path_points_completed_limit;  // set by main thread to the path_point_count when a point is popped.  used by simplify and prune algorithms to detect path shrinking
@@ -224,7 +224,7 @@ private:
     typedef struct {
         uint16_t start_index;   // index of the first point in the loop
         uint16_t end_index;     // index of the last point in the loop
-        Vector3f midpoint;      // midpoint which should replace the first point when the loop is removed
+        Vector3p midpoint;      // midpoint which should replace the first point when the loop is removed
         float length_squared;   // length squared (in meters) of the loop (used so we can remove the longest loops)
     } prune_loop_t;
     struct {
