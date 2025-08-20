@@ -26,7 +26,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef AP_NETWORKING_PORT_STACK_SIZE
-#define AP_NETWORKING_PORT_STACK_SIZE 1024
+#define AP_NETWORKING_PORT_STACK_SIZE 1300
 #endif
 
 const AP_Param::GroupInfo AP_Networking::Port::var_info[] = {
