@@ -38,7 +38,7 @@ Specifications
 
 ## Pinout
 
-[JHEMCUF405WING](JHEMCUF405WING.png)
+![JHEMCUF405WING](JHEMCUF405WING.png)
 
 ## Wiring Diagram
 
