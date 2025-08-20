@@ -387,15 +387,6 @@ void Plane::stabilize_yaw()
      */
     float rudder_output = calc_nav_yaw_coordinated();
 
-#if AP_PLANE_SYSTEMID_ENABLED
-    if (control_mode->supports_fw_systemid()) {
-        Vector3f offset;
-        auto &systemid = plane.g2.systemid;
-        offset = systemid.get_output_offset();
-        rudder_output += offset.z * 4500.0f;
-    }
-#endif 
-
     if (!ground_steering) {
         // Not doing ground steering, output rudder on steering channel
         SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, rudder_output);

@@ -59,12 +59,9 @@ private:
         MIX_YAW = 12,           // mixer pitch axis is being excited
         MIX_THROTTLE = 13,      // mixer throttle axis is being excited
         FW_INPUT_ROLL = 20,     // fixed wing angle input roll axis is being excited
-        FW_INPUT_PITCH = 21,    // fixed wing angle pitch axis is being excited
-        FW_INPUT_YAW = 22,      // fixed wing angle yaw axis is being excited
-        FW_MIX_ROLL = 23,       // fixed wing mixer roll axis is being excited
-        FW_MIX_PITCH = 24,      // fixed wing mixer pitch axis is being excited
-        FW_MIX_YAW = 25,        // fixed wing mixer pitch axis is being excited
-        FW_MIX_THROTTLE = 26,   // fixed wing mixer throttle axis is being excited
+        FW_INPUT_PITCH = 21,    // fixed wing angle input pitch axis is being excited
+        FW_MIX_ROLL = 22,       // fixed wing mixer roll axis is being excited
+        FW_MIX_PITCH = 23,      // fixed wing mixer pitch axis is being excited
     };
 
     void set_bf_feedforward(bool value);
@@ -91,10 +88,6 @@ private:
     float waveform_freq_rads;   // Instantaneous waveform frequency
     float time_const_freq;      // Time at constant frequency before chirp starts
     uint32_t last_loop_time_ms;   // time in milliseconds of last loop
-
-    Vector2f target_vel;        // target velocity for position controller modes
-    Vector2f target_pos;       // target position
-    Vector2f input_vel_last;    // last cycle input velocity
 
     // current attitude offset
     Vector3f attitude_offset_deg;

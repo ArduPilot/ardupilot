@@ -15,7 +15,7 @@ const AP_Param::GroupInfo AP_SystemID::var_info[] = {
     // @DisplayName: System identification axis
     // @Description: Controls which axis are being excited.  Set to non-zero to see more parameters
     // @User: Standard
-    // @Values: 0:None, 1:VTOL Input Roll Angle, 2:VTOL Input Pitch Angle, 3:VTOL Input Yaw Angle, 4:VTOL Recovery Roll Angle, 5:VTOL Recovery Pitch Angle, 6:VTOL Recovery Yaw Angle, 7:VTOL Rate Roll, 8:VTOL Rate Pitch, 9:VTOL Rate Yaw, 10:VTOL Mixer Roll, 11:VTOL Mixer Pitch, 12:VTOL Mixer Yaw, 13:VTOL Mixer Thrust, 20:FW Input Roll Angle, 21:FW Input Pitch Angle, 22:FW Input Yaw Angle, 23:FW Mixer Roll, 24:FW Mixer Pitch, 25:FW Mixer Yaw, 26:FW Mixer Thrust
+    // @Values: 0:None, 1:VTOL Input Roll Angle, 2:VTOL Input Pitch Angle, 3:VTOL Input Yaw Angle, 4:VTOL Recovery Roll Angle, 5:VTOL Recovery Pitch Angle, 6:VTOL Recovery Yaw Angle, 7:VTOL Rate Roll, 8:VTOL Rate Pitch, 9:VTOL Rate Yaw, 10:VTOL Mixer Roll, 11:VTOL Mixer Pitch, 12:VTOL Mixer Yaw, 13:VTOL Mixer Thrust, 20:FW Input Roll Angle, 21:FW Input Pitch Angle, 22:FW Mixer Roll, 23:FW Mixer Pitch
     AP_GROUPINFO_FLAGS("_AXIS", 1, AP_SystemID, axis, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: _MAGNITUDE
@@ -131,11 +131,8 @@ void AP_SystemID::start()
     // Exits if quadplane attempting to run System ID Fixed Wing SID Axis in VTOL flight mode
     if (plane.control_mode->supports_vtol_systemid() && (start_axis == AxisType::FW_INPUT_ROLL 
                                                         || start_axis == AxisType::FW_INPUT_PITCH
-                                                        || start_axis == AxisType::FW_INPUT_YAW
                                                         || start_axis == AxisType::FW_MIX_ROLL
-                                                        || start_axis == AxisType::FW_MIX_PITCH
-                                                        || start_axis == AxisType::FW_MIX_YAW
-                                                        || start_axis == AxisType::FW_MIX_THROTTLE)) {
+                                                        || start_axis == AxisType::FW_MIX_PITCH)) {
 #if HAL_QUADPLANE_ENABLED
         gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Axis not supported for this flight mode");
 #endif
@@ -330,20 +327,11 @@ void AP_SystemID::fw_update()
         case AxisType::FW_INPUT_PITCH:
             plane.nav_pitch_cd += waveform_sample * 100.0f;
             break;
-        case AxisType::FW_INPUT_YAW:
-            // Not incorporated into plane
-            break;
         case AxisType::FW_MIX_ROLL:
             output_offset.x = waveform_sample;
             break;
         case AxisType::FW_MIX_PITCH:
             output_offset.y = waveform_sample;
-            break;
-        case AxisType::FW_MIX_YAW:
-            output_offset.z = waveform_sample;
-            break;
-        case AxisType::FW_MIX_THROTTLE:
-            throttle_offset = waveform_sample;
             break;
         default:
             break;
@@ -449,7 +437,6 @@ void AP_SystemID::log_plane_data() const
                                 degrees(plane.ahrs.get_gyro().y),
                                 SRV_Channels::get_output_scaled(SRV_Channel::k_aileron) * 0.01f,
                                 SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) * 0.01f,
-                                //SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) * 0.01f,
                                 speed_scaler,
                                 plane.ahrs.get_EAS2TAS());
 
