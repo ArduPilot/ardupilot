@@ -1116,14 +1116,10 @@ void AC_PosControl::update_U_controller()
     // Combine desired + offset + terrain for final position target
     _pos_target_neu_m.z = _pos_desired_neu_m.z + _pos_offset_neu_m.z + _pos_terrain_u_m;
 
-    // calculate the target velocity correction
-    float pos_target_zf = _pos_target_neu_m.z;
-
     // P controller: convert position error to velocity target
-    _vel_target_neu_ms.z = _p_pos_u_m.update_all(pos_target_zf, _pos_estimate_neu_m.z);
+    _vel_target_neu_ms.z = _p_pos_u_m.update_all(_pos_target_neu_m.z, _pos_estimate_neu_m.z);
     _vel_target_neu_ms.z *= AP::ahrs().getControlScaleZ();
 
-    _pos_target_neu_m.z = pos_target_zf;
     _pos_desired_neu_m.z = _pos_target_neu_m.z - (_pos_offset_neu_m.z + _pos_terrain_u_m);
 
     // add feed forward component

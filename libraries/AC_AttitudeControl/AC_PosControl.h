@@ -385,10 +385,10 @@ public:
 
     // Sets the desired NE position in centimeters relative to EKF origin.
     // See set_pos_desired_NE_m() for full details.
-    void set_pos_desired_NE_cm(const Vector2f& pos_desired_ne_cm) { set_pos_desired_NE_m(pos_desired_ne_cm * 0.01); }
+    void set_pos_desired_NE_cm(const Vector2f& pos_desired_ne_cm) { set_pos_desired_NE_m(pos_desired_ne_cm.topostype() * 0.01); }
 
     // Sets the desired NE position in meters relative to EKF origin.
-    void set_pos_desired_NE_m(const Vector2f& pos_desired_ne_m) { _pos_desired_neu_m.xy() = pos_desired_ne_m.topostype(); }
+    void set_pos_desired_NE_m(const Vector2p& pos_desired_ne_m) { _pos_desired_neu_m.xy() = pos_desired_ne_m; }
 
     // Returns the desired position in NEU frame, in centimeters relative to EKF origin.
     // See get_pos_desired_NEU_m() for full details.
