@@ -16,10 +16,6 @@
 */
 bool AP_GPS_Blended::_calc_weights(void)
 {
-    // zero the blend weights
-    memset(&_blend_weights, 0, sizeof(_blend_weights));
-
-
     static_assert(GPS_MAX_RECEIVERS == 2, "GPS blending only currently works with 2 receivers");
     // Note that the early quit below relies upon exactly 2 instances
     // The time delta calculations below also rely upon every instance being currently detected and being parsed
