@@ -56,6 +56,22 @@ repos:
       hooks:
       -   id: flake8
 
+  - repo: local
+    hooks:
+    -   id: check-copyright
+        name: check copyright notice in files
+        entry: Tools/gittools/pre_commit_copyright.py
+        language: python
+        files: |
+            (?x)^(
+              Tools/ros2/.*\.py
+            )$
+        args: [
+            --ignore=Tools/ros2/ardupilot_dds_tests/setup.py,
+            --ignore=Tools/ros2/ardupilot_dds_tests/test/test_pep257.py,
+            --ignore=Tools/ros2/ardupilot_dds_tests/test/test_copyright.py,
+        ]
+
 # # Use to sort python imports by name and put system import first.
 #   -   repo: https://github.com/pycqa/isort
 #       rev: 5.12.0
