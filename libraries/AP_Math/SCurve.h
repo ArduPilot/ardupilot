@@ -65,7 +65,7 @@ public:
 
     // generate a trigonometric track in 3D space that moves over a straight line
     // between two points defined by the origin and destination
-    void calculate_track(const Vector3f &origin, const Vector3f &destination,
+    void calculate_track(const Vector3p &origin, const Vector3p &destination,
                          float speed_xy, float speed_up, float speed_down,
                          float accel_xy, float accel_z,
                          float snap_maximum, float jerk_maximum);
@@ -89,7 +89,7 @@ public:
     // target_pos - set to this segment's origin and it will be updated to the current position target
     // target_vel and target_accel - updated with new targets
     // advance_target_along_track returns true if vehicle has passed the apex of the corner
-    bool advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, float wp_radius, float accel_corner, bool fast_waypoint, float dt, Vector3f &target_pos, Vector3f &target_vel, Vector3f &target_accel) WARN_IF_UNUSED;
+    bool advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, float wp_radius, float accel_corner, bool fast_waypoint, float dt, Vector3p &target_pos, Vector3f &target_vel, Vector3f &target_accel) WARN_IF_UNUSED;
 
     // time has reached the end of the sequence
     bool finished() const WARN_IF_UNUSED;
@@ -97,13 +97,13 @@ public:
 private:
 
     // increment time and return the position, velocity and acceleration vectors relative to the origin
-    void move_from_pos_vel_accel(float dt, Vector3f &pos, Vector3f &vel, Vector3f &accel);
+    void move_from_pos_vel_accel(float dt, Vector3p &pos, Vector3f &vel, Vector3f &accel);
 
     // increment time and return the position, velocity and acceleration vectors relative to the destination
-    void move_to_pos_vel_accel(float dt, Vector3f &pos, Vector3f &vel, Vector3f &accel);
+    void move_to_pos_vel_accel(float dt, Vector3p &pos, Vector3f &vel, Vector3f &accel);
 
     // return the position, velocity and acceleration vectors relative to the origin at a specified time along the path
-    void move_from_time_pos_vel_accel(float t, Vector3f &pos, Vector3f &vel, Vector3f &accel);
+    void move_from_time_pos_vel_accel(float t, Vector3p &pos, Vector3f &vel, Vector3f &accel);
 
     // get desired maximum speed along track
     float get_speed_along_track() const WARN_IF_UNUSED { return vel_max; }
@@ -171,7 +171,7 @@ private:
     // set speed and acceleration limits for the path
     // origin and destination are offsets from EKF origin
     // speed and acceleration parameters are given in horizontal, up and down.
-    void set_kinematic_limits(const Vector3f &origin, const Vector3f &destination,
+    void set_kinematic_limits(const Vector3p &origin, const Vector3p &destination,
                               float speed_xy, float speed_up, float speed_down,
                               float accel_xy, float accel_z);
 
