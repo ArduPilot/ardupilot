@@ -1063,21 +1063,21 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
     }
 
     // prepare position
-    Vector3f pos_neu_m;
+    Vector3p pos_neu_m;
     if (!pos_ignore) {
         // convert to m
-        pos_neu_m = Vector3f{packet.x, packet.y, -packet.z};
+        pos_neu_m = Vector3p{packet.x, packet.y, -packet.z};
         // rotate to body-frame if necessary
         if (packet.coordinate_frame == MAV_FRAME_BODY_NED ||
             packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-            copter.rotate_body_frame_to_NE(pos_neu_m.x, pos_neu_m.y);
+            copter.rotate_body_frame_to_NE_p(pos_neu_m.x, pos_neu_m.y);
         }
         // add body offset if necessary
         if (packet.coordinate_frame == MAV_FRAME_LOCAL_OFFSET_NED ||
             packet.coordinate_frame == MAV_FRAME_BODY_NED ||
             packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-            Vector3f pos_ned_m;
-            if (!AP::ahrs().get_relative_position_NED_origin_float(pos_ned_m)) {
+            Vector3p pos_ned_m;
+            if (!AP::ahrs().get_relative_position_NED_origin(pos_ned_m)) {
                 // need position estimate to calculate target position
                 copter.mode_guided.init(true);
                 return;
@@ -1221,7 +1221,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_global_int(const mav
             copter.mode_guided.init(true);
             return;
         }
-        Vector3f pos_neu_m;
+        Vector3p pos_neu_m;
         if (!loc.get_vector_from_origin_NEU_m(pos_neu_m)) {
             // input is not valid so stop
             copter.mode_guided.init(true);

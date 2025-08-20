@@ -135,6 +135,15 @@ void Copter::rotate_body_frame_to_NE(float &x, float &y)
     y = ne_y;
 }
 
+// rotate vector from vehicle's perspective to North-East frame
+void Copter::rotate_body_frame_to_NE_p(postype_t &x, postype_t &y)
+{
+    postype_t ne_x = x * ahrs.cos_yaw() - y * ahrs.sin_yaw();
+    postype_t ne_y = x * ahrs.sin_yaw() + y * ahrs.cos_yaw();
+    x = ne_x;
+    y = ne_y;
+}
+
 // It will return the PILOT_SPEED_DN value if non zero, otherwise if zero it returns the PILOT_SPEED_UP value.
 uint16_t Copter::get_pilot_speed_dn() const
 {

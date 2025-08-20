@@ -643,12 +643,12 @@ void Mode::land_run_vertical_control(bool pause_descent)
 
         if (doing_precision_landing) {
             // prec landing is active
-            Vector2f target_pos_ne_m;
+            Vector2p target_pos_ne_m;
             float target_error_m = 0.0f;
             if (copter.precland.get_target_position_m(target_pos_ne_m)) {
-                const Vector2f current_pos_ne_m = pos_control->get_pos_estimate_NEU_m().xy().tofloat();
+                const Vector2p current_pos_ne_m = pos_control->get_pos_estimate_NEU_m().xy();
                 // target is this many m away from the vehicle
-                target_error_m = (target_pos_ne_m - current_pos_ne_m).length();
+                target_error_m = (target_pos_ne_m - current_pos_ne_m).tofloat().length();
             }
             // check if we should descend or not
             const float max_horiz_pos_error_m = copter.precland.get_max_xy_error_before_descending_m();
@@ -728,17 +728,17 @@ void Mode::land_run_horizontal_control()
     copter.ap.prec_land_active = !copter.ap.land_repo_active && copter.precland.target_acquired();
     // run precision landing
     if (copter.ap.prec_land_active) {
-        Vector2f target_pos_ne_m, target_vel_ne_ms;
+        Vector2p target_pos_ne_m;
+        Vector2f target_vel_ne_ms;
         if (!copter.precland.get_target_position_m(target_pos_ne_m)) {
-            target_pos_ne_m = pos_control->get_pos_estimate_NEU_m().xy().tofloat();
+            target_pos_ne_m = pos_control->get_pos_estimate_NEU_m().xy();
         }
          // get the velocity of the target
         copter.precland.get_target_velocity_ms(pos_control->get_vel_estimate_NEU_ms().xy(), target_vel_ne_ms);
 
         Vector2f accel_zero;
-        Vector2p landing_pos_ne_m = target_pos_ne_m.topostype();
         // target vel will remain zero if landing target is stationary
-        pos_control->input_pos_vel_accel_NE_m(landing_pos_ne_m, target_vel_ne_ms, accel_zero);
+        pos_control->input_pos_vel_accel_NE_m(target_pos_ne_m, target_vel_ne_ms, accel_zero);
     }
 #endif
 
@@ -778,7 +778,7 @@ void Mode::land_run_normal_or_precland(bool pause_descent)
 #if AC_PRECLAND_ENABLED
 // Go towards a position commanded by prec land state machine in order to retry landing
 // The passed in location is expected to be NED and in m
-void Mode::precland_retry_position(const Vector3f &retry_pos_ned_m)
+void Mode::precland_retry_position(const Vector3p &retry_pos_ned_m)
 {
     if (rc().has_valid_input()) {
         if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
@@ -826,7 +826,7 @@ void Mode::precland_run()
     // if user is taking control, we will not run the statemachine, and simply land (may or may not be on target)
     if (!copter.ap.land_repo_active) {
         // This will get updated later to a retry pos if needed
-        Vector3f retry_pos_ned_m;
+        Vector3p retry_pos_ned_m;
 
         switch (copter.precland_statemachine.update(retry_pos_ned_m)) {
         case AC_PrecLand_StateMachine::Status::RETRYING:
