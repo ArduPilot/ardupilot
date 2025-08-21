@@ -19,6 +19,15 @@
 param set SERIAL5_PROTOCOL 5
 
      sim_vehicle.py -D --console --map -A --serial5=sim:gps:2
+
+param set SERIAL5_PROTOCOL 5
+param set SERIAL6_PROTOCOL 5
+param set SIM_GPS2_ENABLE 1
+param set SIM_GPS3_ENABLE 1
+param set SIM_GPS4_ENABLE 1
+param set GPS3_TYPE 1
+param set GPS4_TYPE 1
+     sim_vehicle.py --debug --console --map -A --serial5=sim:gps:3 --serial6=sim:gps:4
 */
 
 #pragma once
