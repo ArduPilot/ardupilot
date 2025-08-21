@@ -3107,7 +3107,11 @@ class TestSuite(abc.ABC):
         else:
             self.set_streamrate(self.sitl_streamrate())
 
-        self.assert_receive_message('RC_CHANNELS', timeout=15)
+        # mode switch needs to be debounced; waiting for more
+        # RC_CHANNELS doesn't necessarily mean we have done that, but
+        # it won't hurt
+        for i in range(0, 3):
+            self.assert_receive_message('RC_CHANNELS')
 
         # stash our arguments in case we need to preserve them in
         # reboot_sitl with Valgrind active:
