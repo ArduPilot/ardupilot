@@ -1009,16 +1009,18 @@ void AP_GPS::update_instance(uint8_t instance)
     }
 
 #if HAL_LOGGING_ENABLED
+#if AP_GPS_BLENDED_ENABLED
     if (type == GPS_TYPE_BLENDED) {
         // Blended backend does its own logging:
         data_should_be_logged = false;
     }
+#endif  // AP_GPS_BLENDED_ENABLED
     if (data_should_be_logged && should_log()) {
         Write_GPS(instance);
     }
-#else
-    (void)data_should_be_logged;
 #endif
+    // sometimes we don't do anything with data_should_be_logged
+    (void)data_should_be_logged;
 
 #if AP_RTC_ENABLED
     if (state[instance].status >= GPS_OK_FIX_3D) {
@@ -1922,6 +1924,7 @@ bool AP_GPS::pre_arm_checks(char failure_msg[], uint16_t failure_msg_len)
     if (_auto_switch == 2) {
         // ensure there is a blended backend
         bool found = false;
+#if AP_GPS_BLENDED_ENABLED
         for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
             // only care about configured type, not allocated type:
             if (get_type(i) == GPS_TYPE_BLENDED) {
@@ -1929,6 +1932,7 @@ bool AP_GPS::pre_arm_checks(char failure_msg[], uint16_t failure_msg_len)
                 break;
             }
         }
+#endif  // AP_GPS_BLENDED_ENABLED
         if (!found) {
             hal.util->snprintf(failure_msg, failure_msg_len, "GPS_AUTO_SWITCH is blended but no blended backend configured");
             return false;
