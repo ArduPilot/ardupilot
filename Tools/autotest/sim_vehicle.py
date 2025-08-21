@@ -771,7 +771,7 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.extend(["--enable-fgview"])
     if opts.sitl_instance_args:
         # this could be a lot better:
-        cmd.extend(opts.sitl_instance_args.split(" "))
+        cmd.extend(opts.sitl_instance_args)
     if opts.mavlink_gimbal:
         cmd.append("--gimbal")
     path = None
@@ -1191,7 +1191,8 @@ group_sim.add_option("", "--can-peripherals",
                      help="start a DroneCAN peripheral instance")
 group_sim.add_option("-A", "--sitl-instance-args",
                      type='string',
-                     default=None,
+                     default=[],
+                     action="append",
                      help="pass arguments to SITL instance")
 group_sim.add_option("-G", "--gdb",
                      action='store_true',
