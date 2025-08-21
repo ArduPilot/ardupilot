@@ -215,11 +215,8 @@ void AP_Motors6DOF::output_min()
     int8_t i;
 
     // set limits flags
-    limit.roll = true;
-    limit.pitch = true;
-    limit.yaw = true;
-    limit.throttle_lower = false;
-    limit.throttle_upper = false;
+    limit.set_rpy(true);
+    limit.set_throttle(false);
 
     // fill the motor_out[] array for HIL use and send minimum value to each motor
     // ToDo find a field to store the minimum pwm instead of hard coding 1500
@@ -315,11 +312,7 @@ void AP_Motors6DOF::output_armed_stabilizing()
         float linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
 
         // initialize limits flags
-        limit.roll = false;
-        limit.pitch = false;
-        limit.yaw = false;
-        limit.throttle_lower = false;
-        limit.throttle_upper = false;
+        limit.set_all(false);
 
         // sanity check throttle is above zero and below current limited throttle
         if (throttle_thrust <= -_throttle_thrust_max) {
@@ -421,11 +414,7 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored()
     float linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
 
     // initialize limits flags
-    limit.roll= false;
-    limit.pitch = false;
-    limit.yaw = false;
-    limit.throttle_lower = false;
-    limit.throttle_upper = false;
+    limit.set_all(false);
 
     // sanity check throttle is above zero and below current limited throttle
     if (throttle_thrust <= -_throttle_thrust_max) {
@@ -508,11 +497,7 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored_6dof()
     float yfl_max;
 
     // initialize limits flags
-    limit.roll = false;
-    limit.pitch = false;
-    limit.yaw = false;
-    limit.throttle_lower = false;
-    limit.throttle_upper = false;
+    limit.set_all(false);
 
     // sanity check throttle is above zero and below current limited throttle
     if (throttle_thrust <= -_throttle_thrust_max) {

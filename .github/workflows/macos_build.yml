@@ -150,7 +150,7 @@ jobs:
         ]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: 'recursive'
       - name: Install Prerequisites

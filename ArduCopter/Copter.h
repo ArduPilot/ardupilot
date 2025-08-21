@@ -433,8 +433,8 @@ private:
     MOTOR_CLASS *motors;
     const struct AP_Param::GroupInfo *motors_var_info;
 
-    int32_t _home_bearing;
-    uint32_t _home_distance;
+    float _home_bearing_rad;
+    float _home_distance_m;
 
     // SIMPLE Mode
     // Used to track the orientation of the vehicle for Simple mode. This value is reset at each arming
@@ -447,7 +447,7 @@ private:
 
     float simple_cos_yaw;
     float simple_sin_yaw;
-    int32_t super_simple_last_bearing;
+    float super_simple_last_bearing_rad;
     float super_simple_cos_yaw;
     float super_simple_sin_yaw;
 
@@ -952,8 +952,8 @@ private:
 
     // navigation.cpp
     void run_nav_updates(void);
-    int32_t home_bearing();
-    uint32_t home_distance();
+    float home_bearing_rad();
+    float home_distance_m();
 
     // Parameters.cpp
     void load_parameters(void) override;
