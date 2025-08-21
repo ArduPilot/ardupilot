@@ -16,6 +16,8 @@ extern const AP_HAL::HAL& hal;
 // update mount position
 void AP_Mount_Gremsy::update()
 {
+    AP_Mount_Backend::update();
+
     // exit immediately if not initialised
     if (!_initialised) {
         find_gimbal();

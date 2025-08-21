@@ -36,3 +36,4 @@ define HAL_WITH_ESC_TELEM 1
 # also enable relay output via hardpoint msgs
 define AP_PERIPH_RELAY_ENABLED 1
 define AP_RELAY_ENABLED 1
+USE_BOOTLOADER_FROM_BOARD MatekL431

@@ -42,7 +42,11 @@ float Plane::calc_speed_scaler(void)
     } else if (arming.is_armed_and_safety_off()) {
         // scale assumed surface movement using throttle output
         float throttle_out = MAX(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), 1);
-        speed_scaler = sqrtf(THROTTLE_CRUISE / throttle_out);
+        // we use a fixed value here as changing the trim throttle
+        // value is often done at runtime - and changing that
+        // shouldn't change the speed scaler here (it will change the
+        // effective PID values)
+        speed_scaler = sqrtf(AP_PLANE_TRIM_THROTTLE_DEFAULT / throttle_out);
         // This case is constrained tighter as we don't have real speed info
         speed_scaler = constrain_float(speed_scaler, 0.6f, 1.67f);
     } else {
@@ -301,6 +305,10 @@ void Plane::stabilize_stick_mixing_fbw()
         return;
     }
 
+    // do FBW-A style pitch stick mixing. Use the same non-linear approach as
+    // roll, but based on the pitch range rather than the limits to ensure full
+    // stick deflection can override either limit regardless of current
+    // attitude.
     float pitch_input = channel_pitch->norm_input_dz();
     if (pitch_input > 0.5f) {
         pitch_input = (3*pitch_input - 1);
@@ -310,11 +318,8 @@ void Plane::stabilize_stick_mixing_fbw()
     if (fly_inverted()) {
         pitch_input = -pitch_input;
     }
-    if (pitch_input > 0) {
-        nav_pitch_cd += pitch_input * aparm.pitch_limit_max*100;
-    } else {
-        nav_pitch_cd += -(pitch_input * pitch_limit_min*100);
-    }
+    const float pitch_range = aparm.pitch_limit_max.get() - pitch_limit_min;
+    nav_pitch_cd += pitch_input * (pitch_range / 2.0f) * 100;
     nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min*100, aparm.pitch_limit_max.get()*100);
 }
 
@@ -627,9 +632,7 @@ void Plane::adjust_nav_pitch_throttle(void)
 
 
 /*
-  calculate a new aerodynamic_load_factor and limit nav_roll_cd to
-  ensure that the load factor does not take us below the sustainable
-  airspeed
+  calculate a new aerodynamic_load_factor
  */
 void Plane::update_load_factor(void)
 {
@@ -642,6 +645,15 @@ void Plane::update_load_factor(void)
     // loadFactor = liftForce / gravityForce, where gravityForce = liftForce * cos(roll) on balanced horizontal turn
     aerodynamic_load_factor = 1.0f / cosf(radians(demanded_roll));
 
+    apply_load_factor_roll_limits();
+}
+
+/*
+  limit nav_roll_cd to ensure that the load factor does not take us below the
+  sustainable airspeed
+ */
+void Plane::apply_load_factor_roll_limits(void)
+{
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.available() && quadplane.transition->set_FW_roll_limit(roll_limit_cd)) {
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
@@ -671,23 +683,41 @@ void Plane::update_load_factor(void)
     float max_load_factor =
         sq(smoothed_airspeed / MAX(stall_airspeed_1g, 1));
 
+    // allow limiting roll command down to wings-level when necessary if
+    // airspeed is accurate and airspeed stall is set (implying low load factor
+    // overhead)
+    const bool enforce_full_roll_limit =
+        flight_option_enabled(FlightOptions::ENABLE_FULL_AERO_LF_ROLL_LIMITS) &&
+        ahrs.using_airspeed_sensor() && is_positive(aparm.airspeed_stall);
+
+    const float level_roll_limit_deg = g.level_roll_limit;
+    float lf_roll_limit_deg = aparm.roll_limit;
     if (max_load_factor <= 1) {
-        // our airspeed is below the minimum airspeed. Limit roll to
-        // 25 degrees
-        nav_roll_cd = constrain_int32(nav_roll_cd, -2500, 2500);
-        roll_limit_cd = MIN(roll_limit_cd, 2500);
+        if (enforce_full_roll_limit) {
+            lf_roll_limit_deg = level_roll_limit_deg;
+        } else {
+            // 25° limit to ensure maneuverability if airspeed estimate is wrong
+            lf_roll_limit_deg = 25;
+        }
     } else if (max_load_factor < aerodynamic_load_factor) {
         // the demanded nav_roll would take us past the aerodynamic
         // load limit. Limit our roll to a bank angle that will keep
-        // the load within what the airframe can handle. We always
-        // allow at least 25 degrees of roll however, to ensure the
-        // aircraft can be manoeuvered with a bad airspeed estimate. At
-        // 25 degrees the load factor is 1.1 (10%)
-        int32_t roll_limit = degrees(acosf(1.0f / max_load_factor))*100;
-        if (roll_limit < 2500) {
-            roll_limit = 2500;
+        // the load within what the airframe can handle.
+        lf_roll_limit_deg = degrees(acosf(1.0f / max_load_factor));
+
+        // unless enforcing full limits, allow at least 25 degrees of roll to
+        // ensure the aircraft can be manoeuvered with a bad airspeed estimate.
+        // At 25 degrees the load factor is 1.1 (10%)
+        if (!enforce_full_roll_limit && lf_roll_limit_deg < 25) {
+            lf_roll_limit_deg = 25;
         }
-        nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit, roll_limit);
-        roll_limit_cd = MIN(roll_limit_cd, roll_limit);
+
+        // always allow at least the wings level threshold to prevent flyaways
+        if (lf_roll_limit_deg < level_roll_limit_deg) {
+            lf_roll_limit_deg = level_roll_limit_deg;
+        }
     }
+
+    nav_roll_cd = constrain_int32(nav_roll_cd, -lf_roll_limit_deg * 100, lf_roll_limit_deg * 100);
+    roll_limit_cd = MIN(roll_limit_cd, lf_roll_limit_deg * 100);
 }

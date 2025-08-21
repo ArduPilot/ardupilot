@@ -75,6 +75,8 @@ public:
     float get_i() const;
     float get_d() const;
     float get_ff() const;
+    float get_ff_component() const;
+    float get_dff_component() const;
 
     // Used to fully zero the I term between mode changes or initialization
     void reset_I();

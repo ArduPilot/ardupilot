@@ -182,7 +182,7 @@ void AC_WPNav::wp_and_spline_init_m(float speed_ms, Vector3f stopping_point_neu_
     _pos_control.set_max_speed_accel_NE_m(_wp_desired_speed_ne_ms, get_wp_acceleration_mss());
     _pos_control.set_correction_speed_accel_NE_m(_wp_desired_speed_ne_ms, get_wp_acceleration_mss());
     _pos_control.set_max_speed_accel_U_m(-get_default_speed_down_ms(), get_default_speed_up_ms(), get_accel_U_mss());
-    _pos_control.set_correction_speed_accel_U_mss(-get_default_speed_down_ms(), get_default_speed_up_ms(), get_accel_U_mss());
+    _pos_control.set_correction_speed_accel_U_m(-get_default_speed_down_ms(), get_default_speed_up_ms(), get_accel_U_mss());
 
     // calculate jerk limit if not explicitly set by parameter
     if (!is_positive(_wp_jerk_msss)) {
@@ -456,7 +456,7 @@ bool AC_WPNav::set_wp_destination_NED_m(const Vector3f& destination_NED_m)
 {
     // convert NED to NEU by inverting the Z axis
     // terrain following is not used (altitude is relative to EKF origin)
-    return set_wp_destination_NEU_m(Vector3f(destination_NED_m.x, destination_NED_m.y, -destination_NED_m.z), false);
+    return set_wp_destination_NEU_m(Vector3f{destination_NED_m.x, destination_NED_m.y, -destination_NED_m.z}, false);
 }
 
 // Sets the next waypoint destination using a NED position vector in meters from EKF origin.
@@ -465,7 +465,7 @@ bool AC_WPNav::set_wp_destination_next_NED_m(const Vector3f& destination_NED_m)
 {
     // convert NED to NEU by inverting the Z axis
     // terrain following is not used (altitude is relative to EKF origin)
-    return set_wp_destination_next_NEU_m(Vector3f(destination_NED_m.x, destination_NED_m.y, -destination_NED_m.z), false);
+    return set_wp_destination_next_NEU_m(Vector3f{destination_NED_m.x, destination_NED_m.y, -destination_NED_m.z}, false);
 }
 
 // Computes the horizontal stopping point in NE frame, returned in centimeters.

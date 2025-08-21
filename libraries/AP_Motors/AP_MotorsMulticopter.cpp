@@ -537,11 +537,7 @@ void AP_MotorsMulticopter::output_logic()
         // Servos set to their trim values or in a test condition.
 
         // set limits flags
-        limit.roll = true;
-        limit.pitch = true;
-        limit.yaw = true;
-        limit.throttle_lower = true;
-        limit.throttle_upper = true;
+        limit.set_all(true);
 
         // make sure the motors are spooling in the correct direction
         if (_spool_desired != DesiredSpoolState::SHUT_DOWN && _disarm_safe_timer >= _safe_time.get()) {
@@ -563,11 +559,7 @@ void AP_MotorsMulticopter::output_logic()
         // Servos should be moving to correct the current attitude.
 
         // set limits flags
-        limit.roll = true;
-        limit.pitch = true;
-        limit.yaw = true;
-        limit.throttle_lower = true;
-        limit.throttle_upper = true;
+        limit.set_all(true);
 
         // set and increment ramp variables
         switch (_spool_desired) {
@@ -621,11 +613,7 @@ void AP_MotorsMulticopter::output_logic()
         // Servos should exhibit normal flight behavior.
 
         // initialize limits flags
-        limit.roll = false;
-        limit.pitch = false;
-        limit.yaw = false;
-        limit.throttle_lower = false;
-        limit.throttle_upper = false;
+        limit.set_all(false);
 
         // make sure the motors are spooling in the correct direction
         if (_spool_desired != DesiredSpoolState::THROTTLE_UNLIMITED) {
@@ -657,11 +645,7 @@ void AP_MotorsMulticopter::output_logic()
         // Servos should exhibit normal flight behavior.
 
         // initialize limits flags
-        limit.roll = false;
-        limit.pitch = false;
-        limit.yaw = false;
-        limit.throttle_lower = false;
-        limit.throttle_upper = false;
+        limit.set_all(false);
 
         // make sure the motors are spooling in the correct direction
         if (_spool_desired != DesiredSpoolState::THROTTLE_UNLIMITED) {
@@ -686,11 +670,7 @@ void AP_MotorsMulticopter::output_logic()
         // Servos should exhibit normal flight behavior.
 
         // initialize limits flags
-        limit.roll = false;
-        limit.pitch = false;
-        limit.yaw = false;
-        limit.throttle_lower = false;
-        limit.throttle_upper = false;
+        limit.set_all(false);
 
         // make sure the motors are spooling in the correct direction
         if (_spool_desired == DesiredSpoolState::THROTTLE_UNLIMITED) {

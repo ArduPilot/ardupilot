@@ -28,6 +28,7 @@
 #include <AP_Common/Location.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Camera/AP_Camera_shareddefs.h>
+#include <SRV_Channel/SRV_Channel.h>
 #include "AP_Mount.h"
 
 class AP_Mount_Backend
@@ -37,7 +38,8 @@ public:
     AP_Mount_Backend(class AP_Mount &frontend, class AP_Mount_Params &params, uint8_t instance) :
         _frontend(frontend),
         _params(params),
-        _instance(instance)
+        _instance(instance),
+        _open_idx(_instance == 0? SRV_Channel::k_mount_open : SRV_Channel::k_mount2_open)
     {}
 
     // init - performs any required initialisation for this instance
@@ -47,7 +49,7 @@ public:
     void set_dev_id(uint32_t id);
 
     // update mount position - should be called periodically
-    virtual void update() = 0;
+    virtual void update();
 
     // used for gimbals that need to read INS data at full rate
     virtual void update_fast() {}
@@ -359,6 +361,9 @@ private:
         bool operator==(const mavlink_control_id_t &rhs) const { return (sysid == rhs.sysid && compid == rhs.compid); }
         bool operator!=(const mavlink_control_id_t &rhs) const { return !(*this == rhs); }
     } mavlink_control_id;
+
+    // SRV_Channel mount open function index
+    SRV_Channel::Function    _open_idx;
 };
 
 #endif // HAL_MOUNT_ENABLED

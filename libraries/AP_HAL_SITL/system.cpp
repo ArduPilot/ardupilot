@@ -54,6 +54,7 @@ void WEAK panic(const char *errormsg, ...)
     if (getenv("SITL_PANIC_EXIT")) {
         // this is used on the autotest server to prevent us waiting
         // 10 hours for a timeout
+        printf("panic and SITL_PANIC_EXIT set - exitting");
         exit(1);
     }
     for(;;);
