@@ -76,6 +76,9 @@ private:
     AP_GPS::GPS_Status _highest_supported_status;
 
     float new_timing_last_message_time_ms;
+
+    // returns true if instance at offset i should be included in this blend
+    bool should_include_instance_in_blend(uint8_t i) const;
 };
 
 #endif  // AP_GPS_BLENDED_ENABLED
