@@ -17,13 +17,7 @@
 bool AP_GPS_Blended::_calc_weights(void)
 {
     static_assert(GPS_MAX_RECEIVERS == 2, "GPS blending only currently works with 2 receivers");
-    // Note that the early quit below relies upon exactly 2 instances
     // The time delta calculations below also rely upon every instance being currently detected and being parsed
-
-    // exit immediately if not enough receivers to do blending
-    if (gps.state[0].status <= AP_GPS::NO_FIX || gps.state[1].status <= AP_GPS::NO_FIX) {
-        return false;
-    }
 
     // Use the oldest non-zero time, but if time difference is excessive, use newest to prevent a disconnected receiver from blocking updates
     uint32_t max_ms = 0; // newest non-zero system time of arrival of a GPS message
@@ -183,6 +177,17 @@ bool AP_GPS_Blended::_calc_weights(void)
 
 bool AP_GPS_Blended::calc_weights()
 {
+    // exit immediately if not enough receivers to do blending
+    if (gps.state[0].status < AP_GPS::GPS_OK_FIX_2D || gps.state[1].status < AP_GPS::GPS_OK_FIX_2D) {
+        // without a 2D fix there is a good chance that the GPS is
+        // supplying all-zeroes for its position.  In that case we
+        // must not use its position, and we shouldn't start until it
+        // has been healthy for some time.  To that end, make blending
+        // completely unhealthy to force a fall-back to some other GPS:
+        _blend_health_counter = 0;
+        return false;
+    }
+
     // adjust blend health counter
     if (!_calc_weights()) {
         _blend_health_counter = MIN(_blend_health_counter+BLEND_COUNTER_FAILURE_INCREMENT, 100);
