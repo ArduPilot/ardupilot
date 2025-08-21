@@ -819,7 +819,7 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
     }
 
     // final output throttle in range -1 to 1
-    return throttle_out;
+    return constrain_float(throttle_out, -1.0f, 1.0f);
 }
 
 // return a throttle output from -1 to +1 to perform a controlled stop.  returns true once the vehicle has stopped
