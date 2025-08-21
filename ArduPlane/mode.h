@@ -250,6 +250,7 @@ class ModeAuto : public Mode
 {
 public:
     friend class Plane;
+    friend class RC_Channel_Plane;
 
     Number mode_number() const override { return Number::AUTO; }
     const char *name() const override { return "AUTO"; }
