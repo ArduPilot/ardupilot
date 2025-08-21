@@ -1041,9 +1041,8 @@ float AR_AttitudeControl::get_desired_speed() const
 // get acceleration limited desired speed
 float AR_AttitudeControl::get_desired_speed_accel_limited(float desired_speed, float dt) const
 {
-    // return input value if no recent calls to speed controller
     // apply no limiting when ATC_ACCEL_MAX is set to zero
-    if (!speed_control_active() || !is_positive(_throttle_accel_max)) {
+    if (!is_positive(_throttle_accel_max)) {
         return desired_speed;
     }
 
