@@ -149,7 +149,9 @@ public:
 #if GPS_MOVING_BASELINE
         MovingBase mb_params;
 #endif // GPS_MOVING_BASELINE
-
+#if AP_GPS_BLENDED_ENABLED
+        AP_Int8 blend_mask;
+#endif
         static const struct AP_Param::GroupInfo var_info[];
     };
 

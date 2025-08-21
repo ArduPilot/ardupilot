@@ -297,6 +297,18 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     AP_SUBGROUPINFO(params[5], "6_", 37, AP_GPS, AP_GPS::Params),
 #endif
 
+#if GPS_MAX_INSTANCES > 6
+    // @Group: 7_
+    // @Path: AP_GPS_Params.cpp
+    AP_SUBGROUPINFO(params[6], "7_", 38, AP_GPS, AP_GPS::Params),
+#endif
+
+#if GPS_MAX_INSTANCES > 7
+    // @Group: 8_
+    // @Path: AP_GPS_Params.cpp
+    AP_SUBGROUPINFO(params[7], "8_", 38, AP_GPS, AP_GPS::Params),
+#endif
+
     AP_GROUPEND
 };
 
