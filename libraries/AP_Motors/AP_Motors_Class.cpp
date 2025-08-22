@@ -105,9 +105,9 @@ void AP_Motors::set_radio_passthrough(float roll_input, float pitch_input, float
 void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
 {
     SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(chan);
-    if ((1U<<chan) & _motor_pwm_range_mask) {
+    if ((1U<<chan) & _motor_pwm_scaled.mask) {
         // note that PWM_MIN/MAX has been forced to 1000/2000
-        SRV_Channels::set_output_scaled(function, pwm - 1000);
+        SRV_Channels::set_output_scaled(function, float(pwm) - _motor_pwm_scaled.offset);
     } else {
         SRV_Channels::set_output_pwm(function, pwm);
     }
@@ -135,7 +135,8 @@ void AP_Motors::rc_set_freq(uint32_t motor_mask, uint16_t freq_hz)
     hal.rcout->set_freq(mask, freq_hz);
     hal.rcout->set_dshot_esc_type(SRV_Channels::get_dshot_esc_type());
 
-    switch (pwm_type(_pwm_type.get())) {
+    const pwm_type type = (pwm_type)_pwm_type.get();
+    switch (type) {
     case PWM_TYPE_ONESHOT:
         if (freq_hz > 50 && mask != 0) {
             hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
@@ -162,14 +163,32 @@ void AP_Motors::rc_set_freq(uint32_t motor_mask, uint16_t freq_hz)
         hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_DSHOT1200);
         break;
     case PWM_TYPE_PWM_RANGE:
+    case PWM_TYPE_PWM_ANGLE:
         /*
           this is a motor output type for multirotors which honours
-          the SERVOn_MIN/MAX values per channel
+          the SERVOn_MIN/MAX (and TRIM for angle) values per channel
+
+          Motor PWM min and max are hard coded to 1000 to 2000.
+          Range type offsets by 1000 to get 0 to 1000.
+          Angle type offsets by 1500 to get -500 to 500.
          */
-        _motor_pwm_range_mask |= motor_mask;
+
+        if (type == PWM_TYPE_PWM_RANGE) {
+            _motor_pwm_scaled.offset = 1000.0;
+        } else {
+            // PWM_TYPE_PWM_ANGLE
+            _motor_pwm_scaled.offset = 1500.0;
+        }
+
+        _motor_pwm_scaled.mask |= motor_mask;
         for (uint8_t i=0; i<16; i++) {
             if ((1U<<i) & motor_mask) {
-                SRV_Channels::set_range(SRV_Channels::get_motor_function(i), 1000);
+                if (type == PWM_TYPE_PWM_RANGE) {
+                    SRV_Channels::set_range(SRV_Channels::get_motor_function(i), 1000);
+                } else {
+                    // PWM_TYPE_PWM_ANGLE
+                    SRV_Channels::set_angle(SRV_Channels::get_motor_function(i), 500);
+                }
             }
         }
         hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_NORMAL);
@@ -243,6 +262,7 @@ bool AP_Motors::is_digital_pwm_type() const
         case PWM_TYPE_ONESHOT125:
         case PWM_TYPE_BRUSHED:
         case PWM_TYPE_PWM_RANGE:
+        case PWM_TYPE_PWM_ANGLE:
             break;
     }
     return false;
