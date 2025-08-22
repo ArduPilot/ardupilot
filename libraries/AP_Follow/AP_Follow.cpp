@@ -235,14 +235,14 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @DisplayName: Object Follow Yaw Reset
     // @Description: At how much yaw angle of the mount (gimbal) the vehicle's yaw will reset (face towards the object), helps when gimbal's yaw is reaching its limit and can't go further while the objecting is moving out of the frame
     // @User: Standard
-    // @Units: Degrees
+    // @Units: deg
     AP_GROUPINFO("_OBJ_Y_RST", 20, AP_Follow, _object_follow_yaw_reset, 30.0),
 
     // @Param: _OBJ_P_RST
     // @DisplayName: Object Follow Pitch Reset
     // @Description: At how much pitch angle of the mount (gimbal) the vehicle's yaw will reset (face towards the object), helps when gimbal's pitch is reaching its limit and can't go further while the objecting is moving out of the frame
     // @User: Standard
-    // @Units: Degrees
+    // @Units: deg
     AP_GROUPINFO("_OBJ_P_RST", 21, AP_Follow, _object_follow_pitch_reset, 30.0),
 #endif
 
