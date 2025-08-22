@@ -31,6 +31,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
+#include <math.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -538,9 +539,18 @@ void FlightAxis::update(const struct sitl_input &input)
 
     battery_voltage = MAX(state.m_batteryVoltage_VOLTS, 0);
     battery_current = MAX(state.m_batteryCurrentDraw_AMPS, 0);
-    rpm[0] = state.m_heliMainRotorRPM;
-    rpm[1] = state.m_propRPM;
-    motor_mask = 3;
+    float prop = roundf(MAX(state.m_propRPM, 0));
+    float heli = roundf(MAX(state.m_heliMainRotorRPM, 0));
+    if (prop > 0 && heli > 0) {
+        rpm[0] = heli;
+        rpm[1] = prop;
+        motor_mask = 3;
+    } else {
+        float v = (prop > 0) ? prop : heli;
+        rpm[0] = v;
+        rpm[1] = 0;
+        motor_mask = 1;
+    }
 
     /*
       the interlink interface supports 12 input channels
