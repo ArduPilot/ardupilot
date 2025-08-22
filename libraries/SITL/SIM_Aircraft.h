@@ -237,6 +237,9 @@ protected:
     virtual float rangefinder_beam_width() const { return 0; }
     virtual float perpendicular_distance_to_rangefinder_surface() const;
 
+    // hook to allow models to have special handling for set_pose()
+    virtual void set_pose_hook(void) {};
+
     struct {
         // data from simulated laser scanner, if available
         struct vector3f_array points;
