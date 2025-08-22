@@ -243,6 +243,7 @@ local SimCom = { banner = 'SIMCOM',
                  mccmnc = 'AT+COPS=1,2,"%u"\r\n',
                  setband_mask = 'AT+CNBP=,0x%x\r\n',
                  setband_all = 'AT+CNBP=,0x480000000000000000000000000000000000000000000042000007FFFFDF3FFF\r\n',
+                 config_extra = 'ATH\r\n',
                 }
 local SimCom2 = { banner = 'R1951',
                  cmux = 'AT+CMUX=0\r\n',
@@ -731,7 +732,7 @@ local function step_ATI()
         end
         return
     end
-    if s and #s >= 4 and s:byte(1) == FLAG and s:byte(-1) == FLAG then
+    if not option_enabled(LTE_OPTIONS_NOMUX) and s and #s >= 4 and s:byte(1) == FLAG and s:byte(-1) == FLAG then
         -- already in mux mode
         found_cmux = true
         gcs:send_text(MAV_SEVERITY.INFO, "LTE_modem: in CMUX mode")
@@ -741,7 +742,7 @@ local function step_ATI()
     end
     if ati_sequence % 3 == 2 then
         uart_write('+++')
-    elseif ati_sequence % 3 == 1 then
+    elseif ati_sequence % 3 == 1 and not option_enabled(LTE_OPTIONS_NOMUX) then
         uart_write(cmux.encode_cmux_frame(DLC_AT, UIH, "ATI\r"))
     else
         uart_write('\rATI\r')
@@ -812,6 +813,9 @@ end
 local function step_CONFIG()
     set_BAND()
     set_MCCMNC()
+    if modem.config_extra then
+       AT_send(modem.config_extra)
+    end
     step = "CREG"
 end
 
@@ -954,7 +958,9 @@ local function step_CMUX()
     if s then
         if s:find("CME ERROR") then
             AT_send('AT+CFUN=1\r\n')
-        elseif #s >= 4 and (cmux.parse_cmux_frame(s) or s:find('CMUX=0\r\r\nOK\r')) then
+        elseif #s >= 4 and (cmux.parse_cmux_frame(s) or
+                            s:find('CMUX=0\r\r\nOK\r') or
+                            s == string.char(FLAG,FLAG,FLAG,FLAG)) then
             gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: CMUX mode set')
             -- send SABM frames to establish the DLCs
             cmux.send_sabm()
@@ -1107,7 +1113,7 @@ local function check_CPSI(s)
     local system_mode, operation_mode, mcc_mnc, tac_str, scell_id_str, pcid_str, earfcn_band, ul_freq_str, dl_freq_str, tdd_cfg_str, rsrp_str, rsrq_str, rssi_str, sinr_str =
     s:match("+CPSI:%s*([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([%-]?%d+),([%-]?%d+),([%-]?%d+),([%-]?%d+)")
 
-    if system_mode then
+    if system_mode and sinr_str then
         -- Convert strings to numbers
         local tac = tonumber(tac_str:match("0x(%w+)"), 16) or tonumber(tac_str) or 0
         local scell_id = tonumber(scell_id_str) or 0
