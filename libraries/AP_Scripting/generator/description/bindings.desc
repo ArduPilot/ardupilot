@@ -446,6 +446,7 @@ userdata AP_Scripting_SerialAccess method read int16_t
 userdata AP_Scripting_SerialAccess manual readstring lua_serial_readstring 1 1
 userdata AP_Scripting_SerialAccess method available uint32_t
 userdata AP_Scripting_SerialAccess method set_flow_control void AP_HAL::UARTDriver::flow_control'enum AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE AP_HAL::UARTDriver::FLOW_CONTROL_RTS_DE
+userdata AP_Scripting_SerialAccess method set_unbuffered_writes void boolean
 
 -- serial is not a real C++ type here, but its name never gets used in C++ as we only have manual methods
 singleton serial depends AP_SERIALMANAGER_ENABLED

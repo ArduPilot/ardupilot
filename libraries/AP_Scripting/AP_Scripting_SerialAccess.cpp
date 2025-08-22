@@ -36,6 +36,12 @@ void AP_Scripting_SerialAccess::set_stop_bits(uint8_t stop_bits) {
     }
 }
 
+void AP_Scripting_SerialAccess::set_unbuffered_writes(bool on) {
+    if (!check_is_device_port()) {
+        stream->set_unbuffered_writes(on);
+    }
+}
+
 size_t AP_Scripting_SerialAccess::write(uint8_t c)
 {
     return write(&c, 1);
