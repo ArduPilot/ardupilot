@@ -2402,7 +2402,7 @@ function esc_telem:get_rpm(instance) end
 
 -- update RPM for an ESC
 ---@param esc_index integer -- esc instance 0 indexed
----@param rpm integer -- RPM
+---@param rpm number -- RPM
 ---@param error_rate number -- error rate
 function esc_telem:update_rpm(esc_index, rpm, error_rate) end
 
