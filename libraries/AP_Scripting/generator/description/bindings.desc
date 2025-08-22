@@ -488,7 +488,7 @@ singleton AP_ESC_Telem method get_current boolean uint8_t'skip_check float'Null
 singleton AP_ESC_Telem method get_voltage boolean uint8_t'skip_check float'Null
 singleton AP_ESC_Telem method get_consumption_mah boolean uint8_t'skip_check float'Null
 singleton AP_ESC_Telem method get_usage_seconds boolean uint8_t'skip_check uint32_t'Null
-singleton AP_ESC_Telem method update_rpm void uint8_t 0 ESC_TELEM_MAX_ESCS uint16_t'skip_check float'skip_check
+singleton AP_ESC_Telem method update_rpm void uint8_t 0 ESC_TELEM_MAX_ESCS float'skip_check float'skip_check
 singleton AP_ESC_Telem method update_telem_data void uint8_t 0 ESC_TELEM_MAX_ESCS AP_ESC_Telem_Backend::TelemetryData uint16_t'skip_check
 singleton AP_ESC_Telem method set_rpm_scale void uint8_t 0 ESC_TELEM_MAX_ESCS float'skip_check
 singleton AP_ESC_Telem method get_last_telem_data_ms uint32_t uint8_t 0 ESC_TELEM_MAX_ESCS
