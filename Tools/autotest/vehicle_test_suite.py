@@ -5742,20 +5742,33 @@ class TestSuite(ABC):
         for (t, want_rate) in message_rates.items():
             if t not in counts:
                 raise NotAchievedException("Wanted %s but got none" % t)
-            self.progress("Got (%u) in (%uus)" % (counts[t], delta_time_us))
             got_rate = float(counts[t]) / delta_time_us * 1000000
+            self.progress(f"Got ({counts[t]}) in ({delta_time_us}us) ({got_rate}/s)")
 
             if abs(want_rate - got_rate) > 5:
                 raise NotAchievedException("Not getting %s data at wanted rate want=%f got=%f" %
                                            (t, want_rate, got_rate))
 
-    def generate_rate_sample_log(self):
+    def generate_rate_sample_log(self, log_bitmask=None):
+        self.context_push()
+        params = {
+            "LOG_DISARMED": 0,
+            "LOG_DARM_RATEMAX": 0,
+            "LOG_FILE_RATEMAX": 0,
+        }
+        if log_bitmask is not None:
+            params["LOG_BITMASK"] = log_bitmask
+
+        self.set_parameters(params)
         self.reboot_sitl()
         self.wait_ready_to_arm()
+        self.set_parameter("LOG_DISARMED", 1)
         self.delay_sim_time(20)
+        self.set_parameter("LOG_DISARMED", 0)
         path = self.current_onboard_log_filepath()
         self.progress("Rate sample log (%s)" % path)
-        self.reboot_sitl()
+        self.reboot_sitl()  # ensure log is rotated
+        self.context_pop()
         return path
 
     def rc_defaults(self):

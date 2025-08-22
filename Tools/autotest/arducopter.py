@@ -11846,35 +11846,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def ATTITUDE_FAST(self):
         '''ensure that when ATTITUDE_FAST is set we get many messages'''
-        self.context_push()
-        ex = None
-        try:
-            log_bitmask_old = int(self.get_parameter('LOG_BITMASK'))
 
-            # enable fast logging (bit 1)
-            # disable PID logging (bit 12) to avoid slowdowns in attitude logging in SITL
-            log_bitmask_new = (log_bitmask_old | (1 << 0)) & ~(1 << 12)
+        # enable fast logging (bit 1)
+        # disable PID logging (bit 12) to avoid slowdowns in attitude logging in SITL
+        log_bitmask_old = int(self.get_parameter('LOG_BITMASK'))
+        log_bitmask_new = (log_bitmask_old | (1 << 0)) & ~(1 << 12)
 
-            self.set_parameters({
-                "LOG_BITMASK": log_bitmask_new,
-                "LOG_DISARMED": 1,
-                "LOG_DARM_RATEMAX": 0,
-                "LOG_FILE_RATEMAX": 0,
-            })
-            path = self.generate_rate_sample_log()
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-
-        self.context_pop()
-
-        self.reboot_sitl()
-
-        if ex is not None:
-            raise ex
-
-        self.delay_sim_time(10)  # NFI why this is required
+        path = self.generate_rate_sample_log(log_bitmask=log_bitmask_new)
 
         self.check_dflog_message_rates(path, {
             'ANG': 400,
@@ -11882,12 +11860,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def BaseLoggingRates(self):
         '''ensure messages come out at specific rates'''
-        self.set_parameters({
-            "LOG_DARM_RATEMAX": 0,
-            "LOG_FILE_RATEMAX": 0,
-        })
         path = self.generate_rate_sample_log()
-        self.delay_sim_time(10)  # NFI why this is required
         self.check_dflog_message_rates(path, {
             "ATT": 10,
             "IMU": 25,
