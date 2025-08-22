@@ -47,7 +47,7 @@ bool AP_Camera_Tracking::set_tracking(TrackingType tracking_type, const Vector2f
     if (_link == nullptr) {
         uint8_t proxy_device_compid = tracking_device_compid;
         uint8_t proxy_device_sysid {};
-        _link = GCS_MAVLINK::find_by_mavtype_and_compid(MAV_TYPE_ONBOARD_CONTROLLER, proxy_device_compid, proxy_device_sysid);
+        _link = GCS_MAVLINK::find_by_mavtype_and_compid(MAV_TYPE_CAMERA, proxy_device_compid, proxy_device_sysid);
         if (proxy_device_sysid != tracking_device_sysid) {
             // means the tracking device sysid we found is not same as what we declared through parameters
             _link = nullptr;
