@@ -176,7 +176,7 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
                 }
             }
 #endif
-            usleep(1000);
+            usleep(10);
         }
     }
     // check the outbound TCP queue size.  If it is too long then
