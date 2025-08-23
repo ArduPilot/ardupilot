@@ -8,6 +8,9 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Terrain/AP_Terrain.h>
+#include <AP_Camera/AP_Camera.h>
+#define ALLOW_DOUBLE_TRIG_FUNCTIONS 1
+#include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -521,8 +524,46 @@ void AP_Mount_Backend::calculate_poi()
         // change vehicle alt to AMSL
         curr_loc.change_alt_frame(Location::AltFrame::ABSOLUTE);
 
-        // project forward from vehicle looking for terrain
-        // start testing at vehicle's location
+        // Get gimbal attitude (body-frame quaternion)
+        Quaternion quat;
+        if (!get_attitude_quaternion(quat)) {
+            continue;
+        }
+
+        // Get vehicle attitude quaternion
+        Quaternion vehicle_quat;
+        if (!ahrs.get_quaternion(vehicle_quat)) {
+            continue;
+        }
+
+        // Combine quaternions: Earth_frame = Vehicle_quat * Gimbal_body_frame_quat
+        Quaternion combined_quat = vehicle_quat * quat;
+
+        // Extract earth-frame angles
+        float mount_pitch_deg = degrees(combined_quat.get_euler_pitch());
+        float mount_yaw_ef_deg = degrees(combined_quat.get_euler_yaw());
+
+        // This is the part where we are doing object tracking and we are also considering the 
+        // relative position of the object with respect to the frame using the camera's intrinsic
+        // parameters, This is for the case when we want precise Object Follow functionality
+        // By default the POI is calculated using the center position
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+        // Try to get object position within camera frame
+        Vector2f obj_frame_pos;
+        float confidence;
+        Vector3f angle_offset_rad;
+        
+        if (get_object_position_in_frame(obj_frame_pos, confidence) && confidence > 0.5f) {
+            // Object detected with good confidence
+            if (calculate_object_direction_offset(obj_frame_pos, angle_offset_rad)) {
+                // Adjust gimbal direction to point at object instead of center
+                // gcs().send_text(MAV_SEVERITY_INFO, "mount_pitch_deg= %f, mount_yaw_ef_deg=%f, angle_offset_rad.y=%f, angle_offset_rad.z=%f", mount_pitch_deg ,mount_yaw_ef_deg ,angle_offset_rad.y, angle_offset_rad.z);
+                mount_pitch_deg += degrees(angle_offset_rad.y);
+                mount_yaw_ef_deg += degrees(angle_offset_rad.z);
+            }
+        }
+#endif
+        // Now perform terrain intersection with adjusted direction
         Location test_loc = curr_loc;
         Location prev_test_loc = curr_loc;
 
@@ -533,17 +574,8 @@ void AP_Mount_Backend::calculate_poi()
             continue;
         }
 
-        // retrieve gimbal attitude
-        Quaternion quat;
-        if (!get_attitude_quaternion(quat)) {
-            // gimbal attitude unavailable
-            continue;
-        }
-
         // iteratively move test_loc forward until its alt-above-sea-level is below terrain-alt-above-sea-level
         const float dist_increment_m = MAX(terrain->get_grid_spacing(), 10);
-        const float mount_pitch_deg = degrees(quat.get_euler_pitch());
-        const float mount_yaw_ef_deg = wrap_180(degrees(quat.get_euler_yaw()) + ahrs.get_yaw_deg());
         float total_dist_m = 0;
         bool get_terrain_alt_success = true;
         float prev_terrain_amsl_m = terrain_amsl_m;
@@ -587,6 +619,71 @@ void AP_Mount_Backend::calculate_poi()
             poi_calculation.poi_update_ms = AP_HAL::millis();
         }
     }
+}
+#endif
+
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+// Calculate object direction based on camera characteristics and object position
+bool AP_Mount_Backend::calculate_object_direction_offset(const Vector2f& obj_frame_pos, 
+                                                        Vector3f& angle_offset_rad) {
+   // Get camera information
+   float horizontal_fov_rad = 0;
+   float vertical_fov_rad = 0;
+   auto camera = AP_Camera::get_singleton();
+   if (camera != nullptr) {
+       camera->get_hfov(_instance,horizontal_fov_rad);
+       camera->get_vfov(_instance,vertical_fov_rad);
+       horizontal_fov_rad = radians(horizontal_fov_rad);
+       vertical_fov_rad = radians(vertical_fov_rad);
+   }
+   // Fallback to default FOV if not available
+   if (horizontal_fov_rad <= 0) {
+       horizontal_fov_rad = radians(115.0f);
+   }
+   if (vertical_fov_rad <= 0) {
+       vertical_fov_rad = radians(85.0f);
+   }
+
+   // Image dimensions (from your Gazebo SDF)
+   const float image_width = 640.0f;
+   const float image_height = 480.0f;
+
+   // Calculate focal length from FOV (proper camera math)
+   float focal_length_x = (image_width / 2.0f) / tanf(horizontal_fov_rad / 2.0f);
+   float focal_length_y = (image_height / 2.0f) / tanf(vertical_fov_rad / 2.0f);
+
+   // Convert normalized coordinates to pixel coordinates
+   float pixel_x = obj_frame_pos.x * image_width;
+   float pixel_y = obj_frame_pos.y * image_height;
+
+   // Calculate offset from center in pixels
+   float dx = pixel_x - (image_width / 2.0f);
+   float dy = pixel_y - (image_height / 2.0f);
+
+   // Correct angular calculation using perspective projection
+   float yaw_offset_rad = atan2f(dx, focal_length_x);
+   float pitch_offset_rad = -atan2f(dy, focal_length_y);
+
+   angle_offset_rad = Vector3f(0, pitch_offset_rad, yaw_offset_rad);
+   return true;
+}
+
+// Get object position within camera frame from tracking system
+bool AP_Mount_Backend::get_object_position_in_frame(Vector2f& normalized_pos, float& confidence) {
+    // This should interface with your tracking system
+    // normalized_pos: (0,0) = top-left, (1,1) = bottom-right
+    // For now, get from camera tracking status
+    // Get tracking data from camera
+    AP_Camera* camera = AP_Camera::get_singleton();
+    if (camera != nullptr) {
+        // Extract object position from camera tracking status
+        if (camera->is_tracking_object_visible(_instance)) {
+            // Get normalized coordinates of tracked object
+            // This assumes your tracking system provides these coordinates
+            return camera->get_tracked_object_position_in_frame(_instance, normalized_pos, confidence);
+        }
+    }
+    return false;
 }
 #endif
 
@@ -809,6 +906,16 @@ void AP_Mount_Backend::update_angle_target_from_rate(const MountTarget& rate_rad
         // if body-frame constrain yaw to body-frame limits
         angle_rad.yaw = constrain_float(angle_rad.yaw, radians(_params.yaw_angle_min), radians(_params.yaw_angle_max));
     }
+}
+
+void AP_Mount_Backend::get_mount_yaw_limits(float &yaw_min, float &yaw_max) {
+    yaw_min = _params.yaw_angle_min;
+    yaw_max = _params.yaw_angle_max;
+}
+
+void AP_Mount_Backend::get_mount_pitch_limits(float &pitch_min, float &pitch_max) {
+    pitch_min = _params.pitch_angle_min;
+    pitch_max = _params.pitch_angle_max;
 }
 
 // helper function to provide GIMBAL_DEVICE_FLAGS for use in GIMBAL_DEVICE_ATTITUDE_STATUS message
