@@ -61,7 +61,7 @@ void AP_Terrain::check_disk_write(void)
  */
 void AP_Terrain::schedule_disk_io(void)
 {
-    if (enable == 0 || !allocate()) {
+    if (enable == 0 || !allocate() || diskless()) {
         return;
     }
 
@@ -135,6 +135,9 @@ All file operations are done by the IO thread.
  */
 void AP_Terrain::open_file(void)
 {
+    if (diskless()) {
+        return;
+    }
     struct grid_block &block = disk_block.block;
     if (fd != -1 && 
         block.lat_degrees == file_lat_degrees &&
@@ -257,7 +260,7 @@ void AP_Terrain::seek_offset(void)
 void AP_Terrain::write_block(void)
 {
     seek_offset();
-    if (io_failure) {
+    if (io_failure || diskless()) {
         return;
     }
 
@@ -290,7 +293,7 @@ void AP_Terrain::write_block(void)
 void AP_Terrain::read_block(void)
 {
     seek_offset();
-    if (io_failure) {
+    if (io_failure || diskless()) {
         return;
     }
     int32_t lat = disk_block.block.lat;
