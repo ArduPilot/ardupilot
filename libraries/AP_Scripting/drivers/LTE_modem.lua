@@ -1110,7 +1110,7 @@ local function check_CPSI(s)
 
     logger:write("LTER","R1,R2",'ZZ', s:sub(1,64), s:sub(65,128))
 
-    local system_mode, operation_mode, mcc_mnc, tac_str, scell_id_str, pcid_str, earfcn_band, ul_freq_str, dl_freq_str, tdd_cfg_str, rsrp_str, rsrq_str, rssi_str, sinr_str =
+    local system_mode, operation_mode, mcc_mnc, tac_str, scell_id_str, pcid_str, earfcn_band, ul_freq_str, dl_freq_str, tdd_cfg_str, rsrq_str, rsrp_str, rssi_str, sinr_str =
     s:match("+CPSI:%s*([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([%-]?%d+),([%-]?%d+),([%-]?%d+),([%-]?%d+)")
 
     if system_mode and sinr_str then
