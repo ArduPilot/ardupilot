@@ -687,12 +687,40 @@ end
 
 local ati_sequence = 0
 
--- reset back to ATI step
-local function reset_to_ATI()
-    send_data_reset()
+local last_data_ms = millis()
+local pending_to_modem = ""
+local pending_to_fc = ""
+local pending_to_parse = ""
+
+--[[
+    reset connection buffers
+--]]
+local function reset_buffers()
+    last_data_ms = millis()
+    pending_to_modem = ""
+    pending_to_fc = ""
+    pending_to_parse = ""
+    cmux.buffers[DLC_AT] = ""
+    cmux.buffers[DLC_DATA] = ""
+    while ser_device:available() > 0 do
+        ser_device:readstring(512)
+    end
+end
+
+-- reset state and buffers
+local function reset_state()
     step = "ATI"
     modem = default_modem
     found_cmux = false
+    reset_buffers()
+    pending_to_uart = ""
+end
+
+-- reset back to ATI step
+local function reset_to_ATI()
+    send_data_reset()
+    uart_write_pending()
+    reset_state()
 end
 
 --[[
@@ -883,26 +911,6 @@ local function step_CREG()
         end
     end
     AT_send('AT+CREG?\r\n')
-end
-
-local last_data_ms = millis()
-local pending_to_modem = ""
-local pending_to_fc = ""
-local pending_to_parse = ""
-
---[[
-    reset connection buffers
---]]
-local function reset_buffers()
-    last_data_ms = millis()
-    pending_to_modem = ""
-    pending_to_fc = ""
-    pending_to_parse = ""
-    cmux.buffers[DLC_AT] = ""
-    cmux.buffers[DLC_DATA] = ""
-    while ser_device:available() > 0 do
-        ser_device:readstring(512)
-    end
 end
 
 --[[
@@ -1149,11 +1157,11 @@ end
     check for QENG reply
 --]]
 local function check_QENG(s)
-    -- Example1: +QENG: "servingcell","NOCONN","LTE","FDD",505,02,12AED4A,445,3750,8,3,3,CBE8,-99,-14,-71,53,30
+   -- Example1: +QENG: "servingcell","NOCONN","LTE","FDD",505,02,12AED4A,445,3750,8,3,3,CBE8,-99,-14,-71,53,30
    -- Example2: +QENG: "servingcell","NOCONN","LTE","FDD",505,02,22D3F32,271,9260,28,3,3,CBE8,-109,-15,-78,38,20
    -- Example3: +QENG: "servingcell","CONNECT","eMTC","FDD",505,01,804A90D,238,9410,28,5,5,2036,-114,-18,-82,6
 
-    -- +QENG:"servingcell",<state>,"LTE",<is_tdd>,<mcc>,<mnc>,<cellid>,<pcid>,<earfcn>,<freq_band_ind>,<ul_bandwidth>,<dl_bandwidth>,<tac>,<rsrp>,<rsrq>,<rssi>,<sinr>,<srxlev>
+   -- +QENG:"servingcell",<state>,"LTE",<is_tdd>,<mcc>,<mnc>,<cellid>,<pcid>,<earfcn>,<freq_band_ind>,<ul_bandwidth>,<dl_bandwidth>,<tac>,<rsrp>,<rsrq>,<rssi>,<sinr>,<srxlev>
     if not s:find("+QENG") then
         return false
     end
@@ -1451,13 +1459,24 @@ end
 
 local function update()
     if LTE_ENABLE:get() == 0 then
-        return update, 500
+        return 500
     end
     local delay = run_step()
     uart_write_pending()
-    return update, delay
+    return delay
 end
 
 gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: starting')
 
-return update,500
+function protected_wrapper()
+   local ok, res = pcall(update)
+   if not ok then
+      gcs:send_text(MAV_SEVERITY.ERROR, 'LTE_modem error: ' .. tostring(res))
+      reset_state()
+      return protected_wrapper, 1000
+   end
+   return protected_wrapper, res
+end
+
+return protected_wrapper, 500
+
