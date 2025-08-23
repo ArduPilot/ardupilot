@@ -1449,6 +1449,16 @@ bool AP_InertialSensor::get_gyro_health_all(void) const
     return (get_gyro_count() > 0);
 }
 
+#if HAL_GYROFFT_ENABLED
+const Vector3f& AP_InertialSensor::get_gyro_for_fft(void) const {
+    return _gyro_for_fft[AP::ahrs().get_primary_gyro_index()];
+}
+
+FloatBuffer&  AP_InertialSensor::get_raw_gyro_window(uint8_t axis) {
+    return get_raw_gyro_window(AP::ahrs().get_primary_gyro_index(), axis);
+}
+#endif
+
 // threshold in degrees/s to be consistent, consistent_time_sec duration for which
 // gyros need to be consistent to be considered consistent
 bool AP_InertialSensor::gyros_consistent(uint8_t threshold) const
