@@ -10690,15 +10690,15 @@ Also, ignores heartbeats not from our target system'''
             if self.is_copter() or self.is_plane():
                 self.set_autodisarm_delay(0)
             self.arm_vehicle()
-            self.delay_sim_time(30)
+            self.delay_sim_time(15)
             self.disarm_vehicle()
             # roughly 4mb
             self.arm_vehicle()
-            self.delay_sim_time(30)
+            self.delay_sim_time(15)
             self.disarm_vehicle()
             # roughly 9mb, should wrap around
             self.arm_vehicle()
-            self.delay_sim_time(50)
+            self.delay_sim_time(25)
             self.disarm_vehicle()
             # make sure we have finished logging
             self.delay_sim_time(15)
