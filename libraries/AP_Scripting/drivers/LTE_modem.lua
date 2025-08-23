@@ -687,12 +687,20 @@ end
 
 local ati_sequence = 0
 
--- reset back to ATI step
-local function reset_to_ATI()
-    send_data_reset()
+-- reset state and buffers
+local function reset_state()
     step = "ATI"
     modem = default_modem
     found_cmux = false
+    reset_buffers()
+    pending_to_uart = ""
+end
+
+-- reset back to ATI step
+local function reset_to_ATI()
+    send_data_reset()
+    uart_write_pending()
+    reset_state()
 end
 
 --[[
@@ -1451,13 +1459,24 @@ end
 
 local function update()
     if LTE_ENABLE:get() == 0 then
-        return update, 500
+        return 500
     end
     local delay = run_step()
     uart_write_pending()
-    return update, delay
+    return delay
 end
 
 gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: starting')
 
-return update,500
+function protected_wrapper()
+   local ok, delay = pcall(update)
+   if not ok then
+      gcs:send_text(MAV_SEVERITY.ERROR, 'LTE_modem error: '..tostring(err))
+      reset_state()
+      return protected_wrapper, 1000
+   end
+   return protected_wrapper, delay
+end
+
+return protected_wrapper, 500
+
