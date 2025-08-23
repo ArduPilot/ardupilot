@@ -29,8 +29,6 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     if (ap.compass_mot) {
         // ignore restart messages
         return MAV_RESULT_TEMPORARILY_REJECTED;
-    } else {
-        ap.compass_mot = true;
     }
 
     // check compass is enabled
@@ -126,6 +124,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     motors->output_min();  // output lowest possible value to motors
     motors->armed(true);
     hal.util->set_soft_armed(true);
+    ap.compass_mot = true;
 
     // initialise run time
     last_run_time = millis();
@@ -144,12 +143,6 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
 
         // read radio input
         read_radio();
-
-        // pass through throttle to motors
-        auto &srv = AP::srv();
-        srv.cork();
-        motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() * 0.001f);
-        srv.push();
 
         // read some compass values
         compass.read();
@@ -240,9 +233,10 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     }
 
     // stop motors
-    motors->output_min();
+    ap.compass_mot = false;
     motors->armed(false);
     hal.util->set_soft_armed(false);
+    motors->output_min();
 
     // set and save motor compensation
     if (updated) {
@@ -268,9 +262,16 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     // re-enable failsafes
     g.failsafe_throttle.load();
 
-    // flag we have completed
-    ap.compass_mot = false;
-
     return MAV_RESULT_ACCEPTED;
 #endif  // FRAME_CONFIG != HELI_FRAME
+}
+
+void Copter::compassmot_output()
+{
+    // exit immediately if the motor test is not running
+    if (!ap.compass_mot) {
+        return;
+    }
+    // pass through throttle to motors
+    motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() * 0.001f);
 }
