@@ -268,10 +268,12 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
 
 void Copter::compassmot_output()
 {
+#if FRAME_CONFIG != HELI_FRAME
     // exit immediately if the motor test is not running
     if (!ap.compass_mot) {
         return;
     }
     // pass through throttle to motors
     motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() * 0.001f);
+#endif
 }
