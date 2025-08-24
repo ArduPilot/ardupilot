@@ -540,11 +540,6 @@ public:
 
     void run() override;
 
-#if AP_PLANE_SYSTEMID_ENABLED
-    // does this mode support fixed wing systemid?
-    bool supports_fw_systemid() const override { return true; }
-#endif
-
 #if MODE_AUTOLAND_ENABLED   
     // true if mode allows landing direction to be set on first takeoff after arm in this mode 
     bool allows_autoland_direction_capture() const override { return true; }
