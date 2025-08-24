@@ -185,7 +185,7 @@ fi
 # Lists of packages to install
 BASE_PKGS="build-essential ccache g++ gawk git make wget valgrind screen python3-pexpect astyle"
 PYTHON_PKGS="future lxml pymavlink pyserial MAVProxy geocoder empy==3.3.4 ptyprocess dronecan"
-PYTHON_PKGS="$PYTHON_PKGS flake8 junitparser wsproto tabulate"
+PYTHON_PKGS="$PYTHON_PKGS flake8 junitparser wsproto tabulate tornado==6.4.1"
 
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
