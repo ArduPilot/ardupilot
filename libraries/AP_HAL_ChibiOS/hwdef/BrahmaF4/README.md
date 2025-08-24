@@ -31,7 +31,7 @@ The UARTs are marked Rx and Tx in the above pinouts.
  SERIAL 1  RX1/TX1    USART 1   RCin (DMA) 
  SERIAL 2  RX3/TX3    USART 3   ESC   
  SERIAL 3  RX6/TX6    USART 6   GPS1 (DMA)       
- SERIAL 4  RX4/TX4    USART 4   GPS2    
+ SERIAL 4  RX4/TX4    USART 4   MSP DisplayPort    
 ========== ========== =======  ==================== 
 
 * USART1 and USART6 supports RX and TX DMA.  
@@ -57,7 +57,7 @@ Any UART can be used for RC system connections in ArduPilot also, and is compati
 
 
 ## PWM Output
-The autopilot supports up to 9 PWM outputs (PWM 9 is defaulted to serial LED support). Outputs are available a standard ESC JST-SH connectors and solder pads for M5-M8. All outputs support  DShot,as well as all PWM types. 
+The autopilot supports up to 9 PWM outputs (PWM 9 is defaulted to serial LED support). Outputs are available a standard ESC JST-SH connectors and solder pads for M5-M8. All outputs support all PWM types. PWM 1-4 and 6-9 support DShot. PWM 1-4 support bi-directional dshot.
 
 The PWM is in 5 groups:
 
@@ -71,7 +71,8 @@ The PWM is in 5 groups:
  ESC port is a jst-sh V-G-C-R3-1-2-3-4  
 
  Channels within the same group need to use the same output rate. All channels in specific Timer groups are configured either as DSHOT or PWM,  
- mixing of protocols within groups is not possible. Channel 9 is configured as NeoPixel by default but can be configured for and extra PWM output.  
+ mixing of protocols within groups is not possible. Channel 9 is configured as NeoPixel by default but can be configured for and extra PWM output.
+ PWM 8 cannot be used for DShot if PWM 9 is configured for NeoPixel. 
 
 
 ## Battery Monitoring
