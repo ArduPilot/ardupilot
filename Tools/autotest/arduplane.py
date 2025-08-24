@@ -7284,14 +7284,17 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.delay_sim_time(0.5)
         self.progress("Failing servo")
         self.set_parameter('SIM_VOLZ_FMASK', 1)
+        self.set_rc(1, 1500)
         self.change_mode('FBWA')
         aileron_failed_text = "aileron has been failed"
         self.send_statustext(aileron_failed_text)
-        self.delay_sim_time(5)
+        self.delay_sim_time(15)
         self.set_parameter('SIM_VOLZ_FMASK', 0)
 
         log_filepath = self.current_onboard_log_filepath()
-        self.fly_home_land_and_disarm()
+        # terminate vehicle in-flight so our tests aren't fooled by the
+        # "flying home" data:
+        self.reboot_sitl(force=True)
 
         self.progress("Inspecting DFReader to ensure servo failure is recorded in the log")
         dfreader = self.dfreader_for_path(log_filepath)
@@ -7335,17 +7338,22 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 continue
             if m.Pos < 20:
                 continue
+            self.progress(f"Chan9 is deflected ({m})")
             break
 
         self.progress("Ensuring the vehicle stabilised with a single aileron")
-        while True:
+        attitude_good_count = 0
+        while attitude_good_count < 5:
             m = dfreader.recv_match()
             if m is None:
                 raise NotAchievedException("Did not see good attitude")
             if m.get_type() != 'ATT':
                 continue
-            if abs(m.Roll) < 5:
-                break
+            if abs(m.Roll) >= 5:
+                attitude_good_count = 0
+                continue
+            attitude_good_count += 1
+        self.progress(f"Attitude is stabilised ({m})")
 
         self.progress("Ensure the roll integrator is wound up")
         while True:
@@ -7355,19 +7363,26 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             if m.get_type() != 'PIDR':
                 continue
             if m.I > 5:
+                self.progress(f"Roll integrator is wound up ({m})")
                 break
 
         self.progress("Checking that aileron is stuck at some deflection")
-        while True:
+        good_count = 0
+        while good_count < 5:
             m = dfreader.recv_match()
             if m is None:
                 raise NotAchievedException("Did not see csrv Pos/PosCmd discrepancy")
             if m.get_type() != 'CSRV':
                 continue
-            if m.Id != 1:
+            if m.Id != 0:
                 continue
-            if abs(m.Pos - m.PosCmd) > 20:
-                break
+            delta = abs(m.Pos - m.PosCmd)
+            if delta <= 20:
+                self.progress(f"CSRV Pos/PosCmd {delta=:.2f} BAD {m}")
+                good_count = 0
+                continue
+            self.progress(f"CSRV Pos/PosCmd {delta=:.2f} OK {m}")
+            good_count += 1
 
     def MAV_CMD_NAV_LOITER_TURNS_zero_turn(self):
         '''Ensure air vehicle achieves loiter target before exiting'''
