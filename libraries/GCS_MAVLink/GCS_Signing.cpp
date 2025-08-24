@@ -21,6 +21,8 @@
 
 #include "GCS.h"
 
+#if AP_MAVLINK_SIGNING_ENABLED
+
 extern const AP_HAL::HAL& hal;
 
 // storage object
@@ -237,6 +239,7 @@ bool GCS_MAVLINK::signing_enabled(void) const
     }
     return false;
 }
+#endif  // AP_MAVLINK_SIGNING_ENABLED
 
 /*
   return packet overhead in bytes for a channel
@@ -262,5 +265,14 @@ uint8_t GCS_MAVLINK::packet_overhead_chan(mavlink_channel_t chan)
     }
     return MAVLINK_NUM_NON_PAYLOAD_BYTES + reserved_space;
 }
+
+#if !AP_MAVLINK_SIGNING_ENABLED
+
+void GCS_MAVLINK::handle_setup_signing(const mavlink_message_t &msg) const
+{
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Signing is not enabled in this firmware");
+}
+
+#endif  // !AP_MAVLINK_SIGNING_ENABLED
 
 #endif  // HAL_GCS_ENABLED

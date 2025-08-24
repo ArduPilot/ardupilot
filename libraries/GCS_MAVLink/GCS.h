@@ -467,8 +467,10 @@ public:
     // corresponding to the channel
     static GCS_MAVLINK *find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint8_t &sysid);
 
+#if AP_MAVLINK_SIGNING_ENABLED
     // update signing timestamp on GPS lock
     static void update_signing_timestamp(uint64_t timestamp_usec);
+#endif  // AP_MAVLINK_SIGNING_ENABLED
 
     // return current packet overhead for a channel
     static uint8_t packet_overhead_chan(mavlink_channel_t chan);
@@ -1005,6 +1007,7 @@ private:
 
     void lock_channel(const mavlink_channel_t chan, bool lock);
 
+#if AP_MAVLINK_SIGNING_ENABLED
     mavlink_signing_t signing;
     static mavlink_signing_streams_t signing_streams;
     static uint32_t last_signing_save_ms;
@@ -1015,6 +1018,7 @@ private:
     void load_signing_key(void);
     bool signing_enabled(void) const;
     static void save_signing_timestamp(bool force_save_now);
+#endif  // AP_MAVLINK_SIGNING_ENABLED
 
 #if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
     // structure containing default intervals read from files for this
