@@ -158,7 +158,7 @@ Dimensions
 Pinout
 ======
 
-![F4BY_H743 V3.0.3 Board](f4BY_H743_v303_diagramm.gif "F4BY_H743 V3.0.3")
+![F4BY_H743 V3.0.3 Board](f4BY_H743_v303_diagramm.jpg "F4BY_H743 V3.0.3")
 
 Battery Monitor
 ===============
