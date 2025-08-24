@@ -5,7 +5,7 @@ F4BY_H743
 
 The F4BY_H743 autopilot is manufactured by `F4BY Team <https://f4by.com>`__
 
-![F4BY_H743](F4BY_H743_board_image.gif)
+![F4BY_H743](F4BY_H743_board_image.jpg)
 
 
 
@@ -158,7 +158,7 @@ Dimensions
 Pinout
 ======
 
-![F4BY_H743 V3.0.3 Board](f4BY_H743_v303_diagramm.png "F4BY_H743 V3.0.3")
+![F4BY_H743 V3.0.3 Board](f4BY_H743_v303_diagramm.gif "F4BY_H743 V3.0.3")
 
 Battery Monitor
 ===============
