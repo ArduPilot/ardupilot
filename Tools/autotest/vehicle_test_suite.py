@@ -10669,7 +10669,10 @@ Also, ignores heartbeats not from our target system'''
         ex = None
         self.context_push()
         try:
-            self.set_parameter("LOG_BACKEND_TYPE", 4)
+            self.set_parameters({
+                "LOG_BACKEND_TYPE": 4,
+                "SIM_SPEEDUP": 20,
+            })
             self.reboot_sitl()
             mavproxy.send("module load log\n")
             mavproxy.send("log erase\n")
