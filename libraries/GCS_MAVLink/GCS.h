@@ -525,7 +525,6 @@ protected:
     AP_Int16 options;
     enum class Option : uint16_t {
         MAVLINK2_SIGNING_DISABLED = (1U << 0),
-        // first bit is reserved for: MAVLINK2_SIGNING_DISABLED = (1U << 0),
         NO_FORWARD                = (1U << 1),  // don't forward MAVLink data to or from this device
         NOSTREAMOVERRIDE          = (1U << 2),  // ignore REQUEST_DATA_STREAM messages (eg. from GCSs)
     };
