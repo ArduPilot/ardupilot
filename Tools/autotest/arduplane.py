@@ -7715,6 +7715,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         ret = []
         ret.extend(self.tests1a())
         ret.extend(self.tests1b())
+        ret.extend(self.tests1c())
         return ret
 
     def tests1a(self):
@@ -7791,7 +7792,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.InertialLabsEAHRS,
             self.GpsSensorPreArmEAHRS,
             self.Deadreckoning,
-            self.DeadreckoningNoAirSpeed,
             self.EKFlaneswitch,
             self.AirspeedDrivers,
             self.RTL_CLIMB_MIN,
@@ -7887,6 +7887,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.ScriptedArmingChecksAppletRally,
         ]
 
+    def tests1c(self):
+        '''kind of reserved for flapping tests which we still have hopes for'''
+        return [
+            self.DeadreckoningNoAirSpeed,
+        ]
+
     def disabled_tests(self):
         return {
             "LandingDrift": "Flapping test. See https://github.com/ArduPilot/ardupilot/issues/20054",
@@ -7904,3 +7910,8 @@ class AutoTestPlaneTests1a(AutoTestPlane):
 class AutoTestPlaneTests1b(AutoTestPlane):
     def tests(self):
         return self.tests1b()
+
+
+class AutoTestPlaneTests1c(AutoTestPlane):
+    def tests(self):
+        return self.tests1c()

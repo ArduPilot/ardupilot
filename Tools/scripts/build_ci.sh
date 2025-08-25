@@ -177,6 +177,10 @@ for t in $CI_BUILD_TARGET; do
        run_autotest "Plane" "build.Plane" "test.PlaneTests1b"
         continue
     fi
+    if [ "$t" == "sitltest-plane-tests1c" ]; then
+       run_autotest "Plane" "build.Plane" "test.PlaneTests1c"
+        continue
+    fi
     if [ "$t" == "sitltest-quadplane" ]; then
         run_autotest "QuadPlane" "build.Plane" "test.QuadPlane"
         continue

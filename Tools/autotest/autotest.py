@@ -276,6 +276,7 @@ __bin_names = {
     "Plane": "arduplane",
     "PlaneTests1a": "arduplane",
     "PlaneTests1b": "arduplane",
+    "PlaneTests1c": "arduplane",
 
     "Rover": "ardurover",
     "Tracker": "antennatracker",
@@ -353,6 +354,7 @@ tester_class_map = {
     "test.Plane": arduplane.AutoTestPlane,
     "test.PlaneTests1a": arduplane.AutoTestPlaneTests1a,
     "test.PlaneTests1b": arduplane.AutoTestPlaneTests1b,
+    "test.PlaneTests1c": arduplane.AutoTestPlaneTests1c,
     "test.QuadPlane": quadplane.AutoTestQuadPlane,
     "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
@@ -379,18 +381,22 @@ def run_specific_test(step, *args, **kwargs):
     if t is None:
         return []
     (testname, test) = t
+    tests = set()
+    tests.update(test.split(","))
 
     tester_class = tester_class_map[testname]
     global tester
     tester = tester_class(*args, **kwargs)
 
     # print("Got %s" % str(tester))
+    run = []
     for a in tester.tests():
         if not isinstance(a, Test):
             a = Test(a)
         print("Got %s" % (a.name))
-        if a.name == test:
-            return tester.autotest(tests=[a], allow_skips=False, step_name=step), tester
+        if a.name in tests:
+            run.append(a)
+    return tester.autotest(tests=run, allow_skips=False, step_name=step), tester
     print("Failed to find test %s on %s" % (test, testname))
     sys.exit(1)
 
@@ -1132,6 +1138,7 @@ if __name__ == "__main__":
 
         'test.PlaneTests1a',
         'test.PlaneTests1b',
+        'test.PlaneTests1c',
 
         'clang-scan-build',
     ]

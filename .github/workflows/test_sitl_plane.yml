@@ -217,6 +217,7 @@ jobs:
         config: [
             sitltest-plane-tests1a,
             sitltest-plane-tests1b,
+            sitltest-plane-tests1c,
             sitltest-quadplane,
         ]
 
