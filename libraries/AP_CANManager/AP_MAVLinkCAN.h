@@ -15,12 +15,12 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/utility/RingBuffer.h>
 #include "AP_CANManager_config.h"
 
-#if HAL_CANMANAGER_ENABLED && HAL_GCS_ENABLED
+#if AP_MAVLINKCAN_ENABLED
 
+#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/RingBuffer.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_HAL/CANIface.h>
 #include <AP_HAL/utility/OwnPtr.h>
@@ -29,18 +29,15 @@
 class AP_MAVLinkCAN {
 public:
     AP_MAVLinkCAN() {}
-    
-    // Process CAN frame forwarding
-    void process_frame_buffer();
 
     // Handle commands to forward CAN frames to GCS
-    bool handle_can_forward(mavlink_channel_t chan, const mavlink_command_int_t &packet, const mavlink_message_t &msg);
-    
+    static bool handle_can_forward(mavlink_channel_t chan, const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+
     // Handle received MAVLink CAN frames
-    void handle_can_frame(const mavlink_message_t &msg);
-    
+    static void handle_can_frame(const mavlink_message_t &msg);
+
     // Handle CAN filter modification
-    void handle_can_filter_modify(const mavlink_message_t &msg);
+    static void handle_can_filter_modify(const mavlink_message_t &msg);
 
 private:
     // Callback for receiving CAN frames from CAN bus and sending to GCS
@@ -71,6 +68,20 @@ private:
     // Frame buffer for queuing frames
     HAL_Semaphore frame_buffer_sem;
     ObjectBuffer<BufferFrame> *frame_buffer;
+
+    static AP_MAVLinkCAN *ensure_singleton();
+
+    // Process CAN frame forwarding
+    void process_frame_buffer();
+
+    // Handle commands to forward CAN frames to GCS
+    bool _handle_can_forward(mavlink_channel_t chan, const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+
+    // Handle received MAVLink CAN frames
+    void _handle_can_frame(const mavlink_message_t &msg);
+
+    // Handle CAN filter modification
+    void _handle_can_filter_modify(const mavlink_message_t &msg);
 };
 
-#endif // HAL_CANMANAGER_ENABLED && HAL_GCS_ENABLED
+#endif // AP_MAVLINKCAN_ENABLED

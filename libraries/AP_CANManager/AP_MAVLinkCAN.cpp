@@ -17,14 +17,52 @@
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Common/sorting.h>
 
-#if HAL_CANMANAGER_ENABLED && HAL_GCS_ENABLED
+#if AP_MAVLINKCAN_ENABLED
 
 extern const AP_HAL::HAL& hal;
+
+static AP_MAVLinkCAN *singleton;
+
+AP_MAVLinkCAN *AP_MAVLinkCAN::ensure_singleton()
+{
+    if (singleton == nullptr) {
+        singleton = NEW_NOTHROW AP_MAVLinkCAN();
+    }
+    return singleton;
+}
+
+bool AP_MAVLinkCAN::handle_can_forward(mavlink_channel_t chan, const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+{
+    auto *s = ensure_singleton();
+    if (s == nullptr) {
+        return false;
+    }
+    return singleton->_handle_can_forward(chan, packet, msg);
+}
+
+void AP_MAVLinkCAN::handle_can_frame(const mavlink_message_t &msg)
+{
+    auto *s = ensure_singleton();
+    if (s == nullptr) {
+        return;
+    }
+    singleton->_handle_can_frame(msg);
+}
+
+void AP_MAVLinkCAN::handle_can_filter_modify(const mavlink_message_t &msg)
+{
+    auto *s = ensure_singleton();
+    if (s == nullptr) {
+        return;
+    }
+    singleton->_handle_can_filter_modify(msg);
+}
+
 
 /*
   handle MAV_CMD_CAN_FORWARD mavlink long command
  */
-bool AP_MAVLinkCAN::handle_can_forward(mavlink_channel_t chan, const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+bool AP_MAVLinkCAN::_handle_can_forward(mavlink_channel_t chan, const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     WITH_SEMAPHORE(can_forward.sem);
     const int8_t bus = int8_t(packet.param1)-1;
@@ -71,7 +109,7 @@ bool AP_MAVLinkCAN::handle_can_forward(mavlink_channel_t chan, const mavlink_com
 /*
   handle a CAN_FRAME packet
  */
-void AP_MAVLinkCAN::handle_can_frame(const mavlink_message_t &msg)
+void AP_MAVLinkCAN::_handle_can_frame(const mavlink_message_t &msg)
 {
     if (frame_buffer == nullptr) {
         // allocate frame buffer
@@ -164,7 +202,7 @@ void AP_MAVLinkCAN::process_frame_buffer()
 /*
   handle a CAN_FILTER_MODIFY packet
  */
-void AP_MAVLinkCAN::handle_can_filter_modify(const mavlink_message_t &msg)
+void AP_MAVLinkCAN::_handle_can_filter_modify(const mavlink_message_t &msg)
 {
     mavlink_can_filter_modify_t p;
     mavlink_msg_can_filter_modify_decode(&msg, &p);
@@ -319,4 +357,4 @@ void AP_MAVLinkCAN::can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &fram
     }
 }
 
-#endif // HAL_CANMANAGER_ENABLED && HAL_GCS_ENABLED
+#endif  // AP_MAVLINKCAN_ENABLED
