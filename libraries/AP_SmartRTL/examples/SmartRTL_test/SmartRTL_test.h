@@ -13,7 +13,7 @@
 // test_path_complete
 
 // assume that any point without a comment should be kept
-std::vector<Vector3f> test_path_before {
+std::vector<Vector3p> test_path_before {
     {0.0, 0.0, 0.0},
     {3.0, 0.0, 0.0}, // simplified
     {3.0, 0.0, 0.0}, // not added
@@ -114,7 +114,7 @@ std::vector<Vector3f> test_path_before {
     {300.0, 300.0, 295.0},
 };
 
-std::vector<Vector3f> test_path_after_adding {
+std::vector<Vector3p> test_path_after_adding {
     {0.0, 0.0, 0.0},        // 0
     {3.0, 0.0, 0.0},
     {6.0, 0.0, 0.0},
@@ -213,7 +213,7 @@ std::vector<Vector3f> test_path_after_adding {
     {300.0, 300.0, 295.0},
 };
 
-std::vector<Vector3f> test_path_after_simplifying {
+std::vector<Vector3p> test_path_after_simplifying {
     {0.0, 0.0, 0.0},        // 0
     {10.0, 0.0, 0.0},
     {10.0, 3.0, 0.0},
@@ -293,7 +293,7 @@ std::vector<Vector3f> test_path_after_simplifying {
     {300.0, 300.0, 295.0},
 };
 
-std::vector<Vector3f> test_path_complete {
+std::vector<Vector3p> test_path_complete {
     {0.0, 0.0, 0.0},        // 0
     {10.0, 0.0, 0.0},
     {10.0, 3.0, 0.0},

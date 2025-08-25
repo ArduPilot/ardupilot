@@ -706,7 +706,7 @@ void AC_AutoTune::get_poshold_attitude_rad(float &roll_out_rad, float &pitch_out
 
     if (!have_position) {
         have_position = true;
-        start_position_neu_m = pos_control->get_pos_estimate_NEU_m().tofloat();
+        start_position_neu_m = pos_control->get_pos_estimate_NEU_m();
     }
 
     // don't go past 10 degrees, as autotune result would deteriorate too much
@@ -719,7 +719,7 @@ void AC_AutoTune::get_poshold_attitude_rad(float &roll_out_rad, float &pitch_out
     // target position. That corresponds to a lean angle of 2.5 degrees
     const float yaw_dist_limit_m = 5.0;
 
-    Vector3f pos_error_neu_m = pos_control->get_pos_estimate_NEU_m().tofloat() - start_position_neu_m;
+    Vector3f pos_error_neu_m = (pos_control->get_pos_estimate_NEU_m() - start_position_neu_m).tofloat();
     pos_error_neu_m.z = 0;
     float dist_m = pos_error_neu_m.length();
     if (dist_m < 0.10) {

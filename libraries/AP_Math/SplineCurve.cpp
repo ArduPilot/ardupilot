@@ -45,7 +45,7 @@ void SplineCurve::set_speed_accel(float speed_xy, float speed_up, float speed_do
 // origin_vel is vehicle velocity at origin (in NEU frame)
 // destination_vel is vehicle velocity at destination (in NEU frame)
 // time is reset to zero
-void SplineCurve::set_origin_and_destination(const Vector3f &origin, const Vector3f &destination, const Vector3f &origin_vel, const Vector3f &destination_vel)
+void SplineCurve::set_origin_and_destination(const Vector3p &origin, const Vector3p &destination, const Vector3f &origin_vel, const Vector3f &destination_vel)
 {
     // store origin and destination locations
     _origin = origin;
@@ -84,7 +84,7 @@ void SplineCurve::set_origin_and_destination(const Vector3f &origin, const Vecto
         // update spline calculator
         update_solution(_origin, _destination, _origin_vel, _destination_vel);
     }
-    Vector3f target_pos;
+    Vector3p target_pos;
     Vector3f spline_vel_unit;
     float spline_dt;
     float accel_max;
@@ -99,7 +99,7 @@ void SplineCurve::set_origin_and_destination(const Vector3f &origin, const Vecto
 // move target location along track from origin to destination
 // target_pos is updated with the target position from EKF origin in NEU frame
 // target_vel is updated with the target velocity in NEU frame
-void SplineCurve::advance_target_along_track(float dt, Vector3f &target_pos, Vector3f &target_vel)
+void SplineCurve::advance_target_along_track(float dt, Vector3p &target_pos, Vector3f &target_vel)
 {
     // handle zero length track
     if (_zero_length) {
@@ -131,7 +131,7 @@ void SplineCurve::advance_target_along_track(float dt, Vector3f &target_pos, Vec
 
 // calculate the spline delta time for a given delta distance
 // returns the spline position and velocity and maximum speed and acceleration the vehicle can travel without exceeding acceleration limits
-void SplineCurve::calc_dt_speed_max(float time, float distance_delta, float &spline_dt, Vector3f &target_pos, Vector3f &spline_vel_unit, float &speed_max, float &accel_max)
+void SplineCurve::calc_dt_speed_max(float time, float distance_delta, float &spline_dt, Vector3p &target_pos, Vector3f &spline_vel_unit, float &speed_max, float &accel_max)
 {
     // initialise outputs
     spline_dt = 0.0f;
@@ -217,12 +217,12 @@ void SplineCurve::calc_dt_speed_max(float time, float distance_delta, float &spl
 
 // recalculate hermite_solution grid
 //     relies on _origin_vel, _destination_vel and _origin and _destination
-void SplineCurve::update_solution(const Vector3f &origin, const Vector3f &dest, const Vector3f &origin_vel, const Vector3f &dest_vel)
+void SplineCurve::update_solution(const Vector3p &origin, const Vector3p &dest, const Vector3f &origin_vel, const Vector3f &dest_vel)
 {
     _hermite_solution[0] = origin;
-    _hermite_solution[1] = origin_vel;
-    _hermite_solution[2] = -origin*3.0f -origin_vel*2.0f + dest*3.0f - dest_vel;
-    _hermite_solution[3] = origin*2.0f + origin_vel -dest*2.0f + dest_vel;
+    _hermite_solution[1] = origin_vel.topostype();
+    _hermite_solution[2] = -origin * 3.0 - origin_vel.topostype() * 2.0 + dest * 3.0 - dest_vel.topostype();
+    _hermite_solution[3] = origin * 2.0 + origin_vel.topostype() - dest * 2.0 + dest_vel.topostype();
 }
 
 // calculate target position and velocity from given spline time
@@ -230,7 +230,7 @@ void SplineCurve::update_solution(const Vector3f &origin, const Vector3f &dest, 
 // position is updated with target position as an offset from EKF origin in NEU frame
 // velocity is updated with the unscaled velocity
 // relies on set_origin_and_destination having been called to update_solution
-void SplineCurve::calc_target_pos_vel(float time, Vector3f &position, Vector3f &velocity, Vector3f &acceleration, Vector3f &jerk)
+void SplineCurve::calc_target_pos_vel(float time, Vector3p &position, Vector3f &velocity, Vector3f &acceleration, Vector3f &jerk)
 {
     const float time_sq = sq(time);
     const float time_cubed = time_sq * time;
@@ -240,13 +240,13 @@ void SplineCurve::calc_target_pos_vel(float time, Vector3f &position, Vector3f &
                _hermite_solution[2] * time_sq + \
                _hermite_solution[3] * time_cubed;
 
-    velocity = _hermite_solution[1] + \
-               _hermite_solution[2] * 2.0f * time + \
-               _hermite_solution[3] * 3.0f * time_sq;
+    velocity = _hermite_solution[1].tofloat() + \
+               _hermite_solution[2].tofloat() * 2.0 * time + \
+               _hermite_solution[3].tofloat() * 3.0 * time_sq;
 
-    acceleration = _hermite_solution[2] * 2.0f + \
-               _hermite_solution[3] * 6.0f * time;
+    acceleration = _hermite_solution[2].tofloat() * 2.0 + \
+               _hermite_solution[3].tofloat() * 6.0 * time;
 
-    jerk = _hermite_solution[3] * 6.0f;
+    jerk = _hermite_solution[3].tofloat() * 6.0;
 }
 
