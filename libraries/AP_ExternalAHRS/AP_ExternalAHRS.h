@@ -154,6 +154,10 @@ public:
         float  ned_vel_north;
         float  ned_vel_east;
         float  ned_vel_down;
+        float heading;
+        bool have_heading;
+        float heading_accuracy;
+        bool have_heading_acc;
     } gps_data_message_t;
 
     typedef struct {
