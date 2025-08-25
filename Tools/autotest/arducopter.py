@@ -10605,6 +10605,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "SIM_GPS2_TYPE": 1,
                 "SIM_GPS2_ENABLE": 1,
                 "GPS_AUTO_SWITCH": 2,
+                "GPS3_TYPE": 27,
             })
             self.reboot_sitl()
 
@@ -14494,6 +14495,81 @@ return update, 1000
             if pname in all_params:
                 raise ValueError(f"{pname} in fetched-all-parameters when it should have gone away")
 
+    def ManyGPS(self):
+        '''check many gps support'''
+        self.set_parameters({
+            'GPS2_TYPE': 1,
+            'GPS3_TYPE': 1,
+            'GPS4_TYPE': 1,
+
+            'SIM_GPS1_NUMSATS': 21,
+
+            'SIM_GPS2_ENABLE': 1,
+            'SIM_GPS2_NUMSATS': 22,
+
+            'SIM_GPS3_TYPE': 1,
+            'SIM_GPS3_ENABLE': 1,
+            'SIM_GPS3_NUMSATS': 23,
+
+            'SIM_GPS4_TYPE': 1,
+            'SIM_GPS4_ENABLE': 1,
+            'SIM_GPS4_NUMSATS': 24,
+
+            'SERIAL5_PROTOCOL': 5,
+            'SERIAL6_PROTOCOL': 5,
+        })
+        self.customise_SITL_commandline([
+            "--serial5=sim:gps:3:",
+            "--serial6=sim:gps:4:",
+        ])
+
+        tstart = self.get_sim_time()
+        i = 0
+        while i < 4:
+            if self.get_sim_time_cached() - tstart > 200:
+                raise NotAchievedException(f"Did not get GNSS message {i}")
+            m = self.assert_receive_message('GNSS')
+            if m.id != i:
+                continue
+            self.dump_message_verbose(m)
+            self.assert_message_field_values(m, {
+                'satellites_visible': 20 + i + 1,
+                'yaw': 0,
+            })
+            i += 1
+
+        self.start_subtest("GPS-for-yaw")
+        self.set_parameters({
+            "GPS3_TYPE": 17,  # RTK base
+            "GPS3_POS_X": -0.5,
+            "GPS3_POS_Y": -0.5,
+            "SIM_GPS3_HDG": 4,
+            "SIM_GPS3_POS_X": -0.5,
+            "SIM_GPS3_POS_Y": -0.5,
+
+            "GPS4_TYPE": 18,  # RTK rover
+            "SIM_GPS4_HDG": 2,
+            "GPS4_POS_X": 0.5,
+            "GPS4_POS_Y": 0.5,
+            "SIM_GPS4_POS_X": 0.5,
+            "SIM_GPS4_POS_Y": 0.5,
+        })
+        self.reboot_sitl()
+
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 120:
+                raise NotAchievedException("Did not get GNSS yaw")
+
+            m = self.assert_receive_message('GNSS', verbose=True, timeout=120)
+
+#            if m.id != 4:
+#                continue
+
+            if m.yaw != 0 and m.yaw != 65535:
+                self.progress(f"GPS{m.id+1} provided yaw")
+                break
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -14584,6 +14660,7 @@ return update, 1000
             self.MISSION_OPTION_CLEAR_MISSION_AT_BOOT,
             self.SafetySwitch,
             self.BrakeZ,
+            self.ManyGPS,
             self.MAV_CMD_DO_FLIGHTTERMINATION,
             self.MAV_CMD_DO_LAND_START,
             self.MAV_CMD_DO_SET_GLOBAL_ORIGIN,

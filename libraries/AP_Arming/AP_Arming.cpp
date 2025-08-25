@@ -664,20 +664,13 @@ bool AP_Arming::gps_checks(bool report)
             return false;
         }
 
-        for (uint8_t i = 0; i < gps.num_sensors(); i++) {
-#if AP_GPS_BLENDED_ENABLED
-            if ((i != GPS_BLENDED_INSTANCE) &&
-#else
-            if (
-#endif
-                    (gps.get_type(i) == AP_GPS::GPS_Type::GPS_TYPE_NONE)) {
-                if (gps.primary_sensor() == i) {
-                    check_failed(Check::GPS, report, "GPS %i: primary but TYPE 0", i+1);
-                    return false;
-                }
-                continue;
-            }
+        const auto primary_sensor = gps.primary_sensor();
+        if (gps.num_sensors() > 0 && gps.get_type(primary_sensor) == AP_GPS::GPS_Type::GPS_TYPE_NONE) {
+            check_failed(Check::GPS, report, "GPS %i: primary but TYPE 0", primary_sensor+1);
+            return false;
+        }
 
+        for (uint8_t i = 0; i < gps.num_sensors(); i++) {
             //GPS OK?
             if (gps.status(i) < AP_GPS::GPS_OK_FIX_3D) {
                 check_failed(Check::GPS, report, "GPS %i: Bad fix", i+1);
