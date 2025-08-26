@@ -569,6 +569,11 @@ function SocketAPM_ud:send(str, len) end
 ---@return integer
 function SocketAPM_ud:sendto(str, len, ipaddr, port) end
 
+-- return true if a socket is in a pending connect state
+-- used for non-blocking TCP connections
+---@return boolean
+function SocketAPM_ud:is_pending() end
+
 -- bind to an address. Use "0.0.0.0" for wildcard bind
 ---@param IP_address string
 ---@param port integer

@@ -159,6 +159,9 @@ bool SOCKET_CLASS_NAME::connect(const char *address, uint16_t port)
 
     ret = CALL_PREFIX(connect)(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
     if (ret != 0) {
+        if (errno == EINPROGRESS) {
+            pending_connect = true;
+        }
         return false;
     }
     connected = true;
@@ -479,6 +482,17 @@ bool SOCKET_CLASS_NAME::pollout(uint32_t timeout_ms)
     if (CALL_PREFIX(select)(fd+1, nullptr, &fds, nullptr, &tv) != 1) {
         return false;
     }
+
+    if (pending_connect) {
+        int sock_error = 0;
+        socklen_t len = sizeof(sock_error);
+        if (CALL_PREFIX(getsockopt)(fd, SOL_SOCKET, SO_ERROR, (void*)&sock_error, &len) == 0 &&
+            sock_error == 0) {
+            connected = true;
+        }
+        pending_connect = false;
+    }
+
     return true;
 }
 
