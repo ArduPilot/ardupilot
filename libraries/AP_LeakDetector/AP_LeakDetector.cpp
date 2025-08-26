@@ -1,6 +1,8 @@
+
 #include "AP_LeakDetector.h"
 #include "AP_LeakDetector_Analog.h"
 #include "AP_LeakDetector_Digital.h"
+#if AP_LEAKDETECTOR_ENABLED
 
 const AP_Param::GroupInfo AP_LeakDetector::var_info[] = {
 
@@ -144,3 +146,5 @@ void AP_LeakDetector::set_detect()
 {
     _last_detect_ms = AP_HAL::millis();
 }
+
+#endif // AP_LEAKDETECTOR_ENABLED
