@@ -3842,13 +3842,13 @@ class TestSuite(abc.ABC):
         if ex is not None:
             raise ex
 
-    def download_full_log_list(self, print_logs=True):
+    def download_full_log_list(self, print_logs=True, LOG_ENTRY_sanity_check=True):
         tstart = self.get_sim_time()
         self.mav.mav.log_request_list_send(self.sysid_thismav(),
                                            1, # target component
                                            0,
                                            0xffff)
-        logs = {}
+        logs : dict[int : mavutil.MAVLink.MAVLink_log_entry_message] = {}
         last_id = None
         num_logs = None
         while True:
@@ -3884,7 +3884,8 @@ class TestSuite(abc.ABC):
                 break
 
         # ensure we don't get any extras:
-        self.assert_not_receiving_message('LOG_ENTRY', timeout=2)
+        if LOG_ENTRY_sanity_check:
+            self.assert_not_receiving_message('LOG_ENTRY', timeout=2)
 
         return logs
 
@@ -11074,87 +11075,113 @@ Also, ignores heartbeats not from our target system'''
         if herrors > header_errors:
             raise NotAchievedException("Error parsing log file %s, %d header errors" % (logname, herrors))
 
+    def assert_current_log_filesizes(self, sizes):
+        file_list = self.download_full_log_list(LOG_ENTRY_sanity_check=False)
+        self.progress(f"List: {file_list}")
+        for file_id, minmax in sizes.items():
+            (minsize, maxsize) = minmax
+            if file_id not in file_list:
+                raise NotAchievedException(f"{file_id} not in downloaded log info")
+            m = file_list[file_id]
+            if m.size < minsize:
+                raise NotAchievedException(f"{file_id} too small; got={m.size} want>{minsize}")
+            if m.size > maxsize:
+                raise NotAchievedException(f"{file_id} too large; got={m.size} want<{maxsize}")
+
     def DataFlashErase(self):
         """Test that erasing the dataflash chip and creating a new log is error free"""
-        mavproxy = self.start_mavproxy()
-
-        ex = None
-        self.context_push()
-        try:
-            self.set_parameter("LOG_BACKEND_TYPE", 4)
-            self.reboot_sitl()
-            mavproxy.send("module load log\n")
-            mavproxy.send("log erase\n")
-            mavproxy.expect("Chip erase complete")
-            self.set_parameter("LOG_DISARMED", 1)
-            self.delay_sim_time(3, reason="LOG_DISARMED to take effect")
-            self.set_parameter("LOG_DISARMED", 0)
-            mavproxy.send("log download 1 logs/dataflash-log-erase.BIN\n")
-            mavproxy.expect("Finished downloading", timeout=120)
-            # read the downloaded log - it must parse without error
-            self.validate_log_file("logs/dataflash-log-erase.BIN")
-
-            self.start_subtest("Test file wrapping results in a valid file")
-            # roughly 4mb
-            self.set_parameter("LOG_FILE_DSRMROT", 1)
-            self.set_parameter("LOG_BITMASK", 131071)
-            self.wait_ready_to_arm()
-            if self.is_copter() or self.is_plane():
-                self.set_autodisarm_delay(0)
-            self.arm_vehicle()
-            self.delay_sim_time(30, reason="log data for wrap test")
-            self.disarm_vehicle()
-            # roughly 4mb
-            self.arm_vehicle()
-            self.delay_sim_time(30, reason="log data for wrap test")
-            self.disarm_vehicle()
-            # roughly 9mb, should wrap around
-            self.arm_vehicle()
-            self.delay_sim_time(50, reason="log data for wrap test")
-            self.disarm_vehicle()
-            # make sure we have finished logging
-            self.delay_sim_time(15, reason="logging to finish")
-            mavproxy.send("log list\n")
-            try:
-                mavproxy.expect("Log ([0-9]+)  numLogs ([0-9]+) lastLog ([0-9]+) size ([0-9]+)", timeout=120)
-            except pexpect.TIMEOUT as e:
-                if self.sitl_is_running():
-                    self.progress("SITL is running")
-                else:
-                    self.progress("SITL is NOT running")
-                raise NotAchievedException("Received %s" % str(e))
-            if int(mavproxy.match.group(2)) != 3:
-                raise NotAchievedException("Expected 3 logs got %s" % (mavproxy.match.group(2)))
-
-            mavproxy.send("log download 1 logs/dataflash-log-erase2.BIN\n")
-            mavproxy.expect("Finished downloading", timeout=120)
-            self.validate_log_file("logs/dataflash-log-erase2.BIN", 1)
-
-            mavproxy.send("log download latest logs/dataflash-log-erase3.BIN\n")
-            mavproxy.expect("Finished downloading", timeout=120)
-            self.validate_log_file("logs/dataflash-log-erase3.BIN", 1)
-
-            # clean up
-            mavproxy.send("log erase\n")
-            mavproxy.expect("Chip erase complete")
-
-            # clean up
-            mavproxy.send("log erase\n")
-            mavproxy.expect("Chip erase complete")
-
-        except Exception as e:  # noqa: BLE001
-            self.print_exception_caught(e)
-            ex = e
-
-        mavproxy.send("module unload log\n")
-
-        self.context_pop()
+        # we have to significantly reduce the data going into the
+        # blackbox chip - it is only 4MB in size and we persist
+        # logging for 15 seconds.  That means we can end up rotating
+        # the contents for size way too much.
+        self.set_parameters({
+            "LOG_DISARMED": 0,
+            "LOG_BACKEND_TYPE": 4,
+            "LOG_BITMASK": 14,
+            "SIM_SPEEDUP": 1,  # there's a wallclock-time thread involved!
+        })
         self.reboot_sitl()
 
-        self.stop_mavproxy(mavproxy)
+        mavproxy = self.start_mavproxy()
 
-        if ex is not None:
-            raise ex
+        mavproxy.send("module load log\n")
+        mavproxy.send("log erase\n")
+        mavproxy.expect("Chip erase complete")
+
+        self.set_autodisarm_delay(0)
+
+        self.progress("Creating a very short log")
+        self.wait_ready_to_arm()
+        self.set_parameter("DISARM_DELAY", 1)
+        self.arm_vehicle()
+        self.wait_disarmed()
+        self.delay_sim_time(15, reason="Allow log persistence to finish")
+        mavproxy.send("log download 1 logs/dataflash-log-erase.BIN\n")
+        mavproxy.expect("Finished downloading", timeout=120)
+        # read the downloaded log - it must parse without error
+        self.validate_log_file("logs/dataflash-log-erase.BIN")
+        self.assert_log_dsf_no_drops("logs/dataflash-log-erase.BIN")
+        self.assert_current_log_filesizes({
+            1: (1000*1024, 1100*1024),
+        })
+
+        self.start_subtest("Test rotation results in a valid file")
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+
+        self.progress("Appending to create larger log")
+        self.arm_vehicle()
+        self.wait_disarmed()
+        self.delay_sim_time(15, reason="Allow log persistence to finish")
+        self.assert_current_log_filesizes({
+            1: (1980*1024, 2020*1024),
+        })
+        self.progress("Creating a second log")
+        self.arm_vehicle()
+        self.wait_disarmed()
+        self.delay_sim_time(15, reason="Allow log persistence to finish")
+        self.assert_current_log_filesizes({
+            1: (1980*1024, 2020*1024),
+            2: (1000*1024, 1100*1024),
+        })
+
+        self.progress("Creating a very large log which wipes the other ones out")
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("LOG_BITMASK", 131071)
+        self.set_parameter("DISARM_DELAY", 0)  # disabled
+        self.arm_vehicle()
+        self.wait_statustext('Chip full, logging stopped', check_context=True, timeout=60)
+        self.disarm_vehicle()
+
+        # make sure we have finished logging
+        self.delay_sim_time(15, reason="logging to finish")
+
+        self.assert_current_log_filesizes({
+            1: (3809996, 4109996),
+        })
+
+        mavproxy.send("log list\n")
+        try:
+            mavproxy.expect("Log ([0-9]+)  numLogs ([0-9]+) lastLog ([0-9]+) size ([0-9]+)", timeout=120)
+        except pexpect.TIMEOUT as e:
+            if self.sitl_is_running():
+                self.progress("SITL is running")
+            else:
+                self.progress("SITL is NOT running")
+            raise NotAchievedException("Received %s" % str(e))
+        if int(mavproxy.match.group(2)) != 1:
+            raise NotAchievedException("Expected 1 log got %s" % (mavproxy.match.group(2)))
+
+        mavproxy.send("log download 1 logs/dataflash-log-erase2.BIN\n")
+        mavproxy.expect("Finished downloading", timeout=120)
+        self.validate_log_file("logs/dataflash-log-erase2.BIN", header_errors=1)
+
+        # clean up
+        mavproxy.send("log erase\n")
+        mavproxy.expect("Chip erase complete")
+
+        # clean up
+        mavproxy.send("log erase\n")
+        mavproxy.expect("Chip erase complete")
 
     def ArmFeatures(self):
         '''Arm features'''
@@ -12905,6 +12932,19 @@ switch value'''
     def dfreader_for_path(self, path):
         return DFReader.DFReader_binary(path,
                                         zero_time_base=True)
+
+    def assert_log_dsf_no_drops(self, path):
+        """Assert that DSF.Dp (write-buffer drop count) is zero in the given log file"""
+        dfreader = self.dfreader_for_path(path)
+        dropped = 0
+        while True:
+            m = dfreader.recv_match(type='DSF')
+            if m is None:
+                break
+            dropped = m.Dp
+        self.progress("DSF dropcount in %s: %d" % (path, dropped))
+        if dropped != 0:
+            raise NotAchievedException("Expected zero dropped log messages in %s, got %d" % (path, dropped))
 
     def dfreader_for_current_onboard_log(self):
         return self.dfreader_for_path(self.current_onboard_log_filepath())
