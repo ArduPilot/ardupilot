@@ -10520,59 +10520,62 @@ Also, ignores heartbeats not from our target system'''
         self.context_push()
         try:
             self.set_parameters({
+                "LOG_DISARMED": 0,
                 "LOG_BACKEND_TYPE": 4,
-                "SIM_SPEEDUP": 20,
+                "SIM_SPEEDUP": 10,
             })
             self.reboot_sitl()
             mavproxy.send("module load log\n")
             mavproxy.send("log erase\n")
             mavproxy.expect("Chip erase complete")
-            self.set_parameter("LOG_DISARMED", 1)
+
+            self.set_autodisarm_delay(0)
+
+            self.progress("Creating a very short log")
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
             self.delay_sim_time(3)
-            self.set_parameter("LOG_DISARMED", 0)
+            self.disarm_vehicle()
             mavproxy.send("log download 1 logs/dataflash-log-erase.BIN\n")
             mavproxy.expect("Finished downloading", timeout=120)
             # read the downloaded log - it must parse without error
             self.validate_log_file("logs/dataflash-log-erase.BIN")
             self.assert_current_log_filesizes({
-                1: (10*1024, 50*1024),  # got=30246
+                1: (500*1024, 600*1024),
             })
 
             self.start_subtest("Test file wrapping results in a valid file")
             self.set_parameter("LOG_FILE_DSRMROT", 1)
             self.set_parameter("LOG_BITMASK", 131071)
             self.wait_ready_to_arm()
-            if not self.is_copter() or self.is_plane():
-                raise ValueError("No valid except on Plane or Copter")
 
-            self.progress("Appending to create ~270kB log")
-            self.set_autodisarm_delay(30)
+            self.progress("Appending to create larger log")
             self.arm_vehicle()
-            self.wait_disarmed()
+            self.delay_sim_time(10)
+            self.disarm_vehicle()
             self.assert_current_log_filesizes({
-                1: (300*1024, 320*1024),  # got=314496
+                1: (1900*1024, 2200*1024),
             })
             self.progress("Creating a second 200kB log")
-            self.set_autodisarm_delay(30)
             self.arm_vehicle()
-            self.wait_disarmed()
+            self.delay_sim_time(10)
+            self.disarm_vehicle()
             self.assert_current_log_filesizes({
-                1: (300*1024, 320*1024),  # got=314496
-                2: (215*1024, 255*1024),  # got=235496
+                1: (1900*1024, 2200*1024),
+                2: (1000*1024, 1700*1024),
             })
 
-            self.progress("Creating a third 500kB log")
-            self.set_autodisarm_delay(50)
+            self.progress("Creating a very large log which wipes the other ones out")
+            self.context_collect('STATUSTEXT')
             self.arm_vehicle()
-            self.wait_disarmed()
+            self.wait_statustext('Chip full, logging stopped', check_context=True, timeout=60)
+            self.disarm_vehicle()
 
             # make sure we have finished logging
             self.delay_sim_time(15)
 
             self.assert_current_log_filesizes({
-                1: (300*1024, 320*1024),  # got=314496
-                2: (215*1024, 255*1024),  # got=235496
-                3: (480*1024, 520*1024),  # got=500746
+                1: (3809996, 4109996),
             })
 
             mavproxy.send("log list\n")
@@ -10584,16 +10587,12 @@ Also, ignores heartbeats not from our target system'''
                 else:
                     self.progress("SITL is NOT running")
                 raise NotAchievedException("Received %s" % str(e))
-            if int(mavproxy.match.group(2)) != 3:
-                raise NotAchievedException("Expected 3 logs got %s" % (mavproxy.match.group(2)))
+            if int(mavproxy.match.group(2)) != 1:
+                raise NotAchievedException("Expected 1 log got %s" % (mavproxy.match.group(2)))
 
             mavproxy.send("log download 1 logs/dataflash-log-erase2.BIN\n")
             mavproxy.expect("Finished downloading", timeout=120)
-            self.validate_log_file("logs/dataflash-log-erase2.BIN", 1)
-
-            mavproxy.send("log download latest logs/dataflash-log-erase3.BIN\n")
-            mavproxy.expect("Finished downloading", timeout=120)
-            self.validate_log_file("logs/dataflash-log-erase3.BIN", 1)
+            self.validate_log_file("logs/dataflash-log-erase2.BIN", header_errors=1)
 
             # clean up
             mavproxy.send("log erase\n")
