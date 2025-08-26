@@ -3971,12 +3971,7 @@ class TestSuite(ABC):
                 break
 
         # ensure we don't get any extras:
-        m = self.mav.recv_match(type='LOG_ENTRY',
-                                blocking=True,
-                                timeout=2)
-        if m is not None:
-            raise NotAchievedException("Received extra LOG_ENTRY?!")
-        # should be: m = self.assert_not_receive_message('LOG_ENTRY', timeout=2)
+        self.assert_not_receiving_message('LOG_ENTRY', timeout=2)
 
         return logs
 
@@ -10674,7 +10669,10 @@ Also, ignores heartbeats not from our target system'''
         ex = None
         self.context_push()
         try:
-            self.set_parameter("LOG_BACKEND_TYPE", 4)
+            self.set_parameters({
+                "LOG_BACKEND_TYPE": 4,
+                "SIM_SPEEDUP": 20,
+            })
             self.reboot_sitl()
             mavproxy.send("module load log\n")
             mavproxy.send("log erase\n")
@@ -10695,15 +10693,15 @@ Also, ignores heartbeats not from our target system'''
             if self.is_copter() or self.is_plane():
                 self.set_autodisarm_delay(0)
             self.arm_vehicle()
-            self.delay_sim_time(30)
+            self.delay_sim_time(15)
             self.disarm_vehicle()
             # roughly 4mb
             self.arm_vehicle()
-            self.delay_sim_time(30)
+            self.delay_sim_time(15)
             self.disarm_vehicle()
             # roughly 9mb, should wrap around
             self.arm_vehicle()
-            self.delay_sim_time(50)
+            self.delay_sim_time(25)
             self.disarm_vehicle()
             # make sure we have finished logging
             self.delay_sim_time(15)
