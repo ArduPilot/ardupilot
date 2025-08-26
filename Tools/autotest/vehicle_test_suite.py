@@ -3708,13 +3708,13 @@ class TestSuite(abc.ABC):
         if ex is not None:
             raise ex
 
-    def download_full_log_list(self, print_logs=True):
+    def download_full_log_list(self, print_logs=True, LOG_ENTRY_sanity_check=True):
         tstart = self.get_sim_time()
         self.mav.mav.log_request_list_send(self.sysid_thismav(),
                                            1, # target component
                                            0,
                                            0xffff)
-        logs = {}
+        logs : dict[int : mavutil.MAVLink.MAVLink_log_entry_message] = {}
         last_id = None
         num_logs = None
         while True:
@@ -3750,7 +3750,8 @@ class TestSuite(abc.ABC):
                 break
 
         # ensure we don't get any extras:
-        self.assert_not_receiving_message('LOG_ENTRY', timeout=2)
+        if LOG_ENTRY_sanity_check:
+            self.assert_not_receiving_message('LOG_ENTRY', timeout=2)
 
         return logs
 
@@ -10497,6 +10498,19 @@ Also, ignores heartbeats not from our target system'''
 
         if herrors > header_errors:
             raise NotAchievedException("Error parsing log file %s, %d header errors" % (logname, herrors))
+
+    def assert_current_log_filesizes(self, sizes):
+        file_list = self.download_full_log_list(LOG_ENTRY_sanity_check=False)
+        self.progress(f"List: {file_list}")
+        for file_id, minmax in sizes.items():
+            (minsize, maxsize) = minmax
+            if file_id not in file_list:
+                raise NotAchievedException(f"{file_id} not in downloaded log info")
+            m = file_list[file_id]
+            if m.size < minsize:
+                raise NotAchievedException(f"{file_id} too small; got={m.size} want>{minsize}")
+            if m.size > maxsize:
+                raise NotAchievedException(f"{file_id} too large; got={m.size} want<{minsize}")
 
     def DataFlashErase(self):
         """Test that erasing the dataflash chip and creating a new log is error free"""
