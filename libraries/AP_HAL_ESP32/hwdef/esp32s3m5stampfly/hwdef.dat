@@ -1,5 +1,5 @@
 
-# SPI Buses; see PlatformIO infrastructure for available values
+# SPI Buses; https://docs.espressif.com/projects/esp-idf/en/v5.3.4/esp32/api-reference/peripherals/spi_master.html
 #            Host      DMA Channel     MOSI        MISO        SCLK
 ESP32_SPIBUS SPI2_HOST SPI_DMA_CH_AUTO GPIO_NUM_14 GPIO_NUM_43 GPIO_NUM_44
 
@@ -7,7 +7,7 @@ ESP32_SPIBUS SPI2_HOST SPI_DMA_CH_AUTO GPIO_NUM_14 GPIO_NUM_43 GPIO_NUM_44
 # a) we have to list it here so its CS gets deasserted and the IMU can talk, but
 # b) we name it something the driver won't find because it's too slow and ties up the bus
 
-# SPI Devices - see PlatformIO infrastructure for available values
+# SPI Devices
 #            Name                Bus   Device  ChipSel      Mode LoSpeed HiSpeed
 ESP32_SPIDEV bmi270              0     0       GPIO_NUM_46  3    10*MHZ  10*MHZ
 ESP32_SPIDEV pixartflow_disabled 0     1       GPIO_NUM_12  3     2*MHZ   2*MHZ
