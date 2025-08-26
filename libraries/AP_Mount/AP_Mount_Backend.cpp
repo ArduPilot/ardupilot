@@ -152,6 +152,8 @@ void AP_Mount_Backend::set_rate_target(float roll_degs, float pitch_degs, float 
     if (option_set(Options::RCTARGETING_LOCK_FROM_PREVMODE)) {
         set_yaw_lock(yaw_is_earth_frame);
     }
+
+    mnt_target.last_rate_request_ms = AP_HAL::millis();
 }
 
 // set_roi_target - sets target location that mount should attempt to point towards
