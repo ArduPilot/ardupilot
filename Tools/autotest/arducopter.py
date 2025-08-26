@@ -14896,7 +14896,7 @@ return update, 1000
             self.GPSBlendingLog,
             self.GPSBlendingAffinity,
             self.DataFlash,
-            Test(self.DataFlashErase, attempts=8),
+            self.DataFlashErase,
             self.Callisto,
             self.PerfInfo,
             self.ModeAllowsEntryWhenNoPilotInput,

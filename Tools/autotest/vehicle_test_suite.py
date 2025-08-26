@@ -10670,7 +10670,10 @@ Also, ignores heartbeats not from our target system'''
         ex = None
         self.context_push()
         try:
-            self.set_parameter("LOG_BACKEND_TYPE", 4)
+            self.set_parameters({
+                "LOG_BACKEND_TYPE": 4,
+                "SIM_SPEEDUP": 20,
+            })
             self.reboot_sitl()
             mavproxy.send("module load log\n")
             mavproxy.send("log erase\n")
@@ -10682,27 +10685,47 @@ Also, ignores heartbeats not from our target system'''
             mavproxy.expect("Finished downloading", timeout=120)
             # read the downloaded log - it must parse without error
             self.validate_log_file("logs/dataflash-log-erase.BIN")
+            self.assert_current_log_filesizes({
+                1: (10*1024, 50*1024),  # got=30246
+            })
 
             self.start_subtest("Test file wrapping results in a valid file")
-            # roughly 4mb
             self.set_parameter("LOG_FILE_DSRMROT", 1)
             self.set_parameter("LOG_BITMASK", 131071)
             self.wait_ready_to_arm()
-            if self.is_copter() or self.is_plane():
-                self.set_autodisarm_delay(0)
+            if not self.is_copter() or self.is_plane():
+                raise ValueError("No valid except on Plane or Copter")
+
+            self.progress("Appending to create ~270kB log")
+            self.set_autodisarm_delay(30)
             self.arm_vehicle()
-            self.delay_sim_time(30)
-            self.disarm_vehicle()
-            # roughly 4mb
+            self.wait_disarmed()
+            self.assert_current_log_filesizes({
+                1: (300*1024, 320*1024),  # got=314496
+            })
+            self.progress("Creating a second 200kB log")
+            self.set_autodisarm_delay(30)
             self.arm_vehicle()
-            self.delay_sim_time(30)
-            self.disarm_vehicle()
-            # roughly 9mb, should wrap around
+            self.wait_disarmed()
+            self.assert_current_log_filesizes({
+                1: (300*1024, 320*1024),  # got=314496
+                2: (215*1024, 255*1024),  # got=235496
+            })
+
+            self.progress("Creating a third 500kB log")
+            self.set_autodisarm_delay(50)
             self.arm_vehicle()
-            self.delay_sim_time(50)
-            self.disarm_vehicle()
+            self.wait_disarmed()
+
             # make sure we have finished logging
             self.delay_sim_time(15)
+
+            self.assert_current_log_filesizes({
+                1: (300*1024, 320*1024),  # got=314496
+                2: (215*1024, 255*1024),  # got=235496
+                3: (480*1024, 520*1024),  # got=500746
+            })
+
             mavproxy.send("log list\n")
             try:
                 mavproxy.expect("Log ([0-9]+)  numLogs ([0-9]+) lastLog ([0-9]+) size ([0-9]+)", timeout=120)
