@@ -212,8 +212,9 @@ private:
 #if AP_DDS_STATUS_PUB_ENABLED
     ardupilot_msgs_msg_Status status_topic;
     bool update_topic(ardupilot_msgs_msg_Status& msg);
-    // The last ms timestamp AP_DDS wrote/checked a status message
+    // The last ms timestamps AP_DDS wrote/checked/published a status message
     uint64_t last_status_check_time_ms;
+    uint64_t last_status_publish_time_ms;
     // last status values;
     ardupilot_msgs_msg_Status last_status_msg_;
     //! @brief Serialize the current status and publish to the IO stream(s)
