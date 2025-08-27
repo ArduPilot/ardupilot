@@ -32,14 +32,16 @@ extern const AP_HAL::HAL& hal;
 #define AC_FENCE_ALT_MAX_BACKUP_DISTANCE            20.0f   // after fence is broken we recreate the fence 20m further up
 #define AC_FENCE_ALT_MIN_BACKUP_DISTANCE            20.0f   // after fence is broken we recreate the fence 20m further down
 #define AC_FENCE_MARGIN_DEFAULT                     2.0f    // default distance in meters that autopilot's should maintain from the fence to avoid a breach
-#define AC_FENCE_MANUAL_RECOVERY_TIME_MIN           10000   // pilot has 10seconds to recover during which time the autopilot will not attempt to re-take control
+#define AC_FENCE_MANUAL_RECOVERY_TIME_MIN           10000   // pilot has 10 seconds to recover during which time the autopilot will not attempt to re-take control
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 #define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE     100.0   // after fence is broken we recreate the fence 100m further out
 #define AC_FENCE_OPTIONS_DEFAULT                   OPTIONS::DISABLE_MODE_CHANGE
+#define AC_FENCE_MANUAL_RECOVERY_FENCES             AC_FENCE_ALL_FENCES
 #else
 #define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE      20.0   // after fence is broken we recreate the fence 20m further out
 #define AC_FENCE_OPTIONS_DEFAULT                   0
+#define AC_FENCE_MANUAL_RECOVERY_FENCES             AC_FENCE_ARMING_FENCES
 #endif
 
 #define AC_FENCE_NOTIFY_DEFAULT                     1.0f    // default to notifications at 1Hz
@@ -1006,7 +1008,7 @@ float AC_Fence::get_breach_distance(uint8_t fence_type) const
 void AC_Fence::manual_recovery_start()
 {
     // return immediate if we haven't breached a fence
-    if (!_breached_fences) {
+    if (!(_breached_fences & AC_FENCE_MANUAL_RECOVERY_FENCES)) {
         return;
     }
 
