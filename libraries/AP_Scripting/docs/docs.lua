@@ -2260,7 +2260,7 @@ function mission:cmd_has_location(cmd)end
 ---@return boolean
 function mission:jump_to_tag(tag) end
 
--- desc
+-- Find the first JUMP_TAG with this tag and return its index, or 0 if none found
 ---@param tag integer
 ---@return integer
 function mission:get_index_of_jump_tag(tag) end
@@ -2274,7 +2274,6 @@ function mission:get_index_of_jump_tag(tag) end
 ---@return integer|nil
 function mission:get_last_jump_tag() end
 
-
 -- Jump the mission to the start of the closest landing sequence. Returns true if one was found
 ---@return boolean
 function mission:jump_to_landing_sequence() end
@@ -2282,6 +2281,31 @@ function mission:jump_to_landing_sequence() end
 -- Jump to the landing abort sequence
 ---@return boolean
 function mission:jump_to_abort_landing_sequence() end
+
+-- Resets current commands to point to the beginning of the mission
+function mission:start() end
+
+-- Stops mission execution.
+function mission:stop() end
+
+-- Continues the mission execution from where we last left off.  Previous running
+-- commands will be re-initialised
+function mission:resume() end
+
+-- If mission can autorestart, calls resume(), otherwise calls start()
+function mission:start_or_resume() end
+
+-- Checks wehether mission starts with a takeoff command
+---@return boolean
+function mission:starts_with_takeoff_cmd() end
+
+-- Reset the mission to the first command
+function mission:reset() end
+
+-- Truncate any mission items beyond given index
+---@param param1 integer
+function mission:truncate(param1) end
+
 
 -- Parameter access
 param = {}

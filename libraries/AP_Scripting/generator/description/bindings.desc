@@ -542,7 +542,13 @@ singleton AP_Mission method get_index_of_jump_tag uint16_t uint16_t 0 UINT16_MAX
 singleton AP_Mission method get_last_jump_tag boolean uint16_t'Null uint16_t'Null
 singleton AP_Mission method jump_to_landing_sequence boolean
 singleton AP_Mission method jump_to_abort_landing_sequence boolean
-
+singleton AP_Mission method start void
+singleton AP_Mission method start_or_resume void
+singleton AP_Mission method starts_with_takeoff_cmd boolean
+singleton AP_Mission method stop void
+singleton AP_Mission method reset void
+singleton AP_Mission method resume void
+singleton AP_Mission method truncate void uint16_t 0 (ud->num_commands()-1)
 
 userdata mavlink_mission_item_int_t depends AP_MISSION_ENABLED
 userdata mavlink_mission_item_int_t field param1 float'skip_check read write
