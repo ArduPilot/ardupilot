@@ -43,6 +43,8 @@ public:
     AP_Float &kFF(void) { return rate_pid.ff(); }
     AP_Float &tau(void) { return gains.tau; }
 
+    float get_desired_rate() { return des_rate; }
+
 protected:
     const AP_FixedWing &aparm;
     AP_AutoTune::ATGains gains;
@@ -52,6 +54,7 @@ protected:
     AC_PID rate_pid;
     float angle_err_deg;
     float ff_scale = 1.0;
+    float des_rate;
 
     AP_PIDInfo _pid_info;
 

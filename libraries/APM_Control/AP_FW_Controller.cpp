@@ -41,7 +41,7 @@ float AP_FW_Controller::_get_rate_out(float desired_rate, float scaler, bool dis
     bool limit_I = fabsf(_last_out) >= 45;
     const float rate = get_measured_rate();
     const float old_I = rate_pid.get_i();
-
+    des_rate = desired_rate;
     const bool underspeed = is_underspeed(aspeed);
     if (underspeed) {
         limit_I = true;
