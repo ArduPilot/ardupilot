@@ -735,27 +735,8 @@ bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Status& msg)
     }
     msg.failsafe_size = fs_iter;
 
-    // Compare with the previous one.
-    bool is_message_changed {false};
-    is_message_changed |= (last_status_msg_.flying != msg.flying);
-    is_message_changed |= (last_status_msg_.armed != msg.armed);
-    is_message_changed |= (last_status_msg_.mode != msg.mode);
-    is_message_changed |= (last_status_msg_.vehicle_type != msg.vehicle_type);
-    is_message_changed |= (last_status_msg_.failsafe_size != msg.failsafe_size);
-    is_message_changed |= (last_status_msg_.external_control != msg.external_control);
-
-    if ( is_message_changed ) {
-        last_status_msg_.flying = msg.flying;
-        last_status_msg_.armed  = msg.armed;
-        last_status_msg_.mode  = msg.mode;
-        last_status_msg_.vehicle_type = msg.vehicle_type;
-        last_status_msg_.failsafe_size = msg.failsafe_size;
-        last_status_msg_.external_control = msg.external_control;
-        update_topic(msg.header.stamp);
-        return true;
-    } else {
-        return false;
-    }
+    update_topic(msg.header.stamp);
+    return true;
 }
 #endif // AP_DDS_STATUS_PUB_ENABLED
 /*
