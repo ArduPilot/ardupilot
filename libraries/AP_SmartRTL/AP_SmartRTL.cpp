@@ -107,7 +107,7 @@ void AP_SmartRTL::init()
     }
 
     // allocate arrays
-    _path = (Vector3f*)calloc(_points_max, sizeof(Vector3f));
+    _path = (Vector3p*)calloc(_points_max, sizeof(Vector3p));
 
     _prune.loops_max = _points_max * SMARTRTL_PRUNING_LOOP_BUFFER_LEN_MULT;
     _prune.loops = (prune_loop_t*)calloc(_prune.loops_max, sizeof(prune_loop_t));
@@ -141,7 +141,7 @@ uint16_t AP_SmartRTL::get_num_points() const
 }
 
 // get next point on the path to home, returns true on success
-bool AP_SmartRTL::pop_point(Vector3f& point)
+bool AP_SmartRTL::pop_point(Vector3p& point)
 {
     // check we are active
     if (!_active) {
@@ -171,7 +171,7 @@ bool AP_SmartRTL::pop_point(Vector3f& point)
 }
 
 // peek at next point on the path without removing it form the path. Returns true on success
-bool AP_SmartRTL::peek_point(Vector3f& point)
+bool AP_SmartRTL::peek_point(Vector3p& point)
 {
     // check we are active
     if (!_active) {
@@ -200,12 +200,12 @@ bool AP_SmartRTL::peek_point(Vector3f& point)
 // clear return path and set home location.  This should be called as part of the arming procedure
 void AP_SmartRTL::set_home(bool position_ok)
 {
-    Vector3f current_pos;
-    position_ok &= AP::ahrs().get_relative_position_NED_origin_float(current_pos);
+    Vector3p current_pos;
+    position_ok &= AP::ahrs().get_relative_position_NED_origin(current_pos);
     set_home(position_ok, current_pos);
 }
 
-void AP_SmartRTL::set_home(bool position_ok, const Vector3f& current_pos)
+void AP_SmartRTL::set_home(bool position_ok, const Vector3p& current_pos)
 {
     if (_path == nullptr) {
         return;
@@ -249,12 +249,12 @@ void AP_SmartRTL::update(bool position_ok, bool save_position)
         return;
     }
 
-    Vector3f current_pos;
-    position_ok &= AP::ahrs().get_relative_position_NED_origin_float(current_pos);
+    Vector3p current_pos;
+    position_ok &= AP::ahrs().get_relative_position_NED_origin(current_pos);
     update(position_ok, current_pos);
 }
 
-void AP_SmartRTL::update(bool position_ok, const Vector3f& current_pos)
+void AP_SmartRTL::update(bool position_ok, const Vector3p& current_pos)
 {
     if (!_active) {
         return;
@@ -318,7 +318,7 @@ void AP_SmartRTL::cancel_request_for_thorough_cleanup()
 //
 
 // add point to end of path (if necessary), returns true on success
-bool AP_SmartRTL::add_point(const Vector3f& point)
+bool AP_SmartRTL::add_point(const Vector3p& point)
 {
     // get semaphore
     if (!_path_sem.take_nonblocking()) {
@@ -328,7 +328,7 @@ bool AP_SmartRTL::add_point(const Vector3f& point)
 
     // check if we have traveled far enough
     if (_path_points_count > 0) {
-        const Vector3f& last_pos = _path[_path_points_count-1];
+        const Vector3p& last_pos = _path[_path_points_count-1];
         if (last_pos.distance_squared(point) < sq(_accuracy.get())) {
             _path_sem.give();
             return true;
@@ -761,7 +761,7 @@ bool AP_SmartRTL::remove_points_by_loops(uint16_t num_points_to_remove)
 // add loop to loops array
 //  returns true if loop added successfully, false if loop array is full
 //  checks if loop overlaps with an existing loop, keeps only the longer loop
-bool AP_SmartRTL::add_loop(uint16_t start_index, uint16_t end_index, const Vector3f& midpoint)
+bool AP_SmartRTL::add_loop(uint16_t start_index, uint16_t end_index, const Vector3p& midpoint)
 {
     // if the buffer is full, return failure
     if (_prune.loops_count >= _prune.loops_max) {
@@ -824,11 +824,11 @@ bool AP_SmartRTL::add_loop(uint16_t start_index, uint16_t end_index, const Vecto
 *  This does not matter for the path cleanup algorithm because the pruning will still occur fine between the first
 *  parallel segment and a segment which is directly before or after the second segment.
 */
-AP_SmartRTL::dist_point AP_SmartRTL::segment_segment_dist(const Vector3f &p1, const Vector3f &p2, const Vector3f &p3, const Vector3f &p4)
+AP_SmartRTL::dist_point AP_SmartRTL::segment_segment_dist(const Vector3p &p1, const Vector3p &p2, const Vector3p &p3, const Vector3p &p4)
 {
-    const Vector3f line1 = p2-p1;
-    const Vector3f line2 = p4-p3;
-    const Vector3f line_start_diff = p1-p3; // from the beginning of the second line to the beginning of the first line
+    const Vector3f line1 = (p2 - p1).tofloat();
+    const Vector3f line2 = (p4 - p3).tofloat();
+    const Vector3f line_start_diff = (p1 - p3).tofloat(); // from the beginning of the second line to the beginning of the first line
 
     // these don't really have a physical representation. They're only here to break up the longer formulas below.
     const float a = line1*line1;
@@ -844,7 +844,7 @@ AP_SmartRTL::dist_point AP_SmartRTL::segment_segment_dist(const Vector3f &p1, co
     // if lines are almost parallel, return a garbage answer. This is irrelevant, since the loop
     // could always be pruned start/end of the previous/subsequent line segment
     if (is_zero((a*c)-(b*b))) {
-        return {FLT_MAX, Vector3f(0.0f, 0.0f, 0.0f)};
+        return {FLT_MAX, Vector3p(0.0f, 0.0f, 0.0f)};
     }
 
     t1 = (b*e-c*d)/(a*c-b*b);
@@ -855,9 +855,9 @@ AP_SmartRTL::dist_point AP_SmartRTL::segment_segment_dist(const Vector3f &p1, co
     t2 = constrain_float(t2, 0.0f, 1.0f);
 
     // difference between two closest points
-    const Vector3f dP = line_start_diff+line1*t1-line2*t2;
+    const Vector3f dP = line_start_diff + line1 * t1 - line2 * t2;
 
-    const Vector3f midpoint = (p1+line1*t1 + p3+line2*t2)/2.0f;
+    const Vector3p midpoint = (p1 + (line1 * t1).topostype() + p3 + (line2 * t2).topostype()) / 2.0;
     return {dP.length(), midpoint};
 }
 
@@ -871,10 +871,10 @@ void AP_SmartRTL::deactivate(Action action, const char *reason)
 
 #if HAL_LOGGING_ENABLED
 // logging
-void AP_SmartRTL::log_action(Action action, const Vector3f &point) const
+void AP_SmartRTL::log_action(Action action, const Vector3p &point) const
 {
     if (!_example_mode) {
-        AP::logger().Write_SRTL(_active, _path_points_count, _path_points_max, action, point);
+        AP::logger().Write_SRTL(_active, _path_points_count, _path_points_max, action, point.tofloat());
     }
 }
 #endif

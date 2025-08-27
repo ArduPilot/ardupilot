@@ -19,7 +19,7 @@ bool ModeSmartRTL::init(bool ignore_checks)
         Vector3p stopping_point_neu_m;
         pos_control->get_stopping_point_NE_m(stopping_point_neu_m.xy());
         pos_control->get_stopping_point_U_m(stopping_point_neu_m.z);
-        wp_nav->set_wp_destination_NEU_m(stopping_point_neu_m.tofloat());
+        wp_nav->set_wp_destination_NEU_m(stopping_point_neu_m);
 
         // initialise yaw to obey user parameter
         auto_yaw.set_mode_to_default(true);
@@ -97,7 +97,7 @@ void ModeSmartRTL::path_follow_run()
 
         // this pop_point can fail if the IO task currently has the
         // path semaphore.
-        Vector3f dest_NED;
+        Vector3p dest_NED;
         if (g2.smart_rtl.pop_point(dest_NED)) {
             // backup destination in case we exit smart_rtl mode and need to restore it to the path
             dest_NED_backup = dest_NED;
@@ -109,7 +109,7 @@ void ModeSmartRTL::path_follow_run()
                 wp_nav->set_wp_destination_NED_m(dest_NED);
             } else {
                 // peek at the next point.  this can fail if the IO task currently has the path semaphore
-                Vector3f next_dest_NED;
+                Vector3p next_dest_NED;
                 if (g2.smart_rtl.peek_point(next_dest_NED)) {
                     wp_nav->set_wp_destination_NED_m(dest_NED);
                     if (g2.smart_rtl.get_num_points() == 1) {
