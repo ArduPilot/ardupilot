@@ -7,10 +7,9 @@
 /*
  * Init and run calls for acro flight mode
  */
-void ModeAcro::run()
+void ModeAcro::get_desired_rates(float& target_roll_rads, float& target_pitch_rads, float& target_yaw_rads, float& pilot_desired_throttle)
 {
     // convert the input to the desired body frame rate
-    float target_roll_rads, target_pitch_rads, target_yaw_rads;
     get_pilot_desired_rates_rads(target_roll_rads, target_pitch_rads, target_yaw_rads);
 
     if (!motors->armed()) {
@@ -28,7 +27,7 @@ void ModeAcro::run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     }
 
-    float pilot_desired_throttle = get_pilot_desired_throttle();
+    pilot_desired_throttle = get_pilot_desired_throttle();
 
     switch (motors->get_spool_state()) {
     case AP_Motors::SpoolState::SHUT_DOWN:
@@ -57,6 +56,12 @@ void ModeAcro::run()
         // do nothing
         break;
     }
+}
+
+void ModeAcro::run()
+{
+    float target_roll_rads, target_pitch_rads, target_yaw_rads, pilot_desired_throttle;
+    get_desired_rates(target_roll_rads, target_pitch_rads, target_yaw_rads, pilot_desired_throttle);
 
     // run attitude controller
     if (g2.acro_options.get() & uint8_t(AcroOptions::RATE_LOOP_ONLY)) {
@@ -203,3 +208,40 @@ void ModeAcro::get_pilot_desired_rates_rads(float &roll_out_rads, float &pitch_o
     yaw_out_rads = rate_bf_request_rads.z;
 }
 #endif
+
+#if MODE_RATE_ACRO_ENABLED
+/*
+ * Init and run calls for rate acro flight mode
+ */
+void ModeRateAcro::run()
+{
+    float target_roll_rads, target_pitch_rads, target_yaw_rads, pilot_desired_throttle;
+
+    get_desired_rates(target_roll_rads, target_pitch_rads, target_yaw_rads, pilot_desired_throttle);
+    // send rate commands to attitude controller (RATE_LOOP_ONLY bypasses full attitude stabilization)
+    attitude_control->input_rate_bf_roll_pitch_yaw_2_cds(target_roll_rads, target_pitch_rads, target_yaw_rads);
+
+    // output pilot's throttle without angle boost
+    attitude_control->set_throttle_out(pilot_desired_throttle, false, copter.g.throttle_filt);
+}
+
+bool ModeRateAcro::init(bool ignore_checks)
+{
+    disable_air_mode_reset = false;
+    copter.air_mode = AirMode::AIRMODE_ENABLED;
+    attitude_control->convert_angle_P_to_I(true);
+
+    return true;
+}
+
+void ModeRateAcro::exit()
+{
+    if (!disable_air_mode_reset) {
+        copter.air_mode = AirMode::AIRMODE_DISABLED;
+    }
+    attitude_control->convert_angle_P_to_I(false);
+    disable_air_mode_reset = false;
+}
+
+#endif // MODE_RATE_ACRO_ENABLED
+
