@@ -382,10 +382,11 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
     // a header to allow for machine parsers to determine format
     const uint32_t isr_stack_size = uint32_t((const uint8_t *)&__main_stack_end__ - (const uint8_t *)&__main_stack_base__);
 #if HAL_USE_LOAD_MEASURE
-    str.printf("%-13.13s LOAD=%4.1f%% PEAK=%4.1f%%\n", "ThreadsV3", (sysGetCPUAverageLoad() / 100.0f), (sysGetCPUPeakLoad() / 100.0f));
-#else
-    str.printf("ThreadsV2\n");
+    if (AP_BoardConfig::use_idle_stats()) {
+        str.printf("%-13.13s LOAD=%4.1f%% PEAK=%4.1f%%\n", "ThreadsV3", (sysGetCPUAverageLoad() / 100.0f), (sysGetCPUPeakLoad() / 100.0f));
+    } else
 #endif
+    str.printf("ThreadsV2\n");
 #if HAL_ENABLE_THREAD_STATISTICS
     str.printf("ISR           PRI=255 sp=%p STACK=%u/%u LOAD=%4.1f%%\n",
                 &__main_stack_base__,
@@ -437,8 +438,10 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
 #endif
     }
 #if HAL_USE_LOAD_MEASURE
-    sysStopLoadMeasure();
-    sysStartLoadMeasure();
+    if (AP_BoardConfig::use_idle_stats()) {
+        sysStopLoadMeasure();
+        sysStartLoadMeasure();
+    }
 #endif
 }
 #endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
@@ -447,13 +450,14 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
 bool Util::get_system_load(float& avg_load, float& peak_load) const
 {
 #if HAL_USE_LOAD_MEASURE
-    avg_load = sysGetCPUAverageLoad() / 100.0f;
-    peak_load = sysGetCPUPeakLoad() / 100.0f;
+    if (AP_BoardConfig::use_idle_stats()) {
+        avg_load = sysGetCPUAverageLoad() / 100.0f;
+        peak_load = sysGetCPUPeakLoad() / 100.0f;
 
-    return true;
-#else
-    return false;
+        return true;
+    } else
 #endif
+    return false;
 }
 
 

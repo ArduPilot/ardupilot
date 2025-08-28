@@ -233,8 +233,10 @@ static void main_loop()
     daemon_task = chThdGetSelfX();
 
 #if HAL_USE_LOAD_MEASURE
-    sysInitLoadMeasure();
-    sysStartLoadMeasure();
+    if (AP_BoardConfig::use_idle_stats()) {
+        sysInitLoadMeasure();
+        sysStartLoadMeasure();
+    }
 #endif
 
     /*

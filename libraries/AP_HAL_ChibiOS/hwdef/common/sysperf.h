@@ -44,7 +44,6 @@
 #if HAL_USE_LOAD_MEASURE == TRUE
 
 typedef uint16_t  sys_cpu_load_t;   /**< @brief CPU load in percent * 100.  */
-typedef uint64_t  sys_load_accum_t; /**< @brief CPU load accumulator.       */
 
 /**
  * @brief Load measurement control structure
