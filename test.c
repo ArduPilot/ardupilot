@@ -1,1 +1,0 @@
-// ArduPilot Project
