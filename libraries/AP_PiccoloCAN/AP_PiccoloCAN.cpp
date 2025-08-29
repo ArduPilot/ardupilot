@@ -642,7 +642,7 @@ bool AP_PiccoloCAN::handle_cortex_message(AP_HAL::CANFrame &frame)
     AP_Generator_Cortex* gen = AP_Generator_Cortex::get_instance();
 
     if (gen != nullptr) {
-        return gen->handle_message(frame);
+        return gen->handle_message(frame, this);
     }
     #endif // AP_GENERATOR_CORTEX_ENABLED
 

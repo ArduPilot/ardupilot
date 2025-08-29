@@ -43,9 +43,14 @@ void AP_Generator_Cortex::init()
 
 
 // Decode received CAN frame    
-bool AP_Generator_Cortex::handle_message(AP_HAL::CANFrame &frame)
+bool AP_Generator_Cortex::handle_message(AP_HAL::CANFrame &frame, AP_PiccoloCAN* can_iface)
 {
     bool result = true;
+
+    // Store a pointer to the CAN interface
+    if (_can_iface == nullptr) {
+        _can_iface = can_iface;
+    }
 
     if (decodeCortex_TelemetryStatusPacketStructure(&frame, &telemetry.status)) {
     } else if (decodeCortex_TelemetryGeneratorPacketStructure(&frame, &telemetry.generator)) {
@@ -87,6 +92,8 @@ void AP_Generator_Cortex::update()
     }
 
     update_frontend();
+
+    // TODO: Voltage rail status?
 
     // TODO: Data logging?
 }
@@ -194,8 +201,25 @@ bool AP_Generator_Cortex::healthy() const
 
 bool AP_Generator_Cortex::stop(void)
 {
-    // Generator cannot be remotely killed - have to stop the engine
-    return false;
+    // Send the "standby" command to the Cortex generator
+    // Note: If the engine is not also disabled, the generator may restart automatically
+
+    AP_HAL::CANFrame txFrame {};
+
+    if (_can_iface == nullptr) {
+        return false;
+    }
+
+    if (!is_connected()) {
+        return false;
+    }
+
+    encodeCortex_StandbyPacket(&txFrame);
+
+    // Use broadcast address to ensure the command is received
+    txFrame.id |= 0xFF;
+
+    return _can_iface->write_frame(txFrame, 1000);
 }
 
 
@@ -208,9 +232,22 @@ bool AP_Generator_Cortex::idle(void)
 
 bool AP_Generator_Cortex::run(void)
 {
-    // TODO: Send the "Start" command to the Cortex generator
-    // TODO: Need to work out how to hook into PiccoloCAN from here
-    return false;
+    AP_HAL::CANFrame txFrame {};
+
+    if (_can_iface == nullptr) {
+        return false;
+    }
+
+    if (!is_connected()) {
+        return false;
+    }
+
+    encodeCortex_StartCrankingPacket(&txFrame);
+
+    // Use broadcast address to ensure the command is received
+    txFrame.id |= 0xFF;
+
+    return _can_iface->write_frame(txFrame, 1000);
 }
 
 #endif // AP_GENERATOR_CORTEX_ENABLED

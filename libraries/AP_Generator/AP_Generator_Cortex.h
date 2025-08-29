@@ -22,9 +22,10 @@
 #if AP_GENERATOR_CORTEX_ENABLED
 
 #include "AP_Generator_Backend.h"
-#include <AP_PiccoloCAN/piccolo_protocol/CortexPackets.h>
-#include <AP_Logger/AP_Logger_config.h>
 #include <AP_Common/AP_Common.h>
+#include <AP_Logger/AP_Logger_config.h>
+#include <AP_PiccoloCAN/AP_PiccoloCAN.h>
+#include <AP_PiccoloCAN/piccolo_protocol/CortexPackets.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -72,7 +73,7 @@ public:
     }
 
 private:
-    bool handle_message(AP_HAL::CANFrame &frame);
+    bool handle_message(AP_HAL::CANFrame &frame, AP_PiccoloCAN* can_iface);
 
     static AP_Generator_Cortex* _singleton;
 
@@ -95,6 +96,9 @@ private:
 
     // Last telemetry reading from the generator
     uint32_t last_reading_ms;
+
+    // Pointer to the CAN interface used to communicate with the generator
+    AP_PiccoloCAN* _can_iface = nullptr;
 
     friend class AP_PiccoloCAN;
 };
