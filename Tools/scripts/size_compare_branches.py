@@ -812,7 +812,6 @@ class SizeCompareBranches(object):
 
             result.vehicle[vehicle] = {}
             v = result.vehicle[vehicle]
-            v["bin_filename"] = self.vehicle_map[vehicle] + '.bin'
 
             elf_dirname = "bin"
             if vehicle == 'bootloader':
@@ -826,10 +825,19 @@ class SizeCompareBranches(object):
                     self.progress("Have source trees")
                 except FileNotFoundError:
                     pass
-            v["bin_dir"] = os.path.join(elf_basedir, task.board, "bin")
-            elf_dir = os.path.join(elf_basedir, task.board, elf_dirname)
-            v["elf_dir"] = elf_dir
-            v["elf_filename"] = self.vehicle_map[vehicle]
+            bin_dirname = "bin"
+            bin_filename = self.vehicle_map[vehicle] + '.bin'
+            elf_filename = self.vehicle_map[vehicle]
+            esp32_elf_dirname = "esp-idf_build"
+            if os.path.exists(os.path.join(elf_basedir, task.board, esp32_elf_dirname)):
+                bin_filename = "ardupilot.bin"
+                elf_dirname = esp32_elf_dirname
+                bin_dirname = elf_dirname
+                elf_filename = "ardupilot.elf"
+            v["bin_dir"] = os.path.join(elf_basedir, task.board, bin_dirname)
+            v["bin_filename"] = bin_filename
+            v["elf_dir"] = os.path.join(elf_basedir, task.board, elf_dirname)
+            v["elf_filename"] = elf_filename
 
         return result
 

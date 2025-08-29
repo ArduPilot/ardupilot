@@ -308,7 +308,7 @@ AP_HW_NarinH5                        1188
 AP_HW_CORVON743V1                    1189
 AP_HW_DAKEFPVF405                    1190
 AP_HW_ORBITH743                      1191
-
+AP_HW_TMOTOR-PACER-H743              1192
 AP_HW_DAKEFPVH743                    1193
 AP_HW_DAKEFPVH743PRO                 1194
 AP_HW_SEQUREH743                     1195
