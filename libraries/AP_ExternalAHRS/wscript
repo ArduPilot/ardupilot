@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+
+def configure(cfg):
+
+    cfg.define('AP_MATH_ALLOW_DOUBLE_FUNCTIONS', 1)
+
+    # cfg.env.CFLAGS += [
+    #     '-Wno-error=float-equal',
+    #     '-Wno-error',
+    # ]
+
+    extra_src = [
+        'libraries/AP_ExternalAHRS/sbgECom/common/sbgErrorCodes.c',
+        'libraries/AP_ExternalAHRS/sbgECom/common/crc/sbgCrc.c',
+        'libraries/AP_ExternalAHRS/sbgECom/common/interfaces/sbgInterface.c',
+        'libraries/AP_ExternalAHRS/sbgECom/common/platform/sbgPlatform.cpp',
+        'libraries/AP_ExternalAHRS/sbgECom/src/sbgECom.c',
+        'libraries/AP_ExternalAHRS/sbgECom/src/logs/sbgEComLog.c',
+        'libraries/AP_ExternalAHRS/sbgECom/src/logs/sbgEComLogAirData.c',
+        'libraries/AP_ExternalAHRS/sbgECom/src/logs/sbgEComLogEkf.c',
+        'libraries/AP_ExternalAHRS/sbgECom/src/logs/sbgEComLogGnssPos.c',
+        'libraries/AP_ExternalAHRS/sbgECom/src/logs/sbgEComLogGnssVel.c',
+        'libraries/AP_ExternalAHRS/sbgECom/src/logs/sbgEComLogImu.c',
+        'libraries/AP_ExternalAHRS/sbgECom/src/logs/sbgEComLogMag.c',
+        'libraries/AP_ExternalAHRS/sbgECom/src/protocol/sbgEComProtocol.c',
+    ]
+
+    extra_src_inc = [
+        'libraries/AP_ExternalAHRS/sbgECom/',
+        'libraries/AP_ExternalAHRS/sbgECom/common/',
+        'libraries/AP_ExternalAHRS/sbgECom/src/',
+    ]
+
+    cfg.env.AP_LIB_EXTRA_SOURCES['AP_ExternalAHRS'] = []
+    for pattern in extra_src:
+        s = cfg.srcnode.ant_glob(pattern, dir=False, src=True)
+        for x in s:
+            cfg.env.AP_LIB_EXTRA_SOURCES['AP_ExternalAHRS'].append(str(x))
+
+    for inc in extra_src_inc:
+        cfg.env.INCLUDES += [str(cfg.srcnode.make_node(inc))]
