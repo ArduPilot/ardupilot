@@ -587,7 +587,10 @@ void AP_ExternalAHRS_sbgECom::process_gnss_pos_packet(const SbgEComLogUnion *ref
     instance->gnss_data.longitude = ref_sbg_data->gpsPosData.longitude * 1.0e7;
     instance->gnss_data.msl_altitude = ref_sbg_data->gpsPosData.altitude * 1.0e2;
 
-    AP::gps().handle_external(instance->gnss_data, 0);
+    uint8_t gps_instance;
+    if (AP::gps().get_first_external_instance(gps_instance)) {
+        AP::gps().handle_external(instance->gnss_data, gps_instance);
+    }
 }
 
 void AP_ExternalAHRS_sbgECom::process_ekf_nav_packet(const SbgEComLogUnion *ref_sbg_data, void *user_arg)
