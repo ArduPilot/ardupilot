@@ -25,6 +25,8 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_VIEWPRO_ZOOM_MAX       10      // hard-coded absolute zoom times max
 #define AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT  (65536.0 / 360.0)   // scalar to convert degrees to the viewpro angle scaling
 #define AP_MOUNT_VIEWPRO_OUTPUT_TO_DEG  (360.0 / 65536.0)   // scalar to convert viewpro angle scaling to degrees
+#define AP_MOUNT_VIEWPRO_RATE_REQUEST_TIMEOUT_MS 1000 
+
 
 #define AP_MOUNT_VIEWPRO_DEBUG 0
 #define debug(fmt, args ...) do { if (AP_MOUNT_VIEWPRO_DEBUG) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Viewpro: " fmt, ## args); } } while (0)
@@ -97,6 +99,14 @@ void AP_Mount_Viewpro::update()
         // point to the angles given by a mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
             // mavlink targets are stored while handling the incoming message
+
+            // send zero rate targets if we have not received rate command for a while
+            if (mnt_target.target_type == MountTargetType::RATE &&
+                AP_HAL::millis() - mnt_target.last_rate_request_ms > AP_MOUNT_VIEWPRO_RATE_REQUEST_TIMEOUT_MS) {
+                send_target_rates(0.0f, 0.0f, mnt_target.rate_rads.yaw_is_ef);
+                return; 
+            }
+
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
