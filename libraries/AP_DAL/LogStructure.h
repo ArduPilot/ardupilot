@@ -217,11 +217,15 @@ struct log_RBRH {
 
 // @LoggerMessage: RBRI
 // @Description: Replay Data Barometer Instance
+// @Field: PX: barometer body-frame offset, X-axis
+// @Field: PY: barometer body-frame offset, Y-axis
+// @Field: PZ: barometer body-frame offset, Z-axis
 // @Field: LastUpdate: timestamp of barometer data
 // @Field: Alt: barometer altitude estimate
 // @Field: H: barometer sensor health indication
 // @Field: I: barometer instance number
 struct log_RBRI {
+    Vector3f pos_offset;
     uint32_t last_update_ms;
     float altitude;  // from get_altitude
     bool healthy;
@@ -623,7 +627,7 @@ struct log_RTER {
     { LOG_RBRH_MSG, RLOG_SIZE(RBRH),                                   \
       "RBRH", "BB", "Primary,NumInst", "--", "--" },  \
     { LOG_RBRI_MSG, RLOG_SIZE(RBRI),                                   \
-      "RBRI", "IfBB", "LastUpdate,Alt,H,I", "---#", "----" }, \
+      "RBRI", "fffIfBB", "OX,OY,OZ,LastUpdate,Alt,H,I", "------#", "-------" }, \
     { LOG_RRNH_MSG, RLOG_SIZE(RRNH),                                   \
       "RRNH", "ffB", "GCl,MaxD,NumSensors", "mm-", "00-" },  \
     { LOG_RRNI_MSG, RLOG_SIZE(RRNI),                                   \
