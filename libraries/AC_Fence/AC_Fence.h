@@ -143,6 +143,10 @@ public:
     /// of the given fences.  fence_type is a bitmask here.
     float get_breach_distance(uint8_t fence_type) const;
 
+    /// get_breach_direction_NED - returns direction in meters outside/inside
+    /// of the given fences.  fence_type is a bitmask.
+    Vector3f get_breach_direction_NED(uint8_t fence_type) const;
+
     /// get_action - getter for user requested action on limit breach
     Action get_action() const { return _action; }
 
@@ -269,6 +273,8 @@ private:
     float           _alt_min_breach_distance;   // distance below the altitude min
     float           _circle_breach_distance;    // distance beyond the circular fence
     float           _polygon_breach_distance;   // distance beyond the polygon fence
+    Vector2f        _polygon_nearest_point;  // direction towards the polygon breach
+    Vector2f        _circle_breach_direction;   // direction towards the circle breach
 
     // other internal variables
     float           _home_distance;         // distance from home in meters (provided by main code)
