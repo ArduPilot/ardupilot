@@ -15,7 +15,22 @@ float Plane::calc_speed_scaler(void)
         // ensure we have scaling over the full configured airspeed
         const float airspeed_min = MAX(aparm.airspeed_min, MIN_AIRSPEED_MIN);
         const float scale_min = MIN(0.5, g.scaling_speed / (2.0 * aparm.airspeed_max));
+#if HAL_QUADPLANE_ENABLED
+        float scale_max;
+        if (quadplane.is_flying_vtol()) {
+            // vtol aircraft can generate excessive large aero control surface deflections
+            // during VTOL operation because the low airspeed can create large speed scaler
+            // values at a flight condition where aero control surfaces have little influence.
+            const float stall_airspeed_1g = is_positive(aparm.airspeed_stall)
+                                            ? aparm.airspeed_stall : 0.7f * airspeed_min;
+            scale_max = g.scaling_speed / stall_airspeed_1g;
+        } else {
+            // use the legacy scaling limit for FW flight
+            scale_max = MAX(2.0, g.scaling_speed / (0.7 * airspeed_min));
+        }
+#else
         const float scale_max = MAX(2.0, g.scaling_speed / (0.7 * airspeed_min));
+#endif
         if (aspeed > 0.0001f) {
             speed_scaler = g.scaling_speed / aspeed;
         } else {
