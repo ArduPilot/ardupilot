@@ -4007,6 +4007,15 @@ function fence:get_margin_breaches() end
 ---@return number -- distance
 function fence:get_breach_distance(fence_type) end
 
+-- Returns the direction and distance in meters to the nearest fence in NED frame given by the type bitmask
+---@param fence_type integer
+---| 1 # Maximim altitude
+---| 2 # Circle
+---| 4 # Polygon
+---| 8 # Minimum altitude
+---@return Vector3f_ud -- direction and distance to breach in NED frame
+function fence:get_breach_direction_NED(fence_type) end
+
 -- Rally library
 rally = {}
 -- Returns a specfic rally by index as a Location 
