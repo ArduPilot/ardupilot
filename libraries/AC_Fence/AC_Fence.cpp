@@ -704,8 +704,7 @@ bool AC_Fence::check_fence_polygon()
             return true;
         }
         return false;
-    } else if (option_enabled(OPTIONS::NOTIFY_MARGIN_BREACH)
-               && _polygon_breach_distance < 0 && fabsf(_polygon_breach_distance) < get_horizontal_margin()) {
+    } else if (_polygon_breach_distance < 0 && fabsf(_polygon_breach_distance) < get_horizontal_margin()) {
         record_margin_breach(AC_FENCE_TYPE_POLYGON);
     } else {
         clear_margin_breach(AC_FENCE_TYPE_POLYGON);
