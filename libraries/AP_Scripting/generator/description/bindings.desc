@@ -313,6 +313,7 @@ singleton GCS rename gcs
 singleton GCS method send_text void MAV_SEVERITY'enum MAV_SEVERITY_EMERGENCY MAV_SEVERITY_DEBUG "%s"'literal string
 singleton GCS method set_message_interval MAV_RESULT'enum uint8_t 0 MAVLINK_COMM_NUM_BUFFERS uint32_t'skip_check int32_t -1 INT32_MAX
 singleton GCS method send_named_float void string float'skip_check
+singleton GCS method send_named_string void string string
 singleton GCS method frame_type MAV_TYPE'enum
 singleton GCS method get_hud_throttle int16_t
 singleton GCS method sysid_mygcs_last_seen_time_ms uint32_t
@@ -1045,6 +1046,13 @@ singleton AC_Fence method get_breach_time uint32_t
 singleton AC_Fence method get_margin_breaches uint8_t
 singleton AC_Fence method get_margin_breach_time uint32_t
 singleton AC_Fence method get_breach_distance float uint8_t'skip_check
+
+include AP_Rally/AP_Rally.h depends HAL_RALLY_ENABLED
+
+singleton AP_Rally depends HAL_RALLY_ENABLED
+singleton AP_Rally rename rally
+singleton AP_Rally method get_rally_location_with_index boolean uint8_t'skip_check Location'Null
+singleton AP_Rally method get_rally_location_with_index rename get_rally_location
 
 include AP_Filesystem/AP_Filesystem.h depends AP_FILESYSTEM_FILE_READING_ENABLED
 include AP_Filesystem/AP_Filesystem_config.h

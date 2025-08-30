@@ -5,6 +5,7 @@
 
 #include "AP_Networking_ChibiOS.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 #include <lwip/udp.h>
 #include <lwip/ip_addr.h>
@@ -161,6 +162,30 @@ void AP_Networking_ChibiOS::link_down_cb(void *p)
 #endif
 }
 
+
+#if AP_NETWORKING_CAPTURE_ENABLED
+/*
+  capture all data in a pbuf chain
+ */
+void AP_Networking_ChibiOS::capture_pbuf(struct pbuf *p)
+{
+    auto *front = AP_Networking::singleton;
+    if (!front->option_is_set(AP_Networking::OPTION::CAPTURE_PACKETS)) {
+        return;
+    }
+    auto &driver = *(AP_Networking_ChibiOS*)front->backend;
+    WITH_SEMAPHORE(driver.capture.sem);
+    if (driver.capture.fd == -1) {
+        return;
+    }
+    driver.capture_header(driver.capture.fd, p->tot_len);
+    auto &fs = AP::FS();
+    for (auto *pp = p; pp != nullptr; pp = pp->next) {
+        fs.write(driver.capture.fd, (const uint8_t *)pp->payload, pp->len);
+    }
+}
+#endif
+
 /*
  * This function does the actual transmission of the packet. The packet is
  * contained in the pbuf that is passed to the function. This pbuf
@@ -185,6 +210,10 @@ int8_t AP_Networking_ChibiOS::low_level_output(struct netif *netif, struct pbuf 
     if (macWaitTransmitDescriptor(&ETHD1, &td, TIME_MS2I(LWIP_SEND_TIMEOUT_MS)) != MSG_OK) {
         return ERR_TIMEOUT;
     }
+
+#if AP_NETWORKING_CAPTURE_ENABLED
+    capture_pbuf(p);
+#endif
 
 #if ETH_PAD_SIZE
     pbuf_header(p, -ETH_PAD_SIZE);        /* drop the padding word */
@@ -247,6 +276,11 @@ bool AP_Networking_ChibiOS::low_level_input(struct netif *netif, struct pbuf **p
 #if ETH_PAD_SIZE
         pbuf_header(*pbuf, ETH_PAD_SIZE); /* reclaim the padding word */
 #endif
+
+#if AP_NETWORKING_CAPTURE_ENABLED
+        capture_pbuf(*pbuf);
+#endif
+
     } else {
         macReleaseReceiveDescriptorX(&rd);     // Drop packet
     }
@@ -278,6 +312,47 @@ int8_t AP_Networking_ChibiOS::ethernetif_init(struct netif *netif)
 
     return ERR_OK;
 }
+
+#if AP_NETWORKING_CAPTURE_ENABLED
+// start a pcap network capture
+void AP_Networking_ChibiOS::start_capture(void)
+{
+    if (capture.fd != -1) {
+        // called at 1Hz, flush the file
+        AP::FS().fsync(capture.fd);
+        return;
+    }
+    const struct pcap_hdr {
+        uint32_t magic_number;   // 0xa1b2c3d4
+        uint16_t version_major;  // 2
+        uint16_t version_minor;  // 4
+        int32_t  thiszone;       // GMT to local correction
+        uint32_t sigfigs;        // accuracy of timestamps
+        uint32_t snaplen;        // max length of captured packets, in octets
+        uint32_t network;        // data link type (1 for Ethernet)
+    } hdr = {
+        0xa1b2c3d4, 2, 4, 0, 0, 1500, 1
+    };
+    const char *fname = "eth0.cap";
+    WITH_SEMAPHORE(capture.sem);
+    auto &fs = AP::FS();
+    capture.fd = fs.open(fname, O_WRONLY|O_CREAT|O_TRUNC);
+    if (capture.fd != -1) {
+        fs.write(capture.fd, (const void *)&hdr, sizeof(hdr));
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Capturing to %s", fname);
+    }
+}
+
+// stop a pcap network capture
+void AP_Networking_ChibiOS::stop_capture(void)
+{
+    int fd = capture.fd;
+    if (fd != -1) {
+        capture.fd = -1;
+        AP::FS().close(fd);
+    }
+}
+#endif // AP_NETWORKING_CAPTURE_ENABLED
 
 /*
   networking thread
@@ -327,7 +402,11 @@ void AP_Networking_ChibiOS::thread()
     chEvtAddEvents(PERIODIC_TIMER_ID | FRAME_RECEIVED_ID);
 
     while (true) {
+#if AP_NETWORKING_CAPTURE_ENABLED
+        eventmask_t mask = chEvtWaitAnyTimeout(ALL_EVENTS, chTimeMS2I(1000));
+#else
         eventmask_t mask = chEvtWaitAny(ALL_EVENTS);
+#endif
         if (mask & PERIODIC_TIMER_ID) {
             bool current_link_status = macPollLinkStatus(&ETHD1);
             if (current_link_status != netif_is_link_up(thisif)) {
@@ -362,6 +441,14 @@ void AP_Networking_ChibiOS::thread()
                 }
             }
         }
+
+#if AP_NETWORKING_CAPTURE_ENABLED
+        if (frontend.option_is_set(AP_Networking::OPTION::CAPTURE_PACKETS)) {
+            start_capture();
+        } else {
+            stop_capture();
+        }
+#endif
     }
 }
 

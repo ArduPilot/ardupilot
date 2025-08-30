@@ -73,6 +73,8 @@ void AP_Mount_Alexmos::init()
 // update mount position - should be called periodically
 void AP_Mount_Alexmos::update()
 {
+    AP_Mount_Backend::update();
+
     if (!_initialised) {
         return;
     }

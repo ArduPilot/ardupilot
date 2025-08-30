@@ -1,0 +1,39 @@
+# hw definition file for processing by chibios_pins.py
+# for BOTWING-F405 bootloader
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_BOTWINGF405
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+FLASH_SIZE_KB 1024
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 48
+
+# LEDs
+PC0 LED_BOOTLOADER OUTPUT LOW GPIO(0)
+PC5 LED_ACTIVITY OUTPUT LOW GPIO(1)
+define HAL_LED_ON 0
+
+# order of UARTs
+SERIAL_ORDER OTG1
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+
+# Add CS pins to ensure they are high in bootloader 
+PA15 OSD_CS     CS
+PB12 FLASH_CS   CS
+PA4  GYRO_CS    CS

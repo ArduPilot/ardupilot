@@ -16,10 +16,6 @@
 */
 bool AP_GPS_Blended::_calc_weights(void)
 {
-    // zero the blend weights
-    memset(&_blend_weights, 0, sizeof(_blend_weights));
-
-
     static_assert(GPS_MAX_RECEIVERS == 2, "GPS blending only currently works with 2 receivers");
     // Note that the early quit below relies upon exactly 2 instances
     // The time delta calculations below also rely upon every instance being currently detected and being parsed
@@ -386,6 +382,13 @@ void AP_GPS_Blended::calc_state(void)
         gps.Write_GPS(GPS_BLENDED_INSTANCE);
     }
 #endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // sanity checks
+    if (state.status > AP_GPS::NO_FIX && !state.location.initialised()) {
+        AP_HAL::panic("status is >NO_FIX but location is zero");
+    }
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
 }
 
 bool AP_GPS_Blended::get_lag(float &lag_sec) const

@@ -177,6 +177,24 @@ class SizeCompareBranches(object):
             'TBS-L431-CurrMon',  # uses USE_BOOTLOADER_FROM_BOARD
             'TBS-L431-PWM',  # uses USE_BOOTLOADER_FROM_BOARD
             'ARKV6X-bdshot',  # uses USE_BOOTLOADER_FROM_BOARD
+
+            'MatekL431-ADSB',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-Airspeed',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-APDTelem',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-AUAV',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-BatteryTag',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-BattMon',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-bdshot',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-DShot',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-EFI',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-GPS',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-HWTelem',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-MagHiRes',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-Periph',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-Proximity',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-Rangefinder',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-RC',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-Serial',  # uses USE_BOOTLOADER_FROM_BOARD
         ])
 
         # blacklist all linux boards for bootloader build:
@@ -233,7 +251,7 @@ class SizeCompareBranches(object):
         '''attempt to find where the arm-none-eabi tools are'''
         binary = shutil.which("arm-none-eabi-g++")
         if binary is None:
-            raise Exception("No arm-none-eabi-g++?")
+            return None
         return os.path.dirname(binary)
 
     # vast amounts of stuff copied into here from build_binaries.py
@@ -324,6 +342,7 @@ class SizeCompareBranches(object):
         consistent_build_envs = {
             "CHIBIOS_GIT_VERSION": "12345678",
             "GIT_VERSION": "abcdef",
+            "GIT_VERSION_EXTENDED": "0123456789abcdef",
             "GIT_VERSION_INT": "15",
         }
         for (n, v) in consistent_build_envs.items():
@@ -793,7 +812,6 @@ class SizeCompareBranches(object):
 
             result.vehicle[vehicle] = {}
             v = result.vehicle[vehicle]
-            v["bin_filename"] = self.vehicle_map[vehicle] + '.bin'
 
             elf_dirname = "bin"
             if vehicle == 'bootloader':
@@ -807,10 +825,19 @@ class SizeCompareBranches(object):
                     self.progress("Have source trees")
                 except FileNotFoundError:
                     pass
-            v["bin_dir"] = os.path.join(elf_basedir, task.board, "bin")
-            elf_dir = os.path.join(elf_basedir, task.board, elf_dirname)
-            v["elf_dir"] = elf_dir
-            v["elf_filename"] = self.vehicle_map[vehicle]
+            bin_dirname = "bin"
+            bin_filename = self.vehicle_map[vehicle] + '.bin'
+            elf_filename = self.vehicle_map[vehicle]
+            esp32_elf_dirname = "esp-idf_build"
+            if os.path.exists(os.path.join(elf_basedir, task.board, esp32_elf_dirname)):
+                bin_filename = "ardupilot.bin"
+                elf_dirname = esp32_elf_dirname
+                bin_dirname = elf_dirname
+                elf_filename = "ardupilot.elf"
+            v["bin_dir"] = os.path.join(elf_basedir, task.board, bin_dirname)
+            v["bin_filename"] = bin_filename
+            v["elf_dir"] = os.path.join(elf_basedir, task.board, elf_dirname)
+            v["elf_filename"] = elf_filename
 
         return result
 

@@ -13,13 +13,13 @@ bool ModeSmartRTL::init(bool ignore_checks)
 {
     if (g2.smart_rtl.is_active()) {
         // initialise waypoint and spline controller
-        wp_nav->wp_and_spline_init_cm();
+        wp_nav->wp_and_spline_init_m();
 
         // set current target to a reasonable stopping point
-        Vector3p stopping_point;
-        pos_control->get_stopping_point_NE_cm(stopping_point.xy());
-        pos_control->get_stopping_point_U_cm(stopping_point.z);
-        wp_nav->set_wp_destination_NEU_cm(stopping_point.tofloat());
+        Vector3p stopping_point_neu_m;
+        pos_control->get_stopping_point_NE_m(stopping_point_neu_m.xy());
+        pos_control->get_stopping_point_U_m(stopping_point_neu_m.z);
+        wp_nav->set_wp_destination_NEU_m(stopping_point_neu_m.tofloat());
 
         // initialise yaw to obey user parameter
         auto_yaw.set_mode_to_default(true);
@@ -153,12 +153,12 @@ void ModeSmartRTL::pre_land_position_run()
 {
     // if we are close to 2m above start point, we are ready to land.
     if (wp_nav->reached_wp_destination()) {
-        // choose descend and hold, or land based on user parameter rtl_alt_final
-        if (g.rtl_alt_final <= 0 || copter.failsafe.radio) {
+        // choose descend and hold, or land based on user parameter rtl_alt_final_cm
+        if (g.rtl_alt_final_cm <= 0 || copter.failsafe.radio) {
             land_start();
             smart_rtl_state = SubMode::LAND;
         } else {
-            set_descent_target_alt(copter.g.rtl_alt_final);
+            set_descent_target_alt(copter.g.rtl_alt_final_cm);
             descent_start();
             smart_rtl_state = SubMode::DESCEND;
         }
@@ -198,7 +198,7 @@ bool ModeSmartRTL::get_wp(Location& destination) const
 
 float ModeSmartRTL::wp_distance_m() const
 {
-    return wp_nav->get_wp_distance_to_destination_cm() * 0.01f;
+    return wp_nav->get_wp_distance_to_destination_m();
 }
 
 float ModeSmartRTL::wp_bearing_deg() const

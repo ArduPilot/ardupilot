@@ -24,8 +24,8 @@ struct Guided_Limit {
     float alt_min_cm;   // lower altitude limit in cm above home (0 = no limit)
     float alt_max_cm;   // upper altitude limit in cm above home (0 = no limit)
     float horiz_max_cm; // horizontal position limit in cm from where guided mode was initiated (0 = no limit)
-    uint32_t start_time;// system time in milliseconds that control was handed to the external computer
-    Vector3f start_pos; // start position as a distance from home in cm.  used for checking horiz_max limit
+    uint32_t start_time_ms;// system time in milliseconds that control was handed to the external computer
+    Vector3f start_pos_neu_cm; // start position as a distance from home in cm.  used for checking horiz_max limit
 } guided_limit;
 
 // guided_init - initialise guided controller
@@ -81,7 +81,7 @@ void ModeGuided::guided_pos_control_start()
     sub.guided_mode = Guided_WP;
 
     // initialise waypoint controller
-    sub.wp_nav.wp_and_spline_init_cm();
+    sub.wp_nav.wp_and_spline_init_m();
 
     // initialise wpnav to stopping point at current altitude
     // To-Do: set to current location if disarmed?
@@ -105,7 +105,7 @@ void ModeGuided::guided_vel_control_start()
 
     // initialize vertical maximum speeds and acceleration
     position_control->set_max_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    position_control->set_correction_speed_accel_U_cmss(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->set_correction_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // initialise velocity controller
     position_control->init_U_controller();
@@ -124,7 +124,7 @@ void ModeGuided::guided_posvel_control_start()
 
     // set vertical speed and acceleration
     position_control->set_max_speed_accel_U_cm(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
-    position_control->set_correction_speed_accel_U_cmss(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
+    position_control->set_correction_speed_accel_U_cm(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
 
     // initialise velocity controller
     position_control->init_U_controller();
@@ -143,7 +143,7 @@ void ModeGuided::guided_angle_control_start()
 
     // set vertical speed and acceleration
     position_control->set_max_speed_accel_U_cm(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
-    position_control->set_correction_speed_accel_U_cmss(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
+    position_control->set_correction_speed_accel_U_cm(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
 
     // initialise velocity controller
     position_control->init_U_controller();
@@ -463,7 +463,7 @@ void ModeGuided::guided_pos_control_run()
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control->set_throttle_out(0,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
-        sub.wp_nav.wp_and_spline_init_cm();
+        sub.wp_nav.wp_and_spline_init_m();
         return;
     }
 
@@ -844,10 +844,10 @@ void ModeGuided::guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float a
 void ModeGuided::guided_limit_init_time_and_pos()
 {
     // initialise start time
-    guided_limit.start_time = AP_HAL::millis();
+    guided_limit.start_time_ms = AP_HAL::millis();
 
     // initialise start position from current position
-    guided_limit.start_pos = inertial_nav.get_position_neu_cm();
+    guided_limit.start_pos_neu_cm = inertial_nav.get_position_neu_cm();
 }
 
 // guided_limit_check - returns true if guided mode has breached a limit
@@ -855,27 +855,27 @@ void ModeGuided::guided_limit_init_time_and_pos()
 bool ModeGuided::guided_limit_check()
 {
     // check if we have passed the timeout
-    if ((guided_limit.timeout_ms > 0) && (AP_HAL::millis() - guided_limit.start_time >= guided_limit.timeout_ms)) {
+    if ((guided_limit.timeout_ms > 0) && (AP_HAL::millis() - guided_limit.start_time_ms >= guided_limit.timeout_ms)) {
         return true;
     }
 
     // get current location
-    const Vector3f& curr_pos = inertial_nav.get_position_neu_cm();
+    const Vector3f& curr_pos_neu_cm = inertial_nav.get_position_neu_cm();
 
     // check if we have gone below min alt
-    if (!is_zero(guided_limit.alt_min_cm) && (curr_pos.z < guided_limit.alt_min_cm)) {
+    if (!is_zero(guided_limit.alt_min_cm) && (curr_pos_neu_cm.z < guided_limit.alt_min_cm)) {
         return true;
     }
 
     // check if we have gone above max alt
-    if (!is_zero(guided_limit.alt_max_cm) && (curr_pos.z > guided_limit.alt_max_cm)) {
+    if (!is_zero(guided_limit.alt_max_cm) && (curr_pos_neu_cm.z > guided_limit.alt_max_cm)) {
         return true;
     }
 
     // check if we have gone beyond horizontal limit
     if (guided_limit.horiz_max_cm > 0.0f) {
-        const float horiz_move = get_horizontal_distance(guided_limit.start_pos.xy(), curr_pos.xy());
-        if (horiz_move > guided_limit.horiz_max_cm) {
+        const float horiz_move_cm = get_horizontal_distance(guided_limit.start_pos_neu_cm.xy(), curr_pos_neu_cm.xy());
+        if (horiz_move_cm > guided_limit.horiz_max_cm) {
             return true;
         }
     }

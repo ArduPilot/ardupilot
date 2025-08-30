@@ -191,7 +191,7 @@ void updating_angle_p_up(float &tune_p, float tune_p_max, float tune_p_step_rati
 
     // Formats and sends gain reports
     void report_axis_gains(const char* axis_string, float rate_P, float rate_I,
-                           float rate_D, float angle_P, float max_accel) const;
+                           float rate_D, float angle_P, float max_accel_radss) const;
 
     // Parameters
     AP_Int8  axis_bitmask;      // Axis enable mask

@@ -45,6 +45,9 @@ public:
     // entry point to actually take a picture.  returns true on success
     bool trigger_pic() override;
 
+    // send camera settings message to GCS
+    void send_camera_settings(mavlink_channel_t chan) const override;
+
     // configure camera
     void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, int32_t exposure_type, int32_t cmd_id, float engine_cutoff_time) override;
 

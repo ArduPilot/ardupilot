@@ -107,7 +107,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     // disable motor compensation
     compass.motor_compensation_type(AP_COMPASS_MOT_COMP_DISABLED);
     for (uint8_t i=0; i<compass.get_count(); i++) {
-        compass.set_motor_compensation(i, Vector3f(0,0,0));
+        compass.set_motor_compensation(i, Vector3f{0,0,0});
     }
 
     // get initial compass readings

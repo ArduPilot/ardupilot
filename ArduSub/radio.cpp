@@ -26,12 +26,25 @@ void Sub::init_rc_in()
     channel_lateral->set_default_dead_zone(30);
 
     // initialize rc input to 1500 on control channels (rather than 0)
-    for (int i = 0; i < 6; i++) {
-        RC_Channels::set_override(i, 1500);
-    }
+    uint32_t tnow = AP_HAL::millis();
+    channel_roll->set_override(1500, tnow);
+    channel_pitch->set_override(1500, tnow);
+    channel_yaw->set_override(1500, tnow);
+    channel_throttle->set_override(1500, tnow);
+    channel_forward->set_override(1500, tnow);
+    channel_lateral->set_override(1500, tnow);
 
-    RC_Channels::set_override(6, 1500); // camera pan channel
-    RC_Channels::set_override(7, 1500); // camera tilt channel
+#if HAL_MOUNT_ENABLED
+    // initialize camera mount RC inputs to centered
+    RC_Channel *cam_pan_chan = rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOUNT1_YAW);
+    if (cam_pan_chan != nullptr) {
+        cam_pan_chan->set_override(1500, tnow);
+    }
+    RC_Channel *cam_tilt_chan = rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOUNT1_PITCH);
+    if (cam_tilt_chan != nullptr) {
+        cam_tilt_chan->set_override(1500, tnow);
+    }
+#endif  // HAL_MOUNT_ENABLED
 }
 
 // init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration

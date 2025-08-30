@@ -66,9 +66,6 @@
 
 #define AP_COMPASS_ENABLE_DEFAULT 0
 #define ALLOW_ARM_NO_COMPASS
-#define AP_AIRSPEED_ENABLED 0
-#define AP_AIRSPEED_ANALOG_ENABLED 0
-#define AP_AIRSPEED_BACKEND_DEFAULT_ENABLED 0
 
 // no ADC
 #define HAL_DISABLE_ADC_DRIVER 1
@@ -90,18 +87,8 @@
 // r-up, l-down, l-up, r-down (quad X order)
 #define HAL_ESP32_RCOUT { GPIO_NUM_42, GPIO_NUM_10, GPIO_NUM_5, GPIO_NUM_41 }
 
-// SPI BUS setup, including gpio, dma, etc
-#define HAL_ESP32_SPI_BUSES \
-    {.host=SPI2_HOST, .dma_ch=SPI_DMA_CH_AUTO, .mosi=GPIO_NUM_14, .miso=GPIO_NUM_43, .sclk=GPIO_NUM_44}
-// SPI2 was used in original firmware
-
-// SPI per-device setup, including speeds, etc.
-// the optical flow sensor (pixartflow) is on the same bus as the main IMU so
-// a) we have to list it here so its CS gets deasserted and the IMU can talk, but
-// b) we name it something the driver won't find because it's too slow and ties up the bus
-#define HAL_ESP32_SPI_DEVICES \
-    {.name= "bmi270", .bus=0, .device=0, .cs=GPIO_NUM_46, .mode=3, .lspeed=10*MHZ, .hspeed=10*MHZ}, \
-    {.name="pixartflow_disabled", .bus=0, .device=1, .cs=GPIO_NUM_12, .mode=3, .lspeed=2*MHZ, .hspeed=2*MHZ},
+// SPI BUS setup, including gpio, dma, etc is in the hwdef.dat
+// SPI per-device setup, including speeds, etc. is in the hwdef.dat
 
 //I2C bus list. bus 0 is internal, bus 1 is the red grove connector
 #define HAL_ESP32_I2C_BUSES \
@@ -126,11 +113,6 @@
 #define HAL_LOGGING_DATAFLASH_ENABLED 0
 #define HAL_LOGGING_MAVLINK_ENABLED 1
 #define HAL_LOGGING_BACKENDS_DEFAULT 2
-
-#define HAL_BOARD_LOG_DIRECTORY "/SDCARD/APM/LOGS"
-#define HAL_BOARD_STORAGE_DIRECTORY "/SDCARD/APM/STORAGE"
-#define HAL_BOARD_LOG_DIRECTORY "/SDCARD/APM/LOGS"
-#define HAL_BOARD_TERRAIN_DIRECTORY "/SDCARD/APM/TERRAIN"
 
 #define AP_RCPROTOCOL_ENABLED 0
 

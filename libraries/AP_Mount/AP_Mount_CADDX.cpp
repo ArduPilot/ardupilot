@@ -15,6 +15,8 @@
 // update mount position - should be called periodically
 void AP_Mount_CADDX::update()
 {
+    AP_Mount_Backend::update();
+
     // exit immediately if not initialised
     if (!_initialised) {
         return;

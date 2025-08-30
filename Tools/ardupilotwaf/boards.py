@@ -558,7 +558,10 @@ class Board:
         if cfg.options.consistent_builds:
             # if symbols are renamed we don't want them to affect the output:
             env.CXXFLAGS += ['-fno-rtti']
-            env.CFLAGS += ['-fno-rtti']
+            # avoid different filenames for the same source file
+            # affecting the compiler output:
+            env.CXXFLAGS += ['-frandom-seed=4']  # ob. xkcd
+
             # stop including a unique ID in the headers.  More useful
             # when trying to find binary differences as the build-id
             # appears to be a hash of the output products
@@ -1102,6 +1105,15 @@ class sitl_periph_can_to_serial(sitl_periph):
 class esp32(Board):
     abstract = True
     toolchain = 'xtensa-esp32-elf'
+
+    def configure(self, cfg):
+        super(esp32, self).configure(cfg)
+        if cfg.env.TOOLCHAIN:
+            self.toolchain = cfg.env.TOOLCHAIN
+        else:
+            # default tool-chain for esp32-based boards:
+            self.toolchain = 'xtensa-esp32-elf'
+
     def configure_env(self, cfg, env):
         env.BOARD_CLASS = "ESP32"
 
@@ -1205,6 +1217,19 @@ class esp32(Board):
 class esp32s3(esp32):
     abstract = True
     toolchain = 'xtensa-esp32s3-elf'
+
+    def configure_env(self, cfg, env):
+        if cfg.env.TOOLCHAIN:
+            self.toolchain = cfg.env.TOOLCHAIN
+        else:
+            # default tool-chain for esp32-based boards:
+            self.toolchain = 'xtensa-esp32s3-elf'
+
+        if hasattr(self, 'hwdef'):
+            cfg.env.HWDEF = self.hwdef
+        super(esp32s3, self).configure_env(cfg, env)
+
+        cfg.load('esp32')
 
 class chibios(Board):
     abstract = True

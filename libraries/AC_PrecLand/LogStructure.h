@@ -43,7 +43,7 @@ struct PACKED log_Precland {
 #if AC_PRECLAND_ENABLED
 #define LOG_STRUCTURE_FROM_PRECLAND                                     \
     { LOG_PRECLAND_MSG, sizeof(log_Precland),                           \
-      "PL",    "QBBfffffffIIB",    "TimeUS,Heal,TAcq,pX,pY,vX,vY,mX,mY,mZ,LastMeasMS,EKFOutl,Est", "s--mmnnmmms--","F--BBBBBBBC--" , true },
+      "PL",    "QBBfffffffIIB",    "TimeUS,Heal,TAcq,pX,pY,vX,vY,mX,mY,mZ,LastMeasMS,EKFOutl,Est", "s--mmnnmmms--","F--0000000C--" , true },
 #else
 #define LOG_STRUCTURE_FROM_PRECLAND
 #endif

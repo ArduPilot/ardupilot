@@ -425,6 +425,7 @@ def start_SITL(binary,
                disable_breakpoints=False,
                customisations=[],
                lldb=False,
+               strace=False,
                enable_fgview=False,
                supplementary=False,
                stdout_prefix=None,
@@ -489,6 +490,10 @@ def start_SITL(binary,
                         '-m',
                         '-S', 'ardupilot-gdb',
                         'gdb', '--cd', os.getcwd(), '-x', '/tmp/x.gdb', binary, '--args'])
+    elif strace:
+        cmd.append("strace")
+        strace_options = ['-f', '-o', binary + '.strace', '-s', '8000', '-ttt']
+        cmd.extend(strace_options)
     elif lldb:
         f = open("/tmp/x.lldb", "w")
         for breakingpoint in breakpoints:

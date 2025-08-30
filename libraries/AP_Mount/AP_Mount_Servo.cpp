@@ -16,13 +16,11 @@ void AP_Mount_Servo::init()
         _roll_idx = SRV_Channel::k_mount_roll;
         _tilt_idx = SRV_Channel::k_mount_tilt;
         _pan_idx  = SRV_Channel::k_mount_pan;
-        _open_idx = SRV_Channel::k_mount_open;
     } else {
         // this must be the 2nd mount
         _roll_idx = SRV_Channel::k_mount2_roll;
         _tilt_idx = SRV_Channel::k_mount2_tilt;
         _pan_idx  = SRV_Channel::k_mount2_pan;
-        _open_idx = SRV_Channel::k_mount2_open;
     }
     AP_Mount_Backend::init();
 }
@@ -30,6 +28,8 @@ void AP_Mount_Servo::init()
 // update mount position - should be called periodically
 void AP_Mount_Servo::update()
 {
+    AP_Mount_Backend::update();
+
     // change to RC_TARGETING mode if RC input has changed
     set_rctargeting_on_rcinput_change();
 
@@ -100,10 +100,6 @@ void AP_Mount_Servo::update()
             }
             break;
     }
-
-    // move mount to a "retracted position" into the fuselage with a fourth servo
-    const bool mount_open = (mount_mode == MAV_MOUNT_MODE_RETRACT) ? 0 : 1;
-    move_servo(_open_idx, mount_open, 0, 1);
 
     // write the results to the servos
     move_servo(_roll_idx, degrees(_angle_bf_output_rad.x)*10, _params.roll_angle_min*10, _params.roll_angle_max*10);

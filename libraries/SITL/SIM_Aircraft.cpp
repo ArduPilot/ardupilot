@@ -1063,7 +1063,9 @@ bool Aircraft::Clamp::clamped(Aircraft &aircraft, const struct sitl_input &input
     }
     const uint16_t servo_pos = input.servos[clamp_idx];
     bool new_clamped = currently_clamped;
-    if (servo_pos < 1200) {
+    if (servo_pos == 0) {
+        // invalid value, do nothing
+    } else if (servo_pos < 1200) {
         if (currently_clamped) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SITL: Clamp: released vehicle");
             new_clamped = false;

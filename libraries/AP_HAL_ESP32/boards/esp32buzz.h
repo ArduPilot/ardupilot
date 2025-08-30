@@ -63,10 +63,6 @@
 #define AP_AIRSPEED_ANALOG_ENABLED 0
 #define AP_AIRSPEED_BACKEND_DEFAULT_ENABLED 0
 
-// allow boot without a baro
-#define HAL_BARO_ALLOW_INIT_NO_BARO 1
-
-
 // ADC is available on lots of pints on the esp32, but adc2 can't co-exist with wifi we choose to allow ADC on :
 //#define HAL_DISABLE_ADC_DRIVER 1
 #define TRUE 1
@@ -168,9 +164,6 @@
 
 #define HAL_ESP32_SDCARD 1
 #define LOGGER_MAVLINK_SUPPORT 1
-#define HAL_BOARD_LOG_DIRECTORY "/SDCARD/APM/LOGS"
-#define HAL_BOARD_TERRAIN_DIRECTORY "/SDCARD/APM/TERRAIN"
-#define HAL_BOARD_STORAGE_DIRECTORY "/SDCARD/APM/STORAGE"
 
 // this becomes the default value for the ardupilot param LOG_BACKEND_TYPE, which most ppl want to be 1, for log-to-flash
 // setting to 2 means log-over-mavlink to a companion computer etc.

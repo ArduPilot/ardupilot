@@ -39,6 +39,8 @@ const AP_Mount_Siyi::HWInfo AP_Mount_Siyi::hardware_lookup_table[] {
 // update mount position - should be called periodically
 void AP_Mount_Siyi::update()
 {
+    AP_Mount_Backend::update();
+
     // exit immediately if not initialised
     if (!_initialised) {
         return;

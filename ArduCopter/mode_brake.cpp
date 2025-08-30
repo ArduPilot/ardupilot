@@ -10,15 +10,15 @@
 bool ModeBrake::init(bool ignore_checks)
 {
     // initialise pos controller speed and acceleration
-    pos_control->set_max_speed_accel_NE_cm(pos_control->get_vel_estimate_NEU_cms().length(), BRAKE_MODE_DECEL_RATE);
-    pos_control->set_correction_speed_accel_NE_cm(pos_control->get_vel_estimate_NEU_cms().length(), BRAKE_MODE_DECEL_RATE);
+    pos_control->set_max_speed_accel_NE_m(pos_control->get_vel_estimate_NEU_ms().length(), BRAKE_MODE_DECEL_RATE_MSS);
+    pos_control->set_correction_speed_accel_NE_m(pos_control->get_vel_estimate_NEU_ms().length(), BRAKE_MODE_DECEL_RATE_MSS);
 
     // initialise position controller
     pos_control->init_NE_controller();
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z, BRAKE_MODE_DECEL_RATE);
-    pos_control->set_correction_speed_accel_U_cmss(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z, BRAKE_MODE_DECEL_RATE);
+    pos_control->set_max_speed_accel_U_m(BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_DECEL_RATE_MSS);
+    pos_control->set_correction_speed_accel_U_m(BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_DECEL_RATE_MSS);
 
     // initialise the vertical position controller
     if (!pos_control->is_active_U()) {
@@ -52,13 +52,13 @@ void ModeBrake::run()
     // use position controller to stop
     Vector2f vel;
     Vector2f accel;
-    pos_control->input_vel_accel_NE_cm(vel, accel);
+    pos_control->input_vel_accel_NE_m(vel, accel);
     pos_control->update_NE_controller();
 
     // call attitude controller
     attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), 0.0f);
 
-    pos_control->set_pos_target_U_from_climb_rate_cm(0.0f);
+    pos_control->set_pos_target_U_from_climb_rate_m(0.0f);
     pos_control->update_U_controller();
 
     // MAV_CMD_SOLO_BTN_PAUSE_CLICK (Solo only) is used to set the timeout.

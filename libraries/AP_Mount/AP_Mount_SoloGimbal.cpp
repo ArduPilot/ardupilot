@@ -29,6 +29,8 @@ void AP_Mount_SoloGimbal::update_fast()
 // update mount position - should be called periodically
 void AP_Mount_SoloGimbal::update()
 {
+    AP_Mount_Backend::update();
+
     // exit immediately if not initialised
     if (!_initialised) {
         return;

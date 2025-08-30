@@ -33,7 +33,6 @@
 #include "AP_AHRS_DCM.h"
 #include "AP_AHRS_SIM.h"
 #include "AP_AHRS_External.h"
-#include <AP_NavEKF/AP_Nav_Common.h>
 
 // forward declare view class
 class AP_AHRS_View;
@@ -324,6 +323,9 @@ public:
 
     // Write velocity data from an external navigation system
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms);
+
+    // Write terrain (derived from SRTM) altitude in meters above sea level
+    void writeTerrainAMSL(float alt_amsl_m);
 
     // get speed limit
     void getControlLimits(float &ekfGndSpdLimit, float &controlScaleXY) const;

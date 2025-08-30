@@ -55,8 +55,8 @@ public:
     // returns time of last time target was seen
     uint32_t last_backend_los_meas_ms() const { return _last_backend_los_meas_ms; }
 
-    // vehicle has to be closer than this many cm's to the target before descending towards target
-    float get_max_xy_error_before_descending_cm() const { return _xy_max_dist_desc * 100.0f; }
+    // vehicle has to be closer than this many m's to the target before descending towards target
+    float get_max_xy_error_before_descending_m() const { return _xy_max_dist_desc; }
 
     // returns orientation of sensor
     Rotation get_orient() const { return _orient; }
@@ -65,22 +65,22 @@ public:
     uint32_t ekf_outlier_count() const { return _outlier_reject_count; }
 
     // give chance to driver to get updates from sensor, should be called at 400hz
-    void update(float rangefinder_alt_cm, bool rangefinder_alt_valid);
+    void update(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
     // returns target position relative to the EKF origin
-    bool get_target_position_cm(Vector2f& ret);
+    bool get_target_position_m(Vector2f& ret);
 
     // returns target relative position as 3D vector
-    void get_target_position_measurement_cm(Vector3f& ret);
+    void get_target_position_measurement_m(Vector3f& ret);
 
     // returns target position relative to vehicle
-    bool get_target_position_relative_cm(Vector2f& ret);
+    bool get_target_position_relative_m(Vector2f& ret);
 
     // returns target velocity relative to vehicle
-    bool get_target_velocity_relative_cms(Vector2f& ret);
+    bool get_target_velocity_relative_ms(Vector2f& ret);
 
     // get the absolute velocity of the vehicle
-    void get_target_velocity_cms(const Vector2f& vehicle_velocity_cms, Vector2f& target_vel_cms);
+    void get_target_velocity_ms(const Vector2f& vehicle_velocity_ms, Vector2f& target_vel_ms);
 
     // returns true when the landing target has been detected
     bool target_acquired();
