@@ -20,9 +20,12 @@ class ESP32HWDef(hwdef.HWDef):
 
     def __init__(self, quiet=False, outdir=None, hwdef=[]):
         super(ESP32HWDef, self).__init__(quiet=quiet, outdir=outdir, hwdef=hwdef)
-        # lists of ESP32_SPIDEV buses and devices
+        # lists of ESP32_SPIBUS buses and ESP32_SPIDEV devices
         self.esp32_spibus = []
         self.esp32_spidev = []
+
+        # lists of ESP32_I2CBUS buses
+        self.esp32_i2cbus = []
 
     def write_hwdef_header_content(self, f):
         for d in self.alllines:
@@ -30,6 +33,7 @@ class ESP32HWDef(hwdef.HWDef):
                 f.write('#define %s\n' % d[7:])
 
         self.write_SPI_config(f)
+        self.write_I2C_config(f)
         self.write_IMU_config(f)
         self.write_MAG_config(f)
         self.write_BARO_config(f)
@@ -43,6 +47,9 @@ class ESP32HWDef(hwdef.HWDef):
         self.alllines.append(line)
 
         a = shlex.split(line, posix=False)
+        if a[0] == 'ESP32_I2CBUS':
+            self.process_line_esp32_i2cbus(line, depth, a)
+
         if a[0] == 'ESP32_SPIBUS':
             self.process_line_esp32_spibus(line, depth, a)
         if a[0] == 'ESP32_SPIDEV':
@@ -50,7 +57,22 @@ class ESP32HWDef(hwdef.HWDef):
 
         super(ESP32HWDef, self).process_line(line, depth)
 
-    # SPI_BUS support:
+    # ESP32_I2CBUS support:
+    def process_line_esp32_i2cbus(self, line, depth, a):
+        self.esp32_i2cbus.append(a[1:])
+
+    def write_I2C_bus_table(self, f):
+        '''write I2C bus table'''
+        buslist = []
+        for bus in self.esp32_i2cbus:
+            if len(bus) != 5:
+                self.error(f"Badly formed ESP32_I2CBUS line {bus} {len(bus)=}")
+            (port, sda, scl, speed, internal) = bus
+            buslist.append(f"{{ .port={port}, .sda={sda}, .scl={scl}, .speed={speed}, .internal={internal} }}")
+
+        self.write_device_table(f, "i2c buses", "HAL_ESP32_I2C_BUSES", buslist)
+
+    # ESP32_SPI_BUS support:
     def process_line_esp32_spibus(self, line, depth, a):
         self.esp32_spibus.append(a[1:])
 
@@ -96,6 +118,11 @@ class ESP32HWDef(hwdef.HWDef):
             devlist.append(f"{{.name= \"{name}\", .bus={bus}, .device={device}, .cs={cs}, .mode={mode}, .lspeed={lowspeed}, .hspeed={highspeed}}}")  # noqa:E501
 
         self.write_device_table(f, 'SPI devices', 'HAL_ESP32_SPI_DEVICES', devlist)
+
+    def write_I2C_config(self, f):
+        '''write I2C config defines'''
+
+        self.write_I2C_bus_table(f)
 
     def write_SPI_config(self, f):
         '''write SPI config defines'''

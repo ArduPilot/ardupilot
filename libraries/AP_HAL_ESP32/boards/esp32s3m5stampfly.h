@@ -33,10 +33,6 @@
 // 3               : +V (+5V if plugged into USB, else +Vbat)
 // 4 (toward front): GND
 
-// make sensor selection clearer
-#define PROBE_BARO_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_Baro_ ## driver::probe(*this,std::move(GET_I2C_DEVICE(bus, addr)),##args))
-#define PROBE_BARO_SPI(driver, devname, args ...) ADD_BACKEND(AP_Baro_ ## driver::probe(*this,std::move(hal.spi->get_device(devname)),##args))
-
 #define PROBE_MAG_I2C(driver, bus, addr, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe(GET_I2C_DEVICE(bus, addr),##args))
 #define PROBE_MAG_SPI(driver, devname, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe(hal.spi->get_device(devname),##args))
 #define PROBE_MAG_IMU(driver, imudev, imu_instance, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe_ ## imudev(imu_instance,##args))
@@ -54,8 +50,6 @@
 #define RTC_WDT_STG_SEL_RESET_RTC       4
 
 #define HAL_ESP32_BOARD_NAME "esp32s3m5stampfly"
-
-#define HAL_BARO_PROBE_LIST         PROBE_BARO_I2C(BMP280, 0, 0x76)
 
 #define AP_COMPASS_ENABLE_DEFAULT 0
 #define ALLOW_ARM_NO_COMPASS
@@ -82,11 +76,6 @@
 
 // SPI BUS setup, including gpio, dma, etc is in the hwdef.dat
 // SPI per-device setup, including speeds, etc. is in the hwdef.dat
-
-//I2C bus list. bus 0 is internal, bus 1 is the red grove connector
-#define HAL_ESP32_I2C_BUSES \
-  {.port=I2C_NUM_0, .sda=GPIO_NUM_3, .scl=GPIO_NUM_4, .speed=400*KHZ, .internal=true}, \
-  {.port=I2C_NUM_1, .sda=GPIO_NUM_13, .scl=GPIO_NUM_15, .speed=400*KHZ, .internal=false}
 
 // rcin on what pin? enable AP_RCPROTOCOL_ENABLED below if using
 // currently on another unmapped pin
