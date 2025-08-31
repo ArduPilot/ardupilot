@@ -25,6 +25,13 @@ define INS_MAX_INSTANCES 3
 # one Baro:
 BARO BMP280 I2C:0:0x76
 
+# HARDWARE UARTS. UART 0 apparently goes over USB? so we assign it to pins we
+# don't have mapped to anything. might be fixable in the HAL...
+# UART 1 (SERIAL3) is the black grove connector
+#             PORT        RXPIN        TXPIN
+ESP32_SERIAL  UART_NUM_0  GPIO_NUM_18  GPIO_NUM_17
+ESP32_SERIAL  UART_NUM_1  GPIO_NUM_1   GPIO_NUM_2
+
 # the stampfly does not have an Airspeed sensor:
 define AP_AIRSPEED_ENABLED 0
 

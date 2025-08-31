@@ -83,13 +83,6 @@
 #define HAL_ESP32_RMT_RX_PIN_NUMBER GPIO_NUM_16
 
 
-// HARDWARE UARTS. UART 0 apparently goes over USB? so we assign it to pins we
-// don't have mapped to anything. might be fixable in the HAL...
-// UART 1 (SERIAL3) is the black grove connector
-#define HAL_ESP32_UART_DEVICES \
-  {.port=UART_NUM_0, .rx=GPIO_NUM_18, .tx=GPIO_NUM_17 }, \
-  {.port=UART_NUM_1, .rx=GPIO_NUM_1, .tx=GPIO_NUM_2 }
-
 // log over MAVLink by default
 #define HAL_LOGGING_FILESYSTEM_ENABLED 0
 #define HAL_LOGGING_DATAFLASH_ENABLED 0
