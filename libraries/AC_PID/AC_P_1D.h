@@ -19,7 +19,7 @@ public:
     // Computes the P controller output given a target and measurement.
     // Applies position error clamping based on configured limits.
     // Optionally constrains output slope using the sqrt_controller.
-    float update_all(float &target, float measurement) WARN_IF_UNUSED;
+    float update_all(postype_t &target, postype_t measurement) WARN_IF_UNUSED;
 
     // Sets limits on output, output slope (D1), and output acceleration (D2).
     // For position controllers: output = velocity, D1 = acceleration, D2 = jerk.
