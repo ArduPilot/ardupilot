@@ -30,6 +30,9 @@ class ESP32HWDef(hwdef.HWDef):
         # list of ESP32_SERIAL devices
         self.esp32_serials = []
 
+        # list of ESP32_RCOUT declarations
+        self.esp32_rcout = []
+
     def write_hwdef_header_content(self, f):
         for d in self.alllines:
             if d.startswith('define '):
@@ -41,6 +44,7 @@ class ESP32HWDef(hwdef.HWDef):
         self.write_MAG_config(f)
         self.write_BARO_config(f)
         self.write_SERIAL_config(f)
+        self.write_RCOUT_config(f)
 
         self.write_env_py(os.path.join(self.outdir, "env.py"))
 
@@ -61,6 +65,9 @@ class ESP32HWDef(hwdef.HWDef):
 
         if a[0] == 'ESP32_SERIAL':
             self.process_line_esp32_serial(line, depth, a)
+
+        if a[0] == 'ESP32_RCOUT':
+            self.process_line_esp32_rcout(line, depth, a)
 
         super(ESP32HWDef, self).process_line(line, depth)
 
@@ -104,6 +111,10 @@ class ESP32HWDef(hwdef.HWDef):
 
     def process_line_esp32_serial(self, line, depth, a):
         self.esp32_serials.append(a[1:])
+
+    # ESP32_RCOUT support:
+    def process_line_esp32_rcout(self, line, depth, a):
+        self.esp32_rcout.append(a[1:])
 
     def write_SPI_device_table(self, f):
         '''write SPI device table'''
@@ -154,6 +165,20 @@ class ESP32HWDef(hwdef.HWDef):
             seriallist.append(f"{{ .port={port}, .rx={rxpin}, .tx={txpin} }}")
 
         self.write_device_table(f, 'serial devices', 'HAL_ESP32_UART_DEVICES', seriallist)
+
+    def write_RCOUT_config(self, f):
+        '''write rc output defines'''
+        rcout_list = []
+        for rcout in self.esp32_rcout:
+            if len(rcout) != 1:
+                self.error(f"Badly formed ESP32_RCOUT line {rcout} {len(rcout)=}")
+            (gpio_num, ) = rcout
+            rcout_list.append(gpio_num)
+
+        if len(rcout_list) == 0:
+            f.write("// No rc outputs\n")
+            return
+        f.write(f"#define HAL_ESP32_RCOUT {{ {', '.join(rcout_list)} }}")
 
 
 if __name__ == '__main__':
