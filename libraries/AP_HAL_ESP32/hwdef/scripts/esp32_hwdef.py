@@ -27,6 +27,9 @@ class ESP32HWDef(hwdef.HWDef):
         # lists of ESP32_I2CBUS buses
         self.esp32_i2cbus = []
 
+        # list of ESP32_SERIAL devices
+        self.esp32_serials = []
+
     def write_hwdef_header_content(self, f):
         for d in self.alllines:
             if d.startswith('define '):
@@ -37,6 +40,7 @@ class ESP32HWDef(hwdef.HWDef):
         self.write_IMU_config(f)
         self.write_MAG_config(f)
         self.write_BARO_config(f)
+        self.write_SERIAL_config(f)
 
         self.write_env_py(os.path.join(self.outdir, "env.py"))
 
@@ -54,6 +58,9 @@ class ESP32HWDef(hwdef.HWDef):
             self.process_line_esp32_spibus(line, depth, a)
         if a[0] == 'ESP32_SPIDEV':
             self.process_line_esp32_spidev(line, depth, a)
+
+        if a[0] == 'ESP32_SERIAL':
+            self.process_line_esp32_serial(line, depth, a)
 
         super(ESP32HWDef, self).process_line(line, depth)
 
@@ -95,6 +102,9 @@ class ESP32HWDef(hwdef.HWDef):
     def process_line_esp32_spidev(self, line, depth, a):
         self.esp32_spidev.append(a[1:])
 
+    def process_line_esp32_serial(self, line, depth, a):
+        self.esp32_serials.append(a[1:])
+
     def write_SPI_device_table(self, f):
         '''write SPI device table'''
         devlist = []
@@ -132,6 +142,18 @@ class ESP32HWDef(hwdef.HWDef):
 
         if len(self.esp32_spidev):
             self.write_SPI_device_table(f)
+
+    def write_SERIAL_config(self, f):
+        '''write serial config defines'''
+
+        seriallist = []
+        for serial in self.esp32_serials:
+            if len(serial) != 3:
+                self.error(f"Badly formed ESP32_SERIALS line {serial} {len(serial)=}")
+            (port, rxpin, txpin) = serial
+            seriallist.append(f"{{ .port={port}, .rx={rxpin}, .tx={txpin} }}")
+
+        self.write_device_table(f, 'serial devices', 'HAL_ESP32_UART_DEVICES', seriallist)
 
 
 if __name__ == '__main__':
