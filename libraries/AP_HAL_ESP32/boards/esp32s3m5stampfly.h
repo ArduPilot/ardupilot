@@ -70,10 +70,6 @@
 #define WIFI_SSID "ardupilot123"
 #define WIFI_PWD "ardupilot123"
 
-//RCOUT which pins are used?
-// r-up, l-down, l-up, r-down (quad X order)
-#define HAL_ESP32_RCOUT { GPIO_NUM_42, GPIO_NUM_10, GPIO_NUM_5, GPIO_NUM_41 }
-
 // SPI BUS setup, including gpio, dma, etc is in the hwdef.dat
 // SPI per-device setup, including speeds, etc. is in the hwdef.dat
 
