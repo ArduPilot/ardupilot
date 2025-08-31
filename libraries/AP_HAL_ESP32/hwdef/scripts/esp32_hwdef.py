@@ -61,31 +61,20 @@ class ESP32HWDef(hwdef.HWDef):
 
     def write_SPI_bus_table(self, f):
         '''write SPI bus table'''
-        if len(self.esp32_spibus) == 0:
-            f.write('\n// No SPI buses\n')
-            return
-
-        f.write('\n// SPI bus table\n')
         buslist = []
         for bus in self.esp32_spibus:
             if len(bus) != 5:
                 self.error(f"Badly formed ESP32_SPIBUS line {bus} {len(bus)=}")
             (host, dma_ch, mosi, miso, sclk) = bus
             buslist.append(f"{{ .host={host}, .dma_ch={dma_ch}, .mosi={mosi}, .miso={miso}, .sclk={sclk} }},")
-        f.write('#define HAL_ESP32_SPI_BUSES \\\n')
-        f.write(',\\\n'.join([f"   {x}" for x in buslist]))
-        f.write("\n")
+
+        self.write_device_table(f, "SPI buses", "HAL_ESP32_SPI_BUSES", buslist)
 
     def process_line_esp32_spidev(self, line, depth, a):
         self.esp32_spidev.append(a[1:])
 
     def write_SPI_device_table(self, f):
         '''write SPI device table'''
-        if len(self.esp32_spidev) == 0:
-            f.write('\n// No SPI devices\n')
-            return
-
-        f.write('\n// SPI device table\n')
         devlist = []
         for dev in self.esp32_spidev:
             if len(dev) != 7:
@@ -105,9 +94,8 @@ class ESP32HWDef(hwdef.HWDef):
                 self.error("Bad highspeed value %s in ESP32_SPIDEV line %s" %
                            (highspeed, dev))
             devlist.append(f"{{.name= \"{name}\", .bus={bus}, .device={device}, .cs={cs}, .mode={mode}, .lspeed={lowspeed}, .hspeed={highspeed}}}")  # noqa:E501
-        f.write('#define HAL_ESP32_SPI_DEVICES \\\n')
-        f.write(',\\\n'.join([f"   {x}" for x in devlist]))
-        f.write("\n")
+
+        self.write_device_table(f, 'SPI devices', 'HAL_ESP32_SPI_DEVICES', devlist)
 
     def write_SPI_config(self, f):
         '''write SPI config defines'''
