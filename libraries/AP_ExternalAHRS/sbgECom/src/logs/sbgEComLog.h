@@ -51,6 +51,7 @@
 #include "sbgEComLogGnssVel.h"
 #include "sbgEComLogImu.h"
 #include "sbgEComLogMag.h"
+#include "sbgEComLogUtc.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,6 +69,7 @@ typedef union _SbgEComLogUnion
     SbgEComLogImuShort              imuShort;           /*!< Stores data for the SBG_ECOM_LOG_IMU_SHORT message. */
     SbgEComLogEkfQuat               ekfQuatData;        /*!< Stores data for the SBG_ECOM_LOG_EKF_QUAT message. */
     SbgEComLogEkfNav                ekfNavData;         /*!< Stores data for the SBG_ECOM_LOG_EKF_NAV message. */
+    SbgEComLogUtc                   utcData;            /*!< Stores data for the SBG_ECOM_LOG_UTC_TIME message. */
     SbgEComLogGnssPos               gpsPosData;         /*!< Stores data for the SBG_ECOM_LOG_GPS_POS message. */
     SbgEComLogGnssVel               gpsVelData;         /*!< Stores data for the SBG_ECOM_LOG_GPS#_VEL message. */
     SbgEComLogMag                   magData;            /*!< Stores data for the SBG_ECOM_LOG_MAG message. */

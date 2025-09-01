@@ -22,6 +22,7 @@ def configure(cfg):
         'libraries/AP_ExternalAHRS/sbgECom/src/logs/sbgEComLogGnssVel.c',
         'libraries/AP_ExternalAHRS/sbgECom/src/logs/sbgEComLogImu.c',
         'libraries/AP_ExternalAHRS/sbgECom/src/logs/sbgEComLogMag.c',
+        'libraries/AP_ExternalAHRS/sbgECom/src/logs/sbgEComLogUtc.c',
         'libraries/AP_ExternalAHRS/sbgECom/src/protocol/sbgEComProtocol.c',
     ]
 

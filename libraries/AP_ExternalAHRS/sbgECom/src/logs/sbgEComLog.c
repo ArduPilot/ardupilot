@@ -13,6 +13,7 @@
 #include "sbgEComLogGnssVel.h"
 #include "sbgEComLogImu.h"
 #include "sbgEComLogMag.h"
+#include "sbgEComLogUtc.h"
 
 //----------------------------------------------------------------------//
 //- Public methods                                                     -//
@@ -50,6 +51,9 @@ SbgErrorCode sbgEComLogParse(SbgEComClass msgClass, SbgEComMsgId msgId, const vo
             break;
         case SBG_ECOM_LOG_EKF_NAV:
             errorCode = sbgEComLogEkfNavReadFromStream(&pLogData->ekfNavData, &inputStream);
+            break;
+        case SBG_ECOM_LOG_UTC_TIME:
+            errorCode = sbgEComLogUtcReadFromStream(&pLogData->utcData, &inputStream);
             break;
         case SBG_ECOM_LOG_GPS1_VEL:
         case SBG_ECOM_LOG_GPS2_VEL:

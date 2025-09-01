@@ -33,6 +33,7 @@
 
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_Common/time.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -365,6 +366,10 @@ SbgErrorCode AP_ExternalAHRS_sbgECom::onLogReceived(SbgEComHandle *handle, SbgEC
             process_ekf_nav_packet(ref_sbg_data, user_arg);
             break;
 
+        case SBG_ECOM_LOG_UTC_TIME:
+            process_utc_time_packet(ref_sbg_data, user_arg);
+            break;
+
         default:
             SBG_LOG_INFO("Received unhandled SBG message (class %u, id %u)", msg_class, msg);
             break;
@@ -522,12 +527,55 @@ SbgErrorCode AP_ExternalAHRS_sbgECom::sendAirDataLog(SbgEComHandle *handle)
     return error_code;
 }
 
+uint16_t AP_ExternalAHRS_sbgECom::makeGpsWeek(const SbgEComLogUtc *utc_data)
+{
+    struct tm tm {};
+
+    tm.tm_year = utc_data->year - 1900;
+    tm.tm_mon  = utc_data->month - 1;
+    tm.tm_mday = utc_data->day;
+
+    tm.tm_hour = utc_data->hour;
+    tm.tm_min = utc_data->minute;
+    tm.tm_sec = utc_data->second;
+
+    // convert from time structure to unix time
+    time_t unix_time = ap_mktime(&tm);
+
+    // convert to time since GPS epoch
+    uint32_t gps_time = unix_time - UNIX_OFFSET_MSEC / 1000;
+
+    // get GPS week
+    uint16_t gps_week = gps_time / AP_SEC_PER_WEEK;
+
+    return gps_week;
+}
+
+void AP_ExternalAHRS_sbgECom::process_utc_time_packet(const SbgEComLogUnion *ref_sbg_data, void *user_arg)
+{
+    assert(ref_sbg_data);
+    assert(user_arg);
+
+    AP_ExternalAHRS_sbgECom *instance = static_cast<AP_ExternalAHRS_sbgECom *>(user_arg);
+
+    SbgEComClockState clock_state = sbgEComLogUtcGetClockState(&ref_sbg_data->utcData);
+
+    if (clock_state == SBG_ECOM_CLOCK_STATE_VALID)
+    {
+        instance->gnss_data.gps_week = makeGpsWeek(&ref_sbg_data->utcData);
+    }
+
+    instance->gnss_data.ms_tow = ref_sbg_data->utcData.gpsTimeOfWeek;
+}
+
 void AP_ExternalAHRS_sbgECom::process_gnss_vel_packet(const SbgEComLogUnion *ref_sbg_data, void *user_arg)
 {
     assert(ref_sbg_data);
     assert(user_arg);
 
     AP_ExternalAHRS_sbgECom *instance = static_cast<AP_ExternalAHRS_sbgECom *>(user_arg);
+
+    instance->gnss_data.ms_tow = ref_sbg_data->gpsVelData.timeOfWeek;
 
     instance->gnss_data.horizontal_vel_accuracy = 0.0f;
 
@@ -545,8 +593,12 @@ void AP_ExternalAHRS_sbgECom::process_gnss_pos_packet(const SbgEComLogUnion *ref
 
     AP_ExternalAHRS_sbgECom *instance = static_cast<AP_ExternalAHRS_sbgECom *>(user_arg);
 
-    instance->gnss_data.gps_week = ref_sbg_data->gpsPosData.timeOfWeek / AP_MSEC_PER_WEEK;
     instance->gnss_data.ms_tow = ref_sbg_data->gpsPosData.timeOfWeek;
+
+    instance->gnss_data.hdop = 0.0f;
+    instance->gnss_data.vdop = 0.0f;
+
+    instance->gnss_data.satellites_in_view = ref_sbg_data->gpsPosData.numSvUsed;
 
     SbgEComGnssPosType posType = sbgEComLogGnssPosGetType(&ref_sbg_data->gpsPosData);
     switch (posType)
@@ -574,11 +626,6 @@ void AP_ExternalAHRS_sbgECom::process_gnss_pos_packet(const SbgEComLogUnion *ref
     case SBG_ECOM_GNSS_POS_TYPE_UNKNOWN:
         instance->gnss_data.fix_type = AP_GPS_FixType::NO_GPS;
     }
-
-    instance->gnss_data.hdop = 0.0f;
-    instance->gnss_data.vdop = 0.0f;
-
-    instance->gnss_data.satellites_in_view = ref_sbg_data->gpsPosData.numSvUsed;
 
     instance->gnss_data.horizontal_pos_accuracy = sqrt(ref_sbg_data->gpsPosData.latitudeAccuracy * ref_sbg_data->gpsPosData.latitudeAccuracy + ref_sbg_data->gpsPosData.longitudeAccuracy * ref_sbg_data->gpsPosData.longitudeAccuracy);
     instance->gnss_data.vertical_pos_accuracy = ref_sbg_data->gpsPosData.altitudeAccuracy;

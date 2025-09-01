@@ -75,9 +75,13 @@ private:
     static void process_mag_packet(const SbgEComLogUnion *ref_sbg_data, void *user_arg);
     static void process_gnss_pos_packet(const SbgEComLogUnion *ref_sbg_data, void *user_arg);
     static void process_gnss_vel_packet(const SbgEComLogUnion *ref_sbg_data, void *user_arg);
+    static void process_utc_time_packet(const SbgEComLogUnion *ref_sbg_data, void *user_arg);
 
     static SbgErrorCode sendAirDataLog(SbgEComHandle *handle);
     static SbgErrorCode sendMagDataLog(SbgEComHandle *handle);
+
+    static uint16_t makeGpsWeek(const SbgEComLogUtc *utc_data);
+
 
     static void printLogCallBack(const char *file_name, const char *function_name, uint32_t line, const char *category,
                                  SbgDebugLogType log_type, SbgErrorCode error_code, const char *message);
