@@ -173,6 +173,13 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 16, AP_Mount_Params, options, 0),
 
+    // @Param: _RAT_TIMEOUT
+    // @DisplayName: Mount rate command timeout
+    // @Description: Timeout in seconds between rate command packets. Rate command will be set to zero if not received within this time period
+    // @Units: s
+    // @User: Standard
+    AP_GROUPINFO("_RAT_TIMEOUT", 17, AP_Mount_Params, rate_request_timeout, 3.0),
+    
     AP_GROUPEND
 };
 
