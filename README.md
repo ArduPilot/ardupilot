@@ -7,8 +7,8 @@ However, if you do not intend to run SITL (simulation), ignore all SITL related 
 
 **Table of Contents**
 - [Installation](#installation)
-- [Setup for the first time build](#setup-for-the-first-time-build)
-- [Subsequent builds](#subsequent-builds)
+- [Build natively](#build-natively) (RECOMMENDED)
+- [Build with Docker](#build-with-docker)
 - [Uploading firmware](#uploading-firmware)
 - [Uploading parameters](#uploading-parameters)
 - [Running SITL](#running-sitl)
@@ -22,7 +22,25 @@ git clone --recursive -b Sub-4.5 https://github.com/NTU-Mecatron/ardupilot.git
 cd ardupilot
 ```
 
-## Setup for the first time build
+## Build natively
+
+Instructions are extracted from [Setting up the Build Environment (Linux/Ubuntu)](https://ardupilot.org/dev/docs/building-setup-linux.html#building-setup-linux):
+
+```
+Tools/environment_install/install-prereqs-ubuntu.sh -y && . ~/.profile
+```
+
+Then, configure the build for Software-In-The-Loop:
+
+```bash
+./waf configure --board=sitl && ./waf sub
+```
+
+To run SITL:
+
+## Build with Docker
+
+### Setup for the first time build
 
 For first time setup on Jetson, you may need to enable Docker access for your user:
 
@@ -49,7 +67,7 @@ docker run --rm -it -v $PWD:/ardupilot ardupilot-dev ./waf configure --board=sit
 docker run --rm -it -v $PWD:/ardupilot ardupilot-dev ./waf configure --board=Pixhawk6C
 ```
 
-## Subsequent builds
+### Subsequent builds
 
 Whenever you make changes to the code, you only need to run the following command to build the firmware (if you already followed the setup above):
 
@@ -83,7 +101,13 @@ If it throws an error "Unable to find parameter RELAY10_PIN", this is because it
 ## Running SITL
 
 ```bash
-docker run --rm -it -v $PWD:/ardupilot ardupilot-dev sim_vehicle.py -v ArduSub --out udp:<your_ip>:14550
+sim_vehicle.py -v ArduSub --out udp:0.0.0.0:14551 -L RATBeach 
+```
+
+or
+
+```bash
+docker run --rm -it -v $PWD:/ardupilot ardupilot-dev sim_vehicle.py -v ArduSub --out udp:0.0.0.0:14551 -L RATBeach
 ```
 
 > Note: after following the above setup to build SITL, this is *the only command* you need to run everytime to start SITL.
@@ -92,12 +116,6 @@ docker run --rm -it -v $PWD:/ardupilot ardupilot-dev sim_vehicle.py -v ArduSub -
 If you are running the package in Docker, you might need to add `-p 14550` flag when running the container, or add the port manually, and use `127.0.0.1` as the IP address.
 
 If you use WSL2 (meaning on Windows), you should clone this package and run docker in WSL2 to make it faster.
-
-To launch pixhawk with SITL, there is no change from how you typically run it:
-
-```bash
-roslaunch pixhawk pixhawk.launch
-```
 
 ## Available frames
 
