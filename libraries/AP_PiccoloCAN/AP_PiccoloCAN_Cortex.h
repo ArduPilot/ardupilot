@@ -20,16 +20,3 @@
 
 #include <AP_CANManager/AP_CANManager.h>
 #include "AP_PiccoloCAN_Device.h"
-
-#if HAL_PICCOLO_CAN_ENABLE
-
-
-/*
- * Class represending an individual PiccoloCAN Cortex hybrid controller
-*/
-class AP_PiccoloCAN_Cortex : public AP_PiccoloCAN_Device
-{
-public:
-};
-
-#endif // HAL_PICCOLO_CAN_ENABLE
