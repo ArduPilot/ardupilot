@@ -111,7 +111,34 @@ static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D == (uint32_t)GPS_FIX_T
 static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_DGPS == (uint32_t)GPS_FIX_TYPE_DGPS, "FIX_DGPS incorrect");
 static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FLOAT == (uint32_t)GPS_FIX_TYPE_RTK_FLOAT, "FIX_RTK_FLOAT incorrect");
 static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FIXED == (uint32_t)GPS_FIX_TYPE_RTK_FIXED, "FIX_RTK_FIXED incorrect");
+
+static_assert((uint32_t)AP_GPS::GPS_Errors::GPS_SYSTEM_ERROR_NONE == (uint32_t)0x00, "GPS_SYSTEM_ERROR_NONE incorrect"); //not ideal but state doesn't exist in mavlink
+static_assert((uint32_t)AP_GPS::GPS_Errors::INCOMING_CORRECTIONS == (uint32_t)GPS_SYSTEM_ERROR_INCOMING_CORRECTIONS, "INCOMING_CORRECTIONS incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Errors::CONFIGURATION == (uint32_t)GPS_SYSTEM_ERROR_CONFIGURATION, "CONFIGURATION incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Errors::SOFTWARE == (uint32_t)GPS_SYSTEM_ERROR_SOFTWARE, "SOFTWARE incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Errors::ANTENNA == (uint32_t)GPS_SYSTEM_ERROR_ANTENNA, "ANTENNA incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Errors::EVENT_CONGESTION == (uint32_t)GPS_SYSTEM_ERROR_EVENT_CONGESTION, "EVENT_CONGESTION incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Errors::CPU_OVERLOAD == (uint32_t)GPS_SYSTEM_ERROR_CPU_OVERLOAD, "CPU_OVERLOAD incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Errors::OUTPUT_CONGESTION == (uint32_t)GPS_SYSTEM_ERROR_OUTPUT_CONGESTION, "OUTPUT_CONGESTION inccorect");
+
+static_assert((uint8_t)AP_GPS::GPS_Authentication::AUTHENTICATION_UNKNOWN == (uint8_t)GPS_AUTHENTICATION_STATE_UNKNOWN, "AUTHENTICATION_UNKNOWN incorrect");
+static_assert((uint8_t)AP_GPS::GPS_Authentication::AUTHENTICATION_INITIALIZING == (uint8_t)GPS_AUTHENTICATION_STATE_INITIALIZING, "AUTHENTICATION_INITIALIZING incorrect");
+static_assert((uint8_t)AP_GPS::GPS_Authentication::AUTHENTICATION_ERROR == (uint8_t)GPS_AUTHENTICATION_STATE_ERROR, "AUTHENTICATION_ERROR incorrect");
+static_assert((uint8_t)AP_GPS::GPS_Authentication::AUTHENTICATION_OK == (uint8_t)GPS_AUTHENTICATION_STATE_OK, "GPS_AUTHENTICATION_STATE_OK incorrect");
+static_assert((uint8_t)AP_GPS::GPS_Authentication::AUTHENTICATION_DISABLED == (uint8_t)GPS_AUTHENTICATION_STATE_DISABLED, "AUTHENTICATION_DISABLED incorrect");
+
+static_assert((uint8_t)AP_GPS::GPS_Jamming::JAMMING_UNKNOWN == (uint8_t)GPS_JAMMING_STATE_UNKNOWN, "JAMMING_UNKNOWN incorrect");
+static_assert((uint8_t)AP_GPS::GPS_Jamming::JAMMING_OK == (uint8_t)GPS_JAMMING_STATE_OK, "JAMMING_OK incorrect");
+static_assert((uint8_t)AP_GPS::GPS_Jamming::JAMMING_DETECTED == (uint8_t)GPS_JAMMING_STATE_DETECTED, "JAMMING_DETECTED incorrect");
+static_assert((uint8_t)AP_GPS::GPS_Jamming::JAMMING_MITIGATED == (uint8_t)GPS_JAMMING_STATE_MITIGATED, "JAMMING_MITIGATED incorrect");
+
+static_assert((uint8_t)AP_GPS::GPS_Spoofing::SPOOFING_UNKNOWN == (uint8_t)GPS_SPOOFING_STATE_UNKNOWN, "SPOOFING_UNKNOWN incorrect");
+static_assert((uint8_t)AP_GPS::GPS_Spoofing::SPOOFING_OK == (uint8_t)GPS_SPOOFING_STATE_OK, "SPOOFING_OK incorrect");
+static_assert((uint8_t)AP_GPS::GPS_Spoofing::SPOOFING_DETECTED == (uint8_t)GPS_SPOOFING_STATE_DETECTED, "SPOOFING_DETECTED incorrect");
+static_assert((uint8_t)AP_GPS::GPS_Spoofing::SPOOFING_MITIGATED == (uint8_t)GPS_SPOOFING_STATE_MITIGATED, "SPOOFING_MITIGATED incorrect");
+
 #endif
+
 
 // ensure that our own enum-class status is equivalent to the
 // ArduPilot-scoped AP_GPS_FixType enumeration:
@@ -1459,6 +1486,35 @@ void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
     }
 }
 #endif
+
+void AP_GPS::send_mavlink_gnss_integrity(mavlink_channel_t chan, uint8_t instance) {
+    uint8_t id = instance; 
+    uint32_t system_error  = get_system_errors(instance);
+    uint8_t authentication = get_authentication_state(instance);
+    uint8_t jamming        = get_jamming_state(instance);
+    uint8_t spoofing       = get_spoofing_state(instance);
+    uint8_t raim_state     = UINT8_MAX; //not implemented yet 
+    uint16_t raim_hfom     = UINT16_MAX; //not implemented yet
+    uint16_t raim_vfom     = UINT16_MAX; //not implemented yet
+    uint8_t corrections_quality     = UINT8_MAX; //not implemented yet
+    uint8_t systems_status_summary  = UINT8_MAX; //not implemented yet
+    uint8_t gnss_signal_quality     = UINT8_MAX; //not implemented yet
+    uint8_t post_processing_quality = UINT8_MAX; //not implemented yet
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "gps %u with auth %u and spooof %u", id, authentication, spoofing);
+    mavlink_msg_gnss_integrity_send(chan, 
+        id,
+        system_error,
+        authentication,
+        jamming,
+        spoofing,
+        raim_state,
+        raim_hfom,
+        raim_vfom,
+        corrections_quality,
+        systems_status_summary,
+        gnss_signal_quality,
+        post_processing_quality);
+}
 
 bool AP_GPS::first_unconfigured_gps(uint8_t &instance) const
 {
