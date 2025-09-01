@@ -13999,7 +13999,7 @@ RTL_ALT 111
         self.wait_ready_to_arm()
         self.change_mode('STABILIZE')
 
-        # Set home current location, this gives a large home vs orgin difference
+        # Set home current location, this gives a large home vs origin difference
         self.set_home(self.mav.location())
 
         self.set_rc(4, 2000)
