@@ -707,10 +707,7 @@ class SizeCompareBranches(object):
             if "master" not in pair or "branch" not in pair:
                 # probably incomplete:
                 continue
-            try:
-                self.elf_diff_results(pair["master"], pair["branch"])
-            except Exception as e:
-                print(f"Exception calling elf_diff: {e}")
+            self.elf_diff_results(pair["master"], pair["branch"])
 
     def emit_csv_for_results(self, results):
         '''emit dictionary of dictionaries as a CSV'''
