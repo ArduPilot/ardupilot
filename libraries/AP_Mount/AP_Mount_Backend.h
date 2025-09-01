@@ -301,6 +301,7 @@ protected:
         MountTargetType target_type;// MAVLink targeting mode's current target type (e.g. angle or rate)
         MountTarget angle_rad;      // angle target in radians
         MountTarget rate_rads;      // rate target in rad/s
+        uint32_t last_rate_request_ms;
     } mnt_target;
 
 private:
