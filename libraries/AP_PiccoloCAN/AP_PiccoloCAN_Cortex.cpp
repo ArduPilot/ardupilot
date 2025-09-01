@@ -59,13 +59,15 @@ void finishCortexPacket(void* pkt, int size, uint32_t packetID)
      * 0x1Ammdddd
      * - 1A = Battery group ID
      * - mm = Message ID
+     * - 35 = Cortex device type
      * - dd = Device ID
      *
-     * Note: The Device ID (lower 16 bits of the frame ID) will have to be inserted later
+     * Note: The Device ID (lower 8 bits of the frame ID) will have to be inserted later
      */
 
     uint32_t id = (((uint8_t) PiccoloCAN_MessageGroup::BATTERY) << 24) |       // CAN Group ID
-                  ((packetID & 0xFF) << 16);                                   // Message ID
+                  ((packetID & 0xFF) << 16) |                                  // Message ID
+                  (((uint8_t) PiccoloCAN_ActuatorType::CORTEX) << 8);          // Device Type
 
     // Extended frame format
     id |= AP_HAL::CANFrame::FlagEFF;
