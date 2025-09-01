@@ -1,0 +1,8 @@
+
+[tests]
+MAVProxy
+mock
+numpy
+pexpect
+pytest
+requests

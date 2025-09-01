@@ -1,0 +1,12 @@
+Metadata-Version: 2.4
+Name: ardupilot
+Version: 4.6.0
+License-File: COPYING.txt
+Provides-Extra: tests
+Requires-Dist: MAVProxy; extra == "tests"
+Requires-Dist: mock; extra == "tests"
+Requires-Dist: numpy; extra == "tests"
+Requires-Dist: pexpect; extra == "tests"
+Requires-Dist: pytest; extra == "tests"
+Requires-Dist: requests; extra == "tests"
+Dynamic: license-file
