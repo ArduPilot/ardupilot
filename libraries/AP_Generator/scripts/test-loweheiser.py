@@ -219,7 +219,7 @@ class TestLoweheiser(object):
             return
         self.last_heartbeat_sent = now
 
-        # self.progress("Sending heatbeat")
+        # self.progress("Sending heartbeat")
         self.conn.mav.heartbeat_send(
             mavutil.mavlink.MAV_TYPE_GCS,
             mavutil.mavlink.MAV_AUTOPILOT_GENERIC,
