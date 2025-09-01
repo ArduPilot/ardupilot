@@ -92,10 +92,6 @@ void AP_Generator_Cortex::update()
     }
 
     update_frontend();
-
-    // TODO: Voltage rail status?
-
-    // TODO: Data logging?
 }
 
 
@@ -108,6 +104,11 @@ bool AP_Generator_Cortex::pre_arm_check(char *failmsg, uint8_t failmsg_len) cons
 
     if (is_inhibited()) {
         snprintf(failmsg, failmsg_len, "Generator is inhibited");
+        return false;
+    }
+
+    if (!is_ready()) {
+        snprintf(failmsg, failmsg_len, "Generator is not ready");
         return false;
     }
 
@@ -185,6 +186,12 @@ bool AP_Generator_Cortex::is_connected(void) const
 bool AP_Generator_Cortex::is_inhibited(void) const
 {
     return telemetry.status.status.inhibited;
+}
+
+
+bool AP_Generator_Cortex::is_ready(void) const
+{
+    return telemetry.status.status.readyToRun;
 }
 
 

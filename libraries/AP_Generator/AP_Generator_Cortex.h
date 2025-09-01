@@ -41,27 +41,27 @@ public:
     // init should be called at vehicle startup to get the generator library ready
     __INITFUNC__ void init(void) override;
     // update should be called regularly to update the generator state
-    void update(void) override;
+    virtual void update(void) override;
 
     // methods to control the generator state:
-    bool stop(void) override;
-    bool idle(void) override;
-    bool run(void) override;
+    virtual bool stop(void) override;
+    virtual bool idle(void) override;
+    virtual bool run(void) override;
 
     // method to send a GENERATOR_STATUS mavlink message
-    void send_generator_status(const GCS_MAVLINK &channel) override;
+    virtual void send_generator_status(const GCS_MAVLINK &channel) override;
 
     // prearm checks to ensure generator is good for arming.  Note
     // that if the generator has never sent us a message then these
     // automatically pass!
-    bool pre_arm_check(char *failmsg, uint8_t failmsg_len) const override;
+    virtual bool pre_arm_check(char *failmsg, uint8_t failmsg_len) const override;
 
     // Update front end with voltage, current, and rpm values
     void update_frontend_readings(void);
 
     bool is_connected(void) const;
-
     bool is_inhibited(void) const;
+    bool is_ready(void) const;
 
     // healthy returns true if the generator is not present, or it is
     // present, providing telemetry and not indicating an errors.
