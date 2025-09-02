@@ -769,7 +769,7 @@ singleton AP_Periph_FW method can_printf void "%s"'literal string
 singleton AP_Periph_FW method reboot void boolean
 
 include AP_Motors/AP_Motors_Class.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
-singleton AP::motors() depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
+singleton AP::motors() depends AP_SCRIPTING_BINDING_MOTORS_ENABLED && (APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI)
 singleton AP::motors() literal
 singleton AP::motors() rename motors
 singleton AP::motors() method set_frame_string void string
