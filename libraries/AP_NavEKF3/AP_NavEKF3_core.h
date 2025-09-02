@@ -218,25 +218,25 @@ public:
     // If a calculated location isn't available, return a raw GPS measurement
     // The status will return true if a calculation or raw measurement is available
     // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
-    bool getLLH(Location &loc) const;
+    bool getLLH(AbsAltLocation &loc) const;
 
     // return the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter are relative to this location
     // Returns false if the origin has not been set
-    bool getOriginLLH(Location &loc) const;
+    bool getOriginLLH(AbsAltLocation &loc) const;
 
     // set the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter will be relative to this location
     // returns false if the origin has already been set
-    bool setOriginLLH(const Location &loc);
+    bool setOriginLLH(const AbsAltLocation &loc);
 
     // Set the EKF's NE horizontal position states and their corresponding variances from a supplied WGS-84 location and uncertainty
     // The altitude element of the location is not used.
     // Returns true if the set was successful
-    bool setLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms);
+    bool setLatLng(const AbsAltLocation &loc, float posAccuracy, uint32_t timestamp_ms);
 
     // Popoluates the WMM data structure with the field at the given location
-    void setEarthFieldFromLocation(const Location &loc);
+    void setEarthFieldFromLocation(const AbsAltLocation &loc);
 
     // return estimated height above ground level
     // return false if ground height is not being estimated.
@@ -942,7 +942,7 @@ private:
     // set the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter will be relative to this location
     // returns false if the origin has already been set
-    bool setOrigin(const Location &loc);
+    bool setOrigin(const AbsAltLocation &loc);
 
     // Assess GPS data quality and set gpsGoodToAlign
     void calcGpsGoodToAlign(void);
@@ -1063,7 +1063,7 @@ private:
     void SelectDragFusion();
     void SampleDragData(const imu_elements &imu);
 
-    bool getGPSLLH(Location &loc) const;
+    bool getGPSLLH(AbsAltLocation &loc) const;
 
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
@@ -1162,8 +1162,8 @@ private:
     bool needEarthBodyVarReset;     // we need to reset mag earth variances at next CovariancePrediction
     bool inhibitDelAngBiasStates;   // true when IMU delta angle bias states are inactive
     bool gpsIsInUse;                // bool true when GPS data is being used to correct states estimates
-    Location EKF_origin;     // LLH origin of the NED axis system, internal only
-    Location &public_origin; // LLH origin of the NED axis system, public functions
+    AbsAltLocation EKF_origin;     // LLH origin of the NED axis system, internal only
+    AbsAltLocation &public_origin; // LLH origin of the NED axis system, public functions
     bool validOrigin;               // true when the EKF origin is valid
     ftype gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the GPS receiver
     ftype gpsPosAccuracy;           // estimated position accuracy in m returned by the GPS receiver
@@ -1256,7 +1256,7 @@ private:
     } vertCompFiltState;
 
     // variables used by the pre-initialisation GPS checks
-    Location gpsloc_prev;    // LLH location of previous GPS measurement
+    AbsAltLocation gpsloc_prev;    // LLH location of previous GPS measurement
     uint32_t lastPreAlignGpsCheckTime_ms;   // last time in msec the GPS quality was checked during pre alignment checks
     ftype gpsDriftNE;               // amount of drift detected in the GPS position during pre-flight GPs checks
     ftype gpsVertVelFilt;           // amount of filtered vertical GPS velocity detected during pre-flight GPS checks

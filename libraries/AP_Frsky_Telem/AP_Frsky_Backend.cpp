@@ -76,7 +76,7 @@ void AP_Frsky_Backend::calc_gps_position(void)
 {
     AP_AHRS &_ahrs = AP::ahrs();
 
-    Location loc;
+    AbsAltLocation loc;
 
     if (_ahrs.get_location(loc)) {
         float lat = format_gps(fabsf(loc.lat/10000000.0f));
@@ -89,7 +89,7 @@ void AP_Frsky_Backend::calc_gps_position(void)
         _SPort_data.lonmmmm = (lon - _SPort_data.londddmm) * 10000;
         _SPort_data.lon_ew = (loc.lng < 0) ? 'W' : 'E';
 
-        float alt = loc.alt * 0.01f;
+        const float alt = loc.get_alt_m();
         _SPort_data.alt_gps_meters = float_to_uint16(alt);
         _SPort_data.alt_gps_cm = float_to_uint16((alt - _SPort_data.alt_gps_meters) * 100);
 

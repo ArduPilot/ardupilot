@@ -98,7 +98,7 @@ public:
 
     // calculate stopping location using current position and attitude controller provided maximum deceleration
     // returns true on success, false on failure
-    bool get_stopping_location(Location& stopping_loc) WARN_IF_UNUSED;
+    bool get_stopping_location(AbsAltLocation& stopping_loc) WARN_IF_UNUSED;
 
     // is_fast_waypoint returns true if vehicle will not stop at destination (e.g. set_desired_location provided a next_destination)
     bool is_fast_waypoint() const { return _fast_waypoint; }
@@ -112,7 +112,7 @@ protected:
     bool is_active() const;
 
     // move target location along track from origin to destination using SCurves navigation
-    void advance_wp_target_along_track(const Location &current_loc, float dt);
+    void advance_wp_target_along_track(const AbsAltLocation &current_loc, float dt);
 
     // update psc input shaping navigation controller
     void update_psc_input_shaping(float dt);
@@ -121,10 +121,10 @@ protected:
     void update_distance_and_bearing_to_destination();
 
     // calculate steering and speed to drive along line from origin to destination waypoint
-    void update_steering_and_speed(const Location &current_loc, float dt);
+    void update_steering_and_speed(const AbsAltLocation &current_loc, float dt);
 
     // calculate the crosstrack error (does not rely on L1 controller)
-    float calc_crosstrack_error(const Location& current_loc) const;
+    float calc_crosstrack_error(const AbsAltLocation& current_loc) const;
 
     // calculate yaw change at next waypoint in degrees
     // returns zero if the angle cannot be calculated because some points are on top of others
@@ -168,7 +168,7 @@ protected:
     uint32_t _last_update_ms;       // system time of last call to update
     Location _origin;               // origin Location (vehicle will travel from the origin to the destination)
     Location _destination;          // destination Location when in Guided_WP
-    Location _next_destination;     // next destination Location when in Guided_WP
+    AbsAltLocation _next_destination;     // next destination Location when in Guided_WP
     bool _orig_and_dest_valid;      // true if the origin and destination have been set
     bool _reversed;                 // execute the mission by backing up
     enum class NavControllerType {

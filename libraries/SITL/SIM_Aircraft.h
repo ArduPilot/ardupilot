@@ -56,7 +56,7 @@ public:
     Aircraft(const char *frame_str);
 
     // called directly after constructor:
-    virtual void set_start_location(const Location &start_loc, const float start_yaw);
+    virtual void set_start_location(const AbsAltLocation &start_loc, const float start_yaw);
 
     /*
       set simulation speedup
@@ -133,9 +133,9 @@ public:
     }
 
     // return simulation origin:
-    const Location &get_origin() const { return origin; }
+    const AbsAltLocation &get_origin() const { return origin; }
 
-    const Location &get_location() const { return location; }
+    const AbsAltLocation &get_location() const { return location; }
 
     // get position relative to home
     Vector3d get_position_relhome() const;
@@ -150,7 +150,7 @@ public:
         attitude.from_rotation_matrix(dcm);
     }
 
-    const Location &get_home() const { return home; }
+    const AbsAltLocation &get_home() const { return home; }
     float get_home_yaw() const { return home_yaw; }
 
     void set_buzzer(Buzzer *_buzzer) { buzzer = _buzzer; }
@@ -193,17 +193,17 @@ public:
     /*
       used by scripting to control simulated aircraft position
      */
-    static bool set_pose(uint8_t instance, const Location &loc, const Quaternion &quat,
+    static bool set_pose(uint8_t instance, const AbsAltLocation &loc, const Quaternion &quat,
                          const Vector3f &velocity_ef, const Vector3f &gyro_rads);
 
 protected:
     SIM *sitl;
     // origin of position vector
-    Location origin;
+    AbsAltLocation origin;
     // home location
-    Location home;
+    AbsAltLocation home;
     bool home_is_set;
-    Location location;
+    AbsAltLocation location;
 
     float ground_level;
     float home_yaw;
@@ -385,7 +385,7 @@ private:
         Vector3d position;
         Vector3f velocity_ef;
         uint64_t last_update_us;
-        Location location;
+        AbsAltLocation location;
     } smoothing;
 
     Buzzer *buzzer;

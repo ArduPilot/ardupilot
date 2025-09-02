@@ -1377,14 +1377,14 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
         return;
     }
 
-    const Location &loc = location(0);
+    const AbsAltLocation &loc = location(0);
     float hacc = 0.0f;
     float vacc = 0.0f;
     float sacc = 0.0f;
     float undulation = 0.0;
     int32_t height_elipsoid_mm = 0;
     if (get_undulation(0, undulation)) {
-        height_elipsoid_mm = loc.alt*10 - undulation*1000;
+        height_elipsoid_mm = loc.get_alt_cm()*10 - undulation*1000;
     }
     horizontal_accuracy(0, hacc);
     vertical_accuracy(0, vacc);
@@ -1395,7 +1395,7 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
         status(0),
         loc.lat,        // in 1E7 degrees
         loc.lng,        // in 1E7 degrees
-        loc.alt * 10UL, // in mm
+        loc.get_alt_cm() * 10UL, // in mm
         get_hdop(0),
         get_vdop(0),
         ground_speed(0)*100,  // cm/s
@@ -1418,14 +1418,14 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
         return;
     }
 
-    const Location &loc = location(1);
+    const AbsAltLocation &loc = location(1);
     float hacc = 0.0f;
     float vacc = 0.0f;
     float sacc = 0.0f;
     float undulation = 0.0;
     float height_elipsoid_mm = 0;
     if (get_undulation(1, undulation)) {
-        height_elipsoid_mm = loc.alt*10 - undulation*1000;
+        height_elipsoid_mm = loc.get_alt_cm()*10 - undulation*1000;
     }
     horizontal_accuracy(1, hacc);
     vertical_accuracy(1, vacc);
@@ -1436,7 +1436,7 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
         status(1),
         loc.lat,
         loc.lng,
-        loc.alt * 10UL,
+        loc.get_alt_cm() * 10UL,
         get_hdop(1),
         get_vdop(1),
         ground_speed(1)*100,  // cm/s
@@ -1896,7 +1896,7 @@ bool AP_GPS::get_undulation(uint8_t instance, float &undulation) const
 void AP_GPS::Write_GPS(uint8_t i)
 {
     const uint64_t time_us = AP_HAL::micros64();
-    const Location &loc = location(i);
+    const AbsAltLocation &loc = location(i);
 
     float yaw_deg=0, yaw_accuracy_deg=0;
     uint32_t yaw_time_ms;
@@ -1913,7 +1913,7 @@ void AP_GPS::Write_GPS(uint8_t i)
         hdop          : get_hdop(i),
         latitude      : loc.lat,
         longitude     : loc.lng,
-        altitude      : loc.alt,
+        altitude      : loc.get_alt_cm(),
         ground_speed  : ground_speed(i),
         ground_course : ground_course(i),
         vel_z         : velocity(i).z,
@@ -1930,7 +1930,7 @@ void AP_GPS::Write_GPS(uint8_t i)
     vertical_accuracy(i, vacc);
     speed_accuracy(i, sacc);
     if (get_undulation(i, undulation)) {
-        alt_ellipsoid = loc.alt - (undulation*100);
+        alt_ellipsoid = loc.get_alt_cm() - (undulation*100);
     }
     struct log_GPA pkt2{
         LOG_PACKET_HEADER_INIT(LOG_GPA_MSG),

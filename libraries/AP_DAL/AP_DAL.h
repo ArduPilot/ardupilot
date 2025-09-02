@@ -91,12 +91,12 @@ public:
     uint32_t millis() const { return _millis; }
 
     void log_event2(Event event);
-    void log_SetOriginLLH2(const Location &loc);
+    void log_SetOriginLLH2(const AbsAltLocation &loc);
     void log_writeDefaultAirSpeed2(const float aspeed, const float uncertainty);
 
     void log_event3(Event event);
-    void log_SetOriginLLH3(const Location &loc);
-    void log_SetLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms);
+    void log_SetOriginLLH3(const AbsAltLocation &loc);
+    void log_SetLatLng(const AbsAltLocation &loc, float posAccuracy, uint32_t timestamp_ms);
 
     void log_writeDefaultAirSpeed3(const float aspeed, const float uncertainty);
     void log_writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type);
@@ -217,7 +217,7 @@ public:
 
     // get the home location. This is const to prevent any changes to
     // home without telling AHRS about the change
-    const class Location &get_home(void) const {
+    const class AbsAltLocation &get_home(void) const {
         return _home;
     }
 
@@ -258,8 +258,7 @@ public:
         _home = {
             msg.lat,
             msg.lng,
-            msg.alt,
-            Location::AltFrame::ABSOLUTE
+            msg.alt
         };
     }
     void handle_message(const log_RFRF &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
@@ -389,7 +388,7 @@ private:
     uint32_t _millis;
 
     Matrix3f _rotation_vehicle_body_to_autopilot_body;
-    Location _home;
+    AbsAltLocation _home;
     uint32_t _last_imu_time_us;
 
     AP_DAL_InertialSensor _ins;

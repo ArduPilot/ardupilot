@@ -681,14 +681,14 @@ void NavEKF3_core::readGpsData()
     calcGpsGoodForFlight();
 
     // Read the GPS location in WGS-84 lat,long,height coordinates
-    const Location &gpsloc = gps.location(selected_gps);
+    const AbsAltLocation &gpsloc = gps.location(selected_gps);
 
     // Set the EKF origin and magnetic field declination if not previously set and GPS checks have passed
     if (gpsGoodToAlign && !validOrigin) {
-        Location gpsloc_fieldelevation = gpsloc; 
+        AbsAltLocation gpsloc_fieldelevation = gpsloc;
         // if flying, correct for height change from takeoff so that the origin is at field elevation
         if (inFlight) {
-            gpsloc_fieldelevation.alt += (int32_t)(100.0f * stateStruct.position.z);
+            gpsloc_fieldelevation.set_alt_m(gpsloc_fieldelevation.get_alt_m() + stateStruct.position.z);
         }
 
         if (!setOrigin(gpsloc_fieldelevation)) {
@@ -702,7 +702,7 @@ void NavEKF3_core::readGpsData()
         alignMagStateDeclination();
 
         // Set the height of the NED origin
-        ekfGpsRefHgt = (double)0.01 * (double)gpsloc.alt + (double)outputDataNew.position.z;
+        ekfGpsRefHgt = gpsloc.get_alt_m() + (double)outputDataNew.position.z;
 
         // Set the uncertainty of the GPS origin height
         ekfOriginHgtVar = sq(gpsHgtAccuracy);
@@ -720,10 +720,10 @@ void NavEKF3_core::readGpsData()
         gpsDataNew.lng = gpsloc.lng;
         if ((frontend->_originHgtMode & (1<<2)) == 0) {
             // the height adjustment to match GPS is being achieved by adjusting the origin height
-            gpsDataNew.hgt = (ftype)((double)0.01 * (double)gpsloc.alt - ekfGpsRefHgt);
+            gpsDataNew.hgt = (ftype)((double)gpsloc.get_alt_m() - ekfGpsRefHgt);
         } else {
             // the height adjustment to match GPS is being achieved by adjusting the measurements
-            gpsDataNew.hgt = 0.01 * (gpsloc.alt - EKF_origin.alt);
+            gpsDataNew.hgt = gpsloc.get_alt_m() - EKF_origin.get_alt_m();
         }
         storedGPS.push(gpsDataNew);
         // declare GPS in use
@@ -999,7 +999,7 @@ void NavEKF3_core::readRngBcnData()
             // Set the EKF origin and magnetic field declination if not previously set
             if (!validOrigin && (PV_AidingMode != AID_ABSOLUTE)) {
                 // get origin from beacon system
-                Location origin_loc;
+                AbsAltLocation origin_loc;
                 if (beacon->get_origin(origin_loc)) {
                     setOriginLLH(origin_loc);
 

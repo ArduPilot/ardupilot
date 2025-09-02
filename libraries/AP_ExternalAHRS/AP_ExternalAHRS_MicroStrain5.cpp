@@ -161,7 +161,11 @@ void AP_ExternalAHRS_MicroStrain5::post_filter() const
         state.velocity = Vector3f{filter_data.ned_velocity_north, filter_data.ned_velocity_east, filter_data.ned_velocity_down};
         state.have_velocity = true;
 
-        state.location = Location{filter_data.lat, filter_data.lon, gnss_data[gnss_instance].msl_altitude, Location::AltFrame::ABSOLUTE};
+        state.location = {
+            filter_data.lat,
+            filter_data.lon,
+            gnss_data[gnss_instance].msl_altitude
+        };
         state.have_location = true;
         state.last_location_update_us = AP_HAL::micros();
     }
@@ -190,10 +194,11 @@ void AP_ExternalAHRS_MicroStrain5::post_filter() const
 
     if (gps.fix_type >= AP_GPS_FixType::FIX_3D && !state.have_origin) {
         WITH_SEMAPHORE(state.sem);
-        state.origin = Location{int32_t(filter_data.lat),
-                                int32_t(filter_data.lon),
-                                int32_t(gnss_data[gnss_instance].msl_altitude),
-                                Location::AltFrame::ABSOLUTE};
+        state.origin = {
+            int32_t(filter_data.lat),
+            int32_t(filter_data.lon),
+            int32_t(gnss_data[gnss_instance].msl_altitude)
+        };
         state.have_origin = true;
     }
 

@@ -375,12 +375,7 @@ AP_AdvancedFailsafe::gps_altitude_ok() const
     if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
         return false;
     }
-    const auto &location = gps.location();
-    float alt;
-    if (!location.get_alt_m(Location::AltFrame::ABSOLUTE, alt)) {
-        return false;
-    }
-    if (alt > _amsl_limit - _amsl_margin_gps) {
+    if (gps.location().get_alt_m() > _amsl_limit - _amsl_margin_gps) {
         return false;
     }
     return true;

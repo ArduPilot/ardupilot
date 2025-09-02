@@ -59,9 +59,9 @@ public:
       get a ground speed adjustment for a landed vehicle based on
       whether it is on a ship
      */
-    Vector2f get_ground_speed_adjustment(const Location &loc, float &yaw_rate);
+    Vector2f get_ground_speed_adjustment(const AbsAltLocation &loc, float &yaw_rate);
 
-    bool get_location(Location &loc) const;
+    bool get_location(AbsAltLocation &loc) const;
 
 private:
 
@@ -72,7 +72,7 @@ private:
     AP_Int8 sys_id;
     AP_Vector3f offset;
 
-    Location home;
+    AbsAltLocation home;
     const char *target_address = "127.0.0.1";
     const uint16_t target_port = 5762;
 

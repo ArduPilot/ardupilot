@@ -114,7 +114,8 @@ void GCS_MAVLINK_Copter::send_position_target_global_int()
     }
 
     // convert altitude frame to AMSL (this may use the terrain database)
-    if (!target.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
+    AbsAltLocation abstarget;
+    if (!abstarget.from(target)) {
         return;
     }
     static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
@@ -126,9 +127,9 @@ void GCS_MAVLINK_Copter::send_position_target_global_int()
         AP_HAL::millis(), // time_boot_ms
         MAV_FRAME_GLOBAL, // targets are always global altitude
         TYPE_MASK, // ignore everything except the x/y/z components
-        target.lat, // latitude as 1e7
-        target.lng, // longitude as 1e7
-        target.alt * 0.01f, // altitude is sent as a float
+        abstarget.lat, // latitude as 1e7
+        abstarget.lng, // longitude as 1e7
+        abstarget.get_alt_m(), // altitude is sent as a float
         0.0f, // vx
         0.0f, // vy
         0.0f, // vz
@@ -1291,7 +1292,7 @@ float GCS_MAVLINK_Copter::vfr_hud_alt() const
     if (copter.g2.dev_options.get() & DevOptionVFR_HUDRelativeAlt) {
         // compatibility option for older mavlink-aware devices that
         // assume Copter returns a relative altitude in VFR_HUD.alt
-        return copter.current_loc.alt * 0.01f;
+        return copter.current_alt_above_home_m();
     }
     return GCS_MAVLINK::vfr_hud_alt();
 }
@@ -1345,12 +1346,12 @@ void GCS_MAVLINK_Copter::send_wind() const
 int16_t GCS_MAVLINK_Copter::high_latency_target_altitude() const
 {
     AP_AHRS &ahrs = AP::ahrs();
-    Location global_position_current;
+    AbsAltLocation global_position_current;
     UNUSED_RESULT(ahrs.get_location(global_position_current));
 
     //return units are m
     if (copter.ap.initialised) {
-        return global_position_current.alt * 0.01 - copter.pos_control->get_pos_error_D_m();
+        return global_position_current.get_alt_m() - copter.pos_control->get_pos_error_D_m();
     }
     return 0;
     

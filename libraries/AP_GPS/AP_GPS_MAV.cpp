@@ -66,11 +66,13 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
             state.time_week_ms  = packet.time_week_ms;
             state.status = (AP_GPS::GPS_Status)packet.fix_type;
 
-            Location loc = {};
-            loc.lat = packet.lat;
-            loc.lng = packet.lon;
+            AbsAltLocation loc {
+                packet.lat,
+                packet.lon,
+                0
+            };
             if (have_alt) {
-                loc.alt = packet.alt * 100; // convert to centimeters
+                loc.set_alt_m(packet.alt);
             }
             state.location = loc;
 

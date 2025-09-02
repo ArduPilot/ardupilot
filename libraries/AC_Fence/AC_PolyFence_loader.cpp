@@ -219,7 +219,7 @@ bool AC_PolyFence_loader::read_latlon_from_storage(uint16_t &read_offset, Vector
 
 bool AC_PolyFence_loader::breached() const
 {
-    Location loc;
+    AbsAltLocation loc;
     if (!AP::ahrs().get_location(loc)) {
         return false;
     }

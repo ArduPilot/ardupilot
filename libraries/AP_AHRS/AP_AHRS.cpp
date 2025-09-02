@@ -664,7 +664,7 @@ void AP_AHRS::update_EKF2(void)
           if we now have an origin then set in all backends
         */
         if (!done_common_origin) {
-            Location new_origin;
+            AbsAltLocation new_origin;
             if (EKF2.getOriginLLH(new_origin)) {
                 done_common_origin = true;
 #if HAL_NAVEKF3_AVAILABLE
@@ -748,7 +748,7 @@ void AP_AHRS::update_EKF3(void)
           if we now have an origin then set in all backends
         */
         if (!done_common_origin) {
-            Location new_origin;
+            AbsAltLocation new_origin;
             if (EKF3.getOriginLLH(new_origin)) {
                 done_common_origin = true;
 #if HAL_NAVEKF2_AVAILABLE
@@ -777,7 +777,7 @@ void AP_AHRS::update_external(void)
       if we now have an origin then set in all backends
     */
     if (!done_common_origin) {
-        Location new_origin;
+        AbsAltLocation new_origin;
         if (external.get_origin(new_origin)) {
             done_common_origin = true;
 #if HAL_NAVEKF2_AVAILABLE
@@ -820,7 +820,7 @@ void AP_AHRS::reset()
 }
 
 // dead-reckoning support
-bool AP_AHRS::_get_location(Location &loc) const
+bool AP_AHRS::_get_location(AbsAltLocation &loc) const
 {
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
@@ -1363,7 +1363,7 @@ bool AP_AHRS::_get_secondary_quaternion(Quaternion &quat) const
 }
 
 // return secondary position solution if available
-bool AP_AHRS::_get_secondary_position(Location &loc) const
+bool AP_AHRS::_get_secondary_position(AbsAltLocation &loc) const
 {
     EKFType secondary_ekf_type;
     if (!_get_secondary_EKF_type(secondary_ekf_type)) {
@@ -1481,7 +1481,7 @@ float AP_AHRS::_groundspeed(void)
 // set the EKF's origin location in 10e7 degrees.  This should only
 // be called when the EKF has no absolute position reference (i.e. GPS)
 // from which to decide the origin on its own
-bool AP_AHRS::set_origin(const Location &loc)
+bool AP_AHRS::set_origin(const AbsAltLocation &loc)
 {
     WITH_SEMAPHORE(_rsem);
 #if HAL_NAVEKF2_AVAILABLE
@@ -1537,7 +1537,7 @@ bool AP_AHRS::set_origin(const Location &loc)
 }
 
 #if AP_AHRS_POSITION_RESET_ENABLED
-bool AP_AHRS::handle_external_position_estimate(const Location &loc, float pos_accuracy, uint32_t timestamp_ms)
+bool AP_AHRS::handle_external_position_estimate(const AbsAltLocation &loc, float pos_accuracy, uint32_t timestamp_ms)
 {
 #if HAL_NAVEKF3_AVAILABLE
     return EKF3.setLatLng(loc, pos_accuracy, timestamp_ms);
@@ -1804,7 +1804,7 @@ bool AP_AHRS::get_relative_position_NED_origin_float(Vector3f &vec) const
 */
 bool AP_AHRS::get_relative_position_NED_home(Vector3f &vec) const
 {
-    Location loc;
+    AbsAltLocation loc;
     if (!_home_is_set ||
         !get_location(loc)) {
         return false;
@@ -1866,7 +1866,7 @@ bool AP_AHRS::get_relative_position_NE_origin_float(Vector2f &posNE) const
 */
 bool AP_AHRS::get_relative_position_NE_home(Vector2f &posNE) const
 {
-    Location loc;
+    AbsAltLocation loc;
     if (!_home_is_set ||
         !get_location(loc)) {
         return false;
@@ -1938,7 +1938,7 @@ void AP_AHRS::get_relative_position_D_home(float &posD) const
         return;
     }
 
-    Location originLLH;
+    AbsAltLocation originLLH;
     postype_t originD;
     if (!get_relative_position_D_origin(originD) ||
         !_get_origin(originLLH)) {
@@ -1946,7 +1946,7 @@ void AP_AHRS::get_relative_position_D_home(float &posD) const
         const auto &gps = AP::gps();
         if (_gps_use == GPSUse::EnableWithHeight &&
             gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-            posD = (_home.alt - gps.location().alt) * 0.01;
+            posD = _home.get_alt_m() - gps.location().get_alt_m();
             return;
         }
 #endif
@@ -1954,7 +1954,7 @@ void AP_AHRS::get_relative_position_D_home(float &posD) const
         return;
     }
 
-    posD = originD - ((originLLH.alt - _home.alt) * 0.01f);
+    posD = originD - (originLLH.get_alt_m() - _home.get_alt_m());
     return;
 }
 /*
@@ -2529,7 +2529,7 @@ void AP_AHRS::writeTerrainAMSL(float alt_amsl_m)
         return;
     }
     // convert from amsl alt to alt above EKF origin
-    const float alt_above_origin_m = alt_amsl_m - (state.origin.alt * 0.01f);
+    const float alt_above_origin_m = alt_amsl_m - state.origin.get_alt_m();
     EKF3.writeTerrainData(alt_above_origin_m);
 #endif
 }
@@ -2984,7 +2984,7 @@ void AP_AHRS::send_ekf_status_report(GCS_MAVLINK &link) const
 }
 
 // return origin for a specified EKF type
-bool AP_AHRS::_get_origin(EKFType type, Location &ret) const
+bool AP_AHRS::_get_origin(EKFType type, AbsAltLocation &ret) const
 {
     switch (type) {
 #if AP_AHRS_DCM_ENABLED
@@ -3022,7 +3022,7 @@ bool AP_AHRS::_get_origin(EKFType type, Location &ret) const
   This copes with users force arming a plane that is running on DCM as
   the EKF has not fully initialised
  */
-bool AP_AHRS::_get_origin(Location &ret) const
+bool AP_AHRS::_get_origin(AbsAltLocation &ret) const
 {
     if (_get_origin(configured_ekf_type(), ret)) {
         return true;
@@ -3035,19 +3035,21 @@ bool AP_AHRS::_get_origin(Location &ret) const
 
 bool AP_AHRS::set_home(const Location &loc)
 {
+    AbsAltLocation absloc;
+    if (!absloc.from(loc)) {
+        return false;
+    }
+    return set_home(absloc);
+}
+
+bool AP_AHRS::set_home(const AbsAltLocation &loc)
+{
     WITH_SEMAPHORE(_rsem);
     // check location is valid
     if (!loc.initialised()) {
         return false;
     }
     if (!loc.check_latlng()) {
-        return false;
-    }
-    // home must always be global frame at the moment as .alt is
-    // accessed directly by the vehicles and they may not be rigorous
-    // in checking the frame type.
-    Location tmp = loc;
-    if (!tmp.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
         return false;
     }
 
@@ -3058,7 +3060,7 @@ bool AP_AHRS::set_home(const Location &loc)
     }
 #endif
 
-    _home = tmp;
+    _home = loc;
     _home_is_set = true;
 
 #if HAL_LOGGING_ENABLED
@@ -3072,7 +3074,7 @@ bool AP_AHRS::set_home(const Location &loc)
     AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
     pd.home_lat = loc.lat;
     pd.home_lon = loc.lng;
-    pd.home_alt_cm = loc.alt;
+    pd.home_alt_cm = loc.get_alt_cm();
 
 #if AP_MISSION_ENABLED
     // Save home to mission
@@ -3092,7 +3094,7 @@ void AP_AHRS::load_watchdog_home()
     if (hal.util->was_watchdog_reset() && (pd.home_lat != 0 || pd.home_lon != 0)) {
         _home.lat = pd.home_lat;
         _home.lng = pd.home_lon;
-        _home.set_alt_cm(pd.home_alt_cm, Location::AltFrame::ABSOLUTE);
+        _home.set_alt_cm(pd.home_alt_cm);
         _home_is_set = true;
         _home_locked = true;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Restored watchdog home");
@@ -3616,7 +3618,7 @@ const EKFGSF_yaw *AP_AHRS::get_yaw_estimator(void) const
 }
 
 // get current location estimate
-bool AP_AHRS::get_location(Location &loc) const
+bool AP_AHRS::get_location(AbsAltLocation &loc) const
 {
     loc = state.location;
     return state.location_ok;
@@ -3670,7 +3672,7 @@ bool AP_AHRS::get_quaternion(Quaternion &quat) const
 }
 
 // returns the inertial navigation origin in lat/lon/alt
-bool AP_AHRS::get_origin(Location &ret) const
+bool AP_AHRS::get_origin(AbsAltLocation &ret) const
 {
     ret = state.origin;
     return state.origin_ok;
@@ -3688,9 +3690,11 @@ bool AP_AHRS::get_velocity_NED(Vector3f &vec) const
 // vehicle's origin
 bool AP_AHRS::get_location_from_origin_offset_NED(Location &loc, const Vector3p &offset_ned) const
 {
-    if (!get_origin(loc)) {
+    AbsAltLocation origin;
+    if (!get_origin(origin)) {
         return false;
     }
+    loc = origin;
     loc.offset(offset_ned);
 
     return true;

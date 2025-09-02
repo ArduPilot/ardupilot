@@ -311,9 +311,11 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         }
         case MessageType::POSITION: {
             CHECK_SIZE(u.position);
-            state.location.lat = u.position.lat; // deg*1.0e7
-            state.location.lng = u.position.lon; // deg*1.0e7
-            state.location.alt = u.position.alt; // m*100
+            state.location = {
+                int32_t(u.position.lat), // deg*1.0e7
+                int32_t(u.position.lon), // deg*1.0e7
+                int32_t(u.position.alt) // m*100
+            };
 
             gps_data.latitude = u.position.lat; // deg*1.0e7
             gps_data.longitude = u.position.lon; // deg*1.0e7
@@ -519,11 +521,11 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
             if (last_gps_ms == 0) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "InertialLabs: got GPS lock");
                 if (!state.have_origin) {
-                    state.origin = Location{
-                        gps_data.latitude,
-                        gps_data.longitude,
-                        gps_data.msl_altitude,
-                        Location::AltFrame::ABSOLUTE};
+                    state.origin = {
+                        int32_t(gps_data.latitude),
+                        int32_t(gps_data.longitude),
+                        int32_t(gps_data.msl_altitude)
+                    };
                     state.have_origin = true;
                 }
             }
@@ -713,7 +715,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
                                     now_us, gps_data.ms_tow,
                                     degrees(roll), degrees(pitch), yaw_deg,
                                     state.velocity.x, state.velocity.y, state.velocity.z,
-                                    state.location.lat*1.0e-7, state.location.lng*1.0e-7, state.location.alt*0.01,
+                                    state.location.lat*1.0e-7, state.location.lng*1.0e-7, state.location.get_alt_m(),
                                     state2.unit_status, state2.unit_status2,
                                     state2.supply_voltage);
 

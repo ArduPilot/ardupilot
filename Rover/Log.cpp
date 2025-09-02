@@ -39,7 +39,7 @@ void Rover::Log_Write_Depth()
     }
 
     // get position
-    Location loc;
+    AbsAltLocation loc;
     IGNORE_RETURN(ahrs.get_location(loc));
 
     for (uint8_t i=0; i<rangefinder.num_sensors(); i++) {

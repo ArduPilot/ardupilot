@@ -59,6 +59,9 @@ void GCS_MAVLINK_Blimp::send_position_target_global_int()
                                           POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
                                           POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
 
+    float target_alt_m = 0;
+    UNUSED_RESULT(target.get_alt_m(Location::AltFrame::ABSOLUTE, target_alt_m));
+
     mavlink_msg_position_target_global_int_send(
         chan,
         AP_HAL::millis(), // time_boot_ms
@@ -66,7 +69,7 @@ void GCS_MAVLINK_Blimp::send_position_target_global_int()
         TYPE_MASK, // ignore everything except the x/y/z components
         target.lat, // latitude as 1e7
         target.lng, // longitude as 1e7
-        target.alt * 0.01f, // altitude is sent as a float
+        target_alt_m, // altitude is sent as a float
         0.0f, // vx
         0.0f, // vy
         0.0f, // vz
@@ -314,7 +317,9 @@ float GCS_MAVLINK_Blimp::vfr_hud_alt() const
     if (blimp.g2.dev_options.get() & DevOptionVFR_HUDRelativeAlt) {
         // compatibility option for older mavlink-aware devices that
         // assume Blimp returns a relative altitude in VFR_HUD.alt
-        return blimp.current_loc.alt * 0.01f;
+        float relative_alt_m = 0;
+        UNUSED_RESULT(blimp.current_loc.get_alt_m(Location::AltFrame::ABOVE_HOME, relative_alt_m));
+        return relative_alt_m;
     }
     return GCS_MAVLINK::vfr_hud_alt();
 }

@@ -108,7 +108,7 @@ bool AC_WPNav_OA::update_wpnav()
 {
     // Run path planning logic using the active OA planner
     AP_OAPathPlanner *oa_ptr = AP_OAPathPlanner::get_singleton();
-    Location current_loc;
+    AbsAltLocation current_loc;
     if ((oa_ptr != nullptr) && AP::ahrs().get_location(current_loc)) {
 
         // Backup current path state before OA modifies it

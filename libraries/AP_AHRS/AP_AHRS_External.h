@@ -78,7 +78,7 @@ public:
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
 
     // relative-origin functions for fallback in AP_InertialNav
-    bool get_origin(Location &ret) const override;
+    bool get_origin(AbsAltLocation &ret) const override;
     bool get_relative_position_NED_origin(Vector3p &vec) const override;
     bool get_relative_position_NE_origin(Vector2p &posNE) const override;
     bool get_relative_position_D_origin(postype_t &posD) const override;

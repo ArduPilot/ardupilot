@@ -340,7 +340,7 @@ bool XPlane::receive_data(void)
     uint8_t pkt[10000];
     uint8_t *p = &pkt[5];
     const uint8_t pkt_len = 36;
-    Location loc {};
+    AbsAltLocation loc {};
     Vector3d pos;
     uint32_t wait_time_ms = 1;
     uint32_t now = AP_HAL::millis();
@@ -415,11 +415,13 @@ bool XPlane::receive_data(void)
         }
             
         case LatLonAlt: {
-            loc.lat = data[1] * 1e7;
-            loc.lng = data[2] * 1e7;
-            loc.alt = data[3] * FEET_TO_METERS * 100.0f;
+            loc = {
+                int32_t(data[1] * 1e7),
+                int32_t(data[2] * 1e7),
+                int32_t(data[3] * FEET_TO_METERS * 100)
+            };
             const float altitude_above_ground = data[4] * FEET_TO_METERS;
-            ground_level = loc.alt * 0.01f - altitude_above_ground;
+            ground_level = loc.get_alt_m() - altitude_above_ground;
             break;
         }
 
@@ -534,14 +536,12 @@ bool XPlane::receive_data(void)
     accel_earth.z += GRAVITY_MSS;
     
     // the position may slowly deviate due to float accuracy and longitude scaling
-    if (loc.get_distance(location) > 4 || abs(loc.alt - location.alt)*0.01f > 2.0f) {
+    if (loc.get_distance(location) > 4 || abs(loc.get_alt_m() - location.get_alt_m()) > 2.0f) {
         printf("X-Plane home reset dist=%f alt=%.1f/%.1f\n",
-               loc.get_distance(location), loc.alt*0.01f, location.alt*0.01f);
+               loc.get_distance(location), loc.get_alt_m(), location.get_alt_m());
         // reset home location
         position_zero = {-pos.x, -pos.y, -pos.z};
-        home.lat = loc.lat;
-        home.lng = loc.lng;
-        home.alt = loc.alt;
+        home = loc;
         origin = home;
         position.x = 0;
         position.y = 0;

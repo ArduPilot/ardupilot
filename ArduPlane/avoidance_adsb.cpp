@@ -180,15 +180,15 @@ bool AP_Avoidance_Plane::handle_avoidance_vertical(const AP_Avoidance::Obstacle 
      }
 
      // get best vector away from obstacle
-     if (plane.current_loc.alt > obstacle->_location.alt) {
+     if (plane.current_loc.get_alt_cm() > obstacle->_location.get_alt_cm()) {
          // should climb, set alt demand to be 10m above us, climb rate will be TECS_CLMB_MAX
-         new_loc.set_alt_cm(plane.current_loc.alt + 1000, Location::AltFrame::ABSOLUTE);
+         new_loc.set_alt_cm(plane.current_loc.get_alt_cm() + 1000, Location::AltFrame::ABSOLUTE);
          return true;
 
-     } else if (plane.current_loc.alt > plane.g.RTL_altitude*100) {
+     } else if (plane.current_loc.get_alt_m() > plane.g.RTL_altitude) {
          // should descend while above RTL alt
          // TODO: consider using a lower altitude than RTL_altitude since it's default (100m) is quite high
-         new_loc.set_alt_cm(plane.current_loc.alt - 1000, Location::AltFrame::ABSOLUTE);
+         new_loc.set_alt_cm(plane.current_loc.get_alt_cm() - 1000, Location::AltFrame::ABSOLUTE);
          return true;
      }
 

@@ -139,23 +139,23 @@ public:
     // If a calculated location isn't available, return a raw GPS measurement
     // The status will return true if a calculation or raw measurement is available
     // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
-    bool getLLH(Location &loc) const;
+    bool getLLH(AbsAltLocation &loc) const;
 
     // Return the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter are relative to this location
     // Returns false if the origin has not been set
-    bool getOriginLLH(Location &loc) const;
+    bool getOriginLLH(AbsAltLocation &loc) const;
 
     // set the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter will be relative to this location
     // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
     // Returns false if the filter has rejected the attempt to set the origin
-    bool setOriginLLH(const Location &loc);
+    bool setOriginLLH(const AbsAltLocation &loc);
 
     // Set the EKF's NE horizontal position states and their corresponding variances from a supplied WGS-84 location and uncertainty
     // The altitude element of the location is not used.
     // Returns true if the set was successful
-    bool setLatLng(const Location &loc, float posErr, uint32_t timestamp_ms);
+    bool setLatLng(const AbsAltLocation &loc, float posErr, uint32_t timestamp_ms);
 
     // return estimated height above ground level
     // return false if ground height is not being estimated.
@@ -552,7 +552,7 @@ private:
     uint64_t coreLastTimePrimary_us[MAX_EKF_CORES]; // last time we were using this core as primary
 
     // origin set by one of the cores
-    Location common_EKF_origin;
+    AbsAltLocation common_EKF_origin;
     bool common_origin_valid;
     
     // update the yaw reset data to capture changes due to a lane switch

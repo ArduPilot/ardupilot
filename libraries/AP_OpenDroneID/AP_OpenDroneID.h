@@ -133,7 +133,7 @@ private:
     const uint32_t _mavlink_static_period_ms = 3000; //how often are mavlink static messages sent in ms
 
     bool     _have_height_above_takeoff;
-    Location _takeoff_location;
+    AbsAltLocation _takeoff_location;
     bool _was_armed;
 
     // packets ready to be sent, updated with semaphore held

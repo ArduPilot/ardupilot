@@ -99,7 +99,7 @@ public:
     void            reset();
 
     // get current location estimate
-    bool get_location(Location &loc) const;
+    bool get_location(AbsAltLocation &loc) const;
 
     // get latest altitude estimate above ground level in meters and validity flag
     bool get_hagl(float &hagl) const WARN_IF_UNUSED;
@@ -228,7 +228,7 @@ public:
     }
 
     // return secondary position solution if available
-    bool get_secondary_position(Location &loc) const {
+    bool get_secondary_position(AbsAltLocation &loc) const {
         loc = state.secondary_pos;
         return state.secondary_pos_ok;
     }
@@ -252,7 +252,7 @@ public:
     // set the EKF's origin location in 10e7 degrees.  This should only
     // be called when the EKF has no absolute position reference (i.e. GPS)
     // from which to decide the origin on its own
-    bool set_origin(const Location &loc) WARN_IF_UNUSED;
+    bool set_origin(const AbsAltLocation &loc) WARN_IF_UNUSED;
 
 #if AP_AHRS_POSITION_RESET_ENABLED
     // Set the EKF's NE horizontal position states and their corresponding variances from the supplied WGS-84 location
@@ -262,11 +262,11 @@ public:
     // pos_accuracy is the standard deviation of the horizontal position uncertainty in metres.
     // The altitude element of the location is not used.
     // Returns true if the set was successful.
-    bool handle_external_position_estimate(const Location &loc, float pos_accuracy, uint32_t timestamp_);
+    bool handle_external_position_estimate(const AbsAltLocation &loc, float pos_accuracy, uint32_t timestamp_);
 #endif
 
     // returns the inertial navigation origin in lat/lon/alt
-    bool get_origin(Location &ret) const WARN_IF_UNUSED;
+    bool get_origin(AbsAltLocation &ret) const WARN_IF_UNUSED;
 
     bool have_inertial_nav() const;
 
@@ -526,7 +526,7 @@ public:
         ekf_origin = 0,
         ahrs_home = 1
     };
-    void Write_Origin(LogOriginType origin_type, const Location &loc) const; 
+    void Write_Origin(LogOriginType origin_type, const AbsAltLocation &loc) const; 
     void write_video_stabilisation() const;
 
     // return a smoothed and corrected gyro vector in radians/second
@@ -545,7 +545,7 @@ public:
 
     // get the home location. This is const to prevent any changes to
     // home without telling AHRS about the change
-    const Location &get_home(void) const {
+    const AbsAltLocation &get_home(void) const {
         return _home;
     }
 
@@ -567,6 +567,7 @@ public:
     // when the vehicle is at this position. It is assumed that the
     // current barometer and GPS altitudes correspond to this altitude
     bool set_home(const Location &loc) WARN_IF_UNUSED;
+    bool set_home(const AbsAltLocation &loc) WARN_IF_UNUSED;
 
     /*
      * Attitude-related public methods and attributes:
@@ -812,7 +813,7 @@ private:
      */
     void load_watchdog_home();
     bool _checked_watchdog_home;
-    Location _home;
+    AbsAltLocation _home;
     bool _home_is_set :1;
     bool _home_locked :1;
 
@@ -932,7 +933,7 @@ private:
     bool _get_quaternion(Quaternion &quat) const WARN_IF_UNUSED;
 
     // return secondary position solution if available
-    bool _get_secondary_position(Location &loc) const;
+    bool _get_secondary_position(AbsAltLocation &loc) const;
 
     // return ground speed estimate in meters/second. Used by ground vehicles.
     float _groundspeed(void);
@@ -941,10 +942,10 @@ private:
     void _getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const;
 
     // returns the inertial navigation origin in lat/lon/alt
-    bool _get_origin(Location &ret) const WARN_IF_UNUSED;
+    bool _get_origin(AbsAltLocation &ret) const WARN_IF_UNUSED;
 
     // return origin for a specified EKF type
-    bool _get_origin(EKFType type, Location &ret) const;
+    bool _get_origin(EKFType type, AbsAltLocation &ret) const;
 
     // return a ground velocity in meters/second, North/East/Down
     // order. Must only be called if have_inertial_nav() is true
@@ -966,7 +967,7 @@ private:
     uint8_t _get_primary_IMU_index(void) const;
 
     // get current location estimate
-    bool _get_location(Location &loc) const;
+    bool _get_location(AbsAltLocation &loc) const;
 
     // return true if a airspeed sensor should be used for the AHRS airspeed estimate
     bool _should_use_airspeed_sensor(uint8_t airspeed_index) const;
@@ -1010,15 +1011,15 @@ private:
         bool secondary_attitude_ok;
         Quaternion secondary_quat;
         bool secondary_quat_ok;
-        Location location;
+        AbsAltLocation location;
         bool location_ok;
-        Location secondary_pos;
+        AbsAltLocation secondary_pos;
         bool secondary_pos_ok;
         Vector2f ground_speed_vec;
         float ground_speed;
         Vector3f corrected_dv;
         float corrected_dv_dt;
-        Location origin;
+        AbsAltLocation origin;
         bool origin_ok;
         Vector3f velocity_NED;
         bool velocity_NED_ok;

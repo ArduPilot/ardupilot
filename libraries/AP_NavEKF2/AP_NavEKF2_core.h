@@ -167,17 +167,17 @@ public:
     // If a calculated location isn't available, return a raw GPS measurement
     // The status will return true if a calculation or raw measurement is available
     // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
-    bool getLLH(Location &loc) const;
+    bool getLLH(AbsAltLocation &loc) const;
 
     // return the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter are relative to this location
     // Returns false if the origin has not been set
-    bool getOriginLLH(Location &loc) const;
+    bool getOriginLLH(AbsAltLocation &loc) const;
 
     // set the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter will be relative to this location
     // returns false if absolute aiding and GPS is being used or if the origin is already set
-    bool setOriginLLH(const Location &loc);
+    bool setOriginLLH(const AbsAltLocation &loc);
 
     // return estimated height above ground level
     // return false if ground height is not being estimated.
@@ -692,7 +692,7 @@ private:
     // set the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter will be relative to this location
     // returns false if the origin has already been set
-    bool setOrigin(const Location &loc);
+    bool setOrigin(const AbsAltLocation &loc);
 
     // Assess GPS data quality and set gpsGoodToAlign if good enough to align the EKF
     void calcGpsGoodToAlign(void);
@@ -866,7 +866,7 @@ private:
     bool needMagBodyVarReset;       // we need to reset mag body variances at next CovariancePrediction
     bool gpsNotAvailable;           // bool true when valid GPS data is not available
     uint8_t last_gps_idx;           // sensor ID of the GPS receiver used for the last fusion or reset
-    Location EKF_origin;     // LLH origin of the NED axis system
+    AbsAltLocation EKF_origin;     // LLH origin of the NED axis system
     bool validOrigin;               // true when the EKF origin is valid
     ftype gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the GPS receiver
     ftype gpsPosAccuracy;           // estimated position accuracy in m returned by the GPS receiver

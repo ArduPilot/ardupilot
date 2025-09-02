@@ -473,6 +473,8 @@ private:
     // 3D Location vectors
     // Current location of the vehicle (altitude is relative to home)
     Location current_loc;
+    // return current location above home:
+    float current_alt_above_home_m() const;
 
     // Attitude, Position and Waypoint navigation objects
     // To-Do: move inertial nav up or other navigation variables down here
@@ -773,7 +775,7 @@ private:
     void update_home_from_EKF();
     void set_home_to_current_location_inflight();
     bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
-    bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
+    bool set_home(const AbsAltLocation& loc, bool lock) override WARN_IF_UNUSED;
 
     // compassmot.cpp
     MAV_RESULT mavlink_compassmot(const GCS_MAVLINK &gcs_chan);

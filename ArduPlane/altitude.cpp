@@ -30,7 +30,7 @@ void Plane::adjust_altitude_target()
 
 void Plane::check_home_alt_change(void)
 {
-    int32_t home_alt_cm = ahrs.get_home().alt;
+    int32_t home_alt_cm = ahrs.get_home().get_alt_cm();
     if (home_alt_cm != auto_state.last_home_alt_cm && hal.util->get_soft_armed()) {
         // cope with home altitude changing
         const int32_t alt_change_cm = home_alt_cm - auto_state.last_home_alt_cm;
@@ -99,9 +99,9 @@ void Plane::setup_alt_slope(void)
 int32_t Plane::get_RTL_altitude_cm() const
 {
     if (g.RTL_altitude < 0) {
-        return current_loc.alt;
+        return current_loc.get_alt_cm();
     }
-    return g.RTL_altitude*100 + home.alt;
+    return g.RTL_altitude*100 + home.get_alt_cm();
 }
 
 /*
@@ -192,7 +192,7 @@ void Plane::set_target_altitude_current(void)
 {
     // record altitude above sea level at the current time as our
     // target altitude
-    target_altitude.amsl_cm = current_loc.alt;
+    target_altitude.amsl_cm = current_loc.get_alt_cm();
 
     // reset any altitude slope offset
     reset_offset_altitude();
@@ -217,9 +217,12 @@ void Plane::set_target_altitude_current(void)
  */
 void Plane::set_target_altitude_location(const Location &loc)
 {
-    target_altitude.amsl_cm = loc.alt;
+    int32_t loc_alt_cm;
+    UNUSED_RESULT(loc.get_alt_cm(loc.get_alt_frame(), loc_alt_cm));
+
+    target_altitude.amsl_cm = loc_alt_cm;
     if (loc.relative_alt) {
-        target_altitude.amsl_cm += home.alt;
+        target_altitude.amsl_cm += home.get_alt_cm();
     }
 #if AP_TERRAIN_AVAILABLE
     if (target_altitude.terrain_following_pending) {
@@ -236,7 +239,7 @@ void Plane::set_target_altitude_location(const Location &loc)
     float height;
     if (loc.terrain_alt && terrain.height_above_terrain(height, true)) {
         target_altitude.terrain_following = true;
-        target_altitude.terrain_alt_cm = loc.alt;
+        target_altitude.terrain_alt_cm = loc_alt_cm;
     } else {
         target_altitude.terrain_following = false;
     }
@@ -268,7 +271,7 @@ int32_t Plane::relative_target_altitude_cm(void)
         return relative_home_height*100;
     }
 #endif
-    int32_t relative_alt = target_altitude.amsl_cm - home.alt;
+    int32_t relative_alt = target_altitude.amsl_cm - home.get_alt_cm();
     relative_alt += mission_alt_offset()*100;
 #if AP_RANGEFINDER_ENABLED
     relative_alt += rangefinder_correction() * 100;
@@ -376,10 +379,19 @@ bool Plane::set_target_altitude_proportion_terrain(void)
  */
 void Plane::constrain_target_altitude_location(const Location &loc1, const Location &loc2)
 {
-    if (loc1.alt > loc2.alt) {
-        target_altitude.amsl_cm = constrain_int32(target_altitude.amsl_cm, loc2.alt, loc1.alt);
+    int32_t loc1_alt_cm;
+    if (!loc1.get_alt_cm(Location::AltFrame::ABSOLUTE, loc1_alt_cm)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    }
+    int32_t loc2_alt_cm;
+    if (!loc2.get_alt_cm(Location::AltFrame::ABSOLUTE, loc2_alt_cm)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    }
+
+    if (loc1_alt_cm > loc2_alt_cm) {
+        target_altitude.amsl_cm = constrain_int32(target_altitude.amsl_cm, loc2_alt_cm, loc1_alt_cm);
     } else {
-        target_altitude.amsl_cm = constrain_int32(target_altitude.amsl_cm, loc1.alt, loc2.alt);
+        target_altitude.amsl_cm = constrain_int32(target_altitude.amsl_cm, loc1_alt_cm, loc2_alt_cm);
     }
 }
 
@@ -446,10 +458,10 @@ void Plane::check_fbwb_altitude(void)
 #endif
 
     if (should_check_max) {
-        target_altitude.amsl_cm = MIN(target_altitude.amsl_cm, home.alt + max_alt_cm);
+        target_altitude.amsl_cm = MIN(target_altitude.amsl_cm, home.get_alt_cm() + max_alt_cm);
     }
     if (should_check_min) {
-        target_altitude.amsl_cm = MAX(target_altitude.amsl_cm, home.alt + min_alt_cm);
+        target_altitude.amsl_cm = MAX(target_altitude.amsl_cm, home.get_alt_cm() + min_alt_cm);
     }
 }
 
@@ -521,19 +533,22 @@ bool Plane::above_location_current(const Location &loc)
     float terrain_alt;
     if (loc.terrain_alt && 
         terrain.height_above_terrain(terrain_alt, true)) {
-        float loc_alt = loc.alt*0.01f;
+        float loc_alt;
+        UNUSED_RESULT(loc.get_alt_m(loc.get_alt_frame(), loc_alt));
         if (!loc.relative_alt) {
-            loc_alt -= home.alt*0.01f;
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            loc_alt -= home.get_alt_m();
         }
         return terrain_alt > loc_alt;
     }
 #endif
 
-    float loc_alt_cm = loc.alt;
+    int32_t loc_alt_cm;
+    UNUSED_RESULT(loc.get_alt_cm(loc.get_alt_frame(), loc_alt_cm));
     if (loc.relative_alt) {
-        loc_alt_cm += home.alt;
+        loc_alt_cm += home.get_alt_cm();
     }
-    return current_loc.alt > loc_alt_cm;
+    return current_loc.get_alt_cm() > loc_alt_cm;
 }
 
 /*
@@ -560,7 +575,7 @@ void Plane::setup_terrain_target_alt(Location &loc)
  */
 int32_t Plane::adjusted_altitude_cm(void)
 {
-    return current_loc.alt - (mission_alt_offset()*100);
+    return current_loc.get_alt_cm() - (mission_alt_offset()*100);
 }
 
 /*
@@ -597,9 +612,10 @@ float Plane::mission_alt_offset(void)
  */
 float Plane::height_above_target(void)
 {
-    float target_alt = next_WP_loc.alt*0.01;
+    float target_alt;
+    UNUSED_RESULT(next_WP_loc.get_alt_m(next_WP_loc.get_alt_frame(), target_alt));
     if (!next_WP_loc.relative_alt) {
-        target_alt -= ahrs.get_home().alt*0.01f;
+        target_alt -= ahrs.get_home().get_alt_m();
     }
 
 #if AP_TERRAIN_AVAILABLE
@@ -611,7 +627,7 @@ float Plane::height_above_target(void)
     }
 #endif
 
-    return (adjusted_altitude_cm()*0.01f - ahrs.get_home().alt*0.01f) - target_alt;
+    return (adjusted_altitude_cm()*0.01f - ahrs.get_home().get_alt_m()) - target_alt;
 }
 
 /*
@@ -971,8 +987,10 @@ void Plane::fix_terrain_WP(Location &loc, uint32_t linenum)
           means that home.alt has been added to loc.alt, so remove it,
           but only if it doesn't lead to a negative terrain altitude
          */
-        if (loc.alt - home.alt > -500) {
-            loc.alt -= home.alt;
+        int32_t loc_alt;
+        UNUSED_RESULT(loc.get_alt_cm(loc.get_alt_frame(), loc_alt));
+        if (loc_alt - home.get_alt_cm() > -500) {
+            loc.offset_up_m(-home.get_alt_m());
         }
         loc.relative_alt = true;
     }

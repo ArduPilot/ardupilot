@@ -2266,7 +2266,7 @@ void NavEKF3_core::moveEKFOrigin(void)
     }
 
     // move the origin to the current state location
-    Location loc = EKF_origin;
+    AbsAltLocation loc = EKF_origin;
     loc.offset(stateStruct.position.x, stateStruct.position.y);
     const Vector2F diffNE = loc.get_distance_NE_ftype(EKF_origin);
     EKF_origin = loc;

@@ -222,12 +222,16 @@ int32_t AP_Landing::loc_alt_AMSL_cm(const Location &loc) const
     if (loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) {
         // if we can't get true terrain then assume flat terrain
         // around home
-        return loc.alt + ahrs.get_home().alt;
+        int32_t terrain_alt_cm = 0;
+        UNUSED_RESULT(loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, terrain_alt_cm));
+        return terrain_alt_cm + ahrs.get_home().get_alt_cm();
     }
 
     // this should not happen, but return a value
     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-    return loc.alt;
+    alt_cm = 0;
+    UNUSED_RESULT(loc.get_alt_cm(loc.get_alt_frame(), alt_cm));
+    return alt_cm;
 }
 
 void AP_Landing::do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
@@ -257,7 +261,7 @@ void AP_Landing::do_land(const AP_Mission::Mission_Command& cmd, const float rel
   update navigation for landing. Called when on landing approach or
   final flare
  */
-bool AP_Landing::verify_land(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
+bool AP_Landing::verify_land(const Location &prev_WP_loc, Location &next_WP_loc, const AbsAltLocation &current_loc,
         const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range)
 {
     bool success = true;
@@ -528,7 +532,7 @@ bool AP_Landing::restart_landing_sequence()
     }
 
     uint16_t do_land_start_index = 0;
-    Location loc;
+    AbsAltLocation loc;
     if (ahrs.get_location(loc)) {
         do_land_start_index = mission.get_landing_sequence_start(loc);
     }
@@ -543,7 +547,9 @@ bool AP_Landing::restart_landing_sequence()
             mission.set_current_cmd(current_index+1))
     {
         // if the next immediate command is MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT to climb, do it
-        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Restarted landing sequence. Climbing to %dm", (signed)cmd.content.location.alt/100);
+        float alt_m;
+        UNUSED_RESULT(cmd.content.location.get_alt_m(Location::AltFrame::ABSOLUTE, alt_m));
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Restarted landing sequence. Climbing to %dm", (signed)alt_m);
         success =  true;
     }
     else if (do_land_start_index != 0 &&

@@ -9,14 +9,16 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 {
     const Location &target_loc = cmd.content.location;
     auto alt_frame = target_loc.get_alt_frame();
+    float alt_m;
+    UNUSED_RESULT(target_loc.get_alt_m(alt_frame, alt_m));
 
     if (alt_frame == Location::AltFrame::ABOVE_HOME) {
-        if (target_loc.alt > 0) {
+        if (alt_m > 0) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Alt above home must be negative");
             return false;
         }
     } else if (alt_frame == Location::AltFrame::ABOVE_TERRAIN) {
-        if (target_loc.alt < 0) {
+        if (alt_m < 0) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Alt above terrain must be positive");
             return false;
         }
@@ -262,7 +264,7 @@ void Sub::do_surface(const AP_Mission::Mission_Command& cmd)
             target_location.set_alt_cm(curr_terr_alt_cm, Location::AltFrame::ABOVE_TERRAIN);
         } else {
             // set target altitude to current altitude above home
-            target_location.set_alt_cm(current_loc.alt, Location::AltFrame::ABOVE_HOME);
+            target_location.copy_alt_from(current_loc);
         }
     } else {
         // set surface state to ascend
@@ -629,7 +631,11 @@ void Sub::do_set_home(const AP_Mission::Mission_Command& cmd)
             // silently ignore this failure
         }
     } else {
-        if (!set_home(cmd.content.location, false)) {
+        AbsAltLocation loc;
+        if (!loc.from(cmd.content.location)) {
+            return;
+        }
+        if (!set_home(loc, false)) {
             // silently ignore this failure
         }
     }

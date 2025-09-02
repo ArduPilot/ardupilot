@@ -749,12 +749,12 @@ int32_t GCS_MAVLINK_Sub::global_position_int_relative_alt() const
 int16_t GCS_MAVLINK_Sub::high_latency_target_altitude() const
 {
     AP_AHRS &ahrs = AP::ahrs();
-    Location global_position_current;
+    AbsAltLocation global_position_current;
     UNUSED_RESULT(ahrs.get_location(global_position_current));
 
     //return units are m
     if (sub.control_mode == Mode::Number::AUTO || sub.control_mode == Mode::Number::GUIDED) {
-        return 0.01 * (global_position_current.alt + sub.pos_control.get_pos_error_U_cm());
+        return 0.01 * (global_position_current.get_alt_cm() + sub.pos_control.get_pos_error_U_cm());
     }
     return 0;
     

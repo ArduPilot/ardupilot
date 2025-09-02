@@ -78,7 +78,7 @@ void AP_Periph_FW::can_gps_update(void)
           send Fix2 packet
         */
         uavcan_equipment_gnss_Fix2 pkt {};
-        const Location &loc = gps.location();
+        const AbsAltLocation &loc = gps.location();
         const Vector3f &vel = gps.velocity();
         if (gps.status() < AP_GPS::GPS_OK_FIX_2D && !saw_gps_lock_once) {
             pkt.timestamp.usec = AP_HAL::micros64();
@@ -95,8 +95,8 @@ void AP_Periph_FW::can_gps_update(void)
         }
         pkt.longitude_deg_1e8 = uint64_t(loc.lng) * 10ULL;
         pkt.latitude_deg_1e8 = uint64_t(loc.lat) * 10ULL;
-        pkt.height_ellipsoid_mm = loc.alt * 10;
-        pkt.height_msl_mm = loc.alt * 10;
+        pkt.height_ellipsoid_mm = loc.get_alt_cm() * 10;
+        pkt.height_msl_mm = loc.get_alt_cm() * 10;
         float undulation;
         if (gps.get_undulation(undulation)) {
             pkt.height_ellipsoid_mm -= undulation*1000;

@@ -613,7 +613,7 @@ float Mode::get_alt_above_ground_m(void) const
     }
 
     // Assume the Earth is flat:
-    return copter.current_loc.alt * 0.01;
+    return copter.current_alt_above_home_m();
 }
 
 void Mode::land_run_vertical_control(bool pause_descent)

@@ -431,8 +431,7 @@ float Sub::get_alt_rel() const
     if (ahrs.get_relative_position_D_origin_float(posD)) {
         if (ahrs.home_is_set()) {
             // adjust to the home position
-            auto home = ahrs.get_home();
-            posD -= static_cast<float>(home.alt) * 0.01f;
+            posD -= ahrs.get_home().get_alt_m();
         }
     } else {
         // fall back to the barometer reading
@@ -450,7 +449,7 @@ float Sub::get_alt_msl() const
         return 0;
     }
 
-    Location origin;
+    AbsAltLocation origin;
     if (!ahrs.get_origin(origin)) {
         return 0;
     }
@@ -463,7 +462,7 @@ float Sub::get_alt_msl() const
     }
 
     // add in the ekf origin altitude
-    posD -= static_cast<float>(origin.alt) * 0.01f;
+    posD -= origin.get_alt_m();
 
     // convert down to up
     return -posD;
@@ -471,7 +470,7 @@ float Sub::get_alt_msl() const
 
 bool Sub::ensure_ekf_origin()
 {
-    Location ekf_origin;
+    AbsAltLocation ekf_origin;
     if (ahrs.get_origin(ekf_origin)) {
         // ekf origin is set
         return true;
@@ -483,10 +482,11 @@ bool Sub::ensure_ekf_origin()
         return false;
     }
 
-    auto backup_origin = Location(static_cast<int32_t>(sub.g2.backup_origin_lat * 1e7),
-                                  static_cast<int32_t>(sub.g2.backup_origin_lon * 1e7),
-                                  static_cast<int32_t>(sub.g2.backup_origin_alt * 100),
-                                  Location::AltFrame::ABSOLUTE);
+    auto backup_origin = AbsAltLocation{
+        static_cast<int32_t>(sub.g2.backup_origin_lat * 1e7),
+        static_cast<int32_t>(sub.g2.backup_origin_lon * 1e7),
+        static_cast<int32_t>(sub.g2.backup_origin_alt * 100)
+    };
 
     if (backup_origin.lat == 0 || backup_origin.lng == 0) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Backup location parameters are missing or zero");

@@ -13,7 +13,7 @@
 void AP_AHRS::Write_AHRS2() const
 {
     Vector3f euler;
-    Location loc;
+    AbsAltLocation loc;
     Quaternion quat;
     if (!get_secondary_attitude(euler) || !get_secondary_position(loc) || !get_secondary_quaternion(quat)) {
         return;
@@ -69,11 +69,11 @@ void AP_AHRS::Write_Attitude(const Vector3f &targets) const
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
-void AP_AHRS::Write_Origin(LogOriginType origin_type, const Location &loc) const
+void AP_AHRS::Write_Origin(LogOriginType origin_type, const AbsAltLocation &loc) const
 {
-    int32_t alt_cm;
-    if (!loc.initialised() || !loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_cm)) {
-        alt_cm = 0;
+    int32_t alt_cm = 0;
+    if (loc.initialised()) {
+        alt_cm = loc.get_alt_cm();
     }
     const struct log_ORGN pkt{
         LOG_PACKET_HEADER_INIT(LOG_ORGN_MSG),
@@ -89,7 +89,7 @@ void AP_AHRS::Write_Origin(LogOriginType origin_type, const Location &loc) const
 // Write a POS packet
 void AP_AHRS::Write_POS() const
 {
-    Location loc;
+    AbsAltLocation loc;
     if (!get_location(loc)) {
         return;
     }

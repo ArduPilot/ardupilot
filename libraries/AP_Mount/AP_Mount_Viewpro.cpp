@@ -602,11 +602,11 @@ bool AP_Mount_Viewpro::send_tracking_command2(TrackingCommand2 cmd, int16_t para
 bool AP_Mount_Viewpro::send_m_ahrs()
 {
     // get current location
-    Location loc;
-    int32_t alt_amsl_cm = 0;
-    if (!AP::ahrs().get_location(loc) || !loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_amsl_cm)) {
+    AbsAltLocation loc;
+    if (!AP::ahrs().get_location(loc)) {
         return false;
     }
+    const int32_t alt_amsl_cm = loc.get_alt_cm();
 
 #if AP_RTC_ENABLED
     // get date and time

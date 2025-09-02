@@ -383,7 +383,7 @@ void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
         // if the mission doesn't specify a pitch use 4 degrees
         auto_state.takeoff_pitch_cd = 400;
     }
-    auto_state.takeoff_altitude_rel_cm = next_WP_loc.alt - home.alt;
+    auto_state.takeoff_altitude_rel_cm = next_WP_loc_abs_alt_m()*100 - home.get_alt_cm();
     next_WP_loc.lat = home.lat + 10;
     next_WP_loc.lng = home.lng + 10;
     auto_state.takeoff_complete = false; // set flag to use gps ground course during TO. IMU will be doing yaw drift correction.
@@ -783,7 +783,7 @@ bool Plane::verify_loiter_to_alt(const AP_Mission::Mission_Command &cmd)
         if (labs(loiter.sum_cd) > 1 && (loiter.reached_target_alt || loiter.unable_to_achieve_target_alt)) {
             // primary goal completed, initialize secondary heading goal
             if (loiter.unable_to_achieve_target_alt) {
-                gcs().send_text(MAV_SEVERITY_INFO,"Loiter to alt was stuck at %d", int(current_loc.alt/100));
+                gcs().send_text(MAV_SEVERITY_INFO,"Loiter to alt was stuck at %d", int(current_loc.get_alt_m()));
             }
 
             condition_value = 1;
@@ -822,16 +822,16 @@ bool Plane::verify_continue_and_change_alt()
     }
 
     //climbing?
-    if (condition_value == 1 && adjusted_altitude_cm() >= next_WP_loc.alt) {
+    if (condition_value == 1 && adjusted_altitude_cm() >= next_WP_loc_abs_alt_m()*100) {
         return true;
     }
     //descending?
     else if (condition_value == 2 &&
-             adjusted_altitude_cm() <= next_WP_loc.alt) {
+             adjusted_altitude_cm() <= next_WP_loc_abs_alt_m()) {
         return true;
     }    
     //don't care if we're climbing or descending
-    else if (labs(adjusted_altitude_cm() - next_WP_loc.alt) <= 500) {
+    else if (labs(adjusted_altitude_cm() - next_WP_loc_abs_alt_m()*100) <= 500) {
         return true;
     }
 
@@ -852,7 +852,7 @@ bool ModeAuto::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
     /*
       the target altitude in param1 is always AMSL
      */
-    const float alt_diff = plane.current_loc.alt*0.01 - cmd.content.altitude_wait.altitude;
+    const float alt_diff = plane.current_loc.get_alt_m() - cmd.content.altitude_wait.altitude;
     bool completed = false;
     if (alt_diff > 0) {
         gcs().send_text(MAV_SEVERITY_INFO,"Reached altitude");
@@ -1068,7 +1068,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 nav_controller->update_loiter(cmd.content.location, abs_radius, direction);
                 if (plane.reached_loiter_target()) {
                     // descend to Q RTL alt
-                    plane.do_RTL(plane.home.alt + plane.quadplane.qrtl_alt_m*100UL);
+                    plane.do_RTL(plane.home.get_alt_cm() + plane.quadplane.qrtl_alt_m*100UL);
                     plane.loiter_angle_reset();
                     vtol_approach_s.approach_stage = VTOLApproach::Stage::LOITER_TO_ALT;
                 }

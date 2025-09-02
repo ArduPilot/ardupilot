@@ -42,14 +42,14 @@ void ADSB_Vehicle::update(const class Aircraft &aircraft, float delta_t)
         return;
     }
 
-    const Location &origin { aircraft.get_origin() };
+    const AbsAltLocation &origin { aircraft.get_origin() };
 
     if (!initialised) {
         // spawn another aircraft
         initialised = true;
         ICAO_address = (uint32_t)(rand() % 10000);
         snprintf(callsign, sizeof(callsign), "SIM%u", ICAO_address);
-        Location aircraft_location = aircraft.get_location();
+        const auto &aircraft_location = aircraft.get_location();
         const Vector2f aircraft_offset_ne = aircraft_location.get_distance_NE(origin);
         position.x = aircraft_offset_ne[1];
         position.y = aircraft_offset_ne[0];
@@ -89,13 +89,11 @@ void ADSB_Vehicle::update(const class Aircraft &aircraft, float delta_t)
         initialised = false;
     }
 
-    Location ret = origin;
-    ret.offset(position.x, position.y);
-
-    location = ret;
+    location = origin;
+    location.offset(position.x, position.y);
 }
 
-const Location &ADSB_Vehicle::get_location() const
+const AbsAltLocation &ADSB_Vehicle::get_location() const
 {
     return location;
 }
@@ -128,7 +126,7 @@ void ADSB::update_simulated_vehicles(const class Aircraft &aircraft)
     last_update_us = now_us;
 
     // prune any aircraft which get too far away from our simulated vehicle:
-    const Location &aircraft_loc = aircraft.get_location();
+    const auto &aircraft_loc = aircraft.get_location();
 
     for (uint8_t i=0; i<num_vehicles; i++) {
         auto &vehicle = vehicles[i];
@@ -233,7 +231,7 @@ void ADSB::send_report(const class Aircraft &aircraft)
                 continue;
             }
 
-            const Location &loc { vehicle.get_location() };
+            const auto &loc { vehicle.get_location() };
 
             mavlink_adsb_vehicle_t adsb_vehicle {};
             last_report_us = now_us;

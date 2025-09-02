@@ -92,7 +92,7 @@ public:
         Barometric = 0,  // we use a specific model for this?
         WGS84 = 1,
     };
-    struct Loc : Location {
+    struct Loc : AbsAltLocation {
         AltType loc_alt_type;  // more information on altitude in base class
 
         AP_GPS_FixType fix_type;
@@ -168,7 +168,7 @@ public:
     void set_is_flying(const bool is_flying) { out_state.is_flying = is_flying; }
 
     // extract a location out of a vehicle item
-    Location get_location(const adsb_vehicle_t &vehicle) const;
+    AbsAltLocation get_location(const adsb_vehicle_t &vehicle) const;
 
     // ADSB is considered enabled if there are any configured backends
     bool enabled() const {

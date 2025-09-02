@@ -27,7 +27,7 @@ void AR_WPNav_OA::update(float dt)
 {
 #if AP_OAPATHPLANNER_ENABLED
     // exit immediately if no current location, origin or destination
-    Location current_loc;
+    AbsAltLocation current_loc;
     float speed;
     if (!hal.util->get_soft_armed() || !is_destination_valid() || !AP::ahrs().get_location(current_loc) || !_atc.get_forward_speed(speed)) {
         _desired_speed_limited = _atc.get_desired_speed_accel_limited(0.0f, dt);
@@ -49,7 +49,7 @@ void AR_WPNav_OA::update(float dt)
 
     AP_OAPathPlanner *oa = AP_OAPathPlanner::get_singleton();
     if (oa != nullptr) {
-        Location oa_origin_new, oa_destination_new, oa_next_destination_new;
+        AbsAltLocation oa_origin_new, oa_destination_new, oa_next_destination_new;
         AP_OAPathPlanner::OAPathPlannerUsed path_planner_used;
         bool dest_to_next_dest_clear;
         const AP_OAPathPlanner::OA_RetState oa_retstate = oa->mission_avoidance(current_loc,
@@ -208,7 +208,7 @@ float AR_WPNav_OA::oa_wp_bearing_cd() const
 void AR_WPNav_OA::update_oa_distance_and_bearing_to_destination()
 {
     // update OA adjusted values
-    Location current_loc;
+    AbsAltLocation current_loc;
     if (_oa_active && AP::ahrs().get_location(current_loc)) {
         _oa_distance_to_destination = current_loc.get_distance(_oa_destination);
         _oa_wp_bearing_cd = current_loc.get_bearing_to(_oa_destination);

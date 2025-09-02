@@ -2296,7 +2296,7 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
         } else if (s == QPOS_LAND_DESCEND) {
             // reset throttle descent control
             qp.thr_ctrl_land = false;
-            qp.land_descend_start_alt_m = plane.current_loc.alt*0.01;
+            qp.land_descend_start_alt_m = plane.current_loc.get_alt_m();
             last_override_descent_ms = 0;
         } else if (s == QPOS_LAND_ABORT) {
             // reset throttle descent control
@@ -2852,9 +2852,9 @@ void QuadPlane::vtol_position_controller(void)
             float target_d_m = -target_altitude_cm * 0.01;
             pos_control->input_pos_vel_accel_D_m(target_d_m, zero, 0);
         } else if (plane.control_mode == &plane.mode_qrtl) {
-            Location loc2 = loc;
-            loc2.change_alt_frame(Location::AltFrame::ABOVE_ORIGIN);
-            float target_d_m = -(loc2.alt * 0.01);
+            float target_u_m = 0;
+            UNUSED_RESULT(loc.get_alt_m(Location::AltFrame::ABOVE_ORIGIN, target_u_m));
+            float target_d_m = -target_u_m;
             float zero = 0;
             pos_control->input_pos_vel_accel_D_m(target_d_m, zero, 0);
         } else {
@@ -3088,7 +3088,7 @@ float QuadPlane::get_scaled_wp_speed(float target_bearing_deg) const
 void QuadPlane::setup_target_position(void)
 {
     const Location &loc = plane.next_WP_loc;
-    Location origin;
+    AbsAltLocation origin;
     if (!ahrs.get_origin(origin)) {
         origin.zero();
     }
@@ -3101,7 +3101,7 @@ void QuadPlane::setup_target_position(void)
     diff2d += poscontrol.correction_ne_m;
     poscontrol.target_ned_m.x = diff2d.x;
     poscontrol.target_ned_m.y = diff2d.y;
-    poscontrol.target_ned_m.z = -(plane.next_WP_loc.alt - origin.alt) * 0.01;
+    poscontrol.target_ned_m.z = -(plane.next_WP_loc_abs_alt_m() - origin.get_alt_m());
 
     // set vertical speed and acceleration limits
     // All limits must be positive
@@ -3181,7 +3181,7 @@ void QuadPlane::takeoff_controller(void)
      */
     bool no_navigation = false;
     if (takeoff_navalt_min_m > 0) {
-        const float alt_m = plane.current_loc.alt * 0.01;
+        const float alt_m = plane.current_loc.get_alt_m();
         if (takeoff_last_run_ms == 0 ||
             now - takeoff_last_run_ms > 1000) {
             takeoff_start_alt_m = alt_m;
@@ -3215,13 +3215,13 @@ void QuadPlane::takeoff_controller(void)
     if (plane.control_mode == &plane.mode_guided && guided_takeoff) {
         // for guided takeoff we aim for a specific height with zero
         // velocity at that height
-        Location origin;
+        AbsAltLocation origin;
         if (ahrs.get_origin(origin)) {
             // a small margin to ensure we do move to the next takeoff
             // stage
-            const int32_t margin_cm = 5;
-            float pos_d_m = -(margin_cm + plane.next_WP_loc.alt - origin.alt) * 0.01;
-            float vel_d_ms = 0.0;
+            const float margin_m = 0.05;
+            float pos_d_m = -(margin_m + plane.next_WP_loc_abs_alt_m() - origin.get_alt_m());
+            vel_d_ms = 0;
             pos_control->input_pos_vel_accel_D_m(pos_d_m, vel_d_ms, 0);
         } else {
             set_climb_rate_ms(vel_u_ms);
@@ -3359,13 +3359,18 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     if (option_is_set(QuadPlane::Option::RESPECT_TAKEOFF_FRAME)) {
         // convert to absolute frame for takeoff
         if (!plane.next_WP_loc.change_alt_frame(Location::AltFrame::ABSOLUTE) ||
-            plane.current_loc.alt >= plane.next_WP_loc.alt) {
+            plane.current_loc.get_alt_m() >= plane.next_WP_loc_abs_alt_m()) {
             // we are above the takeoff already, no need to do anything
             return false;
         }
     } else {
-        plane.next_WP_loc.set_alt_cm(plane.current_loc.alt + cmd.content.location.alt,
-                                     Location::AltFrame::ABSOLUTE);
+        // altitude is always interpreted as above-current-altitude
+        float content_location_alt_m;
+        UNUSED_RESULT(cmd.content.location.get_alt_m(cmd.content.location.get_alt_frame(), content_location_alt_m));
+        plane.next_WP_loc.set_alt_m(
+            plane.current_loc.get_alt_m() + content_location_alt_m,
+            Location::AltFrame::ABSOLUTE
+            );
     }
     throttle_wait = false;
 
@@ -3388,7 +3393,7 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     // d_{remaining} = d_{total} - d_{accel}
     // t_{constant} = \frac{d_{remaining}}{V_z}
     // t = max(t_{accel}, 0) + max(t_{constant}, 0)
-    const float d_total_m = (plane.next_WP_loc.alt - plane.current_loc.alt) * 0.01f;
+    const float d_total_m = plane.next_WP_loc_abs_alt_m() - plane.current_loc.get_alt_m();
     const float accel_m_s_s = MAX(0.1, pilot_accel_z_mss);
     const float vel_max_ms = MAX(0.1, pilot_speed_z_max_up_ms);
     const float vel_u_ms = inertial_nav.get_velocity_z_up_cms() * 0.01f;
@@ -3474,7 +3479,7 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     }
 #endif
 
-    if (plane.current_loc.alt < plane.next_WP_loc.alt) {
+    if (plane.current_loc.get_alt_m() < plane.next_WP_loc_abs_alt_m()) {
         return false;
     }
     transition->restart();
@@ -3657,7 +3662,7 @@ bool QuadPlane::verify_vtol_land(void)
 
     // at land_final_alt_m begin final landing
     if (poscontrol.get_state() == QPOS_LAND_ABORT &&
-        plane.current_loc.alt * 0.01 >= land_descend_start_alt_m) {
+        plane.current_loc.get_alt_m() >= land_descend_start_alt_m) {
         // continue to next WP, if there is one
         return true;
     }
@@ -3666,7 +3671,7 @@ bool QuadPlane::verify_vtol_land(void)
         (poscontrol.get_state() == QPOS_LAND_DESCEND ||
          poscontrol.get_state() == QPOS_LAND_FINAL)) {
         const auto &cmd = plane.mission.get_current_nav_cmd();
-        if (cmd.p1 > 0 && plane.current_loc.alt * 0.01 < land_descend_start_alt_m - cmd.p1 * 0.01) {
+        if (cmd.p1 > 0 && plane.current_loc.get_alt_m() < land_descend_start_alt_m - cmd.p1*0.01) {
             gcs().send_text(MAV_SEVERITY_INFO,"Payload place aborted");
             poscontrol.set_state(QPOS_LAND_ABORT);
         }
@@ -3929,7 +3934,7 @@ void QuadPlane::guided_start(void)
         poscontrol.slow_descent = from_alt > to_alt;
     } else {
         // default back to old method
-        poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
+        poscontrol.slow_descent = (plane.current_loc.get_alt_m() > plane.next_WP_loc_abs_alt_m());
     }
 }
 
@@ -3938,7 +3943,7 @@ void QuadPlane::guided_start(void)
  */
 void QuadPlane::guided_update(void)
 {
-    if (plane.control_mode == &plane.mode_guided && guided_takeoff && plane.current_loc.alt < plane.next_WP_loc.alt) {
+    if (plane.control_mode == &plane.mode_guided && guided_takeoff && plane.current_loc.get_alt_m() < plane.next_WP_loc_abs_alt_m()) {
         throttle_wait = false;
         set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         takeoff_controller();

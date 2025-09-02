@@ -462,7 +462,7 @@ void AP_Mount_Xacti::handle_gnss_status_req(AP_DroneCAN* ap_dronecan, const Cana
 
     // get current location
     uint8_t gps_status = 2;
-    Location loc;
+    AbsAltLocation loc;
     if (!AP::ahrs().get_location(loc)) {
         gps_status = 0;
     }
@@ -492,7 +492,7 @@ void AP_Mount_Xacti::handle_gnss_status_req(AP_DroneCAN* ap_dronecan, const Cana
     xacti_gnss_status_msg.utc_seconds = sec;
     xacti_gnss_status_msg.latitude = loc.lat * 1e-7;
     xacti_gnss_status_msg.longitude = loc.lng * 1e-7;
-    xacti_gnss_status_msg.altitude = loc.alt * 1e-2;
+    xacti_gnss_status_msg.altitude = loc.get_alt_m();
     ap_dronecan->xacti_gnss_status.broadcast(xacti_gnss_status_msg);
 }
 

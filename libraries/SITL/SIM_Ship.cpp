@@ -103,7 +103,7 @@ ShipSim::ShipSim()
 /*
   get the location of the ship
  */
-bool ShipSim::get_location(Location &loc) const
+bool ShipSim::get_location(AbsAltLocation &loc) const
 {
     if (!enable) {
         return false;
@@ -116,9 +116,9 @@ bool ShipSim::get_location(Location &loc) const
 /*
   get ground speed adjustment if we are landed on the ship
  */
-Vector2f ShipSim::get_ground_speed_adjustment(const Location &loc, float &yaw_rate)
+Vector2f ShipSim::get_ground_speed_adjustment(const AbsAltLocation &loc, float &yaw_rate)
 {
-    Location shiploc;
+    AbsAltLocation shiploc;
     if (!get_location(shiploc)) {
         yaw_rate = 0;
         return Vector2f(0,0);
@@ -129,7 +129,7 @@ Vector2f ShipSim::get_ground_speed_adjustment(const Location &loc, float &yaw_ra
     }
 
     // find center of the circle that the ship is on
-    Location center = shiploc;
+    AbsAltLocation center = shiploc;
     const float path_radius = path_size.get()*0.5;
     center.offset_bearing(ship.heading_deg+(ship.yaw_rate>0?90:-90), path_radius);
 
@@ -168,7 +168,7 @@ void ShipSim::update(void)
         }
         const Vector3f &ofs = offset.get();
         home.offset(ofs.x, ofs.y);
-        home.alt -= ofs.z*100;
+        home.set_alt_m(-ofs.z);
 
         initialised = true;
         ::printf("ShipSim home %f %f\n", home.lat*1.0e-7, home.lng*1.0e-7);
@@ -234,12 +234,12 @@ void ShipSim::send_report(void)
     /*
       send a GLOBAL_POSITION_INT messages
      */
-    Location loc;
+    AbsAltLocation loc;
     if (!get_location(loc)) {
         return;
     }
 
-    int32_t alt_mm = home.alt * 10;  // assume home altitude
+    int32_t alt_mm = home.get_alt_cm() * 10;  // assume home altitude
 
 #if AP_TERRAIN_AVAILABLE
     auto terrain = AP::terrain();

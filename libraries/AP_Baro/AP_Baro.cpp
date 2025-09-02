@@ -1005,9 +1005,9 @@ void AP_Baro::update_field_elevation(void)
         if (is_zero(_field_elevation_active) &&
             is_zero(_field_elevation)) {
             // auto-set based on origin
-            Location origin;
+            AbsAltLocation origin;
             if (!armed && AP::ahrs().get_origin(origin)) {
-                _field_elevation_active = origin.alt * 0.01;
+                _field_elevation_active = origin.get_alt_m();
                 if (is_zero(_field_elevation_active)) {
                     _field_elevation_active = 0.001f; // prevent zero value so that we don't keep trying to auto-set
                 }
@@ -1132,7 +1132,7 @@ bool AP_Baro::arming_checks(size_t buflen, char *buffer) const
      */
     const auto &gps = AP::gps();
     if (_alt_error_max > 0 && gps.status() >= AP_GPS::GPS_Status::GPS_OK_FIX_3D) {
-        const float alt_amsl = gps.location().alt*0.01;
+        const float alt_amsl = gps.location().get_alt_m();
         // note the addition of _field_elevation_active as this is subtracted in get_altitude_difference()
         const float alt_pressure = get_altitude_difference(SSL_AIR_PRESSURE, get_pressure());
         const float error = fabsf(alt_amsl - alt_pressure);

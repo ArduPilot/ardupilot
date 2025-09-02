@@ -292,9 +292,11 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
             landing.ahrs.get_relative_position_D_home(height_above_target);
             height_above_target = -height_above_target;
         } else {
-            Location position;
+            AbsAltLocation position;
             if (landing.ahrs.get_location(position)) {
-                height_above_target = (position.alt - landing_point.alt + approach_alt_offset * 100) * 1e-2f;
+                float landing_point_alt_m = 0;
+                UNUSED_RESULT(landing_point.get_alt_m(landing_point.get_alt_frame(), landing_point_alt_m));
+                height_above_target = position.get_alt_m() - landing_point_alt_m + approach_alt_offset;
             } else {
                 height_above_target = approach_alt_offset;
             }
@@ -435,6 +437,11 @@ int32_t AP_Landing_Deepstall::get_target_airspeed_cm(void) const
 
 bool AP_Landing_Deepstall::send_deepstall_message(mavlink_channel_t chan) const
 {
+    // FIXME: return landing point altitude in whatever frame it
+    // happens to currently be in:
+    float landing_point_alt = 0;
+    UNUSED_RESULT(landing_point.get_alt_m(landing_point.get_alt_frame(), landing_point_alt));
+
     CHECK_PAYLOAD_SIZE2(DEEPSTALL);
     mavlink_msg_deepstall_send(
         chan,
@@ -444,7 +451,7 @@ bool AP_Landing_Deepstall::send_deepstall_message(mavlink_channel_t chan) const
         stage >= DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT ? arc_exit.lng : 0.0f,
         stage >= DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT ? arc_entry.lat : 0.0f,
         stage >= DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT ? arc_entry.lng : 0.0f,
-        landing_point.alt * 0.01,
+        landing_point_alt,
         stage >= DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT ? predicted_travel_distance : 0.0f,
         stage == DEEPSTALL_STAGE_LAND ? crosstrack_error : 0.0f,
         stage);
@@ -458,6 +465,11 @@ const AP_PIDInfo& AP_Landing_Deepstall::get_pid_info(void) const
 
 #if HAL_LOGGING_ENABLED
 void AP_Landing_Deepstall::Log(void) const {
+    // FIXME: return landing point altitude in whatever frame it
+    // happens to currently be in:
+    int32_t landing_point_alt_cm = 0;
+    UNUSED_RESULT(landing_point.get_alt_cm(landing_point.get_alt_frame(), landing_point_alt_cm));
+
     const AP_PIDInfo& pid_info = ds_PID.get_pid_info();
     struct log_DSTL pkt = {
         LOG_PACKET_HEADER_INIT(LOG_DSTL_MSG),
@@ -466,7 +478,7 @@ void AP_Landing_Deepstall::Log(void) const {
         target_heading   : target_heading_deg,
         target_lat       : landing_point.lat,
         target_lng       : landing_point.lng,
-        target_alt       : landing_point.alt,
+        target_alt       : landing_point_alt_cm,
         crosstrack_error : (int16_t)(stage >= DEEPSTALL_STAGE_LAND ?
                              constrain_float(crosstrack_error * 1e2f, (float)INT16_MIN, (float)INT16_MAX) : 0),
         travel_distance  : (int16_t)(stage >= DEEPSTALL_STAGE_LAND ?
@@ -492,7 +504,11 @@ bool AP_Landing_Deepstall::terminate(void) {
         landing.flags.in_progress = true;
         stage = DEEPSTALL_STAGE_LAND;
 
-        if(landing.ahrs.get_location(landing_point)) {
+        AbsAltLocation tmp;
+        if(landing.ahrs.get_location(tmp)) {
+            landing_point.lat = tmp.lat;
+            landing_point.lng = tmp.lng;
+            landing_point.set_alt_m(tmp.get_alt_m(), Location::AltFrame::ABSOLUTE);
             build_approach_path(true);
         } else {
             hold_level = true;
@@ -517,7 +533,10 @@ void AP_Landing_Deepstall::build_approach_path(bool use_current_heading)
     //extend the approach point to 1km away so that there is always a navigational target
     extended_approach.offset_bearing(target_heading_deg, 1000.0);
 
-    float expected_travel_distance = predict_travel_distance(wind, is_zero(approach_alt_offset) ?  landing_point.alt * 0.01f : approach_alt_offset,
+    float landing_point_alt_m;
+    UNUSED_RESULT(landing_point.get_alt_m(landing_point.get_alt_frame(), landing_point_alt_m));
+
+    float expected_travel_distance = predict_travel_distance(wind, is_zero(approach_alt_offset) ?  landing_point_alt_m : approach_alt_offset,
                                                              false);
     float approach_extension_m = expected_travel_distance + approach_extension;
     float loiter_radius_m_abs = fabsf(loiter_radius);
@@ -617,13 +636,18 @@ bool AP_Landing_Deepstall::verify_breakout(const Location &current_loc, const Lo
 
 float AP_Landing_Deepstall::update_steering()
 {
+    AbsAltLocation abs_current_loc;
     Location current_loc;
-    if ((!landing.ahrs.get_location(current_loc) || !landing.ahrs.healthy()) && !hold_level) {
+    if ((!landing.ahrs.get_location(abs_current_loc) || !landing.ahrs.healthy()) && !hold_level) {
         // panic if no position source is available
         // continue the stall but target just holding the wings held level as deepstall should be a minimal
         // energy configuration on the aircraft, and if a position isn't available aborting would be worse
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Deepstall: Invalid data from AHRS. Holding level");
         hold_level = true;
+    } else {
+        current_loc.lat = abs_current_loc.lat;
+        current_loc.lng = abs_current_loc.lng;
+        current_loc.copy_alt_from(abs_current_loc);
     }
 
     float desired_change = 0.0f;

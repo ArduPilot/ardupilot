@@ -128,7 +128,7 @@ const AP_Param::GroupInfo SIM_Precland::var_info[] = {
     AP_GROUPEND
 };
 
-void SIM_Precland::update(const Location &loc)
+void SIM_Precland::update(const AbsAltLocation &loc)
 {
     if (!_enable) {
         _healthy = false;
@@ -139,12 +139,13 @@ void SIM_Precland::update(const Location &loc)
         return;
     }
 
-    Location device_center(static_cast<int32_t>(_device_lat * 1.0e7f),
-                           static_cast<int32_t>(_device_lon * 1.0e7f),
-                           static_cast<int32_t>(_device_height*100),
-                           Location::AltFrame::ABOVE_ORIGIN);
+    AbsAltLocation device_center{
+        static_cast<int32_t>(_device_lat * 1.0e7f),
+        static_cast<int32_t>(_device_lon * 1.0e7f),
+        static_cast<int32_t>(_device_height*100)
+    };
 
-    if (device_center.lat == 0 && device_center.lng == 0 && device_center.alt == 0) {
+    if (device_center.is_zero()) {
         const uint32_t now_ms = AP_HAL::millis();
         if (now_ms - last_set_parameters_warning_ms > 5000) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Set SIM_PLD_LAT, SIM_PLD_LAT and SIM_PLD_ALT");
@@ -160,9 +161,8 @@ void SIM_Precland::update(const Location &loc)
           make precland target follow the simulated ship if the ship is enabled
          */
         auto *sitl = AP::sitl();
-        Location shiploc;
+        AbsAltLocation shiploc;
         if (sitl != nullptr && sitl->models.shipsim.get_location(shiploc) && !shiploc.is_zero()) {
-            shiploc.change_alt_frame(Location::AltFrame::ABOVE_ORIGIN);
             device_center = shiploc;
         }
     }
@@ -171,8 +171,6 @@ void SIM_Precland::update(const Location &loc)
     // axis of cone or cylinder inside which the vehicle receives signals from simulated precland device
     Vector3d axis{1, 0, 0};
     axis.rotate((Rotation)_orient.get());   // unit vector in direction of axis of cone or cylinder
-
-    device_center.change_alt_frame(loc.get_alt_frame());
 
     Vector3d position_wrt_device = device_center.get_distance_NED_double(loc);  // position of vehicle with respect to preland device center
     

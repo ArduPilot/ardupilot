@@ -112,7 +112,7 @@ public:
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
 
     // relative-origin functions for fallback in AP_InertialNav
-    bool get_origin(Location &ret) const override;
+    bool get_origin(AbsAltLocation &ret) const override;
     bool get_relative_position_NED_origin(Vector3p &vec) const override;
     bool get_relative_position_NE_origin(Vector2p &posNE) const override;
     bool get_relative_position_D_origin(postype_t &posD) const override;
@@ -127,7 +127,7 @@ public:
 private:
 
     // dead-reckoning support
-    bool get_location(Location &loc) const;
+    bool get_location(AbsAltLocation &loc) const;
 
     // settable parameters
     AP_Float &_kp_yaw;
@@ -266,7 +266,7 @@ private:
     uint32_t _last_startup_ms;
 
     // last origin we returned, for DCM fallback from EKF
-    Location last_origin;
+    AbsAltLocation last_origin;
 
     // Declare filter states for HPF and LPF used by complementary
     // filter in AP_AHRS::groundspeed_vector

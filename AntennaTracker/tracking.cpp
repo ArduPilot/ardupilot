@@ -31,7 +31,7 @@ void Tracker::update_vehicle_pos_estimate()
  */
 void Tracker::update_tracker_position()
 {
-    Location temp_loc;
+    AbsAltLocation temp_loc;
 
     // REVISIT: what if we lose lock during a mission and the antenna is moving?
     if (ahrs.get_location(temp_loc)) {
@@ -62,7 +62,7 @@ void Tracker::update_bearing_and_distance()
 
     // calculate altitude difference to vehicle using gps
     if (g.alt_source == ALT_SOURCE_GPS){
-        nav_status.alt_difference_gps = (vehicle.location_estimate.alt - current_loc.alt) * 0.01f;
+        nav_status.alt_difference_gps = vehicle.location_estimate.get_alt_m() - current_loc.get_alt_m();
     } else {
         // g.alt_source == ALT_SOURCE_GPS_VEH_ONLY
         nav_status.alt_difference_gps = vehicle.relative_alt * 0.01f;
@@ -138,7 +138,7 @@ void Tracker::tracking_update_position(const mavlink_global_position_int_t &msg)
 
     vehicle.location.lat = msg.lat;
     vehicle.location.lng = msg.lon;
-    vehicle.location.alt = msg.alt/10;
+    vehicle.location.set_alt_cm(msg.alt/10);
     vehicle.relative_alt = msg.relative_alt/10;
     vehicle.vel = Vector3f(msg.vx*0.01f, msg.vy*0.01f, msg.vz*0.01f);
     vehicle.last_update_us = AP_HAL::micros();
@@ -146,7 +146,7 @@ void Tracker::tracking_update_position(const mavlink_global_position_int_t &msg)
 #if HAL_LOGGING_ENABLED
     // log vehicle as VPOS
     if (should_log(MASK_LOG_GPS)) {
-        Log_Write_Vehicle_Pos(vehicle.location.lat, vehicle.location.lng, vehicle.location.alt, vehicle.vel);
+        Log_Write_Vehicle_Pos(vehicle.location.lat, vehicle.location.lng, vehicle.location.get_alt_cm(), vehicle.vel);
     }
 #endif
 }
