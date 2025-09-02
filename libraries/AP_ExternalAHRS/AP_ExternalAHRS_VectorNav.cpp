@@ -633,7 +633,11 @@ void AP_ExternalAHRS_VectorNav::process_ins_ekf_packet(const uint8_t *b) {
     state.velocity      = Vector3f{pkt.velNed[0], pkt.velNed[1], pkt.velNed[2]};
     state.have_velocity = true;
 
-    state.location = Location{int32_t(pkt.posLla[0] * 1.0e7), int32_t(pkt.posLla[1] * 1.0e7), int32_t(pkt.posLla[2] * 1.0e2), Location::AltFrame::ABSOLUTE};
+    state.location = {
+        int32_t(pkt.posLla[0] * 1.0e7),
+        int32_t(pkt.posLla[1] * 1.0e7),
+        int32_t(pkt.posLla[2] * 1.0e2)
+    };
     state.last_location_update_us = AP_HAL::micros();
     state.have_location           = true;
 
@@ -703,8 +707,11 @@ void AP_ExternalAHRS_VectorNav::process_ins_gnss_packet(const uint8_t *b) {
 
     if (!state.have_origin && gps.fix_type >= AP_GPS_FixType::FIX_3D) {
         WITH_SEMAPHORE(state.sem);
-        state.origin = Location{int32_t(pkt.posLla1[0] * 1.0e7), int32_t(pkt.posLla1[1] * 1.0e7),
-                                int32_t(pkt.posLla1[2] * 1.0e2), Location::AltFrame::ABSOLUTE};
+        state.origin = {
+            int32_t(pkt.posLla1[0] * 1.0e7),
+            int32_t(pkt.posLla1[1] * 1.0e7),
+            int32_t(pkt.posLla1[2] * 1.0e2)
+        };
         state.have_origin = true;
     }
     uint8_t instance;

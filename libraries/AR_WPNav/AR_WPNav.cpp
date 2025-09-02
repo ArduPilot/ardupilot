@@ -141,7 +141,7 @@ void AR_WPNav::init(float speed_max)
 void AR_WPNav::update(float dt)
 {
     // exit immediately if no current location, origin or destination
-    Location current_loc;
+    AbsAltLocation current_loc;
     float speed;
     if (!hal.util->get_soft_armed() || !_orig_and_dest_valid || !AP::ahrs().get_location(current_loc) || !_atc.get_forward_speed(speed)) {
         _desired_speed_limited = _atc.get_desired_speed_accel_limited(0.0f, dt);
@@ -304,7 +304,7 @@ bool AR_WPNav::set_desired_location(const Location& destination, Location next_d
 // set desired location to a reasonable stopping point, return true on success
 bool AR_WPNav::set_desired_location_to_stopping_location()
 {
-    Location stopping_loc;
+    AbsAltLocation stopping_loc;
     if (!get_stopping_location(stopping_loc)) {
         return false;
     }
@@ -315,7 +315,7 @@ bool AR_WPNav::set_desired_location_to_stopping_location()
 bool AR_WPNav::set_desired_location_NED(const Vector3f& destination)
 {
     // initialise destination to ekf origin
-    Location destination_ned;
+    AbsAltLocation destination_ned;
     if (!AP::ahrs().get_origin(destination_ned)) {
         return false;
     }
@@ -328,7 +328,7 @@ bool AR_WPNav::set_desired_location_NED(const Vector3f& destination)
 bool AR_WPNav::set_desired_location_NED(const Vector3f &destination, const Vector3f &next_destination)
 {
     // initialise destination to ekf origin
-    Location dest_loc, next_dest_loc;
+    AbsAltLocation dest_loc, next_dest_loc;
     if (!AP::ahrs().get_origin(dest_loc)) {
         return false;
     }
@@ -369,9 +369,9 @@ bool AR_WPNav::set_desired_location_expect_fast_update(const Location &destinati
 }
 
 // calculate vehicle stopping point using current location, velocity and maximum acceleration
-bool AR_WPNav::get_stopping_location(Location& stopping_loc)
+bool AR_WPNav::get_stopping_location(AbsAltLocation& stopping_loc)
 {
-    Location current_loc;
+    AbsAltLocation current_loc;
     if (!AP::ahrs().get_location(current_loc)) {
         return false;
     }
@@ -404,7 +404,7 @@ bool AR_WPNav::is_active() const
 }
 
 // move target location along track from origin to destination using SCurves navigation
-void AR_WPNav::advance_wp_target_along_track(const Location &current_loc, float dt)
+void AR_WPNav::advance_wp_target_along_track(const AbsAltLocation &current_loc, float dt)
 {
     // exit immediately if no current location, destination or disarmed
     Vector2f curr_pos_NE;
@@ -495,7 +495,7 @@ void AR_WPNav::update_psc_input_shaping(float dt)
 void AR_WPNav::update_distance_and_bearing_to_destination()
 {
     // if no current location leave distance unchanged
-    Location current_loc;
+    AbsAltLocation current_loc;
     if (!_orig_and_dest_valid || !AP::ahrs().get_location(current_loc)) {
         _distance_to_destination = 0.0f;
         _wp_bearing_cd = 0.0f;
@@ -506,7 +506,7 @@ void AR_WPNav::update_distance_and_bearing_to_destination()
 }
 
 // calculate steering and speed to drive along line from origin to destination waypoint
-void AR_WPNav::update_steering_and_speed(const Location &current_loc, float dt)
+void AR_WPNav::update_steering_and_speed(const AbsAltLocation &current_loc, float dt)
 {
     _cross_track_error = calc_crosstrack_error(current_loc);
 
@@ -536,7 +536,7 @@ void AR_WPNav::set_turn_params(float turn_radius, bool pivot_possible)
 }
 
 // calculate the crosstrack error
-float AR_WPNav::calc_crosstrack_error(const Location& current_loc) const
+float AR_WPNav::calc_crosstrack_error(const AbsAltLocation& current_loc) const
 {
     if (!_orig_and_dest_valid) {
         return 0.0f;
@@ -596,7 +596,7 @@ void AR_WPNav::init_pos_control_if_necessary()
 bool AR_WPNav::set_origin_and_destination_to_stopping_point()
 {
     // initialise origin and destination to stopping point
-    Location stopping_loc;
+    AbsAltLocation stopping_loc;
     if (!get_stopping_location(stopping_loc)) {
         return false;
     }

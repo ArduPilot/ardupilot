@@ -53,7 +53,7 @@ void AP_Landing::type_slope_verify_abort_landing(const Location &prev_WP_loc, Lo
   update navigation for landing. Called when on landing approach or
   final flare
  */
-bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
+bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &next_WP_loc, const AbsAltLocation &current_loc,
         const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range)
 {
     // we don't 'verify' landing in the sense that it never completes,
@@ -64,7 +64,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
     if (type_slope_stage == SlopeStage::NORMAL) {
         const bool heading_lined_up = abs(nav_controller->bearing_error_cd()) < 1000 && !nav_controller->data_is_stale();
         const bool on_flight_line = fabsf(nav_controller->crosstrack_error()) < 5.0f && !nav_controller->data_is_stale();
-        const bool below_prev_WP = current_loc.alt < loc_alt_AMSL_cm(prev_WP_loc);
+        const bool below_prev_WP = current_loc.get_alt_cm() < loc_alt_AMSL_cm(prev_WP_loc);
         if ((mission.get_prev_nav_cmd_id() == MAV_CMD_NAV_LOITER_TO_ALT) ||
             (wp_proportion >= 0 && heading_lined_up && on_flight_line) ||
             (wp_proportion > 0.15f && heading_lined_up && below_prev_WP) ||
@@ -315,10 +315,17 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
 
     // now calculate our aim point, which is before the landing
     // point and above it
-    Location loc = next_WP_loc;
-    loc.change_alt_frame(Location::AltFrame::ABSOLUTE);
+    int32_t next_WP_loc_alt_cm = 0;
+    if (!next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, next_WP_loc_alt_cm)) {
+        UNUSED_RESULT(next_WP_loc.get_alt_cm(next_WP_loc.get_alt_frame(), next_WP_loc_alt_cm));
+    }
+    AbsAltLocation loc {
+        next_WP_loc.lat,
+        next_WP_loc.lng,
+        next_WP_loc_alt_cm
+    };
     loc.offset_bearing(land_bearing_cd * 0.01f, -flare_distance);
-    loc.alt += aim_height*100;
+    loc.offset_up_m(aim_height);
 
     // calculate slope to landing point
     bool is_first_calc = is_zero(slope);
@@ -332,7 +339,7 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
     loc.offset_up_m(-slope * land_projection);
 
     // setup the offset_cm for set_target_altitude_proportion()
-    target_altitude_offset_cm = loc.alt - loc_alt_AMSL_cm(prev_WP_loc);
+    target_altitude_offset_cm = loc.get_alt_cm() - loc_alt_AMSL_cm(prev_WP_loc);
 
     // calculate the proportion we are to the target
     float land_proportion = current_loc.line_path_proportion(prev_WP_loc, loc);

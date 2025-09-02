@@ -276,7 +276,7 @@ private:
     float           _polygon_breach_distance_m; // distance beyond the polygon fence
     Vector2f        _polygon_nearest_point;     // direction towards the polygon breach
     Vector2f        _circle_breach_direction;   // direction towards the circle breach
-    Location        _last_fence_check_loc;      // position used in the last fence check
+    AbsAltLocation  _last_fence_check_loc;      // position used in the last fence check
     bool            _last_fence_check_loc_valid;// whether the position determined in the last fence check was valid
 
     // other internal variables

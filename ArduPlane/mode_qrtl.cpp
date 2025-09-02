@@ -14,7 +14,7 @@ bool ModeQRTL::_enter()
     submode = SubMode::RTL;
     plane.prev_WP_loc = plane.current_loc;
 
-    int32_t RTL_alt_abs_cm = plane.home.alt + quadplane.qrtl_alt_m*100UL;
+    int32_t RTL_alt_abs_cm = plane.home.get_alt_cm() + quadplane.qrtl_alt_m*100UL;
     if (quadplane.motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
         // VTOL motors are active, either in VTOL flight or assisted flight
         Location destination = plane.calc_best_rally_or_home_location(plane.current_loc, RTL_alt_abs_cm);
@@ -45,7 +45,7 @@ bool ModeQRTL::_enter()
                 return true;
             }
 #endif
-            plane.next_WP_loc.set_alt_cm(plane.current_loc.alt + dist_to_climb * 100UL, plane.current_loc.get_alt_frame());
+            plane.next_WP_loc.set_alt_m(plane.current_loc.get_alt_m() + dist_to_climb, plane.current_loc.get_alt_frame());
             return true;
 
         } else if (dist < radius) {
@@ -72,7 +72,9 @@ bool ModeQRTL::_enter()
         return true;
     }
     // default back to old method
-    poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
+    float next_WP_loc_alt_m = 0;
+    UNUSED_RESULT(plane.next_WP_loc.get_alt_m(plane.next_WP_loc.get_alt_frame(), next_WP_loc_alt_m));
+    poscontrol.slow_descent = (plane.current_loc.get_alt_m() > next_WP_loc_alt_m);
     return true;
 }
 
@@ -130,7 +132,7 @@ void ModeQRTL::run()
                 submode = SubMode::RTL;
                 plane.prev_WP_loc = plane.current_loc;
 
-                int32_t RTL_alt_abs_cm = plane.home.alt + quadplane.qrtl_alt_m*100UL;
+                int32_t RTL_alt_abs_cm = plane.home.get_alt_cm() + quadplane.qrtl_alt_m*100UL;
                 Location destination = plane.calc_best_rally_or_home_location(plane.current_loc, RTL_alt_abs_cm);
                 const float dist = plane.current_loc.get_distance(destination);
                 const float radius = get_VTOL_return_radius();
@@ -150,7 +152,7 @@ void ModeQRTL::run()
                     poscontrol.slow_descent = is_positive(alt_diff);
                 } else {
                     // default back to old method
-                    poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
+                    poscontrol.slow_descent = (plane.current_loc.get_alt_m() > plane.next_WP_loc_abs_alt_m());
                 }
             }
             break;

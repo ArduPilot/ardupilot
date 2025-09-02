@@ -869,7 +869,7 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
         cmd.content.location.terrain_alt = packed_content.location.flags.terrain_alt;
         cmd.content.location.origin_alt = packed_content.location.flags.origin_alt;
         cmd.content.location.loiter_xtrack = packed_content.location.flags.loiter_xtrack;
-        cmd.content.location.alt = packed_content.location.alt;
+        cmd.content.location.set_alt_cm(packed_content.location.alt, cmd.content.location.get_alt_frame());
         cmd.content.location.lat = packed_content.location.lat;
         cmd.content.location.lng = packed_content.location.lng;
 
@@ -951,7 +951,11 @@ bool AP_Mission::write_cmd_to_storage(uint16_t index, const Mission_Command& cmd
         packed.location.flags.loiter_xtrack = cmd.content.location.loiter_xtrack;
         packed.location.flags.type_specific_bit_0 = (cmd.type_specific_bits & (1U<<0)) >> 0;
         packed.location.flags.type_specific_bit_1 = (cmd.type_specific_bits & (1U<<1)) >> 1;
-        packed.location.alt = cmd.content.location.alt;
+        int32_t alt_cm = 0;
+        if (cmd.content.location.initialised()) {
+            UNUSED_RESULT(cmd.content.location.get_alt_cm(cmd.content.location.get_alt_frame(), alt_cm));
+        }
+        packed.location.alt = alt_cm;
         packed.location.lat = cmd.content.location.lat;
         packed.location.lng = cmd.content.location.lng;
     } else {
@@ -1485,8 +1489,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.location.lat = packet.x;
         cmd.content.location.lng = packet.y;
 
-        cmd.content.location.alt = packet.z * 100.0f;       // convert packet's alt (m) to cmd alt (cm)
-
         switch (packet.frame) {
 
         case MAV_FRAME_MISSION:
@@ -1514,6 +1516,8 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         default:
             return MAV_MISSION_UNSUPPORTED_FRAME;
         }
+
+        cmd.content.location.set_alt_cm(packet.z * 100.0f, cmd.content.location.get_alt_frame());       // convert packet's alt (m) to cmd alt (cm)
     }
 
     // if we got this far then it must have been successful
@@ -1992,10 +1996,12 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
 
     // copy location from mavlink to command
     if (stored_in_location(cmd.id)) {
-        packet.x = cmd.content.location.lat;
-        packet.y = cmd.content.location.lng;
-
-        packet.z = cmd.content.location.alt * 0.01f;   // cmd alt in cm to m
+        if (cmd.content.location.initialised()) {
+            UNUSED_RESULT(cmd.content.location.get_alt_m(cmd.content.location.get_alt_frame(), packet.z));
+            packet.x = cmd.content.location.lat;
+            packet.y = cmd.content.location.lng;
+            // packet.z = 0;
+        }
         if (cmd.content.location.relative_alt) {
             packet.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
         } else {
@@ -2013,7 +2019,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
                 // interpret it
                 return false;
             }
-            packet.z = cmd.content.location.alt * 0.01f;
+            UNUSED_RESULT(cmd.content.location.get_alt_m(cmd.content.location.get_alt_frame(), packet.z));
             packet.frame = MAV_FRAME_GLOBAL_TERRAIN_ALT;
         }
 #else
@@ -3159,7 +3165,7 @@ void AP_Mission::format_conversion(uint8_t tag_byte, const Mission_Command &cmd,
 #if AP_SCRIPTING_ENABLED
 bool AP_Mission::jump_to_landing_sequence(void)
 {
-    Location loc;
+    AbsAltLocation loc;
     if (AP::ahrs().get_location(loc)) {
         return jump_to_landing_sequence(loc);
     }
@@ -3169,7 +3175,7 @@ bool AP_Mission::jump_to_landing_sequence(void)
 
 bool AP_Mission::jump_to_abort_landing_sequence(void)
 {
-    Location loc;
+    AbsAltLocation loc;
     if (AP::ahrs().get_location(loc)) {
         return jump_to_abort_landing_sequence(loc);
     }

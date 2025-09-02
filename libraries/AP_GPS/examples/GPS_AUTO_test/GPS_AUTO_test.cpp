@@ -109,7 +109,7 @@ void loop()
         last_msg_ms = gps.last_message_time_ms();
 
         // Acquire location
-        const Location &loc = gps.location();
+        const AbsAltLocation &loc = gps.location();
 
         // Print the contents of message
         hal.console->printf("Lat: ");
@@ -117,7 +117,7 @@ void loop()
         hal.console->printf(" Lon: ");
         print_latlon(hal.console, loc.lng);
         hal.console->printf(" Alt: %.2fm GSP: %.2fm/s CoG: %d SAT: %d TIM: %u/%lu STATUS: %u\n",
-                            (double)(loc.alt * 0.01f),
+                            (double)(loc.get_alt_m()),
                             (double)gps.ground_speed(),
                             (int)gps.ground_course(),
                             gps.num_sats(),
