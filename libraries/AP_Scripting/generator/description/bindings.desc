@@ -343,7 +343,7 @@ ap_object AP_Vehicle::custom_mode_state depends (!defined(HAL_BUILD_AP_PERIPH))
 ap_object AP_Vehicle::custom_mode_state field allow_entry boolean read write
 
 include AP_Vehicle/AP_Vehicle.h
-singleton AP_Vehicle depends (!defined(HAL_BUILD_AP_PERIPH))
+singleton AP_Vehicle depends AP_SCRIPTING_BINDING_VEHICLE_ENABLED
 singleton AP_Vehicle rename vehicle
 singleton AP_Vehicle scheduler-semaphore
 singleton AP_Vehicle method set_mode boolean uint8_t'skip_check ModeReason::SCRIPTING'literal
