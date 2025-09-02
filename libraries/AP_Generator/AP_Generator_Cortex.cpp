@@ -56,6 +56,7 @@ bool AP_Generator_Cortex::handle_message(AP_HAL::CANFrame &frame, AP_PiccoloCAN*
     } else if (decodeCortex_TelemetryGeneratorPacketStructure(&frame, &telemetry.generator)) {
     } else if (decodeCortex_TelemetryBatteryPacketStructure(&frame, &telemetry.battery)) {
     } else if (decodeCortex_TelemetryOutputRailPacketStructure(&frame, &telemetry.rails)) {
+    } else if (decodeCortex_TelemetryControllerPacketStructure(&frame, &telemetry.controller)) {
     } else {
         result = false;
     }
@@ -196,11 +197,11 @@ void AP_Generator_Cortex::send_generator_status(const GCS_MAVLINK &channel)
         loadCurrent(),
         generatorPower(),
         generatorVoltage(),
-        0, // TODO: rectifier temperature
-        0, // TODO: battery current setpoint
+        rectifierTemperature(),
+        std::numeric_limits<double>::quiet_NaN(),
         telemetry.generator.temperature,
-        0, // TODO: runtime
-        0  // TODO: time until maintenance
+        telemetry.controller.runTime,
+        0  // time until maintenance (not supported)
     );
 }
 
@@ -231,9 +232,17 @@ bool AP_Generator_Cortex::healthy() const
         return false;
     }
 
-    // TODO: Check if generator is healthy
-
     return true;
+}
+
+
+int16_t AP_Generator_Cortex::rectifierTemperature(void) const
+{
+    const Cortex_TelemetryController_t &controller = telemetry.controller;
+
+    // Return the maximum of the two internal temperature values
+    return controller.rectifierTemperature > controller.regulatorTemperature ?
+        controller.rectifierTemperature : controller.regulatorTemperature;
 }
 
 bool AP_Generator_Cortex::stop(void)

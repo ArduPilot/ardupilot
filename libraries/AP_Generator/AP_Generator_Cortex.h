@@ -83,6 +83,7 @@ private:
         Cortex_TelemetryGenerator_t generator;
         Cortex_TelemetryBattery_t battery;
         Cortex_TelemetryOutputRail_t rails;
+        Cortex_TelemetryController_t controller;
     } telemetry;
 
     float batteryCurrent(void) const { return telemetry.battery.current; }
@@ -93,6 +94,8 @@ private:
     float generatorPower(void) const { return generatorCurrent() * generatorVoltage(); }
 
     float loadCurrent(void) const { return batteryCurrent() - generatorCurrent(); }
+
+    int16_t rectifierTemperature(void) const;
 
     // Last telemetry reading from the generator
     uint32_t last_reading_ms;
