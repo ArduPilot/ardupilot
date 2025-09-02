@@ -126,6 +126,8 @@ void AP_Generator_Cortex::send_generator_status(const GCS_MAVLINK &channel)
 
     // Copy status flags from MAV_GENERATOR_STATUS_FLAG enum
     const Cortex_StatusBits_t &status = telemetry.status.status;
+    const Cortex_WarningBits_t &warning = telemetry.status.warning;
+    const Cortex_ErrorBits_t &error = telemetry.status.error;
 
     // Check inihibit state
     if (status.inhibited) {
@@ -148,15 +150,43 @@ void AP_Generator_Cortex::send_generator_status(const GCS_MAVLINK &channel)
             break;
     }
 
+    // Status flags
     if (status.readyToRun) {
         status_flags |= MAV_GENERATOR_STATUS_FLAG_READY;
     }
 
-    if (telemetry.battery.current <= 0.05f) {
+    if (telemetry.battery.current <= 0.1f) {
         status_flags |= MAV_GENERATOR_STATUS_FLAG_CHARGING;
     }
 
-    // TODO: Add in other status flags for various operational conditions
+    if (status.powerLimit) {
+        status_flags |= MAV_GENERATOR_STATUS_FLAG_REDUCED_POWER;
+    }
+
+    // Warning flags
+    if (warning.generatorTempLimit) {
+        status_flags |= MAV_GENERATOR_STATUS_FLAG_OVERTEMP_WARNING;
+    }
+
+    if (warning.temperature) {
+        status_flags |= MAV_GENERATOR_STATUS_FLAG_ELECTRONICS_OVERTEMP_WARNING;
+    }
+
+    if (warning.enginePowerLimit) {
+        status_flags |= MAV_GENERATOR_STATUS_FLAG_MAXPOWER;
+    }
+    
+    // Error flags
+    if (error.generator) {
+        status_flags |= MAV_GENERATOR_STATUS_FLAG_ELECTRONICS_FAULT;
+    }
+
+    if (error.avionicsRail ||
+        error.payloadRail ||
+        error.servoRail ||
+        error.batteryChargerRail) {
+        status_flags |= MAV_GENERATOR_STATUS_FLAG_POWER_RAIL_FAULT;
+    }
 
     mavlink_msg_generator_status_send(
         channel.get_chan(),
