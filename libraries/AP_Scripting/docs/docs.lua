@@ -3972,7 +3972,7 @@ function mavlink:receive_chan() end
 ---@param chan integer
 ---@param msgid integer
 ---@param message string
----@return boolean -- success
+---@return boolean|nil -- True if send was successful, false if send was not successful, nil if channel does not exist
 function mavlink:send_chan(chan, msgid, message) end
 
 -- Block a given MAV_CMD from being processed by ArduPilot
