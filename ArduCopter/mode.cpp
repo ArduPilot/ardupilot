@@ -602,14 +602,14 @@ float Mode::get_alt_above_ground_m(void) const
         return alt_above_ground_m;
     }
     if (!pos_control->is_active_NE()) {
-        return copter.current_loc.alt;
+        return copter.current_alt_above_home_m();
     }
     if (copter.current_loc.get_alt_m(Location::AltFrame::ABOVE_TERRAIN, alt_above_ground_m)) {
         return alt_above_ground_m;
     }
 
     // Assume the Earth is flat:
-    return copter.current_loc.alt * 0.01;
+    return copter.current_alt_above_home_m();
 }
 
 void Mode::land_run_vertical_control(bool pause_descent)

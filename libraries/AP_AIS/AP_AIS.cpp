@@ -418,7 +418,7 @@ bool AP_AIS::get_vessel_index(uint32_t mmsi, uint16_t &index, int32_t lat, int32
         return false;
     }
 
-    Location current_loc;
+    AbsAltLocation current_loc;
     if (!AP::ahrs().get_location(current_loc)) {
         return false;
     }

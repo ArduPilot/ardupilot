@@ -147,7 +147,7 @@ void ModeTakeoff::update()
     // flying towards a wrong location if we can't climb.
     // This will correct any yaw estimation errors (caused by EKF reset
     // or compass interference from max throttle), since it's using position bearing.
-    const float altitude_cm = plane.current_loc.alt - start_loc.alt;
+    const float altitude_cm = plane.current_loc.get_alt_cm() - start_loc.get_alt_cm();
     if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF
         && plane.steer_state.hold_course_cd == -1 // This is the enter-once flag.
         && (altitude_cm >= (level_alt * 100.0f) || start_loc.get_distance(plane.current_loc) >= dist)

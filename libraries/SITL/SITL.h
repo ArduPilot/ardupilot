@@ -59,7 +59,7 @@ class FlightAxis;
 struct sitl_fdm {
     // this is the structure passed between FDM models and the main SITL code
     uint64_t timestamp_us;
-    Location home;
+    AbsAltLocation home;
     double latitude, longitude; // degrees
     double altitude;  // MSL
     double heading;   // degrees
@@ -629,7 +629,7 @@ public:
     /*
       used by scripting to control simulated aircraft position
      */
-    bool set_pose(uint8_t instance, const Location &loc, const Quaternion &quat,
+    bool set_pose(uint8_t instance, const AbsAltLocation &loc, const Quaternion &quat,
                   const Vector3f &velocity_ef, const Vector3f &gyro_rads);
 };
 
