@@ -62,12 +62,12 @@ Vector2f AP_AHRS_External::groundspeed_vector()
 bool AP_AHRS_External::get_relative_position_NED_origin(Vector3p &vec) const
 {
     auto &extahrs = AP::externalAHRS();
-    Location loc, orgn;
+    AbsAltLocation loc, orgn;
     if (extahrs.get_origin(orgn) &&
         extahrs.get_location(loc)) {
         const Vector2f diff2d = orgn.get_distance_NE(loc);
         vec = Vector3p(diff2d.x, diff2d.y,
-                       -(loc.alt - orgn.alt)*0.01);
+                       -(loc.get_alt_m() - orgn.get_alt_m()));
         return true;
     }
     return false;
@@ -77,7 +77,7 @@ bool AP_AHRS_External::get_relative_position_NE_origin(Vector2p &posNE) const
 {
     auto &extahrs = AP::externalAHRS();
 
-    Location loc, orgn;
+    AbsAltLocation loc, orgn;
     if (!extahrs.get_location(loc) ||
         !extahrs.get_origin(orgn)) {
         return false;
@@ -90,12 +90,12 @@ bool AP_AHRS_External::get_relative_position_D_origin(postype_t &posD) const
 {
     auto &extahrs = AP::externalAHRS();
 
-    Location orgn, loc;
+    AbsAltLocation orgn, loc;
     if (!extahrs.get_origin(orgn) ||
         !extahrs.get_location(loc)) {
         return false;
     }
-    posD = -(loc.alt - orgn.alt)*0.01;
+    posD = -(loc.get_alt_m() - orgn.get_alt_m());
     return true;
 }
 
@@ -125,7 +125,7 @@ void AP_AHRS_External::send_ekf_status_report(GCS_MAVLINK &link) const
     AP::externalAHRS().send_status_report(link);
 }
 
-bool AP_AHRS_External::get_origin(Location &ret) const
+bool AP_AHRS_External::get_origin(AbsAltLocation &ret) const
 {
     return AP::externalAHRS().get_origin(ret);
 }

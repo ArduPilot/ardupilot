@@ -457,7 +457,11 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
                 state.velocity = Vector3f(cached.sbg.sbgLogEkfNavData.velocity[0], cached.sbg.sbgLogEkfNavData.velocity[1], cached.sbg.sbgLogEkfNavData.velocity[2]);
                 state.have_velocity = true;
 
-                state.location = Location(cached.sbg.sbgLogEkfNavData.position[0]*1e7, cached.sbg.sbgLogEkfNavData.position[1]*1e7, cached.sbg.sbgLogEkfNavData.position[2]*1e2, Location::AltFrame::ABSOLUTE);
+                state.location = {
+                    int32_t(cached.sbg.sbgLogEkfNavData.position[0]*1e7),
+                    int32_t(cached.sbg.sbgLogEkfNavData.position[1]*1e7),
+                    int32_t(cached.sbg.sbgLogEkfNavData.position[2]*1e2)
+                };
                 state.last_location_update_us = AP_HAL::micros();
                 if (!state.have_location) {
                     state.have_location = true;

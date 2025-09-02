@@ -74,7 +74,7 @@ void AP_Camera_Backend::update()
 
     const AP_AHRS &ahrs = AP::ahrs();
 
-    Location current_loc;
+    AbsAltLocation current_loc;
     if (!ahrs.get_location(current_loc)) {
         return;
     }
@@ -302,7 +302,7 @@ void AP_Camera_Backend::send_camera_fov_status(mavlink_channel_t chan) const
 
     // get latest POI from mount
     Quaternion quat;
-    Location camera_loc;
+    AbsAltLocation camera_loc;
     Location poi_loc;
     const bool have_poi_loc = mount->get_poi(get_mount_instance(), quat, camera_loc, poi_loc);
 
@@ -326,15 +326,17 @@ void AP_Camera_Backend::send_camera_fov_status(mavlink_channel_t chan) const
         quat_ef.q3,
         quat_ef.q4
     };
+    int32_t poi_loc_abs_alt_cm = 0;
+    UNUSED_RESULT(poi_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, poi_loc_abs_alt_cm));
     mavlink_msg_camera_fov_status_send(
         chan,
         AP_HAL::millis(),
         have_camera_loc ? camera_loc.lat : INT32_MAX,
         have_camera_loc ? camera_loc.lng : INT32_MAX,
-        have_camera_loc ? camera_loc.alt * 10 : INT32_MAX,
+        have_camera_loc ? camera_loc.get_alt_cm() * 10 : INT32_MAX,
         have_poi_loc ? poi_loc.lat : INT32_MAX,
         have_poi_loc ? poi_loc.lng : INT32_MAX,
-        have_poi_loc ? poi_loc.alt * 10 : INT32_MAX,
+        have_poi_loc ? poi_loc_abs_alt_cm * 10 : INT32_MAX,
         quat_array,
         horizontal_fov() > 0 ? horizontal_fov() : NaNf,
         vertical_fov() > 0 ? vertical_fov() : NaNf
