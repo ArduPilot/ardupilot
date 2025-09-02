@@ -257,9 +257,6 @@ void AP_PiccoloCAN::loop()
                 case PiccoloCAN_ActuatorType::ESC:
                     handle_esc_message(rxFrame);
                     break;
-                case PiccoloCAN_ActuatorType::CORTEX:
-                    // TODO: Handle the Cortex / ESC crossover messages
-                    break;
                 default:
                     // Unknown actuator type
                     break;
