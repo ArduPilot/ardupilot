@@ -33,19 +33,19 @@ extern "C" {
  * 
  * The protocol API enumeration is incremented anytime the protocol is changed
  * in a way that affects compatibility with earlier versions of the protocol.
- * The protocol enumeration for this version is: 7
+ * The protocol enumeration for this version is: 8
  * 
- * The protocol version is 1.1
+ * The protocol version is 1.2
  */
 
 #include <stdint.h>
 #include <stdbool.h>
 
 //! \return the protocol API enumeration
-#define getCortexApi() 7
+#define getCortexApi() 8
 
 //! \return the protocol version string
-#define getCortexVersion() "1.1"
+#define getCortexVersion() "1.2"
 
 /*!
  * Cortex packet ID values
@@ -57,6 +57,7 @@ typedef enum
     PKT_CORTEX_TELEMETRY_STATUS = 0x80,         //!< System status information
     PKT_CORTEX_TELEMETRY_GENERATOR = 0x81,      //!< Generator status information
     PKT_CORTEX_TELEMETRY_BATTERY = 0x82,        //!< Battery status information
+    PKT_CORTEX_TELEMETRY_CONTROLLER = 0x83,     //!< Controller status information
     PKT_CORTEX_TELEMETRY_OUTPUT_RAIL = 0x85,    //!< Output rail voltage and current information
     PKT_CORTEX_CONFIG_TELEMETRY = 0x90,         //!< Telemetry settings
     PKT_CORTEX_CONFIG_GENERATOR = 0x91,         //!< Generator settings

@@ -586,6 +586,147 @@ int decodeCortex_TelemetryBatteryPacket(const void* _pg_pkt, float* voltage, flo
 }// decodeCortex_TelemetryBatteryPacket
 
 /*!
+ * \brief Create the Cortex_TelemetryController packet
+ *
+ * Controller status information
+ * \param _pg_pkt points to the packet which will be created by this function
+ * \param _pg_user points to the user data that will be encoded in _pg_pkt
+ */
+void encodeCortex_TelemetryControllerPacketStructure(void* _pg_pkt, const Cortex_TelemetryController_t* _pg_user)
+{
+    uint8_t* _pg_data = getCortexPacketData(_pg_pkt);
+    int _pg_byteindex = 0;
+
+    // Generator rectifier temperature
+    // Range of rectifierTemperature is -55.0f to 200.0f.
+    float32ScaledTo1UnsignedBytes(_pg_user->rectifierTemperature, _pg_data, &_pg_byteindex, -55.0f, 1.0f);
+
+    // Voltage regulator temperature
+    // Range of regulatorTemperature is -55.0f to 200.0f.
+    float32ScaledTo1UnsignedBytes(_pg_user->regulatorTemperature, _pg_data, &_pg_byteindex, -55.0f, 1.0f);
+
+    // Generator run time
+    // Range of runTime is 0 to 16777215.
+    uint24ToBeBytes((uint32_t)(limitMax(_pg_user->runTime, 16777215)), _pg_data, &_pg_byteindex);
+
+    // complete the process of creating the packet
+    finishCortexPacket(_pg_pkt, _pg_byteindex, getCortex_TelemetryControllerPacketID());
+
+}// encodeCortex_TelemetryControllerPacketStructure
+
+/*!
+ * \brief Decode the Cortex_TelemetryController packet
+ *
+ * Controller status information
+ * \param _pg_pkt points to the packet being decoded by this function
+ * \param _pg_user receives the data decoded from the packet
+ * \return 0 is returned if the packet ID or size is wrong, else 1
+ */
+int decodeCortex_TelemetryControllerPacketStructure(const void* _pg_pkt, Cortex_TelemetryController_t* _pg_user)
+{
+    int _pg_numbytes;
+    int _pg_byteindex = 0;
+    const uint8_t* _pg_data;
+
+    // Verify the packet identifier
+    if(getCortexPacketID(_pg_pkt) != getCortex_TelemetryControllerPacketID())
+        return 0;
+
+    // Verify the packet size
+    _pg_numbytes = getCortexPacketSize(_pg_pkt);
+    if(_pg_numbytes < getCortex_TelemetryControllerMinDataLength())
+        return 0;
+
+    // The raw data from the packet
+    _pg_data = getCortexPacketDataConst(_pg_pkt);
+
+    // Generator rectifier temperature
+    // Range of rectifierTemperature is -55.0f to 200.0f.
+    _pg_user->rectifierTemperature = float32ScaledFrom1UnsignedBytes(_pg_data, &_pg_byteindex, -55.0f, 1.0f/1.0f);
+
+    // Voltage regulator temperature
+    // Range of regulatorTemperature is -55.0f to 200.0f.
+    _pg_user->regulatorTemperature = float32ScaledFrom1UnsignedBytes(_pg_data, &_pg_byteindex, -55.0f, 1.0f/1.0f);
+
+    // Generator run time
+    // Range of runTime is 0 to 16777215.
+    _pg_user->runTime = (uint32_t)uint24FromBeBytes(_pg_data, &_pg_byteindex);
+
+    return 1;
+
+}// decodeCortex_TelemetryControllerPacketStructure
+
+/*!
+ * \brief Create the Cortex_TelemetryController packet
+ *
+ * Controller status information
+ * \param _pg_pkt points to the packet which will be created by this function
+ * \param rectifierTemperature is Generator rectifier temperature
+ * \param regulatorTemperature is Voltage regulator temperature
+ * \param runTime is Generator run time
+ */
+void encodeCortex_TelemetryControllerPacket(void* _pg_pkt, float rectifierTemperature, float regulatorTemperature, uint32_t runTime)
+{
+    uint8_t* _pg_data = getCortexPacketData(_pg_pkt);
+    int _pg_byteindex = 0;
+
+    // Generator rectifier temperature
+    // Range of rectifierTemperature is -55.0f to 200.0f.
+    float32ScaledTo1UnsignedBytes(rectifierTemperature, _pg_data, &_pg_byteindex, -55.0f, 1.0f);
+
+    // Voltage regulator temperature
+    // Range of regulatorTemperature is -55.0f to 200.0f.
+    float32ScaledTo1UnsignedBytes(regulatorTemperature, _pg_data, &_pg_byteindex, -55.0f, 1.0f);
+
+    // Generator run time
+    // Range of runTime is 0 to 16777215.
+    uint24ToBeBytes((uint32_t)(limitMax(runTime, 16777215)), _pg_data, &_pg_byteindex);
+
+    // complete the process of creating the packet
+    finishCortexPacket(_pg_pkt, _pg_byteindex, getCortex_TelemetryControllerPacketID());
+
+}// encodeCortex_TelemetryControllerPacket
+
+/*!
+ * \brief Decode the Cortex_TelemetryController packet
+ *
+ * Controller status information
+ * \param _pg_pkt points to the packet being decoded by this function
+ * \param rectifierTemperature receives Generator rectifier temperature
+ * \param regulatorTemperature receives Voltage regulator temperature
+ * \param runTime receives Generator run time
+ * \return 0 is returned if the packet ID or size is wrong, else 1
+ */
+int decodeCortex_TelemetryControllerPacket(const void* _pg_pkt, float* rectifierTemperature, float* regulatorTemperature, uint32_t* runTime)
+{
+    int _pg_byteindex = 0;
+    const uint8_t* _pg_data = getCortexPacketDataConst(_pg_pkt);
+    int _pg_numbytes = getCortexPacketSize(_pg_pkt);
+
+    // Verify the packet identifier
+    if(getCortexPacketID(_pg_pkt) != getCortex_TelemetryControllerPacketID())
+        return 0;
+
+    if(_pg_numbytes < getCortex_TelemetryControllerMinDataLength())
+        return 0;
+
+    // Generator rectifier temperature
+    // Range of rectifierTemperature is -55.0f to 200.0f.
+    (*rectifierTemperature) = float32ScaledFrom1UnsignedBytes(_pg_data, &_pg_byteindex, -55.0f, 1.0f/1.0f);
+
+    // Voltage regulator temperature
+    // Range of regulatorTemperature is -55.0f to 200.0f.
+    (*regulatorTemperature) = float32ScaledFrom1UnsignedBytes(_pg_data, &_pg_byteindex, -55.0f, 1.0f/1.0f);
+
+    // Generator run time
+    // Range of runTime is 0 to 16777215.
+    (*runTime) = (uint32_t)uint24FromBeBytes(_pg_data, &_pg_byteindex);
+
+    return 1;
+
+}// decodeCortex_TelemetryControllerPacket
+
+/*!
  * \brief Create the Cortex_TelemetryOutputRail packet
  *
  * Output rail status information

@@ -122,6 +122,7 @@ typedef struct
     bool generator;  //!< Enable TelemetryGenerator packet
     bool battery;    //!< Enable TelemetryBattery packet
     bool outputRail; //!< Enable TelemetryOutputRail packet
+    bool controller; //!< Enable TelemetryController packet
 }Cortex_TelemetryPackets_t;
 
 //! return the minimum encoded length for the Cortex_TelemetryPackets_t structure
