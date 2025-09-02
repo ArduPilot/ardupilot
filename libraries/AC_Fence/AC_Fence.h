@@ -158,6 +158,9 @@ public:
     /// get_margin - returns the fence margin in meters
     float get_margin() const { return _margin.get(); }
 
+    /// get_horizontal_margin - returns the horizontal fence margin in meters
+    float get_horizontal_margin() const;
+
     /// get_return_rally - returns whether returning to fence return point or rally point
     uint8_t get_return_rally() const { return _ret_rally; }
     
@@ -249,6 +252,7 @@ private:
     AP_Float        _alt_min;               // altitude lower limit in meters
     AP_Float        _circle_radius;         // circle fence radius in meters
     AP_Float        _margin;                // distance in meters that autopilot's should maintain from the fence to avoid a breach
+    AP_Float        _margin_xy;             // distance in meters that autopilot's should maintain from the horizontal fence to avoid a breach
     AP_Int8         _total;                 // number of polygon points saved in eeprom
     AP_Int8         _ret_rally;             // return to fence return point or rally point/home
     AP_Int16        _ret_altitude;          // return to this altitude
