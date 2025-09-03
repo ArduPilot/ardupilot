@@ -18,6 +18,12 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+protected:
+
+    MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
+        return MAV_DISTANCE_SENSOR_RADAR;
+    }
+
 private:
 
     uint32_t get_radar_id(uint32_t id) const { return ((id & 0xF0U) >> 4U); }
