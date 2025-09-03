@@ -4189,6 +4189,47 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                      timeout=1,
                      want_result=mavutil.mavlink.MAV_RESULT_DENIED)
 
+    def ValidJumpTags(self):
+        '''Check jump tag behaviour when waypoints follow jump tag.'''
+        ofs_wp1 = (50, 0)
+        ofs_wp3 = (50, 50)
+        ofs_wp4 = (100, 50)
+        ofs_wp6 = (100, 100)
+        ofs_wp7 = (150, 150)
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, ofs_wp1[0], ofs_wp1[1], 20),
+            self.mission_jump_tag(1),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, ofs_wp3[0], ofs_wp3[1], 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, ofs_wp4[0], ofs_wp4[1], 20),
+            self.mission_do_jump_tag(1, 2),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, ofs_wp6[0], ofs_wp6[1], 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, ofs_wp7[0], ofs_wp7[1], 20),
+        ])
+
+        self.wait_ready_to_arm()
+        here = self.mav.location()
+        loc_wp1 = self.offset_location_ne(here, ofs_wp1[0], ofs_wp1[1])
+        loc_wp3 = self.offset_location_ne(here, ofs_wp3[0], ofs_wp3[1])
+        loc_wp4 = self.offset_location_ne(here, ofs_wp4[0], ofs_wp4[1])
+        loc_wp6 = self.offset_location_ne(here, ofs_wp6[0], ofs_wp6[1])
+        loc_wp7 = self.offset_location_ne(here, ofs_wp7[0], ofs_wp7[1])
+
+        self.takeoff(mode='LOITER')
+        self.change_mode('AUTO')
+        self.wait_location(loc_wp1)
+
+        self.wait_location(loc_wp3)
+        self.wait_location(loc_wp4)
+        self.wait_location(loc_wp3)
+        self.wait_location(loc_wp4)
+        self.wait_location(loc_wp3)
+        self.wait_location(loc_wp4)
+
+        self.wait_location(loc_wp6)
+        self.wait_location(loc_wp7)
+
+        self.do_RTL()
+
     def GPSViconSwitching(self):
         """Fly GPS and Vicon switching test"""
         """Setup parameters including switching to EKF3"""
@@ -14571,6 +14612,7 @@ return update, 1000
             self.FlyMissionTwiceWithReset,
             self.MissionIndexValidity,
             self.InvalidJumpTags,
+            self.ValidJumpTags,
             self.IMUConsistency,
             self.AHRSTrimLand,
             self.IBus,
