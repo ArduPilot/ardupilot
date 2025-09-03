@@ -18,6 +18,7 @@ Specifications
   - 1MB Flash
   - 192KB RAM
   - AT7456E OSD
+  
 - Sensors
 
   - Invensense ICM42688 3-axis gyroscope and a 3-axis accelerometer
@@ -73,7 +74,7 @@ RC input
 
 The SBUS pin, can be used for all ArduPilot supported receiver protocols, except CRSF/ELRS and SRXL2 which require a true UART connection. However, FPort, if connected to the SBUS pin, will only provide RC without telemetry since FPort includes SBUS signaling multiplexed with telemetry which will not be decoded (see below). 
 
-To allow CRSF/ELRS and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, a full UART, such as SERIAL6 (UART4) would need to be used for receiver connections. Below are setups using SERIAL6.
+To allow CRSF/ELRS and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, a full UART, such as SERIAL4 (UART4) would need to be used for receiver connections. Below are setups using SERIAL4.
 
 - :ref:`SERIAL4_PROTOCOL<SERIAL4_PROTOCOL>` should be set to "23".
 - FPort would require :ref:`SERIAL4_OPTIONS<SERIAL4_OPTIONS>` be set to "15".
@@ -91,7 +92,7 @@ Onboard OSD using AT7456E driver is supported by default.
 
 VTX power control
 =================
-GPIO 81 controls the VTX BEC output to pins marked "9V". Setting this GPIO low removes voltage supply to this pin/pad. By default RELAY2 is configured to control this pin and sets the GPIO low at boot.
+GPIO 81 controls the VTX BEC output to pins marked "9V". Setting this GPIO "as high" attach voltage supply to this pin/pad. By default RELAY2 is configured to control this pin and sets the GPIO "as low" at boot.
 
 Camera Switch
 =============
@@ -99,7 +100,7 @@ GPIO 82 controls which camera input, CAM1 or CAM2 is used. By default RELAY3 is 
 
 Compass
 =======
-Does not include compass but can plug-in external controller to USART3 and SDA-SCL pins.
+Does not include compass but can plug-in external controller to USART3 and SDA and SCL pins.
 
 Analog Airspeed
 ===============
@@ -107,7 +108,6 @@ Does not include an analog airspeed meter.
 
 GPIOs
 =====
-
 |Pin           |GPIO Number |
 |--------------|------------|
 |PWM(1)        | 50         |
@@ -141,6 +141,8 @@ Loading Firmware
 ================
 To flash firmware initially, connect USB while holding the bootloader button and use DFU to load the `with_bl.hex` file. Subsequent updates can be applied using `\.apj` files through a ground station.
 
+Additional
+==========
 uk_UA: [україномовна документація та прошивки в репозиторії](https://github.com/CO-CF-TECHNO4/XRush4-ArduPilot)
 
 [Xrush4_F4V3_Manual_Rev.2.0](https://xrush4.tech/wp-content/uploads/2025/05/Xrush4_F4V3_Manual_Rev.2.0.pdf)
