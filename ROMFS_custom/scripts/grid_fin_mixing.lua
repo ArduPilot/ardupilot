@@ -94,6 +94,11 @@ function update()
 
         -- set gridfin pwms
 
+        if vehicle:get_mode() == 0 then
+            SRV_Channels:set_output_pwm(94, 1500)
+            SRV_Channels:set_output_pwm(95, 1400)
+            SRV_Channels:set_output_pwm(96, 1600)
+        end
 
         if vehicle:get_mode() ~= 0 then 
             SRV_Channels:set_output_pwm(94, g_top_pwm)
