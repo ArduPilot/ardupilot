@@ -833,8 +833,7 @@ class sitl(Board):
 
         # wrap malloc to ensure memory is zeroed
         if cfg.env.DEST_OS == 'cygwin':
-            # on cygwin we need to wrap _malloc_r instead
-            env.LINKFLAGS += ['-Wl,--wrap,_malloc_r']
+            pass # handled at runtime in libraries/AP_Common/c++.cpp
         elif platform.system() != 'Darwin':
             env.LINKFLAGS += ['-Wl,--wrap,malloc']
         
