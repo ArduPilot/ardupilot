@@ -105,12 +105,43 @@ function update()
         drop_detected = drop_detector()
     end
 
+    local loc = ahrs:get_position()
+    local current_time = millis()
+
     if arming:is_armed() and drop_detected then
         local target = Location()
-        target:lat( 403373343)
-        target:lng(-746123932)
-        target:change_alt_frame(0)
-        target:alt(1)
+        
+        -- Track GPS acquisition status
+        if loc == nil then
+            -- GPS not available
+            if gps_lost_start_time == nil then
+                gps_lost_start_time = current_time
+                gcs:send_text(6, "GPS lost - starting timer")
+            end
+            
+            local gps_lost_duration = current_time - gps_lost_start_time
+            
+            -- Check if GPS has been lost for 5 minutes (300,000 milliseconds)
+            if gps_lost_duration >= 300000 then
+                gcs:send_text(4, "Warning: GPS not acquired for 5min. New destination: East :)")
+                target:lat(33896418) -- (33.896418, -19.786401)
+                target:lng(-19786401)
+                target:change_alt_frame(0)
+                target:alt(1)
+            else
+                -- GPS lost but not for 5 minutes yet - don't set target, just wait
+                local remaining_seconds = (300000 - gps_lost_duration) / 1000
+                gcs:send_text(6, string.format("GPS lost for %.1fs, waiting %.1fs more", gps_lost_duration/1000, remaining_seconds))
+                return update, 1000
+            end
+        else
+            -- GPS is available - reset the lost timer and use normal target
+            gps_lost_start_time = nil
+            target:lat(403373343)
+            target:lng(-746123932)
+            target:change_alt_frame(0)
+            target:alt(1)
+        end
 
         local GUIDED = 15 --guided mode enum
         local MANUAL = 0
@@ -153,5 +184,6 @@ pullup_complete = false
 last_time_lo_ms = millis()
 low_g_duration = 0.0
 drop_detector_last_time_ms = millis()
+gps_lost_start_time = nil  -- Track when GPS was first lost
 
 return update, 100
