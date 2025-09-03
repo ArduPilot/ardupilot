@@ -13,7 +13,7 @@ How to use?
 Starting in the ardupilot directory.
 ~/ardupilot $ python Tools/scripts/size_compare_branches.py --branch=[PR_BRANCH_NAME] --vehicle=copter
 
-Output is placed into ../ELF_DIFF_[VEHICLE_NAME]
+Output is placed into ELF_DIFF_[VEHICLE_NAME]
 '''
 
 import copy
@@ -641,7 +641,7 @@ class SizeCompareBranches(object):
                 f'--bin_prefix={toolchain}',
                 "--old_alias", "%s %s" % (master_branch, elf_filename),
                 "--new_alias", "%s %s" % (branch, elf_filename),
-                "--html_dir", "../ELF_DIFF_%s_%s" % (board, vehicle_name),
+                "--html_dir", "ELF_DIFF_%s_%s" % (board, vehicle_name),
             ]
 
             try:
