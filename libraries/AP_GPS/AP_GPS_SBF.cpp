@@ -628,7 +628,7 @@ AP_GPS_SBF::process_message(void)
         state.jamming_state = AP_GPS::GPS_Jamming::JAMMING_OK;
         for (int i = 0; i < temp.N; i++) {
             RFStatusRFBandSubBlock* rf_band_data = (RFStatusRFBandSubBlock*)(&temp.RFBand + i * temp.SBLength);
-            switch (rf_band_data->Info & (uint8_t)0b111) {
+            switch (rf_band_data->Info & (uint8_t)0b1111) {
             case 1:
             case 2:
                 // As long as there is indicated but unmitigated spoofing in one band, don't report the overall state as mitigated
