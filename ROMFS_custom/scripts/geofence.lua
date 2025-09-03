@@ -67,5 +67,5 @@ function update()
 end
 
 -- Initial message and start the loop
-gcs:send_text(0, "Waiting for safe zone...")
-return update, 1000
+--gcs:send_text(0, "Waiting for safe zone...")
+--return update, 1000

@@ -1,13 +1,51 @@
 --pullup lockout code
---currently NOT ready for flight, only works with PLAV mixing
 
-function control_lockout()
-    --returns true if control lockout is required
-    --disabled under 20km
-    --if pitch is < -30 degrees and speed is < 100, then it's locked out
+-- Define safe areas as polygons to perform balloon drop. 
+local safe_zones = {
+    -- Can define multiple polygons over ocean areas. 
+    {
+        {lat = 39.758170, lng = -74.065188}, -- (39.758170, -74.065188)
+        {lat = 40.490719, lng = -73.917797}, -- (40.490719, -73.917797)
+        {lat = 40.678260, lng = -72.799620}, -- (40.678260, -72.799620)
+        {lat = 39.684256, lng = -72.799620} --(39.684256, -72.799620)
+    }
+}
 
-    local minimum_for_lockout = 20000
+function point_in_polygon(lat, lng, polygon)
+    local inside = false
+    local p1x, p1y = polygon[1].lat, polygon[1].lng
+    
+    for i = 1, #polygon do
+        local p2x, p2y = polygon[i].lat, polygon[i].lng
+        if ((p2y > lng) ~= (p1y > lng)) and 
+           (lat < (p1x - p2x) * (lng - p2y) / (p1y - p2y) + p2x) then
+            inside = not inside
+        end
+        p1x, p1y = p2x, p2y
+    end
+    
+    return inside
+end
 
+function is_over_safe_zone()
+    local loc = ahrs:get_position()
+    if loc == nil then -- Can't determine position
+        return false  
+    end
+    
+    local lat = loc:lat() / 1e7  -- Convert from integer degrees
+    local lng = loc:lng() / 1e7
+    
+    for _, zone in ipairs(safe_zones) do
+        if point_in_polygon(lat, lng, zone) then
+            return true
+        end
+    end
+    
+    return false
+end
+
+function altitude_updater()
     -- get current EKF position as a Location userdata (or nil if not reasonable)
     local loc = ahrs:get_position()
     if loc == nil then
@@ -29,7 +67,17 @@ function control_lockout()
     end
     --]]
 
-    local alt_m = alt_cm / 100.0
+    alt_m = alt_cm / 100.0
+end
+
+function control_lockout()
+    --returns true if control lockout is required
+    --disabled under 20km
+    --if pitch is < -30 degrees and speed is < 100, then it's locked out
+
+    local minimum_for_lockout = 20000
+
+    
 
     if alt_m ~= nil then
         --gcs:send_text(6, "HAGL: "..tostring(alt_m))
@@ -81,9 +129,64 @@ function drop_detector()
     return false
 end
 
+function nominal_cutaway()
+    --cutaway reaches alt
+
+    if not drop_detected then
+        SRV_Channels:set_output_pwm(97, 2000)
+        relay:on(0)
+    else
+        SRV_Channels:set_output_pwm(97, 1000)
+        relay:off(0)
+        cutaway_confirmed = true
+        
+    end
+end
+
+function emergency_cutaway()
+    --cutaway when unexpected pop
+    if emergency_cutaway_start_ms == 0 then
+        emergency_cutaway_start_ms = millis()
+    end
+    local cutting_time = millis() - emergency_cutaway_start_ms
+
+    if cutting_time < 10000 then
+        SRV_Channels:set_output_pwm(97, 2000)
+        relay:on(0)
+
+    else
+        
+        SRV_Channels:set_output_pwm(97, 1000)
+        relay:off(0)
+        cutaway_confirmed = true
+    end 
+
+end
+
+function ready_to_drop()
+    --determines if drop conditions are met
+    local in_safe_zone = is_over_safe_zone()
+
+    if not in_safe_zone then
+        return false
+    end
+
+    local is_above_alt = alt_m > 33866.6328
+
+    if is_above_alt then
+        return true
+    end
+
+    return false
+end
+
 function update()
 
     local mode = vehicle:get_mode()
+    local MANUAL = 0
+    local RTL = 11
+
+    altitude_updater()
 
     if millis() - last_time_lo_ms > 1000 then
         last_time_lo_ms = millis()
@@ -99,10 +202,44 @@ function update()
         else
             gcs:send_text(6, "Pullup, lockout")
         end
+        if cutaway_confirmed then
+            gcs:send_text(6, "cut away!")
+        else
+            gcs:send_text(6, "on flight train")
+        end
+        if drop_commanded then
+            gcs:send_text(6, "commanded drop!")
+        else
+            gcs:send_text(6, "no command")
+        end
+
+        if relay:get(0) then
+            gcs:send_text(6, "relay 1 hot")
+        else
+            gcs:send_text(6, "relay 1 cold")
+        end
+        gcs:send_text(6, "AltAGL: ".. alt_m)
     end
 
     if not drop_detected then
         drop_detected = drop_detector()
+
+        if mode == RTL then
+            if vehicle:set_mode(MANUAL) then
+                gcs:send_text(6, "Switched to MANUAL")
+            else
+                gcs:send_text(4, "Mode change to MANUAL failed")
+            end
+        end
+    end
+
+    if not cutaway_confirmed and arming:is_armed() then
+        if ready_to_drop() or drop_commanded then --case where we're on the balloon and ready to drop
+            drop_commanded = true
+            nominal_cutaway()
+        elseif drop_detected and not drop_commanded and is_over_safe_zone() then
+            emergency_cutaway()
+        end
     end
 
     local loc = ahrs:get_position()
@@ -144,7 +281,6 @@ function update()
         end
 
         local GUIDED = 15 --guided mode enum
-        local MANUAL = 0
 
         if not control_lockout() then
             --gcs:send_text(6, "Control Lockout Disabled")
@@ -179,11 +315,16 @@ function update()
     return update, 100
 end
 
+
+alt_m = 0.0
 drop_detected = false
+drop_commanded = false
 pullup_complete = false
 last_time_lo_ms = millis()
 low_g_duration = 0.0
 drop_detector_last_time_ms = millis()
 gps_lost_start_time = nil  -- Track when GPS was first lost
+emergency_cutaway_start_ms = 0
+cutaway_confirmed = false
 
 return update, 100
