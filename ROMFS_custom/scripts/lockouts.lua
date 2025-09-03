@@ -54,7 +54,33 @@ function control_lockout()
 
     return false
 end
- 
+
+function drop_detector()
+    --if it detects low g for more than thres_time, detect a drop
+    if not ahrs:healthy() then
+        return false
+    end
+
+    local acceleration = ahrs:get_accel()
+    local accel_abs = acceleration:length()
+
+    local low_g_thres_accel = 3.0 --m/s/s i hope
+    local low_g_thres_time_ms = 1000
+
+    if accel_abs < low_g_thres_accel then
+        local elapsed_time = millis() - drop_detector_last_time_ms
+        low_g_duration = low_g_duration + elapsed_time
+        
+        if low_g_duration > low_g_thres_time_ms then
+            return true
+        end
+    else
+        low_g_duration = 0
+    end
+    drop_detector_last_time_ms = millis()
+    return false
+end
+
 function update()
 
     local mode = vehicle:get_mode()
@@ -62,14 +88,24 @@ function update()
     if millis() - last_time_lo_ms > 1000 then
         last_time_lo_ms = millis()
         gcs:send_text(6, "Mode: "..tostring(mode))
-        if free_from_balloon then
-            gcs:send_text(6, "Free from balloon, no lockout")
+
+        if drop_detected then
+            gcs:send_text(6, "Drop detected")
         else
-            gcs:send_text(6, "On balloon, lockout")
+            gcs:send_text(6, "On balloon")
+        end
+        if pullup_complete then
+            gcs:send_text(6, "Pullup Complete")
+        else
+            gcs:send_text(6, "Pullup, lockout")
         end
     end
 
-    if arming:is_armed() then
+    if not drop_detected then
+        drop_detected = drop_detector()
+    end
+
+    if arming:is_armed() and drop_detected then
         local target = Location()
         target:lat( 403373343)
         target:lng(-746123932)
@@ -82,13 +118,13 @@ function update()
         if not control_lockout() then
             --gcs:send_text(6, "Control Lockout Disabled")
             --vehicle:set_target_location(target)
-            free_from_balloon = true
+            pullup_complete = true
             
         else
             --gcs:send_text(6, "Controls locked out")
         end
 
-        if free_from_balloon then
+        if pullup_complete then
             if vehicle:get_mode() ~= GUIDED then
                 if vehicle:set_mode(GUIDED) then
                     vehicle:set_target_location(target)
@@ -112,7 +148,10 @@ function update()
     return update, 100
 end
 
-free_from_balloon = false
+drop_detected = false
+pullup_complete = false
 last_time_lo_ms = millis()
+low_g_duration = 0.0
+drop_detector_last_time_ms = millis()
 
 return update, 100
