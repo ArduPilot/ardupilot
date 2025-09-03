@@ -514,7 +514,7 @@ AP_HW_AEROFOX_H7                     7110
 # IDs 7120-7129 reserved for Accton Godwit
 AP_HW_Accton_Godwit_GA1        7120
 
-# IDs 7120-7129 reserved for XRush4
+# IDs 7130-7139 reserved for XRush4
 AP_HW_XRush4_F4V2                     7130
 AP_HW_XRush4_F4V3                     7131
 AP_HW_XRush4_H743V1                   7132
