@@ -93,9 +93,13 @@ function update()
         local g_port_pwm = math.floor(deflection_port * 500 + 1500)
 
         -- set gridfin pwms
-        SRV_Channels:set_output_pwm(94, g_top_pwm)  
-        SRV_Channels:set_output_pwm(95, g_star_pwm)  
-        SRV_Channels:set_output_pwm(96, g_port_pwm)  
+
+
+        if vehicle:get_mode() ~= 0 then 
+            SRV_Channels:set_output_pwm(94, g_top_pwm)
+            SRV_Channels:set_output_pwm(95, g_star_pwm)
+            SRV_Channels:set_output_pwm(96, g_port_pwm)
+        end
     end
     return update, 10
 end
