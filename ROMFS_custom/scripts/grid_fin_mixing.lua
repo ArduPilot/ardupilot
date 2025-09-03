@@ -7,6 +7,7 @@ function update()
         local e_pwm = SRV_Channels:get_output_pwm(19)
 
         if not a_pwm or not r_pwm or not e_pwm then
+            gcs:send_text(6, "no pwm!")
             return update, 10
         end
 
@@ -19,17 +20,17 @@ function update()
 
         -- normalize
         local a_norm = (a_pwm - 1500) / 500.0
-        local r_norm = -(r_pwm - 1500) / 500.0
-        local e_norm = -(e_pwm - 1500) / 500.0
+        local r_norm = (r_pwm - 1500) / 500.0
+        local e_norm = (e_pwm - 1500) / 500.0
 
         local yaw_adjustment_factor = 0.5
 
-        local elevator_trim = 0.1
+        local elevator_trim = 0.2
         e_norm = e_norm + elevator_trim
         -- gridfin deflections
         local deflection_top  = -a_norm * 0.2 + r_norm * 0.2
-        local deflection_star = -a_norm * 0.2 + r_norm * yaw_adjustment_factor * 0.2 + e_norm * 0.5
-        local deflection_port = -a_norm * 0.2 + r_norm * yaw_adjustment_factor * 0.2 - e_norm * 0.5
+        local deflection_star = -a_norm * 0.2 + r_norm * yaw_adjustment_factor * 0.2 - e_norm * 0.5
+        local deflection_port = -a_norm * 0.2 + r_norm * yaw_adjustment_factor * 0.2 + e_norm * 0.5
 
         
 
@@ -63,28 +64,28 @@ function update()
 
 
 
-        if V ~= nil and V > 3 then
-            -- calculate AOA and beta (sideslip)
-            AOA = math.atan(V_z, V_x)
-            beta = math.asin(V_y/V)
-           
+        --if V ~= nil and V > 3 then
+        --    -- calculate AOA and beta (sideslip)
+        --    AOA = math.atan(V_z, V_x)
+        --    beta = math.asin(V_y/V)
+        --   
             -- limit fin pwm:
-            deflection_top=limit_extended(deflection_top, 0, AOA, beta)
-            deflection_star=limit_extended(deflection_star,  2*math.pi/3, AOA, beta)
-            deflection_port=limit_extended(deflection_port, -2*math.pi/3, AOA, beta)
-        else
-            deflection_top=limit_failover(deflection_top)
-            deflection_star=limit_failover(deflection_star)
-            deflection_port=limit_failover(deflection_port)
-        end
+        --    deflection_top=limit_extended(deflection_top, 0, AOA, beta)
+        --    deflection_star=limit_extended(deflection_star,  2*math.pi/3, AOA, beta)
+        --    deflection_port=limit_extended(deflection_port, -2*math.pi/3, AOA, beta)
+        --else
+        deflection_top=limit_failover(deflection_top)
+        deflection_star=limit_failover(deflection_star)
+        deflection_port=limit_failover(deflection_port)
+        --end
 
         if millis() - last_time_gfm_ms > 1000 then
             last_time_gfm_ms = millis()
 
             gcs:send_text(6, "Top D: " .. deflection_top)
             gcs:send_text(6, "Velocity: ".. V)
-            gcs:send_text(6, "AOA = " .. math.deg(AOA))
-            gcs:send_text(6, "beta = ".. math.deg(beta))
+            --gcs:send_text(6, "AOA = " .. math.deg(AOA))
+            --gcs:send_text(6, "beta = ".. math.deg(beta))
         end
 
         -- deflections in PWM
@@ -96,8 +97,8 @@ function update()
 
         if vehicle:get_mode() == 0 then
             SRV_Channels:set_output_pwm(94, 1500)
-            SRV_Channels:set_output_pwm(95, 1400)
-            SRV_Channels:set_output_pwm(96, 1600)
+            SRV_Channels:set_output_pwm(95, 1450)
+            SRV_Channels:set_output_pwm(96, 1550)
         end
 
         if vehicle:get_mode() ~= 0 then 
@@ -123,7 +124,7 @@ function limit_extended(fin_deflection, fin_angle, AOA, beta)
 end
 
 function limit_failover(fin_deflection)
-    local limit = math.rad(10)
+    local limit = math.rad(20)
     return math.min(math.max(-limit, fin_deflection), limit)
 end 
 
