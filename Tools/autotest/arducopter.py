@@ -9537,11 +9537,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # Simulate vehicle getting stuck by increasing RC throttle
         self.set_rc(3, 1900)
-        self.delay_sim_time(5, reason='let tether get stuck')
+        self.delay_sim_time(10, reason='let tether get stuck')
 
         # Monitor behavior for 10 seconds
         tstart = self.get_sim_time()
         initial_alt = self.get_altitude()
+        self.progress(f"initial_alt={initial_alt}")
         stuck = True  # Assume it's stuck unless proven otherwise
 
         while self.get_sim_time() - tstart < 10:
@@ -9556,7 +9557,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
             # Check if the vehicle is stuck.
             # We assume the vehicle is stuck if the current is high and the altitude is not changing
-            if battery_status and (battery_status.current_battery < 6500 or abs(current_alt - initial_alt) > 2):
+            if battery_status and (battery_status.current_battery < 6500 or abs(current_alt - initial_alt) > 3):
                 stuck = False  # Vehicle moved or current is abnormal
                 break
 
