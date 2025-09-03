@@ -2187,7 +2187,7 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
         // check for do-jump-tag command and convert target tag to do-jump target index and do-jump to it
         if (temp_cmd.id == MAV_CMD_DO_JUMP_TAG) {
             // convert tmp_cmd target from a target tag to a target index
-            temp_cmd.content.jump.target = get_index_of_jump_tag(temp_cmd.content.jump.target);
+            temp_cmd.content.jump.target = get_index_of_jump_tag(temp_cmd.content.jump.target) + 1;
             temp_cmd.id = MAV_CMD_DO_JUMP;
         }
 
