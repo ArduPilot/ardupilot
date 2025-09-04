@@ -188,6 +188,69 @@ function update()
 
     altitude_updater()
 
+    if not servo_test_completed and not drop_detected and alt_m ~= nil and alt_m > 30000 and alt_m < 33866.6328 then
+        if servo_test_step == 0 then
+            step_start = millis()
+            previous_mode = vehicle:get_mode()
+            vehicle:set_mode(7) -- 7 is test mode
+            gcs:send_text(6, "Servo test mode started")
+            servo_test_step = 1
+        end
+
+        local now = millis()
+        if servo_test_step == 1 then
+            SRV_Channels:set_output_pwm(94, 1300)
+            SRV_Channels:set_output_pwm(95, 1300)
+            SRV_Channels:set_output_pwm(96, 1300)
+            if now - step_start >= 1000 then
+                gcs:send_text(6, "Servo deflect 1")
+                servo_test_step = 2
+                step_start = now
+            end
+        elseif servo_test_step == 2 then
+            SRV_Channels:set_output_pwm(94, 1700)
+            SRV_Channels:set_output_pwm(95, 1700)
+            SRV_Channels:set_output_pwm(96, 1700)
+            if now - step_start >= 1000 then
+                gcs:send_text(6, "Servo deflect 2")
+                servo_test_step = 3
+                step_start = now
+            end
+        elseif servo_test_step == 3 then
+            SRV_Channels:set_output_pwm(94, 1500)
+            SRV_Channels:set_output_pwm(95, 1450)
+            SRV_Channels:set_output_pwm(96, 1550)
+            -- restore previous mode
+            if previous_mode ~= nil then
+                vehicle:set_mode(previous_mode)
+                gcs:send_text(6, "Servo test complete, mode restored")
+            
+            else
+                if pullup_complete then
+                    vehicle:set_mode(GUIDED)
+                else
+                    vehicle:set_mode(MANUAL)
+                end
+            end
+            servo_test_completed = true  -- only run once
+        end
+    
+    else
+        if not servo_test_completed then
+            servo_test_completed = true
+            if previous_mode ~= nil then
+                    vehicle:set_mode(previous_mode)
+                    gcs:send_text(6, "Servo abrupt ended, previous mode restored")
+            else
+                if pullup_complete then
+                    vehicle:set_mode(GUIDED)
+                else
+                    vehicle:set_mode(MANUAL)
+                end
+            end
+        end
+    end
+
     if millis() - last_time_lo_ms > 1000 then
         last_time_lo_ms = millis()
         gcs:send_text(6, "Mode: "..tostring(mode))
@@ -326,5 +389,9 @@ drop_detector_last_time_ms = millis()
 gps_lost_start_time = nil  -- Track when GPS was first lost
 emergency_cutaway_start_ms = 0
 cutaway_confirmed = false
+servo_test_completed = false
+servo_test_step = 0
+step_start = 0
+previous_mode = nil
 
 return update, 100
