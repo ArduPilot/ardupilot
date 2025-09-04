@@ -175,3 +175,10 @@
 #ifndef AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
 #define AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED 0
 #endif  // AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
+
+#if defined(STM32H7) && HAL_MEM_CLASS >= HAL_MEM_CLASS_1000
+// 32k gives huge performance improvements on boards that can cope
+// the memory check excludes things like STM32H750 and STM32H730
+#define AP_FATFS_MAX_IO_SIZE 32768
+#define AP_FATFS_MIN_IO_SIZE 4096
+#endif
