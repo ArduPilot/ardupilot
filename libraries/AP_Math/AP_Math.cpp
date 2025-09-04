@@ -266,6 +266,11 @@ ftype wrap_2PI(const ftype radian)
     return res;
 }
 
+ftype wrap_neg2PI_2PI(const ftype radian)
+{
+    return fmodF(radian, M_2PI);
+}
+
 template <typename T>
 T constrain_value_line(const T amt, const T low, const T high, uint32_t line)
 {
