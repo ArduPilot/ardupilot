@@ -641,8 +641,8 @@ AP_GPS_SBF::process_message(void)
                 break;
             }
         }
-        break;
         #endif
+        break;
     }
 
     case GALAuthStatus:
