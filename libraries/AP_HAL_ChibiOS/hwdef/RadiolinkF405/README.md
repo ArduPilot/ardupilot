@@ -32,11 +32,11 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 ## RC Input
 
 RC input is configured on the R2 (UART2_RX) pin for most RC unidirectional protocols except SBUS which should be applied at the SBUS pin. PPM is not supported.
-For CRSF/ELRS/SRXL2 connection of the receiver to T2 will also be required.
+For CRSF/ELRS/SRXL2 connection of the receiver to T2 will also be required. See :ref:`common-rc-systems` for more info
   
 ## OSD Support
 
-The RadiolinkF405 supports OSD using OSD_TYPE 1 (MAX7456 driver).
+The RadiolinkF405 supports analog OSD using its internal MAX7456. Simultaneous HD OSD operation is enabled by defaullt also.
 
 ## VTX Support
 
@@ -46,13 +46,13 @@ this to a peripheral requiring 5v.
 ## PWM Output
 
 The RadiolinkF405 supports up to 7 PWM outputs. The pads for motor output
-M1 to M4 on the motor connector, M5 M6 for servo or another PWM output, LED pads for led strip.
+M1 to M4 on the motor connector, M5 M6 for servo or another PWM output, LED pads supports serial led strip.
 
 The PWM is in 3 groups:
 
  - PWM 1-4 in group1
  - PWM 5-6 in group2
- - PWM 7   in group3
+ - PWM 7   in group3 (LED)
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -60,35 +60,30 @@ to use DShot. Channels 1-4 support bi-directional DShot.
 
 ## Pin IO
 
-- PINIO1: 9V DCDC control (HIGH:on; LOW:off)
-
-*Note: DCDC default is enabled.*
+- GPIO81 is 9V VTX power control (HIGH:on; LOW:off)
+- RELAY2 is assigned to control this GPIO by default.
 
 ## Battery Monitoring
 
 The board has a internal voltage sensor and connections on the ESC connector for an external current sensor input.
-The voltage sensor can handle up to 6S.
-LiPo batteries.
+The voltage sensor can handle up to 6S LiPo batteries.
 
 The default battery parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 12
- - BATT_CURR_PIN 11
- - BATT_VOLT_MULT 11
- - BATT_AMP_PERVLT 25 (will need to be adjusted for whichever current sensor is attached)
+ - :ref:BATT_MONITOR<BATT_MONITOR> = 4
+ - :ref:BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog> = 12
+ - :ref:BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog> = 11 (CURR pin)
+ - :ref:BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog> = 11.0
+ - :ref:BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog> = 25
 
 ## Compass
 
 The RadiolinkF405 does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
 
+## Firmware
+
+Firmware for the RadiolinkF405 is available from [ArduPilot Firmware Server](https://firmware.ardupilot.org) under the `RadiolinkF405` target.
+
 ## Loading Firmware
 
-Initial firmware load can be done with DFU by plugging in USB with the
-bootloader button pressed. Then you should load the "with_bl.hex"
-firmware, using your favourite DFU loading tool.
-
-Once the initial firmware is loaded you can update the firmware using
-any ArduPilot ground station software. Updates should be done with the
-*.apj firmware files.
-
+To flash firmware initially, connect USB while holding the bootloader button and use DFU to load the `with_bl.hex` file. Subsequent updates can be applied using `.apj` files through a ground station.
