@@ -997,32 +997,31 @@ int SocketAPM_recv(lua_State *L) {
     SocketAPM * ud = *check_SocketAPM(L, 1);
 
     const uint16_t count = get_uint16_t(L, 2);
-    uint8_t *data = (uint8_t*)malloc(count);
-    if (data == nullptr) {
-        return 0;
-    }
 
+    // create a buffer sized to hold the number of bytes the user
+    // wants to read. This will fault if the memory is not available
+    luaL_Buffer b;
+    uint8_t *data = (uint8_t *)luaL_buffinitsize(L, &b, count);
+
+    // read up to that number of bytes
     const auto ret = ud->recv(data, count, 0);
     if (ret < 0) {
-        free(data);
-        return 0;
+        return 0; // error, return nil
     }
 
-    int retcount = 1;
-
-    // push data to lua string
-    lua_pushlstring(L, (const char *)data, ret);
+    // push the buffer as a string, truncated to the number of bytes
+    // actually read
+    luaL_pushresultsize(&b, ret);
 
     // also push the address and port if available
     uint32_t ip_addr;
     uint16_t port;
+    int retcount = 1;
     if (ud->last_recv_address(ip_addr, port)) {
         *new_uint32_t(L) = ip_addr;
         lua_pushinteger(L, port);
         retcount += 2;
     }
-
-    free(data);
 
     return retcount;
 }
