@@ -35,7 +35,7 @@ public:
         // Unique ID, assigned by the source, not used by all sources
         uint32_t id;
 
-        uint8_t send_to_gcs;    // bitmask of mavlink comports to which details of this object should be sent
+        mavlink_channel_mask_t send_to_gcs;    // bitmask of mavlink comports to which details of this object should be sent
         OA_DbItemImportance importance;
 
         // Source of item, refresh treats sources differently
