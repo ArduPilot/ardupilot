@@ -1708,9 +1708,9 @@ void AP_Periph_FW::can_start()
 #endif
         if (can_iface_periph[i] != nullptr) {
 #if HAL_CANFD_SUPPORTED
-            can_iface_periph[i]->init(g.can_baudrate[i], g.can_fdbaudrate[i]*1000000U, AP_HAL::CANIface::NormalMode);
+            can_iface_periph[i]->init(g.can_baudrate[i], g.can_fdbaudrate[i]*1000000U);
 #else
-            can_iface_periph[i]->init(g.can_baudrate[i], AP_HAL::CANIface::NormalMode);
+            can_iface_periph[i]->init(g.can_baudrate[i]);
 #endif
         }
     }

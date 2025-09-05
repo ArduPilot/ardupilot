@@ -557,15 +557,6 @@ bool SLCAN::CANIface::set_event_handle(AP_HAL::BinarySemaphore *sem_handle)
     return false;
 }
 
-uint16_t SLCAN::CANIface::getNumFilters() const
-{
-    // When in passthrough mode methods is handled through can iface
-    if (_can_iface) {
-        return _can_iface->getNumFilters();
-    }
-    return 0;
-}
-
 uint32_t SLCAN::CANIface::getErrorCount() const
 {
     // When in passthrough mode methods is handled through can iface
@@ -590,15 +581,6 @@ bool SLCAN::CANIface::is_busoff() const
         return _can_iface->is_busoff();
     }
     return false;
-}
-
-bool SLCAN::CANIface::configureFilters(const CanFilterConfig* filter_configs, uint16_t num_configs)
-{
-    // When in passthrough mode methods is handled through can iface
-    if (_can_iface) {
-        return _can_iface->configureFilters(filter_configs, num_configs);
-    }
-    return true;
 }
 
 void SLCAN::CANIface::flush_tx()

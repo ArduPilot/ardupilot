@@ -170,13 +170,13 @@ void AP_CANManager::init()
 #if AP_CAN_SLCAN_ENABLED
         if (_slcan_interface.init_passthrough(i)) {
             // we have slcan bridge setup pass that on as can iface
-            can_initialised = hal_mutable.can[i]->init(_interfaces[i]._bitrate, _interfaces[i]._fdbitrate*1000000, AP_HAL::CANIface::NormalMode);
+            can_initialised = hal_mutable.can[i]->init(_interfaces[i]._bitrate, _interfaces[i]._fdbitrate*1000000);
             iface = &_slcan_interface;
         } else {
 #else
         if (true) {
 #endif
-            can_initialised = hal_mutable.can[i]->init(_interfaces[i]._bitrate, _interfaces[i]._fdbitrate*1000000, AP_HAL::CANIface::NormalMode);
+            can_initialised = hal_mutable.can[i]->init(_interfaces[i]._bitrate, _interfaces[i]._fdbitrate*1000000);
         }
 
         if (!can_initialised) {
@@ -247,19 +247,8 @@ void AP_CANManager::init()
         if (_drivers[drv_num] == nullptr) {
             continue;
         }
-        bool enable_filter = false;
-        for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
-            if (_interfaces[i]._driver_number == (drv_num+1) &&
-                hal_mutable.can[i] != nullptr &&
-                hal_mutable.can[i]->get_operating_mode() == AP_HAL::CANIface::FilteredMode) {
-                // Don't worry we don't enable Filters for Normal Ifaces under the driver
-                // this is just to ensure we enable them for the ones we already decided on
-                enable_filter = true;
-                break;
-            }
-        }
 
-        _drivers[drv_num]->init(drv_num, enable_filter);
+        _drivers[drv_num]->init(drv_num);
     }
 
 #if AP_CAN_LOGGING_ENABLED
@@ -280,7 +269,7 @@ void AP_CANManager::init()
             }
 
             AP_Param::load_object_from_eeprom((AP_DroneCAN*)_drivers[i], AP_DroneCAN::var_info);
-            _drivers[i]->init(i, true);
+            _drivers[i]->init(i);
             _driver_type_cache[i] = (AP_CAN::Protocol) _drv_param[i]._driver_type.get();
         }
     }
@@ -331,7 +320,7 @@ bool AP_CANManager::register_driver(AP_CAN::Protocol dtype, AP_CANDriver *driver
         _drivers[drv_num]->add_interface(iface);
         log_text(AP_CANManager::LOG_INFO, LOG_TAG, "Adding Interface %d to Driver %d", i + 1, drv_num + 1);
 
-        _drivers[drv_num]->init(drv_num, false);
+        _drivers[drv_num]->init(drv_num);
         _driver_type_cache[drv_num] = dtype;
 
         _num_drivers++;
