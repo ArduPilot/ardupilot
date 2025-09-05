@@ -330,6 +330,23 @@ bool AP_ExternalAHRS::get_accel(Vector3f &accel)
     return true;
 }
 
+bool AP_ExternalAHRS::get_TempCalibration(TempCal &TempCalibration)
+{
+    if (!has_sensor(AvailableSensor::IMU)) {
+        TempCalibration = DoesntProvideTemp;
+        return false;
+    }
+    if (DevType(devtype) == DevType::MicroStrain7) {
+        TempCalibration = IsTempCalibrated;
+        return true;
+    }
+    else{
+        TempCalibration = IsNotTempCalibrated;
+        return true;    
+    }
+    
+}
+
 // send an EKF_STATUS message to GCS
 void AP_ExternalAHRS::send_status_report(GCS_MAVLINK &link) const
 {
