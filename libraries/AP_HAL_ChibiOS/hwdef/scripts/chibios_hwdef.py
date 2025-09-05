@@ -1486,7 +1486,7 @@ INCLUDE common.ld
                 % (devidx, name, self.spi_list.index(bus), int(devid[5:]), pal_line,
                    mode, lowspeed, highspeed))
             devlist.append('HAL_SPI_DEVICE%u' % devidx)
-        f.write('#define HAL_SPI_DEVICE_LIST %s\n\n' % ','.join(devlist))
+        self.write_device_table(f, 'spi devices', 'HAL_SPI_DEVICE_LIST', devlist)
         for dev in self.spidev:
             f.write("#define HAL_WITH_SPI_%s 1\n" % dev[0].upper().replace("-", "_"))
         f.write("\n")
@@ -1539,7 +1539,7 @@ INCLUDE common.ld
                 '#define HAL_WSPI_DEVICE%-2u WSPIDesc(%-17s, %2u, WSPIDEV_%s, %7s, %2u, %2u)\n'
                 % (devidx, name, self.wspi_list.index(bus), mode, speed, int(size_pow2), int(ncs_clk_delay)))
             devlist.append('HAL_WSPI_DEVICE%u' % devidx)
-        f.write('#define HAL_WSPI_DEVICE_LIST %s\n\n' % ','.join(devlist))
+        self.write_device_table(f, "wspi devices", "HAL_WSPI_DEVICE_LIST", devlist)
         for dev in self.wspidev:
             f.write("#define HAL_HAS_WSPI_%s 1\n" % dev[0].upper().replace("-", "_"))
             if dev[1].startswith('QUADSPI'):
@@ -1879,7 +1879,7 @@ INCLUDE common.ld
 #endif
 ''' % (OTG2_index, OTG2_index))
 
-        f.write('#define HAL_SERIAL_DEVICE_LIST %s\n\n' % ','.join(devlist))
+        self.write_device_table(f, "serial devices", "HAL_SERIAL_DEVICE_LIST", devlist)
         if not need_uart_driver and not self.is_bootloader_fw():
             f.write('''
 #ifndef HAL_USE_SERIAL
@@ -1955,7 +1955,8 @@ INCLUDE common.ld
 #endif
 '''
                     % (n, n, n, n, n, n, n, scl_line, sda_line, n, n, n, scl_line, sda_line))
-        f.write('\n#define HAL_I2C_DEVICE_LIST %s\n\n' % ','.join(devlist))
+        f.write('\n')
+        self.write_device_table(f, "i2c devices", "HAL_I2C_DEVICE_LIST", devlist)
 
     def parse_timer(self, str):
         '''parse timer channel string, i.e TIM8_CH2N'''

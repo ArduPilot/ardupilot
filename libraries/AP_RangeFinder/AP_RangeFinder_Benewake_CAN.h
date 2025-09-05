@@ -15,6 +15,12 @@ public:
     // handler for incoming frames. Return true if consumed
     bool handle_frame(AP_HAL::CANFrame &frame) override;
     bool handle_frame_H30(AP_HAL::CANFrame &frame);
+
+protected:
+
+    MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
+        return MAV_DISTANCE_SENSOR_LASER;
+    }
 };
 
 #endif  // AP_RANGEFINDER_BENEWAKE_CAN_ENABLED

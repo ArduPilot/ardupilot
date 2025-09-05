@@ -2835,8 +2835,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "SIM_SONAR_SCALE": 10,
         })
 
-        # This mission triggers an intersting selection of "Pitching", "Quading" and "CMTC" events
-        # it's not always consistent, perhaps due to wind, so the tests try to accomodate variances.
+        # This mission triggers an interesting selection of "Pitching", "Quading" and "CMTC" events
+        # it's not always consistent, perhaps due to wind, so the tests try to accommodate variances.
         filename = "TopOfTheWorldShort.waypoints"
         self.progress("Flying mission %s" % filename)
         num_wp = self.load_mission(filename)

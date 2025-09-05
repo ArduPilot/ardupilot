@@ -392,6 +392,18 @@ class HWDef:
         if len(devlist) > 0:
             f.write('#define HAL_BARO_PROBE_LIST %s\n\n' % ';'.join(devlist))
 
+    def write_device_table(self, f, description, define_name, devlist):
+        '''writes out a #define which can be used as the body of a C
+        structure to populate object constructor arguments'''
+        if len(devlist) == 0:
+            f.write(f'\n// No {description}\n')
+            return
+
+        f.write(f'\n// {description} table\n')
+        f.write(f'#define {define_name} \\\n')
+        f.write(',\\\n'.join([f"   {x}" for x in devlist]))
+        f.write("\n")
+
     def write_env_py(self, filename):
         '''write out env.py for environment variables to control the build process'''
         pickle.dump(self.env_vars, open(filename, "wb"))
