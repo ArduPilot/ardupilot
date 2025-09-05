@@ -406,6 +406,9 @@ private:
     // limit applied to back pitch to prevent wing producing excessive lift
     AP_Float q_bck_pitch_lim;
 
+    // Time to wait at pos2 before starting final descent to allow for weathervaning
+    AP_Float q_land_freeze_time;
+
     // which fwd throttle handling method is active
     enum class ActiveFwdThr : uint8_t {
         NONE = 0,
@@ -449,6 +452,9 @@ private:
 
     // when did we last run the attitude controller?
     uint32_t last_att_control_ms;
+
+    // last time we were in position2
+    uint32_t last_pos2_ms;
 
     // transition logic
     Transition *transition = nullptr;

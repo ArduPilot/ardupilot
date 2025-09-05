@@ -455,11 +455,23 @@ void Tailsitter::output(void)
         if (!is_zero(extra_pitch) && quadplane.in_vtol_mode()) {
             extra_elevator = extra_sign * powf(fabsf(extra_pitch), vectored_hover_power) * SERVO_MAX;
         }
-        tilt_left  = extra_elevator + tilt_left * vectored_hover_gain;
-        tilt_right = extra_elevator + tilt_right * vectored_hover_gain;
+        if (!is_negative(vectored_hover_power)) {
+            tilt_left  = extra_elevator + tilt_left * vectored_hover_gain;
+            tilt_right = extra_elevator + tilt_right * vectored_hover_gain;
+        } else {
+            tilt_left  = tilt_left * vectored_hover_gain;
+            tilt_right = tilt_right * vectored_hover_gain;
+        }
     }
     SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
     SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
+
+    // Add logging for desired thrust vectoring angles
+    AP::logger().WriteStreaming("PHID", "TimeUS,DesL,DesR",
+            "sdd", // seconds, degrees
+            "F00", // micro (1e-6), no mult (1e0)
+            "Qff", // uint64_t, float
+            AP_HAL::micros64(), tilt_left/100, tilt_right/100);
 
     // Check for saturated limits
     bool tilt_lim = _is_vectored && ((fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft)) >= SERVO_MAX) || (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorRight)) >= SERVO_MAX));
@@ -524,8 +536,13 @@ bool Tailsitter::transition_fw_complete(void)
         gcs().send_text(MAV_SEVERITY_WARNING, "Transition FW done, roll error");
         return true;
     }
-    if (AP_HAL::millis() - transition->fw_transition_start_ms > ((transition_angle_fw+(transition->fw_transition_initial_pitch*0.01f))/transition_rate_fw)*1500) {
+    uint32_t now = AP_HAL::millis();
+
+    if (now - transition->fw_transition_start_ms > ((transition_angle_fw+(transition->fw_transition_initial_pitch*0.01f))/transition_rate_fw)*1500) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Transition FW done, timeout");
+        gcs().send_text(MAV_SEVERITY_WARNING, "FW transition_initial_pitch: %f",(float)transition->fw_transition_initial_pitch*0.01f);
+        gcs().send_text(MAV_SEVERITY_WARNING, "FW current_time: %f, transition_start_ms: %f",(float)now,(float)transition->fw_transition_start_ms);
+        gcs().send_text(MAV_SEVERITY_WARNING, "Time delta: %f",(float)(now - transition->fw_transition_start_ms));
         return true;
     }
     // still waiting
