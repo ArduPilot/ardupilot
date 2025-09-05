@@ -851,6 +851,30 @@ void Sub::clear_input_hold()
     input_hold_engaged = false;
 }
 
+bool Sub::jsbutton_function_is_assigned(JSButton::button_function_t function)
+{
+    bool shift_is_assigned = false;
+    bool function_is_assigned_to_shift = false;
+    const uint8_t num_buttons = 32;
+    // Check all 32 buttons for the specified function
+    for (uint8_t i = 0; i < num_buttons; i++) {
+        JSButton* current_button = get_button(i);
+        if (current_button == nullptr) {
+            continue;
+        }
+        if (current_button->function(false) == function) {
+            return true;
+        }
+        if (current_button->function(false) == JSButton::k_shift) {
+            shift_is_assigned = true;
+        }
+        if (current_button->function(true) == function) {
+            function_is_assigned_to_shift = true;
+        }
+    }
+    return shift_is_assigned && function_is_assigned_to_shift;
+}
+
 #if AP_SCRIPTING_ENABLED
 bool Sub::is_button_pressed(uint8_t index)
 {
