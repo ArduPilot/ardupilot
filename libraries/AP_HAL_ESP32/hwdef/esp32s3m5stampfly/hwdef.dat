@@ -59,13 +59,6 @@ ESP32_RCOUT GPIO_NUM_41
 # the stampfly does not have an Airspeed sensor:
 define AP_AIRSPEED_ENABLED 0
 
-# these are missing from esp-idf......will not be needed later
-define RTC_WDT_STG_SEL_OFF             0
-define RTC_WDT_STG_SEL_INT             1
-define RTC_WDT_STG_SEL_RESET_CPU       2
-define RTC_WDT_STG_SEL_RESET_SYSTEM    3
-define RTC_WDT_STG_SEL_RESET_RTC       4
-
 define HAL_ESP32_BOARD_NAME "esp32s3m5stampfly"
 
 define AP_COMPASS_ENABLE_DEFAULT 0
