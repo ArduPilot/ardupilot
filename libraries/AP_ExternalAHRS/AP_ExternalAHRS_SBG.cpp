@@ -35,6 +35,7 @@
 #include <AP_RTC/AP_RTC.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Airspeed/AP_Airspeed.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL &hal;
 
