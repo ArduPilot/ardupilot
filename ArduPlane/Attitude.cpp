@@ -493,10 +493,10 @@ int16_t Plane::calc_nav_yaw_coordinated()
     int16_t commanded_rudder;
     bool using_rate_controller = false;
 
-    // Received an external msg that guides yaw in the last 3 seconds?
+    // Received an external msg that guides yaw within g2.guided_timeout?
     if (control_mode->is_guided_mode() &&
             plane.guided_state.last_forced_rpy_ms.z > 0 &&
-            millis() - plane.guided_state.last_forced_rpy_ms.z < 3000) {
+            millis() - plane.guided_state.last_forced_rpy_ms.z < g2.guided_timeout*1000.0f) {
         commanded_rudder = plane.guided_state.forced_rpy_cd.z;
     } else if (autotuning && g.acro_yaw_rate > 0 && yawController.rate_control_enabled()) {
         // user is doing an AUTOTUNE with yaw rate control
