@@ -14366,9 +14366,17 @@ RTL_ALT 111
         self.start_subtest("Unable to set DISARM_DELAY freely")
         self.context_push()
         self.context_collect('STATUSTEXT')
+        self.context_collect('PARAM_ERROR')
         old_disarm_delay_value = self.get_parameter('DISARM_DELAY')
         self.send_set_parameter_direct('DISARM_DELAY', 78)
         self.wait_statustext('param-set: param set denied (DISARM_DELAY)', check_context=True)
+        self.assert_received_message_field_values('PARAM_ERROR', {
+            "target_system": 250,
+            "target_component": 250,
+            "param_id": 'DISARM_DELAY',
+            "param_index": -1,
+            "error": mavutil.mavlink.MAV_PARAM_ERROR_PERMISSION_DENIED,
+        }, check_context=True, very_verbose=True)
         self.assert_parameter_value('DISARM_DELAY', old_disarm_delay_value)
         self.context_pop()
 
@@ -14379,10 +14387,18 @@ RTL_ALT 111
         self.start_subtest("Re-enabling applet via parameter should stop freely setting DISARM_DELAY")
         self.context_push()
         self.context_collect('STATUSTEXT')
+        self.context_collect('PARAM_ERROR')
         self.set_parameter("PARAM_SET_ENABLE", 1)
         old_disarm_delay_value = self.get_parameter('DISARM_DELAY')
         self.send_set_parameter_direct('DISARM_DELAY', 78)
         self.wait_statustext('param-set: param set denied (DISARM_DELAY)', check_context=True)
+        self.assert_received_message_field_values('PARAM_ERROR', {
+            "target_system": 250,
+            "target_component": 250,
+            "param_id": 'DISARM_DELAY',
+            "param_index": -1,
+            "error": mavutil.mavlink.MAV_PARAM_ERROR_PERMISSION_DENIED,
+        }, check_context=True, very_verbose=True)
         self.assert_parameter_value('DISARM_DELAY', old_disarm_delay_value)
         self.context_pop()
 
