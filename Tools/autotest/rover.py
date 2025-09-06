@@ -202,6 +202,68 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.disarm_vehicle()
         self.progress("Loiter or Hold as throttle failsafe OK")
 
+    def PARAM_ERROR(self):
+        '''test PARAM_ERROR mavlink message'''
+        self.start_subtest("Non-existant parameter (get)")
+        self.context_push()
+        self.context_collect('PARAM_ERROR')
+        self.install_messageprinter_handlers_context(['PARAM_ERROR'])
+        self.send_get_parameter_direct("BOB")
+        self.assert_received_message_field_values('PARAM_ERROR', {
+            "target_system": 250,
+            "target_component": 250,
+            "param_id": 'BOB',
+            "param_index": -1,
+            "error": mavutil.mavlink.MAV_PARAM_ERROR_DOES_NOT_EXIST,
+        }, check_context=True, very_verbose=True)
+        self.context_pop()
+
+        self.start_subtest("Non-existant parameter (get-by-id)")
+        self.context_push()
+        self.context_collect('PARAM_ERROR')
+        self.install_messageprinter_handlers_context(['PARAM_ERROR'])
+        non_existant_param_index = 32764  # hopefully, anyway....
+        self.mav.mav.param_request_read_send(
+            self.sysid_thismav(),
+            1,
+            bytes("", 'ascii'),
+            non_existant_param_index
+        )
+        self.assert_received_message_field_values('PARAM_ERROR', {
+            "target_system": 250,
+            "target_component": 250,
+            "param_id": '',
+            "param_index": non_existant_param_index,
+            "error": mavutil.mavlink.MAV_PARAM_ERROR_DOES_NOT_EXIST,
+        }, check_context=True, very_verbose=True)
+        self.context_pop()
+
+        self.start_subtest("Non-existant parameter (set)")
+        self.context_push()
+        self.context_collect('PARAM_ERROR')
+        self.send_set_parameter_direct("BOB", 1)
+        self.assert_received_message_field_values('PARAM_ERROR', {
+            "target_system": 250,
+            "target_component": 250,
+            "param_id": 'BOB',
+            "param_index": -1,
+            "error": mavutil.mavlink.MAV_PARAM_ERROR_DOES_NOT_EXIST,
+        }, check_context=True, very_verbose=True)
+        self.context_pop()
+
+        self.start_subtest("Try to set a bad parameter value")
+        self.context_push()
+        self.context_collect('PARAM_ERROR')
+        self.send_set_parameter_direct("SPRAY_ENABLE", float("nan"))
+        self.assert_received_message_field_values('PARAM_ERROR', {
+            "target_system": 250,
+            "target_component": 250,
+            "param_id": 'SPRAY_ENABLE',
+            "param_index": -1,
+            "error": mavutil.mavlink.MAV_PARAM_ERROR_VALUE_OUT_OF_RANGE,
+        }, check_context=True, very_verbose=True)
+        self.context_pop()
+
     def Sprayer(self):
         """Test sprayer functionality."""
         rc_ch = 5
@@ -7039,6 +7101,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.RoverInitialMode,
             self.DriveMaxRCIN,
             self.NoArmWithoutMissionItems,
+            self.PARAM_ERROR,
             self.CompassPrearms,
             self.MAV_CMD_DO_SET_REVERSE,
             self.MAV_CMD_GET_HOME_POSITION,
