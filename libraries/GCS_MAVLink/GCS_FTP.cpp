@@ -284,14 +284,21 @@ void GCS_FTP::Session::list_dir(Transaction &request, Transaction &response)
 
 /*
   close a session
+
+  returns the error code friom the underlying close() call, or zero (no error) if the
+  file was closed already
  */
-void GCS_FTP::Session::close(void)
+int GCS_FTP::Session::close(void)
 {
+    int result = 0;
+
     if (fd != -1) {
-        AP::FS().close(fd);
+        result = AP::FS().close(fd);
         fd = -1;
     }
     last_send_ms = 0;
+
+    return result;
 }
 
 /*
@@ -317,8 +324,13 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
         reply.opcode = FTP_OP::Ack;
         break;
     case FTP_OP::TerminateSession:
-        close();
-        reply.opcode = FTP_OP::Ack;
+        if (close()) {
+            // close() operation indicated an error, errno
+            // was set by close() itself
+            GCS_FTP::error(reply, FTP_ERROR::FailErrno);
+        } else {
+            reply.opcode = FTP_OP::Ack;
+        }
         break;
     case FTP_OP::ListDirectory:
         list_dir(request, reply);
@@ -330,7 +342,7 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
             // no activity for 3s, assume client has
             // timed out receiving open reply, close
             // the file
-            close();
+            close();    // error code ignored
             fd = -1;
         }
         if (fd != -1) {
@@ -736,7 +748,7 @@ void GCS_FTP::worker(void)
             for (auto &s : sessions) {
                 if (s.last_send_ms != 0 &&
                     now - s.last_send_ms > FTP_SESSION_KILL_TIMEOUT) {
-                    s.close();
+                    s.close();   // error code ignored
                 }
             }
         }
@@ -750,7 +762,7 @@ void GCS_FTP::worker(void)
                     request.compid == s.compid &&
                     request.chan == s.chan) {
                     // close this session
-                    s.close();
+                    s.close();   // error code ignored
                 }
             }
             // always ACK, even if no sessions were closed
@@ -797,7 +809,7 @@ void GCS_FTP::worker(void)
                 continue;
             }
             // claim the session
-            s.close();
+            s.close();   // error code ignored
             s.session_id = request.session;
             s.sysid = request.sysid;
             s.compid = request.compid;
