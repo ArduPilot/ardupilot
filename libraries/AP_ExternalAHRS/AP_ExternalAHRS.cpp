@@ -281,7 +281,16 @@ bool AP_ExternalAHRS::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) 
         }
     }
 
-    if (!state.have_origin) {
+    bool check_origin = true;
+    // don't run this check for VN100 Series since its IMU only
+    if (DevType(devtype) == DevType::VecNav) {
+        const char* name = get_name();
+        if (name && !strncmp(name, "VN-1", 4)) {
+            check_origin = false;
+        }
+    }
+
+    if (check_origin && !state.have_origin) {
         hal.util->snprintf(failure_msg, failure_msg_len, "ExternalAHRS: No origin");
 	    return false;
     }
