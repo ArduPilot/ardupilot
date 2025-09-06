@@ -1,11 +1,16 @@
 #pragma once
 
+#ifndef AP_LEAKDETECTOR_ENABLED
+#define AP_LEAKDETECTOR_ENABLED 1
+#endif
+
 #include <AP_Param/AP_Param.h>
 
 #define LEAKDETECTOR_MAX_INSTANCES 3
 
 #define LEAKDETECTOR_COOLDOWN_MS 3000 // Status will return true for this long after last time leak was detected
 
+#if AP_LEAKDETECTOR_ENABLED
 class AP_LeakDetector_Backend;
 
 class AP_LeakDetector {
@@ -54,3 +59,5 @@ private:
     AP_Int8 _pin[LEAKDETECTOR_MAX_INSTANCES]; // Pin that detector is connected to
     AP_Int8 _default_reading[LEAKDETECTOR_MAX_INSTANCES]; // Default reading when leak detector is dry
 };
+
+#endif // AP_LEAKDETECTOR_ENABLED
