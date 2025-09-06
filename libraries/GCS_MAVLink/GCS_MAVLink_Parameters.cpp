@@ -239,6 +239,7 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,
     MSG_POWER_STATUS,
+    MSG_GNSS_INTEGRITY,
 #if HAL_WITH_MCU_MONITORING
     MSG_MCU_STATUS,
 #endif
