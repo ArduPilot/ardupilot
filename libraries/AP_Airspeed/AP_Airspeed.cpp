@@ -485,7 +485,7 @@ void AP_Airspeed::allocate()
 }
 
 // get a temperature reading if possible
-bool AP_Airspeed::get_temperature(uint8_t i, float &temperature)
+bool AP_Airspeed::get_temperature(uint8_t i, float &temperature) const
 {
     if (!enabled(i)) {
         return false;
@@ -995,7 +995,7 @@ bool AP_Airspeed::arming_checks(size_t buflen, char *buffer) const
 const AP_Param::GroupInfo AP_Airspeed::var_info[] = { AP_GROUPEND };
 
 void AP_Airspeed::update() {};
-bool AP_Airspeed::get_temperature(uint8_t i, float &temperature) { return false; }
+bool AP_Airspeed::get_temperature(uint8_t i, float &temperature) const { return false; }
 void AP_Airspeed::calibrate(bool in_startup) {}
 AP_Airspeed::CalibrationState AP_Airspeed::get_calibration_state() const { return CalibrationState::NOT_STARTED; }
 bool AP_Airspeed::use(uint8_t i) const { return false; }
