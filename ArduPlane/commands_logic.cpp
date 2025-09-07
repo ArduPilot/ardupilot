@@ -780,9 +780,9 @@ bool Plane::verify_loiter_to_alt(const AP_Mission::Mission_Command &cmd)
     // condition_value == 0 means alt has never been reached
     if (condition_value == 0) {
         // primary goal, loiter to alt
-        if (labs(loiter.sum_cd) > 1 && (loiter.reached_target_alt || loiter.unable_to_acheive_target_alt)) {
+        if (labs(loiter.sum_cd) > 1 && (loiter.reached_target_alt || loiter.unable_to_achieve_target_alt)) {
             // primary goal completed, initialize secondary heading goal
-            if (loiter.unable_to_acheive_target_alt) {
+            if (loiter.unable_to_achieve_target_alt) {
                 gcs().send_text(MAV_SEVERITY_INFO,"Loiter to alt was stuck at %d", int(current_loc.alt/100));
             }
 
@@ -1078,7 +1078,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
             {
                 nav_controller->update_loiter(cmd.content.location, abs_radius, direction);
 
-                if (labs(loiter.sum_cd) > 1 && (loiter.reached_target_alt || loiter.unable_to_acheive_target_alt)) {
+                if (labs(loiter.sum_cd) > 1 && (loiter.reached_target_alt || loiter.unable_to_achieve_target_alt)) {
                     Vector3f wind = ahrs.wind_estimate();
                     vtol_approach_s.approach_direction_deg = degrees(atan2f(-wind.y, -wind.x));
                     gcs().send_text(MAV_SEVERITY_INFO, "Selected an approach path of %.1f", (double)vtol_approach_s.approach_direction_deg);
