@@ -151,6 +151,7 @@ public:
         USE_HOBBYWING_ESC         = (1U<<7),
         ENABLE_STATS              = (1U<<8),
         ENABLE_FLEX_DEBUG         = (1U<<9),
+        ALLOW_EXTENDED_AUX        = (1U<<10),
     };
 
     // check if a option is set
