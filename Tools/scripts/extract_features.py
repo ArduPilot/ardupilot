@@ -326,6 +326,9 @@ class ExtractFeatures(object):
             ('AP_PERIPH_RCIN_ENABLED', r'AP_Periph_FW::rcin_update'),
             ('AP_PERIPH_RPM_ENABLED', r'AP_Periph_FW::rpm_sensor_send'),
             ('AP_PERIPH_AIRSPEED_ENABLED', r'AP_Periph_FW::can_airspeed_update'),
+
+            ('AP_SCRIPTING_BINDING_VEHICLE_ENABLED', 'AP__vehicle___index'),
+            ('AP_SCRIPTING_BINDING_MOTORS_ENABLED', 'AP__motors___index'),
         ]
 
     def progress(self, msg):
