@@ -14633,6 +14633,83 @@ RTL_ALT 111
         # Test done
         self.land_and_disarm()
 
+    def ScriptingFlipOnASwitch(self):
+        '''Tests the flip_on_switch.lua script'''
+        self.start_subtest("Test FlipOnSwitch functionality")
+
+        # Stage 1: Set SCR_ENABLE and reboot
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "WPNAV_ACCEL": 2000,
+            "WPNAV_ACCEL_Z": 1000,
+            "WPNAV_JERK": 40,
+            "WPNAV_SPEED": 3000,
+            "WPNAV_SPEED_DN": 1000,
+            "WPNAV_SPEED_UP": 1000,
+            "PSC_JERK_Z": 40,
+            "PSC_JERK_XY": 40,
+            "ATC_THR_MIX_MAX": 4,
+        })
+
+        self.install_script_module(os.path.join(self.rootdir(), "libraries", "AP_Scripting", "modules", "vehicle_control.lua"), "vehicle_control.lua")
+        self.install_applet_script_context("flip_on_a_switch.lua")
+
+        self.reboot_sitl()
+
+        # Stage 2: Set script parameters and reboot again
+        self.set_parameters({
+            "FLIP_ENABLE": 1,
+            "FLIP_AXIS": 1,  # Roll
+            "FLIP_RATE": 720,
+            "FLIP_FLICK_TO": 0.5,
+            "FLIP_COMMIT_TO": 1.0,
+            "FLIP_THROTTLE": 0.0,
+            "FLIP_HOVER": 0.37,
+            "RC9_OPTION": 300,  # Scripting1
+        })
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        # Takeoff in Loiter mode
+        self.takeoff(30, mode="LOITER")
+
+        self.context_collect('STATUSTEXT')
+
+        # Trigger the flip
+        self.set_rc(9, 2000)
+        self.wait_statustext(r"^Flip: Starting (\d+(?:\.\d+)?)s? flips?$", check_context=True, timeout=10, regex=True)
+        self.wait_statustext("Trajectory restored", check_context=True, timeout=100)
+
+        # Lower the switch to stop flipping
+        self.set_rc(9, 1000)
+        self.wait_statustext("Flip: Canceled by user", check_context=True, timeout=5)
+        # Land and disarm
+        self.do_RTL()
+
+        self.start_subtest("Test FlipOnSwitch functionality with sprung switch")
+        self.set_parameter("FLIP_CHAN", 9)
+        # flip spring test
+        self.send_cmd_do_set_mode('LOITER')
+        self.set_rc(3, 1000)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        # Takeoff in Loiter mode
+        self.takeoff(30, mode="LOITER")
+
+        self.context_collect('STATUSTEXT')
+
+        # Trigger the flip
+        self.set_rc(9, 2000)
+        self.set_rc(9, 1000)
+        self.wait_statustext(r"^Flip: Starting (\d+(?:\.\d+)?)s? flips?$", check_context=True, timeout=10, regex=True)
+        self.wait_statustext("Trajectory restored", check_context=True, timeout=100)
+
+        # Flick the switch to stop flipping
+        self.set_rc(9, 2000)
+        self.set_rc(9, 1000)
+        self.wait_statustext("Flip: Canceled by user", check_context=True, timeout=5)
+        # Land and disarm
+        self.do_RTL()
+
     def RTLYaw(self):
         '''test that vehicle yaws to original heading on RTL'''
         # 0 is WP_YAW_BEHAVIOR_NONE
@@ -15703,6 +15780,7 @@ return update, 1000
             self.ScriptingFlipMode,
             self.ScriptingFlyVelocity,
             self.EK3_EXT_NAV_vel_without_vert,
+            self.ScriptingFlipOnASwitch,
             self.CompassLearnCopyFromEKF,
             self.AHRSAutoTrim,
             self.Ch6TuningLoitMaxXYSpeed,
