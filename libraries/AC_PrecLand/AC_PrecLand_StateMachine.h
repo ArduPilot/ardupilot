@@ -45,7 +45,7 @@ public:
     // 3. We have the target in sight and can continue landing. 4. The sensor is out of range
     // This method deals with all of these scenarios
     // Returns the action needed to be done by the vehicle.
-    // Parameters: Vector3f "retry_pos_m" is filled with the required location if we need to retry landing.
+    // Parameters: Vector3p "retry_pos_m" is filled with the required location if we need to retry landing.
     Status update(Vector3p &retry_pos_m);
 
     // This is only called when the current status of the state machine returns "failsafe" and will return the action that the vehicle should do
