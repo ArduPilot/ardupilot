@@ -17,7 +17,7 @@ void AC_PrecLand_SITL::update()
 
     if (_state.healthy && _sitl->precland_sim.last_update_ms() != _los_meas.time_ms) {
         const Vector3d position = _sitl->precland_sim.get_target_position();
-        const Matrix3d body_to_ned = AP::ahrs().get_rotation_body_to_ned().todouble();
+        const Matrix3d body_to_ned = AP::ahrs().get_rotation_body_to_ned().topostype();
         _los_meas.vec_unit =  body_to_ned.mul_transpose(-position).tofloat();
         _distance_to_target = _sitl->precland_sim.option_enabled(SITL::SIM_Precland::Option::ENABLE_TARGET_DISTANCE) ? _los_meas.vec_unit.length() : 0.0f;
         _los_meas.vec_unit /= _los_meas.vec_unit.length();

@@ -155,13 +155,13 @@ AC_WPNav::TerrainSource AC_WPNav::get_terrain_source() const
 void AC_WPNav::wp_and_spline_init_cm(float speed_cms, Vector3f stopping_point_neu_cm)
 {
     // convert inputs from centimeters to meters and call the main initializer
-    wp_and_spline_init_m(speed_cms * 0.01, stopping_point_neu_cm * 0.01);
+    wp_and_spline_init_m(speed_cms * 0.01, stopping_point_neu_cm.topostype() * 0.01);
 }
 
 // Initializes waypoint and spline navigation using inputs in meters.
 // Sets speed and acceleration limits, calculates jerk constraints,
 // and initializes spline or S-curve leg with a defined starting point.
-void AC_WPNav::wp_and_spline_init_m(float speed_ms, Vector3f stopping_point_neu_m)
+void AC_WPNav::wp_and_spline_init_m(float speed_ms, Vector3p stopping_point_neu_m)
 {    
     // ensure waypoint radius is not below minimum allowed value
     _wp_radius_cm.set_and_save_ifchanged(MAX(_wp_radius_cm, WPNAV_WP_RADIUS_MIN_CM));
@@ -286,7 +286,7 @@ void AC_WPNav::set_speed_down_ms(float speed_down_ms)
 bool AC_WPNav::set_wp_destination_loc(const Location& destination)
 {
     bool is_terrain_alt;
-    Vector3f dest_neu_m;
+    Vector3p dest_neu_m;
 
     // convert Location to NEU position vector in meters and determine altitude reference frame
     if (!get_vector_NEU_m(destination, dest_neu_m, is_terrain_alt)) {
@@ -303,7 +303,7 @@ bool AC_WPNav::set_wp_destination_loc(const Location& destination)
 bool AC_WPNav::set_wp_destination_next_loc(const Location& destination)
 {
     bool is_terrain_alt;
-    Vector3f dest_neu_m;
+    Vector3p dest_neu_m;
 
     // convert Location to NEU position vector in meters and determine altitude reference frame
     if (!get_vector_NEU_m(destination, dest_neu_m, is_terrain_alt)) {
@@ -333,14 +333,14 @@ bool AC_WPNav::get_wp_destination_loc(Location& destination) const
 // See set_wp_destination_NEU_m() for full details.
 bool AC_WPNav::set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt)
 {
-    return set_wp_destination_NEU_m(destination_neu_cm * 0.01, is_terrain_alt);
+    return set_wp_destination_NEU_m(destination_neu_cm.topostype() * 0.01, is_terrain_alt);
 }
 
 // Sets waypoint destination using NEU position vector in meters from EKF origin.
 // If `is_terrain_alt` is true, altitude is interpreted as height above terrain.
 // Reinitializes the current leg if interrupted, updates origin, and computes trajectory.
 // Returns false if terrain offset cannot be determined when required.
-bool AC_WPNav::set_wp_destination_NEU_m(const Vector3f& destination_neu_m, bool is_terrain_alt)
+bool AC_WPNav::set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt)
 {
     // re-initialise if previous destination has been interrupted
     if (!is_active() || !_flags.reached_destination) {
@@ -414,14 +414,14 @@ bool AC_WPNav::set_wp_destination_NEU_m(const Vector3f& destination_neu_m, bool 
 // See set_wp_destination_next_NEU_m() for full details.
 bool AC_WPNav::set_wp_destination_next_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt)
 {
-    return set_wp_destination_next_NEU_m(destination_neu_cm * 0.01, is_terrain_alt);
+    return set_wp_destination_next_NEU_m(destination_neu_cm.topostype() * 0.01, is_terrain_alt);
 }
 
 // Sets the next waypoint destination using a NEU position vector in meters.
 // Only updates if terrain frame matches current leg.
 // Calculates trajectory preview for smoother transition into next segment.
 // Updates velocity handoff if previous leg is a spline.
-bool AC_WPNav::set_wp_destination_next_NEU_m(const Vector3f& destination_neu_m, bool is_terrain_alt)
+bool AC_WPNav::set_wp_destination_next_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt)
 {
     // do not add next point if alt types don't match
     if (is_terrain_alt != _is_terrain_alt) {
@@ -452,20 +452,20 @@ bool AC_WPNav::set_wp_destination_next_NEU_m(const Vector3f& destination_neu_m, 
 
 // Sets waypoint destination using a NED position vector in meters from EKF origin.
 // Converts internally to NEU. Terrain following is not used.
-bool AC_WPNav::set_wp_destination_NED_m(const Vector3f& destination_NED_m)
+bool AC_WPNav::set_wp_destination_NED_m(const Vector3p& destination_NED_m)
 {
     // convert NED to NEU by inverting the Z axis
     // terrain following is not used (altitude is relative to EKF origin)
-    return set_wp_destination_NEU_m(Vector3f{destination_NED_m.x, destination_NED_m.y, -destination_NED_m.z}, false);
+    return set_wp_destination_NEU_m(Vector3p{destination_NED_m.x, destination_NED_m.y, -destination_NED_m.z}, false);
 }
 
 // Sets the next waypoint destination using a NED position vector in meters from EKF origin.
 // Converts to NEU internally. Terrain following is not applied.
-bool AC_WPNav::set_wp_destination_next_NED_m(const Vector3f& destination_NED_m)
+bool AC_WPNav::set_wp_destination_next_NED_m(const Vector3p& destination_NED_m)
 {
     // convert NED to NEU by inverting the Z axis
     // terrain following is not used (altitude is relative to EKF origin)
-    return set_wp_destination_next_NEU_m(Vector3f{destination_NED_m.x, destination_NED_m.y, -destination_NED_m.z}, false);
+    return set_wp_destination_next_NEU_m(Vector3p{destination_NED_m.x, destination_NED_m.y, -destination_NED_m.z}, false);
 }
 
 // Computes the horizontal stopping point in NE frame, returned in centimeters.
@@ -473,20 +473,17 @@ bool AC_WPNav::set_wp_destination_next_NED_m(const Vector3f& destination_NED_m)
 void AC_WPNav::get_wp_stopping_point_NE_cm(Vector2f& stopping_point_ne_cm) const
 {
     // convert input/output to meters to match internal representation
-    Vector2f stopping_point_ne_m = stopping_point_ne_cm * 0.01;
+    Vector2p stopping_point_ne_m = stopping_point_ne_cm.topostype() * 0.01;
     get_wp_stopping_point_NE_m(stopping_point_ne_m);
-    stopping_point_ne_cm = stopping_point_ne_m * 100.0;
+    stopping_point_ne_cm = stopping_point_ne_m.tofloat() * 100.0;
 }
 
 // Computes the horizontal stopping point in NE frame, in meters, based on current velocity and configured acceleration.
 // This is the point where the vehicle would come to a stop if decelerated using the configured limits.
-void AC_WPNav::get_wp_stopping_point_NE_m(Vector2f& stopping_point_ne_m) const
+void AC_WPNav::get_wp_stopping_point_NE_m(Vector2p& stopping_point_ne_m) const
 {
     // request stopping point from the position controller
-    Vector2p stop_ne_m;
-    _pos_control.get_stopping_point_NE_m(stop_ne_m);
-    // convert from postype_t to Vector2f for external use
-    stopping_point_ne_m = stop_ne_m.tofloat();
+    _pos_control.get_stopping_point_NE_m(stopping_point_ne_m);
 }
 
 // Computes the full 3D NEU stopping point vector in centimeters based on current kinematics.
@@ -494,23 +491,21 @@ void AC_WPNav::get_wp_stopping_point_NE_m(Vector2f& stopping_point_ne_m) const
 void AC_WPNav::get_wp_stopping_point_NEU_cm(Vector3f& stopping_point_neu_cm) const
 {
     // convert input from cm to m for internal calculation
-    Vector3f stopping_point_neu_m = stopping_point_neu_cm * 0.01;
+    Vector3p stopping_point_neu_m = stopping_point_neu_cm.topostype() * 0.01;
     // compute stopping point using meters
     get_wp_stopping_point_NEU_m(stopping_point_neu_m);
     // convert result back to centimeters
-    stopping_point_neu_cm = stopping_point_neu_m * 100.0;
+    stopping_point_neu_cm = stopping_point_neu_m.tofloat() * 100.0;
 }
 
 // Computes the full 3D NEU stopping point in meters based on current velocity and configured acceleration in all axes.
 // Represents where the vehicle will stop if decelerated from current velocity using configured limits.
-void AC_WPNav::get_wp_stopping_point_NEU_m(Vector3f& stopping_point_neu_m) const
+void AC_WPNav::get_wp_stopping_point_NEU_m(Vector3p& stopping_point_neu_m) const
 {
-    Vector3p stop_neu_m;
     // get horizontal stopping point (North and East)
-    _pos_control.get_stopping_point_NE_m(stop_neu_m.xy());
+    _pos_control.get_stopping_point_NE_m(stopping_point_neu_m.xy());
     // get vertical stopping point (Up)
-    _pos_control.get_stopping_point_U_m(stop_neu_m.z);
-    stopping_point_neu_m = stop_neu_m.tofloat();
+    _pos_control.get_stopping_point_U_m(stopping_point_neu_m.z);
 }
 
 // Advances the target location along the current path segment.
@@ -534,7 +529,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     const Vector3p& psc_pos_offset_neu_m = _pos_control.get_pos_offset_NEU_m();
 
     // compute current position in NEU frame, adjusted to destination frame (e.g., terrain-relative if needed)
-    Vector3f curr_pos_neu_m = _pos_control.get_pos_estimate_NEU_m().tofloat() - psc_pos_offset_neu_m.tofloat();
+    Vector3p curr_pos_neu_m = _pos_control.get_pos_estimate_NEU_m() - psc_pos_offset_neu_m;
     curr_pos_neu_m.z -= terr_offset_u_m;
 
     // get desired velocity and remove offset
@@ -569,7 +564,8 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     _track_dt_scalar += (track_dt_scalar - _track_dt_scalar) * (dt / track_dt_scalar_tc);
 
     // select path generator (S-curve or spline) and compute target state
-    Vector3f target_pos_neu_m, target_vel_neu_ms, target_accel_neu_mss;
+    Vector3p target_pos_neu_m;
+    Vector3f target_vel_neu_ms, target_accel_neu_mss;
     bool s_finished;
     if (!_this_leg_is_spline) {
         // update target position, velocity and acceleration
@@ -594,7 +590,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     target_accel_neu_mss += accel_offset_neu_mss;
 
     // send updated position, velocity, and acceleration targets to position controller
-    _pos_control.set_pos_vel_accel_NEU_m(target_pos_neu_m.topostype(), target_vel_neu_ms, target_accel_neu_mss);
+    _pos_control.set_pos_vel_accel_NEU_m(target_pos_neu_m, target_vel_neu_ms, target_accel_neu_mss);
 
     // check if waypoint has been reached based on mode and radius
     if (!_flags.reached_destination) {
@@ -604,7 +600,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
                 _flags.reached_destination = true;
             } else {
                 // regular waypoints also require the copter to be within the waypoint radius
-                const Vector3f dist_to_dest_m = curr_pos_neu_m - _destination_neu_m;
+                const Vector3f dist_to_dest_m = (curr_pos_neu_m - _destination_neu_m).tofloat();
                 if (dist_to_dest_m.length_squared() <= sq(_wp_radius_cm * 0.01)) {
                     _flags.reached_destination = true;
                 }
@@ -649,7 +645,7 @@ float AC_WPNav::get_wp_distance_to_destination_cm() const
 float AC_WPNav::get_wp_distance_to_destination_m() const
 {
     // calculate 2D ground distance between current position and destination in NE frame
-    return get_horizontal_distance(_pos_control.get_pos_estimate_NEU_m().xy().tofloat(), _destination_neu_m.xy());
+    return get_horizontal_distance(_pos_control.get_pos_estimate_NEU_m().xy().tofloat(), _destination_neu_m.xy().tofloat());
 }
 
 // Returns the bearing to the current waypoint destination in centidegrees.
@@ -657,7 +653,7 @@ float AC_WPNav::get_wp_distance_to_destination_m() const
 int32_t AC_WPNav::get_wp_bearing_to_destination_cd() const
 {
     // compute heading from current position to destination in centidegrees
-    return get_bearing_cd(_pos_control.get_pos_estimate_NEU_m().xy().tofloat(), _destination_neu_m.xy());
+    return get_bearing_cd(_pos_control.get_pos_estimate_NEU_m().xy().tofloat(), _destination_neu_m.xy().tofloat());
 }
 
 // Returns the bearing to the current waypoint destination in radians.
@@ -665,7 +661,7 @@ int32_t AC_WPNav::get_wp_bearing_to_destination_cd() const
 float AC_WPNav::get_wp_bearing_to_destination_rad() const
 {
     // compute heading from current position to destination in radians
-    return get_bearing_rad(_pos_control.get_pos_estimate_NEU_m().xy().tofloat(), _destination_neu_m.xy());
+    return get_bearing_rad(_pos_control.get_pos_estimate_NEU_m().xy().tofloat(), _destination_neu_m.xy().tofloat());
 }
 
 // Runs the waypoint navigation controller.
@@ -796,14 +792,14 @@ bool AC_WPNav::get_terrain_offset_m(float& offset_m)
 bool AC_WPNav::set_spline_destination_loc(const Location& destination, const Location& next_destination, bool next_is_spline)
 {
     // convert destination location to NEU vector and altitude frame
-    Vector3f dest_neu_m;
+    Vector3p dest_neu_m;
     bool dest_is_terrain_alt;
     if (!get_vector_NEU_m(destination, dest_neu_m, dest_is_terrain_alt)) {
         return false;
     }
 
     // convert next destination location to NEU vector and altitude frame
-    Vector3f next_dest_neu_m;
+    Vector3p next_dest_neu_m;
     bool next_dest_is_terrain_alt;
     if (!get_vector_NEU_m(next_destination, next_dest_neu_m, next_dest_is_terrain_alt)) {
         return false;
@@ -819,14 +815,14 @@ bool AC_WPNav::set_spline_destination_loc(const Location& destination, const Loc
 bool AC_WPNav::set_spline_destination_next_loc(const Location& next_destination, const Location& next_next_destination, bool next_next_is_spline)
 {
     // convert next_destination location to NEU vector and determine if it uses terrain-relative altitude
-    Vector3f next_dest_neu_m;
+    Vector3p next_dest_neu_m;
     bool next_dest_is_terrain_alt;
     if (!get_vector_NEU_m(next_destination, next_dest_neu_m, next_dest_is_terrain_alt)) {
         return false;
     }
 
     // convert next_next_destination location to NEU vector and determine if it uses terrain-relative altitude
-    Vector3f next_next_dest_neu_m;
+    Vector3p next_next_dest_neu_m;
     bool next_next_dest_is_terr_alt;
     if (!get_vector_NEU_m(next_next_destination, next_next_dest_neu_m, next_next_dest_is_terr_alt)) {
         return false;
@@ -840,7 +836,7 @@ bool AC_WPNav::set_spline_destination_next_loc(const Location& next_destination,
 // Initializes a spline path from `destination_neu_m` to `next_destination_neu_m`, respecting terrain altitude framing.
 // Both waypoints must use the same altitude frame (either above terrain or above origin).
 // Returns false if terrain altitude cannot be determined when required.
-bool AC_WPNav::set_spline_destination_NEU_m(const Vector3f& destination_neu_m, bool is_terrain_alt, const Vector3f& next_destination_neu_m, bool next_is_terrain_alt, bool next_is_spline)
+bool AC_WPNav::set_spline_destination_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt, const Vector3p& next_destination_neu_m, bool next_is_terrain_alt, bool next_is_spline)
 {
     // re-initialise path state if previous destination was not completed or controller inactive
     if (!is_active() || !_flags.reached_destination) {
@@ -861,7 +857,7 @@ bool AC_WPNav::set_spline_destination_NEU_m(const Vector3f& destination_neu_m, b
                 origin_vector_neu_m = _spline_this_leg.get_destination_vel();
             } else {
                 // use direction vector from previous straight-line segment
-                origin_vector_neu_m = _destination_neu_m - _origin_neu_m;
+                origin_vector_neu_m = (_destination_neu_m - _origin_neu_m).tofloat();
             }
         }
 
@@ -899,10 +895,10 @@ bool AC_WPNav::set_spline_destination_NEU_m(const Vector3f& destination_neu_m, b
     if (is_terrain_alt == next_is_terrain_alt) {
         if (next_is_spline) {
             // aim to leave segment in direction of full arc (origin to next)
-            destination_vector_neu_m = next_destination_neu_m - _origin_neu_m;
+            destination_vector_neu_m = (next_destination_neu_m - _origin_neu_m).tofloat();
         } else {
             // aim to leave segment in direction of following leg
-            destination_vector_neu_m = next_destination_neu_m - _destination_neu_m;
+            destination_vector_neu_m = (next_destination_neu_m - _destination_neu_m).tofloat();
         }
     }
     _flags.fast_waypoint = !destination_vector_neu_m.is_zero();
@@ -919,7 +915,7 @@ bool AC_WPNav::set_spline_destination_NEU_m(const Vector3f& destination_neu_m, b
 // Creates a spline path from the current destination to `next_destination_neu_m`, and prepares transition toward `next_next_destination_neu_m`.
 // All waypoints must use the same altitude frame (above terrain or origin).
 // Returns false if terrain data is missing and required.
-bool AC_WPNav::set_spline_destination_next_NEU_m(const Vector3f& next_destination_neu_m, bool next_is_terrain_alt, const Vector3f& next_next_destination_neu_m, bool next_next_is_terrain_alt, bool next_next_is_spline)
+bool AC_WPNav::set_spline_destination_next_NEU_m(const Vector3p& next_destination_neu_m, bool next_is_terrain_alt, const Vector3p& next_next_destination_neu_m, bool next_next_is_terrain_alt, bool next_next_is_spline)
 {
     // do not add next point if alt types don't match
     if (next_is_terrain_alt != _is_terrain_alt) {
@@ -933,7 +929,7 @@ bool AC_WPNav::set_spline_destination_next_NEU_m(const Vector3f& next_destinatio
         origin_vector_neu_m = _spline_this_leg.get_destination_vel();
     } else {
         // use vector from previous origin to current destination
-        origin_vector_neu_m = _destination_neu_m - _origin_neu_m;
+        origin_vector_neu_m = (_destination_neu_m - _origin_neu_m).tofloat();
     }
 
     // calculate destination velocity vector
@@ -941,10 +937,10 @@ bool AC_WPNav::set_spline_destination_next_NEU_m(const Vector3f& next_destinatio
     if (next_is_terrain_alt == next_next_is_terrain_alt) {
         if (next_next_is_spline) {
             // aim to leave segment in direction of the arc from current to next-next
-            destination_vector_neu_m = next_next_destination_neu_m - _destination_neu_m;
+            destination_vector_neu_m = (next_next_destination_neu_m - _destination_neu_m).tofloat();
         } else {
             // aim to leave segment in direction of the upcoming straight leg
-            destination_vector_neu_m = next_next_destination_neu_m - next_destination_neu_m;
+            destination_vector_neu_m = (next_next_destination_neu_m - next_destination_neu_m).tofloat();
         }
     }
 
@@ -974,20 +970,20 @@ bool AC_WPNav::set_spline_destination_next_NEU_m(const Vector3f& next_destinatio
 bool AC_WPNav::get_vector_NEU_cm(const Location &loc, Vector3f &pos_from_origin_neu_cm, bool &is_terrain_alt)
 {
     // convert input to meters for processing
-    Vector3f pos_from_origin_neu_m = pos_from_origin_neu_cm * 0.01;
+    Vector3p pos_from_origin_neu_m = pos_from_origin_neu_cm.topostype() * 0.01;
     // perform vector conversion using meters interface
     const bool ret = get_vector_NEU_m(loc, pos_from_origin_neu_m, is_terrain_alt);
-    pos_from_origin_neu_cm = pos_from_origin_neu_m * 100.0;
+    pos_from_origin_neu_cm = pos_from_origin_neu_m.tofloat() * 100.0;
     return ret;
 }
 
 // Converts a Location to a NEU position vector in meters from the EKF origin.
 // Sets `is_terrain_alt` to true if the resulting Z position is relative to terrain.
 // Returns false if terrain data is unavailable or conversion fails.
-bool AC_WPNav::get_vector_NEU_m(const Location &loc, Vector3f &pos_from_origin_neu_m, bool &is_terrain_alt)
+bool AC_WPNav::get_vector_NEU_m(const Location &loc, Vector3p &pos_from_origin_neu_m, bool &is_terrain_alt)
 {
     // convert horizontal position (latitude/longitude) to NE vector from EKF origin
-    Vector2f loc_pos_from_origin_neu_m;
+    Vector2p loc_pos_from_origin_neu_m;
     if (!loc.get_vector_xy_from_origin_NE_m(loc_pos_from_origin_neu_m)) {
         return false;
     }

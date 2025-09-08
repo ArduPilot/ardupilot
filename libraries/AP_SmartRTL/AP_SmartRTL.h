@@ -42,25 +42,25 @@ public:
     const Vector3f& get_point(uint16_t index) const { return _path[index]; }
 
     // add point to end of path. returns true on success, false on failure (due to failure to take the semaphore)
-    bool add_point(const Vector3f& point);
+    bool add_point(const Vector3p& point);
 
     // get next point on the path to home, returns true on success
-    bool pop_point(Vector3f& point);
+    bool pop_point(Vector3p& point);
 
     // peek at next point on the path without removing it form the path. Returns true on success
     // this may fail if the IO thread has taken the path semaphore
-    bool peek_point(Vector3f& point);
+    bool peek_point(Vector3p& point);
 
     // clear return path and set return location if position_ok is true.  This should be called as part of the arming procedure
     // if position_ok is false, SmartRTL will not be available.
     // example sketches use the method that allows providing vehicle position directly
     void set_home(bool position_ok);
-    void set_home(bool position_ok, const Vector3f& current_pos);
+    void set_home(bool position_ok, const Vector3p& current_pos);
 
     // call this at 3hz (or higher) regardless of what mode the vehicle is in
     // example sketches use method that allows providing vehicle position directly
     void update(bool position_ok, bool save_position);
-    void update(bool position_ok, const Vector3f& current_pos);
+    void update(bool position_ok, const Vector3p& current_pos);
 
     // enum for argument passed to request_through_cleanup
     enum ThoroughCleanupType {

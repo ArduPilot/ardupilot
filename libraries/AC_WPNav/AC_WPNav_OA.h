@@ -27,7 +27,7 @@ public:
     // - destination_neu_m: NEU offset from EKF origin in meters.
     // - is_terrain_alt: true if the Z component represents altitude above terrain.
     // - Resets OA state on success.
-    bool set_wp_destination_NEU_m(const Vector3f& destination_neu_m, bool is_terrain_alt = false) override;
+    bool set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt = false) override;
 
     // Returns the horizontal distance to the final destination in centimeters.
     // See get_wp_distance_to_destination_m() for full details.
@@ -57,9 +57,9 @@ protected:
 
     // oa path planning variables
     AP_OAPathPlanner::OA_RetState _oa_state;    // state of object avoidance, if OA_SUCCESS we use _oa_destination to avoid obstacles
-    Vector3f    _origin_oabak_neu_m;            // backup of _origin_neu_m so it can be restored when oa completes
-    Vector3f    _destination_oabak_neu_m;       // backup of _destination_neu_m so it can be restored when oa completes
-    Vector3f    _next_destination_oabak_neu_m;  // backup of _next_destination_neu_m so it can be restored when oa completes
+    Vector3p    _origin_oabak_neu_m;            // backup of _origin_neu_m so it can be restored when oa completes
+    Vector3p    _destination_oabak_neu_m;       // backup of _destination_neu_m so it can be restored when oa completes
+    Vector3p    _next_destination_oabak_neu_m;  // backup of _next_destination_neu_m so it can be restored when oa completes
     bool        _is_terrain_alt_oabak;  // true if backup origin and destination z-axis are terrain altitudes
     Location    _oa_destination;        // intermediate destination during avoidance
     Location    _oa_next_destination;   // intermediate next destination during avoidance

@@ -27,7 +27,7 @@ struct Guided_Limit {
     float alt_max_m;        // upper altitude limit in m above home (0 = no limit)
     float horiz_max_m;      // horizontal position limit in m from where guided mode was initiated (0 = no limit)
     uint32_t start_time_ms; // system time in milliseconds that control was handed to the external computer
-    Vector3f start_pos_neu_m;     // start position as a distance from home in m.  used for checking horiz_max limit
+    Vector3p start_pos_neu_m;     // start position as a distance from home in m.  used for checking horiz_max limit
 } static guided_limit;
 
 // controls which controller is run (pos or vel):
@@ -186,9 +186,9 @@ void ModeGuided::wp_control_start()
     wp_nav->wp_and_spline_init_m();
 
     // initialise wpnav to stopping point
-    Vector3f stopping_point;
-    wp_nav->get_wp_stopping_point_NEU_m(stopping_point);
-    if (!wp_nav->set_wp_destination_NEU_m(stopping_point, false)) {
+    Vector3p stopping_point_neu_m;
+    wp_nav->get_wp_stopping_point_NEU_m(stopping_point_neu_m);
+    if (!wp_nav->set_wp_destination_NEU_m(stopping_point_neu_m, false)) {
         // this should never happen because terrain data is not used
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     }
@@ -336,7 +336,7 @@ void ModeGuided::angle_control_start()
 // set_pos_neu_m - sets guided mode's target pos_neu_m
 // Returns true if the fence is enabled and guided waypoint is within the fence
 // else return false if the waypoint is outside the fence
-bool ModeGuided::set_pos_NEU_m(const Vector3f& pos_neu_m, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool is_terrain_alt)
+bool ModeGuided::set_pos_NEU_m(const Vector3p& pos_neu_m, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool is_terrain_alt)
 {
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
@@ -397,7 +397,7 @@ bool ModeGuided::set_pos_NEU_m(const Vector3f& pos_neu_m, bool use_yaw, float ya
     set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
     // set position target and zero velocity and acceleration
-    guided_pos_target_neu_m = pos_neu_m.topostype();
+    guided_pos_target_neu_m = pos_neu_m;
     guided_is_terrain_alt = is_terrain_alt;
     guided_vel_target_neu_ms.zero();
     guided_accel_target_neu_mss.zero();
@@ -405,7 +405,7 @@ bool ModeGuided::set_pos_NEU_m(const Vector3f& pos_neu_m, bool use_yaw, float ya
 
 #if HAL_LOGGING_ENABLED
     // log target
-    copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_m.tofloat(), guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
+    copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_m, guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
 #endif
 
     send_notification = true;
@@ -465,7 +465,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 
 #if HAL_LOGGING_ENABLED
         // log target
-        copter.Log_Write_Guided_Position_Target(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt), (dest_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN), Vector3f(), Vector3f());
+        copter.Log_Write_Guided_Position_Target(guided_mode, Vector3p(dest_loc.lat, dest_loc.lng, dest_loc.alt), (dest_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN), Vector3f(), Vector3f());
 #endif
 
         send_notification = true;
@@ -473,7 +473,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
     }
 
     // set position target and zero velocity and acceleration
-    Vector3f pos_target_neu_m;
+    Vector3p pos_target_neu_m;
     bool is_terrain_alt;
     if (!wp_nav->get_vector_NEU_m(dest_loc, pos_target_neu_m, is_terrain_alt)) {
         return false;
@@ -506,7 +506,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         pos_control->init_pos_terrain_U_m(0.0);
     }
 
-    guided_pos_target_neu_m = pos_target_neu_m.topostype();
+    guided_pos_target_neu_m = pos_target_neu_m;
     guided_is_terrain_alt = is_terrain_alt;
     guided_vel_target_neu_ms.zero();
     guided_accel_target_neu_mss.zero();
@@ -514,7 +514,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 
     // log target
 #if HAL_LOGGING_ENABLED
-    copter.Log_Write_Guided_Position_Target(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt), guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
+    copter.Log_Write_Guided_Position_Target(guided_mode, Vector3p(dest_loc.lat, dest_loc.lng, dest_loc.alt), guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
 #endif
 
     send_notification = true;
@@ -543,7 +543,7 @@ void ModeGuided::set_accel_NEU_mss(const Vector3f& accel_neu_mss, bool use_yaw, 
 #if HAL_LOGGING_ENABLED
     // log target
     if (log_request) {
-        copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_m.tofloat(), guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
+        copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_m, guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
     }
 #endif
 }
@@ -575,19 +575,19 @@ void ModeGuided::set_vel_accel_NEU_m(const Vector3f& vel_neu_ms, const Vector3f&
 #if HAL_LOGGING_ENABLED
     // log target
     if (log_request) {
-        copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_m.tofloat(), guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
+        copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_m, guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
     }
 #endif
 }
 
 // set_pos_vel_NEU_m - set guided mode position and velocity target
-bool ModeGuided::set_pos_vel_NEU_m(const Vector3f& pos_neu_m, const Vector3f& vel_neu_ms, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw)
+bool ModeGuided::set_pos_vel_NEU_m(const Vector3p& pos_neu_m, const Vector3f& vel_neu_ms, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw)
 {
     return set_pos_vel_accel_NEU_m(pos_neu_m, vel_neu_ms, Vector3f(), use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 }
 
 // set_pos_vel_accel_NEU_m - set guided mode position, velocity and acceleration target
-bool ModeGuided::set_pos_vel_accel_NEU_m(const Vector3f& pos_neu_m, const Vector3f& vel_neu_ms, const Vector3f& accel_neu_mss, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw)
+bool ModeGuided::set_pos_vel_accel_NEU_m(const Vector3p& pos_neu_m, const Vector3f& vel_neu_ms, const Vector3f& accel_neu_mss, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw)
 {
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
@@ -608,14 +608,14 @@ bool ModeGuided::set_pos_vel_accel_NEU_m(const Vector3f& pos_neu_m, const Vector
     set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
     update_time_ms = millis();
-    guided_pos_target_neu_m = pos_neu_m.topostype();
+    guided_pos_target_neu_m = pos_neu_m;
     guided_is_terrain_alt = false;
     guided_vel_target_neu_ms = vel_neu_ms;
     guided_accel_target_neu_mss = accel_neu_mss;
 
 #if HAL_LOGGING_ENABLED
     // log target
-    copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_m.tofloat(), guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
+    copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_m, guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
 #endif
     return true;
 }
@@ -1058,7 +1058,7 @@ void ModeGuided::limit_init_time_and_pos()
     guided_limit.start_time_ms = AP_HAL::millis();
 
     // initialise start position from current position
-    guided_limit.start_pos_neu_m = pos_control->get_pos_estimate_NEU_m().tofloat();
+    guided_limit.start_pos_neu_m = pos_control->get_pos_estimate_NEU_m();
 }
 
 // limit_check - returns true if guided mode has breached a limit
@@ -1071,7 +1071,7 @@ bool ModeGuided::limit_check()
     }
 
     // get current location
-    const Vector3f& curr_pos_neu_m = pos_control->get_pos_estimate_NEU_m().tofloat();
+    const Vector3p& curr_pos_neu_m = pos_control->get_pos_estimate_NEU_m();
 
     // check if we have gone below min alt
     if (!is_zero(guided_limit.alt_min_m) && (curr_pos_neu_m.z < guided_limit.alt_min_m)) {
