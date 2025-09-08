@@ -691,7 +691,7 @@ bool AP_ExternalAHRS_SBG::send_MagData(AP_HAL::UARTDriver *_uart)
 bool AP_ExternalAHRS_SBG::send_AirData(AP_HAL::UARTDriver *_uart)
 {
     SbgLogAirData air_data_log {};
-    air_data_log.timeStamp = AP_HAL::micros();
+    air_data_log.timeStamp = 0;
     air_data_log.status |= SBG_ECOM_AIR_DATA_TIME_IS_DELAY;
 
 #if AP_BARO_ENABLED
