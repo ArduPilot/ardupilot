@@ -395,7 +395,7 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
                 updated_gps = true;
                 break;
             
-            case SBG_ECOM_LOG_IMU_SHORT:
+            case SBG_ECOM_LOG_IMU_SHORT: // 44
                 safe_copy_msg_to_object((uint8_t*)&cached.sbg.sbgEComLogImuShort, sizeof(cached.sbg.sbgEComLogImuShort), msg.data, msg.len);
 
                 {
@@ -468,6 +468,7 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
                 break;
 
             case SBG_ECOM_LOG_GPS1_VEL: // 13
+            case SBG_ECOM_LOG_GPS2_VEL: // 16
                 safe_copy_msg_to_object((uint8_t*)&cached.sbg.sbgLogGpsVel, sizeof(cached.sbg.sbgLogGpsVel), msg.data, msg.len);
 
                 cached.sensors.gps_data.ms_tow = cached.sbg.sbgLogGpsVel.timeOfWeek;
@@ -481,6 +482,7 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
                 break;
 
             case SBG_ECOM_LOG_GPS1_POS: // 14
+            case SBG_ECOM_LOG_GPS2_POS: // 17
                 safe_copy_msg_to_object((uint8_t*)&cached.sbg.sbgLogGpsPos, sizeof(cached.sbg.sbgLogGpsPos), msg.data, msg.len);
 
                 cached.sensors.gps_data.ms_tow = cached.sbg.sbgLogGpsPos.timeOfWeek;
