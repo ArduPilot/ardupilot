@@ -351,10 +351,12 @@ SbgErrorCode AP_ExternalAHRS_sbgECom::onLogReceived(SbgEComHandle *handle, SbgEC
             break;
 
         case SBG_ECOM_LOG_GPS1_POS:
+        case SBG_ECOM_LOG_GPS2_POS:
             process_gnss_pos_packet(ref_sbg_data, user_arg);
             break;
 
         case SBG_ECOM_LOG_GPS1_VEL:
+        case SBG_ECOM_LOG_GPS2_VEL:
             process_gnss_vel_packet(ref_sbg_data, user_arg);
             break;
 
