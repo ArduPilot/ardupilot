@@ -339,6 +339,7 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
     bool updated_ins = false;
     bool updated_mag = false;
     bool updated_airspeed = false;
+    bool handled_message = true;
 
     {
         WITH_SEMAPHORE(state.sem);
@@ -528,6 +529,7 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
                 break;
 
             default:
+                handled_message = false;
                 // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SBG: unhandled ID=%u, CLASS=%u, LEN=%u", (unsigned)msg.msgid, (unsigned)msg.msgclass, (unsigned)msg.len);
                 return;
         } // switch msgid
@@ -579,6 +581,10 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
         cached.sensors.ins_data.gyro = state.gyro;
         cached.sensors.ins_ms = now_ms;
         AP::ins().handle_external(cached.sensors.ins_data);
+    }
+
+    if (handled_message) {
+        last_received_ms = now_ms;
     }
 }
 
