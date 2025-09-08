@@ -245,6 +245,8 @@ void GCS_MAVLINK::handle_param_request_read(const mavlink_message_t &msg)
     }
 
     struct pending_param_request req;
+    req.src_system_id = msg.sysid;
+    req.src_component_id = msg.compid;
     req.chan = chan;
     req.param_index = packet.param_index;
     memcpy(req.param_name, packet.param_id, MIN(sizeof(packet.param_id), sizeof(req.param_name)));
@@ -275,7 +277,12 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
     // find existing param so we can get the old value
     uint16_t parameter_flags = 0;
     vp = AP_Param::find(key, &var_type, &parameter_flags);
-    if (vp == nullptr || isnan(packet.param_value) || isinf(packet.param_value)) {
+    if (vp == nullptr) {
+        send_param_error(msg, packet, MAV_PARAM_ERROR_DOES_NOT_EXIST);
+        return;
+    }
+    if (isnan(packet.param_value) || isinf(packet.param_value)) {
+        send_param_error(msg, packet, MAV_PARAM_ERROR_VALUE_OUT_OF_RANGE);
         return;
     }
 
@@ -288,6 +295,7 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
         // the value instead of us.
         if (gcs().get_allow_param_set()) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Param write denied (%s)", key);
+            send_param_error(msg, packet, MAV_PARAM_ERROR_PERMSSION_DENIED);
         }
         // send the readonly value
         send_parameter_value(key, var_type, old_value);
@@ -388,26 +396,60 @@ void GCS_MAVLINK::param_io_timer(void)
     if (req.param_index != -1) {
         AP_Param::ParamToken token {};
         vp = AP_Param::find_by_index(req.param_index, &reply.p_type, &token);
-        if (vp == nullptr) {
-            return;
+        if (vp != nullptr) {
+            vp->copy_name_token(token, reply.param_name, AP_MAX_NAME_SIZE, true);
         }
-        vp->copy_name_token(token, reply.param_name, AP_MAX_NAME_SIZE, true);
     } else {
         strncpy(reply.param_name, req.param_name, AP_MAX_NAME_SIZE+1);
         vp = AP_Param::find(req.param_name, &reply.p_type);
-        if (vp == nullptr) {
-            return;
-        }
     }
 
     reply.chan = req.chan;
     reply.param_name[AP_MAX_NAME_SIZE] = 0;
-    reply.value = vp->cast_to_float(reply.p_type);
+    if (vp != nullptr) {
+        reply.value = vp->cast_to_float(reply.p_type);
+        reply.param_error = (MAV_PARAM_ERROR)0;
+    } else {
+        reply.value = NaNf;
+        reply.param_error = MAV_PARAM_ERROR_DOES_NOT_EXIST;
+    }
     reply.param_index = req.param_index;
     reply.count = AP_Param::count_parameters();
 
     // queue for transmission
     param_replies.push(reply);
+}
+
+void GCS_MAVLINK::send_param_error(const mavlink_message_t &msg, const mavlink_param_set_t &param_set, MAV_PARAM_ERROR error)
+{
+    if (!HAVE_PAYLOAD_SPACE(chan, PARAM_ERROR)) {
+        return;
+    }
+    char param_id[MAVLINK_MSG_PARAM_ERROR_FIELD_PARAM_ID_LEN] {};
+    strncpy_noterm(param_id, param_set.param_id, ARRAY_SIZE(param_id));
+    mavlink_msg_param_error_send(
+        chan,
+        msg.sysid,
+        msg.compid,
+        param_id,
+        error
+        );
+}
+
+void GCS_MAVLINK::send_param_error(const GCS_MAVLINK::pending_param_reply &reply, MAV_PARAM_ERROR error)
+{
+    if (!HAVE_PAYLOAD_SPACE(chan, PARAM_ERROR)) {
+        return;
+    }
+    char param_id[MAVLINK_MSG_PARAM_ERROR_FIELD_PARAM_ID_LEN] {};
+    strncpy_noterm(param_id, reply.param_name, ARRAY_SIZE(param_id));
+    mavlink_msg_param_error_send(
+        chan,
+        reply.src_system_id,
+        reply.src_component_id,
+        param_id,
+        error
+        );
 }
 
 /*
@@ -421,6 +463,11 @@ uint8_t GCS_MAVLINK::send_parameter_async_replies()
         struct pending_param_reply reply;
         if (!param_replies.peek(reply)) {
             return async_replies_sent_count;
+        }
+
+        if (reply.param_error != (MAV_PARAM_ERROR)0) {
+            send_param_error(reply, reply.param_error);
+            continue;
         }
 
         /*
