@@ -319,9 +319,9 @@ struct PACKED log_Guided_Position_Target {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint8_t type;
-    float  pos_target_x;
-    float  pos_target_y;
-    float  pos_target_z;
+    float pos_target_x;
+    float pos_target_y;
+    float pos_target_z;
     uint8_t terrain;
     float vel_target_x;
     float vel_target_y;
@@ -366,9 +366,9 @@ void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode submode, const
         LOG_PACKET_HEADER_INIT(LOG_GUIDED_POSITION_TARGET_MSG),
         time_us         : AP_HAL::micros64(),
         type            : (uint8_t)submode,
-        pos_target_x    : pos_target_m.tofloat().x,
-        pos_target_y    : pos_target_m.tofloat().y,
-        pos_target_z    : pos_target_m.tofloat().z,
+        pos_target_x    : (float)pos_target_m.x,
+        pos_target_y    : (float)pos_target_m.y,
+        pos_target_z    : (float)pos_target_m.z,
         terrain         : is_terrain_alt,
         vel_target_x    : vel_target_ms.x,
         vel_target_y    : vel_target_ms.y,
