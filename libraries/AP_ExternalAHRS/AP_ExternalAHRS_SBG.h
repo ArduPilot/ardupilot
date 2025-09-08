@@ -36,7 +36,7 @@ public:
     int8_t get_port(void) const override { return (uart == nullptr) ? -1 : port_num; }
 
     // accessors for AP_AHRS
-    bool healthy(void) const override { return cached.sensors.ins_ms > 0 && (AP_HAL::millis() - cached.sensors.ins_ms < 500); }
+    bool healthy(void) const override { return last_received_ms > 0 && (AP_HAL::millis() - last_received_ms < 500); }
     bool initialised(void) const override { return setup_complete; };
     bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const override;
 
@@ -166,6 +166,7 @@ private:
     uint32_t baudrate;
     bool setup_complete;
     uint32_t version_check_ms;
+    uint32_t last_received_ms;
 };
 
 #endif  // AP_EXTERNAL_AHRS_SBG_ENABLED
