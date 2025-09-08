@@ -31,6 +31,7 @@ enum class AC_PolyFenceType : uint8_t {
 #endif // #if AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
     CIRCLE_EXCLUSION      = 93,
     CIRCLE_INCLUSION      = 92,
+    HOME_CIRCLE_INCLUSION = 91,
 };
 
 // a FenceItem is just a means of passing data about an item into
