@@ -107,7 +107,7 @@ void AP_SmartRTL::init()
     }
 
     // allocate arrays
-    _path = (Vector3p*)calloc(_points_max, sizeof(Vector3p));
+    _path = (Vector3f*)calloc(_points_max, sizeof(Vector3f));
 
     _prune.loops_max = _points_max * SMARTRTL_PRUNING_LOOP_BUFFER_LEN_MULT;
     _prune.loops = (prune_loop_t*)calloc(_prune.loops_max, sizeof(prune_loop_t));
@@ -161,7 +161,7 @@ bool AP_SmartRTL::pop_point(Vector3p& point)
     }
 
     // return last point and remove from path
-    point = _path[--_path_points_count];
+    point = _path[--_path_points_count].topostype();
 
     // record count of last point popped
     _path_points_completed_limit = _path_points_count;
@@ -191,7 +191,7 @@ bool AP_SmartRTL::peek_point(Vector3p& point)
     }
 
     // return last point
-    point = _path[_path_points_count-1];
+    point = _path[_path_points_count-1].topostype();
 
     _path_sem.give();
     return true;
@@ -322,13 +322,13 @@ bool AP_SmartRTL::add_point(const Vector3p& point)
 {
     // get semaphore
     if (!_path_sem.take_nonblocking()) {
-        log_action(Action::ADD_FAILED_NO_SEMAPHORE, point);
+        log_action(Action::ADD_FAILED_NO_SEMAPHORE, point.tofloat());
         return false;
     }
 
     // check if we have traveled far enough
     if (_path_points_count > 0) {
-        const Vector3p& last_pos = _path[_path_points_count-1];
+        const Vector3p& last_pos = _path[_path_points_count-1].topostype();
         if (last_pos.distance_squared(point) < sq(_accuracy.get())) {
             _path_sem.give();
             return true;
@@ -338,13 +338,13 @@ bool AP_SmartRTL::add_point(const Vector3p& point)
     // check we have space in the path
     if (_path_points_count >= _path_points_max) {
         _path_sem.give();
-        log_action(Action::ADD_FAILED_PATH_FULL, point);
+        log_action(Action::ADD_FAILED_PATH_FULL, point.tofloat());
         return false;
     }
 
     // add point to path
-    _path[_path_points_count++] = point;
-    log_action(Action::POINT_ADD, point);
+    _path[_path_points_count++] = point.tofloat();
+    log_action(Action::POINT_ADD, point.tofloat());
 
     _path_sem.give();
     return true;
@@ -761,7 +761,7 @@ bool AP_SmartRTL::remove_points_by_loops(uint16_t num_points_to_remove)
 // add loop to loops array
 //  returns true if loop added successfully, false if loop array is full
 //  checks if loop overlaps with an existing loop, keeps only the longer loop
-bool AP_SmartRTL::add_loop(uint16_t start_index, uint16_t end_index, const Vector3p& midpoint)
+bool AP_SmartRTL::add_loop(uint16_t start_index, uint16_t end_index, const Vector3f& midpoint)
 {
     // if the buffer is full, return failure
     if (_prune.loops_count >= _prune.loops_max) {
@@ -824,18 +824,18 @@ bool AP_SmartRTL::add_loop(uint16_t start_index, uint16_t end_index, const Vecto
 *  This does not matter for the path cleanup algorithm because the pruning will still occur fine between the first
 *  parallel segment and a segment which is directly before or after the second segment.
 */
-AP_SmartRTL::dist_point AP_SmartRTL::segment_segment_dist(const Vector3p &p1, const Vector3p &p2, const Vector3p &p3, const Vector3p &p4)
+AP_SmartRTL::dist_point AP_SmartRTL::segment_segment_dist(const Vector3f &p1, const Vector3f &p2, const Vector3f &p3, const Vector3f &p4)
 {
-    const Vector3f line1 = (p2 - p1).tofloat();
-    const Vector3f line2 = (p4 - p3).tofloat();
-    const Vector3f line_start_diff = (p1 - p3).tofloat(); // from the beginning of the second line to the beginning of the first line
+    const Vector3f line1 = p2 - p1;
+    const Vector3f line2 = p4 - p3;
+    const Vector3f line_start_diff = p1 - p3; // from the beginning of the second line to the beginning of the first line
 
     // these don't really have a physical representation. They're only here to break up the longer formulas below.
-    const float a = line1*line1;
-    const float b = line1*line2;
-    const float c = line2*line2;
-    const float d = line1*line_start_diff;
-    const float e = line2*line_start_diff;
+    const float a = line1 * line1;
+    const float b = line1 * line2;
+    const float c = line2 * line2;
+    const float d = line1 * line_start_diff;
+    const float e = line2 * line_start_diff;
 
     // the parameter for the position on line1 and line2 which define the closest points.
     float t1 = 0.0f;
@@ -844,11 +844,11 @@ AP_SmartRTL::dist_point AP_SmartRTL::segment_segment_dist(const Vector3p &p1, co
     // if lines are almost parallel, return a garbage answer. This is irrelevant, since the loop
     // could always be pruned start/end of the previous/subsequent line segment
     if (is_zero((a*c)-(b*b))) {
-        return {FLT_MAX, Vector3p(0.0f, 0.0f, 0.0f)};
+        return {FLT_MAX, Vector3f(0.0f, 0.0f, 0.0f)};
     }
 
-    t1 = (b*e-c*d)/(a*c-b*b);
-    t2 = (a*e-b*d)/(a*c-b*b);
+    t1 = (b * e - c * d) / (a * c - b * b);
+    t2 = (a * e - b * d) / (a * c - b * b);
 
     // restrict both parameters between 0 and 1.
     t1 = constrain_float(t1, 0.0f, 1.0f);
@@ -857,7 +857,7 @@ AP_SmartRTL::dist_point AP_SmartRTL::segment_segment_dist(const Vector3p &p1, co
     // difference between two closest points
     const Vector3f dP = line_start_diff + line1 * t1 - line2 * t2;
 
-    const Vector3p midpoint = (p1 + (line1 * t1).topostype() + p3 + (line2 * t2).topostype()) / 2.0;
+    const Vector3f midpoint = (p1 + (line1 * t1) + p3 + (line2 * t2)) / 2.0;
     return {dP.length(), midpoint};
 }
 
@@ -871,10 +871,10 @@ void AP_SmartRTL::deactivate(Action action, const char *reason)
 
 #if HAL_LOGGING_ENABLED
 // logging
-void AP_SmartRTL::log_action(Action action, const Vector3p &point) const
+void AP_SmartRTL::log_action(Action action, const Vector3f &point) const
 {
     if (!_example_mode) {
-        AP::logger().Write_SRTL(_active, _path_points_count, _path_points_max, action, point.tofloat());
+        AP::logger().Write_SRTL(_active, _path_points_count, _path_points_max, action, point);
     }
 }
 #endif

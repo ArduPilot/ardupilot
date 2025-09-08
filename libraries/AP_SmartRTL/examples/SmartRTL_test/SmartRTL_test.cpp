@@ -100,7 +100,7 @@ void check_path(const std::vector<Vector3p>& correct_path, const char* test_name
     bool points_match = true;
     uint16_t failure_index = 0;
     for (uint16_t i = 0; i < points_to_compare; i++) {
-        if (smart_rtl.get_point(i) != correct_path[i]) {
+        if (smart_rtl.get_point(i) != correct_path[i].tofloat()) {
             failure_index = i;
             points_match = false;
         }
