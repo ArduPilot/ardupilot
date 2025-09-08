@@ -72,6 +72,13 @@ const AP_Param::GroupInfo AC_Loiter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BRK_DELAY",  6, AC_Loiter, _brake_delay_s, LOITER_BRAKE_START_DELAY_DEFAULT_S),
 
+    // @Param: OPTIONS
+    // @DisplayName: Loiter mode options
+    // @Description: Enables optional Loiter mode behaviors
+    // @Bitmask: 0: Enable Coordinated turns
+    // @User: Standard
+    AP_GROUPINFO("OPTIONS", 7, AC_Loiter, _options, 1),
+
     AP_GROUPEND
 };
 
@@ -179,8 +186,15 @@ void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, f
     const Vector3f predicted_euler_rad {_predicted_euler_angle_rad.x, _predicted_euler_angle_rad.y, _ahrs.yaw};
     const Vector3f predicted_accel_neu_m = _pos_control.lean_angles_rad_to_accel_NEU_mss(predicted_euler_rad);
 
-    _predicted_accel_ne_mss.x = predicted_accel_neu_m.x;
-    _predicted_accel_ne_mss.y = predicted_accel_neu_m.y;
+    _predicted_accel_ne_mss = predicted_accel_neu_m.xy();
+
+    if (_options == 1) {
+        Vector3f target_ang_vel_rads = _attitude_control.get_attitude_target_ang_vel();
+        Vector3f desired_velocity_ms = _pos_control.get_vel_desired_NEU_ms();
+        Vector2f turn_accel_ne_mss = Vector2f(-desired_velocity_ms.y * target_ang_vel_rads.z, desired_velocity_ms.x * target_ang_vel_rads.z);
+        _desired_accel_ne_mss += turn_accel_ne_mss;
+        _predicted_accel_ne_mss += turn_accel_ne_mss;
+    }
 }
 
 // Calculates the expected stopping point based on current velocity and position in the NE frame.
