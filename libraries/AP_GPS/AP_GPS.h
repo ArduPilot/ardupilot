@@ -158,7 +158,7 @@ public:
 
     /// GPS error bits. These are kept aligned with MAVLink by 
     /// static_assert in AP_GPS.cpp
-    enum GPS_Errors {
+    enum class Errors {
         GPS_SYSTEM_ERROR_NONE =      0, 
         INCOMING_CORRECTIONS =  1 << 0, ///< There are problems with incoming correction streams
         CONFIGURATION =         1 << 1, ///< There are problems with the configuration
@@ -171,30 +171,30 @@ public:
 
     /// GPS authentication status. These are kept aligned with MAVLink by 
     /// static_assert in AP_GPS.cpp
-    enum GPS_Authentication {
-        AUTHENTICATION_UNKNOWN =       0, ///< The GPS receiver does not provide GPS signal authentication info
-        AUTHENTICATION_INITIALIZING =  1, ///< The GPS receiver is initializing signal authentication
-        AUTHENTICATION_ERROR =         2, ///< The GPS receiver encountered an error while initializing signal authentication
-        AUTHENTICATION_OK =            3, ///< The GPS receiver has correctly authenticated all signals
-        AUTHENTICATION_DISABLED =      4, ///< GPS signal authentication is disabled on the receiver
+    enum class Authentication {
+        UNKNOWN =       0, ///< The GPS receiver does not provide GPS signal authentication info
+        INITIALIZING =  1, ///< The GPS receiver is initializing signal authentication
+        ERROR =         2, ///< The GPS receiver encountered an error while initializing signal authentication
+        OK =            3, ///< The GPS receiver has correctly authenticated all signals
+        DISABLED =      4, ///< GPS signal authentication is disabled on the receiver
     };
 
     /// GPS jamming status. These are kept aligned with MAVLink by 
     /// static_assert in AP_GPS.cpp
-    enum GPS_Jamming {
-        JAMMING_UNKNOWN =   0, ///< The GPS receiver does not provide GPS signal jamming info
-        JAMMING_OK =        1, ///< The GPS receiver detected no signal jamming
-        JAMMING_MITIGATED = 2, ///< The GPS receiver detected and mitigated signal jamming
-        JAMMING_DETECTED =  3, ///< The GPS receiver detected signal jamming
+    enum class Jamming {
+        UNKNOWN =   0, ///< The GPS receiver does not provide GPS signal jamming info
+        OK =        1, ///< The GPS receiver detected no signal jamming
+        MITIGATED = 2, ///< The GPS receiver detected and mitigated signal jamming
+        DETECTED =  3, ///< The GPS receiver detected signal jamming
     };
 
     /// GPS spoofing status. These are kept aligned with MAVLink by 
     /// static_assert in AP_GPS.cpp
-    enum GPS_Spoofing {
-        SPOOFING_UNKNOWN =   0, ///< The GPS receiver does not provide GPS signal spoofing info
-        SPOOFING_OK =        1, ///< The GPS receiver detected no signal spoofing
-        SPOOFING_MITIGATED = 2, ///< The GPS receiver detected and mitigated signal spoofing
-        SPOOFING_DETECTED =  3, ///< The GPS receiver detected signal spoofing but still has a fix
+    enum class Spoofing {
+        UNKNOWN =   0, ///< The GPS receiver does not provide GPS signal spoofing info
+        OK =        1, ///< The GPS receiver detected no signal spoofing
+        MITIGATED = 2, ///< The GPS receiver detected and mitigated signal spoofing
+        DETECTED =  3, ///< The GPS receiver detected signal spoofing but still has a fix
     };
 
     // GPS navigation engine settings. Not all GPS receivers support
@@ -284,13 +284,14 @@ public:
         float accHeading;                  ///< Reported Heading Accuracy in degrees
         uint32_t relposheading_ts;        ///< True if new data has been received since last time it was false
 
+#if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
         // Integrity message information 
         // all the following fields must only all be filled by backend drivers
         uint32_t system_errors;            ///< System errors
         uint8_t authentication_state;      ///< Authentication state of GNSS signals
         uint8_t jamming_state;             ///< Jamming state of GNSS signals
         uint8_t spoofing_state;            ///< Spoofing state of GNSS signals
-
+#endif  // AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
     };
 
     /// Startup initialisation.
@@ -536,41 +537,6 @@ public:
         return state[instance].gps_yaw_configured;
     }
 
-     // general errors in the GNSS system
-    uint32_t get_system_errors(uint8_t instance) const {
-        return state[instance].system_errors;
-    }
-
-    uint32_t get_system_errors() const {
-        return get_system_errors(primary_instance);
-    }
-
-    // authentication state of GNSS signals
-    uint8_t get_authentication_state(uint8_t instance) const {
-        return state[instance].authentication_state;
-    }
-
-    uint8_t get_authentication_state() const {
-        return get_authentication_state(primary_instance);
-    }
-
-    // jamming state of GNSS signals
-    uint8_t get_jamming_state(uint8_t instance) const {
-        return state[instance].jamming_state;
-    }
-
-    uint8_t get_jamming_state() const {
-        return get_jamming_state(primary_instance);
-    }
-
-    // spoofing state of GNSS signals
-    uint8_t get_spoofing_state(uint8_t instance) const {
-        return state[instance].spoofing_state;
-    }
-
-    uint8_t get_spoofing_state() const {
-        return get_spoofing_state(primary_instance);
-    }
     
     // the expected lag (in seconds) in the position and velocity readings from the gps
     // return true if the GPS hardware configuration is known or the lag parameter has been set manually
@@ -737,6 +703,29 @@ private:
     // rate it is simply a helper for use in the backends for determining what rate
     // they should be configuring the GPS to run at
     uint16_t get_rate_ms(uint8_t instance) const;
+
+    // general errors in the GNSS system
+    uint32_t get_system_errors(uint8_t instance) const {
+        return state[instance].system_errors;
+    }
+
+
+    // authentication state of GNSS signals
+    uint8_t get_authentication_state(uint8_t instance) const {
+        return state[instance].authentication_state;
+    }
+
+
+    // jamming state of GNSS signals
+    uint8_t get_jamming_state(uint8_t instance) const {
+        return state[instance].jamming_state;
+    }
+
+
+    // spoofing state of GNSS signals
+    uint8_t get_spoofing_state(uint8_t instance) const {
+        return state[instance].spoofing_state;
+    }
 
     struct GPS_timing {
         // the time we got our last fix in system milliseconds

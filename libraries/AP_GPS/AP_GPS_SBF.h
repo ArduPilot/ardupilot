@@ -348,6 +348,12 @@ private:
         SETUPERROR      = (1 << 3),   //  set when a configuration/setup error has been detected
     };
 
+    struct SBF_Error_Map {
+            const uint32_t sbf_error_bit;
+            const AP_GPS::Errors ap_error_enum;
+    };
+
+    static const SBF_Error_Map sbf_error_map[];
 
     static constexpr const char *portIdentifiers[] = { "COM", "USB", "IP1", "NTR", "IPS", "IPR" };
     char portIdentifier[5];

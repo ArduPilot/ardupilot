@@ -67,6 +67,15 @@ constexpr const char *AP_GPS_SBF::portIdentifiers[];
 constexpr const char* AP_GPS_SBF::_initialisation_blob[];
 constexpr const char* AP_GPS_SBF::sbas_on_blob[];
 
+const AP_GPS_SBF::SBF_Error_Map AP_GPS_SBF::sbf_error_map[] = {
+    { AP_GPS_SBF::INVALIDCONFIG, AP_GPS::Errors::CONFIGURATION },
+    { AP_GPS_SBF::SOFTWARE,      AP_GPS::Errors::SOFTWARE },
+    { AP_GPS_SBF::ANTENNA,       AP_GPS::Errors::ANTENNA },
+    { AP_GPS_SBF::MISSEDEVENT,   AP_GPS::Errors::EVENT_CONGESTION },
+    { AP_GPS_SBF::CPUOVERLOAD,   AP_GPS::Errors::CPU_OVERLOAD },
+    { AP_GPS_SBF::CONGESTION,    AP_GPS::Errors::OUTPUT_CONGESTION },
+};
+
 AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps,
                        AP_GPS::Params &_params,
                        AP_GPS::GPS_State &_state,
@@ -588,27 +597,16 @@ AP_GPS_SBF::process_message(void)
         }
         ExtError = temp.ExtError;
 
-        state.system_errors = AP_GPS::GPS_Errors::GPS_SYSTEM_ERROR_NONE;
+        state.system_errors = static_cast<uint32_t>(AP_GPS::Errors::GPS_SYSTEM_ERROR_NONE);
+
         if (ExtError & DIFFCORRERROR) {
-            state.system_errors |= AP_GPS::GPS_Errors::INCOMING_CORRECTIONS;
+            state.system_errors |= static_cast<uint32_t>(AP_GPS::Errors::INCOMING_CORRECTIONS);
         }
-        if (RxError & INVALIDCONFIG) {
-            state.system_errors |= AP_GPS::GPS_Errors::CONFIGURATION;
-        }
-        if (RxError & SOFTWARE) {
-            state.system_errors |= AP_GPS::GPS_Errors::SOFTWARE;
-        }
-        if (RxError & ANTENNA) {
-            state.system_errors |= AP_GPS::GPS_Errors::ANTENNA;
-        }
-        if (RxError & MISSEDEVENT) {
-            state.system_errors |= AP_GPS::GPS_Errors::EVENT_CONGESTION;
-        }
-        if (RxError & CPUOVERLOAD) {
-            state.system_errors |= AP_GPS::GPS_Errors::CPU_OVERLOAD;
-        }
-        if (RxError & CONGESTION) {
-            state.system_errors |= AP_GPS::GPS_Errors::OUTPUT_CONGESTION;
+
+        for (const auto &map_entry : sbf_error_map) {
+            if (RxError & map_entry.sbf_error_bit) {
+                state.system_errors |= static_cast<uint32_t>(map_entry.ap_error_enum);
+            }
         }
 
         break;
@@ -618,30 +616,44 @@ AP_GPS_SBF::process_message(void)
     {
         const msg4092 &temp = sbf_msg.data.msg4092u;
         check_new_itow(temp.TOW, sbf_msg.length);
-        #if HAL_GCS_ENABLED
+#if HAL_GCS_ENABLED
         if (temp.Flags==0) {
-            state.spoofing_state = AP_GPS::GPS_Spoofing::SPOOFING_OK;
+            state.spoofing_state = static_cast<uint8_t>(AP_GPS::Spoofing::OK);
         }
         else {
-            state.spoofing_state = AP_GPS::GPS_Spoofing::SPOOFING_DETECTED;
+            state.spoofing_state = static_cast<uint8_t>(AP_GPS::Spoofing::DETECTED);
         }
-        state.jamming_state = AP_GPS::GPS_Jamming::JAMMING_OK;
-        for (int i = 0; i < temp.N; i++) {
-            RFStatusRFBandSubBlock* rf_band_data = (RFStatusRFBandSubBlock*)(&temp.RFBand + i * temp.SBLength);
-            switch (rf_band_data->Info & (uint8_t)0b1111) {
+        state.jamming_state = static_cast<uint8_t>(AP_GPS::Jamming::OK);
+
+        if (temp.SBLength < sizeof(RFStatusRFBandSubBlock)) {
+            break;
+        }
+
+        const uint8_t *p = (const uint8_t *)&temp.RFBand;
+        const uint8_t *packet_end = (const uint8_t *)&temp + (sbf_msg.length - 8);
+
+        for (uint8_t i = 0; i < temp.N; i++) {
+            if (p + temp.SBLength > packet_end) {
+                break;
+            }
+
+            const RFStatusRFBandSubBlock &rf_band_data = *(const RFStatusRFBandSubBlock *)p;
+
+            switch (rf_band_data.Info & (uint8_t)0b1111) {
             case 1:
             case 2:
                 // As long as there is indicated but unmitigated spoofing in one band, don't report the overall state as mitigated
-                if (state.jamming_state == AP_GPS::GPS_Jamming::JAMMING_OK) {
-                    state.jamming_state = AP_GPS::GPS_Jamming::JAMMING_MITIGATED;
+                if (state.jamming_state == static_cast<uint8_t>(AP_GPS::Jamming::OK)) {
+                    state.jamming_state = static_cast<uint8_t>(AP_GPS::Jamming::MITIGATED);
                 }
                 break;
             case 8:
-                state.jamming_state = AP_GPS::GPS_Jamming::JAMMING_DETECTED;
+                state.jamming_state = static_cast<uint8_t>(AP_GPS::Jamming::DETECTED);
                 break;
             }
+            p += temp.SBLength;
         }
-        #endif
+#endif
         break;
     }
 
@@ -651,22 +663,22 @@ AP_GPS_SBF::process_message(void)
         check_new_itow(temp.TOW, sbf_msg.length);
         switch (temp.OSNMAStatus & (uint16_t)0b111) {
         case 0:
-            state.authentication_state = AP_GPS::GPS_Authentication::AUTHENTICATION_DISABLED;
+            state.authentication_state = static_cast<uint8_t>(AP_GPS::Authentication::DISABLED);
             break;
         case 1:
         case 2:
-            state.authentication_state = AP_GPS::GPS_Authentication::AUTHENTICATION_INITIALIZING;
+            state.authentication_state = static_cast<uint8_t>(AP_GPS::Authentication::INITIALIZING);
             break;
         case 3:
         case 4:
         case 5:
-            state.authentication_state = AP_GPS::GPS_Authentication::AUTHENTICATION_ERROR;
+            state.authentication_state = static_cast<uint8_t>(AP_GPS::Authentication::ERROR);
             break;
         case 6:
-            state.authentication_state = AP_GPS::GPS_Authentication::AUTHENTICATION_OK;
+            state.authentication_state = static_cast<uint8_t>(AP_GPS::Authentication::OK);
             break;
         default:
-            state.authentication_state = AP_GPS::GPS_Authentication::AUTHENTICATION_UNKNOWN;
+            state.authentication_state = static_cast<uint8_t>(AP_GPS::Authentication::UNKNOWN);
             break;
         }
         break;
