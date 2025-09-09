@@ -147,6 +147,10 @@ public:
     static uint8_t get_sdcard_slowdown(void) {
         return _singleton?_singleton->_sdcard_slowdown.get():0;
     }
+
+    static bool use_idle_stats(void) {
+        return _singleton?_singleton->state.idle_stats.get():0;
+    }
 #endif
 
     enum board_options {
@@ -248,6 +252,7 @@ private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         AP_Int8 ser_rtscts[9];
         AP_Int8 sbus_out_rate;
+        AP_Int8 idle_stats;
 #endif
         AP_Int8 board_type;
         AP_Int8 io_enable;
