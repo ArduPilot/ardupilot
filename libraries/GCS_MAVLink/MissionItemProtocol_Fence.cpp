@@ -55,7 +55,6 @@ bool MissionItemProtocol_Fence::get_item_as_mission_item(uint16_t seq,
     case AC_PolyFenceType::HOME_CIRCLE_INCLUSION:
         ret_cmd = MAV_CMD_NAV_FENCE_HOME_CIRCLE_INCLUSION;
         p1 = fenceitem.radius;
-        // todo fill in home location before sending
         break;
 #if AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
     case AC_PolyFenceType::CIRCLE_EXCLUSION_INT:

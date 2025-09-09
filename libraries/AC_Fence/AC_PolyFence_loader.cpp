@@ -246,7 +246,7 @@ bool AC_PolyFence_loader::breached(const Location& loc, float& distance_outside_
         return false;
     }
 
-    const uint16_t num_inclusion = _num_loaded_circle_inclusion_boundaries + _num_loaded_inclusion_boundaries; // + int(_has_loaded_circle_home_inclusion_boundary);
+    const uint16_t num_inclusion = _num_loaded_circle_inclusion_boundaries + _num_loaded_inclusion_boundaries;
     uint16_t num_inclusion_outside = 0;
     distance_outside_fence = -FLT_MAX;
 
@@ -289,7 +289,6 @@ bool AC_PolyFence_loader::breached(const Location& loc, float& distance_outside_
     }
 
     for (uint8_t i=0; i<_num_loaded_circle_exclusion_boundaries; i++) {
-        
         const ExclusionCircle &circle = _loaded_circle_exclusion_boundary[i];
         Location circle_center;
         circle_center.lat = circle.point.x;
