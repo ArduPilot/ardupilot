@@ -192,6 +192,7 @@ bool AP_ExternalAHRS_SBG::send_sbgMessage(AP_HAL::UARTDriver *_uart, const sbgMe
     buffer[buffer_len-1] = SBG_PACKET_ETX;
 
     const uint32_t bytes_sent = _uart->write(buffer, buffer_len);
+    _uart->flush();
     return (bytes_sent == buffer_len);
 }
 
