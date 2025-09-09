@@ -159,16 +159,6 @@ bool AC_PolyFence_loader::get_item(const uint16_t seq, AC_PolyFenceItem &item)
         item.radius = fence_storage.read_float(offset);
         break;
     case AC_PolyFenceType::HOME_CIRCLE_INCLUSION: {
-        // if (!AP::ahrs().home_is_set()) {
-        //     Debug("fence home circle missing home");
-        //     return false;
-        // }
-        // auto const home = AP::ahrs().get_home();
-        // // tmp_loc.lat = point.x;
-        // // tmp_loc.lng = point.y;
-        // item.loc = Vector2l(home.lat, home.lng);
-        Debug("skipping set home on get_item.");
-        
         item.radius = fence_storage.read_float(offset);
         break;
     }
@@ -312,11 +302,15 @@ bool AC_PolyFence_loader::breached(const Location& loc, float& distance_outside_
     }
 
     for (uint8_t i=0; i<_num_loaded_circle_inclusion_boundaries; i++) {
-        // TODO [ryan] verify this is correct for home centered circle.
         const InclusionCircle &circle = _loaded_circle_inclusion_boundary[i];
         Location circle_center;
-        circle_center.lat = circle.point.x;
-        circle_center.lng = circle.point.y;
+        if (circle.is_home_centered()) {
+            circle_center = AP::ahrs().get_home();
+        } else {
+            circle_center.lat = circle.point.x;
+            circle_center.lng = circle.point.y;
+        }
+
         const float diff_cm = loc.get_distance(circle_center)*100.0f;
         distance_outside_fence = MAX(distance_outside_fence, diff_cm*0.01f - circle.radius);
         if (diff_cm > circle.radius * 100.0f) {
@@ -895,9 +889,7 @@ bool AC_PolyFence_loader::load_from_storage()
         }
         case AC_PolyFenceType::HOME_CIRCLE_INCLUSION: {
             InclusionCircle &circle = _loaded_circle_inclusion_boundary[_num_loaded_circle_inclusion_boundaries];
-            // TODO get the home location here.
-            auto const home = AP::ahrs().get_home();
-            circle.point = Vector2l(home.lat, home.lng);
+            circle.set_home_centered();
             // now read the radius
             circle.radius = fence_storage.read_float(storage_offset);
             if (!is_positive(circle.radius)) {
