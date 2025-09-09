@@ -478,6 +478,10 @@ bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) c
         }
     }
 
+    if (_configured_fences & AC_FENCE_TYPE_CIRCLE) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AC_FENCE_TYPE_CIRCLE deprecated in 4.7; disable it and switch to MAV_CMD_NAV_FENCE_HOME_CIRCLE_INCLUSION.");
+    }
+
     if (!pre_arm_check_polygon(failure_msg, failure_msg_len)) {
         return false;
     }
