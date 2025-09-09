@@ -704,6 +704,7 @@ private:
     // they should be configuring the GPS to run at
     uint16_t get_rate_ms(uint8_t instance) const;
 
+#if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
     // general errors in the GNSS system
     uint32_t get_system_errors(uint8_t instance) const {
         return state[instance].system_errors;
@@ -726,6 +727,7 @@ private:
     uint8_t get_spoofing_state(uint8_t instance) const {
         return state[instance].spoofing_state;
     }
+#endif  // AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
 
     struct GPS_timing {
         // the time we got our last fix in system milliseconds

@@ -596,7 +596,7 @@ AP_GPS_SBF::process_message(void)
                             (unsigned int)(ExtError & EXT_ERROR_MASK), (unsigned int)(temp.ExtError & EXT_ERROR_MASK));
         }
         ExtError = temp.ExtError;
-
+#if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
         state.system_errors = static_cast<uint32_t>(AP_GPS::Errors::GPS_SYSTEM_ERROR_NONE);
 
         if (ExtError & DIFFCORRERROR) {
@@ -608,7 +608,7 @@ AP_GPS_SBF::process_message(void)
                 state.system_errors |= static_cast<uint32_t>(map_entry.ap_error_enum);
             }
         }
-
+#endif  // AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
         break;
     }
 
@@ -616,7 +616,7 @@ AP_GPS_SBF::process_message(void)
     {
         const msg4092 &temp = sbf_msg.data.msg4092u;
         check_new_itow(temp.TOW, sbf_msg.length);
-#if HAL_GCS_ENABLED
+#if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
         if (temp.Flags==0) {
             state.spoofing_state = static_cast<uint8_t>(AP_GPS::Spoofing::OK);
         }
@@ -653,7 +653,7 @@ AP_GPS_SBF::process_message(void)
             }
             p += temp.SBLength;
         }
-#endif
+#endif  // AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
         break;
     }
 
@@ -661,6 +661,7 @@ AP_GPS_SBF::process_message(void)
     {
         const msg4245 &temp = sbf_msg.data.msg4245u;
         check_new_itow(temp.TOW, sbf_msg.length);
+#if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
         switch (temp.OSNMAStatus & (uint16_t)0b111) {
         case 0:
             state.authentication_state = static_cast<uint8_t>(AP_GPS::Authentication::DISABLED);
@@ -681,6 +682,7 @@ AP_GPS_SBF::process_message(void)
             state.authentication_state = static_cast<uint8_t>(AP_GPS::Authentication::UNKNOWN);
             break;
         }
+#endif  // AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
         break;
     }
 
