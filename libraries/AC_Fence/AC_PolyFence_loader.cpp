@@ -159,14 +159,15 @@ bool AC_PolyFence_loader::get_item(const uint16_t seq, AC_PolyFenceItem &item)
         item.radius = fence_storage.read_float(offset);
         break;
     case AC_PolyFenceType::HOME_CIRCLE_INCLUSION: {
-        if (!AP::ahrs().home_is_set()) {
-            Debug("fence home circle missing home");
-            return false;
-        }
-        auto const home = AP::ahrs().get_home();
-        // tmp_loc.lat = point.x;
-        // tmp_loc.lng = point.y;
-        item.loc = Vector2l(home.lat, home.lng);
+        // if (!AP::ahrs().home_is_set()) {
+        //     Debug("fence home circle missing home");
+        //     return false;
+        // }
+        // auto const home = AP::ahrs().get_home();
+        // // tmp_loc.lat = point.x;
+        // // tmp_loc.lng = point.y;
+        // item.loc = Vector2l(home.lat, home.lng);
+        Debug("skipping set home on get_item.");
         
         item.radius = fence_storage.read_float(offset);
         break;
