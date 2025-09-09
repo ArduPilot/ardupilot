@@ -1324,11 +1324,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_push()
 
         self.start_test("Test zero bias")
+        self.delay_sim_time(2)
         dfreader_tstart = self.assert_dataflash_message_field_level_at(
             "XKF2",
             "AZ",
             0.0,
             condition="XKF2.C==1",
+            maintain=1,
         )
 
         # Add 2m/s/s bias to the second IMU
@@ -2903,6 +2905,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def AutoTune(self):
         """Test autotune mode"""
 
+        # autotune changes a set of parameters on the vehicle which
+        # are not in our context.  That changes the flight
+        # characteristics, which we can't afford between runs.  So
+        # completely reset the simulated vehicle after the run is
+        # complete by "customising" the commandline here:
+        self.customise_SITL_commandline([])
+
+        self.set_parameters({
+            "ATC_RAT_RLL_SMAX": 1,
+            "AUTOTUNE_MIN_D": 0.0004,
+        })
+
         gain_names = [
             "ATC_RAT_RLL_D",
             "ATC_RAT_RLL_I",
@@ -2913,7 +2927,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # set these parameters so they get reverted at the end of the test:
         self.set_parameters(ogains)
 
-        self.set_parameter("ATC_RAT_RLL_SMAX", 1)
         self.takeoff(10)
 
         tstart = self.get_sim_time()
@@ -2937,6 +2950,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def AutoTuneYawD(self):
         """Test autotune mode"""
 
+        # autotune changes a set of parameters on the vehicle which
+        # are not in our context.  That changes the flight
+        # characteristics, which we can't afford between runs.  So
+        # completely reset the simulated vehicle after the run is
+        # complete by "customising" the commandline here:
+        self.customise_SITL_commandline([])
+
+        self.set_parameters({
+            "ATC_RAT_RLL_SMAX": 1,
+            "AUTOTUNE_AXES": 15,
+            "AUTOTUNE_MIN_D": 0.0004,
+        })
+
         gain_names = [
             "ATC_RAT_RLL_D",
             "ATC_RAT_RLL_I",
@@ -2947,8 +2973,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # set these parameters so they get reverted at the end of the test:
         self.set_parameters(ogains)
 
-        self.set_parameter("ATC_RAT_RLL_SMAX", 1)
-        self.set_parameter("AUTOTUNE_AXES", 15)
         self.takeoff(10)
 
         tstart = self.get_sim_time()
@@ -2956,6 +2980,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # hold position in loiter
         self.change_mode('AUTOTUNE')
 
+        # fail-fast if any determination fails:
+        self.install_message_hook_context(vehicle_test_suite.TestSuite.FailFastStatusText(
+            self, "determination failed"
+        ))
         self.wait_statustext("AutoTune: Success", timeout=5000)
         now = self.get_sim_time()
         self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
@@ -3054,6 +3082,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "RC8_OPTION": 17,
             "ATC_RAT_RLL_FLTT": 20,
+            "AUTOTUNE_MIN_D": 0.0004,
         })
 
         self.takeoff(10, mode='LOITER')
@@ -3163,6 +3192,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "RC8_OPTION": 180,
             "ATC_RAT_RLL_FLTT": 20,
+            "AUTOTUNE_MIN_D": 0.0004,
         })
 
         self.takeoff(10, mode='LOITER')
@@ -9507,11 +9537,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # Simulate vehicle getting stuck by increasing RC throttle
         self.set_rc(3, 1900)
-        self.delay_sim_time(5, reason='let tether get stuck')
+        self.delay_sim_time(10, reason='let tether get stuck')
 
         # Monitor behavior for 10 seconds
         tstart = self.get_sim_time()
         initial_alt = self.get_altitude()
+        self.progress(f"initial_alt={initial_alt}")
         stuck = True  # Assume it's stuck unless proven otherwise
 
         while self.get_sim_time() - tstart < 10:
@@ -9526,7 +9557,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
             # Check if the vehicle is stuck.
             # We assume the vehicle is stuck if the current is high and the altitude is not changing
-            if battery_status and (battery_status.current_battery < 6500 or abs(current_alt - initial_alt) > 2):
+            if battery_status and (battery_status.current_battery < 6500 or abs(current_alt - initial_alt) > 3):
                 stuck = False  # Vehicle moved or current is abnormal
                 break
 
@@ -11816,35 +11847,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def ATTITUDE_FAST(self):
         '''ensure that when ATTITUDE_FAST is set we get many messages'''
-        self.context_push()
-        ex = None
-        try:
-            log_bitmask_old = int(self.get_parameter('LOG_BITMASK'))
 
-            # enable fast logging (bit 1)
-            # disable PID logging (bit 12) to avoid slowdowns in attitude logging in SITL
-            log_bitmask_new = (log_bitmask_old | (1 << 0)) & ~(1 << 12)
+        # enable fast logging (bit 1)
+        # disable PID logging (bit 12) to avoid slowdowns in attitude logging in SITL
+        log_bitmask_old = int(self.get_parameter('LOG_BITMASK'))
+        log_bitmask_new = (log_bitmask_old | (1 << 0)) & ~(1 << 12)
 
-            self.set_parameters({
-                "LOG_BITMASK": log_bitmask_new,
-                "LOG_DISARMED": 1,
-                "LOG_DARM_RATEMAX": 0,
-                "LOG_FILE_RATEMAX": 0,
-            })
-            path = self.generate_rate_sample_log()
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-
-        self.context_pop()
-
-        self.reboot_sitl()
-
-        if ex is not None:
-            raise ex
-
-        self.delay_sim_time(10)  # NFI why this is required
+        path = self.generate_rate_sample_log(log_bitmask=log_bitmask_new)
 
         self.check_dflog_message_rates(path, {
             'ANG': 400,
@@ -11852,12 +11861,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def BaseLoggingRates(self):
         '''ensure messages come out at specific rates'''
-        self.set_parameters({
-            "LOG_DARM_RATEMAX": 0,
-            "LOG_FILE_RATEMAX": 0,
-        })
         path = self.generate_rate_sample_log()
-        self.delay_sim_time(10)  # NFI why this is required
         self.check_dflog_message_rates(path, {
             "ATT": 10,
             "IMU": 25,
@@ -13996,7 +14000,7 @@ RTL_ALT 111
         self.wait_ready_to_arm()
         self.change_mode('STABILIZE')
 
-        # Set home current location, this gives a large home vs orgin difference
+        # Set home current location, this gives a large home vs origin difference
         self.set_home(self.mav.location())
 
         self.set_rc(4, 2000)

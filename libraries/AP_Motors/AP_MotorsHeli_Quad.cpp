@@ -167,10 +167,6 @@ void AP_MotorsHeli_Quad::update_motor_control(AP_MotorsHeli_RSC::RotorControlSta
 //
 void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float collective_in, float yaw_out)
 {
-    // initialize limits flag
-    limit.throttle_lower = false;
-    limit.throttle_upper = false;
-
     // constrain collective input
     float collective_out = collective_in;
     if (collective_out <= 0.0f) {

@@ -2021,10 +2021,11 @@ class TestSuite(ABC):
         self.last_sim_time_cached = 0
         self.last_sim_time_cached_wallclock = 0
 
-        # to autopilot we do not want to go to the internet for tiles,
+        # to autotest we do not want to go to the internet for tiles,
         # usually.  Set this to False to gather tiles from internet in
-        # the cae there are new tiles required, then add them to the
+        # the case there are new tiles required, then add them to the
         # repo and set this back to false:
+        # the files will likely be downloaded to ~/.tilecache/SRTM3
         self.terrain_in_offline_mode = True
         self.elevationmodel = mp_elevation.ElevationModel(
             cachedir=util.reltopdir("Tools/autotest/tilecache/srtm"),
@@ -3490,6 +3491,34 @@ class TestSuite(ABC):
         def progress(self, string):
             string = self.progress_prefix() + string
             self.suite.progress(string)
+
+        def hook_removed(self):
+            pass
+
+    class FailFastStatusText(MessageHook):
+        '''watches STATUSTEXT message; any message matching passed-in
+        patterns causes a NotAchievedException to be thrown'''
+        def __init__(self, suite, texts, regex : bool = False):
+            super(TestSuite.FailFastStatusText, self).__init__(suite)
+            if isinstance(texts, str):
+                texts = [texts]
+            self.texts = texts
+            self.regex = regex
+
+        def progress_prefix(self):
+            return "FFST: "
+
+        def process(self, mav, m):
+            if m.get_type() != 'STATUSTEXT':
+                return
+
+            for text in self.texts:
+                if self.regex:
+                    found = re.match(text, m.text)
+                else:
+                    found = text.lower() in m.text.lower()
+                if found:
+                    raise NotAchievedException(f"Fail-fast text found: {m.text}")
 
     class ValidateIntPositionAgainstSimState(MessageHook):
         '''monitors a message containing a position containing lat/lng in 1e7,
@@ -5713,20 +5742,33 @@ class TestSuite(ABC):
         for (t, want_rate) in message_rates.items():
             if t not in counts:
                 raise NotAchievedException("Wanted %s but got none" % t)
-            self.progress("Got (%u) in (%uus)" % (counts[t], delta_time_us))
             got_rate = float(counts[t]) / delta_time_us * 1000000
+            self.progress(f"Got ({counts[t]}) in ({delta_time_us}us) ({got_rate}/s)")
 
             if abs(want_rate - got_rate) > 5:
                 raise NotAchievedException("Not getting %s data at wanted rate want=%f got=%f" %
                                            (t, want_rate, got_rate))
 
-    def generate_rate_sample_log(self):
+    def generate_rate_sample_log(self, log_bitmask=None):
+        self.context_push()
+        params = {
+            "LOG_DISARMED": 0,
+            "LOG_DARM_RATEMAX": 0,
+            "LOG_FILE_RATEMAX": 0,
+        }
+        if log_bitmask is not None:
+            params["LOG_BITMASK"] = log_bitmask
+
+        self.set_parameters(params)
         self.reboot_sitl()
         self.wait_ready_to_arm()
+        self.set_parameter("LOG_DISARMED", 1)
         self.delay_sim_time(20)
+        self.set_parameter("LOG_DISARMED", 0)
         path = self.current_onboard_log_filepath()
         self.progress("Rate sample log (%s)" % path)
-        self.reboot_sitl()
+        self.reboot_sitl()  # ensure log is rotated
+        self.context_pop()
         return path
 
     def rc_defaults(self):
@@ -7292,16 +7334,16 @@ class TestSuite(ABC):
 
     def guided_achieve_heading(self, heading, accuracy=None):
         tstart = self.get_sim_time()
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+            p1=heading,  # target angle
+            p2=10,  # degrees/second
+            p3=1,  # -1 is counter-clockwise, 1 clockwise
+            p4=0,  # 1 for relative, 0 for absolute
+        )
         while True:
             if self.get_sim_time_cached() - tstart > 200:
                 raise NotAchievedException("Did not achieve heading")
-            self.run_cmd(
-                mavutil.mavlink.MAV_CMD_CONDITION_YAW,
-                p1=heading,  # target angle
-                p2=10,  # degrees/second
-                p3=1,  # -1 is counter-clockwise, 1 clockwise
-                p4=0,  # 1 for relative, 0 for absolute
-            )
             m = self.assert_receive_message('VFR_HUD')
             self.progress("heading=%d want=%d" % (m.heading, int(heading)))
             if accuracy is not None:
@@ -8801,6 +8843,9 @@ Also, ignores heartbeats not from our target system'''
 
     def script_applet_source_path(self, scriptname):
         return os.path.join(self.rootdir(), "libraries", "AP_Scripting", "applets", scriptname)
+
+    def script_modules_source_path(self, scriptname):
+        return os.path.join(self.rootdir(), "libraries", "AP_Scripting", "modules", scriptname)
 
     def installed_script_path(self, scriptname):
         return os.path.join("scripts", os.path.basename(scriptname))
@@ -11558,6 +11603,7 @@ Also, ignores heartbeats not from our target system'''
         die if the data is not available - but
         self.terrain_in_offline_mode can be set to true in the
         constructor to change this behaviour
+        this should be called at the very top of your test context!
         '''
 
         def check_terrain_requests(mav, m):
@@ -13172,10 +13218,10 @@ switch value'''
     def tf_validate_gps(self, value): # shared by proto 4 and proto 10
         self.progress("validating gps (0x%02x)" % value)
         lat = value
-        gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
-        gpi_lat = self.tf_encode_gps_latitude(gpi.lat)
-        self.progress("GLOBAL_POSITION_INT lat==%f frsky==%f" % (gpi_lat, lat))
-        if gpi_lat == lat:
+        gri = self.assert_receive_message('GPS_RAW_INT')
+        gri_lat = self.tf_encode_gps_latitude(gri.lat)
+        self.progress("GLOBAL_POSITION_INT lat==%f frsky==%f" % (gri_lat, lat))
+        if gri_lat == lat:
             return True
         return False
 

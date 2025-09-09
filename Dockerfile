@@ -48,7 +48,7 @@ RUN git config --global --add safe.directory $PWD
 RUN echo "if [ -d \"\$HOME/.local/bin\" ] ; then\nPATH=\"\$HOME/.local/bin:\$PATH\"\nfi" >> ~/.ardupilot_env
 
 # Clone & install Micro-XRCE-DDS-Gen dependency
-RUN git clone --recurse-submodules https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git /home/${USER_NAME}/Micro-XRCE-DDS-Gen \
+RUN git clone --recurse-submodules --depth 1 --branch v4.7.1 https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git /home/${USER_NAME}/Micro-XRCE-DDS-Gen \
     && cd /home/${USER_NAME}/Micro-XRCE-DDS-Gen \
     && ./gradlew assemble \
     && export AP_ENV_LOC="/home/${USER_NAME}/.ardupilot_env" \

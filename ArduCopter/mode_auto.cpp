@@ -506,9 +506,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
     copter.circle_nav->set_center(circle_center);
 
     // set circle radius
-    if (!is_zero(radius_m)) {
-        copter.circle_nav->set_radius_m(radius_m);
-    }
+    copter.circle_nav->set_radius_m(radius_m);
 
     // set circle direction by using rate
     float current_rate = copter.circle_nav->get_rate_degs();

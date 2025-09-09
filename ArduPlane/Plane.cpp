@@ -316,6 +316,10 @@ void Plane::update_logging25(void)
 
     if (should_log(MASK_LOG_IMU))
         AP::ins().Write_Vibration();
+
+#if AP_PLANE_BLACKBOX_LOGGING
+    Log_Write_Blackbox();
+#endif
 }
 #endif  // HAL_LOGGING_ENABLED
 

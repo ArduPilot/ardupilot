@@ -51,6 +51,7 @@ public:
             nullptr,
             nullptr,
             nullptr,
+            nullptr,
             nullptr
             ) {}
     void run(int argc, char* const argv[], Callbacks* callbacks) const override {}

@@ -313,17 +313,28 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
     }
 
     // maximum number of servos to send is 12 with new FlightAxis
-    float scaled_servos[12];
+    float scaled_servos[12] {};
+    uint16_t valid_channels = 0;
     for (uint8_t i=0; i<ARRAY_SIZE(scaled_servos); i++) {
+        if (input.servos[i] == 0) {
+            continue;
+        }
         scaled_servos[i] = (input.servos[i] - 1000) / 1000.0f;
+        valid_channels |= 1U << i;
     }
 
     if (option_is_set(Option::Rev4Servos)) {
-        // swap first 4 and last 4 servos, for quadplane testing
+        // swap first 4 and second 4 servos, for quadplane testing
         float saved[4];
         memcpy(saved, &scaled_servos[0], sizeof(saved));
         memcpy(&scaled_servos[0], &scaled_servos[4], sizeof(saved));
         memcpy(&scaled_servos[4], saved, sizeof(saved));
+        // and the validity flags:
+        uint16_t new_channels = 0;
+        new_channels |= (valid_channels & 0b1111111100000000);
+        new_channels |= (valid_channels & 0b11110000) >> 4;
+        new_channels |= (valid_channels & 0b00001111) << 4;
+        valid_channels = new_channels;
     }
 
     if (option_is_set(Option::HeliDemix)) {
@@ -341,7 +352,6 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
         scaled_servos[2] = constrain_float(col, 0, 1);
     }
 
-    const uint16_t channels = hal.scheduler->is_system_initialized()?4095:0;
     if (!sock) {
         soap_request_start("ExchangeData", R"(<?xml version='1.0' encoding='UTF-8'?><soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
 <soap:Body>
@@ -366,7 +376,7 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
 </ExchangeData>
 </soap:Body>
 </soap:Envelope>)",
-                           channels,
+                           valid_channels,
                            scaled_servos[0],
                            scaled_servos[1],
                            scaled_servos[2],

@@ -220,12 +220,18 @@ float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool dis
         }
     }
 
-    // Limit the demanded roll rate
-    if (gains.rmax_pos && desired_rate < -gains.rmax_pos) {
-        desired_rate = - gains.rmax_pos;
-    } else if (gains.rmax_pos && desired_rate > gains.rmax_pos) {
-        desired_rate = gains.rmax_pos;
+    if (!in_recovery) {
+        // Limit the demanded roll rate. When we are in a VTOL
+        // recovery we don't apply the limit
+        if (gains.rmax_pos && desired_rate < -gains.rmax_pos) {
+            desired_rate = - gains.rmax_pos;
+        } else if (gains.rmax_pos && desired_rate > gains.rmax_pos) {
+            desired_rate = gains.rmax_pos;
+        }
     }
+
+    // the in_recovery flag is single loop only
+    in_recovery = false;
 
     return _get_rate_out(desired_rate, scaler, disable_integrator, get_airspeed(), ground_mode);
 }

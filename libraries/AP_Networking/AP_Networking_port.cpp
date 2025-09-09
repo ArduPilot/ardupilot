@@ -26,7 +26,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef AP_NETWORKING_PORT_STACK_SIZE
-#define AP_NETWORKING_PORT_STACK_SIZE 1024
+#define AP_NETWORKING_PORT_STACK_SIZE 1300
 #endif
 
 const AP_Param::GroupInfo AP_Networking::Port::var_info[] = {
@@ -296,7 +296,7 @@ void AP_Networking::Port::tcp_client_loop(void)
         }
         if (!connected) {
             const char *dest = ip.get_str();
-            connected = sock->connect(dest, port.get());
+            connected = sock->connect_timeout(dest, port.get(), 3000);
             if (connected) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP[%u]: connected to %s:%u", unsigned(state.idx), dest, unsigned(port.get()));
                 sock->set_blocking(false);

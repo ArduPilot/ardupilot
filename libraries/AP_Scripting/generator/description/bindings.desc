@@ -647,6 +647,7 @@ ap_object SocketAPM method sendto int32_t string uint32_t'skip_check uint32_t'sk
 ap_object SocketAPM method listen boolean uint8_t'skip_check
 ap_object SocketAPM method set_blocking boolean boolean
 ap_object SocketAPM method is_connected boolean
+ap_object SocketAPM method is_pending boolean
 ap_object SocketAPM method pollout boolean uint32_t'skip_check
 ap_object SocketAPM method pollin boolean uint32_t'skip_check
 ap_object SocketAPM method reuseaddress boolean

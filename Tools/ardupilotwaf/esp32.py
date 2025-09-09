@@ -15,9 +15,26 @@ from collections import OrderedDict
 import os
 import shutil
 import sys
+import traceback
 import re
 import pickle
 import subprocess
+
+import hal_common
+
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ESP32/hwdef/scripts'))
+import esp32_hwdef  # noqa:501
+
+@feature('esp32_ap_library', 'esp32_ap_program')
+@before_method('process_source')
+def esp32_dynamic_env(self):
+    hal_common.common_dynamic_env(self)
+
+
+def load_env_vars(env):
+    '''optionally load extra environment variables from env.py in the build directory'''
+    hal_common.load_env_vars(env)
+
 
 def configure(cfg):
     mcu_esp32s3 = True if (cfg.variant[0:7] == "esp32s3") else False
@@ -51,7 +68,38 @@ def configure(cfg):
         env.IDF = cfg.srcnode.abspath()+"/modules/esp_idf"
     print("USING EXPRESSIF IDF:"+str(env.IDF))
 
-    #env.append_value('GIT_SUBMODULES', 'esp_idf')
+    try:
+        generate_hwdef_h(env)
+    except Exception as e:
+        print(get_exception_stacktrace(e))
+        cfg.fatal("Failed to generate hwdef")
+    load_env_vars(cfg.env)
+
+def get_exception_stacktrace(e):
+    ret = "%s\n" % e
+    ret += ''.join(traceback.format_exception(type(e),
+                                              e,
+                                              tb=e.__traceback__))
+    return ret
+
+def generate_hwdef_h(env):
+    '''run esp32_hwdef.py'''
+    hwdef_dir = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ESP32/hwdef')
+
+    if len(env.HWDEF) == 0:
+        env.HWDEF = os.path.join(hwdef_dir, env.BOARD, 'hwdef.dat')
+    hwdef_out = env.BUILDROOT
+    if not os.path.exists(hwdef_out):
+        os.mkdir(hwdef_out)
+    hwdef = [env.HWDEF]
+    if env.HWDEF_EXTRA:
+        hwdef.append(env.HWDEF_EXTRA)
+    eh = esp32_hwdef.ESP32HWDef(
+        outdir=hwdef_out,
+        hwdef=hwdef,
+        quiet=False,
+    )
+    eh.run()
 
 # delete the output sdkconfig file when the input defaults changes. we take the
 # stamp as the output so we can compute the path to the sdkconfig, yet it
@@ -117,6 +165,28 @@ def pre_build(self):
     tsk.set_inputs(self.path.find_resource('esp-idf_build/includes.list'))
     self.add_to_group(tsk)
 
+    # hwdef pre-build:
+    load_env_vars(self.env)
+#    if bld.env.HAL_NUM_CAN_IFACES:
+#        bld.get_board().with_can = True
+    hwdef_h = os.path.join(self.env.BUILDROOT, 'hwdef.h')
+    if not os.path.exists(hwdef_h):
+        print("Generating hwdef.h")
+        try:
+            generate_hwdef_h(self.env)
+        except Exception:
+            self.fatal(f"Failed to process hwdef.dat {hwdef_h}")
+
+def build(bld):
+    bld(
+        # build hwdef.h from hwdef.dat. This is needed after a waf clean
+        source=bld.path.ant_glob(bld.env.HWDEF),
+        rule="",
+        group='dynamic_sources',
+        target=[
+            bld.bldnode.find_or_declare('hwdef.h'),
+        ]
+    )
 
 @feature('esp32_ap_program')
 @after_method('process_source')
