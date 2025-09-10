@@ -429,6 +429,29 @@ void NavEKF3_core::CorrectGPSForAntennaOffset(gps_elements &gps_data) const
     gps_data.hgt += posOffsetEarth.z;
 }
 
+/*
+  correct Baro data for position offset relative to the IMU
+ */
+void NavEKF3_core::CorrectBaroOffset(baro_elements &baro_data) const
+{
+    // return immediately if already corrected
+    if (baro_data.corrected) {
+        return;
+    }
+    baro_data.corrected = true;
+
+    const Vector3F posOffsetBody = dal.baro().get_baro_pos_offset().toftype() - accelPosOffset;
+    if (posOffsetBody.is_zero()) {
+        return;
+    }
+
+    // get a rotation matrix following DCM conventions (body to earth)
+    Vector3F posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
+    // correct the altitude at the sensor
+    // the reference altitude at home is offseted by posOffsetBody.z which is why we substract it here
+    baro_data.hgt += posOffsetEarth.z/prevTnb.c.z-posOffsetBody.z;
+}
+
 // correct external navigation earth-frame position using sensor body-frame offset
 void NavEKF3_core::CorrectExtNavForSensorOffset(ext_nav_elements &ext_nav_data)
 {
@@ -1206,6 +1229,7 @@ void NavEKF3_core::selectHeightForFusion()
     readBaroData();
     baroDataToFuse = storedBaro.recall(baroDataDelayed, imuDataDelayed.time_ms);
 
+    
     bool rangeFinderDataIsFresh = (imuSampleTime_ms - rngValidMeaTime_ms < 500);
 #if EK3_FEATURE_EXTERNAL_NAV
     const bool extNavDataIsFresh = (imuSampleTime_ms - extNavMeasTime_ms < 500);
@@ -1301,6 +1325,7 @@ void NavEKF3_core::selectHeightForFusion()
         // filtered baro data used to provide a reference for takeoff
         // it is is reset to last height measurement on disarming in performArmingChecks()
         if (!dal.get_takeoff_expected()) {
+            CorrectBaroOffset(baroDataDelayed);
             const ftype gndHgtFiltTC = 0.5;
             const ftype dtBaro = frontend->hgtAvg_ms*1.0e-3;
             ftype alpha = constrain_ftype(dtBaro / (dtBaro+gndHgtFiltTC),0.0,1.0);
@@ -1365,6 +1390,7 @@ void NavEKF3_core::selectHeightForFusion()
         }
     } else if (baroDataToFuse && (activeHgtSource == AP_NavEKF_Source::SourceZ::BARO)) {
         // using Baro data
+        CorrectBaroOffset(baroDataDelayed);
         hgtMea = baroDataDelayed.hgt - baroHgtOffset;
         // correct sensor so that local position height adjusts to match GPS
         if (frontend->_originHgtMode & (1 << 0) && frontend->_originHgtMode & (1 << 2)) {
