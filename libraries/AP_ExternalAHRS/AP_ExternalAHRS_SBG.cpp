@@ -96,7 +96,7 @@ void AP_ExternalAHRS_SBG::update_thread()
             // static uint32_t count = 1;
             // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SBG Requesting DeviceInfo %u", count++);
 
-            const sbgMessage msg = sbgMessage(SBG_ECOM_CMD_INFO, SBG_ECOM_CLASS_LOG_CMD_0);
+            const sbgMessage msg = sbgMessage(SBG_ECOM_CLASS_LOG_CMD_0, SBG_ECOM_CMD_INFO);
             UNUSED_RESULT(send_sbgMessage(uart, msg)); // don't care about any error, just retry at 1Hz
 
 #if AP_COMPASS_ENABLED
@@ -340,7 +340,6 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
     bool updated_ins = false;
     bool updated_mag = false;
     bool updated_airspeed = false;
-    bool handled_message = true;
 
     {
         WITH_SEMAPHORE(state.sem);
@@ -530,7 +529,6 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
                 break;
 
             default:
-                handled_message = false;
                 // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SBG: unhandled ID=%u, CLASS=%u, LEN=%u", (unsigned)msg.msgid, (unsigned)msg.msgclass, (unsigned)msg.len);
                 return;
         } // switch msgid
@@ -584,9 +582,7 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
         AP::ins().handle_external(cached.sensors.ins_data);
     }
 
-    if (handled_message) {
-        last_received_ms = now_ms;
-    }
+    last_received_ms = now_ms;
 }
 
 void AP_ExternalAHRS_SBG::safe_copy_msg_to_object(uint8_t* dest, const uint16_t dest_len, const uint8_t* src, const uint16_t src_len)
