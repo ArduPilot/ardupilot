@@ -49,7 +49,7 @@ Specifications
 Pinout
 ======
 
-![XRush4 F4 V3](XXRush4F4V3-board-pinout1.png)
+![XRush4 F4 V3](XRush4F4V3-board-pinout1.png)
 ![XRush4 F4 V3](XXRush4F4V3-board-pinout2.png)
 
 <!--In addition pin tables and/or connector images can be inserted here..see UART table below for format all user accessible connection points should be clear --> 
@@ -61,11 +61,11 @@ The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive p
 
 |Port  | UART    |Protocol        |TX DMA |RX DMA |
 |------|---------|----------------|-------|-------|
-|0     |  USB    |  MAVLink2      |  -    |   -   |
-|1     |  USART1 |  Tramp         |  -    |   -   |
-|2     |  USART2 |  ESCTelemetry  |  -    |   -   |
-|3     |  USART3 |  GPS           |  -    |   -   |
-|4     |  UART4  |  RCIN          |  -    |   -   |
+|0     |  USB    |  MAVLink2      |  ✘    |   ✘   |
+|1     |  USART1 |  Tramp         |  ✔    |   ✔   |
+|2     |  USART2 |  ESCTelemetry  |  ✔    |   ✔   |
+|3     |  USART3 |  GPS           |  ✔    |   ✔   |
+|4     |  UART4  |  RCIN          |  ✔    |   ✘   |
 |5     |  UART5  |  None          |  ✘    |   ✘   |
 
 RC input
@@ -132,6 +132,8 @@ The default battery parameters are:
  - :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
  - :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 11
  - :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 13 (CURR pin)
+  - :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 11.0
+ - :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 40
 
 Firmware
 ========
