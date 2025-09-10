@@ -14,6 +14,7 @@
  */
 
 #include "SerialLED.h"
+#include "AP_Notify/AP_Notify.h"
 
 #if AP_NOTIFY_SERIALLED_ENABLED
 
@@ -42,9 +43,25 @@ bool SerialLED::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
         return false;
     }
 
-    for (uint16_t chan=0; chan<16; chan++) {
-        if ((1U<<chan) & enable_mask) {
-            led->set_RGB(chan+1, -1, red, green, blue);
+    if (rgb_source() != Source::split_standard) {
+        for (uint16_t chan=0; chan<16; chan++) {
+            if ((1U<<chan) & enable_mask) {
+                led->set_RGB(chan+1, -1, red, green, blue);
+            }
+        }
+    } else {
+        // switch red and green for half the LEDs in split standard
+        // so that copters can display different armed colours on different sides
+        for (uint16_t chan=0; chan<16; chan++) {
+            const uint8_t led_len = pNotify->get_led_len();
+            if ((1U<<chan) & enable_mask) {
+                for (uint8_t i = 0; i < led_len/2; i++) {
+                    led->set_RGB(chan+1, i, red, green, blue);
+                }
+                for (uint8_t i = led_len/2; i < led_len; i++) {
+                    led->set_RGB(chan+1, i, green, red, blue);
+                }
+            }
         }
     }
 
