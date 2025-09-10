@@ -101,7 +101,7 @@ void ModePoshold::control_horizontal() {
     float forward_out = 0;
 
     // get desired rates in the body frame
-    Vector2f body_rates_cm_s = {
+    Vector2f body_rates_cms = {
         sub.get_pilot_desired_horizontal_rate(channel_forward),
         sub.get_pilot_desired_horizontal_rate(channel_lateral)
     };
@@ -113,8 +113,8 @@ void ModePoshold::control_horizontal() {
         }
 
         // convert to the earth frame and set target rates
-        auto earth_rates_cm_s = ahrs.body_to_earth2D(body_rates_cm_s);
-        position_control->input_vel_accel_NE_cm(earth_rates_cm_s, {0, 0});
+        auto earth_rates_cms = ahrs.body_to_earth2D(body_rates_cms);
+        position_control->input_vel_accel_NE_cm(earth_rates_cms, {0, 0});
 
         // convert pos control roll and pitch angles back to lateral and forward efforts
         sub.translate_pos_control_rp(lateral_out, forward_out);
@@ -123,8 +123,8 @@ void ModePoshold::control_horizontal() {
         position_control->update_NE_controller();
     } else if (g.pilot_speed > 0) {
         // allow the pilot to reposition manually
-        forward_out = body_rates_cm_s.x / (float)g.pilot_speed;
-        lateral_out = body_rates_cm_s.y / (float)g.pilot_speed;
+        forward_out = body_rates_cms.x / (float)g.pilot_speed;
+        lateral_out = body_rates_cms.y / (float)g.pilot_speed;
     }
 
     motors.set_forward(forward_out);
