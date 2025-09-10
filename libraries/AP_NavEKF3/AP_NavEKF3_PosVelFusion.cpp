@@ -47,7 +47,7 @@ void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
         P[5][5] = P[4][4] = sq(frontend->_gpsHorizVelNoise);
     } else {
         // reset horizontal velocity states to the GPS velocity if available
-        if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250 && velResetSource == resetDataSource::DEFAULT) || velResetSource == resetDataSource::GPS) {
+        if ((imuSampleTime_ms - lastTimeGpsReceived_ms[selected_gps] < 250 && velResetSource == resetDataSource::DEFAULT) || velResetSource == resetDataSource::GPS) {
             // correct for antenna position
             gps_elements gps_corrected = gpsDataNew;
             CorrectGPSForAntennaOffset(gps_corrected);
@@ -129,7 +129,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
         P[7][7] = P[8][8] = sq(frontend->_gpsHorizPosNoise);
     } else  {
         // Use GPS data as first preference if fresh data is available
-        if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::GPS) {
+        if ((imuSampleTime_ms - lastTimeGpsReceived_ms[selected_gps] < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::GPS) {
             // correct for antenna position
             gps_elements gps_corrected = gpsDataNew;
             CorrectGPSForAntennaOffset(gps_corrected);
@@ -1259,7 +1259,7 @@ void NavEKF3_core::selectHeightForFusion()
 #endif
     } else if (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::BARO) {
         activeHgtSource = AP_NavEKF_Source::SourceZ::BARO;
-    } else if ((frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) < 500) && validOrigin && gpsAccuracyGood) {
+    } else if ((frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms[selected_gps]) < 500) && validOrigin && gpsAccuracyGood) {
         activeHgtSource = AP_NavEKF_Source::SourceZ::GPS;
 #if EK3_FEATURE_BEACON_FUSION
     } else if ((frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::BEACON) && validOrigin && rngBcn.goodToAlign) {
@@ -1273,7 +1273,7 @@ void NavEKF3_core::selectHeightForFusion()
 
     // Use Baro alt as a fallback if we lose range finder, GPS, external nav or Beacon
     bool lostRngHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) && !rangeFinderDataIsFresh);
-    bool lostGpsHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) > 2000 || !gpsAccuracyGoodForAltitude));
+    bool lostGpsHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms[selected_gps]) > 2000 || !gpsAccuracyGoodForAltitude));
 #if EK3_FEATURE_BEACON_FUSION
     bool lostRngBcnHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::BEACON) && ((imuSampleTime_ms - rngBcn.dataDelayed.time_ms) > 2000));
 #endif
