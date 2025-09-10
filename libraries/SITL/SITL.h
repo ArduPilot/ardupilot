@@ -456,6 +456,9 @@ public:
     // minimum throttle for addition of ins noise
     AP_Float ins_noise_throttle_min;
 
+    // 0 = normal FS, 1 = simulate "no SD card"
+    AP_Int8 sdcard_disable;
+
     struct {
         AP_Float x;
         AP_Float y;
