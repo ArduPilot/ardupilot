@@ -1843,7 +1843,12 @@ int clock_gettime(clockid_t clockid, struct timespec *ts)
     //! A fallback mechanism is employed against the caller's choice of clock.
     uint64_t utc_usec;
     if (!AP::rtc().get_utc_usec(utc_usec)) {
-        utc_usec = AP_HAL::micros64();
+        // If AP gets RTC after DDS has started to initialize, it corrupts the traffic.
+        // MicroXRCEDDS libraries assume a monotonic clock.
+        // If there is no time source available, don't supply cpu time.
+        // Instead, return an error in alignment with Linux.
+        // See https://linux.die.net/man/3/clock_gettime.
+        return -1;
     }
     ts->tv_sec = utc_usec / 1000000ULL;
     ts->tv_nsec = (utc_usec % 1000000ULL) * 1000UL;
