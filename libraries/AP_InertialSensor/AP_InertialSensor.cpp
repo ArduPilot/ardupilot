@@ -1049,7 +1049,9 @@ AP_InertialSensor::init(uint16_t loop_rate)
             {
                 AP_Motors *motors = AP::motors();
                 if (motors != nullptr) {
-                    notch.num_dynamic_notches = __builtin_popcount(motors->get_motor_mask());
+                    // Always have at least one notch, this allows the filter to alocate and then be expanded at runtime if the number of motors is changed
+                    // Never have more than INS_MAX_NOTCHES
+                    notch.num_dynamic_notches = MAX(MIN(__builtin_popcount(motors->get_motor_mask()), INS_MAX_NOTCHES), 1);
                 }
             }
             // avoid harmonics unless actually configured by the user
