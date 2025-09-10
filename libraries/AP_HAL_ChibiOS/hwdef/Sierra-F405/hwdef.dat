@@ -77,7 +77,6 @@ PB4 TIM3_CH1 TIM3 PWM(4) GPIO(53)
 # ----------------------- GPS ----------------------------
 define AP_PERIPH_GPS_ENABLED 1
 define HAL_PERIPH_GPS_PORT_DEFAULT 3
-define GPS_MAX_RECEIVERS 1
 define GPS_MAX_INSTANCES 1
 
 # ---------------------- COMPASS ---------------------------

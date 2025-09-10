@@ -108,7 +108,6 @@ define AP_PARAM_MAX_EMBEDDED_PARAM 512
 define HAL_I2C_INTERNAL_MASK 0
 
 # disable dual GPS and GPS blending to save flash space
-define GPS_MAX_RECEIVERS 1
 define GPS_MAX_INSTANCES 1
 define HAL_COMPASS_MAX_SENSORS 1
 define RANGEFINDER_MAX_INSTANCES 1
