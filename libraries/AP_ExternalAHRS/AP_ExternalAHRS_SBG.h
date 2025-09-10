@@ -107,12 +107,12 @@ private:
 
         sbgMessage() {};
 
-        sbgMessage(const uint8_t msgId_, const uint8_t msgClass_) {
+        sbgMessage(const uint8_t msgClass_, const uint8_t msgId_) {
             msgid = msgId_;
             msgclass = msgClass_;
         };
 
-        sbgMessage(const uint8_t msgId_, const uint8_t msgClass_, const uint8_t* payload, const uint16_t payload_len) {
+        sbgMessage(const uint8_t msgClass_, const uint8_t msgId_, const uint8_t* payload, const uint16_t payload_len) {
             msgid = msgId_;
             msgclass = msgClass_;
 
