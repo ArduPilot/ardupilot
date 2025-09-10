@@ -34,6 +34,9 @@
 #if AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
 #include "ardupilot_msgs/srv/Takeoff.h"
 #endif // AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
+#if AP_DDS_GLIDING_SERVER_ENABLED
+#include "ardupilot_msgs/srv/SetGliding.h"
+#endif // AP_DDS_GLIDING_SERVER_ENABLED
 #if AP_DDS_RC_PUB_ENABLED
 #include "AP_RSSI/AP_RSSI.h"
 #endif // AP_DDS_RC_PUB_ENABLED
@@ -1211,6 +1214,41 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         break;
     }
 #endif // AP_DDS_PARAMETER_SERVER_ENABLED
+#if AP_DDS_GLIDING_SERVER_ENABLED
+    case services[to_underlying(ServiceIndex::SET_GLIDING)].rep_id: {
+        ardupilot_msgs_srv_SetGliding_Request req;
+        ardupilot_msgs_srv_SetGliding_Response rsp;
+        const bool deserialize_success = ardupilot_msgs_srv_SetGliding_Request_deserialize_topic(ub, &req);
+        if (deserialize_success == false) {
+            break;
+        }
+
+#if AP_EXTERNAL_CONTROL_ENABLED
+        if (!AP_DDS_External_Control::request_gliding(req)) {
+            // TODO #23430 handle velocity control failure through rosout, throttled.
+        }
+#endif // AP_EXTERNAL_CONTROL_ENABLED
+
+
+
+        const uxrObjectId replier_id = {
+            .id = services[to_underlying(ServiceIndex::SET_GLIDING)].rep_id,
+            .type = UXR_REPLIER_ID
+        };
+
+        uint8_t reply_buffer[8] {};
+        ucdrBuffer reply_ub;
+
+        ucdr_init_buffer(&reply_ub, reply_buffer, sizeof(reply_buffer));
+        const bool serialize_success = ardupilot_msgs_srv_SetGliding_Response_serialize_topic(&reply_ub, &rsp);
+        if (serialize_success == false) {
+            break;
+        }
+
+        uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
+        break;
+    }
+#endif // AP_DDS_GLIDING_SERVER_ENABLED
     }
 }
 
