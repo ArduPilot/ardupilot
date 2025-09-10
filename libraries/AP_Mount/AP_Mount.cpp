@@ -699,6 +699,27 @@ bool AP_Mount::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
     return true;
 }
 
+// get mount's yaw limits (gimbal etc)
+void AP_Mount::get_mount_yaw_limits(uint8_t instance, float &yaw_min, float &yaw_max)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+    backend->get_mount_yaw_limits(yaw_min, yaw_max);
+}
+
+// get mount's pitch limits (gimbal etc)
+void AP_Mount::get_mount_pitch_limits(uint8_t instance, float &pitch_min, float &pitch_max)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+    backend->get_mount_pitch_limits(pitch_min, pitch_max);
+}
+
+
 // get target rate in deg/sec. returns true on success
 bool AP_Mount::get_rate_target(uint8_t instance, float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame)
 {
