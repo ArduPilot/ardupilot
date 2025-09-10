@@ -17,6 +17,10 @@
 
 #pragma once
 
+#include "AP_PiccoloCAN_config.h"
+
+#if AP_PICCOLOCAN_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_CANManager/AP_CANDriver.h>
 
@@ -28,8 +32,6 @@
 #include "AP_PiccoloCAN_ECU.h"
 #include "AP_PiccoloCAN_Servo.h"
 #include <AP_EFI/AP_EFI_Currawong_ECU.h>
-
-#if HAL_PICCOLO_CAN_ENABLE
 
 #define PICCOLO_MSG_RATE_HZ_MIN 1
 #define PICCOLO_MSG_RATE_HZ_MAX 500
@@ -133,4 +135,4 @@ private:
 
 };
 
-#endif // HAL_PICCOLO_CAN_ENABLE
+#endif // AP_PICCOLOCAN_ENABLED

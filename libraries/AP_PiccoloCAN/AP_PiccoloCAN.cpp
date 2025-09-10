@@ -16,12 +16,14 @@
  */
 
 
+#include "AP_PiccoloCAN_config.h"
+
+#if AP_PICCOLOCAN_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 
 #include "AP_PiccoloCAN.h"
-
-#if HAL_PICCOLO_CAN_ENABLE
 
 #include <AP_Param/AP_Param.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -772,4 +774,4 @@ bool AP_PiccoloCAN::pre_arm_check(char* reason, uint8_t reason_len)
 }
 
 
-#endif // HAL_PICCOLO_CAN_ENABLE
+#endif // AP_PICCOLOCAN_ENABLED
