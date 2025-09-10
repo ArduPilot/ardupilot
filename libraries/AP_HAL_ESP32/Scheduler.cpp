@@ -15,7 +15,6 @@
 
 #include "AP_HAL_ESP32/Scheduler.h"
 #include "AP_HAL_ESP32/RCInput.h"
-#include "AP_HAL_ESP32/AnalogIn.h"
 #include "AP_Math/AP_Math.h"
 #include "SdCard.h"
 #include "Profile.h"
@@ -321,10 +320,6 @@ void IRAM_ATTR Scheduler::_timer_thread(void *arg)
     while (true) {
         sched->delay_microseconds(1000);
         sched->_run_timers();
-        //analog in
-#ifndef HAL_DISABLE_ADC_DRIVER
-        ((AnalogIn*)hal.analogin)->_timer_tick();
-#endif
     }
 }
 
