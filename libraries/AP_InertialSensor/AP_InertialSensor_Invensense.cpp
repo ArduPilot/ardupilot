@@ -26,6 +26,7 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
 
+#include "AP_InertialSensor_rate_config.h"
 #include "AP_InertialSensor_Invensense.h"
 #include <GCS_MAVLink/GCS.h>
 
@@ -436,7 +437,7 @@ void AP_InertialSensor_Invensense::start()
     }
 
     // start the timer process to read samples, using the fastest rate avilable
-    _dev->register_periodic_callback(1000000UL / _gyro_backend_rate_hz, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensense::_poll_data, void));
+    periodic_handle = _dev->register_periodic_callback(1000000UL / _gyro_backend_rate_hz, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensense::_poll_data, void));
 }
 
 // get a startup banner to output to the GCS
@@ -481,6 +482,21 @@ bool AP_InertialSensor_Invensense::update() /* front end */
     }
 
     return true;
+}
+
+void AP_InertialSensor_Invensense::set_primary(bool _is_primary)
+{
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    if (_imu.is_dynamic_fifo_enabled(gyro_instance)) {
+        if (_is_primary) {
+            _dev->adjust_periodic_callback(periodic_handle, 1000000UL / _gyro_backend_rate_hz);
+        } else {
+            // scale down non-primary to 2x loop rate, but no greater than the default sampling rate
+            _dev->adjust_periodic_callback(periodic_handle,
+                                          1000000UL / constrain_int16(get_loop_rate_hz() * 2, 400, 1000));
+        }
+    }
+#endif
 }
 
 /*
@@ -729,6 +745,12 @@ void AP_InertialSensor_Invensense::_read_fifo()
 
     bytes_read = uint16_val(rx, 0);
     n_samples = bytes_read / MPU_SAMPLE_SIZE;
+
+    // see if we have enough samples to output a gyro value, if we don't then delay the 
+    // next beat by the block read time above until we do
+    if (n_samples + _accum.gyro_count < _gyro_fifo_downsample_rate) {
+        _dev->adjust_periodic_callback(periodic_handle, 1000000UL / _gyro_backend_rate_hz);
+    }
 
     if (n_samples == 0) {
         /* Not enough data in FIFO */
