@@ -29,6 +29,8 @@
 #include <AP_Arming/AP_Arming_config.h>
 #include <AP_Airspeed/AP_Airspeed_config.h>
 #include <AP_Follow/AP_Follow.h>
+#include <AP_Gripper/AP_Gripper_config.h>
+#include <AC_Sprayer/AC_Sprayer_config.h>
 
 #include "ap_message.h"
 
@@ -175,6 +177,7 @@ class GCS_MAVLINK
 {
 public:
     friend class GCS;
+    friend class CommandSetHome;
 #if AP_MAVLINK_FTP_ENABLED
     friend class GCS_FTP;
 #endif
@@ -493,7 +496,7 @@ public:
 
 protected:
 
-    bool mavlink_coordinate_frame_to_location_alt_frame(MAV_FRAME coordinate_frame,
+    static bool mavlink_coordinate_frame_to_location_alt_frame(MAV_FRAME coordinate_frame,
                                                         Location::AltFrame &frame);
 
     // overridable method to check for packet acceptance. Allows for
@@ -551,14 +554,10 @@ protected:
     MAV_RESULT handle_command_int_external_wind_estimate(const mavlink_command_int_t &packet);
 
 #if AP_HOME_ENABLED
-    MAV_RESULT handle_command_do_set_home(const mavlink_command_int_t &packet);
     bool set_home_to_current_location(bool lock);
     bool set_home(const Location& loc, bool lock);
 #endif
 
-#if AP_ARMING_ENABLED
-    virtual MAV_RESULT handle_command_component_arm_disarm(const mavlink_command_int_t &packet);
-#endif
     MAV_RESULT handle_command_do_aux_function(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_storage_format(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     void handle_mission_request_list(const mavlink_message_t &msg);
@@ -673,13 +672,6 @@ protected:
     MAV_RESULT handle_command_run_prearm_checks(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_flash_bootloader(const mavlink_command_int_t &packet);
 
-    // generally this should not be overridden; Plane overrides it to ensure
-    // failsafe isn't triggered during calibration
-    virtual MAV_RESULT handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
-
-    virtual MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
-    virtual MAV_RESULT _handle_command_preflight_calibration_baro(const mavlink_message_t &msg);
-
 #if AP_MISSION_ENABLED
     virtual MAV_RESULT handle_command_do_set_mission_current(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_jump_tag(const mavlink_command_int_t &packet);
@@ -756,9 +748,6 @@ protected:
     MAV_RESULT handle_control_high_latency(const mavlink_command_int_t &packet);
 
 #endif // HAL_HIGH_LATENCY2_ENABLED
-    
-    static constexpr const float magic_force_arm_value = 2989.0f;
-    static constexpr const float magic_force_arm_disarm_value = 21196.0f;
 
     void manual_override(class RC_Channel *c, int16_t value_in, uint16_t offset, float scaler, const uint32_t tnow, bool reversed = false);
 
@@ -776,13 +765,15 @@ protected:
     // If location is not present in the command then just omit frame.
     // this method ensures the passed-in structure is entirely
     // initialised.
-    virtual void convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame = MAV_FRAME_GLOBAL_RELATIVE_ALT);
+    virtual MAV_RESULT convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame = MAV_FRAME_GLOBAL_RELATIVE_ALT);
     virtual bool mav_frame_for_command_long(MAV_FRAME &fame, MAV_CMD packet_command) const;
     MAV_RESULT try_command_long_as_command_int(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
 #endif
 
     // methods to extract a Location object from a command_int
-    bool location_from_command_t(const mavlink_command_int_t &in, Location &out);
+    static bool location_from_command_t(const mavlink_command_int_t &in, Location &out);
+
+    class CommandIntHandler *new_command_int_handler(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
 
 private:
 
@@ -1084,6 +1075,111 @@ private:
 
 };
 
+class CommandIntHandler {
+public:
+    CommandIntHandler(const mavlink_command_int_t &_packet, const mavlink_message_t &_msg, GCS_MAVLINK &_link) :
+        packet{_packet},
+        msg{_msg},
+        link{_link}
+        { }
+    virtual ~CommandIntHandler() { }
+
+    const mavlink_command_int_t &packet;
+    const mavlink_message_t &msg;
+    GCS_MAVLINK &link;
+
+    MAV_RESULT run();
+    virtual MAV_RESULT _run() = 0;
+
+    virtual uint8_t used_param_mask() const = 0;
+    // by default a parameter which is used is not allowed to be NaN:
+    virtual uint8_t unsupplied_ok_used_param_mask() const { return 0b0; }
+
+    // returns true if parameter is equal to value.  If the parameter
+    // is "NaN" then the result is false
+    bool param_is_equal(float param_value, float wanted_value) const {
+        if (isnan(param_value)) {
+            return false;
+        }
+        return is_equal(param_value, wanted_value);
+    }
+    bool param_is_zero(float param_value) const {
+        if (isnan(param_value)) {
+            return false;
+        }
+        return is_zero(param_value);
+    }
+    bool param_is_equal(int32_t param_value, int32_t wanted_value) const {
+        return param_value == wanted_value;
+    }
+    bool param_is_zero(int32_t param_value) const {
+        return param_value == 0;
+    }
+
+    bool check_float_param(uint8_t ofs, float value, MAV_RESULT &ret) const;
+    bool check_int_param(uint8_t ofs, int32_t value, MAV_RESULT &ret) const;
+};
+
+#if AP_ARMING_ENABLED
+class CommandComponentArmDisarm : public CommandIntHandler {
+    using CommandIntHandler::CommandIntHandler;
+
+    MAV_RESULT _run() override;
+    uint8_t used_param_mask() const override { return 0b00000001; }
+    // "forced" can be omitted from the packet:
+    uint8_t unsupplied_ok_used_param_mask() const override { return 0b00000010; }
+};
+#endif  // AP_ARMING_ENABLED
+
+#if AP_GRIPPER_ENABLED
+class CommandDoGripperHandler : public CommandIntHandler {
+    using CommandIntHandler::CommandIntHandler;
+
+    MAV_RESULT _run() override;
+    uint8_t used_param_mask() const override { return 0b00000011; }
+};
+#endif  // AP_GRIPPER_ENABLED
+
+class CommandPreflightCalibration : public CommandIntHandler {
+public:
+    using CommandIntHandler::CommandIntHandler;
+
+    // generally this should not be overridden; Plane overrides it to ensure
+    // failsafe isn't triggered during calibration
+    MAV_RESULT _run() override;
+
+    virtual MAV_RESULT _run_main();
+
+    uint8_t used_param_mask() const override { return 0b00111111; }
+    // it is OK for x, y and z to be omitted; p1 is marked as nanable
+    // for compatability reasons
+    uint8_t unsupplied_ok_used_param_mask() const override { return 0b00011111; }
+protected:
+    virtual MAV_RESULT _run_baro();
+
+};
+
+#if AP_HOME_ENABLED
+class CommandSetHome : public CommandIntHandler {
+    using CommandIntHandler::CommandIntHandler;
+
+    MAV_RESULT _run() override;
+    uint8_t used_param_mask() const override { return 0b01110001; }
+    // it is OK for x, y and z to be omitted; p1 is marked as nanable
+    // for compatability reasons
+    uint8_t unsupplied_ok_used_param_mask() const override { return 0b01110001; }
+};
+#endif  // AP_HOME_ENABLED
+
+#if HAL_SPRAYER_ENABLED
+class CommandDoSprayerHandler : public CommandIntHandler {
+    using CommandIntHandler::CommandIntHandler;
+
+    MAV_RESULT _run() override;
+    uint8_t used_param_mask() const override { return 0b00000001; }
+};
+#endif  // HAL_SPRAYER_ENABLED
+
 /// @class GCS
 /// @brief global GCS object
 class GCS
@@ -1373,6 +1469,7 @@ private:
     // Sent in AVAILABLE_MODES_MONITOR msg
     uint8_t available_modes_sequence;
 };
+
 
 GCS &gcs();
 
