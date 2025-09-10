@@ -400,11 +400,11 @@ TEST(Location, OffsetError)
 #define TEST_POLYGON_DISTANCE_POINTS(POLYGON, TEST_POINTS)                       \
     do {                                                                \
         for (uint32_t i = 0; i < ARRAY_SIZE(TEST_POINTS); i++) {        \
-            float distance; \
+            Vector2f direction; \
             Polygon_closest_distance_point(POLYGON,     \
                                             ARRAY_SIZE(POLYGON),\
-                                            TEST_POINTS[i].point, distance);\
-            EXPECT_TRUE(fabs(TEST_POINTS[i].distance - distance) <= 1.0f); \
+                                            TEST_POINTS[i].point, direction);\
+            EXPECT_TRUE(fabs(TEST_POINTS[i].distance - direction.length()) <= 1.0f); \
         }                                                               \
     } while(0)
 
