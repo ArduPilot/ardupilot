@@ -14651,7 +14651,9 @@ RTL_ALT 111
             "ATC_THR_MIX_MAX": 4,
         })
 
-        self.install_script_module(os.path.join(self.rootdir(), "libraries", "AP_Scripting", "modules", "vehicle_control.lua"), "vehicle_control.lua")
+        self.install_script_module(os.path.join(self.rootdir(),
+                                                "libraries", "AP_Scripting", "modules",
+                                                "vehicle_control.lua"), "vehicle_control.lua")
         self.install_applet_script_context("flip_on_a_switch.lua")
 
         self.reboot_sitl()
