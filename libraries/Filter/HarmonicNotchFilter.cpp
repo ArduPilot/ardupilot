@@ -23,8 +23,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
-#define HNF_MAX_FILTERS HAL_HNF_MAX_FILTERS // must be even for double-notch filters
-
 /*
   optional logging for SITL only of all notch frequencies
  */
@@ -207,14 +205,14 @@ void HarmonicNotchFilter<T>::init(float sample_freq_hz, HarmonicNotchFilterParam
 }
 
 /*
-  allocate a collection of, at most HNF_MAX_FILTERS, notch filters to be managed by this harmonic notch filter
+  allocate a collection of, at most HAL_HNF_MAX_FILTERS, notch filters to be managed by this harmonic notch filter
  */
 template <class T>
 void HarmonicNotchFilter<T>::allocate_filters(uint8_t num_notches, uint32_t harmonics, uint8_t composite_notches)
 {
     _composite_notches = MIN(composite_notches, 3);
     _num_harmonics = __builtin_popcount(harmonics);
-    _num_filters = _num_harmonics * num_notches * _composite_notches;
+    _num_filters = MIN(_num_harmonics * num_notches * _composite_notches, HAL_HNF_MAX_FILTERS);
     _harmonics = harmonics;
 
     if (_num_filters > 0) {
@@ -359,7 +357,7 @@ void HarmonicNotchFilter<T>::update(uint8_t num_centers, const float center_freq
     // adjust the frequencies to be in the allowable range
     const float nyquist_limit = _sample_freq_hz * HARMONIC_NYQUIST_CUTOFF;
 
-    const uint16_t total_notches = num_centers * _num_harmonics * _composite_notches;
+    const uint16_t total_notches = MIN(num_centers * _num_harmonics * _composite_notches, HAL_HNF_MAX_FILTERS);
     if (total_notches > _num_filters) {
         // alloc realloc of filters
         expand_filter_count(total_notches);
