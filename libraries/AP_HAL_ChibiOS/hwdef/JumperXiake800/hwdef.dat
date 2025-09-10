@@ -1,0 +1,159 @@
+# JumperXiake800 hwdef.dat
+# This plane comes with a 4.2.2 firmware. Jumper loosely based the hwdef.dat on the MatekF405-Wing
+# but with some significant changes.
+# Unfortunately they didn't change the APJ_BOARD_ID, so we now have two boards with different
+# setups but the same ID
+
+###########################################################################
+# NOTE!! If you are the Jumper developer responsible for this firmware then
+# please contact Andrew Tridgell to discuss
+###########################################################################
+
+MCU STM32F4xx STM32F405xx
+
+# sigh. Same ID as MatekF405-Wing
+APJ_BOARD_ID 127
+
+OSCILLATOR_HZ 8000000
+
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+# use timer 5
+define STM32_ST_USE_TIMER 5
+define CH_CFG_ST_RESOLUTION 32
+
+# reserve 4 sectors
+FLASH_RESERVE_START_KB 64
+FLASH_SIZE_KB 1024
+
+# parameters in flash
+define HAL_STORAGE_SIZE 15360
+STORAGE_FLASH_PAGE 1
+
+I2C_ORDER I2C1
+
+SERIAL_ORDER OTG1 USART1 EMPTY EMPTY UART4 UART5 USART2
+
+# SERIAL1 is RCIN
+PA9 USART1_TX USART1
+PA10 USART1_RX USART1
+
+# DJI FPV serial
+PA0 UART4_TX UART4
+PA1 UART4_RX UART4
+
+# debug and RCIN serial?
+PA2 USART2_TX USART2 NODMA
+PA3 USART2_RX USART2 NODMA ALT(1)
+
+# SERIAL5 is GPS
+PC12 UART5_TX UART5 NODMA
+PD2  UART5_RX UART5 NODMA
+
+# RCIN on PA4
+PA3 TIM9_CH2 TIM9 RCININT PULLDOWN LOW
+
+# IMU MPU6000
+PB11 MPU6500_CS CS
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+
+# enable USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# single LED
+PB9 LED_GREEN OUTPUT LOW GPIO(1)
+define HAL_GPIO_A_LED_PIN 0
+define HAL_GPIO_B_LED_PIN 1
+
+# 8 PWM, with BDShot
+PC6  TIM3_CH1 TIM3 PWM(1) GPIO(50) BIDIR # rear motor, CCW
+PC7  TIM3_CH2 TIM3 PWM(2) GPIO(51) # front-right motor, CCW
+PC8  TIM8_CH3 TIM8 PWM(3) GPIO(52) NODMA # elevon right
+PC9  TIM8_CH4 TIM8 PWM(4) GPIO(53) NODMA # tilt right
+PA15 TIM2_CH1 TIM2 PWM(5) GPIO(54) NODMA # elevon-left
+PA8  TIM1_CH1 TIM1 PWM(6) GPIO(55) NODMA
+PB8  TIM4_CH3 TIM4 PWM(7) GPIO(56) NODMA # tilt left
+PB0  TIM3_CH3 TIM3 PWM(8) GPIO(57) BIDIR # front-left motor, CW
+
+# don't share BDShot DMA
+DMA_NOSHARE TIM3_UP
+
+# SPI3 for flash logging
+PB3 SPI3_SCK SPI3
+PB4 SPI3_MISO SPI3
+PB5 SPI3_MOSI SPI3
+PC0 FLASH_CS CS
+
+# single I2C
+PB6 I2C1_SCL I2C1
+PB7 I2C1_SDA I2C1
+
+# OSD on SPI2
+PB15 SPI2_MOSI SPI2
+PB14 SPI2_MISO SPI2
+PB13 SPI2_SCK SPI2
+PB10 OSD_CS CS
+
+# analog battery monitoring
+PC2 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PC1 BATT_CURRENT_SENS ADC1 SCALE(1)
+
+# RSSI on PC4
+PC5 RSSI_ADC_PIN ADC1 SCALE(1)
+
+PC13 VBUS INPUT OPENDRAIN
+
+# buzzer
+PC15 BUZZER OUTPUT GPIO(80) LOW
+define HAL_BUZZER_PIN 80
+define HAL_BUZZER_ON 1
+define HAL_BUZZER_OFF 0
+
+# SPI devices
+SPIDEV mpu6000 SPI1 DEVID1 MPU6500_CS MODE3 1*MHZ 8*MHZ
+SPIDEV osd SPI2 DEVID2 OSD_CS MODE0 10*MHZ 10*MHZ
+SPIDEV dataflash SPI3 DEVID1 FLASH_CS   MODE3 32*MHZ 32*MHZ
+
+# one IMU
+IMU Invensense SPI:mpu6000 ROTATION_YAW_270
+
+# two possible barometers, ships with BMP280
+BARO BMP280 I2C:0:0x76
+BARO DPS310 I2C:0:0x76
+
+define HAL_PROBE_EXTERNAL_I2C_BAROS
+define HAL_BARO_ALLOW_INIT_NO_BARO
+
+# default batt monitor setup
+define HAL_BATT_MONITOR_DEFAULT 4
+define HAL_BATT_VOLT_PIN 12
+define HAL_BATT_CURR_PIN 11
+define HAL_BATT_VOLT_SCALE 11
+define HAL_BATT_CURR_SCALE 35
+
+define BOARD_RSSI_ANA_PIN 15
+
+# no compass, but allow one to be fitted
+define ALLOW_ARM_NO_COMPASS
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+define HAL_LOGGING_DATAFLASH_ENABLED 1
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+
+# build in one OSD font
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
+
+define STM32_PWM_USE_ADVANCED TRUE
+
+# larger defaults file
+define AP_PARAM_MAX_EMBEDDED_PARAM 4096
+
+# save some flash
+include ../include/minimal.inc
