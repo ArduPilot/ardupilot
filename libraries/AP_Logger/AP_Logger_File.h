@@ -25,10 +25,10 @@ class AP_Logger_File : public AP_Logger_Backend
 {
 public:
     // constructor
-    AP_Logger_File(AP_Logger &front,
+    AP_Logger_File(AP_LoggerThread &front,
                    LoggerMessageWriter_DFLogStart *);
 
-    static AP_Logger_Backend  *probe(AP_Logger &front,
+    static AP_Logger_Backend  *probe(AP_LoggerThread &front,
                                      LoggerMessageWriter_DFLogStart *ls) {
         return NEW_NOTHROW AP_Logger_File(front, ls);
     }
