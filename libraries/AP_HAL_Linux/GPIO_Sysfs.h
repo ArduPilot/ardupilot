@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include "AP_HAL_Linux.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/RingBuffer.h>
@@ -43,6 +44,7 @@ public:
     uint8_t read(uint8_t vpin) override;
     void write(uint8_t vpin, uint8_t value) override;
     void toggle(uint8_t vpin) override;
+    bool attach_interrupt(uint8_t pin, irq_handler_fn_t fn, GPIO::INTERRUPT_TRIGGER_TYPE mode) override;
 
     /*
      * Export pin, instantiate a new DigitalSource_Sysfs and return its
@@ -57,6 +59,7 @@ public:
 
 protected:
     void _pinMode(unsigned int pin, uint8_t output);
+    void _pinEdge(unsigned int pin, GPIO::INTERRUPT_TRIGGER_TYPE mode);
     int _open_pin_value(unsigned int pin, int flags);
 
     /*
@@ -68,6 +71,18 @@ protected:
      * Note: the pin is ignored if already exported.
      */
     static bool _export_pin(uint8_t vpin);
+
+    /* true if an interrupt handler thread was started, false otherwise */
+    bool _interrupt_thread_created;
+    /* filedescriptor of inotify to watch input pins */
+    int _interrupt_inotify_fd;
+    /* dictionary for inotify watcher per vpin */
+    std::map<uint8_t, int> _interrupt_watchers;
+    /* dictionary for interrupt handler & pin per inotify watcher */
+    typedef struct { irq_handler_fn_t fn; uint8_t vpin; } _interrupt_and_vpin;
+    std::map<int, _interrupt_and_vpin> _interrupt_handlers;
+    /* thread to handle input pin changes */
+    void _gpio_interrupt_thread(void);
 
 #ifdef HAL_GPIO_SCRIPT
     /*
