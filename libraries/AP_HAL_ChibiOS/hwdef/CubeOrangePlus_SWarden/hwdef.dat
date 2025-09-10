@@ -1,0 +1,2 @@
+include ../CubeOrangePlus/hwdef.dat
+define AP_CUSTOM_FIRMWARE_STRING "SednaWarden"
