@@ -50,7 +50,7 @@ public:
     static AP_PiccoloCAN *get_pcan(uint8_t driver_index);
 
     // initialize PiccoloCAN bus
-    void init(uint8_t driver_index, bool enable_filters) override;
+    void init(uint8_t driver_index) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
 
     // called from SRV_Channels
