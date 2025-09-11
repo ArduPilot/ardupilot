@@ -374,6 +374,21 @@ AP_HW_F4BY_F427                      1530
 AP_HW_AERIUM_RADIAN_F405             1800
 AP_HW_AERIUM_RADIAN_H743             1801
 
+# IDs 1950-1979 reserved for HC Robotics
+AP_HW_HCR-504                        1950
+AP_HW_HCR-506                        1951
+AP_HW_HCR-507                        1952
+AP_HW_HCR-511                        1953
+AP_HW_HCR-512                        1954
+AP_HW_HCR-516                        1955
+AP_HW_HCR-518                        1956
+AP_HW_HCR-523                        1957
+AP_HW_HCR-533                        1958
+AP_HW_HCR-536                        1959
+AP_HW_HCR-551                        1960
+AP_HW_HCR-565                        1961
+AP_HW_HCR-566                        1962
+
 AP_HW_MFT-SEMA100                    2000
 
 AP_HW_SULILGH7-P1-P2                 2005
