@@ -1903,6 +1903,10 @@ __RAMFUNC__ void RCOutput::dma_up_irq_callback(void *p, uint32_t flags)
  */
 void RCOutput::dma_cancel(pwm_group& group)
 {
+    if (group.dma == nullptr) {
+        return;
+    }
+
     chSysLock();
     dmaStreamDisable(group.dma);
 #ifdef HAL_WITH_BIDIR_DSHOT
