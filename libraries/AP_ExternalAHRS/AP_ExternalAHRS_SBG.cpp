@@ -84,9 +84,13 @@ void AP_ExternalAHRS_SBG::update_thread()
     while (true) {
         
         if (check_uart()) {
-            // we've parsed something. There might be more so lets come back quickly without sleeping the thread
+            // we've parsed something. There might be more so lets come back quickly
+            hal.scheduler->delay_microseconds(100);
             continue;
         }
+
+        // uart is idle, lets snooze a little more and then do some housekeeping
+        hal.scheduler->delay_microseconds(250);
 
         const uint32_t now_ms = AP_HAL::millis();
         if (cached.sbg.sbgEComDeviceInfo.firmwareRev == 0 && now_ms - version_check_ms >= 5000) {
@@ -109,9 +113,9 @@ void AP_ExternalAHRS_SBG::update_thread()
                 // 1) uart == nullptr
                 // 2) msg.len > sizeof(data)
                 // 3) did not write all the bytes out the uart: zero/fail is treated same as packet_len != bytes_sent
-                if (now_ms - send_error_last_ms >= 1000) {
-                    // throttle the error to no faster than 1Hz
-                    send_error_last_ms = now_ms;
+                if (now_ms - send_mag_error_last_ms >= 5000) {
+                    // throttle the error to no faster than 5Hz because if you get one error you'll likely get a lot
+                    send_mag_error_last_ms = now_ms;
                     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SBG: Error sending Mag data");
                 }
             }
@@ -127,17 +131,13 @@ void AP_ExternalAHRS_SBG::update_thread()
                 // 1) uart == nullptr
                 // 2) msg.len > sizeof(data)
                 // 3) did not write all the bytes out the uart: zero/fail is treated same as packet_len != bytes_sent
-                if (now_ms - send_error_last_ms >= 1000) {
-                    // throttle the error to no faster than 1Hz
-                    send_error_last_ms = now_ms;
+                if (now_ms - send_air_error_last_ms >= 5000) {
+                    // throttle the error to no faster than 5Hz because if you get one error you'll likely get a lot
+                    send_air_error_last_ms = now_ms;
                     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SBG: Error sending Air data");
                 }
             }
 #endif // AP_BARO_ENABLED || AP_AIRSPEED_ENABLED
-
-        } else {
-            // uart is idle, lets snooze and do some housekeeping
-            hal.scheduler->delay_microseconds(250);
         }
     } // while
 }
@@ -146,10 +146,10 @@ void AP_ExternalAHRS_SBG::update_thread()
 // returns true if any data was found in the UART buffer which was then processed
 bool AP_ExternalAHRS_SBG::check_uart()
 {
-    bool processed_something = false;
-
     uint32_t nbytes = MIN(uart->available(), 512u);
-    processed_something |= (nbytes > 0);
+    if (nbytes == 0) {
+        return false;
+    }
     while (nbytes--> 0) {
         uint8_t b;
         if (!uart->read(b)) {
@@ -160,7 +160,7 @@ bool AP_ExternalAHRS_SBG::check_uart()
             handle_msg(_inbound_state.msg);
         }
     }
-    return processed_something;
+    return true;
 }
 
 
