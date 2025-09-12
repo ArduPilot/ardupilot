@@ -1,12 +1,12 @@
 #include "Rover.h"
 
-#define SAILBOAT_AUTO_TACKING_TIMEOUT_MS 5000   // tacks in auto mode timeout if not successfully completed within this many milliseconds
-#define SAILBOAT_TACKING_ACCURACY_DEG 10        // tack is considered complete when vehicle is within this many degrees of target tack angle
+//#define SAILBOAT_AUTO_TACKING_TIMEOUT_MS 5000   // tacks in auto mode timeout if not successfully completed within this many milliseconds
+//#define SAILBOAT_TACKING_ACCURACY_DEG 10        // tack is considered complete when vehicle is within this many degrees of target tack angle
 #define SAILBOAT_NOGO_PAD 10                    // deg, the no go zone is padded by this much when deciding if we should use the Sailboat heading controller
 #define TACK_RETRY_TIME_MS 5000                 // Can only try another auto mode tack this many milliseconds after the last is cleared (either competed or timed-out)
 /*
 To Do List
- - Improve tacking in light winds and bearing away in strong wings
+ - Improve tacking in light winds and bearing away in strong winds
  - consider drag vs lift sailing differences, ie upwind sail is like wing, dead down wind sail is like parachute
  - max speed parameter and controller, for mapping you may not want to go too fast
  - mavlink sailing messages
@@ -102,6 +102,33 @@ const AP_Param::GroupInfo Sailboat::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("LOIT_RADIUS", 9, Sailboat, loit_radius, 5),
 
+    // @Param: BEAR_AWAY_P
+    // @DisplayName: Bear away gain
+    // @Description: If sailboat is trying to bear away, max heel is reduced by this much at 100% rudder
+    // @Units: deg
+    // @Range: 0 20
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("BEAR_AWAY_P", 10, Sailboat, bear_away_gain, 15),
+
+    // @Param: TACK_TIME
+    // @DisplayName: Auto tacking timeout
+    // @Description: Tacks in auto mode timeout if not successfully completed within this many milliseconds
+    // @Units: ms
+    // @Range: 1000 20000
+    // @Increment: 500
+    // @User: Standard
+    AP_GROUPINFO("TACK_TIME", 11, Sailboat, tack_timeout_ms, 5000),
+
+    // @Param: TACK_ACQ
+    // @DisplayName: sailboat auto tacking accuracy
+    // @Description: Tack is considered complete when vehicle is within this many degrees of target tack angle. -1 will always use TACK_TIME not this, useful for vane transients.
+    // @Units: deg
+    // @Range: -1 20
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("TACK_ACQ", 12, Sailboat, tack_accuracy_deg, 10),    
+
     AP_GROUPEND
 };
 
@@ -186,12 +213,38 @@ void Sailboat::set_pilot_desired_mainsail()
     }
 }
 
+// Max heel angle set by a parameter sail_heel_angle_max
+//  but can be reduced to flatten boat when bearing away (turning downwind)
+float Sailboat::get_target_heel()
+{
+    // Read rudder state +1 to -1 positive is right turn
+    // We don't always calculate the steering before the mainsail, so this may be from the last loop. 
+    const float rudder = rover.g2.motors.get_steering() / 4500.0; // 
+
+    // get apparent wind, + is wind over starboard side, - is wind over port side
+    const float wind_dir_apparent = degrees(rover.g2.windvane.get_apparent_wind_direction_rad());
+
+    // if rudder > 50 % and in bear-away direction, try to flatten the boat
+    float sail_heel_angle_max_bear = sail_heel_angle_max;
+
+    if (fabsf(rudder) > 0.5) {
+        if ((rudder*wind_dir_apparent) < 0) {  // neg*pos=neg
+            // trying to bear away
+            sail_heel_angle_max_bear = sail_heel_angle_max - bear_away_gain*2.0*(fabsf(rudder)-0.5); // continuous function
+            sail_heel_angle_max_bear = MAX(0.0, sail_heel_angle_max_bear); // limit
+        }
+    }
+
+    return sail_heel_angle_max_bear;
+}
+
 /// @brief Set mainsail in auto modes
 /// @param[in] desired_speed desired speed (in m/s) only used to detect desired direction
 void Sailboat::set_auto_mainsail(float desired_speed)
 {
     // use PID controller to sheet out, this number is expected approximately in the 0 to 100 range (with default PIDs)
-    const float pid_offset = rover.g2.attitude_control.get_sail_out_from_heel(radians(sail_heel_angle_max), rover.G_Dt) * 100.0f;
+    //const float pid_offset = rover.g2.attitude_control.get_sail_out_from_heel(radians(sail_heel_angle_max), rover.G_Dt) * 100.0f;
+    const float pid_offset = rover.g2.attitude_control.get_sail_out_from_heel(radians(get_target_heel()), rover.G_Dt) * 100.0f;
 
     // get apparent wind, + is wind over starboard side, - is wind over port side
     const float wind_dir_apparent = degrees(rover.g2.windvane.get_apparent_wind_direction_rad());
@@ -336,8 +389,13 @@ void Sailboat::handle_tack_request_acro()
 // return target heading in radians when tacking (only used in acro)
 float Sailboat::get_tack_heading_rad()
 {
-    if (fabsf(wrap_PI(tack_heading_rad - rover.ahrs.get_yaw_rad())) < radians(SAILBOAT_TACKING_ACCURACY_DEG) ||
-       ((AP_HAL::millis() - tack_request_ms) > SAILBOAT_AUTO_TACKING_TIMEOUT_MS)) {
+ //   if (fabsf(wrap_PI(tack_heading_rad - rover.ahrs.get_yaw_rad())) < radians(SAILBOAT_TACKING_ACCURACY_DEG) ||
+ //      ((AP_HAL::millis() - tack_request_ms) > SAILBOAT_AUTO_TACKING_TIMEOUT_MS)) {
+ //       clear_tack();
+ //   }
+
+    if (fabsf(wrap_PI(tack_heading_rad - rover.ahrs.get_yaw_rad())) < radians(tack_accuracy_deg) ||
+       ((AP_HAL::millis() - tack_request_ms) > tack_timeout_ms)) {
         clear_tack();
     }
 
@@ -482,11 +540,14 @@ float Sailboat::calc_heading(float desired_heading_cd)
     // if we are tacking we maintain the target heading until the tack completes or times out
     if (currently_tacking) {
         // check if we have reached target
-        if (fabsf(wrap_PI(tack_heading_rad - rover.ahrs.get_yaw_rad())) <= radians(SAILBOAT_TACKING_ACCURACY_DEG)) {
+        //if (fabsf(wrap_PI(tack_heading_rad - rover.ahrs.get_yaw_rad())) <= radians(SAILBOAT_TACKING_ACCURACY_DEG)) {
+        if (fabsf(wrap_PI(tack_heading_rad - rover.ahrs.get_yaw_rad())) <= radians(tack_accuracy_deg)) {
             clear_tack();
-        } else if ((now - auto_tack_start_ms) > SAILBOAT_AUTO_TACKING_TIMEOUT_MS) {
+        //} else if ((now - auto_tack_start_ms) > SAILBOAT_AUTO_TACKING_TIMEOUT_MS) {
+        } else if ((now - auto_tack_start_ms) > tack_timeout_ms) {
             // tack has taken too long
-            if ((motor_state == UseMotor::USE_MOTOR_ASSIST) && (now - auto_tack_start_ms) < (3.0f * SAILBOAT_AUTO_TACKING_TIMEOUT_MS)) {
+            //if ((motor_state == UseMotor::USE_MOTOR_ASSIST) && (now - auto_tack_start_ms) < (3.0f * SAILBOAT_AUTO_TACKING_TIMEOUT_MS)) {
+            if ((motor_state == UseMotor::USE_MOTOR_ASSIST) && (now - auto_tack_start_ms) < (3.0f * tack_timeout_ms)) {
                 // if we have throttle available use it for another two time periods to get the tack done
                 tack_assist = true;
             } else {
