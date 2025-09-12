@@ -202,6 +202,12 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.disarm_vehicle()
         self.progress("Loiter or Hold as throttle failsafe OK")
 
+    def PARAM_ERROR_nonexistant_parameter(self):
+        '''test PARAM_ERROR mavlink message'''
+        self.context_collect('PARAM_ERROR')
+        self.send_set_parameter_direct("BOB", 1)
+        self.assert_receive_message('PARAM_ERROR', check_context=True, very_verbose=True)
+
     def Sprayer(self):
         """Test sprayer functionality."""
         rc_ch = 5
@@ -7039,6 +7045,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.RoverInitialMode,
             self.DriveMaxRCIN,
             self.NoArmWithoutMissionItems,
+            self.PARAM_ERROR_nonexistant_parameter,
             self.CompassPrearms,
             self.MAV_CMD_DO_SET_REVERSE,
             self.MAV_CMD_GET_HOME_POSITION,
