@@ -291,18 +291,18 @@ void AP_GSOF::log_pos_time() const
 
 void AP_GSOF::log_ins_full_nav() const
 {
-    // @LoggerMessage: GSIN
-    // @Description: GSOF49 Full INS Navigation Solution
-    // @Field: TimeUS:          Time since system startup [µs]
-    // @Field: GpsWeek:         GPS week number since Jan 1980
-    // @Field: GpsTimeMs:       GPS time of week [ms]
-    // @Field: ImuAlignStat:    IMU alignment status (enum)
+    // @LoggerMessage: GSN1
+    // @Description: GSOF49 Full INS Navigation Solution 1
+    // @Field: TimeUS: Time since system startup [µs]
+    // @Field: GpsWeek: GPS week number since Jan 1980
+    // @Field: GpsTimeMs: GPS time of week [ms]
+    // @Field: ImuStat: IMU alignment status (enum)
     //          0=GPS_ONLY
     //          1=COARSE_LEVELING
     //          2=DEGRADED
     //          3=ALIGNED
     //          4=FULL_NAV
-    // @Field: GnssStat:        GNSS status (enum)
+    // @Field: GStat: GNSS status (enum)
     //          0=FIX_NOT_AVAILABLE
     //          1=GNSS_SPS_MODE
     //          2=DGPS_SPS_MODE
@@ -310,37 +310,21 @@ void AP_GSOF::log_ins_full_nav() const
     //          4=FIXED_RTK_MODE
     //          5=FLOAT_RTK_MODE
     //          6=DR_MODE
-    // @Field: Lat:             Latitude [degrees]
-    // @Field: Lng:             Longitude [degrees]
-    // @Field: Alt:             Altitude in ITRF 2020 [meters]
-    // @Field: VN:              Velocity North [m/s]
-    // @Field: VE:              Velocity East [m/s]
-    // @Field: VD:              Velocity Down [m/s]
-    // @Field: Spd:             3D Speed [m/s]
-    // @Field: Roll:            Roll [degrees]
-    // @Field: Pitch:           Pitch [degrees]
-    // @Field: Heading:         Heading [degrees]
-    // @Field: Track:           Track angle [degrees]
-    // @Field: RateX:           Angular rate X [deg/s]
-    // @Field: RateY:           Angular rate Y [deg/s]
-    // @Field: RateZ:           Angular rate Z [m/s]
-    // @Field: AccX:            Acceleration X [m/s^2]
-    // @Field: AccY:            Acceleration Y [m/s^2]
-    // @Field: AccZ:            Acceleration Z [m/s^2]
+    // @Field: Lat: Latitude [degrees]
+    // @Field: Lng: Longitude [degrees]
+    // @Field: Alt: Altitude in ITRF 2020 [meters]
+    // @Field: VN: Velocity North [m/s]
+    // @Field: VE: Velocity East [m/s]
+    // @Field: VD: Velocity Down [m/s]
+    // @Field: Spd: 3D Speed [m/s]
     AP::logger().WriteStreaming(
-        "GSIN",
-        "TimeUS," "GpsWeek," "GpsTimeMs," "ImuAlignStat," "GnssStat,"
+        "GSN1",
+        "TimeUS," "GpsWk," "GpsTs," "ImuStat," "GStat,"
         "Lat,"     "Lng,"    "Alt,"
-        "VN,"      "VE,"     "VD,"        "Spd,"
-        "Roll,"    "Pitch,"  "Heading,"   "Track,"
-        "RateX,"   "RateY,"  "RateZ,"
-        "AccX,"    "AccY,"   "AccZ,",
+        "VN,"      "VE,"     "VD,"        "Spd",
         "Q"        "H"       "I"          "B"             "B"
         "d"        "d"       "d"
-        "f"        "f"       "f"          "f"
-        "d"        "d"       "d"          "d"
-        "f"        "f"       "f"
-        "f"        "f"       "f",
+        "f"        "f"       "f"          "f",
         AP_HAL::micros64(),
         ins_full_nav.gps_week,
         ins_full_nav.gps_time_ms,
@@ -352,7 +336,30 @@ void AP_GSOF::log_ins_full_nav() const
         ins_full_nav.vel_n,
         ins_full_nav.vel_e,
         ins_full_nav.vel_d,
-        ins_full_nav.speed,
+        ins_full_nav.speed
+    );
+
+    // @LoggerMessage: GSN2
+    // @Description: GSOF49 Full INS Navigation Solution 2
+    // @Field: Roll: Roll [degrees]
+    // @Field: Pitch: Pitch [degrees]
+    // @Field: Heading: Heading [degrees]
+    // @Field: Track: Track angle [degrees]
+    // @Field: RateX: Angular rate X [deg/s]
+    // @Field: RateY: Angular rate Y [deg/s]
+    // @Field: RateZ: Angular rate Z [m/s]
+    // @Field: AccX: Acceleration X [m/s^2]
+    // @Field: AccY: Acceleration Y [m/s^2]
+    // @Field: AccZ: Acceleration Z [m/s^2]
+    AP::logger().WriteStreaming(
+        "GSN2",
+        "Roll,"    "Pitch,"  "Heading,"   "Track,"
+        "RateX,"   "RateY,"  "RateZ,"
+        "AccX,"    "AccY,"   "AccZ",
+        "d"        "d"       "d"          "d"
+        "f"        "f"       "f"
+        "f"        "f"       "f",
+        AP_HAL::micros64(),
         ins_full_nav.roll_deg,
         ins_full_nav.pitch_deg,
         ins_full_nav.heading_deg,
@@ -368,40 +375,24 @@ void AP_GSOF::log_ins_full_nav() const
 
 void AP_GSOF::log_ins_rms() const
 {
-    // @LoggerMessage: GSIR
-    // @Description: GSOF50 INS Solution RMS Values
-    // @Field: TimeUS:        Time since system startup [µs]
-    // @Field: GpsWeek:       GPS week number since Jan 1980
-    // @Field: GpsTimeMs:     GPS time of week [ms]
-    // @Field: ImuAlignStat:  IMU alignment status (enum)
-    //         0=GPS_ONLY
-    //         1=COARSE_LEVELING
-    //         2=DEGRADED
-    //         3=ALIGNED
-    //         4=FULL_NAV
-    // @Field: GnssStat:      GNSS status (enum)
-    //         0=FIX_NOT_AVAILABLE
-    //         1=GNSS_SPS_MODE
-    //         2=DGPS_SPS_MODE
-    //         3=GNSS_PPS_MODE
-    //         4=FIXED_RTK_MODE
-    //         5=FLOAT_RTK_MODE
-    //         6=DR_MODE
-    // @Field: PosRMSN:       North Position RMS [m]
-    // @Field: PosRMSE:       East Position RMS [m]
-    // @Field: PosRMSD:       Down Position RMS [m]
-    // @Field: VelRMSN:       North Velocity RMS [m/s]
-    // @Field: VelRMSE:       East Velocity RMS [m/s]
-    // @Field: VelRMSD:       Down Velocity RMS [m/s]
-    // @Field: RollRMS:       Roll RMS [deg]
-    // @Field: PitchRMS:      Pitch RMS [deg]
-    // @Field: YawRMS:        Yaw RMS [deg]
+    // @LoggerMessage: GSR1
+    // @Description: GSOF50 INS Solution RMS Values 1
+    // @Field: TUS: Time since system startup [µs]
+    // @Field: GpsTMs: GPS time of week [ms]
+    // @Field: PUN: North Position uncertainty RMS [m]
+    // @Field: PUE: East Position uncertainty RMS [m]
+    // @Field: PUD: Down Position uncertainty RMS [m]
+    // @Field: VUN: North Velocity uncertainty RMS [m/s]
+    // @Field: VUE: East Velocity uncertainty RMS [m/s]
+    // @Field: VUD: Down Velocity uncertainty RMS [m/s]
+    // @Field: RollU: Roll RMS uncertainty [deg]
+    // @Field: PitchU: Pitch RMS uncertainty[deg]
+    // @Field: YawU: Yaw RMS uncertainty[deg]
     AP::logger().WriteStreaming(
-        "GSIR",
-        "TimeUS,GpsWeek,GpsTimeMs,ImuAlignStat,GnssStat,PosRMSN,PosRMSE,PosRMSD,VelRMSN,VelRMSE,VelRMSD,RollRMS,PitchRMS,YawRMS",
-        "Q"     "H"      "I"        "B"          "B"      "f"      "f"      "f"      "f"      "f"      "f"     "f"      "f"      "f",
+        "GSR1",
+        "TUS,GpsTMs,PUN,PUE,PUD,VUN,VUE,VUD,RollU,PitchU,YawU",
+        "Q" "I"    "f"   "f"   "f"   "f"   "f"   "f"   "f"   "f"    "f",
         AP_HAL::micros64(),
-        ins_rms.gps_week,
         ins_rms.gps_time_ms,
         static_cast<uint8_t>(ins_rms.imu_alignment_status),
         static_cast<uint8_t>(ins_rms.gnss_status),

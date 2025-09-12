@@ -17,7 +17,7 @@
 //     param set EAHRS_TYPE 6
 //     For EAHRS as a GPS:
 //     param set GPS1_TYPE 21
-//   Configure GSOF 49,50,70 on UDP port 44444, "UDP Mode" and "UDP Broadcast Transmit"
+//   Configure GSOF 1, 49,50,70 on UDP port 44444, "UDP Mode" and "UDP Broadcast Transmit"
 //   Consider setting EK3_SRC1_YAW to 2 on the bench...
 
 // Usage with NET parameters and ethernet in SITL with hardware:
