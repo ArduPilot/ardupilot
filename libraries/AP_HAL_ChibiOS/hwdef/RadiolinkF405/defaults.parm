@@ -1,0 +1,4 @@
+# setup for LEDs on chan7
+SERVO7_FUNCTION 120
+NTF_LED_TYPES 257
+OSD_TYPE2 5
