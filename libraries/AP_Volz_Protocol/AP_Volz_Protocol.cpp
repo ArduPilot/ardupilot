@@ -197,7 +197,7 @@ void AP_Volz_Protocol::send_position_cmd()
         // ratio = 0 at PWM_POSITION_MIN to 1 at PWM_POSITION_MAX
         const float ratio = (float(pwm) - PWM_POSITION_MIN) / (PWM_POSITION_MAX - PWM_POSITION_MIN);
         // Convert ratio to +-0.5 and multiply by stroke
-        const float angle = (ratio - 0.5) * constrain_float(range, 0.0, 200.0);
+        const float angle = (ratio - 0.5) * constrain_float(range(), 0.0, 200.0);
 
         // Map angle to command out of full range, add 0.5 so that float to int truncation rounds correctly
         const uint16_t value = linear_interpolate(EXTENDED_POSITION_MIN, EXTENDED_POSITION_MAX, angle, ANGLE_POSITION_MIN, ANGLE_POSITION_MAX) + 0.5;
