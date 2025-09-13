@@ -5,10 +5,20 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 #include <stddef.h>
+#include <stdio.h>
+#include "pico/stdlib.h"
 
 int main(int argc, char *argv[]);
 
 void app_main()
 {
+    stdio_init_all();
+    printf("Hello, world!\n");
+    sleep_ms(1000);
+    printf("Hello, world again!\n");
+    // while (true) {
+    //     printf("Hello, world!\n");
+    //     sleep_ms(1000);
+    // }
     main(0, NULL);
 }
