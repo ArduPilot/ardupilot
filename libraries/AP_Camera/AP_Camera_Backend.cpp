@@ -364,19 +364,19 @@ void AP_Camera_Backend::send_camera_capture_status(mavlink_channel_t chan) const
 // mode we can use the microsecond timer.
 void AP_Camera_Backend::setup_feedback_callback()
 {
-    if (_params.feedback_pin <= 0 || timer_installed || isr_installed) {
+    if (_params.feedback_pin() <= 0 || timer_installed || isr_installed) {
         // invalid or already installed
         return;
     }
 
     // ensure we are in input mode
-    hal.gpio->pinMode(_params.feedback_pin, HAL_GPIO_INPUT);
+    hal.gpio->pinMode(_params.feedback_pin(), HAL_GPIO_INPUT);
 
     // enable pullup/pulldown
-    uint8_t trigger_polarity = _params.feedback_polarity == 0 ? 0 : 1;
-    hal.gpio->write(_params.feedback_pin, !trigger_polarity);
+    uint8_t trigger_polarity = _params.feedback_polarity() == 0 ? 0 : 1;
+    hal.gpio->write(_params.feedback_pin(), !trigger_polarity);
 
-    if (hal.gpio->attach_interrupt(_params.feedback_pin, FUNCTOR_BIND_MEMBER(&AP_Camera_Backend::feedback_pin_isr, void, uint8_t, bool, uint32_t),
+    if (hal.gpio->attach_interrupt(_params.feedback_pin(), FUNCTOR_BIND_MEMBER(&AP_Camera_Backend::feedback_pin_isr, void, uint8_t, bool, uint32_t),
                                    trigger_polarity?AP_HAL::GPIO::INTERRUPT_RISING:AP_HAL::GPIO::INTERRUPT_FALLING)) {
         isr_installed = true;
     } else {
@@ -398,8 +398,8 @@ void AP_Camera_Backend::feedback_pin_isr(uint8_t pin, bool high, uint32_t timest
 // attach_interrupt fails
 void AP_Camera_Backend::feedback_pin_timer()
 {
-    uint8_t pin_state = hal.gpio->read(_params.feedback_pin);
-    uint8_t trigger_polarity = _params.feedback_polarity == 0 ? 0 : 1;
+    uint8_t pin_state = hal.gpio->read(_params.feedback_pin());
+    uint8_t trigger_polarity = _params.feedback_polarity() == 0 ? 0 : 1;
     if (pin_state == trigger_polarity &&
         last_pin_state != trigger_polarity) {
         feedback_trigger_timestamp_us = AP_HAL::micros();
@@ -448,7 +448,7 @@ void AP_Camera_Backend::prep_mavlink_msg_camera_feedback(uint64_t timestamp_us)
 // log picture
 void AP_Camera_Backend::log_picture()
 {
-    const bool using_feedback_pin = _params.feedback_pin > 0;
+    const bool using_feedback_pin = _params.feedback_pin() > 0;
 
     if (!using_feedback_pin) {
         // if we're using a feedback pin then when the event occurs we

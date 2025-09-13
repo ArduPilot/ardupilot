@@ -21,14 +21,14 @@ void AP_Camera_Servo::update()
     if (trigger_counter > 0) {
         trigger_counter--;
     } else {
-        SRV_Channels::set_output_pwm(SRV_Channel::k_cam_trigger, _params.servo_off_pwm);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_cam_trigger, _params.servo_off_pwm());
     }
 
     // iso counter
     if (iso_counter > 0) {
         iso_counter--;
     } else {
-        SRV_Channels::set_output_pwm(SRV_Channel::k_cam_iso, _params.servo_off_pwm);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_cam_iso, _params.servo_off_pwm());
     }
     float current_zoom = SRV_Channels::get_output_scaled(SRV_Channel::k_cam_zoom);
     float new_zoom = constrain_float(current_zoom + zoom_current_rate, 0, 1000);
@@ -50,7 +50,7 @@ bool AP_Camera_Servo::trigger_pic()
         return false;
     }
 
-    SRV_Channels::set_output_pwm(SRV_Channel::k_cam_trigger, _params.servo_on_pwm);
+    SRV_Channels::set_output_pwm(SRV_Channel::k_cam_trigger, _params.servo_on_pwm());
 
     // set counter to move servo to off position after this many iterations of update (assumes 50hz update rate)
     trigger_counter = constrain_float(_params.trigger_duration * 50, 0, UINT16_MAX);
@@ -100,7 +100,7 @@ void AP_Camera_Servo::configure(float shooting_mode, float shutter_speed, float 
     if (ISO > 0) {
         // set a trigger for the iso function that is flip controlled
         iso_counter = constrain_float(_params.trigger_duration * 50, 0, UINT16_MAX);
-        SRV_Channels::set_output_pwm(SRV_Channel::k_cam_iso, _params.servo_on_pwm);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_cam_iso, _params.servo_on_pwm());
     }
 
     if (aperture > 0) {
