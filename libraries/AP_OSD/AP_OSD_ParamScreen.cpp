@@ -438,7 +438,7 @@ void AP_OSD_ParamScreen::update_state_machine()
         _transition_timeout_ms = OSD_HOLD_BUTTON_PRESS_DELAY;
         _transition_count++;
     } else {
-        _transition_timeout_ms = osd->button_delay_ms;
+        _transition_timeout_ms = osd->button_delay_ms();
         _transition_count = 0;
     }
     _last_rc_event = ev;
@@ -446,7 +446,7 @@ void AP_OSD_ParamScreen::update_state_machine()
     // if we were armed then there is no selected parameter - so find one
     if (_selected_param == 0) {
         _selected_param = 1;
-        for (uint8_t i = 0; i < NUM_PARAMS && !params[_selected_param-1].enabled; i++) {
+        for (uint8_t i = 0; i < NUM_PARAMS && !params[_selected_param-1].enabled(); i++) {
             _selected_param++;
         }
     }
@@ -483,14 +483,14 @@ void AP_OSD_ParamScreen::update_state_machine()
                 _selected_param = SAVE_PARAM;
             }
             // skip over parameters that are not enabled
-            for (uint8_t i = 0; i < NUM_PARAMS + 1 && (_selected_param != SAVE_PARAM && !params[_selected_param-1].enabled); i++) {
+            for (uint8_t i = 0; i < NUM_PARAMS + 1 && (_selected_param != SAVE_PARAM && !params[_selected_param-1].enabled()); i++) {
                 _selected_param--;
                 if (_selected_param < 1) {
                     _selected_param = SAVE_PARAM;
                 }
             }
             // repeat at the standard rate
-            _transition_timeout_ms = osd->button_delay_ms;
+            _transition_timeout_ms = osd->button_delay_ms();
             break;
         case MenuState::PARAM_VALUE_MODIFY:
             modify_parameter(_selected_param, ev);
@@ -508,14 +508,14 @@ void AP_OSD_ParamScreen::update_state_machine()
                 _selected_param = 1;
             }
             // skip over parameters that are not enabled
-            for (uint8_t i = 0; i < NUM_PARAMS + 1 && (_selected_param != SAVE_PARAM && !params[_selected_param-1].enabled); i++) {
+            for (uint8_t i = 0; i < NUM_PARAMS + 1 && (_selected_param != SAVE_PARAM && !params[_selected_param-1].enabled()); i++) {
                 _selected_param++;
                 if (_selected_param > SAVE_PARAM) {
                     _selected_param = 1;
                 }
             }
             // repeat at the standard rate
-            _transition_timeout_ms = osd->button_delay_ms;
+            _transition_timeout_ms = osd->button_delay_ms();
             break;
         case MenuState::PARAM_VALUE_MODIFY:
             modify_parameter(_selected_param, ev);
@@ -545,7 +545,7 @@ void AP_OSD_ParamScreen::update_state_machine()
 #if HAL_WITH_OSD_BITMAP || HAL_WITH_MSP_DISPLAYPORT
 void AP_OSD_ParamScreen::draw(void)
 {
-    if (!enabled || !backend) {
+    if (!enabled() || !backend) {
         return;
     }
 
@@ -558,12 +558,12 @@ void AP_OSD_ParamScreen::draw(void)
 
     for (uint8_t i = 0; i < NUM_PARAMS; i++) {
         AP_OSD_ParamSetting n = params[i];
-        if (n.enabled) {
-            draw_parameter(n._param_number, n.xpos, n.ypos);
+        if (n.enabled()) {
+            draw_parameter(n._param_number, n.xpos(), n.ypos());
         }
     }
     // the save button
-    draw_parameter(SAVE_PARAM, save_x, save_y);
+    draw_parameter(SAVE_PARAM, save_x(), save_y());
 }
 #endif
 
@@ -577,7 +577,7 @@ void AP_OSD_ParamScreen::save_parameters()
     }
 
     for (uint8_t i = 0; i < NUM_PARAMS; i++) {
-        if (params[i].enabled && (_requires_save & (1 << i))) {
+        if (params[i].enabled() && (_requires_save & (1 << i))) {
             AP_Param* p = params[i]._param;
             if (p != nullptr) {
                 p->save();
@@ -626,7 +626,7 @@ void AP_OSD_ParamScreen::handle_read_msg(const mavlink_osd_param_show_config_t& 
     param._param->copy_name_token(param._current_token, buf, AP_MAX_NAME_SIZE);
     buf[AP_MAX_NAME_SIZE] = 0;
     mavlink_msg_osd_param_show_config_reply_send(link.get_chan(), packet.request_id, OSD_PARAM_SUCCESS,
-        buf, param._type, param._param_min, param._param_max, param._param_incr);
+        buf, param._type(), param._param_min, param._param_max, param._param_incr);
 }
 #endif
 
