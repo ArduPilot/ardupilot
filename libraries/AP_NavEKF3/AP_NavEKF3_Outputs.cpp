@@ -72,13 +72,13 @@ float NavEKF3_core::errorScore() const
         // EKF less sensitive to innovations arising due events like strong gusts of wind, thus, prevent reporting high error scores
         if (assume_zero_sideslip()) {
             const auto *arsp = dal.airspeed();
-            if (arsp != nullptr && arsp->get_num_sensors() >= 2 && (frontend->_affinity & EKF_AFFINITY_ARSP)) {
+            if (arsp != nullptr && arsp->get_num_sensors() >= 2 && (frontend->_affinity() & EKF_AFFINITY_ARSP)) {
                 score = MAX(score, 0.3f * tasTestRatio);
             }
         }
         // Check magnetometer fusion performance - need this when magnetometer affinity is enabled to override the inherent compass
         // switching mechanism, and instead be able to move to a better lane
-        if (frontend->_affinity & EKF_AFFINITY_MAG) {
+        if (frontend->_affinity() & EKF_AFFINITY_MAG) {
             score = MAX(score, 0.3f * (magTestRatio.x + magTestRatio.y + magTestRatio.z));
         }
     }
@@ -416,7 +416,7 @@ bool NavEKF3_core::getOriginLLH(Location &loc) const
     if (validOrigin) {
         loc = public_origin;
         // report internally corrected reference height if enabled
-        if ((frontend->_originHgtMode & (1<<2)) == 0) {
+        if ((frontend->_originHgtMode() & (1<<2)) == 0) {
             loc.alt = (int32_t)(100.0f * (float)ekfGpsRefHgt);
         }
     }
@@ -640,7 +640,7 @@ void NavEKF3_core::send_status_report(GCS_MAVLINK &link) const
     // height estimation or optical flow operation. This prevents false alarms at the GCS if a
     // range finder is fitted for other applications
     float temp = 0;
-    if (((frontend->_useRngSwHgt > 0) && activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) || (PV_AidingMode == AID_RELATIVE && flowDataValid)) {
+    if (((frontend->_useRngSwHgt() > 0) && activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) || (PV_AidingMode == AID_RELATIVE && flowDataValid)) {
         temp = sqrtF(auxRngTestRatio);
     }
 
