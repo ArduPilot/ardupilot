@@ -19,7 +19,13 @@
 #include "SdCard.h"
 
 #include <stdint.h>
-#include "esp_timer.h"
+//vprintf
+#include <stdio.h>
+#include <stdarg.h>
+
+#include "pico/time.h"
+
+//#include "esp_timer.h"
 
 namespace AP_HAL
 {
@@ -47,7 +53,7 @@ uint32_t millis()
 
 uint64_t micros64()
 {
-    return esp_timer_get_time();
+    return time_us_64();
 }
 
 uint64_t millis64()

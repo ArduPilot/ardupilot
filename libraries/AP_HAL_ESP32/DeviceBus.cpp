@@ -38,6 +38,10 @@ DeviceBus::DeviceBus(uint8_t _thread_priority) :
 #endif
 }
 
+#ifndef IRAM_ATTR
+#define IRAM_ATTR
+#endif
+
 /*
   per-bus callback thread
 */

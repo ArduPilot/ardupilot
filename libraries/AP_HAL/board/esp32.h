@@ -87,7 +87,8 @@
 #define __BYTE_ORDER     __LITTLE_ENDIAN
 
 // ArduPilot uses __RAMFUNC__ to place functions in fast instruction RAM
-#define __RAMFUNC__ IRAM_ATTR
+//#define __RAMFUNC__ IRAM_ATTR
+#define __RAMFUNC__ 
 
 
 // whenver u get ... error: "xxxxxxx" is not defined, evaluates to 0 [-Werror=undef]  just define it below as 0
