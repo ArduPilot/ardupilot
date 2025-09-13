@@ -61,7 +61,7 @@ void AP_Baro_SITL::_timer()
 
     float sim_alt = _sitl->state.altitude;
 
-    if (_sitl->baro[_instance].disable) {
+    if (_sitl->baro[_instance].disable()) {
         // barometer is disabled
         return;
     }
@@ -88,7 +88,7 @@ void AP_Baro_SITL::_timer()
         }
 
         // if freezed barometer, report altitude to last recorded altitude
-        if (_sitl->baro[_instance].freeze == 1) {
+        if (_sitl->baro[_instance].freeze() == 1) {
             sim_alt = _last_altitude;
         } else {
             _last_altitude = sim_alt;
@@ -100,7 +100,7 @@ void AP_Baro_SITL::_timer()
     }
 
     // return delayed measurement
-    const uint32_t delayed_time = now - _sitl->baro[_instance].delay;  // get time corresponding to delay
+    const uint32_t delayed_time = now - _sitl->baro[_instance].delay();  // get time corresponding to delay
 
     // find data corresponding to delayed time in buffer
     for (uint8_t i = 0; i <= _buffer_length - 1; i++) {
@@ -140,7 +140,7 @@ void AP_Baro_SITL::_timer()
 // unhealthy if baro is turned off or beyond supported instances
 bool AP_Baro_SITL::healthy(uint8_t instance) 
 {
-    return _last_sample_time != 0 && !_sitl->baro[instance].disable;
+    return _last_sample_time != 0 && !_sitl->baro[instance].disable();
 }
 
 // Read the sensor
