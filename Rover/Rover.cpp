@@ -346,7 +346,7 @@ void Rover::ahrs_update()
  */
 void Rover::gcs_failsafe_check(void)
 {
-    if (g.fs_gcs_enabled == FS_GCS_DISABLED) {
+    if (g.fs_gcs_enabled() == FS_GCS_DISABLED) {
         // gcs failsafe disabled
         return;
     }

@@ -9,7 +9,7 @@ bool GCS_Rover::simple_input_active() const
     if (rover.control_mode != &rover.mode_simple) {
         return false;
     }
-    return (rover.g2.simple_type == ModeSimple::Simple_InitialHeading);
+    return (rover.g2.simple_type() == ModeSimple::Simple_InitialHeading);
 }
 
 bool GCS_Rover::supersimple_input_active() const
@@ -17,7 +17,7 @@ bool GCS_Rover::supersimple_input_active() const
     if (rover.control_mode != &rover.mode_simple) {
         return false;
     }
-    return (rover.g2.simple_type == ModeSimple::Simple_CardinalDirections);
+    return (rover.g2.simple_type() == ModeSimple::Simple_CardinalDirections);
 }
 
 void GCS_Rover::update_vehicle_sensor_status_flags(void)

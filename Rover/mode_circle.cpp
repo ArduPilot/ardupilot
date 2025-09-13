@@ -88,7 +88,7 @@ bool ModeCircle::_enter()
     config.radius = MAX(fabsf(radius), AR_CIRCLE_RADIUS_MIN);
     check_config_radius();
 
-    config.dir = (direction == 1) ? Direction::CCW : Direction::CW;
+    config.dir = (direction() == 1) ? Direction::CCW : Direction::CW;
     config.speed = is_positive(speed) ? speed : g2.wp_nav.get_default_speed();
     target.yaw_rad = AP::ahrs().get_yaw_rad();
     target.speed = 0;

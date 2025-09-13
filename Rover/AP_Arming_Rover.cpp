@@ -34,7 +34,7 @@ bool AP_Arming_Rover::rc_calibration_checks(const bool display_failure)
 // performs pre_arm gps related checks and returns true if passed
 bool AP_Arming_Rover::gps_checks(bool display_failure)
 {
-    if (!require_location &&
+    if (!require_location() &&
         !rover.control_mode->requires_position() &&
         !rover.control_mode->requires_velocity()) {
         // we don't care!
@@ -84,7 +84,7 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
     }
 
     //are arming checks disabled?
-    if (checks_to_perform == 0) {
+    if (checks_to_perform() == 0) {
         return mandatory_checks(report);
     }
 
@@ -116,7 +116,7 @@ bool AP_Arming_Rover::arm_checks(AP_Arming::Method method)
     }
 
     //are arming checks disabled?
-    if (checks_to_perform == 0) {
+    if (checks_to_perform() == 0) {
         return true;
     }
     return AP_Arming::arm_checks(method);

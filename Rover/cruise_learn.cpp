@@ -55,7 +55,7 @@ void Rover::cruise_learn_complete()
         if (thr >= 10.0f && thr <= 100.0f && is_positive(speed)) {
             g.throttle_cruise.set_and_save(thr);
             g.speed_cruise.set_and_save(speed);
-            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Cruise Learned: Thr:%d Speed:%3.1f", (int)g.throttle_cruise, (double)g.speed_cruise);
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Cruise Learned: Thr:%d Speed:%3.1f", (int)g.throttle_cruise(), (double)g.speed_cruise);
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Cruise Learning failed");
         }

@@ -64,7 +64,7 @@ bool ModeDock::_enter()
         return false;
     }
 
-    if (hdg_corr_enable && is_negative(desired_dir)) {
+    if (hdg_corr_enable() && is_negative(desired_dir)) {
         // DOCK_DIR is required for heading correction
         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Dock: Set DOCK_DIR or disable heading correction");
         return false;
@@ -151,7 +151,7 @@ void ModeDock::update()
     // then the position target is 75 m from the dock, i.e., 25 m from the vehicle
     // as the vehicle tries to reach this target, this target appears to move towards the dock and at last it is sandwiched b/w dock and vehicle
     // since this target is moving along desired direction of approach, the vehicle also comes on that line while following it
-    if  (!force_real_target && hdg_corr_enable) {
+    if  (!force_real_target && hdg_corr_enable()) {
         const float correction_vec_mag = hdg_corr_weight * dock_pos_rel_vehicle_m.projected(_desired_heading_NE).length();
         target_m = _dock_pos_rel_origin_m - _desired_heading_NE * correction_vec_mag;
     }

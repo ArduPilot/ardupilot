@@ -163,7 +163,7 @@ void Rover::update_ahrs_flyforward()
     // boats never use movement to estimate heading
     if (!is_boat()) {
         // throttle threshold is 15% or 1/2 cruise throttle
-        bool throttle_over_thresh = g2.motors.get_throttle() > MIN(g.throttle_cruise * 0.50f, 15.0f);
+        bool throttle_over_thresh = g2.motors.get_throttle() > MIN(g.throttle_cruise() * 0.50f, 15.0f);
         // desired speed threshold of 1m/s
         bool desired_speed_over_thresh = g2.attitude_control.speed_control_active() && (g2.attitude_control.get_desired_speed() > 0.5f);
         if (throttle_over_thresh || (is_positive(g2.motors.get_throttle()) && desired_speed_over_thresh)) {

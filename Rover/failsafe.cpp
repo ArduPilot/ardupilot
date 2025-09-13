@@ -67,7 +67,7 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, const char* type_str, bool o
         (failsafe.bits != 0) &&
         (millis() - failsafe.start_time > g.fs_timeout * 1000) &&
         (control_mode != &mode_rtl) &&
-        ((control_mode != &mode_hold || (g2.fs_options & (uint32_t)Failsafe_Options::Failsafe_Option_Active_In_Hold)))) {
+        ((control_mode != &mode_hold || (g2.fs_options() & (uint32_t)Failsafe_Options::Failsafe_Option_Active_In_Hold)))) {
         failsafe.triggered = failsafe.bits;
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Failsafe", type_str);
 
@@ -75,8 +75,8 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, const char* type_str, bool o
         RC_Channels::clear_overrides();
 
         if ((control_mode == &mode_auto) &&
-            ((failsafe_type == FAILSAFE_EVENT_THROTTLE && g.fs_throttle_enabled == FS_THR_ENABLED_CONTINUE_MISSION) ||
-             (failsafe_type == FAILSAFE_EVENT_GCS && g.fs_gcs_enabled == FS_GCS_ENABLED_CONTINUE_MISSION))) {
+            ((failsafe_type == FAILSAFE_EVENT_THROTTLE && g.fs_throttle_enabled() == FS_THR_ENABLED_CONTINUE_MISSION) ||
+             (failsafe_type == FAILSAFE_EVENT_GCS && g.fs_gcs_enabled() == FS_GCS_ENABLED_CONTINUE_MISSION))) {
             // continue with mission in auto mode
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failsafe - Continuing Auto Mode");
         } else {

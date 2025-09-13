@@ -12,7 +12,7 @@
 
 int8_t RC_Channels_Rover::flight_mode_channel_number() const
 {
-    return rover.g.mode_channel;
+    return rover.g.mode_channel();
 }
 
 void RC_Channel_Rover::mode_switch_changed(modeswitch_pos_t new_pos)

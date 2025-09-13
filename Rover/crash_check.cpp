@@ -14,13 +14,13 @@ void Rover::crash_check()
     bool crashed = false; //stores crash state
 
     // return immediately if disarmed, crash checking is disabled or vehicle is Hold, Manual or Acro mode(if it is not a balance bot)
-    if (!arming.is_armed() || g.fs_crash_check == FS_CRASH_DISABLE || ((!control_mode->is_autopilot_mode()) && (!is_balancebot()))) {
+    if (!arming.is_armed() || g.fs_crash_check() == FS_CRASH_DISABLE || ((!control_mode->is_autopilot_mode()) && (!is_balancebot()))) {
         crash_counter = 0;
         return;
     }
 
     // Crashed if pitch/roll > crash_angle
-    if ((g2.crash_angle != 0) && ((fabsf(ahrs.get_pitch_rad()) > radians(g2.crash_angle)) || (fabsf(ahrs.get_roll_rad()) > radians(g2.crash_angle)))) {
+    if ((g2.crash_angle() != 0) && ((fabsf(ahrs.get_pitch_rad()) > radians(g2.crash_angle())) || (fabsf(ahrs.get_roll_rad()) > radians(g2.crash_angle())))) {
         crashed = true;
     }
 
@@ -57,7 +57,7 @@ void Rover::crash_check()
             GCS_SEND_TEXT(MAV_SEVERITY_EMERGENCY, "Crash: Going to HOLD");
             // change mode to hold and disarm
             set_mode(mode_hold, ModeReason::CRASH_FAILSAFE);
-            if (g.fs_crash_check == FS_CRASH_HOLD_AND_DISARM) {
+            if (g.fs_crash_check() == FS_CRASH_HOLD_AND_DISARM) {
                 arming.disarm(AP_Arming::Method::CRASH);
             }
         }

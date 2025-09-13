@@ -14,7 +14,7 @@ void ModeSimple::update()
     get_pilot_desired_heading_and_speed(desired_heading_cd, desired_speed);
 
     // rotate heading around based on initial heading
-    if (g2.simple_type == Simple_InitialHeading) {
+    if (g2.simple_type() == Simple_InitialHeading) {
         desired_heading_cd = wrap_360_cd(_initial_heading_cd + desired_heading_cd);
     }
 
