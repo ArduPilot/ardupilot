@@ -180,7 +180,7 @@ uint8_t AP_RSSI::read_receiver_rssi_uint8()
 // read the RSSI value from an analog pin - returns float in range 0.0 to 1.0
 float AP_RSSI::read_pin_rssi()
 {
-    if (!rssi_analog_source || !rssi_analog_source->set_pin(rssi_analog_pin)) {
+    if (!rssi_analog_source || !rssi_analog_source->set_pin(rssi_analog_pin())) {
         return 0;
     }
     float current_analog_voltage = rssi_analog_source->voltage_average();
@@ -191,12 +191,12 @@ float AP_RSSI::read_pin_rssi()
 // read the RSSI value from a PWM value on a RC channel
 float AP_RSSI::read_channel_rssi()
 {
-    RC_Channel *c = rc().channel(rssi_channel-1);
+    RC_Channel *c = rc().channel(rssi_channel()-1);
     if (c == nullptr) {
         return 0.0f;
     }
     uint16_t rssi_channel_value = c->get_radio_in();
-    float channel_rssi = scale_and_constrain_float_rssi(rssi_channel_value, rssi_channel_low_pwm_value, rssi_channel_high_pwm_value);
+    float channel_rssi = scale_and_constrain_float_rssi(rssi_channel_value, rssi_channel_low_pwm_value(), rssi_channel_high_pwm_value());
     return channel_rssi;    
 }
 
@@ -204,7 +204,7 @@ float AP_RSSI::read_channel_rssi()
 float AP_RSSI::read_pwm_pin_rssi()
 {
     // check if pin has changed and configure interrupt handlers if required:
-    if (!pwm_state.pwm_source.set_pin(rssi_analog_pin, "RSSI")) {
+    if (!pwm_state.pwm_source.set_pin(rssi_analog_pin(), "RSSI")) {
         // disabled (either by configuration or failure to attach interrupt)
         return 0.0f;
     }
@@ -220,7 +220,7 @@ float AP_RSSI::read_pwm_pin_rssi()
         }
     } else {
         // a new reading - convert pwm value to rssi value
-        pwm_state.rssi_value = scale_and_constrain_float_rssi(pwm_us, rssi_channel_low_pwm_value, rssi_channel_high_pwm_value);
+        pwm_state.rssi_value = scale_and_constrain_float_rssi(pwm_us, rssi_channel_low_pwm_value(), rssi_channel_high_pwm_value());
         pwm_state.last_reading_ms = now;
     }
 
