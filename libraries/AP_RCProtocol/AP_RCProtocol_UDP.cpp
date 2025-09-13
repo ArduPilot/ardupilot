@@ -85,7 +85,7 @@ void AP_RCProtocol_UDP::update()
         return;
     }
 
-    if (sitl->rc_fail == SITL::SIM::SITL_RCFail_NoPulses) {
+    if (sitl->rc_fail() == SITL::SIM::SITL_RCFail_NoPulses) {
         return;
     }
 #endif
@@ -145,7 +145,7 @@ void AP_RCProtocol_UDP::read_all_socket_input(void)
     }
 
     // convert last packet received into pwm values
-    switch (sitl->rc_fail) {
+    switch (sitl->rc_fail()) {
     case SITL::SIM::SITL_RCFail_Throttle950:
         // discard anything we just read from the "receiver" and set
         // values to bind values:
