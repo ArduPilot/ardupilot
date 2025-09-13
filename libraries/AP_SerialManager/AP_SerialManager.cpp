@@ -427,7 +427,7 @@ void AP_SerialManager::init()
     convert_parameters();
 
     // reset passthru port2 on boot if timeout is not -1
-    if (passthru_timeout != -1) {
+    if (passthru_timeout() != -1) {
         passthru_port2.set_and_save_ifchanged(-1);
     }
 
@@ -437,8 +437,8 @@ void AP_SerialManager::init()
       MAVLink. This fixes an issue where users trying to get SLCAN
       change SERIAL0_PROTOCOL to 22 and find they can no longer connect
      */
-    if (state[0].protocol != SerialProtocol_MAVLink &&
-        state[0].protocol != SerialProtocol_MAVLink2) {
+    if (state[0].protocol() != SerialProtocol_MAVLink &&
+        state[0].protocol() != SerialProtocol_MAVLink2) {
         state[0].protocol.set(SerialProtocol_MAVLink2);
     }
 #endif
@@ -453,7 +453,7 @@ void AP_SerialManager::init()
 
         if (uart != nullptr) {
             set_options(i);
-            switch (state[i].protocol) {
+            switch (state[i].protocol()) {
                 case SerialProtocol_None:
 #if HAL_GCS_ENABLED
                     // disable RX and TX pins in case they are shared
@@ -651,7 +651,7 @@ AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, 
 #endif
 
     if (port) {
-        port->set_options(_state->options);
+        port->set_options(_state->options());
     }
     return port;
 }
@@ -795,7 +795,7 @@ void AP_SerialManager::set_options(uint16_t i)
 {
     struct UARTState &opt = state[i];
     // pass through to HAL
-    if (!hal.serial(i)->set_options(opt.options)) {
+    if (!hal.serial(i)->set_options(opt.options())) {
         DEV_PRINTF("Unable to setup options for Serial%u\n", i);
     }
 }
@@ -804,23 +804,23 @@ void AP_SerialManager::set_options(uint16_t i)
 bool AP_SerialManager::get_passthru(AP_HAL::UARTDriver *&port1, AP_HAL::UARTDriver *&port2, uint8_t &timeout_s,
                                     uint32_t &baud1, uint32_t &baud2)
 {
-    if (passthru_port2 < 0 ||
-        passthru_port1 < 0) {
+    if (passthru_port2() < 0 ||
+        passthru_port1() < 0) {
         return false;
     }
-    port1 = get_serial_by_id(passthru_port1);
-    port2 = get_serial_by_id(passthru_port2);
+    port1 = get_serial_by_id(passthru_port1());
+    port2 = get_serial_by_id(passthru_port2());
     if (port1 == nullptr || port2 == nullptr) {
         return false;
     }
-    const auto *state1 = get_state_by_id(passthru_port1);
-    const auto *state2 = get_state_by_id(passthru_port2);
+    const auto *state1 = get_state_by_id(passthru_port1());
+    const auto *state2 = get_state_by_id(passthru_port2());
     if (!state1 || !state2) {
         return false;
     }
     baud1 = state1->baudrate();
     baud2 = state2->baudrate();
-    timeout_s = MAX(passthru_timeout, 0);
+    timeout_s = MAX(passthru_timeout(), 0);
     return true;
 }
 
@@ -847,11 +847,11 @@ bool AP_SerialManager::pre_arm_checks(char *failure_msg, const uint8_t failure_m
     // ArduPilot 4.9++ removes the pre-arm failure
     for (uint8_t i=0; i<ARRAY_SIZE(state); i++) {
         const auto &_state = state[i];
-        if (_state.options & AP_HAL::UARTDriver::Option::OPTION_MAVLINK_NO_FORWARD_old) {
+        if (_state.options() & AP_HAL::UARTDriver::Option::OPTION_MAVLINK_NO_FORWARD_old) {
             hal.util->snprintf(failure_msg, failure_msg_len, "SERIAL%u_OPTIONS bit 10 ('no forward mavlink') must not be set; use MAVn_OPTIONS bit 1 instead", unsigned(i));
             return false;
         }
-        if (_state.options & AP_HAL::UARTDriver::Option::OPTION_NOSTREAMOVERRIDE_old) {
+        if (_state.options() & AP_HAL::UARTDriver::Option::OPTION_NOSTREAMOVERRIDE_old) {
             hal.util->snprintf(failure_msg, failure_msg_len, "SERIAL%u_OPTIONS bit 12 ('no stream overrides') must not be set; use MAVn_OPTIONS bit 2 instead", unsigned(i));
             return false;
         }
