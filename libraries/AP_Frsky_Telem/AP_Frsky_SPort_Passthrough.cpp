@@ -657,7 +657,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_velandyaw(void)
         hspeed_m = _ahrs.groundspeed(); // default is to use groundspeed
         airspeed_estimate_true = AP::ahrs().airspeed_estimate_true(airspeed_m);
     }
-    bool option_airspeed_enabled = (_frsky_parameters->_options & frsky_options_e::OPTION_AIRSPEED_AND_GROUNDSPEED) != 0;
+    bool option_airspeed_enabled = (_frsky_parameters->_options() & frsky_options_e::OPTION_AIRSPEED_AND_GROUNDSPEED) != 0;
     // airspeed estimate + airspeed option disabled (default) => send airspeed (we give priority to airspeed over groundspeed)
     // airspeed estimate + airspeed option enabled => alternate airspeed/groundspeed, i.e send airspeed only when _passthrough.send_airspeed==true
     if (airspeed_estimate_true && (!option_airspeed_enabled || _passthrough.send_airspeed)) {
