@@ -72,7 +72,7 @@ private:
 
     struct Tone {
         const char *str;
-        const uint8_t continuous : 1;
+        const bool continuous;
     };
 
     const static Tone _tones[];
