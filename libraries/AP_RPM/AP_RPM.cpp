@@ -80,7 +80,7 @@ void AP_RPM::init(void)
     }
 
     for (uint8_t i=0; i<RPM_MAX_INSTANCES; i++) {
-        switch (_params[i].type) {
+        switch (_params[i].type()) {
 #if AP_RPM_PIN_ENABLED
         case RPM_TYPE_PWM:
         case RPM_TYPE_PIN:
@@ -136,7 +136,7 @@ void AP_RPM::update(void)
 {
     for (uint8_t i=0; i<num_instances; i++) {
         if (drivers[i] != nullptr) {
-            if (_params[i].type == RPM_TYPE_NONE) {
+            if (_params[i].type() == RPM_TYPE_NONE) {
                 // allow user to disable an RPM sensor at runtime and force it to re-learn the quality if re-enabled.
                 state[i].signal_quality = 0;
                 continue;
@@ -160,7 +160,7 @@ void AP_RPM::update(void)
  */
 bool AP_RPM::healthy(uint8_t instance) const
 {
-    if (instance >= num_instances || _params[instance].type == RPM_TYPE_NONE) {
+    if (instance >= num_instances || _params[instance].type() == RPM_TYPE_NONE) {
         return false;
     }
 
@@ -181,7 +181,7 @@ bool AP_RPM::enabled(uint8_t instance) const
         return false;
     }
     // if no sensor type is selected, the sensor is not activated.
-    if (_params[instance].type == RPM_TYPE_NONE) {
+    if (_params[instance].type() == RPM_TYPE_NONE) {
         return false;
     }
     return true;
@@ -203,17 +203,17 @@ bool AP_RPM::get_rpm(uint8_t instance, float &rpm_value) const
 bool AP_RPM::arming_checks(size_t buflen, char *buffer) const
 {
     for (uint8_t i=0; i<RPM_MAX_INSTANCES; i++) {
-        switch (_params[i].type) {
+        switch (_params[i].type()) {
 #if AP_RPM_PIN_ENABLED
         case RPM_TYPE_PWM:
         case RPM_TYPE_PIN:
-            if (_params[i].pin == -1) {
+            if (_params[i].pin() == -1) {
                 hal.util->snprintf(buffer, buflen, "RPM%u_PIN not set", unsigned(i + 1));
                 return false;
             }
-            if (!hal.gpio->valid_pin(_params[i].pin)) {
+            if (!hal.gpio->valid_pin(_params[i].pin())) {
                 uint8_t servo_ch;
-                if (hal.gpio->pin_to_servo_channel(_params[i].pin, servo_ch)) {
+                if (hal.gpio->pin_to_servo_channel(_params[i].pin(), servo_ch)) {
                     hal.util->snprintf(buffer, buflen, "RPM%u_PIN=%d, set SERVO%u_FUNCTION=-1", unsigned(i + 1), int(_params[i].pin.get()), unsigned(servo_ch+1));
                 } else {
                     hal.util->snprintf(buffer, buflen, "RPM%u_PIN=%d invalid", unsigned(i + 1), int(_params[i].pin.get()));

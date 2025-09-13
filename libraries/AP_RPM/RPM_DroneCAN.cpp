@@ -54,7 +54,7 @@ void AP_RPM_DroneCAN::handle_rpm(AP_DroneCAN *ap_dronecan, const CanardRxTransfe
         const uint8_t instance = _drivers[i]->state.instance;
         const AP_RPM_Params& params = _drivers[i]->ap_rpm._params[instance];
 
-        if (params.dronecan_sensor_id == msg.sensor_id) {
+        if (params.dronecan_sensor_id() == msg.sensor_id) {
             // Driver loaded and looking for this ID, add reading
             _drivers[i]->last_reading_ms = AP_HAL::millis();
             _drivers[i]->rpm = msg.rpm * params.scaling;
