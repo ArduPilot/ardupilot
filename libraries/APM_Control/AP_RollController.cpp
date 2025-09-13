@@ -180,7 +180,7 @@ float AP_RollController::get_airspeed() const
 
 bool AP_RollController::is_underspeed(const float aspeed) const
 {
-    return aspeed <= float(aparm.airspeed_min);
+    return aspeed <= float(aparm.airspeed_min());
 }
 
 /*
@@ -223,10 +223,10 @@ float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool dis
     if (!in_recovery) {
         // Limit the demanded roll rate. When we are in a VTOL
         // recovery we don't apply the limit
-        if (gains.rmax_pos && desired_rate < -gains.rmax_pos) {
-            desired_rate = - gains.rmax_pos;
-        } else if (gains.rmax_pos && desired_rate > gains.rmax_pos) {
-            desired_rate = gains.rmax_pos;
+        if (gains.rmax_pos() && desired_rate < -gains.rmax_pos()) {
+            desired_rate = -gains.rmax_pos();
+        } else if (gains.rmax_pos() && desired_rate > gains.rmax_pos()) {
+            desired_rate = gains.rmax_pos();
         }
     }
 

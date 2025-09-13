@@ -196,7 +196,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
     _last_t = tnow;
 
 
-    int16_t aspd_min = aparm.airspeed_min;
+    int16_t aspd_min = aparm.airspeed_min();
     if (aspd_min < 1) {
         aspd_min = 1;
     }
@@ -214,7 +214,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
     const AP_AHRS &_ahrs = AP::ahrs();
     if (!_ahrs.airspeed_estimate(aspeed)) {
         // If no airspeed available use average of min and max
-        aspeed = 0.5f*(float(aspd_min) + float(aparm.airspeed_max));
+        aspeed = 0.5f*(float(aspd_min) + float(aparm.airspeed_max()));
     }
     rate_offset = (GRAVITY_MSS / MAX(aspeed, float(aspd_min))) * sinf(bank_angle) * _K_FF;
 
@@ -269,7 +269,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
     }
 
     // Scale the integration limit
-    float intLimScaled = _imax * 0.01f / (_K_D * scaler * scaler);
+    float intLimScaled = _imax() * 0.01f / (_K_D * scaler * scaler);
 
     // Constrain the integrator state
     _integrator = constrain_float(_integrator, -intLimScaled, intLimScaled);
@@ -309,7 +309,7 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
     if (!_ahrs.airspeed_estimate(aspeed)) {
         aspeed = 0;
     }
-    bool underspeed = aspeed <= float(aparm.airspeed_min);
+    bool underspeed = aspeed <= float(aparm.airspeed_min());
     if (underspeed) {
         limit_I = true;
     }
@@ -358,7 +358,7 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
     // remember the last output to trigger the I limit
     _last_out = out;
 
-    if (autotune != nullptr && autotune->running && aspeed > aparm.airspeed_min) {
+    if (autotune != nullptr && autotune->running && aspeed > aparm.airspeed_min()) {
         // fake up an angular error based on a notional time constant of 0.5s
         const float angle_err_deg = desired_rate * gains.tau;
         // let autotune have a go at the values

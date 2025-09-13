@@ -189,14 +189,14 @@ float AP_PitchController::get_airspeed() const
     float aspeed;
     if (!AP::ahrs().airspeed_estimate(aspeed)) {
         // If no airspeed available use average of min and max
-        aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
+        aspeed = 0.5f*(float(aparm.airspeed_min()) + float(aparm.airspeed_max()));
     }
     return aspeed;
 }
 
 bool AP_PitchController::is_underspeed(const float aspeed) const
 {
-    return aspeed <= 0.5*float(aparm.airspeed_min);
+    return aspeed <= 0.5*float(aparm.airspeed_min());
 }
 
 /*
@@ -228,7 +228,7 @@ float AP_PitchController::_get_coordination_rate_offset(const float &aspeed, boo
         // don't do turn coordination handling when at very high pitch angles
         rate_offset = 0;
     } else {
-        rate_offset = cosf(_ahrs.get_pitch_rad())*fabsf(degrees((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()), MAX(aparm.airspeed_min, 1))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
+        rate_offset = cosf(_ahrs.get_pitch_rad())*fabsf(degrees((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()), MAX(aparm.airspeed_min(), 1))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
     }
     if (inverted) {
         rate_offset = -rate_offset;
@@ -270,10 +270,10 @@ float AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool di
     // much higher rates are needed inverted
     if (!inverted) {
         desired_rate += rate_offset;
-        if (gains.rmax_neg && desired_rate < -gains.rmax_neg) {
-            desired_rate = -gains.rmax_neg;
-        } else if (gains.rmax_pos && desired_rate > gains.rmax_pos) {
-            desired_rate = gains.rmax_pos;
+        if (gains.rmax_neg() && desired_rate < -gains.rmax_neg()) {
+            desired_rate = -gains.rmax_neg();
+        } else if (gains.rmax_pos() && desired_rate > gains.rmax_pos()) {
+            desired_rate = gains.rmax_pos();
         }
     } else {
         // Make sure not to invert the turn coordination offset

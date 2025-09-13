@@ -227,7 +227,7 @@ void AP_AutoTune::update(AP_PIDInfo &pinfo, float scaler, float angle_err_deg)
 
 
     // thresholds for when we consider an event to start and end
-    const float rate_threshold1 = 0.4 * MIN(att_limit_deg / current.tau.get(), current.rmax_pos);
+    const float rate_threshold1 = 0.4 * MIN(att_limit_deg / current.tau.get(), current.rmax_pos());
     const float rate_threshold2 = 0.25 * rate_threshold1;
     bool in_att_demand = fabsf(angle_err_deg) >= 0.3 * att_limit_deg;
 
@@ -309,8 +309,8 @@ void AP_AutoTune::update(AP_PIDInfo &pinfo, float scaler, float angle_err_deg)
         return;
     }
 
-    if ((state == ATState::DEMAND_POS && max_rate < 0.01 * current.rmax_pos) ||
-        (state == ATState::DEMAND_NEG && min_rate > -0.01 * current.rmax_neg)) {
+    if ((state == ATState::DEMAND_POS && max_rate < 0.01 * current.rmax_pos()) ||
+        (state == ATState::DEMAND_NEG && min_rate > -0.01 * current.rmax_neg())) {
         // we didn't get enough rate
         action = Action::LOW_RATE;
         state_change(ATState::IDLE);
@@ -504,8 +504,8 @@ void AP_AutoTune::save_gains(void)
 {
     const auto &v = last_save;
     save_float_if_changed(current.tau, v.tau);
-    save_int16_if_changed(current.rmax_pos, v.rmax_pos);
-    save_int16_if_changed(current.rmax_neg, v.rmax_neg);
+    save_int16_if_changed(current.rmax_pos, v.rmax_pos());
+    save_int16_if_changed(current.rmax_neg, v.rmax_neg());
     save_float_if_changed(rpid.ff(), v.FF);
     save_float_if_changed(rpid.kP(), v.P);
     save_float_if_changed(rpid.kI(), v.I);
@@ -557,14 +557,14 @@ void AP_AutoTune::restore_gains(void)
  */
 void AP_AutoTune::update_rmax(void)
 {
-    uint8_t level = constrain_int32(aparm.autotune_level, 0, ARRAY_SIZE(tuning_table));
+    uint8_t level = constrain_int32(aparm.autotune_level(), 0, ARRAY_SIZE(tuning_table));
 
     int16_t target_rmax;
     float target_tau;
 
     if (level == 0) {
         // this level means to keep current values of RMAX and TCONST
-        target_rmax = constrain_float(current.rmax_pos, 20, 720);
+        target_rmax = constrain_float(current.rmax_pos(), 20, 720);
         target_tau = constrain_float(current.tau, 0.1, 2);
     } else {
         target_rmax = tuning_table[level-1].rmax;
@@ -582,7 +582,7 @@ void AP_AutoTune::update_rmax(void)
         }
     }
 
-    if (current.rmax_pos == 0) {
+    if (current.rmax_pos() == 0) {
         // conservative initial value
         current.rmax_pos.set(75);
     }
