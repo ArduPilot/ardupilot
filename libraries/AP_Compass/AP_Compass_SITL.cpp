@@ -11,7 +11,7 @@ AP_Compass_SITL::AP_Compass_SITL()
 {
     if (_sitl != nullptr) {
         for (uint8_t i=0; i<MAX_CONNECTED_MAGS; i++) {
-            uint32_t dev_id = _sitl->mag_devid[i];
+            uint32_t dev_id = _sitl->mag_devid[i]();
             if (dev_id == 0) {
                 continue;
             }
@@ -22,7 +22,7 @@ AP_Compass_SITL::AP_Compass_SITL()
                 _compass_instance[_num_compass] = instance;
                 set_dev_id(_compass_instance[_num_compass], dev_id);
 
-                if (_sitl->mag_save_ids) {
+                if (_sitl->mag_save_ids()) {
                     // save so the compass always comes up configured in SITL
                     save_dev_id(_compass_instance[_num_compass]);
                 }
@@ -110,7 +110,7 @@ void AP_Compass_SITL::_timer()
     }
 
     // return delayed measurement
-    uint32_t delayed_time = now - _sitl->mag_delay; // get time corresponding to delay
+    uint32_t delayed_time = now - _sitl->mag_delay(); // get time corresponding to delay
     // find data corresponding to delayed time in buffer
     for (uint8_t i=0; i<=buffer_length-1; i++) {
         // find difference between delayed time and time stamp in buffer
@@ -134,7 +134,7 @@ void AP_Compass_SITL::_timer()
         // scale the compass to simulate sensor scale factor errors
         f *= _sitl->mag_scaling[i];
 
-        switch (_sitl->mag_fail[i]) {
+        switch (_sitl->mag_fail[i]()) {
         case 0:
             accumulate_sample(f, _compass_instance[i], 10);
             _last_data[i] = f;

@@ -32,7 +32,7 @@ void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)
       AHRS_ORIENTATION
      */
     if (!is_external(instance)) {
-        const uint32_t dev_id = uint32_t(_compass._state[Compass::StateIndex(instance)].dev_id);
+        const uint32_t dev_id = uint32_t(_compass._state[Compass::StateIndex(instance)].dev_id());
         static const struct offset {
             uint32_t dev_id;
             Vector3f ofs;
@@ -48,7 +48,7 @@ void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)
     }
 #endif
 
-    if (!state.external) {
+    if (!state.external()) {
         mag.rotate(_compass._board_orientation);
     } else {
         // add user selectable orientation
@@ -114,9 +114,9 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
     if (_compass._per_motor.enabled() && i == 0) {
         // per-motor correction is only valid for first compass
         _compass._per_motor.compensate(state.motor_offset);
-    } else if (_compass._motor_comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
+    } else if (_compass._motor_comp_type() == AP_COMPASS_MOT_COMP_THROTTLE) {
         state.motor_offset = mot * _compass._thr;
-    } else if (_compass._motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
+    } else if (_compass._motor_comp_type() == AP_COMPASS_MOT_COMP_CURRENT) {
         AP_BattMonitor &battery = AP::battery();
         float current;
         if (battery.current_amps(current)) {
@@ -234,14 +234,14 @@ void AP_Compass_Backend::save_dev_id(uint8_t instance)
 */
 void AP_Compass_Backend::set_external(uint8_t instance, bool external)
 {
-    if (_compass._state[Compass::StateIndex(instance)].external != 2) {
+    if (_compass._state[Compass::StateIndex(instance)].external() != 2) {
         _compass._state[Compass::StateIndex(instance)].external.set_and_notify(external);
     }
 }
 
 bool AP_Compass_Backend::is_external(uint8_t instance)
 {
-    return _compass._state[Compass::StateIndex(instance)].external;
+    return _compass._state[Compass::StateIndex(instance)].external();
 }
 
 // set rotation of an instance

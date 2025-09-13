@@ -721,7 +721,7 @@ Compass::Compass(void)
 //
 void Compass::init()
 {
-    if (!_enabled) {
+    if (!_enabled()) {
         return;
     }
 
@@ -732,12 +732,12 @@ void Compass::init()
      */
     suppress_devid_save = true;
     for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-        if (_state._priv_instance[i].dev_id != 0) {
+        if (_state._priv_instance[i].dev_id() != 0) {
             suppress_devid_save = false;
             break;
         }
 #if COMPASS_MAX_INSTANCES > 1
-        if (_priority_did_stored_list._priv_instance[i] != 0) {
+        if (_priority_did_stored_list._priv_instance[i]() != 0) {
             suppress_devid_save = false;
             break;
         }
@@ -748,7 +748,7 @@ void Compass::init()
     // PARAMETER_CONVERSION - Added: Nov-2021
 #if AP_CUSTOMROTATIONS_ENABLED
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        if (_state[i].orientation != ROTATION_CUSTOM_OLD) {
+        if (_state[i].orientation() != ROTATION_CUSTOM_OLD) {
             continue;
         }
         _state[i].orientation.set_and_save(ROTATION_CUSTOM_2);
@@ -772,7 +772,7 @@ void Compass::init()
     // Look if there was a primary compass setup in previous version
     // if so and the primary compass is not set in current setup
     // make the devid as primary.
-    if (_priority_did_stored_list[Priority(0)] == 0) {
+    if (_priority_did_stored_list[Priority(0)]() == 0) {
         uint16_t k_param_compass;
         if (AP_Param::find_top_level_key_by_pointer(this, k_param_compass)) {
             const AP_Param::ConversionInfo primary_compass_old_param = {k_param_compass, 12, AP_PARAM_INT8, ""};
@@ -781,7 +781,7 @@ void Compass::init()
             bool primary_param_exists = AP_Param::find_old_parameter(&primary_compass_old_param, &value);
             int8_t oldvalue = value.get();
             if ((oldvalue!=0) && (oldvalue<COMPASS_MAX_INSTANCES) && primary_param_exists) {
-                _priority_did_stored_list[Priority(0)].set_and_save_ifchanged(_state[StateIndex(oldvalue)].dev_id);
+                _priority_did_stored_list[Priority(0)].set_and_save_ifchanged(_state[StateIndex(oldvalue)].dev_id());
             }
         }
     }
@@ -790,19 +790,19 @@ void Compass::init()
     // by user only take effect post reboot, after this
     if (!suppress_devid_save) {
         for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
-            if (_priority_did_stored_list[i] != 0) {
-                _priority_did_list[i] = _priority_did_stored_list[i];
+            if (_priority_did_stored_list[i]() != 0) {
+                _priority_did_list[i] = _priority_did_stored_list[i]();
             } else {
                 // Maintain a list without gaps and duplicates
                 for (Priority j(i+1); j<COMPASS_MAX_INSTANCES; j++) {
                     int32_t temp;
-                    if (_priority_did_stored_list[j] == _priority_did_stored_list[i]) {
+                    if (_priority_did_stored_list[j]() == _priority_did_stored_list[i]()) {
                         _priority_did_stored_list[j].set_and_save_ifchanged(0);
                     }
-                    if (_priority_did_stored_list[j] == 0) {
+                    if (_priority_did_stored_list[j]() == 0) {
                         continue;
                     }
-                    temp = _priority_did_stored_list[j];
+                    temp = _priority_did_stored_list[j]();
                     _priority_did_stored_list[j].set_and_save_ifchanged(0);
                     _priority_did_list[i] = temp;
                     _priority_did_stored_list[i].set_and_save_ifchanged(temp);
@@ -815,7 +815,7 @@ void Compass::init()
 
     // cache expected dev ids for use during runtime detection
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        _state[i].expected_dev_id = _state[i].dev_id;
+        _state[i].expected_dev_id = _state[i].dev_id();
     }
 
 #if COMPASS_MAX_UNREG_DEV
@@ -825,7 +825,7 @@ void Compass::init()
     for (uint8_t i=_unreg_compass_count; i<COMPASS_MAX_UNREG_DEV; i++) {
         // cache the extra devices detected in last boot
         // for detecting replacement mag
-        _previously_unreg_mag[i] = extra_dev_id[i];
+        _previously_unreg_mag[i] = extra_dev_id[i]();
         extra_dev_id[i].set(0);
     }
 #endif
@@ -887,7 +887,7 @@ Compass::Priority Compass::_update_priority_list(int32_t dev_id)
 
     // We are not in priority list, let's add at first empty
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        if (_priority_did_stored_list[i] == 0) {
+        if (_priority_did_stored_list[i]() == 0) {
             if (suppress_devid_save) {
                 _priority_did_stored_list[i].set(dev_id);
             } else {
@@ -918,7 +918,7 @@ void Compass::_reorder_compass_params()
         }
         curr_state_id = COMPASS_MAX_INSTANCES;
         for (StateIndex j(0); j<COMPASS_MAX_INSTANCES; j++) {
-            if (_priority_did_list[i] == _state[j].dev_id) {
+            if (_priority_did_list[i] == _state[j].dev_id()) {
                 curr_state_id = j;
                 break;
             }
@@ -935,15 +935,15 @@ void Compass::_reorder_compass_params()
 
 void Compass::mag_state::copy_from(const Compass::mag_state& state)
 {
-    external.set_and_save_ifchanged(state.external);
-    orientation.set_and_save_ifchanged(state.orientation);
+    external.set_and_save_ifchanged(state.external());
+    orientation.set_and_save_ifchanged(state.orientation());
     offset.set_and_save_ifchanged(state.offset);
 #if AP_COMPASS_DIAGONALS_ENABLED
     diagonals.set_and_save_ifchanged(state.diagonals);
     offdiagonals.set_and_save_ifchanged(state.offdiagonals);
 #endif
     scale_factor.set_and_save_ifchanged(state.scale_factor);
-    dev_id.set_and_save_ifchanged(state.dev_id);
+    dev_id.set_and_save_ifchanged(state.dev_id());
     motor_compensation.set_and_save_ifchanged(state.motor_compensation);
     expected_dev_id = state.expected_dev_id;
     detected_dev_id = state.detected_dev_id;
@@ -981,7 +981,7 @@ bool Compass::register_compass(int32_t dev_id, uint8_t& instance)
     // This is an unregistered compass, check if any free slot is available
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
         priority = _update_priority_list(dev_id);
-        if (_state[i].dev_id == 0 && priority < COMPASS_MAX_INSTANCES) {
+        if (_state[i].dev_id() == 0 && priority < COMPASS_MAX_INSTANCES) {
             _state[i].registered = true;
             _state[i].priority = priority;
             instance = uint8_t(i);
@@ -1009,13 +1009,13 @@ bool Compass::register_compass(int32_t dev_id, uint8_t& instance)
     }
 
     for (uint8_t i=0; i<COMPASS_MAX_UNREG_DEV; i++) {
-        if (extra_dev_id[i] == dev_id) {
+        if (extra_dev_id[i]() == dev_id) {
             if (i >= _unreg_compass_count) {
                 _unreg_compass_count = i+1;
             }
             instance = i+COMPASS_MAX_INSTANCES;
             return false;
-        } else if (extra_dev_id[i] == 0) {
+        } else if (extra_dev_id[i]() == 0) {
             extra_dev_id[_unreg_compass_count++].set(dev_id);
             instance = i+COMPASS_MAX_INSTANCES;
             return false;
@@ -1564,7 +1564,7 @@ void Compass::probe_dronecan_compasses(void)
                     // let's begin the replacement
                     bool found_replacement = false;
                     for (StateIndex k(0); k<COMPASS_MAX_INSTANCES; k++) {
-                        if ((uint32_t)_state[k].dev_id == detected_devid) {
+                        if ((uint32_t)_state[k].dev_id() == detected_devid) {
                             if (_state[k].priority <= uint8_t(i)) {
                                 // we are already on higher priority
                                 // nothing to do
@@ -1633,7 +1633,7 @@ void Compass::remove_unreg_dev_id(uint32_t devid)
 
 #if COMPASS_MAX_UNREG_DEV > 0
     for (uint8_t i = 0; i<COMPASS_MAX_UNREG_DEV; i++) {
-        if ((uint32_t)extra_dev_id[i] == devid) {
+        if ((uint32_t)extra_dev_id[i]() == devid) {
             extra_dev_id[i].set(0);
             return;
         }
@@ -1647,8 +1647,8 @@ void Compass::_reset_compass_id()
 #if COMPASS_MAX_INSTANCES > 1
     // Check if any of the registered devs are not registered
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        if (_priority_did_stored_list[i] != _priority_did_list[i] ||
-            _priority_did_stored_list[i] == 0) {
+        if (_priority_did_stored_list[i]() != _priority_did_list[i] ||
+            _priority_did_stored_list[i]() == 0) {
             //We don't touch priorities that might have been touched by the user
             continue;
         }
@@ -1661,7 +1661,7 @@ void Compass::_reset_compass_id()
     // Check if any of the old registered devs are not registered
     // and hence can be removed
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        if (_state[i].dev_id == 0 && _state[i].expected_dev_id != 0) {
+        if (_state[i].dev_id() == 0 && _state[i].expected_dev_id != 0) {
             // also hard reset dev_ids that are not detected
             _state[i].dev_id.save();
         }
@@ -1746,7 +1746,7 @@ Compass::read(void)
 
     // Set _first_usable parameter
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        if (_use_for_yaw[i]) {
+        if (_use_for_yaw[i]()) {
             _first_usable = uint8_t(i);
             break;
         }
@@ -1883,10 +1883,10 @@ Compass::save_motor_compensation()
 
 void Compass::try_set_initial_location()
 {
-    if (!_auto_declination) {
+    if (!_auto_declination()) {
         return;
     }
-    if (!_enabled) {
+    if (!_enabled()) {
         return;
     }
 
@@ -1922,7 +1922,7 @@ Compass::use_for_yaw(uint8_t i) const
     // when we are doing in-flight compass learning the state
     // estimator must not use the compass. The learning code turns off
     // inflight learning when it has converged
-    return _use_for_yaw[Priority(i)] && _learn != LearnType::INFLIGHT;
+    return _use_for_yaw[Priority(i)]() && _learn != LearnType::INFLIGHT;
 }
 
 /*
@@ -2048,13 +2048,13 @@ bool Compass::configured(uint8_t i)
 #endif
 
     // back up cached value of dev_id
-    int32_t dev_id_cache_value = _state[id].dev_id;
+    int32_t dev_id_cache_value = _state[id].dev_id();
 
     // load dev_id from eeprom
     _state[id].dev_id.load();
 
     // if dev_id loaded from eeprom is different from detected dev id or dev_id loaded from eeprom is different from cached dev_id, compass is unconfigured
-    if (_state[id].dev_id != _state[id].detected_dev_id || _state[id].dev_id != dev_id_cache_value) {
+    if (_state[id].dev_id() != _state[id].detected_dev_id || _state[id].dev_id() != dev_id_cache_value) {
         // restore cached value
         _state[id].dev_id.set(dev_id_cache_value);
         // return failure
@@ -2075,7 +2075,7 @@ bool Compass::configured(char *failure_msg, uint8_t failure_msg_len)
                 snprintf(failure_msg, failure_msg_len, "Compass %d not found", uint8_t(i + 1));
                 return false;
             }
-            if (_priority_did_list[i] != _priority_did_stored_list[i]) {
+            if (_priority_did_list[i] != _priority_did_stored_list[i]()) {
                 snprintf(failure_msg, failure_msg_len, "Compass order change requires reboot");
                 return false;
             }
@@ -2107,7 +2107,7 @@ bool Compass::configured(char *failure_msg, uint8_t failure_msg_len)
  */
 void Compass::motor_compensation_type(const uint8_t comp_type)
 {
-    if (_motor_comp_type <= AP_COMPASS_MOT_COMP_CURRENT && _motor_comp_type != (int8_t)comp_type) {
+    if (_motor_comp_type() <= AP_COMPASS_MOT_COMP_CURRENT && _motor_comp_type() != (int8_t)comp_type) {
         _motor_comp_type.set((int8_t)comp_type);
         _thr = 0; // set current  throttle to zero
         for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
@@ -2211,7 +2211,7 @@ void Compass::handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt)
 void Compass::force_save_calibration(void)
 {
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        if (_state[i].dev_id != 0) {
+        if (_state[i].dev_id() != 0) {
             _state[i].dev_id.save();
         }
     }
