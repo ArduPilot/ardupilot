@@ -40,13 +40,13 @@ void AP_TemperatureSensor_TSYS03::init()
 
 #if AP_TEMPERATURE_SENSOR_TSYS03_ENFORCE_KNOWN_VALID_I2C_ADDRESS
     // I2C Address: Default to using TSYS03_ADDR_CSB0 & Check I2C Address is Correct
-    if ((_params.bus_address != TSYS03_ADDR_CSB0) ) {
+    if ((_params.bus_address() != TSYS03_ADDR_CSB0) ) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s wrong I2C addr of 0x%2X, setting to 0x%2X", name, (unsigned)_params.bus_address.get(), (unsigned)TSYS03_ADDR_CSB0);
         _params.bus_address.set(TSYS03_ADDR_CSB0);
     }
 #endif
 
-    _dev = hal.i2c_mgr->get_device_ptr(_params.bus, _params.bus_address);
+    _dev = hal.i2c_mgr->get_device_ptr(_params.bus(), _params.bus_address());
     if (!_dev) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s device is null!", name);
         return;

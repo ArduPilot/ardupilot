@@ -97,9 +97,9 @@ void AP_TemperatureSensor_MAX31865::init()
 
     // also look for "max31865_n" where n is the addr param.
     char name[12] = "max31865";
-    if (_params.bus_address > 0 && _params.bus_address <= 9) {
+    if (_params.bus_address() > 0 && _params.bus_address() <= 9) {
         name[8] = '_';
-        name[9] = '0' + _params.bus_address; // convert bus_address to ascii
+        name[9] = '0' + _params.bus_address(); // convert bus_address to ascii
         name[10] = 0;
     }
 
