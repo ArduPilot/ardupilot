@@ -117,12 +117,12 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg, int16_t m
 void AP_Airspeed::update_calibration(uint8_t i, const Vector3f &vground, int16_t max_airspeed_allowed_during_cal)
 {
 #if AP_AIRSPEED_AUTOCAL_ENABLE
-    if (!param[i].autocal && !calibration_enabled) {
+    if (!param[i].autocal() && !calibration_enabled) {
         // auto-calibration not enabled
         return;
     }
 
-    if (param[i].use == 2 && !is_zero(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle))) {
+    if (param[i].use() == 2 && !is_zero(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle))) {
         // special case for gliders with airspeed sensors behind the
         // propeller. Allow airspeed to be disabled when throttle is
         // running
@@ -185,7 +185,7 @@ void AP_Airspeed::send_airspeed_calibration(const Vector3f &vground)
       so we can only send it for one sensor at a time
      */
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-        if (!param[i].autocal && !calibration_enabled) {
+        if (!param[i].autocal() && !calibration_enabled) {
             // auto-calibration not enabled on this sensor
             continue;
         }
