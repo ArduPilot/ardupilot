@@ -196,18 +196,18 @@ void AP_PiccoloCAN::loop()
         }
 
         // Calculate the output rate for ESC commands
-        _esc_hz.set(constrain_int16(_esc_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX));
+        _esc_hz.set(constrain_int16(_esc_hz(), PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX));
 
-        uint16_t escCmdRateMs = 1000 / _esc_hz;
+        uint16_t escCmdRateMs = 1000 / _esc_hz();
 
         // Calculate the output rate for servo commands
-        _srv_hz.set(constrain_int16(_srv_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX));
+        _srv_hz.set(constrain_int16(_srv_hz(), PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX));
 
-        uint16_t servoCmdRateMs = 1000 / _srv_hz;
+        uint16_t servoCmdRateMs = 1000 / _srv_hz();
 #if AP_EFI_CURRAWONG_ECU_ENABLED
-        _ecu_hz.set(constrain_int16(_ecu_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX));
+        _ecu_hz.set(constrain_int16(_ecu_hz(), PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX));
 
-        uint16_t ecuCmdRateMs = 1000 / _ecu_hz;
+        uint16_t ecuCmdRateMs = 1000 / _ecu_hz();
 #endif
 
         // 1ms loop delay
@@ -353,7 +353,7 @@ void AP_PiccoloCAN::update()
     }
 
 #if AP_EFI_CURRAWONG_ECU_ENABLED
-    if (_ecu_id != 0) {
+    if (_ecu_id() != 0) {
         _ecu_info.command = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
         _ecu_info.newCommand = true;
     }
@@ -406,7 +406,7 @@ void AP_PiccoloCAN::send_servo_messages(void)
     AP_HAL::CANFrame txFrame {};
 
     // No servos are selected? Don't send anything!
-    if (_srv_bm == 0x00) {
+    if (_srv_bm() == 0x00) {
         return;
     }
 
@@ -473,7 +473,7 @@ void AP_PiccoloCAN::send_esc_messages(void)
     AP_HAL::CANFrame txFrame {};
 
     // No ESCs are selected? Don't send anything
-    if (_esc_bm == 0x00) {
+    if (_esc_bm() == 0x00) {
         return;
     }
 
@@ -602,13 +602,13 @@ void AP_PiccoloCAN::send_ecu_messages(void)
     AP_HAL::CANFrame txFrame {};
 
     // No ECU node id set, don't send anything
-    if (_ecu_id == 0) {
+    if (_ecu_id() == 0) {
         return;
     }
 
     if (_ecu_info.newCommand) {
         encodeECU_ThrottleCommandPacket(&txFrame, _ecu_info.command);
-        txFrame.id |= (uint8_t) _ecu_id;
+        txFrame.id |= (uint8_t) _ecu_id();
 
         _ecu_info.newCommand = false;
 
@@ -633,7 +633,7 @@ bool AP_PiccoloCAN::handle_ecu_message(AP_HAL::CANFrame &frame)
 bool AP_PiccoloCAN::is_servo_channel_active(uint8_t chan)
 {
     // First check if the particular servo channel is enabled in the channel mask
-    if (((_srv_bm >> chan) & 0x01) == 0x00) {
+    if (((_srv_bm() >> chan) & 0x01) == 0x00) {
         return false;
     }
 
@@ -659,7 +659,7 @@ bool AP_PiccoloCAN::is_servo_channel_active(uint8_t chan)
 bool AP_PiccoloCAN::is_esc_channel_active(uint8_t chan)
 {
     // First check if the particular ESC channel is enabled in the channel mask
-    if (((_esc_bm >> chan) & 0x01) == 0x00) {
+    if (((_esc_bm() >> chan) & 0x01) == 0x00) {
         return false;
     }
 
