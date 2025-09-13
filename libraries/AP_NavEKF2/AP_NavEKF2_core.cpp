@@ -93,7 +93,7 @@ bool NavEKF2_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
        return false;
     }
 
-    if ((yawEstimator == nullptr) && (frontend->_gsfRunMask & (1U<<core_index))) {
+    if ((yawEstimator == nullptr) && (frontend->_gsfRunMask() & (1U<<core_index))) {
         // check if there is enough memory to create the EKF-GSF object
         if (dal.available_memory() < sizeof(EKFGSF_yaw) + 1024) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF2 IMU%u GSF: not enough memory",(unsigned)imu_index);
@@ -846,7 +846,7 @@ void NavEKF2_core::calcOutputStates()
         outputTrackError.z = posErr.length();
 
         // convert user specified time constant from centi-seconds to seconds
-        ftype tauPosVel = constrain_ftype(0.01f*(ftype)frontend->_tauVelPosOutput, 0.1f, 0.5f);
+        ftype tauPosVel = constrain_ftype(0.01f*(ftype)frontend->_tauVelPosOutput(), 0.1f, 0.5f);
 
         // calculate a gain to track the EKF position states with the specified time constant
         ftype velPosGain = dtEkfAvg / constrain_ftype(tauPosVel, dtEkfAvg, 10.0f);
@@ -1523,7 +1523,7 @@ void NavEKF2_core::ConstrainVariances()
 void NavEKF2_core::MagTableConstrain(void)
 {
     // constrain to error from table earth field
-    ftype limit_ga = frontend->_mag_ef_limit * 0.001f;
+    ftype limit_ga = frontend->_mag_ef_limit() * 0.001f;
     stateStruct.earth_magfield.x = constrain_ftype(stateStruct.earth_magfield.x,
                                                    table_earth_field_ga.x-limit_ga,
                                                    table_earth_field_ga.x+limit_ga);
@@ -1554,7 +1554,7 @@ void NavEKF2_core::ConstrainStates()
     stateStruct.accel_zbias = constrain_ftype(stateStruct.accel_zbias,-1.0f*dtEkfAvg,1.0f*dtEkfAvg);
 
     // earth magnetic field limit
-    if (frontend->_mag_ef_limit <= 0 || !have_table_earth_field) {
+    if (frontend->_mag_ef_limit() <= 0 || !have_table_earth_field) {
         // constrain to +/-1Ga
         for (uint8_t i=16; i<=18; i++) statesArray[i] = constrain_ftype(statesArray[i],-1.0f,1.0f);
     } else {
@@ -1630,7 +1630,7 @@ QuaternionF NavEKF2_core::calcQuatAndFieldStates(ftype roll, ftype pitch)
         // don't do this if the earth field has already been learned
         if (!magFieldLearned) {
             initQuat.rotation_matrix(Tbn);
-            if (have_table_earth_field && frontend->_mag_ef_limit > 0) {
+            if (have_table_earth_field && frontend->_mag_ef_limit() > 0) {
                 stateStruct.earth_magfield = table_earth_field_ga;
             } else {
                 stateStruct.earth_magfield = Tbn * magDataDelayed.mag;

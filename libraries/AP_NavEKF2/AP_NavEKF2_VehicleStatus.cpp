@@ -25,7 +25,7 @@ void NavEKF2_core::calcGpsGoodToAlign(void)
     }
 
     // User defined multiplier to be applied to check thresholds
-    ftype checkScaler = 0.01f*(ftype)frontend->_gpsCheckScaler;
+    ftype checkScaler = 0.01f*(ftype)frontend->_gpsCheckScaler();
 
     if (gpsGoodToAlign) {
         /*
@@ -65,7 +65,7 @@ void NavEKF2_core::calcGpsGoodToAlign(void)
     gpsDriftNE = MIN(gpsDriftNE,10.0f);
     // Fail if more than 3 metres drift after filtering whilst on-ground
     // This corresponds to a maximum acceptable average drift rate of 0.3 m/s or single glitch event of 3m
-    bool gpsDriftFail = (gpsDriftNE > 3.0f*checkScaler) && onGround && (frontend->_gpsCheck & MASK_GPS_POS_DRIFT);
+    bool gpsDriftFail = (gpsDriftNE > 3.0f*checkScaler) && onGround && (frontend->_gpsCheck() & MASK_GPS_POS_DRIFT);
 
     // Report check result as a text string and bitmask
     if (gpsDriftFail) {
@@ -83,7 +83,7 @@ void NavEKF2_core::calcGpsGoodToAlign(void)
         // check that the average vertical GPS velocity is close to zero
         gpsVertVelFilt = 0.1f * gpsDataNew.vel.z + 0.9f * gpsVertVelFilt;
         gpsVertVelFilt = constrain_ftype(gpsVertVelFilt,-10.0f,10.0f);
-        gpsVertVelFail = (fabsF(gpsVertVelFilt) > 0.3f*checkScaler) && (frontend->_gpsCheck & MASK_GPS_VERT_SPD);
+        gpsVertVelFail = (fabsF(gpsVertVelFilt) > 0.3f*checkScaler) && (frontend->_gpsCheck() & MASK_GPS_VERT_SPD);
     } else {
         gpsVertVelFail = false;
     }
@@ -104,7 +104,7 @@ void NavEKF2_core::calcGpsGoodToAlign(void)
     if (onGround) {
         gpsHorizVelFilt = 0.1f * gpsDataDelayed.vel.xy().length() + 0.9f * gpsHorizVelFilt;
         gpsHorizVelFilt = constrain_ftype(gpsHorizVelFilt,-10.0f,10.0f);
-        gpsHorizVelFail = (fabsF(gpsHorizVelFilt) > 0.3f*checkScaler) && (frontend->_gpsCheck & MASK_GPS_HORIZ_SPD);
+        gpsHorizVelFail = (fabsF(gpsHorizVelFilt) > 0.3f*checkScaler) && (frontend->_gpsCheck() & MASK_GPS_HORIZ_SPD);
     } else {
         gpsHorizVelFail = false;
     }
@@ -123,7 +123,7 @@ void NavEKF2_core::calcGpsGoodToAlign(void)
     float hAcc = 0.0;
     bool hAccFail;
     if (gps.horizontal_accuracy(hAcc)) {
-        hAccFail = (hAcc > 5.0f*checkScaler)  && (frontend->_gpsCheck & MASK_GPS_POS_ERR);
+        hAccFail = (hAcc > 5.0f*checkScaler)  && (frontend->_gpsCheck() & MASK_GPS_POS_ERR);
     } else {
         hAccFail =  false;
     }
@@ -142,7 +142,7 @@ void NavEKF2_core::calcGpsGoodToAlign(void)
     float vAcc = 0.0f;
     bool vAccFail = false;
     if (gps.vertical_accuracy(vAcc)) {
-        vAccFail = (vAcc > 7.5f * checkScaler) && (frontend->_gpsCheck & MASK_GPS_POS_ERR);
+        vAccFail = (vAcc > 7.5f * checkScaler) && (frontend->_gpsCheck() & MASK_GPS_POS_ERR);
     }
     // Report check result as a text string and bitmask
     if (vAccFail) {
@@ -155,7 +155,7 @@ void NavEKF2_core::calcGpsGoodToAlign(void)
     }
 
     // fail if reported speed accuracy greater than threshold
-    bool gpsSpdAccFail = (gpsSpdAccuracy > 1.0f*checkScaler) && (frontend->_gpsCheck & MASK_GPS_SPD_ERR);
+    bool gpsSpdAccFail = (gpsSpdAccuracy > 1.0f*checkScaler) && (frontend->_gpsCheck() & MASK_GPS_SPD_ERR);
 
     // Report check result as a text string and bitmask
     if (gpsSpdAccFail) {
@@ -168,7 +168,7 @@ void NavEKF2_core::calcGpsGoodToAlign(void)
     }
 
     // fail if satellite geometry is poor
-    bool hdopFail = (gps.get_hdop() > 250)  && (frontend->_gpsCheck & MASK_GPS_HDOP);
+    bool hdopFail = (gps.get_hdop() > 250)  && (frontend->_gpsCheck() & MASK_GPS_HDOP);
 
     // Report check result as a text string and bitmask
     if (hdopFail) {
@@ -180,7 +180,7 @@ void NavEKF2_core::calcGpsGoodToAlign(void)
     }
 
     // fail if not enough sats
-    bool numSatsFail = (gps.num_sats() < 6) && (frontend->_gpsCheck & MASK_GPS_NSATS);
+    bool numSatsFail = (gps.num_sats() < 6) && (frontend->_gpsCheck() & MASK_GPS_NSATS);
 
     // Report check result as a text string and bitmask
     if (numSatsFail) {
@@ -194,7 +194,7 @@ void NavEKF2_core::calcGpsGoodToAlign(void)
     // fail if magnetometer innovations are outside limits indicating bad yaw
     // with bad yaw we are unable to use GPS
     bool yawFail;
-    if ((magTestRatio.x > 1.0f || magTestRatio.y > 1.0f || yawTestRatio > 1.0f) && (frontend->_gpsCheck & MASK_GPS_YAW_ERR)) {
+    if ((magTestRatio.x > 1.0f || magTestRatio.y > 1.0f || yawTestRatio > 1.0f) && (frontend->_gpsCheck() & MASK_GPS_YAW_ERR)) {
         yawFail = true;
     } else {
         yawFail = false;

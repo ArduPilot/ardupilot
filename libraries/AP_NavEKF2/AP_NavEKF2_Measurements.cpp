@@ -168,7 +168,7 @@ void NavEKF2_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
         // record time last observation was received so we can detect loss of data elsewhere
         flowValidMeaTime_ms = imuSampleTime_ms;
         // estimate sample time of the measurement
-        ofDataNew.time_ms = imuSampleTime_ms - frontend->_flowDelay_ms - frontend->flowTimeDeltaAvg_ms/2;
+        ofDataNew.time_ms = imuSampleTime_ms - frontend->_flowDelay_ms() - frontend->flowTimeDeltaAvg_ms/2;
         // Correct for the average intersampling delay due to the filter updaterate
         ofDataNew.time_ms -= localFilterTimeStep_ms/2;
         // Prevent time delay exceeding age of oldest IMU data in the buffer
@@ -492,7 +492,7 @@ bool NavEKF2_core::readDeltaVelocity(uint8_t ins_index, Vector3F &dVel, ftype &d
 // check for new valid GPS data and update stored measurement if available
 void NavEKF2_core::readGpsData()
 {
-    if (frontend->_fusionModeGPS == 3) {
+    if (frontend->_fusionModeGPS() == 3) {
         // don't read GPS data if GPS usage disabled
         return;
     }
@@ -571,7 +571,7 @@ void NavEKF2_core::readGpsData()
             }
 
             // Check if GPS can output vertical velocity, if it is allowed to be used, and set GPS fusion mode accordingly
-            if (gps.have_vertical_velocity() && frontend->_fusionModeGPS == 0) {
+            if (gps.have_vertical_velocity() && frontend->_fusionModeGPS() == 0) {
                 useGpsVertVel = true;
             } else {
                 useGpsVertVel = false;
@@ -632,7 +632,7 @@ void NavEKF2_core::readGpsData()
                     table_declination = radians(AP_Declination::get_declination(gpsloc.lat*1.0e-7,
                                                                                 gpsloc.lng*1.0e-7));
                     have_table_earth_field = true;
-                    if (frontend->_mag_ef_limit > 0) {
+                    if (frontend->_mag_ef_limit() > 0) {
                         // initialise earth field from tables
                         stateStruct.earth_magfield = table_earth_field_ga;
                     }
@@ -642,7 +642,7 @@ void NavEKF2_core::readGpsData()
             // convert GPS measurements to local NED and save to buffer to be fused later if we have a valid origin
             if (validOrigin) {
                 gpsDataNew.pos = EKF_origin.get_distance_NE_ftype(gpsloc);
-                if ((frontend->_originHgtMode & (1<<2)) == 0) {
+                if ((frontend->_originHgtMode() & (1<<2)) == 0) {
                     gpsDataNew.hgt = (float)((double)0.01 * (double)gpsloc.alt - ekfGpsRefHgt);
                 } else {
                     gpsDataNew.hgt = 0.01 * (gpsloc.alt - EKF_origin.alt);
@@ -703,7 +703,7 @@ void NavEKF2_core::readBaroData()
         lastBaroReceived_ms = baro.get_last_update();
 
         // estimate of time height measurement was taken, allowing for delays
-        baroDataNew.time_ms = lastBaroReceived_ms - frontend->_hgtDelay_ms;
+        baroDataNew.time_ms = lastBaroReceived_ms - frontend->_hgtDelay_ms();
 
         // Correct for the average intersampling delay due to the filter updaterate
         baroDataNew.time_ms -= localFilterTimeStep_ms/2;
@@ -835,7 +835,7 @@ void NavEKF2_core::readRngBcnData()
         {
             // set the timestamp, correcting for measurement delay and average intersampling delay due to the filter update rate
             lastTimeRngBcn_ms[index] = beacon->beacon_last_update_ms(index);
-            rngBcnDataNew.time_ms = lastTimeRngBcn_ms[index] - frontend->_rngBcnDelay_ms - localFilterTimeStep_ms/2;
+            rngBcnDataNew.time_ms = lastTimeRngBcn_ms[index] - frontend->_rngBcnDelay_ms() - localFilterTimeStep_ms/2;
 
             // set the range noise
             // TODO the range library should provide the noise/accuracy estimate for each beacon
@@ -979,7 +979,7 @@ ftype NavEKF2_core::MagDeclination(void) const
     // if we are using the WMM tables then use the table declination
     // to ensure consistency with the table mag field. Otherwise use
     // the declination from the compass library
-    if (have_table_earth_field && frontend->_mag_ef_limit > 0) {
+    if (have_table_earth_field && frontend->_mag_ef_limit() > 0) {
         return table_declination;
     }
     if (!use_compass()) {

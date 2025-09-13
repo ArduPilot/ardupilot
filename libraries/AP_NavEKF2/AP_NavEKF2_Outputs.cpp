@@ -58,7 +58,7 @@ ftype NavEKF2_core::errorScore() const
 bool NavEKF2_core::getHeightControlLimit(float &height) const
 {
     // only ask for limiting if we are doing optical flow only navigation
-    if (frontend->_fusionModeGPS == 3 && (PV_AidingMode == AID_RELATIVE) && flowDataValid) {
+    if (frontend->_fusionModeGPS() == 3 && (PV_AidingMode == AID_RELATIVE) && flowDataValid) {
         // If are doing optical flow nav, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
 #if AP_RANGEFINDER_ENABLED
         const auto *_rng = dal.rangefinder();
@@ -71,7 +71,7 @@ bool NavEKF2_core::getHeightControlLimit(float &height) const
         return false;
 #endif
         // If we are are not using the range finder as the height reference, then compensate for the difference between terrain and EKF origin
-        if (frontend->_altSource != 1) {
+        if (frontend->_altSource() != 1) {
             height -= terrainState;
         }
         return true;
@@ -255,7 +255,7 @@ bool NavEKF2_core::getPosD(postype_t &posD) const
     // The EKF always has a height estimate regardless of mode of operation
     // Correct for the IMU offset in body frame (EKF calculations are at the IMU)
     // Also correct for changes to the origin height
-    if ((frontend->_originHgtMode & (1<<2)) == 0) {
+    if ((frontend->_originHgtMode() & (1<<2)) == 0) {
         // Any sensor height drift corrections relative to the WGS-84 reference are applied to the origin.
         posD = outputDataNew.position.z + posOffsetNED.z;
     } else {
@@ -354,7 +354,7 @@ bool NavEKF2_core::getOriginLLH(Location &loc) const
     if (validOrigin) {
         loc = EKF_origin;
         // report internally corrected reference height if enabled
-        if ((frontend->_originHgtMode & (1<<2)) == 0) {
+        if ((frontend->_originHgtMode() & (1<<2)) == 0) {
             loc.alt = (int32_t)(100.0f * (float)ekfGpsRefHgt);
         }
     }
@@ -549,7 +549,7 @@ void NavEKF2_core::send_status_report(GCS_MAVLINK &link) const
     // height estimation or optical flow operation. This prevents false alarms at the GCS if a
     // range finder is fitted for other applications
     float temp;
-    if (((frontend->_useRngSwHgt > 0) && activeHgtSource == HGT_SOURCE_RNG) || (PV_AidingMode == AID_RELATIVE && flowDataValid)) {
+    if (((frontend->_useRngSwHgt() > 0) && activeHgtSource == HGT_SOURCE_RNG) || (PV_AidingMode == AID_RELATIVE && flowDataValid)) {
         temp = sqrtF(auxRngTestRatio);
     } else {
         temp = 0.0f;
