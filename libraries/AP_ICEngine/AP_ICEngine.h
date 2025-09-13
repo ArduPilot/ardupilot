@@ -153,7 +153,7 @@ private:
     float height_required;
 
     // we are waiting for valid height data
-    bool height_pending:1;
+    bool height_pending;
 
     bool allow_single_start_while_disarmed;
 
