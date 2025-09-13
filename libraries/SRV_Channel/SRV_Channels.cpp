@@ -369,7 +369,7 @@ void SRV_Channels::init(uint32_t motor_mask, AP_HAL::RCOutput::output_mode mode)
     blheli.init(motor_mask, mode);
 #endif
 #ifndef HAL_BUILD_AP_PERIPH
-    hal.rcout->set_dshot_rate(_singleton->dshot_rate, AP::scheduler().get_loop_rate_hz());
+    hal.rcout->set_dshot_rate(_singleton->dshot_rate(), AP::scheduler().get_loop_rate_hz());
 #endif
 }
 
@@ -390,7 +390,7 @@ void SRV_Channels::setup_failsafe_trim_all_non_motors(void)
 {
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         if (!SRV_Channel::is_motor(channels[i].get_function())) {
-            hal.rcout->set_failsafe_pwm(1U<<channels[i].ch_num, channels[i].servo_trim);
+            hal.rcout->set_failsafe_pwm(1U<<channels[i].ch_num, channels[i].servo_trim());
         }
     }
 }
@@ -571,7 +571,7 @@ bool SRV_Channels::is_GPIO(uint8_t channel)
     if (channel_function(channel) == SRV_Channel::k_GPIO) {
         return true;
     }
-    if (_singleton != nullptr && (_singleton->gpio_mask & (1U<<channel)) != 0) {
+    if (_singleton != nullptr && (_singleton->gpio_mask() & (1U<<channel)) != 0) {
         // user has set this channel in SERVO_GPIO_MASK
         return true;
     }

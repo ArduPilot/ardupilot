@@ -268,13 +268,13 @@ void SRV_Channels::enable_aux_servos()
         // output some servo functions before we fiddle with the
         // parameter values:
         if (c.function == SRV_Channel::k_min) {
-            c.set_output_pwm(c.servo_min);
+            c.set_output_pwm(c.servo_min());
             c.output_ch();
         } else if (c.function == SRV_Channel::k_trim) {
-            c.set_output_pwm(c.servo_trim);
+            c.set_output_pwm(c.servo_trim());
             c.output_ch();
         } else if (c.function == SRV_Channel::k_max) {
-            c.set_output_pwm(c.servo_max);
+            c.set_output_pwm(c.servo_max());
             c.output_ch();
         }
     }
@@ -543,7 +543,7 @@ SRV_Channels::move_servo(SRV_Channel::Function function,
         SRV_Channel &c = channels[i];
         if (c.function == function) {
             float v2 = c.get_reversed()? (1-v) : v;
-            uint16_t pwm = c.servo_min + v2 * (c.servo_max - c.servo_min);
+            uint16_t pwm = c.servo_min() + v2 * (c.servo_max() - c.servo_min());
             c.set_output_pwm(pwm);
         }
     }
@@ -679,7 +679,7 @@ void SRV_Channels::set_trim_to_min_for(SRV_Channel::Function function, bool igno
 {
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         if (channels[i].function == function) {
-            channels[i].servo_trim.set_and_default((channels[i].get_reversed() && !ignore_reversed)?channels[i].servo_max:channels[i].servo_min);
+            channels[i].servo_trim.set_and_default((channels[i].get_reversed() && !ignore_reversed)?channels[i].servo_max():channels[i].servo_min());
         }
     }
 }
@@ -720,12 +720,12 @@ void SRV_Channels::adjust_trim(SRV_Channel::Function function, float v)
         if (function != c.function) {
             continue;
         }
-        float change = c.reversed?-v:v;
-        uint16_t new_trim = c.servo_trim;
-        if (c.servo_max <= c.servo_min) {
+        float change = c.reversed()?-v:v;
+        uint16_t new_trim = c.servo_trim();
+        if (c.servo_max() <= c.servo_min()) {
             continue;
         }
-        float trim_scaled = float(c.servo_trim - c.servo_min) / (c.servo_max - c.servo_min);
+        float trim_scaled = float(c.servo_trim() - c.servo_min()) / (c.servo_max() - c.servo_min());
         if (change > 0 && trim_scaled < 0.6f) {
             new_trim++;
         } else if (change < 0 && trim_scaled > 0.4f) {
@@ -759,7 +759,7 @@ void SRV_Channels::set_output_to_trim(SRV_Channel::Function function)
 {
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         if (channels[i].function == function) {
-            channels[i].set_output_pwm(channels[i].servo_trim);
+            channels[i].set_output_pwm(channels[i].servo_trim());
         }
     }
 }
@@ -903,7 +903,7 @@ void SRV_Channels::constrain_pwm(SRV_Channel::Function function)
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         SRV_Channel &c = channels[i];
         if (c.function == function) {
-            c.set_output_pwm(constrain_int16(c.output_pwm, c.servo_min, c.servo_max));
+            c.set_output_pwm(constrain_int16(c.output_pwm, c.servo_min(), c.servo_max()));
         }
     }
 }
