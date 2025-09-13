@@ -153,7 +153,7 @@ protected:
     uint32_t _last_gps_loss_ms;
 
     // have the failsafe values been setup?
-    bool _failsafe_setup:1;
+    bool _failsafe_setup;
 
     Location _first_location;
     bool _have_first_location;
