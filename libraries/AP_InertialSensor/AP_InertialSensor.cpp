@@ -752,7 +752,7 @@ bool AP_InertialSensor::register_gyro(uint8_t &instance, uint16_t raw_sample_rat
 
     // Loop over the existing instances and check if the instance already exists
     for (uint8_t instance_to_check = 0; instance_to_check < _gyro_count; instance_to_check++) {
-        if ((uint32_t)_gyro_id(instance_to_check) == id) {
+        if ((uint32_t)_gyro_id(instance_to_check)() == id) {
             // if it does, then bail
             return false;
         }
@@ -764,7 +764,7 @@ bool AP_InertialSensor::register_gyro(uint8_t &instance, uint16_t raw_sample_rat
 
     bool saved = _gyro_id(_gyro_count).load();
 
-    if (saved && (uint32_t)_gyro_id(_gyro_count) != id) {
+    if (saved && (uint32_t)_gyro_id(_gyro_count)() != id) {
         // inconsistent gyro id - mark it as needing calibration
         _gyro_cal_ok[_gyro_count] = false;
     }
@@ -820,7 +820,7 @@ bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_ra
 
     // Loop over the existing instances and check if the instance already exists
     for (uint8_t instance_to_check = 0; instance_to_check < _accel_count; instance_to_check++) {
-        if ((uint32_t)_accel_id(instance_to_check) == id) {
+        if ((uint32_t)_accel_id(instance_to_check)() == id) {
             // if it does, then bail
             return false;
         }
@@ -835,7 +835,7 @@ bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_ra
     if (!saved) {
         // inconsistent accel id
         _accel_id_ok[_accel_count] = false;
-    } else if ((uint32_t)_accel_id(_accel_count) != id) {
+    } else if ((uint32_t)_accel_id(_accel_count)() != id) {
         // inconsistent accel id
         _accel_id_ok[_accel_count] = false;
     } else {
@@ -1064,7 +1064,7 @@ AP_InertialSensor::init(uint16_t loop_rate)
     // count number of used sensors
     uint8_t sensors_used = 0;
     for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
-        sensors_used += _use(i);
+        sensors_used += _use(i)();
     }
 
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
@@ -1086,7 +1086,7 @@ AP_InertialSensor::init(uint16_t loop_rate)
     // allocate notches
     for (uint8_t i=0; i<get_gyro_count(); i++) {
         // only allocate notches for IMUs in use
-        if (_use(i)) {
+        if (_use(i)()) {
             for (auto &notch : harmonic_notches) {
                 if (notch.params.enabled() || fft_enabled) {
                     notch.filter[i].allocate_filters(notch.num_dynamic_notches,
@@ -1143,7 +1143,7 @@ AP_InertialSensor::detect_backends(void)
     // boards. For users who really want limited IMUs they will need
     // to either use the INS_ENABLE_MASK or set INS_USE2=0 which will
     // enable the first IMU without triggering this check
-    if (_use(0) == 1 && _use(1) == 1 && _use(2) == 0) {
+    if (_use(0)() == 1 && _use(1)() == 1 && _use(2)() == 0) {
         _use(2).set(1);
     }
 #endif
@@ -1206,7 +1206,7 @@ AP_InertialSensor::detect_backends(void)
 #endif
 
 #if AP_SIM_INS_ENABLED
-    for (uint8_t i=0; i<AP::sitl()->imu_count; i++) {
+    for (uint8_t i=0; i<AP::sitl()->imu_count(); i++) {
         ADD_BACKEND(AP_InertialSensor_SITL::detect(*this, i==1?INS_SITL_SENSOR_B:INS_SITL_SENSOR_A));
     }
     return;
@@ -1466,7 +1466,7 @@ bool AP_InertialSensor::gyro_calibrated_ok_all() const
         }
     }
     for (uint8_t i=get_gyro_count(); i<INS_MAX_INSTANCES; i++) {
-        if (_gyro_id(i) != 0) {
+        if (_gyro_id(i)() != 0) {
             // missing gyro
             return false;
         }
@@ -1481,11 +1481,11 @@ bool AP_InertialSensor::pre_arm_check_gyro_backend_rate_hz(char* fail_msg, uint1
     const auto gyro_count = get_gyro_count();
     const auto threshold = 1.8 * _loop_rate;
     for (uint8_t i=0; i<gyro_count; i++) {
-        if (!_use(i) || _backends[i] == nullptr) {
+        if (!_use(i)() || _backends[i] == nullptr) {
             continue;
         }
         const auto rate_hz = _backends[i]->get_gyro_backend_rate_hz();
-        if (rate_hz < threshold && (AP_HAL::Device::devid_get_devtype(_gyro_id(i)) != AP_InertialSensor_Backend::DEVTYPE_SERIAL)) {
+        if (rate_hz < threshold && (AP_HAL::Device::devid_get_devtype(_gyro_id(i)()) != AP_InertialSensor_Backend::DEVTYPE_SERIAL)) {
             hal.util->snprintf(fail_msg, fail_msg_len, "Gyro %d rate %dHz < loop ratex1.8 %dHz",
                                i, int(rate_hz), int(threshold));
             return false;
@@ -1502,7 +1502,7 @@ bool AP_InertialSensor::use_gyro(uint8_t instance) const
         return false;
     }
 
-    return (get_gyro_health(instance) && _use(instance));
+    return (get_gyro_health(instance) && _use(instance)());
 }
 
 // get_accel_health_all - return true if all accels are healthy
@@ -1649,7 +1649,7 @@ bool AP_InertialSensor::accel_calibrated_ok_all() const
         }
     }
     for (uint8_t i=get_accel_count(); i<INS_MAX_INSTANCES; i++) {
-        if (_accel_id(i) != 0) {
+        if (_accel_id(i)() != 0) {
             // missing accel
             return false;
         }
@@ -1678,7 +1678,7 @@ bool AP_InertialSensor::use_accel(uint8_t instance) const
         return false;
     }
 
-    return (get_accel_health(instance) && _use(instance));
+    return (get_accel_health(instance) && _use(instance)());
 }
 
 void
@@ -1960,7 +1960,7 @@ void AP_InertialSensor::update(void)
 
         // set primary to first healthy accel and gyro
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_gyro_healthy[i] && _use(i)) {
+            if (_gyro_healthy[i] && _use(i)()) {
                 _first_usable_gyro = i;
 #if !AP_AHRS_ENABLED
                 _primary = _first_usable_gyro;
@@ -1969,7 +1969,7 @@ void AP_InertialSensor::update(void)
             }
         }
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_accel_healthy[i] && _use(i)) {
+            if (_accel_healthy[i] && _use(i)()) {
                 _first_usable_accel = i;
                 break;
             }
@@ -2079,7 +2079,7 @@ check_sample:
                 if (_new_gyro_data[i]) {
                     const uint8_t imask = (1U<<i);
                     gyro_available_mask |= imask;
-                    if (_use(i)) {
+                    if (_use(i)()) {
                         _gyro_wait_mask |= imask;
                     } else {
                         _gyro_wait_mask &= ~imask;
@@ -2090,7 +2090,7 @@ check_sample:
                 if (_new_accel_data[i]) {
                     const uint8_t imask = (1U<<i);
                     accel_available_mask |= imask;
-                    if (_use(i)) {
+                    if (_use(i)()) {
                         _accel_wait_mask |= imask;
                     } else {
                         _accel_wait_mask &= ~imask;
@@ -2415,7 +2415,7 @@ void AP_InertialSensor::_acal_save_calibrations()
     
     Vector3f aligned_sample;
     Vector3f misaligned_sample;
-    switch(_trim_option) {
+    switch(_trim_option()) {
         case 0:
             break;
         case 1:
@@ -2482,10 +2482,10 @@ bool AP_InertialSensor::get_new_trim(Vector3f &trim_rad)
 */
 bool AP_InertialSensor::get_fixed_mount_accel_cal_sample(uint8_t sample_num, Vector3f& ret) const
 {
-    if (_accel_count <= (_acc_body_aligned-1) || _accel_calibrator[2].get_status() != ACCEL_CAL_SUCCESS || sample_num>=_accel_calibrator[2].get_num_samples_collected()) {
+    if (_accel_count <= (_acc_body_aligned()-1) || _accel_calibrator[2].get_status() != ACCEL_CAL_SUCCESS || sample_num>=_accel_calibrator[2].get_num_samples_collected()) {
         return false;
     }
-    _accel_calibrator[_acc_body_aligned-1].get_sample_corrected(sample_num, ret);
+    _accel_calibrator[_acc_body_aligned()-1].get_sample_corrected(sample_num, ret);
     ret.rotate(_board_orientation);
     return true;
 }
@@ -2803,7 +2803,7 @@ void AP_InertialSensor::handle_external(const AP_ExternalAHRS::ins_data_message_
 void AP_InertialSensor::force_save_calibration(void)
 {
     for (uint8_t i=0; i<_accel_count; i++) {
-        if (_accel_id(i) != 0) {
+        if (_accel_id(i)() != 0) {
             _accel_id(i).save();
             // we also save the scale as the default of 1.0 may be
             // over a stored value of 0.0

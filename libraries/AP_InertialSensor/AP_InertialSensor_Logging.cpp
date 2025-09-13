@@ -131,7 +131,7 @@ bool AP_InertialSensor::BatchSampler::Write_ISBD() const
         LOG_PACKET_HEADER_INIT(LOG_ISBD_MSG),
         time_us    : AP_HAL::micros64(),
         isb_seqno  : isb_seqnum,
-        seqno      : (uint16_t) (data_read_offset/samples_per_msg)
+        seqno      : (uint16_t) (data_read_offset/samples_per_msg())
     };
     memcpy(pkt.x, &data_x[data_read_offset], sizeof(pkt.x));
     memcpy(pkt.y, &data_y[data_read_offset], sizeof(pkt.y));

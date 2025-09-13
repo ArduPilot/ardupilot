@@ -142,7 +142,7 @@ void AP_InertialSensor_SITL::generate_accel()
             while ((mbit = __builtin_ffs(mask)) != 0) {
                 const uint8_t motor = mbit-1;
                 mask &= ~(1U<<motor);
-                uint32_t harmonics = uint32_t(sitl->vibe_motor_harmonics);
+                uint32_t harmonics = uint32_t(sitl->vibe_motor_harmonics());
                 const float base_freq = calculate_noise(sitl->state.rpm[motor] / 60.0f, freq_variation);
                 while (harmonics != 0) {
                     const uint8_t bit = __builtin_ffs(harmonics);
@@ -187,7 +187,7 @@ void AP_InertialSensor_SITL::generate_accel()
         _notify_new_accel_sensor_rate_sample(accel_instance, accel);
 
 #if AP_SIM_INS_FILE_ENABLED
-        if (sitl->accel_file_rw == SITL::SIM::INSFileMode::INS_FILE_WRITE) {
+        if (sitl->accel_file_rw() == SITL::SIM::INSFileMode::INS_FILE_WRITE) {
             write_accel_to_file(accel);
         }
 #endif
@@ -260,7 +260,7 @@ void AP_InertialSensor_SITL::generate_gyro()
             while ((mbit = __builtin_ffs(mask)) != 0) {
                 const uint8_t motor = mbit-1;
                 mask &= ~(1U<<motor);
-                uint32_t harmonics = uint32_t(sitl->vibe_motor_harmonics);
+                uint32_t harmonics = uint32_t(sitl->vibe_motor_harmonics());
                 const float base_freq = calculate_noise(sitl->state.rpm[motor] / 60.0f, freq_variation);
                 while (harmonics != 0) {
                     const uint8_t bit = __builtin_ffs(harmonics);
@@ -295,7 +295,7 @@ void AP_InertialSensor_SITL::generate_gyro()
         _notify_new_gyro_sensor_rate_sample(gyro_instance, gyro);
 
 #if AP_SIM_INS_FILE_ENABLED
-        if (sitl->gyro_file_rw == SITL::SIM::INSFileMode::INS_FILE_WRITE) {
+        if (sitl->gyro_file_rw() == SITL::SIM::INSFileMode::INS_FILE_WRITE) {
             write_gyro_to_file(gyro);
         }
 #endif
@@ -322,10 +322,10 @@ void AP_InertialSensor_SITL::timer_update(void)
         return;
     }
     if (now >= next_accel_sample) {
-        if (((1U << accel_instance) & sitl->accel_fail_mask) == 0) {
+        if (((1U << accel_instance) & sitl->accel_fail_mask()) == 0) {
 #if AP_SIM_INS_FILE_ENABLED
-            if (sitl->accel_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ
-                || sitl->accel_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
+            if (sitl->accel_file_rw() == SITL::SIM::INSFileMode::INS_FILE_READ
+                || sitl->accel_file_rw() == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
                 read_accel_from_file();
             } else
 #endif
@@ -340,10 +340,10 @@ void AP_InertialSensor_SITL::timer_update(void)
         }
     }
     if (now >= next_gyro_sample) {
-        if (((1U << gyro_instance) & sitl->gyro_fail_mask) == 0) {
+        if (((1U << gyro_instance) & sitl->gyro_fail_mask()) == 0) {
 #if AP_SIM_INS_FILE_ENABLED
-            if (sitl->gyro_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ
-                || sitl->gyro_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
+            if (sitl->gyro_file_rw() == SITL::SIM::INSFileMode::INS_FILE_READ
+                || sitl->gyro_file_rw() == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
                 read_gyro_from_file();
             } else
 #endif
@@ -396,12 +396,12 @@ void AP_InertialSensor_SITL::start()
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SITL::timer_update, void));
 
 #if AP_SIM_INS_FILE_ENABLED
-    if (sitl->accel_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ
-        || sitl->accel_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
+    if (sitl->accel_file_rw() == SITL::SIM::INSFileMode::INS_FILE_READ
+        || sitl->accel_file_rw() == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
         hal.console->printf("Reading accel data from file for IMU[%u]\n", accel_instance);
     }
-    if (sitl->gyro_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ
-        || sitl->gyro_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ) {
+    if (sitl->gyro_file_rw() == SITL::SIM::INSFileMode::INS_FILE_READ
+        || sitl->gyro_file_rw() == SITL::SIM::INSFileMode::INS_FILE_READ) {
         hal.console->printf("Reading gyro data from file for IMU[%u]\n", gyro_instance);
     }
 #endif
@@ -431,7 +431,7 @@ void AP_InertialSensor_SITL::read_gyro_from_file()
     }
 
     if (ret <= 0) {
-        if (sitl->gyro_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
+        if (sitl->gyro_file_rw() == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
 #if HAL_LOGGING_ENABLED
             //stop logging
             if (AP_Logger::get_singleton()) {
@@ -499,7 +499,7 @@ void AP_InertialSensor_SITL::read_accel_from_file()
     }
 
     if (ret <= 0) {
-        if (sitl->accel_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
+        if (sitl->accel_file_rw() == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
 #if HAL_LOGGING_ENABLED
             //stop logging
             if (AP_Logger::get_singleton()) {
