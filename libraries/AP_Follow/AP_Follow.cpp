@@ -242,8 +242,8 @@ void AP_Follow::update_estimates()
     }
 
     // if sysid changed, reset the estimation state
-    if (_sysid != _sysid_used) {
-        _sysid_used = _sysid;
+    if (_sysid() != _sysid_used) {
+        _sysid_used = _sysid();
         _estimate_valid = false;
     }
 
@@ -299,7 +299,7 @@ void AP_Follow::update_estimates()
     Vector3f offset_m = _offset_m.get();
 
     // calculate estimated position and velocity with offsets applied
-    if (offset_m.is_zero() || (_offset_type == AP_FOLLOW_OFFSET_TYPE_NED)) {
+    if (offset_m.is_zero() || (_offset_type() == AP_FOLLOW_OFFSET_TYPE_NED)) {
         // offsets are in NED frame: simple addition
         _ofs_estimate_pos_ned_m = _estimate_pos_ned_m + offset_m.topostype();
         _ofs_estimate_vel_ned_ms = _estimate_vel_ned_ms;
@@ -527,7 +527,7 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
 bool AP_Follow::should_handle_message(const mavlink_message_t &msg) const
 {
     // exit immediately if not enabled
-    if (!_enabled) {
+    if (!_enabled()) {
         return false;
     }
 
@@ -537,7 +537,7 @@ bool AP_Follow::should_handle_message(const mavlink_message_t &msg) const
     }
 
     // skip message if not from our target
-    if (_sysid != 0 && msg.sysid != _sysid) {
+    if (_sysid() != 0 && msg.sysid != _sysid()) {
         return false;
     }
 
@@ -616,7 +616,7 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
     _target_location.lng = packet.lon;
 
     // set target altitude based on configured altitude type
-    if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
+    if (_alt_type() == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
         // use relative altitude above home
         _target_location.set_alt_cm(packet.relative_alt / 10, Location::AltFrame::ABOVE_HOME);
     } else {
@@ -642,7 +642,7 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
     if (packet.hdg <= 36000) {
         // valid heading field available (in centi-degrees)
         _target_heading_deg = packet.hdg * 0.01f;
-    } else if (_offset_type == AP_FOLLOW_OFFSET_TYPE_RELATIVE) {
+    } else if (_offset_type() == AP_FOLLOW_OFFSET_TYPE_RELATIVE) {
         // heading missing but relative offset mode requires heading -> reject
         return false;
     } else {
@@ -654,7 +654,7 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
     _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
 
     // if sysid not yet set, adopt sender’s sysid and enable automatic sysid tracking
-    if (_sysid == 0) {
+    if (_sysid() == 0) {
         _sysid.set(msg.sysid);
         _sysid_used = 0;
         _estimate_valid = false;
@@ -738,7 +738,7 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
 
         // store heading rate (yaw rate in world frame) in degrees/sec
         _target_heading_rate_degs = degrees(omega_world.z);
-    } else if (_offset_type == AP_FOLLOW_OFFSET_TYPE_RELATIVE) {
+    } else if (_offset_type() == AP_FOLLOW_OFFSET_TYPE_RELATIVE) {
         // if attitude unavailable and using relative frame, cannot compute — abort
         return false;
     } else {
@@ -750,7 +750,7 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
     _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.timestamp, AP_HAL::millis());
 
     // if sysid not yet assigned, adopt sender's sysid and enable automatic sysid tracking
-    if (_sysid == 0) {
+    if (_sysid() == 0) {
         _sysid.set(msg.sysid);
         _automatic_sysid = true;
     }
@@ -786,7 +786,7 @@ void AP_Follow::init_offsets_if_required()
     }
     const Vector3f dist_vec_ned_m = (_target_pos_ned_m - current_position_ned_m).tofloat();
 
-    if ((_offset_type == AP_FOLLOW_OFFSET_TYPE_RELATIVE)) {
+    if ((_offset_type() == AP_FOLLOW_OFFSET_TYPE_RELATIVE)) {
         // rotate offset into vehicle-relative frame based on heading
         _offset_m.set(rotate_vector(-dist_vec_ned_m, -degrees(_estimate_heading_rad)));
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Relative follow offset loaded");
@@ -913,7 +913,7 @@ void AP_Follow::Log_Write_FOLL()
 // Returns true if following is enabled and a recent target update has been received.
 bool AP_Follow::have_target(void) const
 {
-    if (!_enabled) {
+    if (!_enabled()) {
         return false;
     }
 
