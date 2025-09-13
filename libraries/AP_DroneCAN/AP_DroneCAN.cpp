@@ -327,7 +327,7 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
         debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: init called more than once\n\r");
         return;
     }
-    uint8_t node = _dronecan_node;
+    uint8_t node = _dronecan_node();
     if (node < 1 || node > 125) { // reset to default if invalid
         _dronecan_node.set(AP_DRONECAN_DEFAULT_NODE);
         node = AP_DRONECAN_DEFAULT_NODE;
@@ -349,12 +349,12 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
     uint8_t uid_len = sizeof(uavcan_protocol_HardwareVersion::unique_id);
     uint8_t unique_id[sizeof(uavcan_protocol_HardwareVersion::unique_id)];
 
-    mem_pool = NEW_NOTHROW uint32_t[_pool_size/sizeof(uint32_t)];
+    mem_pool = NEW_NOTHROW uint32_t[_pool_size()/sizeof(uint32_t)];
     if (mem_pool == nullptr) {
         debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: Failed to allocate memory pool\n\r");
         return;
     }
-    canard_iface.init(mem_pool, (_pool_size/sizeof(uint32_t))*sizeof(uint32_t), node);
+    canard_iface.init(mem_pool, (_pool_size()/sizeof(uint32_t))*sizeof(uint32_t), node);
 
     if (!hal.util->get_system_id_unformatted(unique_id, uid_len)) {
         return;
@@ -726,7 +726,7 @@ int16_t AP_DroneCAN::scale_esc_output(uint8_t idx){
     }
     scaled = constrain_float(scaled, -1, 1);
     //Check if this channel has a reversible ESC. If it does, we can send negative commands.
-    if ((((uint32_t) 1) << idx) & _esc_rv) {
+    if ((((uint32_t) 1) << idx) & _esc_rv()) {
         scaled *= cmd_max;
     } else {
         scaled = cmd_max * (scaled + 1.0) / 2.0;
@@ -945,8 +945,8 @@ void AP_DroneCAN::SRV_push_servos()
         }
     }
 
-    uint32_t servo_armed_mask = _servo_bm & non_zero_channels;
-    uint32_t esc_armed_mask = _esc_bm & non_zero_channels;
+    uint32_t servo_armed_mask = _servo_bm() & non_zero_channels;
+    uint32_t esc_armed_mask = _esc_bm() & non_zero_channels;
     const bool safety_off = hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED;
     if (!safety_off) {
         AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
@@ -980,7 +980,7 @@ void AP_DroneCAN::notify_state_send()
 {
     uint32_t now = AP_HAL::millis();
 
-    if (_notify_state_hz == 0 || (now - _last_notify_state_ms) < uint32_t(1000 / _notify_state_hz)) {
+    if (_notify_state_hz() == 0 || (now - _last_notify_state_ms) < uint32_t(1000 / _notify_state_hz())) {
         return;
     }
 
@@ -1276,7 +1276,7 @@ void AP_DroneCAN::safety_state_send()
 void AP_DroneCAN::relay_hardpoint_send()
 {
     const uint32_t now = AP_HAL::millis();
-    if ((_relay.rate_hz == 0) || ((now - _relay.last_send_ms) < uint32_t(1000 / _relay.rate_hz))) {
+    if ((_relay.rate_hz() == 0) || ((now - _relay.last_send_ms) < uint32_t(1000 / _relay.rate_hz()))) {
         // Rate limit per user config
         return;
     }
