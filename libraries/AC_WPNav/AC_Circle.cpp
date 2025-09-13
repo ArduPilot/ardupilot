@@ -45,8 +45,6 @@ AC_Circle::AC_Circle(const AP_AHRS_View& ahrs, AC_PosControl& pos_control) :
 {
     AP_Param::setup_object_defaults(this, var_info);
 
-    // init flags
-    _flags.panorama = false;
     _rotation_rate_max_rads = radians(_rate_parm_degs);
 }
 
