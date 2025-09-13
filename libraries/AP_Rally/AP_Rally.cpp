@@ -68,7 +68,7 @@ AP_Rally::AP_Rally()
 // get a rally point from EEPROM
 bool AP_Rally::get_rally_point_with_index(uint8_t i, RallyLocation &ret) const
 {
-    if (i >= (uint8_t) _rally_point_total_count) {
+    if (i >= (uint8_t) _rally_point_total_count()) {
         return false;
     }
 
@@ -94,7 +94,7 @@ bool AP_Rally::get_rally_location_with_index(uint8_t i, Location &ret) const
 
 void AP_Rally::truncate(uint8_t num)
 {
-    if (num > _rally_point_total_count) {
+    if (num > _rally_point_total_count()) {
         // we never make the space larger this way
         return;
     }
@@ -115,7 +115,7 @@ bool AP_Rally::append(const RallyLocation &loc)
 // save a rally point to EEPROM - this assumes that the RALLY_TOTAL param has been incremented beforehand, which is the case in Mission Planner
 bool AP_Rally::set_rally_point_with_index(uint8_t i, const RallyLocation &rallyLoc)
 {
-    if (i >= (uint8_t) _rally_point_total_count) {
+    if (i >= (uint8_t) _rally_point_total_count()) {
         return false;
     }
 
@@ -128,7 +128,7 @@ bool AP_Rally::set_rally_point_with_index(uint8_t i, const RallyLocation &rallyL
     _last_change_time_ms = AP_HAL::millis();
 
 #if HAL_LOGGING_ENABLED
-    AP::logger().Write_RallyPoint(_rally_point_total_count, i, rallyLoc);
+    AP::logger().Write_RallyPoint(_rally_point_total_count(), i, rallyLoc);
 #endif
 
     return true;
@@ -153,7 +153,7 @@ bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocati
 {
     float min_dis = -1;
 
-    for (uint8_t i = 0; i < (uint8_t) _rally_point_total_count; i++) {
+    for (uint8_t i = 0; i < (uint8_t) _rally_point_total_count(); i++) {
         RallyLocation next_rally;
         if (!get_rally_point_with_index(i, next_rally)) {
             continue;
@@ -187,7 +187,7 @@ Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc,
     if (find_nearest_rally_point(current_loc, ral_loc)) {
         Location loc = rally_location_to_location(ral_loc);
         // use the rally point if it's closer then home, or we aren't generally considering home as acceptable
-        if (!_rally_incl_home  || (current_loc.get_distance(loc) < current_loc.get_distance(return_loc))) {
+        if (!_rally_incl_home()  || (current_loc.get_distance(loc) < current_loc.get_distance(return_loc))) {
             return_loc = rally_location_to_location(ral_loc);
         }
     }
