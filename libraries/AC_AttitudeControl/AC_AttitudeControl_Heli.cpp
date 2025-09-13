@@ -491,7 +491,7 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(const Vector3f &rate_r
     // helicopter rotates in yaw.  Much of the built-up I-term is needed to tip the disk into the incoming wind.  Fast yawing can create an instability
     // as the built-up I-term in one axis must be reduced, while the other increases.  This helps solve that by rotating the I-terms before the error occurs.
     // It does assume that the rotor aerodynamics and mechanics are essentially symmetrical about the main shaft, which is a generally valid assumption. 
-    if (_piro_comp_enabled) {
+    if (_piro_comp_enabled()) {
 
         // used to hold current I-terms while doing piro comp:
         const float piro_roll_i = _pid_rate_roll.get_i();
@@ -554,7 +554,7 @@ void AC_AttitudeControl_Heli::set_throttle_out(float throttle_in, bool apply_ang
 // throttle value should be 0 ~ 1
 float AC_AttitudeControl_Heli::get_throttle_boosted(float throttle_in)
 {
-    if (!_angle_boost_enabled) {
+    if (!_angle_boost_enabled()) {
         _angle_boost = 0;
         return throttle_in;
     }
@@ -578,7 +578,7 @@ float AC_AttitudeControl_Heli::get_roll_trim_cd()
 {
     // hover roll trim is given the opposite sign in inverted flight since the tail rotor thrust is pointed in the opposite direction. 
     float inverted_factor = constrain_float(2.0f * _ahrs.cos_roll(), -1.0f, 1.0f);
-    return constrain_float(_hover_roll_trim_scalar * _hover_roll_trim_cd * inverted_factor, -1000.0f,1000.0f);
+    return constrain_float(_hover_roll_trim_scalar * _hover_roll_trim_cd() * inverted_factor, -1000.0f,1000.0f);
 }
 
 // Sets desired roll and pitch angles (in radians) and yaw rate (in radians/s).

@@ -373,7 +373,7 @@ void AC_AttitudeControl_Multi::set_throttle_mix_max(float ratio)
 // throttle value should be 0 ~ 1
 float AC_AttitudeControl_Multi::get_throttle_boosted(float throttle_in)
 {
-    if (!_angle_boost_enabled) {
+    if (!_angle_boost_enabled()) {
         _angle_boost = 0;
         return throttle_in;
     }
