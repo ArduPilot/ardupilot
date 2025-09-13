@@ -60,16 +60,16 @@ AP_Stats::AP_Stats(void)
 
 void AP_Stats::copy_variables_from_parameters()
 {
-    flttime = params.flttime;
-    runtime = params.runtime;
-    reset = params.reset;
+    flttime = params.flttime();
+    runtime = params.runtime();
+    reset = params.reset();
     flttime_boot = flttime;
-    fltcount = params.fltcount;
+    fltcount = params.fltcount();
 }
 
 void AP_Stats::init()
 {
-    params.bootcount.set_and_save(params.bootcount+1);
+    params.bootcount.set_and_save(params.bootcount()+1);
 
     // initialise our variables from parameters:
     copy_variables_from_parameters();
@@ -112,7 +112,7 @@ void AP_Stats::update()
         update_runtime();
         flush();
     }
-    const uint32_t params_reset = params.reset;
+    const uint32_t params_reset = params.reset();
     if (params_reset == 0) {
         // Only reset statistics if the user explicitly sets AP_STATS_RESET parameter to zero.
         // This allows users to load parameter files (in MP, MAVProxy or any other GCS) without
