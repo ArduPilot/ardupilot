@@ -54,7 +54,7 @@ lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, AP
       _debug_options(debug_options)
 {
     const bool allow_heap_expansion = !option_is_set(AP_Scripting::DebugOption::DISABLE_HEAP_EXPANSION);
-    _heap.create(heap_size, 10, allow_heap_expansion, 20*1024);
+    _heap.create(heap_size(), 10, allow_heap_expansion, 20*1024);
 }
 
 lua_scripts::~lua_scripts() {
@@ -313,7 +313,7 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
 void lua_scripts::reset_loop_overtime(lua_State *L) {
     overtime = false;
     // reset the hook to clear the counter
-    const int32_t vm_steps = MAX(_vm_steps, 1000);
+    const int32_t vm_steps = MAX(_vm_steps(), 1000);
     lua_sethook(L, hook, LUA_MASKCOUNT, vm_steps);
 }
 

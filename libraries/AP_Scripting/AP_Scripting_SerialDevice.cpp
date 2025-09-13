@@ -24,7 +24,7 @@
 */
 void AP_Scripting_SerialDevice::init(void)
 {
-    if (enable == 0) {
+    if (enable() == 0) {
         return;
     }
 
