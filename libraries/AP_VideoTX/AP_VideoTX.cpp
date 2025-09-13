@@ -148,8 +148,8 @@ bool AP_VideoTX::init(void)
 
     // find the index into the power table
     for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
-        if (_power_mw <= _power_levels[i].mw) {
-            if (_power_mw != _power_levels[i].mw) {
+        if (_power_mw() <= _power_levels[i].mw) {
+            if (_power_mw() != _power_levels[i].mw) {
                 if (i > 0) {
                     _current_power = i - 1;
                 }
@@ -160,11 +160,11 @@ bool AP_VideoTX::init(void)
             break;
         }
     }
-    _current_band = _band;
-    _current_channel = _channel;
-    _current_frequency = _frequency_mhz;
-    _current_options = _options;
-    _current_enabled = _enabled;
+    _current_band = _band();
+    _current_channel = _channel();
+    _current_frequency = _frequency_mhz();
+    _current_options = _options();
+    _current_enabled = _enabled();
     _initialized = true;
 
     return true;
@@ -193,7 +193,7 @@ void AP_VideoTX::set_configured_power_mw(uint16_t power)
 uint8_t AP_VideoTX::find_current_power() const
 {
     for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
-        if (_power_mw == _power_levels[i].mw) {
+        if (_power_mw() == _power_levels[i].mw) {
             return i;
         }
     }
@@ -332,30 +332,30 @@ void AP_VideoTX::set_power_is_current()
 
 void AP_VideoTX::set_freq_is_current()
 {
-    _current_frequency = _frequency_mhz;
-    _current_band = _band;
-    _current_channel = _channel;
+    _current_frequency = _frequency_mhz();
+    _current_band = _band();
+    _current_channel = _channel();
 }
 
 // periodic update
 void AP_VideoTX::update(void)
 {
-    if (!_enabled) {
+    if (!_enabled()) {
         return;
     }
 
     // manipulate pitmode if pitmode-on-disarm or power-on-arm is set
     if (has_option(VideoOptions::VTX_PITMODE_ON_DISARM) || has_option(VideoOptions::VTX_PITMODE_UNTIL_ARM)) {
         if (hal.util->get_soft_armed() && has_option(VideoOptions::VTX_PITMODE)) {
-            _options.set(_options & ~uint8_t(VideoOptions::VTX_PITMODE));
+            _options.set(_options() & ~uint8_t(VideoOptions::VTX_PITMODE));
         } else if (!hal.util->get_soft_armed() && !has_option(VideoOptions::VTX_PITMODE)
             && has_option(VideoOptions::VTX_PITMODE_ON_DISARM)) {
-            _options.set(_options | uint8_t(VideoOptions::VTX_PITMODE));
+            _options.set(_options() | uint8_t(VideoOptions::VTX_PITMODE));
         }
     }
     // check that the requested power is actually allowed
     // reset if not
-    if (_power_mw != get_power_mw()) {
+    if (_power_mw() != get_power_mw()) {
         if (_power_levels[find_current_power()].active == PowerActive::Inactive) {
             // reset to something we know works
             debug("power reset to %dmw from %dmw", get_power_mw(), _power_mw.get());
@@ -370,7 +370,7 @@ bool AP_VideoTX::update_options() const
         return false;
     }
     // check pitmode
-    if ((_options & uint8_t(VideoOptions::VTX_PITMODE))
+    if ((_options() & uint8_t(VideoOptions::VTX_PITMODE))
         != (_current_options & uint8_t(VideoOptions::VTX_PITMODE))) {
         return true;
     }
@@ -382,7 +382,7 @@ bool AP_VideoTX::update_options() const
     }
 #endif
     // check unlock only
-    if ((_options & uint8_t(VideoOptions::VTX_UNLOCKED)) != 0
+    if ((_options() & uint8_t(VideoOptions::VTX_UNLOCKED)) != 0
         && (_current_options & uint8_t(VideoOptions::VTX_UNLOCKED)) == 0) {
         return true;
     }
@@ -392,12 +392,12 @@ bool AP_VideoTX::update_options() const
 }
 
 bool AP_VideoTX::update_power() const {
-    if (!_defaults_set || _power_mw == get_power_mw() || get_pitmode()) {
+    if (!_defaults_set || _power_mw() == get_power_mw() || get_pitmode()) {
         return false;
     }
     // check that the requested power is actually allowed
     for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
-        if (_power_mw == _power_levels[i].mw
+        if (_power_mw() == _power_levels[i].mw
             && _power_levels[i].active != PowerActive::Inactive) {
             return true;
         }
@@ -408,7 +408,7 @@ bool AP_VideoTX::update_power() const {
 
 bool AP_VideoTX::have_params_changed() const
 {
-    return _enabled
+    return _enabled()
         && (update_power()
         || update_band()
         || update_channel()
@@ -419,7 +419,7 @@ bool AP_VideoTX::have_params_changed() const
 // update the configured frequency to match the channel and band
 void AP_VideoTX::update_configured_frequency()
 {
-    _frequency_mhz.set_and_save(get_frequency_mhz(_band, _channel));
+    _frequency_mhz.set_and_save(get_frequency_mhz(_band(), _channel()));
 }
 
 // update the configured channel and band to match the frequency
@@ -427,7 +427,7 @@ void AP_VideoTX::update_configured_channel_and_band()
 {
     VideoBand band;
     uint8_t channel;
-    if (get_band_and_channel(_frequency_mhz, band, channel)) {
+    if (get_band_and_channel(_frequency_mhz(), band, channel)) {
         _band.set_and_save(band);
         _channel.set_and_save(channel);
     } else {
@@ -478,8 +478,8 @@ bool AP_VideoTX::set_defaults()
     }
 
     // Now check that the user didn't screw up by selecting incompatible options
-    if (_frequency_mhz != get_frequency_mhz(_band, _channel)) {
-        if (_frequency_mhz > 0) {
+    if (_frequency_mhz() != get_frequency_mhz(_band(), _channel())) {
+        if (_frequency_mhz() > 0) {
             update_configured_channel_and_band();
         } else {
             update_configured_frequency();
@@ -505,13 +505,13 @@ void AP_VideoTX::announce_vtx_settings() const
 // 6-pos range is in the middle of the available range
 void AP_VideoTX::change_power(int8_t position)
 {
-    if (!_enabled || position < 0 || position > 5) {
+    if (!_enabled() || position < 0 || position > 5) {
         return;
     }
     // first find out how many possible levels there are
     uint8_t num_active_levels = 0;
     for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
-        if (_power_levels[i].active != PowerActive::Inactive && _power_levels[i].mw <= _max_power_mw) {
+        if (_power_levels[i].active != PowerActive::Inactive && _power_levels[i].mw <= _max_power_mw()) {
             num_active_levels++;
         }
     }
