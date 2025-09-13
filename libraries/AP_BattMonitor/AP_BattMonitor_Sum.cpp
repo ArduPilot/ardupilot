@@ -68,11 +68,11 @@ AP_BattMonitor_Sum::read()
             // never include self
             continue;
         }
-        if ((_sum_mask == 0) && (i <= _instance)) {
+        if ((_sum_mask() == 0) && (i <= _instance)) {
             // sum of remaining, skip lower instances
             continue;
         }
-        if ((_sum_mask != 0) && ((_sum_mask & 1U<<i) == 0)) {
+        if ((_sum_mask() != 0) && ((_sum_mask() & 1U<<i) == 0)) {
             // mask param, skip if mask bit not set
             continue;
         }

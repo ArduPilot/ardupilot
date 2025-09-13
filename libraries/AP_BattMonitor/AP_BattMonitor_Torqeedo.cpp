@@ -62,7 +62,7 @@ void AP_BattMonitor_Torqeedo::read(void)
         uint16_t batt_capacity_ah;
         if (torqeedo->get_batt_capacity_Ah(_state.instance, batt_capacity_ah)) {
             have_capacity = true;
-            if (batt_capacity_ah * 1000 != _params._pack_capacity) {
+            if (batt_capacity_ah * 1000 != _params._pack_capacity()) {
                 _params._pack_capacity.set_and_notify(batt_capacity_ah * 1000);
             }
         }

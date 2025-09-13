@@ -886,7 +886,7 @@ bool AP_BattMonitor::time_remaining(uint32_t &seconds, uint8_t instance) const
 int32_t AP_BattMonitor::pack_capacity_mah(uint8_t instance) const
 {
     if (instance < AP_BATT_MONITOR_MAX_INSTANCES) {
-        return _params[instance]._pack_capacity;
+        return _params[instance]._pack_capacity();
     } else {
         return 0;
     }
@@ -916,11 +916,11 @@ void AP_BattMonitor::check_failsafes(void)
                     type_str = "missing, last:";
                     break;
                 case Failsafe::Low:
-                    action = _params[i]._failsafe_low_action;
+                    action = _params[i]._failsafe_low_action();
                     type_str = "low";
                     break;
                 case Failsafe::Critical:
-                    action = _params[i]._failsafe_critical_action;
+                    action = _params[i]._failsafe_critical_action();
                     type_str = "critical";
                     break;
             }

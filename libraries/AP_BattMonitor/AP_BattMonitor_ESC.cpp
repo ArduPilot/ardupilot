@@ -60,9 +60,9 @@ void AP_BattMonitor_ESC::read(void)
     float consumed_mah_sum = 0.0;
     uint32_t highest_ms = 0;
 
-    const bool all_enabled = _mask == 0;
+    const bool all_enabled = _mask() == 0;
     for (uint8_t i=0; i<ESC_TELEM_MAX_ESCS; i++) {
-        if (!all_enabled && ((_mask & (1U<<i)) == 0)) {
+        if (!all_enabled && ((_mask() & (1U<<i)) == 0)) {
             // Only include ESCs set in mask
             continue;
         }

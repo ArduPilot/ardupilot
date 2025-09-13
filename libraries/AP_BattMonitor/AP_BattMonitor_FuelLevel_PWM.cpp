@@ -32,7 +32,7 @@ AP_BattMonitor_FuelLevel_PWM::AP_BattMonitor_FuelLevel_PWM(AP_BattMonitor &mon, 
 */
 void AP_BattMonitor_FuelLevel_PWM::read()
 {
-    if (!pwm_source.set_pin(_curr_pin, "FuelLevelPWM")) {
+    if (!pwm_source.set_pin(_curr_pin(), "FuelLevelPWM")) {
         _state.healthy = false;
         return;
     }
@@ -61,7 +61,7 @@ void AP_BattMonitor_FuelLevel_PWM::read()
     _state.healthy = true;
 
     // map consumed_mah to consumed millilitres
-    _state.consumed_mah = proportion_used * _params._pack_capacity;
+    _state.consumed_mah = proportion_used * _params._pack_capacity();
 
     // map consumed_wh using fixed voltage of 1
     _state.consumed_wh = _state.consumed_mah;
