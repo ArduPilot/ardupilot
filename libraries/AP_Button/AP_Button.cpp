@@ -142,7 +142,7 @@ AP_Button::AP_Button(void)
  */
 void AP_Button::update(void)
 {
-    if (!enable) {
+    if (!enable()) {
         return;
     }
 
@@ -215,7 +215,7 @@ void AP_Button::update(void)
 #if HAL_GCS_ENABLED
     if (last_debounce_ms != 0 &&
         (AP_HAL::millis() - last_report_ms) > AP_BUTTON_REPORT_PERIOD_MS &&
-        (AP_HAL::millis64() - last_debounce_ms) < report_send_time*1000ULL) {
+        (AP_HAL::millis64() - last_debounce_ms) < report_send_time()*1000ULL) {
         // send a change report
         last_report_ms = AP_HAL::millis();
 
@@ -305,13 +305,13 @@ uint8_t AP_Button::get_mask(void)
 {
     uint8_t mask = 0;
     for (uint8_t i=0; i<AP_BUTTON_NUM_PINS; i++) {
-        if (pin[i] == -1) {
+        if (pin[i]() == -1) {
             continue;
         }
         if (is_pwm_input(i)) {
             continue;
         }
-        mask |= hal.gpio->read(pin[i]) << i;
+        mask |= hal.gpio->read(pin[i]()) << i;
     }
 
     return mask;
@@ -322,7 +322,7 @@ uint8_t AP_Button::get_mask(void)
  */
 void AP_Button::timer_update(void)
 {
-    if (!enable) {
+    if (!enable()) {
         return;
     }
     uint8_t mask = get_mask();
@@ -365,29 +365,29 @@ void AP_Button::setup_pins(void)
 {
     for (uint8_t i=0; i<AP_BUTTON_NUM_PINS; i++) {
         if (is_pwm_input(i)) {
-            pwm_pin_source[i].set_pin(pin[i], "Button");
+            pwm_pin_source[i].set_pin(pin[i](), "Button");
             continue;
         }
-        if (pin[i] == -1) {
+        if (pin[i]() == -1) {
             continue;
         }
 
-        hal.gpio->pinMode(pin[i], HAL_GPIO_INPUT);
+        hal.gpio->pinMode(pin[i](), HAL_GPIO_INPUT);
         // setup pullup
-        hal.gpio->write(pin[i], 1);
+        hal.gpio->write(pin[i](), 1);
     }
 }
 
 // check settings are valid
 bool AP_Button::arming_checks(size_t buflen, char *buffer) const
 {
-    if (!enable) {
+    if (!enable()) {
         return true;
     }
     for (uint8_t i=0; i<AP_BUTTON_NUM_PINS; i++) {
-        if (pin[i] != -1 && !hal.gpio->valid_pin(pin[i])) {
+        if (pin[i]() != -1 && !hal.gpio->valid_pin(pin[i]())) {
             uint8_t servo_ch;
-            if (hal.gpio->pin_to_servo_channel(pin[i], servo_ch)) {
+            if (hal.gpio->pin_to_servo_channel(pin[i](), servo_ch)) {
                 hal.util->snprintf(buffer, buflen, "BTN_PIN%u=%d, set SERVO%u_FUNCTION=-1", unsigned(i + 1), int(pin[i].get()), unsigned(servo_ch+1));
             } else {
                 hal.util->snprintf(buffer, buflen, "BTN_PIN%u=%d invalid", unsigned(i + 1), int(pin[i].get()));
