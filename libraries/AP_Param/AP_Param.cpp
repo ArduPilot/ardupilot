@@ -2212,13 +2212,13 @@ bool AP_Param::_convert_parameter_width(ap_var_type old_ptype, float scale_facto
         uint32_t mask;
         switch (old_ptype) {
         case AP_PARAM_INT8:
-            mask = (uint8_t)(*(AP_Int8*)old_ap);
+            mask = (uint8_t)(*(AP_Int8*)old_ap)();
             break;
         case AP_PARAM_INT16:
-            mask = (uint16_t)(*(AP_Int16*)old_ap);
+            mask = (uint16_t)(*(AP_Int16*)old_ap)();
             break;
         case AP_PARAM_INT32:
-            mask = (uint32_t)(*(AP_Int32*)old_ap);
+            mask = (uint32_t)(*(AP_Int32*)old_ap)();
             break;
         default:
             return false;
