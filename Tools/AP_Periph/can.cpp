@@ -709,7 +709,7 @@ void AP_Periph_FW::handle_notify_state(CanardInstance* canard_instance, CanardRx
         yaw_earth = radians((float)tmp * 0.01f);
     }
     vehicle_state = msg.vehicle_state;
-    last_vehicle_state = AP_HAL::millis();
+    last_vehicle_state_ms = AP_HAL::millis();
 }
 #endif // AP_PERIPH_NOTIFY_ENABLED
 
