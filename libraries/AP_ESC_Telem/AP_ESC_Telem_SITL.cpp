@@ -52,9 +52,9 @@ void AP_ESC_Telem_SITL::update()
       provide telemetry for
     */
 #if defined(HAL_BUILD_AP_PERIPH)
-    mask &= uint32_t(sitl->can_servo_mask);
+    mask &= uint32_t(sitl->can_servo_mask());
 #else
-    mask &= ~uint32_t(sitl->can_servo_mask);
+    mask &= ~uint32_t(sitl->can_servo_mask());
 #endif
     uint8_t bit;
 
