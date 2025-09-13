@@ -50,6 +50,7 @@ def configure(cfg):
 
     #define env and location for the cmake esp32 file
     env = cfg.env
+    # FXIME!?
     env.AP_HAL_ESP32 = srcpath('libraries/AP_HAL_ESP32/targets/'+target+'/esp-idf')
     env.AP_PROGRAM_FEATURES += ['esp32_ap_program']
 

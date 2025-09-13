@@ -139,6 +139,8 @@ class BoardList(object):
                     board.toolchain = 'arm-none-eabi'
                 elif "ESP32" in hwdef_dir:
                     board.toolchain = 'xtensa-esp32-elf'
+                    # fixme - rp2350 config
+                    board.toolchain = 'arm-none-eabi'
                 else:
                     raise ValueError(f"Unable to determine toolchain for {adir}")
 
