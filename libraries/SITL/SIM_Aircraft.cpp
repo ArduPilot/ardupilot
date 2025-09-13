@@ -114,7 +114,7 @@ float Aircraft::ground_height_difference() const
     float h1, h2;
     if (sitl &&
         terrain != nullptr &&
-        sitl->terrain_enable &&
+        sitl->terrain_enable() &&
         terrain->height_amsl(home, h1, false) &&
         terrain->height_amsl(location, h2, false)) {
         h2 += local_ground_level;
@@ -406,7 +406,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.velocity_air_bf = velocity_air_bf;
     fdm.battery_voltage = battery_voltage;
     fdm.battery_current = battery_current;
-    fdm.motor_mask = motor_mask | sitl->vibe_motor_mask;
+    fdm.motor_mask = motor_mask | sitl->vibe_motor_mask();
     memcpy(fdm.rpm, rpm, sizeof(fdm.rpm));
     fdm.rcin_chan_count = rcin_chan_count;
     fdm.range = rangefinder_range();
@@ -874,7 +874,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
 #endif
 
     // allow for changes in physics step
-    adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
+    adjust_frame_time(constrain_float(sitl->loop_rate_hz(), rate_hz-1, rate_hz+1));
 }
 
 /*
@@ -1054,10 +1054,10 @@ void Aircraft::extrapolate_sensors(float delta_time)
 bool Aircraft::Clamp::clamped(Aircraft &aircraft, const struct sitl_input &input)
 {
     const auto clamp_ch = AP::sitl()->clamp_ch;
-    if (clamp_ch < 1) {
+    if (clamp_ch() < 1) {
         return false;
     }
-    const uint32_t clamp_idx = clamp_ch - 1;
+    const uint32_t clamp_idx = clamp_ch() - 1;
     if (clamp_idx > ARRAY_SIZE(input.servos)) {
         return false;
     }
@@ -1203,13 +1203,13 @@ void Aircraft::add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel)
     if (sitl == nullptr) {
         return;
     }
-    if (sitl->shove.t == 0) {
+    if (sitl->shove.t() == 0) {
         return;
     }
     if (sitl->shove.start_ms == 0) {
         sitl->shove.start_ms = now;
     }
-    if (now - sitl->shove.start_ms < uint32_t(sitl->shove.t)) {
+    if (now - sitl->shove.start_ms < uint32_t(sitl->shove.t())) {
         // FIXME: can we get a vector operation here instead?
         body_accel.x += sitl->shove.x;
         body_accel.y += sitl->shove.y;
@@ -1222,7 +1222,7 @@ void Aircraft::add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel)
 
 float Aircraft::get_local_updraft(const Vector3d &currentPos)
 {
-    int scenario = sitl->thermal_scenario;
+    int scenario = sitl->thermal_scenario();
 
     #define MAX_THERMALS 10
 
@@ -1292,20 +1292,20 @@ void Aircraft::add_twist_forces(Vector3f &rot_accel)
     if (sitl == nullptr) {
         return;
     }
-    if (sitl->gnd_behav != -1) {
+    if (sitl->gnd_behav() != -1) {
         ground_behavior = (GroundBehaviour)sitl->gnd_behav.get();
     }
     const uint32_t now = AP_HAL::millis();
     if (sitl == nullptr) {
         return;
     }
-    if (sitl->twist.t == 0) {
+    if (sitl->twist.t() == 0) {
         return;
     }
     if (sitl->twist.start_ms == 0) {
         sitl->twist.start_ms = now;
     }
-    if (now - sitl->twist.start_ms < uint32_t(sitl->twist.t)) {
+    if (now - sitl->twist.start_ms < uint32_t(sitl->twist.t())) {
         // FIXME: can we get a vector operation here instead?
         rot_accel.x += sitl->twist.x;
         rot_accel.y += sitl->twist.y;

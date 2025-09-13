@@ -38,7 +38,7 @@ static uint32_t CRC32_MS(const uint8_t *buf, uint32_t len)
 void EFI_MegaSquirt::update()
 {
     auto sitl = AP::sitl();
-    if (!sitl || sitl->efi_type != SIM::EFI_TYPE_MS) {
+    if (!sitl || sitl->efi_type() != SIM::EFI_TYPE_MS) {
         return;
     }
     const float rpm = sitl->state.rpm[2];

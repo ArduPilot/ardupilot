@@ -94,7 +94,7 @@ TetherSim::TetherSim()
 
 void TetherSim::update(const Location& veh_pos)
 {
-    if (!enable) {
+    if (!enable()) {
         return;
     }
 
@@ -137,7 +137,7 @@ void TetherSim::update(const Location& veh_pos)
 // returns true on success and fills in forces_ef argument, false on failure
 bool TetherSim::get_forces_on_vehicle(Vector3f& forces_ef) const
 {
-    if (!enable) {
+    if (!enable()) {
         return false;
     }
 
@@ -206,7 +206,7 @@ void TetherSim::send_report(void)
             hdg: 0                              // heading in centi-degrees
         };
         mavlink_message_t msg;
-        mavlink_msg_global_position_int_encode_status(sys_id, component_id, &mav_status, &msg, &global_position_int);
+        mavlink_msg_global_position_int_encode_status(sys_id(), component_id, &mav_status, &msg, &global_position_int);
         uint8_t buf[300];
         const uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
         if (len > 0) {
@@ -286,7 +286,7 @@ void TetherSim::update_tether_force(const Location& veh_pos, float dt)
 
         prev_stretch = stretch;
 
-    } else if (tether_stuck) {
+    } else if (tether_stuck()) {
 
         // Calculate the stretch beyond the maximum length
         float stretch = MAX(tether_length - tether_not_stuck_length, 0.0f);

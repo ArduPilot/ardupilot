@@ -130,7 +130,7 @@ const AP_Param::GroupInfo SIM_Precland::var_info[] = {
 
 void SIM_Precland::update(const Location &loc)
 {
-    if (!_enable) {
+    if (!_enable()) {
         _healthy = false;
         return;
     }
@@ -155,7 +155,7 @@ void SIM_Precland::update(const Location &loc)
     }
 
 #if AP_SIM_SHIP_ENABLED
-    if (_ship == 1) {
+    if (_ship() == 1) {
         /*
           make precland target follow the simulated ship if the ship is enabled
          */
@@ -195,12 +195,12 @@ void SIM_Precland::update(const Location &loc)
     }
 
     const uint32_t now = AP_HAL::millis();
-    if (now - _last_update_ms < 1000.0f * (1.0f / _rate)) {
+    if (now - _last_update_ms < 1000.0f * (1.0f / _rate())) {
         return;
     }
     _last_update_ms = now;
 
-    switch (_type) {
+    switch (_type()) {
         case PRECLAND_TYPE_CONE: {
             // lateral_limit is the limit of how far the vehicle can laterally be from precland_device
             // in case of cone, this limit increases gradually as the vehicle moves longitudinally far away from precland device

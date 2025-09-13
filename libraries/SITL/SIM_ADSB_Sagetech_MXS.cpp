@@ -539,7 +539,7 @@ void ADSB_Sagetech_MXS::update_rf_output()
 void ADSB_Sagetech_MXS::update(const SITL::Aircraft *sitl_model)
 {
     // see if we should do a report.
-    if ((AP::sitl()->adsb_types & (1U << (uint8_t)SIM::ADSBType::SageTechMXS)) == 0) {
+    if ((AP::sitl()->adsb_types() & (1U << (uint8_t)SIM::ADSBType::SageTechMXS)) == 0) {
         return;
     }
 

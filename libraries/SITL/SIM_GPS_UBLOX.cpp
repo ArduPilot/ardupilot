@@ -45,7 +45,7 @@ void GPS_UBlox::update_relposned(ubx_nav_relposned &relposned, uint32_t tow_ms, 
             // this shouldn't matter as our heading type should never be base
             continue;
         }
-        if (_sitl->gps[i].hdg_enabled != SITL::SIM::GPS_HEADING_BASE) {
+        if (_sitl->gps[i].hdg_enabled() != SITL::SIM::GPS_HEADING_BASE) {
             continue;
         }
         ant1_pos = _sitl->gps[i].pos_offset.get();
@@ -63,7 +63,7 @@ void GPS_UBlox::update_relposned(ubx_nav_relposned &relposned, uint32_t tow_ms, 
                   radians(_sitl->state.pitchRate),
                   radians(_sitl->state.yawRate));
     rot.from_euler(radians(_sitl->state.rollDeg), radians(_sitl->state.pitchDeg), radians(yaw_deg));
-    const float lag = _sitl->gps[instance].delay_ms * 0.001;
+    const float lag = _sitl->gps[instance].delay_ms() * 0.001;
     rot.rotate(gyro * (-lag));
     rel_antenna_pos = rot * rel_antenna_pos;
     relposned.version = 1;
@@ -271,7 +271,7 @@ void GPS_UBlox::publish(const GPS_Data *d)
     pvt.headVeh = 0;
     memset(pvt.reserved2, '\0', ARRAY_SIZE(pvt.reserved2));
 
-    switch (_sitl->gps[instance].hdg_enabled) {
+    switch (_sitl->gps[instance].hdg_enabled()) {
     case SITL::SIM::GPS_HEADING_NONE:
     case SITL::SIM::GPS_HEADING_BASE:
         break;
@@ -288,7 +288,7 @@ void GPS_UBlox::publish(const GPS_Data *d)
     send_ubx(MSG_SOL,    (uint8_t*)&sol, sizeof(sol));
     send_ubx(MSG_DOP,    (uint8_t*)&dop, sizeof(dop));
     send_ubx(MSG_PVT,    (uint8_t*)&pvt, sizeof(pvt));
-    if (_sitl->gps[instance].hdg_enabled > SITL::SIM::GPS_HEADING_NONE) {
+    if (_sitl->gps[instance].hdg_enabled() > SITL::SIM::GPS_HEADING_NONE) {
         send_ubx(MSG_RELPOSNED,    (uint8_t*)&relposned, sizeof(relposned));
     }
 

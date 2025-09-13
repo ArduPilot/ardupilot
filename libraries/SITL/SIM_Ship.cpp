@@ -105,7 +105,7 @@ ShipSim::ShipSim()
  */
 bool ShipSim::get_location(Location &loc) const
 {
-    if (!enable) {
+    if (!enable()) {
         return false;
     }
     loc = home;
@@ -154,7 +154,7 @@ Vector2f ShipSim::get_ground_speed_adjustment(const Location &loc, float &yaw_ra
 */
 void ShipSim::update(void)
 {
-    if (!enable) {
+    if (!enable()) {
         return;
     }
 
@@ -266,7 +266,7 @@ void ShipSim::send_report(void)
         };
         mavlink_message_t msg;
         mavlink_msg_global_position_int_encode_status(
-            sys_id,
+            sys_id(),
             component_id,
             &mav_status,
             &msg,
@@ -290,7 +290,7 @@ void ShipSim::send_report(void)
         };
         mavlink_message_t msg;
         mavlink_msg_attitude_encode_status(
-            sys_id,
+            sys_id(),
             component_id,
             &mav_status,
             &msg,

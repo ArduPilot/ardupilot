@@ -124,7 +124,7 @@ void AIS::update(const class Aircraft &aircraft)
     }
 
     // Disabled
-    if (vessel_count <= 0) {
+    if (vessel_count() <= 0) {
         return;
     }
 
@@ -144,7 +144,7 @@ void AIS::update(const class Aircraft &aircraft)
     // Add new vessels until we have the correct number
     for (uint8_t i=0; i<ARRAY_SIZE(vessels); i++) {
         // Disable any extra vessels over the set count
-        if (i >= vessel_count) {
+        if (i >= vessel_count()) {
             vessels[i].active = false;
             continue;
         }

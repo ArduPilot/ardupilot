@@ -48,7 +48,7 @@ const AP_Param::GroupInfo Parachute::var_info[] = {
  */
 void Parachute::update(const struct sitl_input &input)
 {
-    const int16_t pwm = parachute_pin >= 1 ? input.servos[parachute_pin-1] : -1;
+    const int16_t pwm = parachute_pin() >= 1 ? input.servos[parachute_pin()-1] : -1;
     const uint64_t now = AP_HAL::micros64();
     // const float dt = (now - last_update_us) * 1.0e-6f;
     if (pwm >= 1250) {

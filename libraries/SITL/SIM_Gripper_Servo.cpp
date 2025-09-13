@@ -73,7 +73,7 @@ const AP_Param::GroupInfo Gripper_Servo::var_info[] = {
  */
 void Gripper_Servo::update(const struct sitl_input &input)
 {
-    const int16_t gripper_pwm = gripper_servo_pin >= 1 ? input.servos[gripper_servo_pin-1] : -1;
+    const int16_t gripper_pwm = gripper_servo_pin() >= 1 ? input.servos[gripper_servo_pin()-1] : -1;
 
     const uint64_t now = AP_HAL::micros64();
     const float dt = (now - last_update_us) * 1.0e-6f;
@@ -83,16 +83,16 @@ void Gripper_Servo::update(const struct sitl_input &input)
         last_update_us = now;
         return;
     }
-    const int16_t diff_pwm = abs(grab_pwm - release_pwm);
+    const int16_t diff_pwm = abs(grab_pwm() - release_pwm());
     float position_demand = (gripper_pwm - diff_pwm) * 0.001f;
-    if (gripper_pwm < MIN(grab_pwm, release_pwm) || position_demand > 1.0f) { // never updated
+    if (gripper_pwm < MIN(grab_pwm(), release_pwm()) || position_demand > 1.0f) { // never updated
         position_demand = position;
     }
 
     const float position_max_change = position_slew_rate * 0.01f * dt;
     position = constrain_float(position_demand, position - position_max_change, position + position_max_change);
     float jaw_gap;
-    if ((release_pwm < grab_pwm && reverse) || (release_pwm > grab_pwm && !reverse)) {
+    if ((release_pwm() < grab_pwm() && reverse()) || (release_pwm() > grab_pwm() && !reverse())) {
         jaw_gap = gap * position;
     } else {
         jaw_gap = gap * (1.0f - position);

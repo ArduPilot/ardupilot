@@ -229,10 +229,10 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
         return;
     }
 
-    if (_sitl->vicon.rate_hz == 0) {
+    if (_sitl->vicon.rate_hz() == 0) {
         return;
     }
-    const uint64_t vicon_interval_us = 1000000UL / _sitl->vicon.rate_hz;  // Interval in microseconds based on rate
+    const uint64_t vicon_interval_us = 1000000UL / _sitl->vicon.rate_hz();  // Interval in microseconds based on rate
     if (now_us - last_observation_usec < vicon_interval_us) {
         // create observations at rate specified by vicon_rate_hz
         // by default runs at 50Hz

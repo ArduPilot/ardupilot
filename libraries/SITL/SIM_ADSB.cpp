@@ -108,14 +108,14 @@ void ADSB::update_simulated_vehicles(const class Aircraft &aircraft)
     if (_sitl == nullptr) {
         _sitl = AP::sitl();
         return;
-    } else if (_sitl->adsb_plane_count <= 0) {
+    } else if (_sitl->adsb_plane_count() <= 0) {
         return;
-    } else if (_sitl->adsb_plane_count >= num_vehicles_MAX) {
+    } else if (_sitl->adsb_plane_count() >= num_vehicles_MAX) {
         _sitl->adsb_plane_count.set_and_save(0);
         num_vehicles = 0;
         return;
-    } else if (num_vehicles != _sitl->adsb_plane_count) {
-        num_vehicles = _sitl->adsb_plane_count;
+    } else if (num_vehicles != _sitl->adsb_plane_count()) {
+        num_vehicles = _sitl->adsb_plane_count();
         for (uint8_t i=0; i<num_vehicles_MAX; i++) {
             vehicles[i].initialised = false;
         }
@@ -146,7 +146,7 @@ void ADSB::update(const class Aircraft &aircraft)
     update_simulated_vehicles(aircraft);
 
     // see if we should do a report.
-    if ((_sitl->adsb_types & (1U << (uint8_t)SIM::ADSBType::Shortcut)) == 0) {
+    if ((_sitl->adsb_types() & (1U << (uint8_t)SIM::ADSBType::Shortcut)) == 0) {
         // some other simulated device is in use (e.g. MXS)
         return;
     }
@@ -277,7 +277,7 @@ void ADSB::send_report(const class Aircraft &aircraft)
     }
     
     // ADSB_transceiever is enabled, send the status report.
-    if (_sitl->adsb_tx && now - last_tx_report_ms > 1000) {
+    if (_sitl->adsb_tx() && now - last_tx_report_ms > 1000) {
         last_tx_report_ms = now;
 
         const mavlink_uavionix_adsb_transceiver_health_report_t health_report = {UAVIONIX_ADSB_RF_HEALTH_OK};

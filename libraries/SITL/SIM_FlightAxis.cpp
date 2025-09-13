@@ -118,10 +118,10 @@ FlightAxis::FlightAxis(const char *frame_str) :
     use_time_sync = false;
     rate_hz = 250 / target_speedup;
     if(strstr(frame_str, "helidemix") != nullptr) {
-        _options.set(_options | uint32_t(Option::HeliDemix));
+        _options.set(_options() | uint32_t(Option::HeliDemix));
     }
     if(strstr(frame_str, "rev4") != nullptr) {
-        _options.set(_options | uint32_t(Option::Rev4Servos));
+        _options.set(_options() | uint32_t(Option::Rev4Servos));
     }
 
     const char *colon = strchr(frame_str, ':');

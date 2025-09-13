@@ -79,7 +79,7 @@ float ServoModel::apply_filter(float v, float dt)
 
     // apply delay
     if (sitl->servo.servo_delay > 0) {
-        uint32_t delay_len = MAX(1,sitl->servo.servo_delay * sitl->loop_rate_hz);
+        uint32_t delay_len = MAX(1,sitl->servo.servo_delay * sitl->loop_rate_hz());
         if (!delay) {
             delay = NEW_NOTHROW ObjectBuffer<float>();
         }
@@ -105,7 +105,7 @@ float ServoModel::apply_filter(float v, float dt)
 
     // apply filter
     if (sitl->servo.servo_filter > 0) {
-        filter.set_cutoff_frequency(sitl->loop_rate_hz, sitl->servo.servo_filter);
+        filter.set_cutoff_frequency(sitl->loop_rate_hz(), sitl->servo.servo_filter);
         v = filter.apply(v);
     }
 

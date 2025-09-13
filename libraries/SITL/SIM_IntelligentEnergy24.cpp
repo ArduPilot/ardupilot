@@ -108,8 +108,8 @@ void IntelligentEnergy24::update_send()
     const int32_t pwr_out = float_to_int32(battery_pwr*1.4f);
     const uint32_t spm_pwr = float_to_uint32(battery_pwr*0.3f);
 
-    uint32_t state = set_state;
-    if (set_state == -1) {
+    uint32_t state = set_state();
+    if (set_state() == -1) {
         state = 2; // Running
     }
 
@@ -126,7 +126,7 @@ void IntelligentEnergy24::update_send()
              (unsigned)spm_pwr,
              (signed)battery_pwr,
              (unsigned)state,
-             (unsigned)err_code);
+             (unsigned)err_code());
 
     } else {
         // V2 Protocol
@@ -155,9 +155,9 @@ void IntelligentEnergy24::update_send()
              0, // unit at fault (0 = no fault)
              (signed)battery_pwr,
              (unsigned)state,
-             (unsigned)err_code,
+             (unsigned)err_code(),
              0, // fault state 2 (0 = no fault)
-             get_error_string(err_code)); 
+             get_error_string(err_code())); 
 
         // calculate the checksum
         uint8_t checksum = 0;

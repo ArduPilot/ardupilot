@@ -341,6 +341,6 @@ void Blimp::update(const struct sitl_input &input)
   update_position(); //updates the position from the Vector3f position
   time_advance();
   update_mag_field_bf();
-  rate_hz = sitl->loop_rate_hz;
+  rate_hz = sitl->loop_rate_hz();
 
 }

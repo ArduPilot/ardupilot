@@ -138,7 +138,7 @@ void Sailboat::update_wave(float delta_time)
     dcm.to_euler(&r, &p, &y); 
 
     // if not armed don't do waves, to allow gyro init
-    if (sitl->wave.enable == 0 || !hal.util->get_soft_armed() || is_zero(wave_amp) ) { 
+    if (sitl->wave.enable() == 0 || !hal.util->get_soft_armed() || is_zero(wave_amp) ) { 
         wave_gyro = Vector3f(-r,-p,0.0f) * WAVE_ANGLE_GAIN;
         wave_heave = -velocity_ef.z * WAVE_HEAVE_GAIN;
         wave_phase = 0.0f;
@@ -172,7 +172,7 @@ void Sailboat::update_wave(float delta_time)
     wave_gyro.z = 0.0f;
 
     // calculate wave height (NED)
-    if (sitl->wave.enable == 2) {
+    if (sitl->wave.enable() == 2) {
         wave_heave = (wave_slope - velocity_ef.z) * WAVE_HEAVE_GAIN;
     } else {
         wave_heave = 0.0f;
