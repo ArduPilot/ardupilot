@@ -169,7 +169,7 @@ AC_Fence::AC_Fence()
 #endif
     _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
-    if (_enabled) {
+    if (_enabled()) {
         _enabled_fences = _configured_fences.get() & ~AC_FENCE_TYPE_ALT_MIN;
     }
 }
@@ -227,11 +227,11 @@ void AC_Fence::update()
 {
     _poly_loader.update();
     // if someone changes the parameter we want to enable or disable everything
-    if (_enabled != _last_enabled || _auto_enabled != _last_auto_enabled) {
+    if (_enabled() != _last_enabled || _auto_enabled() != _last_auto_enabled) {
         // reset the auto mask since we just reconfigured all of fencing
-        _last_enabled = _enabled;
-        _last_auto_enabled = _auto_enabled;
-        if (_enabled) {
+        _last_enabled = _enabled();
+        _last_auto_enabled = _auto_enabled();
+        if (_enabled()) {
             _enabled_fences = _configured_fences.get() & ~AC_FENCE_TYPE_ALT_MIN;
         } else {
             _enabled_fences = 0;
@@ -393,7 +393,7 @@ uint8_t AC_Fence::get_enabled_fences() const
 // additional checks for the polygon fence:
 bool AC_Fence::pre_arm_check_polygon(char *failure_msg, const uint8_t failure_msg_len) const
 {
-    if (!(_configured_fences & AC_FENCE_TYPE_POLYGON)) {
+    if (!(_configured_fences() & AC_FENCE_TYPE_POLYGON)) {
         // not enabled; all good
         return true;
     }
@@ -446,31 +446,31 @@ bool AC_Fence::pre_arm_check_alt(char *failure_msg, const uint8_t failure_msg_le
 bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const
 {
     // if fences are enabled but none selected fail pre-arm check
-    if (_enabled && !present()) {
+    if (_enabled() && !present()) {
         hal.util->snprintf(failure_msg, failure_msg_len, "Fences enabled, but none selected");
         return false;
     }
     
     // if AUTOENABLE = 1 or 2 warn now, but fail in a later release
     // PARAMETER_CONVERSION - Added: Jul-2024 for ArduPilot-4.6
-    if (_auto_enabled == 1 || _auto_enabled == 2) {
+    if (_auto_enabled() == 1 || _auto_enabled() == 2) {
         static uint32_t last_autoenable_warn_ms;
         const uint32_t now_ms = AP_HAL::millis();
         if (now_ms - last_autoenable_warn_ms > 60000) {
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "FENCE_AUTOENABLE is %u, will be removed in 4.7, use 3", unsigned(_auto_enabled));
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "FENCE_AUTOENABLE is %u, will be removed in 4.7, use 3", unsigned(_auto_enabled()));
             last_autoenable_warn_ms = now_ms;
         }
     }
 
     // if not enabled or not fence set-up always return true
-    if ((!enabled() && !_auto_enabled) || !_configured_fences) {
+    if ((!enabled() && !_auto_enabled()) || !_configured_fences()) {
         return true;
     }
 
     // if we have horizontal limits enabled, check we can get a
     // relative position from the AHRS
-    if ((_configured_fences & AC_FENCE_TYPE_CIRCLE) ||
-        (_configured_fences & AC_FENCE_TYPE_POLYGON)) {
+    if ((_configured_fences() & AC_FENCE_TYPE_CIRCLE) ||
+        (_configured_fences() & AC_FENCE_TYPE_POLYGON)) {
         Vector2f position;
         if (!AP::ahrs().get_relative_position_NE_home(position)) {
             hal.util->snprintf(failure_msg, failure_msg_len, "Fence requires position");
@@ -640,10 +640,10 @@ bool AC_Fence::check_fence_alt_min()
 bool AC_Fence::auto_enable_fence_floor()
 {
     // altitude fence check
-    if (!(_configured_fences & AC_FENCE_TYPE_ALT_MIN)       // not configured
+    if (!(_configured_fences() & AC_FENCE_TYPE_ALT_MIN)       // not configured
         || (get_enabled_fences() & AC_FENCE_TYPE_ALT_MIN)   // already enabled
         || _min_alt_state == MinAltState::MANUALLY_DISABLED // user has manually disabled the fence
-        || (!_enabled && (auto_enabled() == AC_Fence::AutoEnable::ALWAYS_DISABLED
+        || (!_enabled() && (auto_enabled() == AC_Fence::AutoEnable::ALWAYS_DISABLED
             || auto_enabled() == AutoEnable::ENABLE_ON_AUTO_TAKEOFF))) {
         // not enabled
         return false;
@@ -757,11 +757,11 @@ uint8_t AC_Fence::check(bool disable_auto_fences)
     uint8_t fences_to_disable = disabled_fences & _enabled_fences;
 
     // clear any breach from a non-enabled fence
-    clear_breach(~_configured_fences);
+    clear_breach(~_configured_fences());
     // clear any breach from disabled fences
     clear_breach(fences_to_disable);
     // clear any margin breach from a non-enabled fence
-    clear_margin_breach(~_configured_fences);
+    clear_margin_breach(~_configured_fences());
     // clear any marginbreach from disabled fences
     clear_margin_breach(fences_to_disable);
 
@@ -797,7 +797,7 @@ uint8_t AC_Fence::check(bool disable_auto_fences)
                                     AP_HAL::micros64(),
                                     enabled(),
                                     _auto_enabled,
-                                    _configured_fences,
+                                    _configured_fences(),
                                     get_enabled_fences(),
                                     disabled_fences,
                                     alt*-1);
@@ -805,7 +805,7 @@ uint8_t AC_Fence::check(bool disable_auto_fences)
 #endif
     
     // return immediately if disabled
-    if ((!enabled() && !_auto_enabled && !(_configured_fences & AC_FENCE_TYPE_ALT_MIN)) || !_configured_fences) {
+    if ((!enabled() && !_auto_enabled() && !(_configured_fences() & AC_FENCE_TYPE_ALT_MIN)) || !_configured_fences()) {
         return 0;
     }
 
