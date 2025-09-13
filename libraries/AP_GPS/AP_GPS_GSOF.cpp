@@ -78,14 +78,14 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps,
     constexpr uint8_t default_com_port = static_cast<uint8_t>(HW_Port::COM2);
     params.com_port.set_default(default_com_port);
     const auto com_port = params.com_port;
-    if (!validate_com_port(com_port)) {
+    if (!validate_com_port(com_port())) {
         // The user parameter for COM port is not a valid GSOF port
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "GSOF instance %d has invalid COM port setting of %d", state.instance, (unsigned)com_port);
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "GSOF instance %d has invalid COM port setting of %d", state.instance, (unsigned)com_port());
         return;
     }
 
-    if (gps._auto_config >= AP_GPS::GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
-        requestBaud(static_cast<HW_Port>(unsigned(com_port)));
+    if (gps._auto_config() >= AP_GPS::GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
+        requestBaud(static_cast<HW_Port>(unsigned(com_port())));
     }
 
     const uint32_t now = AP_HAL::millis();
@@ -123,7 +123,7 @@ bool AP_GPS_GSOF::configure(void)
 bool
 AP_GPS_GSOF::read(void)
 {
-    if (gps._auto_config >= AP_GPS::GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
+    if (gps._auto_config() >= AP_GPS::GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
         if (!configure()) return false;
     }
     while (port->available() > 0) {

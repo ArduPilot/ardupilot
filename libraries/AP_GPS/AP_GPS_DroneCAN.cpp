@@ -112,13 +112,13 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
     bool bad_override_config = false;
     for (int8_t i = GPS_MAX_RECEIVERS - 1; i >= 0; i--) {
         if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_dronecan != nullptr) {
-            if (_gps.params[_state.instance].override_node_id != 0 &&
-                _gps.params[_state.instance].override_node_id != _detected_modules[i].node_id) {
+            if (_gps.params[_state.instance].override_node_id() != 0 &&
+                _gps.params[_state.instance].override_node_id() != _detected_modules[i].node_id) {
                 continue; // This device doesn't match the correct node
             }
             last_match = found_match;
             for (uint8_t j = 0; j < GPS_MAX_RECEIVERS; j++) {
-                if (_detected_modules[i].node_id == _gps.params[j].override_node_id &&
+                if (_detected_modules[i].node_id == _gps.params[j].override_node_id() &&
                     (j != _state.instance)) {
                     //wrong instance
                     found_match = -1;
@@ -129,8 +129,8 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
 
             // Handle Duplicate overrides
             for (uint8_t j = 0; j < GPS_MAX_RECEIVERS; j++) {
-                if (_gps.params[i].override_node_id != 0 && (i != j) &&
-                    _gps.params[i].override_node_id == _gps.params[j].override_node_id) {
+                if (_gps.params[i].override_node_id() != 0 && (i != j) &&
+                    _gps.params[i].override_node_id() == _gps.params[j].override_node_id()) {
                     bad_override_config = true;
                 }
             }
@@ -184,7 +184,7 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
         snprintf(backend->_name, ARRAY_SIZE(backend->_name), "DroneCAN%u-%u", _detected_modules[found_match].ap_dronecan->get_driver_index()+1, _detected_modules[found_match].node_id);
         _detected_modules[found_match].instance = _state.instance;
         for (uint8_t i=0; i < GPS_MAX_RECEIVERS; i++) {
-            if (_detected_modules[found_match].node_id == AP::gps().params[i].node_id) {
+            if (_detected_modules[found_match].node_id == AP::gps().params[i].node_id()) {
                 if (i == _state.instance) {
                     // Nothing to do here
                     break;
@@ -219,7 +219,7 @@ bool AP_GPS_DroneCAN::inter_instance_pre_arm_checks(char failure_msg[], uint16_t
         }
         bool overriden_node_found = false;
         bool bad_override_config = false;
-        if (params_i.override_node_id == 0) {
+        if (params_i.override_node_id() == 0) {
             //anything goes
             continue;
         }
@@ -229,12 +229,12 @@ bool AP_GPS_DroneCAN::inter_instance_pre_arm_checks(char failure_msg[], uint16_t
             if (!is_dronecan_gps_type(params_j.type)) {
                 continue;
             }
-            if (params_i.override_node_id == params_j.override_node_id && (i != j)) {
+            if (params_i.override_node_id() == params_j.override_node_id() && (i != j)) {
                 bad_override_config = true;
                 break;
             }
             if (i == _detected_modules[j].instance && _detected_modules[j].driver) {
-                if (params_i.override_node_id == _detected_modules[j].node_id) {
+                if (params_i.override_node_id() == _detected_modules[j].node_id) {
                     overriden_node_found = true;
                     break;
                 }
@@ -710,7 +710,7 @@ bool AP_GPS_DroneCAN::do_config()
 // Consume new data and mark it received
 bool AP_GPS_DroneCAN::read(void)
 {
-    if (gps._auto_config >= AP_GPS::GPS_AUTO_CONFIG_ENABLE_ALL) {
+    if (gps._auto_config() >= AP_GPS::GPS_AUTO_CONFIG_ENABLE_ALL) {
         if (!do_config()) {
             return false;
         }

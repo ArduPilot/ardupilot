@@ -841,7 +841,7 @@ void AP_GPS_NMEA::send_config(void)
     const auto type = get_type();
     _expect_agrica = (type == AP_GPS::GPS_TYPE_UNICORE_NMEA ||
                       type == AP_GPS::GPS_TYPE_UNICORE_MOVINGBASE_NMEA);
-    if (gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
+    if (gps._auto_config() == AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
         // not doing auto-config
         return;
     }
@@ -850,7 +850,7 @@ void AP_GPS_NMEA::send_config(void)
         return;
     }
     last_config_ms = now_ms;
-    const uint16_t rate_ms = params.rate_ms;
+    const uint16_t rate_ms = params.rate_ms();
 #if AP_GPS_NMEA_UNICORE_ENABLED
     const float rate_s = rate_ms * 0.001;
 #endif
@@ -876,7 +876,7 @@ void AP_GPS_NMEA::send_config(void)
         if (!_have_unicore_versiona) {
             // get version information for logging if we don't have it yet
             port->printf("VERSIONA\r\n");
-            if (gps._save_config) {
+            if (gps._save_config()) {
                 // save config changes for fast startup
                 port->printf("SAVECONFIG\r\n");
             }
