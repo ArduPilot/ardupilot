@@ -1157,7 +1157,7 @@ bool AP_Vehicle::block_GCS_mode_change(uint8_t mode_num, const uint8_t *mode_lis
         // Find index of mode
         if (mode_list[i] == mode_num) {
             const uint32_t mask = 1U << i;
-            return (uint32_t(flight_mode_GCS_block) & mask) != 0;
+            return (uint32_t(flight_mode_GCS_block()) & mask) != 0;
         }
     }
 
