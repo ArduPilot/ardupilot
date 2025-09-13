@@ -202,9 +202,9 @@ void AP_ADSB::init(void)
 {
     if (in_state.vehicle_list == nullptr) {
         // sanity check param
-        in_state.list_size_param.set(constrain_int16(in_state.list_size_param, 1, INT16_MAX));
+        in_state.list_size_param.set(constrain_int16(in_state.list_size_param(), 1, INT16_MAX));
 
-        in_state.vehicle_list = NEW_NOTHROW adsb_vehicle_t[in_state.list_size_param];
+        in_state.vehicle_list = NEW_NOTHROW adsb_vehicle_t[in_state.list_size_param()];
 
         if (in_state.vehicle_list == nullptr) {
             // dynamic RAM allocation of in_state.vehicle_list[] failed
@@ -212,7 +212,7 @@ void AP_ADSB::init(void)
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ADSB: Unable to initialize ADSB vehicle list");
             return;
         }
-        in_state.list_size_allocated = in_state.list_size_param;
+        in_state.list_size_allocated = in_state.list_size_param();
     }
 
     if (detected_num_instances == 0) {
@@ -245,7 +245,7 @@ bool AP_ADSB::check_startup()
 
     bool all_backends_disabled = true;
     for (uint8_t instance=0; instance<ADSB_MAX_INSTANCES; instance++) {
-        if (_type[instance] > 0) {
+        if (_type[instance]() > 0) {
             all_backends_disabled = false;
             break;
         }
@@ -396,31 +396,31 @@ void AP_ADSB::update(const AP_ADSB::Loc &loc)
         }
     }
 
-    if (out_state.cfg.squawk_octal_param != out_state.cfg.squawk_octal) {
+    if (out_state.cfg.squawk_octal_param() != out_state.cfg.squawk_octal) {
         // param changed, check that it's a valid octal
-        if (!is_valid_callsign(out_state.cfg.squawk_octal_param)) {
+        if (!is_valid_callsign(out_state.cfg.squawk_octal_param())) {
             // invalid, reset it to default
             out_state.cfg.squawk_octal_param.set(ADSB_SQUAWK_OCTAL_DEFAULT);
         }
-        out_state.cfg.squawk_octal = (uint16_t)out_state.cfg.squawk_octal_param;
+        out_state.cfg.squawk_octal = (uint16_t)out_state.cfg.squawk_octal_param();
     }
 
     // ensure it's positive 24bit but allow -1
-    if (out_state.cfg.ICAO_id_param <= -1 || out_state.cfg.ICAO_id_param > 0x00FFFFFF) {
+    if (out_state.cfg.ICAO_id_param() <= -1 || out_state.cfg.ICAO_id_param() > 0x00FFFFFF) {
         // icao param of -1 means static information is not sent, transceiver is assumed pre-programmed.
         // reset timer constantly so it never reaches 10s so it never sends
         out_state.last_config_ms = now;
 
-    } else if ((out_state.cfg.rfSelect & UAVIONIX_ADSB_OUT_RF_SELECT_TX_ENABLED) &&
-                (out_state.cfg.ICAO_id == 0 || out_state.cfg.ICAO_id_param_prev != out_state.cfg.ICAO_id_param)) {
+    } else if ((out_state.cfg.rfSelect() & UAVIONIX_ADSB_OUT_RF_SELECT_TX_ENABLED) &&
+                (out_state.cfg.ICAO_id == 0 || out_state.cfg.ICAO_id_param_prev != out_state.cfg.ICAO_id_param())) {
 
         // if param changed then regenerate. This allows the param to be changed back to zero to trigger a re-generate
-        if (out_state.cfg.ICAO_id_param == 0) {
+        if (out_state.cfg.ICAO_id_param() == 0) {
             out_state.cfg.ICAO_id = genICAO(_my_loc);
         } else {
-            out_state.cfg.ICAO_id = out_state.cfg.ICAO_id_param;
+            out_state.cfg.ICAO_id = out_state.cfg.ICAO_id_param();
         }
-        out_state.cfg.ICAO_id_param_prev = out_state.cfg.ICAO_id_param;
+        out_state.cfg.ICAO_id_param_prev = out_state.cfg.ICAO_id_param();
 
 #ifndef ADSB_STATIC_CALLSIGN
         if (!out_state.cfg.was_set_externally) {
@@ -531,8 +531,8 @@ void AP_ADSB::handle_adsb_vehicle(const adsb_vehicle_t &vehicle)
     const bool my_loc_is_zero = _my_loc.is_zero();
     const float my_loc_distance_to_vehicle = _my_loc.get_distance(vehicle_loc);
     const bool is_special = is_special_vehicle(vehicle.info.ICAO_address);
-    const bool out_of_range = in_state.list_radius > 0 && !my_loc_is_zero && my_loc_distance_to_vehicle > in_state.list_radius && !is_special;
-    const bool out_of_range_alt = in_state.list_altitude > 0 && !my_loc_is_zero && abs(vehicle_loc.alt - _my_loc.alt) > in_state.list_altitude*100 && !is_special;
+    const bool out_of_range = in_state.list_radius() > 0 && !my_loc_is_zero && my_loc_distance_to_vehicle > in_state.list_radius() && !is_special;
+    const bool out_of_range_alt = in_state.list_altitude() > 0 && !my_loc_is_zero && abs(vehicle_loc.alt - _my_loc.alt) > in_state.list_altitude()*100 && !is_special;
     const bool is_tracked_in_list = find_index(vehicle, &index);
     const uint32_t now = AP_HAL::millis();
 
@@ -733,7 +733,7 @@ void AP_ADSB::handle_transceiver_report(const mavlink_channel_t chan, const mavl
 void AP_ADSB::send_adsb_out_status(const mavlink_channel_t chan) const
 {
     for (uint8_t i=0; i < ADSB_MAX_INSTANCES; i++) {
-        if (_type[i] == (int8_t)(AP_ADSB::Type::uAvionix_UCP) || _type[i] == (int8_t)(AP_ADSB::Type::Sagetech_MXS)) {
+        if (_type[i]() == (int8_t)(AP_ADSB::Type::uAvionix_UCP) || _type[i]() == (int8_t)(AP_ADSB::Type::Sagetech_MXS)) {
             mavlink_msg_uavionix_adsb_out_status_send_struct(chan, &out_state.tx_status);
             return;
         }

@@ -118,7 +118,7 @@ void AP_ADSB_uAvionix_UCP::update()
         }
     }
 
-    if ((now_ms - run_state.last_packet_GPS_ms >= 200) && (_frontend._options & uint32_t(AP_ADSB::AdsbOption::Ping200X_Send_GPS)) != 0) {
+    if ((now_ms - run_state.last_packet_GPS_ms >= 200) && (_frontend._options() & uint32_t(AP_ADSB::AdsbOption::Ping200X_Send_GPS)) != 0) {
         run_state.last_packet_GPS_ms = now_ms;
         send_GPS_Data();
     }
@@ -411,14 +411,14 @@ void AP_ADSB_uAvionix_UCP::send_Transponder_Control()
     _frontend.out_state.ctrl.identActive = false; // only send identButtonActive once per request
     msg.modeAEnabled = _frontend.out_state.ctrl.modeAEnabled;
     msg.modeCEnabled = _frontend.out_state.ctrl.modeCEnabled;
-    msg.modeSEnabled = (_frontend._options & uint32_t(AP_ADSB::AdsbOption::Mode3_Only)) ? 0 : _frontend.out_state.ctrl.modeSEnabled;
-    msg.es1090TxEnabled = (_frontend._options & uint32_t(AP_ADSB::AdsbOption::Mode3_Only)) ? 0 : _frontend.out_state.ctrl.es1090TxEnabled;
+    msg.modeSEnabled = (_frontend._options() & uint32_t(AP_ADSB::AdsbOption::Mode3_Only)) ? 0 : _frontend.out_state.ctrl.modeSEnabled;
+    msg.es1090TxEnabled = (_frontend._options() & uint32_t(AP_ADSB::AdsbOption::Mode3_Only)) ? 0 : _frontend.out_state.ctrl.es1090TxEnabled;
 
     // if enabled via param ADSB_OPTIONS, use squawk 7400 while in any Loss-Comms related failsafe
     // https://www.faa.gov/documentLibrary/media/Notice/N_JO_7110.724_5-2-9_UAS_Lost_Link_2.pdf
     const AP_Notify& notify = AP::notify();
-    if (((_frontend._options & uint32_t(AP_ADSB::AdsbOption::Squawk_7400_FS_RC)) && notify.flags.failsafe_radio) ||
-        ((_frontend._options & uint32_t(AP_ADSB::AdsbOption::Squawk_7400_FS_GCS)) && notify.flags.failsafe_gcs)) {
+    if (((_frontend._options() & uint32_t(AP_ADSB::AdsbOption::Squawk_7400_FS_RC)) && notify.flags.failsafe_radio) ||
+        ((_frontend._options() & uint32_t(AP_ADSB::AdsbOption::Squawk_7400_FS_GCS)) && notify.flags.failsafe_gcs)) {
         msg.squawkCode = 7400;
     } else {
         msg.squawkCode = _frontend.out_state.ctrl.squawkCode;

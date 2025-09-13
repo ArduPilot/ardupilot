@@ -95,12 +95,12 @@ void AP_ADSB_Sagetech::update()
             // send as data changes
             last_operating_squawk != _frontend.out_state.cfg.squawk_octal ||
             abs(last_operating_alt - _frontend._my_loc.alt) > 1555 ||      // 1493cm == 49ft. The output resolution is 100ft per bit
-            last_operating_rf_select != _frontend.out_state.cfg.rfSelect))
+            last_operating_rf_select != _frontend.out_state.cfg.rfSelect()))
     {
         last_packet_Operating_ms = now_ms;
         last_operating_squawk = _frontend.out_state.cfg.squawk_octal;
         last_operating_alt = _frontend._my_loc.alt;
-        last_operating_rf_select = _frontend.out_state.cfg.rfSelect;
+        last_operating_rf_select = _frontend.out_state.cfg.rfSelect();
         send_packet(MsgType_XP::Operating_Set);
 
     } else if (now_ms - last_packet_GPS_ms >= (_frontend.out_state.is_flying ? 200 : 1000)) {
@@ -396,7 +396,7 @@ void AP_ADSB_Sagetech::send_msg_Installation()
 
 //    // convert a decimal 123456 to 0x123456
     // TODO: do a proper conversion. The param contains "131313" but what gets transmitted over the air is 0x200F1.
-    const uint32_t icao_hex = AP_ADSB::convert_base_to_decimal(16, _frontend.out_state.cfg.ICAO_id_param);
+    const uint32_t icao_hex = AP_ADSB::convert_base_to_decimal(16, _frontend.out_state.cfg.ICAO_id_param());
     put_le24_ptr(&pkt.payload[0], icao_hex);
 
     memcpy(&pkt.payload[3], &_frontend.out_state.cfg.callsign, 8);
@@ -410,10 +410,10 @@ void AP_ADSB_Sagetech::send_msg_Installation()
     pkt.payload[15] = 1;        // GPS from COM port 0 (this port)
     pkt.payload[16] = 1;        // GPS Integrity
 
-    pkt.payload[17] = _frontend.out_state.cfg.emitterType / 8;      // Emitter Set
-    pkt.payload[18] = _frontend.out_state.cfg.emitterType & 0x0F;   // Emitter Type
+    pkt.payload[17] = _frontend.out_state.cfg.emitterType() / 8;      // Emitter Set
+    pkt.payload[18] = _frontend.out_state.cfg.emitterType() & 0x0F;   // Emitter Type
 
-    pkt.payload[19] = _frontend.out_state.cfg.lengthWidth;          // Aircraft Size
+    pkt.payload[19] = _frontend.out_state.cfg.lengthWidth();          // Aircraft Size
 
     pkt.payload[20] = 0;        // Altitude Encoder Offset
     pkt.payload[21] = 0;        // Altitude Encoder Offset
@@ -455,7 +455,7 @@ void AP_ADSB_Sagetech::send_msg_Operating()
     put_le16_ptr(&pkt.payload[0], squawk);
 
     // altitude
-    if (_frontend.out_state.cfg.rf_capable & 0x01) {
+    if (_frontend.out_state.cfg.rf_capable() & 0x01) {
         const float alt_meters = last_operating_alt * 0.01f;
         const int32_t alt_feet = (int32_t)(alt_meters * FEET_TO_METERS);
         const int16_t alt_feet_adj = (alt_feet + 50) / 100; // 1 = 100 feet, 1 = 149 feet, 5 = 500 feet

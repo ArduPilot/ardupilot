@@ -179,10 +179,10 @@ uint8_t AP_ADSB_uAvionix_MAVLink::get_encoded_callsign_null_char()
 
     encoded_null = AP_ADSB::convert_maxknots_to_enum(_frontend.out_state.cfg.maxAircraftSpeed_knots);
 
-    if (_frontend.out_state.cfg.rf_capable & ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN) {
+    if (_frontend.out_state.cfg.rf_capable() & ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN) {
         encoded_null |= 0x10;
     }
-    if (_frontend.out_state.cfg.rf_capable & ADSB_BITBASK_RF_CAPABILITIES_UAT_IN) {
+    if (_frontend.out_state.cfg.rf_capable() & ADSB_BITBASK_RF_CAPABILITIES_UAT_IN) {
         encoded_null |= 0x20;
     }
 
@@ -228,12 +228,12 @@ void AP_ADSB_uAvionix_MAVLink::send_configure(const mavlink_channel_t chan)
             chan,
             icao,
             (const char*)callsign,
-            (uint8_t)_frontend.out_state.cfg.emitterType,
-            (uint8_t)_frontend.out_state.cfg.lengthWidth,
-            (uint8_t)_frontend.out_state.cfg.gpsOffsetLat,
-            (uint8_t)_frontend.out_state.cfg.gpsOffsetLon,
+            (uint8_t)_frontend.out_state.cfg.emitterType(),
+            (uint8_t)_frontend.out_state.cfg.lengthWidth(),
+            (uint8_t)_frontend.out_state.cfg.gpsOffsetLat(),
+            (uint8_t)_frontend.out_state.cfg.gpsOffsetLon(),
             _frontend.out_state.cfg.stall_speed_cm,
-            (uint8_t)_frontend.out_state.cfg.rfSelect);
+            (uint8_t)_frontend.out_state.cfg.rfSelect());
 }
 
 #endif // HAL_ADSB_UAVIONIX_MAVLINK_ENABLED
