@@ -99,20 +99,20 @@ void AP_SmartRTL::init()
     }
 
     // constrain the path length, in case the user decided to make the path unreasonably long.
-    _points_max.set(constrain_int16(_points_max, 0, SMARTRTL_POINTS_MAX));
+    _points_max.set(constrain_int16(_points_max(), 0, SMARTRTL_POINTS_MAX));
 
     // check if user has disabled SmartRTL
-    if (_points_max == 0 || !is_positive(_accuracy)) {
+    if (_points_max() == 0 || !is_positive(_accuracy)) {
         return;
     }
 
     // allocate arrays
-    _path = (Vector3f*)calloc(_points_max, sizeof(Vector3f));
+    _path = (Vector3f*)calloc(_points_max(), sizeof(Vector3f));
 
-    _prune.loops_max = _points_max * SMARTRTL_PRUNING_LOOP_BUFFER_LEN_MULT;
+    _prune.loops_max = _points_max() * SMARTRTL_PRUNING_LOOP_BUFFER_LEN_MULT;
     _prune.loops = (prune_loop_t*)calloc(_prune.loops_max, sizeof(prune_loop_t));
 
-    _simplify.stack_max = _points_max * SMARTRTL_SIMPLIFY_STACK_LEN_MULT;
+    _simplify.stack_max = _points_max() * SMARTRTL_SIMPLIFY_STACK_LEN_MULT;
     _simplify.stack = (simplify_start_finish_t*)calloc(_simplify.stack_max, sizeof(simplify_start_finish_t));
 
     // check if memory allocation failed
@@ -125,7 +125,7 @@ void AP_SmartRTL::init()
         return;
     }
 
-    _path_points_max = _points_max;
+    _path_points_max = _points_max();
 
     // when running the example sketch, we want the cleanup tasks to run when we tell them to, not in the background (so that they can be timed.)
     if (!_example_mode){
