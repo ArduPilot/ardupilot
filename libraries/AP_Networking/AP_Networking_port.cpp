@@ -123,8 +123,8 @@ void AP_Networking::Port::udp_client_init(void)
     sock->set_blocking(false);
 
     // setup for packet boundaries if this is mavlink
-    packetise = (state.protocol == AP_SerialManager::SerialProtocol_MAVLink ||
-                 state.protocol == AP_SerialManager::SerialProtocol_MAVLink2);
+    packetise = (state.protocol() == AP_SerialManager::SerialProtocol_MAVLink ||
+                 state.protocol() == AP_SerialManager::SerialProtocol_MAVLink2);
 
     thread_create(FUNCTOR_BIND_MEMBER(&AP_Networking::Port::udp_client_loop, void));
 }
@@ -141,8 +141,8 @@ void AP_Networking::Port::udp_server_init(void)
     sock->set_blocking(false);
 
     // setup for packet boundaries if this is mavlink
-    packetise = (state.protocol == AP_SerialManager::SerialProtocol_MAVLink ||
-                 state.protocol == AP_SerialManager::SerialProtocol_MAVLink2);
+    packetise = (state.protocol() == AP_SerialManager::SerialProtocol_MAVLink ||
+                 state.protocol() == AP_SerialManager::SerialProtocol_MAVLink2);
 
     thread_create(FUNCTOR_BIND_MEMBER(&AP_Networking::Port::udp_server_loop, void));
 }
