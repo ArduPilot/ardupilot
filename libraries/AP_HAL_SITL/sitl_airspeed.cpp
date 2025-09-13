@@ -53,7 +53,7 @@ void SITL_State::_update_airspeed(float true_airspeed)
         float airspeed_pressure = (airspeed * airspeed) / arspd.ratio;
 
         // flip sign here for simulating reversed pitot/static connections
-        if (arspd.signflip) {
+        if (arspd.signflip()) {
             airspeed_pressure *= -1;
         }
 

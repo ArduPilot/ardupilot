@@ -202,7 +202,7 @@ void Scheduler::set_system_initialized() {
     exceptions |= FE_INVALID;
 #endif
 #if !defined(HAL_BUILD_AP_PERIPH)
-    if (_sitlState->_sitl == nullptr || _sitlState->_sitl->float_exception) {
+    if (_sitlState->_sitl == nullptr || _sitlState->_sitl->float_exception()) {
         feenableexcept(exceptions);
     } else {
         feclearexcept(exceptions);
