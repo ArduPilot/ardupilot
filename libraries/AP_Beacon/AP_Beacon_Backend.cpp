@@ -87,16 +87,16 @@ void AP_Beacon_Backend::set_beacon_position(uint8_t beacon_instance, const Vecto
 Vector3f AP_Beacon_Backend::correct_for_orient_yaw(const Vector3f &vector)
 {
     // exit immediately if no correction
-    if (_frontend.orient_yaw == 0) {
+    if (_frontend.orient_yaw() == 0) {
         return vector;
     }
 
     // check for change in parameter value and update constants
-    if (orient_yaw_deg != _frontend.orient_yaw) {
+    if (orient_yaw_deg != _frontend.orient_yaw()) {
         _frontend.orient_yaw.set(wrap_180(_frontend.orient_yaw.get()));
 
         // calculate rotation constants
-        orient_yaw_deg = _frontend.orient_yaw;
+        orient_yaw_deg = _frontend.orient_yaw();
         orient_cos_yaw = cosf(radians(orient_yaw_deg));
         orient_sin_yaw = sinf(radians(orient_yaw_deg));
     }
