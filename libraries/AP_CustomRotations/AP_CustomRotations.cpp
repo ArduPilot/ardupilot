@@ -56,7 +56,7 @@ AP_CustomRotations::AP_CustomRotations()
 
 void AP_CustomRotations::init()
 {
-    if (enable == 0) {
+    if (enable() == 0) {
         return;
     }
 
