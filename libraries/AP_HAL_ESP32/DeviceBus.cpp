@@ -21,8 +21,8 @@
 #include "Scheduler.h"
 #include "Semaphores.h"
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 
 using namespace ESP32;
@@ -37,6 +37,10 @@ DeviceBus::DeviceBus(uint8_t _thread_priority) :
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
 }
+
+#ifndef IRAM_ATTR
+#define IRAM_ATTR
+#endif
 
 /*
   per-bus callback thread

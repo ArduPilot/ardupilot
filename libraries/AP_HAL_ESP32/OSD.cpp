@@ -2,7 +2,7 @@
 
 #ifdef WITH_INT_OSD
 
-#include "freertos/FreeRTOS.h"
+#include "FreeRTOS.h"
 
 #include "soc/mcpwm_struct.h"
 #include "soc/mcpwm_reg.h"

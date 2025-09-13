@@ -42,12 +42,16 @@
 #include "AP_Filesystem_FlashMemory_LittleFS.h"
 #endif
 
+
+
+#endif // HAL_BOARD_CHIBIOS
+
+// not avail on pico. todo fix logic
 struct dirent {
    char    d_name[MAX_NAME_LEN]; /* filename */
    uint8_t d_type;
 };
 
-#endif // HAL_BOARD_CHIBIOS
 
 #include <fcntl.h>
 #include <errno.h>
