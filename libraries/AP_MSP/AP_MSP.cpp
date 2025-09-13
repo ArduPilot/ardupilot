@@ -230,7 +230,7 @@ AP_MSP_Telem_Backend* AP_MSP::find_protocol(const AP_SerialManager::SerialProtoc
 
 bool AP_MSP::is_option_enabled(Option option) const
 {
-    return (_options & (uint8_t)option) != 0;
+    return (_options() & (uint8_t)option) != 0;
 }
 
 namespace AP
