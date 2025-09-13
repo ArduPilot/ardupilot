@@ -142,7 +142,7 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
     }
 
     // Log one visgraph point per loop
-    if (_polyfence_visgraph_ok && (_log_num_points < total_numpoints()) && (_options & AP_OAPathPlanner::OARecoveryOptions::OA_OPTION_LOG_DIJKSTRA_POINTS) ) {
+    if (_polyfence_visgraph_ok && (_log_num_points < total_numpoints()) && (_options() & AP_OAPathPlanner::OARecoveryOptions::OA_OPTION_LOG_DIJKSTRA_POINTS) ) {
         Vector2f vis_point;
         if (get_point(_log_num_points, vis_point)) {
             Location log_location(Vector3f{vis_point.x, vis_point.y, 0.0}, Location::AltFrame::ABOVE_ORIGIN);

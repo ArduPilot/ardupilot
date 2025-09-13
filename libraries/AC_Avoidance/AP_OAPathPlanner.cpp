@@ -86,7 +86,7 @@ AP_OAPathPlanner::AP_OAPathPlanner()
 void AP_OAPathPlanner::init()
 {
     // run background task looking for best alternative destination
-    switch (_type) {
+    switch (_type()) {
     case OA_PATHPLAN_DISABLED:
         // do nothing
         return;
@@ -124,7 +124,7 @@ void AP_OAPathPlanner::init()
 bool AP_OAPathPlanner::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
 {
     // check if initialisation has succeeded
-    switch (_type) {
+    switch (_type()) {
     case OA_PATHPLAN_DISABLED:
         // do nothing
         break;
@@ -157,7 +157,7 @@ bool AP_OAPathPlanner::start_thread()
     if (_thread_created) {
         return true;
     }
-    if (_type == OA_PATHPLAN_DISABLED) {
+    if (_type() == OA_PATHPLAN_DISABLED) {
         return false;
     }
 
@@ -204,7 +204,7 @@ AP_OAPathPlanner::OA_RetState AP_OAPathPlanner::mission_avoidance(const Location
                                          OAPathPlannerUsed &path_planner_used)
 {
     // exit immediately if disabled or thread is not running from a failed init
-    if (_type == OA_PATHPLAN_DISABLED || !_thread_created) {
+    if (_type() == OA_PATHPLAN_DISABLED || !_thread_created) {
         return OA_NOT_REQUIRED;
     }
 
@@ -308,7 +308,7 @@ void AP_OAPathPlanner::avoidance_thread()
         // run background task looking for best alternative destination
         OA_RetState res = OA_NOT_REQUIRED;
         OAPathPlannerUsed path_planner_used = OAPathPlannerUsed::None;
-        switch (_type) {
+        switch (_type()) {
         case OA_PATHPLAN_DISABLED:
             continue;
         case OA_PATHPLAN_BENDYRULER: {
