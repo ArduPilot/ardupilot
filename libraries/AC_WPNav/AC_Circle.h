@@ -197,11 +197,6 @@ private:
     // Terrain source may be rangefinder or terrain database.
     bool get_terrain_offset_m(float& offset_m);
 
-    // flags structure
-    struct circle_flags {
-        uint8_t panorama    : 1;    // true if we are doing a panorama
-    } _flags;
-
     // references to inertial nav and ahrs libraries
     const AP_AHRS_View&         _ahrs;
     AC_PosControl&              _pos_control;
