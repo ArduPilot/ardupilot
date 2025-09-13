@@ -962,6 +962,13 @@ public:
     operator const T &() const {
         return this->_value;
     }
+
+    /// The call operator returns a reference to the value. This is simply a
+    /// short version of `.get()` and so does allow standard C numeric
+    /// conversion rules.
+    const T& operator()(void) const {
+        return this->_value;
+    }
 };
 
 template<>
