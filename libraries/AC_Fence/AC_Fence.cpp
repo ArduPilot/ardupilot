@@ -57,9 +57,9 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
 
     // @Param: TYPE
     // @DisplayName: Fence Type
-    // @Description: Configured fence types held as bitmask. Max altitide, Circle and Polygon fences will be immediately enabled if configured. Min altitude fence will only be enabled once the minimum altitude is reached.
-    // @Bitmask{Rover}: 1:Circle Centered on Home,2:Inclusion/Exclusion Circles+Polygons
-    // @Bitmask{Copter, Plane, Sub}: 0:Max altitude,1:Circle Centered on Home,2:Inclusion/Exclusion Circles+Polygons,3:Min altitude
+    // @Description: Configured fence types held as bitmask. Max altitude, Circle and Polygon fences will be immediately enabled if configured. Min altitude fence will only be enabled once the minimum altitude is reached.
+    // @Bitmask{Rover}: 1:Circle Centered on Home (deprecated in 4.7 by MAV_CMD_NAV_FENCE_HOME_CIRCLE_INCLUSION, prearm failure if enabled in 4.8, compiled out by default in 4.9, removed in 4.10),2:Inclusion/Exclusion Circles+Polygons
+    // @Bitmask{Copter, Plane, Sub}: 0:Max altitude,1:Circle Centered on Home (deprecated in 4.7 by MAV_CMD_NAV_FENCE_HOME_CIRCLE_INCLUSION, prearm failure if enabled in 4.8, removed in 4.9),2:Inclusion/Exclusion Circles+Polygons,3:Min altitude
     // @User: Standard
     AP_GROUPINFO("TYPE",        1,  AC_Fence,   _configured_fences,  AC_FENCE_TYPE_DEFAULT),
 
@@ -476,6 +476,10 @@ bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) c
             hal.util->snprintf(failure_msg, failure_msg_len, "Fence requires position");
             return false;
         }
+    }
+
+    if (_configured_fences & AC_FENCE_TYPE_CIRCLE) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AC_FENCE_TYPE_CIRCLE deprecated in 4.7; disable it and switch to MAV_CMD_NAV_FENCE_HOME_CIRCLE_INCLUSION.");
     }
 
     if (!pre_arm_check_polygon(failure_msg, failure_msg_len)) {
