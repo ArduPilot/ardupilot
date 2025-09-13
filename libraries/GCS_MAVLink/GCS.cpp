@@ -588,10 +588,10 @@ MAV_RESULT GCS::lua_command_int_packet(const mavlink_command_int_t &packet)
 */
 bool GCS::sysid_is_gcs(uint8_t _sysid) const
 {
-    if (mav_gcs_sysid_high <= mav_gcs_sysid) {
-        return mav_gcs_sysid == _sysid;
+    if (mav_gcs_sysid_high() <= mav_gcs_sysid()) {
+        return mav_gcs_sysid() == _sysid;
     }
-    return _sysid >= mav_gcs_sysid && _sysid <= mav_gcs_sysid_high;
+    return _sysid >= mav_gcs_sysid() && _sysid <= mav_gcs_sysid_high();
 }
 
 #endif  // HAL_GCS_ENABLED
