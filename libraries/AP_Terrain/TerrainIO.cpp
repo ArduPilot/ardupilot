@@ -61,7 +61,7 @@ void AP_Terrain::check_disk_write(void)
  */
 void AP_Terrain::schedule_disk_io(void)
 {
-    if (enable == 0 || !allocate()) {
+    if (enable() == 0 || !allocate()) {
         return;
     }
 
@@ -226,9 +226,9 @@ uint32_t AP_Terrain::east_blocks(struct grid_block &block) const
     loc2.lng = (block.lon_degrees+1)*10*1000*1000L;
 
     // shift another two blocks east to ensure room is available
-    loc2.offset(0, 2*grid_spacing*TERRAIN_GRID_BLOCK_SIZE_Y);
+    loc2.offset(0, 2*grid_spacing()*TERRAIN_GRID_BLOCK_SIZE_Y);
     const Vector2f offset = loc1.get_distance_NE(loc2);
-    return offset.y / (grid_spacing*TERRAIN_GRID_BLOCK_SPACING_Y);
+    return offset.y / (grid_spacing()*TERRAIN_GRID_BLOCK_SPACING_Y);
 }
 
 /*
@@ -301,7 +301,7 @@ void AP_Terrain::read_block(void)
         !TERRAIN_LATLON_EQUAL(disk_block.block.lat,lat) ||
         !TERRAIN_LATLON_EQUAL(disk_block.block.lon,lon) ||
         disk_block.block.bitmap == 0 ||
-        disk_block.block.spacing != grid_spacing ||
+        disk_block.block.spacing != grid_spacing() ||
         disk_block.block.version != TERRAIN_GRID_FORMAT_VERSION ||
         disk_block.block.crc != get_block_crc(disk_block.block)) {
 #if TERRAIN_DEBUG

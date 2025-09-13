@@ -71,8 +71,8 @@ void AP_Terrain::calculate_grid_info(const Location &loc, struct grid_info &info
     const Vector2f offset = ref.get_distance_NE(loc);
 
     // get indices in terms of grid_spacing elements
-    uint32_t idx_x = offset.x / grid_spacing;
-    uint32_t idx_y = offset.y / grid_spacing;
+    uint32_t idx_x = offset.x / grid_spacing();
+    uint32_t idx_y = offset.y / grid_spacing();
 
     // find indexes into 32*28 grids for this degree reference. Note
     // the use of TERRAIN_GRID_BLOCK_SPACING_{X,Y} which gives a one square
@@ -85,12 +85,12 @@ void AP_Terrain::calculate_grid_info(const Location &loc, struct grid_info &info
     info.idx_y = idx_y % TERRAIN_GRID_BLOCK_SPACING_Y;
 
     // find the fraction (0..1) within the square
-    info.frac_x = (offset.x - idx_x * grid_spacing) / grid_spacing;
-    info.frac_y = (offset.y - idx_y * grid_spacing) / grid_spacing;
+    info.frac_x = (offset.x - idx_x * grid_spacing()) / grid_spacing();
+    info.frac_y = (offset.y - idx_y * grid_spacing()) / grid_spacing();
 
     // calculate lat/lon of SW corner of 32*28 grid_block
-    ref.offset(info.grid_idx_x * TERRAIN_GRID_BLOCK_SPACING_X * (float)grid_spacing,
-               info.grid_idx_y * TERRAIN_GRID_BLOCK_SPACING_Y * (float)grid_spacing);
+    ref.offset(info.grid_idx_x * TERRAIN_GRID_BLOCK_SPACING_X * (float)grid_spacing(),
+               info.grid_idx_y * TERRAIN_GRID_BLOCK_SPACING_Y * (float)grid_spacing());
     info.grid_lat = ref.lat;
     info.grid_lon = ref.lng;
 
@@ -113,7 +113,7 @@ AP_Terrain::grid_cache &AP_Terrain::find_grid_cache(const struct grid_info &info
     for (uint16_t i=0; i<cache_size; i++) {
         if (TERRAIN_LATLON_EQUAL(cache[i].grid.lat,info.grid_lat) &&
             TERRAIN_LATLON_EQUAL(cache[i].grid.lon,info.grid_lon) &&
-            cache[i].grid.spacing == grid_spacing) {
+            cache[i].grid.spacing == grid_spacing()) {
             cache[i].last_access_ms = now_ms;
             return cache[i];
         }
@@ -129,7 +129,7 @@ AP_Terrain::grid_cache &AP_Terrain::find_grid_cache(const struct grid_info &info
 
     grid.grid.lat = info.grid_lat;
     grid.grid.lon = info.grid_lon;
-    grid.grid.spacing = grid_spacing;
+    grid.grid.spacing = grid_spacing();
     grid.grid.grid_idx_x = info.grid_idx_x;
     grid.grid.grid_idx_y = info.grid_idx_y;
     grid.grid.lat_degrees = info.lat_degrees;
