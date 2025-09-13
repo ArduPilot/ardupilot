@@ -83,7 +83,7 @@ void AP_NMEA_Output::init()
 
 void AP_NMEA_Output::update()
 {
-    if (_num_outputs == 0 || _message_enable_bitmask == 0) {
+    if (_num_outputs == 0 || _message_enable_bitmask() == 0) {
         return;
     }
 
