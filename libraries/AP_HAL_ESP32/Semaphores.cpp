@@ -17,9 +17,9 @@
 
 #include "Semaphores.h"
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/semphr.h"
-#include "freertos/task.h"
+#include "FreeRTOS.h"
+#include "semphr.h"
+#include "task.h"
 
 extern const AP_HAL::HAL& hal;
 

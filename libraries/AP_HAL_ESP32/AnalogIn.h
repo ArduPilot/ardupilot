@@ -19,9 +19,9 @@
 
 #include "AP_HAL_ESP32.h"
 
-#include "esp_adc/adc_oneshot.h"
-#include "esp_adc/adc_cali.h"
-#include "esp_adc/adc_cali_scheme.h"
+// #include "esp_adc/adc_oneshot.h"
+// #include "esp_adc/adc_cali.h"
+// #include "esp_adc/adc_cali_scheme.h"
 
 #if HAL_USE_ADC == TRUE && !defined(HAL_DISABLE_ADC_DRIVER)
 

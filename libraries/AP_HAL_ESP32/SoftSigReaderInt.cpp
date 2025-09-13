@@ -21,10 +21,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "driver/gpio.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+// #include "driver/gpio.h"
 
 // future possible TODO - can we use the RMT peripheral on the esp32 to do this ? looks plausible.
 // https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/peripherals/rmt.html

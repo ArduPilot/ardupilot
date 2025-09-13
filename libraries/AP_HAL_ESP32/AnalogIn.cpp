@@ -20,12 +20,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "soc/adc_channel.h"
-#include "esp_adc/adc_oneshot.h"
-#include "esp_adc/adc_cali.h"
-#include "esp_adc/adc_cali_scheme.h"
+#include "FreeRTOS.h"
+#include "task.h"
+// #include "soc/adc_channel.h"
+// #include "esp_adc/adc_oneshot.h"
+// #include "esp_adc/adc_cali.h"
+// #include "esp_adc/adc_cali_scheme.h"
 
 #if HAL_USE_ADC == TRUE && !defined(HAL_DISABLE_ADC_DRIVER)
 
