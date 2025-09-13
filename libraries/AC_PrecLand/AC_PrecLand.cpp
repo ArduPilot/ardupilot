@@ -301,7 +301,7 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
     const float rangefinder_alt_m = rangefinder_alt_cm*0.01f;  //cm to meter
 
     // update estimator of target position
-    if (_backend != nullptr && _enabled) {
+    if (_backend != nullptr && _enabled()) {
         _backend->update();
         run_estimator(rangefinder_alt_m, rangefinder_alt_valid);
     }
@@ -458,7 +458,7 @@ bool AC_PrecLand::get_target_velocity_relative_ms(Vector2f& ret)
 // get the absolute velocity of the vehicle
 void AC_PrecLand::get_target_velocity_ms(const Vector2f& vehicle_velocity_ms, Vector2f& target_vel_ms)
 {
-    if (!(_options & PLND_OPTION_MOVING_TARGET)) {
+    if (!(_options() & PLND_OPTION_MOVING_TARGET)) {
         // the target should not be moving
         target_vel_ms.zero();
         return;
@@ -793,7 +793,7 @@ bool AC_PrecLand::get_target_location(Location &loc)
 */
 bool AC_PrecLand::get_target_velocity(Vector2f& target_vel)
 {
-    if (!(_options & PLND_OPTION_MOVING_TARGET)) {
+    if (!(_options() & PLND_OPTION_MOVING_TARGET)) {
         // the target should not be moving
         return false;
     }
@@ -839,7 +839,7 @@ void AC_PrecLand::Write_Precland()
         meas_z          : target_pos_meas_neu_m.z,
         last_meas       : last_backend_los_meas_ms(),
         ekf_outcount    : ekf_outlier_count(),
-        estimator       : (uint8_t)_estimator_type
+        estimator       : (uint8_t)_estimator_type()
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
