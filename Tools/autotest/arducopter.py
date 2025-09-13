@@ -13181,6 +13181,20 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.wait_disarmed()
 
+    def AccelHealthFailureDisarmTest(self):
+        '''test the effect of Accel Failure on landing detector'''
+        self.start_subtest("Test to show land detector does not trigger when only Accel is unhealthy")
+        self.takeoff(2, mode='GUIDED')
+        self.set_rc(3, 1500)
+        self.set_parameters({
+            "SIM_ACC_HEALTH": 1,  # mark accel unhealthy
+            "SIM_ACCEL1_FAIL": 1,  # fail accel1
+        })
+        self.change_mode('LOITER')
+        self.set_rc(3, 1000)
+
+        self.wait_disarmed()
+
     def CameraLogMessages(self):
         '''ensure Camera log messages are good'''
         self.set_parameter("RC12_OPTION", 9) # CameraTrigger
@@ -14626,6 +14640,7 @@ return update, 1000
             self.PLDNoParameters,
             self.PeriphMultiUARTTunnel,
             self.EKF3SRCPerCore,
+            self.AccelHealthFailureDisarmTest,
         ])
         return ret
 
