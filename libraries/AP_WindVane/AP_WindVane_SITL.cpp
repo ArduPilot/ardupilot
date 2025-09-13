@@ -24,7 +24,7 @@
 
 void AP_WindVane_SITL::update_direction()
 {
-    if (_frontend._direction_type == _frontend.WindVaneType::WINDVANE_SITL_TRUE) {
+    if (_frontend._direction_type() == _frontend.WindVaneType::WINDVANE_SITL_TRUE) {
         // read in the true wind direction and calculate the apparent
 
         // temporarily store true speed and direction for easy access
@@ -52,7 +52,7 @@ void AP_WindVane_SITL::update_direction()
 
 void AP_WindVane_SITL::update_speed()
 {
-    if (_frontend._speed_sensor_type == _frontend.Speed_type::WINDSPEED_SITL_TRUE) {
+    if (_frontend._speed_sensor_type() == _frontend.Speed_type::WINDSPEED_SITL_TRUE) {
         // read in the true wind direction and calculate the apparent
 
         // temporarily store true speed and direction for easy access
