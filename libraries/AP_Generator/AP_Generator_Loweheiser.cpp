@@ -296,7 +296,7 @@ void AP_Generator_Loweheiser::check_second_init()
         return;
     }
     second_init_done = true;
-    if (time_until_maintenance == 0) {
+    if (time_until_maintenance() == 0) {
         // manufacturer-recommended maintenance interval, 300 hours.
         // On the off-chance that the user manages to switch the
         // vehicle off at exactly 0 seconds remaining this *will*
@@ -571,12 +571,12 @@ void AP_Generator_Loweheiser::update_stats()
     uint32_t seconds = runtime_delta_ms / 1000;
     runtime_delta_ms -= seconds * 1000;
 
-    total_runtime.set_and_save_ifchanged(total_runtime + seconds);
+    total_runtime.set_and_save_ifchanged(total_runtime() + seconds);
         // avoid resetting time until maintenance to initial value:
-    if (seconds > 0 && (signed)seconds == time_until_maintenance) {
+    if (seconds > 0 && (signed)seconds == time_until_maintenance()) {
         seconds--;
     }
-    time_until_maintenance.set_and_save_ifchanged(time_until_maintenance - seconds);
+    time_until_maintenance.set_and_save_ifchanged(time_until_maintenance() - seconds);
 }
 
 // ensure the generator is running and generally working before
@@ -743,11 +743,11 @@ void AP_Generator_Loweheiser::send_generator_status(const GCS_MAVLINK &channel)
     // parameters for those:
     uint32_t runtime = packet.runtime;
     if (runtime == UINT32_MAX) {
-        runtime = total_runtime + runtime_delta_ms/1000;
+        runtime = total_runtime() + runtime_delta_ms/1000;
     }
     uint32_t maint_time = packet.until_maintenance;
     if (maint_time == INT32_MAX) {
-        maint_time = time_until_maintenance - runtime_delta_ms/1000;
+        maint_time = time_until_maintenance() - runtime_delta_ms/1000;
     }
 
     mavlink_msg_generator_status_send(
