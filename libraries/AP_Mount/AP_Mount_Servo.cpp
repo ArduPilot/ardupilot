@@ -102,9 +102,9 @@ void AP_Mount_Servo::update()
     }
 
     // write the results to the servos
-    move_servo(_roll_idx, degrees(_angle_bf_output_rad.x)*10, _params.roll_angle_min*10, _params.roll_angle_max*10);
-    move_servo(_tilt_idx, degrees(_angle_bf_output_rad.y)*10, _params.pitch_angle_min*10, _params.pitch_angle_max*10);
-    move_servo(_pan_idx,  degrees(_angle_bf_output_rad.z)*10, _params.yaw_angle_min*10, _params.yaw_angle_max*10);
+    move_servo(_roll_idx, degrees(_angle_bf_output_rad.x)*10, _params.roll_angle_min()*10, _params.roll_angle_max()*10);
+    move_servo(_tilt_idx, degrees(_angle_bf_output_rad.y)*10, _params.pitch_angle_min()*10, _params.pitch_angle_max()*10);
+    move_servo(_pan_idx,  degrees(_angle_bf_output_rad.z)*10, _params.yaw_angle_min()*10, _params.yaw_angle_max()*10);
 }
 
 // returns true if this mount can control its roll
@@ -134,13 +134,13 @@ bool AP_Mount_Servo::get_attitude_quaternion(Quaternion& att_quat)
     float pitch_rad = 0.0f;
     float yaw_rad = 0.0f;
     if (has_roll_control()) {
-        roll_rad = constrain_float(_angle_bf_output_rad.x, radians(_params.roll_angle_min), radians(_params.roll_angle_max));
+        roll_rad = constrain_float(_angle_bf_output_rad.x, radians(_params.roll_angle_min()), radians(_params.roll_angle_max()));
     }
     if (has_pitch_control()) {
-        pitch_rad = constrain_float(_angle_bf_output_rad.y, radians(_params.pitch_angle_min), radians(_params.pitch_angle_max));
+        pitch_rad = constrain_float(_angle_bf_output_rad.y, radians(_params.pitch_angle_min()), radians(_params.pitch_angle_max()));
     }
     if (has_pan_control()) {
-        yaw_rad = constrain_float(_angle_bf_output_rad.z, radians(_params.yaw_angle_min), radians(_params.yaw_angle_max));
+        yaw_rad = constrain_float(_angle_bf_output_rad.z, radians(_params.yaw_angle_min()), radians(_params.yaw_angle_max()));
     }
 
     // convert to quaternion
@@ -156,7 +156,7 @@ void AP_Mount_Servo::update_angle_outputs(const MountTarget& angle_rad)
     const AP_AHRS &ahrs = AP::ahrs();
 
     // get target yaw in body-frame with limits applied
-    const float yaw_bf_rad = constrain_float(angle_rad.get_bf_yaw(), radians(_params.yaw_angle_min), radians(_params.yaw_angle_max));
+    const float yaw_bf_rad = constrain_float(angle_rad.get_bf_yaw(), radians(_params.yaw_angle_min()), radians(_params.yaw_angle_max()));
 
     // default output to target earth-frame roll and pitch angles, body-frame yaw
     _angle_bf_output_rad.x = angle_rad.roll;
