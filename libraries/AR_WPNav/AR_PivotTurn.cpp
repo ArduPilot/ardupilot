@@ -88,7 +88,7 @@ bool AR_PivotTurn::active() const
 void AR_PivotTurn::check_activation(float desired_heading_deg, bool force_active)
 {
     // check cases where we clearly cannot use pivot steering
-    if (!_enabled || (_angle <= AR_PIVOT_ANGLE_ACCURACY)) {
+    if (!_enabled || (_angle() <= AR_PIVOT_ANGLE_ACCURACY)) {
         _active = false;
         return;
     }
@@ -97,7 +97,7 @@ void AR_PivotTurn::check_activation(float desired_heading_deg, bool force_active
     const float yaw_error = fabsf(wrap_180(desired_heading_deg - (AP::ahrs().get_yaw_deg())));
 
     // if error is larger than _pivot_angle start pivot steering
-    if (yaw_error > _angle || force_active) {
+    if (yaw_error > _angle() || force_active) {
         _active = true;
         _delay_start_ms = 0;
         return;
@@ -123,12 +123,12 @@ void AR_PivotTurn::check_activation(float desired_heading_deg, bool force_active
 bool AR_PivotTurn::would_activate(float yaw_change_deg) const
 {
     // check cases where we clearly cannot use pivot steering
-    if (!_enabled || (_angle <= AR_PIVOT_ANGLE_ACCURACY)) {
+    if (!_enabled || (_angle() <= AR_PIVOT_ANGLE_ACCURACY)) {
         return false;
     }
 
     // return true if yaw change is larger than _pivot_angle
-    return fabsf(wrap_180(yaw_change_deg)) > _angle;
+    return fabsf(wrap_180(yaw_change_deg)) > _angle();
 }
 
 // get turn rate (in rad/sec)
@@ -137,7 +137,7 @@ bool AR_PivotTurn::would_activate(float yaw_change_deg) const
 float AR_PivotTurn::get_turn_rate_rads(float desired_heading_deg, float dt)
 {
     // handle pivot turns
-    const float desired_turn_rate_rads = _atc.get_turn_rate_from_heading(radians(desired_heading_deg), radians(_rate_max));
+    const float desired_turn_rate_rads = _atc.get_turn_rate_from_heading(radians(desired_heading_deg), radians(_rate_max()));
 
     // update flag so that it can be cleared
     check_activation(desired_heading_deg);
