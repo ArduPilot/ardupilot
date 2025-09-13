@@ -495,7 +495,7 @@ bool AP_Logger_Backend::ShouldLog(bool is_critical)
         }
     }
 
-    if (is_critical && have_logged_armed && !_front._params.file_disarm_rot) {
+    if (is_critical && have_logged_armed && !_front._params.file_disarm_rot()) {
         // if we have previously logged while armed then we log all
         // critical messages from then on. That fixes a problem where
         // logs show the wrong flight mode if you disarm then arm again
@@ -666,8 +666,8 @@ uint16_t AP_Logger_Backend::find_oldest_log()
 
 void AP_Logger_Backend::vehicle_was_disarmed()
 {
-    if (_front._params.file_disarm_rot &&
-        !_front._params.log_replay) {
+    if (_front._params.file_disarm_rot() &&
+        !_front._params.log_replay()) {
         // rotate our log.  Closing the current one and letting the
         // logging restart naturally based on log_disarmed should do
         // the trick:
