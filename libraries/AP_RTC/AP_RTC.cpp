@@ -69,7 +69,7 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
     }
 
     // check it's from an allowed sources:
-    if (!(allowed_types & (1<<type))) {
+    if (!(allowed_types() & (1<<type))) {
         return;
     }
 
@@ -249,7 +249,7 @@ bool AP_RTC::get_local_time(uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t 
         return false;
     }
     time_ms /= 1000U;
-    const uint64_t ms_local = time_ms + (tz_min * 60000);
+    const uint64_t ms_local = time_ms + (tz_min() * 60000);
     clock_ms_to_hms_fields(ms_local, hour, min, sec, ms);
     return true;
 }
