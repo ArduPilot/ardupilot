@@ -303,8 +303,8 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
 #if AP_RANGEFINDER_MAXSONARI2CXL_ENABLED
     case Type::MBI2C: {
         uint8_t addr = AP_RANGE_FINDER_MAXSONARI2CXL_DEFAULT_ADDR;
-        if (params[instance].address != 0) {
-            addr = params[instance].address;
+        if (params[instance].address() != 0) {
+            addr = params[instance].address();
         }
         FOREACH_I2C(i) {
             auto *device_ptr = hal.i2c_mgr->get_device_ptr(i, addr);
@@ -320,7 +320,7 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
 #endif
 #if AP_RANGEFINDER_LWI2C_ENABLED
     case Type::LWI2C:
-        if (params[instance].address) {
+        if (params[instance].address()) {
             // the LW20 needs a long time to boot up, so we delay 1.5s here
 #ifndef HAL_BUILD_AP_PERIPH
             if (!hal.util->was_watchdog_armed()) {
@@ -329,12 +329,12 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
 #endif
 #ifdef HAL_RANGEFINDER_LIGHTWARE_I2C_BUS
             _add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance], params[instance],
-                                                             hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, params[instance].address)),
+                                                             hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, params[instance].address())),
                                                              instance);
 #else
             FOREACH_I2C(i) {
                 if (_add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance], params[instance],
-                                                                     hal.i2c_mgr->get_device(i, params[instance].address)),
+                                                                     hal.i2c_mgr->get_device(i, params[instance].address())),
                                  instance)) {
                     break;
                 }
@@ -345,9 +345,9 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
 #endif  // AP_RANGEFINDER_LWI2C_ENABLED
 #if AP_RANGEFINDER_TRI2C_ENABLED
     case Type::TRI2C:
-        if (params[instance].address) {
+        if (params[instance].address()) {
             FOREACH_I2C(i) {
-                auto *device_ptr = hal.i2c_mgr->get_device_ptr(i, params[instance].address);
+                auto *device_ptr = hal.i2c_mgr->get_device_ptr(i, params[instance].address());
                 if (_add_backend(AP_RangeFinder_TeraRangerI2C::detect(state[instance], params[instance],
                                                                       device_ptr),
                                  instance)) {
@@ -363,14 +363,14 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
             FOREACH_I2C(i) {
 #if AP_RANGEFINDER_VL53L0X_ENABLED
                 if (_add_backend(AP_RangeFinder_VL53L0X::detect(state[instance], params[instance],
-                                                                hal.i2c_mgr->get_device(i, params[instance].address)),
+                                                                hal.i2c_mgr->get_device(i, params[instance].address())),
                         instance)) {
                     break;
                 }
 #endif
 #if AP_RANGEFINDER_VL53L1X_ENABLED
                 if (_add_backend(AP_RangeFinder_VL53L1X::detect(state[instance], params[instance],
-                                                                hal.i2c_mgr->get_device(i, params[instance].address),
+                                                                hal.i2c_mgr->get_device(i, params[instance].address()),
                                                                 _type == Type::VL53L1X_Short ?  AP_RangeFinder_VL53L1X::DistanceMode::Short :
                                                                 AP_RangeFinder_VL53L1X::DistanceMode::Long),
                                  instance)) {
@@ -382,8 +382,8 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
 #if AP_RANGEFINDER_BENEWAKE_TFMINIPLUS_ENABLED
     case Type::BenewakeTFminiPlus: {
         uint8_t addr = TFMINIPLUS_ADDR_DEFAULT;
-        if (params[instance].address != 0) {
-            addr = params[instance].address;
+        if (params[instance].address() != 0) {
+            addr = params[instance].address();
         }
         FOREACH_I2C(i) {
             if (_add_backend(AP_RangeFinder_Benewake_TFMiniPlus::detect(state[instance], params[instance],
@@ -592,8 +592,8 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
 #if AP_RANGEFINDER_TOFSENSEF_I2C_ENABLED
     case Type::TOFSenseF_I2C: {
         uint8_t addr = TOFSENSEP_I2C_DEFAULT_ADDR;
-        if (params[instance].address != 0) {
-            addr = params[instance].address;
+        if (params[instance].address() != 0) {
+            addr = params[instance].address();
         }
         FOREACH_I2C(i) {
             if (_add_backend(AP_RangeFinder_TOFSenseF_I2C::detect(state[instance], params[instance],
@@ -888,7 +888,7 @@ bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_le
 #endif
         {
             // ensure pin is configured
-            if (params[i].pin == -1) {
+            if (params[i].pin() == -1) {
                 hal.util->snprintf(failure_msg, failure_msg_len, "RNGFND%u_PIN not set", unsigned(i + 1));
                 return false;
             }
@@ -900,9 +900,9 @@ bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_le
 #endif
 
             // ensure that the pin we're configured to use is available
-            if (!hal.gpio->valid_pin(params[i].pin)) {
+            if (!hal.gpio->valid_pin(params[i].pin())) {
                 uint8_t servo_ch;
-                if (hal.gpio->pin_to_servo_channel(params[i].pin, servo_ch)) {
+                if (hal.gpio->pin_to_servo_channel(params[i].pin(), servo_ch)) {
                     hal.util->snprintf(failure_msg, failure_msg_len, "RNGFND%u_PIN=%d, set SERVO%u_FUNCTION=-1", unsigned(i + 1), int(params[i].pin.get()), unsigned(servo_ch+1));
                 } else {
                     hal.util->snprintf(failure_msg, failure_msg_len, "RNGFND%u_PIN=%d invalid", unsigned(i + 1), int(params[i].pin.get()));

@@ -38,7 +38,7 @@ extern const AP_HAL::HAL& hal;
 AP_RangeFinder_analog::AP_RangeFinder_analog(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
     AP_RangeFinder_Backend(_state, _params)
 {
-    source = hal.analogin->channel(_params.pin);
+    source = hal.analogin->channel(_params.pin());
     if (source == nullptr) {
         // failed to allocate a ADC channel? This shouldn't happen
         set_status(RangeFinder::Status::NotConnected);
@@ -54,7 +54,7 @@ AP_RangeFinder_analog::AP_RangeFinder_analog(RangeFinder::RangeFinder_State &_st
 */
 bool AP_RangeFinder_analog::detect(AP_RangeFinder_Params &_params)
 {
-    if (_params.pin != -1) {
+    if (_params.pin() != -1) {
         return true;
     }
     return false;
@@ -66,12 +66,12 @@ bool AP_RangeFinder_analog::detect(AP_RangeFinder_Params &_params)
  */
 void AP_RangeFinder_analog::update_voltage(void)
 {
-   if (source == nullptr || !source->set_pin(params.pin)) {
+   if (source == nullptr || !source->set_pin(params.pin())) {
        state.voltage_mv = 0;
        set_status(RangeFinder::Status::NotConnected);
        return;
    }
-   if (params.ratiometric) {
+   if (params.ratiometric()) {
        state.voltage_mv = source->voltage_average_ratiometric() * 1000U;
    } else {
        state.voltage_mv = source->voltage_average() * 1000U;

@@ -21,7 +21,7 @@ bool AP_RangeFinder_TOFSenseP_CAN::handle_frame(AP_HAL::CANFrame &frame)
     const uint8_t status = frame.data[3];
     const uint16_t snr = le16toh_ptr(&frame.data[4]);
 
-    if ((snr_min != 0 && snr < uint16_t(snr_min.get())) || status > 0) {
+    if ((snr_min() != 0 && snr < uint16_t(snr_min.get())) || status > 0) {
         // too low signal strength or bad status
         return false;
     }

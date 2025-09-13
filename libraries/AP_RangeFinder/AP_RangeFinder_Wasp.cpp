@@ -144,40 +144,40 @@ void AP_RangeFinder_Wasp::update(void) {
 
     switch (configuration_state) {
         case WASP_CFG_RATE:
-            hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">BAUD %s\n", baud > 0 ? "HIGH" : "LOW");
+            hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">BAUD %s\n", baud() > 0 ? "HIGH" : "LOW");
             break;
         case WASP_CFG_ENCODING:
             uart->end();
-            uart->begin(baud > 0 ? 921600 : 115200);
+            uart->begin(baud() > 0 ? 921600 : 115200);
             hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">LBE LITTLE\n");
             break;
         case WASP_CFG_PROTOCOL:
             hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">FMT ASCII\n");
             break;
         case WASP_CFG_FRQ:
-            hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">FRQ %d\n", constrain_int16(frq, 20, baud > 0 ? 10000 : 1440));
+            hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">FRQ %d\n", constrain_int16(frq(), 20, baud() > 0 ? 10000 : 1440));
             break;
         case WASP_CFG_GO:
             hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">GO\n");
             break;
         case WASP_CFG_AUT:
-            hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">AUT %d\n", thr >= 0 ? 0 : 1);
+            hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">AUT %d\n", thr() >= 0 ? 0 : 1);
             break;
         case WASP_CFG_THR:
-            if (thr >= 0) {
-                hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">THR %d\n", constrain_int16(thr, 0,255));
+            if (thr() >= 0) {
+                hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">THR %d\n", constrain_int16(thr(), 0,255));
             } else {
                 configuration_state = WASP_CFG_MAVG;
             }
             break;
         case WASP_CFG_MAVG:
-            hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">MAVG %d\n", constrain_int16(mavg, 0, 255));
+            hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">MAVG %d\n", constrain_int16(mavg(), 0, 255));
             break;
         case WASP_CFG_MEDF:
-            hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">MEDF %d\n", constrain_int16(medf, 0, 255));
+            hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">MEDF %d\n", constrain_int16(medf(), 0, 255));
             break;
         case WASP_CFG_AVG:
-            hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">AVG %d\n", constrain_int16(avg, 0, 255));
+            hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">AVG %d\n", constrain_int16(avg(), 0, 255));
             break;
         case WASP_CFG_AUV:
             hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">AUV 1\n");

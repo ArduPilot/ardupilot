@@ -82,7 +82,7 @@ bool AP_RangeFinder_Backend_CAN::get_reading(float &reading_m)
 // return true if the CAN ID is correct
 bool AP_RangeFinder_Backend_CAN::is_correct_id(uint32_t id) const
 {
-    if (receive_id != 0 && id != uint32_t(receive_id.get())) {
+    if (receive_id() != 0 && id != uint32_t(receive_id.get())) {
         // incorrect receive ID
         return false;
     }

@@ -31,7 +31,7 @@ AP_RangeFinder_DroneCAN* AP_RangeFinder_DroneCAN::get_dronecan_backend(AP_DroneC
     //Scan through the Rangefinder params to find UAVCAN RFND with matching address.
     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
         if ((RangeFinder::Type)frontend.params[i].type.get() == RangeFinder::Type::UAVCAN &&
-            frontend.params[i].address == address) {
+            frontend.params[i].address() == address) {
             driver = (AP_RangeFinder_DroneCAN*)frontend.drivers[i];
         }
         //Double check if the driver was initialised as UAVCAN Type
@@ -50,7 +50,7 @@ AP_RangeFinder_DroneCAN* AP_RangeFinder_DroneCAN::get_dronecan_backend(AP_DroneC
     if (create_new) {
         for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
             if ((RangeFinder::Type)frontend.params[i].type.get() == RangeFinder::Type::UAVCAN &&
-                frontend.params[i].address == address) {
+                frontend.params[i].address() == address) {
                 WITH_SEMAPHORE(frontend.detect_sem);
                 if (frontend.drivers[i] != nullptr) {
                     //we probably initialised this driver as something else, reboot is required for setting
