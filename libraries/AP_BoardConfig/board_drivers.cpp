@@ -55,7 +55,7 @@ void AP_BoardConfig::board_init_safety()
 void AP_BoardConfig::board_init_debug()
 {
 #if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_DEBUG_BUILD)
-    if ((_options & BOARD_OPTION_DEBUG_ENABLE) == 0) {
+    if ((_options() & BOARD_OPTION_DEBUG_ENABLE) == 0) {
 #ifdef HAL_GPIO_PIN_JTCK_SWCLK
         palSetLineMode(HAL_GPIO_PIN_JTCK_SWCLK, PAL_MODE_INPUT);
 #endif
@@ -73,7 +73,7 @@ AP_BoardConfig::px4_board_type AP_BoardConfig::px4_configured_board;
 
 void AP_BoardConfig::board_setup_drivers(void)
 {
-    if (state.board_type == PX4_BOARD_OLDDRIVERS) {
+    if (state.board_type() == PX4_BOARD_OLDDRIVERS) {
         printf("Old drivers no longer supported\n");
         state.board_type.set(PX4_BOARD_AUTO);
     }
@@ -260,7 +260,7 @@ void AP_BoardConfig::validate_board_type(void)
        override the board type for that specific case
      */
 #if defined(HAL_CHIBIOS_ARCH_FMUV3)
-    if (state.board_type == PX4_BOARD_PIXHAWK &&
+    if (state.board_type() == PX4_BOARD_PIXHAWK &&
         (spi_check_register("mpu6000_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
          spi_check_register("mpu9250_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250) ||
          spi_check_register("icm20608", MPUREG_WHOAMI, MPU_WHOAMI_ICM20608) ||
@@ -287,7 +287,7 @@ void AP_BoardConfig::validate_board_type(void)
 void AP_BoardConfig::board_autodetect(void)
 {
 #if defined(HAL_VALIDATE_BOARD)
-    if((_options & SKIP_BOARD_VALIDATION) == 0) {
+    if((_options() & SKIP_BOARD_VALIDATION) == 0) {
         const char* errored_check = HAL_VALIDATE_BOARD;
         if (errored_check == nullptr) {
             return;
@@ -298,7 +298,7 @@ void AP_BoardConfig::board_autodetect(void)
     }
 #endif
 
-    if (state.board_type != PX4_BOARD_AUTO) {
+    if (state.board_type() != PX4_BOARD_AUTO) {
         validate_board_type();
         // user has chosen a board type
         return;
@@ -420,7 +420,7 @@ void AP_BoardConfig::board_setup_sbus(void)
         };
         uint16_t rate = 300;
         for (uint8_t i=0; i<ARRAY_SIZE(rates); i++) {
-            if (rates[i].value == state.sbus_out_rate) {
+            if (rates[i].value == state.sbus_out_rate()) {
                 rate = rates[i].rate;
             }
         }
@@ -445,9 +445,9 @@ void AP_BoardConfig::board_setup()
 #endif
 
 #ifdef HAL_GPIO_PWM_VOLT_PIN
-    if (_pwm_volt_sel == 0) {
+    if (_pwm_volt_sel() == 0) {
         hal.gpio->write(HAL_GPIO_PWM_VOLT_PIN, HAL_GPIO_PWM_VOLT_3v3); //set pin for 3.3V PWM Output
-    } else if (_pwm_volt_sel == 1) {
+    } else if (_pwm_volt_sel() == 1) {
         hal.gpio->write(HAL_GPIO_PWM_VOLT_PIN, !HAL_GPIO_PWM_VOLT_3v3); //set pin for 5V PWM Output
     }
 #endif
