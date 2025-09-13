@@ -407,7 +407,7 @@ void AP_RobotisServo::update()
         const uint16_t min = c->get_output_min();
         const uint16_t max = c->get_output_max();
         float v = float(pwm - min) / (max - min);
-        uint32_t value = pos_min + v * (pos_max - pos_min);
+        uint32_t value = pos_min() + v * (pos_max() - pos_min());
         send_command(i+1, REG_GOAL_POSITION, value, 4);
     }
 }
