@@ -307,7 +307,7 @@ void AP_Proximity::update()
 AP_Proximity::Type AP_Proximity::get_type(uint8_t instance) const
 {
     if (instance < AP_PROXIMITY_MAX_INSTANCES) {
-        return (Type)((uint8_t)params[instance].type);
+        return (Type)((uint8_t)params[instance].type());
     }
     return Type::None;
 }
@@ -553,7 +553,7 @@ void AP_Proximity::log()
         };
         logger.WriteBlock(&pkt_proximity, sizeof(pkt_proximity));
 
-        if (_raw_log_enable) {
+        if (_raw_log_enable()) {
             const struct log_Proximity_raw pkt_proximity_raw{
                 LOG_PACKET_HEADER_INIT(LOG_RAW_PROXIMITY_MSG),
                 time_us         : AP_HAL::micros64(),

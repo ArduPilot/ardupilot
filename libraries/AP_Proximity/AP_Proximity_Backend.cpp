@@ -44,8 +44,8 @@ void AP_Proximity_Backend::set_status(AP_Proximity::Status status)
 // correct an angle (in degrees) based on the orientation and yaw correction parameters
 float AP_Proximity_Backend::correct_angle_for_orientation(float angle_degrees) const
 {
-    const float angle_sign = (params.orientation == 1) ? -1.0f : 1.0f;
-    return wrap_360(angle_degrees * angle_sign + params.yaw_correction);
+    const float angle_sign = (params.orientation() == 1) ? -1.0f : 1.0f;
+    return wrap_360(angle_degrees * angle_sign + params.yaw_correction());
 }
 
 // check if a reading should be ignored because it falls into an ignore area (check_for_ign_area should be sent as false if this check is not needed)
@@ -73,8 +73,8 @@ bool AP_Proximity_Backend::ignore_reading(float pitch, float yaw, float distance
     if (check_for_ign_area) {
         // check angle vs each ignore area
         for (uint8_t i=0; i < PROXIMITY_MAX_IGNORE; i++) {
-            if (params.ignore_width_deg[i] != 0) {
-                if (abs(yaw - params.ignore_angle_deg[i]) <= (params.ignore_width_deg[i]/2)) {
+            if (params.ignore_width_deg[i]() != 0) {
+                if (abs(yaw - params.ignore_angle_deg[i]()) <= (params.ignore_width_deg[i]()/2)) {
                     return true;
                 }
             }
