@@ -250,7 +250,7 @@ void AP_Notify::add_backends(void)
     }
 
     for (uint32_t i = 1; i < Notify_LED_MAX; i = i << 1) {
-        switch(_led_type & i) {
+        switch(_led_type() & i) {
             case Notify_LED_None:
                 break;
             case Notify_LED_Board:
@@ -327,8 +327,8 @@ void AP_Notify::add_backends(void)
 #endif
 #if AP_NOTIFY_OREOLED_ENABLED
             case Notify_LED_OreoLED:
-                if (_oreo_theme) {
-                    ADD_BACKEND(NEW_NOTHROW OreoLED_I2C(0, _oreo_theme));
+                if (_oreo_theme()) {
+                    ADD_BACKEND(NEW_NOTHROW OreoLED_I2C(0, _oreo_theme()));
                 }
                 break;
 #endif
@@ -506,7 +506,7 @@ void AP_Notify::release_text_scripting(uint8_t r)
 // convert 0-3 to 0-100
 int8_t AP_Notify::get_rgb_led_brightness_percent() const
 {
-    switch (_rgb_led_brightness) {
+    switch (_rgb_led_brightness()) {
     default:
     case RGB_LED_OFF:
         return 0;
