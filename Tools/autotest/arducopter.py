@@ -14352,6 +14352,7 @@ RTL_ALT 111
             param_defaults={
                 "SIM_SPEEDUP": speedup,
             },
+            supplementary=True,
         )
         self.expect_list_add(periph_exp)
 
