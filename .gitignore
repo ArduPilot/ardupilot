@@ -90,6 +90,7 @@ eeprom.bin
 index.html
 logs/
 pristine-logs/
+parallel-autotest/
 mav.log
 mav.log.raw
 mav.parm
