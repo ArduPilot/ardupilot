@@ -6849,6 +6849,15 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             '127.0.0.1:%u' % self.adjust_ardupilot_port(5765))
 
         self.context_push()
+        # pppd outlives us otherwise: die_with_parent()'s death signal is
+        # cleared across sudo's setuid exec, so nothing else stops a
+        # root-owned pppd - and its kernel interface and route - from
+        # surviving this test and contending with whoever next uses this
+        # instance's address pair.  A worker killed outright needs no
+        # help here: its SITL hangs up, and pppd - which is not run with
+        # persist - exits on the closed socket within a second, taking
+        # its interface and routes with it (measured with pppd 2.4.9).
+        self.context_register_periph_child(pppd)
         self.context_collect('STATUSTEXT')
 
         pppd.expect("remote IP address %s" % remote_ip)
