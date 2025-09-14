@@ -17,6 +17,7 @@ import pickle
 import struct
 import base64
 import subprocess
+import traceback
 
 import hal_common
 
@@ -602,6 +603,7 @@ def configure(cfg):
     try:
         hwdef_env = generate_hwdef_h(env)
     except Exception:
+        traceback.print_exc()
         cfg.fatal("Failed to process hwdef.dat")
     load_env_vars(cfg.env, hwdef_env)
     if env.HAL_NUM_CAN_IFACES and not env.AP_PERIPH:
