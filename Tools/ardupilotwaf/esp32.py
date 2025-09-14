@@ -31,11 +31,6 @@ def esp32_dynamic_env(self):
     hal_common.common_dynamic_env(self)
 
 
-def load_env_vars(env):
-    '''optionally load extra environment variables from env.py in the build directory'''
-    hal_common.load_env_vars(env)
-
-
 def configure(cfg):
     mcu_esp32s3 = True if (cfg.variant[0:7] == "esp32s3") else False
     target = "esp32s3" if mcu_esp32s3 else "esp32"
@@ -69,11 +64,11 @@ def configure(cfg):
     print("USING EXPRESSIF IDF:"+str(env.IDF))
 
     try:
-        generate_hwdef_h(env)
+        hwdef_env = generate_hwdef_h(env)
     except Exception as e:
         print(get_exception_stacktrace(e))
         cfg.fatal("Failed to generate hwdef")
-    load_env_vars(cfg.env)
+    hal_common.load_env_vars(cfg.env, hwdef_env)
 
 def get_exception_stacktrace(e):
     ret = "%s\n" % e
@@ -100,6 +95,7 @@ def generate_hwdef_h(env):
         quiet=False,
     )
     eh.run()
+    return eh.env_vars
 
 # delete the output sdkconfig file when the input defaults changes. we take the
 # stamp as the output so we can compute the path to the sdkconfig, yet it
@@ -173,6 +169,7 @@ def pre_build(self):
         print("Generating hwdef.h")
         try:
             generate_hwdef_h(self.env)
+            # TRAP: env vars are not reloaded!
         except Exception:
             self.fatal(f"Failed to process hwdef.dat {hwdef_h}")
 

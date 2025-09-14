@@ -30,11 +30,6 @@ def linux_firmware(self):
     pass
 
 
-def load_env_vars(env):
-    '''optionally load extra environment variables from env.py in the build directory'''
-    hal_common.load_env_vars(env)
-
-
 def configure(cfg):
 
     def srcpath(path):
@@ -56,11 +51,11 @@ def configure(cfg):
     env.AP_PROGRAM_FEATURES += ['linux_ap_program']
 
     try:
-        generate_hwdef_h(env)
+        hwdef_env = generate_hwdef_h(env)
     except Exception as e:
         print(get_exception_stacktrace(e))
         cfg.fatal("Failed to generate hwdef")
-    load_env_vars(cfg.env)
+    hal_common.load_env_vars(cfg.env, hwdef_env)
 
 
 def get_exception_stacktrace(e):
@@ -89,6 +84,7 @@ def generate_hwdef_h(env):
         quiet=False,
     )
     lh.run()
+    return lh.env_vars
 
 
 def pre_build(bld):
@@ -102,5 +98,6 @@ def pre_build(bld):
         print("Generating hwdef.h")
         try:
             generate_hwdef_h(bld.env)
+            # TRAP: env vars are not reloaded!
         except Exception:
             bld.fatal(f"Failed to process hwdef.dat {hwdef_h}")
