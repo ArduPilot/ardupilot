@@ -528,6 +528,7 @@ def run_step(step):
         "build_opts": copy.copy(build_opts),
         "generate_junit": opts.junit,
         "enable_fgview": opts.enable_fgview,
+        "instance": opts.instance,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -540,7 +541,7 @@ def run_step(step):
         global tester
         tester = tester_class_map[step](binary, **fly_opts)
         # run the test and return its result and the tester itself
-        return tester.autotest(None, step_name=step), tester
+        return (tester.autotest(step_name=step, parallel=opts.parallel), tester)
 
     # handle "test.Copter.CPUFailsafe" etc:
     specific_test_to_run = find_specific_test_to_run(step)
@@ -711,6 +712,24 @@ def write_fullresults():
 def run_tests(steps):
     """Run a list of steps."""
 
+    # A serial, instance-0 run uses the repo-root working directory.  The
+    # ArduPilot scripting engine loads every file in "scripts/", so stale
+    # content there (e.g. left over from a previous run, or a dangling
+    # symlink) silently pollutes the run.  Refuse to start rather than
+    # produce confusing failures.  Parallel runs - and serial "-I N" runs -
+    # each use their own fresh per-instance directory, so they are immune
+    # and exempt from this check.
+    if opts.parallel == 1 and opts.instance == 0:
+        if os.path.isdir("scripts"):
+            scripts_contents = os.listdir("scripts")
+            if len(scripts_contents) > 0:
+                print("ERROR: refusing to start: serial autotest runs in the "
+                      "repo-root working directory but 'scripts/' is not empty: "
+                      "%s" % sorted(scripts_contents))
+                print("Remove its contents first (parallel runs use "
+                      "per-instance directories and are unaffected).")
+                sys.exit(1)
+
     corefiles = glob.glob("core*")
     corefiles.extend(glob.glob("ap-*.core"))
     if corefiles:
@@ -725,6 +744,17 @@ def run_tests(steps):
         print('Removing diagnostic files: %s' % str(diagnostic_files))
         for f in diagnostic_files:
             os.unlink(f)
+
+    # each parallel worker (and serial "-I N" run) runs in its own
+    # "parallel-autotest/<instance>" directory.  Wipe the directories THIS
+    # run will use so per-instance logs/eeprom/etc. don't accumulate across
+    # runs - but only this run's instance range, so concurrent runs started
+    # with different -I values don't delete each other's directories.
+    lo = opts.instance
+    hi = opts.instance + opts.parallel  # parallel pass uses base+1..base+parallel
+    instance_dirs = " ".join("parallel-autotest/%u" % n for n in range(lo, hi + 1))
+    print("Removing parallel autotest instance directories %u..%u" % (lo, hi))
+    util.run_cmd("rm -rf " + instance_dirs, checkfail=False)
 
     passed = True
     failed = []
@@ -891,6 +921,19 @@ if __name__ == "__main__":
                       default=None,
                       type='int',
                       help='maximum runtime in seconds')
+    parser.add_option("--parallel",
+                      default=1,
+                      type='int',
+                      help='number of tests to run in parallel')
+    parser.add_option("-I", "--instance",
+                      default=0,
+                      type='int',
+                      help='base instance number (like sim_vehicle.py -I): offsets '
+                           'the ports and per-instance working directories.  For a '
+                           'serial run this is the instance used; with --parallel it '
+                           'is the lowest instance, and workers count up from it.  '
+                           'Use distinct -I values to run several parallel suites at '
+                           'once without colliding (give each its own BUILDLOGS too).')
     parser.add_option("--show-test-timings",
                       action="store_true",
                       default=False,
