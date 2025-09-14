@@ -66,6 +66,14 @@ public:
     // return -1 if no primary core selected
     int8_t getPrimaryCoreIMUIndex(void) const;
 
+    // returns the gyro index of the primary core
+    // return -1 if no primary core selected
+    int8_t getPrimaryCoreGyroIndex(void) const;
+
+    // returns the accel index of the primary core
+    // return -1 if no primary core selected
+    int8_t getPrimaryCoreAccelIndex(void) const;
+
     // Write the last calculated NE position relative to the reference point (m)
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
