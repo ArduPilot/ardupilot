@@ -922,6 +922,26 @@ int8_t NavEKF2::getPrimaryCoreIMUIndex(void) const
     return core[primary].getIMUIndex();
 }
 
+// returns the gyro index of the primary core
+// return -1 if no primary core selected
+int8_t NavEKF2::getPrimaryCoreGyroIndex(void) const
+{
+    if (!core) {
+        return -1;
+    }
+    return core[primary].getGyroIndex();
+}
+
+// returns the accel index of the primary core
+// return -1 if no primary core selected
+int8_t NavEKF2::getPrimaryCoreAccelIndex(void) const
+{
+    if (!core) {
+        return -1;
+    }
+    return core[primary].getAccelIndex();
+}
+
 // Write the last calculated NE position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control

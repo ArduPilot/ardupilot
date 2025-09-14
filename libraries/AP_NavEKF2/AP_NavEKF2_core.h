@@ -291,6 +291,12 @@ public:
     // critical for use by other subsystems.
     uint8_t getIMUIndex(void) const { return gyro_index_active; }
 
+    // get the active gyro index in use by this core
+    uint8_t getGyroIndex(void) const { return gyro_index_active; }
+
+    // get the active accel index in use by this core
+    uint8_t getAccelIndex(void) const { return accel_index_active; }
+
     /*
      * Write position and quaternion data from an external navigation system
      *
