@@ -3139,7 +3139,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         # CHIBIOS_BUILD_FLAGS is passed to the ChibiOS makefile
         self.env_vars['CHIBIOS_BUILD_FLAGS'] = ' '.join(self.build_flags)
-        self.write_env_py(os.path.join(self.outdir, "env.py"))
 
 
 if __name__ == '__main__':
