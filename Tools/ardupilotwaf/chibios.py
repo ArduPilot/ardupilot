@@ -514,16 +514,16 @@ def setup_canperiph_build(cfg):
     cfg.get_board().with_can = True
 
 def load_env_vars_handle_kv_pair(env, kv_pair):
-    '''handle a key/value pair out of the pickled environment dictionary'''
+    '''handle a key/value pair out of the hwdef generator'''
     (k, v) = kv_pair
     if k == 'ROMFS_FILES':
         env.ROMFS_FILES += v
         return
     hal_common.load_env_vars_handle_kv_pair(env, kv_pair)
 
-def load_env_vars(env):
-    '''optionally load extra environment variables from env.py in the build directory'''
-    hal_common.load_env_vars(env, kv_handler=load_env_vars_handle_kv_pair)
+def load_env_vars(env, hwdef_env):
+    '''load environment variables from the hwdef generator'''
+    hal_common.load_env_vars(env, hwdef_env, kv_handler=load_env_vars_handle_kv_pair)
 
     if env.DEBUG or env.DEBUG_SYMBOLS:
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_DEBUG_SYMBOLS=yes'
@@ -600,10 +600,10 @@ def configure(cfg):
         env.DEFAULT_PARAMETERS = cfg.options.default_parameters
 
     try:
-        generate_hwdef_h(env)
+        hwdef_env = generate_hwdef_h(env)
     except Exception:
         cfg.fatal("Failed to process hwdef.dat")
-    load_env_vars(cfg.env)
+    load_env_vars(cfg.env, hwdef_env)
     if env.HAL_NUM_CAN_IFACES and not env.AP_PERIPH:
         setup_canmgr_build(cfg)
     if env.HAL_NUM_CAN_IFACES and env.AP_PERIPH and not env.BOOTLOADER:
@@ -646,6 +646,7 @@ def generate_hwdef_h(env):
         quiet=False,
     )
     c.run()
+    return c.env_vars
 
 def pre_build(bld):
     '''pre-build hook to change dynamic sources'''
@@ -658,6 +659,7 @@ def pre_build(bld):
         print("Generating hwdef.h")
         try:
             generate_hwdef_h(bld.env)
+            # TRAP: env vars are not reloaded!
         except Exception:
             bld.fatal("Failed to process hwdef.dat")
     setup_optimization(bld.env)
