@@ -624,9 +624,11 @@ void AP_AHRS::update_EKF2(void)
 
             // Use the primary EKF to select the primary gyro
             const AP_InertialSensor &_ins = AP::ins();
-            const int8_t primary_imu = EKF2.getPrimaryCoreIMUIndex();
-            const uint8_t primary_gyro = primary_imu>=0?primary_imu:_ins.get_first_usable_gyro();
-            const uint8_t primary_accel = primary_imu>=0?primary_imu:_ins.get_first_usable_accel();
+            const int8_t ekf_gyro  = EKF2.getPrimaryCoreGyroIndex();
+            const int8_t ekf_accel = EKF2.getPrimaryCoreAccelIndex();
+
+            const int8_t primary_gyro  = (ekf_gyro  >= 0) ? ekf_gyro  : _ins.get_first_usable_gyro();
+            const int8_t primary_accel = (ekf_accel >= 0) ? ekf_accel : _ins.get_first_usable_accel();
 
             // get gyro bias for primary EKF and change sign to give gyro drift
             // Note sign convention used by EKF is bias = measurement - truth
@@ -707,11 +709,11 @@ void AP_AHRS::update_EKF3(void)
             update_trig();
 
             const AP_InertialSensor &_ins = AP::ins();
+            const int8_t ekf_gyro  = EKF3.getPrimaryCoreGyroIndex();
+            const int8_t ekf_accel = EKF3.getPrimaryCoreAccelIndex();
 
-            // Use the primary EKF to select the primary gyro
-            const int8_t primary_imu = EKF3.getPrimaryCoreIMUIndex();
-            const uint8_t primary_gyro = primary_imu>=0?primary_imu:_ins.get_first_usable_gyro();
-            const uint8_t primary_accel = primary_imu>=0?primary_imu:_ins.get_first_usable_accel();
+            const int8_t primary_gyro  = (ekf_gyro  >= 0) ? ekf_gyro  : _ins.get_first_usable_gyro();
+            const int8_t primary_accel = (ekf_accel >= 0) ? ekf_accel : _ins.get_first_usable_accel();
 
             // get gyro bias for primary EKF and change sign to give gyro drift
             // Note sign convention used by EKF is bias = measurement - truth
@@ -2633,13 +2635,13 @@ void AP_AHRS::_getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const
 #endif
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
-        imu_idx = EKF2.getPrimaryCoreIMUIndex();
+        imu_idx = EKF2.getPrimaryCoreAccelIndex();
         EKF2.getAccelZBias(accel_bias.z);
         break;
 #endif
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        imu_idx = EKF3.getPrimaryCoreIMUIndex();
+        imu_idx = EKF3.getPrimaryCoreAccelIndex();
         EKF3.getAccelBias(-1,accel_bias);
         break;
 #endif
@@ -3411,13 +3413,73 @@ int8_t AP_AHRS::_get_primary_core_index() const
 // get the index of the current primary accelerometer sensor
 uint8_t AP_AHRS::_get_primary_accel_index(void) const
 {
-    return _get_primary_IMU_index();
+    int8_t accel = -1;
+    switch (active_EKF_type()) {
+#if AP_AHRS_DCM_ENABLED
+    case EKFType::DCM:
+        break;
+#endif
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        // let EKF2 choose primary accel
+        accel = EKF2.getPrimaryCoreAccelIndex();
+        break;
+#endif
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        // let EKF2 choose primary IMU
+        accel = EKF3.getPrimaryCoreAccelIndex();
+        break;
+#endif
+#if AP_AHRS_SIM_ENABLED
+    case EKFType::SIM:
+        break;
+#endif
+#if AP_AHRS_EXTERNAL_ENABLED
+    case EKFType::EXTERNAL:
+        break;
+#endif
+    }
+    if (accel == -1) {
+        accel = AP::ins().get_first_usable_accel();
+    }
+    return accel;
 }
 
 // get the index of the current primary gyro sensor
 uint8_t AP_AHRS::_get_primary_gyro_index(void) const
 {
-    return _get_primary_IMU_index();
+    int8_t gyro = -1;
+    switch (active_EKF_type()) {
+#if AP_AHRS_DCM_ENABLED
+    case EKFType::DCM:
+        break;
+#endif
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        // let EKF2 choose primary IMU
+        gyro = EKF2.getPrimaryCoreGyroIndex();
+        break;
+#endif
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        // let EKF2 choose primary IMU
+        gyro = EKF3.getPrimaryCoreGyroIndex();
+        break;
+#endif
+#if AP_AHRS_SIM_ENABLED
+    case EKFType::SIM:
+        break;
+#endif
+#if AP_AHRS_EXTERNAL_ENABLED
+    case EKFType::EXTERNAL:
+        break;
+#endif
+    }
+    if (gyro == -1) {
+        gyro = AP::ins().get_first_usable_gyro();
+    }
+    return gyro;
 }
 
 // see if EKF lane switching is possible to avoid EKF failsafe
