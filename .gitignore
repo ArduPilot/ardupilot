@@ -89,6 +89,7 @@ dataflash.bin
 eeprom.bin
 index.html
 logs/
+parallel-autotest/
 mav.log
 mav.log.raw
 mav.parm

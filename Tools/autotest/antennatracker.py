@@ -214,8 +214,14 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
         self.send_statustext(long_message_text)
 
         self.delay_sim_time(10, reason="statustext to be logged")
-        dfreader = self.dfreader_for_current_onboard_log()
+        # capture the path of the log the statustexts went into, then
+        # reboot so the log is closed and flushed to disk before we read
+        # it.  Opening the dfreader before the reboot races the logger's
+        # IO thread flushing the buffer - which it can lose under load
+        # (e.g. several SITLs running in parallel):
+        onboard_log = self.current_onboard_log_filepath()
         self.reboot_sitl()
+        dfreader = self.dfreader_for_path(onboard_log)
 
         phase = "short"
         seq = 0
