@@ -3,13 +3,9 @@
  For this script we will use four strips with up to 10 LEDs each.
 --]]
 local num_leds = 10
-local timer = 0
 
 -- Brightness for green or red light.
 local br_color = 255
-
- -- Brightness for flash light when armed.
-local br_flash = 255
 
 --[[
  Use SERVOn_FUNCTION 94 for left LED strip 
@@ -38,48 +34,20 @@ assert(serialLED:set_num_neopixel(chan_left, num_leds),"Failed left LED setup")
 assert(serialLED:set_num_neopixel(chan_right, num_leds),"Failed right LED setup")
 assert(serialLED:set_num_neopixel(chan_left_back, num_leds),"Failed back left LED setup")
 assert(serialLED:set_num_neopixel(chan_right_back, num_leds),"Failed back right LED setup")
---assert(serialLED:set_num_profiled(chan_left, num_leds),"Failed left LED setup")
---assert(serialLED:set_num_profiled(chan_right, num_leds),"Failed right LED setup")
 
 function update_LEDs()
-  if arming:is_armed() then
-    if (timer == 0) then
-      serialLED:set_RGB(chan_left, -1, br_flash, br_flash, br_flash)
-      serialLED:set_RGB(chan_right, -1, br_flash, br_flash, br_flash)
-      serialLED:set_RGB(chan_left_back, -1, br_flash, br_flash, br_flash)
-      serialLED:set_RGB(chan_right_back, -1, br_flash, br_flash, br_flash)
-    elseif (timer == 1) then
-      serialLED:set_RGB(chan_left, -1, br_color, 0, 0)
-      serialLED:set_RGB(chan_right, -1, 0, br_color, 0)
-      serialLED:set_RGB(chan_left_back, -1, br_color, 0, 0)
-      serialLED:set_RGB(chan_right_back, -1, 0, br_color, 0)
-    elseif (timer == 2) then
-      serialLED:set_RGB(chan_left, -1, br_flash, br_flash, br_flash)
-      serialLED:set_RGB(chan_right, -1, br_flash, br_flash, br_flash)
-      serialLED:set_RGB(chan_left_back, -1, br_flash, br_flash, br_flash)
-      serialLED:set_RGB(chan_right_back, -1, br_flash, br_flash, br_flash)
-    elseif (timer == 3) then
-      serialLED:set_RGB(chan_left, -1, br_color, 0, 0)
-      serialLED:set_RGB(chan_right, -1, 0, br_color, 0)
-      serialLED:set_RGB(chan_left_back, -1, br_color, 0, 0)
-      serialLED:set_RGB(chan_right_back, -1, 0, br_color, 0)
-    end
-    timer = timer + 1
-    if (timer > 10) then
-      timer = 0
-    end
-  else 
-    serialLED:set_RGB(chan_left, -1, br_color, 0, 0)
-    serialLED:set_RGB(chan_right, -1, 0, br_color, 0)
-    serialLED:set_RGB(chan_left_back, -1, br_color, 0, 0)
-    serialLED:set_RGB(chan_right_back, -1, 0, br_color, 0)
-    timer = 0
-  end
+
+  serialLED:set_RGB(chan_left, -1, br_color, 0, 0)
+  serialLED:set_RGB(chan_right, -1, 0, br_color, 0)
+  serialLED:set_RGB(chan_left_back, -1, br_color, 0, 0)
+  serialLED:set_RGB(chan_right_back, -1, 0, br_color, 0)
+
   serialLED:send(chan_left)
   serialLED:send(chan_right)
   serialLED:send(chan_left_back)
   serialLED:send(chan_right_back)
-  return update_LEDs, 10 -- run at 100Hz or 10ms -- xc = 1/(2*pi*f*c)
+
+  return update_LEDs
 end
 
-return update_LEDs(), 10 -- run at 100HZ or 10ms -- xc = 1/(2*pi*f*c)
+return update_LEDs()
