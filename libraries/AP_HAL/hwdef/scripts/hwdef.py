@@ -6,7 +6,6 @@ AP_FLAKE8_CLEAN
 
 import filecmp
 import os
-import pickle
 import re
 import shlex
 import sys
@@ -427,7 +426,3 @@ class HWDef:
         f.write(f'#define {define_name} \\\n')
         f.write(',\\\n'.join([f"   {x}" for x in devlist]))
         f.write("\n")
-
-    def write_env_py(self, filename):
-        '''write out env.py for environment variables to control the build process'''
-        pickle.dump(self.env_vars, open(filename, "wb"))
