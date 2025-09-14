@@ -65,17 +65,10 @@ def configure(cfg):
 
     try:
         hwdef_env = generate_hwdef_h(env)
-    except Exception as e:
-        print(get_exception_stacktrace(e))
+    except Exception:
+        traceback.print_exc()
         cfg.fatal("Failed to generate hwdef")
     hal_common.load_env_vars(cfg.env, hwdef_env)
-
-def get_exception_stacktrace(e):
-    ret = "%s\n" % e
-    ret += ''.join(traceback.format_exception(type(e),
-                                              e,
-                                              tb=e.__traceback__))
-    return ret
 
 def generate_hwdef_h(env):
     '''run esp32_hwdef.py'''
