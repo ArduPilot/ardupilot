@@ -20,9 +20,18 @@ class ESP32HWDef(hwdef.HWDef):
 
     def __init__(self, quiet=False, outdir=None, hwdef=[]):
         super(ESP32HWDef, self).__init__(quiet=quiet, outdir=outdir, hwdef=hwdef)
-        # lists of ESP32_SPIDEV buses and devices
+        # lists of ESP32_SPIBUS buses and ESP32_SPIDEV devices
         self.esp32_spibus = []
         self.esp32_spidev = []
+
+        # lists of ESP32_I2CBUS buses
+        self.esp32_i2cbus = []
+
+        # list of ESP32_SERIAL devices
+        self.esp32_serials = []
+
+        # list of ESP32_RCOUT declarations
+        self.esp32_rcout = []
 
     def write_hwdef_header_content(self, f):
         for d in self.alllines:
@@ -30,9 +39,12 @@ class ESP32HWDef(hwdef.HWDef):
                 f.write('#define %s\n' % d[7:])
 
         self.write_SPI_config(f)
+        self.write_I2C_config(f)
         self.write_IMU_config(f)
         self.write_MAG_config(f)
         self.write_BARO_config(f)
+        self.write_SERIAL_config(f)
+        self.write_RCOUT_config(f)
 
         self.write_env_py(os.path.join(self.outdir, "env.py"))
 
@@ -43,14 +55,38 @@ class ESP32HWDef(hwdef.HWDef):
         self.alllines.append(line)
 
         a = shlex.split(line, posix=False)
+        if a[0] == 'ESP32_I2CBUS':
+            self.process_line_esp32_i2cbus(line, depth, a)
+
         if a[0] == 'ESP32_SPIBUS':
             self.process_line_esp32_spibus(line, depth, a)
         if a[0] == 'ESP32_SPIDEV':
             self.process_line_esp32_spidev(line, depth, a)
 
+        if a[0] == 'ESP32_SERIAL':
+            self.process_line_esp32_serial(line, depth, a)
+
+        if a[0] == 'ESP32_RCOUT':
+            self.process_line_esp32_rcout(line, depth, a)
+
         super(ESP32HWDef, self).process_line(line, depth)
 
-    # SPI_BUS support:
+    # ESP32_I2CBUS support:
+    def process_line_esp32_i2cbus(self, line, depth, a):
+        self.esp32_i2cbus.append(a[1:])
+
+    def write_I2C_bus_table(self, f):
+        '''write I2C bus table'''
+        buslist = []
+        for bus in self.esp32_i2cbus:
+            if len(bus) != 5:
+                self.error(f"Badly formed ESP32_I2CBUS line {bus} {len(bus)=}")
+            (port, sda, scl, speed, internal) = bus
+            buslist.append(f"{{ .port={port}, .sda={sda}, .scl={scl}, .speed={speed}, .internal={internal} }}")
+
+        self.write_device_table(f, "i2c buses", "HAL_ESP32_I2C_BUSES", buslist)
+
+    # ESP32_SPI_BUS support:
     def process_line_esp32_spibus(self, line, depth, a):
         self.esp32_spibus.append(a[1:])
 
@@ -61,31 +97,27 @@ class ESP32HWDef(hwdef.HWDef):
 
     def write_SPI_bus_table(self, f):
         '''write SPI bus table'''
-        if len(self.esp32_spibus) == 0:
-            f.write('\n// No SPI buses\n')
-            return
-
-        f.write('\n// SPI bus table\n')
         buslist = []
         for bus in self.esp32_spibus:
             if len(bus) != 5:
                 self.error(f"Badly formed ESP32_SPIBUS line {bus} {len(bus)=}")
             (host, dma_ch, mosi, miso, sclk) = bus
             buslist.append(f"{{ .host={host}, .dma_ch={dma_ch}, .mosi={mosi}, .miso={miso}, .sclk={sclk} }},")
-        f.write('#define HAL_ESP32_SPI_BUSES \\\n')
-        f.write(',\\\n'.join([f"   {x}" for x in buslist]))
-        f.write("\n")
+
+        self.write_device_table(f, "SPI buses", "HAL_ESP32_SPI_BUSES", buslist)
 
     def process_line_esp32_spidev(self, line, depth, a):
         self.esp32_spidev.append(a[1:])
 
+    def process_line_esp32_serial(self, line, depth, a):
+        self.esp32_serials.append(a[1:])
+
+    # ESP32_RCOUT support:
+    def process_line_esp32_rcout(self, line, depth, a):
+        self.esp32_rcout.append(a[1:])
+
     def write_SPI_device_table(self, f):
         '''write SPI device table'''
-        if len(self.esp32_spidev) == 0:
-            f.write('\n// No SPI devices\n')
-            return
-
-        f.write('\n// SPI device table\n')
         devlist = []
         for dev in self.esp32_spidev:
             if len(dev) != 7:
@@ -105,9 +137,13 @@ class ESP32HWDef(hwdef.HWDef):
                 self.error("Bad highspeed value %s in ESP32_SPIDEV line %s" %
                            (highspeed, dev))
             devlist.append(f"{{.name= \"{name}\", .bus={bus}, .device={device}, .cs={cs}, .mode={mode}, .lspeed={lowspeed}, .hspeed={highspeed}}}")  # noqa:E501
-        f.write('#define HAL_ESP32_SPI_DEVICES \\\n')
-        f.write(',\\\n'.join([f"   {x}" for x in devlist]))
-        f.write("\n")
+
+        self.write_device_table(f, 'SPI devices', 'HAL_ESP32_SPI_DEVICES', devlist)
+
+    def write_I2C_config(self, f):
+        '''write I2C config defines'''
+
+        self.write_I2C_bus_table(f)
 
     def write_SPI_config(self, f):
         '''write SPI config defines'''
@@ -117,6 +153,32 @@ class ESP32HWDef(hwdef.HWDef):
 
         if len(self.esp32_spidev):
             self.write_SPI_device_table(f)
+
+    def write_SERIAL_config(self, f):
+        '''write serial config defines'''
+
+        seriallist = []
+        for serial in self.esp32_serials:
+            if len(serial) != 3:
+                self.error(f"Badly formed ESP32_SERIALS line {serial} {len(serial)=}")
+            (port, rxpin, txpin) = serial
+            seriallist.append(f"{{ .port={port}, .rx={rxpin}, .tx={txpin} }}")
+
+        self.write_device_table(f, 'serial devices', 'HAL_ESP32_UART_DEVICES', seriallist)
+
+    def write_RCOUT_config(self, f):
+        '''write rc output defines'''
+        rcout_list = []
+        for rcout in self.esp32_rcout:
+            if len(rcout) != 1:
+                self.error(f"Badly formed ESP32_RCOUT line {rcout} {len(rcout)=}")
+            (gpio_num, ) = rcout
+            rcout_list.append(gpio_num)
+
+        if len(rcout_list) == 0:
+            f.write("// No rc outputs\n")
+            return
+        f.write(f"#define HAL_ESP32_RCOUT {{ {', '.join(rcout_list)} }}")
 
 
 if __name__ == '__main__':

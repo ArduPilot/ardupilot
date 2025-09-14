@@ -17,6 +17,7 @@
 #include <AP_RangeFinder/AP_RangeFinder_config.h>
 #include <AP_RPM/AP_RPM_config.h>
 #include <AP_Terrain/AP_Terrain_config.h>
+#include <RC_Channel/RC_Channel_config.h>
 
 const struct AP_Param::GroupInfo *GCS::_chan_var_info[MAVLINK_COMM_NUM_BUFFERS];
 
@@ -212,7 +213,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Description: Bitmask for configuring this telemetry channel. For having effect on all channels, set the relevant mask in all MAVx_OPTIONS parameters. Keep in mind that part of the flags may require a reboot to take action.
     // @RebootRequired: True
     // @User: Standard
-    // @Bitmask: 1:Don't forward mavlink to/from, 2:Ignore Streamrate
+    // @Bitmask: 0:Accept unsigned MAVLink2 messages, 1:Don't forward mavlink to/from, 2:Ignore Streamrate
     AP_GROUPINFO("_OPTIONS",   20, GCS_MAVLINK, options, 0),
 
     // PARAMETER_CONVERSION - Added: May-2025 for ArduPilot-4.7
@@ -271,8 +272,8 @@ static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
 static const ap_message STREAM_POSITION_msgs[] = {
 #if AP_AHRS_ENABLED
     MSG_LOCATION,
-#endif  // AP_AHRS_ENABLED
     MSG_LOCAL_POSITION
+#endif  // AP_AHRS_ENABLED
 };
 
 static const ap_message STREAM_RAW_CONTROLLER_msgs[] = {
@@ -283,10 +284,12 @@ static const ap_message STREAM_RAW_CONTROLLER_msgs[] = {
 
 static const ap_message STREAM_RC_CHANNELS_msgs[] = {
     MSG_SERVO_OUTPUT_RAW,
+#if AP_RC_CHANNEL_ENABLED
     MSG_RC_CHANNELS,
 #if AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED
     MSG_RC_CHANNELS_RAW, // only sent on a mavlink1 connection
 #endif
+#endif  // AP_RC_CHANNEL_ENABLED
 };
 
 static const ap_message STREAM_EXTRA1_msgs[] = {
@@ -340,7 +343,9 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
 #if AP_AHRS_ENABLED
     MSG_AHRS,
 #endif  // AP_AHRS_ENABLED
+#if AP_MAVLINK_MSG_WIND_ENABLED
     MSG_WIND,
+#endif  // AP_MAVLINK_MSG_WIND_ENABLED
 #if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
     MSG_RANGEFINDER,
 #endif  // AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
@@ -366,7 +371,9 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_MAG_CAL_REPORT,
     MSG_MAG_CAL_PROGRESS,
 #endif
+#if AP_AHRS_ENABLED
     MSG_EKF_STATUS_REPORT,
+#endif  // AP_AHRS_ENABLED
 #if !APM_BUILD_TYPE(APM_BUILD_AntennaTracker)
     MSG_VIBRATION,
 #endif

@@ -73,6 +73,8 @@
 #include "MissionItemProtocol_Rally.h"
 #include "MissionItemProtocol_Fence.h"
 
+#include <AP_CANManager/AP_MAVLinkCAN.h>
+
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Vehicle/AP_Vehicle_config.h>
 
@@ -1096,11 +1098,15 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_ATTITUDE,              MSG_ATTITUDE},
         { MAVLINK_MSG_ID_ATTITUDE_QUATERNION,   MSG_ATTITUDE_QUATERNION},
         { MAVLINK_MSG_ID_GLOBAL_POSITION_INT,   MSG_LOCATION},
+#if AP_AHRS_ENABLED
         { MAVLINK_MSG_ID_LOCAL_POSITION_NED,    MSG_LOCAL_POSITION},
+#endif  // AP_AHRS_ENABLED
         { MAVLINK_MSG_ID_VFR_HUD,               MSG_VFR_HUD},
 #endif
         { MAVLINK_MSG_ID_HWSTATUS,              MSG_HWSTATUS},
+#if AP_MAVLINK_MSG_WIND_ENABLED
         { MAVLINK_MSG_ID_WIND,                  MSG_WIND},
+#endif  // AP_MAVLINK_MSG_WIND_ENABLED
 #if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
         { MAVLINK_MSG_ID_RANGEFINDER,           MSG_RANGEFINDER},
 #endif  // AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
@@ -1137,7 +1143,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_MAG_CAL_PROGRESS,      MSG_MAG_CAL_PROGRESS},
         { MAVLINK_MSG_ID_MAG_CAL_REPORT,        MSG_MAG_CAL_REPORT},
 #endif
+#if AP_AHRS_ENABLED
         { MAVLINK_MSG_ID_EKF_STATUS_REPORT,     MSG_EKF_STATUS_REPORT},
+#endif  // AP_AHRS_ENABLED
         { MAVLINK_MSG_ID_PID_TUNING,            MSG_PID_TUNING},
         { MAVLINK_MSG_ID_VIBRATION,             MSG_VIBRATION},
 #if AP_RPM_ENABLED
@@ -4198,13 +4206,13 @@ MAV_RESULT GCS_MAVLINK::handle_command_mag_cal(const mavlink_command_int_t &pack
 }
 #endif  // COMPASS_CAL_ENABLED
 
-#if HAL_CANMANAGER_ENABLED
+#if AP_MAVLINKCAN_ENABLED
 /*
   handle MAV_CMD_CAN_FORWARD
  */
 MAV_RESULT GCS_MAVLINK::handle_can_forward(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
-    return AP::can().handle_can_forward(chan, packet, msg) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+    return AP_MAVLinkCAN::handle_can_forward(chan, packet, msg) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
 }
 
 /*
@@ -4212,9 +4220,9 @@ MAV_RESULT GCS_MAVLINK::handle_can_forward(const mavlink_command_int_t &packet, 
  */
 void GCS_MAVLINK::handle_can_frame(const mavlink_message_t &msg) const
 {
-    AP::can().handle_can_frame(msg);
+    AP_MAVLinkCAN::handle_can_frame(msg);
 }
-#endif  // HAL_CANMANAGER_ENABLED
+#endif  // AP_MAVLINKCAN_ENABLED
 
 void GCS_MAVLINK::handle_distance_sensor(const mavlink_message_t &msg)
 {
@@ -4571,11 +4579,11 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         break;
 #endif
 
-#if HAL_CANMANAGER_ENABLED
+#if AP_MAVLINKCAN_ENABLED
     case MAVLINK_MSG_ID_CAN_FILTER_MODIFY:
-        AP::can().handle_can_filter_modify(msg);
+        AP_MAVLinkCAN::handle_can_filter_modify(msg);
         break;
-#endif
+#endif  // AP_MAVLINKCAN_ENABLED
 
 #if AP_OPENDRONEID_ENABLED
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_ARM_STATUS:
@@ -5587,10 +5595,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_battery_reset(packet);
 #endif
 
-#if HAL_CANMANAGER_ENABLED
+#if AP_MAVLINKCAN_ENABLED
     case MAV_CMD_CAN_FORWARD:
         return handle_can_forward(packet, msg);
-#endif
+#endif  // AP_MAVLINKCAN_ENABLED
 
 #if HAL_HIGH_LATENCY2_ENABLED
     case MAV_CMD_CONTROL_HIGH_LATENCY:

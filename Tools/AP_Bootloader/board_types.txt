@@ -319,6 +319,7 @@ AP_HW_NarinX3                        1199
 AP_HW_JFB200                         1200
 AP_HW_SKYSTARSF405V2                 1201
 AP_HW_MicoAir743-Lite                1202
+AP_HW_X-MAV-AP-H743R1                1203
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
@@ -372,6 +373,21 @@ AP_HW_F4BY_F427                      1530
 # IDs 1800-1809 reserved for Aerium Systems
 AP_HW_AERIUM_RADIAN_F405             1800
 AP_HW_AERIUM_RADIAN_H743             1801
+
+# IDs 1950-1979 reserved for HC Robotics
+AP_HW_HCR-504                        1950
+AP_HW_HCR-506                        1951
+AP_HW_HCR-507                        1952
+AP_HW_HCR-511                        1953
+AP_HW_HCR-512                        1954
+AP_HW_HCR-516                        1955
+AP_HW_HCR-518                        1956
+AP_HW_HCR-523                        1957
+AP_HW_HCR-533                        1958
+AP_HW_HCR-536                        1959
+AP_HW_HCR-551                        1960
+AP_HW_HCR-565                        1961
+AP_HW_HCR-566                        1962
 
 AP_HW_MFT-SEMA100                    2000
 
@@ -503,6 +519,7 @@ AP_HW_SVehicle-E2                    6110
 
 # IDs 7000-7099 reserved for CUAV
 AP_HW_CUAV-7-NANO                    7000
+AP_HW_CUAV-V6X-V2                    7001
 AP_HW_CUAV-X25-EVO                   7002
 
 # IDs 7100-7109 reserved for V-UAV
@@ -523,6 +540,7 @@ AP_HW_Pixhawk6_ODID                 10053
 AP_HW_CUAV_NORA_ODID                11009
 AP_HW_CUAV_X7_PRO_ODID              11010
 AP_HW_CUAV-7-NANO_ODID              17000
+AP_HW_CUAV-V6X-V2_ODID              17001
 AP_HW_CUAV-X25-EVO_ODID             17002
 
 AP_HW_CUBEORANGEPLUS_ODID           11063
