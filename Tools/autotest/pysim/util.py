@@ -505,7 +505,10 @@ class PSpawnStdPrettyPrinter(object):
         print("%s: %s" % (self.prefix, line), file=self.output)
 
     def flush(self):
-        pass
+        # when we are writing to a file rather than a terminal this is
+        # the only thing which gets the last line of a SITL which is
+        # about to die onto disk.  pexpect flushes us after each write.
+        self.output.flush()
 
 
 def unix_domain_socket_path(serial, cwd=None):
@@ -604,12 +607,17 @@ def start_SITL(binary,
                enable_fgview=False,
                supplementary=False,
                stdout_prefix=None,
+               stdout_file=None,
                asan=False,
                unix_domain_socket=False,
                instance=0,
                sitl_rcin_port=None,
                env: dict | None = None,  # extra environment variables
                ):
+
+    if model is None and not supplementary:
+        raise ValueError("model must not be None")
+
     """Launch a SITL instance."""
 
     if defaults_filepath is None:
@@ -768,7 +776,11 @@ def start_SITL(binary,
     pexpect_logfile_prefix = stdout_prefix
     if pexpect_logfile_prefix is None:
         pexpect_logfile_prefix = os.path.basename(binary)
-    pexpect_logfile = PSpawnStdPrettyPrinter(prefix=pexpect_logfile_prefix)
+    if stdout_file is None:
+        pexpect_logfile = PSpawnStdPrettyPrinter(prefix=pexpect_logfile_prefix)
+    else:
+        pexpect_logfile = PSpawnStdPrettyPrinter(output=stdout_file,
+                                                 prefix=pexpect_logfile_prefix)
 
     if (gdb or lldb) and sys.platform == "darwin" and os.getenv('DISPLAY'):
         # on MacOS record the window IDs so we can close them later
