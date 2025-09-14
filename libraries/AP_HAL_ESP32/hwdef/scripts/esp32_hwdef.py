@@ -46,8 +46,6 @@ class ESP32HWDef(hwdef.HWDef):
         self.write_SERIAL_config(f)
         self.write_RCOUT_config(f)
 
-        self.write_env_py(os.path.join(self.outdir, "env.py"))
-
     def process_line(self, line, depth):
         '''process one line of pin definition file'''
         # keep all config lines for later use
