@@ -20,6 +20,9 @@ import subprocess
 
 import hal_common
 
+# sys.path already set up at the top of boards.py
+import chibios_hwdef
+
 _dynamic_env_data = {}
 def _load_dynamic_env_data(bld):
     bldnode = bld.bldnode.make_node('modules/ChibiOS')
@@ -597,11 +600,9 @@ def configure(cfg):
         env.DEFAULT_PARAMETERS = cfg.options.default_parameters
 
     try:
-        ret = generate_hwdef_h(env)
+        generate_hwdef_h(env)
     except Exception:
         cfg.fatal("Failed to process hwdef.dat")
-    if ret != 0:
-        cfg.fatal("Failed to process hwdef.dat ret=%d" % ret)
     load_env_vars(cfg.env)
     if env.HAL_NUM_CAN_IFACES and not env.AP_PERIPH:
         setup_canmgr_build(cfg)
@@ -613,34 +614,38 @@ def configure(cfg):
 
 def generate_hwdef_h(env):
     '''run chibios_hwdef.py'''
-    import subprocess
     if env.BOOTLOADER:
         if len(env.HWDEF) == 0:
             env.HWDEF = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef-bl.dat' % env.BOARD)
         else:
             # update to using hwdef-bl.dat
             env.HWDEF = env.HWDEF.replace('hwdef.dat', 'hwdef-bl.dat')
-        bootloader_option="--bootloader"
+        bootloader_flag = True
     else:
         if len(env.HWDEF) == 0:
             env.HWDEF = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % env.BOARD)
-        bootloader_option=""
+        bootloader_flag = False
 
-    if env.AP_SIGNED_FIRMWARE:
-        print(bootloader_option)
-        bootloader_option += " --signed-fw"
-        print(bootloader_option)
     hwdef_script = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/scripts/chibios_hwdef.py')
     hwdef_out = env.BUILDROOT
     if not os.path.exists(hwdef_out):
         os.mkdir(hwdef_out)
-    python = sys.executable
-    cmd = "{0} '{1}' -D '{2}' --params '{3}' '{4}'".format(python, hwdef_script, hwdef_out, env.DEFAULT_PARAMETERS, env.HWDEF)
+
+    hwdef = [env.HWDEF]
     if env.HWDEF_EXTRA:
-        cmd += " '{0}'".format(env.HWDEF_EXTRA)
-    if bootloader_option:
-        cmd += " " + bootloader_option
-    return subprocess.call(cmd, shell=True)
+        hwdef.append(env.HWDEF_EXTRA)
+
+    c = chibios_hwdef.ChibiOSHWDef(
+        outdir=hwdef_out,
+        bootloader=bootloader_flag,
+        signed_fw=bool(env.AP_SIGNED_FIRMWARE),
+        hwdef=hwdef,
+        # stringify like old subprocess based invocation. note that no error is
+        # generated if this path is missing!
+        default_params_filepath=str(env.DEFAULT_PARAMETERS),
+        quiet=False,
+    )
+    c.run()
 
 def pre_build(bld):
     '''pre-build hook to change dynamic sources'''
@@ -652,11 +657,9 @@ def pre_build(bld):
     if not os.path.exists(hwdef_h):
         print("Generating hwdef.h")
         try:
-            ret = generate_hwdef_h(bld.env)
+            generate_hwdef_h(bld.env)
         except Exception:
             bld.fatal("Failed to process hwdef.dat")
-        if ret != 0:
-            bld.fatal("Failed to process hwdef.dat ret=%d" % ret)
     setup_optimization(bld.env)
 
 def build(bld):
