@@ -47,7 +47,7 @@ function update_LEDs()
   serialLED:send(chan_left_back)
   serialLED:send(chan_right_back)
 
-  return update_LEDs, 100 
+  return update_LEDs, 1000 
 end
 
 return update_LEDs(), 1000

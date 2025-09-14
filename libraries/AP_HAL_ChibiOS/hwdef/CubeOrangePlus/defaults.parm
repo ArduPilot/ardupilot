@@ -12,10 +12,11 @@ SERIAL1_BAUD 57
 SERIAL1_OPTIONS 0
 
 #Setup HDZero Freestyle VTX V2 on Telem2 -> Serial2
-SERIAL2_PROTOCOL 32
+VTX_ENABLE 1
+SERIAL2_PROTOCOL 42
 SERIAL2_BAUD 115
-MSP_OPTIONS 0
-OSD_TYPE 3
+MSP_OPTIONS 5
+OSD_TYPE 5
 
 #Setup GPS on GPS1 -> Serial3 - A bug seems to exist and this must stay as GPS. I have not been able to run any other protocol other than GPS on Serial3.
 SERIAL3_PROTOCOL 5
