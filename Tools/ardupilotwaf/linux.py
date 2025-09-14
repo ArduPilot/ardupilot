@@ -93,7 +93,6 @@ def generate_hwdef_h(env):
 
 def pre_build(bld):
     '''pre-build hook to change dynamic sources'''
-    load_env_vars(bld.env)
     if bld.env.HAL_NUM_CAN_IFACES:
         bld.get_board().with_can = True
     if bld.env.WITH_LITTLEFS:

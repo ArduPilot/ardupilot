@@ -166,7 +166,6 @@ def pre_build(self):
     self.add_to_group(tsk)
 
     # hwdef pre-build:
-    load_env_vars(self.env)
 #    if bld.env.HAL_NUM_CAN_IFACES:
 #        bld.get_board().with_can = True
     hwdef_h = os.path.join(self.env.BUILDROOT, 'hwdef.h')
