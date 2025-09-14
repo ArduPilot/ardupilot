@@ -176,17 +176,6 @@ def pre_build(self):
         except Exception:
             self.fatal(f"Failed to process hwdef.dat {hwdef_h}")
 
-def build(bld):
-    bld(
-        # build hwdef.h from hwdef.dat. This is needed after a waf clean
-        source=bld.path.ant_glob(bld.env.HWDEF),
-        rule="",
-        group='dynamic_sources',
-        target=[
-            bld.bldnode.find_or_declare('hwdef.h'),
-        ]
-    )
-
 @feature('esp32_ap_program')
 @after_method('process_source')
 def esp32_firmware(self):

@@ -620,16 +620,16 @@ def generate_hwdef_h(env):
         else:
             # update to using hwdef-bl.dat
             env.HWDEF = env.HWDEF.replace('hwdef.dat', 'hwdef-bl.dat')
-        env.BOOTLOADER_OPTION="--bootloader"
+        bootloader_option="--bootloader"
     else:
         if len(env.HWDEF) == 0:
             env.HWDEF = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % env.BOARD)
-        env.BOOTLOADER_OPTION=""
+        bootloader_option=""
 
     if env.AP_SIGNED_FIRMWARE:
-        print(env.BOOTLOADER_OPTION)
-        env.BOOTLOADER_OPTION += " --signed-fw"
-        print(env.BOOTLOADER_OPTION)
+        print(bootloader_option)
+        bootloader_option += " --signed-fw"
+        print(bootloader_option)
     hwdef_script = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/scripts/chibios_hwdef.py')
     hwdef_out = env.BUILDROOT
     if not os.path.exists(hwdef_out):
@@ -638,8 +638,8 @@ def generate_hwdef_h(env):
     cmd = "{0} '{1}' -D '{2}' --params '{3}' '{4}'".format(python, hwdef_script, hwdef_out, env.DEFAULT_PARAMETERS, env.HWDEF)
     if env.HWDEF_EXTRA:
         cmd += " '{0}'".format(env.HWDEF_EXTRA)
-    if env.BOOTLOADER_OPTION:
-        cmd += " " + env.BOOTLOADER_OPTION
+    if bootloader_option:
+        cmd += " " + bootloader_option
     return subprocess.call(cmd, shell=True)
 
 def pre_build(bld):
@@ -663,26 +663,6 @@ def build(bld):
 
     # make ccache effective on ChibiOS builds
     os.environ['CCACHE_IGNOREOPTIONS'] = '--specs=nano.specs --specs=nosys.specs'
-
-    hwdef_rule="%s '%s/hwdef/scripts/chibios_hwdef.py' -D '%s' --params '%s' '%s'" % (
-            bld.env.get_flat('PYTHON'),
-            bld.env.AP_HAL_ROOT,
-            bld.env.BUILDROOT,
-            bld.env.default_parameters,
-            bld.env.HWDEF)
-    if bld.env.HWDEF_EXTRA:
-        hwdef_rule += " " + bld.env.HWDEF_EXTRA
-    if bld.env.BOOTLOADER_OPTION:
-        hwdef_rule += " " + bld.env.BOOTLOADER_OPTION
-    bld(
-        # build hwdef.h from hwdef.dat. This is needed after a waf clean
-        source=bld.path.ant_glob(bld.env.HWDEF),
-        rule=hwdef_rule,
-        group='dynamic_sources',
-        target=[bld.bldnode.find_or_declare('hwdef.h'),
-                bld.bldnode.find_or_declare('ldscript.ld'),
-                bld.bldnode.find_or_declare('hw.dat')]
-    )
     
     bld(
         # create the file modules/ChibiOS/include_dirs
