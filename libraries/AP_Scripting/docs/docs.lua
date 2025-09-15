@@ -104,6 +104,16 @@ function mission_receive() end
 ---@param text string|number|integer
 function print(text) end
 
+-- compute CRC-16/XMODEM checksum of text
+---@param text string
+---@return integer -- checksum
+function crc_xmodem(text) end
+
+-- compute CRC-16/MODBUS checksum of text
+---@param text string
+---@return integer -- checksum
+function crc_modbus(text) end
+
 -- data flash logging to SD card
 logger = {}
 
