@@ -3331,7 +3331,16 @@ class TestSuite(ABC):
         '''temporarily stop the SITL process from running.  Note that
         simulation time will not move forward!'''
         # self.progress("Pausing SITL")
-        self.sitl.kill(signal.SIGSTOP)
+        if sys.platform == 'cygwin':
+            # Maintain original behaviour under cygwin as SIGTSTP has not been tested
+            self.sitl.kill(signal.SIGSTOP)
+
+        else:
+            # SIGTSTP can be ignored by GDB allowing easier debugging rather than having GDB break at every pause
+            # EG add:
+            # handle SIGTSTP nostop noprint pass
+            # handle SIGCONT nostop noprint pass
+            self.sitl.kill(signal.SIGTSTP)
 
     def unpause_SITL(self):
         # self.progress("Unpausing SITL")
