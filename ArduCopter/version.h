@@ -7,7 +7,7 @@
 #include "ap_version.h"
 
 
-#define THISFIRMWARE "MA_Copter-V4.3.0.11_dev"
+#define THISFIRMWARE "MA_Copter-V4.3.0.11_PreRelease"
 
 
 // the following line is parsed by the autotest scripts
