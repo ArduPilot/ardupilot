@@ -1152,8 +1152,12 @@ void AP_GPS::update_primary(void)
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         if (((_type[i] == GPS_TYPE_UBLOX_RTK_BASE) || (_type[i] == GPS_TYPE_UAVCAN_RTK_BASE)) &&
             ((_type[i^1] == GPS_TYPE_UBLOX_RTK_ROVER) || (_type[i^1] == GPS_TYPE_UAVCAN_RTK_ROVER)) &&
-            ((state[i].status >= GPS_OK_FIX_3D) || (state[i].status >= state[i^1].status))) {
+            ((state[i].status >= GPS_OK_FIX_3D) || (state[i].status >= state[i^1].status)) && 
+            // [NHW] Added in checks for GPS performance before switching to check it's not donkey
+            ((state[i].vertical_accuracy <= 1.0) || (state[i].vertical_accuracy <= state[i^1].vertical_accuracy)) &&
+            ((state[i].horizontal_accuracy <= 1.0) || (state[i].horizontal_accuracy <= state[i^1].horizontal_accuracy))) {
             if (primary_instance != i) {
+
                 _last_instance_swap_ms = now;
                 primary_instance = i;
             }
@@ -1215,26 +1219,31 @@ void AP_GPS::update_primary(void)
         if (i == primary_instance) {
             continue;
         }
-        if (state[i].status > state[primary_instance].status) {
-            // we have a higher status lock, or primary is set to the blended GPS, change GPS
+        if ((state[i].status > state[primary_instance].status) &&
+            // [NHW] adding in additional health check for GPS status before switching
+            ((state[i].vertical_accuracy <= 1.0) || (state[i].vertical_accuracy <= state[primary_instance].vertical_accuracy)) &&
+            ((state[i].horizontal_accuracy <= 1.0) || (state[i].horizontal_accuracy <= state[primary_instance].horizontal_accuracy))) {
+            // we have a higher status lock (plus the additional performance checks), or primary is set to the blended GPS, change GPS
             primary_instance = i;
             _last_instance_swap_ms = now;
             continue;
         }
 
         bool another_gps_has_1_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 1);
-
-        if (state[i].status == state[primary_instance].status && another_gps_has_1_or_more_sats) {
+        // [NHW] Add check for better accuracy
+        bool another_gps_has_better_accuracy =  ((state[i].vertical_accuracy <= state[primary_instance].vertical_accuracy) && (state[i].horizontal_accuracy <= state[primary_instance].horizontal_accuracy));
+        if (state[i].status == state[primary_instance].status && another_gps_has_1_or_more_sats && another_gps_has_better_accuracy) {
 
             bool another_gps_has_2_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 2);
 
-            if ((another_gps_has_1_or_more_sats && (now - _last_instance_swap_ms) >= 20000) ||
-                (another_gps_has_2_or_more_sats && (now - _last_instance_swap_ms) >= 5000)) {
+            if ((another_gps_has_1_or_more_sats && another_gps_has_better_accuracy && (now - _last_instance_swap_ms) >= 20000) ||
+                (another_gps_has_2_or_more_sats && another_gps_has_better_accuracy && (now - _last_instance_swap_ms) >= 5000)) {
                 // this GPS has more satellites than the
                 // current primary, switch primary. Once we switch we will
                 // then tend to stick to the new GPS as primary. We don't
                 // want to switch too often as it will look like a
                 // position shift to the controllers.
+                // [NHW] Also now checks for better accuracy before it does this.
                 primary_instance = i;
                 _last_instance_swap_ms = now;
             }
