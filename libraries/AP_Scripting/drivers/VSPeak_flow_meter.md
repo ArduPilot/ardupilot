@@ -53,25 +53,28 @@ Once this is done, perform the following steps.
 3. Enable the scripting engine via `SCR_ENABLE`.
 4. Set the baud rate to 19200 with `SERIAL*_BAUD = 19`.
 5. Set port protocol to scripting with `SERIAL*_PROTOCOL = 28`.
+6. Point the script to that serial port by configuring `VSPF_PORT`. Set it to
+0 to select the first **scripting** serial port, etc...
 
 Then, decide which battery monitor will be assigned to the sensor (for now
 referred to as `BATT*`).
-6. Set `BATT*_MONITOR` = 29 (Scripting)
 
-7. Set `BATT*_CAPACITY` to the amount of ml your tank is filled with. This can 
+7. Set `BATT*_MONITOR` = 29 (Scripting)
+
+8. Set `BATT*_CAPACITY` to the amount of ml your tank is filled with. This can 
 vary from flight to flight.
 If operating under Mode A (Save consumed), you do not need to update this
 value with what is remaining in the tank after every reboot.
 If you are operating under Mode B (Reset consumed), you will have to update
 this value after every reboot, if fuel was consumed in the meantime.
 
-8. Tell the script which battery monitor is employed via `VSPF_BAT_IDX`.
+9. Tell the script which battery monitor is employed via `VSPF_BAT_IDX`.
 
-9. Set the selected operation mode:
+10. Set the selected operation mode:
 For mode A (save consumed), set `VSPF_MODE=0`.
 For mode B (reset consumed), set `VSPF_MODE=1`.
 
-10. Enable the script itself with `VSPF_ENABLE=1`.
+11. Enable the script itself with `VSPF_ENABLE=1`.
 
 # Operation
 
@@ -118,3 +121,4 @@ Tells the script which mode it is operating in.
 ## VSPF_PORT
 
 Which Scripting serial port the sensor is connected at.
+Set to 0 to select the first serial port, 1 to select the 2nd serial port, etc...
