@@ -1,8 +1,11 @@
 APM:Sub Release Notes:
 
+Sub-4.5.6
+ - Add migration from hardcoded servo_functions for lights and actuators
+ - Untie Lights control from RCIN channels
+
 Sub-4.5.5
  - Implement Actuator support
- - Untie Lights control from RCIN channels
  - Bum waf submodule for easier building
 
 Sub-4.5.4
