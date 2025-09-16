@@ -545,6 +545,8 @@ private:
     uint16_t get_pilot_speed_dn() const;
 
     void convert_old_parameters(void);
+    void update_actuators_from_jsbuttons();
+    void update_lights_from_rcin();
     bool handle_do_motor_test(mavlink_command_int_t command);
     bool init_motor_test();
     bool verify_motor_test();
