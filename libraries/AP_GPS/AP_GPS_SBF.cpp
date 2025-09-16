@@ -76,6 +76,16 @@ const AP_GPS_SBF::SBF_Error_Map AP_GPS_SBF::sbf_error_map[] = {
     { AP_GPS_SBF::CONGESTION,    AP_GPS::Errors::OUTPUT_CONGESTION },
 };
 
+const AP_GPS_SBF::Auth_State_Map AP_GPS_SBF::auth_state_map[] = {
+    {0, AP_GPS::Authentication::DISABLED},
+    {1, AP_GPS::Authentication::INITIALIZING},
+    {2, AP_GPS::Authentication::INITIALIZING},
+    {3, AP_GPS::Authentication::ERROR},
+    {4, AP_GPS::Authentication::ERROR},
+    {5, AP_GPS::Authentication::ERROR},
+    {6, AP_GPS::Authentication::OK},
+};
+
 AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps,
                        AP_GPS::Params &_params,
                        AP_GPS::GPS_State &_state,
@@ -662,25 +672,15 @@ AP_GPS_SBF::process_message(void)
         const msg4245 &temp = sbf_msg.data.msg4245u;
         check_new_itow(temp.TOW, sbf_msg.length);
 #if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
-        switch (temp.OSNMAStatus & (uint16_t)0b111) {
-        case 0:
-            state.authentication_state = static_cast<uint8_t>(AP_GPS::Authentication::DISABLED);
-            break;
-        case 1:
-        case 2:
-            state.authentication_state = static_cast<uint8_t>(AP_GPS::Authentication::INITIALIZING);
-            break;
-        case 3:
-        case 4:
-        case 5:
-            state.authentication_state = static_cast<uint8_t>(AP_GPS::Authentication::ERROR);
-            break;
-        case 6:
-            state.authentication_state = static_cast<uint8_t>(AP_GPS::Authentication::OK);
-            break;
-        default:
-            state.authentication_state = static_cast<uint8_t>(AP_GPS::Authentication::UNKNOWN);
-            break;
+        state.authentication_state = static_cast<uint8_t>(AP_GPS::Authentication::UNKNOWN);
+
+        const uint16_t osnma_status = temp.OSNMAStatus & (uint16_t)0b111;
+
+        for (const auto &map_entry : auth_state_map) {
+            if (osnma_status == map_entry.osnma_status_code) {
+                state.authentication_state = static_cast<uint8_t>(map_entry.auth_state);
+                break; 
+            }
         }
 #endif  // AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
         break;

@@ -349,11 +349,18 @@ private:
     };
 
     struct SBF_Error_Map {
-            const uint32_t sbf_error_bit;
-            const AP_GPS::Errors ap_error_enum;
+        const uint32_t sbf_error_bit;
+        const AP_GPS::Errors ap_error_enum;
     };
 
     static const SBF_Error_Map sbf_error_map[];
+
+    struct Auth_State_Map {
+        const uint16_t osnma_status_code;
+        const AP_GPS::Authentication auth_state;
+    };
+
+    static const Auth_State_Map auth_state_map[];
 
     static constexpr const char *portIdentifiers[] = { "COM", "USB", "IP1", "NTR", "IPS", "IPR" };
     char portIdentifier[5];
