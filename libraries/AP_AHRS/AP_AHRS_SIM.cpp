@@ -251,7 +251,7 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     results.location_valid = get_location(results.location);
 
 #if HAL_NAVEKF3_AVAILABLE
-    if (_sitl->odom_enable) {
+    if (_sitl->odom_enable()) {
         // use SITL states to write body frame odometry data at 20Hz
         uint32_t timeStamp_ms = AP_HAL::millis();
         if (timeStamp_ms - _last_body_odm_update_ms > 50) {

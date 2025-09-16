@@ -336,7 +336,7 @@ bool Display::init(void)
 
     // initialise driver
     FOREACH_I2C(i) {
-        switch (pNotify->_display_type) {
+        switch (pNotify->_display_type()) {
         case DISPLAY_SSD1306: {
             _driver = Display_SSD1306_I2C::probe(std::move(hal.i2c_mgr->get_device(i, NOTIFY_DISPLAY_I2C_ADDR)));
             break;

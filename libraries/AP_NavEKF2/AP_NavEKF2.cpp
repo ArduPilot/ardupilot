@@ -629,7 +629,7 @@ bool NavEKF2::InitialiseFilter(void)
     }
 
     initFailure = InitFailures::UNKNOWN;
-    if (_enable == 0) {
+    if (_enable() == 0) {
         if (AP::dal().get_ekf_type() == 2) {
             initFailure = InitFailures::NO_ENABLE;
         }
@@ -656,7 +656,7 @@ bool NavEKF2::InitialiseFilter(void)
         _imuMask.set_and_default(_imuMask.get() & mask);
         
         // count IMUs from mask
-        num_cores = __builtin_popcount(_imuMask);
+        num_cores = __builtin_popcount(_imuMask());
 
         // abort if num_cores is zero
         if (num_cores == 0) {
@@ -695,7 +695,7 @@ bool NavEKF2::InitialiseFilter(void)
         // set the IMU index for the cores
         num_cores = 0;
         for (uint8_t i=0; i<7; i++) {
-            if (_imuMask & (1U<<i)) {
+            if (_imuMask() & (1U<<i)) {
                 if(!core[num_cores].setup_core(i, num_cores)) {
                     // if any core setup fails, free memory, zero the core pointer and abort
                     AP::dal().free_type(core, sizeof(NavEKF2_core)*num_cores, AP_DAL::MemoryType::FAST);

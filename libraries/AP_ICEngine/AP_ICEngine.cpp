@@ -223,7 +223,7 @@ void AP_ICEngine::init()
 // PARAMETER_CONVERSION - Added: Aug 2024
 void AP_ICEngine::param_conversion()
 {
-    if (!enable || (param_format_version == 1)) {
+    if (!enable() || (param_format_version() == 1)) {
         // not enabled or conversion has already been done
         return;
     }
@@ -257,11 +257,11 @@ void AP_ICEngine::param_conversion()
         AP_Int16 param_value;
         info.old_group_element = elem.element[0];
         if (AP_Param::find_old_parameter(&info, &param_value)) {
-            pwm_on = param_value;
+            pwm_on = param_value();
         }
         info.old_group_element = elem.element[1];
         if (AP_Param::find_old_parameter(&info, &param_value)) {
-            pwm_off = param_value;
+            pwm_off = param_value();
         }
 
         // Save as servo endpoints, note that save_output_min_max will set reversed if needed
@@ -272,8 +272,8 @@ void AP_ICEngine::param_conversion()
     AP_Int8 start_chan;
     info.type = AP_PARAM_INT8;
     info.old_group_element = 66;
-    if (AP_Param::find_old_parameter(&info, &start_chan) && (start_chan > 0)) {
-        RC_Channel *chan = rc().channel(start_chan-1);
+    if (AP_Param::find_old_parameter(&info, &start_chan) && (start_chan() > 0)) {
+        RC_Channel *chan = rc().channel(start_chan()-1);
         if (chan != nullptr) {
             chan->option.set_and_save((int16_t)RC_Channel::AUX_FUNC::ICE_START_STOP);
         }
@@ -286,7 +286,7 @@ void AP_ICEngine::do_aux_function(const RC_Channel::AuxFuncTrigger &trigger)
     // If triggered from RC apply start chan min
     if (trigger.source == RC_Channel::AuxFuncTrigger::Source::RC) {
         RC_Channel *chan = rc().channel(trigger.source_index);
-        if ((chan != nullptr) && (chan->get_radio_in() < start_chan_min_pwm)) {
+        if ((chan != nullptr) && (chan->get_radio_in() < start_chan_min_pwm())) {
             return;
         }
     }
@@ -299,7 +299,7 @@ void AP_ICEngine::do_aux_function(const RC_Channel::AuxFuncTrigger &trigger)
  */
 void AP_ICEngine::update(void)
 {
-    if (!enable) {
+    if (!enable()) {
         return;
     }
 
@@ -395,7 +395,7 @@ void AP_ICEngine::update(void)
             state = ICE_OFF;
         } else if (now - starter_last_run_ms >= starter_delay*1000) {
             // check if we should retry starting the engine
-            if (max_crank_retry <= 0 || crank_retry_ct < max_crank_retry) {
+            if (max_crank_retry() <= 0 || crank_retry_ct < max_crank_retry()) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Starting engine");
                 state = ICE_STARTING;
                 crank_retry_ct++;
@@ -422,11 +422,11 @@ void AP_ICEngine::update(void)
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Stopped engine");
         }
 #if AP_RPM_ENABLED
-        else if (rpm_instance > 0) {
+        else if (rpm_instance() > 0) {
             // check RPM to see if still running
             float rpm_value;
-            if (!AP::rpm()->get_rpm(rpm_instance-1, rpm_value) ||
-                rpm_value < rpm_threshold) {
+            if (!AP::rpm()->get_rpm(rpm_instance()-1, rpm_value) ||
+                rpm_value < rpm_threshold()) {
                 // engine has stopped when it should be running
                 state = ICE_START_DELAY;
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Uncommanded engine stop");
@@ -451,7 +451,7 @@ void AP_ICEngine::update(void)
                 // reset initial height while disarmed
                 initial_height = -pos.z;
             }
-        } else if (idle_percent <= 0 && !allow_throttle_while_disarmed()) {
+        } else if (idle_percent() <= 0 && !allow_throttle_while_disarmed()) {
             // force ignition off when disarmed
             state = ICE_OFF;
         }
@@ -460,14 +460,14 @@ void AP_ICEngine::update(void)
 #if AP_RPM_ENABLED
     // check against redline RPM
     float rpm_value;
-    if (rpm_instance > 0 && redline_rpm > 0 && AP::rpm()->get_rpm(rpm_instance-1, rpm_value)) {
+    if (rpm_instance() > 0 && redline_rpm() > 0 && AP::rpm()->get_rpm(rpm_instance()-1, rpm_value)) {
         // update the filtered RPM value
         filtered_rpm_value =  _rpm_filter.apply(rpm_value);
-        if (!redline.flag && filtered_rpm_value > redline_rpm) {
+        if (!redline.flag && filtered_rpm_value > redline_rpm()) {
             // redline governor is off. rpm is too high. enable the governor
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Engine: Above redline RPM");
             redline.flag = true;
-        } else if (redline.flag && filtered_rpm_value < redline_rpm * 0.9f) {
+        } else if (redline.flag && filtered_rpm_value < redline_rpm() * 0.9f) {
             // redline governor is on. rpm is safely below. disable the governor
             redline.flag = false;
             // reset redline governor
@@ -523,16 +523,16 @@ void AP_ICEngine::update(void)
  */
 bool AP_ICEngine::throttle_override(float &percentage, const float base_throttle)
 {
-    if (!enable) {
+    if (!enable()) {
         return false;
     }
 
     if (state == ICE_RUNNING &&
-        idle_percent > 0 &&
-        idle_percent < 100 &&
-        idle_percent > percentage)
+        idle_percent() > 0 &&
+        idle_percent() < 100 &&
+        idle_percent() > percentage)
     {
-        percentage = idle_percent;
+        percentage = idle_percent();
         if (allow_throttle_while_disarmed() && !hal.util->get_soft_armed()) {
             percentage = MAX(percentage, base_throttle);
         }
@@ -563,7 +563,7 @@ bool AP_ICEngine::throttle_override(float &percentage, const float base_throttle
             // remove the difference from the integrator
             redline.governor_integrator -= redline.throttle_percentage - percentage;
             redline.throttle_percentage = percentage;
-        } else if (filtered_rpm_value > redline_rpm) {
+        } else if (filtered_rpm_value > redline_rpm()) {
             // reduce the throttle if still over the redline RPM
             const float redline_setpoint_step = idle_slew * AP::scheduler().get_loop_period_s();
             redline.governor_integrator += redline_setpoint_step;
@@ -588,7 +588,7 @@ bool AP_ICEngine::throttle_override(float &percentage, const float base_throttle
 */
 bool AP_ICEngine::engine_control(float start_control, float cold_start, float height_delay, uint32_t flags)
 {
-    if (!enable) {
+    if (!enable()) {
         return false;
     }
 
@@ -628,7 +628,7 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
 */
 void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
 {
-    if (!enable) {
+    if (!enable()) {
         return;
     }
 #if AP_RPM_ENABLED
@@ -641,12 +641,12 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
         idle_point_initialized = true;
     }
     AP_RPM *ap_rpm = AP::rpm();
-    if (!ap_rpm || rpm_instance == 0 || !ap_rpm->healthy(rpm_instance-1)) {
+    if (!ap_rpm || rpm_instance() == 0 || !ap_rpm->healthy(rpm_instance()-1)) {
         return;
     }
 
     // Check to make sure we have an enabled IC Engine, EFI Instance and that the idle governor is enabled
-    if (get_state() != AP_ICEngine::ICE_RUNNING || idle_rpm < 0) {
+    if (get_state() != AP_ICEngine::ICE_RUNNING || idle_rpm() < 0) {
         return;
     }
 
@@ -654,7 +654,7 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
     float rpmv;
 
     // Double Check to make sure engine is really running
-    if (!ap_rpm->get_rpm(rpm_instance-1, rpmv) || rpmv < 1) {
+    if (!ap_rpm->get_rpm(rpm_instance()-1, rpmv) || rpmv < 1) {
         // Reset idle point to the default value when the engine is stopped
         idle_governor_integrator = min_throttle;
         return;
@@ -664,12 +664,12 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
     min_throttle = roundf(idle_governor_integrator);
 
     // Calculate Error in system
-    int32_t error = idle_rpm - rpmv;
+    int32_t error = idle_rpm() - rpmv;
 
     bool underspeed = error > 0;
 
     // Don't adjust idle point when we're within the deadband
-    if (abs(error) < idle_db) {
+    if (abs(error) < idle_db()) {
         return;
     }
 
@@ -742,7 +742,7 @@ bool AP_ICEngine::allow_throttle_while_disarmed() const
 bool AP_ICEngine::get_legacy_ignition_relay_index(int8_t &num) 
 {
     // PARAMETER_CONVERSION - Added: Dec-2023
-    if (!enable || !AP_Param::get_param_by_index(this, 18, AP_PARAM_INT8, &num)) {
+    if (!enable() || !AP_Param::get_param_by_index(this, 18, AP_PARAM_INT8, &num)) {
         return false;
     }
     // convert to zero indexed

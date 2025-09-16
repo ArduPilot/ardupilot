@@ -139,7 +139,7 @@ void AP_ExternalAHRS::init(void)
 
     }
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Unsupported ExternalAHRS type %u", unsigned(devtype));
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Unsupported ExternalAHRS type %u", unsigned(devtype()));
 }
 
 bool AP_ExternalAHRS::enabled() const

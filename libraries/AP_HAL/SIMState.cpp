@@ -310,7 +310,7 @@ void SIMState::update_simulated_wind(struct sitl_input &input)
 
         // pass wind into simulators using different wind types via param SIM_WIND_T*.
         const float altitude = _sitl->state.height_agl;
-        switch (_sitl->wind_type) {
+        switch (_sitl->wind_type()) {
         case SITL::SIM::WIND_TYPE_SQRT:
             if (altitude < _sitl->wind_type_alt) {
                 wind_speed *= sqrtf(MAX(altitude / _sitl->wind_type_alt, 0));

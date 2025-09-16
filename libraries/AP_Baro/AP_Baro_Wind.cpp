@@ -72,7 +72,7 @@ float AP_Baro::wind_pressure_correction(uint8_t instance)
 {
     const WindCoeff &wcoef = sensors[instance].wind_coeff;
 
-    if (!wcoef.enable) {
+    if (!wcoef.enable()) {
         return 0;
     }
 

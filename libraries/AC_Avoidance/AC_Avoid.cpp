@@ -148,7 +148,7 @@ void AC_Avoid::adjust_velocity_fence(float kP, float accel_cmss, Vector3f &desir
     Vector2f quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel;
 
 #if AP_FENCE_ENABLED
-    if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0) {
+    if ((_enabled() & AC_AVOID_STOP_AT_FENCE) > 0) {
         // Store velocity needed to back away from fence
         Vector2f backup_vel_fence;
 
@@ -171,7 +171,7 @@ void AC_Avoid::adjust_velocity_fence(float kP, float accel_cmss, Vector3f &desir
 #endif // AP_FENCE_ENABLED
 
 #if AP_BEACON_ENABLED
-    if ((_enabled & AC_AVOID_STOP_AT_BEACON_FENCE) > 0) {
+    if ((_enabled() & AC_AVOID_STOP_AT_BEACON_FENCE) > 0) {
         // Store velocity needed to back away from beacon fence
         Vector2f backup_vel_beacon;
         adjust_velocity_beacon_fence(kP, accel_cmss_limited, desired_velocity_xy_cms, backup_vel_beacon, dt);
@@ -199,7 +199,7 @@ void AC_Avoid::adjust_velocity_fence(float kP, float accel_cmss, Vector3f &desir
 void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, float kP, float accel_cmss, float kP_z, float accel_cmss_z, float dt)
 {
     // exit immediately if disabled
-    if (_enabled == AC_AVOID_DISABLED) {
+    if (_enabled() == AC_AVOID_DISABLED) {
         return;
     }
 
@@ -504,7 +504,7 @@ void AC_Avoid::adjust_roll_pitch_rad(float &roll_rad, float &pitch_rad, float ve
     }
 
     // exit immediately if angle max is zero
-    if (_angle_max_cd <= 0.0f || veh_angle_max_rad <= 0.0f) {
+    if (_angle_max_cd() <= 0.0f || veh_angle_max_rad <= 0.0f) {
         return;
     }
 
@@ -521,7 +521,7 @@ void AC_Avoid::adjust_roll_pitch_rad(float &roll_rad, float &pitch_rad, float ve
 
     // apply avoidance angular limits
     // the object avoidance lean angle is never more than 75% of the total angle-limit to allow the pilot to override
-    const float angle_limit_rad = constrain_float(cd_to_rad(_angle_max_cd), 0.0f, veh_angle_max_rad * AC_AVOID_ANGLE_MAX_PERCENT);
+    const float angle_limit_rad = constrain_float(cd_to_rad(_angle_max_cd()), 0.0f, veh_angle_max_rad * AC_AVOID_ANGLE_MAX_PERCENT);
     float vec_length_rad = rp_out_rad.length();
     if (vec_length_rad > angle_limit_rad) {
         rp_out_rad *= (angle_limit_rad / vec_length_rad);
@@ -802,7 +802,7 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
     backup_vel = quad_1_back_vel + quad_2_back_vel + quad_3_back_vel + quad_4_back_vel;
 
     // vehicle is inside the circular fence
-    switch (_behavior) {
+    switch (_behavior()) {
     case BEHAVIOR_SLIDE: {
         // implement sliding behaviour
         const Vector2f stopping_point = position_xy + desired_vel_cms*(get_stopping_distance(kP, accel_cmss, desired_speed)/desired_speed);
@@ -933,7 +933,7 @@ void AC_Avoid::adjust_velocity_inclusion_circles(float kP, float accel_cmss, Vec
     // get stopping distance as an offset from the vehicle
     Vector2f stopping_offset;
     if (!is_zero(desired_speed)) {
-        switch (_behavior) {
+        switch (_behavior()) {
             case BEHAVIOR_SLIDE:
                 stopping_offset = desired_vel_cms*(get_stopping_distance(kP, accel_cmss, desired_speed)/desired_speed);
                 break;
@@ -977,7 +977,7 @@ void AC_Avoid::adjust_velocity_inclusion_circles(float kP, float accel_cmss, Vec
                 continue;
             }
 
-            switch (_behavior) {
+            switch (_behavior()) {
                 case BEHAVIOR_SLIDE: {
                     // implement sliding behaviour
                     const Vector2f stopping_point = position_NE_rel + stopping_offset;
@@ -1107,7 +1107,7 @@ void AC_Avoid::adjust_velocity_exclusion_circles(float kP, float accel_cmss, Vec
                 continue;
             }
 
-            switch (_behavior) {
+            switch (_behavior()) {
                 case BEHAVIOR_SLIDE: {
                     // vector from current position to circle's center
                     Vector2f limit_direction = vector_to_center;
@@ -1267,7 +1267,7 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
             continue;
         }
 
-        switch (_behavior) {
+        switch (_behavior()) {
         case BEHAVIOR_SLIDE: {
             Vector3f limit_direction{vector_to_obstacle};
             // distance to closest point
@@ -1397,7 +1397,7 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
             continue;
         }
 
-        switch (_behavior) {
+        switch (_behavior()) {
         case (BEHAVIOR_SLIDE): {
             // vector from current position to closest point on current edge
             Vector2f limit_direction = vector_to_boundary;

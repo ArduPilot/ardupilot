@@ -219,7 +219,7 @@ AP_WheelRateControl::AP_WheelRateControl(const AP_WheelEncoder &wheel_encoder_re
 bool AP_WheelRateControl::enabled(uint8_t instance)
 {
     // sanity check instance
-    if ((instance > 1) || (_enabled == 0)) {
+    if ((instance > 1) || (_enabled() == 0)) {
         return false;
     }
     // wheel encoder enabled

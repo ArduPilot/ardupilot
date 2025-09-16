@@ -270,7 +270,7 @@ void
 AP_GPS_UBLOX::_request_next_config(void)
 {
     // don't request config if we shouldn't configure the GPS
-    if (gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
+    if (gps._auto_config() == AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
         return;
     }
 
@@ -328,7 +328,7 @@ AP_GPS_UBLOX::_request_next_config(void)
         break;
     case STEP_POLL_GNSS:
         if (supports_F9_config()) {
-            if (last_configured_gnss != params.gnss_mode) {
+            if (last_configured_gnss != params.gnss_mode()) {
                 _unconfigured_messages |= CONFIG_F9;
             }
             break;
@@ -386,7 +386,7 @@ AP_GPS_UBLOX::_request_next_config(void)
         break;
     case STEP_RAW:
 #if UBLOX_RXM_RAW_LOGGING
-        if(gps._raw_data == 0) {
+        if(gps._raw_data() == 0) {
             _unconfigured_messages &= ~CONFIG_RATE_RAW;
         } else if(!_request_message_rate(CLASS_RXM, MSG_RXM_RAW)) {
             _next_message--;
@@ -397,7 +397,7 @@ AP_GPS_UBLOX::_request_next_config(void)
         break;
     case STEP_RAWX:
 #if UBLOX_RXM_RAW_LOGGING
-        if(gps._raw_data == 0) {
+        if(gps._raw_data() == 0) {
             _unconfigured_messages &= ~CONFIG_RATE_RAW;
         } else if(!_request_message_rate(CLASS_RXM, MSG_RXM_RAWX)) {
             _next_message--;
@@ -460,7 +460,7 @@ AP_GPS_UBLOX::_request_next_config(void)
             uint8_t cfg_count = populate_F9_gnss();
             // special handling of F9 config
             if (cfg_count > 0) {
-                CFG_Debug("Sending F9 settings, GNSS=%u", unsigned(params.gnss_mode));
+                CFG_Debug("Sending F9 settings, GNSS=%u", unsigned(params.gnss_mode()));
 
                 if (!_configure_list_valset(config_GNSS, cfg_count, UBX_VALSET_LAYER_RAM | UBX_VALSET_LAYER_BBR)) {
                     _next_message--;
@@ -484,7 +484,7 @@ AP_GPS_UBLOX::_request_next_config(void)
             uint8_t cfg_count = populate_F9_gnss();
             // special handling of F9 config
             if (cfg_count > 0) {
-                CFG_Debug("Validating F9 settings, GNSS=%u", unsigned(params.gnss_mode));
+                CFG_Debug("Validating F9 settings, GNSS=%u", unsigned(params.gnss_mode()));
                 // now validate all of the settings, this is a no-op if the first call succeeded
                 if (!_configure_config_set(config_GNSS, cfg_count, CONFIG_F9, UBX_VALSET_LAYER_RAM | UBX_VALSET_LAYER_BBR)) {
                     _next_message--;
@@ -587,11 +587,11 @@ AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
     case CLASS_RXM:
         switch(msg_id) {
         case MSG_RXM_RAW:
-            desired_rate = gps._raw_data;
+            desired_rate = gps._raw_data();
             config_msg_id = CONFIG_RATE_RAW;
             break;
         case MSG_RXM_RAWX:
-            desired_rate = gps._raw_data;
+            desired_rate = gps._raw_data();
             config_msg_id = CONFIG_RATE_RAW;
             break;
         default:
@@ -674,12 +674,12 @@ AP_GPS_UBLOX::read(void)
     }
 #endif
 
-    if(!_unconfigured_messages && gps._save_config && !_cfg_saved &&
+    if(!_unconfigured_messages && gps._save_config() && !_cfg_saved &&
        _num_cfg_save_tries < 5 && (millis_now - _last_cfg_sent_time) > 5000 &&
        !hal.util->get_soft_armed()) {
         //save the configuration sent until now
-        if (gps._save_config == 1 ||
-            (gps._save_config == 2 && _cfg_needs_save)) {
+        if (gps._save_config() == 1 ||
+            (gps._save_config() == 2 && _cfg_needs_save)) {
             _save_cfg();
         }
     }
@@ -1146,19 +1146,19 @@ AP_GPS_UBLOX::_parse_gps(void)
                   (int)_buffer.nav_settings.minElev,
                   (unsigned)_buffer.nav_settings.drLimit);
             _buffer.nav_settings.mask = 0;
-            if (gps._navfilter != AP_GPS::GPS_ENGINE_NONE &&
-                _buffer.nav_settings.dynModel != gps._navfilter) {
+            if (gps._navfilter() != AP_GPS::GPS_ENGINE_NONE &&
+                _buffer.nav_settings.dynModel != gps._navfilter()) {
                 // we've received the current nav settings, change the engine
                 // settings and send them back
                 Debug("Changing engine setting from %u to %u\n",
-                      (unsigned)_buffer.nav_settings.dynModel, (unsigned)gps._navfilter);
-                _buffer.nav_settings.dynModel = gps._navfilter;
+                      (unsigned)_buffer.nav_settings.dynModel, (unsigned)gps._navfilter());
+                _buffer.nav_settings.dynModel = gps._navfilter();
                 _buffer.nav_settings.mask |= 1;
             }
-            if (gps._min_elevation != -100 &&
-                _buffer.nav_settings.minElev != gps._min_elevation) {
-                Debug("Changing min elevation to %d\n", (int)gps._min_elevation);
-                _buffer.nav_settings.minElev = gps._min_elevation;
+            if (gps._min_elevation() != -100 &&
+                _buffer.nav_settings.minElev != gps._min_elevation()) {
+                Debug("Changing min elevation to %d\n", (int)gps._min_elevation());
+                _buffer.nav_settings.minElev = gps._min_elevation();
                 _buffer.nav_settings.mask |= 2;
             }
             if (_buffer.nav_settings.mask != 0) {
@@ -1174,7 +1174,7 @@ AP_GPS_UBLOX::_parse_gps(void)
 
 #if UBLOX_GNSS_SETTINGS
         case MSG_CFG_GNSS:
-            if (params.gnss_mode != 0 && !supports_F9_config()) {
+            if (params.gnss_mode() != 0 && !supports_F9_config()) {
                 struct ubx_cfg_gnss start_gnss = _buffer.gnss;
                 uint8_t gnssCount = 0;
                 Debug("Got GNSS Settings %u %u %u %u:\n",
@@ -1193,13 +1193,13 @@ AP_GPS_UBLOX::_parse_gps(void)
 #endif
 
                 for(int i = 0; i < UBLOX_MAX_GNSS_CONFIG_BLOCKS; i++) {
-                    if((params.gnss_mode & (1 << i)) && i != GNSS_SBAS) {
+                    if((params.gnss_mode() & (1 << i)) && i != GNSS_SBAS) {
                         gnssCount++;
                     }
                 }
                 for(int i = 0; i < _buffer.gnss.numConfigBlocks; i++) {
                     // Reserve an equal portion of channels for all enabled systems that supports it
-                    if(params.gnss_mode & (1 << _buffer.gnss.configBlock[i].gnssId)) {
+                    if(params.gnss_mode() & (1 << _buffer.gnss.configBlock[i].gnssId)) {
                         if(GNSS_SBAS !=_buffer.gnss.configBlock[i].gnssId && (_hardware_generation > UBLOX_M8 || GNSS_GALILEO !=_buffer.gnss.configBlock[i].gnssId)) {
                             _buffer.gnss.configBlock[i].resTrkCh = (_buffer.gnss.numTrkChHw - 3) / (gnssCount * 2);
                             _buffer.gnss.configBlock[i].maxTrkCh = _buffer.gnss.numTrkChHw;
@@ -1241,8 +1241,8 @@ AP_GPS_UBLOX::_parse_gps(void)
                       (unsigned)_buffer.sbas.maxSBAS,
                       (unsigned)_buffer.sbas.scanmode2,
                       (unsigned)_buffer.sbas.scanmode1);
-                if (_buffer.sbas.mode != gps._sbas_mode) {
-                    _buffer.sbas.mode = gps._sbas_mode;
+                if (_buffer.sbas.mode != gps._sbas_mode()) {
+                    _buffer.sbas.mode = gps._sbas_mode();
                     _send_message(CLASS_CFG, MSG_CFG_SBAS,
                                   &_buffer.sbas,
                                   sizeof(_buffer.sbas));
@@ -1274,7 +1274,7 @@ AP_GPS_UBLOX::_parse_gps(void)
            _ublox_port = _buffer.prt.portID;
            return false;
         case MSG_CFG_RATE:
-            if(_buffer.nav_rate.measure_rate_ms != params.rate_ms ||
+            if(_buffer.nav_rate.measure_rate_ms != params.rate_ms() ||
                _buffer.nav_rate.nav_rate != 1 ||
                _buffer.nav_rate.timeref != 0) {
                _configure_rate();
@@ -1478,10 +1478,10 @@ AP_GPS_UBLOX::_parse_gps(void)
     }
 
 #if UBLOX_RXM_RAW_LOGGING
-    if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAW && gps._raw_data != 0) {
+    if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAW && gps._raw_data() != 0) {
         log_rxm_raw(_buffer.rxm_raw);
         return false;
-    } else if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAWX && gps._raw_data != 0) {
+    } else if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAWX && gps._raw_data() != 0) {
         log_rxm_rawx(_buffer.rxm_rawx);
         return false;
     }
@@ -2218,7 +2218,7 @@ bool AP_GPS_UBLOX::get_lag(float &lag_sec) const
         // always bail out in this case, it's used to indicate we have yet to receive a valid
         // hardware generation, however the user may have inhibited us detecting the generation
         // so if we aren't allowed to do configuration, we will accept this as the default delay
-        return gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE;
+        return gps._auto_config() == AP_GPS::GPS_AUTO_CONFIG_DISABLE;
     case UBLOX_5:
     case UBLOX_6:
     default:
@@ -2295,7 +2295,7 @@ void AP_GPS_UBLOX::clear_RTCMV3(void)
 bool AP_GPS_UBLOX::is_healthy(void) const
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
+    if (gps._auto_config() == AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
         // allow for fake ublox moving baseline
         return true;
     }
@@ -2320,9 +2320,9 @@ uint8_t AP_GPS_UBLOX::populate_F9_gnss(void)
 {
     uint8_t cfg_count = 0;
 
-    if (params.gnss_mode == 0) {
+    if (params.gnss_mode() == 0) {
         _unconfigured_messages &= ~CONFIG_F9;
-        last_configured_gnss = params.gnss_mode;
+        last_configured_gnss = params.gnss_mode();
         return 0;
     }
 
@@ -2346,7 +2346,7 @@ uint8_t AP_GPS_UBLOX::populate_F9_gnss(void)
             return 0;
         }
 
-        uint8_t gnss_mode = params.gnss_mode;
+        uint8_t gnss_mode = params.gnss_mode();
         gnss_mode |= 1U<<GNSS_GPS;
         gnss_mode |= 1U<<GNSS_QZSS;
         gnss_mode &= ~(1U<<GNSS_IMES);
@@ -2393,7 +2393,7 @@ uint8_t AP_GPS_UBLOX::populate_F9_gnss(void)
         }
     }
 
-    last_configured_gnss = params.gnss_mode;
+    last_configured_gnss = params.gnss_mode();
 
     return cfg_count;
 }

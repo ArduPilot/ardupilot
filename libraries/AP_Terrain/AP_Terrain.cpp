@@ -317,7 +317,7 @@ bool AP_Terrain::height_relative_home_equivalent(float terrain_altitude,
 */
 float AP_Terrain::lookahead(float bearing, float distance, float climb_ratio)
 {
-    if (!allocate() || grid_spacing <= 0) {
+    if (!allocate() || grid_spacing() <= 0) {
         return 0;
     }
 
@@ -337,9 +337,9 @@ float AP_Terrain::lookahead(float bearing, float distance, float climb_ratio)
 
     // check for terrain at grid spacing intervals
     while (distance > 0) {
-        loc.offset_bearing(bearing, grid_spacing);
-        climb += climb_ratio * grid_spacing;
-        distance -= grid_spacing;
+        loc.offset_bearing(bearing, grid_spacing());
+        climb += climb_ratio * grid_spacing();
+        distance -= grid_spacing();
         float height;
         if (height_amsl(loc, height)) {
             float rise = (height - base_height) - climb;
@@ -360,7 +360,7 @@ float AP_Terrain::lookahead(float bearing, float distance, float climb_ratio)
  */
 void AP_Terrain::update(void)
 {
-    if (!enable) { return; }
+    if (!enable()) { return; }
     // just schedule any needed disk IO
     schedule_disk_io();
 
@@ -420,8 +420,8 @@ bool AP_Terrain::update_surrounding_tiles(const Location &loc)
     for (int8_t x=-1; x<=1; x++) {
         for (int8_t y=-1; y<=1; y++) {
             Location loc2 = loc;
-            loc2.offset(x*TERRAIN_GRID_BLOCK_SIZE_X*0.7f*grid_spacing,
-                        y*TERRAIN_GRID_BLOCK_SIZE_Y*0.7f*grid_spacing);
+            loc2.offset(x*TERRAIN_GRID_BLOCK_SIZE_X*0.7f*grid_spacing(),
+                        y*TERRAIN_GRID_BLOCK_SIZE_Y*0.7f*grid_spacing());
             float height;
             if (!height_amsl(loc2, height)) {
                 ret = false;
@@ -444,7 +444,7 @@ bool AP_Terrain::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len) cons
         hal.util->snprintf(failure_msg, failure_msg_len, "waiting for terrain data");
         return false;
     }
-    if (grid_spacing <= 0) {
+    if (grid_spacing() <= 0) {
         hal.util->snprintf(failure_msg, failure_msg_len, "TERRAIN_SPACING can't be <= 0");
         return false;
     }
@@ -477,7 +477,7 @@ void AP_Terrain::log_terrain_data()
         status         : (uint8_t)status(),
         lat            : loc.lat,
         lng            : loc.lng,
-        spacing        : (uint16_t)grid_spacing,
+        spacing        : (uint16_t)grid_spacing(),
         terrain_height : terrain_height,
         current_height : current_height,
         pending        : pending,
@@ -494,19 +494,19 @@ void AP_Terrain::log_terrain_data()
  */
 bool AP_Terrain::allocate(void)
 {
-    if (enable == 0 || memory_alloc_failed) {
+    if (enable() == 0 || memory_alloc_failed) {
         return false;
     }
     if (cache != nullptr) {
         return true;
     }
-    cache = (struct grid_cache *)calloc(config_cache_size, sizeof(cache[0]));
+    cache = (struct grid_cache *)calloc(config_cache_size(), sizeof(cache[0]));
     if (cache == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Terrain: Allocation failed");
         memory_alloc_failed = true;
         return false;
     }
-    cache_size = config_cache_size;
+    cache_size = config_cache_size();
     return true;
 }
 

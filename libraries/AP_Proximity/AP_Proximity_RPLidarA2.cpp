@@ -373,8 +373,8 @@ void AP_Proximity_RPLidarA2::parse_response_data()
         return;
     }
 
-    const float angle_sign = (params.orientation == 1) ? -1.0f : 1.0f;
-    const float angle_deg = wrap_360(_payload.sensor_scan.angle_q6/64.0f * angle_sign + params.yaw_correction);
+    const float angle_sign = (params.orientation() == 1) ? -1.0f : 1.0f;
+    const float angle_deg = wrap_360(_payload.sensor_scan.angle_q6/64.0f * angle_sign + params.yaw_correction());
     const float distance_m = (_payload.sensor_scan.distance_q2/4000.0f);
 #if RP_DEBUG_LEVEL >= 2
     const float quality = _payload.sensor_scan.quality;

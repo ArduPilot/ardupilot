@@ -68,7 +68,7 @@ bool AP_Proximity_MR72_CAN::handle_frame(AP_HAL::CANFrame &frame)
     // check if message is coming from the right sensor ID
     const uint16_t id = frame.id;
 
-    if (receive_id > 0 && (get_radar_id(frame.id) != uint32_t(receive_id))) {
+    if (receive_id() > 0 && (get_radar_id(frame.id) != uint32_t(receive_id()))) {
         return false;
     }
 

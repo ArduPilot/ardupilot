@@ -90,10 +90,10 @@ bool AP_RangeFinder_LeddarVu8::get_reading(float &reading_m)
 // get sensor address from RNGFNDx_ADDR parameter
 uint8_t AP_RangeFinder_LeddarVu8::get_sensor_address() const
 {
-    if (params.address == 0) {
+    if (params.address() == 0) {
         return LEDDARVU8_ADDR_DEFAULT;
     }
-    return params.address;
+    return params.address();
 }
 
 // send request to device to provide distances

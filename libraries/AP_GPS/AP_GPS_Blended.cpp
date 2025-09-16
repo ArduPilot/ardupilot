@@ -54,7 +54,7 @@ bool AP_GPS_Blended::_calc_weights(void)
 
     // calculate the sum squared speed accuracy across all GPS sensors
     float speed_accuracy_sum_sq = 0.0f;
-    if (gps._blend_mask & BLEND_MASK_USE_SPD_ACC) {
+    if (gps._blend_mask() & BLEND_MASK_USE_SPD_ACC) {
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (gps.state[i].status >= AP_GPS::GPS_OK_FIX_3D) {
                 if (gps.state[i].have_speed_accuracy && gps.state[i].speed_accuracy > 0.0f) {
@@ -70,7 +70,7 @@ bool AP_GPS_Blended::_calc_weights(void)
 
     // calculate the sum squared horizontal position accuracy across all GPS sensors
     float horizontal_accuracy_sum_sq = 0.0f;
-    if (gps._blend_mask & BLEND_MASK_USE_HPOS_ACC) {
+    if (gps._blend_mask() & BLEND_MASK_USE_HPOS_ACC) {
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (gps.state[i].status >= AP_GPS::GPS_OK_FIX_2D) {
                 if (gps.state[i].have_horizontal_accuracy && gps.state[i].horizontal_accuracy > 0.0f) {
@@ -86,7 +86,7 @@ bool AP_GPS_Blended::_calc_weights(void)
 
     // calculate the sum squared vertical position accuracy across all GPS sensors
     float vertical_accuracy_sum_sq = 0.0f;
-    if (gps._blend_mask & BLEND_MASK_USE_VPOS_ACC) {
+    if (gps._blend_mask() & BLEND_MASK_USE_VPOS_ACC) {
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (gps.state[i].status >= AP_GPS::GPS_OK_FIX_3D) {
                 if (gps.state[i].have_vertical_accuracy && gps.state[i].vertical_accuracy > 0.0f) {

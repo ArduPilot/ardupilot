@@ -45,7 +45,7 @@ bool AP_RangeFinder_Benewake_CAN::handle_frame(AP_HAL::CANFrame &frame)
 
     const uint16_t dist_cm = le16toh_ptr(&frame.data[0]);
     const uint16_t snr = le16toh_ptr(&frame.data[2]);
-    if (snr_min != 0 && snr < uint16_t(snr_min.get())) {
+    if (snr_min() != 0 && snr < uint16_t(snr_min.get())) {
         // too low signal strength
         return true;
     }

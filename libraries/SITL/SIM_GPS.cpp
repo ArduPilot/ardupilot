@@ -205,7 +205,7 @@ ssize_t GPS::write_to_autopilot(const char *p, size_t size) const
     // the first will start sending back 3 satellites, the second just
     // stops responding when disabled.  This is not necessarily a good
     // thing.
-    if (instance == 1 && !_sitl->gps[instance].enabled) {
+    if (instance == 1 && !_sitl->gps[instance].enabled()) {
         return -1;
     }
 
@@ -455,7 +455,7 @@ void GPS::update()
 
     //Capture current position as basestation location for
     if (!_gps_has_basestation_position &&
-        now_ms >= _sitl->gps[0].lock_time*1000UL) {
+        now_ms >= _sitl->gps[0].lock_time()*1000UL) {
         _gps_basestation_data.latitude = latitude;
         _gps_basestation_data.longitude = longitude;
         _gps_basestation_data.altitude = altitude;
@@ -470,10 +470,10 @@ void GPS::update()
     struct GPS_Data d {};
 
     // simulate delayed lock times
-    bool have_lock = (params.enabled && now_ms >= params.lock_time*1000UL);
+    bool have_lock = (params.enabled() && now_ms >= params.lock_time()*1000UL);
 
     // Only let physics run and GPS write at configured GPS rate (default 5Hz).
-    if ((now_ms - last_write_update_ms) < (uint32_t)(1000/params.hertz)) {
+    if ((now_ms - last_write_update_ms) < (uint32_t)(1000/params.hertz())) {
         // Reading runs every iteration.
         // Beware- physics don't update every iteration with this approach.
         // Currently, none of the drivers rely on quickly updated physics.
@@ -483,7 +483,7 @@ void GPS::update()
 
     last_write_update_ms = now_ms;
 
-    d.num_sats = params.numsats;
+    d.num_sats = params.numsats();
     d.latitude = latitude;
     d.longitude = longitude;
     d.yaw_deg = wrap_360(_sitl->state.yawDeg + params.heading_offset);
@@ -491,7 +491,7 @@ void GPS::update()
     d.pitch_deg = _sitl->state.pitchDeg;
 
     // add an altitude error controlled by a slow sine wave
-    d.altitude = altitude + params.noise * sinf(now_ms * 0.0005f) + params.alt_offset;
+    d.altitude = altitude + params.noise * sinf(now_ms * 0.0005f) + params.alt_offset();
 
     // Add offset to c.g. velocity to get velocity at antenna and add simulated error
     Vector3f velErrorNED = params.vel_err;
@@ -545,7 +545,7 @@ void GPS::update()
 
     // get delayed data
     d.timestamp_ms = now_ms;
-    d = interpolate_data(d, params.delay_ms);
+    d = interpolate_data(d, params.delay_ms());
 
     // Applying GPS glitch
     // Using first gps glitch
@@ -554,7 +554,7 @@ void GPS::update()
     d.longitude += glitch_offsets.y;
     d.altitude += glitch_offsets.z;
 
-    if (params.jam == 1) {
+    if (params.jam() == 1) {
         simulate_jamming(d);
     }
 

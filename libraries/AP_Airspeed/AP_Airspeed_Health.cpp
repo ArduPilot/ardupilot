@@ -43,7 +43,7 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
     const AP_GPS &gps = AP::gps();
     if (gps.status() < AP_GPS::GPS_Status::GPS_OK_FIX_3D) {
         // GPS speed can't be trusted, re-enable airspeed as a fallback
-        if ((param[i].use == 0) && (state[i].failures.param_use_backup == 1)) {
+        if ((param[i].use() == 0) && (state[i].failures.param_use_backup == 1)) {
             GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Airspeed sensor %d, Re-enabled as GPS fall-back", i+1);
             param[i].use.set_and_notify(state[i].failures.param_use_backup); 
             state[i].failures.param_use_backup = -1;
@@ -60,9 +60,9 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
         state[i].failures.test_ratio = 0.0f;
     }
     bool data_is_inconsistent = false;
-    if (is_positive(_wind_gate) && (AP_Airspeed::OptionsMask::USE_EKF_CONSISTENCY & _options) != 0) {
+    if (is_positive(_wind_gate) && (AP_Airspeed::OptionsMask::USE_EKF_CONSISTENCY & _options()) != 0) {
         float gate_size = MAX(_wind_gate, 0.0f);
-        if (param[i].use == 0) {
+        if (param[i].use() == 0) {
             // require a smaller inconsistency for a disabled sensor to be declared consistent
             gate_size *= 0.7f;
         }
@@ -90,12 +90,12 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
     static const float DISABLE_PROB_THRESH_CRIT = 0.1f;
     static const float RE_ENABLE_PROB_THRESH_OK = 0.95f;
 
-    if (param[i].use > 0) {
-        if (((AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_DO_DISABLE & _options) != 0) &&
+    if (param[i].use() > 0) {
+        if (((AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_DO_DISABLE & _options()) != 0) &&
                 (state[i].failures.health_probability < DISABLE_PROB_THRESH_CRIT)) {
             // if "disable" option is allowed and sensor is enabled and is probably not healthy
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed sensor %d failure. Disabling", i+1);
-            state[i].failures.param_use_backup = param[i].use;
+            state[i].failures.param_use_backup = param[i].use();
             param[i].use.set_and_notify(0);
             state[i].healthy = false;
         }
@@ -114,7 +114,7 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
         }
 
     // if Re-Enable options is allowed, and sensor is disabled but was previously enabled, and is probably healthy
-    } else if (((AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_RECOVERY_DO_REENABLE & _options) != 0) &&
+    } else if (((AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_RECOVERY_DO_REENABLE & _options()) != 0) &&
                 (state[i].failures.param_use_backup > 0) && 
                 (state[i].failures.health_probability > RE_ENABLE_PROB_THRESH_OK)) {
 

@@ -56,7 +56,7 @@ bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
     Priority prio = Priority(i);
 
 #if COMPASS_MAX_INSTANCES > 1
-    if (_priority_did_list[prio] != _priority_did_stored_list[prio]) {
+    if (_priority_did_list[prio] != _priority_did_stored_list[prio]()) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Compass cal requires reboot after priority change");
         return false;
     }
@@ -80,14 +80,14 @@ bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
         AP_Notify::events.initiated_compass_cal = 1;
     }
 
-    if (_rotate_auto) {
-        enum Rotation r = _get_state(prio).external?(enum Rotation)_get_state(prio).orientation.get():ROTATION_NONE;
+    if (_rotate_auto()) {
+        enum Rotation r = _get_state(prio).external()?(enum Rotation)_get_state(prio).orientation.get():ROTATION_NONE;
         if (r < ROTATION_MAX) {
-            _calibrator[prio]->set_orientation(r, _get_state(prio).external, _rotate_auto>=2, _rotate_auto>=3);
+            _calibrator[prio]->set_orientation(r, _get_state(prio).external(), _rotate_auto()>=2, _rotate_auto()>=3);
         }
     }
     _cal_saved[prio] = false;
-    if (i == 0 && _get_state(prio).external != 0) {
+    if (i == 0 && _get_state(prio).external() != 0) {
         _calibrator[prio]->start(retry, delay, get_offsets_max(), i, _calibration_threshold);
     } else {
         // internal compasses or secondary compasses get twice the
@@ -209,7 +209,7 @@ bool Compass::_accept_calibration(uint8_t i)
 #endif
         set_and_save_scale_factor(i,scale_factor);
 
-        if (cal_report.check_orientation && _get_state(prio).external && _rotate_auto >= 2) {
+        if (cal_report.check_orientation && _get_state(prio).external() && _rotate_auto() >= 2) {
             set_and_save_orientation(i, cal_report.orientation);
         }
 
@@ -548,7 +548,7 @@ bool Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
             // skip this compass
             continue;
         }
-        if (_use_for_yaw[Priority(i)] == 0 || (!force_use && !use_for_yaw(i))) {
+        if (_use_for_yaw[Priority(i)]() == 0 || (!force_use && !use_for_yaw(i))) {
             continue;
         }
         if (!healthy(i)) {

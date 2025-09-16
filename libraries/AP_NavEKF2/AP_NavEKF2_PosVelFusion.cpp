@@ -214,7 +214,7 @@ void NavEKF2_core::ResetHeight(void)
 
     // Reset the vertical velocity state using GPS vertical velocity if we are airborne
     // Check that GPS vertical velocity data is available and can be used
-    if (inFlight && !gpsNotAvailable && frontend->_fusionModeGPS == 0 &&
+    if (inFlight && !gpsNotAvailable && frontend->_fusionModeGPS() == 0 &&
         dal.gps().have_vertical_velocity()) {
         stateStruct.velocity.z =  gpsDataNew.vel.z;
     } else if (inFlight && useExtNavVel) {
@@ -402,7 +402,7 @@ void NavEKF2_core::SelectVelPosFusion()
     // Determine if we need to fuse position and velocity data on this time step
     if (gpsDataToFuse && PV_AidingMode == AID_ABSOLUTE) {
         // set fusion request flags
-        if (frontend->_fusionModeGPS <= 1) {
+        if (frontend->_fusionModeGPS() <= 1) {
             fuseVelData = true;
         } else {
             fuseVelData = false;
@@ -458,7 +458,7 @@ void NavEKF2_core::SelectVelPosFusion()
         fusePosData = false;
     }
 
-    if (extNavVelToFuse && (frontend->_fusionModeGPS == 3)) {
+    if (extNavVelToFuse && (frontend->_fusionModeGPS() == 3)) {
         fuseVelData = true;
         velPosObs[0] = extNavVelDelayed.vel.x;
         velPosObs[1] = extNavVelDelayed.vel.y;
@@ -529,7 +529,7 @@ void NavEKF2_core::SelectVelPosFusion()
     }
 
     // check for external nav position reset
-    if (extNavDataToFuse && (PV_AidingMode == AID_ABSOLUTE) && (frontend->_fusionModeGPS == 3) && extNavDataDelayed.posReset) {
+    if (extNavDataToFuse && (PV_AidingMode == AID_ABSOLUTE) && (frontend->_fusionModeGPS() == 3) && extNavDataDelayed.posReset) {
         ResetPositionNE(extNavDataDelayed.pos.x, extNavDataDelayed.pos.y);
         if (activeHgtSource == HGT_SOURCE_EXTNAV) {
             ResetPositionD(-hgtMea);
@@ -642,7 +642,7 @@ void NavEKF2_core::FuseVelPosNED()
         // if vertical GPS velocity data and an independent height source is being used, check to see if the GPS vertical velocity and altimeter
         // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
         // the accelerometers and we should disable the GPS and barometer innovation consistency checks.
-        if (useGpsVertVel && fuseVelData && (frontend->_altSource != 2)) {
+        if (useGpsVertVel && fuseVelData && (frontend->_altSource() != 2)) {
             // calculate innovations for height and vertical GPS vel measurements
             ftype hgtErr  = stateStruct.position.z - velPosObs[5];
             ftype velDErr = stateStruct.velocity.z - velPosObs[2];
@@ -663,7 +663,7 @@ void NavEKF2_core::FuseVelPosNED()
             varInnovVelPos[3] = P[6][6] + R_OBS_DATA_CHECKS[3];
             varInnovVelPos[4] = P[7][7] + R_OBS_DATA_CHECKS[4];
             // apply an innovation consistency threshold test, but don't fail if bad IMU data
-            ftype maxPosInnov2 = sq(MAX(0.01f * (ftype)frontend->_gpsPosInnovGate, 1.0f))*(varInnovVelPos[3] + varInnovVelPos[4]);
+            ftype maxPosInnov2 = sq(MAX(0.01f * (ftype)frontend->_gpsPosInnovGate(), 1.0f))*(varInnovVelPos[3] + varInnovVelPos[4]);
             posTestRatio = (sq(innovVelPos[3]) + sq(innovVelPos[4])) / maxPosInnov2;
             posHealth = ((posTestRatio < 1.0f) || badIMUdata);
             // use position data if healthy or timed out
@@ -674,7 +674,7 @@ void NavEKF2_core::FuseVelPosNED()
                 posHealth = true;
                 lastPosPassTime_ms = imuSampleTime_ms;
                 // if timed out or outside the specified uncertainty radius, reset to the GPS
-                if (posTimeout || ((P[6][6] + P[7][7]) > sq(float(frontend->_gpsGlitchRadiusMax)))) {
+                if (posTimeout || ((P[6][6] + P[7][7]) > sq(float(frontend->_gpsGlitchRadiusMax())))) {
                     // reset the position to the current GPS position
                     ResetPosition();
                     // reset the velocity to the GPS velocity
@@ -685,7 +685,7 @@ void NavEKF2_core::FuseVelPosNED()
                     // Reset the position variances and corresponding covariances to a value that will pass the checks
                     zeroRows(P,6,7);
                     zeroCols(P,6,7);
-                    P[6][6] = sq(float(0.5f*frontend->_gpsGlitchRadiusMax));
+                    P[6][6] = sq(float(0.5f*frontend->_gpsGlitchRadiusMax()));
                     P[7][7] = P[6][6];
                     // Reset the normalised innovation to avoid failing the bad fusion tests
                     posTestRatio = 0.0f;
@@ -699,7 +699,7 @@ void NavEKF2_core::FuseVelPosNED()
             // test velocity measurements
             uint8_t imax = 2;
             // Don't fuse vertical velocity observations if inhibited by the user or if we are using synthetic data
-            if (!useExtNavVel && (frontend->_fusionModeGPS > 0 || PV_AidingMode != AID_ABSOLUTE ||
+            if (!useExtNavVel && (frontend->_fusionModeGPS() > 0 || PV_AidingMode != AID_ABSOLUTE ||
                                   !dal.gps().have_vertical_velocity())) {
                 imax = 1;
             }
@@ -718,7 +718,7 @@ void NavEKF2_core::FuseVelPosNED()
             }
             // apply an innovation consistency threshold test, but don't fail if bad IMU data
             // calculate the test ratio
-            velTestRatio = innovVelSumSq / (varVelSum * sq(MAX(0.01f * (ftype)frontend->_gpsVelInnovGate, 1.0f)));
+            velTestRatio = innovVelSumSq / (varVelSum * sq(MAX(0.01f * (ftype)frontend->_gpsVelInnovGate(), 1.0f)));
             // fail if the ratio is greater than 1
             velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
             // use velocity data if healthy, timed out, or in constant position mode
@@ -744,7 +744,7 @@ void NavEKF2_core::FuseVelPosNED()
             innovVelPos[5] = stateStruct.position.z - velPosObs[5];
             varInnovVelPos[5] = P[8][8] + R_OBS_DATA_CHECKS[5];
             // calculate the innovation consistency test ratio
-            hgtTestRatio = sq(innovVelPos[5]) / (sq(MAX(0.01f * (ftype)frontend->_hgtInnovGate, 1.0f)) * varInnovVelPos[5]);
+            hgtTestRatio = sq(innovVelPos[5]) / (sq(MAX(0.01f * (ftype)frontend->_hgtInnovGate(), 1.0f)) * varInnovVelPos[5]);
 
             // when on ground we accept a larger test ratio to allow
             // the filter to handle large switch on IMU bias errors
@@ -974,12 +974,12 @@ void NavEKF2_core::selectHeightForFusion()
         // always use external navigation as the height source if using for position.
         activeHgtSource = HGT_SOURCE_EXTNAV;
 #if AP_RANGEFINDER_ENABLED
-    } else if ((frontend->_altSource == 1) && _rng && rangeFinderDataIsFresh) {
+    } else if ((frontend->_altSource() == 1) && _rng && rangeFinderDataIsFresh) {
         // user has specified the range finder as a primary height source
         activeHgtSource = HGT_SOURCE_RNG;
-    } else if ((frontend->_useRngSwHgt > 0) && ((frontend->_altSource == 0) || (frontend->_altSource == 2)) && _rng && rangeFinderDataIsFresh) {
+    } else if ((frontend->_useRngSwHgt() > 0) && ((frontend->_altSource() == 0) || (frontend->_altSource() == 2)) && _rng && rangeFinderDataIsFresh) {
         // determine if we are above or below the height switch region
-        const ftype rangeMaxUse = 1e-2f * _rng->max_distance_orient(ROTATION_PITCH_270) * (ftype)frontend->_useRngSwHgt;
+        const ftype rangeMaxUse = 1e-2f * _rng->max_distance_orient(ROTATION_PITCH_270) * (ftype)frontend->_useRngSwHgt();
         bool aboveUpperSwHgt = (terrainState - stateStruct.position.z) > rangeMaxUse;
         bool belowLowerSwHgt = (terrainState - stateStruct.position.z) < 0.7f * rangeMaxUse;
 
@@ -998,9 +998,9 @@ void NavEKF2_core::selectHeightForFusion()
         */
         if ((aboveUpperSwHgt || dontTrustTerrain) && (activeHgtSource == HGT_SOURCE_RNG)) {
             // cannot trust terrain or range finder so stop using range finder height
-            if (frontend->_altSource == 0) {
+            if (frontend->_altSource() == 0) {
                 activeHgtSource = HGT_SOURCE_BARO;
-            } else if (frontend->_altSource == 2) {
+            } else if (frontend->_altSource() == 2) {
                 activeHgtSource = HGT_SOURCE_GPS;
             }
         } else if (belowLowerSwHgt && trustTerrain && (prevTnb.c.z >= 0.7f)) {
@@ -1008,11 +1008,11 @@ void NavEKF2_core::selectHeightForFusion()
             activeHgtSource = HGT_SOURCE_RNG;
         }
 #endif  // AP_RANGEFINDER_ENABLED
-    } else if (frontend->_altSource == 0) {
+    } else if (frontend->_altSource() == 0) {
         activeHgtSource = HGT_SOURCE_BARO;
-    } else if ((frontend->_altSource == 2) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) < 500) && validOrigin && gpsAccuracyGood) {
+    } else if ((frontend->_altSource() == 2) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) < 500) && validOrigin && gpsAccuracyGood) {
         activeHgtSource = HGT_SOURCE_GPS;
-    } else if ((frontend->_altSource == 3) && validOrigin && rngBcnGoodToAlign) {
+    } else if ((frontend->_altSource() == 3) && validOrigin && rngBcnGoodToAlign) {
         activeHgtSource = HGT_SOURCE_BCN;
     }
 
@@ -1045,8 +1045,8 @@ void NavEKF2_core::selectHeightForFusion()
     // combined local NED position height and origin height remains consistent with the GPS altitude
     // This also enables the GPS height to be used as a backup height source
     if (gpsDataToFuse &&
-            (((frontend->_originHgtMode & (1 << 0)) && (activeHgtSource == HGT_SOURCE_BARO)) ||
-            ((frontend->_originHgtMode & (1 << 1)) && (activeHgtSource == HGT_SOURCE_RNG)))
+            (((frontend->_originHgtMode() & (1 << 0)) && (activeHgtSource == HGT_SOURCE_BARO)) ||
+            ((frontend->_originHgtMode() & (1 << 1)) && (activeHgtSource == HGT_SOURCE_RNG)))
             ) {
         correctEkfOriginHeight();
     }

@@ -116,10 +116,10 @@ bool AC_WeatherVane::get_yaw_out(float &yaw_output, const int16_t pilot_yaw, con
     }
 
     // override direction when in takeoff for landing
-    if (is_takeoff && (_takeoff_direction >= 0)) {
+    if (is_takeoff && (_takeoff_direction() >= 0)) {
         dir = (Direction)_takeoff_direction.get();
     }
-    if (is_landing && (_landing_direction >= 0)) {
+    if (is_landing && (_landing_direction() >= 0)) {
         dir = (Direction)_landing_direction.get();
     }
     if (dir == Direction::OFF || (dir == Direction::TAKEOFF_OR_LAND_ONLY)) {

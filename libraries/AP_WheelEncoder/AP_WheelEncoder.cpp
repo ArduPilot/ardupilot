@@ -195,7 +195,7 @@ void AP_WheelEncoder::init(void)
 void AP_WheelEncoder::update(void)
 {
     for (uint8_t i=0; i<num_instances; i++) {
-        if (drivers[i] != nullptr && _type[i] != WheelEncoder_TYPE_NONE) {
+        if (drivers[i] != nullptr && _type[i]() != WheelEncoder_TYPE_NONE) {
             drivers[i]->update();
         }
     }
@@ -238,7 +238,7 @@ bool AP_WheelEncoder::enabled(uint8_t instance) const
         return false;
     }
     // if no sensor type is selected, the sensor is not activated.
-    if (_type[instance] == WheelEncoder_TYPE_NONE) {
+    if (_type[instance]() == WheelEncoder_TYPE_NONE) {
         return false;
     }
     return true;
@@ -251,7 +251,7 @@ uint16_t AP_WheelEncoder::get_counts_per_revolution(uint8_t instance) const
     if (instance >= WHEELENCODER_MAX_INSTANCES) {
         return 0;
     }
-    return (uint16_t)_counts_per_revolution[instance];
+    return (uint16_t)_counts_per_revolution[instance]();
 }
 
 // get the wheel radius in meters
@@ -282,10 +282,10 @@ float AP_WheelEncoder::get_delta_angle(uint8_t instance) const
         return 0.0f;
     }
     // protect against divide by zero
-    if (_counts_per_revolution[instance] == 0) {
+    if (_counts_per_revolution[instance]() == 0) {
         return 0.0f;
     }
-    return M_2PI * state[instance].distance_count / _counts_per_revolution[instance];
+    return M_2PI * state[instance].distance_count / _counts_per_revolution[instance]();
 }
 
 // get the total distance traveled in meters
@@ -304,12 +304,12 @@ float AP_WheelEncoder::get_rate(uint8_t instance) const
     }
 
     // protect against divide by zero
-    if ((state[instance].dt_ms == 0) || _counts_per_revolution[instance] == 0) {
+    if ((state[instance].dt_ms == 0) || _counts_per_revolution[instance]() == 0) {
         return 0;
     }
 
     // calculate delta_angle (in radians) per second
-    return M_2PI * (state[instance].dist_count_change / ((float)_counts_per_revolution[instance])) / (state[instance].dt_ms * 1e-3f);
+    return M_2PI * (state[instance].dist_count_change / ((float)_counts_per_revolution[instance]())) / (state[instance].dt_ms * 1e-3f);
 }
 
 // get the total number of sensor reading from the encoder

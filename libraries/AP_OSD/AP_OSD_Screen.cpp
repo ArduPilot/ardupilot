@@ -1318,7 +1318,7 @@ void AP_OSD_AbstractScreen::set_backend(AP_OSD_Backend *_backend)
 
 bool AP_OSD_AbstractScreen::check_option(uint32_t option)
 {
-    return osd?(osd->options & option) != 0 : false;
+    return osd?(osd->options() & option) != 0 : false;
 }
 
 /*
@@ -1364,7 +1364,7 @@ char AP_OSD_AbstractScreen::u_icon(enum unit_type unit)
         icons_SI,
         icons_aviation,
     };
-    return (char)SYMBOL(icons[constrain_int16(osd->units, 0, AP_OSD::UNITS_LAST-1)][unit]);
+    return (char)SYMBOL(icons[constrain_int16(osd->units(), 0, AP_OSD::UNITS_LAST-1)][unit]);
 }
 
 /*
@@ -1424,7 +1424,7 @@ float AP_OSD_AbstractScreen::u_scale(enum unit_type unit, float value)
         nullptr,
         nullptr
     };
-    uint8_t units = constrain_int16(osd->units, 0, AP_OSD::UNITS_LAST-1);
+    uint8_t units = constrain_int16(osd->units(), 0, AP_OSD::UNITS_LAST-1);
     return value * scale[units][unit] + (offsets[units]?offsets[units][unit]:0);
 }
 
@@ -1479,9 +1479,9 @@ void AP_OSD_Screen::draw_bat_volt(uint8_t instance, VoltageType type, uint8_t x,
        // calculate cell count - WARNING this can be inaccurate if the LIPO/LIION  battery is far from 
        // fully charged when attached and is used in this panel
        osd->max_battery_voltage.set(MAX(osd->max_battery_voltage,v));
-       if (osd->cell_count > 0) {
-           v = v / osd->cell_count;
-       } else if (osd->cell_count < 0) { // user must decide on autodetect cell count or manually entered to display this panel since default is -1
+       if (osd->cell_count() > 0) {
+           v = v / osd->cell_count();
+       } else if (osd->cell_count() < 0) { // user must decide on autodetect cell count or manually entered to display this panel since default is -1
            backend->write(x,y, false, "%c---%c", SYMBOL(SYM_BATT_FULL) + p, SYMBOL(SYM_VOLT));
            return;
        } else {  // use autodetected cell count
@@ -1533,7 +1533,7 @@ void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
     AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
     if (ap_rssi) {
         const uint8_t rssiv = ap_rssi->read_receiver_rssi() * 100;
-        backend->write(x, y, rssiv < osd->warn_rssi, "%c%2d", SYMBOL(SYM_RSSI), rssiv);
+        backend->write(x, y, rssiv < osd->warn_rssi(), "%c%2d", SYMBOL(SYM_RSSI), rssiv);
     }
 }
 
@@ -1592,7 +1592,7 @@ void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
 {
     AP_GPS & gps = AP::gps();
     uint8_t nsat = gps.num_sats();
-    bool flash = (nsat < osd->warn_nsat) || (gps.status() < AP_GPS::GPS_OK_FIX_3D);
+    bool flash = (nsat < osd->warn_nsat()) || (gps.status() < AP_GPS::GPS_OK_FIX_3D);
     backend->write(x, y, flash, "%c%c%2u", SYMBOL(SYM_SAT_L), SYMBOL(SYM_SAT_R), nsat);
 }
 
@@ -1624,7 +1624,7 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
     AP_Notify * notify = AP_Notify::get_singleton();
     if (notify) {
         int32_t visible_time = AP_HAL::millis() - notify->get_text_updated_millis();
-        if (visible_time < osd->msgtime_s *1000) {
+        if (visible_time < osd->msgtime_s() *1000) {
             char buffer[NOTIFY_TEXT_BUFFER_SIZE];
             strncpy(buffer, notify->get_text(), sizeof(buffer));
             int16_t len = strnlen(buffer, sizeof(buffer));
@@ -1760,7 +1760,7 @@ void AP_OSD_Screen::draw_distance(uint8_t x, uint8_t y, float distance)
     char unit_icon = u_icon(DISTANCE);
     float distance_scaled = u_scale(DISTANCE, distance);
     const char *fmt = "%4.0f%c";
-    if (distance_scaled > 9999.0f || (osd->units == AP_OSD::UNITS_IMPERIAL && distance_scaled > 5280.0f && (osd->options & AP_OSD::OPTION_IMPERIAL_MILES))) {
+    if (distance_scaled > 9999.0f || (osd->units() == AP_OSD::UNITS_IMPERIAL && distance_scaled > 5280.0f && (osd->options() & AP_OSD::OPTION_IMPERIAL_MILES))) {
         distance_scaled = u_scale(DISTANCE_LONG, distance);
         unit_icon= u_icon(DISTANCE_LONG);
         //try to pack as many useful info as possible
@@ -1868,10 +1868,10 @@ void AP_OSD_Screen::draw_sidebars(uint8_t x, uint8_t y)
     float scaled_aspd = u_scale(SPEED, aspd);
     float scaled_alt = u_scale(ALTITUDE, -alt);
     static const int aspd_interval = 10; //units between large tick marks
-    int alt_interval = (osd->units == AP_OSD::UNITS_AVIATION || osd->units == AP_OSD::UNITS_IMPERIAL) ? 20 : 10;
+    int alt_interval = (osd->units() == AP_OSD::UNITS_AVIATION || osd->units() == AP_OSD::UNITS_IMPERIAL) ? 20 : 10;
 
     // Height values taking into account configurable vertical extension
-    const int bar_total_height = 7 + (osd->sidebar_v_ext * 2);
+    const int bar_total_height = 7 + (osd->sidebar_v_ext() * 2);
     const int bar_middle = bar_total_height / 2;     // Integer division
 
     // render airspeed ladder
@@ -1892,9 +1892,9 @@ void AP_OSD_Screen::draw_sidebars(uint8_t x, uint8_t y)
     for (int i = 0; i < bar_total_height; i++){
         if (i == bar_middle) {
             // the middle section of the ladder with the currrent altitude
-            backend->write(x + 16 + osd->sidebar_h_offset, y+i, false, "%c%d%c", SYMBOL(SYM_SIDEBAR_L_ARROW), (int) scaled_alt, u_icon(ALTITUDE));
+            backend->write(x + 16 + osd->sidebar_h_offset(), y+i, false, "%c%d%c", SYMBOL(SYM_SIDEBAR_L_ARROW), (int) scaled_alt, u_icon(ALTITUDE));
         } else {
-            backend->write(x + 16 + osd->sidebar_h_offset, y+i, false,  "%c", SYMBOL(sidebar_sectors[alt_symbol_index]));
+            backend->write(x + 16 + osd->sidebar_h_offset(), y+i, false,  "%c", SYMBOL(sidebar_sectors[alt_symbol_index]));
         }
         alt_symbol_index = (alt_symbol_index + 12) % 18;
     }
@@ -1999,10 +1999,10 @@ void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
         sym = SYMBOL(SYM_DOWN_DOWN);
     }
     vs_scaled = u_scale(VSPEED, fabsf(vspd));
-    if ((osd->units != AP_OSD::UNITS_AVIATION) && (vs_scaled < 9.95f)) {
+    if ((osd->units() != AP_OSD::UNITS_AVIATION) && (vs_scaled < 9.95f)) {
         backend->write(x, y, false, "%c%.1f%c", sym, (float)vs_scaled, u_icon(VSPEED));
     } else {
-        const char *fmt = osd->units == AP_OSD::UNITS_AVIATION ? "%c%4d%c" : "%c%2d%c";
+        const char *fmt = osd->units() == AP_OSD::UNITS_AVIATION ? "%c%4d%c" : "%c%2d%c";
         backend->write(x, y, false, fmt, sym, (int)roundf(vs_scaled), u_icon(VSPEED));
     }
 }
@@ -2012,8 +2012,8 @@ void AP_OSD_Screen::draw_esc_temp(uint8_t x, uint8_t y)
 {
     int16_t etemp;
 
-    if (esc_index > 0) {
-        if (!AP::esc_telem().get_temperature(esc_index-1, etemp)) {
+    if (esc_index() > 0) {
+        if (!AP::esc_telem().get_temperature(esc_index()-1, etemp)) {
             return;
         }
     }
@@ -2028,8 +2028,8 @@ void AP_OSD_Screen::draw_esc_rpm(uint8_t x, uint8_t y)
 {
     float rpm;
     uint8_t esc = AP::esc_telem().get_max_rpm_esc();
-    if (esc_index > 0) {
-        if (!AP::esc_telem().get_rpm(esc_index-1, rpm)) {
+    if (esc_index() > 0) {
+        if (!AP::esc_telem().get_rpm(esc_index()-1, rpm)) {
             return;
         }
     } else if (!AP::esc_telem().get_rpm(esc, rpm)) {
@@ -2044,8 +2044,8 @@ void AP_OSD_Screen::draw_esc_amps(uint8_t x, uint8_t y)
 {
     float amps;
     uint8_t esc = AP::esc_telem().get_max_rpm_esc();
-    if (esc_index > 0) {
-        if (!AP::esc_telem().get_current(esc_index-1, amps)) {
+    if (esc_index() > 0) {
+        if (!AP::esc_telem().get_current(esc_index()-1, amps)) {
             return;
         }
     } else if (!AP::esc_telem().get_current(esc, amps)) {
@@ -2093,7 +2093,7 @@ void AP_OSD_Screen::draw_rc_tx_power(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_rc_rssi_dbm(uint8_t x, uint8_t y)
 {
     const int8_t rssidbm = AP::crsf()->get_link_status().rssi_dbm;
-    const bool blink = -rssidbm < osd->warn_rssi;
+    const bool blink = -rssidbm < osd->warn_rssi();
     bool btfl = is_btfl_fonts();
 
     backend->write(x, y, blink, "%c", SYMBOL(SYM_RSSI));
@@ -2509,7 +2509,7 @@ void AP_OSD_Screen::draw_hgt_abvterr(uint8_t x, uint8_t y)
 
     float terrain_altitude;
     if (terrain != nullptr && terrain->height_above_terrain(terrain_altitude,true)) {
-        bool blink = (osd->warn_terr != -1)? (terrain_altitude < osd->warn_terr) : false; //blink if warn_terr is not disabled and alt above terrain is below warning value
+        bool blink = (osd->warn_terr() != -1)? (terrain_altitude < osd->warn_terr()) : false; //blink if warn_terr is not disabled and alt above terrain is below warning value
         backend->write(x, y, blink, "%4d%c%c", (int)u_scale(ALTITUDE, terrain_altitude), u_icon(ALTITUDE), SYMBOL(SYM_TERALT));
      } else {
         backend->write(x, y, false, " ---%c%c", u_icon(ALTITUDE),SYMBOL(SYM_TERALT));
@@ -2548,12 +2548,12 @@ void AP_OSD_Screen::draw_rngf(uint8_t x, uint8_t y)
 }
 #endif
 
-#define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
+#define DRAW_SETTING(n) if (n.enabled()) draw_ ## n(n.xpos(), n.ypos())
 
 #if HAL_WITH_OSD_BITMAP || HAL_WITH_MSP_DISPLAYPORT
 void AP_OSD_Screen::draw(void)
 {
-    if (!enabled || !backend) {
+    if (!enabled() || !backend) {
         return;
     }
     //Note: draw order should be optimized.

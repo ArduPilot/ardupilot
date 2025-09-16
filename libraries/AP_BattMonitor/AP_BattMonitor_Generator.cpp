@@ -114,14 +114,14 @@ void AP_BattMonitor_Generator_FuelLevel::read()
 bool AP_BattMonitor_Generator_FuelLevel::capacity_remaining_ml(float &capacity_ml) const
 {
         // we consider anything under 10 ml as being an invalid capacity and so will be our measurement of remaining capacity
-        if ( _params._pack_capacity <= 10) {
+        if ( _params._pack_capacity() <= 10) {
             return false;
         }
 
         // we get the initial fuel multiplying pack capacity parameter by initial fuel percentage.
         // this initial fuel percentage will be 100% by default, but we can change it using the
         // mavlink command MAV_CMD_BATTERY_RESET
-        const float initial_fuel = _params._pack_capacity * _initial_fuel_pct * 0.01;
+        const float initial_fuel = _params._pack_capacity() * _initial_fuel_pct * 0.01;
 
         // to get the actual remaining level we need to substract the consumed ml
         capacity_ml = initial_fuel - _state.consumed_mah;
@@ -152,7 +152,7 @@ bool AP_BattMonitor_Generator_FuelLevel::capacity_remaining_pct(uint8_t &percent
         }
 
         // now we get the percentage according to tank capacity (pack_capacity parameter)
-        percentage = constrain_float(100 * remaining_ml / _params._pack_capacity, 0, UINT8_MAX);;
+        percentage = constrain_float(100 * remaining_ml / _params._pack_capacity(), 0, UINT8_MAX);;
         return true;
         
     // Otherwise use generator's own percentage

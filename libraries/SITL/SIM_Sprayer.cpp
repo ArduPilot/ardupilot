@@ -56,8 +56,8 @@ const AP_Param::GroupInfo Sprayer::var_info[] = {
  */
 void Sprayer::update(const struct sitl_input &input)
 {
-    const int16_t pump_pwm = sprayer_pump_pin >= 1 ? input.servos[sprayer_pump_pin-1] : -1;
-    const int16_t spinner_pwm = sprayer_spin_pin >= 1 ? input.servos[sprayer_spin_pin-1] : -1;
+    const int16_t pump_pwm = sprayer_pump_pin() >= 1 ? input.servos[sprayer_pump_pin()-1] : -1;
+    const int16_t spinner_pwm = sprayer_spin_pin() >= 1 ? input.servos[sprayer_spin_pin()-1] : -1;
     const uint64_t now = AP_HAL::micros64();
     const float dt = (now - last_update_us) * 1.0e-6f;
     if (pump_pwm >= 0) {

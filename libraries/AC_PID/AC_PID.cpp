@@ -158,16 +158,16 @@ void AC_PID::set_slew_limit(float smax)
 void AC_PID::set_notch_sample_rate(float sample_rate)
 {
 #if AP_FILTER_ENABLED
-    if (_notch_T_filter == 0 && _notch_E_filter == 0) {
+    if (_notch_T_filter() == 0 && _notch_E_filter() == 0) {
         return;
     }
 
-    if (_notch_T_filter != 0) {
+    if (_notch_T_filter() != 0) {
         if (_target_notch == nullptr) {
             _target_notch = NEW_NOTHROW NotchFilterFloat();
         }
         // Lookup filter definition and initialize if valid
-        AP_Filter* filter = AP::filters().get_filter(_notch_T_filter);
+        AP_Filter* filter = AP::filters().get_filter(_notch_T_filter());
         if (filter != nullptr && !filter->setup_notch_filter(*_target_notch, sample_rate)) {
             delete _target_notch;
             _target_notch = nullptr;
@@ -175,12 +175,12 @@ void AC_PID::set_notch_sample_rate(float sample_rate)
         }
     }
 
-    if (_notch_E_filter != 0) {
+    if (_notch_E_filter() != 0) {
         if (_error_notch == nullptr) {
             _error_notch = NEW_NOTHROW NotchFilterFloat();
         }
         // Lookup filter definition and initialize if valid
-        AP_Filter* filter = AP::filters().get_filter(_notch_E_filter);
+        AP_Filter* filter = AP::filters().get_filter(_notch_E_filter());
         if (filter != nullptr && !filter->setup_notch_filter(*_error_notch, sample_rate)) {
             delete _error_notch;
             _error_notch = nullptr;

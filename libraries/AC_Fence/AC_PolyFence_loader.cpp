@@ -57,7 +57,7 @@ void AC_PolyFence_loader::init()
     if (!check_indexed()) {
         // tell the user, perhaps?
     }
-    _old_total = _total;
+    _old_total = _total();
 }
 
 bool AC_PolyFence_loader::find_index_for_seq(const uint16_t seq, const FenceIndex *&entry, uint16_t &i) const
@@ -1314,7 +1314,7 @@ void AC_PolyFence_loader::handle_msg_fetch_fence_point(GCS_MAVLINK &link, const 
         return;
     }
 
-    if (_total != 0 && _total < 5) {
+    if (_total() != 0 && _total() < 5) {
         link.send_text(MAV_SEVERITY_WARNING, "Invalid FENCE_TOTAL");
         return;
     }
@@ -1322,7 +1322,7 @@ void AC_PolyFence_loader::handle_msg_fetch_fence_point(GCS_MAVLINK &link, const 
     mavlink_fence_fetch_point_t packet;
     mavlink_msg_fence_fetch_point_decode(&msg, &packet);
 
-    if (packet.idx >= _total) {
+    if (packet.idx >= _total()) {
         link.send_text(MAV_SEVERITY_WARNING, "Invalid fence point, index past total(%u >= %u)", packet.idx, _total.get());
         return;
     }
@@ -1331,7 +1331,7 @@ void AC_PolyFence_loader::handle_msg_fetch_fence_point(GCS_MAVLINK &link, const 
     ret_packet.target_system = msg.sysid;
     ret_packet.target_component = msg.compid;
     ret_packet.idx = packet.idx;
-    ret_packet.count = _total;
+    ret_packet.count = _total();
 
     if (packet.idx == 0) {
         // return point
@@ -1351,7 +1351,7 @@ void AC_PolyFence_loader::handle_msg_fetch_fence_point(GCS_MAVLINK &link, const 
             ret_packet.lng = 0;
         } else {
             uint8_t fencepoint_offset; // 1st idx is return point
-            if (packet.idx == _total-1) {
+            if (packet.idx == _total()-1) {
                 // the is the loop closure point - send the first point again
                 fencepoint_offset = 0;
             } else {
@@ -1472,7 +1472,7 @@ AC_PolyFence_loader::FenceIndex *AC_PolyFence_loader::get_or_create_include_fenc
     if (inclusion != nullptr) {
         return inclusion;
     }
-    if (_total < 5) {
+    if (_total() < 5) {
         return nullptr;
     }
     if (!write_type_to_storage(_eos_offset, AC_PolyFenceType::POLYGON_INCLUSION)) {
@@ -1508,17 +1508,17 @@ void AC_PolyFence_loader::handle_msg_fence_point(GCS_MAVLINK &link, const mavlin
     mavlink_fence_point_t packet;
     mavlink_msg_fence_point_decode(&msg, &packet);
 
-    if (_total != 0 && _total < 5) {
+    if (_total() != 0 && _total() < 5) {
         link.send_text(MAV_SEVERITY_WARNING, "Invalid FENCE_TOTAL");
         return;
     }
 
-    if (packet.count != _total) {
+    if (packet.count != _total()) {
         link.send_text(MAV_SEVERITY_WARNING, "Invalid fence point, bad count (%u vs %u)", packet.count, _total.get());
         return;
     }
 
-    if (packet.idx >= _total) {
+    if (packet.idx >= _total()) {
         // this is a protocol failure
         link.send_text(MAV_SEVERITY_WARNING, "Invalid fence point, index past total (%u >= %u)", packet.idx, _total.get());
         return;
@@ -1559,7 +1559,7 @@ void AC_PolyFence_loader::handle_msg_fence_point(GCS_MAVLINK &link, const mavlin
             link.send_text(MAV_SEVERITY_WARNING, "PolyFence: storage write failed");
             return;
         }
-    } else if (packet.idx == _total-1) {
+    } else if (packet.idx == _total()-1) {
         /* this is the fence closing point. We use this to set the vertex
            count of the inclusion fence
         */
@@ -1675,9 +1675,9 @@ void AC_PolyFence_loader::update()
 {
 #if AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
     // if an older GCS sets the fence point count to zero then clear the fence
-    if (_old_total != _total) {
-        _old_total = _total;
-        if (_total == 0 && _eeprom_fence_count) {
+    if (_old_total != _total()) {
+        _old_total = _total();
+        if (_total() == 0 && _eeprom_fence_count) {
             if (!format()) {
                 // we are in all sorts of trouble
                 return;

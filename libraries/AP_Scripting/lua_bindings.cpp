@@ -791,7 +791,7 @@ int lua_serial_find_simulated_device(lua_State *L) {
     AP_Scripting_SerialDevice::Port *device_stream = nullptr;
 
     for (auto &port : scripting->_serialdevice.ports) {
-        if (port.state.protocol == protocol) {
+        if (port.state.protocol() == protocol) {
             if (instance-- == 0) {
                 device_stream = &port;
                 break;
@@ -799,7 +799,7 @@ int lua_serial_find_simulated_device(lua_State *L) {
         }
     }
 
-    if (!scripting->_serialdevice.enable || device_stream == nullptr) {
+    if (!scripting->_serialdevice.enable() || device_stream == nullptr) {
         // serial devices as a whole are disabled, or port not found
         return 0;
     }

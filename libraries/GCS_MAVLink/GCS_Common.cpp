@@ -162,7 +162,7 @@ bool GCS_MAVLINK::init(uint8_t instance)
     // "private" or not, and whether to ignore streamrate sets via
     // REQUEST_DATA_STREAM.  We moved that into the MAVn_OPTIONS, this
     // is the conversion:
-    if (!options_were_converted) {
+    if (!options_were_converted()) {
         auto &sm = AP::serialmanager();
         options_were_converted.set_and_save(1);
         if (_port->option_is_set(AP_HAL::UARTDriver::Option::OPTION_MAVLINK_NO_FORWARD_old)) {
@@ -2725,7 +2725,7 @@ void GCS::send_message(enum ap_message id)
 void GCS::update_send()
 {
     // cope with changes to mavlink system ID parameter
-    mavlink_system.sysid = sysid;
+    mavlink_system.sysid = sysid();
 
     update_send_has_been_called = true;
 

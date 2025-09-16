@@ -758,7 +758,7 @@ NavEKF3::NavEKF3() :
 // Initialise the filter
 bool NavEKF3::InitialiseFilter(void)
 {
-    if (_enable == 0 || _imuMask == 0) {
+    if (_enable() == 0 || _imuMask() == 0) {
         return false;
     }
     const auto &ins = dal.ins();
@@ -803,7 +803,7 @@ bool NavEKF3::InitialiseFilter(void)
 
         // count IMUs from mask
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_imuMask & (1U<<i)) {
+            if (_imuMask() & (1U<<i)) {
                 coreSetupRequired[num_cores] = true;
                 coreImuIndex[num_cores] = i;
                 num_cores++;
@@ -854,7 +854,7 @@ bool NavEKF3::InitialiseFilter(void)
     resetCoreErrors();
 
     // Set the primary initially to be users selected primary
-    primary = uint8_t(_primary_core) < num_cores? _primary_core : 0;
+    primary = uint8_t(_primary_core()) < num_cores? _primary_core() : 0;
 
     // invalidate shared origin
     common_origin_valid = false;
@@ -941,7 +941,7 @@ void NavEKF3::UpdateFilter(void)
         runCoreSelection = (imuSampleTime_us - lastUnhealthyTime_us) > 1E7;
     }
 
-    const uint8_t user_primary = uint8_t(_primary_core) < num_cores? _primary_core : 0;
+    const uint8_t user_primary = uint8_t(_primary_core()) < num_cores? _primary_core() : 0;
     bool lane_switching_enabled = true;
     if (option_is_enabled(Option::ManualLaneSwitch)) {
         lane_switching_enabled = false;

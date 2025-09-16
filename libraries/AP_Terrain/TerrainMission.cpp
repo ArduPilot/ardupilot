@@ -41,12 +41,12 @@ void AP_Terrain::update_mission_data(void)
     }
 
     if (last_mission_change_ms != mission->last_change_time_ms() ||
-        last_mission_spacing != grid_spacing) {
+        last_mission_spacing != grid_spacing()) {
         // the mission has changed - start again
         next_mission_index = 1;
         next_mission_pos = 0;
         last_mission_change_ms = mission->last_change_time_ms();
-        last_mission_spacing = grid_spacing;
+        last_mission_spacing = grid_spacing();
     }
     if (next_mission_index == 0) {
         // nothing to do
@@ -126,11 +126,11 @@ void AP_Terrain::update_rally_data(void)
     }
 
     if (last_rally_change_ms != rally->last_change_time_ms() ||
-        last_rally_spacing != grid_spacing) {
+        last_rally_spacing != grid_spacing()) {
         // a rally point has changed - start again
         next_rally_index = 1;
         last_rally_change_ms = rally->last_change_time_ms();
-        last_rally_spacing = grid_spacing;
+        last_rally_spacing = grid_spacing();
     }
     if (next_rally_index == 0) {
         // nothing to do

@@ -49,16 +49,16 @@ const AP_Param::GroupInfo AP_InertialSensor::BatchSampler::var_info[] = {
 extern const AP_HAL::HAL& hal;
 void AP_InertialSensor::BatchSampler::init()
 {
-    if (_sensor_mask == 0) {
+    if (_sensor_mask() == 0) {
         return;
     }
-    if (_required_count <= 0) {
+    if (_required_count() <= 0) {
         return;
     }
 
-    _required_count.set(_required_count - (_required_count % 32)); // round down to nearest multiple of 32
+    _required_count.set(_required_count() - (_required_count() % 32)); // round down to nearest multiple of 32
 
-    _real_required_count = _required_count;
+    _real_required_count = _required_count();
 
     const uint32_t total_allocation = 3*_real_required_count*sizeof(uint16_t);
     GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "INS: alloc %u bytes for ISB (free=%u)", (unsigned int)total_allocation, (unsigned int)hal.util->available_memory());
@@ -84,7 +84,7 @@ void AP_InertialSensor::BatchSampler::init()
 
 void AP_InertialSensor::BatchSampler::periodic()
 {
-    if (_sensor_mask == 0) {
+    if (_sensor_mask() == 0) {
         return;
     }
 #if HAL_LOGGING_ENABLED
@@ -117,12 +117,12 @@ void AP_InertialSensor::BatchSampler::update_doing_sensor_rate_logging()
 
 void AP_InertialSensor::BatchSampler::rotate_to_next_sensor()
 {
-    if (_sensor_mask == 0) {
+    if (_sensor_mask() == 0) {
         // should not have been called
         return;
     }
-    if ((1U<<instance) > (uint8_t)_sensor_mask) {
-        // should only ever happen if user resets _sensor_mask
+    if ((1U<<instance) > (uint8_t)_sensor_mask()) {
+        // should only ever happen if user resets _sensor_mask()
         instance = 0;
         post_filter = false;
     }
@@ -147,7 +147,7 @@ void AP_InertialSensor::BatchSampler::rotate_to_next_sensor()
     // find next backend instance to log:
     bool haveinstance = false;
     for (uint8_t i=instance+1; i<_count; i++) {
-        if (_sensor_mask & (1U<<i)) {
+        if (_sensor_mask() & (1U<<i)) {
             instance = i;
             haveinstance = true;
             break;
@@ -155,7 +155,7 @@ void AP_InertialSensor::BatchSampler::rotate_to_next_sensor()
     }
     if (!haveinstance) {
         for (uint8_t i=0; i<=instance; i++) {
-            if (_sensor_mask & (1U<<i)) {
+            if (_sensor_mask() & (1U<<i)) {
                 instance = i;
                 haveinstance = true;
                 post_filter = !post_filter;
@@ -183,14 +183,14 @@ void AP_InertialSensor::BatchSampler::push_data_to_log()
     if (!initialised) {
         return;
     }
-    if (_sensor_mask == 0) {
+    if (_sensor_mask() == 0) {
         return;
     }
-    if (data_write_offset - data_read_offset < samples_per_msg) {
+    if (data_write_offset - data_read_offset < samples_per_msg()) {
         // insuffucient data to pack a packet
         return;
     }
-    if (AP_HAL::millis() - last_sent_ms < (uint16_t)push_interval_ms) {
+    if (AP_HAL::millis() - last_sent_ms < (uint16_t)push_interval_ms()) {
         // avoid flooding AP_Logger's buffer
         return;
     }
@@ -229,7 +229,7 @@ void AP_InertialSensor::BatchSampler::push_data_to_log()
         return;
     }
 
-    data_read_offset += samples_per_msg;
+    data_read_offset += samples_per_msg();
     last_sent_ms = AP_HAL::millis();
     if (data_read_offset >= _real_required_count) {
         // that was the last one.  Clean up:
@@ -244,7 +244,7 @@ void AP_InertialSensor::BatchSampler::push_data_to_log()
 
 bool AP_InertialSensor::BatchSampler::should_log(uint8_t _instance, IMU_SENSOR_TYPE _type)
 {
-    if (_sensor_mask == 0) {
+    if (_sensor_mask() == 0) {
         return false;
     }
     if (!initialised) {

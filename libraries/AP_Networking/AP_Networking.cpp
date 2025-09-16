@@ -123,7 +123,7 @@ AP_Networking::AP_Networking(void)
  */
 void AP_Networking::init()
 {
-    if (!param.enabled || backend != nullptr) {
+    if (!param.enabled() || backend != nullptr) {
         return;
     }
 

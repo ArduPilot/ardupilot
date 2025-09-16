@@ -260,16 +260,16 @@ bool SLCAN::CANIface::init_passthrough(uint8_t i)
 {
     // we setup undelying can iface here which we use for passthrough
     if (initialized_ ||
-        _slcan_can_port <= 0 ||
-        _slcan_can_port != i+1) {
+        _slcan_can_port() <= 0 ||
+        _slcan_can_port() != i+1) {
         return false;
     }
 
     _can_iface = hal.can[i];
-    _iface_num = _slcan_can_port - 1;
+    _iface_num = _slcan_can_port() - 1;
     _prev_ser_port = -1;
 #if HAL_CANMANAGER_ENABLED
-    AP::can().log_text(AP_CANManager::LOG_INFO, LOG_TAG, "Setting SLCAN Passthrough for CAN%d\n", _slcan_can_port - 1);
+    AP::can().log_text(AP_CANManager::LOG_INFO, LOG_TAG, "Setting SLCAN Passthrough for CAN%d\n", _slcan_can_port() - 1);
 #endif
     return true;
 }
@@ -515,15 +515,15 @@ void SLCAN::CANIface::update_slcan_port()
             return;
         }
     }
-    if (_prev_ser_port != _slcan_ser_port) {
+    if (_prev_ser_port != _slcan_ser_port()) {
         if (!_slcan_start_req) {
             _slcan_start_req_time = AP_HAL::millis();
             _slcan_start_req = true;
         }
-        if (((AP_HAL::millis() - _slcan_start_req_time) < ((uint32_t)_slcan_start_delay*1000))) {
+        if (((AP_HAL::millis() - _slcan_start_req_time) < ((uint32_t)_slcan_start_delay()*1000))) {
             return;
         }
-        auto new_port = AP::serialmanager().get_serial_by_id(_slcan_ser_port);
+        auto new_port = AP::serialmanager().get_serial_by_id(_slcan_ser_port());
         if (new_port == nullptr) {
             _slcan_ser_port.set_and_save(-1);
             return;
@@ -531,15 +531,15 @@ void SLCAN::CANIface::update_slcan_port()
         _port = new_port;
         _port->lock_port(_serial_lock_key, _serial_lock_key);
         _enabled = true;
-        _prev_ser_port = _slcan_ser_port;
+        _prev_ser_port = _slcan_ser_port();
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CANManager: Starting SLCAN Passthrough on Serial %d with CAN%d", _slcan_ser_port.get(), _iface_num);
         _last_had_activity = AP_HAL::millis();
     }
     if (!is_enabled()) {
         return;
     }
-    if (((AP_HAL::millis() - _last_had_activity) > ((uint32_t)_slcan_timeout*1000)) &&
-        (uint32_t)_slcan_timeout != 0) {
+    if (((AP_HAL::millis() - _last_had_activity) > ((uint32_t)_slcan_timeout()*1000)) &&
+        (uint32_t)_slcan_timeout() != 0) {
         _port->lock_port(0, 0);
         _enabled = false;
         _slcan_ser_port.set_and_save(-1);

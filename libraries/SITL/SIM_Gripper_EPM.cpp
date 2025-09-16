@@ -95,7 +95,7 @@ void Gripper_EPM::update_from_demand()
 
 void Gripper_EPM::update(const struct sitl_input &input)
 {
-    const int16_t gripper_pwm = gripper_emp_servo_pin >= 1 ? input.servos[gripper_emp_servo_pin-1] : -1;
+    const int16_t gripper_pwm = gripper_emp_servo_pin() >= 1 ? input.servos[gripper_emp_servo_pin()-1] : -1;
 
     update_servobased(gripper_pwm);
 

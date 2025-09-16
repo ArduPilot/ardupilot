@@ -86,11 +86,11 @@ bool AP_Torqeedo_TQBus::init_internals()
 
     // if using tiller connection set on/off pin for 0.5 sec to turn on battery
     if (get_type() == AP_Torqeedo::ConnectionType::TYPE_TILLER) {
-        if (_params.pin_onoff > -1) {
-            hal.gpio->pinMode(_params.pin_onoff, HAL_GPIO_OUTPUT);
-            hal.gpio->write(_params.pin_onoff, 1);
+        if (_params.pin_onoff() > -1) {
+            hal.gpio->pinMode(_params.pin_onoff(), HAL_GPIO_OUTPUT);
+            hal.gpio->write(_params.pin_onoff(), 1);
             hal.scheduler->delay(500);
-            hal.gpio->write(_params.pin_onoff, 0);
+            hal.gpio->write(_params.pin_onoff(), 0);
         } else {
             // use serial port's RTS pin to turn on battery
             _uart->set_RTS_pin(true);
@@ -100,9 +100,9 @@ bool AP_Torqeedo_TQBus::init_internals()
     }
 
     // initialise RS485 DE pin (when high, allows send to motor)
-    if (_params.pin_de > -1) {
-        hal.gpio->pinMode(_params.pin_de, HAL_GPIO_OUTPUT);
-        hal.gpio->write(_params.pin_de, 0);
+    if (_params.pin_de() > -1) {
+        hal.gpio->pinMode(_params.pin_de(), HAL_GPIO_OUTPUT);
+        hal.gpio->write(_params.pin_de(), 0);
     } else {
         _uart->set_CTS_pin(false);
     }
@@ -708,8 +708,8 @@ void AP_Torqeedo_TQBus::parse_message()
 void AP_Torqeedo_TQBus::send_start()
 {
     // set gpio pin or serial port's CTS pin
-    if (_params.pin_de > -1) {
-        hal.gpio->write(_params.pin_de, 1);
+    if (_params.pin_de() > -1) {
+        hal.gpio->write(_params.pin_de(), 1);
     } else {
         _uart->set_CTS_pin(true);
     }
@@ -730,8 +730,8 @@ void AP_Torqeedo_TQBus::check_for_send_end()
     _send_delay_us = 0;
 
     // unset gpio or serial port's CTS pin
-    if (_params.pin_de > -1) {
-        hal.gpio->write(_params.pin_de, 0);
+    if (_params.pin_de() > -1) {
+        hal.gpio->write(_params.pin_de(), 0);
     } else {
         _uart->set_CTS_pin(false);
     }
@@ -886,7 +886,7 @@ void AP_Torqeedo_TQBus::send_motor_speed_cmd()
 
     // update message if using motor connection
     if (get_type() == AP_Torqeedo::ConnectionType::TYPE_MOTOR) {
-        const uint8_t motor_power = (uint8_t)constrain_int16(_params.motor_power, 0, 100);
+        const uint8_t motor_power = (uint8_t)constrain_int16(_params.motor_power(), 0, 100);
         mot_speed_cmd_buff[0] = (uint8_t)MsgAddress::MOTOR;
         mot_speed_cmd_buff[1] = (uint8_t)MotorMsgId::DRIVE;
         mot_speed_cmd_buff[2] = (mot_speed_limited == 0 ? 0 : 0x01) | (_motor_clear_error ? 0x04 : 0);  // 1:enable motor, 2:fast off, 4:clear error

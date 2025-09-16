@@ -90,21 +90,21 @@ void AP_TemperatureSensor_Backend::update_external_libraries(const float tempera
 #if HAL_WITH_ESC_TELEM
         case AP_TemperatureSensor_Params::Source::ESC:
             t.temperature_cdeg = temperature * 100;
-            update_telem_data(_params.source_id-1, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE_EXTERNAL);
+            update_telem_data(_params.source_id()-1, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE_EXTERNAL);
             break;
 
         case AP_TemperatureSensor_Params::Source::Motor:
             t.motor_temp_cdeg = temperature * 100;
-            update_telem_data(_params.source_id-1, t, AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE_EXTERNAL);
+            update_telem_data(_params.source_id()-1, t, AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE_EXTERNAL);
             break;
 #endif
 
 #if AP_BATTERY_ENABLED
         case AP_TemperatureSensor_Params::Source::Battery_Index:
-            AP::battery().set_temperature(temperature, _params.source_id-1);
+            AP::battery().set_temperature(temperature, _params.source_id()-1);
             break;
         case AP_TemperatureSensor_Params::Source::Battery_ID_SerialNumber:
-            AP::battery().set_temperature_by_serial_number(temperature, _params.source_id);
+            AP::battery().set_temperature_by_serial_number(temperature, _params.source_id());
             break;
 #endif
         case AP_TemperatureSensor_Params::Source::DroneCAN:

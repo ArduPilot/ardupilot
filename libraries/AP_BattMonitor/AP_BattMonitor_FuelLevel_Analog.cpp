@@ -98,7 +98,7 @@ AP_BattMonitor_FuelLevel_Analog::AP_BattMonitor_FuelLevel_Analog(AP_BattMonitor 
     AP_Param::setup_object_defaults(this, var_info);
     _state.var_info = var_info;
 
-    _analog_source = hal.analogin->channel(_pin);
+    _analog_source = hal.analogin->channel(_pin());
 
     // create a low pass filter
     // use a pole at 0.3 Hz if the filter is not being used
@@ -114,7 +114,7 @@ void AP_BattMonitor_FuelLevel_Analog::read()
         return;
     }
 
-    if (!_analog_source->set_pin(_pin)) {
+    if (!_analog_source->set_pin(_pin())) {
         _state.healthy = false;
         return;
     }
@@ -149,7 +149,7 @@ void AP_BattMonitor_FuelLevel_Analog::read()
     const float fuel_level_used_ratio = 1.0 - fuel_level_ratio;
 
     // map consumed_mah to consumed millilitres
-    _state.consumed_mah = fuel_level_used_ratio * _params._pack_capacity;
+    _state.consumed_mah = fuel_level_used_ratio * _params._pack_capacity();
 
     _state.current_amps = 0;   
 

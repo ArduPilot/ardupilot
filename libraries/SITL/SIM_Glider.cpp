@@ -357,7 +357,7 @@ void Glider::update(const struct sitl_input &input)
         gyro.zero();
         dcm.from_euler(0.0f, radians(-80.0f), radians(home_yaw));
         use_smoothing = true;
-        adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
+        adjust_frame_time(constrain_float(sitl->loop_rate_hz(), rate_hz-1, rate_hz+1));
     } else {
         update_dynamics(rot_accel);
     }

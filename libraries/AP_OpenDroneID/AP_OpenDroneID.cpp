@@ -102,12 +102,12 @@ AP_OpenDroneID::AP_OpenDroneID()
 
 void AP_OpenDroneID::init()
 {
-    if (_enable == 0) {
+    if (_enable() == 0) {
         return;
     }
 
     load_UAS_ID_from_persistent_memory();
-    _chan = mavlink_channel_t(gcs().get_channel_from_port_number(_mav_port));
+    _chan = mavlink_channel_t(gcs().get_channel_from_port_number(_mav_port()));
     _initialised = true;
 }
 
@@ -149,7 +149,7 @@ void AP_OpenDroneID::set_basic_id() {
 void AP_OpenDroneID::get_persistent_params(ExpandingString &str) const
 {
     if ((pkt_basic_id.id_type == MAV_ODID_ID_TYPE_SERIAL_NUMBER)
-        && (_options & LockUASIDOnFirstBasicIDRx)
+        && (_options() & LockUASIDOnFirstBasicIDRx)
         && id_len == 0) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "OpenDroneID: ID is locked as %s", pkt_basic_id.uas_id);
         str.printf("DID_UAS_ID=%s\nDID_UAS_ID_TYPE=%u\nDID_UA_TYPE=%u\n", pkt_basic_id.uas_id, pkt_basic_id.id_type, pkt_basic_id.ua_type);
@@ -166,7 +166,7 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
         return true;
     }
 
-    if(_enable == 0) {
+    if(_enable() == 0) {
         strncpy(failmsg, "DID_ENABLE must be 1", failmsg_len);
         return false;
     }
@@ -206,12 +206,12 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
 
 void AP_OpenDroneID::update()
 {
-    if (_enable == 0) {
+    if (_enable() == 0) {
         return;
     }
 
     if ((pkt_basic_id.id_type == MAV_ODID_ID_TYPE_SERIAL_NUMBER)
-        && (_options & LockUASIDOnFirstBasicIDRx)
+        && (_options() & LockUASIDOnFirstBasicIDRx)
         && id_len == 0
         && !bootloader_flashed) {
         hal.util->flash_bootloader();
@@ -238,7 +238,7 @@ void AP_OpenDroneID::update()
         if (dronecan == nullptr) {
             continue;
         }
-        if (dronecan->get_driver_index()+1 != _can_driver) {
+        if (dronecan->get_driver_index()+1 != _can_driver()) {
             continue;
         }
         // send messages
@@ -293,7 +293,7 @@ void AP_OpenDroneID::send_static_out()
     const uint32_t msg_spacing_ms = _mavlink_static_period_ms / 4;
     if (now_ms - last_msg_send_ms >= msg_spacing_ms) {
         // allow update of channel during setup, this makes it easy to debug with a GCS
-        _chan = mavlink_channel_t(gcs().get_channel_from_port_number(_mav_port));
+        _chan = mavlink_channel_t(gcs().get_channel_from_port_number(_mav_port()));
         bool sent_ok = false;
         switch (next_msg_to_send) {
         case NEXT_MSG_BASIC_ID:

@@ -67,7 +67,7 @@ uint8_t RGBLed::get_brightness(void) const
 {
     uint8_t brightness = _led_bright;
 
-    switch (pNotify->_rgb_led_brightness) {
+    switch (pNotify->_rgb_led_brightness()) {
     case RGB_LED_OFF:
         brightness = _led_off;
         break;

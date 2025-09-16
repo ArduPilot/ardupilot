@@ -55,7 +55,7 @@ AP_Proximity_DroneCAN* AP_Proximity_DroneCAN::get_dronecan_backend(AP_DroneCAN* 
     //Scan through the proximity type params to find DroneCAN with matching address.
     for (uint8_t i = 0; i < AP_PROXIMITY_MAX_INSTANCES; i++) {
         if ((AP_Proximity::Type)prx->params[i].type.get() == AP_Proximity::Type::DroneCAN &&
-            prx->params[i].address == address) {
+            prx->params[i].address() == address) {
             driver = (AP_Proximity_DroneCAN*)prx->drivers[i];
         }
         //Double check if the driver was initialised as DroneCAN Type
@@ -74,7 +74,7 @@ AP_Proximity_DroneCAN* AP_Proximity_DroneCAN::get_dronecan_backend(AP_DroneCAN* 
     if (create_new) {
         for (uint8_t i = 0; i < AP_PROXIMITY_MAX_INSTANCES; i++) {
             if ((AP_Proximity::Type)prx->params[i].type.get() == AP_Proximity::Type::DroneCAN &&
-                prx->params[i].address == address) {
+                prx->params[i].address() == address) {
                 WITH_SEMAPHORE(prx->detect_sem);
                 if (prx->drivers[i] != nullptr) {
                     //we probably initialised this driver as something else, reboot is required for setting

@@ -8,7 +8,7 @@
 void AP_Vehicle::load_parameters(AP_Int16 &format_version, const uint16_t expected_format_version)
 {
     if (!format_version.load() ||
-        format_version != expected_format_version) {
+        format_version() != expected_format_version) {
 
         // erase all parameters
         hal.console->printf("Firmware change: erasing EEPROM...\n");

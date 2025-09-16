@@ -202,13 +202,13 @@ void AP_OpticalFlow::update(void)
         if (_calibrator->update()) {
             // apply new calibration values
             const Vector2f new_scaling = _calibrator->get_scalars();
-            const float flow_scalerx_as_multiplier = (1.0 + (_flowScalerX * 0.001)) * new_scaling.x;
-            const float flow_scalery_as_multiplier = (1.0 + (_flowScalerY * 0.001)) * new_scaling.y;
+            const float flow_scalerx_as_multiplier = (1.0 + (_flowScalerX() * 0.001)) * new_scaling.x;
+            const float flow_scalery_as_multiplier = (1.0 + (_flowScalerY() * 0.001)) * new_scaling.y;
             _flowScalerX.set_and_save_ifchanged((flow_scalerx_as_multiplier - 1.0) * 1000.0);
             _flowScalerY.set_and_save_ifchanged((flow_scalery_as_multiplier - 1.0) * 1000.0);
             _flowScalerX.notify();
             _flowScalerY.notify();
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "FlowCal: FLOW_FXSCALER=%d, FLOW_FYSCALER=%d", (int)_flowScalerX, (int)_flowScalerY);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "FlowCal: FLOW_FXSCALER=%d, FLOW_FYSCALER=%d", (int)_flowScalerX(), (int)_flowScalerY());
         }
     }
 #endif

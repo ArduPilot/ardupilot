@@ -51,16 +51,16 @@ bool AP_RangeFinder_HC_SR04::check_pins()
 
 void AP_RangeFinder_HC_SR04::check_trigger_pin()
 {
-    if (params.stop_pin == trigger_pin) {
+    if (params.stop_pin() == trigger_pin) {
         // no change
         return;
     }
-    trigger_pin = params.stop_pin;
+    trigger_pin = params.stop_pin();
 }
 
 bool AP_RangeFinder_HC_SR04::check_echo_pin()
 {
-    return pwm_source.set_pin(params.pin, "HC_SR04");
+    return pwm_source.set_pin(params.pin(), "HC_SR04");
 }
 
 
@@ -72,10 +72,10 @@ bool AP_RangeFinder_HC_SR04::check_echo_pin()
 */
 bool AP_RangeFinder_HC_SR04::detect(AP_RangeFinder_Params &_params)
 {
-    if (_params.pin == -1) {
+    if (_params.pin() == -1) {
         return false;
     }
-    if (_params.stop_pin == -1) {
+    if (_params.stop_pin() == -1) {
         return false;
     }
     return true;

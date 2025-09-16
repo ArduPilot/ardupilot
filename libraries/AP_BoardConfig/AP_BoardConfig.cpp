@@ -443,7 +443,7 @@ void AP_BoardConfig::init()
     AP::rtc().set_utc_usec(hal.util->get_hw_rtc(), AP_RTC::SOURCE_HW);
 #endif
 
-    if (_boot_delay_ms > 0) {
+    if (_boot_delay_ms() > 0) {
         uint16_t delay_ms = uint16_t(_boot_delay_ms.get());
         if (hal.util->was_watchdog_armed() && delay_ms > 200) {
             // don't delay a long time on watchdog reset, the pilot

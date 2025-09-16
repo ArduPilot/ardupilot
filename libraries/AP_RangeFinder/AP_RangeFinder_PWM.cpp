@@ -58,7 +58,7 @@ bool AP_RangeFinder_PWM::get_reading(float &reading_m)
 
 bool AP_RangeFinder_PWM::check_pin()
 {
-    if (!pwm_source.set_pin(params.pin, "RangeFinder_PWM")) {
+    if (!pwm_source.set_pin(params.pin(), "RangeFinder_PWM")) {
         return false;
     }
     return true;
@@ -66,13 +66,13 @@ bool AP_RangeFinder_PWM::check_pin()
 
 void AP_RangeFinder_PWM::check_stop_pin()
 {
-    if (params.stop_pin == last_stop_pin) {
+    if (params.stop_pin() == last_stop_pin) {
         return;
     }
 
-    hal.gpio->pinMode(params.stop_pin, HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(params.stop_pin(), HAL_GPIO_OUTPUT);
 
-    last_stop_pin = params.stop_pin;
+    last_stop_pin = params.stop_pin();
 }
 
 bool AP_RangeFinder_PWM::check_pins()
@@ -92,12 +92,12 @@ void AP_RangeFinder_PWM::update(void)
         return;
     }
 
-    if (params.stop_pin != -1) {
+    if (params.stop_pin() != -1) {
         const bool oor = out_of_range();
         if (oor) {
             if (!was_out_of_range) {
                 // we are above the power saving range. Disable the sensor
-                hal.gpio->write(params.stop_pin, false);
+                hal.gpio->write(params.stop_pin(), false);
                 set_status(RangeFinder::Status::NoData);
                 state.distance_m = 0.0f;
                 state.voltage_mv = 0;
@@ -107,7 +107,7 @@ void AP_RangeFinder_PWM::update(void)
         }
         // re-enable the sensor:
         if (!oor && was_out_of_range) {
-            hal.gpio->write(params.stop_pin, true);
+            hal.gpio->write(params.stop_pin(), true);
             was_out_of_range = oor;
         }
     }
@@ -130,7 +130,7 @@ void AP_RangeFinder_PWM::update(void)
 
 // return true if we are beyond the power saving range
 bool AP_RangeFinder_PWM::out_of_range(void) const {
-    return params.powersave_range > 0 && estimated_terrain_height > params.powersave_range;
+    return params.powersave_range() > 0 && estimated_terrain_height > params.powersave_range();
 }
 
 #endif  // AP_RANGEFINDER_PWM_ENABLED

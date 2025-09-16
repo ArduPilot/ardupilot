@@ -299,7 +299,7 @@ void AP_Baro::calibrate(bool save)
     }
 
 #if AP_SIM_BARO_ENABLED
-    if (AP::sitl()->baro_count == 0) {
+    if (AP::sitl()->baro_count() == 0) {
         return;
     }
 #endif
@@ -553,7 +553,7 @@ void AP_Baro::init(void)
     }
 #if !AP_TEST_DRONECAN_DRIVERS
     // use dronecan instances instead of SITL instances
-    for(uint8_t i = 0; i < sitl->baro_count; i++) {
+    for(uint8_t i = 0; i < sitl->baro_count(); i++) {
         ADD_BACKEND(NEW_NOTHROW AP_Baro_SITL(*this));
     }
 #endif
@@ -579,7 +579,7 @@ void AP_Baro::init(void)
 #if AP_SIM_BARO_ENABLED
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL && AP_BARO_MS5611_ENABLED
     ADD_BACKEND(AP_Baro_MS5611::probe(*this,
-                                      std::move(GET_I2C_DEVICE(_ext_bus, HAL_BARO_MS5611_I2C_ADDR))));
+                                      std::move(GET_I2C_DEVICE(_ext_bus(), HAL_BARO_MS5611_I2C_ADDR))));
 #endif
     // do not probe for other drivers when using simulation:
     return;
@@ -633,20 +633,20 @@ void AP_Baro::init(void)
 #endif  // defined(HAL_BARO_PROBE_LIST) / AP_FEATURE_BOARD_DETECT
 
     // can optionally have baro on I2C too
-    if (_ext_bus >= 0) {
+    if (_ext_bus() >= 0) {
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
 #if AP_BARO_MS5837_ENABLED
         ADD_BACKEND(AP_Baro_MS5837::probe(*this,
-                                          std::move(GET_I2C_DEVICE(_ext_bus, HAL_BARO_MS5837_I2C_ADDR))));
+                                          std::move(GET_I2C_DEVICE(_ext_bus(), HAL_BARO_MS5837_I2C_ADDR))));
 #endif
 #if AP_BARO_KELLERLD_ENABLED
         ADD_BACKEND(AP_Baro_KellerLD::probe(*this,
-                                          std::move(GET_I2C_DEVICE(_ext_bus, HAL_BARO_KELLERLD_I2C_ADDR))));
+                                          std::move(GET_I2C_DEVICE(_ext_bus(), HAL_BARO_KELLERLD_I2C_ADDR))));
 #endif
 #else
 #if AP_BARO_MS5611_ENABLED
         ADD_BACKEND(AP_Baro_MS5611::probe(*this,
-                                          std::move(GET_I2C_DEVICE(_ext_bus, HAL_BARO_MS5611_I2C_ADDR))));
+                                          std::move(GET_I2C_DEVICE(_ext_bus(), HAL_BARO_MS5611_I2C_ADDR))));
 #endif
 #endif
     }
@@ -669,7 +669,7 @@ void AP_Baro::init(void)
 
 #if !defined(HAL_BARO_ALLOW_INIT_NO_BARO) // most boards requires external baro
 #if AP_SIM_BARO_ENABLED
-    if (sitl->baro_count == 0) {
+    if (sitl->baro_count() == 0) {
         return;
     }
 #endif
@@ -703,7 +703,7 @@ void AP_Baro::_probe_i2c_barometers(void)
         mask |= hal.i2c_mgr->get_bus_mask_internal();
     }
     // if the user has set BARO_EXT_BUS then probe the bus given by that parameter
-    int8_t ext_bus = _ext_bus;
+    int8_t ext_bus = _ext_bus();
     if (ext_bus >= 0) {
         mask = 1U << (uint8_t)ext_bus;
     }
@@ -861,8 +861,8 @@ void AP_Baro::update(void)
     }
 
     // choose primary sensor
-    if (_primary_baro >= 0 && _primary_baro < _num_sensors && healthy(_primary_baro)) {
-        _primary = _primary_baro;
+    if (_primary_baro() >= 0 && _primary_baro() < _num_sensors && healthy(_primary_baro())) {
+        _primary = _primary_baro();
     } else {
         _primary = 0;
         for (uint8_t i=0; i<_num_sensors; i++) {

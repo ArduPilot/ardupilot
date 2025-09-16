@@ -126,7 +126,7 @@ void NavEKF3_core::FuseAirspeed()
         varInnovVtas = 1.0f/SK_TAS[0];
 
         // calculate the innovation consistency test ratio
-        tasTestRatio = sq(innovVtas) / (sq(MAX(0.01f * (ftype)frontend->_tasInnovGate, 1.0f)) * varInnovVtas);
+        tasTestRatio = sq(innovVtas) / (sq(MAX(0.01f * (ftype)frontend->_tasInnovGate(), 1.0f)) * varInnovVtas);
 
         // fail if the ratio is > 1, but don't fail if bad IMU data
         const bool isConsistent = (tasTestRatio < 1.0f) || badIMUdata;
@@ -238,7 +238,7 @@ void NavEKF3_core::SelectBetaDragFusion()
     bool is_dead_reckoning = ((imuSampleTime_ms - lastGpsPosPassTime_ms) > frontend->deadReckonDeclare_ms) &&
                              ((imuSampleTime_ms - lastVelPassTime_ms) > frontend->deadReckonDeclare_ms);
     const bool noYawSensor = !use_compass() && !using_noncompass_for_yaw();
-    const bool f_required = (noYawSensor && (frontend->_betaMask & (1<<1))) || is_dead_reckoning;
+    const bool f_required = (noYawSensor && (frontend->_betaMask() & (1<<1))) || is_dead_reckoning;
 
     // set true when sideslip fusion is feasible (requires zero sideslip assumption to be valid and use of wind states)
     const bool f_beta_feasible = (assume_zero_sideslip() && !inhibitWindStates);
@@ -246,7 +246,7 @@ void NavEKF3_core::SelectBetaDragFusion()
     // use synthetic sideslip fusion if feasible, required and enough time has lapsed since the last fusion
     if (f_beta_feasible && f_timeTrigger) {
         // unless air data is required to constrain drift, it is only used to update wind state estimates
-        if (f_required || (frontend->_betaMask & (1<<0))) {
+        if (f_required || (frontend->_betaMask() & (1<<0))) {
             // we are required to correct all states
             airDataFusionWindOnly = false;
         } else {

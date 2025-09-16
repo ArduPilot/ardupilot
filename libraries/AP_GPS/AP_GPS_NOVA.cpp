@@ -52,7 +52,7 @@ AP_GPS_NOVA::AP_GPS_NOVA(AP_GPS &_gps,
     nova_msg.header.data[1] = NOVA_PREAMBLE2;
     nova_msg.header.data[2] = NOVA_PREAMBLE3;
 
-    if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
+    if (gps._auto_config() != AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
         const char *init_str = _initialisation_blob[0];
         const char *init_str1 = _initialisation_blob[1];
 
@@ -73,7 +73,7 @@ const char* const AP_GPS_NOVA::_initialisation_blob[4] {
 bool
 AP_GPS_NOVA::read(void)
 {
-    if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
+    if (gps._auto_config() != AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
         const uint32_t now = AP_HAL::millis();
 
         if (_init_blob_index < (sizeof(_initialisation_blob) / sizeof(_initialisation_blob[0]))) {

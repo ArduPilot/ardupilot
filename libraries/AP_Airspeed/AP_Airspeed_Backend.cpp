@@ -37,7 +37,7 @@ AP_Airspeed_Backend::AP_Airspeed_Backend(AP_Airspeed &_frontend, uint8_t _instan
 int8_t AP_Airspeed_Backend::get_pin(void) const
 {
 #ifndef HAL_BUILD_AP_PERIPH
-    return frontend.param[instance].pin;
+    return frontend.param[instance].pin();
 #else
     return 0;
 #endif
@@ -50,7 +50,7 @@ float AP_Airspeed_Backend::get_psi_range(void) const
 
 uint8_t AP_Airspeed_Backend::get_bus(void) const
 {
-    return frontend.param[instance].bus;
+    return frontend.param[instance].bus();
 }
 
 bool AP_Airspeed_Backend::bus_is_configured(void) const

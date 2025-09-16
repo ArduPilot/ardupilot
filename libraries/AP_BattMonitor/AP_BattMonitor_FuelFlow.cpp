@@ -61,7 +61,7 @@ void AP_BattMonitor_FuelFlow::irq_handler(uint8_t pin, bool pin_state, uint32_t 
 */
 void AP_BattMonitor_FuelFlow::read()
 {
-    int8_t pin = _curr_pin;
+    int8_t pin = _curr_pin();
     if (last_pin != pin) {
         // detach from last pin
         if (last_pin != -1) {

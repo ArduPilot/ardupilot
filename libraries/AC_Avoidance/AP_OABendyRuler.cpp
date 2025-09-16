@@ -356,7 +356,7 @@ bool AP_OABendyRuler::search_vertical_path(const Location &current_loc, const Lo
 
 AP_OABendyRuler::OABendyType AP_OABendyRuler::get_type() const
 {
-    switch (_bendy_type) {
+    switch (_bendy_type()) {
         case (uint8_t)OABendyType::OA_BENDY_VERTICAL:
         #if VERTICAL_ENABLED 
             return OABendyType::OA_BENDY_VERTICAL;
@@ -391,7 +391,7 @@ bool AP_OABendyRuler::resist_bearing_change(const Location &destination, const L
     // check if we need to resist the change in direction of the vehicle. If we have a clear path to destination, go there any how  
     if (active && !dest_change && is_positive(_bendy_ratio)) { 
         // check the change in bearing between freshly calculated and previous stored BendyRuler bearing
-        if ((fabsf(wrap_180(prev_bearing-bearing_test)) > _bendy_angle) && (!is_equal(prev_bearing,FLT_MAX))) {
+        if ((fabsf(wrap_180(prev_bearing-bearing_test)) > _bendy_angle()) && (!is_equal(prev_bearing,FLT_MAX))) {
             // check margin in last bearing's direction
             Location test_loc_previous_bearing = current_loc;
             test_loc_previous_bearing.offset_bearing(wrap_180(prev_bearing), lookahead_step1_dist);

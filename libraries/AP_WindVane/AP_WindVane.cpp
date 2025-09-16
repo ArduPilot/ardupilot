@@ -184,13 +184,13 @@ AP_WindVane *AP_WindVane::get_singleton()
 // return true if wind vane is enabled
 bool AP_WindVane::enabled() const
 {
-    return _direction_type != WINDVANE_NONE;
+    return _direction_type() != WINDVANE_NONE;
 }
 
 // return true if wind speed is enabled
 bool AP_WindVane::wind_speed_enabled() const
 {
-    return (_speed_sensor_type != WINDSPEED_NONE);
+    return (_speed_sensor_type() != WINDSPEED_NONE);
 }
 
 // Initialize the Wind Vane object and prepare it for use
@@ -202,7 +202,7 @@ void AP_WindVane::init(const AP_SerialManager& serial_manager)
     }
 
     // wind direction
-    switch (_direction_type) {
+    switch (_direction_type()) {
         case WindVaneType::WINDVANE_NONE:
             // WindVane disabled
             return;
@@ -232,7 +232,7 @@ void AP_WindVane::init(const AP_SerialManager& serial_manager)
     }
 
     // wind speed
-    switch (_speed_sensor_type) {
+    switch (_speed_sensor_type()) {
         case Speed_type::WINDSPEED_NONE:
             break;
 #if AP_WINDVANE_AIRSPEED_ENABLED
@@ -249,7 +249,7 @@ void AP_WindVane::init(const AP_SerialManager& serial_manager)
         case Speed_type::WINDSPEED_SITL_TRUE:
         case Speed_type::WINDSPEED_SITL_APPARENT:
             // single driver does both speed and direction
-            if (_direction_type != _speed_sensor_type) {
+            if (_direction_type() != _speed_sensor_type()) {
                 _speed_driver = NEW_NOTHROW AP_WindVane_SITL(*this);
             } else {
                 _speed_driver = _direction_driver;
@@ -259,7 +259,7 @@ void AP_WindVane::init(const AP_SerialManager& serial_manager)
 #if AP_WINDVANE_NMEA_ENABLED
         case Speed_type::WINDSPEED_NMEA:
             // single driver does both speed and direction
-            if (_direction_type != WindVaneType::WINDVANE_NMEA) {
+            if (_direction_type() != WindVaneType::WINDVANE_NMEA) {
                 _speed_driver = NEW_NOTHROW AP_WindVane_NMEA(*this);
                 _speed_driver->init(serial_manager);
             } else {
@@ -288,15 +288,15 @@ void AP_WindVane::update()
 
     // calibrate if booted and disarmed
     if (!hal.util->get_soft_armed()) {
-        if (_calibration == 1 && have_direction) {
+        if (_calibration() == 1 && have_direction) {
             _direction_driver->calibrate();
-        } else if (_calibration == 2 && have_speed) {
+        } else if (_calibration() == 2 && have_speed) {
             _speed_driver->calibrate();
-        } else if (_calibration != 0) {
+        } else if (_calibration() != 0) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "WindVane: driver not found");
             _calibration.set_and_save(0);
         }
-    } else if (_calibration != 0) {
+    } else if (_calibration() != 0) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "WindVane: disarm for cal");
         _calibration.set_and_save(0);
     }
@@ -403,7 +403,7 @@ void AP_WindVane::record_home_heading()
 // to start direction calibration from mavlink or other
 bool AP_WindVane::start_direction_calibration()
 {
-    if (enabled() && (_calibration == 0)) {
+    if (enabled() && (_calibration() == 0)) {
         _calibration.set(1);
         return true;
     }
@@ -413,7 +413,7 @@ bool AP_WindVane::start_direction_calibration()
 // to start speed calibration from mavlink or other
 bool AP_WindVane::start_speed_calibration()
 {
-    if (enabled() && (_calibration == 0)) {
+    if (enabled() && (_calibration() == 0)) {
         _calibration.set(2);
         return true;
     }

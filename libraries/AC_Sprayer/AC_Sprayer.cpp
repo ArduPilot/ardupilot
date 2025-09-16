@@ -71,7 +71,7 @@ AC_Sprayer::AC_Sprayer()
     if (_pump_pct_1ms < 0.0f || _pump_pct_1ms > 100.0f) {
         _pump_pct_1ms.set_and_save(AC_SPRAYER_DEFAULT_PUMP_RATE);
     }
-    if (_spinner_pwm < 0) {
+    if (_spinner_pwm() < 0) {
         _spinner_pwm.set_and_save(AC_SPRAYER_DEFAULT_SPINNER_PWM);
     }
 
@@ -96,7 +96,7 @@ void AC_Sprayer::run(const bool activate)
 
     // set flag indicate whether spraying is permitted:
     // do not allow running to be set to true if we are currently not enabled
-    _flags.running = _enabled && activate;
+    _flags.running = _enabled() && activate;
 
     // turn off the pump and spinner servos if necessary
     if (!_flags.running) {
@@ -116,7 +116,7 @@ void AC_Sprayer::stop_spraying()
 void AC_Sprayer::update()
 {
     // exit immediately if we are disabled or shouldn't be running
-    if (!_enabled || !running()) {
+    if (!_enabled() || !running()) {
         run(false);
         return;
     }
@@ -184,10 +184,10 @@ void AC_Sprayer::update()
     // if spraying or testing update the pump servo position
     if (should_be_spraying) {
         float pos = ground_speed * _pump_pct_1ms;
-        pos = MAX(pos, 100 *_pump_min_pct); // ensure min pump speed
+        pos = MAX(pos, 100 *_pump_min_pct()); // ensure min pump speed
         pos = MIN(pos,10000); // clamp to range
         SRV_Channels::move_servo(SRV_Channel::k_sprayer_pump, pos, 0, 10000);
-        SRV_Channels::set_output_pwm(SRV_Channel::k_sprayer_spinner, _spinner_pwm);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_sprayer_spinner, _spinner_pwm());
         _flags.spraying = true;
     } else {
         stop_spraying();

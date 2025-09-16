@@ -38,13 +38,13 @@ void AP_TemperatureSensor_TSYS01::init()
 
 #if AP_TEMPERATURE_SENSOR_TSYS01_ENFORCE_KNOWN_VALID_I2C_ADDRESS
     // I2C Address: Default to using TSYS01_ADDR_CSB0 & Check I2C Address is Correct
-    if ((_params.bus_address != TSYS01_ADDR_CSB0) && (_params.bus_address != TSYS01_ADDR_CSB1)) {
+    if ((_params.bus_address() != TSYS01_ADDR_CSB0) && (_params.bus_address() != TSYS01_ADDR_CSB1)) {
         printf("%s wrong I2C addr of 0x%2X, setting to 0x%2X", name, (unsigned)_params.bus_address.get(), (unsigned)TSYS01_ADDR_CSB0);
         _params.bus_address.set(TSYS01_ADDR_CSB0);
     }
 #endif
 
-    _dev = hal.i2c_mgr->get_device_ptr(_params.bus, _params.bus_address);
+    _dev = hal.i2c_mgr->get_device_ptr(_params.bus(), _params.bus_address());
     if (!_dev) {
         printf("%s device is null!", name);
         return;

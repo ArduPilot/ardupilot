@@ -60,7 +60,7 @@ AP_EFI_ThrLin::AP_EFI_ThrLin(void)
  */
 float AP_EFI_ThrLin::linearise_throttle(float throttle_percent)
 {
-    if (!enable) {
+    if (!enable()) {
         return throttle_percent;
     }
     float ret = coefficient[0] * throttle_percent;

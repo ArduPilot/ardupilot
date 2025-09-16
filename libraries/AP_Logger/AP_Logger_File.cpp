@@ -74,7 +74,7 @@ void AP_Logger_File::ensure_log_directory_exists()
 void AP_Logger_File::Init()
 {
     // determine and limit file backend buffersize
-    uint32_t bufsize = _front._params.file_bufsize;
+    uint32_t bufsize = _front._params.file_bufsize();
     bufsize *= 1024;
 
     const uint32_t desired_bufsize = bufsize;
@@ -320,7 +320,7 @@ void AP_Logger_File::Prep_MinSpace()
         return;
     }
 
-    const int64_t target_free = (int64_t)_front._params.min_MB_free * MB_to_B;
+    const int64_t target_free = (int64_t)_front._params.min_MB_free() * MB_to_B;
 
     uint16_t log_to_remove = first_log_to_remove;
 
@@ -1000,7 +1000,7 @@ void AP_Logger_File::io_timer(void)
             stop_logging();
             _open_error_ms = AP_HAL::millis(); // prevent logging starting again for 5s
             last_io_operation = "";
-        } else if ((tnow - _last_write_ms)/1000U > unsigned(_front._params.file_timeout)) {
+        } else if ((tnow - _last_write_ms)/1000U > unsigned(_front._params.file_timeout())) {
             // if we can't write for LOG_FILE_TIMEOUT seconds we give up and close
             // the file. This allows us to cope with temporary write
             // failures caused by directory listing

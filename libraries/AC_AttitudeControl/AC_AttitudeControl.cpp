@@ -309,7 +309,7 @@ void AC_AttitudeControl::input_quaternion(Quaternion& attitude_desired_quat, Vec
     ang_vel_limit(ang_vel_body_rads, radians(_ang_vel_roll_max_degs), radians(_ang_vel_pitch_max_degs), radians(_ang_vel_yaw_max_degs));
     Vector3f ang_vel_target = attitude_desired_quat * ang_vel_body_rads;
 
-    if (_rate_bf_ff_enabled) {
+    if (_rate_bf_ff_enabled()) {
         Quaternion attitude_error_quat = _attitude_target.inverse() * attitude_desired_quat;
         Vector3f attitude_error_angle;
         attitude_error_quat.to_axis_angle(attitude_error_angle);
@@ -367,7 +367,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_rad(float e
     // Add roll trim to compensate tail rotor thrust in heli (will return zero on multirotors)
     euler_roll_angle_rad += get_roll_trim_rad();
 
-    if (_rate_bf_ff_enabled) {
+    if (_rate_bf_ff_enabled()) {
         // translate the roll pitch and yaw acceleration limits to the euler axis
         const Vector3f euler_accel = euler_accel_limit(_attitude_target, Vector3f{get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()});
 
@@ -431,7 +431,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_rad(float euler_roll_a
     euler_roll_angle_rad += get_roll_trim_rad();
 
     const float slew_yaw_max_rads = get_slew_yaw_max_rads();
-    if (_rate_bf_ff_enabled) {
+    if (_rate_bf_ff_enabled()) {
         // translate the roll pitch and yaw acceleration limits to the euler axis
         const Vector3f euler_accel = euler_accel_limit(_attitude_target, Vector3f{get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()});
 
@@ -500,7 +500,7 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw_rads(float euler_roll_r
     // calculate the attitude target euler angles
     _attitude_target.to_euler(_euler_angle_target_rad);
 
-    if (_rate_bf_ff_enabled) {
+    if (_rate_bf_ff_enabled()) {
         // translate the roll pitch and yaw acceleration limits to the euler axis
         const Vector3f euler_accel = euler_accel_limit(_attitude_target, Vector3f{get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()});
 
@@ -556,7 +556,7 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_rads(float roll_rate_bf_ra
     // calculate the attitude target euler angles
     _attitude_target.to_euler(_euler_angle_target_rad);
 
-    if (_rate_bf_ff_enabled) {
+    if (_rate_bf_ff_enabled()) {
         // Compute acceleration-limited body frame rates
         // When acceleration limiting is enabled, the input shaper constrains angular acceleration about the axis, slewing
         // the output rate towards the input rate.
@@ -795,7 +795,7 @@ void AC_AttitudeControl::input_thrust_vector_rate_heading_rads(const Vector3f& t
     float returned_thrust_vector_angle;
     thrust_vector_rotation_angles(thrust_vec_quat, _attitude_target, thrust_vec_correction_quat, attitude_error, returned_thrust_vector_angle, thrust_vector_diff_angle);
 
-    if (_rate_bf_ff_enabled) {
+    if (_rate_bf_ff_enabled()) {
         // When yaw acceleration limiting is enabled, the yaw input shaper constrains angular acceleration about the yaw axis, slewing
         // the output rate towards the input rate.
         _ang_vel_target_rads.x = input_shaping_angle(attitude_error.x, _input_tc, get_accel_roll_max_radss(), _ang_vel_target_rads.x, _dt_s);
@@ -853,7 +853,7 @@ void AC_AttitudeControl::input_thrust_vector_heading_rad(const Vector3f& thrust_
     // convert thrust vector and heading to a quaternion attitude
     const Quaternion desired_attitude_quat = attitude_from_thrust_vector(thrust_vector, heading_angle_rad);
 
-    if (_rate_bf_ff_enabled) {
+    if (_rate_bf_ff_enabled()) {
         // calculate the angle error in x and y.
         Vector3f attitude_error;
         float thrust_vector_diff_angle;
@@ -1096,7 +1096,7 @@ float AC_AttitudeControl::input_shaping_ang_vel(float target_ang_vel, float desi
 // This function can be used to predict the delay associated with angle requests.
 void AC_AttitudeControl::input_shaping_rate_predictor(const Vector2f &error_angle_rad, Vector2f& target_ang_vel_rads, float dt) const
 {
-    if (_rate_bf_ff_enabled) {
+    if (_rate_bf_ff_enabled()) {
         // translate the roll pitch and yaw acceleration limits to the euler axis
         target_ang_vel_rads.x = input_shaping_angle(wrap_PI(error_angle_rad.x), _input_tc, get_accel_roll_max_radss(), target_ang_vel_rads.x, dt);
         target_ang_vel_rads.y = input_shaping_angle(wrap_PI(error_angle_rad.y), _input_tc, get_accel_pitch_max_radss(), target_ang_vel_rads.y, dt);

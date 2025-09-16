@@ -44,7 +44,7 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcac
         return false;
     }
 
-    if (grid.spacing != grid_spacing) {
+    if (grid.spacing != grid_spacing()) {
         // an invalid grid
         return false;
     }
@@ -69,7 +69,7 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcac
     /*
       ask the GCS to send a set of 4x4 grids
      */
-    mavlink_msg_terrain_request_send(chan, grid.lat, grid.lon, grid_spacing, bitmap_mask & ~grid.bitmap);
+    mavlink_msg_terrain_request_send(chan, grid.lat, grid.lon, grid_spacing(), bitmap_mask & ~grid.bitmap);
     last_request_time_ms[chan] = AP_HAL::millis();
 
     return true;
@@ -167,7 +167,7 @@ void AP_Terrain::get_statistics(uint16_t &pending, uint16_t &loaded) const
     pending = 0;
     loaded = 0;
     for (uint16_t i=0; i<cache_size; i++) {
-        if (cache[i].grid.spacing != grid_spacing) {
+        if (cache[i].grid.spacing != grid_spacing()) {
             continue;
         }
         if (cache[i].state == GRID_CACHE_INVALID) {
@@ -225,7 +225,7 @@ void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc
     uint16_t spacing = 0;
     if (height_amsl(loc, terrain_height)) {
         // non-zero spacing indicates we have data
-        spacing = grid_spacing;
+        spacing = grid_spacing();
     } else if (extrapolate && have_current_loc_height) {
         // show the extrapolated height, so logs show what height is
         // being used for navigation
@@ -271,7 +271,7 @@ void AP_Terrain::handle_terrain_data(const mavlink_message_t &msg)
         if (TERRAIN_LATLON_EQUAL(cache[i].grid.lat,packet.lat) &&
             TERRAIN_LATLON_EQUAL(cache[i].grid.lon,packet.lon) &&
             cache[i].grid.spacing == packet.grid_spacing &&
-            grid_spacing == packet.grid_spacing &&
+            grid_spacing() == packet.grid_spacing &&
             packet.gridbit < 56) {
             break;
         }
@@ -307,7 +307,7 @@ void AP_Terrain::handle_terrain_data(const mavlink_message_t &msg)
         Location loc2;
         loc2.lat = grid.lat;
         loc2.lng = grid.lon;
-        loc2.offset(28*grid_spacing, 32*grid_spacing);
+        loc2.offset(28*grid_spacing(), 32*grid_spacing());
         hal.console->printf("--lat=%12.7f --lon=%12.7f %u\n",
                             loc2.lat*1.0e-7f,
                             loc2.lng*1.0e-7f,

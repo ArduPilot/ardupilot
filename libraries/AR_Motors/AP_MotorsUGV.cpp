@@ -159,7 +159,7 @@ void AP_MotorsUGV::init(uint8_t frtype)
 
 bool AP_MotorsUGV::get_legacy_relay_index(int8_t &index1, int8_t &index2, int8_t &index3, int8_t &index4) const
 {
-    if (_pwm_type != PWMType::BRUSHED_WITH_RELAY) {
+    if (_pwm_type() != PWMType::BRUSHED_WITH_RELAY) {
         // Relays only used if PWM type is set to brushed with relay
         return false;
     }
@@ -187,7 +187,7 @@ bool AP_MotorsUGV::get_legacy_relay_index(int8_t &index1, int8_t &index2, int8_t
 // setup output in case of main CPU failure
 void AP_MotorsUGV::setup_safety_output()
 {
-    if (_pwm_type == PWMType::BRUSHED_WITH_RELAY) {
+    if (_pwm_type() == PWMType::BRUSHED_WITH_RELAY) {
         // set trim to min to set duty cycle range (0 - 100%) to servo range
         // ignore servo revese flag, it is used by the relay
         SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttle, true);
@@ -247,7 +247,7 @@ void AP_MotorsUGV::set_throttle(float throttle)
     }
 
     // check throttle is between -_throttle_max and  +_throttle_max
-    _throttle = constrain_float(throttle, -_throttle_max, _throttle_max);
+    _throttle = constrain_float(throttle, -_throttle_max(), _throttle_max());
 }
 
 // set lateral input as a value from -100 to +100
@@ -297,11 +297,11 @@ void AP_MotorsUGV::set_mast_rotation(float mast_rotation)
 // same as private slew_limit_throttle method (see below) but does not update throttle state
 float AP_MotorsUGV::get_slew_limited_throttle(float throttle, float dt) const
 {
-    if (_slew_rate <= 0) {
+    if (_slew_rate() <= 0) {
         return throttle;
     }
 
-    const float throttle_change_max = static_cast<float>(_slew_rate) * dt;
+    const float throttle_change_max = static_cast<float>(_slew_rate()) * dt;
     return constrain_float(throttle, _throttle_prev - throttle_change_max, _throttle_prev + throttle_change_max);
 }
 
@@ -542,7 +542,7 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
     // Check relays are configured for brushed with relay outputs
 #if AP_RELAY_ENABLED
     AP_Relay*relay = AP::relay();
-    if ((_pwm_type == PWMType::BRUSHED_WITH_RELAY) && (relay != nullptr)) {
+    if ((_pwm_type() == PWMType::BRUSHED_WITH_RELAY) && (relay != nullptr)) {
         // If a output is configured its relay must be enabled
         struct RelayTable {
             bool output_assigned;
@@ -573,8 +573,8 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
 // sanity check parameters
 void AP_MotorsUGV::sanity_check_parameters()
 {
-    _throttle_min.set(constrain_int16(_throttle_min, 0, 20));
-    _throttle_max.set(constrain_int16(_throttle_max, 30, 100));
+    _throttle_min.set(constrain_int16(_throttle_min(), 0, 20));
+    _throttle_max.set(constrain_int16(_throttle_max(), 30, 100));
     _vector_angle_max.set(constrain_float(_vector_angle_max, 0.0f, 90.0f));
 }
 
@@ -593,7 +593,7 @@ void AP_MotorsUGV::setup_pwm_type()
         _motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channels::get_motor_function(i));
     }
 
-    switch (_pwm_type) {
+    switch (_pwm_type()) {
     case PWMType::ONESHOT:
         hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
         break;
@@ -603,7 +603,7 @@ void AP_MotorsUGV::setup_pwm_type()
     case PWMType::BRUSHED_WITH_RELAY:
     case PWMType::BRUSHED_BIPOLAR:
         hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
-        hal.rcout->set_freq(_motor_mask, uint16_t(_pwm_freq * 1000));
+        hal.rcout->set_freq(_motor_mask, uint16_t(_pwm_freq() * 1000));
         break;
     case PWMType::DSHOT150:
         hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT150);
@@ -782,7 +782,7 @@ void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering
         output_throttle(SRV_Channel::k_throttle, throttle);
     } else {
         // handle disarmed case
-        if (_disarm_disable_pwm) {
+        if (_disarm_disable_pwm()) {
             SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::ZERO_PWM);
         } else {
             SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::TRIM);
@@ -815,7 +815,7 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
 
     // handle simpler disarmed case
     if (!armed) {
-        if (_disarm_disable_pwm) {
+        if (_disarm_disable_pwm()) {
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::Limit::ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::Limit::ZERO_PWM);
         } else {
@@ -972,7 +972,7 @@ void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float
         }
     } else {
         // handle disarmed case
-        if (_disarm_disable_pwm) {
+        if (_disarm_disable_pwm()) {
             for (uint8_t i=0; i<_motors_num; i++) {
                 SRV_Channels::set_output_limit(SRV_Channels::get_motor_function(i), SRV_Channel::Limit::ZERO_PWM);
             }
@@ -1001,7 +1001,7 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Function function, float throttl
     // set relay if necessary
 #if AP_RELAY_ENABLED
     AP_Relay*relay = AP::relay();
-    if ((_pwm_type == PWMType::BRUSHED_WITH_RELAY) && (relay != nullptr)) {
+    if ((_pwm_type() == PWMType::BRUSHED_WITH_RELAY) && (relay != nullptr)) {
 
         // find the output channel, if not found return
         const SRV_Channel *out_chan = SRV_Channels::get_channel_for(function);
@@ -1104,8 +1104,8 @@ void AP_MotorsUGV::set_limits_from_input(bool armed, float steering, float throt
     // set limits based on inputs
     limit.steer_left |= !armed || (steering <= -4500.0f);
     limit.steer_right |= !armed || (steering >= 4500.0f);
-    limit.throttle_lower |= !armed || (throttle <= -_throttle_max);
-    limit.throttle_upper |= !armed || (throttle >= _throttle_max);
+    limit.throttle_lower |= !armed || (throttle <= -_throttle_max());
+    limit.throttle_upper |= !armed || (throttle >= _throttle_max());
 }
 
 // scale a throttle using the _throttle_min and _thrust_curve_expo parameters.  throttle should be in the range -100 to +100
@@ -1117,11 +1117,11 @@ float AP_MotorsUGV::get_scaled_throttle(float throttle) const
     }
 
     // scale using throttle_min
-    if (_throttle_min > 0) {
+    if (_throttle_min() > 0) {
         if (is_negative(throttle)) {
-            throttle = -_throttle_min + (throttle * ((100.0f - _throttle_min) * 0.01f));
+            throttle = -_throttle_min() + (throttle * ((100.0f - _throttle_min()) * 0.01f));
         } else {
-            throttle = _throttle_min + (throttle * ((100.0f - _throttle_min) * 0.01f));
+            throttle = _throttle_min() + (throttle * ((100.0f - _throttle_min()) * 0.01f));
         }
     }
 
@@ -1182,7 +1182,7 @@ bool AP_MotorsUGV::active() const
 // returns true if the configured PWM type is digital and should have fixed endpoints
 bool AP_MotorsUGV::is_digital_pwm_type() const
 {
-    switch (_pwm_type) {
+    switch (_pwm_type()) {
     case PWMType::DSHOT150:
     case PWMType::DSHOT300:
     case PWMType::DSHOT600:

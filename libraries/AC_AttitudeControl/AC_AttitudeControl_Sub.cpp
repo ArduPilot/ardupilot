@@ -377,7 +377,7 @@ void AC_AttitudeControl_Sub::set_throttle_out(float throttle_in, bool apply_angl
 // throttle value should be 0 ~ 1
 float AC_AttitudeControl_Sub::get_throttle_boosted(float throttle_in)
 {
-    if (!_angle_boost_enabled) {
+    if (!_angle_boost_enabled()) {
         _angle_boost = 0;
         return throttle_in;
     }

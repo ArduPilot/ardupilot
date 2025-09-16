@@ -38,10 +38,10 @@ void NavEKF2_core::controlFilterModes()
 uint8_t NavEKF2_core::effective_magCal(void) const
 {
     // force use of simple magnetic heading fusion for specified cores
-    if (frontend->_magMask & core_index) {
+    if (frontend->_magMask() & core_index) {
         return 2;
     } else {
-        return frontend->_magCal;
+        return frontend->_magCal();
     }
 }
 
@@ -160,12 +160,12 @@ void NavEKF2_core::setAidingMode()
         bool filterIsStable = tiltAlignComplete && yawAlignComplete && checkGyroCalStatus();
         // If GPS usage has been prohiited then we use flow aiding provided optical flow data is present
         // GPS aiding is the preferred option unless excluded by the user
-        bool canUseGPS = ((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && filterIsStable);
+        bool canUseGPS = ((frontend->_fusionModeGPS()) != 3 && readyToUseGPS() && filterIsStable);
         bool canUseRangeBeacon = readyToUseRangeBeacon() && filterIsStable;
         bool canUseExtNav = readyToUseExtNav();
         if(canUseGPS || canUseRangeBeacon || canUseExtNav) {
             PV_AidingMode = AID_ABSOLUTE;
-        } else if (optFlowDataPresent() && (frontend->_flowUse == FLOW_USE_NAV) && filterIsStable) {
+        } else if (optFlowDataPresent() && (frontend->_flowUse() == FLOW_USE_NAV) && filterIsStable) {
             PV_AidingMode = AID_RELATIVE;
         }
         }
@@ -178,7 +178,7 @@ void NavEKF2_core::setAidingMode()
         bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowFuseTime_ms) > 5000);
         // Enable switch to absolute position mode if GPS is available
         // If GPS is not available and flow fusion has timed out, then fall-back to no-aiding
-        if((frontend->_fusionModeGPS) != 3 && readyToUseGPS()) {
+        if((frontend->_fusionModeGPS()) != 3 && readyToUseGPS()) {
             PV_AidingMode = AID_ABSOLUTE;
         } else if (flowSensorTimeout || flowFusionTimeout) {
             PV_AidingMode = AID_NONE;
@@ -249,7 +249,7 @@ void NavEKF2_core::setAidingMode()
             tasTimeout = true;
             gpsNotAvailable = true;
         } else if (posAidLossCritical) {
-            if ((frontend->_flowUse == FLOW_USE_NAV) && optFlowDataPresent() && (imuSampleTime_ms - rngValidMeaTime_ms < 500)) {
+            if ((frontend->_flowUse() == FLOW_USE_NAV) && optFlowDataPresent() && (imuSampleTime_ms - rngValidMeaTime_ms < 500)) {
                 PV_AidingMode = AID_NONE;
             }
             // if the loss of position is critical, declare all sources of position aiding as being timed out
@@ -297,7 +297,7 @@ void NavEKF2_core::setAidingMode()
             break;
 
         case AID_ABSOLUTE: {
-            bool canUseGPS = ((frontend->_fusionModeGPS) != 3 && readyToUseGPS());
+            bool canUseGPS = ((frontend->_fusionModeGPS()) != 3 && readyToUseGPS());
             bool canUseRangeBeacon = readyToUseRangeBeacon();
             bool canUseExtNav = readyToUseExtNav();
             // We have commenced aiding and GPS usage is allowed
@@ -388,7 +388,7 @@ bool NavEKF2_core::optFlowDataPresent(void) const
 // return true if the filter to be ready to use gps
 bool NavEKF2_core::readyToUseGPS(void) const
 {
-    return validOrigin && tiltAlignComplete && yawAlignComplete && gpsGoodToAlign && (frontend->_fusionModeGPS != 3) && gpsDataToFuse;
+    return validOrigin && tiltAlignComplete && yawAlignComplete && gpsGoodToAlign && (frontend->_fusionModeGPS() != 3) && gpsDataToFuse;
 }
 
 // return true if the filter to be ready to use the beacon range measurements
@@ -498,7 +498,7 @@ void  NavEKF2_core::updateFilterStatus(void)
     bool gpsNavPossible = !gpsNotAvailable && gpsGoodToAlign && delAngBiasLearned;
     bool filterHealthy = healthy() && tiltAlignComplete && (yawAlignComplete || (!use_compass() && (PV_AidingMode == AID_NONE)));
     // If GPS height usage is specified, height is considered to be inaccurate until the GPS passes all checks
-    bool hgtNotAccurate = (frontend->_altSource == 2) && !validOrigin;
+    bool hgtNotAccurate = (frontend->_altSource() == 2) && !validOrigin;
 
     // set individual flags
     filterStatus.flags.attitude = !stateStruct.quat.is_nan() && filterHealthy;   // attitude valid (we need a better check)
@@ -526,7 +526,7 @@ void  NavEKF2_core::updateFilterStatus(void)
 
 void NavEKF2_core::runYawEstimatorPrediction()
 {
-    if (yawEstimator != nullptr && frontend->_fusionModeGPS <= 1) {
+    if (yawEstimator != nullptr && frontend->_fusionModeGPS() <= 1) {
         ftype trueAirspeed;
         if (is_positive(defaultAirSpeed) && assume_zero_sideslip()) {
             if (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 5000) {
@@ -544,7 +544,7 @@ void NavEKF2_core::runYawEstimatorPrediction()
 
 void NavEKF2_core::runYawEstimatorCorrection()
 {
-    if (yawEstimator != nullptr && frontend->_fusionModeGPS <= 1 && EKFGSF_run_filterbank) {
+    if (yawEstimator != nullptr && frontend->_fusionModeGPS() <= 1 && EKFGSF_run_filterbank) {
         if (gpsDataToFuse) {
             Vector2F gpsVelNE = Vector2F(gpsDataDelayed.vel.x, gpsDataDelayed.vel.y);
             ftype gpsVelAcc = fmaxF(gpsSpdAccuracy, ftype(frontend->_gpsHorizVelNoise));

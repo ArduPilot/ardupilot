@@ -118,8 +118,8 @@ void AP_AIS::update()
         }
         const char c = byte;
         if (decode(c)) {
-            const bool log_all = (_log_options & AIS_OPTIONS_LOG_ALL_RAW) != 0;
-            const bool log_unsupported = ((_log_options & AIS_OPTIONS_LOG_UNSUPPORTED_RAW) != 0) && !log_all; // only log unsupported if not logging all
+            const bool log_all = (_log_options() & AIS_OPTIONS_LOG_ALL_RAW) != 0;
+            const bool log_unsupported = ((_log_options() & AIS_OPTIONS_LOG_UNSUPPORTED_RAW) != 0) && !log_all; // only log unsupported if not logging all
 
             if (_incoming.total  > AIVDM_BUFFER_SIZE)  {
                 // no point in trying to decode it wont fit
@@ -234,7 +234,7 @@ void AP_AIS::update()
 
     // remove expired items from the list
     const uint32_t now =  AP_HAL::millis();
-    const uint32_t timeout = _time_out * 1000;
+    const uint32_t timeout = _time_out() * 1000;
     if (now < timeout) {
         return;
     }
@@ -403,7 +403,7 @@ bool AP_AIS::get_vessel_index(uint32_t mmsi, uint16_t &index, int32_t lat, int32
     }
 
     // no space in the list
-    if (list_size < _max_list) {
+    if (list_size < _max_list()) {
         // if we can try and expand
         if (_list.expand(1)) {
             index = list_size;
@@ -530,7 +530,7 @@ bool AP_AIS::decode_position_report(const char *payload, uint8_t type)
 
 #if HAL_LOGGING_ENABLED
     // log the raw infomation
-    if ((_log_options & AIS_OPTIONS_LOG_DECODED) != 0) {
+    if ((_log_options() & AIS_OPTIONS_LOG_DECODED) != 0) {
         const struct log_AIS_msg1 pkt{
             LOG_PACKET_HEADER_INIT(LOG_AIS_MSG1),
             time_us      : AP_HAL::micros64(),
@@ -657,7 +657,7 @@ bool AP_AIS::decode_base_station_report(const char *payload)
 
 #if HAL_LOGGING_ENABLED
     // log the raw infomation
-    if ((_log_options & AIS_OPTIONS_LOG_DECODED) != 0) {
+    if ((_log_options() & AIS_OPTIONS_LOG_DECODED) != 0) {
         struct log_AIS_msg4 pkt {
             LOG_PACKET_HEADER_INIT(LOG_AIS_MSG4),
             time_us     : AP_HAL::micros64(),
@@ -741,7 +741,7 @@ bool AP_AIS::decode_static_and_voyage_data(const char *payload)
 
 #if HAL_LOGGING_ENABLED
     // log the raw infomation
-    if ((_log_options & AIS_OPTIONS_LOG_DECODED) != 0) {
+    if ((_log_options() & AIS_OPTIONS_LOG_DECODED) != 0) {
         struct log_AIS_msg5 pkt {
             LOG_PACKET_HEADER_INIT(LOG_AIS_MSG5),
             time_us     : AP_HAL::micros64(),

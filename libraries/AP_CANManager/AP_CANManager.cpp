@@ -129,7 +129,7 @@ void AP_CANManager::init()
     }
 #endif
     // We only allocate log buffer only when under debug
-    if (_loglevel != AP_CANManager::LOG_NONE) {
+    if (_loglevel() != AP_CANManager::LOG_NONE) {
         _log_buf = NEW_NOTHROW char[LOG_BUFFER_SIZE];
         _log_pos = 0;
     }
@@ -144,7 +144,7 @@ void AP_CANManager::init()
     // Also allocate Driver objects, and add interfaces to them
     for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
         // Get associated Driver to the interface
-        uint8_t drv_num = _interfaces[i]._driver_number;
+        uint8_t drv_num = _interfaces[i]._driver_number();
         if (drv_num == 0 || drv_num > HAL_MAX_CAN_PROTOCOL_DRIVERS) {
             continue;
         }
@@ -170,13 +170,13 @@ void AP_CANManager::init()
 #if AP_CAN_SLCAN_ENABLED
         if (_slcan_interface.init_passthrough(i)) {
             // we have slcan bridge setup pass that on as can iface
-            can_initialised = hal_mutable.can[i]->init(_interfaces[i]._bitrate, _interfaces[i]._fdbitrate*1000000, AP_HAL::CANIface::NormalMode);
+            can_initialised = hal_mutable.can[i]->init(_interfaces[i]._bitrate(), _interfaces[i]._fdbitrate()*1000000, AP_HAL::CANIface::NormalMode);
             iface = &_slcan_interface;
         } else {
 #else
         if (true) {
 #endif
-            can_initialised = hal_mutable.can[i]->init(_interfaces[i]._bitrate, _interfaces[i]._fdbitrate*1000000, AP_HAL::CANIface::NormalMode);
+            can_initialised = hal_mutable.can[i]->init(_interfaces[i]._bitrate(), _interfaces[i]._fdbitrate()*1000000, AP_HAL::CANIface::NormalMode);
         }
 
         if (!can_initialised) {
@@ -249,7 +249,7 @@ void AP_CANManager::init()
         }
         bool enable_filter = false;
         for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
-            if (_interfaces[i]._driver_number == (drv_num+1) &&
+            if (_interfaces[i]._driver_number() == (drv_num+1) &&
                 hal_mutable.can[i] != nullptr &&
                 hal_mutable.can[i]->get_operating_mode() == AP_HAL::CANIface::FilteredMode) {
                 // Don't worry we don't enable Filters for Normal Ifaces under the driver
@@ -298,7 +298,7 @@ bool AP_CANManager::register_driver(AP_CAN::Protocol dtype, AP_CANDriver *driver
     AP_HAL::HAL& hal_mutable = AP_HAL::get_HAL_mutable();
 
     for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
-        uint8_t drv_num = _interfaces[i]._driver_number;
+        uint8_t drv_num = _interfaces[i]._driver_number();
         if (drv_num == 0 || drv_num > HAL_MAX_CAN_PROTOCOL_DRIVERS) {
             continue;
         }
@@ -347,7 +347,7 @@ bool AP_CANManager::register_11bit_driver(AP_CAN::Protocol dtype, CANSensor *sen
     WITH_SEMAPHORE(_sem);
 
     for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
-        uint8_t drv_num = _interfaces[i]._driver_number;
+        uint8_t drv_num = _interfaces[i]._driver_number();
         if (drv_num == 0 || drv_num > HAL_MAX_CAN_PROTOCOL_DRIVERS) {
             continue;
         }
@@ -374,7 +374,7 @@ void AP_CANManager::log_text(AP_CANManager::LogLevel loglevel, const char *tag, 
     if (_log_buf == nullptr) {
         return;
     }
-    if (loglevel > _loglevel) {
+    if (loglevel > _loglevel()) {
         return;
     }
     WITH_SEMAPHORE(_sem);

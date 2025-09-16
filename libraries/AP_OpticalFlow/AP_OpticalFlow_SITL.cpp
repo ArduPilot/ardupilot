@@ -28,13 +28,13 @@ void AP_OpticalFlow_SITL::update(void)
 {
     auto *_sitl = AP::sitl();
 
-    if (!_sitl->flow_enable) {
+    if (!_sitl->flow_enable()) {
         return;
     }
 
     // update at the requested rate
     uint32_t now = AP_HAL::millis();
-    if (now - last_flow_ms < 1000*(1.0f/_sitl->flow_rate)) {
+    if (now - last_flow_ms < 1000*(1.0f/_sitl->flow_rate())) {
         return;
     }
     last_flow_ms = now;
@@ -101,13 +101,13 @@ void AP_OpticalFlow_SITL::update(void)
 
     state = optflow_data[next_optflow_index];
 
-    if (_sitl->flow_delay != optflow_delay) {
+    if (_sitl->flow_delay() != optflow_delay) {
         // cope with updates to the delay control
-        if (_sitl->flow_delay > 0 &&
-            (uint8_t)(_sitl->flow_delay) > ARRAY_SIZE(optflow_data)) {
+        if (_sitl->flow_delay() > 0 &&
+            (uint8_t)(_sitl->flow_delay()) > ARRAY_SIZE(optflow_data)) {
             _sitl->flow_delay.set(ARRAY_SIZE(optflow_data));
         }
-        optflow_delay = _sitl->flow_delay;
+        optflow_delay = _sitl->flow_delay();
         for (uint8_t i=0; i<optflow_delay; i++) {
             optflow_data[i] = state;
         }

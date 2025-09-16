@@ -43,7 +43,7 @@ void AP_Logger_Block::Init(void)
         df_NumPages -= df_PagePerBlock;
 
         // determine and limit file backend buffersize
-        uint32_t bufsize = _front._params.file_bufsize;
+        uint32_t bufsize = _front._params.file_bufsize();
         if (bufsize > 64) {
             bufsize = 64;
         }

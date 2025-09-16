@@ -285,7 +285,7 @@ void NavEKF2_core::SelectMagFusion()
             // maintained by fusing declination as a synthesised observation
             // We also fuse declination if we are using the WMM tables
             if (PV_AidingMode != AID_ABSOLUTE ||
-                (frontend->_mag_ef_limit > 0 && have_table_earth_field)) {
+                (frontend->_mag_ef_limit() > 0 && have_table_earth_field)) {
                 FuseDeclination(0.34f);
             }
 
@@ -425,7 +425,7 @@ void NavEKF2_core::FuseMagnetometer()
 
     // calculate the innovation test ratios
     for (uint8_t i = 0; i<=2; i++) {
-        magTestRatio[i] = sq(innovMag[i]) / (sq(MAX(0.01f * (ftype)frontend->_magInnovGate, 1.0f)) * varInnovMag[i]);
+        magTestRatio[i] = sq(innovMag[i]) / (sq(MAX(0.01f * (ftype)frontend->_magInnovGate(), 1.0f)) * varInnovMag[i]);
     }
 
     // check the last values from all components and set magnetometer health accordingly
@@ -684,7 +684,7 @@ void NavEKF2_core::FuseMagnetometer()
             }
 
             // add table constraint here for faster convergence
-            if (have_table_earth_field && frontend->_mag_ef_limit > 0) {
+            if (have_table_earth_field && frontend->_mag_ef_limit() > 0) {
                 MagTableConstrain();
             }
 
@@ -899,7 +899,7 @@ void NavEKF2_core::fuseEulerYaw()
     }
 
     // calculate the innovation test ratio
-    yawTestRatio = sq(innovation) / (sq(MAX(0.01f * (ftype)frontend->_yawInnovGate, 1.0f)) * varInnov);
+    yawTestRatio = sq(innovation) / (sq(MAX(0.01f * (ftype)frontend->_yawInnovGate(), 1.0f)) * varInnov);
 
     // Declare the magnetometer unhealthy if the innovation test fails
     if (yawTestRatio > 1.0f) {
@@ -1162,8 +1162,8 @@ bool NavEKF2_core::EKFGSF_resetMainFilterYaw()
 {
     // Don't do a reset unless permitted by the EK2_GSF_USE_MASK and EKF2_GSF_RUN_MASK parameter masks
     if ((yawEstimator == nullptr)
-        || !(frontend->_gsfUseMask & (1U<<core_index))
-        || EKFGSF_yaw_reset_count >= frontend->_gsfResetMaxCount) {
+        || !(frontend->_gsfUseMask() & (1U<<core_index))
+        || EKFGSF_yaw_reset_count >= frontend->_gsfResetMaxCount()) {
         return false;
     };
 

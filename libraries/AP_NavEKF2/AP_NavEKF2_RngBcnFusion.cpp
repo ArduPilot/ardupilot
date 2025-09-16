@@ -153,7 +153,7 @@ void NavEKF2_core::FuseRngBcn()
         innovRngBcn = delta.length() - rngBcnDataDelayed.rng;
 
         // calculate the innovation consistency test ratio
-        rngBcnTestRatio = sq(innovRngBcn) / (sq(MAX(0.01f * (ftype)frontend->_rngBcnInnovGate, 1.0f)) * varInnovRngBcn);
+        rngBcnTestRatio = sq(innovRngBcn) / (sq(MAX(0.01f * (ftype)frontend->_rngBcnInnovGate(), 1.0f)) * varInnovRngBcn);
 
         // fail if the ratio is > 1, but don't fail if bad IMU data
         rngBcnHealth = ((rngBcnTestRatio < 1.0f) || badIMUdata);

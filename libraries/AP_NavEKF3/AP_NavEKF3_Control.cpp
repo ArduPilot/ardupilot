@@ -39,7 +39,7 @@ void NavEKF3_core::controlFilterModes()
 NavEKF3_core::MagCal NavEKF3_core::effective_magCal(void) const
 {
     // force use of simple magnetic heading fusion for specified cores
-    if (frontend->_magMask & core_index) {
+    if (frontend->_magMask() & core_index) {
         return MagCal::NEVER;
     }
 
@@ -542,7 +542,7 @@ bool NavEKF3_core::useRngFinder(void) const
 bool NavEKF3_core::readyToUseOptFlow(void) const
 {
     // ensure flow is used for navigation and not terrain alt estimation
-    if (frontend->_flowUse != FLOW_USE_NAV) {
+    if (frontend->_flowUse() != FLOW_USE_NAV) {
         return false;
     }
 
@@ -684,7 +684,7 @@ void NavEKF3_core::setEarthFieldFromLocation(const Location &loc)
     if (compass.have_scale_factor(magSelectIndex) &&
         compass.auto_declination_enabled()) {
         getEarthFieldTable(loc);
-        if (frontend->_mag_ef_limit > 0) {
+        if (frontend->_mag_ef_limit() > 0) {
             // initialise earth field from tables
             stateStruct.earth_magfield = table_earth_field_ga;
         }

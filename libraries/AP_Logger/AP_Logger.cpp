@@ -253,7 +253,7 @@ void AP_Logger::init(const AP_Int32 &log_bitmask, const struct LogStructure *str
 };
 
     for (const auto &backend_config : backend_configs) {
-        if ((_params.backend_types & uint8_t(backend_config.type)) == 0) {
+        if ((_params.backend_types() & uint8_t(backend_config.type)) == 0) {
             continue;
         }
         if (_next_backend == LOGGER_MAX_BACKENDS) {
@@ -634,7 +634,7 @@ bool AP_Logger::should_log(const uint32_t mask) const
 {
     bool armed = vehicle_is_armed();
 
-    if (!(mask & *_log_bitmask)) {
+    if (!(mask & (*_log_bitmask)())) {
         return false;
     }
     if (!armed && !log_while_disarmed()) {
@@ -654,7 +654,7 @@ bool AP_Logger::should_log(const uint32_t mask) const
  */
 bool AP_Logger::in_log_download() const
 {
-    if (uint8_t(_params.backend_types) & uint8_t(Backend_Type::BLOCK)) {
+    if (uint8_t(_params.backend_types()) & uint8_t(Backend_Type::BLOCK)) {
         // when we have a BLOCK backend then listing completely prevents logging
         return transfer_activity != TransferActivity::IDLE;
     }

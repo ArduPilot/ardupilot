@@ -29,7 +29,7 @@ void AP_Baro::Write_Baro_instance(uint64_t time_us, uint8_t baro_instance)
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 #if HAL_BARO_WIND_COMP_ENABLED
-    if (!sensors[baro_instance].wind_coeff.enable) {
+    if (!sensors[baro_instance].wind_coeff.enable()) {
         return;
     }
 

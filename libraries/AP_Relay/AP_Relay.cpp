@@ -272,7 +272,7 @@ void AP_Relay::convert_params()
 #endif
 
         } else {
-            if (_params[i].pin < 0) {
+            if (_params[i].pin() < 0) {
                 // Don't enable as numbered relay if pin is invalid
                 // Other functions should be enabled with a invalid pin
                 // This will result in a pre-arm promoting the user to resolve
@@ -322,7 +322,7 @@ void AP_Relay::init()
 
     // setup the actual default values of all the pins
     for (uint8_t instance = 0; instance < ARRAY_SIZE(_params); instance++) {
-        const int16_t pin = _params[instance].pin;
+        const int16_t pin = _params[instance].pin();
         if (pin == -1) {
             // no valid pin to set it on, skip it
             continue;
@@ -379,21 +379,21 @@ void AP_Relay::set(const AP_Relay_Params::FUNCTION function, const bool value) {
 // this is an internal helper, instance must have already been validated to be in range
 void AP_Relay::set_pin_by_instance(uint8_t instance, bool value)
 {
-    const int16_t pin = _params[instance].pin;
+    const int16_t pin = _params[instance].pin();
     if (pin == -1) {
         // no valid pin to set it on, skip it
         return;
     }
 
 #if AP_SIM_ENABLED
-    if (!(AP::sitl()->on_hardware_relay_enable_mask & (1U << instance))) {
+    if (!(AP::sitl()->on_hardware_relay_enable_mask() & (1U << instance))) {
         return;
     }
 #endif
 
     const bool initial_value = get_pin(pin);
 
-    if (_params[instance].inverted > 0) {
+    if (_params[instance].inverted() > 0) {
         value = !value;
     }
 
@@ -495,7 +495,7 @@ bool AP_Relay::get(uint8_t instance) const
         return false;
     }
 
-    if (_params[instance].inverted > 0) {
+    if (_params[instance].inverted() > 0) {
         return !get_pin(_params[instance].pin.get());
     }
 
@@ -547,14 +547,14 @@ void AP_Relay::set_pin(const int16_t pin, const bool value)
 bool AP_Relay::enabled(uint8_t instance) const 
 {
     // Must be a valid instance with function relay and pin set
-    return (instance < ARRAY_SIZE(_params)) && (_params[instance].pin != -1) && (_params[instance].function == AP_Relay_Params::FUNCTION::RELAY);
+    return (instance < ARRAY_SIZE(_params)) && (_params[instance].pin() != -1) && (_params[instance].function == AP_Relay_Params::FUNCTION::RELAY);
 }
 
 // see if the relay is enabled
 bool AP_Relay::enabled(AP_Relay_Params::FUNCTION function) const
 {
     for (uint8_t instance = 0; instance < ARRAY_SIZE(_params); instance++) {
-        if ((_params[instance].function == function) && (_params[instance].pin != -1)) {
+        if ((_params[instance].function == function) && (_params[instance].pin() != -1)) {
             return true;
         }
     }

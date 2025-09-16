@@ -58,13 +58,13 @@ void AP_Mount_Backend::update()
 // return true if this mount accepts roll targets
 bool AP_Mount_Backend::has_roll_control() const
 {
-    return (_params.roll_angle_min < _params.roll_angle_max);
+    return (_params.roll_angle_min() < _params.roll_angle_max());
 }
 
 // return true if this mount accepts pitch targets
 bool AP_Mount_Backend::has_pitch_control() const
 {
-    return (_params.pitch_angle_min < _params.pitch_angle_max);
+    return (_params.pitch_angle_min() < _params.pitch_angle_max());
 }
 
 bool AP_Mount_Backend::valid_mode(MAV_MOUNT_MODE mode) const
@@ -116,15 +116,15 @@ void AP_Mount_Backend::update_mnt_target_from_rc_target()
 void AP_Mount_Backend::set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame)
 {
     // enforce angle limits
-    roll_deg = constrain_float(roll_deg, _params.roll_angle_min, _params.roll_angle_max);
-    pitch_deg = constrain_float(pitch_deg, _params.pitch_angle_min, _params.pitch_angle_max);
+    roll_deg = constrain_float(roll_deg, _params.roll_angle_min(), _params.roll_angle_max());
+    pitch_deg = constrain_float(pitch_deg, _params.pitch_angle_min(), _params.pitch_angle_max());
     if (!yaw_is_earth_frame) {
         // only limit yaw if in body-frame.  earth-frame yaw limiting is backend specific
         // custom wrap code (instead of wrap_180) to better handle yaw of <= -180
         if (yaw_deg > 180) {
             yaw_deg -= 360;
         }
-        yaw_deg = constrain_float(yaw_deg, _params.yaw_angle_min, _params.yaw_angle_max);
+        yaw_deg = constrain_float(yaw_deg, _params.yaw_angle_min(), _params.yaw_angle_max());
     }
 
     // set angle targets
@@ -282,12 +282,12 @@ void AP_Mount_Backend::send_gimbal_manager_information(mavlink_channel_t chan)
                                                 AP_HAL::millis(),                       // autopilot system time
                                                 get_gimbal_manager_capability_flags(),  // bitmap of gimbal manager capability flags
                                                 _instance + 1,                          // gimbal device id
-                                                radians(_params.roll_angle_min),        // roll_min in radians
-                                                radians(_params.roll_angle_max),        // roll_max in radians
-                                                radians(_params.pitch_angle_min),       // pitch_min in radians
-                                                radians(_params.pitch_angle_max),       // pitch_max in radians
-                                                radians(_params.yaw_angle_min),         // yaw_min in radians
-                                                radians(_params.yaw_angle_max));        // yaw_max in radians
+                                                radians(_params.roll_angle_min()),        // roll_min in radians
+                                                radians(_params.roll_angle_max()),        // roll_max in radians
+                                                radians(_params.pitch_angle_min()),       // pitch_min in radians
+                                                radians(_params.pitch_angle_max()),       // pitch_max in radians
+                                                radians(_params.yaw_angle_min()),         // yaw_min in radians
+                                                radians(_params.yaw_angle_max()));        // yaw_max in radians
 }
 
 // send a GIMBAL_MANAGER_STATUS message to GCS
@@ -683,14 +683,14 @@ void AP_Mount_Backend::get_rc_target(MountTargetType& target_type, MountTarget& 
     target_rpy.yaw_is_ef = _yaw_lock;
 
     // if RC_RATE is zero, targets are angle
-    if (_params.rc_rate_max <= 0) {
+    if (_params.rc_rate_max() <= 0) {
         target_type = MountTargetType::ANGLE;
 
         // roll angle
-        target_rpy.roll = radians(((roll_in + 1.0f) * 0.5f * (_params.roll_angle_max - _params.roll_angle_min) + _params.roll_angle_min));
+        target_rpy.roll = radians(((roll_in + 1.0f) * 0.5f * (_params.roll_angle_max() - _params.roll_angle_min()) + _params.roll_angle_min()));
 
         // pitch angle
-        target_rpy.pitch = radians(((pitch_in + 1.0f) * 0.5f * (_params.pitch_angle_max - _params.pitch_angle_min) + _params.pitch_angle_min));
+        target_rpy.pitch = radians(((pitch_in + 1.0f) * 0.5f * (_params.pitch_angle_max() - _params.pitch_angle_min()) + _params.pitch_angle_min()));
 
         // yaw angle
         if (target_rpy.yaw_is_ef) {
@@ -698,7 +698,7 @@ void AP_Mount_Backend::get_rc_target(MountTargetType& target_type, MountTarget& 
             target_rpy.yaw = yaw_in * M_PI;
         } else {
             // yaw target in body frame so apply body frame limits
-            target_rpy.yaw = radians(((yaw_in + 1.0f) * 0.5f * (_params.yaw_angle_max - _params.yaw_angle_min) + _params.yaw_angle_min));
+            target_rpy.yaw = radians(((yaw_in + 1.0f) * 0.5f * (_params.yaw_angle_max() - _params.yaw_angle_min()) + _params.yaw_angle_min()));
         }
         return;
     }
@@ -797,8 +797,8 @@ void AP_Mount_Backend::MountTarget::set(const Vector3f& rpy, bool yaw_is_ef_in)
 void AP_Mount_Backend::update_angle_target_from_rate(const MountTarget& rate_rad, MountTarget& angle_rad) const
 {
     // update roll and pitch angles and apply limits
-    angle_rad.roll = constrain_float(angle_rad.roll + rate_rad.roll * AP_MOUNT_UPDATE_DT, radians(_params.roll_angle_min), radians(_params.roll_angle_max));
-    angle_rad.pitch = constrain_float(angle_rad.pitch + rate_rad.pitch * AP_MOUNT_UPDATE_DT, radians(_params.pitch_angle_min), radians(_params.pitch_angle_max));
+    angle_rad.roll = constrain_float(angle_rad.roll + rate_rad.roll * AP_MOUNT_UPDATE_DT, radians(_params.roll_angle_min()), radians(_params.roll_angle_max()));
+    angle_rad.pitch = constrain_float(angle_rad.pitch + rate_rad.pitch * AP_MOUNT_UPDATE_DT, radians(_params.pitch_angle_min()), radians(_params.pitch_angle_max()));
 
     // ensure angle yaw frames matches rate yaw frame
     if (angle_rad.yaw_is_ef != rate_rad.yaw_is_ef) {
@@ -817,7 +817,7 @@ void AP_Mount_Backend::update_angle_target_from_rate(const MountTarget& rate_rad
         angle_rad.yaw = wrap_PI(angle_rad.yaw);
     } else {
         // if body-frame constrain yaw to body-frame limits
-        angle_rad.yaw = constrain_float(angle_rad.yaw, radians(_params.yaw_angle_min), radians(_params.yaw_angle_max));
+        angle_rad.yaw = constrain_float(angle_rad.yaw, radians(_params.yaw_angle_min()), radians(_params.yaw_angle_max()));
     }
 }
 

@@ -92,7 +92,7 @@ void FETtecOneWireESC::update_escs()
 {
     // process the power-off mask
     for (auto  &esc : escs) {
-        bool should_be_on = _powered_mask & (1U<<(esc.id-1));
+        bool should_be_on = _powered_mask() & (1U<<(esc.id-1));
         switch (esc.state) {
         case ESC::State::POWERED_OFF:
             if (should_be_on) {

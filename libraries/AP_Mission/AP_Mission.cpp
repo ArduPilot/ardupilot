@@ -221,7 +221,7 @@ bool AP_Mission::is_takeoff_next(uint16_t cmd_index)
 /// check mission starts with a takeoff command
 bool AP_Mission::starts_with_takeoff_cmd()
 {
-    uint16_t cmd_index = _restart ? AP_MISSION_CMD_INDEX_NONE : _nav_cmd.index;
+    uint16_t cmd_index = _restart() ? AP_MISSION_CMD_INDEX_NONE : _nav_cmd.index;
     if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
         cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
     }
@@ -248,7 +248,7 @@ bool AP_Mission::continue_after_land_check_for_takeoff()
 /// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
 void AP_Mission::start_or_resume()
 {
-    if (_restart == 1 && !_force_resume) {
+    if (_restart() == 1 && !_force_resume) {
         start();
     } else {
         resume();
@@ -299,7 +299,7 @@ bool AP_Mission::clear()
 /// trucate - truncate any mission items beyond index
 void AP_Mission::truncate(uint16_t index)
 {
-    if ((unsigned)_cmd_total > index) {
+    if ((unsigned)_cmd_total() > index) {
         _cmd_total.set_and_save(index);
         _last_change_time_ms = AP_HAL::millis();
     }
@@ -310,7 +310,7 @@ void AP_Mission::truncate(uint16_t index)
 void AP_Mission::update()
 {
     // exit immediately if not running or no mission commands
-    if (_flags.state != MISSION_RUNNING || _cmd_total == 0) {
+    if (_flags.state != MISSION_RUNNING || _cmd_total() == 0) {
         return;
     }
 
@@ -499,18 +499,18 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
 bool AP_Mission::add_cmd(Mission_Command& cmd)
 {
     // Add home if its not already present
-    if (_cmd_total < 1) {
+    if (_cmd_total() < 1) {
         write_home_to_storage();
     }
 
     // attempt to write the command to storage
-    bool ret = write_cmd_to_storage(_cmd_total, cmd);
+    bool ret = write_cmd_to_storage(_cmd_total(), cmd);
 
     if (ret) {
         // update command's index
-        cmd.index = _cmd_total;
+        cmd.index = _cmd_total();
         // increment total number of commands
-        _cmd_total.set_and_save(_cmd_total + 1);
+        _cmd_total.set_and_save(_cmd_total() + 1);
     }
 
     return ret;
@@ -522,7 +522,7 @@ bool AP_Mission::add_cmd(Mission_Command& cmd)
 bool AP_Mission::replace_cmd(uint16_t index, const Mission_Command& cmd)
 {
     // sanity check index
-    if (index >= (unsigned)_cmd_total) {
+    if (index >= (unsigned)_cmd_total()) {
         return false;
     }
 
@@ -552,7 +552,7 @@ bool AP_Mission::is_nav_cmd(const Mission_Command& cmd)
 bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
 {
     // search until the end of the mission command list
-    for (uint16_t cmd_index = start_index; cmd_index < (unsigned)_cmd_total; cmd_index++) {
+    for (uint16_t cmd_index = start_index; cmd_index < (unsigned)_cmd_total(); cmd_index++) {
         // get next command
         if (!get_next_cmd(cmd_index, cmd, false)) {
             // no more commands so return failure
@@ -622,7 +622,7 @@ bool AP_Mission::set_current_cmd(uint16_t index)
     reset_wp_history();
 
     // sanity check index and that we have a mission
-    if (index >= (unsigned)_cmd_total || _cmd_total == 1) {
+    if (index >= (unsigned)_cmd_total() || _cmd_total() == 1) {
         return false;
     }
 
@@ -731,7 +731,7 @@ bool AP_Mission::set_item(uint16_t index, mavlink_mission_item_int_t& src_packet
     // Writing index zero is not allowed, it must be home
     if (index == 0) {
         // If home is not already loaded add it so cmd_total is incremented to 1 as would be expected when the returning true
-        if (_cmd_total < 1) {
+        if (_cmd_total() < 1) {
             write_home_to_storage();
         }
         // Really should be returning false in this case, but in order to not break things we return true
@@ -828,7 +828,7 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
         cmd.content.location = AP::ahrs().get_home();
         return true;
     }
-    if (index >= (unsigned)_cmd_total || index >= _commands_max) {
+    if (index >= (unsigned)_cmd_total() || index >= _commands_max) {
         return false;
     }
 
@@ -1004,7 +1004,7 @@ void AP_Mission::write_home_to_storage()
     write_cmd_to_storage(0,home_cmd);
 
     // Make sure command total reflects that home has been added
-    if (_cmd_total < 1) {
+    if (_cmd_total() < 1) {
         _cmd_total.set_and_save(1);
     }
 }
@@ -2177,7 +2177,7 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
 
     // search until the end of the mission command list
     uint8_t max_loops = 64;
-    while (cmd_index < (unsigned)_cmd_total) {
+    while (cmd_index < (unsigned)_cmd_total()) {
         // load the next command
         if (!read_cmd_from_storage(cmd_index, temp_cmd)) {
             // this should never happen because of check above but just in case
@@ -2199,7 +2199,7 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
             }
 
             // check for invalid target
-            if ((temp_cmd.content.jump.target >= (unsigned)_cmd_total) || (temp_cmd.content.jump.target == 0)) {
+            if ((temp_cmd.content.jump.target >= (unsigned)_cmd_total()) || (temp_cmd.content.jump.target == 0)) {
                 // To-Do: log an error?
                 return false;
             }
@@ -2262,7 +2262,7 @@ bool AP_Mission::get_next_do_cmd(uint16_t start_index, Mission_Command& cmd)
     Mission_Command temp_cmd;
 
     // check we have not passed the end of the mission list
-    if (start_index >= (unsigned)_cmd_total) {
+    if (start_index >= (unsigned)_cmd_total()) {
         return false;
     }
 
@@ -2340,7 +2340,7 @@ void AP_Mission::init_jump_tracking()
 int16_t AP_Mission::get_jump_times_run(const Mission_Command& cmd)
 {
     // exit immediately if cmd is not a do-jump command or target is invalid
-    if ((cmd.id != MAV_CMD_DO_JUMP) || (cmd.content.jump.target >= (unsigned)_cmd_total) || (cmd.content.jump.target == 0)) {
+    if ((cmd.id != MAV_CMD_DO_JUMP) || (cmd.content.jump.target >= (unsigned)_cmd_total()) || (cmd.content.jump.target == 0)) {
         // To-Do: log an error?
         return AP_MISSION_JUMP_TIMES_MAX;
     }
@@ -2633,7 +2633,7 @@ bool AP_Mission::distance_to_landing(uint16_t index, float &tot_distance, Locati
     // run through remainder of mission to approximate a distance to landing
     for (uint8_t i=0; i<UINT8_MAX; i++) {
         // search until the end of the mission command list
-        for (uint16_t cmd_index = index; cmd_index < (unsigned)_cmd_total; cmd_index++) {
+        for (uint16_t cmd_index = index; cmd_index < (unsigned)_cmd_total(); cmd_index++) {
             // get next command
             if (!get_next_cmd(cmd_index, temp_cmd, true, false)) {
                 // we got to the end of the mission
@@ -2692,7 +2692,7 @@ bool AP_Mission::distance_to_mission_leg(uint16_t start_index, uint16_t &search_
     uint16_t index = start_index;
     for (; search_remaining > 0; search_remaining--) {
         // search until the end of the mission command list
-        for (uint16_t cmd_index = index; cmd_index <= (unsigned)_cmd_total; cmd_index++) {
+        for (uint16_t cmd_index = index; cmd_index <= (unsigned)_cmd_total(); cmd_index++) {
             if (get_next_cmd(cmd_index, temp_cmd, true, false)) {
                 break;
             } else {

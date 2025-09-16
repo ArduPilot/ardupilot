@@ -98,7 +98,7 @@ AP_GPS_SBF::read(void)
     }
 
     const uint32_t now = AP_HAL::millis();
-    if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
+    if (gps._auto_config() != AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
         if (config_step != Config_State::Complete) {
             if (now > _init_blob_time) {
                 if (now > _config_last_ack_time + 2000) {
@@ -114,7 +114,7 @@ AP_GPS_SBF::read(void)
                         switch (config_step) {
                             case Config_State::Baud_Rate:
                                 if (asprintf(&config_string, "scs,COM%d,baud%d,bits8,No,bit1,%s\n",
-                                             (int)params.com_port,
+                                             (int)params.com_port(),
                                              230400,
                                              port->get_flow_control() != AP_HAL::UARTDriver::flow_control::FLOW_CONTROL_ENABLE ? "none" : "RTS|CTS") == -1) {
                                     config_string = nullptr;
@@ -133,20 +133,20 @@ AP_GPS_SBF::read(void)
                                 }
                                 if (asprintf(&config_string, "sso,Stream%d,COM%d,PVTGeodetic+DOP+ReceiverStatus+VelCovGeodetic+BaseVectorGeod%s,msec100\n",
                                              (int)GPS_SBF_STREAM_NUMBER,
-                                             (int)params.com_port,
+                                             (int)params.com_port(),
                                              extra_config) == -1) {
                                     config_string = nullptr;
                                 }
                                 break;
                             case Config_State::Constellation:
-                                if ((params.gnss_mode&0x6F)!=0) {
+                                if ((params.gnss_mode()&0x6F)!=0) {
                                     //IMES not taken into account by Septentrio receivers
-                                    if (asprintf(&config_string, "sst, %s%s%s%s%s%s\n", (params.gnss_mode&(1U<<0))!=0 ? "GPS" : "",
-                                                            (params.gnss_mode&(1U<<1))!=0 ? ((params.gnss_mode&0x01)==0 ? "SBAS" : "+SBAS") : "",
-                                                            (params.gnss_mode&(1U<<2))!=0 ? ((params.gnss_mode&0x03)==0  ? "GALILEO" : "+GALILEO") : "",
-                                                            (params.gnss_mode&(1U<<3))!=0 ? ((params.gnss_mode&0x07)==0 ? "BEIDOU" : "+BEIDOU") : "",
-                                                            (params.gnss_mode&(1U<<5))!=0 ? ((params.gnss_mode&0x0F)==0 ? "QZSS" : "+QZSS") : "",
-                                                            (params.gnss_mode&(1U<<6))!=0 ? ((params.gnss_mode&0x2F)==0  ? "GLONASS" : "+GLONASS") : "") == -1) {
+                                    if (asprintf(&config_string, "sst, %s%s%s%s%s%s\n", (params.gnss_mode()&(1U<<0))!=0 ? "GPS" : "",
+                                                            (params.gnss_mode()&(1U<<1))!=0 ? ((params.gnss_mode()&0x01)==0 ? "SBAS" : "+SBAS") : "",
+                                                            (params.gnss_mode()&(1U<<2))!=0 ? ((params.gnss_mode()&0x03)==0  ? "GALILEO" : "+GALILEO") : "",
+                                                            (params.gnss_mode()&(1U<<3))!=0 ? ((params.gnss_mode()&0x07)==0 ? "BEIDOU" : "+BEIDOU") : "",
+                                                            (params.gnss_mode()&(1U<<5))!=0 ? ((params.gnss_mode()&0x0F)==0 ? "QZSS" : "+QZSS") : "",
+                                                            (params.gnss_mode()&(1U<<6))!=0 ? ((params.gnss_mode()&0x2F)==0  ? "GLONASS" : "+GLONASS") : "") == -1) {
                                         config_string=nullptr;
                                     }
                                     break;
@@ -204,7 +204,7 @@ AP_GPS_SBF::read(void)
                     }
                 }
             }
-        } else if (gps._raw_data == 2) { // only manage disarm/rearms when the user opts into it
+        } else if (gps._raw_data() == 2) { // only manage disarm/rearms when the user opts into it
             if (hal.util->get_soft_armed()) {
                 _has_been_armed = true;
             } else if (_has_been_armed && (RxState & SBF_DISK_MOUNTED)) {
@@ -229,7 +229,7 @@ AP_GPS_SBF::read(void)
 
 bool AP_GPS_SBF::logging_healthy(void) const
 {
-    switch (gps._raw_data) {
+    switch (gps._raw_data()) {
         case 1:
         default:
             return (RxState & SBF_DISK_MOUNTED) && (RxState & SBF_DISK_ACTIVITY);
@@ -685,7 +685,7 @@ AP_GPS_SBF::process_message(void)
 
 void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
 {
-    if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE &&
+    if (gps._auto_config() != AP_GPS::GPS_AUTO_CONFIG_DISABLE &&
         config_step != Config_State::Complete) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %u: SBF is not fully configured (%u/%u/%u/%u)",
                                          state.instance + 1,
@@ -697,7 +697,7 @@ void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
 }
 
 bool AP_GPS_SBF::is_configured (void) const {
-    return ((gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE) ||
+    return ((gps._auto_config() == AP_GPS::GPS_AUTO_CONFIG_DISABLE) ||
             (config_step == Config_State::Complete) ||AP_SIM_GPS_SBF_ENABLED);
 }
 
@@ -719,7 +719,7 @@ void AP_GPS_SBF::unmount_disk (void) const {
 
 bool AP_GPS_SBF::prepare_for_arming(void) {
     bool is_logging = true; // assume that its logging until proven otherwise
-    if (gps._raw_data) {
+    if (gps._raw_data()) {
         if (!(RxState & SBF_DISK_MOUNTED)){
             is_logging = false;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: SBF disk is not mounted", state.instance + 1);

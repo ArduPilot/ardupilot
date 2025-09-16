@@ -35,7 +35,7 @@ void AP_BoardConfig::set_imu_temp(float current)
 {
     int8_t target = heater.imu_target_temperature.get();
     // pass to HAL for Linux
-    hal.util->set_imu_target_temp((int8_t *)&heater.imu_target_temperature);
+    hal.util->set_imu_target_temp((int8_t *)&heater.imu_target_temperature());
     hal.util->set_imu_temp(current);
 
     if (target == -1) {
@@ -127,7 +127,7 @@ void AP_BoardConfig::set_imu_temp(float current)
 // getter for current temperature, return false if heater disabled
 bool AP_BoardConfig::get_board_heater_temperature(float &temperature) const
 {
-    if (heater.imu_target_temperature == -1) {
+    if (heater.imu_target_temperature() == -1) {
         return false; // heater disabled
     }
     temperature = heater.temperature;
@@ -137,10 +137,10 @@ bool AP_BoardConfig::get_board_heater_temperature(float &temperature) const
 // getter for min arming temperature, return false if heater disabled or min check disabled
 bool AP_BoardConfig::get_board_heater_arming_temperature(int8_t &temperature) const
 {
-    if ((heater.imu_target_temperature == -1) || (heater.imu_arming_temperature_margin_low == 0)) {
+    if ((heater.imu_target_temperature() == -1) || (heater.imu_arming_temperature_margin_low() == 0)) {
         return false; // heater or temperature check disabled
     }
-    temperature = heater.imu_target_temperature - heater.imu_arming_temperature_margin_low;
+    temperature = heater.imu_target_temperature() - heater.imu_arming_temperature_margin_low();
     return true;
 }
 

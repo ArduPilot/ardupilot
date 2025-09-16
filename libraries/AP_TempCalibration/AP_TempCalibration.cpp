@@ -199,7 +199,7 @@ void AP_TempCalibration::learn_calibration(void)
     uint32_t now = AP_HAL::millis();
     if (now - last_learn_ms > 100 &&
         idx*learn_temp_step > min_learn_temp_range &&
-        temp - learn_temp_start > temp_max - temp_min) {
+        temp - learn_temp_start > temp_max() - temp_min()) {
         last_learn_ms = now;
         // run estimation and update parameters
         calculate_calibration();

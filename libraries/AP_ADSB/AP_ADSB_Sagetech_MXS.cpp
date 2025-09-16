@@ -93,7 +93,7 @@ void AP_ADSB_Sagetech_MXS::update()
         if (!last.packet_initialize_ms || (now_ms - last.packet_initialize_ms >= SAGETECH_INSTALL_MSG_RATE)) {
             last.packet_initialize_ms = now_ms;
 
-            if (_frontend._options & uint32_t(AP_ADSB::AdsbOption::SagteTech_MXS_External_Config)) {
+            if (_frontend._options() & uint32_t(AP_ADSB::AdsbOption::SagteTech_MXS_External_Config)) {
                 // request the device's configuration
                 send_data_req(dataInstall);
 
@@ -134,7 +134,7 @@ void AP_ADSB_Sagetech_MXS::update()
             last.operating_squawk != _frontend.out_state.ctrl.squawkCode ||                 // Or anytime Operating data changes
             last.operating_squawk != _frontend.out_state.cfg.squawk_octal ||
             abs(last.operating_alt - _frontend._my_loc.alt) > 1555 ||                       // 1493cm == 49ft. The output resolution is 100ft per bit
-            last.operating_rf_select != _frontend.out_state.cfg.rfSelect ||                 // The following booleans control the MXS OpMode
+            last.operating_rf_select != _frontend.out_state.cfg.rfSelect() ||                 // The following booleans control the MXS OpMode
             last.modeAEnabled != _frontend.out_state.ctrl.modeAEnabled ||
             last.modeCEnabled != _frontend.out_state.ctrl.modeCEnabled ||
             last.modeSEnabled != _frontend.out_state.ctrl.modeSEnabled
@@ -147,10 +147,10 @@ void AP_ADSB_Sagetech_MXS::update()
             last.operating_squawk = _frontend.out_state.cfg.squawk_octal;
             _frontend.out_state.ctrl.squawkCode = last.operating_squawk;
         }
-        last.operating_rf_select = _frontend.out_state.cfg.rfSelect;
+        last.operating_rf_select = _frontend.out_state.cfg.rfSelect();
         last.modeAEnabled = _frontend.out_state.ctrl.modeAEnabled;
         last.modeCEnabled = _frontend.out_state.ctrl.modeCEnabled;
-        last.modeSEnabled = (_frontend._options & uint32_t(AP_ADSB::AdsbOption::Mode3_Only)) ? 0 : _frontend.out_state.ctrl.modeSEnabled;
+        last.modeSEnabled = (_frontend._options() & uint32_t(AP_ADSB::AdsbOption::Mode3_Only)) ? 0 : _frontend.out_state.ctrl.modeSEnabled;
 
         last.operating_alt = _frontend._my_loc.alt;
         last.packet_Operating_ms = now_ms;
@@ -161,7 +161,7 @@ void AP_ADSB_Sagetech_MXS::update()
         send_gps_msg();
 
     } else if ((now_ms - last.packet_targetReq >= SAGETECH_TARGETREQ_MSG_RATE) && 
-            ((mxs_state.treq.icao != (uint32_t)_frontend._special_ICAO_target) || (mxs_state.treq.maxTargets != (uint16_t)_frontend.in_state.list_size_param))) {
+            ((mxs_state.treq.icao != (uint32_t)_frontend._special_ICAO_target()) || (mxs_state.treq.maxTargets != (uint16_t)_frontend.in_state.list_size_param()))) {
         send_targetreq_msg();
     }
 }
@@ -344,7 +344,7 @@ void AP_ADSB_Sagetech_MXS::auto_config_operating()
 void AP_ADSB_Sagetech_MXS::auto_config_installation()
 {
     // Configure the Default Installation Message Data
-    mxs_state.inst.icao = (uint32_t) _frontend.out_state.cfg.ICAO_id_param;
+    mxs_state.inst.icao = (uint32_t) _frontend.out_state.cfg.ICAO_id_param();
     snprintf(mxs_state.inst.reg, 8, "%-7s", "TEST01Z");
 
     mxs_state.inst.com0 = sg_baud_t::baud230400;
@@ -553,7 +553,7 @@ void AP_ADSB_Sagetech_MXS::send_operating_msg()
             _frontend.out_state.ctrl.modeSEnabled && _frontend.out_state.ctrl.es1090TxEnabled) {
         mxs_state.op.opMode = modeAlt;
     }
-    if ((_frontend.out_state.cfg.rfSelect & 1) == 0) {
+    if ((_frontend.out_state.cfg.rfSelect() & 1) == 0) {
         mxs_state.op.opMode = modeOff;
     }
 
@@ -665,7 +665,7 @@ void AP_ADSB_Sagetech_MXS::send_targetreq_msg()
 {
     mxs_state.treq.reqType = sg_reporttype_t::reportAuto;
     mxs_state.treq.transmitPort = sg_transmitport_t::transmitCom1;
-    mxs_state.treq.maxTargets = _frontend.in_state.list_size_param;
+    mxs_state.treq.maxTargets = _frontend.in_state.list_size_param();
     mxs_state.treq.icao = _frontend._special_ICAO_target.get();
     mxs_state.treq.stateVector = true;
     mxs_state.treq.modeStatus = true;

@@ -48,7 +48,7 @@ bool AP_RangeFinder_NRA24_CAN::handle_frame(AP_HAL::CANFrame &frame)
             const float dist_m = (frame.data[2] * 0x100U + frame.data[3]) * 0.01;
             const uint8_t snr = frame.data[7] - 128;
 
-            if ((snr_min != 0 && snr < uint16_t(snr_min.get()))) {
+            if ((snr_min() != 0 && snr < uint16_t(snr_min.get()))) {
                 // too low signal strength
                 return false;
             }

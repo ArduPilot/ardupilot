@@ -190,7 +190,7 @@ void Loweheiser::update_send()
     last_sent_ms = now;
 
     auto sitl = AP::sitl();
-    if (!sitl || sitl->efi_type == SIM::EFIType::EFI_TYPE_NONE) {
+    if (!sitl || sitl->efi_type() == SIM::EFIType::EFI_TYPE_NONE) {
         return;
     }
 

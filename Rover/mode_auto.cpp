@@ -410,7 +410,7 @@ void ModeAuto::nav_script_time_done(uint16_t id)
 bool ModeAuto::check_trigger(void)
 {
     // check for user pressing the auto trigger to off
-    if (auto_triggered && g.auto_trigger_pin != -1 && rover.check_digital_pin(g.auto_trigger_pin) == 1) {
+    if (auto_triggered && g.auto_trigger_pin() != -1 && rover.check_digital_pin(g.auto_trigger_pin()) == 1) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AUTO triggered off");
         auto_triggered = false;
         return false;
@@ -423,14 +423,14 @@ bool ModeAuto::check_trigger(void)
     }
 
     // return true if auto trigger and kickstart are disabled
-    if (g.auto_trigger_pin == -1 && is_zero(g.auto_kickstart)) {
+    if (g.auto_trigger_pin() == -1 && is_zero(g.auto_kickstart)) {
         // no trigger configured - let's go!
         auto_triggered = true;
         return true;
     }
 
     // check if trigger pin has been pushed
-    if (g.auto_trigger_pin != -1 && rover.check_digital_pin(g.auto_trigger_pin) == 0) {
+    if (g.auto_trigger_pin() != -1 && rover.check_digital_pin(g.auto_trigger_pin()) == 0) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Triggered AUTO with pin");
         auto_triggered = true;
         return true;

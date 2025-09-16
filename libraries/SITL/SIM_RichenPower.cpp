@@ -90,7 +90,7 @@ void RichenPower::update_control_pin(const struct sitl_input &input)
     // RICHENPOWER, 13:47
     // 1100~1300 for engine stop, 1300~1800 for idle, and 1800~2000 for run
 
-    const uint16_t control_pwm = _ctrl_pin >= 1 ? input.servos[_ctrl_pin-1] : -1;
+    const uint16_t control_pwm = _ctrl_pin() >= 1 ? input.servos[_ctrl_pin()-1] : -1;
     if (_state != State::STOPPING) {
         if (control_pwm <= INPUT_SERVO_PWM_STOP && _state != State::STOP) {
             if (stop_start_ms == 0) {

@@ -438,7 +438,7 @@ void NavEKF3_core::SelectMagFusion()
             // maintained by fusing declination as a synthesised observation
             // We also fuse declination if we are using the WMM tables
             if (PV_AidingMode != AID_ABSOLUTE ||
-                (frontend->_mag_ef_limit > 0 && have_table_earth_field)) {
+                (frontend->_mag_ef_limit() > 0 && have_table_earth_field)) {
                 FuseDeclination(0.34f);
             }
             // fuse the three magnetometer componenents using sequential fusion for each axis
@@ -570,7 +570,7 @@ void NavEKF3_core::FuseMagnetometer()
 
     // calculate the innovation test ratios
     for (uint8_t i = 0; i<=2; i++) {
-        magTestRatio[i] = sq(innovMag[i]) / (sq(MAX(0.01f * (ftype)frontend->_magInnovGate, 1.0f)) * varInnovMag[i]);
+        magTestRatio[i] = sq(innovMag[i]) / (sq(MAX(0.01f * (ftype)frontend->_magInnovGate(), 1.0f)) * varInnovMag[i]);
     }
 
     // check the last values from all components and set magnetometer health accordingly
@@ -891,7 +891,7 @@ void NavEKF3_core::FuseMagnetometer()
             }
 
             // add table constraint here for faster convergence
-            if (have_table_earth_field && frontend->_mag_ef_limit > 0) {
+            if (have_table_earth_field && frontend->_mag_ef_limit() > 0) {
                 MagTableConstrain();
             }
 
@@ -1183,7 +1183,7 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
     }
 
     // calculate the innovation test ratio
-    yawTestRatio = sq(innovYaw) / (sq(MAX(0.01f * (ftype)frontend->_yawInnovGate, 1.0f)) * varInnov);
+    yawTestRatio = sq(innovYaw) / (sq(MAX(0.01f * (ftype)frontend->_yawInnovGate(), 1.0f)) * varInnov);
 
     // Declare the magnetometer unhealthy if the innovation test fails
     if (yawTestRatio > 1.0f) {
@@ -1557,12 +1557,12 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw(bool emergency_reset)
 {
     // Don't do a reset unless permitted by the EK3_GSF_USE_MASK and EK3_GSF_RUN_MASK parameter masks
     if ((yawEstimator == nullptr)
-        || !(frontend->_gsfUseMask & (1U<<core_index))) {
+        || !(frontend->_gsfUseMask() & (1U<<core_index))) {
         return false;
     };
 
     // limit the number of emergency resets
-    if (emergency_reset && (EKFGSF_yaw_reset_count >= frontend->_gsfResetMaxCount)) {
+    if (emergency_reset && (EKFGSF_yaw_reset_count >= frontend->_gsfResetMaxCount())) {
         return false;
     }
 

@@ -217,12 +217,12 @@ AP_Scripting::AP_Scripting() {
 }
 
 void AP_Scripting::init(void) {
-    if (!_enable) {
+    if (!_enable()) {
         return;
     }
 
 #if AP_FILESYSTEM_FILE_WRITING_ENABLED
-    if ((_dir_disable & uint16_t(AP_Scripting::SCR_DIR::SCRIPTS)) == 0) {
+    if ((_dir_disable() & uint16_t(AP_Scripting::SCR_DIR::SCRIPTS)) == 0) {
         // Only try creating scripts directory if loading from it is enabled
         const char *dir_name = SCRIPTING_DIRECTORY;
         if (AP::FS().mkdir(dir_name)) {
@@ -263,7 +263,7 @@ void AP_Scripting::init(void) {
 
 #if AP_SCRIPTING_SERIALDEVICE_ENABLED
 void AP_Scripting::init_serialdevice_ports(void) {
-    if (!_enable) {
+    if (!_enable()) {
         return;
     }
 
@@ -403,7 +403,7 @@ void AP_Scripting::thread(void) {
 void AP_Scripting::handle_mission_command(const AP_Mission::Mission_Command& cmd_in)
 {
 #if AP_MISSION_ENABLED
-    if (!_enable) {
+    if (!_enable()) {
         return;
     }
 
@@ -456,7 +456,7 @@ bool AP_Scripting::arming_checks(size_t buflen, char *buffer) const
     lua_scripts::get_last_error_semaphore()->give();
 
     // Use -1 for disabled, this means we don't have to avoid 0 in the CRC, the sign bit is masked off anyway
-    if (_required_loaded_checksum != -1) {
+    if (_required_loaded_checksum() != -1) {
         const uint32_t expected_loaded = (uint32_t)_required_loaded_checksum.get() & checksum_param_mask;
         const uint32_t loaded = lua_scripts::get_loaded_checksum() & checksum_param_mask;
         if (expected_loaded != loaded) {
@@ -465,7 +465,7 @@ bool AP_Scripting::arming_checks(size_t buflen, char *buffer) const
         }
     }
 
-    if (_required_running_checksum != -1) {
+    if (_required_running_checksum() != -1) {
         const uint32_t expected_running = (uint32_t)_required_running_checksum.get() & checksum_param_mask;
         const uint32_t running = lua_scripts::get_running_checksum() & checksum_param_mask;
         if (expected_running != running) {

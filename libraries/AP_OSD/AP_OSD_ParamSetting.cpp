@@ -288,7 +288,7 @@ AP_OSD_ParamSetting::AP_OSD_ParamSetting(const Initializer& initializer) :
 void AP_OSD_ParamSetting::update()
 {
     // if the user has not made any changes then skip the update
-    if (PARAM_TOKEN_INDEX(_current_token) == PARAM_COMPOSITE_INDEX(_param_key, _param_idx, _param_group) && _param_key >= 0) {
+    if (PARAM_TOKEN_INDEX(_current_token) == PARAM_COMPOSITE_INDEX(_param_key(), _param_idx(), _param_group()) && _param_key() >= 0) {
         return;
     }
     // if a parameter was configured then use that
@@ -452,10 +452,10 @@ void AP_OSD_ParamSetting::copy_name_camel_case(char* name, size_t len) const
 bool AP_OSD_ParamSetting::set_from_metadata()
 {
     // check for statically configured setting metadata
-    if (_type > 0 && _type < uint8_t(Type::NUM_TYPES) && _param_metadata[_type - 1].values_max > 0) {
-        _param_incr.set(_param_metadata[_type - 1].increment);
-        _param_min.set(_param_metadata[_type - 1].min_value);
-        _param_max.set(_param_metadata[_type - 1].max_value);
+    if (_type() > 0 && _type() < uint8_t(Type::NUM_TYPES) && _param_metadata[_type() - 1].values_max > 0) {
+        _param_incr.set(_param_metadata[_type() - 1].increment);
+        _param_min.set(_param_metadata[_type() - 1].min_value);
+        _param_max.set(_param_metadata[_type() - 1].max_value);
         return true;
     }
     return false;

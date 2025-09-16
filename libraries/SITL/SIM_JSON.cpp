@@ -523,7 +523,7 @@ void JSON::update(const struct sitl_input &input)
 
     // allow for changes in physics step
     if (use_time_sync) {
-        adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
+        adjust_frame_time(constrain_float(sitl->loop_rate_hz(), rate_hz-1, rate_hz+1));
     }
 
 #if 0

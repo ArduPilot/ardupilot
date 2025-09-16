@@ -73,13 +73,13 @@ AP_TemperatureSensor_Analog::AP_TemperatureSensor_Analog(AP_TemperatureSensor &f
 {
     AP_Param::setup_object_defaults(this, var_info);
     _state.var_info = var_info;
-    _analog_source = hal.analogin->channel(_pin);
+    _analog_source = hal.analogin->channel(_pin());
 }
 
 // Update function called at 5Hz
 void AP_TemperatureSensor_Analog::update()
 {
-    if ((_analog_source == nullptr) || !_analog_source->set_pin(_pin)) {
+    if ((_analog_source == nullptr) || !_analog_source->set_pin(_pin())) {
         // Invalid pln
         return;
     }

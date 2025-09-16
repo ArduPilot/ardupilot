@@ -63,7 +63,7 @@ void AP_Gripper_EPM::grab()
 #endif
     {
         // move the servo output to the grab position
-        SRV_Channels::set_output_pwm(SRV_Channel::k_gripper, config.grab_pwm);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_gripper, config.grab_pwm());
     }
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Gripper load grabbing");
     LOGGER_WRITE_EVENT(LogEvent::GRIPPER_GRAB);
@@ -87,7 +87,7 @@ void AP_Gripper_EPM::release()
 #endif
     {
         // move the servo to the release position
-        SRV_Channels::set_output_pwm(SRV_Channel::k_gripper, config.release_pwm);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_gripper, config.release_pwm());
     }
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Gripper load releasing");
     LOGGER_WRITE_EVENT(LogEvent::GRIPPER_RELEASE);
@@ -98,7 +98,7 @@ void AP_Gripper_EPM::neutral()
 {
     if (!should_use_uavcan()) {
         // move the servo to the off position
-        SRV_Channels::set_output_pwm(SRV_Channel::k_gripper, config.neutral_pwm);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_gripper, config.neutral_pwm());
     }
 }
 
@@ -119,8 +119,8 @@ void AP_Gripper_EPM::update_gripper()
 
     // re-grab the cargo intermittently
     if (config.state == AP_Gripper::STATE_GRABBED &&
-        (config.regrab_interval > 0) &&
-        (AP_HAL::millis() - _last_grab_or_release > ((uint32_t)config.regrab_interval * 1000))) {
+        (config.regrab_interval() > 0) &&
+        (AP_HAL::millis() - _last_grab_or_release > ((uint32_t)config.regrab_interval() * 1000))) {
         grab();
     }
 }
@@ -128,7 +128,7 @@ void AP_Gripper_EPM::update_gripper()
 UAVCANCommand AP_Gripper_EPM::make_uavcan_command(uint16_t command) const
 {
     UAVCANCommand cmd;
-    cmd.hardpoint_id = config.uavcan_hardpoint_id;
+    cmd.hardpoint_id = config.uavcan_hardpoint_id();
     cmd.command = command;
     return cmd;
 }

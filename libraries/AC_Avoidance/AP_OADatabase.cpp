@@ -201,7 +201,7 @@ void AP_OADatabase::queue_push(const Vector3f &pos, const uint32_t timestamp_ms,
 
 void AP_OADatabase::init_queue()
 {
-    _queue.size = _queue_size_param;
+    _queue.size = _queue_size_param();
     if (_queue.size == 0) {
         return;
     }
@@ -216,8 +216,8 @@ void AP_OADatabase::init_queue()
 
 void AP_OADatabase::init_database()
 {
-    _database.size = _database_size_param;
-    if (_database_size_param == 0) {
+    _database.size = _database_size_param();
+    if (_database_size_param() == 0) {
         return;
     }
 
@@ -377,14 +377,14 @@ void AP_OADatabase::database_items_remove_all_expired()
 {
     // calculate age of all items in the _database
 
-    if (_database_expiry_seconds <= 0) {
+    if (_database_expiry_seconds() <= 0) {
         // zero means never expire. This is not normal behavior but perhaps you could send a static
         // environment once that you don't want to have to constantly update
         return;
     }
 
     const uint32_t now_ms = AP_HAL::millis();
-    const uint32_t expiry_ms = (uint32_t)_database_expiry_seconds * 1000;
+    const uint32_t expiry_ms = (uint32_t)_database_expiry_seconds() * 1000;
     uint16_t index = 0;
     while (index < _database.count) {
         if (now_ms - _database.items[index].timestamp_ms > expiry_ms) {

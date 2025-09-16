@@ -82,7 +82,7 @@ SlungPayloadSim::SlungPayloadSim()
 // update the SlungPayloadSim's state using the vehicle's earth-frame position, velocity, acceleration and wind
 void SlungPayloadSim::update(const Vector3p& veh_pos, const Vector3f& veh_vel_ef, const Vector3f& veh_accel_ef, const Vector3f& wind_ef)
 {
-    if (!enable) {
+    if (!enable()) {
         return;
     }
 
@@ -119,7 +119,7 @@ void SlungPayloadSim::update(const Vector3p& veh_pos, const Vector3f& veh_vel_ef
 // returns true on success and fills in forces_ef argument, false on failure
 bool SlungPayloadSim::get_forces_on_vehicle(Vector3f& forces_ef) const
 {
-    if (!enable) {
+    if (!enable()) {
         return false;
     }
 
@@ -188,7 +188,7 @@ void SlungPayloadSim::send_report(void)
             hdg: 0                              // heading in centi-degrees
         };
         mavlink_message_t msg;
-        mavlink_msg_global_position_int_encode_status(sys_id, component_id, &mav_status, &msg, &global_position_int);
+        mavlink_msg_global_position_int_encode_status(sys_id(), component_id, &mav_status, &msg, &global_position_int);
         uint8_t buf[300];
         const uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
         if (len > 0) {
@@ -209,7 +209,7 @@ void SlungPayloadSim::send_report(void)
         };
         mavlink_message_t msg;
         mavlink_msg_attitude_encode_status(
-                sys_id,
+                sys_id(),
                 component_id,
                 &mav_status,
                 &msg,

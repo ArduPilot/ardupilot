@@ -175,7 +175,7 @@ void EFI_Hirth::init()
 void EFI_Hirth::update()
 {
     const auto *sitl = AP::sitl();
-    if (!sitl || sitl->efi_type != SIM::EFI_TYPE_HIRTH) {
+    if (!sitl || sitl->efi_type() != SIM::EFI_TYPE_HIRTH) {
         return;
     }
 

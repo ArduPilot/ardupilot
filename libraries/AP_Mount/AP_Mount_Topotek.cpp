@@ -806,7 +806,7 @@ void AP_Mount_Topotek::send_angle_target(const MountTarget& angle_rad)
     // sample command #tpUG6wGIY
     const char* format_str = "%04X%02X";
     const uint8_t speed = 99;
-    const uint16_t yaw_angle_cd = (uint16_t)constrain_int16(degrees(angle_rad.get_bf_yaw()) * 100, MAX(-18000, _params.yaw_angle_min * 100), MIN(18000, _params.yaw_angle_max * 100));
+    const uint16_t yaw_angle_cd = (uint16_t)constrain_int16(degrees(angle_rad.get_bf_yaw()) * 100, MAX(-18000, _params.yaw_angle_min() * 100), MIN(18000, _params.yaw_angle_max() * 100));
 
     uint8_t databuff[7];
     hal.util->snprintf((char *)databuff, ARRAY_SIZE(databuff), format_str, yaw_angle_cd, speed);

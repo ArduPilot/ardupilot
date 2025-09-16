@@ -290,7 +290,7 @@ void Sailboat::get_throttle_and_set_mainsail(float desired_speed, float &throttl
                                                                         rover.g2.motors.limit.throttle_lower,
                                                                         rover.g2.motors.limit.throttle_upper,
                                                                         rover.g.speed_cruise,
-                                                                        rover.g.throttle_cruise * 0.01f,
+                                                                        rover.g.throttle_cruise() * 0.01f,
                                                                         rover.G_Dt);
     }
 

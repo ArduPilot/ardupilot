@@ -107,16 +107,16 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint
     _rsem.take_blocking();
 
     // only allow 50 to 2000 Hz
-    if (_loop_rate_hz < 50) {
+    if (_loop_rate_hz() < 50) {
         _loop_rate_hz.set(50);
-    } else if (_loop_rate_hz > 2000) {
+    } else if (_loop_rate_hz() > 2000) {
         _loop_rate_hz.set(2000);
     }
-    _last_loop_time_s = 1.0 / _loop_rate_hz;
+    _last_loop_time_s = 1.0 / _loop_rate_hz();
     // at least on SITL the lazy initialization of these gets called early
     // make sure they reflect the current values of _loop_rate_hz
-    _loop_period_us = 1000000UL / _loop_rate_hz;
-    _loop_period_s = 1.0f / _loop_rate_hz;
+    _loop_period_us = 1000000UL / _loop_rate_hz();
+    _loop_period_s = 1.0f / _loop_rate_hz();
     _active_loop_rate_hz = _loop_rate_hz;
 
     _vehicle_tasks = tasks;
@@ -138,7 +138,7 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint
     perf_info.set_loop_rate(get_loop_rate_hz());
     perf_info.reset();
 
-    if (_options & uint8_t(Options::RECORD_TASK_INFO)) {
+    if (_options() & uint8_t(Options::RECORD_TASK_INFO)) {
         perf_info.allocate_task_info(_num_tasks);
     }
 
@@ -230,7 +230,7 @@ void AP_Scheduler::run(uint32_t time_available)
         if (task.priority > MAX_FAST_TASK_PRIORITIES) {
             const uint16_t dt = _tick_counter - _last_run[i];
             // we allow 0 to mean loop rate
-            uint32_t interval_ticks = (is_zero(task.rate_hz) ? 1 : _loop_rate_hz / task.rate_hz);
+            uint32_t interval_ticks = (is_zero(task.rate_hz) ? 1 : _loop_rate_hz() / task.rate_hz);
             if (interval_ticks < 1) {
                 interval_ticks = 1;
             }
@@ -442,9 +442,9 @@ void AP_Scheduler::update_logging()
     perf_info.set_loop_rate(get_loop_rate_hz());
     perf_info.reset();
     // dynamically update the per-task perf counter
-    if (!(_options & uint8_t(Options::RECORD_TASK_INFO)) && perf_info.has_task_info()) {
+    if (!(_options() & uint8_t(Options::RECORD_TASK_INFO)) && perf_info.has_task_info()) {
         perf_info.free_task_info();
-    } else if ((_options & uint8_t(Options::RECORD_TASK_INFO)) && !perf_info.has_task_info()) {
+    } else if ((_options() & uint8_t(Options::RECORD_TASK_INFO)) && !perf_info.has_task_info()) {
         perf_info.allocate_task_info(_num_tasks);
     }
 }
@@ -487,8 +487,8 @@ void AP_Scheduler::task_info(ExpandingString &str)
     str.printf("TasksV2\n");
 
     // dynamically enable statistics collection
-    if (!(_options & uint8_t(Options::RECORD_TASK_INFO))) {
-        _options.set(_options | uint8_t(Options::RECORD_TASK_INFO));
+    if (!(_options() & uint8_t(Options::RECORD_TASK_INFO))) {
+        _options.set(_options() | uint8_t(Options::RECORD_TASK_INFO));
         return;
     }
 

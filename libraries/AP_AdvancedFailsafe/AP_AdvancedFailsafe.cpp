@@ -185,16 +185,16 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
 void
 AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
 {
-    if (!_enable) {
+    if (!_enable()) {
         return;
     }
 
 #if AP_FENCE_ENABLED
     // we always check for fence breach
-    if(_enable_geofence_fs) {
+    if(_enable_geofence_fs()) {
         const AC_Fence *ap_fence = AP::fence();
         if ((ap_fence != nullptr && ap_fence->get_breaches() != 0) || check_altlimit()) {
-            if (!_terminate) {
+            if (!_terminate()) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Terminating due to fence breach");
                 _terminate.set_and_notify(1);
             }
@@ -209,8 +209,8 @@ AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
     
     // check if RC termination is enabled
     // check for RC failure in manual mode or RC failure when AFS_RC_MANUAL is 0
-    if (_state != STATE_PREFLIGHT && !_terminate && _enable_RC_fs &&
-        (mode == AFS_MANUAL || mode == AFS_STABILIZED || !_rc_term_manual_only) &&
+    if (_state != STATE_PREFLIGHT && !_terminate() && _enable_RC_fs() &&
+        (mode == AFS_MANUAL || mode == AFS_STABILIZED || !_rc_term_manual_only()) &&
         _rc_fail_time_seconds > 0 &&
             (AP_HAL::millis() - last_valid_rc_ms) > (_rc_fail_time_seconds * 1000.0f)) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Terminating due to RC failure");
@@ -220,9 +220,9 @@ AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
     // tell the failsafe board if we are in manual control
     // mode. This tells it to pass through controls from the
     // receiver
-    if (_manual_pin != -1) {
-        hal.gpio->pinMode(_manual_pin, HAL_GPIO_OUTPUT);
-        hal.gpio->write(_manual_pin, mode==AFS_MANUAL);
+    if (_manual_pin() != -1) {
+        hal.gpio->pinMode(_manual_pin(), HAL_GPIO_OUTPUT);
+        hal.gpio->write(_manual_pin(), mode==AFS_MANUAL);
     }
 
     const uint32_t last_heartbeat_ms = gcs().sysid_mygcs_last_seen_time_ms();
@@ -251,9 +251,9 @@ AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
         if (!gcs_link_ok) {
             GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "AFS State: DATA_LINK_LOSS");
             _state = STATE_DATA_LINK_LOSS;
-            if (_wp_comms_hold) {
+            if (_wp_comms_hold()) {
                 _saved_wp = mission.get_current_nav_cmd().index;
-                mission.set_current_cmd(_wp_comms_hold);
+                mission.set_current_cmd(_wp_comms_hold());
                 if (mode == AFS_AUTO && option_is_set(Option::GCS_FS_ALL_AUTONOMOUS_MODES)) {
                     set_mode_auto();
                 }
@@ -268,9 +268,9 @@ AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
         if (!gps_lock_ok) {
             GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "AFS State: GPS_LOSS");
             _state = STATE_GPS_LOSS;
-            if (_wp_gps_loss) {
+            if (_wp_gps_loss()) {
                 _saved_wp = mission.get_current_nav_cmd().index;
-                mission.set_current_cmd(_wp_gps_loss);
+                mission.set_current_cmd(_wp_gps_loss());
             }
             // if two events happen within 30s we consider it to be part of the same event
             if (now - _last_gps_loss_ms > 30*1000UL) {
@@ -285,8 +285,8 @@ AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
         if (!gps_lock_ok) {
             // losing GPS lock when data link is lost
             // leads to termination if AFS_DUAL_LOSS is 1
-            if(_enable_dual_loss) {
-                if (!_terminate) {
+            if(_enable_dual_loss()) {
+                if (!_terminate()) {
                     GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Terminating due to dual loss");
                     _terminate.set_and_notify(1);
                 }
@@ -301,8 +301,8 @@ AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
 
             // we only return to the mission if we have not exceeded AFS_MAX_COM_LOSS
             if (_saved_wp != 0 && 
-                (_max_comms_loss <= 0 || 
-                 _comms_loss_count <= _max_comms_loss)) {
+                (_max_comms_loss() <= 0 || 
+                 _comms_loss_count <= _max_comms_loss())) {
                 mission.set_current_cmd(_saved_wp);            
                 _saved_wp = 0;
             }
@@ -313,7 +313,7 @@ AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
         if (!gcs_link_ok) {
             // losing GCS link when GPS lock lost
             // leads to termination if AFS_DUAL_LOSS is 1
-            if (!_terminate && _enable_dual_loss) {
+            if (!_terminate() && _enable_dual_loss()) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Terminating due to dual loss");
                 _terminate.set_and_notify(1);
             }
@@ -322,7 +322,7 @@ AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
             _state = STATE_AUTO;
             // we only return to the mission if we have not exceeded AFS_MAX_GPS_LOSS
             if (_saved_wp != 0 &&
-                (_max_gps_loss <= 0 || _gps_loss_count <= _max_gps_loss)) {
+                (_max_gps_loss() <= 0 || _gps_loss_count <= _max_gps_loss())) {
                 mission.set_current_cmd(_saved_wp);            
                 _saved_wp = 0;
             }
@@ -335,9 +335,9 @@ AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
     heartbeat();
 
     // set the terminate pin
-    if (_terminate_pin != -1) {
-        hal.gpio->pinMode(_terminate_pin, HAL_GPIO_OUTPUT);
-        hal.gpio->write(_terminate_pin, _terminate?1:0);
+    if (_terminate_pin() != -1) {
+        hal.gpio->pinMode(_terminate_pin(), HAL_GPIO_OUTPUT);
+        hal.gpio->write(_terminate_pin(), _terminate()?1:0);
     }    
 }
 
@@ -346,23 +346,23 @@ AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
 void
 AP_AdvancedFailsafe::heartbeat(void)
 {    
-    if (!_enable) {
+    if (!_enable()) {
         return;
     }
 
     // if we are not terminating or if there is a separate terminate
     // pin configured then toggle the heartbeat pin at 10Hz
-    if (_heartbeat_pin != -1 && (_terminate_pin != -1 || !_terminate)) {
+    if (_heartbeat_pin() != -1 && (_terminate_pin() != -1 || !_terminate())) {
         _heartbeat_pin_value = !_heartbeat_pin_value;
-        hal.gpio->pinMode(_heartbeat_pin, HAL_GPIO_OUTPUT);
-        hal.gpio->write(_heartbeat_pin, _heartbeat_pin_value);
+        hal.gpio->pinMode(_heartbeat_pin(), HAL_GPIO_OUTPUT);
+        hal.gpio->write(_heartbeat_pin(), _heartbeat_pin_value);
     }    
 }
 
 bool
 AP_AdvancedFailsafe::gps_altitude_ok() const
 {
-    if (_amsl_margin_gps == -1) {
+    if (_amsl_margin_gps() == -1) {
         return false;
     }
     const AP_GPS &gps = AP::gps();
@@ -374,7 +374,7 @@ AP_AdvancedFailsafe::gps_altitude_ok() const
     if (!location.get_alt_m(Location::AltFrame::ABSOLUTE, alt)) {
         return false;
     }
-    if (alt > _amsl_limit - _amsl_margin_gps) {
+    if (alt > _amsl_limit() - _amsl_margin_gps()) {
         return false;
     }
     return true;
@@ -384,10 +384,10 @@ AP_AdvancedFailsafe::gps_altitude_ok() const
 bool
 AP_AdvancedFailsafe::check_altlimit(void)
 {    
-    if (!_enable) {
+    if (!_enable()) {
         return false;
     }
-    if (_amsl_limit == 0 || _qnh_pressure <= 0) {
+    if (_amsl_limit() == 0 || _qnh_pressure <= 0) {
         // no limit set
         return false;
     }
@@ -405,7 +405,7 @@ AP_AdvancedFailsafe::check_altlimit(void)
     }
 
     float alt_amsl = baro.get_altitude_difference(_qnh_pressure*100, baro.get_pressure());
-    if (alt_amsl > _amsl_limit) {
+    if (alt_amsl > _amsl_limit()) {
         // pressure altitude breach
         return true;
     }
@@ -419,7 +419,7 @@ AP_AdvancedFailsafe::check_altlimit(void)
  */
 bool AP_AdvancedFailsafe::should_crash_vehicle(void)
 {
-    if (!_enable) {
+    if (!_enable()) {
         return false;
     }
     // ensure failsafe values are setup for if FMU crashes on PX4/Pixhawk
@@ -431,9 +431,9 @@ bool AP_AdvancedFailsafe::should_crash_vehicle(void)
     // determine if the vehicle should be crashed
     // only possible if FS_TERM_ACTION is 42 and _terminate is non zero
     // _terminate may be set via parameters, or a mavlink command
-    if (_terminate &&
-        (_terminate_action == TERMINATE_ACTION_TERMINATE ||
-         _terminate_action == TERMINATE_ACTION_LAND)) {
+    if (_terminate() &&
+        (_terminate_action() == TERMINATE_ACTION_TERMINATE ||
+         _terminate_action() == TERMINATE_ACTION_LAND)) {
         // we are terminating
         return true;
     }
@@ -445,7 +445,7 @@ bool AP_AdvancedFailsafe::should_crash_vehicle(void)
 // update GCS based termination
 // returns true if AFS is in the desired termination state
 bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) {
-    if (!_enable) {
+    if (!_enable()) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AFS not enabled, can't terminate the vehicle");
         return false;
     }
@@ -462,7 +462,7 @@ bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reaso
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Aborting termination due to %s", reason);
         }
         return true;
-    } else if (should_terminate && _terminate_action != TERMINATE_ACTION_TERMINATE) {
+    } else if (should_terminate && _terminate_action() != TERMINATE_ACTION_TERMINATE) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Unable to terminate, termination is not configured");
     }
     return false;
@@ -473,7 +473,7 @@ bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reaso
  */
 void AP_AdvancedFailsafe::max_range_update(void)
 {
-    if (_max_range_km <= 0) {
+    if (_max_range_km() <= 0) {
         return;
     }
 
@@ -497,7 +497,7 @@ void AP_AdvancedFailsafe::max_range_update(void)
     
     // check distance from first location
     float distance_km = _first_location.get_distance(AP::gps().location()) * 0.001;
-    if (distance_km > _max_range_km) {
+    if (distance_km > _max_range_km()) {
         uint32_t now = AP_HAL::millis();
         if (now - _term_range_notice_ms > 5000) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Terminating due to range %.1fkm", distance_km);

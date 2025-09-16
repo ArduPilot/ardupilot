@@ -68,7 +68,7 @@ const AP_Param::GroupInfo AP_Tuning::var_info[] = {
 */
 void AP_Tuning::check_selector_switch(void)
 {
-    if (selector == 0) {
+    if (selector() == 0) {
         // no selector switch enabled
         return;
     }
@@ -76,7 +76,7 @@ void AP_Tuning::check_selector_switch(void)
         selector_start_ms = 0;
         return;
     }
-    RC_Channel *selchan = rc().channel(selector-1);
+    RC_Channel *selchan = rc().channel(selector()-1);
     if (selchan == nullptr) {
         return;
     }
@@ -133,14 +133,14 @@ void AP_Tuning::re_center(void)
  */
 void AP_Tuning::check_input(uint8_t flightmode)
 {
-    if (channel <= 0 || parmset <= 0) {
+    if (channel() <= 0 || parmset() <= 0) {
         // disabled
         return;
     }
 
     // check for revert on changed flightmode
     if (flightmode != last_flightmode) {
-        if (need_revert != 0 && mode_revert != 0) {
+        if (need_revert != 0 && mode_revert() != 0) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Tuning: reverted");
             revert_parameters();
             re_center();
@@ -156,7 +156,7 @@ void AP_Tuning::check_input(uint8_t flightmode)
     }
     last_check_ms = now;
 
-    if (channel > RC_Channels::get_valid_channel_count()) {
+    if (channel() > RC_Channels::get_valid_channel_count()) {
         // not valid channel
         return;
     }
@@ -171,10 +171,10 @@ void AP_Tuning::check_input(uint8_t flightmode)
     }
 
     // cope with user changing parmset while tuning
-    if (current_set != parmset) {
+    if (current_set != parmset()) {
         re_center();
     }
-    current_set = parmset;
+    current_set = parmset();
     
     check_selector_switch();
 
@@ -187,11 +187,11 @@ void AP_Tuning::check_input(uint8_t flightmode)
         return;
     }
     
-    RC_Channel *chan = rc().channel(channel-1);
+    RC_Channel *chan = rc().channel(channel()-1);
     if (chan == nullptr) {
         return;
     }
-    float chan_value = linear_interpolate(-1, 1, chan->get_radio_in(), channel_min, channel_max);
+    float chan_value = linear_interpolate(-1, 1, chan->get_radio_in(), channel_min(), channel_max());
     if (dt_ms > 500) {
         last_channel_value = chan_value;
     }
@@ -258,7 +258,7 @@ void AP_Tuning::Log_Write_Parameter_Tuning(float value)
 // @Field: CenterValue: Center value (startpoint of current modifications) of parameter being tuned
     AP::logger().Write("PRTN", "TimeUS,Set,Parm,Value,CenterValue", "QBBff",
                                            AP_HAL::micros64(),
-                                           parmset,
+                                           parmset(),
                                            current_parm,
                                            (double)value,
                                            (double)center_value);

@@ -85,15 +85,15 @@ void AC_CustomControl::update(void)
 
 // choose which axis to apply custom controller output
 void AC_CustomControl::motor_set(Vector3f rpy) {
-    if (_custom_controller_mask & (uint8_t)CustomControlOption::ROLL) {
+    if (_custom_controller_mask() & (uint8_t)CustomControlOption::ROLL) {
         _motors->set_roll(rpy.x);
         _att_control->get_rate_roll_pid().set_integrator(0.0);
     }
-    if (_custom_controller_mask & (uint8_t)CustomControlOption::PITCH) {
+    if (_custom_controller_mask() & (uint8_t)CustomControlOption::PITCH) {
         _motors->set_pitch(rpy.y);
         _att_control->get_rate_pitch_pid().set_integrator(0.0);
     }
-    if (_custom_controller_mask & (uint8_t)CustomControlOption::YAW) {
+    if (_custom_controller_mask() & (uint8_t)CustomControlOption::YAW) {
         _motors->set_yaw(rpy.z);
         _att_control->get_rate_yaw_pid().set_integrator(0.0);
     }
@@ -122,13 +122,13 @@ void AC_CustomControl::set_custom_controller(bool enabled)
     _custom_controller_active = false;
 
     // don't allow accidental main controller reset without active custom controller
-    if (_controller_type == CustomControlType::CONT_NONE) {
+    if ((CustomControlType)_controller_type() == CustomControlType::CONT_NONE) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Custom controller is not enabled");
         return;
     }
 
     // controller type is out of range
-    if (_controller_type > CUSTOMCONTROL_MAX_TYPES) {
+    if (_controller_type() > CUSTOMCONTROL_MAX_TYPES) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Custom controller type is out of range");
         return;
     }
@@ -139,7 +139,7 @@ void AC_CustomControl::set_custom_controller(bool enabled)
         return;
     }
 
-    if (_custom_controller_mask == 0 && enabled) {
+    if (_custom_controller_mask() == 0 && enabled) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Axis mask is not set");
         return;
     }
@@ -148,12 +148,12 @@ void AC_CustomControl::set_custom_controller(bool enabled)
     if (!enabled) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Custom controller is OFF");
         // don't reset if the empty backend is selected
-        if (_controller_type > CustomControlType::CONT_EMPTY) {
+        if ((CustomControlType)_controller_type() > CustomControlType::CONT_EMPTY) {
             reset_main_att_controller();
         }
     }
 
-    if (enabled && _controller_type > CustomControlType::CONT_NONE) {
+    if (enabled && (CustomControlType)_controller_type() > CustomControlType::CONT_NONE) {
         // reset custom controller filter, integrator etc.
         _backend->reset();
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Custom controller is ON");
@@ -167,8 +167,8 @@ void AC_CustomControl::set_custom_controller(bool enabled)
 
 // check that RC switch is on, backend is not changed mid flight and controller type is selected
 bool AC_CustomControl::is_safe_to_run(void) {
-    if (_custom_controller_active && (_controller_type > CustomControlType::CONT_NONE)
-        && (_controller_type <= CUSTOMCONTROL_MAX_TYPES) && _backend != nullptr)
+    if (_custom_controller_active && ((CustomControlType)_controller_type() > CustomControlType::CONT_NONE)
+        && (_controller_type() <= CUSTOMCONTROL_MAX_TYPES) && _backend != nullptr)
     {
         return true;
     }
@@ -186,7 +186,7 @@ void AC_CustomControl::log_switch(void) {
     // @Field: Act: true if controller is active
     AP::logger().Write("CC", "TimeUS,Type,Act","QBB",
                             AP_HAL::micros64(),
-                            _controller_type,
+                            _controller_type(),
                             _custom_controller_active);
 }
 

@@ -25,7 +25,7 @@ AP_DroneCAN_Serial *AP_DroneCAN_Serial::serial[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 */
 void AP_DroneCAN_Serial::init(AP_DroneCAN *_dronecan)
 {
-    if (enable == 0) {
+    if (enable() == 0) {
         return;
     }
     const uint8_t driver_index = _dronecan->get_driver_index();
@@ -41,7 +41,7 @@ void AP_DroneCAN_Serial::init(AP_DroneCAN *_dronecan)
     for (uint8_t i=0; i<ARRAY_SIZE(ports); i++) {
         auto &p = ports[i];
         p.state.idx = base_port + i;
-        if (p.node > 0 && p.idx >= 0) {
+        if (p.node() > 0 && p.idx() >= 0) {
             p.init();
             AP::serialmanager().register_port(&p);
             need_subscriber = true;
@@ -71,7 +71,7 @@ void AP_DroneCAN_Serial::update(void)
         if (p.baudrate == 0) {
             continue;
         }
-        if (p.writebuffer == nullptr || p.node <= 0 || p.idx < 0) {
+        if (p.writebuffer == nullptr || p.node() <= 0 || p.idx() < 0) {
             continue;
         }
         uavcan_tunnel_Targetted pkt {};
@@ -85,8 +85,8 @@ void AP_DroneCAN_Serial::update(void)
                 continue;
             }
             n = MIN(avail, sizeof(pkt.buffer.data));
-            pkt.target_node = p.node;
-            switch (p.state.protocol) {
+            pkt.target_node = p.node();
+            switch (p.state.protocol()) {
                 case AP_SerialManager::SerialProtocol_MAVLink:
                     pkt.protocol.protocol = UAVCAN_TUNNEL_PROTOCOL_MAVLINK;
                     break;
@@ -102,7 +102,7 @@ void AP_DroneCAN_Serial::update(void)
             }
             pkt.buffer.len = n;
             pkt.baudrate = p.baudrate;
-            pkt.serial_id = p.idx;
+            pkt.serial_id = p.idx();
             pkt.options = UAVCAN_TUNNEL_TARGETTED_OPTION_LOCK_PORT;
             if (ptr != nullptr) {
                 memcpy(pkt.buffer.data, ptr, n);
@@ -130,7 +130,7 @@ void AP_DroneCAN_Serial::handle_tunnel_targetted(AP_DroneCAN *dronecan,
     }
     auto &s = *serial[driver_index];
     for (auto &p : s.ports) {
-        if (p.idx == msg.serial_id && transfer.source_node_id == p.node) {
+        if (p.idx() == msg.serial_id && transfer.source_node_id == p.node()) {
             WITH_SEMAPHORE(p.sem);
             if (p.readbuffer != nullptr) {
                 const uint32_t written = p.readbuffer->write(msg.buffer.data, msg.buffer.len);
@@ -148,7 +148,7 @@ void AP_DroneCAN_Serial::handle_tunnel_targetted(AP_DroneCAN *dronecan,
  */
 void AP_DroneCAN_Serial::Port::init(void)
 {
-    baudrate = AP_SerialManager::map_baudrate(state.baud);
+    baudrate = AP_SerialManager::map_baudrate(state.baud());
     begin(baudrate, 0, 0);
 }
 

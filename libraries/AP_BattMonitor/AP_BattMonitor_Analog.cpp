@@ -89,14 +89,14 @@ AP_BattMonitor_Analog::AP_BattMonitor_Analog(AP_BattMonitor &mon,
     _state.var_info = var_info;
     
     if (_params._type != AP_BattMonitor::Type::ANALOG_CURRENT_ONLY) {
-        _volt_pin_analog_source = hal.analogin->channel(_volt_pin);
+        _volt_pin_analog_source = hal.analogin->channel(_volt_pin());
         if (_volt_pin_analog_source == nullptr) {
             AP_BoardConfig::config_error("No analog voltage channel for battery %d", mon_state.instance);
         }
     }
     if (_params._type == AP_BattMonitor::Type::ANALOG_VOLTAGE_AND_CURRENT ||
         _params._type == AP_BattMonitor::Type::ANALOG_CURRENT_ONLY) {
-        _curr_pin_analog_source = hal.analogin->channel(_curr_pin);
+        _curr_pin_analog_source = hal.analogin->channel(_curr_pin());
         if (_curr_pin_analog_source == nullptr) {
             AP_BoardConfig::config_error("No analog current channel for battery %d", mon_state.instance);
         }
@@ -110,7 +110,7 @@ AP_BattMonitor_Analog::read()
 {
     if (_state.type != AP_BattMonitor::Type::ANALOG_CURRENT_ONLY) {
         // this copes with changing the pin at runtime
-        _state.healthy = _volt_pin_analog_source->set_pin(_volt_pin);
+        _state.healthy = _volt_pin_analog_source->set_pin(_volt_pin());
 
         // get voltage
         _state.voltage = (_volt_pin_analog_source->voltage_average() - _volt_offset) * _volt_multiplier;
@@ -126,7 +126,7 @@ AP_BattMonitor_Analog::read()
         const uint32_t dt_us = tnow - _state.last_time_micros;
 
         // this copes with changing the pin at runtime
-        _state.healthy &= _curr_pin_analog_source->set_pin(_curr_pin);
+        _state.healthy &= _curr_pin_analog_source->set_pin(_curr_pin());
 
         // read current
         _state.current_amps = (_curr_pin_analog_source->voltage_average() - _curr_amp_offset) * _curr_amp_per_volt;

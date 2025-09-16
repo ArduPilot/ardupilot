@@ -711,7 +711,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
     if (!have_gps() ||
             _gps.status() < AP_GPS::GPS_OK_FIX_3D ||
-            _gps.num_sats() < _gps_minsats) {
+            _gps.num_sats() < _gps_minsats()) {
         // no GPS, or not a good lock. From experience we need at
         // least 6 satellites to get a really reliable velocity number
         // from the GPS.

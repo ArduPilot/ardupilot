@@ -181,7 +181,7 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
 	}
 	
     // Scale the integration limit
-    float intLimScaled = _imax * 0.01f;
+    float intLimScaled = _imax() * 0.01f;
 
     // Constrain the integrator state
     _pid_info.I = constrain_float(_pid_info.I, -intLimScaled, intLimScaled);
