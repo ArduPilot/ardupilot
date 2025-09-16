@@ -11,7 +11,7 @@ Global definitions
 --]]
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 local SCRIPT_NAME = "VSPeak Modell flow meter driver"
-local NUM_SCRIPT_PARAMS = 4
+local NUM_SCRIPT_PARAMS = 5
 local LOOP_RATE_HZ = 10
 local last_warning_time_ms = uint32_t(0)
 local WARNING_DEADTIME_MS = 1000
@@ -83,6 +83,16 @@ local VSPF_CFACT = bind_add_param('CFACT', 3, 1)
   // @User: Standard
 --]]
 local VSPF_MODE = bind_add_param('MODE', 4, 0)
+
+--[[
+  // @Param: PORT
+  // @DisplayName: Scripting serial port number
+  // @Description: Which Scripting serial port the sensor is connected at.
+  // @Range: 1 10
+  // @User: Standard
+--]]
+local VSPF_PORT = bind_add_param('PORT', 5, 0)
+
 
 -- Warn the user, throttling the message rate.
 function warn_user(msg, severity)
@@ -238,7 +248,8 @@ end
 Setup function
 --]]
 function setup()
-    uart = serial:find_serial(0) -- First scripting serial
+    local port_num = VSPF_PORT:get()
+    uart = serial:find_serial(port_num) -- Find scripting serial port
     if not uart then
         warn_user("Unable to find scripting serial", MAV_SEVERITY.ERROR)
         return

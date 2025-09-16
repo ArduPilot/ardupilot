@@ -114,3 +114,7 @@ sensor measures too high and vice versa.
 Tells the script which mode it is operating in.
 0: Mode A, save consumption.
 1: Mode B, reset consumption.
+
+## VSPF_PORT
+
+Which Scripting serial port the sensor is connected at.
