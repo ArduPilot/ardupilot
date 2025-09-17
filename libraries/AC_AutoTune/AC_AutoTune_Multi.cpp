@@ -97,21 +97,21 @@
 // allows us to go beyond the 64 parameter limit
 const AP_Param::GroupInfo AC_AutoTune_Multi::var_info[] = {
 
-    // @Param: AXES
+    // @Param{Copter,Plane}: AXES
     // @DisplayName: Autotune axis bitmask
     // @Description: 1-byte bitmap of axes to autotune
     // @Bitmask: 0:Roll,1:Pitch,2:Yaw,3:YawD
     // @User: Standard
     AP_GROUPINFO("AXES", 1, AC_AutoTune_Multi, axis_bitmask,  7),  // AUTOTUNE_AXIS_BITMASK_DEFAULT
 
-    // @Param: AGGR
+    // @Param{Copter,Plane}: AGGR
     // @DisplayName: Autotune aggressiveness
     // @Description: Autotune aggressiveness. Defines the bounce back used to detect size of the D term.
     // @Range: 0.05 0.10
     // @User: Standard
     AP_GROUPINFO("AGGR", 2, AC_AutoTune_Multi, aggressiveness, 0.075f),
 
-    // @Param: MIN_D
+    // @Param{Copter,Plane}: MIN_D
     // @DisplayName: AutoTune minimum D
     // @Description: Defines the minimum D gain
     // @Range: 0.0001 0.005
