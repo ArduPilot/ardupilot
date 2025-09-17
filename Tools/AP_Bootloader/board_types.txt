@@ -407,6 +407,9 @@ AP_HW_KRSHKF7_MINI                   4000
 AP_HW_HAKRC_F405                     4200
 AP_HW_HAKRC_F405Wing                 4201
 
+# IDs 4300-4309 reserved for AeroCogito
+AP_HW_AeroCogito-H7Digital           4300
+
 # IDs 4500-4509 reserved for Lumenier
 AP_HW_LUMENIER_LUX_F765_NDAA         4500
 
