@@ -187,7 +187,7 @@ function update_battery()
     bat_state:current_amps(state.flow/1000*60.0*VSPF_CFACT:get()) -- Convert from ml/min to l/h.
     bat_state:temperature(0)
 
-    if VSPF_MODE:get() == 1 then
+    if VSPF_MODE:get() == 0 then
         bat_state:consumed_mah(state.fuel_ml*VSPF_CFACT:get())
     end
 
