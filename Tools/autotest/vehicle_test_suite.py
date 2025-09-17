@@ -393,8 +393,6 @@ class IBusResponse_GET_SENSOR_VALUE(IBusResponse):
         ret = 0
         for i in range(len(self.sensor_value)):
             x = self.sensor_value[i]
-            if sys.version_info.major < 3:
-                x = ord(x)
             ret = ret | (x << (i*8))
         return ret
 
@@ -448,8 +446,6 @@ class IBus(Telem):
 
     def packet_from_buffer(self, buffer):
         t = buffer[1] >> 4
-        if sys.version_info.major < 3:
-            t = ord(t)
         if t == 0x08:
             return IBusResponse_DISCOVER(buffer)
         if t == 0x09:
@@ -462,8 +458,6 @@ class IBus(Telem):
         self.buffer += self.do_read()
         while len(self.buffer):
             msglen = self.buffer[0]
-            if sys.version_info.major < 3:
-                msglen = ord(msglen)
             if len(self.buffer) < msglen:
                 return
             packet = self.packet_from_buffer(self.buffer[:msglen])
@@ -953,21 +947,15 @@ class LTM(Telem):
 
     def consume_frame(self):
         b2 = self.buffer[2]
-        if sys.version_info.major < 3:
-            b2 = ord(b2)
         frame_type = b2
         frame_length = self.frame_lengths[frame_type]
         # check frame CRC
         crc = 0
         count = 0
         for c in self.buffer[3:frame_length-1]:
-            if sys.version_info.major < 3:
-                c = ord(c)
             crc ^= c
             count += 1
         buffer_crc = self.buffer[frame_length-1]
-        if sys.version_info.major < 3:
-            buffer_crc = ord(buffer_crc)
         if crc != buffer_crc:
             raise NotAchievedException("Invalid checksum on frame type %s" % str(chr(frame_type)))
 #        self.progress("Received valid %s frame" % str(chr(frame_type)))
@@ -1003,24 +991,17 @@ class LTM(Telem):
                 return self.int32(7)
 
             def gndspeed(self):
-                ret = self.buffer[11]
-                if sys.version_info.major < 3:
-                    ret = ord(ret)
-                return ret
+                return self.buffer[11]
 
             def alt(self):
                 return self.int32(12)
 
             def sats(self):
                 s = self.buffer[16]
-                if sys.version_info.major < 3:
-                    s = ord(s)
                 return (s >> 2)
 
             def fix_type(self):
                 s = self.buffer[16]
-                if sys.version_info.major < 3:
-                    s = ord(s)
                 return s & 0b11
 
         class FrameA(Frame):
@@ -1057,22 +1038,16 @@ class LTM(Telem):
             if len(self.buffer) == 0:
                 break
             b0 = self.buffer[0]
-            if sys.version_info.major < 3:
-                b0 = ord(b0)
             if b0 != self.HEADER1:
                 self.bad_chars += 1
                 self.buffer = self.buffer[1:]
                 continue
             b1 = self.buffer[1]
-            if sys.version_info.major < 3:
-                b1 = ord(b1)
             if b1 != self.HEADER2:
                 self.bad_chars += 1
                 self.buffer = self.buffer[1:]
                 continue
             b2 = self.buffer[2]
-            if sys.version_info.major < 3:
-                b2 = ord(b2)
             if b2 not in [self.FRAME_G, self.FRAME_A, self.FRAME_S]:
                 self.bad_chars += 1
                 self.buffer = self.buffer[1:]
@@ -1129,13 +1104,9 @@ class DEVO(Telem):
         # check frame checksum
         checksum = 0
         for c in self.buffer[:self.frame_length-1]:
-            if sys.version_info.major < 3:
-                c = ord(c)
             checksum += c
         checksum &= 0xff    # since we receive 8 bit checksum
         buffer_checksum = self.buffer[self.frame_length-1]
-        if sys.version_info.major < 3:
-            buffer_checksum = ord(buffer_checksum)
         if checksum != buffer_checksum:
             raise NotAchievedException("Invalid checksum")
 
@@ -1178,8 +1149,6 @@ class DEVO(Telem):
             if len(self.buffer) == 0:
                 break
             b0 = self.buffer[0]
-            if sys.version_info.major < 3:
-                b0 = ord(b0)
             if b0 != self.HEADER:
                 self.bad_chars += 1
                 self.buffer = self.buffer[1:]
@@ -1246,10 +1215,7 @@ class FRSkyD(FRSky):
             if len(self.buffer) == 0:
                 break
             consume = 1
-            if sys.version_info.major >= 3:
-                b = self.buffer[0]
-            else:
-                b = ord(self.buffer[0])
+            b = self.buffer[0]
             if self.state == self.state_WANT_START_STOP_D:
                 if b != self.START_STOP_D:
                     # we may come into a stream mid-way, so we can't judge
@@ -1609,20 +1575,14 @@ class FRSkySPort(FRSky):
             self.progress("(0x%x): %u" % (sensor_id, self.sensor_id_poll_counts[sensor_id]))
 
     def read_bytestuffed_byte(self):
-        if sys.version_info.major >= 3:
-            b = self.buffer[0]
-        else:
-            b = ord(self.buffer[0])
+        b = self.buffer[0]
         if b == 0x7D:
             # byte-stuffed
             if len(self.buffer) < 2:
                 self.consume = 0
                 return None
             self.consume = 2
-            if sys.version_info.major >= 3:
-                b2 = self.buffer[1]
-            else:
-                b2 = ord(self.buffer[1])
+            b2 = self.buffer[1]
             if b2 == 0x5E:
                 return self.START_STOP_SPORT
             if b2 == 0x5D:
@@ -1758,10 +1718,7 @@ class FRSkySPort(FRSky):
             if len(self.buffer) == 0:
                 break
             self.consume = 1
-            if sys.version_info.major >= 3:
-                b = self.buffer[0]
-            else:
-                b = ord(self.buffer[0])
+            b = self.buffer[0]
 #            self.progress("Have (%s) bytes state=%s b=0x%02x" % (str(len(self.buffer)), str(self.state), b));
             if self.state == self.state_WANT_FRAME_TYPE:
                 if b in [self.SPORT_DATA_FRAME, self.SPORT_DOWNLINK_FRAME]:
@@ -6531,7 +6488,7 @@ class TestSuite(ABC):
 
     def send_get_parameter_direct(self, name):
         encname = name
-        if sys.version_info.major >= 3 and not isinstance(encname, bytes):
+        if not isinstance(encname, bytes):
             encname = bytes(encname, 'ascii')
         self.mav.mav.param_request_read_send(self.sysid_thismav(),
                                              1,
@@ -8984,10 +8941,8 @@ Also, ignores heartbeats not from our target system'''
                       (self.terrain_data_messages_sent,))
 
     def send_statustext(self, text):
-        if sys.version_info.major >= 3 and not isinstance(text, bytes):
+        if not isinstance(text, bytes):
             text = bytes(text, "ascii")
-        elif 'unicode' in str(type(text)):
-            text = text.encode('ascii')
         seq = 0
         while len(text):
             self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_WARNING, text[:50], id=self.statustext_id, chunk_seq=seq)
@@ -14596,10 +14551,9 @@ switch value'''
 
     def write_content_to_filepath(self, content, filepath):
         '''write biunary content to filepath'''
+        if not isinstance(content, bytes):
+            raise NotAchievedException("Want bytes to write_content_to_filepath")
         with open(filepath, "wb") as f:
-            if sys.version_info.major >= 3:
-                if not isinstance(content, bytes):
-                    raise NotAchievedException("Want bytes to write_content_to_filepath")
             f.write(content)
             f.close()
 
