@@ -955,6 +955,8 @@ private:
         mavlink_channel_t chan;
         int16_t param_index;
         char param_name[AP_MAX_NAME_SIZE+1];
+        uint8_t src_system_id;
+        uint8_t src_component_id;
     };
 
     struct pending_param_reply {
@@ -964,6 +966,9 @@ private:
         int16_t param_index;
         uint16_t count;
         char param_name[AP_MAX_NAME_SIZE+1];
+        uint8_t src_system_id;
+        uint8_t src_component_id;
+        MAV_PARAM_ERROR param_error;
     };
 
     // queue of pending parameter requests and replies
@@ -976,6 +981,9 @@ private:
     // IO timer callback for parameters
     void param_io_timer(void);
 
+    // support for returning explicit error for parameter protocol
+    void send_param_error(const mavlink_message_t &msg, const mavlink_param_set_t &param_set, MAV_PARAM_ERROR error);
+    void send_param_error(const pending_param_reply &msg, MAV_PARAM_ERROR error);
     uint8_t send_parameter_async_replies();
 
     void send_distance_sensor(const class AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
