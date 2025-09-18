@@ -43,7 +43,6 @@ define BOOTLOADER_BAUDRATE 57600
 # use a small bootloader timeout
 define HAL_BOOTLOADER_TIMEOUT 2500
 
-define HAL_NO_GPIO_IRQ
 define HAL_USE_EMPTY_IO TRUE
 define DMA_RESERVE_SIZE 0
 define HAL_NO_TIMER_THREAD
