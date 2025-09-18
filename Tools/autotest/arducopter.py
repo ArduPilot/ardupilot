@@ -2732,38 +2732,46 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.change_mode('LOITER')
 
-        # ensure OPTICAL_FLOW message is reasonable:
-        global flow_rate_rads
-        global rangefinder_distance
-        global gps_speed
-        global last_debug_time
-        flow_rate_rads = 0
-        rangefinder_distance = 0
-        gps_speed = 0
-        last_debug_time = 0
+        class CheckOpticalFlow(vehicle_test_suite.TestSuite.MessageHook):
+            '''ensures OPTICAL_FLOW data matches other data'''
+            def __init__(self, suite):
+                super().__init__(suite)
 
-        def check_optical_flow(mav, m):
-            global flow_rate_rads
-            global rangefinder_distance
-            global gps_speed
-            global last_debug_time
-            m_type = m.get_type()
-            if m_type == "OPTICAL_FLOW":
-                flow_rate_rads = math.sqrt(m.flow_comp_m_x**2+m.flow_comp_m_y**2)
-            elif m_type == "RANGEFINDER":
-                rangefinder_distance = m.distance
-            elif m_type == "GPS_RAW_INT":
-                gps_speed = m.vel/100.0  # cm/s -> m/s
-            of_speed = flow_rate_rads * rangefinder_distance
-            if abs(of_speed - gps_speed) > 3:
-                raise NotAchievedException("gps=%f vs of=%f mismatch" %
-                                           (gps_speed, of_speed))
+                self.flow_rate_rads = 0
+                self.rangefinder_distance = 0
+                self.gps_speed = 0
+                self.last_debug_time = 0
+                self.distance_sensor_distance = 0
 
-            now = self.get_sim_time_cached()
-            if now - last_debug_time > 5:
-                last_debug_time = now
-                self.progress("gps=%f of=%f" % (gps_speed, of_speed))
+            def progress_prefix(self):
+                return "COF: "
 
+            def process(self, mav, m):
+                m_type = m.get_type()
+                if m_type == "OPTICAL_FLOW":
+                    self.flow_rate_rads = math.sqrt(m.flow_comp_m_x**2+m.flow_comp_m_y**2)
+                elif m_type == "RANGEFINDER":
+                    self.rangefinder_distance = m.distance
+                elif m_type == "DISTANCE_SENSOR":
+                    self.distance_sensor_distance = m.current_distance * 0.01
+                elif m_type == "GPS_RAW_INT":
+                    self.gps_speed = m.vel/100.0  # cm/s -> m/s
+
+                of_speed = self.flow_rate_rads * self.rangefinder_distance
+                if abs(of_speed - self.gps_speed) > 3:
+                    raise NotAchievedException(f"gps={self.gps_speed} vs of={of_speed} mismatch")
+                of_speed = self.flow_rate_rads * self.distance_sensor_distance
+                if abs(of_speed - self.gps_speed) > 3:
+                    raise NotAchievedException(f"gps={self.gps_speed} vs of={of_speed} mismatch")
+
+                now = self.suite.get_sim_time_cached()
+                if now - self.last_debug_time > 5:
+                    self.last_debug_time = now
+                    self.progress(f"gps={self.gps_speed} of={of_speed}")
+
+        self.context_set_message_rate_hz('RANGEFINDER', self.sitl_streamrate())
+
+        check_optical_flow = CheckOpticalFlow(self)
         self.install_message_hook_context(check_optical_flow)
 
         self.fly_generic_mission("CMAC-copter-navtest.txt")
@@ -4333,6 +4341,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def RangeFinder(self):
         '''Test RangeFinder Basic Functionality'''
         self.assert_not_receiving_message('RANGEFINDER', timeout=5)
+        self.assert_not_receiving_message('DISTANCE_SENSOR', timeout=5)
 
         # may need to force a rotation if some other test has used the
         # rangefinder...
@@ -4348,7 +4357,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
         self.progress("Making sure we now get RANGEFINDER messages")
+        self.context_set_message_rate_hz('RANGEFINDER', self.sitl_streamrate())
         m = self.assert_receive_message('RANGEFINDER', timeout=10)
+
+        self.progress("Making sure we now get DISTANCE_SENSOR messages")
+        self.assert_receive_message('DISTANCE_SENSOR', timeout=10)
 
         self.progress("Checking RangeFinder is marked as enabled in mavlink")
         m = self.assert_receive_message('SYS_STATUS', timeout=10)
@@ -4374,13 +4387,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.takeoff(10, mode="LOITER")
 
-        m_r = self.assert_receive_message('RANGEFINDER')
         m_p = self.assert_receive_message('GLOBAL_POSITION_INT')
 
+        m_r = self.assert_receive_message('RANGEFINDER')
         if abs(m_r.distance - m_p.relative_alt/1000) > 1:
             raise NotAchievedException(
-                "rangefinder/global position int mismatch %0.2f vs %0.2f" %
+                "RANGEFINDER/GLOBAL_POSITION_INT mismatch %0.2f vs %0.2f" %
                 (m_r.distance, m_p.relative_alt/1000))
+
+        m_ds = self.assert_receive_message('DISTANCE_SENSOR')
+        if abs(m_ds.current_distance * 0.01 - m_p.relative_alt/1000) > 1:
+            raise NotAchievedException(
+                "DISTANCE_SENSOR/GLOBAL_POSITION_INT mismatch %0.2f vs %0.2f" %
+                (m_ds.current_distance*0.01, m_p.relative_alt/1000))
 
         self.land_and_disarm()
 
@@ -9585,10 +9604,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''ensure rangefinder gives height-above-ground'''
         expected_alt = 5
         self.takeoff(expected_alt, mode='GUIDED', alt_minimum_duration=5)
-        rf = self.assert_receive_message("RANGEFINDER")
+        ds = self.assert_receive_message("DISTANCE_SENSOR")
         gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
-        delta = abs(rf.distance - gpi.relative_alt/1000.0)
-        alt_msg = f"{rf.distance=} disagrees with global-position-int.relative_alt ({gpi.relative_alt/1000.0}) by {delta}m"
+        delta = abs(ds.current_distance*0.01 - gpi.relative_alt/1000.0)
+        alt_msg = f"{ds.current_distance*0.01=} disagrees with global-position-int.relative_alt ({gpi.relative_alt/1000.0}) by {delta}m"  # NOQA:E501
         self.progress(alt_msg)
         self.progress(f"Terrain report: {self.mav.messages['TERRAIN_REPORT']}")
         if delta > 1:
@@ -9924,6 +9943,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         expected_alt = 5
         self.user_takeoff(alt_min=expected_alt)
 
+        self.context_push()
+        self.context_set_message_rate_hz('RANGEFINDER', self.sitl_streamrate())
+
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time() - tstart > 5:
@@ -9931,17 +9953,20 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             rf = self.assert_receive_message("RANGEFINDER")
             gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
             if abs(rf.distance - gpi.relative_alt/1000.0) > 1:
-                print("rangefinder alt (%s) disagrees with global-position-int.relative_alt (%s)" %
-                      (rf.distance, gpi.relative_alt/1000.0))
+                self.progress("rangefinder alt (%s) disagrees with global-position-int.relative_alt (%s)" %
+                              (rf.distance, gpi.relative_alt/1000.0))
                 continue
 
             ds = self.assert_receive_message("DISTANCE_SENSOR", timeout=2, verbose=True)
             if abs(ds.current_distance/100.0 - gpi.relative_alt/1000.0) > 1:
-                print(
+                self.progress(
                     "distance sensor.current_distance (%f) disagrees with global-position-int.relative_alt (%s)" %
                     (ds.current_distance/100.0, gpi.relative_alt/1000.0))
                 continue
             break
+
+        self.context_pop()
+
         self.progress("mavlink rangefinder OK")
         self.land_and_disarm()
 
@@ -10114,6 +10139,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline([
             "--serial4=sim:lightwareserial",
         ])
+        self.context_set_message_rate_hz('RANGEFINDER', self.sitl_streamrate())
         self.takeoff(95, mode='GUIDED', timeout=240, max_err=0.5)
         self.assert_rangefinder_distance_between(90, 100)
 

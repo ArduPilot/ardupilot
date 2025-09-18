@@ -7423,11 +7423,12 @@ class TestSuite(ABC):
                                        (quality, m.signal_quality))
 
     def get_rangefinder_distance(self):
-        m = self.assert_receive_message('RANGEFINDER', timeout=5)
-        return m.distance
+        '''returns current rangefinder distance in metres'''
+        m = self.assert_receive_message('DISTANCE_SENSOR', timeout=5)
+        return m.current_distance * 0.01
 
     def wait_rangefinder_distance(self, dist_min, dist_max, timeout=30, **kwargs):
-        '''wait for RANGEFINDER distance'''
+        '''wait for DISTANCE_SENSOR distance in metres'''
         def validator(value2, target2=None):
             if dist_min <= value2 <= dist_max:
                 return True
@@ -7435,7 +7436,7 @@ class TestSuite(ABC):
                 return False
 
         self.wait_and_maintain(
-            value_name="RageFinderDistance",
+            value_name="RangeFinderDistance",
             target=dist_min,
             current_value_getter=lambda: self.get_rangefinder_distance(),
             accuracy=(dist_max - dist_min),
