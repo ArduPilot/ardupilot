@@ -3092,6 +3092,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
         ret.update({
             'HAL_NO_RCIN_THREAD': 'HAL_NO_RCIN_THREAD is no longer used; try "define HAL_RCIN_THREAD_ENABLED 0"',
             'HAL_NO_MONITOR_THREAD': 'HAL_NO_MONITOR_THREAD is no longer used; try "define HAL_MONITOR_THREAD_ENABLED 0"',
+            'HAL_NO_GPIO_IRQ': 'HAL_NO_GPIO_IRQ is no longer used; remove it from your hwdef',
         })
         return ret
 
