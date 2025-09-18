@@ -13,7 +13,7 @@
 
 // bit masks for enabled fence types.  Used for TYPE parameter
 #define AC_FENCE_TYPE_ALT_MAX                       1       // high alt fence which usually initiates an RTL
-#define AC_FENCE_TYPE_CIRCLE                        2       // circular horizontal fence (usually initiates an RTL), deprecated in 4.7 by MAV_CMD_NAV_FENCE_HOME_CIRCLE_INCLUSION .
+#define AC_FENCE_TYPE_CIRCLE                        2       // circular horizontal fence (usually initiates an RTL)
 #define AC_FENCE_TYPE_POLYGON                       4       // polygon horizontal fence
 #define AC_FENCE_TYPE_ALT_MIN                       8       // low alt fence which usually initiates an RTL
 #define AC_FENCE_ARMING_FENCES  (AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON)
