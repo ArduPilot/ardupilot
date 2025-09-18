@@ -18,13 +18,20 @@
 
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
 
-AP_Compass_ExternalAHRS::AP_Compass_ExternalAHRS(uint8_t port)
+AP_Compass_Backend *AP_Compass_ExternalAHRS::probe(uint8_t port)
 {
     auto devid = AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SERIAL,port,0,0);
-    register_compass(devid, instance);
-
-    set_dev_id(instance, devid);
-    set_external(instance, true);
+    auto *ret = NEW_NOTHROW AP_Compass_ExternalAHRS();
+    if (ret == nullptr) {
+        return nullptr;
+    }
+    if (!ret->register_compass(devid, ret->instance)) {
+        delete ret;
+        return nullptr;
+    }
+    ret->set_dev_id(ret->instance, devid);
+    ret->set_external(ret->instance, true);
+    return ret;
 }
 
 void AP_Compass_ExternalAHRS::handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt)
