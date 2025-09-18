@@ -1373,7 +1373,7 @@ void Compass::_detect_backends(void)
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
     const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::COMPASS);
     if (serial_port >= 0) {
-        ADD_BACKEND(DRIVER_EXTERNALAHRS, NEW_NOTHROW AP_Compass_ExternalAHRS(serial_port));
+        ADD_BACKEND(DRIVER_EXTERNALAHRS, AP_Compass_ExternalAHRS::probe(serial_port));
     }
 #endif
     
@@ -1387,7 +1387,10 @@ void Compass::_detect_backends(void)
 #endif
 
 #if AP_COMPASS_SITL_ENABLED && !AP_TEST_DRONECAN_DRIVERS
-    ADD_BACKEND(DRIVER_SITL, NEW_NOTHROW AP_Compass_SITL());
+    // create several SITL compass backends:
+    for (uint8_t i=0; i<3; i++) {
+        ADD_BACKEND(DRIVER_SITL, NEW_NOTHROW AP_Compass_SITL(i));
+    }
 #endif
 
 #if AP_COMPASS_DRONECAN_ENABLED

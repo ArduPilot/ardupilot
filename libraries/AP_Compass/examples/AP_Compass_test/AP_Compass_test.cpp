@@ -25,10 +25,21 @@
 #include <AP_Compass/AP_Compass.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_Logger/AP_Logger.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static AP_BoardConfig board_config;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+SITL::SIM sitl;
+#endif
+
+static AP_Int32 log_bitmask;
+static AP_Logger logger;
+static const struct LogStructure log_structure[] = {
+};
 
 class DummyVehicle {
 public:
@@ -54,6 +65,9 @@ static void setup()
     board_config.init();
     vehicle.ahrs.init();
     compass.init();
+    log_bitmask.set((uint32_t)-1);
+    logger.init(log_bitmask, log_structure, ARRAY_SIZE(log_structure));
+
     hal.console->printf("init done - %u compasses detected\n", compass.get_count());
 
     // set offsets to account for surrounding interference
