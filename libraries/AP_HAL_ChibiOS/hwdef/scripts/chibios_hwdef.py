@@ -1189,9 +1189,7 @@ class ChibiOSHWDef(hwdef.HWDef):
             f.write('''
 #define HAL_BOOTLOADER_BUILD TRUE
 #define HAL_USE_ADC FALSE
-#define HAL_USE_EXT FALSE
 #define HAL_NO_PRINTF
-#define HAL_NO_CCM
 #define HAL_USE_I2C FALSE
 #define HAL_USE_PWM FALSE
 #define CH_DBG_ENABLE_STACK_CHECK FALSE
