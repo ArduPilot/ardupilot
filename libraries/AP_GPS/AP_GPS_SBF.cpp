@@ -99,6 +99,11 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps,
     // if we ever parse RTK observations it will always be of type NED, so set it once
     state.rtk_baseline_coords_type = RTK_BASELINE_COORDINATE_SYSTEM_NED;
 
+#if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
+    //all septentrio receivers support GNSS integrity msg
+    state.has_gnss_integrity = true;
+#endif //AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
+
     // yaw available when option bit set or using dual antenna
     if (option_set(AP_GPS::DriverOptions::SBF_UseBaseForYaw) ||
         (get_type() == AP_GPS::GPS_Type::GPS_TYPE_SBF_DUAL_ANTENNA)) {

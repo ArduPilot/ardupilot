@@ -287,6 +287,7 @@ public:
 #if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
         // Integrity message information 
         // all the following fields must only all be filled by backend drivers
+        bool has_gnss_integrity;          ///< True if the receiver supports GNSS integrity msg
         uint32_t system_errors;            ///< System errors
         uint8_t authentication_state;      ///< Authentication state of GNSS signals
         uint8_t jamming_state;             ///< Jamming state of GNSS signals
@@ -703,31 +704,6 @@ private:
     // rate it is simply a helper for use in the backends for determining what rate
     // they should be configuring the GPS to run at
     uint16_t get_rate_ms(uint8_t instance) const;
-
-#if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
-    // general errors in the GNSS system
-    uint32_t get_system_errors(uint8_t instance) const {
-        return state[instance].system_errors;
-    }
-
-
-    // authentication state of GNSS signals
-    uint8_t get_authentication_state(uint8_t instance) const {
-        return state[instance].authentication_state;
-    }
-
-
-    // jamming state of GNSS signals
-    uint8_t get_jamming_state(uint8_t instance) const {
-        return state[instance].jamming_state;
-    }
-
-
-    // spoofing state of GNSS signals
-    uint8_t get_spoofing_state(uint8_t instance) const {
-        return state[instance].spoofing_state;
-    }
-#endif  // AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
 
     struct GPS_timing {
         // the time we got our last fix in system milliseconds
