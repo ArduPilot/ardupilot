@@ -777,7 +777,7 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
     // get the fence radius in cm
     const float fence_radius = _fence.get_radius() * 100.0f;
     // get the margin to the fence in cm
-    const float margin_cm = _fence.get_margin() * 100.0f;
+    const float margin_cm = _fence.get_horizontal_margin() * 100.0f;
 
     if (margin_cm > fence_radius) {
         return;
@@ -877,7 +877,7 @@ void AC_Avoid::adjust_velocity_inclusion_and_exclusion_polygons(float kP, float 
         const Vector2f* boundary = fence->polyfence().get_inclusion_polygon(i, num_points);
         Vector2f backup_vel_inc;
         // adjust velocity
-        adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, backup_vel_inc, boundary, num_points, fence->get_margin(), dt, true);
+        adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, backup_vel_inc, boundary, num_points, fence->get_horizontal_margin(), dt, true);
         find_max_quadrant_velocity(backup_vel_inc, quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel);
     }
 
@@ -888,7 +888,7 @@ void AC_Avoid::adjust_velocity_inclusion_and_exclusion_polygons(float kP, float 
         const Vector2f* boundary = fence->polyfence().get_exclusion_polygon(i, num_points);
         Vector2f backup_vel_exc;
         // adjust velocity
-        adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, backup_vel_exc, boundary, num_points, fence->get_margin(), dt, false);
+        adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, backup_vel_exc, boundary, num_points, fence->get_horizontal_margin(), dt, false);
         find_max_quadrant_velocity(backup_vel_exc, quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel);
     }
     // desired backup velocity is sum of maximum velocity component in each quadrant 
@@ -925,7 +925,7 @@ void AC_Avoid::adjust_velocity_inclusion_circles(float kP, float accel_cmss, Vec
     position_NE = position_NE * 100.0f;  // m to cm
 
     // get the margin to the fence in cm
-    const float margin_cm = fence->get_margin() * 100.0f;
+    const float margin_cm = fence->get_horizontal_margin() * 100.0f;
 
     // get desired speed
     const float desired_speed = desired_vel_cms.length();
@@ -1062,7 +1062,7 @@ void AC_Avoid::adjust_velocity_exclusion_circles(float kP, float accel_cmss, Vec
     position_NE = position_NE * 100.0f;  // m to cm
 
     // get the margin to the fence in cm
-    const float margin_cm = fence->get_margin() * 100.0f;
+    const float margin_cm = fence->get_horizontal_margin() * 100.0f;
 
     // for backing away
     Vector2f quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel;
@@ -1184,7 +1184,7 @@ void AC_Avoid::adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f
     float margin = 0;
 #if AP_FENCE_ENABLED
     if (AP::fence()) {
-        margin = AP::fence()->get_margin();
+        margin = AP::fence()->get_horizontal_margin();
     }
 #endif
     adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, backup_vel, boundary, num_points, margin, dt, true);
