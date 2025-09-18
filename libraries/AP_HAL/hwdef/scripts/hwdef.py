@@ -255,6 +255,7 @@ class HWDef:
             'HAL_NO_GCS': 'HAL_NO_GCS is no longer used; try "define HAL_GCS_ENABLED 0"',
             'HAL_NO_LOGGING': 'HAL_NO_LOGGING is no longer used; try "define HAL_LOGGING_ENABLED 0"',
             'HAL_NO_UARTDRIVER': 'HAL_NO_UARTDRIVER is no longer used; try "define AP_HAL_UARTDRIVER_ENABLED 0"',
+            'HAL_DISABLE_LOOP_DELAY': 'HAL_DISABLE_LOOP_DELAY is no longer used; try "define HAL_SCHEDULER_LOOP_DELAY_ENABLED 0"',  # noqa:E501
         }
 
     def assert_good_define(self, name):
