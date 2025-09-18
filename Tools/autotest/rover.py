@@ -5938,7 +5938,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_ready_to_arm()
         if self.mavproxy is not None:
             self.mavproxy.send('script /tmp/post-locations.scr\n')
+        self.context_push()
+        self.context_set_message_rate_hz('RANGEFINDER', self.sitl_streamrate())
         m = self.assert_receive_message('RANGEFINDER', very_verbose=True)
+        self.context_pop()
         if m.voltage == 0:
             raise NotAchievedException("Did not get non-zero voltage")
         want_range = 10
