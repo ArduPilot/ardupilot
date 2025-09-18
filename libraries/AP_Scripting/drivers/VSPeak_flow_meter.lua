@@ -111,16 +111,7 @@ end
 function read_uart()
     local n_avail = uart:available():toint()
 
-    -- Discard up to BUFFER_LEN bytes.
-    -- These are stale data.
-    if (n_avail - BUFFER_LEN) > 0 then
-        n_avail = BUFFER_LEN
-        for _ = 1, (n_avail-BUFFER_LEN) do
-            uart:read()
-        end
-    end
-
-    -- Read in the rest of the data.
+    -- Read in the all of the data.
     for _ = 1, n_avail do
         local val = uart:read()
         table.insert(state.buffer, val)
@@ -131,7 +122,8 @@ end
 function parse_buffer()
 
     -- Drop old data.
-    for _ = 1, (#state.buffer - BUFFER_LEN) do
+    for _ = 1, (#state.buffer - 2*BUFFER_LEN) do
+        -- Leave up to 2*BUFFER_LEN, in case a full frame is somewhere in there.
         table.remove(state.buffer, 1)
     end
 
@@ -192,6 +184,7 @@ function update_battery()
     end
 
     battery:handle_scripting(VSPF_BAT_IDX:get()-1, bat_state)
+    state.updated = false
 end
 
 --[[
