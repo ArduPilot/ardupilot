@@ -99,6 +99,8 @@ void GCS_MAVLINK_Sub::send_scaled_pressure3()
 #if AP_TEMPERATURE_SENSOR_ENABLED
     float temperature;
     if (!sub.temperature_sensor.get_temperature(temperature)) {
+        // Fall back to original behaviour
+        GCS_MAVLINK::send_scaled_pressure3();
         return;
     }
     mavlink_msg_scaled_pressure3_send(
@@ -108,6 +110,9 @@ void GCS_MAVLINK_Sub::send_scaled_pressure3()
         0,
         temperature * 100,
         0); // TODO: use differential pressure temperature
+#else
+    // Fall back to standard behaviour
+    GCS_MAVLINK::send_scaled_pressure3();
 #endif
 }
 
