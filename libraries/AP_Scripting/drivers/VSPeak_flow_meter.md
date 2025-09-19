@@ -19,7 +19,7 @@ reading even if you power down or reboot the autopilot.
 However, you will have to manually reset the sensor each time you refuel the
 vehicle. This is achieved by issuing a PWM signal to the sensor.
 
-To set that mode, you need to set the `Auto Reset` setting to `Power ON` in
+To set that mode, you need to set the `Auto Reset` setting to `OFF` in
 the `FLOW.txt` sensor settings file.
 For more information, read the sensor manual.
 
@@ -33,7 +33,7 @@ On the upside, you do not need to wire a PWM signal to the sensor to reset the
 consumed volume measurement. You will have to update the starting volume
 manually.
 
-To set that mode, you need to set the `Auto Reset` setting to `Power OFF` in
+To set that mode, you need to set the `Auto Reset` setting to `Power ON` in
 the `FLOW.txt` sensor settings file.
 For more information, read the sensor manual.
 

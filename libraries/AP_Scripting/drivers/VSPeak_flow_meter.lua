@@ -93,6 +93,15 @@ local VSPF_MODE = bind_add_param('MODE', 4, 0)
 --]]
 local VSPF_PORT = bind_add_param('PORT', 5, 0)
 
+function print_buffer()
+
+    local outstring = "Buffer:"
+    for idx = 1, #state.buffer do
+        outstring = outstring .. "," .. state.buffer[idx]
+    end
+    gcs:send_text(0, outstring)
+end
+
 
 -- Warn the user, throttling the message rate.
 function warn_user(msg, severity)
@@ -135,9 +144,16 @@ function parse_buffer()
             break
         end
     end
+
+    -- HACK: If the 2nd byte is also the header byte, then we're probably
+    -- reading the checksum. Skip one more.
+    if state.buffer[2] == HEADER_BYTE then
+        table.remove(state.buffer, 1)
+    end
     
     -- Check if the buffer has enough data in it.
     if #state.buffer >= FRAME_LEN then
+        ---print_buffer()
         -- Parse the data.
         state.flow = uint16_value(state.buffer[3], state.buffer[2])
         state.fuel_ml = uint16_value(state.buffer[5], state.buffer[4])
@@ -179,7 +195,7 @@ function update_battery()
     bat_state:current_amps(state.flow/1000*60.0*VSPF_CFACT:get()) -- Convert from ml/min to l/h.
     bat_state:temperature(0)
 
-    if VSPF_MODE:get() == 0 then
+    if VSPF_MODE:get() == 1 then
         bat_state:consumed_mah(state.fuel_ml*VSPF_CFACT:get())
     end
 
