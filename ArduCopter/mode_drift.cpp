@@ -5,9 +5,6 @@
 /*
  * Drift flight mode — meters/second and radians version
  */
-
-// Coupling from lateral speed error (m/s) to roll command (rad):
-//   Original was 8 cd/(cm/s).
 //   Converted: 8 [cd/(cm/s)] * (π/18000 rad/cd) * (100 cm/m) = 0.13962634 rad/(m/s)
 #ifndef DRIFT_SPEEDGAIN_RAD
  # define DRIFT_SPEEDGAIN_RAD 0.13962634f
@@ -16,24 +13,22 @@
     #error please convert to radians and use DRIFT_SPEEDGAIN_RAD
 #endif
 
-// Speed limits and scheduling thresholds converted from cm/s
 #ifndef DRIFT_SPEEDLIMIT_MS
- # define DRIFT_SPEEDLIMIT_MS 5.60f       // 560 cm/s -> 5.60 m/s
+ # define DRIFT_SPEEDLIMIT_MS 5.60f
 #endif
 #ifdef DRIFT_SPEEDLIMIT
     #error please convert to meters per second and use DRIFT_SPEEDLIMIT_MS
 #endif
 
 #ifndef DRIFT_VEL_FORWARD_MIN_MS
- # define DRIFT_VEL_FORWARD_MIN_MS 20.0f  // 2000 cm/s -> 20.0 m/s
+ # define DRIFT_VEL_FORWARD_MIN_MS 20.0f
 #endif
 #ifdef DRIFT_VEL_FORWARD_MIN
     #error please convert to meters per second and use DRIFT_VEL_FORWARD_MIN_MS
 #endif
 
-// Throttle assist (velz changed from cm/s to m/s, so gain ×100)
 #ifndef DRIFT_THR_ASSIST_GAIN_MS
- # define DRIFT_THR_ASSIST_GAIN_MS 0.18f     // was 0.0018 with cm/s
+ # define DRIFT_THR_ASSIST_GAIN_MS 0.18f
 #endif
 #ifdef DRIFT_THR_ASSIST_GAIN
     #error please convert to meters per second and use DRIFT_THR_ASSIST_GAIN_MS
@@ -79,8 +74,6 @@ void ModeDrift::run()
     const float vel_forward_2_ms = MIN(fabsf(vel_forward_ms), DRIFT_VEL_FORWARD_MIN_MS);
 
     // yaw-rate schedule:
-    //   original: target_yaw_rate_cds = target_roll_cd * (1 - v/5000) * R / 45
-    //   new:      target_yaw_rate_rads = (target_roll_rad / radians(45)) * radians(R) * (1 - v/50)
     const float yaw_rate_max_rads = radians(g2.command_model_acro_y.get_rate());
     const float target_yaw_rate_rads = (target_roll_rad / radians(45.0f)) * yaw_rate_max_rads * (1.0f - (vel_forward_2_ms / 50.0f));
 
@@ -94,13 +87,9 @@ void ModeDrift::run()
     roll_input_rad = roll_input_rad * 0.96f + yaw_stick_rad * 0.04f;
 
     // convert user input into desired roll velocity term (m/s equivalent)
-    // original: vel_right_cms - (roll_input_cd / SPEEDGAIN)
-    // new:      vel_right_ms  - (roll_input_rad / SPEEDGAIN)  [since SPEEDGAIN now rad/(m/s)]
     float roll_vel_error_ms = vel_right_ms - (roll_input_rad / DRIFT_SPEEDGAIN_RAD);
 
     // roll velocity is fed into roll angle to minimize slip
-    // original: target_roll_cd = roll_vel_error_cms * -SPEEDGAIN
-    // new:      target_roll_rad = roll_vel_error_ms * -SPEEDGAIN
     target_roll_rad = roll_vel_error_ms * -DRIFT_SPEEDGAIN_RAD;
 
     // constrain to ±45 deg
@@ -108,7 +97,6 @@ void ModeDrift::run()
 
     // If we let go of sticks, bring us to a stop
     if (is_zero(target_pitch_rad)) {
-        // 0.14 / (0.03 * 100) timing comment (call frequency) still applies to "braker" rise;
         // Clamp to the same coupling constant, now in rad/(m/s)
         braker += 0.03f;
         braker = MIN(braker, DRIFT_SPEEDGAIN_RAD);
