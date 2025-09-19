@@ -12,7 +12,7 @@
 #include <AC_Avoidance/AC_Avoid.h>                 // Stop at fence library
 
 // maximum velocities and accelerations
-#define WPNAV_ACCELERATION_MS           2.5        // default horizontal acceleration limit for waypoint navigation (m/s²)
+#define WPNAV_ACCELERATION_MS           2.5        // default horizontal acceleration limit for waypoint navigation (m/s/s)
 
 class AC_WPNav
 {
@@ -136,23 +136,23 @@ public:
     // Derived from the WPNAV_SPEED_DN parameter. Always positive.
     float get_default_speed_down_ms() const { return fabsf(_wp_speed_down_cms * 0.01); }
 
-    // Returns the vertical acceleration in cm/s² used during waypoint navigation.
+    // Returns the vertical acceleration in cm/s/s used during waypoint navigation.
     // Always positive. See get_accel_U_mss() for full details.
     float get_accel_U_cmss() const { return get_accel_U_mss() * 100.0; }
 
-    // Returns the vertical acceleration in m/s² used during waypoint navigation.
+    // Returns the vertical acceleration in m/s/s used during waypoint navigation.
     // Derived from the WPNAV_ACCEL_Z parameter. Always positive.
     float get_accel_U_mss() const { return _wp_accel_z_cmss * 0.01; }
 
-    // Returns the horizontal acceleration in cm/s² used during waypoint navigation.
+    // Returns the horizontal acceleration in cm/s/s used during waypoint navigation.
     // See get_wp_acceleration_mss() for full details.
     float get_wp_acceleration_cmss() const { return get_wp_acceleration_mss() * 100.0; }
 
-    // Returns the horizontal acceleration in m/s² used during waypoint navigation.
+    // Returns the horizontal acceleration in m/s/s used during waypoint navigation.
     // Derived from the WPNAV_ACCEL parameter. Falls back to a default if unset.
     float get_wp_acceleration_mss() const { return (is_positive(_wp_accel_cmss)) ? _wp_accel_cmss * 0.01 : WPNAV_ACCELERATION_MS; }
 
-    // Returns the maximum lateral acceleration in m/s² used during waypoint cornering.
+    // Returns the maximum lateral acceleration in m/s/s used during waypoint cornering.
     // Derived from WPNAV_ACCEL_C or defaults to 2x WPNAV_ACCEL if unset.
     float get_corner_acceleration_mss() const { return (is_positive(_wp_accel_c_cmss)) ? _wp_accel_c_cmss * 0.01 : 2.0 * get_wp_acceleration_mss(); }
 
@@ -393,10 +393,10 @@ protected:
     AP_Float    _wp_speed_up_cms;    // default climb rate in cm/s for waypoint navigation
     AP_Float    _wp_speed_down_cms;  // default descent rate in cm/s for waypoint navigation
     AP_Float    _wp_radius_cm;       // waypoint radius in cm; waypoint is considered reached when within this distance
-    AP_Float    _wp_accel_cmss;      // maximum horizontal acceleration in cm/s² used during waypoint tracking
-    AP_Float    _wp_accel_c_cmss;    // maximum acceleration in cm/s² for turns; defaults to 2x horizontal accel if unset
-    AP_Float    _wp_accel_z_cmss;    // maximum vertical acceleration in cm/s² used during climb or descent
-    AP_Float    _wp_jerk_msss;       // maximum jerk in m/s³ used for s-curve trajectory shaping
+    AP_Float    _wp_accel_cmss;      // maximum horizontal acceleration in cm/s/s used during waypoint tracking
+    AP_Float    _wp_accel_c_cmss;    // maximum acceleration in cm/s/s for turns; defaults to 2x horizontal accel if unset
+    AP_Float    _wp_accel_z_cmss;    // maximum vertical acceleration in cm/s/s used during climb or descent
+    AP_Float    _wp_jerk_msss;       // maximum jerk in m/s/s/s used for s-curve trajectory shaping
     AP_Float    _terrain_margin_m;   // minimum altitude margin in meters when terrain following is active
 
     // WPNAV_SPEED param change checker
@@ -409,7 +409,7 @@ protected:
     SCurve _scurve_prev_leg;         // s-curve for the previous waypoint leg, used for smoothing transitions
     SCurve _scurve_this_leg;         // s-curve for the current active waypoint leg
     SCurve _scurve_next_leg;         // s-curve for the next waypoint leg, used for lookahead blending
-    float _scurve_jerk_max_msss;     // computed maximum jerk in m/s³ used for trajectory shaping
+    float _scurve_jerk_max_msss;     // computed maximum jerk in m/s/s/s used for trajectory shaping
     float _scurve_snap_max_mssss;    // computed maximum snap in m/s⁴ derived from controller responsiveness
 
     // spline curves

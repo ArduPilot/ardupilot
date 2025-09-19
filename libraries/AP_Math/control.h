@@ -170,18 +170,18 @@ float kinematic_limit(Vector3f direction, float max_xy, float max_z_pos, float m
 // - Clipped to `expo < 0.95` to avoid divide-by-zero or extreme scaling.
 float input_expo(float input, float expo);
 
-// Converts a lean angle (radians) to horizontal acceleration in m/s².
+// Converts a lean angle (radians) to horizontal acceleration in m/s/s.
 // Assumes flat Earth and small angle approximation: a = g * tan(θ)
 float angle_rad_to_accel_mss(float angle_rad);
 
-// Converts a lean angle (degrees) to horizontal acceleration in m/s².
+// Converts a lean angle (degrees) to horizontal acceleration in m/s/s.
 float angle_deg_to_accel_mss(float angle_deg);
 
-// Converts a horizontal acceleration (m/s²) to lean angle in radians.
+// Converts a horizontal acceleration (m/s/s) to lean angle in radians.
 // Assumes: angle = atan(a / g)
 float accel_mss_to_angle_rad(float accel_mss);
 
-// Converts a horizontal acceleration (m/s²) to lean angle in degrees.
+// Converts a horizontal acceleration (m/s/s) to lean angle in degrees.
 float accel_mss_to_angle_deg(float accel_mss);
 
 // Converts pilot’s normalized roll/pitch input into target roll and pitch angles (radians).
