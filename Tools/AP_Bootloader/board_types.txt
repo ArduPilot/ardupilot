@@ -343,6 +343,8 @@ AP_HW_RadiolinkPIX6                  1410
 
 AP_HW_JHEMCU-H743HD                  1411
 
+AP_HW_RadiolinkF405                  1417
+
 AP_HW_LongbowF405                    1422
 
 AP_HW_MountainEagleH743              1444
