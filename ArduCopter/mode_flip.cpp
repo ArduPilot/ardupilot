@@ -15,14 +15,14 @@
  *          Pilot may manually exit flip by switching off ch7/ch8 or by moving roll stick to >40deg left or right
  *
  *      State machine approach:
- *          FlipState::Start (while copter is leaning <45deg) : roll right at 400deg/sec, increase throttle
- *          FlipState::Roll (while copter is between +45deg ~ -90) : roll right at 400deg/sec, reduce throttle
+ *          FlipState::Start (while copter is leaning <45deg) : roll right at 400 deg/sec, increase throttle
+ *          FlipState::Roll (while copter is between +45deg ~ -90) : roll right at 400 deg/sec, reduce throttle
  *          FlipState::Recover (while copter is between -90deg and original target angle) : use earth frame angle controller to return vehicle to original attitude
  */
 
 #define FLIP_THR_INC            0.20f           // throttle increase during FlipState::Start stage (under 45deg lean angle)
 #define FLIP_THR_DEC            0.24f           // throttle decrease during FlipState::Roll stage (between 45deg ~ -90deg roll)
-#define FLIP_ROTATION_RATE_RADS radians(400.0)  // rotation rate request in centi-degrees / sec (i.e. 400 deg/sec)
+#define FLIP_ROTATION_RATE_RADS radians(400.0)  // rotation rate request in radians / sec (i.e. 400 deg/sec)
 #define FLIP_TIMEOUT_MS         2500            // timeout after 2.5sec.  Vehicle will switch back to original flight mode
 #define FLIP_RECOVERY_ANGLE_RAD radians(5.0)    // consider successful recovery when roll is back within 5 degrees of original
 

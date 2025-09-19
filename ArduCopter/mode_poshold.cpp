@@ -17,7 +17,7 @@
 #define TC_WIND_COMP                            0.0025f // Time constant for filtering wind compensation lean angle estimates (used in low-pass filter)
 
 // definitions that are independent of main loop rate
-#define POSHOLD_STICK_RELEASE_SMOOTH_ANGLE_RAD  radians(18.0f)  // max angle required (in centi-degrees) after which the smooth stick release effect is applied
+#define POSHOLD_STICK_RELEASE_SMOOTH_ANGLE_RAD  radians(18.0f)  // max angle required (in radians) after which the smooth stick release effect is applied
 #define POSHOLD_WIND_COMP_ESTIMATE_SPEED_MAX_MS 0.10            // wind compensation estimates will only run when velocity is at or below this speed in cm/s
 #define POSHOLD_WIND_COMP_LEAN_PCT_MAX          0.6666f         // wind compensation no more than 2/3rds of angle max to ensure pilot can always override
 
@@ -37,7 +37,7 @@ bool ModePosHold::init(bool ignore_checks)
     pilot_roll_rad = 0.0f;
     pilot_pitch_rad = 0.0f;
 
-    // compute brake_gain in rad/(m/s); original (cd/(cm/s)) × (π/180) -> rad/(m/s)
+    // compute brake_gain in rad/(m/s);
     brake.gain = radians((15.0f * (float)g.poshold_brake_rate_degs + 95.0f) * 0.01f);
 
     if (copter.ap.land_complete) {
@@ -289,7 +289,6 @@ void ModePosHold::run()
             update_pilot_lean_angle_rad(pilot_pitch_rad, target_pitch_rad);
 
             // switch to BRAKE next iteration if no pilot input
-            // NOTE: preserve original behavior (cd vs deg quirk) => 0.02 * deg threshold, then to radians
             if (is_zero(target_pitch_rad) && (fabsf(pilot_pitch_rad) < radians(2 * g.poshold_brake_rate_degs))) {
                 // initialise BRAKE mode
                 pitch_mode = RPMode::BRAKE;         // set brake pitch mode
@@ -468,7 +467,7 @@ void ModePosHold::run()
                             roll_mode = RPMode::BRAKE_READY_TO_LOITER;
                             brake.roll_rad = 0.0f;
                         }
-                            // if roll not overridden switch roll-mode to brake (but be ready to go back to loiter any time)
+                        // if roll not overridden switch roll-mode to brake (but be ready to go back to loiter any time)
                     }
                 }
                 break;
@@ -498,7 +497,7 @@ void ModePosHold::update_pilot_lean_angle_rad(float &lean_angle_filtered_rad, fl
     if ((lean_angle_filtered_rad > 0.0 && lean_angle_raw_rad < 0.0) || (lean_angle_filtered_rad < 0.0 && lean_angle_raw_rad > 0.0) || (fabsf(lean_angle_raw_rad) > POSHOLD_STICK_RELEASE_SMOOTH_ANGLE_RAD)) {
         lean_angle_filtered_rad = lean_angle_raw_rad;
     } else {
-        // lean_angle_raw_cd must be pulling lean_angle_filtered_cd towards zero, smooth the decrease
+        // lean_angle_raw must be pulling lean_angle_filtered towards zero, smooth the decrease
         const float brake_rate_step_rad = radians((float)g.poshold_brake_rate_degs) * G_Dt;
         if (lean_angle_filtered_rad > 0.0) {
             // reduce the filtered lean angle at 1.25% per step or the brake rate (whichever is faster).
@@ -530,8 +529,6 @@ void ModePosHold::update_brake_angle_from_velocity(float &brake_angle_rad, float
     const float brake_delta_rad = radians((float)g.poshold_brake_rate_degs) * G_Dt;
 
     // velocity-shaped lean angle:
-    //   original: -gain * v_cms * (1 + 500/(|v|+60))
-    //   SI:       -gain * v_ms  * (1 + 5.0/(|v|+0.60))
     float lean_angle_rad = -brake.gain * velocity_ms * (1.0f + 5.0f / (fabsf(velocity_ms) + 0.60f));
 
     // do not let lean_angle be too far from brake_angle
