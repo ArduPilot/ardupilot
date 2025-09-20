@@ -218,6 +218,9 @@ void ModeRateAcro::run()
     float target_roll_rads, target_pitch_rads, target_yaw_rads, pilot_desired_throttle;
 
     get_desired_rates(target_roll_rads, target_pitch_rads, target_yaw_rads, pilot_desired_throttle);
+
+    attitude_control->scale_I_to_angle_P();
+
     // send rate commands to attitude controller (RATE_LOOP_ONLY bypasses full attitude stabilization)
     attitude_control->input_rate_bf_roll_pitch_yaw_2_cds(target_roll_rads, target_pitch_rads, target_yaw_rads);
 
@@ -229,7 +232,6 @@ bool ModeRateAcro::init(bool ignore_checks)
 {
     disable_air_mode_reset = false;
     copter.air_mode = AirMode::AIRMODE_ENABLED;
-    attitude_control->convert_angle_P_to_I(true);
 
     return true;
 }
@@ -239,7 +241,6 @@ void ModeRateAcro::exit()
     if (!disable_air_mode_reset) {
         copter.air_mode = AirMode::AIRMODE_DISABLED;
     }
-    attitude_control->convert_angle_P_to_I(false);
     disable_air_mode_reset = false;
 }
 
