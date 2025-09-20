@@ -26,7 +26,7 @@ AC_P_1D::AC_P_1D(float initial_p) :
 float AC_P_1D::update_all(postype_t &target, postype_t measurement)
 {
     // Compute position error between target and measurement
-    _error = target - measurement;
+    _error = (float)(target - measurement);
 
     // Clamp error to configured min/max bounds
     if (is_negative(_error_min) && (_error < _error_min)) {
