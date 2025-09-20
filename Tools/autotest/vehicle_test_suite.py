@@ -5399,8 +5399,8 @@ class TestSuite(ABC):
             target_system=target_system,
             target_component=target_component
         )
-        itemstype = mavutil.mavlink.enums["MAV_MISSION_TYPE"][wploader.mav_mission_type()]
-        self.progress(f"Loading {itemstype} ({os.path.basename(filepath)}")
+        itemstype = mavutil.mavlink.enums["MAV_MISSION_TYPE"][wploader.mav_mission_type()].name
+        self.progress(f"Loading {itemstype} ({os.path.basename(filepath)})")
         wploader.load(filepath)
         return [self.wp_to_mission_item_int(x, wploader.mav_mission_type()) for x in wploader.wpoints]  # noqa:502
 
