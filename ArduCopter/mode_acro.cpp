@@ -219,6 +219,7 @@ void ModeRateAcro::run()
 
     get_desired_rates(target_roll_rads, target_pitch_rads, target_yaw_rads, pilot_desired_throttle);
 
+    // scale I by the value of angle P to mimic betaflight tunes
     attitude_control->scale_I_to_angle_P();
 
     // send rate commands to attitude controller (RATE_LOOP_ONLY bypasses full attitude stabilization)
