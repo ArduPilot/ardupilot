@@ -281,7 +281,14 @@ void Copter::failsafe_terrain_set_status(bool data_ok)
 void Copter::failsafe_terrain_on_event()
 {
     failsafe.terrain = true;
-    gcs().send_text(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain data missing");
+    if (wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE) {
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain %s", "data missing");
+    } else if (wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER) {
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain %s", "Rangefinder Unhealthy");
+    } else {
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain");
+    }
+
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::FAILSAFE_OCCURRED);
 
     if (should_disarm_on_failsafe()) {
