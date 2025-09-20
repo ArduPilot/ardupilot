@@ -1890,7 +1890,7 @@ void Compass::try_set_initial_location()
         return;
     }
 
-    Location loc;
+    AbsAltLocation loc;
     if (!AP::ahrs().get_location(loc)) {
         return;
     }

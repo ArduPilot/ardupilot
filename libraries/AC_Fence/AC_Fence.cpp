@@ -492,7 +492,7 @@ bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) c
 
     auto breached_fences = _breached_fences;
     if (auto_enabled() == AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
-        Location loc;
+        AbsAltLocation loc;
         if (!AP::ahrs().get_location(loc)) {
             hal.util->snprintf(failure_msg, failure_msg_len, "Fence requires position");
             return false;
@@ -676,7 +676,7 @@ bool AC_Fence::check_fence_polygon()
 
     const bool was_breached = _breached_fences & AC_FENCE_TYPE_POLYGON;
 
-    Location loc;
+    AbsAltLocation loc;
     const bool have_location = AP::ahrs().get_location(loc);
 
     if (have_location && _poly_loader.breached(loc, _polygon_breach_distance)) {

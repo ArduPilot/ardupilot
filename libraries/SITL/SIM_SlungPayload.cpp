@@ -169,7 +169,7 @@ void SlungPayloadSim::send_report(void)
 
     // send a GLOBAL_POSITION_INT messages
     {
-        Location payload_loc;
+        AbsAltLocation payload_loc;
         int32_t alt_amsl_cm, alt_rel_cm;
         if (!get_payload_location(payload_loc) ||
             !payload_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_amsl_cm) ||
@@ -270,14 +270,14 @@ void SlungPayloadSim::write_log()
 }
 
 // returns true on success and fills in payload_loc argument, false on failure
-bool SlungPayloadSim::get_payload_location(Location& payload_loc) const
+bool SlungPayloadSim::get_payload_location(AbsAltLocation& payload_loc) const
 {
     // get EKF origin
     auto *sitl = AP::sitl();
     if (sitl == nullptr) {
         return false;
     }
-    const Location ekf_origin = sitl->state.home;
+    const auto &ekf_origin = sitl->state.home;
     if (ekf_origin.lat == 0 && ekf_origin.lng == 0) {
         return false;
     }
@@ -319,7 +319,7 @@ void SlungPayloadSim::update_payload(const Vector3p& veh_pos, const Vector3f& ve
     float payload_to_veh_length = payload_to_veh.length();
 
     // update landed state by checking if payload has dropped below terrain
-    Location payload_loc;
+    AbsAltLocation payload_loc;
     if (get_payload_location(payload_loc)) {
         int32_t alt_terrain_cm;
         bool landed_orig = landed;
@@ -356,7 +356,7 @@ void SlungPayloadSim::update_payload(const Vector3p& veh_pos, const Vector3f& ve
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SlungPayload: landed lat:%f lon:%f alt:%4.1f",
                               (double)payload_loc.lat * 1e-7,
                               (double)payload_loc.lng * 1e-7,
-                              (double)payload_loc.alt * 1e-2);
+                              (double)payload_loc.get_alt_m());
             } else {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SlungPayload: liftoff");
             }

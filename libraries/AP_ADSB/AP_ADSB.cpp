@@ -465,15 +465,14 @@ void AP_ADSB::determine_furthest_aircraft(void)
 /*
  * Convert/Extract a Location from a vehicle
  */
-Location AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
+AbsAltLocation AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
 {
-    const Location loc = Location(
+    return AbsAltLocation{
         vehicle.info.lat,
         vehicle.info.lon,
-        vehicle.info.altitude * 0.1f,
-        Location::AltFrame::ABSOLUTE);
-
-    return loc;
+        int32_t(vehicle.info.altitude * 0.1f),
+        Location::AltFrame::ABSOLUTE
+    };
 }
 
 /*
@@ -527,12 +526,12 @@ void AP_ADSB::handle_adsb_vehicle(const adsb_vehicle_t &vehicle)
     }
 
     uint16_t index = in_state.list_size_allocated + 1; // initialize with invalid index
-    const Location vehicle_loc = AP_ADSB::get_location(vehicle);
+    const AbsAltLocation vehicle_loc = AP_ADSB::get_location(vehicle);
     const bool my_loc_is_zero = _my_loc.is_zero();
     const float my_loc_distance_to_vehicle = _my_loc.get_distance(vehicle_loc);
     const bool is_special = is_special_vehicle(vehicle.info.ICAO_address);
     const bool out_of_range = in_state.list_radius > 0 && !my_loc_is_zero && my_loc_distance_to_vehicle > in_state.list_radius && !is_special;
-    const bool out_of_range_alt = in_state.list_altitude > 0 && !my_loc_is_zero && abs(vehicle_loc.alt - _my_loc.alt) > in_state.list_altitude*100 && !is_special;
+    const bool out_of_range_alt = in_state.list_altitude > 0 && !my_loc_is_zero && abs(vehicle_loc.get_alt_cm() - _my_loc.get_alt_cm()) > in_state.list_altitude*100 && !is_special;
     const bool is_tracked_in_list = find_index(vehicle, &index);
     const uint32_t now = AP_HAL::millis();
 

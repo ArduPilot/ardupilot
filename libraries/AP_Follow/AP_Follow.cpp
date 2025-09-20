@@ -696,11 +696,11 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
     _target_pos_ned_m *= 0.01; // convert from cm to meters
 
     // adjust Z coordinate to NED frame (NEU altitude -> NED)
-    Location origin;
+    AbsAltLocation origin;
     if (!AP::ahrs().get_origin(origin)) {
         return false;
     }
-    _target_pos_ned_m.z = -packet.alt + origin.alt * 0.01;
+    _target_pos_ned_m.z = -packet.alt + origin.get_alt_m();
 
     // decode velocity if available (bit 1 of est_capabilities)
     if (packet.est_capabilities & (1<<1)) {
@@ -866,11 +866,11 @@ void AP_Follow::update_dist_and_bearing_to_target()
 void AP_Follow::Log_Write_FOLL()
 {
     // retrieve latest estimated location and velocity
-    Location loc_estimate{};
+    AbsAltLocation loc_estimate{};
     Vector3f vel_estimate;
     UNUSED_RESULT(get_target_location_and_velocity(loc_estimate, vel_estimate));
 
-    Location _target_location;
+    AbsAltLocation _target_location;
     UNUSED_RESULT(AP::ahrs().get_location_from_origin_offset_NED(_target_location, _target_pos_ned_m));
 
     // log the lead target's reported position and vehicle's estimated position
@@ -894,13 +894,13 @@ void AP_Follow::Log_Write_FOLL()
                                 AP_HAL::micros64(),
                                 _target_location.lat,
                                 _target_location.lng,
-                                _target_location.alt,
+                                _target_location.get_alt_cm(),
                                 (double)_target_vel_ned_ms.x,
                                 (double)_target_vel_ned_ms.y,
                                 (double)_target_vel_ned_ms.z,
                                 loc_estimate.lat,
                                 loc_estimate.lng,
-                                loc_estimate.alt
+                                loc_estimate.get_alt_cm()
                                 );
 }
 #endif  // HAL_LOGGING_ENABLED

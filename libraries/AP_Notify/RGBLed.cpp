@@ -138,7 +138,7 @@ uint32_t RGBLed::get_colour_sequence(void) const
     }
 
 #if AP_GPS_ENABLED
-    Location loc;
+    AbsAltLocation loc;
 #if AP_AHRS_ENABLED
     // the AHRS can return "true" for get_location and still not be
     // happy enough with the location to set its origin from that

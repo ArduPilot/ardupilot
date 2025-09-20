@@ -523,18 +523,15 @@ void AP_Mount_Backend::calculate_poi()
 
         // get the current location of vehicle
         const AP_AHRS &ahrs = AP::ahrs();
-        Location curr_loc;
+        AbsAltLocation curr_loc;
         if (!ahrs.get_location(curr_loc)) {
             continue;
         }
 
-        // change vehicle alt to AMSL
-        curr_loc.change_alt_frame(Location::AltFrame::ABSOLUTE);
-
         // project forward from vehicle looking for terrain
         // start testing at vehicle's location
-        Location test_loc = curr_loc;
-        Location prev_test_loc = curr_loc;
+        AbsAltLocation test_loc = curr_loc;
+        AbsAltLocation prev_test_loc = curr_loc;
 
         // get terrain altitude (AMSL) at test_loc
         auto terrain = AP_Terrain::get_singleton();
@@ -557,7 +554,7 @@ void AP_Mount_Backend::calculate_poi()
         float total_dist_m = 0;
         bool get_terrain_alt_success = true;
         float prev_terrain_amsl_m = terrain_amsl_m;
-        while (total_dist_m < AP_MOUNT_POI_DIST_M_MAX && (test_loc.alt * 0.01) > terrain_amsl_m) {
+        while (total_dist_m < AP_MOUNT_POI_DIST_M_MAX && test_loc.get_alt_m() > terrain_amsl_m) {
             total_dist_m += dist_increment_m;
 
             // backup previous test location and terrain amsl
@@ -587,7 +584,7 @@ void AP_Mount_Backend::calculate_poi()
 
         // test location has dropped below terrain
         // interpolate along line between prev_test_loc and test_loc
-        float dist_interp_m = linear_interpolate(0, dist_increment_m, 0, prev_test_loc.alt * 0.01 - prev_terrain_amsl_m, test_loc.alt * 0.01 - terrain_amsl_m);
+        float dist_interp_m = linear_interpolate(0, dist_increment_m, 0, prev_test_loc.get_alt_m() - prev_terrain_amsl_m, test_loc.get_alt_m() - terrain_amsl_m);
         {
             WITH_SEMAPHORE(poi_calculation.sem);
             poi_calculation.poi_loc = prev_test_loc;
@@ -716,7 +713,7 @@ void AP_Mount_Backend::get_rc_target(MountTargetType& target_type, MountTarget& 
 bool AP_Mount_Backend::get_angle_target_to_location(const Location &loc, MountTarget& angle_rad) const
 {
     // exit immediately if vehicle's location is unavailable
-    Location current_loc;
+    AbsAltLocation current_loc;
     if (!AP::ahrs().get_location(current_loc)) {
         return false;
     }
@@ -732,10 +729,7 @@ bool AP_Mount_Backend::get_angle_target_to_location(const Location &loc, MountTa
     if (!loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, target_alt_cm)) {
         return false;
     }
-    int32_t current_alt_cm = 0;
-    if (!current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, current_alt_cm)) {
-        return false;
-    }
+    const int32_t current_alt_cm = current_loc.get_alt_cm();
     float GPS_vector_z = target_alt_cm - current_alt_cm;
     float target_distance = 100.0f*norm(GPS_vector_x, GPS_vector_y);      // Careful , centimeters here locally. Baro/alt is in cm, lat/lon is in meters.
 
