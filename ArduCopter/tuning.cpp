@@ -128,14 +128,14 @@ void Copter::tuning(const RC_Channel *tuning_ch, int8_t tuning_param, float tuni
         wp_nav->set_speed_NE_cms(tuning_value);
         break;
 
-#if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
+#if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED || MODE_RATE_ACRO_ENABLED
     // Acro roll pitch rates
     case TUNING_ACRO_RP_RATE:
         g2.command_model_acro_rp.set_rate(tuning_value);
         break;
 #endif
 
-#if MODE_ACRO_ENABLED || MODE_DRIFT_ENABLED
+#if MODE_ACRO_ENABLED || MODE_DRIFT_ENABLED || MODE_RATE_ACRO_ENABLED
     // Acro yaw rate
     case TUNING_ACRO_YAW_RATE:
         g2.command_model_acro_y.set_rate(tuning_value);
