@@ -69,14 +69,15 @@ class Board:
             LUA_32BITS = 1,
         )
 
-        env.AP_LIBRARIES += [
-            'AP_Scripting',
-            'AP_Scripting/lua/src',
-        ]
+        # env.AP_LIBRARIES += [
+        #     'AP_Scripting',
+        #     'AP_Scripting/lua/src',
+        # ]
 
         if cfg.options.enable_scripting:
             env.DEFINES.update(
-                AP_SCRIPTING_ENABLED = 1,
+                # fixme
+                AP_SCRIPTING_ENABLED = 0,
             )
         elif cfg.options.disable_scripting:
             env.DEFINES.update(
@@ -131,7 +132,7 @@ class Board:
                                 'libraries/AP_Scripting/applets/ONVIF_Camera_Control.lua')]
             env.DEFINES.update(
                 ENABLE_ONVIF=1,
-                SCRIPTING_ENABLE_DEFAULT=1,
+                SCRIPTING_ENABLE_DEFAULT=0,
             )
             env.AP_LIBRARIES += [
                 'AP_ONVIF'
@@ -304,7 +305,7 @@ class Board:
 
         if cfg.options.scripting_checks:
             env.DEFINES.update(
-                AP_SCRIPTING_CHECKS = 1,
+                AP_SCRIPTING_CHECKS = 0,
                 )
 
         cfg.msg("CXX Compiler", "%s %s"  % (cfg.env.COMPILER_CXX, ".".join(cfg.env.CC_VERSION)))
@@ -1102,8 +1103,9 @@ class sitl_periph_can_to_serial(sitl_periph):
         )
 
 class esp32(Board):
+    # FIXME !!!
     abstract = True
-    toolchain = 'xtensa-esp32-elf'
+    toolchain = 'arm-none-eabi'
 
     def configure(self, cfg):
         super(esp32, self).configure(cfg)
@@ -1112,6 +1114,7 @@ class esp32(Board):
         else:
             # default tool-chain for esp32-based boards:
             self.toolchain = 'xtensa-esp32-elf'
+            self.toolchain = 'arm-none-eabi'
 
     def configure_env(self, cfg, env):
         env.BOARD_CLASS = "ESP32"
@@ -1145,41 +1148,63 @@ class esp32(Board):
             ]
         else:
             env.DEFINES.update(AP_SIM_ENABLED = 0)
+            env.DEFINES.update(AP_FILESYSTEM_ENABLED = 0)
+            env.DEFINES.update(AP_FILESYSTEM_ESP32_ENABLED = 0)
+            env.DEFINES.update(AP_SCRIPTING_ENABLED = 0)
+            env.DEFINES.update(AP_LOGGING_ENABLED = 0)
 
         # FreeRTOS component from esp-idf expects this define
-        env.DEFINES.update(ESP_PLATFORM = 1)
+        env.DEFINES.update(ESP_PLATFORM = 0)
 
         env.AP_LIBRARIES += [
             'AP_HAL_ESP32',
         ]
 
-        env.CFLAGS += [
-            '-fno-inline-functions',
-            '-mlongcalls',
-            '-fsingle-precision-constant',
+
+        CPU_FLAGS = [
+            '-mthumb',
+            '-mlittle-endian',
+            '-mcpu=cortex-m33',
+            '-mfloat-abi=soft', 
+            '-mfpu=fpv5-sp-d16'
         ]
+
+        if True:
+            # Fixme
+            env.CFLAGS += [
+                '-fno-inline-functions',
+                '-mlong-calls',
+                '-fsingle-precision-constant',
+            ] + CPU_FLAGS
         env.CFLAGS.remove('-Werror=undef')
 
-        env.CXXFLAGS += ['-mlongcalls',
-                         '-Os',
-                         '-g',
-                         '-ffunction-sections',
-                         '-fdata-sections',
-                         '-fno-exceptions',
-                         '-fno-rtti',
-                         '-nostdlib',
-                         '-fstrict-volatile-bitfields',
-                         '-Wno-sign-compare',
-                         '-fno-inline-functions',
-                         '-mlongcalls',
-                         '-fsingle-precision-constant', # force const vals to be float , not double. so 100.0 means 100.0f 
-                         '-fno-threadsafe-statics']
+
+        if True:
+            # FIXME
+            env.CXXFLAGS += [ #'-mlongcalls',
+                             '-Os',
+                             '-g',
+                             '-ffunction-sections',
+                             '-fdata-sections',
+                             '-fno-exceptions',
+                             '-fno-rtti',
+                             '-nostdlib',
+                             '-fstrict-volatile-bitfields',
+                             '-Wno-sign-compare',
+                             '-fno-inline-functions',
+                             '-mlong-calls',
+                             '-fsingle-precision-constant', # force const vals to be float , not double. so 100.0 means 100.0f 
+                             '-fno-threadsafe-statics'] + CPU_FLAGS
         env.CXXFLAGS.remove('-Werror=undef')
         env.CXXFLAGS.remove('-Werror=shadow')
 
         # wrap malloc to ensure memory is zeroed
         # note that this also needs to be done in the CMakeLists.txt files
+        print('LINKFLAGS:')
+        print(env.LINKFLAGS)
+        # FIXME?
         env.LINKFLAGS += ['-Wl,--wrap,malloc']
+        env.LINKFLAGS += CPU_FLAGS
 
         # TODO: remove once hwdef.dat support is in place
         defaults_file = 'libraries/AP_HAL_ESP32/hwdef/%s/defaults.parm' % self.get_name()

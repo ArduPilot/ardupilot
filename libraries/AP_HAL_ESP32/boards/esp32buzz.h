@@ -66,7 +66,8 @@
 // ADC is available on lots of pints on the esp32, but adc2 can't co-exist with wifi we choose to allow ADC on :
 //#define HAL_DISABLE_ADC_DRIVER 1
 #define TRUE 1
-#define HAL_USE_ADC TRUE
+#define FALSE 0
+#define HAL_USE_ADC FALSE
 
 // the pin number, the gain/multiplier associated with it, the ardupilot name for the pin in parameter/s.
 //
@@ -110,7 +111,7 @@
 #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(BMP280, "bmp280")
 
 // 2 use udp, 1 use tcp...  for udp,client needs to connect as UDPCL in missionplanner etc to 192.168.4.1 port 14550
-#define HAL_ESP32_WIFI 1
+//#define HAL_ESP32_WIFI 0
 
 // tip: if u are ok getting mavlink-over-tcp or mavlink-over-udp and want to disable mavlink-over-serial-usb
 //then set ardupilot parameter SERIAL0_PROTOCOL = 0 and reboot.
@@ -147,26 +148,35 @@
 
 
 // rcin on what pin?
-#define HAL_ESP32_RCIN GPIO_NUM_4
+//#define HAL_ESP32_RCIN GPIO_NUM_4
 
 
 //HARDWARE UARTS
 #define HAL_ESP32_UART_DEVICES \
   {.port=UART_NUM_0, .rx=GPIO_NUM_3, .tx=GPIO_NUM_1 },{.port=UART_NUM_1, .rx=GPIO_NUM_16, .tx=GPIO_NUM_17 }
 
-#define AP_FILESYSTEM_ESP32_ENABLED 1
+  
+#define AP_FILESYSTEM_ESP32_ENABLED 0
+#define AP_FILESYSTEM_ENABLED 0
+#define AP_SCRIPTING_ENABLED 0
+//#undef  AP_SCRIPTING_ENABLED
+#define   AP_LOGGING_ENABLED 0
+#define HAL_DISABLE_ADC_DRIVER 1
+#define HAL_ESP32_SDCARD 0
+#define HAL_USE_EMPTY_STORAGE 1
 
 // Do u want to use mmc or spi mode for the sd card, this is board specific ,
 //  as mmc uses specific pins but is quicker,
-#define HAL_ESP32_SDMMC 1
+//#define HAL_ESP32_SDMMC 1
 // and spi is more flexible pinouts....  dont forget vspi/hspi should be selected to NOT conflict with SPI_BUSES above
 //#define HAL_ESP32_SDSPI {.host=VSPI_HOST, .dma_ch=2, .mosi=GPIO_NUM_2, .miso=GPIO_NUM_15, .sclk=GPIO_NUM_14, .cs=GPIO_NUM_21}
 
-#define HAL_ESP32_SDCARD 1
-#define LOGGER_MAVLINK_SUPPORT 1
+//#define HAL_ESP32_SDCARD 1
+#define HAL_ESP32_SDCARD 0
+//#define LOGGER_MAVLINK_SUPPORT 1
 
 // this becomes the default value for the ardupilot param LOG_BACKEND_TYPE, which most ppl want to be 1, for log-to-flash
 // setting to 2 means log-over-mavlink to a companion computer etc.
-#define HAL_LOGGING_BACKENDS_DEFAULT 1
+//#define HAL_LOGGING_BACKENDS_DEFAULT 1
 
 #define HAL_ESP32_RMT_RX_PIN_NUMBER 4

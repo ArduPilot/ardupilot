@@ -33,6 +33,7 @@
   want to avoid
 */
 
+
 /*
   variant for new(std::nothrow), which is all that should be used in
   ArduPilot
@@ -53,6 +54,9 @@ void * operator new[](size_t size, std::nothrow_t const &nothrow)
     return(calloc(size, 1));
 }
 
+
+// FIXME !!!!
+#if defined(BLABLA)
 /*
   These variants are for new without std::nothrow. We don't want to ever
   use this from ArduPilot code
@@ -83,6 +87,7 @@ void operator delete[](void * ptr)
 {
     if (ptr) free(ptr);
 }
+#endif
 
 #if defined(CYGWIN_BUILD) && CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
@@ -131,7 +136,7 @@ __attribute__((constructor(101))) static void hack_in_malloc() {
     }
 }
 
-#elif CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS && CONFIG_HAL_BOARD != HAL_BOARD_QURT
+#elif CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS && CONFIG_HAL_BOARD != HAL_BOARD_QURT && CONFIG_HAL_BOARD != HAL_BOARD_ESP32
 /*
   wrapper around malloc to ensure all memory is initialised as zero
   ChibiOS and QURT have their own wrappers

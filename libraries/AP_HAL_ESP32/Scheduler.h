@@ -18,8 +18,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include "HAL_ESP32_Namespace.h"
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 #define ESP32_SCHEDULER_MAX_TIMER_PROCS 10
 #define ESP32_SCHEDULER_MAX_IO_PROCS 10
