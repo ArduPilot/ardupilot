@@ -32,7 +32,7 @@ AP_BoardConfig board_config;
 void setup();
 void loop();
 void reset();
-void check_path(const std::vector<Vector3f> &correct_path, const char* test_name, uint32_t time_us);
+void check_path(const std::vector<Vector3p> &correct_path, const char* test_name, uint32_t time_us);
 
 void setup()
 {
@@ -83,14 +83,14 @@ void loop()
 // reset path (i.e. clear path and add home) and upload "test_path_before" to smart_rtl
 void reset()
 {
-    smart_rtl.set_home(true, Vector3f{0.0f, 0.0f, 0.0f});
-    for (Vector3f v : test_path_before) {
+    smart_rtl.set_home(true, Vector3p{0.0f, 0.0f, 0.0f});
+    for (Vector3p v : test_path_before) {
         smart_rtl.update(true, v);
     }
 }
 
 // compare the vector array passed in with the path held in the smart_rtl object
-void check_path(const std::vector<Vector3f>& correct_path, const char* test_name, uint32_t time_us)
+void check_path(const std::vector<Vector3p>& correct_path, const char* test_name, uint32_t time_us)
 {
     // check number of points
     bool num_points_match = correct_path.size() == smart_rtl.get_num_points();
@@ -100,7 +100,7 @@ void check_path(const std::vector<Vector3f>& correct_path, const char* test_name
     bool points_match = true;
     uint16_t failure_index = 0;
     for (uint16_t i = 0; i < points_to_compare; i++) {
-        if (smart_rtl.get_point(i) != correct_path[i]) {
+        if (smart_rtl.get_point(i) != correct_path[i].tofloat()) {
             failure_index = i;
             points_match = false;
         }
@@ -115,7 +115,7 @@ void check_path(const std::vector<Vector3f>& correct_path, const char* test_name
     // display the first failed point and all subsequent points
     if (!points_match) {
         for (uint16_t j = failure_index; j < points_to_compare; j++) {
-            const Vector3f& smartrtl_point = smart_rtl.get_point(j);
+            const Vector3f& smartrtl_point = smart_rtl.get_point(j).tofloat();
             hal.console->printf("   expected point %d to be %4.2f,%4.2f,%4.2f, got %4.2f,%4.2f,%4.2f\n",
                             (int)j,
                             (double)correct_path[j].x,

@@ -98,13 +98,13 @@ AC_Loiter::AC_Loiter(const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const
 // See init_target_m() for full details.
 void AC_Loiter::init_target_cm(const Vector2f& position_ne_cm)
 {
-    init_target_m(position_ne_cm * 0.01);
+    init_target_m(position_ne_cm.topostype() * 0.01);
 }
 
 // Sets the initial loiter target position in meters from the EKF origin.
 // - position_neu_m: horizontal position in the NE frame, in meters.
 // - Initializes internal control state including acceleration targets and feed-forward planning.
-void AC_Loiter::init_target_m(const Vector2f& position_ne_m)
+void AC_Loiter::init_target_m(const Vector2p& position_ne_m)
 {
     sanity_check_params();
 

@@ -340,7 +340,7 @@ bool ModeAuto::loiter_start()
     _mode = SubMode::LOITER;
 
     // calculate stopping point
-    Vector3f stopping_point_neu_m;
+    Vector3p stopping_point_neu_m;
     wp_nav->get_wp_stopping_point_NEU_m(stopping_point_neu_m);
 
     // initialise waypoint controller target to stopping point
@@ -424,11 +424,11 @@ bool ModeAuto::wp_start(const Location& dest_loc)
 {
     // init wpnav and set origin if transitioning from takeoff
     if (!wp_nav->is_active()) {
-        Vector3f stopping_point_neu_m;
+        Vector3p stopping_point_neu_m;
         if (_mode == SubMode::TAKEOFF) {
             Vector3p takeoff_complete_pos_neu_m;
             if (auto_takeoff.get_completion_pos_neu_m(takeoff_complete_pos_neu_m)) {
-                stopping_point_neu_m = takeoff_complete_pos_neu_m.tofloat();
+                stopping_point_neu_m = takeoff_complete_pos_neu_m;
             }
         }
         float des_speed_xy_ms = is_positive(desired_speed_override_ms.xy) ? desired_speed_override_ms.xy : 0;
@@ -514,7 +514,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
     copter.circle_nav->set_rate_degs(current_rate);
 
     // check our distance from edge of circle
-    Vector3f circle_edge_neu_m;
+    Vector3p circle_edge_neu_m;
     float dist_to_edge_m;
     copter.circle_nav->get_closest_point_on_circle_NEU_m(circle_edge_neu_m, dist_to_edge_m);
 

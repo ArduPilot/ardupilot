@@ -22,7 +22,7 @@ public:
     // Sets the initial loiter target position in meters from the EKF origin.
     // - position_neu_m: horizontal position in the NE frame, in meters.
     // - Initializes internal control state including acceleration targets and feed-forward planning.
-    void init_target_m(const Vector2f& position_neu_m);
+    void init_target_m(const Vector2p& position_neu_m);
 
     // Initializes the loiter controller using the current position and velocity.
     // Updates feed-forward velocity, predicted acceleration, and resets control state.
