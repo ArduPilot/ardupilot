@@ -28,12 +28,6 @@ define SERIAL_BUFFERS_SIZE 512
 # stack for fast interrupts
 define PORT_INT_REQUIRED_STACK 64
 
-define HAL_NO_GPIO_IRQ
-define HAL_DISABLE_LOOP_DELAY
-define HAL_NO_GCS
-define HAL_NO_LOGGING
-
-
 define DMA_RESERVE_SIZE 2048
 
 # don't share any DMA channels (there are enough for everyone)

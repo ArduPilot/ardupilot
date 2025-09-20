@@ -1227,7 +1227,6 @@ class ChibiOSHWDef(hwdef.HWDef):
 #define HAL_STORAGE_SIZE 16384
 #endif
 #define HAL_USE_RTC FALSE
-#define DISABLE_SERIAL_ESC_COMM TRUE
 #ifndef CH_CFG_USE_DYNAMIC
 #define CH_CFG_USE_DYNAMIC FALSE
 #endif
@@ -3085,6 +3084,17 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         self.romfs_add('defaults.parm', filepath)
         self.have_defaults_file = True
+
+    def get_stale_defines(self):
+        '''returns a map with a stale define and a comment as to what to do about it'''
+        ret = super().get_stale_defines()
+        ret.update({
+            'HAL_NO_RCIN_THREAD': 'HAL_NO_RCIN_THREAD is no longer used; try "define HAL_RCIN_THREAD_ENABLED 0"',
+            'HAL_NO_MONITOR_THREAD': 'HAL_NO_MONITOR_THREAD is no longer used; try "define HAL_MONITOR_THREAD_ENABLED 0"',
+            'HAL_NO_GPIO_IRQ': 'HAL_NO_GPIO_IRQ is no longer used; remove it from your hwdef',
+            'DISABLE_SERIAL_ESC_COMM': 'DISABLE_SERIAL_ESC_COMM is no longer used; try "define HAL_SERIAL_ESC_COMM_ENABLED 1"',
+        })
+        return ret
 
     def run(self):
         # process input file

@@ -246,7 +246,26 @@ class HWDef:
         value = ' '.join(a[2:])
         self.env_vars[name] = value
 
+    def get_stale_defines(self):
+        '''returns a map with a stale define and a comment as to what to do about it'''
+        return {
+            'HAL_NO_GCS': 'HAL_NO_GCS is no longer used; try "define HAL_GCS_ENABLED 0"',
+            'HAL_NO_LOGGING': 'HAL_NO_LOGGING is no longer used; try "define HAL_LOGGING_ENABLED 0"',
+            'HAL_NO_UARTDRIVER': 'HAL_NO_UARTDRIVER is no longer used; try "define AP_HAL_UARTDRIVER_ENABLED 0"',
+            'HAL_DISABLE_LOOP_DELAY': 'HAL_DISABLE_LOOP_DELAY is no longer used; try "define HAL_SCHEDULER_LOOP_DELAY_ENABLED 0"',  # noqa:E501
+        }
+
     def process_line_define(self, line, depth, a):
+        # defines are currently written out a little haphazardly, but
+        # we do the sanity checks here:
+        result = re.match(r'define\s*([A-Z_0-9]+)\s*', line)
+        if result is not None:
+            # ensure that stale defines aren't introduced into hwdef files:
+            name = result.group(1)
+            stale_defines = self.get_stale_defines()
+            if name in stale_defines:
+                self.error(stale_defines[name])
+
         # extract numerical defines for processing by other parts of the script
         result = re.match(r'define\s*([A-Z_0-9]+)\s+([0-9]+)', line)
         if result:
