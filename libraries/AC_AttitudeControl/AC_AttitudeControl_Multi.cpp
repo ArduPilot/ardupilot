@@ -444,10 +444,6 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro_rads,
     // take a copy of the target so that it can't be changed from under us.
     Vector3f ang_vel_body = _ang_vel_body_rads;
 
-    if (_convert_angle_P_to_I) {
-        scale_I_to_angle_P();
-    }
-
     // boost angle_p/pd each cycle on high throttle slew
     update_throttle_gain_boost();
 
