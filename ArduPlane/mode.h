@@ -307,6 +307,8 @@ protected:
 
 private:
 
+    bool init_pending;
+
     // Delay the next navigation command
     struct {
         uint32_t time_max_ms;
