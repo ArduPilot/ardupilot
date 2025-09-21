@@ -15,6 +15,8 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Camera/AP_Camera.h>
+#include <AP_Common/Location.h>
 #if AP_DDS_ARM_SERVER_ENABLED
 #include <AP_Arming/AP_Arming.h>
 # endif // AP_DDS_ARM_SERVER_ENABLED
@@ -34,6 +36,10 @@
 #if AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
 #include "ardupilot_msgs/srv/Takeoff.h"
 #endif // AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
+#if AP_DDS_IMAGE_CAPTURE_SERVER_ENABLED
+#include "ardupilot_msgs/srv/ImageStartCapture.h"
+#include "ardupilot_msgs/srv/ImageStopCapture.h"
+#endif // AP_DDS_IMAGE_CAPTURE_SERVER_ENABLED
 #if AP_DDS_RC_PUB_ENABLED
 #include "AP_RSSI/AP_RSSI.h"
 #endif // AP_DDS_RC_PUB_ENABLED
@@ -89,6 +95,12 @@ static constexpr uint16_t DELAY_PING_MS = 500;
 #if AP_DDS_STATUS_PUB_ENABLED
 static constexpr uint16_t DELAY_STATUS_TOPIC_MS = AP_DDS_DELAY_STATUS_TOPIC_MS;
 #endif // AP_DDS_STATUS_PUB_ENABLED
+#if AP_DDS_CAMERA_FEEDBACK_PUB_ENABLED
+static constexpr uint16_t DELAY_CAMERA_FEEDBACK_TOPIC_MS = AP_DDS_DELAY_CAMERA_FEEDBACK_TOPIC_MS;
+#endif // AP_DDS_CAMERA_FEEDBACK_PUB_ENABLED
+#if AP_DDS_CAMERA_CAPTURE_STATUS_PUB_ENABLED
+static constexpr uint16_t DELAY_CAMERA_CAPTURE_STATUS_TOPIC_MS = AP_DDS_DELAY_CAMERA_CAPTURE_STATUS_TOPIC_MS;
+#endif // AP_DDS_CAMERA_CAPTURE_STATUS_PUB_ENABLED
 
 // Define the subscriber data members, which are static class scope.
 // If these are created on the stack in the subscriber,
@@ -115,7 +127,14 @@ rcl_interfaces_srv_SetParameters_Response AP_DDS_Client::set_parameter_response 
 rcl_interfaces_srv_GetParameters_Request AP_DDS_Client::get_parameters_request {};
 rcl_interfaces_srv_GetParameters_Response AP_DDS_Client::get_parameters_response {};
 rcl_interfaces_msg_Parameter AP_DDS_Client::param {};
-#endif
+#endif // AP_DDS_PARAMETER_SERVER_ENABLED
+
+#if AP_DDS_IMAGE_CAPTURE_SERVER_ENABLED
+ardupilot_msgs_srv_ImageStartCapture_Request AP_DDS_Client::image_start_capture_request {};
+ardupilot_msgs_srv_ImageStartCapture_Response AP_DDS_Client::image_start_capture_response {};
+ardupilot_msgs_srv_ImageStopCapture_Request AP_DDS_Client::image_stop_capture_request {};
+ardupilot_msgs_srv_ImageStopCapture_Response AP_DDS_Client::image_stop_capture_response {};
+#endif // AP_DDS_IMAGE_CAPTURE_SERVER_ENABLED
 
 const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
 
@@ -758,6 +777,107 @@ bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Status& msg)
     }
 }
 #endif // AP_DDS_STATUS_PUB_ENABLED
+
+#if AP_DDS_CAMERA_FEEDBACK_PUB_ENABLED
+bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_CameraFeedback& msg, uint8_t camera_instance, float camera_interval_msec)
+{
+    update_topic(msg.header.stamp);
+    STRCPY(msg.header.frame_id, BASE_LINK_FRAME_ID);
+
+    auto &ahrs = AP::ahrs();
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+
+    msg.timestamp_us = AP_HAL::micros64();
+    msg.camera_id = camera_instance;
+
+#if AP_EXTERNAL_CONTROL_ENABLED
+    msg.image_index = AP_DDS_External_Control::image_current_seq(camera_instance);
+#else
+    msg.image_index = 0;
+#endif
+
+    Location current_loc;
+    if (ahrs.get_location(current_loc)) {
+        msg.latitude = current_loc.lat * 1e-7;
+        msg.longitude = current_loc.lng * 1e-7;
+
+        int32_t altitude_cm;
+        if (current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, altitude_cm)) {
+            msg.altitude_msl = altitude_cm * 1e-2f;
+        }
+        if (current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, altitude_cm)) {
+            msg.altitude_rel = altitude_cm * 1e-2f;
+        }
+    }
+
+    msg.roll_deg = ahrs.get_roll_deg();
+    msg.pitch_deg = ahrs.get_pitch_deg();
+    msg.yaw_deg = ahrs.get_yaw_deg();
+
+    msg.focal_length_mm = 0.0f;
+    msg.flags = 0;
+    msg.completed_captures = 0;
+
+    static ardupilot_msgs_msg_CameraFeedback last_msg {};
+    bool is_message_changed = false;
+
+    is_message_changed |= (last_msg.image_index != msg.image_index);
+    is_message_changed |= (last_msg.camera_id != msg.camera_id);
+
+    if (is_message_changed) {
+        last_msg = msg;
+        return true;
+    }
+
+    return false;
+}
+#endif // AP_DDS_CAMERA_FEEDBACK_PUB_ENABLED
+
+#if AP_DDS_CAMERA_CAPTURE_STATUS_PUB_ENABLED
+bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_CameraCaptureStatus& msg, uint8_t camera_instance, float camera_interval_msec)
+{
+    update_topic(msg.header.stamp);
+    STRCPY(msg.header.frame_id, BASE_LINK_FRAME_ID); // Can be CAMERA_FRAME_ID if needed
+
+    msg.time_boot_ms = AP_HAL::millis();
+
+#if AP_EXTERNAL_CONTROL_ENABLED
+    uint32_t current_image_count = AP_DDS_External_Control::image_current_seq(camera_instance);
+    uint32_t total_images = AP_DDS_External_Control::total_image_cap(camera_instance);
+    uint32_t remaining_images = total_images - current_image_count;
+
+    if (remaining_images > 0) {
+        msg.image_status = 3;
+    } else {
+        msg.image_status = 0;
+    }
+
+    msg.image_count = current_image_count;
+#else
+    msg.image_status = 0;
+    msg.image_count = 0;
+#endif
+
+    msg.video_status = 0;
+    msg.image_interval = camera_interval_msec;
+    msg.recording_time_ms = 0;
+    msg.available_capacity = 0.0f;
+
+    static ardupilot_msgs_msg_CameraCaptureStatus last_msg {};
+    bool is_message_changed = false;
+
+    is_message_changed |= (last_msg.image_status != msg.image_status);
+    is_message_changed |= (last_msg.video_status != msg.video_status);
+
+    if (is_message_changed) {
+        last_msg = msg;
+        return true;
+    }
+
+    return false;
+}
+#endif // AP_DDS_CAMERA_CAPTURE_STATUS_PUB_ENABLED
+
 /*
   start the DDS thread
  */
@@ -1211,6 +1331,88 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         break;
     }
 #endif // AP_DDS_PARAMETER_SERVER_ENABLED
+
+#if AP_DDS_IMAGE_CAPTURE_SERVER_ENABLED
+    case services[to_underlying(ServiceIndex::IMAGE_START_CAPTURE)].rep_id: {
+        ardupilot_msgs_srv_ImageStartCapture_Request start_capture_request;
+        ardupilot_msgs_srv_ImageStartCapture_Response start_capture_response;
+        const bool deserialize_success = ardupilot_msgs_srv_ImageStartCapture_Request_deserialize_topic(ub, &start_capture_request);
+        if (deserialize_success == false) {
+            break;
+        }
+
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for starting image capture received", msg_prefix);
+
+        // Update active camera instance for DDS topics
+        // TODO: allow multiple instances to be active over DDS.
+#if AP_DDS_CAMERA_FEEDBACK_PUB_ENABLED || AP_DDS_CAMERA_CAPTURE_STATUS_PUB_ENABLED
+        active_camera_instance = start_capture_request.camera_id;
+        camera_interval_msec = start_capture_request.interval_msec;
+#endif
+
+        start_capture_response.success = AP_DDS_External_Control::start_image_capture(start_capture_request.camera_id, start_capture_request.interval_msec, start_capture_request.total_images);
+        STRCPY(start_capture_response.message, "Image capture started successfully");
+        start_capture_response.sequence_start = AP_DDS_External_Control::image_current_seq(start_capture_request.camera_id) + 1;
+
+        const uxrObjectId replier_id = {
+            .id = services[to_underlying(ServiceIndex::IMAGE_START_CAPTURE)].rep_id,
+            .type = UXR_REPLIER_ID
+        };
+
+        uint8_t reply_buffer[sizeof(start_capture_response.message) + 8] {};
+        ucdrBuffer reply_ub;
+
+        ucdr_init_buffer(&reply_ub, reply_buffer, sizeof(reply_buffer));
+        const bool serialize_success = ardupilot_msgs_srv_ImageStartCapture_Response_serialize_topic(&reply_ub, &start_capture_response);
+        if (serialize_success == false) {
+            break;
+        }
+
+        uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Image Start Capture Request : %s", msg_prefix, start_capture_response.success ? "SUCCESS" : "FAIL");
+        break;
+    }
+    case services[to_underlying(ServiceIndex::IMAGE_STOP_CAPTURE)].rep_id: {
+        ardupilot_msgs_srv_ImageStopCapture_Request stop_capture_request;
+        ardupilot_msgs_srv_ImageStopCapture_Response stop_capture_response;
+        const bool deserialize_success = ardupilot_msgs_srv_ImageStopCapture_Request_deserialize_topic(ub, &stop_capture_request);
+        if (deserialize_success == false) {
+            break;
+        }
+
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for stopping image capture received", msg_prefix);
+
+        // Update active camera instance for DDS topics
+#if AP_DDS_CAMERA_FEEDBACK_PUB_ENABLED || AP_DDS_CAMERA_CAPTURE_STATUS_PUB_ENABLED
+        active_camera_instance = stop_capture_request.camera_id;
+#endif
+
+        stop_capture_response.success = AP_DDS_External_Control::stop_image_capture(stop_capture_request.camera_id);
+        STRCPY(stop_capture_response.message, "Image capture stopped successfully");
+        stop_capture_response.total_captured = AP_DDS_External_Control::total_image_cap(stop_capture_request.camera_id);
+
+        const uxrObjectId replier_id = {
+            .id = services[to_underlying(ServiceIndex::IMAGE_STOP_CAPTURE)].rep_id,
+            .type = UXR_REPLIER_ID
+        };
+
+        uint8_t reply_buffer[sizeof(stop_capture_response.message) + 8] {};
+        ucdrBuffer reply_ub;
+
+        ucdr_init_buffer(&reply_ub, reply_buffer, sizeof(reply_buffer));
+        const bool serialize_success = ardupilot_msgs_srv_ImageStopCapture_Response_serialize_topic(&reply_ub, &stop_capture_response);
+        if (serialize_success == false) {
+            break;
+        }
+
+        uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Image Stop Capture Request : %s", msg_prefix, stop_capture_response.success ? "SUCCESS" : "FAIL");
+        break;
+    }
+#endif // AP_DDS_IMAGE_CAPTURE_SERVER_ENABLED
+
+    default:
+        break;
     }
 }
 
@@ -1724,6 +1926,40 @@ void AP_DDS_Client::write_status_topic()
 }
 #endif // AP_DDS_STATUS_PUB_ENABLED
 
+#if AP_DDS_CAMERA_FEEDBACK_PUB_ENABLED
+void AP_DDS_Client::write_camera_feedback_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = ardupilot_msgs_msg_CameraFeedback_size_of_topic(&camera_feedback_topic, 0);
+        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::CAMERA_FEEDBACK_PUB)].dw_id, &ub, topic_size);
+        const bool success = ardupilot_msgs_msg_CameraFeedback_serialize_topic(&ub, &camera_feedback_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
+        }
+    }
+}
+#endif // AP_DDS_CAMERA_FEEDBACK_PUB_ENABLED
+
+#if AP_DDS_CAMERA_CAPTURE_STATUS_PUB_ENABLED
+void AP_DDS_Client::write_camera_capture_status_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = ardupilot_msgs_msg_CameraCaptureStatus_size_of_topic(&camera_capture_status_topic, 0);
+        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::CAMERA_CAPTURE_STATUS_PUB)].dw_id, &ub, topic_size);
+        const bool success = ardupilot_msgs_msg_CameraCaptureStatus_serialize_topic(&ub, &camera_capture_status_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
+        }
+    }
+}
+#endif // AP_DDS_CAMERA_CAPTURE_STATUS_PUB_ENABLED
+
 void AP_DDS_Client::update()
 {
     WITH_SEMAPHORE(csem);
@@ -1828,6 +2064,24 @@ void AP_DDS_Client::update()
         last_status_check_time_ms = cur_time_ms;
     }
 #endif // AP_DDS_STATUS_PUB_ENABLED
+
+#if AP_DDS_CAMERA_FEEDBACK_PUB_ENABLED
+    if (cur_time_ms - last_camera_feedback_time_ms > DELAY_CAMERA_FEEDBACK_TOPIC_MS) {
+        if (update_topic(camera_feedback_topic, active_camera_instance, camera_interval_msec)) {
+            write_camera_feedback_topic();
+        }
+        last_camera_feedback_time_ms = cur_time_ms;
+    }
+#endif // AP_DDS_CAMERA_FEEDBACK_PUB_ENABLED
+
+#if AP_DDS_CAMERA_CAPTURE_STATUS_PUB_ENABLED
+    if (cur_time_ms - last_camera_capture_status_time_ms > DELAY_CAMERA_CAPTURE_STATUS_TOPIC_MS) {
+        if (update_topic(camera_capture_status_topic, active_camera_instance, camera_interval_msec)) {
+            write_camera_capture_status_topic();
+        }
+        last_camera_capture_status_time_ms = cur_time_ms;
+    }
+#endif // AP_DDS_CAMERA_CAPTURE_STATUS_PUB_ENABLED
 
     status_ok = uxr_run_session_time(&session, 1);
 }

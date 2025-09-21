@@ -62,9 +62,22 @@
 #include "rcl_interfaces/srv/GetParameters.h"
 #endif //AP_DDS_PARAMETER_SERVER_ENABLED
 
+// VIO Camera includes
+#if AP_DDS_CAMERA_FEEDBACK_PUB_ENABLED
+#include "ardupilot_msgs/msg/CameraFeedback.h"
+#endif // AP_DDS_CAMERA_FEEDBACK_PUB_ENABLED
+#if AP_DDS_CAMERA_CAPTURE_STATUS_PUB_ENABLED
+#include "ardupilot_msgs/msg/CameraCaptureStatus.h"
+#endif // AP_DDS_CAMERA_CAPTURE_STATUS_PUB_ENABLED
+#if AP_DDS_IMAGE_CAPTURE_SERVER_ENABLED
+#include "ardupilot_msgs/srv/ImageStartCapture.h"
+#include "ardupilot_msgs/srv/ImageStopCapture.h"
+#endif // AP_DDS_IMAGE_CAPTURE_SERVER_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Scheduler.h>
 #include <AP_HAL/Semaphores.h>
+#include <AP_Common/Location.h>
 
 #include "fcntl.h"
 
@@ -200,6 +213,31 @@ private:
     void write_imu_topic();
 #endif // AP_DDS_IMU_PUB_ENABLED
 
+#if AP_DDS_CAMERA_FEEDBACK_PUB_ENABLED
+    ardupilot_msgs_msg_CameraFeedback camera_feedback_topic;
+    ardupilot_msgs_msg_CameraFeedback last_camera_feedback_msg_;
+    // The last ms timestamp AP_DDS wrote a camera feedback message
+    uint64_t last_camera_feedback_time_ms;
+    //! @brief Serialize the current camera feedback and publish to the IO stream(s)
+    void write_camera_feedback_topic();
+    static bool update_topic(ardupilot_msgs_msg_CameraFeedback& msg, uint8_t camera_instance, float camera_interval_msec);
+#endif // AP_DDS_CAMERA_FEEDBACK_PUB_ENABLED
+
+#if AP_DDS_CAMERA_CAPTURE_STATUS_PUB_ENABLED
+    ardupilot_msgs_msg_CameraCaptureStatus camera_capture_status_topic;
+    ardupilot_msgs_msg_CameraCaptureStatus last_camera_capture_status_msg_;
+    // The last ms timestamp AP_DDS wrote a camera capture status message
+    uint64_t last_camera_capture_status_time_ms;
+    //! @brief Serialize the current camera capture status and publish to the IO stream(s)
+    void write_camera_capture_status_topic();
+    static bool update_topic(ardupilot_msgs_msg_CameraCaptureStatus& msg, uint8_t camera_instance, float camera_interval_msec);
+#endif // AP_DDS_CAMERA_CAPTURE_STATUS_PUB_ENABLED
+
+#if AP_DDS_CAMERA_FEEDBACK_PUB_ENABLED || AP_DDS_CAMERA_CAPTURE_STATUS_PUB_ENABLED
+    uint8_t active_camera_instance = 0;
+    float camera_interval_msec = 0.0f;
+#endif
+
 #if AP_DDS_CLOCK_PUB_ENABLED
     rosgraph_msgs_msg_Clock clock_topic;
     // The last ms timestamp AP_DDS wrote a Clock message
@@ -244,6 +282,7 @@ private:
     // incoming transforms
     static tf2_msgs_msg_TFMessage rx_dynamic_transforms_topic;
 #endif // AP_DDS_DYNAMIC_TF_SUB_ENABLED
+
     HAL_Semaphore csem;
 
 #if AP_DDS_PARAMETER_SERVER_ENABLED
@@ -253,6 +292,13 @@ private:
     static rcl_interfaces_srv_GetParameters_Response get_parameters_response;
     static rcl_interfaces_msg_Parameter param;
 #endif
+
+#if AP_DDS_IMAGE_CAPTURE_SERVER_ENABLED
+    static ardupilot_msgs_srv_ImageStartCapture_Request image_start_capture_request;
+    static ardupilot_msgs_srv_ImageStartCapture_Response image_start_capture_response;
+    static ardupilot_msgs_srv_ImageStopCapture_Request image_stop_capture_request;
+    static ardupilot_msgs_srv_ImageStopCapture_Response image_stop_capture_response;
+#endif // AP_DDS_IMAGE_CAPTURE_SERVER_ENABLED
 
     // connection parametrics
     bool status_ok{false};
