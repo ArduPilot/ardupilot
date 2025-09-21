@@ -41,7 +41,13 @@ void Plane::set_next_WP(const Location &loc)
 
     // convert relative alt to absolute alt
     if (!next_WP_loc.terrain_alt) {
-        next_WP_loc.change_alt_frame(Location::AltFrame::ABSOLUTE);
+        // without home a relative altitude can't be converted; a
+        // GCS can still start the mission then, but AUTO doesn't fly
+        // it until home is set
+        if (!next_WP_loc.change_alt_frame(Location::AltFrame::ABSOLUTE) &&
+            AP::ahrs().home_is_set()) {
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        }
     }
 
     // are we already past the waypoint? This happens when we jump
