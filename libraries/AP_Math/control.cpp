@@ -569,7 +569,19 @@ float stopping_distance(float velocity, float p, float accel_max)
 float kinematic_limit(Vector3f direction, float max_xy, float max_z_pos, float max_z_neg)
 {
     // Reject zero-length direction vectors or undefined limits
-    if (is_zero(direction.length_squared()) || is_zero(max_xy) || is_zero(max_z_pos) || is_zero(max_z_neg)) {
+    if (is_zero(direction.length_squared())) {
+        return 0.0;
+    }
+
+    const float mag_xy = direction.xy().length();
+    
+    return kinematic_limit(mag_xy, direction.z, max_xy, max_z_pos, max_z_neg);
+}
+
+float kinematic_limit(float mag_xy, float mag_z, float max_xy, float max_z_pos, float max_z_neg)
+{
+    // Reject zero-length direction vectors or undefined limits
+    if (is_zero(max_xy) || is_zero(max_z_pos) || is_zero(max_z_neg)) {
         return 0.0;
     }
 
@@ -577,37 +589,38 @@ float kinematic_limit(Vector3f direction, float max_xy, float max_z_pos, float m
     max_z_pos = fabsf(max_z_pos);
     max_z_neg = fabsf(max_z_neg);
 
-    direction.normalize();
-    const float xy_length = Vector2f{direction.x, direction.y}.length();
+    const float length = safe_sqrt(sq(mag_xy) + sq(mag_z));
+    mag_xy /= length;
+    mag_z /= length;
 
-    if (is_zero(xy_length)) {
+    if (is_zero(mag_xy)) {
         // Pure vertical motion
-        return is_positive(direction.z) ? max_z_pos : max_z_neg;
+        return is_positive(mag_z) ? max_z_pos : max_z_neg;
     }
 
-    if (is_zero(direction.z)) {
+    if (is_zero(mag_z)) {
         // Pure horizontal motion
         return max_xy;
     }
 
     // Compute vertical-to-horizontal slope of desired direction
-    const float slope = direction.z/xy_length;
+    const float slope = mag_z/mag_xy;
     if (is_positive(slope)) {
         // Ascending: check if slope is within limits
         if (fabsf(slope) < max_z_pos/max_xy) {
-            return max_xy/xy_length;
+            return max_xy/mag_xy;
         }
-        // Vertical limit dominates
-        return fabsf(max_z_pos/direction.z);
+        // Vertical limit dominates in upward direction
+        return fabsf(max_z_pos/mag_z);
     }
 
     // Descending: check if slope is within limits
     if (fabsf(slope) < max_z_neg/max_xy) {
-        return max_xy/xy_length;
+        return max_xy/mag_xy;
     }
 
     // Vertical limit dominates in downward direction
-    return fabsf(max_z_neg/direction.z);
+    return fabsf(max_z_neg/mag_z);
 }
 
 // Applies an exponential curve to a normalized input in the range [-1, 1].

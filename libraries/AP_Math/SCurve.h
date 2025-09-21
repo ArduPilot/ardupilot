@@ -65,9 +65,9 @@ public:
 
     // generate a trigonometric track in 3D space that moves over a straight line
     // between two points defined by the origin and destination
-    void calculate_track(const Vector3p &origin, const Vector3p &destination,
+    void calculate_track(const Vector3p &origin, const Vector3p &destination, float arc_rad,
                          float speed_xy, float speed_up, float speed_down,
-                         float accel_xy, float accel_z,
+                         float accel_xy, float accel_z, float accel_c,
                          float snap_maximum, float jerk_maximum);
 
     // set maximum velocity and re-calculate the path using these limits
@@ -105,6 +105,8 @@ private:
     // return the position, velocity and acceleration vectors relative to the origin at a specified time along the path
     void move_from_time_pos_vel_accel(float t, Vector3p &pos, Vector3f &vel, Vector3f &accel);
 
+    void project_scurve_onto_track(float scurve_A1, float scurve_V1, float scurve_P1, Vector3p &pos, Vector3f &vel, Vector3f &accel);
+
     // get desired maximum speed along track
     float get_speed_along_track() const WARN_IF_UNUSED { return vel_max; }
 
@@ -115,7 +117,7 @@ private:
     float get_accel_z_max() const WARN_IF_UNUSED { return accel_z_max; }
 
     // return the change in position from origin to destination
-    const Vector3f& get_track() const WARN_IF_UNUSED { return track; };
+    const Vector3f& get_track() const WARN_IF_UNUSED { return seg_delta; };
 
     // return the current time elapsed
     float get_time_elapsed() const WARN_IF_UNUSED { return time; }
@@ -178,10 +180,10 @@ private:
     // return true if the curve is valid.  Used to identify and protect against code errors
     bool valid() const WARN_IF_UNUSED;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+//#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // debugging messages
     void debug() const;
-#endif
+//#endif
 
     // segment types
     enum class SegmentType {
@@ -200,7 +202,6 @@ private:
     float accel_z_max;    // maximum acceleration magnitude
     float vel_max;      // maximum velocity magnitude
     float time;         // time that defines position on the path
-    float position_sq;  // position (squared) on the path at the last time step (used to detect finish)
 
     // segment 0 is the initial segment and holds the vehicle's initial position and velocity
     // segments 1 to 7 are the acceleration segments
@@ -219,6 +220,11 @@ private:
         float end_pos;      // final position value for segment
     } segment[segments_max];
 
-    Vector3f track;       // total change in position from origin to destination
-    Vector3f delta_unit;  // reference direction vector for path
+    bool is_arc_segment;    // true if this segment is a circular arc, false if straight line
+    Vector3f seg_delta;     // total displacement vector from start to end point (NEU frame)
+    float seg_length;       // 3D scalar length of the path (arc length + vertical component)
+    float arc_angle_rad;    // signed central angle of the arc [rad] (+CCW, -CW), 0 = straight
+    float arc_length_ne;    // horizontal arc length along the circle (R * |theta|)
+    float arc_radius_ne;    // arc radius
+    Vector2f arc_center_ne; // center of the circle in local NE plane, relative to start point
 };
