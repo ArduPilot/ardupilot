@@ -9486,6 +9486,41 @@ return update()
         self.set_rc(2, 1500)
         self.fly_home_land_and_disarm()
 
+    def PlaneAbsAltTakeoff(self):
+        '''try taking off to an absolute altitude'''
+        takeoff_alt = 650
+        self.upload_simple_relhome_mission([
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+                z=takeoff_alt,
+            ),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            ),
+        ])
+
+        self.reboot_sitl()
+        self.change_mode('AUTO')
+
+        self.progress("Setting the current item while AUTO waits for home")
+        # these must not resume the stopped mission; item 2's altitude
+        # can't be made absolute without home
+        self.set_current_waypoint_using_mission_set_current(2)
+        self.set_current_waypoint_using_mav_cmd_do_set_mission_current(2)
+        self.set_current_waypoint_using_mission_set_current(1)
+        self.assert_prearm_failure("Auto waiting for home", other_prearm_failures_fatal=False)
+
+        self.wait_ready_to_arm()
+        alt = self.get_altitude()
+        if takeoff_alt - alt > 100:
+            raise ValueError("Bad altitude assumption made")
+
+        self.arm_vehicle()
+        self.wait_altitude(takeoff_alt-10, takeoff_alt+10, timeout=60, minimum_duration=45)
+        self.fly_home_land_and_disarm()
+
     def ScriptedArmingChecksApplet(self):
         """ Applet for Arming Checks will prevent a vehicle from arming based on scripted checks
             """
@@ -10800,6 +10835,7 @@ return update()
             self.FRSkyPassThroughStatustext,
             self.LOITER,
             self.MAV_CMD_NAV_LOITER_TO_ALT,
+            self.PlaneAbsAltTakeoff,
             self.TerrainMission,
             self.TerrainMissionInterrupt,
             self.AcroLocking,
