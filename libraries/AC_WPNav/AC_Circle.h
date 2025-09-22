@@ -40,10 +40,6 @@ public:
     // If conversion fails, defaults to current position and logs a navigation error.
     void set_center(const Location& center);
 
-    // Sets the circle center using a NEU position vector in centimeters from the EKF origin.
-    // See set_center_NEU_m() for full details.
-    void set_center_NEU_cm(const Vector3f& center_neu_cm, bool is_terrain_alt) { _center_neu_m = center_neu_cm.topostype() * 0.01; _is_terrain_alt = is_terrain_alt; }
-
     // Sets the circle center using a NEU position vector in meters from the EKF origin.
     // If `is_terrain_alt` is true, the Z component is treated as altitude above terrain; otherwise, above EKF origin.
     void set_center_NEU_m(const Vector3p& center_neu_m, bool is_terrain_alt) { _center_neu_m = center_neu_m; _is_terrain_alt = is_terrain_alt; }
@@ -100,11 +96,11 @@ public:
 
     // Returns the desired roll angle in centidegrees from the position controller.
     // Should be passed to the attitude controller as a stabilization input.
-    float get_roll_cd() const { return _pos_control.get_roll_cd(); }
+    float get_roll_cd() const { return rad_to_cd(_pos_control.get_roll_rad()); }
 
     // Returns the desired pitch angle in centidegrees from the position controller.
     // Should be passed to the attitude controller as a stabilization input.
-    float get_pitch_cd() const { return _pos_control.get_pitch_cd(); }
+    float get_pitch_cd() const { return rad_to_cd(_pos_control.get_pitch_rad()); }
 
     // Returns the desired yaw angle in centidegrees computed by the circle controller.
     // May be oriented toward the circle center or along the path depending on configuration.
@@ -132,10 +128,6 @@ public:
     // dist_m is updated with the horizontal distance to the circle center.
     // If the vehicle is at the center, the point directly behind the vehicle (based on yaw) is returned.
     void get_closest_point_on_circle_NEU_m(Vector3p& result_NEU_m, float& dist_m) const;
-
-    // Returns the horizontal distance to the circle target in centimeters.
-    // See get_distance_to_target_m() for full details.
-    float get_distance_to_target_cm() const { return get_distance_to_target_m() * 100.0; }
 
     // Returns the horizontal distance to the circle target in meters.
     // Calculated using the position controller’s NE position error norm.
@@ -187,10 +179,6 @@ private:
         TERRAIN_FROM_TERRAINDATABASE,
     };
     AC_Circle::TerrainSource get_terrain_source() const;
-
-    // Returns terrain offset in centimeters above the EKF origin at the current position.
-    // See get_terrain_offset_m() for full details.
-    bool get_terrain_offset_cm(float& offset_cm);
 
     // Returns terrain offset in meters above the EKF origin at the current position.
     // Positive values indicate terrain is above the EKF origin altitude.

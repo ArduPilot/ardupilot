@@ -94,13 +94,6 @@ AC_Loiter::AC_Loiter(const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-// Sets the initial loiter target position in centimeters from the EKF origin.
-// See init_target_m() for full details.
-void AC_Loiter::init_target_cm(const Vector2f& position_ne_cm)
-{
-    init_target_m(position_ne_cm.topostype() * 0.01);
-}
-
 // Sets the initial loiter target position in meters from the EKF origin.
 // - position_neu_m: horizontal position in the NE frame, in meters.
 // - Initializes internal control state including acceleration targets and feed-forward planning.
@@ -199,18 +192,6 @@ void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, f
 }
 
 // Calculates the expected stopping point based on current velocity and position in the NE frame.
-// Result is returned in centimeters.
-// See get_stopping_point_NE_m() for full details.
-void AC_Loiter::get_stopping_point_NE_cm(Vector2f& stopping_point_ne_cm) const
-{
-    Vector2f stop_ne_m;
-    // Retrieve stopping point in meters
-    get_stopping_point_NE_m(stop_ne_m);
-    // Convert to centimeters
-    stopping_point_ne_cm = stop_ne_m * 100.0;
-}
-
-// Calculates the expected stopping point based on current velocity and position in the NE frame.
 // Result is returned in meters.
 // Uses the position controller’s deceleration model.
 void AC_Loiter::get_stopping_point_NE_m(Vector2f& stopping_point_ne_m) const
@@ -253,13 +234,6 @@ void AC_Loiter::update(bool avoidance_on)
 
     // Run position controller to compute desired attitude and thrust
     _pos_control.update_NE_controller();
-}
-
-// Sets the maximum allowed horizontal loiter speed in cm/s.
-// See set_speed_max_NE_ms() for full details.
-void AC_Loiter::set_speed_max_NE_cms(float speed_max_ne_cms)
-{
-    set_speed_max_NE_ms(speed_max_ne_cms * 0.01);
 }
 
 // Sets the maximum allowed horizontal loiter speed in m/s.

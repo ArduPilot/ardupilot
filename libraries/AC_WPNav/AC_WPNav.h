@@ -44,10 +44,6 @@ public:
     };
     AC_WPNav::TerrainSource get_terrain_source() const;
 
-    // Returns terrain offset in cm above the EKF origin at the current position.
-    // See get_terrain_offset_m() for full details.
-    bool get_terrain_offset_cm(float& offset_cm);
-
     // Returns terrain offset in meters above the EKF origin at the current position.
     // Positive values mean terrain lies above the EKF origin altitude.
     // Source may be rangefinder or terrain database depending on availability.
@@ -57,10 +53,6 @@ public:
     // Vehicle will stop if distance from target altitude exceeds this margin.
     float get_terrain_margin_m() const { return MAX(_terrain_margin_m, 0.1); }
 
-    // Converts a Location to a NEU position vector in cm from the EKF origin.
-    // See get_vector_NEU_m() for full details.
-    bool get_vector_NEU_cm(const Location &loc, Vector3f &pos_from_origin_NEU_cm, bool &is_terrain_alt);
-
     // Converts a Location to a NEU position vector in meters from the EKF origin.
     // Sets `is_terrain_alt` to true if the resulting Z position is relative to terrain.
     // Returns false if terrain data is unavailable or conversion fails.
@@ -69,10 +61,6 @@ public:
     ///
     /// waypoint controller
     ///
-
-    // Initializes waypoint and spline controllers using inputs in cm.
-    // See wp_and_spline_init_m() for full details.
-    void wp_and_spline_init_cm(float speed_cms = 0.0f, Vector3f stopping_point_neu_cm = Vector3f{});
 
     // Initializes waypoint and spline navigation using inputs in meters.
     // Sets speed and acceleration limits, calculates jerk constraints,
@@ -96,17 +84,9 @@ public:
     // Returns true if waypoint navigation is currently paused via set_pause().
     bool paused() { return _paused; }
 
-    // Sets the climb speed for waypoint navigation in cm/s.
-    // See set_speed_up_ms() for full details.
-    void set_speed_up_cms(float speed_up_cms);
-
     // Sets the climb speed for waypoint navigation in m/s.
     // Updates the vertical controller with the new ascent rate limit.
     void set_speed_up_ms(float speed_up_ms);
-
-    // Sets the descent speed for waypoint navigation in cm/s.
-    // See set_speed_down_ms() for full details.
-    void set_speed_down_cms(float speed_down_cms);
 
     // Sets the descent speed for waypoint navigation in m/s.
     // Updates the vertical controller with the new descent rate limit.
@@ -206,10 +186,6 @@ public:
     // Returns false if terrain offset cannot be determined when required.
     virtual bool set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt = false);
 
-    // Sets the next waypoint destination using a NEU position vector in centimeters.
-    // See set_wp_destination_next_NEU_m() for full details.
-    bool set_wp_destination_next_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt = false);
-
     // Sets the next waypoint destination using a NEU position vector in meters.
     // Only updates if terrain frame matches current leg.
     // Calculates trajectory preview for smoother transition into next segment.
@@ -265,10 +241,6 @@ public:
         return get_wp_distance_to_destination_m() < _wp_radius_cm * 0.01;
     }
 
-    // Returns the waypoint acceptance radius in centimeters.
-    // See get_wp_radius_m() for full details.
-    float get_wp_radius_cm() const { return get_wp_radius_m() * 100.0; }
-
     // Returns the waypoint acceptance radius in meters.
     // This radius defines the distance from the target waypoint within which the vehicle is considered to have arrived.
     float get_wp_radius_m() const { return _wp_radius_cm * 0.01; }
@@ -302,19 +274,11 @@ public:
     // Returns false if any conversion from location to vector fails.
     bool set_spline_destination_next_loc(const Location& next_destination, const Location& next_next_destination, bool next_next_is_spline);
 
-    // Sets the current spline segment using position vectors in centimeters.
-    // See set_spline_destination_NEU_m() for full details.
-    bool set_spline_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt, const Vector3f& next_destination_neu_cm, bool next_terrain_alt, bool next_is_spline);
-
     // Sets the current spline waypoint using NEU position vectors in meters.
     // Initializes a spline path from `destination_neu_m` to `next_destination_neu_m`, respecting terrain altitude framing.
     // Both waypoints must use the same altitude frame (either above terrain or above origin).
     // Returns false if terrain altitude cannot be determined when required.
     bool set_spline_destination_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt, const Vector3p& next_destination_neu_m, bool next_terrain_alt, bool next_is_spline);
-
-    // Sets the next spline segment using NEU position vectors in centimeters.
-    // See set_spline_destination_next_NEU_m() for full details.
-    bool set_spline_destination_next_NEU_cm(const Vector3f& next_destination_neu_cm, bool next_is_terrain_alt, const Vector3f& next_next_destination_neu_cm, bool next_next_is_terrain_alt, bool next_next_is_spline);
 
     // Sets the next spline segment using NEU position vectors in meters.
     // Creates a spline path from the current destination to `next_destination_neu_m`, and prepares transition toward `next_next_destination_neu_m`.
@@ -344,15 +308,15 @@ public:
 
     // Returns the desired roll angle in centidegrees from the position controller.
     // See get_roll_rad() for full details.
-    float get_roll() const { return _pos_control.get_roll_cd(); }
+    float get_roll() const { return rad_to_cd(get_roll_rad()); }
 
     // Returns the desired pitch angle in centidegrees from the position controller.
     // See get_pitch_rad() for full details.
-    float get_pitch() const { return _pos_control.get_pitch_cd(); }
+    float get_pitch() const { return rad_to_cd(get_pitch_rad()); }
 
     // Returns the desired yaw angle in centidegrees from the position controller.
     // See get_yaw_rad() for full details.
-    float get_yaw() const { return _pos_control.get_yaw_cd(); }
+    float get_yaw() const { return rad_to_cd(get_yaw_rad()); }
 
     // Advances the target location along the current path segment.
     // Updates target position, velocity, and acceleration based on jerk-limited profile (or spline).
