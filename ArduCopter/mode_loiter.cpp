@@ -192,7 +192,7 @@ void ModeLoiter::run()
 
 float ModeLoiter::wp_distance_m() const
 {
-    return loiter_nav->get_distance_to_target_cm() * 0.01f;
+    return loiter_nav->get_distance_to_target_m();
 }
 
 float ModeLoiter::wp_bearing_deg() const
