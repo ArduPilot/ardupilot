@@ -128,6 +128,13 @@ Battery Monitor
 The board has a internal voltage sensor and connections on the ESC connector for an external current sensor input.
 The voltage sensor can handle up to 6S LiPo batteries.
 
+Firmware contain following battery variables:
+- HAL_BATT_VOLT_PIN 11
+- HAL_BATT_CURR_PIN 13
+- HAL_BATT_VOLT_SCALE 11
+- HAL_BATT_CURR_SCALE 25.0
+- HAL_BATT_MONITOR_DEFAULT 4
+
 Firmware
 ========
 Firmware for the XRush4 F4 V3 is available from [ArduPilot Firmware Server](https://firmware.ardupilot.org) under the `XRush4 F4 V3` target.
