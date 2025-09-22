@@ -131,28 +131,30 @@ bool Plane::suppress_throttle(void)
         // keep throttle suppressed
         return true;
     }
-    
-    if (fabsf(relative_altitude) >= 10.0f) {
-        // we're more than 10m from the home altitude
-        throttle_suppressed = false;
-        return false;
-    }
 
-    if (gps_movement) {
-        // if we have an airspeed sensor, then check it too, and
-        // require 5m/s. This prevents throttle up due to spiky GPS
-        // groundspeed with bad GPS reception
-#if AP_AIRSPEED_ENABLED
-        if ((!ahrs.using_airspeed_sensor()) || airspeed.get_airspeed() >= 5) {
-            // we're moving at more than 5 m/s
+    if (is_flying()) {
+        if (fabsf(relative_altitude) >= 10.0f) {
+            // we're more than 10m from the home altitude
             throttle_suppressed = false;
-            return false;        
+            return false;
         }
-#else
-        // no airspeed sensor, so we trust that the GPS's movement is truthful
-        throttle_suppressed = false;
-        return false;
-#endif
+
+        if (gps_movement) {
+            // if we have an airspeed sensor, then check it too, and
+            // require 5m/s. This prevents throttle up due to spiky GPS
+            // groundspeed with bad GPS reception
+    #if AP_AIRSPEED_ENABLED
+            if ((!ahrs.using_airspeed_sensor()) || airspeed.get_airspeed() >= 5) {
+                // we're moving at more than 5 m/s
+                throttle_suppressed = false;
+                return false;        
+            }
+    #else
+            // no airspeed sensor, so we trust that the GPS's movement is truthful
+            throttle_suppressed = false;
+            return false;
+    #endif
+        }
     }
 
 #if HAL_QUADPLANE_ENABLED
