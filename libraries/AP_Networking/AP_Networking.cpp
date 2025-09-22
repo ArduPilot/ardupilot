@@ -144,7 +144,7 @@ void AP_Networking::init()
     }
 #endif
 
-#if AP_NETWORKING_PPP_GATEWAY_ENABLED
+#if AP_NETWORKING_BACKEND_CHIBIOS && AP_NETWORKING_PPP_GATEWAY_ENABLED
     if (option_is_set(OPTION::PPP_ETHERNET_GATEWAY)) {
         /*
           when we are a PPP/Ethernet gateway we bring up the ethernet first
