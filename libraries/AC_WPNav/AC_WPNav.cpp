@@ -150,14 +150,6 @@ AC_WPNav::TerrainSource AC_WPNav::get_terrain_source() const
 /// waypoint navigation
 ///
 
-// Initializes waypoint and spline controllers using inputs in cm.
-// See wp_and_spline_init_m() for full details.
-void AC_WPNav::wp_and_spline_init_cm(float speed_cms, Vector3f stopping_point_neu_cm)
-{
-    // convert inputs from centimeters to meters and call the main initializer
-    wp_and_spline_init_m(speed_cms * 0.01, stopping_point_neu_cm.topostype() * 0.01);
-}
-
 // Initializes waypoint and spline navigation using inputs in meters.
 // Sets speed and acceleration limits, calculates jerk constraints,
 // and initializes spline or S-curve leg with a defined starting point.
@@ -243,13 +235,6 @@ void AC_WPNav::set_speed_NE_ms(float speed_ms)
     }
 }
 
-// Sets the climb speed for waypoint navigation in cm/s.
-// See set_speed_up_ms() for full details.
-void AC_WPNav::set_speed_up_cms(float speed_up_cms)
-{
-    set_speed_up_ms(speed_up_cms * 0.01);
-}
-
 // Sets the climb speed for waypoint navigation in m/s.
 // Updates the vertical controller with the new ascent rate limit.
 void AC_WPNav::set_speed_up_ms(float speed_up_ms)
@@ -259,14 +244,6 @@ void AC_WPNav::set_speed_up_ms(float speed_up_ms)
 
     // recompute the trajectory using updated limits
     update_track_with_speed_accel_limits();
-}
-
-// Sets the descent speed for waypoint navigation in cm/s.
-// See set_speed_down_ms() for full details.
-void AC_WPNav::set_speed_down_cms(float speed_down_cms)
-{
-    // convert cm/s to m/s and apply to descent limit
-    set_speed_down_ms(speed_down_cms * 0.01);
 }
 
 // Sets the descent speed for waypoint navigation in m/s.
@@ -408,13 +385,6 @@ bool AC_WPNav::set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool 
     _flags.reached_destination = false;
 
     return true;
-}
-
-// Sets the next waypoint destination using a NEU position vector in centimeters.
-// See set_wp_destination_next_NEU_m() for full details.
-bool AC_WPNav::set_wp_destination_next_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt)
-{
-    return set_wp_destination_next_NEU_m(destination_neu_cm.topostype() * 0.01, is_terrain_alt);
 }
 
 // Sets the next waypoint destination using a NEU position vector in meters.
@@ -735,17 +705,6 @@ bool AC_WPNav::force_stop_at_next_wp()
     return true;
 }
 
-// Returns terrain offset in cm above the EKF origin at the current position.
-// See get_terrain_offset_m() for full details.
-bool AC_WPNav::get_terrain_offset_cm(float& offset_cm)
-{
-    // call meter-version and convert to centimeters
-    float offset_m = offset_cm;
-    const bool ret = get_terrain_offset_m(offset_m);
-    offset_cm = offset_m * 100.0;
-    return ret;
-}
-
 // Returns terrain offset in meters above the EKF origin at the current position.
 // Positive values mean terrain lies above the EKF origin altitude.
 // Source may be rangefinder or terrain database depending on availability.
@@ -963,18 +922,6 @@ bool AC_WPNav::set_spline_destination_next_NEU_m(const Vector3p& next_destinatio
     }
 
     return true;
-}
-
-// Converts a Location to a NEU position vector in cm from the EKF origin.
-// See get_vector_NEU_m() for full details.
-bool AC_WPNav::get_vector_NEU_cm(const Location &loc, Vector3f &pos_from_origin_neu_cm, bool &is_terrain_alt)
-{
-    // convert input to meters for processing
-    Vector3p pos_from_origin_neu_m = pos_from_origin_neu_cm.topostype() * 0.01;
-    // perform vector conversion using meters interface
-    const bool ret = get_vector_NEU_m(loc, pos_from_origin_neu_m, is_terrain_alt);
-    pos_from_origin_neu_cm = pos_from_origin_neu_m.tofloat() * 100.0;
-    return ret;
 }
 
 // Converts a Location to a NEU position vector in meters from the EKF origin.

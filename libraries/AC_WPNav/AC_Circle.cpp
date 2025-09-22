@@ -410,19 +410,6 @@ AC_Circle::TerrainSource AC_Circle::get_terrain_source() const
 #endif
 }
 
-// Returns terrain offset in centimeters above the EKF origin at the current position.
-// See get_terrain_offset_m() for full details.
-bool AC_Circle::get_terrain_offset_cm(float& offset_cm)
-{
-    // Convert input value to meters for internal processing
-    float offset_m = offset_cm * 0.01;
-    // Retrieve terrain offset in meters
-    bool terrain_valid = get_terrain_offset_m(offset_m);
-    // Convert result back to centimeters
-    offset_cm = offset_m * 100.0;
-    return terrain_valid;
-}
-
 // Returns terrain offset in meters above the EKF origin at the current position.
 // Positive values indicate terrain is above the EKF origin altitude.
 // Terrain source may be rangefinder or terrain database.
