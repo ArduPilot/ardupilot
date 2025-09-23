@@ -126,7 +126,7 @@ void DroneCAN_sniffer::init(void)
         AP_HAL::panic("Couldn't allocate CANManager, something is very wrong");
     }
 
-    hal_mutable.can[driver_index]->init(1000000, AP_HAL::CANIface::NormalMode);
+    hal_mutable.can[driver_index]->init(1000000);
 
     if (!hal_mutable.can[driver_index]->is_initialized()) {
         debug_dronecan("Can not initialised\n");
