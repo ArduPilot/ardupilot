@@ -2887,6 +2887,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
+        self.set_parameter('TECS_RLL2THR', 2)
+
         # Keep track of the maximum terrain alt.
         global max_terrain_alt
         max_terrain_alt = 0
@@ -2912,7 +2914,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode("GUIDED")
         loc = self.mav.location()
         self.location_offset_ne(loc, 350, 0)
-        new_alt = 290
+        new_alt = 280
         self.run_cmd_int(
             mavutil.mavlink.MAV_CMD_DO_REPOSITION,
             p5=int(loc.lat * 1e7),
