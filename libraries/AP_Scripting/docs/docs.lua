@@ -1898,7 +1898,7 @@ function FWVersion:string() end
 periph = {}
 
 -- desc
----@return uint32_t_ud
+---@return uint64_t_ud
 function periph:get_vehicle_state() end
 
 -- desc
