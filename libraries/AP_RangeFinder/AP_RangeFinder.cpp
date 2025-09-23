@@ -24,6 +24,8 @@
 #include "AP_RangeFinder_BBB_PRU.h"
 #include "AP_RangeFinder_LightWareI2C.h"
 #include "AP_RangeFinder_LightWareSerial.h"
+#include "AP_RangeFinder_LightWareI2C_FilteredFirstReturn.h"
+#include "AP_RangeFinder_LightWareI2C_FilteredLastReturn.h"
 #if AP_RANGEFINDER_BEBOP_ENABLED
 #include "AP_RangeFinder_Bebop.h"
 #endif
@@ -343,6 +345,59 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
         }
         break;
 #endif  // AP_RANGEFINDER_LWI2C_ENABLED
+
+#if AP_RANGEFINDER_LWI2CFILTEREDFIRSTRETURN_ENABLED
+    case Type::LWI2CFFR:
+        if (params[instance].address) {
+            // the LW20 needs a long time to boot up, so we delay 1.5s here
+#ifndef HAL_BUILD_AP_PERIPH
+            if (!hal.util->was_watchdog_armed()) {
+                hal.scheduler->delay(1500);
+            }
+#endif
+#ifdef HAL_RANGEFINDER_LIGHTWARE_I2C_BUS
+            _add_backend(AP_RangeFinder_LightWareI2CFILTEREDFIRSTRETURN::detect(state[instance], params[instance],
+                                                             hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, params[instance].address)),
+                                                             instance);
+#else
+            FOREACH_I2C(i) {
+                if (_add_backend(AP_RangeFinder_LightWareI2CFILTEREDFIRSTRETURN::detect(state[instance], params[instance],
+                                                                     hal.i2c_mgr->get_device(i, params[instance].address)),
+                                 instance)) {
+                    break;
+                }
+            }
+#endif
+        }
+        break;
+#endif  // AP_RANGEFINDER_LWI2CFILTEREDFIRSTRETURN_ENABLED
+#if AP_RANGEFINDER_LWI2CFILTEREDLASTRETURN_ENABLED
+    case Type::LWI2CFLR:
+        if (params[instance].address) {
+            // the LW20 needs a long time to boot up, so we delay 1.5s here
+#ifndef HAL_BUILD_AP_PERIPH
+            if (!hal.util->was_watchdog_armed()) {
+                hal.scheduler->delay(1500);
+            }
+#endif
+
+#ifdef HAL_RANGEFINDER_LIGHTWARE_I2C_BUS
+            _add_backend(AP_RangeFinder_LightWareI2CFILTEREDLASTRETURN::detect(state[instance], params[instance],
+                                                             hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, params[instance].address)),
+                                                             instance);
+#else
+            FOREACH_I2C(i) {
+                if (_add_backend(AP_RangeFinder_LightWareI2CFILTEREDLASTRETURN::detect(state[instance], params[instance],
+                                                                     hal.i2c_mgr->get_device(i, params[instance].address)),
+                                 instance)) {
+                    break;
+                }
+            }
+#endif
+        }
+        break;
+#endif  // AP_RANGEFINDER_LWI2CFILTEREDFIRSTRETURN_ENABLED
+
 #if AP_RANGEFINDER_TRI2C_ENABLED
     case Type::TRI2C:
         if (params[instance].address) {
