@@ -1070,7 +1070,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
         // rotate to body-frame if necessary
         if (packet.coordinate_frame == MAV_FRAME_BODY_NED ||
             packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-            copter.rotate_body_frame_to_NE_p(pos_neu_m.x, pos_neu_m.y);
+            copter.ahrs.body_to_earth2D_p(pos_neu_m.xy());
         }
         // add body offset if necessary
         if (packet.coordinate_frame == MAV_FRAME_LOCAL_OFFSET_NED ||
@@ -1098,7 +1098,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
         }
         // rotate to body-frame if necessary
         if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-            copter.rotate_body_frame_to_NE(vel_neu_ms.x, vel_neu_ms.y);
+            copter.ahrs.body_to_earth2D(vel_neu_ms.xy());
         }
     }
 
@@ -1108,7 +1108,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
         accel_neu_mss = Vector3f{packet.afx, packet.afy, -packet.afz};
         // rotate to body-frame if necessary
         if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-            copter.rotate_body_frame_to_NE(accel_neu_mss.x, accel_neu_mss.y);
+            copter.ahrs.body_to_earth2D(accel_neu_mss.xy());
         }
     }
 
