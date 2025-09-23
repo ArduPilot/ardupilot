@@ -1,0 +1,80 @@
+# hw definition file for UAV-DEV GmbH LED
+
+# MCU class and specific type
+MCU STM32L431 STM32L431xx
+
+# bootloader starts firmware at 36k + 4k (STORAGE_FLASH)
+FLASH_RESERVE_START_KB 40
+FLASH_SIZE_KB 256
+
+# store parameters in pages 18 and 19
+STORAGE_FLASH_PAGE 18
+define HAL_STORAGE_SIZE 800
+
+# board ID
+APJ_BOARD_ID AP_HW_UAV-DEV-LED-L4
+
+define CAN_APP_NODE_NAME "com.uav-dev.led"
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 16
+define CH_CFG_ST_RESOLUTION 16
+
+# AP_PERIPH firmware
+env AP_PERIPH 1
+
+define HAL_NO_GPIO_IRQ
+define PORT_INT_REQUIRED_STACK 64
+
+define DMA_RESERVE_SIZE 0
+
+# MAIN_STACK is stack for ISR handlers
+MAIN_STACK 0x300
+
+# PROCESS_STACK controls stack for main thread
+PROCESS_STACK 0xA00
+
+# we setup a small defaults.parm
+define AP_PARAM_MAX_EMBEDDED_PARAM 512
+
+# LEDs
+PC13 LED OUTPUT OPENDRAIN HIGH
+define HAL_LED_ON 0
+
+# debugger support
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# CAN
+CAN_ORDER 1
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+
+# UARTs
+SERIAL_ORDER USART3
+
+# USART3
+PB10 USART3_TX USART3
+PB11 USART3_RX USART3
+
+RDG LEDs
+define NOTIFY_LED_OVERRIDE_DEFAULT 0
+define DEFAULT_NTF_LED_TYPES 256
+define NOTIFY_LED_LEN_DEFAULT 5
+define AP_PERIPH_NOTIFY_ENABLED 1
+define AP_SERIALLED_ENABLED 1
+define AP_PERIPH_RC_OUT_ENABLED 1
+PA0 TIM2_CH1  TIM2 PWM(1) GPIO(50)
+
+# keep ROMFS uncompressed as we don't have enough RAM
+# to uncompress the bootloader at runtime
+env ROMFS_UNCOMPRESSED True
+
+# disable unnecessary threads
+define HAL_NO_MONITOR_THREAD
+define HAL_NO_RCIN_THREAD
+define HAL_NO_TIMER_THREAD
+define HAL_USE_ADC FALSE
