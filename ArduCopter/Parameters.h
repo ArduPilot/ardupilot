@@ -528,6 +528,10 @@ public:
     AP_Beacon beacon;
 #endif
 
+#if AP_WINCH_ENABLED
+    AP_Winch winch;
+#endif
+
 #if HAL_PROXIMITY_ENABLED
     // proximity (aka object avoidance) library
     AP_Proximity proximity;

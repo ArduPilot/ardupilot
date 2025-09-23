@@ -777,6 +777,39 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
     case MAV_CMD_DO_CHANGE_ALTITUDE:
         return handle_command_int_DO_CHANGE_ALTITUDE(packet);
 
+        case MAV_CMD_DO_WINCH:
+#if AP_WINCH_ENABLED
+    {
+        // We use param2..4 to match the common ArduPilot mapping used in Copter:
+        //  param2 = action (0=RELAXED, 1=RELATIVE_LENGTH_CONTROL, 2=RATE_CONTROL)
+        //  param3 = release_length (m)   [if action==1]
+        //  param4 = release_rate  (m/s)  [if action==2]
+        const uint8_t action = uint8_t(packet.param2);
+        const float length_m = packet.param3;
+        const float rate_mps = packet.param4;
+
+        auto &winch = plane.g2.winch;
+
+        switch (action) {
+        case WINCH_RELAXED:
+            winch.relax();
+            break;
+        case WINCH_RELATIVE_LENGTH_CONTROL:
+            winch.release_length(length_m);
+            break;
+        case WINCH_RATE_CONTROL:
+            winch.set_desired_rate(rate_mps);
+            break;
+        default:
+            return MAV_RESULT_DENIED; // bad action
+        }
+        return MAV_RESULT_ACCEPTED;
+    }
+#else
+        return MAV_RESULT_UNSUPPORTED;
+#endif
+
+
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     // special 'slew-enabled' guided commands here... for speed,alt, and direction commands
     case MAV_CMD_GUIDED_CHANGE_SPEED:
@@ -921,6 +954,20 @@ void GCS_MAVLINK_Plane::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_comman
     switch (in.command) {
     case MAV_CMD_NAV_TAKEOFF:
         convert_MAV_CMD_NAV_TAKEOFF_to_COMMAND_INT(in, out);
+        return;
+
+
+    case MAV_CMD_DO_WINCH:
+        // pass-through the params we use in the INT handler
+        memset(&out, 0, sizeof(out));
+        out.target_system    = in.target_system;
+        out.target_component = in.target_component;
+        out.frame            = MAV_FRAME_MISSION;   // arbitrary; not used by our handler
+        out.command          = in.command;
+        // we map param2..4 (see handler above):
+        out.param2 = in.param2;   // action
+        out.param3 = in.param3;   // release_length (m)
+        out.param4 = in.param4;   // release_rate   (m/s)
         return;
     }
     return GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(in, out, frame);

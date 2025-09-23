@@ -68,6 +68,34 @@ void Plane::set_next_WP(const Location &loc)
     adjust_altitude_target();
 }
 
+#if AP_WINCH_ENABLED
+static void do_winch(const AP_Mission::Mission_Command& cmd)
+{
+    auto &winch = plane.g2.winch;
+
+    // Same actions as Copter
+    switch (cmd.content.winch.action) {
+    case WINCH_RELAXED:
+        winch.relax();
+        plane.gcs().send_text(MAV_SEVERITY_INFO, "Winch: relaxed");
+        break;
+    case WINCH_RELATIVE_LENGTH_CONTROL:
+        winch.release_length(cmd.content.winch.release_length);
+        plane.gcs().send_text(MAV_SEVERITY_INFO, "Winch: length %0.2fm",
+                              double(cmd.content.winch.release_length));
+        break;
+    case WINCH_RATE_CONTROL:
+        winch.set_desired_rate(cmd.content.winch.release_rate);
+        plane.gcs().send_text(MAV_SEVERITY_INFO, "Winch: rate %0.2fm/s",
+                              double(cmd.content.winch.release_rate));
+        break;
+    default:
+        plane.gcs().send_text(MAV_SEVERITY_WARNING, "Winch: unknown action");
+        break;
+    }
+}
+#endif
+
 void Plane::set_guided_WP(const Location &loc)
 {
     if (aparm.loiter_radius < 0 || loc.loiter_ccw) {

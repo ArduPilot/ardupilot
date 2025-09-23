@@ -495,6 +495,10 @@ public:
     AP_Button *button_ptr;
 #endif
 
+#if AP_WINCH_ENABLED
+    AP_Winch winch;
+#endif
+
 #if AP_ICENGINE_ENABLED
     // internal combustion engine control
     AP_ICEngine ice_control;
