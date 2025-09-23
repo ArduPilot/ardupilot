@@ -483,7 +483,7 @@ private:
     AC_Loiter *loiter_nav;
 
 #if AC_CUSTOMCONTROL_MULTI_ENABLED
-    AC_CustomControl custom_control{ahrs_view, attitude_control, motors, scheduler.get_loop_period_s()};
+    AC_CustomControl custom_control{ahrs_view, attitude_control, motors};
 #endif
 
 #if MODE_CIRCLE_ENABLED
@@ -568,7 +568,7 @@ private:
 #if FRAME_CONFIG == HELI_FRAME
     // Tradheli flags
     typedef struct {
-        uint8_t dynamic_flight          : 1;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
+        bool dynamic_flight                ;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
         bool coll_stk_low                  ;    // 1   // true when collective stick is on lower limit
     } heli_flags_t;
     heli_flags_t heli_flags;

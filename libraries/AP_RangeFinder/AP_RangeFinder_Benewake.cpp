@@ -30,22 +30,37 @@ extern const AP_HAL::HAL& hal;
 #define BENEWAKE_OUT_OF_RANGE_ADD 1.00  // metres
 
 // format of serial packets received from benewake lidar
+// Model       | Byte 0-1  | Byte 2 | Byte 3 | Byte 4     | Byte 5     | Byte 6     | Byte 7         | Byte 8
+// ------------+-----------+--------+--------+------------+------------+------------+----------------+---------
+// TFmini      | 0x59 0x59 | Dist_L | Dist_H | Strength_L | Strength_H | dist mode* | reserved       | Checksum
+// TF02        | 0x59 0x59 | Dist_L | Dist_H | Strength_L | Strength_H | SIG*       | Exposure Time* | Checksum
+// TF-Nova     | 0x59 0x59 | Dist_L | Dist_H | Strength_L | Strength_H | Temp       | Confidence*    | Checksum
+// ------------+-----------+--------+--------+------------+------------+------------+----------------+---------
+// TFmini-S    | 0x59 0x59 | Dist_L | Dist_H | Strength_L | Strength_H | Temp_L     | Temp_H         | Checksum
+// TFmini-plus | 0x59 0x59 | Dist_L | Dist_H | Strength_L | Strength_H | Temp_L     | Temp_H         | Checksum
+// TF02-Pro    | 0x59 0x59 | Dist_L | Dist_H | Strength_L | Strength_H | Temp_L     | Temp_H         | Checksum
+// TFS20-L     | 0x59 0x59 | Dist_L | Dist_H | Strength_L | Strength_H | Temp_L     | Temp_H         | Checksum
+// TF-Luna     | 0x59 0x59 | Dist_L | Dist_H | Strength_L | Strength_H | Temp_L     | Temp_H         | Checksum
+// TF03        | 0x59 0x59 | Dist_L | Dist_H | Strength_L | Strength_H | reserved   | reserved       | Checksum
+// TF350       | 0x59 0x59 | Dist_L | Dist_H | Strength_L | Strength_H | reserved   | reserved       | Checksum
 //
-// Data Bit             Definition      Description
-// ------------------------------------------------
-// byte 0               Frame header    0x59
-// byte 1               Frame header    0x59
-// byte 2               DIST_L          Distance (in cm) low 8 bits
-// byte 3               DIST_H          Distance (in cm) high 8 bits
-// byte 4               STRENGTH_L      Strength low 8 bits
-// bute 4 (TF03)        (Reserved)
-// byte 5               STRENGTH_H      Strength high 8 bits
-// bute 5 (TF03)        (Reserved)
-// byte 6 (TF02)        SIG             Reliability in 8 levels, 7 & 8 means reliable
-// byte 6 (TFmini)      Distance Mode   0x02 for short distance (mm), 0x07 for long distance (cm)
-// byte 6 (TF03)        (Reserved)
-// byte 7 (TF02 only)   TIME            Exposure time in two levels 0x03 and 0x06
-// byte 8               Checksum        Checksum byte, sum of bytes 0 to bytes 7
+// Notes:
+// TFmini (discontinued) : Byte 6 : Distance mode is 0x02 for short distance (mm), 0x07 for long distance (cm)
+// TF02 (discontinued) : Byte 6 : SIG byte is reliability in 8 levels, 7 & 8 means reliable
+// TF02 (discontinued) : Byte 7 : Exposure Time in two levels 0x03 and 0x06
+// TF-Nova : Byte 7 : Confidence from 0 ~ 100 (100 being highest confidence)
+//
+// Strength values per model:
+// TFmini: No documentation
+// TF02: 0 ~ 3000, reliable if value >=20 and <= 2000
+// TF-Nova: No documentation
+// TFmini-S: 0 ~ 65535. reliable if value >=100 and <65535, 65535 (-1) means signal strength saturation (bad)
+// TFmini-plus: 0 ~ 65535. reliable if value >=100 and <65535, 65535 (-1) means signal strength saturation (bad)
+// TF02-Pro: 0 ~ 65535, no documentation
+// TFS20-L: 0 ~ 65535, no documentation
+// TF-Luna: 0 ~ 65535. reliable if value >=100 and <65535, 65535 (-1) means signal strength saturation (bad)
+// TF03: 0 ~ 3500, reliable if >=40 ~ 1200.  if high reflectivity object will be 1500
+// TF350: 0 ~ 3500, reliable if >=40 ~ 1200.  if high reflectivity object will be 1500
 
 // distance returned in reading_m, signal_ok is set to true if sensor reports a strong signal
 bool AP_RangeFinder_Benewake::get_reading(float &reading_m)
@@ -99,7 +114,7 @@ bool AP_RangeFinder_Benewake::get_reading(float &reading_m)
                         // when out of range
                         count_out_of_range++;
                     } else if (!has_signal_byte()) {
-                        // no signal byte from TFmini so add distance to sum
+                        // no signal byte so can immediately add distance to sum
                         sum_cm += dist;
                         count++;
                     } else {

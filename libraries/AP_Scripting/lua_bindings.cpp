@@ -161,8 +161,14 @@ int lua_mavlink_send_chan(lua_State *L) {
     const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
 
     binding_argcheck(L, 3+arg_offset);
-    
+
     const mavlink_channel_t chan = (mavlink_channel_t)get_uint32(L, 1+arg_offset, 0, MAVLINK_COMM_NUM_BUFFERS - 1);
+
+    // Check if the channel is valid
+    if (chan >= gcs().num_gcs()) {
+        // Return nil
+        return 0;
+    }
 
     const uint32_t msgid = get_uint32(L, 2+arg_offset, 0, (1 << 24) - 1);
 

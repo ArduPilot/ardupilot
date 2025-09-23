@@ -68,7 +68,7 @@ private:
 
     enum Rotation _rotation;
     uint8_t _instance;
-    bool _force_external:1;
+    bool _force_external;
 };
 
 #endif  // AP_COMPASS_QMC5883L_ENABLED

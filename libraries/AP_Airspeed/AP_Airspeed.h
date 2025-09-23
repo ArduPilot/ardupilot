@@ -125,8 +125,8 @@ public:
     float get_airspeed_ratio(void) const { return get_airspeed_ratio(primary); }
 
     // get temperature if available
-    bool get_temperature(uint8_t i, float &temperature);
-    bool get_temperature(float &temperature) { return get_temperature(primary, temperature); }
+    bool get_temperature(uint8_t i, float &temperature) const;
+    bool get_temperature(float &temperature) const { return get_temperature(primary, temperature); }
 
     // set the airspeed ratio (dimensionless)
 #ifndef HAL_BUILD_AP_PERIPH

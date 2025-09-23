@@ -32,4 +32,3 @@ define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_MSP_DisplayPort
 
 # other pin defaults come from hwdefs this one includes
 define RELAY4_PIN_DEFAULT 83
-define DEFAULT_NTF_LED_TYPES 455

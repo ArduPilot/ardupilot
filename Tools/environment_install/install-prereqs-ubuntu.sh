@@ -101,6 +101,11 @@ if [ ${RELEASE_CODENAME} == 'bionic' ] ||
       [ ${RELEASE_CODENAME} == 'buster' ]; then
     echo "ArduPilot no longer supports developing on this operating system that has reached end of standard support."
     exit 1
+elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
+    SITLFML_VERSION="2.6"
+    SITLCFML_VERSION="2.6"
+    PYTHON_V="python3"
+    PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
@@ -194,7 +199,8 @@ fi
 ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $INSTALL_PKG_CONFIG"
 # python-wxgtk packages are added to SITL_PKGS below
 
-if [ ${RELEASE_CODENAME} == 'bookworm' ] ||
+if [ ${RELEASE_CODENAME} == 'trixie' ] ||
+   [ ${RELEASE_CODENAME} == 'bookworm' ] ||
    [ ${RELEASE_CODENAME} == 'lunar' ] ||
    [ ${RELEASE_CODENAME} == 'mantic' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
@@ -210,7 +216,8 @@ fi
 
 # add some packages required for commonly-used MAVProxy modules:
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
-    if [ ${RELEASE_CODENAME} == 'bookworm' ] ||
+    if [ ${RELEASE_CODENAME} == 'trixie' ] ||
+       [ ${RELEASE_CODENAME} == 'bookworm' ] ||
        [ ${RELEASE_CODENAME} == 'lunar' ] ||
        [ ${RELEASE_CODENAME} == 'mantic' ] ||
        [ ${RELEASE_CODENAME} == 'noble' ] ||
@@ -303,6 +310,8 @@ elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
          [ ${RELEASE_CODENAME} == 'jammy' ]; then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
+elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
+    SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'lunar' ]; then
@@ -326,6 +335,8 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
            [ ${RELEASE_CODENAME} == 'focal' ]; then
     SITL_PKGS+=" libjpeg8-dev"
+  elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
+    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
   elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
   elif [ ${RELEASE_CODENAME} == 'lunar' ]; then
@@ -353,7 +364,11 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libjpeg8-dev libpng12-0 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   fi
 
-  if [ ${RELEASE_CODENAME} == 'bookworm' ]; then
+  if [ ${RELEASE_CODENAME} == 'trixie' ]; then
+      PYTHON_PKGS+=" opencv-python"
+      SITL_PKGS+=" python3-wxgtk4.0"
+      SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
+  elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
       PYTHON_PKGS+=" opencv-python"
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
@@ -415,6 +430,9 @@ if $IS_DOCKER; then
     echo "# ArduPilot env file. Need to be loaded by your Shell." > ~/$SHELL_LOGIN
 fi
 
+SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
+
 PIP_USER_ARGUMENT="--user"
 
 # create a Python venv on more recent releases:
@@ -427,20 +445,38 @@ elif [ ${RELEASE_CODENAME} == 'noble' ]; then
     PYTHON_VENV_PACKAGE=python3.12-venv
 elif [ ${RELEASE_CODENAME} == 'oracular' ]; then
     PYTHON_VENV_PACKAGE=python3.12-venv
-elif [ ${RELEASE_CODENAME} == 'plucky' ]; then
+elif [ ${RELEASE_CODENAME} == 'trixie' ] ||
+     [ ${RELEASE_CODENAME} == 'plucky' ]; then
     PYTHON_VENV_PACKAGE=python3-venv
 fi
 
 if [ -n "$PYTHON_VENV_PACKAGE" ]; then
     $APT_GET install $PYTHON_VENV_PACKAGE
-    python3 -m venv --system-site-packages $HOME/venv-ardupilot
+
+    # Check if venv already exists in ARDUPILOT_ROOT (check both venv-ardupilot and venv)
+    VENV_PATH=""
+    if [ -d "$ARDUPILOT_ROOT/venv-ardupilot" ]; then
+        VENV_PATH="$ARDUPILOT_ROOT/venv-ardupilot"
+        echo "Found existing venv at $VENV_PATH"
+    elif [ -d "$ARDUPILOT_ROOT/venv" ]; then
+        VENV_PATH="$ARDUPILOT_ROOT/venv"
+        echo "Found existing venv at $VENV_PATH"
+    elif [ -d "$ARDUPILOT_ROOT/.venv" ]; then
+        VENV_PATH="$ARDUPILOT_ROOT/.venv"
+        echo "Found existing venv at $VENV_PATH"
+    else
+        VENV_PATH="$HOME/venv-ardupilot"
+        echo "Creating new venv at $VENV_PATH"
+        python3 -m venv --system-site-packages "$VENV_PATH"
+    fi
+
+    SOURCE_LINE="source $VENV_PATH/bin/activate"
 
     # activate it:
-    SOURCE_LINE="source $HOME/venv-ardupilot/bin/activate"
     $SOURCE_LINE
     PIP_USER_ARGUMENT=""
 
-    if [[ -z "${DO_PYTHON_VENV_ENV}" ]] && maybe_prompt_user "Make ArduPilot venv default for python [N/y]?" ; then
+    if [[ -z "${DO_PYTHON_VENV_ENV}" ]] && maybe_prompt_user "Make ArduPilot venv default for python [N/y]?\nThis means that any terminal will open and load ArduPilot venv" ; then
         DO_PYTHON_VENV_ENV=1
     fi
 
@@ -462,7 +498,8 @@ if [ "$GITHUB_ACTIONS" == "true" ]; then
     PIP_USER_ARGUMENT+=" --progress-bar off"
 fi
 
-if [ ${RELEASE_CODENAME} == 'bookworm' ] ||
+if [ ${RELEASE_CODENAME} == 'trixie' ] ||
+   [ ${RELEASE_CODENAME} == 'bookworm' ] ||
    [ ${RELEASE_CODENAME} == 'lunar' ] ||
    [ ${RELEASE_CODENAME} == 'mantic' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
@@ -478,8 +515,32 @@ fi
 for PACKAGE in $PYTHON_PKGS; do
     if [ "$PACKAGE" == "wxpython" ]; then
         echo "##### $PACKAGE takes a *VERY* long time to install (~30 minutes).  Be patient."
+
+        # Use wheel repository for specific supported Ubuntu releases only
+        case ${RELEASE_CODENAME} in
+            focal)
+                echo "##### Adding wxpython wheel repository for faster installation"
+                WXPYTHON_WHEEL_REPO="https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-20.04"
+                time $PIP install $PIP_USER_ARGUMENT -U -f $WXPYTHON_WHEEL_REPO $PACKAGE
+                ;;
+            jammy)
+                echo "##### Adding wxpython wheel repository for faster installation"
+                WXPYTHON_WHEEL_REPO="https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04"
+                time $PIP install $PIP_USER_ARGUMENT -U -f $WXPYTHON_WHEEL_REPO $PACKAGE
+                ;;
+            noble)
+                echo "##### Adding wxpython wheel repository for faster installation"
+                WXPYTHON_WHEEL_REPO="https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04"
+                time $PIP install $PIP_USER_ARGUMENT -U -f $WXPYTHON_WHEEL_REPO $PACKAGE
+                ;;
+            *)
+                echo "##### Installing wxpython from PyPI (no specific wheel repository for this release)"
+                time $PIP install $PIP_USER_ARGUMENT -U $PACKAGE
+                ;;
+        esac
+    else
+        time $PIP install $PIP_USER_ARGUMENT -U $PACKAGE
     fi
-    time $PIP install $PIP_USER_ARGUMENT -U $PACKAGE
 done
 
 # somehow Plucky really wants Pillow reinstalled or MAVProxy's map
@@ -508,9 +569,6 @@ if [[ $DO_AP_STM_ENV -eq 1 ]]; then
 fi
 
 heading "Adding ArduPilot Tools to environment"
-
-SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
-ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
 
 if [[ $DO_AP_STM_ENV -eq 1 ]]; then
 exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";

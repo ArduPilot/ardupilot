@@ -539,8 +539,8 @@ float Plane::apply_throttle_limits(float throttle_in)
     int8_t max_throttle = aparm.throttle_max.get();
 
 #if AP_ICENGINE_ENABLED
-    // Apply idle governor.
-    g2.ice_control.update_idle_governor(min_throttle);
+    // Get the idle throttle (parameter or idle governor) from AP_ICEngine
+    min_throttle = MAX(min_throttle, g2.ice_control.get_min_throttle_pct());
 #endif
 
     // If reverse thrust is enabled not allowed right now, the minimum throttle must not fall below 0.

@@ -622,7 +622,7 @@ AP_IBus_Telem::SensorValue AP_IBus_Telem::get_sensor_value(const uint8_t sensor_
 
 #if AP_GPS_ENABLED
     case IBUS_SENSOR_TYPE_GROUND_SPEED:
-        value.uint16 = AP::gps().ground_speed_cm();
+        value.uint16 = AP::gps().ground_speed()*100;
         break;
 #endif
 

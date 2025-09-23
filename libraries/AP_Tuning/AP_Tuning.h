@@ -79,7 +79,7 @@ private:
     uint8_t current_set;
 
     // true if tune has changed
-    bool changed:1;
+    bool changed;
 
     // mask of params in set that need reverting
     uint32_t need_revert;

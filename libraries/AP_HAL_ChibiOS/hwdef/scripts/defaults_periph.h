@@ -18,16 +18,36 @@
   supported serial device type has it's own parameter within AP_Periph
   for which port is used.
  */
+#ifndef DEFAULT_SERIAL0_PROTOCOL
 #define DEFAULT_SERIAL0_PROTOCOL SerialProtocol_None
+#endif
+#ifndef DEFAULT_SERIAL1_PROTOCOL
 #define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_None
+#endif
+#ifndef DEFAULT_SERIAL2_PROTOCOL
 #define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_None
+#endif
+#ifndef DEFAULT_SERIAL3_PROTOCOL
 #define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_None
+#endif
+#ifndef DEFAULT_SERIAL4_PROTOCOL
 #define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_None
+#endif
+#ifndef DEFAULT_SERIAL5_PROTOCOL
 #define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_None
+#endif
+#ifndef DEFAULT_SERIAL6_PROTOCOL
 #define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_None
+#endif
+#ifndef DEFAULT_SERIAL7_PROTOCOL
 #define DEFAULT_SERIAL7_PROTOCOL SerialProtocol_None
+#endif
+#ifndef DEFAULT_SERIAL8_PROTOCOL
 #define DEFAULT_SERIAL8_PROTOCOL SerialProtocol_None
+#endif
+#ifndef DEFAULT_SERIAL9_PROTOCOL
 #define DEFAULT_SERIAL9_PROTOCOL SerialProtocol_None
+#endif
 
 #ifndef HAL_LOGGING_MAVLINK_ENABLED
 #define HAL_LOGGING_MAVLINK_ENABLED 0

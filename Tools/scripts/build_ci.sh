@@ -188,6 +188,7 @@ for t in $CI_BUILD_TARGET; do
     if [ "$t" == "sitltest-rover" ]; then
         sudo apt-get update || /bin/true
         sudo apt-get install -y ppp || /bin/true
+        pppd --help # fail with `command not found` if ppp install failed
         run_autotest "Rover" "build.Rover" "test.Rover"
         continue
     fi

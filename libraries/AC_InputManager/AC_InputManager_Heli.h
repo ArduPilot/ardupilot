@@ -43,7 +43,7 @@ public:
 
 private:
     struct InputManagerHeliFlags {
-        uint8_t use_stab_col        :   1;  // 1 if we should use Stabilise mode collective range, 0 for Acro range
+        bool use_stab_col; // 1 if we should use Stabilise mode collective range, 0 for Acro range
     } _im_flags_heli;
 
     //  factor used to smoothly ramp collective from Acro value to Stab-Col value

@@ -138,6 +138,13 @@ protected:
     AP_Float    _brake_accel_max_cmss;  // Maximum braking acceleration (in cm/s²) applied when pilot sticks are released.
     AP_Float    _brake_jerk_max_cmsss;  // Maximum braking jerk (in cm/s³) applied during braking transitions after pilot release.
     AP_Float    _brake_delay_s;         // Delay in seconds before braking begins after sticks are centered. Prevents premature deceleration during brief pauses.
+    AP_Int8     _options;               // Loiter options bit mask
+
+    // Bitfields of LOITER_OPTIONS
+    enum class LoiterOption {
+        COORDINATED_TURN_ENABLED    = (1U << 0),    // Enable Coordinated Turn
+    };
+    bool loiter_option_is_set(LoiterOption option) const;
 
     // loiter controller internal variables
     Vector2f    _desired_accel_ne_mss;      // Pilot-requested horizontal acceleration in m/s² (after smoothing), in the NE (horizontal) frame.

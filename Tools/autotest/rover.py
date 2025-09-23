@@ -3577,6 +3577,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         target_system = 1
         target_component = 1
         mavproxy = self.start_mavproxy()
+        self.wait_parameter_value('MIS_TOTAL', 1)
         mavproxy.send('wp clear\n')
         self.wait_parameter_value('MIS_TOTAL', 0)
         self.assert_received_message_field_values('MISSION_CURRENT', {

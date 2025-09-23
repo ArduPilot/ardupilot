@@ -518,7 +518,7 @@ private:
         Vector3p target_neu_m;
         Vector2f correction_ne_m;
         Vector3f target_vel_ms;
-        bool slow_descent:1;
+        bool slow_descent;
         bool pilot_correction_active;
         bool pilot_correction_done;
         uint32_t thrust_loss_start_ms;

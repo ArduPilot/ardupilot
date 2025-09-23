@@ -6,12 +6,14 @@ Run a mission in SITL
 AP_FLAKE8_CLEAN
 '''
 
-import vehicle_test_suite
 import os
-import sys
-import argparse
 
-from pysim import util
+os.environ['MAVLINK20'] = '1'
+
+import vehicle_test_suite  # noqa:E402
+import sys  # noqa:E402
+import argparse  # noqa:E402
+from pysim import util  # noqa:E402
 
 
 class RunMission(vehicle_test_suite.TestSuite):

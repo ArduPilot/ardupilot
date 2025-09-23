@@ -5058,6 +5058,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''test zigzag mode'''
         # set channel 8 for zigzag savewp and recentre it
         self.set_parameter("RC8_OPTION", 61)
+        self.set_parameter("LOIT_OPTIONS", 0)
 
         self.takeoff(alt_min=5, mode='LOITER')
 
