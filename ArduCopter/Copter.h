@@ -961,7 +961,6 @@ private:
 #if HAL_PROXIMITY_ENABLED
     void convert_prx_parameters();
 #endif
-    void convert_lgr_parameters(void);
 
     // precision_landing.cpp
     void init_precland();
@@ -984,7 +983,6 @@ private:
     bool rangefinder_alt_ok() const;
     bool rangefinder_up_ok() const;
     void update_rangefinder_terrain_offset();
-    void update_optical_flow(void);
 
     // takeoff_check.cpp
     void takeoff_check();
