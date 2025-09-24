@@ -57,7 +57,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
 
     // @Param: TYPE
     // @DisplayName: Fence Type
-    // @Description: Configured fence types held as bitmask. Max altitide, Circle and Polygon fences will be immediately enabled if configured. Min altitude fence will only be enabled once the minimum altitude is reached.
+    // @Description: Configured fence types held as bitmask. Max altitude, Circle and Polygon fences will be immediately enabled if configured. Min altitude fence will only be enabled once the minimum altitude is reached.
     // @Bitmask{Rover}: 1:Circle Centered on Home,2:Inclusion/Exclusion Circles+Polygons
     // @Bitmask{Copter, Plane, Sub}: 0:Max altitude,1:Circle Centered on Home,2:Inclusion/Exclusion Circles+Polygons,3:Min altitude
     // @User: Standard
