@@ -28,12 +28,15 @@ using namespace ESP32;
 
 //#define SPIDEBUG 1
 
+#if defined(HAL_ESP32_SPI_BUSES)
 SPIDeviceDesc device_desc[] = {HAL_ESP32_SPI_DEVICES};
 SPIBusDesc bus_desc[] = {HAL_ESP32_SPI_BUSES};
+#endif  // HAL_ESP32_SPI_BUSES
 
 SPIBus::SPIBus(uint8_t _bus):
     DeviceBus(Scheduler::SPI_PRIORITY), bus(_bus)
 {
+#if defined(HAL_ESP32_SPI_BUSES)
 
 #ifdef SPIDEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
@@ -46,12 +49,14 @@ SPIBus::SPIBus(uint8_t _bus):
         .quadhd_io_num = -1
     };
     spi_bus_initialize(bus_desc[_bus].host, &config, bus_desc[_bus].dma_ch);
+#endif  // HAL_ESP32_SPI_BUSES
 }
 
 SPIDevice::SPIDevice(SPIBus &_bus, SPIDeviceDesc &_device_desc)
     : bus(_bus)
     , device_desc(_device_desc)
 {
+#if defined(HAL_ESP32_SPI_BUSES)
 
 #ifdef SPIDEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
@@ -82,6 +87,9 @@ SPIDevice::SPIDevice(SPIBus &_bus, SPIDeviceDesc &_device_desc)
     asprintf(&pname, "SPI:%s:%u:%u",
              device_desc.name, 0, (unsigned)device_desc.device);
     printf("spi device constructed %s\n", pname);
+
+#endif  // #if defined(HAL_ESP32_SPI_BUSES)
+
 }
 
 SPIDevice::~SPIDevice()
@@ -191,6 +199,8 @@ bool SPIDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint3
 AP_HAL::SPIDevice *
 SPIDeviceManager::get_device_ptr(const char *name)
 {
+#if defined(HAL_ESP32_SPI_BUSES)
+
 #ifdef SPIDEBUG
     printf("%s:%d %s\n", __PRETTY_FUNCTION__, __LINE__, name);
 #endif
@@ -244,5 +254,7 @@ SPIDeviceManager::get_device_ptr(const char *name)
 #endif
 
     return NEW_NOTHROW SPIDevice(*busp, desc);
+#else
+    return nullptr;  // HAL_ESP32_SPI_BUSES
+#endif  // AP_SIM_VICON_ENABLED
 }
-
