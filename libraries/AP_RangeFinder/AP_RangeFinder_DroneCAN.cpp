@@ -81,7 +81,10 @@ AP_RangeFinder_DroneCAN* AP_RangeFinder_DroneCAN::get_dronecan_backend(AP_DroneC
 void AP_RangeFinder_DroneCAN::update()
 {
     WITH_SEMAPHORE(_sem);
-    if ((AP_HAL::millis() - _last_reading_ms) > 500) {
+    if (_status != RangeFinder::Status::Good) {
+        //handle additional states received by measurement handler
+        set_status(_status);
+    } else if ((AP_HAL::millis() - _last_reading_ms) > 500) {
         //if data is older than 500ms, report NoData
         set_status(RangeFinder::Status::NoData);
     } else if (_status == RangeFinder::Status::Good && new_data) {
@@ -90,9 +93,6 @@ void AP_RangeFinder_DroneCAN::update()
         state.last_reading_ms = _last_reading_ms;
         update_status();
         new_data = false;
-    } else if (_status != RangeFinder::Status::Good) {
-        //handle additional states received by measurement handler
-        set_status(_status);
     }
 }
 
