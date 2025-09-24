@@ -28,6 +28,7 @@ protected:
     }
 private:
     uint8_t _instance;
+    // _status is the state received from the peripheral
     RangeFinder::Status _status;
     uint16_t _distance_cm;
     uint32_t _last_reading_ms;
