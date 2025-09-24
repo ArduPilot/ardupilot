@@ -165,6 +165,13 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  15, AP_ADSB, _options, 0),
 
+    // @Param: DYN_OUT
+    // @DisplayName: ADS-B Options
+    // @Description: This is to disable UAVIONIX_ADSB_OUT_DYNAMIC (10002) messages. This is for issue we observed on ping1090i where it would not accept these messages.
+    // @Values: 0:Disable dynamic messages,1:Enable dynamic messages
+    // @User: Advanced
+    AP_GROUPINFO("DYN_OUT",  16, AP_ADSB, _dyn_out_messages_enabled, 0),
+
     AP_GROUPEND
 };
 
