@@ -88,6 +88,13 @@ public:
     // get serial port number, -1 for not enabled
     int8_t get_port(AvailableSensor sensor) const;
 
+    enum TempCal {
+        DoesntProvideTemp,
+        IsNotTempCalibrated,
+        IsTempCalibrated
+    };
+
+
     struct state_t {
         HAL_Semaphore sem;
 
@@ -102,7 +109,6 @@ public:
         bool have_origin;
         bool have_location;
         bool have_velocity;
-
         uint32_t last_location_update_us;
     } state;
 
@@ -121,6 +127,7 @@ public:
     void get_filter_status(nav_filter_status &status) const;
     bool get_gyro(Vector3f &gyro);
     bool get_accel(Vector3f &accel);
+    bool get_TempCalibration(TempCal &TempCalibration);
     void send_status_report(class GCS_MAVLINK &link) const;
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const;
 
@@ -162,6 +169,7 @@ public:
         Vector3f accel;
         Vector3f gyro;
         float temperature;
+        TempCal TempCalibration;
     } ins_data_message_t;
 
     typedef struct {
