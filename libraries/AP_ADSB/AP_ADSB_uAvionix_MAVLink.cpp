@@ -57,8 +57,10 @@ void AP_ADSB_uAvionix_MAVLink::update()
         // send dynamic data to transceiver at 5Hz
         if (now - _frontend.out_state.last_report_ms >= 200 && HAVE_PAYLOAD_SPACE(chan, UAVIONIX_ADSB_OUT_DYNAMIC)) {
             _frontend.out_state.last_report_ms = now;
-            // Commenting this for ADSB ping1090i as it has its own gps and accelerometer (Abhishek Saxena)
-            // send_dynamic_out(chan);
+            // for ADSB ping1090i we should not send dynamic messages, set AP_ADSB_DYN_OUT param to 0
+            if (_frontend._dyn_out_messages_enabled == 1) {
+                send_dynamic_out(chan);
+            }
         } // last_report_ms
     } // chan_last_ms
 }
