@@ -9068,7 +9068,6 @@ Also, ignores heartbeats not from our target system'''
 
     def run_one_test_attempt(self, test, interact=False, attempt=1, suppress_stdout=False):
         '''called by run_one_test to actually run the test in a retry loop'''
-        print(f"{type(test)=} {dir(test)=}")
         name = test.name
         desc = test.description
         test_function = test.function
@@ -12501,15 +12500,10 @@ switch value'''
         self.test_queue = multiprocessing.Queue()
         self.result_queue = multiprocessing.Queue()
 
-        # tests = tests[:4]
         for test in tests:
-            print("name=%s" % str(test.name))
-            print("Putting (%s)" % str(test))
-            # BUG HERE: cn't pickle methods:
-            delattr(test, "function")
+            # can't pick functions, so pass a string instead:
+            test.function = test.function.__name__
             self.test_queue.put(test)
-
-        sys.exit(1)
 
         # start processes
         self.threads = []
@@ -12568,6 +12562,8 @@ switch value'''
             while True:
                 try:
                     test = self.test_queue.get(block=False)
+                    # can't pickle functions, string -> function here
+                    test.function = getattr(self, test.function)
                 except queue.Empty:
                     self.progress("Queue is empty")
                     break
@@ -12575,6 +12571,7 @@ switch value'''
                 self.progress("TestRunner-%u: running test (%s)" %
                               (instance, test.name))
                 result = self.run_one_test(test, suppress_stdout=True)
+                del result.test.function  # can't pickle functions
                 self.result_queue.put(result)
 #                self.result_queue.put((desc, "Fred", debug_filename))
 
