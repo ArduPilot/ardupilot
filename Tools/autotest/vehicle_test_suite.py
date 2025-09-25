@@ -9131,6 +9131,9 @@ Also, ignores heartbeats not from our target system'''
             passed = False
 
         result = Result(test)
+        result.fcu_firmware_version = self.fcu_firmware_version
+        result.fcu_firmware_hash = self.fcu_firmware_hash
+        result.githash = self.githash
         result.time_elapsed = self.test_timings[desc]
 
         ardupilot_alive = False
@@ -12527,6 +12530,13 @@ switch value'''
                     result = self.result_queue.get(block=False)
                     self.progress("Received result (%s)" % str(result))
                     results.append(result)
+                    if not hasattr(self, "fcu_firmware_version"):
+                        try:
+                            self.fcu_firmware_version = result.fcu_firmware_version
+                            self.fcu_firmware_hash = result.fcu_firmware_hash
+                            self.githash = result.githash
+                        except AttributeError:
+                            pass
                     outstanding_results.remove(result.test.name)
                 except queue.Empty:
                     break
