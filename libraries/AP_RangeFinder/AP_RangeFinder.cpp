@@ -42,6 +42,7 @@
 #include "AP_RangeFinder_Benewake_TF03.h"
 #include "AP_RangeFinder_Benewake_TFMini.h"
 #include "AP_RangeFinder_Benewake_TFMiniPlus.h"
+#include "AP_RangeFinder_Benewake_TFS20L.h"
 #include "AP_RangeFinder_PWM.h"
 #include "AP_RangeFinder_GYUS42v2.h"
 #include "AP_RangeFinder_HC_SR04.h"
@@ -388,6 +389,22 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
         FOREACH_I2C(i) {
             if (_add_backend(AP_RangeFinder_Benewake_TFMiniPlus::detect(state[instance], params[instance],
                                                                         hal.i2c_mgr->get_device(i, addr)),
+                    instance)) {
+                break;
+            }
+        }
+        break;
+    }
+#endif
+#if AP_RANGEFINDER_BENEWAKE_TFS20L_ENABLED
+    case Type::BenewakeTFS20L: {
+        uint8_t addr = TFS20L_ADDR_DEFAULT;
+        if (params[instance].address != 0) {
+            addr = params[instance].address;
+        }
+        FOREACH_I2C(i) {
+            if (_add_backend(AP_RangeFinder_Benewake_TFS20L::detect(state[instance], params[instance],
+                                                                    hal.i2c_mgr->get_device(i, addr)),
                     instance)) {
                 break;
             }
