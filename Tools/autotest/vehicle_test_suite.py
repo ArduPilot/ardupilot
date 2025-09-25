@@ -3331,7 +3331,7 @@ class TestSuite(ABC):
         '''temporarily stop the SITL process from running.  Note that
         simulation time will not move forward!'''
         # self.progress("Pausing SITL")
-        self.sitl.kill(signal.SIGSTOP)
+        self.sitl.kill(signal.SIGTSTP)
 
     def unpause_SITL(self):
         # self.progress("Unpausing SITL")
