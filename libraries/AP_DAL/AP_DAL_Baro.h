@@ -28,6 +28,12 @@ public:
     float get_altitude() const {
         return get_altitude(get_primary());
     }
+    const Vector3f &get_baro_pos_offset(uint8_t sensor_id) const{
+        return _RBRI[sensor_id].pos_offset;
+    }
+    const Vector3f &get_baro_pos_offset() const{
+        return get_baro_pos_offset(get_primary());
+    }
 
     // update_calibration is a no-op in Replay as it simply modifies the data
     // which we'll be logging for input to the EKF.

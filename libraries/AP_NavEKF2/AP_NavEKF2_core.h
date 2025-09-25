@@ -449,6 +449,7 @@ private:
 
     struct baro_elements : EKF_obs_element_t {
         ftype       hgt;
+        bool corrected;
     };
 
     struct range_elements : EKF_obs_element_t {
@@ -755,6 +756,9 @@ private:
 
     // correct gps data for antenna position
     void CorrectGPSForAntennaOffset(gps_elements &gps_data) const;
+
+    // correct Baro data for position offset relative to the IMU
+    void CorrectBaroOffset(baro_elements &baro_data) const;
 
     // correct external navigation earth-frame position using sensor body-frame offset
     void CorrectExtNavForSensorOffset(Vector3F &ext_position) const;
