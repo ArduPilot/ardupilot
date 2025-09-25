@@ -145,7 +145,7 @@ void GCS_MAVLINK_Rover::send_servo_out()
 #if AP_RSSI_ENABLED
         receiver_rssi()
 #else
-        255
+        UINT8_MAX
 #endif
         );
 }
