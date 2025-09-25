@@ -78,9 +78,10 @@ private:
     static constexpr uint8_t TFS20L_ENABLE = 0x25;           // Enable register
     
     // Distance and strength limits
-    static constexpr uint16_t MAX_DIST_CM = 2000;
-    static constexpr uint16_t MIN_DIST_CM = 1;
-    static constexpr uint16_t MIN_STRENGTH = 100;
+    static inline constexpr uint16_t MAX_DIST_CM = 2000;
+    static inline constexpr uint16_t MIN_DIST_CM = 1;
+    static inline constexpr uint16_t MIN_STRENGTH = 100;
+    
 };
 
 #endif
