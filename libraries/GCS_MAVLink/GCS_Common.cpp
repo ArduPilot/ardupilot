@@ -7377,11 +7377,11 @@ uint8_t GCS_MAVLINK::receiver_rssi() const
 {
     AP_RSSI *aprssi = AP::rssi();
     if (aprssi == nullptr) {
-        return 255;
+        return UINT8_MAX;
     }
 
     if (!aprssi->enabled()) {
-        return 255;
+        return UINT8_MAX;
     }
 
     // scale across the full valid range
