@@ -8128,6 +8128,20 @@ class TestSuite(ABC):
                 return
             self.delay_sim_time(0.1)
 
+    def wait_parameter_values(self, parameters, timeout=10):
+        need_to_see = copy.copy(parameters)
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException(f"Parameters did not get values: {need_to_see}")
+            new_values = self.get_parameters(need_to_see.keys())
+            for (n, v) in new_values.items():
+                self.progress(f"Got parameter value ({n}={v}) want={need_to_see[n]}")
+                if need_to_see[n] == v:
+                    del need_to_see[n]
+            if len(need_to_see) == 0:
+                break
+
     def get_servo_channel_value(self, channel, timeout=2):
         channel_field = "servo%u_raw" % channel
         tstart = self.get_sim_time()
