@@ -83,6 +83,10 @@ void AP_RangeFinder_DroneCAN::update()
     WITH_SEMAPHORE(_sem);
     if (_status != RangeFinder::Status::Good) {
         //handle additional states received by measurement handler
+        if (_status == RangeFinder::Status::OutOfRangeLow) {
+            state.distance_m = 0;
+            _distance_cm = 0;
+        }
         set_status(_status);
     } else if ((AP_HAL::millis() - _last_reading_ms) > 500) {
         //if data is older than 500ms, report NoData
