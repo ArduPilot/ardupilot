@@ -28,31 +28,27 @@ extern const AP_HAL::HAL& hal;
 #define DRIVER "TFS20L"
 #define BENEWAKE_OUT_OF_RANGE_ADD_CM 100
 
+
 AP_RangeFinder_Benewake_TFS20L::AP_RangeFinder_Benewake_TFS20L(
         RangeFinder::RangeFinder_State &_state,
         AP_RangeFinder_Params &_params,
-        AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+        AP_HAL::I2CDevice *dev)
     : AP_RangeFinder_Backend(_state, _params)
-    , _dev(std::move(dev))
+    , _dev(dev)
 {
 }
 
 AP_RangeFinder_Backend *AP_RangeFinder_Benewake_TFS20L::detect(
-        RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params,
-        AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+        RangeFinder::RangeFinder_State &_state,
+        AP_RangeFinder_Params &_params,
+        AP_HAL::I2CDevice *dev)
 {
-    if (!dev) {
-        return nullptr;
-    }
-
-    AP_RangeFinder_Benewake_TFS20L *sensor
-        = NEW_NOTHROW AP_RangeFinder_Benewake_TFS20L(_state, _params, std::move(dev));
-
+    if (!dev) return nullptr;
+    auto *sensor = NEW_NOTHROW AP_RangeFinder_Benewake_TFS20L(_state, _params, dev);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
     }
-
     return sensor;
 }
 
