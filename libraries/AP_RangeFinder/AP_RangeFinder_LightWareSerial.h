@@ -3,6 +3,8 @@
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend_Serial.h"
 
+#include <AP_Logger/AP_Logger.h>
+
 #ifndef AP_RANGEFINDER_LIGHTWARE_SERIAL_ENABLED
 #define AP_RANGEFINDER_LIGHTWARE_SERIAL_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
 #endif
@@ -37,6 +39,7 @@ private:
     // get a reading
     bool get_reading(float &reading_m) override;
     bool is_lost_signal_distance(int16_t distance_cm, int16_t distance_cm_max);
+    int8_t get_distance_from_lidar_reply(char *reply, float &distance_m);
     // Logging Function
     void Log_LW20_C(float ldf_reading_cm, float ldl_reading_cm, float integrated_reading_cm);
 

@@ -159,6 +159,53 @@ bool AP_RangeFinder_LightWareSerial::is_lost_signal_distance(int16_t distance_cm
     return false;
 }
 
+/*
+This is a function to extract the distance reported by the LW20 for commands ldf and ldl
+Return: 
+0 if the reply is not valid
+1 if the reply is for ldf 
+2 if the reply is for ldl
+*/
+int8_t AP_RangeFinder_LightWareSerial::get_distance_from_lidar_reply(char reply[], float &distance_m)
+{
+    // Parse the data stream
+    int8_t channel = 0; // 1 for ldf and 2 for ldl
+
+    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "1. reply: %s", reply);
+    
+    char* token = strtok(reply, ",:");
+
+    if (token == nullptr) {
+        return -1;
+    }
+
+    token = strtok(nullptr, ",:");
+    if (token == nullptr) {
+        return -1;
+    }
+    channel = atoi(token);
+    if (channel == 0) {
+        return -1;
+    }
+
+    token = strtok(nullptr, ",:"); // get the part after the colon
+    if (token == nullptr) {
+        channel = -1;
+    }
+
+    char *distance_str = token;
+    distance_m = strtof(distance_str, nullptr); // Convert to meters
+
+    if (channel == 1) {
+        ldf_val_m = distance_m; // Store the first reading in cm
+    } else if (channel == 2) {
+        ldl_val_m = distance_m; // Store the last reading in cm
+    } else {
+        channel = -1; // Invalid channel
+    }
+    return channel;
+}
+
 void AP_RangeFinder_LightWareSerial::Log_LW20_C(
     float ldf_m, float ldl_m, float integrated_m)
 {
