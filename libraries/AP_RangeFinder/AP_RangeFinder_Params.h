@@ -15,7 +15,7 @@ public:
     AP_RangeFinder_Params(const AP_RangeFinder_Params &other) = delete;
     AP_RangeFinder_Params &operator=(const AP_RangeFinder_Params&) = delete;
 
-    AP_Vector3f pos_offset; // position offset in body frame
+    AP_Vector3f pos_offset;     // position offset in body frame
     AP_Float scaling;
     AP_Float offset;
     AP_Int16 powersave_range;
@@ -29,10 +29,9 @@ public:
     AP_Int8  ground_clearance_cm;
     AP_Int8  address;
     AP_Int8  orientation;
-    // LRD1 frequency mode (24GHz of Integrated)
-    AP_Int8  lrd1_freq_mode;
-    // LRD1 Low pass filter window size (1-20)
-    AP_Int8  lrd1_lpf_window;
+    AP_Int8  lrd1_freq_mode;    // LRD1 frequency mode (24GHz of Integrated)
+    AP_Int8  lrd1_lpf_window;   // LRD1 Low pass filter window size (1-20)
+    AP_Int8  lw20_distance_mode;  // LW20C Lidar return type
     int8_t lrd1_cur_pos;
     float _range_window[MAX_WINDOW_SIZE];  // Static array for readings
 };
