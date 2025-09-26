@@ -157,6 +157,19 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
     if (valid_count > 0) {
         reading_m = sum / valid_count;
         no_signal = false;
+        // log the data
+        if (valid_count_ldf > 0){
+            ldf_reading_m = sum_ldf / valid_count_ldf;
+        }
+        if (valid_count_ldl > 0){
+            ldl_reading_m = sum_ldl / valid_count_ldl;
+        }
+#if HAL_LOGGING_ENABLED
+        Log_LW20_C(
+            ldf_reading_m,
+            ldl_reading_m,
+            reading_m);
+#endif
         return true;
     }
 
