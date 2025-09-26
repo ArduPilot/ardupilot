@@ -32,7 +32,7 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
         return false;
     }
 
-    float sum = 0;              // sum of all readings taken
+    float sum_auto = 0;           // sum of integrated mode if (VAL > ground clearance) ? ldf : ldl
     float sum_ldf = 0;          // sum of ldf readings taken
     float sum_ldl = 0;          // sum of ldl readings taken
     uint16_t valid_count = 0;   // number of valid readings
@@ -41,6 +41,7 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
     uint16_t invalid_count = 0; // number of invalid readings
     float ldf_reading_m = 0;
     float ldl_reading_m = 0;
+    float auto_reading_m = 0;
 
     // max distance the sensor can reliably measure - read from parameters
     const int16_t distance_cm_max = max_distance_cm();
@@ -75,10 +76,10 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
                     }
                     // overall sum and count
                     if (lidar_reply_type == 1  && ldf_val_m < (distance_lpf_min_cm*0.01f) && ldl_val_m > 0) {
-                        sum += float(ldl_val_m); // use the stored ldl reading if available
+                        sum_auto += float(ldl_val_m); // use the stored ldl reading if available
                         valid_count++;
                     } else if(lidar_reply_type == 1) {
-                        sum += dist;
+                        sum_auto += dist;
                         valid_count++;
                     }
 
@@ -113,7 +114,7 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
                 if (high_byte_received) {
                     const int16_t dist = (high_byte & 0x7f) << 7 | (c & 0x7f);
                     if (dist >= 0 && !is_lost_signal_distance(dist, distance_cm_max)) {
-                        sum += dist * 0.01f;
+                        sum_auto += dist * 0.01f;
                         valid_count++;
                         // if still determining protocol update binary valid count
                         if (protocol_state == ProtocolState::UNKNOWN) {
@@ -154,8 +155,7 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
 
     // return average of all valid readings
     if (valid_count > 0) {
-        reading_m = sum / valid_count;
-        no_signal = false;
+        auto_reading_m = sum_auto / valid_count;
         // log the data
         if (valid_count_ldf > 0){
             ldf_reading_m = sum_ldf / valid_count_ldf;
@@ -163,12 +163,20 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
         if (valid_count_ldl > 0){
             ldl_reading_m = sum_ldl / valid_count_ldl;
         }
+        // chose the reading based on LW20MODE param
+        if(lw20_distance_mode() == 1)
+            reading_m = ldf_reading_m;
+        else if (lw20_distance_mode() == 2)
+            reading_m = ldl_reading_m;
+        else
+            reading_m = auto_reading_m;
 #if HAL_LOGGING_ENABLED
         Log_LW20_C(
             ldf_reading_m,
             ldl_reading_m,
-            reading_m);
+            auto_reading_m);
 #endif
+        no_signal = false;
         return true;
     }
 
