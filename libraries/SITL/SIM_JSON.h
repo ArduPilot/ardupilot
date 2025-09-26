@@ -18,7 +18,7 @@
 
 #if AP_SIM_JSON_ENABLED
 
-#include <AP_HAL/utility/Socket_native.h>
+#include <AP_HAL/utility/Socket.h>
 #include "SIM_Aircraft.h"
 
 namespace SITL {
@@ -60,7 +60,12 @@ private:
     // default connection_info_.sitl_ip_port
     uint16_t control_port = 9002;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SocketAPM_native sock;
+#else
+    // sim-on-hardware
+    SocketAPM sock;
+#endif
 
     uint32_t frame_counter;
     double last_timestamp_s;

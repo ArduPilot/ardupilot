@@ -44,6 +44,7 @@ parser.add_argument("--simclass", default=None, help="simulation class")
 parser.add_argument("--defaults", default=None, help="extra defaults file")
 parser.add_argument("--upload", action='store_true', default=False, help="upload firmware")
 parser.add_argument("--debug", action='store_true', default=False, help="create debug build")
+parser.add_argument("--extra-hwdef", action='append', default=[], help="extra hwdef files")
 
 args, unknown_args = parser.parse_known_args()
 
@@ -56,20 +57,17 @@ def run_program(cmd_list):
     retcode = subprocess.call(cmd_list)
     if retcode != 0:
         print("FAILED: %s" % (' '.join(cmd_list)))
-        if extra_hwdef is not None:
-            extra_hwdef.close()
-            os.unlink(extra_hwdef.name)
         sys.exit(1)
 
 
 frame_options = sorted(vinfo.options[vehicle_map[args.vehicle]]["frames"].keys())
 frame_options_string = ' '.join(frame_options)
-if args.frame and args.frame not in frame_options:
-    print(f"ERROR: frame must be one of {frame_options_string}")
+if args.frame and args.frame not in frame_options and not not args.simclass.startswith('json:'):
+    print(f"ERROR: invalid frame {args.frame}; must be one of {frame_options_string}")
     sys.exit(1)
 
 
-extra_hwdef = tempfile.NamedTemporaryFile(mode='w')
+extra_hwdef = tempfile.NamedTemporaryFile(mode='w', delete=False)
 extra_defaults = tempfile.NamedTemporaryFile(mode='w')
 
 
@@ -98,6 +96,9 @@ else:
 # add base hwdef to extra_hwdef
 hwdef_write(open(sohw_path(extra_hwdef_base), "r").read() + "\n")
 
+for f in args.extra_hwdef:
+    hwdef_write(open(f, "r").read() + "\n")
+
 # add base defaults to extra_defaults
 defaults_write(open(sohw_path(defaults_base), "r").read() + "\n")
 
@@ -108,6 +109,8 @@ if args.defaults:
 if args.simclass:
     if args.simclass == 'Glider':
         hwdef_write("define AP_SIM_GLIDER_ENABLED 1\n")
+    elif args.simclass == 'JSON':
+        hwdef_write("define AP_SIM_JSON_ENABLED 1\n")
     hwdef_write("define AP_SIM_FRAME_CLASS %s\n" % args.simclass)
 if args.frame:
     hwdef_write('define AP_SIM_FRAME_STRING "%s"\n' % args.frame)
