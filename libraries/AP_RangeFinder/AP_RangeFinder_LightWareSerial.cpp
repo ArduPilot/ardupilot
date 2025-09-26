@@ -55,10 +55,34 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
         if (protocol_state == ProtocolState::UNKNOWN || protocol_state == ProtocolState::LEGACY) {
             if (c == '\r') {
                 linebuf[linebuf_len] = 0;
-                const float dist = strtof(linebuf, nullptr);
-                if (!is_negative(dist) && !is_lost_signal_distance(dist * 100, distance_cm_max)) {
-                    sum += dist;
-                    valid_count++;
+                float dist = 0;
+                int8_t lidar_reply_type = get_distance_from_lidar_reply(linebuf, dist);
+                if (lidar_reply_type == -1) {
+                    // invalid reading
+                    invalid_count++;
+                    // reset the buffer length and clear the buffer
+                    linebuf_len = 0;
+                    memset(linebuf, 0, sizeof(linebuf));
+                    continue;
+                }
+                else if (!is_negative(dist) && !is_lost_signal_distance(dist * 100, distance_cm_max)) {
+                    if (lidar_reply_type == 1) {
+                        sum_ldf += ldf_val_m;
+                        valid_count_ldf++;
+                    } else if (lidar_reply_type == 2) {
+                        sum_ldl += ldl_val_m;
+                        valid_count_ldl++;
+                    }
+                    // overall sum and count
+                    if (lidar_reply_type == 1  && ldf_val_m < (distance_lpf_min_cm*0.01f) && ldl_val_m > 0) {
+                        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Incorrect LDF :: %f so LDL : %f", ldf_val_m, ldl_val_m);
+                        sum += float(ldl_val_m); // use the stored ldl reading if available
+                        valid_count++;
+                    } else if(lidar_reply_type == 1) {
+                        sum += dist;
+                        valid_count++;
+                    }
+
                     // if still determining protocol update legacy valid count
                     if (protocol_state == ProtocolState::UNKNOWN) {
                         legacy_valid_count++;
@@ -67,11 +91,13 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
                     invalid_count++;
                 }
                 linebuf_len = 0;
-            } else if (isdigit(c) || c == '.' || c == '-') {
+                memset(linebuf, 0, sizeof(linebuf));
+            }else if(isdigit(c) || c == '.' || c == '-' || c == 'l' || c == 'd' || c == 'f' || c == ',' || c == ':'){
                 linebuf[linebuf_len++] = c;
                 if (linebuf_len == sizeof(linebuf)) {
                     // too long, discard the line
                     linebuf_len = 0;
+                    memset(linebuf, 0, sizeof(linebuf));
                 }
             }
         }
@@ -122,7 +148,9 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
         uart->write("www\r\n");
         last_init_ms = now;
     } else {
-        uart->write('d');
+        // Sending LDL before LDF is required
+        uart->write("?LDL,2\r\n");
+        uart->write("?LDF,1\r\n");
     }
 
     // return average of all valid readings
