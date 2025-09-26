@@ -163,6 +163,7 @@ float stopping_distance(float velocity, float p, float accel_max);
 // - Limits: max_xy, max_z_pos (upward), max_z_neg (downward)
 // Returns the maximum achievable magnitude in that direction without violating any axis constraint.
 float kinematic_limit(Vector3f direction, float max_xy, float max_z_pos, float max_z_neg);
+float kinematic_limit(float mag_xy, float mag_z, float max_xy, float max_z_pos, float max_z_neg);
 
 // Applies an exponential curve to a normalized input in the range [-1, 1].
 // - `expo` shapes the curve (0 = linear, closer to 1 = more curvature).

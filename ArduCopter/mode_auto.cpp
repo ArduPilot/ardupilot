@@ -709,7 +709,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:           // 82  Navigate to Waypoint using spline
-        do_spline_wp(cmd);
+        do_nav_wp(cmd);
         break;
 
 #if AC_NAV_GUIDED
@@ -952,7 +952,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:
-        cmd_complete = verify_spline_wp(cmd);
+        cmd_complete = verify_nav_wp(cmd);
         break;
 
 #if AC_NAV_GUIDED
@@ -1570,7 +1570,11 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
     // this is the delay, stored in seconds
-    loiter_time_max = cmd.p1;
+    if (cmd.id != MAV_CMD_NAV_SPLINE_WAYPOINT) {
+        loiter_time_max = cmd.p1;
+    } else {
+        loiter_time_max = 0;
+    }
 
     // set next destination if necessary
     if (!set_next_wp(cmd, target_loc)) {
@@ -1588,7 +1592,7 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const Location &default_loc)
 {
     // do not add next wp if current command has a delay meaning the vehicle will stop at the destination
-    if (current_cmd.p1 > 0) {
+    if (current_cmd.p1 > 0 && current_cmd.id != MAV_CMD_NAV_SPLINE_WAYPOINT) {
         return true;
     }
 
@@ -1611,12 +1615,17 @@ bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const
         return wp_nav->set_wp_destination_next_loc(next_dest_loc);
     }
     case MAV_CMD_NAV_SPLINE_WAYPOINT: {
-        // get spline's location and next location from command and send to wp_nav
-        Location next_dest_loc, next_next_dest_loc;
-        bool next_next_dest_loc_is_spline;
-        get_spline_from_cmd(next_cmd, default_loc, next_dest_loc, next_next_dest_loc, next_next_dest_loc_is_spline);
-        return wp_nav->set_spline_destination_next_loc(next_dest_loc, next_next_dest_loc, next_next_dest_loc_is_spline);
+        const Location dest_loc = loc_from_cmd(current_cmd, default_loc);
+        const Location next_dest_loc = loc_from_cmd(next_cmd, dest_loc);
+        return wp_nav->set_wp_destination_next_loc(next_dest_loc, radians(next_cmd.p1 - 360));
     }
+    // case MAV_CMD_NAV_SPLINE_WAYPOINT: {
+    //     // get spline's location and next location from command and send to wp_nav
+    //     Location next_dest_loc, next_next_dest_loc;
+    //     bool next_next_dest_loc_is_spline;
+    //     get_spline_from_cmd(next_cmd, default_loc, next_dest_loc, next_next_dest_loc, next_next_dest_loc_is_spline);
+    //     return wp_nav->set_spline_destination_next_loc(next_dest_loc, next_next_dest_loc, next_next_dest_loc_is_spline);
+    // }
     case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_LAND:
         // stop because we may change between rel,abs and terrain alt types
