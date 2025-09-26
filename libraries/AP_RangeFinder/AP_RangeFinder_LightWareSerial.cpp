@@ -57,7 +57,7 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
                 linebuf[linebuf_len] = 0;
                 float dist = 0;
                 int8_t lidar_reply_type = get_distance_from_lidar_reply(linebuf, dist);
-                if (lidar_reply_type == -1) {
+                if (lidar_reply_type == 0) {
                     // invalid reading
                     invalid_count++;
                     // reset the buffer length and clear the buffer
@@ -66,16 +66,15 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
                     continue;
                 }
                 else if (!is_negative(dist) && !is_lost_signal_distance(dist * 100, distance_cm_max)) {
-                    if (lidar_reply_type == 1) {
-                        sum_ldf += ldf_val_m;
+                    if (lidar_reply_type == 1) { 
+                        sum_ldf += ldf_val_m; // summing LDF value
                         valid_count_ldf++;
                     } else if (lidar_reply_type == 2) {
-                        sum_ldl += ldl_val_m;
+                        sum_ldl += ldl_val_m; // summing LDL value
                         valid_count_ldl++;
                     }
                     // overall sum and count
                     if (lidar_reply_type == 1  && ldf_val_m < (distance_lpf_min_cm*0.01f) && ldl_val_m > 0) {
-                        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Incorrect LDF :: %f so LDL : %f", ldf_val_m, ldl_val_m);
                         sum += float(ldl_val_m); // use the stored ldl reading if available
                         valid_count++;
                     } else if(lidar_reply_type == 1) {
@@ -209,40 +208,39 @@ Return:
 */
 int8_t AP_RangeFinder_LightWareSerial::get_distance_from_lidar_reply(char reply[], float &distance_m)
 {
-    // Parse the data stream
+    // Parse the data stream format ldl,2:0.55 or ldf,1:0.45
     int8_t channel = 0; // 1 for ldf and 2 for ldl
 
-    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "1. reply: %s", reply);
     
     char* token = strtok(reply, ",:");
 
     if (token == nullptr) {
-        return -1;
+        return channel;
     }
 
     token = strtok(nullptr, ",:");
     if (token == nullptr) {
-        return -1;
+        return channel;
     }
     channel = atoi(token);
     if (channel == 0) {
-        return -1;
+        return channel;
     }
 
     token = strtok(nullptr, ",:"); // get the part after the colon
     if (token == nullptr) {
-        channel = -1;
+        channel = channel;
     }
 
     char *distance_str = token;
     distance_m = strtof(distance_str, nullptr); // Convert to meters
 
     if (channel == 1) {
-        ldf_val_m = distance_m; // Store the first reading in cm
+        ldf_val_m = distance_m; // Store the first reading in m
     } else if (channel == 2) {
-        ldl_val_m = distance_m; // Store the last reading in cm
+        ldl_val_m = distance_m; // Store the last reading in m
     } else {
-        channel = -1; // Invalid channel
+        channel = 0; // Invalid channel
     }
     return channel;
 }
