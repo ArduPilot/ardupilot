@@ -760,7 +760,7 @@ def _build_cmd_tweaks(bld):
         bld.options.clear_failed_tests = True
 
 def _build_dynamic_sources(bld):
-    if not bld.env.BOOTLOADER:
+    if not bld.env.BOOTLOADER or bld.env.FORCE_MAVLINK_GENERATION:
         bld(
             features='mavgen',
             source='modules/mavlink/message_definitions/v1.0/all.xml',
