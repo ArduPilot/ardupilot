@@ -409,6 +409,7 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
                     instance)) {
                 break;
             }
+            delete device_ptr;
         }
         break;
     }

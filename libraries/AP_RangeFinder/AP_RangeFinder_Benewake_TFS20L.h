@@ -25,8 +25,10 @@
 
 #define TFS20L_ADDR_DEFAULT              0x10        // TFS20L default device id
 
-#include <AP_HAL/utility/sparse-endian.h>
-#include <AP_HAL/I2CDevice.h>
+// Forward declaration
+namespace AP_HAL {
+    class I2CDevice;
+}
 
 class AP_RangeFinder_Benewake_TFS20L : public AP_RangeFinder_Backend
 {
@@ -54,10 +56,6 @@ private:
     bool init();
     void timer();
 
-    bool read_registers(uint8_t reg_addr, uint8_t* data, uint8_t len);
-    void process_raw_measure(uint16_t distance_raw, uint16_t strength_raw,
-                             uint16_t &output_distance_cm);
-
     AP_HAL::I2CDevice * _dev;
 
     struct {
@@ -65,23 +63,6 @@ private:
         uint32_t count;
     } accum;
 
-    // TFS20L register addresses
-    static const uint8_t TFS20L_DIST_LOW = 0x00;         // Distance low byte
-    static const uint8_t TFS20L_DIST_HIGH = 0x01;        // Distance high byte  
-    static const uint8_t TFS20L_AMP_LOW = 0x02;          // Signal strength/amplitude low byte
-    static const uint8_t TFS20L_AMP_HIGH = 0x03;         // Signal strength/amplitude high byte
-    static const uint8_t TFS20L_TEMP_LOW = 0x04;         // Temperature low byte
-    static const uint8_t TFS20L_TEMP_HIGH = 0x05;        // Temperature high byte
-    static const uint8_t TFS20L_VERSION_REVISION = 0x0A; // Version revision byte
-    static const uint8_t TFS20L_VERSION_MINOR = 0x0B;    // Version minor byte
-    static const uint8_t TFS20L_VERSION_MAJOR = 0x0C;    // Version major byte
-    static const uint8_t TFS20L_ENABLE = 0x25;           // Enable register
-    
-    // Distance and strength limits
-    static const uint16_t MAX_DIST_CM = 2000;
-    static const uint16_t MIN_DIST_CM = 1;
-    static const uint16_t MIN_STRENGTH = 100;
-    
 };
 
 #endif
