@@ -459,6 +459,10 @@ AP_HW_TBS_LUCID_H7_WING              5253
 AP_HW_SpeedyBeeF405WINGV2            5270
 AP_HW_SpeedyBeeF405AIO               5271
 
+# IDs 5280-5289 reserved for LightDynamix
+AP_HW_Dynamix_PIXEL                  5280
+AP_HW_Dynamix_PYRO                   5281
+
 #IDs 5301-5399 reserved for Sierra Aerospace
 AP_HW_Sierra-TrueNavPro-G4           5301
 AP_HW_Sierra-TrueNavIC               5302
