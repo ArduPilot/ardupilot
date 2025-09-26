@@ -428,9 +428,7 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
 
     // The frame requested by FOLL_ALT_TYPE may not be the frame of location returned by ahrs. 
     // Make sure we give the caller the frame they have asked for.
-    loc.change_alt_frame(_alt_type);
-
-    return true;
+    return loc.change_alt_frame(_alt_type);
 }
 
 // Retrieves the target's estimated global location including configured offsets, and estimated velocity,  for LUA bindings.
@@ -638,7 +636,7 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
         case Location::AltFrame::ABOVE_HOME:
             _target_location.set_alt_cm(packet.relative_alt * 0.1, Location::AltFrame::ABOVE_HOME);
             break;
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane|APM_BUILD_ArduCopter)
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduCopter)
         case Location::AltFrame::ABOVE_TERRAIN:
             /// Altitude comes in AMSL
             _target_location.set_alt_cm(packet.alt * 0.1, Location::AltFrame::ABSOLUTE);
