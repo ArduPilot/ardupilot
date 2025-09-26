@@ -37,6 +37,8 @@ private:
     // get a reading
     bool get_reading(float &reading_m) override;
     bool is_lost_signal_distance(int16_t distance_cm, int16_t distance_cm_max);
+    // Logging Function
+    void Log_LW20_C(float ldf_reading_cm, float ldl_reading_cm, float integrated_reading_cm);
 
     char linebuf[50];           // legacy protocol buffer
     uint8_t linebuf_len;        // legacy protocol buffer length

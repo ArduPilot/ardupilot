@@ -159,4 +159,17 @@ bool AP_RangeFinder_LightWareSerial::is_lost_signal_distance(int16_t distance_cm
     return false;
 }
 
+void AP_RangeFinder_LightWareSerial::Log_LW20_C(
+    float ldf_m, float ldl_m, float integrated_m)
+{
+    const struct log_LW20 pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_LW20_MSG),
+        time_us : AP_HAL::micros64(),
+        dist_ldf_m : ldf_m,
+        dist_ldl_m : ldl_m,
+        dist_int_m : integrated_m,
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
+
 #endif
