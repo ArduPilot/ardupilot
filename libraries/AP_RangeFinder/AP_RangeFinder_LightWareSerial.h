@@ -38,11 +38,13 @@ private:
     bool get_reading(float &reading_m) override;
     bool is_lost_signal_distance(int16_t distance_cm, int16_t distance_cm_max);
 
-    char linebuf[10];           // legacy protocol buffer
+    char linebuf[50];           // legacy protocol buffer
     uint8_t linebuf_len;        // legacy protocol buffer length
     uint32_t last_init_ms;      // init time used to switch lw20 to serial mode
     uint8_t high_byte;          // binary protocol high byte
     bool high_byte_received;    // true if high byte has been received
+    float ldf_val_m;        // lidar first reading in m
+    float ldl_val_m;        // lidar last reading in m
 
     // automatic protocol decision variables
     enum class ProtocolState {
