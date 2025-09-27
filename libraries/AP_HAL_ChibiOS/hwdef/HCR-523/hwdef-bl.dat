@@ -1,0 +1,65 @@
+# HC Robotics - HCR-523 CAN L1/L5 GPS + Magnetometer
+# STM32G491KEU6
+# GPS Module: uBlox NEO-F10T
+# Antenna: Taoglas GPVSF.25.8.A.08
+# Magnetometer: PNI RM3100 
+# CAN: 1 FDCAN 8Mbit
+# Backup Power: 11MF Super Cap
+# TimePulse signal and USB signals via JST Connector
+# 3 Status LEDs: Status (Blue), GPS Power (Green), MCU Power (Green)
+#
+# USB and CAN share the single UART on the F10T, it is muxed so that the USB will supercede the onboard MCU if connected
+###########################################################################################################################################################
+
+# MCU class and specific type
+MCU STM32G4xx STM32G491xx
+
+FLASH_RESERVE_START_KB 0
+FLASH_BOOTLOADER_LOAD_KB 32
+
+# reserve some space for params
+APP_START_OFFSET_KB 4
+
+# assume 512k flash part
+FLASH_SIZE_KB 512
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_HCR-523
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+# blue LED
+PA15 LED_BOOTLOADER OUTPUT HIGH
+define HAL_LED_ON 1
+
+define HAL_USE_SERIAL 0
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+define HAL_USE_EMPTY_IO 1
+
+# avoid timer and RCIN threads to save memory
+define HAL_NO_TIMER_THREAD
+define HAL_RCIN_THREAD_ENABLED 0
+
+define DMA_RESERVE_SIZE 0
+
+define HAL_SCHEDULER_LOOP_DELAY_ENABLED 0
+
+# enable CAN support
+
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+
+define CAN_APP_NODE_NAME "com.hcrobo.HCR-523-BL"
+
+# use a smaller bootloader timeout
+define HAL_BOOTLOADER_TIMEOUT 2500
+
+
