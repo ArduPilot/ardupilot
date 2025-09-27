@@ -140,24 +140,15 @@ public:
     float load_average();
 
     // get the active main loop rate
-    uint16_t get_loop_rate_hz(void) {
-        if (_active_loop_rate_hz == 0) {
-            _active_loop_rate_hz = _loop_rate_hz;
-        }
+    uint16_t get_loop_rate_hz(void) const {
         return _active_loop_rate_hz;
     }
     // get the time-allowed-per-loop in microseconds
-    uint32_t get_loop_period_us() {
-        if (_loop_period_us == 0) {
-            _loop_period_us = 1000000UL / _loop_rate_hz;
-        }
+    uint32_t get_loop_period_us() const {
         return _loop_period_us;
     }
     // get the time-allowed-per-loop in seconds
-    float get_loop_period_s() {
-        if (is_zero(_loop_period_s)) {
-            _loop_period_s = 1.0f / _loop_rate_hz;
-        }
+    float get_loop_period_s() const {
         return _loop_period_s;
     }
 
@@ -203,7 +194,7 @@ private:
     AP_Int16 _loop_rate_hz;
 
     // loop rate in Hz as set at startup
-    AP_Int16 _active_loop_rate_hz;
+    uint16_t _active_loop_rate_hz;
 
     // scheduler options
     AP_Int8 _options;
