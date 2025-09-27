@@ -55,6 +55,9 @@
 # define MODE_FOLLOW_ENABLED AP_FOLLOW_ENABLED
 #endif
 
+#ifndef AP_LEAKDETECTOR_ENABLED
+#define AP_LEAKDETECTOR_ENABLED 1
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items

@@ -232,3 +232,4 @@
 # define FLIGHT_MODE_6 Mode::Number::SURFACE
 #endif
 
+#define AP_LEAKDETECTOR_ENABLED 1
