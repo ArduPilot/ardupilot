@@ -379,7 +379,12 @@ private:
 
     enum class Options {
         DisableDownload = (1U<<0),
+        DisableDisk = (1U<<1),
     };
+
+    inline bool diskless() const {
+        return (options.get() & uint16_t(Options::DisableDisk)) != 0;
+    }
 
     // cache of grids in memory, LRU
     uint8_t cache_size = 0;
