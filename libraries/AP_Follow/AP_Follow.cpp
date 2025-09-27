@@ -40,26 +40,25 @@
 
 extern const AP_HAL::HAL& hal;
 
-
 //==============================================================================
 // Constants and Definitions
 //==============================================================================
 
-#define AP_FOLLOW_TIMEOUT_MS    3000    // position estimate timeout
 #define AP_FOLLOW_SYSID_TIMEOUT_MS 10000 // forget sysid we are following if we have not heard from them in 10 seconds
 
 #define AP_FOLLOW_OFFSET_TYPE_NED       0   // offsets are in north-east-down frame
 #define AP_FOLLOW_OFFSET_TYPE_RELATIVE  1   // offsets are relative to lead vehicle's heading
 
-#define AP_FOLLOW_ALTITUDE_TYPE_RELATIVE  1 // relative altitude is used by default   
+#define AP_FOLLOW_ALT_TYPE_DEFAULT      static_cast<float>(Location::AltFrame::ABOVE_HOME)
 
 #define AP_FOLLOW_POS_P_DEFAULT 0.1f    // position error gain default
 
+
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
- #define AP_FOLLOW_ALT_TYPE_DEFAULT 0
- #define AP_FOLLOW_DIST_MAX_DEFAULT 0
+ #define AP_FOLLOW_TIMEOUT          0.6    // position estimate timeout (for Plane)
+ #define AP_FOLLOW_DIST_MAX_DEFAULT 500
 #else
- #define AP_FOLLOW_ALT_TYPE_DEFAULT AP_FOLLOW_ALTITUDE_TYPE_RELATIVE
+ #define AP_FOLLOW_TIMEOUT          3    // position estimate timeout
  #define AP_FOLLOW_DIST_MAX_DEFAULT 100
 #endif
 
@@ -152,7 +151,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Param: _ALT_TYPE
     // @DisplayName: Follow altitude type
     // @Description: Follow altitude type
-    // @Values: 0:absolute, 1:relative
+    // @Values: 0:absolute, 1:relative, 3:terrain
     // @User: Standard
     AP_GROUPINFO("_ALT_TYPE", 10, AP_Follow, _alt_type, AP_FOLLOW_ALT_TYPE_DEFAULT),
 #endif
@@ -212,6 +211,12 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_JERK_H", 17, AP_Follow, _jerk_max_h_degsss, 360.0),
 
+    // @Param: _TIMEOUT
+    // @DisplayName: Follow timeout
+    // @Description: Follow position update from lead - timeout after x seconds
+    // @User: Standard
+    // @Units: s
+    AP_GROUPINFO("_TIMEOUT", 18, AP_Follow, _timeout, AP_FOLLOW_TIMEOUT),
 
     AP_GROUPEND
 };
@@ -223,7 +228,6 @@ AP_Follow::AP_Follow() :
     _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
 }
-
 
 //==============================================================================
 // Target Estimation Update Functions
@@ -408,7 +412,7 @@ bool AP_Follow::get_heading_heading_rate_rad(float &heading_rad, float &heading_
     return true;
 }
 
-// Retrieves the target's estimated global location and velocity
+// Retrieves the target's estimated global location and estimated velocity
 bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ned)
 {
     WITH_SEMAPHORE(_follow_sem);
@@ -422,10 +426,12 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
     }
     vel_ned = _estimate_vel_ned_ms;
 
-    return true;
+    // The frame requested by FOLL_ALT_TYPE may not be the frame of location returned by ahrs. 
+    // Make sure we give the caller the frame they have asked for.
+    return loc.change_alt_frame(_alt_type);
 }
 
-// Retrieves the target's estimated global location and velocity, including configured offsets, for LUA bindings.
+// Retrieves the target's estimated global location including configured offsets, and estimated velocity,  for LUA bindings.
 bool AP_Follow::get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned)
 {
     WITH_SEMAPHORE(_follow_sem);
@@ -547,7 +553,7 @@ bool AP_Follow::should_handle_message(const mavlink_message_t &msg) const
 // Checks whether the current estimate should be reset based on position and velocity errors.
 bool AP_Follow::estimate_error_too_large() const
 {
-    const float timeout_sec = AP_FOLLOW_TIMEOUT_MS * 0.001f;
+    const float timeout_sec = _timeout;
 
     // Calculate position thresholds based on maximum acceleration then deceleration for the timeout duration
     const float pos_thresh_horiz_m = _accel_max_ne_mss.get() * sq(timeout_sec * 0.5);
@@ -611,19 +617,36 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
         return false;
     }
 
+    // apply jitter-corrected timestamp to this update
+    uint32_t location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
+    if (location_update_ms < _last_location_update_ms) {
+        // ignore if the new update is older than the most recent one received
+        return false;
+    }
+    _last_location_update_ms = location_update_ms;
+
     Location _target_location;
     _target_location.lat = packet.lat;
     _target_location.lng = packet.lon;
 
-    // set target altitude based on configured altitude type
-    if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
-        // use relative altitude above home
-        _target_location.set_alt_cm(packet.relative_alt / 10, Location::AltFrame::ABOVE_HOME);
-    } else {
-        // use absolute altitude
-        _target_location.set_alt_cm(packet.alt / 10, Location::AltFrame::ABSOLUTE);
+    switch((Location::AltFrame)_alt_type) {
+        case Location::AltFrame::ABSOLUTE:
+            _target_location.set_alt_cm(packet.alt * 0.1, Location::AltFrame::ABSOLUTE);
+            break;
+        case Location::AltFrame::ABOVE_HOME:
+            _target_location.set_alt_cm(packet.relative_alt * 0.1, Location::AltFrame::ABOVE_HOME);
+            break;
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+        case Location::AltFrame::ABOVE_TERRAIN:
+            /// Altitude comes in AMSL
+            _target_location.set_alt_cm(packet.alt * 0.1, Location::AltFrame::ABSOLUTE);
+            // convert the incoming altitude to terrain altitude
+            _target_location.change_alt_frame(Location::AltFrame::ABOVE_TERRAIN);
+#endif
+            break;
+        default:
+            return false;
     }
-
     // convert global location to local NED frame position
     if (!_target_location.get_vector_from_origin_NEU(_target_pos_ned_m)) {
         return false;
@@ -649,9 +672,6 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
         // no heading available: set heading rate to zero
         _target_heading_rate_degs = 0.0f;
     }
-
-    // apply jitter-corrected timestamp to this update
-    _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
 
     // if sysid not yet set, adopt sender’s sysid and enable automatic sysid tracking
     if (_sysid == 0) {
@@ -680,6 +700,15 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
     if ((packet.est_capabilities & (1<<0)) == 0) {
         return false;
     }
+
+    // apply jitter-corrected timestamp to this update
+    uint32_t location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.timestamp, AP_HAL::millis());
+    if (location_update_ms < _last_location_update_ms) {
+        // ignore if the new update is older than the most recent one received
+        return false;
+    }
+    _last_location_update_ms = location_update_ms;
+
 
     // build Location object from latitude, longitude, and altitude (alt in meters)
     const Location _target_location {
@@ -745,9 +774,6 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
         // otherwise, default heading rate to zero
         _target_heading_rate_degs = 0.0f;
     }
-
-    // apply jitter-corrected timestamp to this update
-    _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.timestamp, AP_HAL::millis());
 
     // if sysid not yet assigned, adopt sender's sysid and enable automatic sysid tracking
     if (_sysid == 0) {
@@ -885,12 +911,13 @@ void AP_Follow::Log_Write_FOLL()
     // @Field: VelD: Target velocity, Down (m/s)
     // @Field: LatE: Vehicle estimated latitude (degrees * 1E7)
     // @Field: LonE: Vehicle estimated longitude (degrees * 1E7)
-    // @Field: AltE: Vehicle estimated absolute altitude (centimeters)
+    // @Field: AltE: Vehicle estimated altitude (centimeters)
+    // @Field: FrmE: Vehicle estimated altitude Frame
     AP::logger().WriteStreaming("FOLL",
-                                "TimeUS,Lat,Lon,Alt,VelN,VelE,VelD,LatE,LonE,AltE",  // labels
-                                "sDUmnnnDUm",    // units
-                                "F--B000--B",    // mults
-                                "QLLifffLLi",    // fmt
+                                "TimeUS,Lat,Lon,Alt,VelN,VelE,VelD,LatE,LonE,AltE,FrmE",  // labels
+                                "sDUmnnnDUm-",    // units
+                                "F--B000--B-",    // mults
+                                "QLLifffLLib",    // fmt
                                 AP_HAL::micros64(),
                                 _target_location.lat,
                                 _target_location.lng,
@@ -900,7 +927,8 @@ void AP_Follow::Log_Write_FOLL()
                                 (double)_target_vel_ned_ms.z,
                                 loc_estimate.lat,
                                 loc_estimate.lng,
-                                loc_estimate.alt
+                                loc_estimate.alt,
+                                loc_estimate.get_alt_frame()
                                 );
 }
 #endif  // HAL_LOGGING_ENABLED
@@ -918,7 +946,7 @@ bool AP_Follow::have_target(void) const
     }
 
     // check for timeout
-    if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
+    if ((_last_location_update_ms == 0) || (((AP_HAL::millis() - _last_location_update_ms) * 0.001f) > _timeout)) {
         return false;
     }
     return true;
