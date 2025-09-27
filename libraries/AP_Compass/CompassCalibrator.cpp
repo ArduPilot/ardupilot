@@ -215,6 +215,9 @@ void CompassCalibrator::update()
             _fit_step++;
         }
     } else if (_status == Status::RUNNING_STEP_TWO) {
+        if (_fit_step == 0) {
+            initialize_fit(); // determine fitness of prior fit on new data set
+        }
         if (_fit_step >= 35) {
             if (fit_acceptable() && fix_radius() && calculate_orientation()) {
                 set_status(Status::SUCCESS);
