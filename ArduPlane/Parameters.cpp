@@ -1268,6 +1268,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("CLIMB_SLOPE_HGT", 39, ParametersG2, waypoint_climb_slope_height_min, 25),
 
+    // @Param: GUIDED_TIMEOUT
+    // @DisplayName: Timeout for external guided command.
+    // @Description: If external guided command was not received by this timeout, the vehicle will revert to regular GUIDED mode.
+    // @Units: s
+    // @Range: 0 10
+    // @Increment: 0.5
+    // @User: Advanced
+    AP_GROUPINFO("GUIDED_TIMEOUT", 40, ParametersG2, guided_timeout, 3.0f),
+
     AP_GROUPEND
 };
 
