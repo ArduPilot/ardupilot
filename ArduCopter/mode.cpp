@@ -38,6 +38,10 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             return &mode_acro;
 #endif
 
+#if MODE_RATE_ACRO_ENABLED
+        case Mode::Number::RATE_ACRO:
+            return &mode_rate_acro;
+#endif
         case Mode::Number::STABILIZE:
             return &mode_stabilize;
 
@@ -208,7 +212,8 @@ bool Copter::gcs_mode_enabled(const Mode::Number mode_num)
         (uint8_t)Mode::Number::SYSTEMID,
         (uint8_t)Mode::Number::AUTOROTATE,
         (uint8_t)Mode::Number::AUTO_RTL,
-        (uint8_t)Mode::Number::TURTLE
+        (uint8_t)Mode::Number::TURTLE,
+        (uint8_t)Mode::Number::RATE_ACRO
     };
 
     if (!block_GCS_mode_change((uint8_t)mode_num, mode_list, ARRAY_SIZE(mode_list))) {
@@ -229,7 +234,7 @@ bool Copter::gcs_mode_enabled(const Mode::Number mode_num)
 // set_mode - change flight mode and perform any necessary initialisation
 // optional force parameter used to force the flight mode change (used only first time mode is set)
 // returns true if mode was successfully set
-// ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
+// ACRO, RATE_ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
 bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 {
     // update last reason
@@ -371,12 +376,12 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 #endif
 
     // set rate shaping time constants
-#if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
+#if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED || MODE_RATE_ACRO_ENABLED
     attitude_control->set_roll_pitch_rate_tc(g2.command_model_acro_rp.get_rate_tc());
 #endif
     attitude_control->set_yaw_rate_tc(g2.command_model_pilot_y.get_rate_tc());
-#if MODE_ACRO_ENABLED || MODE_DRIFT_ENABLED
-    if (mode== Mode::Number::ACRO || mode== Mode::Number::DRIFT) {
+#if MODE_ACRO_ENABLED || MODE_DRIFT_ENABLED || MODE_RATE_ACRO_ENABLED
+    if (mode == Mode::Number::ACRO || mode == Mode::Number::RATE_ACRO || mode== Mode::Number::DRIFT) {
         attitude_control->set_yaw_rate_tc(g2.command_model_acro_y.get_rate_tc());
     }
 #endif
@@ -435,7 +440,11 @@ void Copter::exit_mode(Mode *&old_flightmode,
 
 #if FRAME_CONFIG == HELI_FRAME
     // firmly reset the flybar passthrough to false when exiting acro mode.
-    if (old_flightmode == &mode_acro) {
+    if (old_flightmode == &mode_acro
+#if MODE_RATE_ACRO_ENABLED
+        || old_flightmode == &mode_rate_acro
+#endif
+       ) {
         attitude_control->use_flybar_passthrough(false, false);
         motors->set_acro_tail(false);
     }
@@ -446,7 +455,11 @@ void Copter::exit_mode(Mode *&old_flightmode,
     if (!old_flightmode->has_manual_throttle()){
         if (new_flightmode == &mode_stabilize){
             input_manager.set_stab_col_ramp(1.0);
-        } else if (new_flightmode == &mode_acro){
+        } else if (new_flightmode == &mode_acro
+#if MODE_RATE_ACRO_ENABLED
+                   || new_flightmode == &mode_rate_acro
+#endif
+                  ) {
             input_manager.set_stab_col_ramp(0.0);
         }
     }

@@ -52,6 +52,13 @@ class AutoTestHelicopter(AutoTestCopter):
         ret = filter(lambda x : x != "THROW", ret)
         return ret
 
+    @staticmethod
+    def get_normal_armable_modes_list():
+        '''filter RATE_ACRO mode out of armable modes list; Heli is special-cased'''
+        ret = AutoTestCopter.get_normal_armable_modes_list()
+        ret = filter(lambda x : x != "RATE_ACRO", ret)
+        return ret
+
     def loiter_requires_position(self):
         self.progress("Skipping loiter-requires-position for heli; rotor runup issues")
 

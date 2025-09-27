@@ -68,7 +68,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     @staticmethod
     def get_normal_armable_modes_list():
-        return ["ACRO", "ALT_HOLD", "STABILIZE", "GUIDED_NOGPS"]
+        return ["ACRO", "RATE_ACRO", "ALT_HOLD", "STABILIZE", "GUIDED_NOGPS"]
 
     def log_name(self):
         return "ArduCopter"
@@ -1247,6 +1247,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.test_takeoff_check_mode("STABILIZE")
         self.test_takeoff_check_mode("ACRO")
+        # self.test_takeoff_check_mode("RATE_ACRO")
+        self.test_takeoff_check_mode(29)
         self.test_takeoff_check_mode("LOITER")
         self.test_takeoff_check_mode("ALT_HOLD")
         # self.test_takeoff_check_mode("FLOWHOLD")
@@ -1262,6 +1264,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.test_takeoff_check_mode("STABILIZE")
         self.test_takeoff_check_mode("ACRO")
+        # self.test_takeoff_check_mode("RATE_ACRO")
+        self.test_takeoff_check_mode(29)
         self.test_takeoff_check_mode("LOITER")
         self.test_takeoff_check_mode("ALT_HOLD")
         # self.test_takeoff_check_mode("FLOWHOLD")
@@ -5810,6 +5814,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.change_mode("ACRO")
+        self.change_mode(29)
+        # self.change_mode("RATE_ACRO")
         self.change_mode("STABILIZE")
         self.change_mode("GUIDED")
         self.set_rc(3, 1700)
@@ -5817,6 +5823,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.run_cmd_do_set_mode(
             "ACRO",
             want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.run_cmd_do_set_mode(
+            29,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        # self.run_cmd_do_set_mode(
+        #    "RATE_ACRO",
+        #    want_result=mavutil.mavlink.MAV_RESULT_FAILED)
         self.run_cmd_do_set_mode(
             "STABILIZE",
             want_result=mavutil.mavlink.MAV_RESULT_FAILED)
