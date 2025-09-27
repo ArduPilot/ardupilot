@@ -24,18 +24,21 @@
 #include <AP_ROMFS/AP_ROMFS.h>
 #include "SdCard.h"
 
-#include <esp_timer.h>
-#include <multi_heap.h>
-#include <esp_heap_caps.h>
+// #include <esp_timer.h>
+// FIMXE ?!!
+// #include <multi_heap.h>
+// #include <esp_heap_caps.h>
 
 #include <stdlib.h>
 #include <string.h>
-#include "esp_log.h"
-#include "esp_system.h"
-#include "esp_heap_caps.h"
+// #include "esp_log.h"
+// #include "esp_system.h"
+// #include "esp_heap_caps.h"
 #include <AP_Common/ExpandingString.h>
 
-#include "esp_mac.h"
+#include "pico/time.h"
+
+// #include "esp_mac.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -47,7 +50,8 @@ using namespace ESP32;
 */
 uint32_t Util::available_memory(void)
 {
-    return heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT);
+    // FIXME - return heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT);
+    return 10000;
 
 }
 
@@ -72,21 +76,23 @@ void* Util::malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type)
     //The ESP-IDF malloc() implementation internally calls heap_caps_malloc(size, MALLOC_CAP_8BIT) in order to allocate DRAM that is byte-addressable.
 
     //For most purposes, the standard libc malloc() and free() functions can be used for heap allocation without any special consideration.
-    //	return malloc(size);
+    return malloc(size);
 
-    if (mem_type == AP_HAL::Util::MEM_DMA_SAFE) {
-        return heap_caps_calloc(1, size, MALLOC_CAP_DMA);
-        //} else if (mem_type == AP_HAL::Util::MEM_FAST) {
-        //   return heap_caps_calloc(1, size, MALLOC_CAP_32BIT); //WARNING 32bit memory cannot use unless 32bit access
-    } else {
-        return heap_caps_calloc(1, size, MALLOC_CAP_8BIT);
-    }
+    // FIXME - proper mem management !!!!
+    // if (mem_type == AP_HAL::Util::MEM_DMA_SAFE) {
+    //     return heap_caps_calloc(1, size, MALLOC_CAP_DMA);
+    //     //} else if (mem_type == AP_HAL::Util::MEM_FAST) {
+    //     //   return heap_caps_calloc(1, size, MALLOC_CAP_32BIT); //WARNING 32bit memory cannot use unless 32bit access
+    // } else {
+    //     return heap_caps_calloc(1, size, MALLOC_CAP_8BIT);
+    // }
 }
 
 void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
 {
     if (ptr != NULL) {
-        heap_caps_free(ptr);
+        // FIXME !!!! heap_caps_free(ptr);
+        free(ptr);
     }
 }
 
@@ -141,7 +147,8 @@ void Util::set_hw_rtc(uint64_t time_utc_usec)
 */
 uint64_t Util::get_hw_rtc() const
 {
-    return esp_timer_get_time();
+    // return esp_timer_get_time();
+    return time_us_64();
 }
 
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
@@ -168,24 +175,25 @@ Util::FlashBootloader Util::flash_bootloader()
 bool Util::get_system_id(char buf[50])
 {
     //uint8_t serialid[12];
-    char board_name[] = HAL_ESP32_BOARD_NAME" ";
+    // char board_name[] = HAL_ESP32_BOARD_NAME" ";
 
-    uint8_t base_mac_addr[6] = {0};
-    esp_err_t ret = esp_efuse_mac_get_custom(base_mac_addr);
-    if (ret != ESP_OK) {
-        ret = esp_efuse_mac_get_default(base_mac_addr);
-    }
+    // uint8_t base_mac_addr[6] = {0};
+    // esp_err_t ret = esp_efuse_mac_get_custom(base_mac_addr);
+    // if (ret != ESP_OK) {
+    //     ret = esp_efuse_mac_get_default(base_mac_addr);
+    // }
 
-    char board_mac[20] = "                   ";
-    snprintf(board_mac,20, "%x %x %x %x %x %x",
-             base_mac_addr[0], base_mac_addr[1], base_mac_addr[2], base_mac_addr[3], base_mac_addr[4], base_mac_addr[5]);
+    // char board_mac[20] = "                   ";
+    // snprintf(board_mac,20, "%x %x %x %x %x %x",
+    //          base_mac_addr[0], base_mac_addr[1], base_mac_addr[2], base_mac_addr[3], base_mac_addr[4], base_mac_addr[5]);
 
-    // null terminate both
-    //board_name[13] = 0;
-    board_mac[19] = 0;
+    // // null terminate both
+    // //board_name[13] = 0;
+    // board_mac[19] = 0;
 
-    // tack strings together
-    snprintf(buf, 40, "%s %s", board_name, board_mac);
+    // // tack strings together
+    // snprintf(buf, 40, "%s %s", board_name, board_mac);
+    snprintf(buf, 40, "unknown rp2350");
     // and null terminate that too..
     buf[39] = 0;
     return true;
@@ -193,14 +201,15 @@ bool Util::get_system_id(char buf[50])
 
 bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
 {
-    uint8_t base_mac_addr[6] = {0};
-    esp_err_t ret = esp_efuse_mac_get_custom(base_mac_addr);
-    if (ret != ESP_OK) {
-        ret = esp_efuse_mac_get_default(base_mac_addr);
-    }
+    // FIXME
+    // uint8_t base_mac_addr[6] = {0};
+    // esp_err_t ret = esp_efuse_mac_get_custom(base_mac_addr);
+    // if (ret != ESP_OK) {
+    //     ret = esp_efuse_mac_get_default(base_mac_addr);
+    // }
 
-    len = MIN(len, ARRAY_SIZE(base_mac_addr));
-    memcpy(buf, (const void *)base_mac_addr, len);
+    // len = MIN(len, ARRAY_SIZE(base_mac_addr));
+    // memcpy(buf, (const void *)base_mac_addr, len);
 
     return true;
 }
@@ -209,12 +218,12 @@ bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
 bool Util::was_watchdog_reset() const
 {
     return false;
-    esp_reset_reason_t reason = esp_reset_reason();
+    // esp_reset_reason_t reason = esp_reset_reason();
 
-    return reason == ESP_RST_PANIC
-           || reason == ESP_RST_PANIC
-           || reason == ESP_RST_TASK_WDT
-           || reason == ESP_RST_WDT;
+    // return reason == ESP_RST_PANIC
+    //        || reason == ESP_RST_PANIC
+    //        || reason == ESP_RST_TASK_WDT
+    //        || reason == ESP_RST_WDT;
 }
 
 /*

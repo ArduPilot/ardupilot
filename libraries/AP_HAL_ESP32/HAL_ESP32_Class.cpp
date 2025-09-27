@@ -20,20 +20,29 @@
 #include "Scheduler.h"
 #include "I2CDevice.h"
 #include "SPIDevice.h"
+
+// FIXME!!!
 #include "UARTDriver.h"
-#include "WiFiDriver.h"
-#include "WiFiUdpDriver.h"
-#include "RCInput.h"
-#include "RCOutput.h"
-#include "GPIO.h"
-#include "Storage.h"
-#include "AnalogIn.h"
+
+
+// #include "WiFiDriver.h"
+// #include "WiFiUdpDriver.h"
+
+//#include "RCInput.h"
+// #include "RCOutput.h"
+//#include "GPIO.h"
+//#include "Storage.h"
+//#include "AnalogIn.h"
 #include "Util.h"
+
 #if AP_SIM_ENABLED
 #include <AP_HAL/SIMState.h>
 #endif
 
-static ESP32::UARTDriver cons(0);
+// FIXME
+// static ESP32::UARTDriver cons(0);
+static Empty::UARTDriver cons;
+
 #ifdef HAL_ESP32_WIFI
 #if HAL_ESP32_WIFI == 1
 static ESP32::WiFiDriver serial1Driver; //tcp, client should connect to 192.168.4.1 port 5760
@@ -45,8 +54,13 @@ static Empty::UARTDriver serial1Driver;
 #else
 static Empty::UARTDriver serial1Driver;
 #endif
-static ESP32::UARTDriver serial2Driver(2);
-static ESP32::UARTDriver serial3Driver(1);
+
+//static ESP32::UARTDriver serial2Driver(2);
+//static ESP32::UARTDriver serial3Driver(1);
+static Empty::UARTDriver serial2Driver;
+static Empty::UARTDriver serial3Driver;
+
+
 static Empty::UARTDriver serial4Driver;
 static Empty::UARTDriver serial5Driver;
 static Empty::UARTDriver serial6Driver;
@@ -58,8 +72,8 @@ static Empty::UARTDriver serial9Driver;
 static Empty::DSP dspDriver;
 #endif
 
-static ESP32::I2CDeviceManager i2cDeviceManager;
-static ESP32::SPIDeviceManager spiDeviceManager;
+static Empty::I2CDeviceManager i2cDeviceManager;
+static Empty::SPIDeviceManager spiDeviceManager;
 #ifndef HAL_DISABLE_ADC_DRIVER
 static ESP32::AnalogIn analogIn;
 #else
@@ -70,13 +84,26 @@ static Empty::Storage storageDriver;
 #else
 static ESP32::Storage storageDriver;
 #endif
-static ESP32::GPIO gpioDriver;
+
+//static ESP32::GPIO gpioDriver;
+static Empty::GPIO gpioDriver;
+
+
 #if AP_SIM_ENABLED
 static Empty::RCOutput rcoutDriver;
 #else
-static ESP32::RCOutput rcoutDriver;
+// FIXME !!!
+    #if false
+    static ESP32::RCOutput rcoutDriver;
+    #else
+    static Empty::RCOutput rcoutDriver;
+    #endif
 #endif
-static ESP32::RCInput rcinDriver;
+
+//static ESP32::RCInput rcinDriver;
+static Empty::RCInput rcinDriver;
+// FIXME !!!
+//static Empty::Scheduler schedulerInstance;
 static ESP32::Scheduler schedulerInstance;
 static ESP32::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
