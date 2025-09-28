@@ -1406,7 +1406,11 @@ void Compass::_detect_backends(void)
 #if AP_COMPASS_MSP_ENABLED
     for (uint8_t i=0; i<8; i++) {
         if (msp_instance_mask & (1U<<i)) {
-            ADD_BACKEND(DRIVER_MSP, NEW_NOTHROW AP_Compass_MSP(i));
+            auto *backend = AP_Compass_MSP::probe(i);
+            if (backend == nullptr) {
+                continue;
+            }
+            ADD_BACKEND(DRIVER_MSP, backend);
         }
     }
 #endif
