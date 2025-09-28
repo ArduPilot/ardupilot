@@ -995,13 +995,13 @@ bool AP_Baro::healthy(uint8_t instance) const {
 /*
   update field elevation value
  */
-void AP_Baro::update_field_elevation(void)
+void AP_Baro::update_field_elevation(bool force)
 {
 #if AP_FIELD_ELEVATION_ENABLED
     const uint32_t now_ms = AP_HAL::millis();
     bool new_field_elev = false;
     const bool armed = hal.util->get_soft_armed();
-    if (now_ms - _field_elevation_last_ms >= 1000) {
+    if (force || now_ms - _field_elevation_last_ms >= 1000) {
         if (is_zero(_field_elevation_active) &&
             is_zero(_field_elevation)) {
             // auto-set based on origin
