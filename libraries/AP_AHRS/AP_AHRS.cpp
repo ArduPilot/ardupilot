@@ -208,7 +208,29 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Bitmask: 0:DisableDCMFallbackFW, 1:DisableDCMFallbackVTOL, 2:DontDisableAirspeedUsingEKF
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  18, AP_AHRS, _options, HAL_AHRS_OPTIONS_DEFAULT),
+
+    // @Param: ORIGIN_LAT
+    // @DisplayName: AHRS last origin latitude
+    // @Description: AHRS last origin latitude in degrees
+    // @Range: -180 180
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("ORIGIN_LAT", 19, AP_AHRS, _origin_lat, 0),
+
+    // @Param: ORIGIN_LNG
+    // @DisplayName: AHRS last origin longitude
+    // @Description: AHRS last origin longitude in degrees
+    // @Range: -180 180
+    // @User: Advanced
+    AP_GROUPINFO("ORIGIN_LNG", 20, AP_AHRS, _origin_lng, 0),
     
+    // @Param: ORIGIN_ALT
+    // @DisplayName: AHRS last origin altitude
+    // @Description: AHRS last origin altitude in meters
+    // @Range: -200 5000
+    // @User: Advanced
+    AP_GROUPINFO("ORIGIN_ALT", 21, AP_AHRS, _origin_alt, 0),
+
     AP_GROUPEND
 };
 
@@ -398,7 +420,11 @@ void AP_AHRS::update_state(void)
     state.ground_speed_vec = _groundspeed_vector();
     state.ground_speed = _groundspeed();
     _getCorrectedDeltaVelocityNED(state.corrected_dv, state.corrected_dv_dt);
-    state.origin_ok = _get_origin(state.origin);
+    bool origin_ok = _get_origin(state.origin);
+    if (!state.origin_ok && origin_ok) {
+        record_origin();
+    }
+    state.origin_ok = origin_ok;
     state.velocity_NED_ok = _get_velocity_NED(state.velocity_NED);
 }
 
@@ -1534,6 +1560,35 @@ bool AP_AHRS::set_origin(const Location &loc)
 #endif
     }
     return success;
+}
+
+void AP_AHRS::record_origin()
+{
+    _origin_lat.set_and_save_ifchanged(state.origin.lat * 1.0e-7);
+    _origin_lng.set_and_save_ifchanged(state.origin.lng * 1.0e-7);
+    _origin_alt.set_and_save_ifchanged(state.origin.alt * 1.0e-2);
+}
+
+bool AP_AHRS::ensure_origin_is_set()
+{
+    if (state.origin_ok) {  // we already have an origin
+        return true;
+    }
+
+    const Location loc = {
+        int32_t(_origin_lat.get() * 1e7),
+        int32_t(_origin_lng.get() * 1e7),
+        int32_t(_origin_alt.get() * 100),
+        Location::AltFrame::ABSOLUTE
+    };
+
+    if (set_origin(loc)) {
+        // make sure the baro height is reset to the new origin
+        AP::baro().update_field_elevation(true);
+        return true;
+    }
+
+    return false;
 }
 
 #if AP_AHRS_POSITION_RESET_ENABLED
