@@ -772,6 +772,20 @@ QuaternionT<T> &QuaternionT<T>::operator*=(const QuaternionT<T> &v)
     return *this;
 }
 
+// Note: Quaternions do not have a single, universally agreed-upon "division" definition like real numbers.
+// By definition, for a unit quaternion, its inverse equals its conjugate:
+//    q^-1 = conj(q) / |q|^2   (if |q|=1, then q^-1 = conj(q))
+// Quaternion multiplication is non-commutative, so the result of q1 / q2 can follow two conventions:
+// (1) Right division (commonly used in mathematics): q1 / q2 = q1 * q2^-1
+// (2) Left division (engineering convention): q1 / q2 = q2^-1 * q1
+// Both are mathematically valid, but the results differ because q1 * q2^-1 != q2^-1 * q1.
+// Here, we adopt the second convention (left division): q1 / q2 = q2^-1 * q1.
+// The rotation order is different, so the rotational effect also differs.
+// For detailed definitions, see:
+//    https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/arithmetic/index.htm
+//    https://www.mathworks.com/help/aerotbx/ug/quatdivide.html
+
+
 template <typename T>
 QuaternionT<T> QuaternionT<T>::operator/(const QuaternionT<T> &v) const
 {
