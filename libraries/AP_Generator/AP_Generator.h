@@ -116,7 +116,7 @@ private:
 #endif
 #if AP_GENERATOR_CORTEX_ENABLED
         CORTEX = 5,
-#endif
+#endif  // AP_GENERATOR_CORTEX_ENABLED
     };
 
     // Helper to get param and cast to GenType
