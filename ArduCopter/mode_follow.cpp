@@ -119,7 +119,52 @@ void ModeFollow::run()
                 }
                 break;
             }
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+            case AP_Follow::YAW_BEHAVE_OBJECT_FOLLOW: {
+                // Face the target and remember that yaw during manuevers, and reset the yaw to target only when gimbal is reaching its angle limits
+                // This helps gimbal to minimize shaking in yaw axis and move freely without interials effects of sudden yaw changes of the vehicle
+                AP_Mount *mount = AP_Mount::get_singleton();
 
+                // Get the last yaw under mount limits where the object was
+                float last_yaw_tobe_pointed_to;
+                bool last_yaw_tobe_pointed_to_isvalid = AP_Follow::get_singleton()->get_yaw_under_gimbal_limit_to_point_to(last_yaw_tobe_pointed_to);
+
+                // Get gimbal attitude
+                float roll, pitch, yaw;
+                if (!mount->get_attitude_euler(mount->get_primary_instance(), roll, pitch, yaw)) {
+                    break; 
+                }
+                // Get the mount limits
+                float yaw_max, pitch_max;
+                float yaw_min, pitch_min;
+                mount->get_mount_yaw_limits(yaw_min,yaw_max);
+                mount->get_mount_pitch_limits(pitch_min,pitch_max);
+                bool gimbal_yaw_reaching_limits = (yaw > (yaw_max - g2.follow.get_object_follow_yaw_reset())) || (yaw < (yaw_min + g2.follow.get_object_follow_yaw_reset()));
+                bool gimbal_pitch_reaching_limits = pitch < (pitch_min + g2.follow.get_object_follow_pitch_reset());
+
+                // Reset the yaw to lastest object position cause the gimbal is reaching limits or the last pointed yaw isn't valid
+                if (gimbal_yaw_reaching_limits || !last_yaw_tobe_pointed_to_isvalid || gimbal_pitch_reaching_limits) {
+                    Vector3p pos_ned_m;  // vector to lead vehicle
+                    Vector3f vel_ned_ms;  // velocity of lead vehicle
+                    Vector3f accel_ned_mss;  // accel of lead vehicle
+                    if (g2.follow.get_target_pos_vel_accel_NED_m(pos_ned_m, vel_ned_ms, accel_ned_mss)) {
+                        if (pos_ned_m.xy().length_squared() > 1.0) {
+                            yaw_rad = (pos_ned_m.xy() - pos_control->get_pos_target_NEU_m().xy()).tofloat().angle();
+                            AP_Follow::get_singleton()->set_yaw_under_gimbal_limit_to_point_to(yaw_rad);
+                        }  else {
+                            // TODO:
+                            // Its when your object is going (slowly or by some way) such that you can't get the distance vector less than 1
+                            // and You have achieved your yaw and pitch limits
+                        }
+                    }
+                }
+                last_yaw_tobe_pointed_to_isvalid = AP_Follow::get_singleton()->get_yaw_under_gimbal_limit_to_point_to(last_yaw_tobe_pointed_to);
+                if (last_yaw_tobe_pointed_to_isvalid) {
+                    yaw_rad = last_yaw_tobe_pointed_to;
+                }
+                break;
+            }
+#endif
             case AP_Follow::YAW_BEHAVE_NONE:
             default:
                 // do nothing
