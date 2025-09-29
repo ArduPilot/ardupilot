@@ -76,7 +76,7 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
                     }
                     // overall sum and count
                     if (lidar_reply_type == 1  && ldf_val_m < (distance_lpf_min_cm*0.01f) && ldl_val_m > 0) {
-                        sum_auto += float(ldl_val_m); // use the stored ldl reading if available
+                        sum_auto += ldl_val_m; // use the stored ldl reading if available
                         valid_count++;
                     } else if(lidar_reply_type == 1) {
                         sum_auto += dist;
