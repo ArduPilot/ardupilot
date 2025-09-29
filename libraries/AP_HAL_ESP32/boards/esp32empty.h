@@ -73,10 +73,8 @@
 #define HAL_ESP32_I2C_BUSES {.port=I2C_NUM_0, .sda=GPIO_NUM_13, .scl=GPIO_NUM_14, .speed=400*KHZ, .internal=true, .soft=true}
 
 //SPI Buses
-#define HAL_ESP32_SPI_BUSES {}
 
 //SPI Devices
-#define HAL_ESP32_SPI_DEVICES {}
 
 //RMT pin number
 #define HAL_ESP32_RMT_RX_PIN_NUMBER 4
@@ -115,8 +113,6 @@
     {.port=UART_NUM_2, .rx=GPIO_NUM_16, .tx=GPIO_NUM_17}
 
 //ADC
-#define HAL_DISABLE_ADC_DRIVER 1
-#define HAL_USE_ADC 0
 
 //LED
 #define DEFAULT_NTF_LED_TYPES Notify_LED_None

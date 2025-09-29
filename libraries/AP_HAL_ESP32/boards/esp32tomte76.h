@@ -103,8 +103,6 @@
     							{.port=UART_NUM_1, .rx=GPIO_NUM_16, .tx=GPIO_NUM_17}
 
 //ADC
-#define HAL_DISABLE_ADC_DRIVER				1
-#define HAL_USE_ADC					0
 
 //LED
 #define BUILD_DEFAULT_LED_TYPE				Notify_LED_None
