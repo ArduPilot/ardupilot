@@ -547,6 +547,13 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Description: Number of simulated IMUs to create
     AP_GROUPINFO("IMU_COUNT",    23, SIM,  imu_count,  2),
 
+    // @Param: SD_DISABLE
+    // @DisplayName: Disable SD card in SITL
+    // @Description: When set to 1, the SITL filesystem backend simulates an absent SD card
+    // @Values: 0:Enabled (default),1:Disabled (simulate no SD)
+    // @User: Advanced
+    AP_GROUPINFO("SD_DISABLE", 24, SIM, sdcard_disable, 0),
+
     // @Group: FTOWESC_
     // @Path: ./SIM_FETtecOneWireESC.cpp
     AP_SUBGROUPINFO(fetteconewireesc_sim, "FTOWESC_", 30, SIM, FETtecOneWireESC),
