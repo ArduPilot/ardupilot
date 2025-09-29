@@ -1157,7 +1157,6 @@ void AP_GPS::update_primary(void)
             ((state[i].vertical_accuracy <= 1.0) || (state[i].vertical_accuracy <= state[i^1].vertical_accuracy)) &&
             ((state[i].horizontal_accuracy <= 1.0) || (state[i].horizontal_accuracy <= state[i^1].horizontal_accuracy))) {
             if (primary_instance != i) {
-
                 _last_instance_swap_ms = now;
                 primary_instance = i;
             }
