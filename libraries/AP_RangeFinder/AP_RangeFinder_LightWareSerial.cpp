@@ -216,10 +216,9 @@ Return:
 */
 int8_t AP_RangeFinder_LightWareSerial::get_distance_from_lidar_reply(char reply[], float &distance_m)
 {
-    // Parse the data stream format ldl,2:0.55 or ldf,1:0.45
     int8_t channel = 0; // 1 for ldf and 2 for ldl
-
-    
+    char tmp_ch = reply[4];
+    // Parse the data stream format ldl,2:0.55 or ldf,1:0.45
     char* token = strtok(reply, ",:");
 
     if (token == nullptr) {
@@ -230,7 +229,11 @@ int8_t AP_RangeFinder_LightWareSerial::get_distance_from_lidar_reply(char reply[
     if (token == nullptr) {
         return channel;
     }
-    channel = atoi(token);
+
+    if(isdigit(tmp_ch)){
+        channel = atoi(tmp_ch);
+    }
+
     if (channel == 0) {
         return channel;
     }
