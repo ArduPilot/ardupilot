@@ -98,47 +98,55 @@ void AP_SystemID::start()
 {
     start_axis = axis;
 
-    // check if enabled
-    if (start_axis == AxisType::NONE) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: No axis selected");
-        return;
-    }
+    // If system ID is not supported in FW or VTOL mode then exit immediately
     if (!plane.control_mode->supports_fw_systemid() && !plane.control_mode->supports_vtol_systemid()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Not supported in mode %s", plane.control_mode->name());
         return;
     }
-    // Exits if quadplane or plane attempting to run System ID VTOL SID Axis in fixed wing flight mode
-    if (plane.control_mode->supports_fw_systemid() && (start_axis == AxisType::INPUT_ROLL 
-                                                        || start_axis == AxisType::INPUT_PITCH
-                                                        || start_axis == AxisType::INPUT_YAW
-                                                        || start_axis == AxisType::RECOVER_ROLL 
-                                                        || start_axis == AxisType::RECOVER_PITCH
-                                                        || start_axis == AxisType::RECOVER_YAW
-                                                        || start_axis == AxisType::RATE_ROLL
-                                                        || start_axis == AxisType::RATE_PITCH
-                                                        || start_axis == AxisType::RATE_YAW                                                        || start_axis == AxisType::RATE_ROLL
-                                                        || start_axis == AxisType::MIX_ROLL
-                                                        || start_axis == AxisType::MIX_PITCH                                                        || start_axis == AxisType::RATE_ROLL
-                                                        || start_axis == AxisType::MIX_YAW
-                                                        || start_axis == AxisType::MIX_THROTTLE)) {
+
+    switch (start_axis) {
+        case AxisType::NONE:
+            // check if enabled
+            gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: No axis selected");
+            return;
+        case AxisType::INPUT_ROLL:
+        case AxisType::INPUT_PITCH:
+        case AxisType::INPUT_YAW:
+        case AxisType::RECOVER_ROLL:
+        case AxisType::RECOVER_PITCH:
+        case AxisType::RECOVER_YAW:
+        case AxisType::RATE_ROLL:
+        case AxisType::RATE_PITCH:
+        case AxisType::RATE_YAW:
+        case AxisType::MIX_ROLL:
+        case AxisType::MIX_PITCH:
+        case AxisType::MIX_YAW:
+        case AxisType::MIX_THROTTLE:
+            // Exits if quadplane or plane attempting to run System ID VTOL SID Axis in fixed wing flight mode
+            if (plane.control_mode->supports_fw_systemid()) {
 #if HAL_QUADPLANE_ENABLED
-        gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Axis not supported for this flight mode");
+                gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Axis not supported for this flight mode");
 #else
-        gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Axis not supported in Plane");
+                gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Axis not supported in Plane");
 #endif
-        return;
-    }
-    // Exits if quadplane attempting to run System ID Fixed Wing SID Axis in VTOL flight mode
-    if (plane.control_mode->supports_vtol_systemid() && (start_axis == AxisType::FW_INPUT_ROLL 
-                                                        || start_axis == AxisType::FW_INPUT_PITCH
-                                                        || start_axis == AxisType::FW_MIX_ROLL
-                                                        || start_axis == AxisType::FW_MIX_PITCH)) {
+                return;
+            }
+            break;
+        case AxisType::FW_INPUT_ROLL:
+        case AxisType::FW_INPUT_PITCH:
+        case AxisType::FW_MIX_ROLL:
+        case AxisType::FW_MIX_PITCH:
+            // Exits if quadplane attempting to run System ID Fixed Wing SID Axis in VTOL flight mode
+            if (plane.control_mode->supports_vtol_systemid()) {
 #if HAL_QUADPLANE_ENABLED
-        gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Axis not supported for this flight mode");
+                gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Axis not supported for this flight mode");
 #endif
-        return;
+                return;
+            }
+            break;
     }
-if (!hal.util->get_soft_armed()) {
+
+    if (!hal.util->get_soft_armed()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: must be armed");
         return;
     }
@@ -147,7 +155,7 @@ if (!hal.util->get_soft_armed()) {
     throttle_offset = 0;
 
 #if HAL_QUADPLANE_ENABLED
-    if (plane.quadplane.enabled()) {
+    if (plane.quadplane.available()) {
         restore.att_bf_feedforward = plane.quadplane.attitude_control->get_bf_feedforward();
     }
 #endif
@@ -187,7 +195,7 @@ void AP_SystemID::stop()
         throttle_offset = 0;
 
 #if HAL_QUADPLANE_ENABLED
-        if (plane.quadplane.enabled()) {
+        if (plane.quadplane.available()) {
             auto *attitude_control = plane.quadplane.attitude_control;
             attitude_control->bf_feedforward(restore.att_bf_feedforward);
             attitude_control->rate_bf_roll_sysid_rads(0);
