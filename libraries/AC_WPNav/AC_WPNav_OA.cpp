@@ -30,14 +30,14 @@ bool AC_WPNav_OA::get_oa_wp_destination(Location& destination) const
 bool AC_WPNav_OA::set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt)
 {
     // Convert input from centimeters to meters and delegate to meter version
-    return set_wp_destination_NEU_m(destination_neu_cm * 0.01, is_terrain_alt);
+    return set_wp_destination_NEU_m(destination_neu_cm.topostype() * 0.01, is_terrain_alt);
 }
 
 // Sets the waypoint destination using NEU coordinates in meters.
 // - destination_neu_m: NEU offset from EKF origin in meters.
 // - is_terrain_alt: true if the Z component represents altitude above terrain.
 // - Resets OA state on success.
-bool AC_WPNav_OA::set_wp_destination_NEU_m(const Vector3f& destination_neu_m, bool is_terrain_alt)
+bool AC_WPNav_OA::set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt)
 {
     // Call base implementation to set destination and terrain-altitude flag
     const bool ret = AC_WPNav::set_wp_destination_NEU_m(destination_neu_m, is_terrain_alt);
@@ -69,7 +69,7 @@ float AC_WPNav_OA::get_wp_distance_to_destination_m() const
     }
 
     // Compute distance to original destination using backed-up NEU position
-    return get_horizontal_distance(_pos_control.get_pos_estimate_NEU_m().xy().tofloat(), _destination_oabak_neu_m.xy());
+    return get_horizontal_distance(_pos_control.get_pos_estimate_NEU_m().xy(), _destination_oabak_neu_m.xy());
 }
 
 // Returns the bearing to the final destination in centidegrees.
@@ -90,7 +90,7 @@ float AC_WPNav_OA::get_wp_bearing_to_destination_rad() const
     }
 
     // Return bearing to the original destination, not the OA-adjusted one
-    return get_bearing_rad(_pos_control.get_pos_estimate_NEU_m().xy().tofloat(), _destination_oabak_neu_m.xy());
+    return get_bearing_rad(_pos_control.get_pos_estimate_NEU_m().xy().tofloat(), _destination_oabak_neu_m.xy().tofloat());
 }
 
 // Returns true if the vehicle has reached the final destination within radius threshold.
@@ -177,9 +177,9 @@ bool AC_WPNav_OA::update_wpnav()
             // OA temporarily failing — stop vehicle at current position
             if ((_oa_state != AP_OAPathPlanner::OA_PROCESSING) && (_oa_state != AP_OAPathPlanner::OA_ERROR)) {
                 // calculate stopping point
-                Vector3f stopping_point_neu_m;
+                Vector3p stopping_point_neu_m;
                 get_wp_stopping_point_NEU_m(stopping_point_neu_m);
-                _oa_destination = Location(stopping_point_neu_m * 100.0, Location::AltFrame::ABOVE_ORIGIN);
+                _oa_destination = Location(stopping_point_neu_m * 100.0f, Location::AltFrame::ABOVE_ORIGIN);
                 _oa_next_destination.zero();
                 if (set_wp_destination_NEU_m(stopping_point_neu_m, false)) {
                     _oa_state = oa_retstate;
@@ -268,7 +268,7 @@ bool AC_WPNav_OA::update_wpnav()
                 _oa_destination = oa_destination_new;
 
                 // Convert final destination to NEU offset and push to position controller
-                Vector3f destination_neu_m;
+                Vector3p destination_neu_m;
                 if (!_oa_destination.get_vector_from_origin_NEU_m(destination_neu_m)) {
                     // this should never happen because we can only get here if we have an EKF origin
                     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
@@ -276,8 +276,7 @@ bool AC_WPNav_OA::update_wpnav()
                 }
 
                 // pass the desired position directly to the position controller as an offset from EKF origin in NEU
-                Vector3p destination_neu_m_p{destination_neu_m.x, destination_neu_m.y, destination_neu_m.z};
-                _pos_control.input_pos_NEU_m(destination_neu_m_p, 0, 10.0);
+                _pos_control.input_pos_NEU_m(destination_neu_m, 0, 10.0);
 
                 // update horizontal position controller (vertical is updated in vehicle code)
                 _pos_control.update_NE_controller();

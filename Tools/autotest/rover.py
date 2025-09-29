@@ -3577,6 +3577,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         target_system = 1
         target_component = 1
         mavproxy = self.start_mavproxy()
+        self.wait_parameter_value('MIS_TOTAL', 1)
         mavproxy.send('wp clear\n')
         self.wait_parameter_value('MIS_TOTAL', 0)
         self.assert_received_message_field_values('MISSION_CURRENT', {
@@ -6956,6 +6957,22 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             if self.distance_to_home() > 2:
                 raise NotAchievedException("Did not get home!")
 
+    def AP_ROVER_AUTO_ARM_ONCE_ENABLED(self):
+        '''test Rover arm-once-when-ready behaviour'''
+        # do a little dance so we don't arm after setting the parameter:
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.disarm_vehicle()
+        self.set_parameter("ARMING_REQUIRE", 3)
+        self.reboot_sitl()
+        self.wait_armed(timeout=120)
+        self.disarm_vehicle()
+        vehicle_test_suite.WaitAndMaintainDisarmed(
+            self,
+            minimum_duration=10,
+            timeout=30,
+        ).run()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -7060,6 +7077,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.SafetySwitch,
             self.ThrottleFailsafe,
             self.DriveEachFrame,
+            self.AP_ROVER_AUTO_ARM_ONCE_ENABLED,
         ])
         return ret
 

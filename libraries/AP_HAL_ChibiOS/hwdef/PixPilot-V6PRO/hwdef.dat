@@ -227,11 +227,6 @@ undef AP_FEATURE_SBUS_OUT
 define HAL_OS_FATFS_IO 1
 AP_BOOTLOADER_FLASH_FROM_SD_ENABLED 
 
-#define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
-
-
 # Now setup the default battery pins driver analog pins and default
 # scaling for the power brick.
 define HAL_BATT_MONITOR_DEFAULT 4

@@ -1289,6 +1289,10 @@ function AP_HAL__I2CDevice_ud:set_retries(retries) end
 ---@class (exact) AP_Scripting_SerialAccess_ud
 local AP_Scripting_SerialAccess_ud = {}
 
+-- Set UART use unbuffered writes flag, false by default (no effect for device ports)
+---@param on boolean
+function AP_Scripting_SerialAccess_ud:set_unbuffered_writes(on) end
+
 -- Start serial port with the given baud rate (no effect for device ports)
 ---@param baud_rate uint32_t_ud|integer|number
 function AP_Scripting_SerialAccess_ud:begin(baud_rate) end
@@ -1898,7 +1902,7 @@ function FWVersion:string() end
 periph = {}
 
 -- desc
----@return uint32_t_ud
+---@return uint64_t_ud
 function periph:get_vehicle_state() end
 
 -- desc
@@ -2402,7 +2406,7 @@ function esc_telem:get_rpm(instance) end
 
 -- update RPM for an ESC
 ---@param esc_index integer -- esc instance 0 indexed
----@param rpm integer -- RPM
+---@param rpm number -- RPM
 ---@param error_rate number -- error rate
 function esc_telem:update_rpm(esc_index, rpm, error_rate) end
 
@@ -3968,7 +3972,7 @@ function mavlink:receive_chan() end
 ---@param chan integer
 ---@param msgid integer
 ---@param message string
----@return boolean -- success
+---@return boolean|nil -- True if send was successful, false if send was not successful, nil if channel does not exist
 function mavlink:send_chan(chan, msgid, message) end
 
 -- Block a given MAV_CMD from being processed by ArduPilot

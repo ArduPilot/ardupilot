@@ -80,7 +80,7 @@ private:
 
     // flags
     struct ac_pid_flags {
-        bool _reset_filter : 1;    // true when input filter should be reset during next call to set_input
+        bool _reset_filter;    // true when input filter should be reset during next call to set_input
     } _flags;
 
     // internal variables

@@ -14,6 +14,7 @@ extern const AP_HAL::HAL& hal;
 #define LOITER_VEL_CORRECTION_MAX_MS        2.0     // Maximum speed (in m/s) used for correcting position errors in loiter.
 #define LOITER_POS_CORRECTION_MAX_M         2.0     // Maximum horizontal position error allowed before correction (m).
 #define LOITER_ACTIVE_TIMEOUT_MS            200     // Loiter is considered active if updated within the past 200 ms.
+#define LOITER_DEFAULT_OPTIONS              1       // Enable Coordinated Turn by default.
 
 const AP_Param::GroupInfo AC_Loiter::var_info[] = {
 
@@ -72,6 +73,13 @@ const AP_Param::GroupInfo AC_Loiter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BRK_DELAY",  6, AC_Loiter, _brake_delay_s, LOITER_BRAKE_START_DELAY_DEFAULT_S),
 
+    // @Param: OPTIONS
+    // @DisplayName: Loiter mode options
+    // @Description: Enables optional Loiter mode behaviors
+    // @Bitmask: 0: Enable Coordinated turns
+    // @User: Standard
+    AP_GROUPINFO("OPTIONS", 7, AC_Loiter, _options, LOITER_DEFAULT_OPTIONS),
+
     AP_GROUPEND
 };
 
@@ -86,17 +94,10 @@ AC_Loiter::AC_Loiter(const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-// Sets the initial loiter target position in centimeters from the EKF origin.
-// See init_target_m() for full details.
-void AC_Loiter::init_target_cm(const Vector2f& position_ne_cm)
-{
-    init_target_m(position_ne_cm * 0.01);
-}
-
 // Sets the initial loiter target position in meters from the EKF origin.
 // - position_neu_m: horizontal position in the NE frame, in meters.
 // - Initializes internal control state including acceleration targets and feed-forward planning.
-void AC_Loiter::init_target_m(const Vector2f& position_ne_m)
+void AC_Loiter::init_target_m(const Vector2p& position_ne_m)
 {
     sanity_check_params();
 
@@ -179,20 +180,15 @@ void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, f
     const Vector3f predicted_euler_rad {_predicted_euler_angle_rad.x, _predicted_euler_angle_rad.y, _ahrs.yaw};
     const Vector3f predicted_accel_neu_m = _pos_control.lean_angles_rad_to_accel_NEU_mss(predicted_euler_rad);
 
-    _predicted_accel_ne_mss.x = predicted_accel_neu_m.x;
-    _predicted_accel_ne_mss.y = predicted_accel_neu_m.y;
-}
+    _predicted_accel_ne_mss = predicted_accel_neu_m.xy();
 
-// Calculates the expected stopping point based on current velocity and position in the NE frame.
-// Result is returned in centimeters.
-// See get_stopping_point_NE_m() for full details.
-void AC_Loiter::get_stopping_point_NE_cm(Vector2f& stopping_point_ne_cm) const
-{
-    Vector2f stop_ne_m;
-    // Retrieve stopping point in meters
-    get_stopping_point_NE_m(stop_ne_m);
-    // Convert to centimeters
-    stopping_point_ne_cm = stop_ne_m * 100.0;
+    if (loiter_option_is_set(LoiterOption::COORDINATED_TURN_ENABLED)) {
+        Vector3f target_ang_vel_rads = _attitude_control.get_attitude_target_ang_vel();
+        Vector3f desired_velocity_ms = _pos_control.get_vel_desired_NEU_ms();
+        Vector2f turn_accel_ne_mss = Vector2f(-desired_velocity_ms.y * target_ang_vel_rads.z, desired_velocity_ms.x * target_ang_vel_rads.z);
+        _desired_accel_ne_mss += turn_accel_ne_mss;
+        _predicted_accel_ne_mss += turn_accel_ne_mss;
+    }
 }
 
 // Calculates the expected stopping point based on current velocity and position in the NE frame.
@@ -240,13 +236,6 @@ void AC_Loiter::update(bool avoidance_on)
     _pos_control.update_NE_controller();
 }
 
-// Sets the maximum allowed horizontal loiter speed in cm/s.
-// See set_speed_max_NE_ms() for full details.
-void AC_Loiter::set_speed_max_NE_cms(float speed_max_ne_cms)
-{
-    set_speed_max_NE_ms(speed_max_ne_cms * 0.01);
-}
-
 // Sets the maximum allowed horizontal loiter speed in m/s.
 // Internally converts to cm/s and clamps to a minimum of LOITER_SPEED_MIN_CMS.
 void AC_Loiter::set_speed_max_NE_ms(float speed_max_ne_ms)
@@ -264,6 +253,10 @@ void AC_Loiter::sanity_check_params()
 
     // Clamp horizontal accel to lean-angle-limited max (converted to cm/s²)
     _accel_max_ne_cmss.set(MIN(_accel_max_ne_cmss, GRAVITY_MSS * 100.0f * tanf(_attitude_control.lean_angle_max_rad())));
+}
+
+bool AC_Loiter::loiter_option_is_set(LoiterOption option) const {
+    return (_options & int8_t(option)) != 0;
 }
 
 // Updates feed-forward velocity using pilot-requested acceleration and braking logic.

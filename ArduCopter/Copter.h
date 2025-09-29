@@ -483,7 +483,7 @@ private:
     AC_Loiter *loiter_nav;
 
 #if AC_CUSTOMCONTROL_MULTI_ENABLED
-    AC_CustomControl custom_control{ahrs_view, attitude_control, motors, scheduler.get_loop_period_s()};
+    AC_CustomControl custom_control{ahrs_view, attitude_control, motors};
 #endif
 
 #if MODE_CIRCLE_ENABLED
@@ -568,7 +568,7 @@ private:
 #if FRAME_CONFIG == HELI_FRAME
     // Tradheli flags
     typedef struct {
-        uint8_t dynamic_flight          : 1;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
+        bool dynamic_flight                ;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
         bool coll_stk_low                  ;    // 1   // true when collective stick is on lower limit
     } heli_flags_t;
     heli_flags_t heli_flags;
@@ -731,7 +731,6 @@ private:
     float get_pilot_desired_climb_rate_ms();
     float get_non_takeoff_throttle();
     void set_accel_throttle_I_from_pilot_throttle();
-    void rotate_body_frame_to_NE(float &x, float &y);
     uint16_t get_pilot_speed_dn() const;
     void run_rate_controller_main();
 
@@ -912,7 +911,7 @@ private:
     void Log_Write_Data(LogDataID id, float value);
     void Log_Write_PTUN(uint8_t param, float tuning_val, float tune_min, float tune_max, float norm_in);
     void Log_Video_Stabilisation();
-    void Log_Write_Guided_Position_Target(ModeGuided::SubMode submode, const Vector3f& pos_target_m, bool is_terrain_alt, const Vector3f& vel_target_ms, const Vector3f& accel_target_mss);
+    void Log_Write_Guided_Position_Target(ModeGuided::SubMode submode, const Vector3p& pos_target_m, bool is_terrain_alt, const Vector3f& vel_target_ms, const Vector3f& accel_target_mss);
     void Log_Write_Guided_Attitude_Target(ModeGuided::SubMode submode, float roll, float pitch, float yaw, const Vector3f &ang_vel, float thrust, float climb_rate);
     void Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out);
     void Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z);
@@ -961,7 +960,6 @@ private:
 #if HAL_PROXIMITY_ENABLED
     void convert_prx_parameters();
 #endif
-    void convert_lgr_parameters(void);
 
     // precision_landing.cpp
     void init_precland();
@@ -984,7 +982,6 @@ private:
     bool rangefinder_alt_ok() const;
     bool rangefinder_up_ok() const;
     void update_rangefinder_terrain_offset();
-    void update_optical_flow(void);
 
     // takeoff_check.cpp
     void takeoff_check();

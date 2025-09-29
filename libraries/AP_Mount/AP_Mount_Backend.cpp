@@ -44,6 +44,15 @@ void AP_Mount_Backend::update()
     // move mount to a "retracted position" into the fuselage or out of it
     const bool mount_open = (_mode == MAV_MOUNT_MODE_RETRACT);
     SRV_Channels::move_servo(_open_idx, mount_open, 0, 1);
+
+    // set target rate to zero if we have not received rate command for a while
+    if ((get_mode() == MAV_MOUNT_MODE_MAVLINK_TARGETING) &&
+        (mnt_target.target_type == MountTargetType::RATE) &&
+        (AP_HAL::millis() - mnt_target.last_rate_request_ms > 3000)) {
+        mnt_target.rate_rads.roll = 0;
+        mnt_target.rate_rads.pitch = 0;
+        mnt_target.rate_rads.yaw = 0;
+    }
 }
 
 // return true if this mount accepts roll targets
@@ -144,6 +153,7 @@ void AP_Mount_Backend::set_rate_target(float roll_degs, float pitch_degs, float 
     mnt_target.rate_rads.pitch = radians(pitch_degs);
     mnt_target.rate_rads.yaw = radians(yaw_degs);
     mnt_target.rate_rads.yaw_is_ef = yaw_is_earth_frame;
+    mnt_target.last_rate_request_ms = AP_HAL::millis();
 
     // set the mode to mavlink targeting
     set_mode(MAV_MOUNT_MODE_MAVLINK_TARGETING);

@@ -24,7 +24,6 @@ define STM32_HSE_BYPASS
 
 env AP_PERIPH 1
 
-define HAL_NO_GPIO_IRQ
 define DMA_RESERVE_SIZE 0
 
 # MAIN_STACK is stack for ISR handlers

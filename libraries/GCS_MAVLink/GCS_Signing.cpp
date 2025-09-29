@@ -234,7 +234,7 @@ void GCS_MAVLINK::save_signing_timestamp(bool force_save_now)
 bool GCS_MAVLINK::signing_enabled(void) const
 {
     const mavlink_status_t *status = mavlink_get_channel_status(chan);
-    if (status->signing && (status->signing->flags & MAVLINK_SIGNING_FLAG_SIGN_OUTGOING)) {
+    if ((status != nullptr) && status->signing && (status->signing->flags & MAVLINK_SIGNING_FLAG_SIGN_OUTGOING)) {
         return true;
     }
     return false;
@@ -260,7 +260,7 @@ uint8_t GCS_MAVLINK::packet_overhead_chan(mavlink_channel_t chan)
     }
     
     const mavlink_status_t *status = mavlink_get_channel_status(chan);
-    if (status->signing && (status->signing->flags & MAVLINK_SIGNING_FLAG_SIGN_OUTGOING)) {
+    if ((status != nullptr) && status->signing && (status->signing->flags & MAVLINK_SIGNING_FLAG_SIGN_OUTGOING)) {
         return MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_SIGNATURE_BLOCK_LEN + reserved_space;
     }
     return MAVLINK_NUM_NON_PAYLOAD_BYTES + reserved_space;

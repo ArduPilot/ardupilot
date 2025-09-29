@@ -475,18 +475,6 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_rad(float euler_roll_a
     attitude_controller_run_quat();
 }
 
-// Sets desired roll, pitch, and yaw angular rates (in centidegrees/s).
-// See input_euler_rate_roll_pitch_yaw_rads() for full details.
-void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw_cds(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds)
-{
-    // Convert from centidegrees on public interface to radians
-    const float euler_roll_rate_rads = cd_to_rad(euler_roll_rate_cds);
-    const float euler_pitch_rate_rads = cd_to_rad(euler_pitch_rate_cds);
-    const float euler_yaw_rate_rads = cd_to_rad(euler_yaw_rate_cds);
-
-    input_euler_rate_roll_pitch_yaw_rads(euler_roll_rate_rads, euler_pitch_rate_rads, euler_yaw_rate_rads);
-}
-
 // Sets desired roll, pitch, and yaw angular rates (in radians/s).
 // This command is used to apply angular rate targets in the earth frame.
 // The inputs are shaped using acceleration limits and time constants.
@@ -757,16 +745,6 @@ void AC_AttitudeControl::input_rate_step_bf_roll_pitch_yaw_rads(float roll_rate_
     _ang_vel_body_rads = Vector3f{roll_rate_step_bf_rads, pitch_rate_step_bf_rads, yaw_rate_step_bf_rads};
 }
 
-// Sets desired thrust vector and heading rate (in centidegrees/s).
-// See input_thrust_vector_rate_heading_rads() for full details.
-void AC_AttitudeControl::input_thrust_vector_rate_heading_cds(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw)
-{
-    // Convert from centidegrees on public interface to radians
-    const float heading_rate_rads = cd_to_rad(heading_rate_cds);
-
-    input_thrust_vector_rate_heading_rads(thrust_vector, heading_rate_rads, slew_yaw);
-}
-
 // Sets desired thrust vector and heading rate (in radians/s).
 // Used for tilt-based navigation with independent yaw control.
 // The thrust vector defines the desired orientation (e.g., pointing direction for vertical thrust),
@@ -822,17 +800,6 @@ void AC_AttitudeControl::input_thrust_vector_rate_heading_rads(const Vector3f& t
 
     // Call quaternion attitude controller
     attitude_controller_run_quat();
-}
-
-// Sets desired thrust vector and heading (in centidegrees) with heading rate (in centidegrees/s).
-// See input_thrust_vector_heading_rad() for full details.
-void AC_AttitudeControl::input_thrust_vector_heading_cd(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds)
-{
-    // Convert from centidegrees on public interface to radians
-    const float heading_rate_rads = cd_to_rad(heading_rate_cds);
-    const float heading_angle_rad = cd_to_rad(heading_angle_cd);
-
-    input_thrust_vector_heading_rad(thrust_vector, heading_angle_rad, heading_rate_rads);
 }
 
 // Sets desired thrust vector and heading (in radians) with heading rate (in radians/s).

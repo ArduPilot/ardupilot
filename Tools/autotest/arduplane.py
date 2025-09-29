@@ -1073,12 +1073,18 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        # flaps should deploy for landing (RC input value used for position?!)
+        self.start_subtest("flaps should deploy for landing")  # (RC input value used for position?!)
         self.wait_servo_channel_value(servo_ch, flaps_ch_trim, timeout=300)
-        # flaps should undeploy at the end
+        self.start_subtest("flaps should undeploy at the end")
         self.wait_servo_channel_value(servo_ch, servo_ch_min, timeout=30)
 
         self.progress("Flaps OK")
+
+        # because we have used flaps, RC output 5 is now non-zero -
+        # it's actually the SERVO5_MIN value of 1100 now.  The simulator
+        # sees that as 100us above the zero-position (it is
+        # 1000-to-2000 for flaps).  That slows the aircraft down!
+        self.reboot_sitl()
 
     def TestRCRelay(self):
         '''Test Relay RC Channel Option'''
@@ -2881,6 +2887,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
+        self.set_parameter('TECS_RLL2THR', 2)
+
         # Keep track of the maximum terrain alt.
         global max_terrain_alt
         max_terrain_alt = 0
@@ -2906,7 +2914,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode("GUIDED")
         loc = self.mav.location()
         self.location_offset_ne(loc, 350, 0)
-        new_alt = 290
+        new_alt = 280
         self.run_cmd_int(
             mavutil.mavlink.MAV_CMD_DO_REPOSITION,
             p5=int(loc.lat * 1e7),
@@ -5981,7 +5989,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.binary,
             'plane',
             self.generic_mission_filepath_for_filename("flaps.txt"),
-        ])
+        ], checkfail=True)
         self.start_SITL()
 
     def MAV_CMD_GUIDED_CHANGE_ALTITUDE(self):
@@ -6665,7 +6673,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             higher_home = copy.copy(home)
             higher_home.alt += 40
             self.set_home(higher_home)
-            self.wait_altitude(home.alt+target_alt-5, home.alt+target_alt+5, relative=False, minimum_duration=10, timeout=11)
+            self.wait_altitude(home.alt+target_alt-5, home.alt+target_alt+5, relative=False, minimum_duration=10, timeout=12)
             self.disarm_vehicle(force=True)
             self.reboot_sitl()
 
