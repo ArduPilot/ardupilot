@@ -1,11 +1,11 @@
-# Orqa FC 3030 H743 Flight Controller
+# Orqa FC 3030 H7 QuadCore Flight Controller
 
-The Orqa FC 3030 H743 is a flight controller produced by [Orqa](https://enterprise.orqafpv.com/).
+The Orqa FC 3030 H7 QuadCore is a flight controller produced by [Orqa](https://enterprise.orqafpv.com/).
 
 ## Features
 
  - MCU - STM32H743 32-bit processor
- - IMU - MPU6000
+ - IMU - dual ICM42688
  - Barometer - DPS310
  - OSD - AT7456E
  - Onboard Flash: 128Mbit
@@ -19,8 +19,8 @@ The Orqa FC 3030 H743 is a flight controller produced by [Orqa](https://enterpri
 
 ## Pinout
 
-![Orqa FC 3030 H743 Top](OrqaH743Top.png "Orqa FC 3030 H743 Top")
-![Orqa FC 3030 H743 Bottom](OrqaH743Bottom.png "Orqa FC 3030 H743 Bottom")
+![Orqa FC 3030 H7 Quadcore Top](OrqaH7QuadCoreTop.png "Orqa FC 3030 H7 QuadCOre Top")
+![Orqa FC 3030 H7 QuadCore Bottom](OrqaH7QuadCoreBottom.png "Orqa FC 3030 H7 Quadcore Bottom")
 
 ## UART Mapping
 
@@ -39,11 +39,11 @@ RC input is configured for half duplex protocls (GHST/SRXL2) by default on the T
   
 ## OSD Support
 
-The Orqa FC 3030 H743 supports OSD using OSD_TYPE 1 (MAX7456 driver). HD OSD and other ODSDs can be supported using a UART (see https://ardupilot.org/plane/docs/common-osd-boards-on-screen-display.html)
+The Orqa FC 3030 H7 QuadCore supports OSD using OSD_TYPE 1 (MAX7456 driver). HD OSD and other ODSDs can be supported using a UART (see https://ardupilot.org/plane/docs/common-osd-boards-on-screen-display.html)
 
 ## PWM Output
 
-The Orqa FC 3030 H743 supports up to 10 PWM outputs in the JST-GH ESC and MFC connectors and Servo pads.
+The Orqa FC 3030 H7 QuadCore supports up to 10 PWM outputs in the JST-GH ESC and MFC connectors and Servo pads.
 
 The PWM is in 5 groups:
 
@@ -80,10 +80,10 @@ Switching between Camera1 and Camera2 can be achieved via GPIO pin 74 which is c
 The GPIO5 pin is assigned as GPIO 75
 ## Compass
 
-The Orqa FC 3030 H743 does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pin.
+The Orqa FC 3030 H7 QuadCore does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pin.
 
 ## Loading Firmware
-Firmware is found under the "OrqaH743Pro" folders on the firmware server: https://firmware.ardupilot.org/
+Firmware is found under the "OrqaH7QuadCore" folders on the firmware server: https://firmware.ardupilot.org/
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"
