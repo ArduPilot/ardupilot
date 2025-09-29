@@ -376,7 +376,7 @@ private:
     /// @param  dev_id                   Dev ID of compass to register against
     ///
     /// @return instance number saved against the dev id or first available empty instance number
-    bool register_compass(int32_t dev_id, uint8_t& instance);
+    bool register_compass(int32_t dev_id, uint8_t& instance) WARN_IF_UNUSED;
 
     // load backend drivers
     bool _add_backend(AP_Compass_Backend *backend);

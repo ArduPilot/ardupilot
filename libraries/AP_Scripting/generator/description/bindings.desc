@@ -764,7 +764,7 @@ include ../Tools/AP_Periph/AP_Periph.h depends defined(HAL_BUILD_AP_PERIPH)
 singleton AP_Periph_FW depends defined(HAL_BUILD_AP_PERIPH)
 singleton AP_Periph_FW rename periph
 singleton AP_Periph_FW method get_yaw_earth float
-singleton AP_Periph_FW method get_vehicle_state uint32_t
+singleton AP_Periph_FW method get_vehicle_state uint64_t
 singleton AP_Periph_FW method can_printf void "%s"'literal string
 singleton AP_Periph_FW method reboot void boolean
 
