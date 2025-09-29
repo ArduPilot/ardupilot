@@ -45,8 +45,6 @@ void AP_Generator_Cortex::init()
 // Decode received CAN frame    
 bool AP_Generator_Cortex::handle_message(AP_HAL::CANFrame &frame, AP_PiccoloCAN* can_iface)
 {
-    bool result = true;
-
     // Store a pointer to the CAN interface
     if (_can_iface == nullptr) {
         _can_iface = can_iface;
@@ -58,14 +56,13 @@ bool AP_Generator_Cortex::handle_message(AP_HAL::CANFrame &frame, AP_PiccoloCAN*
     } else if (decodeCortex_TelemetryOutputRailPacketStructure(&frame, &telemetry.rails)) {
     } else if (decodeCortex_TelemetryControllerPacketStructure(&frame, &telemetry.controller)) {
     } else {
-        result = false;
+        // No matching packet
+        return false;
     }
 
-    if (result) {
-        last_reading_ms = AP_HAL::millis();
-    }
+    last_reading_ms = AP_HAL::millis();
 
-    return result;
+    return true;
 }
 
 
