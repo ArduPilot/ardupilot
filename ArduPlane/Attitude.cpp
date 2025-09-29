@@ -138,12 +138,12 @@ void Plane::stabilize_roll()
         nav_roll_cd += 18000;
         if (ahrs.roll_sensor < 0) nav_roll_cd -= 36000;
     }
-float roll_out = stabilize_roll_get_roll_out();
+    float roll_out = stabilize_roll_get_roll_out();
+    auto &systemid = plane.g2.systemid;
 
 #if AP_PLANE_SYSTEMID_ENABLED
-    if (control_mode->supports_fw_systemid()) {
+    if (control_mode->supports_fw_systemid() && systemid.is_running()) {
         Vector3f offset;
-        auto &systemid = plane.g2.systemid;
         offset = systemid.get_output_offset();
         roll_out += offset.x * 100.0f;
     }
@@ -202,11 +202,11 @@ void Plane::stabilize_pitch()
     }
 
     float pitch_out = stabilize_pitch_get_pitch_out();
+    auto &systemid = plane.g2.systemid;
 
 #if AP_PLANE_SYSTEMID_ENABLED
-    if (control_mode->supports_fw_systemid()) {
+    if (control_mode->supports_fw_systemid() && systemid.is_running()) {
         Vector3f offset;
-        auto &systemid = plane.g2.systemid;
         offset = systemid.get_output_offset();
         pitch_out += offset.y * 100.0f;
     }
