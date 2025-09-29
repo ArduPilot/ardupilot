@@ -32,12 +32,20 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
         return false;
     }
 
-    float sum = 0;              // sum of all readings taken
+    float sum_auto = 0;           // sum of integrated mode if (VAL > ground clearance) ? ldf : ldl
+    float sum_ldf = 0;          // sum of ldf readings taken
+    float sum_ldl = 0;          // sum of ldl readings taken
     uint16_t valid_count = 0;   // number of valid readings
+    uint16_t valid_count_ldf = 0; // number of valid ldf readings
+    uint16_t valid_count_ldl = 0; // number of valid ldl readings
     uint16_t invalid_count = 0; // number of invalid readings
+    float ldf_reading_m = 0;
+    float ldl_reading_m = 0;
+    float auto_reading_m = 0;
 
     // max distance the sensor can reliably measure - read from parameters
     const int16_t distance_cm_max = max_distance_cm();
+    const int16_t distance_lpf_min_cm = ground_clearance_cm();
 
     // read any available lines from the lidar
     int16_t nbytes = uart->available();
@@ -48,10 +56,33 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
         if (protocol_state == ProtocolState::UNKNOWN || protocol_state == ProtocolState::LEGACY) {
             if (c == '\r') {
                 linebuf[linebuf_len] = 0;
-                const float dist = strtof(linebuf, nullptr);
-                if (!is_negative(dist) && !is_lost_signal_distance(dist * 100, distance_cm_max)) {
-                    sum += dist;
-                    valid_count++;
+                float dist = 0;
+                int8_t lidar_reply_type = get_distance_from_lidar_reply(linebuf, dist);
+                if (lidar_reply_type == 0) {
+                    // invalid reading
+                    invalid_count++;
+                    // reset the buffer length and clear the buffer
+                    linebuf_len = 0;
+                    memset(linebuf, 0, sizeof(linebuf));
+                    continue;
+                }
+                else if (!is_negative(dist) && !is_lost_signal_distance(dist * 100, distance_cm_max)) {
+                    if (lidar_reply_type == 1) { 
+                        sum_ldf += ldf_val_m; // summing LDF value
+                        valid_count_ldf++;
+                    } else if (lidar_reply_type == 2) {
+                        sum_ldl += ldl_val_m; // summing LDL value
+                        valid_count_ldl++;
+                    }
+                    // overall sum and count
+                    if (lidar_reply_type == 1  && ldf_val_m < (distance_lpf_min_cm*0.01f) && ldl_val_m > 0) {
+                        sum_auto += ldl_val_m; // use the stored ldl reading if available
+                        valid_count++;
+                    } else if(lidar_reply_type == 1) {
+                        sum_auto += dist;
+                        valid_count++;
+                    }
+
                     // if still determining protocol update legacy valid count
                     if (protocol_state == ProtocolState::UNKNOWN) {
                         legacy_valid_count++;
@@ -60,11 +91,13 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
                     invalid_count++;
                 }
                 linebuf_len = 0;
-            } else if (isdigit(c) || c == '.' || c == '-') {
+                memset(linebuf, 0, sizeof(linebuf));
+            }else if(isdigit(c) || c == '.' || c == '-' || c == 'l' || c == 'd' || c == 'f' || c == ',' || c == ':'){
                 linebuf[linebuf_len++] = c;
                 if (linebuf_len == sizeof(linebuf)) {
                     // too long, discard the line
                     linebuf_len = 0;
+                    memset(linebuf, 0, sizeof(linebuf));
                 }
             }
         }
@@ -81,7 +114,7 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
                 if (high_byte_received) {
                     const int16_t dist = (high_byte & 0x7f) << 7 | (c & 0x7f);
                     if (dist >= 0 && !is_lost_signal_distance(dist, distance_cm_max)) {
-                        sum += dist * 0.01f;
+                        sum_auto += dist * 0.01f;
                         valid_count++;
                         // if still determining protocol update binary valid count
                         if (protocol_state == ProtocolState::UNKNOWN) {
@@ -115,12 +148,34 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
         uart->write("www\r\n");
         last_init_ms = now;
     } else {
-        uart->write('d');
+        // Sending LDL before LDF is required
+        uart->write("?LDL,2\r\n");
+        uart->write("?LDF,1\r\n");
     }
 
     // return average of all valid readings
     if (valid_count > 0) {
-        reading_m = sum / valid_count;
+        auto_reading_m = sum_auto / valid_count;
+        // log the data
+        if (valid_count_ldf > 0){
+            ldf_reading_m = sum_ldf / valid_count_ldf;
+        }
+        if (valid_count_ldl > 0){
+            ldl_reading_m = sum_ldl / valid_count_ldl;
+        }
+        // chose the reading based on LW20MODE param
+        if(lw20_distance_mode() == 1)
+            reading_m = ldf_reading_m;
+        else if (lw20_distance_mode() == 2)
+            reading_m = ldl_reading_m;
+        else
+            reading_m = auto_reading_m;
+#if HAL_LOGGING_ENABLED
+        Log_LW20_C(
+            ldf_reading_m,
+            ldl_reading_m,
+            auto_reading_m);
+#endif
         no_signal = false;
         return true;
     }
@@ -150,6 +205,68 @@ bool AP_RangeFinder_LightWareSerial::is_lost_signal_distance(int16_t distance_cm
         }
     }
     return false;
+}
+
+/*
+This is a function to extract the distance reported by the LW20 for commands ldf and ldl
+Return: 
+0 if the reply is not valid
+1 if the reply is for ldf 
+2 if the reply is for ldl
+*/
+int8_t AP_RangeFinder_LightWareSerial::get_distance_from_lidar_reply(char reply[], float &distance_m)
+{
+    int8_t channel = 0; // 1 for ldf and 2 for ldl
+    char tmp_ch = reply[4];
+    // Parse the data stream format ldl,2:0.55 or ldf,1:0.45
+    char* token = strtok(reply, ",:");
+
+    if (token == nullptr) {
+        return channel;
+    }
+
+    token = strtok(nullptr, ",:");
+    if (token == nullptr) {
+        return channel;
+    }
+
+    if(isdigit(tmp_ch)){
+        channel = atoi(tmp_ch);
+    }
+
+    if (channel == 0) {
+        return channel;
+    }
+
+    token = strtok(nullptr, ",:"); // get the part after the colon
+    if (token == nullptr) {
+        channel = channel;
+    }
+
+    char *distance_str = token;
+    distance_m = strtof(distance_str, nullptr); // Convert to meters
+
+    if (channel == 1) {
+        ldf_val_m = distance_m; // Store the first reading in m
+    } else if (channel == 2) {
+        ldl_val_m = distance_m; // Store the last reading in m
+    } else {
+        channel = 0; // Invalid channel
+    }
+    return channel;
+}
+
+void AP_RangeFinder_LightWareSerial::Log_LW20_C(
+    float ldf_m, float ldl_m, float integrated_m)
+{
+    const struct log_LW20 pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_LW20_MSG),
+        time_us : AP_HAL::micros64(),
+        dist_ldf_m : ldf_m,
+        dist_ldl_m : ldl_m,
+        dist_int_m : integrated_m,
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
 #endif
