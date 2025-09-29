@@ -836,6 +836,7 @@ private:
 #if AP_FENCE_ENABLED
     void fence_check();
     void fence_checks_async() override;
+    void fence_handle_new_breaches();
 #endif
 
     // heli.cpp
