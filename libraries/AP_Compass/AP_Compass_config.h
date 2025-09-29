@@ -127,3 +127,14 @@
 #ifndef AP_COMPASS_RM3100_ENABLED
 #define AP_COMPASS_RM3100_ENABLED AP_COMPASS_I2C_BACKEND_DEFAULT_ENABLED
 #endif
+
+// compatability code added for ArduPilot-4.7, June 2025 to make life
+// easier for external hwdef owners
+#ifdef HAL_PROBE_EXTERNAL_I2C_COMPASSES
+#error HAL_PROBE_EXTERNAL_I2C_COMPASSES is no longer used; try defining AP_COMPASS_PROBING_ENABLED to 1 instead
+#endif  // HAL_PROBE_EXTERNAL_I2C_COMPASSES
+
+#ifndef AP_COMPASS_PROBING_ENABLED
+// FIXME: vast majority of boards define this to 1!
+#define AP_COMPASS_PROBING_ENABLED 0
+#endif
