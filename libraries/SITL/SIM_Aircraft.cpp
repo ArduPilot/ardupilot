@@ -1011,7 +1011,12 @@ void Aircraft::smooth_sensors(void)
  */
 float Aircraft::filtered_servo_angle(const struct sitl_input &input, uint8_t idx)
 {
-    uint16_t pwm = input.servos[idx] == 0 ? 1500 : input.servos[idx];
+    uint16_t pwm =  input.servos[idx];
+    if (pwm == 0) {
+        // invalid input, servo does not move, apply current value.
+        // glad we have a zero-momentum system.
+        pwm = servo_filter[idx].angle_pwm();
+    }
     return servo_filter[idx].filter_angle(pwm, frame_time_us * 1.0e-6);
 }
 

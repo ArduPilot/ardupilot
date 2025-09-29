@@ -172,8 +172,6 @@ private:
     void report_FPS(void);
     void socket_creator(void);
 
-    struct sitl_input last_input;
-
     AP_Int32 _options;
 
     enum class Option : uint32_t{

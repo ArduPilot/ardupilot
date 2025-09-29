@@ -295,26 +295,6 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
     if (_sitl == nullptr) {
         return;
     }
-    static uint32_t last_update_usec;
-
-    /* this maps the registers used for PWM outputs. The RC
-     * driver updates these whenever it wants the channel output
-     * to change */
-
-    if (last_update_usec == 0 || !output_ready) {
-        if (_vehicle == ArduPlane) {
-            for (uint8_t i=0; i<SITL_NUM_CHANNELS; i++) {
-                pwm_output[i] = 1000;
-            }
-        }
-        if (_vehicle == ArduPlane) {
-            pwm_output[0] = pwm_output[1] = pwm_output[3] = 1500;
-        }
-    }
-
-    // output at chosen framerate
-    uint32_t now = AP_HAL::micros();
-    last_update_usec = now;
 
 #if AP_SIM_WIND_SIMULATION_ENABLED
     hal.simstate->update_simulated_wind(input);
