@@ -296,6 +296,10 @@ private:
 
     // logging
     AP_Int8 _log;
+
+    // when true, we send dynamic out messages to the adsb transciever (10002)
+    AP_Int8 _dyn_out_messages_enabled;
+
     void write_log(const adsb_vehicle_t &vehicle) const;
     enum logging {
         NONE            = 0,
