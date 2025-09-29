@@ -387,12 +387,27 @@ void AP_TECS::_update_speed(float DT)
         _vdot_filter.reset();
         _vel_dot_lpf = _vel_dot;
     } else {
-        // Get DCM
-        const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
-        // Calculate speed rate of change
-        float temp = rotMat.c.x * GRAVITY_MSS + AP::ins().get_accel().x;
-        // take 5 point moving average
-        _vel_dot = _vdot_filter.apply(temp);
+        Vector3f vel_NED, vel_wind_NED;
+        if (_ahrs.get_velocity_NED(vel_NED) && _ahrs.wind_estimate(vel_wind_NED)) {
+            // Calculate a wind relative flight path unit vector
+            Vector3f flight_path_NED = (vel_NED - vel_wind_NED);
+            flight_path_NED.normalize();
+            // Get rate of change of velocity vector along wind relative flight path
+            Vector3f vel_dot_NED = _ahrs.get_accel_ef();
+            vel_dot_NED.z += GRAVITY_MSS;
+            // * operator is overloaded as a dot product
+            const float temp = vel_dot_NED * flight_path_NED;
+            // take 5 point moving average
+            _vel_dot = _vdot_filter.apply(temp);
+        } else {
+            // In no wind relative velocity data is availablem use less ccurate method
+            // that uses acceleration along X axis and is subject to pitch coupling
+            const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
+            // Calculate speed rate of change
+            const float temp = rotMat.c.x * GRAVITY_MSS + AP::ins().get_accel().x;
+            // take 5 point moving average
+            _vel_dot = _vdot_filter.apply(temp);
+        }
         const float alpha = DT / (DT + timeConstant());
         _vel_dot_lpf = _vel_dot_lpf * (1.0f - alpha) + _vel_dot * alpha;
     }
