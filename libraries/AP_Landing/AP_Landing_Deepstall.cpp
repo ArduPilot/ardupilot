@@ -168,6 +168,20 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("AIL_SCL", 16, AP_Landing_Deepstall, aileron_scalar, 1.0f),
 
+    // @Param: ELEV_SRC
+    // @DisplayName: Deepstall elevator value source
+    // @Description: 0=use ELEV_PWM (legacy), 1=use DS_ELEV_NORM (-1..+1)
+    // @Values: 0:LegacyPWM,1:Normalized
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("ELEV_SRC", 17, AP_Landing_Deepstall, ds_elev_src, 0, AP_PARAM_FLAG_ENABLE),
+
+    // @Param: ELEV_NRM
+    // @DisplayName: Deepstall elevator normalized
+    // @Description: Normalized channel invariant value for the elevator at full deflection in deepstall
+    // @Range: -1.0 1.0
+    // @User: Advanced
+    AP_GROUPINFO("ELEV_NRM", 18, AP_Landing_Deepstall, elevator_norm, 0.7f),
+
     AP_GROUPEND
 };
 
@@ -317,11 +331,20 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         stall_entry_time = AP_HAL::millis();
 
         const SRV_Channel* elevator = SRV_Channels::get_channel_for(SRV_Channel::k_elevator);
-        if (elevator != nullptr) {
-            // take the last used elevator angle as the starting deflection
-            // don't worry about bailing here if the elevator channel can't be found
-            // that will be handled within override_servos
-            initial_elevator_pwm = elevator->get_output_pwm();
+        switch (ds_elev_src) {
+            case 0:
+                // legacy
+                if (elevator != nullptr) {
+                    // take the last used elevator angle as the starting deflection
+                    // don't worry about bailing here if the elevator channel can't be found
+                    // that will be handled within override_servos
+                    initial_elevator_pwm = elevator->get_output_pwm();
+                }
+                break;
+            case 1:
+                // channel invariant
+                initial_elevator_scaled = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
+                break;
         }
         }
         FALLTHROUGH;
@@ -341,24 +364,38 @@ bool AP_Landing_Deepstall::override_servos(void)
         return false;
     }
 
-    SRV_Channel* elevator = SRV_Channels::get_channel_for(SRV_Channel::k_elevator);
-
-    if (elevator == nullptr) {
-        // deepstalls are impossible without these channels, abort the process
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Deepstall: Unable to find the elevator channels");
-        request_go_around();
-        return false;
-    }
-
     // calculate the progress on slewing the elevator
     float slew_progress = 1.0f;
     if (slew_speed > 0) {
         slew_progress  = (AP_HAL::millis() - stall_entry_time) / (100.0f * slew_speed);
     }
 
-    // mix the elevator to the correct value
-    elevator->set_output_pwm(linear_interpolate(initial_elevator_pwm, elevator_pwm,
-                             slew_progress, 0.0f, 1.0f));
+    switch (ds_elev_src) {
+        case 0:
+        {
+            //legacy
+            SRV_Channel* elevator = SRV_Channels::get_channel_for(SRV_Channel::k_elevator);
+
+            if (elevator == nullptr) {
+                // deepstalls are impossible without these channels, abort the process
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Deepstall: Unable to find the elevator channels");
+                request_go_around();
+                return false;
+            }
+
+            // mix the elevator to the correct value
+            elevator->set_output_pwm(linear_interpolate(initial_elevator_pwm, elevator_pwm,
+                                    slew_progress, 0.0f, 1.0f));
+            break;
+        }
+        case 1:
+        {
+            // channel invariant elevator mixing
+            SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, linear_interpolate(initial_elevator_scaled, elevator_norm*4500,
+                                    slew_progress, 0.0f, 1.0f));
+            break;
+        }
+    }
 
     // use the current airspeed to dictate the travel limits
     float airspeed;
