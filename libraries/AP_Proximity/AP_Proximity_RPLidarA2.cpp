@@ -332,7 +332,7 @@ void AP_Proximity_RPLidarA2::parse_response_device_info()
         model = Model::A1;
         device_type = "A1";
         break;
-    case 0x28:
+    case 0x2C:
         model = Model::A2;
         device_type = "A2";
         break;
@@ -347,7 +347,7 @@ void AP_Proximity_RPLidarA2::parse_response_device_info()
     default:
         Debug(1, "Unknown device (%u)", _payload.device_info.model);
     }
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RPLidar %s hw=%u fw=%u.%u", device_type, _payload.device_info.hardware, _payload.device_info.firmware_minor, _payload.device_info.firmware_major);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RPLidar 0x%02X %s hw=%u fw=%u.%u", _payload.device_info.model, device_type, _payload.device_info.hardware, _payload.device_info.firmware_minor, _payload.device_info.firmware_major);
     send_scan_mode_request();
     _state = State::AWAITING_RESPONSE;
 }

@@ -25,6 +25,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 // parameter defaults
+
 const float OA_BENDYRULER_LOOKAHEAD_DEFAULT = 15.0f;
 const float OA_BENDYRULER_RATIO_DEFAULT = 1.5f;
 const int16_t OA_BENDYRULER_ANGLE_DEFAULT = 75;
