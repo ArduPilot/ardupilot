@@ -124,6 +124,12 @@ float ServoModel::filter_angle(uint16_t pwm, float dt)
     return apply_filter(v, dt);
 }
 
+// return pwm required for current angle
+float ServoModel::angle_pwm() const
+{
+    return angle() * (0.5*float(pwm_max - pwm_min)) + 0.5*(pwm_max+pwm_min);
+}
+
 void ServoModel::set_pwm_range(uint16_t _pwm_min, uint16_t _pwm_max)
 {
     pwm_min = _pwm_min;
