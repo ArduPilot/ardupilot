@@ -14,7 +14,12 @@
  *
  * Code by Charles Villard, ARg and Bayu Laksono
  */
+#include "AnalogIn.h"
+
+#if AP_HAL_ANALOGIN_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
+
 #include <AP_HAL_ESP32/Semaphores.h>
 
 #include <stdlib.h>
@@ -26,10 +31,6 @@
 #include "esp_adc/adc_oneshot.h"
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
-
-#if HAL_USE_ADC == TRUE && !defined(HAL_DISABLE_ADC_DRIVER)
-
-#include "AnalogIn.h"
 
 #ifndef ESP32_ADC_MAVLINK_DEBUG
 // this allows the first 6 analog channels to be reported by mavlink for debugging purposes
@@ -66,7 +67,7 @@ using namespace ESP32;
    scaling table between ADC count and actual input voltage, to account
    for voltage dividers on the board.
    */
-const AnalogIn::pin_info AnalogIn::pin_config[] = HAL_ESP32_ADC_PINS;
+const AnalogIn::pin_info AnalogIn::pin_config[] = {HAL_ESP32_ADC_PINS};
 
 #define ADC_GRP1_NUM_CHANNELS   ARRAY_SIZE(AnalogIn::pin_config)
 
@@ -439,4 +440,4 @@ AP_HAL::AnalogSource *AnalogIn::channel(int16_t ardupin)
     return nullptr;
 }
 
-#endif // HAL_USE_ADC
+#endif  // AP_HAL_ANALOGIN_ENABLED

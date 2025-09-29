@@ -52,10 +52,6 @@
 //TODO RCOUT config
 #define HAL_ESP32_RCOUT {GPIO_NUM_15, GPIO_NUM_2, GPIO_NUM_0, GPIO_NUM_4}
 
-#define HAL_ESP32_SPI_BUSES {}
-
-#define HAL_ESP32_SPI_DEVICES {}
-
 #define HAL_ESP32_I2C_BUSES \
 	{.port=I2C_NUM_0, .sda=GPIO_NUM_5, .scl=GPIO_NUM_18, .speed=400*KHZ, .internal=true, .soft=true},\
 	{.port=I2C_NUM_1, .sda=GPIO_NUM_22, .scl=GPIO_NUM_23, .speed=400*KHZ, .internal=true, .soft=false}
@@ -68,9 +64,7 @@
 #define HAL_BATT_CURR_SCALE (36)
 
 // ADC is available on lots of pints on the esp32, but adc2 can't co-exist with wifi we choose to allow ADC on :
-//#define HAL_DISABLE_ADC_DRIVER 1
-#define TRUE 1
-#define HAL_USE_ADC TRUE
+//#define AP_HAL_ANALOGIN_ENABLED 0
 
 // the pin number, the gain/multiplier associated with it, the ardupilot name for the pin in parameter/s.
 #define HAL_ESP32_ADC_PINS {\

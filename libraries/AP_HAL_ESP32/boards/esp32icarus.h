@@ -48,6 +48,4 @@
     {.port=UART_NUM_1, .rx=GPIO_NUM_34, .tx=GPIO_NUM_32},\
     {.port=UART_NUM_2, .rx=GPIO_NUM_35, .tx=GPIO_NUM_33}
 
-#define HAL_DISABLE_ADC_DRIVER 1
-#define HAL_USE_ADC 0
 #define HAL_ESP32_RMT_RX_PIN_NUMBER 36
