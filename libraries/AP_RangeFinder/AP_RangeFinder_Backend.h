@@ -50,6 +50,7 @@ public:
     int8_t lrd1_lpf_window() const { return params.lrd1_lpf_window; }
     void set_lrd1_cur_pos(int8_t pos){ params.lrd1_cur_pos = pos; }
     int8_t get_lrd1_cur_pos(){ return params.lrd1_cur_pos; }
+    int8_t lw20_distance_mode() const{ return params.lw20_distance_mode;}
 
     // Function to be called to update reading and calculate average
     float get_avg_reading(float new_reading);

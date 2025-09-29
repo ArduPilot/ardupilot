@@ -477,6 +477,18 @@ struct PACKED log_LRD1
 };
 
 /*
+  rangefinder - Logging LW20C Lidar Alt
+*/
+struct PACKED log_LW20
+{
+  LOG_PACKET_HEADER;
+  uint64_t time_us;
+  float dist_ldf_m;  // Distance first from lidar m
+  float dist_ldl_m;  // Distance last from lidar m
+  float dist_int_m;  // Distance selected as the reading m
+};
+
+/*
   terrain log structure
  */
 struct PACKED log_TERRAIN {
@@ -1270,7 +1282,9 @@ LOG_STRUCTURE_FROM_CAMERA \
     { LOG_RFND_MSG, sizeof(log_RFND), \
       "RFND", "QBCBB", "TimeUS,Instance,Dist,Stat,Orient", "s#m--", "F-B--", true }, \
     { LOG_LRD1_MSG, sizeof(log_LRD1), \
-      "LRD1", "QCCCCBBB", "TimeUS,Dis24,Dis60,DisInt,DisLpf,Snr24,Snr60,SnrInt", "smmmm---", "FHHHH---", true }, \
+      "LRD1", "QCCCCBBB", "TimeUS,Dis24,Dis60,DisInt,DisLpf,Snr24,Snr60,SnrInt", "smmmm---", "FBBBB---", true }, \
+    { LOG_LW20_MSG, sizeof(log_LW20), \
+      "LW20", "Qfff", "TimeUS,DisLdf,DisLdl,DisInt", "smmm", "F000", true }, \
     { LOG_MAV_STATS, sizeof(log_MAV_Stats), \
       "DMS", "QIIIIBBBBBBBBB",         "TimeUS,N,Dp,RT,RS,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s-------------", "F-------------" }, \
     LOG_STRUCTURE_FROM_BEACON                                       \
@@ -1393,6 +1407,7 @@ enum LogMessages : uint8_t {
     LOG_IDS_FROM_RPM,
     LOG_RFND_MSG,
     LOG_LRD1_MSG,
+    LOG_LW20_MSG,
     LOG_MAV_STATS,
     LOG_FORMAT_UNITS_MSG,
     LOG_UNIT_MSG,
