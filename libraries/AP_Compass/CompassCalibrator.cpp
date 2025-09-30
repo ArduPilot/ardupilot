@@ -244,8 +244,8 @@ void CompassCalibrator::pull_sample()
         if (_status == Status::WAITING_TO_START) {
             set_status(Status::RUNNING_STEP_ONE);
         }
-        _new_sample = false;
         mag_sample = _last_sample;
+        _new_sample = false;        
     }
     if (_running() && _samples_collected < COMPASS_CAL_NUM_SAMPLES && accept_sample(mag_sample.get())) {
         update_completion_mask(mag_sample.get());
@@ -685,7 +685,6 @@ void CompassCalibrator::run_sphere_fit()
     if (!isnan(fitness) && fitness < _fitness) {
         _fitness = fitness;
         _params = fit1_params;
-        update_completion_mask();
     }
 }
 
@@ -801,7 +800,6 @@ void CompassCalibrator::run_ellipsoid_fit()
     if (fitness < _fitness) {
         _fitness = fitness;
         _params = fit1_params;
-        update_completion_mask();
     }
 }
 
@@ -1037,7 +1035,6 @@ bool CompassCalibrator::calculate_orientation(void)
     // re-run the fit to get the diagonals and off-diagonals for the
     // new orientation
     initialize_fit();
-    run_sphere_fit();
     run_ellipsoid_fit();
 
     return fit_acceptable();
