@@ -348,7 +348,6 @@ bool ModeAuto::loiter_start()
 
     // hold yaw at current heading
     auto_yaw.set_mode(AutoYaw::Mode::HOLD);
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "Thawa tiken wadinawa! Waypoint eka poddk ehata karala danna..");
     return true;
 }
 

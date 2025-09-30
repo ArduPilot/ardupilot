@@ -124,7 +124,7 @@ bool AC_WPNav_OA::update_wpnav()
             // ensure we stop at next waypoint
             // Note that this check is run on every iteration even if the path planner is not active
             if (!dest_to_next_dest_clear) {
-                //force_stop_at_next_wp();
+                force_stop_at_next_wp();
             }
             break;
 

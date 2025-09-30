@@ -319,7 +319,7 @@ void AP_OAPathPlanner::avoidance_thread()
 
             AP_OABendyRuler::OABendyType bendy_type;
             if (_oabendyruler->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new, bendy_type, false)) {
-                res = OA_ERROR;
+                res = OA_SUCCESS;
             }
             path_planner_used = map_bendytype_to_pathplannerused(bendy_type);
             break;
