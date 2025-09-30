@@ -31,21 +31,21 @@ extern const AP_HAL::HAL& hal;
 
 
 // TFS20L register addresses
-static const uint8_t TFS20L_DIST_LOW = 0x00;         // Distance low byte
-static const uint8_t TFS20L_DIST_HIGH = 0x01;        // Distance high byte  
-static const uint8_t TFS20L_AMP_LOW = 0x02;          // Signal strength/amplitude low byte
-static const uint8_t TFS20L_AMP_HIGH = 0x03;         // Signal strength/amplitude high byte
-static const uint8_t TFS20L_TEMP_LOW = 0x04;         // Temperature low byte
-static const uint8_t TFS20L_TEMP_HIGH = 0x05;        // Temperature high byte
-static const uint8_t TFS20L_VERSION_REVISION = 0x0A; // Version revision byte
-static const uint8_t TFS20L_VERSION_MINOR = 0x0B;    // Version minor byte
-static const uint8_t TFS20L_VERSION_MAJOR = 0x0C;    // Version major byte
-static const uint8_t TFS20L_ENABLE = 0x25;           // Enable register
+static constexpr uint8_t TFS20L_DIST_LOW = 0x00;         // Distance low byte
+// static constexpr uint8_t TFS20L_DIST_HIGH = 0x01;        // Distance high byte
+// static constexpr uint8_t TFS20L_AMP_LOW = 0x02;          // Signal strength/amplitude low byte
+// static constexpr uint8_t TFS20L_AMP_HIGH = 0x03;         // Signal strength/amplitude high byte
+// static constexpr uint8_t TFS20L_TEMP_LOW = 0x04;         // Temperature low byte
+// static constexpr uint8_t TFS20L_TEMP_HIGH = 0x05;        // Temperature high byte
+// static constexpr uint8_t TFS20L_VERSION_REVISION = 0x0A; // Version revision byte
+// static constexpr uint8_t TFS20L_VERSION_MINOR = 0x0B;    // Version minor byte
+static constexpr uint8_t TFS20L_VERSION_MAJOR = 0x0C;    // Version major byte
+// static constexpr uint8_t TFS20L_ENABLE = 0x25;           // Enable register
 
 // Distance and strength limits
-static const uint16_t MAX_DIST_CM = 2000;
-static const uint16_t MIN_DIST_CM = 1;
-static const uint16_t MIN_STRENGTH = 100;
+static constexpr uint16_t MAX_DIST_CM = 2000;
+static constexpr uint16_t MIN_DIST_CM = 1;
+static constexpr uint16_t MIN_STRENGTH = 100;
 
 
 AP_RangeFinder_Benewake_TFS20L::AP_RangeFinder_Benewake_TFS20L(
@@ -115,11 +115,11 @@ void AP_RangeFinder_Benewake_TFS20L::update()
 
 void AP_RangeFinder_Benewake_TFS20L::timer()
 {
-    uint8_t raw_data[6]; // Buffer for distance + strength + temperature data
+    uint8_t raw_data[4]; // Buffer for distance + strength data only
 
     /*
-     * Read the first 6 registers at once to get all data
-     * TFS20L_DIST_LOW (0x00) through TFS20L_TEMP_HIGH (0x05)
+     * Read the first 4 registers to get distance and strength data
+     * TFS20L_DIST_LOW (0x00) through TFS20L_AMP_HIGH (0x03)
      */
     if (!_dev->read_registers(TFS20L_DIST_LOW, raw_data, sizeof(raw_data))) {
         return;
@@ -128,7 +128,6 @@ void AP_RangeFinder_Benewake_TFS20L::timer()
     // Combine bytes to form distance and strength (little-endian)
     uint16_t distance_cm = (uint16_t(raw_data[1]) << 8) | raw_data[0];
     uint16_t strength = (uint16_t(raw_data[3]) << 8) | raw_data[2];
-    // Temperature data is also available in raw_data[4-5] if needed
 
     // Validate reading and handle invalid cases
     if (strength < MIN_STRENGTH || strength == 0xFFFF || 
@@ -138,7 +137,7 @@ void AP_RangeFinder_Benewake_TFS20L::timer()
          * sensor's specified range, set distance to max + offset.
          * This forces status to OutOfRangeHigh rather than NoData
          */
-        distance_cm = MAX(MAX_DIST_CM, max_distance()*100 + BENEWAKE_OUT_OF_RANGE_ADD_CM);
+        distance_cm = max_distance()*100 + BENEWAKE_OUT_OF_RANGE_ADD_CM;
     }
 
     {

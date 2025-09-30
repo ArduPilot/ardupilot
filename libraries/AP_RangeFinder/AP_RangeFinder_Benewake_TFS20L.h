@@ -13,6 +13,13 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ * 
+ * 
+ * Benewake TFS20L I2C Rangefinder Driver
+ * 
+ * Range: 0.01m to 20m
+ * Datasheet: https://altronics.cl/uploads/benewake/TFS20-L-User-Manual.pdf
  */
 #pragma once
 
@@ -22,7 +29,6 @@
 
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend.h"
-
 #define TFS20L_ADDR_DEFAULT              0x10        // TFS20L default device id
 
 // Forward declaration
