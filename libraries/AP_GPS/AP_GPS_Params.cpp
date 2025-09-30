@@ -113,6 +113,13 @@ const AP_Param::GroupInfo AP_GPS::Params::var_info[] = {
     AP_GROUPINFO("CAN_OVRIDE", 9, AP_GPS::Params, override_node_id, 0),
 #endif
 
+    // @Param: SIG_MODE
+    // @DisplayName: GNSS signal configuration
+    // @Description: Bitmask for what signals to use (all unchecked or zero to leave GPS as configured)
+    // @Bitmask: 0:GPS_L1CA,1:GPS_L2C,2:GPS_L5,3:SBAS_L1CA,4:GAL_E1,5:GAL_E5A,6:GAL_E5B,7:GAL_E6,8:BDS_B1,9:BDS_B1C,10:BDS_B2,11:BDS_B2A,12:BDS_B3,13:QZSS_L1CA,14:QZSS_L1S,15:QZSS_L2C,16:QZSS_L5,17:GLO_L1,18:GLO_L2,19:NAVIC_L5
+    // @User: Advanced
+    AP_GROUPINFO("SIG_MODE", 10, AP_GPS::Params, sig_mode, 0),
+
     AP_GROUPEND
 };
 
