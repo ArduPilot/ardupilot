@@ -556,7 +556,7 @@ void NavEKF2_core::send_status_report(GCS_MAVLINK &link) const
     }
 
     // send message
-    mavlink_msg_ekf_status_report_send(link.get_chan(), flags, velVar, posVar, hgtVar, mag_max, temp, tasVar, 1, core_index + 1);
+    mavlink_msg_ekf_status_report_send(link.get_chan(), flags, velVar, posVar, hgtVar, mag_max, temp, tasVar, ESTIMATOR_TYPE_EKF2, core_index + 1, 0);
 }
 #endif  // HAL_GCS_ENABLED
 

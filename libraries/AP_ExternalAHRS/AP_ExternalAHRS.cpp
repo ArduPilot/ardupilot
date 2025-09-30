@@ -389,7 +389,7 @@ void AP_ExternalAHRS::send_status_report(GCS_MAVLINK &link) const
                                        velVar,
                                        posVar,
                                        hgtVar,
-                                       mag_var, 0, 0, 1, 1);
+                                       mag_var, 0, 0, ESTIMATOR_TYPE_EXTERNAL, 0, 0);
 }
 
 void AP_ExternalAHRS::update(void)
