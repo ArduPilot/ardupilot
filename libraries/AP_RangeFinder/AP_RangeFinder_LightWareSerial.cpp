@@ -231,7 +231,7 @@ int8_t AP_RangeFinder_LightWareSerial::get_distance_from_lidar_reply(char reply[
     }
 
     if(isdigit(tmp_ch)){
-        channel = atoi(tmp_ch);
+        channel = atoi(token);
     }
 
     if (channel == 0) {
