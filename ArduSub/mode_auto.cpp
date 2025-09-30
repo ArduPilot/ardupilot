@@ -282,11 +282,11 @@ bool ModeAuto::auto_loiter_start()
     sub.auto_mode = Auto_Loiter;
 
     // calculate stopping point
-    Vector3f stopping_point;
-    sub.wp_nav.get_wp_stopping_point_NEU_cm(stopping_point);
+    Vector3f stopping_point_neu_cm;
+    sub.wp_nav.get_wp_stopping_point_NEU_cm(stopping_point_neu_cm);
 
     // initialise waypoint controller target to stopping point
-    sub.wp_nav.set_wp_destination_NEU_cm(stopping_point);
+    sub.wp_nav.set_wp_destination_NEU_cm(stopping_point_neu_cm);
 
     // hold yaw at current heading
     set_auto_yaw_mode(AUTO_YAW_HOLD);

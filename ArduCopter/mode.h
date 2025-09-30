@@ -237,7 +237,7 @@ protected:
 #if AC_PRECLAND_ENABLED
     // Go towards a position commanded by prec land state machine in order to retry landing
     // The passed in location is expected to be NED and in meters
-    void precland_retry_position(const Vector3f &retry_pos);
+    void precland_retry_position(const Vector3p &retry_pos);
 
     // Run precland statemachine. This function should be called from any mode that wants to do precision landing.
     // This handles everything from prec landing, to prec landing failures, to retries and failsafe measures
@@ -1102,14 +1102,14 @@ public:
     //             IF false: climb_rate_ms_or_thrust represents climb_rate (m/s)
     void set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel, float climb_rate_ms_or_thrust, bool use_thrust);
 
-    bool set_pos_NEU_m(const Vector3f& pos_neu_m, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool is_terrain_alt = false);
+    bool set_pos_NEU_m(const Vector3p& pos_neu_m, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool is_terrain_alt = false);
     bool set_destination(const Location& dest_loc, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
     bool get_wp(Location &loc) const override;
     void set_accel_NEU_mss(const Vector3f& accel_neu_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
     void set_vel_NEU_ms(const Vector3f& vel_neu_ms, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
     void set_vel_accel_NEU_m(const Vector3f& vel_neu_ms, const Vector3f& accel_neu_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
-    bool set_pos_vel_NEU_m(const Vector3f& pos_neu_m, const Vector3f& vel_neu_ms, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
-    bool set_pos_vel_accel_NEU_m(const Vector3f& pos_neu_m, const Vector3f& vel_neu_ms, const Vector3f& accel_neu_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
+    bool set_pos_vel_NEU_m(const Vector3p& pos_neu_m, const Vector3f& vel_neu_ms, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
+    bool set_pos_vel_accel_NEU_m(const Vector3p& pos_neu_m, const Vector3f& vel_neu_ms, const Vector3f& accel_neu_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
 
     // get position, velocity and acceleration targets
     const Vector3p& get_target_pos_NEU_m() const;
@@ -1622,7 +1622,7 @@ private:
 
     // backup last popped point so that it can be restored to the path
     // if vehicle exits SmartRTL mode before reaching home. invalid if zero
-    Vector3f dest_NED_backup;
+    Vector3p dest_NED_backup;
 };
 
 
@@ -1771,7 +1771,7 @@ private:
     float time_const_freq;          // Time at constant frequency before chirp starts
     int8_t log_subsample;           // Subsample multiple for logging.
     Vector2f target_vel_ne_ms;      // target velocity for position controller modes
-    Vector2f target_pos_ne_m;       // target position
+    Vector2p target_pos_ne_m;       // target position
     Vector2f input_vel_last_ne_ms;  // last cycle input velocity
     // System ID states
     enum class SystemIDModeState {
@@ -1993,14 +1993,14 @@ private:
     void auto_control();
     void manual_control();
     bool reached_destination();
-    bool calculate_next_dest_m(Destination ab_dest, bool use_wpnav_alt, Vector3f& next_dest, bool& is_terrain_alt) const;
+    bool calculate_next_dest_m(Destination ab_dest, bool use_wpnav_alt, Vector3p& next_dest, bool& is_terrain_alt) const;
     void spray(bool b);
-    bool calculate_side_dest_m(Vector3f& next_dest_neu_m, bool& is_terrain_alt) const;
+    bool calculate_side_dest_m(Vector3p& next_dest_neu_m, bool& is_terrain_alt) const;
     void move_to_side();
 
-    Vector2f dest_A_ne_m;    // in NEU frame in cm relative to ekf origin
-    Vector2f dest_B_ne_m;    // in NEU frame in cm relative to ekf origin
-    Vector3f current_dest_neu_m; // current target destination (use for resume after suspending)
+    Vector2p dest_A_ne_m;    // in NEU frame in m relative to ekf origin
+    Vector2p dest_B_ne_m;    // in NEU frame in m relative to ekf origin
+    Vector3p current_dest_neu_m; // current target destination (use for resume after suspending)
     bool current_is_terr_alt;
 
     // parameters

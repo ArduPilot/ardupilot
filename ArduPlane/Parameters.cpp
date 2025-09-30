@@ -1260,13 +1260,22 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 #endif
     
     // @Param: CLIMB_SLOPE_HGT
-    // @DisplayName: Climb slope mininum height
+    // @DisplayName: Climb slope minimum height
     // @Description: Sets the minimum height above home at which the aircraft will apply a climb slope between waypoints. Below it, the aircraft will ascend immediately, and will only resume the requested trajectory upon reaching this height. This prevents unsafe behavior such as attempting to slowly gain altitude near obstacles. The default value ensures safe operations in most environments, but it can be adjusted based on specific terrain or operational needs.
     // @Units: m
     // @Range: 0 50
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("CLIMB_SLOPE_HGT", 39, ParametersG2, waypoint_climb_slope_height_min, 25),
+
+    // @Param: GUIDED_TIMEOUT
+    // @DisplayName: Timeout for external guided command.
+    // @Description: If external guided command was not received by this timeout, the vehicle will revert to regular GUIDED mode.
+    // @Units: s
+    // @Range: 0 10
+    // @Increment: 0.5
+    // @User: Advanced
+    AP_GROUPINFO("GUIDED_TIMEOUT", 40, ParametersG2, guided_timeout, 3.0f),
 
     AP_GROUPEND
 };

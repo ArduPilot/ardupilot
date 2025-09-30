@@ -259,6 +259,8 @@ private:
     enum class ConfigKey : uint32_t {
         TMODE_MODE = 0x20030001,
         CFG_RATE_MEAS                   = 0x30210001,
+        CFG_SIGNAL_NAVIC_ENA            = 0x10370001,  // NAVIC Enable
+        CFG_SIGNAL_NAVIC_L5_ENA         = 0x10370005,  // NAVIC L5 Enable
 
         CFG_UART1_BAUDRATE              = 0x40520001,
         CFG_UART1_ENABLED               = 0x10520005,

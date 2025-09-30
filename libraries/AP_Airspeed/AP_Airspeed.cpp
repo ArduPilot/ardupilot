@@ -119,7 +119,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: _PRIMARY
     // @DisplayName: Primary airspeed sensor
     // @Description: This selects which airspeed sensor will be the primary if multiple sensors are found
-    // @Values: 0:FirstSensor,1:2ndSensor
+    // @Values: 0:FirstSensor, 1:2nd Sensor, 2:3rd Sensor, 3:4th Sensor, 4:5th Sensor, 5:6th Sensor
     // @User: Advanced
     AP_GROUPINFO("_PRIMARY", 10, AP_Airspeed, primary_sensor, 0),
 #endif
@@ -180,6 +180,30 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 #endif
 
     // index 30 is used by enable at the top of the table
+
+#if AIRSPEED_MAX_SENSORS > 2
+    // @Group: 3_
+    // @Path: AP_Airspeed_Params.cpp
+    AP_SUBGROUPINFO(param[2], "3_", 31, AP_Airspeed, AP_Airspeed_Params),
+#endif
+
+#if AIRSPEED_MAX_SENSORS > 3
+    // @Group: 4_
+    // @Path: AP_Airspeed_Params.cpp
+    AP_SUBGROUPINFO(param[3], "4_", 32, AP_Airspeed, AP_Airspeed_Params),
+#endif
+
+#if AIRSPEED_MAX_SENSORS > 4
+    // @Group: 5_
+    // @Path: AP_Airspeed_Params.cpp
+    AP_SUBGROUPINFO(param[4], "5_", 33, AP_Airspeed, AP_Airspeed_Params),
+#endif
+
+#if AIRSPEED_MAX_SENSORS > 5
+    // @Group: 6_
+    // @Path: AP_Airspeed_Params.cpp
+    AP_SUBGROUPINFO(param[5], "6_", 34, AP_Airspeed, AP_Airspeed_Params),
+#endif
 
     AP_GROUPEND
 };
