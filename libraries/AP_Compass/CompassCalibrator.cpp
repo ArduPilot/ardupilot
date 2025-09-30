@@ -47,9 +47,8 @@
  * sphere must be covered by samples.
  *
  * Once the sample buffer is full, a sphere fitting algorithm is run, which
- * computes a new sphere radius. The sample buffer is thinned of samples which
- * no longer meet the acceptance criteria, and the state transitions to
- * RUNNING_STEP_TWO. Samples continue to be collected until the buffer is full
+ * computes a new sphere radius. Now the state transitions to
+ * RUNNING_STEP_TWO. Fresh samples are collected until the buffer is full
  * again, the full ellipsoid fit is run, and the state transitions to either
  * SUCCESS or FAILED.
  *
@@ -316,7 +315,7 @@ void CompassCalibrator::update_cal_status()
             cal_state.completion_pct = 33.3f * _samples_collected/COMPASS_CAL_NUM_SAMPLES;
             break;
         case Status::RUNNING_STEP_TWO:
-            cal_state.completion_pct = 33.3f + 65.7f*((float)(_samples_collected-_samples_thinned)/(COMPASS_CAL_NUM_SAMPLES-_samples_thinned));
+            cal_state.completion_pct = 33.3f + 65.7f*((float)(_samples_collected)/(COMPASS_CAL_NUM_SAMPLES));
             break;
         case Status::SUCCESS:
             cal_state.completion_pct = 100.0f;
@@ -373,7 +372,6 @@ void CompassCalibrator::initialize_fit()
 void CompassCalibrator::reset_state()
 {
     _samples_collected = 0;
-    _samples_thinned = 0;
     _params.radius = 200;
     _params.offset.zero();
     _params.diag = Vector3f(1.0f,1.0f,1.0f);
@@ -430,8 +428,9 @@ bool CompassCalibrator::set_status(CompassCalibrator::Status status)
             if (_status != Status::RUNNING_STEP_ONE) {
                 return false;
             }
-            thin_samples();
-            initialize_fit();
+            _fit_step = 0;
+            _samples_collected = 0;
+            update_completion_mask();
             _status = Status::RUNNING_STEP_TWO;
             return true;
 
@@ -496,34 +495,6 @@ bool CompassCalibrator::fit_acceptable() const
             return _fitness <= sq(_tolerance);
         }
     return false;
-}
-
-void CompassCalibrator::thin_samples()
-{
-    if (_sample_buffer == nullptr) {
-        return;
-    }
-
-    _samples_thinned = 0;
-    // shuffle the samples http://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
-    // this is so that adjacent samples don't get sequentially eliminated
-    for (uint16_t i=_samples_collected-1; i>=1; i--) {
-        uint16_t j = get_random16() % (i+1);
-        CompassSample temp = _sample_buffer[i];
-        _sample_buffer[i] = _sample_buffer[j];
-        _sample_buffer[j] = temp;
-    }
-
-    // remove any samples that are close together
-    for (uint16_t i=0; i < _samples_collected; i++) {
-        if (!accept_sample(_sample_buffer[i], i)) {
-            _sample_buffer[i] = _sample_buffer[_samples_collected-1];
-            _samples_collected--;
-            _samples_thinned++;
-        }
-    }
-
-    update_completion_mask();
 }
 
 /*
