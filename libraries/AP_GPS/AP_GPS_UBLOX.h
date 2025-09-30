@@ -692,6 +692,7 @@ private:
         GNSS_GPS     = 0x00,
         GNSS_SBAS    = 0x01,
         GNSS_NAVIC   = 0x07,  // Adding NAVIC with unique identifier 0x07
+        GNSS_NAVIC   = 0x07,  // Adding NAVIC with unique identifier 0x07
         GNSS_GALILEO = 0x02,
         GNSS_BEIDOU  = 0x03,
         GNSS_IMES    = 0x04,
