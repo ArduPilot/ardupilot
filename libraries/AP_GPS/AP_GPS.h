@@ -128,7 +128,7 @@ public:
         Params(void);
 
         AP_Enum<GPS_Type> type;
-        AP_Int8 gnss_mode;
+        AP_Int16 gnss_mode;
         AP_Int16 rate_ms;   // this parameter should always be accessed using get_rate_ms()
         AP_Vector3f antenna_offset;
         AP_Int16 delay_ms;
@@ -633,7 +633,7 @@ protected:
 
     // check if an option is set
     bool option_set(const DriverOptions option) const {
-        return (uint8_t(_driver_options.get()) & uint8_t(option)) != 0;
+        return (uint16_t(_driver_options.get()) & uint16_t(option)) != 0;
     }
 
 private:
