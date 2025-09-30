@@ -187,7 +187,7 @@ void AP_AHRS_SIM::send_ekf_status_report(GCS_MAVLINK &link) const
         //EKF_CONST_POS_MODE | /* EKF is in constant position mode and does not know it's absolute or relative position. | */
         EKF_PRED_POS_HORIZ_REL | /* Set if EKF's predicted horizontal position (relative) estimate is good. | */
         EKF_PRED_POS_HORIZ_ABS; /* Set if EKF's predicted horizontal position (absolute) estimate is good. | */
-    mavlink_msg_ekf_status_report_send(link.get_chan(), flags, 0, 0, 0, 0, 0, 0, 1, 1);
+    mavlink_msg_ekf_status_report_send(link.get_chan(), flags, 0, 0, 0, 0, 0, 0, ESTIMATOR_TYPE_SIM, 1, 0);
 #endif // HAL_GCS_ENABLED
 }
 

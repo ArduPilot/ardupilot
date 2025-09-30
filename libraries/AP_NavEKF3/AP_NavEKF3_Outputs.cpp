@@ -652,8 +652,9 @@ void NavEKF3_core::send_status_report(GCS_MAVLINK &link) const
         temp,
         flags,
         tasVar,
+        ESTIMATOR_TYPE_EKF3,
+        uint8_t(core_index + 1),
         uint8_t(frontend->sources.getActiveSourceSet(core_index) + 1),
-        uint8_t(core_index + 1)
     };
 
     // send message
