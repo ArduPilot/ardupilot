@@ -141,14 +141,6 @@ void CyphalReadinessPublisherBack::publish()
     size_t buf_size = sizeof(buf);
     int32_t res = zubax_service_Readiness_1_0_serialize_(&msg, buf, &buf_size);
     if (NUNAVUT_SUCCESS == res) {
-        // ⚡ Лог в GCS — какое значение реально отправляем
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                      "Cyphal Readiness: %u (armed=%d, emergency=%d, pwm=%u)",
-                      (unsigned)msg.value,
-                      (int)armed,
-                      (int)emergency,
-                      (unsigned)pwm);
-
         push(buf_size, buf);
         _transfer_metadata.transfer_id++;
     } else {
@@ -197,11 +189,6 @@ void CyphalReadinessPublisherFront::publish()
     size_t buf_size = sizeof(buf);
     int32_t res = zubax_service_Readiness_1_0_serialize_(&msg, buf, &buf_size);
     if (NUNAVUT_SUCCESS == res) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                      "Cyphal Readiness: %u (armed=%d, emergency=%d)",
-                      (unsigned)msg.value,
-                      (int)armed,
-                      (int)emergency);
         push(buf_size, buf);
         _transfer_metadata.transfer_id++;
     } else {
