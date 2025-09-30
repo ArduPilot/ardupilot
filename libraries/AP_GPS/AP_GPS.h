@@ -68,6 +68,7 @@ class AP_GPS
     friend class AP_GPS_UBLOX;
     friend class AP_GPS_Backend;
     friend class AP_GPS_DroneCAN;
+    friend class AP_GPS_UBLOX_CFGv2;
 
 public:
     AP_GPS();
@@ -129,6 +130,7 @@ public:
 
         AP_Enum<GPS_Type> type;
         AP_Int16 gnss_mode;
+        AP_Int32 sig_mode;
         AP_Int16 rate_ms;   // this parameter should always be accessed using get_rate_ms()
         AP_Vector3f antenna_offset;
         AP_Int16 delay_ms;
@@ -629,6 +631,7 @@ protected:
         GPSL5HealthOverride = (1U << 5),
         AlwaysRTCMDecode = (1U << 6),
         DisableRTCMDecode = (1U << 7),
+        ForceUBXConfigV2 = (1U << 8U)
     };
 
     // check if an option is set
