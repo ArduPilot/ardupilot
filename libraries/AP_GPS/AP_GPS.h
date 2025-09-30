@@ -68,6 +68,7 @@ class AP_GPS
     friend class AP_GPS_UBLOX;
     friend class AP_GPS_Backend;
     friend class AP_GPS_DroneCAN;
+    friend class AP_GPS_UBLOX_CFGv2;
 
 public:
     AP_GPS();
@@ -319,6 +320,9 @@ public:
 
     // Query the highest status this GPS supports (always reports GPS_OK_FIX_3D for the blended GPS)
     GPS_Status highest_supported_status(uint8_t instance) const WARN_IF_UNUSED;
+
+    // Check if GPS instance is configured
+    bool is_configured(uint8_t instance) const;
 
     // location of last fix
     const Location &location(uint8_t instance) const {
@@ -629,6 +633,7 @@ protected:
         GPSL5HealthOverride = (1U << 5),
         AlwaysRTCMDecode = (1U << 6),
         DisableRTCMDecode = (1U << 7),
+        ForceUBXConfigV2 = (1U << 8U)
     };
 
     // check if an option is set
@@ -772,6 +777,7 @@ private:
         GPS_AUTO_CONFIG_DISABLE = 0,
         GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY  = 1,
         GPS_AUTO_CONFIG_ENABLE_ALL = 2,
+        GPS_AUTO_CLEAR_CONFIG_UBLOX_SERIAL_ONLY = 3,  // then acts like GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY
     };
 
     enum class GPSAutoSwitch {

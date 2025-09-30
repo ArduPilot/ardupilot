@@ -203,7 +203,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _AUTO_CONFIG
     // @DisplayName: Automatic GPS configuration
     // @Description: Controls if the autopilot should automatically configure the GPS based on the parameters and default settings
-    // @Values: 0:Disables automatic configuration,1:Enable automatic configuration for Serial GPSes only,2:Enable automatic configuration for DroneCAN as well
+    // @Values: 0:Disables automatic configuration,1:Enable automatic configuration for Serial GPSes only,2:Enable automatic configuration for DroneCAN as well,3:Clear all configurations not set by ardupilot (UBlox only)
     // @User: Advanced
     AP_GROUPINFO("_AUTO_CONFIG", 13, AP_GPS, _auto_config, 1),
 
@@ -239,7 +239,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _DRV_OPTIONS
     // @DisplayName: driver options
     // @Description: Additional backend specific options
-    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200 on ublox,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL, 5:Override GPS satellite health of L5 band from L1 health, 6:Enable RTCM full parse even for a single channel, 7:Disable automatic full RTCM parsing when RTCM seen on more than one channel
+    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200 on ublox,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL, 5:Override GPS satellite health of L5 band from L1 health, 6:Enable RTCM full parse even for a single channel, 7:Disable automatic full RTCM parsing when RTCM seen on more than one channel, 8:Force UBlox Config Get/Set for configuration then automatic configuration for Serial GPSes only
     // @User: Advanced
     AP_GROUPINFO("_DRV_OPTIONS", 22, AP_GPS, _driver_options, 0),
 
@@ -1479,6 +1479,14 @@ bool AP_GPS::first_unconfigured_gps(uint8_t &instance) const
         }
     }
     return false;
+}
+
+bool AP_GPS::is_configured(uint8_t instance) const
+{
+    if (instance >= GPS_MAX_INSTANCES || drivers[instance] == nullptr) {
+        return false;
+    }
+    return drivers[instance]->is_configured();
 }
 
 void AP_GPS::broadcast_first_configuration_failure_reason(void) const
