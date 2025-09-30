@@ -258,80 +258,6 @@ private:
         uint8_t scanmode2;
         uint32_t scanmode1;
     };
-    // F9 config keys
-    enum class ConfigKey : uint32_t {
-        TMODE_MODE = 0x20030001,
-        CFG_RATE_MEAS                   = 0x30210001,
-
-        CFG_UART1_BAUDRATE              = 0x40520001,
-        CFG_UART1_ENABLED               = 0x10520005,
-        CFG_UART1INPROT_UBX             = 0x10730001,
-        CFG_UART1INPROT_NMEA            = 0x10730002,
-        CFG_UART1INPROT_RTCM3X          = 0x10730004,
-        CFG_UART1OUTPROT_UBX            = 0x10740001,
-        CFG_UART1OUTPROT_NMEA           = 0x10740002,
-        CFG_UART1OUTPROT_RTCM3X         = 0x10740004,
-
-        CFG_UART2_BAUDRATE              = 0x40530001,
-        CFG_UART2_ENABLED               = 0x10530005,
-        CFG_UART2INPROT_UBX             = 0x10750001,
-        CFG_UART2INPROT_NMEA            = 0x10750002,
-        CFG_UART2INPROT_RTCM3X          = 0x10750004,
-        CFG_UART2OUTPROT_UBX            = 0x10760001,
-        CFG_UART2OUTPROT_NMEA           = 0x10760002,
-        CFG_UART2OUTPROT_RTCM3X         = 0x10760004,
-
-        MSGOUT_RTCM_3X_TYPE4072_0_UART1 = 0x209102ff,
-        MSGOUT_RTCM_3X_TYPE4072_1_UART1 = 0x20910382,
-        MSGOUT_RTCM_3X_TYPE1077_UART1   = 0x209102cd,
-        MSGOUT_RTCM_3X_TYPE1087_UART1   = 0x209102d2,
-        MSGOUT_RTCM_3X_TYPE1097_UART1   = 0x20910319,
-        MSGOUT_RTCM_3X_TYPE1127_UART1   = 0x209102d7,
-        MSGOUT_RTCM_3X_TYPE1230_UART1   = 0x20910304,
-        MSGOUT_UBX_NAV_RELPOSNED_UART1  = 0x2091008e,
-
-        MSGOUT_RTCM_3X_TYPE4072_0_UART2 = 0x20910300,
-        MSGOUT_RTCM_3X_TYPE4072_1_UART2 = 0x20910383,
-        MSGOUT_RTCM_3X_TYPE1077_UART2   = 0x209102ce,
-        MSGOUT_RTCM_3X_TYPE1087_UART2   = 0x209102d3,
-        MSGOUT_RTCM_3X_TYPE1097_UART2   = 0x2091031a,
-        MSGOUT_RTCM_3X_TYPE1127_UART2   = 0x209102d8,
-        MSGOUT_RTCM_3X_TYPE1230_UART2   = 0x20910305,
-        MSGOUT_UBX_NAV_RELPOSNED_UART2  = 0x2091008f,
-
-        // enable specific signals and constellations
-        CFG_SIGNAL_GPS_ENA              = 0x1031001f,
-        CFG_SIGNAL_GPS_L1CA_ENA         = 0x10310001,
-        CFG_SIGNAL_GPS_L2C_ENA          = 0x10310003,
-        CFG_SIGNAL_GPS_L5_ENA           = 0x10310004,
-        CFG_SIGNAL_SBAS_ENA             = 0x10310020,
-        CFG_SIGNAL_SBAS_L1CA_ENA        = 0x10310005,
-        CFG_SIGNAL_GAL_ENA              = 0x10310021,
-        CFG_SIGNAL_GAL_E1_ENA           = 0x10310007,
-        CFG_SIGNAL_GAL_E5A_ENA          = 0x10310009,
-        CFG_SIGNAL_GAL_E5B_ENA          = 0x1031000a,
-        CFG_SIGNAL_BDS_ENA              = 0x10310022,
-        CFG_SIGNAL_BDS_B1_ENA           = 0x1031000d,
-        CFG_SIGNAL_BDS_B1C_ENA          = 0x1031000f,
-        CFG_SIGNAL_BDS_B2_ENA           = 0x1031000e,
-        CFG_SIGNAL_BDS_B2A_ENA          = 0x10310028,
-        CFG_SIGNAL_QZSS_ENA             = 0x10310024,
-        CFG_SIGNAL_QZSS_L1CA_ENA        = 0x10310012,
-        CFG_SIGNAL_QZSS_L1S_ENA         = 0x10310014,
-        CFG_SIGNAL_QZSS_L2C_ENA         = 0x10310015,
-        CFG_SIGNAL_QZSS_L5_ENA          = 0x10310017,
-        CFG_SIGNAL_GLO_ENA              = 0x10310025,
-        CFG_SIGNAL_GLO_L1_ENA           = 0x10310018,
-        CFG_SIGNAL_GLO_L2_ENA           = 0x1031001a,
-        CFG_SIGNAL_NAVIC_ENA            = 0x10310026,
-        CFG_SIGNAL_NAVIC_L5_ENA         = 0x1031001d,
-
-        CFG_SIGNAL_L5_HEALTH_OVRD       = 0x10320001,
-
-        // other keys
-        CFG_NAVSPG_DYNMODEL             = 0x20110021,
-
-    };
 
     // layers for VALSET
     #define UBX_VALSET_LAYER_RAM 0x1U
@@ -694,13 +620,19 @@ private:
     enum ubx_gnss_identifier {
         GNSS_GPS     = 0x00,
         GNSS_SBAS    = 0x01,
-        GNSS_GALILEO = 0x02,
-        GNSS_BEIDOU  = 0x03,
+        GNSS_GAL     = 0x02,
+        GNSS_BDS     = 0x03,
         GNSS_IMES    = 0x04,
         GNSS_QZSS    = 0x05,
-        GNSS_GLONASS = 0x06,
+        GNSS_GLO     = 0x06,
         GNSS_NAVIC   = 0x07,
+        GNSS_LAST
     };
+
+    #define UBLOX_GNSS_TYPE_ASSERT(NAME, INDEX) static_assert(AP_GPS_UBLOX::GNSS_##NAME == INDEX);
+    UBLOX_GNSS(UBLOX_GNSS_TYPE_ASSERT)
+    #undef UBLOX_GNSS_TYPE_ASSERT
+
     enum ubs_nav_fix_type {
         FIX_NONE = 0,
         FIX_DEAD_RECKONING = 1,

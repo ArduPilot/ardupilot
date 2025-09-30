@@ -139,48 +139,11 @@ AP_GPS_UBLOX::~AP_GPS_UBLOX()
   See ZED-F9P integration manual section 3.1.5.6.1
  */
 const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Base_uart1[] {
- { ConfigKey::CFG_UART1OUTPROT_RTCM3X, 1},
- { ConfigKey::CFG_UART2OUTPROT_RTCM3X, 0},
- { ConfigKey::MSGOUT_UBX_NAV_RELPOSNED_UART1, 0},
- { ConfigKey::MSGOUT_UBX_NAV_RELPOSNED_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE4072_0_UART1, RTK_MB_RTCM_RATE},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE4072_1_UART1, RTK_MB_RTCM_RATE},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1077_UART1, RTK_MB_RTCM_RATE},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1087_UART1, RTK_MB_RTCM_RATE},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1097_UART1, RTK_MB_RTCM_RATE},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1127_UART1, RTK_MB_RTCM_RATE},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1230_UART1, RTK_MB_RTCM_RATE},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE4072_0_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE4072_1_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1077_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1087_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1097_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1127_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1230_UART2, 0},
+    UBX_CFG_MB_BASE_UART1
 };
 
 const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Base_uart2[] {
- { ConfigKey::CFG_UART2_ENABLED, 1},
- { ConfigKey::CFG_UART2_BAUDRATE, 460800},
- { ConfigKey::CFG_UART2OUTPROT_RTCM3X, 1},
- { ConfigKey::CFG_UART1OUTPROT_RTCM3X, 0},
- { ConfigKey::CFG_UART1INPROT_RTCM3X, 1},
- { ConfigKey::MSGOUT_UBX_NAV_RELPOSNED_UART2, 0},
- { ConfigKey::MSGOUT_UBX_NAV_RELPOSNED_UART1, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE4072_0_UART2, RTK_MB_RTCM_RATE},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE4072_1_UART2, RTK_MB_RTCM_RATE},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1077_UART2, RTK_MB_RTCM_RATE},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1087_UART2, RTK_MB_RTCM_RATE},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1097_UART2, RTK_MB_RTCM_RATE},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1127_UART2, RTK_MB_RTCM_RATE},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1230_UART2, RTK_MB_RTCM_RATE},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE4072_0_UART1, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE4072_1_UART1, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1077_UART1, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1087_UART1, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1097_UART1, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1127_UART1, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1230_UART1, 0},
+    UBX_CFG_MB_BASE_UART2
 };
 
 
@@ -191,49 +154,11 @@ const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Base_uart2[] {
   data from a GPS previously configured as a base
  */
 const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Rover_uart1[] {
- { ConfigKey::CFG_UART2OUTPROT_RTCM3X, 0},
- { ConfigKey::CFG_UART1INPROT_RTCM3X, 1},
- { ConfigKey::CFG_UART2INPROT_RTCM3X, 0},
- { ConfigKey::MSGOUT_UBX_NAV_RELPOSNED_UART1, 1},
- { ConfigKey::MSGOUT_UBX_NAV_RELPOSNED_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE4072_0_UART1, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE4072_1_UART1, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1077_UART1, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1087_UART1, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1097_UART1, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1127_UART1, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1230_UART1, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE4072_0_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE4072_1_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1077_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1087_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1097_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1127_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1230_UART2, 0},
+    UBX_CFG_MB_ROVER_UART1
 };
 
 const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Rover_uart2[] {
- { ConfigKey::CFG_UART2_ENABLED, 1},
- { ConfigKey::CFG_UART2_BAUDRATE, 460800},
- { ConfigKey::CFG_UART2OUTPROT_RTCM3X, 0},
- { ConfigKey::CFG_UART2INPROT_RTCM3X, 1},
- { ConfigKey::CFG_UART1INPROT_RTCM3X, 0},
- { ConfigKey::MSGOUT_UBX_NAV_RELPOSNED_UART1, 1},
- { ConfigKey::MSGOUT_UBX_NAV_RELPOSNED_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE4072_0_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE4072_1_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1077_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1087_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1097_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1127_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1230_UART2, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE4072_0_UART1, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE4072_1_UART1, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1077_UART1, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1087_UART1, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1097_UART1, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1127_UART1, 0},
- { ConfigKey::MSGOUT_RTCM_3X_TYPE1230_UART1, 0},
+    UBX_CFG_MB_ROVER_UART2
 };
 #endif // GPS_MOVING_BASELINE
 
@@ -243,27 +168,18 @@ const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Rover_uart2[] {
   and also disable Glonass and enable QZSS
  */
 const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_M10[] {
- { ConfigKey::CFG_SIGNAL_BDS_ENA, 1},
- { ConfigKey::CFG_SIGNAL_BDS_B1_ENA, 0},
- { ConfigKey::CFG_SIGNAL_BDS_B1C_ENA, 1},
- { ConfigKey::CFG_SIGNAL_GLO_ENA, 0},
- { ConfigKey::CFG_SIGNAL_QZSS_ENA, 1},
- { ConfigKey::CFG_SIGNAL_QZSS_L1CA_ENA, 1},
- { ConfigKey::CFG_SIGNAL_QZSS_L1S_ENA, 1},
- { ConfigKey::CFG_NAVSPG_DYNMODEL, 8}, // Air < 4g
+    UBX_CFG_M10
 };
-
 
 /*
   config changes for L5 modules
 */
 const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_L5_ovrd_ena[] {
-    {ConfigKey::CFG_SIGNAL_L5_HEALTH_OVRD, 1},
-    {ConfigKey::CFG_SIGNAL_GPS_L5_ENA, 1},
+    UBX_CFG_L5_OVRD_ENA
 };
 
 const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_L5_ovrd_dis[] {
-    {ConfigKey::CFG_SIGNAL_L5_HEALTH_OVRD, 0},
+    UBX_CFG_L5_OVRD_DIS
 };
 
 void
@@ -415,7 +331,7 @@ AP_GPS_UBLOX::_request_next_config(void)
         break;
     case STEP_TMODE:
         if (supports_F9_config()) {
-            if (!_configure_valget(ConfigKey::TMODE_MODE)) {
+            if (!_configure_valget(ConfigKey::CFG_TMODE_MODE)) {
                 _next_message--;
             }
         }
@@ -1200,7 +1116,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                 for(int i = 0; i < _buffer.gnss.numConfigBlocks; i++) {
                     // Reserve an equal portion of channels for all enabled systems that supports it
                     if(params.gnss_mode & (1 << _buffer.gnss.configBlock[i].gnssId)) {
-                        if(GNSS_SBAS !=_buffer.gnss.configBlock[i].gnssId && (_hardware_generation > UBLOX_M8 || GNSS_GALILEO !=_buffer.gnss.configBlock[i].gnssId)) {
+                        if(GNSS_SBAS !=_buffer.gnss.configBlock[i].gnssId && (_hardware_generation > UBLOX_M8 || GNSS_GAL !=_buffer.gnss.configBlock[i].gnssId)) {
                             _buffer.gnss.configBlock[i].resTrkCh = (_buffer.gnss.numTrkChHw - 3) / (gnssCount * 2);
                             _buffer.gnss.configBlock[i].maxTrkCh = _buffer.gnss.numTrkChHw;
                         } else {
@@ -1208,7 +1124,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                                 _buffer.gnss.configBlock[i].resTrkCh = 1;
                                 _buffer.gnss.configBlock[i].maxTrkCh = 3;
                             }
-                            if(GNSS_GALILEO ==_buffer.gnss.configBlock[i].gnssId) {
+                            if(GNSS_GAL ==_buffer.gnss.configBlock[i].gnssId) {
                                 _buffer.gnss.configBlock[i].resTrkCh = (_buffer.gnss.numTrkChHw - 3) / (gnssCount * 2);
                                 _buffer.gnss.configBlock[i].maxTrkCh = 8; //Per the M8 receiver description UBX-13003221 - R16, 4.1.1.3 it is not recommended to set the number of galileo channels higher then eight
                             }
@@ -1331,12 +1247,12 @@ AP_GPS_UBLOX::_parse_gps(void)
                 cfg_len -= 4;
                 cfg_data += 4;
                 switch (id) {
-                    case ConfigKey::TMODE_MODE: {
+                    case ConfigKey::CFG_TMODE_MODE: {
                         uint8_t mode = cfg_data[0];
                         if (mode != 0) {
                             // ask for mode 0, to disable TIME mode
                             mode = 0;
-                            _configure_valset(ConfigKey::TMODE_MODE, &mode);
+                            _configure_valset(ConfigKey::CFG_TMODE_MODE, &mode);
                             _cfg_needs_save = true;
                             _unconfigured_messages |= CONFIG_TMODE_MODE;
                         } else {
@@ -2374,7 +2290,7 @@ uint8_t AP_GPS_UBLOX::populate_F9_gnss(void)
                 config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_SBAS_ENA, ena };
                 config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_SBAS_L1CA_ENA, ena };
                 break;
-            case GNSS_GALILEO:
+            case GNSS_GAL:
                 config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_GAL_ENA, ena };
                 config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_GAL_E1_ENA, ena };
                 if (_hardware_variant == UBLOX_F9_ZED) {
@@ -2383,7 +2299,7 @@ uint8_t AP_GPS_UBLOX::populate_F9_gnss(void)
                     config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_GAL_E5A_ENA, ena };
                 }
                 break;
-            case GNSS_BEIDOU:
+            case GNSS_BDS:
                 config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_BDS_ENA, ena };
                 config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_BDS_B1_ENA, ena };
                 if (_hardware_variant == UBLOX_F9_ZED) {
@@ -2392,7 +2308,7 @@ uint8_t AP_GPS_UBLOX::populate_F9_gnss(void)
                     config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_BDS_B2A_ENA, ena };
                 }
                 break;
-            case GNSS_GLONASS:
+            case GNSS_GLO:
                 config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_GLO_ENA, ena };
                 config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_GLO_L1_ENA, ena };
                 if (_hardware_variant == UBLOX_F9_ZED) {
