@@ -2914,7 +2914,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline([])
 
         self.set_parameters({
-            "ATC_RAT_RLL_SMAX": 1,
+            "AUTOTUNE_AGGR": 0.1,
             "AUTOTUNE_MIN_D": 0.0004,
         })
 
@@ -2959,9 +2959,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline([])
 
         self.set_parameters({
-            "ATC_RAT_RLL_SMAX": 1,
-            "AUTOTUNE_AXES": 15,
-            "AUTOTUNE_MIN_D": 0.0004,
+            "AUTOTUNE_AGGR": 0.1,
+            "AUTOTUNE_AXES": 12,
         })
 
         gain_names = [
@@ -3082,7 +3081,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.set_parameters({
             "RC8_OPTION": 17,
-            "ATC_RAT_RLL_FLTT": 20,
+            "AUTOTUNE_AGGR": 0.1,
             "AUTOTUNE_MIN_D": 0.0004,
         })
 
@@ -3192,7 +3191,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.set_parameters({
             "RC8_OPTION": 180,
-            "ATC_RAT_RLL_FLTT": 20,
+            "AUTOTUNE_AGGR": 0.1,
             "AUTOTUNE_MIN_D": 0.0004,
         })
 
