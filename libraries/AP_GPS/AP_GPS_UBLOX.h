@@ -28,6 +28,7 @@
 #include "GPS_Backend.h"
 
 #include <AP_HAL/AP_HAL.h>
+#include "AP_GPS_UBLOX_CFGv2.h"
 
 /*
  *  try to put a UBlox into binary mode. This is in two parts. 
@@ -58,6 +59,7 @@
 #define UBLOX_RXM_RAW_LOGGING 1
 #define UBLOX_MAX_RXM_RAW_SATS 22
 #define UBLOX_MAX_RXM_RAWX_SATS 32
+#define UBLOX_MAX_INTERFACE_PORTS 5
 #define UBLOX_MAX_EXTENSIONS 8
 #define UBLOX_GNSS_SETTINGS 1
 #ifndef UBLOX_TIM_TM2_LOGGING
@@ -70,6 +72,7 @@
 
 #define UBLOX_MAX_PORTS 6
 #define UBLOX_MODULE_LEN 9
+#define UBLOX_PROTVER_LEN 8
 
 #define RATE_POSLLH 1
 #define RATE_STATUS 1
@@ -129,6 +132,10 @@ class RTCM3_Parser;
 
 class AP_GPS_UBLOX : public AP_GPS_Backend
 {
+    using ConfigKey = AP_GPS_UBLOX_CFGv2::ConfigKey;
+    using CFGv2 = AP_GPS_UBLOX_CFGv2;
+    friend class AP_GPS_UBLOX_CFGv2;
+    friend class UBXCfgKVBlob;
 public:
     AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::Params &_params, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port, AP_GPS::GPS_Role role);
     ~AP_GPS_UBLOX() override;
@@ -145,7 +152,7 @@ public:
         if (!gps._auto_config) {
             return true;
         } else {
-            return !_unconfigured_messages;
+            return !_unconfigured_messages || (_cfg_v2.curr_state == CFGv2::CONFIGURED);
         }
 #else
         return true;
@@ -153,7 +160,11 @@ public:
     }
 
     bool get_error_codes(uint32_t &error_codes) const override {
-        error_codes = _unconfigured_messages;
+        if (_cfg_v2._legacy_cfg_unsupported) {
+            return false;
+        } else {
+            error_codes = _unconfigured_messages;
+        }
         return true;
     };
 
@@ -452,6 +463,30 @@ private:
         char hwVersion[10];
         char extension[30*UBLOX_MAX_EXTENSIONS]; // extensions are not enabled
     };
+    // UBX-MON-RF block (repeated nBlocks times after ubx_mon_rf header)
+    struct PACKED ubx_mon_rf_block {
+        uint8_t  blockId;        // 0
+        uint8_t  flags;          // 1 (jammingState etc)
+        uint8_t  antStatus;      // 2
+        uint8_t  antPower;       // 3
+        uint32_t postStatus;     // 4..7
+        uint8_t  reserved1[4];   // 8..11
+        uint16_t noisePerMS;     // 12..13
+        uint16_t agcCnt;         // 14..15
+        uint8_t  cwSuppression;  // 16
+        int8_t   ofsI;           // 17
+        uint8_t  magI;           // 18
+        int8_t   ofsQ;           // 19
+        uint8_t  magQ;           // 20
+        uint8_t  rfBlockGnssBand;// 21
+        uint8_t  reserved2[2];   // 22..23
+    };
+    struct PACKED ubx_mon_rf {
+        uint8_t version;         // 0
+        uint8_t nBlocks;         // 1
+        uint8_t reserved0[2];    // 2..3
+        ubx_mon_rf_block blocks[2]; // provision for up to 2 RF blocks
+    };
     struct PACKED ubx_nav_svinfo_header {
         uint32_t itow;
         uint8_t numCh;
@@ -529,6 +564,32 @@ private:
         uint32_t accEst;
     };
 
+    // UBX-MON-COMMS structures (per UBX spec)
+    struct PACKED ubx_mon_comms_port_block {
+        uint16_t portId;       // 8 + n*40
+        uint16_t txPending;    // 10 + n*40
+        uint32_t txBytes;      // 12 + n*40
+        uint8_t  txUsage;      // 16 + n*40
+        uint8_t  txPeakUsage;  // 17 + n*40
+        uint16_t rxPending;    // 18 + n*40
+        uint32_t rxBytes;      // 20 + n*40
+        uint8_t  rxUsage;      // 24 + n*40
+        uint8_t  rxPeakUsage;  // 25 + n*40
+        uint16_t overrunErrs;  // 26 + n*40
+        uint16_t msgs[4];      // 28 + n*40
+        uint8_t  reserved1[8]; // 36 + n*40
+        uint32_t skipped;      // 44 + n*40 (but within block size 40; spec describes as bytes skipped)
+    };
+    struct PACKED ubx_mon_comms_header {
+        uint8_t version;       // 0
+        uint8_t nPorts;        // 1
+        uint8_t txErrors;      // 2 (bits 4..2 = outputPort)
+        uint8_t reserved0;     // 3
+        uint8_t protIds[4];    // 4..7
+        // followed by ubx_mon_comms_port_block[nPorts]
+        ubx_mon_comms_port_block port_block[UBLOX_MAX_INTERFACE_PORTS];
+    };
+
     // Receive buffer
     union PACKED {
         DEFINE_BYTE_ARRAY_METHODS
@@ -548,6 +609,7 @@ private:
         ubx_mon_hw_68 mon_hw_68;
         ubx_mon_hw2 mon_hw2;
         ubx_mon_ver mon_ver;
+        ubx_mon_rf mon_rf;
         ubx_cfg_tp5 nav_tp5;
 #if UBLOX_GNSS_SETTINGS
         ubx_cfg_gnss gnss;
@@ -563,6 +625,7 @@ private:
         ubx_ack_ack ack;
         ubx_ack_nack nack;
         ubx_tim_tm2 tim_tm2;
+        ubx_mon_comms_header mon_comms;
     } _buffer;
 
     enum class RELPOSNED {
@@ -611,7 +674,9 @@ private:
         MSG_CFG_VALGET = 0x8B,
         MSG_MON_HW = 0x09,
         MSG_MON_HW2 = 0x0B,
+        MSG_MON_RF = 0x38,
         MSG_MON_VER = 0x04,
+        MSG_MON_COMMS = 0x36,
         MSG_NAV_SVINFO = 0x30,
         MSG_RXM_RAW = 0x10,
         MSG_RXM_RAWX = 0x15,
@@ -719,6 +784,7 @@ private:
     bool            _have_version;
     struct ubx_mon_ver _version;
     char            _module[UBLOX_MODULE_LEN];
+    char            _protver[UBLOX_PROTVER_LEN];
     uint32_t        _unconfigured_messages {CONFIG_ALL};
     uint8_t         _hardware_generation { UBLOX_UNKNOWN_HARDWARE_GENERATION };
     uint8_t         _hardware_variant;
@@ -738,6 +804,8 @@ private:
 
     // Buffer parse & GPS state update
     bool        _parse_gps();
+    bool        _legacy_config_update(void);
+    bool        _legacy_cfg_unsupported;
 
     // used to update fix between status and position packets
     AP_GPS::GPS_Status next_fix { AP_GPS::NO_FIX };
@@ -769,10 +837,12 @@ private:
     void        _save_cfg(void);
     void        _verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
     void        _check_new_itow(uint32_t itow);
+    static void _update_checksum(uint8_t *data, uint16_t len, uint8_t &ck_a, uint8_t &ck_b);
 
     void unexpected_message(void);
     void log_mon_hw(void);
     void log_mon_hw2(void);
+    void log_mon_rf(void);
     void log_tim_tm2(void);
     void log_rxm_raw(const struct ubx_rxm_raw &raw);
     void log_rxm_rawx(const struct ubx_rxm_rawx &raw);
@@ -841,6 +911,7 @@ private:
     static const config_list config_L5_ovrd_dis[];
     // scratch space for GNSS config
     config_list* config_GNSS;
+    AP_GPS_UBLOX_CFGv2 _cfg_v2;
 };
 
 #endif

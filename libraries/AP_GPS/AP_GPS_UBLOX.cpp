@@ -22,6 +22,8 @@
 
 #if AP_GPS_UBLOX_ENABLED
 
+#include "AP_GPS_UBLOX_CFGv2.h"
+
 #include "AP_GPS.h"
 #include <AP_HAL/Util.h>
 #include <AP_Logger/AP_Logger.h>
@@ -97,7 +99,8 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps,
                            AP_HAL::UARTDriver *_port,
                            AP_GPS::GPS_Role _role) :
     AP_GPS_Backend(_gps, _params, _state, _port),
-    role(_role)
+    role(_role),
+    _cfg_v2(*this)
 {
     // stop any config strings that are pending
     gps.send_blob_start(state.instance, nullptr, 0);
@@ -567,8 +570,10 @@ AP_GPS_UBLOX::read(void)
     bool parsed = false;
     uint32_t millis_now = AP_HAL::millis();
 
+    _cfg_v2.update();
+
     // walk through the gps configuration at 1 message per second
-    if (millis_now - _last_config_time >= _delay_time) {
+    if (millis_now - _last_config_time >= _delay_time && !_legacy_cfg_unsupported && !option_set(AP_GPS::DriverOptions::ForceUBXConfigV2)) {
         _request_next_config();
         _last_config_time = millis_now;
         if (_unconfigured_messages) {
@@ -627,6 +632,10 @@ AP_GPS_UBLOX::read(void)
 #endif
 
 	reset:
+        if (_step == 0) {
+            // reset the valget state machine
+            _cfg_v2.process_valget_complete(false);
+        }
         switch(_step) {
 
         // Message preamble detection
@@ -680,7 +689,7 @@ AP_GPS_UBLOX::read(void)
             _ck_b += (_ck_a += data);                   // checksum byte
 
             _payload_length += (uint16_t)(data<<8);
-            if (_payload_length > sizeof(_buffer)) {
+            if ((_payload_length > sizeof(_buffer)) && _class != CLASS_CFG && _msg_id != MSG_CFG_VALGET) {
                 Debug("large payload %u", (unsigned)_payload_length);
                 // assume any payload bigger then what we know about is noise
                 _payload_length = 0;
@@ -698,6 +707,9 @@ AP_GPS_UBLOX::read(void)
         //
         case 6:
             _ck_b += (_ck_a += data);                   // checksum byte
+            if (_class == CLASS_CFG && _msg_id == MSG_CFG_VALGET) {
+                _cfg_v2.process_valget_byte(data);
+            }
             if (_payload_counter < sizeof(_buffer)) {
                 _buffer[_payload_counter] = data;
             }
@@ -712,6 +724,9 @@ AP_GPS_UBLOX::read(void)
             if (_ck_a != data) {
                 Debug("bad cka %x should be %x", data, _ck_a);
                 _step = 0;
+                if (_class == CLASS_CFG && _msg_id == MSG_CFG_VALGET) {
+                    _cfg_v2.process_valget_complete(false);
+                }
 				goto reset;
             }
             break;
@@ -719,6 +734,9 @@ AP_GPS_UBLOX::read(void)
             _step = 0;
             if (_ck_b != data) {
                 Debug("bad ckb %x should be %x", data, _ck_b);
+                if (_class == CLASS_CFG && _msg_id == MSG_CFG_VALGET) {
+                    _cfg_v2.process_valget_complete(false);
+                }
                 break;                                                  // bad checksum
             }
 
@@ -728,6 +746,10 @@ AP_GPS_UBLOX::read(void)
                 rtcm3_parser->reset();
             }
 #endif
+
+            if (_class == CLASS_CFG && _msg_id == MSG_CFG_VALGET) {
+                _cfg_v2.process_valget_complete(true);
+            }
             if (_parse_gps()) {
                 parsed = true;
             }
@@ -781,6 +803,48 @@ void AP_GPS_UBLOX::log_mon_hw2(void)
         magQ      : _buffer.mon_hw2.magQ,
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
+#endif
+}
+
+void AP_GPS_UBLOX::log_mon_rf(void)
+{
+#if HAL_LOGGING_ENABLED
+    if (!should_log()) {
+        return;
+    }
+    // Use structured buffer
+    const ubx_mon_rf &rf = _buffer.mon_rf;
+    const uint8_t version = rf.version;
+    const uint8_t nBlocks = rf.nBlocks;
+    if (version != 0 || nBlocks == 0) {
+        return;
+    }
+    const ubx_mon_rf_block &blk0 = rf.blocks[0];
+
+    // Fill UBX1 with RF noise and AGC-like info
+    const struct log_Ubx1 pkt1 {
+        LOG_PACKET_HEADER_INIT(LOG_GPS_UBX1_MSG),
+        time_us    : AP_HAL::micros64(),
+        instance   : state.instance,
+        noisePerMS : blk0.noisePerMS,
+        jamInd     : uint8_t(blk0.flags & 0x03U), // jammingState per spec (0..3)
+        aPower     : blk0.antPower,
+        agcCnt     : blk0.agcCnt,
+        config     : 0, // not used for CFGv2
+    };
+    AP::logger().WriteBlock(&pkt1, sizeof(pkt1));
+
+    // Fill UBX2 with I/Q imbalance and magnitudes
+    const struct log_Ubx2 pkt2 {
+        LOG_PACKET_HEADER_INIT(LOG_GPS_UBX2_MSG),
+        time_us   : AP_HAL::micros64(),
+        instance  : state.instance,
+        ofsI      : blk0.ofsI,
+        magI      : blk0.magI,
+        ofsQ      : blk0.ofsQ,
+        magQ      : blk0.magQ,
+    };
+    AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
 #endif
 }
 
@@ -953,7 +1017,7 @@ int8_t AP_GPS_UBLOX::find_active_config_index(ConfigKey key) const
 }
 
 bool
-AP_GPS_UBLOX::_parse_gps(void)
+AP_GPS_UBLOX::_legacy_config_update(void)
 {
     if (_class == CLASS_ACK) {
         Debug("ACK %u", (unsigned)_msg_id);
@@ -1313,6 +1377,17 @@ AP_GPS_UBLOX::_parse_gps(void)
         }
         }
     }
+    return true;
+}
+
+bool
+AP_GPS_UBLOX::_parse_gps(void)
+{
+    if (!_legacy_cfg_unsupported && !gps.option_set(AP_GPS::ForceUBXConfigV2)) {
+        if (!_legacy_config_update()) {
+            return false;
+        }
+    }
 
     if (_class == CLASS_MON) {
         switch(_msg_id) {
@@ -1326,6 +1401,16 @@ AP_GPS_UBLOX::_parse_gps(void)
                 log_mon_hw2();  
             }
             break;
+        case MSG_MON_RF:
+            // forward to logger when present
+            log_mon_rf();
+            break;
+        case MSG_MON_COMMS: {
+            // accept partial packet; only need first 3 bytes to derive outputPort
+            // bits 4..2 map to output port per u-blox doc: 1=I2C,2=UART1,3=UART2,4=USB,5=SPI
+            _ublox_port = (uint8_t)((_buffer.mon_comms.txErrors >> 2) & 0x07);
+            break;
+        }
         case MSG_MON_VER: {
             bool check_L1L5 = false;
             _have_version = true;
@@ -1333,7 +1418,13 @@ AP_GPS_UBLOX::_parse_gps(void)
             strncpy(_version.swVersion, _buffer.mon_ver.swVersion, sizeof(_version.swVersion));
             void* mod = memmem(_buffer.mon_ver.extension, sizeof(_buffer.mon_ver.extension), "MOD=", 4);
             if (mod != nullptr) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "u-blox MOD string %.20s", (char*)mod+4);
                 strncpy(_module, (char*)mod+4, UBLOX_MODULE_LEN-1);
+            }
+            void* prot = memmem(_buffer.mon_ver.extension, sizeof(_buffer.mon_ver.extension), "PROTVER=", 8);
+            if (prot != nullptr) {
+                Debug("Found PROTVER string %.20s", (char*)prot+8);
+                strncpy(_protver, (char*)prot+8, UBLOX_PROTVER_LEN-1);
             }
 
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, 
