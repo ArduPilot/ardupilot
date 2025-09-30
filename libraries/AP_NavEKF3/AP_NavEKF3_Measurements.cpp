@@ -1114,15 +1114,30 @@ void NavEKF3_core::update_gps_selection(void)
     // in normal operation use the primary GPS
     selected_gps = gps.primary_sensor();
     preferred_gps = selected_gps;
-
+    
     if (frontend->_affinity & EKF_AFFINITY_GPS) {
         if (core_index < gps.num_sensors() ) {
             // always prefer our core_index, unless we don't have that
             // many GPS sensors available
             preferred_gps = core_index;
         }
-        if (gps.status(preferred_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D) {
-            // select our preferred_gps if it has a 3D fix, otherwise
+
+    // [NHW] get the accuracies of the GPS instances
+    float vacc_preffered_gps = 0.0f;
+    float vacc_selected_gps = 0.0f;
+    float hacc_preffered_gps = 0.0f;
+    float hacc_selected_gps = 0.0f;
+    bool vacc_preffered_valid = gps.vertical_accuracy(preferred_gps, vacc_preffered_gps);
+    bool vacc_selected_valid = gps.vertical_accuracy(selected_gps, vacc_selected_gps);
+    bool hacc_preffered_valid = gps.horizontal_accuracy(preferred_gps, hacc_preffered_gps);
+    bool hacc_selected_valid = gps.vertical_accuracy(selected_gps, hacc_selected_gps);
+
+        // [NHW] Adding in additional checks for GPS performance before switching based only on the status. 
+        if ((gps.status(preferred_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D) &&
+            ((vacc_preffered_valid && (vacc_preffered_gps <= 1.0)) || (vacc_selected_valid && (vacc_preffered_gps <= vacc_selected_gps))) &&
+            ((hacc_preffered_valid && (hacc_preffered_gps <= 1.0)) || (hacc_selected_valid && (hacc_preffered_gps <= hacc_selected_gps)))) 
+            {
+            // select our preferred_gps if it has a 3D fix (and now also checking the accuracy), otherwise
             // use the primary GPS
             selected_gps = preferred_gps;
         }
