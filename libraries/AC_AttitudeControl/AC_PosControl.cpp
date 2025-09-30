@@ -82,13 +82,7 @@ AC_PosControl *AC_PosControl::_singleton;
 const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // 0 was used for HOVER
 
-    // @Param: _ACC_XY_FILT
-    // @DisplayName: XY Acceleration filter cutoff frequency
-    // @Description: Lower values will slow the response of the navigation controller and reduce twitchiness
-    // @Units: Hz
-    // @Range: 0.5 5
-    // @Increment: 0.1
-    // @User: Advanced
+    // POS_ACC_XY_FILT was here.
 
     // @Param: _POSZ_P
     // @DisplayName: Position (vertical) controller P gain
