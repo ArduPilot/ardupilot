@@ -695,7 +695,8 @@ private:
         GNSS_BEIDOU  = 0x03,
         GNSS_IMES    = 0x04,
         GNSS_QZSS    = 0x05,
-        GNSS_GLONASS = 0x06
+        GNSS_GLONASS = 0x06,
+        GNSS_NAVIC   = 0x07,
     };
     enum ubs_nav_fix_type {
         FIX_NONE = 0,
