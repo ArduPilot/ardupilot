@@ -321,6 +321,11 @@ void AP_GPS::init()
     // set the default for the first GPS according to define:
     params[0].type.set_default(HAL_GPS1_TYPE_DEFAULT);
 
+    // PARAMETER_CONVERSION - Added: Jan-2026
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        params[i].gnss_mode.convert_parameter_width(AP_PARAM_INT8);
+    }
+
     convert_parameters();
 
     // Set new primary param based on old auto_switch use second option
