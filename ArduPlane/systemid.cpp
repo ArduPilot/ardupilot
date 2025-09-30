@@ -345,7 +345,6 @@ void AP_SystemID::fw_update()
             break;
     }
 
-#if HAL_QUADPLANE_ENABLED
     if (log_subsample <= 0) {
         log_data();
         log_plane_data();
@@ -361,11 +360,6 @@ void AP_SystemID::fw_update()
         }
     }
     log_subsample -= 1;
-#else
-    // plane alway logs at full rate as the loop rate is only 50hz
-    log_data();
-    log_plane_data();
-#endif
 }
 
 // @LoggerMessage: SIDD
