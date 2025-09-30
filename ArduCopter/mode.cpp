@@ -152,6 +152,10 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             return &mode_turtle;
 #endif
 
+        case Mode::Number::UNKNOWN:
+        	// Do not set the flight mode
+            break;
+
         default:
             break;
     }
@@ -220,7 +224,9 @@ bool Copter::gcs_mode_enabled(const Mode::Number mode_num)
     if (new_flightmode != nullptr) {
         mode_change_failed(new_flightmode, "GCS entry disabled (FLTMODE_GCSBLOCK)");
     } else {
-        notify_no_such_mode((uint8_t)mode_num);
+        if (mode_num != Mode::Number::UNKNOWN) {
+            notify_no_such_mode((uint8_t)mode_num);
+        }
     }
 
     return false;
@@ -265,7 +271,9 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 
     Mode *new_flightmode = mode_from_mode_num(mode);
     if (new_flightmode == nullptr) {
-        notify_no_such_mode((uint8_t)mode);
+        if (mode != Mode::Number::UNKNOWN) {
+            notify_no_such_mode((uint8_t)mode);
+        }
         return false;
     }
 
