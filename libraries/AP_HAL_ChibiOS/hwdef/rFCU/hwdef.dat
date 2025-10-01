@@ -287,7 +287,7 @@ define HAL_GPIO_LED_ON  1
 # use pixracer style 3-LED indicators
 define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_STORAGE_SIZE 32768
 define HAL_WITH_RAMTRON 1
 

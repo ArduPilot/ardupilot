@@ -25,7 +25,7 @@ FLASH_SIZE_KB 1024
 define HAL_STORAGE_SIZE 15360
 STORAGE_FLASH_PAGE 1
 
-# enable FLASH/RAMTROM parameter storage
+# enable FLASH/RAMTRON parameter storage
 #define HAL_WITH_DATAFLASH 1
 # enable logging to dataflash
 #define HAL_LOGGING_DATAFLASH_ENABLED 1

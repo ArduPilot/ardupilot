@@ -134,7 +134,7 @@ SPIDEV dwm1000     SPI4 DEVID5  UWB_CS     		MODE0   3*MHZ  20*MHZ
 
 define HAL_STORAGE_SIZE        16384
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_WITH_RAMTRON 1
 
 # enable FAT filesystem

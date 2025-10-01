@@ -194,7 +194,7 @@ PD2 SDMMC1_CMD SDMMC1
 # allow to have have a dedicated safety switch pin
 define HAL_HAVE_SAFETY_SWITCH 1
 
-# Enable RAMTROM parameter storage.
+# Enable RAMTRON parameter storage.
 define HAL_WITH_RAMTRON 1
 define HAL_STORAGE_SIZE 32768
 

@@ -105,7 +105,7 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 7
 define AP_BARO_MS5611_ENABLED 1
 BARO MS5611 I2C:0:0x77
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_WITH_RAMTRON 1
 # enable FAT filesystem support
 define HAL_OS_FATFS_IO 1

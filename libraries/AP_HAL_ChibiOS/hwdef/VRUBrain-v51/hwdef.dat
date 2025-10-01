@@ -139,7 +139,7 @@ STORAGE_FLASH_PAGE    2
 # reserve 32k for bootloader and 32k for flash storage
 FLASH_RESERVE_START_KB 64
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 #define HAL_WITH_RAMTRON 1
 
 # enable FAT filesystem

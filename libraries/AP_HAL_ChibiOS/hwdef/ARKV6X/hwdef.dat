@@ -320,7 +320,7 @@ IMU Invensensev3 SPI:iim42653_ext2 ROTATION_ROLL_180_YAW_270
 
 define HAL_DEFAULT_INS_FAST_SAMPLE 7
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_STORAGE_SIZE 32768
 define HAL_WITH_RAMTRON 1
 
