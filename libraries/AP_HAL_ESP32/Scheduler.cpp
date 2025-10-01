@@ -322,7 +322,7 @@ void IRAM_ATTR Scheduler::_timer_thread(void *arg)
         sched->delay_microseconds(1000);
         sched->_run_timers();
         //analog in
-#ifndef HAL_DISABLE_ADC_DRIVER
+#if AP_HAL_ANALOGIN_ENABLED
         ((AnalogIn*)hal.analogin)->_timer_tick();
 #endif
     }
@@ -547,7 +547,7 @@ void IRAM_ATTR Scheduler::_main_thread(void *arg)
 #endif
     Scheduler *sched = (Scheduler *)arg;
 
-#ifndef HAL_DISABLE_ADC_DRIVER
+#if AP_HAL_ANALOGIN_ENABLED
     hal.analogin->init();
 #endif
     hal.rcout->init();

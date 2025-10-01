@@ -40,8 +40,6 @@
 #define AP_AIRSPEED_BACKEND_DEFAULT_ENABLED 0
 
 // no ADC
-#define HAL_DISABLE_ADC_DRIVER 1
-#define HAL_USE_ADC 0
 
 // 2 use udp, 1 use tcp...  for udp,client needs to connect as UDPCL in missionplanner etc to 192.168.4.1 port 14550
 #define HAL_ESP32_WIFI 2
@@ -54,11 +52,8 @@
 #define HAL_ESP32_RCOUT { GPIO_NUM_11,GPIO_NUM_10, GPIO_NUM_9, GPIO_NUM_8, GPIO_NUM_7, GPIO_NUM_6 }
 
 // SPI BUS setup, including gpio, dma, etc
-// note... we use 'vspi' for the bmp280 and mpu9250
-#define HAL_ESP32_SPI_BUSES {}
 
 // SPI per-device setup, including speeds, etc.
-#define HAL_ESP32_SPI_DEVICES {}
 
 //I2C bus list
 #define HAL_ESP32_I2C_BUSES {.port=I2C_NUM_0, .sda=GPIO_NUM_13, .scl=GPIO_NUM_14, .speed=400*KHZ, .internal=true, .soft=true}

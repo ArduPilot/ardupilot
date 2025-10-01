@@ -19,11 +19,15 @@
 
 #include "AP_HAL_ESP32.h"
 
+#ifndef AP_HAL_ANALOGIN_ENABLED
+#define AP_HAL_ANALOGIN_ENABLED defined(HAL_ESP32_ADC_PINS)
+#endif  // AP_HAL_ANALOGIN_ENABLED
+
+#if AP_HAL_ANALOGIN_ENABLED
+
 #include "esp_adc/adc_oneshot.h"
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
-
-#if HAL_USE_ADC == TRUE && !defined(HAL_DISABLE_ADC_DRIVER)
 
 #define ANALOG_MAX_CHANNELS 8
 
@@ -104,4 +108,4 @@ private:
 
 }
 
-#endif // HAL_USE_ADC
+#endif // AP_HAL_ANALOGIN_ENABLED

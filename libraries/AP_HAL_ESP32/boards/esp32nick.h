@@ -47,17 +47,16 @@
 #define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
 //-----ADC-----
-#define HAL_USE_ADC TRUE
 
 // 	pin number,
 //	gain/multiplier,
 //	the ardupilot name for the pin in parameter/s.
-#define HAL_ESP32_ADC_PINS {\
+#define HAL_ESP32_ADC_PINS \
 	{ADC1_GPIO35_CHANNEL, 11, 34},\
 	{ADC1_GPIO34_CHANNEL, 11, 35},\
 	{ADC1_GPIO39_CHANNEL, 11, 39},\
 	{ADC1_GPIO36_CHANNEL, 11, 36}\
-}
+
 
 //-----COMPASS-----
 #define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
