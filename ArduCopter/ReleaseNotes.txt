@@ -1,5 +1,60 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Release 4.6.3-beta1 01-Oct-2025
+
+Changes from 4.6.2
+
+1) Board specific changes
+
+- Accton Godwit G-A1 support
+- Blitz Wing H743 and H743 Pro I2C pullup fixes
+- Blitz Wing H743 and H743 Pro now use SPA06 barometer
+- BOTWINGF405 support
+- Brahma F4 support
+- CUAV OpenDroneID support
+- CUAV-7-Nano now uses IIM-42653 accel/gyro
+- CUAV-X25-EVO support
+- DAKEFPV H743 and H743 Pro support
+- GEPRC TAKER H743 BT support
+- Orqa FC 3030 H7 QuadCore support
+- RadiolinkF405 support
+- SequreH743 now uses DPS310 and DPS368 baro
+- SIYI N7 now uses ICM45686 accel/gyro
+- SkystarsF405v2 support
+- SPEDIX H743 analog VTX enabled
+- TBS LUCID H7 fix VSW control
+- ZeroOne X6 bi-directional DShot support
+
+2) Driver bug fixes and enhancements
+
+- DJI goggles support for iNAV multi-page fonts
+- Gremsy mounts cope with NaN in device information
+- OSD can now be controlled over DroneCAN serial passthrough
+
+3) Copter specific fixes
+
+- correct setting of deadzone on RC tuning channel
+
+4) Plane specific fixes and enhancements
+
+- fix landing flare when using rangefinder
+- for gliders with airspeed sensors mounted behind the prop, disable airspeed calibration when throttle is not idle
+- improve TECS behavior when using MIN_GROUNDSPEED
+
+5) Bug Fixes and minor enhancements
+
+- Cygwin SITL stability fixes
+- Data race in parameter creation fixed
+- GPS blending fix when one GPS loses lock
+- Harmonic notch filter fixes for Dotriacontacopters (32 motors)
+- More BLHeli passthrough fixes
+- Networking stack overflow (and subsequent watchdog) fixed
+- Pre-arm check for system initialization
+- Printing extremely small numbers no longer causes an infinite loop
+- Raspberry Pi 5 board-type detection fixed
+- Scripting fix for parameter indices being registered out of order
+- Septentrio GPS fixes
+------------------------------------------------------------------
 Release 4.6.2 17-Jul-2025 / 4.6.2-beta2 02-Jul-2025
 
 Changes from 4.6.2-beta1
