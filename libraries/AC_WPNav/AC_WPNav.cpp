@@ -708,7 +708,8 @@ bool AC_WPNav::get_terrain_U_m(float& terrain_u_m)
             terrain_u_m = _rangefinder_terrain_u_m;
             return true;
         }
-        return false;
+        // If the rangefinder isn't healthy then use terrain data if available
+        FALLTHROUGH;
 
     case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
 #if AP_TERRAIN_AVAILABLE
