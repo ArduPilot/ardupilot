@@ -131,6 +131,8 @@ public:
         AP_Enum<GPS_Type> type;
         AP_Int16 gnss_mode;
         AP_Int32 sig_mode;
+        AP_Int16 gnss_avail;
+        AP_Int32 sig_avail;
         AP_Int16 rate_ms;   // this parameter should always be accessed using get_rate_ms()
         AP_Vector3f antenna_offset;
         AP_Int16 delay_ms;
