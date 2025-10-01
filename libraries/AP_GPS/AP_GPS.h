@@ -777,6 +777,7 @@ private:
         GPS_AUTO_CONFIG_DISABLE = 0,
         GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY  = 1,
         GPS_AUTO_CONFIG_ENABLE_ALL = 2,
+        GPS_AUTO_CONFIG_UBLOX_RESET_SERIAL_ONLY = 3,
     };
 
     enum class GPSAutoSwitch {
