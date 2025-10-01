@@ -228,6 +228,11 @@ private:
         uint8_t msg_id;
         uint8_t rates[6];
     };
+    struct PACKED ubx_cfg_rst {
+        uint16_t navBbrMask;
+        uint8_t resetMode;
+        uint8_t reserved0;
+    };
     struct PACKED ubx_cfg_nav_settings {
         uint16_t mask;
         uint8_t dynModel;
@@ -288,6 +293,13 @@ private:
         uint8_t layers;
         uint8_t reserved[2];
         // variable length data, check buffer length
+    };
+    struct PACKED ubx_cfg_valdel {
+        uint8_t version;
+        uint8_t layers;
+        uint8_t transaction;
+        uint8_t reserved0;
+        // variable length data (keys), check buffer length
     };
     struct PACKED ubx_nav_posllh {
         uint32_t itow;                                  // GPS msToW
@@ -665,6 +677,7 @@ private:
         MSG_CFG_CFG = 0x09,
         MSG_CFG_RATE = 0x08,
         MSG_CFG_MSG = 0x01,
+        MSG_CFG_RST = 0x04,
         MSG_CFG_NAV_SETTINGS = 0x24,
         MSG_CFG_PRT = 0x00,
         MSG_CFG_SBAS = 0x16,
@@ -672,6 +685,7 @@ private:
         MSG_CFG_TP5 = 0x31,
         MSG_CFG_VALSET = 0x8A,
         MSG_CFG_VALGET = 0x8B,
+        MSG_CFG_VALDEL = 0x8C,
         MSG_MON_HW = 0x09,
         MSG_MON_HW2 = 0x0B,
         MSG_MON_RF = 0x38,
@@ -709,6 +723,15 @@ private:
     enum ubx_nav_status_bits {
         NAV_STATUS_FIX_VALID = 1,
         NAV_STATUS_DGPS_USED = 2
+    };
+    enum ubx_reset_type {
+        RESET_HW_WATCHDOG_IMMEDIATE = 0x00,
+        RESET_SW_CONTROLLED = 0x01,
+        RESET_SW_GNSS_ONLY = 0x02,
+        RESET_HW_WATCHDOG_AFTER_SHUTDOWN = 0x04,
+        RESET_GNSS_STOP = 0x08,
+        RESET_GNSS_START = 0x09,
+        RESET_HW_PWSEQ_BBR_RETAINED = 0x0a
     };
     enum ubx_hardware_version {
         ANTARIS = 0,

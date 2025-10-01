@@ -188,6 +188,7 @@ public:
 
     enum States : uint8_t {
         IDENTIFY_MODULE,
+        RESET_MODULE,
         IDENTIFY_SIGNALS,
         CONFIGURE_SIGNALS,
         IDENTIFY_UART_PORT,
@@ -197,13 +198,13 @@ public:
         FAILED,
     };
 
-    enum class Module {
+    enum class Module  : uint8_t {
         // Units with single UART
         UNKNOWN,
-        M8,
         M9,
         M10,
         F10,
+        SINGLE_UART_LAST,
         // Units with dual UARTs
         NEO_F9,
         ZED_F9,
@@ -216,6 +217,9 @@ public:
     void process_valget_byte(uint8_t byte);
     void process_valget_complete(bool success);
     bool valget_active() const { return _valget_in_progress; }
+
+    void handle_cfg_ack(uint8_t msg_id);
+    bool delete_and_reset_config();
 
 private:
     struct PACKED config_list {
@@ -298,4 +302,5 @@ private:
     // streams without allocating a new combined buffer
     bool _send_valset_bytes(const uint8_t *bytes, uint16_t size, ConfigLayer layers = ALL);
 
+    bool _send_reset(uint16_t navBbrMask, uint8_t resetMode);
 };
