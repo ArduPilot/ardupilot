@@ -1,0 +1,55 @@
+# Bell206 model
+
+{
+    # simulate a Bell 206 helicopter.  This model was taken from the following reference.
+    # Zion, L, Tishler, M, Development of a Full Flight Envelope Helicopter Simulation using System Identification,
+    # American Helicopter Society’s 63rd Annual Forum & Technology Display, Virginia Beach, VA, May 1-3, 2007.
+    # The rotor control derivatives were modified as it was too sensitive with the ones in the paper assuming that 
+    # the controls inputs were percent (-100 to 100).
+
+    # General Aircraft Data
+    "hover_lean": -3.2,
+    "nominal_rpm": 395,
+    "coll_max": 12,
+    "coll_min": -2,
+    "coll_hover": 5,
+
+
+    # Stability and Control Derivatives
+    "Ma1s": 5.648,
+    "Lb1s": 30.52,
+    "Xa1s": -9.81,
+    "Yb1s": 9.81,
+    "Mu": 0.006,
+    "Mv":  0.0,
+    "Lu":  0.0,
+    "Lv":  -0.03,
+    # "Lr":  -0.6223,
+    "Lr":  0.0,
+    "Xu":  -0.02162,
+    "Yv":  -0.06006,
+    "Yr":  1.042,
+    "Zw":  -0.7378,
+    "Nr":  -1.399,
+    "Nw":  0.0,
+    "Nv":  0.0,
+    "Ncol":  0.0,
+    "Nped":  3.6,
+    "Zcol":  -21.47,
+
+    # rotor derivatives
+    "tf":  0.06097,
+    "Lfa1s":  0.21114,
+    "Mfb1s":  0.82553,
+    "Lflt":  0.73591,
+    "Lflg":  -0.28211,
+    "Mflt":  -0.083834,
+    "Mflg":  0.24178,
+
+
+    # Time Delay
+    "time_delay_rp" : 20,
+    "time_delay_ped" : 20,
+    "time_delay_col" : 20
+
+}
