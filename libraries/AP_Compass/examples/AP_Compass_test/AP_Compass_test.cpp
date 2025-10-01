@@ -48,6 +48,10 @@ static AP_SerialManager serial_manager;
 
 static AP_Logger logger;
 AP_Int32 logger_bitmask;
+static const struct LogStructure log_structure[] = {
+    LOG_COMMON_STRUCTURES
+};
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 SITL::SIM sitl;
@@ -60,9 +64,6 @@ static void setup()
 {
     hal.console->printf("Compass library test\n");
 
-    const struct LogStructure log_structure[] = {
-        LOG_COMMON_STRUCTURES
-    };
     logger.init(logger_bitmask, log_structure, ARRAY_SIZE(log_structure));
     board_config.init();
     vehicle.ahrs.init();
@@ -70,7 +71,9 @@ static void setup()
     hal.console->printf("init done - %u compasses detected\n", compass.get_count());
 
     // set offsets to account for surrounding interference
-    compass.set_and_save_offsets(0, Vector3f(0, 0, 0));
+    for (uint8_t i=0; i<compass.get_count(); i++) {
+        compass.set_and_save_offsets(i, Vector3f(0, 0, 0));
+    }
     // set local difference between magnetic north and true north
     compass.set_declination(radians(0.0f));
 
