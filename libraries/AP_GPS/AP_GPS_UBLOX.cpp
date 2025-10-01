@@ -2254,6 +2254,9 @@ bool AP_GPS_UBLOX::get_lag(float &lag_sec) const
     case UBLOX_F9:
     case UBLOX_M9:
     case UBLOX_M10:
+    case UBLOX_F10:
+    case UBLOX_F20:
+    case UBLOX_X20:
         // F9 lag not verified yet from flight log, but likely to be at least
         // as good as M8
         lag_sec = 0.12f;

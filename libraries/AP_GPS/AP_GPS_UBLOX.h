@@ -719,6 +719,9 @@ private:
         UBLOX_F9 = 0x80, // comes from MON_VER hwVersion/swVersion strings
         UBLOX_M9 = 0x81, // comes from MON_VER hwVersion/swVersion strings
         UBLOX_M10 = 0x82,
+        UBLOX_F10 = 0x83,
+        UBLOX_F20 = 0x85,
+        UBLOX_X20 = 0x84,
         UBLOX_UNKNOWN_HARDWARE_GENERATION = 0xff // not in the ublox spec used for
                                                  // flagging state in the driver
     };
