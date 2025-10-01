@@ -721,7 +721,8 @@ bool AC_WPNav::get_terrain_offset_m(float& offset_m)
             offset_m = _rangefinder_terrain_offset_m;
             return true;
         }
-        return false;
+        // If the rangefinder isn't healthy then use terrain data if available
+        FALLTHROUGH;
 
     case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
 #if AP_TERRAIN_AVAILABLE
