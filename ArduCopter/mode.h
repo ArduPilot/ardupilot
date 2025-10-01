@@ -1281,6 +1281,8 @@ public:
 
     // RTL states
     enum class SubMode : uint8_t {
+        BRAKING,
+        BRAKING_INIT,
         STARTING,
         INITIAL_CLIMB,
         RETURN_HOME,
@@ -1328,6 +1330,8 @@ private:
     void climb_return_run();
     void loiterathome_start();
     void loiterathome_run();
+    void brake_init();
+    void brake_run();
     void build_path();
     void compute_return_target();
 

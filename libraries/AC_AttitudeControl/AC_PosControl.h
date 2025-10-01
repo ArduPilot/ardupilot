@@ -357,6 +357,9 @@ public:
     AC_PID_Basic& get_vel_z_pid() { return _pid_vel_z; }
     AC_PID& get_accel_z_pid() { return _pid_accel_z; }
 
+    /// give speed
+    const AP_InertialNav& get_inav() const { return _inav; }
+
     /// set_limit_accel_xy - mark that accel has been limited
     ///     this prevents integrator buildup
     void set_externally_limited_xy() { _limit_vector.x = _accel_target.x; _limit_vector.y = _accel_target.y; }
