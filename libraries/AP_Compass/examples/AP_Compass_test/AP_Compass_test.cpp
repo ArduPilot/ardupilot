@@ -25,6 +25,8 @@
 #include <AP_Compass/AP_Compass.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <SITL/SITL.h>
+#include <AP_Logger/AP_Logger.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -44,6 +46,13 @@ static DummyVehicle vehicle;
 static Compass compass;
 static AP_SerialManager serial_manager;
 
+static AP_Logger logger;
+AP_Int32 logger_bitmask;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+SITL::SIM sitl;
+#endif
+
 uint32_t timer;
 
 // to be called only once on boot for initializing objects
@@ -51,6 +60,10 @@ static void setup()
 {
     hal.console->printf("Compass library test\n");
 
+    const struct LogStructure log_structure[] = {
+        LOG_COMMON_STRUCTURES
+    };
+    logger.init(logger_bitmask, log_structure, ARRAY_SIZE(log_structure));
     board_config.init();
     vehicle.ahrs.init();
     compass.init();
