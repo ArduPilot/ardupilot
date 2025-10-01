@@ -142,22 +142,27 @@ bool AP_GPS_UBLOX_CFGv2::_identify_module()
                     ubx_backend._module);
 
         // check if module contains the model string
-        if (strstr(ubx_backend._module, "M8") != nullptr) {
-            module = Module::M8;
-        } else if (strstr(ubx_backend._module, "M9") != nullptr) {
+        if (strstr(ubx_backend._module, "M9") != nullptr) {
             module = Module::M9;
+            // _hardware_generation defined in AP_GPS_UBLOX.cpp
         } else if (strstr(ubx_backend._module, "NEO-F9") != nullptr) {
             module = Module::NEO_F9;
+            // _hardware_generation defined in AP_GPS_UBLOX.cpp
         } else if (strstr(ubx_backend._module, "ZED-F9") != nullptr) {
             module = Module::ZED_F9;
+            // _hardware_generation defined in AP_GPS_UBLOX.cpp
         } else if (strstr(ubx_backend._module, "M10") != nullptr) {
             module = Module::M10;
+            // _hardware_generation defined in AP_GPS_UBLOX.cpp
         } else if (strstr(ubx_backend._module, "F10") != nullptr) {
             module = Module::F10;
+            ubx_backend._hardware_generation = AP_GPS_UBLOX::UBLOX_F10;
         } else if (strstr(ubx_backend._module, "F20") != nullptr) {
             module = Module::F20;
+            ubx_backend._hardware_generation = AP_GPS_UBLOX::UBLOX_F20;
         } else if (strstr(ubx_backend._module, "X20") != nullptr) {
             module = Module::X20;
+            ubx_backend._hardware_generation = AP_GPS_UBLOX::UBLOX_X20;
         } else {
             module = Module::UNKNOWN;
         }
