@@ -546,6 +546,10 @@ void AP_GPS_UBLOX_CFGv2::_publish_supported_constellations()
                  ubx_backend.state.instance + 1,
                  (unsigned long)_cfg.enabled_signals,
                  (unsigned long)_cfg.supported_signals);
+
+    // update available masks, so user can see what is possible
+    ubx_backend.params.sig_avail.set(_cfg.supported_signals);
+    ubx_backend.params.gnss_avail.set(_cfg.supported_gnss);
 }
 
 bool AP_GPS_UBLOX_CFGv2::is_signal_cfg_needed()
