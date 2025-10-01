@@ -710,6 +710,9 @@ bool AC_WPNav::force_stop_at_next_wp()
 // Source may be rangefinder or terrain database depending on availability.
 bool AC_WPNav::get_terrain_offset_m(float& offset_m)
 {
+#if AP_TERRAIN_AVAILABLE
+    AP_Terrain *terrain = AP::terrain();
+#endif
     // determine terrain data source and compute offset accordingly
     switch (get_terrain_source()) {
     case AC_WPNav::TerrainSource::TERRAIN_UNAVAILABLE:
@@ -721,13 +724,19 @@ bool AC_WPNav::get_terrain_offset_m(float& offset_m)
             offset_m = _rangefinder_terrain_offset_m;
             return true;
         }
+#if AP_TERRAIN_AVAILABLE
+        if (terrain != nullptr && !terrain->rangefinder_fallback_enabled()) {
+            return false;
+        }
         // If the rangefinder isn't healthy then use terrain data if available
-        FALLTHROUGH;
+        FALLTHROUGH;        
+#else
+        return false;
+#endif
 
     case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
 #if AP_TERRAIN_AVAILABLE
         float terrain_alt_m = 0.0f;
-        AP_Terrain *terrain = AP::terrain();
         if (terrain != nullptr &&
             terrain->height_above_terrain(terrain_alt_m, true)) {
             // compute offset as difference between current altitude and terrain height
