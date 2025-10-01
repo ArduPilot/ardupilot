@@ -51,6 +51,8 @@ SPIBus::SPIBus(uint8_t _bus):
 SPIDevice::SPIDevice(SPIBus &_bus, SPIDeviceDesc &_device_desc)
     : bus(_bus)
     , device_desc(_device_desc)
+    , speed(AP_HAL::Device::SPEED_LOW)  // Initialize speed to LOW by default
+    , current_speed_hz(0)  // Initialize current speed tracking
 {
 
 #ifdef SPIDEBUG
@@ -60,41 +62,67 @@ SPIDevice::SPIDevice(SPIBus &_bus, SPIDeviceDesc &_device_desc)
     set_device_address(_device_desc.device);
     set_speed(AP_HAL::Device::SPEED_LOW);
 
-    spi_device_interface_config_t cfg_low;
-    memset(&cfg_low, 0, sizeof(cfg_low));
-    cfg_low.mode = _device_desc.mode;
-    cfg_low.clock_speed_hz = _device_desc.lspeed;
-    cfg_low.spics_io_num = -1;
-    cfg_low.queue_size = 5;
-    spi_bus_add_device(bus_desc[_bus.bus].host, &cfg_low, &low_speed_dev_handle);
-
-    if (_device_desc.hspeed != _device_desc.lspeed) {
-        spi_device_interface_config_t cfg_high;
-        memset(&cfg_high, 0, sizeof(cfg_high));
-        cfg_high.mode = _device_desc.mode;
-        cfg_high.clock_speed_hz = _device_desc.hspeed;
-        cfg_high.spics_io_num = -1;
-        cfg_high.queue_size = 5;
-        spi_bus_add_device(bus_desc[_bus.bus].host, &cfg_high, &high_speed_dev_handle);
-    }
+    // Create initial device handle at low speed
+    spi_device_interface_config_t cfg;
+    memset(&cfg, 0, sizeof(cfg));
+    cfg.mode = _device_desc.mode;
+    cfg.clock_speed_hz = _device_desc.lspeed;  // Start with low speed
+    cfg.spics_io_num = _device_desc.cs;
+    cfg.queue_size = 15;
+    spi_bus_add_device(bus_desc[_bus.bus].host, &cfg, &device_handle);
+    current_speed_hz = _device_desc.lspeed;  // Track current configured speed
 
 
     asprintf(&pname, "SPI:%s:%u:%u",
              device_desc.name, 0, (unsigned)device_desc.device);
-    printf("spi device constructed %s\n", pname);
 }
 
 SPIDevice::~SPIDevice()
 {
+    // Clean up the device handle
+    if (device_handle != nullptr) {
+        spi_bus_remove_device(device_handle);
+    }
     free(pname);
 }
 
 spi_device_handle_t SPIDevice::current_handle()
 {
-    if (speed == AP_HAL::Device::SPEED_HIGH && high_speed_dev_handle != nullptr) {
-        return high_speed_dev_handle;
+    // Check if we need to reconfigure the device speed
+    uint32_t desired_speed = (speed == AP_HAL::Device::SPEED_HIGH) ? device_desc.hspeed : device_desc.lspeed;
+
+    if (current_speed_hz != desired_speed) {
+        // Reconfigure the device handle for the new speed
+        reconfigure_speed(desired_speed);
     }
-    return low_speed_dev_handle;
+
+    return device_handle;
+}
+
+void SPIDevice::reconfigure_speed(uint32_t new_speed_hz)
+{
+    // Skip reconfiguration if already at the desired speed
+    if (current_speed_hz == new_speed_hz) {
+        return;
+    }
+
+    // Remove the current device handle
+    if (device_handle != nullptr) {
+        spi_bus_remove_device(device_handle);
+    }
+
+    // Create new device handle with the desired speed
+    spi_device_interface_config_t cfg;
+    memset(&cfg, 0, sizeof(cfg));
+    cfg.mode = device_desc.mode;
+    cfg.clock_speed_hz = new_speed_hz;
+    cfg.spics_io_num = device_desc.cs;
+    cfg.queue_size = 15;
+
+    esp_err_t ret = spi_bus_add_device(bus_desc[bus.bus].host, &cfg, &device_handle);
+    if (ret == ESP_OK) {
+        current_speed_hz = new_speed_hz;
+    }
 }
 
 bool SPIDevice::set_speed(AP_HAL::Device::Speed _speed)
@@ -153,12 +181,12 @@ bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv, uint32_t
     return true;
 }
 
-void SPIDevice::acquire_bus(bool accuire)
+void SPIDevice::acquire_bus(bool acquire)
 {
 #ifdef SPIDEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
-    if (accuire) {
+    if (acquire) {
         spi_device_acquire_bus(current_handle(), portMAX_DELAY);
         gpio_set_level(device_desc.cs, 0);
     } else {
