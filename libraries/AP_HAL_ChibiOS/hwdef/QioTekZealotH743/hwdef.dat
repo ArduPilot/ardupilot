@@ -218,7 +218,7 @@ PE6  EXTERN_GPIO4 OUTPUT GPIO(4)
 # enable FAT filesystem support
 define HAL_OS_FATFS_IO 1
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_STORAGE_SIZE 32768
 define HAL_WITH_RAMTRON 1
 

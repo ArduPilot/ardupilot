@@ -97,7 +97,7 @@ IMU Invensense SPI:mpu6000 ROTATION_NONE
 BARO MS5611 I2C:0:0x76
 BARO MS5611 I2C:0:0x77
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_WITH_RAMTRON 1
 # enable FAT filesystem support
 define HAL_OS_FATFS_IO 1

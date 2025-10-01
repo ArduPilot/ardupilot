@@ -96,7 +96,7 @@ COMPASS RM3100 I2C:1:0x20 false ROTATION_NONE
 
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_WITH_RAMTRON 1
 # enable FAT filesystem support
 define HAL_OS_FATFS_IO 1

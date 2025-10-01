@@ -403,7 +403,7 @@ define HAL_HAVE_SAFETY_SWITCH 1
 # this enables the use of a ramtron device for storage, if one is
 # found on SPI. You must have a ramtron entry in the SPI device table
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_WITH_RAMTRON 1
 
 # setup for the possibility of an IMU heater as the The CUBE has
