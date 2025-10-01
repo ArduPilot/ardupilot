@@ -429,6 +429,17 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // index 30 used by SER6_RTSCTS
     // index 31 used by SER7_RTSCTS
     // index 32 used by SER8_RTSCTS
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    // @Param: IDLE_STATS
+    // @DisplayName: Capture and calculate true CPU load using idle threads
+    // @Description: Capture and calculate true CPU load using idle threads
+    // @Values: 0:Disable,1:Enable
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("IDLE_STATS", 33, AP_BoardConfig, state.idle_stats, 0),
+#endif
+
     AP_GROUPEND
 };
 
