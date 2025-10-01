@@ -49,21 +49,41 @@ AP_GPS_UBLOX_CFGv2::AP_GPS_UBLOX_CFGv2(AP_GPS_UBLOX &_ubx_backend)
 
 void AP_GPS_UBLOX_CFGv2::update()
 {
-    // if (ubx_backend._class == AP_GPS_UBLOX::CLASS_ACK) {
-    //     if (ubx_backend._msg_id == AP_GPS_UBLOX::MSG_ACK_ACK) {
-    //         Debug("GPS %d: ACK for class 0x%02x id 0x%02x",
-    //               ubx_backend.state.instance + 1,
-    //               ubx_backend._buffer.ack.clsID,
-    //               ubx_backend._buffer.ack.msgID);
-    //     } else if (ubx_backend._msg_id == AP_GPS_UBLOX::MSG_ACK_NACK) {
-    //         Debug("GPS %d: NACK for class 0x%02x id 0x%02x",
-    //                 ubx_backend.state.instance + 1,
-    //                 ubx_backend._buffer.nack.clsID,
-    //                 ubx_backend._buffer.nack.msgID);
-    //     }
-    // }
+    // Check if reset was requested via AUTO_CONFIG parameter (bit 3)
+    if ((ubx_backend.gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_UBLOX_RESET_SERIAL_ONLY) &&
+        (curr_state != States::RESET_MODULE)) {
+        curr_state = States::RESET_MODULE;
+        _last_request_time = 0; // immediate action
+    }
+
+    if (ubx_backend._class == AP_GPS_UBLOX::CLASS_ACK &&
+        ubx_backend._msg_id == AP_GPS_UBLOX::MSG_ACK_ACK &&
+        ubx_backend._buffer.ack.clsID == AP_GPS_UBLOX::CLASS_CFG) {
+        handle_cfg_ack(ubx_backend._buffer.ack.msgID);
+//      Debug("GPS %d: ACK for class 0x%02x id 0x%02x",
+//            ubx_backend.state.instance + 1,
+//            ubx_backend._buffer.ack.clsID,
+//            ubx_backend._buffer.ack.msgID);
+    }
+    //else if (ubx_backend._class == AP_GPS_UBLOX::CLASS_ACK &&
+    //   ubx_backend._msg_id == AP_GPS_UBLOX::MSG_ACK_NACK &&
+    //   ubx_backend._buffer.nack.clsID == AP_GPS_UBLOX::CLASS_CFG) {
+    //    Debug("GPS %d: NACK for class 0x%02x id 0x%02x",
+    //            ubx_backend.state.instance + 1,
+    //            ubx_backend._buffer.nack.clsID,
+    //            ubx_backend._buffer.nack.msgID);
+    //}
 
     switch (curr_state) {
+        case States::RESET_MODULE:
+            if (AP_HAL::millis() - _last_request_time > 500) {
+                _last_request_time = AP_HAL::millis();
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                                 "GPS %d: u-blox resetting to default config",
+                                 ubx_backend.state.instance + 1);
+                delete_and_reset_config();
+            }
+            break;
         case States::IDENTIFY_MODULE: {
             if (AP_HAL::millis() - _last_request_time > 200) {
                 _last_request_time = AP_HAL::millis();
@@ -341,17 +361,17 @@ bool AP_GPS_UBLOX_CFGv2::is_common_cfg_needed()
         if (_processing_cfg.KEY##_val != (TYPE)VAL) { need = true; }
 
     bool need = false;
-    if (module <= Module::F10) {
+    if (module < Module::SINGLE_UART_LAST) {
         // Check constant config values for single-UART modules
-        need = UBX_CFG_COMMON_UART(CFG_NEED);
+        UBX_CFG_COMMON_UART(CFG_NEED);
     } else {
         // Check constant config values
         switch (ubx_backend._ublox_port) {
         case 2: // UART1
-            need = UBX_CFG_COMMON_UART1(CFG_NEED);
+            UBX_CFG_COMMON_UART1(CFG_NEED);
             break;
         case 3: // UART2
-            need = UBX_CFG_COMMON_UART2(CFG_NEED);
+            UBX_CFG_COMMON_UART2(CFG_NEED);
             break;
         default:
             // should not happen
@@ -717,7 +737,7 @@ bool AP_GPS_UBLOX_CFGv2::_request_common_cfg()
         }  // Copy from the array
     };
 
-    if (module <= Module::F10) {
+    if (module < Module::SINGLE_UART_LAST) {
         if (ubx_backend.port->txspace() < (uint16_t)(sizeof(AP_GPS_UBLOX::ubx_header) + sizeof(msg_single_uart) + 2)) {
             return false;
         }
@@ -781,7 +801,7 @@ bool AP_GPS_UBLOX_CFGv2::set_common_cfg()
     uint8_t blob[100] = {};
     UBXPackedCfg packed_cfg(blob, sizeof(blob));
 
-    if (module <= Module::F10) {
+    if (module < Module::SINGLE_UART_LAST) {
         UBX_CFG_COMMON_UART(CFG_PUSH)
     } else {
         // set constant config values for dual-UART modules
@@ -813,6 +833,78 @@ bool AP_GPS_UBLOX_CFGv2::set_common_cfg()
     }
 
     return _send_valset_bytes(bytes, size, ConfigLayer::ALL);
+}
+
+void AP_GPS_UBLOX_CFGv2::handle_cfg_ack(uint8_t msg_id)
+{
+    switch (msg_id) {
+        case AP_GPS_UBLOX::MSG_CFG_VALDEL:
+            if (curr_state == States::RESET_MODULE) {
+                Debug("GPS %d: CFG-VALDEL acknowledged, sending reset",
+                      ubx_backend.state.instance + 1);
+                // Send controlled software reset
+                _send_reset(0x0000, AP_GPS_UBLOX::RESET_SW_CONTROLLED);
+                // move back to SERIAL ONLY Config and transition to IDENTIFY_MODULE
+                ubx_backend.gps._auto_config.set_and_save(AP_GPS::GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY);
+                curr_state = States::IDENTIFY_MODULE;
+                _last_request_time = AP_HAL::millis();
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+bool AP_GPS_UBLOX_CFGv2::delete_and_reset_config()
+{
+    static constexpr struct PACKED {
+        AP_GPS_UBLOX::ubx_cfg_valdel msg;
+        uint32_t key;
+    } valdel_all = {
+        .msg = {
+            .version = 0x01,
+            .layers = (1U<<BBR) | (1U<<FLASH),
+            .transaction = 0x00,
+            .reserved0 = 0x00
+        },
+        .key = 0xFFFFFFFF
+    };
+
+    if (ubx_backend.port->txspace() < (uint16_t)(sizeof(AP_GPS_UBLOX::ubx_header) + sizeof(valdel_all) + 2)) {
+        return false;
+    }
+
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
+                  "GPS %d: Deleting all config and resetting",
+                  ubx_backend.state.instance + 1);
+
+    return ubx_backend._send_message(AP_GPS_UBLOX::CLASS_CFG,
+                                     AP_GPS_UBLOX::MSG_CFG_VALDEL,
+                                     &valdel_all,
+                                     sizeof(valdel_all));
+}
+
+bool AP_GPS_UBLOX_CFGv2::_send_reset(uint16_t navBbrMask, uint8_t resetMode)
+{
+    AP_GPS_UBLOX::ubx_cfg_rst rst = {
+        .navBbrMask = navBbrMask,
+        .resetMode = resetMode,
+        .reserved0 = 0
+    };
+
+    if (ubx_backend.port->txspace() < (uint16_t)(sizeof(AP_GPS_UBLOX::ubx_header) + sizeof(rst) + 2)) {
+        return false;
+    }
+
+    Debug("GPS %d: Sending reset: navBbrMask=0x%04x resetMode=0x%02x",
+          ubx_backend.state.instance + 1,
+          navBbrMask,
+          resetMode);
+
+    return ubx_backend._send_message(AP_GPS_UBLOX::CLASS_CFG,
+                                     AP_GPS_UBLOX::MSG_CFG_RST,
+                                     &rst,
+                                     sizeof(rst));
 }
 
 // Append value bytes in little-endian order to dest at index, incrementing index
