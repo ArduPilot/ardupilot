@@ -400,7 +400,7 @@ void AP_TECS::_update_speed(float DT)
             // take 5 point moving average
             _vel_dot = _vdot_filter.apply(temp);
         } else {
-            // In no wind relative velocity data is availablem use less ccurate method
+            // If no wind relative velocity data is available use less accurate method
             // that uses acceleration along X axis and is subject to pitch coupling
             const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
             // Calculate speed rate of change
