@@ -444,7 +444,6 @@ void AC_PosControl::set_correction_speed_accel_xy(float speed_cms, float accel_c
 void AC_PosControl::init_xy_controller_stopping_point()
 {
     init_xy_controller();
-
     get_stopping_point_xy_cm(_pos_target.xy());
     _vel_desired.xy().zero();
     _accel_desired.xy().zero();
@@ -615,7 +614,6 @@ void AC_PosControl::update_xy_controller()
 
     const Vector3f &curr_pos = _inav.get_position_neu_cm();
     Vector2f vel_target = _p_pos_xy.update_all(_pos_target.x, _pos_target.y, curr_pos);
-
     // add velocity feed-forward scaled to compensate for optical flow measurement induced EKF noise
     vel_target *= ahrsControlScaleXY;
     _vel_target.xy() = vel_target;

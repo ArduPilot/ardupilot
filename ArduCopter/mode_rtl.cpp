@@ -19,7 +19,7 @@ bool ModeRTL::init(bool ignore_checks)
     }
     // initialise waypoint and spline controller
     wp_nav->wp_and_spline_init(g.rtl_speed_cms);
-    _state = SubMode::STARTING;
+    _state = SubMode::BRAKING_INIT;
     _state_complete = true; // see run() method below
     terrain_following_allowed = !copter.failsafe.terrain;
     // reset flag indicating if pilot has applied roll or pitch inputs during landing
@@ -66,6 +66,12 @@ void ModeRTL::run(bool disarm_on_land)
     // check if we need to move to next state
     if (_state_complete) {
         switch (_state) {
+        case SubMode::BRAKING_INIT:
+            brake_init();
+            break;
+        case SubMode::BRAKING:
+            // no further action here, see run
+            break;
         case SubMode::STARTING:
             build_path();
             climb_start();
@@ -94,12 +100,17 @@ void ModeRTL::run(bool disarm_on_land)
 
     // call the correct run function
     switch (_state) {
-
+    case SubMode::BRAKING_INIT:
+        // should not be reached:
+        _state = SubMode::BRAKING;
+        FALLTHROUGH;
+    case SubMode::BRAKING:
+        brake_run();
+        break;
     case SubMode::STARTING:
         // should not be reached:
         _state = SubMode::INITIAL_CLIMB;
         FALLTHROUGH;
-
     case SubMode::INITIAL_CLIMB:
         climb_return_run();
         break;
@@ -127,7 +138,6 @@ void ModeRTL::climb_start()
 {
     _state = SubMode::INITIAL_CLIMB;
     _state_complete = false;
-
     // set the destination
     if (!wp_nav->set_wp_destination_loc(rtl_path.climb_target) || !wp_nav->set_wp_destination_next_loc(rtl_path.return_target)) {
         // this should not happen because rtl_build_path will have checked terrain data was available
@@ -139,6 +149,38 @@ void ModeRTL::climb_start()
 
     // hold current yaw during initial climb
     auto_yaw.set_mode(AUTO_YAW_HOLD);
+}
+
+void ModeRTL::brake_run()
+{
+    _state_complete = false;
+    // if not armed set throttle to zero and exit immediately
+    if (is_disarmed_or_landed()) {
+        make_safe_ground_handling();
+        return;
+    }
+
+    // set motors to full range
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+    // use position controller to stop
+    Vector2f vel;
+    Vector2f accel;
+    pos_control->input_vel_accel_xy(vel, accel);
+    pos_control->update_xy_controller();
+
+    // call attitude controller
+    attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0f);
+
+    pos_control->set_pos_target_z_from_climb_rate_cm(0.0f);
+    pos_control->update_z_controller();
+
+    if (inertial_nav.get_velocity_neu_cms().length() < g.rtl_speed_cms){
+        _state_complete = true;
+        _state = SubMode::STARTING;
+        //undo the changes we made to the vel targets. 
+        wp_nav->set_speed_xy(g.rtl_speed_cms);
+    }
 }
 
 // rtl_return_start - initialise return to home
@@ -418,6 +460,28 @@ void ModeRTL::land_run(bool disarm_on_land)
     land_run_normal_or_precland();
 }
 
+void ModeRTL::brake_init()
+{
+    _state = SubMode::BRAKING;
+    float accel_max = wp_nav->get_wp_acceleration(); // [NHW] Get WPNAV_ACCEL parameter for braking acceleration
+    float z_speed = wp_nav->get_default_speed_down(); // [NHW} get default vertical speed. Use descent only for safety.
+    // initialise pos controller speed and acceleration
+    pos_control->set_max_speed_accel_xy(inertial_nav.get_velocity_neu_cms().length(), accel_max);
+    pos_control->set_correction_speed_accel_xy(inertial_nav.get_velocity_neu_cms().length(), accel_max);
+
+    // initialise position controller
+    pos_control->init_xy_controller();
+
+    // set vertical speed and acceleration limits
+    pos_control->set_max_speed_accel_z(z_speed, z_speed, accel_max);
+    pos_control->set_correction_speed_accel_z(z_speed, z_speed, accel_max);
+
+    // initialise the vertical position controller
+    if (!pos_control->is_active_z()) {
+        pos_control->init_z_controller();
+    }
+}
+
 void ModeRTL::build_path()
 {
     // origin point is our stopping point
@@ -557,6 +621,8 @@ bool ModeRTL::get_wp(Location& destination) const
 {
     // provide target in states which use wp_nav
     switch (_state) {
+    case SubMode::BRAKING_INIT:
+    case SubMode::BRAKING:
     case SubMode::STARTING:
     case SubMode::INITIAL_CLIMB:
     case SubMode::RETURN_HOME:
