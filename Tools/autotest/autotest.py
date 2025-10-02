@@ -21,6 +21,7 @@ import sys
 import time
 import traceback
 from distutils.dir_util import copy_tree
+import logging
 
 import rover
 import arducopter
@@ -43,6 +44,11 @@ tester = None
 
 build_opts = None
 
+file_path =  os.path.join( ".", fr'logs/MA_autotest.log' )
+
+logger = logging.getLogger(__name__)
+
+logging.basicConfig(filename=file_path, encoding='utf-8', level=logging.DEBUG)
 
 def buildlogs_dirpath():
     """Return BUILDLOGS directory path."""
@@ -740,6 +746,7 @@ def run_tests(steps):
 
         t1 = time.time()
         print(">>>> RUNNING STEP: %s at %s" % (step, time.asctime()))
+        logger.info(">>>> RUNNING STEP: %s at %s" % (step, time.asctime()))
         try:
             success = run_step(step)
             testinstance = None
@@ -749,8 +756,10 @@ def run_tests(steps):
                 results.add(step, '<span class="passed-text">PASSED</span>',
                             time.time() - t1)
                 print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
+                logger.info(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
             else:
                 print(">>>> FAILED STEP: %s at %s" % (step, time.asctime()))
+                logger.error(">>>> FAILED STEP: %s at %s" % (step, time.asctime()))
                 passed = False
                 failed.append(step)
                 if testinstance is not None:
@@ -764,6 +773,8 @@ def run_tests(steps):
             failed.append(step)
             print(">>>> FAILED STEP: %s at %s (%s)" %
                   (step, time.asctime(), msg))
+            logger.error(">>>> FAILED STEP: %s at %s (%s)" %
+                         (step, time.asctime(), msg))
             traceback.print_exc(file=sys.stdout)
             results.add(step,
                         '<span class="failed-text">FAILED</span>',
@@ -781,13 +792,17 @@ def run_tests(steps):
         keys = failed_testinstances.keys()
         if len(keys):
             print("Failure Summary:")
+            logger.error("Failure Summary:")            
         for key in keys:
             print("  %s:" % key)
+            logger.error("  %s:" % key)
             for testinstance in failed_testinstances[key]:
                 for failure in testinstance.fail_list:
                     print("  " + str(failure))
+                    logger.error("  " + str(failure))
 
         print("FAILED %u tests: %s" % (len(failed), failed))
+        logger.error("FAILED %u tests: %s" % (len(failed), failed))
 
     util.pexpect_close_all()
 
