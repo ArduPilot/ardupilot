@@ -519,6 +519,9 @@ protected:
     // call the arming library's update function
     void update_arming();
 
+    // call the RC library's update function
+    void update_rc();
+
     // check for motor noise at a particular frequency
     void check_motor_noise();
 
