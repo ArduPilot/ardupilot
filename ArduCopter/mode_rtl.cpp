@@ -175,7 +175,7 @@ void ModeRTL::brake_run()
     pos_control->set_pos_target_z_from_climb_rate_cm(0.0f);
     pos_control->update_z_controller();
 
-    if(copter.pos_control->get_inav().get_velocity_xy_cms().length() < g.rtl_speed_cms){
+    if (inertial_nav.get_velocity_neu_cms().length() < g.rtl_speed_cms){
         _state_complete = true;
         _state = SubMode::STARTING;
         //undo the changes we made to the vel targets. 
@@ -463,7 +463,8 @@ void ModeRTL::land_run(bool disarm_on_land)
 void ModeRTL::brake_init()
 {
     _state = SubMode::BRAKING;
-    float accel_max = wp_nav->get_wp_acceleration();
+    float accel_max = wp_nav->get_wp_acceleration(); // [NHW] Get WPNAV_ACCEL parameter for braking acceleration
+    float z_speed = wp_nav->get_default_speed_down(); // [NHW} get default vertical speed. Use descent only for safety.
     // initialise pos controller speed and acceleration
     pos_control->set_max_speed_accel_xy(inertial_nav.get_velocity_neu_cms().length(), accel_max);
     pos_control->set_correction_speed_accel_xy(inertial_nav.get_velocity_neu_cms().length(), accel_max);
@@ -472,8 +473,8 @@ void ModeRTL::brake_init()
     pos_control->init_xy_controller();
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(250, 250, accel_max);
-    pos_control->set_correction_speed_accel_z(250, 250, accel_max);
+    pos_control->set_max_speed_accel_z(z_speed, z_speed, accel_max);
+    pos_control->set_correction_speed_accel_z(z_speed, z_speed, accel_max);
 
     // initialise the vertical position controller
     if (!pos_control->is_active_z()) {

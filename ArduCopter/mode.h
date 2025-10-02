@@ -1330,7 +1330,7 @@ private:
     void climb_return_run();
     void loiterathome_start();
     void loiterathome_run();
-    void brake_init();
+    void brake_init();          // [NHW] Added brake states to smooth kinematic transition into RTL when targetting lower RTL speeds. 
     void brake_run();
     void build_path();
     void compute_return_target();
