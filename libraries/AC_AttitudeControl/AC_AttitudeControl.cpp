@@ -1087,7 +1087,7 @@ void AC_AttitudeControl::scale_I_to_angle_P()
     Vector3f i_scale{
         _p_angle_roll.kP() * _angle_P_scale.x,
         _p_angle_pitch.kP() * _angle_P_scale.y,
-        _p_angle_yaw.kP() * _angle_P_scale.y
+        _p_angle_yaw.kP() * _angle_P_scale.z
     };
     set_I_scale_mult(i_scale);
 }
