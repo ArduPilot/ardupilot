@@ -10,7 +10,7 @@
 
 #define PROXIMITY_TRTOWER_TIMEOUT_MS            300                               // requests timeout after 0.3 seconds
 
-class AP_Proximity_TeraRangerTowerEvo : public AP_Proximity_Backend_Serial {
+class AP_Proximity_TeraRangerHub : public AP_Proximity_Backend_Serial {
 
 public:
 
@@ -49,7 +49,7 @@ private:
     const uint16_t _mode_request_delay = 1000;
     enum InitState _current_init_state = InitState_Printout;
 
-    // tower evo operating modes
+    // tower hub operating modes
 
     const uint8_t BINARY_MODE[4] = {(uint8_t)0x00, (uint8_t)0x11, (uint8_t)0x02, (uint8_t)0x4C};
     const uint8_t TOWER_MODE[4] = {(uint8_t)0x00, (uint8_t)0x31, (uint8_t)0x03, (uint8_t)0xE5};
