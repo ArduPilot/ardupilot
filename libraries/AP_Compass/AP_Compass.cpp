@@ -792,20 +792,20 @@ void Compass::init()
         for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
             if (_priority_did_stored_list[i] != 0) {
                 _priority_did_list[i] = _priority_did_stored_list[i];
-            } else {
-                // Maintain a list without gaps and duplicates
+                // check for duplicates
                 for (Priority j(i+1); j<COMPASS_MAX_INSTANCES; j++) {
-                    int32_t temp;
                     if (_priority_did_stored_list[j] == _priority_did_stored_list[i]) {
                         _priority_did_stored_list[j].set_and_save_ifchanged(0);
                     }
+                }
+            } else {
+                // Maintain a list without gaps
+                for (Priority j(i+1); j<COMPASS_MAX_INSTANCES; j++) {
                     if (_priority_did_stored_list[j] == 0) {
                         continue;
                     }
-                    temp = _priority_did_stored_list[j];
+                    _priority_did_stored_list[i].set_and_save_ifchanged(_priority_did_stored_list[j]);
                     _priority_did_stored_list[j].set_and_save_ifchanged(0);
-                    _priority_did_list[i] = temp;
-                    _priority_did_stored_list[i].set_and_save_ifchanged(temp);
                     break;
                 }
             }
