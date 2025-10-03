@@ -1643,18 +1643,29 @@ AP_GPS_UBLOX::_parse_gps(void)
             MB_Debug("RELPOSNED flags: %lx valid: %lx invalid: %lx\n", _buffer.relposned.flags, valid_mask, invalid_mask);
             if (((_buffer.relposned.flags & valid_mask) == valid_mask) &&
                 ((_buffer.relposned.flags & invalid_mask) == 0)) {
-                if (calculate_moving_base_yaw(_buffer.relposned.relPosHeading * 1e-5,
-                                          _buffer.relposned.relPosLength * 0.01,
-                                          _buffer.relposned.relPosD*0.01)) {
-                    state.have_gps_yaw_accuracy = true;
-                    state.gps_yaw_accuracy = _buffer.relposned.accHeading * 1e-5;
-                    _last_relposned_ms = AP_HAL::millis();
-                }
+
+                // Populate state
                 state.relPosHeading = _buffer.relposned.relPosHeading * 1e-5;
                 state.relPosLength  = _buffer.relposned.relPosLength * 0.01;
                 state.relPosD       = _buffer.relposned.relPosD * 0.01;
                 state.accHeading    = _buffer.relposned.accHeading * 1e-5;
                 state.relposheading_ts = AP_HAL::millis();
+
+                // Add high precision components if available
+                if (_buffer.relposned.relPosHPLength > -100 && _buffer.relposned.relPosHPLength < 100) {
+                    // 0.1mm to m
+                    state.relPosLength += _buffer.relposned.relPosHPLength * 0.0001;
+                }
+                if (_buffer.relposned.relPosHPD > -100 && _buffer.relposned.relPosHPD < 100) {
+                    // 0.1mm to m
+                    state.relPosD += _buffer.relposned.relPosHPD * 0.0001;
+                }
+
+                if (calculate_moving_base_yaw(state.relPosHeading, state.relPosLength, state.relPosD)) {
+                    state.have_gps_yaw_accuracy = true;
+                    state.gps_yaw_accuracy = state.accHeading;
+                    _last_relposned_ms = state.relposheading_ts;
+                }
             } else {
                 state.have_gps_yaw_accuracy = false;
             }
