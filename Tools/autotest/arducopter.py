@@ -2728,10 +2728,21 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def AutoTune(self):
         """Test autotune mode"""
 
+        # autotune changes a set of parameters on the vehicle which
+        # are not in our context.  That changes the flight
+        # characteristics, which we can't afford between runs.  So
+        # completely reset the simulated vehicle after the run is
+        # complete by "customising" the commandline here:
+        self.customise_SITL_commandline([])
+
+        self.set_parameters({
+            "ATC_RAT_RLL_SMAX": 1,
+            "AUTOTUNE_MIN_D": 0.0004,
+        })
+
         rlld = self.get_parameter("ATC_RAT_RLL_D")
         rlli = self.get_parameter("ATC_RAT_RLL_I")
         rllp = self.get_parameter("ATC_RAT_RLL_P")
-        self.set_parameter("ATC_RAT_RLL_SMAX", 1)
         self.takeoff(10)
 
         # hold position in loiter
@@ -2766,11 +2777,22 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def AutoTuneYawD(self):
         """Test autotune mode"""
 
+        # autotune changes a set of parameters on the vehicle which
+        # are not in our context.  That changes the flight
+        # characteristics, which we can't afford between runs.  So
+        # completely reset the simulated vehicle after the run is
+        # complete by "customising" the commandline here:
+        self.customise_SITL_commandline([])
+
+        self.set_parameters({
+            "ATC_RAT_RLL_SMAX": 1,
+            "AUTOTUNE_AXES": 15,
+            "AUTOTUNE_MIN_D": 0.0004,
+        })
+
         rlld = self.get_parameter("ATC_RAT_RLL_D")
         rlli = self.get_parameter("ATC_RAT_RLL_I")
         rllp = self.get_parameter("ATC_RAT_RLL_P")
-        self.set_parameter("ATC_RAT_RLL_SMAX", 1)
-        self.set_parameter("AUTOTUNE_AXES", 15)
         self.takeoff(10)
 
         # hold position in loiter
@@ -2815,6 +2837,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "RC8_OPTION": 17,
             "ATC_RAT_RLL_FLTT": 20,
+            "AUTOTUNE_MIN_D": 0.0004,
         })
 
         self.takeoff(10, mode='LOITER')
@@ -5366,19 +5389,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             p4=1,  # 1 for relative, 0 for absolute
             quiet=True,
         )
-
-    def setup_servo_mount(self, roll_servo=5, pitch_servo=6, yaw_servo=7):
-        '''configure a rpy servo mount; caller responsible for required rebooting'''
-        self.progress("Setting up servo mount")
-        self.set_parameters({
-            "MNT1_TYPE": 1,
-            "MNT1_PITCH_MIN": -45,
-            "MNT1_PITCH_MAX": 45,
-            "RC6_OPTION": 213,  # MOUNT1_PITCH
-            "SERVO%u_FUNCTION" % roll_servo: 8, # roll
-            "SERVO%u_FUNCTION" % pitch_servo: 7, # pitch
-            "SERVO%u_FUNCTION" % yaw_servo: 6, # yaw
-        })
 
     def get_mount_roll_pitch_yaw_deg(self):
         '''return mount (aka gimbal) roll, pitch and yaw angles in degrees'''
@@ -11546,6 +11556,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "AUTO_OPTIONS": 3,
         })
         self.set_rc(6, 2000)
+        self.reboot_sitl()
 
         self.upload_simple_relhome_mission([
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
@@ -12296,6 +12307,78 @@ RTL_ALT 111
         self.assert_parameter_value("RTL_ALT", 111)
         self.assert_parameter_value('RTL_ALT_FINAL', 101)
 
+    def ScriptParamRegistration(self):
+        '''test parameter script registration'''
+        self.set_parameters({
+            'SCR_ENABLE': 1,
+        })
+        script_content = """
+local PARAM_TABLE_KEY = 10
+local PARAM_TABLE_PREFIX = "TST_"
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 16), 'could not add param table')
+
+-- add a parameter and bind it to a variable
+function bind_add_param(name, idx, default_value)
+    assert(param:add_param(PARAM_TABLE_KEY, idx, name, default_value), string.format('could not add param %s', PARAM_TABLE_PREFIX .. name))
+    return Parameter(PARAM_TABLE_PREFIX .. name)
+end
+
+local PARAM_A = bind_add_param("A", 5, 22)
+local PARAM_B = bind_add_param("B", 1, 33)
+
+function update()
+  gcs:send_text(3, string.format("test script running"))
+  return update, 1000
+end
+
+return update, 1000
+"""  # noqa: E501
+        self.install_script_content_context("test.lua", script_content)
+        self.reboot_sitl()
+        self.wait_statustext('test script running')
+        self.assert_parameter_value('TST_A', 22)
+        self.assert_parameter_value('TST_B', 33)
+
+        all_params = self.fetch_all_parameters()
+        for pname in "TST_A", "TST_B":
+            if pname not in all_params:
+                raise ValueError(f"{pname} not in fetched-all-parameters")
+
+        self.start_subtest("Remove parameter at runtime")
+        script_content = """
+local PARAM_TABLE_KEY = 10
+local PARAM_TABLE_PREFIX = "TST_"
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 16), 'could not add param table')
+
+-- add a parameter and bind it to a variable
+function bind_add_param(name, idx, default_value)
+    assert(param:add_param(PARAM_TABLE_KEY, idx, name, default_value), string.format('could not add param %s', PARAM_TABLE_PREFIX .. name))
+    return Parameter(PARAM_TABLE_PREFIX .. name)
+end
+
+local PARAM_B = bind_add_param("B", 1, 33)
+
+function update()
+  gcs:send_text(3, string.format("test script running"))
+  return update, 1000
+end
+
+return update, 1000
+"""  # noqa: E501
+        self.install_script_content_context("test.lua", script_content)
+        self.scripting_restart()
+        self.wait_statustext('restart')
+        self.wait_statustext('test script running')
+        self.assert_parameter_value('TST_B', 33)
+
+        all_params = self.fetch_all_parameters()
+        for pname in ["TST_B"]:
+            if pname not in all_params:
+                raise ValueError(f"{pname} not in fetched-all-parameters")
+        for pname in ["TST_A"]:
+            if pname in all_params:
+                raise ValueError(f"{pname} in fetched-all-parameters when it should have gone away")
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -12324,6 +12407,7 @@ RTL_ALT 111
             self.SMART_RTL_EnterLeave,
             self.RTL_TO_RALLY,
             self.FlyEachFrame,
+            self.ScriptParamRegistration,
             self.GPSBlending,
             self.GPSWeightedBlending,
             self.GPSBlendingLog,

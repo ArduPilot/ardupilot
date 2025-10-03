@@ -1026,7 +1026,9 @@ AP_InertialSensor::init(uint16_t loop_rate)
             {
                 AP_Motors *motors = AP::motors();
                 if (motors != nullptr) {
-                    notch.num_dynamic_notches = __builtin_popcount(motors->get_motor_mask());
+                    // Always have at least one notch, this allows the filter to alocate and then be expanded at runtime if the number of motors is changed
+                    // Never have more than INS_MAX_NOTCHES
+                    notch.num_dynamic_notches = MAX(MIN(__builtin_popcount(motors->get_motor_mask()), INS_MAX_NOTCHES), 1);
                 }
             }
             // avoid harmonics unless actually configured by the user
@@ -1446,6 +1448,16 @@ bool AP_InertialSensor::get_gyro_health_all(void) const
     // return true if we have at least one gyro
     return (get_gyro_count() > 0);
 }
+
+#if HAL_GYROFFT_ENABLED
+const Vector3f& AP_InertialSensor::get_gyro_for_fft(void) const {
+    return _gyro_for_fft[AP::ahrs().get_primary_gyro_index()];
+}
+
+FloatBuffer&  AP_InertialSensor::get_raw_gyro_window(uint8_t axis) {
+    return get_raw_gyro_window(AP::ahrs().get_primary_gyro_index(), axis);
+}
+#endif
 
 // threshold in degrees/s to be consistent, consistent_time_sec duration for which
 // gyros need to be consistent to be considered consistent
