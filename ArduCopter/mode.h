@@ -668,6 +668,7 @@ private:
 
     void do_takeoff(const AP_Mission::Mission_Command& cmd);
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);
+    void do_arc_wp(const AP_Mission::Mission_Command& cmd);
     bool set_next_wp(const AP_Mission::Mission_Command& current_cmd, const Location &default_loc);
     void do_land(const AP_Mission::Mission_Command& cmd);
     void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
