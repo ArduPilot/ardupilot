@@ -7014,17 +7014,21 @@ void GCS_MAVLINK::initialise_message_intervals_from_config_files()
 
 void GCS_MAVLINK::initialise_message_intervals_from_streamrates()
 {
-    // this is O(n^2), but it's once at boot and across a 10-entry list...
-    for (uint8_t i=0; all_stream_entries[i].ap_message_ids != nullptr; i++) {
-        initialise_message_intervals_for_stream(all_stream_entries[i].stream_id);
-    }
 #if HAL_HIGH_LATENCY2_ENABLED
     if (!is_high_latency_link) {
+        // this is O(n^2), but it's once at boot and across a 10-entry list...
+        for (uint8_t i=0; all_stream_entries[i].ap_message_ids != nullptr; i++) {
+            initialise_message_intervals_for_stream(all_stream_entries[i].stream_id);
+        }
         set_mavlink_message_id_interval(MAVLINK_MSG_ID_HEARTBEAT, 1000);
     } else {
         set_mavlink_message_id_interval(MAVLINK_MSG_ID_HIGH_LATENCY2, 5000);
     }
 #else
+    // this is O(n^2), but it's once at boot and across a 10-entry list...
+    for (uint8_t i=0; all_stream_entries[i].ap_message_ids != nullptr; i++) {
+        initialise_message_intervals_for_stream(all_stream_entries[i].stream_id);
+    }
     set_mavlink_message_id_interval(MAVLINK_MSG_ID_HEARTBEAT, 1000);
 #endif
 }
