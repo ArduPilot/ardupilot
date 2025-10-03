@@ -162,12 +162,11 @@ bool AP_Compass_AK8963::init()
 
     /* register the compass instance in the frontend */
     _bus->set_device_type(DEVTYPE_AK8963);
-    if (!register_compass(_bus->get_bus_id(), _compass_instance)) {
+    if (!register_compass(_bus->get_bus_id())) {
         goto fail;
     }
-    set_dev_id(_compass_instance, _bus->get_bus_id());
 
-    set_rotation(_compass_instance, _rotation);
+    set_rotation(_rotation);
     bus_sem->give();
 
     _bus->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, void));
@@ -185,7 +184,7 @@ void AP_Compass_AK8963::read()
         return;
     }
 
-    drain_accumulated_samples(_compass_instance);
+    drain_accumulated_samples();
 }
 
 void AP_Compass_AK8963::_make_adc_sensitivity_adjustment(Vector3f& field) const
@@ -227,7 +226,7 @@ void AP_Compass_AK8963::_update()
     _make_adc_sensitivity_adjustment(raw_field);
     raw_field *= AK8963_MILLIGAUSS_SCALE;
 
-    accumulate_sample(raw_field, _compass_instance, 10);
+    accumulate_sample(raw_field, 10);
 }
 
 bool AP_Compass_AK8963::_check_id()
