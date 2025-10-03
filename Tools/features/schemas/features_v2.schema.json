@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ArduPilot Features YAML",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "actions", "categories", "features"],
+  "properties": {
+    "version": { "type": "string", "const": "v2" },
+    "actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/actionDef" },
+      "uniqueItems": true
+    },
+    "categories": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/categoryDef" }
+    },
+    "features": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/featureDef" }
+    }
+  },
+  "$defs": {
+    "kebabName": {
+      "type": "string",
+      "description": "lowercase, numbers, kebab-case",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "macroName": {
+      "type": "string",
+      "description": "C/C++ macro name (ALLCAPS, digits, underscores)",
+      "pattern": "^[A-Z][A-Z0-9_]*$"
+    },
+    "actionDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "description", "fields"],
+      "properties": {
+        "name": { "$ref": "#/$defs/kebabName" },
+        "description": { "type": "string", "minLength": 1 },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "description": "Field name required by this action",
+            "pattern": "^[a-z][a-z0-9_\\-]*$"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "featureAction": {
+      "type": "object",
+      "description": "Generic action instance. Must include `type`; per-action required fields should be validated with a runtime cross-check against the action catalog.",
+      "required": ["type"],
+      "properties": {
+        "type": { "$ref": "#/$defs/kebabName" },
+        "macro": { "$ref": "#/$defs/macroName" }
+      },
+      "additionalProperties": {
+        "type": ["string", "number", "integer", "boolean", "null"]
+      },
+      "propertyNames": { "pattern": "^[a-z][a-z0-9_\\-]*$" },
+      "minProperties": 1
+    },
+    "featureDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "description",
+        "category",
+        "actions"
+      ],
+      "properties": {
+        "name": { "$ref": "#/$defs/kebabName" },
+        "description": { "type": "string", "minLength": 1 },
+        "category": { "$ref": "#/$defs/kebabName" },
+        "enabledByDefault": { "type": "boolean" },
+        "dependencies": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/kebabName" },
+          "uniqueItems": true
+        },
+        "vehicles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["copter", "plane", "rover", "sub", "tracker", "blimp", "periph"]
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "actions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/featureAction" }
+        }
+      }
+    },
+    "categoryDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "description"],
+      "properties": {
+        "name": { "$ref": "#/$defs/kebabName" },
+        "description": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

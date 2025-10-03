@@ -24,11 +24,206 @@ import os
 import pathlib
 import re
 import sys
+import json
+import jsonschema
+import jsonschema.exceptions
+import yaml
 
 from pysim import util
 
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
 import extract_features  # noqa
+
+sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..', 'features'))
+import features  # noqa
+
+
+class SchemaValidator:
+    def __init__(self):
+        return
+
+    def load_json_schema(self, schema_path):
+        try:
+            with open(os.fspath(schema_path), "r", encoding="utf-8") as f:
+                schema = json.load(f)
+        except json.JSONDecodeError as e:
+            raise SystemExit(f"[schema error] {schema_path}: invalid JSON — {e}")
+        except OSError as e:
+            raise SystemExit(f"[schema error] {schema_path}: {e}")
+
+        try:
+            jsonschema.Draft202012Validator.check_schema(schema)
+        except jsonschema.exceptions.SchemaError as e:
+            raise SystemExit(f"[schema error] {schema_path}: {e.message}")
+
+        return schema
+
+    def format_error(self, err):
+        location = "/".join([str(p) for p in err.absolute_path]) or "(root)"
+        ctx = ""
+        if err.context:
+            bullet_points = "\n    - " + "\n    - ".join(c.message for c in err.context)
+            ctx = f"\n  details:{bullet_points}"
+        return (
+            f"{err.message}\n"
+            f"  at: {location}\n"
+            f"  validator: {err.validator}{ctx}"
+        )
+
+    def schema_path_for_yaml(self, document, schema_dir):
+        """
+        Read the YAML document and return '<schema_dir>/features_{version}.schema.json' based on
+        the 'version' field.
+        """
+        if not schema_dir:
+            raise ValueError("schema_dir is required and cannot be None or empty")
+        version = document.get("version")
+        if version is None:
+            raise SystemExit("[yaml error] YAML document missing required root 'version' field")
+        return os.path.join(os.fspath(schema_dir), f"features_{version}.schema.json")
+
+    def run(self, data, schema_dir):
+        """
+        Validate an ardupilot features.yml data against corresponding schema.
+        """
+        schema_path = self.schema_path_for_yaml(data, schema_dir)
+        schema = self.load_json_schema(schema_path)
+        validator = jsonschema.Draft202012Validator(schema)
+
+        had_errors = False
+        errors = sorted(validator.iter_errors(data), key=lambda e: e.path)
+        if errors:
+            had_errors = True
+            for e in errors:
+                print(self.format_error(e), file=sys.stderr)
+
+        return not had_errors
+
+
+class ConsistencyChecker:
+    """
+    Checks cross-references in the config:
+      - actions used by features are defined in top-level actions
+      - action instances have all required fields declared by their action type
+      - feature dependencies point to existing features
+      - feature categories reference valid category names
+      - catches duplicate feature names and self-dependencies
+    """
+
+    def __init__(self):
+        self.errors: list[str] = []
+
+    def collect_action_defs(self, data):
+        action_defs = {}
+        for i, a in enumerate(data.get("actions", []) or []):
+            t = a.get("name")
+            if not t:
+                self.errors.append(f"[actions[{i}]] missing 'name'")
+                continue
+            if t in action_defs:
+                self.errors.append(f"[action '{t}'] defined multiple times")
+            req_fields = set(a.get("fields", []) or [])
+            action_defs[t] = req_fields
+        return action_defs
+
+    def collect_categories(self, data):
+        categories = set()
+        for i, cat in enumerate(data.get("categories", []) or []):
+            cname = cat.get("name")
+            if not cname:
+                self.errors.append(f"[categories[{i}]] missing 'name'")
+                continue
+            if cname in categories:
+                self.errors.append(f"[category '{cname}'] defined multiple times")
+            categories.add(cname)
+        return categories
+
+    def collect_features(self, data):
+        features = {}
+        for i, f in enumerate(data.get("features", []) or []):
+            fname = f.get("name")
+            if not fname:
+                self.errors.append(f"[features[{i}]] missing 'name'")
+                continue
+            if fname in features:
+                self.errors.append(f"[feature '{fname}'] defined multiple times")
+                continue
+            features[fname] = f
+        return features
+
+    def check_categories(self, features, categories):
+        for fname, f in features.items():
+            cname = f.get("category")
+            if not cname:
+                self.errors.append(f"[feature '{fname}'] missing 'category' field")
+                continue
+            if cname not in categories:
+                self.errors.append(
+                    f"[feature '{fname}'] references unknown category '{cname}'",
+                )
+
+    def check_actions(
+        self,
+        features,
+        action_defs,
+    ):
+        for fname, f in features.items():
+            for ai, act in enumerate(f.get("actions", []) or []):
+                atype = act.get("type")
+                loc = f"[feature '{fname}': actions[{ai}]]"
+                if not atype:
+                    self.errors.append(f"{loc} missing 'type'")
+                    continue
+                if atype not in action_defs:
+                    self.errors.append(
+                        f"{loc} unknown action type '{atype}' (not defined in top-level actions)",
+                    )
+                    continue
+                req = action_defs[atype]
+                missing = sorted([r for r in req if r not in act])
+                if missing:
+                    self.errors.append(
+                        f"{loc} action '{atype}' missing required field(s): {', '.join(missing)}",
+                    )
+
+    def check_dependencies(self, features):
+        known = set(features.keys())
+        for fname, f in features.items():
+            deps = f.get("dependencies", []) or []
+            if not isinstance(deps, list):
+                self.errors.append(
+                    f"[feature '{fname}'] 'dependencies' must be a list",
+                )
+                continue
+            for di, dep in enumerate(deps):
+                loc = f"[feature '{fname}': dependencies[{di}]]"
+                if not isinstance(dep, str):
+                    self.errors.append(f"{loc} dependency must be a string (feature name)")
+                    continue
+                if dep == fname:
+                    self.errors.append(f"{loc} self-dependency not allowed")
+                if dep not in known:
+                    self.errors.append(f"{loc} unknown feature '{dep}'")
+
+    def run(self, data):
+        """
+        Perform consistency checks for an ardupilot features.yml data.
+        """
+        self.errors.clear()
+        action_defs = self.collect_action_defs(data)
+        categories = self.collect_categories(data)
+        features = self.collect_features(data)
+
+        self.check_categories(features, categories)
+        self.check_actions(features, action_defs)
+        self.check_dependencies(features)
+
+        if self.errors:
+            for e in self.errors:
+                print(e, file=sys.stderr)
+            return False
+
+        return True
 
 
 class TestBuildOptionsResult(object):
@@ -53,6 +248,8 @@ class TestBuildOptions(object):
                  extra_hwdef=None,
                  emit_disable_all_defines=None,
                  resume=False,
+                 do_consistency_checks=True,
+                 do_schema_validation=True,
                  ):
         self.extra_hwdef = extra_hwdef
         self.sizes_nothing_disabled = None
@@ -62,6 +259,8 @@ class TestBuildOptions(object):
         self.do_step_run_with_defaults = do_step_disable_defaults
         self.do_step_disable_in_turn = do_step_disable_in_turn
         self.do_step_enable_in_turn = do_step_enable_in_turn
+        self.do_consistency_checks = do_consistency_checks
+        self.do_schema_validation = do_schema_validation
         self.build_targets = build_targets
         if self.build_targets is None:
             self.build_targets = self.all_targets()
@@ -73,34 +272,38 @@ class TestBuildOptions(object):
         self.enable_in_turn_results = {}
         self.sizes_everything_disabled = None
 
-    def must_have_defines_for_board(self, board):
-        '''return a set of defines which must always be enabled'''
-        must_have_defines = {
+        self.f = features.Features.from_file(features_file=os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                                        '..', 'features', 'features.yml'))
+        self.f.load_data()
+
+    def must_have_features_for_board(self, board):
+        '''return a set of features which must always be enabled'''
+        must_have_features = {
             "CubeOrange": frozenset([
-                'AP_BARO_MS5611_ENABLED',
-                'AP_BARO_MS5607_ENABLED',
-                'AP_COMPASS_LSM303D_ENABLED',
-                'AP_COMPASS_AK8963_ENABLED',
-                'AP_COMPASS_AK09916_ENABLED',
-                'AP_COMPASS_ICM20948_ENABLED',
+                'ms5611',
+                'ms5607',
+                'lsm303d',
+                'ak8963',
+                'ak09916',
+                'icm20948',
             ]),
             "CubeBlack": frozenset([
-                'AP_BARO_MS5611_ENABLED',
-                'AP_BARO_MS5607_ENABLED',
-                'AP_COMPASS_LSM303D_ENABLED',
-                'AP_COMPASS_AK8963_ENABLED',
-                'AP_COMPASS_AK09916_ENABLED',
-                'AP_COMPASS_ICM20948_ENABLED',
+                'ms5611',
+                'ms5607',
+                'lsm303d',
+                'ak8963',
+                'ak09916',
+                'icm20948',
             ]),
             "Pixhawk6X-GenericVehicle": frozenset([
-                "AP_BARO_BMP388_ENABLED",
-                "AP_BARO_ICP201XX_ENABLED",
+                "bmp388",
+                # "icp201xx", # This feature is not yet in features.yml
             ]),
         }
-        return must_have_defines.get(board, frozenset([]))
+        return must_have_features.get(board, frozenset([]))
 
-    def must_have_defines(self):
-        return self.must_have_defines_for_board(self._board)
+    def must_have_features(self):
+        return self.must_have_features_for_board(self._board)
 
     @staticmethod
     def all_targets():
@@ -109,97 +312,48 @@ class TestBuildOptions(object):
     def progress(self, message):
         print("###### %s" % message, file=sys.stderr)
 
-    # swiped from app.py:
-    def get_build_options_from_ardupilot_tree(self):
-        '''return a list of build options'''
-        import importlib.util
-        spec = importlib.util.spec_from_file_location(
-            "build_options.py",
-            os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                         '..', 'scripts', 'build_options.py'))
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-        return mod.BUILD_OPTIONS
+    def load_ap_features_yaml(self):
+        yaml_path = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            '..', 'features', 'features.yml'
+        )
+        try:
+            with open(yaml_path, 'r', encoding='utf-8') as f:
+                data = yaml.safe_load(f)
+            if not isinstance(data, dict):
+                raise SystemExit("Top-level document must be a mapping (object)")
+            return data
+        except yaml.YAMLError as e:
+            raise SystemExit(f"[yaml error] {yaml_path}: invalid YAML — {e}")
+        except OSError as e:
+            raise SystemExit(f"[yaml error] {yaml_path}: {e}")
 
-    def write_defines_to_file(self, defines, filepath):
-        self.write_defines_to_Path(defines, pathlib.Path(filepath))
+    def test_disable_feature(self, feature_name):
+        disable_features = set([feature_name,])
 
-    def write_defines_to_Path(self, defines, Path):
-        lines = []
-        lines.extend(["undef %s\n" % (a, ) for (a, b) in defines.items()])
-        lines.extend(["define %s %s\n" % (a, b) for (a, b) in defines.items()])
-        content = "".join(lines)
-        Path.write_text(content)
+        must_have_features = self.must_have_features_for_board(self._board)
+        must_have_features |= self.f.resolve_deps_to_enable(must_have_features)
 
-    def get_disable_defines(self, feature, options):
-        '''returns a hash of (name, value) defines to turn feature off -
-        recursively gets dependencies'''
-        ret = {
-            feature.define: 0,
-        }
-        added_one = True
-        while added_one:
-            added_one = False
-            for option in options:
-                if option.define in ret:
-                    continue
-                if option.dependency is None:
-                    continue
-                for dep in option.dependency.split(','):
-                    f = self.get_option_by_label(dep, options)
-                    if f.define not in ret:
-                        continue
+        disable_features -= must_have_features
+        disable_features = self.f.resolve_deps_to_disable(disable_features)
 
-                    # print("%s requires %s" % (option.define, f.define), file=sys.stderr)
-                    added_one = True
-                    ret[option.define] = 0
-                    break
-        return ret
+        self.test_compile_with_features(
+            enable_features=set(),
+            disable_features=disable_features,
+        )
 
-    def update_get_enable_defines_for_feature(self, ret, feature, options):
-        '''recursive function to turn on required feature and what it depends
-        on'''
-        ret[feature.define] = 1
-        if feature.dependency is None:
-            return
-        for depname in feature.dependency.split(','):
-            dep = None
-            for f in options:
-                if f.label == depname:
-                    dep = f
-            if dep is None:
-                raise ValueError("Invalid dep (%s) for feature (%s)" %
-                                 (depname, feature.label))
-            self.update_get_enable_defines_for_feature(ret, dep, options)
+        self.assert_feature_not_in_code(disable_features)
 
-    def get_enable_defines(self, feature, options):
-        '''returns a hash of (name, value) defines to turn all features *but* feature (and whatever it depends on) on'''
-        ret = self.get_disable_all_defines()
-        self.update_get_enable_defines_for_feature(ret, feature, options)
-        for define in self.must_have_defines_for_board(self._board):
-            ret[define] = 1
-        return ret
-
-    def test_disable_feature(self, feature, options):
-        defines = self.get_disable_defines(feature, options)
-
-        if len(defines.keys()) > 1:
-            self.progress("Disabling %s disables (%s)" % (
-                feature.define,
-                ",".join(defines.keys())))
-
-        self.test_compile_with_defines(defines)
-
-        self.assert_feature_not_in_code(defines, feature)
-
-    def assert_feature_not_in_code(self, defines, feature):
+    def assert_feature_not_in_code(self, feature_names):
         # if the feature is truly disabled then extract_features.py
         # should say so:
         for target in self.build_targets:
             path = self.target_to_elf_path(target)
             extractor = extract_features.ExtractFeatures(path)
             (compiled_in_feature_defines, not_compiled_in_feature_defines) = extractor.extract()
-            for define in defines:
+            for feature_name in feature_names:
+                feature = self.f.get_feature_by_name(feature_name)
+                define = feature.get_macro_to_set()
                 # the following defines are known not to work on some
                 # or all vehicles:
                 feature_define_whitelist = set([
@@ -217,19 +371,18 @@ class TestBuildOptions(object):
                     else:
                         raise ValueError(error)
 
-    def test_enable_feature(self, feature, options):
-        defines = self.get_enable_defines(feature, options)
+    def test_enable_feature(self, feature_name):
+        enable_features = set([feature_name,])
+        must_have_features = self.must_have_features_for_board(self._board)
+        enable_features |= must_have_features
+        enable_features = self.f.resolve_deps_to_enable(enable_features)
 
-        enabled = list(filter(lambda x : bool(defines[x]), defines.keys()))
+        self.test_compile_with_features(
+            enable_features=enable_features,
+            disable_features=set(),
+        )
 
-        if len(enabled) > 1:
-            self.progress("Enabling %s enables (%s)" % (
-                feature.define,
-                ",".join(enabled)))
-
-        self.test_compile_with_defines(defines)
-
-        self.assert_feature_in_code(defines, feature)
+        self.assert_feature_in_code(feature_name)
 
     def define_is_whitelisted_for_feature_in_code(self, target, define):
         '''returns true if we can not expect the define to be extracted from
@@ -406,15 +559,17 @@ class TestBuildOptions(object):
             if re.match(some_re, define):
                 return True
 
-    def assert_feature_in_code(self, defines, feature):
+    def assert_feature_in_code(self, feature_names):
         # if the feature is truly disabled then extract_features.py
         # should say so:
         for target in self.build_targets:
             path = self.target_to_elf_path(target)
             extractor = extract_features.ExtractFeatures(path)
             (compiled_in_feature_defines, not_compiled_in_feature_defines) = extractor.extract()
-            for define in defines:
-                if not defines[define]:
+            for feature_name in feature_names:
+                feature = self.f.get_feature_by_name(feature_name)
+                define = feature.get_macro_to_set()
+                if not define:
                     continue
                 if define in compiled_in_feature_defines:
                     continue
@@ -428,9 +583,10 @@ class TestBuildOptions(object):
         '''returns board to build for'''
         return self._board
 
-    def test_compile_with_defines(self, defines):
+    def test_compile_with_features(self, enable_features: set[str], disable_features: set[str]):
         extra_hwdef_filepath = "/tmp/extra.hwdef"
-        self.write_defines_to_file(defines, extra_hwdef_filepath)
+
+        self.f.generate_hwdef(set(enable_features), set(disable_features), extra_hwdef_filepath)
         if self.extra_hwdef is not None:
             content = open(self.extra_hwdef, "r").read()
             with open(extra_hwdef_filepath, "a") as f:
@@ -509,40 +665,42 @@ class TestBuildOptions(object):
         current_sizes = self.find_build_sizes()
         for (build, new_size) in current_sizes.items():
             old_size = sizes_nothing_disabled[build]
-            self.progress("Disabling %s(%s) on %s saves %u bytes" %
-                          (feature.label, feature.define, build, old_size - new_size))
-            if feature.define not in self.results:
-                self.results[feature.define] = {}
-            self.results[feature.define][build] = TestBuildOptionsResult(feature.define, build, old_size - new_size)
+            self.progress("Disabling %s on %s saves %u bytes" %
+                          (feature.name, build, old_size - new_size))
+            if feature.name not in self.results:
+                self.results[feature.name] = {}
+            self.results[feature.name][build] = TestBuildOptionsResult(feature.name, build, old_size - new_size)
             with open("/tmp/some.csv", "w") as f:
                 f.write(self.csv_for_results(self.results))
 
     def run_disable_in_turn(self):
         progress_file = pathlib.Path("/tmp/run-disable-in-turn-progress")
         resume_number = self.resume_number_from_progress_Path(progress_file)
-        options = self.get_build_options_from_ardupilot_tree()
+        all_features = self.f.get_features()
+        all_features = sorted(all_features, key=lambda f: f.name)
+
         count = 1
-        for feature in sorted(options, key=lambda x : x.define):
+        for feature in all_features:
             if resume_number is not None:
                 if count < resume_number:
                     count += 1
                     continue
             if self.match_glob is not None:
-                if not fnmatch.fnmatch(feature.define, self.match_glob):
+                if not fnmatch.fnmatch(feature.name, self.match_glob):
                     continue
             with open(progress_file, "w") as f:
-                f.write(f"{count}/{len(options)} {feature.define}\n")
-                #            if feature.define < "WINCH_ENABLED":
+                f.write(f"{count}/{len(all_features)} {feature.name}\n")
+                #            if feature.name < "WINCH_ENABLED":
                 #                count += 1
                 #                continue
-            if feature.define in self.must_have_defines_for_board(self._board):
-                self.progress("Feature %s(%s) (%u/%u) is a MUST-HAVE" %
-                              (feature.label, feature.define, count, len(options)))
+            if feature.name in self.must_have_features_for_board(self._board):
+                self.progress("Feature %s (%u/%u) is a MUST-HAVE" %
+                              (feature.name, count, len(all_features)))
                 count += 1
                 continue
-            self.progress("Disabling feature %s(%s) (%u/%u)" %
-                          (feature.label, feature.define, count, len(options)))
-            self.test_disable_feature(feature, options)
+            self.progress("Disabling feature %s (%u/%u)" %
+                          (feature.name, count, len(all_features)))
+            self.test_disable_feature(feature.name)
             count += 1
             self.disable_in_turn_check_sizes(feature, self.sizes_nothing_disabled)
 
@@ -553,11 +711,11 @@ class TestBuildOptions(object):
         current_sizes = self.find_build_sizes()
         for (build, new_size) in current_sizes.items():
             old_size = sizes_everything_disabled[build]
-            self.progress("Enabling %s(%s) on %s costs %u bytes" %
-                          (feature.label, feature.define, build, old_size - new_size))
-            if feature.define not in self.enable_in_turn_results:
-                self.enable_in_turn_results[feature.define] = {}
-            self.enable_in_turn_results[feature.define][build] = TestBuildOptionsResult(feature.define, build, old_size - new_size)  # noqa
+            self.progress("Enabling %s on %s costs %u bytes" %
+                          (feature.name, build, old_size - new_size))
+            if feature.name not in self.enable_in_turn_results:
+                self.enable_in_turn_results[feature.name] = {}
+            self.enable_in_turn_results[feature.name][build] = TestBuildOptionsResult(feature.name, build, old_size - new_size)  # noqa
             with open("/tmp/enable-in-turn.csv", "w") as f:
                 f.write(self.csv_for_results(self.enable_in_turn_results))
 
@@ -577,21 +735,23 @@ class TestBuildOptions(object):
     def run_enable_in_turn(self):
         progress_file = pathlib.Path("/tmp/run-enable-in-turn-progress")
         resume_number = self.resume_number_from_progress_Path(progress_file)
-        options = self.get_build_options_from_ardupilot_tree()
+        all_features = self.f.get_features()
+        all_features = sorted(all_features, key=lambda f: f.name)
+
         count = 1
-        for feature in options:
+        for feature in all_features:
             if resume_number is not None:
                 if count < resume_number:
                     count += 1
                     continue
             if self.match_glob is not None:
-                if not fnmatch.fnmatch(feature.define, self.match_glob):
+                if not fnmatch.fnmatch(feature.name, self.match_glob):
                     continue
-            self.progress("Enabling feature %s(%s) (%u/%u)" %
-                          (feature.label, feature.define, count, len(options)))
+            self.progress("Enabling feature %s (%u/%u)" %
+                          (feature.name, count, len(all_features)))
             with open(progress_file, "w") as f:
-                f.write(f"{count}/{len(options)} {feature.define}\n")
-            self.test_enable_feature(feature, options)
+                f.write(f"{count}/{len(all_features)} {feature.name}\n")
+            self.test_enable_feature(feature)
             count += 1
             self.enable_in_turn_check_sizes(feature, self.sizes_everything_disabled)
 
@@ -601,62 +761,81 @@ class TestBuildOptions(object):
                 return x
         raise ValueError("No such option (%s)" % label)
 
-    def get_disable_all_defines(self):
-        '''returns a hash of defines which turns all features off'''
-        options = self.get_build_options_from_ardupilot_tree()
-        defines = {}
-        for feature in options:
-            if self.match_glob is not None:
-                if not fnmatch.fnmatch(feature.define, self.match_glob):
-                    continue
-            defines[feature.define] = 0
-        for define in self.must_have_defines_for_board(self._board):
-            defines[define] = 1
-
-        return defines
-
     def run_disable_all(self):
-        defines = self.get_disable_all_defines()
-        self.test_compile_with_defines(defines)
+        features = self.f.get_features()
+        enable_features = set()
+        disable_features = set()
+
+        # Disable all
+        for feature in features:
+            if self.match_glob is not None:
+                define = feature.get_macro_to_set()
+                if define is None or not fnmatch.fnmatch(define, self.match_glob):
+                    continue
+            disable_features.add(feature.name)
+
+        # Enable must-have features and remove them from the disable features set
+        enable_features |= self.must_have_features_for_board(self._board)
+        disable_features -= self.must_have_features_for_board(self._board)
+
+        # Resolve dependencies
+        enable_features = self.f.resolve_deps_to_enable(enable_features)
+        disable_features = self.f.resolve_deps_to_disable(disable_features)
+
+        self.test_compile_with_features(enable_features, disable_features)
         self.sizes_everything_disabled = self.find_build_sizes()
 
     def run_disable_none(self):
-        self.test_compile_with_defines({})
+        self.test_compile_with_features({}, {})
         self.sizes_nothing_disabled = self.find_build_sizes()
 
     def run_with_defaults(self):
-        options = self.get_build_options_from_ardupilot_tree()
-        defines = {}
-        for feature in options:
-            defines[feature.define] = feature.default
-        self.test_compile_with_defines(defines)
+        features = self.f.get_features()
 
-    def check_deps_consistency(self):
-        # self.progress("Checking deps consistency")
-        options = self.get_build_options_from_ardupilot_tree()
-        for feature in options:
-            self.get_disable_defines(feature, options)
+        enable_features = set()
+        disable_features = set()
+        for feature in features:
+            if feature.enabledByDefault:
+                enable_features.add(feature.name)
+            else:
+                disable_features.add(feature.name)
 
-    def check_duplicate_labels(self):
-        '''check that we do not have multiple features with same labels'''
-        options = self.get_build_options_from_ardupilot_tree()
-        seen_labels = {}
-        for feature in options:
-            if seen_labels.get(feature.label, None) is not None:
-                raise ValueError("Duplicate entries found for label '%s'" % feature.label)
-            seen_labels[feature.label] = True
+        self.test_compile_with_features(enable_features, disable_features)
 
     def do_emit_disable_all_defines(self):
-        defines = tbo.get_disable_all_defines()
-        for f in self.must_have_defines():
-            defines[f] = 1
-        tbo.write_defines_to_Path(defines, pathlib.Path("/dev/stdout"))
+        all_features = self.f.get_feature_names()
+        must_have_features = self.must_have_features_for_board(self._board)
+        must_have_features |= self.f.resolve_deps_to_enable(must_have_features)
+        enable_features = must_have_features
+        disable_features = all_features - enable_features
+
+        # Generate the hwdef content but write to stdout
+        self.f.generate_hwdef(enable_features, disable_features, pathlib.Path("/dev/stdout"))
         sys.exit(0)
 
-    def run(self):
-        self.check_deps_consistency()
-        self.check_duplicate_labels()
+    def run_consistency_checks(self):
+        data = self.load_ap_features_yaml()
+        cc = ConsistencyChecker()
+        ok = cc.run(data)
+        if ok:
+            self.progress("Consistency checks passed!")
+        else:
+            raise AssertionError("Expected consistency check to pass, but failed")
 
+    def run_schema_validation(self):
+        data = self.load_ap_features_yaml()
+        schema_dir = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            '..', 'features', 'schemas'
+        )
+        sv = SchemaValidator()
+        ok = sv.run(data, schema_dir)
+        if ok:
+            self.progress("Schema validation passed!")
+        else:
+            raise AssertionError("Expected schema validation to pass, but failed")
+
+    def run(self):
         if self.emit_disable_all_defines:
             self.do_emit_disable_all_defines()
             sys.exit(0)
@@ -676,6 +855,12 @@ class TestBuildOptions(object):
         if self.do_step_enable_in_turn:
             self.progress("Running enable-in-turn step")
             self.run_enable_in_turn()
+        if self.do_consistency_checks:
+            self.progress("Running consistency-check step")
+            self.run_consistency_checks()
+        if self.do_schema_validation:
+            self.progress("Running schema-validation step")
+            self.run_schema_validation()
 
 
 if __name__ == '__main__':
@@ -719,6 +904,14 @@ if __name__ == '__main__':
     parser.add_option("--resume",
                       action='store_true',
                       help='resume from previous progress file')
+    parser.add_option("--check-consistency",
+                      action='store_true',
+                      default=True,
+                      help='Check consistency of features.yml')
+    parser.add_option("--check-schema",
+                      action='store_true',
+                      default=True,
+                      help='Validate features.yml against corresponding schema')
 
     opts, args = parser.parse_args()
 
@@ -734,6 +927,8 @@ if __name__ == '__main__':
         extra_hwdef=opts.extra_hwdef,
         emit_disable_all_defines=opts.emit_disable_all_defines,
         resume=opts.resume,
+        do_consistency_checks=opts.check_consistency,
+        do_schema_validation=opts.check_schema,
     )
 
     tbo.run()

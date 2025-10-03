@@ -1,0 +1,3513 @@
+version: v2
+
+actions:
+- name: set-macro
+  description: Set a preprocessor macro
+  fields:
+  - macro
+
+categories:
+- name: ahrs
+  description: AHRS
+- name: ap-periph
+  description: AP_Periph
+- name: actuators
+  description: Actuators
+- name: airspeed-drivers
+  description: Airspeed Drivers
+- name: baro
+  description: Baro
+- name: battery
+  description: Battery
+- name: can
+  description: CAN
+- name: camera
+  description: Camera
+- name: compass
+  description: Compass
+- name: copter
+  description: Copter
+- name: dds
+  description: DDS
+- name: developer
+  description: Developer
+- name: esc
+  description: ESC
+- name: filesystem
+  description: Filesystem
+- name: gps-drivers
+  description: GPS Drivers
+- name: generator
+  description: Generator
+- name: gimbal
+  description: Gimbal
+- name: ice
+  description: ICE
+- name: imu
+  description: IMU
+- name: ident
+  description: Ident
+- name: mavlink
+  description: MAVLink
+- name: msp
+  description: MSP
+- name: mission
+  description: Mission
+- name: networking
+  description: Networking
+- name: notify
+  description: Notify
+- name: osd
+  description: OSD
+- name: other
+  description: Other
+- name: payload
+  description: Payload
+- name: plane
+  description: Plane
+- name: precision-landing
+  description: Precision Landing
+- name: proximity
+  description: Proximity
+- name: rc
+  description: RC
+- name: rangefinder
+  description: Rangefinder
+- name: rover
+  description: Rover
+- name: safety
+  description: Safety
+- name: sensors
+  description: Sensors
+- name: telemetry
+  description: Telemetry
+- name: vtol-frame
+  description: VTOL Frame
+- name: vtx
+  description: VTX
+
+features:
+# AHRS features
+- name: ahrs-ext
+  description: External AHRS
+  category: ahrs
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_EXTERNAL_AHRS_ENABLED
+- name: ahrs-ext-vectornav
+  description: VectorNav external AHRS
+  category: ahrs
+  enabledByDefault: false
+  dependencies:
+  - ahrs-ext
+  actions:
+  - type: set-macro
+    macro: AP_EXTERNAL_AHRS_VECTORNAV_ENABLED
+- name: baro-wind-comp
+  description: Baro wind compensation
+  category: ahrs
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_BARO_WIND_COMP_ENABLED
+- name: ekf2
+  description: EKF2
+  category: ahrs
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_NAVEKF2_AVAILABLE
+- name: ekf3
+  description: EKF3
+  category: ahrs
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: HAL_NAVEKF3_AVAILABLE
+- name: ekf3-extnav
+  description: External navigation for EKF3
+  category: ahrs
+  enabledByDefault: false
+  dependencies:
+  - ekf3
+  actions:
+  - type: set-macro
+    macro: EK3_FEATURE_EXTERNAL_NAV
+- name: ekf3-optflow
+  description: OpticalFlow fusion for EKF3
+  category: ahrs
+  enabledByDefault: false
+  dependencies:
+  - ekf3
+  - opticalflow
+  actions:
+  - type: set-macro
+    macro: EK3_FEATURE_OPTFLOW_FUSION
+- name: ekf3-optflow-srtm
+  description: OpticalFlow using SRTM for EKF3
+  category: ahrs
+  enabledByDefault: false
+  dependencies:
+  - ekf3-optflow
+  actions:
+  - type: set-macro
+    macro: EK3_FEATURE_OPTFLOW_SRTM
+- name: ekf3-windest
+  description: Wind estimation for EKF3
+  category: ahrs
+  enabledByDefault: false
+  dependencies:
+  - ekf3
+  actions:
+  - type: set-macro
+    macro: EK3_FEATURE_DRAG_FUSION
+- name: inertiallabs
+  description: InertialLabs external AHRS
+  category: ahrs
+  enabledByDefault: false
+  dependencies:
+  - ahrs-ext
+  actions:
+  - type: set-macro
+    macro: AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED
+- name: microstrain5
+  description: MICROSTRAIN 5-series external AHRS
+  category: ahrs
+  enabledByDefault: false
+  dependencies:
+  - ahrs-ext
+  actions:
+  - type: set-macro
+    macro: AP_EXTERNAL_AHRS_MICROSTRAIN5_ENABLED
+- name: microstrain7
+  description: MICROSTRAIN 7-series external AHRS
+  category: ahrs
+  enabledByDefault: false
+  dependencies:
+  - ahrs-ext
+  actions:
+  - type: set-macro
+    macro: AP_EXTERNAL_AHRS_MICROSTRAIN7_ENABLED
+- name: sbg
+  description: SBG external AHRS
+  category: ahrs
+  enabledByDefault: false
+  dependencies:
+  - ahrs-ext
+  actions:
+  - type: set-macro
+    macro: AP_EXTERNAL_AHRS_SBG_ENABLED
+- name: visualodom
+  description: Visual Odometry
+  category: ahrs
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_VISUALODOM_ENABLED
+
+# AP_Periph features
+- name: long-text
+  description: extended length text strings
+  category: ap-periph
+  enabledByDefault: false
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF
+- name: periph-adsb
+  description: Emit DroneCAN TrafficReport Messages for ADSB_VEHICLE MAVLink messages
+  category: ap-periph
+  enabledByDefault: false
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: AP_PERIPH_ADSB_ENABLED
+- name: periph-airspeed
+  description: Emit DroneCAN air_data_RawAirData messages for AP_Airspeed sensors
+  category: ap-periph
+  enabledByDefault: false
+  dependencies:
+  - airspeed
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: AP_PERIPH_AIRSPEED_ENABLED
+- name: periph-baro
+  description: Emit DroneCAN StaticTemperature and StaticPressure Messages for AP_Baro
+    Sensors
+  category: ap-periph
+  enabledByDefault: false
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: AP_PERIPH_BARO_ENABLED
+- name: periph-battery
+  description: Emit DroneCAN battery info messages using AP_BattMonitor
+  category: ap-periph
+  enabledByDefault: false
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: AP_PERIPH_BATTERY_ENABLED
+- name: periph-battery-balance
+  description: Emit DroneCAN BatteryInfoAux messages for monitoring Battery Balance
+  category: ap-periph
+  enabledByDefault: false
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: AP_PERIPH_BATTERY_BALANCE_ENABLED
+- name: periph-battery-tag
+  description: Emit DroneCAN BatteryTag messages
+  category: ap-periph
+  enabledByDefault: false
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: AP_PERIPH_BATTERY_TAG_ENABLED
+- name: periph-device-temperature
+  description: Emit DroneCAN Temperature Messages for AP_Temperature sensors
+  category: ap-periph
+  enabledByDefault: false
+  dependencies:
+  - temp
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: AP_PERIPH_DEVICE_TEMPERATURE_ENABLED
+- name: periph-efi
+  description: Emit DroneCAN ice_reciprocating_Status Messages
+  category: ap-periph
+  enabledByDefault: false
+  dependencies:
+  - efi
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: AP_PERIPH_EFI_ENABLED
+- name: periph-gps
+  description: Emit DroneCAN GNSS Messages for AP_GPS sensors
+  category: ap-periph
+  enabledByDefault: false
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: AP_PERIPH_GPS_ENABLED
+- name: periph-imu
+  description: 'Emit DroneCAN ahrs_RawIMU Messages '
+  category: ap-periph
+  enabledByDefault: false
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: AP_PERIPH_IMU_ENABLED
+- name: periph-mag
+  description: 'Emit DroneCAN MagneticFieldStrength Messages '
+  category: ap-periph
+  enabledByDefault: false
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: AP_PERIPH_MAG_ENABLED
+- name: periph-msp
+  description: Emit MSP protocol messages from AP_Periph
+  category: ap-periph
+  enabledByDefault: false
+  dependencies:
+  - msp
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: AP_PERIPH_MSP_ENABLED
+- name: periph-notify
+  description: Handle DroneCAN messages for notification equipment (e.g. buzzers,
+    lights etc.)
+  category: ap-periph
+  enabledByDefault: false
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: AP_PERIPH_NOTIFY_ENABLED
+- name: periph-proximity
+  description: Emit DroneCAN Proximity Messages for AP_Proximity sensors
+  category: ap-periph
+  enabledByDefault: false
+  dependencies:
+  - proximity
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: AP_PERIPH_PROXIMITY_ENABLED
+- name: periph-rangefinder
+  description: 'Emit DroneCAN range_sensor_Measurement Messages '
+  category: ap-periph
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: AP_PERIPH_RANGEFINDER_ENABLED
+- name: periph-rcin
+  description: Emit DroneCAN RCInput Messages
+  category: ap-periph
+  enabledByDefault: false
+  dependencies:
+  - rc-protocol
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: AP_PERIPH_RCIN_ENABLED
+- name: periph-rc-out
+  description: Emit DroneCAN actuator_Status Messages
+  category: ap-periph
+  enabledByDefault: false
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: AP_PERIPH_RC_OUT_ENABLED
+- name: periph-relay
+  description: Handle DroneCAN hardpoint command
+  category: ap-periph
+  enabledByDefault: false
+  dependencies:
+  - relay
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: AP_PERIPH_RELAY_ENABLED
+- name: periph-rpm
+  description: Emit DroneCAN RPM messages for AP_RPM sensors
+  category: ap-periph
+  enabledByDefault: false
+  dependencies:
+  - rpm
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: AP_PERIPH_RPM_ENABLED
+- name: periph-serial-options
+  description: Serial Options on AP_Periph
+  category: ap-periph
+  enabledByDefault: false
+  vehicles:
+  - periph
+  actions:
+  - type: set-macro
+    macro: AP_PERIPH_SERIAL_OPTIONS_ENABLED
+
+# Actuators features
+- name: fetteconewire
+  description: FETTec OneWire ESCs
+  category: actuators
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_FETTEC_ONEWIRE_ENABLED
+- name: himarkservo
+  description: Himark DroneCAN servos
+  category: actuators
+  enabledByDefault: false
+  dependencies:
+  - dronecan
+  actions:
+  - type: set-macro
+    macro: AP_DRONECAN_HIMARK_SERVO_SUPPORT
+- name: hobbywingesc
+  description: Hobbywing DroneCAN ESCs
+  category: actuators
+  enabledByDefault: false
+  dependencies:
+  - dronecan
+  actions:
+  - type: set-macro
+    macro: AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+- name: kdecan
+  description: KDE Direct KDECAN ESC
+  category: actuators
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_KDECAN_ENABLED
+- name: robotisservo
+  description: RobotisServo protocol
+  category: actuators
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_ROBOTISSERVO_ENABLED
+- name: sbus-output
+  description: SBUS output on serial ports
+  category: actuators
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_SBUSOUTPUT_ENABLED
+- name: servotelem
+  description: servo telemetry library
+  category: actuators
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_SERVO_TELEM_ENABLED
+- name: volz
+  description: Volz Protocol
+  category: actuators
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_VOLZ_ENABLED
+- name: volz-dronecan
+  description: Volz DroneCAN Feedback
+  category: actuators
+  enabledByDefault: false
+  dependencies:
+  - dronecan
+  - volz
+  - servotelem
+  actions:
+  - type: set-macro
+    macro: AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
+
+# Airspeed Drivers features
+- name: asp5033
+  description: ASP5033 AIRSPEED
+  category: airspeed-drivers
+  enabledByDefault: false
+  dependencies:
+  - airspeed
+  actions:
+  - type: set-macro
+    macro: AP_AIRSPEED_ASP5033_ENABLED
+- name: auav-airspeed
+  description: ENABLE AUAV AIRSPEED
+  category: airspeed-drivers
+  enabledByDefault: false
+  dependencies:
+  - airspeed
+  actions:
+  - type: set-macro
+    macro: AP_AIRSPEED_AUAV_ENABLED
+- name: analog
+  description: Analog Airspeed
+  category: airspeed-drivers
+  enabledByDefault: false
+  dependencies:
+  - airspeed
+  actions:
+  - type: set-macro
+    macro: AP_AIRSPEED_ANALOG_ENABLED
+- name: dlvr
+  description: DLVR AIRSPEED
+  category: airspeed-drivers
+  enabledByDefault: false
+  dependencies:
+  - airspeed
+  actions:
+  - type: set-macro
+    macro: AP_AIRSPEED_DLVR_ENABLED
+- name: dronecan-aspd
+  description: DroneCAN AIRSPEED
+  category: airspeed-drivers
+  enabledByDefault: false
+  dependencies:
+  - airspeed
+  - dronecan
+  actions:
+  - type: set-macro
+    macro: AP_AIRSPEED_DRONECAN_ENABLED
+- name: ms4525
+  description: MS4525 AIRSPEED
+  category: airspeed-drivers
+  enabledByDefault: false
+  dependencies:
+  - airspeed
+  actions:
+  - type: set-macro
+    macro: AP_AIRSPEED_MS4525_ENABLED
+- name: ms5525
+  description: MS5525 AIRSPEED
+  category: airspeed-drivers
+  enabledByDefault: false
+  dependencies:
+  - airspeed
+  actions:
+  - type: set-macro
+    macro: AP_AIRSPEED_MS5525_ENABLED
+- name: msp-airspeed
+  description: MSP AIRSPEED
+  category: airspeed-drivers
+  enabledByDefault: false
+  dependencies:
+  - airspeed
+  - msp
+  - osd
+  actions:
+  - type: set-macro
+    macro: AP_AIRSPEED_MSP_ENABLED
+- name: nmea-airspeed
+  description: NMEA AIRSPEED
+  category: airspeed-drivers
+  enabledByDefault: false
+  dependencies:
+  - airspeed
+  actions:
+  - type: set-macro
+    macro: AP_AIRSPEED_NMEA_ENABLED
+- name: sdp3x
+  description: SDP3X AIRSPEED
+  category: airspeed-drivers
+  enabledByDefault: false
+  dependencies:
+  - airspeed
+  actions:
+  - type: set-macro
+    macro: AP_AIRSPEED_SDP3X_ENABLED
+
+# Baro features
+- name: baro-probext
+  description: Probing of External i2c buses
+  category: baro
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_BARO_PROBE_EXTERNAL_I2C_BUSES
+- name: baro-tempcal
+  description: Baro Temperature Calibration
+  category: baro
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_TEMPCALIBRATION_ENABLED
+- name: baro-thrust-comp
+  description: thrust compensation on BARO1
+  category: baro
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_BARO_THST_COMP_ENABLED
+- name: bmp085
+  description: BMP085 Barometric Sensor
+  category: baro
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_BARO_BMP085_ENABLED
+- name: bmp280
+  description: BMP280 Barometric Sensor
+  category: baro
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_BARO_BMP280_ENABLED
+- name: bmp388
+  description: BMP388 Barometric Sensor
+  category: baro
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_BARO_BMP388_ENABLED
+- name: bmp581
+  description: BMP581 Barometric Sensor
+  category: baro
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_BARO_BMP581_ENABLED
+- name: dps280
+  description: DPS280/DPS310 Barometric Sensor
+  category: baro
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_BARO_DPS280_ENABLED
+- name: dronecan-baro
+  description: DroneCAN Barometric Sensor
+  category: baro
+  enabledByDefault: false
+  dependencies:
+  - dronecan
+  actions:
+  - type: set-macro
+    macro: AP_BARO_DRONECAN_ENABLED
+- name: externalahrs-baro
+  description: EXTERNALAHRS Barometric Sensor
+  category: baro
+  enabledByDefault: false
+  dependencies:
+  - ahrs-ext
+  actions:
+  - type: set-macro
+    macro: AP_BARO_EXTERNALAHRS_ENABLED
+- name: fbm320
+  description: FBM320 Barometric Sensor
+  category: baro
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_BARO_FBM320_ENABLED
+- name: kellerld
+  description: KELLERLD Barometric Sensor
+  category: baro
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_BARO_KELLERLD_ENABLED
+- name: lps2xh
+  description: LPS2XH Barometric Sensor
+  category: baro
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_BARO_LPS2XH_ENABLED
+- name: ms5607
+  description: MS5607 Barometric Sensor
+  category: baro
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_BARO_MS5607_ENABLED
+- name: ms5611
+  description: MS5611 Barometric Sensor
+  category: baro
+  enabledByDefault: true
+  dependencies:
+  - ms5607
+  actions:
+  - type: set-macro
+    macro: AP_BARO_MS5611_ENABLED
+- name: ms5637
+  description: MS5637 Barometric Sensor
+  category: baro
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_BARO_MS5637_ENABLED
+- name: ms5837
+  description: MS5837 Barometric Sensor
+  category: baro
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_BARO_MS5837_ENABLED
+- name: msp-baro
+  description: MSP Barometric Sensor
+  category: baro
+  enabledByDefault: false
+  dependencies:
+  - msp
+  actions:
+  - type: set-macro
+    macro: AP_BARO_MSP_ENABLED
+- name: spl06
+  description: SPL06 Barometric Sensor
+  category: baro
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_BARO_SPL06_ENABLED
+
+# Battery features
+- name: battery-esc-telem-out
+  description: Ability to put battery monitor data into ESC telem stream
+  category: battery
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED
+- name: battery-fuelflow
+  description: Fuel flow battery monitor
+  category: battery
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_BATTERY_FUELFLOW_ENABLED
+- name: battery-fuellevel-analog
+  description: Analog Fuel level battry monitor
+  category: battery
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_BATTERY_FUELLEVEL_ANALOG_ENABLED
+- name: battery-fuellevel-pwm
+  description: PWM Fuel level battery monitor
+  category: battery
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_BATTERY_FUELLEVEL_PWM_ENABLED
+- name: battery-ina2xx
+  description: INA2XX battery monitor
+  category: battery
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_BATTERY_INA2XX_ENABLED
+- name: battery-ina3221
+  description: INA3221 battery monitor
+  category: battery
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_BATTERY_INA3221_ENABLED
+- name: battery-smbus
+  description: SMBUS battery monitor
+  category: battery
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_BATTERY_SMBUS_ENABLED
+- name: battery-sum
+  description: Synthetic sum-of-other-batteries backend
+  category: battery
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_BATTERY_SUM_ENABLED
+- name: battery-synthetic-current
+  description: Synthetic Current monitor
+  category: battery
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_BATTERY_SYNTHETIC_CURRENT_ENABLED
+- name: battery-watt-max
+  description: BATT_WATT_MAX parameter
+  category: battery
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_BATTERY_WATT_MAX_ENABLED
+
+# CAN features
+- name: can-logging
+  description: CAN logging support
+  category: can
+  enabledByDefault: false
+  dependencies:
+  - logging
+  actions:
+  - type: set-macro
+    macro: AP_CAN_LOGGING_ENABLED
+- name: dronecan
+  description: DroneCAN support
+  category: can
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_ENABLE_DRONECAN_DRIVERS
+
+# Camera features
+- name: camera
+  description: Camera trigger
+  category: camera
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_CAMERA_ENABLED
+- name: camera-fov-status
+  description: GCS camera FOV status
+  category: camera
+  enabledByDefault: false
+  dependencies:
+  - camera
+  - mount
+  actions:
+  - type: set-macro
+    macro: AP_CAMERA_SEND_FOV_STATUS_ENABLED
+- name: camera-info-from-script
+  description: Camera information messages via Lua script
+  category: camera
+  enabledByDefault: false
+  dependencies:
+  - camera
+  - scripting
+  actions:
+  - type: set-macro
+    macro: AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+- name: camera-mavlink
+  description: 'MAVLink camera '
+  category: camera
+  enabledByDefault: false
+  dependencies:
+  - camera
+  actions:
+  - type: set-macro
+    macro: AP_CAMERA_MAVLINK_ENABLED
+- name: camera-mavlinkcamv2
+  description: MAVLink CameraV2
+  category: camera
+  enabledByDefault: false
+  dependencies:
+  - camera
+  actions:
+  - type: set-macro
+    macro: AP_CAMERA_MAVLINKCAMV2_ENABLED
+- name: camera-mount
+  description: 'Camera-in-Mount '
+  category: camera
+  enabledByDefault: false
+  dependencies:
+  - camera
+  - mount
+  actions:
+  - type: set-macro
+    macro: AP_CAMERA_MOUNT_ENABLED
+- name: camera-relay
+  description: Relay camera trigger
+  category: camera
+  enabledByDefault: false
+  dependencies:
+  - camera
+  - relay
+  actions:
+  - type: set-macro
+    macro: AP_CAMERA_RELAY_ENABLED
+- name: camera-servo
+  description: Servo camera trigger
+  category: camera
+  enabledByDefault: false
+  dependencies:
+  - camera
+  actions:
+  - type: set-macro
+    macro: AP_CAMERA_SERVO_ENABLED
+- name: camera-solo
+  description: Solo gimbal
+  category: camera
+  enabledByDefault: false
+  dependencies:
+  - camera
+  actions:
+  - type: set-macro
+    macro: AP_CAMERA_SOLOGIMBAL_ENABLED
+- name: camera-thermalrange
+  description: GCS camera thermal range
+  category: camera
+  enabledByDefault: false
+  dependencies:
+  - camera
+  - mount
+  actions:
+  - type: set-macro
+    macro: AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
+- name: runcam
+  description: RunCam control
+  category: camera
+  enabledByDefault: false
+  dependencies:
+  - camera
+  actions:
+  - type: set-macro
+    macro: AP_CAMERA_RUNCAM_ENABLED
+
+# Compass features
+- name: ak09916
+  description: AK0991x compasses
+  category: compass
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_AK09916_ENABLED
+- name: ak8963
+  description: AK8963 compasses
+  category: compass
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_AK8963_ENABLED
+- name: bmm150
+  description: BMM150 compasses
+  category: compass
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_BMM150_ENABLED
+- name: bmm350
+  description: BMM350 compasses
+  category: compass
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_BMM350_ENABLED
+- name: compasslearn
+  description: In-Flight compass learning
+  category: compass
+  enabledByDefault: true
+  dependencies:
+  - fixedyawcal
+  actions:
+  - type: set-macro
+    macro: COMPASS_LEARN_ENABLED
+- name: dronecan-compass
+  description: DroneCAN compasses
+  category: compass
+  enabledByDefault: false
+  dependencies:
+  - dronecan
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_DRONECAN_ENABLED
+- name: dronecan-compass-hires
+  description: DroneCAN HiRes compasses for survey logging
+  category: compass
+  enabledByDefault: false
+  dependencies:
+  - dronecan
+  - dronecan-compass
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_DRONECAN_HIRES_ENABLED
+- name: externalahrs-compass
+  description: ExternalAHRS compasses
+  category: compass
+  enabledByDefault: false
+  dependencies:
+  - ahrs-ext
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_EXTERNALAHRS_ENABLED
+- name: fixedyawcal
+  description: Fixed-Yaw Compass Calibration
+  category: compass
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
+- name: hmc5843
+  description: HMC5843 compasses
+  category: compass
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_HMC5843_ENABLED
+- name: icm20948
+  description: AK0991x on ICM20948 compasses
+  category: compass
+  enabledByDefault: true
+  dependencies:
+  - ak09916
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_ICM20948_ENABLED
+- name: iis2mdc
+  description: IIS2MDC compasses
+  category: compass
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_IIS2MDC_ENABLED
+- name: ist8308
+  description: IST8308 compasses
+  category: compass
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_IST8308_ENABLED
+- name: ist8310
+  description: IST8310 compasses
+  category: compass
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_IST8310_ENABLED
+- name: lis3mdl
+  description: LIS3MDL compasses
+  category: compass
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_LIS3MDL_ENABLED
+- name: lsm303d
+  description: LSM303D compasses
+  category: compass
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_LSM303D_ENABLED
+- name: lsm9ds1
+  description: LSM9DS1 compasses
+  category: compass
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_LSM9DS1_ENABLED
+- name: mag3110
+  description: MAG3110 compasses
+  category: compass
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_MAG3110_ENABLED
+- name: mmc3416
+  description: MMC3416 compasses
+  category: compass
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_MMC3416_ENABLED
+- name: mmc5xx3
+  description: MMC5XX3 compasses
+  category: compass
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_MMC5XX3_ENABLED
+- name: qmc5883l
+  description: QMC5883L compasses
+  category: compass
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_QMC5883L_ENABLED
+- name: qmc5883p
+  description: QMC5883P compasses
+  category: compass
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_QMC5883P_ENABLED
+- name: rm3100
+  description: RM3100 compasses
+  category: compass
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_RM3100_ENABLED
+
+# Copter features
+- name: ac-payload-place-enabled
+  description: Copter Payload Place
+  category: copter
+  enabledByDefault: false
+  dependencies:
+  - mission-nav-payload-place
+  vehicles:
+  - copter
+  actions:
+  - type: set-macro
+    macro: AC_PAYLOAD_PLACE_ENABLED
+- name: copter-advanced-failsafe
+  description: Advanced Failsafe
+  category: copter
+  enabledByDefault: false
+  dependencies:
+  - advanced-failsafe
+  vehicles:
+  - copter
+  actions:
+  - type: set-macro
+    macro: AP_COPTER_ADVANCED_FAILSAFE_ENABLED
+- name: copter-ahrs-auto-trim
+  description: Copter AHRS AutoTrim
+  category: copter
+  enabledByDefault: false
+  vehicles:
+  - copter
+  actions:
+  - type: set-macro
+    macro: AP_COPTER_AHRS_AUTO_TRIM_ENABLED
+- name: mode-brake
+  description: Mode Brake
+  category: copter
+  enabledByDefault: false
+  vehicles:
+  - copter
+  actions:
+  - type: set-macro
+    macro: MODE_BRAKE_ENABLED
+- name: mode-flip
+  description: Mode Flip
+  category: copter
+  enabledByDefault: false
+  vehicles:
+  - copter
+  actions:
+  - type: set-macro
+    macro: MODE_FLIP_ENABLED
+- name: mode-flowhold
+  description: Mode Flowhold
+  category: copter
+  enabledByDefault: false
+  dependencies:
+  - opticalflow
+  vehicles:
+  - copter
+  actions:
+  - type: set-macro
+    macro: MODE_FLOWHOLD_ENABLED
+- name: mode-follow
+  description: Mode Follow
+  category: copter
+  enabledByDefault: false
+  dependencies:
+  - ac-avoid
+  - ap-follow
+  vehicles:
+  - copter
+  actions:
+  - type: set-macro
+    macro: MODE_FOLLOW_ENABLED
+- name: mode-guided-nogps
+  description: Mode Guided NoGPS
+  category: copter
+  enabledByDefault: false
+  vehicles:
+  - copter
+  actions:
+  - type: set-macro
+    macro: MODE_GUIDED_NOGPS_ENABLED
+- name: mode-sport
+  description: Mode Sport
+  category: copter
+  enabledByDefault: false
+  vehicles:
+  - copter
+  actions:
+  - type: set-macro
+    macro: MODE_SPORT_ENABLED
+- name: mode-systemid
+  description: Mode SystemID
+  category: copter
+  enabledByDefault: false
+  dependencies:
+  - logging
+  vehicles:
+  - copter
+  actions:
+  - type: set-macro
+    macro: MODE_SYSTEMID_ENABLED
+- name: mode-turtle
+  description: Mode Turtle
+  category: copter
+  enabledByDefault: false
+  vehicles:
+  - copter
+  actions:
+  - type: set-macro
+    macro: MODE_TURTLE_ENABLED
+- name: mode-zigzag
+  description: Mode ZigZag
+  category: copter
+  enabledByDefault: false
+  vehicles:
+  - copter
+  actions:
+  - type: set-macro
+    macro: MODE_ZIGZAG_ENABLED
+
+# DDS features
+- name: dds
+  description: MicroXRCE DDS support for ROS 2
+  category: dds
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_DDS_ENABLED
+
+# Developer features
+- name: crashcatcher
+  description: CrashCatcher
+  category: developer
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_CRASHDUMP_ENABLED
+- name: kill-imu
+  description: Allow IMUs to be disabled at runtime
+  category: developer
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_INERTIALSENSOR_KILL_IMU_ENABLED
+
+# ESC features
+- name: esc-extended-telm
+  description: Extended ESC telemetry
+  category: esc
+  enabledByDefault: false
+  dependencies:
+  - dronecan
+  actions:
+  - type: set-macro
+    macro: AP_EXTENDED_ESC_TELEM_ENABLED
+- name: piccolocan
+  description: PiccoloCAN
+  category: esc
+  enabledByDefault: false
+  dependencies:
+  - dronecan
+  actions:
+  - type: set-macro
+    macro: HAL_PICCOLO_CAN_ENABLE
+- name: torqeedo
+  description: Torqeedo motors
+  category: esc
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_TORQEEDO_ENABLED
+
+# Filesystem features
+- name: apj-tool-parameters
+  description: apj_tool parameter area
+  category: filesystem
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: FORCE_APJ_DEFAULT_PARAMETERS
+- name: filesystem-mission
+  description: '@MISSION/ filesystem'
+  category: filesystem
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_FILESYSTEM_MISSION_ENABLED
+- name: filesystem-param
+  description: '@PARAM/ filesystem'
+  category: filesystem
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_FILESYSTEM_PARAM_ENABLED
+- name: filesystem-romfs
+  description: '@ROMFS/ filesystem'
+  category: filesystem
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_FILESYSTEM_ROMFS_ENABLED
+- name: filesystem-sys
+  description: '@SYS/ filesystem'
+  category: filesystem
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_FILESYSTEM_SYS_ENABLED
+
+# GPS Drivers features
+- name: dronecan-gps-out
+  description: Sending GPS data from Autopilot
+  category: gps-drivers
+  enabledByDefault: false
+  dependencies:
+  - dronecan
+  actions:
+  - type: set-macro
+    macro: AP_DRONECAN_SEND_GPS
+- name: erb
+  description: ERB GPS
+  category: gps-drivers
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_GPS_ERB_ENABLED
+- name: gps-blending
+  description: GPS Blending
+  category: gps-drivers
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_GPS_BLENDED_ENABLED
+- name: gsof
+  description: GSOF GPS
+  category: gps-drivers
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_GPS_GSOF_ENABLED
+- name: mav
+  description: MAVLink GPS
+  category: gps-drivers
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_GPS_MAV_ENABLED
+- name: nmea-gps
+  description: NMEA GPS
+  category: gps-drivers
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_GPS_NMEA_ENABLED
+- name: nmea-unicore
+  description: NMEA Unicore GPS
+  category: gps-drivers
+  enabledByDefault: false
+  dependencies:
+  - nmea-gps
+  actions:
+  - type: set-macro
+    macro: AP_GPS_NMEA_UNICORE_ENABLED
+- name: nova
+  description: NOVA GPS
+  category: gps-drivers
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_GPS_NOVA_ENABLED
+- name: sbf
+  description: SBF GPS
+  category: gps-drivers
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_GPS_SBF_ENABLED
+- name: sbp
+  description: SBP GPS
+  category: gps-drivers
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_GPS_SBP_ENABLED
+- name: sbp2
+  description: SBP2 GPS
+  category: gps-drivers
+  enabledByDefault: false
+  dependencies:
+  - sbp
+  actions:
+  - type: set-macro
+    macro: AP_GPS_SBP2_ENABLED
+- name: sirf
+  description: SiRF GPS
+  category: gps-drivers
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_GPS_SIRF_ENABLED
+- name: ublox
+  description: U-blox GPS
+  category: gps-drivers
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_GPS_UBLOX_ENABLED
+
+# Generator features
+- name: generator
+  description: Generator
+  category: generator
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_GENERATOR_ENABLED
+- name: generator-ie2400
+  description: IntelligentEnergy 2400
+  category: generator
+  enabledByDefault: false
+  dependencies:
+  - generator
+  actions:
+  - type: set-macro
+    macro: AP_GENERATOR_IE_2400_ENABLED
+- name: generator-ie650
+  description: IntelligentEnergy 650 and 800
+  category: generator
+  enabledByDefault: false
+  dependencies:
+  - generator
+  actions:
+  - type: set-macro
+    macro: AP_GENERATOR_IE_650_800_ENABLED
+- name: generator-loweheiser
+  description: Loweheiser generator
+  category: generator
+  enabledByDefault: false
+  dependencies:
+  - generator
+  - efi
+  actions:
+  - type: set-macro
+    macro: AP_GENERATOR_LOWEHEISER_ENABLED
+- name: generator-richenpower
+  description: Richenpower generator
+  category: generator
+  enabledByDefault: false
+  dependencies:
+  - generator
+  actions:
+  - type: set-macro
+    macro: AP_GENERATOR_RICHENPOWER_ENABLED
+
+# Gimbal features
+- name: alexmos
+  description: Alexmos gimbal
+  category: gimbal
+  enabledByDefault: false
+  dependencies:
+  - mount
+  actions:
+  - type: set-macro
+    macro: HAL_MOUNT_ALEXMOS_ENABLED
+- name: caddx
+  description: CADDX gimbal
+  category: gimbal
+  enabledByDefault: false
+  dependencies:
+  - mount
+  actions:
+  - type: set-macro
+    macro: HAL_MOUNT_CADDX_ENABLED
+- name: gremsy
+  description: Gremsy gimbal
+  category: gimbal
+  enabledByDefault: false
+  dependencies:
+  - mount
+  actions:
+  - type: set-macro
+    macro: HAL_MOUNT_GREMSY_ENABLED
+- name: mount
+  description: Camera Mounts
+  category: gimbal
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_MOUNT_ENABLED
+- name: servo
+  description: Servo gimbal
+  category: gimbal
+  enabledByDefault: false
+  dependencies:
+  - mount
+  actions:
+  - type: set-macro
+    macro: HAL_MOUNT_SERVO_ENABLED
+- name: siyi
+  description: Siyi gimbal
+  category: gimbal
+  enabledByDefault: false
+  dependencies:
+  - mount
+  actions:
+  - type: set-macro
+    macro: HAL_MOUNT_SIYI_ENABLED
+- name: sologimbal
+  description: Solo gimbal
+  category: gimbal
+  enabledByDefault: false
+  dependencies:
+  - mount
+  actions:
+  - type: set-macro
+    macro: HAL_SOLO_GIMBAL_ENABLED
+- name: storm32-mavlink
+  description: SToRM32 MAVLink gimbal
+  category: gimbal
+  enabledByDefault: false
+  dependencies:
+  - mount
+  actions:
+  - type: set-macro
+    macro: HAL_MOUNT_STORM32MAVLINK_ENABLED
+- name: storm32-serial
+  description: SToRM32 Serial gimbal
+  category: gimbal
+  enabledByDefault: false
+  dependencies:
+  - mount
+  actions:
+  - type: set-macro
+    macro: HAL_MOUNT_STORM32SERIAL_ENABLED
+- name: topotek
+  description: Topotek gimbal
+  category: gimbal
+  enabledByDefault: false
+  dependencies:
+  - mount
+  actions:
+  - type: set-macro
+    macro: HAL_MOUNT_TOPOTEK_ENABLED
+- name: viewpro
+  description: Viewpro gimbal
+  category: gimbal
+  enabledByDefault: false
+  dependencies:
+  - mount
+  actions:
+  - type: set-macro
+    macro: HAL_MOUNT_VIEWPRO_ENABLED
+- name: xacti
+  description: Xacti gimbal
+  category: gimbal
+  enabledByDefault: false
+  dependencies:
+  - mount
+  - dronecan
+  actions:
+  - type: set-macro
+    macro: HAL_MOUNT_XACTI_ENABLED
+- name: xfrobot
+  description: XFRobot gimbal
+  category: gimbal
+  enabledByDefault: false
+  dependencies:
+  - mount
+  actions:
+  - type: set-macro
+    macro: HAL_MOUNT_XFROBOT_ENABLED
+
+# ICE features
+- name: efi
+  description: EFI monitoring
+  category: ice
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_EFI_ENABLED
+- name: efi-currawongecu
+  description: Currawong ECU
+  category: ice
+  enabledByDefault: false
+  dependencies:
+  - efi
+  actions:
+  - type: set-macro
+    macro: AP_EFI_CURRAWONG_ECU_ENABLED
+- name: efi-dronecan
+  description: DroneCAN EFI
+  category: ice
+  enabledByDefault: false
+  dependencies:
+  - efi
+  - dronecan
+  actions:
+  - type: set-macro
+    macro: AP_EFI_DRONECAN_ENABLED
+- name: efi-hirth
+  description: Hirth ECU
+  category: ice
+  enabledByDefault: false
+  dependencies:
+  - efi
+  actions:
+  - type: set-macro
+    macro: AP_EFI_SERIAL_HIRTH_ENABLED
+- name: efi-lutan
+  description: Lutan EFI
+  category: ice
+  enabledByDefault: false
+  dependencies:
+  - efi
+  actions:
+  - type: set-macro
+    macro: AP_EFI_SERIAL_LUTAN_ENABLED
+- name: efi-mav
+  description: MAVLink EFI
+  category: ice
+  enabledByDefault: false
+  dependencies:
+  - efi
+  actions:
+  - type: set-macro
+    macro: AP_EFI_MAV_ENABLED
+- name: efi-megasquirt
+  description: MegaSquirt EFI
+  category: ice
+  enabledByDefault: false
+  dependencies:
+  - efi
+  actions:
+  - type: set-macro
+    macro: AP_EFI_SERIAL_MS_ENABLED
+- name: efi-nmpwu
+  description: NMPMU EFI
+  category: ice
+  enabledByDefault: false
+  dependencies:
+  - efi
+  actions:
+  - type: set-macro
+    macro: AP_EFI_NWPWU_ENABLED
+- name: ice-engine
+  description: Internal combustion engine support
+  category: ice
+  enabledByDefault: false
+  dependencies:
+  - rpm
+  actions:
+  - type: set-macro
+    macro: AP_ICENGINE_ENABLED
+
+# IMU features
+- name: batchsampler
+  description: Batch sampler
+  category: imu
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
+- name: harmonicnotches
+  description: InertialSensor harmonic notch filters
+  category: imu
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
+- name: tempcal
+  description: IMU Temperature calibration
+  category: imu
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_INS_TEMPERATURE_CAL_ENABLE
+
+# Ident features
+- name: adsb
+  description: ADSB
+  category: ident
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_ADSB_ENABLED
+- name: adsb-sagetech
+  description: Sagetech ADSB
+  category: ident
+  enabledByDefault: false
+  dependencies:
+  - adsb
+  actions:
+  - type: set-macro
+    macro: HAL_ADSB_SAGETECH_ENABLED
+- name: adsb-sagetech-mxs
+  description: Sagetech MXS ADSB
+  category: ident
+  enabledByDefault: false
+  dependencies:
+  - adsb
+  actions:
+  - type: set-macro
+    macro: HAL_ADSB_SAGETECH_MXS_ENABLED
+- name: adsb-uavionix
+  description: UAvionix ADSB
+  category: ident
+  enabledByDefault: false
+  dependencies:
+  - adsb
+  actions:
+  - type: set-macro
+    macro: HAL_ADSB_UAVIONIX_MAVLINK_ENABLED
+- name: adsb-uavionx-ucp
+  description: uAvionix UCP ADSB
+  category: ident
+  enabledByDefault: false
+  dependencies:
+  - adsb
+  actions:
+  - type: set-macro
+    macro: HAL_ADSB_UCP_ENABLED
+- name: ais
+  description: AIS
+  category: ident
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_AIS_ENABLED
+- name: opendroneid
+  description: OpenDroneID (Remote ID)
+  category: ident
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_OPENDRONEID_ENABLED
+
+# MAVLink features
+- name: ap-mavlink-ftp-enabled
+  description: MAVLink FTP protocol
+  category: mavlink
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_MAVLINK_FTP_ENABLED
+- name: fencepoint-protocol
+  description: Old MAVLink fence points protocol
+  category: mavlink
+  enabledByDefault: false
+  dependencies:
+  - fence
+  actions:
+  - type: set-macro
+    macro: AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
+- name: highlat2
+  description: HighLatency2 Support
+  category: mavlink
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_HIGH_LATENCY2_ENABLED
+- name: mavlink-msg-flight-information
+  description: FLIGHT_INFORMATION MAVLink message
+  category: mavlink
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
+- name: mavlink-msg-mission-request
+  description: MISSION_REQUEST MAVLink messages
+  category: mavlink
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
+- name: mavlink-msg-rc-channels-raw
+  description: RC_CHANNELS_RAW MAVLink messages
+  category: mavlink
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED
+- name: mavlink-signing
+  description: MAVLink2 packet signing and validation
+  category: mavlink
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_MAVLINK_SIGNING_ENABLED
+- name: mavlink-version-request
+  description: Old AUTOPILOT_VERSION_REQUEST mesage
+  category: mavlink
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED
+- name: mav-cmd-set-hagl
+  description: MAVLink HAGL command
+  category: mavlink
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
+- name: mav-device-op
+  description: DeviceOp MAVLink messages
+  category: mavlink
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_MAVLINK_MSG_DEVICE_OP_ENABLED
+- name: mav-msg-relay-status
+  description: Send RELAY_STATUS message
+  category: mavlink
+  enabledByDefault: false
+  dependencies:
+  - relay
+  actions:
+  - type: set-macro
+    macro: AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
+- name: mav-msg-serial-control
+  description: Serial Control MAVLink messages
+  category: mavlink
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED
+- name: mav-servo-relay
+  description: ServoRelay MAVLink messages
+  category: mavlink
+  enabledByDefault: false
+  dependencies:
+  - servorelay-events
+  actions:
+  - type: set-macro
+    macro: AP_MAVLINK_SERVO_RELAY_ENABLED
+- name: rallypoint-protocol
+  description: Old MAVLink rally points protocol
+  category: mavlink
+  enabledByDefault: false
+  dependencies:
+  - rally
+  actions:
+  - type: set-macro
+    macro: AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED
+- name: rangefinder-sending
+  description: sending of RANGEFINDER mavlink message
+  category: mavlink
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
+- name: request-autopilot-capa
+  description: Old REQUEST_AUTOPILOT_CAPABILITIES command
+  category: mavlink
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED
+- name: video-stream-information
+  description: MAVLink VIDEO_STREAM_INFORMATION message
+  category: mavlink
+  enabledByDefault: false
+  dependencies:
+  - camera
+  actions:
+  - type: set-macro
+    macro: AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+
+# MSP features
+- name: displayport-inav-fonts
+  description: INAV Fonts Translation for DisplayPort
+  category: msp
+  enabledByDefault: false
+  dependencies:
+  - msp-displayport
+  - msp
+  - osd
+  actions:
+  - type: set-macro
+    macro: AP_MSP_INAV_FONTS_ENABLED
+- name: msp
+  description: MSP telemetry and MSP OSD
+  category: msp
+  enabledByDefault: false
+  dependencies:
+  - osd
+  actions:
+  - type: set-macro
+    macro: HAL_MSP_ENABLED
+- name: msp-compass
+  description: MSP compass
+  category: msp
+  enabledByDefault: false
+  dependencies:
+  - msp
+  - osd
+  actions:
+  - type: set-macro
+    macro: AP_COMPASS_MSP_ENABLED
+- name: msp-displayport
+  description: MSP DisplayPort OSD (aka CANVAS MODE)
+  category: msp
+  enabledByDefault: false
+  dependencies:
+  - msp
+  - osd
+  actions:
+  - type: set-macro
+    macro: HAL_WITH_MSP_DISPLAYPORT
+- name: msp-gps
+  description: MSP GPS
+  category: msp
+  enabledByDefault: false
+  dependencies:
+  - msp
+  - osd
+  actions:
+  - type: set-macro
+    macro: HAL_MSP_GPS_ENABLED
+- name: msp-opticalflow
+  description: MSP OpticalFlow
+  category: msp
+  enabledByDefault: false
+  dependencies:
+  - msp
+  - osd
+  - opticalflow
+  actions:
+  - type: set-macro
+    macro: HAL_MSP_OPTICALFLOW_ENABLED
+- name: msp-rangefinder
+  description: MSP rangefinder
+  category: msp
+  enabledByDefault: false
+  dependencies:
+  - msp
+  - osd
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: HAL_MSP_RANGEFINDER_ENABLED
+- name: msp-sensors
+  description: MSP sensors
+  category: msp
+  enabledByDefault: false
+  dependencies:
+  - msp-gps
+  - msp-baro
+  - msp-compass
+  - msp-airspeed
+  - msp
+  - msp-opticalflow
+  - msp-rangefinder
+  - osd
+  actions:
+  - type: set-macro
+    macro: HAL_MSP_SENSORS_ENABLED
+
+# Mission features
+- name: mission-nav-payload-place
+  description: NAV_PAYLOAD_PLACE
+  category: mission
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED
+
+# Networking features
+- name: can-mcast
+  description: CAN multicast bridge
+  category: networking
+  enabledByDefault: false
+  dependencies:
+  - networking
+  - dronecan
+  actions:
+  - type: set-macro
+    macro: AP_NETWORKING_CAN_MCAST_ENABLED
+- name: networkcapture
+  description: network capture
+  category: networking
+  enabledByDefault: false
+  dependencies:
+  - networking
+  actions:
+  - type: set-macro
+    macro: AP_NETWORKING_CAPTURE_ENABLED
+- name: networking
+  description: networking
+  category: networking
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_NETWORKING_ENABLED
+- name: ppp
+  description: PPP networking
+  category: networking
+  enabledByDefault: false
+  dependencies:
+  - networking
+  actions:
+  - type: set-macro
+    macro: AP_NETWORKING_BACKEND_PPP
+
+# Notify features
+- name: display
+  description: I2C Displays
+  category: notify
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_DISPLAY_ENABLED
+- name: led-control
+  description: MAVLink LED control
+  category: notify
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_NOTIFY_MAVLINK_LED_CONTROL_SUPPORT_ENABLED
+- name: notify-ncp5623
+  description: NCP5623 LED
+  category: notify
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_NOTIFY_NCP5623_ENABLED
+- name: notify-neopixel
+  description: NeoPixel LED strings
+  category: notify
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_NOTIFY_NEOPIXEL_ENABLED
+- name: notify-profiled
+  description: ProfiLED
+  category: notify
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_NOTIFY_PROFILED_ENABLED
+- name: notify-profiled-spi
+  description: ProfiLED (SPI)
+  category: notify
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_NOTIFY_PROFILED_SPI_ENABLED
+- name: play-tune
+  description: MAVLink Play Tune command
+  category: notify
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED
+- name: tonealarm
+  description: PWM tone alarm
+  category: notify
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_NOTIFY_TONEALARM_ENABLED
+
+# OSD features
+- name: osd
+  description: OSD
+  category: osd
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: OSD_ENABLED
+- name: osd-extended-link-stats
+  description: OSD panels with extended link stats data
+  category: osd
+  enabledByDefault: false
+  dependencies:
+  - osd
+  - rc-crsf
+  - msp
+  actions:
+  - type: set-macro
+    macro: AP_OSD_LINK_STATS_EXTENSIONS_ENABLED
+- name: osd-param
+  description: OSD param
+  category: osd
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: OSD_PARAM_ENABLED
+- name: osd-sidebars
+  description: Scrolling sidebars
+  category: osd
+  enabledByDefault: false
+  dependencies:
+  - osd
+  actions:
+  - type: set-macro
+    macro: HAL_OSD_SIDEBAR_ENABLE
+- name: pluscode
+  description: PlusCode
+  category: osd
+  enabledByDefault: false
+  dependencies:
+  - osd
+  actions:
+  - type: set-macro
+    macro: HAL_PLUSCODE_ENABLE
+
+# Other features
+- name: ap-avoidance
+  description: '"ADSB" Avoidance'
+  category: other
+  enabledByDefault: false
+  dependencies:
+  - adsb
+  actions:
+  - type: set-macro
+    macro: AP_ADSB_AVOIDANCE_ENABLED
+- name: ap-follow
+  description: Follow library
+  category: other
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_FOLLOW_ENABLED
+- name: bootloader-flashing
+  description: Bootloader flashing
+  category: other
+  enabledByDefault: false
+  dependencies:
+  - filesystem-romfs
+  actions:
+  - type: set-macro
+    macro: AP_BOOTLOADER_FLASHING_ENABLED
+- name: buttons
+  description: Buttons
+  category: other
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_BUTTON_ENABLED
+- name: compass-cal
+  description: '"Tumble" compass calibration'
+  category: other
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: COMPASS_CAL_ENABLED
+- name: custom-rotations
+  description: Custom  sensor rotations
+  category: other
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_CUSTOMROTATIONS_ENABLED
+- name: dronecan-serial
+  description: DroneCAN virtual serial ports
+  category: other
+  enabledByDefault: false
+  dependencies:
+  - dronecan
+  - serialdevice-register
+  actions:
+  - type: set-macro
+    macro: AP_DRONECAN_SERIAL_ENABLED
+- name: gyrofft
+  description: In-Flight gyro FFT calculations
+  category: other
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_GYROFFT_ENABLED
+- name: logging
+  description: Logging
+  category: other
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_LOGGING_ENABLED
+- name: nmea-output
+  description: NMEA output
+  category: other
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_NMEA_OUTPUT_ENABLED
+- name: pid-filtering
+  description: PID filtering
+  category: other
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_FILTER_ENABLED
+- name: polyfence-circle-int-support
+  description: Fence circle compatability
+  category: other
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
+- name: rateloopthread
+  description: Rate Loop Thread
+  category: other
+  enabledByDefault: false
+  dependencies:
+  - harmonicnotches
+  actions:
+  - type: set-macro
+    macro: AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+- name: scripting
+  description: Lua Scripting
+  category: other
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_SCRIPTING_ENABLED
+- name: scripting-serialdevice
+  description: Lua serial device simulation
+  category: other
+  enabledByDefault: false
+  dependencies:
+  - scripting
+  - serialdevice-register
+  actions:
+  - type: set-macro
+    macro: AP_SCRIPTING_SERIALDEVICE_ENABLED
+- name: sdcard-formatting
+  description: Formatting of microSD cards
+  category: other
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_FILESYSTEM_FORMAT_ENABLED
+- name: sdcard-mission
+  description: Storing mission on microSD cards
+  category: other
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_SDCARD_STORAGE_ENABLED
+- name: serialdevice-register
+  description: Serial device registration
+  category: other
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_SERIALMANAGER_REGISTER_ENABLED
+- name: slcan
+  description: SLCAN serial protocol
+  category: other
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_CAN_SLCAN_ENABLED
+
+# Payload features
+- name: gripper
+  description: Gripper
+  category: payload
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_GRIPPER_ENABLED
+- name: landing-gear
+  description: Landing Gear
+  category: payload
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_LANDINGGEAR_ENABLED
+- name: relay
+  description: Relays
+  category: payload
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_RELAY_ENABLED
+- name: servorelay-events
+  description: Servo/Relay Event
+  category: payload
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_SERVORELAYEVENTS_ENABLED
+- name: sprayer
+  description: Sprayer
+  category: payload
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_SPRAYER_ENABLED
+- name: winch
+  description: Winch
+  category: payload
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_WINCH_ENABLED
+- name: winch-daiwa
+  description: DAIWA Winch
+  category: payload
+  enabledByDefault: false
+  dependencies:
+  - winch
+  actions:
+  - type: set-macro
+    macro: AP_WINCH_DAIWA_ENABLED
+- name: winch-pwm
+  description: PWM Winch
+  category: payload
+  enabledByDefault: false
+  dependencies:
+  - winch
+  actions:
+  - type: set-macro
+    macro: AP_WINCH_PWM_ENABLED
+
+# Plane features
+- name: advanced-failsafe
+  description: Advanced Failsafe
+  category: plane
+  enabledByDefault: false
+  vehicles:
+  - plane
+  actions:
+  - type: set-macro
+    macro: AP_ADVANCEDFAILSAFE_ENABLED
+- name: ap-tx-tuning
+  description: TX-based tuning parameter adjustments
+  category: plane
+  enabledByDefault: false
+  vehicles:
+  - plane
+  actions:
+  - type: set-macro
+    macro: AP_TUNING_ENABLED
+- name: autoland-mode
+  description: Fixed Wing Autolanding mode
+  category: plane
+  enabledByDefault: false
+  vehicles:
+  - plane
+  actions:
+  - type: set-macro
+    macro: MODE_AUTOLAND_ENABLED
+- name: deepstall
+  description: Deepstall landing
+  category: plane
+  enabledByDefault: false
+  vehicles:
+  - plane
+  actions:
+  - type: set-macro
+    macro: HAL_LANDING_DEEPSTALL_ENABLED
+- name: plane-blackbox
+  description: Blackbox logging
+  category: plane
+  enabledByDefault: false
+  vehicles:
+  - plane
+  actions:
+  - type: set-macro
+    macro: AP_PLANE_BLACKBOX_LOGGING
+- name: plane-glider-pullup
+  description: Glider pullup support
+  category: plane
+  enabledByDefault: false
+  vehicles:
+  - plane
+  actions:
+  - type: set-macro
+    macro: AP_PLANE_GLIDER_PULLUP_ENABLED
+- name: plane-guided-slew
+  description: Offboard-guided slew commands
+  category: plane
+  enabledByDefault: false
+  vehicles:
+  - plane
+  actions:
+  - type: set-macro
+    macro: AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
+- name: plane-systemid
+  description: systemID support for quadplanes
+  category: plane
+  enabledByDefault: false
+  dependencies:
+  - quadplane
+  - logging
+  vehicles:
+  - plane
+  actions:
+  - type: set-macro
+    macro: AP_PLANE_SYSTEMID_ENABLED
+- name: qautotune
+  description: QuadPlane AUTOTUNE
+  category: plane
+  enabledByDefault: false
+  dependencies:
+  - quadplane
+  vehicles:
+  - plane
+  actions:
+  - type: set-macro
+    macro: QAUTOTUNE_ENABLED
+- name: quadplane
+  description: QuadPlane
+  category: plane
+  enabledByDefault: false
+  vehicles:
+  - plane
+  actions:
+  - type: set-macro
+    macro: HAL_QUADPLANE_ENABLED
+- name: quicktune
+  description: VTOL quicktune
+  category: plane
+  enabledByDefault: false
+  vehicles:
+  - plane
+  actions:
+  - type: set-macro
+    macro: AP_QUICKTUNE_ENABLED
+- name: soaring
+  description: Soaring
+  category: plane
+  enabledByDefault: false
+  vehicles:
+  - plane
+  actions:
+  - type: set-macro
+    macro: HAL_SOARING_ENABLED
+
+# Precision Landing features
+- name: precland
+  description: Precision landing support
+  category: precision-landing
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AC_PRECLAND_ENABLED
+- name: precland-companion
+  description: MAVLink precision landing support
+  category: precision-landing
+  enabledByDefault: false
+  dependencies:
+  - precland
+  actions:
+  - type: set-macro
+    macro: AC_PRECLAND_MAVLINK_ENABLED
+- name: precland-irlock
+  description: IRLock precision landing support
+  category: precision-landing
+  enabledByDefault: false
+  dependencies:
+  - precland
+  actions:
+  - type: set-macro
+    macro: AC_PRECLAND_IRLOCK_ENABLED
+
+# Proximity features
+- name: proximity
+  description: Proximity
+  category: proximity
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_PROXIMITY_ENABLED
+- name: proximity-cygbot
+  description: Cygbot D1 Proximity Sensors
+  category: proximity
+  enabledByDefault: false
+  dependencies:
+  - proximity
+  actions:
+  - type: set-macro
+    macro: AP_PROXIMITY_CYGBOT_ENABLED
+- name: proximity-dronecan
+  description: DroneCAN Proximity Sensors
+  category: proximity
+  enabledByDefault: false
+  dependencies:
+  - proximity
+  - dronecan
+  actions:
+  - type: set-macro
+    macro: AP_PROXIMITY_DRONECAN_ENABLED
+- name: proximity-hexsoonradar-enabled
+  description: Hexsoon Radar Proximity Sensors
+  category: proximity
+  enabledByDefault: false
+  dependencies:
+  - proximity
+  actions:
+  - type: set-macro
+    macro: AP_PROXIMITY_HEXSOONRADAR_ENABLED
+- name: proximity-lightware-sf40c
+  description: LightWare SF40C Proximity Sensors
+  category: proximity
+  enabledByDefault: false
+  dependencies:
+  - proximity
+  actions:
+  - type: set-macro
+    macro: AP_PROXIMITY_LIGHTWARE_SF40C_ENABLED
+- name: proximity-lightware-sf45b
+  description: LightWare SF45B Proximity Sensors
+  category: proximity
+  enabledByDefault: false
+  dependencies:
+  - proximity
+  actions:
+  - type: set-macro
+    macro: AP_PROXIMITY_LIGHTWARE_SF45B_ENABLED
+- name: proximity-mav
+  description: MAVLink Proximity Sensors
+  category: proximity
+  enabledByDefault: false
+  dependencies:
+  - proximity
+  actions:
+  - type: set-macro
+    macro: AP_PROXIMITY_MAV_ENABLED
+- name: proximity-mr72-enabled
+  description: NanoRadar MR72 Proximity Sensors
+  category: proximity
+  enabledByDefault: false
+  dependencies:
+  - proximity
+  actions:
+  - type: set-macro
+    macro: AP_PROXIMITY_MR72_ENABLED
+- name: proximity-rangefinder
+  description: Use RangeFinders as proximity sensors
+  category: proximity
+  enabledByDefault: false
+  dependencies:
+  - proximity
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_PROXIMITY_RANGEFINDER_ENABLED
+- name: proximity-rplidara2
+  description: RPLidarA2 Proximity Sensors
+  category: proximity
+  enabledByDefault: false
+  dependencies:
+  - proximity
+  actions:
+  - type: set-macro
+    macro: AP_PROXIMITY_RPLIDARA2_ENABLED
+- name: proximity-terrarangertower
+  description: TerraRangerTower Proximity Sensors
+  category: proximity
+  enabledByDefault: false
+  dependencies:
+  - proximity
+  actions:
+  - type: set-macro
+    macro: AP_PROXIMITY_TERARANGERTOWER_ENABLED
+- name: proximity-terrarangertowerevo
+  description: TerraRangerTower Evo Proximity Sensors
+  category: proximity
+  enabledByDefault: false
+  dependencies:
+  - proximity
+  actions:
+  - type: set-macro
+    macro: AP_PROXIMITY_TERARANGERTOWEREVO_ENABLED
+
+# RC features
+- name: rc-crsf
+  description: CRSF
+  category: rc
+  enabledByDefault: false
+  dependencies:
+  - rc-protocol
+  actions:
+  - type: set-macro
+    macro: AP_RCPROTOCOL_CRSF_ENABLED
+- name: rc-ghst
+  description: Ghost
+  category: rc
+  enabledByDefault: false
+  dependencies:
+  - rc-protocol
+  actions:
+  - type: set-macro
+    macro: AP_RCPROTOCOL_GHST_ENABLED
+- name: rc-ibus
+  description: IBus
+  category: rc
+  enabledByDefault: false
+  dependencies:
+  - rc-protocol
+  actions:
+  - type: set-macro
+    macro: AP_RCPROTOCOL_IBUS_ENABLED
+- name: rc-mavlink-radio
+  description: MAVLink
+  category: rc
+  enabledByDefault: false
+  dependencies:
+  - rc-protocol
+  actions:
+  - type: set-macro
+    macro: AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+- name: rc-ppmsum
+  description: PPMSum
+  category: rc
+  enabledByDefault: false
+  dependencies:
+  - rc-protocol
+  actions:
+  - type: set-macro
+    macro: AP_RCPROTOCOL_PPMSUM_ENABLED
+- name: rc-protocol
+  description: Serial RC Protocols
+  category: rc
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_RCPROTOCOL_ENABLED
+- name: rc-sbus
+  description: SBUS
+  category: rc
+  enabledByDefault: false
+  dependencies:
+  - rc-protocol
+  actions:
+  - type: set-macro
+    macro: AP_RCPROTOCOL_SBUS_ENABLED
+- name: rc-srxl
+  description: SRXL
+  category: rc
+  enabledByDefault: false
+  dependencies:
+  - rc-protocol
+  actions:
+  - type: set-macro
+    macro: AP_RCPROTOCOL_SRXL_ENABLED
+- name: rc-srxl2
+  description: SRXL2
+  category: rc
+  enabledByDefault: false
+  dependencies:
+  - rc-protocol
+  actions:
+  - type: set-macro
+    macro: AP_RCPROTOCOL_SRXL2_ENABLED
+- name: rc-st24
+  description: ST24
+  category: rc
+  enabledByDefault: false
+  dependencies:
+  - rc-protocol
+  actions:
+  - type: set-macro
+    macro: AP_RCPROTOCOL_ST24_ENABLED
+- name: rc-sumd
+  description: SUMD
+  category: rc
+  enabledByDefault: false
+  dependencies:
+  - rc-protocol
+  actions:
+  - type: set-macro
+    macro: AP_RCPROTOCOL_SUMD_ENABLED
+- name: rc-transmitter-tuning
+  description: knob-based transmitter tuning
+  category: rc
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_RC_TRANSMITTER_TUNING_ENABLED
+- name: rssi
+  description: RSSI
+  category: rc
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_RSSI_ENABLED
+
+# Rangefinder features
+- name: rangefinder
+  description: Rangefinders
+  category: rangefinder
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_ENABLED
+- name: rangefinder-analog
+  description: Rangefinder - Analog
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_ANALOG_ENABLED
+- name: rangefinder-benewake-can
+  description: Rangefinder - Benewake (CAN)
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_BENEWAKE_CAN_ENABLED
+- name: rangefinder-benewake-tf02
+  description: Rangefinder - Benewake -TF02
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_BENEWAKE_TF02_ENABLED
+- name: rangefinder-benewake-tf03
+  description: Rangefinder - Benewake - TF03
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_BENEWAKE_TF03_ENABLED
+- name: rangefinder-blping
+  description: Rangefinder - BLPing
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_BLPING_ENABLED
+- name: rangefinder-dronecan
+  description: Rangefinder - DroneCAN
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  - dronecan
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_DRONECAN_ENABLED
+- name: rangefinder-gyus42v2
+  description: Rangefinder - GYUS42V2
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_GYUS42V2_ENABLED
+- name: rangefinder-hc-sr04
+  description: Rangefinder - HC_SR04
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_HC_SR04_ENABLED
+- name: rangefinder-hexsoonradar
+  description: Rangefinder - Hexsoon Radar
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_HEXSOONRADAR_ENABLED
+- name: rangefinder-jre-serial
+  description: Rangefinder - JRE_SERIAL
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_JRE_SERIAL_ENABLED
+- name: rangefinder-lanbao
+  description: Rangefinder - Lanbao
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_LANBAO_ENABLED
+- name: rangefinder-leddarone
+  description: Rangefinder - LeddarOne
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_LEDDARONE_ENABLED
+- name: rangefinder-leddarvu8
+  description: Rangefinder - LeddarVU8
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_LEDDARVU8_ENABLED
+- name: rangefinder-lightware-serial
+  description: Rangefinder - Lightware (serial)
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_LIGHTWARE_SERIAL_ENABLED
+- name: rangefinder-lua
+  description: Rangefinder - Lua Scripting
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  - scripting
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_LUA_ENABLED
+- name: rangefinder-lwi2c
+  description: Rangefinder - Lightware (i2c)
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_LWI2C_ENABLED
+- name: rangefinder-mavlink
+  description: Rangefinder - MAVLink
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_MAVLINK_ENABLED
+- name: rangefinder-maxbotix-serial
+  description: Rangefinder - MaxBotix (serial)
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_MAXBOTIX_SERIAL_ENABLED
+- name: rangefinder-maxsonari2cxl
+  description: Rangefinder - MaxSonarI2CXL
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_MAXSONARI2CXL_ENABLED
+- name: rangefinder-nmea
+  description: Rangefinder - NMEA
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_NMEA_ENABLED
+- name: rangefinder-nooploop
+  description: Rangefinder - Nooploop TOF P/F
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_NOOPLOOP_ENABLED
+- name: rangefinder-nra24-can
+  description: Rangefinder - NRA24 CAN
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_NRA24_CAN_ENABLED
+- name: rangefinder-pulsedlightlrf
+  description: Rangefinder - PulsedLightLRF
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_PULSEDLIGHTLRF_ENABLED
+- name: rangefinder-pwm
+  description: Rangefinder - PWM
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_PWM_ENABLED
+- name: rangefinder-rds02uf
+  description: Rangefinder - RDS02UF
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_RDS02UF_ENABLED
+- name: rangefinder-tofsf-i2c
+  description: Rangefinder - ToFSense-F I2C
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_TOFSENSEF_I2C_ENABLED
+- name: rangefinder-tofsp-can
+  description: Rangefinder - ToFSense-P CAN
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_TOFSENSEP_CAN_ENABLED
+- name: rangefinder-tri2c
+  description: Rangefinder - TeraRangerI2C
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_TRI2C_ENABLED
+- name: rangefinder-tr-serial
+  description: Rangefinder - TeraRanger Serial
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_TERARANGER_SERIAL_ENABLED
+- name: rangefinder-usd1-can
+  description: Rangefinder - USD1 (CAN)
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_USD1_CAN_ENABLED
+- name: rangefinder-usd1-serial
+  description: Rangefinder - USD1 (SERIAL)
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_USD1_SERIAL_ENABLED
+- name: rangefinder-vl53l0x
+  description: Rangefinder - VL53L0X
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_VL53L0X_ENABLED
+- name: rangefinder-vl53l1x
+  description: Rangefinder - VL53L1X
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_VL53L1X_ENABLED
+- name: rangefinder-wasp
+  description: Rangefinder - Wasp
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_WASP_ENABLED
+- name: rfnd-benewake-tfmini
+  description: Rangefinder - Benewake - TFMini
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_BENEWAKE_TFMINI_ENABLED
+- name: rfnd-benewake-tfminiplus
+  description: Rangefinder - Benewake - TFMiniPlus
+  category: rangefinder
+  enabledByDefault: false
+  dependencies:
+  - rangefinder
+  actions:
+  - type: set-macro
+    macro: AP_RANGEFINDER_BENEWAKE_TFMINIPLUS_ENABLED
+
+# Rover features
+- name: rover-advanced-failsafe
+  description: Advanced Failsafe
+  category: rover
+  enabledByDefault: false
+  dependencies:
+  - advanced-failsafe
+  vehicles:
+  - rover
+  actions:
+  - type: set-macro
+    macro: AP_ROVER_ADVANCED_FAILSAFE_ENABLED
+- name: rover-auto-arm-once
+  description: Make Auto-Arm-Once functionality available
+  category: rover
+  enabledByDefault: false
+  vehicles:
+  - rover
+  actions:
+  - type: set-macro
+    macro: AP_ROVER_AUTO_ARM_ONCE_ENABLED
+
+# Safety features
+- name: ac-avoid
+  description: Object Avoidance
+  category: safety
+  enabledByDefault: false
+  dependencies:
+  - fence
+  actions:
+  - type: set-macro
+    macro: AP_AVOIDANCE_ENABLED
+- name: ac-oapathplanner
+  description: Object Avoidance Path Planner
+  category: safety
+  enabledByDefault: false
+  dependencies:
+  - fence
+  actions:
+  - type: set-macro
+    macro: AP_OAPATHPLANNER_ENABLED
+- name: fence
+  description: Geofences
+  category: safety
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_FENCE_ENABLED
+- name: parachute
+  description: Parachute
+  category: safety
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_PARACHUTE_ENABLED
+- name: rally
+  description: Rally points
+  category: safety
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_RALLY_ENABLED
+
+# Sensors features
+- name: airspeed
+  description: Airspeed Sensors
+  category: sensors
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_AIRSPEED_ENABLED
+- name: beacon
+  description: Beacon
+  category: sensors
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_BEACON_ENABLED
+- name: gps-moving-baseline
+  description: GPS Moving Baseline
+  category: sensors
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: GPS_MOVING_BASELINE
+- name: imu-on-uart
+  description: Send raw IMU data on a serial port
+  category: sensors
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_SERIALMANAGER_IMUOUT_ENABLED
+- name: opticalflow
+  description: Optical Flow
+  category: sensors
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_OPTICALFLOW_ENABLED
+- name: opticalflow-cxof
+  description: Optical flow CXOF Sensor
+  category: sensors
+  enabledByDefault: false
+  dependencies:
+  - opticalflow
+  actions:
+  - type: set-macro
+    macro: AP_OPTICALFLOW_CXOF_ENABLED
+- name: opticalflow-hereflow
+  description: Optical flow HereFlow Sensor
+  category: sensors
+  enabledByDefault: false
+  dependencies:
+  - opticalflow
+  - dronecan
+  actions:
+  - type: set-macro
+    macro: AP_OPTICALFLOW_HEREFLOW_ENABLED
+- name: opticalflow-mav
+  description: Optical flow MAVLink Sensor
+  category: sensors
+  enabledByDefault: false
+  dependencies:
+  - opticalflow
+  actions:
+  - type: set-macro
+    macro: AP_OPTICALFLOW_MAV_ENABLED
+- name: opticalflow-onboard
+  description: Optical flow ONBOARD Sensor
+  category: sensors
+  enabledByDefault: false
+  dependencies:
+  - opticalflow
+  actions:
+  - type: set-macro
+    macro: AP_OPTICALFLOW_ONBOARD_ENABLED
+- name: opticalflow-pixart
+  description: Optical flow PIXART Sensor
+  category: sensors
+  enabledByDefault: false
+  dependencies:
+  - opticalflow
+  actions:
+  - type: set-macro
+    macro: AP_OPTICALFLOW_PIXART_ENABLED
+- name: opticalflow-px4flow
+  description: Optical flow PX4FLOW Sensor
+  category: sensors
+  enabledByDefault: false
+  dependencies:
+  - opticalflow
+  actions:
+  - type: set-macro
+    macro: AP_OPTICALFLOW_PX4FLOW_ENABLED
+- name: opticalflow-upflow
+  description: Optical flow UPFLOW Sensor
+  category: sensors
+  enabledByDefault: false
+  dependencies:
+  - opticalflow
+  actions:
+  - type: set-macro
+    macro: AP_OPTICALFLOW_UPFLOW_ENABLED
+- name: rpm
+  description: RPM sensors
+  category: sensors
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_RPM_ENABLED
+- name: rpm-dronecan
+  description: DroneCAN-based RPM sensors
+  category: sensors
+  enabledByDefault: false
+  dependencies:
+  - rpm
+  - generator
+  - dronecan
+  actions:
+  - type: set-macro
+    macro: AP_RPM_DRONECAN_ENABLED
+- name: rpm-efi
+  description: RPM EFI sensors
+  category: sensors
+  enabledByDefault: false
+  dependencies:
+  - rpm
+  - efi
+  actions:
+  - type: set-macro
+    macro: AP_RPM_EFI_ENABLED
+- name: rpm-esc-telem
+  description: RPM ESC Telemetry sensors
+  category: sensors
+  enabledByDefault: false
+  dependencies:
+  - rpm
+  actions:
+  - type: set-macro
+    macro: AP_RPM_ESC_TELEM_ENABLED
+- name: rpm-generator
+  description: Generator RPM sensors
+  category: sensors
+  enabledByDefault: false
+  dependencies:
+  - rpm
+  - generator
+  actions:
+  - type: set-macro
+    macro: AP_RPM_GENERATOR_ENABLED
+- name: rpm-harmonic-notch
+  description: RPM Harmonic Notch sensors
+  category: sensors
+  enabledByDefault: false
+  dependencies:
+  - rpm
+  - harmonicnotches
+  actions:
+  - type: set-macro
+    macro: AP_RPM_HARMONICNOTCH_ENABLED
+- name: rpm-pin
+  description: RPM Pin-based sensors
+  category: sensors
+  enabledByDefault: false
+  dependencies:
+  - rpm
+  actions:
+  - type: set-macro
+    macro: AP_RPM_PIN_ENABLED
+- name: temp
+  description: Temperature Sensors
+  category: sensors
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_TEMPERATURE_SENSOR_ENABLED
+- name: temp-mcp9600
+  description: Temp Sensor - MCP9600
+  category: sensors
+  enabledByDefault: false
+  dependencies:
+  - temp
+  actions:
+  - type: set-macro
+    macro: AP_TEMPERATURE_SENSOR_MCP9600_ENABLED
+- name: temp-mlx90614
+  description: Temp Sensor - MLX90614
+  category: sensors
+  enabledByDefault: false
+  dependencies:
+  - temp
+  actions:
+  - type: set-macro
+    macro: AP_TEMPERATURE_SENSOR_MLX90614_ENABLED
+- name: temp-sht3x
+  description: Temp Sensor - SHT3x
+  category: sensors
+  enabledByDefault: false
+  dependencies:
+  - temp
+  actions:
+  - type: set-macro
+    macro: AP_TEMPERATURE_SENSOR_SHT3X_ENABLED
+- name: temp-tsys01
+  description: Temp Sensor - TSYS01
+  category: sensors
+  enabledByDefault: false
+  dependencies:
+  - temp
+  actions:
+  - type: set-macro
+    macro: AP_TEMPERATURE_SENSOR_TSYS01_ENABLED
+- name: temp-tsys03
+  description: Temp Sensor - TSYS03
+  category: sensors
+  enabledByDefault: false
+  dependencies:
+  - temp
+  actions:
+  - type: set-macro
+    macro: AP_TEMPERATURE_SENSOR_TSYS03_ENABLED
+
+# Telemetry features
+- name: aux-function-strings
+  description: Auxiliary function activation text messages
+  category: telemetry
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
+- name: bidirectional-frsky-telemetry
+  description: bidirectional FrSky telemetry
+  category: telemetry
+  enabledByDefault: false
+  dependencies:
+  - frsky-sport
+  actions:
+  - type: set-macro
+    macro: HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+- name: crsf
+  description: CRSF telemetry
+  category: telemetry
+  enabledByDefault: false
+  dependencies:
+  - frsky-sport-passthrough
+  - frsky
+  - frsky-sport
+  - rc-crsf
+  actions:
+  - type: set-macro
+    macro: HAL_CRSF_TELEM_ENABLED
+- name: crsf-scripting
+  description: CRSF Menu Scripting
+  category: telemetry
+  enabledByDefault: false
+  dependencies:
+  - crsftext
+  - crsf
+  - osd-param
+  - frsky-sport-passthrough
+  - frsky
+  - frsky-sport
+  actions:
+  - type: set-macro
+    macro: AP_CRSF_SCRIPTING_ENABLED
+- name: crsftext
+  description: CRSF text param selection
+  category: telemetry
+  enabledByDefault: false
+  dependencies:
+  - crsf
+  - osd-param
+  - frsky-sport-passthrough
+  - frsky
+  - frsky-sport
+  actions:
+  - type: set-macro
+    macro: HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
+- name: frsky
+  description: FrSky telemetry
+  category: telemetry
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_FRSKY_TELEM_ENABLED
+- name: frsky-d
+  description: FrSkyD telemetry
+  category: telemetry
+  enabledByDefault: false
+  dependencies:
+  - frsky
+  actions:
+  - type: set-macro
+    macro: AP_FRSKY_D_TELEM_ENABLED
+- name: frsky-sport
+  description: FrSkySPort telemetry
+  category: telemetry
+  enabledByDefault: false
+  dependencies:
+  - frsky
+  actions:
+  - type: set-macro
+    macro: AP_FRSKY_SPORT_TELEM_ENABLED
+- name: frsky-sport-passthrough
+  description: FrSkySPort pass-through telemetry
+  category: telemetry
+  enabledByDefault: false
+  dependencies:
+  - frsky-sport
+  - frsky
+  actions:
+  - type: set-macro
+    macro: AP_FRSKY_SPORT_PASSTHROUGH_ENABLED
+- name: ghst
+  description: Ghost telemetry
+  category: telemetry
+  enabledByDefault: false
+  dependencies:
+  - rc-ghst
+  actions:
+  - type: set-macro
+    macro: AP_GHST_TELEM_ENABLED
+- name: hott
+  description: HOTT telemetry
+  category: telemetry
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_HOTT_TELEM_ENABLED
+- name: ltm
+  description: LTM telemetry
+  category: telemetry
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_LTM_TELEM_ENABLED
+- name: spektrum
+  description: Spektrum telemetry
+  category: telemetry
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: HAL_SPEKTRUM_TELEM_ENABLED
+- name: i-bus
+  description: i-BUS telemetry
+  category: telemetry
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_IBUS_TELEM_ENABLED
+
+# VTOL Frame features
+- name: deca
+  description: DECA
+  category: vtol-frame
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_MOTORS_FRAME_DECA_ENABLED
+- name: dodecahexa
+  description: DODECAHEXA
+  category: vtol-frame
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_MOTORS_FRAME_DODECAHEXA_ENABLED
+- name: hexa
+  description: HEXA
+  category: vtol-frame
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_MOTORS_FRAME_HEXA_ENABLED
+- name: octa
+  description: OCTA
+  category: vtol-frame
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_MOTORS_FRAME_OCTA_ENABLED
+- name: octaquad
+  description: OCTAQUAD
+  category: vtol-frame
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_MOTORS_FRAME_OCTAQUAD_ENABLED
+- name: quad
+  description: QUAD
+  category: vtol-frame
+  enabledByDefault: true
+  actions:
+  - type: set-macro
+    macro: AP_MOTORS_FRAME_QUAD_ENABLED
+- name: tri
+  description: TriCopters
+  category: vtol-frame
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_MOTORS_TRI_ENABLED
+- name: y6
+  description: Y6
+  category: vtol-frame
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_MOTORS_FRAME_Y6_ENABLED
+
+# VTX features
+- name: smartaudio
+  description: SmartAudio VTX contol
+  category: vtx
+  enabledByDefault: false
+  dependencies:
+  - video-tx
+  actions:
+  - type: set-macro
+    macro: AP_SMARTAUDIO_ENABLED
+- name: tramp
+  description: IRC Tramp VTX control
+  category: vtx
+  enabledByDefault: false
+  dependencies:
+  - video-tx
+  actions:
+  - type: set-macro
+    macro: AP_TRAMP_ENABLED
+- name: video-tx
+  description: VideoTX control
+  category: vtx
+  enabledByDefault: false
+  actions:
+  - type: set-macro
+    macro: AP_VIDEOTX_ENABLED
