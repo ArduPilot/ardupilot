@@ -1,0 +1,48 @@
+#customize board hw definition file for processing by chibios_pins.py
+# for SkyRukh Surge H7 FC board bootloader
+
+# MCU class and specific type
+MCU STM32H7 STM32H743xx
+
+# crystal frequency, setup to use external oscillator
+OSCILLATOR_HZ 16000000
+
+# board ID.
+APJ_BOARD_ID AP_HW_SkyRukh_Surge_H7
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# flash size
+FLASH_SIZE_KB 2048
+
+define HAL_LED_ON 0
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 UART7
+
+# UART7 is debug
+PE8 UART7_TX UART7 NODMA
+PF6 UART7_RX UART7 NODMA
+
+# USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# pins for SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+define BOOTLOADER_DEBUG SD7
+
+# Add CS pins to ensure they are high in bootloader
+
+PG10	MAX7456_CS	CS
+PH15	FRAM_CS1	CS
+PC13	BMI088_CS1	CS
+PF0	BMI088_CS2	CS
+PF10	DPS310_CS1	CS
+PB7	ICM20602_CS	CS
