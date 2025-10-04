@@ -200,13 +200,14 @@ void AP_Networking::init()
 #endif
 
 #if AP_NETWORKING_CAN_MCAST_BRIDGING_ENABLED
-    if (option_is_set(OPTION::CAN1_MCAST_ENDPOINT) || option_is_set(OPTION::CAN1_MCAST_ENDPOINT)) {
+    if (option_is_set(OPTION::CAN1_MCAST_ENDPOINT) ||
+        option_is_set(OPTION::CAN2_MCAST_ENDPOINT)) {
         // get mask of enabled buses
         uint8_t bus_mask = 0;
         if (option_is_set(OPTION::CAN1_MCAST_ENDPOINT)) {
             bus_mask |= (1U<<0);
         }
-        if (option_is_set(OPTION::CAN1_MCAST_ENDPOINT)) {
+        if (option_is_set(OPTION::CAN2_MCAST_ENDPOINT)) {
             bus_mask |= (1U<<1);
         }
         mcast_server.start(bus_mask);
