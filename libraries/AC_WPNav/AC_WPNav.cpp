@@ -72,7 +72,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @Param: RFND_USE
     // @DisplayName: Waypoint missions use rangefinder for terrain following
     // @Description: This controls if waypoint missions use rangefinder for terrain following
-    // @Values: 0:Disable,1:Enable,
+    // @Values: 0:Disable,1:Enable
     // @User: Advanced
     AP_GROUPINFO("RFND_USE",   10, AC_WPNav, _rangefinder_use, 1),
 
@@ -716,7 +716,7 @@ bool AC_WPNav::get_terrain_U_m(float& terrain_u_m)
             return false;
         }
         // If the rangefinder isn't healthy then use terrain data if available
-        FALLTHROUGH;        
+        FALLTHROUGH;
 #else
         return false;
 #endif
