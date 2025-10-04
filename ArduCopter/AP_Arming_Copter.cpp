@@ -566,7 +566,7 @@ bool AP_Arming_Copter::alt_checks(bool display_failure)
 //  has side-effect that logging is started
 bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 {
-    const auto &ahrs = AP::ahrs();
+    auto &ahrs = AP::ahrs();
 
     // always check if inertial nav has started and is ready
     if (!ahrs.healthy()) {
@@ -642,6 +642,11 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
     // check if safety switch has been pushed
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
         check_failed(true, "Safety Switch");
+        return false;
+    }
+
+    if (!ahrs.set_origin_to_recorded()) {
+        check_failed(true, "No origin set");
         return false;
     }
 
