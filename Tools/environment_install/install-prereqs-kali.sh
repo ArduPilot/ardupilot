@@ -1,71 +1,49 @@
 #!/usr/bin/env bash
 echo "---------- $0 start ----------"
 set -e
-#set -x
 
-# Color definitions
+# ===== COLORI =====
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Color functions
-print_red() {
-    echo -e "${RED}$1${NC}"
-}
+print_red()   { echo -e "${RED}$1${NC}"; }
+print_green() { echo -e "${GREEN}$1${NC}"; }
+print_yellow(){ echo -e "${YELLOW}$1${NC}"; }
+print_blue()  { echo -e "${BLUE}$1${NC}"; }
 
-print_green() {
-    echo -e "${GREEN}$1${NC}"
-}
-
-print_yellow() {
-    echo -e "${YELLOW}$1${NC}"
-}
-
-print_blue() {
-    echo -e "${BLUE}$1${NC}"
-}
-
+# ===== PRELIMINARI =====
 if [ $EUID == 0 ]; then
     print_red "Please do not run this script as root; don't sudo it!"
     exit 1
 fi
 
 OPT="/opt"
-# Ardupilot Tools
 ARDUPILOT_TOOLS="Tools/autotest"
-
 ASSUME_YES=false
 QUIET=false
 sep="##############################################"
 
-OPTIND=1 # Reset in case getopts has been used previously in the shell.
+OPTIND=1
 while getopts "yq" opt; do
     case "$opt" in
-        y)  ASSUME_YES=true
-            ;;
-        q)  QUIET=true
-            ;;
-        *)  print_red "Invalid option: -$OPTARG"
-            exit 1
-            ;;
+        y)  ASSUME_YES=true ;;
+        q)  QUIET=true ;;
+        *)  print_red "Invalid option: -$OPTARG"; exit 1 ;;
     esac
 done
 
 APT_GET="sudo apt-get"
-if $ASSUME_YES; then
-    APT_GET="$APT_GET --assume-yes"
-fi
-if $QUIET; then
-    APT_GET="$APT_GET -qq"
-fi
+$ASSUME_YES && APT_GET="$APT_GET --assume-yes"
+$QUIET && APT_GET="$APT_GET -qq"
 
-# update apt package list
 $APT_GET update
 
+# ===== FUNZIONI =====
 function package_is_installed() {
-    dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed" || true
+    dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed"
 }
 
 function heading() {
@@ -74,117 +52,130 @@ function heading() {
     print_blue "$sep"
 }
 
-# Install lsb-release as it is needed to check Ubuntu version
+# ===== DETECTION DISTRIBUZIONE =====
 if ! package_is_installed "lsb-release"; then
     heading "Installing lsb-release"
     $APT_GET install lsb-release
     print_green "Done!"
 fi
 
-# Checking release
 RELEASE_CODENAME=$(lsb_release -c -s)
 RELEASE_DISTRIBUTOR=$(lsb_release -i -s | tr '[:upper:]' '[:lower:]')
 
 print_yellow "Detected distribution: $RELEASE_DISTRIBUTOR"
 print_yellow "Detected codename: $RELEASE_CODENAME"
 
-# Kali Linux detection
 if [ "$RELEASE_DISTRIBUTOR" != "kali" ]; then
-    print_red "This script is specifically for Kali Linux. Detected: $RELEASE_DISTRIBUTOR"
-    print_red "Please use the appropriate install script for your distribution."
+    print_red "This script is for Kali Linux only. Detected: $RELEASE_DISTRIBUTOR"
     exit 1
 fi
 
 PYTHON_V="python3"
 PIP="python3 -m pip"
 
-# For Kali, use generic SFML packages without version numbers
-SITLFML_VERSION=""
-SITLCFML_VERSION=""
-
-# Lists of packages to install
+# ===== PACCHETTI BASE =====
 BASE_PKGS="build-essential ccache g++ gawk git make wget valgrind screen python3-pexpect astyle"
-PYTHON_PKGS="future lxml pymavlink pyserial MAVProxy geocoder empy==3.3.4 ptyprocess dronecan"
-PYTHON_PKGS="$PYTHON_PKGS flake8 junitparser wsproto tabulate"
-
-# add some Python packages required for commonly-used MAVProxy modules and hex file generation:
-if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
-    PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
-fi
+PYTHON_PKGS="future lxml pymavlink pyserial MAVProxy geocoder empy==3.3.4 ptyprocess dronecan flake8 junitparser wsproto tabulate"
+[[ $SKIP_AP_EXT_ENV -ne 1 ]] && PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
 
 ARM_LINUX_PKGS="g++-arm-linux-gnueabihf"
-
-# For Kali, install in venv
 PYTHON_PKGS+=" numpy pyparsing psutil"
 SITL_PKGS="python3-dev"
 
-# add some packages required for commonly-used MAVProxy modules:
+# ===== GRAFICA / MAVPROXY (VERSIONE CORRETTA PER KALI) =====
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
-    PYTHON_PKGS+=" matplotlib scipy opencv-python pyyaml"
-    # Generic SFML packages for Kali (no version suffix)
-    SITL_PKGS+=" xterm xfonts-base libcsfml-dev libsfml-dev"
+    PYTHON_PKGS+=" matplotlib scipy opencv-python pyyaml wxpython"
+    
+    # Pacchetti base sempre disponibili
+    SITL_PKGS+=" xterm xfonts-base libgtk-3-dev python3-wxgtk4.0 \
+fonts-freefont-ttf libfreetype6-dev libportmidi-dev"
+    
+    # SFML/CSFML - usa solo i pacchetti -dev senza versioni specifiche
+    SITL_PKGS+=" libcsfml-dev libsfml-dev"
+    
+    # Prova a trovare libpng (potrebbe essere libpng-dev o libpng16-16)
+    if apt-cache show libpng16-16 >/dev/null 2>&1; then
+        SITL_PKGS+=" libpng16-16"
+    elif apt-cache show libpng-dev >/dev/null 2>&1; then
+        SITL_PKGS+=" libpng-dev"
+    fi
+    
+    # SDL - controlla disponibilità
+    if apt-cache show libsdl1.2-dev >/dev/null 2>&1; then
+        SITL_PKGS+=" libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"
+    else
+        print_yellow "SDL 1.2 packages not found, trying SDL2..."
+        SITL_PKGS+=" libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev"
+    fi
+    
+    # wxWidgets - controlla versione disponibile
+    if apt-cache show libwxgtk3.2-dev >/dev/null 2>&1; then
+        SITL_PKGS+=" libwxgtk3.2-dev"
+    elif apt-cache show libwxgtk3.0-gtk3-dev >/dev/null 2>&1; then
+        SITL_PKGS+=" libwxgtk3.0-gtk3-dev"
+    fi
 fi
 
-if [[ $SKIP_AP_COV_ENV -ne 1 ]]; then
-    # Coverage utilities
-    COVERAGE_PKGS="lcov gcovr"
+[[ $SKIP_AP_COV_ENV -ne 1 ]] && COVERAGE_PKGS="lcov gcovr"
+
+# ===== CONTROLLI REALI SU REALPATH E LIBTOOL =====
+if ! command -v realpath >/dev/null 2>&1; then
+    print_yellow "Installing realpath..."
+    $APT_GET install realpath
+    print_green "realpath installed successfully!"
 fi
 
-# Check if we need to install pkg-config
+if apt-cache search -n '^libtool-bin' | grep -q libtool-bin; then
+    SITL_PKGS+=" libtool-bin"
+fi
+
 if ! package_is_installed "pkg-config"; then
     print_yellow "Installing pkg-config..."
     $APT_GET install pkg-config
     print_green "pkg-config installed successfully!"
 fi
 
-# Kali specific packages
-SITL_PKGS+=" libpython3-stdlib"
+SITL_PKGS+=" libpython3-stdlib ppp"
 
-# Check for graphical package for MAVProxy
-if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev"
-    PYTHON_PKGS+=" opencv-python wxpython"
-    SITL_PKGS+=" python3-wxgtk4.0"
-    SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"
+# ===== AGGIUNTA AL GRUPPO DIALOUT =====
+if ! groups $USER | grep -q '\bdialout\b'; then
+    heading "Adding user to dialout group"
+    sudo usermod -a -G dialout $USER
+    print_green "User added to dialout group (relog required)."
+else
+    print_green "User already in dialout group."
 fi
 
-# Check if we need to manually install realpath
-RP=$(apt-cache search -n '^realpath$' || true)
-if [ -n "$RP" ]; then
-    BASE_PKGS+=" realpath"
-fi
-
-# Check if we need to manually install libtool-bin
-LBTBIN=$(apt-cache search -n '^libtool-bin' || true)
-if [ -n "$LBTBIN" ]; then
-    SITL_PKGS+=" libtool-bin"
-fi
-
-SITL_PKGS+=" ppp"
-
-# Install all packages
+# ===== INSTALLAZIONE PACCHETTI =====
 heading "Installing packages"
-$APT_GET install $BASE_PKGS $SITL_PKGS $ARM_LINUX_PKGS $COVERAGE_PKGS
+print_yellow "Installing base packages..."
+$APT_GET install $BASE_PKGS $ARM_LINUX_PKGS $COVERAGE_PKGS
+
+# Installa SITL_PKGS uno alla volta per evitare che un pacchetto mancante blocchi tutto
+print_yellow "Installing SITL packages (one by one to handle missing packages)..."
+for pkg in $SITL_PKGS; do
+    if $APT_GET install $pkg 2>/dev/null; then
+        print_green "✓ Installed $pkg"
+    else
+        print_yellow "⚠ Skipped $pkg (not available)"
+    fi
+done
+
 print_green "Packages installed successfully!"
 
-if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
-    # If xfonts-base was just installed, you need to rebuild the font information cache.
-    heading "Rebuilding font cache"
-    fc-cache
-    print_green "Font cache rebuilt successfully!"
-fi
+[[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]] && { heading "Rebuilding font cache"; fc-cache; print_green "Font cache rebuilt!"; }
 
+# ===== DOCKER CHECK =====
 heading "Check if we are inside docker environment..."
 IS_DOCKER=false
 if [[ ${AP_DOCKER_BUILD:-0} -eq 1 ]] || [[ -f /.dockerenv ]] || grep -Eq '(lxc|docker)' /proc/1/cgroup 2>/dev/null; then
     IS_DOCKER=true
 fi
 print_yellow "Docker environment: $IS_DOCKER"
-print_green "Docker check complete!"
 
 SHELL_LOGIN=".profile"
 if $IS_DOCKER; then
-    print_yellow "Inside docker, we add the tools path into .bashrc directly"
+    print_yellow "Inside docker, adjusting environment file"
     SHELL_LOGIN=".ardupilot_env"
     echo "# ArduPilot env file. Need to be loaded by your Shell." > ~/$SHELL_LOGIN
 fi
@@ -192,130 +183,60 @@ fi
 SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
 
+# ===== VENV SETUP =====
 PIP_USER_ARGUMENT="--user"
-
-# create a Python venv for Kali
 PYTHON_VENV_PACKAGE="python3-venv"
 
 heading "Setting up Python virtual environment"
 $APT_GET install $PYTHON_VENV_PACKAGE
 
-# Check if venv already exists in ARDUPILOT_ROOT
 VENV_PATH=""
 if [ -d "$ARDUPILOT_ROOT/venv-ardupilot" ]; then
     VENV_PATH="$ARDUPILOT_ROOT/venv-ardupilot"
-    print_green "Found existing venv at $VENV_PATH"
 elif [ -d "$ARDUPILOT_ROOT/venv" ]; then
     VENV_PATH="$ARDUPILOT_ROOT/venv"
-    print_green "Found existing venv at $VENV_PATH"
 elif [ -d "$ARDUPILOT_ROOT/.venv" ]; then
     VENV_PATH="$ARDUPILOT_ROOT/.venv"
-    print_green "Found existing venv at $VENV_PATH"
 else
     VENV_PATH="$HOME/venv-ardupilot"
     print_yellow "Creating new venv at $VENV_PATH"
     python3 -m venv --system-site-packages "$VENV_PATH"
-    print_green "Virtual environment created successfully!"
 fi
 
 SOURCE_LINE="source $VENV_PATH/bin/activate"
-
-# activate it:
 $SOURCE_LINE
 PIP_USER_ARGUMENT=""
 
-function maybe_prompt_user() {
-    if $ASSUME_YES; then
-        return 0
-    else
-        read -p "$1" -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            return 0
-        else
-            return 1
-        fi
-    fi
-}
-
-if [[ -z "${DO_PYTHON_VENV_ENV}" ]] && maybe_prompt_user "Make ArduPilot venv default for python [N/y]? "; then
-    DO_PYTHON_VENV_ENV=1
-fi
-
-if [[ $DO_PYTHON_VENV_ENV -eq 1 ]]; then
-    echo "$SOURCE_LINE" >> ~/$SHELL_LOGIN
-    print_green "ArduPilot venv added to $SHELL_LOGIN"
-else
-    print_yellow "Please use \`$SOURCE_LINE\` to activate the ArduPilot venv"
-fi
-
 print_green "Virtual environment setup complete!"
 
+# ===== AGGIORNAMENTO PIP E PACCHETTI PYTHON =====
 heading "Upgrading pip and setuptools"
-# try update packaging, setuptools and wheel before installing pip package that may need compilation
 $PIP install $PIP_USER_ARGUMENT -U pip packaging setuptools wheel
-print_green "pip and setuptools upgraded successfully!"
-
-if [ "$GITHUB_ACTIONS" == "true" ]; then
-    PIP_USER_ARGUMENT+=" --progress-bar off"
-fi
-
-# must do this ahead of wxPython pip3 run
-heading "Installing attrdict3"
 $PIP install $PIP_USER_ARGUMENT -U attrdict3
-print_green "attrdict3 installed successfully!"
 
-# install Python packages one-at-a-time so it is clear which package is causing problems:
 heading "Installing Python packages"
 for PACKAGE in $PYTHON_PKGS; do
     print_yellow "Installing $PACKAGE..."
-    if [ "$PACKAGE" == "wxpython" ]; then
-        print_yellow "##### $PACKAGE takes a *VERY* long time to install (~30 minutes). Be patient."
-        time $PIP install $PIP_USER_ARGUMENT -U $PACKAGE || {
-            print_red "Warning: Failed to install $PACKAGE, continuing anyway..."
-        }
-    else
-        time $PIP install $PIP_USER_ARGUMENT -U $PACKAGE || {
-            print_red "Warning: Failed to install $PACKAGE, continuing anyway..."
-        }
-    fi
-    
-    # Check if installation was successful
-    if $PIP show $PACKAGE &>/dev/null; then
-        print_green "✓ $PACKAGE installed successfully!"
+    if ! time $PIP install $PIP_USER_ARGUMENT -U $PACKAGE; then
+        print_red "Warning: Failed to install $PACKAGE, continuing..."
     fi
 done
-print_green "All Python packages processed!"
 
-# Force reinstall Pillow for Kali
+# ===== REINSTALL PILLOW =====
 heading "Reinstalling Pillow"
 $PIP install --force-reinstall pillow
-print_green "Pillow reinstalled successfully!"
 
-heading "Add user to dialout group to allow managing serial ports"
-sudo usermod -a -G dialout $USER
-print_green "User added to dialout group successfully!"
-
-if [[ -z "${DO_AP_STM_ENV}" ]] && maybe_prompt_user "Install ArduPilot STM32 toolchain [N/y]? "; then
-    DO_AP_STM_ENV=1
-fi
-
-heading "Removing modemmanager and brltty package that could conflict with firmware uploading"
+# ===== RIMOZIONE PACCHETTI CHE CREANO CONFLITTI =====
+heading "Removing conflicting packages"
 if package_is_installed "modemmanager"; then
     $APT_GET remove modemmanager
-    print_green "modemmanager removed successfully!"
-else
-    print_green "modemmanager is not installed (already clean)"
 fi
 if package_is_installed "brltty"; then
     $APT_GET remove brltty
-    print_green "brltty removed successfully!"
-else
-    print_green "brltty is not installed (already clean)"
 fi
-print_green "Conflicting packages check complete!"
+print_green "Conflicting packages removed if present!"
 
-# ArduPilot official Toolchain for STM32 boards
+# ===== TOOLCHAIN ARM =====
 function install_arm_none_eabi_toolchain() {
     ARM_ROOT="gcc-arm-none-eabi-10-2020-q4-major"
     case $(uname -m) in
@@ -324,128 +245,59 @@ function install_arm_none_eabi_toolchain() {
                 (
                     cd $OPT
                     heading "Installing toolchain for STM32 Boards"
-                    print_yellow "Downloading from ArduPilot server"
                     sudo wget --progress=dot:giga https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
-                    print_yellow "Installing..."
                     sudo chmod -R 755 gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
                     sudo tar xjf gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
-                    print_yellow "Cleaning..."
                     sudo rm gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
-                    print_green "STM32 toolchain installed successfully!"
                 )
-            else
-                print_green "STM32 toolchain already installed!"
             fi
             CCACHE_PATH=$(which ccache)
-            print_yellow "Registering STM32 Toolchain for ccache"
-            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
-            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
-            print_green "STM32 Toolchain registered for ccache!"
+            sudo ln -sf $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
+            sudo ln -sf $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
             ;;
-
         aarch64)
             if [ ! -d $OPT/$ARM_ROOT ]; then
                 (
                     cd $OPT
                     heading "Installing toolchain for STM32 Boards"
-                    print_yellow "Downloading from ArduPilot server"
                     sudo wget --progress=dot:giga https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
-                    print_yellow "Installing..."
                     sudo chmod -R 755 gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
                     sudo tar xjf gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
-                    print_yellow "Cleaning..."
                     sudo rm gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
-                    print_green "STM32 toolchain installed successfully!"
                 )
-            else
-                print_green "STM32 toolchain already installed!"
             fi
             CCACHE_PATH=$(which ccache)
-            print_yellow "Registering STM32 Toolchain for ccache"
-            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
-            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
-            print_green "STM32 Toolchain registered for ccache!"
+            sudo ln -sf $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
+            sudo ln -sf $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
             ;;
     esac
 }
 
-CCACHE_PATH=$(which ccache)
-if [[ $DO_AP_STM_ENV -eq 1 ]]; then
-    install_arm_none_eabi_toolchain
+if [[ -z "${DO_AP_STM_ENV}" ]] && read -p "Install ArduPilot STM32 toolchain [N/y]? " -n 1 -r; then
+    echo
+    [[ $REPLY =~ ^[Yy]$ ]] && install_arm_none_eabi_toolchain
 fi
 
+# ===== CONFIGURAZIONE AMBIENTE =====
 heading "Adding ArduPilot Tools to environment"
+exportline="export PATH=\"$ARDUPILOT_ROOT/$ARDUPILOT_TOOLS:\$PATH\""
+grep -Fxq "$exportline" ~/$SHELL_LOGIN 2>/dev/null || echo "$exportline" >> ~/$SHELL_LOGIN
 
-if [[ $DO_AP_STM_ENV -eq 1 ]]; then
-    exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH"
-    if ! grep -Fxq "$exportline" ~/$SHELL_LOGIN 2>/dev/null; then
-        if maybe_prompt_user "Add $OPT/$ARM_ROOT/bin to your PATH [N/y]? "; then
-            echo "$exportline" >> ~/$SHELL_LOGIN
-            eval "$exportline"
-            print_green "STM32 toolchain added to PATH!"
-        else
-            print_yellow "Skipping adding $OPT/$ARM_ROOT/bin to PATH."
-        fi
-    else
-        print_green "STM32 toolchain already in PATH!"
-    fi
-fi
+exportline2="export PATH=/usr/lib/ccache:\$PATH"
+grep -Fxq "$exportline2" ~/$SHELL_LOGIN 2>/dev/null || echo "$exportline2" >> ~/$SHELL_LOGIN
 
-exportline2="export PATH=\"$ARDUPILOT_ROOT/$ARDUPILOT_TOOLS:\"\$PATH"
-if ! grep -Fxq "$exportline2" ~/$SHELL_LOGIN 2>/dev/null; then
-    if maybe_prompt_user "Add $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to your PATH [N/y]? "; then
-        echo "$exportline2" >> ~/$SHELL_LOGIN
-        eval "$exportline2"
-        print_green "ArduPilot Tools added to PATH!"
-    else
-        print_yellow "Skipping adding $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to PATH."
-    fi
-else
-    print_green "ArduPilot Tools already in PATH!"
-fi
-
-if [[ $SKIP_AP_COMPLETION_ENV -ne 1 ]]; then
-    exportline3="source \"$ARDUPILOT_ROOT/Tools/completion/completion.bash\""
-    if ! grep -Fxq "$exportline3" ~/$SHELL_LOGIN 2>/dev/null; then
-        if maybe_prompt_user "Add ArduPilot Bash Completion to your bash shell [N/y]? "; then
-            echo "$exportline3" >> ~/.bashrc
-            eval "$exportline3"
-            print_green "ArduPilot Bash Completion added!"
-        else
-            print_yellow "Skipping adding ArduPilot Bash Completion."
-        fi
-    else
-        print_green "ArduPilot Bash Completion already configured!"
-    fi
-fi
-
-exportline4="export PATH=/usr/lib/ccache:\$PATH"
-if ! grep -Fxq "$exportline4" ~/$SHELL_LOGIN 2>/dev/null; then
-    if maybe_prompt_user "Append CCache to your PATH [N/y]? "; then
-        echo "$exportline4" >> ~/$SHELL_LOGIN
-        eval "$exportline4"
-        print_green "CCache added to PATH!"
-    else
-        print_yellow "Skipping appending CCache to PATH."
-    fi
-else
-    print_green "CCache already in PATH!"
-fi
 print_green "Environment configuration complete!"
 
-if [[ $SKIP_AP_GIT_CHECK -ne 1 ]]; then
-    if [ -d ".git" ]; then
-        heading "Update git submodules"
-        cd "$ARDUPILOT_ROOT"
-        git submodule update --init --recursive
-        print_green "Git submodules updated successfully!"
-    fi
+if [[ $SKIP_AP_GIT_CHECK -ne 1 ]] && [ -d ".git" ]; then
+    heading "Updating git submodules"
+    cd "$ARDUPILOT_ROOT"
+    git submodule update --init --recursive
+    print_green "Git submodules updated!"
 fi
 
 if $IS_DOCKER; then
-    print_yellow "Finalizing ArduPilot env for Docker"
     echo "source ~/.ardupilot_env" >> ~/.bashrc
-    print_green "Docker environment finalized!"
+    print_yellow "Docker environment finalized!"
 fi
 
 heading "Installation complete!"
