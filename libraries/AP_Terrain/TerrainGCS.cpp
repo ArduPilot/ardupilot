@@ -113,17 +113,17 @@ void AP_Terrain::send_request(mavlink_channel_t chan)
     // see if we need to schedule some disk IO
     schedule_disk_io();
 
+    // did we request recently?
+    if (AP_HAL::millis() - last_request_time_ms[chan] < 2000) {
+        // too soon to request again
+        return;
+    }
+
     Location loc;
     if (!AP::ahrs().get_location(loc)) {
         // we don't know where we are. Request any cached blocks.
         // this allows for download of mission items when we have no GPS lock
         send_cache_request(chan);
-        return;
-    }
-
-    // did we request recently?
-    if (AP_HAL::millis() - last_request_time_ms[chan] < 2000) {
-        // too soon to request again
         return;
     }
 
