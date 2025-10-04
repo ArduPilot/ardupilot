@@ -72,7 +72,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @Param: RFND_USE
     // @DisplayName: Waypoint missions use rangefinder for terrain following
     // @Description: This controls if waypoint missions use rangefinder for terrain following
-    // @Values: 0:Disable,1:Enable
+    // @Values: 0:Disable,1:Enable,
     // @User: Advanced
     AP_GROUPINFO("RFND_USE",   10, AC_WPNav, _rangefinder_use, 1),
 
@@ -720,7 +720,7 @@ bool AC_WPNav::get_terrain_offset_m(float& offset_m)
 
     case AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER:
         if (_rangefinder_healthy) {
-            // return previously saved offset based on rangefinder
+            // return previously saved offset based on rangefinder (calculated in AP_SurfaceDistance)
             offset_m = _rangefinder_terrain_offset_m;
             return true;
         }
