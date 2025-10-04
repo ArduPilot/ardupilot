@@ -142,6 +142,7 @@ DMA_NOSHARE TIM3_UP TIM1_UP TIM4_UP SPI2*
 DMA_PRIORITY TIM3_UP TIM1_UP TIM4_UP SPI2*
 
 BARO BMP280 I2C:0:0x76
+BARO DPS310 I2C:0:0x76
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
