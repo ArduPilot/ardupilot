@@ -110,7 +110,7 @@ The first voltage/current sensor is enabled by default and the pin inputs for th
 * BATT_VOLT_PIN 10
 * BATT_CURR_PIN 11
 * BATT_VOLT_MULT 11
-* BATT_CURR_SCALE 40
+* BATT_AMP_PERVLT 40
 * BATT2_VOLT_PIN 18
 * BATT2_CURR_PIN 7
 * BATT2_VOLT_MULT 11
