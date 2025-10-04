@@ -113,7 +113,7 @@ This board has a built-in voltage and current sensors. The following settings ne
 - BATT_VOLT_PIN 14
 - BATT_CURR_PIN 15
 - BATT_VOLT_SCALE 15.3
-- BATT_CURR_SCALE 50.0
+- BATT_AMP_PERVLT 50.0
 
 *Other Power Module needs to be adjusted accordingly*
 
