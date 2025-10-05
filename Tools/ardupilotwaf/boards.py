@@ -529,7 +529,37 @@ class Board:
                     CANARD_ALLOCATE_SEM=1
                 )
 
+        def log_error_msg(msg):
+            from waflib import Logs
+            Logs.pprint('RED', msg)
 
+        if cfg.options.trusted_flight_issuer and cfg.options.trusted_flight_key:
+            if cfg.options.board != 'sitl':
+                # prepare a temp file to embed issuer string into ROMFS
+                artifacts = cfg.bldnode.make_node('trusted_flight_artifacts/' + f'{cfg.options.board}_romfs')
+                artifacts.mkdir()
+                trusted_flight_key_file = artifacts.make_node('key.pub').abspath()
+                trusted_flight_issuer_file = artifacts.make_node('issuer').abspath()
+                with open(trusted_flight_issuer_file, 'w') as f:
+                    f.write(cfg.options.trusted_flight_issuer.strip())
+
+                with open(trusted_flight_key_file, 'wb') as f:
+                    key = open(cfg.options.trusted_flight_key, 'rb').read()
+                    f.write(key)
+
+                env.ROMFS_FILES += [
+                    ('trusted_flight/key.pub', trusted_flight_key_file),
+                    ('trusted_flight/token_issuer', trusted_flight_issuer_file)
+                ]
+
+            env.DEFINES.update(
+                AP_JWT_ENABLED=1,
+                AP_TRUSTED_FLIGHT_ENABLED=1
+            )
+
+        elif cfg.options.trusted_flight_issuer or cfg.options.trusted_flight_key:
+            log_error_msg('Trusted Flight Issuer or Trusted Flight Key not provided. Please provide both to enable Trusted Flights feature or none to disable the feature.')
+            exit (1)
 
         if cfg.options.build_dates:
             env.build_dates = True
@@ -854,6 +884,12 @@ class sitl(Board):
             for f in os.listdir('libraries/AP_OSD/fonts'):
                 if fnmatch.fnmatch(f, "font*bin"):
                     env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
+
+        if cfg.options.enable_sitl_trusted_flight:
+            env.DEFINES.update(
+                AP_JWT_ENABLED=1,
+                AP_TRUSTED_FLIGHT_ENABLED=1
+            )
 
         for f in os.listdir('Tools/autotest/models'):
             if fnmatch.fnmatch(f, "*.json") or fnmatch.fnmatch(f, "*.parm"):

@@ -352,6 +352,9 @@ def do_build(opts, frame_options):
     if opts.coverage:
         cmd_configure.append("--coverage")
 
+    if opts.enable_sitl_trusted_flight:
+        cmd_configure.append("--enable-sitl-trusted-flight")
+
     if opts.enable_onvif and 'antennatracker' in frame_options["waf_target"]:
         cmd_configure.append("--enable-onvif")
 
@@ -789,6 +792,23 @@ def start_vehicle(binary, opts, stuff, spawns=None):
             # we are in a subdirectory when using -n
             path = os.path.join("..", path)
         progress("Using defaults from (%s)" % (path,))
+
+    if opts.enable_sitl_trusted_flight:
+        sys.path.append(os.path.join(os.path.dirname(__file__), '../../', 'libraries/AP_TrustedFlight/tools'))
+
+        from generate_key_and_token import create_key_pair, create_token, PUBLIC_KEY_FILE, TOKEN_FILE, TOKEN_ISSUER
+
+        artifacts_dir = f'{os.getcwd()}/trusted_flight'
+        os.makedirs(artifacts_dir, exist_ok=True)
+
+        import contextlib
+        # generate trusted flight key and token for SITL testing
+        with open(os.devnull, 'w') as null, contextlib.redirect_stdout(null), contextlib.redirect_stderr(null):
+            private_key = create_key_pair(f'{artifacts_dir}/{PUBLIC_KEY_FILE}')
+            create_token(private_key, f'{artifacts_dir}/{TOKEN_FILE}')
+            with open(f'{artifacts_dir}/token_issuer', 'w') as f:
+                f.write(TOKEN_ISSUER)
+
     if opts.flash_storage:
         cmd.append("--set-storage-flash-enabled 1")
         cmd.append("--set-storage-posix-enabled 0")
@@ -1168,6 +1188,10 @@ group_sim.add_option("", "--can-peripherals",
                      action='store_true',
                      default=False,
                      help="start a DroneCAN peripheral instance")
+group_sim.add_option("", "--enable-sitl-trusted-flight",
+                     action='store_true',
+                     default=False,
+                     help="Enable Trusted Flight for sitl")
 group_sim.add_option("-A", "--sitl-instance-args",
                      type='string',
                      default=None,
