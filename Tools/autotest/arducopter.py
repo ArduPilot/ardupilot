@@ -411,6 +411,52 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("test: MISSION COMPLETE: passed!")
         self.land_and_disarm()
 
+    def WPArcs(self):
+        '''Test WP Arc functionality'''
+        _ = self.load_and_start_mission("ArcWPMissionTest.txt")
+
+        self.wait_waypoint(0, 15, max_dist=10, timeout=400)
+        self.progress("Check that vehicle flys an arc between WP 15 and 16")
+        # A crude check, if the arc waypoint doesn't work then the copter will fly directly south between wp 15 and 16
+        # If the arc waypoint works then we expect the copter to arc 180 deg in a CW direction meaning it will travel east
+        # of WP 15 before attaining WP 16
+        tstart = self.get_sim_time()
+        timeout = 200
+        last_print_time = 0
+        while True:
+            now = self.get_sim_time_cached()
+            delta = now - tstart
+            pos = self.assert_receive_message('GLOBAL_POSITION_INT')
+            current_long = pos.lon * 1e-7
+            desired_long = 149.16522
+            current_wp = self.mav.waypoint_current()
+            if delta > timeout:
+                raise AutoTestTimeoutException(
+                    "Failed to achieve position within %fs" % (timeout,)
+                )
+            if now - last_print_time > 1:
+                self.progress(
+                    "Waiting for current long (%f) > desired long (%f) "
+                    "(%.2fs remaining before timeout)"
+                    % (current_long, desired_long, timeout - delta)
+                )
+                last_print_time = now
+
+            if current_wp > 16:
+                raise NotAchievedException(
+                    "mission progressed beyond WP 16 before current longitude > "
+                    "desired long (%f)" % desired_long
+                )
+
+            if (current_long > desired_long):
+                self.progress(
+                    "Success: Copter traveled far enough east whilst traveling to "
+                    "WP 16 that we are likely flying a WP Arc"
+                )
+                break
+
+        self.wait_disarmed()
+
     # enter RTL mode and wait for the vehicle to disarm
     def do_RTL(self, distance_min=None, check_alt=True, distance_max=10, timeout=250, quiet=False):
         """Enter RTL mode and wait for the vehicle to disarm at Home."""
@@ -4483,12 +4529,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.wait_climbrate(-speed_ms-1, -speed_ms+1, minimum_duration=minimum_duration)
         self.do_RTL()
 
-    def fly_mission(self, filename, strict=True):
+    def load_and_start_mission(self, filename, strict=True):
         num_wp = self.load_mission(filename, strict=strict)
         self.set_parameter("AUTO_OPTIONS", 3)
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         self.arm_vehicle()
+        return num_wp
+
+    def fly_mission(self, filename, strict=True):
+        num_wp = self.load_and_start_mission(filename, strict)
         self.wait_waypoint(num_wp-1, num_wp-1)
         self.wait_disarmed()
 
@@ -12134,6 +12184,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.ThrottleFailsafePassthrough,
              self.GCSFailsafe,
              self.CustomController,
+             self.WPArcs,
         ])
         return ret
 
