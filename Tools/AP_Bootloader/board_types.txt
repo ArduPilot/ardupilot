@@ -366,6 +366,9 @@ AP_HW_HAKRC_F405Wing                 4201
 # IDs 4500-4509 reserved for Lumenier
 AP_HW_LUMENIER_LUX_F765_NDAA         4500
 
+# IDs 4600-4619 reserved for Beyond Robotix
+AP_HW_BEYOND_ROBOTIX_ML431_NODE      4600
+
 # IDs 5000-5099 reserved for Carbonix
 # IDs 5100-5199 reserved for SYPAQ Systems
 # IDs 5200-5209 reserved for Airvolute
