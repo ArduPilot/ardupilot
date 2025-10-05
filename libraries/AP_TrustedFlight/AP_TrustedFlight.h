@@ -22,22 +22,36 @@
 #if AP_TRUSTED_FLIGHT_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_CheckFirmware/AP_CheckFirmware.h>
+
+/*
+  app descriptor for public key and token issuer
+ */
+extern const app_descriptor_t app_descriptor;
 
 class AP_TrustedFlight
 {
 public:
+    enum KeyType {
+        PUBLIC_KEY_None,
+        PUBLIC_KEY_EdDSA
+    };
+
+    // constructor
     AP_TrustedFlight();
+
+    // destructor
     ~AP_TrustedFlight();
-    
+
     // Aerobridge Trusted Flight module init
     void init();
-    
+
     // get singleton instance of AP_TrustedFlight
     static AP_TrustedFlight *get_singleton()
     {
         return _singleton;
     }
-    
+
     /**
      * entry method to check if trusted flight artifacts are valid or not
      * @param buffer output message buffer
@@ -56,33 +70,23 @@ private:
     /**
      * read file contents
      * @param filename reference to path of the file to read
-     * @param outbuf reference to buffer to put file contents
-     * @param outsize reference to put size of the file contentx
-     * @returns true if read was successful, false otherwise
+     * @param outsize reference to put size of the file content
+     * @returns pointer to buffer of contents read from file
      */
-    bool read_from_file(const char *filename, uint8_t **outbuf, uint32_t *outsize);
+    const uint8_t *read_from_file(const char *filename, uint32_t *outsize);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     const char *public_key_path = HAL_BOARD_STORAGE_DIRECTORY "/trusted_flight/key.pub";
     const char *token_issuer_path = HAL_BOARD_STORAGE_DIRECTORY "/trusted_flight/token_issuer";
-#else
-    // paths in ROMFS
-    const char *public_key_path = "trusted_flight/key.pub";
-    const char *token_issuer_path = "trusted_flight/token_issuer";
 #endif
 
     const char *token_file_path = HAL_BOARD_STORAGE_DIRECTORY "/trusted_flight/token";
 
+    // flag to determine module initialization
     bool init_done = false;
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
-    const
-#endif
-    uint8_t* public_key;
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
-    const
-#endif
-    uint8_t* token_issuer;
+    const uint8_t* public_key;
+    const uint8_t* token_issuer;
     uint32_t public_key_length;
     uint32_t token_issuer_length;
 
