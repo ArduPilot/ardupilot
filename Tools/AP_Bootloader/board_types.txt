@@ -547,6 +547,8 @@ AP_HW_Accton_Godwit_GA1        7120
 
 # please fill gaps in the above ranges rather than adding past ID #7199
 
+# IDs 7140-7149 reserved for Trusted Flight enabled boards 
+AP_HW_CubeOrange_TFL                7140
 
 # OpenDroneID enabled boards. Use 10000 + the base board ID
 AP_HW_CubeOrange_ODID               10140
