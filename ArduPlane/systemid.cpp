@@ -137,7 +137,9 @@ void AP_SystemID::start()
         case AxisType::FW_MIX_ROLL:
         case AxisType::FW_MIX_PITCH:
             // Exits if quadplane attempting to run System ID Fixed Wing SID Axis in VTOL flight mode
-            if (plane.control_mode->supports_vtol_systemid()) {
+            if (plane.control_mode->supports_vtol_systemid() 
+                || plane.flight_stage == AP_FixedWing::FlightStage::LAND
+                || plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF) {
 #if HAL_QUADPLANE_ENABLED
                 gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Axis not supported for this flight mode");
 #endif
