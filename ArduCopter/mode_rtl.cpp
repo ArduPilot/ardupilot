@@ -179,9 +179,7 @@ void ModeRTL::brake_run()
         _state_complete = true;
         _state = SubMode::STARTING;
         //undo the changes we made to the vel targets. 
-        if (g.rtl_speed_cms != 0){  // Check if RTL speed is non zero to avoid setting the return speed to zero.
-            wp_nav->set_speed_xy(g.rtl_speed_cms); 
-        }
+        wp_nav->set_speed_xy(g.rtl_speed_cms); 
     } else if (inertial_nav.get_velocity_neu_cms().length() < wp_nav->get_default_speed_xy() && g.rtl_speed_cms == 0) {
         _state_complete = true;
         _state = SubMode::STARTING; // vel targets already correct don't adjust further
