@@ -19,6 +19,7 @@ Specifications
   - 1MB Flash
   - 192KB RAM
   - AT7456E OSD
+  - 16MB Winbond W25Q128JVSQ dataflash
   
 - Sensors
 
