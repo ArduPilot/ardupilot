@@ -179,7 +179,9 @@ void ModeRTL::brake_run()
         _state_complete = true;
         _state = SubMode::STARTING;
         //undo the changes we made to the vel targets. 
-        wp_nav->set_speed_xy(g.rtl_speed_cms);
+        if (g.rtl_speed_cms != 0){  // Check if RTL speed is non zero to avoid setting the return speed to zero.
+            wp_nav->set_speed_xy(g.rtl_speed_cms); 
+        }
     }
 }
 
