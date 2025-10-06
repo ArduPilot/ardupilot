@@ -880,12 +880,14 @@ private:
         Bitmask<MSG_LAST> ap_message_ids;
         uint16_t interval_ms;
         uint16_t last_sent_ms; // from AP_HAL::millis16()
+        bool highest_message_id_first;  // send highest-numbered message first
     };
     deferred_message_bucket_t deferred_message_bucket[10];
     static const uint8_t no_bucket_to_send = -1;
     static const ap_message no_message_to_send = (ap_message)-1;
     uint8_t sending_bucket_id = no_bucket_to_send;
     Bitmask<MSG_LAST> bucket_message_ids_to_send;
+    bool highest_message_id_first;  // send highest-numbered message first
 
     ap_message next_deferred_bucket_message_to_send(uint16_t now16_ms);
     void find_next_bucket_to_send(uint16_t now16_ms);
