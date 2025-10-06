@@ -208,6 +208,7 @@ void Plane::flaperon_update()
      */
     float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
     float flap_percent = SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap_auto);
+    flap_percent = fmin(flap_percent, g.flaperon_limit);
     float flaperon_left  = constrain_float(aileron + flap_percent * 45, -4500, 4500);
     float flaperon_right = constrain_float(aileron - flap_percent * 45, -4500, 4500);
     SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_left, flaperon_left);
