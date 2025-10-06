@@ -82,7 +82,7 @@ void ModeTakeoff::update()
     const float dist = target_dist;
     if (!takeoff_mode_setup) {
         plane.auto_state.takeoff_altitude_rel_cm = alt * 100;
-        const uint16_t altitude = plane.relative_ground_altitude(false,true);
+        const uint16_t altitude = plane.relative_ground_altitude(RangeFinderUse::NONE,true);
         const Vector2f &groundspeed2d = ahrs.groundspeed_vector();
         const float direction = wrap_360(degrees(groundspeed2d.angle()));
         const float groundspeed = groundspeed2d.length();
