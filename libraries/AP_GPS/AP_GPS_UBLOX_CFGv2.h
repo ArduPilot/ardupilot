@@ -114,7 +114,7 @@ private:
 
         // common constexpr helper with compile time type size inference
         template <typename T>
-        static constexpr void append_value_le_bytes(uint8_t *dest, size_t &index, T value) {
+        static void append_value_le_bytes(uint8_t *dest, size_t &index, T value) {
             append_value_le_bytes(dest, index, (uint64_t)value, sizeof(T));
         }
 

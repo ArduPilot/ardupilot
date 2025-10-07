@@ -96,7 +96,8 @@ void AP_GPS_UBLOX_CFGv2::update()
                 // stay in this state
                 break;
             }
-        } // fallthrough to next state
+        }
+        FALLTHROUGH; // fallthrough to next state
         case States::IDENTIFY_SIGNALS:
             if (AP_HAL::millis() - _last_request_time > 550) {
                 _last_request_time = AP_HAL::millis();
@@ -118,6 +119,7 @@ void AP_GPS_UBLOX_CFGv2::update()
                 curr_state = States::IDENTIFY_UART_PORT;
                 _last_request_time = 0; // immediate next state
             }
+        FALLTHROUGH; // fallthrough to next state
         case States::IDENTIFY_UART_PORT: {
             // transition occurs when ubx_backend sets _ublox_port from MON-COMMS
             if (ubx_backend._ublox_port < UBLOX_MAX_PORTS) {
@@ -130,6 +132,7 @@ void AP_GPS_UBLOX_CFGv2::update()
                 break;
             }
         }
+        FALLTHROUGH; // fallthrough to next state
         case States::FETCH_COMMON_CONFIG:
             if (AP_HAL::millis() - _last_request_time > 200) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO,
@@ -575,14 +578,14 @@ void AP_GPS_UBLOX_CFGv2::_publish_supported_constellations()
 bool AP_GPS_UBLOX_CFGv2::is_signal_cfg_needed()
 {
     return _cfg.enabled_gnss != ubx_backend.params.gnss_mode ||
-           _cfg.enabled_signals != ubx_backend.params.sig_mode;
+           _cfg.enabled_signals != (uint32_t)ubx_backend.params.sig_mode;
 }
 
 // send signal configuration if needed, return true if more to do
 // returns false if configuration is unchanged
 bool AP_GPS_UBLOX_CFGv2::_send_signal_cfg()
 {
-    if ((_cfg.enabled_gnss == ubx_backend.params.gnss_mode && _cfg.enabled_signals == ubx_backend.params.sig_mode)
+    if ((_cfg.enabled_gnss == (uint32_t)ubx_backend.params.gnss_mode && _cfg.enabled_signals == (uint32_t)ubx_backend.params.sig_mode)
          || ubx_backend.params.gnss_mode == 0) {
         return false;
     }
@@ -610,7 +613,7 @@ bool AP_GPS_UBLOX_CFGv2::_send_signal_cfg()
     #undef ACCUM_ALLOWED
     desired_signals &= allowed_signals;
 
-    // Update parameters if` they were modified
+    // Update parameters if they were modified
     if (desired_gnss != ubx_backend.params.gnss_mode) {
         ubx_backend.params.gnss_mode.set_and_save(desired_gnss);
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,
@@ -620,7 +623,7 @@ bool AP_GPS_UBLOX_CFGv2::_send_signal_cfg()
                     (unsigned)desired_gnss);
     }
 
-    if (desired_signals != ubx_backend.params.sig_mode) {
+    if (desired_signals != (uint32_t)ubx_backend.params.sig_mode) {
         ubx_backend.params.sig_mode.set_and_save(desired_signals);
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,
                     "GPS %d: Signal mode cleared unavailable signals: 0x%08lx -> 0x%08lx",
