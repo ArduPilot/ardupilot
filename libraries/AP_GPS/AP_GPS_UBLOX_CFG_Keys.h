@@ -603,3 +603,10 @@
     X(GLO, 0x00060000) \
     X(NAVIC, 0x00080000)
 
+namespace AP {
+    enum UBXConfigKey : uint32_t {
+        #define X(NAME, VALUE) NAME = VALUE,
+        UBLOX_CFG_KEYS(X)
+        #undef X
+    };
+}
