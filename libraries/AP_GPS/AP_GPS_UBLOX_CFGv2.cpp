@@ -760,7 +760,9 @@ bool AP_GPS_UBLOX_CFGv2::_request_common_cfg()
 
 #define CASE_UPDATE_VALUES(KEY_CLASS,KEY, KEYTYPE, VAL) \
     case ConfigKey::KEY_CLASS##_##KEY: { \
-        _processing_cfg.KEY##_val = reinterpret_cast<KEYTYPE&>(value); \
+        KEYTYPE temp; \
+        memcpy(&temp, &value, sizeof(KEYTYPE)); \
+        _processing_cfg.KEY##_val = temp; \
         break; \
     }
 
@@ -771,20 +773,28 @@ void AP_GPS_UBLOX_CFGv2::_parse_common_cfg(ConfigKey key, uint64_t value)
     UBX_CFG_COMMON_UART1(CASE_UPDATE_VALUES)
     // variable settings
     case ConfigKey::CFG_RATE_MEAS: {
-        _processing_cfg.meas_rate = reinterpret_cast<uint16_t&>(value);
+        uint16_t temp;
+        memcpy(&temp, &value, sizeof(uint16_t));
+        _processing_cfg.meas_rate = temp;
         break;
     }
     case ConfigKey::CFG_NAVSPG_DYNMODEL: {
-        _processing_cfg.dynmodel = reinterpret_cast<uint8_t&>(value);
+        uint8_t temp;
+        memcpy(&temp, &value, sizeof(uint8_t));
+        _processing_cfg.dynmodel = temp;
         break;
     }
     case ConfigKey::CFG_NAVSPG_INFIL_MINELEV: {
-        _processing_cfg.min_elevation = reinterpret_cast<int8_t&>(value);
+        int8_t temp;
+        memcpy(&temp, &value, sizeof(int8_t));
+        _processing_cfg.min_elevation = temp;
         break;
     }
     case ConfigKey::CFG_SIGNAL_L5_HEALTH_OVRD: {
         // we receive this as part of signal config request
-        _processing_cfg.gps_l5_health_ovrd = reinterpret_cast<uint8_t&>(value);
+        uint8_t temp;
+        memcpy(&temp, &value, sizeof(uint8_t));
+        _processing_cfg.gps_l5_health_ovrd = temp;
         _processing_cfg.gps_l5_health_ovrd_exists = true;
         break;
     }
