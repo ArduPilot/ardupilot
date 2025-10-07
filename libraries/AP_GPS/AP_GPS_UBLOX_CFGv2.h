@@ -142,16 +142,6 @@ private:
 
 public:
     AP_GPS_UBLOX_CFGv2(AP_GPS_UBLOX &_ubx_backend);
-    
-    // optionally compiled list of all config keys
-    static constexpr ConfigKey ALL_CONFIG_KEYS[] = {
-        #define X(NAME, VALUE) ConfigKey::NAME,
-        UBLOX_CFG_KEYS(X)
-        #undef X
-    };
-
-    // number of all config keys
-    static constexpr uint16_t ALL_CONFIG_KEYS_COUNT = sizeof(ALL_CONFIG_KEYS) / sizeof(ALL_CONFIG_KEYS[0]);
 
     enum States : uint8_t {
         IDENTIFY_MODULE,
