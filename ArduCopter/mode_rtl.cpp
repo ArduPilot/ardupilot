@@ -182,7 +182,8 @@ void ModeRTL::brake_run()
         wp_nav->set_speed_xy(g.rtl_speed_cms); 
     } else if (inertial_nav.get_velocity_neu_cms().length() < wp_nav->get_default_speed_xy() && g.rtl_speed_cms == 0) {
         _state_complete = true;
-        _state = SubMode::STARTING; // vel targets already correct don't adjust further
+        _state = SubMode::STARTING;
+        wp_nav->set_speed_xy(wp_nav->get_default_speed_xy()); // reset the velocity to wpnav_speed
     }
 }
 
