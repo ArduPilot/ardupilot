@@ -605,8 +605,8 @@
 
 namespace AP {
     enum UBXConfigKey : uint32_t {
-        #define X(NAME, VALUE) NAME = VALUE,
-        UBLOX_CFG_KEYS(X)
-        #undef X
+        #define UBX_CFG_KEY_VAL(KEY, VAL) KEY = VAL,
+        UBLOX_CFG_KEYS(UBX_CFG_KEY_VAL)
+        #undef UBX_CFG_KEY_VAL
     };
 }
