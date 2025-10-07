@@ -1055,6 +1055,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_MISSION_CURRENT,       MSG_CURRENT_WAYPOINT},
         { MAVLINK_MSG_ID_SERVO_OUTPUT_RAW,      MSG_SERVO_OUTPUT_RAW},
         { MAVLINK_MSG_ID_RC_CHANNELS,           MSG_RC_CHANNELS},
+#if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
+        { MAVLINK_MSG_ID_GNSS_INTEGRITY,        MSG_GNSS_INTEGRITY},
+#endif
 #if AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED
         { MAVLINK_MSG_ID_RC_CHANNELS_RAW,       MSG_RC_CHANNELS_RAW},
 #endif
@@ -6525,7 +6528,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         AP::gps().send_mavlink_gps_rtk(chan, 1);
         break;
 #endif  // AP_GPS_GPS2_RTK_SENDING_ENABLED
-
+#if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
+    case MSG_GNSS_INTEGRITY:
+        CHECK_PAYLOAD_SIZE(GNSS_INTEGRITY);
+        AP::gps().send_mavlink_gnss_integrity(chan, 0);
+        break;
+#endif  // AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
 #if AP_AHRS_ENABLED
     case MSG_LOCAL_POSITION:
         CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
