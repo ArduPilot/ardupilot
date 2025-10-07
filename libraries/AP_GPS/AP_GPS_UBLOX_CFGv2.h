@@ -288,17 +288,17 @@ private:
     uint64_t _valget_value;              // current value (little-endian)
 
     enum ConfigLayer : uint8_t {
-        RAM = 0x00,
-        BBR = 0x01,
-        FLASH = 0x02,
-        DEFAULT = 0x07,
-        ALL = 0x07,
+        CFG_LAYER_RAM = 0x00,
+        CFG_LAYER_BBR = 0x01,
+        CFG_LAYER_FLASH = 0x02,
+        CFG_LAYER_DEFAULT = 0x07,
+        CFG_LAYER_ALL = 0x07,
     };
 
     bool _request_cfg_group(ConfigKey group, ConfigLayer layer);
     // send a CFG-VALSET made of repeated [key:uint32][value:N] pairs in 'bytes'
     // streams without allocating a new combined buffer
-    bool _send_valset_bytes(const uint8_t *bytes, uint16_t size, ConfigLayer layers = ALL);
+    bool _send_valset_bytes(const uint8_t *bytes, uint16_t size, ConfigLayer layers = CFG_LAYER_ALL);
 
     bool _send_reset(uint16_t navBbrMask, uint8_t resetMode);
 };
