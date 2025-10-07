@@ -651,7 +651,7 @@ bool AP_GPS_UBLOX_CFGv2::_send_signal_cfg()
     }
 
     // Prepare a packed config with the changes
-    constexpr uint32_t max_cfg_size = (AP_GPS_UBLOX::GNSS_LAST + SIGNALS_LAST) * (sizeof(uint32_t) + 1);
+    constexpr uint32_t max_cfg_size = (uint32_t(AP_GPS_UBLOX::GNSS_LAST) + uint32_t(SIGNALS_LAST)) * (sizeof(uint32_t) + 1);
     uint8_t packed_buf[max_cfg_size] = {};
     UBXPackedCfg packed_cfg(packed_buf, sizeof(packed_buf));
 
