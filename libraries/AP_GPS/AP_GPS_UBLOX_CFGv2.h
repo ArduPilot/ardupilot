@@ -19,6 +19,9 @@
 #include <string.h>
 #include "AP_GPS_UBLOX_CFG_List.h"
 #include <AP_Common/AP_Common.h>
+#include "AP_GPS_config.h"
+
+#if AP_GPS_UBLOX_CFGV2_ENABLED
 
 // this is number of epochs per output. A higher value will reduce
 // the uart bandwidth needed and allow for higher latency
@@ -30,8 +33,6 @@
 
 
 class AP_GPS_UBLOX;
-class AP_GPS_UBLOX_CFGv2;
-
 
 // -----------------------------------------------------------------------------
 // UBX CFG key size helpers (Bits 30..28 encode the value storage size)
@@ -69,13 +70,7 @@ class AP_GPS_UBLOX_CFGv2;
 // key value pair method of configuration
 //----------------------------------------------------------------------------------
 class AP_GPS_UBLOX_CFGv2 {
-public:
-    enum ConfigKey : uint32_t {
-        #define X(NAME, VALUE) NAME = VALUE,
-        UBLOX_CFG_KEYS(X)
-        #undef X
-    };
-
+    using ConfigKey = AP::UBXConfigKey;
 private:
     friend class AP_GPS_UBLOX;
 
@@ -274,3 +269,4 @@ private:
 
     bool _send_reset(uint16_t navBbrMask, uint8_t resetMode);
 };
+#endif // AP_GPS_UBLOX_CFGV2_ENABLED

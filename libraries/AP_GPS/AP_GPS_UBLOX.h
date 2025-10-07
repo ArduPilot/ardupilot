@@ -132,8 +132,10 @@ class RTCM3_Parser;
 
 class AP_GPS_UBLOX : public AP_GPS_Backend
 {
-    using ConfigKey = AP_GPS_UBLOX_CFGv2::ConfigKey;
+    using ConfigKey = AP::UBXConfigKey;
+#if AP_GPS_UBLOX_CFGV2_ENABLED
     using CFGv2 = AP_GPS_UBLOX_CFGv2;
+#endif
     friend class AP_GPS_UBLOX_CFGv2;
     friend class UBXCfgKVBlob;
 public:
@@ -152,7 +154,11 @@ public:
         if (!gps._auto_config) {
             return true;
         } else {
-            return !_unconfigured_messages || (_cfg_v2.curr_state == CFGv2::CONFIGURED);
+            return !_unconfigured_messages
+             #if AP_GPS_UBLOX_CFGV2_ENABLED
+                    || (_cfg_v2.curr_state == CFGv2::CONFIGURED)
+             #endif
+            ;
         }
 #else
         return true;
@@ -937,7 +943,9 @@ private:
     static const config_list config_L5_ovrd_dis[];
     // scratch space for GNSS config
     config_list* config_GNSS;
+#if AP_GPS_UBLOX_CFGV2_ENABLED
     AP_GPS_UBLOX_CFGv2 _cfg_v2;
+#endif
 };
 
 #endif

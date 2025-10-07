@@ -99,8 +99,10 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps,
                            AP_HAL::UARTDriver *_port,
                            AP_GPS::GPS_Role _role) :
     AP_GPS_Backend(_gps, _params, _state, _port),
-    role(_role),
-    _cfg_v2(*this)
+    role(_role)
+#if AP_GPS_UBLOX_CFGV2_ENABLED
+    ,_cfg_v2(*this)
+#endif
 {
     // stop any config strings that are pending
     gps.send_blob_start(state.instance, nullptr, 0);
@@ -569,9 +571,9 @@ AP_GPS_UBLOX::read(void)
 {
     bool parsed = false;
     uint32_t millis_now = AP_HAL::millis();
-
+#if AP_GPS_UBLOX_CFGV2_ENABLED
     _cfg_v2.update();
-
+#endif
     // walk through the gps configuration at 1 message per second
     if (millis_now - _last_config_time >= _delay_time && !_legacy_cfg_unsupported && !option_set(AP_GPS::DriverOptions::ForceUBXConfigV2)) {
         _request_next_config();
@@ -632,10 +634,12 @@ AP_GPS_UBLOX::read(void)
 #endif
 
 	reset:
+#if AP_GPS_UBLOX_CFGV2_ENABLED
         if (_step == 0) {
             // reset the valget state machine
             _cfg_v2.process_valget_complete(false);
         }
+#endif
         switch(_step) {
 
         // Message preamble detection
@@ -707,9 +711,11 @@ AP_GPS_UBLOX::read(void)
         //
         case 6:
             _ck_b += (_ck_a += data);                   // checksum byte
+#if AP_GPS_UBLOX_CFGV2_ENABLED
             if (_class == CLASS_CFG && _msg_id == MSG_CFG_VALGET) {
                 _cfg_v2.process_valget_byte(data);
             }
+#endif
             if (_payload_counter < sizeof(_buffer)) {
                 _buffer[_payload_counter] = data;
             }
@@ -724,9 +730,11 @@ AP_GPS_UBLOX::read(void)
             if (_ck_a != data) {
                 Debug("bad cka %x should be %x", data, _ck_a);
                 _step = 0;
+#if AP_GPS_UBLOX_CFGV2_ENABLED
                 if (_class == CLASS_CFG && _msg_id == MSG_CFG_VALGET) {
                     _cfg_v2.process_valget_complete(false);
                 }
+#endif
 				goto reset;
             }
             break;
@@ -734,9 +742,11 @@ AP_GPS_UBLOX::read(void)
             _step = 0;
             if (_ck_b != data) {
                 Debug("bad ckb %x should be %x", data, _ck_b);
+#if AP_GPS_UBLOX_CFGV2_ENABLED
                 if (_class == CLASS_CFG && _msg_id == MSG_CFG_VALGET) {
                     _cfg_v2.process_valget_complete(false);
                 }
+#endif
                 break;                                                  // bad checksum
             }
 
@@ -746,10 +756,11 @@ AP_GPS_UBLOX::read(void)
                 rtcm3_parser->reset();
             }
 #endif
-
+#if AP_GPS_UBLOX_CFGV2_ENABLED
             if (_class == CLASS_CFG && _msg_id == MSG_CFG_VALGET) {
                 _cfg_v2.process_valget_complete(true);
             }
+#endif
             if (_parse_gps()) {
                 parsed = true;
             }
