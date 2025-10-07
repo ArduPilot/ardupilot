@@ -73,6 +73,7 @@ private:
     enum class Config_State {
         Baud_Rate,
         SSO,
+        SSO_Status,
         Blob,
         SBAS,
         SGA,
@@ -103,6 +104,7 @@ private:
     uint32_t crc_error_counter = 0;
     uint32_t RxState;
     uint32_t RxError;
+    uint8_t ExtError;
 
     void mount_disk(void) const;
     void unmount_disk(void) const;
@@ -113,6 +115,8 @@ private:
         PVTGeodetic = 4007,
         ReceiverStatus = 4014,
         BaseVectorGeod = 4028,
+        RFStatus = 4092,
+        GALAuthStatus = 4245,
         VelCovGeodetic = 5908,
         AttEulerCov = 5939,
         AuxAntPositions = 5942,
@@ -205,6 +209,36 @@ private:
         VectorInfoGeod info; // there can be multiple baselines here, but we will only consume the first one, so don't worry about anything after
     };
 
+    struct PACKED RFStatusRFBandSubBlock // RFBand sub-blocks of RFStatus message
+    {
+        uint32_t Frequency;
+        uint16_t Bandwidth;
+        uint8_t Info;
+    };
+
+    struct PACKED msg4092 // RFStatus
+    {
+        uint32_t TOW;
+        uint16_t WNc;
+        uint8_t N;
+        uint8_t SBLength;
+        uint8_t Flags;
+        uint8_t Reserved[3];
+        uint8_t RFBand;      // So we can use address and parse sub-blocks manually
+    };
+
+    struct PACKED msg4245 // GALAuthStatus
+    {
+        uint32_t TOW;
+        uint16_t WNc;
+        uint16_t OSNMAStatus;
+        float TrustedTimeDelta;
+        uint64_t GalActiveMask;
+        uint64_t GalAuthenticMask;
+        uint64_t GpsActiveMask;
+        uint64_t GpsAuthenticMask;
+    };
+
     struct PACKED msg5908 // VelCovGeodetic
     {
         uint32_t TOW;
@@ -265,6 +299,8 @@ private:
         msg4001 msg4001u;
         msg4014 msg4014u;
         msg4028 msg4028u;
+        msg4092 msg4092u;
+        msg4245 msg4245u;
         msg5908 msg5908u;
         msg5939 msg5939u;
         msg5942 msg5942u;
@@ -297,12 +333,34 @@ private:
     enum {
         SOFTWARE      = (1 << 3),   // set upon detection of a software warning or  error. This bit is reset by the command lif, error
         WATCHDOG      = (1 << 4),   // set when the watch-dog expired at least once since the last power-on.
+        ANTENNA       = (1 << 5),  // set when antenna overcurrent condition is detected
         CONGESTION    = (1 << 6),   // set when an output data congestion has been detected on at least one of the communication ports of the receiver during the last second.
         MISSEDEVENT   = (1 << 8),   // set when an external event congestion has been detected during the last second. It indicates that the receiver is receiving too many events on its EVENTx pins.
         CPUOVERLOAD   = (1 << 9),   // set when the CPU load is larger than 90%. If this bit is set, receiver operation may be unreliable and the user must decrease the processing load by following the recommendations in the User Manual.
         INVALIDCONFIG = (1 << 10),  // set if one or more configuration file (permission or channel configuration) is invalid or absent.
         OUTOFGEOFENCE = (1 << 11),  // set if the receiver is currently out of its permitted region of operation (geo-fencing).
     };
+
+    enum {
+        SISERROR        = (1 << 0),   //  set if a violation of the signal-in-space ICD has been detected
+        DIFFCORRERROR   = (1 << 1),   //  set when an anomaly has been detected in an incoming differential correction stream
+        EXTSENSORERROR  = (1 << 2),   //  set when a malfunction has been detected on at least one of the external sensors connected to the receiver
+        SETUPERROR      = (1 << 3),   //  set when a configuration/setup error has been detected
+    };
+
+    struct SBF_Error_Map {
+        const uint32_t sbf_error_bit;
+        const AP_GPS::Errors ap_error_enum;
+    };
+
+    static const SBF_Error_Map sbf_error_map[];
+
+    struct Auth_State_Map {
+        const uint16_t osnma_status_code;
+        const AP_GPS::Authentication auth_state;
+    };
+
+    static const Auth_State_Map auth_state_map[];
 
     static constexpr const char *portIdentifiers[] = { "COM", "USB", "IP1", "NTR", "IPS", "IPR" };
     char portIdentifier[5];
