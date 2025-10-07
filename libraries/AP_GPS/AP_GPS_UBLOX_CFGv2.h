@@ -64,22 +64,6 @@ class AP_GPS_UBLOX_CFGv2;
 #define UBX_CFG_PUSH(NAME_, KEY, VAL) \
     NAME_.push_raw((KEY), &(VAL))
 
-#define UBX_CFG_VALGET()
-
-// // Template to map size code to C++ type
-// template <uint8_t SizeCode>
-// struct UBXCfgValueType {};
-// template <>
-// struct UBXCfgValueType<UBX_CFG_KEY_SIZE_CODE_BIT> { typedef uint8_t type; };
-// template <>
-// struct UBXCfgValueType<UBX_CFG_KEY_SIZE_CODE_1B> { typedef uint8_t type; };
-// template <>
-// struct UBXCfgValueType<UBX_CFG_KEY_SIZE_CODE_2B> { typedef uint16_t type; };
-// template <>
-// struct UBXCfgValueType<UBX_CFG_KEY_SIZE_CODE_4B> { typedef uint32_t type; };
-// template <>
-// struct UBXCfgValueType<UBX_CFG_KEY_SIZE_CODE_8B> { typedef uint64_t type; };
-
 //---------------------------------------------------------------------------------
 // AP_GPS_UBLOX_CFGv2 class used to configure modern ublox units with configuration
 // key value pair method of configuration
@@ -91,18 +75,6 @@ public:
         UBLOX_CFG_KEYS(X)
         #undef X
     };
-
-    // // Typed key/value helper that selects ValueType from the key's size bits
-    // // for static compile time use only
-    // template <uint32_t Key>
-    // struct PACKED UBXCfgKV {
-    //     static constexpr uint8_t SizeCode = UBX_CFG_KEY_SIZE_CODE(Key);
-    //     static constexpr uint32_t KeyValue = Key;
-    //     typedef typename UBXCfgValueType<SizeCode>::type ValueType;
-    //     ValueType value;
-    //     // constexpr to allow static array initialisation
-    //     constexpr explicit UBXCfgKV(ValueType v) : value(v) {}
-    // };
 
 private:
     friend class AP_GPS_UBLOX;
