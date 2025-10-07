@@ -248,8 +248,6 @@ private:
     bool _identify_module();
     Module module;
 
-    bool _legacy_cfg_unsupported;
-
     struct {
         // bit masks of supported and enabled constellations and signals
         uint8_t supported_gnss;

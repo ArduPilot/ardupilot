@@ -160,7 +160,7 @@ public:
     }
 
     bool get_error_codes(uint32_t &error_codes) const override {
-        if (_cfg_v2._legacy_cfg_unsupported) {
+        if (_legacy_cfg_unsupported) {
             return false;
         } else {
             error_codes = _unconfigured_messages;
