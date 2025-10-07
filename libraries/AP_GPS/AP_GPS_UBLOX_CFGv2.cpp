@@ -383,7 +383,7 @@ bool AP_GPS_UBLOX_CFGv2::is_common_cfg_needed()
     need = need || (_cfg.meas_rate != ubx_backend.params.rate_ms) ||
                    (_cfg.dynmodel != ubx_backend.gps._navfilter);
 
-                   if (ubx_backend.gps._min_elevation != 100) {
+    if (ubx_backend.gps._min_elevation != -100) {
         // do not set min_elevation if user has not set it
         need = need || (_processing_cfg.min_elevation != _cfg.min_elevation);
     }
