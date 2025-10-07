@@ -100,7 +100,7 @@ void AP_GPS_UBLOX_CFGv2::update()
         case States::IDENTIFY_SIGNALS:
             if (AP_HAL::millis() - _last_request_time > 550) {
                 _last_request_time = AP_HAL::millis();
-                _request_cfg_group(ConfigKey::CFG_SIGNAL_GPS_ENA, ConfigLayer::RAM);
+                _request_cfg_group(ConfigKey::CFG_SIGNAL_GPS_ENA, ConfigLayer::CFG_LAYER_RAM);
             }
             break;
         case States::CONFIGURE_SIGNALS:
@@ -687,7 +687,7 @@ exit:
         return true;
     }
 
-    _send_valset_bytes(blob, blob_len, ConfigLayer::ALL);
+    _send_valset_bytes(blob, blob_len, ConfigLayer::CFG_LAYER_ALL);
 
     return true;
 }
@@ -832,7 +832,7 @@ bool AP_GPS_UBLOX_CFGv2::set_common_cfg()
         return false;
     }
 
-    return _send_valset_bytes(bytes, size, ConfigLayer::ALL);
+    return _send_valset_bytes(bytes, size, ConfigLayer::CFG_LAYER_ALL);
 }
 
 void AP_GPS_UBLOX_CFGv2::handle_cfg_ack(uint8_t msg_id)
@@ -863,7 +863,7 @@ bool AP_GPS_UBLOX_CFGv2::delete_and_reset_config()
     } valdel_all = {
         .msg = {
             .version = 0x01,
-            .layers = (1U<<BBR) | (1U<<FLASH),
+            .layers = (1U<<CFG_LAYER_BBR) | (1U<<CFG_LAYER_FLASH),
             .transaction = 0x00,
             .reserved0 = 0x00
         },
