@@ -21,6 +21,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
+#if AP_GPS_UBLOX_CFGv2_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
@@ -964,3 +965,4 @@ bool AP_GPS_UBLOX_CFGv2::UBXPackedCfg::push(ConfigKey key, uint64_t value)
     _size = index;
     return true;
 }
+#endif
