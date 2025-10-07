@@ -96,7 +96,7 @@ public:
 
     void log_event3(Event event);
     void log_SetOriginLLH3(const Location &loc);
-    void log_SetLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms);
+    void log_SetLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms, uint32_t received_ms);
 
     void log_writeDefaultAirSpeed3(const float aspeed, const float uncertainty);
     void log_writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type);
