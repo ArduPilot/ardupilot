@@ -415,21 +415,31 @@ AC_Circle::TerrainSource AC_Circle::get_terrain_source() const
 // Terrain source may be rangefinder or terrain database.
 bool AC_Circle::get_terrain_offset_m(float& offset_m)
 {
+#if AP_TERRAIN_AVAILABLE
+    AP_Terrain *terrain = AP::terrain();
+#endif
     // Determine terrain source and calculate offset accordingly
     switch (get_terrain_source()) {
     case AC_Circle::TerrainSource::TERRAIN_UNAVAILABLE:
         return false;
     case AC_Circle::TerrainSource::TERRAIN_FROM_RANGEFINDER:
         if (_rangefinder_healthy) {
-            // Use last known healthy rangefinder terrain offset
+            // Use last known healthy rangefinder terrain offset calculated by AP_SurfaceDistance
             offset_m = _rangefinder_terrain_offset_m;
             return true;
         }
+#if AP_TERRAIN_AVAILABLE
+        if (terrain != nullptr && !terrain->rangefinder_fallback_enabled()) {
+            return false;
+        }
+        // If the rangefinder isn't healthy then use terrain data if available
+        FALLTHROUGH;        
+#else
         return false;
+#endif
     case AC_Circle::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
 #if AP_TERRAIN_AVAILABLE
         float terr_alt_m = 0.0f;
-        AP_Terrain *terrain = AP_Terrain::get_singleton();
         if (terrain != nullptr && terrain->height_above_terrain(terr_alt_m, true)) {
             // Calculate offset from EKF origin altitude to terrain altitude
             offset_m = _pos_control.get_pos_estimate_NEU_m().z - terr_alt_m;

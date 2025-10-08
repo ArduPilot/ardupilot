@@ -72,7 +72,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @Param: RFND_USE
     // @DisplayName: Waypoint missions use rangefinder for terrain following
     // @Description: This controls if waypoint missions use rangefinder for terrain following
-    // @Values: 0:Disable,1:Enable
+    // @Values: 0:Disable,1:Enable,
     // @User: Advanced
     AP_GROUPINFO("RFND_USE",   10, AC_WPNav, _rangefinder_use, 1),
 
@@ -710,6 +710,9 @@ bool AC_WPNav::force_stop_at_next_wp()
 // Source may be rangefinder or terrain database depending on availability.
 bool AC_WPNav::get_terrain_offset_m(float& offset_m)
 {
+#if AP_TERRAIN_AVAILABLE
+    AP_Terrain *terrain = AP::terrain();
+#endif
     // determine terrain data source and compute offset accordingly
     switch (get_terrain_source()) {
     case AC_WPNav::TerrainSource::TERRAIN_UNAVAILABLE:
@@ -717,16 +720,23 @@ bool AC_WPNav::get_terrain_offset_m(float& offset_m)
 
     case AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER:
         if (_rangefinder_healthy) {
-            // return previously saved offset based on rangefinder
+            // return previously saved offset based on rangefinder (calculated in AP_SurfaceDistance)
             offset_m = _rangefinder_terrain_offset_m;
             return true;
         }
+#if AP_TERRAIN_AVAILABLE
+        if (terrain != nullptr && !terrain->rangefinder_fallback_enabled()) {
+            return false;
+        }
+        // If the rangefinder isn't healthy then use terrain data if available
+        FALLTHROUGH;        
+#else
         return false;
+#endif
 
     case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
 #if AP_TERRAIN_AVAILABLE
         float terrain_alt_m = 0.0f;
-        AP_Terrain *terrain = AP::terrain();
         if (terrain != nullptr &&
             terrain->height_above_terrain(terrain_alt_m, true)) {
             // compute offset as difference between current altitude and terrain height

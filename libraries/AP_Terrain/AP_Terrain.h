@@ -203,6 +203,9 @@ public:
      */
     void set_reference_location(void);
 
+    // Returns true if the option to fallback to terrain if a rangefinder fails is set
+    bool rangefinder_fallback_enabled() const { return (options.get() & (int16_t)Options::RangeFinderFallback) != 0; }
+
 private:
     // allocate the terrain subsystem data
     bool allocate(void);
@@ -379,6 +382,7 @@ private:
 
     enum class Options {
         DisableDownload = (1U<<0),
+        RangeFinderFallback = (1U<<1),
     };
 
     // cache of grids in memory, LRU
