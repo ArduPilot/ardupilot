@@ -175,6 +175,10 @@ protected:
     // rate_max is a maximum turn rate in deg/s.  set to zero to use default turn rate limits
     void calc_steering_to_heading(float desired_heading_cd, float rate_max_degs = 0.0f);
 
+    // calculate steering output to drive towards desired heading
+    // rate_max is a maximum turn rate in deg/s.  set to zero to use default turn rate limits
+    void calc_directional_steering_to_heading(float desired_heading_cd, float rate_max_degs = 0.0f);
+
     // calculates the amount of throttle that should be output based
     // on things like proximity to corners and current speed
     virtual void calc_throttle(float target_speed, bool avoidance_enabled);
@@ -551,6 +555,10 @@ public:
     void set_desired_heading_delta_and_speed(float yaw_delta_cd, float target_speed);
     void set_desired_turn_rate_and_speed(float turn_rate_cds, float target_speed);
 
+    // set desired turn rate and heading
+    void set_desired_turn_rate_and_heading(float yaw_angle_cd, float turn_rate_cds, int16_t direction);
+    void set_desired_turn_rate_and_heading_delta(float yaw_delta_cd, float turn_rate_cds, int16_t direction);
+
     // set steering and throttle (-1 to +1).  Only called from scripts
     void set_steering_and_throttle(float steering, float throttle);
 
@@ -574,6 +582,7 @@ protected:
         TurnRateAndSpeed,
         Loiter,
         SteeringAndThrottle,
+        TurnRateAndHeading,
         Stop
     };
 
