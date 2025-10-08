@@ -299,8 +299,8 @@ private:
             char        callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN]; //Vehicle identifier (8 characters, null terminated, valid characters are A-Z, 0-9, " " only).
             AP_Int8     emitterType;
             AP_Int8     lengthWidth;  // Aircraft length and width encoding (table 2-35 of DO-282B)
-            AP_Int8     gpsOffsetLat;
-            AP_Int8     gpsOffsetLon;
+            AP_Int8     pos_x;
+            AP_Int8     pos_y;
             uint16_t    stall_speed_cm;
             AP_Int8     rfSelect;
             AP_Int16    squawk_octal_param;
