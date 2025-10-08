@@ -13636,6 +13636,42 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def GripperInitialPosition(self):
+        '''test gripper initial position'''
+
+        self.set_servo_gripper_parameters()
+        self.set_parameters({
+            "RC8_OPTION": 19,  # gripper
+        })
+        grip_neutral = 1423
+        self.set_parameter('GRIP_NEUTRAL', grip_neutral)
+
+        # install a message hook which ensures that the output stays at neutral
+        global seen_grip_neutral
+        seen_grip_neutral = False
+
+        def hook(mav, m):
+            global seen_grip_neutral
+            if m.get_type() != 'SERVO_OUTPUT_RAW':
+                return
+            if m.servo8_raw == 0:
+                # initial value
+                if seen_grip_neutral:
+                    raise NotAchievedException("Saw 0 after seeing grip neutral")
+                return
+            if m.servo8_raw == grip_neutral:
+                # expected value after autopilot boot
+                seen_grip_neutral = True
+                return
+            raise NotAchievedException(f"Received bad value {m.servo8_raw=} for servo gripper")
+        self.install_message_hook_context(hook)
+
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        if not seen_grip_neutral:
+            raise NotAchievedException("Never saw grip neutral")
+
     def REQUIRE_LOCATION_FOR_ARMING(self):
         '''check AP_Arming::Option::REQUIRE_LOCATION_FOR_ARMING works'''
         self.context_push()
@@ -14883,6 +14919,7 @@ return update, 1000
             self.LUAConfigProfile,
             self.Clamp,
             self.GripperReleaseOnThrustLoss,
+            self.GripperInitialPosition,
             self.REQUIRE_LOCATION_FOR_ARMING,
             self.LoggingFormat,
             self.MissionRTLYawBehaviour,
