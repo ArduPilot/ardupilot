@@ -49,6 +49,21 @@ int decodeCortex_StandbyPacket(const void* pkt);
 //! return the maximum encoded length for the Cortex_Standby packet
 #define getCortex_StandbyMaxDataLength() (2)
 
+//! Create the Cortex_Preflight packet from parameters
+void encodeCortex_PreflightPacket(void* pkt);
+
+//! Decode the Cortex_Preflight packet to parameters
+int decodeCortex_PreflightPacket(const void* pkt);
+
+//! return the packet ID for the Cortex_Preflight packet
+#define getCortex_PreflightPacketID() (PKT_CORTEX_PREFLIGHT)
+
+//! return the minimum encoded length for the Cortex_Preflight packet
+#define getCortex_PreflightMinDataLength() (2)
+
+//! return the maximum encoded length for the Cortex_Preflight packet
+#define getCortex_PreflightMaxDataLength() (2)
+
 //! Create the Cortex_StartCranking packet from parameters
 void encodeCortex_StartCrankingPacket(void* pkt);
 
@@ -191,6 +206,38 @@ int decodeCortex_TelemetryControllerPacket(const void* pkt, float* rectifierTemp
 #define getCortex_TelemetryControllerMaxDataLength() (5)
 
 /*!
+ * Engine control status information. Note that this packet is only available
+ * for Cortex devices which support external engine control.
+ */
+typedef struct
+{
+    float voltageTarget;  //!< Throttle voltage target
+    float throttleTarget; //!< Current throttle target
+    float powerTarget;    //!< Engine power demand
+}Cortex_TelemetryEngine_t;
+
+//! Create the Cortex_TelemetryEngine packet
+void encodeCortex_TelemetryEnginePacketStructure(void* pkt, const Cortex_TelemetryEngine_t* user);
+
+//! Decode the Cortex_TelemetryEngine packet
+int decodeCortex_TelemetryEnginePacketStructure(const void* pkt, Cortex_TelemetryEngine_t* user);
+
+//! Create the Cortex_TelemetryEngine packet from parameters
+void encodeCortex_TelemetryEnginePacket(void* pkt, float voltageTarget, float throttleTarget, float powerTarget);
+
+//! Decode the Cortex_TelemetryEngine packet to parameters
+int decodeCortex_TelemetryEnginePacket(const void* pkt, float* voltageTarget, float* throttleTarget, float* powerTarget);
+
+//! return the packet ID for the Cortex_TelemetryEngine packet
+#define getCortex_TelemetryEnginePacketID() (PKT_CORTEX_TELEMETRY_ENGINE)
+
+//! return the minimum encoded length for the Cortex_TelemetryEngine packet
+#define getCortex_TelemetryEngineMinDataLength() (5)
+
+//! return the maximum encoded length for the Cortex_TelemetryEngine packet
+#define getCortex_TelemetryEngineMaxDataLength() (5)
+
+/*!
  * Output rail status information
  */
 typedef struct
@@ -306,6 +353,7 @@ typedef struct
     bool    enableTempLimit;       //!< Enable over-temperature power limit
     bool    enableCurrentLimit;    //!< Enable motor current power limit
     bool    enablePowerLimit;      //!< Enable power map power limit
+    bool    enableBatteryLimit;    //!< Enable battery charging current limit
     float   generatorCurrentLimit; //!< Generator winding current limit
     uint8_t generatorTempLimit;    //!< Generator temperature limit value
     float   filter;                //!< Power limit filter frequency
@@ -353,11 +401,75 @@ int decodeCortex_PowerMapPacketStructure(const void* pkt, Cortex_PowerMap_t* use
 #define getCortex_PowerMapMaxDataLength() (10)
 
 /*!
+ * Engine control settings. This packet only has effect when Cortex device
+ * regulates engine RPM.
+ */
+typedef struct
+{
+    uint8_t  address;   //!< Engine ID / address
+    float    rpmFilter; //!< Engine speed input filter
+    uint16_t rpmLimit;  //!< Maximum engine speed limit
+    float    Kp;        //!< Engine RPM setpoint controller proportional gain
+    float    Ki;        //!< Engine RPM setpoint controller integral gain
+    float    Kd;        //!< Engine RPM setpoint controller derivative gain
+    float    Kf;        //!< Engine RPM setpoint controller feedforward gain
+}Cortex_EngineControlSettings_t;
+
+//! Create the Cortex_EngineControlSettings packet
+void encodeCortex_EngineControlSettingsPacketStructure(void* pkt, const Cortex_EngineControlSettings_t* user);
+
+//! Decode the Cortex_EngineControlSettings packet
+int decodeCortex_EngineControlSettingsPacketStructure(const void* pkt, Cortex_EngineControlSettings_t* user);
+
+//! return the packet ID for the Cortex_EngineControlSettings packet
+#define getCortex_EngineControlSettingsPacketID() (PKT_CORTEX_CONFIG_ENGINE)
+
+//! return the minimum encoded length for the Cortex_EngineControlSettings packet
+#define getCortex_EngineControlSettingsMinDataLength() (12)
+
+//! return the maximum encoded length for the Cortex_EngineControlSettings packet
+#define getCortex_EngineControlSettingsMaxDataLength() (12)
+
+/*!
+ * Throttle control loop settings. This packet only has effect when Cortex
+ * device regulates engine throttle.
+ */
+typedef struct
+{
+    float   filter;           //!< Throttle control loop input filter
+    uint8_t startingThrottle; //!< Initial throttle setting during engine start/cranking
+    uint8_t minThrottle;      //!< Minimum throttle setting
+    uint8_t maxThrottle;      //!< Maximum throttle setting
+    float   Kp;               //!< Throttle controller proportional gain
+    float   Ki;               //!< Throttle controller integral gain
+    float   Kd;               //!< Throttle controller derivative gain
+    float   Kf;               //!< Throttle controller feedforward gain
+}Cortex_ThrottleControlSettings_t;
+
+//! Create the Cortex_ThrottleControlSettings packet
+void encodeCortex_ThrottleControlSettingsPacketStructure(void* pkt, const Cortex_ThrottleControlSettings_t* user);
+
+//! Decode the Cortex_ThrottleControlSettings packet
+int decodeCortex_ThrottleControlSettingsPacketStructure(const void* pkt, Cortex_ThrottleControlSettings_t* user);
+
+//! return the packet ID for the Cortex_ThrottleControlSettings packet
+#define getCortex_ThrottleControlSettingsPacketID() (PKT_CORTEX_CONFIG_THROTTLE)
+
+//! return the minimum encoded length for the Cortex_ThrottleControlSettings packet
+#define getCortex_ThrottleControlSettingsMinDataLength() (12)
+
+//! return the maximum encoded length for the Cortex_ThrottleControlSettings packet
+#define getCortex_ThrottleControlSettingsMaxDataLength() (12)
+
+/*!
  * Battery settings
  */
 typedef struct
 {
-    uint16_t minChargingRpm; //!< Minimum engine speed required for battery charging
+    uint16_t minChargingRpm;     //!< Minimum engine speed required for battery charging
+    float    nominalVoltage;     //!< Nominal battery voltage
+    float    chargeCurrentLimit; //!< Maximum battery charging current limit
+    float    currentFilter;      //!< Filter frequency for battery current measurement
 }Cortex_BatterySettings_t;
 
 //! Create the Cortex_BatterySettings packet
@@ -373,7 +485,7 @@ int decodeCortex_BatterySettingsPacketStructure(const void* pkt, Cortex_BatteryS
 #define getCortex_BatterySettingsMinDataLength() (4)
 
 //! return the maximum encoded length for the Cortex_BatterySettings packet
-#define getCortex_BatterySettingsMaxDataLength() (4)
+#define getCortex_BatterySettingsMaxDataLength() (8)
 
 /*!
  * Output rail settings

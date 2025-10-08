@@ -69,13 +69,14 @@ int decodeCortex_StatusBits_t(const uint8_t* data, int* bytecount, Cortex_Status
  */
 typedef struct
 {
-    bool generator;             //!< Generator warning - refer to the motor warnings packet
-    bool temperature;           //!< Device overtemperature warning
-    bool generatorTempLimit;    //!< Generator temperature limit warning
-    bool generatorCurrentLimit; //!< Generator current limit warning
-    bool enginePowerLimit;      //!< Engine power limit warning
-    bool powerLoss;             //!< Power loss warning (engine is not developing any power)
-    bool lowRpm;                //!< Low RPM warning (engine speed is below minimum RPM threshold)
+    bool generator;                 //!< Generator warning - refer to the motor warnings packet
+    bool temperature;               //!< Device overtemperature warning
+    bool generatorTempLimit;        //!< Generator temperature limit warning
+    bool generatorCurrentLimit;     //!< Generator current limit warning
+    bool enginePowerLimit;          //!< Engine power limit warning
+    bool powerLoss;                 //!< Power loss warning (engine is not developing any power)
+    bool lowRpm;                    //!< Low RPM warning (engine speed is below minimum RPM threshold)
+    bool batteryChargeCurrentLimit; //!< Battery charge current limit warning
 }Cortex_WarningBits_t;
 
 //! return the minimum encoded length for the Cortex_WarningBits_t structure
@@ -101,7 +102,9 @@ typedef struct
     bool payloadRail;        //!< Critical error occurred during rail configuration
     bool servoRail;          //!< Critical error occurred during rail configuration
     bool batteryChargerRail; //!< Critical error occurred during rail configuration
-    bool powerMap;           //!< Power map is impoperly configured
+    bool powerMap;           //!< Power map is improperly configured
+    bool lowRpm;             //!< Engine was disabled due to low RPM
+    bool powerLoss;          //!< Engine was disabled due to loss of power
 }Cortex_ErrorBits_t;
 
 //! return the minimum encoded length for the Cortex_ErrorBits_t structure
@@ -123,6 +126,7 @@ typedef struct
     bool battery;    //!< Enable TelemetryBattery packet
     bool outputRail; //!< Enable TelemetryOutputRail packet
     bool controller; //!< Enable TelemetryController packet
+    bool engine;     //!< Enable TelemetryEngine packet
 }Cortex_TelemetryPackets_t;
 
 //! return the minimum encoded length for the Cortex_TelemetryPackets_t structure

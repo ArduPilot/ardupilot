@@ -79,6 +79,60 @@ int decodeCortex_StandbyPacket(const void* _pg_pkt)
 }// decodeCortex_StandbyPacket
 
 /*!
+ * \brief Create the Cortex_Preflight packet
+ *
+ * Command the Cortex to enter preflight mode
+ * \param _pg_pkt points to the packet which will be created by this function
+ */
+void encodeCortex_PreflightPacket(void* _pg_pkt)
+{
+    uint8_t* _pg_data = getCortexPacketData(_pg_pkt);
+    int _pg_byteindex = 0;
+
+    // Constant value required for preflight sequence
+    uint8ToBytes((uint8_t)(0x3C), _pg_data, &_pg_byteindex);
+
+    // Constant value required for preflight sequence
+    uint8ToBytes((uint8_t)(0xC3), _pg_data, &_pg_byteindex);
+
+    // complete the process of creating the packet
+    finishCortexPacket(_pg_pkt, _pg_byteindex, getCortex_PreflightPacketID());
+
+}// encodeCortex_PreflightPacket
+
+/*!
+ * \brief Decode the Cortex_Preflight packet
+ *
+ * Command the Cortex to enter preflight mode
+ * \param _pg_pkt points to the packet being decoded by this function
+ * \return 0 is returned if the packet ID or size is wrong, else 1
+ */
+int decodeCortex_PreflightPacket(const void* _pg_pkt)
+{
+    int _pg_byteindex = 0;
+    const uint8_t* _pg_data = getCortexPacketDataConst(_pg_pkt);
+    int _pg_numbytes = getCortexPacketSize(_pg_pkt);
+
+    // Verify the packet identifier
+    if(getCortexPacketID(_pg_pkt) != getCortex_PreflightPacketID())
+        return 0;
+
+    if(_pg_numbytes < getCortex_PreflightMinDataLength())
+        return 0;
+
+    // Constant value required for preflight sequence
+    if (uint8FromBytes(_pg_data, &_pg_byteindex) != (uint8_t) 0x3C)
+        return 0;
+
+    // Constant value required for preflight sequence
+    if (uint8FromBytes(_pg_data, &_pg_byteindex) != (uint8_t) 0xC3)
+        return 0;
+
+    return 1;
+
+}// decodeCortex_PreflightPacket
+
+/*!
  * \brief Create the Cortex_StartCranking packet
  *
  * Command the Cortex to start cranking the engine
@@ -727,6 +781,151 @@ int decodeCortex_TelemetryControllerPacket(const void* _pg_pkt, float* rectifier
 }// decodeCortex_TelemetryControllerPacket
 
 /*!
+ * \brief Create the Cortex_TelemetryEngine packet
+ *
+ * Engine control status information. Note that this packet is only available
+ * for Cortex devices which support external engine control.
+ * \param _pg_pkt points to the packet which will be created by this function
+ * \param _pg_user points to the user data that will be encoded in _pg_pkt
+ */
+void encodeCortex_TelemetryEnginePacketStructure(void* _pg_pkt, const Cortex_TelemetryEngine_t* _pg_user)
+{
+    uint8_t* _pg_data = getCortexPacketData(_pg_pkt);
+    int _pg_byteindex = 0;
+
+    // Throttle voltage target
+    // Range of voltageTarget is 0.0f to 655.35f.
+    float32ScaledTo2UnsignedBeBytes(_pg_user->voltageTarget, _pg_data, &_pg_byteindex, 0.0f, 100.0f);
+
+    // Current throttle target
+    // Range of throttleTarget is 0.0f to 100.0f.
+    float32ScaledTo1UnsignedBytes(_pg_user->throttleTarget, _pg_data, &_pg_byteindex, 0.0f, 2.55f);
+
+    // Engine power demand
+    // Range of powerTarget is -32767.0f to 32767.0f.
+    float32ScaledTo2SignedBeBytes(_pg_user->powerTarget, _pg_data, &_pg_byteindex, 1.0f);
+
+    // complete the process of creating the packet
+    finishCortexPacket(_pg_pkt, _pg_byteindex, getCortex_TelemetryEnginePacketID());
+
+}// encodeCortex_TelemetryEnginePacketStructure
+
+/*!
+ * \brief Decode the Cortex_TelemetryEngine packet
+ *
+ * Engine control status information. Note that this packet is only available
+ * for Cortex devices which support external engine control.
+ * \param _pg_pkt points to the packet being decoded by this function
+ * \param _pg_user receives the data decoded from the packet
+ * \return 0 is returned if the packet ID or size is wrong, else 1
+ */
+int decodeCortex_TelemetryEnginePacketStructure(const void* _pg_pkt, Cortex_TelemetryEngine_t* _pg_user)
+{
+    int _pg_numbytes;
+    int _pg_byteindex = 0;
+    const uint8_t* _pg_data;
+
+    // Verify the packet identifier
+    if(getCortexPacketID(_pg_pkt) != getCortex_TelemetryEnginePacketID())
+        return 0;
+
+    // Verify the packet size
+    _pg_numbytes = getCortexPacketSize(_pg_pkt);
+    if(_pg_numbytes < getCortex_TelemetryEngineMinDataLength())
+        return 0;
+
+    // The raw data from the packet
+    _pg_data = getCortexPacketDataConst(_pg_pkt);
+
+    // Throttle voltage target
+    // Range of voltageTarget is 0.0f to 655.35f.
+    _pg_user->voltageTarget = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/100.0f);
+
+    // Current throttle target
+    // Range of throttleTarget is 0.0f to 100.0f.
+    _pg_user->throttleTarget = float32ScaledFrom1UnsignedBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/2.55f);
+
+    // Engine power demand
+    // Range of powerTarget is -32767.0f to 32767.0f.
+    _pg_user->powerTarget = float32ScaledFrom2SignedBeBytes(_pg_data, &_pg_byteindex, 1.0f/1.0f);
+
+    return 1;
+
+}// decodeCortex_TelemetryEnginePacketStructure
+
+/*!
+ * \brief Create the Cortex_TelemetryEngine packet
+ *
+ * Engine control status information. Note that this packet is only available
+ * for Cortex devices which support external engine control.
+ * \param _pg_pkt points to the packet which will be created by this function
+ * \param voltageTarget is Throttle voltage target
+ * \param throttleTarget is Current throttle target
+ * \param powerTarget is Engine power demand
+ */
+void encodeCortex_TelemetryEnginePacket(void* _pg_pkt, float voltageTarget, float throttleTarget, float powerTarget)
+{
+    uint8_t* _pg_data = getCortexPacketData(_pg_pkt);
+    int _pg_byteindex = 0;
+
+    // Throttle voltage target
+    // Range of voltageTarget is 0.0f to 655.35f.
+    float32ScaledTo2UnsignedBeBytes(voltageTarget, _pg_data, &_pg_byteindex, 0.0f, 100.0f);
+
+    // Current throttle target
+    // Range of throttleTarget is 0.0f to 100.0f.
+    float32ScaledTo1UnsignedBytes(throttleTarget, _pg_data, &_pg_byteindex, 0.0f, 2.55f);
+
+    // Engine power demand
+    // Range of powerTarget is -32767.0f to 32767.0f.
+    float32ScaledTo2SignedBeBytes(powerTarget, _pg_data, &_pg_byteindex, 1.0f);
+
+    // complete the process of creating the packet
+    finishCortexPacket(_pg_pkt, _pg_byteindex, getCortex_TelemetryEnginePacketID());
+
+}// encodeCortex_TelemetryEnginePacket
+
+/*!
+ * \brief Decode the Cortex_TelemetryEngine packet
+ *
+ * Engine control status information. Note that this packet is only available
+ * for Cortex devices which support external engine control.
+ * \param _pg_pkt points to the packet being decoded by this function
+ * \param voltageTarget receives Throttle voltage target
+ * \param throttleTarget receives Current throttle target
+ * \param powerTarget receives Engine power demand
+ * \return 0 is returned if the packet ID or size is wrong, else 1
+ */
+int decodeCortex_TelemetryEnginePacket(const void* _pg_pkt, float* voltageTarget, float* throttleTarget, float* powerTarget)
+{
+    int _pg_byteindex = 0;
+    const uint8_t* _pg_data = getCortexPacketDataConst(_pg_pkt);
+    int _pg_numbytes = getCortexPacketSize(_pg_pkt);
+
+    // Verify the packet identifier
+    if(getCortexPacketID(_pg_pkt) != getCortex_TelemetryEnginePacketID())
+        return 0;
+
+    if(_pg_numbytes < getCortex_TelemetryEngineMinDataLength())
+        return 0;
+
+    // Throttle voltage target
+    // Range of voltageTarget is 0.0f to 655.35f.
+    (*voltageTarget) = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/100.0f);
+
+    // Current throttle target
+    // Range of throttleTarget is 0.0f to 100.0f.
+    (*throttleTarget) = float32ScaledFrom1UnsignedBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/2.55f);
+
+    // Engine power demand
+    // Range of powerTarget is -32767.0f to 32767.0f.
+    (*powerTarget) = float32ScaledFrom2SignedBeBytes(_pg_data, &_pg_byteindex, 1.0f/1.0f);
+
+    return 1;
+
+}// decodeCortex_TelemetryEnginePacket
+
+/*!
  * \brief Create the Cortex_TelemetryOutputRail packet
  *
  * Output rail status information
@@ -1277,6 +1476,9 @@ void encodeCortex_PowerLimitSettingsPacketStructure(void* _pg_pkt, const Cortex_
     // Enable power map power limit
     _pg_data[_pg_byteindex] |= (uint8_t)((_pg_user->enablePowerLimit == true) ? 1 : 0) << 5;
 
+    // Enable battery charging current limit
+    _pg_data[_pg_byteindex] |= (uint8_t)((_pg_user->enableBatteryLimit == true) ? 1 : 0) << 4;
+
     // Reserved bits
     _pg_byteindex += 1; // close bit field
 
@@ -1340,6 +1542,9 @@ int decodeCortex_PowerLimitSettingsPacketStructure(const void* _pg_pkt, Cortex_P
 
     // Enable power map power limit
     _pg_user->enablePowerLimit = (((_pg_data[_pg_byteindex] >> 5) & 0x1)) ? true : false;
+
+    // Enable battery charging current limit
+    _pg_user->enableBatteryLimit = (((_pg_data[_pg_byteindex] >> 4) & 0x1)) ? true : false;
 
     // Reserved bits
     _pg_byteindex += 1; // close bit field
@@ -1438,6 +1643,224 @@ int decodeCortex_PowerMapPacketStructure(const void* _pg_pkt, Cortex_PowerMap_t*
 }// decodeCortex_PowerMapPacketStructure
 
 /*!
+ * \brief Create the Cortex_EngineControlSettings packet
+ *
+ * Engine control settings. This packet only has effect when Cortex device
+ * regulates engine RPM.
+ * \param _pg_pkt points to the packet which will be created by this function
+ * \param _pg_user points to the user data that will be encoded in _pg_pkt
+ */
+void encodeCortex_EngineControlSettingsPacketStructure(void* _pg_pkt, const Cortex_EngineControlSettings_t* _pg_user)
+{
+    uint8_t* _pg_data = getCortexPacketData(_pg_pkt);
+    int _pg_byteindex = 0;
+
+    // Engine ID / address
+    // Range of address is 0 to 255.
+    uint8ToBytes(_pg_user->address, _pg_data, &_pg_byteindex);
+
+    // Engine speed input filter
+    // Range of rpmFilter is 0.0f to 10.0f.
+    float32ScaledTo1UnsignedBytes(_pg_user->rpmFilter, _pg_data, &_pg_byteindex, 0.0f, 25.5f);
+
+    // Maximum engine speed limit
+    // Range of rpmLimit is 0 to 65535.
+    uint16ToBeBytes(_pg_user->rpmLimit, _pg_data, &_pg_byteindex);
+
+    // Engine RPM setpoint controller proportional gain
+    // Range of Kp is 0.0f to 65.535f.
+    float32ScaledTo2UnsignedBeBytes(_pg_user->Kp, _pg_data, &_pg_byteindex, 0.0f, 1000.0f);
+
+    // Engine RPM setpoint controller integral gain
+    // Range of Ki is 0.0f to 65.535f.
+    float32ScaledTo2UnsignedBeBytes(_pg_user->Ki, _pg_data, &_pg_byteindex, 0.0f, 1000.0f);
+
+    // Engine RPM setpoint controller derivative gain
+    // Range of Kd is 0.0f to 65.535f.
+    float32ScaledTo2UnsignedBeBytes(_pg_user->Kd, _pg_data, &_pg_byteindex, 0.0f, 1000.0f);
+
+    // Engine RPM setpoint controller feedforward gain
+    // Range of Kf is 0.0f to 65.535f.
+    float32ScaledTo2UnsignedBeBytes(_pg_user->Kf, _pg_data, &_pg_byteindex, 0.0f, 1000.0f);
+
+    // complete the process of creating the packet
+    finishCortexPacket(_pg_pkt, _pg_byteindex, getCortex_EngineControlSettingsPacketID());
+
+}// encodeCortex_EngineControlSettingsPacketStructure
+
+/*!
+ * \brief Decode the Cortex_EngineControlSettings packet
+ *
+ * Engine control settings. This packet only has effect when Cortex device
+ * regulates engine RPM.
+ * \param _pg_pkt points to the packet being decoded by this function
+ * \param _pg_user receives the data decoded from the packet
+ * \return 0 is returned if the packet ID or size is wrong, else 1
+ */
+int decodeCortex_EngineControlSettingsPacketStructure(const void* _pg_pkt, Cortex_EngineControlSettings_t* _pg_user)
+{
+    int _pg_numbytes;
+    int _pg_byteindex = 0;
+    const uint8_t* _pg_data;
+
+    // Verify the packet identifier
+    if(getCortexPacketID(_pg_pkt) != getCortex_EngineControlSettingsPacketID())
+        return 0;
+
+    // Verify the packet size
+    _pg_numbytes = getCortexPacketSize(_pg_pkt);
+    if(_pg_numbytes < getCortex_EngineControlSettingsMinDataLength())
+        return 0;
+
+    // The raw data from the packet
+    _pg_data = getCortexPacketDataConst(_pg_pkt);
+
+    // Engine ID / address
+    // Range of address is 0 to 255.
+    _pg_user->address = uint8FromBytes(_pg_data, &_pg_byteindex);
+
+    // Engine speed input filter
+    // Range of rpmFilter is 0.0f to 10.0f.
+    _pg_user->rpmFilter = float32ScaledFrom1UnsignedBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/25.5f);
+
+    // Maximum engine speed limit
+    // Range of rpmLimit is 0 to 65535.
+    _pg_user->rpmLimit = uint16FromBeBytes(_pg_data, &_pg_byteindex);
+
+    // Engine RPM setpoint controller proportional gain
+    // Range of Kp is 0.0f to 65.535f.
+    _pg_user->Kp = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/1000.0f);
+
+    // Engine RPM setpoint controller integral gain
+    // Range of Ki is 0.0f to 65.535f.
+    _pg_user->Ki = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/1000.0f);
+
+    // Engine RPM setpoint controller derivative gain
+    // Range of Kd is 0.0f to 65.535f.
+    _pg_user->Kd = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/1000.0f);
+
+    // Engine RPM setpoint controller feedforward gain
+    // Range of Kf is 0.0f to 65.535f.
+    _pg_user->Kf = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/1000.0f);
+
+    return 1;
+
+}// decodeCortex_EngineControlSettingsPacketStructure
+
+/*!
+ * \brief Create the Cortex_ThrottleControlSettings packet
+ *
+ * Throttle control loop settings. This packet only has effect when Cortex
+ * device regulates engine throttle.
+ * \param _pg_pkt points to the packet which will be created by this function
+ * \param _pg_user points to the user data that will be encoded in _pg_pkt
+ */
+void encodeCortex_ThrottleControlSettingsPacketStructure(void* _pg_pkt, const Cortex_ThrottleControlSettings_t* _pg_user)
+{
+    uint8_t* _pg_data = getCortexPacketData(_pg_pkt);
+    int _pg_byteindex = 0;
+
+    // Throttle control loop input filter
+    // Range of filter is 0.0f to 10.0f.
+    float32ScaledTo1UnsignedBytes(_pg_user->filter, _pg_data, &_pg_byteindex, 0.0f, 25.5f);
+
+    // Initial throttle setting during engine start/cranking
+    // Range of startingThrottle is 0 to 255.
+    uint8ToBytes(_pg_user->startingThrottle, _pg_data, &_pg_byteindex);
+
+    // Minimum throttle setting
+    // Range of minThrottle is 0 to 255.
+    uint8ToBytes(_pg_user->minThrottle, _pg_data, &_pg_byteindex);
+
+    // Maximum throttle setting
+    // Range of maxThrottle is 0 to 255.
+    uint8ToBytes(_pg_user->maxThrottle, _pg_data, &_pg_byteindex);
+
+    // Throttle controller proportional gain
+    // Range of Kp is 0.0f to 65.535f.
+    float32ScaledTo2UnsignedBeBytes(_pg_user->Kp, _pg_data, &_pg_byteindex, 0.0f, 1000.0f);
+
+    // Throttle controller integral gain
+    // Range of Ki is 0.0f to 65.535f.
+    float32ScaledTo2UnsignedBeBytes(_pg_user->Ki, _pg_data, &_pg_byteindex, 0.0f, 1000.0f);
+
+    // Throttle controller derivative gain
+    // Range of Kd is 0.0f to 65.535f.
+    float32ScaledTo2UnsignedBeBytes(_pg_user->Kd, _pg_data, &_pg_byteindex, 0.0f, 1000.0f);
+
+    // Throttle controller feedforward gain
+    // Range of Kf is 0.0f to 65.535f.
+    float32ScaledTo2UnsignedBeBytes(_pg_user->Kf, _pg_data, &_pg_byteindex, 0.0f, 1000.0f);
+
+    // complete the process of creating the packet
+    finishCortexPacket(_pg_pkt, _pg_byteindex, getCortex_ThrottleControlSettingsPacketID());
+
+}// encodeCortex_ThrottleControlSettingsPacketStructure
+
+/*!
+ * \brief Decode the Cortex_ThrottleControlSettings packet
+ *
+ * Throttle control loop settings. This packet only has effect when Cortex
+ * device regulates engine throttle.
+ * \param _pg_pkt points to the packet being decoded by this function
+ * \param _pg_user receives the data decoded from the packet
+ * \return 0 is returned if the packet ID or size is wrong, else 1
+ */
+int decodeCortex_ThrottleControlSettingsPacketStructure(const void* _pg_pkt, Cortex_ThrottleControlSettings_t* _pg_user)
+{
+    int _pg_numbytes;
+    int _pg_byteindex = 0;
+    const uint8_t* _pg_data;
+
+    // Verify the packet identifier
+    if(getCortexPacketID(_pg_pkt) != getCortex_ThrottleControlSettingsPacketID())
+        return 0;
+
+    // Verify the packet size
+    _pg_numbytes = getCortexPacketSize(_pg_pkt);
+    if(_pg_numbytes < getCortex_ThrottleControlSettingsMinDataLength())
+        return 0;
+
+    // The raw data from the packet
+    _pg_data = getCortexPacketDataConst(_pg_pkt);
+
+    // Throttle control loop input filter
+    // Range of filter is 0.0f to 10.0f.
+    _pg_user->filter = float32ScaledFrom1UnsignedBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/25.5f);
+
+    // Initial throttle setting during engine start/cranking
+    // Range of startingThrottle is 0 to 255.
+    _pg_user->startingThrottle = uint8FromBytes(_pg_data, &_pg_byteindex);
+
+    // Minimum throttle setting
+    // Range of minThrottle is 0 to 255.
+    _pg_user->minThrottle = uint8FromBytes(_pg_data, &_pg_byteindex);
+
+    // Maximum throttle setting
+    // Range of maxThrottle is 0 to 255.
+    _pg_user->maxThrottle = uint8FromBytes(_pg_data, &_pg_byteindex);
+
+    // Throttle controller proportional gain
+    // Range of Kp is 0.0f to 65.535f.
+    _pg_user->Kp = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/1000.0f);
+
+    // Throttle controller integral gain
+    // Range of Ki is 0.0f to 65.535f.
+    _pg_user->Ki = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/1000.0f);
+
+    // Throttle controller derivative gain
+    // Range of Kd is 0.0f to 65.535f.
+    _pg_user->Kd = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/1000.0f);
+
+    // Throttle controller feedforward gain
+    // Range of Kf is 0.0f to 65.535f.
+    _pg_user->Kf = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/1000.0f);
+
+    return 1;
+
+}// decodeCortex_ThrottleControlSettingsPacketStructure
+
+/*!
  * \brief Create the Cortex_BatterySettings packet
  *
  * Battery settings
@@ -1455,6 +1878,18 @@ void encodeCortex_BatterySettingsPacketStructure(void* _pg_pkt, const Cortex_Bat
     // Minimum engine speed required for battery charging
     // Range of minChargingRpm is 0 to 65535.
     uint16ToBeBytes(_pg_user->minChargingRpm, _pg_data, &_pg_byteindex);
+
+    // Nominal battery voltage
+    // Range of nominalVoltage is 0.0f to 655.35f.
+    float32ScaledTo2UnsignedBeBytes(_pg_user->nominalVoltage, _pg_data, &_pg_byteindex, 0.0f, 100.0f);
+
+    // Maximum battery charging current limit
+    // Range of chargeCurrentLimit is 0.0f to 25.5f.
+    float32ScaledTo1UnsignedBytes(_pg_user->chargeCurrentLimit, _pg_data, &_pg_byteindex, 0.0f, 10.0f);
+
+    // Filter frequency for battery current measurement
+    // Range of currentFilter is 0.0f to 5.1f.
+    float32ScaledTo1UnsignedBytes(_pg_user->currentFilter, _pg_data, &_pg_byteindex, 0.0f, 50.0f);
 
     // complete the process of creating the packet
     finishCortexPacket(_pg_pkt, _pg_byteindex, getCortex_BatterySettingsPacketID());
@@ -1487,12 +1922,38 @@ int decodeCortex_BatterySettingsPacketStructure(const void* _pg_pkt, Cortex_Batt
     // The raw data from the packet
     _pg_data = getCortexPacketDataConst(_pg_pkt);
 
+    // this packet has default fields, make sure they are set
+    _pg_user->nominalVoltage = 48;
+    _pg_user->chargeCurrentLimit = 5;
+    _pg_user->currentFilter = 1;
+
     // Unused, reserved for future use
     _pg_byteindex += 2;
 
     // Minimum engine speed required for battery charging
     // Range of minChargingRpm is 0 to 65535.
     _pg_user->minChargingRpm = uint16FromBeBytes(_pg_data, &_pg_byteindex);
+
+    if(_pg_byteindex + 2 > _pg_numbytes)
+        return 1;
+
+    // Nominal battery voltage
+    // Range of nominalVoltage is 0.0f to 655.35f.
+    _pg_user->nominalVoltage = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/100.0f);
+
+    if(_pg_byteindex + 1 > _pg_numbytes)
+        return 1;
+
+    // Maximum battery charging current limit
+    // Range of chargeCurrentLimit is 0.0f to 25.5f.
+    _pg_user->chargeCurrentLimit = float32ScaledFrom1UnsignedBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/10.0f);
+
+    if(_pg_byteindex + 1 > _pg_numbytes)
+        return 1;
+
+    // Filter frequency for battery current measurement
+    // Range of currentFilter is 0.0f to 5.1f.
+    _pg_user->currentFilter = float32ScaledFrom1UnsignedBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/50.0f);
 
     return 1;
 

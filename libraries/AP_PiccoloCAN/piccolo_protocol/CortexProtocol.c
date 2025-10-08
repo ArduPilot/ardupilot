@@ -33,6 +33,8 @@ const char* CortexPackets_EnumLabel(int value)
         return "";
     case PKT_CORTEX_STANDBY:
         return "PKT_CORTEX_STANDBY";
+    case PKT_CORTEX_PREFLIGHT:
+        return "PKT_CORTEX_PREFLIGHT";
     case PKT_CORTEX_CRANK:
         return "PKT_CORTEX_CRANK";
     case PKT_CORTEX_TELEMETRY_STATUS:
@@ -43,6 +45,8 @@ const char* CortexPackets_EnumLabel(int value)
         return "PKT_CORTEX_TELEMETRY_BATTERY";
     case PKT_CORTEX_TELEMETRY_CONTROLLER:
         return "PKT_CORTEX_TELEMETRY_CONTROLLER";
+    case PKT_CORTEX_TELEMETRY_ENGINE:
+        return "PKT_CORTEX_TELEMETRY_ENGINE";
     case PKT_CORTEX_TELEMETRY_OUTPUT_RAIL:
         return "PKT_CORTEX_TELEMETRY_OUTPUT_RAIL";
     case PKT_CORTEX_CONFIG_TELEMETRY:
@@ -55,6 +59,10 @@ const char* CortexPackets_EnumLabel(int value)
         return "PKT_CORTEX_CONFIG_POWER_LIMIT";
     case PKT_CORTEX_CONFIG_POWER_MAP:
         return "PKT_CORTEX_CONFIG_POWER_MAP";
+    case PKT_CORTEX_CONFIG_ENGINE:
+        return "PKT_CORTEX_CONFIG_ENGINE";
+    case PKT_CORTEX_CONFIG_THROTTLE:
+        return "PKT_CORTEX_CONFIG_THROTTLE";
     case PKT_CORTEX_CONFIG_BATTERY:
         return "PKT_CORTEX_CONFIG_BATTERY";
     case PKT_CORTEX_CONFIG_OUTPUT_RAIL:

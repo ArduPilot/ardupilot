@@ -53,17 +53,21 @@ extern "C" {
 typedef enum
 {
     PKT_CORTEX_STANDBY = 0x10,                  //!< Command the cortex unit into standby mode
+    PKT_CORTEX_PREFLIGHT = 0x11,                //!< Command the cortex unit to enter preflight mode (if supported)
     PKT_CORTEX_CRANK = 0x15,                    //!< Command the cortex unit to start cranking the engine
     PKT_CORTEX_TELEMETRY_STATUS = 0x80,         //!< System status information
     PKT_CORTEX_TELEMETRY_GENERATOR = 0x81,      //!< Generator status information
     PKT_CORTEX_TELEMETRY_BATTERY = 0x82,        //!< Battery status information
     PKT_CORTEX_TELEMETRY_CONTROLLER = 0x83,     //!< Controller status information
+    PKT_CORTEX_TELEMETRY_ENGINE = 0x84,         //!< Engine control status information
     PKT_CORTEX_TELEMETRY_OUTPUT_RAIL = 0x85,    //!< Output rail voltage and current information
     PKT_CORTEX_CONFIG_TELEMETRY = 0x90,         //!< Telemetry settings
     PKT_CORTEX_CONFIG_GENERATOR = 0x91,         //!< Generator settings
     PKT_CORTEX_CONFIG_STARTING = 0x92,          //!< System starting settings
     PKT_CORTEX_CONFIG_POWER_LIMIT = 0x93,       //!< Power limit settings
     PKT_CORTEX_CONFIG_POWER_MAP = 0x94,         //!< Engine power map
+    PKT_CORTEX_CONFIG_ENGINE = 0x95,            //!< Engine control loop settings
+    PKT_CORTEX_CONFIG_THROTTLE = 0x96,          //!< Engine throttle control settings
     PKT_CORTEX_CONFIG_BATTERY = 0x9A,           //!< Battery settings
     PKT_CORTEX_CONFIG_OUTPUT_RAIL = 0x9B,       //!< Output rail settings
     PKT_CORTEX_EXTRA_TELLTALES = 0xA0,          //!< Cortex telltales

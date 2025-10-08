@@ -188,7 +188,8 @@ void encodeCortex_WarningBits_t(uint8_t* _pg_data, int* _pg_bytecount, const Cor
     // Low RPM warning (engine speed is below minimum RPM threshold)
     _pg_data[_pg_byteindex] |= (uint8_t)((_pg_user->lowRpm == true) ? 1 : 0) << 1;
 
-    // Reserved bits
+    // Battery charge current limit warning
+    _pg_data[_pg_byteindex] |= (uint8_t)((_pg_user->batteryChargeCurrentLimit == true) ? 1 : 0);
     _pg_byteindex += 1; // close bit field
 
     // Reserved byte
@@ -232,7 +233,8 @@ int decodeCortex_WarningBits_t(const uint8_t* _pg_data, int* _pg_bytecount, Cort
     // Low RPM warning (engine speed is below minimum RPM threshold)
     _pg_user->lowRpm = (((_pg_data[_pg_byteindex] >> 1) & 0x1)) ? true : false;
 
-    // Reserved bits
+    // Battery charge current limit warning
+    _pg_user->batteryChargeCurrentLimit = (((_pg_data[_pg_byteindex]) & 0x1)) ? true : false;
     _pg_byteindex += 1; // close bit field
 
     // Reserved byte
@@ -274,14 +276,17 @@ void encodeCortex_ErrorBits_t(uint8_t* _pg_data, int* _pg_bytecount, const Corte
     // Critical error occurred during rail configuration
     _pg_data[_pg_byteindex] |= (uint8_t)((_pg_user->batteryChargerRail == true) ? 1 : 0) << 2;
 
-    // Power map is impoperly configured
+    // Power map is improperly configured
     _pg_data[_pg_byteindex] |= (uint8_t)((_pg_user->powerMap == true) ? 1 : 0) << 1;
 
-    // Reserved bits
-    _pg_byteindex += 1; // close bit field
+    // Engine was disabled due to low RPM
+    _pg_data[_pg_byteindex] |= (uint8_t)((_pg_user->lowRpm == true) ? 1 : 0);
+
+    // Engine was disabled due to loss of power
+    _pg_data[_pg_byteindex + 1] = (uint8_t)((_pg_user->powerLoss == true) ? 1 : 0) << 7;
 
     // Reserved byte
-    uint8ToBytes((uint8_t)(0), _pg_data, &_pg_byteindex);
+    _pg_byteindex += 2; // close bit field
 
     *_pg_bytecount = _pg_byteindex;
 
@@ -318,14 +323,17 @@ int decodeCortex_ErrorBits_t(const uint8_t* _pg_data, int* _pg_bytecount, Cortex
     // Critical error occurred during rail configuration
     _pg_user->batteryChargerRail = (((_pg_data[_pg_byteindex] >> 2) & 0x1)) ? true : false;
 
-    // Power map is impoperly configured
+    // Power map is improperly configured
     _pg_user->powerMap = (((_pg_data[_pg_byteindex] >> 1) & 0x1)) ? true : false;
 
-    // Reserved bits
-    _pg_byteindex += 1; // close bit field
+    // Engine was disabled due to low RPM
+    _pg_user->lowRpm = (((_pg_data[_pg_byteindex]) & 0x1)) ? true : false;
+
+    // Engine was disabled due to loss of power
+    _pg_user->powerLoss = ((_pg_data[_pg_byteindex + 1] >> 7)) ? true : false;
 
     // Reserved byte
-    _pg_byteindex += 1;
+    _pg_byteindex += 2; // close bit field
 
     *_pg_bytecount = _pg_byteindex;
 
@@ -359,6 +367,9 @@ void encodeCortex_TelemetryPackets_t(uint8_t* _pg_data, int* _pg_bytecount, cons
 
     // Enable TelemetryController packet
     _pg_data[_pg_byteindex] |= (uint8_t)((_pg_user->controller == true) ? 1 : 0) << 3;
+
+    // Enable TelemetryEngine packet
+    _pg_data[_pg_byteindex] |= (uint8_t)((_pg_user->engine == true) ? 1 : 0) << 2;
     _pg_byteindex += 1; // close bit field
 
     *_pg_bytecount = _pg_byteindex;
@@ -392,6 +403,9 @@ int decodeCortex_TelemetryPackets_t(const uint8_t* _pg_data, int* _pg_bytecount,
 
     // Enable TelemetryController packet
     _pg_user->controller = (((_pg_data[_pg_byteindex] >> 3) & 0x1)) ? true : false;
+
+    // Enable TelemetryEngine packet
+    _pg_user->engine = (((_pg_data[_pg_byteindex] >> 2) & 0x1)) ? true : false;
     _pg_byteindex += 1; // close bit field
 
     *_pg_bytecount = _pg_byteindex;
