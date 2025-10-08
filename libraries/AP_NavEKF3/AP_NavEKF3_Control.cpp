@@ -659,6 +659,21 @@ bool NavEKF3_core::using_extnav_for_yaw() const
     return false;
 }
 
+// are we using (aka fusing) gps?
+bool NavEKF3_core::using_gps() const
+{
+    if (yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS || yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) {
+        return ((imuSampleTime_ms - last_gps_yaw_fuse_ms < 5000) || (imuSampleTime_ms - lastSynthYawTime_ms < 5000));
+    }
+    if (posxy_source_last == AP_NavEKF_Source::SourceXY::GPS) {
+        return ((imuSampleTime_ms - lastGpsPosPassTime_ms < 5000));
+    }
+    if (activeHgtSource == AP_NavEKF_Source::SourceZ::GPS) {
+        return ((imuSampleTime_ms - lastHgtPassTime_ms < 5000));
+    }
+    return false;
+}
+
 /*
   should we assume zero sideslip?
  */
