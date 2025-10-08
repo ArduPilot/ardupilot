@@ -25,24 +25,23 @@ AP_Compass_Backend *AP_Compass_ExternalAHRS::probe(uint8_t port)
     if (ret == nullptr) {
         return nullptr;
     }
-    if (!ret->register_compass(devid, ret->instance)) {
+    if (!ret->register_compass(devid)) {
         delete ret;
         return nullptr;
     }
-    ret->set_dev_id(ret->instance, devid);
-    ret->set_external(ret->instance, true);
+    ret->set_external(true);
     return ret;
 }
 
 void AP_Compass_ExternalAHRS::handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt)
 {
     Vector3f field = pkt.field;
-    accumulate_sample(field, instance);
+    accumulate_sample(field);
 }
 
 void AP_Compass_ExternalAHRS::read(void)
 {
-    drain_accumulated_samples(instance);
+    drain_accumulated_samples();
 }
 
 #endif // AP_COMPASS_EXTERNALAHRS_ENABLED

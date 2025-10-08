@@ -64,7 +64,6 @@ private:
 
     float _magnetometer_ASA[3] {0, 0, 0};
 
-    uint8_t _compass_instance;
     bool _initialized;
     enum Rotation _rotation;
 };
