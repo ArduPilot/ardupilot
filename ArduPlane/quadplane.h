@@ -359,10 +359,10 @@ private:
     // control if a VTOL RTL will be used
     AP_Int8 rtl_mode;
     enum RTL_MODE{
-        NONE,
-        SWITCH_QRTL,
-        VTOL_APPROACH_QRTL,
-        QRTL_ALWAYS,
+        NONE                = 0,
+        SWITCH_QRTL         = 1,
+        VTOL_APPROACH_QRTL  = 2,
+        QRTL_ALWAYS         = 3,
     };
 
     // control if a VTOL GUIDED will be used
