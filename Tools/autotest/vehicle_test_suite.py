@@ -7067,13 +7067,15 @@ class TestSuite(ABC):
     def assert_mode(self, mode):
         self.wait_mode(mode, timeout=0)
 
-    def change_mode(self, mode, timeout=60):
+    def change_mode(self, mode, timeout=60, expect_mode=None):
         '''change vehicle flightmode'''
+        if expect_mode is None:
+            expect_mode = mode
         self.wait_heartbeat()
         self.progress("Changing mode to %s" % mode)
         self.send_cmd_do_set_mode(mode)
         tstart = self.get_sim_time()
-        while not self.mode_is(mode):
+        while not self.mode_is(expect_mode):
             custom_num = self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s custom=%u" % (
                 self.mav.flightmode, mode, custom_num))
