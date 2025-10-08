@@ -213,7 +213,7 @@ jobs:
           ./install.sh
           source ./export.sh
           cd ../..
-          python3 -m pip install --progress-bar off future lxml pymavlink MAVProxy pexpect flake8 geocoder empy==3.3.4 dronecan
+          python3 -m pip install --progress-bar off future lxml pymavlink MAVProxy pexpect flake8 geocoder empy==3.3.4 dronecan "pydantic<2.12"
           which cmake
           ./waf configure --board ${{matrix.config}} 
           echo './waf configure --board ${{matrix.config}}' >> $GITHUB_STEP_SUMMARY  
