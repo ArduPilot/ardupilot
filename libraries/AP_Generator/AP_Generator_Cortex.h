@@ -20,7 +20,7 @@
 #include "AP_Generator_config.h"
 #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 
-#if HAL_GENERATOR_ENABLED && AP_GENERATOR_CORTEX_ENABLED && HAL_PICCOLO_CAN_ENABLE
+#if HAL_GENERATOR_ENABLED && AP_GENERATOR_CORTEX_ENABLED
 
 #include "AP_Generator_Backend.h"
 #include <AP_Common/AP_Common.h>
@@ -74,10 +74,9 @@ public:
     }
 
 private:
-    bool handle_message(AP_HAL::CANFrame &frame, AP_PiccoloCAN &can_iface);
-
     static AP_Generator_Cortex* _singleton;
 
+#if HAL_PICCOLO_CAN_ENABLE
     // Internal data structures for received telemetry
     struct CortexTelemetry_t {
         Cortex_TelemetryStatus_t status;
@@ -98,11 +97,7 @@ private:
 
     int16_t rectifierTemperature(void) const;
 
-    // Last telemetry reading from the generator
-    uint32_t last_reading_ms;
-
-    // Connection state, used to detect changes
-    bool connected;
+    bool handle_message(AP_HAL::CANFrame &frame, AP_PiccoloCAN &can_iface);
 
     // Pointer to the CAN interface used to communicate with the generator
     AP_PiccoloCAN* _can_iface = nullptr;
@@ -112,6 +107,21 @@ private:
     uint8_t _can_device_id = 0xFF;
 
     friend class AP_PiccoloCAN;
+
+#endif // HAL_PICCOLO_CAN_ENABLE
+
+    // Last telemetry reading from the generator
+    uint32_t last_reading_ms;
+
+    // Connection state, used to detect changes
+    bool connected;
+
+    bool send_message(AP_HAL::CANFrame &frame);
+
+#if HAL_PICCOLO_CAN_ENABLE
+
+
+#endif // HAL_PICCOLO_CAN_ENABLE
 };
 
 #endif // AP_GENERATOR_CORTEX_ENABLED

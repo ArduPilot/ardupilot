@@ -634,14 +634,14 @@ bool AP_PiccoloCAN::handle_ecu_message(AP_HAL::CANFrame &frame)
 
 bool AP_PiccoloCAN::handle_cortex_message(AP_HAL::CANFrame &frame)
 {
-    #if AP_GENERATOR_CORTEX_ENABLED
+#if HAL_GENERATOR_ENABLED && AP_GENERATOR_CORTEX_ENABLED
     // Get the generator instance
     AP_Generator_Cortex* gen = AP_Generator_Cortex::get_instance();
 
     if (gen != nullptr) {
         return gen->handle_message(frame, *this);
     }
-    #endif // AP_GENERATOR_CORTEX_ENABLED
+#endif // AP_GENERATOR_CORTEX_ENABLED
 
     return false;
 }

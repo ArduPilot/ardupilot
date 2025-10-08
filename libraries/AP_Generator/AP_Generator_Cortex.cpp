@@ -20,7 +20,7 @@
 #include "AP_Generator_config.h"
 #include "AP_Generator_Cortex.h"
 
-#if HAL_GENERATOR_ENABLED && AP_GENERATOR_CORTEX_ENABLED && HAL_PICCOLO_CAN_ENABLE
+#if HAL_GENERATOR_ENABLED && AP_GENERATOR_CORTEX_ENABLED
 
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
@@ -42,6 +42,7 @@ void AP_Generator_Cortex::init()
 }
 
 
+#if HAL_PICCOLO_CAN_ENABLE
 // Decode received CAN frame    
 bool AP_Generator_Cortex::handle_message(AP_HAL::CANFrame &frame, AP_PiccoloCAN& can_iface)
 {
@@ -68,6 +69,7 @@ bool AP_Generator_Cortex::handle_message(AP_HAL::CANFrame &frame, AP_PiccoloCAN&
 
     return true;
 }
+#endif // HAL_PICCOLO_CAN_ENABLE
 
 
 void AP_Generator_Cortex::update()
@@ -82,10 +84,12 @@ void AP_Generator_Cortex::update()
         }
     }
 
+#if HAL_PICCOLO_CAN_ENABLE
     // Update internal readings
     _voltage = telemetry.generator.voltage;
     _current = telemetry.generator.current;
     _rpm = (uint16_t) abs(telemetry.generator.rpm);
+#endif // HAL_PICCOLO_CAN_ENABLE
 
     update_frontend();
 }
@@ -93,6 +97,8 @@ void AP_Generator_Cortex::update()
 
 bool AP_Generator_Cortex::pre_arm_check(char *failmsg, uint8_t failmsg_len) const
 {
+#if HAL_PICCOLO_CAN_ENABLE
+
     if (!is_connected()) {
         snprintf(failmsg, failmsg_len, "Generator is not connected");
         return false;
@@ -109,11 +115,18 @@ bool AP_Generator_Cortex::pre_arm_check(char *failmsg, uint8_t failmsg_len) cons
     }
 
     return true;
+
+#else
+    snprintf(failmsg, failmsg_len, "PiccoloCAN support not enabled");
+    return false;
+#endif // !HAL_PICCOLO_CAN_ENABLE
+
 }
 
 
 void AP_Generator_Cortex::send_generator_status(const GCS_MAVLINK &channel)
 {
+#if HAL_PICCOLO_CAN_ENABLE
     uint64_t status_flags = 0;
 
     if (!is_connected()) {
@@ -198,6 +211,7 @@ void AP_Generator_Cortex::send_generator_status(const GCS_MAVLINK &channel)
         telemetry.controller.runTime,
         0  // time until maintenance (not supported)
     );
+#endif // HAL_PICCOLO_CAN_ENABLE
 }
 
 
@@ -211,13 +225,23 @@ bool AP_Generator_Cortex::is_connected(void) const
 
 bool AP_Generator_Cortex::is_inhibited(void) const
 {
+#if HAL_PICCOLO_CAN_ENABLE
     return telemetry.status.status.inhibited;
+#else
+    // Fallback in the case that PiccoloCAN support is not enabled
+    return false;
+#endif // HAL_PICCOLO_CAN_ENABLE
 }
 
 
 bool AP_Generator_Cortex::is_ready(void) const
 {
+#if HAL_PICCOLO_CAN_ENABLE
     return is_connected() && telemetry.status.status.readyToRun;
+#else
+    // Fallback in the case that PiccoloCAN support is not enabled
+    return false;
+#endif // HAL_PICCOLO_CAN_ENABLE
 }
 
 
@@ -230,7 +254,7 @@ bool AP_Generator_Cortex::healthy() const
     return true;
 }
 
-
+#if HAL_PICCOLO_CAN_ENABLE
 int16_t AP_Generator_Cortex::rectifierTemperature(void) const
 {
     const Cortex_TelemetryController_t &controller = telemetry.controller;
@@ -239,15 +263,37 @@ int16_t AP_Generator_Cortex::rectifierTemperature(void) const
     return controller.rectifierTemperature > controller.regulatorTemperature ?
         controller.rectifierTemperature : controller.regulatorTemperature;
 }
+#endif // HAL_PICCOLO_CAN_ENABLE
 
-bool AP_Generator_Cortex::stop(void)
+
+bool AP_Generator_Cortex::send_message(AP_HAL::CANFrame &frame)
 {
-    // Send the "standby" command to the Cortex generator
-    // Note: If the engine is not also disabled, the generator may restart automatically
-
+#if HAL_PICCOLO_CAN_ENABLE
     if (_can_iface == nullptr) {
         return false;
     }
+
+    if (!is_connected()) {
+        return false;
+    }
+
+    // Encode stored device type and node ID
+    frame.id |= _can_device_id;
+    frame.id |= (_can_device_type << 8) & 0xFF00;
+
+    return _can_iface->write_frame(frame, 1000);
+#else
+    // PiccoloCAN interface not supported
+    return false;
+#endif // HAL_PICCOLO_CAN_ENABLE
+}
+
+
+// Send the "standby" command to the Cortex generator
+bool AP_Generator_Cortex::stop(void)
+{
+#if HAL_PICCOLO_CAN_ENABLE
+    // Note: If the engine is not also disabled, the generator may restart automatically
 
     if (!is_connected()) {
         return false;
@@ -256,22 +302,18 @@ bool AP_Generator_Cortex::stop(void)
     AP_HAL::CANFrame txFrame {};
 
     encodeCortex_StandbyPacket(&txFrame);
-
-    // Encode stored device type and node ID
-    txFrame.id |= _can_device_id;
-    txFrame.id |= (_can_device_type << 8) & 0xFF00;
-
-    return _can_iface->write_frame(txFrame, 1000);
+    return send_message(txFrame);
+#else
+    // PiccoloCAN interface not supported
+    return false;
+#endif // HAL_PICCOLO_CAN_ENABLE
 }
 
 
-bool AP_Generator_Cortex::idle(void) {
-    // Send the "preflight" command to the Cortex generator
-    
-    if (_can_iface == nullptr) {
-        return false;
-    }
-
+// Send the "preflight" command to the Cortex generator
+bool AP_Generator_Cortex::idle(void)
+{
+#if HAL_PICCOLO_CAN_ENABLE
     if (!is_connected()) {
         return false;
     }
@@ -280,21 +322,18 @@ bool AP_Generator_Cortex::idle(void) {
 
     encodeCortex_PreflightPacket(&txFrame);
 
-    // Encode stored device type and node ID
-    txFrame.id |= _can_device_id;
-    txFrame.id |= (_can_device_type << 8) & 0xFF00;
-
-    return _can_iface->write_frame(txFrame, 1000);
+    return send_message(txFrame);
+#else
+    // PiccoloCAN interface not supported
+    return false;
+#endif // HAL_PICCOLO_CAN_ENABLE
 }
 
 
+// Send the "crank engine" command to the Cortex generator
 bool AP_Generator_Cortex::run(void)
 {
-    // Send the "crank engine" command to the Cortex generator
-    if (_can_iface == nullptr) {
-        return false;
-    }
-
+#if HAL_PICCOLO_CAN_ENABLE
     if (!is_connected()) {
         return false;
     }
@@ -303,11 +342,11 @@ bool AP_Generator_Cortex::run(void)
 
     encodeCortex_StartCrankingPacket(&txFrame);
 
-    // Encode stored device type and node ID
-    txFrame.id |= _can_device_id;
-    txFrame.id |= (_can_device_type << 8) & 0xFF00;
-
-    return _can_iface->write_frame(txFrame, 1000);
+    return send_message(txFrame);
+#else
+    // PiccoloCAN interface not supported
+    return false;
+#endif // HAL_PICCOLO_CAN_ENABLE
 }
 
 #endif // AP_GENERATOR_CORTEX_ENABLED
