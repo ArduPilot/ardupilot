@@ -12,6 +12,7 @@ import errno
 import glob
 import math
 import os
+import pathlib
 import re
 import shutil
 import signal
@@ -4942,6 +4943,13 @@ class TestSuite(ABC):
         if isinstance(hook, TestSuite.MessageHook):
             hook.hook_removed()
 
+    def install_script_content_context(self, scriptname, content):
+        '''installs an example script with content which will be
+        removed when the context goes away
+        '''
+        self.install_script_content(scriptname, content)
+        self.context_get().installed_scripts.append(scriptname)
+
     def install_example_script_context(self, scriptname):
         '''installs an example script which will be removed when the context goes
         away'''
@@ -6313,6 +6321,25 @@ class TestSuite(ABC):
         if len(want) == 0:
             return
         raise ValueError("Failed to set parameters (%s)" % want)
+
+    def fetch_all_parameters(self):
+        self.mav.mav.param_request_list_send(self.sysid_thismav(), 1)
+        tstart = self.get_sim_time_cached()
+        ret = {}
+        param_count = 0
+        while True:
+            if param_count > 100 and len(ret) == param_count:
+                break
+            if self.get_sim_time_cached() - tstart > 5:
+                raise NotAchievedException("Did not get all params")
+            m = self.mav.recv_match(type='PARAM_VALUE', blocking=True, timeout=0.1)
+            if m is None:
+                continue
+            if param_count is None or m.param_count > param_count:
+                param_count = m.param_count
+            ret[m.param_id] = m.param_value
+
+        return ret
 
     def get_parameter(self, *args, **kwargs):
         return self.get_parameter_direct(*args, **kwargs)
@@ -8665,6 +8692,14 @@ Also, ignores heartbeats not from our target system'''
                                          "message_definitions", "v1.0", "ardupilotmega.xml")
         mavgen.mavgen(mavgen.Opts(output=dest, wire_protocol='2.0', language='Lua'), [ardupilotmega_xml])
         self.progress("Installed mavlink module")
+
+    def install_script_content(self, scriptname, content):
+        dest = self.installed_script_path(scriptname)
+        destdir = os.path.dirname(dest)
+        if not os.path.exists(destdir):
+            os.mkdir(destdir)
+        destPath = pathlib.Path(dest)
+        destPath.write_text(content)
 
     def install_example_script(self, scriptname):
         source = self.script_example_source_path(scriptname)
@@ -12967,16 +13002,16 @@ switch value'''
     def tf_validate_gps(self, value): # shared by proto 4 and proto 10
         self.progress("validating gps (0x%02x)" % value)
         lat = value
-        gpi = self.mav.recv_match(
-            type='GLOBAL_POSITION_INT',
+        gri = self.mav.recv_match(
+            type='GPS_RAW_INT',
             blocking=True,
             timeout=1
         )
-        if gpi is None:
-            raise NotAchievedException("Did not get GLOBAL_POSITION_INT message")
-        gpi_lat = self.tf_encode_gps_latitude(gpi.lat)
-        self.progress("GLOBAL_POSITION_INT lat==%f frsky==%f" % (gpi_lat, lat))
-        if gpi_lat == lat:
+        if gri is None:
+            raise NotAchievedException("Did not get GPS_RAW_INT message")
+        gri_lat = self.tf_encode_gps_latitude(gri.lat)
+        self.progress("GPS_RAW_INT lat==%f frsky==%f" % (gri_lat, lat))
+        if gri_lat == lat:
             return True
         return False
 
@@ -14995,3 +15030,16 @@ SERIAL5_BAUD 128
                 "SIM_SPEEDUP": 4,
                 "FS_GCS_ENABLE": paramValue,
             })
+
+    def setup_servo_mount(self, roll_servo=5, pitch_servo=6, yaw_servo=7):
+        '''configure a rpy servo mount; caller responsible for required rebooting'''
+        self.progress("Setting up servo mount")
+        self.set_parameters({
+            "MNT1_TYPE": 1,
+            "MNT1_PITCH_MIN": -45,
+            "MNT1_PITCH_MAX": 45,
+            "RC6_OPTION": 213,  # MOUNT1_PITCH
+            "SERVO%u_FUNCTION" % roll_servo: 8, # roll
+            "SERVO%u_FUNCTION" % pitch_servo: 7, # pitch
+            "SERVO%u_FUNCTION" % yaw_servo: 6, # yaw
+        })
