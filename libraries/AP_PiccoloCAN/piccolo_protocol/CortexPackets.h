@@ -160,6 +160,37 @@ int decodeCortex_TelemetryBatteryPacket(const void* pkt, float* voltage, float* 
 #define getCortex_TelemetryBatteryMaxDataLength() (5)
 
 /*!
+ * Controller status information
+ */
+typedef struct
+{
+    float    rectifierTemperature; //!< Generator rectifier temperature
+    float    regulatorTemperature; //!< Voltage regulator temperature
+    uint32_t runTime;              //!< Generator run time
+}Cortex_TelemetryController_t;
+
+//! Create the Cortex_TelemetryController packet
+void encodeCortex_TelemetryControllerPacketStructure(void* pkt, const Cortex_TelemetryController_t* user);
+
+//! Decode the Cortex_TelemetryController packet
+int decodeCortex_TelemetryControllerPacketStructure(const void* pkt, Cortex_TelemetryController_t* user);
+
+//! Create the Cortex_TelemetryController packet from parameters
+void encodeCortex_TelemetryControllerPacket(void* pkt, float rectifierTemperature, float regulatorTemperature, uint32_t runTime);
+
+//! Decode the Cortex_TelemetryController packet to parameters
+int decodeCortex_TelemetryControllerPacket(const void* pkt, float* rectifierTemperature, float* regulatorTemperature, uint32_t* runTime);
+
+//! return the packet ID for the Cortex_TelemetryController packet
+#define getCortex_TelemetryControllerPacketID() (PKT_CORTEX_TELEMETRY_CONTROLLER)
+
+//! return the minimum encoded length for the Cortex_TelemetryController packet
+#define getCortex_TelemetryControllerMinDataLength() (5)
+
+//! return the maximum encoded length for the Cortex_TelemetryController packet
+#define getCortex_TelemetryControllerMaxDataLength() (5)
+
+/*!
  * Output rail status information
  */
 typedef struct

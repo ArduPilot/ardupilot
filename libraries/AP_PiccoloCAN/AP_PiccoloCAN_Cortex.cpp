@@ -15,44 +15,21 @@
  * Author: Oliver Walters / Currawong Engineering Pty Ltd
  */
 
-#include "AP_PiccoloCAN_Servo.h"
+#include "AP_PiccoloCAN_Cortex.h"
 
 #if HAL_PICCOLO_CAN_ENABLE
 
-/*
- * Decode a recevied CAN frame.
- * It is assumed at this point that the received frame is intended for *this* servo
- */
-bool AP_PiccoloCAN_Servo::handle_can_frame(AP_HAL::CANFrame &frame)
-{
-    bool result = true;
+// Protocol files for the Cortex controller
+#include <AP_PiccoloCAN/piccolo_protocol/CortexDefines.h>
+#include <AP_PiccoloCAN/piccolo_protocol/CortexPackets.h>
+#include <AP_PiccoloCAN/piccolo_protocol/CortexProtocol.h>
 
-    if (decodeServo_StatusAPacketStructure(&frame, &status.statusA)) {
-        newTelemetry = true;
-    } else if (decodeServo_StatusBPacketStructure(&frame, &status.statusB)) {
-        newTelemetry = true;
-    } else if (decodeServo_FirmwarePacketStructure(&frame, &settings.firmware)) {
-    } else if (decodeServo_AddressPacketStructure(&frame, &settings.address)) {
-    } else if (decodeServo_SettingsInfoPacketStructure(&frame, &settings.settings)) {
-    } else {
-        // Incoming frame did not match any packet decoding routine
-        result = false;
-    }
-
-    if (result) {
-        reset_rx_timestamp();
-    }
-
-    return result;
-}
-
-
-/* Piccolo Glue Logic
- * The following functions are required by the auto-generated protogen code.
+/**
+ * PiccoloCAN glue logic
  */
 
 //! \return the packet data pointer from the packet
-uint8_t* getServoPacketData(void* pkt)
+uint8_t* getCortexPacketData(void* pkt)
 {
     AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
 
@@ -60,7 +37,7 @@ uint8_t* getServoPacketData(void* pkt)
 }
 
 //! \return the packet data pointer from the packet, const
-const uint8_t* getServoPacketDataConst(const void* pkt)
+const uint8_t* getCortexPacketDataConst(const void* pkt)
 {
     AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
 
@@ -68,7 +45,7 @@ const uint8_t* getServoPacketDataConst(const void* pkt)
 }
 
 //! Complete a packet after the data have been encoded
-void finishServoPacket(void* pkt, int size, uint32_t packetID)
+void finishCortexPacket(void* pkt, int size, uint32_t packetID)
 {
     AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
 
@@ -79,18 +56,17 @@ void finishServoPacket(void* pkt, int size, uint32_t packetID)
     frame->dlc = size;
 
     /* Encode the CAN ID
-     * 0x07mm20dd
-     * - 07 = ACTUATOR group ID
+     * 0x1Ammddii
+     * - 1A = Battery group ID
      * - mm = Message ID
-     * - 00 = Servo actuator type
-     * - dd = Device ID
+     * - dd = Cortex device type
+     * - ii = Device ID
      *
-     * Note: The Device ID (lower 8 bits of the frame ID) will have to be inserted later
+     * Note: The Device type and node ID (lower 16 bits of the frame ID) will be inserted later
      */
 
-    uint32_t id = (((uint8_t) PiccoloCAN_MessageGroup::ACTUATOR) << 24) |   // CAN Group ID
-                  ((packetID & 0xFF) << 16) |                               // Message ID
-                  (((uint8_t) PiccoloCAN_DeviceType::SERVO) << 8);          // Actuator type
+    uint32_t id = (((uint8_t) PiccoloCAN_MessageGroup::BATTERY) << 24) |    // CAN Group ID
+                  ((packetID & 0xFF) << 16);                                // Message ID
 
     // Extended frame format
     id |= AP_HAL::CANFrame::FlagEFF;
@@ -99,7 +75,7 @@ void finishServoPacket(void* pkt, int size, uint32_t packetID)
 }
 
 //! \return the size of a packet from the packet header
-int getServoPacketSize(const void* pkt)
+int getCortexPacketSize(const void* pkt)
 {
     AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
 
@@ -107,7 +83,7 @@ int getServoPacketSize(const void* pkt)
 }
 
 //! \return the ID of a packet from the packet header
-uint32_t getServoPacketID(const void* pkt)
+uint32_t getCortexPacketID(const void* pkt)
 {
     AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
 

@@ -57,6 +57,9 @@ void encodeCortex_StatusBits_t(uint8_t* _pg_data, int* _pg_bytecount, const Cort
     // Set if the CHPS is ready to run the engine
     _pg_data[_pg_byteindex + 1] |= (uint8_t)((_pg_user->readyToRun == true) ? 1 : 0) << 3;
 
+    // Set if the CHPS is hardware inhibited
+    _pg_data[_pg_byteindex + 1] |= (uint8_t)((_pg_user->inhibited == true) ? 1 : 0) << 2;
+
     // Reserved bits
 
     // Set if the CHPS is in calibration mode
@@ -118,6 +121,9 @@ int decodeCortex_StatusBits_t(const uint8_t* _pg_data, int* _pg_bytecount, Corte
 
     // Set if the CHPS is ready to run the engine
     _pg_user->readyToRun = (((_pg_data[_pg_byteindex + 1] >> 3) & 0x1)) ? true : false;
+
+    // Set if the CHPS is hardware inhibited
+    _pg_user->inhibited = (((_pg_data[_pg_byteindex + 1] >> 2) & 0x1)) ? true : false;
 
     // Reserved bits
 
@@ -350,6 +356,9 @@ void encodeCortex_TelemetryPackets_t(uint8_t* _pg_data, int* _pg_bytecount, cons
 
     // Enable TelemetryOutputRail packet
     _pg_data[_pg_byteindex] |= (uint8_t)((_pg_user->outputRail == true) ? 1 : 0) << 4;
+
+    // Enable TelemetryController packet
+    _pg_data[_pg_byteindex] |= (uint8_t)((_pg_user->controller == true) ? 1 : 0) << 3;
     _pg_byteindex += 1; // close bit field
 
     *_pg_bytecount = _pg_byteindex;
@@ -380,6 +389,9 @@ int decodeCortex_TelemetryPackets_t(const uint8_t* _pg_data, int* _pg_bytecount,
 
     // Enable TelemetryOutputRail packet
     _pg_user->outputRail = (((_pg_data[_pg_byteindex] >> 4) & 0x1)) ? true : false;
+
+    // Enable TelemetryController packet
+    _pg_user->controller = (((_pg_data[_pg_byteindex] >> 3) & 0x1)) ? true : false;
     _pg_byteindex += 1; // close bit field
 
     *_pg_bytecount = _pg_byteindex;

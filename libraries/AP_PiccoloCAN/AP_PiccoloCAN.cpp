@@ -34,6 +34,7 @@
 #include <AP_CANManager/AP_CANManager.h>
 
 #include <AP_EFI/AP_EFI_Currawong_ECU.h>
+#include <AP_Generator/AP_Generator_Cortex.h>
 #include <AP_Servo_Telem/AP_Servo_Telem.h>
 
 #include <stdio.h>
@@ -249,15 +250,12 @@ void AP_PiccoloCAN::loop()
             // ESC messages exist in the ACTUATOR group
             case PiccoloCAN_MessageGroup::ACTUATOR:
 
-                switch (PiccoloCAN_ActuatorType(frame_id_device)) {
-                case PiccoloCAN_ActuatorType::SERVO:
+                switch (PiccoloCAN_DeviceType(frame_id_device)) {
+                case PiccoloCAN_DeviceType::SERVO:
                     handle_servo_message(rxFrame);
                     break;
-                case PiccoloCAN_ActuatorType::ESC:
+                case PiccoloCAN_DeviceType::ESC:
                     handle_esc_message(rxFrame);
-                    break;
-                case PiccoloCAN_ActuatorType::CORTEX:
-                    // TODO: Handle the Cortex / ESC crossover messages
                     break;
                 default:
                     // Unknown actuator type
@@ -636,7 +634,14 @@ bool AP_PiccoloCAN::handle_ecu_message(AP_HAL::CANFrame &frame)
 
 bool AP_PiccoloCAN::handle_cortex_message(AP_HAL::CANFrame &frame)
 {
-    // TODO - Implement this...
+    #if AP_GENERATOR_CORTEX_ENABLED
+    // Get the generator instance
+    AP_Generator_Cortex* gen = AP_Generator_Cortex::get_instance();
+
+    if (gen != nullptr) {
+        return gen->handle_message(frame, *this);
+    }
+    #endif // AP_GENERATOR_CORTEX_ENABLED
 
     return false;
 }

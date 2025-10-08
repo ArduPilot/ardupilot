@@ -39,11 +39,13 @@ enum class PiccoloCAN_MessageGroup : uint8_t {
     SYSTEM = 0x19,          //!< System messages (e.g. bootloader)
 };
 
-//! Piccolo actuator types differentiate between actuator frames
-enum class PiccoloCAN_ActuatorType : uint8_t {
+//! Piccolo device type descriminators
+enum class PiccoloCAN_DeviceType : uint8_t {
     SERVO = 0x00,
     ESC = 0x20,
-    CORTEX = 0x35,
+    CORTEX_LEGACY=0x33,
+    CORTEX_HYBRID=0x34,
+    CORTEX_CHPS = 0x35,
 };
 
 
