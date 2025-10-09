@@ -1833,7 +1833,7 @@ bool AP_GPS::pre_arm_checks(char failure_msg[], uint16_t failure_msg_len)
     }
 
 #if AP_GPS_BLENDED_ENABLED
-    if (!drivers[GPS_BLENDED_INSTANCE]->is_healthy()) {
+    if (drivers[GPS_BLENDED_INSTANCE] == nullptr || !drivers[GPS_BLENDED_INSTANCE]->is_healthy()) {
         hal.util->snprintf(failure_msg, failure_msg_len, "GPS blending unhealthy");
         return false;
     }
