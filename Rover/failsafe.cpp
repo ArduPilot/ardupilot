@@ -63,6 +63,10 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, const char* type_str, bool o
 
     failsafe.triggered &= failsafe.bits;
 
+    if (failsafe_type == FAILSAFE_EVENT_GCS) {
+        AP_Notify::flags.failsafe_gcs = on;
+    }
+
     if ((failsafe.triggered == 0) &&
         (failsafe.bits != 0) &&
         (millis() - failsafe.start_time > g.fs_timeout * 1000) &&
