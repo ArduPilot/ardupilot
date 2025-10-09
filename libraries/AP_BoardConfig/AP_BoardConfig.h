@@ -149,6 +149,12 @@ public:
     }
 #endif
 
+#if AP_CPU_IDLE_STATS_ENABLED
+    static bool use_idle_stats(void) {
+        return _singleton?_singleton->state.idle_stats.get():0;
+    }
+#endif
+
     enum board_options {
         BOARD_OPTION_WATCHDOG = (1 << 0),
         DISABLE_FTP = (1<<1),
@@ -248,6 +254,9 @@ private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         AP_Int8 ser_rtscts[9];
         AP_Int8 sbus_out_rate;
+#endif
+#if AP_CPU_IDLE_STATS_ENABLED
+        AP_Int8 idle_stats;
 #endif
         AP_Int8 board_type;
         AP_Int8 io_enable;

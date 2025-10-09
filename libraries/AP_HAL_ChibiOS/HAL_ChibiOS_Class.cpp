@@ -25,6 +25,7 @@
 #include <AP_HAL_ChibiOS/AP_HAL_ChibiOS_Private.h>
 #include "shared_dma.h"
 #include "sdcard.h"
+#include <sysperf.h>
 #include "hwdef/common/usbcfg.h"
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/watchdog.h"
@@ -230,6 +231,13 @@ static AP_HAL::HAL::Callbacks* g_callbacks;
 static void main_loop()
 {
     daemon_task = chThdGetSelfX();
+
+#if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
+    if (AP_BoardConfig::use_idle_stats()) {
+        sysInitLoadMeasure();
+        sysStartLoadMeasure();
+    }
+#endif
 
     /*
       switch to high priority for main loop
