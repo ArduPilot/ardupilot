@@ -39,6 +39,9 @@ public:
         return running;
     }
 
+    // Return true if a fixed wing system ID is currently running
+    bool is_running_fw() const;
+
 private:
     Chirp chirp_input;
     bool running;
