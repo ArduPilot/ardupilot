@@ -153,6 +153,8 @@ private:
     static uint16_t calcCRC(const void *pBuffer, uint16_t bufferSize);
     static bool send_sbgMessage(AP_HAL::UARTDriver *_uart, const sbgMessage &msg);
     static void safe_copy_msg_to_object(uint8_t* dest, const uint16_t dest_len, const uint8_t* src, const uint16_t src_len);
+    static bool SbgEkfStatus_is_fullNav(const uint32_t ekfStatus);
+
     static AP_GPS_FixType SbgGpsPosStatus_to_GpsFixType(const uint32_t gpsPosStatus);
 
     uint32_t send_MagData_ms;
