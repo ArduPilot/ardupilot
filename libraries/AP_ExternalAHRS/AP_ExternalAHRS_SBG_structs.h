@@ -216,6 +216,20 @@ typedef struct PACKED _SbgEComLogImuShort
 
 
 
+#define SBG_ECOM_LOG_EKF_SOLUTION_MODE_MASK         (0x0000000Fu)       /*!< Mask used to keep only the clock status part. */
+
+/*!
+ * Solution filter mode enum.
+ */
+typedef enum _SbgEComSolutionMode
+{
+    SBG_ECOM_SOL_MODE_UNINITIALIZED         = 0,                    /*!< The Kalman filter is not initialized and the returned data are all invalid. */
+    SBG_ECOM_SOL_MODE_VERTICAL_GYRO         = 1,                    /*!< The Kalman filter only rely on a vertical reference to compute roll and pitch angles. Heading and navigation data drift freely. */
+    SBG_ECOM_SOL_MODE_AHRS                  = 2,                    /*!< A heading reference is available, the Kalman filter provides full orientation but navigation data drift freely. */
+    SBG_ECOM_SOL_MODE_NAV_VELOCITY          = 3,                    /*!< The Kalman filter computes orientation and velocity. Position is freely integrated from velocity estimation. */
+    SBG_ECOM_SOL_MODE_NAV_POSITION          = 4                     /*!< Nominal mode, the Kalman filter computes all parameters (attitude, velocity, position). Absolute position is provided. */
+} SbgEComSolutionMode;
+
 /*!
  * EKF computed orientation using euler angles.
  */
