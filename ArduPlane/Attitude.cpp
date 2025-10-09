@@ -141,8 +141,8 @@ void Plane::stabilize_roll()
     float roll_out = stabilize_roll_get_roll_out();
 
 #if AP_PLANE_SYSTEMID_ENABLED
-    auto &systemid = plane.g2.systemid;
-    if (control_mode->supports_fw_systemid() && systemid.is_running()) {
+    const auto &systemid = plane.g2.systemid;
+    if (systemid.is_running_fw()) {
         Vector3f offset;
         offset = systemid.get_output_offset();
         roll_out += offset.x * 100.0f;
@@ -204,8 +204,8 @@ void Plane::stabilize_pitch()
     float pitch_out = stabilize_pitch_get_pitch_out();
 
 #if AP_PLANE_SYSTEMID_ENABLED
-    auto &systemid = plane.g2.systemid;
-    if (control_mode->supports_fw_systemid() && systemid.is_running()) {
+    const auto &systemid = plane.g2.systemid;
+    if (systemid.is_running_fw()) {
         Vector3f offset;
         offset = systemid.get_output_offset();
         pitch_out += offset.y * 100.0f;
@@ -437,10 +437,8 @@ void Plane::stabilize()
 #endif
 
 #if AP_PLANE_SYSTEMID_ENABLED
-    if (control_mode->supports_fw_systemid()) {
-        auto &systemid = plane.g2.systemid;
-        // systemid is updated here for all other calls
-        systemid.fw_update();
+    if (plane.g2.systemid.is_running_fw()) {
+        plane.g2.systemid.fw_update();
     }
 #endif
 

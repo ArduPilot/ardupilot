@@ -98,12 +98,6 @@ void AP_SystemID::start()
 {
     start_axis = axis;
 
-    // If system ID is not supported in FW or VTOL mode then exit immediately
-    if (!plane.control_mode->supports_fw_systemid() && !plane.control_mode->supports_vtol_systemid()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Not supported in mode %s", plane.control_mode->name());
-        return;
-    }
-
     switch (start_axis) {
         case AxisType::NONE:
             // check if enabled
@@ -122,8 +116,8 @@ void AP_SystemID::start()
         case AxisType::MIX_PITCH:
         case AxisType::MIX_YAW:
         case AxisType::MIX_THROTTLE:
-            // Exits if quadplane or plane attempting to run System ID VTOL SID Axis in fixed wing flight mode
-            if (plane.control_mode->supports_fw_systemid()) {
+            // Exits if the current flight mode or phase does not support system ID axis.
+            if (!plane.control_mode->supports_vtol_systemid()) {
 #if HAL_QUADPLANE_ENABLED
                 gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Axis not supported for this flight mode");
 #else
@@ -136,13 +130,13 @@ void AP_SystemID::start()
         case AxisType::FW_INPUT_PITCH:
         case AxisType::FW_MIX_ROLL:
         case AxisType::FW_MIX_PITCH:
-            // Exits if quadplane attempting to run System ID Fixed Wing SID Axis in VTOL flight mode
-            if (plane.control_mode->supports_vtol_systemid() 
-                || plane.flight_stage == AP_FixedWing::FlightStage::LAND
-                || plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF) {
-#if HAL_QUADPLANE_ENABLED
+            // Exits if the currently flight mode or phase does not support system ID axis.
+            if (!plane.control_mode->supports_fw_systemid()) {
                 gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Axis not supported for this flight mode");
-#endif
+                return;
+            }
+            if (!plane.control_mode->allow_fw_systemid()) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Axis not supported for this flight phase");
                 return;
             }
             break;
@@ -308,15 +302,48 @@ void AP_SystemID::vtol_update()
 #endif
 }
 
+// Return true if a fixed wing system ID is currently running
+bool AP_SystemID::is_running_fw() const
+{
+    if (!is_running()) {
+        return false;
+    }
+
+    switch (start_axis) {
+        case AxisType::NONE:
+        case AxisType::INPUT_ROLL:
+        case AxisType::INPUT_PITCH:
+        case AxisType::INPUT_YAW:
+        case AxisType::RECOVER_ROLL:
+        case AxisType::RECOVER_PITCH:
+        case AxisType::RECOVER_YAW:
+        case AxisType::RATE_ROLL:
+        case AxisType::RATE_PITCH:
+        case AxisType::RATE_YAW:
+        case AxisType::MIX_ROLL:
+        case AxisType::MIX_PITCH:
+        case AxisType::MIX_YAW:
+        case AxisType::MIX_THROTTLE:
+            break;
+
+        case AxisType::FW_INPUT_ROLL:
+        case AxisType::FW_INPUT_PITCH:
+        case AxisType::FW_MIX_ROLL:
+        case AxisType::FW_MIX_PITCH:
+            return true;
+    }
+
+    return false;
+}
+
 /*
   update systemid - needs to be called at main loop rate
  */
 void AP_SystemID::fw_update()
 {
-    if (!running) {
-        return;
-    }
-    if (chirp_input.completed()) {
+    if (!plane.control_mode->allow_fw_systemid() || chirp_input.completed()) {
+        // Control mode change means chirp should be stopped, or
+        // Chirp is complete
         stop();
         return;
     }

@@ -175,8 +175,11 @@ public:
 
     // does this mode support plane or quadplane fixed wing systemid?
     virtual bool supports_fw_systemid() const { return false; }
+
+    // Return true if fixed wing system ID should be allowed
+    bool allow_fw_systemid() const;
 #endif
-    
+
 protected:
 
     // subclasses override this to perform checks before entering the mode
