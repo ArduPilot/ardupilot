@@ -15,4 +15,6 @@ enum class AP_GPS_FixType {
     DGPS = 4,             ///< Receiving valid messages and 3D lock with differential improvements
     RTK_FLOAT = 5,        ///< Receiving valid messages and 3D RTK Float
     RTK_FIXED = 6,        ///< Receiving valid messages and 3D RTK Fixed
+    STATIC = 7,           ///< Receiving valid messages and static fixed, typically used for base stations
+    PPP = 8,              ///< Receiving valid messages and improved with PPP
 };
