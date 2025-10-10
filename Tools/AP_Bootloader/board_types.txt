@@ -439,6 +439,7 @@ AP_HW_SVehicle-E2                    6110
 
 # IDs 7000-7099 reserved for CUAV
 AP_HW_CUAV-7-NANO                    7000
+AP_HW_CUAV-V6X-V2                    7001
 
 # IDs 7100-7109 reserved for V-UAV
 AP_HW_VUAV-V7pro                     7100
@@ -452,6 +453,7 @@ AP_HW_AEROFOX_H7                     7110
 # OpenDroneID enabled boards. Use 10000 + the base board ID
 AP_HW_CubeOrange_ODID               10140
 AP_HW_Pixhawk6_ODID                 10053
+AP_HW_CUAV-V6X-V2_ODID              17001
 
 # do not allocate board IDs above 10,000 for non-ODID boards.
 # do not allocate board IDs above 19,999 in this file.
