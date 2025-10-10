@@ -1147,6 +1147,15 @@ function Location_ud:get_alt_frame() end
 ---@return boolean
 function Location_ud:change_alt_frame(desired_frame) end
 
+-- set altitude in Location object in metres
+---@param alt number -- altitude
+---@param frame integer -- altitude frame
+---| '0' # ABSOLUTE
+---| '1' # ABOVE_HOME
+---| '2' # ABOVE_ORIGIN
+---| '3' # ABOVE_TERRAIN
+function Location_ud:set_alt_m(alt, frame) end
+
 -- Given a Location this calculates the north and east distance between the two locations in meters.
 ---@param loc Location_ud -- location to compare with
 ---@return Vector2f_ud -- North east distance vector in meters

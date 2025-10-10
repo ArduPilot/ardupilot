@@ -27,6 +27,7 @@ userdata Location method get_distance_NE Vector2f Location
 userdata Location method get_alt_frame uint8_t
 userdata Location method change_alt_frame boolean Location::AltFrame'enum Location::AltFrame::ABSOLUTE Location::AltFrame::ABOVE_TERRAIN
 userdata Location method copy Location
+userdata Location method set_alt_m void float'skip_check Location::AltFrame'enum Location::AltFrame::ABSOLUTE Location::AltFrame::ABOVE_TERRAIN
 
 include AP_AHRS/AP_AHRS.h
 
