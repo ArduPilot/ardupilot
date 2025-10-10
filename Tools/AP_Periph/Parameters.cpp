@@ -73,6 +73,10 @@ extern const AP_HAL::HAL &hal;
 #define AP_PERIPH_PROBE_CONTINUOUS 0
 #endif
 
+#ifndef AP_PERIPH_SERVO_ENABLED_DEFAULT
+#define AP_PERIPH_SERVO_ENABLED_DEFAULT 1
+#endif
+
 /*
  *  AP_Periph parameter definitions
  *
@@ -431,6 +435,13 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Units: ms
     // @User: Advanced
     GSCALAR(esc_command_timeout_ms, "ESC_CMD_TIMO",     200),
+
+    // @Param: SRV_ENABLED
+    // @DisplayName: Servos and ESCs enabled
+    // @Description: This allows the servo and ESC outputs to be disabled
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    GSCALAR(servo_enabled, "SRV_ENABLED", AP_PERIPH_SERVO_ENABLED_DEFAULT),
 
 #if HAL_WITH_ESC_TELEM && !HAL_GCS_ENABLED
     // @Param: ESC_TELEM_PORT

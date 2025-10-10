@@ -103,6 +103,7 @@ public:
         k_param__gcs,
         k_param_battery_tag,
         k_param_servo_command_timeout_ms,
+        k_param_servo_enabled,
     };
 
     AP_Int16 format_version;
@@ -185,6 +186,8 @@ public:
     AP_Int16 esc_rate;
     AP_Int8 esc_pwm_type;
     AP_Int16 esc_command_timeout_ms;
+    AP_Int8 servo_enabled;
+
 #if HAL_WITH_ESC_TELEM && !HAL_GCS_ENABLED
     AP_Int8 esc_telem_port;
 #endif
