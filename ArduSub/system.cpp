@@ -154,9 +154,12 @@ void Sub::init_ardupilot()
     mainloop_failsafe_enable();
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
+
+    update_actuators_from_jsbuttons();
     g2.actuators.initialize_actuators();
 
     // flag that initialisation has completed
+    update_lights_from_rcin();
     ap.initialised = true;
 }
 
