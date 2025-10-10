@@ -3923,6 +3923,11 @@ void GCS_MAVLINK::handle_set_gps_global_origin(const mavlink_message_t &msg)
         // silently drop the request
         return;
     }
+    // sanity check altitude in mm, note that abs can't handle INT32_MIN correctly
+    if (packet.altitude < -LOCATION_ALT_MAX_M * 1000 || packet.altitude > LOCATION_ALT_MAX_M * 1000) {
+        // silently drop the request
+        return;
+    }
 
     const Location ekf_origin {
         packet.latitude,
