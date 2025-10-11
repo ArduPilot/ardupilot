@@ -25,7 +25,8 @@ extern const AP_HAL::HAL& hal;
 
 #ifndef HAL_LOGGING_FILE_BUFSIZE
 #if HAL_MEM_CLASS >= HAL_MEM_CLASS_1000
-#define HAL_LOGGING_FILE_BUFSIZE  200
+// adjust buffer size for extra space allocated on more capable boards
+#define HAL_LOGGING_FILE_BUFSIZE  (200-((AP_FATFS_MAX_IO_SIZE-AP_FATFS_MIN_IO_SIZE)*2/1024))
 #elif HAL_MEM_CLASS >= HAL_MEM_CLASS_500
 #define HAL_LOGGING_FILE_BUFSIZE  80
 #elif HAL_MEM_CLASS >= HAL_MEM_CLASS_300
