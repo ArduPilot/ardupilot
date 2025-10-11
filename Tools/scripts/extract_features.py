@@ -91,6 +91,10 @@ class ExtractFeatures(object):
             ('AP_RANGEFINDER_HEXSOONRADAR_ENABLED', r'AP_RangeFinder_NRA24_CAN::handle_frame'),
 
             ('AP_GPS_NMEA_UNICORE_ENABLED', r'AP_GPS_NMEA::parse_agrica_field',),
+            ('AP_GPS_NMEA_QUECTEL_ENABLED', r'AP_GPS_NMEA::parse_pqtmver_field',),
+            ('AP_GPS_NMEA_QUECTEL_ENABLED', r'AP_GPS_NMEA::parse_pqtmepe_field',),
+            ('AP_GPS_NMEA_QUECTEL_ENABLED', r'AP_GPS_NMEA::parse_pqtmvel_field',),
+            ('AP_GPS_NMEA_QUECTEL_ENABLED', r'AP_GPS_NMEA::parse_pqtmpvt_field',),
             ('AP_GPS_{type}_ENABLED', r'AP_GPS_(?P<type>.*)::read\b',),
 
             ('AP_OPTICALFLOW_ENABLED', 'AP_OpticalFlow::AP_OpticalFlow',),
