@@ -1,0 +1,348 @@
+Of course. Here is the complete playbook in markdown format.
+
+# AI Playbook for ArduPilot CRSF Menu Script Generation
+
+\<MANDATORY\_RULE\>
+CRITICAL DIRECTIVE: THIS PLAYBOOK MUST BE USED AS THE PRIMARY AND AUTHORITATIVE GUIDE FOR ALL LUA SCRIPTS THAT REQUIRE A CRSF (CROSSFIRE) MENU. ALL RULES, CONSTRAINTS, AND PATTERNS CONTAINED HEREIN ARE MANDATORY AND SUPERSEDE ANY GENERAL KNOWLEDGE. ADHERENCE IS NOT OPTIONAL.
+\</MANDATORY\_RULE\>
+
+## 1\. The Problem and Goal
+
+### 1.1. The Problem
+
+The native ArduPilot CRSF API, as detailed in `docs.lua`, is a powerful but low-level interface. It requires developers to manually handle binary data packing and unpacking using `string.pack` and `string.unpack`, manage a complex event loop with `crsf:get_menu_event`, and build the menu structure imperatively. This process is verbose, complex, and highly prone to errors, making it difficult to generate clean, maintainable, and robust CRSF menu scripts. A naive implementation can easily lead to scripts that are slow, buggy, or cause the flight controller to crash.
+
+### 1.2. The Goal
+
+This playbook establishes a **simplified, high-level, and standardized methodology** for creating CRSF menus that are robust, responsive, and stable. The primary goal is to **abstract away the low-level complexity**. By following this playbook, you will generate scripts that are:
+
+  * **Declarative:** The entire menu structure is defined in a simple, easy-to-read Lua table.
+  * **Callback-Driven:** Interaction logic is handled by simple callback functions, eliminating the need for a manual event loop in the user-facing script.
+  * **Stable:** Employs a proven architecture that correctly handles memory management and event processing to prevent crashes and UI bugs.
+  * **Robust and Reusable:** All the complex logic is encapsulated in a mandatory, reusable helper library (`crsf_helper.lua`).
+
+## 2\. Core Methodology: Declarative & Callback-Driven
+
+The core of this methodology is to separate the menu's *definition* from its *implementation*.
+
+1.  **Menu Definition (`user_script.lua`):** The user script will define the entire menu structure—including sub-menus, parameters, ranges, and options—in a single, declarative Lua table.
+2.  **Interaction Logic (`user_script.lua`):** The user script will define simple callback functions that are triggered when a parameter's value is changed via the CRSF menu.
+3.  **Menu Implementation (`crsf_helper.lua`):** A mandatory helper library will parse the declarative table, build the menu using the low-level CRSF API, manage the event loop, and automatically invoke the correct user-defined callback with the new value.
+
+Care must be taken to build the entire menu structure in memory and maintain strong references to all created CRSF objects to prevent Lua's garbage collector from prematurely freeing menu items, which was found to be a major source of instability and UI corruption.
+
+\<MANDATORY\_RULE\>
+CRITICAL DIRECTIVE: EVERY CRSF SCRIPT GENERATED MUST CONSIST OF TWO FILES: THE USER'S SCRIPT (E.G., `my_menu.lua`) AND THE STANDARD `crsf_helper.lua` LIBRARY. THE USER'S SCRIPT MUST `require()` THE HELPER LIBRARY.
+\</MANDATORY\_RULE\>
+
+## 3\. The `crsf_helper.lua` Library
+
+This reusable library is the heart of the new methodology. You must include this exact code as a separate `crsf_helper.lua` file alongside any CRSF menu script you generate.
+
+### 3.1. `crsf_helper.lua` Full Code (Version 1.3)
+
+```lua
+-- crsf_helper.lua
+-- A reusable helper library to simplify the creation of ArduPilot CRSF menus.
+-- This library abstracts away the complexity of binary packing/unpacking and event loop management.
+-- Version 2.2: Balanced the event loop to prevent crashes on busy menus while maintaining responsiveness.
+
+local helper = {}
+
+-- MAVLink severity levels for GCS messages
+local MAV_SEVERITY = {INFO = 6, WARNING = 4, ERROR = 3, DEBUG = 7}
+
+-- CRSF constants
+local CRSF_EVENT = {PARAMETER_READ = 1, PARAMETER_WRITE = 2}
+local CRSF_PARAM_TYPE = {
+    FLOAT = 8,
+    TEXT_SELECTION = 9,
+    FOLDER = 11,
+    INFO = 12,
+    COMMAND = 13,
+}
+local CRSF_COMMAND_STATUS = { READY = 0, START = 1 }
+
+-- Internal storage for menu items, callbacks, and object references
+local menu_items = {}
+local crsf_objects = {} -- Keep references to all CRSF objects to prevent garbage collection
+
+-- ####################
+-- # PACKING FUNCTIONS
+-- ####################
+
+-- These functions create the binary packed strings required by the low-level CRSF API.
+
+-- Creates a CRSF menu text selection item
+local function create_selection_entry(name, options_table, current_idx)
+    -- The CRSF spec requires options to be separated by a semicolon ';'.
+    local options_str = table.concat(options_table, ";")
+    local zero_based_idx = current_idx - 1
+    local min_val = 0
+    local max_val = #options_table - 1
+    -- The 4th argument is the current value. The 7th is the default value.
+    -- For our purposes, we'll pack the current value into both slots.
+    return string.pack(">BzzBBBBz", CRSF_PARAM_TYPE.TEXT_SELECTION, name, options_str, zero_based_idx, min_val, max_val, zero_based_idx, "")
+end
+
+-- Creates a CRSF menu number item (as float)
+local function create_number_entry(name, value, min, max, default, dpoint, step, unit)
+    -- Per CRSF spec, float values are sent as INT32 with a decimal point indicator.
+    local scale = 10^(dpoint or 0)
+    local packed_value = math.floor(value * scale + 0.5)
+    local packed_min = math.floor(min * scale + 0.5)
+    local packed_max = math.floor(max * scale + 0.5)
+    local packed_default = math.floor(default * scale + 0.5)
+    local packed_step = math.floor(step * scale + 0.5)
+    return string.pack(">BzllllBlz", CRSF_PARAM_TYPE.FLOAT, name, packed_value, packed_min, packed_max, packed_default, dpoint or 0, packed_step, unit or "")
+end
+
+-- Creates a CRSF menu info item
+local function create_info_entry(name, info)
+    return string.pack(">Bzz", CRSF_PARAM_TYPE.INFO, name, info)
+end
+
+-- Creates a CRSF command entry
+local function create_command_entry(name)
+    return string.pack(">BzBBz", CRSF_PARAM_TYPE.COMMAND, name, CRSF_COMMAND_STATUS.READY, 10, "Execute")
+end
+
+-- ####################
+-- # MENU PARSING
+-- ####################
+
+-- Recursively parses the user's declarative menu table and builds the CRSF menu structure.
+local function parse_menu(menu_definition, parent_menu_obj)
+    if not menu_definition.items or type(menu_definition.items) ~= "table" then
+        return
+    end
+
+    for _, item_def in ipairs(menu_definition.items) do
+        local param_obj = nil
+        local packed_data = nil
+
+        if item_def.type == 'MENU' then
+            param_obj = parent_menu_obj:add_menu(item_def.name)
+            if param_obj then
+                parse_menu(item_def, param_obj) -- Recurse into sub-menu
+            else
+                gcs:send_text(MAV_SEVERITY.WARNING, "CRSF: Failed to create menu: " .. item_def.name)
+            end
+
+        elseif item_def.type == 'SELECTION' then
+            item_def.current_idx = item_def.default -- Store the initial 1-based index
+            packed_data = create_selection_entry(item_def.name, item_def.options, item_def.current_idx)
+            param_obj = parent_menu_obj:add_parameter(packed_data)
+
+        elseif item_def.type == 'NUMBER' then
+            packed_data = create_number_entry(item_def.name, item_def.default, item_def.min, item_def.max, item_def.default, item_def.dpoint, item_def.step, item_def.unit)
+            param_obj = parent_menu_obj:add_parameter(packed_data)
+
+        elseif item_def.type == 'COMMAND' then
+            packed_data = create_command_entry(item_def.name)
+            param_obj = parent_menu_obj:add_parameter(packed_data)
+
+        elseif item_def.type == 'INFO' then
+            packed_data = create_info_entry(item_def.name, item_def.info)
+            param_obj = parent_menu_obj:add_parameter(packed_data)
+        end
+
+        if param_obj then
+            -- Store a reference to the CRSF object to prevent garbage collection
+            table.insert(crsf_objects, param_obj)
+            -- Store the CRSF-assigned ID back into our definition table for easy lookup
+            menu_items[param_obj:id()] = item_def
+        elseif not param_obj and item_def.type ~= 'MENU' then
+            gcs:send_text(MAV_SEVERITY.WARNING, "CRSF: Failed to create param: " .. item_def.name)
+        end
+    end
+end
+
+-- ####################
+-- # EVENT HANDLING
+-- ####################
+
+-- This function runs in the background, listens for menu events, and triggers callbacks.
+local function event_loop()
+    -- Process multiple events per cycle to keep the menu responsive, but with a limit
+    -- to prevent starving the main scheduler, which can cause a crash.
+    local MAX_EVENTS_PER_CYCLE = 5
+    local events_processed = 0
+
+    while events_processed < MAX_EVENTS_PER_CYCLE do
+        -- Listen for both read and write events from the transmitter
+        local events_to_get = CRSF_EVENT.PARAMETER_READ + CRSF_EVENT.PARAMETER_WRITE
+        local param_id, payload, events = crsf:get_menu_event(events_to_get)
+
+        -- An 'events' value of 0 means the event queue is empty.
+        if not events or events == 0 then
+            break -- Exit the while loop
+        end
+
+        events_processed = events_processed + 1
+
+        local item_def = menu_items[param_id]
+        if not item_def then
+            -- No item definition found for this ID, continue to next event
+            goto continue_loop
+        end
+
+        -- Handle a READ request from the transmitter first.
+        if (events & CRSF_EVENT.PARAMETER_READ) ~= 0 then
+            if item_def.type == 'SELECTION' then
+                local packed_data = create_selection_entry(item_def.name, item_def.options, item_def.current_idx)
+                crsf:send_write_response(packed_data)
+            elseif item_def.type == 'COMMAND' then
+                local packed_data = create_command_entry(item_def.name)
+                crsf:send_write_response(packed_data)
+            end
+
+        end
+
+        -- Handle a WRITE request from the transmitter.
+        if (events & CRSF_EVENT.PARAMETER_WRITE) ~= 0 then
+            if not item_def.callback then
+                goto continue_loop -- No callback found for this write event
+            end
+
+            local new_value = nil
+
+            -- Determine the new value from the payload and call the user's callback
+            if item_def.type == 'SELECTION' then
+                local selected_index_zero_based = string.unpack(">B", payload)
+                item_def.current_idx = selected_index_zero_based + 1
+                new_value = item_def.options[item_def.current_idx]
+
+            elseif item_def.type == 'NUMBER' then
+                local raw_value = string.unpack(">l", payload)
+                local scale = 10^(item_def.dpoint or 0)
+                new_value = raw_value / scale
+
+            elseif item_def.type == 'COMMAND' then
+                local command_action = string.unpack(">B", payload)
+                if command_action == CRSF_COMMAND_STATUS.START then
+                    new_value = true
+                end
+            end
+
+            if new_value ~= nil then
+                local success, err = pcall(item_def.callback, new_value)
+                if not success then
+                    gcs:send_text(MAV_SEVERITY.ERROR, "CRSF Callback Err: " .. tostring(err))
+                end
+            end
+
+            -- After a write event, we must respond to confirm the new state to the transmitter.
+            if item_def.type == 'COMMAND' and new_value then
+                local packed_data = create_command_entry(item_def.name)
+                crsf:send_write_response(packed_data)
+            elseif item_def.type == 'SELECTION' then
+                local packed_data = create_selection_entry(item_def.name, item_def.options, item_def.current_idx)
+                crsf:send_write_response(packed_data)
+            end
+        end
+        ::continue_loop::
+    end
+
+    -- Reschedule the event loop to run again. 20ms provides a good balance of responsiveness and stability.
+    return event_loop, 20
+end
+
+
+-- ####################
+-- # PUBLIC API
+-- ####################
+
+-- The main entry point for the helper library.
+-- The user script calls this function with its menu definition table.
+function helper.init(menu_definition)
+    -- Create the top-level menu
+    local top_menu_obj = crsf:add_menu(menu_definition.name)
+    if not top_menu_obj then
+        gcs:send_text(MAV_SEVERITY.ERROR, "CRSF: Failed to create top-level menu.")
+        return
+    end
+    table.insert(crsf_objects, top_menu_obj) -- Keep a reference to the top-level menu object
+
+    -- Parse the rest of the menu structure
+    parse_menu(menu_definition, top_menu_obj)
+
+    gcs:send_text(MAV_SEVERITY.INFO, "CRSF Menu '" .. menu_definition.name .. "' initialized.")
+
+    -- Start the background event loop
+    return event_loop, 1000 -- Initial delay before starting the loop
+end
+
+return helper
+```
+
+## 4\. Declarative Menu Syntax
+
+The menu is defined as a nested Lua table. Each item in the table is a table itself, representing a menu item, sub-menu, or parameter.
+
+### 4.1. Top-Level Menu Table
+
+The root of the definition must be a table with two keys:
+
+  * `name`: (string) The name of the root menu entry that appears on the transmitter.
+  * `items`: (table) A list of tables, where each table defines a menu item.
+
+### 4.2. Menu Item Properties
+
+| Property | Type | Description | Used By |
+| :--- | :--- | :--- | :--- |
+| `type` | `string` | **Required.** The type of menu item. Must be one of: `'MENU'`, `'NUMBER'`, `'SELECTION'`, `'COMMAND'`, `'INFO'`. | All |
+| `name` | `string` | **Required.** The text displayed for this menu item. | All |
+| `callback` | `function` | **Required.** The function to call when the value is changed or the command is executed. | `NUMBER`, `SELECTION`, `COMMAND` |
+| `items` | `table` | A list of item definition tables for a sub-menu. | `MENU` |
+| `default` | `number` | The initial value of the parameter. For `SELECTION`, this is the **1-based index** of the `options` table. | `NUMBER`, `SELECTION` |
+| `min`, `max` | `number` | The minimum and maximum allowed values. | `NUMBER` |
+| `step` | `number` | *Optional.* The increment/decrement step size. Defaults to 1. | `NUMBER` |
+| `dpoint` | `number` | *Optional.* The number of decimal points to display. Defaults to 0. | `NUMBER` |
+| `unit` | `string` | *Optional.* A short string for the unit (e.g., "m", "s", "%"). | `NUMBER` |
+| `options` | `table` | A list of strings for the available choices. **Note:** Options must be separated by a semicolon (`;`) in the final packed data, which the helper library handles automatically. | `SELECTION` |
+| `info` | `string` | The read-only text to be displayed next to the name. | `INFO` |
+
+## **5\. Implementation Deep Dive & Common Pitfalls**
+
+Understanding the "why" behind the crsf\_helper.lua design is critical to avoid reintroducing subtle bugs.
+
+### **5.1. Garbage Collection and Memory Corruption**
+
+* **The Problem:** Lua's garbage collector (GC) will free memory for objects that are no longer referenced. In early versions, the script created CRSF menu and parameter objects but did not keep a persistent reference to them. After some time, the GC would delete these objects. This led to UI corruption (e.g., all menu items taking the name of the last-created item) and crashes when the system tried to access the freed memory.  
+* **The Solution:** The menu\_objects table is mandatory. Every single CRSFMenu\_ud and CRSFParameter\_ud object created by crsf:add\_menu() or parent\_menu\_obj:add\_parameter() **must** be inserted into this table. This creates a strong reference that tells the GC these objects are still in use, preventing them from being collected and ensuring menu stability.
+
+### **5.2. CRSF State Synchronization**
+
+* **The Problem:** The CRSF protocol is a two-way conversation. When a user changes a selection on their transmitter, the transmitter sends a PARAMETER\_WRITE event to the script. To confirm the change and get the latest state, the transmitter may immediately follow up with a PARAMETER\_READ request. If the script only handles the write and ignores the read, the transmitter will time out, assume the change failed, and revert the UI display to its previous state. This was the cause of the "reverting selection" bug.  
+* **The Solution:** The event loop **must** handle both event types. For stateful items like SELECTION and COMMAND, the script must send a crsf:send\_write\_response() after processing *any* event, whether it's a read or a write. This confirms the current state to the transmitter and keeps the UI perfectly synchronized. The helper must also internally track the current state of selections (in item\_def.current\_idx) to respond to read requests correctly.
+
+### **5.3. Balanced Event Loop**
+
+* **The Problem:** A Lua script runs in a sandboxed environment with a limited time slice to execute before it must yield control back to the main flight controller scheduler. An event loop that is too aggressive (e.g., a tight while loop with no delay) can use up its entire time slice, starve the main scheduler, and cause a watchdog to trigger a crash. A loop that is too slow (e.g., a long delay) will feel unresponsive and laggy to the user.  
+* **The Solution:** The helper library uses a balanced approach. It processes a small batch of events (up to 5\) in a quick while loop. This allows it to drain the event queue quickly for a responsive feel. It then reschedules itself with a 20ms delay. This delay is the key to stability: it guarantees that the script yields control frequently, preventing watchdog crashes while still being fast enough to be unnoticeable to the user.
+
+## 6\. Main Script Pattern (`user_script.lua`)
+
+This is the standard pattern you must follow for the user-facing script.
+
+1.  **Require the Helper:** The first line must be `local crsf_helper = require('crsf_helper')`.
+2.  **Define Callbacks:** Create the functions that will handle value changes. These functions will receive one argument: the new value. For `SELECTION`, this is the selected string. For `NUMBER`, it's the new number. For `COMMAND`, it's simply `true`.
+3.  **Define the Menu Table:** Create the `menu_definition` table according to the syntax in section 4.
+4.  **Initialize:** The script must return `crsf_helper.init(menu_definition)`.
+
+## 7\. CRSF Specification Notes
+
+  * **NUMBER Type:** The CRSF protocol transmits `FLOAT` parameter types as 32-bit signed integers. The `dpoint` property tells the receiver where to place the decimal point. The helper library handles this conversion automatically.
+  * **SELECTION Type:** The list of text options is transmitted as a single string with each option separated by a semicolon (`;`). The helper library handles this formatting.
+  * **String Lengths:** While the protocol can handle longer strings, transmitter screens are small. It is best practice to keep `name` and `unit` strings short and descriptive.
+
+## 8\. Mandatory Rules and Checklist
+
+1.  **\[ \] Use Declarative Table:** The entire menu structure **must** be defined in a single Lua table.
+2.  **\[ \] Use `crsf_helper.lua`:** The provided `crsf_helper.lua` library **must** be included and used. Do not attempt to re-implement its logic.
+3.  **\[ \] Use `require()`:** The main script **must** load the helper using `require('crsf_helper')`.
+4.  **\[ \] Use Callbacks:** All menu interactions **must** be handled via callback functions assigned in the menu definition table. The main script must not contain a `crsf:get_menu_event` loop.
+5.  **\[ \] Return `helper.init()`:** The main script **must** conclude by returning the result of the `crsf_helper.init()` function, passing its menu definition table as the argument.
+6.  **\[ \] Follow Parameter Syntax:** All parameter types (`NUMBER`, `SELECTION`, etc.) **must** use the exact property names and data types defined in section 4.2.
+7. **\[ \] Prevent Garbage Collection:** The helper library **must** maintain a reference to every CRSF object it creates.
