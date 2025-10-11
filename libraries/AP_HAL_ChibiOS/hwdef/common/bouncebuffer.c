@@ -49,10 +49,7 @@ bool bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf,
 {
     if (!bouncebuffer || mem_is_dma_safe(*buf, size, bouncebuffer->on_axi_sram)) {
 #if defined(STM32H7)
-        /*
-          on H7 the cache needs invalidating before a read to ensure
-          there is no stale data in the buffer
-         */
+        // invalidate buffer so we know state in bouncebuffer_finish_read
         stm32_cacheBufferInvalidate(*buf, (size+31)&~31);
 #endif
         return true;
@@ -76,6 +73,7 @@ bool bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf,
 #endif
 #if defined(STM32H7)
     osalDbgAssert((((uint32_t)*buf)&31) == 0, "bouncebuffer read align");
+    // invalidate buffer so we know state in bouncebuffer_finish_read
     stm32_cacheBufferInvalidate(*buf, (size+31)&~31);
 #endif
     bouncebuffer->busy = true;
@@ -87,6 +85,18 @@ bool bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf,
  */
 void bouncebuffer_finish_read(struct bouncebuffer_t *bouncebuffer, const uint8_t *buf, uint32_t size)
 {
+#if defined(STM32H7)
+    // clean+invalidate buffer after DMA transfer to it completed. invalidation
+    // is mandatory as prefetch etc. could have re-cached it before completion.
+    // clean is necessary as a bouncebuffer is sometimes used for non-DMA reads
+    // and if we didn't clean first we would lose CPU-written data. there is no
+    // risk of writing pre-DMA data as we invalidated any cached data before
+    // starting, so it can only be dirty if the CPU dirtied it storing reads to
+    // the bouncebuffer. in this case invalidation is unnecessary as no DMA
+    // occurred, but we can't know which we need to do here, so we do both.
+    stm32_cacheBufferFlush(buf, (size+31)&~31);
+#endif
+
     if (bouncebuffer && buf == bouncebuffer->dma_buf) {
         osalDbgAssert((bouncebuffer->busy == true), "bouncebuffer finish_read");
         if (bouncebuffer->orig_buf) {
