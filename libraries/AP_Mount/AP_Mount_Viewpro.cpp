@@ -949,7 +949,7 @@ void AP_Mount_Viewpro::send_camera_information(mavlink_channel_t chan) const
         0,                      // sensor_size_v float (mm)
         0,                      // resolution_h uint16_t (pix)
         0,                      // resolution_v uint16_t (pix)
-        0,                      // lens_id uint8_t
+        (uint8_t)_image_sensor, // lens_id uint8_t
         flags,                  // flags uint32_t (CAMERA_CAP_FLAGS)
         0,                      // cam_definition_version uint16_t
         cam_definition_uri,     // cam_definition_uri char[140]
