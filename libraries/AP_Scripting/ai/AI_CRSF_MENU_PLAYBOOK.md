@@ -303,7 +303,26 @@ The root of the definition must be a table with two keys:
 | `options` | `table` | A list of strings for the available choices. **Note:** Options must be separated by a semicolon (`;`) in the final packed data, which the helper library handles automatically. | `SELECTION` |
 | `info` | `string` | The read-only text to be displayed next to the name. | `INFO` |
 
-## 5\. Main Script Pattern (`user_script.lua`)
+## **5\. Implementation Deep Dive & Common Pitfalls**
+
+Understanding the "why" behind the crsf\_helper.lua design is critical to avoid reintroducing subtle bugs.
+
+### **5.1. Garbage Collection and Memory Corruption**
+
+* **The Problem:** Lua's garbage collector (GC) will free memory for objects that are no longer referenced. In early versions, the script created CRSF menu and parameter objects but did not keep a persistent reference to them. After some time, the GC would delete these objects. This led to UI corruption (e.g., all menu items taking the name of the last-created item) and crashes when the system tried to access the freed memory.  
+* **The Solution:** The menu\_objects table is mandatory. Every single CRSFMenu\_ud and CRSFParameter\_ud object created by crsf:add\_menu() or parent\_menu\_obj:add\_parameter() **must** be inserted into this table. This creates a strong reference that tells the GC these objects are still in use, preventing them from being collected and ensuring menu stability.
+
+### **5.2. CRSF State Synchronization**
+
+* **The Problem:** The CRSF protocol is a two-way conversation. When a user changes a selection on their transmitter, the transmitter sends a PARAMETER\_WRITE event to the script. To confirm the change and get the latest state, the transmitter may immediately follow up with a PARAMETER\_READ request. If the script only handles the write and ignores the read, the transmitter will time out, assume the change failed, and revert the UI display to its previous state. This was the cause of the "reverting selection" bug.  
+* **The Solution:** The event loop **must** handle both event types. For stateful items like SELECTION and COMMAND, the script must send a crsf:send\_write\_response() after processing *any* event, whether it's a read or a write. This confirms the current state to the transmitter and keeps the UI perfectly synchronized. The helper must also internally track the current state of selections (in item\_def.current\_idx) to respond to read requests correctly.
+
+### **5.3. Balanced Event Loop**
+
+* **The Problem:** A Lua script runs in a sandboxed environment with a limited time slice to execute before it must yield control back to the main flight controller scheduler. An event loop that is too aggressive (e.g., a tight while loop with no delay) can use up its entire time slice, starve the main scheduler, and cause a watchdog to trigger a crash. A loop that is too slow (e.g., a long delay) will feel unresponsive and laggy to the user.  
+* **The Solution:** The helper library uses a balanced approach. It processes a small batch of events (up to 5\) in a quick while loop. This allows it to drain the event queue quickly for a responsive feel. It then reschedules itself with a 20ms delay. This delay is the key to stability: it guarantees that the script yields control frequently, preventing watchdog crashes while still being fast enough to be unnoticeable to the user.
+
+## 6\. Main Script Pattern (`user_script.lua`)
 
 This is the standard pattern you must follow for the user-facing script.
 
@@ -312,13 +331,13 @@ This is the standard pattern you must follow for the user-facing script.
 3.  **Define the Menu Table:** Create the `menu_definition` table according to the syntax in section 4.
 4.  **Initialize:** The script must return `crsf_helper.init(menu_definition)`.
 
-## 6\. CRSF Specification Notes
+## 7\. CRSF Specification Notes
 
   * **NUMBER Type:** The CRSF protocol transmits `FLOAT` parameter types as 32-bit signed integers. The `dpoint` property tells the receiver where to place the decimal point. The helper library handles this conversion automatically.
   * **SELECTION Type:** The list of text options is transmitted as a single string with each option separated by a semicolon (`;`). The helper library handles this formatting.
   * **String Lengths:** While the protocol can handle longer strings, transmitter screens are small. It is best practice to keep `name` and `unit` strings short and descriptive.
 
-## 7\. Mandatory Rules and Checklist
+## 8\. Mandatory Rules and Checklist
 
 1.  **\[ \] Use Declarative Table:** The entire menu structure **must** be defined in a single Lua table.
 2.  **\[ \] Use `crsf_helper.lua`:** The provided `crsf_helper.lua` library **must** be included and used. Do not attempt to re-implement its logic.
@@ -326,3 +345,4 @@ This is the standard pattern you must follow for the user-facing script.
 4.  **\[ \] Use Callbacks:** All menu interactions **must** be handled via callback functions assigned in the menu definition table. The main script must not contain a `crsf:get_menu_event` loop.
 5.  **\[ \] Return `helper.init()`:** The main script **must** conclude by returning the result of the `crsf_helper.init()` function, passing its menu definition table as the argument.
 6.  **\[ \] Follow Parameter Syntax:** All parameter types (`NUMBER`, `SELECTION`, etc.) **must** use the exact property names and data types defined in section 4.2.
+7. **\[ \] Prevent Garbage Collection:** The helper library **must** maintain a reference to every CRSF object it creates.
