@@ -81,10 +81,11 @@ private:
     SPIDeviceDesc &device_desc;
     Speed speed;
     char *pname;
-    spi_device_handle_t low_speed_dev_handle;
-    spi_device_handle_t high_speed_dev_handle;
+    spi_device_handle_t device_handle;  // Single reconfigurable handle
+    uint32_t current_speed_hz;  // Track currently configured speed
     spi_device_handle_t current_handle();
-    void acquire_bus(bool accuire);
+    void reconfigure_speed(uint32_t new_speed_hz);  // Reconfigure device handle speed
+    void acquire_bus(bool acquire);
 };
 
 class SPIDeviceManager : public AP_HAL::SPIDeviceManager
