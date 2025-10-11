@@ -586,7 +586,7 @@ void AP_DroneCAN::loop(void)
 void AP_DroneCAN::hobbywing_ESC_update(void)
 {
     if (hal.util->get_soft_armed()) {
-        // don't update ID database while disarmed, as it can cause
+        // don't update ID database while armed, as it can cause
         // some hobbywing ESCs to stutter
         return;
     }
