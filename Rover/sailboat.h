@@ -82,6 +82,10 @@ public:
     // set mainsail according to pilot input
     void set_pilot_desired_mainsail();
 
+    // Max heel angle set by a parameter sail_heel_angle_max
+    //  but can be reduced to flatten boat when bearing away (turning downwind)
+    float get_target_heel();
+
     // set mainsail in auto modes
     void set_auto_mainsail(float desired_speed);
 
@@ -107,6 +111,9 @@ private:
     AP_Float sail_windspeed_min;
     AP_Float xtrack_max;
     AP_Float loit_radius;
+    AP_Float bear_away_gain;
+    AP_Int16 tack_timeout_ms;
+    AP_Float tack_accuracy_deg;
 
     RC_Channel *channel_mainsail;   // rc input channel for controlling mainsail
     bool currently_tacking;         // true when sailboat is in the process of tacking to a new heading
