@@ -18,7 +18,7 @@ and ==must be different== from the MAVLINK_SYSID of the following plane.
 
 The script adds the following parameters to control it's behaviour. It uses 
 the existing FOLL parameters that are used for the Copter FOLLOW mode. In addition
-the following "ZPF" parameters are added: Z = scripting, P = Plane, F = Follow.
+the following "FOLLP" parameters are added.
 
 ## FOLLP_FAIL_MODE
 
@@ -107,7 +107,7 @@ Enable Lua scripting by setting `SCR_ENABLE = 1` on the FOLLOW plane.
 Install the plane_follow.lua script in the `APM/scripts` directory on the flight
 controller's microSD card on the FOLLOW plane. s
 
-Install the speedpid.lua, mavlink_command_int.lua, mavlink_attitude.lua files
+Install the pid.lua, mavlink_attitude.lua files
 in the `APM/scripts/modules` directory on the SD card on the FOLLOW plane.
 
 Install the mavlink_msgs.lua files
@@ -127,7 +127,7 @@ The target location the plane will attempt to achieve will be offset from the ta
 vehicle location by FOLL_OFS_X and FOLL_OFS_Y. FOLL_OFS_Z will be offset against the 
 target vehicle, but also FOLL_ALT_TYPE will determine the altitude frame that the vehicle
 will use when calculating the target altitude. See the definitions of these
-parameters to understand how they work. ZPF2_ALT_OVR will override the operation of FOLL_OFS_Z
+parameters to understand how they work. FOLLP_ALT_OVR will override the operation of FOLL_OFS_Z
 setting a fixed altitude for the following plane in FOLL_ALT_TYPE frame.
 
 The existing FOLL_YAW_BEHAVE and FOLL_POS_P parameters are ignored by Plane Follow.
@@ -138,11 +138,11 @@ and ATTITUDE mavlink messages are sent. The default value is 4Hz, a good value i
 some testing should be done to confirm the best rate for your telemetry radios and vehicles.
 
 To prevent Mission Planner, QGC, MAVproxy or any other ground control station connected to your plane
-from requesting a different stream rate, also set SERIALx_OPTIONS bit 12 for the matching serial port. 
+from requesting a different stream rate, also set MAVx_OPTIONS bit 2 for the matching mavlink port. 
 
 For example if your telemetry radio is connected to Telem1 = SERIAL1 then set
-SERIAL1_OPTIONS = 
-SR1_POSITION = 10
-SR1_EXTRA1 = 10
+MAV1_OPTIONS = 4
+MAV1_POSITION = 10
+MAV1_EXTRA1 = 10
 
-Ideally the connection is direct plane-to-plane and not routed via a Ground Control Station. This has been tested with 2x HolyBro SiK telemetry radios, one in each plane. RFD900 radios might work and LTE or other IP radio based connections will probably work well, but haven't been tested. Fast telemetry updates from the target to the following plane will give the best results.
+Ideally the connection is direct plane-to-plane and not routed via a Ground Control Station. This has been tested with 2x HolyBro SiK telemetry radios, one in each plane. RFD900 radios might work and LTE or other IP radio based connections will probably work well, but haven't been tested. Some users have reported using ESP32 WiFi modules configured with one of the radios set to be in station mode. Fast telemetry updates from the target to the following plane will give the best results.
