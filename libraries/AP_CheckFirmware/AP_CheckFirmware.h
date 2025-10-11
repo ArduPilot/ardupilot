@@ -5,6 +5,7 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_OpenDroneID/AP_OpenDroneID_config.h>
+#include <AP_TrustedFlight/AP_TrustedFlight_Config.h>
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_config.h>
 #if HAL_GCS_ENABLED
@@ -12,7 +13,7 @@
 #endif
 
 #ifndef AP_CHECK_FIRMWARE_ENABLED
-#define AP_CHECK_FIRMWARE_ENABLED AP_OPENDRONEID_ENABLED
+#define AP_CHECK_FIRMWARE_ENABLED (AP_OPENDRONEID_ENABLED || AP_TRUSTED_FLIGHT_ENABLED)
 #endif
 
 #if AP_CHECK_FIRMWARE_ENABLED
@@ -66,6 +67,15 @@ struct app_descriptor_unsigned {
     uint32_t image_size;
     uint32_t git_hash;
 
+#if AP_TRUSTED_FLIGHT_ENABLED
+    // trusted flight artifacts
+    uint32_t key_type;
+    uint32_t key_len;
+    uint8_t key[32];
+    uint32_t issuer_len;
+    uint8_t issuer[12];
+#endif
+
     // software version number
     uint8_t  version_major;
     uint8_t version_minor;
@@ -89,6 +99,15 @@ struct app_descriptor_signed {
     uint32_t signature_length;
     uint8_t signature[72];
 
+#if AP_TRUSTED_FLIGHT_ENABLED
+    // trusted flight artifacts
+    uint32_t key_type;
+    uint32_t key_len;
+    uint8_t key[32];
+    uint32_t issuer_len;
+    uint8_t issuer[12];
+#endif
+
     // software version number
     uint8_t  version_major;
     uint8_t version_minor;
@@ -104,7 +123,11 @@ typedef struct app_descriptor_signed app_descriptor_t;
 typedef struct app_descriptor_unsigned app_descriptor_t;
 #endif
 
+#if AP_TRUSTED_FLIGHT_ENABLED
+#define APP_DESCRIPTOR_UNSIGNED_TOTAL_LENGTH (36+56)
+#else
 #define APP_DESCRIPTOR_UNSIGNED_TOTAL_LENGTH 36
+#endif
 #define APP_DESCRIPTOR_SIGNED_TOTAL_LENGTH (APP_DESCRIPTOR_UNSIGNED_TOTAL_LENGTH+72+4)
 
 static_assert(sizeof(app_descriptor_unsigned) == APP_DESCRIPTOR_UNSIGNED_TOTAL_LENGTH, "app_descriptor_unsigned incorrect length");
