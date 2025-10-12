@@ -1228,8 +1228,6 @@ class esp32s3(esp32):
             cfg.env.HWDEF = self.hwdef
         super(esp32s3, self).configure_env(cfg, env)
 
-        cfg.load('esp32')
-
 class chibios(Board):
     abstract = True
     toolchain = 'arm-none-eabi'
