@@ -15,6 +15,7 @@ int lua_serial_find_serial(lua_State *L);
 int lua_serial_find_simulated_device(lua_State *L);
 int lua_serial_writestring(lua_State *L);
 int lua_serial_readstring(lua_State *L);
+int lua_serial_begin(lua_State *L);
 int lua_dirlist(lua_State *L);
 int lua_removefile(lua_State *L);
 int SRV_Channels_get_safety_state(lua_State *L);

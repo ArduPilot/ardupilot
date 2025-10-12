@@ -17,7 +17,6 @@ assert(port, "REPL scripting port not configured")
 -- scan through parameters to find our port and grab its baud rate
 do
   local serial_info = ""
-  local baud = 115200
   if PORT_IDX ~= nil then
     local port_num = 0
     while PORT_IDX >= 0 and port_num <= 9 do
@@ -27,13 +26,15 @@ do
     end
     if PORT_IDX == -1 then -- correct port index found
       port_num = port_num - 1
-      baud = param:get(("SERIAL%d_BAUD"):format(port_num)) or 115200
+      local baud = param:get(("SERIAL%d_BAUD"):format(port_num)) or 115200
       serial_info = (" on SERIAL%d, BAUD=%d"):format(port_num, baud)
     end
   end
+ 
+  -- auto-configure the baud rate from the parameters/HAL setting
   -- if we can't find the right port, the baud probably does not matter
   -- (e.g. CAN or network port)
-  port:begin(baud)
+  port:begin()
 
   gcs:send_text(6, "Lua REPL "..VERSION.." starting"..serial_info)
 end
