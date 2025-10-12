@@ -145,7 +145,7 @@ uint8_t AP_ESC_Telem::get_num_active_escs() const {
 }
 
 // return the whether all the motors in servo_channel_mask are running
-bool AP_ESC_Telem::are_motors_running(uint32_t servo_channel_mask, float min_rpm, float max_rpm) const
+bool AP_ESC_Telem::are_motors_running(uint32_t servo_channel_mask, float min_rpm, float max_rpm, float max_error_rate) const
 {
 
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
@@ -159,6 +159,9 @@ bool AP_ESC_Telem::are_motors_running(uint32_t servo_channel_mask, float min_rpm
                 return false;
             }
             if ((max_rpm > 0) && (rpmdata.rpm > max_rpm)) {
+                return false;
+            }
+            if (!is_zero(min_rpm) && !is_zero(max_error_rate) && rpmdata.error_rate > max_error_rate) {
                 return false;
             }
         }
@@ -210,7 +213,7 @@ bool AP_ESC_Telem::get_rpm(uint8_t esc_index, float& rpm) const
 }
 
 // get an individual ESC's raw rpm if available, returns true on success
-bool AP_ESC_Telem::get_raw_rpm(uint8_t esc_index, float& rpm) const
+bool AP_ESC_Telem::get_raw_rpm(uint8_t esc_index, float& rpm, float& error_rate) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS) {
         return false;
@@ -223,6 +226,8 @@ bool AP_ESC_Telem::get_raw_rpm(uint8_t esc_index, float& rpm) const
     }
 
     rpm = rpmdata.rpm;
+    error_rate = rpmdata.error_rate;
+
     return true;
 }
 
@@ -688,7 +693,8 @@ void AP_ESC_Telem::update()
                 float rpm = AP::logger().quiet_nanf();
                 get_rpm(i, rpm);
                 float raw_rpm = AP::logger().quiet_nanf();
-                get_raw_rpm(i, raw_rpm);
+                float error_rate = AP::logger().quiet_nanf();
+                get_raw_rpm(i, raw_rpm, error_rate);
 
                 // Write ESC status messages
                 //   id starts from 0
@@ -710,7 +716,7 @@ void AP_ESC_Telem::update()
                     esc_temp    : telemdata.temperature_cdeg,
                     current_tot : telemdata.consumption_mah,
                     motor_temp  : telemdata.motor_temp_cdeg,
-                    error_rate  : rpmdata.error_rate
+                    error_rate  : error_rate
                 };
                 AP::logger().WriteBlock(&pkt, sizeof(pkt));
 

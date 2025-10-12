@@ -32,7 +32,7 @@ public:
     bool get_rpm(uint8_t esc_index, float& rpm) const;
 
     // get an individual ESC's raw rpm if available
-    bool get_raw_rpm(uint8_t esc_index, float& rpm) const;
+    bool get_raw_rpm(uint8_t esc_index, float& rpm, float& error_rate) const;
 
     // get raw telemetry data, used by IOMCU
     const volatile AP_ESC_Telem_Backend::TelemetryData& get_telem_data(uint8_t esc_index) const {
@@ -46,7 +46,7 @@ public:
     float get_average_motor_rpm() const { return get_average_motor_rpm(0xFFFFFFFF); }
 
     // determine whether all the motors in servo_channel_mask are running
-    bool are_motors_running(uint32_t servo_channel_mask, float min_rpm, float max_rpm) const;
+    bool are_motors_running(uint32_t servo_channel_mask, float min_rpm, float max_rpm, float max_error_rate) const;
 
     // get an individual ESC's temperature in centi-degrees if available, returns true on success
     bool get_temperature(uint8_t esc_index, int16_t& temp) const;
