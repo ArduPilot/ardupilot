@@ -58,6 +58,7 @@
 #include "AP_RangeFinder_NoopLoop.h"
 #include "AP_RangeFinder_TOFSenseP_CAN.h"
 #include "AP_RangeFinder_NRA24_CAN.h"
+#include "AP_RangeFinder_NRA24_Serial.h"
 #include "AP_RangeFinder_TOFSenseF_I2C.h"
 #include "AP_RangeFinder_JRE_Serial.h"
 #include "AP_RangeFinder_Ainstein_LR_D1.h"
@@ -589,6 +590,13 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
         _add_backend(NEW_NOTHROW AP_RangeFinder_NRA24_CAN(state[instance], params[instance]), instance);
         break;
 #endif  // AP_RANGEFINDER_NRA24_CAN_DRIVER_ENABLED
+
+#if AP_RANGEFINDER_NRA24_SERIAL_ENABLED
+    case Type::NRA24_Serial:
+        serial_create_fn = AP_RangeFinder_NRA24_Serial::create;
+        break;
+#endif
+
 #if AP_RANGEFINDER_TOFSENSEF_I2C_ENABLED
     case Type::TOFSenseF_I2C: {
         uint8_t addr = TOFSENSEP_I2C_DEFAULT_ADDR;
@@ -930,6 +938,18 @@ bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_le
             break;
         }
 #endif // AP_RANGEFINDER_NRA24_CAN_DRIVER_ENABLED 
+
+#if AP_RANGEFINDER_NRA24_SERIAL_ENABLED
+        case Type::NRA24_Serial: {
+            if (drivers[i]->status() == Status::NoData) {
+                // This sensor stops sending data if there is no relative motion. This will mostly happen during takeoff, before arming
+                // To avoid pre-arm failure, return true even though there is no data.
+                // This sensor also sends a "heartbeat" so we can differentiate between  "NoData" and "NotConnected"
+                return true;
+            }
+            break;
+        }
+#endif
 
         default:
             break;
