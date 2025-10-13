@@ -10363,6 +10363,37 @@ Also, ignores heartbeats not from our target system'''
             (3, 2),
             (1, 3),
         ])
+
+        self.progress("Setting priorities back to original order")
+        self.set_parameters({
+            "COMPASS_PRIO1_ID": prio1_id,
+            "COMPASS_PRIO2_ID": prio2_id,
+            "COMPASS_PRIO3_ID": prio3_id,
+        })
+
+        self.reboot_sitl()
+
+        self.test_mag_reordering_assert_mag_transform(originals, [
+            (1, 1),
+            (2, 2),
+            (3, 3),
+        ])
+
+        self.progress("And reverse ordering")
+        self.set_parameters({
+            "COMPASS_PRIO1_ID": prio3_id,
+            "COMPASS_PRIO2_ID": prio2_id,
+            "COMPASS_PRIO3_ID": prio1_id,
+        })
+
+        self.reboot_sitl()
+
+        self.test_mag_reordering_assert_mag_transform(originals, [
+            (1, 3),
+            (2, 2),
+            (3, 1),
+        ])
+
         self.context_pop()
 
     # something about SITLCompassCalibration appears to fail
