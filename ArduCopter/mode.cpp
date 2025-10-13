@@ -497,7 +497,7 @@ Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
     if (vel.is_zero()) {
         return vel;
     }
-    copter.ahrs.body_to_earth2D(vel);
+    vel = copter.ahrs.body_to_earth2D(vel);
 
     // Transform square input range to circular output
     // vel_scalar is the vector to the edge of the +- 1.0 square in the direction of the current input
