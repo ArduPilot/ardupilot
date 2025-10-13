@@ -639,8 +639,8 @@ public:
 
     // rotate a 2D vector from earth frame to body frame
     // in input, x is forward, y is right
-    Vector2f body_to_earth2D(const Vector2f &bf) const;
-    Vector2f body_to_earth2D_p(const Vector2p &bf) const;
+    Vector2f body_to_earth2D(const Vector2f &bf) const WARN_IF_UNUSED;
+    Vector2p body_to_earth2D_p(const Vector2p &bf) const WARN_IF_UNUSED;
 
     // convert a vector from body to earth frame
     Vector3f body_to_earth(const Vector3f &v) const;
