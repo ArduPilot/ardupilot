@@ -7,8 +7,8 @@ define HAL_ESP32_BOARD_NAME "esp32-nick"
 ESP32_SPIBUS VSPI_HOST 1               GPIO_NUM_23 GPIO_NUM_19 GPIO_NUM_18
 
 # i2c Buses
-#             Port       SDA         SCL          SPEED    INTERNAL
-ESP32_I2CBUS  I2C_NUM_0  GPIO_NUM_13 GPIO_NUM_12  400*KHZ  true
+#             Port       SDA         SCL          SPEED    INTERNAL SOFT
+ESP32_I2CBUS  I2C_NUM_0  GPIO_NUM_13 GPIO_NUM_12  400*KHZ  true     false
 
 # SPI Devices
 #            Name                Bus   Device  ChipSel      Mode LoSpeed HiSpeed
