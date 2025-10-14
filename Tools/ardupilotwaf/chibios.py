@@ -318,6 +318,28 @@ class set_app_descriptor(Task.Task):
             desc = struct.pack('<IIII76s', crc1, crc2, len(img), githash, sig)
         else:
             desc = struct.pack('<IIII', crc1, crc2, len(img), githash)
+
+        if all([
+            self.generator.bld.env.TRUSTED_FLIGHT_KEY_TYPE,
+            self.generator.bld.env.TRUSTED_FLIGHT_KEY,
+            self.generator.bld.env.TRUSTED_FLIGHT_ISSUER
+        ]):
+            trusted_flight_key = open(self.generator.bld.env.TRUSTED_FLIGHT_KEY, 'rb').read()
+            desc += struct.pack('<II32sI12s',
+                                self.generator.bld.env.TRUSTED_FLIGHT_KEY_TYPE,
+                                len(trusted_flight_key),
+                                trusted_flight_key,
+                                len(self.generator.bld.env.TRUSTED_FLIGHT_ISSUER),
+                                self.generator.bld.env.TRUSTED_FLIGHT_ISSUER)
+            desc_len += 56
+            Logs.info("Trusted Flight parameters added")
+        elif any([
+            self.generator.bld.env.TRUSTED_FLIGHT_KEY_TYPE,
+            self.generator.bld.env.TRUSTED_FLIGHT_KEY,
+            self.generator.bld.env.TRUSTED_FLIGHT_ISSUER
+        ]):
+            self.generator.bld.fatal("Invalid Trusted Flight parameters")
+        
         img = img[:offset] + desc + img[offset+desc_len:]
         Logs.info("Applying APP_DESCRIPTOR %08x%08x" % (crc1, crc2))
         open(bin_file, 'wb').write(img)
