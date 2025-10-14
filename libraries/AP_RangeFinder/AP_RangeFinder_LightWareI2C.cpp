@@ -120,23 +120,32 @@ bool AP_RangeFinder_LightWareI2C::sf20_send_and_expect(const char* send_msg, con
     const size_t expected_reply_len = strlen(expected_reply);
     uint8_t rx_bytes[expected_reply_len + 1];
     memset(rx_bytes, 0, sizeof(rx_bytes));
+    bool got_data = false;
 
     if ((expected_reply_len > lx20_max_reply_len_bytes) ||
         (expected_reply_len < 2)) {
         return false;
     }
 
-    if (!write_bytes((uint8_t*)send_msg,
-                     strlen(send_msg))) {
-        return false;
-    }
+    for (uint8_t i=0; i<5; i++ ) {
+        if (!write_bytes((uint8_t*)send_msg,
+                        strlen(send_msg))) {
+            continue;
+        }
 
-    if (!sf20_wait_on_reply(rx_bytes)) {
-        return false;
-    }
+        if (!sf20_wait_on_reply(rx_bytes)) {
+            continue;
+        }
 
-    if ((rx_bytes[0] != expected_reply[0]) ||
-        (rx_bytes[1] != expected_reply[1]) ) {
+        if ((rx_bytes[0] != expected_reply[0]) ||
+            (rx_bytes[1] != expected_reply[1]) ) {
+                continue;
+        } else {
+            got_data = true;
+            break;
+        }
+    }
+    if (!got_data) {
         return false;
     }
 
