@@ -104,7 +104,8 @@ public:
 private:
     SPIBus *buses;
 };
-}
 #endif  // HAL_ESP32_SPI_BUSES
+
+} // end of namespace ESP32
 
 #endif  // AP_HAL_SPI_ENABLED
