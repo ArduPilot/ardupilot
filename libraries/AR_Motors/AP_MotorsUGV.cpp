@@ -17,6 +17,8 @@
 #include <GCS_MAVLink/GCS.h>
 #include "AP_MotorsUGV.h"
 #include <AP_Relay/AP_Relay.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 
 #define SERVO_MAX 4500  // This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 
@@ -126,7 +128,17 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("REV_DELAY", 15, AP_MotorsUGV, _reverse_delay, 0),
-    
+
+#if AP_BATTERY_WATT_MAX_ENABLED
+    // @Param: BAT_WATT_TC
+    // @DisplayName: Battery power limiting time constant
+    // @Description: Time constant used to limit the smooth power throttling.
+    // @Range: 0 10
+    // @Units: s
+    // @User: Advanced
+    AP_GROUPINFO("BAT_WATT_TC", 16, AP_MotorsUGV, _batt_power_time_constant, 5.0f),
+#endif
+
     AP_GROUPEND
 };
 
@@ -336,6 +348,11 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
 
     // slew limit throttle
     slew_limit_throttle(dt);
+
+    // apply power limiting to throttle
+#if AP_BATTERY_WATT_MAX_ENABLED
+    power_limit_throttle(dt);
+#endif
 
     // output for regular steering/throttle style frames
     output_regular(armed, ground_speed, _steering, _throttle);
@@ -984,6 +1001,36 @@ void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float
     }
 }
 
+// return power_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
+#if AP_BATTERY_WATT_MAX_ENABLED
+float AP_MotorsUGV::get_power_limit_max_throttle(float dt)
+{
+    AP_BattMonitor &battery = AP::battery();
+
+    float _batt_current;
+    const float watt_max = battery.get_watt_max();
+    const float _batt_voltage = battery.voltage();
+    
+    if (watt_max <= 0 ||  // return maximum if power limiting is disabled
+        !hal.util->get_soft_armed() ||   // remove throttle limit if disarmed
+        !battery.current_amps(_batt_current) || // no current monitoring is available
+        is_zero(_batt_voltage)) {  // no voltage monitoring is available
+        _throttle_limit = 1.0f;
+        return 1.0f;
+    }
+
+    const float power = _batt_voltage * _batt_current;
+    const float power_ratio = power / watt_max;
+
+    _throttle_limit += (dt / (dt + _batt_power_time_constant)) * (1.0f - power_ratio);
+
+    // throttle limit drops to 5% minimum when over power limit
+    _throttle_limit = constrain_float(_throttle_limit, _throttle_min, _throttle_max);
+
+    return _throttle_limit;
+}
+#endif
+
 // output throttle value to main throttle channel, left throttle or right throttle.  throttle should be scaled from -100 to 100
 void AP_MotorsUGV::output_throttle(SRV_Channel::Function function, float throttle, float dt)
 {
@@ -1097,6 +1144,25 @@ void AP_MotorsUGV::slew_limit_throttle(float dt)
     }
     _throttle_prev = _throttle;
 }
+
+// apply power limiting to throttle for one iteration
+#if AP_BATTERY_WATT_MAX_ENABLED
+void AP_MotorsUGV::power_limit_throttle(float dt)
+{
+    const float power_limit_max = get_power_limit_max_throttle(dt);
+    
+    const float throttle_max = 100.0f * power_limit_max;
+    const float throttle_min = -100.0f * power_limit_max;
+    
+    if (_throttle > throttle_max) {
+        _throttle = throttle_max;
+        limit.throttle_upper = true;
+    } else if (_throttle < throttle_min) {
+        _throttle = throttle_min;
+        limit.throttle_lower = true;
+    }
+}
+#endif
 
 // set limits based on steering and throttle input
 void AP_MotorsUGV::set_limits_from_input(bool armed, float steering, float throttle)
