@@ -59,7 +59,7 @@ static Empty::DSP dspDriver;
 #endif
 
 static ESP32::I2CDeviceManager i2cDeviceManager;
-#if AP_HAL_SPI_ENABLED
+#if defined(HAL_ESP32_SPI_BUSES)
 static ESP32::SPIDeviceManager spiDeviceManager;
 #else
 static Empty::SPIDeviceManager spiDeviceManager;
