@@ -61,6 +61,8 @@ public:
     // Used to constrain acceleration changes in trajectory generation.
     float get_shaping_jerk_NE_msss() const { return _shaping_jerk_ne_msss; }
 
+    // Returns the jerk limit for vertical path shaping in m/s³.
+    float get_shaping_jerk_U_msss() const { return _shaping_jerk_u_msss; }
 
     ///
     /// 3D position shaper
