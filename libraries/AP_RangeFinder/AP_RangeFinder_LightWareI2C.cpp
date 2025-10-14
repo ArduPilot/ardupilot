@@ -25,6 +25,7 @@ extern const AP_HAL::HAL& hal;
 #define LIGHTWARE_LOST_SIGNAL_TIMEOUT_READ_REG 22
 #define LIGHTWARE_LOST_SIGNAL_TIMEOUT_WRITE_REG 23
 #define LIGHTWARE_TIMEOUT_REG_DESIRED_VALUE 20      // number of lost signal confirmations for legacy protocol only
+#define LIGHTWARE_I2C_SF20_RETRYS 5
 
 #define LIGHTWARE_OUT_OF_RANGE_ADD_CM   100
 
@@ -127,7 +128,7 @@ bool AP_RangeFinder_LightWareI2C::sf20_send_and_expect(const char* send_msg, con
         return false;
     }
 
-    for (uint8_t i=0; i<5; i++ ) {
+    for (uint8_t i=0; i<LIGHTWARE_I2C_SF20_RETRYS; i++ ) {
         if (!write_bytes((uint8_t*)send_msg,
                         strlen(send_msg))) {
             continue;
