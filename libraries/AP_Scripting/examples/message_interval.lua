@@ -28,7 +28,11 @@ local ATTITUDE_ID               = uint32_t(30)
 --local VIBRATION_ID              = uint32_t(241)
 --local WIND_ID                   = uint32_t(168)
 
--- serial port
+-- serial port number
+-- e.g. SERIAL3 is 3
+--      NET_P2 is 22
+--      CAN_D2_UC_S3 is 53
+-- see https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_SerialManager/AP_SerialManager_config.h#L67
 local serial_port = 0
 
 -- intervals is a table which contains a table for each entry we want to adjust
@@ -43,10 +47,10 @@ gcs:send_text(MAV_SEVERITY.INFO, "Loaded message_interval.lua")
 
 function update() -- this is the loop which periodically runs
   for i = 1, #intervals do -- we want to iterate over every specified interval
-    local channel, message, interval_hz = table.unpack(intervals[i]) -- this extracts the channel, MAVLink ID, and interval
+    local port_num, message, interval_hz = table.unpack(intervals[i]) -- this extracts the port_num, MAVLink ID, and interval
 
     -- Lua checks get the unpacked types wrong, these are the correct types
-    ---@cast channel integer
+    ---@cast port_num integer
     ---@cast message uint32_t_ud
     ---@cast interval_hz number
 
@@ -54,7 +58,7 @@ function update() -- this is the loop which periodically runs
     if interval_hz > 0 then
       interval_us = math.floor(1000000 / interval_hz) -- convert the interval to microseconds
     end
-    gcs:set_message_interval(channel, message, interval_us) -- actually sets the interval as appropriate
+    gcs:set_message_interval(port_num, message, interval_us) -- actually sets the interval as appropriate
   end
   return update, loop_time -- reschedules the loop
 end
