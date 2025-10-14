@@ -109,7 +109,7 @@ bool AP_RangeFinder_LightWareI2C::write_bytes(uint8_t *write_buf_u8, uint32_t le
  */
 void AP_RangeFinder_LightWareI2C::sf20_disable_address_tagging()
 {
-    sf20_send_and_expect("#CT,0\r\n", "ct:0");
+    sf20_send_and_expect("#CT,0\r\n", "c:0");
 }
 
 /*
