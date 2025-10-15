@@ -756,6 +756,24 @@ void Mode::land_run_horizontal_control()
 
 }
 
+// Altitude Stick Mixing (only for automatic flight modes)
+void Mode::altitude_stick_mix_run()
+{
+    if (rc().has_valid_input()) {
+        float max_speed_down_ms = get_pilot_speed_dn_ms();
+        int32_t rng_alt_m = get_alt_above_ground_m();
+        // never allow descending below 3 m (hardcoded)
+        if (rng_alt_m < 3.0f) {
+            max_speed_down_ms = 0.0f;
+        // slow down when approaching LAND_ALT_LOW
+        } else if (rng_alt_m < g2.land_alt_low_cm * 0.01f) {
+            max_speed_down_ms = abs(g.land_speed_cms) * 0.01f;
+        }
+        float pilot_climb_rate_ms = constrain_float(get_pilot_desired_climb_rate_ms(), -max_speed_down_ms, get_pilot_speed_up_ms());
+        wp_nav->set_alt_stick_mix(pilot_climb_rate_ms, G_Dt);
+    }
+}
+
 // run normal or precision landing (if enabled)
 // pause_descent is true if vehicle should not descend
 void Mode::land_run_normal_or_precland(bool pause_descent)

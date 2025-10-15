@@ -225,6 +225,10 @@ protected:
         land_run_vertical_control(pause_descent);
     }
 
+    // altitude stick mix for automatic modes
+    void altitude_stick_mix_reset() { wp_nav->reset_alt_stick_mix(); }
+    void altitude_stick_mix_run();
+
 #if AC_PAYLOAD_PLACE_ENABLED
     // payload place flight behaviour:
     static PayloadPlace payload_place;
@@ -629,10 +633,11 @@ protected:
 private:
 
     enum class Option : int32_t {
-        AllowArming                        = (1 << 0U),
-        AllowTakeOffWithoutRaisingThrottle = (1 << 1U),
-        IgnorePilotYaw                     = (1 << 2U),
-        AllowWeatherVaning                 = (1 << 7U),
+        AllowArming                        = (1U << 0),
+        AllowTakeOffWithoutRaisingThrottle = (1U << 1),
+        IgnorePilotYaw                     = (1U << 2),
+        AltitudeStickMix                   = (1U << 3),
+        AllowWeatherVaning                 = (1U << 7),
     };
     bool option_is_enabled(Option option) const;
 
@@ -1561,6 +1566,7 @@ private:
     enum class Option : int32_t {
         // First pair of bits are still available, pilot yaw was mapped to bit 2 for symmetry with auto
         IgnorePilotYaw    = (1U << 2),
+        AltitudeStickMix  = (1U << 3),
     };
     bool option_is_enabled(Option option) const;
 

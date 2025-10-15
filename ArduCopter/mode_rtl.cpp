@@ -28,6 +28,9 @@ bool ModeRTL::init(bool ignore_checks)
     // this will be set true if prec land is later active
     copter.ap.prec_land_active = false;
 
+    // reset altitude stick mixing
+    altitude_stick_mix_reset();
+
 #if AC_PRECLAND_ENABLED
     // initialise precland state machine
     copter.precland_statemachine.init();
@@ -169,6 +172,11 @@ void ModeRTL::climb_return_run()
 
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+    // Altitude stick mixing
+    if (option_is_enabled(Option::AltitudeStickMix)) {
+        altitude_stick_mix_run();
+    }
 
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());

@@ -56,6 +56,9 @@ bool ModeAuto::init(bool ignore_checks)
         // reset flag indicating if pilot has applied roll or pitch inputs during landing
         copter.ap.land_repo_active = false;
 
+        // reset altitude stick mixing
+        altitude_stick_mix_reset();
+
 #if AC_PRECLAND_ENABLED
         // initialise precland state machine
         copter.precland_statemachine.init();
@@ -1058,6 +1061,11 @@ void ModeAuto::wp_run()
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
+    // Altitude Stick Mixing
+    if (option_is_enabled(Option::AltitudeStickMix)) {
+        altitude_stick_mix_run();
+    }
+
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle
     pos_control->update_U_controller();
@@ -1098,6 +1106,11 @@ void ModeAuto::circle_run()
 {
     // call circle controller
     copter.failsafe_terrain_set_status(copter.circle_nav->update_ms());
+
+    // Altitude Stick Mixing
+    if (option_is_enabled(Option::AltitudeStickMix)) {
+        altitude_stick_mix_run();
+    }
 
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle
