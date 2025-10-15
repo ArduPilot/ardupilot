@@ -1416,6 +1416,11 @@ void Compass::_detect_backends(void)
     CHECK_UNREG_LIMIT_RETURN;
 #endif
 
+#if defined(HAL_MAG_PROBE_LIST)
+    // driver probes defined by COMPASS lines in hwdef.dat
+    HAL_MAG_PROBE_LIST;
+#endif
+
 #ifdef HAL_PROBE_EXTERNAL_I2C_COMPASSES
     // allow boards to ask for external probing of all i2c compass types in hwdef.dat
     _probe_external_i2c_compasses();
@@ -1449,10 +1454,7 @@ void Compass::_detect_backends(void)
  */
 void Compass::probe_i2c_spi_compasses(void)
 {
-#if defined(HAL_MAG_PROBE_LIST)
-    // driver probes defined by COMPASS lines in hwdef.dat
-    HAL_MAG_PROBE_LIST;
-#elif AP_FEATURE_BOARD_DETECT
+#if !defined(HAL_MAG_PROBE_LIST) && AP_FEATURE_BOARD_DETECT
     switch (AP_BoardConfig::get_board_type()) {
     case AP_BoardConfig::PX4_BOARD_PX4V1:
     case AP_BoardConfig::PX4_BOARD_PIXHAWK:
