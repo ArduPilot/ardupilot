@@ -13,6 +13,71 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/*
+ * Description:  Architectural Principles of CRSF Scripted Menu Support
+ *
+ * ### Overview
+ * The CRSF scripted menu system provides a mechanism for Lua scripts to create and manage
+ * custom menu hierarchies on a CRSF-compatible transmitter. The architecture is a hybrid
+ * model where the C++ backend manages the menu structure, navigation, and response
+ * generation for folders, while the Lua script handles the content of "leaf" parameters
+ * (like selections, commands, and numbers).
+ *
+ * ### Core Data Structures
+ * The entire menu system is built on two main C++ classes: `ScriptedMenu` and
+ * `ScriptedParameter`.
+ *
+ * 1.  **Global Menu List**: All `ScriptedMenu` objects, regardless of their position in the
+ * hierarchy, are stored in a single, flat, singly-linked list. The list is anchored
+ * at the `scripted_menus` object. This flat structure is crucial for the global lookup
+ * functions (`find_menu` and `find_parameter`).
+ *
+ * 2.  **Parent-Child Hierarchy**: The hierarchical relationship between menus is established
+ * using a "parameter-as-a-shortcut" or "symbolic link" pattern:
+ * - Each `ScriptedMenu` object contains a `parent_id` member that correctly stores the
+ * ID of its parent menu. This is used when generating responses for "back" navigation.
+ * - To make a sub-menu appear inside a parent, a special `ScriptedParameter` object is
+ * created within the parent's `params` array.
+ * - The `id` of this special "parameter-link" is manually set to be identical to the
+ * `id` of the sub-menu object it points to.
+ *
+ * This dual-representation (an ID belonging to both a menu object and a parameter-link) is
+ * the key to the entire architecture.
+ *
+ * ### Execution Flow for Menu Navigation
+ * The interaction to navigate into a sub-menu is a multi-step process that relies on
+ * careful request routing within the C++ backend.
+ *
+ * 1.  **Transmitter Request**: When a user selects a sub-menu (e.g., "Roll Tuning" with ID 62),
+ * the transmitter sends a `CRSF_FRAMETYPE_PARAMETER_READ` request for that ID. It does not
+ * know whether the ID represents a parameter or a menu.
+ *
+ * 2.  **Initial Routing (`process_scripted_param_read`)**: This is the central routing function.
+ * - It first calls `find_parameter(62)`. This function searches the *entire global list* of
+ * menus, checking the `params` array of each one. It successfully finds the "parameter-link"
+ * with ID 62 inside the "Gain Tuner" menu object.
+ * - Having found a parameter, it then performs a second check: `find_menu(62)`. This also
+ * succeeds because a `ScriptedMenu` object with ID 62 exists.
+ * - Because *both* lookups succeeded, the function knows this is a sub-menu navigation request.
+ * It returns `false` to delegate the request to the generic C++ handler.
+ * - If only the `find_parameter` call had succeeded, it would be a regular "leaf" parameter,
+ * and the function would return `true` to send the event to the Lua script for handling.
+ *
+ * 3.  **Response Generation (`calc_parameter`)**:
+ * - The delegated request is handled by `calc_parameter`. It calls `find_menu(62)` to get the
+ * `ScriptedMenu` object for "Roll Tuning".
+ * - It then constructs a `FOLDER` type response (`0x2B Parameter settings (entry)`).
+ * - Critically, it packs the `parent_id` (e.g., 41) from the found menu object into the response
+ * payload.
+ * - It also includes the list of child parameter IDs from that menu's `params` array.
+ * - This response is sent to the transmitter, which uses the `parent_id` for "back" navigation
+ * and the child list to populate the new menu screen.
+ *
+ * This architecture ensures a clean separation of concerns: C++ handles the complex and
+ * stateful task of menu navigation, while Lua provides the dynamic content for the final
+ * user-interactive elements.
+ */
+
 #include "AP_RCTelemetry_config.h"
 
 #if HAL_CRSF_TELEM_ENABLED
@@ -755,17 +820,21 @@ void AP_CRSF_Telem::process_command_frame(CommandFrame* command)
 
 void AP_CRSF_Telem::process_param_read_frame(ParameterSettingsReadFrame* read_frame)
 {
-    debug("process_param_read_frame: %d -> %d for %d[%d]", read_frame->origin, read_frame->destination,
-        read_frame->param_num, read_frame->param_chunk);
     if (read_frame->destination != 0 && read_frame->destination != AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
+        debug("process_param_read_frame: %d -> %d for %d[%d]: NAK", read_frame->origin, read_frame->destination,
+               read_frame->param_num, read_frame->param_chunk);
         return; // request was not for us
     }
 #if AP_CRSF_SCRIPTING_ENABLED
     // write parameter in scripted menus
     if (process_scripted_param_read(read_frame)) {
+        debug("process_param_read_frame: %d -> %d for %d[%d]: scripted response OK", read_frame->origin, read_frame->destination,
+            read_frame->param_num, read_frame->param_chunk);
         return;
     }
 #endif // AP_CRSF_SCRIPTING_ENABLED
+    debug("process_param_read_frame: %d -> %d for %d[%d]: generic response", read_frame->origin, read_frame->destination,
+        read_frame->param_num, read_frame->param_chunk);
     _param_request.origin = read_frame->origin;
     _param_request.destination = read_frame->destination;
     _param_request.param_num = read_frame->param_num;
@@ -1631,9 +1700,13 @@ void AP_CRSF_Telem::process_param_write_frame(ParameterSettingsWriteFrame* write
 }
 
 #if AP_CRSF_SCRIPTING_ENABLED
-// scripting interface to parameter menus
+
+// get a menu event filtered by event type, this adds the event to the outbound queue for processing
+// called from lua
 uint8_t AP_CRSF_Telem::get_menu_event(uint8_t menu_events, uint8_t& param_id, ScriptedPayload& payload)
 {
+    WITH_SEMAPHORE(scr_sem);
+
     uint8_t events = 0;
     ScriptedParameterWrite spw;
     if (inbound_params.pop(spw)) {
@@ -1658,13 +1731,68 @@ uint8_t AP_CRSF_Telem::get_menu_event(uint8_t menu_events, uint8_t& param_id, Sc
         }
         // respond with parameter entry
         outbound_params.push(spw);
+        debug("get_menu_event(%u) -> %s", param_id, spw.type == ScriptedParameterEvents::PARAMETER_WRITE ? "WRITE" : "READ");
     }
 
     return events;
 }
 
+// peek for a menu event filtered by event type, this makes no changes to the outbound queue
+// called from lua
+uint8_t AP_CRSF_Telem::peek_menu_event(uint8_t& param_id, ScriptedPayload& payload, uint8_t& events)
+{
+    WITH_SEMAPHORE(scr_sem);
+
+    ScriptedParameterWrite spw;
+    if (!inbound_params.peek(&spw, 1)) {
+        events = 0;
+        param_id = 0;
+        payload.payload_length = 0;
+        return 0;
+    }
+
+    switch (spw.type) {
+        case ScriptedParameterEvents::PARAMETER_WRITE:
+            payload = spw.payload;
+            break;
+        case ScriptedParameterEvents::PARAMETER_READ:
+            payload.payload_length = 0;
+            break;
+        default:
+            break;
+    }
+    events = spw.type;
+    param_id = spw.param->id;
+
+    debug("peek_menu_event(%u) -> %s", param_id, events == ScriptedParameterEvents::PARAMETER_WRITE ? "WRITE" : "READ");
+
+    return inbound_params.available();
+}
+
+// pop a menu event from the inbound queue and add to the outbound queue for processing via lua
+// called from lua
+void AP_CRSF_Telem::pop_menu_event()
+{
+    WITH_SEMAPHORE(scr_sem);
+
+     ScriptedParameterWrite spw;
+    // Pop the event from the queue. We must check if it's empty in case of a race condition
+    // where another script handled the event between our peek and pop.
+    if (inbound_params.pop(spw)) {
+        debug("pop_menu_event(%u) -> %s", spw.param->id, spw.type == ScriptedParameterEvents::PARAMETER_WRITE ? "WRITE" : "READ");
+        // respond with parameter entry
+        outbound_params.push(spw);
+    } else {
+        debug("pop_menu_event(): EMPTY");
+    }
+}
+
+// send a new response from the first item in the outbound queueu
+// called from lua
 bool AP_CRSF_Telem::send_write_response(uint8_t length, const char* data)
 {
+    WITH_SEMAPHORE(scr_sem);
+
     ScriptedParameterWrite spw;
     if (outbound_params.pop(spw)) {
         switch (spw.type) {
@@ -1685,6 +1813,21 @@ bool AP_CRSF_Telem::send_write_response(uint8_t length, const char* data)
             send_response(spw);
             break;
         }
+        // respond with parameter entry
+        return true;
+    }
+    return false;
+}
+
+// send a generic response from the first item in the outbound queue
+// called from lua
+bool AP_CRSF_Telem::send_response()
+{
+    WITH_SEMAPHORE(scr_sem);
+
+    ScriptedParameterWrite spw;
+    if (outbound_params.pop(spw)) {
+        send_response(spw);
         // respond with parameter entry
         return true;
     }
@@ -1717,8 +1860,11 @@ AP_CRSF_Telem::ScriptedParameter* AP_CRSF_Telem::ScriptedMenu::find_parameter(ui
     return nullptr;
 }
 
+// called from lua
 AP_CRSF_Telem::ScriptedParameter* AP_CRSF_Telem::ScriptedMenu::add_parameter(uint8_t length, const char* data)
 {
+    WITH_SEMAPHORE(AP::crsf_telem()->get_scripting_semamphore());
+
     ScriptedParameter* new_params = (ScriptedParameter*)mem_realloc(params,
         sizeof(ScriptedParameter) * num_params,
         sizeof(ScriptedParameter) * (num_params+1));
@@ -1759,6 +1905,8 @@ AP_CRSF_Telem::ScriptedMenu* AP_CRSF_Telem::ScriptedMenu::find_menu(uint8_t para
 
 bool AP_CRSF_Telem::ScriptedMenu::remove_menu(uint8_t param_num)
 {
+    WITH_SEMAPHORE(AP::crsf_telem()->get_scripting_semamphore());
+
     // find the parameter to write
     ScriptedMenu* prev = this;
     for (ScriptedMenu* m = next_menu; m != nullptr; m = m->next_menu) {
@@ -1784,8 +1932,12 @@ AP_CRSF_Telem::ScriptedMenu::~ScriptedMenu()
     }
 }
 
+// add a scripted sub-menu to this menu
+// called from lua
 AP_CRSF_Telem::ScriptedMenu* AP_CRSF_Telem::ScriptedMenu::add_menu(const char* menu_name, uint8_t size, uint8_t parent_menu)
 {
+    WITH_SEMAPHORE(AP::crsf_telem()->get_scripting_semamphore());
+
     // find the menu to create
     ScriptedMenu* tail = this;
     for (; tail->next_menu != nullptr; tail = tail->next_menu) {
@@ -1818,6 +1970,8 @@ bool AP_CRSF_Telem::process_scripted_param_write(ParameterSettingsWriteFrame* wr
         return false;
     }
 
+    WITH_SEMAPHORE(scr_sem);   // not called from lua, but interacting with data structures that might change
+
     // find the parameter to write
     ScriptedParameter* param = scripted_menus.find_parameter(write_frame->param_num);
 
@@ -1842,6 +1996,8 @@ bool AP_CRSF_Telem::process_scripted_param_read(ParameterSettingsReadFrame* read
         return false;
     }
 
+    WITH_SEMAPHORE(scr_sem);   // not called from lua, but interacting with data structures that might change
+
     if (scripted_menus.find_menu(read_frame->param_num) != nullptr) {
         return false;
     }
@@ -1858,16 +2014,23 @@ bool AP_CRSF_Telem::process_scripted_param_read(ParameterSettingsReadFrame* read
     return true;
 }
 
+// add a scripted top-level menu
+// called from lua
 AP_CRSF_Telem::ScriptedMenu* AP_CRSF_Telem::add_menu(const char* name)
 {
+    WITH_SEMAPHORE(scr_sem);
+
     // create a new menu
     ScriptedMenu* new_menu = scripted_menus.add_menu(name, 2, 0);
     debug("adding menu %d", new_menu->id);
     return new_menu;
 }
 
+// called from lua
 void AP_CRSF_Telem::clear_menus()
 {
+    WITH_SEMAPHORE(scr_sem);
+
 #ifdef CRSF_DEBUG
     dump_menu_structure();
 #endif
