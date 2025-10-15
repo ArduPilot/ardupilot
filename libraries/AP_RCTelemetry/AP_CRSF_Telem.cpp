@@ -1847,16 +1847,18 @@ void AP_CRSF_Telem::send_response(const ScriptedParameterWrite& spw)
 
 AP_CRSF_Telem::ScriptedParameter* AP_CRSF_Telem::ScriptedMenu::find_parameter(uint8_t param_num)
 {
-    // find the parameter to write
+    // This function is called on the root, so loop through all menus.
     for (ScriptedMenu* m = next_menu; m != nullptr; m = m->next_menu) {
-        if (param_num > m->id && param_num <= m->id + MAX_SCRIPTED_MENU_SIZE) {
-            for (uint8_t i = 0; i < m->num_params; i++) {
-                if (m->params[i].id == param_num) {
-                    return &m->params[i];
-                }
+        // Search all parameters within the current menu 'm'.
+        for (uint8_t i = 0; i < m->num_params; i++) {
+            if (m->params[i].id == param_num) {
+                // Found the parameter (or menu link).
+                return &m->params[i];
             }
         }
     }
+
+    // Parameter was not found in any menu.
     return nullptr;
 }
 
@@ -2002,16 +2004,29 @@ bool AP_CRSF_Telem::process_scripted_param_read(ParameterSettingsReadFrame* read
         return false;
     }
 
-    // find the parameter to write
+    // First, check if the requested ID corresponds to a parameter link.
     ScriptedParameter* param = scripted_menus.find_parameter(read_frame->param_num);
 
-    if (param == nullptr) {
-        return false;
+    if (param != nullptr) {
+        // We found a parameter. NOW, we must check if this parameter's ID
+        // ALSO corresponds to a menu object. If it does, it's a sub-menu link.
+        if (scripted_menus.find_menu(read_frame->param_num) != nullptr) {
+            // This is a sub-menu link. Return false to let the C++ 'calc_parameter'
+            // function handle it as a FOLDER request.
+            return false;
+        }
+
+        // This is a regular parameter (not a menu link). Handle it in Lua.
+        inbound_params.push({ ScriptedParameterEvents::PARAMETER_READ, *read_frame, param });
+        return true;
     }
 
-    inbound_params.push({ ScriptedParameterEvents::PARAMETER_READ, *read_frame, param });
+    // If it's not a parameter at all, check if it's a top-level menu request.
+    if (scripted_menus.find_menu(read_frame->param_num) != nullptr) {
+        return false; // Delegate to C++ handler.
+    }
 
-    return true;
+    return false;
 }
 
 // add a scripted top-level menu
