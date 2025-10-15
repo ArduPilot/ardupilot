@@ -220,13 +220,17 @@ public:
         ScriptedParameter* params;
         ScriptedMenu* next_menu;    // linked list of menus to make addition/removal/modification easy
 
+        // public API called from lua
+        ScriptedMenu* add_menu(const char* menu_name, uint8_t size, uint8_t parent_menu);
+        ScriptedParameter* add_parameter(uint8_t length, const char* data);
+
+        // private API
         ScriptedMenu(const char* menu_name, uint8_t size, uint8_t parent_menu);
         ~ScriptedMenu();
+        ScriptedParameter* find_parameter(uint8_t param_num);
         ScriptedMenu* find_menu(uint8_t param_num);
         bool remove_menu(uint8_t param_num);
-        ScriptedMenu* add_menu(const char* menu_name, uint8_t size, uint8_t parent_menu);
-        ScriptedParameter* find_parameter(uint8_t param_num);
-        ScriptedParameter* add_parameter(uint8_t length, const char* data);
+
         void dump_structure(uint8_t indent);
         ScriptedMenu() {}
     };
@@ -249,15 +253,29 @@ public:
 
     ObjectBuffer<ScriptedParameterWrite> inbound_params{8};
     ObjectBuffer<ScriptedParameterWrite> outbound_params{8};
+    HAL_Semaphore scr_sem; // semaphore guarding access to the inbound and outbound queues
+    // access so that submenus can serialize access from scripting
+    HAL_Semaphore& get_scripting_semamphore() { return scr_sem; }
 
-    ScriptedMenu* add_menu(const char* name);
     void clear_menus();
     bool process_scripted_param_write(ParameterSettingsWriteFrame* write, uint8_t length);
     bool process_scripted_param_read(ParameterSettingsReadFrame* read);
-    uint8_t get_menu_event(uint8_t menu_events, uint8_t& param_id, ScriptedPayload& payload);
-    bool send_write_response(uint8_t length, const char* data);
     void send_response(const ScriptedParameterWrite& spw);
     void dump_menu_structure();
+
+    // public API called from lua
+    // add a scripted sub-menu to this menu
+    ScriptedMenu* add_menu(const char* name);
+    // get a menu event filtered by event type, this adds the event to the outbound queue for processing
+    uint8_t get_menu_event(uint8_t menu_events, uint8_t& param_id, ScriptedPayload& payload);
+    // peek for a menu event filtered by event type, this makes no changes to the outbound queue
+    uint8_t peek_menu_event(uint8_t& param_id, ScriptedPayload& payload, uint8_t& events);
+    // pop a menu event from the inbound queue and add to the outbound queue for processing via lua
+    void pop_menu_event();
+    // send a new response from the first item in the outbound queueu
+    bool send_write_response(uint8_t length, const char* data);
+    // send a generic response from the first item in the outbound queue
+    bool send_response();
 #endif
 
     // Frame to hold passthrough telemetry
