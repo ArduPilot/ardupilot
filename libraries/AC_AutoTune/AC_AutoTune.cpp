@@ -183,25 +183,20 @@ void AC_AutoTune::send_step_string()
 
 const char *AC_AutoTune::get_tune_type_name() const
 {
+    const char *tune_string[uint8_t(TuneType::TUNE_COMPLETE)+1] = {
+        "Rate D Up",
+        "Rate D Down",
+        "Rate P Up",
+        "Rate FF Up",
+        "Angle P Up",
+        "Angle P Down",
+        "Find Max Gains",
+        "Check Tune Frequency Response",
+        "Tune Complete"
+    };
     switch (tune_type) {
-    case TuneType::RATE_D_UP:
-        return "Rate D Up";
-    case TuneType::RATE_D_DOWN:
-        return "Rate D Down";
-    case TuneType::RATE_P_UP:
-        return "Rate P Up";
-    case TuneType::RATE_FF_UP:
-        return "Rate FF Up";
-    case TuneType::ANGLE_P_UP:
-        return "Angle P Up";
-    case TuneType::ANGLE_P_DOWN:
-        return "Angle P Down";
-    case TuneType::MAX_GAINS:
-        return "Find Max Gains";
-    case TuneType::TUNE_CHECK:
-        return "Check Tune Frequency Response";
-    case TuneType::TUNE_COMPLETE:
-        return "Tune Complete";
+    case TuneType::RATE_D_UP...TuneType::TUNE_COMPLETE:
+        return tune_string[uint8_t(tune_type)];
     }
     return "";
     // this should never happen
