@@ -82,17 +82,29 @@ void AP_RangeFinder_DroneCAN::update()
 {
     WITH_SEMAPHORE(_sem);
     if ((AP_HAL::millis() - _last_reading_ms) > 500) {
-        //if data is older than 500ms, report NoData
+        // if last read was more than 500ms, report NoData
         set_status(RangeFinder::Status::NoData);
-    } else if (_status == RangeFinder::Status::Good && new_data) {
+        return;
+    }
+
+    if (_status != RangeFinder::Status::Good) {
+        // handle additional states received by measurement handler
+        if (_status == RangeFinder::Status::OutOfRangeLow) {
+            // distance_m starts out as 0 when we are initially on the ground, we want it to return
+            // to this value upon landing
+            state.distance_m = 0;
+        }
+        state.last_reading_ms = _last_reading_ms;
+        set_status(_status);
+        return;
+    }
+
+    if (_status == RangeFinder::Status::Good && new_data) {
         //copy over states
         state.distance_m = _distance_cm * 0.01f;
         state.last_reading_ms = _last_reading_ms;
         update_status();
         new_data = false;
-    } else if (_status != RangeFinder::Status::Good) {
-        //handle additional states received by measurement handler
-        set_status(_status);
     }
 }
 
