@@ -128,7 +128,7 @@ bool ModeSystemId::init(bool ignore_checks)
         if (!pos_control->is_active_U()) {
             pos_control->init_U_controller();
         }
-        target_pos_ne_m = pos_control->get_pos_estimate_NEU_m().tofloat().xy();
+        target_pos_ne_m = pos_control->get_pos_estimate_NEU_m().xy();
     }
 
     att_bf_feedforward = attitude_control->get_bf_feedforward();
@@ -361,12 +361,12 @@ void ModeSystemId::run()
         }
 
         Vector2f accel_ne_mss;
-        target_pos_ne_m += input_vel_ne_ms * G_Dt;
+        target_pos_ne_m += input_vel_ne_ms.topostype() * G_Dt;
         if (is_positive(G_Dt)) {
             accel_ne_mss = (input_vel_ne_ms - input_vel_last_ne_ms) / G_Dt;
             input_vel_last_ne_ms = input_vel_ne_ms;
         }
-        pos_control->set_pos_vel_accel_NE_m(target_pos_ne_m.topostype(), input_vel_ne_ms, accel_ne_mss);
+        pos_control->set_pos_vel_accel_NE_m(target_pos_ne_m, input_vel_ne_ms, accel_ne_mss);
 
         // run pos controller
         pos_control->update_NE_controller();

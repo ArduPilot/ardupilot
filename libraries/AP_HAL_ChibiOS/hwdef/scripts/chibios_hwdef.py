@@ -1189,9 +1189,7 @@ class ChibiOSHWDef(hwdef.HWDef):
             f.write('''
 #define HAL_BOOTLOADER_BUILD TRUE
 #define HAL_USE_ADC FALSE
-#define HAL_USE_EXT FALSE
 #define HAL_NO_PRINTF
-#define HAL_NO_CCM
 #define HAL_USE_I2C FALSE
 #define HAL_USE_PWM FALSE
 #define CH_DBG_ENABLE_STACK_CHECK FALSE
@@ -1229,7 +1227,6 @@ class ChibiOSHWDef(hwdef.HWDef):
 #define HAL_STORAGE_SIZE 16384
 #endif
 #define HAL_USE_RTC FALSE
-#define DISABLE_SERIAL_ESC_COMM TRUE
 #ifndef CH_CFG_USE_DYNAMIC
 #define CH_CFG_USE_DYNAMIC FALSE
 #endif
@@ -1486,7 +1483,7 @@ INCLUDE common.ld
                 % (devidx, name, self.spi_list.index(bus), int(devid[5:]), pal_line,
                    mode, lowspeed, highspeed))
             devlist.append('HAL_SPI_DEVICE%u' % devidx)
-        f.write('#define HAL_SPI_DEVICE_LIST %s\n\n' % ','.join(devlist))
+        self.write_device_table(f, 'spi devices', 'HAL_SPI_DEVICE_LIST', devlist)
         for dev in self.spidev:
             f.write("#define HAL_WITH_SPI_%s 1\n" % dev[0].upper().replace("-", "_"))
         f.write("\n")
@@ -1539,7 +1536,7 @@ INCLUDE common.ld
                 '#define HAL_WSPI_DEVICE%-2u WSPIDesc(%-17s, %2u, WSPIDEV_%s, %7s, %2u, %2u)\n'
                 % (devidx, name, self.wspi_list.index(bus), mode, speed, int(size_pow2), int(ncs_clk_delay)))
             devlist.append('HAL_WSPI_DEVICE%u' % devidx)
-        f.write('#define HAL_WSPI_DEVICE_LIST %s\n\n' % ','.join(devlist))
+        self.write_device_table(f, "wspi devices", "HAL_WSPI_DEVICE_LIST", devlist)
         for dev in self.wspidev:
             f.write("#define HAL_HAS_WSPI_%s 1\n" % dev[0].upper().replace("-", "_"))
             if dev[1].startswith('QUADSPI'):
@@ -1879,7 +1876,7 @@ INCLUDE common.ld
 #endif
 ''' % (OTG2_index, OTG2_index))
 
-        f.write('#define HAL_SERIAL_DEVICE_LIST %s\n\n' % ','.join(devlist))
+        self.write_device_table(f, "serial devices", "HAL_SERIAL_DEVICE_LIST", devlist)
         if not need_uart_driver and not self.is_bootloader_fw():
             f.write('''
 #ifndef HAL_USE_SERIAL
@@ -1955,7 +1952,8 @@ INCLUDE common.ld
 #endif
 '''
                     % (n, n, n, n, n, n, n, scl_line, sda_line, n, n, n, scl_line, sda_line))
-        f.write('\n#define HAL_I2C_DEVICE_LIST %s\n\n' % ','.join(devlist))
+        f.write('\n')
+        self.write_device_table(f, "i2c devices", "HAL_I2C_DEVICE_LIST", devlist)
 
     def parse_timer(self, str):
         '''parse timer channel string, i.e TIM8_CH2N'''
@@ -2728,7 +2726,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
     def write_processed_defaults_file(self, filepath):
         # see if board has a defaults.parm file or a --default-parameters file was specified
         defaults_filename = os.path.join(os.path.dirname(self.hwdef[0]), 'defaults.parm')
-        defaults_path = os.path.join(os.path.dirname(self.hwdef[0]), args.params)
+        defaults_path = os.path.join(os.path.dirname(self.hwdef[0]), self.default_params_filepath)
 
         defaults_abspath = None
         if os.path.exists(defaults_path):
@@ -3087,6 +3085,17 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.romfs_add('defaults.parm', filepath)
         self.have_defaults_file = True
 
+    def get_stale_defines(self):
+        '''returns a map with a stale define and a comment as to what to do about it'''
+        ret = super().get_stale_defines()
+        ret.update({
+            'HAL_NO_RCIN_THREAD': 'HAL_NO_RCIN_THREAD is no longer used; try "define HAL_RCIN_THREAD_ENABLED 0"',
+            'HAL_NO_MONITOR_THREAD': 'HAL_NO_MONITOR_THREAD is no longer used; try "define HAL_MONITOR_THREAD_ENABLED 0"',
+            'HAL_NO_GPIO_IRQ': 'HAL_NO_GPIO_IRQ is no longer used; remove it from your hwdef',
+            'DISABLE_SERIAL_ESC_COMM': 'DISABLE_SERIAL_ESC_COMM is no longer used; try "define HAL_SERIAL_ESC_COMM_ENABLED 1"',
+        })
+        return ret
+
     def run(self):
         # process input file
         self.process_hwdefs()
@@ -3130,7 +3139,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         # CHIBIOS_BUILD_FLAGS is passed to the ChibiOS makefile
         self.env_vars['CHIBIOS_BUILD_FLAGS'] = ' '.join(self.build_flags)
-        self.write_env_py(os.path.join(self.outdir, "env.py"))
 
 
 if __name__ == '__main__':

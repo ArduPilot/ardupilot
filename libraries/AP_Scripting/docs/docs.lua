@@ -569,6 +569,11 @@ function SocketAPM_ud:send(str, len) end
 ---@return integer
 function SocketAPM_ud:sendto(str, len, ipaddr, port) end
 
+-- return true if a socket is in a pending connect state
+-- used for non-blocking TCP connections
+---@return boolean
+function SocketAPM_ud:is_pending() end
+
 -- bind to an address. Use "0.0.0.0" for wildcard bind
 ---@param IP_address string
 ---@param port integer
@@ -1142,6 +1147,15 @@ function Location_ud:get_alt_frame() end
 ---@return boolean
 function Location_ud:change_alt_frame(desired_frame) end
 
+-- set altitude in Location object in metres
+---@param alt number -- altitude
+---@param frame integer -- altitude frame
+---| '0' # ABSOLUTE
+---| '1' # ABOVE_HOME
+---| '2' # ABOVE_ORIGIN
+---| '3' # ABOVE_TERRAIN
+function Location_ud:set_alt_m(alt, frame) end
+
 -- Given a Location this calculates the north and east distance between the two locations in meters.
 ---@param loc Location_ud -- location to compare with
 ---@return Vector2f_ud -- North east distance vector in meters
@@ -1283,6 +1297,10 @@ function AP_HAL__I2CDevice_ud:set_retries(retries) end
 -- Serial port access object
 ---@class (exact) AP_Scripting_SerialAccess_ud
 local AP_Scripting_SerialAccess_ud = {}
+
+-- Set UART use unbuffered writes flag, false by default (no effect for device ports)
+---@param on boolean
+function AP_Scripting_SerialAccess_ud:set_unbuffered_writes(on) end
 
 -- Start serial port with the given baud rate (no effect for device ports)
 ---@param baud_rate uint32_t_ud|integer|number
@@ -1893,7 +1911,7 @@ function FWVersion:string() end
 periph = {}
 
 -- desc
----@return uint32_t_ud
+---@return uint64_t_ud
 function periph:get_vehicle_state() end
 
 -- desc
@@ -2397,7 +2415,7 @@ function esc_telem:get_rpm(instance) end
 
 -- update RPM for an ESC
 ---@param esc_index integer -- esc instance 0 indexed
----@param rpm integer -- RPM
+---@param rpm number -- RPM
 ---@param error_rate number -- error rate
 function esc_telem:update_rpm(esc_index, rpm, error_rate) end
 
@@ -3898,27 +3916,37 @@ function precland:healthy() end
 -- desc
 follow = {}
 
--- desc
+-- get the SYSID_THISMAV of the target
+---@return uint32_t_ud
+function follow:get_target_sysid() end
+
+-- get target's heading in degrees (0 = north, 90 = east)
 ---@return number|nil
 function follow:get_target_heading_deg() end
 
--- desc
----@return Location_ud|nil
----@return Vector3f_ud|nil
-function follow:get_target_location_and_velocity_ofs() end
-
--- desc
----@return Location_ud|nil
----@return Vector3f_ud|nil
+-- get target's estimated location and velocity (in NED)
+---@return Location_ud|nil -- location
+---@return Vector3f_ud|nil -- velocity
 function follow:get_target_location_and_velocity() end
+
+-- get target's estimated location with offsets added, and velocity (in NED)
+---@return Location_ud|nil -- location
+---@return Vector3f_ud|nil -- velocity
+function follow:get_target_location_and_velocity_ofs() end
 
 -- desc
 ---@return uint32_t_ud
 function follow:get_last_update_ms() end
 
--- desc
+-- true if we have a valid target location estimate
 ---@return boolean
 function follow:have_target() end
+
+-- get distance vector to target (in meters) and target's velocity all in NED frame
+---@return Vector3f_ud|nil -- distance NED
+---@return Vector3f_ud|nil -- distance NED with offsets
+---@return Vector3f_ud|nil -- velocity NED
+function follow:get_target_dist_and_vel_NED_m() end
 
 -- desc
 scripting = {}
@@ -3963,7 +3991,7 @@ function mavlink:receive_chan() end
 ---@param chan integer
 ---@param msgid integer
 ---@param message string
----@return boolean -- success
+---@return boolean|nil -- True if send was successful, false if send was not successful, nil if channel does not exist
 function mavlink:send_chan(chan, msgid, message) end
 
 -- Block a given MAV_CMD from being processed by ArduPilot

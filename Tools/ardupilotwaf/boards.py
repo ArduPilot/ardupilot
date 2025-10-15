@@ -98,7 +98,7 @@ class Board:
             # need to check the hwdef.h file for the board to see if dds is enabled
             # the issue here is that we need to configure the env properly to include
             # the DDS library, but the definition is the the hwdef file
-            # and can be overriden by the commandline options
+            # and can be overridden by the commandline options
             with open(env.BUILDROOT + "/hwdef.h", 'r', encoding="utf8") as file:
                 if "#define AP_DDS_ENABLED 1" in file.read():
                     # Enable DDS if the hwdef file has it enabled
@@ -558,7 +558,10 @@ class Board:
         if cfg.options.consistent_builds:
             # if symbols are renamed we don't want them to affect the output:
             env.CXXFLAGS += ['-fno-rtti']
-            env.CFLAGS += ['-fno-rtti']
+            # avoid different filenames for the same source file
+            # affecting the compiler output:
+            env.CXXFLAGS += ['-frandom-seed=4']  # ob. xkcd
+
             # stop including a unique ID in the headers.  More useful
             # when trying to find binary differences as the build-id
             # appears to be a hash of the output products
@@ -830,8 +833,7 @@ class sitl(Board):
 
         # wrap malloc to ensure memory is zeroed
         if cfg.env.DEST_OS == 'cygwin':
-            # on cygwin we need to wrap _malloc_r instead
-            env.LINKFLAGS += ['-Wl,--wrap,_malloc_r']
+            pass # handled at runtime in libraries/AP_Common/c++.cpp
         elif platform.system() != 'Darwin':
             env.LINKFLAGS += ['-Wl,--wrap,malloc']
         
@@ -1225,8 +1227,6 @@ class esp32s3(esp32):
         if hasattr(self, 'hwdef'):
             cfg.env.HWDEF = self.hwdef
         super(esp32s3, self).configure_env(cfg, env)
-
-        cfg.load('esp32')
 
 class chibios(Board):
     abstract = True

@@ -393,8 +393,6 @@ class IBusResponse_GET_SENSOR_VALUE(IBusResponse):
         ret = 0
         for i in range(len(self.sensor_value)):
             x = self.sensor_value[i]
-            if sys.version_info.major < 3:
-                x = ord(x)
             ret = ret | (x << (i*8))
         return ret
 
@@ -448,8 +446,6 @@ class IBus(Telem):
 
     def packet_from_buffer(self, buffer):
         t = buffer[1] >> 4
-        if sys.version_info.major < 3:
-            t = ord(t)
         if t == 0x08:
             return IBusResponse_DISCOVER(buffer)
         if t == 0x09:
@@ -462,8 +458,6 @@ class IBus(Telem):
         self.buffer += self.do_read()
         while len(self.buffer):
             msglen = self.buffer[0]
-            if sys.version_info.major < 3:
-                msglen = ord(msglen)
             if len(self.buffer) < msglen:
                 return
             packet = self.packet_from_buffer(self.buffer[:msglen])
@@ -953,21 +947,15 @@ class LTM(Telem):
 
     def consume_frame(self):
         b2 = self.buffer[2]
-        if sys.version_info.major < 3:
-            b2 = ord(b2)
         frame_type = b2
         frame_length = self.frame_lengths[frame_type]
         # check frame CRC
         crc = 0
         count = 0
         for c in self.buffer[3:frame_length-1]:
-            if sys.version_info.major < 3:
-                c = ord(c)
             crc ^= c
             count += 1
         buffer_crc = self.buffer[frame_length-1]
-        if sys.version_info.major < 3:
-            buffer_crc = ord(buffer_crc)
         if crc != buffer_crc:
             raise NotAchievedException("Invalid checksum on frame type %s" % str(chr(frame_type)))
 #        self.progress("Received valid %s frame" % str(chr(frame_type)))
@@ -1003,24 +991,17 @@ class LTM(Telem):
                 return self.int32(7)
 
             def gndspeed(self):
-                ret = self.buffer[11]
-                if sys.version_info.major < 3:
-                    ret = ord(ret)
-                return ret
+                return self.buffer[11]
 
             def alt(self):
                 return self.int32(12)
 
             def sats(self):
                 s = self.buffer[16]
-                if sys.version_info.major < 3:
-                    s = ord(s)
                 return (s >> 2)
 
             def fix_type(self):
                 s = self.buffer[16]
-                if sys.version_info.major < 3:
-                    s = ord(s)
                 return s & 0b11
 
         class FrameA(Frame):
@@ -1057,22 +1038,16 @@ class LTM(Telem):
             if len(self.buffer) == 0:
                 break
             b0 = self.buffer[0]
-            if sys.version_info.major < 3:
-                b0 = ord(b0)
             if b0 != self.HEADER1:
                 self.bad_chars += 1
                 self.buffer = self.buffer[1:]
                 continue
             b1 = self.buffer[1]
-            if sys.version_info.major < 3:
-                b1 = ord(b1)
             if b1 != self.HEADER2:
                 self.bad_chars += 1
                 self.buffer = self.buffer[1:]
                 continue
             b2 = self.buffer[2]
-            if sys.version_info.major < 3:
-                b2 = ord(b2)
             if b2 not in [self.FRAME_G, self.FRAME_A, self.FRAME_S]:
                 self.bad_chars += 1
                 self.buffer = self.buffer[1:]
@@ -1129,13 +1104,9 @@ class DEVO(Telem):
         # check frame checksum
         checksum = 0
         for c in self.buffer[:self.frame_length-1]:
-            if sys.version_info.major < 3:
-                c = ord(c)
             checksum += c
         checksum &= 0xff    # since we receive 8 bit checksum
         buffer_checksum = self.buffer[self.frame_length-1]
-        if sys.version_info.major < 3:
-            buffer_checksum = ord(buffer_checksum)
         if checksum != buffer_checksum:
             raise NotAchievedException("Invalid checksum")
 
@@ -1178,8 +1149,6 @@ class DEVO(Telem):
             if len(self.buffer) == 0:
                 break
             b0 = self.buffer[0]
-            if sys.version_info.major < 3:
-                b0 = ord(b0)
             if b0 != self.HEADER:
                 self.bad_chars += 1
                 self.buffer = self.buffer[1:]
@@ -1246,10 +1215,7 @@ class FRSkyD(FRSky):
             if len(self.buffer) == 0:
                 break
             consume = 1
-            if sys.version_info.major >= 3:
-                b = self.buffer[0]
-            else:
-                b = ord(self.buffer[0])
+            b = self.buffer[0]
             if self.state == self.state_WANT_START_STOP_D:
                 if b != self.START_STOP_D:
                     # we may come into a stream mid-way, so we can't judge
@@ -1609,20 +1575,14 @@ class FRSkySPort(FRSky):
             self.progress("(0x%x): %u" % (sensor_id, self.sensor_id_poll_counts[sensor_id]))
 
     def read_bytestuffed_byte(self):
-        if sys.version_info.major >= 3:
-            b = self.buffer[0]
-        else:
-            b = ord(self.buffer[0])
+        b = self.buffer[0]
         if b == 0x7D:
             # byte-stuffed
             if len(self.buffer) < 2:
                 self.consume = 0
                 return None
             self.consume = 2
-            if sys.version_info.major >= 3:
-                b2 = self.buffer[1]
-            else:
-                b2 = ord(self.buffer[1])
+            b2 = self.buffer[1]
             if b2 == 0x5E:
                 return self.START_STOP_SPORT
             if b2 == 0x5D:
@@ -1758,10 +1718,7 @@ class FRSkySPort(FRSky):
             if len(self.buffer) == 0:
                 break
             self.consume = 1
-            if sys.version_info.major >= 3:
-                b = self.buffer[0]
-            else:
-                b = ord(self.buffer[0])
+            b = self.buffer[0]
 #            self.progress("Have (%s) bytes state=%s b=0x%02x" % (str(len(self.buffer)), str(self.state), b));
             if self.state == self.state_WANT_FRAME_TYPE:
                 if b in [self.SPORT_DATA_FRAME, self.SPORT_DOWNLINK_FRAME]:
@@ -3374,7 +3331,16 @@ class TestSuite(ABC):
         '''temporarily stop the SITL process from running.  Note that
         simulation time will not move forward!'''
         # self.progress("Pausing SITL")
-        self.sitl.kill(signal.SIGSTOP)
+        if sys.platform == 'cygwin':
+            # Maintain original behaviour under cygwin as SIGTSTP has not been tested
+            self.sitl.kill(signal.SIGSTOP)
+
+        else:
+            # SIGTSTP can be ignored by GDB allowing easier debugging rather than having GDB break at every pause
+            # EG add:
+            # handle SIGTSTP nostop noprint pass
+            # handle SIGCONT nostop noprint pass
+            self.sitl.kill(signal.SIGTSTP)
 
     def unpause_SITL(self):
         # self.progress("Unpausing SITL")
@@ -5442,8 +5408,8 @@ class TestSuite(ABC):
             target_system=target_system,
             target_component=target_component
         )
-        itemstype = mavutil.mavlink.enums["MAV_MISSION_TYPE"][wploader.mav_mission_type()]
-        self.progress(f"Loading {itemstype} ({os.path.basename(filepath)}")
+        itemstype = mavutil.mavlink.enums["MAV_MISSION_TYPE"][wploader.mav_mission_type()].name
+        self.progress(f"Loading {itemstype} ({os.path.basename(filepath)})")
         wploader.load(filepath)
         return [self.wp_to_mission_item_int(x, wploader.mav_mission_type()) for x in wploader.wpoints]  # noqa:502
 
@@ -5742,20 +5708,33 @@ class TestSuite(ABC):
         for (t, want_rate) in message_rates.items():
             if t not in counts:
                 raise NotAchievedException("Wanted %s but got none" % t)
-            self.progress("Got (%u) in (%uus)" % (counts[t], delta_time_us))
             got_rate = float(counts[t]) / delta_time_us * 1000000
+            self.progress(f"Got ({counts[t]}) in ({delta_time_us}us) ({got_rate}/s)")
 
             if abs(want_rate - got_rate) > 5:
                 raise NotAchievedException("Not getting %s data at wanted rate want=%f got=%f" %
                                            (t, want_rate, got_rate))
 
-    def generate_rate_sample_log(self):
+    def generate_rate_sample_log(self, log_bitmask=None):
+        self.context_push()
+        params = {
+            "LOG_DISARMED": 0,
+            "LOG_DARM_RATEMAX": 0,
+            "LOG_FILE_RATEMAX": 0,
+        }
+        if log_bitmask is not None:
+            params["LOG_BITMASK"] = log_bitmask
+
+        self.set_parameters(params)
         self.reboot_sitl()
         self.wait_ready_to_arm()
+        self.set_parameter("LOG_DISARMED", 1)
         self.delay_sim_time(20)
+        self.set_parameter("LOG_DISARMED", 0)
         path = self.current_onboard_log_filepath()
         self.progress("Rate sample log (%s)" % path)
-        self.reboot_sitl()
+        self.reboot_sitl()  # ensure log is rotated
+        self.context_pop()
         return path
 
     def rc_defaults(self):
@@ -6518,7 +6497,7 @@ class TestSuite(ABC):
 
     def send_get_parameter_direct(self, name):
         encname = name
-        if sys.version_info.major >= 3 and not isinstance(encname, bytes):
+        if not isinstance(encname, bytes):
             encname = bytes(encname, 'ascii')
         self.mav.mav.param_request_read_send(self.sysid_thismav(),
                                              1,
@@ -7444,11 +7423,12 @@ class TestSuite(ABC):
                                        (quality, m.signal_quality))
 
     def get_rangefinder_distance(self):
-        m = self.assert_receive_message('RANGEFINDER', timeout=5)
-        return m.distance
+        '''returns current rangefinder distance in metres'''
+        m = self.assert_receive_message('DISTANCE_SENSOR', timeout=5)
+        return m.current_distance * 0.01
 
     def wait_rangefinder_distance(self, dist_min, dist_max, timeout=30, **kwargs):
-        '''wait for RANGEFINDER distance'''
+        '''wait for DISTANCE_SENSOR distance in metres'''
         def validator(value2, target2=None):
             if dist_min <= value2 <= dist_max:
                 return True
@@ -7456,7 +7436,7 @@ class TestSuite(ABC):
                 return False
 
         self.wait_and_maintain(
-            value_name="RageFinderDistance",
+            value_name="RangeFinderDistance",
             target=dist_min,
             current_value_getter=lambda: self.get_rangefinder_distance(),
             accuracy=(dist_max - dist_min),
@@ -8157,6 +8137,20 @@ class TestSuite(ABC):
             if v == value:
                 return
             self.delay_sim_time(0.1)
+
+    def wait_parameter_values(self, parameters, timeout=10):
+        need_to_see = copy.copy(parameters)
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException(f"Parameters did not get values: {need_to_see}")
+            new_values = self.get_parameters(need_to_see.keys())
+            for (n, v) in new_values.items():
+                self.progress(f"Got parameter value ({n}={v}) want={need_to_see[n]}")
+                if need_to_see[n] == v:
+                    del need_to_see[n]
+            if len(need_to_see) == 0:
+                break
 
     def get_servo_channel_value(self, channel, timeout=2):
         channel_field = "servo%u_raw" % channel
@@ -8971,10 +8965,8 @@ Also, ignores heartbeats not from our target system'''
                       (self.terrain_data_messages_sent,))
 
     def send_statustext(self, text):
-        if sys.version_info.major >= 3 and not isinstance(text, bytes):
+        if not isinstance(text, bytes):
             text = bytes(text, "ascii")
-        elif 'unicode' in str(type(text)):
-            text = text.encode('ascii')
         seq = 0
         while len(text):
             self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_WARNING, text[:50], id=self.statustext_id, chunk_seq=seq)
@@ -10290,106 +10282,119 @@ Also, ignores heartbeats not from our target system'''
 
     def CompassReordering(self):
         '''Test Compass reordering when priorities are changed'''
-        self.context_push()
-        ex = None
-        try:
-            originals = {
-                "COMPASS_OFS_X": 1.1,
-                "COMPASS_OFS_Y": 1.2,
-                "COMPASS_OFS_Z": 1.3,
-                "COMPASS_DIA_X": 1.4,
-                "COMPASS_DIA_Y": 1.5,
-                "COMPASS_DIA_Z": 1.6,
-                "COMPASS_ODI_X": 1.7,
-                "COMPASS_ODI_Y": 1.8,
-                "COMPASS_ODI_Z": 1.9,
-                "COMPASS_MOT_X": 1.91,
-                "COMPASS_MOT_Y": 1.92,
-                "COMPASS_MOT_Z": 1.93,
-                "COMPASS_SCALE": 1.94,
-                "COMPASS_ORIENT": 1,
-                "COMPASS_EXTERNAL": 2,
+        originals = {
+            "COMPASS_OFS_X": 1.1,
+            "COMPASS_OFS_Y": 1.2,
+            "COMPASS_OFS_Z": 1.3,
+            "COMPASS_DIA_X": 1.4,
+            "COMPASS_DIA_Y": 1.5,
+            "COMPASS_DIA_Z": 1.6,
+            "COMPASS_ODI_X": 1.7,
+            "COMPASS_ODI_Y": 1.8,
+            "COMPASS_ODI_Z": 1.9,
+            "COMPASS_MOT_X": 1.91,
+            "COMPASS_MOT_Y": 1.92,
+            "COMPASS_MOT_Z": 1.93,
+            "COMPASS_SCALE": 1.94,
+            "COMPASS_ORIENT": 1,
+            "COMPASS_EXTERNAL": 2,
 
-                "COMPASS_OFS2_X": 2.1,
-                "COMPASS_OFS2_Y": 2.2,
-                "COMPASS_OFS2_Z": 2.3,
-                "COMPASS_DIA2_X": 2.4,
-                "COMPASS_DIA2_Y": 2.5,
-                "COMPASS_DIA2_Z": 2.6,
-                "COMPASS_ODI2_X": 2.7,
-                "COMPASS_ODI2_Y": 2.8,
-                "COMPASS_ODI2_Z": 2.9,
-                "COMPASS_MOT2_X": 2.91,
-                "COMPASS_MOT2_Y": 2.92,
-                "COMPASS_MOT2_Z": 2.93,
-                "COMPASS_SCALE2": 2.94,
-                "COMPASS_ORIENT2": 3,
-                "COMPASS_EXTERN2": 4,
+            "COMPASS_OFS2_X": 2.1,
+            "COMPASS_OFS2_Y": 2.2,
+            "COMPASS_OFS2_Z": 2.3,
+            "COMPASS_DIA2_X": 2.4,
+            "COMPASS_DIA2_Y": 2.5,
+            "COMPASS_DIA2_Z": 2.6,
+            "COMPASS_ODI2_X": 2.7,
+            "COMPASS_ODI2_Y": 2.8,
+            "COMPASS_ODI2_Z": 2.9,
+            "COMPASS_MOT2_X": 2.91,
+            "COMPASS_MOT2_Y": 2.92,
+            "COMPASS_MOT2_Z": 2.93,
+            "COMPASS_SCALE2": 2.94,
+            "COMPASS_ORIENT2": 3,
+            "COMPASS_EXTERN2": 4,
 
-                "COMPASS_OFS3_X": 3.1,
-                "COMPASS_OFS3_Y": 3.2,
-                "COMPASS_OFS3_Z": 3.3,
-                "COMPASS_DIA3_X": 3.4,
-                "COMPASS_DIA3_Y": 3.5,
-                "COMPASS_DIA3_Z": 3.6,
-                "COMPASS_ODI3_X": 3.7,
-                "COMPASS_ODI3_Y": 3.8,
-                "COMPASS_ODI3_Z": 3.9,
-                "COMPASS_MOT3_X": 3.91,
-                "COMPASS_MOT3_Y": 3.92,
-                "COMPASS_MOT3_Z": 3.93,
-                "COMPASS_SCALE3": 3.94,
-                "COMPASS_ORIENT3": 5,
-                "COMPASS_EXTERN3": 6,
-            }
+            "COMPASS_OFS3_X": 3.1,
+            "COMPASS_OFS3_Y": 3.2,
+            "COMPASS_OFS3_Z": 3.3,
+            "COMPASS_DIA3_X": 3.4,
+            "COMPASS_DIA3_Y": 3.5,
+            "COMPASS_DIA3_Z": 3.6,
+            "COMPASS_ODI3_X": 3.7,
+            "COMPASS_ODI3_Y": 3.8,
+            "COMPASS_ODI3_Z": 3.9,
+            "COMPASS_MOT3_X": 3.91,
+            "COMPASS_MOT3_Y": 3.92,
+            "COMPASS_MOT3_Z": 3.93,
+            "COMPASS_SCALE3": 3.94,
+            "COMPASS_ORIENT3": 5,
+            "COMPASS_EXTERN3": 6,
+        }
 
-            # quick sanity check to ensure all values are unique:
-            if len(originals.values()) != len(set(originals.values())):
-                raise NotAchievedException("Values are not all unique!")
+        # quick sanity check to ensure all values are unique:
+        if len(originals.values()) != len(set(originals.values())):
+            raise NotAchievedException("Values are not all unique!")
 
-            self.progress("Setting parameters")
-            self.set_parameters(originals)
+        self.progress("Setting parameters")
+        self.set_parameters(originals)
 
-            self.reboot_sitl()
-
-            # no transforms means our originals should be our finals:
-            self.test_mag_reordering_assert_mag_transform(originals, [])
-
-            self.start_subtest("Pushing 1st mag to 3rd")
-            ey = None
-            self.context_push()
-            try:
-                # now try reprioritising compass 1 to be higher than compass 0:
-                prio1_id = self.get_parameter("COMPASS_PRIO1_ID")
-                prio2_id = self.get_parameter("COMPASS_PRIO2_ID")
-                prio3_id = self.get_parameter("COMPASS_PRIO3_ID")
-                self.set_parameter("COMPASS_PRIO1_ID", prio2_id)
-                self.set_parameter("COMPASS_PRIO2_ID", prio3_id)
-                self.set_parameter("COMPASS_PRIO3_ID", prio1_id)
-
-                self.reboot_sitl()
-
-                self.test_mag_reordering_assert_mag_transform(originals, [(2, 1),
-                                                                          (3, 2),
-                                                                          (1, 3)])
-
-            except Exception as e:
-                self.progress("Caught exception: %s" %
-                              self.get_exception_stacktrace(e))
-                ey = e
-            self.context_pop()
-            self.reboot_sitl()
-            if ey is not None:
-                raise ey
-
-        except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
-            ex = e
-        self.context_pop()
         self.reboot_sitl()
-        if ex is not None:
-            raise ex
+
+        # no transforms means our originals should be our finals:
+        self.test_mag_reordering_assert_mag_transform(originals, [])
+
+        self.start_subtest("Pushing 1st mag to 3rd")
+        self.context_push()
+        # now try reprioritising compass 1 to be higher than compass 0:
+        prio1_id = self.get_parameter("COMPASS_PRIO1_ID")
+        prio2_id = self.get_parameter("COMPASS_PRIO2_ID")
+        prio3_id = self.get_parameter("COMPASS_PRIO3_ID")
+        self.set_parameters({
+            "COMPASS_PRIO1_ID": prio2_id,
+            "COMPASS_PRIO2_ID": prio3_id,
+            "COMPASS_PRIO3_ID": prio1_id,
+        })
+
+        self.reboot_sitl()
+
+        self.test_mag_reordering_assert_mag_transform(originals, [
+            (2, 1),
+            (3, 2),
+            (1, 3),
+        ])
+
+        self.progress("Setting priorities back to original order")
+        self.set_parameters({
+            "COMPASS_PRIO1_ID": prio1_id,
+            "COMPASS_PRIO2_ID": prio2_id,
+            "COMPASS_PRIO3_ID": prio3_id,
+        })
+
+        self.reboot_sitl()
+
+        self.test_mag_reordering_assert_mag_transform(originals, [
+            (1, 1),
+            (2, 2),
+            (3, 3),
+        ])
+
+        self.progress("And reverse ordering")
+        self.set_parameters({
+            "COMPASS_PRIO1_ID": prio3_id,
+            "COMPASS_PRIO2_ID": prio2_id,
+            "COMPASS_PRIO3_ID": prio1_id,
+        })
+
+        self.reboot_sitl()
+
+        self.test_mag_reordering_assert_mag_transform(originals, [
+            (1, 3),
+            (2, 2),
+            (3, 1),
+        ])
+
+        self.context_pop()
 
     # something about SITLCompassCalibration appears to fail
     # this one, so we put it first:
@@ -14583,10 +14588,9 @@ switch value'''
 
     def write_content_to_filepath(self, content, filepath):
         '''write biunary content to filepath'''
+        if not isinstance(content, bytes):
+            raise NotAchievedException("Want bytes to write_content_to_filepath")
         with open(filepath, "wb") as f:
-            if sys.version_info.major >= 3:
-                if not isinstance(content, bytes):
-                    raise NotAchievedException("Want bytes to write_content_to_filepath")
             f.write(content)
             f.close()
 

@@ -49,7 +49,9 @@ enum ap_message : uint8_t {
     MSG_FENCE_STATUS                   =  32,
     MSG_SIMSTATE                       =  33,
     MSG_SIM_STATE                      =  34,
+#if AP_MAVLINK_MSG_HWSTATUS_ENABLED
     MSG_HWSTATUS                       =  35,
+#endif  // AP_MAVLINK_MSG_HWSTATUS_ENABLED
     MSG_WIND                           =  36,
 #if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
     MSG_RANGEFINDER                    =  37,

@@ -112,7 +112,7 @@ The TBS LUCID H7 does not have a builtin compass, but you can attach an external
 
 ## VTX power control
 
-GPIO 81 controls the VSW pins which can be set to output either VBAT or 5V via a board jumper. Setting this GPIO high removes voltage supply to pins. RELAY2 is configured by default to control this GPIO and is low by default.
+GPIO 81 controls the VSW pins which can be set to output either VBAT or 5V via a board jumper. Setting this GPIO low removes voltage supply to pins. RELAY2 is configured by default to control this GPIO and is low by default.
 
 GPIO 83 controls the VTX BEC output to pins marked "9V" and is included on the HD VTX connector. Setting this GPIO low removes voltage supply to this pin/pad.
 

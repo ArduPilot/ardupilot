@@ -15,6 +15,10 @@
 #define HAL_MAVLINK_BINDINGS_ENABLED HAL_GCS_ENABLED
 #endif
 
+#ifndef AP_MAVLINK_SIGNING_ENABLED
+#define AP_MAVLINK_SIGNING_ENABLED HAL_GCS_ENABLED
+#endif  // AP_MAVLINK_SIGNING_ENABLED
+
 #ifndef HAL_HIGH_LATENCY2_ENABLED
 #define HAL_HIGH_LATENCY2_ENABLED 1
 #endif
@@ -50,6 +54,10 @@
 
 #ifndef AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
 #define AP_MAVLINK_MSG_RELAY_STATUS_ENABLED HAL_GCS_ENABLED && AP_RELAY_ENABLED
+#endif
+
+#ifndef AP_MAVLINK_MSG_WIND_ENABLED
+#define AP_MAVLINK_MSG_WIND_ENABLED AP_AHRS_ENABLED
 #endif
 
 // allow removal of developer-centric mavlink commands
@@ -101,6 +109,10 @@
 
 // RANGEFINDER is a subset of the DISTANCE_SENSOR message which we
 // also send.  Rover's send-minimum can be done on the client-side.
+// CODE_REMOVAL
+// ArduPilot 4.7 stops sending the message by default
+// ArduPilot 4.8 compiles the code out by default
+// ArduPilot 4.9 removes the code entirely
 #ifndef AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
 #define AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED AP_RANGEFINDER_ENABLED
 #endif
@@ -114,6 +126,13 @@
 
 #ifndef AP_MAVLINK_MSG_HIGHRES_IMU_ENABLED
 #define AP_MAVLINK_MSG_HIGHRES_IMU_ENABLED (HAL_PROGRAM_SIZE_LIMIT_KB > 1024) && AP_INERTIALSENSOR_ENABLED
+#endif
+
+// ArduPilot 4.4 stopped sending this message by default
+// ArduPilot 4.7 stops compiling support into the firmware
+// ArduPilot 4.8 removes the code
+#ifndef AP_MAVLINK_MSG_HWSTATUS_ENABLED
+#define AP_MAVLINK_MSG_HWSTATUS_ENABLED 0
 #endif
 
 #ifndef AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED

@@ -88,6 +88,9 @@ public:
     
 protected:
 
+    // this backend's instance number
+    uint8_t instance;
+
     /*
      * A compass measurement is expected to pass through the following functions:
      * 1. rotate_field - this rotates the measurement in-place from sensor frame
@@ -101,33 +104,33 @@ protected:
      * All those functions expect the mag field to be in milligauss.
      */
 
-    void rotate_field(Vector3f &mag, uint8_t instance);
-    void publish_raw_field(const Vector3f &mag, uint8_t instance);
-    void correct_field(Vector3f &mag, uint8_t i);
-    void publish_filtered_field(const Vector3f &mag, uint8_t instance);
-    void set_last_update_usec(uint32_t last_update, uint8_t instance);
+    void rotate_field(Vector3f &mag);
+    void publish_raw_field(const Vector3f &mag);
+    void correct_field(Vector3f &mag);
+    void publish_filtered_field(const Vector3f &mag);
+    void set_last_update_usec(uint32_t last_update);
 
-    void accumulate_sample(Vector3f &field, uint8_t instance,
+    void accumulate_sample(Vector3f &field,
                            uint32_t max_samples = 10);
-    void drain_accumulated_samples(uint8_t instance, const Vector3f *scale = NULL);
+    void drain_accumulated_samples(const Vector3f *scale = NULL);
 
-    // register a new compass instance with the frontend
-    bool register_compass(int32_t dev_id, uint8_t& instance) const;
+    // register compass instance with the frontend
+    bool register_compass(int32_t dev_id) WARN_IF_UNUSED;
 
     // set dev_id for an instance
-    void set_dev_id(uint8_t instance, uint32_t dev_id);
+    void set_dev_id(uint32_t dev_id);
 
     // save dev_id, used by SITL
-    void save_dev_id(uint8_t instance);
+    void save_dev_id();
 
     // set external state for an instance
-    void set_external(uint8_t instance, bool external);
+    void set_external(bool external);
 
     // tell if instance is an external compass
-    bool is_external(uint8_t instance);
+    bool is_external();
 
     // set rotation of an instance
-    void set_rotation(uint8_t instance, enum Rotation rotation);
+    void set_rotation(enum Rotation rotation);
 
     // get board orientation (for SITL)
     enum Rotation get_board_orientation(void) const;

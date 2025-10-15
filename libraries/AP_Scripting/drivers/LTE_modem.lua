@@ -243,6 +243,7 @@ local SimCom = { banner = 'SIMCOM',
                  mccmnc = 'AT+COPS=1,2,"%u"\r\n',
                  setband_mask = 'AT+CNBP=,0x%x\r\n',
                  setband_all = 'AT+CNBP=,0x480000000000000000000000000000000000000000000042000007FFFFDF3FFF\r\n',
+                 config_extra = 'ATH\r\n',
                 }
 local SimCom2 = { banner = 'R1951',
                  cmux = 'AT+CMUX=0\r\n',
@@ -285,7 +286,39 @@ local EC200 = { banner = 'EC200',
                  reset = 'AT+CFUN=1,1\r\n',
                  cipopen_tcp = 'AT+QIOPEN=1,0,"TCP","%d.%d.%d.%d",%d,0,2\r\n',
                  cipopen_udp = 'AT+QIOPEN=1,0,"UDP","%d.%d.%d.%d",%d,6001,2\r\n',
-                 cipclose = 'AT+QICLOSE=1\r\n',
+                 cipclose = 'AT+QICLOSE=0\r\n',
+                 mccmnc = 'AT+COPS=4,2,"%u"\r\n',
+                 setband_mask = 'AT+QCFG="band",0,0x%x\r\n',
+                 setband_all = 'AT+QCFG="band",0,0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\r\n',
+                }
+local BG95 = { banner = 'BG95',
+                 cmux = 'AT+CMUX=0\r\n',
+                 --setbaud = 'AT+IPR=%u\r\n',
+--                 cgact = 'AT+QIACT=1\r\n',
+                 pppopen = 'ATD*99#\r',
+                 cpsi = 'AT+QENG="servingcell"\r\n',
+                 cipmode = nil,
+                 cpin = 'AT+CPIN?\r\n',
+                 reset = 'AT+CFUN=1,1\r\n',
+                 cipopen_tcp = 'AT+QIOPEN=1,0,"TCP","%d.%d.%d.%d",%d,0,2\r\n',
+                 cipopen_udp = 'AT+QIOPEN=1,0,"UDP","%d.%d.%d.%d",%d,6001,2\r\n',
+                 cipclose = 'AT+QICLOSE=0\r\n',
+                 mccmnc = 'AT+COPS=4,2,"%u"\r\n',
+                 setband_mask = 'AT+QCFG="band",0,0x%x\r\n',
+                 setband_all = 'AT+QCFG="band",0,0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\r\n',
+                }
+local EG800Q = { banner = 'EG800Q',
+                 cmux = 'AT+CMUX=0\r\n',
+                 --setbaud = 'AT+IPR=%u\r\n',
+--                 cgact = 'AT+QIACT=1\r\n',
+                 pppopen = 'ATD*99#\r',
+                 cpsi = 'AT+QENG="servingcell"\r\n',
+                 cipmode = nil,
+                 cpin = 'AT+CPIN?\r\n',
+                 reset = 'AT+CFUN=1,1\r\n',
+                 cipopen_tcp = 'AT+QIOPEN=1,0,"TCP","%d.%d.%d.%d",%d,0,2\r\n',
+                 cipopen_udp = 'AT+QIOPEN=1,0,"UDP","%d.%d.%d.%d",%d,6001,2\r\n',
+                 cipclose = 'AT+QICLOSE=0\r\n',
                  mccmnc = 'AT+COPS=4,2,"%u"\r\n',
                  setband_mask = 'AT+QCFG="band",0,0x%x\r\n',
                  setband_all = 'AT+QCFG="band",0,0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\r\n',
@@ -298,6 +331,8 @@ local modem_list = {
     ["SimCom2"] = SimCom2,
     ["Air780"] = Air780,
     ["EC200"] = EC200,
+    ["BG95"] = BG95,
+    ["EG800Q"] = EG800Q,
 }
 
 local modem = default_modem
@@ -652,12 +687,40 @@ end
 
 local ati_sequence = 0
 
--- reset back to ATI step
-local function reset_to_ATI()
-    send_data_reset()
+local last_data_ms = millis()
+local pending_to_modem = ""
+local pending_to_fc = ""
+local pending_to_parse = ""
+
+--[[
+    reset connection buffers
+--]]
+local function reset_buffers()
+    last_data_ms = millis()
+    pending_to_modem = ""
+    pending_to_fc = ""
+    pending_to_parse = ""
+    cmux.buffers[DLC_AT] = ""
+    cmux.buffers[DLC_DATA] = ""
+    while ser_device:available() > 0 do
+        ser_device:readstring(512)
+    end
+end
+
+-- reset state and buffers
+local function reset_state()
     step = "ATI"
     modem = default_modem
     found_cmux = false
+    reset_buffers()
+    pending_to_uart = ""
+end
+
+-- reset back to ATI step
+local function reset_to_ATI()
+    send_data_reset()
+    uart_write_pending()
+    reset_state()
 end
 
 --[[
@@ -697,7 +760,7 @@ local function step_ATI()
         end
         return
     end
-    if s and #s >= 4 and s:byte(1) == FLAG and s:byte(-1) == FLAG then
+    if not option_enabled(LTE_OPTIONS_NOMUX) and s and #s >= 4 and s:byte(1) == FLAG and s:byte(-1) == FLAG then
         -- already in mux mode
         found_cmux = true
         gcs:send_text(MAV_SEVERITY.INFO, "LTE_modem: in CMUX mode")
@@ -707,7 +770,7 @@ local function step_ATI()
     end
     if ati_sequence % 3 == 2 then
         uart_write('+++')
-    elseif ati_sequence % 3 == 1 then
+    elseif ati_sequence % 3 == 1 and not option_enabled(LTE_OPTIONS_NOMUX) then
         uart_write(cmux.encode_cmux_frame(DLC_AT, UIH, "ATI\r"))
     else
         uart_write('\rATI\r')
@@ -778,6 +841,9 @@ end
 local function step_CONFIG()
     set_BAND()
     set_MCCMNC()
+    if modem.config_extra then
+       AT_send(modem.config_extra)
+    end
     step = "CREG"
 end
 
@@ -847,26 +913,6 @@ local function step_CREG()
     AT_send('AT+CREG?\r\n')
 end
 
-local last_data_ms = millis()
-local pending_to_modem = ""
-local pending_to_fc = ""
-local pending_to_parse = ""
-
---[[
-    reset connection buffers
---]]
-local function reset_buffers()
-    last_data_ms = millis()
-    pending_to_modem = ""
-    pending_to_fc = ""
-    pending_to_parse = ""
-    cmux.buffers[DLC_AT] = ""
-    cmux.buffers[DLC_DATA] = ""
-    while ser_device:available() > 0 do
-        ser_device:readstring(512)
-    end
-end
-
 --[[
     activate network
 --]]
@@ -920,7 +966,9 @@ local function step_CMUX()
     if s then
         if s:find("CME ERROR") then
             AT_send('AT+CFUN=1\r\n')
-        elseif #s >= 4 and (cmux.parse_cmux_frame(s) or s:find('CMUX=0\r\r\nOK\r')) then
+        elseif #s >= 4 and (cmux.parse_cmux_frame(s) or
+                            s:find('CMUX=0\r\r\nOK\r') or
+                            s == string.char(FLAG,FLAG,FLAG,FLAG)) then
             gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: CMUX mode set')
             -- send SABM frames to establish the DLCs
             cmux.send_sabm()
@@ -928,7 +976,7 @@ local function step_CMUX()
             return
         end
     end
-    AT_send(modem.cmux)
+    uart_write(modem.cmux)
 end
 
 --[[
@@ -1070,10 +1118,10 @@ local function check_CPSI(s)
 
     logger:write("LTER","R1,R2",'ZZ', s:sub(1,64), s:sub(65,128))
 
-    local system_mode, operation_mode, mcc_mnc, tac_str, scell_id_str, pcid_str, earfcn_band, ul_freq_str, dl_freq_str, tdd_cfg_str, rsrp_str, rsrq_str, rssi_str, sinr_str =
+    local system_mode, operation_mode, mcc_mnc, tac_str, scell_id_str, pcid_str, earfcn_band, ul_freq_str, dl_freq_str, tdd_cfg_str, rsrq_str, rsrp_str, rssi_str, sinr_str =
     s:match("+CPSI:%s*([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([%-]?%d+),([%-]?%d+),([%-]?%d+),([%-]?%d+)")
 
-    if system_mode then
+    if system_mode and sinr_str then
         -- Convert strings to numbers
         local tac = tonumber(tac_str:match("0x(%w+)"), 16) or tonumber(tac_str) or 0
         local scell_id = tonumber(scell_id_str) or 0
@@ -1109,9 +1157,11 @@ end
     check for QENG reply
 --]]
 local function check_QENG(s)
-    -- Example1: +QENG: "servingcell","NOCONN","LTE","FDD",505,02,12AED4A,445,3750,8,3,3,CBE8,-99,-14,-71,53,30
-    -- Example2: +QENG: "servingcell","NOCONN","LTE","FDD",505,02,22D3F32,271,9260,28,3,3,CBE8,-109,-15,-78,38,20
-    -- +QENG:"servingcell",<state>,"LTE",<is_tdd>,<mcc>,<mnc>,<cellid>,<pcid>,<earfcn>,<freq_band_ind>,<ul_bandwidth>,<dl_bandwidth>,<tac>,<rsrp>,<rsrq>,<rssi>,<sinr>,<srxlev>
+   -- Example1: +QENG: "servingcell","NOCONN","LTE","FDD",505,02,12AED4A,445,3750,8,3,3,CBE8,-99,-14,-71,53,30
+   -- Example2: +QENG: "servingcell","NOCONN","LTE","FDD",505,02,22D3F32,271,9260,28,3,3,CBE8,-109,-15,-78,38,20
+   -- Example3: +QENG: "servingcell","CONNECT","eMTC","FDD",505,01,804A90D,238,9410,28,5,5,2036,-114,-18,-82,6
+
+   -- +QENG:"servingcell",<state>,"LTE",<is_tdd>,<mcc>,<mnc>,<cellid>,<pcid>,<earfcn>,<freq_band_ind>,<ul_bandwidth>,<dl_bandwidth>,<tac>,<rsrp>,<rsrq>,<rssi>,<sinr>,<srxlev>
     if not s:find("+QENG") then
         return false
     end
@@ -1119,7 +1169,7 @@ local function check_QENG(s)
     logger:write("LTER","R1,R2",'ZZ', s:sub(1,64), s:sub(65,128))
 
     local mcc_str, mnc_str, cid_hex, pcid_str, earfcn_str, band_str, tac_hex, rsrp_str, rsrq_str, rssi_str, sinr_str =
-        s:match('+QENG:%s+"servingcell","[^"]+","LTE","[^"]+",(%d+),(%d+),([%x]+),(%d+),(%d+),(%d+),%d+,%d+,([%x]+),([%-]?%d+),([%-]?%d+),([%-]?%d+)')
+        s:match('+QENG:%s+"servingcell","[^"]+","[^"]+","[^"]+",(%d+),(%d+),([%x]+),(%d+),(%d+),(%d+),%d+,%d+,([%x]+),([%-]?%d+),([%-]?%d+),([%-]?%d+)')
 
     if mcc_str then
         local tac = tonumber(tac_hex, 16) or 0
@@ -1409,13 +1459,24 @@ end
 
 local function update()
     if LTE_ENABLE:get() == 0 then
-        return update, 500
+        return 500
     end
     local delay = run_step()
     uart_write_pending()
-    return update, delay
+    return delay
 end
 
 gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: starting')
 
-return update,500
+function protected_wrapper()
+   local ok, res = pcall(update)
+   if not ok then
+      gcs:send_text(MAV_SEVERITY.ERROR, 'LTE_modem error: ' .. tostring(res))
+      reset_state()
+      return protected_wrapper, 1000
+   end
+   return protected_wrapper, res
+end
+
+return protected_wrapper, 500
+

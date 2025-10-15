@@ -62,7 +62,7 @@ private:
     // const GCS_MAVLINK_XXXX *chan(const uint8_t ofs) override const;
     GCS_MAVLINK_CHAN_METHOD_DEFINITIONS(GCS_MAVLINK_Dummy);
 
-    void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t dest_bitmask) override;
+    void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, mavlink_channel_mask_t dest_bitmask) override;
 
     MAV_TYPE frame_type() const override { return MAV_TYPE_FIXED_WING; }
     uint32_t custom_mode() const override { return 3; } // magic number

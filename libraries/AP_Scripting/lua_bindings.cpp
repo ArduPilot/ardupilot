@@ -161,8 +161,14 @@ int lua_mavlink_send_chan(lua_State *L) {
     const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
 
     binding_argcheck(L, 3+arg_offset);
-    
+
     const mavlink_channel_t chan = (mavlink_channel_t)get_uint32(L, 1+arg_offset, 0, MAVLINK_COMM_NUM_BUFFERS - 1);
+
+    // Check if the channel is valid
+    if (chan >= gcs().num_gcs()) {
+        // Return nil
+        return 0;
+    }
 
     const uint32_t msgid = get_uint32(L, 2+arg_offset, 0, (1 << 24) - 1);
 
@@ -997,21 +1003,23 @@ int SocketAPM_recv(lua_State *L) {
     SocketAPM * ud = *check_SocketAPM(L, 1);
 
     const uint16_t count = get_uint16_t(L, 2);
-    uint8_t *data = (uint8_t*)malloc(count);
-    if (data == nullptr) {
-        return 0;
-    }
 
+    // create a buffer sized to hold the number of bytes the user
+    // wants to read. This will fault if the memory is not available
+    luaL_Buffer b;
+    uint8_t *data = (uint8_t *)luaL_buffinitsize(L, &b, count);
+
+    // read up to that number of bytes
     const auto ret = ud->recv(data, count, 0);
     if (ret < 0) {
-        free(data);
-        return 0;
+        return 0; // error, return nil
     }
 
     int retcount = 1;
 
-    // push data to lua string
-    lua_pushlstring(L, (const char *)data, ret);
+    // push the buffer as a string, truncated to the number of bytes
+    // actually read
+    luaL_pushresultsize(&b, ret);
 
     // also push the address and port if available
     uint32_t ip_addr;
@@ -1021,8 +1029,6 @@ int SocketAPM_recv(lua_State *L) {
         lua_pushinteger(L, port);
         retcount += 2;
     }
-
-    free(data);
 
     return retcount;
 }

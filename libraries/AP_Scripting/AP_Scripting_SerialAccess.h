@@ -16,6 +16,7 @@ public:
 
     void configure_parity(uint8_t parity);
     void set_stop_bits(uint8_t stop_bits);
+    void set_unbuffered_writes(bool on);
 
     size_t write(uint8_t c);
     size_t write(const uint8_t *buffer, size_t size);

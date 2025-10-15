@@ -277,10 +277,10 @@ void Sailboat::update(const struct sitl_input &input)
         if (skid_steering) {
             const float throttle_left = input.servos[MOTORLEFT_SERVO_CH] ? normalise_servo_input(input.servos[MOTORLEFT_SERVO_CH]) : 0;
             const float throttle_right = input.servos[MOTORRIGHT_SERVO_CH] ? normalise_servo_input(input.servos[MOTORRIGHT_SERVO_CH]) : 0;
-            throttle_force = (0.5f*(throttle_left + throttle_right)) * 0.1f;
+            throttle_force = (0.5f*(throttle_left + throttle_right)) * 50.0f;
         } else {
             const float throttle_out = input.servos[THROTTLE_SERVO_CH] ? normalise_servo_input(input.servos[THROTTLE_SERVO_CH]) : 0;
-            throttle_force = throttle_out * 0.1f;
+            throttle_force = throttle_out * 50.0f;
         }
     }
 

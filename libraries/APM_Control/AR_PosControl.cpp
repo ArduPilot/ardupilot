@@ -417,11 +417,11 @@ void AR_PosControl::handle_ekf_xy_reset()
     Vector2f pos_shift;
     uint32_t reset_ms = AP::ahrs().getLastPosNorthEastReset(pos_shift);
     if (reset_ms != _ekf_xy_reset_ms) {
-        Vector2f pos_NE;
-        if (!AP::ahrs().get_relative_position_NE_origin_float(pos_NE)) {
+        Vector2p pos_ne_m;
+        if (!AP::ahrs().get_relative_position_NE_origin(pos_ne_m)) {
             return;
         }
-        _pos_target = (pos_NE + _p_pos.get_error()).topostype();
+        _pos_target = pos_ne_m + _p_pos.get_error().topostype();
 
         Vector3f vel_NED;
         if (!AP::ahrs().get_velocity_NED(vel_NED)) {

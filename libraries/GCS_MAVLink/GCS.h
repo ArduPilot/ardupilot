@@ -416,13 +416,13 @@ public:
 
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
-    static uint8_t active_channel_mask(void) { return mavlink_active; }
+    static mavlink_channel_mask_t active_channel_mask(void) { return mavlink_active; }
 
     // return a bitmap of streaming channels
-    static uint8_t streaming_channel_mask(void) { return chan_is_streaming; }
+    static mavlink_channel_mask_t streaming_channel_mask(void) { return chan_is_streaming; }
 
     // return a bitmap of private channels
-    static uint8_t private_channel_mask(void) { return mavlink_private; }
+    static mavlink_channel_mask_t private_channel_mask(void) { return mavlink_private; }
 
     // set a channel as private. Private channels get sent heartbeats, but
     // don't get broadcast packets or forwarded packets
@@ -467,8 +467,10 @@ public:
     // corresponding to the channel
     static GCS_MAVLINK *find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint8_t &sysid);
 
+#if AP_MAVLINK_SIGNING_ENABLED
     // update signing timestamp on GPS lock
     static void update_signing_timestamp(uint64_t timestamp_usec);
+#endif  // AP_MAVLINK_SIGNING_ENABLED
 
     // return current packet overhead for a channel
     static uint8_t packet_overhead_chan(mavlink_channel_t chan);
@@ -525,7 +527,6 @@ protected:
     AP_Int16 options;
     enum class Option : uint16_t {
         MAVLINK2_SIGNING_DISABLED = (1U << 0),
-        // first bit is reserved for: MAVLINK2_SIGNING_DISABLED = (1U << 0),
         NO_FORWARD                = (1U << 1),  // don't forward MAVLink data to or from this device
         NOSTREAMOVERRIDE          = (1U << 2),  // ignore REQUEST_DATA_STREAM messages (eg. from GCSs)
     };
@@ -710,10 +711,10 @@ protected:
       handle MAV_CMD_CAN_FORWARD and CAN_FRAME messages for CAN over MAVLink
      */
     void can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &);
-#if HAL_CANMANAGER_ENABLED
+#if AP_MAVLINKCAN_ENABLED
     MAV_RESULT handle_can_forward(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
-#endif
     void handle_can_frame(const mavlink_message_t &msg) const;
+#endif  // AP_MAVLINKCAN_ENABLED
 
     void handle_optical_flow(const mavlink_message_t &msg);
 
@@ -728,7 +729,9 @@ protected:
 
     // message sending functions:
     bool try_send_mission_message(enum ap_message id);
+#if AP_MAVLINK_MSG_HWSTATUS_ENABLED
     void send_hwstatus();
+#endif  // AP_MAVLINK_MSG_HWSTATUS_ENABLED
     void handle_data_packet(const mavlink_message_t &msg);
 
     // these two methods are called after current_loc is updated:
@@ -939,13 +942,13 @@ private:
     static uint32_t reserve_param_space_start_ms;
     
     // bitmask of what mavlink channels are active
-    static uint8_t mavlink_active;
+    static mavlink_channel_mask_t mavlink_active;
 
     // bitmask of what mavlink channels are private
-    static uint8_t mavlink_private;
+    static mavlink_channel_mask_t mavlink_private;
 
     // bitmask of what mavlink channels are streaming
-    static uint8_t chan_is_streaming;
+    static mavlink_channel_mask_t chan_is_streaming;
 
     // mavlink routing object
     static MAVLink_routing routing;
@@ -1006,6 +1009,7 @@ private:
 
     void lock_channel(const mavlink_channel_t chan, bool lock);
 
+#if AP_MAVLINK_SIGNING_ENABLED
     mavlink_signing_t signing;
     static mavlink_signing_streams_t signing_streams;
     static uint32_t last_signing_save_ms;
@@ -1016,6 +1020,7 @@ private:
     void load_signing_key(void);
     bool signing_enabled(void) const;
     static void save_signing_timestamp(bool force_save_now);
+#endif  // AP_MAVLINK_SIGNING_ENABLED
 
 #if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
     // structure containing default intervals read from files for this
@@ -1115,7 +1120,7 @@ public:
     struct statustext_t {
         mavlink_statustext_t    msg;
         uint16_t                entry_created_ms;
-        uint8_t                 bitmask;
+        mavlink_channel_mask_t  bitmask;
     };
     class StatusTextQueue : public ObjectArray<statustext_t> {
     public:
@@ -1154,8 +1159,8 @@ public:
 
     void send_text(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(3, 4);
     void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list);
-    virtual void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t mask);
-    uint8_t statustext_send_channel_mask() const;
+    virtual void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, mavlink_channel_mask_t mask);
+    mavlink_channel_mask_t statustext_send_channel_mask() const;
 
     virtual GCS_MAVLINK *chan(const uint8_t ofs) = 0;
     virtual const GCS_MAVLINK *chan(const uint8_t ofs) const = 0;

@@ -659,7 +659,6 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
     } else {
         initialize(msg.orientation);
     }
-    msg.orientation_covariance[0] = -1;
 
     uint8_t accel_index = ahrs.get_primary_accel_index();
     uint8_t gyro_index = ahrs.get_primary_gyro_index();
@@ -674,8 +673,6 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
     msg.angular_velocity.x = gyro_data.x;
     msg.angular_velocity.y = gyro_data.y;
     msg.angular_velocity.z = gyro_data.z;
-    msg.angular_velocity_covariance[0] = -1;
-    msg.linear_acceleration_covariance[0] = -1;
 }
 #endif // AP_DDS_IMU_PUB_ENABLED
 
@@ -1230,6 +1227,18 @@ void AP_DDS_Client::main_loop(void)
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s transport invalid, exiting", msg_prefix);
             return;
         }
+        // If using UDP, check if the network is active before proceeding
+        // not applicable for SITL, which doesn't use AP_Networking
+#if AP_DDS_UDP_ENABLED && !AP_NETWORKING_BACKEND_SITL
+        if (!is_using_serial) {
+            const auto &network = AP::network();
+            if (network.get_ip_active() == 0) {
+                hal.scheduler->delay(1000);
+                continue;
+            }
+
+        }
+#endif
 
         // check ping
         if (ping_max_retry == 0) {

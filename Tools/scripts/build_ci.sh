@@ -177,6 +177,10 @@ for t in $CI_BUILD_TARGET; do
        run_autotest "Plane" "build.Plane" "test.PlaneTests1b"
         continue
     fi
+    if [ "$t" == "sitltest-plane-tests1c" ]; then
+       run_autotest "Plane" "build.Plane" "test.PlaneTests1c"
+        continue
+    fi
     if [ "$t" == "sitltest-quadplane" ]; then
         run_autotest "QuadPlane" "build.Plane" "test.QuadPlane"
         continue
@@ -184,6 +188,7 @@ for t in $CI_BUILD_TARGET; do
     if [ "$t" == "sitltest-rover" ]; then
         sudo apt-get update || /bin/true
         sudo apt-get install -y ppp || /bin/true
+        pppd --help # fail with `command not found` if ppp install failed
         run_autotest "Rover" "build.Rover" "test.Rover"
         continue
     fi

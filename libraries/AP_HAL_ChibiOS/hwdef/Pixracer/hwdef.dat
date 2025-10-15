@@ -171,7 +171,7 @@ SPIDEV ramtron     SPI2 DEVID10 FRAM_CS    MODE3   8*MHZ   8*MHZ
 
 define HAL_STORAGE_SIZE        16384
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_WITH_RAMTRON 1
 
 # enable FAT filesystem

@@ -66,8 +66,7 @@ private:
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 
     enum Rotation _rotation;
-    uint8_t _instance;
-    bool _force_external:1;
+    bool _force_external;
 };
 
 #endif  // AP_COMPASS_QMC5883P_ENABLED

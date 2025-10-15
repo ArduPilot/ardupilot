@@ -1,5 +1,6 @@
 local FOLLOW_TARGET = {}
 FOLLOW_TARGET.id = 144
+FOLLOW_TARGET.crc_extra = 127
 FOLLOW_TARGET.fields = {
              { "timestamp", "<I8" },
              { "custom_state", "<I8" },

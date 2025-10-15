@@ -265,7 +265,7 @@ define BOARD_TYPE_DEFAULT 3
 # allow to have have a dedicated safety switch pin
 define HAL_HAVE_SAFETY_SWITCH 1
 
-# Enable RAMTROM parameter storage.
+# Enable RAMTRON parameter storage.
 define HAL_WITH_RAMTRON 1
 
 # Setup the IMU heater

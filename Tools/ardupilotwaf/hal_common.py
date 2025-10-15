@@ -4,19 +4,12 @@ Waf tool for functions common to the esp32, Linux and ChibiOS builds.
 AP_FLAKE8_CLEAN
 """
 
-import os
-import pickle
 import sys
 
 
-def load_env_vars(env, kv_handler=None):
-    '''optionally load extra environment variables from env.py in the build directory'''
-    env_py = os.path.join(env.BUILDROOT, 'env.py')
-    if not os.path.exists(env_py):
-        print("No env.py found")
-        return
-    e = pickle.load(open(env_py, 'rb'))
-    for kv in e.items():
+def load_env_vars(env, hwdef_env, kv_handler=None):
+    '''load environment variables from the hwdef generator'''
+    for kv in hwdef_env.items():
         if kv_handler is not None:
             kv_handler(env, kv)
             continue
@@ -24,7 +17,7 @@ def load_env_vars(env, kv_handler=None):
 
 
 def load_env_vars_handle_kv_pair(env, kv_pair):
-    '''handle a key/value pair out of the pickled environment dictionary'''
+    '''handle a key/value pair out of the hwdef generator'''
     (k, v) = kv_pair
     if k in env:
         if isinstance(env[k], dict):

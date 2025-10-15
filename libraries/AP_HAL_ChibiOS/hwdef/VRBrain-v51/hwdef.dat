@@ -137,7 +137,7 @@ IMU Invensense SPI:mpu6000 ROTATION_YAW_180
 
 define HAL_STORAGE_SIZE   16384
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_WITH_RAMTRON 1
 
 # enable FAT filesystem

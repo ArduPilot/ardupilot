@@ -316,7 +316,7 @@ bool Copter::set_target_pos_NED(const Vector3f& target_pos_ned_m, bool use_yaw, 
         return false;
     }
 
-    const Vector3f pos_neu_m{target_pos_ned_m.x, target_pos_ned_m.y, -target_pos_ned_m.z};
+    const Vector3p pos_neu_m{target_pos_ned_m.x, target_pos_ned_m.y, -target_pos_ned_m.z};
 
     return mode_guided.set_pos_NEU_m(pos_neu_m, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), yaw_relative, is_terrain_alt);
 }
@@ -329,7 +329,7 @@ bool Copter::set_target_posvel_NED(const Vector3f& target_pos_ned_m, const Vecto
         return false;
     }
 
-    const Vector3f pos_neu_m{target_pos_ned_m.x, target_pos_ned_m.y, -target_pos_ned_m.z};
+    const Vector3p pos_neu_m{target_pos_ned_m.x, target_pos_ned_m.y, -target_pos_ned_m.z};
     const Vector3f vel_neu_ms{target_vel_ned_ms.x, target_vel_ned_ms.y, -target_vel_ned_ms.z};
 
     return mode_guided.set_pos_vel_accel_NEU_m(pos_neu_m, vel_neu_ms, Vector3f());
@@ -343,7 +343,7 @@ bool Copter::set_target_posvelaccel_NED(const Vector3f& target_pos_ned_m, const 
         return false;
     }
 
-    const Vector3f pos_neu_m{target_pos_ned_m.x, target_pos_ned_m.y, -target_pos_ned_m.z};
+    const Vector3p pos_neu_m{target_pos_ned_m.x, target_pos_ned_m.y, -target_pos_ned_m.z};
     const Vector3f vel_neu_ms{target_vel_ned_ms.x, target_vel_ned_ms.y, -target_vel_ned_ms.z};
     const Vector3f accel_neu_mss{target_accel_ned_mss.x, target_accel_ned_mss.y, -target_accel_ned_mss.z};
 

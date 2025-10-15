@@ -45,7 +45,7 @@ def get_filelist_url(ip_address, media_type, dir_path):
         'media_type': str(media_type),
         'path': dir_path,
         'start': 0,
-        'count': 999
+        'count': 9999
     }
     return f"http://{ip_address}:82/cgi-bin/media.cgi/api/v1/getmedialist?" + urlencode(params)
 

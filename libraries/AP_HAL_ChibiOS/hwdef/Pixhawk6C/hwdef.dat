@@ -242,7 +242,7 @@ IMU BMI088 SPI:bmi055_a SPI:bmi055_g ROTATION_PITCH_180
 
 define HAL_DEFAULT_INS_FAST_SAMPLE 3
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_STORAGE_SIZE 32768
 define HAL_WITH_RAMTRON 1
 

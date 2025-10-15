@@ -25,9 +25,6 @@
 #define HAL_ESP32_SDCARD //after enabled, uncomment one of below
 #define HAL_ESP32_SDMMC
 //#define HAL_ESP32_SDSPI {.host=VSPI_HOST, .dma_ch=2, .mosi=GPIO_NUM_2, .miso=GPIO_NUM_15, .sclk=GPIO_NUM_26, .cs=GPIO_NUM_21}
-#define HAL_BOARD_LOG_DIRECTORY "/SDCARD/APM/LOGS"
-#define HAL_BOARD_STORAGE_DIRECTORY "/SDCARD/APM/STORAGE"
-#define HAL_BOARD_TERRAIN_DIRECTORY "/SDCARD/APM/TERRAIN"
 
 #define HAL_ESP32_WIFI 1
 
@@ -51,6 +48,4 @@
     {.port=UART_NUM_1, .rx=GPIO_NUM_34, .tx=GPIO_NUM_32},\
     {.port=UART_NUM_2, .rx=GPIO_NUM_35, .tx=GPIO_NUM_33}
 
-#define HAL_DISABLE_ADC_DRIVER 1
-#define HAL_USE_ADC 0
 #define HAL_ESP32_RMT_RX_PIN_NUMBER 36
