@@ -41,6 +41,8 @@ extern const AP_HAL::HAL& hal;
  # define Debug(fmt, args ...)  do {} while(0)
 #endif
 
+AP_GPS_UBLOX_CFGv2::UBXPackedCfg* AP_GPS_UBLOX_CFGv2::_override_common_cfg[GPS_MAX_INSTANCES] = {};
+
 const char* const AP_GPS_UBLOX_CFGv2::CONSTELLATION_NAMES[] = {
     "GPS",   // 0
     "SBAS",  // 1
@@ -462,11 +464,11 @@ void AP_GPS_UBLOX_CFGv2::process_valget_complete(bool success)
 
 void AP_GPS_UBLOX_CFGv2::_handle_valget_kv(ConfigKey key, uint64_t value, uint8_t value_len)
 {
-    Debug("GPS %d: valget key 0x%lx value 0x%llx len %u",
-            ubx_backend.state.instance + 1,
-            (uint32_t)key,
-            (uint64_t)value,
-            (size_t)value_len);
+    // Debug("GPS %d: valget key 0x%lx value 0x%llx len %u",
+    //         ubx_backend.state.instance + 1,
+    //         (uint32_t)key,
+    //         (uint64_t)value,
+    //         (size_t)value_len);
     // First, check for signal-related keys and update masks
     _parse_signal_kv(key, value, value_len);
 
@@ -734,6 +736,30 @@ void AP_GPS_UBLOX_CFGv2::_init_common_cfg_list()
     if (_common_cfg_fetch_index == 0) {
         _common_cfg.reset();
         Debug("Starting common config list initialization");
+    }
+
+    if (_override_common_cfg[ubx_backend.state.instance] != nullptr) {
+        const auto &override_cfg = _override_common_cfg[ubx_backend.state.instance];
+        // load override config if provided
+        for (uint16_t i = _common_cfg_fetch_index; i < override_cfg->get_size(); ) {
+            ConfigKey key;
+            if (!override_cfg->get_key_at_offset(i, key)) {
+                Debug("Invalid or truncated override config at offset %u", i);
+                break; // invalid or truncated
+            }
+            uint64_t value = 0;
+            if (!override_cfg->get(key, value)) {
+                Debug("Invalid override config key 0x%08x", (unsigned)key);
+                break; // invalid key
+            }
+            if (!_common_cfg.push(key, value)) {
+                Debug("Buffer full at item %u, will continue next call", i);
+                _common_cfg_fetch_index = i;
+                return; // buffer full
+            }
+        }
+        _common_cfg_fetch_index = override_cfg->get_size(); // mark complete
+        return; // done with override
     }
 
     uint16_t item_index = 0;
