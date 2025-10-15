@@ -1481,6 +1481,14 @@ bool AP_GPS::first_unconfigured_gps(uint8_t &instance) const
     return false;
 }
 
+bool AP_GPS::is_configured(uint8_t instance) const
+{
+    if (instance >= GPS_MAX_INSTANCES || drivers[instance] == nullptr) {
+        return false;
+    }
+    return drivers[instance]->is_configured();
+}
+
 void AP_GPS::broadcast_first_configuration_failure_reason(void) const
 {
     uint8_t unconfigured;
