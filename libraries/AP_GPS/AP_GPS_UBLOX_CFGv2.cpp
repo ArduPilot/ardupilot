@@ -25,10 +25,20 @@
 
 extern const AP_HAL::HAL& hal;
 
-#if 0
-#define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+// debug CFGv2 configuration
+#define UBLOX_CFGV2_DEBUGGING 0
+
+#if UBLOX_CFGV2_DEBUGGING
+#if defined(HAL_BUILD_AP_PERIPH)
+ extern "C" {
+   void can_printf(const char *fmt, ...);
+ }
+ # define Debug(fmt, args ...)  do {can_printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args);} while(0)
 #else
-#define Debug(fmt, args ...)  do {} while(0)
+ # define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+#endif
+#else
+ # define Debug(fmt, args ...)  do {} while(0)
 #endif
 
 const char* const AP_GPS_UBLOX_CFGv2::CONSTELLATION_NAMES[] = {
@@ -43,7 +53,9 @@ const char* const AP_GPS_UBLOX_CFGv2::CONSTELLATION_NAMES[] = {
 };
 
 AP_GPS_UBLOX_CFGv2::AP_GPS_UBLOX_CFGv2(AP_GPS_UBLOX &_ubx_backend)
-    : ubx_backend(_ubx_backend)
+    : ubx_backend(_ubx_backend),
+      _common_cfg(_common_cfg_buffer, COMMON_CFG_BUFFER_SIZE),
+      _common_cfg_to_set(_common_cfg_to_set_buffer, COMMON_CFG_BUFFER_SIZE)
 {
     static_assert(ARRAY_SIZE(AP_GPS_UBLOX_CFGv2::CONSTELLATION_NAMES) == AP_GPS_UBLOX::GNSS_LAST, "missing constellation name or ubx_gnss_identifier");
 }
@@ -101,6 +113,9 @@ void AP_GPS_UBLOX_CFGv2::update()
         FALLTHROUGH; // fallthrough to next state
         case States::IDENTIFY_SIGNALS:
             if (AP_HAL::millis() - _last_request_time > 550) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                                 "GPS %d: u-blox identifying signals",
+                                 ubx_backend.state.instance + 1);
                 _last_request_time = AP_HAL::millis();
                 _request_cfg_group(ConfigKey::CFG_SIGNAL_GPS_ENA, ConfigLayer::CFG_LAYER_RAM);
             }
@@ -125,20 +140,24 @@ void AP_GPS_UBLOX_CFGv2::update()
             // transition occurs when ubx_backend sets _ublox_port from MON-COMMS
             if (ubx_backend._ublox_port < UBLOX_MAX_PORTS) {
                 curr_state = States::FETCH_COMMON_CONFIG;
+                _common_cfg_fetch_index = 0; // reset for new init
+                _init_common_cfg_list(); // start building config list incrementally
                 _last_request_time = 0; // immediate next state
             } else if (AP_HAL::millis() - _last_request_time > 250) {
                 _last_request_time = AP_HAL::millis();
                 // Poll only MON-COMMS to detect output port interface
                 ubx_backend._send_message(AP_GPS_UBLOX::CLASS_MON, AP_GPS_UBLOX::MSG_MON_COMMS, nullptr, 0);
                 break;
+            } else {
+                break;
             }
         }
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                    "GPS %d: u-blox fetching config",
+                    ubx_backend.state.instance + 1);
         FALLTHROUGH; // fallthrough to next state
         case States::FETCH_COMMON_CONFIG:
             if (AP_HAL::millis() - _last_request_time > 200) {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                                 "GPS %d: u-blox fetching config",
-                                 ubx_backend.state.instance + 1);
                 _last_request_time = AP_HAL::millis();
                 _request_common_cfg();
             }
@@ -148,6 +167,7 @@ void AP_GPS_UBLOX_CFGv2::update()
                 _last_request_time = AP_HAL::millis();
                 if (set_common_cfg()) {
                     // after sending, re-fetch to verify
+                    _common_cfg_to_set.reset(); // clear for next check cycle
                     curr_state = States::FETCH_COMMON_CONFIG;
                 }
             }
@@ -274,7 +294,29 @@ bool AP_GPS_UBLOX_CFGv2::UBXPackedCfg::set(ConfigKey Key, uint64_t value) {
     return false;
 }
 
-// 
+// get key at byte offset, returns next offset or 0 if end
+bool AP_GPS_UBLOX_CFGv2::UBXPackedCfg::get_key_at_offset(uint16_t &offset, ConfigKey &key) const {
+    if (offset >= _size) {
+        return false; // end of buffer
+    }
+
+    // read key (4 bytes little-endian)
+    uint32_t key_val;
+    memcpy(&key_val, _buf + offset, sizeof(key_val));
+    key = (ConfigKey)key_val;
+
+    // calculate value size from key to get next offset
+    uint8_t value_size = config_key_size(key);
+    if (value_size == 0 || offset + sizeof(uint32_t) + value_size > _size) {
+        return false; // invalid or truncated
+    }
+
+    // return next offset
+    offset = offset + sizeof(uint32_t) + value_size;
+    return true;
+}
+
+//
 // Streaming VALGET byte-wise processing
 // 
 void AP_GPS_UBLOX_CFGv2::process_valget_byte(uint8_t byte)
@@ -299,6 +341,9 @@ void AP_GPS_UBLOX_CFGv2::process_valget_byte(uint8_t byte)
 
     if (_valget_abort) {
         // aborting this VALGET; ignore all bytes until process_valget_complete()
+        Debug("GPS %d: valget aborted, ignoring byte 0x%02x",
+                ubx_backend.state.instance + 1,
+                byte);
         return;
     }
 
@@ -361,41 +406,8 @@ void AP_GPS_UBLOX_CFGv2::process_valget_byte(uint8_t byte)
 
 bool AP_GPS_UBLOX_CFGv2::is_common_cfg_needed()
 {
-    #define CFG_NEED(KEY_CLASS, KEY, TYPE, VAL) \
-        if (_processing_cfg.KEY##_val != (TYPE)VAL) { need = true; }
-
-    bool need = false;
-    if (module < Module::SINGLE_UART_LAST) {
-        // Check constant config values for single-UART modules
-        UBX_CFG_COMMON_UART(CFG_NEED);
-    } else {
-        // Check constant config values
-        switch (ubx_backend._ublox_port) {
-        case 2: // UART1
-            UBX_CFG_COMMON_UART1(CFG_NEED);
-            break;
-        case 3: // UART2
-            UBX_CFG_COMMON_UART2(CFG_NEED);
-            break;
-        default:
-            // should not happen
-            break;
-        }
-    }
-
-    // check variable settings
-    need = need || (_cfg.meas_rate != ubx_backend.params.rate_ms) ||
-                   (_cfg.dynmodel != ubx_backend.gps._navfilter);
-
-    if (ubx_backend.gps._min_elevation != -100) {
-        // do not set min_elevation if user has not set it
-        need = need || (_processing_cfg.min_elevation != _cfg.min_elevation);
-    }
-    if (_cfg.gps_l5_health_ovrd_exists) {
-        need = need || (_processing_cfg.gps_l5_health_ovrd != _cfg.gps_l5_health_ovrd);
-    }
-
-    return need;
+    // Simply check if we have any mismatched config that needs to be set
+    return _common_cfg_to_set.get_size() > 0;
 }
 
 void AP_GPS_UBLOX_CFGv2::process_valget_complete(bool success)
@@ -416,12 +428,28 @@ void AP_GPS_UBLOX_CFGv2::process_valget_complete(bool success)
                 curr_state = States::CONFIGURE_SIGNALS;
                 break;
             case States::FETCH_COMMON_CONFIG: {
-                // Decide whether to set config based on fetched rates/model
-                curr_state = is_common_cfg_needed() ? States::SET_COMMON_CONFIG : States::CONFIGURED;
-                if (curr_state == States::CONFIGURED) {
-                    GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                                 "GPS %d: u-blox configured",
-                                 ubx_backend.state.instance + 1);
+                // Check if current batch had any mismatches
+                if (is_common_cfg_needed()) {
+                    // Mismatches found, need to set config
+                    curr_state = States::SET_COMMON_CONFIG;
+                    Debug("Batch has %u mismatches, need to set",
+                          (unsigned)_common_cfg_to_set.get_size());
+                } else {
+                    // No mismatches in current batch - current configs match!
+                    // Clear the buffer and continue building next batch
+                    _common_cfg.reset();
+                    _init_common_cfg_list();
+
+                    // Check if we're done (no more configs to add)
+                    if (_common_cfg.get_size() == 0) {
+                        curr_state = States::CONFIGURED;
+                        GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                                     "GPS %d: u-blox configured",
+                                     ubx_backend.state.instance + 1);
+                    } else {
+                        // More configs to verify, stay in FETCH state
+                        Debug("Batch verified, continuing with next batch (%u bytes)", (unsigned)_common_cfg.get_size());
+                    }
                 }
                 _last_request_time = 0; // immediate next state
                 break;
@@ -443,7 +471,7 @@ void AP_GPS_UBLOX_CFGv2::_handle_valget_kv(ConfigKey key, uint64_t value, uint8_
     _parse_signal_kv(key, value, value_len);
 
     // Capture common configuration when fetching
-    _parse_common_cfg(key, value);
+    _parse_common_cfg(key, value, value_len);
 }
 
 // Request a configuration group via CFG-VALGET
@@ -696,156 +724,155 @@ exit:
     return true;
 }
 
-#define CFG_KEYS(KEY_CLASS,KEY, KEYTYPE, VAL) \
-    ConfigKey::KEY_CLASS##_##KEY,
-
-#define COMMON_CFG_KEYS_DUAL_UART \
-    UBX_CFG_COMMON_UART1(CFG_KEYS) \
-    ConfigKey::CFG_NAVSPG_DYNMODEL, \
-    ConfigKey::CFG_NAVSPG_INFIL_MINELEV, \
-    ConfigKey::CFG_RATE_MEAS,
-
-#define COMMON_CFG_KEYS_SINGLE_UART \
-    UBX_CFG_COMMON_UART(CFG_KEYS) \
-    ConfigKey::CFG_NAVSPG_DYNMODEL, \
-    ConfigKey::CFG_NAVSPG_INFIL_MINELEV, \
-    ConfigKey::CFG_RATE_MEAS,
-
-bool AP_GPS_UBLOX_CFGv2::_request_common_cfg()
+// Initialize common config list incrementally based on module type
+// Uses _common_cfg_fetch_index to track progress across calls
+// Stops early if buffer fills and continues on next call
+// Returns true if complete, false if more to process
+void AP_GPS_UBLOX_CFGv2::_init_common_cfg_list()
 {
-    constexpr uint32_t common_cfg_keys_single_uart[] = {
-        COMMON_CFG_KEYS_SINGLE_UART
-    };
+    // On first call, reset buffer
+    if (_common_cfg_fetch_index == 0) {
+        _common_cfg.reset();
+        Debug("Starting common config list initialization");
+    }
 
-    // Use ARRAY_SIZE macro to calculate array size at compile time
-    static constexpr struct PACKED {
-        AP_GPS_UBLOX::ubx_cfg_valget msg;
-        uint32_t keys[ARRAY_SIZE(common_cfg_keys_single_uart)];
-    } msg_single_uart = {
-        .msg = {0, 0, {0, 0}},  // version=0, layers=0, reserved={0,0}
-        .keys = {
-            COMMON_CFG_KEYS_SINGLE_UART
-        }  // Copy from the array
-    };
+    uint16_t item_index = 0;
 
-    constexpr uint32_t common_cfg_keys_dual_uart[] = {
-        COMMON_CFG_KEYS_DUAL_UART
-    };
-    static constexpr struct PACKED {
-        AP_GPS_UBLOX::ubx_cfg_valget msg;
-        uint32_t keys[ARRAY_SIZE(common_cfg_keys_dual_uart)];
-    } msg_dual_uart = {
-        .msg = {0, 0, {0, 0}},  // version=0, layers=0, reserved={0,0}
-        .keys = {
-            COMMON_CFG_KEYS_DUAL_UART
-        }  // Copy from the array
-    };
+    // Helper macro to conditionally push config based on current index
+    #define INIT_CFG_PUSH_INDEXED(KEY_CLASS, KEY, TYPE, VAL) \
+        if (item_index >= _common_cfg_fetch_index) { \
+            if (!_common_cfg.push<ConfigKey::KEY_CLASS##_##KEY>((TYPE)VAL)) { \
+                Debug("Buffer full at item %u, will continue next call", item_index); \
+                _common_cfg_fetch_index = item_index; \
+                return; \
+            } \
+        } \
+        item_index++;
 
+    // Fill with expected configuration based on module type
     if (module < Module::SINGLE_UART_LAST) {
-        if (ubx_backend.port->txspace() < (uint16_t)(sizeof(AP_GPS_UBLOX::ubx_header) + sizeof(msg_single_uart) + 2)) {
-            return false;
-        }
-
-        // send VALGET with multiple keys
-        return ubx_backend._send_message(AP_GPS_UBLOX::CLASS_CFG, AP_GPS_UBLOX::MSG_CFG_VALGET, &msg_single_uart, sizeof(msg_single_uart));
+        UBX_CFG_COMMON_UART(INIT_CFG_PUSH_INDEXED)
     } else {
-        if (ubx_backend.port->txspace() < (uint16_t)(sizeof(AP_GPS_UBLOX::ubx_header) + sizeof(msg_dual_uart) + 2)) {
-            return false;
-        }
-
-        // send VALGET with multiple keys
-        return ubx_backend._send_message(AP_GPS_UBLOX::CLASS_CFG, AP_GPS_UBLOX::MSG_CFG_VALGET, &msg_dual_uart, sizeof(msg_dual_uart));
-    }
-}
-
-#define CASE_UPDATE_VALUES(KEY_CLASS,KEY, KEYTYPE, VAL) \
-    case ConfigKey::KEY_CLASS##_##KEY: { \
-        KEYTYPE temp; \
-        memcpy(&temp, &value, sizeof(KEYTYPE)); \
-        _processing_cfg.KEY##_val = temp; \
-        break; \
-    }
-
-void AP_GPS_UBLOX_CFGv2::_parse_common_cfg(ConfigKey key, uint64_t value)
-{
-    switch (key) {
-    // combined common cfg key cases
-    UBX_CFG_COMMON_UART1(CASE_UPDATE_VALUES)
-    // variable settings
-    case ConfigKey::CFG_RATE_MEAS: {
-        uint16_t temp;
-        memcpy(&temp, &value, sizeof(uint16_t));
-        _processing_cfg.meas_rate = temp;
-        break;
-    }
-    case ConfigKey::CFG_NAVSPG_DYNMODEL: {
-        uint8_t temp;
-        memcpy(&temp, &value, sizeof(uint8_t));
-        _processing_cfg.dynmodel = temp;
-        break;
-    }
-    case ConfigKey::CFG_NAVSPG_INFIL_MINELEV: {
-        int8_t temp;
-        memcpy(&temp, &value, sizeof(int8_t));
-        _processing_cfg.min_elevation = temp;
-        break;
-    }
-    case ConfigKey::CFG_SIGNAL_L5_HEALTH_OVRD: {
-        // we receive this as part of signal config request
-        uint8_t temp;
-        memcpy(&temp, &value, sizeof(uint8_t));
-        _processing_cfg.gps_l5_health_ovrd = temp;
-        _processing_cfg.gps_l5_health_ovrd_exists = true;
-        break;
-    }
-    default:
-        break;
-    }
-}
-
-#define CFG_PUSH(KEY_CLASS, KEY, TYPE, VAL) \
-    packed_cfg.push<ConfigKey::KEY_CLASS##_##KEY>(_cfg.KEY##_val, (TYPE)VAL);
-
-// removed _reset_common_capture; we initialize inline with sentinels
-bool AP_GPS_UBLOX_CFGv2::set_common_cfg()
-{
-    // Compose and send VALSET for differences recorded in _processing_cfg
-    // we are not too worried about the blob size, if we exceed we just fail to send
-    // and retry later, with less number of changes, but it will be nice to avoid
-    uint8_t blob[100] = {};
-    UBXPackedCfg packed_cfg(blob, sizeof(blob));
-
-    if (module < Module::SINGLE_UART_LAST) {
-        UBX_CFG_COMMON_UART(CFG_PUSH)
-    } else {
-        // set constant config values for dual-UART modules
+        // Dual-UART modules configuration depends on detected port
         switch (ubx_backend._ublox_port) {
         case 2: // UART1
-            UBX_CFG_COMMON_UART1(CFG_PUSH)
+            UBX_CFG_COMMON_UART1(INIT_CFG_PUSH_INDEXED)
             break;
         case 3: // UART2
-            UBX_CFG_COMMON_UART2(CFG_PUSH)
+            UBX_CFG_COMMON_UART2(INIT_CFG_PUSH_INDEXED)
             break;
         default:
             break;
         }
     }
 
-    // push variable settings
-    packed_cfg.push<ConfigKey::CFG_RATE_MEAS>(_cfg.meas_rate, (uint16_t)ubx_backend.params.rate_ms);
-    packed_cfg.push<ConfigKey::CFG_NAVSPG_DYNMODEL>(_cfg.dynmodel, (uint8_t)ubx_backend.gps._navfilter);
+    // Add variable settings using the same macro for consistency
+    INIT_CFG_PUSH_INDEXED(CFG_RATE, MEAS, uint16_t, ubx_backend.params.rate_ms)
+    INIT_CFG_PUSH_INDEXED(CFG_NAVSPG, DYNMODEL, uint8_t, ubx_backend.gps._navfilter)
+
     if (ubx_backend.gps._min_elevation != -100) {
-        packed_cfg.push<ConfigKey::CFG_NAVSPG_INFIL_MINELEV>((uint8_t)_cfg.min_elevation, (uint8_t)ubx_backend.gps._min_elevation);
+        INIT_CFG_PUSH_INDEXED(CFG_NAVSPG, INFIL_MINELEV, uint8_t, ubx_backend.gps._min_elevation)
     }
-    if (_cfg.gps_l5_health_ovrd_exists) {
-        packed_cfg.push<ConfigKey::CFG_SIGNAL_L5_HEALTH_OVRD>((uint8_t)_cfg.gps_l5_health_ovrd, (uint8_t)ubx_backend.gps.option_set(AP_GPS::GPSL5HealthOverride));
+
+    if (ubx_backend.gps.option_set(AP_GPS::GPSL5HealthOverride)) {
+        INIT_CFG_PUSH_INDEXED(CFG_SIGNAL, L5_HEALTH_OVRD, uint8_t, 1)
     }
-    const uint8_t *bytes = packed_cfg.get();
-    const uint16_t size = (uint16_t)packed_cfg.get_size();
-    if (size == 0) {
+
+    // Mark complete if we reached the end by setting the last item index
+    _common_cfg_fetch_index = item_index;
+
+    Debug("Common config list initialization complete: %u items, %u bytes",
+          item_index, (unsigned)_common_cfg.get_size());
+
+    #undef INIT_CFG_PUSH_INDEXED
+}
+
+// Request configuration keys from packed buffer starting from _common_cfg_verified_offset
+// Extracts keys using get_key_at_offset and sends VALGET request for next batch
+bool AP_GPS_UBLOX_CFGv2::_request_common_cfg()
+{
+    if (_common_cfg.get_size() == 0) {
+        Debug("No config to request");
         return false;
     }
 
+    // Build VALGET message with keys from packed buffer starting at verified offset
+    struct PACKED {
+        AP_GPS_UBLOX::ubx_cfg_valget msg;
+        uint32_t keys[COMMON_CFG_BUFFER_SIZE/5]; // max keys we should fit
+    } valget_msg;
+
+    valget_msg.msg.version = 0;
+    valget_msg.msg.layers = 0; // RAM layer
+    valget_msg.msg.reserved[0] = 0;
+    valget_msg.msg.reserved[1] = 0;
+
+    // Extract all keys from current _common_cfg buffer
+    uint16_t key_count = 0;
+    uint16_t offset = 0;
+    ConfigKey key;
+
+    while (offset < _common_cfg.get_size() && key_count < ARRAY_SIZE(valget_msg.keys)) {
+        if (!_common_cfg.get_key_at_offset(offset, key)) {
+            Debug("invalid or truncated config at offset %u", offset);
+            break; // invalid or truncated
+        }
+        valget_msg.keys[key_count++] = (uint32_t)key;
+    }
+
+    if (key_count == 0) {
+        Debug("No config keys in buffer");
+        return false;
+    }
+
+    size_t msg_size = sizeof(valget_msg.msg) + (key_count * sizeof(uint32_t));
+
+    if (ubx_backend.port->txspace() < (uint16_t)(sizeof(AP_GPS_UBLOX::ubx_header) + msg_size + 2)) {
+        return false;
+    }
+
+    Debug("Requesting %u config keys", key_count);
+    return ubx_backend._send_message(AP_GPS_UBLOX::CLASS_CFG, AP_GPS_UBLOX::MSG_CFG_VALGET, &valget_msg, msg_size);
+}
+
+// Parse common config from VALGET response
+// Compares received value against expected value in _common_cfg
+// Adds mismatched key-value pairs to _common_cfg_to_set
+void AP_GPS_UBLOX_CFGv2::_parse_common_cfg(ConfigKey key, uint64_t value, uint8_t value_len)
+{
+    // Get expected value from packed config
+    uint64_t expected_value = 0;
+    if (!_common_cfg.get(key, expected_value)) {
+        return;
+    }
+
+    // Compare received value with expected value
+    if (memcmp(&value, &expected_value, value_len) != 0) {
+        Debug("Config mismatch for key 0x%08x: got 0x%llx, expected 0x%llx",
+              (unsigned)key, (unsigned long long)value, (unsigned long long)expected_value);
+
+        // Add expected value to the "to set" buffer
+        // push() already handles size inference from the key
+        _common_cfg_to_set.push(key, expected_value);
+
+        // Values don't match, need to send VALSET
+        curr_state = States::SET_COMMON_CONFIG;
+    }
+}
+
+// Set common config by sending VALSET with mismatched key-value pairs from _common_cfg_to_set
+bool AP_GPS_UBLOX_CFGv2::set_common_cfg()
+{
+    if (_common_cfg_to_set.get_size() == 0) {
+        Debug("No config mismatches to set");
+        return false;
+    }
+
+    // Send VALSET with only mismatched key-value pairs
+    const uint8_t *bytes = _common_cfg_to_set.get();
+    const uint16_t size = (uint16_t)_common_cfg_to_set.get_size();
+
+    Debug("Setting %u bytes of config", size);
     return _send_valset_bytes(bytes, size, ConfigLayer::CFG_LAYER_ALL);
 }
 
@@ -947,6 +974,7 @@ bool AP_GPS_UBLOX_CFGv2::UBXPackedCfg::push(ConfigKey key, uint64_t value)
     Debug("GPS: try packed push key 0x%08x value 0x%llx", (uint32_t)key, (uint64_t)value);
     size_t len = config_key_size(key);
     if (_size + sizeof(key) + len > _capacity) {
+        Debug("GPS: packed push failed, not enough space");
         return false;
     }
     size_t index = _size;
@@ -969,7 +997,14 @@ bool AP_GPS_UBLOX_CFGv2::UBXPackedCfg::push(ConfigKey key, uint64_t value)
         default:
             return false;
     }
+    Debug("GPS: packed push succeeded, new size %u", (unsigned)index);
     _size = index;
     return true;
 }
+
+void AP_GPS_UBLOX_CFGv2::UBXPackedCfg::reset() {
+    Debug("GPS: packed config reset");
+    _size = 0;
+}
+
 #endif

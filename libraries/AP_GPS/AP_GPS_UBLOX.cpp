@@ -52,6 +52,9 @@
 // debug VALGET/VALSET configuration
 #define UBLOX_CFG_DEBUGGING 0
 
+// debug CFGv2 configuration
+#define UBLOX_CFGV2_DEBUGGING 0
+
 extern const AP_HAL::HAL& hal;
 
 #if UBLOX_DEBUGGING
@@ -91,6 +94,19 @@ extern const AP_HAL::HAL& hal;
 #endif
 #else
  # define CFG_Debug(fmt, args ...)
+#endif
+
+#if UBLOX_CFGV2_DEBUGGING
+#if defined(HAL_BUILD_AP_PERIPH)
+ extern "C" {
+   void can_printf(const char *fmt, ...);
+ }
+ # define CFGv2_Debug(fmt, args ...)  do {can_printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args);} while(0)
+#else
+ # define CFGv2_Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+#endif
+#else
+ # define CFGv2_Debug(fmt, args ...)
 #endif
 
 AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps,
@@ -713,6 +729,7 @@ AP_GPS_UBLOX::read(void)
             _ck_b += (_ck_a += data);                   // checksum byte
 #if AP_GPS_UBLOX_CFGV2_ENABLED
             if (_class == CLASS_CFG && _msg_id == MSG_CFG_VALGET) {
+                CFGv2_Debug("V2 VALGET byte %u/%u: 0x%02x\n", (unsigned)_payload_counter, (unsigned)_payload_length, data);
                 _cfg_v2.process_valget_byte(data);
             }
 #endif

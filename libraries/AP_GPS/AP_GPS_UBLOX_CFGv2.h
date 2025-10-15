@@ -86,6 +86,9 @@ private:
         const uint8_t *get() const { return _buf; }
         size_t get_size() const { return _size; }
 
+        // Reset the packed config to empty state
+        void reset();
+
         // Following templates enforce correct type for key at compile time
         // unconditional push
         template <ConfigKey Key, typename T>
@@ -118,10 +121,14 @@ private:
 
         // set value by key
         bool set(ConfigKey key, uint64_t value);
-    
-    private:
+
+        // get key at byte offset, returns next offset or 0 if end
+        bool get_key_at_offset(uint16_t &offset, ConfigKey &key) const;
+
         // Push raw value for a key (length is inferred from key's size bits)
         bool push(const ConfigKey key, const uint64_t value);
+
+    private:
 
         static void append_value_le_bytes(uint8_t *dest, size_t &index, uint64_t value, size_t size);
 
@@ -227,13 +234,16 @@ private:
 
     void _handle_valget_kv(ConfigKey key, uint64_t value, uint8_t value_len);
     void _parse_signal_kv(ConfigKey key, uint64_t value, uint8_t value_len);
-    void _parse_common_cfg(ConfigKey key, uint64_t value);
+    void _parse_common_cfg(ConfigKey key, uint64_t value, uint8_t value_len);
     void _publish_supported_constellations();
     bool _send_signal_cfg();
     bool _request_common_cfg();
     bool set_common_cfg();
     bool is_common_cfg_needed();
     bool is_signal_cfg_needed();
+
+    // Common config packed buffer management
+    void _init_common_cfg_list();
 
     bool _valget_in_progress;
     bool _valget_abort;                  // if true, ignore all bytes until process_valget_complete()
@@ -243,6 +253,16 @@ private:
     uint8_t _valget_value_count;         // bytes of current value seen
     uint32_t _valget_key;                // current key (little-endian)
     uint64_t _valget_value;              // current value (little-endian)
+
+    // Common config management - single source of truth
+    static constexpr size_t COMMON_CFG_BUFFER_SIZE = 100;
+    uint8_t _common_cfg_buffer[COMMON_CFG_BUFFER_SIZE];
+    UBXPackedCfg _common_cfg;
+    uint16_t _common_cfg_fetch_index;    // tracks progress through config list building
+
+    // Buffer to track mismatched config that needs to be set
+    uint8_t _common_cfg_to_set_buffer[COMMON_CFG_BUFFER_SIZE];
+    UBXPackedCfg _common_cfg_to_set;
 
     enum ConfigLayer : uint8_t {
         CFG_LAYER_RAM = 0x00,
