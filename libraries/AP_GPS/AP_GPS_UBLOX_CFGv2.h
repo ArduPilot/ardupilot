@@ -60,11 +60,6 @@ class AP_GPS_UBLOX;
 #define UBX_CFG_BLOB_SIZE_FROM_KV(...) \
     (UBXCfgBlobSizeFromKVExpr(__VA_ARGS__))
 
-
-// define for pushing key/value pairs to BLOB NAME_
-#define UBX_CFG_PUSH(NAME_, KEY, VAL) \
-    NAME_.push_raw((KEY), &(VAL))
-
 //---------------------------------------------------------------------------------
 // AP_GPS_UBLOX_CFGv2 class used to configure modern ublox units with configuration
 // key value pair method of configuration
@@ -73,6 +68,9 @@ class AP_GPS_UBLOX_CFGv2 {
     using ConfigKey = AP::UBXConfigKey;
 private:
     friend class AP_GPS_UBLOX;
+
+public:
+    AP_GPS_UBLOX_CFGv2(AP_GPS_UBLOX &_ubx_backend);
 
     // -----------------------------------------------------------------------------
     // UBX key/value blob builder for dynamic configuration. Produces a packed sequence:
@@ -128,6 +126,11 @@ private:
         // Push raw value for a key (length is inferred from key's size bits)
         bool push(const ConfigKey key, const uint64_t value);
 
+        void set_size(size_t size) {
+            if (size <= _capacity) {
+                _size = size;
+            }
+        }
     private:
 
         static void append_value_le_bytes(uint8_t *dest, size_t &index, uint64_t value, size_t size);
@@ -146,9 +149,6 @@ private:
         size_t _size{0};
         size_t _capacity{0};
     };
-
-public:
-    AP_GPS_UBLOX_CFGv2(AP_GPS_UBLOX &_ubx_backend);
 
     enum States : uint8_t {
         IDENTIFY_MODULE,
@@ -185,6 +185,10 @@ public:
     void handle_cfg_ack(uint8_t msg_id);
     bool delete_and_reset_config();
 
+    static void override_ubx_cfg(uint8_t instance, uint8_t *cfg, size_t size) {
+        _override_common_cfg[instance] = new UBXPackedCfg(cfg, size);
+        _override_common_cfg[instance]->set_size(size);
+    }
 private:
     struct PACKED config_list {
         AP_GPS_UBLOX_CFGv2::ConfigKey key;
@@ -258,6 +262,7 @@ private:
     static constexpr size_t COMMON_CFG_BUFFER_SIZE = 100;
     uint8_t _common_cfg_buffer[COMMON_CFG_BUFFER_SIZE];
     UBXPackedCfg _common_cfg;
+    static UBXPackedCfg *_override_common_cfg[GPS_MAX_INSTANCES];
     uint16_t _common_cfg_fetch_index;    // tracks progress through config list building
 
     // Buffer to track mismatched config that needs to be set
