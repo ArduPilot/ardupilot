@@ -29,6 +29,7 @@
 #include "AP_Compass_LSM303D.h"
 #include "AP_Compass_LSM9DS1.h"
 #include "AP_Compass_LIS3MDL.h"
+#include "AP_Compass_LIS2MDL.h"
 #include "AP_Compass_AK09916.h"
 #include "AP_Compass_QMC5883L.h"
 #if AP_COMPASS_DRONECAN_ENABLED
@@ -530,7 +531,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Param: DISBLMSK
     // @DisplayName: Compass disable driver type mask
     // @Description: This is a bitmask of driver types to disable. If a driver type is set in this mask then that driver will not try to find a sensor at startup
-    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK0991x,7:IST8310,8:ICM20948,9:MMC3416,11:DroneCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS,19:MMC5XX3,20:QMC5883P,21:BMM350,22:IIS2MDC
+    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK0991x,7:IST8310,8:ICM20948,9:MMC3416,11:DroneCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS,19:MMC5XX3,20:QMC5883P,21:BMM350,22:IIS2MDC,23:LIS2MDL
     // @User: Advanced
     AP_GROUPINFO("DISBLMSK", 33, Compass, _driver_type_mask, 0),
 
@@ -1253,6 +1254,23 @@ void Compass::_probe_external_i2c_compasses(void)
                     true, ROTATION_YAW_90));
     }
 #endif  // AP_COMPASS_LIS3MDL_ENABLED
+
+#if AP_COMPASS_LIS2MDL_ENABLED
+    // external lis2mdl
+#if AP_COMPASS_LIS2MDL_EXTERNAL_BUS_PROBING_ENABLED
+    FOREACH_I2C_EXTERNAL(i) {
+        ADD_BACKEND(DRIVER_LIS2MDL, AP_Compass_LIS2MDL::probe(GET_I2C_DEVICE(i, HAL_COMPASS_LIS2MDL_I2C_ADDR),
+                    true, ROTATION_NONE));
+    }
+#endif
+    // internal lis2mdl
+#if AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
+    FOREACH_I2C_INTERNAL(i) {
+        ADD_BACKEND(DRIVER_LIS2MDL, AP_Compass_LIS2MDL::probe(GET_I2C_DEVICE(i, HAL_COMPASS_LIS2MDL_I2C_ADDR),
+                    all_external, ROTATION_NONE));
+    }
+#endif
+#endif  // AP_COMPASS_LIS2MDL_ENABLED
 
 #if AP_COMPASS_AK09916_ENABLED
     // AK09916. This can be found twice, due to the ICM20948 i2c bus pass-thru, so we need to be careful to avoid that
