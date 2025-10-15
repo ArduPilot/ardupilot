@@ -15,7 +15,7 @@
 #
 # Grove Black (SERIAL3)
 # 1 (toward rear) : GPIO_NUM_1, RX
-# 2               : GPIO_NUM_3, TX
+# 2               : GPIO_NUM_2, TX
 # 3               : +V (+5V if plugged into USB, else +Vbat)
 # 4 (toward front): GND
 
