@@ -244,7 +244,6 @@ private:
     bool _request_common_cfg();
     bool set_common_cfg();
     bool is_common_cfg_needed();
-    bool is_signal_cfg_needed();
 
     // Common config packed buffer management
     void _init_common_cfg_list();
