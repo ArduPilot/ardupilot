@@ -1029,6 +1029,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
     case MAV_FRAME_BODY_NED:  // deprecated in favour of FRD
     case MAV_FRAME_BODY_OFFSET_NED:  // deprecated in favour of FRD
 #endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+    case MAV_FRAME_BODY_FRD:
         break;
     default:
         // unsupported coordinate frame
@@ -1110,6 +1111,10 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
             vel_ned_ms.xy() = copter.ahrs.body_to_earth2D(vel_ned_ms.xy());
             break;
 #endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+        case MAV_FRAME_BODY_FRD:
+            // rotate using the full attitude, not just the heading
+            vel_ned_ms = copter.ahrs.get_rotation_body_to_ned() * vel_ned_ms;
+            break;
         default:
             break;
         }
