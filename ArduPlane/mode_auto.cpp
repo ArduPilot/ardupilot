@@ -23,9 +23,6 @@ bool ModeAuto::_enter()
 #else
     plane.auto_state.vtol_mode = false;
 #endif
-    plane.next_WP_loc = plane.prev_WP_loc = plane.current_loc;
-    // start or resume the mission, based on MIS_AUTORESET
-    plane.mission.start_or_resume();
 
     if (hal.util->was_watchdog_armed()) {
         if (hal.util->persistent_data.waypoint_num != 0) {
@@ -38,6 +35,8 @@ bool ModeAuto::_enter()
 #if HAL_SOARING_ENABLED
     plane.g2.soaring_controller.init_cruising();
 #endif
+
+    init_pending = true;
 
     return true;
 }
@@ -62,6 +61,21 @@ void ModeAuto::_exit()
 
 void ModeAuto::update()
 {
+    if (init_pending) {
+        if (!AP::ahrs().home_is_set()) {
+            plane.nav_roll_cd = ahrs.roll_sensor;
+            plane.nav_pitch_cd = ahrs.pitch_sensor;
+            plane.calc_nav_roll();
+            plane.calc_nav_pitch();
+            plane.calc_throttle();
+            return;
+        }
+        init_pending = false;
+        plane.next_WP_loc = plane.prev_WP_loc = plane.current_loc;
+        // start or resume the mission, based on MIS_AUTORESET
+        plane.mission.start_or_resume();
+    }
+
     if (plane.mission.state() != AP_Mission::MISSION_RUNNING) {
         // this could happen if AP_Landing::restart_landing_sequence() returns false which would only happen if:
         // restart_landing_sequence() is called when not executing a NAV_LAND or there is no previous nav point
@@ -148,6 +162,11 @@ bool ModeAuto::does_auto_throttle() const
 // returns true if the vehicle can be armed in this mode
 bool ModeAuto::_pre_arm_checks(size_t buflen, char *buffer) const
 {
+    if (init_pending) {
+        hal.util->snprintf(buffer, buflen, "ModeAuto: waiting for home");
+        return false;
+    }
+
 #if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.enabled()) {
         if (plane.quadplane.option_is_set(QuadPlane::Option::ONLY_ARM_IN_QMODE_OR_AUTO) &&
