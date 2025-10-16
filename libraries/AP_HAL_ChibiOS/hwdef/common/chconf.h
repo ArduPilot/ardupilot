@@ -246,10 +246,6 @@ extern "C" {
 #define CH_CFG_USE_TM                       TRUE
 #endif
 
-#if !defined(HAL_USE_LOAD_MEASURE)
-#define HAL_USE_LOAD_MEASURE CH_CFG_USE_TM
-#endif
-
 /**
  * @brief   Threads registry APIs.
  * @details If enabled then the registry APIs are included in the kernel.
@@ -766,8 +762,6 @@ extern "C" {
  */
 #define CH_CFG_IDLE_ENTER_HOOK() {                                          \
   /* Idle-enter code here.*/                                                \
-  extern void sysIdleEnterMeasure(void);                                    \
-  sysIdleEnterMeasure();                                                    \
 }
 
 /**
@@ -778,8 +772,6 @@ extern "C" {
  */
 #define CH_CFG_IDLE_LEAVE_HOOK() {                                          \
   /* Idle-leave code here.*/                                                \
-  extern void sysIdleLeaveMeasure(void);                                    \
-  sysIdleLeaveMeasure();                                                    \
 }
 
 /**

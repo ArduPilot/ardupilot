@@ -735,7 +735,3 @@
 #ifndef HAL_OS_POSIX_IO
 #define HAL_OS_POSIX_IO 0
 #endif
-
-#ifndef HAL_USE_LOAD_MEASURE
-#define HAL_USE_LOAD_MEASURE 0
-#endif

@@ -6,6 +6,9 @@
 #include <AP_Math/control.h>
 
 #include <fenv.h>
+#ifdef __APPLE__
+#include <signal.h>
+#endif
 #include <setjmp.h>
 
 TEST(Control, test_control)
