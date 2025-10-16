@@ -33,7 +33,7 @@ ESP32_RCOUT GPIO_NUM_4
 
 # i2c Buses
 #             Port       SDA         SCL          SPEED    INTERNAL SOFT
-ESP32_I2CBUS  I2C_NUM_0  GPIO_NUM_5  GPIO_NUM_18  400*KHZ  true     false
+ESP32_I2CBUS  I2C_NUM_0  GPIO_NUM_5  GPIO_NUM_18  400*KHZ  true     true
 ESP32_I2CBUS  I2C_NUM_1  GPIO_NUM_22 GPIO_NUM_23  400*KHZ  false    false
 
 # GPIO36
