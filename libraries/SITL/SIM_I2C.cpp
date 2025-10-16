@@ -31,6 +31,7 @@
 #include "SIM_ICM40609.h"
 #include "SIM_INA3221.h"
 #include "SIM_IS31FL3195.h"
+#include "SIM_RF_LightWareI2C_Legacy16Bit.h"
 #include "SIM_LM2755.h"
 #include "SIM_LP5562.h"
 #include "SIM_MaxSonarI2CXL.h"
@@ -64,6 +65,9 @@ static IgnoredI2CDevice ignored;
 #if AP_SIM_TOSHIBALED_ENABLED
 static ToshibaLED toshibaled;
 #endif
+#if AP_SIM_RF_LIGHTWAREI2C_LEGACY16BIT_ENABLED
+static LightWareI2C_Legacy16Bit lightwarei2c_legacy16bit;
+#endif  // AP_SIM_RF_LIGHTWAREI2C_LEGACY16BIT_ENABLED
 #if AP_SIM_MAXSONAR_I2C_XL_ENABLED
 static MaxSonarI2CXL maxsonari2cxl;
 static MaxSonarI2CXL maxsonari2cxl_2;
@@ -130,6 +134,9 @@ struct i2c_device_at_address {
 #if AP_SIM_TERARANGERI2C_ENABLED
     { 0, 0x31, terarangeri2c },   // RNGFNDx_TYPE = 14, RNGFNDx_ADDR = 49
 #endif  // AP_SIM_TERARANGERI2C_ENABLED
+#if AP_SIM_RF_LIGHTWAREI2C_LEGACY16BIT_ENABLED
+    { 0, 0x66, lightwarei2c_legacy16bit },  // RNGFNDx_TYPE = 7, RNGFNDx_ADDR = 0x66
+#endif  // AP_SIM_RF_LIGHTWAREI2C_LEGACY16BIT_ENABLED
 #if AP_SIM_MAXSONAR_I2C_XL_ENABLED
     { 0, 0x70, maxsonari2cxl },   // RNGFNDx_TYPE = 2, RNGFNDx_ADDR = 112
 #endif
