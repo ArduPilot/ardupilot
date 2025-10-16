@@ -285,7 +285,7 @@ private:
     };
 #endif
 
-    struct sensor {
+    struct {
         uint32_t last_update_ms;        // last update time in ms
         uint32_t last_change_ms;        // last update time in ms that included a change in reading from previous readings
         float pressure;                 // pressure in Pascal
