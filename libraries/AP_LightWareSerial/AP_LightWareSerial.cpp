@@ -15,7 +15,7 @@
 
 #include "AP_LightWareSerial.h"
 
-#if AP_PROXIMITY_LIGHTWARE_SF45B_ENABLED ||  AP_RANGEFINDER_LIGHTWARE_GRF_ENABLED
+#if AP_LIGHTWARESERIAL_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/utility/sparse-endian.h>
@@ -141,5 +141,5 @@ bool AP_LightWareSerial::parse_byte(uint8_t b)
     return false;
 }
 
-#endif // AP_PROXIMITY_LIGHTWARE_SF45B_ENABLED ||  AP_RANGEFINDER_LIGHTWARE_GRF_ENABLED
+#endif //AP_LIGHTWARESERIAL_ENABLED
 
