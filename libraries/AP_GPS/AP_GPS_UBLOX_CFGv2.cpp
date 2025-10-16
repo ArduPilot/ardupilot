@@ -50,7 +50,7 @@ const char* const AP_GPS_UBLOX_CFGv2::CONSTELLATION_NAMES[] = {
     "BDS",   // 3
     "",      // 4 (IMES, unused)
     "QZSS",  // 5
-    "GLO",   // 6
+    "",      // 6 (GLO, unused)
     "NAVIC", // 7
 };
 
@@ -606,17 +606,12 @@ void AP_GPS_UBLOX_CFGv2::_publish_supported_constellations()
     ubx_backend.params.gnss_avail.set(_cfg.supported_gnss);
 }
 
-bool AP_GPS_UBLOX_CFGv2::is_signal_cfg_needed()
-{
-    return _cfg.enabled_gnss != ubx_backend.params.gnss_mode ||
-           _cfg.enabled_signals != (uint32_t)ubx_backend.params.sig_mode;
-}
-
 // send signal configuration if needed, return true if more to do
 // returns false if configuration is unchanged
 bool AP_GPS_UBLOX_CFGv2::_send_signal_cfg()
 {
-    if ((_cfg.enabled_gnss == (uint32_t)ubx_backend.params.gnss_mode && _cfg.enabled_signals == (uint32_t)ubx_backend.params.sig_mode)
+    if ((_cfg.enabled_gnss == (uint32_t)ubx_backend.params.gnss_mode && 
+         (_cfg.enabled_signals == (uint32_t)ubx_backend.params.sig_mode || ubx_backend.params.sig_mode == 0))
          || ubx_backend.params.gnss_mode == 0) {
         return false;
     }
@@ -654,7 +649,7 @@ bool AP_GPS_UBLOX_CFGv2::_send_signal_cfg()
                     (unsigned)desired_gnss);
     }
 
-    if (desired_signals != (uint32_t)ubx_backend.params.sig_mode) {
+    if (desired_signals != (uint32_t)ubx_backend.params.sig_mode && ubx_backend.params.sig_mode != 0) {
         ubx_backend.params.sig_mode.set_and_save(desired_signals);
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,
                     "GPS %d: Signal mode cleared unavailable signals: 0x%08lx -> 0x%08lx",
@@ -690,8 +685,10 @@ bool AP_GPS_UBLOX_CFGv2::_send_signal_cfg()
         { \
             uint8_t curr_val = (_cfg.enabled_gnss & (1U << AP_GPS_UBLOX::GNSS_##NAME)) ? 1U : 0U; \
             uint8_t desired_val = (desired_gnss & (1U << AP_GPS_UBLOX::GNSS_##NAME)) ? 1U : 0U; \
-            if (packed_cfg.push<ConfigKey::CFG_SIGNAL_##NAME##_ENA>(curr_val, desired_val)) { \
-                Debug("GPS %d: pushed GNSS %s %d -> %d", ubx_backend.state.instance + 1, #NAME, curr_val, desired_val); \
+            if (curr_val != desired_val) { \
+                if (packed_cfg.push<ConfigKey::CFG_SIGNAL_##NAME##_ENA>(curr_val, desired_val)) { \
+                    Debug("GPS %d: pushed GNSS %s %d -> %d", ubx_backend.state.instance + 1, #NAME, curr_val, desired_val); \
+                } \
             } \
         }
     UBLOX_GNSS(PUSH_GNSS)
@@ -708,8 +705,10 @@ bool AP_GPS_UBLOX_CFGv2::_send_signal_cfg()
         { \
             uint8_t curr_val = (_cfg.enabled_signals & (1UL << (INDEX))) ? 1U : 0U; \
             uint8_t desired_val = (desired_signals & (1UL << (INDEX))) ? 1U : 0U; \
-            if (packed_cfg.push<ConfigKey::CFG_SIGNAL_##NAME##_ENA>(curr_val, desired_val)) { \
-                Debug("GPS %d: pushed signal %s %d -> %d", ubx_backend.state.instance + 1, #NAME, curr_val, desired_val); \
+            if (curr_val != desired_val) { \
+                if (packed_cfg.push<ConfigKey::CFG_SIGNAL_##NAME##_ENA>(curr_val, desired_val)) { \
+                    Debug("GPS %d: pushed signal %s %d -> %d", ubx_backend.state.instance + 1, #NAME, curr_val, desired_val); \
+                } \
             } \
         }
     UBLOX_SIGNALS(PUSH_SIG)

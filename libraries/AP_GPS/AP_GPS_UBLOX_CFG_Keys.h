@@ -590,8 +590,6 @@
     X(QZSS_L1S ,    14) \
     X(QZSS_L2C ,    15) \
     X(QZSS_L5 ,     16) \
-    X(GLO_L1 ,      17) \
-    X(GLO_L2 ,      18) \
     X(NAVIC_L5 ,    19)
 
 #define UBLOX_SIG_MASK(X) \
@@ -600,7 +598,6 @@
     X(GAL, 0x000000F0) \
     X(BDS, 0x00001F00) \
     X(QZSS, 0x0001E000) \
-    X(GLO, 0x00060000) \
     X(NAVIC, 0x00080000)
 
 namespace AP {
