@@ -57,16 +57,17 @@ protected:
 private:
     AP_RangeFinder_Benewake_TFS20L(RangeFinder::RangeFinder_State &_state,
                                    AP_RangeFinder_Params &_params,
-                                   AP_HAL::I2CDevice *dev);
+                                   AP_HAL::I2CDevice &dev);
 
     bool init();
     void timer();
 
-    AP_HAL::I2CDevice * _dev;
+    AP_HAL::I2CDevice &_dev;
 
     struct {
         uint32_t sum;
         uint32_t count;
+        uint32_t out_of_range_count;
     } accum;
 
 };

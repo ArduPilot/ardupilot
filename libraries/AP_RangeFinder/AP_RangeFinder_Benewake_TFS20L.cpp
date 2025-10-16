@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024
+ * Copyright (C) 2025 Shubham Jolapara <shubhamjolapara256@gmail.com>
  *
  * This file is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -17,8 +17,6 @@
 #include "AP_RangeFinder_Benewake_TFS20L.h"
 
 #if AP_RANGEFINDER_BENEWAKE_TFS20L_ENABLED
-
-#include <utility>
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_HAL/AP_HAL.h>
@@ -51,7 +49,7 @@ static constexpr uint16_t MIN_STRENGTH = 100;
 AP_RangeFinder_Benewake_TFS20L::AP_RangeFinder_Benewake_TFS20L(
         RangeFinder::RangeFinder_State &_state,
         AP_RangeFinder_Params &_params,
-        AP_HAL::I2CDevice *dev)
+        AP_HAL::I2CDevice &dev)
     : AP_RangeFinder_Backend(_state, _params)
     , _dev(dev)
 {
@@ -65,7 +63,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_Benewake_TFS20L::detect(
     if (dev == nullptr) {
         return nullptr;
     }
-    AP_RangeFinder_Benewake_TFS20L *sensor = NEW_NOTHROW AP_RangeFinder_Benewake_TFS20L(_state, _params, dev);
+    AP_RangeFinder_Benewake_TFS20L *sensor = NEW_NOTHROW AP_RangeFinder_Benewake_TFS20L(_state, _params, *dev);
     if (sensor == nullptr || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -75,14 +73,13 @@ AP_RangeFinder_Backend *AP_RangeFinder_Benewake_TFS20L::detect(
 
 bool AP_RangeFinder_Benewake_TFS20L::init()
 {
-    uint8_t version_data[3];
-
     {
-        WITH_SEMAPHORE(_dev->get_semaphore());
-        _dev->set_retries(3);
+        WITH_SEMAPHORE(_dev.get_semaphore());
+        uint8_t version_data[3];
+        _dev.set_retries(3);
 
         // Read firmware version to detect if sensor is present
-        if (!_dev->read_registers(TFS20L_VERSION_MAJOR, version_data, 3)) {
+        if (!_dev.read_registers(TFS20L_VERSION_MAJOR, version_data, 3)) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "TFS20L: No response from sensor");
             return false;
         }
@@ -92,7 +89,7 @@ bool AP_RangeFinder_Benewake_TFS20L::init()
     }
 
     // Register periodic callback to read sensor data
-    _dev->register_periodic_callback(50000,  // 20Hz sampling rate
+    _dev.register_periodic_callback(50000,  // 20Hz sampling rate
                                      FUNCTOR_BIND_MEMBER(&AP_RangeFinder_Benewake_TFS20L::timer, void));
 
     return true;
@@ -102,12 +99,21 @@ void AP_RangeFinder_Benewake_TFS20L::update()
 {
     WITH_SEMAPHORE(_sem);
 
-    if (accum.count > 0) {
-        state.distance_m = (accum.sum * 0.01f) / accum.count;
+    const uint32_t total_count = accum.count + accum.out_of_range_count;
+    if (total_count > 0) {
+        if (accum.out_of_range_count == total_count) {
+            // All readings were out of range
+            state.distance_m = max_distance() + (BENEWAKE_OUT_OF_RANGE_ADD_CM * 0.01f);
+            set_status(RangeFinder::Status::OutOfRangeHigh);
+        } else if (accum.count > 0) {
+            // Some readings were valid
+            state.distance_m = (accum.sum * 0.01f) / accum.count;
+            update_status();
+        }
         state.last_reading_ms = AP_HAL::millis();
         accum.sum = 0;
         accum.count = 0;
-        update_status();
+        accum.out_of_range_count = 0;
     } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
         set_status(RangeFinder::Status::NoData);
     }
@@ -115,13 +121,12 @@ void AP_RangeFinder_Benewake_TFS20L::update()
 
 void AP_RangeFinder_Benewake_TFS20L::timer()
 {
-    uint8_t raw_data[4]; // Buffer for distance + strength data only
-
     /*
      * Read the first 4 registers to get distance and strength data
      * TFS20L_DIST_LOW (0x00) through TFS20L_AMP_HIGH (0x03)
      */
-    if (!_dev->read_registers(TFS20L_DIST_LOW, raw_data, sizeof(raw_data))) {
+    uint8_t raw_data[4]; // Buffer for distance + strength data only
+    if (!_dev.read_registers(TFS20L_DIST_LOW, raw_data, sizeof(raw_data))) {
         return;
     }
 
@@ -134,10 +139,11 @@ void AP_RangeFinder_Benewake_TFS20L::timer()
         distance_cm > MAX_DIST_CM || distance_cm < MIN_DIST_CM) {
         /*
          * When signal strength is too low or invalid, or distance is outside
-         * sensor's specified range, set distance to max + offset.
-         * This forces status to OutOfRangeHigh rather than NoData
+         * sensor's specified range, mark as out of range
          */
-        distance_cm = max_distance()*100 + BENEWAKE_OUT_OF_RANGE_ADD_CM;
+        WITH_SEMAPHORE(_sem);
+        accum.out_of_range_count++;
+        return;
     }
 
     {
