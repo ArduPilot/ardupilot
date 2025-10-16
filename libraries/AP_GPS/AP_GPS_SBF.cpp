@@ -46,6 +46,10 @@ do {                                            \
   #define GPS_SBF_STREAM_NUMBER 1
 #endif
 
+#ifndef GPS_SBF_STATUS_STREAM_NUMBER
+  #define GPS_SBF_STATUS_STREAM_NUMBER 3
+#endif
+
 #define SBF_EXCESS_COMMAND_BYTES 5 // 2 start bytes + validity byte + space byte + endline byte
 
 #define RX_ERROR_MASK (CONGESTION    | \
@@ -54,9 +58,33 @@ do {                                            \
                        INVALIDCONFIG | \
                        OUTOFGEOFENCE)
 
+#define EXT_ERROR_MASK  (SISERROR        | \
+                         DIFFCORRERROR   | \
+                         EXTSENSORERROR  | \
+                         SETUPERROR)
+
 constexpr const char *AP_GPS_SBF::portIdentifiers[];
 constexpr const char* AP_GPS_SBF::_initialisation_blob[];
 constexpr const char* AP_GPS_SBF::sbas_on_blob[];
+
+const AP_GPS_SBF::SBF_Error_Map AP_GPS_SBF::sbf_error_map[] = {
+    { AP_GPS_SBF::INVALIDCONFIG, AP_GPS::Errors::CONFIGURATION },
+    { AP_GPS_SBF::SOFTWARE,      AP_GPS::Errors::SOFTWARE },
+    { AP_GPS_SBF::ANTENNA,       AP_GPS::Errors::ANTENNA },
+    { AP_GPS_SBF::MISSEDEVENT,   AP_GPS::Errors::EVENT_CONGESTION },
+    { AP_GPS_SBF::CPUOVERLOAD,   AP_GPS::Errors::CPU_OVERLOAD },
+    { AP_GPS_SBF::CONGESTION,    AP_GPS::Errors::OUTPUT_CONGESTION },
+};
+
+const AP_GPS_SBF::Auth_State_Map AP_GPS_SBF::auth_state_map[] = {
+    {0, AP_GPS::Authentication::DISABLED},
+    {1, AP_GPS::Authentication::INITIALIZING},
+    {2, AP_GPS::Authentication::INITIALIZING},
+    {3, AP_GPS::Authentication::ERROR},
+    {4, AP_GPS::Authentication::ERROR},
+    {5, AP_GPS::Authentication::ERROR},
+    {6, AP_GPS::Authentication::OK},
+};
 
 AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps,
                        AP_GPS::Params &_params,
@@ -70,6 +98,11 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps,
 
     // if we ever parse RTK observations it will always be of type NED, so set it once
     state.rtk_baseline_coords_type = RTK_BASELINE_COORDINATE_SYSTEM_NED;
+
+#if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
+    //all septentrio receivers support GNSS integrity msg
+    state.has_gnss_integrity = true;
+#endif //AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
 
     // yaw available when option bit set or using dual antenna
     if (option_set(AP_GPS::DriverOptions::SBF_UseBaseForYaw) ||
@@ -136,6 +169,13 @@ AP_GPS_SBF::read(void)
                                              (int)params.com_port,
                                              extra_config) == -1) {
                                     config_string = nullptr;
+                                }
+                                break;
+                            case Config_State::SSO_Status:
+                                if (asprintf(&config_string, "sso,Stream%d,COM%d,GalAuthStatus+RFStatus+QualityInd+ReceiverStatus,sec1\n",
+                                            (int)GPS_SBF_STATUS_STREAM_NUMBER,
+                                            (int)params.com_port) == -1) {
+                                                config_string = nullptr;
                                 }
                                 break;
                             case Config_State::Constellation:
@@ -387,8 +427,11 @@ AP_GPS_SBF::parse(uint8_t temp)
                                     config_step = Config_State::SSO;
                                     break;
                                 case Config_State::SSO:
-                                    config_step = Config_State::Constellation;
+                                    config_step = Config_State::SSO_Status;
                                     break;
+                                case Config_State::SSO_Status:
+                                    config_step = Config_State::Constellation;
+                                    break;    
                                 case Config_State::Constellation:
                                     // we can also move to
                                     // Config_State::Blob if we choose
@@ -559,12 +602,95 @@ AP_GPS_SBF::process_message(void)
         check_new_itow(temp.TOW, sbf_msg.length);
         RxState = temp.RxState;
         if ((RxError & RX_ERROR_MASK) != (temp.RxError & RX_ERROR_MASK)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %u: SBF error changed (0x%08x/0x%08x)", (unsigned int)(state.instance + 1),
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %u: SBF internal error changed (0x%08x/0x%08x)", (unsigned int)(state.instance + 1),
                             (unsigned int)(RxError & RX_ERROR_MASK), (unsigned int)(temp.RxError & RX_ERROR_MASK));
         }
         RxError = temp.RxError;
+        if ((ExtError & EXT_ERROR_MASK) != (temp.ExtError & EXT_ERROR_MASK)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %u: SBF external error changed (0x%08x/0x%08x)", (unsigned int)(state.instance + 1),
+                            (unsigned int)(ExtError & EXT_ERROR_MASK), (unsigned int)(temp.ExtError & EXT_ERROR_MASK));
+        }
+        ExtError = temp.ExtError;
+#if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
+        state.system_errors = static_cast<uint32_t>(AP_GPS::Errors::GPS_SYSTEM_ERROR_NONE);
+
+        if (ExtError & DIFFCORRERROR) {
+            state.system_errors |= static_cast<uint32_t>(AP_GPS::Errors::INCOMING_CORRECTIONS);
+        }
+
+        for (const auto &map_entry : sbf_error_map) {
+            if (RxError & map_entry.sbf_error_bit) {
+                state.system_errors |= static_cast<uint32_t>(map_entry.ap_error_enum);
+            }
+        }
+#endif  // AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
         break;
     }
+
+    case RFStatus:
+    {
+        const msg4092 &temp = sbf_msg.data.msg4092u;
+        check_new_itow(temp.TOW, sbf_msg.length);
+#if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
+        if (temp.Flags==0) {
+            state.spoofing_state = static_cast<uint8_t>(AP_GPS::Spoofing::OK);
+        }
+        else {
+            state.spoofing_state = static_cast<uint8_t>(AP_GPS::Spoofing::DETECTED);
+        }
+        state.jamming_state = static_cast<uint8_t>(AP_GPS::Jamming::OK);
+
+        if (temp.SBLength < sizeof(RFStatusRFBandSubBlock)) {
+            break;
+        }
+
+        const uint8_t *p = (const uint8_t *)&temp.RFBand;
+        const uint8_t *packet_end = (const uint8_t *)&temp + (sbf_msg.length - 8);
+
+        for (uint8_t i = 0; i < temp.N; i++) {
+            if (p + temp.SBLength > packet_end) {
+                break;
+            }
+
+            const RFStatusRFBandSubBlock &rf_band_data = *(const RFStatusRFBandSubBlock *)p;
+
+            switch (rf_band_data.Info & (uint8_t)0b1111) {
+            case 1:
+            case 2:
+                // As long as there is indicated but unmitigated spoofing in one band, don't report the overall state as mitigated
+                if (state.jamming_state == static_cast<uint8_t>(AP_GPS::Jamming::OK)) {
+                    state.jamming_state = static_cast<uint8_t>(AP_GPS::Jamming::MITIGATED);
+                }
+                break;
+            case 8:
+                state.jamming_state = static_cast<uint8_t>(AP_GPS::Jamming::DETECTED);
+                break;
+            }
+            p += temp.SBLength;
+        }
+#endif  // AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
+        break;
+    }
+
+    case GALAuthStatus:
+    {
+        const msg4245 &temp = sbf_msg.data.msg4245u;
+        check_new_itow(temp.TOW, sbf_msg.length);
+#if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
+        state.authentication_state = static_cast<uint8_t>(AP_GPS::Authentication::UNKNOWN);
+
+        const uint16_t osnma_status = temp.OSNMAStatus & (uint16_t)0b111;
+
+        for (const auto &map_entry : auth_state_map) {
+            if (osnma_status == map_entry.osnma_status_code) {
+                state.authentication_state = static_cast<uint8_t>(map_entry.auth_state);
+                break; 
+            }
+        }
+#endif  // AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
+        break;
+    }
+
     case VelCovGeodetic:
     {
         const msg5908 &temp = sbf_msg.data.msg5908u;
