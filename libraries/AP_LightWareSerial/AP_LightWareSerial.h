@@ -1,9 +1,8 @@
 #pragma once
 
-#include <AP_RangeFinder/AP_RangeFinder_config.h>
-#include <AP_Proximity/AP_Proximity_config.h>
+#include "AP_LightWareSerial_config.h"
 
-#if AP_PROXIMITY_LIGHTWARE_SF45B_ENABLED ||  AP_RANGEFINDER_LIGHTWARE_GRF_ENABLED
+#if AP_LIGHTWARESERIAL_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 #define LIGHTWARE_PAYLOAD_LEN_MAX 256 // maximum payload size we can accept (in some configurations sensor may send as large as 1023)
@@ -55,4 +54,4 @@ protected:
 private:
     AP_HAL::UARTDriver *& _uart;
 };
-#endif // AP_PROXIMITY_LIGHTWARE_SF45B_ENABLED ||  AP_RANGEFINDER_LIGHTWARE_GRF_ENABLED
+#endif // AP_LIGHTWARESERIAL_ENABLED
