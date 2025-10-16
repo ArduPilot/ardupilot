@@ -1,0 +1,123 @@
+# Enhanced Dependabot Configuration for ArduPilot
+# Tracks GitHub Actions, Docker, Git submodules, and Python dependencies
+version: 2
+
+updates:
+  # GitHub Actions dependencies
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    reviewers:
+      - "ardupilot/devops-team"
+    assignees:
+      - "ardupilot/maintainers"
+    open-pull-requests-limit: 10
+    pull-request-branch-name:
+      separator: "-"
+
+  # Docker dependencies
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "06:00"
+    commit-message:
+      prefix: "build"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "docker"
+    reviewers:
+      - "ardupilot/devops-team"
+    open-pull-requests-limit: 5
+    ignore:
+      # Ignore patch updates for base images
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"]
+
+  # Python dependencies (if requirements.txt exists)
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "06:00"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "python"
+    groups:
+      python-build-tools:
+        patterns:
+          - "setuptools"
+          - "wheel"
+          - "pip"
+      python-testing:
+        patterns:
+          - "pytest*"
+          - "coverage"
+          - "mock"
+      python-linting:
+        patterns:
+          - "flake8*"
+          - "black"
+          - "pylint"
+          - "mypy"
+    open-pull-requests-limit: 10
+    versioning-strategy: increase
+
+  # Python dependencies in Tools directory
+  - package-ecosystem: pip
+    directory: /Tools
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "06:00"
+    commit-message:
+      prefix: "tools"
+    labels:
+      - "dependencies"
+      - "python"
+      - "tools"
+    open-pull-requests-limit: 5
+
+  # Git submodules
+  - package-ecosystem: gitsubmodule
+    directory: /
+    schedule:
+      interval: weekly
+      day: thursday
+      time: "06:00"
+    commit-message:
+      prefix: "submodule"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "submodules"
+    reviewers:
+      - "ardupilot/maintainers"
+    open-pull-requests-limit: 5
+    ignore:
+      # Specify submodules to ignore updates (if any)
+      - dependency-name: "modules/ChibiOS"
+        # Only update when explicitly needed
+        update-types: ["version-update:semver-major"]
+
+# Dependency review action configuration
+# This ensures PRs are checked for security vulnerabilities

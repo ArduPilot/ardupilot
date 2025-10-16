@@ -1,0 +1,223 @@
+name: Documentation Build and Deploy
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'libraries/**/*.h'
+      - 'libraries/**/*.cpp'
+      - '*.md'
+      - 'docs/**'
+      - '.github/workflows/documentation.yml'
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'libraries/**/*.h'
+      - 'libraries/**/*.cpp'
+      - '*.md'
+      - 'docs/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: docs-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Build API documentation with Doxygen
+  doxygen:
+    name: Build Doxygen Documentation
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          submodules: 'recursive'
+
+      - name: Install Doxygen and dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen graphviz plantuml
+
+      - name: Generate Doxygen configuration
+        run: |
+          cat > Doxyfile << 'EOF'
+          PROJECT_NAME           = "ArduPilot"
+          PROJECT_NUMBER         = "$(git describe --tags --always)"
+          PROJECT_BRIEF          = "Open Source Autopilot Software"
+          OUTPUT_DIRECTORY       = docs/doxygen
+          INPUT                  = libraries/ ArduCopter/ ArduPlane/ Rover/ ArduSub/ AntennaTracker/ Blimp/
+          RECURSIVE              = YES
+          EXCLUDE                = modules/ build/ tests/
+          EXCLUDE_PATTERNS       = */tests/* */examples/* */benchmarks/*
+          FILE_PATTERNS          = *.cpp *.h *.hpp
+          EXTRACT_ALL            = YES
+          EXTRACT_PRIVATE        = NO
+          EXTRACT_STATIC         = YES
+          JAVADOC_AUTOBRIEF      = YES
+          QT_AUTOBRIEF           = YES
+          GENERATE_HTML          = YES
+          GENERATE_LATEX         = NO
+          HTML_OUTPUT            = html
+          HTML_TIMESTAMP         = YES
+          GENERATE_TREEVIEW      = YES
+          DISABLE_INDEX          = NO
+          FULL_SIDEBAR           = NO
+          HTML_COLORSTYLE        = LIGHT
+          HAVE_DOT               = YES
+          DOT_IMAGE_FORMAT       = svg
+          INTERACTIVE_SVG        = YES
+          DOT_TRANSPARENT        = YES
+          CALL_GRAPH             = YES
+          CALLER_GRAPH           = YES
+          COLLABORATION_GRAPH    = YES
+          CLASS_DIAGRAMS         = YES
+          WARN_IF_UNDOCUMENTED   = NO
+          QUIET                  = NO
+          WARNINGS               = YES
+          WARN_IF_DOC_ERROR      = YES
+          SOURCE_BROWSER         = YES
+          INLINE_SOURCES         = NO
+          REFERENCED_BY_RELATION = YES
+          REFERENCES_RELATION    = YES
+          USE_MDFILE_AS_MAINPAGE = README.md
+          MARKDOWN_SUPPORT       = YES
+          SEARCHENGINE           = YES
+          SERVER_BASED_SEARCH    = NO
+          EOF
+
+      - name: Run Doxygen
+        run: |
+          doxygen Doxyfile
+
+      - name: Generate documentation index
+        run: |
+          mkdir -p docs/doxygen/html
+          cat > docs/doxygen/html/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>ArduPilot API Documentation</title>
+              <meta charset="utf-8">
+              <style>
+                  body { font-family: Arial, sans-serif; margin: 40px; }
+                  h1 { color: #2c3e50; }
+                  .section { margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 5px; }
+                  a { color: #3498db; text-decoration: none; }
+                  a:hover { text-decoration: underline; }
+              </style>
+          </head>
+          <body>
+              <h1>🚁 ArduPilot API Documentation</h1>
+              <div class="section">
+                  <h2>Quick Links</h2>
+                  <ul>
+                      <li><a href="html/index.html">Full API Reference (Doxygen)</a></li>
+                      <li><a href="https://ardupilot.org/dev/">Developer Wiki</a></li>
+                      <li><a href="https://github.com/ArduPilot/ardupilot">GitHub Repository</a></li>
+                  </ul>
+              </div>
+              <div class="section">
+                  <h2>Vehicle Documentation</h2>
+                  <ul>
+                      <li><a href="https://ardupilot.org/copter/">ArduCopter</a></li>
+                      <li><a href="https://ardupilot.org/plane/">ArduPlane</a></li>
+                      <li><a href="https://ardupilot.org/rover/">Rover</a></li>
+                      <li><a href="http://ardusub.com/">ArduSub</a></li>
+                  </ul>
+              </div>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload Doxygen artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: doxygen-documentation
+          path: docs/doxygen/html
+          retention-days: 30
+
+  # Check documentation coverage
+  doc-coverage:
+    name: Documentation Coverage Check
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install coverage tools
+        run: |
+          pip install interrogate
+
+      - name: Check Python docstring coverage
+        run: |
+          interrogate -v --fail-under=50 Tools/ || true
+
+      - name: Generate coverage report
+        run: |
+          interrogate --generate-badge docs/coverage.svg Tools/ || true
+
+      - name: Upload coverage badge
+        uses: actions/upload-artifact@v4
+        with:
+          name: doc-coverage-badge
+          path: docs/coverage.svg
+          retention-days: 30
+
+  # Deploy to GitHub Pages
+  deploy-pages:
+    name: Deploy to GitHub Pages
+    needs: [doxygen]
+    runs-on: ubuntu-22.04
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: Download Doxygen artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: doxygen-documentation
+          path: ./docs
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact to Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./docs
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # Summary report
+  documentation-summary:
+    name: Documentation Summary
+    runs-on: ubuntu-22.04
+    needs: [doxygen, doc-coverage]
+    if: always()
+    
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## 📚 Documentation Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Documentation generated for commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Results:" >> $GITHUB_STEP_SUMMARY
+          echo "- API Documentation (Doxygen): ${{ needs.doxygen.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Coverage Check: ${{ needs.doc-coverage.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.ref }}" = "refs/heads/master" ]; then
+            echo "📖 **Documentation deployed to GitHub Pages**" >> $GITHUB_STEP_SUMMARY
+          fi

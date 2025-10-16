@@ -1,0 +1,102 @@
+{
+  "name": "ArduPilot Development",
+  "dockerFile": "../Dockerfile",
+  "context": "..",
+  "workspaceFolder": "/ardupilot",
+  
+  "build": {
+    "args": {
+      "BASE_IMAGE": "ubuntu",
+      "TAG": "22.04",
+      "USER_NAME": "ardupilot",
+      "USER_UID": "1000",
+      "USER_GID": "1000"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cpptools-extension-pack",
+        "ms-vscode.cmake-tools",
+        "twxs.cmake",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.black-formatter",
+        "ms-python.flake8",
+        "streetsidesoftware.code-spell-checker",
+        "eamodio.gitlens",
+        "donjayamanne.githistory",
+        "github.vscode-pull-request-github",
+        "redhat.vscode-yaml",
+        "timonwong.shellcheck",
+        "foxundermoon.shell-format",
+        "gruntfuggly.todo-tree",
+        "aaron-bond.better-comments"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "C_Cpp.default.cppStandard": "c++17",
+        "C_Cpp.default.cStandard": "c11",
+        "C_Cpp.default.intelliSenseMode": "linux-gcc-x64",
+        "C_Cpp.default.compilerPath": "/usr/bin/g++",
+        "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+        "python.defaultInterpreterPath": "/usr/bin/python3",
+        "python.linting.enabled": true,
+        "python.linting.flake8Enabled": true,
+        "python.formatting.provider": "black",
+        "editor.formatOnSave": true,
+        "editor.rulers": [120],
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true,
+        "git.autofetch": true,
+        "git.confirmSync": false
+      }
+    }
+  },
+
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "installOhMyZsh": true,
+      "upgradePackages": true
+    }
+  },
+
+  "forwardPorts": [
+    5760,
+    5761,
+    5762,
+    5763
+  ],
+
+  "portsAttributes": {
+    "5760": {
+      "label": "MAVLink (SITL)",
+      "onAutoForward": "notify"
+    },
+    "5761": {
+      "label": "MAVLink Console",
+      "onAutoForward": "notify"
+    }
+  },
+
+  "mounts": [
+    "source=${localWorkspaceFolder}/.ccache,target=/home/ardupilot/.ccache,type=bind,consistency=cached",
+    "source=${localWorkspaceFolder}/.vscode-server,target=/home/ardupilot/.vscode-server,type=bind,consistency=cached"
+  ],
+
+  "remoteUser": "ardupilot",
+  
+  "postCreateCommand": "git config --global --add safe.directory /ardupilot && echo 'Development environment ready!'",
+  
+  "postStartCommand": "source ~/.ardupilot_env",
+
+  "containerEnv": {
+    "CCACHE_DIR": "/home/ardupilot/.ccache",
+    "CCACHE_MAXSIZE": "2G"
+  }
+}

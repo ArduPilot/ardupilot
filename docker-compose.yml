@@ -1,0 +1,147 @@
+version: '3.8'
+
+services:
+  # Main ArduPilot development container
+  ardupilot-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BASE_IMAGE: ubuntu
+        TAG: "22.04"
+        USER_NAME: ardupilot
+        USER_UID: 1000
+        USER_GID: 1000
+    container_name: ardupilot-dev
+    hostname: ardupilot-dev
+    volumes:
+      - .:/ardupilot:cached
+      - ardupilot-ccache:/home/ardupilot/.ccache
+      - ardupilot-home:/home/ardupilot
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - CCACHE_DIR=/home/ardupilot/.ccache
+      - CCACHE_MAXSIZE=2G
+      - BUILDLOGS=/tmp/buildlogs
+    working_dir: /ardupilot
+    stdin_open: true
+    tty: true
+    privileged: true
+    cap_add:
+      - SYS_PTRACE
+      - NET_ADMIN
+    security_opt:
+      - seccomp:unconfined
+      - apparmor:unconfined
+    ports:
+      - "5760:5760"  # MAVLink SITL
+      - "5761:5761"  # MAVLink Console
+      - "5762:5762"  # Additional MAVLink port
+      - "5763:5763"  # Additional MAVLink port
+      - "8000:8000"  # Documentation server
+      - "9000:9000"  # API server
+    networks:
+      - ardupilot-network
+    command: bash
+
+  # SITL simulation environment with GUI support
+  ardupilot-sitl:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SKIP_AP_GRAPHIC_ENV: 0
+    container_name: ardupilot-sitl
+    hostname: ardupilot-sitl
+    volumes:
+      - .:/ardupilot:cached
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ardupilot-ccache:/home/ardupilot/.ccache
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - CCACHE_DIR=/home/ardupilot/.ccache
+      - CCACHE_MAXSIZE=2G
+    working_dir: /ardupilot
+    stdin_open: true
+    tty: true
+    privileged: true
+    ports:
+      - "5770:5760"  # MAVLink SITL (different host port)
+    networks:
+      - ardupilot-network
+    profiles:
+      - simulation
+    command: bash
+
+  # Documentation server
+  ardupilot-docs:
+    image: node:18-alpine
+    container_name: ardupilot-docs
+    volumes:
+      - .:/ardupilot:cached
+      - ardupilot-docs-build:/ardupilot/docs/_build
+    working_dir: /ardupilot/docs
+    ports:
+      - "8080:8080"
+    networks:
+      - ardupilot-network
+    profiles:
+      - docs
+    command: sh -c "npm install -g http-server && http-server ./_build/html -p 8080"
+
+  # Code analysis and quality tools
+  sonarqube:
+    image: sonarqube:community
+    container_name: ardupilot-sonarqube
+    depends_on:
+      - sonarqube-db
+    environment:
+      - SONAR_JDBC_URL=jdbc:postgresql://sonarqube-db:5432/sonar
+      - SONAR_JDBC_USERNAME=sonar
+      - SONAR_JDBC_PASSWORD=sonar
+    volumes:
+      - sonarqube-data:/opt/sonarqube/data
+      - sonarqube-extensions:/opt/sonarqube/extensions
+      - sonarqube-logs:/opt/sonarqube/logs
+    ports:
+      - "9090:9000"
+    networks:
+      - ardupilot-network
+    profiles:
+      - analysis
+
+  # PostgreSQL database for SonarQube
+  sonarqube-db:
+    image: postgres:14-alpine
+    container_name: ardupilot-sonarqube-db
+    environment:
+      - POSTGRES_USER=sonar
+      - POSTGRES_PASSWORD=sonar
+      - POSTGRES_DB=sonar
+    volumes:
+      - sonarqube-db:/var/lib/postgresql/data
+    networks:
+      - ardupilot-network
+    profiles:
+      - analysis
+
+networks:
+  ardupilot-network:
+    driver: bridge
+    name: ardupilot-network
+
+volumes:
+  ardupilot-ccache:
+    name: ardupilot-ccache
+  ardupilot-home:
+    name: ardupilot-home
+  ardupilot-docs-build:
+    name: ardupilot-docs-build
+  sonarqube-data:
+    name: ardupilot-sonarqube-data
+  sonarqube-extensions:
+    name: ardupilot-sonarqube-extensions
+  sonarqube-logs:
+    name: ardupilot-sonarqube-logs
+  sonarqube-db:
+    name: ardupilot-sonarqube-db

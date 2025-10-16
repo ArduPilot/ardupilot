@@ -173,3 +173,22 @@ env.bak/
 venv.bak/
 autotest_result_*_junit.xml
 .python-version
+
+# Docker and container development
+.ccache/
+.vscode-server/
+docs/doxygen/
+docs/coverage.svg
+
+# Security and analysis tools
+trivy-results.sarif
+trivy-container-results.sarif
+semgrep.sarif
+safety-results.json
+python-licenses.json
+requirements-frozen.txt
+
+# SonarQube analysis
+.scannerwork/
+bw-output/
+sonar-project.properties
