@@ -59,6 +59,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Values: 42:Ainstein_LR_D1
     // @Values: 43:RDS02UF
     // @Values: 44:HexsoonRadar
+    // @Values: 45:LightWare-GRF
     // @Values: 100:SITL
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_RangeFinder_Params, type, 0, AP_PARAM_FLAG_ENABLE),
