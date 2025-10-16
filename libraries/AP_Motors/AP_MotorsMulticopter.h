@@ -114,7 +114,7 @@ public:
 
 protected:
 
-    // run spool logic
+    // run motor spooling logic
     void                output_logic();
 
     // output_to_motors - sends commands to the motors
