@@ -143,6 +143,11 @@ public:
     /// of the given fences.  fence_type is a bitmask here.
     float get_breach_distance(uint8_t fence_type) const;
 
+    /// get_breach_direction_NED - returns direction in meters outside/inside
+    /// of the given fences.  fence_check_pos is the home relative position in NED frame when the check was made.
+    // fence_type is a bitmask.
+    Vector3f get_breach_direction_NED(uint8_t fence_type, Vector3f& fence_check_pos) const;
+
     /// get_action - getter for user requested action on limit breach
     Action get_action() const { return _action; }
 
@@ -233,6 +238,9 @@ private:
     /// clear_margin_breach - update margin breach bitmask
     void clear_margin_breach(uint8_t fence_type);
 
+    /// retrieve the current NED position relative to home
+    bool get_current_position_NED(Vector3f& currpos) const;
+
     // additional checks for the different fence types:
     bool pre_arm_check_polygon(char *failure_msg, const uint8_t failure_msg_len) const;
     bool pre_arm_check_circle(char *failure_msg, const uint8_t failure_msg_len) const;
@@ -269,6 +277,9 @@ private:
     float           _alt_min_breach_distance;   // distance below the altitude min
     float           _circle_breach_distance;    // distance beyond the circular fence
     float           _polygon_breach_distance;   // distance beyond the polygon fence
+    Vector2f        _polygon_nearest_point;  // direction towards the polygon breach
+    Vector2f        _circle_breach_direction;   // direction towards the circle breach
+    Vector3f        _last_fence_check_pos;  // position used in the last fence check
 
     // other internal variables
     float           _home_distance;         // distance from home in meters (provided by main code)

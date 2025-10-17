@@ -550,6 +550,21 @@ bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) c
     return true;
 }
 
+// retrieve the current NED position relative to home
+// always retrieves altitude but returns false if position could not be determnined
+bool AC_Fence::get_current_position_NED(Vector3f& currpos) const
+{
+    AP::ahrs().get_relative_position_D_home(currpos.z);
+
+    Vector2f pos;
+    if (AP::ahrs().get_relative_position_NE_home(pos)) {
+        currpos.x = pos.x;
+        currpos.y = pos.y;
+        return true;
+    }
+    return false;
+}
+
 /// returns true if we have freshly breached the maximum altitude
 /// fence; also may set up a fallback fence which, if breached, will
 /// cause the altitude fence to be freshly breached
@@ -561,9 +576,8 @@ bool AC_Fence::check_fence_alt_max()
         return false;
     }
 
-    float alt;
-    AP::ahrs().get_relative_position_D_home(alt);
-    const float _curr_alt = -alt; // translate Down to Up
+    get_current_position_NED(_last_fence_check_pos);
+    const float _curr_alt = -_last_fence_check_pos.z; // translate Down to Up
 
     // record distance above/below breach
     _alt_max_breach_distance = _curr_alt - _alt_max;
@@ -612,9 +626,9 @@ bool AC_Fence::check_fence_alt_min()
         return false;
     }
 
-    float alt;
-    AP::ahrs().get_relative_position_D_home(alt);
-    const float _curr_alt = -alt; // translate Down to Up
+    get_current_position_NED(_last_fence_check_pos);
+
+    const float _curr_alt = -_last_fence_check_pos.z; // translate Down to Up
 
     // record distance above/below breach
     _alt_min_breach_distance = _alt_min - _curr_alt;
@@ -698,7 +712,9 @@ bool AC_Fence::check_fence_polygon()
     Location loc;
     const bool have_location = AP::ahrs().get_location(loc);
 
-    if (have_location && _poly_loader.breached(loc, _polygon_breach_distance)) {
+    get_current_position_NED(_last_fence_check_pos);
+
+    if (have_location && _poly_loader.breached(loc, _polygon_breach_distance, _polygon_nearest_point)) {
         if (!was_breached) {
             record_breach(AC_FENCE_TYPE_POLYGON);
             return true;
@@ -727,10 +743,17 @@ bool AC_Fence::check_fence_circle()
         return false;
     }
 
-    Vector2f home;
-    if (AP::ahrs().get_relative_position_NE_home(home)) {
+    if (get_current_position_NED(_last_fence_check_pos)) {
         // we (may) remain breached if we can't update home
-        _home_distance = home.length();
+        const Vector2f& pos = _last_fence_check_pos.xy();
+        _home_distance = pos.length();
+
+        if (is_zero(pos.length_squared())) {
+            _circle_breach_direction.x = _circle_radius;
+            _circle_breach_direction.y = 0.0f;
+        } else {
+            _circle_breach_direction = pos.normalized() * _circle_radius.get()  - pos;
+        }
     }
 
     // record distance outside/inside the fence
@@ -1019,6 +1042,35 @@ float AC_Fence::get_breach_distance(uint8_t fence_type) const
     return max;
 }
 
+/// get_breach_direction - returns direction to the closest fence breach in NED frame.
+// fence_check_pos is the home relative position in NED frame when the check was made
+//  fence_type is a bitmask here.
+Vector3f AC_Fence::get_breach_direction_NED(uint8_t fence_type, Vector3f& fence_check_pos) const
+{
+    fence_type = fence_type & present();
+    Vector3f direction_to_closest;
+    fence_check_pos = _last_fence_check_pos;
+    float closest = FLT_MAX;
+
+    if (fence_type & AC_FENCE_TYPE_ALT_MAX && fabsf(_alt_max_breach_distance) < closest) {
+        direction_to_closest = Vector3f{0, 0, _alt_max_breach_distance};
+        closest = fabsf(_alt_max_breach_distance);
+    }
+    if (fence_type & AC_FENCE_TYPE_ALT_MIN && fabsf(_alt_min_breach_distance) < closest) {
+        direction_to_closest = Vector3f{0, 0, -_alt_min_breach_distance};
+        closest = fabsf(_alt_min_breach_distance);
+    }
+    if (fence_type & AC_FENCE_TYPE_CIRCLE && fabsf(_circle_breach_distance) < closest) {
+        direction_to_closest = Vector3f{_circle_breach_direction.x, _circle_breach_direction.y, 0};
+        closest = fabsf(_circle_breach_distance);
+    }
+    if (fence_type & AC_FENCE_TYPE_POLYGON && fabsf(_polygon_breach_distance) < closest) {
+        direction_to_closest = Vector3f{_polygon_nearest_point.x, _polygon_nearest_point.y, 0};
+        closest = fabsf(_polygon_breach_distance);
+    }
+    return direction_to_closest;
+}
+
 /// manual_recovery_start - caller indicates that pilot is re-taking manual control so fence should be disabled for 10 seconds
 ///     has no effect if no breaches have occurred
 void AC_Fence::manual_recovery_start()
@@ -1098,6 +1150,7 @@ bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) c
 uint8_t AC_Fence::check(bool disable_auto_fences) { return 0; }
 bool AC_Fence::check_destination_within_fence(const Location& loc) { return true; }
 float AC_Fence::get_breach_distance(uint8_t fence_type) const { return 0.0; }
+Vector3f AC_Fence::get_breach_direction_NED(uint8_t fence_type, Vector3f& fence_check_pos) const { return Vector3f(); }
 void AC_Fence::get_fence_names(uint8_t fences, ExpandingString& msg) { }
 void AC_Fence::print_fence_message(const char* msg, uint8_t fences) const {}
 
