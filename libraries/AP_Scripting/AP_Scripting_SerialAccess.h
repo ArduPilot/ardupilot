@@ -13,6 +13,7 @@ public:
     AP_Scripting_SerialAccess() {}
 
     void begin(uint32_t baud);
+    void begin();
 
     void configure_parity(uint8_t parity);
     void set_stop_bits(uint8_t stop_bits);
