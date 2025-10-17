@@ -1296,4 +1296,31 @@ int lua_gps_inject_data(lua_State *L)
 
 #endif  // AP_GPS_ENABLED
 
+int lua_crc_xmodem(lua_State *L) {
+    binding_argcheck(L, 1);
+
+    size_t len = 0;
+    const char *str = luaL_checklstring(L, 1, &len);
+
+    uint16_t crc = 0;
+    for (size_t i=0; i < len; i++) {
+        crc = crc_xmodem_update(crc, (uint8_t)str[i]);
+    }
+
+    lua_pushinteger(L, crc);
+    return 1;
+}
+
+int lua_crc_modbus(lua_State *L) {
+    binding_argcheck(L, 1);
+
+    size_t len = 0;
+    const char *str = luaL_checklstring(L, 1, &len);
+
+    uint16_t crc = calc_crc_modbus((const uint8_t*)str, len);
+
+    lua_pushinteger(L, crc);
+    return 1;
+}
+
 #endif  // AP_SCRIPTING_ENABLED
