@@ -3810,43 +3810,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def drive_somewhere_breach_boundary_and_rtl(self, loc, target_system=1, target_component=1, timeout=60):
         tstart = self.get_sim_time()
-        last_sent = 0
         seen_fence_breach = False
 
-        type_mask = (mavutil.mavlink.POSITION_TARGET_TYPEMASK_VX_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_VY_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_VZ_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_AX_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_AY_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_AZ_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE)
-
-        self.change_mode('GUIDED')
+        self.change_mode('MANUAL')
+        self.set_rc(3, 1800)
         while True:
             now = self.get_sim_time_cached()
             if now - tstart > timeout:
                 raise NotAchievedException("Did not breach boundary + RTL")
-            if now - last_sent > 10:
-                last_sent = now
-                self.mav.mav.set_position_target_global_int_send(
-                    0,
-                    target_system,
-                    target_component,
-                    mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
-                    type_mask,
-                    int(loc.lat * 1.0e7),
-                    int(loc.lng * 1.0e7),
-                    0, # alt
-                    0, # x-ve
-                    0, # y-vel
-                    0, # z-vel
-                    0, # afx
-                    0, # afy
-                    0, # afz
-                    0, # yaw,
-                    0, # yaw-rate
-                )
             m = self.mav.recv_match(blocking=True,
                                     timeout=1)
             if m is None:
