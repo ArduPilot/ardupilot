@@ -13,6 +13,8 @@ import copy
 from pymavlink import mavutil
 from pymavlink.rotmat import Vector3
 
+from pysim import vehicleinfo
+
 import vehicle_test_suite
 from vehicle_test_suite import Test
 from vehicle_test_suite import AutoTestTimeoutException, NotAchievedException, PreconditionFailedException
@@ -2756,6 +2758,51 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_rc(4, 1500)
         self.disarm_vehicle()
 
+    def ChangeModesInMotSpinArmed(self):
+        '''see what happens when mode is changed to fixed-wing when throttle held down'''
+        frame = 'quadplane-tilt'
+
+        vinfo = vehicleinfo.VehicleInfo()
+        vinfo_options = vinfo.options[self.vehicleinfo_key()]
+        frame_bits = vinfo_options["frames"][frame]
+        model = frame_bits.get("model", frame)
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath(frame),
+            model=model,
+            wipe=True,
+        )
+
+        self.change_mode('QLOITER')
+        self.set_rc(3, 1000)
+        self.wait_ready_to_arm()
+
+        spin = self.get_parameters([
+            'Q_M_SPIN_ARM',
+            'Q_M_SPIN_MIN',
+            'Q_M_SPIN_MAX',
+        ])
+        self.arm_vehicle()
+        vehicle_test_suite.WaitAndMaintainServoChannelValue(
+            self,
+            5,  # front-right
+            int(1000 + spin['Q_M_SPIN_ARM']*1000),
+            comparator=operator.eq,
+            minimum_duration=2,
+        ).run()
+
+        # install a message hook which ensures that the tilt motors don't move
+        self.install_message_hook_context(self.WatchServoOutputs(self, {
+            12: 1100,  # tilt-yaw-angle, pointing straight up
+            13: 1100,
+        }, epsilon=2, fail_fast=False))
+
+        self.set_parameter('Q_RTL_MODE', 1)  # switch-qrtl
+
+        self.change_mode('QRTL', expect_mode='QLAND')
+
+        self.wait_disarmed()
+
     def ScriptedArmingChecksApplet(self):
         """ Applet for Arming Checks will prevent a vehicle from arming based on scripted checks
             """
@@ -2989,6 +3036,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.PilotYaw,
             self.ParameterChecks,
             self.QAUTOTUNE,
+            self.ChangeModesInMotSpinArmed,
             self.TestLogDownload,
             self.TestLogDownloadWrap,
             self.EXTENDED_SYS_STATE,
