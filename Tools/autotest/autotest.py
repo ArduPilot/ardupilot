@@ -414,6 +414,7 @@ def run_step(step):
         "debug": opts.debug,
         "clean": not opts.no_clean,
         "configure": not opts.no_configure,
+        "configure_if_required": opts.configure_if_required,
         "math_check_indexes": opts.math_check_indexes,
         "ekf_single": opts.ekf_single,
         "postype_single": opts.postype_single,
@@ -910,6 +911,11 @@ if __name__ == "__main__":
                            action='store_true',
                            help='do not configure before building',
                            dest="no_configure")
+    group_build.add_option("--configure-if-required",
+                           default=False,
+                           action='store_true',
+                           help='configure before building only if required',
+                           dest="configure_if_required")
     group_build.add_option("", "--waf-configure-args",
                            action="append",
                            dest="waf_configure_args",
