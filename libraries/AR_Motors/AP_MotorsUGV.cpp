@@ -17,6 +17,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include "AP_MotorsUGV.h"
 #include <AP_Relay/AP_Relay.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 
 #define SERVO_MAX 4500  // This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 
@@ -126,6 +127,22 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("REV_DELAY", 15, AP_MotorsUGV, _reverse_delay, 0),
+
+    // @Param: BAT_CURR_MAX
+    // @DisplayName: Motor Current Max
+    // @Description: Maximum current over which maximum throttle is limited (0 = Disabled)
+    // @Range: 0 200
+    // @Units: A
+    // @User: Advanced
+    AP_GROUPINFO("BAT_CURR_MAX", 16, AP_MotorsUGV, _batt_current_max, 0),
+
+    // @Param: BAT_CURR_TC
+    // @DisplayName: Motor Current Max Time Constant
+    // @Description: Time constant used to limit the maximum current
+    // @Range: 0 10
+    // @Units: s
+    // @User: Advanced
+    AP_GROUPINFO("BAT_CURR_TC", 17, AP_MotorsUGV, _batt_current_time_constant, 1.0f),
     
     AP_GROUPEND
 };
@@ -338,13 +355,13 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
     slew_limit_throttle(dt);
 
     // output for regular steering/throttle style frames
-    output_regular(armed, ground_speed, _steering, _throttle);
+    output_regular(armed, ground_speed, _steering, _throttle, dt);
 
     // output for skid steering style frames
     output_skid_steering(armed, _steering, _throttle, dt);
 
     // output for omni frames
-    output_omni(armed, _steering, _throttle, _lateral);
+    output_omni(armed, _steering, _throttle, _lateral, dt);
 
     // output to sails
     output_sail();
@@ -370,16 +387,16 @@ bool AP_MotorsUGV::output_test_pct(motor_test_order motor_seq, float pct)
     switch (motor_seq) {
         case MOTOR_TEST_THROTTLE: {
             if (SRV_Channels::function_assigned(SRV_Channel::k_motor1)) {
-                output_throttle(SRV_Channel::k_motor1, pct);
+                output_throttle(SRV_Channel::k_motor1, pct, 0.02f);
             }
             if (SRV_Channels::function_assigned(SRV_Channel::k_throttle)) {
-                output_throttle(SRV_Channel::k_throttle, pct);
+                output_throttle(SRV_Channel::k_throttle, pct, 0.02f);
             }
             break;
         }
         case MOTOR_TEST_STEERING: {
             if (SRV_Channels::function_assigned(SRV_Channel::k_motor2)) {
-                output_throttle(SRV_Channel::k_motor2, pct);
+                output_throttle(SRV_Channel::k_motor2, pct, 0.02f);
             }
             if (SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
                 SRV_Channels::set_output_scaled(SRV_Channel::k_steering, pct * 45.0f);
@@ -388,19 +405,19 @@ bool AP_MotorsUGV::output_test_pct(motor_test_order motor_seq, float pct)
         }
         case MOTOR_TEST_THROTTLE_LEFT: {
             if (SRV_Channels::function_assigned(SRV_Channel::k_motor3)) {
-                output_throttle(SRV_Channel::k_motor3, pct);
+                output_throttle(SRV_Channel::k_motor3, pct, 0.02f);
             }
             if (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft)) {
-                output_throttle(SRV_Channel::k_throttleLeft, pct);
+                output_throttle(SRV_Channel::k_throttleLeft, pct, 0.02f);
             }
             break;
         }
         case MOTOR_TEST_THROTTLE_RIGHT: {
             if (SRV_Channels::function_assigned(SRV_Channel::k_motor4)) {
-                output_throttle(SRV_Channel::k_motor4, pct);
+                output_throttle(SRV_Channel::k_motor4, pct, 0.02f);
             }
             if (SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
-                output_throttle(SRV_Channel::k_throttleRight, pct);
+                output_throttle(SRV_Channel::k_throttleRight, pct, 0.02f);
             }
             break;
         }
@@ -712,7 +729,7 @@ void AP_MotorsUGV::clear_omni_motors(int8_t motor_num)
 }
 
 // output to regular steering and throttle channels
-void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering, float throttle)
+void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering, float throttle, float dt)
 {
     // output to throttle channels
     if (armed) {
@@ -779,7 +796,7 @@ void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering
                 steering *= -1.0f;
             }
         }
-        output_throttle(SRV_Channel::k_throttle, throttle);
+        output_throttle(SRV_Channel::k_throttle, throttle, dt);
     } else {
         // handle disarmed case
         if (_disarm_disable_pwm) {
@@ -926,7 +943,7 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
 }
 
 // output for omni frames
-void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float lateral)
+void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float lateral, float dt)
 {
     // exit immediately if the vehicle is not omni
     if (!is_omni()) {
@@ -961,7 +978,7 @@ void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float
         const float output_scale = 1 / thr_str_ltr_max;
         for (uint8_t i=0; i<_motors_num; i++) {
             // send output for each motor
-            output_throttle(SRV_Channels::get_motor_function(i), thr_str_ltr_out[i] * 100.0f * output_scale);
+            output_throttle(SRV_Channels::get_motor_function(i), thr_str_ltr_out[i] * 100.0f * output_scale, dt);
         }
         if (output_scale < 1.0) {
             // can't tell which command resulted in the scale back, so limit all
@@ -984,6 +1001,34 @@ void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float
     }
 }
 
+// return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
+float AP_MotorsUGV::get_current_limit_max_throttle(float dt)
+{
+#if AP_BATTERY_ENABLED
+    AP_BattMonitor &battery = AP::battery();
+
+    float _batt_current;
+
+    if (_batt_current_max <= 0 || // return maximum if current limiting is disabled
+        !hal.util->get_soft_armed() || // remove throttle limit if disarmed
+        !battery.current_amps(_batt_current)) { // no current monitoring is available
+        _throttle_limit = 1.0f;
+        return 1.0f;
+    }
+
+    float batt_current_ratio = _batt_current / _batt_current_max;
+
+    _throttle_limit += (dt / (dt + _batt_current_time_constant)) * (1.0f - batt_current_ratio);
+
+    // throttle limit drops to 5% minimum when over current
+    _throttle_limit = constrain_float(_throttle_limit, 0.05f, 1.0f);
+
+    return _throttle_limit;
+#else
+    return 1.0f;
+#endif
+}
+
 // output throttle value to main throttle channel, left throttle or right throttle.  throttle should be scaled from -100 to 100
 void AP_MotorsUGV::output_throttle(SRV_Channel::Function function, float throttle, float dt)
 {
@@ -997,6 +1042,10 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Function function, float throttl
 
     // apply rate control
     throttle = get_rate_controlled_throttle(function, throttle, dt);
+    
+    // apply current limiting
+    const float current_limit_max = get_current_limit_max_throttle(dt);
+    throttle = constrain_float(throttle, -100.0f * current_limit_max, 100.0f * current_limit_max);
 
     // set relay if necessary
 #if AP_RELAY_ENABLED
