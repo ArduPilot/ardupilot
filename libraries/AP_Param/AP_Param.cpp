@@ -1104,24 +1104,6 @@ bool AP_Param::get_param_by_index(void *obj_ptr, uint8_t idx, ap_var_type old_pt
 }
 
 
-// Find a object by name.
-//
-AP_Param *
-AP_Param::find_object(const char *name)
-{
-    for (uint16_t i=0; i<_num_vars; i++) {
-        const auto &info = var_info(i);
-        if (strcasecmp(name, info.name) == 0) {
-            ptrdiff_t base;
-            if (!get_base(info, base)) {
-                return nullptr;
-            }
-            return (AP_Param *)base;
-        }
-    }
-    return nullptr;
-}
-
 // notify GCS of current value of parameter
 void AP_Param::notify() const {
     uint32_t group_element = 0;
