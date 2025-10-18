@@ -601,11 +601,13 @@ def configure(cfg):
         env.DEFAULT_PARAMETERS = cfg.options.default_parameters
 
     try:
-        hwdef_env = generate_hwdef_h(env)
+        hwdef_env, hwdef_files = generate_hwdef_h(env)
     except Exception:
         traceback.print_exc()
         cfg.fatal("Failed to process hwdef.dat")
     load_env_vars(cfg.env, hwdef_env)
+    hal_common.handle_hwdef_files(cfg, hwdef_files)
+
     if env.HAL_NUM_CAN_IFACES and not env.AP_PERIPH:
         setup_canmgr_build(cfg)
     if env.HAL_NUM_CAN_IFACES and env.AP_PERIPH and not env.BOOTLOADER:
@@ -648,7 +650,7 @@ def generate_hwdef_h(env):
         quiet=False,
     )
     c.run()
-    return c.env_vars
+    return c.env_vars, c.output_files
 
 def pre_build(bld):
     '''pre-build hook to change dynamic sources'''
@@ -656,14 +658,6 @@ def pre_build(bld):
         bld.get_board().with_can = True
     if bld.env.WITH_LITTLEFS:
         bld.get_board().with_littlefs = True
-    hwdef_h = os.path.join(bld.env.BUILDROOT, 'hwdef.h')
-    if not os.path.exists(hwdef_h):
-        print("Generating hwdef.h")
-        try:
-            generate_hwdef_h(bld.env)
-            # TRAP: env vars are not reloaded!
-        except Exception:
-            bld.fatal("Failed to process hwdef.dat")
     setup_optimization(bld.env)
 
 def build(bld):
