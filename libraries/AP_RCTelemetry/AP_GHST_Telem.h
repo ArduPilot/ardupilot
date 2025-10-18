@@ -60,14 +60,18 @@ public:
     };
 
     struct PACKED VTXFrame {
-#if __BYTE_ORDER != __LITTLE_ENDIAN
-#error "Only supported on little-endian architectures"
-#endif
         uint8_t flags;
         uint16_t frequency;         // frequency in Mhz
         uint16_t power;              // power in mw, 0 == off
+#if __BYTE_ORDER == __LITTLE_ENDIAN
         uint8_t band : 4;               // A, B, E, AirWave, Race
         uint8_t channel : 4;            // 1x-8x
+#elif __BYTE_ORDER == __BIG_ENDIAN
+        uint8_t channel : 4;            // 1x-8x
+        uint8_t band : 4;               // A, B, E, AirWave, Race
+#else
+#error "Unsupported-endian architecture"
+#endif
         uint8_t spare[3];
     };
 
