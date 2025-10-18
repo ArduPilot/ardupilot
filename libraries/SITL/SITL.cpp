@@ -1260,6 +1260,13 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @Description: If non-zero the vehicle will be clamped in position until the value on this servo channel passes 1800PWM
     AP_GROUPINFO("CLAMP_CH",     49, SIM, clamp_ch, 0),
 
+    // @Param: ACC_HEALTH
+    // @DisplayName: Accelerometer Health Flag Mask
+    // @Description: Determines if the accelerometer is marked unhealthy when an IMU failure is simulated by ACCELx_FAIL params
+    // @Values: 0:Disabled, 1:Mark unhealthy
+    // @User: Advanced
+    AP_GROUPINFO("ACC_HEALTH", 50, SIM, accel_health_mask,  0),
+
     // the IMUT parameters must be last due to the enable parameters
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SIM, AP_InertialSensor_TCal),
