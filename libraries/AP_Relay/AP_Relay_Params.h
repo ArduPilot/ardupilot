@@ -70,4 +70,5 @@ public:
     AP_Enum<FUNCTION> function;            // relay function
     AP_Int16 pin;                          // gpio pin number
     AP_Enum<DefaultState> default_state;  // default state
+    AP_Int8 inverted;                       // inverted signal
 };

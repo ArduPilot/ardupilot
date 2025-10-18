@@ -434,6 +434,17 @@ void AP_SerialManager::init()
     }
 #endif
 
+
+#ifdef SERIAL1_READONLY
+    if (state[1].protocol != DEFAULT_SERIAL1_PROTOCOL) {
+        state[1].protocol.set(DEFAULT_SERIAL1_PROTOCOL);
+    }
+
+    if (state[1].baud != DEFAULT_SERIAL1_BAUD) {
+        state[1].baud.set(DEFAULT_SERIAL1_BAUD);
+    }
+#endif
+
     init_console();
 
     // initialise serial ports
