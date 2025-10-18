@@ -1558,10 +1558,11 @@ private:
     bool terrain_following_allowed;
 
     // enum for RTL_OPTIONS parameter
-    enum class Options : int32_t {
+    enum class Option : int32_t {
         // First pair of bits are still available, pilot yaw was mapped to bit 2 for symmetry with auto
         IgnorePilotYaw    = (1U << 2),
     };
+    bool option_is_enabled(Option option) const;
 
 };
 

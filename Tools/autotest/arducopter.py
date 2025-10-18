@@ -14329,6 +14329,33 @@ RTL_ALT 111
         if len(self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)) != 0:
             raise NotAchievedException("Mission did not clear after reboot with option set")
 
+    def IgnorePilotYaw(self):
+        '''test RTL_OPTIONS bit 2, "IgnorePilotYaw"'''
+        self.takeoff(10, mode='GUIDED')
+        self.fly_guided_move_local(10, 10, 10, timeout=100)
+
+        orig_yaw = self.assert_receive_message('VFR_HUD').heading
+
+        def ensure_heading_stays_constant(mav, m):
+            print(m.get_type())
+            if m.get_type() != "VFR_HUD":
+                return
+            new_yaw = m.heading
+            if abs(orig_yaw - new_yaw) > 15:
+                raise NotAchievedException(f"Vehicle yawed! ({orig_yaw=} {new_yaw=}")
+
+        self.context_push()
+        self.install_message_hook_context(ensure_heading_stays_constant)
+
+        self.change_mode('RTL')
+
+        self.set_parameter('RTL_OPTIONS', 1 << 2)
+        self.set_rc(4, 2000)
+        self.delay_sim_time(5)
+        self.context_pop()
+
+        self.wait_disarmed()
+
     def PLDNoParameters(self):
         ''''try enabling PLD with lat/lng/alt all zero'''
         self.set_parameter('SIM_PLD_LAT', 0)
@@ -14950,6 +14977,7 @@ return update, 1000
             self.CompassLearnCopyFromEKF,
             self.AHRSAutoTrim,
             self.Ch6TuningLoitMaxXYSpeed,
+            self.IgnorePilotYaw,
             self.TestEKF3CompassFailover,
             self.test_EKF3_option_disable_lane_switch,
             self.PLDNoParameters,
