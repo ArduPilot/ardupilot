@@ -384,14 +384,6 @@ public:
     static bool find_top_level_key_by_pointer(const void *ptr, uint16_t &key);
 
 
-    /// Find a object in the top level var_info table
-    ///
-    /// If the variable has no name, it cannot be found by this interface.
-    ///
-    /// @param  name            The full name of the variable to be found.
-    ///
-    static AP_Param * find_object(const char *name);
-
     /// Notify GCS of current parameter value
     ///
     void notify() const;
