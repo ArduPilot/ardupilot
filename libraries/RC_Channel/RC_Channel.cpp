@@ -126,7 +126,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane}: 16:AUTO Mode
     // @Values{Copter}: 17:AUTOTUNE Mode
     // @Values{Copter, Blimp}: 18:LAND Mode
-    // @Values{Copter, Rover}: 19:Gripper Release
+    // @Values{Copter, Rover}: 19:Gripper
     // @Values{Copter}: 21:Parachute Enable
     // @Values{Copter, Plane}: 22:Parachute Release
     // @Values{Copter}: 23:Parachute 3pos
