@@ -35,32 +35,32 @@ AP_Baro_Backend* AP_Baro_DroneCAN::probe(AP_Baro &baro)
     WITH_SEMAPHORE(_sem_registry);
 
     AP_Baro_DroneCAN* backend = nullptr;
-    for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
-        if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_dronecan != nullptr) {
+    for (auto &detected_module : _detected_modules) {
+        if (detected_module.driver == nullptr && detected_module.ap_dronecan != nullptr) {
             backend = NEW_NOTHROW AP_Baro_DroneCAN(baro);
             if (backend == nullptr) {
                 AP::can().log_text(AP_CANManager::LOG_ERROR,
                             LOG_TAG,
                             "Failed register DroneCAN Baro Node %d on Bus %d\n",
-                            _detected_modules[i].node_id,
-                            _detected_modules[i].ap_dronecan->get_driver_index());
+                            detected_module.node_id,
+                            detected_module.ap_dronecan->get_driver_index());
             } else {
-                _detected_modules[i].driver = backend;
+                detected_module.driver = backend;
                 backend->_pressure = 0;
                 backend->_pressure_count = 0;
-                backend->_ap_dronecan = _detected_modules[i].ap_dronecan;
-                backend->_node_id = _detected_modules[i].node_id;
+                backend->_ap_dronecan = detected_module.ap_dronecan;
+                backend->_node_id = detected_module.node_id;
 
                 backend->_instance = backend->_frontend.register_sensor();
                 backend->set_bus_id(backend->_instance, AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_UAVCAN,
-                                                                                    _detected_modules[i].ap_dronecan->get_driver_index(),
+                                                                                    detected_module.ap_dronecan->get_driver_index(),
                                                                                     backend->_node_id, 0));
 
                 AP::can().log_text(AP_CANManager::LOG_INFO,
                             LOG_TAG,
                             "Registered DroneCAN Baro Node %d on Bus %d\n",
-                            _detected_modules[i].node_id,
-                            _detected_modules[i].ap_dronecan->get_driver_index());
+                            detected_module.node_id,
+                            detected_module.ap_dronecan->get_driver_index());
             }
             break;
         }
@@ -73,29 +73,29 @@ AP_Baro_DroneCAN* AP_Baro_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_droneca
     if (ap_dronecan == nullptr) {
         return nullptr;
     }
-    for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
-        if (_detected_modules[i].driver != nullptr &&
-            _detected_modules[i].ap_dronecan == ap_dronecan && 
-            _detected_modules[i].node_id == node_id) {
-            return _detected_modules[i].driver;
+    for (auto &detected_module : _detected_modules) {
+        if (detected_module.driver != nullptr &&
+            detected_module.ap_dronecan == ap_dronecan &&
+            detected_module.node_id == node_id) {
+            return detected_module.driver;
         }
     }
     
     if (create_new) {
         bool already_detected = false;
         //Check if there's an empty spot for possible registration
-        for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
-            if (_detected_modules[i].ap_dronecan == ap_dronecan && _detected_modules[i].node_id == node_id) {
+        for (auto &detected_module : _detected_modules) {
+            if (detected_module.ap_dronecan == ap_dronecan && detected_module.node_id == node_id) {
                 //Already Detected
                 already_detected = true;
                 break;
             }
         }
         if (!already_detected) {
-            for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
-                if (_detected_modules[i].ap_dronecan == nullptr) {
-                    _detected_modules[i].ap_dronecan = ap_dronecan;
-                    _detected_modules[i].node_id = node_id;
+            for (auto &detected_module : _detected_modules) {
+                if (detected_module.ap_dronecan == nullptr) {
+                    detected_module.ap_dronecan = ap_dronecan;
+                    detected_module.node_id = node_id;
                     break;
                 }
             }

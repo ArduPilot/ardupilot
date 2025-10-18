@@ -492,7 +492,7 @@ bool AP_Baro::_add_backend(AP_Baro_Backend *backend)
     if (!backend) {
         return false;
     }
-    if (_num_drivers >= BARO_MAX_DRIVERS) {
+    if (_num_drivers >= ARRAY_SIZE(drivers)) {
         AP_HAL::panic("Too many barometer drivers");
     }
     drivers[_num_drivers++] = backend;
@@ -520,8 +520,8 @@ bool AP_Baro::_have_i2c_driver(uint8_t bus, uint8_t address) const
  */
 #define ADD_BACKEND(backend) \
     do { _add_backend(backend);     \
-       if (_num_drivers == BARO_MAX_DRIVERS || \
-          _num_sensors == BARO_MAX_INSTANCES) { \
+        if (_num_drivers == ARRAY_SIZE(drivers) ||  \
+            _num_sensors == ARRAY_SIZE(sensors)) {  \
           return; \
        } \
     } while (0)
@@ -542,8 +542,8 @@ void AP_Baro::init(void)
     }
 
     // zero bus IDs before probing
-    for (uint8_t i = 0; i < BARO_MAX_INSTANCES; i++) {
-        sensors[i].bus_id.set(0);
+    for (auto &sensor : sensors) {
+        sensor.bus_id.set(0);
     }
 
 #if AP_SIM_BARO_ENABLED
@@ -975,7 +975,7 @@ float AP_Baro::thrust_pressure_correction(uint8_t instance)
 */
 uint8_t AP_Baro::register_sensor(void)
 {
-    if (_num_sensors >= BARO_MAX_INSTANCES) {
+    if (_num_sensors >= ARRAY_SIZE(sensors)) {
         AP_HAL::panic("Too many barometers");
     }
     return _num_sensors++;
