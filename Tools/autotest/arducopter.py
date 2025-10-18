@@ -9574,13 +9574,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # Monitor behavior for 10 seconds
         tstart = self.get_sim_time()
-        initial_alt = self.get_altitude()
+        initial_alt = self.get_altitude(altitude_source='SIM_STATE.alt')
         self.progress(f"initial_alt={initial_alt}")
         stuck = True  # Assume it's stuck unless proven otherwise
 
         while self.get_sim_time() - tstart < 10:
             # Fetch current altitude
-            current_alt = self.get_altitude()
+            current_alt = self.get_altitude(altitude_source='SIM_STATE.alt')
             self.progress(f"current_alt={current_alt}")
 
             # Fetch and log battery status
