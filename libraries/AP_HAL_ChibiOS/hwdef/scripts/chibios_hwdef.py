@@ -1396,7 +1396,7 @@ INCLUDE common.ld
 ''' % (ext_flash_base, ext_flash_length, instruction_ram_base, instruction_ram_length, ram0_start, ram0_len, ram1_start, ram1_len, ram2_start, ram2_len))  # noqa
         f.close()
 
-    def copy_common_linkerscript(self, outdir):
+    def copy_common_linkerscript(self, outpath):
         dirpath = os.path.dirname(os.path.realpath(__file__))
 
         if self.is_bootloader_fw():
@@ -1410,8 +1410,7 @@ INCLUDE common.ld
                 linker = 'common_mixf.ld'
             else:
                 linker = 'common_extf.ld'
-        shutil.copy(os.path.join(dirpath, "../common", linker),
-                    os.path.join(outdir, "common.ld"))
+        shutil.copy(os.path.join(dirpath, "../common", linker), outpath)
 
     def get_USB_IDs(self):
         '''return tuple of USB VID/PID'''
@@ -2378,7 +2377,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.romfs["bootloader.bin"] = bp
         f.write("#define AP_BOOTLOADER_FLASHING_ENABLED 1\n")
 
-    def write_ROMFS(self, outdir):
+    def write_ROMFS(self):
         '''create ROMFS embedded header'''
         romfs_list = []
         for k in self.romfs.keys():
@@ -3060,7 +3059,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.add_firmware_defaults_from_file(f, "defaults_normal.h", "normal")
 
     def processed_defaults_filepath(self):
-        return os.path.join(self.outdir, "processed_defaults.parm")
+        return self.get_output_path("processed_defaults.parm")
 
     def write_default_parameters(self):
         '''handle default parameters'''
@@ -3119,23 +3118,23 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.write_default_parameters()
 
         # write out hw.dat for ROMFS
-        self.write_all_lines(os.path.join(self.outdir, "hw.dat"))
+        self.write_all_lines(self.get_output_path("hw.dat"))
 
         # Add ROMFS directories
         self.romfs_add_dir(['scripts'])
         self.romfs_add_dir(['param'])
 
         # write out hwdef.h
-        self.write_hwdef_header(os.path.join(self.outdir, "hwdef.h"))
+        self.write_hwdef_header(self.get_output_path("hwdef.h"))
 
         # write out ldscript.ld
-        self.write_ldscript(os.path.join(self.outdir, "ldscript.ld"))
+        self.write_ldscript(self.get_output_path("ldscript.ld"))
 
-        self.write_ROMFS(self.outdir)
+        self.write_ROMFS()
 
         # copy the shared linker script into the build directory; it must
         # exist in the same directory as the ldscript.ld file we generate.
-        self.copy_common_linkerscript(self.outdir)
+        self.copy_common_linkerscript(self.get_output_path("common.ld"))
 
         # CHIBIOS_BUILD_FLAGS is passed to the ChibiOS makefile
         self.env_vars['CHIBIOS_BUILD_FLAGS'] = ' '.join(self.build_flags)
