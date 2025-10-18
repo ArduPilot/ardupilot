@@ -10,6 +10,9 @@
 
 static uint32_t motor_test_start_ms;        // system time the motor test began
 static uint32_t motor_test_timeout_ms;      // test will timeout this many milliseconds after the motor_test_start_ms
+#if HAL_WITH_ESC_TELEM
+static uint32_t last_motor_message_ms;      // last time we output a message about poor error rates
+#endif
 static uint8_t motor_test_seq;              // motor sequence number of motor being tested
 static uint8_t motor_test_count;            // number of motors to test
 static uint8_t motor_test_throttle_type;    // motor throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through)
@@ -92,6 +95,15 @@ void Copter::motor_test_output()
             gcs().send_text(MAV_SEVERITY_INFO, "Motor Test: cancelled");
             motor_test_stop();
         }
+#if HAL_WITH_ESC_TELEM
+        float rpm, error_rate;
+        if (AP::esc_telem().get_raw_rpm(motor_test_seq, rpm, error_rate)
+            && error_rate > 1.0f
+            && now - last_motor_message_ms > 1000) {
+            gcs().send_text(MAV_SEVERITY_WARNING,"Motor Test: error rate %f for motor %u at %f rpm", error_rate, motor_test_seq, rpm);
+            last_motor_message_ms = now;
+        }
+#endif
     }
 }
 
