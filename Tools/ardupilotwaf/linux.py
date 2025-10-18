@@ -51,11 +51,12 @@ def configure(cfg):
     env.AP_PROGRAM_FEATURES += ['linux_ap_program']
 
     try:
-        hwdef_env = generate_hwdef_h(env)
+        hwdef_env, hwdef_files = generate_hwdef_h(env)
     except Exception:
         traceback.print_exc()
         cfg.fatal("Failed to generate hwdef")
     hal_common.load_env_vars(cfg.env, hwdef_env)
+    hal_common.handle_hwdef_files(cfg, hwdef_files)
 
 
 def generate_hwdef_h(env):
@@ -76,7 +77,7 @@ def generate_hwdef_h(env):
         quiet=False,
     )
     lh.run()
-    return lh.env_vars
+    return lh.env_vars, lh.output_files
 
 
 def pre_build(bld):
@@ -85,11 +86,3 @@ def pre_build(bld):
         bld.get_board().with_can = True
     if bld.env.WITH_LITTLEFS:
         bld.get_board().with_littlefs = True
-    hwdef_h = os.path.join(bld.env.BUILDROOT, 'hwdef.h')
-    if not os.path.exists(hwdef_h):
-        print("Generating hwdef.h")
-        try:
-            generate_hwdef_h(bld.env)
-            # TRAP: env vars are not reloaded!
-        except Exception:
-            bld.fatal(f"Failed to process hwdef.dat {hwdef_h}")

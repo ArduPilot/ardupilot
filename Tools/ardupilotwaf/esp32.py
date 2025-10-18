@@ -64,11 +64,12 @@ def configure(cfg):
     print("USING EXPRESSIF IDF:"+str(env.IDF))
 
     try:
-        hwdef_env = generate_hwdef_h(env)
+        hwdef_env, hwdef_files = generate_hwdef_h(env)
     except Exception:
         traceback.print_exc()
         cfg.fatal("Failed to generate hwdef")
     hal_common.load_env_vars(cfg.env, hwdef_env)
+    hal_common.handle_hwdef_files(cfg, hwdef_files)
 
 def generate_hwdef_h(env):
     '''run esp32_hwdef.py'''
@@ -88,7 +89,7 @@ def generate_hwdef_h(env):
         quiet=False,
     )
     eh.run()
-    return eh.env_vars
+    return eh.env_vars, eh.output_files
 
 # delete the output sdkconfig file when the input defaults changes. we take the
 # stamp as the output so we can compute the path to the sdkconfig, yet it
@@ -153,18 +154,6 @@ def pre_build(self):
     tsk = load_generated_includes(env=self.env)
     tsk.set_inputs(self.path.find_resource('esp-idf_build/includes.list'))
     self.add_to_group(tsk)
-
-    # hwdef pre-build:
-#    if bld.env.HAL_NUM_CAN_IFACES:
-#        bld.get_board().with_can = True
-    hwdef_h = os.path.join(self.env.BUILDROOT, 'hwdef.h')
-    if not os.path.exists(hwdef_h):
-        print("Generating hwdef.h")
-        try:
-            generate_hwdef_h(self.env)
-            # TRAP: env vars are not reloaded!
-        except Exception:
-            self.fatal(f"Failed to process hwdef.dat {hwdef_h}")
 
 @feature('esp32_ap_program')
 @after_method('process_source')
