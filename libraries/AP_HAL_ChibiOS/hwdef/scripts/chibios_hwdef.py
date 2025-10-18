@@ -37,6 +37,7 @@ class ChibiOSHWDef(hwdef.HWDef):
         self.bootloader = bootloader
         self.signed_fw = signed_fw
         self.default_params_filepath = default_params_filepath
+        self.processed_defaults_filepath = None
         self.have_defaults_file = False
 
         # if true then parameters will be appended in special apj-tool
@@ -2505,7 +2506,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         self.write_peripheral_enable(f)
 
-        if os.path.exists(self.processed_defaults_filepath()):
+        if self.processed_defaults_filepath:
             self.write_define(f, 'AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED', 1)
         else:
             self.write_define(f, 'AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED', 0)
@@ -2722,7 +2723,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
                                     (defaults_filepath, include_filepath))
         return ret
 
-    def write_processed_defaults_file(self, filepath):
+    def write_processed_defaults_file(self):
         # see if board has a defaults.parm file or a --default-parameters file was specified
         defaults_filename = os.path.join(os.path.dirname(self.hwdef[0]), 'defaults.parm')
         defaults_path = os.path.join(os.path.dirname(self.hwdef[0]), self.default_params_filepath)
@@ -2737,14 +2738,15 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         if defaults_abspath is None:
             self.progress("No default parameter file found")
-            return False
+            return None
 
         content = self.get_processed_defaults_file(defaults_abspath)
 
+        filepath = self.get_output_path("processed_defaults.parm")
         with open(filepath, "w") as processed_defaults_fh:
             processed_defaults_fh.write(content)
 
-        return True
+        return filepath
 
     def romfs_add(self, romfs_filename, filename):
         '''add a file to ROMFS'''
@@ -3058,9 +3060,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         self.add_firmware_defaults_from_file(f, "defaults_normal.h", "normal")
 
-    def processed_defaults_filepath(self):
-        return self.get_output_path("processed_defaults.parm")
-
     def write_default_parameters(self):
         '''handle default parameters'''
 
@@ -3070,18 +3069,18 @@ Please run: Tools/scripts/build_bootloaders.py %s
         if self.is_io_fw():
             return
 
-        filepath = self.processed_defaults_filepath()
-        if not self.write_processed_defaults_file(filepath):
+        self.processed_defaults_filepath = self.write_processed_defaults_file()
+        if not self.processed_defaults_filepath:
             return
 
         if self.get_config('FORCE_APJ_DEFAULT_PARAMETERS', default=False):
             # set env variable so that post-processing in waf uses
             # apj-tool to append parameters to image:
-            if os.path.exists(filepath):
-                self.env_vars['DEFAULT_PARAMETERS'] = filepath
+            if os.path.exists(self.processed_defaults_filepath):
+                self.env_vars['DEFAULT_PARAMETERS'] = self.processed_defaults_filepath
             return
 
-        self.romfs_add('defaults.parm', filepath)
+        self.romfs_add('defaults.parm', self.processed_defaults_filepath)
         self.have_defaults_file = True
 
     def get_stale_defines(self):
