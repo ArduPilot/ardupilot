@@ -53,6 +53,9 @@ public:
     void init(uint8_t driver_index, bool enable_filters) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
 
+    // write frame on CAN bus, returns true on success
+    bool write_frame(AP_HAL::CANFrame &out_frame, uint32_t timeout_us);
+
     // called from SRV_Channels
     void update();
 
@@ -82,9 +85,6 @@ private:
     // loop to send output to ESCs in background thread
     void loop();
 
-    // write frame on CAN bus, returns true on success
-    bool write_frame(AP_HAL::CANFrame &out_frame, uint32_t timeout_us);
-
     // read frame on CAN bus, returns true on succses
     bool read_frame(AP_HAL::CANFrame &recv_frame, uint32_t timeout_us);
 
@@ -106,6 +106,8 @@ private:
     // interpret an ECU message received over CAN
     bool handle_ecu_message(AP_HAL::CANFrame &frame);
 #endif
+
+    bool handle_cortex_message(AP_HAL::CANFrame &frame);
 
     bool _initialized;
     char _thread_name[16];
