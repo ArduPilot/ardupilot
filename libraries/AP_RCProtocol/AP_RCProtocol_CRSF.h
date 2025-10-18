@@ -244,12 +244,17 @@ public:
     } PACKED;
 
     struct SubsetChannelsFrame {
-#if __BYTE_ORDER != __LITTLE_ENDIAN
-#error "Only supported on little-endian architectures"
-#endif
+#if __BYTE_ORDER == __LITTLE_ENDIAN
         uint8_t starting_channel:5;     // which channel number is the first one in the frame
         uint8_t res_configuration:2;    // configuration for the RC data resolution (10 - 13 bits)
         uint8_t digital_switch_flag:1;  // configuration bit for digital channel
+#elif __BYTE_ORDER == __BIG_ENDIAN
+        uint8_t digital_switch_flag:1;  // configuration bit for digital channel
+        uint8_t res_configuration:2;    // configuration for the RC data resolution (10 - 13 bits)
+        uint8_t starting_channel:5;     // which channel number is the first one in the frame
+#else
+#error "unsupported-endian architecture"
+#endif
         uint8_t channels[CRSF_FRAME_PAYLOAD_MAX - 2]; // payload less byte above
         // uint16_t channel[]:res;      // variable amount of channels (with variable resolution based
                                         // on the res_configuration) based on the frame size
