@@ -559,6 +559,19 @@ MAV_RESULT AP_Mount::handle_command_do_set_roi_sysid(const mavlink_command_int_t
     return MAV_RESULT_ACCEPTED;
 }
 
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+MAV_RESULT AP_Mount::handle_command_do_set_roi_wpnext_offset(const mavlink_command_int_t &packet)
+{
+    const Vector3f rpy {
+        float(packet.y),
+        float(packet.x),
+        packet.z,
+    };
+    set_roi_target_wpnext_offset(rpy);
+    return MAV_RESULT_ACCEPTED;
+}
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+
 MAV_RESULT AP_Mount::handle_command(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
@@ -572,6 +585,10 @@ MAV_RESULT AP_Mount::handle_command(const mavlink_command_int_t &packet, const m
         return handle_command_do_gimbal_manager_configure(packet, msg);
     case MAV_CMD_DO_SET_ROI_SYSID:
         return handle_command_do_set_roi_sysid(packet);
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    case MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET:
+        return handle_command_do_set_roi_wpnext_offset(packet);
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
     default:
         return MAV_RESULT_UNSUPPORTED;
     }
@@ -790,6 +807,17 @@ void AP_Mount::clear_roi_target(uint8_t instance)
     }
     backend->clear_roi_target();
 }
+
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+void AP_Mount::set_roi_target_wpnext_offset(uint8_t instance, const Vector3f &rpy)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+    backend->set_roi_target_wpnext_offset(rpy);
+}
+#endif
 
 //
 // camera controls for gimbals that include a camera

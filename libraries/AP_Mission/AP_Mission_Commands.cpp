@@ -375,3 +375,40 @@ bool AP_Mission::start_command_fence(const AP_Mission::Mission_Command& cmd)
 }
 
 #endif  // AP_MISSION_ENABLED
+
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
+bool AP_Mission::start_command_do_set_roi_wpnext_offset(const AP_Mission::Mission_Command& cmd)
+{
+#if HAL_MOUNT_ENABLED
+    AP_Mount *mount = AP::mount();
+    if (mount == nullptr) {
+        return false;
+    }
+
+    mount->set_roi_target_wpnext_offset(Vector3f{
+            float(cmd.content.wpnext_offset.roll_offset_deg),
+            float(cmd.content.wpnext_offset.pitch_offset_deg),
+            float(cmd.content.wpnext_offset.yaw_offset_deg)
+        });
+
+    return true;
+#else
+    return false;
+#endif // HAL_MOUNT_ENABLED
+}
+
+bool AP_Mission::start_command_do_set_roi_none()
+{
+#if HAL_MOUNT_ENABLED
+    AP_Mount *mount = AP::mount();
+    if (mount == nullptr) {
+        return false;
+    }
+
+    mount->set_mode_to_default();
+    return true;
+#else
+    return false;
+#endif
+}
+#endif
