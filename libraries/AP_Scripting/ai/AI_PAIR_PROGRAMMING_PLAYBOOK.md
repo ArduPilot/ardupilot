@@ -13,9 +13,20 @@ This playbook is designed to provide a Large Language Model (LLM) with the neces
 
 **Key Principles:**
 
-* **Sandboxed Environment:** Scripts run in a sandboxed environment, meaning they have limited access to the system's resources and cannot crash the main flight controller.  
-* **Event-Driven:** Scripts are typically event-driven, reacting to changes in the drone's state, sensor data, or RC controller inputs.  
-* **ArduPilot API:** Scripts interact with the drone through a specific ArduPilot Lua API, which provides functions for controlling the vehicle, reading sensors, and more.
+### 1.1. Strict Sandboxing
+
+ArduPilot Lua scripts run in **completely isolated sandboxes**. This is a critical safety feature that prevents buggy scripts from interfering with each other r the main flight code. This means:
+* Scripts **cannot** directly share variables or state, even if they `require` the same module file. Each script effectively gets its own private copy of a required module's state.
+* Patterns relying on shared Lua tables (like module tables or the `_G` global table) for coordination between separate script files **will fail**.
+* Coordination between scripts involving shared resources (like hardware peripherals or communication event queues) **must** be mediated through the C++ API, which acts as a trusted broker.
+
+### 1.2. Event-Driven
+
+Scripts are typically event-driven, reacting to changes in the drone's state, sensor data, or RC controller inputs.  
+
+### 1.3. ArduPilot API
+
+Scripts interact with the drone through a specific ArduPilot Lua API, which provides functions for controlling the vehicle, reading sensors, and more.
 
 ## 2\. Environment Setup
 
@@ -317,6 +328,7 @@ The following constraints apply to all Lua code generation:
   * Functions documented in the provided docs.lua file.  
   * The standard io library for file operations.  
   * The require() function, for loading modules from the script's local APM/scripts directory.
+* **API Interaction Subtleties:** The order of operations when calling C++ API functions can be critical, especially when functions have side effects related to internal state (e.g., needing to pop a shared event *before* sending a response related to that event to ensure the necessary context is prepared in the C++ backend).
 
 ### 5.2. Script Structure and Execution
 
@@ -325,7 +337,12 @@ The following constraints apply to all Lua code generation:
 * **Update Function Pattern:** The required structure depends on the script's purpose:  
   * **Applets (Continuous Tasks):** Must use a main update() function that performs its tasks and then reschedules itself to run again at a regular interval.  
   * **One-Shot Scripts:** Can execute logic sequentially and terminate without an update() loop.  
-  * **Test Scripts:** Typically run a series of assert() checks and may optionally enter a simple loop to report a "tests passed" message.  
+  * **Test Scripts:** Typically run a series of assert() checks and may optionally enter a simple loop to report a "tests passed" message.
+* **Shared Resource Handling (e.g., Event Queues):** When multiple independent scripts need to access a shared, limited C++ resource like an event queue, special care must be taken to avoid race conditions. A robust pattern involves:
+  1.  Using a non-destructive "peek" function (if provided by the C++ API) to check the resource state (e.g., see the next event).
+  2.  Checking if the resource state/event belongs to the current script.
+  3.  If it belongs, processing it and then using a destructive "pop" function (if provided) to consume the resource/event.
+  4.  If it does *not* belong, yielding execution quickly to allow other scripts a chance to process it. (See the CRSF Menu Playbook for a detailed example).
 * **Error Handling:** A protected\_wrapper using pcall() is mandatory for all applets. It is also required for any example or test script where a runtime error is possible (e.g., interacting with hardware, complex calculations). For very simple, infallible example scripts (like hello\_world.lua), the wrapper can be omitted for clarity.  
   **Example protected\_wrapper:**
 ```lua
