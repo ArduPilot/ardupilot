@@ -18,7 +18,7 @@
 #if AP_PROXIMITY_TERARANGERTOWEREVO_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
-#include "AP_Proximity_TeraRangerTowerEvo.h"
+#include "AP_Proximity_TeraRangerHub.h"
 
 #include <AP_Math/crc.h>
 #include <ctype.h>
@@ -27,7 +27,7 @@
 extern const AP_HAL::HAL& hal;
 
 // update the state of the sensor
-void AP_Proximity_TeraRangerTowerEvo::update(void)
+void AP_Proximity_TeraRangerHub::update(void)
 {
     if (_uart == nullptr) {
         return;
@@ -53,16 +53,16 @@ void AP_Proximity_TeraRangerTowerEvo::update(void)
 }
 
 // get maximum and minimum distances (in meters) of primary sensor
-float AP_Proximity_TeraRangerTowerEvo::distance_max() const
+float AP_Proximity_TeraRangerHub::distance_max() const
 {
-    return 60.0f;
+    return params.max_m;
 }
-float AP_Proximity_TeraRangerTowerEvo::distance_min() const
+float AP_Proximity_TeraRangerHub::distance_min() const
 {
-    return 0.50f;
+    return params.min_m;
 }
 
-void AP_Proximity_TeraRangerTowerEvo::initialise_modes()
+void AP_Proximity_TeraRangerHub::initialise_modes()
 {
     if((AP_HAL::millis() - _last_request_sent_ms) < _mode_request_delay) {
         return;
@@ -81,14 +81,14 @@ void AP_Proximity_TeraRangerTowerEvo::initialise_modes()
     }
 }
 
-void AP_Proximity_TeraRangerTowerEvo::set_mode(const uint8_t *c, int length)
+void AP_Proximity_TeraRangerHub::set_mode(const uint8_t *c, int length)
 {
     _uart->write(c, length);
     _last_request_sent_ms = AP_HAL::millis();
 }
 
 // check for replies from sensor, returns true if at least one message was processed
-bool AP_Proximity_TeraRangerTowerEvo::read_sensor_data()
+bool AP_Proximity_TeraRangerHub::read_sensor_data()
 {
     if (_uart == nullptr) {
         return false;
@@ -134,14 +134,14 @@ bool AP_Proximity_TeraRangerTowerEvo::read_sensor_data()
 
             //check if message has right CRC
             if (crc_crc8(buffer, 19) == buffer[19]){
-                update_sector_data(0,   UINT16_VALUE(buffer[2],  buffer[3]));   // d1
-                update_sector_data(45,  UINT16_VALUE(buffer[4],  buffer[5]));   // d2
-                update_sector_data(90,  UINT16_VALUE(buffer[6],  buffer[7]));   // d3
-                update_sector_data(135, UINT16_VALUE(buffer[8],  buffer[9]));   // d4
-                update_sector_data(180, UINT16_VALUE(buffer[10], buffer[11]));  // d5
-                update_sector_data(225, UINT16_VALUE(buffer[12], buffer[13]));  // d6
-                update_sector_data(270, UINT16_VALUE(buffer[14], buffer[15]));  // d7
-                update_sector_data(315, UINT16_VALUE(buffer[16], buffer[17]));  // d8
+                update_sector_data((int16_t)lround(correct_angle_for_orientation((float)0)),   UINT16_VALUE(buffer[2],  buffer[3]));   // d1
+                update_sector_data((int16_t)lround(correct_angle_for_orientation((float)45)),  UINT16_VALUE(buffer[4],  buffer[5]));   // d2
+                update_sector_data((int16_t)lround(correct_angle_for_orientation((float)90)),  UINT16_VALUE(buffer[6],  buffer[7]));   // d3
+                update_sector_data((int16_t)lround(correct_angle_for_orientation((float)135)), UINT16_VALUE(buffer[8],  buffer[9]));   // d4
+                update_sector_data((int16_t)lround(correct_angle_for_orientation((float)180)), UINT16_VALUE(buffer[10], buffer[11]));  // d5
+                update_sector_data((int16_t)lround(correct_angle_for_orientation((float)225)), UINT16_VALUE(buffer[12], buffer[13]));  // d6
+                update_sector_data((int16_t)lround(correct_angle_for_orientation((float)270)), UINT16_VALUE(buffer[14], buffer[15]));  // d7
+                update_sector_data((int16_t)lround(correct_angle_for_orientation((float)315)), UINT16_VALUE(buffer[16], buffer[17]));  // d8
 
                 message_count++;
             }
@@ -151,7 +151,7 @@ bool AP_Proximity_TeraRangerTowerEvo::read_sensor_data()
 }
 
 // process reply
-void AP_Proximity_TeraRangerTowerEvo::update_sector_data(int16_t angle_deg, uint16_t distance_mm)
+void AP_Proximity_TeraRangerHub::update_sector_data(int16_t angle_deg, uint16_t distance_mm)
 {
     // Get location on 3-D boundary based on angle to the object
     const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(angle_deg);
