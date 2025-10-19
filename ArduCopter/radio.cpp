@@ -1,5 +1,6 @@
 #include "Copter.h"
 
+#include <AP_RCProtocol/AP_RCProtocol.h>
 
 // Function that will read the radio data, limit servos and trigger a failsafe
 // ----------------------------------------------------------------------------
@@ -93,8 +94,23 @@ void Copter::read_radio()
 {
     const uint32_t tnow_ms = millis();
 
+#if AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+    // update in case failsafe values have changed:
+    if(g.failsafe_throttle == FS_THR_Action::DISABLED) {
+        // set flag values to disable filtering in AP_RCProtocol:
+        AP::RC().set_throttle_channel_and_failsafe_value(UINT8_MAX, UINT16_MAX);
+    } else {
+        AP::RC().set_throttle_channel_and_failsafe_value(
+            channel_throttle->ch(),
+            g.failsafe_throttle_value
+        );
+    }
+#endif  // AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+
     if (rc().read_input()) {
-        set_throttle_and_failsafe(channel_throttle->get_radio_in());
+        if (failsafe.radio) {
+            set_failsafe_radio(false);
+        }
         set_throttle_zero_flag(channel_throttle->get_control_in());
 
         // pass pilot input through to motors (used to allow wiggling servos while disarmed on heli, single, coax copters)
