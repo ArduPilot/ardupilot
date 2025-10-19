@@ -1341,27 +1341,45 @@ void AP_CRSF_Telem::calc_parameter() {
     debug("param request: %d -> 0x%p", _param_request.param_num, param);
 
     if (param != nullptr) {
-        // find the parameter to write
-
         _telem.ext.param_entry.header.param_num = _param_request.param_num;
-        const uint8_t CHUNK_SIZE = 56;
-        const uint8_t chunks = ((param->length - 1) / CHUNK_SIZE) + 1;
-        _telem.ext.param_entry.header.chunks_left = (chunks - 1) - _param_request.param_chunk;
-        _telem.ext.param_entry.payload[idx++] = param->parent_id; // parent folder
 
-        if (_pending_request.frame_type == AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_READ) {
-            // payload encoded from lua
-            memcpy((uint8_t*)&_telem.ext.param_entry.payload[idx],
-                    &param->data[_param_request.param_chunk * CHUNK_SIZE],
-                    _telem.ext.param_entry.header.chunks_left > 0 ? CHUNK_SIZE : param->length % CHUNK_SIZE);
-            idx += param->length;
-        } else {
+        // COMMAND types for parameter writes are weird in that they expect a settings entry
+        if (_pending_request.frame_type == AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_WRITE
+            && param->length > 0 && param->data[0] == ParameterType::COMMAND) {
+            _telem.ext.param_entry.header.chunks_left = 0;
+            _telem.ext.param_entry.payload[idx++] = param->parent_id;
+            // payload encoded from lua send_write_response()
             memcpy((uint8_t*)&_telem.ext.param_entry.payload[idx], _param_request.payload.payload,
                     _param_request.payload.payload_length);
             idx += _param_request.payload.payload_length;
+            _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsEntryHeader) + idx;
+            _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY;
+        }  else if (_pending_request.frame_type == AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_READ) {
+            const uint8_t CHUNK_SIZE = 55;  // This wastes a byte on chunks > 0 but makes the maths easier
+            // send_write_response() has already updated the parameter data with the new payload
+            // so we can statefully send this in chunks
+            const uint8_t chunks = ((param->length) / CHUNK_SIZE) + 1;  // includes the extra byte for the parent folder id
+            _telem.ext.param_entry.header.chunks_left = (chunks - 1) - _param_request.param_chunk;
+
+            if (_param_request.param_chunk == 0) {
+                _telem.ext.param_entry.payload[idx++] = param->parent_id; // parent folder only in first chunk
+            }
+
+            const uint8_t chunk_len = _telem.ext.param_entry.header.chunks_left > 0 ? CHUNK_SIZE : (param->length + 1) % CHUNK_SIZE;
+            // payload encoded from lua
+            memcpy((uint8_t*)&_telem.ext.param_entry.payload[idx],
+                    &param->data[_param_request.param_chunk * CHUNK_SIZE], chunk_len);
+            idx += chunk_len;
+            _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsEntryHeader) + idx;
+            _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY;
+        } else {    // write parameter
+            memcpy((uint8_t*)&_telem.ext.param_write.payload[idx], _param_request.payload.payload,
+                    _param_request.payload.payload_length);
+            idx += _param_request.payload.payload_length;
+
+            _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsHeader) + idx;
+            _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_WRITE;
         }
-        _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsEntryHeader) + 1 + idx;
-        _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY;
         _pending_request.frame_type = 0;
         _telem_pending = true;
 
@@ -1764,7 +1782,7 @@ uint8_t AP_CRSF_Telem::peek_menu_event(uint8_t& param_id, ScriptedPayload& paylo
     events = spw.type;
     param_id = spw.param->id;
 
-    debug("peek_menu_event(%u) -> %s", param_id, events == ScriptedParameterEvents::PARAMETER_WRITE ? "WRITE" : "READ");
+    debug("peek_menu_event(%u) -> %s, size: %u", param_id, events == ScriptedParameterEvents::PARAMETER_WRITE ? "WRITE" : "READ", payload.payload_length);
 
     return inbound_params.available();
 }
@@ -1787,7 +1805,7 @@ void AP_CRSF_Telem::pop_menu_event()
     }
 }
 
-// send a new response from the first item in the outbound queueu
+// send a new response from the first item in the outbound queue
 // called from lua
 bool AP_CRSF_Telem::send_write_response(uint8_t length, const char* data)
 {
@@ -1981,7 +1999,7 @@ bool AP_CRSF_Telem::process_scripted_param_write(ParameterSettingsWriteFrame* wr
         return false;
     }
     ScriptedParameterWrite spw { ScriptedParameterEvents::PARAMETER_WRITE, *write_frame, param };
-    spw.payload.payload_length = uint8_t(length - 3U);
+    spw.payload.payload_length = uint8_t(length - 3U);  // remove destination, origin and param number from payload length
     memcpy(spw.payload.payload, write_frame->payload, spw.payload.payload_length);
     inbound_params.push(spw); // payload size in frame
 
