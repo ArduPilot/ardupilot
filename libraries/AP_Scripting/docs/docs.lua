@@ -3482,55 +3482,56 @@ function gps:num_sensors() end
 ---@param data string -- binary data to inject
 function gps:inject_data(data) end
 
--- desc
+-- Object that can be passed to a scripting battery monitor backend
 ---@class (exact) BattMonitorScript_State_ud
 local BattMonitorScript_State_ud = {}
 
+-- Create BattMonitorScript_State object
 ---@return BattMonitorScript_State_ud
 function BattMonitorScript_State() end
 
--- set field
----@param value number
+-- set temperature
+---@param value number degrees Celsius
 function BattMonitorScript_State_ud:temperature(value) end
 
--- set field
----@param value number
+-- set consumed watt hours, if not provided the comsumed watt hours will be calculated from the consumed mah and voltage
+---@param value number watt hours
 function BattMonitorScript_State_ud:consumed_wh(value) end
 
--- set field
----@param value number
+-- set consumed milliampere hours, if not provided the comsumed mah will be calculated from the current draw
+---@param value number milliampere hours
 function BattMonitorScript_State_ud:consumed_mah(value) end
 
--- set field
----@param value number
+-- set current
+---@param value number amps
 function BattMonitorScript_State_ud:current_amps(value) end
 
--- set field
+-- set cycle_count
 ---@param value integer
 function BattMonitorScript_State_ud:cycle_count(value) end
 
 -- set array field
----@param index integer
----@param value integer
+---@param index integer -- 0 indexed
+---@param value integer -- voltage in millivolts
 function BattMonitorScript_State_ud:cell_voltages(index, value) end
 
--- set field
----@param value integer
+-- set the remaining capacity, if not provided the remaining capacity will be calculated from the consumed mah
+---@param value integer -- 0% to 100%
 function BattMonitorScript_State_ud:capacity_remaining_pct(value) end
 
--- set field
+-- set the number of avalable cells as set with `cell_voltages`
 ---@param value integer
 function BattMonitorScript_State_ud:cell_count(value) end
 
--- set field
----@param value number
+-- set voltage
+---@param value number volts
 function BattMonitorScript_State_ud:voltage(value) end
 
--- set field
----@param value boolean
+-- set battery monitor health
+---@param value boolean true if battery monitor is healthy
 function BattMonitorScript_State_ud:healthy(value) end
 
--- set state of health, 255 if not available (this is the defualt)
+-- set state of health, 255 if not available (this is the default)
 ---@param value integer
 function BattMonitorScript_State_ud:state_of_health_pct(value) end
 
