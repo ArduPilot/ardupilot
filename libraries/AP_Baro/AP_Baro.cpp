@@ -288,9 +288,9 @@ AP_Baro::AP_Baro()
 void AP_Baro::calibrate(bool save)
 {
     // start by assuming all sensors are calibrated (for healthy() test)
-    for (uint8_t i=0; i<_num_sensors; i++) {
-        sensors[i].calibrated = true;
-        sensors[i].alt_ok = true;
+    for (auto &sensor : sensors) {
+        sensor.calibrated = true;
+        sensor.alt_ok = true;
     }
 
     if (hal.util->was_watchdog_reset()) {
@@ -504,9 +504,9 @@ bool AP_Baro::_add_backend(AP_Baro_Backend *backend)
  */
 bool AP_Baro::_have_i2c_driver(uint8_t bus, uint8_t address) const
 {
-    for (int i=0; i<_num_drivers; ++i) {
+    for (const auto &sensor : sensors) {
         if (AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_I2C, bus, address, 0) ==
-            AP_HAL::Device::change_bus_id(uint32_t(sensors[i].bus_id.get()), 0)) {
+            AP_HAL::Device::change_bus_id(uint32_t(sensor.bus_id.get()), 0)) {
             // device already has been defined.
             return true;
         }
@@ -680,9 +680,9 @@ void AP_Baro::init(void)
 #ifdef HAL_BUILD_AP_PERIPH
     // AP_Periph always is set calibrated. We only want the pressure,
     // so ground calibration is unnecessary
-    for (uint8_t i=0; i<_num_sensors; i++) {
-        sensors[i].calibrated = true;
-        sensors[i].alt_ok = true;
+    for (auto &sensor : sensors) {
+        sensor.calibrated = true;
+        sensor.alt_ok = true;
     }
 #endif
 }
@@ -815,7 +815,7 @@ void AP_Baro::update(void)
     bool old_primary_healthy = sensors[_primary].healthy;
 #endif
 
-    for (uint8_t i=0; i<_num_drivers; i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(drivers); i++) {
         drivers[i]->backend_update(i);
     }
 
@@ -1015,8 +1015,8 @@ void AP_Baro::handle_msp(const MSP::msp_baro_data_message_t &pkt)
     if (!init_done) {
         msp_instance_mask |= 1U<<pkt.instance;
     } else if (msp_instance_mask != 0) {
-        for (uint8_t i=0; i<_num_drivers; i++) {
-            drivers[i]->handle_msp(pkt);
+        for (auto &driver : drivers) {
+            driver->handle_msp(pkt);
         }
     }
 }
@@ -1028,8 +1028,8 @@ void AP_Baro::handle_msp(const MSP::msp_baro_data_message_t &pkt)
  */
 void AP_Baro::handle_external(const AP_ExternalAHRS::baro_data_message_t &pkt)
 {
-    for (uint8_t i=0; i<_num_drivers; i++) {
-        drivers[i]->handle_external(pkt);
+    for (auto &driver : drivers) {
+        driver->handle_external(pkt);
     }
 }
 #endif  // AP_BARO_EXTERNALAHRS_ENABLED
