@@ -124,7 +124,11 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_one_reading(float &reading_m)
             malfunction_alert = u.packet.malfunction_alert;
         }
         if (malfunction_alert_prev != malfunction_alert && now_ms - malfunction_alert_last_send_ms >= 1000) {
-            report_malfunction(malfunction_alert, malfunction_alert_prev);
+            if (is_v19000) {
+                report_malfunction_v19000(malfunction_alert, malfunction_alert_prev);
+            } else {
+                report_malfunction(malfunction_alert, malfunction_alert_prev);
+            }
             malfunction_alert_prev = malfunction_alert;
             malfunction_alert_last_send_ms = now_ms;
         }
@@ -138,7 +142,8 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_one_reading(float &reading_m)
         0, 255
     );
 
-    if (is_v19000 && !u.packet_v19000.altitude_valid) {
+    if (is_v19000 && (!u.packet_v19000.altitude_valid ||
+                      (malfunction_alert & uint16_t(MalfunctionAlert_v19000::AltitudeReadingOverflow)))) {
         // the device has specifically told us that the reading is not
         // valid, we can't interepret it further.  It's still a
         // reading, so we still return true from this function, but we
@@ -191,6 +196,33 @@ void AP_RangeFinder_Ainstein_LR_D1::report_malfunction(const uint16_t _malfuncti
             continue;
         }
         if ((_malfunction_alert_prev_ & uint8_t(alert.bit)) != 0) {
+            // alert is not new
+            continue;
+        }
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RangeFinder: %s alert", alert.name);
+    }
+}
+void AP_RangeFinder_Ainstein_LR_D1::report_malfunction_v19000(const uint16_t malfunction_alert, const uint16_t malfunction_alert_prev)
+{
+    static const struct {
+        MalfunctionAlert_v19000 bit;
+        const char *name;
+    } alerts[] {
+        { MalfunctionAlert_v19000::MCUTemperature, "MCU Temperature" },
+        { MalfunctionAlert_v19000::MCUVoltage, "MCU Voltage" },
+        { MalfunctionAlert_v19000::IFTemperature, "IF Temperature" },
+        { MalfunctionAlert_v19000::IFSignalSaturation, "IF Signal Saturation" },
+        { MalfunctionAlert_v19000::Software, "Software" },
+        { MalfunctionAlert_v19000::AltitudeReadingOverflow, "Altitude Reading Overflow" },
+        { MalfunctionAlert_v19000::Voltage, "Voltage" },
+    };
+
+    for (const auto &alert : alerts) {
+        if ((malfunction_alert & uint16_t(alert.bit)) == 0) {
+            // alert not current
+            continue;
+        }
+        if ((malfunction_alert_prev & uint16_t(alert.bit)) != 0) {
             // alert is not new
             continue;
         }
