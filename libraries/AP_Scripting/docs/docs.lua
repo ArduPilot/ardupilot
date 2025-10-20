@@ -1303,7 +1303,7 @@ local AP_Scripting_SerialAccess_ud = {}
 function AP_Scripting_SerialAccess_ud:set_unbuffered_writes(on) end
 
 -- Start serial port with the given baud rate (no effect for device ports)
----@param baud_rate uint32_t_ud|integer|number
+---@param baud_rate? uint32_t_ud|integer|number|nil baud rate, parameter-derived value used if nil or omitted
 function AP_Scripting_SerialAccess_ud:begin(baud_rate) end
 
 -- Set UART parity (no effect for device ports)
