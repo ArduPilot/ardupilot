@@ -505,6 +505,7 @@ def do\_lua\_mynewapplet\_test(self):
 ```
 
 * **luacheck Compliance:** All generated Lua code must be free of errors and warnings when analyzed with the luacheck tool, using the standard ArduPilot configuration.
+* No Trailing Whitespace: All generated lines of code **must not** contain any trailing whitespace characters (spaces or tabs at the end of a line).
 
 ### 5.7. Parameter Creation
 
@@ -584,6 +585,11 @@ When asked to modify an existing file, you must strictly limit your changes to t
 
  * **Adding Comments:** It is highly encouraged to add comments that explain the purpose of new or modified code blocks, especially for complex logic like state machines.
  * **Adding Debug Messages:** When debugging, it is good practice to add gcs:send_text(MAV_SEVERITY.DEBUG, ...) messages to provide insight into the script's state. These should be preserved across edits unless the user explicitly asks for them to be removed. By adhering to this, you ensure that the user can easily review the changes and trust that no unintended side effects have been introduced.
+
+* **Commenting Guidelines:**
+  * **Explain "Why", Not "What":** Good comments explain the *purpose* or complex *behavior* of a code block. They should provide context that isn't obvious from reading the code itself.
+  * **Prohibit Change-Log Comments:** You **must not** add comments that merely describe a change you made (e.g., \-- BUGFIX: Corrected loop index, \-- CHANGED: Renamed variable, \-- ADDED: New function). This information belongs in version control history, not in the code, and quickly becomes outdated.
+  * **Preserve Existing Comments:** Do not remove or alter existing comments unless they are clearly obsolete or factually incorrect due to the requested changes.
 
 ### 5.9. Data Type Coercion
 
