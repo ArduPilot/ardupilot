@@ -10038,7 +10038,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             sqalt=495,
             sq_at_sqalt=39,
         )
-        self.wait_text("Rangefinder: Temperature alert", check_context=True)
+        self.wait_text("Rangefinder: MCU Temperature alert", check_context=True)
 
     def RangeFinderDriversLongRange(self):
         '''test rangefinder above 327m'''
