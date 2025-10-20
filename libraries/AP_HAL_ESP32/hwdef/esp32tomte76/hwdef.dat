@@ -52,6 +52,7 @@ ESP32_I2CBUS  I2C_NUM_0  GPIO_NUM_21 GPIO_NUM_22  400*KHZ  true     false
 #-----INS/IMU-----
 IMU Invensense SPI:mpu9250 ROTATION_NONE
 define HAL_INS_DEFAULT                              	HAL_INS_MPU9250_SPI
+define INS_MAX_INSTANCES 3  # only here for binary identicality
 
 #-----COMPASS-----
 COMPASS AK8963:probe_mpu9250 0 ROTATION_NONE
