@@ -35,6 +35,7 @@ ESP32_ADC_PIN ADC_CHANNEL_0       11     4
 IMU Invensense SPI:mpu9250 ROTATION_NONE
 # IMU Invensense SPI:mpu9250 ROTATION_ROLL_180
 define HAL_INS_DEFAULT HAL_INS_MPU9250_SPI
+define INS_MAX_INSTANCES 3  # only here for binary identicality
 
 #-----COMPASS-----
 COMPASS AK8963:probe_mpu9250 0 ROTATION_NONE
