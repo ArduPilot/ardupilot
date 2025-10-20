@@ -1230,7 +1230,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         else:
             self.set_rc(3, 1700)
         # we may never see ourselves as armed in a heartbeat
-        self.wait_statustext("Takeoff blocked: ESC RPM out of range", check_context=True)
+        self.wait_statustext("Takeoff blocked: ESC RPM or errors out of range", check_context=True)
         self.context_pop()
         self.zero_throttle()
         self.disarm_vehicle()
