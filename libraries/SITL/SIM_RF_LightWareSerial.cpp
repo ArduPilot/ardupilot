@@ -48,8 +48,9 @@ void RF_LightWareSerial::update(float range)
     return SerialRangeFinder::update(range);
 }
 
-uint32_t RF_LightWareSerial::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
+uint32_t RF_LightWareSerial::packet_for_alt(float alt_m, uint8_t *buffer, uint8_t buflen)
 {
+    uint16_t alt_cm = alt_m * 100;
     if (alt_cm > 10000) {
         // out-of-range-high
         alt_cm = 13000;  // from datasheet
