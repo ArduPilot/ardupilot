@@ -5289,6 +5289,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             dist = self.distance_to_local_position((x, y, -z_up))
             if dist < 1:
                 self.progress(f"Reach distance ({dist})")
+                self.progress("endpos=%s" % str(startpos))
                 break
 
     def test_guided_local_position_target(self, x, y, z_up):
@@ -9965,6 +9966,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                                            maxalt : float,
                                            sqalt : float | None = None,
                                            sq_at_sqalt : float | None = None,
+                                           expected_statustext : str | None = None,
                                            ):
         '''test max-height behaviour'''
         # lightwareserial goes to 130m when out of range
@@ -10000,6 +10002,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.assert_distance_sensor_quality(1)
 
+        self.progress("Test behaviour above 655.35 metres (UINT16_MAX cm)")
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+#        self.send_debug_trap()
+        self.fly_guided_move_local(0, 0, 700)
+        self.assert_sensor_state(rf_bit, present=True, enabled=True, healthy=True)
+        self.assert_distance_sensor_quality(1)
+        if expected_statustext is not None:
+            self.wait_statustext(expected_statustext, check_context=True)
+        self.context_pop()
+
         # life's too short for soft landings:
         self.disarm_vehicle(force=True)
 
@@ -10012,6 +10025,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             maxalt=100,
             sqalt=95,
             sq_at_sqalt=100,
+            expected_statustext=None,
         )
 
     def RangeFinderDriversMaxAlt_AinsteinLRD1(self) -> None:
@@ -10024,6 +10038,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             maxalt=500,
             sqalt=495,
             sq_at_sqalt=39,
+            expected_statustext='Altitude reading overflow',
         )
         self.wait_text("Rangefinder: Temperature alert", check_context=True)
 
