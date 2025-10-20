@@ -1856,8 +1856,8 @@ bool AP_CRSF_Telem::send_response()
 
 void AP_CRSF_Telem::send_response(const ScriptedParameterWrite& spw)
 {
-    _param_request.origin = spw.settings.destination;
-    _param_request.destination = spw.settings.origin;
+    _param_request.origin = spw.settings.origin;
+    _param_request.destination = spw.settings.destination;
     _param_request.param_num = spw.settings.param_num;
     _param_request.param_chunk = 0;
     _pending_request.frame_type = (spw.type == ScriptedParameterEvents::PARAMETER_READ) ?
@@ -2000,7 +2000,14 @@ bool AP_CRSF_Telem::process_scripted_param_write(ParameterSettingsWriteFrame* wr
     if (param == nullptr) {
         return false;
     }
-    ScriptedParameterWrite spw { ScriptedParameterEvents::PARAMETER_WRITE, *write_frame, param };
+    ScriptedParameterWrite spw {ScriptedParameterEvents::PARAMETER_WRITE,
+                                {
+                                    write_frame->destination,
+                                    write_frame->origin,
+                                    write_frame->param_num
+                                },
+                                param };
+
     spw.payload.payload_length = uint8_t(length - 3U);  // remove destination, origin and param number from payload length
     memcpy(spw.payload.payload, write_frame->payload, spw.payload.payload_length);
     inbound_params.push(spw); // payload size in frame
@@ -2037,7 +2044,14 @@ bool AP_CRSF_Telem::process_scripted_param_read(ParameterSettingsReadFrame* read
         }
 
         // This is a regular parameter (not a menu link). Handle it in Lua.
-        inbound_params.push({ ScriptedParameterEvents::PARAMETER_READ, *read_frame, param });
+        inbound_params.push({
+            ScriptedParameterEvents::PARAMETER_READ,
+            {
+                read_frame->destination,
+                read_frame->origin,
+                read_frame->param_num
+            },
+            param });
         return true;
     }
 
