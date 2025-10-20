@@ -49,6 +49,7 @@ define HAL_INS_MPU9250_NAME "mpu9250"
 IMU Invensense SPI:mpu9250 ROTATION_NONE
 # IMU Invensense SPI:mpu9250 ROTATION_180
 define HAL_INS_DEFAULT HAL_INS_MPU9250_SPI
+define INS_MAX_INSTANCES 3  # only here for binary identicality
 
 # -----BARO-----
 BARO BMP280 SPI:bmp280
