@@ -10184,7 +10184,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_sensor_state(rf_bit, present=True, enabled=True, healthy=True)
         m = self.assert_receive_message('DISTANCE_SENSOR', verbose=True)
         if abs(m.current_distance * 0.01 - alt) > 1:
-            raise NotAchievedException(f"Expected {alt}m range")
+            raise NotAchievedException(f"Expected {alt}m range got range={m.current_distance * 0.01}")
         self.assert_parameter_value("RNGFND1_MAX", m.max_distance * 0.01, epsilon=0.00001)
         self.assert_parameter_value("RNGFND1_MIN", m.min_distance * 0.01, epsilon=0.00001)
 
