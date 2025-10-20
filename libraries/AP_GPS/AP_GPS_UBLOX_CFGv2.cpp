@@ -803,6 +803,52 @@ void AP_GPS_UBLOX_CFGv2::_init_common_cfg_list()
         INIT_CFG_PUSH_INDEXED(CFG_SIGNAL, L5_HEALTH_OVRD, uint8_t, 1)
     }
 
+    // Add raw logging message configuration if enabled
+    // gps._raw_data values: 0=disabled, 1=always log, 5=log every 5 samples
+    if (ubx_backend.gps._raw_data != 0) {
+        uint8_t raw_rate = ubx_backend.gps._raw_data;
+
+        // Configure based on module type and detected port
+        if (module < Module::SINGLE_UART_LAST) {
+            // Single UART modules - configure UART1
+            INIT_CFG_PUSH_INDEXED(CFG_MSGOUT, UBX_RXM_RAWX_UART1, uint8_t, raw_rate)
+        } else {
+            // Dual-UART modules - configure appropriate port
+            switch (ubx_backend._ublox_port) {
+            case 2: // UART1
+                INIT_CFG_PUSH_INDEXED(CFG_MSGOUT, UBX_RXM_RAWX_UART1, uint8_t, raw_rate)
+                // Disable on UART2
+                INIT_CFG_PUSH_INDEXED(CFG_MSGOUT, UBX_RXM_RAWX_UART2, uint8_t, 0)
+                break;
+            case 3: // UART2
+                INIT_CFG_PUSH_INDEXED(CFG_MSGOUT, UBX_RXM_RAWX_UART2, uint8_t, raw_rate)
+                // Disable on UART1
+                INIT_CFG_PUSH_INDEXED(CFG_MSGOUT, UBX_RXM_RAWX_UART1, uint8_t, 0)
+                break;
+            default:
+                break;
+            }
+        }
+    } else {
+        // Raw logging disabled - explicitly disable these messages
+        if (module < Module::SINGLE_UART_LAST) {
+            INIT_CFG_PUSH_INDEXED(CFG_MSGOUT, UBX_RXM_RAWX_UART1, uint8_t, 0)
+        } else {
+            switch (ubx_backend._ublox_port) {
+            case 2: // UART1
+                INIT_CFG_PUSH_INDEXED(CFG_MSGOUT, UBX_RXM_RAWX_UART1, uint8_t, 0)
+                INIT_CFG_PUSH_INDEXED(CFG_MSGOUT, UBX_RXM_RAWX_UART2, uint8_t, 0)
+                break;
+            case 3: // UART2
+                INIT_CFG_PUSH_INDEXED(CFG_MSGOUT, UBX_RXM_RAWX_UART2, uint8_t, 0)
+                INIT_CFG_PUSH_INDEXED(CFG_MSGOUT, UBX_RXM_RAWX_UART1, uint8_t, 0)
+                break;
+            default:
+                break;
+            }
+        }
+    }
+
     // Mark complete if we reached the end by setting the last item index
     _common_cfg_fetch_index = item_index;
 
