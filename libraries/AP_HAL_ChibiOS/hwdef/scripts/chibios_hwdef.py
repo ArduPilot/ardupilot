@@ -3335,10 +3335,17 @@ Analog Airspeed sensor would use ARSPD_PIN %s
 ''' % airspeed)
 
     def readme_write_MAG(self, f):
-        f.write('''
+        if not self.compass_list:
+            f.write('''
 ## Compass
 
 The %s does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
+''' % self.board_name)
+        else:
+            f.write('''
+## Compass
+
+The %s has builtin compass. You can also attach an external compass using I2C on the SDA and SCL pads.
 ''' % self.board_name)
 
     def get_relay(self, gpiopin):
@@ -3422,6 +3429,7 @@ any ArduPilot ground station software. Updates should be done with the
         self.periph_list = self.build_peripheral_list()
 
         if args.generate_readme:
+            self.progress("Writing README.md to %s" % os.path.join(self.outdir, "README.md"))
             self.write_readme(os.path.join(self.outdir, "README.md"))
             return
 
