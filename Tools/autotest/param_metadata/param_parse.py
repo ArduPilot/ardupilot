@@ -594,6 +594,25 @@ def validate(param, is_library=False):
         if not param.Description or not param.Description.strip():
             error("Empty Description (%s)" % param)
 
+    # Check range and values don't contradict one another
+    if (hasattr(param, "Range") and hasattr(param, "Values")):
+        # Get the min and max of values
+        valueList = param.__dict__["Values"].split(",")
+        values = [float(v.replace(" ", "").partition(":")[0]) for v in valueList]
+        minValue = min(values)
+        maxValue = max(values)
+
+        # Get min and max range
+        rangeValues = param.__dict__["Range"].split(" ")
+        minRange = float(rangeValues[0])
+        maxRange = float(rangeValues[1])
+
+        # Check values are within range
+        if minValue < minRange:
+            error("Range of %f to %f and value of: %f" % (minRange, maxRange, minValue))
+        if maxValue > maxRange:
+            error("Range of %f to %f and value of: %f" % (minRange, maxRange, maxValue))
+
     required_fields = required_param_fields
     if is_library:
         required_fields = required_library_param_fields
