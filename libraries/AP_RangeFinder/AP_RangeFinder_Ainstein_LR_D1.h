@@ -68,6 +68,17 @@ private:
         IFSignalSaturation= (1U << 6),  // 0x40
         AltitudeReading   = (1U << 7),  // 0x80
     };
+    // see page 25
+    static void report_malfunction_v19000(const uint16_t malfunction_alert, const uint16_t malfunction_alert_prev);
+    enum class MalfunctionAlert_v19000 : uint16_t {
+        MCUTemperature         = (1U << 0),   // 0x0001
+        MCUVoltage             = (1U << 1),   // 0x0002
+        IFTemperature          = (1U << 4),   // 0x0010
+        IFSignalSaturation     = (1U << 7),   // 0x0080
+        Software               = (1U << 8),   // 0x0100
+        AltitudeReadingOverflow= (1U << 10),  // 0x0400
+        Voltage                = (1U << 15),  // 0x8000
+    };
 
     // Ainstein LR-D1 firmware emits a single message with the same
     // header bytes, size, device_id and length, but different
