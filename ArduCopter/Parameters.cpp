@@ -88,7 +88,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: RTL_CONE_SLOPE
     // @DisplayName: RTL cone slope
     // @Description: Defines a cone above home which determines maximum climb
-    // @Range: 0.5 10.0
+    // @Range: 0 10.0
     // @Increment: 0.1
     // @Values: 0:Disabled,1:Shallow,3:Steep
     // @User: Standard
