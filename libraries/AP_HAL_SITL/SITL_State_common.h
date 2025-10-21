@@ -108,7 +108,7 @@ public:
     SITL::Vicon *vicon;
 #endif  // AP_SIM_VICON_ENABLED
 
-    SITL::SerialRangeFinder *serial_rangefinders[16];
+    SITL::SerialRangeFinder *serial_rangefinders[17];
     uint8_t num_serial_rangefinders;
 
     // simulated Frsky devices
