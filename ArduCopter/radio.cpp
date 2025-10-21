@@ -143,9 +143,6 @@ void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
         if (failsafe.radio) {
             return;
         }
-        if (!rc().has_ever_seen_rc_input() && !motors->armed())) {
-            return;
-        }
 
         // check for 3 low throttle values
         // Note: we do not pass through the low throttle until 3 low throttle values are received
