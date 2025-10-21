@@ -331,6 +331,7 @@ class Board:
                 '-Werror=implicit-fallthrough',
                 '-cl-single-precision-constant',
                 '-Wno-vla-extension',
+                '-ftrapping-math',  # prevent re-ordering of sanity checks
             ]
         else:
             env.CFLAGS += [
@@ -451,6 +452,7 @@ class Board:
                 '-Wno-gnu-variable-sized-type-not-at-end',
                 '-Werror=implicit-fallthrough',
                 '-cl-single-precision-constant',
+                '-ftrapping-math',  # prevent re-ordering of sanity checks
             ]
         else:
             env.CXXFLAGS += [
