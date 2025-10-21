@@ -196,7 +196,7 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Param: S1_IDX
     // @DisplayName: DroneCAN Serial1 index
     // @Description: Serial port number on remote CAN node
-    // @Range: 0 100
+    // @Range: -1 100
     // @Values: -1:Disabled,0:Serial0,1:Serial1,2:Serial2,3:Serial3,4:Serial4,5:Serial5,6:Serial6
     // @RebootRequired: True
     // @User: Advanced
