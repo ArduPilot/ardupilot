@@ -50,7 +50,7 @@ bool RC_Channels_Copter::has_valid_input() const
     if (copter.failsafe.radio_counter != 0) {
         return false;
     }
-    return true;
+    return RC_Channels::has_valid_input();
 }
 
 // returns true if throttle arming checks should be run
