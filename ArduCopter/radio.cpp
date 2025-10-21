@@ -117,8 +117,8 @@ void Copter::read_radio()
         // throttle failsafe not enabled
         return;
     }
-    if (!rc().has_ever_seen_rc_input() && !motors->armed()) {
-        // we only failsafe if we are armed OR we have ever seen an RC receiver
+    if (!rc().has_ever_seen_rc_input()) {
+        // we only failsafe if we have ever seen an RC receiver
         return;
     }
 
