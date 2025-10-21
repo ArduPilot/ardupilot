@@ -17,9 +17,17 @@ class HtmlEmit(Emit):
     def __init__(self, *args, **kwargs):
         Emit.__init__(self, *args, **kwargs)
         html_fname = 'Parameters.html'
+        self.html_fname = html_fname
         self.f = open(html_fname, mode='w')
-        self.preamble = """<!-- Dynamically generated list of documented parameters
+        # Build optional firmware metadata line for inclusion in the generated comment
+        firmware_line = ''
+        if self.git_sha is not None:
+            firmware_line += f'\ngit_sha: {self.git_sha}'
+        if self.git_tag is not None:
+            firmware_line += f'\ngit_tag: {self.git_tag}'
+        self.preamble = f"""<!-- Dynamically generated list of documented parameters
 This page was generated using Tools/autotest/param_metadata/param_parse.py
+{firmware_line}
 
 DO NOT EDIT
 -->
@@ -42,6 +50,9 @@ DO NOT EDIT
         s = s.replace('(', '')
         s = s.replace(')', '')
         return s
+
+    def output_fname(self):
+        return self.html_fname
 
     def close(self):
         self.f.write(self.preamble)

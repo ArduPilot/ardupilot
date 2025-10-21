@@ -13,7 +13,6 @@ SPDX-License-Identifier: GPL-3.0-or-later
 '''
 
 import os
-import datetime
 import shutil
 import subprocess
 
@@ -54,20 +53,18 @@ def create_one_pdef_xml_file(vehicle_type: str, dst_dir: str, git_tag: str):
     os.chdir('../ardupilot')
     subprocess.run(['git', 'checkout', git_tag], check=True)
     # subprocess.run(['git', 'pull'], check=True)
-    subprocess.run(['Tools/autotest/param_metadata/param_parse.py', '--vehicle', vehicle_type, '--format', 'xml'], check=True)
+    git_sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+    subprocess.run(['Tools/autotest/param_metadata/param_parse.py',
+                    '--vehicle', vehicle_type,
+                    '--format', 'xml',
+                    '--git-sha', git_sha,
+                    '--git-tag', git_tag], check=True)
     # Return to the old working directory
     os.chdir(old_cwd)
 
     if not os.path.exists(dst_dir):
         os.makedirs(dst_dir)
 
-    # Insert an XML comment on line 3 in the ../ardupilot/apm.pdef.xml file to indicate
-    # the tag used to generate the file and the current date
-    with open('../ardupilot/apm.pdef.xml', 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-    lines.insert(2, f'<!-- Generated from git tag {git_tag} on {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")} -->\n')
-    with open('../ardupilot/apm.pdef.xml', 'w', encoding='utf-8') as f:
-        f.writelines(lines)
     shutil.copy('../ardupilot/apm.pdef.xml', f'{dst_dir}/apm.pdef.xml')
 
 # Function to sync files using rsync
