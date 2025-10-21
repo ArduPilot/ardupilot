@@ -113,7 +113,7 @@ void Copter::read_radio()
         // not timed out yet
         return;
     }
-    if (!g.failsafe_throttle) {
+    if (g.failsafe_throttle == FS_THR_DISABLED) {
         // throttle failsafe not enabled
         return;
     }
