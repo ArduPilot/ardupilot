@@ -246,13 +246,21 @@ public:
 
     struct ScriptedParameterWrite {
         ScriptedParameterEvents type;
-        ParameterSettingsHeader settings;
+        uint8_t destination;
+        uint8_t origin;
+        uint8_t param_num;
+        uint8_t param_chunk;
         ScriptedParameter* param;
         ScriptedPayload payload;
     };
 
-    ObjectBuffer<ScriptedParameterWrite> inbound_params{8};
-    ObjectBuffer<ScriptedParameterWrite> outbound_params{8};
+    // scripted menus represent a complicated dance between the transmitter, flight controller and lua
+    // lua-in-the-loop requires mediation via outbound_params whereas direct responses can pass straight to
+    // ready_params. This is made more complicated by the protocol not being request-response - requests to
+    // read can be interleaved with ongoing requests to write
+    ObjectBuffer<ScriptedParameterWrite> inbound_params{8}; // parameter requests waiting to be processed
+    ObjectBuffer<ScriptedParameterWrite> outbound_params{8};// parameter repsonses waiting to be processed
+    ObjectBuffer<ScriptedParameterWrite> ready_params{8};   // parameter responses ready to be scheduled
     HAL_Semaphore scr_sem; // semaphore guarding access to the inbound and outbound queues
     // access so that submenus can serialize access from scripting
     HAL_Semaphore& get_scripting_semamphore() { return scr_sem; }
@@ -260,7 +268,6 @@ public:
     void clear_menus();
     bool process_scripted_param_write(ParameterSettingsWriteFrame* write, uint8_t length);
     bool process_scripted_param_read(ParameterSettingsReadFrame* read);
-    void send_response(const ScriptedParameterWrite& spw);
     void dump_menu_structure();
 
     // public API called from lua
@@ -394,6 +401,9 @@ private:
     void calc_command_response();
     void calc_bind();
     void calc_parameter();
+#if AP_CRSF_SCRIPTING_ENABLED
+    bool calc_scripted_parameter();
+#endif
 #if HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
     void calc_text_selection( AP_OSD_ParamSetting* param, uint8_t chunk);
 #endif
