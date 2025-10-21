@@ -40,6 +40,8 @@ jobs:
             name: bookworm
           - os: debian
             name: bullseye
+          - os: debian
+            name: buster
     steps:
       - name: Install Git
         timeout-minutes: 30
@@ -71,7 +73,7 @@ jobs:
           esac
 
       # git checkout the PR
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
             submodules: 'recursive'
       - name: test install environment ${{matrix.os}}.${{matrix.name}}
@@ -152,7 +154,7 @@ jobs:
           TZ: Europe/Paris
         run: |
           apk update && apk add --no-cache git
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
       - name: test install environment alpine

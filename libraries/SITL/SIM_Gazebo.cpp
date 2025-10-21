@@ -16,11 +16,9 @@
   simulator connector for ardupilot version of Gazebo
 */
 
-#include "SIM_config.h"
-
-#if AP_SIM_GAZEBO_ENABLED
-
 #include "SIM_Gazebo.h"
+
+#if HAL_SIM_GAZEBO_ENABLED
 
 #include <stdio.h>
 #include <errno.h>
@@ -173,4 +171,4 @@ void Gazebo::update(const struct sitl_input &input)
 }  // namespace SITL
 
 
-#endif  // AP_SIM_GAZEBO_ENABLED
+#endif  // HAL_SIM_GAZEBO_ENABLED

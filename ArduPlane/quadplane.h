@@ -62,7 +62,6 @@ public:
     friend class ModeQAutotune;
     friend class ModeQAcro;
     friend class ModeLoiterAltQLand;
-    friend class ModeAutoLand;
     friend class AP_SystemID;
 
     QuadPlane(AP_AHRS &_ahrs);
@@ -149,7 +148,7 @@ public:
     // is throttle controlled landing descent active?
     bool thr_ctrl_land;
 
-    uint16_t get_pilot_velocity_z_max_dn_m() const;
+    uint16_t get_pilot_velocity_z_max_dn() const;
     
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
@@ -219,11 +218,11 @@ private:
     AC_Loiter *loiter_nav;
     
     // maximum vertical velocity the pilot may request
-    AP_Float pilot_speed_z_max_up_ms;
-    AP_Float pilot_speed_z_max_dn_ms;
+    AP_Float pilot_speed_z_max_up;
+    AP_Float pilot_speed_z_max_dn;
 
     // vertical acceleration the pilot may request
-    AP_Float pilot_accel_z_mss;
+    AP_Float pilot_accel_z;
 
     // air mode state: OFF, ON, ASSISTED_FLIGHT_ONLY
     AirMode air_mode;
@@ -248,7 +247,7 @@ private:
     void hold_stabilize(float throttle_in);
 
     // set climb rate in position controller
-    void set_climb_rate_ms(float target_climb_rate_ms);
+    void set_climb_rate_cms(float target_climb_rate_cms);
 
     // get pilot desired yaw rate in cd/s
     float get_pilot_input_yaw_rate_cds(void) const;
@@ -282,13 +281,13 @@ private:
     float assist_climb_rate_cms(void) const;
 
     // calculate desired yaw rate for assistance
-    float desired_auto_yaw_rate_cds(bool body_frame = false) const;
+    float desired_auto_yaw_rate_cds(void) const;
 
     bool should_relax(void);
     void motors_output(bool run_rate_controller = true);
     void Log_Write_QControl_Tuning();
     void log_QPOS(void);
-    float landing_descent_rate_ms(float height_above_ground_m);
+    float landing_descent_rate_cms(float height_above_ground);
     
     // setup correct aux channels for frame class
     void setup_default_channels(uint8_t num_motors);
@@ -299,24 +298,24 @@ private:
     void update_throttle_suppression(void);
 
     void run_z_controller(void);
-    void run_xy_controller(float accel_limit_mss = 0.0);
+    void run_xy_controller(float accel_limit=0.0);
 
     void setup_defaults(void);
 
     // calculate a stopping distance for fixed-wing to vtol transitions
-    float stopping_distance_m(float ground_speed_squared_m) const;
+    float stopping_distance(float ground_speed_squared) const;
     float accel_needed(float stop_distance, float ground_speed_squared) const;
-    float stopping_distance_m(void);
+    float stopping_distance(void);
 
     // distance below which we don't do approach, based on stopping
     // distance for cruise speed
-    float transition_threshold_m(void);
+    float transition_threshold(void);
 
     AP_Int16 transition_time_ms;
     AP_Int16 back_trans_pitch_limit_ms;
 
     // transition deceleration, m/s/s
-    AP_Float transition_decel_mss;
+    AP_Float transition_decel;
 
     // transition failure handling
     struct TRANS_FAIL {
@@ -335,7 +334,7 @@ private:
     float _last_ahrs_trim_pitch;
 
     // fw landing approach radius
-    AP_Float fw_land_approach_radius_m;
+    AP_Float fw_land_approach_radius;
 
     AP_Int16 rc_speed;
 
@@ -343,15 +342,15 @@ private:
     VTOL_Assist assist {*this};
 
     // landing speed in m/s
-    AP_Float land_final_speed_ms;
+    AP_Float land_final_speed;
 
     // QRTL start altitude, meters
-    AP_Int16 qrtl_alt_m;
-    AP_Int16 qrtl_alt_min_m;
+    AP_Int16 qrtl_alt;
+    AP_Int16 qrtl_alt_min;
     
     // alt to switch to QLAND_FINAL
-    AP_Float land_final_alt_m;
-    AP_Float vel_forward_alt_cutoff_m;
+    AP_Float land_final_alt;
+    AP_Float vel_forward_alt_cutoff;
     
     AP_Int8 enable;
     AP_Int8 transition_pitch_max;
@@ -486,7 +485,7 @@ private:
         float vpos_start_m;
 
         // landing detection threshold in meters
-        AP_Float detect_alt_change_m;
+        AP_Float detect_alt_change;
     } landing_detect;
 
     // throttle mix acceleration filter
@@ -515,9 +514,9 @@ private:
         uint32_t time_since_state_start_ms() const {
             return AP_HAL::millis() - last_state_change_ms;
         }
-        Vector3p target_neu_m;
-        Vector2f correction_ne_m;
-        Vector3f target_vel_ms;
+        Vector3p target_cm;
+        Vector2f xy_correction;
+        Vector3f target_vel_cms;
         bool slow_descent:1;
         bool pilot_correction_active;
         bool pilot_correction_done;
@@ -525,16 +524,16 @@ private:
         uint32_t last_log_ms;
         bool reached_wp_speed;
         uint32_t last_run_ms;
-        float pos1_speed_limit_ms;
+        float pos1_speed_limit;
         bool done_accel_init;
-        Vector2f velocity_match_ms;
+        Vector2f velocity_match;
         uint32_t last_velocity_match_ms;
-        float target_speed_ms;
-        float target_accel_mss;
+        float target_speed;
+        float target_accel;
         uint32_t last_pos_reset_ms;
         bool overshoot;
 
-        float override_descent_rate_ms;
+        float override_descent_rate;
         uint32_t last_override_descent_ms;
     private:
         uint32_t last_state_change_ms;
@@ -551,8 +550,8 @@ private:
         uint8_t motor_count;          // number of motors to cycle
     } motor_test;
 
-    // time of last MOTB log message
-    uint32_t last_motb_log_ms;
+    // time of last control log message
+    uint32_t last_ctrl_log_ms;
 
     // time of last QTUN log message
     uint32_t last_qtun_log_ms;
@@ -584,7 +583,7 @@ private:
 
     // additional options
     AP_Int32 options;
-    enum class Option {
+    enum class OPTION {
         LEVEL_TRANSITION=(1<<0),
         ALLOW_FW_TAKEOFF=(1<<1),
         ALLOW_FW_LAND=(1<<2),
@@ -609,27 +608,27 @@ private:
         DISARMED_TILT_UP=(1<<21),
         SCALE_FF_ANGLE_P=(1<<22),
     };
-    bool option_is_set(Option option) const {
+    bool option_is_set(OPTION option) const {
         return (options.get() & int32_t(option)) != 0;
     }
 
     // minimum distance to be from destination to use approach logic
-    AP_Float approach_distance_m;
+    AP_Float approach_distance;
 
     AP_Float takeoff_failure_scalar;
-    AP_Float maximum_takeoff_airspeed_ms;
+    AP_Float maximum_takeoff_airspeed;
     uint32_t takeoff_start_time_ms;
     uint32_t takeoff_time_limit_ms;
 
-    float last_land_final_agl_m;
+    float last_land_final_agl;
 
     // AHRS alt for land abort and package place, meters
-    float land_descend_start_alt_m;
+    float land_descend_start_alt;
 
     // min alt for navigation in takeoff
-    AP_Float takeoff_navalt_min_m;
+    AP_Float takeoff_navalt_min;
     uint32_t takeoff_last_run_ms;
-    float takeoff_start_alt_m;
+    float takeoff_start_alt;
 
     // oneshot with duration ARMING_DELAY_MS used by quadplane to delay spoolup after arming:
     // ignored unless OPTION_DELAY_ARMING or OPTION_TILT_DISARMED is set
@@ -692,7 +691,7 @@ private:
     /*
       get the airspeed for landing approach
      */
-    float get_land_airspeed_ms(void);
+    float get_land_airspeed(void);
 
     /*
       setup for landing approach
@@ -703,12 +702,12 @@ private:
       calculate our closing velocity vector on the landing
       point. Takes account of the landing point having a velocity
      */
-    Vector2f landing_closing_velocity_NE_ms();
+    Vector2f landing_closing_velocity();
 
     /*
       calculate our desired closing velocity vector on the landing point.
     */
-    Vector2f landing_desired_closing_velocity_NE_ms();
+    Vector2f landing_desired_closing_velocity();
 
     /*
       change spool state, providing easy hook for catching changes in debug

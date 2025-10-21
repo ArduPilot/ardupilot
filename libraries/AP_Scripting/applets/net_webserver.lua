@@ -435,11 +435,13 @@ end
 --[[
    client class for open connections
 --]]
-local function Client(sock, idx)
+local function Client(_sock, _idx)
    local self = {}
 
    self.closed = false
 
+   local sock = _sock
+   local idx = _idx
    local have_header = false
    local header = ""
    local header_lines = {}

@@ -1,4 +1,4 @@
-#!/usr/bin/env -S gnuplot -persist
+#!/usr/bin/gnuplot -persist
 set y2tics 0,10
 set ytics nomirror
 set style data linespoints

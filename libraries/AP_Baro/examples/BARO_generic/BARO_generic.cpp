@@ -35,9 +35,9 @@ static AP_Int32 log_bitmask;
 static AP_Logger logger;
 static AP_AHRS ahrs;
 
-#if AP_EXTERNAL_AHRS_ENABLED
+#if HAL_EXTERNAL_AHRS_ENABLED
  static AP_ExternalAHRS eAHRS;
-#endif // AP_EXTERNAL_AHRS_ENABLED
+#endif // HAL_EXTERNAL_AHRS_ENABLED
 
 static uint32_t timer;
 static AP_BoardConfig board_config;
@@ -105,6 +105,9 @@ void loop()
     }
 }
 
+const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {
+    AP_GROUPEND
+};
 GCS_Dummy _gcs;
 
 

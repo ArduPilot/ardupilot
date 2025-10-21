@@ -16,11 +16,9 @@
   Base class for CRSF telemetry
 */
 
-#include "SIM_config.h"
+#include "SIM_CRSF.h"
 
 #if AP_SIM_CRSF_ENABLED
-
-#include "SIM_CRSF.h"
 
 using namespace SITL;
 

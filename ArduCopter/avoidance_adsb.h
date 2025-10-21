@@ -1,9 +1,5 @@
 #pragma once
 
-#include <AP_Avoidance/AP_Avoidance_config.h>
-
-#if AP_ADSB_AVOIDANCE_ENABLED
-
 #include <AP_Avoidance/AP_Avoidance.h>
 
 // Provide Copter-specific implementation of avoidance.  While most of
@@ -23,7 +19,7 @@ private:
     void set_mode_else_try_RTL_else_LAND(Mode::Number mode);
 
     // get minimum limit altitude allowed on descend
-    int32_t get_altitude_minimum_cm() const;
+    int32_t get_altitude_minimum() const;
 
 protected:
     // override avoidance handler
@@ -47,5 +43,3 @@ protected:
     // control mode before avoidance began
     Mode::Number prev_control_mode = Mode::Number::RTL;
 };
-
-#endif  // AP_ADSB_AVOIDANCE_ENABLED

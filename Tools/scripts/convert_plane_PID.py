@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
-
-# flake8: noqa
-
+#!/usr/bin/env python
 '''
 convert fixed wing PIDs in a parameter file from old system to ACPID system
 '''

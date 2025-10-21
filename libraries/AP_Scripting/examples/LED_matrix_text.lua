@@ -2,6 +2,7 @@
 Script to control LED strips based on the roll of the aircraft. This is an example to demonstrate
 the LED interface for WS2812 LEDs
 --]]
+-- luacheck: only 0
 
 --[[
 for this demo we will use a single strip with 30 LEDs
@@ -76,7 +77,7 @@ id[7][6] = 28
 id[7][7] = 27
 
 -- https://github.com/noopkat/oled-font-5x7/blob/master/oled-font-5x7.js
-local font = {}
+font = {}
 font[' '] = {0x00, 0x00, 0x00, 0x00, 0x00} -- // space
 font['!'] = {0x00, 0x00, 0x5F, 0x00, 0x00} -- // !
 font['"'] = {0x00, 0x07, 0x00, 0x07, 0x00} -- // "
@@ -204,6 +205,9 @@ if char_offset < 1 - 5 then
     return
 end
 
+local i
+local j
+
 for i = 1, 5 do
     local x_index = i + char_offset
     if x_index >= 1 and x_index <= matrix_x then
@@ -221,6 +225,7 @@ end
 
 local function display_string(string,r,g,b,offset_in)
 local str_offset = 0
+local i
 for i = 1, string:len() do
     display_char(string:sub(i,i),r,g,b,str_offset + offset_in)
     str_offset = str_offset + 6
@@ -242,7 +247,7 @@ function update_LEDs()
     -- start with the stuff off the right edge of the display
     offset = 8
 
-    text_string = tostring(math.floor(math.deg(ahrs:get_yaw_rad())))
+    text_string = tostring(math.floor(math.deg(ahrs:get_yaw())))
   end
 
   return update_LEDs, 100

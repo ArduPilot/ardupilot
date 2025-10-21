@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 '''
 A script suitable for use as a git pre-commit hook to ensure your

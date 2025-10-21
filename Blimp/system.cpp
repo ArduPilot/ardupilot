@@ -142,21 +142,16 @@ bool Blimp::ekf_has_absolute_position() const
         return false;
     }
 
+    // with EKF use filter status and ekf check
+    nav_filter_status filt_status = inertial_nav.get_filter_status();
+
     // if disarmed we accept a predicted horizontal position
     if (!motors->armed()) {
-        if (ahrs.has_status(AP_AHRS::Status::HORIZ_POS_ABS)) {
-            return true;
-        }
-        if (ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_ABS)) {
-            return true;
-        }
-        return false;
+        return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
+    } else {
+        // once armed we require a good absolute position and EKF must not be in const_pos_mode
+        return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
     }
-    // once armed we require a good absolute position and EKF must not be in const_pos_mode
-    if (ahrs.has_status(AP_AHRS::Status::CONST_POS_MODE)) {
-        return false;
-     }
-    return ahrs.has_status(AP_AHRS::Status::HORIZ_POS_ABS);
 }
 
 // ekf_has_relative_position - returns true if the EKF can provide a position estimate relative to it's starting position
@@ -173,14 +168,15 @@ bool Blimp::ekf_has_relative_position() const
         return false;
     }
 
+    // get filter status from EKF
+    nav_filter_status filt_status = inertial_nav.get_filter_status();
+
     // if disarmed we accept a predicted horizontal relative position
     if (!motors->armed()) {
-        return ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_REL);
+        return (filt_status.flags.pred_horiz_pos_rel);
+    } else {
+        return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
     }
-    if (ahrs.has_status(AP_AHRS::Status::CONST_POS_MODE)) {
-        return false;
-    }
-    return ahrs.has_status(AP_AHRS::Status::HORIZ_POS_REL);
 }
 
 // returns true if the ekf has a good altitude estimate (required for modes which do AltHold)
@@ -191,15 +187,11 @@ bool Blimp::ekf_alt_ok() const
         return false;
     }
 
-    // require both vertical velocity and position
-    if (!ahrs.has_status(AP_AHRS::Status::VERT_VEL)) {
-        return false;
-    }
-    if (!ahrs.has_status(AP_AHRS::Status::VERT_POS)) {
-        return false;
-    }
+    // with EKF use filter status and ekf check
+    nav_filter_status filt_status = inertial_nav.get_filter_status();
 
-    return true;
+    // require both vertical velocity and position
+    return (filt_status.flags.vert_vel && filt_status.flags.vert_pos);
 }
 
 // update_auto_armed - update status of auto_armed flag

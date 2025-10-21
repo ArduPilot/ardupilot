@@ -15,7 +15,7 @@
 
 //  Novatel/Tersus/ComNav GPS driver for ArduPilot.
 //  Code by Michael Oborne
-//  Derived from https://hexagondownloads.blob.core.windows.net/public/Novatel/assets/Documents/Manuals/om-20000129/om-20000129.pdf
+//  Derived from http://www.novatel.com/assets/Documents/Manuals/om-20000129.pdf
 
 #include "AP_GPS.h"
 #include "AP_GPS_NOVA.h"
@@ -199,9 +199,9 @@ AP_GPS_NOVA::process_message(void)
     Debug("NOVA process_message messid=%u\n",messageid);
 
     check_new_itow(nova_msg.header.nova_headeru.tow, nova_msg.header.nova_headeru.messagelength + nova_msg.header.nova_headeru.headerlength);
- 
-    switch (messageid) {
-    case NOVA_BESTPOS: {  // bestpos
+    
+    if (messageid == 42) // bestpos
+    {
         const bestpos &bestposu = nova_msg.data.bestposu;
 
         state.time_week = nova_msg.header.nova_headeru.week;
@@ -258,9 +258,10 @@ AP_GPS_NOVA::process_message(void)
         }
         
         _new_position = true;
-        break;
     }
-    case NOVA_BESTVEL: {  // bestvel
+
+    if (messageid == 99) // bestvel
+    {
         const bestvel &bestvelu = nova_msg.data.bestvelu;
 
         state.ground_speed = (float) bestvelu.horspd;
@@ -271,17 +272,15 @@ AP_GPS_NOVA::process_message(void)
         
         _last_vel_time = (uint32_t) nova_msg.header.nova_headeru.tow;
         _new_speed = true;
-        break;
     }
-    case NOVA_PSRDOP: {  // psrdop
+
+    if (messageid == 174) // psrdop
+    {
         const psrdop &psrdopu = nova_msg.data.psrdopu;
 
         state.hdop = (uint16_t) (psrdopu.hdop*100);
         state.vdop = (uint16_t) (psrdopu.htdop*100);
         return false;
-    }
-    default:
-        break;
     }
 
     // ensure out position and velocity stay insync

@@ -22,7 +22,6 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <stdio.h>
-#include <GCS_MAVLink/GCS_Dummy.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <sys/types.h>
@@ -104,9 +103,9 @@ static bool check_result(const char *name, bool bytes, const uint16_t *values, u
         test_failures++;
         return false;
     }
-    const char *pname = rcprot->detected_protocol_name();
+    const char *pname = rcprot->protocol_name();
     if (strncmp(pname, name, strlen(pname)) != 0) {
-        printf("%s: wrong protocol detected %s\n", label, pname);
+        printf("%s: wrong protocol detected %s\n", label, rcprot->protocol_name());
         test_failures++;
         return false;
     }
@@ -534,7 +533,5 @@ void loop()
     }
     printf("Test count %u - %u failures\n", unsigned(test_count), unsigned(test_failures));
 }
-
-GCS_Dummy _gcs;
 
 AP_HAL_MAIN();

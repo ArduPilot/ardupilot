@@ -12,7 +12,7 @@
 #include <AP_HAL/utility/sparse-endian.h>
 #include <dronecan_msgs.h>
 
-#if AP_PERIPH_HOBBYWING_ESC_ENABLED
+#ifdef HAL_PERIPH_ENABLE_HWESC
 
 #include <SITL/SITL.h>
 
@@ -173,5 +173,5 @@ void AP_Periph_FW::hwesc_telem_update()
                     total_size);
 }
 
-#endif // AP_PERIPH_HOBBYWING_ESC_ENABLED
+#endif // HAL_PERIPH_ENABLE_HWESC
 

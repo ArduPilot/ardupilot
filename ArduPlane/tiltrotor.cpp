@@ -224,7 +224,7 @@ void Tiltrotor::continuous_update(void)
         // a forward motor
 
         // option set then if disarmed move to VTOL position to prevent ground strikes, allow tilt forward in manual mode for testing
-        const bool disarmed_tilt_up = !plane.arming.is_armed_and_safety_off() && (plane.control_mode != &plane.mode_manual) && quadplane.option_is_set(QuadPlane::Option::DISARMED_TILT_UP);
+        const bool disarmed_tilt_up = !plane.arming.is_armed_and_safety_off() && (plane.control_mode != &plane.mode_manual) && quadplane.option_is_set(QuadPlane::OPTION::DISARMED_TILT_UP);
         slew(disarmed_tilt_up ? 0.0 : get_forward_flight_tilt());
 
         max_change = tilt_max_change(false);
@@ -245,7 +245,7 @@ void Tiltrotor::continuous_update(void)
         }
         if (!quadplane.motor_test.running) {
             // the motors are all the way forward, start using them for fwd thrust
-            const uint32_t mask = is_zero(current_throttle) ? 0U : tilt_mask.get();
+            const uint16_t mask = is_zero(current_throttle)?0U:tilt_mask.get();
             motors->output_motor_mask(current_throttle, mask, plane.rudder_dt);
         }
         return;
@@ -311,14 +311,14 @@ void Tiltrotor::continuous_update(void)
             slew(0);
         } else {
             // manual control of forward throttle up to max VTOL angle
-            float settilt = 0.01f * quadplane.forward_throttle_pct();
+            float settilt = .01f * quadplane.forward_throttle_pct();
             slew(MIN(settilt * max_angle_deg * (1/90.0), get_forward_flight_tilt())); 
         }
         return;
     }
 
     if (quadplane.assisted_flight &&
-        transition->transition_state >= Tiltrotor_Transition::State::TIMER) {
+        transition->transition_state >= Tiltrotor_Transition::TRANSITION_TIMER) {
         // we are transitioning to fixed wing - tilt the motors all
         // the way forward
         slew(get_forward_flight_tilt());
@@ -365,7 +365,7 @@ void Tiltrotor::binary_update(void)
 
         float new_throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)*0.01f;
         if (current_tilt >= 1) {
-            const uint32_t mask = is_zero(new_throttle) ? 0 : tilt_mask.get();
+            const uint16_t mask = is_zero(new_throttle)?0U:tilt_mask.get();
             // the motors are all the way forward, start using them for fwd thrust
             motors->output_motor_mask(new_throttle, mask, plane.rudder_dt);
         }
@@ -562,7 +562,7 @@ void Tiltrotor::vectoring(void)
     // Wait TILT_DELAY_MS after disarming to allow props to spin down first.
     constexpr uint32_t TILT_DELAY_MS = 3000;
     uint32_t now = AP_HAL::millis();
-    if (!plane.arming.is_armed_and_safety_off() && plane.quadplane.option_is_set(QuadPlane::Option::DISARMED_TILT)) {
+    if (!plane.arming.is_armed_and_safety_off() && plane.quadplane.option_is_set(QuadPlane::OPTION::DISARMED_TILT)) {
         // this test is subject to wrapping at ~49 days, but the consequences are insignificant
         if ((now - hal.util->get_last_armed_change()) > TILT_DELAY_MS) {
             if (quadplane.in_vtol_mode()) {
@@ -649,7 +649,7 @@ void Tiltrotor::vectoring(void)
             motors->limit.yaw = true;
         }
 
-        // constrain and scale to output range
+        // constrain and scale to ouput range
         left_tilt = constrain_float(left_tilt,0.0,1.0) * 1000.0;
         right_tilt = constrain_float(right_tilt,0.0,1.0) * 1000.0;
 
@@ -748,17 +748,7 @@ void Tiltrotor::update_yaw_target(void)
  */
 bool Tiltrotor_Transition::use_multirotor_control_in_fwd_transition() const
 {
-    if (!tiltrotor.is_vectored()) {
-        return false;
-    }
-    switch (transition_state) {
-    case State::AIRSPEED_WAIT:
-    case State::TIMER:
-        return true;
-    case State::DONE:
-        return false;
-    }
-    return false;
+    return tiltrotor.is_vectored() && transition_state <= TRANSITION_TIMER;
 }
 
 bool Tiltrotor_Transition::update_yaw_target(float& yaw_target_cd)
@@ -776,7 +766,7 @@ bool Tiltrotor_Transition::show_vtol_view() const
 {
     bool show_vtol = quadplane.in_vtol_mode();
 
-    if (!show_vtol && tiltrotor.is_vectored() && transition_state <= State::TIMER) {
+    if (!show_vtol && tiltrotor.is_vectored() && transition_state <= TRANSITION_TIMER) {
         // we use multirotor controls during fwd transition for
         // vectored yaw vehicles
         return true;
@@ -790,34 +780,6 @@ bool Tiltrotor::tilt_over_max_angle(void) const
 {
     const float tilt_threshold = (max_angle_deg/90.0f);
     return (current_tilt > MIN(tilt_threshold, get_forward_flight_tilt()));
-}
-
-// throttle of forward flight motors including any tilting motors
-bool Tiltrotor::get_forward_throttle(float &throttle) const
-{
-    if (!enabled() || !_is_vectored) {
-        return false;
-    }
-    const float throttle_range = motors->thr_lin.get_spin_max() - motors->thr_lin.get_spin_min();
-    if (!is_positive(throttle_range)) {
-        return false;
-    }
-    float throttle_sum = 0.0f;
-    uint8_t num_vectored_motors = 0;
-    for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
-        if (is_motor_tilting(i)) {
-            float thrust;
-            if (motors->get_thrust(i, thrust)) {
-                throttle_sum += (motors->thr_lin.thrust_to_actuator(thrust) - motors->thr_lin.get_spin_min()) / throttle_range;
-                num_vectored_motors ++;
-            }
-        }
-    }
-    if (num_vectored_motors > 0) {
-        throttle = throttle_sum / (float)num_vectored_motors;
-        return true;
-    }
-    return false;
 }
 
 #endif  // HAL_QUADPLANE_ENABLED

@@ -110,6 +110,11 @@ namespace AP {
     AP_InternalError &internalerror();
 };
 
+extern "C" {
+    void AP_stack_overflow(const char *thread_name);
+    void AP_memory_guard_error(uint32_t size);
+}
+
 #define INTERNAL_ERROR(error_number) \
     AP::internalerror().error(error_number, __AP_LINE__);
 

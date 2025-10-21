@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-
-# flake8: noqa
+#!/usr/bin/env python
 
 '''
 decode RCDA messages from a log and optionally play back to a serial port. The RCDA message is

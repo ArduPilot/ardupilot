@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-
-# flake8: noqa
+#!/usr/bin/env python
 '''
 tables for STM32G431xx MCUs
 '''

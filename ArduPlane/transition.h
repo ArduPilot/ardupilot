@@ -62,13 +62,13 @@ public:
 
 protected:
 
-    // references for convenience
+    // refences for convenience
     QuadPlane& quadplane;
     AP_MotorsMulticopter*& motors;
 
 };
 
-// Transition for separate lift thrust quadplanes
+// Transition for separate left thrust quadplanes
 class SLT_Transition : public Transition
 {
 public:
@@ -81,9 +81,9 @@ public:
 
     void force_transition_complete() override;
 
-    bool complete() const override { return transition_state == State::DONE; }
+    bool complete() const override { return transition_state == TRANSITION_DONE; }
 
-    void restart() override { transition_state = State::AIRSPEED_WAIT; }
+    void restart() override { transition_state = TRANSITION_AIRSPEED_WAIT; }
 
     uint8_t get_log_transition_state() const override { return static_cast<uint8_t>(transition_state); }
 
@@ -105,10 +105,10 @@ public:
 
 protected:
 
-    enum class State {
-        AIRSPEED_WAIT = 0,
-        TIMER         = 1,
-        DONE          = 2,
+    enum {
+        TRANSITION_AIRSPEED_WAIT,
+        TRANSITION_TIMER,
+        TRANSITION_DONE
     } transition_state;
 
     // timer start for transition

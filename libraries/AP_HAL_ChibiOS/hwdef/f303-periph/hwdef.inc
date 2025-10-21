@@ -10,8 +10,8 @@ FLASH_RESERVE_START_KB 26
 STORAGE_FLASH_PAGE 11
 define HAL_STORAGE_SIZE 800
 
-# board ID. See Tools/AP_Bootloader/board_types.txt
-APJ_BOARD_ID AP_HW_F303_PERIPH
+# board ID for firmware load
+APJ_BOARD_ID 1004
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -66,6 +66,8 @@ define SERIAL_BUFFERS_SIZE 512
 define PORT_INT_REQUIRED_STACK 64
 
 define HAL_NO_RCOUT_THREAD
+
+define HAL_USE_RTC FALSE
 
 define DMA_RESERVE_SIZE 0
 

@@ -9,7 +9,7 @@
 #include <AP_Math/definitions.h>
 #include <string.h>
 
-#if AP_PERIPH_ESC_APD_ENABLED
+#ifdef HAL_PERIPH_ENABLE_ESC_APD
 
 extern const AP_HAL::HAL& hal;
 
@@ -17,9 +17,8 @@ extern const AP_HAL::HAL& hal;
 #define TELEM_LEN    0x16
 
 ESC_APD_Telem::ESC_APD_Telem (AP_HAL::UARTDriver *_uart, float num_poles) :
-    uart(_uart),
-    pole_count(num_poles)
-{
+    pole_count(num_poles),
+    uart(_uart) {
     uart->begin(115200);
 }
 
@@ -95,4 +94,4 @@ float ESC_APD_Telem::convert_temperature(uint16_t raw) const {
     return temperature;
 }
 
-#endif // AP_PERIPH_ESC_APD_ENABLED
+#endif // HAL_PERIPH_ENABLE_ESC_APD

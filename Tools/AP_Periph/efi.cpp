@@ -1,6 +1,6 @@
 #include "AP_Periph.h"
 
-#if AP_PERIPH_EFI_ENABLED
+#ifdef HAL_PERIPH_ENABLE_EFI
 
 /*
   EFI support
@@ -204,4 +204,4 @@ void AP_Periph_FW::can_efi_update(void)
     }
 }
 
-#endif // AP_PERIPH_EFI_ENABLED
+#endif // HAL_PERIPH_ENABLE_EFI

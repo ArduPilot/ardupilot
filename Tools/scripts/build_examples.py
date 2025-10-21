@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 # useful script to test the build of all example code
 # This helps when doing large merges

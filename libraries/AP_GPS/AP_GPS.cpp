@@ -42,7 +42,7 @@
 #include "AP_GPS_MSP.h"
 #include "AP_GPS_ExternalAHRS.h"
 #include "GPS_Backend.h"
-#if AP_SIM_GPS_ENABLED
+#if HAL_SIM_GPS_ENABLED
 #include "AP_GPS_SITL.h"
 #endif
 
@@ -239,7 +239,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _DRV_OPTIONS
     // @DisplayName: driver options
     // @Description: Additional backend specific options
-    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200 on ublox,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL, 5:Override GPS satellite health of L5 band from L1 health, 6:Enable RTCM full parse even for a single channel, 7:Disable automatic full RTCM parsing when RTCM seen on more than one channel
+    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL, 5:Override GPS satellite health of L5 band from L1 health, 6:Enable RTCM full parse even for a single channel, 7:Disable automatic full RTCM parsing when RTCM seen on more than one channel
     // @User: Advanced
     AP_GROUPINFO("_DRV_OPTIONS", 22, AP_GPS, _driver_options, 0),
 
@@ -332,7 +332,7 @@ void AP_GPS::init()
     // search for serial ports with gps protocol
     const auto &serial_manager = AP::serialmanager();
     uint8_t uart_idx = 0;
-    for (uint8_t i=0; i<ARRAY_SIZE(params) && i<ARRAY_SIZE(_port); i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(params); i++) {
         if (needs_uart(params[i].type)) {
             _port[i] = serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS, uart_idx);
             uart_idx++;
@@ -561,9 +561,9 @@ void AP_GPS::send_blob_start(uint8_t instance)
 #if AP_GPS_NOVA_ENABLED
     case GPS_TYPE_NOVA:
 #endif //AP_GPS_NOVA_ENABLED
-#if AP_SIM_GPS_ENABLED
+#if HAL_SIM_GPS_ENABLED
     case GPS_TYPE_SITL:
-#endif  // AP_SIM_GPS_ENABLED
+#endif  // HAL_SIM_GPS_ENABLED
         // none of these GPSs have initialisation blobs
         break;
     default:
@@ -585,8 +585,7 @@ void AP_GPS::send_blob_start(uint8_t instance)
 void AP_GPS::send_blob_update(uint8_t instance)
 {
     // exit immediately if no uart for this instance
-    if (instance >= ARRAY_SIZE(_port) ||
-        _port[instance] == nullptr) {
+    if (_port[instance] == nullptr) {
         return;
     }
 
@@ -632,12 +631,11 @@ void AP_GPS::detect_instance(uint8_t instance)
   run detection step for one GPS instance. If this finds a GPS then it
   will return it - otherwise nullptr
  */
-AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
+AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
 {
     struct detect_state *dstate = &detect_state[instance];
 
     const auto type = params[instance].type;
-    auto *port = (instance < ARRAY_SIZE(_port)) ? _port[instance] : nullptr;
 
     switch (GPS_Type(type)) {
     // user has to explicitly set the MAV type, do not use AUTO
@@ -662,7 +660,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
         dstate->auto_detected_baud = false; // specified, not detected
         return NEW_NOTHROW AP_GPS_MSP(*this, params[instance], state[instance], nullptr);
 #endif
-#if AP_EXTERNAL_AHRS_ENABLED
+#if HAL_EXTERNAL_AHRS_ENABLED
     case GPS_TYPE_EXTERNAL_AHRS:
         if (AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::GPS) >= 0) {
             dstate->auto_detected_baud = false; // specified, not detected
@@ -673,13 +671,13 @@ AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
 #if AP_GPS_GSOF_ENABLED
     case GPS_TYPE_GSOF:
         dstate->auto_detected_baud = false; // specified, not detected
-        return NEW_NOTHROW AP_GPS_GSOF(*this, params[instance], state[instance], port);
+        return NEW_NOTHROW AP_GPS_GSOF(*this, params[instance], state[instance], _port[instance]);
 #endif //AP_GPS_GSOF_ENABLED
     default:
         break;
     }
 
-    if (port == nullptr) {
+    if (_port[instance] == nullptr) {
         // UART not available
         return nullptr;
     }
@@ -694,7 +692,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
         // incrementing like this will skip the first element in array of bauds
         // this is okay, and relied upon
         if (dstate->probe_baud == 0) {
-            dstate->probe_baud = port->get_baud_rate();
+            dstate->probe_baud = _port[instance]->get_baud_rate();
         } else {
             dstate->current_baud++;
             if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
@@ -709,8 +707,8 @@ AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
         if (type == GPS_TYPE_UBLOX_RTK_BASE) {
             rx_size = 2048;
         }
-        port->begin(dstate->probe_baud, rx_size, tx_size);
-        port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+        _port[instance]->begin(dstate->probe_baud, rx_size, tx_size);
+        _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
         dstate->last_baud_change_ms = now;
 
         if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
@@ -727,17 +725,17 @@ AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
     // by default the sbf/trimble gps outputs no data on its port, until configured.
     case GPS_TYPE_SBF:
     case GPS_TYPE_SBF_DUAL_ANTENNA:
-        return NEW_NOTHROW AP_GPS_SBF(*this, params[instance], state[instance], port);
+        return NEW_NOTHROW AP_GPS_SBF(*this, params[instance], state[instance], _port[instance]);
 #endif //AP_GPS_SBF_ENABLED
 #if AP_GPS_NOVA_ENABLED
     case GPS_TYPE_NOVA:
-        return NEW_NOTHROW AP_GPS_NOVA(*this, params[instance], state[instance], port);
+        return NEW_NOTHROW AP_GPS_NOVA(*this, params[instance], state[instance], _port[instance]);
 #endif //AP_GPS_NOVA_ENABLED
 
-#if AP_SIM_GPS_ENABLED
+#if HAL_SIM_GPS_ENABLED
     case GPS_TYPE_SITL:
-        return NEW_NOTHROW AP_GPS_SITL(*this, params[instance], state[instance], port);
-#endif  // AP_SIM_GPS_ENABLED
+        return NEW_NOTHROW AP_GPS_SITL(*this, params[instance], state[instance], _port[instance]);
+#endif  // HAL_SIM_GPS_ENABLED
 
     default:
         break;
@@ -748,10 +746,10 @@ AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
         return nullptr;
     }
 
-    uint16_t bytecount = MIN(8192U, port->available());
+    uint16_t bytecount = MIN(8192U, _port[instance]->available());
 
     while (bytecount-- > 0) {
-        const uint8_t data = port->read();
+        const uint8_t data = _port[instance]->read();
         (void)data;  // if all backends are compiled out then "data" is unused
 
 #if AP_GPS_UBLOX_ENABLED
@@ -761,7 +759,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
              (_baudrates[dstate->current_baud] >= 115200 && option_set(DriverOptions::UBX_Use115200)) ||
              _baudrates[dstate->current_baud] == 230400) &&
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
-            return NEW_NOTHROW AP_GPS_UBLOX(*this, params[instance], state[instance], port, GPS_ROLE_NORMAL);
+            return NEW_NOTHROW AP_GPS_UBLOX(*this, params[instance], state[instance], _port[instance], GPS_ROLE_NORMAL);
         }
 
         const uint32_t ublox_mb_required_baud = option_set(DriverOptions::UBX_MBUseUart2)?230400:460800;
@@ -775,31 +773,31 @@ AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
             } else {
                 role = GPS_ROLE_MB_ROVER;
             }
-            return NEW_NOTHROW AP_GPS_UBLOX(*this, params[instance], state[instance], port, role);
+            return NEW_NOTHROW AP_GPS_UBLOX(*this, params[instance], state[instance], _port[instance], role);
         }
 #endif  // AP_GPS_UBLOX_ENABLED
 #if AP_GPS_SBP2_ENABLED
         if ((type == GPS_TYPE_AUTO || type == GPS_TYPE_SBP) &&
                  AP_GPS_SBP2::_detect(dstate->sbp2_detect_state, data)) {
-            return NEW_NOTHROW AP_GPS_SBP2(*this, params[instance], state[instance], port);
+            return NEW_NOTHROW AP_GPS_SBP2(*this, params[instance], state[instance], _port[instance]);
         }
 #endif //AP_GPS_SBP2_ENABLED
 #if AP_GPS_SBP_ENABLED
         if ((type == GPS_TYPE_AUTO || type == GPS_TYPE_SBP) &&
                  AP_GPS_SBP::_detect(dstate->sbp_detect_state, data)) {
-            return NEW_NOTHROW AP_GPS_SBP(*this, params[instance], state[instance], port);
+            return NEW_NOTHROW AP_GPS_SBP(*this, params[instance], state[instance], _port[instance]);
         }
 #endif //AP_GPS_SBP_ENABLED
 #if AP_GPS_SIRF_ENABLED
         if ((type == GPS_TYPE_AUTO || type == GPS_TYPE_SIRF) &&
                  AP_GPS_SIRF::_detect(dstate->sirf_detect_state, data)) {
-            return NEW_NOTHROW AP_GPS_SIRF(*this, params[instance], state[instance], port);
+            return NEW_NOTHROW AP_GPS_SIRF(*this, params[instance], state[instance], _port[instance]);
         }
 #endif
 #if AP_GPS_ERB_ENABLED
         if ((type == GPS_TYPE_AUTO || type == GPS_TYPE_ERB) &&
                  AP_GPS_ERB::_detect(dstate->erb_detect_state, data)) {
-            return NEW_NOTHROW AP_GPS_ERB(*this, params[instance], state[instance], port);
+            return NEW_NOTHROW AP_GPS_ERB(*this, params[instance], state[instance], _port[instance]);
         }
 #endif // AP_GPS_ERB_ENABLED
 #if AP_GPS_NMEA_ENABLED
@@ -811,7 +809,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
 #endif
                     type == GPS_TYPE_ALLYSTAR) &&
                    AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
-            return NEW_NOTHROW AP_GPS_NMEA(*this, params[instance], state[instance], port);
+            return NEW_NOTHROW AP_GPS_NMEA(*this, params[instance], state[instance], _port[instance]);
         }
 #endif //AP_GPS_NMEA_ENABLED
     }
@@ -1283,7 +1281,7 @@ void AP_GPS::handle_msp(const MSP::msp_gps_data_message_t &pkt)
 }
 #endif // HAL_MSP_GPS_ENABLED
 
-#if AP_EXTERNAL_AHRS_ENABLED
+#if HAL_EXTERNAL_AHRS_ENABLED
 
 bool AP_GPS::get_first_external_instance(uint8_t& instance) const
 {
@@ -1302,7 +1300,7 @@ void AP_GPS::handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt, con
         drivers[instance]->handle_external(pkt);
     }
 }
-#endif // AP_EXTERNAL_AHRS_ENABLED
+#endif // HAL_EXTERNAL_AHRS_ENABLED
 
 /**
    Lock a GPS port, preventing the GPS driver from using it. This can
@@ -1369,7 +1367,6 @@ uint16_t AP_GPS::gps_yaw_cdeg(uint8_t instance) const
     return yaw_cd;
 }
 
-#if AP_GPS_GPS_RAW_INT_SENDING_ENABLED
 void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
 {
     const Location &loc = location(0);
@@ -1403,9 +1400,8 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
         0,                    // TODO one-sigma heading accuracy standard deviation
         gps_yaw_cdeg(0));
 }
-#endif  // AP_GPS_GPS_RAW_INT_SENDING_ENABLED
 
-#if AP_GPS_GPS2_RAW_SENDING_ENABLED
+#if GPS_MAX_RECEIVERS > 1
 void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
 {
     // always send the message if 2nd GPS is configured
@@ -1446,9 +1442,9 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
         sacc * 1000,          // one-sigma standard deviation in mm/s
         0);                    // TODO one-sigma heading accuracy standard deviation
 }
-#endif // AP_GPS_GPS2_RAW_SENDING_ENABLED
+#endif // GPS_MAX_RECEIVERS
 
-#if AP_GPS_GPS_RTK_SENDING_ENABLED || AP_GPS_GPS2_RTK_SENDING_ENABLED
+#if HAL_GCS_ENABLED
 void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
 {
     if (inst >= GPS_MAX_RECEIVERS) {
@@ -1621,7 +1617,7 @@ void AP_GPS::handle_gps_rtcm_data(mavlink_channel_t chan, const mavlink_message_
  */
 bool AP_GPS::parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm_data_t &pkt)
 {
-    if (static_cast<int>(chan) >= MAVLINK_COMM_NUM_BUFFERS) {
+    if (chan >= MAVLINK_COMM_NUM_BUFFERS) {
         return false;
     }
     if (rtcm.parsers[chan] == nullptr) {
@@ -1642,13 +1638,6 @@ bool AP_GPS::parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm
             const uint32_t crc = crc_crc32(0, buf, len);
 
 #if HAL_LOGGING_ENABLED
-// @LoggerMessage: RTCM
-// @Description: GPS atmospheric perturbation data
-// @Field: TimeUS: Time since system startup
-// @Field: Chan: mavlink channel number this data was received on
-// @Field: RTCMId: ID field from RTCM packet
-// @Field: Len: RTCM packet length
-// @Field: CRC: calculated crc32 for the packet
             AP::logger().WriteStreaming("RTCM", "TimeUS,Chan,RTCMId,Len,CRC", "s#---", "F----", "QBHHI",
                                         AP_HAL::micros64(),
                                         uint8_t(chan),

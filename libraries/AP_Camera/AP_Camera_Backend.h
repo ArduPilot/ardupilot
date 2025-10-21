@@ -94,8 +94,8 @@ public:
 #endif
 
     // get camera image horizontal or vertical field of view in degrees.  returns 0 if unknown
-    float horizontal_fov() const { return MAX(0, _params.hfov); }
-    float vertical_fov() const { return MAX(0, _params.vfov); }
+    float horizontal_fov() const { return MAX(0.0f, _params.hfov); }
+    float vertical_fov() const { return MAX(0.0f, _params.vfov); }
 
     // handle MAVLink messages from the camera
     virtual void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg) {}
@@ -167,9 +167,9 @@ protected:
     struct {
         uint64_t timestamp_us;      // system time of most recent image
         Location location;          // location where most recent image was taken
-        float roll_deg;             // vehicle roll in degrees
-        float pitch_deg;            // vehicle pitch in degrees
-        float yaw_deg;              // vehicle yaw in degrees
+        int32_t roll_sensor;        // vehicle roll in centi-degrees
+        int32_t pitch_sensor;       // vehicle pitch in centi-degrees
+        int32_t yaw_sensor;         // vehicle yaw in centi-degrees
         uint32_t feedback_trigger_logged_count; // ID sequence number
     } camera_feedback;
 

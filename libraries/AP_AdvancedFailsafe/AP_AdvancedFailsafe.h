@@ -58,7 +58,7 @@ public:
         {
             AP_Param::setup_object_defaults(this, var_info);
             if (_singleton != nullptr) {
-                AP_HAL::panic("AP_AdvancedFailsafe must be singleton");
+                AP_HAL::panic("AP_Logger must be singleton");
             }
 
             _singleton = this;
@@ -175,8 +175,6 @@ private:
     bool option_is_set(Option option) const {
         return (options.get() & int16_t(option)) != 0;
     }
-
-    bool gps_altitude_ok() const;
 };
 
 namespace AP {

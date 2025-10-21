@@ -35,10 +35,6 @@ const AP_Param::GroupInfo AP_TemperatureSensor_DroneCAN::var_info[] = {
     // @Range: 0 65535
     AP_GROUPINFO("MSG_ID", 1, AP_TemperatureSensor_DroneCAN, _ID, 0),
 
-    // CHECK/UPDATE INDEX TABLE IN AP_TemperatureSensor_Backend.cpp WHEN CHANGING OR ADDING PARAMETERS
-    // MSG_ID here clashes with pin in the analog backed,
-    // but because there different types (AP_Int8 vs AP_Int32) we get away with it.
-
     AP_GROUPEND
 };
 
@@ -57,11 +53,15 @@ AP_TemperatureSensor_DroneCAN::AP_TemperatureSensor_DroneCAN(AP_TemperatureSenso
 }
 
 // Subscript to incoming temperature messages
-bool AP_TemperatureSensor_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+void AP_TemperatureSensor_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    const auto driver_index = ap_dronecan->get_driver_index();
+    if (ap_dronecan == nullptr) {
+        return;
+    }
 
-    return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_temperature, driver_index) != nullptr);
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_temperature, ap_dronecan->get_driver_index()) == nullptr) {
+        AP_BoardConfig::allocation_error("temp_sub");
+    }
 }
 
 void AP_TemperatureSensor_DroneCAN::handle_temperature(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_device_Temperature &msg)

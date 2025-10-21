@@ -19,10 +19,9 @@
  *  Created on: June 09, 2016
  *      Author: Ian Chen
  */
-#include "AP_IRLock_config.h"
+#include <AP_HAL/AP_HAL.h>
 
-#if AP_IRLOCK_SITL_GAZEBO_ENABLED
-
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "AP_IRLock_SITL_Gazebo.h"
 #include <SITL/SITL.h>
 #include <fcntl.h>
@@ -93,4 +92,4 @@ bool AP_IRLock_SITL_Gazebo::update()
     return new_data;
 }
 
-#endif  // AP_IRLOCK_SITL_GAZEBO_ENABLED
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL

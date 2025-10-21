@@ -12,7 +12,6 @@ on:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
-      - 'libraries/AP_HAL_QURT/**'
       # remove non SITL directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
@@ -88,7 +87,6 @@ on:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
-      - 'libraries/AP_HAL_QURT/**'
       # remove non SITL directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
@@ -172,7 +170,7 @@ jobs:
         ]
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
 
@@ -183,7 +181,7 @@ jobs:
           NOW=$(date -u +"%F-%T")
           echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
       - name: ccache cache files
-        uses: actions/cache@v4
+        uses: actions/cache@v3
         with:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-${{ matrix.toolchain }}-${{steps.ccache_cache_timestamp.outputs.timestamp}}
@@ -226,7 +224,7 @@ jobs:
 
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
 
@@ -294,7 +292,7 @@ jobs:
       options: --privileged --cap-add=SYS_PTRACE --security-opt apparmor=unconfined --security-opt seccomp=unconfined
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
       # Put ccache into github cache for faster build
@@ -304,7 +302,7 @@ jobs:
           NOW=$(date -u +"%F-%T")
           echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
       - name: ccache cache files
-        uses: actions/cache@v4
+        uses: actions/cache@v3
         with:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-base-${{steps.ccache_cache_timestamp.outputs.timestamp}}
@@ -335,7 +333,7 @@ jobs:
 
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
       # Put ccache into github cache for faster build

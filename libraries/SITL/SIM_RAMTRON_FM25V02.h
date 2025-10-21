@@ -1,10 +1,12 @@
 #pragma once
 
-#include "SIM_config.h"
+#include "SIM_RAMTRON.h"
+
+#ifndef AP_SIM_RAMTRON_FM25V02_ENABLED
+#define AP_SIM_RAMTRON_FM25V02_ENABLED AP_SIM_RAMTRON_ENABLED
+#endif
 
 #if AP_SIM_RAMTRON_FM25V02_ENABLED
-
-#include "SIM_RAMTRON.h"
 
 namespace SITL {
 

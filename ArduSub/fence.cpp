@@ -5,27 +5,24 @@
 #if AP_FENCE_ENABLED
 
 // fence_check - ask fence library to check for breaches and initiate the response
-// async fence checking io callback at 1Khz
-void Sub::fence_checks_async()
+// called at 1hz
+void Sub::fence_check()
 {
-    const uint32_t now = AP_HAL::millis();
     // ignore any fence activity when not armed
     if (!motors.armed()) {
         return;
     }
 
-    if (!AP_HAL::timeout_expired(fence_breaches.last_check_ms, now, 333U)) { // 3Hz update rate
-        return;
-    }
-
-    fence_breaches.last_check_ms = now;
     const uint8_t orig_breaches = fence.get_breaches();
-    // check for new breaches; new_breaches is bitmask of fence types breached
-    const uint8_t new_breaches = fence.check();
 
-    // if the user wants some kind of response and motors are armed
+    // check for new breaches; new_breaches is bitmask of fence types breached
+    const uint8_t new_breaches = sub.fence.check();
+
+    // if there is a new breach take action
     if (new_breaches) {
-        if (fence.get_action() != AC_Fence::Action::REPORT_ONLY) {
+
+        // if the user wants some kind of response and motors are armed
+        if (fence.get_action() != AC_FENCE_ACTION_REPORT_ONLY) {
             //
             //            // disarm immediately if we think we are on the ground or in a manual flight mode with zero throttle
             //            // don't disarm if the high-altitude fence has been broken because it's likely the user has pulled their throttle to zero to bring it down
@@ -44,8 +41,7 @@ void Sub::fence_checks_async()
             //            }
         }
 
-        LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode(fence_breaches.new_breaches));
-
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode(new_breaches));
     } else if (orig_breaches) {
         // record clearing of breach
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode::ERROR_RESOLVED);

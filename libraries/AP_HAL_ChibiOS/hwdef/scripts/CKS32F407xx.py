@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-
-# flake8: noqa
+#!/usr/bin/env python
 
 '''
 CKS32F407 is based on STM32F407

@@ -6,7 +6,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include "AP_Periph.h"
 
-#if AP_PERIPH_MSP_ENABLED
+#ifdef HAL_PERIPH_ENABLE_MSP
 
 void AP_Periph_FW::msp_init(AP_HAL::UARTDriver *_uart)
 {
@@ -45,22 +45,22 @@ void AP_Periph_FW::msp_sensor_update(void)
     if (msp.port.uart == nullptr) {
         return;
     }
-#if AP_PERIPH_GPS_ENABLED
+#ifdef HAL_PERIPH_ENABLE_GPS
     send_msp_GPS();
 #endif
-#if AP_PERIPH_BARO_ENABLED
+#ifdef HAL_PERIPH_ENABLE_BARO
     send_msp_baro();
 #endif
-#if AP_PERIPH_MAG_ENABLED
+#ifdef HAL_PERIPH_ENABLE_MAG
     send_msp_compass();
 #endif
-#if AP_PERIPH_AIRSPEED_ENABLED
+#ifdef HAL_PERIPH_ENABLE_AIRSPEED
     send_msp_airspeed();
 #endif
 }
 
 
-#if AP_PERIPH_GPS_ENABLED
+#ifdef HAL_PERIPH_ENABLE_GPS
 /*
   send MSP GPS packet
  */
@@ -122,10 +122,10 @@ void AP_Periph_FW::send_msp_GPS(void)
 
     send_msp_packet(MSP2_SENSOR_GPS, &p, sizeof(p));
 }
-#endif // AP_PERIPH_GPS_ENABLED
+#endif // HAL_PERIPH_ENABLE_GPS
 
 
-#if AP_PERIPH_BARO_ENABLED
+#ifdef HAL_PERIPH_ENABLE_BARO
 /*
   send MSP baro packet
  */
@@ -149,9 +149,9 @@ void AP_Periph_FW::send_msp_baro(void)
 
     send_msp_packet(MSP2_SENSOR_BAROMETER, &p, sizeof(p));
 }
-#endif // AP_PERIPH_BARO_ENABLED
+#endif // HAL_PERIPH_ENABLE_BARO
 
-#if AP_PERIPH_MAG_ENABLED
+#ifdef HAL_PERIPH_ENABLE_MAG
 /*
   send MSP compass packet
  */
@@ -176,9 +176,9 @@ void AP_Periph_FW::send_msp_compass(void)
 
     send_msp_packet(MSP2_SENSOR_COMPASS, &p, sizeof(p));
 }
-#endif // AP_PERIPH_MAG_ENABLED
+#endif // HAL_PERIPH_ENABLE_MAG
 
-#if AP_PERIPH_AIRSPEED_ENABLED
+#ifdef HAL_PERIPH_ENABLE_AIRSPEED
 /*
   send MSP airspeed packet
  */
@@ -209,7 +209,7 @@ void AP_Periph_FW::send_msp_airspeed(void)
 
     send_msp_packet(MSP2_SENSOR_AIRSPEED, &p, sizeof(p));
 }
-#endif // AP_PERIPH_AIRSPEED_ENABLED
+#endif // HAL_PERIPH_ENABLE_AIRSPEED
 
 
-#endif // AP_PERIPH_MSP_ENABLED
+#endif // HAL_PERIPH_ENABLE_MSP

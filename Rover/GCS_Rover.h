@@ -1,7 +1,7 @@
 #pragma once
 
 #include <GCS_MAVLink/GCS.h>
-#include "GCS_MAVLink_Rover.h"
+#include "GCS_Mavlink.h"
 
 class GCS_Rover : public GCS
 {
@@ -28,8 +28,11 @@ public:
 
 protected:
 
-    GCS_MAVLINK_Rover *new_gcs_mavlink_backend(AP_HAL::UARTDriver &uart) override {
-        return NEW_NOTHROW GCS_MAVLINK_Rover(uart);
+    uint8_t sysid_this_mav() const override;
+
+    GCS_MAVLINK_Rover *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
+                                               AP_HAL::UARTDriver &uart) override {
+        return NEW_NOTHROW GCS_MAVLINK_Rover(params, uart);
     }
 
 };

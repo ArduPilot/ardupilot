@@ -2,6 +2,7 @@
 Script to control LED strips based on the roll of the aircraft. This is an example to demonstrate
 the LED interface for WS2812 LEDs
 --]]
+-- luacheck: only 0
 
 --[[
 for this demo we will use a single strip with 30 LEDs
@@ -76,7 +77,7 @@ id[7][6] = 28
 id[7][7] = 27
 
 -- ArduPilot logo 7 x 48, RGB
-local image = {}
+image = {}
 image[1] = {}
 image[2] = {}
 image[3] = {}
@@ -500,6 +501,9 @@ local function display_image(image_in,offset_in,brightness_in)
     if brightness_in then
         brightness = brightness_in
     end
+
+    local i
+    local j
 
     for i = 1, 48 do
         local x_index = i + im_offset

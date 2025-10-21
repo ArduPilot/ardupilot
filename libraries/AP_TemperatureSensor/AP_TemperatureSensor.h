@@ -53,7 +53,7 @@ public:
     uint8_t num_instances(void) const { return _num_instances; }
 
     // detect and initialise any available temperature sensors
-    __INITFUNC__ void init();
+    void init();
 
     // Update the temperature for all temperature sensors
     void update();

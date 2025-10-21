@@ -17,8 +17,7 @@
  */
 #include <AP_HAL/AP_HAL.h>
 
-#if AP_INERTIALSENSOR_RST_ENABLED
-
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
 #include "AP_InertialSensor_RST.h"
 #include <AP_Math/AP_Math.h>
 
@@ -403,4 +402,4 @@ void AP_InertialSensor_RST::accel_measure(void)
     }
 }
 
-#endif  // AP_INERTIALSENSOR_RST_ENABLED
+#endif

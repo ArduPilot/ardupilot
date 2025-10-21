@@ -1,7 +1,5 @@
 # encoding: utf-8
 
-# flake8: noqa
-
 """
 Waf tool for ChibiOS build
 """
@@ -17,8 +15,6 @@ import pickle
 import struct
 import base64
 import subprocess
-
-import hal_common
 
 _dynamic_env_data = {}
 def _load_dynamic_env_data(bld):
@@ -107,7 +103,7 @@ class upload_fw(Task.Task):
         except subprocess.CalledProcessError:
             #if where.exe can't find the file it returns a non-zero result which throws this exception
             where_python = ""
-        if "python.exe" not in where_python:
+        if not where_python or "\Python\Python" not in where_python or "python.exe" not in where_python:
             print(self.get_full_wsl2_error_msg("Windows python.exe not found"))
             return False
         return True
@@ -368,7 +364,7 @@ class generate_apj(Task.Task):
             d["brand_name"] = self.env.BRAND_NAME
         if self.env.build_dates:
             # we omit build_time when we don't have build_dates so that apj
-            # file is identical for same git hash and compiler
+            # file is idential for same git hash and compiler
             d["build_time"] = int(time.time())
         apj_file = self.outputs[0].abspath()
         f = open(apj_file, "w")
@@ -509,19 +505,34 @@ def setup_canperiph_build(cfg):
         ]
 
     cfg.get_board().with_can = True
-
-def load_env_vars_handle_kv_pair(env, kv_pair):
-    '''handle a key/value pair out of the pickled environment dictionary'''
-    (k, v) = kv_pair
-    if k == 'ROMFS_FILES':
-        env.ROMFS_FILES += v
-        return
-    hal_common.load_env_vars_handle_kv_pair(env, kv_pair)
-
+    
 def load_env_vars(env):
     '''optionally load extra environment variables from env.py in the build directory'''
-    hal_common.load_env_vars(env, kv_handler=load_env_vars_handle_kv_pair)
-
+    print("Checking for env.py")
+    env_py = os.path.join(env.BUILDROOT, 'env.py')
+    if not os.path.exists(env_py):
+        print("No env.py found")
+        return
+    e = pickle.load(open(env_py, 'rb'))
+    for k in e.keys():
+        v = e[k]
+        if k == 'ROMFS_FILES':
+            env.ROMFS_FILES += v
+            continue
+        if k in env:
+            if isinstance(env[k], dict):
+                a = v.split('=')
+                env[k][a[0]] = '='.join(a[1:])
+                print("env updated %s=%s" % (k, v))
+            elif isinstance(env[k], list):
+                env[k].append(v)
+                print("env appended %s=%s" % (k, v))
+            else:
+                env[k] = v
+                print("env added %s=%s" % (k, v))
+        else:
+            env[k] = v
+            print("env set %s=%s" % (k, v))
     if env.DEBUG or env.DEBUG_SYMBOLS:
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_DEBUG_SYMBOLS=yes'
     if env.ENABLE_ASSERTS:
@@ -647,8 +658,6 @@ def pre_build(bld):
     load_env_vars(bld.env)
     if bld.env.HAL_NUM_CAN_IFACES:
         bld.get_board().with_can = True
-    if bld.env.WITH_LITTLEFS:
-        bld.get_board().with_littlefs = True
     hwdef_h = os.path.join(bld.env.BUILDROOT, 'hwdef.h')
     if not os.path.exists(hwdef_h):
         print("Generating hwdef.h")
@@ -662,8 +671,6 @@ def pre_build(bld):
 
 def build(bld):
 
-    # make ccache effective on ChibiOS builds
-    os.environ['CCACHE_IGNOREOPTIONS'] = '--specs=nano.specs --specs=nosys.specs'
 
     hwdef_rule="%s '%s/hwdef/scripts/chibios_hwdef.py' -D '%s' --params '%s' '%s'" % (
             bld.env.get_flat('PYTHON'),
@@ -747,8 +754,8 @@ def build(bld):
     wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf', 'vasprintf', 'asprintf', 'vprintf', 'scanf', 'printf']
 
     # list of functions that we will give a link error for if they are
-    # used. This is to prevent accidental use of these functions
-    blacklist = ['_sbrk', '_sbrk_r', '_malloc_r', '_calloc_r', '_free_r', 'ftell', 'realloc',
+    # used. This is to prevent accidential use of these functions
+    blacklist = ['_sbrk', '_sbrk_r', '_malloc_r', '_calloc_r', '_free_r', 'ftell',
                  'fopen', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
                  'clearerr', 'fseek', 'ferror', 'fclose', 'tmpfile', 'getc', 'ungetc', 'feof',
                 'ftell', 'freopen', 'remove', 'vfprintf', 'vfprintf_r', 'fscanf',

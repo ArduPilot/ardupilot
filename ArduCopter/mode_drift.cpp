@@ -3,51 +3,29 @@
 #if MODE_DRIFT_ENABLED
 
 /*
- * Drift flight mode — meters/second and radians version
+ * Init and run calls for drift flight mode
  */
 
-// Coupling from lateral speed error (m/s) to roll command (rad):
-//   Original was 8 cd/(cm/s).
-//   Converted: 8 [cd/(cm/s)] * (π/18000 rad/cd) * (100 cm/m) = 0.13962634 rad/(m/s)
-#ifndef DRIFT_SPEEDGAIN_RAD
- # define DRIFT_SPEEDGAIN_RAD 0.13962634f
+#ifndef DRIFT_SPEEDGAIN
+ # define DRIFT_SPEEDGAIN 8.0f
 #endif
-#ifdef DRIFT_SPEEDGAIN
-    #error please convert to radians and use DRIFT_SPEEDGAIN_RAD
+#ifndef DRIFT_SPEEDLIMIT
+ # define DRIFT_SPEEDLIMIT 560.0f
 #endif
 
-// Speed limits and scheduling thresholds converted from cm/s
-#ifndef DRIFT_SPEEDLIMIT_MS
- # define DRIFT_SPEEDLIMIT_MS 5.60f       // 560 cm/s -> 5.60 m/s
-#endif
-#ifdef DRIFT_SPEEDLIMIT
-    #error please convert to meters per second and use DRIFT_SPEEDLIMIT_MS
-#endif
-
-#ifndef DRIFT_VEL_FORWARD_MIN_MS
- # define DRIFT_VEL_FORWARD_MIN_MS 20.0f  // 2000 cm/s -> 20.0 m/s
-#endif
-#ifdef DRIFT_VEL_FORWARD_MIN
-    #error please convert to meters per second and use DRIFT_VEL_FORWARD_MIN_MS
-#endif
-
-// Throttle assist (velz changed from cm/s to m/s, so gain ×100)
-#ifndef DRIFT_THR_ASSIST_GAIN_MS
- # define DRIFT_THR_ASSIST_GAIN_MS 0.18f     // was 0.0018 with cm/s
-#endif
-#ifdef DRIFT_THR_ASSIST_GAIN
-    #error please convert to meters per second and use DRIFT_THR_ASSIST_GAIN_MS
+#ifndef DRIFT_THR_ASSIST_GAIN
+ # define DRIFT_THR_ASSIST_GAIN 0.0018f    // gain controlling amount of throttle assistance
 #endif
 
 #ifndef DRIFT_THR_ASSIST_MAX
- # define DRIFT_THR_ASSIST_MAX  0.3f      // maximum assistance throttle assist will provide
+ # define DRIFT_THR_ASSIST_MAX  0.3f    // maximum assistance throttle assist will provide
 #endif
 
 #ifndef DRIFT_THR_MIN
- # define DRIFT_THR_MIN         0.213f
+ # define DRIFT_THR_MIN         0.213f  // throttle assist will be active when pilot's throttle is above this value
 #endif
 #ifndef DRIFT_THR_MAX
- # define DRIFT_THR_MAX         0.787f
+ # define DRIFT_THR_MAX         0.787f  // throttle assist will be active when pilot's throttle is below this value
 #endif
 
 // drift_init - initialise drift controller
@@ -61,65 +39,50 @@ bool ModeDrift::init(bool ignore_checks)
 void ModeDrift::run()
 {
     static float braker = 0.0f;
-    static float roll_input_rad = 0.0f;
+    static float roll_input = 0.0f;
 
-    // convert pilot input to lean angles (already radians)
-    float target_roll_rad, target_pitch_rad;
-    get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
+    // convert pilot input to lean angles
+    float target_roll, target_pitch;
+    get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
 
-    // Grab inertial velocity (already m/s)
-    const Vector3f& vel_NEU_ms = pos_control->get_vel_estimate_NEU_ms();
+    // Grab inertial velocity
+    const Vector3f& vel = inertial_nav.get_velocity_neu_cms();
 
     // rotate roll, pitch input from north facing to vehicle's perspective
-    // body-frame components in m/s
-    float vel_right_ms   =  vel_NEU_ms.y * ahrs.cos_yaw() - vel_NEU_ms.x * ahrs.sin_yaw(); // body roll axis
-    float vel_forward_ms =  vel_NEU_ms.y * ahrs.sin_yaw() + vel_NEU_ms.x * ahrs.cos_yaw(); // body pitch axis
+    float roll_vel =  vel.y * ahrs.cos_yaw() - vel.x * ahrs.sin_yaw(); // body roll vel
+    float pitch_vel = vel.y * ahrs.sin_yaw() + vel.x * ahrs.cos_yaw(); // body pitch vel
 
     // gain scheduling for yaw
-    const float vel_forward_2_ms = MIN(fabsf(vel_forward_ms), DRIFT_VEL_FORWARD_MIN_MS);
+    float pitch_vel2 = MIN(fabsf(pitch_vel), 2000);
+    float target_yaw_rate = target_roll * (1.0f - (pitch_vel2 / 5000.0f)) * g2.command_model_acro_y.get_rate() / 45.0;
 
-    // yaw-rate schedule:
-    //   original: target_yaw_rate_cds = target_roll_cd * (1 - v/5000) * R / 45
-    //   new:      target_yaw_rate_rads = (target_roll_rad / radians(45)) * radians(R) * (1 - v/50)
-    const float yaw_rate_max_rads = radians(g2.command_model_acro_y.get_rate());
-    const float target_yaw_rate_rads = (target_roll_rad / radians(45.0f)) * yaw_rate_max_rads * (1.0f - (vel_forward_2_ms / 50.0f));
+    roll_vel = constrain_float(roll_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
+    pitch_vel = constrain_float(pitch_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
 
-    // Constrain body velocities
-    vel_right_ms   = constrain_float(vel_right_ms,   -DRIFT_SPEEDLIMIT_MS, DRIFT_SPEEDLIMIT_MS);
-    vel_forward_ms = constrain_float(vel_forward_ms, -DRIFT_SPEEDLIMIT_MS, DRIFT_SPEEDLIMIT_MS);
+    roll_input = roll_input * .96f + (float)channel_yaw->get_control_in() * .04f;
 
-    // roll_input from yaw stick (convert centidegrees -> radians before LP)
-    // (channel_yaw->get_control_in() returns centidegrees)
-    const float yaw_stick_rad = cd_to_rad((float)channel_yaw->get_control_in());
-    roll_input_rad = roll_input_rad * 0.96f + yaw_stick_rad * 0.04f;
+    // convert user input into desired roll velocity
+    float roll_vel_error = roll_vel - (roll_input / DRIFT_SPEEDGAIN);
 
-    // convert user input into desired roll velocity term (m/s equivalent)
-    // original: vel_right_cms - (roll_input_cd / SPEEDGAIN)
-    // new:      vel_right_ms  - (roll_input_rad / SPEEDGAIN)  [since SPEEDGAIN now rad/(m/s)]
-    float roll_vel_error_ms = vel_right_ms - (roll_input_rad / DRIFT_SPEEDGAIN_RAD);
-
-    // roll velocity is fed into roll angle to minimize slip
-    // original: target_roll_cd = roll_vel_error_cms * -SPEEDGAIN
-    // new:      target_roll_rad = roll_vel_error_ms * -SPEEDGAIN
-    target_roll_rad = roll_vel_error_ms * -DRIFT_SPEEDGAIN_RAD;
-
-    // constrain to ±45 deg
-    target_roll_rad = constrain_float(target_roll_rad, -radians(45.0f), radians(45.0f));
+    // roll velocity is feed into roll acceleration to minimize slip
+    target_roll = roll_vel_error * -DRIFT_SPEEDGAIN;
+    target_roll = constrain_float(target_roll, -4500.0f, 4500.0f);
 
     // If we let go of sticks, bring us to a stop
-    if (is_zero(target_pitch_rad)) {
-        // 0.14 / (0.03 * 100) timing comment (call frequency) still applies to "braker" rise;
-        // Clamp to the same coupling constant, now in rad/(m/s)
-        braker += 0.03f;
-        braker = MIN(braker, DRIFT_SPEEDGAIN_RAD);
-        target_pitch_rad = vel_forward_ms * braker;
+    if (is_zero(target_pitch)) {
+        // .14/ (.03 * 100) = 4.6 seconds till full braking
+        braker += .03f;
+        braker = MIN(braker, DRIFT_SPEEDGAIN);
+        target_pitch = pitch_vel * braker;
     } else {
         braker = 0.0f;
     }
 
     if (!motors->armed()) {
+        // Motors should be Stopped
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
     } else if (copter.ap.throttle_zero) {
+        // Attempting to Land
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
     } else {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -127,16 +90,19 @@ void ModeDrift::run()
 
     switch (motors->get_spool_state()) {
     case AP_Motors::SpoolState::SHUT_DOWN:
+        // Motors Stopped
         attitude_control->reset_yaw_target_and_rate(false);
         attitude_control->reset_rate_controller_I_terms();
         break;
 
     case AP_Motors::SpoolState::GROUND_IDLE:
+        // Landed
         attitude_control->reset_yaw_target_and_rate();
         attitude_control->reset_rate_controller_I_terms_smoothly();
         break;
 
     case AP_Motors::SpoolState::THROTTLE_UNLIMITED:
+        // clear landing flag above zero throttle
         if (!motors->limit.throttle_lower) {
             set_land_complete(false);
         }
@@ -144,34 +110,34 @@ void ModeDrift::run()
 
     case AP_Motors::SpoolState::SPOOLING_UP:
     case AP_Motors::SpoolState::SPOOLING_DOWN:
+        // do nothing
         break;
     }
 
-    // call attitude controller (already expects radians)
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(
-        target_roll_rad, target_pitch_rad, target_yaw_rate_rads);
+    // call attitude controller
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 
-    // output pilot's throttle with angle boost (velz now m/s)
-    const float assisted_throttle = get_throttle_assist(vel_NEU_ms.z, get_pilot_desired_throttle());
+    // output pilot's throttle with angle boost
+    const float assisted_throttle = get_throttle_assist(vel.z, get_pilot_desired_throttle());
     attitude_control->set_throttle_out(assisted_throttle, true, g.throttle_filt);
 }
 
 // get_throttle_assist - return throttle output (range 0 ~ 1) based on pilot input and z-axis velocity
-float ModeDrift::get_throttle_assist(float vel_u_ms, float pilot_throttle_scaled)
+float ModeDrift::get_throttle_assist(float velz, float pilot_throttle_scaled)
 {
     // throttle assist - adjusts throttle to slow the vehicle's vertical velocity
-    //      Only active when pilot's throttle is between 0.213 ~ 0.787
-    //      Assistance is strongest at mid, drops linearly to no assistance at 0.213 and 0.787
+    //      Only active when pilot's throttle is between 213 ~ 787
+    //      Assistance is strongest when throttle is at mid, drops linearly to no assistance at 213 and 787
     float thr_assist = 0.0f;
     if (pilot_throttle_scaled > DRIFT_THR_MIN && pilot_throttle_scaled < DRIFT_THR_MAX) {
         // calculate throttle assist gain
         thr_assist = 1.2f - ((float)fabsf(pilot_throttle_scaled - 0.5f) / 0.24f);
-        thr_assist = constrain_float(thr_assist, 0.0f, 1.0f) * -DRIFT_THR_ASSIST_GAIN_MS * vel_u_ms;
+        thr_assist = constrain_float(thr_assist, 0.0f, 1.0f) * -DRIFT_THR_ASSIST_GAIN * velz;
 
-        // ensure throttle assist never adjusts the throttle by more than 0.3 (≈300 pwm)
+        // ensure throttle assist never adjusts the throttle by more than 300 pwm
         thr_assist = constrain_float(thr_assist, -DRIFT_THR_ASSIST_MAX, DRIFT_THR_ASSIST_MAX);
     }
-
+    
     return constrain_float(pilot_throttle_scaled + thr_assist, 0.0f, 1.0f);
 }
 #endif

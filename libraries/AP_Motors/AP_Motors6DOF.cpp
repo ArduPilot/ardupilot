@@ -215,8 +215,11 @@ void AP_Motors6DOF::output_min()
     int8_t i;
 
     // set limits flags
-    limit.set_rpy(true);
-    limit.set_throttle(false);
+    limit.roll = true;
+    limit.pitch = true;
+    limit.yaw = true;
+    limit.throttle_lower = false;
+    limit.throttle_upper = false;
 
     // fill the motor_out[] array for HIL use and send minimum value to each motor
     // ToDo find a field to store the minimum pwm instead of hard coding 1500
@@ -312,7 +315,11 @@ void AP_Motors6DOF::output_armed_stabilizing()
         float linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
 
         // initialize limits flags
-        limit.set_all(false);
+        limit.roll = false;
+        limit.pitch = false;
+        limit.yaw = false;
+        limit.throttle_lower = false;
+        limit.throttle_upper = false;
 
         // sanity check throttle is above zero and below current limited throttle
         if (throttle_thrust <= -_throttle_thrust_max) {
@@ -363,9 +370,9 @@ void AP_Motors6DOF::output_armed_stabilizing()
 
     float _batt_current_delta = _batt_current - _batt_current_last;
 
-    float _current_change_rate = _batt_current_delta / _dt_s;
+    float _current_change_rate = _batt_current_delta / _dt;
 
-    float predicted_current = _batt_current + (_current_change_rate * _dt_s * 5);
+    float predicted_current = _batt_current + (_current_change_rate * _dt * 5);
 
     float batt_current_ratio = _batt_current / _batt_current_max;
 
@@ -377,7 +384,7 @@ void AP_Motors6DOF::output_armed_stabilizing()
     } else if (_batt_current < _batt_current_max && predicted_current > _batt_current_max) {
         batt_current_ratio = predicted_current_ratio;
     }
-    _output_limited += (_dt_s / (_dt_s + _batt_current_time_constant)) * (1 - batt_current_ratio);
+    _output_limited += (_dt / (_dt + _batt_current_time_constant)) * (1 - batt_current_ratio);
 #endif
 
     _output_limited = constrain_float(_output_limited, 0.0f, 1.0f);
@@ -414,7 +421,11 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored()
     float linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
 
     // initialize limits flags
-    limit.set_all(false);
+    limit.roll= false;
+    limit.pitch = false;
+    limit.yaw = false;
+    limit.throttle_lower = false;
+    limit.throttle_upper = false;
 
     // sanity check throttle is above zero and below current limited throttle
     if (throttle_thrust <= -_throttle_thrust_max) {
@@ -497,7 +508,11 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored_6dof()
     float yfl_max;
 
     // initialize limits flags
-    limit.set_all(false);
+    limit.roll = false;
+    limit.pitch = false;
+    limit.yaw = false;
+    limit.throttle_lower = false;
+    limit.throttle_upper = false;
 
     // sanity check throttle is above zero and below current limited throttle
     if (throttle_thrust <= -_throttle_thrust_max) {
@@ -509,8 +524,6 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored_6dof()
         throttle_thrust = _throttle_thrust_max;
         limit.throttle_upper = true;
     }
-
-    throttle_thrust = constrain_float(throttle_thrust, -1.0f, _max_throttle);
 
     // calculate roll, pitch and Throttle for each motor (only used by vertical thrusters)
     rpt_max = 1; //Initialized to 1 so that normalization will only occur if value is saturated

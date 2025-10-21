@@ -34,39 +34,37 @@
 #if HAL_WITH_ESC_TELEM
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #endif
-#if AP_PERIPH_RTC_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RTC
 #include <AP_RTC/AP_RTC.h>
 #endif
 #include <AP_RCProtocol/AP_RCProtocol_config.h>
 #include "rc_in.h"
 #include "batt_balance.h"
-#include "battery_tag.h"
 #include "networking.h"
 #include "serial_options.h"
 #if AP_SIM_ENABLED
 #include <SITL/SITL.h>
 #endif
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_DAC/AP_DAC.h>
 
-#if AP_PERIPH_RELAY_ENABLED
-#if AP_PERIPH_PWM_HARDPOINT_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RELAY
+#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
     #error "Relay and PWM_HARDPOINT both use hardpoint message"
 #endif
 #include <AP_Relay/AP_Relay.h>
 #if !AP_RELAY_ENABLED
-    #error "AP_PERIPH_RELAY_ENABLED requires AP_RELAY_ENABLED"
+    #error "HAL_PERIPH_ENABLE_RELAY requires AP_RELAY_ENABLED"
 #endif
 #endif
 
-#if AP_PERIPH_DEVICE_TEMPERATURE_ENABLED && !AP_TEMPERATURE_SENSOR_ENABLED
-    #error "AP_PERIPH_DEVICE_TEMPERATURE_ENABLED requires AP_TEMPERATURE_SENSOR_ENABLED"
+#if defined(HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE) && !AP_TEMPERATURE_SENSOR_ENABLED
+    #error "HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE requires AP_TEMPERATURE_SENSOR_ENABLED"
 #endif
 
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
-#if HAL_NMEA_OUTPUT_ENABLED && !(HAL_GCS_ENABLED && AP_PERIPH_GPS_ENABLED)
+#if HAL_NMEA_OUTPUT_ENABLED && !(HAL_GCS_ENABLED && defined(HAL_PERIPH_ENABLE_GPS))
     // Needs SerialManager + (AHRS or GPS)
-    #error "AP_NMEA_Output requires Serial/GCS and either AHRS or GPS. Needs HAL_GCS_ENABLED and AP_PERIPH_GPS_ENABLED"
+    #error "AP_NMEA_Output requires Serial/GCS and either AHRS or GPS. Needs HAL_GCS_ENABLED and HAL_PERIPH_ENABLE_GPS"
 #endif
 
 #if HAL_GCS_ENABLED
@@ -75,39 +73,40 @@
 
 #include "esc_apd_telem.h"
 
-#define AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) || AP_PERIPH_NCP5623_LED_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_NCP5623_BGR_LED_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_TOSHIBA_LED_WITHOUT_NOTIFY_ENABLED)
+#if defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NCP5623_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NCP5623_BGR_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_TOSHIBA_LED_WITHOUT_NOTIFY)
+#define AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
+#endif
 
-#if AP_PERIPH_NOTIFY_ENABLED
-    #if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED
-        #error "You cannot enable AP_PERIPH_NOTIFY_ENABLED and AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED at the same time. Notify already includes it"
+#ifdef HAL_PERIPH_ENABLE_NOTIFY
+    #if !defined(HAL_PERIPH_ENABLE_RC_OUT) && !defined(HAL_PERIPH_NOTIFY_WITHOUT_RCOUT)
+        #error "HAL_PERIPH_ENABLE_NOTIFY requires HAL_PERIPH_ENABLE_RC_OUT"
     #endif
-    #if AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
-        #error "You cannot enable AP_PERIPH_NOTIFY_ENABLED and any AP_PERIPH_<device>_LED_WITHOUT_NOTIFY_ENABLED at the same time. Notify already includes them all"
+    #ifdef HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY
+        #error "You cannot enable HAL_PERIPH_ENABLE_NOTIFY and HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY at the same time. Notify already includes it"
+    #endif
+    #ifdef AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
+        #error "You cannot enable HAL_PERIPH_ENABLE_NOTIFY and any HAL_PERIPH_ENABLE_<device>_LED_WITHOUT_NOTIFY at the same time. Notify already includes them all"
     #endif
     #ifdef HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY
-        #error "You cannot use AP_PERIPH_NOTIFY_ENABLED and HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY at the same time. Notify already includes it. Set param OUTx_FUNCTION=120"
+        #error "You cannot use HAL_PERIPH_ENABLE_NOTIFY and HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY at the same time. Notify already includes it. Set param OUTx_FUNCTION=120"
     #endif
 #endif
 
-#if AP_PERIPH_RPM_STREAM_ENABLED && !AP_PERIPH_RPM_ENABLED
-    #error "AP_PERIPH_RPM_STREAM_ENABLED requires AP_PERIPH_RPM_ENABLED"
+#if defined(HAL_PERIPH_ENABLE_RPM_STREAM) && !defined(HAL_PERIPH_ENABLE_RPM)
+    #error "HAL_PERIPH_ENABLE_RPM_STREAM requires HAL_PERIPH_ENABLE_RPM"
 #endif
 
 #ifndef AP_PERIPH_SAFETY_SWITCH_ENABLED
-#define AP_PERIPH_SAFETY_SWITCH_ENABLED AP_PERIPH_RC_OUT_ENABLED
+#define AP_PERIPH_SAFETY_SWITCH_ENABLED defined(HAL_PERIPH_ENABLE_RC_OUT)
 #endif
 
 #ifndef HAL_PERIPH_CAN_MIRROR
 #define HAL_PERIPH_CAN_MIRROR 0
 #endif
 
-#ifndef AP_SIM_PARAM_ENABLED
-#define AP_SIM_PARAM_ENABLED AP_SIM_ENABLED
-#endif
-
 #if defined(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT) && !defined(HAL_DEBUG_BUILD) && !defined(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_NON_DEBUG)
 /* this checking for reboot can lose bytes on GPS modules and other
- * serial devices. It is really only relevant on a debug build if you
+ * serial devices. It is really only relevent on a debug build if you
  * really want it for non-debug build then define
  * HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_NON_DEBUG in hwdef.dat
  */
@@ -175,11 +174,11 @@ public:
     void send_relposheading_msg();
     void can_baro_update();
     void can_airspeed_update();
-#if AP_PERIPH_IMU_ENABLED
+#ifdef HAL_PERIPH_ENABLE_IMU
     void can_imu_update();
 #endif
 
-#if AP_PERIPH_RANGEFINDER_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
     void can_rangefinder_update();
 #endif
     void can_battery_update();
@@ -193,7 +192,7 @@ public:
     void prepare_reboot();
     bool canfdout() const { return (g.can_fdmode == 1); }
 
-#if AP_PERIPH_EFI_ENABLED
+#ifdef HAL_PERIPH_ENABLE_EFI
     void can_efi_update();
 #endif
 
@@ -217,7 +216,7 @@ public:
     AP_Stats node_stats;
 #endif
 
-#if AP_GPS_ENABLED
+#ifdef HAL_PERIPH_ENABLE_GPS
     AP_GPS gps;
 #if HAL_NUM_CAN_IFACES >= 2
     int8_t gps_mb_can_port = -1;
@@ -228,29 +227,29 @@ public:
     AP_NMEA_Output nmea;
 #endif
 
-#if AP_PERIPH_MAG_ENABLED
+#ifdef HAL_PERIPH_ENABLE_MAG
     Compass compass;
 #endif
 
-#if AP_PERIPH_BARO_ENABLED
+#ifdef HAL_PERIPH_ENABLE_BARO
     AP_Baro baro;
 #endif
 
-#if AP_PERIPH_IMU_ENABLED
+#ifdef HAL_PERIPH_ENABLE_IMU
     AP_InertialSensor imu;
 #endif
 
-#if AP_PERIPH_RPM_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RPM
     AP_RPM rpm_sensor;
     uint32_t rpm_last_update_ms;
-#if AP_PERIPH_RPM_STREAM_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RPM_STREAM
     void rpm_sensor_send();
     uint32_t rpm_last_send_ms;
     uint8_t rpm_last_sent_index;
 #endif
-#endif // AP_PERIPH_RPM_ENABLED
+#endif // HAL_PERIPH_ENABLE_RPM
 
-#if AP_PERIPH_BATTERY_ENABLED
+#ifdef HAL_PERIPH_ENABLE_BATTERY
     void handle_battery_failsafe(const char* type_str, const int8_t action) { }
     AP_BattMonitor battery_lib{0, FUNCTOR_BIND_MEMBER(&AP_Periph_FW::handle_battery_failsafe, void, const char*, const int8_t), nullptr};
     struct {
@@ -266,7 +265,7 @@ public:
     AP_CAN::Protocol can_protocol_cached[HAL_NUM_CAN_IFACES];
 #endif
 
-#if AP_PERIPH_MSP_ENABLED
+#ifdef HAL_PERIPH_ENABLE_MSP
     struct {
         AP_MSP msp;
         MSP::msp_port_t port;
@@ -284,7 +283,7 @@ public:
     void send_msp_airspeed(void);
 #endif
     
-#if AP_PERIPH_ADSB_ENABLED
+#ifdef HAL_PERIPH_ENABLE_ADSB
     void adsb_init();
     void adsb_update();
     void can_send_ADSB(struct __mavlink_adsb_vehicle_t &msg);
@@ -295,21 +294,21 @@ public:
     } adsb;
 #endif
 
-#if AP_PERIPH_AIRSPEED_ENABLED
+#ifdef HAL_PERIPH_ENABLE_AIRSPEED
     AP_Airspeed airspeed;
 #endif
 
-#if AP_PERIPH_RANGEFINDER_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
     RangeFinder rangefinder;
     uint32_t last_rangefinder_update_ms;
     uint32_t last_rangefinder_sample_ms[RANGEFINDER_MAX_INSTANCES];
 #endif
 
-#if AP_PERIPH_PROXIMITY_ENABLED
+#ifdef HAL_PERIPH_ENABLE_PROXIMITY
     AP_Proximity proximity;
 #endif
 
-#if AP_PERIPH_PWM_HARDPOINT_ENABLED
+#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
     void pwm_irq_handler(uint8_t pin, bool pin_state, uint32_t timestamp);
     void pwm_hardpoint_init();
     void pwm_hardpoint_update();
@@ -322,12 +321,12 @@ public:
     } pwm_hardpoint;
 #endif
 
-#if AP_PERIPH_HOBBYWING_ESC_ENABLED
+#ifdef HAL_PERIPH_ENABLE_HWESC
     HWESC_Telem hwesc_telem;
     void hwesc_telem_update();
 #endif
 
-#if AP_PERIPH_EFI_ENABLED
+#ifdef HAL_PERIPH_ENABLE_EFI
     AP_EFI efi;
     uint32_t efi_update_ms;
 #endif
@@ -336,12 +335,12 @@ public:
     AP_KDECAN kdecan;
 #endif
     
-#if AP_PERIPH_ESC_APD_ENABLED
+#ifdef HAL_PERIPH_ENABLE_ESC_APD
     ESC_APD_Telem *apd_esc_telem[APD_ESC_INSTANCES];
     void apd_esc_telem_update();
 #endif
 
-#if AP_PERIPH_RC_OUT_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RC_OUT
 #if HAL_WITH_ESC_TELEM
     AP_ESC_Telem esc_telem;
     uint8_t get_motor_number(const uint8_t esc_number) const;
@@ -361,13 +360,6 @@ public:
     uint32_t last_esc_raw_command_ms;
     uint8_t  last_esc_num_channels;
 
-    // Track channels that have been output to by actuator commands
-    // Note there is a single timeout, channels are not tracked individually
-    struct {
-        uint32_t last_command_ms;
-        uint32_t mask;
-    } actuator;
-
     void rcout_init();
     void rcout_init_1Hz();
     void rcout_esc(int16_t *rc, uint8_t num_channels);
@@ -377,7 +369,7 @@ public:
     void rcout_handle_safety_state(uint8_t safety_state);
 #endif
 
-#if AP_PERIPH_RCIN_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RCIN
     void rcin_init();
     void rcin_update();
     void can_send_RCInput(uint8_t quality, uint16_t *values, uint8_t nvalues, bool in_failsafe, bool quality_valid);
@@ -387,32 +379,28 @@ public:
     Parameters_RCIN g_rcin;
 #endif
 
-#if AP_PERIPH_BATTERY_BALANCE_ENABLED
+#ifdef HAL_PERIPH_ENABLE_BATTERY_BALANCE
     void batt_balance_update();
     BattBalance battery_balance;
 #endif
 
-#if AP_PERIPH_BATTERY_TAG_ENABLED
-    BatteryTag battery_tag;
-#endif
-    
-#if AP_PERIPH_SERIAL_OPTIONS_ENABLED
+#ifdef HAL_PERIPH_ENABLE_SERIAL_OPTIONS
     SerialOptions serial_options;
 #endif
     
 #if AP_TEMPERATURE_SENSOR_ENABLED
     AP_TemperatureSensor temperature_sensor;
-#if AP_PERIPH_DEVICE_TEMPERATURE_ENABLED
+#ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
     void temperature_sensor_update();
     uint32_t temperature_last_send_ms;
     uint8_t temperature_last_sent_index;
 #endif
 #endif
 
-#if AP_PERIPH_NOTIFY_ENABLED || defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY)
+#if defined(HAL_PERIPH_ENABLE_NOTIFY) || defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY)
     void update_rainbow();
 #endif
-#if AP_PERIPH_NOTIFY_ENABLED
+#ifdef HAL_PERIPH_ENABLE_NOTIFY
     // notification object for LEDs, buzzers etc
     AP_Notify notify;
     uint64_t vehicle_state = 1; // default to initialisation
@@ -437,11 +425,11 @@ public:
     AP_Logger logger;
 #endif
 
-#if AP_PERIPH_NETWORKING_ENABLED
+#ifdef HAL_PERIPH_ENABLE_NETWORKING
     Networking_Periph networking_periph;
 #endif
 
-#if AP_PERIPH_RTC_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RTC
     AP_RTC rtc;
 #endif
 
@@ -449,7 +437,7 @@ public:
     GCS_Periph _gcs;
 #endif
 
-#if AP_PERIPH_RELAY_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RELAY
     AP_Relay relay;
 #endif
 
@@ -458,24 +446,24 @@ public:
 
     static const AP_Param::Info var_info[];
 
-#if AP_PERIPH_EFI_ENABLED
+#ifdef HAL_PERIPH_ENABLE_EFI
     uint32_t last_efi_update_ms;
 #endif
-#if AP_PERIPH_MAG_ENABLED
+#ifdef HAL_PERIPH_ENABLE_MAG
     uint32_t last_mag_update_ms;
 #endif
-#if AP_PERIPH_GPS_ENABLED
+#ifdef HAL_PERIPH_ENABLE_GPS
     uint32_t last_gps_update_ms;
     uint32_t last_gps_yaw_ms;
 #endif
     uint32_t last_relposheading_ms;
-#if AP_PERIPH_BARO_ENABLED
+#ifdef HAL_PERIPH_ENABLE_BARO
     uint32_t last_baro_update_ms;
 #endif
-#if AP_PERIPH_AIRSPEED_ENABLED
+#ifdef HAL_PERIPH_ENABLE_AIRSPEED
     uint32_t last_airspeed_update_ms;
 #endif
-#if AP_PERIPH_GPS_ENABLED
+#ifdef HAL_PERIPH_ENABLE_GPS
     bool saw_gps_lock_once;
 #endif
 
@@ -537,7 +525,7 @@ public:
     void send_serial_monitor_data();
     int8_t get_default_tunnel_serial_port(void) const;
 
-    struct UARTMonitor {
+    struct {
         ByteBuffer *buffer;
         uint32_t last_request_ms;
         AP_HAL::UARTDriver *uart;
@@ -546,8 +534,7 @@ public:
         uint8_t protocol;
         uint32_t baudrate;
         bool locked;
-    } uart_monitors[SERIALMANAGER_MAX_PORTS];
-    void send_serial_monitor_data_instance(UARTMonitor &monitor);
+    } uart_monitor;
 #endif
 
     // handlers for incoming messages
@@ -566,7 +553,6 @@ public:
     void handle_lightscommand(CanardInstance* canard_instance, CanardRxTransfer* transfer);
     void handle_notify_state(CanardInstance* canard_instance, CanardRxTransfer* transfer);
     void handle_hardpoint_command(CanardInstance* canard_instance, CanardRxTransfer* transfer);
-    void handle_globaltime(CanardInstance* canard_instance, CanardRxTransfer* transfer);
 
     void process1HzTasks(uint64_t timestamp_usec);
     void processTx(void);
@@ -582,15 +568,6 @@ public:
     uint16_t pool_peak_percent();
     void set_rgb_led(uint8_t red, uint8_t green, uint8_t blue);
 
-#if AP_SIM_ENABLED
-    // update simulation of servos
-    void sim_update_actuator(uint8_t actuator_id);
-    struct {
-        uint32_t mask;
-        uint32_t last_send_ms;
-    } sim_actuator;
-#endif
-    
     struct dronecan_protocol_t {
         CanardInstance canard;
         uint32_t canard_memory_pool[HAL_CAN_POOL_SIZE/sizeof(uint32_t)];
@@ -615,12 +592,6 @@ public:
 #if AP_AHRS_ENABLED
     AP_AHRS ahrs;
 #endif
-
-#if AP_DAC_ENABLED
-    AP_DAC dac;
-#endif
-
-    uint32_t reboot_request_ms = 0;
 
     HAL_Semaphore canard_broadcast_semaphore;
 };

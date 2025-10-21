@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
-
-# flake8: noqa
-
+#!/usr/bin/env python
 '''
 Create temperature calibration parameters for IMUs based on log data.
 '''

@@ -1,7 +1,5 @@
 # encoding: utf-8
 
-# flake8: noqa
-
 """
 generate DSDLC headers for uavcan
 """

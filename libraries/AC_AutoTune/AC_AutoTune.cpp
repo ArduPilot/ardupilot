@@ -31,14 +31,16 @@ AC_AutoTune::AC_AutoTune()
 bool AC_AutoTune::init_internals(bool _use_poshold,
                                  AC_AttitudeControl *_attitude_control,
                                  AC_PosControl *_pos_control,
-                                 AP_AHRS_View *_ahrs_view)
+                                 AP_AHRS_View *_ahrs_view,
+                                 AP_InertialNav *_inertial_nav)
 {
     use_poshold = _use_poshold;
     attitude_control = _attitude_control;
     pos_control = _pos_control;
     ahrs_view = _ahrs_view;
+    inertial_nav = _inertial_nav;
     motors = AP_Motors::get_singleton();
-    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     // exit immediately if motor are not armed
     if ((motors == nullptr) || !motors->armed()) {
@@ -49,34 +51,37 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
     init_position_controller();
 
     switch (mode) {
-    case TuneMode::FAILED:
-        // Fall through to restart the tuning process from scratch
+    case FAILED:
+        // fall through to restart the tuning
         FALLTHROUGH;
 
-    case TuneMode::UNINITIALISED:
-        // First-time run: store the current gains as the baseline (original gains)
+    case UNINITIALISED:
+        // autotune has never been run
+        // so store current gains as original gains
         backup_gains_and_initialise();
-        // Set the mode to TUNING to begin the autotune process
-        mode = TuneMode::TUNING;
-        // Notify GCS that autotune has started
+        // advance mode to tuning
+        mode = TUNING;
+        // send message to ground station that we've started tuning
         update_gcs(AUTOTUNE_MESSAGE_STARTED);
         break;
 
-    case TuneMode::TUNING:
-        // Resuming from previous tuning session, restart from current axis and tune step
+    case TUNING:
+        // reset test variables for each vehicle
         reset_vehicle_test_variables();
-        step = Step::WAITING_FOR_LEVEL;
-        step_start_time_ms = now_ms;
-        level_start_time_ms = now_ms;
-        // Reload gains with low I-term and restart logging
+
+        // we are restarting tuning so restart where we left off
+        step = WAITING_FOR_LEVEL;
+        step_start_time_ms = now;
+        level_start_time_ms = now;
+        // reset gains to tuning-start gains (i.e. low I term)
+        load_gains(GAIN_INTRA_TEST);
         LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_RESTART);
         update_gcs(AUTOTUNE_MESSAGE_STARTED);
         break;
 
-    case TuneMode::FINISHED:
-    case TuneMode::VALIDATING:
-        // The user is now validating the tuned gains in flight
-        mode = TuneMode::VALIDATING;
+    case SUCCESS:
+        // we have completed a tune and the pilot wishes to test the new gains
+        load_gains(GAIN_TUNED);
         update_gcs(AUTOTUNE_MESSAGE_TESTING);
         LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_PILOT_TESTING);
         break;
@@ -91,7 +96,10 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
 void AC_AutoTune::stop()
 {
     // set gains to their original values
-    load_gains(GainType::ORIGINAL);
+    load_gains(GAIN_ORIGINAL);
+
+    // re-enable angle-to-rate request limits
+    attitude_control->use_sqrt_controller(true);
 
     update_gcs(AUTOTUNE_MESSAGE_STOPPED);
 
@@ -104,7 +112,7 @@ void AC_AutoTune::stop()
 // Autotune aux function trigger
 void AC_AutoTune::do_aux_function(const RC_Channel::AuxSwitchPos ch_flag)
 {
-    if (mode != TuneMode::FINISHED) {
+    if (mode != TuneMode::SUCCESS) {
         if (ch_flag == RC_Channel::AuxSwitchPos::HIGH) {
             gcs().send_text(MAV_SEVERITY_NOTICE,"AutoTune: must be complete to test gains");
         }
@@ -114,30 +122,30 @@ void AC_AutoTune::do_aux_function(const RC_Channel::AuxSwitchPos ch_flag)
     switch(ch_flag) {
         case RC_Channel::AuxSwitchPos::LOW:
             // load original gains
-            load_gains(GainType::ORIGINAL);
+            load_gains(GainType::GAIN_ORIGINAL);
             update_gcs(AUTOTUNE_MESSAGE_TESTING_END);
             break;
         case RC_Channel::AuxSwitchPos::MIDDLE:
-            // Middle position is unused for now_ms
+            // Middle position is unused for now
             break;
         case RC_Channel::AuxSwitchPos::HIGH:
             // Load tuned gains
-            load_gains(GainType::TUNED);
+            load_gains(GainType::GAIN_TUNED);
             update_gcs(AUTOTUNE_MESSAGE_TESTING);
             break;
     }
 
-    testing_switch_used = true;
+    have_pilot_testing_command = true;
 }
 
 // Possibly save gains, called on disarm
 void AC_AutoTune::disarmed(const bool in_autotune_mode)
 {
     // True if pilot is testing tuned gains
-    const bool testing_tuned = testing_switch_used && (loaded_gains == GainType::TUNED);
+    const bool testing_tuned = have_pilot_testing_command && (loaded_gains == GainType::GAIN_TUNED);
 
     // True if in autotune mode and no pilot testing commands have been received
-    const bool tune_complete_no_testing = !testing_switch_used && in_autotune_mode;
+    const bool tune_complete_no_testing = !have_pilot_testing_command && in_autotune_mode;
 
     if (tune_complete_no_testing || testing_tuned) {
         save_tuning_gains();
@@ -153,7 +161,7 @@ bool AC_AutoTune::init_position_controller(void)
     init_z_limits();
 
     // initialise the vertical position controller
-    pos_control->init_U_controller();
+    pos_control->init_z_controller();
 
     return true;
 }
@@ -165,42 +173,42 @@ void AC_AutoTune::send_step_string()
         return;
     }
     switch (step) {
-    case Step::WAITING_FOR_LEVEL:
+    case WAITING_FOR_LEVEL:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: Leveling");
         return;
-    case Step::UPDATE_GAINS:
+    case UPDATE_GAINS:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: Updating Gains");
         return;
-    case Step::ABORT:
+    case ABORT:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: Aborting Test");
         return;
-    case Step::EXECUTING_TEST:
+    case TESTING:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: Testing");
         return;
     }
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: unknown step");
 }
 
-const char *AC_AutoTune::get_tune_type_name() const
+const char *AC_AutoTune::type_string() const
 {
     switch (tune_type) {
-    case TuneType::RATE_D_UP:
+    case RD_UP:
         return "Rate D Up";
-    case TuneType::RATE_D_DOWN:
+    case RD_DOWN:
         return "Rate D Down";
-    case TuneType::RATE_P_UP:
+    case RP_UP:
         return "Rate P Up";
-    case TuneType::RATE_FF_UP:
+    case RFF_UP:
         return "Rate FF Up";
-    case TuneType::ANGLE_P_UP:
+    case SP_UP:
         return "Angle P Up";
-    case TuneType::ANGLE_P_DOWN:
+    case SP_DOWN:
         return "Angle P Down";
-    case TuneType::MAX_GAINS:
+    case MAX_GAINS:
         return "Find Max Gains";
-    case TuneType::TUNE_CHECK:
+    case TUNE_CHECK:
         return "Check Tune Frequency Response";
-    case TuneType::TUNE_COMPLETE:
+    case TUNE_COMPLETE:
         return "Tune Complete";
     }
     return "";
@@ -209,7 +217,7 @@ const char *AC_AutoTune::get_tune_type_name() const
 }
 
 // return current axis string
-const char *AC_AutoTune::get_axis_name() const
+const char *AC_AutoTune::axis_string() const
 {
     switch (axis) {
     case AxisType::ROLL:
@@ -224,103 +232,87 @@ const char *AC_AutoTune::get_axis_name() const
     return "";
 }
 
-// Main update loop for Autotune mode. Handles all states: tuning, validating, or idle.
-// Should be called at ≥100Hz for consistent performance.
+// run - runs the autotune flight mode
+// should be called at 100hz or more
 void AC_AutoTune::run()
 {
-    // Initialise vertical climb rate and acceleration limits
+    // initialize vertical speeds and acceleration
     init_z_limits();
 
-    // Exit early if the vehicle is disarmed or motor interlock is not enabled
-    // (this condition should not occur if init() is working correctly)
+    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
+    // this should not actually be possible because of the init() checks
     if (!motors->armed() || !motors->get_interlock()) {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0.0f, true, 0.0f);
-        pos_control->relax_U_controller(0.0f);
+        pos_control->relax_z_controller(0.0f);
         return;
     }
 
-    float desired_yaw_rate_rads;   // used during manual control
-    get_pilot_desired_rp_yrate_rad(desired_roll_rad, desired_pitch_rad, desired_yaw_rate_rads);
+    float target_roll_cd, target_pitch_cd, target_yaw_rate_cds;
+    get_pilot_desired_rp_yrate_cd(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
 
-    // Get pilot's desired climb rate
+    // get pilot desired climb rate
     const float target_climb_rate_cms = get_pilot_desired_climb_rate_cms();
 
-    const bool zero_rp_input = is_zero(desired_roll_rad) && is_zero(desired_pitch_rad);
-    if (zero_rp_input) {
-        // Use position hold if enabled
-        get_poshold_attitude_rad(desired_roll_rad, desired_pitch_rad, desired_yaw_rad);
-    }
+    const bool zero_rp_input = is_zero(target_roll_cd) && is_zero(target_pitch_cd);
 
-    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
-    switch (mode) {
-    case TuneMode::TUNING:
-        // Detect pilot override
-        if (!zero_rp_input || !is_zero(desired_yaw_rate_rads) || !is_zero(target_climb_rate_cms)) {
+    if (mode != SUCCESS) {
+        if (!zero_rp_input || !is_zero(target_yaw_rate_cds) || !is_zero(target_climb_rate_cms)) {
             if (!pilot_override) {
                 pilot_override = true;
-                // Restore original gains while pilot is in control
+                // set gains to their original values
+                load_gains(GAIN_ORIGINAL);
+                attitude_control->use_sqrt_controller(true);
             }
-            // Update last override time
-            override_time = now_ms;
+            // reset pilot override time
+            override_time = now;
             if (!zero_rp_input) {
-                // Invalidate position hold if pilot inputs roll/pitch
+                // only reset position on roll or pitch input
                 have_position = false;
             }
         } else if (pilot_override) {
-            // Check if pilot has released sticks long enough to resume tuning
-            if (now_ms - override_time > AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS) {
-                pilot_override = false;
-                step = Step::WAITING_FOR_LEVEL;
-                step_start_time_ms = now_ms;
-                level_start_time_ms = now_ms;
-                // TODO: Consider using our current target.
-                desired_yaw_rad = ahrs_view->get_yaw_rad(); // Reset yaw reference
+            // check if we should resume tuning after pilot's override
+            if (now - override_time > AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS) {
+                pilot_override = false;             // turn off pilot override
+                // set gains to their intra-test values (which are very close to the original gains)
+                // load_gains(GAIN_INTRA_TEST); //I think we should be keeping the originals here to let the I term settle quickly
+                step = WAITING_FOR_LEVEL; // set tuning step back from beginning
+                step_start_time_ms = now;
+                level_start_time_ms = now;
+                desired_yaw_cd = ahrs_view->yaw_sensor;
             }
         }
-
-        if (pilot_override) {
-            // Pilot is actively controlling the vehicle; fly on original gains
-            if (now_ms - last_pilot_override_warning > 1000) {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: pilot overrides active");
-                last_pilot_override_warning = now_ms;
-            }
-            load_gains(GainType::ORIGINAL);
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(desired_roll_rad, desired_pitch_rad, desired_yaw_rate_rads);
-        } else {
-            // Autotune controls the aircraft
-            control_attitude();
-            do_gcs_announcements();
+    }
+    if (pilot_override) {
+        if (now - last_pilot_override_warning > 1000) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: pilot overrides active");
+            last_pilot_override_warning = now;
         }
-        break;
-
-    case TuneMode::UNINITIALISED:
-        // Should never reach this state; init() must be called before run()
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-        FALLTHROUGH;
-
-    case TuneMode::FAILED:
-        FALLTHROUGH;
-
-    case TuneMode::FINISHED:
-        // Tuning is complete or failed; fly using original gains
-        load_gains(GainType::ORIGINAL);
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(desired_roll_rad, desired_pitch_rad, desired_yaw_rate_rads);
-        break;
-
-    case TuneMode::VALIDATING:
-        // Pilot is evaluating tuned gains
-        load_gains(GainType::TUNED);
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(desired_roll_rad, desired_pitch_rad, desired_yaw_rate_rads);
-        break;
+    }
+    if (zero_rp_input) {
+        // pilot input on throttle and yaw will still use position hold if enabled
+        get_poshold_attitude(target_roll_cd, target_pitch_cd, desired_yaw_cd);
     }
 
+    // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-    // Update vertical position controller with pilot climb rate input
-    pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_cms * 0.01);
-    pos_control->update_U_controller();
+    // if pilot override call attitude controller
+    if (pilot_override || mode != TUNING) {
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
+    } else {
+        // somehow get attitude requests from autotuning
+        control_attitude();
+        // tell the user what's going on
+        do_gcs_announcements();
+    }
+
+    // call position controller
+    pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate_cms);
+    pos_control->update_z_controller();
+
 }
 
 // return true if vehicle is close to level
@@ -330,162 +322,209 @@ bool AC_AutoTune::currently_level()
     const uint32_t now_ms = AP_HAL::millis();
     if (now_ms - level_start_time_ms > 3 * AUTOTUNE_LEVEL_TIMEOUT_MS) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Failed to level, please tune manually");
-        mode = TuneMode::FAILED;
+        mode = FAILED;
         LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
+        load_gains(GAIN_ORIGINAL);
     }
 
     // slew threshold to ensure sufficient settling time for aircraft unable to obtain small thresholds
     // relax threshold if we pass AUTOTUNE_LEVEL_TIMEOUT_MS
     const float threshold_mul = constrain_float((float)(now_ms - level_start_time_ms) / (float)AUTOTUNE_LEVEL_TIMEOUT_MS, 0.0, 2.0);
 
-    if (fabsf(ahrs_view->get_roll_rad() - desired_roll_rad) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_ANGLE_CD)) {
+    if (fabsf(ahrs_view->roll_sensor - roll_cd) > threshold_mul * AUTOTUNE_LEVEL_ANGLE_CD) {
         return false;
     }
-    if (fabsf(ahrs_view->get_pitch_rad() - desired_pitch_rad) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_ANGLE_CD)) {
+
+    if (fabsf(ahrs_view->pitch_sensor - pitch_cd) > threshold_mul * AUTOTUNE_LEVEL_ANGLE_CD) {
         return false;
     }
-    if (fabsf(wrap_PI(ahrs_view->get_yaw_rad() - desired_yaw_rad)) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_ANGLE_CD)) {
+    if (fabsf(wrap_180_cd(ahrs_view->yaw_sensor - desired_yaw_cd)) > threshold_mul * AUTOTUNE_LEVEL_ANGLE_CD) {
         return false;
     }
-    if (ahrs_view->get_gyro().x > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_RP_CD)) {
+    if ((ToDeg(ahrs_view->get_gyro().x) * 100.0f) > threshold_mul * AUTOTUNE_LEVEL_RATE_RP_CD) {
         return false;
     }
-    if (ahrs_view->get_gyro().y > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_RP_CD)) {
+    if ((ToDeg(ahrs_view->get_gyro().y) * 100.0f) > threshold_mul * AUTOTUNE_LEVEL_RATE_RP_CD) {
         return false;
     }
-    if (ahrs_view->get_gyro().z > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_Y_CD)) {
+    if ((ToDeg(ahrs_view->get_gyro().z) * 100.0f) > threshold_mul * AUTOTUNE_LEVEL_RATE_Y_CD) {
         return false;
     }
     return true;
 }
 
-// Main tuning state machine. Handles all StepTypes: WAITING_FOR_LEVEL, EXECUTING_TEST, UPDATE_GAINS, ABORT.
-// Updates attitude controller targets and processes test results to adjust PID gains.
+// main state machine to level vehicle, perform a test and update gains
+// directly updates attitude controller with targets
 void AC_AutoTune::control_attitude()
 {
-    rotation_rate = 0.0f;
+    rotation_rate = 0.0f;        // rotation rate in radians/second
     lean_angle = 0.0f;
     const float direction_sign = positive_direction ? 1.0f : -1.0f;
-    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
+    // check tuning step
     switch (step) {
 
-    case Step::WAITING_FOR_LEVEL: {
-        // Use intra-test gains while holding level between tests
-        load_gains(GainType::INTRA_TEST);
-        
-        attitude_control->input_euler_angle_roll_pitch_yaw_rad(desired_roll_rad, desired_pitch_rad, desired_yaw_rad, true);
+    case WAITING_FOR_LEVEL: {
 
-        // Require a short stable period before executing the next test
+        // Note: we should be using intra-test gains (which are very close to the original gains but have lower I)
+        // re-enable rate limits
+        attitude_control->use_sqrt_controller(true);
+
+        get_poshold_attitude(roll_cd, pitch_cd, desired_yaw_cd);
+
+        // hold level attitude
+        attitude_control->input_euler_angle_roll_pitch_yaw(roll_cd, pitch_cd, desired_yaw_cd, true);
+
+        // hold the copter level for 0.5 seconds before we begin a twitch
+        // reset counter if we are no longer level
         if (!currently_level()) {
-            step_start_time_ms = now_ms;
+            step_start_time_ms = now;
         }
 
-        if (now_ms - step_start_time_ms > AUTOTUNE_REQUIRED_LEVEL_TIME_MS) {
-            // Begin the test phase
-            step = Step::EXECUTING_TEST;
-            step_start_time_ms = now_ms;
-            step_timeout_ms = get_testing_step_timeout_ms();
-
-            // Record starting angular position and rate
-            switch (axis) {
-            case AxisType::ROLL:
-                start_rate = degrees(ahrs_view->get_gyro().x) * 100.0f;
-                start_angle = ahrs_view->roll_sensor;
-                break;
-            case AxisType::PITCH:
-                start_rate = degrees(ahrs_view->get_gyro().y) * 100.0f;
-                start_angle = ahrs_view->pitch_sensor;
-                break;
-            case AxisType::YAW:
-            case AxisType::YAW_D:
-                start_rate = degrees(ahrs_view->get_gyro().z) * 100.0f;
-                start_angle = ahrs_view->yaw_sensor;
-                break;
-            }
-
-            // Apply test gains and initialise test-specific variables
-            load_gains(GainType::TEST);
-            test_init();
+        // if we have been level for a sufficient amount of time (0.5 seconds) move onto tuning step
+        if (now - step_start_time_ms > AUTOTUNE_REQUIRED_LEVEL_TIME_MS) {
+            // initiate variables for next step
+            step = TESTING;
+            step_start_time_ms = now;
+            step_time_limit_ms = get_testing_step_timeout_ms();
+            // set gains to their to-be-tested values
+            load_gains(GAIN_TEST);
+        } else {
+            // when waiting for level we use the intra-test gains
+            load_gains(GAIN_INTRA_TEST);
         }
+
+        // Initialize test-specific variables
+        switch (axis) {
+        case AxisType::ROLL:
+            start_rate = ToDeg(ahrs_view->get_gyro().x) * 100.0f;
+            start_angle = ahrs_view->roll_sensor;
+            break;
+        case AxisType::PITCH:
+            start_rate = ToDeg(ahrs_view->get_gyro().y) * 100.0f;
+            start_angle = ahrs_view->pitch_sensor;
+            break;
+        case AxisType::YAW:
+        case AxisType::YAW_D:
+            start_rate = ToDeg(ahrs_view->get_gyro().z) * 100.0f;
+            start_angle = ahrs_view->yaw_sensor;
+            break;
+        }
+
+        // tests must be initialized last as some rely on variables above
+        test_init();
+
         break;
     }
 
-    case Step::EXECUTING_TEST: {
-        // Run the test with current trial gains
-        load_gains(GainType::TEST);
+    case TESTING: {
+        // Run the twitching step
+        load_gains(GAIN_TEST);
+
+        // run the test
         test_run(axis, direction_sign);
 
-        // Detect failure due to reverse response or excessive lean angle
-        if (lean_angle <= -angle_lim_neg_rpy_cd() ||
-            attitude_control->lean_angle_deg() * 100 > angle_lim_max_rp_cd()) {
-            step = Step::ABORT;
+        // Check for failure causing reverse response
+        if (lean_angle <= -angle_lim_neg_rpy_cd()) {
+            step = WAITING_FOR_LEVEL;
+            positive_direction = twitch_reverse_direction();
+            step_start_time_ms = now;
+            level_start_time_ms = now;
+        }
+
+        // protect from roll over
+        if (attitude_control->lean_angle_deg() * 100 > angle_lim_max_rp_cd()) {
+            step = WAITING_FOR_LEVEL;
+            positive_direction = twitch_reverse_direction();
+            step_start_time_ms = now;
+            level_start_time_ms = now;
         }
 
 #if HAL_LOGGING_ENABLED
+        // log this iterations lean angle and rotation rate
         Log_AutoTuneDetails();
         attitude_control->Write_Rate(*pos_control);
         log_pids();
 #endif
 
-        // Update yaw target for next test if required
         if (axis == AxisType::YAW || axis == AxisType::YAW_D) {
-            desired_yaw_rad = ahrs_view->get_yaw_rad();
+            desired_yaw_cd = ahrs_view->yaw_sensor;
         }
         break;
     }
 
-    case Step::UPDATE_GAINS:
+    case UPDATE_GAINS:
+
+        // re-enable rate limits
+        attitude_control->use_sqrt_controller(true);
 
 #if HAL_LOGGING_ENABLED
-        Log_AutoTune(); // Log gain adjustment results
+        // log the latest gains
+        Log_AutoTune();
 #endif
 
-        // Announce test results before gains are changed
+        // Announce tune type test results
+        // must be done before updating method because this method changes parameters for next test
         do_post_test_gcs_announcements();
 
-        // Update gains based on the current tuning strategy
         switch (tune_type) {
-        case TuneType::RATE_D_UP:
+        // Check results after mini-step to increase rate D gain
+        case RD_UP:
             updating_rate_d_up_all(axis);
             break;
-        case TuneType::RATE_D_DOWN:
+        // Check results after mini-step to decrease rate D gain
+        case RD_DOWN:
             updating_rate_d_down_all(axis);
             break;
-        case TuneType::RATE_P_UP:
+        // Check results after mini-step to increase rate P gain
+        case RP_UP:
             updating_rate_p_up_all(axis);
             break;
-        case TuneType::ANGLE_P_DOWN:
+        // Check results after mini-step to increase stabilize P gain
+        case SP_DOWN:
             updating_angle_p_down_all(axis);
             break;
-        case TuneType::ANGLE_P_UP:
+        // Check results after mini-step to increase stabilize P gain
+        case SP_UP:
             updating_angle_p_up_all(axis);
             break;
-        case TuneType::RATE_FF_UP:
+        case RFF_UP:
             updating_rate_ff_up_all(axis);
             break;
-        case TuneType::MAX_GAINS:
+        case MAX_GAINS:
             updating_max_gains_all(axis);
             break;
-        case TuneType::TUNE_CHECK:
-            success_counter = AUTOTUNE_SUCCESS_COUNT;
+        case TUNE_CHECK:
+            counter = AUTOTUNE_SUCCESS_COUNT;
             FALLTHROUGH;
-        case TuneType::TUNE_COMPLETE:
+        case TUNE_COMPLETE:
             break;
         }
 
-        // If tuning step was successful, proceed to the next step
-        if (success_counter >= AUTOTUNE_SUCCESS_COUNT) {
-            success_counter = 0;
+        // we've complete this step, finalize pids and move to next step
+        if (counter >= AUTOTUNE_SUCCESS_COUNT) {
+
+            // reset counter
+            counter = 0;
+
+            // reset scaling factor
             step_scaler = 1.0f;
-            set_tuning_gains_with_backoff(axis);
+
+
+            // set gains for post tune before moving to the next tuning type
+            set_gains_post_tune(axis);
+
+            // increment the tune type to the next one in tune sequence
             next_tune_type(tune_type, false);
 
-            if (tune_type == TuneType::TUNE_COMPLETE) {
-                // Complete tuning for this axis and determine the next one
+            if (tune_type == TUNE_COMPLETE) {
+                // we've reached the end of a D-up-down PI-up-down tune type cycle
                 next_tune_type(tune_type, true);
+
                 report_final_gains(axis);
 
+                // advance to the next axis
                 bool complete = false;
                 switch (axis) {
                 case AxisType::ROLL:
@@ -524,12 +563,16 @@ void AC_AutoTune::control_attitude()
                     break;
                 }
 
+                // if we've just completed all axes we have successfully completed the autotune
+                // change to TESTING mode to allow user to fly with new gains
                 if (complete) {
-                    mode = TuneMode::FINISHED;
+                    mode = SUCCESS;
                     update_gcs(AUTOTUNE_MESSAGE_SUCCESS);
                     LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_SUCCESS);
                     AP_Notify::events.autotune_complete = true;
-                    load_gains(GainType::ORIGINAL); // Reset for landing
+
+                    // Return to original gains for landing
+                    load_gains(GainType::GAIN_ORIGINAL);
                 } else {
                     AP_Notify::events.autotune_next_axis = true;
                     reset_update_gain_variables();
@@ -538,18 +581,21 @@ void AC_AutoTune::control_attitude()
         }
         FALLTHROUGH;
 
-    case Step::ABORT:
-        // Recover from failed test or move on after a successful one
-        
-        attitude_control->input_euler_angle_roll_pitch_yaw_rad(desired_roll_rad, desired_pitch_rad, desired_yaw_rad, true);
+    case ABORT:
+        if (axis == AxisType::YAW || axis == AxisType::YAW_D) {
+            // todo: check to make sure we need this
+            attitude_control->input_euler_angle_roll_pitch_yaw(0.0f, 0.0f, ahrs_view->yaw_sensor, false);
+        }
 
-        load_gains(GainType::INTRA_TEST);
+        // set gains to their intra-test values (which are very close to the original gains)
+        load_gains(GAIN_INTRA_TEST);
 
-        step = Step::WAITING_FOR_LEVEL;
-        positive_direction = reverse_test_direction();
-        step_start_time_ms = now_ms;
-        level_start_time_ms = now_ms;
-        step_timeout_ms = AUTOTUNE_REQUIRED_LEVEL_TIME_MS;
+        // reset testing step
+        step = WAITING_FOR_LEVEL;
+        positive_direction = twitch_reverse_direction();
+        step_start_time_ms = now;
+        level_start_time_ms = now;
+        step_time_limit_ms = AUTOTUNE_REQUIRED_LEVEL_TIME_MS;
         break;
     }
 }
@@ -558,7 +604,7 @@ void AC_AutoTune::control_attitude()
 //  called before tuning starts to backup original gains
 void AC_AutoTune::backup_gains_and_initialise()
 {
-    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     
     // initialise state because this is our first time
     if (roll_enabled()) {
@@ -579,13 +625,13 @@ void AC_AutoTune::backup_gains_and_initialise()
     // start at the beginning of tune sequence
     next_tune_type(tune_type, true);
 
-    step = Step::WAITING_FOR_LEVEL;
+    step = WAITING_FOR_LEVEL;
     positive_direction = false;
-    step_start_time_ms = now_ms;
-    level_start_time_ms = now_ms;
+    step_start_time_ms = now;
+    level_start_time_ms = now;
     step_scaler = 1.0f;
 
-    desired_yaw_rad = ahrs_view->get_yaw_rad();
+    desired_yaw_cd = ahrs_view->yaw_sensor;
 }
 
 /*
@@ -600,16 +646,16 @@ void AC_AutoTune::load_gains(enum GainType gain_type)
     loaded_gains = gain_type;
 
     switch (gain_type) {
-    case GainType::ORIGINAL:
+    case GAIN_ORIGINAL:
         load_orig_gains();
         break;
-    case GainType::INTRA_TEST:
+    case GAIN_INTRA_TEST:
         load_intra_test_gains();
         break;
-    case GainType::TEST:
+    case GAIN_TEST:
         load_test_gains();
         break;
-    case GainType::TUNED:
+    case GAIN_TUNED:
         load_tuned_gains();
         break;
     }
@@ -682,17 +728,16 @@ bool AC_AutoTune::position_ok(void)
     }
 
     // with EKF use filter status and ekf check
-    nav_filter_status filt_status {}; 
-    AP::ahrs().get_filter_status(filt_status);
+    nav_filter_status filt_status = inertial_nav->get_filter_status();
 
     // require a good absolute position and EKF must not be in const_pos_mode
     return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
 }
 
 // get attitude for slow position hold in autotune mode
-void AC_AutoTune::get_poshold_attitude_rad(float &roll_out_rad, float &pitch_out_rad, float &yaw_out_rad)
+void AC_AutoTune::get_poshold_attitude(float &roll_cd_out, float &pitch_cd_out, float &yaw_cd_out)
 {
-    roll_out_rad = pitch_out_rad = 0;
+    roll_cd_out = pitch_cd_out = 0;
 
     if (!use_poshold) {
         // we are not trying to hold position
@@ -706,23 +751,23 @@ void AC_AutoTune::get_poshold_attitude_rad(float &roll_out_rad, float &pitch_out
 
     if (!have_position) {
         have_position = true;
-        start_position_neu_m = pos_control->get_pos_estimate_NEU_m().tofloat();
+        start_position = inertial_nav->get_position_neu_cm();
     }
 
     // don't go past 10 degrees, as autotune result would deteriorate too much
-    const float angle_max_rad = radians(10.0);
+    const float angle_max_cd = 1000;
 
     // hit the 10 degree limit at 20 meters position error
-    const float dist_limit_m = 20.00;
+    const float dist_limit_cm = 2000;
 
     // we only start adjusting yaw if we are more than 5m from the
     // target position. That corresponds to a lean angle of 2.5 degrees
-    const float yaw_dist_limit_m = 5.0;
+    const float yaw_dist_limit_cm = 500;
 
-    Vector3f pos_error_neu_m = pos_control->get_pos_estimate_NEU_m().tofloat() - start_position_neu_m;
-    pos_error_neu_m.z = 0;
-    float dist_m = pos_error_neu_m.length();
-    if (dist_m < 0.10) {
+    Vector3f pdiff = inertial_nav->get_position_neu_cm() - start_position;
+    pdiff.z = 0;
+    float dist_cm = pdiff.length();
+    if (dist_cm < 10) {
         // don't do anything within 10cm
         return;
     }
@@ -730,37 +775,37 @@ void AC_AutoTune::get_poshold_attitude_rad(float &roll_out_rad, float &pitch_out
     /*
       very simple linear controller
      */
-    float scaling = constrain_float(angle_max_rad * dist_m / dist_limit_m, 0, angle_max_rad);
-    Vector2f angle_ne(pos_error_neu_m.x, pos_error_neu_m.y);
-    angle_ne *= scaling / dist_m;
+    float scaling = constrain_float(angle_max_cd * dist_cm / dist_limit_cm, 0, angle_max_cd);
+    Vector2f angle_ne(pdiff.x, pdiff.y);
+    angle_ne *= scaling / dist_cm;
 
     // rotate into body frame
-    pitch_out_rad = angle_ne.x * ahrs_view->cos_yaw() + angle_ne.y * ahrs_view->sin_yaw();
-    roll_out_rad  = angle_ne.x * ahrs_view->sin_yaw() - angle_ne.y * ahrs_view->cos_yaw();
+    pitch_cd_out = angle_ne.x * ahrs_view->cos_yaw() + angle_ne.y * ahrs_view->sin_yaw();
+    roll_cd_out  = angle_ne.x * ahrs_view->sin_yaw() - angle_ne.y * ahrs_view->cos_yaw();
 
-    if (dist_m < yaw_dist_limit_m) {
+    if (dist_cm < yaw_dist_limit_cm) {
         // no yaw adjustment
         return;
     }
 
     /*
-      also point so that test occurs perpendicular to the wind,
-      if we have drifted more than yaw_dist_limit_m from the desired
+      also point so that twitching occurs perpendicular to the wind,
+      if we have drifted more than yaw_dist_limit_cm from the desired
       position. This ensures that autotune doesn't have to deal with
       more than 2.5 degrees of attitude on the axis it is tuning
      */
-    float target_yaw_rad = atan2f(pos_error_neu_m.y, pos_error_neu_m.x);
+    float target_yaw_cd = degrees(atan2f(pdiff.y, pdiff.x)) * 100;
     if (axis == AxisType::PITCH) {
         // for roll and yaw tuning we point along the wind, for pitch
         // we point across the wind
-        target_yaw_rad += radians(90);
+        target_yaw_cd += 9000;
     }
     // go to the nearest 180 degree mark, with 5 degree slop to prevent oscillation
-    if (fabsf(yaw_out_rad - target_yaw_rad) > radians(95.0)) {
-        target_yaw_rad += radians(180.0);
+    if (fabsf(yaw_cd_out - target_yaw_cd) > 9500) {
+        target_yaw_cd += 18000;
     }
 
-    yaw_out_rad = target_yaw_rad;
+    yaw_cd_out = target_yaw_cd;
 }
 
 // get the next tune type
@@ -768,15 +813,15 @@ void AC_AutoTune::next_tune_type(TuneType &curr_tune_type, bool reset)
 {
     if (reset) {
         set_tune_sequence();
-        tune_seq_index = 0;
-    } else if (curr_tune_type == TuneType::TUNE_COMPLETE) {
+        tune_seq_curr = 0;
+    } else if (curr_tune_type == TUNE_COMPLETE) {
         // leave tune_type as TUNE_COMPLETE to initiate next axis or exit autotune
         return;
     } else {
-        tune_seq_index++;
+        tune_seq_curr++;
     }
 
-    curr_tune_type = tune_seq[tune_seq_index];
+    curr_tune_type = tune_seq[tune_seq_curr];
 }
 
 #endif  // AC_AUTOTUNE_ENABLED

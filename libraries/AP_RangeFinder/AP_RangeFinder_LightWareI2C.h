@@ -32,7 +32,7 @@ protected:
 
 private:
 
-    float sf20_stream_val[NUM_SF20_DATA_STREAMS];
+    uint16_t sf20_stream_val[NUM_SF20_DATA_STREAMS];
     int currentStreamSequenceIndex = 0;
 
     // constructor
@@ -44,7 +44,7 @@ private:
     void sf20_disable_address_tagging();
     bool sf20_send_and_expect(const char* send, const char* expected_reply);
     bool sf20_set_lost_signal_confirmations();
-    void sf20_get_version(const char* send_msg, const char *reply_prefix, char *reply, uint8_t reply_len);
+    void sf20_get_version(const char* send_msg, const char *reply_prefix, char reply[5]);
     bool sf20_wait_on_reply(uint8_t *rx_two_bytes);
     bool init();
     bool legacy_init();
@@ -59,7 +59,8 @@ private:
     bool sf20_parse_stream(uint8_t *stream_buf,
                            size_t *p_num_processed_chars,
                            const char *string_identifier,
-                           float &val);
+                           uint16_t &val);
+    void data_log(uint16_t *val);
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 };
 

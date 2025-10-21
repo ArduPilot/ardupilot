@@ -34,7 +34,7 @@
 
 #pragma GCC optimize("Os")
 
-#define AP_MATH_ALLOW_DOUBLE_FUNCTIONS 1
+#define ALLOW_DOUBLE_MATH_FUNCTIONS
 
 #include "AP_JSON.h"
 #include <AP_Filesystem/AP_Filesystem.h>

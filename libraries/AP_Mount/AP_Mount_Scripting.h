@@ -4,11 +4,9 @@
 
 #pragma once
 
-#include "AP_Mount_config.h"
+#include "AP_Mount_Backend.h"
 
 #if HAL_MOUNT_SCRIPTING_ENABLED
-
-#include "AP_Mount_Backend.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
@@ -52,4 +50,4 @@ private:
     bool target_loc_valid;          // true if target_loc holds a valid target location
 };
 
-#endif // HAL_MOUNT_SCRIPTING_ENABLED
+#endif // HAL_MOUNT_SIYISERIAL_ENABLED

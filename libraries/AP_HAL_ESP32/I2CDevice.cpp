@@ -61,8 +61,7 @@ I2CDeviceManager::I2CDeviceManager(void)
 I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool use_smbus, uint32_t timeout_ms) :
     bus(I2CDeviceManager::businfo[busnum]),
     _retries(10),
-    _address(address),
-    _timeout_ms(timeout_ms)
+    _address(address)
 {
     set_device_bus(busnum);
     set_device_address(address);
@@ -119,10 +118,9 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         }
         i2c_master_stop(cmd);
 
-        uint32_t timeout_ms = 1 + 16L * (send_len + recv_len) * 1000 / bus.bus_clock;
-        timeout_ms = MAX(timeout_ms, _timeout_ms);
+        TickType_t timeout = 1 + 16L * (send_len + recv_len) * 1000 / bus.bus_clock / portTICK_PERIOD_MS;
         for (int i = 0; !result && i < _retries; i++) {
-            result = (i2c_master_cmd_begin(bus.port, cmd, pdMS_TO_TICKS(timeout_ms)) == ESP_OK);
+            result = (i2c_master_cmd_begin(bus.port, cmd, timeout) == ESP_OK);
             if (!result) {
                 i2c_reset_tx_fifo(bus.port);
                 i2c_reset_rx_fifo(bus.port);
@@ -152,16 +150,17 @@ bool I2CDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint3
     return bus.adjust_timer(h, period_usec);
 }
 
-AP_HAL::I2CDevice *
-I2CDeviceManager::get_device_ptr(uint8_t bus, uint8_t address,
-                                 uint32_t bus_clock,
-                                 bool use_smbus,
-                                 uint32_t timeout_ms)
+AP_HAL::OwnPtr<AP_HAL::I2CDevice>
+I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
+                             uint32_t bus_clock,
+                             bool use_smbus,
+                             uint32_t timeout_ms)
 {
     if (bus >= ARRAY_SIZE(i2c_bus_desc)) {
-        return nullptr;
+        return AP_HAL::OwnPtr<AP_HAL::I2CDevice>(nullptr);
     }
-    return NEW_NOTHROW I2CDevice(bus, address, bus_clock, use_smbus, timeout_ms);
+    auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(NEW_NOTHROW I2CDevice(bus, address, bus_clock, use_smbus, timeout_ms));
+    return dev;
 }
 
 /*

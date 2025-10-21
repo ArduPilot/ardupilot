@@ -1,11 +1,14 @@
-#pragma once
+#include "SIM_I2CDevice.h"
 
-#include "SIM_config.h"
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_SIM_TOSHIBALED_ENABLED
+#define AP_SIM_TOSHIBALED_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
 
 #if AP_SIM_TOSHIBALED_ENABLED
 
 #include "SIM_RGBLED.h"
-#include "SIM_I2CDevice.h"
 
 namespace SITL {
 

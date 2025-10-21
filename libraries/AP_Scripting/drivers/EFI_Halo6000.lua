@@ -274,7 +274,6 @@ local function engine_control()
        local msg = CANFrame()
        msg:id(0x1A0)
        msg:data(0,1)
-       msg:data(7,1)
        self.write_frame_checksum(msg)
     end
 
@@ -339,7 +338,7 @@ local function engine_control()
     
     -- return the instance
     return self
-end -- end function engine_control()
+end -- end function engine_control(_driver)
 
 local engine1 = engine_control()
 

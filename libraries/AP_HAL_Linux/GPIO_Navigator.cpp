@@ -1,7 +1,5 @@
 #include "GPIO_Navigator.h"
 
-#if HAL_LINUX_GPIO_NAVIGATOR_ENABLED
-
 uint8_t GPIO_Navigator::read(uint8_t pin)
 {
     if (pinAllowed(pin)) {
@@ -47,5 +45,3 @@ bool GPIO_Navigator::pinAllowed(uint8_t pin)
     }
     return false;
 }
-
-#endif  // HAL_LINUX_GPIO_NAVIGATOR_ENABLED

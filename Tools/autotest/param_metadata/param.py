@@ -1,5 +1,3 @@
-# flake8: noqa
-
 
 class Parameter(object):
     def __init__(self, name, real_path):
@@ -66,7 +64,7 @@ known_param_fields = [
 # http://www1.bipm.org/en/CGPM/db/3/2/   g_n unit for G-force
 # one further constrain is that only printable (7bit) ASCII characters are allowed
 known_units = {
-#          abbreviation : full-text (used in .html .rst and .wiki files)
+#          abreviation : full-text (used in .html .rst and .wiki files)
 # time
              's'       : 'seconds'               ,
              'ds'      : 'deciseconds'           ,
@@ -120,7 +118,6 @@ known_units = {
 # compound
 
              'kB'      : 'kilobytes'               ,
-             'KiB'     : 'kibibytes',
              'MB'      : 'megabyte'                ,
              'm.m/s/s' : 'square meter per square second',
              'deg/m/s' : 'degrees per meter per second'  ,

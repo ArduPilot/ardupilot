@@ -21,8 +21,6 @@
 
 #include "GCS.h"
 
-#if AP_MAVLINK_SIGNING_ENABLED
-
 extern const AP_HAL::HAL& hal;
 
 // storage object
@@ -117,7 +115,7 @@ static bool accept_unsigned_callback(const mavlink_status_t *status, uint32_t ms
 {
     if (status == mavlink_get_channel_status(MAVLINK_COMM_0)) {
         // always accept channel 0, assumed to be secure channel. This
-        // is USB on ChibiOS boards
+        // is USB on PX4 boards
         return true;
     }
     for (uint8_t i=0; i<ARRAY_SIZE(accept_list); i++) {
@@ -135,7 +133,7 @@ static bool accept_unsigned_callback(const mavlink_status_t *status, uint32_t ms
 void GCS_MAVLINK::load_signing_key(void)
 {
     struct SigningKey key;
-    if (option_enabled(Option::MAVLINK2_SIGNING_DISABLED) || !signing_key_load(key)) {
+    if (!signing_key_load(key)) {
         return;
     }
     memcpy(signing.secret_key, key.secret_key, 32);
@@ -239,7 +237,6 @@ bool GCS_MAVLINK::signing_enabled(void) const
     }
     return false;
 }
-#endif  // AP_MAVLINK_SIGNING_ENABLED
 
 /*
   return packet overhead in bytes for a channel
@@ -265,14 +262,5 @@ uint8_t GCS_MAVLINK::packet_overhead_chan(mavlink_channel_t chan)
     }
     return MAVLINK_NUM_NON_PAYLOAD_BYTES + reserved_space;
 }
-
-#if !AP_MAVLINK_SIGNING_ENABLED
-
-void GCS_MAVLINK::handle_setup_signing(const mavlink_message_t &msg) const
-{
-    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Signing is not enabled in this firmware");
-}
-
-#endif  // !AP_MAVLINK_SIGNING_ENABLED
 
 #endif  // HAL_GCS_ENABLED

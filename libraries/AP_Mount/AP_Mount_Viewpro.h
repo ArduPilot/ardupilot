@@ -16,11 +16,9 @@
 
 #pragma once
 
-#include "AP_Mount_config.h"
+#include "AP_Mount_Backend_Serial.h"
 
 #if HAL_MOUNT_VIEWPRO_ENABLED
-
-#include "AP_Mount_Backend_Serial.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
@@ -160,9 +158,7 @@ private:
         START_RECORD = 0x14,
         STOP_RECORD = 0x15,
         AUTO_FOCUS = 0x19,
-        MANUAL_FOCUS = 0x1A,
-        IR_ZOOM_OUT = 0x1B,
-        IR_ZOOM_IN = 0x1C
+        MANUAL_FOCUS = 0x1A
     };
 
     // C1 rangefinder commands

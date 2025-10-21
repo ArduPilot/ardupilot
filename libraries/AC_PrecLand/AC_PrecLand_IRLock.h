@@ -6,13 +6,12 @@
 
 #include <AC_PrecLand/AC_PrecLand_Backend.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_IRLock/AP_IRLock_config.h>
 
-#if AP_IRLOCK_SITL_ENABLED
-#include <AP_IRLock/AP_IRLock_SITL.h>
-#elif AP_IRLOCK_I2C_ENABLED
-#include <AP_IRLock/AP_IRLock_I2C.h>
-#endif  // AP_IRLOCK_I2C_ENABLED
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+ #include <AP_IRLock/AP_IRLock_SITL.h>
+#else
+ #include <AP_IRLock/AP_IRLock.h>
+#endif
 
 /*
  * AC_PrecLand_IRLock - implements precision landing using target vectors provided
@@ -33,9 +32,9 @@ public:
     void update() override;
 
 private:
-#if AP_IRLOCK_SITL_ENABLED
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     AP_IRLock_SITL irlock;
-#elif AP_IRLOCK_I2C_ENABLED
+#else
     AP_IRLock_I2C irlock;
 #endif
 };

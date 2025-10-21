@@ -56,7 +56,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef COMPASS_LEARN_DEFAULT
-#define COMPASS_LEARN_DEFAULT Compass::LearnType::NONE
+#define COMPASS_LEARN_DEFAULT Compass::LEARN_NONE
 #endif
 
 #ifndef AP_COMPASS_OFFSETS_MAX_DEFAULT
@@ -117,9 +117,9 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Param: LEARN
     // @DisplayName: Learn compass offsets automatically
     // @Description: Enable or disable the automatic learning of compass offsets. You can enable learning either using a compass-only method that is suitable only for fixed wing aircraft or using the offsets learnt by the active EKF state estimator. If this option is enabled then the learnt offsets are saved when you disarm the vehicle. If InFlight learning is enabled then the compass with automatically start learning once a flight starts (must be armed). While InFlight learning is running you cannot use position control modes.
-    // @Values: 0:Disabled,2:EKF-Learning,3:InFlight-Learning
+    // @Values: 0:Disabled,1:Internal-Learning,2:EKF-Learning,3:InFlight-Learning
     // @User: Advanced
-    AP_GROUPINFO("LEARN",  3, Compass, _learn, float(COMPASS_LEARN_DEFAULT)),
+    AP_GROUPINFO("LEARN",  3, Compass, _learn, COMPASS_LEARN_DEFAULT),
 #endif
 
 #ifndef HAL_BUILD_AP_PERIPH
@@ -530,7 +530,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Param: DISBLMSK
     // @DisplayName: Compass disable driver type mask
     // @Description: This is a bitmask of driver types to disable. If a driver type is set in this mask then that driver will not try to find a sensor at startup
-    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK0991x,7:IST8310,8:ICM20948,9:MMC3416,11:DroneCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS,19:MMC5XX3,20:QMC5883P,21:BMM350,22:IIS2MDC
+    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK09916,7:IST8310,8:ICM20948,9:MMC3416,11:DroneCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS,19:MMC5XX3,20:QMC5883P,21:BMM350,22:IIS2MDC
     // @User: Advanced
     AP_GROUPINFO("DISBLMSK", 33, Compass, _driver_type_mask, 0),
 
@@ -1192,6 +1192,7 @@ void Compass::_probe_external_i2c_compasses(void)
 #endif
 #endif  // AP_COMPASS_QMC5883P_ENABLED
 
+#ifndef HAL_BUILD_AP_PERIPH
     // AK09916 on ICM20948
 #if AP_COMPASS_AK09916_ENABLED && AP_COMPASS_ICM20948_ENABLED
     FOREACH_I2C_EXTERNAL(i) {
@@ -1214,6 +1215,7 @@ void Compass::_probe_external_i2c_compasses(void)
     }
 #endif
 #endif  // AP_COMPASS_AK09916_ENABLED && AP_COMPASS_ICM20948_ENABLED
+#endif // HAL_BUILD_AP_PERIPH
 
 #if AP_COMPASS_LIS3MDL_ENABLED
     // lis3mdl on bus 0 with default address
@@ -1337,7 +1339,7 @@ void Compass::_probe_external_i2c_compasses(void)
 #endif
 #endif  // AP_COMPASS_RM3100_ENABLED
 
-#if AP_COMPASS_BMM150_ENABLED
+#if AP_COMPASS_BMM150_DETECT_BACKENDS_ENABLED
     // BMM150 on I2C
     FOREACH_I2C_EXTERNAL(i) {
         for (uint8_t addr=BMM150_I2C_ADDR_MIN; addr <= BMM150_I2C_ADDR_MAX; addr++) {
@@ -1345,7 +1347,7 @@ void Compass::_probe_external_i2c_compasses(void)
                         AP_Compass_BMM150::probe(GET_I2C_DEVICE(i, addr), true, ROTATION_NONE));
         }
     }
-#endif  // AP_COMPASS_BMM150_ENABLED
+#endif // AP_COMPASS_BMM150_ENABLED
 
 #if AP_COMPASS_BMM350_ENABLED
     // BMM350 on I2C
@@ -1437,12 +1439,47 @@ void Compass::probe_i2c_spi_compasses(void)
     case AP_BoardConfig::PX4_BOARD_AUAV21:
     case AP_BoardConfig::PX4_BOARD_PH2SLIM:
     case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
+    case AP_BoardConfig::PX4_BOARD_MINDPXV2:
     case AP_BoardConfig::PX4_BOARD_FMUV5:
     case AP_BoardConfig::PX4_BOARD_FMUV6:
+    case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
     case AP_BoardConfig::PX4_BOARD_AEROFC:
         _probe_external_i2c_compasses();
         CHECK_UNREG_LIMIT_RETURN;
         break;
+
+    case AP_BoardConfig::PX4_BOARD_PCNC1:
+#if AP_COMPASS_BMM150_ENABLED
+        ADD_BACKEND(DRIVER_BMM150,
+                    AP_Compass_BMM150::probe(GET_I2C_DEVICE(0, 0x10), false, ROTATION_NONE));
+#endif
+        break;
+    case AP_BoardConfig::VRX_BOARD_BRAIN54:
+    case AP_BoardConfig::VRX_BOARD_BRAIN51: {
+#if AP_COMPASS_HMC5843_ENABLED
+        // external i2c bus
+        ADD_BACKEND(DRIVER_HMC5843, AP_Compass_HMC5843::probe(GET_I2C_DEVICE(1, HAL_COMPASS_HMC5843_I2C_ADDR),
+                    true, ROTATION_ROLL_180));
+
+        // internal i2c bus
+        ADD_BACKEND(DRIVER_HMC5843, AP_Compass_HMC5843::probe(GET_I2C_DEVICE(0, HAL_COMPASS_HMC5843_I2C_ADDR),
+                    false, ROTATION_YAW_270));
+#endif  // AP_COMPASS_HMC5843_ENABLED
+    }
+    break;
+
+    case AP_BoardConfig::VRX_BOARD_BRAIN52:
+    case AP_BoardConfig::VRX_BOARD_BRAIN52E:
+    case AP_BoardConfig::VRX_BOARD_CORE10:
+    case AP_BoardConfig::VRX_BOARD_UBRAIN51:
+    case AP_BoardConfig::VRX_BOARD_UBRAIN52: {
+#if AP_COMPASS_HMC5843_ENABLED
+        // external i2c bus
+        ADD_BACKEND(DRIVER_HMC5843, AP_Compass_HMC5843::probe(GET_I2C_DEVICE(1, HAL_COMPASS_HMC5843_I2C_ADDR),
+                    true, ROTATION_ROLL_180));
+#endif  // AP_COMPASS_HMC5843_ENABLED
+    }
+    break;
 
     default:
         break;
@@ -1486,6 +1523,22 @@ void Compass::probe_i2c_spi_compasses(void)
 #endif  // AP_COMPASS_IST8310_ENABLED
         break;
 
+    case AP_BoardConfig::PX4_BOARD_SP01:
+#if AP_COMPASS_AK8963_ENABLED
+        ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(1, ROTATION_NONE));
+#endif
+        break;
+
+    case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
+#if AP_COMPASS_AK8963_ENABLED
+        ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(0, ROTATION_ROLL_180_YAW_90));
+#endif
+#if AP_COMPASS_LIS3MDL_ENABLED
+        ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(hal.spi->get_device(HAL_COMPASS_LIS3MDL_NAME),
+                    false, ROTATION_NONE));
+#endif  // AP_COMPASS_LIS3MDL_ENABLED
+        break;
+
     case AP_BoardConfig::PX4_BOARD_PHMINI:
 #if AP_COMPASS_AK8963_ENABLED
         ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(0, ROTATION_ROLL_180));
@@ -1501,6 +1554,16 @@ void Compass::probe_i2c_spi_compasses(void)
     case AP_BoardConfig::PX4_BOARD_PH2SLIM:
 #if AP_COMPASS_AK8963_ENABLED
         ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(0, ROTATION_YAW_270));
+#endif
+        break;
+
+    case AP_BoardConfig::PX4_BOARD_MINDPXV2:
+#if AP_COMPASS_HMC5843_ENABLED
+        ADD_BACKEND(DRIVER_HMC5843, AP_Compass_HMC5843::probe(GET_I2C_DEVICE(0, HAL_COMPASS_HMC5843_I2C_ADDR),
+                    false, ROTATION_YAW_90));
+#endif
+#if AP_COMPASS_LSM303D_ENABLED
+        ADD_BACKEND(DRIVER_LSM303D, AP_Compass_LSM303D::probe(hal.spi->get_device(HAL_INS_LSM9DS0_A_NAME), ROTATION_PITCH_180_YAW_270));
 #endif
         break;
 
@@ -1730,11 +1793,11 @@ Compass::read(void)
         any_healthy |= _state[i].healthy;
     }
 #if COMPASS_LEARN_ENABLED
-    if (_learn == LearnType::INFLIGHT && !learn_allocated) {
+    if (_learn == LEARN_INFLIGHT && !learn_allocated) {
         learn_allocated = true;
         learn = NEW_NOTHROW CompassLearn(*this);
     }
-    if (_learn == LearnType::INFLIGHT && learn != nullptr) {
+    if (_learn == LEARN_INFLIGHT && learn != nullptr) {
         learn->update();
     }
 #endif
@@ -1922,7 +1985,7 @@ Compass::use_for_yaw(uint8_t i) const
     // when we are doing in-flight compass learning the state
     // estimator must not use the compass. The learning code turns off
     // inflight learning when it has converged
-    return _use_for_yaw[Priority(i)] && _learn != LearnType::INFLIGHT;
+    return _use_for_yaw[Priority(i)] && _learn.get() != LEARN_INFLIGHT;
 }
 
 /*

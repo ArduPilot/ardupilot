@@ -21,11 +21,15 @@ AP_EFI_DroneCAN::AP_EFI_DroneCAN(AP_EFI &_frontend) :
 }
 
 // links the DroneCAN message to this backend
-bool AP_EFI_DroneCAN::subscribe_msgs(AP_DroneCAN *ap_dronecan)
+void AP_EFI_DroneCAN::subscribe_msgs(AP_DroneCAN *ap_dronecan)
 {
-    const auto driver_index = ap_dronecan->get_driver_index();
+    if (ap_dronecan == nullptr) {
+        return;
+    }
 
-    return (Canard::allocate_sub_arg_callback(ap_dronecan, &trampoline_status, driver_index) != nullptr);
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &trampoline_status, ap_dronecan->get_driver_index()) == nullptr) {
+        AP_BoardConfig::allocation_error("status_sub");
+    }
 }
 
 // Called from frontend to update with the readings received by handler

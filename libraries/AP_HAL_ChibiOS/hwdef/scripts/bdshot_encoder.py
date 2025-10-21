@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-
-# flake8: noqa
+#!/usr/bin/env python
 
 """
 script to encode a telemetry value using dshot and gcr and then display in binary and ascii art

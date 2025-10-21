@@ -318,6 +318,7 @@ static const Vector2f PROX_boundary[] = {
     Vector2f{938.315063f,388.662872f},
 };
 
+
 static const struct {
     Vector2f point;
     bool outside;

@@ -3,11 +3,9 @@
  */
 #pragma once
 
-#include "AP_Mount_config.h"
+#include "AP_Mount_Backend.h"
 
 #if HAL_MOUNT_GREMSY_ENABLED
-
-#include "AP_Mount_Backend.h"
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>

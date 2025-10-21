@@ -41,11 +41,15 @@ rc 2 1450
 
 #pragma once
 
-#include "SIM_config.h"
-
-#if AP_SIM_PS_TERARANGERTOWER_ENABLED
-
 #include "SIM_SerialProximitySensor.h"
+
+#ifndef HAL_SIM_PS_TERARANGERTOWER_ENABLED
+#define HAL_SIM_PS_TERARANGERTOWER_ENABLED HAL_SIM_SERIALPROXIMITYSENSOR_ENABLED
+#endif
+
+#if HAL_SIM_PS_TERARANGERTOWER_ENABLED
+
+#include <stdio.h>
 
 namespace SITL {
 
@@ -70,4 +74,4 @@ private:
 
 };
 
-#endif  // AP_SIM_PS_TERARANGERTOWER_ENABLED
+#endif  // HAL_SIM_PS_TERARANGERTOWER_ENABLED

@@ -1,33 +1,34 @@
 #pragma once
 
 /// @file	AC_PID_2D.h
-/// @brief	2D PID controller with vector support, input filtering, integrator clamping, and EEPROM-backed gain storage.
+/// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <stdlib.h>
 #include <cmath>
 #include <AC_PID/AP_PIDInfo.h>
+#include <Filter/SlewCalculator2D.h>
 
 /// @class	AC_PID_2D
 /// @brief	Copter PID control class
 class AC_PID_2D {
 public:
 
-    /// Constructor for 2D PID controller with EEPROM-backed gain.
-    /// Parameters are initialized from defaults or EEPROM at runtime.
+    // Constructor for PID
     AC_PID_2D(float initial_kP, float initial_kI, float initial_kD, float initial_kFF, float initial_imax, float initial_filt_hz, float initial_filt_d_hz);
 
     CLASS_NO_COPY(AC_PID_2D);
 
-    // Computes the 2D PID output from target and measurement vectors.
-    // Applies filtering to error and derivative terms.
-    // Integrator is updated only if it does not grow in the direction of the specified limit vector.
+    // update_all - set target and measured inputs to PID controller and calculate outputs
+    // target and error are filtered
+    // the derivative is then calculated and filtered
+    // the integral is then updated if it does not increase in the direction of the limit vector
     Vector2f update_all(const Vector2f &target, const Vector2f &measurement, float dt, const Vector2f &limit);
     Vector2f update_all(const Vector3f &target, const Vector3f &measurement, float dt, const Vector3f &limit);
 
-    // Updates the 2D integrator using the filtered error.
-    // The integrator is only allowed to grow if it does not push further in the direction of the limit vector.
+    // update the integral
+    // if the limit flag is set the integral is only allowed to shrink
     void update_i(float dt, const Vector2f &limit);
 
     // get results from pid controller
@@ -40,10 +41,10 @@ public:
     // reset the integrator
     void reset_I();
 
-    // Flags the input and derivative filters for reset on the next call to update_all().
+    // reset_filter - input and D term filter will be reset to the next value provided to set_input()
     void reset_filter() { _reset_filter = true; }
 
-    // Saves controller configuration from EEPROM, including gains and filter frequencies. (not used)
+    // save gain to eeprom
     void save_gains();
 
     // get accessors
@@ -66,12 +67,14 @@ public:
     void set_filt_E_hz(float hz) { _filt_E_hz.set(fabsf(hz)); }
     void set_filt_D_hz(float hz) { _filt_D_hz.set(fabsf(hz)); }
 
-    // Sets the integrator directly or based on a target, measurement, or error.
-    // Result is clamped to IMAX length.
+    // integrator setting functions
     void set_integrator(const Vector2f& target, const Vector2f& measurement, const Vector2f& i);
     void set_integrator(const Vector2f& error, const Vector2f& i);
     void set_integrator(const Vector3f& i) { set_integrator(Vector2f{i.x, i.y}); }
     void set_integrator(const Vector2f& i);
+
+    // return current slew rate of slew limiter. Will return 0 if SMAX is zero
+    float get_slew_rate(void) const { return _slew_calc.get_slew_rate(); }
 
     const AP_PIDInfo& get_pid_info_x(void) const { return _pid_info_x; }
     const AP_PIDInfo& get_pid_info_y(void) const { return _pid_info_y; }
@@ -99,6 +102,8 @@ protected:
 
     AP_PIDInfo _pid_info_x;
     AP_PIDInfo _pid_info_y;
+
+    SlewCalculator2D _slew_calc;    // 2D slew rate calculator
 
 private:
     const float default_kp;

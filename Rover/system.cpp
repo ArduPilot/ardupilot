@@ -13,6 +13,11 @@ void Rover::init_ardupilot()
 
     battery.init();
 
+#if AP_RPM_ENABLED
+    // Initialise RPM sensor
+    rpm_sensor.init();
+#endif
+
 #if AP_RSSI_ENABLED
     rssi.init();
 #endif
@@ -216,7 +221,7 @@ bool Rover::set_mode(Mode &new_mode, ModeReason reason)
 
     // Check if GCS mode change is disabled via parameter
     if ((reason == ModeReason::GCS_COMMAND) && !gcs_mode_enabled((Mode::Number)new_mode.mode_number())) {
-        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"Mode change to %s denied, GCS entry disabled (FLTMODE_GCSBLOCK)", new_mode.name4());
+        gcs().send_text(MAV_SEVERITY_NOTICE,"Mode change to %s denied, GCS entry disabled (FLTMODE_GCSBLOCK)", new_mode.name4());
         return false;
     }
 
@@ -225,7 +230,7 @@ bool Rover::set_mode(Mode &new_mode, ModeReason reason)
         // Log error that we failed to enter desired flight mode
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE,
                            LogErrorCode(new_mode.mode_number()));
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Flight mode change failed");
+        gcs().send_text(MAV_SEVERITY_WARNING, "Flight mode change failed");
         return false;
     }
 
@@ -272,7 +277,7 @@ bool Rover::set_mode(Mode::Number new_mode, ModeReason reason)
 
 void Rover::startup_INS(void)
 {
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Beginning INS calibration. Do not move vehicle");
+    gcs().send_text(MAV_SEVERITY_INFO, "Beginning INS calibration. Do not move vehicle");
     hal.scheduler->delay(100);
 
     ahrs.init();
@@ -324,7 +329,8 @@ bool Rover::is_boat() const
 }
 
 #include <AP_Avoidance/AP_Avoidance.h>
-#if AP_ADSB_AVOIDANCE_ENABLED
+#include <AP_ADSB/AP_ADSB.h>
+#if HAL_ADSB_ENABLED
 // dummy method to avoid linking AP_Avoidance
 AP_Avoidance *AP::ap_avoidance() { return nullptr; }
-#endif  // AP_ADSB_AVOIDANCE_ENABLED
+#endif

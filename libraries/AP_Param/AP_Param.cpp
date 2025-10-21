@@ -268,12 +268,7 @@ void AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
         if (size == 0) {
             FATAL("invalid type in %s", group_info[i].name);
         }
-        uint8_t param_name_length = prefix_length + strlen(group_info[i].name);
-        if (type == AP_PARAM_VECTOR3F) {
-            // need room for _X/_Y/_Z
-            param_name_length += 2;
-        }
-        if (param_name_length > 16) {
+        if (prefix_length + strlen(group_info[i].name) > 16) {
             FATAL("suffix is too long in %s", group_info[i].name);
         }
         (*total_size) += size + sizeof(struct Param_header);
@@ -939,8 +934,6 @@ AP_Param::find(const char *name, enum ap_var_type *ptype, uint16_t *flags)
                     ap->find_var_info(&group_element, ginfo, group_nesting, &idx);
                     if (ginfo != nullptr) {
                         *flags = ginfo->flags;
-                    } else {
-                        *flags = 0;
                     }
                 }
                 return ap;
@@ -953,9 +946,6 @@ AP_Param::find(const char *name, enum ap_var_type *ptype, uint16_t *flags)
             ptrdiff_t base;
             if (!get_base(info, base)) {
                 return nullptr;
-            }
-            if (flags != nullptr) {
-                *flags = 0;
             }
             return (AP_Param *)base;
         }
@@ -985,14 +975,8 @@ AP_Param* AP_Param::find_by_name(const char* name, enum ap_var_type *ptype, Para
     for (ap = AP_Param::first(token, ptype);
          ap && *ptype != AP_PARAM_GROUP && *ptype != AP_PARAM_NONE;
          ap = AP_Param::next_scalar(token, ptype)) {
-        const auto nlen = strlen(var_info(token->key).name);
-        /*
-          the name must either match the token name (if a non-group top level param)
-          or match up to the length (if a group).
-          This check avoids us traversing down into most groups, saving a lot of calls to copy_name_token()
-         */
-        int32_t ret = strncasecmp(name, var_info(token->key).name, nlen);
-        if (ret == 0) {
+        int32_t ret = strncasecmp(name, var_info(token->key).name, AP_MAX_NAME_SIZE);
+        if (ret >= 0) {
             char buf[AP_MAX_NAME_SIZE];
             ap->copy_name_token(*token, buf, AP_MAX_NAME_SIZE);
             if (strncasecmp(name, buf, AP_MAX_NAME_SIZE) == 0) {
@@ -1475,13 +1459,6 @@ bool AP_Param::allow_set_via_mavlink(uint16_t flags) const
         }
     }
 
-#if HAL_GCS_ENABLED
-    // check the MAVLink library is OK with the concept:
-    if (!gcs().get_allow_param_set()) {
-        return false;
-    }
-#endif  // HAL_GCS_ENABLED
-
     return true;
 }
 
@@ -1653,7 +1630,7 @@ void AP_Param::load_defaults_file_from_filesystem(const char *default_file, bool
 #endif
     } else {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        AP_HAL::panic("Failed to load defaults from %s", default_file);
+        AP_HAL::panic("Failed to load defaults from %s\n", default_file);
 #else
         printf("Failed to load defaults from %s\n", default_file);
 #endif
@@ -2078,7 +2055,7 @@ void AP_Param::convert_old_parameters_scaled(const struct ConversionInfo *conver
 // is_top_level: Is true if the class had its own top level key, param_key. It is false if the class was a subgroup
 void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
                                     const struct AP_Param::GroupInfo *group_info,
-                                    uint16_t old_index, bool is_top_level, bool recurse_sub_groups)
+                                    uint16_t old_index, bool is_top_level)
 {
     const uint8_t group_shift = is_top_level ? 0 : 6;
 
@@ -2092,15 +2069,6 @@ void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
         if (group_shift != 0 && idx == 0) {
             // Note: Index 0 is treated as 63 for group bit shifting purposes. See group_id()
             idx = 63;
-        }
-
-        if (info.type == AP_PARAM_GROUP) {
-            // Convert subgroups if enabled
-            if (recurse_sub_groups) {
-                // Only recurse once
-                convert_class(param_key, (uint8_t *)object_pointer + group_info[i].offset, get_group_info(group_info[i]), idx, false, false);
-            }
-            continue;
         }
 
         info.old_group_element = (idx << group_shift) + old_index;
@@ -3139,23 +3107,22 @@ bool AP_Param::add_table(uint8_t _key, const char *prefix, uint8_t num_params)
             info.name = _empty_string;
             return false;
         }
+        // fill in footer for all entries
+        for (uint8_t gi=1; gi<num_params+2; gi++) {
+            auto &ginfo = const_cast<GroupInfo*>(info.group_info)[gi];
+            ginfo.name = _empty_string;
+            ginfo.idx = 0xff;
+        }
+        // hidden first parameter containing AP_Int32 crc
+        auto &hinfo = const_cast<GroupInfo*>(info.group_info)[0];
+        hinfo.flags = AP_PARAM_FLAG_HIDDEN;
+        hinfo.name = _empty_string;
+        hinfo.idx = 0;
+        hinfo.offset = 0;
+        hinfo.type = AP_PARAM_INT32;
+        // fill in default value with the CRC. Relies on sizeof crc == sizeof float
+        memcpy((uint8_t *)&hinfo.def_value, (const uint8_t *)&crc, sizeof(crc));
     }
-    // fill in footer for all entries
-    for (uint8_t gi=1; gi<num_params+2; gi++) {
-        auto &ginfo = const_cast<GroupInfo*>(info.group_info)[gi];
-        ginfo.name = _empty_string;
-        ginfo.idx = 0xff;
-        ginfo.flags = AP_PARAM_FLAG_HIDDEN;
-    }
-    // hidden first parameter containing AP_Int32 crc
-    auto &hinfo = const_cast<GroupInfo*>(info.group_info)[0];
-    hinfo.flags = AP_PARAM_FLAG_HIDDEN;
-    hinfo.name = _empty_string;
-    hinfo.idx = 0;
-    hinfo.offset = 0;
-    hinfo.type = AP_PARAM_INT32;
-    // fill in default value with the CRC. Relies on sizeof crc == sizeof float
-    memcpy((uint8_t *)&hinfo.def_value, (const uint8_t *)&crc, sizeof(crc));
 
     // remember the table size
     if (_dynamic_table_sizes[i] == 0) {
@@ -3210,7 +3177,7 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
     }
 
     // check for valid values
-    if (param_num == 0 || param_num > 63 || strlen(pname) > AP_MAX_NAME_SIZE) {
+    if (param_num == 0 || param_num > 63 || strlen(pname) > 16) {
         return false;
     }
 
@@ -3247,26 +3214,6 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
         return false;
     }
 
-    // Check length
-    char fullName[AP_MAX_NAME_SIZE+1] = {};
-    const int fullNameLength = hal.util->snprintf(fullName, sizeof(fullName), "%s%s", info.name, pname);
-    if ((fullNameLength < 0) || (fullNameLength > AP_MAX_NAME_SIZE)) {
-        // Param is too long with table prefix (or snprintf failed)
-        return false;
-    }
-
-    // Get param object
-    AP_Float *pvalues = const_cast<AP_Float *>((const AP_Float *)info.ptr);
-    AP_Float &p = pvalues[param_num];
-
-    // Check for conflicting name
-    enum ap_var_type existingType;
-    AP_Param* existingParam = find(fullName, &existingType);
-    if ((existingParam != nullptr) && ((existingType != AP_PARAM_FLOAT) || ((AP_Float*)existingParam != &p))) {
-        // There is a existing parameter with this name (which is not this parameter from a previous script run)
-        return false;
-    }
-
     // fill in idx of any gaps, leaving them hidden, this allows
     // scripts to remove parameters
     for (uint8_t j=1; j<param_num; j++) {
@@ -3295,17 +3242,14 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
     *def_value = default_value;
     ginfo.type = AP_PARAM_FLOAT;
 
-    // load from storage if available, the param is hidden during this
-    // load so the param is not visible to MAVLink until after it is
-    // loaded
+    invalidate_count();
+
+    // load from storage if available
+    AP_Float *pvalues = const_cast<AP_Float *>((const AP_Float *)info.ptr);
+    AP_Float &p = pvalues[param_num];
     p.set_default(default_value);
     p.load();
 
-    // clear the hidden flag if set and invalidate the count
-    // so we recount the parameters
-    ginfo.flags = 0;
-    invalidate_count();
-    
     return true;
 }
 #endif

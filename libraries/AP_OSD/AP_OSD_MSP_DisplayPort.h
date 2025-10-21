@@ -3,8 +3,6 @@
 
 #if HAL_WITH_MSP_DISPLAYPORT
 
-#define DISPLAYPORT_WRITE_BUFFER_MAX_LEN 30
-
 class AP_OSD_MSP_DisplayPort : public AP_OSD_Backend
 {
     using AP_OSD_Backend::AP_OSD_Backend;
@@ -16,9 +14,6 @@ public:
 
     //draw given text to framebuffer
     void write(uint8_t x, uint8_t y, const char* text) override;
-    
-    //draw given text to framebuffer using INAV fonts
-    void write_INAV(uint8_t x, uint8_t y, const char* text);
 
     //flush framebuffer to screen
     void flush() override;
@@ -58,7 +53,6 @@ protected:
 
 private:
     void setup_defaults(void);
-    char displayport_write_buffer[DISPLAYPORT_WRITE_BUFFER_MAX_LEN]; // terminator
 
     AP_MSP_Telem_Backend* _displayport;
 
@@ -259,9 +253,7 @@ private:
         SYM_SIDEBAR_I,
         SYM_SIDEBAR_J,
     };
-#if AP_MSP_INAV_FONTS_ENABLED
-    static const uint8_t ap_to_inav_symbols_map[256][2];
-#endif //AP_MSP_INAV_FONTS_ENABLED
+
     bool _blink_on;
 };
 #endif

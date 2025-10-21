@@ -2,7 +2,7 @@
 
 #include "SIM_config.h"
 
-#if AP_SIM_GPS_ENABLED
+#if HAL_SIM_GPS_ENABLED
 
 #include "SIM_GPS.h"
 
@@ -22,4 +22,4 @@ protected:
 
 };
 
-#endif  // AP_SIM_GPS_ENABLED
+#endif

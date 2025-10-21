@@ -17,10 +17,6 @@
 #define PWM_IGNORE_THIS_CHANNEL UINT16_MAX
 #define SERVO_COUNT 8
 
-#define PROFILED_LED_LEN         2
-#define PROFILED_OUTPUT_BYTE_LEN 3
-#define PROFILED_LEADING_ZEROS   50
-
 class AP_IOMCU_FW {
 public:
     void process_io_packet();
@@ -40,9 +36,6 @@ public:
     bool handle_code_write();
     bool handle_code_read();
     void schedule_reboot(uint32_t time_ms);
-#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
-    void profiled_update();
-#endif
     void safety_update();
     void rcout_config_update();
     void rcin_serial_init();
@@ -88,14 +81,6 @@ public:
 
     uint16_t last_channel_mask;
 
-#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
-    uint8_t profiled_byte_index;
-    uint8_t profiled_leading_zeros;
-    uint8_t profiled_num_led_pushed;
-    uint8_t profiled_brg[3];
-    bool profiled_control_enabled;
-#endif
-
     // CONFIG values
     struct page_config config;
 
@@ -131,11 +116,6 @@ public:
 
     // output mode values
     struct page_mode_out mode_out;
-
-#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
-    // profiled control values
-    struct page_profiled profiled;
-#endif
 
     uint16_t last_output_mode_mask;
     uint16_t last_output_bdmask;
@@ -185,9 +165,7 @@ public:
     bool update_default_rate;
     bool update_rcout_freq;
     bool has_heater;
-#ifdef IOMCU_IMU_HEATER_POLARITY
     const bool heater_pwm_polarity = IOMCU_IMU_HEATER_POLARITY;
-#endif
     uint32_t last_blue_led_ms;
     uint32_t safety_update_ms;
     uint32_t safety_button_counter;
@@ -205,14 +183,8 @@ public:
 };
 
 // GPIO macros
-#ifdef HAL_GPIO_PIN_HEATER
 #define HEATER_SET(on) palWriteLine(HAL_GPIO_PIN_HEATER, (on));
 #define BLUE_TOGGLE() palToggleLine(HAL_GPIO_PIN_HEATER);
-#else
-#define HEATER_SET(on)
-#define BLUE_TOGGLE()
-#endif
-
 #define AMBER_SET(on) palWriteLine(HAL_GPIO_PIN_AMBER_LED, !(on));
 #define SPEKTRUM_POWER(on) palWriteLine(HAL_GPIO_PIN_SPEKTRUM_PWR_EN, on);
 #define SPEKTRUM_SET(on) palWriteLine(HAL_GPIO_PIN_SPEKTRUM_OUT, on);

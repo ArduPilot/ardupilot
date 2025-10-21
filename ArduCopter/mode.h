@@ -3,7 +3,6 @@
 #include "Copter.h"
 #include <AP_Math/chirp.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h> // TODO why is this needed if Copter.h includes this
-#include <AP_HAL/Semaphores.h>
 
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
 #include "afs_copter.h"
@@ -19,20 +18,20 @@ class GCS_Copter;
 class _AutoTakeoff {
 public:
     void run();
-    void start_m(float complete_alt_m, bool is_terrain_alt);
-    bool get_completion_pos_neu_m(Vector3p& pos_neu_m);
+    void start(float complete_alt_cm, bool terrain_alt);
+    bool get_completion_pos(Vector3p& pos_neu_cm);
 
     bool complete;          // true when takeoff is complete
 
 private:
     // altitude above-ekf-origin below which auto takeoff does not control horizontal position
     bool no_nav_active;
-    float no_nav_alt_m;
+    float no_nav_alt_cm;
 
     // auto takeoff variables
-    float complete_alt_m;          // completion altitude expressed in m above ekf origin or above terrain (depending upon auto_takeoff_terrain_alt)
-    bool is_terrain_alt;            // true if altitudes are above terrain
-    Vector3p complete_pos_neu_m;   // target takeoff position as offset from ekf origin in m
+    float complete_alt_cm;  // completion altitude expressed in cm above ekf origin or above terrain (depending upon auto_takeoff_terrain_alt)
+    bool terrain_alt;       // true if altitudes are above terrain
+    Vector3p complete_pos;  // target takeoff position as offset from ekf origin in cm
 };
 
 #if AC_PAYLOAD_PLACE_ENABLED
@@ -56,15 +55,15 @@ public:
 
     // these are set by the Mission code:
     State state = State::Descent_Start; // records state of payload place
-    float descent_max_m;
+    float descent_max_cm;
 
 private:
 
     uint32_t descent_established_time_ms; // milliseconds
     uint32_t place_start_time_ms; // milliseconds
     float descent_thrust_level;
-    float descent_start_altitude_m;
-    float descent_speed_ms;
+    float descent_start_altitude_cm;
+    float descent_speed_cms;
 };
 #endif
 
@@ -102,8 +101,6 @@ public:
         AUTO_RTL =     27,  // Auto RTL, this is not a true mode, AUTO will report as this mode if entered to perform a DO_LAND_START Landing sequence
         TURTLE =       28,  // Flip over after crash
 
-        // Mode number 30 reserved for "offboard" for external/lua control.
-
         // Mode number 127 reserved for the "drone show mode" in the Skybrush
         // fork at https://github.com/skybrush-io/ardupilot
     };
@@ -128,18 +125,14 @@ public:
     virtual bool requires_GPS() const = 0;
     virtual bool has_manual_throttle() const = 0;
     virtual bool allows_arming(AP_Arming::Method method) const = 0;
-    virtual bool is_autopilot() const = 0;
+    virtual bool is_autopilot() const { return false; }
     virtual bool has_user_takeoff(bool must_navigate) const { return false; }
     virtual bool in_guided_mode() const { return false; }
     virtual bool logs_attitude() const { return false; }
     virtual bool allows_save_trim() const { return false; }
-    virtual bool allows_auto_trim() const { return false; }
     virtual bool allows_autotune() const { return false; }
     virtual bool allows_flip() const { return false; }
     virtual bool crash_check_enabled() const { return true; }
-
-    // "no pilot input" here means eg. in RC failsafe
-    virtual bool allows_entry_in_rc_failsafe() const { return true; }
 
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     // Return the type of this mode for use by advanced failsafe
@@ -157,7 +150,7 @@ public:
     virtual const char *name() const = 0;
     virtual const char *name4() const = 0;
 
-    bool do_user_takeoff_U_m(float takeoff_alt_m, bool must_navigate);
+    bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
     virtual bool is_taking_off() const;
     static void takeoff_stop() { takeoff.stop(); }
 
@@ -168,26 +161,26 @@ public:
 
     // functions for reporting to GCS
     virtual bool get_wp(Location &loc) const { return false; };
-    virtual float wp_bearing_deg() const { return 0; }
-    virtual float wp_distance_m() const { return 0.0f; }
-    virtual float crosstrack_error_m() const { return 0.0f;}
+    virtual int32_t wp_bearing() const { return 0; }
+    virtual uint32_t wp_distance() const { return 0; }
+    virtual float crosstrack_error() const { return 0.0f;}
 
     // functions to support MAV_CMD_DO_CHANGE_SPEED
-    virtual bool set_speed_NE_ms(float speed_ne_ms) {return false;}
-    virtual bool set_speed_up_ms(float speed_up_ms) {return false;}
-    virtual bool set_speed_down_ms(float speed_down_ms) {return false;}
+    virtual bool set_speed_xy(float speed_xy_cms) {return false;}
+    virtual bool set_speed_up(float speed_xy_cms) {return false;}
+    virtual bool set_speed_down(float speed_xy_cms) {return false;}
 
-    virtual float get_alt_above_ground_m(void) const;
+    int32_t get_alt_above_ground_cm(void);
 
     // pilot input processing
-    void get_pilot_desired_lean_angles_rad(float &roll_out_rad, float &pitch_out_rad, float angle_max_rad, float angle_limit_rad) const;
-    float get_pilot_desired_yaw_rate_rads() const;
+    void get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const;
     Vector2f get_pilot_desired_velocity(float vel_max) const;
+    float get_pilot_desired_yaw_rate() const;
     float get_pilot_desired_throttle() const;
 
     // returns climb target_rate reduced to avoid obstacles and
     // altitude fence
-    float get_avoidance_adjusted_climbrate_ms(float target_rate_ms);
+    float get_avoidance_adjusted_climbrate(float target_rate);
 
     // send output to the motors, can be overridden by subclasses
     virtual void output_to_motors();
@@ -255,7 +248,7 @@ protected:
         Landed_Pre_Takeoff,
         Flying
     };
-    AltHoldModeState get_alt_hold_state_U_ms(float target_climb_rate_ms);
+    AltHoldModeState get_alt_hold_state(float target_climb_rate_cms);
 
     // convenience references to avoid code churn in conversion:
     Parameters &g;
@@ -263,6 +256,7 @@ protected:
     AC_WPNav *&wp_nav;
     AC_Loiter *&loiter_nav;
     AC_PosControl *&pos_control;
+    AP_InertialNav &inertial_nav;
     AP_AHRS &ahrs;
     AC_AttitudeControl *&attitude_control;
     MOTOR_CLASS *&motors;
@@ -284,21 +278,21 @@ protected:
     // user-takeoff support; takeoff state is shared across all mode instances
     class _TakeOff {
     public:
-        void start_m(float alt_m);
+        void start(float alt_cm);
         void stop();
-        void do_pilot_takeoff_ms(float& pilot_climb_rate_ms);
-        bool triggered_ms(float target_climb_rate_ms) const;
+        void do_pilot_takeoff(float& pilot_climb_rate);
+        bool triggered(float target_climb_rate) const;
 
         bool running() const { return _running; }
     private:
         bool _running;
-        float take_off_start_alt_m;
-        float take_off_complete_alt_m;
+        float take_off_start_alt;
+        float take_off_complete_alt;
     };
 
     static _TakeOff takeoff;
 
-    virtual bool do_user_takeoff_start_m(float takeoff_alt_m);
+    virtual bool do_user_takeoff_start(float takeoff_alt_cm);
 
     static _AutoTakeoff auto_takeoff;
 
@@ -310,17 +304,17 @@ public:
 
         // Autopilot Yaw Mode enumeration
         enum class Mode {
-            HOLD =             0,   // hold zero yaw rate
-            LOOK_AT_NEXT_WP =  1,   // point towards next waypoint (no pilot input accepted)
-            ROI =              2,   // point towards a location held in roi_ne_m (no pilot input accepted)
-            FIXED =            3,   // point towards a particular angle (no pilot input accepted)
-            LOOK_AHEAD =       4,   // point in the direction the copter is moving
-            RESET_TO_ARMED_YAW = 5, // point towards heading at time motors were armed
-            ANGLE_RATE =       6,   // turn at a specified rate from a starting angle
-            RATE =             7,   // turn at a specified rate (held in auto_yaw_rate)
-            CIRCLE =           8,   // use AC_Circle's provided yaw (used during Loiter-Turns commands)
-            PILOT_RATE =       9,   // target rate from pilot stick
-            WEATHERVANE =     10,   // yaw into wind
+            HOLD =             0,  // hold zero yaw rate
+            LOOK_AT_NEXT_WP =  1,  // point towards next waypoint (no pilot input accepted)
+            ROI =              2,  // point towards a location held in roi (no pilot input accepted)
+            FIXED =            3,  // point towards a particular angle (no pilot input accepted)
+            LOOK_AHEAD =       4,  // point in the direction the copter is moving
+            RESETTOARMEDYAW =  5,  // point towards heading at time motors were armed
+            ANGLE_RATE =       6,  // turn at a specified rate from a starting angle
+            RATE =             7,  // turn at a specified rate (held in auto_yaw_rate)
+            CIRCLE =           8,  // use AC_Circle's provided yaw (used during Loiter-Turns commands)
+            PILOT_RATE =       9,  // target rate from pilot stick
+            WEATHERVANE =     10,  // yaw into wind
         };
 
         // mode(): current method of determining desired yaw:
@@ -329,79 +323,77 @@ public:
         void set_mode(Mode new_mode);
         Mode default_mode(bool rtl) const;
 
-        void set_rate_rad(float turn_rate_rads);
+        void set_rate(float new_rate_cds);
 
         // set_roi(...): set a "look at" location:
         void set_roi(const Location &roi_location);
 
-        void set_fixed_yaw_rad(float angle_rad,
-                               float turn_rate_rads,
-                               int8_t direction,
-                               bool relative_angle);
+        void set_fixed_yaw(float angle_deg,
+                           float turn_rate_dps,
+                           int8_t direction,
+                           bool relative_angle);
 
-        void set_yaw_angle_and_rate_rad(float yaw_angle_rad, float yaw_rate_rads);
+        void set_yaw_angle_rate(float yaw_angle_d, float yaw_rate_ds);
 
-        void set_yaw_angle_offset_deg(const float yaw_angle_offset_deg);
+        void set_yaw_angle_offset(const float yaw_angle_offset_d);
 
         bool reached_fixed_yaw_target();
 
 #if WEATHERVANE_ENABLED
-        void update_weathervane(const float pilot_yaw_rads);
+        void update_weathervane(const int16_t pilot_yaw_cds);
 #endif
 
         AC_AttitudeControl::HeadingCommand get_heading();
 
     private:
 
-        // yaw_rad(): main product of AutoYaw; the heading:
-        float yaw_rad();
+        // yaw_cd(): main product of AutoYaw; the heading:
+        float yaw_cd();
 
-        // rate_rads(): desired yaw rate in radians/second:
-        float rate_rads();
+        // rate_cds(): desired yaw rate in centidegrees/second:
+        float rate_cds();
 
-        // Returns the yaw angle (in radians) representing the direction of horizontal motion.
-        float look_ahead_yaw_rad();
+        // returns a yaw in degrees, direction of vehicle travel:
+        float look_ahead_yaw();
 
-        float roi_yaw_rad() const;
+        float roi_yaw() const;
 
         // auto flight mode's yaw mode
         Mode _mode = Mode::LOOK_AT_NEXT_WP;
         Mode _last_mode;
 
         // Yaw will point at this location if mode is set to Mode::ROI
-        Vector3f roi_ne_m;
+        Vector3f roi;
 
         // yaw used for YAW_FIXED yaw_mode
-        float _fixed_yaw_offset_rad;
+        float _fixed_yaw_offset_cd;
 
-        // Radians/s we should turn
-        float _fixed_yaw_slewrate_rads;
+        // Deg/s we should turn
+        float _fixed_yaw_slewrate_cds;
 
         // time of the last yaw update
         uint32_t _last_update_ms;
 
         // heading when in yaw_look_ahead_yaw
-        float _look_ahead_yaw_rad;
+        float _look_ahead_yaw;
 
-        // turn heading (rad) and rate (rads) when auto_yaw_mode is set to AUTO_YAW_RATE
-        float _yaw_angle_rad;
-        float _yaw_rate_rads;
-        float _pilot_yaw_rate_rads;
+        // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
+        float _yaw_angle_cd;
+        float _yaw_rate_cds;
+        float _pilot_yaw_rate_cds;
     };
     static AutoYaw auto_yaw;
 
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base
     // class.
-    float get_pilot_desired_climb_rate_ms() const;
-    float get_non_takeoff_throttle() const;
-    void update_simple_mode();
+    float get_pilot_desired_climb_rate(float throttle_control);
+    float get_non_takeoff_throttle(void);
+    void update_simple_mode(void);
     bool set_mode(Mode::Number mode, ModeReason reason);
     void set_land_complete(bool b);
-    GCS_Copter &gcs() const;
-    float get_pilot_speed_up_ms() const;
-    float get_pilot_speed_dn_ms() const;
-    float get_pilot_accel_U_mss() const;
+    GCS_Copter &gcs();
+    uint16_t get_pilot_speed_dn(void);
     // end pass-through functions
 };
 
@@ -433,21 +425,20 @@ public:
     bool is_autopilot() const override { return false; }
     bool init(bool ignore_checks) override;
     void exit() override;
-    // Called when air mode is enabled via AUX switch; prevents automatic reset to default air_mode state
+    // whether an air-mode aux switch has been toggled
     void air_mode_aux_changed();
     bool allows_save_trim() const override { return true; }
     bool allows_flip() const override { return true; }
     bool crash_check_enabled() const override { return false; }
-    bool allows_entry_in_rc_failsafe() const override { return false; }
 
 protected:
 
     const char *name() const override { return "ACRO"; }
     const char *name4() const override { return "ACRO"; }
 
-    // get_pilot_desired_rates_rads - transform pilot's normalised roll pitch and yaw input into a desired lean angle rates
-    // the function returns desired angle rates in radians-per-second
-    void get_pilot_desired_rates_rads(float &roll_out_rads, float &pitch_out_rads, float &yaw_out_rads);
+    // get_pilot_desired_angle_rates - transform pilot's normalised roll pitch and yaw input into a desired lean angle rates
+    // inputs are -1 to 1 and the function returns desired angle rates in centi-degrees-per-second
+    void get_pilot_desired_angle_rates(float roll_in, float pitch_in, float yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
 
     float throttle_hover() const override;
 
@@ -492,8 +483,6 @@ public:
     }
     bool allows_autotune() const override { return true; }
     bool allows_flip() const override { return true; }
-    bool allows_auto_trim() const override { return true; }
-    bool allows_save_trim() const override { return true; }
 #if FRAME_CONFIG == HELI_FRAME
     bool allows_inverted() const override { return true; };
 #endif
@@ -576,9 +565,9 @@ public:
     bool is_taking_off() const override;
     bool use_pilot_yaw() const override;
 
-    bool set_speed_NE_ms(float speed_ne_ms) override;
-    bool set_speed_up_ms(float speed_up_ms) override;
-    bool set_speed_down_ms(float speed_down_ms) override;
+    bool set_speed_xy(float speed_xy_cms) override;
+    bool set_speed_up(float speed_up_cms) override;
+    bool set_speed_down(float speed_down_cms) override;
 
     bool requires_terrain_failsafe() const override { return true; }
 
@@ -613,17 +602,14 @@ public:
     bool allows_weathervaning(void) const override;
 #endif
 
-    // Get height above ground, uses landing height if available
-    float get_alt_above_ground_m() const override;
-
 protected:
 
     const char *name() const override { return auto_RTL? "AUTO RTL" : "AUTO"; }
     const char *name4() const override { return auto_RTL? "ARTL" : "AUTO"; }
 
-    float wp_distance_m() const override;
-    float wp_bearing_deg() const override;
-    float crosstrack_error_m() const override { return wp_nav->crosstrack_error_m();}
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
+    float crosstrack_error() const override { return wp_nav->crosstrack_error();}
     bool get_wp(Location &loc) const override;
 
 private:
@@ -731,8 +717,8 @@ private:
         bool reached_destination_xy : 1;
         bool loiter_start_done : 1;
         bool reached_alt : 1;
-        float alt_error_m;
-        float alt_m;
+        float alt_error_cm;
+        int32_t alt;
     } loiter_to_alt;
 
     // Delay the next navigation command
@@ -772,11 +758,11 @@ private:
 
     // nav attitude time command variables
     struct {
-        int16_t roll_deg;       // target roll angle in degrees.  provided by mission command
-        int8_t pitch_deg;       // target pitch angle in degrees.  provided by mission command
-        int16_t yaw_deg;        // target yaw angle in degrees.  provided by mission command
-        float climb_rate_ms;    // climb rate in m/s. provided by mission command
-        uint32_t start_ms;      // system time that nav attitude time command was received (used for timeout)
+        int16_t roll_deg;   // target roll angle in degrees.  provided by mission command
+        int8_t pitch_deg;   // target pitch angle in degrees.  provided by mission command
+        int16_t yaw_deg;    // target yaw angle in degrees.  provided by mission command
+        float climb_rate;   // climb rate in m/s. provided by mission command
+        uint32_t start_ms;  // system time that nav attitude time command was received (used for timeout)
     } nav_attitude_time;
 
     // desired speeds
@@ -784,9 +770,7 @@ private:
         float xy;     // desired speed horizontally in m/s. 0 if unset
         float up;     // desired speed upwards in m/s. 0 if unset
         float down;   // desired speed downwards in m/s. 0 if unset
-    } desired_speed_override_ms;
-
-    float circle_last_num_complete;
+    } desired_speed_override;
 };
 
 #if AUTOTUNE_ENABLED
@@ -807,7 +791,7 @@ public:
 protected:
     bool position_ok() override;
     float get_pilot_desired_climb_rate_cms(void) const override;
-    void get_pilot_desired_rp_yrate_rad(float &des_roll_rad, float &des_pitch_rad, float &des_yaw_rate_rads) override;
+    void get_pilot_desired_rp_yrate_cd(float &roll_cd, float &pitch_cd, float &yaw_rate_cds) override;
     void init_z_limits() override;
 #if HAL_LOGGING_ENABLED
     void log_pids() override;
@@ -856,7 +840,7 @@ public:
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return false; };
-    bool is_autopilot() const override { return true; }
+    bool is_autopilot() const override { return false; }
 
     void timeout_to_loiter_ms(uint32_t timeout_ms);
 
@@ -893,8 +877,8 @@ protected:
     const char *name() const override { return "CIRCLE"; }
     const char *name4() const override { return "CIRC"; }
 
-    float wp_distance_m() const override;
-    float wp_bearing_deg() const override;
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
 
 private:
 
@@ -917,7 +901,6 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
-    bool allows_entry_in_rc_failsafe() const override { return false; }
 
 protected:
 
@@ -926,7 +909,7 @@ protected:
 
 private:
 
-    float get_throttle_assist(float vel_u_ms, float pilot_throttle_scaled);
+    float get_throttle_assist(float velz, float pilot_throttle_scaled);
 
 };
 
@@ -955,7 +938,7 @@ protected:
 private:
 
     // Flip
-    Vector3f orig_attitude_euler_rad;   // original vehicle attitude before flip
+    Vector3f orig_attitude;         // original vehicle attitude before flip
 
     enum class FlipState : uint8_t {
         Start,
@@ -965,11 +948,11 @@ private:
         Recover,
         Abandon
     };
-    FlipState _state;                   // current state of flip
-    Mode::Number  orig_control_mode;    // flight mode when flip was initiated
-    uint32_t start_time_ms;             // time since flip began
-    int8_t roll_dir;                    // roll direction (-1 = roll left, 1 = roll right)
-    int8_t pitch_dir;                   // pitch direction (-1 = pitch forward, 1 = pitch back)
+    FlipState _state;               // current state of flip
+    Mode::Number   orig_control_mode;   // flight mode when flip was initated
+    uint32_t  start_time_ms;          // time since flip began
+    int8_t    roll_dir;            // roll direction (-1 = roll left, 1 = roll right)
+    int8_t    pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)
 };
 
 
@@ -1020,11 +1003,11 @@ private:
 
     bool flowhold_init(bool ignore_checks);
     void flowhold_run();
-    void flowhold_flow_to_angle(Vector2f &bf_angles_rad, bool stick_input);
+    void flowhold_flow_to_angle(Vector2f &angle, bool stick_input);
     void update_height_estimate(void);
 
     // minimum assumed height
-    const float height_min_m = 0.1f;
+    const float height_min = 0.1f;
 
     // maximum scaling height
     const float height_max = 3.0f;
@@ -1042,16 +1025,16 @@ private:
     Vector2f xy_I;
 
     // accumulated INS delta velocity in north-east form since last flow update
-    Vector2f delta_velocity_ne_ms;
+    Vector2f delta_velocity_ne;
 
     // last flow rate in radians/sec in north-east axis
-    Vector2f last_flow_rate_rads;
+    Vector2f last_flow_rate_rps;
 
     // timestamp of last flow data
     uint32_t last_flow_ms;
 
-    float last_ins_height_m;
-    float height_offset_m;
+    float last_ins_height;
+    float height_offset;
 
     // are we braking after pilot input?
     bool braking;
@@ -1097,45 +1080,45 @@ public:
     // attitude_quat: IF zero: ang_vel (angular velocity) must be provided even if all zeroes
     //                IF non-zero: attitude_control is performed using both the attitude quaternion and angular velocity
     // ang_vel: angular velocity (rad/s)
-    // climb_rate_ms_or_thrust: represents either the climb_rate (m/s) or thrust scaled from [0, 1], unitless
-    // use_thrust: IF true: climb_rate_ms_or_thrust represents thrust
-    //             IF false: climb_rate_ms_or_thrust represents climb_rate (m/s)
-    void set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel, float climb_rate_ms_or_thrust, bool use_thrust);
+    // climb_rate_cms_or_thrust: represents either the climb_rate (cm/s) or thrust scaled from [0, 1], unitless
+    // use_thrust: IF true: climb_rate_cms_or_thrust represents thrust
+    //             IF false: climb_rate_cms_or_thrust represents climb_rate (cm/s)
+    void set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel, float climb_rate_cms_or_thrust, bool use_thrust);
 
-    bool set_pos_NEU_m(const Vector3f& pos_neu_m, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool is_terrain_alt = false);
-    bool set_destination(const Location& dest_loc, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
+    bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool terrain_alt = false);
+    bool set_destination(const Location& dest_loc, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
     bool get_wp(Location &loc) const override;
-    void set_accel_NEU_mss(const Vector3f& accel_neu_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
-    void set_vel_NEU_ms(const Vector3f& vel_neu_ms, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
-    void set_vel_accel_NEU_m(const Vector3f& vel_neu_ms, const Vector3f& accel_neu_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
-    bool set_pos_vel_NEU_m(const Vector3f& pos_neu_m, const Vector3f& vel_neu_ms, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
-    bool set_pos_vel_accel_NEU_m(const Vector3f& pos_neu_m, const Vector3f& vel_neu_ms, const Vector3f& accel_neu_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
+    void set_accel(const Vector3f& acceleration, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
+    void set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
+    void set_velaccel(const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
+    bool set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
+    bool set_destination_posvelaccel(const Vector3f& destination, const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
 
     // get position, velocity and acceleration targets
-    const Vector3p& get_target_pos_NEU_m() const;
-    const Vector3f& get_target_vel_NEU_ms() const;
-    const Vector3f& get_target_accel_NEU_mss() const;
+    const Vector3p& get_target_pos() const;
+    const Vector3f& get_target_vel() const;
+    const Vector3f& get_target_accel() const;
 
     // returns true if GUIDED_OPTIONS param suggests SET_ATTITUDE_TARGET's "thrust" field should be interpreted as thrust instead of climb rate
     bool set_attitude_target_provides_thrust() const;
-    bool stabilizing_pos_NE() const;
-    bool stabilizing_vel_NE() const;
+    bool stabilizing_pos_xy() const;
+    bool stabilizing_vel_xy() const;
     bool use_wpnav_for_position_control() const;
 
     void limit_clear();
     void limit_init_time_and_pos();
-    void limit_set(uint32_t timeout_ms, float alt_min_m, float alt_max_m, float horiz_max_m);
+    void limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
     bool limit_check();
 
     bool is_taking_off() const override;
     
-    bool set_speed_NE_ms(float speed_ne_ms) override;
-    bool set_speed_up_ms(float speed_up_ms) override;
-    bool set_speed_down_ms(float speed_down_ms) override;
+    bool set_speed_xy(float speed_xy_cms) override;
+    bool set_speed_up(float speed_up_cms) override;
+    bool set_speed_down(float speed_down_cms) override;
 
     // initialises position controller to implement take-off
-    // takeoff_alt_m is interpreted as alt-above-home (in m) or alt-above-terrain if a rangefinder is available
-    bool do_user_takeoff_start_m(float takeoff_alt_m) override;
+    // takeoff_alt_cm is interpreted as alt-above-home (in cm) or alt-above-terrain if a rangefinder is available
+    bool do_user_takeoff_start(float takeoff_alt_cm) override;
 
     enum class SubMode {
         TakeOff,
@@ -1171,9 +1154,9 @@ protected:
     const char *name() const override { return "GUIDED"; }
     const char *name4() const override { return "GUID"; }
 
-    float wp_distance_m() const override;
-    float wp_bearing_deg() const override;
-    float crosstrack_error_m() const override;
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
+    float crosstrack_error() const override;
 
 private:
 
@@ -1207,40 +1190,17 @@ private:
     void velaccel_control_run();
     void pause_control_run();
     void posvelaccel_control_run();
-    void set_yaw_state_rad(bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_angle);
+    void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
 
     // controls which controller is run (pos or vel):
-    static SubMode guided_mode;
-    static bool send_notification;     // used to send one time notification to ground station
-    static bool takeoff_complete;      // true once takeoff has completed (used to trigger retracting of landing gear)
+    SubMode guided_mode = SubMode::TakeOff;
+    bool send_notification;     // used to send one time notification to ground station
+    bool takeoff_complete;      // true once takeoff has completed (used to trigger retracting of landing gear)
 
     // guided mode is paused or not
-    static bool _paused;
+    bool _paused;
 };
 
-#if AP_SCRIPTING_ENABLED
-// Mode which behaves as guided with custom mode number and name
-class ModeGuidedCustom : public ModeGuided {
-public:
-    // constructor registers custom number and names
-    ModeGuidedCustom(const Number _number, const char* _full_name, const char* _short_name);
-
-    bool init(bool ignore_checks) override;
-
-    Number mode_number() const override { return number; }
-
-    const char *name() const override { return full_name; }
-    const char *name4() const override { return short_name; }
-
-    // State object which can be edited by scripting
-    AP_Vehicle::custom_mode_state state;
-
-private:
-    const Number number;
-    const char* full_name;
-    const char* short_name;
-};
-#endif
 
 class ModeGuidedNoGPS : public ModeGuided {
 
@@ -1328,7 +1288,6 @@ public:
     bool is_autopilot() const override { return false; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool allows_autotune() const override { return true; }
-    bool allows_auto_trim() const override { return true; }
 
 #if FRAME_CONFIG == HELI_FRAME
     bool allows_inverted() const override { return true; };
@@ -1343,9 +1302,9 @@ protected:
     const char *name() const override { return "LOITER"; }
     const char *name4() const override { return "LOIT"; }
 
-    float wp_distance_m() const override;
-    float wp_bearing_deg() const override;
-    float crosstrack_error_m() const override { return pos_control->crosstrack_error_m();}
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
+    float crosstrack_error() const override { return pos_control->crosstrack_error();}
 
 #if AC_PRECLAND_ENABLED
     bool do_precision_loiter();
@@ -1378,7 +1337,6 @@ public:
     bool is_autopilot() const override { return false; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool allows_autotune() const override { return true; }
-    bool allows_auto_trim() const override { return true; }
 
 protected:
 
@@ -1387,12 +1345,12 @@ protected:
 
 private:
 
-    void update_pilot_lean_angle_rad(float &lean_angle_filtered_rad, float &lean_angle_raw_rad);
+    void update_pilot_lean_angle(float &lean_angle_filtered, float &lean_angle_raw);
     float mix_controls(float mix_ratio, float first_control, float second_control);
-    void update_brake_angle_from_velocity(float &brake_angle_rad, float velocity_ms);
+    void update_brake_angle_from_velocity(float &brake_angle, float velocity);
     void init_wind_comp_estimate();
     void update_wind_comp_estimate();
-    void get_wind_comp_lean_angles_rad(float &roll_angle_rad, float &pitch_angle_rad);
+    void get_wind_comp_lean_angles(float &roll_angle, float &pitch_angle);
     void roll_controller_to_pilot_override();
     void pitch_controller_to_pilot_override();
 
@@ -1409,41 +1367,41 @@ private:
     RPMode pitch_mode;
 
     // pilot input related variables
-    float pilot_roll_rad;   // filtered roll lean angle commanded by the pilot. Slowly returns to zero when stick is released
-    float pilot_pitch_rad;  // filtered pitch lean angle commanded by the pilot. Slowly returns to zero when stick is released
-
+    float pilot_roll;                         // pilot requested roll angle (filtered to slow returns to zero)
+    float pilot_pitch;                        // pilot requested roll angle (filtered to slow returns to zero)
 
     // braking related variables
     struct {
-        bool  time_updated_roll;                    // true if braking timeout (roll) has been re-estimated
-        bool  time_updated_pitch;                   // true if braking timeout (pitch) has been re-estimated
-        float gain;                                 // braking gain converting velocity (m/s) -> lean angle (rad)
-        float roll_rad;                             // braking roll angle (rad)
-        float pitch_rad;                            // braking pitch angle (rad)
-        uint32_t start_time_roll_ms;                // time (ms) when braking on roll axis begins
-        uint32_t start_time_pitch_ms;               // time (ms) when braking on pitch axis begins
-        float angle_max_roll_rad;                   // peak roll angle (rad) during braking, used to detect vehicle flattening
-        float angle_max_pitch_rad;                  // peak pitch angle (rad) during braking, used to detect vehicle flattening
-        uint32_t loiter_transition_start_time_ms;   // time (ms) when transition from brake to loiter started
+        uint8_t time_updated_roll   : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
+        uint8_t time_updated_pitch  : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
+
+        float gain;                         // gain used during conversion of vehicle's velocity to lean angle during braking (calculated from rate)
+        float roll;                         // target roll angle during braking periods
+        float pitch;                        // target pitch angle during braking periods
+        int16_t timeout_roll;               // number of cycles allowed for the braking to complete, this timeout will be updated at half-braking
+        int16_t timeout_pitch;              // number of cycles allowed for the braking to complete, this timeout will be updated at half-braking
+        float angle_max_roll;               // maximum lean angle achieved during braking.  Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
+        float angle_max_pitch;              // maximum lean angle achieved during braking  Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
+        int16_t to_loiter_timer;            // cycles to mix brake and loiter controls in POSHOLD_TO_LOITER
     } brake;
 
-    // loiter transition timing (ms)
-    uint32_t controller_to_pilot_start_time_roll_ms;    // time (ms) when transition from controller to pilot roll input began
-    uint32_t controller_to_pilot_start_time_pitch_ms;   // time (ms) when transition from controller to pilot pitch input began
-
-    // cached controller outputs for mix during transition (radians)
-    float controller_final_roll_rad;    // final roll output (rad) from controller before transition to pilot input
-    float controller_final_pitch_rad;   // final pitch output (rad) from controller before transition to pilot input
+    // loiter related variables
+    int16_t controller_to_pilot_timer_roll;     // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
+    int16_t controller_to_pilot_timer_pitch;    // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
+    float controller_final_roll;                // final roll angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
+    float controller_final_pitch;               // final pitch angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
 
     // wind compensation related variables
-    Vector2f wind_comp_ne_mss;              // earth-frame accel estimate (N,E), m/s^2, low-pass filtered
-    float wind_comp_roll_rad;           // roll angle (rad) to counter wind
-    float wind_comp_pitch_rad;          // pitch angle (rad) to counter wind
-    uint32_t wind_comp_start_time_ms;   // time (ms) when wind compensation updates are started
+    Vector2f wind_comp_ef;                      // wind compensation in earth frame, filtered lean angles from position controller
+    float wind_comp_roll;                       // roll angle to compensate for wind
+    float wind_comp_pitch;                      // pitch angle to compensate for wind
+    uint16_t wind_comp_start_timer;             // counter to delay start of wind compensation for a short time after loiter is engaged
+    int8_t  wind_comp_timer;                    // counter to reduce wind comp roll/pitch lean angle calcs to 10hz
 
-    // final outputs (radians)
-    float roll_rad;     // final roll angle sent to attitude controller
-    float pitch_rad;    // final pitch angle sent to attitude controller
+    // final output
+    float roll;   // final roll angle sent to attitude controller
+    float pitch;  // final pitch angle sent to attitude controller
+
 };
 
 
@@ -1477,9 +1435,9 @@ public:
 
     bool use_pilot_yaw() const override;
 
-    bool set_speed_NE_ms(float speed_ne_ms) override;
-    bool set_speed_up_ms(float speed_up_ms) override;
-    bool set_speed_down_ms(float speed_down_ms) override;
+    bool set_speed_xy(float speed_xy_cms) override;
+    bool set_speed_up(float speed_up_cms) override;
+    bool set_speed_down(float speed_down_cms) override;
 
     // RTL states
     enum class SubMode : uint8_t {
@@ -1512,9 +1470,9 @@ protected:
     const char *name4() const override { return "RTL "; }
 
     // for reporting to GCS
-    float wp_distance_m() const override;
-    float wp_bearing_deg() const override;
-    float crosstrack_error_m() const override { return wp_nav->crosstrack_error_m();}
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
+    float crosstrack_error() const override { return wp_nav->crosstrack_error();}
 
     void descent_start();
     void descent_run();
@@ -1603,9 +1561,9 @@ protected:
 
     // for reporting to GCS
     bool get_wp(Location &loc) const override;
-    float wp_distance_m() const override;
-    float wp_bearing_deg() const override;
-    float crosstrack_error_m() const override { return wp_nav->crosstrack_error_m();}
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
+    float crosstrack_error() const override { return wp_nav->crosstrack_error();}
 
 private:
 
@@ -1668,10 +1626,8 @@ public:
     bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
     bool allows_save_trim() const override { return true; }
-    bool allows_auto_trim() const override { return true; }
     bool allows_autotune() const override { return true; }
     bool allows_flip() const override { return true; }
-    bool allows_entry_in_rc_failsafe() const override { return false; }
 
 protected:
 
@@ -1764,15 +1720,15 @@ private:
     AP_Float time_record;       // Time taken to complete the chirp waveform
     AP_Float time_fade_out;     // Time to reach zero amplitude after chirp finishes
 
-    bool att_bf_feedforward;        // Setting of attitude_control->get_bf_feedforward
-    float waveform_time;            // Time reference for waveform
-    float waveform_sample;          // Current waveform sample
-    float waveform_freq_rads;       // Instantaneous waveform frequency
-    float time_const_freq;          // Time at constant frequency before chirp starts
-    int8_t log_subsample;           // Subsample multiple for logging.
-    Vector2f target_vel_ne_ms;      // target velocity for position controller modes
-    Vector2f target_pos_ne_m;       // target position
-    Vector2f input_vel_last_ne_ms;  // last cycle input velocity
+    bool att_bf_feedforward;    // Setting of attitude_control->get_bf_feedforward
+    float waveform_time;        // Time reference for waveform
+    float waveform_sample;      // Current waveform sample
+    float waveform_freq_rads;   // Instantaneous waveform frequency
+    float time_const_freq;      // Time at constant frequency before chirp starts
+    int8_t log_subsample;       // Subsample multiple for logging.
+    Vector2f target_vel;        // target velocity for position controller modes
+    Vector2f target_pos;       // target positon
+    Vector2f input_vel_last;    // last cycle input velocity
     // System ID states
     enum class SystemIDModeState {
         SYSTEMID_STATE_STOPPED,
@@ -1833,7 +1789,7 @@ private:
     uint32_t last_log_ms;
     bool nextmode_attempted;
     uint32_t free_fall_start_ms;    // system time free fall was detected
-    float free_fall_start_vel_u_ms;     // vertical velocity when free fall was detected
+    float free_fall_start_velz;     // vertical velocity when free fall was detected
 };
 
 #if MODE_TURTLE_ENABLED
@@ -1854,7 +1810,6 @@ public:
     bool is_autopilot() const override { return false; }
     void change_motor_direction(bool reverse);
     void output_to_motors() override;
-    bool allows_entry_in_rc_failsafe() const override { return false; }
 
 protected:
     const char *name() const override { return "TURTLE"; }
@@ -1867,16 +1822,11 @@ private:
     float motors_output;
     Vector2f motors_input;
     uint32_t last_throttle_warning_output_ms;
-
-    // Semaphore to protect the motors from the arming state
-    HAL_Semaphore msem;
-    bool shutdown;
 };
 #endif
 
 // modes below rely on Guided mode so must be declared at the end (instead of in alphabetical order)
 
-#if AP_ADSB_AVOIDANCE_ENABLED
 class ModeAvoidADSB : public ModeGuided {
 
 public:
@@ -1902,7 +1852,6 @@ protected:
 private:
 
 };
-#endif  // AP_ADSB_AVOIDANCE_ENABLED
 
 #if MODE_FOLLOW_ENABLED
 class ModeFollow : public ModeGuided {
@@ -1929,8 +1878,8 @@ protected:
 
     // for reporting to GCS
     bool get_wp(Location &loc) const override;
-    float  wp_distance_m() const override;
-    float wp_bearing_deg() const override;
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
 
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
 };
@@ -1984,32 +1933,32 @@ protected:
 
     const char *name() const override { return "ZIGZAG"; }
     const char *name4() const override { return "ZIGZ"; }
-    float wp_distance_m() const override;
-    float wp_bearing_deg() const override;
-    float crosstrack_error_m() const override;
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
+    float crosstrack_error() const override;
 
 private:
 
     void auto_control();
     void manual_control();
     bool reached_destination();
-    bool calculate_next_dest_m(Destination ab_dest, bool use_wpnav_alt, Vector3f& next_dest, bool& is_terrain_alt) const;
+    bool calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Vector3f& next_dest, bool& terrain_alt) const;
     void spray(bool b);
-    bool calculate_side_dest_m(Vector3f& next_dest_neu_m, bool& is_terrain_alt) const;
+    bool calculate_side_dest(Vector3f& next_dest, bool& terrain_alt) const;
     void move_to_side();
 
-    Vector2f dest_A_ne_m;    // in NEU frame in cm relative to ekf origin
-    Vector2f dest_B_ne_m;    // in NEU frame in cm relative to ekf origin
-    Vector3f current_dest_neu_m; // current target destination (use for resume after suspending)
-    bool current_is_terr_alt;
+    Vector2f dest_A;    // in NEU frame in cm relative to ekf origin
+    Vector2f dest_B;    // in NEU frame in cm relative to ekf origin
+    Vector3f current_dest; // current target destination (use for resume after suspending)
+    bool current_terr_alt;
 
     // parameters
     AP_Int8  _auto_enabled;    // top level enable/disable control
 #if HAL_SPRAYER_ENABLED
     AP_Int8  _spray_enabled;   // auto spray enable/disable
 #endif
-    AP_Int8  _wp_delay_s;      // delay for zigzag waypoint
-    AP_Float _side_dist_m;     // sideways distance
+    AP_Int8  _wp_delay;        // delay for zigzag waypoint
+    AP_Float _side_dist;       // sideways distance
     AP_Int8  _direction;       // sideways direction
     AP_Int16 _line_num;        // total number of lines
 
@@ -2059,21 +2008,46 @@ protected:
 
 private:
 
-    uint32_t _entry_time_start_ms;  // time remaining until entry phase moves on to glide phase
-    uint32_t _last_logged_ms;       // used for timing slow rate autorotation log
+    // --- Internal variables ---
+    float _initial_rpm;             // Head speed recorded at initiation of flight mode (RPM)
+    float _target_head_speed;       // The terget head main rotor head speed.  Normalised by main rotor set point
+    float _desired_v_z;             // Desired vertical
+    int32_t _pitch_target;          // Target pitch attitude to pass to attitude controller
+    uint32_t _entry_time_start_ms;  // Time remaining until entry phase moves on to glide phase
+    float _hs_decay;                // The head accerleration during the entry phase
 
-    enum class Phase {
-        ENTRY_INIT,
+    enum class Autorotation_Phase {
         ENTRY,
-        GLIDE_INIT,
-        GLIDE,
-        FLARE_INIT,
+        SS_GLIDE,
         FLARE,
-        TOUCH_DOWN_INIT,
         TOUCH_DOWN,
-        LANDED_INIT,
-        LANDED,
-    } current_phase;
+        LANDED } phase_switch;
+
+    enum class Navigation_Decision {
+        USER_CONTROL_STABILISED,
+        STRAIGHT_AHEAD,
+        INTO_WIND,
+        NEAREST_RALLY} nav_pos_switch;
+
+    // --- Internal flags ---
+    struct controller_flags {
+            bool entry_initial             : 1;
+            bool ss_glide_initial          : 1;
+            bool flare_initial             : 1;
+            bool touch_down_initial        : 1;
+            bool landed_initial            : 1;
+            bool straight_ahead_initial    : 1;
+            bool level_initial             : 1;
+            bool break_initial             : 1;
+            bool bad_rpm                   : 1;
+    } _flags;
+
+    struct message_flags {
+            bool bad_rpm                   : 1;
+    } _msg_flags;
+
+    //--- Internal functions ---
+    void warning_message(uint8_t message_n);    //Handles output messages to the terminal
 
 };
 #endif

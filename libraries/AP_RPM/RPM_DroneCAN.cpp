@@ -34,11 +34,15 @@ AP_RPM_DroneCAN::AP_RPM_DroneCAN(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_
 }
 
 // Subscribe to incoming rpm messages
-bool AP_RPM_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+void AP_RPM_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    const auto driver_index = ap_dronecan->get_driver_index();
+    if (ap_dronecan == nullptr) {
+        return;
+    }
 
-    return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_rpm, driver_index) != nullptr);
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_rpm, ap_dronecan->get_driver_index()) == nullptr) {
+        AP_BoardConfig::allocation_error("rpm_sub");
+    }
 }
 
 // Receive new CAN message

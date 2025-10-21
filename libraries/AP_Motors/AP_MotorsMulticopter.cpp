@@ -191,7 +191,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Param: SLEW_UP_TIME
     // @DisplayName: Output slew time for increasing throttle
     // @Description: Time in seconds to slew output from zero to full. This is used to limit the rate at which output can change. Range is constrained between 0 and 0.5.
-    // @Range: 0 0.5
+    // @Range: 0 .5
     // @Units: s
     // @Increment: 0.001
     // @User: Advanced
@@ -200,7 +200,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Param: SLEW_DN_TIME
     // @DisplayName: Output slew time for decreasing throttle
     // @Description: Time in seconds to slew output from full to zero. This is used to limit the rate at which output can change.  Range is constrained between 0 and 0.5.
-    // @Range: 0 0.5
+    // @Range: 0 .5
     // @Units: s
     // @Increment: 0.001
     // @User: Advanced
@@ -321,7 +321,7 @@ void AP_MotorsMulticopter::update_throttle_filter()
     const float last_thr = _throttle_filter.get();
 
     if (armed()) {
-        _throttle_filter.apply(_throttle_in, _dt_s);
+        _throttle_filter.apply(_throttle_in, _dt);
         // constrain filtered throttle
         if (_throttle_filter.get() < 0.0f) {
             _throttle_filter.reset(0.0f);
@@ -341,7 +341,7 @@ void AP_MotorsMulticopter::update_throttle_filter()
 
     // calculate slope normalized from per-micro
     const float rate = fabsf(_throttle_slew.slope() * 1e6);
-    _throttle_slew_rate = _throttle_slew_filter.apply(rate, _dt_s);
+    _throttle_slew_rate = _throttle_slew_filter.apply(rate, _dt);
 }
 
 // return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
@@ -372,7 +372,7 @@ float AP_MotorsMulticopter::get_current_limit_max_throttle()
 
     float batt_current_ratio = _batt_current / batt_current_max;
 
-    _throttle_limit += (_dt_s / (_dt_s + _batt_current_time_constant)) * (1.0f - batt_current_ratio);
+    _throttle_limit += (_dt / (_dt + _batt_current_time_constant)) * (1.0f - batt_current_ratio);
 
     // throttle limit drops to 20% between hover and full throttle
     _throttle_limit = constrain_float(_throttle_limit, 0.2f, 1.0f);
@@ -437,13 +437,13 @@ void AP_MotorsMulticopter::set_actuator_with_slew(float& actuator_output, float 
 
     // If MOT_SLEW_UP_TIME is set, calculate the highest allowed new output value, constrained 0.0~1.0
     if (is_positive(_slew_up_time)) {
-        float output_delta_up_max = _dt_s / (constrain_float(_slew_up_time, 0.0f, 0.5f));
+        float output_delta_up_max = _dt / (constrain_float(_slew_up_time, 0.0f, 0.5f));
         output_slew_limit_up = constrain_float(actuator_output + output_delta_up_max, 0.0f, 1.0f);
     }
 
     // If MOT_SLEW_DN_TIME is set, calculate the lowest allowed new output value, constrained 0.0~1.0
     if (is_positive(_slew_dn_time)) {
-        float output_delta_dn_max = _dt_s / (constrain_float(_slew_dn_time, 0.0f, 0.5f));
+        float output_delta_dn_max = _dt / (constrain_float(_slew_dn_time, 0.0f, 0.5f));
         output_slew_limit_dn = constrain_float(actuator_output - output_delta_dn_max, 0.0f, 1.0f);
     }
 
@@ -512,7 +512,7 @@ void AP_MotorsMulticopter::output_logic()
     const constexpr float minimum_spool_time = 0.05f;
     if (armed()) {
         if (_disarm_disable_pwm && (_disarm_safe_timer < _safe_time)) {
-            _disarm_safe_timer += _dt_s;
+            _disarm_safe_timer += _dt;
         } else {
             _disarm_safe_timer = _safe_time;
         }
@@ -537,7 +537,11 @@ void AP_MotorsMulticopter::output_logic()
         // Servos set to their trim values or in a test condition.
 
         // set limits flags
-        limit.set_all(true);
+        limit.roll = true;
+        limit.pitch = true;
+        limit.yaw = true;
+        limit.throttle_lower = true;
+        limit.throttle_upper = true;
 
         // make sure the motors are spooling in the correct direction
         if (_spool_desired != DesiredSpoolState::SHUT_DOWN && _disarm_safe_timer >= _safe_time.get()) {
@@ -559,13 +563,17 @@ void AP_MotorsMulticopter::output_logic()
         // Servos should be moving to correct the current attitude.
 
         // set limits flags
-        limit.set_all(true);
+        limit.roll = true;
+        limit.pitch = true;
+        limit.yaw = true;
+        limit.throttle_lower = true;
+        limit.throttle_upper = true;
 
         // set and increment ramp variables
         switch (_spool_desired) {
         case DesiredSpoolState::SHUT_DOWN: {
             const float spool_time = _spool_down_time > minimum_spool_time ? _spool_down_time : _spool_up_time;
-            const float spool_step = _dt_s / spool_time;
+            const float spool_step = _dt / spool_time;
             _spin_up_ratio -= spool_step;
             // constrain ramp value and update mode
             if (_spin_up_ratio <= 0.0f) {
@@ -576,7 +584,7 @@ void AP_MotorsMulticopter::output_logic()
         }
 
         case DesiredSpoolState::THROTTLE_UNLIMITED: {
-            const float spool_step = _dt_s / _spool_up_time;
+            const float spool_step = _dt / _spool_up_time;
             _spin_up_ratio += spool_step;
             // constrain ramp value and update mode
             if (_spin_up_ratio >= 1.0f) {
@@ -589,9 +597,9 @@ void AP_MotorsMulticopter::output_logic()
             break;
         }
         case DesiredSpoolState::GROUND_IDLE: {
-            const float spool_up_step = _dt_s / _spool_up_time;
+            const float spool_up_step = _dt / _spool_up_time;
             const float spool_down_time = _spool_down_time > minimum_spool_time ? _spool_down_time : _spool_up_time;
-            const float spool_down_step = _dt_s / spool_down_time;
+            const float spool_down_step = _dt / spool_down_time;
             float spin_up_armed_ratio = 0.0f;
             if (thr_lin.get_spin_min() > 0.0f) {
                 spin_up_armed_ratio = _spin_arm / thr_lin.get_spin_min();
@@ -608,12 +616,16 @@ void AP_MotorsMulticopter::output_logic()
         break;
     }
     case SpoolState::SPOOLING_UP: {
-        const float spool_step = _dt_s / _spool_up_time;
+        const float spool_step = _dt / _spool_up_time;
         // Maximum throttle should move from minimum to maximum.
         // Servos should exhibit normal flight behavior.
 
         // initialize limits flags
-        limit.set_all(false);
+        limit.roll = false;
+        limit.pitch = false;
+        limit.yaw = false;
+        limit.throttle_lower = false;
+        limit.throttle_upper = false;
 
         // make sure the motors are spooling in the correct direction
         if (_spool_desired != DesiredSpoolState::THROTTLE_UNLIMITED) {
@@ -640,12 +652,16 @@ void AP_MotorsMulticopter::output_logic()
     }
 
     case SpoolState::THROTTLE_UNLIMITED: {
-        const float spool_step = _dt_s / _spool_up_time;
+        const float spool_step = _dt / _spool_up_time;
         // Throttle should exhibit normal flight behavior.
         // Servos should exhibit normal flight behavior.
 
         // initialize limits flags
-        limit.set_all(false);
+        limit.roll = false;
+        limit.pitch = false;
+        limit.yaw = false;
+        limit.throttle_lower = false;
+        limit.throttle_upper = false;
 
         // make sure the motors are spooling in the correct direction
         if (_spool_desired != DesiredSpoolState::THROTTLE_UNLIMITED) {
@@ -670,7 +686,11 @@ void AP_MotorsMulticopter::output_logic()
         // Servos should exhibit normal flight behavior.
 
         // initialize limits flags
-        limit.set_all(false);
+        limit.roll = false;
+        limit.pitch = false;
+        limit.yaw = false;
+        limit.throttle_lower = false;
+        limit.throttle_upper = false;
 
         // make sure the motors are spooling in the correct direction
         if (_spool_desired == DesiredSpoolState::THROTTLE_UNLIMITED) {
@@ -681,7 +701,7 @@ void AP_MotorsMulticopter::output_logic()
         // set and increment ramp variables
         _spin_up_ratio = 1.0f;
         const float spool_time = _spool_down_time > minimum_spool_time ? _spool_down_time : _spool_up_time;
-        const float spool_step = _dt_s / spool_time;
+        const float spool_step = _dt / spool_time;
         _throttle_thrust_max -= spool_step;
 
         // constrain ramp value and update mode
@@ -720,7 +740,7 @@ void AP_MotorsMulticopter::set_throttle_passthrough_for_esc_calibration(float th
 // output a thrust to all motors that match a given motor mask. This
 // is used to control tiltrotor motors in forward flight. Thrust is in
 // the range 0 to 1
-void AP_MotorsMulticopter::output_motor_mask(float thrust, uint32_t mask, float rudder_dt)
+void AP_MotorsMulticopter::output_motor_mask(float thrust, uint16_t mask, float rudder_dt)
 {
     const int16_t pwm_min = get_pwm_output_min();
     const int16_t pwm_range = get_pwm_output_max() - pwm_min;
@@ -786,7 +806,7 @@ bool AP_MotorsMulticopter::arming_checks(size_t buflen, char *buffer) const
             continue;
         }
         uint8_t chan;
-        SRV_Channel::Function function = SRV_Channels::get_motor_function(i);
+        SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
         if (!SRV_Channels::find_channel(function, chan)) {
             hal.util->snprintf(buffer, buflen, "no SERVOx_FUNCTION set to Motor%u", i + 1);
             return false;
@@ -807,17 +827,6 @@ bool AP_MotorsMulticopter::arming_checks(size_t buflen, char *buffer) const
         return false;
     }
 
-    return true;
-}
-
-// return raw throttle out fraction for motor motor_num, returns true if value is valid, false otherwise
-bool AP_MotorsMulticopter::get_raw_motor_throttle(uint8_t motor_num, float& thr_out) const
-{
-    if (motor_num >= AP_MOTORS_MAX_NUM_MOTORS || !motor_enabled[motor_num]) {
-        return false;
-    }
-
-    thr_out = constrain_float(_actuator[motor_num], 0.0f, 1.0f);
     return true;
 }
 

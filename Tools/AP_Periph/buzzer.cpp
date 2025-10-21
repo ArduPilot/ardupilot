@@ -1,6 +1,6 @@
 #include "AP_Periph.h"
 
-#if AP_PERIPH_NOTIFY_ENABLED || AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED
+#if defined(HAL_PERIPH_ENABLE_NOTIFY) || defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY)
 
 /*
   buzzer support
@@ -31,10 +31,10 @@ void AP_Periph_FW::handle_beep_command(CanardInstance* canard_instance, CanardRx
     }
     buzzer_start_ms = AP_HAL::millis();
     buzzer_len_ms = req.duration*1000;
-#if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED
-    float volume = constrain_float(periph.g.buzz_volume*0.01f, 0, 1);
-#elif AP_PERIPH_NOTIFY_ENABLED
-    float volume = constrain_float(periph.notify.get_buzz_volume()*0.01f, 0, 1);
+#ifdef HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY
+    float volume = constrain_float(periph.g.buzz_volume/100.0f, 0, 1);
+#elif defined(HAL_PERIPH_ENABLE_NOTIFY)
+    float volume = constrain_float(periph.notify.get_buzz_volume()/100.0f, 0, 1);
 #endif
     hal.util->toneAlarm_set_buzzer_tone(req.frequency, volume, uint32_t(req.duration*1000));
 }
@@ -53,4 +53,4 @@ void AP_Periph_FW::can_buzzer_update(void)
     }
 }
 
-#endif // AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_NOTIFY_ENABLED
+#endif // (HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || (HAL_PERIPH_ENABLE_NOTIFY)

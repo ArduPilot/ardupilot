@@ -16,6 +16,7 @@
 #include "DeviceBus.h"
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/OwnPtr.h>
 #include <stdio.h>
 
 #include "Scheduler.h"

@@ -14,11 +14,15 @@ extern const AP_HAL::HAL& hal;
 AP_RCProtocol_DroneCAN::Registry AP_RCProtocol_DroneCAN::registry;
 AP_RCProtocol_DroneCAN *AP_RCProtocol_DroneCAN::_singleton;
 
-bool AP_RCProtocol_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+void AP_RCProtocol_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    const auto driver_index = ap_dronecan->get_driver_index();
+    if (ap_dronecan == nullptr) {
+        return;
+    }
 
-    return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_rcinput, driver_index) != nullptr);
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_rcinput, ap_dronecan->get_driver_index()) == nullptr) {
+        AP_BoardConfig::allocation_error("rc_sub");
+    }
 }
 
 AP_RCProtocol_DroneCAN* AP_RCProtocol_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id)

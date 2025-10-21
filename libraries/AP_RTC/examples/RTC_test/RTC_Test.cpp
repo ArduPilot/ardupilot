@@ -115,6 +115,9 @@ void loop(void)
     hal.console->printf("Test complete.\n\n");
 }
 
+const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {
+    AP_GROUPEND
+};
 GCS_Dummy _gcs;
 
 AP_HAL_MAIN();

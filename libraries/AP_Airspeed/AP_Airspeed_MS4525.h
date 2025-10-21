@@ -23,6 +23,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/OwnPtr.h>
 #include <AP_HAL/I2CDevice.h>
 #include <utility>
 
@@ -31,12 +32,9 @@
 class AP_Airspeed_MS4525 : public AP_Airspeed_Backend
 {
 public:
-    using AP_Airspeed_Backend::AP_Airspeed_Backend;
-
-    ~AP_Airspeed_MS4525(void) {
-        delete _dev;
-    }
-
+    AP_Airspeed_MS4525(AP_Airspeed &frontend, uint8_t _instance);
+    ~AP_Airspeed_MS4525(void) {}
+    
     // probe and initialise the sensor
     bool init() override;
 
@@ -62,7 +60,7 @@ private:
     float _pressure;
     uint32_t _last_sample_time_ms;
     uint32_t _measurement_started_ms;
-    AP_HAL::I2CDevice *_dev;
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 
     bool probe(uint8_t bus, uint8_t address);
 };

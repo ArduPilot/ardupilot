@@ -25,6 +25,8 @@
 #include <AP_Logger/AP_Logger.h>
 #include <SITL/SITL.h>
 
+extern const AP_HAL::HAL& hal;
+
 #define LOG_TAG "COMPASS"
 
 AP_Compass_DroneCAN::DetectedModules AP_Compass_DroneCAN::_detected_modules[];
@@ -35,16 +37,24 @@ AP_Compass_DroneCAN::AP_Compass_DroneCAN(AP_DroneCAN* ap_dronecan, uint32_t devi
 {
 }
 
-bool AP_Compass_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+void AP_Compass_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    const auto driver_index = ap_dronecan->get_driver_index();
+    if (ap_dronecan == nullptr) {
+        return;
+    }
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_magnetic_field, ap_dronecan->get_driver_index()) == nullptr) {
+        AP_BoardConfig::allocation_error("mag_sub");
+    }
 
-    return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_magnetic_field, driver_index) != nullptr)
-        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_magnetic_field_2, driver_index) != nullptr)
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_magnetic_field_2, ap_dronecan->get_driver_index()) == nullptr) {
+        AP_BoardConfig::allocation_error("mag2_sub");
+    }
+
 #if AP_COMPASS_DRONECAN_HIRES_ENABLED
-        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_magnetic_field_hires, driver_index) != nullptr)
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_magnetic_field_hires, ap_dronecan->get_driver_index()) == nullptr) {
+        AP_BoardConfig::allocation_error("mag3_sub");
+    }
 #endif
-    ;
 }
 
 AP_Compass_Backend* AP_Compass_DroneCAN::probe(uint8_t index)

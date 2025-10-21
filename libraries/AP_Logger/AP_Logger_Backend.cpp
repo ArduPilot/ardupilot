@@ -13,7 +13,6 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <Filter/Filter.h>
 #include "AP_Logger.h"
-#include <AP_IOMCU/AP_IOMCU.h>
 
 #if HAL_LOGGER_FENCE_ENABLED
     #include <AC_Fence/AC_Fence.h>
@@ -404,7 +403,7 @@ void AP_Logger_Backend::validate_WritePrioritisedBlock(const void *pBuffer,
         } else {
             strncpy(name, "?NM?", ARRAY_SIZE(name));
         }
-        AP_HAL::panic("Size mismatch for %u (%s) (expected=%u got=%u)",
+        AP_HAL::panic("Size mismatch for %u (%s) (expected=%u got=%u)\n",
                       type, name, type_len, size);
     }
 }
@@ -605,13 +604,6 @@ bool AP_Logger_Backend::Write_VER()
         patch: fwver.patch,
         fw_type: fwver.fw_type,
         git_hash: fwver.fw_hash,
-#if HAL_WITH_IO_MCU
-        iomcu_mcu_id : AP::iomcu()->get_mcu_id(),
-        iomcu_cpu_id : AP::iomcu()->get_cpu_id(),
-#else
-        iomcu_mcu_id : 0,
-        iomcu_cpu_id : 0,
-#endif  // HAL_WITH_IO_MCU
     };
     strncpy(pkt.fw_string, fwver.fw_string, ARRAY_SIZE(pkt.fw_string)-1);
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 """
 Runs flake8 over Python files which contain a marker indicating
@@ -8,7 +8,6 @@ they are clean, ensures that they actually are
 """
 
 import os
-import pathlib
 import subprocess
 import sys
 
@@ -37,16 +36,12 @@ class Flake8Checker(object):
             self.retcode = 1
 
     def run(self):
-        for (dirpath, dirnames, filenames) in os.walk("."):
+        for (dirpath, dirnames, filenames) in os.walk("Tools"):
             for filename in filenames:
                 if os.path.splitext(filename)[1] != ".py":
                     continue
-                if filename == 'env.py':
-                    # we are generating content into these files which
-                    # is not actually Python...
-                    continue
                 filepath = os.path.join(dirpath, filename)
-                content = pathlib.Path(filepath).read_text()
+                content = open(filepath).read()
                 if "AP_FLAKE8_CLEAN" not in content:
                     continue
                 self.files_to_check.append(filepath)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 # Copyright (C) 2016  Intel Corporation. All rights reserved.
 #
@@ -14,9 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-# flake8: noqa
-
+from __future__ import print_function
 import argparse
 import numpy as np
 import sys

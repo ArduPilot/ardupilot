@@ -130,16 +130,10 @@ public:
     // true if bailing out autorotation
     bool autorotation_bailout(void) const { return _main_rotor.autorotation.bailing_out(); }
 
-    // true if the autorotation functionality within the rsc has been enabled
-    bool rsc_autorotation_enabled(void) const { return _main_rotor.autorotation.enabled(); }
-
     // set land complete flag
     void set_land_complete(bool landed) { _heliflags.land_complete = landed; }
-
-    // function to calculate and set the normalised collective position given a desired blade pitch angle (deg)
-    void set_coll_from_ang(float col_ang_deg);
-
-    //return zero lift collective position
+	
+	//return zero lift collective position
     float get_coll_mid() const { return _collective_zero_thrust_pct; }
 
     // enum for heli optional features

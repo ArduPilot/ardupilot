@@ -24,7 +24,7 @@ mkdir -p swarm/plane swarm/copter
 
 # create default parameter file for the follower
 cat <<EOF > swarm/copter/follow.parm
-MAV_SYSID 2
+SYSID_THISMAV 2
 FOLL_ENABLE 1
 FOLL_OFS_X -5
 FOLL_OFS_TYPE 1

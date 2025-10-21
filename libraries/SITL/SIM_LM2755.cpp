@@ -1,8 +1,6 @@
-#include "SIM_config.h"
+#include "SIM_LM2755.h"
 
 #if AP_SIM_LM2755_ENABLED
-
-#include "SIM_LM2755.h"
 
 using namespace SITL;
 

@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-# flake8: noqa
-
 import argparse
 import csv
 import sys

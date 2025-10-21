@@ -34,6 +34,11 @@ AP_Airspeed_Backend::AP_Airspeed_Backend(AP_Airspeed &_frontend, uint8_t _instan
 {
 }
 
+AP_Airspeed_Backend::~AP_Airspeed_Backend(void)
+{
+}
+ 
+
 int8_t AP_Airspeed_Backend::get_pin(void) const
 {
 #ifndef HAL_BUILD_AP_PERIPH

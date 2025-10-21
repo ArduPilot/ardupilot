@@ -898,7 +898,7 @@ void AnalogIn::update_power_flags(void)
 #endif
 
     if (_power_flags != 0 &&
-        (_power_flags&~MAV_POWER_STATUS_CHANGED) != (flags&~MAV_POWER_STATUS_CHANGED) &&
+        _power_flags != flags &&
         hal.util->get_soft_armed()) {
         // the power status has changed while armed
         flags |= MAV_POWER_STATUS_CHANGED;

@@ -95,6 +95,31 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
     }
 }
 
+
+#if ENABLE_HEAP
+/*
+  realloc implementation thanks to wolfssl, used by ExpandingString
+  and ExpandingArray
+ */
+void *Util::std_realloc(void *addr, uint32_t size)
+{
+    if (size == 0) {
+       free(addr);
+       return nullptr;
+    }
+    if (addr == nullptr) {
+        return malloc(size);
+    }
+    void *new_mem = malloc(size);
+    if (new_mem != nullptr) {
+        memcpy(new_mem, addr, chHeapGetSize(addr) > size ? size : chHeapGetSize(addr));
+        free(addr);
+    }
+    return new_mem;
+}
+
+#endif // ENABLE_HEAP
+
 #endif // CH_CFG_USE_HEAP
 
 /*
@@ -633,17 +658,14 @@ void Util::uart_info(ExpandingString &str)
     for (uint8_t i = 0; i < HAL_UART_NUM_SERIAL_PORTS; i++) {
         auto *uart = hal.serial(i);
         if (uart) {
-#if HAL_WITH_IO_MCU
-            if (i == HAL_UART_IOMCU_IDX) {
-                str.printf("IOMCU   ");
-            } else
-#endif
-            {
-                str.printf("SERIAL%u ", i);
-            }
+            str.printf("SERIAL%u ", i);
             uart->uart_info(str, sys_uart_stats.serial[i], dt_ms);
         }
     }
+#if HAL_WITH_IO_MCU
+    str.printf("IOMCU   ");
+    uart_io.uart_info(str, sys_uart_stats.io, dt_ms);
+#endif
 }
 
 // Log UART message for each serial port
@@ -662,6 +684,10 @@ void Util::uart_log()
             uart->log_stats(i, log_uart_stats.serial[i], dt_ms);
         }
     }
+#if HAL_WITH_IO_MCU
+    // Use magic instance 100 for IOMCU
+    uart_io.log_stats(100, log_uart_stats.io, dt_ms);
+#endif
 }
 #endif // HAL_LOGGING_ENABLED
 #endif // HAL_UART_STATS_ENABLED

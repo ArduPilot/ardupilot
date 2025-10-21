@@ -1,6 +1,6 @@
 #include "AP_Periph.h"
 
-#if AP_PERIPH_GPS_ENABLED
+#ifdef HAL_PERIPH_ENABLE_GPS
 
 /*
   GPS support
@@ -317,4 +317,4 @@ void AP_Periph_FW::send_relposheading_msg() {
 #endif // GPS_MOVING_BASELINE
 }
 
-#endif // AP_PERIPH_GPS_ENABLED
+#endif // HAL_PERIPH_ENABLE_GPS

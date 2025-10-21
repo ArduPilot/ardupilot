@@ -67,7 +67,6 @@ const struct UnitStructure log_Units[] = {
     { '%', "%" },             // percent
     { 'S', "satellites" },    // number of satellites
     { 's', "s" },             // seconds
-    { 't', "N.m" },           // Newton meters, torque
     { 'q', "rpm" },           // rounds per minute. Not SI, but sometimes more intuitive than Hertz
     { 'r', "rad" },           // radians
     { 'U', "deglongitude" },  // degrees of longitude
@@ -149,7 +148,6 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AC_AttitudeControl/LogStructure.h>
 #include <AP_HAL/LogStructure.h>
 #include <AP_Mission/LogStructure.h>
-#include <AP_Servo_Telem/LogStructure.h>
 
 // structure used to define logging format
 // It is packed on ChibiOS to save flash space; however, this causes problems
@@ -316,7 +314,6 @@ struct PACKED log_MAV {
     uint8_t flags;
     uint16_t stream_slowdown_ms;
     uint16_t times_full;
-    uint32_t GCS_SYSID_last_seen_ms;
 };
 
 struct PACKED log_RSSI {
@@ -457,7 +454,7 @@ struct PACKED log_RFND {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint8_t instance;
-    float dist;
+    uint16_t dist;
     uint8_t status;
     uint8_t orient;
     int8_t quality;
@@ -480,6 +477,22 @@ struct PACKED log_TERRAIN {
     float reference_offset;
 };
 
+struct PACKED log_CSRV {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;     
+    uint8_t id;
+    float position;
+    float force;
+    float speed;
+    uint8_t power_pct;
+    float pos_cmd;
+    float voltage;
+    float current;
+    float mot_temp;
+    float pcb_temp;
+    uint8_t error;
+};
+
 struct PACKED log_ARSP {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -496,7 +509,7 @@ struct PACKED log_ARSP {
     uint8_t primary;
 };
 
-struct PACKED log_DMS {
+struct PACKED log_MAV_Stats {
     LOG_PACKET_HEADER;
     uint64_t timestamp;
     uint32_t seqno;
@@ -637,8 +650,6 @@ struct PACKED log_VER {
     uint16_t _APJ_BOARD_ID;
     uint8_t build_type;
     uint8_t filter_version;
-    uint32_t iomcu_mcu_id;
-    uint32_t iomcu_cpu_id;
 };
 
 
@@ -668,7 +679,7 @@ struct PACKED log_VER {
 // @Field: TimeUS: Time since system startup
 // @Field: ArmState: true if vehicle is now armed
 // @Field: ArmChecks: arming bitmask at time of arming
-// @FieldBitmaskEnum: ArmChecks: AP_Arming::Check
+// @FieldBitmaskEnum: ArmChecks: AP_Arming::ArmingChecks
 // @Field: Forced: true if arm/disarm was forced
 // @Field: Method: method used for arming
 // @FieldValueEnum: Method: AP_Arming::Method
@@ -687,6 +698,21 @@ struct PACKED log_VER {
 // @Field: Hp: Probability sensor is healthy
 // @Field: TR: innovation test ratio
 // @Field: Pri: True if sensor is the primary sensor
+
+// @LoggerMessage: CSRV
+// @Description: Servo feedback data
+// @Field: TimeUS: Time since system startup
+// @Field: Id: Servo number this data relates to
+// @Field: Pos: Current servo position
+// @Field: Force: Force being applied
+// @Field: Speed: Current servo movement speed
+// @Field: Pow: Amount of rated power being applied
+// @Field: PosCmd: commanded servo position
+// @Field: V: Voltage
+// @Field: A: Current
+// @Field: MotT: motor temperature
+// @Field: PCBT: PCB temperature
+// @Field: Err: error flags
 
 // @LoggerMessage: DMS
 // @Description: DataFlash-Over-MAVLink statistics
@@ -775,11 +801,10 @@ struct PACKED log_VER {
 // @Field: txp: transmitted packet count
 // @Field: rxp: received packet count
 // @Field: rxdp: perceived number of packets we never received
-// @Field: flags: compact representation of some state of the channel
+// @Field: flags: compact representation of some stage of the channel
 // @FieldBitmaskEnum: flags: GCS_MAVLINK::Flags
 // @Field: ss: stream slowdown is the number of ms being added to each message to fit within bandwidth
 // @Field: tf: times buffer was full when a message was going to be sent
-// @Field: mgs: time MAV_GCS_SYSID heartbeat (or manual control) last seen
 
 // @LoggerMessage: MAVC
 // @Description: MAVLink command we have just executed
@@ -1001,7 +1026,6 @@ struct PACKED log_VER {
 // @Field: Stat: Sensor state
 // @FieldValueEnum: Stat: RangeFinder::Status
 // @Field: Orient: Sensor orientation
-// @FieldValueEnum: Orient: Rotation
 // @Field: Quality: Signal quality. -1 means invalid, 0 is no signal, 100 is perfect signal
 
 // @LoggerMessage: RSSI
@@ -1113,9 +1137,7 @@ struct PACKED log_VER {
 // @Description: Ardupilot version
 // @Field: TimeUS: Time since system startup
 // @Field: BT: Board type
-// @FieldValueEnum: BT: HAL_BOARD
 // @Field: BST: Board subtype
-// @FieldValueEnum: BST: HAL_BOARD_SUBTYPE
 // @Field: Maj: Major version number
 // @Field: Min: Minor version number
 // @Field: Pat: Patch number
@@ -1124,10 +1146,7 @@ struct PACKED log_VER {
 // @Field: FWS: Firmware version string
 // @Field: APJ: Board ID
 // @Field: BU: Build vehicle type
-// @FieldValueEnum: BU: APM_BUILD
 // @Field: FV: Filter version
-// @Field: IMI: IOMCU MCU ID
-// @Field: ICI: IOMCU CPU ID
 
 // @LoggerMessage: MOTB
 // @Description: Motor mixer information
@@ -1187,8 +1206,8 @@ LOG_STRUCTURE_FROM_MOUNT \
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn", "s---", "F---" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
-      "RFND", "QBfBBb", "TimeUS,Instance,Dist,Stat,Orient,Quality", "s#m--%", "F-0---", true }, \
-    { LOG_DMS_MSG, sizeof(log_DMS), \
+      "RFND", "QBCBBb", "TimeUS,Instance,Dist,Stat,Orient,Quality", "s#m--%", "F-B---", true }, \
+    { LOG_MAV_STATS, sizeof(log_MAV_Stats), \
       "DMS", "QIIIIBBBBBBBBB",         "TimeUS,N,Dp,RT,RS,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s-------------", "F-------------" }, \
     LOG_STRUCTURE_FROM_BEACON                                       \
     LOG_STRUCTURE_FROM_PROXIMITY                                    \
@@ -1202,7 +1221,8 @@ LOG_STRUCTURE_FROM_AVOIDANCE \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHHf","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded,ROfs", "s-DU-mm--m", "F-GG-00--0", true }, \
 LOG_STRUCTURE_FROM_ESC_TELEM \
-LOG_STRUCTURE_FROM_SERVO_TELEM \
+    { LOG_CSRV_MSG, sizeof(log_CSRV), \
+      "CSRV","QBfffBfffffB","TimeUS,Id,Pos,Force,Speed,Pow,PosCmd,V,A,MotT,PCBT,Err", "s#---%dvAOO-", "F-000000000-", false }, \
     { LOG_PIDR_MSG, sizeof(log_PID), \
       "PIDR", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS, true },  \
     { LOG_PIDP_MSG, sizeof(log_PID), \
@@ -1233,7 +1253,7 @@ LOG_STRUCTURE_FROM_FENCE \
     { LOG_RALLY_MSG, sizeof(log_Rally), \
       "RALY", "QBBLLhB", "TimeUS,Tot,Seq,Lat,Lng,Alt,Flags", "s--DUm-", "F--GGB-" },  \
     { LOG_MAV_MSG, sizeof(log_MAV),   \
-      "MAV", "QBHHHBHHI",   "TimeUS,chan,txp,rxp,rxdp,flags,ss,tf,mgs", "s#----s-s", "F-000-C-C" },   \
+      "MAV", "QBHHHBHH",   "TimeUS,chan,txp,rxp,rxdp,flags,ss,tf", "s#----s-", "F-000-C-" },   \
 LOG_STRUCTURE_FROM_VISUALODOM \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEEE", "F-0000" , true }, \
@@ -1258,7 +1278,7 @@ LOG_STRUCTURE_FROM_AIS \
     { LOG_SCRIPTING_MSG, sizeof(log_Scripting), \
       "SCR",   "QNIii", "TimeUS,Name,Runtime,Total_mem,Run_mem", "s#sbb", "F-F--", true }, \
     { LOG_VER_MSG, sizeof(log_VER), \
-      "VER",   "QBHBBBBIZHBBII", "TimeUS,BT,BST,Maj,Min,Pat,FWT,GH,FWS,APJ,BU,FV,IMI,ICI", "s-------------", "F-------------", false }, \
+      "VER",   "QBHBBBBIZHBB", "TimeUS,BT,BST,Maj,Min,Pat,FWT,GH,FWS,APJ,BU,FV", "s-----------", "F-----------", false }, \
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt), \
       "MOTB", "QfffffB",  "TimeUS,LiftMax,BatVolt,ThLimit,ThrAvMx,ThrOut,FailFlags", "s------", "F------" , true }
 
@@ -1286,7 +1306,7 @@ enum LogMessages : uint8_t {
     LOG_IDS_FROM_CAMERA,
     LOG_IDS_FROM_MOUNT,
     LOG_TERRAIN_MSG,
-    LOG_IDS_FROM_SERVO_TELEM,
+    LOG_CSRV_MSG,
     LOG_IDS_FROM_ESC_TELEM,
     LOG_IDS_FROM_BATTMONITOR,
     LOG_IDS_FROM_HAL_CHIBIOS,
@@ -1306,7 +1326,7 @@ enum LogMessages : uint8_t {
     LOG_ARSP_MSG,
     LOG_IDS_FROM_RPM,
     LOG_RFND_MSG,
-    LOG_DMS_MSG,
+    LOG_MAV_STATS,
     LOG_FORMAT_UNITS_MSG,
     LOG_UNIT_MSG,
     LOG_MULT_MSG,

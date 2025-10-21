@@ -19,7 +19,7 @@
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include "AP_GPS_ExternalAHRS.h"
 
-#if AP_EXTERNAL_AHRS_ENABLED
+#if HAL_EXTERNAL_AHRS_ENABLED
 
 // Reading does nothing in this class; we simply return whether or not
 // the latest reading has been consumed.  By calling this function we assume
@@ -48,17 +48,10 @@ void AP_GPS_ExternalAHRS::handle_external(const AP_ExternalAHRS::gps_data_messag
     }
     state.num_sats = pkt.satellites_in_view;
 
-    const Location loc {
-        pkt.latitude,
-        pkt.longitude,
-        pkt.msl_altitude,
-        Location::AltFrame::ABSOLUTE
-    };
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (!loc.initialised() && state.status >= AP_GPS::GPS_Status::GPS_OK_FIX_2D) {
-        AP_HAL::panic("Invalid location passed to AP_GPS_ExternalAHRS");
-    }
-#endif
+    Location loc = {};
+    loc.lat = pkt.latitude;
+    loc.lng = pkt.longitude;
+    loc.alt = pkt.msl_altitude;
 
     state.location = loc;
     state.hdop = pkt.hdop;
@@ -95,5 +88,5 @@ bool AP_GPS_ExternalAHRS::get_lag(float &lag_sec) const
     return true;
 }
 
-#endif // AP_EXTERNAL_AHRS_ENABLED
+#endif // HAL_EXTERNAL_AHRS_ENABLED
 

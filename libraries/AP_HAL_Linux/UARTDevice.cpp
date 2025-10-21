@@ -119,12 +119,9 @@ void UARTDevice::set_speed(uint32_t baudrate)
         return;
     }
 
-    // use CBAUDEX and B(aud)OTHER to gain access to "non-standard" rates that are common for eg. RC receivers
+    // use CBAUDEX to gain access to "non-standard" rates that are common for eg. RC receivers
     tio.c_cflag &= ~CBAUD;
     tio.c_cflag |= CBAUDEX;
-#if defined BOTHER    
-    tio.c_cflag |= BOTHER;
-#endif
     tio.c_ispeed = baudrate;
     tio.c_ospeed = baudrate;
 

@@ -14,7 +14,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
-#include <AP_Servo_Telem/AP_Servo_Telem.h>
+#include <AP_Logger/AP_Logger.h>
 
 // Extended Position Data Format defines -100 as 0x0080 decimal 128, we map this to a PWM of 1000 (if range is default)
 #define PWM_POSITION_MIN               1000
@@ -62,15 +62,12 @@ void AP_Volz_Protocol::init(void)
         return;
     }
 
-    AP_SerialManager &serial_manager = AP::serialmanager();
+    const AP_SerialManager &serial_manager = AP::serialmanager();
     port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Volz,0);
     if (port == nullptr) {
         // No port configured
         return;
     }
-
-    // update baud param in case user looks at it
-    serial_manager.set_and_default_baud(AP_SerialManager::SerialProtocol_Volz, 0, 115200);
 
     // Create thread to handle output
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Volz_Protocol::loop, void),
@@ -80,7 +77,7 @@ void AP_Volz_Protocol::init(void)
     }
 }
 
-#if AP_SERVO_TELEM_ENABLED
+#if HAL_LOGGING_ENABLED
 // Request telem data, cycling through each servo and telem item
 void AP_Volz_Protocol::request_telem()
 {
@@ -147,7 +144,7 @@ void AP_Volz_Protocol::loop()
             hal.scheduler->delay_microseconds(100);
         }
 
-#if AP_SERVO_TELEM_ENABLED
+#if HAL_LOGGING_ENABLED
         // Send a command for each servo, then one telem request
         const uint8_t num_servos = __builtin_popcount(bitmask.get());
         if (sent_count < num_servos) {
@@ -165,7 +162,7 @@ void AP_Volz_Protocol::loop()
             read_telem();
         }
 
-#else // No telem, send only
+#else // No logging, send only
         send_position_cmd();
 #endif
     }
@@ -211,7 +208,7 @@ void AP_Volz_Protocol::send_position_cmd()
 
         send_command(cmd);
 
-#if AP_SERVO_TELEM_ENABLED
+#if HAL_LOGGING_ENABLED
         {
             // Update the commanded angle
             WITH_SEMAPHORE(telem.sem);
@@ -224,7 +221,7 @@ void AP_Volz_Protocol::send_position_cmd()
     }
 }
 
-#if AP_SERVO_TELEM_ENABLED
+#if HAL_LOGGING_ENABLED
 void AP_Volz_Protocol::process_response(const CMD &cmd)
 {
     // Convert to 0 indexed
@@ -351,7 +348,7 @@ void AP_Volz_Protocol::read_telem()
     // Used up all attempts without running out of data.
     // Really should not end up here
 }
-#endif // AP_SERVO_TELEM_ENABLED
+#endif // HAL_LOGGING_ENABLED
 
 // Called each time the servo outputs are sent
 void AP_Volz_Protocol::update()
@@ -379,11 +376,11 @@ void AP_Volz_Protocol::update()
         servo_pwm[i] = (pwm == 0) ? c->get_trim() : pwm;
     }
 
-#if AP_SERVO_TELEM_ENABLED
-    // Report telem data
-    AP_Servo_Telem *servo_telem = AP_Servo_Telem::get_singleton();
-    if (servo_telem != nullptr) {
-        const uint32_t now_ms = AP_HAL::millis();
+#if HAL_LOGGING_ENABLED
+    // take semaphore and log all channels at 5 Hz
+    const uint32_t now_ms = AP_HAL::millis();
+    if ((now_ms - telem.last_log_ms) > 200) {
+        telem.last_log_ms = now_ms;
 
         WITH_SEMAPHORE(telem.sem);
         for (uint8_t i=0; i<ARRAY_SIZE(telem.data); i++) {
@@ -392,25 +389,37 @@ void AP_Volz_Protocol::update()
                 continue;
             }
 
-            const AP_Servo_Telem::TelemetryData telem_data {
-                .command_position = telem.data[i].desired_angle,
-                .measured_position = telem.data[i].angle,
-                .voltage = telem.data[i].primary_voltage,
-                .current = telem.data[i].primary_current,
-                .motor_temperature_cdeg = int16_t(telem.data[i].motor_temp_deg * 100),
-                .pcb_temperature_cdeg = int16_t(telem.data[i].pcb_temp_deg * 100),
-                .present_types = AP_Servo_Telem::TelemetryData::Types::COMMANDED_POSITION |
-                                 AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
-                                 AP_Servo_Telem::TelemetryData::Types::VOLTAGE |
-                                 AP_Servo_Telem::TelemetryData::Types::CURRENT |
-                                 AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP |
-                                 AP_Servo_Telem::TelemetryData::Types::PCB_TEMP
-            };
-
-            servo_telem->update_telem_data(i, telem_data);
+            // @LoggerMessage: VOLZ
+            // @Description: Volz servo data
+            // @Field: TimeUS: Time since system startup
+            // @Field: I: Instance
+            // @Field: Dang: desired angle
+            // @Field: ang: reported angle
+            // @Field: pc: primary supply current
+            // @Field: sc: secondary supply current
+            // @Field: pv: primary supply voltage
+            // @Field: sv: secondary supply voltage
+            // @Field: mt: motor temperature
+            // @Field: pt: pcb temperature
+            AP::logger().WriteStreaming("VOLZ",
+                "TimeUS,I,Dang,ang,pc,sc,pv,sv,mt,pt",
+                "s#ddAAvvOO",
+                "F000000000",
+                "QBffffffHH",
+                AP_HAL::micros64(),
+                i + 1, // convert to 1 indexed to match actuator IDs and SERVOx numbering
+                telem.data[i].desired_angle,
+                telem.data[i].angle,
+                telem.data[i].primary_current,
+                telem.data[i].secondary_current,
+                telem.data[i].primary_voltage,
+                telem.data[i].secondary_voltage,
+                telem.data[i].motor_temp_deg,
+                telem.data[i].pcb_temp_deg
+            );
         }
     }
-#endif // AP_SERVO_TELEM_ENABLED
+#endif // HAL_LOGGING_ENABLED
 }
 
 // Return the crc for a given command packet

@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-# flake8: noqa
-
 # Copyright (c) 2008,2010,2011,2012,2013 Alexander Belchenko
 # All rights reserved.
 #
@@ -35,7 +33,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 # EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-'''Intel HEX file format bin2hex converter utility.'''
+'''Intel HEX file format bin2hex convertor utility.'''
 
 VERSION = '1.5'
 
@@ -46,7 +44,7 @@ if __name__ == '__main__':
 
     from intelhex import bin2hex
 
-    usage = '''Bin2Hex converter utility.
+    usage = '''Bin2Hex convertor utility.
 Usage:
     python bin2hex.py [options] INFILE [OUTFILE]
 

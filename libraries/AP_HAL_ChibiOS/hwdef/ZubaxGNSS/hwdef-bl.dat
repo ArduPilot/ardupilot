@@ -8,8 +8,8 @@ define STM32F107_MCUCONF
 FLASH_RESERVE_START_KB 0
 FLASH_BOOTLOADER_LOAD_KB 34
 
-# board ID. See Tools/AP_Bootloader/board_types.txt
-APJ_BOARD_ID AP_HW_ZUBAXGNSS
+# board ID for firmware load
+APJ_BOARD_ID 1005
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -88,6 +88,8 @@ define HAL_UART_STACK_SIZE 256
 define STORAGE_THD_WA_SIZE 512
 
 define HAL_DEVICE_THREAD_STACK 768
+
+define AP_PARAM_MAX_EMBEDDED_PARAM 0
 
 # USART2 for GPS
 PA2 USART2_TX USART2 SPEED_HIGH NODMA

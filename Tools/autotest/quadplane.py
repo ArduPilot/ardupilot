@@ -5,6 +5,7 @@ AP_FLAKE8_CLEAN
 
 '''
 
+from __future__ import print_function
 import os
 import numpy
 import math
@@ -402,18 +403,19 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.takeoff(15, mode='GUIDED')
         self.set_rc(3, 1500)
         self.change_mode("QLOITER")
+        self.change_mode("QAUTOTUNE")
         tstart = self.get_sim_time()
         self.context_collect('STATUSTEXT')
-        self.change_mode("QAUTOTUNE")
-        self.wait_text(
-            "AutoTune: (Success|Failed to level).*",
-            timeout=5000,
-            check_context=True,
-            regex=True,
-        )
-        if self.re_match.group(1) != "Success":
-            raise NotAchievedException("autotune did not succeed")
-        now = self.get_sim_time()
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 5000:
+                raise NotAchievedException("Did not get success message")
+            try:
+                self.wait_text("AutoTune: Success", timeout=1, check_context=True)
+            except AutoTestTimeoutException:
+                continue
+            # got success message
+            break
         self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
         self.context_clear_collection('STATUSTEXT')
 
@@ -502,7 +504,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_rc(2, 1500)
         self.set_rc(4, 1500)
         while self.get_sim_time_cached() < tstart + timeout:
-            m = self.assert_receive_message('ATTITUDE')
+            m = self.mav.recv_match(type='ATTITUDE', blocking=True)
             roll = math.degrees(m.roll)
             pitch = math.degrees(m.pitch)
             self.progress("Roll=%.1f Pitch=%.1f" % (roll, pitch))
@@ -545,8 +547,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         tstart = self.get_sim_time()
         self.progress("Hovering for %u seconds" % hover_time)
         while self.get_sim_time_cached() < tstart + hover_time:
-            self.assert_receive_message('ATTITUDE')
-        vfr_hud = self.assert_receive_message('VFR_HUD')
+            self.mav.recv_match(type='ATTITUDE', blocking=True)
+        vfr_hud = self.mav.recv_match(type='VFR_HUD', blocking=True)
         tend = self.get_sim_time()
 
         self.do_RTL()
@@ -659,7 +661,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.progress("Hovering for %u seconds" % hover_time)
             tstart = self.get_sim_time()
             while self.get_sim_time_cached() < tstart + hover_time:
-                self.assert_receive_message('ATTITUDE')
+                self.mav.recv_match(type='ATTITUDE', blocking=True)
             tend = self.get_sim_time()
 
             self.do_RTL()
@@ -766,7 +768,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                              "Q_WVANE_ENABLE": 1,
                              "Q_WVANE_GAIN": 1,
                              "STICK_MIXING": 0,
-                             "Q_FWD_THR_USE": 2})
+                             "Q_FWD_THR_USE": 2,
+                             "SIM_ENGINE_FAIL": 2}) # we want to fail the forward thrust motor only
 
         self.takeoff(10, mode="QLOITER")
         self.set_rc(2, 1000)
@@ -776,14 +779,14 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         if fwd_thr_pwm < 1150 :
             raise NotAchievedException("fwd motor pwm command low, want >= 1150 got %f" % (fwd_thr_pwm))
         # check that pitch is on limit
-        m = self.assert_receive_message('ATTITUDE')
+        m = self.mav.recv_match(type='ATTITUDE', blocking=True)
         pitch = math.degrees(m.pitch)
         if abs(pitch + 3.0) > 0.5 :
             raise NotAchievedException("pitch should be -3.0 +- 0.5 deg, got %f" % (pitch))
         self.set_rc(2, 1500)
         self.delay_sim_time(5)
         loc1 = self.mav.location()
-        self.set_parameter("SIM_ENGINE_FAIL", 1 << 2) # simulate a complete loss of forward motor thrust
+        self.set_parameter("SIM_ENGINE_MUL", 0) # simulate a complete loss of forward motor thrust
         self.delay_sim_time(20)
         self.change_mode('QLAND')
         self.wait_disarmed(timeout=60)
@@ -820,7 +823,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def QAssist(self):
         '''QuadPlane Assist tests'''
-        self.takeoff(50, mode="QHOVER", timeout=120)
+        self.takeoff(10, mode="QHOVER")
         self.set_rc(3, 1800)
         self.change_mode("FBWA")
 
@@ -829,8 +832,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         thr_min_pwm = self.get_parameter("Q_M_PWM_MIN")
         lim_roll_deg = self.get_parameter("ROLL_LIMIT_DEG")
-        lim_pitch_down_deg = self.get_parameter("PTCH_LIM_MIN_DEG")
-        lim_pitch_up_deg = self.get_parameter("PTCH_LIM_MAX_DEG")
         self.progress("Waiting for motors to stop (transition completion)")
         self.wait_servo_channel_value(5,
                                       thr_min_pwm,
@@ -854,13 +855,12 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                                       comparator=operator.eq)
         self.set_rc(3, 1300)
 
-        self.start_subtest("Test angle assist (roll)")
+        # Test angle assist
         self.context_push()
-        self.context_collect('STATUSTEXT')
         self.progress("Rolling over to %.0f degrees" % -lim_roll_deg)
         self.set_rc(1, 1000)
         self.wait_roll(-lim_roll_deg, 5)
-        self.progress("Killing aileron servo output to force qassist to help")
+        self.progress("Killing servo outputs to force qassist to help")
         self.set_parameter("SERVO1_MIN", 1480)
         self.set_parameter("SERVO1_MAX", 1480)
         self.set_parameter("SERVO1_TRIM", 1480)
@@ -868,93 +868,9 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_rc(1, 2000)
         self.progress("Waiting for qassist (angle) to kick in")
         self.wait_servo_channel_value(5, 1100, timeout=30, comparator=operator.gt)
-        self.wait_statustext('Angle assist', check_context=True)
         self.wait_roll(lim_roll_deg, 5)
         self.context_pop()
         self.set_rc(1, 1500)
-        self.progress("Checking qassist stops")
-        # we must push RC3 here or the translational drag from the
-        # motors keeps us at ~17m/s, below the airspeed assist speed!
-        self.set_rc(3, 1800)
-        self.wait_servo_channel_value(
-            5,
-            thr_min_pwm,
-            timeout=60,
-            comparator=operator.eq,
-        )
-        self.set_rc(3, 1300)
-
-        self.start_subtest("Test angle assist (pitch-down)")
-        self.context_push()
-        self.context_collect('STATUSTEXT')
-        self.progress("Pitching down to %.0f degrees" % lim_pitch_down_deg)
-        self.set_rc(2, 1000)
-        self.wait_pitch(lim_pitch_down_deg, accuracy=5)
-        self.progress("Killing elevator servo output to force qassist to help")
-        self.set_parameters({
-            "SERVO2_MIN": 1480,
-            "SERVO2_MAX": 1480,
-            "SERVO2_TRIM": 1480,
-        })
-        self.progress("Trying to pitch up hard")
-        self.set_rc(2, 2000)
-        self.progress("Waiting for qassist (angle) to kick in")
-        self.wait_servo_channel_value(5, 1100, timeout=30, comparator=operator.gt)
-        self.wait_statustext('Angle assist', check_context=True)
-        self.set_rc(2, 1500)
-        self.wait_pitch(0, accuracy=5)
-        self.context_pop()
-        self.progress("Checking qassist stops")
-        # we must push RC3 here or the translational drag from the
-        # motors keeps us at ~17m/s, below the airspeed assist speed!
-        self.set_rc(3, 1800)
-        self.wait_servo_channel_value(
-            5,
-            thr_min_pwm,
-            timeout=30,
-            comparator=operator.eq,
-        )
-        self.set_rc(3, 1300)
-
-        self.start_subtest("Test angle assist (pitch-up)")
-        self.context_push()
-        self.context_collect('STATUSTEXT')
-        self.progress("Pitching up to %.0f degrees" % lim_pitch_up_deg)
-        self.set_rc(3, 2000)
-        self.delay_sim_time(5)
-        self.change_mode('MANUAL')
-        self.context_push()
-        self.set_parameter("SIM_SPEEDUP", 1)
-        self.set_rc(2, 1550)
-        self.wait_pitch(lim_pitch_up_deg+5, accuracy=5)
-        self.context_pop()
-        self.progress("Killing elevator servo output to force qassist to help")
-        servo2_out = self.get_servo_channel_value(2)
-        self.set_parameters({
-            "SERVO2_MIN": servo2_out,
-            "SERVO2_MAX": servo2_out,
-            "SERVO2_TRIM": servo2_out,
-        })
-        self.change_mode('FBWA')
-        self.progress("Trying to pitch down hard")
-        self.set_rc(2, 1000)
-        self.progress("Waiting for qassist (angle) to kick in")
-        self.wait_servo_channel_value(5, 1100, timeout=30, comparator=operator.gt)
-        self.wait_statustext('Angle assist', check_context=True)
-        self.set_rc(2, 1500)
-        self.wait_pitch(0, accuracy=5)
-        self.context_pop()
-        self.progress("Checking qassist stops")
-        # we must push RC3 here or the translational drag from the
-        # motors keeps us at ~17m/s, below the airspeed assist speed!
-        self.set_rc(3, 1800)
-        self.wait_servo_channel_value(
-            5,
-            thr_min_pwm,
-            timeout=30,
-            comparator=operator.eq,
-        )
-        self.set_rc(3, 1300)
 
         # Test alt assist, climb to 60m and set assist alt to 50m
         self.context_push()
@@ -962,7 +878,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         guided_loc.alt = 60
         self.change_mode("GUIDED")
         self.send_do_reposition(guided_loc)
-        self.wait_altitude(58, 62, relative=True, timeout=120)
+        self.wait_altitude(58, 62, relative=True)
         self.set_parameter("Q_ASSIST_ALT", 50)
 
         # Try and descent to 40m
@@ -1163,7 +1079,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.context_collect("STATUSTEXT")
         self.progress("Starting QLAND")
         self.change_mode("QLAND")
-        self.wait_statustext("Rangefinder engaged", check_context=True)
+        self.wait_statustext("Rangefinder engaged")
         self.wait_disarmed(timeout=100)
 
     def setup_ICEngine_vehicle(self):
@@ -1319,7 +1235,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.start_subtest("Check start chan control disable")
             old_start_channel_value = self.get_rc_channel_value(rc_engine_start_chan)
             self.set_rc(rc_engine_start_chan, 1000)
-            self.delay_sim_time(1) # Make sure the RC change has registered
             self.context_collect('STATUSTEXT')
             method(mavutil.mavlink.MAV_CMD_DO_ENGINE_CONTROL, p1=1, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
             self.wait_statustext("start control disabled", check_context=True)
@@ -1561,10 +1476,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                     (p, new_values[p], threshold))
 
         self.progress("ensure we are not overtuned")
-        self.set_parameters({
-            'SIM_ENGINE_MUL': 0.9,
-            'SIM_ENGINE_FAIL': 1 << 0,
-        })
+        self.set_parameter('SIM_ENGINE_MUL', 0.9)
 
         self.delay_sim_time(5)
 
@@ -1610,7 +1522,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "RNGFND1_TYPE": 100,
             "RNGFND1_PIN" : 0,
             "RNGFND1_SCALING" : 12.2,
-            "RNGFND1_MAX" : 50.00,
+            "RNGFND1_MAX_CM" : 5000,
             "RNGFND_LANDING" : 1,
         })
 
@@ -1651,7 +1563,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "SCR_ENABLE": 1,
             "SIM_SHIP_ENABLE": 1,
             "SIM_SHIP_SPEED": 5,
-            "Q_WP_SPEED": 700,
             "SIM_SHIP_DSIZE": 10,
             "FOLL_ENABLE": 1,
             "FOLL_SYSID": 17,
@@ -1691,24 +1602,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # deck is just 10m in size, so we must be within 10m if we are moving
         # with the deck
         self.wait_groundspeed(4.8, 5.2)
-
-        tstart = self.get_sim_time_cached()
-        ship_gpi = None
-        vehicle_gpi = None
-        while ship_gpi is None or vehicle_gpi is None:
-            if self.get_sim_time_cached() - tstart > 5:
-                raise NotAchievedException("Did not get GPI for ship")
-            gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
-            if gpi.get_srcSystem() == 17:
-                ship_gpi = gpi
-            elif gpi.get_srcSystem() == 1:
-                vehicle_gpi = gpi
-
-        distance = self.get_distance_int(vehicle_gpi, ship_gpi)
-        self.progress(f"{distance=}")
-        max_distance = 1.2
-        if distance > max_distance:
-            raise NotAchievedException(f"Did not land within {max_distance}m of ship {distance=}")
 
     def RCDisableAirspeedUse(self):
         '''check disabling airspeed using RC switch'''
@@ -1961,8 +1854,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         # Kill any GPSs
         self.set_parameters({
-            'SIM_GPS1_ENABLE': 0,
-            'SIM_GPS2_ENABLE': 0,
+            'SIM_GPS_DISABLE': 1,
+            'SIM_GPS2_DISABLE': 1,
         })
         self.delay_sim_time(5)
 
@@ -1970,8 +1863,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_rc(3, 1000)
         self.wait_climbrate(-5, -0.5, timeout=10)
 
-        # reboot SITL
-        self.reboot_sitl(force=True)
+        # Force disarm
+        self.disarm_vehicle(force=True)
 
     def RTL_AUTOLAND_1(self):
         '''test behaviour when RTL_AUTOLAND==1'''
@@ -2719,265 +2612,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.mav.motors_disarmed_wait()
         self.reset_SITL_commandline()
 
-    def RudderArmedTakeoffRequiresNeutralThrottle(self):
-        '''check rudder must be neutral before VTOL takeoff allowed'''
-        self.upload_simple_relhome_mission([
-            (mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF, 0, 0, 10),
-            (mavutil.mavlink.MAV_CMD_NAV_VTOL_LAND, 0, 0, 0),
-        ])
-        self.upload_simple_relhome_mission
-        self.change_mode('AUTO')
-        self.wait_ready_to_arm()
-        self.set_rc(4, 2000)
-        self.wait_armed()
-        self.wait_altitude(-1, 1, relative=True, minimum_duration=10)
-        self.set_rc(4, 1500)
-        self.wait_altitude(5, 1000, relative=True)
-        self.zero_throttle()
-        self.wait_disarmed(timeout=60)
-
-    def RudderArmingWithARMING_CHECK_THROTTLEUnset(self) -> None:
-        '''check arming behaviour with ARMING_CHECK_THROTTLE unset'''
-        self.wait_ready_to_arm()
-
-        self.start_subtest("Should not be able to arm with mid-stick throttle")
-        self.set_rc(3, 1500)
-        self.set_rc(4, 2000)
-        w = vehicle_test_suite.WaitAndMaintainDisarmed(self, minimum_duration=10)
-        w.run()
-        self.set_rc(4, 1500)
-        self.disarm_vehicle()
-
-        self.clear_parameter_bit("RC_OPTIONS", 5)
-        self.start_subtest("Should be able to arm with mid-stick throttle")
-        self.set_rc(3, 1500)
-        self.set_rc(4, 2000)
-        self.wait_armed()
-        self.set_rc(4, 1500)
-        self.disarm_vehicle()
-
-    def ScriptedArmingChecksApplet(self):
-        """ Applet for Arming Checks will prevent a vehicle from arming based on scripted checks
-            """
-        self.start_subtest("Scripted Arming Checks Applet validation")
-        self.context_collect("STATUSTEXT")
-
-        applet_script = "arming-checks.lua"
-        """Initialize the FC"""
-        self.set_parameter("SCR_ENABLE", 1)
-        self.install_applet_script_context(applet_script)
-        self.reboot_sitl()
-        self.wait_ekf_happy()
-        self.wait_text("ArduPilot Ready", check_context=True)
-        self.wait_text("Arming Checks .* loaded", timeout=30, check_context=True, regex=True)
-        '''self.install_messageprinter_handlers_context(['PARAM_VALUE'])'''
-
-        self.start_subsubtest("ArmCk: Q_RTL_ALT must be legal")
-        self.set_parameter("SCALING_SPEED", 22)
-        self.set_parameter("Q_RTL_ALT", 150)
-        self.assert_prearm_failure("ArmCk: fail: Q_RTL_ALT too high", other_prearm_failures_fatal=False)
-        self.set_parameter("Q_RTL_ALT", 120)
-        self.wait_text("clear: Q_RTL_ALT", check_context=True)
-
-        self.start_subsubtest("ArmCk: Q_RTL vs QLand")
-        ''' this is only a warning'''
-        self.set_parameter("Q_OPTIONS", 33)
-        self.wait_text("ArmCk: note: Q will RTL", check_context=True)
-        self.set_parameter("Q_OPTIONS", 1)
-        self.wait_text("ArmCk: note: Q will land", check_context=True)
-
-    def TerrainAvoidApplet(self):
-        '''Terrain Avoidance with CMTC'''
-        self.start_subtest("Terrain Avoidance Load and Start")
-
-        # We do this in a real-world scenario in Alaska where we take off from the Top of the World
-        # and fly a mission that goes down into the valley to purposefully trigger Pitcing, Quading and CMTC events
-        topofworld_loc = mavutil.location(64.1624778, -139.8402246, 1109.0)
-        self.customise_SITL_commandline(
-            ["--home", f"{topofworld_loc.lat},{topofworld_loc.lng},{topofworld_loc.alt},0"]
-        )
-
-        self.context_collect("STATUSTEXT")
-
-        # want 30m STRM data. This has to be set before install_terrain_handlers_context() is called
-        self.set_parameters({
-            "TERRAIN_ENABLE": 1,
-            "TERRAIN_SPACING": 30,
-            "TERRAIN_FOLLOW": 1,
-            "TERRAIN_OFS_MAX": 0,
-        })
-
-        self.install_terrain_handlers_context()
-        self.reboot_sitl(check_position=False)
-
-        self.set_parameters({
-            "SCR_ENABLE": 1,
-            "SIM_SPEEDUP": 20, # need to give some cycles to lua
-            "RC7_OPTION": 305,
-            "RTL_AUTOLAND": 2,
-            "RNGFND1_TYPE": 100,
-        })
-
-        self.install_applet_script_context("quadplane_terrain_avoid.lua")
-        self.install_script_module(self.script_modules_source_path("mavlink_wrappers.lua"), "mavlink_wrappers.lua")
-        self.reboot_sitl(check_position=False)
-        self.wait_ready_to_arm()
-
-        self.wait_text("Terrain Avoid .* script loaded", regex=True, check_context=True)
-        self.set_parameters({
-            "TA_CMTC_ENABLE": 1,
-            "TA_CMTC_RAD": 80,
-            "TA_ALT_MAX": 250,
-            "WP_LOITER_RAD": 150,
-            "RNGFND1_SCALING": 10,
-            "RNGFND1_PIN": 0,
-            "RNGFND1_MAX": 100,
-            "SIM_SONAR_SCALE": 10,
-        })
-
-        # This mission triggers an intersting selection of "Pitching", "Quading" and "CMTC" events
-        # it's not always consistent, perhaps due to wind, so the tests try to accomodate variances.
-        filename = "TopOfTheWorldShort.waypoints"
-        self.progress("Flying mission %s" % filename)
-        num_wp = self.load_mission(filename)
-        self.progress("Mission items %d" % num_wp)
-
-        self.change_mode("AUTO")
-
-        # check that we got terrain data, this test doesn't work if we don't have the correct terrain.
-        loc = self.mav.location()
-
-        lng_int = int(loc.lng * 1e7)
-        lat_int = int(loc.lat * 1e7)
-
-        tstart = self.get_sim_time_cached()
-        last_terrain_report_pending = -1
-        while True:
-            now = self.get_sim_time_cached()
-            if now - tstart > 600:
-                raise NotAchievedException("Did not get correct terrain report")
-
-            self.mav.mav.terrain_check_send(lat_int, lng_int)
-
-            report = self.assert_receive_message('TERRAIN_REPORT', timeout=60)
-            self.progress(self.dump_message_verbose(report))
-            if report.spacing != 0:
-                break
-
-            # we will keep trying to long as the number of pending
-            # tiles is dropping:
-            if last_terrain_report_pending == -1:
-                last_terrain_report_pending = report.pending
-            elif report.pending < last_terrain_report_pending:
-                last_terrain_report_pending = report.pending
-                tstart = now
-
-            self.delay_sim_time(1)
-
-        self.progress(self.dump_message_verbose(report))
-        self.wait_ready_to_arm()
-
-        # TopOfTheWord "ground" is at over 1km altitude
-        expected_terrain_height = 1101
-        if abs(report.terrain_height - expected_terrain_height) > 1.0:
-            raise NotAchievedException("Expected terrain height=%f got=%f" %
-                                       (expected_terrain_height, report.terrain_height))
-
-        self.set_rc(7, 1000)
-        self.wait_text("TerrAvoid: activated", check_context=True)
-        self.set_rc(7, 2000)
-        self.wait_text("TerrAvoid: deactivated", check_context=True)
-        self.set_rc(7, 1000)
-        self.wait_text("TerrAvoid: activated", check_context=True)
-
-        self.progress("TERRAIN_FOLLOW is %f" % self.get_parameter('TERRAIN_FOLLOW'))
-        self.progress("TERRAIN_LOOKAHD is %f" % self.get_parameter('TERRAIN_LOOKAHD'))
-        self.progress("TERRAIN_OFS_MAX is %f" % self.get_parameter('TERRAIN_OFS_MAX'))
-        self.progress("ROLL_LIMIT_DEG is %f" % self.get_parameter('ROLL_LIMIT_DEG'))
-
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
-        self.wait_text("TerrAvoid: close to home", check_context=True)
-        self.wait_waypoint(2, 4, max_dist=100)
-        self.wait_text("TerrAvoid: away from home", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.progress("CMTC alt #1 is %f" % self.get_altitude(relative=False, timeout=2))
-        # wait for CMTC to gain altitude 1170m +-20
-        self.wait_altitude(1150, 1190, timeout=60, relative=False, minimum_duration=5)
-
-        self.wait_text("TerrAvoid: CMTC Done|TerrAvoid: Quading overrides CMTC", check_context=True, regex=True, timeout=60)
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True, timeout=60)
-        self.progress("CMTC alt #2 is %f" % self.get_altitude(relative=False, timeout=2))
-        # wait for CMTC to gain altitude to 1125m +- 55
-        self.wait_altitude(1070, 1180, timeout=60, relative=False, minimum_duration=5)
-        self.wait_text("TerrAvoid: CMTC Done|TerrAvoid: Quading overrides CMTC", check_context=True, regex=True)
-
-        self.wait_text("TerrAvoid: high terrain detected", check_context=True, regex=True, timeout=60)
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.progress("CMTC alt #3 is %f" % self.get_altitude(relative=False, timeout=2))
-        # 1020 +- 20
-        self.wait_altitude(1000, 1040, timeout=120, relative=False, minimum_duration=5)
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-
-        self.wait_text("TerrAvoid: high terrain detected", check_context=True, regex=True, timeout=60)
-
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.progress("CMTC alt #4 is %f" % self.get_altitude(relative=False, timeout=2))
-        self.wait_text("TerrAvoid: high terrain detected", check_context=True, regex=True, timeout=60)
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.progress("CMTC alt #6 is %f" % self.get_altitude(relative=False, timeout=2))
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-
-        self.progress("alt is %f" % self.get_altitude(relative=False, timeout=2))
-
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-
-        self.progress("#Pitching alt is %f" % self.get_altitude(relative=False, timeout=2))
-        self.wait_text("TerrAvoid: Pitching Started", check_context=True, regex=True, timeout=600)
-        self.wait_text("TerrAvoid: Terrain Ok", check_context=True, regex=True, timeout=60)
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.progress("CMTC alt #7 is %f" % self.get_altitude(relative=False, timeout=2))
-        self.wait_text("TerrAvoid: Pitching DONE", check_context=True, regex=True)
-        self.progress("#Pitching DONE alt is %f" % self.get_altitude(relative=False, timeout=2))
-
-        # After Pitching CMTC to 1170m +- 30
-        self.wait_altitude(1140, 1200, timeout=120, relative=False, minimum_duration=5)
-
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-        # wait for 1 more CMTC's
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-
-        # now we get a guaranteed quadding
-        self.wait_text("TerrAvoid: Pitching started", check_context=True, regex=True, timeout=120)
-        self.progress("Pitching alt #1 is %f" % self.get_altitude(relative=False, timeout=2))
-        self.wait_text("TerrAvoid: Pitching DONE", check_context=True, regex=True)
-        self.progress("Pitching alt #2 is %f" % self.get_altitude(relative=False, timeout=2))
-
-        # wait for 1 more CMTC
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-
-        self.wait_statustext('Land complete', timeout=600)
-        self.wait_disarmed(timeout=120) # give quadplane a long time to land
-
-        # autotest doesn't like this location, so need to move back to Dalby before finishing
-        self.customise_SITL_commandline(
-            ["--home", "-27.274439,151.290064,343.0,0"]
-        )
-        self.reboot_sitl()
-        # remove the installed module. Pretty sure Autotest will remove the script itself
-        self.remove_installed_script_module("mavlink_wrappers.lua")
-
     def tests(self):
         '''return list of all tests'''
 
@@ -3035,9 +2669,5 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.QLoiterRecovery,
             self.FastInvertedRecovery,
             self.CruiseRecovery,
-            self.RudderArmedTakeoffRequiresNeutralThrottle,
-            self.RudderArmingWithARMING_CHECK_THROTTLEUnset,
-            self.ScriptedArmingChecksApplet,
-            self.TerrainAvoidApplet,
         ])
         return ret

@@ -14,7 +14,6 @@ void bootloader(unsigned timeout);
 #endif
 
 #define MAX_DES_LENGTH 20
-#define MAX_VERSION_LENGTH 32
 
 #define arraySize(a) (sizeof((a))/sizeof(((a)[0])))
 

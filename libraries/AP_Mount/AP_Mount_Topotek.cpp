@@ -1,8 +1,6 @@
-#include "AP_Mount_config.h"
+#include "AP_Mount_Topotek.h"
 
 #if HAL_MOUNT_TOPOTEK_ENABLED
-
-#include "AP_Mount_Topotek.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -57,8 +55,6 @@ const char* AP_Mount_Topotek::send_message_prefix = "Mount: Topotek";
 // update mount position - should be called periodically
 void AP_Mount_Topotek::update()
 {
-    AP_Mount_Backend::update();
-
     // exit immediately if not initialised
     if (!_initialised) {
         return;
@@ -160,9 +156,20 @@ void AP_Mount_Topotek::update()
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING:
-            update_mnt_target_from_rc_target();
+        case MAV_MOUNT_MODE_RC_TARGETING: {
+            // update targets using pilot's RC inputs
+            MountTarget rc_target;
+            get_rc_target(mnt_target.target_type, rc_target);
+            switch (mnt_target.target_type) {
+            case MountTargetType::ANGLE:
+                mnt_target.angle_rad = rc_target;
+                break;
+            case MountTargetType::RATE:
+                mnt_target.rate_rads = rc_target;
+                break;
+            }
             break;
+        }
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
@@ -943,7 +950,7 @@ bool AP_Mount_Topotek::send_location_info()
 
     // prepare and send vehicle yaw
     // sample command: #tpUD5wAZI359.9, similar format to $GPRMC
-    const float veh_yaw_deg = AP::ahrs().get_yaw_deg();
+    const float veh_yaw_deg = wrap_360(degrees(AP::ahrs().get_yaw()));
     uint8_t databuff_azimuth[6];
     hal.util->snprintf((char*)databuff_azimuth, ARRAY_SIZE(databuff_azimuth), "%05.1f", veh_yaw_deg);
     if (!send_variablelen_packet(HeaderType::VARIABLE_LEN, AddressByte::SYSTEM_AND_IMAGE, AP_MOUNT_TOPOTEK_ID3CHAR_SET_AZIMUTH, true, (uint8_t*)databuff_azimuth, ARRAY_SIZE(databuff_azimuth)-1)) {
@@ -962,9 +969,9 @@ void AP_Mount_Topotek::gimbal_angle_analyse()
     int16_t roll_angle_cd = hexchar4_to_int16(_msg_buff[18], _msg_buff[19], _msg_buff[20], _msg_buff[21]);
 
     // convert cd to radians
-    _current_angle_rad.x = cd_to_rad(roll_angle_cd);
-    _current_angle_rad.y = cd_to_rad(pitch_angle_cd);
-    _current_angle_rad.z = cd_to_rad(yaw_angle_cd);
+    _current_angle_rad.x = radians(roll_angle_cd * 0.01);
+    _current_angle_rad.y = radians(pitch_angle_cd * 0.01);
+    _current_angle_rad.z = radians(yaw_angle_cd * 0.01);
     _last_current_angle_ms = AP_HAL::millis();
 
     return;

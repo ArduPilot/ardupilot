@@ -9,7 +9,7 @@ class AP_TemperatureSensor_MLX90614 : public AP_TemperatureSensor_Backend {
     using AP_TemperatureSensor_Backend::AP_TemperatureSensor_Backend;
 public:
 
-    __INITFUNC__ void init(void) override;
+    void init(void) override;
 
     void update() override {};
 

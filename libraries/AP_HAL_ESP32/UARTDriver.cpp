@@ -38,12 +38,6 @@ void UARTDriver::vprintf(const char *fmt, va_list ap)
 
 void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
-    if (b == 0 && txS == 0 && rxS == 0 && _initialized) {
-        // the thread owning this port has changed
-        _uart_owner_thd = xTaskGetCurrentTaskHandle();
-        return;
-    }
-
     if (uart_num < ARRAY_SIZE(uart_desc)) {
         uart_port_t p = uart_desc[uart_num].port;
         if (!_initialized) {
@@ -64,7 +58,6 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
             uart_driver_install(p, 2*UART_HW_FIFO_LEN(p), 0, 0, nullptr, 0);
             _readbuf.set_size(RX_BUF_SIZE);
             _writebuf.set_size(TX_BUF_SIZE);
-            _uart_owner_thd = xTaskGetCurrentTaskHandle();
 
             _initialized = true;
         } else {
@@ -105,7 +98,7 @@ bool UARTDriver::tx_pending()
 
 uint32_t UARTDriver::_available()
 {
-    if (!_initialized || _uart_owner_thd != xTaskGetCurrentTaskHandle()) {
+    if (!_initialized) {
         return 0;
     }
     return _readbuf.available();
@@ -124,10 +117,6 @@ uint32_t UARTDriver::txspace()
 
 ssize_t IRAM_ATTR UARTDriver::_read(uint8_t *buffer, uint16_t count)
 {
-    if (_uart_owner_thd != xTaskGetCurrentTaskHandle()) {
-        return -1;
-    }
-
     if (!_initialized) {
         return -1;
     }
@@ -195,16 +184,9 @@ size_t IRAM_ATTR UARTDriver::_write(const uint8_t *buffer, size_t size)
 
 bool UARTDriver::_discard_input()
 {
-    if (_uart_owner_thd != xTaskGetCurrentTaskHandle()) {
-        return false;
-    }
-    if (!_initialized) {
-        return false;
-    }
-
-    _readbuf.clear();
-
-    return true;
+    //uart_port_t p = uart_desc[uart_num].port;
+    //return uart_flush_input(p) == ESP_OK;
+    return false;
 }
 
 // record timestamp of new incoming data

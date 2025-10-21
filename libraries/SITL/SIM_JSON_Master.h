@@ -18,9 +18,13 @@
 
 #pragma once
 
-#include "SIM_config.h"
+#include <AP_HAL/AP_HAL_Boards.h>
 
-#if AP_SIM_JSON_MASTER_ENABLED
+#ifndef HAL_SIM_JSON_MASTER_ENABLED
+#define HAL_SIM_JSON_MASTER_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
+#if HAL_SIM_JSON_MASTER_ENABLED
 
 #include "SITL_Input.h"
 #include <AP_HAL/utility/Socket_native.h>
@@ -59,4 +63,4 @@ private:
 
 }
 
-#endif  // AP_SIM_JSON_MASTER_ENABLED
+#endif  // HAL_SIM_JSON_MASTER_ENABLED

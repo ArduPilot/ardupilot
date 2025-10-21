@@ -6,7 +6,7 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
-# board ID. See Tools/AP_Bootloader/board_types.txt
+# board ID for firmware load
 APJ_BOARD_ID AP_HW_TBS_LUCID_PRO
 
 # crystal frequency, setup to use external oscillator
@@ -155,4 +155,3 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 1
 define HAL_FRAME_TYPE_DEFAULT 12
 
 include ../include/minimize_fpv_osd.inc
-define DEFAULT_NTF_LED_TYPES 455

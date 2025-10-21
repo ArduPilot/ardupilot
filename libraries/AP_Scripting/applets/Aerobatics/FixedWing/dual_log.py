@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-
-# flake8: noqa
+#!/usr/bin/env python
 
 '''
 combined two aerobatics logs to generate a new log for showing the combined

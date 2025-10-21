@@ -18,9 +18,13 @@
 
 #pragma once
 
-#include "SIM_config.h"
+#include <AP_HAL/AP_HAL_Boards.h>
 
-#if AP_SIM_JSBSIM_ENABLED
+#ifndef HAL_SIM_JSBSIM_ENABLED
+#define HAL_SIM_JSBSIM_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
+#if HAL_SIM_JSBSIM_ENABLED
 
 #include <AP_HAL/utility/Socket_native.h>
 
@@ -84,10 +88,6 @@ private:
     void drain_control_socket();
 };
 
-} // namespace SITL
-#endif  // AP_SIM_JSBSIM_ENABLED
-
-namespace SITL {
 /*
   FGNetFDM class from JSBSim
  */
@@ -183,4 +183,6 @@ public:
     void ByteSwap(void);
 };
 
-}  // end namespace SITL
+} // namespace SITL
+
+#endif  // HAL_SIM_JSBSIM_ENABLED

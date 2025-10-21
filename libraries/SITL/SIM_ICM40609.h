@@ -1,7 +1,3 @@
-#include "SIM_config.h"
-
-#if AP_SIM_ICM40609_ENABLED
-
 #include "SIM_Invensense_v3.h"
 
 namespace SITL {
@@ -25,5 +21,3 @@ private:
 };
 
 } // namespace SITL
-
-#endif  // AP_SIM_ICM40609_ENABLED

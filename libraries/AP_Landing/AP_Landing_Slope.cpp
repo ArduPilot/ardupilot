@@ -325,7 +325,7 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
 
     // calculate point along that slope 500m ahead
     loc.offset_bearing(land_bearing_cd * 0.01f, land_projection);
-    loc.offset_up_m(-slope * land_projection);
+    loc.alt -= slope * land_projection * 100;
 
     // setup the offset_cm for set_target_altitude_proportion()
     target_altitude_offset_cm = loc.alt - loc_alt_AMSL_cm(prev_WP_loc);
@@ -391,12 +391,6 @@ bool AP_Landing::type_slope_is_flaring(void) const
     return (type_slope_stage == SlopeStage::FINAL);
 }
 
-bool AP_Landing::type_slope_is_on_final(void) const
-{
-    return (type_slope_stage == SlopeStage::PREFLARE ||
-            type_slope_stage == SlopeStage::FINAL);
-}
-
 bool AP_Landing::type_slope_is_on_approach(void) const
 {
     return (type_slope_stage == SlopeStage::APPROACH ||
@@ -405,7 +399,8 @@ bool AP_Landing::type_slope_is_on_approach(void) const
 
 bool AP_Landing::type_slope_is_expecting_impact(void) const
 {
-    return type_slope_is_on_final();
+    return (type_slope_stage == SlopeStage::PREFLARE ||
+            type_slope_stage == SlopeStage::FINAL);
 }
 
 bool AP_Landing::type_slope_is_complete(void) const

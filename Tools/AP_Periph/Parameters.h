@@ -48,7 +48,7 @@ public:
         k_param_can_protocol0,
         k_param_can_protocol1,
         k_param_can_protocol2,
-        k_param_sysid_this_mav_old,
+        k_param_sysid_this_mav,
         k_param_serial_manager,
         k_param_gps_mb_only_can_port,
         k_param_scripting,
@@ -99,10 +99,6 @@ public:
         k_param_esc_extended_telem_rate,
         k_param_imu_sample_rate,
         k_param_imu,
-        k_param_dac,
-        k_param__gcs,
-        k_param_battery_tag,
-        k_param_servo_command_timeout_ms,
     };
 
     AP_Int16 format_version;
@@ -117,43 +113,43 @@ public:
     AP_Int8 can_slcan_cport;
 #endif
 
-#if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED
+#ifdef HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY
     AP_Int8 buzz_volume;
 #endif
-#if AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
+#ifdef AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
     AP_Int8 led_brightness;
 #endif
-#if AP_PERIPH_BARO_ENABLED
+#ifdef HAL_PERIPH_ENABLE_BARO
     AP_Int8 baro_enable;
 #endif
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
     AP_Int8 flash_bootloader;
 #endif
 
-#if AP_PERIPH_RANGEFINDER_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
     AP_Int32 rangefinder_baud[RANGEFINDER_MAX_INSTANCES];
     AP_Int8 rangefinder_port[RANGEFINDER_MAX_INSTANCES];
     AP_Int16 rangefinder_max_rate;
 #endif
 
-#if AP_PERIPH_PROXIMITY_ENABLED
+#ifdef HAL_PERIPH_ENABLE_PROXIMITY
     AP_Int32 proximity_baud;
     AP_Int8 proximity_port;
     AP_Int16 proximity_max_rate;
 #endif
 
 
-#if AP_PERIPH_ADSB_ENABLED
+#ifdef HAL_PERIPH_ENABLE_ADSB
     AP_Int32 adsb_baudrate;
     AP_Int8 adsb_port;
 #endif
 
-#if AP_PERIPH_PWM_HARDPOINT_ENABLED
+#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
     AP_Int16 hardpoint_id;
     AP_Int8 hardpoint_rate;
 #endif
 
-#if AP_PERIPH_HOBBYWING_ESC_ENABLED || AP_PERIPH_ESC_APD_ENABLED
+#if defined(HAL_PERIPH_ENABLE_HWESC) || defined(HAL_PERIPH_ENABLE_ESC_APD)
     #if defined ESC_NUMBERS
         #error "ESC_NUMBERS should not have been previously defined"
     #endif
@@ -170,18 +166,18 @@ public:
     AP_Int8 pole_count[ESC_NUMBERS];
 #endif
 
-#if AP_PERIPH_GPS_ENABLED
+#ifdef HAL_PERIPH_ENABLE_GPS
     AP_Int8 gps_port;
 #if GPS_MOVING_BASELINE
     AP_Int8 gps_mb_only_can_port;
 #endif
 #endif
 
-#if AP_PERIPH_MSP_ENABLED
+#ifdef HAL_PERIPH_ENABLE_MSP
     AP_Int8 msp_port;
 #endif
 
-#if AP_PERIPH_RC_OUT_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RC_OUT
     AP_Int16 esc_rate;
     AP_Int8 esc_pwm_type;
     AP_Int16 esc_command_timeout_ms;
@@ -194,7 +190,6 @@ public:
     AP_Int16 esc_extended_telem_rate;
 #endif
 #endif
-    AP_Int16 servo_command_timeout_ms;
 #endif
 
     AP_Int8 debug;
@@ -205,16 +200,20 @@ public:
     AP_Int32        log_bitmask;
 #endif
 
-#if AP_PERIPH_BATTERY_ENABLED
+#if HAL_GCS_ENABLED
+    AP_Int16 sysid_this_mav;
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_BATTERY
     AP_Int32 battery_hide_mask;
 #endif
 
-#if AP_PERIPH_EFI_ENABLED
+#ifdef HAL_PERIPH_ENABLE_EFI
     AP_Int32 efi_baudrate;
     AP_Int8 efi_port;
 #endif
 
-#if AP_PERIPH_IMU_ENABLED
+#ifdef HAL_PERIPH_ENABLE_IMU
     AP_Int16 imu_sample_rate;
 #endif
 
@@ -222,11 +221,11 @@ public:
     AP_Int8 can_mirror_ports;
 #endif // HAL_PERIPH_CAN_MIRROR
 
-#if AP_PERIPH_DEVICE_TEMPERATURE_ENABLED
+#ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
     AP_Int8 temperature_msg_rate;
 #endif
 
-#if AP_PERIPH_RPM_STREAM_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RPM_STREAM
     AP_Int16 rpm_msg_rate;
 #endif
 

@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-
-# flake8: noqa
+#!/usr/bin/env python
 
 import re
 from enum import StrEnum # requires Python >= 3.11

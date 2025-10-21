@@ -1,6 +1,6 @@
 #include "SIM_config.h"
 
-#if AP_SIM_GPS_ENABLED
+#if HAL_SIM_GPS_ENABLED
 
 #include "SIM_GPS_SBP_Common.h"
 
@@ -10,7 +10,7 @@ using namespace SITL;
 
 void GPS_SBP_Common::sbp_send_message(uint16_t msg_type, uint16_t sender_id, uint8_t len, uint8_t *payload)
 {
-    if (len != 0 && payload == nullptr) {
+    if (len != 0 && payload == 0) {
         return; //SBP_NULL_ERROR;
     }
 
@@ -31,4 +31,4 @@ void GPS_SBP_Common::sbp_send_message(uint16_t msg_type, uint16_t sender_id, uin
     write_to_autopilot((char*)&crc, 2);
 }
 
-#endif  // AP_SIM_GPS_ENABLED
+#endif

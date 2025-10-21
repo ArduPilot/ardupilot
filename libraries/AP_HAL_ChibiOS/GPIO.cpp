@@ -24,7 +24,9 @@
 #ifndef HAL_BOOTLOADER_BUILD
 #include <SRV_Channel/SRV_Channel.h>
 #endif
+#ifndef HAL_NO_UARTDRIVER
 #include <GCS_MAVLink/GCS.h>
+#endif
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Math/AP_Math.h>
 
@@ -76,6 +78,9 @@ static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num, bool check_enabled=tr
 #endif
     return NULL;
 }
+
+static void pal_interrupt_cb(void *arg);
+static void pal_interrupt_cb_functor(void *arg);
 
 GPIO::GPIO()
 {}
@@ -297,11 +302,6 @@ AP_HAL::DigitalSource* GPIO::channel(uint16_t pin)
 
 extern const AP_HAL::HAL& hal;
 
-#if PAL_USE_CALLBACKS == TRUE // then ChibiOS PAL event funcs/types are declared
-
-static void pal_interrupt_cb(void *arg);
-static void pal_interrupt_cb_functor(void *arg);
-
 /*
    Attach an interrupt handler to a GPIO pin number. The pin number
    must be one specified with a GPIO() marker in hwdef.dat
@@ -393,8 +393,6 @@ bool GPIO::_attach_interrupt(ioline_t line, palcallback_t cb, void *p, uint8_t m
     return ret;
 }
 
-#endif // PAL_USE_CALLBACKS == TRUE
-
 bool GPIO::usb_connected(void)
 {
     return _usb_connected;
@@ -440,8 +438,6 @@ void IOMCU_DigitalSource::toggle()
 }
 #endif // HAL_WITH_IO_MCU
 
-#if PAL_USE_CALLBACKS == TRUE // then ChibiOS PAL event funcs/types are declared
-
 static void pal_interrupt_cb(void *arg)
 {
     if (arg != nullptr) {
@@ -478,8 +474,6 @@ static void pal_interrupt_cb_functor(void *arg)
     }
     (g->fn)(g->pin_num, palReadLine(g->pal_line), now);
 }
-
-#endif // PAL_USE_CALLBACKS == TRUE
 
 /*
   handle interrupt from pin change for wait_pin()
@@ -627,7 +621,9 @@ void GPIO::timer_tick()
         // INTERNAL_ERROR() to get the reporting mechanism
 
         if (_gpio_tab[i].isr_disabled_ticks == 0) {
+#ifndef HAL_NO_UARTDRIVER
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"ISR flood on pin %u", _gpio_tab[i].pin_num);
+#endif
             // Only trigger internal error if armed
             if (hal.util->get_soft_armed()) {
                 INTERNAL_ERROR(AP_InternalError::error_t::gpio_isr);
@@ -648,7 +644,9 @@ void GPIO::timer_tick()
         const uint8_t ISR_retry_ticks = 100U;
         if ((_gpio_tab[i].isr_disabled_ticks > ISR_retry_ticks) && (_gpio_tab[i].fn != nullptr)) {
             // Try re-enabling
+#ifndef HAL_NO_UARTDRIVER
             GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Retrying pin %d after ISR flood", _gpio_tab[i].pin_num);
+#endif
             if (attach_interrupt(_gpio_tab[i].pin_num, _gpio_tab[i].fn, _gpio_tab[i].isr_mode)) {
                 // Success, reset quota
                 _gpio_tab[i].isr_quota = quota;

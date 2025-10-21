@@ -53,7 +53,7 @@ void ModeGuided::update()
         {
             // stop vehicle if target not updated within 3 seconds
             if (have_attitude_target && (millis() - _des_att_time_ms) > 3000) {
-                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
+                gcs().send_text(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
                 have_attitude_target = false;
             }
             if (have_attitude_target) {
@@ -77,7 +77,7 @@ void ModeGuided::update()
         {
             // stop vehicle if target not updated within 3 seconds
             if (have_attitude_target && (millis() - _des_att_time_ms) > 3000) {
-                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
+                gcs().send_text(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
                 have_attitude_target = false;
             }
             if (have_attitude_target) {
@@ -112,7 +112,7 @@ void ModeGuided::update()
             // handle timeout
             if (_have_strthr && (AP_HAL::millis() - _strthr_time_ms) > 3000) {
                 _have_strthr = false;
-                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
+                gcs().send_text(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
             }
             if (_have_strthr) {
                 // pass latest steering and throttle directly to motors library
@@ -136,7 +136,7 @@ void ModeGuided::update()
             break;
 
         default:
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
+            gcs().send_text(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
             break;
     }
 }

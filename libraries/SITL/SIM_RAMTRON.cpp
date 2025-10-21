@@ -1,8 +1,6 @@
-#include "SIM_config.h"
+#include "SIM_RAMTRON.h"
 
 #if AP_SIM_RAMTRON_ENABLED
-
-#include "SIM_RAMTRON.h"
 
 #include <errno.h>
 #include <unistd.h>

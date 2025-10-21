@@ -1,6 +1,6 @@
 #pragma once
 
-#if AP_PERIPH_BATTERY_BALANCE_ENABLED
+#ifdef HAL_PERIPH_ENABLE_BATTERY_BALANCE
 
 class BattBalance {
 public:
@@ -20,5 +20,5 @@ private:
     uint8_t cells_allocated;
 };
 
-#endif // AP_PERIPH_BATTERY_BALANCE_ENABLED
+#endif // HAL_PERIPH_ENABLE_BATTERY_BALANCE
 

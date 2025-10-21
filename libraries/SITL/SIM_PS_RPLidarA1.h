@@ -45,7 +45,7 @@ rc 2 1450
 
 #include "SIM_config.h"
 
-#if AP_SIM_PS_RPLIDARA1_ENABLED
+#if HAL_SIM_PS_RPLIDARA1_ENABLED
 
 #include "SIM_PS_RPLidar.h"
 
@@ -59,4 +59,4 @@ public:
 
 }
 
-#endif  // AP_SIM_PS_RPLIDARA1_ENABLED
+#endif  // HAL_SIM_PS_RPLIDARA1_ENABLED

@@ -27,7 +27,11 @@ rc 3 1600
 
 #pragma once
 
-#include "SIM_config.h"
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_SIM_CRSF_ENABLED
+#define AP_SIM_CRSF_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
 
 #if AP_SIM_CRSF_ENABLED
 

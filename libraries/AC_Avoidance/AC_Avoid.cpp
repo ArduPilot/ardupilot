@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Increment: 10
     // @Range: 0 4500
     // @User: Standard
-    AP_GROUPINFO_FRAME("ANGLE_MAX", 2,  AC_Avoid, _angle_max_cd, 1000, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+    AP_GROUPINFO_FRAME("ANGLE_MAX", 2,  AC_Avoid, _angle_max, 1000, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
 
     // @Param{Copter}: DIST_MAX
     // @DisplayName: Avoidance distance maximum in non-GPS flight modes
@@ -430,7 +430,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
     float alt_limit;
     float curr_alt;
     if (_ahrs.get_hgt_ctrl_limit(alt_limit) &&
-        _ahrs.get_relative_position_D_origin_float(curr_alt)) {
+        _ahrs.get_relative_position_D_origin(curr_alt)) {
         // alt_limit is UP, curr_alt is DOWN:
         const float ctrl_alt_diff = alt_limit + curr_alt;
         if (!limit_max_alt || ctrl_alt_diff < max_alt_diff) {
@@ -494,9 +494,8 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
 }
 
 // adjust roll-pitch to push vehicle away from objects
-// roll and pitch value are in radians
-// veh_angle_max_rad is the user defined maximum lean angle for the vehicle in radians
-void AC_Avoid::adjust_roll_pitch_rad(float &roll_rad, float &pitch_rad, float veh_angle_max_rad)
+// roll and pitch value are in centi-degrees
+void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
 {
     // exit immediately if proximity based avoidance is disabled
     if (!proximity_avoidance_enabled()) {
@@ -504,7 +503,7 @@ void AC_Avoid::adjust_roll_pitch_rad(float &roll_rad, float &pitch_rad, float ve
     }
 
     // exit immediately if angle max is zero
-    if (_angle_max_cd <= 0.0f || veh_angle_max_rad <= 0.0f) {
+    if (_angle_max <= 0.0f || veh_angle_max <= 0.0f) {
         return;
     }
 
@@ -514,32 +513,32 @@ void AC_Avoid::adjust_roll_pitch_rad(float &roll_rad, float &pitch_rad, float ve
     float pitch_negative = 0.0f;   // minimum negative pitch value
 
     // get maximum positive and negative roll and pitch percentages from proximity sensor
-    get_proximity_roll_pitch_norm(roll_positive, roll_negative, pitch_positive, pitch_negative);
+    get_proximity_roll_pitch_pct(roll_positive, roll_negative, pitch_positive, pitch_negative);
 
-    // add maximum positive and negative percentages together for roll and pitch, convert to radians
-    Vector2f rp_out_rad((roll_positive + roll_negative) * radians(45.0), (pitch_positive + pitch_negative) * radians(45.0));
+    // add maximum positive and negative percentages together for roll and pitch, convert to centi-degrees
+    Vector2f rp_out((roll_positive + roll_negative) * 4500.0f, (pitch_positive + pitch_negative) * 4500.0f);
 
     // apply avoidance angular limits
     // the object avoidance lean angle is never more than 75% of the total angle-limit to allow the pilot to override
-    const float angle_limit_rad = constrain_float(cd_to_rad(_angle_max_cd), 0.0f, veh_angle_max_rad * AC_AVOID_ANGLE_MAX_PERCENT);
-    float vec_length_rad = rp_out_rad.length();
-    if (vec_length_rad > angle_limit_rad) {
-        rp_out_rad *= (angle_limit_rad / vec_length_rad);
+    const float angle_limit = constrain_float(_angle_max, 0.0f, veh_angle_max * AC_AVOID_ANGLE_MAX_PERCENT);
+    float vec_len = rp_out.length();
+    if (vec_len > angle_limit) {
+        rp_out *= (angle_limit / vec_len);
     }
 
     // add passed in roll, pitch angles
-    rp_out_rad.x += roll_rad;
-    rp_out_rad.y += pitch_rad;
+    rp_out.x += roll;
+    rp_out.y += pitch;
 
     // apply total angular limits
-    vec_length_rad = rp_out_rad.length();
-    if (vec_length_rad > veh_angle_max_rad) {
-        rp_out_rad *= (veh_angle_max_rad / vec_length_rad);
+    vec_len = rp_out.length();
+    if (vec_len > veh_angle_max) {
+        rp_out *= (veh_angle_max / vec_len);
     }
 
     // return adjusted roll, pitch
-    roll_rad = rp_out_rad.x;
-    pitch_rad = rp_out_rad.y;
+    roll = rp_out.x;
+    pitch = rp_out.y;
 }
 
 /*
@@ -918,7 +917,7 @@ void AC_Avoid::adjust_velocity_inclusion_circles(float kP, float accel_cmss, Vec
 
     // get vehicle position
     Vector2f position_NE;
-    if (!AP::ahrs().get_relative_position_NE_origin_float(position_NE)) {
+    if (!AP::ahrs().get_relative_position_NE_origin(position_NE)) {
         // do not limit velocity if we don't have a position estimate
         return;
     }
@@ -1055,7 +1054,7 @@ void AC_Avoid::adjust_velocity_exclusion_circles(float kP, float accel_cmss, Vec
 
     // get vehicle position
     Vector2f position_NE;
-    if (!AP::ahrs().get_relative_position_NE_origin_float(position_NE)) {
+    if (!AP::ahrs().get_relative_position_NE_origin(position_NE)) {
         // do not limit velocity if we don't have a position estimate
         return;
     }
@@ -1345,7 +1344,7 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
 
     // do not adjust velocity if vehicle is outside the polygon fence
     Vector2f position_xy;
-    if (!_ahrs.get_relative_position_NE_origin_float(position_xy)) {
+    if (!_ahrs.get_relative_position_NE_origin(position_xy)) {
         // boundary is in earth frame but we have no idea
         // where we are
         return;
@@ -1476,7 +1475,7 @@ float AC_Avoid::get_stopping_distance(float kP, float accel_cmss, float speed_cm
 }
 
 // convert distance (in meters) to a lean percentage (in 0~1 range) for use in manual flight modes
-float AC_Avoid::distance_to_lean_norm(float dist_m)
+float AC_Avoid::distance_to_lean_pct(float dist_m)
 {
     // ignore objects beyond DIST_MAX
     if (dist_m < 0.0f || dist_m >= _dist_max || _dist_max <= 0.0f) {
@@ -1487,7 +1486,7 @@ float AC_Avoid::distance_to_lean_norm(float dist_m)
 }
 
 // returns the maximum positive and negative roll and pitch percentages (in -1 ~ +1 range) based on the proximity sensor
-void AC_Avoid::get_proximity_roll_pitch_norm(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative)
+void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative)
 {
 #if HAL_PROXIMITY_ENABLED
     AP_Proximity *proximity = AP::proximity();
@@ -1507,7 +1506,7 @@ void AC_Avoid::get_proximity_roll_pitch_norm(float &roll_positive, float &roll_n
         if (_proximity.get_object_angle_and_distance(i, ang_deg, dist_m)) {
             if (dist_m < _dist_max) {
                 // convert distance to lean angle (in 0 to 1 range)
-                const float lean_pct = distance_to_lean_norm(dist_m);
+                const float lean_pct = distance_to_lean_pct(dist_m);
                 // convert angle to roll and pitch lean percentages
                 const float angle_rad = radians(ang_deg);
                 const float roll_pct = -sinf(angle_rad) * lean_pct;

@@ -1,10 +1,9 @@
 #pragma once
 
-#include "AP_OpticalFlow_config.h"
+#include "AP_OpticalFlow.h"
+#include <AP_HAL/utility/OwnPtr.h>
 
 #if HAL_MSP_OPTICALFLOW_ENABLED
-
-#include "AP_OpticalFlow.h"
 
 class AP_OpticalFlow_MSP : public OpticalFlow_backend
 {

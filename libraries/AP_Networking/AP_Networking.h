@@ -147,13 +147,6 @@ public:
     static uint32_t convert_netmask_bitcount_to_ip(const uint32_t netmask_bitcount);
     static uint8_t convert_netmask_ip_to_bitcount(const uint32_t netmask_ip);
 
-    // add new routes for an interface.
-    // Returns true if the route is added or the route already exists
-    bool add_route(uint8_t backend_idx, uint8_t iface_idx, uint32_t dest_ip, uint8_t mask_len);
-
-    // hook for custom routes
-    struct netif *routing_hook(uint32_t dest);
-
     /*
       send contents of a file to a socket then close both socket and file
      */
@@ -173,9 +166,6 @@ public:
 #endif
         PPP_TIMEOUT_DISABLE=(1U<<5),
         PPP_ECHO_LIMIT_DISABLE=(1U<<6),
-#if AP_NETWORKING_CAPTURE_ENABLED
-        CAPTURE_PACKETS=(1U<<7),
-#endif
     };
     bool option_is_set(OPTION option) const {
         return (param.options.get() & int32_t(option)) != 0;
@@ -243,8 +233,7 @@ private:
         Port() {}
 
         static const struct AP_Param::GroupInfo var_info[];
-        AP_Enum<NetworkPortType> type_param;
-        NetworkPortType type;
+        AP_Enum<NetworkPortType> type;
         AP_Networking_IPV4 ip {"0.0.0.0"};
         AP_Int32 port;
         SocketAPM *sock;
@@ -300,19 +289,7 @@ private:
         bool have_received;
         bool close_on_recv_error;
         uint32_t last_udp_srv_recv_time_ms;
-
-        // statistics
-        uint32_t tx_stats_bytes;
-        uint32_t rx_stats_bytes;
-
         HAL_Semaphore sem;
-
-    protected:
-#if HAL_UART_STATS_ENABLED
-        // Getters for cumulative tx and rx counts
-        uint32_t get_total_tx_bytes() const override { return tx_stats_bytes; }
-        uint32_t get_total_rx_bytes() const override { return rx_stats_bytes; }
-#endif
     };
 #endif // AP_NETWORKING_REGISTER_PORT_ENABLED
 

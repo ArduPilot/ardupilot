@@ -80,8 +80,7 @@ public:
 
     static std::string parse(value &out, const std::string &s);
 
-    // load a json file, returning a value object.
-    // caller must delete the returned pointer when done.
+    // load a json file, returning a value object
     static value *load_json(const char *filename);
 };
 

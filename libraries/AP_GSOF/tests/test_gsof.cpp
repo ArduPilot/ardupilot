@@ -16,8 +16,7 @@ const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 TEST(AP_GSOF, incomplete_packet)
 {
     AP_GSOF gsof;
-    AP_GSOF::MsgTypes expected;
-    EXPECT_FALSE(gsof.parse(0, expected));
+    EXPECT_FALSE(gsof.parse(0, 5));
 }
 
 TEST(AP_GSOF, packet1)
@@ -28,17 +27,9 @@ TEST(AP_GSOF, packet1)
     AP_GSOF gsof;
     char c = 0;
     bool parsed = false;
-
-    AP_GSOF::MsgTypes expected;
-    expected.set(1);
-    expected.set(2);
-    expected.set(8);
-    expected.set(9);
-    expected.set(12);
-
     while (c != EOF) {
         c = fgetc (fp);
-        parsed |= gsof.parse((uint8_t)c, expected);
+        parsed |= gsof.parse((uint8_t)c, 5);
     }
     
     EXPECT_TRUE(parsed);

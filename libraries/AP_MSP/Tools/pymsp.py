@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
-
-# flake8: noqa
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """
  author: Alex Apostoli
@@ -277,7 +276,7 @@ class PyMSP:
         msgName = a[0]
         fieldName = a[1]
         if not msgName in self.by_name:
-            # default to zero for simplicity of display
+            # default to zero for simplicty of display
             return 0
         msg = self.by_name[msgName]
         if not fieldName in msg.values:

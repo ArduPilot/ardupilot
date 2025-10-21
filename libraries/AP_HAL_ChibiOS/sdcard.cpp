@@ -26,7 +26,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#if HAL_USE_FATFS
+#ifdef USE_POSIX
 static FATFS SDC_FS; // FATFS object
 #ifndef HAL_BOOTLOADER_BUILD
 static HAL_Semaphore sem;
@@ -41,7 +41,7 @@ static SDCConfig sdcconfig = {
 };
 #elif HAL_USE_MMC_SPI
 MMCDriver MMCD1;
-static AP_HAL::SPIDevice *device;
+static AP_HAL::OwnPtr<AP_HAL::SPIDevice> device;
 static MMCConfig mmcconfig;
 static SPIConfig lowspeed;
 static SPIConfig highspeed;
@@ -54,7 +54,7 @@ static SPIConfig highspeed;
  */
 bool sdcard_init()
 {
-#if HAL_USE_FATFS
+#ifdef USE_POSIX
 #ifndef HAL_BOOTLOADER_BUILD
     WITH_SEMAPHORE(sem);
 
@@ -114,19 +114,18 @@ bool sdcard_init()
 
     sdcard_running = true;
 
-    if (device == nullptr) {
-        device = AP_HAL::get_HAL().spi->get_device_ptr("sdcard");
-        if (!device) {
-            printf("No sdcard SPI device found\n");
-            sdcard_running = false;
-            return false;
-        }
+    device = AP_HAL::get_HAL().spi->get_device("sdcard");
+    if (!device) {
+        printf("No sdcard SPI device found\n");
+        sdcard_running = false;
+        return false;
     }
     device->set_slowdown(sd_slowdown);
 
     mmcObjectInit(&MMCD1, MMCD1.buffer);
 
-    mmcconfig.spip = (static_cast<ChibiOS::SPIDevice*>(device))->get_driver();
+    mmcconfig.spip =
+            static_cast<ChibiOS::SPIDevice*>(device.get())->get_driver();
     mmcconfig.hscfg = &highspeed;
     mmcconfig.lscfg = &lowspeed;
 
@@ -151,7 +150,7 @@ bool sdcard_init()
     }
 #endif
     sdcard_running = false;
-#endif  // HAL_USE_FATFS
+#endif  // USE_POSIX
     return false;
 }
 
@@ -160,7 +159,7 @@ bool sdcard_init()
  */
 void sdcard_stop(void)
 {
-#if HAL_USE_FATFS
+#ifdef USE_POSIX
     // unmount
     f_mount(nullptr, "/", 1);
 #endif
@@ -186,7 +185,7 @@ void sdcard_stop(void)
 
 bool sdcard_retry(void)
 {
-#if HAL_USE_FATFS
+#ifdef USE_POSIX
     if (!sdcard_running) {
         if (sdcard_init()) {
 #if AP_FILESYSTEM_FILE_WRITING_ENABLED
@@ -221,7 +220,7 @@ void spiStopHook(SPIDriver *spip)
 __RAMFUNC__ void spiAcquireBusHook(SPIDriver *spip)
 {
     if (sdcard_running) {
-        ChibiOS::SPIDevice *devptr = static_cast<ChibiOS::SPIDevice*>(device);
+        ChibiOS::SPIDevice *devptr = static_cast<ChibiOS::SPIDevice*>(device.get());
         devptr->acquire_bus(true, true);
     }
 }
@@ -229,7 +228,7 @@ __RAMFUNC__ void spiAcquireBusHook(SPIDriver *spip)
 __RAMFUNC__ void spiReleaseBusHook(SPIDriver *spip)
 {
     if (sdcard_running) {
-        ChibiOS::SPIDevice *devptr = static_cast<ChibiOS::SPIDevice*>(device);
+        ChibiOS::SPIDevice *devptr = static_cast<ChibiOS::SPIDevice*>(device.get());
         devptr->acquire_bus(false, true);
     }
 }

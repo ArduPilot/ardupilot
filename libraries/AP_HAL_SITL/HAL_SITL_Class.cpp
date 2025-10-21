@@ -33,7 +33,6 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_RCProtocol/AP_RCProtocol_config.h>
-#include <AP_HAL/SIMState.h>
 
 using namespace HALSITL;
 
@@ -43,18 +42,13 @@ static Storage sitlStorage;
 static SITL_State sitlState;
 static Scheduler sitlScheduler(&sitlState);
 #if AP_RCPROTOCOL_ENABLED
-static RCInput sitlRCInput;
+static RCInput sitlRCInput(&sitlState);
 #else
 static Empty::RCInput  sitlRCInput;
 #endif
 static RCOutput sitlRCOutput(&sitlState);
 static GPIO sitlGPIO(&sitlState);
 static AnalogIn sitlAnalogIn(&sitlState);
-
-#if AP_SIM_ENABLED
-static AP_HAL::SIMState xsimstate;
-#endif
-
 #if HAL_WITH_DSP
 static DSP dspDriver;
 #endif
@@ -115,9 +109,6 @@ HAL_SITL::HAL_SITL() :
         &utilInstance,      /* util */
         &emptyOpticalFlow,  /* onboard optical flow */
         &emptyFlash,        /* flash driver */
-#if AP_SIM_ENABLED
-&xsimstate,
-#endif
 #if HAL_WITH_DSP
         &dspDriver,         /* dsp driver */
 #endif

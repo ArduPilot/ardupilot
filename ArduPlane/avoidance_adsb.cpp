@@ -2,19 +2,14 @@
 #include <stdio.h>
 #include "Plane.h"
 
-#if HAL_ADSB_ENABLED || AP_ADSB_AVOIDANCE_ENABLED
+#if HAL_ADSB_ENABLED
 void Plane::avoidance_adsb_update(void)
 {
-#if HAL_ADSB_ENABLED
     adsb.update();
-#endif  // HAL_ADSB_ENABLED
-#if AP_ADSB_AVOIDANCE_ENABLED
     avoidance_adsb.update();
-#endif  // AP_ADSB_AVOIDANCE_ENABLED
 }
-#endif  // HAL_ADSB_ENABLED || AP_ADSB_AVOIDANCE_ENABLED
 
-#if AP_ADSB_AVOIDANCE_ENABLED
+
 MAV_COLLISION_ACTION AP_Avoidance_Plane::handle_avoidance(const AP_Avoidance::Obstacle *obstacle, MAV_COLLISION_ACTION requested_action)
 {
     MAV_COLLISION_ACTION actual_action = requested_action;
@@ -228,4 +223,5 @@ bool AP_Avoidance_Plane::handle_avoidance_horizontal(const AP_Avoidance::Obstacl
     return false;
 }
 
-#endif // AP_ADSB_AVOIDANCE_ENABLED
+#endif // HAL_ADSB_ENABLED
+

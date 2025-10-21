@@ -88,7 +88,7 @@ void OpticalFlow_Onboard::init()
     if (!_camerasensor->set_format(HAL_OPTFLOW_ONBOARD_SENSOR_WIDTH,
                                    HAL_OPTFLOW_ONBOARD_SENSOR_HEIGHT,
                                    V4L2_MBUS_FMT_UYVY8_2X8)) {
-        AP_HAL::panic("OpticalFlow_Onboard: couldn't set subdev fmt");
+        AP_HAL::panic("OpticalFlow_Onboard: couldn't set subdev fmt\n");
     }
     _format = V4L2_PIX_FMT_NV12;
 #endif
@@ -100,7 +100,7 @@ void OpticalFlow_Onboard::init()
 
     if (_format != V4L2_PIX_FMT_NV12 && _format != V4L2_PIX_FMT_GREY &&
         _format != V4L2_PIX_FMT_YUYV) {
-        AP_HAL::panic("OpticalFlow_Onboard: format not supported");
+        AP_HAL::panic("OpticalFlow_Onboard: format not supported\n");
     }
 
     if (_width == HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH &&
@@ -272,7 +272,7 @@ void OpticalFlow_Onboard::_run_optflow()
 
         convert_buffer = (uint8_t *)calloc(1, convert_buffer_size);
         if (!convert_buffer) {
-            AP_HAL::panic("OpticalFlow_Onboard: couldn't allocate conversion buffer");
+            AP_HAL::panic("OpticalFlow_Onboard: couldn't allocate conversion buffer\n");
         }
     }
 
@@ -286,7 +286,7 @@ void OpticalFlow_Onboard::_run_optflow()
                 free(convert_buffer);
             }
 
-            AP_HAL::panic("OpticalFlow_Onboard: couldn't allocate crop buffer");
+            AP_HAL::panic("OpticalFlow_Onboard: couldn't allocate crop buffer\n");
         }
     }
 
@@ -322,7 +322,7 @@ void OpticalFlow_Onboard::_run_optflow()
                free(output_buffer);
             }
 
-            AP_HAL::panic("OpticalFlow_Onboard: couldn't get frame");
+            AP_HAL::panic("OpticalFlow_Onboard: couldn't get frame\n");
         }
 
         if (_format == V4L2_PIX_FMT_YUYV) {

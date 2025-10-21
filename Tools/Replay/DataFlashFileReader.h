@@ -19,7 +19,6 @@ public:
 
     void format_type(uint16_t type, char dest[5]);
     void get_packet_counts(uint64_t dest[]);
-    float get_percent_read(); // Get percentage of log file read
 
 protected:
     int fd = -1;
@@ -30,7 +29,6 @@ private:
     ssize_t read_input(void *buf, size_t count);
 
     uint64_t bytes_read = 0;
-    uint64_t file_size = 0; // Total size of the log file
     uint32_t message_count = 0;
     uint64_t start_micros;
 

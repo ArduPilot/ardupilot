@@ -10,6 +10,8 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_BattMonitor_SMBus::var_info[] = {
 
+    // Param indexes must be between 10 and 19 to avoid conflict with other battery monitor param tables loaded by pointer
+
     // @Param: I2C_BUS
     // @DisplayName: Battery monitor I2C bus number
     // @Description: Battery monitor I2C bus number
@@ -26,7 +28,7 @@ const AP_Param::GroupInfo AP_BattMonitor_SMBus::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("I2C_ADDR", 11, AP_BattMonitor_SMBus, _address, AP_BATTMONITOR_SMBUS_I2C_ADDR),
 
-    // CHECK/UPDATE INDEX TABLE IN AP_BattMonitor_Backend.cpp WHEN CHANGING OR ADDING PARAMETERS
+    // Param indexes must be between 10 and 19 to avoid conflict with other battery monitor param tables loaded by pointer
 
     AP_GROUPEND
 };
@@ -47,7 +49,7 @@ AP_BattMonitor_SMBus::AP_BattMonitor_SMBus(AP_BattMonitor &mon,
 
 void AP_BattMonitor_SMBus::init(void)
 {
-    _dev = hal.i2c_mgr->get_device_ptr(_bus, _address, 100000, true, 20);
+    _dev = hal.i2c_mgr->get_device(_bus, _address, 100000, true, 20);
     
     if (_dev) {
         timer_handle = _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_SMBus::timer, void));

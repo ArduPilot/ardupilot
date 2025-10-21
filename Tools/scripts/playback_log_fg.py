@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 '''
 play back an onboard log as a FlightGear FG NET stream
@@ -42,7 +42,7 @@ class Playback(object):
         self.msg = self.next_msg()
         if self.msg is None:
             sys.exit(1)
-        self.last_timestamp = self.msg._timestamp
+        self.last_timestamp = self.msg.TimeUS*1.0e-6
 
         while True:
             self.next_message()
@@ -64,7 +64,7 @@ class Playback(object):
         if msg is None:
             return
 
-        timestamp = msg._timestamp
+        timestamp = msg.TimeUS*1.0e-6
 
         dt = timestamp - self.last_timestamp
         dt = max(dt, 0)

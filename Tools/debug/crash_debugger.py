@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
-
-# flake8: noqa
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """
 Script to catch and give backtrace of a HardFault Crash

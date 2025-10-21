@@ -63,7 +63,7 @@ for i in $(seq $NCOPTERS); do
 
     # create default parameter file for the follower
     cat <<EOF > copter$i/follow.parm
-MAV_SYSID $SYSID
+SYSID_THISMAV $SYSID
 FOLL_ENABLE 1
 FOLL_OFS_X -5
 FOLL_OFS_TYPE 1

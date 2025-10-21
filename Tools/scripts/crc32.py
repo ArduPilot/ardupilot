@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
-
-# flake8: noqa
-
+#!/usr/bin/env python
 '''
 show crc32 matching MAVFtp
 '''

@@ -70,6 +70,8 @@
 #define HAL_INS_MPU9250_NAME 				"mpu9250"
 
 //Baro
+#define HAL_BARO_DEFAULT 				HAL_BARO_BMP280_I2C
+#define HAL_BARO_BMP085_NAME 				"bmp280"
 #define HAL_BARO_PROBE_LIST 				PROBE_BARO_I2C(BMP280, 0, 0x76)
 
 //I2C Buses

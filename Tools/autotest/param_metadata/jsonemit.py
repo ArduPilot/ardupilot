@@ -1,5 +1,3 @@
-# flake8: noqa
-
 import json
 import copy
 from emit import Emit

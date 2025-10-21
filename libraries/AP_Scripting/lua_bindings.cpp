@@ -10,7 +10,6 @@
 #endif
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Filesystem/AP_Filesystem.h>
-#include <AP_GPS/AP_GPS.h>
 
 #include "lua_bindings.h"
 
@@ -600,13 +599,18 @@ int lua_get_i2c_device(lua_State *L) {
         return luaL_argerror(L, 1, "no i2c devices available");
     }
 
-    scripting->_i2c_dev[scripting->num_i2c_devices] = hal.i2c_mgr->get_device_ptr(bus, address, bus_clock, use_smbus);
-
+    scripting->_i2c_dev[scripting->num_i2c_devices] = NEW_NOTHROW AP_HAL::OwnPtr<AP_HAL::I2CDevice>;
     if (scripting->_i2c_dev[scripting->num_i2c_devices] == nullptr) {
         return luaL_argerror(L, 1, "i2c device nullptr");
     }
 
-    *new_AP_HAL__I2CDevice(L) = scripting->_i2c_dev[scripting->num_i2c_devices];
+    *scripting->_i2c_dev[scripting->num_i2c_devices] = std::move(hal.i2c_mgr->get_device(bus, address, bus_clock, use_smbus));
+
+    if (scripting->_i2c_dev[scripting->num_i2c_devices] == nullptr || scripting->_i2c_dev[scripting->num_i2c_devices]->get() == nullptr) {
+        return luaL_argerror(L, 1, "i2c device nullptr");
+    }
+
+    *new_AP_HAL__I2CDevice(L) = scripting->_i2c_dev[scripting->num_i2c_devices]->get();
 
     scripting->num_i2c_devices++;
 
@@ -1270,24 +1274,5 @@ int lua_DroneCAN_get_FlexDebug(lua_State *L)
     return 2;
 }
 #endif // HAL_ENABLE_DRONECAN_DRIVERS
-
-#if AP_GPS_ENABLED
-int lua_gps_inject_data(lua_State *L)
-{
-    binding_argcheck(L, 2);
-    luaL_checkudata(L, 1, "gps");
-
-    size_t len = 0;
-    const char *data = luaL_checklstring(L, 2, &len);
-
-    if (len > 0 && len <= UINT16_MAX)
-    {
-        AP::gps().inject_data((const uint8_t *)data, (uint16_t)len);
-    }
-
-    return 0;
-}
-
-#endif  // AP_GPS_ENABLED
 
 #endif  // AP_SCRIPTING_ENABLED

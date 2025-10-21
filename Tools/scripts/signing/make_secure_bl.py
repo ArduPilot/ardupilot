@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-
-# flake8: noqa
-
 '''
 add a set of up to 10 public keys to an ArduPilot bootloader bin file
 '''

@@ -17,14 +17,15 @@ bool AP_ExternalControl_Copter::set_linear_velocity_and_yaw_rate(const Vector3f 
     if (!ready_for_external_control()) {
         return false;
     }
-    const float checked_yaw_rate_rad = isnan(yaw_rate_rads)? 0: yaw_rate_rads;
+    const float yaw_rate_cds = isnan(yaw_rate_rads)? 0: degrees(yaw_rate_rads)*100;
 
     // Copter velocity is positive if aircraft is moving up which is opposite the incoming NED frame.
-    const Vector3f velocity_neu_ms {
+    Vector3f velocity_NEU_ms {
         linear_velocity.x,
         linear_velocity.y,
         -linear_velocity.z };
-    copter.mode_guided.set_vel_NEU_ms(velocity_neu_ms, false, 0, !isnan(yaw_rate_rads), checked_yaw_rate_rad);
+    Vector3f velocity_up_cms = velocity_NEU_ms * 100;
+    copter.mode_guided.set_velocity(velocity_up_cms, false, 0, !isnan(yaw_rate_rads), yaw_rate_cds);
     return true;
 }
 

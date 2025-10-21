@@ -15,11 +15,12 @@ void Copter::default_dead_zones()
     channel_throttle->set_default_dead_zone(30);
     channel_yaw->set_default_dead_zone(20);
 #endif
+    rc().channel(CH_6)->set_default_dead_zone(0);
 }
 
 void Copter::init_rc_in()
 {
-    // the library guarantees that these are non-nullptr:
+    // the library gaurantees that these are non-nullptr:
     channel_roll     = &rc().get_roll_channel();
     channel_pitch    = &rc().get_pitch_channel();
     channel_throttle = &rc().get_throttle_channel();
@@ -30,11 +31,6 @@ void Copter::init_rc_in()
     channel_pitch->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
     channel_yaw->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
     channel_throttle->set_range(1000);
-
-#if AP_RC_TRANSMITTER_TUNING_ENABLED
-    rc_tuning = rc().find_channel_for_option(RC_Channel::AUX_FUNC::TRANSMITTER_TUNING);
-    rc_tuning2 = rc().find_channel_for_option(RC_Channel::AUX_FUNC::TRANSMITTER_TUNING2);
-#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
     // set default dead zones
     default_dead_zones();
@@ -132,7 +128,6 @@ void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
 {
     // if failsafe not enabled pass through throttle and exit
     if(g.failsafe_throttle == FS_THR_DISABLED) {
-        set_failsafe_radio(false);
         return;
     }
 

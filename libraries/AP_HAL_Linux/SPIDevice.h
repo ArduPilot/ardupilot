@@ -27,26 +27,6 @@ namespace Linux {
 class SPIBus;
 class SPIDesc;
 
-struct SPIDesc {
-    SPIDesc(const char *name_, uint16_t bus_, uint16_t subdev_, uint8_t mode_,
-            uint8_t bits_per_word_, int16_t cs_pin_, uint32_t lowspeed_,
-            uint32_t highspeed_)
-        : name(name_), bus(bus_), subdev(subdev_), mode(mode_)
-        , bits_per_word(bits_per_word_), cs_pin(cs_pin_), lowspeed(lowspeed_)
-        , highspeed(highspeed_)
-    {
-    }
-
-    const char *name;
-    uint16_t bus;
-    uint16_t subdev;
-    uint8_t mode;
-    uint8_t bits_per_word;
-    int16_t cs_pin;
-    uint32_t lowspeed;
-    uint32_t highspeed;
-};
-
 class SPIDevice : public AP_HAL::SPIDevice {
 public:
     SPIDevice(SPIBus &bus, SPIDesc &device_desc);
@@ -65,9 +45,6 @@ public:
     /* See AP_HAL::SPIDevice::transfer_fullduplex() */
     bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
                              uint32_t len) override;
-
-    /* See AP_HAL::SPIDevice::transfer_fullduplex() */
-    bool transfer_fullduplex(uint8_t *send_recv, uint32_t len) override;
 
     /* See AP_HAL::Device::get_semaphore() */
     AP_HAL::Semaphore *get_semaphore() override;
@@ -113,7 +90,7 @@ public:
     }
 
     /* AP_HAL::SPIDeviceManager implementation */
-    AP_HAL::SPIDevice *get_device_ptr(const char *name) override;
+    AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name) override;
 
     /*
      * Stop all SPI threads and block until they are finalized. This doesn't
@@ -130,7 +107,7 @@ public:
 
 protected:
     void _unregister(SPIBus &b);
-    AP_HAL::SPIDevice *_create_device(SPIBus &b, SPIDesc &device_desc) const;
+    AP_HAL::OwnPtr<AP_HAL::SPIDevice> _create_device(SPIBus &b, SPIDesc &device_desc) const;
 
     std::vector<SPIBus*> _buses;
 

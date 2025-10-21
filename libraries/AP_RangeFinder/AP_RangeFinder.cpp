@@ -24,7 +24,9 @@
 #include "AP_RangeFinder_BBB_PRU.h"
 #include "AP_RangeFinder_LightWareI2C.h"
 #include "AP_RangeFinder_LightWareSerial.h"
-#if AP_RANGEFINDER_BEBOP_ENABLED
+#if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || \
+     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO) &&      \
+    defined(HAVE_LIBIIO)
 #include "AP_RangeFinder_Bebop.h"
 #endif
 #include "AP_RangeFinder_Backend.h"
@@ -190,23 +192,13 @@ RangeFinder::RangeFinder()
     _singleton = this;
 }
 
-void RangeFinder::convert_params(void)
-{
-    // PARAMETER_CONVERSION - Added: Dec-2024 for 4.6->4.7
-    for (auto &p : params) {
-        p.convert_min_max_params();
-    }
-}
-
 /*
   initialise the RangeFinder class. We do detection of attached range
   finders here. For now we won't allow for hot-plugging of
   rangefinders.
  */
-__INITFUNC__ void RangeFinder::init(enum Rotation orientation_default)
+void RangeFinder::init(enum Rotation orientation_default)
 {
-    convert_params();
-
     if (num_instances != 0) {
         // don't re-init if we've found some sensors already
         return;
@@ -260,7 +252,7 @@ void RangeFinder::update(void)
 #endif
 }
 
-__INITFUNC__ bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend, uint8_t instance, uint8_t serial_instance)
+bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend, uint8_t instance, uint8_t serial_instance)
 {
     if (!backend) {
         return false;
@@ -282,7 +274,7 @@ __INITFUNC__ bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend, uin
 /*
   detect if an instance of a rangefinder is connected. 
  */
-__INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
+void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 {
     AP_RangeFinder_Backend_Serial *(*serial_create_fn)(RangeFinder::RangeFinder_State&, AP_RangeFinder_Params&) = nullptr;
 
@@ -307,13 +299,11 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
             addr = params[instance].address;
         }
         FOREACH_I2C(i) {
-            auto *device_ptr = hal.i2c_mgr->get_device_ptr(i, addr);
             if (_add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(state[instance], params[instance],
-                                                                  device_ptr),
+                                                                  hal.i2c_mgr->get_device(i, addr)),
                              instance)) {
                 break;
             }
-            delete device_ptr;
         }
         break;
     }
@@ -347,13 +337,11 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
     case Type::TRI2C:
         if (params[instance].address) {
             FOREACH_I2C(i) {
-                auto *device_ptr = hal.i2c_mgr->get_device_ptr(i, params[instance].address);
                 if (_add_backend(AP_RangeFinder_TeraRangerI2C::detect(state[instance], params[instance],
-                                                                      device_ptr),
+                                                                      hal.i2c_mgr->get_device(i, params[instance].address)),
                                  instance)) {
                     break;
                 }
-                delete device_ptr;
             }
         }
         break;
@@ -686,26 +674,7 @@ void RangeFinder::handle_msp(const MSP::msp_rangefinder_data_message_t &pkt)
 // return true if we have a range finder with the specified orientation
 bool RangeFinder::has_orientation(enum Rotation orientation) const
 {
-    if ((find_instance(orientation) != nullptr)) {
-        // we have a rangefinder with this orientation
-        return true;
-    }
-
-    // special case for DroneCAN
-    // DroneCAN rangefinder backend is not created until we receive a
-    // measurement, so we need to check the params directly
-#if AP_RANGEFINDER_DRONECAN_ENABLED
-     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
-        if ((RangeFinder::Type)params[i].type.get() == RangeFinder::Type::UAVCAN) {
-            if (params[i].orientation.get() == orientation) {
-                return true;
-            }
-        }
-    }
-#endif
-
-    // no rangefinder with this orientation
-    return false;
+    return (find_instance(orientation) != nullptr);
 }
 
 // find first range finder instance with the specified orientation
@@ -740,6 +709,11 @@ float RangeFinder::distance_orient(enum Rotation orientation) const
     return backend->distance();
 }
 
+uint16_t RangeFinder::distance_cm_orient(enum Rotation orientation) const
+{
+    return distance_orient(orientation) * 100.0;
+}
+
 int8_t RangeFinder::signal_quality_pct_orient(enum Rotation orientation) const
 {
     AP_RangeFinder_Backend *backend = find_instance(orientation);
@@ -749,31 +723,31 @@ int8_t RangeFinder::signal_quality_pct_orient(enum Rotation orientation) const
     return backend->signal_quality_pct();
 }
 
-float RangeFinder::min_distance_orient(enum Rotation orientation) const
+int16_t RangeFinder::max_distance_cm_orient(enum Rotation orientation) const
 {
     AP_RangeFinder_Backend *backend = find_instance(orientation);
     if (backend == nullptr) {
-        return 0;  // consider NaN
+        return 0;
     }
-    return backend->min_distance();
+    return backend->max_distance_cm();
 }
 
-float RangeFinder::max_distance_orient(enum Rotation orientation) const
+int16_t RangeFinder::min_distance_cm_orient(enum Rotation orientation) const
 {
     AP_RangeFinder_Backend *backend = find_instance(orientation);
     if (backend == nullptr) {
-        return 0;  // consider NaN
+        return 0;
     }
-    return backend->max_distance();
+    return backend->min_distance_cm();
 }
 
-float RangeFinder::ground_clearance_orient(enum Rotation orientation) const
+int16_t RangeFinder::ground_clearance_cm_orient(enum Rotation orientation) const
 {
     AP_RangeFinder_Backend *backend = find_instance(orientation);
     if (backend == nullptr) {
-        return 0;  // consider NaN
+        return 0;
     }
-    return backend->ground_clearance();
+    return backend->ground_clearance_cm();
 }
 
 bool RangeFinder::has_data_orient(enum Rotation orientation) const
@@ -854,7 +828,7 @@ void RangeFinder::Log_RFND() const
                 LOG_PACKET_HEADER_INIT(LOG_RFND_MSG),
                 time_us      : AP_HAL::micros64(),
                 instance     : i,
-                dist         : s->distance(),
+                dist         : s->distance_cm(),
                 status       : (uint8_t)s->status(),
                 orient       : s->orientation(),
                 quality      : s->signal_quality_pct(),

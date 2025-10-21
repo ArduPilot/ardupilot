@@ -46,6 +46,11 @@
 // 2 use udp, 1 use tcp...  for udp,client needs to connect as UDPCL in missionplanner etc to 192.168.4.1 port 14550
 #define HAL_ESP32_WIFI 2
 
+// see boards.py
+#ifndef ENABLE_HEAP
+#define ENABLE_HEAP 1
+#endif
+
 #define WIFI_SSID "ardupilot123"
 #define WIFI_PWD "ardupilot123"
 
@@ -88,6 +93,3 @@
 #define AP_SCRIPTING_ENABLED 0
 #define HAL_USE_EMPTY_STORAGE 1
 
-// disable all frames for sim on hw except quad to save DRAM .bss
-#define AP_MOTORS_FRAME_DEFAULT_ENABLED 0
-#define AP_MOTORS_FRAME_QUAD_ENABLED 1

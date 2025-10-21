@@ -1,6 +1,10 @@
 #pragma once
 
-#include "SIM_config.h"
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_SIM_RAMTRON_ENABLED
+#define AP_SIM_RAMTRON_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
 
 #if AP_SIM_RAMTRON_ENABLED
 

@@ -1,6 +1,6 @@
 include ../KakuteH7-bdshot/hwdef.dat
 
-# board ID. See Tools/AP_Bootloader/board_types.txt
+# board ID for firmware load
 APJ_BOARD_ID AP_HW_SDMODELH7V2
 
 # VTX power switch
@@ -16,4 +16,3 @@ define HAL_FRAME_TYPE_DEFAULT 12
 
 # builtin compass
 COMPASS IST8310 I2C:0:0x0E false ROTATION_PITCH_180
-define DEFAULT_NTF_LED_TYPES 455

@@ -6,14 +6,11 @@
  */
 #pragma once
 
-#include "AP_IRLock_config.h"
-
-#if AP_IRLOCK_SITL_ENABLED
-
-#include "AP_IRLock.h"
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include "IRLock.h"
 #include <SITL/SITL.h>
 
-class AP_IRLock_SITL : public AP_IRLock
+class AP_IRLock_SITL : public IRLock
 {
 public:
     // init - initialize sensor library
@@ -26,5 +23,4 @@ private:
     SITL::SIM          *_sitl;                 // sitl instance pointer
     uint32_t _last_timestamp = 0;
 };
-
-#endif  // AP_IRLOCK_SITL_ENABLED
+#endif // CONFIG_HAL_BOARD

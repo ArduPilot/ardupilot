@@ -7,10 +7,6 @@
   common protocol definitions between AP_IOMCU and iofirmware
  */
 
-#ifndef AP_IOMCU_PROFILED_SUPPORT_ENABLED
-#define AP_IOMCU_PROFILED_SUPPORT_ENABLED 0
-#endif
-
 // 22 is enough for the rc_input page in one transfer
 #define PKT_MAX_REGS 22
 // The number of channels that can be propagated - due to SBUS_OUT is higher than the physical channels
@@ -21,13 +17,7 @@
 
 //#define IOMCU_DEBUG
 
-struct 
-#if defined(STM32H7)
-__attribute__((aligned(32), packed))
-#else
-PACKED
-#endif
-IOPacket  {
+struct PACKED IOPacket {
     uint8_t 	count:6;
     uint8_t 	code:2;
     uint8_t 	crc;
@@ -78,9 +68,6 @@ enum iopage {
     PAGE_RAW_DSHOT_TELEM_5_8 = 205,
     PAGE_RAW_DSHOT_TELEM_9_12 = 206,
     PAGE_RAW_DSHOT_TELEM_13_16 = 207,
-#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
-    PAGE_PROFILED = 208,
-#endif
 };
 
 // setup page registers
@@ -126,8 +113,6 @@ enum iopage {
 #define PAGE_REG_SETUP_FORCE_SAFETY_OFF 12
 #define PAGE_REG_SETUP_FORCE_SAFETY_ON  14
 #define FORCE_SAFETY_MAGIC 22027
-
-#define PROFILED_ENABLE_MAGIC 123
 
 struct page_config {
     uint16_t protocol_version;
@@ -245,12 +230,3 @@ struct page_dshot_telem {
     uint8_t   edt2_stress[4];
 #endif
 };
-
-#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
-struct __attribute__((packed, aligned(2))) page_profiled {
-    uint8_t magic;
-    uint8_t blue;
-    uint8_t red;
-    uint8_t green;
-};
-#endif

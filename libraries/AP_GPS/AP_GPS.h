@@ -112,7 +112,7 @@ public:
         GPS_TYPE_UNICORE_NMEA = 24,
         GPS_TYPE_UNICORE_MOVINGBASE_NMEA = 25,
         GPS_TYPE_SBF_DUAL_ANTENNA = 26,
-#if AP_SIM_GPS_ENABLED
+#if HAL_SIM_GPS_ENABLED
         GPS_TYPE_SITL = 100,
 #endif
     };
@@ -262,7 +262,7 @@ public:
 #if HAL_MSP_GPS_ENABLED
     void handle_msp(const MSP::msp_gps_data_message_t &pkt);
 #endif
-#if AP_EXTERNAL_AHRS_ENABLED
+#if HAL_EXTERNAL_AHRS_ENABLED
     // Retrieve the first instance ID that is configured as type GPS_TYPE_EXTERNAL_AHRS.
     // Can be used by external AHRS systems that only report one GPS to get the instance ID.
     // Returns true if an instance was found, false otherwise.
@@ -602,9 +602,6 @@ public:
     uint8_t get_auto_switch_type() const { return _auto_switch; }
 #endif
 
-    // Inject a packet of raw binary to a GPS
-    void inject_data(const uint8_t *data, uint16_t len);
-
 protected:
 
     // configuration parameters
@@ -754,6 +751,7 @@ private:
     void handle_gps_inject(const mavlink_message_t &msg);
 
     //Inject a packet of raw binary to a GPS
+    void inject_data(const uint8_t *data, uint16_t len);
     void inject_data(uint8_t instance, const uint8_t *data, uint16_t len);
 
 #if AP_GPS_BLENDED_ENABLED

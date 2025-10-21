@@ -1,6 +1,6 @@
 #include "AP_Periph.h"
 
-#if AP_PERIPH_RELAY_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RELAY
 
 #include <dronecan_msgs.h>
 

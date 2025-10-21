@@ -6,8 +6,6 @@
 # Requires opencv-python (`pip3 install opencv-python`)
 #
 
-# flake8: noqa
-
 import cv2
 import socket
 import struct

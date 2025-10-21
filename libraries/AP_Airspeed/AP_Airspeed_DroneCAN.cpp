@@ -13,15 +13,21 @@ extern const AP_HAL::HAL& hal;
 AP_Airspeed_DroneCAN::DetectedModules AP_Airspeed_DroneCAN::_detected_modules[];
 HAL_Semaphore AP_Airspeed_DroneCAN::_sem_registry;
 
-bool AP_Airspeed_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+void AP_Airspeed_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    const auto driver_index = ap_dronecan->get_driver_index();
+    if (ap_dronecan == nullptr) {
+        return;
+    }
 
-    return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_airspeed, driver_index) != nullptr)
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_airspeed, ap_dronecan->get_driver_index()) == nullptr) {
+        AP_BoardConfig::allocation_error("airspeed_sub");
+    }
+
 #if AP_AIRSPEED_HYGROMETER_ENABLE
-        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_hygrometer, driver_index) != nullptr)
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_hygrometer, ap_dronecan->get_driver_index()) == nullptr) {
+        AP_BoardConfig::allocation_error("hygrometer_sub");
+    }
 #endif
-    ;
 }
 
 AP_Airspeed_Backend* AP_Airspeed_DroneCAN::probe(AP_Airspeed &_frontend, uint8_t _instance, uint32_t previous_devid)

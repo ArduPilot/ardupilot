@@ -8,7 +8,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if AP_PERIPH_HOBBYWING_ESC_ENABLED
+#ifdef HAL_PERIPH_ENABLE_HWESC
 
 class HWESC_Telem {
 public:
@@ -64,4 +64,4 @@ private:
     uint8_t temperature_decode(uint8_t temp_raw) const;
 };
 
-#endif // AP_PERIPH_HOBBYWING_ESC_ENABLED
+#endif // HAL_PERIPH_ENABLE_HWESC

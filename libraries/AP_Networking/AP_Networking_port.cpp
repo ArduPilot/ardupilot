@@ -26,7 +26,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef AP_NETWORKING_PORT_STACK_SIZE
-#define AP_NETWORKING_PORT_STACK_SIZE 1300
+#define AP_NETWORKING_PORT_STACK_SIZE 1024
 #endif
 
 const AP_Param::GroupInfo AP_Networking::Port::var_info[] = {
@@ -36,7 +36,7 @@ const AP_Param::GroupInfo AP_Networking::Port::var_info[] = {
     // @Values: 0:Disabled, 1:UDP client, 2:UDP server, 3:TCP client, 4:TCP server
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("TYPE", 1,  AP_Networking::Port, type_param, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("TYPE", 1,  AP_Networking::Port, type, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: PROTOCOL
     // @DisplayName: Protocol
@@ -69,9 +69,9 @@ void AP_Networking::ports_init(void)
 {
     for (uint8_t i=0; i<ARRAY_SIZE(ports); i++) {
         auto &p = ports[i];
-        p.type = (NetworkPortType)p.type_param;
+        NetworkPortType ptype = (NetworkPortType)p.type;
         p.state.idx = AP_SERIALMANAGER_NET_PORT_1 + i;
-        switch (p.type) {
+        switch (ptype) {
         case NetworkPortType::NONE:
             break;
         case NetworkPortType::UDP_CLIENT:
@@ -341,11 +341,6 @@ bool AP_Networking::Port::send_receive(void)
         if (ret > 0) {
             WITH_SEMAPHORE(sem);
             readbuffer->write(buf, ret);
-
-            // Cant track dropped read packets because we only read in what there is space for
-            // The socket buffer becomes full and data is lost there
-            rx_stats_bytes += ret;
-
             active = true;
             have_received = true;
         }
@@ -418,7 +413,6 @@ bool AP_Networking::Port::send_receive(void)
         if (ret > 0) {
             WITH_SEMAPHORE(sem);
             writebuffer->advance(ret);
-            tx_stats_bytes += ret;
             active = true;
         } else if (errno == ENOTCONN &&
             (type == NetworkPortType::TCP_CLIENT || type == NetworkPortType::TCP_SERVER)) {

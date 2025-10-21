@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-
-# flake8: noqa
-
 '''
 script to decode IMU data on a UART
 '''

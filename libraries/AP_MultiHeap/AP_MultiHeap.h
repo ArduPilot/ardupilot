@@ -9,6 +9,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Util.h>
 
+#if ENABLE_HEAP
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -77,3 +79,5 @@ private:
     // be able to determine which heap the allocation was from using the pointer
     void heap_free(void *ptr);
 };
+
+#endif // ENABLE_HEAP

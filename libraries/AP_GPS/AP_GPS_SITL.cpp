@@ -15,7 +15,7 @@
 
 #include "AP_GPS_SITL.h"
 
-#if AP_SIM_GPS_ENABLED
+#if HAL_SIM_GPS_ENABLED
 
 #include <ctype.h>
 #include <stdint.h>
@@ -117,4 +117,4 @@ bool AP_GPS_SITL::read(void)
     return true;
 }
 
-#endif  // AP_SIM_GPS_ENABLED
+#endif  // HAL_SIM_GPS_ENABLED

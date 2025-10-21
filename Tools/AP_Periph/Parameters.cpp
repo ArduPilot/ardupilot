@@ -113,8 +113,8 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
 #ifdef HAL_GPIO_PIN_GPIO_CAN1_TERM
     // @Param: CAN_TERMINATE
-    // @DisplayName: Enable CAN software termination in this node
-    // @Description: Enable CAN software termination in this node
+    // @DisplayName: Enable CAN software temination in this node
+    // @Description: Enable CAN software temination in this node
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     // @RebootRequired: True
@@ -213,7 +213,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @User: Advanced
     GSCALAR(serial_number, "BRD_SERIAL_NUM", 0),
 
-#if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED
+#ifdef HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY
     // @Param: BUZZER_VOLUME
     // @DisplayName: Buzzer volume
     // @Description: Control the volume of the buzzer
@@ -224,7 +224,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(buzz_volume,     "BUZZER_VOLUME", 100),
 #endif
 
-#if AP_PERIPH_GPS_ENABLED
+#ifdef HAL_PERIPH_ENABLE_GPS
     // GPS driver
     // @Group: GPS
     // @Path: ../libraries/AP_GPS/AP_GPS.cpp
@@ -250,7 +250,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 #endif
 #endif
 
-#if AP_PERIPH_BATTERY_ENABLED
+#ifdef HAL_PERIPH_ENABLE_BATTERY
     // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
     GOBJECT(battery_lib, "BATT", AP_BattMonitor),
@@ -263,13 +263,13 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(battery_hide_mask, "BATT_HIDE_MASK", HAL_PERIPH_BATT_HIDE_MASK_DEFAULT),
 #endif
 
-#if AP_PERIPH_MAG_ENABLED
+#ifdef HAL_PERIPH_ENABLE_MAG
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
     GOBJECT(compass,         "COMPASS_",     Compass),
 #endif
 
-#if AP_PERIPH_BARO_ENABLED
+#ifdef HAL_PERIPH_ENABLE_BARO
     // Baro driver
     // @Group: BARO
     // @Path: ../libraries/AP_Baro/AP_Baro.cpp
@@ -283,7 +283,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(baro_enable, "BARO_ENABLE", AP_PERIPH_BARO_ENABLE_DEFAULT),
 #endif
 
-#if AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
+#ifdef AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
     // @Param: LED_BRIGHTNESS
     // @DisplayName: LED Brightness
     // @Description: Select the RGB LED brightness level.
@@ -294,14 +294,14 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(led_brightness, "LED_BRIGHTNESS", HAL_PERIPH_LED_BRIGHT_DEFAULT),
 #endif
 
-#if AP_PERIPH_AIRSPEED_ENABLED
+#ifdef HAL_PERIPH_ENABLE_AIRSPEED
     // Airspeed driver
     // @Group: ARSPD
     // @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
     GOBJECT(airspeed, "ARSPD", AP_Airspeed),
 #endif
 
-#if AP_PERIPH_RANGEFINDER_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
     // @Param: RNGFND_BAUDRATE
     // @DisplayName: Rangefinder serial baudrate
     // @Description: Rangefinder serial baudrate.
@@ -355,7 +355,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(rangefinder, "RNGFND", RangeFinder),
 #endif
 
-#if AP_PERIPH_ADSB_ENABLED
+#ifdef HAL_PERIPH_ENABLE_ADSB
     // @Param: ADSB_BAUDRATE
     // @DisplayName: ADSB serial baudrate
     // @Description: ADSB serial baudrate.
@@ -375,7 +375,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(adsb_port, "ADSB_PORT", HAL_PERIPH_ADSB_PORT_DEFAULT),
 #endif
 
-#if AP_PERIPH_PWM_HARDPOINT_ENABLED
+#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
     // @Param: HARDPOINT_ID
     // @DisplayName: Hardpoint ID
     // @Description: Hardpoint ID
@@ -392,7 +392,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(hardpoint_rate, "HARDPOINT_RATE", 100),
 #endif
 
-#if AP_PERIPH_HOBBYWING_ESC_ENABLED || AP_PERIPH_ESC_APD_ENABLED
+#if defined(HAL_PERIPH_ENABLE_HWESC) || defined(HAL_PERIPH_ENABLE_ESC_APD)
     // @Param: ESC_NUMBER
     // @DisplayName: ESC number
     // @Description: This is the ESC number to report as in UAVCAN ESC telemetry feedback packets.
@@ -401,7 +401,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GARRAY(esc_number, 0, "ESC_NUMBER", 0),
 #endif
 
-#if AP_PERIPH_RC_OUT_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RC_OUT
     // Servo driver
     // @Group: OUT
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
@@ -461,7 +461,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(temperature_sensor,         "TEMP",     AP_TemperatureSensor),
 #endif
 
-#if AP_PERIPH_MSP_ENABLED
+#ifdef HAL_PERIPH_ENABLE_MSP
     // @Param: MSP_PORT
     // @DisplayName: MSP Serial Port
     // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to MSP
@@ -472,7 +472,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(msp_port, "MSP_PORT", AP_PERIPH_MSP_PORT_DEFAULT),
 #endif
     
-#if AP_PERIPH_NOTIFY_ENABLED
+#ifdef HAL_PERIPH_ENABLE_NOTIFY
     // @Group: NTF_
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
     GOBJECT(notify, "NTF_",  AP_Notify),
@@ -491,7 +491,14 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(log_bitmask,    "LOG_BITMASK",          4),
 #endif
 
-    // SYSID_THISMAV was here
+#if HAL_GCS_ENABLED
+    // @Param: SYSID_THISMAV
+    // @DisplayName: MAVLink system ID of this vehicle
+    // @Description: Allows setting an individual system id for this vehicle to distinguish it from others on the same network
+    // @Range: 1 255
+    // @User: Advanced
+    GSCALAR(sysid_this_mav,         "SYSID_THISMAV",  MAV_SYSTEM_ID),
+#endif
 
 #if HAL_GCS_ENABLED || defined(HAL_PERIPH_SHOW_SERIAL_MANAGER_PARAMS)
     // @Group: SERIAL
@@ -511,7 +518,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(node_stats, "STAT", AP_Stats),
 #endif
 
-#if AP_PERIPH_EFI_ENABLED
+#ifdef HAL_PERIPH_ENABLE_EFI
     // @Param: EFI_BAUDRATE
     // @DisplayName: EFI serial baudrate
     // @Description: EFI  serial baudrate.
@@ -536,7 +543,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(efi, "EFI", AP_EFI),
 #endif
 
-#if AP_PERIPH_PROXIMITY_ENABLED
+#ifdef HAL_PERIPH_ENABLE_PROXIMITY
     // @Param: PRX_BAUDRATE
     // @DisplayName: Proximity Sensor serial baudrate
     // @Description: Proximity Sensor serial baudrate.
@@ -568,7 +575,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: PRX
     // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
     GOBJECT(proximity, "PRX", AP_Proximity),
-#endif  // AP_PERIPH_PROXIMITY_ENABLED
+#endif  // HAL_PERIPH_ENABLE_PROXIMITY
 
 #if HAL_NMEA_OUTPUT_ENABLED
     // @Group: NMEA_
@@ -582,11 +589,11 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(kdecan, "KDE_",   AP_KDECAN),
 #endif
 
-#if AP_PERIPH_ESC_APD_ENABLED
+#if defined(HAL_PERIPH_ENABLE_ESC_APD)
     GARRAY(pole_count, 0, "ESC_NUM_POLES", 22),
 #endif
 
-#if AP_PERIPH_ESC_APD_ENABLED
+#if defined(HAL_PERIPH_ENABLE_ESC_APD)
     // @Param: ESC_APD_SERIAL_1
     // @DisplayName: ESC APD Serial 1
     // @Description: Which serial port to use for APD ESC data
@@ -612,44 +619,38 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
   #endif
 #endif
 
-#if AP_PERIPH_NETWORKING_ENABLED
+#ifdef HAL_PERIPH_ENABLE_NETWORKING
     // @Group: NET_
     // @Path: networking.cpp
     GOBJECT(networking_periph, "NET_", Networking_Periph),
 #endif
 
-#if AP_PERIPH_RPM_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RPM
     // @Group: RPM
     // @Path: ../libraries/AP_RPM/AP_RPM.cpp
     GOBJECT(rpm_sensor, "RPM", AP_RPM),
 #endif
 
-#if AP_PERIPH_RCIN_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RCIN
     // @Group: RC
     // @Path: rc_in.cpp
     GOBJECT(g_rcin, "RC",  Parameters_RCIN),
 #endif
 
-#if AP_PERIPH_BATTERY_BALANCE_ENABLED
+#ifdef HAL_PERIPH_ENABLE_BATTERY_BALANCE
     // @Group: BAL
     // @Path: batt_balance.cpp
     GOBJECT(battery_balance, "BAL",  BattBalance),
 #endif
 
-#if AP_PERIPH_BATTERY_TAG_ENABLED
-    // @Group: BTAG
-    // @Path: battery_tag.cpp
-    GOBJECT(battery_tag, "BTAG",  BatteryTag),
-#endif
-    
-#if AP_PERIPH_SERIAL_OPTIONS_ENABLED
+#ifdef HAL_PERIPH_ENABLE_SERIAL_OPTIONS
     // @Group: UART
     // @Path: serial_options.cpp
     GOBJECT(serial_options, "UART",  SerialOptions),
 #endif
     
     // NOTE: sim parameters should go last
-#if AP_SIM_PARAM_ENABLED
+#if AP_SIM_ENABLED
     // @Group: SIM_
     // @Path: ../libraries/SITL/SITL.cpp
     GOBJECT(sitl, "SIM_", SITL::SIM),
@@ -670,19 +671,19 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(can_mirror_ports, "CAN_MIRROR_PORTS", 0),
 #endif // HAL_PERIPH_CAN_MIRROR
 
-#if AP_PERIPH_RTC_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RTC
     // @Group: RTC
     // @Path: ../libraries/AP_RTC/AP_RTC.cpp
     GOBJECT(rtc,                   "RTC",    AP_RTC),
 #endif
 
-#if AP_PERIPH_RELAY_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RELAY
     // @Group: RELAY
     // @Path: ../libraries/AP_Relay/AP_Relay.cpp
     GOBJECT(relay,                 "RELAY", AP_Relay),
 #endif
 
-#if AP_PERIPH_DEVICE_TEMPERATURE_ENABLED
+#ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
     // @Param: TEMP_MSG_RATE
     // @DisplayName: Temperature sensor message rate
     // @Description: This is the rate Temperature sensor data is sent in Hz. Zero means no send. Each sensor with source DroneCAN is sent in turn.
@@ -700,7 +701,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @User: Standard
     GSCALAR(options, "OPTIONS", AP_PERIPH_PROBE_CONTINUOUS),
 
-#if AP_PERIPH_RPM_STREAM_ENABLED
+#ifdef HAL_PERIPH_ENABLE_RPM_STREAM
     // @Param: RPM_MSG_RATE
     // @DisplayName: RPM sensor message rate
     // @Description: This is the rate RPM sensor data is sent in Hz. Zero means no send. Each sensor with a set ID is sent in turn.
@@ -723,7 +724,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 #endif
 
 
-#if AP_PERIPH_IMU_ENABLED
+#ifdef HAL_PERIPH_ENABLE_IMU
     // @Param: IMU_SAMPLE_RATE
     // @DisplayName: IMU Sample Rate
     // @Description: IMU Sample Rate
@@ -734,28 +735,6 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: INS
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
     GOBJECT(imu, "INS", AP_InertialSensor),
-#endif
-
-#if AP_DAC_ENABLED
-    // @Group: DAC
-    // @Path: ../libraries/AP_DAC/AP_DAC.cpp
-    GOBJECT(dac, "DAC", AP_DAC),
-#endif
-
-#if HAL_GCS_ENABLED
-    // @Group: MAV
-    // @Path: ../libraries/GCS_MAVLink/GCS.cpp
-    GOBJECT(_gcs,           "MAV",  GCS),
-#endif
-
-#if AP_PERIPH_RC_OUT_ENABLED
-    // @Param: SRV_CMD_TIME_OUT
-    // @DisplayName: Servo Command Timeout
-    // @Description: This is the duration (ms) with which to hold the last driven servo command before timing out and zeroing the servo outputs. To disable zeroing of outputs in event of CAN loss, use 0. Use values greater than the expected duration between two CAN frames to ensure Periph is not starved of ESC Raw Commands.
-    // @Range: 0 10000
-    // @Units: ms
-    // @User: Advanced
-    GSCALAR(servo_command_timeout_ms, "SRV_CMD_TIME_OUT", 200),
 #endif
 
     AP_VAREND

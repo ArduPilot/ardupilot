@@ -18,7 +18,7 @@ public:
         _singleton = this;
     }
 
-    static bool subscribe_msgs(AP_DroneCAN* ap_dronecan);
+    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
 
     void update() override;
 

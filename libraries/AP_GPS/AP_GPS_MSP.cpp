@@ -43,12 +43,13 @@ void AP_GPS_MSP::handle_msp(const MSP::msp_gps_data_message_t &pkt)
     state.time_week_ms = pkt.ms_tow;
     state.status = (AP_GPS::GPS_Status)pkt.fix_type;
     state.num_sats = pkt.satellites_in_view;
-    state.location = {
-        pkt.latitude,
-        pkt.longitude,
-        pkt.msl_altitude,
-        Location::AltFrame::ABSOLUTE
-    };
+
+    Location loc = {};
+    loc.lat = pkt.latitude;
+    loc.lng = pkt.longitude;
+    loc.alt = pkt.msl_altitude;
+
+    state.location = loc;
     state.hdop = pkt.hdop;
     state.vdop = GPS_UNKNOWN_DOP;
 

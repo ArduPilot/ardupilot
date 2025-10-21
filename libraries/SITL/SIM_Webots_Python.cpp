@@ -16,11 +16,9 @@
   simulator connection for Webots 2023a
 */
 
-#include "SIM_config.h"
-
-#if AP_SIM_WEBOTSPYTHON_ENABLED
-
 #include "SIM_Webots_Python.h"
+
+#if HAL_SIM_WEBOTSPYTHON_ENABLED
 
 #include <stdio.h>
 #include <errno.h>
@@ -171,4 +169,4 @@ void WebotsPython::update(const struct sitl_input &input)
 }  // namespace SITL
 
 
-#endif  // AP_SIM_WEBOTSPYTHON_ENABLED
+#endif  // HAL_SIM_WEBOTSPYTHON_ENABLED

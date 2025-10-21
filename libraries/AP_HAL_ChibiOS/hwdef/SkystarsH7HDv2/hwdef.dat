@@ -30,6 +30,6 @@ define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_ESCTelemetry
 define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_SmartAudio
 define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_MSP_DisplayPort
 
-# other pin defaults come from hwdefs this one includes
+define RELAY2_PIN_DEFAULT 81
+define RELAY3_PIN_DEFAULT 82
 define RELAY4_PIN_DEFAULT 83
-define DEFAULT_NTF_LED_TYPES 455

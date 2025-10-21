@@ -161,7 +161,9 @@ void AP_MotorsMatrix_6DoF_Scripting::output_armed_stabilizing()
 
     // set limit flags if output is being scaled
     if (rpy_ratio < 1) {
-        limit.set_rpy(true);
+        limit.roll = true;
+        limit.pitch = true;
+        limit.yaw = true;
     }
 
     // scale back rotations evenly so it will all fit
@@ -259,7 +261,7 @@ void AP_MotorsMatrix_6DoF_Scripting::add_motor(int8_t motor_num, float roll_fact
         _test_order[motor_num] = testing_order;
 
         // ensure valid motor number is provided
-        SRV_Channel::Function function = SRV_Channels::get_motor_function(motor_num);
+        SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(motor_num);
         SRV_Channels::set_aux_channel_default(function, motor_num);
 
         uint8_t chan;

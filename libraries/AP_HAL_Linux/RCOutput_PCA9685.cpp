@@ -58,11 +58,13 @@ using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
 
-RCOutput_PCA9685::RCOutput_PCA9685(AP_HAL::I2CDevice *dev,
+RCOutput_PCA9685::RCOutput_PCA9685(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
                                    uint32_t external_clock,
                                    uint8_t channel_offset,
                                    int16_t oe_pin_number) :
-    _dev(dev),
+    _enable_pin(nullptr),
+    _dev(std::move(dev)),
+    _frequency(50),
     _pulses_buffer(NEW_NOTHROW uint16_t[PWM_CHAN_COUNT - channel_offset]),
     _external_clock(external_clock),
     _channel_offset(channel_offset),
@@ -78,7 +80,6 @@ RCOutput_PCA9685::RCOutput_PCA9685(AP_HAL::I2CDevice *dev,
 RCOutput_PCA9685::~RCOutput_PCA9685()
 {
     delete [] _pulses_buffer;
-    delete _dev;
 }
 
 void RCOutput_PCA9685::init()

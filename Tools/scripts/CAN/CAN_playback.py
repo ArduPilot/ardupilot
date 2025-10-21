@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-
-# flake8: noqa
-
 '''
  playback a set of CAN frames
  capture frames either using libraries/AP_Scripting/examples/CAN_logger.lua

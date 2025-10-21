@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-
-# flake8: noqa
-
 '''
 tool to manipulate ArduPilot firmware files, changing default parameters
 '''

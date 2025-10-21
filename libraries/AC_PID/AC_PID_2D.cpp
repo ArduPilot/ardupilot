@@ -1,5 +1,5 @@
 /// @file	AC_PID_2D.cpp
-/// @brief	2D PID controller with vector support, input filtering, integrator clamping, and EEPROM-backed gain storage.
+/// @brief	Generic PID algorithm
 
 #include <AP_Math/AP_Math.h>
 #include "AC_PID_2D.h"
@@ -23,8 +23,8 @@ const AP_Param::GroupInfo AC_PID_2D::var_info[] = {
     AP_GROUPINFO_FLAGS_DEFAULT_POINTER("IMAX", 2, AC_PID_2D, _kimax, default_kimax),
 
     // @Param: FLTE
-    // @DisplayName: PID Error filter frequency in Hz
-    // @Description: Low-pass filter frequency applied to the error (Hz)
+    // @DisplayName: PID Input filter frequency in Hz
+    // @Description: Input filter frequency in Hz
     // @Units: Hz
     AP_GROUPINFO_FLAGS_DEFAULT_POINTER("FLTE", 3, AC_PID_2D, _filt_E_hz, default_filt_E_hz),
 
@@ -35,8 +35,8 @@ const AP_Param::GroupInfo AC_PID_2D::var_info[] = {
 
     // @Param: FLTD
     // @DisplayName: D term filter frequency in Hz
-    // @Description: Low-pass filter frequency applied to the derivative (Hz)
-    // @Units: Hzs
+    // @Description: D term filter frequency in Hz
+    // @Units: Hz
     AP_GROUPINFO_FLAGS_DEFAULT_POINTER("FLTD", 5, AC_PID_2D, _filt_D_hz, default_filt_D_hz),
 
     // @Param: FF
@@ -64,12 +64,13 @@ AC_PID_2D::AC_PID_2D(float initial_kP, float initial_kI, float initial_kD, float
     _reset_filter = true;
 }
 
-// Computes the 2D PID output from target and measurement vectors.
-// Applies filtering to error and derivative terms.
-// Integrator is updated only if it does not grow in the direction of the specified limit vector.
+//  update_all - set target and measured inputs to PID controller and calculate outputs
+//  target and error are filtered
+//  the derivative is then calculated and filtered
+//  the integral is then updated if it does not increase in the direction of the limit vector
 Vector2f AC_PID_2D::update_all(const Vector2f &target, const Vector2f &measurement, float dt, const Vector2f &limit)
 {
-    // Return zero if any component is NaN or infinite
+    // don't process inf or NaN
     if (target.is_nan() || target.is_inf() ||
         measurement.is_nan() || measurement.is_inf()) {
         return Vector2f{};
@@ -79,17 +80,14 @@ Vector2f AC_PID_2D::update_all(const Vector2f &target, const Vector2f &measureme
 
     // reset input filter to value received
     if (_reset_filter) {
-        // Reset filters to match the current inputs
         _reset_filter = false;
         _error = _target - measurement;
-        // Reset the derivative to avoid transients
         _derivative.zero();
     } else {
         Vector2f error_last{_error};
-        // Apply first-order low-pass filter to error
         _error += ((_target - measurement) - _error) * get_filt_E_alpha(dt);
 
-        // Compute and low-pass filter the derivative
+        // calculate and filter derivative
         if (is_positive(dt)) {
             const Vector2f derivative{(_error - error_last) / dt};
             _derivative += (derivative - _derivative) * get_filt_D_alpha(dt);
@@ -98,6 +96,10 @@ Vector2f AC_PID_2D::update_all(const Vector2f &target, const Vector2f &measureme
 
     // update I term
     update_i(dt, limit);
+
+    // calculate slew limit
+    _slew_calc.update(Vector2f{_pid_info_x.P + _pid_info_x.D, _pid_info_y.P + _pid_info_y.D}, dt);
+    _pid_info_x.slew_rate = _pid_info_y.slew_rate = _slew_calc.get_slew_rate();
  
     _pid_info_x.target = _target.x;
     _pid_info_x.actual = measurement.x;
@@ -115,7 +117,6 @@ Vector2f AC_PID_2D::update_all(const Vector2f &target, const Vector2f &measureme
     _pid_info_y.D = _derivative.y * _kd;
     _pid_info_y.FF = _target.y * _kff;
 
-    // Return total control output: P + I + D + FF terms
     return _error * _kp + _integrator + _derivative * _kd + _target * _kff;
 }
 
@@ -124,8 +125,8 @@ Vector2f AC_PID_2D::update_all(const Vector3f &target, const Vector3f &measureme
     return update_all(Vector2f{target.x, target.y}, Vector2f{measurement.x, measurement.y}, dt, Vector2f{limit.x, limit.y});
 }
 
-// Updates the 2D integrator using the filtered error.
-// The integrator is only allowed to grow if it does not push further in the direction of the limit vector.
+//  update_i - update the integral
+//  If the limit is set the integral is only allowed to reduce in the direction of the limit
 void AC_PID_2D::update_i(float dt, const Vector2f &limit)
 {
     _pid_info_x.limit = false;
@@ -134,13 +135,12 @@ void AC_PID_2D::update_i(float dt, const Vector2f &limit)
     Vector2f delta_integrator = (_error * _ki) * dt;
     float integrator_length = _integrator.length();
     _integrator += delta_integrator;
-    // Compute integrator delta and apply anti-windup by limiting growth in the direction of the limit vector
+    // do not let integrator increase in length if delta_integrator is in the direction of limit
     if (is_positive(delta_integrator * limit) && _integrator.limit_length(integrator_length)) {
         _pid_info_x.limit = true;
         _pid_info_y.limit = true;
     }
 
-    // Clamp integrator to maximum length (IMAX)
     _integrator.limit_length(_kimax);
 }
 
@@ -159,7 +159,6 @@ Vector2f AC_PID_2D::get_d() const
     return _derivative * _kd;
 }
 
-// Update FF terms in PID logs and return feedforward vector
 Vector2f AC_PID_2D::get_ff()
 {
     _pid_info_x.FF = _target.x * _kff;
@@ -172,7 +171,7 @@ void AC_PID_2D::reset_I()
     _integrator.zero(); 
 }
 
-// Saves controller configuration from EEPROM, including gains and filter frequencies. (not used)
+// save_gains - save gains to eeprom
 void AC_PID_2D::save_gains()
 {
     _kp.save();
@@ -184,31 +183,28 @@ void AC_PID_2D::save_gains()
     _filt_D_hz.save();
 }
 
-// Returns alpha value for the error low-pass filter (based on filter frequency and dt)
+// get the target filter alpha
 float AC_PID_2D::get_filt_E_alpha(float dt) const
 {
     return calc_lowpass_alpha_dt(dt, _filt_E_hz);
 }
 
-// Returns alpha value for the derivative low-pass filter (based on filter frequency and dt)
+// get the derivative filter alpha
 float AC_PID_2D::get_filt_D_alpha(float dt) const
 {
     return calc_lowpass_alpha_dt(dt, _filt_D_hz);
 }
 
-// Compute error from target and measurement, then set integrator
 void AC_PID_2D::set_integrator(const Vector2f& target, const Vector2f& measurement, const Vector2f& i)
 {
     set_integrator(target - measurement, i);
 }
 
-// Convert from desired total output and error to integrator value
 void AC_PID_2D::set_integrator(const Vector2f& error, const Vector2f& i)
 {
     set_integrator(i - error * _kp);
 }
 
-// Set integrator directly and clamp to IMAX
 void AC_PID_2D::set_integrator(const Vector2f& i)
 {
     _integrator = i;

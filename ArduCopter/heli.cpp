@@ -33,20 +33,20 @@ void Copter::check_dynamic_flight(void)
     bool moving = false;
 
     // with GPS lock use inertial nav to determine if we are moving
-    Vector3f vel_ned_ms;
-    if (AP::ahrs().get_velocity_NED(vel_ned_ms)) {
+    if (position_ok()) {
         // get horizontal speed
-        moving = (vel_ned_ms.xy().length() * 100.0 >= HELI_DYNAMIC_FLIGHT_SPEED_MIN);
+        const float speed = inertial_nav.get_speed_xy_cms();
+        moving = (speed >= HELI_DYNAMIC_FLIGHT_SPEED_MIN);
     } else {
         // with no GPS lock base it on throttle and forward lean angle
-        moving = (motors->get_throttle() > 0.8f || ahrs.get_pitch_deg() < -15);
+        moving = (motors->get_throttle() > 0.8f || ahrs.pitch_sensor < -1500);
     }
 
 #if AP_RANGEFINDER_ENABLED
     if (!moving && rangefinder_state.enabled && rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::Good) {
         // when we are more than 2m from the ground with good
         // rangefinder lock consider it to be dynamic flight
-        moving = (rangefinder.distance_orient(ROTATION_PITCH_270) > 2);
+        moving = (rangefinder.distance_cm_orient(ROTATION_PITCH_270) > 200);
     }
 #endif
 

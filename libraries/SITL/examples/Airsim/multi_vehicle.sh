@@ -45,7 +45,7 @@ for i in $(seq $NCOPTERS); do
 
     # create seperate parameter file for each drone for SYSID
     cat <<EOF > copter$i/identity.parm
-MAV_SYSID $SYSID
+SYSID_THISMAV $SYSID
 EOF
 
     pushd copter$i

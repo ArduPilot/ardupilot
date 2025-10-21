@@ -29,7 +29,10 @@
 #include "RTCM3_Parser.h"
 #include <stdio.h>
 
-#ifndef UBLOX_SPEED_CHANGE
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
+    #define UBLOX_SPEED_CHANGE  1
+#else
     #define UBLOX_SPEED_CHANGE 0
 #endif
 
@@ -129,8 +132,6 @@ AP_GPS_UBLOX::~AP_GPS_UBLOX()
 #if GPS_MOVING_BASELINE
     delete rtcm3_parser;
 #endif
-
-    free(config_GNSS);
 }
 
 #if GPS_MOVING_BASELINE
@@ -460,7 +461,7 @@ AP_GPS_UBLOX::_request_next_config(void)
             uint8_t cfg_count = populate_F9_gnss();
             // special handling of F9 config
             if (cfg_count > 0) {
-                CFG_Debug("Sending F9 settings, GNSS=%u", unsigned(params.gnss_mode));
+                CFG_Debug("Sending F9 settings, GNSS=%u", params.gnss_mode);
 
                 if (!_configure_list_valset(config_GNSS, cfg_count, UBX_VALSET_LAYER_RAM | UBX_VALSET_LAYER_BBR)) {
                     _next_message--;
@@ -484,7 +485,7 @@ AP_GPS_UBLOX::_request_next_config(void)
             uint8_t cfg_count = populate_F9_gnss();
             // special handling of F9 config
             if (cfg_count > 0) {
-                CFG_Debug("Validating F9 settings, GNSS=%u", unsigned(params.gnss_mode));
+                CFG_Debug("Validating F9 settings, GNSS=%u", params.gnss_mode);
                 // now validate all of the settings, this is a no-op if the first call succeeded
                 if (!_configure_config_set(config_GNSS, cfg_count, CONFIG_F9, UBX_VALSET_LAYER_RAM | UBX_VALSET_LAYER_BBR)) {
                     _next_message--;
@@ -1350,7 +1351,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                 // see if it is in active config list
                 int8_t cfg_idx = find_active_config_index(id);
                 if (cfg_idx >= 0) {
-                    CFG_Debug("valset(0x%lx): %u", (long unsigned)id, unsigned((*cfg_data) & 0x1));
+                    CFG_Debug("valset(0x%lx): %u", uint32_t(id), (*cfg_data) & 0x1);
                     const uint8_t key_size = config_key_size(id);
                     if (cfg_len < key_size
                         // for keys of length 1 only the LSB is significant
@@ -1383,7 +1384,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                         }
                     }
                 } else {
-                    CFG_Debug("valget no active config for 0x%lx", (long unsigned)id);
+                    CFG_Debug("valget no active config for 0x%lx", (uint32_t)id);
                 }
 
                 // step over the value

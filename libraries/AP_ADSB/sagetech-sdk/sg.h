@@ -287,7 +287,7 @@ typedef struct
 } sg_operating_t;
 
 /**
- * Available NACp values.
+ * Avaiable NACp values.
  */
 typedef enum
 {

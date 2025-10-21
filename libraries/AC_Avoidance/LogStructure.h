@@ -1,7 +1,6 @@
 #pragma once
 
 #include <AP_Logger/LogStructure.h>
-#include "AC_Avoidance_config.h"
 
 #define LOG_IDS_FROM_AVOIDANCE \
     LOG_OA_BENDYRULER_MSG, \
@@ -37,10 +36,10 @@ struct PACKED log_OABendyRuler {
     float margin;
     int32_t final_lat;
     int32_t final_lng;
-    float final_alt;
+    int32_t final_alt;
     int32_t oa_lat;
     int32_t oa_lng;
-    float oa_alt;
+    int32_t oa_alt;
 };
 
 // @LoggerMessage: OADJ
@@ -107,16 +106,12 @@ struct PACKED log_OD_Visgraph {
   int32_t Lon;
 };
 
-#if AP_AVOIDANCE_ENABLED
 #define LOG_STRUCTURE_FROM_AVOIDANCE \
     { LOG_OA_BENDYRULER_MSG, sizeof(log_OABendyRuler), \
-      "OABR","QBBHHHBfLLfLLf","TimeUS,Type,Act,DYaw,Yaw,DP,RChg,Mar,DLt,DLg,DAlt,OLt,OLg,OAlt", "s--ddd-mDUmDUm", "F-------GG0GG0" , true }, \
+      "OABR","QBBHHHBfLLiLLi","TimeUS,Type,Act,DYaw,Yaw,DP,RChg,Mar,DLt,DLg,DAlt,OLt,OLg,OAlt", "s--ddd-mDUmDUm", "F-------GGBGGB" , true }, \
     { LOG_OA_DIJKSTRA_MSG, sizeof(log_OADijkstra), \
       "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "s----DUDU", "F----GGGG" , true }, \
     { LOG_SIMPLE_AVOID_MSG, sizeof(log_SimpleAvoid), \
       "SA",  "QBffffffB","TimeUS,State,DVelX,DVelY,DVelZ,MVelX,MVelY,MVelZ,Back", "s-nnnnnn-", "F--------", true }, \
      { LOG_OD_VISGRAPH_MSG, sizeof(log_OD_Visgraph), \
       "OAVG", "QBBLL", "TimeUS,version,point_num,Lat,Lon", "s--DU", "F--GG", true},
-#else
-#define LOG_STRUCTURE_FROM_AVOIDANCE
-#endif // AP_AVOIDANCE_ENABLED

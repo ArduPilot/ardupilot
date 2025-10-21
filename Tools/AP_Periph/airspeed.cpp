@@ -1,6 +1,6 @@
 #include "AP_Periph.h"
 
-#if AP_PERIPH_AIRSPEED_ENABLED
+#ifdef HAL_PERIPH_ENABLE_AIRSPEED
 
 /*
   airspeed support
@@ -82,4 +82,4 @@ void AP_Periph_FW::can_airspeed_update(void)
                     total_size);
 }
 
-#endif // AP_PERIPH_AIRSPEED_ENABLED
+#endif // HAL_PERIPH_ENABLE_AIRSPEED

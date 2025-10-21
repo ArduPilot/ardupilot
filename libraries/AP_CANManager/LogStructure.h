@@ -56,7 +56,9 @@ struct PACKED log_CAFD {
     uint64_t data[8];
 };
 
-#if AP_CAN_LOGGING_ENABLED
+#if !AP_CAN_LOGGING_ENABLED
+#define LOG_STRUCTURE_FROM_CANMANAGER
+#else
 #define LOG_STRUCTURE_FROM_CANMANAGER \
     { LOG_CANF_MSG, sizeof(log_CANF), \
             "CANF", \
@@ -74,6 +76,4 @@ struct PACKED log_CAFD {
             "F"       "-"    "-"    "-"    "-"    "-"    "-"    "-"    "-"    "-"    "-"    "-", \
             false \
             },
-#else
-#define LOG_STRUCTURE_FROM_CANMANAGER
 #endif // AP_CAN_LOGGING_ENABLED

@@ -6,7 +6,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if AP_PERIPH_ESC_APD_ENABLED
+#ifdef HAL_PERIPH_ENABLE_ESC_APD
 
 class ESC_APD_Telem {
 public:
@@ -58,4 +58,4 @@ private:
     void shift_buffer(void);
 };
 
-#endif // AP_PERIPH_ESC_APD_ENABLED
+#endif // HAL_PERIPH_ENABLE_ESC_APD

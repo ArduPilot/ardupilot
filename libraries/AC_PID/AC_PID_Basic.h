@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file	AC_PID_Basic.h
-/// @brief	Lightweight PID controller with error and derivative filtering, integrator limit, and EEPROM gain storage.
+/// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -12,19 +12,18 @@
 class AC_PID_Basic {
 public:
 
-    /// Constructor for PID controller with EEPROM-backed gain.
-    /// Parameters are initialized from defaults or EEPROM at runtime.
+    // Constructor for PID
     AC_PID_Basic(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_E_hz, float initial_filt_D_hz);
 
-    // Computes the PID output using a target and measurement input.
-    // Applies filters to the error and derivative, then updates the integrator.
-    // If `limit` is true, the integrator is allowed to shrink but not grow.
+    // set target and measured inputs to PID controller and calculate outputs
+    // target and error are filtered
+    // the derivative is then calculated and filtered
+    // the integral is then updated based on the setting of the limit flag
     float update_all(float target, float measurement, float dt, bool limit = false) WARN_IF_UNUSED;
     float update_all(float target, float measurement, float dt, bool limit_neg, bool limit_pos) WARN_IF_UNUSED;
 
-    // Updates the integrator using current error and dt.
-    // If `limit_neg` is true, integrator may only increase.
-    // If `limit_pos` is true, integrator may only decrease.
+    // update the integral
+    // if the limit flags are set the integral is only allowed to shrink
     void update_i(float dt, bool limit_neg, bool limit_pos);
 
     // get results from pid controller
@@ -34,13 +33,13 @@ public:
     float get_ff() const WARN_IF_UNUSED { return _target * _kff; }
     float get_error() const WARN_IF_UNUSED { return _error; }
 
-    // Resets the integrator to zero.
+    // reset the integrator
     void reset_I();
 
-    // Flags the filter to reset on the next call to update_all().
+    // input and D term filter will be reset to the next value provided to set_input()
     void reset_filter() { _reset_filter = true; }
 
-    // Saves controller configuration from EEPROM, including gains and filter frequencies. (not used)
+    // save gain to eeprom
     void save_gains();
 
     // get accessors
@@ -63,8 +62,7 @@ public:
     void set_filt_E_hz(float hz) { _filt_E_hz.set(fabsf(hz)); }
     void set_filt_D_hz(float hz) { _filt_D_hz.set(fabsf(hz)); }
 
-    // Sets the integrator directly, with overloads supporting raw I value, target + measurement, or error.
-    // Internally clamps to IMAX.
+    // integrator setting functions
     void set_integrator(float target, float measurement, float i);
     void set_integrator(float error, float i);
     void set_integrator(float i);

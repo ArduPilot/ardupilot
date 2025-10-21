@@ -19,11 +19,9 @@
 
 #pragma once
 
-#include "AP_Mount_config.h"
+#include "AP_Mount_Backend_Serial.h"
 
 #if HAL_MOUNT_SIYI_ENABLED
-
-#include "AP_Mount_Backend_Serial.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
@@ -383,4 +381,4 @@ private:
     uint8_t sent_time_count;
 };
 
-#endif // HAL_MOUNT_SIYI_ENABLED
+#endif // HAL_MOUNT_SIYISERIAL_ENABLED

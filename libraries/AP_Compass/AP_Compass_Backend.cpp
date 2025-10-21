@@ -11,6 +11,8 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
+extern const AP_HAL::HAL& hal;
+
 AP_Compass_Backend::AP_Compass_Backend()
     : _compass(AP::compass())
 {

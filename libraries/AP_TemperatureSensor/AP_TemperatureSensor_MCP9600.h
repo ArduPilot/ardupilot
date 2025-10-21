@@ -45,7 +45,7 @@ public:
         R = 7,
     };
 
-    __INITFUNC__ void init(void) override;
+    void init(void) override;
 
     void update(void) override {};
 

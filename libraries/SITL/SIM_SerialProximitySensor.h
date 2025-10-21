@@ -20,7 +20,7 @@
 
 #include "SIM_config.h"
 
-#if AP_SIM_SERIALPROXIMITYSENSOR_ENABLED
+#if HAL_SIM_SERIALPROXIMITYSENSOR_ENABLED
 
 #include "SIM_Aircraft.h"
 

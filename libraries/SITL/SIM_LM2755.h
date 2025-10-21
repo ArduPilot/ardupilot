@@ -1,4 +1,4 @@
-#pragma once
+#include <AP_HAL/AP_HAL_Boards.h>
 
 /*
  * To test in SITL:
@@ -6,7 +6,9 @@
  * ./Tools/autotest/sim_vehicle.py -v ArduCopter --rgbled
  */
 
-#include "SIM_config.h"
+#ifndef AP_SIM_LM2755_ENABLED
+#define AP_SIM_LM2755_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
 
 #if AP_SIM_LM2755_ENABLED
 

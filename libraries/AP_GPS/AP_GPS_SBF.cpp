@@ -149,10 +149,8 @@ AP_GPS_SBF::read(void)
                                                             (params.gnss_mode&(1U<<6))!=0 ? ((params.gnss_mode&0x2F)==0  ? "GLONASS" : "+GLONASS") : "") == -1) {
                                         config_string=nullptr;
                                     }
-                                    break;
                                 }
-                                config_step = Config_State::Blob;
-                                FALLTHROUGH;
+                                break;
                             case Config_State::Blob:
                                 if (asprintf(&config_string, "%s\n", _initialisation_blob[_init_blob_index]) == -1) {
                                     config_string = nullptr;
@@ -390,11 +388,6 @@ AP_GPS_SBF::parse(uint8_t temp)
                                     config_step = Config_State::Constellation;
                                     break;
                                 case Config_State::Constellation:
-                                    // we can also move to
-                                    // Config_State::Blob if we choose
-                                    // not to update the GPS's
-                                    // constellation configuration
-                                    // (above).
                                     config_step = Config_State::Blob;
                                     break;
                                 case Config_State::Blob:

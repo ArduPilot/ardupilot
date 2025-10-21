@@ -140,7 +140,7 @@ AP_Radio_beken::AP_Radio_beken(AP_Radio &_radio) :
 bool AP_Radio_beken::init(void)
 {
     if (_irq_handler_ctx != nullptr) {
-        AP_HAL::panic("AP_Radio_beken: double instantiation of irq_handler");
+        AP_HAL::panic("AP_Radio_beken: double instantiation of irq_handler\n");
     }
     chVTObjectInit(&timeout_vt);
     _irq_handler_ctx = chThdCreateFromHeap(NULL,

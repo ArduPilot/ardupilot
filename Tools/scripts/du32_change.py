@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 """
 Parses a log file and shows how Copter's du32 changes over time
@@ -6,6 +6,8 @@ Parses a log file and shows how Copter's du32 changes over time
 AP_FLAKE8_CLEAN
 
 """
+
+from __future__ import print_function
 
 import optparse
 import sys

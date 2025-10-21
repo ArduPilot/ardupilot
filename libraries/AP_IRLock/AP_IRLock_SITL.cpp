@@ -19,10 +19,9 @@
  *  Created on: June 09, 2016
  *      Author: Ian Chen
  */
-#include "AP_IRLock_config.h"
+#include <AP_HAL/AP_HAL.h>
 
-#if AP_IRLOCK_SITL_ENABLED
-
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "AP_IRLock_SITL.h"
 #include "AP_AHRS/AP_AHRS.h"
 
@@ -56,4 +55,4 @@ bool AP_IRLock_SITL::update()
     return false;
 }
 
-#endif  // AP_IRLOCK_SITL_ENABLED
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL

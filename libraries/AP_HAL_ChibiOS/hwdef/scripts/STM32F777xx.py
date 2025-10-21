@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-
-# flake8: noqa
+#!/usr/bin/env python
 '''
 these tables are generated from the STM32 datasheet for the STM32F777x
 '''

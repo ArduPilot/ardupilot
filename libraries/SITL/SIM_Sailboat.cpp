@@ -190,12 +190,11 @@ void Sailboat::update(const struct sitl_input &input)
     // in sailboats the steering controls the rudder, the throttle controls the main sail position
     float steering = 0.0f;
     if (skid_steering) {
-        const float steering_left = input.servos[MOTORLEFT_SERVO_CH] ? normalise_servo_input(input.servos[MOTORLEFT_SERVO_CH]) : 0;
-        const float steering_right = input.servos[MOTORRIGHT_SERVO_CH] ? normalise_servo_input(input.servos[MOTORRIGHT_SERVO_CH]) : 0;
+        float steering_left = 2.0f*((input.servos[MOTORLEFT_SERVO_CH]-1000)/1000.0f - 0.5f);
+        float steering_right = 2.0f*((input.servos[MOTORRIGHT_SERVO_CH]-1000)/1000.0f - 0.5f);
         steering = steering_left - steering_right;
     } else {
-        // invalid input (0us) centres the rudder, which is not great
-        steering = input.servos[STEERING_SERVO_CH] ? normalise_servo_input(input.servos[STEERING_SERVO_CH]) : 0;
+        steering = 2*((input.servos[STEERING_SERVO_CH]-1000)/1000.0f - 0.5f);
     }
 
     // calculate apparent wind in earth-frame (this is the direction the wind is coming from)
@@ -275,12 +274,12 @@ void Sailboat::update(const struct sitl_input &input)
     float throttle_force = 0.0f;
     if (motor_connected) {
         if (skid_steering) {
-            const float throttle_left = input.servos[MOTORLEFT_SERVO_CH] ? normalise_servo_input(input.servos[MOTORLEFT_SERVO_CH]) : 0;
-            const float throttle_right = input.servos[MOTORRIGHT_SERVO_CH] ? normalise_servo_input(input.servos[MOTORRIGHT_SERVO_CH]) : 0;
-            throttle_force = (0.5f*(throttle_left + throttle_right)) * 0.1f;
+            const uint16_t throttle_left = constrain_int16(input.servos[MOTORLEFT_SERVO_CH], 1000, 2000);
+            const uint16_t throttle_right = constrain_int16(input.servos[MOTORRIGHT_SERVO_CH], 1000, 2000);
+            throttle_force = (0.5f*(throttle_left + throttle_right)-1500) * 0.1f;
         } else {
-            const float throttle_out = input.servos[THROTTLE_SERVO_CH] ? normalise_servo_input(input.servos[THROTTLE_SERVO_CH]) : 0;
-            throttle_force = throttle_out * 0.1f;
+            const uint16_t throttle_out = constrain_int16(input.servos[THROTTLE_SERVO_CH], 1000, 2000);
+            throttle_force = (throttle_out-1500) * 0.1f;           
         }
     }
 

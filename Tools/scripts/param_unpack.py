@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-
-# flake8: noqa
-
 '''
 unpack a param.pck file from @PARAM/param.pck via mavlink FTP
 '''

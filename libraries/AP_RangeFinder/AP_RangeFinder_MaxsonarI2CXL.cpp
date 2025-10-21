@@ -34,9 +34,9 @@ extern const AP_HAL::HAL& hal;
 
 AP_RangeFinder_MaxsonarI2CXL::AP_RangeFinder_MaxsonarI2CXL(RangeFinder::RangeFinder_State &_state,
                                                            AP_RangeFinder_Params &_params,
-                                                           AP_HAL::I2CDevice *dev)
+                                                           AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
     : AP_RangeFinder_Backend(_state, _params)
-    , _dev(dev)
+    , _dev(std::move(dev))
 {
 }
 
@@ -47,14 +47,14 @@ AP_RangeFinder_MaxsonarI2CXL::AP_RangeFinder_MaxsonarI2CXL(RangeFinder::RangeFin
 */
 AP_RangeFinder_Backend *AP_RangeFinder_MaxsonarI2CXL::detect(RangeFinder::RangeFinder_State &_state,
 																AP_RangeFinder_Params &_params,
-                                                             AP_HAL::I2CDevice *dev)
+                                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
     if (!dev) {
         return nullptr;
     }
 
     AP_RangeFinder_MaxsonarI2CXL *sensor
-        = NEW_NOTHROW AP_RangeFinder_MaxsonarI2CXL(_state, _params, dev);
+        = NEW_NOTHROW AP_RangeFinder_MaxsonarI2CXL(_state, _params, std::move(dev));
     if (!sensor) {
         return nullptr;
     }

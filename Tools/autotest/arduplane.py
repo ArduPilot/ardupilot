@@ -4,11 +4,11 @@ Fly ArduPlane in SITL
 AP_FLAKE8_CLEAN
 '''
 
+from __future__ import print_function
 import copy
 import math
 import os
 import signal
-import time
 
 from pymavlink import quaternion
 from pymavlink import mavutil
@@ -23,7 +23,6 @@ from vehicle_test_suite import OldpymavlinkException
 from vehicle_test_suite import PreconditionFailedException
 from vehicle_test_suite import Test
 from vehicle_test_suite import WaitModeTimeout
-from vehicle_test_suite import MAV_POS_TARGET_TYPE_MASK
 
 from pysim import vehicleinfo
 from pysim import util
@@ -187,7 +186,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def NeedEKFToArm(self):
         """Ensure the EKF must be healthy for the vehicle to arm."""
         self.progress("Ensuring we need EKF to be healthy to arm")
-        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.set_parameter("SIM_GPS_DISABLE", 1)
         self.context_collect("STATUSTEXT")
         tstart = self.get_sim_time()
         success = False
@@ -203,7 +202,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 except AutoTestTimeoutException:
                     pass
 
-        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.set_parameter("SIM_GPS_DISABLE", 0)
         self.wait_ready_to_arm()
 
     def fly_LOITER(self, num_circles=4):
@@ -211,7 +210,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Testing LOITER for %u turns" % num_circles)
         self.change_mode('LOITER')
 
-        m = self.assert_receive_message('VFR_HUD')
+        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
         initial_alt = m.alt
         self.progress("Initial altitude %u\n" % initial_alt)
 
@@ -221,7 +220,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             num_circles -= 1
             self.progress("Loiter %u circles left" % num_circles)
 
-        m = self.assert_receive_message('VFR_HUD')
+        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
         final_alt = m.alt
         self.progress("Final altitude %u initial %u\n" %
                       (final_alt, initial_alt))
@@ -238,7 +237,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Testing CIRCLE for %u turns" % num_circles)
         self.change_mode('CIRCLE')
 
-        m = self.assert_receive_message('VFR_HUD')
+        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
         initial_alt = m.alt
         self.progress("Initial altitude %u\n" % initial_alt)
 
@@ -248,7 +247,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             num_circles -= 1
             self.progress("CIRCLE %u circles left" % num_circles)
 
-        m = self.assert_receive_message('VFR_HUD')
+        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
         final_alt = m.alt
         self.progress("Final altitude %u initial %u\n" %
                       (final_alt, initial_alt))
@@ -268,7 +267,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_rc(2, 1500)
         self.set_rc(4, 1500)
         while self.get_sim_time_cached() < tstart + timeout:
-            m = self.assert_receive_message('ATTITUDE')
+            m = self.mav.recv_match(type='ATTITUDE', blocking=True)
             roll = math.degrees(m.roll)
             pitch = math.degrees(m.pitch)
             self.progress("Roll=%.1f Pitch=%.1f" % (roll, pitch))
@@ -363,7 +362,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                                             timeout=0.1)
                     now = self.get_sim_time_cached()
                     if now - step_start > 30:
-                        raise AutoTestTimeoutException("Maneuvers not completed")
+                        raise AutoTestTimeoutException("Manuevers not completed")
                     if m is None:
                         continue
 
@@ -510,7 +509,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_rc(2, 1500)
         self.wait_distance(50, accuracy=20)
 
-        m = self.assert_receive_message('VFR_HUD')
+        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
         initial_alt = m.alt
         self.progress("Initial altitude %u\n" % initial_alt)
 
@@ -546,7 +545,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.wait_distance(100, accuracy=20)
         self.progress("Circuit complete")
 
-        m = self.assert_receive_message('VFR_HUD')
+        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
         final_alt = m.alt
         self.progress("Final altitude %u initial %u\n" %
                       (final_alt, initial_alt))
@@ -623,7 +622,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             if self.get_sim_time_cached() - tstart > 120:
                 raise NotAchievedException("Did not move to correct terrain alt")
 
-            m = self.assert_receive_message('TERRAIN_REPORT')
+            m = self.mav.recv_match(type='TERRAIN_REPORT',
+                                    blocking=True,
+                                    timeout=1)
             tr = m
             terrain_height_achieved = m.current_height
             self.progress("terrain_alt=%f want=%f" %
@@ -640,7 +641,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             if achieve_start is not None:
                 if self.get_sim_time_cached() - achieve_start > 10:
                     break
-        m = self.assert_receive_message('GLOBAL_POSITION_INT')
+        m = self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                blocking=True,
+                                timeout=1)
         self.progress("TR: %s" % tr)
         self.progress("GPI: %s" % m)
         min_delta = 4
@@ -691,7 +694,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.wait_heartbeat()
 
         self.progress("getting base position")
-        gpi = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
+        gpi = self.mav.recv_match(
+            type='GLOBAL_POSITION_INT',
+            blocking=True,
+            timeout=5
+        )
         loc = mavutil.location(gpi.lat*1e-7, gpi.lon*1e-7, 0, 0)
 
         self.progress("set new position with no GPS")
@@ -712,7 +719,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         while self.get_sim_time() < tstart + 3:
             self.wait_heartbeat()
 
-        gpi2 = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
+        gpi2 = self.mav.recv_match(
+            type='GLOBAL_POSITION_INT',
+            blocking=True,
+            timeout=5
+        )
         loc2 = mavutil.location(gpi2.lat*1e-7, gpi2.lon*1e-7, 0, 0)
         dist = self.get_distance(loc, loc2)
 
@@ -809,7 +820,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "BATT_MONITOR": 16, # Maxell battery monitor
         })
 
-        # Must reboot sitl after setting monitor type for SMBus parameters to be set due to dynamic group
+        # Must reboot sitl after setting montior type for SMBus parameters to be set due to dynamic group
         self.reboot_sitl()
         self.set_parameters({
             "BATT_I2C_BUS": 2,      # specified in SIM_I2C.cpp
@@ -964,7 +975,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Did not achieve groundspeed delta")
-            m = self.assert_receive_message('VFR_HUD')
+            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
             delta = abs(m.airspeed - m.groundspeed)
             want_delta = 5
             self.progress("groundspeed and airspeed should be different (have=%f want=%f)" % (delta, want_delta))
@@ -1001,11 +1012,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             )
             self.wait_message_field_values('VFR_HUD', {
                 "throttle": expected_throttle,
-            }, minimum_duration=5, epsilon=5)
+            }, minimum_duration=5, epsilon=2)
 
         self.fly_home_land_and_disarm(timeout=240)
 
-    def fly_home_land_and_disarm(self, timeout=120):
+    def fly_home_land_and_disarm(self, timeout=180):
         filename = "flaps.txt"
         self.progress("Using %s to fly home" % filename)
         self.load_generic_mission(filename)
@@ -1144,24 +1155,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Bad relalt (want=%f vs got=%f)" % (takeoff_alt, x.alt_rel))
         if abs(x.alt_msl - (original_alt+30)) > 10:
             raise NotAchievedException("Bad absalt (want=%f vs got=%f)" % (original_alt+30, x.alt_msl))
-
-        self.change_mode('LOITER')
-        self.delay_sim_time(10)
-
-        self.context_collect('CAMERA_FEEDBACK')
-        self.set_rc(12, 2000)
-        self.delay_sim_time(1)
-        self.set_rc(12, 1000)
-        self.assert_received_message_field_values('CAMERA_FEEDBACK', {
-            "roll": math.degrees(self.assert_receive_message('ATTITUDE').roll),
-        }, check_context=True, epsilon=5.0)
-
         self.fly_home_land_and_disarm()
 
     def ThrottleFailsafe(self):
         '''Fly throttle failsafe'''
         self.change_mode('MANUAL')
-        m = self.assert_receive_message('SYS_STATUS')
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         receiver_bit = mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER
         self.progress("Testing receiver enabled")
         if (not (m.onboard_control_sensors_enabled & receiver_bit)):
@@ -1301,7 +1300,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
 
         self.progress("Checking fence is not present before being configured")
-        m = self.assert_receive_message('SYS_STATUS')
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         self.progress("Got (%s)" % str(m))
         if (m.onboard_control_sensors_enabled & fence_bit):
             raise NotAchievedException("Fence enabled before being configured")
@@ -1318,7 +1317,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             7: 2000,
         }) # Turn fence on with aux function
 
-        m = self.assert_receive_message('FENCE_STATUS', timeout=2, verbose=True)
+        m = self.mav.recv_match(type='FENCE_STATUS', blocking=True, timeout=2)
+        self.progress("Got (%s)" % str(m))
+        if m is None:
+            raise NotAchievedException("Got FENCE_STATUS unexpectedly")
 
         self.progress("Checking fence is initially OK")
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE,
@@ -1350,7 +1352,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "FS_GCS_ENABL": 1,
             "FS_LONG_ACTN": 1,
             "RTL_AUTOLAND": 1,
-            "MAV_GCS_SYSID": self.mav.source_system,
+            "SYSID_MYGCS": self.mav.source_system,
         })
         self.takeoff()
         self.change_mode('LOITER')
@@ -1406,7 +1408,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def assert_fence_sys_status(self, present, enabled, health):
         self.delay_sim_time(1)
         self.do_timesync_roundtrip()
-        m = self.assert_receive_message('SYS_STATUS')
+        m = self.assert_receive_message('SYS_STATUS', timeout=1)
         tests = [
             ("present", present, m.onboard_control_sensors_present),
             ("enabled", enabled, m.onboard_control_sensors_enabled),
@@ -1434,7 +1436,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             got_radius = self.get_distance(loc, here)
             average_radius = 0.95*average_radius + 0.05*got_radius
             on_radius = abs(got_radius - want_radius) < epsilon
-            m = self.assert_receive_message('VFR_HUD')
+            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
             heading = m.heading
             on_string = "off"
             got_angle = ""
@@ -1916,7 +1918,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.run_subtest("Inside loop", self.inside_loop)
 
-        self.run_subtest("Stabilize test", self.test_stabilize)
+        self.run_subtest("Stablize test", self.test_stabilize)
 
         self.run_subtest("ACRO test", self.test_acro)
 
@@ -2042,17 +2044,17 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.progress("Orbit with GPS and learn wind")
             # allow longer to learn wind if there is no airspeed sensor
             if disable_airspeed_sensor:
-                self.delay_sim_time(180)
+                self.delay_sim_time(60)
             else:
                 self.delay_sim_time(20)
-            self.set_parameter("SIM_GPS1_ENABLE", 0)
+            self.set_parameter("SIM_GPS_DISABLE", 1)
             self.progress("Continue orbit without GPS")
             self.delay_sim_time(20)
             self.change_mode("RTL")
             self.wait_distance_to_home(100, 200, timeout=200)
-            # go into LOITER to create additional time for a GPS re-enable test
+            # go into LOITER to create additonal time for a GPS re-enable test
             self.change_mode("LOITER")
-            self.set_parameter("SIM_GPS1_ENABLE", 1)
+            self.set_parameter("SIM_GPS_DISABLE", 0)
             t_enabled = self.get_sim_time()
             # The EKF should wait for GPS checks to pass when we are still able to navigate using dead reckoning
             # to prevent bad GPS being used when coming back after loss of lock due to interence.
@@ -2063,9 +2065,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.delay_sim_time(20)
 
             self.set_parameter("AHRS_OPTIONS", 1)
-            self.set_parameter("SIM_GPS1_JAM", 1)
+            self.set_parameter("SIM_GPS_JAM", 1)
             self.delay_sim_time(10)
-            self.set_parameter("SIM_GPS1_JAM", 0)
+            self.set_parameter("SIM_GPS_JAM", 0)
             t_enabled = self.get_sim_time()
             # The EKF should wait for GPS checks to pass when we are still able to navigate using dead reckoning
             # to prevent bad GPS being used when coming back after loss of lock due to interence.
@@ -2384,7 +2386,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_rc(12, 1000)
         self.delay_sim_time(1) # let the switch get polled
         self.test_adsb_send_threatening_adsb_message(here)
-        m = self.assert_not_receive_message('COLLISION', timeout=4)
+        m = self.mav.recv_match(type='COLLISION', blocking=True, timeout=4)
+        self.progress("Got (%s)" % str(m))
+        if m is not None:
+            raise NotAchievedException("Got collision message when I shouldn't have")
 
     def GuidedRequest(self, target_system=1, target_component=1):
         '''Test handling of MISSION_ITEM in guided mode'''
@@ -2474,7 +2479,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def LOITER(self):
         '''Test Loiter mode'''
-        # first test old loiter behaviour
+        # first test old loiter behavour
         self.set_parameter("FLIGHT_OPTIONS", 0)
         self.takeoff(alt=200)
         self.set_rc(3, 1500)
@@ -2519,9 +2524,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Centering elevator and ensuring we get back to loiter altitude")
         self.set_rc(2, 1500)
         self.wait_altitude(initial_alt-1, initial_alt+1)
-        # Test new loiter behaviour
+        # Test new loiter behavour
         self.set_parameter("FLIGHT_OPTIONS", 1 << 12)
-        # should descend at max stick
+        # should decend at max stick
         self.set_rc(2, int(rc2_max))
         self.wait_altitude(initial_alt - 110, initial_alt - 90, timeout=90)
         # should not climb back at mid stick
@@ -2621,7 +2626,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameter("SOAR_ENABLE", 0)
         self.delay_sim_time(10)
 
-        # And re-enable. This should force throttle-down
+        # And reenable. This should force throttle-down
         self.set_parameter("SOAR_ENABLE", 1)
         self.delay_sim_time(10)
 
@@ -2634,7 +2639,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Back to auto
         self.change_mode('AUTO')
 
-        # Re-enable thermals
+        # Reenable thermals
         self.set_parameter("SIM_THML_SCENARI", 1)
 
         # Disable soaring using RC channel.
@@ -2955,7 +2960,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
             self.mav.mav.terrain_check_send(lat_int, lng_int)
 
-            report = self.assert_receive_message('TERRAIN_REPORT', timeout=60)
+            report = self.mav.recv_match(type='TERRAIN_REPORT', blocking=True, timeout=60)
             self.progress(self.dump_message_verbose(report))
             if report.spacing != 0:
                 break
@@ -3015,21 +3020,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.progress("Returning home")
         self.fly_home_land_and_disarm(240)
-
-    def TerrainLoiterToCircle(self):
-        '''loiter terrain-relative.  Switch to Circle, maintain alt'''
-        self.install_terrain_handlers_context()
-        self.set_parameters({
-            "TERRAIN_FOLLOW": 1, # enable terrain following in loiter
-            "WP_LOITER_RAD": 2000, # set very large loiter rad to get some terrain changes
-        })
-        alt = 50
-        self.takeoff(alt*0.9, alt*1.1, mode='TAKEOFF')
-        self.change_mode('LOITER')
-        self.delay_sim_time(10)
-        self.change_mode('CIRCLE')
-        self.wait_altitude(alt*0.9, alt*1.1, minimum_duration=10, relative=True)
-        self.fly_home_land_and_disarm()
 
     def fly_external_AHRS(self, sim, eahrs_type, mission):
         """Fly with external AHRS"""
@@ -3388,7 +3378,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def EKFlaneswitch(self):
         '''Test EKF3 Affinity and Lane Switching'''
 
-        # new lane switch available only with EK3
+        # new lane swtich available only with EK3
         self.set_parameters({
             "EK3_ENABLE": 1,
             "EK2_ENABLE": 0,
@@ -3396,7 +3386,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "EK3_AFFINITY": 15, # enable affinity for all sensors
             "EK3_IMU_MASK": 3, # use only 2 IMUs
             "GPS2_TYPE": 1,
-            "SIM_GPS2_ENABLE": 1,
+            "SIM_GPS2_DISABLE": 0,
             "SIM_BARO_COUNT": 2,
             "SIM_BAR2_DISABLE": 0,
             "ARSPD2_TYPE": 2,
@@ -3471,9 +3461,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # noise on each axis
         def sim_gps_verr():
             self.set_parameters({
-                "SIM_GPS1_VERR_X": self.get_parameter("SIM_GPS1_VERR_X") + 2,
-                "SIM_GPS1_VERR_Y": self.get_parameter("SIM_GPS1_VERR_Y") + 2,
-                "SIM_GPS1_VERR_Z": self.get_parameter("SIM_GPS1_VERR_Z") + 2,
+                "SIM_GPS_VERR_X": self.get_parameter("SIM_GPS_VERR_X") + 2,
+                "SIM_GPS_VERR_Y": self.get_parameter("SIM_GPS_VERR_Y") + 2,
+                "SIM_GPS_VERR_Z": self.get_parameter("SIM_GPS_VERR_Z") + 2,
             })
         self.wait_statustext(text="EKF3 lane switch", timeout=30, the_function=sim_gps_verr, check_context=True)
         if self.lane_switches != [1, 0, 1]:
@@ -3522,7 +3512,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             # current airspeed then changing the airspeed demand
             # to a higher value and waiting for the TECS speed
             # loop to diverge
-            m = self.assert_receive_message('VFR_HUD')
+            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
             self.set_parameter("SIM_ARSPD_FAIL", m.airspeed)
             self.run_cmd(
                 mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
@@ -3751,13 +3741,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
         # Grab Home Position
-        self.assert_receive_message('HOME_POSITION')
+        self.mav.recv_match(type='HOME_POSITION', blocking=True)
         self.set_rc(7, 1000) # Turn fence off with aux function, does not impact later auto-enable
 
         self.wait_ready_to_arm()
 
         self.progress("Check fence disabled at boot")
-        m = self.assert_receive_message('SYS_STATUS')
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         if (m.onboard_control_sensors_enabled & fence_bit):
             raise NotAchievedException("Fence is enabled at boot")
 
@@ -3772,7 +3762,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_statustext("Max Alt fence breached", timeout=10, check_context=True)
         self.wait_mode('RTL')
 
-        m = self.assert_receive_message('SYS_STATUS')
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         if (m.onboard_control_sensors_health & fence_bit):
             raise NotAchievedException("Fence ceiling not breached")
 
@@ -3787,45 +3777,15 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_altitude(cruise_alt, relative=True)
 
         self.progress("Check fence breach cleared")
-        m = self.assert_receive_message('SYS_STATUS')
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         if (not (m.onboard_control_sensors_health & fence_bit)):
             raise NotAchievedException("Fence breach not cleared")
 
-        self.progress("Fly above ceiling and check there is a breach and switch to AUTOLAND mode")
-        self.context_push()
-        self.context_collect('STATUSTEXT')
-        self.set_parameters({
-            "FENCE_ACTION": 8,   # Set action to AUTOLAND if possible
-        })
-
-        self.set_rc(3, 2000)
-        self.set_rc(2, 1000)
-
-        self.wait_statustext("Max Alt fence breached", timeout=10, check_context=True)
-        self.wait_mode(26) # AUTOLAND,need pymavlink .43 to use text name
-        self.assert_fence_sys_status(True, True, False)
-
-        self.set_rc(3, 1500)
-        self.set_rc(2, 1500)
-
-        self.progress("Wait for cruise alt reached")
-        self.wait_altitude(
-            cruise_alt-5,
-            cruise_alt+5,
-            relative=True,
-            timeout=30,
-        )
-
-        self.progress("Check fence breach cleared")
-        self.assert_fence_sys_status(True, True, True)
-
-        self.context_pop()
-        self.change_mode('FBWA')
         self.progress("Fly below floor and check for breach")
         self.set_rc(2, 2000)
         self.wait_statustext("Min Alt fence breached", timeout=10, check_context=True)
         self.wait_mode("RTL")
-        m = self.assert_receive_message('SYS_STATUS')
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         if (m.onboard_control_sensors_health & fence_bit):
             raise NotAchievedException("Fence floor not breached")
 
@@ -3834,7 +3794,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Fly above floor and check fence is enabled")
         self.set_rc(3, 2000)
         self.change_altitude(75, relative=True)
-        m = self.assert_receive_message('SYS_STATUS')
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         if (not (m.onboard_control_sensors_enabled & fence_bit)):
             raise NotAchievedException("Fence Floor not enabled")
 
@@ -3845,13 +3805,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.delay_sim_time(2)
 
         self.progress("Check fence is disabled")
-        m = self.assert_receive_message('SYS_STATUS')
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         if (m.onboard_control_sensors_enabled & fence_bit):
             raise NotAchievedException("Fence disable with switch failed")
 
         self.progress("Fly below floor and check for no breach")
         self.change_altitude(40, relative=True)
-        m = self.assert_receive_message('SYS_STATUS')
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         if (not (m.onboard_control_sensors_health & fence_bit)):
             raise NotAchievedException("Fence floor breached")
 
@@ -3902,7 +3862,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         })
 
         self.progress("Checking fence is not present before being configured")
-        m = self.assert_receive_message('SYS_STATUS')
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         self.progress("Got (%s)" % str(m))
         if (m.onboard_control_sensors_enabled & fence_bit):
             raise NotAchievedException("Fence enabled before being configured")
@@ -3919,7 +3879,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             7: 2000,
         }) # Turn fence on with aux function
 
-        m = self.assert_receive_message('FENCE_STATUS', timeout=2, verbose=True)
+        m = self.mav.recv_match(type='FENCE_STATUS', blocking=True, timeout=2)
+        self.progress("Got (%s)" % str(m))
+        if m is None:
+            raise NotAchievedException("Got FENCE_STATUS unexpectedly")
 
         self.progress("Checking fence is initially OK")
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE,
@@ -3966,7 +3929,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         if not enable:
             self.progress("Checking fence is not present before being configured")
-            m = self.assert_receive_message('SYS_STATUS')
+            m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
             self.progress("Got (%s)" % str(m))
             if (m.onboard_control_sensors_enabled & fence_bit):
                 raise NotAchievedException("Fence enabled before being configured")
@@ -3985,7 +3948,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED
         )
 
-        m = self.assert_receive_message('FENCE_STATUS', timeout=2, verbose=True)
+        m = self.mav.recv_match(type='FENCE_STATUS', blocking=True, timeout=2)
+        self.progress("Got (%s)" % str(m))
+        if m is None:
+            raise NotAchievedException("Got FENCE_STATUS unexpectedly")
 
         self.progress("Checking fence is initially OK")
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE,
@@ -4030,7 +3996,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED
         )
 
-        m = self.assert_receive_message('FENCE_STATUS', timeout=2, verbose=True)
+        m = self.mav.recv_match(type='FENCE_STATUS', blocking=True, timeout=2)
+        self.progress("Got (%s)" % str(m))
+        if m is None:
+            raise NotAchievedException("Got FENCE_STATUS unexpectedly")
 
         self.progress("Waiting for RTL")
         tstart = self.get_sim_time()
@@ -4082,8 +4051,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.progress("User mode change to cruise should retrigger fence action")
         try:
-            # mode change should time out, 'WaitModeTimeout' exception is the desired result
-            # can't wait too long or the vehicle will be inside fence and allow the mode change
+            # mode change should time out, 'WaitModeTimeout' exception is the desired resut
+            # cant wait too long or the vehicle will be inside fence and allow the mode change
             self.change_mode("CRUISE", timeout=10)
             raise NotAchievedException("Should not change mode in fence breach")
         except WaitModeTimeout:
@@ -4291,7 +4260,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         vinfo = vehicleinfo.VehicleInfo()
         vinfo_options = vinfo.options[self.vehicleinfo_key()]
         known_broken_frames = {
-            "plane-tailsitter": "unstable in hover; unflyable in cruise",
+            "plane-tailsitter": "does not take off; immediately emits 'AP: Transition VTOL done' while on ground",
+            "plane-ice" : "needs ICE control channel for ignition",
+            "quadplane-ice" : "needs ICE control channel for ignition",
             "quadplane-can" : "needs CAN periph",
             "stratoblimp" : "not expected to fly normally",
             "glider" : "needs balloon lift",
@@ -4308,7 +4279,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 self.progress("Actually, no I'm not - it is an external simulation")
                 continue
             model = frame_bits.get("model", frame)
-            defaults = self.model_defaults_filepath(frame)
+            # the model string for Callisto has crap in it.... we
+            # should really have another entry in the vehicleinfo data
+            # to carry the path to the JSON.
+            actual_model = model.split(":")[0]
+            defaults = self.model_defaults_filepath(actual_model)
             if not isinstance(defaults, list):
                 defaults = [defaults]
             self.customise_SITL_commandline(
@@ -4329,38 +4304,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.arm_vehicle()
             self.fly_mission(mission_file, strict=False, quadplane=quadplane, mission_timeout=400.0)
             self.wait_disarmed()
-
-    def AutoLandMode(self):
-        '''Test AUTOLAND mode'''
-        self.set_parameters({
-            "AUTOLAND_DIR_OFF": 45,
-            "TERRAIN_FOLLOW": 1,
-            "AUTOLAND_CLIMB": 300,
-        })
-        self.customise_SITL_commandline(["--home", "-35.362938,149.165085,585,173"])
-        self.context_collect('STATUSTEXT')
-        self.load_mission("autoland_mission.txt")
-        self.install_terrain_handlers_context()
-        self.change_mode("AUTO")
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
-        self.wait_text("Autoland direction", check_context=True)
-        self.wait_waypoint(2, 2, max_dist=100)
-        self.change_mode(26) # AUTOLAND need .43 pymavlink to use text name
-        self.wait_disarmed(400)
-        self.progress("Check the landed heading matches takeoff plus offset")
-        self.wait_heading(218, accuracy=5, timeout=1)
-        loc = mavutil.location(-35.362938, 149.165085, 585, 218)
-        if self.get_distance(loc, self.mav.location()) > 35:
-            raise NotAchievedException("Did not land close to home")
-        self.set_parameters({
-            "TKOFF_OPTIONS": 2,
-        })
-        self.wait_ready_to_arm()
-        self.set_autodisarm_delay(0)
-        self.arm_vehicle()
-        self.progress("Check the set dir on arm option")
-        self.wait_text("Autoland direction", check_context=True)
 
     def RCDisableAirspeedUse(self):
         '''Test RC DisableAirspeedUse option'''
@@ -4437,65 +4380,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def AUTOTUNE(self):
         '''Test AutoTune mode'''
-        self.run_autotune()
-
-        # Values that are set to constants
-        # If these are changed then the expected tune parameters should also change
-        self.assert_parameter_value_pct("RLL2SRV_TCONST", 0.5, 0)
-        self.assert_parameter_value_pct("RLL2SRV_RMAX", 75, 0)
-        self.assert_parameter_value_pct("RLL_RATE_IMAX", 0.666, 0.01) # allow some small error to account for floating point stuff  # noqa:E501
-        self.assert_parameter_value_pct("RLL_RATE_FLTT", 3.183, 0.01)
-        self.assert_parameter_value_pct("RLL_RATE_FLTE", 0, 0)
-        self.assert_parameter_value_pct("RLL_RATE_FLTD", 10.0, 0)
-        self.assert_parameter_value_pct("RLL_RATE_SMAX", 150.0, 0)
-
-        self.assert_parameter_value_pct("PTCH2SRV_TCONST", 0.75, 0)
-        self.assert_parameter_value_pct("PTCH2SRV_RMAX_UP", 75, 0)
-        self.assert_parameter_value_pct("PTCH2SRV_RMAX_DN", 75, 0)
-        self.assert_parameter_value_pct("PTCH_RATE_IMAX", 0.666, 0.01)
-        self.assert_parameter_value_pct("PTCH_RATE_FLTT", 2.122, 0.01)
-        self.assert_parameter_value_pct("PTCH_RATE_FLTE", 0, 0)
-        self.assert_parameter_value_pct("PTCH_RATE_FLTD", 10, 0)
-        self.assert_parameter_value_pct("PTCH_RATE_SMAX", 150, 0)
-
-        # Check tuned values, targets derived from running tests multiple times and taking average
-        # Expect within 2%
-        # Note that I is not checked directly, its value is derived from P, FF, and TCONST which are all checked.
-        self.assert_parameter_value_pct("RLL_RATE_P", 1.222702146, 2)
-        self.assert_parameter_value_pct("RLL_RATE_D", 0.070284024, 2)
-        self.assert_parameter_value_pct("RLL_RATE_FF", 0.229291457, 2)
-
-        self.assert_parameter_value_pct("PTCH_RATE_FF", 0.503520715, 5)
-
-        # There seem to be multiple solutions for pitch. I'm not sure why this is.
-        # Each value is quite consistent because of the fixed steps that autotune takes
-        try:
-            # Expect this about 84% of the time
-            self.assert_parameter_value_pct("PTCH_RATE_P", 1.746079683, 2)
-        except ValueError:
-            try:
-                # 12%
-                self.assert_parameter_value_pct("PTCH_RATE_P", 1.343138218, 2)
-            except ValueError:
-                # 4%
-                self.assert_parameter_value_pct("PTCH_RATE_P", 2.26990366, 2)
-
-        try:
-            # 64%
-            self.assert_parameter_value_pct("PTCH_RATE_D", 0.108, 2)
-        except ValueError:
-            try:
-                # 28%
-                self.assert_parameter_value_pct("PTCH_RATE_D", 0.141, 2)
-            except ValueError:
-                try:
-                    # 4%
-                    self.assert_parameter_value_pct("PTCH_RATE_D", 0.049, 2)
-                except ValueError:
-                    # 4%
-                    self.assert_parameter_value_pct("PTCH_RATE_D", 0.0836, 2)
-
-    def run_autotune(self):
         self.takeoff(100)
         self.change_mode('AUTOTUNE')
         self.context_collect('STATUSTEXT')
@@ -4511,14 +4395,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 self.progress("Got %s" % str(m))
                 if axis == "Roll":
                     axis = "Pitch"
-                    # Center sticks to allow roll to return to neutral before starting pitch
-                    self.set_rc(1, 1500)
-                    self.set_rc(2, 1500)
-                    self.delay_sim_time(15)
-
-                    # Reset toggle value so the initial input is in a consistent direction
-                    rc_value = 1000
-
                 elif axis == "Pitch":
                     break
                 else:
@@ -4564,7 +4440,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "RLL_RATE_FLTT": 20,
             "PTCH_RATE_FLTT": 20,
         })
-        self.run_autotune()
+        self.AUTOTUNE()
 
     def LandingDrift(self):
         '''Circuit with baro drift'''
@@ -5098,34 +4974,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.fly_home_land_and_disarm()
 
-    def TakeoffIdleThrottle(self):
-        '''Apply idle throttle before takeoff.'''
-        self.customise_SITL_commandline(
-            [],
-            model='plane-catapult',
-            defaults_filepath=self.model_defaults_filepath("plane")
-        )
-        self.set_parameters({
-            "TKOFF_THR_IDLE": 20.0,
-            "TKOFF_THR_MINSPD": 3.0,
-        })
-        self.change_mode("TAKEOFF")
-
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
-
-        # Ensure that the throttle rises to idle throttle.
-        expected_idle_throttle = 1000+10*self.get_parameter("TKOFF_THR_IDLE")
-        self.assert_servo_channel_range(3, expected_idle_throttle-10, expected_idle_throttle+10)
-
-        # Launch the catapult
-        self.set_servo(6, 1000)
-
-        self.delay_sim_time(5)
-        self.change_mode('RTL')
-
-        self.fly_home_land_and_disarm()
-
     def TakeoffBadLevelOff(self):
         '''Ensure that the takeoff can be completed under 0 pitch demand.'''
         '''
@@ -5196,8 +5044,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_level_flight(accuracy=10, timeout=1)  # Ensure we have roughly level-off.
         self.delay_sim_time(5)
 
-        self.change_mode('AUTOLAND')
-        self.wait_disarmed(timeout=180)
+        self.fly_home_land_and_disarm()
 
     def DCMFallback(self):
         '''Really annoy the EKF and force fallback'''
@@ -5210,8 +5057,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.context_collect('STATUSTEXT')
         self.set_parameters({
             "EK3_POS_I_GATE": 0,
-            "SIM_GPS1_HZ": 1,
-            "SIM_GPS1_LAG_MS": 1000,
+            "SIM_GPS_HZ": 1,
+            "SIM_GPS_LAG_MS": 1000,
         })
         self.wait_statustext("DCM Active", check_context=True, timeout=60)
         self.wait_statustext("EKF3 Active", check_context=True)
@@ -5236,8 +5083,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_statustext("DCM Active", check_context=True)
         self.context_stop_collecting('STATUSTEXT')
 
-        self.change_mode('AUTOLAND')
-        self.wait_disarmed(timeout=180)
+        self.fly_home_land_and_disarm()
 
     def EFITest(self, efi_type, name, sim_name, check_fuel_flow=True):
         '''method to be called by EFI tests'''
@@ -5319,20 +5165,20 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         '''Test Hirth EFI'''
         self.EFITest(8, "Hirth", "hirth")
 
-    def AltitudeSlopeMaxHeight(self):
-        '''Test rebuild altitude slope if above and climbing'''
+    def GlideSlopeThresh(self):
+        '''Test rebuild glide slope if above and climbing'''
 
-        # Test that ALT_SLOPE_MAXHGT correctly controls re-planning altitude slope
+        # Test that GLIDE_SLOPE_THRESHOLD correctly controls re-planning glide slope
         # in the scenario that aircraft is above planned slope and slope is positive (climbing).
         #
         #
-        #  Behaviour with ALT_SLOPE_MAXHGT = 0 (no slope replanning)
+        #  Behaviour with GLIDE_SLOPE_THRESH = 0 (no slope replanning)
         #       (2)..      __(4)
         #         |  \..__/
         #         |  __/
         #         (3)
         #
-        # Behaviour with ALT_SLOPE_MAXHGT = 5 (slope replanning when >5m error)
+        # Behaviour with GLIDE_SLOPE_THRESH = 5 (slope replanning when >5m error)
         #       (2)........__(4)
         #         |     __/
         #         |  __/
@@ -5347,9 +5193,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
 
         #
-        # Initial run with ALT_SLOPE_MAXHGT = 5 (default).
+        # Initial run with GLIDE_SLOPE_THR = 5 (default).
         #
-        self.set_parameter("ALT_SLOPE_MAXHGT", 5)
+        self.set_parameter("GLIDE_SLOPE_THR", 5)
 
         # Wait for waypoint commanding rapid descent, followed by climb.
         self.wait_current_waypoint(5, timeout=1200)
@@ -5375,9 +5221,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_current_waypoint(2)
 
         #
-        # Second run with ALT_SLOPE_MAXHGT = 0 (no re-plan).
+        # Second run with GLIDE_SLOPE_THR = 0 (no re-plan).
         #
-        self.set_parameter("ALT_SLOPE_MAXHGT", 0)
+        self.set_parameter("GLIDE_SLOPE_THR", 0)
 
         # Wait for waypoint commanding rapid descent, followed by climb.
         self.wait_current_waypoint(5, timeout=1200)
@@ -5394,7 +5240,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             seq = self.mav.waypoint_current()
             self.progress("Waiting for wp=%u current=%u" % (wpnum, seq))
             if seq == wpnum:
-                raise NotAchievedException("Reached desired waypoint without first descending 10m,\
+                raise NotAchievedException("Reached desired waypoint without first decending 10m,\
  indicating slope was replanned unexpectedly")
 
             if (self.get_altitude(relative=True, timeout=2) - init_altitude) < -10:
@@ -5596,7 +5442,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         highest_error = 0
         while True:
-            m = self.mav.recv_match(type='NAMED_VALUE_FLOAT', timeout=2, blocking=True)
+            m = self.mav.recv_match(type='NAMED_VALUE_FLOAT', blocking=True, timeout=2)
             if not m:
                 break
             if m.name != 'PERR':
@@ -5625,41 +5471,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 self.progress("Completed trick %s" % t)
             else:
                 raise NotAchievedException("Missing trick %s" % t)
-
-    def UniversalAutoLandScript(self):
-        '''Test UniversalAutoLandScript'''
-        applet_script = "UniversalAutoLand.lua"
-        self.customise_SITL_commandline(["--home", "-35.362938,149.165085,585,173"])
-
-        self.install_applet_script_context(applet_script)
-        self.context_collect('STATUSTEXT')
-        self.set_parameters({
-            "SCR_ENABLE" : 1,
-            "SCR_VM_I_COUNT" : 1000000,
-            "RTL_AUTOLAND" : 2
-            })
-        self.reboot_sitl()
-        self.wait_text("Loaded UniversalAutoLand.lua", check_context=True)
-        self.set_parameters({
-             "ALAND_ENABLE" : 1,
-             "ALAND_WP_ALT" : 55,
-             "ALAND_WP_DIST" : 400
-            })
-        self.wait_ready_to_arm()
-        self.scripting_restart()
-        self.wait_text("Scripting: restarted", check_context=True)
-
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
-        self.change_mode("AUTO")
-        self.wait_text("Captured initial takeoff direction", check_context=True)
-
-        self.wait_disarmed(120)
-        self.progress("Check the landed heading matches takeoff")
-        self.wait_heading(173, accuracy=5, timeout=1)
-        loc = mavutil.location(-35.362938, 149.165085, 585, 173)
-        if self.get_distance(loc, self.mav.location()) > 35:
-            raise NotAchievedException("Did not land close to home")
 
     def SDCardWPTest(self):
         '''test BRD_SD_MISSION support'''
@@ -5711,7 +5522,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def MANUAL_CONTROL(self):
         '''test MANUAL_CONTROL mavlink message'''
-        self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
+        self.set_parameter("SYSID_MYGCS", self.mav.source_system)
 
         self.progress("Takeoff")
         self.takeoff(alt=50)
@@ -5732,7 +5543,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 32767, # z (thrust)
                 32767, # r (yaw)
                 0) # button mask
-            m = self.assert_receive_message('ATTITUDE', verbose=True)
+            m = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=1)
+            print("m=%s" % str(m))
+            if m is None:
+                continue
             p = math.degrees(m.roll)
             self.progress("roll=%f want<=%f" % (p, want_roll_degrees))
             if p <= want_roll_degrees:
@@ -5903,8 +5717,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def AltResetBadGPS(self):
         '''Tests the handling of poor GPS lock pre-arm alt resets'''
         self.set_parameters({
-            "SIM_GPS1_GLTCH_Z": 0,
-            "SIM_GPS1_ACC": 0.3,
+            "SIM_GPS_GLITCH_Z": 0,
+            "SIM_GPS_ACC": 0.3,
         })
         self.wait_ready_to_arm()
 
@@ -5914,8 +5728,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Bad relative alt %.1f" % relalt)
 
         self.progress("Setting low accuracy, glitching GPS")
-        self.set_parameter("SIM_GPS1_ACC", 40)
-        self.set_parameter("SIM_GPS1_GLTCH_Z", -47)
+        self.set_parameter("SIM_GPS_ACC", 40)
+        self.set_parameter("SIM_GPS_GLITCH_Z", -47)
 
         self.progress("Waiting 10s for height update")
         self.delay_sim_time(10)
@@ -6258,6 +6072,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         }, epsilon=10)
 
         def check_altitude(mav, m):
+            global initial_airspeed_threshold_reached
             m_type = m.get_type()
             if m_type != 'GLOBAL_POSITION_INT':
                 return
@@ -6335,7 +6150,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def _MAV_CMD_DO_FLIGHTTERMINATION(self, command):
         self.set_parameters({
             "AFS_ENABLE": 1,
-            "MAV_GCS_SYSID": self.mav.source_system,
+            "SYSID_MYGCS": self.mav.source_system,
             "AFS_TERM_ACTION": 42,
         })
         self.wait_ready_to_arm()
@@ -6589,7 +6404,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.takeoff(50)
         self.change_mode('GUIDED')
         self.context_push()
-        self.set_parameter('SIM_GPS1_ENABLE', 0)
+        self.set_parameter('SIM_GPS_DISABLE', 1)
         self.delay_sim_time(30)
         self.set_attitude_target()
         self.context_pop()
@@ -6654,18 +6469,14 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def SetHomeAltChange(self):
         '''check modes retain altitude when home alt changed'''
         for mode in 'FBWB', 'CRUISE', 'LOITER':
-            self.set_rc(3, 1000)
             self.wait_ready_to_arm()
             home = self.home_position_as_mav_location()
-            target_alt = 20
-            self.takeoff(target_alt, mode="TAKEOFF")
-            self.delay_sim_time(20)  # Give some time to altitude to stabilize.
-            self.set_rc(3, 1500)
-            self.change_mode(mode)
-            higher_home = copy.copy(home)
+            self.takeoff(20)
+            higher_home = home
             higher_home.alt += 40
             self.set_home(higher_home)
-            self.wait_altitude(home.alt+target_alt-5, home.alt+target_alt+5, relative=False, minimum_duration=10, timeout=11)
+            self.change_mode(mode)
+            self.wait_altitude(15, 25, relative=True, minimum_duration=10)
             self.disarm_vehicle(force=True)
             self.reboot_sitl()
 
@@ -6701,26 +6512,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
-    def SetHomeAltChange3(self):
-        '''same as SetHomeAltChange, but the home alt change occurs during TECS operation'''
-        self.wait_ready_to_arm()
-        home = self.home_position_as_mav_location()
-        target_alt = 20
-        self.takeoff(target_alt, mode="TAKEOFF")
-        self.change_mode("LOITER")
-        self.delay_sim_time(20) # Let the plane settle.
-
-        higher_home = copy.copy(home)
-        higher_home.alt += 40
-        self.set_home(higher_home)
-        self.wait_altitude(home.alt+target_alt-5, home.alt+target_alt+5, relative=False, minimum_duration=10, timeout=10.1)
-
-        self.disarm_vehicle(force=True)
-        self.reboot_sitl()
-
     def ForceArm(self):
         '''check force-arming functionality'''
-        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.set_parameter("SIM_GPS_DISABLE", 1)
         # 21196 is the mavlink standard, 2989 is legacy
         for magic_value in 21196, 2989:
             self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK,
@@ -6741,31 +6535,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
             )
             self.disarm_vehicle()
-
-    def CompassLearnInFlight(self):
-        '''check we can learn compass offsets in flight'''
-        self.context_push()
-        self.set_parameters({
-            "COMPASS_OFS_X": 1100,
-        })
-        self.assert_prearm_failure("Check mag field", other_prearm_failures_fatal=False)
-        self.context_pop()
-        self.wait_ready_to_arm()
-        self.takeoff(30, mode='TAKEOFF')
-        self.assert_parameter_value("COMPASS_OFS_X", 20, epsilon=30)
-        # fly straight and level for a bit to let GSF converge for accurate learning
-        self.change_mode("FBWB") # not "CRUISE" to avoid heading track with bad compass
-        self.wait_distance(200, accuracy=20)
-        old_compass_ofs_x = self.get_parameter('COMPASS_OFS_X')
-        self.set_parameters({
-            "COMPASS_OFS_X": 1100,
-        })
-        self.send_set_parameter("COMPASS_LEARN", 3)  # 3 is in-flight learning
-        self.wait_parameter_value("COMPASS_LEARN", 0)
-        self.assert_parameter_value("COMPASS_OFS_X", old_compass_ofs_x, epsilon=30)
-        self.fly_home_land_and_disarm()
-        self.reboot_sitl()
-        self.assert_parameter_value("COMPASS_OFS_X", old_compass_ofs_x, epsilon=30)
 
     def _MAV_CMD_EXTERNAL_WIND_ESTIMATE(self, command):
         self.reboot_sitl()
@@ -6799,109 +6568,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         command(mavutil.mavlink.MAV_CMD_EXTERNAL_WIND_ESTIMATE, p1=-2, p3=-90, want_result=mavutil.mavlink.MAV_RESULT_DENIED)
         command(mavutil.mavlink.MAV_CMD_EXTERNAL_WIND_ESTIMATE, p1=2, p3=370, want_result=mavutil.mavlink.MAV_RESULT_DENIED)
 
-    def FenceDoubleBreach(self):
-        '''test breaching the fence twice'''
-        self.wait_ready_to_arm()
-
-        fence_centre_ne = (0, -500)
-
-        fence_centre = self.mav.location()
-        fence_centre = self.offset_location_ne(fence_centre, fence_centre_ne[0], fence_centre_ne[1])
-
-        self.set_parameters({
-            "RTL_AUTOLAND": 2,
-        })
-
-        alt = 50
-        self.upload_simple_relhome_mission([
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 200, 0, alt),
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, fence_centre_ne[0], fence_centre_ne[1], alt),
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -750, alt),
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1000, alt),
-            self.create_MISSION_ITEM_INT(
-                mavutil.mavlink.MAV_CMD_DO_LAND_START,
-            ),
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 800, alt),
-        ])
-
-        self.upload_fences_from_locations([
-            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
-                self.offset_location_ne(fence_centre, -200, -200), # bl
-                self.offset_location_ne(fence_centre, -200, 200), # br
-                self.offset_location_ne(fence_centre, 200, 200), # tr
-                self.offset_location_ne(fence_centre, 200, -200), # tl,
-            ]),
-        ])
-
-        self.do_fence_enable()
-
-        self.takeoff(mode='FBWA')
-        self.set_rc(3, 1500)
-
-        self.change_mode('AUTO')
-
-        self.context_collect('STATUSTEXT')
-
-        self.wait_statustext('Polygon fence breached', timeout=300)
-        self.wait_current_waypoint(6)
-        self.wait_distance_to_location(fence_centre, 350, 20000)
-
-        self.set_current_waypoint(2)
-
-        self.wait_statustext('Polygon fence breached', timeout=300)
-        self.wait_current_waypoint(6, timeout=5)
-        self.fly_home_land_and_disarm()
-
     def MAV_CMD_EXTERNAL_WIND_ESTIMATE(self):
         '''test MAV_CMD_EXTERNAL_WIND_ESTIMATE as a mavlink command'''
         self._MAV_CMD_EXTERNAL_WIND_ESTIMATE(self.run_cmd)
         self._MAV_CMD_EXTERNAL_WIND_ESTIMATE(self.run_cmd_int)
-
-    def LoggedNamedValueFloat(self):
-        '''ensure that sent named value floats are logged'''
-        self.context_push()
-        self.install_example_script_context('simple_loop.lua')
-        self.set_parameters({
-            'SCR_ENABLE': 1,
-        })
-        self.reboot_sitl()
-        self.wait_ready_to_arm()
-        self.wait_statustext('hello, world')
-        m = self.assert_received_message_field_values('NAMED_VALUE_FLOAT', {
-            "name": "Lua Float",
-        })
-        dfreader = self.dfreader_for_current_onboard_log()
-        self.context_pop()
-
-        m = dfreader.recv_match(type='NVF')
-        if m is None:
-            raise NotAchievedException("Did not find NVF message")
-        self.progress(f"Received NVF with value {m.Value}")
-
-    def LoggedNamedValueString(self):
-        '''ensure that sent named value strings are logged'''
-        self.context_push()
-        self.install_example_script_context('simple_named_string.lua')
-        self.set_parameters({
-            'SCR_ENABLE': 1,
-        })
-        self.reboot_sitl()
-        self.wait_ready_to_arm()
-        m = self.assert_received_message_field_values('NAMED_VALUE_STRING', {
-            "name": "Lua String",
-            "value": "Lua String Value",
-        })
-        dfreader = self.dfreader_for_current_onboard_log()
-        self.context_pop()
-
-        m = dfreader.recv_match(type='NVS')
-        if m is None:
-            raise NotAchievedException("Did not find NVS message")
-        self.progress(f"Received NVS with value {m.Value}")
-        if m.Name != 'Lua String':
-            raise NotAchievedException("Unexpected name in NVS")
-        if m.Value != 'Lua String Value':
-            raise NotAchievedException("Unexpected value in NVS")
 
     def GliderPullup(self):
         '''test pullup of glider after ALTITUDE_WAIT'''
@@ -6965,425 +6635,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_current_waypoint(4)
         self.fly_home_land_and_disarm()
 
-    def RudderArmedTakeoffRequiresNeutralThrottle(self):
-        '''auto-takeoff should not occur while rudder continues to be held over'''
-        self.change_mode('TAKEOFF')
-        self.wait_ready_to_arm()
-        self.set_rc(4, 1000)
-        self.wait_armed()
-        self.wait_groundspeed(0, 1, minimum_duration=10)
-        self.set_rc(4, 1500)
-        self.wait_groundspeed(5, 100)
-        self.fly_home_land_and_disarm()
-
-    def VolzMission(self):
-        '''test Volz serially-connected servos in a mission'''
-        volz_motor_mask = ((1 << 0) | (1 << 1) | (1 << 3) | (1 << 8) | (1 << 9) | (1 << 11))
-        self.set_parameters({
-            'SERIAL5_PROTOCOL': 14,
-            'SERVO_VOLZ_MASK': volz_motor_mask,
-            'RTL_AUTOLAND': 2,
-
-            'SIM_VOLZ_ENA': 1,
-            'SIM_VOLZ_MASK': volz_motor_mask,
-        })
-        # defaults file not working?
-        self.set_parameters({
-            "SERVO2_REVERSED":  0,  # elevator
-
-            "SERVO9_FUNCTION": 4,
-
-            "SERVO10_FUNCTION": 19,  # elevator
-
-            "SERVO12_FUNCTION": 21,  # rudder
-            "SERVO12_REVERSED":  1,  # rudder
-
-        })
-        self.customise_SITL_commandline([
-            "--serial5=sim:volz",
-        ], model="plane-redundant",
-                                        )
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
-        self.takeoff()
-        self.fly_home_land_and_disarm()
-
-    def DO_CHANGE_ALTITUDE(self):
-        '''test DO_CHANGE_ALTITUDE mavlink command'''
-        takeoff_alt = 30
-        self.takeoff(alt=takeoff_alt, mode='TAKEOFF')
-        self.wait_altitude(takeoff_alt-1, takeoff_alt+1, minimum_duration=10, relative=True, timeout=60)
-
-        self.start_subtest("Home-relative altitude")
-        target_rel_alt = 40
-        self.run_cmd(
-            mavutil.mavlink.MAV_CMD_DO_CHANGE_ALTITUDE,
-            p1=target_rel_alt,
-            p2=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-        )
-        self.wait_altitude(
-            target_rel_alt-1,
-            target_rel_alt+1,
-            minimum_duration=10,
-            relative=True,
-            timeout=60,
-        )
-
-        self.start_subtest("Absolute altitude")
-        current_abs_alt = self.get_altitude()
-        target_abs_alt = current_abs_alt + 30
-        self.run_cmd(
-            mavutil.mavlink.MAV_CMD_DO_CHANGE_ALTITUDE,
-            p1=target_abs_alt,
-            p2=mavutil.mavlink.MAV_FRAME_GLOBAL,
-        )
-        self.wait_altitude(
-            target_abs_alt-1,
-            target_abs_alt+1,
-            minimum_duration=10,
-            timeout=60,
-        )
-
-        self.start_subtest("Terrain altitude")
-        current_relative_alt = self.get_altitude(relative=True)
-        target_terr_alt = current_relative_alt + 10
-        self.run_cmd(
-            mavutil.mavlink.MAV_CMD_DO_CHANGE_ALTITUDE,
-            p1=target_terr_alt,
-            p2=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
-        )
-        self.wait_altitude(
-            target_terr_alt-1,
-            target_terr_alt+1,
-            minimum_duration=10,
-            relative=True,
-            altitude_source="TERRAIN_REPORT.current_height",
-            timeout=120,
-        )
-
-        self.start_subtest("Change alt in loiter")
-        self.change_mode('LOITER')
-        current_relative_alt = self.get_altitude(relative=True)
-        self.wait_altitude(
-            current_relative_alt-1,
-            current_relative_alt+1,
-            minimum_duration=10,
-            relative=True,
-            timeout=60,
-        )
-        target_loiter_alt = current_relative_alt+5
-        self.run_cmd(
-            mavutil.mavlink.MAV_CMD_DO_CHANGE_ALTITUDE,
-            p1=target_loiter_alt,
-            p2=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-        )
-        self.wait_altitude(
-            target_loiter_alt-1,
-            target_loiter_alt+1,
-            minimum_duration=10,
-            relative=True,
-            timeout=60,
-        )
-
-        self.start_subtest("Change alt in circle")
-        self.change_mode('CIRCLE')
-        current_relative_alt = self.get_altitude(relative=True)
-        self.wait_altitude(
-            current_relative_alt-1,
-            current_relative_alt+1,
-            minimum_duration=10,
-            relative=True,
-            timeout=60,
-        )
-        target_circle_alt = current_relative_alt-5
-        self.run_cmd(
-            mavutil.mavlink.MAV_CMD_DO_CHANGE_ALTITUDE,
-            p1=target_circle_alt,
-            p2=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-        )
-        self.wait_altitude(
-            target_circle_alt-1,
-            target_circle_alt+1,
-            minimum_duration=10,
-            relative=True,
-            timeout=60,
-        )
-
-        self.start_subtest("Immediately respond to DO_CHANGE_ALTITUDE in a mission")
-        current_relative_alt = self.get_altitude(relative=True)
-        mission_alt = current_relative_alt - 10
-        self.upload_simple_relhome_mission([
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, -2000, 0, mission_alt)
-        ])
-        self.change_mode('AUTO')
-        self.wait_altitude(
-            mission_alt-1,
-            mission_alt+1,
-            minimum_duration=10,
-            relative=True,
-            timeout=240,
-        )
-        self.fly_home_land_and_disarm()
-
-    def SET_POSITION_TARGET_GLOBAL_INT_for_altitude(self):
-        '''test changing altitude using SET_POSITION_TARGET_GLOBAL_INT_for_altitude in guided mode'''
-        self.takeoff(30, mode='TAKEOFF')
-        self.change_mode('GUIDED')
-        target_alt = 40
-        self.mav.mav.set_position_target_global_int_send(
-            0, # timestamp
-            self.mav.target_system, # target system_id
-            self.mav.target_component, # target component id
-            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-            MAV_POS_TARGET_TYPE_MASK.ALT_ONLY,
-            0, # lat
-            0, # lon
-            target_alt, # alt
-            0, # vx
-            0, # vy
-            0, # vz
-            0, # afx
-            0, # afy
-            0, # afz
-            0, # yaw
-            0, # yawrate
-        )
-        self.wait_altitude(
-            target_alt-1,
-            target_alt+1,
-            minimum_duration=10,
-            timeout=120,
-            relative=True,
-        )
-
-        self.progress("Ensure ignore bit is honoured")
-        self.mav.mav.set_position_target_global_int_send(
-            0, # timestamp
-            self.mav.target_system, # target system_id
-            self.mav.target_component, # target component id
-            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-            MAV_POS_TARGET_TYPE_MASK.IGNORE_ALL, # mask specifying use-only-alt
-            0, # lat
-            0, # lon
-            target_alt, # alt
-            0, # vx
-            0, # vy
-            0, # vz
-            0, # afx
-            0, # afy
-            0, # afz
-            0, # yaw
-            0, # yawrate
-        )
-        self.wait_altitude(
-            target_alt-1,
-            target_alt+1,
-            timeout=60,
-            minimum_duration=10,
-            relative=True,
-        )
-        self.fly_home_land_and_disarm()
-
-    def mavlink_AIRSPEED(self):
-        '''check receiving of two airspeed sensors'''
-        self.set_parameters({
-            "ARSPD_PIN": 2,
-            "ARSPD_RATIO": 0,
-            "ARSPD2_RATIO": 4,
-            "ARSPD2_TYPE": 3,  # MS5525
-            "ARSPD2_BUS": 1,
-            "ARSPD2_AUTOCAL": 1,
-        })
-        self.reboot_sitl()
-
-        self.start_subtest('Ensure we get both instances')
-        self.wait_message_field_values('AIRSPEED', {
-            "id": 0,
-            "flags": mavutil.mavlink.AIRSPEED_SENSOR_USING,
-        })
-        self.wait_message_field_values('AIRSPEED', {
-            "id": 1,
-            "flags": 0,
-        })
-
-        self.wait_ready_to_arm()
-        self.takeoff()
-
-        self.start_subtest("Now testing failure of sensor 1 - fail to many m/s")
-        self.set_parameter("SIM_ARSPD_FAIL", 60)
-
-        # airspeed sensor never becomes unhealthy - we just stop using
-        # it as EKF3 starts to reject:
-        self.wait_message_field_values('AIRSPEED', {
-            "id": 0,
-            "flags": 0,
-        })
-        # ArduPilot's airspeed redundancy is only available through
-        # EKF3 affinity:
-        self.progress("Checking we're not using second airspeed sensor")
-        self.wait_message_field_values('AIRSPEED', {
-            "id": 1,
-            "flags": 0,
-        })
-        self.set_parameter("SIM_ARSPD_FAIL", 0)
-        self.fly_home_land_and_disarm()
-
-    def RudderArmingWithArmingChecksZero(self):
-        '''check we can't arm with rudder even if checks are disabled'''
-        self.set_parameters({
-            "ARMING_RUDDER": 0,
-            "ARMING_CHECK": 0,
-            "RC4_REVERSED": 0,
-        })
-        self.reboot_sitl()
-        self.delay_sim_time(5)
-        self.set_rc(4, 2000)
-        w = vehicle_test_suite.WaitAndMaintainDisarmed(
-            self,
-            minimum_duration=30,
-            timeout=60,
-        )
-        w.run()
-
-    def Volz(self):
-        '''test Volz serially-connected'''
-        volz_motor_mask = ((1 << 0) | (1 << 1) | (1 << 3) | (1 << 8) | (1 << 9) | (1 << 11))
-        self.set_parameters({
-            'SERIAL5_PROTOCOL': 14,
-            'SERVO_VOLZ_MASK': volz_motor_mask,
-            'RTL_AUTOLAND': 2,
-
-            'SIM_VOLZ_ENA': 1,
-            'SIM_VOLZ_MASK': volz_motor_mask,
-        })
-        # defaults file not working?
-        self.set_parameters({
-            "SERVO2_REVERSED":  0,  # elevator
-
-            "SERVO9_FUNCTION": 4,
-
-            "SERVO10_FUNCTION": 19,  # elevator
-
-            "SERVO12_FUNCTION": 21,  # rudder
-            "SERVO12_REVERSED":  1,  # rudder
-
-        })
-        self.customise_SITL_commandline([
-            "--serial5=sim:volz",
-        ], model="plane-redundant",
-                                        )
-        self.wait_ready_to_arm()
-        self.takeoff()
-        self.change_mode('FBWA')
-        straight_and_level_text = "straight-and-level"
-        self.send_statustext(straight_and_level_text)
-        self.delay_sim_time(2)
-        self.progress("sticking servo with constant deflection")
-        self.set_rc(1, 1400)
-        self.change_mode('MANUAL')
-        self.delay_sim_time(0.5)
-        self.progress("Failing servo")
-        self.set_parameter('SIM_VOLZ_FMASK', 1)
-        self.set_rc(1, 1500)
-        self.change_mode('FBWA')
-        aileron_failed_text = "aileron has been failed"
-        self.send_statustext(aileron_failed_text)
-        self.delay_sim_time(15)
-        self.set_parameter('SIM_VOLZ_FMASK', 0)
-
-        log_filepath = self.current_onboard_log_filepath()
-        # terminate vehicle in-flight so our tests aren't fooled by the
-        # "flying home" data:
-        self.reboot_sitl(force=True)
-
-        self.progress("Inspecting DFReader to ensure servo failure is recorded in the log")
-        dfreader = self.dfreader_for_path(log_filepath)
-        while True:
-            m = dfreader.recv_match(type=['MSG'])
-            if m is None:
-                raise NotAchievedException("Did not see straight_and_level_text")
-            if m.Message == "SRC=250/250:" + straight_and_level_text:
-                break
-
-        self.progress("Ensuring deflections are close to zero in straight-and-level flight")
-        chan1_good = False
-        chan9_good = False
-        while not (chan1_good and chan9_good):
-            m = dfreader.recv_match()
-            if m is None:
-                raise NotAchievedException("Did not see chan1 and chan9 as close-to-0")
-            if m.get_type() != 'CSRV':
-                continue
-            if m.Id == 0 and abs(m.Pos) < 3:
-                chan1_good = True
-            elif m.Id == 8 and abs(m.Pos) < 3:
-                chan9_good = True
-
-        while True:
-            m = dfreader.recv_match(type=['MSG'])
-            if m is None:
-                raise NotAchievedException("Did not see aileron_failed_text")
-            if m.Message == "SRC=250/250:" + aileron_failed_text:
-                break
-
-        self.progress("Checking servo9 is deflected")
-        while True:
-            # m = dfreader.recv_match(type=['CSRV'])
-            m = dfreader.recv_match()
-            if m is None:
-                raise NotAchievedException("Did not see chan9 deflection")
-            if m.get_type() != 'CSRV':
-                continue
-            if m.Id != 8:
-                continue
-            if m.Pos < 20:
-                continue
-            self.progress(f"Chan9 is deflected ({m})")
-            break
-
-        self.progress("Ensuring the vehicle stabilised with a single aileron")
-        attitude_good_count = 0
-        while attitude_good_count < 5:
-            m = dfreader.recv_match()
-            if m is None:
-                raise NotAchievedException("Did not see good attitude")
-            if m.get_type() != 'ATT':
-                continue
-            if abs(m.Roll) >= 5:
-                attitude_good_count = 0
-                continue
-            attitude_good_count += 1
-        self.progress(f"Attitude is stabilised ({m})")
-
-        self.progress("Ensure the roll integrator is wound up")
-        while True:
-            m = dfreader.recv_match()
-            if m is None:
-                raise NotAchievedException("Did not see wound-up roll integrator")
-            if m.get_type() != 'PIDR':
-                continue
-            if m.I > 5:
-                self.progress(f"Roll integrator is wound up ({m})")
-                break
-
-        self.progress("Checking that aileron is stuck at some deflection")
-        good_count = 0
-        while good_count < 5:
-            m = dfreader.recv_match()
-            if m is None:
-                raise NotAchievedException("Did not see csrv Pos/PosCmd discrepancy")
-            if m.get_type() != 'CSRV':
-                continue
-            if m.Id != 0:
-                continue
-            delta = abs(m.Pos - m.PosCmd)
-            if delta <= 20:
-                self.progress(f"CSRV Pos/PosCmd {delta=:.2f} BAD {m}")
-                good_count = 0
-                continue
-            self.progress(f"CSRV Pos/PosCmd {delta=:.2f} OK {m}")
-            good_count += 1
-
     def MAV_CMD_NAV_LOITER_TURNS_zero_turn(self):
         '''Ensure air vehicle achieves loiter target before exiting'''
         offset = 500
@@ -7443,294 +6694,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.fly_home_land_and_disarm()
 
-    class ValidateVFRHudClimbAgainstSimState(vehicle_test_suite.TestSuite.MessageHook):
-        '''monitors VFR_HUD to make sure reported climbrate is in-line with SIM_STATE.vd'''
-        def __init__(self, suite, max_allowed_divergence=5):
-            super(AutoTestPlane.ValidateVFRHudClimbAgainstSimState, self).__init__(suite)
-            self.max_allowed_divergence = max_allowed_divergence  # m/s
-            self.max_divergence = 0
-            self.vfr_hud = None
-            self.sim_state = None
-            self.last_print = 0
-            self.min_print_interval = 1  # seconds
-            self.instafail = True
-            self.failed = False
-
-        def progress_prefix(self):
-            return "VVHCASS: "
-
-        def process(self, mav, m):
-            if m.get_type() == 'VFR_HUD':
-                self.vfr_hud = m
-            elif m.get_type() == 'SIM_STATE':
-                self.sim_state = m
-            if self.vfr_hud is None:
-                return
-            if self.sim_state is None:
-                return
-
-            vfr_hud_climb = self.vfr_hud.climb
-            sim_state_climb = -self.sim_state.vd
-            divergence = abs(vfr_hud_climb - sim_state_climb)
-            if (time.time() - self.last_print > self.min_print_interval or
-                    divergence > self.max_divergence):
-                self.progress(f"climb delta is {divergence}")
-                self.last_print = time.time()
-            if divergence > self.max_divergence:
-                self.max_divergence = divergence
-            if divergence > self.max_allowed_divergence:
-                msg = f"VFR_HUD.climb diverged from SIM_STATE.vd by {divergence}m/s (max={self.max_allowed_divergence}m/s"
-                if self.instafail:
-                    raise NotAchievedException(msg)
-                else:
-                    self.failed = True
-                    self.progress(msg)
-
-        def hook_removed(self):
-            if self.vfr_hud is None:
-                raise ValueError("Did not receive VFR_HUD")
-            if self.sim_state is None:
-                raise ValueError("Did not receive SIM_STATE")
-            msg = f"Maximum divergence was {self.max_divergence}m/s (max={self.max_allowed_divergence}m/s)"
-            if self.failed:
-                raise NotAchievedException(msg)
-
-            self.progress(msg)
-
-    def SoaringClimbRate(self):
-        '''test displayed climb rate when soaring'''
-        self.set_parameters({
-            'RC16_OPTION': 88,  # soaring enable
-            'SOAR_ENABLE': 1,
-        })
-        self.set_rc(16, 1000)  # disable soaring
-        self.reboot_sitl()
-        self.set_message_rate_hz('SIM_STATE', 10)
-        self.install_message_hook_context(AutoTestPlane.ValidateVFRHudClimbAgainstSimState(self))
-        self.takeoff(20)
-        self.change_mode('FBWB')
-        self.set_rc(2, 1000)  # full climb
-        self.delay_sim_time(10)
-        self.set_rc(16, 2000)  # enable soaring
-        self.delay_sim_time(10)
-
-        self.set_rc(2, 1500)
-        self.fly_home_land_and_disarm()
-
-    def ScriptedArmingChecksApplet(self):
-        """ Applet for Arming Checks will prevent a vehicle from arming based on scripted checks
-            """
-        self.start_subtest("Scripted Arming Checks Applet validation")
-        self.context_collect("STATUSTEXT")
-
-        """Initialize the FC"""
-        self.set_parameter("SCR_ENABLE", 1)
-        self.install_applet_script_context("arming-checks.lua")
-        self.reboot_sitl()
-        self.wait_ekf_happy()
-        self.wait_text("ArduPilot Ready", check_context=True)
-        self.wait_text("Arming Checks .* loaded", timeout=30, check_context=True, regex=True)
-
-        self.start_subsubtest("ArmCk: MAV_SYSID not set")
-        self.progress("Currently SYSID is %f" % self.get_parameter('MAV_SYSID'))
-        self.wait_text("ArmCk: warn: MAV_SYSID not set", timeout=30, check_context=True, regex=True)
-        """ disable the SYSID check, since autotest doesn't like changing the sysid"""
-        self.set_parameter("ARM_SYSID", -1)
-
-        ''' This check comes first since its part of the standard parameters - an invalid scaling speed'''
-        self.start_subsubtest("ArmCk: SCALING_SPEED close to AIRSPEED_CRUISE")
-        self.assert_prearm_failure("fail: Scaling spd", other_prearm_failures_fatal=False)
-        self.set_parameter("SCALING_SPEED", 22)
-        self.wait_text("clear: Scaling spd", check_context=True)
-
-        self.start_subsubtest("ArmCk: FOLL_SYSID must be set if FOLL_ENABLE = 1")
-        self.set_parameter("FOLL_ENABLE", 1)
-        self.set_parameter("FOLL_OFS_X", 10)
-        self.assert_prearm_failure("FOLL_SYSID not set", other_prearm_failures_fatal=False)
-        self.set_parameter("FOLL_SYSID", 3)
-        self.wait_text("clear: FOLL_SYSID not set", check_context=True)
-        self.set_parameter("FOLL_SYSID", -1)
-
-        self.start_subsubtest("ArmCk: FOLL_OFS_[XYZ] must be set if FOLL_ENABLE = 1")
-        self.set_parameter("FOLL_OFS_X", 0)
-        self.assert_prearm_failure("FOLL_OFS_[XYZ] = 0", other_prearm_failures_fatal=False)
-        self.set_parameter("FOLL_OFS_X", 10)
-        self.wait_text("clear: FOLL_OFS_[XYZ] = 0", check_context=True)
-        self.set_parameter("FOLL_OFS_X", 0)
-        self.assert_prearm_failure("FOLL_OFS_[XYZ] = 0", other_prearm_failures_fatal=False)
-        self.set_parameter("FOLL_OFS_Y", 10)
-        self.wait_text("clear: FOLL_OFS_[XYZ] = 0", check_context=True)
-        self.set_parameter("FOLL_OFS_Y", 0)
-        self.assert_prearm_failure("FOLL_OFS_[XYZ] = 0", other_prearm_failures_fatal=False)
-        self.set_parameter("FOLL_OFS_Z", 10)
-        self.wait_text("clear: FOLL_OFS_[XYZ] = 0", check_context=True)
-        """ clear these checks to make the context cleaner for subsequent tests """
-        self.set_parameters({
-            "ARM_SYSID": -1,
-            "ARM_FOLL_SYSID": -1,
-            "ARM_FOLL_SYSID_X": -1,
-            "ARM_FOLL_OFS_DEF": -1,
-        })
-
-        self.start_subsubtest("ArmCk: RTL_ALTITUDE must be legal")
-        self.progress("Currently ARM_P_RTL_ALT is %f" % self.get_parameter('ARM_P_RTL_ALT'))
-        self.set_parameter("RTL_ALTITUDE", 150)
-        self.assert_prearm_failure("ArmCk: fail: RTL_ALTITUDE too high", other_prearm_failures_fatal=False)
-        self.set_parameter("RTL_ALTITUDE", 120)
-        self.wait_text("clear: RTL_ALT", check_context=True)
-
-        self.start_subsubtest("ArmCk: RTL_CLIMB_MIN must be legal")
-        self.set_parameter("RTL_CLIMB_MIN", 150)
-        self.wait_text("ArmCk: warn: RTL_CLIMB_MIN too high", check_context=True)
-        self.set_parameter("RTL_CLIMB_MIN", 120)
-        self.wait_text("clear: RTL_CLIMB_MIN too high", check_context=True)
-
-        self.start_subsubtest("ArmCk: AIRSPEED stall < min < cruise < max")
-        ''' Airspeed parameter start out as
-        AIRSPEED_STALL = 0
-        AIRSPEED_MIN = 10
-        AIRSPEED_CRUISE = 22
-        AIRSPEED_MAX = 30
-        '''
-        self.start_subsubtest("ArmCk: AIRSPEED max < others")
-        self.set_parameter("AIRSPEED_MAX", 5)
-        self.assert_prearm_failure("ArmCk: fail: stall < min", other_prearm_failures_fatal=False)
-        self.set_parameter("AIRSPEED_MAX", 30)
-        self.wait_text("clear: stall < min", check_context=True)
-        self.start_subsubtest("ArmCk: AIRSPEED cruise < min")
-        self.set_parameter("AIRSPEED_MIN", 25)
-        self.assert_prearm_failure("ArmCk: fail: stall < min", other_prearm_failures_fatal=False)
-        self.set_parameter("AIRSPEED_MIN", 10)
-        self.wait_text("clear: stall < min", check_context=True)
-        self.start_subsubtest("ArmCk: AIRSPEED cruise > max")
-        self.set_parameter("AIRSPEED_CRUISE", 40)
-        self.set_parameter("SCALING_SPEED", 40)
-        self.assert_prearm_failure("ArmCk: fail: stall < min", other_prearm_failures_fatal=False)
-        self.set_parameter("AIRSPEED_CRUISE", 22)
-        self.set_parameter("SCALING_SPEED", 22)
-        self.wait_text("clear: stall < min", check_context=True)
-
-        self.start_subsubtest("ArmCk: AIRSPEED_MIN must be > AIRSPEED_STALL")
-        ''' only applies if AIRSPEED_STALL is non zero'''
-        self.set_parameter("AIRSPEED_STALL", 2)
-        self.wait_text("ArmCk: info: Min Speed not", check_context=True)
-        self.set_parameter("AIRSPEED_STALL", 8)
-
-        self.start_subsubtest("ArmCk: Mount SYSID must not match FOLL_SYSID")
-        self.set_parameter("ARM_SYSID", -1)
-        ''' to fail the check MNTx_SYSID_DFLT must be non zero but not= FOLL_SYSID'''
-        self.set_parameter("MNT1_SYSID_DFLT", 1)
-        ''' Need a healthy camera mount defined for this to work '''
-        self.setup_servo_mount()
-        self.progress("rebooting to enable MNT1")
-        self.reboot_sitl() # to handle MNT_TYPE changing
-        self.wait_ekf_happy()
-        self.wait_text("ArduPilot Ready", check_context=True)
-        self.wait_text("Arming Checks .* loaded", timeout=30, check_context=True, regex=True)
-        self.progress("Currently FOLL_SYSID is %f" % self.get_parameter('FOLL_SYSID'))
-        self.progress("Currently MNT1_SYSID_DFLT is %f" % self.get_parameter('MNT1_SYSID_DFLT'))
-        self.set_parameter("ARM_SYSID", -1)
-        self.progress("Currently FOLL_SYSID is %f" % self.get_parameter('FOLL_SYSID'))
-        self.progress("Currently MNT1_SYSID_DFLT is %f" % self.get_parameter('MNT1_SYSID_DFLT'))
-        self.wait_text("warn: MNTx_SYSID != FOLL", check_context=True)
-
-        self.start_subsubtest("ArmCk: Fence must be enabled or autoenabled (warning)")
-        self.reboot_sitl()
-        self.wait_ekf_happy()
-        self.wait_text("ArduPilot Ready", check_context=True)
-        self.wait_text("Arming Checks .* loaded", timeout=30, check_context=True, regex=True)
-        self.load_fence("CMAC-fence.txt")
-        self.wait_statustext("warn: Fence not enabled", check_context=True)
-        self.set_parameter("FENCE_ENABLE", 1)
-        self.wait_statustext("clear: Fence not enabled", check_context=True)
-        self.set_parameter("FENCE_ENABLE", 0)
-        self.wait_statustext("warn: Fence not enabled", check_context=True)
-        self.set_parameter("FENCE_AUTOENABLE", 1)
-        self.wait_text("clear: Fence not enabled", check_context=True)
-        self.set_parameter("FENCE_AUTOENABLE", 0)
-        self.wait_text("warn: Fence not enabled", check_context=True)
-
-    def ScriptedArmingChecksAppletEStop(self):
-        """ Applet for Arming Checks will prevent a vehicle from arming based on scripted checks
-            """
-        self.start_subtest("Scripted Arming Checks Applet validation")
-        self.context_collect("STATUSTEXT")
-
-        """Initialize the FC"""
-        self.set_parameter("SCR_ENABLE", 1)
-        self.install_applet_script_context("arming-checks.lua")
-        self.reboot_sitl()
-        self.wait_ekf_happy()
-        self.wait_text("ArduPilot Ready", check_context=True)
-        self.wait_text("Arming Checks .* loaded", timeout=30, check_context=True, regex=True)
-        self.set_parameters({
-            "ARM_SYSID": -1,
-            "ARM_FOLL_SYSID": -1,
-            "ARM_FOLL_SYSID_X": -1,
-            "ARM_FOLL_OFS_DEF": -1,
-            "ARM_P_SCALING": -1,
-        })
-
-        self.start_subsubtest("ArmCk: Cannot arm while motors estopped")
-        self.set_parameter("RC6_OPTION", 165)
-        self.progress("rebooting to enable RC channel")
-        self.reboot_sitl() # to handle RC option changing
-        self.wait_ekf_happy()
-        self.wait_text("ArduPilot Ready", check_context=True)
-        self.wait_text("Arming Checks .* loaded", timeout=30, check_context=True, regex=True)
-        self.set_parameters({
-            "ARM_SYSID": -1,
-            "ARM_FOLL_SYSID": -1,
-            "ARM_FOLL_SYSID_X": -1,
-            "ARM_FOLL_OFS_DEF": -1,
-            "ARM_P_SCALING": -1,
-        })
-        self.set_rc(6, 1000)
-        self.assert_prearm_failure("ArmCk: fail: Motors EStopped", other_prearm_failures_fatal=False)
-        self.set_rc(6, 2000)
-        self.wait_text("clear: Motors EStopped", timeout=30, check_context=True, regex=True)
-        self.wait_ready_to_arm()
-
-    def ScriptedArmingChecksAppletRally(self):
-        """ Applet for Arming Checks will prevent a vehicle from arming based on scripted checks
-            """
-        self.start_subtest("Scripted Arming Checks Applet validation")
-        self.context_collect("STATUSTEXT")
-
-        """Initialize the FC"""
-        self.set_parameter("SCR_ENABLE", 1)
-        self.install_applet_script_context("arming-checks.lua")
-        self.reboot_sitl()
-        self.wait_ekf_happy()
-        self.wait_text("ArduPilot Ready", check_context=True)
-        self.wait_text("Arming Checks .* loaded", timeout=30, check_context=True, regex=True)
-
-        self.start_subsubtest("ArmCk: MAV_SYSID not set")
-        self.progress("Currently SYSID is %f" % self.get_parameter('MAV_SYSID'))
-        self.wait_text("ArmCk: warn: MAV_SYSID not set", timeout=30, check_context=True, regex=True)
-        """ disable the SYSID check, since autotest doesn't like changing the sysid"""
-        self.set_parameters({
-            "ARM_SYSID": -1,
-            "ARM_FOLL_SYSID": -1,
-            "ARM_FOLL_SYSID_X": -1,
-            "ARM_FOLL_OFS_DEF": -1,
-            "ARM_P_SCALING": -1,
-        })
-
-        self.start_subsubtest("ArmCk: Rally Point must be < ARM_V_RALLY_MAX meters away")
-        self.progress("Currently RALLY_LIMIT_KM is %f" % self.get_parameter('RALLY_LIMIT_KM'))
-        loc = self.home_relative_loc_ne(6500, -50)
-        self.upload_rally_points_from_locations([loc])
-        self.wait_text("warn: Rally too far", check_context=True)
-        self.set_parameter("RALLY_LIMIT_KM", 7)
-        self.wait_text("clear: Rally too far", check_context=True)
-
     def tests(self):
         '''return list of all tests'''
         ret = []
         ret.extend(self.tests1a())
         ret.extend(self.tests1b())
-        ret.extend(self.tests1c())
         return ret
 
     def tests1a(self):
@@ -7743,7 +6711,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.ThrottleFailsafe,
             self.NeedEKFToArm,
             self.ThrottleFailsafeFence,
-            self.SoaringClimbRate,
             self.TestFlaps,
             self.DO_CHANGE_SPEED,
             self.DO_REPOSITION,
@@ -7794,7 +6761,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.Terrain,
             self.TerrainMission,
             self.TerrainMissionInterrupt,
-            self.UniversalAutoLandScript,
         ])
         return ret
 
@@ -7807,6 +6773,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.InertialLabsEAHRS,
             self.GpsSensorPreArmEAHRS,
             self.Deadreckoning,
+            self.DeadreckoningNoAirSpeed,
             self.EKFlaneswitch,
             self.AirspeedDrivers,
             self.RTL_CLIMB_MIN,
@@ -7815,7 +6782,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MAV_CMD_DO_AUX_FUNCTION,
             self.SmartBattery,
             self.FlyEachFrame,
-            self.AutoLandMode,
             self.RCDisableAirspeedUse,
             self.AHRS_ORIENTATION,
             self.AHRSTrim,
@@ -7830,7 +6796,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.TakeoffTakeoff4,
             self.TakeoffTakeoff5,
             self.TakeoffGround,
-            self.TakeoffIdleThrottle,
             self.TakeoffBadLevelOff,
             self.TakeoffLevelOffWind,
             self.ForcedDCM,
@@ -7842,7 +6807,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.Hirth,
             self.MSP_DJI,
             self.SpeedToFly,
-            self.AltitudeSlopeMaxHeight,
+            self.GlideSlopeThresh,
             self.HIGH_LATENCY2,
             self.MidAirDisarmDisallowed,
             self.AerobaticsScripting,
@@ -7855,7 +6820,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             Test(self.GCSFailsafe, speedup=8),
             self.SDCardWPTest,
             self.NoArmWithoutMissionItems,
-            self.RudderArmedTakeoffRequiresNeutralThrottle,
             self.MODE_SWITCH_RESET,
             self.ExternalPositionEstimate,
             self.SagetechMXS,
@@ -7868,7 +6832,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MAV_CMD_DO_LAND_START,
             self.MAV_CMD_NAV_ALTITUDE_WAIT,
             self.InteractTest,
-            self.CompassLearnInFlight,
             self.MAV_CMD_MISSION_START,
             self.TerrainRally,
             self.MAV_CMD_NAV_LOITER_UNLIM,
@@ -7880,32 +6843,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.GPSPreArms,
             self.SetHomeAltChange,
             self.SetHomeAltChange2,
-            self.SetHomeAltChange3,
             self.ForceArm,
             self.MAV_CMD_EXTERNAL_WIND_ESTIMATE,
             self.GliderPullup,
             self.BadRollChannelDefined,
-            self.VolzMission,
-            self.mavlink_AIRSPEED,
-            self.Volz,
-            self.LoggedNamedValueFloat,
-            self.LoggedNamedValueString,
-            self.AdvancedFailsafeBadBaro,
-            self.DO_CHANGE_ALTITUDE,
-            self.SET_POSITION_TARGET_GLOBAL_INT_for_altitude,
             self.MAV_CMD_NAV_LOITER_TURNS_zero_turn,
-            self.RudderArmingWithArmingChecksZero,
-            self.TerrainLoiterToCircle,
-            self.FenceDoubleBreach,
-            self.ScriptedArmingChecksApplet,
-            self.ScriptedArmingChecksAppletEStop,
-            self.ScriptedArmingChecksAppletRally,
-        ]
-
-    def tests1c(self):
-        '''kind of reserved for flapping tests which we still have hopes for'''
-        return [
-            self.DeadreckoningNoAirSpeed,
         ]
 
     def disabled_tests(self):
@@ -7913,7 +6855,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "LandingDrift": "Flapping test. See https://github.com/ArduPilot/ardupilot/issues/20054",
             "InteractTest": "requires user interaction",
             "ClimbThrottleSaturation": "requires https://github.com/ArduPilot/ardupilot/pull/27106 to pass",
-            "SoaringClimbRate": "very bad sink rate",
+            "SetHomeAltChange": "https://github.com/ArduPilot/ardupilot/issues/5672",
         }
 
 
@@ -7925,8 +6867,3 @@ class AutoTestPlaneTests1a(AutoTestPlane):
 class AutoTestPlaneTests1b(AutoTestPlane):
     def tests(self):
         return self.tests1b()
-
-
-class AutoTestPlaneTests1c(AutoTestPlane):
-    def tests(self):
-        return self.tests1c()

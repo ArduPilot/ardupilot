@@ -22,8 +22,6 @@ ImagePanel class to display openCV images in wxWidgets
   https://stackoverflow.com/questions/14804741/opencv-integration-with-wxpython
 """
 
-# flake8: noqa
-
 import copy
 import cv2
 import gi

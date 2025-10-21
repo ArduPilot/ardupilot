@@ -5,7 +5,7 @@
 # MCU class and specific type
 MCU STM32F7xx STM32F745xx
 
-# board ID. See Tools/AP_Bootloader/board_types.txt
+# board ID for firmware load
 APJ_BOARD_ID AP_HW_GEPRCF745BTHD
 
 # crystal frequency, setup to use external oscillator
@@ -181,10 +181,9 @@ include ../include/no_bootloader_DFU.inc
 #only enable BMP280 Baro
 define AP_BARO_BACKEND_DEFAULT_ENABLED 0
 define AP_BARO_BMP280_ENABLED 1
-define AP_BARO_MS5611_ENABLED 1
+define AP_BARO_MS56XX_ENABLED 1
 define AP_BARO_SPL06_ENABLED 1
 
 # need to probe external baros even 'though we're minimised to allow custom build options:
 undef AP_BARO_PROBE_EXTERNAL_I2C_BUSES
 define AP_BARO_PROBE_EXTERNAL_I2C_BUSES 1
-define DEFAULT_NTF_LED_TYPES 455
