@@ -14,25 +14,23 @@
 */
 
 /*
- * Description:  Architectural Principles of CRSF Scripted Menu Support
+ * Architectural Principles of CRSF Scripted Menu Support
  *
- * ### Overview
  * The CRSF scripted menu system provides a mechanism for Lua scripts to create and manage
  * custom menu hierarchies on a CRSF-compatible transmitter. The architecture is a hybrid
  * model where the C++ backend manages the menu structure, navigation, and response
  * generation for folders, while the Lua script handles the content of "leaf" parameters
  * (like selections, commands, and numbers).
  *
- * ### Core Data Structures
  * The entire menu system is built on two main C++ classes: `ScriptedMenu` and
  * `ScriptedParameter`.
  *
- * 1.  **Global Menu List**: All `ScriptedMenu` objects, regardless of their position in the
+ * 1.  Global Menu List - All `ScriptedMenu` objects, regardless of their position in the
  * hierarchy, are stored in a single, flat, singly-linked list. The list is anchored
  * at the `scripted_menus` object. This flat structure is crucial for the global lookup
  * functions (`find_menu` and `find_parameter`).
  *
- * 2.  **Parent-Child Hierarchy**: The hierarchical relationship between menus is established
+ * 2. Parent-Child Hierarchy - The hierarchical relationship between menus is established
  * using a "parameter-as-a-shortcut" or "symbolic link" pattern:
  * - Each `ScriptedMenu` object contains a `parent_id` member that correctly stores the
  * ID of its parent menu. This is used when generating responses for "back" navigation.
@@ -44,15 +42,14 @@
  * This dual-representation (an ID belonging to both a menu object and a parameter-link) is
  * the key to the entire architecture.
  *
- * ### Execution Flow for Menu Navigation
  * The interaction to navigate into a sub-menu is a multi-step process that relies on
  * careful request routing within the C++ backend.
  *
- * 1.  **Transmitter Request**: When a user selects a sub-menu (e.g., "Roll Tuning" with ID 62),
+ * 1.  Transmitter Request - When a user selects a sub-menu (e.g., "Roll Tuning" with ID 62),
  * the transmitter sends a `CRSF_FRAMETYPE_PARAMETER_READ` request for that ID. It does not
  * know whether the ID represents a parameter or a menu.
  *
- * 2.  **Initial Routing (`process_scripted_param_read`)**: This is the central routing function.
+ * 2.  Initial Routing (`process_scripted_param_read`) - This is the central routing function.
  * - It first calls `find_parameter(62)`. This function searches the *entire global list* of
  * menus, checking the `params` array of each one. It successfully finds the "parameter-link"
  * with ID 62 inside the "Gain Tuner" menu object.
@@ -63,7 +60,7 @@
  * - If only the `find_parameter` call had succeeded, it would be a regular "leaf" parameter,
  * and the function would return `true` to send the event to the Lua script for handling.
  *
- * 3.  **Response Generation (`calc_parameter`)**:
+ * 3.  Response Generation (`calc_parameter`) - 
  * - The delegated request is handled by `calc_parameter`. It calls `find_menu(62)` to get the
  * `ScriptedMenu` object for "Roll Tuning".
  * - It then constructs a `FOLDER` type response (`0x2B Parameter settings (entry)`).
@@ -458,8 +455,11 @@ void AP_CRSF_Telem::adjust_packet_weight(bool queue_empty)
     */
     bool expired = (now_ms - _custom_telem.params_mode_start_ms) > 5000;
     if (!_custom_telem.params_mode_active
-        && _pending_request.frame_type > 0
-        && _pending_request.frame_type != AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO
+        && ((_pending_request.frame_type > 0 && _pending_request.frame_type != AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO)
+#if AP_CRSF_SCRIPTING_ENABLED
+            || !ready_params.is_empty()
+#endif
+        )
         && !hal.util->get_soft_armed()) {
         // fast window start
         _custom_telem.params_mode_start_ms = now_ms;
@@ -481,7 +481,11 @@ bool AP_CRSF_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
 
     switch (idx) {
     case PARAMETERS:
+#if AP_CRSF_SCRIPTING_ENABLED
+        return _pending_request.frame_type > 0 || !ready_params.is_empty();
+#else
         return _pending_request.frame_type > 0;
+#endif
     case VTX_PARAMETERS:
 #if AP_VIDEOTX_ENABLED
         return AP::vtx().have_params_changed() ||_vtx_power_change_pending || _vtx_freq_change_pending || _vtx_options_change_pending;
@@ -846,6 +850,14 @@ void AP_CRSF_Telem::process_param_read_frame(ParameterSettingsReadFrame* read_fr
 
 void AP_CRSF_Telem::process_pending_requests()
 {
+#if AP_CRSF_SCRIPTING_ENABLED
+    // handle SCRIPTED parameter requests first, as they are now self-contained
+    if (calc_scripted_parameter()) {
+        // scripted request was popped from outbound_params and handled.
+        _custom_telem.params_mode_start_ms = AP_HAL::millis();
+        return;
+    }
+#endif
     // handle general parameter requests
     switch (_pending_request.frame_type) {
     // construct a response to a ping frame
@@ -1283,6 +1295,7 @@ void AP_CRSF_Telem::calc_parameter() {
     }
 
 #if AP_CRSF_SCRIPTING_ENABLED
+    { WITH_SEMAPHORE(scr_sem);
     // root folder request
     if (scripted_menus.next_menu != nullptr && _param_request.param_num == PARAMETER_MENU_ID) {
         _telem.ext.param_entry.header.param_num = PARAMETER_MENU_ID;
@@ -1335,56 +1348,8 @@ void AP_CRSF_Telem::calc_parameter() {
         _telem_pending = true;
         return;
     }
+}
 
-    // scripted menu parameter request indexed after scripted menu ids
-    AP_CRSF_Telem::ScriptedParameter* param = scripted_menus.find_parameter(_param_request.param_num);
-    debug("param request: %d -> 0x%p", _param_request.param_num, param);
-
-    if (param != nullptr) {
-        _telem.ext.param_entry.header.param_num = _param_request.param_num;
-
-        // COMMAND types for parameter writes are weird in that they expect a settings entry
-        if (_pending_request.frame_type == AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_WRITE
-            && param->length > 0 && param->data[0] == ParameterType::COMMAND) {
-            _telem.ext.param_entry.header.chunks_left = 0;
-            _telem.ext.param_entry.payload[idx++] = param->parent_id;
-            // payload encoded from lua send_write_response()
-            memcpy((uint8_t*)&_telem.ext.param_entry.payload[idx], _param_request.payload.payload,
-                    _param_request.payload.payload_length);
-            idx += _param_request.payload.payload_length;
-            _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsEntryHeader) + idx;
-            _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY;
-        }  else if (_pending_request.frame_type == AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_READ) {
-            const uint8_t CHUNK_SIZE = 55;  // This wastes a byte on chunks > 0 but makes the maths easier
-            // send_write_response() has already updated the parameter data with the new payload
-            // so we can statefully send this in chunks
-            const uint8_t chunks = ((param->length) / CHUNK_SIZE) + 1;  // includes the extra byte for the parent folder id
-            _telem.ext.param_entry.header.chunks_left = (chunks - 1) - _param_request.param_chunk;
-
-            if (_param_request.param_chunk == 0) {
-                _telem.ext.param_entry.payload[idx++] = param->parent_id; // parent folder only in first chunk
-            }
-
-            const uint8_t chunk_len = _telem.ext.param_entry.header.chunks_left > 0 ? CHUNK_SIZE : (param->length + 1) % CHUNK_SIZE;
-            // payload encoded from lua
-            memcpy((uint8_t*)&_telem.ext.param_entry.payload[idx],
-                    &param->data[_param_request.param_chunk * CHUNK_SIZE], chunk_len);
-            idx += chunk_len;
-            _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsEntryHeader) + idx;
-            _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY;
-        } else {    // write parameter
-            memcpy((uint8_t*)&_telem.ext.param_write.payload[idx], _param_request.payload.payload,
-                    _param_request.payload.payload_length);
-            idx += _param_request.payload.payload_length;
-
-            _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsHeader) + idx;
-            _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_WRITE;
-        }
-        _pending_request.frame_type = 0;
-        _telem_pending = true;
-
-        return;
-    }
 #endif // AP_CRSF_SCRIPTING_ENABLED
 
     AP_OSD* osd = AP::osd();
@@ -1485,6 +1450,66 @@ void AP_CRSF_Telem::calc_parameter() {
     _telem_pending = true;
 #endif  // OSD_PARAM_ENABLED
 }
+
+#if AP_CRSF_SCRIPTING_ENABLED
+// process a completed scripted parameter request from the outbound queue
+bool AP_CRSF_Telem::calc_scripted_parameter()
+{
+    WITH_SEMAPHORE(scr_sem);
+    ScriptedParameterWrite spw;
+    // Check if there's a fully-formed scripted request to process from a Lua script.
+    // This is the new thread-safe path that avoids using shared global variables.
+    if (!ready_params.pop(spw)) {
+        return false;
+    }
+
+    // The spw object now contains all context needed to build the response.
+    size_t idx = 0;
+    _telem.ext.param_entry.header.destination = spw.origin;
+    _telem.ext.param_entry.header.origin = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;
+    _telem.ext.param_entry.header.param_num = spw.param_num;
+
+    // For a WRITE to a non-COMMAND parameter, the response type is PARAMETER_WRITE (0x2D).
+    if (spw.type == ScriptedParameterEvents::PARAMETER_WRITE &&
+        !(spw.param->length > 0 && spw.param->data[0] == ParameterType::COMMAND)) {
+
+        memcpy((uint8_t*)&_telem.ext.param_write.payload[idx], spw.payload.payload, spw.payload.payload_length);
+        idx += spw.payload.payload_length;
+
+        _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsHeader) + idx;
+        _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_WRITE;
+
+    } else {
+        // For a READ, or a WRITE to a COMMAND parameter, the response is a SETTINGS_ENTRY (0x2B).
+
+        if (spw.type == ScriptedParameterEvents::PARAMETER_WRITE) { // COMMAND type
+            _telem.ext.param_entry.header.chunks_left = 0;
+            _telem.ext.param_entry.payload[idx++] = spw.param->parent_id;
+            memcpy((uint8_t*)&_telem.ext.param_entry.payload[idx], spw.payload.payload, spw.payload.payload_length);
+            idx += spw.payload.payload_length;
+        } else { // READ type
+            const uint8_t CHUNK_SIZE = 55;  // This wastes a byte on chunks > 0 but makes the maths easier
+            const uint8_t chunks = ((spw.param->length) / CHUNK_SIZE) + 1;  // includes the extra byte for the parent folder id
+            _telem.ext.param_entry.header.chunks_left = (chunks - 1) - spw.param_chunk;
+
+            if (spw.param_chunk == 0) {
+                _telem.ext.param_entry.payload[idx++] = spw.param->parent_id; // parent folder only in first chunk
+            }
+
+            const uint8_t chunk_len = _telem.ext.param_entry.header.chunks_left > 0 ? CHUNK_SIZE : (spw.param->length + 1) % CHUNK_SIZE;
+            memcpy((uint8_t*)&_telem.ext.param_entry.payload[idx],
+                    &spw.param->data[spw.param_chunk * CHUNK_SIZE], chunk_len);
+            idx += chunk_len;
+        }
+        _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsEntryHeader) + idx;
+        _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY;
+    }
+
+    _pending_request.frame_type = 0;
+    _telem_pending = true;
+    return true; // Scripted request handled.
+}
+#endif // AP_CRSF_SCRIPTING_ENABLED
 
 #if HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
 // class that spits out a chunk of data from a larger stream of contiguous chunks
@@ -1730,7 +1755,7 @@ uint8_t AP_CRSF_Telem::get_menu_event(uint8_t menu_events, uint8_t& param_id, Sc
     if (inbound_params.pop(spw)) {
         // not listening for the event, send a response directly
         if ((spw.type & menu_events) == 0) {
-            send_response(spw);
+            ready_params.push(spw);
             return 0;
         }
         switch (spw.type) {
@@ -1762,7 +1787,7 @@ uint8_t AP_CRSF_Telem::peek_menu_event(uint8_t& param_id, ScriptedPayload& paylo
     WITH_SEMAPHORE(scr_sem);
 
     ScriptedParameterWrite spw;
-    if (!inbound_params.peek(&spw, 1)) {
+    if (!inbound_params.peek(spw)) {
         events = 0;
         param_id = 0;
         payload.payload_length = 0;
@@ -1793,7 +1818,7 @@ void AP_CRSF_Telem::pop_menu_event()
 {
     WITH_SEMAPHORE(scr_sem);
 
-     ScriptedParameterWrite spw;
+    ScriptedParameterWrite spw;
     // Pop the event from the queue. We must check if it's empty in case of a race condition
     // where another script handled the event between our peek and pop.
     if (inbound_params.pop(spw)) {
@@ -1812,31 +1837,39 @@ bool AP_CRSF_Telem::send_write_response(uint8_t length, const char* data)
     WITH_SEMAPHORE(scr_sem);
 
     ScriptedParameterWrite spw;
-    if (outbound_params.pop(spw)) {
-        switch (spw.type) {
-        case ScriptedParameterEvents::PARAMETER_READ:
-            // respond with parameter entry updated with the new data
-            if (length > spw.param->length) {
-                // we don't care about old data so old length of 0 is fine
-                spw.param->data = (const char*)mem_realloc((char*)spw.param->data, 0, length);
-            }
-            if (spw.param->data == nullptr) {
-                return false; // old data is untouched
-            }
-            memcpy((char*)spw.param->data, data, length);
-            spw.param->length = length;
-            send_response(spw);
-            break;
-        case ScriptedParameterEvents::PARAMETER_WRITE:
-            memcpy((char*)_param_request.payload.payload, data, MIN(length, sizeof(_param_request.payload.payload)));
-            _param_request.payload.payload_length = MIN(length, sizeof(_param_request.payload.payload));
-            send_response(spw);
-            break;
-        }
-        // respond with parameter entry
-        return true;
+    if (!outbound_params.pop(spw)) {
+        // another script might have handled it
+        return false;
     }
-    return false;
+
+    switch (spw.type) {
+    case ScriptedParameterEvents::PARAMETER_READ:
+        // For a READ response, Lua provides the full data payload to be sent.
+        // We update the parameter's data buffer directly.
+        if (length > spw.param->length) {
+            spw.param->data = (const char*)mem_realloc((char*)spw.param->data, 0, length);
+        }
+        if (spw.param->data == nullptr) {
+            // failed to realloc
+            return false;
+        }
+        memcpy((char*)spw.param->data, data, length);
+        spw.param->length = length;
+        break;
+    case ScriptedParameterEvents::PARAMETER_WRITE:
+        // For a WRITE response, Lua provides the data for the response packet.
+        // This is stored in the payload field of the queued request.
+        memcpy(spw.payload.payload, data, MIN(length, sizeof(spw.payload.payload)));
+        spw.payload.payload_length = MIN(length, sizeof(spw.payload.payload));
+        break;
+    }
+
+    // Update the object in the queue with the new data
+    ready_params.push(spw);
+
+    // The scheduler will now be triggered by the is_packet_ready() check on ready_params
+    // and process this request in calc_parameter().
+    return true;
 }
 
 // send a generic response from the first item in the outbound queue
@@ -1847,22 +1880,11 @@ bool AP_CRSF_Telem::send_response()
 
     ScriptedParameterWrite spw;
     if (outbound_params.pop(spw)) {
-        send_response(spw);
-        // respond with parameter entry
+        // Update the object in the queue with the new data
+        ready_params.push(spw);
         return true;
     }
     return false;
-}
-
-void AP_CRSF_Telem::send_response(const ScriptedParameterWrite& spw)
-{
-    _param_request.origin = spw.settings.origin;
-    _param_request.destination = spw.settings.destination;
-    _param_request.param_num = spw.settings.param_num;
-    _param_request.param_chunk = 0;
-    _pending_request.frame_type = (spw.type == ScriptedParameterEvents::PARAMETER_READ) ?
-            AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_READ
-            : AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_WRITE;
 }
 
 AP_CRSF_Telem::ScriptedParameter* AP_CRSF_Telem::ScriptedMenu::find_parameter(uint8_t param_num)
@@ -2000,13 +2022,14 @@ bool AP_CRSF_Telem::process_scripted_param_write(ParameterSettingsWriteFrame* wr
     if (param == nullptr) {
         return false;
     }
-    ScriptedParameterWrite spw {ScriptedParameterEvents::PARAMETER_WRITE,
-                                {
-                                    write_frame->destination,
-                                    write_frame->origin,
-                                    write_frame->param_num
-                                },
-                                param };
+    ScriptedParameterWrite spw {
+        ScriptedParameterEvents::PARAMETER_WRITE,
+        write_frame->destination,
+        write_frame->origin,
+        write_frame->param_num,
+        0,
+        param
+    };
 
     spw.payload.payload_length = uint8_t(length - 3U);  // remove destination, origin and param number from payload length
     memcpy(spw.payload.payload, write_frame->payload, spw.payload.payload_length);
@@ -2017,10 +2040,6 @@ bool AP_CRSF_Telem::process_scripted_param_write(ParameterSettingsWriteFrame* wr
 
 bool AP_CRSF_Telem::process_scripted_param_read(ParameterSettingsReadFrame* read_frame)
 {
-    if (read_frame->param_chunk > 0) { // read in process
-        return false;
-    }
-
     if (read_frame->param_num < SCRIPTED_MENU_START_ID) {
         return false;
     }
@@ -2028,7 +2047,13 @@ bool AP_CRSF_Telem::process_scripted_param_read(ParameterSettingsReadFrame* read
     WITH_SEMAPHORE(scr_sem);   // not called from lua, but interacting with data structures that might change
 
     if (scripted_menus.find_menu(read_frame->param_num) != nullptr) {
-        return false;
+        // This is a request for a menu folder, not a leaf parameter.
+        // The exception is if it's a multi-chunk read for a parameter that happens
+        // to have the same ID as a menu (which is the case for submenu links).
+        // If it's a chunked read, we must handle it as a scripted param read.
+        if (read_frame->param_chunk == 0) {
+            return false;
+        }
     }
 
     // First, check if the requested ID corresponds to a parameter link.
@@ -2043,15 +2068,21 @@ bool AP_CRSF_Telem::process_scripted_param_read(ParameterSettingsReadFrame* read
             return false;
         }
 
-        // This is a regular parameter (not a menu link). Handle it in Lua.
-        inbound_params.push({
+        ScriptedParameterWrite spw{
             ScriptedParameterEvents::PARAMETER_READ,
-            {
-                read_frame->destination,
-                read_frame->origin,
-                read_frame->param_num
-            },
-            param });
+            read_frame->destination,
+            read_frame->origin,
+            read_frame->param_num,
+            read_frame->param_chunk,
+            param
+        };
+
+        if (read_frame->param_chunk > 0) {
+            ready_params.push(spw); // handle directly - no need to involve lua
+        } else {
+            // This is a regular parameter (not a menu link). Handle it in Lua.
+            inbound_params.push(spw);
+        }
         return true;
     }
 
@@ -2282,3 +2313,5 @@ namespace AP {
 };
 
 #endif  // HAL_CRSF_TELEM_ENABLED
+
+
