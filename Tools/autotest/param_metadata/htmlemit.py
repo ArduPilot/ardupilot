@@ -14,12 +14,16 @@ except Exception:
 
 class HtmlEmit(Emit):
 
+    def output_fname(self):
+        return 'Parameters.html'
+
     def __init__(self, *args, **kwargs):
         Emit.__init__(self, *args, **kwargs)
-        html_fname = 'Parameters.html'
-        self.f = open(html_fname, mode='w')
+        self.f = open(self.output_fname(), mode='w')
         self.preamble = """<!-- Dynamically generated list of documented parameters
 This page was generated using Tools/autotest/param_metadata/param_parse.py
+
+{firmware_metadata}
 
 DO NOT EDIT
 -->
@@ -44,7 +48,12 @@ DO NOT EDIT
         return s
 
     def close(self):
-        self.f.write(self.preamble)
+        firmware_metadata = ''
+        if self.git_sha is not None:
+            firmware_metadata += f'git_sha: {self.git_sha}\n'
+        if self.git_tag is not None:
+            firmware_metadata += f'git_tag: {self.git_tag}\n'
+        self.f.write(self.preamble.format(firmware_metadata=firmware_metadata.rstrip()))
         self.f.write(self.t)
         self.f.close()
 

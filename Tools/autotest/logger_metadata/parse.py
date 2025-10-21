@@ -11,13 +11,13 @@ import re
 import sys
 
 import emit_html
+import emit_json5
+import emit_md
 import emit_rst
 import emit_xml
 import enum_parse
 
 from enum_parse import EnumDocco
-
-import emit_md
 
 topdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
 topdir = os.path.realpath(topdir)
@@ -93,12 +93,15 @@ class LoggerDocco(object):
             emit_html.HTMLEmitter(),
             emit_rst.RSTEmitter(),
             emit_xml.XMLEmitter(),
+            emit_json5.JSON5Emitter(),
             emit_md.MDEmitter(),
         ]
         self.msg_fmts_list = {}
         self.msg_names_list = {}
         self.msg_units_list = {}
         self.msg_mults_list = {}
+        self.git_sha = None
+        self.git_branch = None
 
     class Docco(object):
 
@@ -261,7 +264,7 @@ class LoggerDocco(object):
         # Initialise the lookup tables
         # Read the contents of the LogStructure.h file
         structfile = os.path.join(topdir, "libraries", "AP_Logger", "LogStructure.h")
-        with open(structfile) as f:
+        with open(structfile, encoding='utf-8', errors='replace') as f:
             lines = f.readlines()
             f.close()
         # Initialise current section to none
@@ -363,7 +366,7 @@ class LoggerDocco(object):
         return prevmessagedef
 
     def parse_file(self, filepath):
-        with open(filepath) as f:
+        with open(filepath, encoding='utf-8', errors='replace') as f:
             # print("Opened (%s)" % filepath)
             lines = f.readlines()
             f.close()
@@ -531,6 +534,8 @@ class LoggerDocco(object):
         for enum in self.enumerations:
             enums_by_name[enum.name] = enum
         for emitter in self.emitters:
+            emitter.git_sha = self.git_sha
+            emitter.git_branch = self.git_branch
             emitter.emit(new_doccos, enums_by_name)
 
     def run(self):
@@ -550,10 +555,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Parse parameters.")
     parser.add_argument("-v", "--verbose", dest='verbose', action='store_true', default=False, help="show debugging output")
     parser.add_argument("--vehicle", required=True, help="Vehicle type to generate for")
+    parser.add_argument("--git-sha", help="git SHA of the firmware build (optional, included in output metadata)")
+    parser.add_argument("--git-branch", help="git branch of the firmware build (optional, included in output metadata)")
 
     args = parser.parse_args()
 
     s = LoggerDocco(args.vehicle)
+    s.git_sha = args.git_sha
+    s.git_branch = args.git_branch
 
     if args.vehicle not in s.vehicle_map:
         print("Invalid vehicle (choose from: %s)" % str(s.vehicle_map.keys()))
