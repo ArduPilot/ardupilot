@@ -183,6 +183,8 @@ public:
     bool valget_active() const { return _valget_in_progress; }
 
     void handle_cfg_ack(uint8_t msg_id);
+    void handle_cfg_nack(uint8_t msg_id);
+
     bool delete_and_reset_config();
 
     static void override_ubx_cfg(uint8_t instance, uint8_t *cfg, size_t size) {
@@ -246,7 +248,8 @@ private:
     bool is_common_cfg_needed();
 
     // Common config packed buffer management
-    void _init_common_cfg_list();
+    bool _init_common_cfg_list(bool check_only = false, uint32_t key_to_check = 0);
+    bool fetch_all_config();
 
     bool _valget_in_progress;
     bool _valget_abort;                  // if true, ignore all bytes until process_valget_complete()
@@ -282,5 +285,9 @@ private:
     bool _send_valset_bytes(const uint8_t *bytes, uint16_t size, ConfigLayer layers = CFG_LAYER_ALL);
 
     bool _send_reset(uint16_t navBbrMask, uint8_t resetMode);
+
+    static bool _module_reset[GPS_MAX_INSTANCES];
+    bool _is_reset_required;
+    ConfigLayer fetch_config_layer = ConfigLayer::CFG_LAYER_BBR;
 };
 #endif // AP_GPS_UBLOX_CFGV2_ENABLED

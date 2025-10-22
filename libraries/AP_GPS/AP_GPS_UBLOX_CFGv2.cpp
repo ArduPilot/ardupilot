@@ -42,6 +42,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 AP_GPS_UBLOX_CFGv2::UBXPackedCfg* AP_GPS_UBLOX_CFGv2::_override_common_cfg[GPS_MAX_INSTANCES] = {};
+bool AP_GPS_UBLOX_CFGv2::_module_reset[GPS_MAX_INSTANCES] = {};
 
 const char* const AP_GPS_UBLOX_CFGv2::CONSTELLATION_NAMES[] = {
     "GPS",   // 0
@@ -65,8 +66,9 @@ AP_GPS_UBLOX_CFGv2::AP_GPS_UBLOX_CFGv2(AP_GPS_UBLOX &_ubx_backend)
 void AP_GPS_UBLOX_CFGv2::update()
 {
     // Check if reset was requested via AUTO_CONFIG parameter (bit 3)
-    if ((ubx_backend.gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_UBLOX_RESET_SERIAL_ONLY) &&
-        (curr_state != States::RESET_MODULE)) {
+    if ((ubx_backend.gps._auto_config == AP_GPS::GPS_AUTO_CLEAR_CONFIG_UBLOX_SERIAL_ONLY) &&
+        (curr_state != States::RESET_MODULE) &&
+        !_module_reset[ubx_backend.state.instance]) {
         curr_state = States::RESET_MODULE;
         _last_request_time = 0; // immediate action
     }
@@ -80,14 +82,15 @@ void AP_GPS_UBLOX_CFGv2::update()
 //            ubx_backend._buffer.ack.clsID,
 //            ubx_backend._buffer.ack.msgID);
     }
-    //else if (ubx_backend._class == AP_GPS_UBLOX::CLASS_ACK &&
-    //   ubx_backend._msg_id == AP_GPS_UBLOX::MSG_ACK_NACK &&
-    //   ubx_backend._buffer.nack.clsID == AP_GPS_UBLOX::CLASS_CFG) {
+    else if (ubx_backend._class == AP_GPS_UBLOX::CLASS_ACK &&
+      ubx_backend._msg_id == AP_GPS_UBLOX::MSG_ACK_NACK &&
+      ubx_backend._buffer.nack.clsID == AP_GPS_UBLOX::CLASS_CFG) {
+        handle_cfg_nack(ubx_backend._buffer.nack.msgID);
     //    Debug("GPS %d: NACK for class 0x%02x id 0x%02x",
     //            ubx_backend.state.instance + 1,
     //            ubx_backend._buffer.nack.clsID,
     //            ubx_backend._buffer.nack.msgID);
-    //}
+    }
 
     switch (curr_state) {
         case States::RESET_MODULE:
@@ -96,7 +99,7 @@ void AP_GPS_UBLOX_CFGv2::update()
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO,
                                  "GPS %d: u-blox resetting to default config",
                                  ubx_backend.state.instance + 1);
-                delete_and_reset_config();
+                fetch_all_config();
             }
             break;
         case States::IDENTIFY_MODULE: {
@@ -375,7 +378,7 @@ void AP_GPS_UBLOX_CFGv2::process_valget_byte(uint8_t byte)
                 _valget_value_expected = 8; break;
             default:
                 // invalid size; abort this VALGET
-                Debug("GPS %d: valget invalid key size code %u for key 0x%lx",
+                Debug("GPS %d: valget invalid key size code %u for key 0x%08x",
                         ubx_backend.state.instance + 1,
                         size_code,
                         _valget_key);
@@ -424,6 +427,18 @@ void AP_GPS_UBLOX_CFGv2::process_valget_complete(bool success)
         _cfg = _processing_cfg;
 
         switch (curr_state) {
+            case States::RESET_MODULE:
+                if (!_is_reset_required && (fetch_config_layer == ConfigLayer::CFG_LAYER_FLASH)) {
+                    // no reset needed, move to IDENTIFY_MODULE
+                    curr_state = States::IDENTIFY_MODULE;
+                    _module_reset[ubx_backend.state.instance] = true;
+                    _last_request_time = 0; // immediate next state
+                } else {
+                    fetch_config_layer = ConfigLayer::CFG_LAYER_FLASH;
+                    fetch_all_config();
+                    _last_request_time = 0; // immediate next state
+                }
+                break;
             case States::IDENTIFY_SIGNALS:
                 // show a list of supported constellations
                 _publish_supported_constellations();
@@ -464,7 +479,21 @@ void AP_GPS_UBLOX_CFGv2::process_valget_complete(bool success)
 
 void AP_GPS_UBLOX_CFGv2::_handle_valget_kv(ConfigKey key, uint64_t value, uint8_t value_len)
 {
-    // Debug("GPS %d: valget key 0x%lx value 0x%llx len %u",
+    if (curr_state == States::RESET_MODULE) {
+        // check if the key is in init list or signal key, if not we need a reset
+        if (!_init_common_cfg_list(true, key) && ((key & 0xFFFFLU) != (ConfigKey::CFG_SIGNAL_GPS_ENA & 0xFFFFLU))) {
+            // not in init list, ignore
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS %d: Found unexpected valget key 0x%08x reset required",
+                    ubx_backend.state.instance + 1,
+                    (uint32_t)key);
+            _is_reset_required = true;
+            delete_and_reset_config();
+            return;
+        }
+        // else continue to process normally
+        return;
+    }
+    // Debug("GPS %d: valget key 0x%08x value 0x%llx len %u",
     //         ubx_backend.state.instance + 1,
     //         (uint32_t)key,
     //         (uint64_t)value,
@@ -725,20 +754,38 @@ exit:
     return true;
 }
 
-// Initialize common config list incrementally based on module type
+// Initialize common config incrementally based on module type
 // Uses _common_cfg_fetch_index to track progress across calls
 // Stops early if buffer fills and continues on next call
-// Returns true if complete, false if more to process
-void AP_GPS_UBLOX_CFGv2::_init_common_cfg_list()
+// return is true if key_to_check is found (when check_only is true)
+// return is false in all other cases
+bool AP_GPS_UBLOX_CFGv2::_init_common_cfg_list(bool check_only, uint32_t key_to_check)
 {
     // On first call, reset buffer
-    if (_common_cfg_fetch_index == 0) {
+    if (_common_cfg_fetch_index == 0 && !check_only) {
         _common_cfg.reset();
         Debug("Starting common config list initialization");
     }
 
     if (_override_common_cfg[ubx_backend.state.instance] != nullptr) {
         const auto &override_cfg = _override_common_cfg[ubx_backend.state.instance];
+        // if check_only is set, just check if key_to_check exists in override
+        if (check_only) {
+            uint16_t i = 0;;
+            while (i < override_cfg->get_size()) {
+                ConfigKey key;
+                if (!override_cfg->get_key_at_offset(i, key)) {
+                    Debug("Invalid or truncated override config at offset %u", i);
+                    break; // invalid or truncated
+                }
+                if ((uint32_t)key == key_to_check) {
+                    Debug("Found override config key 0x%08x", (unsigned)key);
+                    return true; // found
+                }
+            }
+            Debug("Override config key 0x%08x not found", (unsigned)key_to_check);
+            return false; // not found
+        }
         // load override config if provided
         for (uint16_t i = _common_cfg_fetch_index; i < override_cfg->get_size(); ) {
             ConfigKey key;
@@ -754,25 +801,34 @@ void AP_GPS_UBLOX_CFGv2::_init_common_cfg_list()
             if (!_common_cfg.push(key, value)) {
                 Debug("Buffer full at item %u, will continue next call", i);
                 _common_cfg_fetch_index = i;
-                return; // buffer full
+                return false; // buffer full
             }
         }
         _common_cfg_fetch_index = override_cfg->get_size(); // mark complete
-        return; // done with override
+        return false; // done with override
     }
 
     uint16_t item_index = 0;
 
     // Helper macro to conditionally push config based on current index
     #define INIT_CFG_PUSH_INDEXED(KEY_CLASS, KEY, TYPE, VAL) \
-        if (item_index >= _common_cfg_fetch_index) { \
-            if (!_common_cfg.push<ConfigKey::KEY_CLASS##_##KEY>((TYPE)VAL)) { \
-                Debug("Buffer full at item %u, will continue next call", item_index); \
-                _common_cfg_fetch_index = item_index; \
-                return; \
+        if (check_only) { \
+            if (item_index == _common_cfg_fetch_index) { \
+                if ((uint32_t)ConfigKey::KEY_CLASS##_##KEY == key_to_check) { \
+                    Debug("Found config key 0x%08x at index %u", (unsigned)key_to_check, item_index); \
+                    return true; \
+                } \
             } \
-        } \
-        item_index++;
+        } else { \
+            if (item_index >= _common_cfg_fetch_index) { \
+                if (!_common_cfg.push<ConfigKey::KEY_CLASS##_##KEY>((TYPE)VAL)) { \
+                    Debug("Buffer full at item %u, will continue next call", item_index); \
+                    _common_cfg_fetch_index = item_index; \
+                    return false; \
+                } \
+            } \
+            item_index++; \
+        }
 
     // Fill with expected configuration based on module type
     if (module < Module::SINGLE_UART_LAST) {
@@ -849,13 +905,15 @@ void AP_GPS_UBLOX_CFGv2::_init_common_cfg_list()
         }
     }
 
-    // Mark complete if we reached the end by setting the last item index
-    _common_cfg_fetch_index = item_index;
+    if (!check_only) {
+        // Mark complete if we reached the end by setting the last item index
+        _common_cfg_fetch_index = item_index;
 
-    Debug("Common config list initialization complete: %u items, %u bytes",
-          item_index, (unsigned)_common_cfg.get_size());
-
+        Debug("Common config list initialization complete: %u items, %u bytes",
+            item_index, (unsigned)_common_cfg.get_size());
+    }
     #undef INIT_CFG_PUSH_INDEXED
+    return false;
 }
 
 // Request configuration keys from packed buffer starting from _common_cfg_verified_offset
@@ -952,12 +1010,12 @@ void AP_GPS_UBLOX_CFGv2::handle_cfg_ack(uint8_t msg_id)
     switch (msg_id) {
         case AP_GPS_UBLOX::MSG_CFG_VALDEL:
             if (curr_state == States::RESET_MODULE) {
-                Debug("GPS %d: CFG-VALDEL acknowledged, sending reset",
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS %d: CFG-VALDEL acknowledged, resetting module",
                       ubx_backend.state.instance + 1);
                 // Send controlled software reset
                 _send_reset(0x0000, AP_GPS_UBLOX::RESET_SW_CONTROLLED);
                 // move back to SERIAL ONLY Config and transition to IDENTIFY_MODULE
-                ubx_backend.gps._auto_config.set_and_save(AP_GPS::GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY);
+                _module_reset[ubx_backend.state.instance] = true;
                 curr_state = States::IDENTIFY_MODULE;
                 _last_request_time = AP_HAL::millis();
             }
@@ -965,6 +1023,47 @@ void AP_GPS_UBLOX_CFGv2::handle_cfg_ack(uint8_t msg_id)
         default:
             break;
     }
+}
+
+void AP_GPS_UBLOX_CFGv2::handle_cfg_nack(uint8_t msg_id)
+{
+    switch (msg_id) {
+        case AP_GPS_UBLOX::MSG_CFG_VALGET:
+            if (curr_state == States::RESET_MODULE) {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "GPS %d: CFG-VALGET NACK received, unsupported layer %s",
+                      ubx_backend.state.instance + 1, fetch_config_layer == ConfigLayer::CFG_LAYER_FLASH ? "FLASH" : "BBR");
+                if (fetch_config_layer == ConfigLayer::CFG_LAYER_BBR) {
+                    // try FLASH layer
+                    fetch_config_layer = ConfigLayer::CFG_LAYER_FLASH;
+                    fetch_all_config();
+                } else if (!_is_reset_required) {
+                    curr_state = States::IDENTIFY_MODULE;
+                    _module_reset[ubx_backend.state.instance] = true;
+                    _last_request_time = 0; // immediate next state
+                }
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+bool AP_GPS_UBLOX_CFGv2::fetch_all_config()
+{
+    // request all config by sending VALGET with key=0xFFFFFFFF
+    struct {
+        AP_GPS_UBLOX::ubx_cfg_valget msg;
+        uint32_t key;
+    } msg {};
+    if (ubx_backend.port->txspace() < 2*((uint16_t)(sizeof(AP_GPS_UBLOX::ubx_header)+sizeof(msg)+2))) {
+        return false;
+    }
+    msg.msg.version = 0;
+    msg.msg.layers = fetch_config_layer;
+    msg.key = 0xFFFFFFFF;
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: Requesting all config (%s)", ubx_backend.state.instance + 1,
+          (fetch_config_layer == ConfigLayer::CFG_LAYER_FLASH) ? "FLASH" : "BBR");
+    return !ubx_backend._send_message(AP_GPS_UBLOX::CLASS_CFG, AP_GPS_UBLOX::MSG_CFG_VALGET, &msg, sizeof(msg));
 }
 
 bool AP_GPS_UBLOX_CFGv2::delete_and_reset_config()
