@@ -1189,9 +1189,6 @@ class esp32(Board):
                 HAL_PARAM_DEFAULTS_PATH='"@ROMFS/defaults.parm"',
             )
 
-        env.INCLUDES += [
-                cfg.srcnode.find_dir('libraries/AP_HAL_ESP32/boards').abspath(),
-            ]
         env.AP_PROGRAM_AS_STLIB = True
         #if cfg.options.enable_profile:
         #    env.CXXFLAGS += ['-pg',
