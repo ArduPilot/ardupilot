@@ -1,7 +1,0 @@
-#Default Parameters for the mRo Pixracer Pro
-
-CAN_P1_DRIVER 1
-CAN_P2_DRIVER 2
-CAN_SLCAN_CPORT 1
-SERIAL6_PROTOCOL 22
-

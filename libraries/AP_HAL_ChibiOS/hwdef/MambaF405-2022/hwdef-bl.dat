@@ -1,3 +1,0 @@
-include ../MambaF405US-I2C/hwdef-bl.dat
-
-PC5 VTX_PWR OUTPUT HIGH

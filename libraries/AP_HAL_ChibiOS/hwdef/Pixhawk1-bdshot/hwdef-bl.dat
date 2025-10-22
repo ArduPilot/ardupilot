@@ -1,4 +1,0 @@
-# hw definition file for processing by chibios_hwdef.py
-# for pixhawk1, based on fmuv3
-
-include ../fmuv3/hwdef-bl.dat

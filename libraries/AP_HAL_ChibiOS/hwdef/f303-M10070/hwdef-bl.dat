@@ -1,5 +1,0 @@
-include ../f303-periph/hwdef-bl.inc
-
-# mRo Location One CAN GPS
-# M10084
-

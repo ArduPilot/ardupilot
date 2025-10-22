@@ -1,4 +1,0 @@
-include ../KakuteH7-bdshot/hwdef-bl.dat
-
-## pull up VTX power
-PB11 VTX_PWR OUTPUT HIGH GPIO(81)

@@ -1,4 +1,0 @@
-
-include ../BlitzF745/hwdef-bl.dat
-
-APJ_BOARD_ID AP_HW_BlitzF7Mini

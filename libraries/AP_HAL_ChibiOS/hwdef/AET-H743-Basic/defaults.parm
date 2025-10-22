@@ -1,3 +1,0 @@
-# setup for LEDs on chan13
-SERVO13_FUNCTION 120
-NTF_LED_TYPES 257

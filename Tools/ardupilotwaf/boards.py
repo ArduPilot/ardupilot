@@ -17,9 +17,23 @@ _board_classes = {}
 _board = None
 
 # modify our search path:
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ChibiOS/hwdef/scripts'))
-import chibios_hwdef
-import build_options
+chibios_hwdef_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ChibiOS/hwdef/scripts')
+if os.path.exists(chibios_hwdef_path):
+    sys.path.append(chibios_hwdef_path)
+    try:
+        import chibios_hwdef
+    except ImportError:
+        chibios_hwdef = None
+else:
+    chibios_hwdef = None
+
+# build_options is in Tools/scripts
+build_options_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../scripts')
+sys.path.append(build_options_path)
+try:
+    import build_options
+except ImportError:
+    build_options = None
 
 class BoardMeta(type):
     def __init__(cls, name, bases, dct):
@@ -626,14 +640,18 @@ Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
 
 def add_dynamic_boards_chibios():
     '''add boards based on existence of hwdef.dat in subdirectories for ChibiOS'''
-    add_dynamic_boards_from_hwdef_dir(chibios, 'libraries/AP_HAL_ChibiOS/hwdef')
+    if os.path.exists('libraries/AP_HAL_ChibiOS/hwdef'):
+        add_dynamic_boards_from_hwdef_dir(chibios, 'libraries/AP_HAL_ChibiOS/hwdef')
 
 def add_dynamic_boards_linux():
     '''add boards based on existence of hwdef.dat in subdirectories for '''
-    add_dynamic_boards_from_hwdef_dir(linux, 'libraries/AP_HAL_Linux/hwdef')
+    if os.path.exists('libraries/AP_HAL_Linux/hwdef'):
+        add_dynamic_boards_from_hwdef_dir(linux, 'libraries/AP_HAL_Linux/hwdef')
 
 def add_dynamic_boards_from_hwdef_dir(base_type, hwdef_dir):
     '''add boards based on existence of hwdef.dat in subdirectory'''
+    if not os.path.exists(hwdef_dir):
+        return
     dirname, dirlist, filenames = next(os.walk(hwdef_dir))
     for d in dirlist:
         if d in _board_classes.keys():
@@ -670,19 +688,22 @@ def is_board_based(board, cls):
 def get_ap_periph_boards():
     '''Add AP_Periph boards based on existence of periph keyword in hwdef.dat or board name'''
     list_ap = [s for s in list(_board_classes.keys()) if "periph" in s]
-    dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ChibiOS/hwdef'))
-    for d in dirlist:
-        if d in list_ap:
-            continue
-        hwdef = os.path.join(dirname, d, 'hwdef.dat')
-        if os.path.exists(hwdef):
-            ch = chibios_hwdef.ChibiOSHWDef(hwdef=[hwdef], quiet=True)
-            try:
-                if ch.is_periph_fw_unprocessed():
-                    list_ap.append(d)
-            except chibios_hwdef.ChibiOSHWDefIncludeNotFoundException as e:
-                print(f"{e.includer} includes {e.hwdef} which does not exist")
-                sys.exit(1)
+
+    # Only process ChibiOS boards if chibios_hwdef is available and directory exists
+    if chibios_hwdef is not None and os.path.exists('libraries/AP_HAL_ChibiOS/hwdef'):
+        dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ChibiOS/hwdef'))
+        for d in dirlist:
+            if d in list_ap:
+                continue
+            hwdef = os.path.join(dirname, d, 'hwdef.dat')
+            if os.path.exists(hwdef):
+                ch = chibios_hwdef.ChibiOSHWDef(hwdef=[hwdef], quiet=True)
+                try:
+                    if ch.is_periph_fw_unprocessed():
+                        list_ap.append(d)
+                except chibios_hwdef.ChibiOSHWDefIncludeNotFoundException as e:
+                    print(f"{e.includer} includes {e.hwdef} which does not exist")
+                    sys.exit(1)
 
     list_ap = list(set(list_ap))
     return list_ap

@@ -1,4 +1,0 @@
-
-# Pixhawk4 does not have hw flow control on radios
-BRD_SER1_RTSCTS 0
-BRD_SER2_RTSCTS 0

@@ -1,8 +1,0 @@
-@INCLUDE = docs/config/default
-
-PROJECT_NAME = "APM:Rover"
-INPUT = Rover/
-OUTPUT_DIRECTORY = $(DOCS_OUTPUT_BASE)/Rover
-HTML_OUTPUT = .
-TAGFILES = $(DOCS_OUTPUT_BASE)/tags/libraries=../libraries
-

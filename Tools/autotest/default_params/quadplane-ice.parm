@@ -1,2 +1,0 @@
-Q_OPTIONS 64
-ICE_RPM_THRESH 50  # idles at 70 (1% thrust)

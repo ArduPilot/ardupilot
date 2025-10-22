@@ -1,8 +1,0 @@
-#Default Parameters for the Horizon31 PixC4-Jetson
-
-#Default setup for comms with companion computer
-SERIAL2_PROTOCOL 2
-SERIAL2_BAUD 500
-
-
-

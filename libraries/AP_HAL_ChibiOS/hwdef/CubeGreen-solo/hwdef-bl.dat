@@ -1,6 +1,0 @@
-# hw definition file for processing by chibios_hwdef.py
-# for The CUBE Green hardware in a 3DR Solo
-# this is based on the CubeBlack hwdef-bl, with Solo's required parameter defaults
-# The CUBE green is identical to a CUBE Black, but uses 5v signalling for the Solo ESC issues
-
-include ../CubeBlack/hwdef-bl.dat

@@ -1,4 +1,0 @@
-# hw definition file for processing by chibios_hwdef.py
-# for PH4-mini bootloader
-
-include ../fmuv5/hwdef-bl.dat

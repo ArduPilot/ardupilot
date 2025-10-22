@@ -1,4 +1,0 @@
-# hw definition file for processing by chibios_pins.py
-# for Matek F765-Wing bootloader
-
-include ../MatekF765-Wing/hwdef-bl.dat

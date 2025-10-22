@@ -1,8 +1,0 @@
-#!/bin/bash
-
-print_usage() {
-    echo -e "\nUsage: voxl-ardupilot"
-    exit 1
-}
-
-/usr/bin/ardupilot
