@@ -571,7 +571,7 @@ def configure(cfg):
 
     if cfg.options.enable_benchmarks:
         cfg.load('gbenchmark')
-    cfg.load('gtest')
+    # cfg.load('gtest')  # Disabled - gtest removed for ESP32-only build
 
     if cfg.env.BOARD == "sitl":
         cfg.start_msg('Littlefs')
@@ -607,8 +607,8 @@ def configure(cfg):
     cfg.recurse('libraries/AP_Scripting')
 
     cfg.recurse('libraries/AP_GPS')
-    cfg.recurse('libraries/AP_HAL_SITL')
-    cfg.recurse('libraries/SITL')
+    # cfg.recurse('libraries/AP_HAL_SITL')  # Disabled - SITL removed for ESP32-only build
+    # cfg.recurse('libraries/SITL')  # Disabled - SITL removed for ESP32-only build
 
     cfg.recurse('libraries/AP_Networking')
     cfg.recurse('libraries/AP_DDS')

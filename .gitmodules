@@ -1,27 +1,18 @@
+# ESP32 精简版：只保留必需的模块
+
+[submodule "modules/esp_idf"]
+	path = modules/esp_idf
+	url = https://github.com/espressif/esp-idf.git
+	branch = v5.3
 [submodule "modules/waf"]
 	path = modules/waf
 	url = https://github.com/ArduPilot/waf.git
-[submodule "modules/gbenchmark"]
-	path = modules/gbenchmark
-	url = https://github.com/google/benchmark.git
 [submodule "modules/mavlink"]
 	path = modules/mavlink
 	url = https://github.com/ArduPilot/mavlink
-[submodule "gtest"]
-	path = modules/gtest
-	url = https://github.com/ArduPilot/googletest
-[submodule "modules/ChibiOS"]
-	path = modules/ChibiOS
-	url = https://github.com/ArduPilot/ChibiOS.git
-[submodule "modules/gsoap"]
-	path = modules/gsoap
-	url = https://github.com/ArduPilot/gsoap
 [submodule "modules/DroneCAN/DSDL"]
 	path = modules/DroneCAN/DSDL
 	url = https://github.com/DroneCAN/DSDL.git
-[submodule "modules/CrashDebug"]
-	path = modules/CrashDebug
-	url = https://github.com/ardupilot/CrashDebug
 [submodule "modules/DroneCAN/pydronecan"]
 	path = modules/DroneCAN/pydronecan
 	url = https://github.com/DroneCAN/pydronecan

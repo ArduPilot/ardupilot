@@ -155,7 +155,9 @@ dumpstack*out
 dumpcore*out
 build.tmp.binaries/
 tasklist.json
-modules/esp_idf
+
+# ESP32精简版：排除所有modules（太大，~3GB）
+modules/
 
 # lua-language-server linter
 ScriptingDocs.md

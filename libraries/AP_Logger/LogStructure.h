@@ -142,7 +142,12 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AC_Avoidance/LogStructure.h>
 #include <AP_ESC_Telem/LogStructure.h>
 #include <AP_AIS/LogStructure.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <AP_HAL_ChibiOS/LogStructure.h>
+#else
+// Define empty macro for non-ChibiOS boards
+#define LOG_STRUCTURE_FROM_HAL_CHIBIOS
+#endif
 #include <AP_RPM/LogStructure.h>
 #include <AC_Fence/LogStructure.h>
 #include <AP_Landing/LogStructure.h>
