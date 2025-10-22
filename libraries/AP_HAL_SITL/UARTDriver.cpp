@@ -77,11 +77,11 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
     if (strcmp(path, "GPS1") == 0) {
         /* gps */
         _connected = true;
-        _sim_serial_device = _sitlState->create_serial_sim("gps:1", "", _portNumber);
+        _sim_serial_device = _sitlState->create_serial_sim("gps", "1", _portNumber);
     } else if (strcmp(path, "GPS2") == 0) {
         /* 2nd gps */
         _connected = true;
-        _sim_serial_device = _sitlState->create_serial_sim("gps:2", "", _portNumber);
+        _sim_serial_device = _sitlState->create_serial_sim("gps", "2", _portNumber);
     } else {
         /* parse type:args:flags string for path. 
            For example:
@@ -714,6 +714,8 @@ bool UARTDriver::set_unbuffered_writes(bool on) {
     v &= ~O_NONBLOCK;
 #if defined(__APPLE__) && defined(__MACH__)
     fcntl(_fd, F_SETFL | F_NOCACHE, v | O_SYNC);
+#elif defined(__OpenBSD__)
+    fcntl(_fd, F_SETFL, v | O_SYNC);
 #else
     fcntl(_fd, F_SETFL, v | O_DIRECT | O_SYNC);
 #endif

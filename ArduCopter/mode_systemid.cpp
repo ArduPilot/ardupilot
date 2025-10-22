@@ -112,25 +112,23 @@ bool ModeSystemId::init(bool ignore_checks)
         }
 
         // set horizontal speed and acceleration limits
-        pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
-        pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+        pos_control->set_max_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+        pos_control->set_correction_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
 
         // initialise the horizontal position controller
-        if (!pos_control->is_active_xy()) {
-            pos_control->init_xy_controller();
+        if (!pos_control->is_active_NE()) {
+            pos_control->init_NE_controller();
         }
 
         // set vertical speed and acceleration limits
-        pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
-        pos_control->set_correction_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+        pos_control->set_max_speed_accel_U_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_U_mss());
+        pos_control->set_correction_speed_accel_U_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_U_mss());
 
         // initialise the vertical position controller
-        if (!pos_control->is_active_z()) {
-            pos_control->init_z_controller();
+        if (!pos_control->is_active_U()) {
+            pos_control->init_U_controller();
         }
-        Vector3f curr_pos;
-        curr_pos = inertial_nav.get_position_neu_cm();
-        target_pos = curr_pos.xy();
+        target_pos_ne_m = pos_control->get_pos_estimate_NEU_m().xy();
     }
 
     att_bf_feedforward = attitude_control->get_bf_feedforward();
@@ -161,11 +159,12 @@ void ModeSystemId::exit()
 // should be called at 100hz or more
 void ModeSystemId::run()
 {
-    float target_roll, target_pitch;
-    float target_yaw_rate = 0.0f;
+    float target_roll_rad = 0.0f;
+    float target_pitch_rad = 0.0f;
+    float target_yaw_rate_rads = 0.0f;
     float pilot_throttle_scaled = 0.0f;
-    float target_climb_rate = 0.0f;
-    Vector2f input_vel;
+    float target_climb_rate_ms = 0.0f;
+    Vector2f input_vel_ne_ms;
 
     if (!is_poscontrol_axis_type()) {
 
@@ -173,10 +172,10 @@ void ModeSystemId::run()
         update_simple_mode();
 
         // convert pilot input to lean angles
-        get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
+        get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad(), attitude_control->lean_angle_max_rad());
 
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate();
+        target_yaw_rate_rads = get_pilot_desired_yaw_rate_rads();
 
         if (!motors->armed()) {
             // Motors should be Stopped
@@ -250,9 +249,9 @@ void ModeSystemId::run()
                 gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: Landed");
                 break;
             }
-            if (attitude_control->lean_angle_deg()*100 > attitude_control->lean_angle_max_cd()) {
+            if (attitude_control->lean_angle_rad() > attitude_control->lean_angle_max_rad()) {
                 systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
-                gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: lean=%f max=%f", (double)attitude_control->lean_angle_deg(), (double)attitude_control->lean_angle_max_cd());
+                gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: lean=%f max=%f", (double)degrees(attitude_control->lean_angle_rad()), (double)degrees(attitude_control->lean_angle_max_rad()));
                 break;
             }
             if (waveform_time > SYSTEM_ID_DELAY + time_fade_in + time_const_freq + time_record + time_fade_out) {
@@ -267,34 +266,34 @@ void ModeSystemId::run()
                     gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: axis = 0");
                     break;
                 case AxisType::INPUT_ROLL:
-                    target_roll += waveform_sample*100.0f;
+                    target_roll_rad += radians(waveform_sample);
                     break;
                 case AxisType::INPUT_PITCH:
-                    target_pitch += waveform_sample*100.0f;
+                    target_pitch_rad += radians(waveform_sample);
                     break;
                 case AxisType::INPUT_YAW:
-                    target_yaw_rate += waveform_sample*100.0f;
+                    target_yaw_rate_rads += radians(waveform_sample);
                     break;
                 case AxisType::RECOVER_ROLL:
-                    target_roll += waveform_sample*100.0f;
+                    target_roll_rad += radians(waveform_sample);
                     attitude_control->bf_feedforward(false);
                     break;
                 case AxisType::RECOVER_PITCH:
-                    target_pitch += waveform_sample*100.0f;
+                    target_pitch_rad += radians(waveform_sample);
                     attitude_control->bf_feedforward(false);
                     break;
                 case AxisType::RECOVER_YAW:
-                    target_yaw_rate += waveform_sample*100.0f;
+                    target_yaw_rate_rads += radians(waveform_sample);
                     attitude_control->bf_feedforward(false);
                     break;
                 case AxisType::RATE_ROLL:
-                    attitude_control->rate_bf_roll_sysid(radians(waveform_sample));
+                    attitude_control->rate_bf_roll_sysid_rads(radians(waveform_sample));
                     break;
                 case AxisType::RATE_PITCH:
-                    attitude_control->rate_bf_pitch_sysid(radians(waveform_sample));
+                    attitude_control->rate_bf_pitch_sysid_rads(radians(waveform_sample));
                     break;
                 case AxisType::RATE_YAW:
-                    attitude_control->rate_bf_yaw_sysid(radians(waveform_sample));
+                    attitude_control->rate_bf_yaw_sysid_rads(radians(waveform_sample));
                     break;
                 case AxisType::MIX_ROLL:
                     attitude_control->actuator_roll_sysid(waveform_sample);
@@ -310,37 +309,37 @@ void ModeSystemId::run()
                     break;
                 case AxisType::DISTURB_POS_LAT:
                     disturb_state.x = 0.0f;
-                    disturb_state.y = waveform_sample * 100.0f;
+                    disturb_state.y = waveform_sample;
                     disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
-                    pos_control->set_disturb_pos_cm(disturb_state);
+                    pos_control->set_disturb_pos_NE_m(disturb_state);
                     break;
                 case AxisType::DISTURB_POS_LONG:
-                    disturb_state.x = waveform_sample * 100.0f;
+                    disturb_state.x = waveform_sample;
                     disturb_state.y = 0.0f;
                     disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
-                    pos_control->set_disturb_pos_cm(disturb_state);
+                    pos_control->set_disturb_pos_NE_m(disturb_state);
                     break;
                 case AxisType::DISTURB_VEL_LAT:
                     disturb_state.x = 0.0f;
-                    disturb_state.y = waveform_sample * 100.0f;
+                    disturb_state.y = waveform_sample;
                     disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
-                    pos_control->set_disturb_vel_cms(disturb_state);
+                    pos_control->set_disturb_vel_NE_ms(disturb_state);
                     break;
                 case AxisType::DISTURB_VEL_LONG:
-                    disturb_state.x = waveform_sample * 100.0f;
+                    disturb_state.x = waveform_sample;
                     disturb_state.y = 0.0f;
                     disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
-                    pos_control->set_disturb_vel_cms(disturb_state);
+                    pos_control->set_disturb_vel_NE_ms(disturb_state);
                     break;
                 case AxisType::INPUT_VEL_LAT:
-                    input_vel.x = 0.0f;
-                    input_vel.y = waveform_sample * 100.0f;
-                    input_vel.rotate(attitude_control->get_att_target_euler_rad().z);
+                    input_vel_ne_ms.x = 0.0f;
+                    input_vel_ne_ms.y = waveform_sample;
+                    input_vel_ne_ms.rotate(attitude_control->get_att_target_euler_rad().z);
                     break;
                 case AxisType::INPUT_VEL_LONG:
-                    input_vel.x = waveform_sample * 100.0f;
-                    input_vel.y = 0.0f;
-                    input_vel.rotate(attitude_control->get_att_target_euler_rad().z);
+                    input_vel_ne_ms.x = waveform_sample;
+                    input_vel_ne_ms.y = 0.0f;
+                    input_vel_ne_ms.rotate(attitude_control->get_att_target_euler_rad().z);
                     break;
             }
             break;
@@ -349,7 +348,7 @@ void ModeSystemId::run()
     if (!is_poscontrol_axis_type()) {
 
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(target_roll_rad, target_pitch_rad, target_yaw_rate_rads);
 
         // output pilot's throttle
         attitude_control->set_throttle_out(pilot_throttle_scaled, !copter.is_tradheli(), g.throttle_filt);
@@ -358,28 +357,28 @@ void ModeSystemId::run()
 
         // relax loiter target if we might be landed
         if (copter.ap.land_complete_maybe) {
-            pos_control->soften_for_landing_xy();
+            pos_control->soften_for_landing_NE();
         }
 
-        Vector2f accel;
-        target_pos += input_vel * G_Dt;
+        Vector2f accel_ne_mss;
+        target_pos_ne_m += input_vel_ne_ms.topostype() * G_Dt;
         if (is_positive(G_Dt)) {
-            accel = (input_vel - input_vel_last) / G_Dt;
-            input_vel_last = input_vel;
+            accel_ne_mss = (input_vel_ne_ms - input_vel_last_ne_ms) / G_Dt;
+            input_vel_last_ne_ms = input_vel_ne_ms;
         }
-        pos_control->set_pos_vel_accel_xy(target_pos.topostype(), input_vel, accel);
+        pos_control->set_pos_vel_accel_NE_m(target_pos_ne_m, input_vel_ne_ms, accel_ne_mss);
 
         // run pos controller
-        pos_control->update_xy_controller();
+        pos_control->update_NE_controller();
 
         // call attitude controller
-        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), target_yaw_rate, false);
+        attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), target_yaw_rate_rads, false);
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);
+        pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_ms);
 
         // run the vertical position controller and set output throttle
-        pos_control->update_z_controller();
+        pos_control->update_U_controller();
     }
 
     if (log_subsample <= 0) {
@@ -414,12 +413,13 @@ void ModeSystemId::log_data() const
 
     // Full rate logging of attitude, rate and pid loops
     copter.Log_Write_Attitude();
+    copter.Log_Write_Rate();
     copter.Log_Write_PIDS();
 
     if (is_poscontrol_axis_type()) {
         pos_control->write_log();
-        copter.logger.Write_PID(LOG_PIDN_MSG, pos_control->get_vel_xy_pid().get_pid_info_x());
-        copter.logger.Write_PID(LOG_PIDE_MSG, pos_control->get_vel_xy_pid().get_pid_info_y());
+        copter.logger.Write_PID(LOG_PIDN_MSG, pos_control->get_vel_NE_pid().get_pid_info_x());
+        copter.logger.Write_PID(LOG_PIDE_MSG, pos_control->get_vel_NE_pid().get_pid_info_y());
 
     }
 }

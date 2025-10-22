@@ -114,6 +114,12 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint
     }
     _last_loop_time_s = 1.0 / _loop_rate_hz;
 
+    // These variables are initialized only here in scheduler::init()
+    // These are also defensively initialized in the getter functions to catch initialization order issues.
+    _loop_period_us = 1000000UL / _loop_rate_hz;
+    _loop_period_s = 1.0f / _loop_rate_hz;
+    _active_loop_rate_hz = _loop_rate_hz;
+
     _vehicle_tasks = tasks;
     _num_vehicle_tasks = num_tasks;
 
@@ -447,6 +453,11 @@ void AP_Scheduler::update_logging()
 // Write a performance monitoring packet
 void AP_Scheduler::Log_Write_Performance()
 {
+    uint64_t rtc = 0;
+#if AP_RTC_ENABLED
+    UNUSED_RESULT(AP::rtc().get_utc_usec(rtc));
+#endif
+
     const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
@@ -464,6 +475,7 @@ void AP_Scheduler::Log_Write_Performance()
         i2c_count        : pd.i2c_count,
         i2c_isr_count    : pd.i2c_isr_count,
         extra_loop_us    : extra_loop_us,
+        rtc              : rtc,
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
 }

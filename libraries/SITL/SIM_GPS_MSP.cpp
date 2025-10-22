@@ -74,7 +74,7 @@ void GPS_MSP::publish(const GPS_Data *d)
     msp_gps.ned_vel_north = 100 * d->speedN;
     msp_gps.ned_vel_east = 100 * d->speedE;
     msp_gps.ned_vel_down = 100 * d->speedD;
-    msp_gps.ground_course = ToDeg(atan2f(d->speedE, d->speedN)) * 100;
+    msp_gps.ground_course = degrees(atan2f(d->speedE, d->speedN)) * 100;
     msp_gps.true_yaw = wrap_360(d->yaw_deg)*100U; // can send 65535 for no yaw
     msp_gps.year = tm->tm_year;
     msp_gps.month = tm->tm_mon;

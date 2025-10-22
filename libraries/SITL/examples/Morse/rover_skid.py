@@ -18,6 +18,9 @@ channel 1 and right throttle on channel 2, which means you need to set:
   SERVO1_FUNCTION 73
   SERVO3_FUNCTION 74
 '''
+
+# flake8: noqa
+
 from morse.builder import *
 
 # use the ATRV rover

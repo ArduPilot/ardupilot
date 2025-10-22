@@ -85,7 +85,7 @@ bool AP_Radio_cc2500::init(void)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     if (_irq_handler_ctx != nullptr) {
-        AP_HAL::panic("AP_Radio_cc2500: double instantiation of irq_handler\n");
+        AP_HAL::panic("AP_Radio_cc2500: double instantiation of irq_handler");
     }
     chVTObjectInit(&timeout_vt);
     _irq_handler_ctx = chThdCreateFromHeap(NULL,

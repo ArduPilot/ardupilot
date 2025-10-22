@@ -18,7 +18,7 @@ public:
     // static detection function
     static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state,
                                           AP_RangeFinder_Params &_params,
-                                          AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+                                          AP_HAL::I2CDevice *dev);
 
     // update state
     void update(void) override;
@@ -33,7 +33,7 @@ private:
     // constructor
     AP_RangeFinder_MaxsonarI2CXL(RangeFinder::RangeFinder_State &_state,
     								AP_RangeFinder_Params &_params,
-                                 AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+                                 AP_HAL::I2CDevice *dev);
 
     bool _init(void);
     void _timer(void);
@@ -44,7 +44,7 @@ private:
     // start a reading
     bool start_reading(void);
     bool get_reading(uint16_t &reading_cm);
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    AP_HAL::I2CDevice *_dev;
 };
 
 #endif  // AP_RANGEFINDER_MAXSONARI2CXL_ENABLED

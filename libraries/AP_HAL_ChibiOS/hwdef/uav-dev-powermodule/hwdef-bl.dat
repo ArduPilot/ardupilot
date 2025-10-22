@@ -1,0 +1,74 @@
+# hw definition for UAV-DEV GmbH powermodule
+
+# MCU class and specific type
+MCU STM32G4xx STM32G474xx
+
+FLASH_RESERVE_START_KB 0
+FLASH_BOOTLOADER_LOAD_KB 32
+
+# reserve some space for params
+APP_START_OFFSET_KB 4
+
+# assume 512k flash part
+FLASH_SIZE_KB 512
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_UAV-DEV-PM-G4
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# debug on USART1
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# node name
+define CAN_APP_NODE_NAME "com.uav-dev.powermodule"
+
+define CH_CFG_ST_FREQUENCY 1000000
+
+# order of UARTs
+SERIAL_ORDER USART1
+
+# blue LED
+PC13 LED_RED OUTPUT OPENDRAIN HIGH
+PC14 LED_GREEN OUTPUT OPENDRAIN HIGH
+PC15 LED_BOOTLOADER OUTPUT OPENDRAIN HIGH
+define HAL_LED_ON 0
+
+# USART1
+PB6 USART1_TX USART1
+PB7 USART1_RX USART1
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+define HAL_USE_SERIAL TRUE
+
+define STM32_SERIAL_USE_USART1 TRUE
+define STM32_SERIAL_USE_USART2 TRUE
+define STM32_SERIAL_USE_USART3 FALSE
+
+define HAL_USE_EMPTY_IO TRUE
+
+define DMA_RESERVE_SIZE 0
+
+# enable CAN support
+
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+PA8 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+PB12 CAN2_RX CAN2
+PB13 CAN2_TX CAN2
+PB15 GPIO_CAN2_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+# make bl baudrate match debug baudrate for easier debugging
+define BOOTLOADER_BAUDRATE 57600
+
+# use a smaller bootloader timeout
+define HAL_BOOTLOADER_TIMEOUT 2500

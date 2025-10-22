@@ -1,14 +1,15 @@
 #include "Plane.h"
 
 Mode::Mode() :
-    ahrs(plane.ahrs)
+    unused_integer{17},
 #if HAL_QUADPLANE_ENABLED
-    , quadplane(plane.quadplane),
     pos_control(plane.quadplane.pos_control),
     attitude_control(plane.quadplane.attitude_control),
     loiter_nav(plane.quadplane.loiter_nav),
-    poscontrol(plane.quadplane.poscontrol)
+    quadplane(plane.quadplane),
+    poscontrol(plane.quadplane.poscontrol),
 #endif
+    ahrs(plane.ahrs)
 {
 }
 
@@ -73,6 +74,9 @@ bool Mode::enter()
     // disable taildrag takeoff on mode change
     plane.auto_state.fbwa_tdrag_takeoff_mode = false;
 
+    // wipe the takeoff rotation complete state
+    plane.auto_state.rotation_complete = false;
+
     // start with previous WP at current location
     plane.prev_WP_loc = plane.current_loc;
 
@@ -98,6 +102,10 @@ bool Mode::enter()
 
 #if AP_TERRAIN_AVAILABLE
     plane.target_altitude.terrain_following_pending = false;
+#endif
+
+#if AP_PLANE_SYSTEMID_ENABLED
+    plane.g2.systemid.stop();
 #endif
 
     // disable auto mode servo idle during altitude wait command
@@ -140,12 +148,22 @@ bool Mode::enter()
 
         // Make sure the flight stage is correct for the new mode
         plane.update_flight_stage();
+        
+        // reset landing state
+        plane.landing.reset();
+
 
 #if HAL_QUADPLANE_ENABLED
         if (quadplane.enabled()) {
             float aspeed;
             bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
             quadplane.assisted_flight = quadplane.assist.should_assist(aspeed, have_airspeed);
+        }
+
+        if (is_vtol_mode() && !quadplane.tailsitter.enabled()) {
+            // if flying inverted and entering a VTOL mode cancel
+            // inverted flight
+            plane.inverted_flight = false;
         }
 #endif
     }
@@ -193,7 +211,13 @@ void Mode::update_target_altitude()
         // once we reach a loiter target then lock to the final
         // altitude target
         plane.set_target_altitude_location(plane.next_WP_loc);
-    } else if (plane.target_altitude.offset_cm != 0 && 
+#if AP_TERRAIN_AVAILABLE
+    } else if (plane.next_WP_loc.terrain_alt &&
+               plane.set_target_altitude_proportion_terrain()) {
+        // special case for target as terrain relative handled inside
+        // set_target_altitude_proportion_terrain
+#endif
+    } else if (plane.target_altitude.offset_cm != 0 &&
                !plane.current_loc.past_interval_finish_line(plane.prev_WP_loc, plane.next_WP_loc)) {
         // control climb/descent rate
         plane.set_target_altitude_proportion(plane.next_WP_loc, 1.0f-plane.auto_state.wp_proportion);
@@ -224,7 +248,7 @@ bool Mode::_pre_arm_checks(size_t buflen, char *buffer) const
 {
 #if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.enabled() && !is_vtol_mode() &&
-            plane.quadplane.option_is_set(QuadPlane::OPTION::ONLY_ARM_IN_QMODE_OR_AUTO)) {
+            plane.quadplane.option_is_set(QuadPlane::Option::ONLY_ARM_IN_QMODE_OR_AUTO)) {
         hal.util->snprintf(buffer, buflen, "not Q mode");
         return false;
     }
@@ -236,8 +260,15 @@ void Mode::run()
 {
     // Direct stick mixing functionality has been removed, so as not to remove all stick mixing from the user completely
     // the old direct option is now used to enable fbw mixing, this is easier than doing a param conversion.
-    if ((plane.g.stick_mixing == StickMixing::FBW) || (plane.g.stick_mixing == StickMixing::DIRECT_REMOVED)) {
-        plane.stabilize_stick_mixing_fbw();
+    switch ((StickMixing)plane.g.stick_mixing) {
+        case StickMixing::FBW:
+        case StickMixing::FBW_NO_PITCH:
+        case StickMixing::DIRECT_REMOVED:
+            plane.stabilize_stick_mixing_fbw();
+            break;
+        case StickMixing::NONE:
+        case StickMixing::VTOL_YAW:
+            break;
     }
     plane.stabilize_roll();
     plane.stabilize_pitch();

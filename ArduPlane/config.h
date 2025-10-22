@@ -9,7 +9,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #ifdef CONFIG_APM_HARDWARE
-#error CONFIG_APM_HARDWARE option is depreated! use CONFIG_HAL_BOARD instead.
+#error CONFIG_APM_HARDWARE option is deprecated! use CONFIG_HAL_BOARD instead.
 #endif
 
 #ifndef MAV_SYSTEM_ID
@@ -138,8 +138,11 @@
 #ifndef THROTTLE_MIN
  # define THROTTLE_MIN                   0 // percent
 #endif
-#ifndef THROTTLE_CRUISE
- # define THROTTLE_CRUISE                45
+#ifdef THROTTLE_CRUISE
+#error THROTTLE_CRUISE was renamed to AP_PLANE_TRIM_THROTTLE_DEFAULT
+#endif
+#ifndef AP_PLANE_TRIM_THROTTLE_DEFAULT
+ # define AP_PLANE_TRIM_THROTTLE_DEFAULT                45
 #endif
 #ifndef THROTTLE_MAX
  # define THROTTLE_MAX                   100

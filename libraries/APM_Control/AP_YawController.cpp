@@ -206,7 +206,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
     // Calculate yaw rate required to keep up with a constant height coordinated turn
     float aspeed;
     float rate_offset;
-    float bank_angle = AP::ahrs().get_roll();
+    float bank_angle = AP::ahrs().get_roll_rad();
     // limit bank angle between +- 80 deg if right way up
     if (fabsf(bank_angle) < 1.5707964f)	{
         bank_angle = constrain_float(bank_angle,-1.3962634f,1.3962634f);
@@ -230,7 +230,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 
     // Subtract the steady turn component of rate from the measured rate
     // to calculate the rate relative to the turn requirement in degrees/sec
-    float rate_hp_in = ToDeg(omega_z - rate_offset);
+    float rate_hp_in = degrees(omega_z - rate_offset);
 
     // Apply a high-pass filter to the rate to washout any steady state error
     // due to bias errors in rate_offset
@@ -314,8 +314,8 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
         limit_I = true;
     }
 
-    // the P and I elements are scaled by sq(scaler). To use an
-    // unmodified AC_PID object we scale the inputs and calculate FF separately
+    // the PID elements are scaled by sq(scaler). To use an
+    // unmodified AC_PID object we scale the inputs (target and measurement)
     //
     // note that we run AC_PID in radians so that the normal scaling
     // range for IMAX in AC_PID applies (usually an IMAX value less than 1.0)
@@ -326,10 +326,11 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
         rate_pid.set_integrator(old_I);
     }
 
-    // FF should be scaled by scaler/eas2tas, but since we have scaled
+    // FF and DFF should be scaled by scaler/eas2tas, but since we have scaled
     // the AC_PID target above by scaler*scaler we need to instead
     // divide by scaler*eas2tas to get the right scaling
-    const float ff = degrees(rate_pid.get_ff() / (scaler * eas2tas));
+    const float ff = degrees(rate_pid.get_ff_component() / (scaler * eas2tas));
+    const float dff = degrees(rate_pid.get_dff_component() / (scaler * eas2tas));
 
     if (disable_integrator) {
         rate_pid.reset_I();
@@ -344,7 +345,7 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
     pinfo.P *= deg_scale;
     pinfo.I *= deg_scale;
     pinfo.D *= deg_scale;
-    pinfo.DFF *= deg_scale;
+    pinfo.DFF = dff;
     pinfo.limit = limit_I;
 
     // fix the logged target and actual values to not have the scalers applied

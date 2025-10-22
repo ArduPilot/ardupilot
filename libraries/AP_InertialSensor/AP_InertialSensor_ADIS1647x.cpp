@@ -171,22 +171,22 @@ bool AP_InertialSensor_ADIS1647x::check_product_id(uint16_t &prod_id)
         opmode = OpMode::Delta32;
         expected_sample_rate_hz = 1200;
         accel_scale = 392.0 / 2097152000.0;
-        dvel_scale = 400.0 / 0x7FFFFFFF;
+        dvel_scale = 400.0 / (float)0x7FFFFFFF;
         _clip_limit = (40.0f - 0.5f) * GRAVITY_MSS;
         // RANG_MDL register used for gyro range
         uint16_t rang_mdl = read_reg16(REG_RANG_MDL);
         switch ((rang_mdl >> 2) & 3) {
         case 0:
             gyro_scale = radians(125) / 0x4E200000;
-            dangle_scale = radians(360.0 / 0x7FFFFFFF);
+            dangle_scale = radians(360.0 / (float)0x7FFFFFFF);
             break;
         case 1:
             gyro_scale = radians(500) / 0x4E200000;
-            dangle_scale = radians(720.0 / 0x7FFFFFFF);
+            dangle_scale = radians(720.0 / (float)0x7FFFFFFF);
             break;
         case 3:
             gyro_scale = radians(2000) / 0x4E200000;
-            dangle_scale = radians(2160.0 / 0x7FFFFFFF);
+            dangle_scale = radians(2160.0 / (float)0x7FFFFFFF);
             break;
         default:
             return false;
@@ -332,7 +332,7 @@ void AP_InertialSensor_ADIS1647x::read_sensor16(void)
         WITH_SEMAPHORE(dev->get_semaphore());
         data.cmd[0] = REG_GLOB_CMD;
         DEBUG_SET_PIN(2, 1);
-        if (!dev->transfer((const uint8_t *)&data, sizeof(data), (uint8_t *)&data, sizeof(data))) {
+        if (!dev->transfer_fullduplex((uint8_t *)&data, sizeof(data))) {
             break;
         }
         DEBUG_SET_PIN(2, 0);
@@ -424,7 +424,7 @@ void AP_InertialSensor_ADIS1647x::read_sensor32(void)
         WITH_SEMAPHORE(dev->get_semaphore());
         data.cmd[0] = REG_GLOB_CMD;
         DEBUG_SET_PIN(2, 1);
-        if (!dev->transfer((const uint8_t *)&data, sizeof(data), (uint8_t *)&data, sizeof(data))) {
+        if (!dev->transfer_fullduplex((uint8_t *)&data, sizeof(data))) {
             break;
         }
         DEBUG_SET_PIN(2, 0);
@@ -516,7 +516,7 @@ void AP_InertialSensor_ADIS1647x::read_sensor32_delta(void)
         WITH_SEMAPHORE(dev->get_semaphore());
         data.cmd[0] = REG_GLOB_CMD;
         DEBUG_SET_PIN(2, 1);
-        if (!dev->transfer((const uint8_t *)&data, sizeof(data), (uint8_t *)&data, sizeof(data))) {
+        if (!dev->transfer_fullduplex((uint8_t *)&data, sizeof(data))) {
             break;
         }
         DEBUG_SET_PIN(2, 0);

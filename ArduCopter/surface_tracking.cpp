@@ -18,7 +18,7 @@ void Copter::SurfaceTracking::update_surface_offset()
         AP_SurfaceDistance &rf_state = (surface == Surface::GROUND) ? copter.rangefinder_state : copter.rangefinder_up_state;
 
         // update position controller target offset to the surface's alt above the EKF origin
-        copter.pos_control->set_pos_terrain_target_cm(rf_state.terrain_offset_cm);
+        copter.pos_control->set_pos_terrain_target_U_m(rf_state.terrain_offset_m);
         last_update_ms = now_ms;
         valid_for_logging = true;
 
@@ -28,7 +28,7 @@ void Copter::SurfaceTracking::update_surface_offset()
         if (timeout ||
             reset_target ||
             (last_glitch_cleared_ms != rf_state.glitch_cleared_ms)) {
-            copter.pos_control->init_pos_terrain_cm(rf_state.terrain_offset_cm);
+            copter.pos_control->init_pos_terrain_U_m(rf_state.terrain_offset_m);
             reset_target = false;
             last_glitch_cleared_ms = rf_state.glitch_cleared_ms;
         }
@@ -37,14 +37,14 @@ void Copter::SurfaceTracking::update_surface_offset()
         // reset position controller offsets if surface tracking is inactive
         // flag target should be reset when/if it next becomes active
         if (timeout && !reset_target) {
-            copter.pos_control->init_pos_terrain_cm(0);
+            copter.pos_control->init_pos_terrain_U_m(0);
             valid_for_logging = false;
             reset_target = true;
         }
     }
 }
 
-// target has already been set by terrain following so do not initalise again
+// target has already been set by terrain following so do not initialise again
 // this should be called by flight modes when switching from terrain following to surface tracking (e.g. ZigZag)
 void Copter::SurfaceTracking::external_init()
 {
@@ -54,20 +54,20 @@ void Copter::SurfaceTracking::external_init()
     }
 }
 
-bool Copter::SurfaceTracking::get_target_dist_for_logging(float &target_dist) const
+bool Copter::SurfaceTracking::get_target_dist_for_logging(float &target_dist_m) const
 {
     if (!valid_for_logging || (surface == Surface::NONE)) {
         return false;
     }
 
     const float dir = (surface == Surface::GROUND) ? 1.0f : -1.0f;
-    target_dist = dir * copter.pos_control->get_pos_desired_z_cm() * 0.01f;
+    target_dist_m = dir * copter.pos_control->get_pos_desired_U_m();
     return true;
 }
 
 float Copter::SurfaceTracking::get_dist_for_logging() const
 {
-    return ((surface == Surface::CEILING) ? copter.rangefinder_up_state.alt_cm : copter.rangefinder_state.alt_cm) * 0.01f;
+    return ((surface == Surface::CEILING) ? copter.rangefinder_up_state.alt_m : copter.rangefinder_state.alt_m);
 }
 
 // set direction

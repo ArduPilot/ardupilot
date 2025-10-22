@@ -1,4 +1,4 @@
 include ../f303-periph/hwdef.inc
 
 
-define HAL_PERIPH_ENABLE_HWESC
+define AP_PERIPH_HOBBYWING_ESC_ENABLED 1

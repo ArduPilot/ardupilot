@@ -4,7 +4,7 @@
 
 // Code to detect a crash main ArduCopter code
 #define LAND_CHECK_ANGLE_ERROR_DEG  30.0f       // maximum angle error to be considered landing
-#define LAND_CHECK_LARGE_ANGLE_CD   1500.0f     // maximum angle target to be considered landing
+#define LAND_CHECK_LARGE_ANGLE_RAD   radians(15.0f)     // maximum angle target to be considered landing
 #define LAND_CHECK_ACCEL_MOVING     3.0f        // maximum acceleration after subtracting gravity
 
 
@@ -82,11 +82,11 @@ void Copter::update_land_detector()
         // check if landing
         const bool landing = flightmode->is_landing();
         SET_LOG_FLAG(landing, LandDetectorLoggingFlag::LANDING);
-        bool motor_at_lower_limit = (flightmode->has_manual_throttle() && (motors->get_below_land_min_coll() || heli_flags.coll_stk_low) && fabsf(ahrs.get_roll()) < M_PI/2.0f)
+        bool motor_at_lower_limit = (flightmode->has_manual_throttle() && (motors->get_below_land_min_coll() || heli_flags.coll_stk_low) && fabsf(ahrs.get_roll_rad()) < M_PI/2.0f)
 #if MODE_AUTOROTATE_ENABLED
                                     || (flightmode->mode_number() == Mode::Number::AUTOROTATE && motors->get_below_land_min_coll())
 #endif
-                                    || ((!get_force_flying() || landing) && motors->limit.throttle_lower && pos_control->get_vel_desired_cms().z < 0.0f);
+                                    || ((!get_force_flying() || landing) && motors->limit.throttle_lower && pos_control->get_vel_desired_NEU_ms().z < 0.0f);
         bool throttle_mix_at_min = true;
 #else
         // check that the average throttle output is near minimum (less than 12.5% hover throttle)
@@ -111,8 +111,8 @@ void Copter::update_land_detector()
 #endif
 
         // check for aggressive flight requests - requested roll or pitch angle below 15 degrees
-        const Vector3f angle_target = attitude_control->get_att_target_euler_cd();
-        bool large_angle_request = angle_target.xy().length() > LAND_CHECK_LARGE_ANGLE_CD;
+        const Vector3f& angle_target_rad = attitude_control->get_att_target_euler_rad();
+        bool large_angle_request = angle_target_rad.xy().length_squared() > sq(LAND_CHECK_LARGE_ANGLE_RAD);
         SET_LOG_FLAG(large_angle_request, LandDetectorLoggingFlag::LARGE_ANGLE_REQUEST);
 
         // check for large external disturbance - angle error over 30 degrees
@@ -125,11 +125,13 @@ void Copter::update_land_detector()
         SET_LOG_FLAG(accel_stationary, LandDetectorLoggingFlag::ACCEL_STATIONARY);
 
         // check that vertical speed is within 1m/s of zero
-        bool descent_rate_low = fabsf(inertial_nav.get_velocity_z_up_cms()) < 100.0 * LAND_DETECTOR_VEL_Z_MAX * land_detector_scalar;
+        float vel_d_ms = 0;
+        UNUSED_RESULT(AP::ahrs().get_velocity_D(vel_d_ms, copter.vibration_check.high_vibes));
+        const bool descent_rate_low = fabsf(vel_d_ms) < LAND_DETECTOR_VEL_Z_MAX * land_detector_scalar;
         SET_LOG_FLAG(descent_rate_low, LandDetectorLoggingFlag::DESCENT_RATE_LOW);
 
         // if we have a healthy rangefinder only allow landing detection below 2 meters
-        bool rangefinder_check = (!rangefinder_alt_ok() || rangefinder_state.alt_cm_filt.get() < LAND_RANGEFINDER_MIN_ALT_CM);
+        bool rangefinder_check = (!rangefinder_alt_ok() || rangefinder_state.alt_m_filt.get() < LAND_RANGEFINDER_MIN_ALT_M);
         SET_LOG_FLAG(rangefinder_check, LandDetectorLoggingFlag::RANGEFINDER_BELOW_2M);
 
         // if we have weight on wheels (WoW) or ambiguous unknown. never no WoW
@@ -296,8 +298,8 @@ void Copter::update_throttle_mix()
         // autopilot controlled throttle
 
         // check for aggressive flight requests - requested roll or pitch angle below 15 degrees
-        const Vector3f angle_target = attitude_control->get_att_target_euler_cd();
-        bool large_angle_request = angle_target.xy().length() > LAND_CHECK_LARGE_ANGLE_CD;
+        const Vector3f& angle_target_rad = attitude_control->get_att_target_euler_rad();
+        bool large_angle_request = angle_target_rad.xy().length_squared() > sq(LAND_CHECK_LARGE_ANGLE_RAD);
 
         // check for large external disturbance - angle error over 30 degrees
         const float angle_error = attitude_control->get_att_error_angle_deg();
@@ -307,13 +309,13 @@ void Copter::update_throttle_mix()
         const bool accel_moving = (land_accel_ef_filter.get().length() > LAND_CHECK_ACCEL_MOVING);
 
         // check for requested descent
-        bool descent_not_demanded = pos_control->get_vel_desired_cms().z >= 0.0f;
+        bool descent_not_demanded = pos_control->get_vel_desired_NEU_ms().z >= 0.0f;
 
         // check if landing
         const bool landing = flightmode->is_landing();
 
         if (((large_angle_request || get_force_flying()) && !landing) || large_angle_error || accel_moving || descent_not_demanded) {
-            attitude_control->set_throttle_mix_max(pos_control->get_vel_z_control_ratio());
+            attitude_control->set_throttle_mix_max(pos_control->get_vel_U_control_ratio());
         } else {
             attitude_control->set_throttle_mix_min();
         }

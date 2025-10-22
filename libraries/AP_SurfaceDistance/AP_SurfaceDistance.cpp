@@ -16,11 +16,11 @@
 #endif
 
 #ifndef RANGEFINDER_GLITCH_NUM_SAMPLES
- # define RANGEFINDER_GLITCH_NUM_SAMPLES  3   // number of rangefinder glitches in a row to take new reading
+ # define RANGEFINDER_GLITCH_NUM_SAMPLES  3 // number of rangefinder glitches in a row to take new reading
 #endif
 
 #ifndef RANGEFINDER_GLITCH_ALT_CM
- # define RANGEFINDER_GLITCH_ALT_CM  200      // amount of rangefinder change to be considered a glitch
+ # define RANGEFINDER_GLITCH_ALT_M 2.00     // amount of rangefinder change to be considered a glitch
 #endif
 
 #ifndef RANGEFINDER_HEALTH_MIN
@@ -69,31 +69,28 @@ void AP_SurfaceDistance::update()
     }
 
     // tilt corrected but unfiltered, not glitch protected alt
-    alt_cm = tilt_correction * rangefinder->distance_cm_orient(rotation);
+    alt_m = tilt_correction * rangefinder->distance_orient(rotation);
 
-    // remember inertial alt to allow us to interpolate rangefinder
-    inertial_alt_cm = inertial_nav.get_position_z_up_cm();
-
-    // glitch handling.  rangefinder readings more than RANGEFINDER_GLITCH_ALT_CM from the last good reading
+    // Glitch Handling. Rangefinder readings more than RANGEFINDER_GLITCH_ALT_M from the last good reading
     // are considered a glitch and glitch_count becomes non-zero
     // glitches clear after RANGEFINDER_GLITCH_NUM_SAMPLES samples in a row.
     // glitch_cleared_ms is set so surface tracking (or other consumers) can trigger a target reset
-    const int32_t glitch_cm = alt_cm - alt_cm_glitch_protected;
+    const float glitch_m = alt_m - alt_glitch_protected_m;
     bool reset_terrain_offset = false;
-    if (glitch_cm >= RANGEFINDER_GLITCH_ALT_CM) {
+    if (glitch_m >= RANGEFINDER_GLITCH_ALT_M) {
         glitch_count = MAX(glitch_count+1, 1);
         status |= (uint8_t)Surface_Distance_Status::Glitch_Detected;
-    } else if (glitch_cm <= -RANGEFINDER_GLITCH_ALT_CM) {
+    } else if (glitch_m <= -RANGEFINDER_GLITCH_ALT_M) {
         glitch_count = MIN(glitch_count-1, -1);
         status |= (uint8_t)Surface_Distance_Status::Glitch_Detected;
     } else {
         glitch_count = 0;
-        alt_cm_glitch_protected = alt_cm;
+        alt_glitch_protected_m = alt_m;
     }
     if (abs(glitch_count) >= RANGEFINDER_GLITCH_NUM_SAMPLES) {
         // clear glitch and record time so consumers (i.e. surface tracking) can reset their target altitudes
         glitch_count = 0;
-        alt_cm_glitch_protected = alt_cm;
+        alt_glitch_protected_m = alt_m;
         glitch_cleared_ms = now;
         reset_terrain_offset = true;
     }
@@ -103,24 +100,31 @@ void AP_SurfaceDistance::update()
     if (alt_healthy) {
         if (timed_out) {
             // reset filter if we haven't used it within the last second
-            alt_cm_filt.reset(alt_cm);
+            alt_m_filt.reset(alt_m);
             reset_terrain_offset = true;
             status |= (uint8_t)Surface_Distance_Status::Stale_Data;
         } else {
             // TODO: When we apply this library in plane we will need to be able to set the filter freq
-            alt_cm_filt.apply(alt_cm, 0.05);
+            // we should be using the updated dt not 0.05
+            alt_m_filt.apply(alt_m, 0.05);
         }
         last_healthy_ms = now;
+    }
+
+    // remember inertial alt to allow us to interpolate rangefinder
+    float pos_d_m;
+    if (AP::ahrs().get_relative_position_D_origin_float(pos_d_m)) {
+        inertial_alt_m = -pos_d_m;
     }
 
     // handle reset of terrain offset
     if (reset_terrain_offset) {
         if (rotation == ROTATION_PITCH_90) {
             // upward facing
-            terrain_offset_cm = inertial_alt_cm + alt_cm;
+            terrain_offset_m = inertial_alt_m + alt_m;
         } else {
             // assume downward facing
-            terrain_offset_cm = inertial_alt_cm - alt_cm;
+            terrain_offset_m = inertial_alt_m - alt_m;
         }
     }
 #if HAL_LOGGING_ENABLED
@@ -134,13 +138,20 @@ void AP_SurfaceDistance::update()
   difference between the inertial height at that time and the current
   inertial height to give us interpolation of height from rangefinder
  */
-bool AP_SurfaceDistance::get_rangefinder_height_interpolated_cm(int32_t& ret) const
+bool AP_SurfaceDistance::get_rangefinder_height_interpolated_m(float& height_m) const
 {
     if (!enabled_and_healthy()) {
         return false;
     }
-    ret = alt_cm_filt.get();
-    ret += inertial_nav.get_position_z_up_cm() - inertial_alt_cm;
+
+    // get inertial alt
+    float pos_d_m;
+    if (!AP::ahrs().get_relative_position_D_origin_float(pos_d_m)) {
+        return false;
+    }
+
+    height_m = alt_m_filt.get();
+    height_m += -pos_d_m - inertial_alt_m;
     return true;
 }
 
@@ -166,9 +177,9 @@ void AP_SurfaceDistance::Log_Write(void) const
                                 AP_HAL::micros64(),
                                 instance,
                                 status,
-                                (float)alt_cm * 0.01,
-                                (float)alt_cm_filt.get() * 0.01,
-                                (float)terrain_offset_cm * 0.01
+                                (float)alt_m,
+                                (float)alt_m_filt.get(),
+                                (float)terrain_offset_m
                                 );
 }
 #endif  // HAL_LOGGING_ENABLED

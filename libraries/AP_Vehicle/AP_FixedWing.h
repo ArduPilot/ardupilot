@@ -12,6 +12,7 @@ struct AP_FixedWing {
     AP_Int8 throttle_cruise;
     AP_Int8 takeoff_throttle_max;
     AP_Int8 takeoff_throttle_min;
+    AP_Int8 takeoff_throttle_idle;
     AP_Int32 takeoff_options;
     AP_Int16 airspeed_min;
     AP_Int16 airspeed_max;

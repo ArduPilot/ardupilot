@@ -9,7 +9,7 @@ public:
 
 private:
     void mcast_server(void);
-    void can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &frame);
+    void can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &frame, AP_HAL::CANIface::CanIOFlags flags);
     SocketAPM *mcast_sockets[HAL_NUM_CAN_IFACES];
 
     uint8_t bus_mask;

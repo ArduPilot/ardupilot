@@ -2,6 +2,10 @@
 /// @brief	Motor control class for Tricopters
 #pragma once
 
+#include "AP_Motors_config.h"
+
+#if AP_MOTORS_TRI_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include "AP_MotorsMulticopter.h"
@@ -42,7 +46,7 @@ public:
     // mask. This is used to control tiltrotor motors in forward
     // flight. Thrust is in the range 0 to 1
     // rudder_dt applys diffential thrust for yaw in the range 0 to 1
-    void                output_motor_mask(float thrust, uint16_t mask, float rudder_dt) override;
+    void                output_motor_mask(float thrust, uint32_t mask, float rudder_dt) override;
 
     // return the roll factor of any motor, this is used for tilt rotors and tail sitters
     // using copter motors for forward flight
@@ -83,3 +87,5 @@ protected:
     bool _pitch_reversed;
     bool _have_tail_servo;
 };
+
+#endif  // AP_MOTORS_TRI_ENABLED

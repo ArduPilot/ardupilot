@@ -120,7 +120,7 @@ void AP_ADSB_Sagetech_MXS::update()
             (mxs_state.inst.icao != (uint32_t)_frontend.out_state.cfg.ICAO_id_param.get() ||
             mxs_state.inst.emitter != convert_emitter_type_to_sg(_frontend.out_state.cfg.emitterType.get()) ||
             mxs_state.inst.size != _frontend.out_state.cfg.lengthWidth.get() ||
-            mxs_state.inst.maxSpeed != convert_airspeed_knots_to_sg(_frontend.out_state.cfg.maxAircraftSpeed_knots)
+            mxs_state.inst.maxSpeed != (sg_airspeed_t)AP_ADSB::convert_maxknots_to_enum(_frontend.out_state.cfg.maxAircraftSpeed_knots)
             )) {
         last.packet_initialize_ms = now_ms;
         send_install_msg();
@@ -150,7 +150,7 @@ void AP_ADSB_Sagetech_MXS::update()
         last.operating_rf_select = _frontend.out_state.cfg.rfSelect;
         last.modeAEnabled = _frontend.out_state.ctrl.modeAEnabled;
         last.modeCEnabled = _frontend.out_state.ctrl.modeCEnabled;
-        last.modeSEnabled = _frontend.out_state.ctrl.modeSEnabled;
+        last.modeSEnabled = (_frontend._options & uint32_t(AP_ADSB::AdsbOption::Mode3_Only)) ? 0 : _frontend.out_state.ctrl.modeSEnabled;
 
         last.operating_alt = _frontend._my_loc.alt;
         last.packet_Operating_ms = now_ms;
@@ -358,7 +358,7 @@ void AP_ADSB_Sagetech_MXS::auto_config_installation()
     mxs_state.inst.sda = sg_sda_t::sdaUnknown;
     mxs_state.inst.emitter = convert_emitter_type_to_sg(_frontend.out_state.cfg.emitterType.get());
     mxs_state.inst.size = (sg_size_t)_frontend.out_state.cfg.lengthWidth.get();
-    mxs_state.inst.maxSpeed = convert_airspeed_knots_to_sg(_frontend.out_state.cfg.maxAircraftSpeed_knots);
+    mxs_state.inst.maxSpeed = (sg_airspeed_t)AP_ADSB::convert_maxknots_to_enum(_frontend.out_state.cfg.maxAircraftSpeed_knots);
     mxs_state.inst.altOffset = 0;         // Alt encoder offset is legacy field that should always be 0.
     mxs_state.inst.antenna = sg_antenna_t::antBottom;
 
@@ -511,7 +511,7 @@ void AP_ADSB_Sagetech_MXS::send_install_msg()
     mxs_state.inst.icao = (uint32_t)_frontend.out_state.cfg.ICAO_id_param.get();
     mxs_state.inst.emitter = convert_emitter_type_to_sg(_frontend.out_state.cfg.emitterType.get());
     mxs_state.inst.size = (sg_size_t)_frontend.out_state.cfg.lengthWidth.get();
-    mxs_state.inst.maxSpeed = convert_airspeed_knots_to_sg(_frontend.out_state.cfg.maxAircraftSpeed_knots);
+    mxs_state.inst.maxSpeed = (sg_airspeed_t)AP_ADSB::convert_maxknots_to_enum(_frontend.out_state.cfg.maxAircraftSpeed_knots);
     mxs_state.inst.antenna = sg_antenna_t::antBottom;
 
     last.msg.type = SG_MSG_TYPE_HOST_INSTALL;

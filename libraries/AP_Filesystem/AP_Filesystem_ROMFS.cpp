@@ -32,6 +32,8 @@ int AP_Filesystem_ROMFS::open(const char *fname, int flags, bool allow_absolute_
         errno = EROFS;
         return -1;
     }
+
+    WITH_SEMAPHORE(record_sem); // search for free file record
     uint8_t idx;
     for (idx=0; idx<max_open_file; idx++) {
         if (file[idx].data == nullptr) {
@@ -40,10 +42,6 @@ int AP_Filesystem_ROMFS::open(const char *fname, int flags, bool allow_absolute_
     }
     if (idx == max_open_file) {
         errno = ENFILE;
-        return -1;
-    }
-    if (file[idx].data != nullptr) {
-        errno = EBUSY;
         return -1;
     }
     file[idx].data = AP_ROMFS::find_decompress(fname, file[idx].size);
@@ -61,6 +59,8 @@ int AP_Filesystem_ROMFS::close(int fd)
         errno = EBADF;
         return -1;
     }
+
+    WITH_SEMAPHORE(record_sem); // release file record
     AP_ROMFS::free(file[fd].data);
     file[fd].data = nullptr;
     return 0;
@@ -142,6 +142,7 @@ int AP_Filesystem_ROMFS::mkdir(const char *pathname)
 
 void *AP_Filesystem_ROMFS::opendir(const char *pathname)
 {
+    WITH_SEMAPHORE(record_sem); // search for free directory record
     uint8_t idx;
     for (idx=0; idx<max_open_dir; idx++) {
         if (dir[idx].path == nullptr) {
@@ -216,6 +217,8 @@ int AP_Filesystem_ROMFS::closedir(void *dirp)
         errno = EBADF;
         return -1;
     }
+
+    WITH_SEMAPHORE(record_sem); // release directory record
     free(dir[idx].path);
     dir[idx].path = nullptr;
     return 0;

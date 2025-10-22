@@ -44,7 +44,7 @@ public:
 
     const char *name() const override { return _name; }
 
-    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
+    static bool subscribe_msgs(AP_DroneCAN* ap_dronecan);
     static AP_GPS_Backend* probe(AP_GPS &_gps, AP_GPS::GPS_State &_state);
 
     static void handle_fix2_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_gnss_Fix2& msg);
@@ -111,6 +111,7 @@ private:
     bool seen_aux;
     bool seen_status;
     bool seen_relposheading;
+    bool seen_valid_height_ellipsoid;
 
     bool healthy;
     uint32_t status_flags;
@@ -131,6 +132,7 @@ private:
 #if GPS_MOVING_BASELINE
     // RTCM3 parser for when in moving baseline base mode
     RTCM3_Parser *rtcm3_parser;
+    uint32_t last_base_warning_ms;
 #endif
     // the role set from GPS_TYPE
     AP_GPS::GPS_Role role;

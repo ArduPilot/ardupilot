@@ -5,7 +5,7 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_LongbowF405
 
 # crystal frequency
@@ -182,13 +182,11 @@ include ../include/minimize_fpv_osd.inc
 #undef AP_LANDINGGEAR_ENABLED
 #undef HAL_MOUNT_ENABLED
 #undef HAL_MOUNT_SERVO_ENABLED
-#undef QAUTOTUNE_ENABLED
 
 #define AP_CAMERA_MOUNT_ENABLED 1
 #define AP_LANDINGGEAR_ENABLED 1
 #define HAL_MOUNT_ENABLED 1
 #define HAL_MOUNT_SERVO_ENABLED 1
-#define QAUTOTUNE_ENABLED 1
 
 #define DEFAULT_NTF_LED_TYPES 257
 

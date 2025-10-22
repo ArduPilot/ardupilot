@@ -103,24 +103,25 @@ int16_t ftoa_engine(float val, char *buf, uint8_t precision, uint8_t maxDecimals
     // Read the sign, shift the exponent in place and delete it from frac.
     if (valbits[3] & (1<<7)) flags = FTOA_MINUS; else flags = 0;
     uint8_t exp = valbits[3]<<1;
-    if(valbits[2] & (1<<7)) exp++;    // TODO possible but in case of subnormal
+    if(valbits[2] & (1<<7)) exp++;
 
-    // Test for easy cases, zero and NaN
-    if(exp==0 && frac==0) {
-        buf[0] = flags | FTOA_ZERO;
-        uint8_t i;
-        for(i=0; i<=precision; i++) {
-            buf[i+1] = '0';
+    // Test for easy cases
+    if(exp==0) { // Zero or subnormal
+        if(frac == 0) { // Zero
+            buf[0] = flags | FTOA_ZERO;
+            uint8_t i;
+            for(i=0; i<=precision; i++) {
+                buf[i+1] = '0';
+            }
+            return 0;
+        } else { // Subnormal
+            exp = 1; // Subnormal mantissa has same significance as exp=1
         }
-        return 0;
+    } else if(exp==0xff) { // Infinity or NaN
+        if(frac==0) flags |= FTOA_INF; else flags |= FTOA_NAN;
+    } else { // Normal number
+        frac |= (1UL<<23); // The implicit leading 1 is made explicit
     }
-
-    if(exp == 0xff) {
-        if(frac == 0) flags |= FTOA_INF; else flags |= FTOA_NAN;
-    }
-
-    // The implicit leading 1 is made explicit, except if value subnormal.
-    if (exp != 0) frac |= (1UL<<23);
 
     uint8_t idx = exp>>3;
     int8_t exp10 = exponentTable[idx];
@@ -145,6 +146,12 @@ int16_t ftoa_engine(float val, char *buf, uint8_t precision, uint8_t maxDecimals
 
     do {
         char digit = '0';
+        if(decimal == 0) {
+            // Abnormal case, can't ever add enough digits to exit the loop,
+            // bail out. This will happen for subnormals with frac <= 7 and
+            // precision == 7.
+            break;
+        }
         while(1) {// find the first nonzero digit or any of the next digits.
             while ((prod -= decimal) >= 0)
                 digit++;

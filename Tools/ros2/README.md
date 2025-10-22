@@ -191,7 +191,7 @@ install MAVProxy if it is not available on the container.
 
 
 ```bash
-pip install -U MAVProxy
+python3 -m pip install -U MAVProxy
 ```
 
 

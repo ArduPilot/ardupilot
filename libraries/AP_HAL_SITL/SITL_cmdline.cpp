@@ -115,7 +115,7 @@ void SITL_State::_usage(void)
            "\t--sim-port-out PORT      set port num for simulator out\n"
            "\t--irlock-port PORT       set port num for irlock\n"
            "\t--start-time TIMESTR     set simulation start time in UNIX timestamp\n"
-           "\t--sysid ID               set SYSID_THISMAV\n"
+           "\t--sysid ID               set MAV_SYSID\n"
            "\t--slave number           set the number of JSON slaves\n"
         );
 }
@@ -125,7 +125,9 @@ static const struct {
     Aircraft *(*constructor)(const char *frame_str);
 } model_constructors[] = {
     { "quadplane",          QuadPlane::create },
+#if AP_SIM_XPLANE_ENABLED
     { "xplane",             XPlane::create },
+#endif  // AP_SIM_XPLANE_ENABLED
     { "firefly",            QuadPlane::create },
     { "+",                  MultiCopter::create },
     { "quad",               MultiCopter::create },
@@ -143,7 +145,10 @@ static const struct {
     { "octa-cwx",           MultiCopter::create },
     { "octa-dji",           MultiCopter::create },
     { "octa-quad-cwx",      MultiCopter::create },
+    { "dotriaconta_octaquad_x", MultiCopter::create },
     { "dodeca-hexa",        MultiCopter::create },
+    { "hexadeca-octa",      MultiCopter::create },
+    { "hexadeca-octa-cwx",  MultiCopter::create },
     { "tri",                MultiCopter::create },
     { "y6",                 MultiCopter::create },
     { "deca",               MultiCopter::create },
@@ -158,11 +163,21 @@ static const struct {
     { "balancebot",         BalanceBot::create },
     { "sailboat",           Sailboat::create },
     { "motorboat",          MotorBoat::create },
+#if AP_SIM_CRRCSIM_ENABLED
     { "crrcsim",            CRRCSim::create },
+#endif  // AP_SIM_CRRCSIM_ENABLED
+#if AP_SIM_JSBSIM_ENABLED
     { "jsbsim",             JSBSim::create },
+#endif  // AP_SIM_JSBSIM_ENABLED
+#if AP_SIM_FLIGHTAXIS_ENABLED
     { "flightaxis",         FlightAxis::create },
+#endif  // AP_SIM_FLIGHTAXIS_ENABLED
+#if AP_SIM_GAZEBO_ENABLED
     { "gazebo",             Gazebo::create },
+#endif  // AP_SIM_GAZEBO_ENABLED
+#if AP_SIM_LAST_LETTER_ENABLED
     { "last_letter",        last_letter::create },
+#endif  // AP_SIM_LAST_LETTER_ENABLED
     { "tracker",            Tracker::create },
     { "balloon",            Balloon::create },
     { "glider",             Glider::create },
@@ -170,13 +185,25 @@ static const struct {
     { "calibration",        Calibration::create },
     { "vectored",           Submarine::create },
     { "vectored_6dof",      Submarine::create },
+#if AP_SIM_SILENTWINGS_ENABLED
     { "silentwings",        SilentWings::create },
+#endif  // AP_SIM_SILENTWINGS_ENABLED
+#if AP_SIM_MORSE_ENABLED
     { "morse",              Morse::create },
+#endif  // AP_SIM_MORSE_ENABLED
+#if AP_SIM_AIRSIM_ENABLED
     { "airsim",             AirSim::create},
+#endif  // AP_SIM_AIRSIM_ENABLED
+#if AP_SIM_SCRIMMAGE_ENABLED
     { "scrimmage",          Scrimmage::create },
+#endif  // AP_SIM_SCRIMMAGE_ENABLED
     { "webots-python",      WebotsPython::create },
+#if AP_SIM_WEBOTS_ENABLED
     { "webots",             Webots::create },
+#endif  // AP_SIM_WEBOTS_ENABLED
+#if AP_SIM_JSON_ENABLED
     { "JSON",               JSON::create },
+#endif  // AP_SIM_JSON_ENABLED
     { "blimp",              Blimp::create },
     { "novehicle",          NoVehicle::create },
 #if AP_SIM_STRATOBLIMP_ENABLED
@@ -209,7 +236,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     float speedup = 1.0f;
     float sim_rate_hz = 0;
     _instance = 0;
-    _synthetic_clock_mode = false;
     // default to CMAC
     const char *home_str = nullptr;
     const char *model_str = nullptr;
@@ -422,7 +448,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             _set_param_default(gopt.optarg);
             break;
         case 'S':
-            _synthetic_clock_mode = true;
+            printf("Ignoring stale command-line parameter '-S'");
             break;
         case 'O':
             home_str = gopt.optarg;
@@ -514,9 +540,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
                 fprintf(stderr, "You must specify a SYSID greater than 0 and less than 256\n");
                 exit(1);
             }
-            temp_cmdline_param = {"SYSID_THISMAV", static_cast<float>(sysid)};
+            temp_cmdline_param = {"MAV_SYSID", static_cast<float>(sysid)};
             cmdline_param.push(temp_cmdline_param);
-            printf("Setting SYSID_THISMAV=%d\n", sysid);
+            printf("Setting MAV_SYSID=%d\n", sysid);
             break;
         }
 #if STORAGE_USE_POSIX
@@ -538,12 +564,12 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             _usage();
             exit(0);
         case CMDLINE_SLAVE: {
-#if HAL_SIM_JSON_MASTER_ENABLED
+#if AP_SIM_JSON_MASTER_ENABLED
             const int32_t slaves = atoi(gopt.optarg);
             if (slaves > 0) {
                 ride_along.init(slaves);
             }
-#endif
+#endif  // AP_SIM_JSON_MASTER_ENABLED
             break;
         }
         default:
@@ -586,7 +612,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             sitl_model->set_instance(_instance);
             sitl_model->set_autotest_dir(autotest_dir);
             sitl_model->set_config(config);
-            _synthetic_clock_mode = true;
             break;
         }
     }

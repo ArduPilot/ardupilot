@@ -108,6 +108,7 @@ float AP_Proximity_RPLidarA2::distance_max() const
         return 8.0f;
     case Model::A2:
         return 16.0f;
+    case Model::A2M12:
     case Model::C1:
         return 12.0f;
     case Model::S1:
@@ -124,6 +125,7 @@ float AP_Proximity_RPLidarA2::distance_min() const
         return 0.0f;
     case Model::A1:
     case Model::A2:
+    case Model::A2M12:
     case Model::C1:
     case Model::S1:
         return 0.2f;
@@ -335,6 +337,10 @@ void AP_Proximity_RPLidarA2::parse_response_device_info()
     case 0x28:
         model = Model::A2;
         device_type = "A2";
+        break;
+    case 0x2C:
+        model = Model::A2M12;
+        device_type = "A2M12";
         break;
     case 0x41:
         model=Model::C1;

@@ -175,7 +175,7 @@ void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_
     }
 
     // calculate angle of input stick vector
-    heading_out = wrap_360_cd(atan2f(desired_steering, desired_throttle) * DEGX100);
+    heading_out = wrap_360_cd(rad_to_cd(atan2f(desired_steering, desired_throttle)));
 
     // calculate throttle using magnitude of input stick vector
     const float throttle = MIN(safe_sqrt(sq(desired_throttle) + sq(desired_steering)), 1.0f);
@@ -292,7 +292,7 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
 #if AP_AVOIDANCE_ENABLED
     // apply object avoidance to desired speed using half vehicle's maximum deceleration
     if (avoidance_enabled) {
-        g2.avoid.adjust_speed(0.0f, 0.5f * attitude_control.get_decel_max(), ahrs.get_yaw(), target_speed, rover.G_Dt);
+        g2.avoid.adjust_speed(0.0f, 0.5f * attitude_control.get_decel_max(), ahrs.get_yaw_rad(), target_speed, rover.G_Dt);
         if (g2.sailboat.tack_enabled() && g2.avoid.limits_active()) {
             // we are a sailboat trying to avoid fence, try a tack
             if (rover.control_mode != &rover.mode_acro) {

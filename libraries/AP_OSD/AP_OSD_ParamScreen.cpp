@@ -388,37 +388,13 @@ void AP_OSD_ParamScreen::modify_configured_parameter(uint8_t number, Event ev)
     }
 }
 
-// return radio values as LOW, MIDDLE, HIGH
-// this function uses different threshold values to RC_Chanel::get_aux_switch_pos()
-// to avoid glitching on the stick travel
-RC_Channel::AuxSwitchPos AP_OSD_ParamScreen::get_channel_pos(const RC_Channel &chanref) const
-{
-    const auto *chan = &chanref;
-
-    const uint16_t in = chan->get_radio_in();
-    if (in <= 900 || in >= 2200) {
-        return RC_Channel::AuxSwitchPos::LOW;
-    }
-
-    // switch is reversed if 'reversed' option set on channel and switches reverse is allowed by RC_OPTIONS
-    bool switch_reversed = chan->get_reverse() && rc().option_is_enabled(RC_Channels::Option::ALLOW_SWITCH_REV);
-
-    if (in < RC_Channel::AUX_PWM_TRIGGER_LOW) {
-        return switch_reversed ? RC_Channel::AuxSwitchPos::HIGH : RC_Channel::AuxSwitchPos::LOW;
-    } else if (in > RC_Channel::AUX_PWM_TRIGGER_HIGH) {
-        return switch_reversed ? RC_Channel::AuxSwitchPos::LOW : RC_Channel::AuxSwitchPos::HIGH;
-    } else {
-        return RC_Channel::AuxSwitchPos::MIDDLE;
-    }
-}
-
 // map rc input to an event
 AP_OSD_ParamScreen::Event AP_OSD_ParamScreen::map_rc_input_to_event() const
 {
-    const RC_Channel::AuxSwitchPos throttle = get_channel_pos(rc().get_throttle_channel());
-    const RC_Channel::AuxSwitchPos yaw = get_channel_pos(rc().get_yaw_channel());
-    const RC_Channel::AuxSwitchPos roll = get_channel_pos(rc().get_roll_channel());
-    const RC_Channel::AuxSwitchPos pitch = get_channel_pos(rc().get_pitch_channel());
+    const RC_Channel::AuxSwitchPos throttle = rc().get_throttle_channel().get_stick_gesture_pos();
+    const RC_Channel::AuxSwitchPos yaw = rc().get_yaw_channel().get_stick_gesture_pos();
+    const RC_Channel::AuxSwitchPos roll = rc().get_roll_channel().get_stick_gesture_pos();
+    const RC_Channel::AuxSwitchPos pitch = rc().get_pitch_channel().get_stick_gesture_pos();
 
     Event result = Event::NONE;
 

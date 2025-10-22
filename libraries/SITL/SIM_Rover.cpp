@@ -147,13 +147,15 @@ void SimRover::update_ackermann_or_skid(const struct sitl_input &input, float de
 
     // if in skid steering mode the steering and throttle values are used for motor1 and motor2
     if (skid_steering) {
-        float motor1 = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
-        float motor2 = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
+        const float motor1 = input.servos[0] ? normalise_servo_input(input.servos[0]) : 0;
+        const float motor2 = input.servos[2] ? normalise_servo_input(input.servos[2]) : 0;
         steering = motor1 - motor2;
         throttle = 0.5*(motor1 + motor2);
     } else {
-        steering = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
-        throttle = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
+        // steering here should really be "old steering" as no-pulses
+        // should yield no servo movement
+        steering = input.servos[0] ? normalise_servo_input(input.servos[0]) : 0;
+        throttle = input.servos[2] ? normalise_servo_input(input.servos[2]) : 0;
 
         // vectored thrust conversion
         if (vectored_thrust) {
@@ -197,16 +199,13 @@ void SimRover::update_ackermann_or_skid(const struct sitl_input &input, float de
 void SimRover::update_omni3(const struct sitl_input &input, float delta_time)
 {
     // in omni3 mode the first three servos are motor speeds
-    float motor1 = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
-    float motor2 = 2*((input.servos[1]-1000)/1000.0f - 0.5f);
-    float motor3 = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
 
     // use forward kinematics to calculate body frame velocity
-    Vector3f wheel_ang_vel(
-      motor1 * omni3_wheel_max_ang_vel,
-      motor2 * omni3_wheel_max_ang_vel,
-      motor3 * omni3_wheel_max_ang_vel
-    );
+    Vector3f wheel_ang_vel;
+    for (uint8_t i=0; i<3; i++) {
+        wheel_ang_vel[i] = input.servos[i] ? normalise_servo_input(input.servos[i]) : 0;
+    };
+    wheel_ang_vel *= omni3_wheel_max_ang_vel;
 
     // derivation of forward kinematics for an Omni3Mecanum rover
     // A. Gfrerrer. "Geometry and kinematics of the Mecanum wheel",

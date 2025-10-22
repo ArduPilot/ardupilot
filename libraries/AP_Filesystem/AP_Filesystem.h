@@ -38,6 +38,9 @@
 #if AP_FILESYSTEM_FATFS_ENABLED
 #include "AP_Filesystem_FATFS.h"
 #endif
+#if AP_FILESYSTEM_LITTLEFS_ENABLED
+#include "AP_Filesystem_FlashMemory_LittleFS.h"
+#endif
 
 struct dirent {
    char    d_name[MAX_NAME_LEN]; /* filename */
@@ -56,6 +59,9 @@ struct dirent {
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_QURT
 #include "AP_Filesystem_posix.h"
+#if AP_FILESYSTEM_LITTLEFS_ENABLED
+#include "AP_Filesystem_FlashMemory_LittleFS.h"
+#endif
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
@@ -103,6 +109,10 @@ public:
     DirHandle *opendir(const char *pathname);
     struct dirent *readdir(DirHandle *dirp);
     int closedir(DirHandle *dirp);
+
+    // return number of bytes that should be written before fsync for optimal
+    // streaming performance/robustness. if zero, any number can be written.
+    uint32_t bytes_until_fsync(int fd);
 
     // return free disk space in bytes, -1 on error
     int64_t disk_free(const char *path);

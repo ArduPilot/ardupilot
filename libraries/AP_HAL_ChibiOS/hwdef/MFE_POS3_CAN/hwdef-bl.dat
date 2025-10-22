@@ -1,0 +1,72 @@
+# hw definition file for processing by chibios_pins.py
+
+# MCU class and specific type
+MCU STM32F4xx STM32F427xx
+
+FLASH_RESERVE_START_KB 0
+FLASH_BOOTLOADER_LOAD_KB 32
+
+# reserve some space for params
+APP_START_OFFSET_KB 4
+
+# 128k flash part
+FLASH_SIZE_KB 2048
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MFE_POS3_CAN
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# debug on USART1
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+define CH_CFG_ST_FREQUENCY 1000000
+
+# order of UARTs
+SERIAL_ORDER 
+
+# blue LED
+PC6 LED_BOOTLOADER OUTPUT HIGH
+define HAL_LED_ON 1
+
+#PA0 LED_RED OUTPUT LOW
+#PA2 LED_GREEN OUTPUT LOW
+#PA3 LED_SAFETY OUTPUT LOW
+#PA4 VDD_3V3_SENSORS_EN OUTPUT LOW
+
+# USART1
+PB6 USART1_TX USART1
+PB7 USART1_RX USART1
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+define HAL_USE_SERIAL TRUE
+
+define STM32_SERIAL_USE_USART1 TRUE
+define STM32_SERIAL_USE_USART2 TRUE
+define STM32_SERIAL_USE_USART3 FALSE
+
+define HAL_USE_EMPTY_IO TRUE
+
+define DMA_RESERVE_SIZE 0
+
+# enable CAN support
+PB8 CAN1_RX CAN1
+PB9 CAN1_TX CAN1
+PB5 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+# make bl baudrate match debug baudrate for easier debugging
+define BOOTLOADER_BAUDRATE 57600
+
+# use a smaller bootloader timeout
+define HAL_BOOTLOADER_TIMEOUT 2500
+
+# Add CS pins to ensure they are high in bootloader
+PA4 MAG_CS CS

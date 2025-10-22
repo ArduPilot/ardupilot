@@ -8,9 +8,11 @@
 
 #pragma once
 
-#include "AP_Mount_Backend.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_XACTI_ENABLED
+
+#include "AP_Mount_Backend.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
@@ -73,7 +75,7 @@ public:
     void send_camera_settings(mavlink_channel_t chan) const override;
 
     // subscribe to Xacti DroneCAN messages
-    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
+    static bool subscribe_msgs(AP_DroneCAN* ap_dronecan);
 
     // xacti specific message handlers
     static void handle_gimbal_attitude_status(AP_DroneCAN* ap_dronecan, const CanardRxTransfer& transfer, const com_xacti_GimbalAttitudeStatus &msg);
@@ -265,7 +267,6 @@ private:
     bool _camera_error;                             // true if status reports camera error
 
     // DroneCAN related variables
-    static bool _subscribed;                        // true once subscribed to receive DroneCAN messages
     static struct DetectedModules {
         AP_Mount_Xacti *driver;                     // pointer to Xacti backends
         AP_DroneCAN* ap_dronecan;                   // DroneCAN interface used by this backend

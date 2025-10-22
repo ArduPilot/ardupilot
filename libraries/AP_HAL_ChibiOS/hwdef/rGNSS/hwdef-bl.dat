@@ -12,8 +12,8 @@ APP_START_OFFSET_KB 4
 # 128k flash part
 FLASH_SIZE_KB 256
 
-# board ID for firmware load
-APJ_BOARD_ID 1103
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_rGNSS
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -53,11 +53,7 @@ define STM32_SERIAL_USE_USART1 TRUE
 define STM32_SERIAL_USE_USART2 FALSE
 define STM32_SERIAL_USE_USART3 FALSE
 
-define HAL_NO_GPIO_IRQ
 define HAL_USE_EMPTY_IO TRUE
-
-# avoid timer and RCIN threads to save memory
-define HAL_NO_TIMER_THREAD
 
 define DMA_RESERVE_SIZE 0
 

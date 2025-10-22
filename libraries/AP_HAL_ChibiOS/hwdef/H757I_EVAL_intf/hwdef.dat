@@ -18,8 +18,8 @@ define SMPS_PWR
 # crystal frequency
 OSCILLATOR_HZ 25000000
 
-# board ID for firmware load
-APJ_BOARD_ID 146
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_H757I_EVAL
 
 FLASH_SIZE_KB 2048
 
@@ -60,8 +60,6 @@ define HAL_STORAGE_SIZE 16384
 define HAL_USE_ADC FALSE
 define STM32_ADC_USE_ADC1 FALSE
 define HAL_DISABLE_ADC_DRIVER TRUE
-
-define HAL_NO_GPIO_IRQ
 
 PB13 VBUS INPUT OPENDRAIN
 

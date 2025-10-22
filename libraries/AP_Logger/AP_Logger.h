@@ -262,8 +262,6 @@ public:
     void Write_Radio(const mavlink_radio_t &packet);
     void Write_Message(const char *message);
     void Write_MessageF(const char *fmt, ...);
-    void Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct,
-                           float pos_cmd, float voltage, float current, float mot_temp, float pcb_temp, uint8_t error);
     void Write_Compass();
     void Write_Mode(uint8_t mode, const ModeReason reason);
 
@@ -301,7 +299,7 @@ public:
     // returns true if logging of a message should be attempted
     bool should_log(uint32_t mask) const;
 
-    bool logging_started(void);
+    bool logging_started(void) const;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     // currently only AP_Logger_File support this:
@@ -414,7 +412,8 @@ public:
         return _log_start_count;
     }
 
-    // add a filename to list of files to log. The name must be a constant string, not allocated
+    // add a filename to list of files to log. The name is copied internally so
+    // the pointer passed can be freed after return.
     void log_file_content(const char *name);
 
 protected:

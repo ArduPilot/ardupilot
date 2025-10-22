@@ -108,7 +108,9 @@ const AP_Param::GroupInfo AP_BattMonitor_INA2XX::var_info[] = {
     // @Units: Ohm
     // @User: Advanced
     AP_GROUPINFO("SHUNT", 28, AP_BattMonitor_INA2XX, rShunt, DEFAULT_BATTMON_INA2XX_SHUNT),
-    
+
+    // CHECK/UPDATE INDEX TABLE IN AP_BattMonitor_Backend.cpp WHEN CHANGING OR ADDING PARAMETERS
+
     AP_GROUPEND
 };
 
@@ -123,7 +125,7 @@ AP_BattMonitor_INA2XX::AP_BattMonitor_INA2XX(AP_BattMonitor &mon,
 
 void AP_BattMonitor_INA2XX::init(void)
 {
-    dev = hal.i2c_mgr->get_device(i2c_bus, i2c_address, 100000, false, 20);
+    dev = hal.i2c_mgr->get_device_ptr(i2c_bus, i2c_address, 100000, false, 20);
     if (!dev) {
         return;
     }

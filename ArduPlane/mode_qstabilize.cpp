@@ -27,7 +27,7 @@ void ModeQStabilize::update()
         return;
     }
 
-    if (!plane.quadplane.option_is_set(QuadPlane::OPTION::INGORE_FW_ANGLE_LIMITS_IN_Q_MODES)) {
+    if (!plane.quadplane.option_is_set(QuadPlane::Option::INGORE_FW_ANGLE_LIMITS_IN_Q_MODES)) {
         // by default angles are also constrained by forward flight limits
         set_limited_roll_pitch(roll_input, pitch_input);
     } else {
@@ -64,6 +64,9 @@ void ModeQStabilize::run()
     // Stabilize with fixed wing surfaces
     plane.stabilize_roll();
     plane.stabilize_pitch();
+
+    // Center rudder
+    output_rudder_and_steering(0.0);
 }
 
 // set the desired roll and pitch for a tailsitter

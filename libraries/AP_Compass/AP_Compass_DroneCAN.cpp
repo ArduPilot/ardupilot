@@ -25,8 +25,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include <SITL/SITL.h>
 
-extern const AP_HAL::HAL& hal;
-
 #define LOG_TAG "COMPASS"
 
 AP_Compass_DroneCAN::DetectedModules AP_Compass_DroneCAN::_detected_modules[];
@@ -37,24 +35,16 @@ AP_Compass_DroneCAN::AP_Compass_DroneCAN(AP_DroneCAN* ap_dronecan, uint32_t devi
 {
 }
 
-void AP_Compass_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+bool AP_Compass_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    if (ap_dronecan == nullptr) {
-        return;
-    }
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_magnetic_field, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("mag_sub");
-    }
+    const auto driver_index = ap_dronecan->get_driver_index();
 
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_magnetic_field_2, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("mag2_sub");
-    }
-
+    return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_magnetic_field, driver_index) != nullptr)
+        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_magnetic_field_2, driver_index) != nullptr)
 #if AP_COMPASS_DRONECAN_HIRES_ENABLED
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_magnetic_field_hires, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("mag3_sub");
-    }
+        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_magnetic_field_hires, driver_index) != nullptr)
 #endif
+    ;
 }
 
 AP_Compass_Backend* AP_Compass_DroneCAN::probe(uint8_t index)
@@ -101,12 +91,10 @@ AP_Compass_Backend* AP_Compass_DroneCAN::probe(uint8_t index)
 bool AP_Compass_DroneCAN::init()
 {
     // Adding 1 is necessary to allow backward compatibility, where this field was set as 1 by default
-    if (!register_compass(_devid, _instance)) {
+    if (!register_compass(_devid)) {
         return false;
     }
-
-    set_dev_id(_instance, _devid);
-    set_external(_instance, true);
+    set_external(true);
 
     AP::can().log_text(AP_CANManager::LOG_INFO, LOG_TAG,  "AP_Compass_DroneCAN loaded\n\r");
     return true;
@@ -238,6 +226,6 @@ void AP_Compass_DroneCAN::handle_magnetic_field_hires(AP_DroneCAN *ap_dronecan, 
 
 void AP_Compass_DroneCAN::read(void)
 {
-    drain_accumulated_samples(_instance);
+    drain_accumulated_samples();
 }
 #endif  // AP_COMPASS_DRONECAN_ENABLED

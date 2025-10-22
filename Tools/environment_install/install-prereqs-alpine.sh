@@ -17,7 +17,6 @@ apk update && apk add --no-cache \
         libxml2-dev \
         libxslt-dev \
         git \
-    && ln -sf python3 /usr/bin/python \
     &&  rm -rf /var/cache/apk/*
 
 python3 -m pip install --user --no-deps --no-cache-dir empy==3.3.4 pexpect ptyprocess --break-system-packages

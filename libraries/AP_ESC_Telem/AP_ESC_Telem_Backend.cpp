@@ -48,9 +48,9 @@ void AP_ESC_Telem_Backend::update_telem_data(const uint8_t esc_index, const Tele
 /*
   return true if the data is stale
  */
-bool AP_ESC_Telem_Backend::TelemetryData::stale(uint32_t now_ms) const volatile
+bool AP_ESC_Telem_Backend::TelemetryData::stale() const volatile
 {
-    return last_update_ms == 0 || now_ms - last_update_ms > ESC_TELEM_DATA_TIMEOUT_MS;
+    return last_update_ms == 0 || !any_data_valid;
 }
 
 /*
@@ -62,7 +62,7 @@ bool AP_ESC_Telem_Backend::TelemetryData::valid(const uint16_t type_mask) const 
         // Requested type not available
         return false;
     }
-    return !stale(AP_HAL::millis());
+    return !stale();
 }
 
 #endif

@@ -109,18 +109,16 @@ bool AP_Compass_MMC5XX3::init()
 
     /* register the compass instance in the frontend */
     dev->set_device_type(DEVTYPE_MMC5983);
-    if (!register_compass(dev->get_bus_id(), compass_instance)) {
+    if (!register_compass(dev->get_bus_id())) {
         return false;
     }
 
-    set_dev_id(compass_instance, dev->get_bus_id());
+    printf("Found a MMC5983 on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), instance);
 
-    printf("Found a MMC5983 on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), compass_instance);
-
-    set_rotation(compass_instance, rotation);
+    set_rotation(rotation);
 
     if (force_external) {
-        set_external(compass_instance, true);
+        set_external(true);
     }
 
     dev->set_retries(1);
@@ -250,7 +248,7 @@ void AP_Compass_MMC5XX3::timer()
             offset = offset * 0.5f + new_offset * 0.5f;
         }
 
-        accumulate_sample(field, compass_instance);
+        accumulate_sample(field);
 
         if (!dev->write_register(REG_CONTROL0, REG_CONTROL0_TMM)) {
             printf("failed to initiate measurement\n");
@@ -288,7 +286,7 @@ void AP_Compass_MMC5XX3::timer()
                        float((data1[4] << 8) + data1[5]) - zero_offset};
         field *= counts_to_milliGauss;
         field -= offset;
-        accumulate_sample(field, compass_instance);
+        accumulate_sample(field);
 
         // we stay in STATE_MEASURE for measure_count_limit cycles
         if (measure_count++ >= measure_count_limit) {
@@ -306,7 +304,7 @@ void AP_Compass_MMC5XX3::timer()
 
 void AP_Compass_MMC5XX3::read()
 {
-    drain_accumulated_samples(compass_instance);
+    drain_accumulated_samples();
 }
 
 #endif  // AP_COMPASS_MMC5XX3_ENABLED

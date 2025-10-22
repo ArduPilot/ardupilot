@@ -32,14 +32,14 @@ void Plane::Log_Write_Attitude(void)
         logger.Write_PID(LOG_PIQR_MSG, quadplane.attitude_control->get_rate_roll_pid().get_pid_info());
         logger.Write_PID(LOG_PIQP_MSG, quadplane.attitude_control->get_rate_pitch_pid().get_pid_info());
         logger.Write_PID(LOG_PIQY_MSG, quadplane.attitude_control->get_rate_yaw_pid().get_pid_info());
-        logger.Write_PID(LOG_PIQA_MSG, quadplane.pos_control->get_accel_z_pid().get_pid_info() );
+        logger.Write_PID(LOG_PIQA_MSG, quadplane.pos_control->get_accel_U_pid().get_pid_info() );
 
         // Write tailsitter specific log at same rate as PIDs
         quadplane.tailsitter.write_log();
     }
-    if (quadplane.in_vtol_mode() && quadplane.pos_control->is_active_xy()) {
-        logger.Write_PID(LOG_PIDN_MSG, quadplane.pos_control->get_vel_xy_pid().get_pid_info_x());
-        logger.Write_PID(LOG_PIDE_MSG, quadplane.pos_control->get_vel_xy_pid().get_pid_info_y());
+    if (quadplane.in_vtol_mode() && quadplane.pos_control->is_active_NE()) {
+        logger.Write_PID(LOG_PIDN_MSG, quadplane.pos_control->get_vel_NE_pid().get_pid_info_x());
+        logger.Write_PID(LOG_PIDE_MSG, quadplane.pos_control->get_vel_NE_pid().get_pid_info_y());
     }
 #endif
 
@@ -102,13 +102,19 @@ void Plane::Log_Write_Control_Tuning()
         synthetic_airspeed = logger.quiet_nan();
     }
 
+    int16_t pitch = ahrs.pitch_sensor - g.pitch_trim * 100;
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.show_vtol_view()) {
+        pitch = quadplane.ahrs_view->pitch_sensor;
+    }
+#endif      
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CTUN_MSG),
         time_us         : AP_HAL::micros64(),
         nav_roll_cd     : (int16_t)nav_roll_cd,
         roll            : (int16_t)ahrs.roll_sensor,
         nav_pitch_cd    : (int16_t)nav_pitch_cd,
-        pitch           : (int16_t)ahrs.pitch_sensor,
+        pitch           : pitch,
         throttle_out    : SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),
         rudder_out      : SRV_Channels::get_output_scaled(SRV_Channel::k_rudder),
         throttle_dem    : TECS_controller.get_throttle_demand(),
@@ -204,6 +210,7 @@ struct PACKED log_Status {
     bool is_still;
     uint8_t stage;
     bool impact;
+    bool throttle_supressed;
 };
 
 void Plane::Log_Write_Status()
@@ -219,6 +226,7 @@ void Plane::Log_Write_Status()
         ,is_still    : AP::ins().is_still()
         ,stage       : static_cast<uint8_t>(flight_stage)
         ,impact      : crash_state.impact_detected
+        ,throttle_supressed : throttle_suppressed
         };
 
     logger.WriteBlock(&pkt, sizeof(pkt));
@@ -276,7 +284,7 @@ void Plane::Log_Write_Guided(void)
         logger.Write_PID(LOG_PIDG_MSG, g2.guidedHeading.get_pid_info());
     }
 
-    if ( guided_state.target_location.alt != -1 || is_positive(guided_state.target_airspeed_cm) ) {
+    if (!guided_state.target_location_alt_is_minus_one() || is_positive(guided_state.target_airspeed_cm) ) {
         Log_Write_OFG_Guided();
     }
 #endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
@@ -312,8 +320,8 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: TimeUS: Time since system startup
 // @Field: NavRoll: desired roll
 // @Field: Roll: achieved roll
-// @Field: NavPitch: desired pitch
-// @Field: Pitch: achieved pitch
+// @Field: NavPitch: desired pitch assuming pitch trims are already applied
+// @Field: Pitch: achieved pitch assuming pitch trims are already applied,ie "0deg" is level flight trimmed pitch attitude as shown on artificial horizon level line.
 // @Field: ThO: scaled output throttle
 // @Field: RdO: scaled output rudder
 // @Field: ThD: demanded speed-height-controller throttle
@@ -369,15 +377,16 @@ const struct LogStructure Plane::log_structure[] = {
 // @Description: Current status of the aircraft
 // @Field: TimeUS: Time since system startup
 // @Field: isFlying: True if aircraft is probably flying
-// @Field: isFlyProb: Probabilty that the aircraft is flying
+// @Field: isFlyProb: Probability that the aircraft is flying
 // @Field: Armed: Arm status of the aircraft
 // @Field: Safety: State of the safety switch
 // @Field: Crash: True if crash is detected
 // @Field: Still: True when vehicle is not moving in any axis
 // @Field: Stage: Current stage of the flight
 // @Field: Hit: True if impact is detected
+// @Field: Sup: True if throttle is suppressed
     { LOG_STATUS_MSG, sizeof(log_Status),
-      "STAT", "QBfBBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage,Hit", "s--------", "F--------" , true },
+      "STAT", "QBfBBBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage,Hit,Sup", "s---------", "F---------" , true },
 
 // @LoggerMessage: QTUN
 // @Description: QuadPlane vertical tuning message
@@ -437,7 +446,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: TimeUS: Time since system startup
 // @Field: Ts: throttle scaling used for tilt motors
 // @Field: Ss: speed scailing used for control surfaces method from Q_TAILSIT_GSCMSK
-// @Field: Tmin: minimum output throttle caculated from disk thoery gain scale with Q_TAILSIT_MIN_VO
+// @Field: Tmin: minimum output throttle calculated from disk thoery gain scale with Q_TAILSIT_MIN_VO
 #if HAL_QUADPLANE_ENABLED
     { LOG_TSIT_MSG, sizeof(Tailsitter::log_tailsitter),
       "TSIT", "Qfff",  "TimeUS,Ts,Ss,Tmin", "s---", "F---" , true },
@@ -521,5 +530,66 @@ void Plane::Log_Write_Vehicle_Startup_Messages()
     ahrs.Log_Write_Home_And_Origin();
     gps.Write_AP_Logger_Log_Startup_messages();
 }
+
+#if AP_PLANE_BLACKBOX_LOGGING
+/*
+  logging for blackbox recording. Split across two messages but with
+  the same timestamp
+ */
+void Plane::Log_Write_Blackbox(void)
+{
+    const uint64_t now_us = AP_HAL::micros64();
+    // @LoggerMessage: BBX1
+    // @Description: BlackBox data1
+    // @Field: TimeUS: Time since system startup
+    // @Field: Lat: Latitude
+    // @Field: Lon: Longitude
+    // @Field: Alt: altitude above sea level
+    // @Field: Roll: euler roll
+    // @Field: Pitch: euler pitch
+    // @Field: Yaw: euler yaw
+    // @Field: VN: velocity north
+    // @Field: VE: velocity east
+    // @Field: VD: velocity down
+    Location loc;
+    Vector3f vel;
+    float alt;
+    if (!ahrs.get_location(loc) ||
+        !ahrs.get_velocity_NED(vel) ||
+        !loc.get_alt_m(Location::AltFrame::ABSOLUTE, alt)) {
+        return;
+    }
+
+    AP::logger().WriteStreaming("BBX1", "TimeUS,Lat,Lon,Alt,Roll,Pitch,Yaw,VN,VE,VD",
+                                "sDUmdddnnn",
+                                "FGG-------",
+                                "QLLfffffff",
+                                now_us,
+                                loc.lat, loc.lng, alt,
+                                degrees(ahrs.get_roll_rad()),
+                                degrees(ahrs.get_pitch_rad()),
+                                degrees(ahrs.get_yaw_rad()),
+                                vel.x, vel.y, vel.z);
+
+    // @LoggerMessage: BBX2
+    // @Description: BlackBox data2
+    // @Field: TimeUS: Time since system startup
+    // @Field: GyrX: X axis gyro
+    // @Field: GyrY: Y axis gyro
+    // @Field: GyrZ: Z axis gyro
+    // @Field: AccX: accel X axis (front)
+    // @Field: AccY: accel Y axis (right)
+    // @Field: AccZ: accel Z axis (down)
+    const auto &gyro = ahrs.get_gyro();
+    const auto &accel = ahrs.get_accel();
+    AP::logger().WriteStreaming("BBX2", "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ",
+                                "skkkooo",
+                                "F------",
+                                "Qffffff",
+                                now_us,
+                                degrees(gyro.x), degrees(gyro.y), degrees(gyro.z),
+                                accel.x, accel.y, accel.z);
+}
+#endif // AP_PLANE_BLACKBOX_LOGGING
 
 #endif // HAL_LOGGING_ENABLED

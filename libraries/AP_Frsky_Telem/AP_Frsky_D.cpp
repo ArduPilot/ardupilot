@@ -39,7 +39,7 @@ void AP_Frsky_D::send_uint16(uint16_t id, uint16_t data)
 /*
  * send frame1 and frame2 telemetry data
  * one frame (frame1) is sent every 200ms with baro alt, nb sats, batt volts and amp, control_mode
- * a second frame (frame2) is sent every second (1000ms) with gps position data, and ahrs.yaw_sensor heading (instead of GPS heading)
+ * a second frame (frame2) is sent every second (1000ms) with gps position data, and ahrs.get_yaw_deg() heading (instead of GPS heading)
  * for FrSky D protocol (D-receivers)
  */
 void AP_Frsky_D::send(void)
@@ -68,7 +68,7 @@ void AP_Frsky_D::send(void)
     if (now - _D.last_1000ms_frame >= 1000) {
         _D.last_1000ms_frame = now;
         AP_AHRS &_ahrs = AP::ahrs();
-        send_uint16(DATA_ID_GPS_COURS_BP, (uint16_t)((_ahrs.yaw_sensor / 100) % 360)); // send heading in degree based on AHRS and not GPS
+        send_uint16(DATA_ID_GPS_COURS_BP, (uint16_t)_ahrs.get_yaw_deg()); // send heading in degree based on AHRS and not GPS
         calc_gps_position();
         if (AP::gps().status() >= 3) {
             send_uint16(DATA_ID_GPS_LAT_BP, _SPort_data.latdddmm); // send gps latitude degree and minute integer part

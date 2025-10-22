@@ -1,6 +1,6 @@
 #include "AP_Periph.h"
 
-#ifdef HAL_PERIPH_ENABLE_BATTERY
+#if AP_PERIPH_BATTERY_ENABLED
 
 /*
   battery support
@@ -54,7 +54,13 @@ void AP_Periph_FW::can_battery_update(void)
             pkt.temperature = C_TO_KELVIN(temperature);
         }
 
+        // Populate state of health
         pkt.state_of_health_pct = UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATE_OF_HEALTH_UNKNOWN;
+        uint8_t state_of_health_pct = 0;
+        if (battery_lib.get_state_of_health_pct(i, state_of_health_pct)) {
+            pkt.state_of_health_pct = state_of_health_pct;
+        }
+
         uint8_t percentage = 0;
         if (battery_lib.capacity_remaining_pct(percentage, i)) {
             pkt.state_of_charge_pct = percentage;
@@ -124,5 +130,4 @@ void AP_Periph_FW::can_battery_send_cells(uint8_t instance)
     delete [] buffer;
 }
 
-#endif // HAL_PERIPH_ENABLE_BATTERY
-
+#endif // AP_PERIPH_BATTERY_ENABLED

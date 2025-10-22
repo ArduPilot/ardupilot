@@ -32,6 +32,8 @@ char keyword_global[]              = "global";
 char keyword_creation[]            = "creation";
 char keyword_manual_operator[]     = "manual_operator";
 char keyword_operator_getter[]     = "operator_getter";
+char keyword_field_valid_mask[]    = "valid_mask";
+
 
 // attributes (should include the leading ' )
 char keyword_attr_enum[]    = "'enum";
@@ -167,7 +169,7 @@ struct range_check {
 enum type_flags {
   TYPE_FLAGS_NULLABLE = (1U << 1),
   TYPE_FLAGS_ENUM     = (1U << 2),
-  TYPE_FLAGS_REFERNCE = (1U << 3),
+  TYPE_FLAGS_REFERENCE = (1U << 3),
   TYPE_FLAGS_NO_RANGE_CHECK = (1U << 4),
 };
 
@@ -184,6 +186,10 @@ struct type {
     char *enum_name;
     char *literal;
   } data;
+  struct {
+    char *name;
+    char *value;
+  } valid_mask;
 };
 
 int TRACE_LEVEL = 0;
@@ -510,6 +516,11 @@ unsigned int parse_access_flags(struct type * type) {
             error(ERROR_INTERNAL, "Can't access a NONE type");
         }
       }
+    } else if (strcmp(state.token, keyword_field_valid_mask) == 0) {
+      char * name = next_token();
+      string_copy(&(type->valid_mask.name), name);
+      char * value = next_token();
+      string_copy(&(type->valid_mask.value), value);
     } else {
       error(ERROR_UNKNOWN_KEYWORD, "Unknown access provided: %s", state.token);
       break;
@@ -570,7 +581,7 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
       }
       type->flags |= TYPE_FLAGS_NULLABLE;
     } else if (strcmp(attribute, keyword_attr_reference) == 0) {
-      type->flags |= TYPE_FLAGS_REFERNCE;
+      type->flags |= TYPE_FLAGS_REFERENCE;
     } else if (strcmp(attribute, keyword_attr_no_range_check) == 0) {
       type->flags |= TYPE_FLAGS_NO_RANGE_CHECK;
     } else {
@@ -579,8 +590,8 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
     attribute[0] = 0;
   }
 
-  if ((type->access == ACCESS_REFERENCE) && ((type->flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) == 0)) {
-      error(ERROR_USERDATA, "Only support refences access will 'Null or 'Ref keyword");
+  if ((type->access == ACCESS_REFERENCE) && ((type->flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERENCE)) == 0)) {
+      error(ERROR_USERDATA, "Only support references access with 'Null or 'Ref keyword");
   }
 
   if (strcmp(data_type, keyword_boolean) == 0) {
@@ -644,7 +655,7 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
   }
 
   // sanity check that only supported types are nullable
-  if (type->flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) {
+  if (type->flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERENCE)) {
     // a switch is a very verbose way to do this, but forces users to consider new types added
     switch (type->type) {
       case TYPE_FLOAT:
@@ -672,7 +683,7 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
   }
 
   // add range checks, unless disabled or a nullable type
-  if (range_type != RANGE_CHECK_NONE && !(type->flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE | TYPE_FLAGS_NO_RANGE_CHECK))) {
+  if (range_type != RANGE_CHECK_NONE && !(type->flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERENCE | TYPE_FLAGS_NO_RANGE_CHECK))) {
     switch (type->type) {
       case TYPE_FLOAT:
       case TYPE_INT8_T:
@@ -851,14 +862,14 @@ void handle_method(struct userdata *node) {
     if ((method->return_type.type != TYPE_BOOLEAN) && (arg_type.flags & TYPE_FLAGS_NULLABLE)) {
       error(ERROR_USERDATA, "Nullable arguments are only available on a boolean method");
     }
-    if ((method->return_type.type == TYPE_BOOLEAN) && (arg_type.flags & TYPE_FLAGS_REFERNCE)) {
+    if ((method->return_type.type == TYPE_BOOLEAN) && (arg_type.flags & TYPE_FLAGS_REFERENCE)) {
       error(ERROR_USERDATA, "Use Nullable arguments on a boolean method, not 'Ref");
     }
     if (arg_type.flags & TYPE_FLAGS_NULLABLE) {
       method->flags |= TYPE_FLAGS_NULLABLE;
     }
-    if (arg_type.flags & TYPE_FLAGS_REFERNCE) {
-      method->flags |= TYPE_FLAGS_REFERNCE;
+    if (arg_type.flags & TYPE_FLAGS_REFERENCE) {
+      method->flags |= TYPE_FLAGS_REFERENCE;
     }
     struct argument * arg = allocate(sizeof(struct argument));
     memcpy(&(arg->type), &arg_type, sizeof(struct type));
@@ -1222,8 +1233,11 @@ void handle_ap_object(void) {
   } else if (strcmp(type, keyword_manual) == 0) {
     handle_manual(node, ALIAS_TYPE_MANUAL);
 
+  } else if (strcmp(type, keyword_field) == 0) {
+    handle_userdata_field(node);
+
   } else {
-    error(ERROR_SINGLETON, "AP_Objects only support renames, methods, semaphore or manual keywords (got %s)", type);
+    error(ERROR_SINGLETON, "AP_Objects only support renames, methods, field, semaphore or manual keywords (got %s)", type);
   }
 
   // check that we didn't just add 2 singleton flags
@@ -1287,6 +1301,24 @@ void end_dependency(FILE *f, const char *dependency) {
   }
 }
 
+int should_emit_creation(struct userdata * data) {
+    if (data->creation || data->methods) {
+      // Custom creation or methods, if not specifically disabled
+      return !(data->creation && data->creation_args == -1);
+    } else {
+      // Don't expose creation function for items with only read-only fields
+      struct userdata_field * field = data->fields;
+      while(field) {
+        if (field->access_flags & ACCESS_FLAG_WRITE) {
+          return TRUE;
+          break;
+        }
+        field = field->next;
+      }
+      return FALSE;
+    }
+}
+
 void emit_headers(FILE *f) {
   struct header *node = headers;
   while (node) {
@@ -1311,7 +1343,7 @@ void emit_userdata_allocators(void) {
     fprintf(source, "}\n");
 
     // New method used externally, includes argcheck, overridden by custom creation function if provided
-    if (node->creation == NULL) {
+    if (node->creation == NULL && should_emit_creation(node)) {
       fprintf(source, "\n");
       fprintf(source, "int lua_new_%s(lua_State *L) {\n", node->sanatized_name);
 
@@ -1396,7 +1428,7 @@ void emit_userdata_declarations(void) {
   while (node) {
     start_dependency(header, node->dependency);
     fprintf(header, "%s * new_%s(lua_State *L);\n", node->name, node->sanatized_name);
-    if (node->creation == NULL) {
+    if (node->creation == NULL && should_emit_creation(node)) {
       fprintf(header, "int lua_new_%s(lua_State *L);\n", node->sanatized_name);
     }
     fprintf(header, "%s * check_%s(lua_State *L, int arg);\n", node->name, node->sanatized_name);
@@ -1424,7 +1456,7 @@ void emit_checker(const struct type t, int arg_number, int skipped, const char *
     error(ERROR_INTERNAL, "Can't handle more then %d arguments to a function", NULLABLE_ARG_COUNT_BASE);
   }
 
-  if (t.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) {
+  if (t.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERENCE)) {
     arg_number = arg_number + NULLABLE_ARG_COUNT_BASE;
     switch (t.type) {
       case TYPE_BOOLEAN:
@@ -1713,10 +1745,20 @@ void emit_field(const struct userdata_field *field, const char* object_name, con
     fprintf(source, "    binding_argcheck(L, %d);\n",args);
   }
 
+  int valid_mask = (field->type.valid_mask.name != NULL) && (field->type.valid_mask.value != NULL);
+
   if (field->access_flags & ACCESS_FLAG_READ) {
     if (use_switch) {
       fprintf(source, "        case 1:\n");
     }
+
+    // Check if field is valid
+    if (valid_mask) {
+        fprintf(source, "%sif ((%s%s%s & %s) == 0) {\n", indent, object_name, object_access, field->type.valid_mask.name, field->type.valid_mask.value);
+        fprintf(source, "%s    return 0;\n", indent);
+        fprintf(source, "%s}\n", indent);
+    }
+
     switch (field->type.type) {
       case TYPE_BOOLEAN:
         fprintf(source, "%slua_pushinteger(L, %s%s%s%s);\n", indent, object_name, object_access, field->name, index_string);
@@ -1761,6 +1803,12 @@ void emit_field(const struct userdata_field *field, const char* object_name, con
       fprintf(source, "        case 2: {\n");
     }
     emit_checker(field->type, write_arg_number, 0, indent);
+
+    // set field valid
+    if (valid_mask) {
+      fprintf(source, "%s%s%s%s |= %s;\n", indent, object_name, object_access, field->type.valid_mask.name, field->type.valid_mask.value);
+    }
+
     fprintf(source, "%s%s%s%s%s = data_%i;\n", indent, object_name, object_access, field->name, index_string, write_arg_number);
     fprintf(source, "%sreturn 0;\n", indent);
     if (use_switch) {
@@ -1830,14 +1878,36 @@ void emit_singleton_fields() {
   }
 }
 
-// emit refences functions for a call, return the number of arduments added
+void emit_ap_object_field(const struct userdata *data, const struct userdata_field *field) {
+  fprintf(source, "static int %s_%s(lua_State *L) {\n", data->sanatized_name, field->name);
+  fprintf(source, "    %s *ud = *check_%s(L, 1);\n", data->name, data->sanatized_name);
+  emit_field(field, "ud", "->");
+}
+
+void emit_ap_object_fields() {
+  struct userdata * node = parsed_ap_objects;
+  while(node) {
+    struct userdata_field *field = node->fields;
+    if (field) {
+      start_dependency(source, node->dependency);
+      while(field) {
+        emit_ap_object_field(node, field);
+        field = field->next;
+      }
+      end_dependency(source, node->dependency);
+    }
+    node = node->next;
+  }
+}
+
+// emit references functions for a call, return the number of arduments added
 int emit_references(const struct argument *arg, const char * tab) {
   int arg_index = NULLABLE_ARG_COUNT_BASE + 2;
   int return_count = 0;
   // count arguments to return so we know if we need to check the stack
   const struct argument *count_arg = arg;
   while (count_arg != NULL) {
-    if (count_arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) {
+    if (count_arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERENCE)) {
       return_count++;
     }
     count_arg = count_arg->next;
@@ -1847,7 +1917,7 @@ int emit_references(const struct argument *arg, const char * tab) {
   fprintf(source, "%sluaL_checkstack(L, %d, nullptr);\n", tab, return_count+1);
   fprintf(source, "#endif\n\n");
   while (arg != NULL) {
-    if (arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) {
+    if (arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERENCE)) {
       switch (arg->type.type) {
         case TYPE_BOOLEAN:
           fprintf(source, "%slua_pushboolean(L, data_%d);\n", tab, arg_index);
@@ -1873,7 +1943,7 @@ int emit_references(const struct argument *arg, const char * tab) {
           fprintf(source, "%s*new_%s(L) = data_%d;\n", tab, arg->type.data.ud.sanatized_name, arg_index);
           break;
         case TYPE_NONE:
-          error(ERROR_INTERNAL, "Attempted to emit a nullable or reference  argument of type none");
+          error(ERROR_INTERNAL, "Attempted to emit a nullable or reference argument of type none");
           break;
         case TYPE_LITERAL:
           error(ERROR_INTERNAL, "Attempted to make a nullable or reference literal");
@@ -1895,6 +1965,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   start_dependency(source, data->dependency);
   start_dependency(source, method->dependency);
 
+
   // bind ud early if it's a singleton, so that we can use it in the range checks
   fprintf(source, "static int %s_%s(lua_State *L) {\n", data->sanatized_name, method->sanatized_name);
   // emit comments on expected arg/type
@@ -1912,7 +1983,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   // sanity check number of args called with
   arg_count = 1;
   while (arg != NULL) {
-    if (!(arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) && !(arg->type.type == TYPE_LITERAL)) {
+    if (!(arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERENCE)) && !(arg->type.type == TYPE_LITERAL)) {
       arg_count++;
     }
     arg = arg->next;
@@ -1949,7 +2020,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       arg_count++;
     }
     if (//arg->type.type == TYPE_LITERAL ||
-        arg->type.flags & (TYPE_FLAGS_NULLABLE| TYPE_FLAGS_REFERNCE)) {
+        arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERENCE)) {
       skipped++;
     }
     arg = arg->next;
@@ -2069,7 +2140,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       case TYPE_ENUM:
       case TYPE_USERDATA:
       case TYPE_AP_OBJECT:
-        fprintf(source, "            %sdata_%d", (arg->type.access == ACCESS_REFERENCE)?"&":"", arg_count + ((arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) ? NULLABLE_ARG_COUNT_BASE : 0));
+        fprintf(source, "            %sdata_%d", (arg->type.access == ACCESS_REFERENCE)?"&":"", arg_count + ((arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERENCE)) ? NULLABLE_ARG_COUNT_BASE : 0));
         break;
       case TYPE_LITERAL:
         fprintf(source, "            %s", arg->type.data.literal);
@@ -2104,7 +2175,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
 
   // we need to emit out refernce arguments, iterate the args again, creating and copying objects, while keeping a new count
   int return_count = 1; 
-  if (method->flags & TYPE_FLAGS_REFERNCE) {
+  if (method->flags & TYPE_FLAGS_REFERENCE) {
     arg = method->arguments;
     // number of arguments to return
     return_count += emit_references(arg,"    ");
@@ -2560,24 +2631,7 @@ void emit_userdata_new_funcs(void) {
   fprintf(source, "    const lua_CFunction fun;\n");
   fprintf(source, "} new_userdata[] = {\n");
   while (data) {
-    // Dont expose creation function for all read only items
-    int expose_creation = FALSE;
-    if (data->creation || data->methods) {
-      // Custom creation or methods, if not specifically disabled
-      expose_creation = !(data->creation && data->creation_args == -1);
-    } else {
-      // Feilds only
-      struct userdata_field * field = data->fields;
-      while(field) {
-        if (field->access_flags & ACCESS_FLAG_WRITE) {
-          expose_creation = TRUE;
-          break;
-        }
-        field = field->next;
-      }
-    }
-
-    if (expose_creation) {
+    if (should_emit_creation(data)) {
       start_dependency(source, data->dependency);
       if (data->creation) {
         // expose custom creation function to user (not used internally)
@@ -2800,7 +2854,7 @@ void emit_docs_method(const char *name, const char *method_name, struct method *
   int count = 1;
   // input arguments
   while (arg != NULL) {
-    if ((arg->type.type != TYPE_LITERAL) && (arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) == 0) {
+    if ((arg->type.type != TYPE_LITERAL) && (arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERENCE)) == 0) {
       char *param_name = (char *)allocate(20);
       sprintf(param_name, "---@param param%i", count);
       emit_docs_param_type(arg->type, param_name, "\n");
@@ -2818,7 +2872,7 @@ void emit_docs_method(const char *name, const char *method_name, struct method *
   arg = method->arguments;
   // nulable and refences returns
   while (arg != NULL) {
-    if ((arg->type.type != TYPE_LITERAL) && (arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE))) {
+    if ((arg->type.type != TYPE_LITERAL) && (arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERENCE))) {
       emit_docs_return_type(arg->type, arg->type.flags & TYPE_FLAGS_NULLABLE);
     }
     arg = arg->next;
@@ -2863,8 +2917,7 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
       // local userdata
       fprintf(docs, "local %s = {}\n\n", name);
 
-      int creation_disabled = (node->creation && node->creation_args == -1);
-      if (emit_creation && (!node->creation || !creation_disabled)) {
+      if (emit_creation && should_emit_creation(node)) {
         // creation function
         if (node->creation != NULL) {
           for (int i = 0; i < node->creation_args; ++i) {
@@ -2885,7 +2938,6 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
           }
           fprintf(docs, ") end\n\n");
         }
-
       }
     } else {
       // global
@@ -2897,11 +2949,14 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
     if (node->fields != NULL) {
       struct userdata_field *field = node->fields;
       while(field) {
+          int valid_mask = (field->type.valid_mask.name != NULL) && (field->type.valid_mask.value != NULL);
+          const char * return_postfix = valid_mask ? "|nil\n" : "\n";
+
           if (field->array_len == NULL) {
             // single value field
             if (field->access_flags & ACCESS_FLAG_READ) {
               fprintf(docs, "-- get field\n");
-              emit_docs_type(field->type, "---@return", "\n");
+              emit_docs_type(field->type, "---@return", return_postfix);
               fprintf(docs, "function %s:%s() end\n\n", name, field->rename ? field->rename : field->name);
             }
             if (field->access_flags & ACCESS_FLAG_WRITE) {
@@ -2914,7 +2969,7 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
             if (field->access_flags & ACCESS_FLAG_READ) {
               fprintf(docs, "-- get array field\n");
               fprintf(docs, "---@param index integer\n");
-              emit_docs_type(field->type, "---@return", "\n");
+              emit_docs_type(field->type, "---@return", return_postfix);
               fprintf(docs, "function %s:%s(index) end\n\n", name, field->rename ? field->rename : field->name);
             }
             if (field->access_flags & ACCESS_FLAG_WRITE) {
@@ -3162,7 +3217,7 @@ int main(int argc, char **argv) {
   emit_methods(parsed_userdata);
   emit_index(parsed_userdata);
 
-
+  emit_ap_object_fields();
   emit_methods(parsed_ap_objects);
   emit_index(parsed_ap_objects);
 

@@ -1,6 +1,8 @@
-#include "AP_Avoidance.h"
+#include "AP_Avoidance_config.h"
 
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
+
+#include "AP_Avoidance.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -635,7 +637,7 @@ bool AP_Avoidance::get_vector_perpendicular(const AP_Avoidance::Obstacle *obstac
     if (obstacle->_velocity.length() < _low_velocity_threshold) {
         const Vector2f delta_pos_xy =  obstacle->_location.get_distance_NE(my_abs_pos);
         const float delta_pos_z = my_abs_pos.alt - obstacle->_location.alt;
-        Vector3f delta_pos_xyz = Vector3f(delta_pos_xy.x, delta_pos_xy.y, delta_pos_z);
+        Vector3f delta_pos_xyz = Vector3f{delta_pos_xy.x, delta_pos_xy.y, delta_pos_z};
         // avoid div by zero
         if (delta_pos_xyz.is_zero()) {
             return false;
@@ -689,4 +691,4 @@ AP_Avoidance *ap_avoidance()
 
 }
 
-#endif // HAL_ADSB_ENABLED
+#endif // AP_ADSB_AVOIDANCE_ENABLED

@@ -4,7 +4,7 @@
 
 #include "Copter.h"
 
-#if ADVANCED_FAILSAFE
+#if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
 
 /*
   setup radio_out values for all channels to termination values
@@ -63,4 +63,4 @@ AP_AdvancedFailsafe::control_mode AP_AdvancedFailsafe_Copter::afs_mode(void)
  {
     copter.set_mode(Mode::Number::AUTO,ModeReason::GCS_FAILSAFE);
  }
-#endif // ADVANCED_FAILSAFE
+#endif // AP_COPTER_ADVANCED_FAILSAFE_ENABLED

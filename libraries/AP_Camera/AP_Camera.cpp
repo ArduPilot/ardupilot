@@ -6,6 +6,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 #include "AP_Camera_Backend.h"
 #include "AP_Camera_Servo.h"
 #include "AP_Camera_Relay.h"
@@ -14,6 +15,7 @@
 #include "AP_Camera_MAVLink.h"
 #include "AP_Camera_MAVLinkCamV2.h"
 #include "AP_Camera_Scripting.h"
+#include "AP_RunCam.h"
 
 const AP_Param::GroupInfo AP_Camera::var_info[] = {
 
@@ -41,9 +43,23 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Path: AP_Camera_Params.cpp
     AP_SUBGROUPINFO(_params[1], "2", 13, AP_Camera, AP_Camera_Params),
 #endif
+#if AP_CAMERA_RUNCAM_ENABLED
+    // @Group: 1_RC_
+    // @Path: AP_RunCam.cpp
+    AP_SUBGROUPVARPTR(_backends[0], "1_RC_", 14, AP_Camera, _backend_var_info[0]),
 
+#if AP_CAMERA_MAX_INSTANCES > 1
+    // @Group: 2_RC_
+    // @Path: AP_RunCam.cpp
+    AP_SUBGROUPVARPTR(_backends[1], "2_RC_", 15, AP_Camera, _backend_var_info[1]),
+#endif
+#endif
     AP_GROUPEND
 };
+
+#if AP_CAMERA_RUNCAM_ENABLED
+const AP_Param::GroupInfo *AP_Camera::_backend_var_info[AP_CAMERA_MAX_INSTANCES];
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -237,6 +253,17 @@ void AP_Camera::init()
         // check for Scripting driver
         case CameraType::SCRIPTING:
             _backends[instance] = NEW_NOTHROW AP_Camera_Scripting(*this, _params[instance], instance);
+            break;
+#endif
+#if AP_CAMERA_RUNCAM_ENABLED
+        // check for RunCam driver
+        case CameraType::RUNCAM:
+            if (_backends[instance] == nullptr) { // may have already been created by the conversion code
+                _backends[instance] = NEW_NOTHROW AP_RunCam(*this, _params[instance], instance, _runcam_instances);
+                _backend_var_info[instance] = AP_RunCam::var_info;
+                AP_Param::load_object_from_eeprom(_backends[instance], _backend_var_info[instance]);
+                _runcam_instances++;
+            }
             break;
 #endif
         case CameraType::NONE:
@@ -899,7 +926,11 @@ AP_Camera_Backend *AP_Camera::get_instance(uint8_t instance) const
 void AP_Camera::convert_params()
 {
     // exit immediately if CAM1_TYPE has already been configured
-    if (_params[0].type.configured()) {
+    if (_params[0].type.configured()
+#if AP_CAMERA_RUNCAM_ENABLED
+        && _params[1].type.configured()
+#endif
+       ) {
         return;
     }
 
@@ -918,6 +949,42 @@ void AP_Camera::convert_params()
         cam1_type = cam_trigg_type + 1;
     }
     _params[0].type.set_and_save(cam1_type);
+
+#if AP_CAMERA_RUNCAM_ENABLED
+    // RunCam PARAMETER_CONVERSION - Added: Nov-2024 ahead of 4.7 release
+
+    // Since slot 1 is essentially used by the trigger type, we will use slot 2 for runcam
+    int8_t rc_type = 0;
+    // find vehicle's top level key
+    uint16_t k_param_vehicle_key;
+    if (!AP_Param::find_top_level_key_by_pointer(AP::vehicle(), k_param_vehicle_key)) {
+        return;
+    }
+
+    // RunCam protocol configured so set cam type to RunCam
+    bool rc_protocol_configured = false;
+    AP_SerialManager *serial_manager = AP_SerialManager::get_singleton();
+    if (serial_manager && serial_manager->find_serial(AP_SerialManager::SerialProtocol_RunCam, 0)) {
+        rc_protocol_configured = true;
+    }
+
+    const AP_Param::ConversionInfo rc_type_info = {
+        k_param_vehicle_key, AP_GROUP_ELEM_IDX(1, 1), AP_PARAM_INT8, "CAM_RC_TYPE"
+    };
+    AP_Int8 rc_type_old;
+    const bool found_rc_type = AP_Param::find_old_parameter(&rc_type_info, &rc_type_old);
+
+    if (rc_protocol_configured || (found_rc_type && rc_type_old.get() > 0)) {
+        rc_type = int8_t(CameraType::RUNCAM);
+        _backends[1] = NEW_NOTHROW AP_RunCam(*this, _params[1], 1, _runcam_instances);
+        _backend_var_info[1] = AP_RunCam::var_info;
+        AP_Param::convert_class(k_param_vehicle_key, &_backends[1], _backend_var_info[1], 1, false);
+        AP_Param::invalidate_count();
+        _runcam_instances++;
+    }
+
+    _params[1].type.set_and_save(rc_type);
+#endif // AP_CAMERA_RUNCAM_ENABLED
 
     // convert CAM_DURATION (in deci-seconds) to CAM1_DURATION (in seconds)
     int8_t cam_duration = 0;

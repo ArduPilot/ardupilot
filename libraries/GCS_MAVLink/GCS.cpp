@@ -17,14 +17,226 @@
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
-#include <AP_GPS/AP_GPS.h>
 #include <RC_Channel/RC_Channel.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
 #include "MissionItemProtocol_Fence.h"
 
 extern const AP_HAL::HAL& hal;
+
+#ifndef MAV_SYSID_DEFAULT
+#if APM_BUILD_TYPE(APM_BUILD_AntennaTracker)
+#define MAV_SYSID_DEFAULT 2
+#else
+#define MAV_SYSID_DEFAULT 1
+#endif  // APM_BUILD_TYPE(APM_BUILD_AntennaTracker)
+#endif  // defined(MAV_SYSID_DEFAULT)
+
+const AP_Param::GroupInfo GCS::var_info[] {
+    // @Param: _SYSID
+    // @DisplayName: MAVLink system ID of this vehicle
+    // @Description: Allows setting an individual MAVLink system id for this vehicle to distinguish it from others on the same network.
+    // @Range: 1 255
+    // @User: Advanced
+    AP_GROUPINFO("_SYSID",    1,     GCS,  sysid,  MAV_SYSID_DEFAULT),
+
+    // @Param: _GCS_SYSID
+    // @DisplayName: My ground station number
+    // @Description: This sets what MAVLink source system IDs are accepted for GCS failsafe handling, RC overrides and manual control. When MAV_GCS_SYSID_HI is less than MAV_GCS_SYSID then only this value is considered to be a GCS. When MAV_GCS_SYSID_HI is greater than or equal to MAV_GCS_SYSID then the range of values between MAV_GCS_SYSID and MAV_GCS_SYSID_HI (inclusive) are all treated as valid GCS MAVLink system IDs
+    // @Range: 1 255
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_GCS_SYSID",    2,      GCS, mav_gcs_sysid, 255),
+
+    // @Param: _GCS_SYSID_HI
+    // @DisplayName: ground station system ID, maximum
+    // @Description: Upper limit of MAVLink source system IDs considered to be from the GCS. When this is less than MAV_GCS_SYSID then only MAV_GCS_SYSID is used as GCS ID. When this is greater than or equal to MAV_GCS_SYSID then the range of values from MAV_GCS_SYSID to MAV_GCS_SYSID_HI (inclusive) is treated as a GCS ID.
+    // @Range: 0 255
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_GCS_SYSID_HI",    5,   GCS, mav_gcs_sysid_high, 0),
+    
+    // @Param: _OPTIONS
+    // @DisplayName: MAVLink Options
+    // @Description: Alters various behaviour of the MAVLink interface
+    // @Bitmask: 0:Accept MAVLink only from system IDs given by MAV_SYSID_GCS and MAV_SYSID_GCS_HI
+    // @User: Advanced
+    AP_GROUPINFO("_OPTIONS",    3,      GCS, mav_options, 0),
+
+    // @Param: _TELEM_DELAY
+    // @DisplayName: Telemetry startup delay
+    // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
+    // @User: Advanced
+    // @Units: s
+    // @Range: 0 30
+    // @Increment: 1
+    AP_GROUPINFO("_TELEM_DELAY",    4,      GCS, mav_telem_delay, 0),
+
+#if MAVLINK_COMM_NUM_BUFFERS > 0
+    // @Group: 1
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[0], "1", 11, GCS, _chan_var_info[0]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 1
+    // @Group: 2
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[1], "2", 12, GCS, _chan_var_info[1]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 2
+    // @Group: 3
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[2], "3", 13, GCS, _chan_var_info[2]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 3
+    // @Group: 4
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[3], "4", 14, GCS, _chan_var_info[3]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 4
+    // @Group: 5
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[4], "5", 15, GCS, _chan_var_info[4]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 5
+    // @Group: 6
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[5], "6", 16, GCS, _chan_var_info[5]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 6
+    // @Group: 7
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[6], "7", 17, GCS, _chan_var_info[6]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 7
+    // @Group: 8
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[7], "8", 18, GCS, _chan_var_info[7]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 8
+    // @Group: 9
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[8], "9", 19, GCS, _chan_var_info[8]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 9
+    // @Group: 10
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[9], "10", 20, GCS, _chan_var_info[9]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 10
+    // @Group: 11
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[10], "11", 21, GCS, _chan_var_info[10]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 11
+    // @Group: 12
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[11], "12", 22, GCS, _chan_var_info[11]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 12
+    // @Group: 13
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[12], "13", 23, GCS, _chan_var_info[12]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 13
+    // @Group: 14
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[13], "14", 24, GCS, _chan_var_info[13]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 14
+    // @Group: 15
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[14], "15", 25, GCS, _chan_var_info[14]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 15
+    // @Group: 16
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[15], "16", 26, GCS, _chan_var_info[15]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 16
+    // @Group: 17
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[16], "17", 27, GCS, _chan_var_info[16]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 17
+    // @Group: 18
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[17], "18", 28, GCS, _chan_var_info[17]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 18
+    // @Group: 19
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[18], "19", 29, GCS, _chan_var_info[18]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 19
+    // @Group: 20
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[19], "20", 30, GCS, _chan_var_info[19]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 20
+    // @Group: 21
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[20], "21", 31, GCS, _chan_var_info[20]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 21
+    // @Group: 22
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[21], "22", 32, GCS, _chan_var_info[21]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 22
+    // @Group: 23
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[22], "23", 33, GCS, _chan_var_info[22]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 23
+    // @Group: 24
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[23], "24", 34, GCS, _chan_var_info[23]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 24
+    // @Group: 25
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[24], "25", 35, GCS, _chan_var_info[24]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 25
+    // @Group: 26
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[25], "26", 36, GCS, _chan_var_info[25]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 26
+    // @Group: 27
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[26], "27", 37, GCS, _chan_var_info[26]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 27
+    // @Group: 28
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[27], "28", 38, GCS, _chan_var_info[27]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 28
+    // @Group: 29
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[28], "29", 39, GCS, _chan_var_info[28]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 29
+    // @Group: 30
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[29], "30", 40, GCS, _chan_var_info[29]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 30
+    // @Group: 31
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[30], "31", 41, GCS, _chan_var_info[30]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 31
+    // @Group: 32
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[31], "32", 42, GCS, _chan_var_info[31]),
+#endif
+
+    AP_GROUPEND
+};
 
 void GCS::get_sensor_status_flags(uint32_t &present,
                                   uint32_t &enabled,
@@ -33,8 +245,10 @@ void GCS::get_sensor_status_flags(uint32_t &present,
 // if this assert fails then fix it and the comment in GCS.h where
 // _statustext_queue is declared
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-ASSERT_STORAGE_SIZE(GCS::statustext_t, 58);
+ASSERT_STORAGE_SIZE(GCS::statustext_t, 60);
 #endif
+
+    WITH_SEMAPHORE(control_sensors_sem);
 
     update_sensor_status_flags();
 
@@ -53,9 +267,9 @@ void GCS::init()
 /*
  * returns a mask of channels that statustexts should be sent to
  */
-uint8_t GCS::statustext_send_channel_mask() const
+mavlink_channel_mask_t GCS::statustext_send_channel_mask() const
 {
-    uint8_t ret = 0;
+    mavlink_channel_mask_t ret = 0;
     ret |= GCS_MAVLINK::active_channel_mask();
     ret |= GCS_MAVLINK::streaming_channel_mask();
     ret &= ~GCS_MAVLINK::private_channel_mask();
@@ -67,7 +281,7 @@ uint8_t GCS::statustext_send_channel_mask() const
  */
 void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list)
 {
-    uint8_t mask = statustext_send_channel_mask();
+    mavlink_channel_mask_t mask = statustext_send_channel_mask();
     if (!update_send_has_been_called) {
         // we have not yet initialised the streaming-channel-mask,
         // which is done as part of the update() call.  So just send
@@ -119,7 +333,56 @@ void GCS::send_named_float(const char *name, float value) const
 
     gcs().send_to_active_channels(MAVLINK_MSG_ID_NAMED_VALUE_FLOAT,
                                   (const char *)&packet);
+
+#if HAL_LOGGING_ENABLED
+// @LoggerMessage: NVF
+// @Description: Named Value Float messages; messages sent to GCS via NAMED_VALUE_FLOAT
+// @Field: TimeUS: Time since system startup
+// @Field: Name: Name of float
+// @Field: Value: Value of float
+    AP::logger().WriteStreaming(
+        "NVF",
+        "TimeUS," "Name," "Value",
+        "s"       "#"     "-",
+        "F"       "-"     "-",
+        "Q"       "N"     "f",
+        AP_HAL::micros64(),
+        name,
+        value
+    );
+#endif  // HAL_LOGGING_ENABLED
 }
+
+void GCS::send_named_string(const char *name, const char *value) const
+{
+    mavlink_named_value_string_t packet {};
+    packet.time_boot_ms = AP_HAL::millis();
+    strncpy_noterm(packet.name, name, ARRAY_SIZE(packet.name));
+    strncpy_noterm(packet.value, value, ARRAY_SIZE(packet.value));
+
+    gcs().send_to_active_channels(MAVLINK_MSG_ID_NAMED_VALUE_STRING,
+                                  (const char *)&packet);
+
+#if HAL_LOGGING_ENABLED
+// NVS is also emitted in GCS_Common.cpp
+// @LoggerMessage: NVS
+// @Description: Named Value String messages; messages sent to GCS via NAMED_VALUE_STRING
+// @Field: TimeUS: Time since system startup
+// @Field: Name: Name of string
+// @Field: Value: Value of string
+    AP::logger().WriteStreaming(
+        "NVS",
+        "TimeUS," "Name," "Value",
+        "s"       "#"     "-",
+        "F"       "-"     "-",
+        "Q"       "N"     "Z",
+        AP_HAL::micros64(),
+        name,
+        value
+    );
+#endif  // HAL_LOGGING_ENABLED
+}
+
 
 #if HAL_HIGH_LATENCY2_ENABLED
 void GCS::enable_high_latency_connections(bool enabled)
@@ -154,6 +417,9 @@ bool GCS::install_alternative_protocol(mavlink_channel_t c, GCS_MAVLINK::protoco
     return true;
 }
 
+// note that control_sensors_present and friends are protected by
+// control_sensors_sem.  There is currently only one caller to this
+// method, and it does the protection for us.
 void GCS::update_sensor_status_flags()
 {
     control_sensors_present = 0;
@@ -426,5 +692,16 @@ MAV_RESULT GCS::lua_command_int_packet(const mavlink_command_int_t &packet)
     return ch->handle_command_int_packet(packet, msg);
 }
 #endif // AP_SCRIPTING_ENABLED
+
+/*
+  return true if a MAVLink system ID is a GCS for this vehicle
+*/
+bool GCS::sysid_is_gcs(uint8_t _sysid) const
+{
+    if (mav_gcs_sysid_high <= mav_gcs_sysid) {
+        return mav_gcs_sysid == _sysid;
+    }
+    return _sysid >= mav_gcs_sysid && _sysid <= mav_gcs_sysid_high;
+}
 
 #endif  // HAL_GCS_ENABLED

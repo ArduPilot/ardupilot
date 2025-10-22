@@ -16,7 +16,7 @@ bool ModeGuided::_enter()
           if using Q_GUIDED_MODE then project forward by the stopping distance
         */
         loc.offset_bearing(degrees(ahrs.groundspeed_vector().angle()),
-                           plane.quadplane.stopping_distance());
+                           plane.quadplane.stopping_distance_m());
     }
 #endif
 
@@ -36,9 +36,9 @@ void ModeGuided::update()
     }
 #endif
 
-    // Received an external msg that guides roll in the last 3 seconds?
+    // Received an external msg that guides roll within g2.guided_timeout?
     if (plane.guided_state.last_forced_rpy_ms.x > 0 &&
-            millis() - plane.guided_state.last_forced_rpy_ms.x < 3000) {
+            millis() - plane.guided_state.last_forced_rpy_ms.x < plane.g2.guided_timeout*1000.0f) {
         plane.nav_roll_cd = constrain_int32(plane.guided_state.forced_rpy_cd.x, -plane.roll_limit_cd, plane.roll_limit_cd);
         plane.update_load_factor();
 
@@ -52,7 +52,7 @@ void ModeGuided::update()
 
         float error = 0.0f;
         if (plane.guided_state.target_heading_type == GUIDED_HEADING_HEADING) {
-            error = wrap_PI(plane.guided_state.target_heading - AP::ahrs().get_yaw());
+            error = wrap_PI(plane.guided_state.target_heading - AP::ahrs().get_yaw_rad());
         } else {
             Vector2f groundspeed = AP::ahrs().groundspeed_vector();
             error = wrap_PI(plane.guided_state.target_heading - atan2f(-groundspeed.y, -groundspeed.x) + M_PI);
@@ -76,7 +76,7 @@ void ModeGuided::update()
     }
 
     if (plane.guided_state.last_forced_rpy_ms.y > 0 &&
-            millis() - plane.guided_state.last_forced_rpy_ms.y < 3000) {
+            millis() - plane.guided_state.last_forced_rpy_ms.y < plane.g2.guided_timeout*1000.0f) {
         plane.nav_pitch_cd = constrain_int32(plane.guided_state.forced_rpy_cd.y, plane.pitch_limit_min*100, plane.aparm.pitch_limit_max.get()*100);
     } else {
         plane.calc_nav_pitch();
@@ -89,8 +89,8 @@ void ModeGuided::update()
 
     }  else if (plane.aparm.throttle_cruise > 1 &&
             plane.guided_state.last_forced_throttle_ms > 0 &&
-            millis() - plane.guided_state.last_forced_throttle_ms < 3000) {
-        // Received an external msg that guides throttle in the last 3 seconds?
+            millis() - plane.guided_state.last_forced_throttle_ms < plane.g2.guided_timeout*1000.0f) {
+        // Received an external msg that guides throttle within g2.guided_timeout?
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.guided_state.forced_throttle);
 
     } else {
@@ -108,16 +108,48 @@ void ModeGuided::navigate()
 
 bool ModeGuided::handle_guided_request(Location target_loc)
 {
+    plane.fix_terrain_WP(target_loc, __LINE__);
     // add home alt if needed
-    if (target_loc.relative_alt) {
-        target_loc.alt += plane.home.alt;
-        target_loc.relative_alt = 0;
+    if (!target_loc.terrain_alt) {
+        target_loc.change_alt_frame(Location::AltFrame::ABSOLUTE);
     }
 
     plane.set_guided_WP(target_loc);
 
     return true;
 }
+
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
+bool ModeGuided::handle_change_airspeed(const float airspeed, const float acceleration)
+{
+    // reject airspeeds that are outside of the tuning envelope
+    if (airspeed > plane.aparm.airspeed_max || airspeed < plane.aparm.airspeed_min) {
+        return false;
+    }
+
+    // no need to process any new packet/s with the
+    // same airspeed any further, if we are already doing it.
+    float new_target_airspeed_cm = airspeed * 100;
+    if (is_equal(new_target_airspeed_cm,plane.guided_state.target_airspeed_cm)) { 
+        return true;
+    }
+    plane.guided_state.target_airspeed_cm = new_target_airspeed_cm;
+    plane.guided_state.target_airspeed_time_ms = AP_HAL::millis();
+
+    if (is_zero(acceleration)) {
+        // the user wanted /maximum acceleration, pick a large value as close enough
+        plane.guided_state.target_airspeed_accel = 1000.0f;
+    } else {
+        plane.guided_state.target_airspeed_accel = fabsf(acceleration);
+    }
+
+    // assign an acceleration direction
+    if (plane.guided_state.target_airspeed_cm < plane.target_airspeed_cm) {
+        plane.guided_state.target_airspeed_accel *= -1.0f;
+    }
+    return true; 
+}
+#endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
 
 void ModeGuided::set_radius_and_direction(const float radius, const bool direction_is_ccw)
 {
@@ -126,11 +158,21 @@ void ModeGuided::set_radius_and_direction(const float radius, const bool directi
     plane.loiter.direction = direction_is_ccw ? -1 : 1;
 }
 
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
+bool Plane::GuidedState::target_location_alt_is_minus_one() const
+{
+    int32_t target_location_alt = 0;
+    UNUSED_RESULT(target_location.get_alt_cm(target_location.get_alt_frame(), target_location_alt));
+    return target_location_alt == -1;
+}
+#endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
+
 void ModeGuided::update_target_altitude()
 {
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     // target altitude can be negative (e.g. flying below home altitude from the top of a mountain)
-    if (((plane.guided_state.target_alt_time_ms != 0) || plane.guided_state.target_location.alt != -1 )) { // target_alt now defaults to -1, and _time_ms defaults to zero.
+    if ((plane.guided_state.target_alt_time_ms != 0) ||
+        !plane.guided_state.target_location_alt_is_minus_one()) { // target_alt now defaults to -1, and _time_ms defaults to zero.
         // offboard altitude demanded
         uint32_t now = AP_HAL::millis();
         float delta = 1e-3f * (now - plane.guided_state.target_alt_time_ms);

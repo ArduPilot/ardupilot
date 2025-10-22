@@ -5,6 +5,10 @@
 #define LED_ACTIVITY	1
 #define LED_BOOTLOADER	2
 
+#ifndef AP_FLASH_ECC_CHECK_ENABLED
+#define AP_FLASH_ECC_CHECK_ENABLED defined(STM32H7) && CH_CFG_USE_HEAP
+#endif
+
 /* board info forwarded from board-specific code to booloader */
 struct boardinfo {
     uint32_t	board_type;
@@ -18,7 +22,7 @@ extern struct boardinfo board_info;
 void init_uarts(void);
 int16_t cin(unsigned timeout_ms);
 int cin_word(uint32_t *wp, unsigned timeout_ms);
-void cout(uint8_t *data, uint32_t len);
+void cout(const uint8_t *data, uint32_t len);
 void port_setbaud(uint32_t baudrate);
 #if defined(BOOTLOADER_FORWARD_OTG2_SERIAL)
 bool update_otg2_serial_forward(void);
@@ -54,7 +58,7 @@ void thread_sleep_us(uint32_t us);
 
 void custom_startup(void);
 
-#if defined(STM32H7) && CH_CFG_USE_HEAP
+#if AP_FLASH_ECC_CHECK_ENABLED
 void check_ecc_errors(void);
 #endif
 

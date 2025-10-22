@@ -37,7 +37,7 @@ UART1 supports RX and TX DMA. UART2, UART3 and UART4 support RX DMA. UART7 suppo
 ## RC Input
  
 RC input is configured on the (UART3_RX) pin which forms part of the DJI connector. It supports all RC protocols.
-For RC input/output use UART1 wih SERIAL1_PROTOCOL as 23 and set SERIAL3_PROTOCOL set to -1
+For RC input/output use UART1 with SERIAL1_PROTOCOL as 23 and set SERIAL3_PROTOCOL set to -1
   
 ## OSD Support
 

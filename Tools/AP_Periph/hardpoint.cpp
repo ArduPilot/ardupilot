@@ -1,6 +1,6 @@
 #include "AP_Periph.h"
 
-#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
+#if AP_PERIPH_PWM_HARDPOINT_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -63,4 +63,4 @@ void AP_Periph_FW::pwm_hardpoint_update()
     }
 }
 
-#endif // HAL_PERIPH_ENABLE_PWM_HARDPOINT
+#endif // AP_PERIPH_PWM_HARDPOINT_ENABLED

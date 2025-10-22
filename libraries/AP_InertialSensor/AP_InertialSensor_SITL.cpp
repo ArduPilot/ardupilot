@@ -195,6 +195,9 @@ void AP_InertialSensor_SITL::generate_accel()
     }
 
     accel_accum /= nsamples;
+
+    accel_accum.rotate(sitl->imu_orientation);
+
     _rotate_and_correct_accel(accel_instance, accel_accum);
     _notify_new_accel_raw_sample(accel_instance, accel_accum, AP_HAL::micros64());
 
@@ -216,7 +219,7 @@ void AP_InertialSensor_SITL::generate_gyro()
         float r = radians(sitl->state.yawRate) + _gyro_drift;
 
         // minimum gyro noise is less than 1 bit
-        float gyro_noise = ToRad(0.04f);
+        float gyro_noise = radians(0.04f);
         constexpr float noise_variation = 0.05f;
         // this smears the individual motor peaks somewhat emulating physical motors
         constexpr float freq_variation = 0.12f;
@@ -230,7 +233,7 @@ void AP_InertialSensor_SITL::generate_gyro()
         // giving a gyro noise variation of 0.33 rad/s or 20deg/s over the full throttle range
         if (motors_on) {
             // add extra noise when the motors are on
-            gyro_noise = ToRad(sitl->gyro_noise[gyro_instance]) * sitl->throttle;
+            gyro_noise = radians(sitl->gyro_noise[gyro_instance]) * sitl->throttle;
         }
 
         // VIB_FREQ is a static vibration applied to each axis
@@ -298,6 +301,9 @@ void AP_InertialSensor_SITL::generate_gyro()
 #endif
     }
     gyro_accum /= nsamples;
+
+    gyro_accum.rotate(sitl->imu_orientation);
+
     _rotate_and_correct_gyro(gyro_instance, gyro_accum);
     _notify_new_gyro_raw_sample(gyro_instance, gyro_accum, AP_HAL::micros64());
 }
@@ -363,9 +369,9 @@ float AP_InertialSensor_SITL::gyro_drift(void) const
     double period  = sitl->drift_time * 2;
     double minutes = fmod(AP_HAL::micros64() / 60.0e6, period);
     if (minutes < period/2) {
-        return minutes * ToRad(sitl->drift_speed);
+        return minutes * radians(sitl->drift_speed);
     }
-    return (period - minutes) * ToRad(sitl->drift_speed);
+    return (period - minutes) * radians(sitl->drift_speed);
 }
 
 

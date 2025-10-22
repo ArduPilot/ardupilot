@@ -54,11 +54,12 @@ bool AP_HAL::CANFrame::priorityHigherThan(const CANFrame& rhs) const
 }
 
 /*
-  parent class receive handling for MAVCAN
+  parent class receive handling for forwarding received frames to registered callbacks
  */
 int16_t AP_HAL::CANIface::receive(CANFrame& out_frame, uint64_t& out_ts_monotonic, CanIOFlags& out_flags)
 {
-    if ((out_flags & IsMAVCAN) != 0) {
+    if ((out_flags & IsForwardedFrame) != 0) {
+        // this frame was forwarded from another interface to this one, so we should not forward it back
         return 1;
     }
 #ifndef HAL_BOOTLOADER_BUILD
@@ -66,14 +67,15 @@ int16_t AP_HAL::CANIface::receive(CANFrame& out_frame, uint64_t& out_ts_monotoni
 #endif
     for (auto &cb : callbacks.cb) {
         if (cb != nullptr) {
-            cb(get_iface_num(), out_frame);
+            // forward the frame to the registered callbacks and mark it as forwarded
+            cb(get_iface_num(), out_frame, out_flags | IsForwardedFrame);
         }
     }
     return 1;
 }
 
 /*
-  parent class send handling for MAVCAN
+  parent class send handling for Forwarded frames
  */
 int16_t AP_HAL::CANIface::send(const CANFrame& frame, uint64_t tx_deadline, CanIOFlags flags)
 {
@@ -85,13 +87,15 @@ int16_t AP_HAL::CANIface::send(const CANFrame& frame, uint64_t tx_deadline, CanI
         if (cb == nullptr) {
             continue;
         }
-        if ((flags & IsMAVCAN) == 0) {
-            cb(get_iface_num(), frame);
+        if ((flags & IsForwardedFrame) == 0) {
+            // call the frame callback from send only if the frame originated from this node
+            cb(get_iface_num(), frame, flags);
         } else if (!added_to_rx_queue) {
+            // the frame was forwarded from another interface, so add it to the receive queue
             CanRxItem rx_item;
             rx_item.frame = frame;
             rx_item.timestamp_us = AP_HAL::micros64();
-            rx_item.flags = AP_HAL::CANIface::IsMAVCAN;
+            rx_item.flags = AP_HAL::CANIface::IsForwardedFrame;
             add_to_rx_queue(rx_item);
             added_to_rx_queue = true;
         }

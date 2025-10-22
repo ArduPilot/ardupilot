@@ -26,15 +26,11 @@ AP_OpticalFlow_HereFlow::AP_OpticalFlow_HereFlow(AP_OpticalFlow &flow) :
 }
 
 //links the HereFlow messages to the backend
-void AP_OpticalFlow_HereFlow::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+bool AP_OpticalFlow_HereFlow::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    if (ap_dronecan == nullptr) {
-        return;
-    }
+    const auto driver_index = ap_dronecan->get_driver_index();
 
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_measurement, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("measurement_sub");
-    }
+    return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_measurement, driver_index) != nullptr);
 }
 
 //updates driver states based on received HereFlow messages

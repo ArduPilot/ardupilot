@@ -166,7 +166,7 @@ local function update()
    --[[ get rangefinder distance, and if PLND_ALT_CUTOFF is set then
       stop precland operation if below the cutoff
    --]]
-   local rngfnd_distance_m = rangefinder:distance_cm_orient(rangefinder_orient) * 0.01
+   local rngfnd_distance_m = rangefinder:distance_orient(rangefinder_orient)
    if PLND_ALT_CUTOFF:get() > 0 and rngfnd_distance_m < PLND_ALT_CUTOFF:get() then
       return
    end

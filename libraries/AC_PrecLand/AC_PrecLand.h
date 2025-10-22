@@ -13,7 +13,7 @@
 
 // declare backend classes
 class AC_PrecLand_Backend;
-class AC_PrecLand_Companion;
+class AC_PrecLand_MAVLink;
 class AC_PrecLand_IRLock;
 class AC_PrecLand_SITL_Gazebo;
 class AC_PrecLand_SITL;
@@ -23,7 +23,7 @@ class AC_PrecLand
 {
     // declare backends as friends
     friend class AC_PrecLand_Backend;
-    friend class AC_PrecLand_Companion;
+    friend class AC_PrecLand_MAVLink;
     friend class AC_PrecLand_IRLock;
     friend class AC_PrecLand_SITL_Gazebo;
     friend class AC_PrecLand_SITL;
@@ -55,8 +55,8 @@ public:
     // returns time of last time target was seen
     uint32_t last_backend_los_meas_ms() const { return _last_backend_los_meas_ms; }
 
-    // vehicle has to be closer than this many cm's to the target before descending towards target
-    float get_max_xy_error_before_descending_cm() const { return _xy_max_dist_desc * 100.0f; }
+    // vehicle has to be closer than this many m's to the target before descending towards target
+    float get_max_xy_error_before_descending_m() const { return _xy_max_dist_desc; }
 
     // returns orientation of sensor
     Rotation get_orient() const { return _orient; }
@@ -65,22 +65,22 @@ public:
     uint32_t ekf_outlier_count() const { return _outlier_reject_count; }
 
     // give chance to driver to get updates from sensor, should be called at 400hz
-    void update(float rangefinder_alt_cm, bool rangefinder_alt_valid);
+    void update(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
     // returns target position relative to the EKF origin
-    bool get_target_position_cm(Vector2f& ret);
+    bool get_target_position_m(Vector2p& ret);
 
     // returns target relative position as 3D vector
-    void get_target_position_measurement_cm(Vector3f& ret);
+    void get_target_position_measurement_m(Vector3f& ret);
 
     // returns target position relative to vehicle
-    bool get_target_position_relative_cm(Vector2f& ret);
+    bool get_target_position_relative_m(Vector2f& ret);
 
     // returns target velocity relative to vehicle
-    bool get_target_velocity_relative_cms(Vector2f& ret);
+    bool get_target_velocity_relative_ms(Vector2f& ret);
 
     // get the absolute velocity of the vehicle
-    void get_target_velocity_cms(const Vector2f& vehicle_velocity_cms, Vector2f& target_vel_cms);
+    void get_target_velocity_ms(const Vector2f& vehicle_velocity_ms, Vector2f& target_vel_ms);
 
     // returns true when the landing target has been detected
     bool target_acquired();
@@ -103,10 +103,10 @@ public:
     TargetState get_target_state() const { return _current_target_state; }
 
     // return the last known landing position in Earth Frame NED meters.
-    void get_last_detected_landing_pos(Vector3f &pos) const { pos = _last_target_pos_rel_origin_NED; }
+    void get_last_detected_landing_pos(Vector3p &pos) const { pos = _last_target_pos_rel_origin_NED; }
 
     // return the last known postion of the vehicle when the target was detected in Earth Frame NED meters.
-    void get_last_vehicle_pos_when_target_detected(Vector3f &pos) const { pos = _last_vehicle_pos_NED; }
+    void get_last_vehicle_pos_when_target_detected(Vector3p &pos) const { pos = _last_vehicle_pos_NED; }
 
     // Parameter getters
     AC_PrecLand_StateMachine::RetryStrictness get_retry_strictness() const { return static_cast<AC_PrecLand_StateMachine::RetryStrictness>(_strict.get()); }
@@ -141,8 +141,8 @@ private:
     // types of precision landing (used for PRECLAND_TYPE parameter)
     enum class Type : uint8_t {
         NONE = 0,
-#if AC_PRECLAND_COMPANION_ENABLED
-        COMPANION = 1,
+#if AC_PRECLAND_MAVLINK_ENABLED
+        MAVLINK = 1,
 #endif
 #if AC_PRECLAND_IRLOCK_ENABLED
         IRLOCK = 2,
@@ -160,6 +160,12 @@ private:
         PLND_OPTION_MOVING_TARGET = (1 << 0),
         PLND_OPTION_PRECLAND_AFTER_REPOSITION = (1 << 1),
         PLND_OPTION_FAST_DESCEND = (1 << 2),
+    };
+
+    // frames for vectors from vehicle to target
+    enum class VectorFrame : uint8_t {
+        BODY_FRD = 0,     // body frame, forward-right-down relative to the vehicle's attitude
+        LOCAL_FRD = 1,    // forward-right-down where forward is aligned with front of the vehicle in the horizontal plane
     };
 
     // check the status of the target
@@ -180,8 +186,8 @@ private:
     // If a new measurement was retrieved, sets _target_pos_rel_meas_NED and returns true
     bool construct_pos_meas_using_rangefinder(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
-    // get vehicle body frame 3D vector from vehicle to target.  returns true on success, false on failure
-    bool retrieve_los_meas(Vector3f& target_vec_unit_body);
+    // get 3D vector from vehicle to target and frame.  returns true on success, false on failure
+    bool retrieve_los_meas(Vector3f& target_vec_unit, VectorFrame& frame);
 
     // calculate target's position and velocity relative to the vehicle (used as input to position controller)
     // results are stored in_target_pos_rel_out_NE, _target_vel_rel_out_NE
@@ -221,8 +227,8 @@ private:
     Vector3f                    _target_pos_rel_meas_NED; // target's relative position as 3D vector
     Vector3f                    _approach_vector_body;   // unit vector in landing approach direction (in body frame)
 
-    Vector3f                    _last_target_pos_rel_origin_NED;  // stores the last known location of the target horizontally, and the height of the vehicle where it detected this target in meters NED
-    Vector3f                    _last_vehicle_pos_NED;            // stores the position of the vehicle when landing target was last detected in m and NED
+    Vector3p                    _last_target_pos_rel_origin_NED;  // stores the last known location of the target horizontally, and the height of the vehicle where it detected this target in meters NED
+    Vector3p                    _last_vehicle_pos_NED;            // stores the position of the vehicle when landing target was last detected in m and NED
     Vector2f                    _target_pos_rel_est_NE; // target's position relative to the IMU, not compensated for lag
     Vector2f                    _target_vel_rel_est_NE; // target's velocity relative to the IMU, not compensated for lag
 

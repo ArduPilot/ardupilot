@@ -1,4 +1,4 @@
-#include <AP_HAL/AP_HAL_Boards.h>
+#pragma once
 
 /*
 
@@ -15,9 +15,7 @@
  */
 
 
-#ifndef AP_SIM_LP5562_ENABLED
-#define AP_SIM_LP5562_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
-#endif
+#include "SIM_config.h"
 
 #if AP_SIM_LP5562_ENABLED
 

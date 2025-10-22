@@ -12,6 +12,9 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# flake8: noqa
+
 """
 Waf tool for Ardupilot libraries. The function bld.ap_library() creates the
 necessary task generators for creating the objects of a library for a vehicle.
@@ -54,7 +57,8 @@ def _vehicle_index(vehicle):
 # note that AP_NavEKF3_core.h is needed for AP_NavEKF3_feature.h
 _vehicle_macros = ['APM_BUILD_DIRECTORY', 'AP_BUILD_TARGET_NAME',
                    'APM_BUILD_TYPE', 'APM_BUILD_COPTER_OR_HELI',
-                   'AP_NavEKF3_core.h', 'lua_generated_bindings.h']
+                   'AP_NavEKF3_core.h', 'lua_generated_bindings.h',
+                   'AP_InertialSensor_rate_config.h']
 _macros_re = re.compile(r'\b(%s)\b' % '|'.join(_vehicle_macros))
 
 # some cpp files are not available at the time we run this check so need to be
@@ -174,6 +178,7 @@ class ap_library_check_headers(Task.Task):
         'libraries/AP_Scripting/lua_generated_bindings.h',
         'libraries/AP_NavEKF3/AP_NavEKF3_feature.h',
         'libraries/AP_LandingGear/AP_LandingGear_config.h',
+        'libraries/AP_InertialSensor/AP_InertialSensor_rate_config.h',
     )
     whitelist = tuple(os.path.join(*p.split('/')) for p in whitelist)
 
@@ -275,13 +280,7 @@ def double_precision_check(tasks):
             double_library = t.env.DOUBLE_PRECISION_LIBRARIES.get(src[0],False)
 
             if double_library or src in double_tasks:
-                t.env.CXXFLAGS = t.env.CXXFLAGS[:]
-                for opt in ['-fsingle-precision-constant', '-cl-single-precision-constant']:
-                    try:
-                        t.env.CXXFLAGS.remove(opt)
-                    except ValueError:
-                        pass
-                t.env.CXXFLAGS.append("-DALLOW_DOUBLE_MATH_FUNCTIONS")
+                t.env.CXXFLAGS = ap.set_double_precision_flags(t.env.CXXFLAGS)
 
 
 def gsoap_library_check(bld, tasks):

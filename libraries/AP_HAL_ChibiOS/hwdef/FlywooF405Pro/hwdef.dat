@@ -6,8 +6,8 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1137
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_FlywooF405Pro
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
@@ -154,3 +154,4 @@ define HAL_FRAME_TYPE_DEFAULT 12
 
 include ../include/minimize_fpv_osd.inc
 
+define DEFAULT_NTF_LED_TYPES 455

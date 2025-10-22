@@ -55,6 +55,11 @@ public:
     // get a startup banner to output to the GCS
     bool get_output_banner(char* banner, uint8_t banner_len) override;
 
+    // get the gyro backend rate in Hz at which the FIFO is being read
+    uint16_t get_gyro_backend_rate_hz() const override {
+        return _gyro_backend_rate_hz;
+    }
+
     enum Invensensev2_Type {
         Invensensev2_ICM20948 = 0,
         Invensensev2_ICM20648,

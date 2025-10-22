@@ -6,8 +6,8 @@ MCU STM32L431 STM32L431xx
 # crystal frequency
 OSCILLATOR_HZ 16000000
 
-# board ID for firmware load
-APJ_BOARD_ID 1091
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_Sierra-TrueNavPro
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -39,7 +39,6 @@ define BOOTLOADER_BAUDRATE 57600
 define HAL_BOOTLOADER_TIMEOUT 1000
 
 define HAL_USE_SERIAL FALSE
-define HAL_NO_GPIO_IRQ
 define HAL_USE_EMPTY_IO TRUE
 define PORT_INT_REQUIRED_STACK 64
 define DMA_RESERVE_SIZE 0

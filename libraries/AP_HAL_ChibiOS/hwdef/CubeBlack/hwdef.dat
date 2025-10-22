@@ -63,8 +63,8 @@ IMU Invensensev2 SPI:icm20948 ROTATION_YAW_270
 define HAL_DEFAULT_INS_FAST_SAMPLE 5
 
 # two baros
-BARO MS56XX SPI:ms5611_ext
-BARO MS56XX SPI:ms5611
+BARO MS5611 SPI:ms5611_ext
+BARO MS5611 SPI:ms5611
 
 # two compasses. First is in the LSM303D
 COMPASS LSM303D SPI:lsm9ds0_ext_am ROTATION_YAW_270
@@ -102,8 +102,9 @@ define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 5
 
 # default the 2nd interface to SLCAN
 define HAL_OTG2_PROTOCOL SerialProtocol_SLCAN
-ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_dshot_highpolh.bin
-ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_highpolh.bin
+ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_cube_dshot_highpolh.bin
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_cube_highpolh.bin
 
+define AP_IOMCU_PROFILED_SUPPORT_ENABLED 1
 # enable support for dshot on iomcu
 define HAL_WITH_IO_MCU_DSHOT 1

@@ -55,3 +55,13 @@ See the [code examples folder](https://github.com/ArduPilot/ardupilot/tree/maste
 
 Edit bindings.desc and rebuild. The waf build will automatically
 re-run the code generator.
+
+## Lua Source Code
+
+The Lua 5.3.6 source code is vendored in `lua/`. This is a customized
+version of the [official
+distribution](https://www.lua.org/ftp/lua-5.3.6.tar.gz). Where possible,
+differences have been marked of the code.
+
+Lua (not including modifications) is distributed under the terms of the
+MIT license.

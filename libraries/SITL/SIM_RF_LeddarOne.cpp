@@ -23,16 +23,16 @@
 
 using namespace SITL;
 
-uint32_t RF_LeddarOne::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
+uint32_t RF_LeddarOne::packet_for_alt(float alt_m, uint8_t *buffer, uint8_t buflen)
 {
     const uint8_t response_size = 25;
     const uint16_t internal_temperature = 1245;
     const uint16_t num_detections = 1;
-    const uint16_t first_distance = alt_cm * 10;
+    const uint16_t first_distance = alt_m * 1000;
     const uint16_t first_amplitude = 37;
-    const uint16_t second_distance = alt_cm * 10;
+    const uint16_t second_distance = alt_m * 1000;
     const uint16_t second_amplitude = 37;
-    const uint16_t third_distance = alt_cm * 10;
+    const uint16_t third_distance = alt_m * 1000;
     const uint16_t third_amplitude = 37;
     const uint32_t now = AP_HAL::millis();
 

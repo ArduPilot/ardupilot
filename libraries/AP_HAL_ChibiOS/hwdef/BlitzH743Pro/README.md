@@ -8,7 +8,7 @@ The Blitz H7 Pro is a flight controller produced by [iFlight](https://shop.iflig
  - Gyro: ICM42688
  - 32Gb SDCard for logging
  - BEC output: 5V 2.5A,  switch controlled 12v 2A
- - Barometer: DPS310
+ - Barometer: DPS310 (SPA06 on v2)
  - OSD: AT7456E
  - 7x UARTs
  - 13x PWM Outputs (12 Motor Output, 1 LED)
@@ -74,12 +74,15 @@ Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
 to use DShot.
 
-Video Power Control
-================
+## Video Power Control
 
 The 12V video power can be turned off/on  using GPIO 81 which is already assigned by default to RELAY2.  This relay can be controlled either from the GCS or using a transmitter channel (See :ref:`common-auxiliary-functions`)
-RSSI
-====
+
+## Camera Switch
+
+The camera output can be switched using GPIO 82 which is already assigned by default to RELAY3.  This relay can be controlled either from the GCS or using a transmitter channel (See :ref:`common-auxiliary-functions`)
+
+## RSSI
 
 Analog RSSI pin is "4"
 

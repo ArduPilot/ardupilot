@@ -41,10 +41,6 @@ AP_BoardLED board_led;
 // create fake gcs object
 GCS_Dummy _gcs;                                                 //gcs stands for Ground Control Station
 
-const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
-        AP_GROUPEND
-};
-
 #if AP_SIM_ENABLED
 SITL::SIM sitl;
 AP_Baro baro;

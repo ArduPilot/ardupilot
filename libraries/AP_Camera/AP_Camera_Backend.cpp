@@ -212,9 +212,9 @@ void AP_Camera_Backend::send_camera_feedback(mavlink_channel_t chan)
         camera_feedback.location.lng,       // longitude
         altitude*1e-2f,                     // alt MSL
         altitude_rel*1e-2f,                 // alt relative to home
-        camera_feedback.roll_sensor*1e-2f,  // roll angle (deg)
-        camera_feedback.pitch_sensor*1e-2f, // pitch angle (deg)
-        camera_feedback.yaw_sensor*1e-2f,   // yaw angle (deg)
+        camera_feedback.roll_deg,           // roll angle (deg)
+        camera_feedback.pitch_deg,          // pitch angle (deg)
+        camera_feedback.yaw_deg,            // yaw angle (deg)
         0.0f,                               // focal length
         CAMERA_FEEDBACK_PHOTO,              // flags
         camera_feedback.feedback_trigger_logged_count); // completed image captures
@@ -274,7 +274,6 @@ void AP_Camera_Backend::send_video_stream_information(mavlink_channel_t chan) co
 #if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
 void AP_Camera_Backend::set_stream_information(mavlink_video_stream_information_t stream_info)
 {
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Camera %u VIDEO_STREAM_INFORMATION (%s) set from script", _instance, stream_info.name);
     _stream_info = stream_info;
 };
 #endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
@@ -296,32 +295,46 @@ void AP_Camera_Backend::send_camera_settings(mavlink_channel_t chan) const
 void AP_Camera_Backend::send_camera_fov_status(mavlink_channel_t chan) const
 {
     // getting corresponding mount instance for camera
-    const AP_Mount* mount = AP::mount();
+    AP_Mount* mount = AP::mount();
     if (mount == nullptr) {
         return;
     }
+
+    // get latest POI from mount
     Quaternion quat;
-    Location loc;
+    Location camera_loc;
     Location poi_loc;
-    if (!mount->get_poi(get_mount_instance(), quat, loc, poi_loc)) {
-        return;
+    const bool have_poi_loc = mount->get_poi(get_mount_instance(), quat, camera_loc, poi_loc);
+
+    // if failed to get POI, get camera location directly from AHRS
+    // and attitude directly from mount
+    bool have_camera_loc = have_poi_loc;
+    if (!have_camera_loc) {
+        have_camera_loc = AP::ahrs().get_location(camera_loc);
+        mount->get_attitude_quaternion(get_mount_instance(), quat);
     }
+
+    // calculate attitude quaternion in earth frame using AHRS yaw
+    Quaternion quat_ef;
+    quat_ef.from_euler(0, 0, AP::ahrs().get_yaw_rad());
+    quat_ef *= quat;
+
     // send camera fov status message only if the last calculated values aren't stale
     const float quat_array[4] = {
-        quat.q1,
-        quat.q2,
-        quat.q3,
-        quat.q4
+        quat_ef.q1,
+        quat_ef.q2,
+        quat_ef.q3,
+        quat_ef.q4
     };
     mavlink_msg_camera_fov_status_send(
         chan,
         AP_HAL::millis(),
-        loc.lat,
-        loc.lng,
-        loc.alt * 10,
-        poi_loc.lat,
-        poi_loc.lng,
-        poi_loc.alt * 10,
+        have_camera_loc ? camera_loc.lat : INT32_MAX,
+        have_camera_loc ? camera_loc.lng : INT32_MAX,
+        have_camera_loc ? camera_loc.alt * 10 : INT32_MAX,
+        have_poi_loc ? poi_loc.lat : INT32_MAX,
+        have_poi_loc ? poi_loc.lng : INT32_MAX,
+        have_poi_loc ? poi_loc.alt * 10 : INT32_MAX,
         quat_array,
         horizontal_fov() > 0 ? horizontal_fov() : NaNf,
         vertical_fov() > 0 ? vertical_fov() : NaNf
@@ -423,9 +436,9 @@ void AP_Camera_Backend::prep_mavlink_msg_camera_feedback(uint64_t timestamp_us)
         // completely ignore this failure!  AHRS will provide its best guess.
     }
     camera_feedback.timestamp_us = timestamp_us;
-    camera_feedback.roll_sensor = ahrs.roll_sensor;
-    camera_feedback.pitch_sensor = ahrs.pitch_sensor;
-    camera_feedback.yaw_sensor = ahrs.yaw_sensor;
+    camera_feedback.roll_deg = ahrs.get_roll_deg();
+    camera_feedback.pitch_deg = ahrs.get_pitch_deg();
+    camera_feedback.yaw_deg = ahrs.get_yaw_deg();
     camera_feedback.feedback_trigger_logged_count = feedback_trigger_logged_count;
 
     GCS_SEND_MESSAGE(MSG_CAMERA_FEEDBACK);

@@ -85,31 +85,50 @@ void operator delete[](void * ptr)
 }
 
 #if defined(CYGWIN_BUILD) && CONFIG_HAL_BOARD == HAL_BOARD_SITL
-/*
-  wrapper around malloc to ensure all memory is initialised as zero
-  cygwin needs to wrap _malloc_r
- */
-#undef _malloc_r
-extern "C" {
-    void *__wrap__malloc_r(_reent *r, size_t size);
-    void *__real__malloc_r(_reent *r, size_t size);
-    void *_malloc_r(_reent *r, size_t size);
+
+// intercept malloc to ensure memory so allocated is zeroed. this is rather
+// nasty hack that hopefully does not live long! if it breaks again, that's it!
+// this is completely unsupported!
+
+// __imp_malloc is a pointer to a function that will be called to actually
+// do the malloc work. we can't replace it (or malloc itself) at build time as
+// that will cause cygwin to disable its own malloc. we therefore use a
+// constructor function that runs before main but after cygwin's disable check
+// to set the pointer to our own malloc which calls back into cygwin's allocator
+// through calloc to actually do the work and the zeroing.
+
+#include <stdio.h> // perror
+#include <sys/mman.h> // mprotect and constants
+
+extern "C" void *__imp_malloc; // the pointer of our affection
+
+static void *do_the_malloc(size_t size) { // replacement for malloc
+    // allocate zeroed using calloc (malloc would of course recurse infinitely)
+    return calloc(1, size);
 }
-void *__wrap__malloc_r(_reent *r, size_t size)
-{
-    void *ret = __real__malloc_r(r, size);
-    if (ret != nullptr) {
-        memset(ret, 0, size);
+
+// called before main to set __imp_malloc. priority of 101 guarantees execution
+// before C++ constructors.
+__attribute__((constructor(101))) static void hack_in_malloc() {
+    // __imp_malloc is in .text which is read-only so make it read-write first
+
+    // compute address of its memory page as mprotect mandates page alignment
+    size_t page_size = (size_t)sysconf(_SC_PAGESIZE);
+    void *page_base = (void *)((size_t)&__imp_malloc & (~(page_size-1)));
+
+    // make it writable and executable as we (unlikely) may be executing near it
+    int res = mprotect(page_base, page_size, PROT_READ|PROT_WRITE|PROT_EXEC);
+    if (res) {
+        perror("hack_in_malloc() mprotect writable");
     }
-    return ret;
-}
-void *_malloc_r(_reent *x, size_t size)
-{
-    void *ret = __real__malloc_r(x, size);
-    if (ret != nullptr) {
-        memset(ret, 0, size);
+
+    *(void **)&__imp_malloc = (void *)&do_the_malloc; // set the pointer now
+
+    // put the page back to read-only (and let execution keep happening)
+    res = mprotect(page_base, page_size, PROT_READ|PROT_EXEC);
+    if (res) {
+        perror("hack_in_malloc() mprotect readable");
     }
-    return ret;
 }
 
 #elif CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS && CONFIG_HAL_BOARD != HAL_BOARD_QURT
@@ -130,3 +149,34 @@ void *__wrap_malloc(size_t size)
     return ret;
 }
 #endif
+
+/*
+  custom realloc which is guaranteed to zero newly-allocated memory
+  (assuming malloc does). marked as WEAK so tests can override it.
+
+  * always frees ptr (and returns nullptr) if new_size is 0
+  * allocates if ptr is nullptr and new_size is not 0
+  * else allocates new_size and copies over the smaller of old_size and new_size
+    and frees ptr (old_size can be <= actual original requested size)
+  * returns nullptr if allocation fails and leaves ptr and its data unchanged
+*/
+void * WEAK mem_realloc(void *ptr, size_t old_size, size_t new_size)
+{
+    if (new_size == 0) {
+        free(ptr);
+        return nullptr;
+    }
+
+    if (ptr == nullptr) {
+        return malloc(new_size);
+    }
+
+    void *new_ptr = malloc(new_size);
+    if (new_ptr != nullptr) {
+        size_t copy_size = new_size > old_size ? old_size : new_size;
+        memcpy(new_ptr, ptr, copy_size);
+        free(ptr);
+    }
+
+    return new_ptr;
+}

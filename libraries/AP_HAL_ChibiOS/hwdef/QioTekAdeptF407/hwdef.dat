@@ -4,8 +4,8 @@
 # MCU class and specific type
 MCU CKS32F4xx CKS32F407xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1065
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_QioTekAdeptF407
 
 FLASH_SIZE_KB 1024
 
@@ -179,7 +179,7 @@ PB15 LED_SAFETY OUTPUT
 PB12  SAFETY_IN INPUT PULLDOWN
 PB14  TIM12_CH1 TIM12 ALARM
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_WITH_RAMTRON 1
 define HAL_STORAGE_SIZE 16384
 

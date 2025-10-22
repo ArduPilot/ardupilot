@@ -31,8 +31,8 @@ void AC_AttitudeControl::Write_ANG() const
 void AC_AttitudeControl::Write_Rate(const AC_PosControl &pos_control) const
 {
     const Vector3f rate_targets = rate_bf_targets() * RAD_TO_DEG;
-    const Vector3f &accel_target = pos_control.get_accel_target_cmss();
-    const Vector3f gyro_rate = _rate_gyro * RAD_TO_DEG;
+    const Vector3f &accel_target = pos_control.get_accel_target_NEU_mss() * 100.0;
+    const Vector3f gyro_rate = _rate_gyro_rads * RAD_TO_DEG;
     const struct log_Rate pkt_rate{
         LOG_PACKET_HEADER_INIT(LOG_RATE_MSG),
         time_us         : _rate_gyro_time_us,
@@ -57,7 +57,10 @@ void AC_AttitudeControl::Write_Rate(const AC_PosControl &pos_control) const
      */
     const Vector3f &scale = get_last_angle_P_scale();
     const Vector3f &pd_scale = _pd_scale_used;
-    if (scale != AC_AttitudeControl::VECTORF_111 || pd_scale != AC_AttitudeControl::VECTORF_111) {
+    const Vector3f &i_scale = _i_scale_used;
+    if (scale != AC_AttitudeControl::VECTORF_111 
+        || pd_scale != AC_AttitudeControl::VECTORF_111
+        || i_scale != AC_AttitudeControl::VECTORF_111) {
         const struct log_ATSC pkt_ATSC {
             LOG_PACKET_HEADER_INIT(LOG_ATSC_MSG),
             time_us  : _rate_gyro_time_us,
@@ -67,6 +70,9 @@ void AC_AttitudeControl::Write_Rate(const AC_PosControl &pos_control) const
             scalePD_x : pd_scale.x,
             scalePD_y : pd_scale.y,
             scalePD_z : pd_scale.z,
+            scaleI_x : i_scale.x,
+            scaleI_y : i_scale.y,
+            scaleI_z : i_scale.z,
         };
         AP::logger().WriteBlock(&pkt_ATSC, sizeof(pkt_ATSC));
     }

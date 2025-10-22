@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
 ############################################################################
 #
 #   Copyright (c) 2012-2017 PX4 Development Team. All rights reserved.
@@ -51,9 +52,6 @@
 #
 
 # AP_FLAKE8_CLEAN
-
-# for python2.7 compatibility
-from __future__ import print_function
 
 import sys
 import argparse
@@ -225,6 +223,7 @@ class uploader(object):
     GET_CHIP        = b'\x2c'     # rev5+  , get chip version
     SET_BOOT_DELAY  = b'\x2d'     # rev5+  , set boot delay
     GET_CHIP_DES    = b'\x2e'     # rev5+  , get chip description in ASCII
+    GET_SOFTWARE    = b'\x2f'
     MAX_DES_LENGTH  = 20
 
     REBOOT          = b'\x30'
@@ -262,7 +261,8 @@ class uploader(object):
                  source_system=None,
                  source_component=None,
                  no_extf=False,
-                 force_erase=False):
+                 force_erase=False,
+                 identify_only=False):
         self.MAVLINK_REBOOT_ID1 = bytearray(b'\xfe\x21\x72\xff\x00\x4c\x00\x00\x40\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf6\x00\x01\x00\x00\x53\x6b')  # NOQA
         self.MAVLINK_REBOOT_ID0 = bytearray(b'\xfe\x21\x45\xff\x00\x4c\x00\x00\x40\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf6\x00\x00\x00\x00\xcc\x37')  # NOQA
         if target_component is None:
@@ -273,6 +273,7 @@ class uploader(object):
             source_component = 1
         self.no_extf = no_extf
         self.force_erase = force_erase
+        self.identify_only = identify_only
 
         # open the port, keep the default timeout short so we can poll quickly
         self.port = serial.Serial(portname, baudrate_bootloader, timeout=2.0, write_timeout=2.0)
@@ -390,7 +391,7 @@ class uploader(object):
             return True
 
         except NotImplementedError:
-            raise RuntimeError("Programing not supported for this version of silicon!\n"
+            raise RuntimeError("Programming not supported for this version of silicon!\n"
                                "See https://pixhawk.org/help/errata")
         except RuntimeError:
             # timeout, no response yet
@@ -434,8 +435,19 @@ class uploader(object):
         self.__getSync()
         if runningPython3:
             value = value.decode('ascii')
-        peices = value.split(",")
-        return peices
+        pieces = value.split(",")
+        return pieces
+
+    # send the GET_SOFTWARE command
+    def __getBootloaderSoftware(self):
+        self.__send(uploader.GET_SOFTWARE + uploader.EOC)
+        length = self.__recv_int()
+        print(f"RX Len: {length}")
+        value = self.__recv(length)
+        if runningPython3:
+            value = value.decode('ascii')
+        self.__getSync()
+        return value
 
     def __drawProgressBar(self, label, progress, maxVal):
         if maxVal < progress:
@@ -737,6 +749,13 @@ class uploader(object):
         self.board_rev = self.__getInfo(uploader.INFO_BOARD_REV)
         self.fw_maxsize = self.__getInfo(uploader.INFO_FLASH_SIZE)
 
+        if self.identify_only:
+            # Only run if we are trying to identify the board
+            try:
+                self.git_hash_bl = self.__getBootloaderSoftware()
+            except Exception:
+                self.__sync()
+
     def dump_board_info(self):
         # OTP added in v4:
         print("Bootloader Protocol: %u" % self.bl_rev)
@@ -839,6 +858,9 @@ class uploader(object):
             print("  board_type: %u" % self.board_type)
         print("  board_rev: %u" % self.board_rev)
 
+        if hasattr(self, "git_hash_bl") and self.git_hash_bl is not None:
+            print("  git hash (Bootloader): %s" % self.git_hash_bl)
+
         print("Identification complete")
 
     def board_name_for_board_id(self, board_id):
@@ -881,6 +903,20 @@ class uploader(object):
         except Exception as e:
             print("Failed to get name: %s" % str(e))
         return None
+
+    # Verify firmware version on board matches provided version
+    def verify_firmware_is(self, fw, boot_delay=None):
+        if self.bl_rev == 2:
+            self.__verify_v2("Verify ", fw)
+        else:
+            self.__verify_v3("Verify ", fw)
+
+        if boot_delay is not None:
+            self.__set_boot_delay(boot_delay)
+
+        print("\nRebooting.\n")
+        self.__reboot()
+        self.port.close()
 
     # upload the firmware
     def upload(self, fw, force=False, boot_delay=None):
@@ -1120,6 +1156,8 @@ def main():
     )
     parser.add_argument('--download', action='store_true', default=False, help='download firmware from board')
     parser.add_argument('--identify', action="store_true", help="Do not flash firmware; simply dump information about board")
+    parser.add_argument('--verify-firmware-is', action="store_true",
+                        help="Do not flash firmware; verify that the firmware on the board matches the supplied firmware")
     parser.add_argument('--no-extf', action="store_true", help="Do not attempt external flash operations")
     parser.add_argument('--erase-extflash', type=lambda x: int(x, 0), default=None,
                         help="Erase sectors containing specified amount of bytes from ext flash")
@@ -1162,7 +1200,8 @@ def main():
                                   args.source_system,
                                   args.source_component,
                                   args.no_extf,
-                                  args.force_erase)
+                                  args.force_erase,
+                                  args.identify)
 
                 except Exception as e:
                     if not is_WSL and not is_WSL2 and "win32" not in _platform:
@@ -1183,6 +1222,8 @@ def main():
                         up.dump_board_info()
                     elif args.download:
                         up.download(args.firmware)
+                    elif args.verify_firmware_is:
+                        up.verify_firmware_is(fw, boot_delay=args.boot_delay)
                     elif args.erase_extflash:
                         up.erase_extflash('Erase ExtF', args.erase_extflash)
                         print("\nExtF Erase Finished")

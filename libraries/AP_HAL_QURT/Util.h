@@ -25,19 +25,4 @@ public:
       return state of safety switch, if applicable
      */
     enum safety_state safety_switch_state(void) override;
-    
-#if ENABLE_HEAP
-    // heap functions, note that a heap once alloc'd cannot be dealloc'd
-    virtual void *allocate_heap_memory(size_t size) override;
-    virtual void *heap_realloc(void *h, void *ptr, size_t old_size, size_t new_size) override;
-
-    struct heap_allocation_header {
-        uint64_t allocation_size; // size of allocated block, not including this header
-    };
-
-    struct heap {
-        size_t max_heap_size;
-        size_t current_heap_usage;
-    };
-#endif // ENABLE_HEAP
 };

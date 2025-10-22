@@ -194,16 +194,22 @@ public:
       read a series of bytes from a port, using serial parameters from serial_setup_output()
       return the number of bytes read. This is a blocking call
      */
-    virtual uint16_t serial_read_bytes(uint8_t *buf, uint16_t len) { return 0; }
+    virtual uint16_t serial_read_bytes(uint8_t *buf, uint16_t len, uint32_t timeout_us) { return 0; }
     
     /*
       stop serial output. This restores the previous output mode for
       the channel and any other channels that were stopped by
       serial_setup_output()
      */
-    virtual void serial_end(void) {}
+    virtual void serial_end(uint32_t chanmask) {}
     
     /*
+      reset serial output. This re-initializes the DMA configuration to that configured by
+      serial_setup_output()
+     */
+    virtual void serial_reset(uint32_t chanmask) {}
+
+     /*
       output modes. Allows for support of PWM, oneshot and dshot 
     */
     // this enum is used by BLH_OTYPE and ESC_PWM_TYPE on AP_Periph
@@ -375,6 +381,11 @@ public:
       Writes gpio state to a channel
     */
     virtual void write_gpio(uint8_t chan, bool active) {};
+
+    /*
+      Force group trigger from all callers rather than just from the main thread
+    */
+    virtual void force_trigger_groups(bool onoff) {};
 
     /*
      * calculate the prescaler required to achieve the desire bitrate

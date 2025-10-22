@@ -20,10 +20,11 @@ jobs:
             astyle-cleanliness,
             validate_board_list,
             logger_metadata,
+            param-file-validation,
        ]
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: 'recursive'
       - name: test ${{matrix.config}}

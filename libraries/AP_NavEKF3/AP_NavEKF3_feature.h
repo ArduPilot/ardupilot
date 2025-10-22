@@ -15,17 +15,17 @@
 
 // body odomotry (which includes wheel encoding) on rover or 2M boards
 #ifndef EK3_FEATURE_BODY_ODOM
-#define EK3_FEATURE_BODY_ODOM EK3_FEATURE_ALL || APM_BUILD_TYPE(APM_BUILD_Rover) || BOARD_FLASH_SIZE > 1024
+#define EK3_FEATURE_BODY_ODOM EK3_FEATURE_ALL || APM_BUILD_TYPE(APM_BUILD_Rover) || HAL_PROGRAM_SIZE_LIMIT_KB > 1024
 #endif
 
 // external navigation on 2M boards
 #ifndef EK3_FEATURE_EXTERNAL_NAV
-#define EK3_FEATURE_EXTERNAL_NAV EK3_FEATURE_ALL || BOARD_FLASH_SIZE > 1024
+#define EK3_FEATURE_EXTERNAL_NAV EK3_FEATURE_ALL || HAL_PROGRAM_SIZE_LIMIT_KB > 1024
 #endif
 
 // drag fusion on 2M boards
 #ifndef EK3_FEATURE_DRAG_FUSION
-#define EK3_FEATURE_DRAG_FUSION EK3_FEATURE_ALL || BOARD_FLASH_SIZE > 1024
+#define EK3_FEATURE_DRAG_FUSION EK3_FEATURE_ALL || HAL_PROGRAM_SIZE_LIMIT_KB > 1024
 #endif
 
 // Beacon Fusion if beacon data available
@@ -45,4 +45,9 @@
 // Flow Fusion if Flow data available
 #ifndef EK3_FEATURE_OPTFLOW_FUSION
 #define EK3_FEATURE_OPTFLOW_FUSION HAL_NAVEKF3_AVAILABLE && AP_OPTICALFLOW_ENABLED
+#endif
+
+// Optical flow using SRTM terrain data
+#ifndef EK3_FEATURE_OPTFLOW_SRTM
+#define EK3_FEATURE_OPTFLOW_SRTM EK3_FEATURE_OPTFLOW_FUSION
 #endif

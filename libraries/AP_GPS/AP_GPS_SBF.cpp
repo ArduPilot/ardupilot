@@ -31,12 +31,12 @@ extern const AP_HAL::HAL& hal;
 #define SBF_DEBUGGING 0
 
 #if SBF_DEBUGGING
+// INFO rather than debug because MP filters DEBUG
  # define Debug(fmt, args ...)                  \
 do {                                            \
-    hal.console->printf("%s:%d: " fmt "\n",     \
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s:%d: " fmt, \
                         __FUNCTION__, __LINE__, \
                         ## args);               \
-    hal.scheduler->delay(1);                    \
 } while(0)
 #else
  # define Debug(fmt, args ...)
@@ -149,8 +149,10 @@ AP_GPS_SBF::read(void)
                                                             (params.gnss_mode&(1U<<6))!=0 ? ((params.gnss_mode&0x2F)==0  ? "GLONASS" : "+GLONASS") : "") == -1) {
                                         config_string=nullptr;
                                     }
+                                    break;
                                 }
-                                break;
+                                config_step = Config_State::Blob;
+                                FALLTHROUGH;
                             case Config_State::Blob:
                                 if (asprintf(&config_string, "%s\n", _initialisation_blob[_init_blob_index]) == -1) {
                                     config_string = nullptr;
@@ -321,6 +323,14 @@ AP_GPS_SBF::parse(uint8_t temp)
                                      // indicates not enough bytes to do a crc
                 break;
             }
+            if (sbf_msg.length > 256) {
+                // no SBF packet is this big!  serial corruption may
+                // cause the length to get very large; 24320 has been
+                // seen (0x5F00).  Discard and go back to looking for
+                // preamble.
+                sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
+                crc_error_counter++; // this is a probable serial corruption
+            }
             break;
         case sbf_msg_parser_t::DATA:
             if (sbf_msg.read < sizeof(sbf_msg.data)) {
@@ -380,6 +390,11 @@ AP_GPS_SBF::parse(uint8_t temp)
                                     config_step = Config_State::Constellation;
                                     break;
                                 case Config_State::Constellation:
+                                    // we can also move to
+                                    // Config_State::Blob if we choose
+                                    // not to update the GPS's
+                                    // constellation configuration
+                                    // (above).
                                     config_step = Config_State::Blob;
                                     break;
                                 case Config_State::Blob:

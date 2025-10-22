@@ -135,7 +135,7 @@ bool CANSensor::add_interface(AP_HAL::CANIface* can_iface)
     return true;
 }
 
-bool CANSensor::write_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us)
+bool CANSensor::write_frame(AP_HAL::CANFrame &out_frame, const uint32_t timeout_us)
 {
     if (!_initialized) {
         debug_can(AP_CANManager::LOG_ERROR, "Driver not initialized for write_frame");
@@ -171,12 +171,12 @@ void CANSensor::loop()
 #endif
 
     while (true) {
-        uint64_t timeout = AP_HAL::micros64() + LOOP_INTERVAL_US;
+        uint64_t deadline_us = AP_HAL::micros64() + LOOP_INTERVAL_US;
 
         // wait to receive frame
         bool read_select = true;
         bool write_select = false;
-        bool ret = _can_iface->select(read_select, write_select, nullptr, timeout);
+        bool ret = _can_iface->select(read_select, write_select, nullptr, deadline_us);
         if (ret && read_select) {
             uint64_t time;
             AP_HAL::CANIface::CanIOFlags flags {};

@@ -8,9 +8,9 @@
 #define CRASH_CHECK_ACCEL_MAX           3.0f    // vehicle must be accelerating less than 3m/s/s to be considered crashed
 
 // Code to detect a thrust loss main ArduCopter code
-#define THRUST_LOSS_CHECK_TRIGGER_SEC         1     // 1 second descent while level and high throttle indicates thrust loss
-#define THRUST_LOSS_CHECK_ANGLE_DEVIATION_CD  1500  // we can't expect to maintain altitude beyond 15 degrees on all aircraft
-#define THRUST_LOSS_CHECK_MINIMUM_THROTTLE    0.9f  // we can expect to maintain altitude above 90 % throttle
+#define THRUST_LOSS_CHECK_TRIGGER_SEC         1             // 1 second descent while level and high throttle indicates thrust loss
+#define THRUST_LOSS_CHECK_ANGLE_DEVIATION_RAD radians(15.0) // we can't expect to maintain altitude beyond 15 degrees on all aircraft
+#define THRUST_LOSS_CHECK_MINIMUM_THROTTLE    0.9f          // we can expect to maintain altitude above 90 % throttle
 
 // Yaw imbalance check
 #define YAW_IMBALANCE_IMAX_THRESHOLD 0.75f
@@ -124,8 +124,8 @@ void Copter::thrust_loss_check()
 
     // check for desired angle over 15 degrees
     // todo: add thrust angle to AC_AttitudeControl
-    const Vector3f angle_target = attitude_control->get_att_target_euler_cd();
-    if (sq(angle_target.x) + sq(angle_target.y) > sq(THRUST_LOSS_CHECK_ANGLE_DEVIATION_CD)) {
+    const Vector3f& angle_target_rad = attitude_control->get_att_target_euler_rad();
+    if (angle_target_rad.xy().length_squared() > sq(THRUST_LOSS_CHECK_ANGLE_DEVIATION_RAD)) {
         thrust_loss_counter = 0;
         return;
     }
@@ -143,7 +143,9 @@ void Copter::thrust_loss_check()
     }
 
     // check for descent
-    if (!is_negative(inertial_nav.get_velocity_z_up_cms())) {
+    float vel_d_ms = 0;
+    if (!AP::ahrs().get_velocity_D(vel_d_ms, vibration_check.high_vibes) || !is_positive(vel_d_ms)) {
+        // we have no vertical velocity estimate and/or we are not descending
         thrust_loss_counter = 0;
         return;
     }
@@ -241,7 +243,7 @@ void Copter::yaw_imbalance_check()
 void Copter::parachute_check()
 {
     static uint16_t control_loss_count; // number of iterations we have been out of control
-    static int32_t baro_alt_start;
+    static float baro_alt_start_m;
 
     // exit immediately if parachute is not enabled
     if (!parachute.enabled()) {
@@ -252,7 +254,9 @@ void Copter::parachute_check()
     parachute.set_is_flying(!ap.land_complete);
 
     // pass sink rate to parachute library
-    parachute.set_sink_rate(-inertial_nav.get_velocity_z_up_cms() * 0.01f);
+    float vel_d_ms = 0;
+    UNUSED_RESULT(AP::ahrs().get_velocity_D(vel_d_ms, vibration_check.high_vibes));
+    parachute.set_sink_rate(vel_d_ms);
 
     // exit immediately if in standby
     if (standby_active) {
@@ -308,10 +312,10 @@ void Copter::parachute_check()
 
     // record baro alt if we have just started losing control
     if (control_loss_count == 1) {
-        baro_alt_start = baro_alt;
+        baro_alt_start_m = baro_alt_m;
 
     // exit if baro altitude change indicates we are not falling
-    } else if (baro_alt >= baro_alt_start) {
+    } else if (baro_alt_m >= baro_alt_start_m) {
         control_loss_count = 0;
         return;
 

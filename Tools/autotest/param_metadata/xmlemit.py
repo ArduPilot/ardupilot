@@ -1,3 +1,5 @@
+# flake8: noqa
+
 from lxml import etree
 
 from emit import Emit
@@ -69,9 +71,12 @@ class XmlEmit(Emit):
         keys = nv_pairs.keys()
         def sort_key(value):
             description = nv_pairs[value]
-            if zero_at_top and value == "0":
-                # make sure this item goes at the top of the list:
-                return "AAAAAAA"
+            if zero_at_top:
+                # make sure -1 and 0 appear at the top of the list
+                if value == "-1":
+                    return "0000000"
+                if value == "0":
+                    return "0000001"
             return description
         return sorted(keys, key=sort_key)
 
@@ -93,13 +98,13 @@ class XmlEmit(Emit):
             if hasattr(param, 'Calibration'):
                 xml_param.set('calibration', param.Calibration)
 
-            # Add values as chidren of this node
+            # Add values as children of this node
             for field in param.__dict__.keys():
                 if not self.should_emit_field(param, field):
                     continue
                 if field not in ['name', 'DisplayName', 'Description', 'User', 'SortValues'] and field in known_param_fields:
                     # we emit Bitmask as both a sub-element (so that
-                    # consumers don't need to parse the Bimask list),
+                    # consumers don't need to parse the Bitmask list),
                     # but also as a text so we don't break existing
                     # implementations.  Contrast with "values", which
                     # is only emitted as a sub-element.
@@ -124,7 +129,7 @@ class XmlEmit(Emit):
                     elif field == 'Units':
                         abreviated_units = param.__dict__[field]
                         if abreviated_units != '':
-                            units = known_units[abreviated_units]   # use the known_units dictionary to convert the abreviated unit into a full textual one
+                            units = known_units[abreviated_units]   # use the known_units dictionary to convert the abbreviated unit into a full textual one
                             xml_field1 = etree.SubElement(xml_param, 'field', name=field)  # i.e. A/s
                             xml_field1.text = abreviated_units
                             xml_field2 = etree.SubElement(xml_param, 'field', name='UnitText')  # i.e. ampere per second

@@ -114,7 +114,7 @@ bool AP_Baro_BMP581::init()
         return false;
     }
 
-    if ((status & 0b10) == 0  || (status & 0b100) == 1) {
+    if ((status & 0b10) == 0 || (status & 0b100)) {
         return false;
     }
 

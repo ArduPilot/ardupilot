@@ -20,6 +20,7 @@
 #include <hal.h>
 #include "Util.h"
 #include <ch.h>
+#include <sysperf.h>
 #include "RCOutput.h"
 #include "UARTDriver.h"
 #include "hwdef/common/stm32_util.h"
@@ -42,8 +43,8 @@
 #include <AP_Logger/AP_Logger.h>
 #endif
 
-#if HAL_WITH_IO_MCU
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#if HAL_WITH_IO_MCU
 #include <AP_IOMCU/AP_IOMCU.h>
 extern AP_IOMCU iomcu;
 #endif
@@ -94,68 +95,6 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
         free(ptr);
     }
 }
-
-
-#if ENABLE_HEAP
-
-void *Util::allocate_heap_memory(size_t size)
-{
-    memory_heap_t *heap = (memory_heap_t *)malloc(size + sizeof(memory_heap_t));
-    if (heap == nullptr) {
-        return nullptr;
-    }
-    chHeapObjectInit(heap, heap + 1U, size);
-    return heap;
-}
-
-/*
-  realloc implementation thanks to wolfssl, used by AP_Scripting
- */
-void *Util::std_realloc(void *addr, size_t size)
-{
-    if (size == 0) {
-       free(addr);
-       return nullptr;
-    }
-    if (addr == nullptr) {
-        return malloc(size);
-    }
-    void *new_mem = malloc(size);
-    if (new_mem != nullptr) {
-        memcpy(new_mem, addr, chHeapGetSize(addr) > size ? size : chHeapGetSize(addr));
-        free(addr);
-    }
-    return new_mem;
-}
-
-void *Util::heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size)
-{
-    if (heap == nullptr) {
-        return nullptr;
-    }
-    if (new_size == 0) {
-        if (ptr != nullptr) {
-            chHeapFree(ptr);
-        }
-        return nullptr;
-    }
-    if (ptr == nullptr) {
-        return chHeapAlloc((memory_heap_t *)heap, new_size);
-    }
-    void *new_mem = chHeapAlloc((memory_heap_t *)heap, new_size);
-    if (new_mem != nullptr) {
-        const size_t old_size2 = chHeapGetSize(ptr);
-#if defined(HAL_DEBUG_BUILD) && !defined(IOMCU_FW)
-        if (new_size != 0 && old_size2 != old_size) {
-            INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
-        }
-#endif
-        memcpy(new_mem, ptr, old_size2 > new_size ? new_size : old_size2);
-        chHeapFree(ptr);
-    }
-    return new_mem;
-}
-#endif // ENABLE_HEAP
 
 #endif // CH_CFG_USE_HEAP
 
@@ -442,14 +381,20 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
 #endif
     // a header to allow for machine parsers to determine format
     const uint32_t isr_stack_size = uint32_t((const uint8_t *)&__main_stack_end__ - (const uint8_t *)&__main_stack_base__);
+#if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
+    if (AP_BoardConfig::use_idle_stats()) {
+        str.printf("%-13.13s LOAD=%4.1f%% PEAK=%4.1f%%\n", "ThreadsV3", (sysGetCPUAverageLoad() / 100.0f), (sysGetCPUPeakLoad() / 100.0f));
+    } else
+#endif
+    str.printf("ThreadsV2\n");
 #if HAL_ENABLE_THREAD_STATISTICS
-    str.printf("ThreadsV2\nISR           PRI=255 sp=%p STACK=%u/%u LOAD=%4.1f%%\n",
+    str.printf("ISR           PRI=255 sp=%p STACK=%u/%u LOAD=%4.1f%%\n",
                 &__main_stack_base__,
                 unsigned(stack_free(&__main_stack_base__)),
                 unsigned(isr_stack_size), 100.0f * float(currcore->kernel_stats.m_crit_isr.cumulative) / float(cumulative_cycles));
     currcore->kernel_stats.m_crit_isr.cumulative = 0U;
 #else
-    str.printf("ThreadsV2\nISR           PRI=255 sp=%p STACK=%u/%u\n",
+    str.printf("ISR           PRI=255 sp=%p STACK=%u/%u\n",
                 &__main_stack_base__,
                 unsigned(stack_free(&__main_stack_base__)),
                 unsigned(isr_stack_size));
@@ -492,8 +437,29 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
                     unsigned(stack_free(tp->wabase)), unsigned(total_stack));
 #endif
     }
+#if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
+    if (AP_BoardConfig::use_idle_stats()) {
+        sysStopLoadMeasure();
+        sysStartLoadMeasure();
+    }
+#endif
 }
 #endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
+
+// get the system load
+bool Util::get_system_load(float& avg_load, float& peak_load) const
+{
+#if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
+    if (AP_BoardConfig::use_idle_stats()) {
+        avg_load = sysGetCPUAverageLoad() / 100.0f;
+        peak_load = sysGetCPUPeakLoad() / 100.0f;
+
+        return true;
+    }
+#endif
+    return false;
+}
+
 
 #if CH_CFG_USE_SEMAPHORES
 // request information on dma contention
@@ -695,14 +661,17 @@ void Util::uart_info(ExpandingString &str)
     for (uint8_t i = 0; i < HAL_UART_NUM_SERIAL_PORTS; i++) {
         auto *uart = hal.serial(i);
         if (uart) {
-            str.printf("SERIAL%u ", i);
+#if HAL_WITH_IO_MCU
+            if (i == HAL_UART_IOMCU_IDX) {
+                str.printf("IOMCU   ");
+            } else
+#endif
+            {
+                str.printf("SERIAL%u ", i);
+            }
             uart->uart_info(str, sys_uart_stats.serial[i], dt_ms);
         }
     }
-#if HAL_WITH_IO_MCU
-    str.printf("IOMCU   ");
-    uart_io.uart_info(str, sys_uart_stats.io, dt_ms);
-#endif
 }
 
 // Log UART message for each serial port
@@ -721,10 +690,6 @@ void Util::uart_log()
             uart->log_stats(i, log_uart_stats.serial[i], dt_ms);
         }
     }
-#if HAL_WITH_IO_MCU
-    // Use magic instance 100 for IOMCU
-    uart_io.log_stats(100, log_uart_stats.io, dt_ms);
-#endif
 }
 #endif // HAL_LOGGING_ENABLED
 #endif // HAL_UART_STATS_ENABLED

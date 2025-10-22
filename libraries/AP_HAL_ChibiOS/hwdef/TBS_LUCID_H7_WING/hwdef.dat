@@ -1,0 +1,15 @@
+# hw definition file for processing by chibios_pins.py
+# for TBS H743 LUCID WING
+
+include ../TBS_LUCID_H7/hwdef.dat
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_TBS_LUCID_H7_WING
+
+undef IMU PA15
+
+PC2 BUZZER OUTPUT GPIO(32) LOW
+
+IMU Invensensev3 SPI:imu1 ROTATION_NONE
+IMU Invensensev3 SPI:imu2 ROTATION_YAW_270
+define DEFAULT_NTF_LED_TYPES 455

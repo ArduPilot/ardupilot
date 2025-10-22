@@ -7,7 +7,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 
 #include "AC_PrecLand_Backend.h"
-#include "AC_PrecLand_Companion.h"
+#include "AC_PrecLand_MAVLink.h"
 #include "AC_PrecLand_IRLock.h"
 #include "AC_PrecLand_SITL_Gazebo.h"
 #include "AC_PrecLand_SITL.h"
@@ -240,9 +240,9 @@ void AC_PrecLand::init(uint16_t update_rate_hz)
         default:
             return;
         // companion computer
-#if AC_PRECLAND_COMPANION_ENABLED
-        case Type::COMPANION:
-            _backend = NEW_NOTHROW AC_PrecLand_Companion(*this, _backend_state);
+#if AC_PRECLAND_MAVLINK_ENABLED
+        case Type::MAVLINK:
+            _backend = NEW_NOTHROW AC_PrecLand_MAVLink(*this, _backend_state);
             break;
         // IR Lock
 #endif
@@ -349,10 +349,10 @@ void AC_PrecLand::check_target_status(float rangefinder_alt_m, bool rangefinder_
 
     if (_current_target_state == TargetState::TARGET_RECENTLY_LOST) {
         // check if it's nearby/found recently, else the status will be demoted to "TARGET_LOST"
-        Vector2f curr_pos;
+        Vector2p curr_pos;
         if (AP::ahrs().get_relative_position_NE_origin(curr_pos)) {
-            const float dist_to_last_target_loc_xy = (curr_pos - Vector2f{_last_target_pos_rel_origin_NED.x, _last_target_pos_rel_origin_NED.y}).length();
-            const float dist_to_last_loc_xy = (curr_pos - Vector2f{_last_vehicle_pos_NED.x, _last_vehicle_pos_NED.y}).length();
+            const float dist_to_last_target_loc_xy = (curr_pos - _last_target_pos_rel_origin_NED.xy()).length();
+            const float dist_to_last_loc_xy = (curr_pos - _last_vehicle_pos_NED.xy()).length();
             if ((AP_HAL::millis() - _last_valid_target_ms) > LANDING_TARGET_LOST_TIMEOUT_MS) {
                 // the target has not been seen for a long time
                 // might as well consider it as "never seen"
@@ -397,6 +397,7 @@ bool AC_PrecLand::check_if_sensor_in_range(float rangefinder_alt_m, bool rangefi
     return true;
 }
 
+// returns true when the landing target has been detected
 bool AC_PrecLand::target_acquired()
 {
     if ((AP_HAL::millis()-_last_update_ms) > LANDING_TARGET_TIMEOUT_MS) {
@@ -412,67 +413,71 @@ bool AC_PrecLand::target_acquired()
     return _target_acquired;
 }
 
-bool AC_PrecLand::get_target_position_cm(Vector2f& ret)
+// returns target position relative to the EKF origin
+bool AC_PrecLand::get_target_position_m(Vector2p& ret)
 {
     if (!target_acquired()) {
         return false;
     }
-    Vector2f curr_pos;
+    Vector2p curr_pos;
     if (!AP::ahrs().get_relative_position_NE_origin(curr_pos)) {
         return false;
     }
-    ret.x = (_target_pos_rel_out_NE.x + curr_pos.x) * 100.0f;   // m to cm
-    ret.y = (_target_pos_rel_out_NE.y + curr_pos.y) * 100.0f;   // m to cm
+    ret.x = (_target_pos_rel_out_NE.x + curr_pos.x);
+    ret.y = (_target_pos_rel_out_NE.y + curr_pos.y);
     return true;
 }
 
-void AC_PrecLand::get_target_position_measurement_cm(Vector3f& ret)
+// returns target relative position as 3D vector
+void AC_PrecLand::get_target_position_measurement_m(Vector3f& ret)
 {
-    ret = _target_pos_rel_meas_NED*100.0f;
+    ret = _target_pos_rel_meas_NED;
     return;
 }
 
-bool AC_PrecLand::get_target_position_relative_cm(Vector2f& ret)
+// returns target position relative to vehicle
+bool AC_PrecLand::get_target_position_relative_m(Vector2f& ret)
 {
     if (!target_acquired()) {
         return false;
     }
-    ret = _target_pos_rel_out_NE*100.0f;
+    ret = _target_pos_rel_out_NE;
     return true;
 }
 
-bool AC_PrecLand::get_target_velocity_relative_cms(Vector2f& ret)
+// returns target velocity relative to vehicle
+bool AC_PrecLand::get_target_velocity_relative_ms(Vector2f& ret)
 {
     if (!target_acquired()) {
         return false;
     }
-    ret = _target_vel_rel_out_NE*100.0f;
+    ret = _target_vel_rel_out_NE;
     return true;
 }
 
 // get the absolute velocity of the vehicle
-void AC_PrecLand::get_target_velocity_cms(const Vector2f& vehicle_velocity_cms, Vector2f& target_vel_cms)
+void AC_PrecLand::get_target_velocity_ms(const Vector2f& vehicle_velocity_ms, Vector2f& target_vel_ms)
 {
     if (!(_options & PLND_OPTION_MOVING_TARGET)) {
         // the target should not be moving
-        target_vel_cms.zero();
+        target_vel_ms.zero();
         return;
     }
     if ((EstimatorType)_estimator_type.get() == EstimatorType::RAW_SENSOR) {
         // We do not predict the velocity of the target in this case
         // assume velocity to be zero
-        target_vel_cms.zero();
+        target_vel_ms.zero();
         return;
     }
-    Vector2f target_vel_rel_cms;
-    if (!get_target_velocity_relative_cms(target_vel_rel_cms)) {
+    Vector2f target_vel_rel_ms;
+    if (!get_target_velocity_relative_ms(target_vel_rel_ms)) {
         // Don't know where the target is
         // assume velocity to be zero
-        target_vel_cms.zero();
+        target_vel_ms.zero();
         return;
     }
     // return the absolute velocity
-    target_vel_cms  = target_vel_rel_cms + vehicle_velocity_cms;
+    target_vel_ms  = target_vel_rel_ms + vehicle_velocity_ms;
 }
 
 // handle_msg - Process a LANDING_TARGET mavlink message
@@ -488,6 +493,7 @@ void AC_PrecLand::handle_msg(const mavlink_landing_target_t &packet, uint32_t ti
 // Private methods
 //
 
+// run target position estimator
 void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_valid)
 {
     _inertial_data_delayed = (*_inertial_history)[0];
@@ -612,16 +618,16 @@ void AC_PrecLand::check_ekf_init_timeout()
     }
 }
 
-bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit_body)
+// get 3D vector from vehicle to target and frame.  returns true on success, false on failure
+bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit, VectorFrame& frame)
 {
     const uint32_t los_meas_time_ms = _backend->los_meas_time_ms();
-    if (los_meas_time_ms != _last_backend_los_meas_ms && _backend->get_los_body(target_vec_unit_body)) {
+    if ((los_meas_time_ms != _last_backend_los_meas_ms) && _backend->get_los_meas(target_vec_unit, frame)) {
         _last_backend_los_meas_ms = los_meas_time_ms;
         if (!is_zero(_yaw_align)) {
             // Apply sensor yaw alignment rotation
-            target_vec_unit_body.rotate_xy(radians(_yaw_align*0.01f));
+            target_vec_unit.rotate_xy(cd_to_rad(_yaw_align));
         }
-
 
         // rotate vector based on sensor orientation to get correct body frame vector
         if (_orient != ROTATION_PITCH_270) {
@@ -632,8 +638,8 @@ bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit_body)
             // because the rotations are measured with respect to a vector pointing towards front in body frame
             // for eg, if orientation is back, i.e., ROTATION_YAW_180, 
             // the vector is first brought to front and then rotation by YAW 180 to take it to the back of vehicle
-            target_vec_unit_body.rotate(ROTATION_PITCH_90); // bring vector to front
-            target_vec_unit_body.rotate(_orient);           // rotate it to desired orientation
+            target_vec_unit.rotate(ROTATION_PITCH_90); // bring vector to front
+            target_vec_unit.rotate(_orient);           // rotate it to desired orientation
         }
 
         return true;
@@ -641,14 +647,33 @@ bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit_body)
     return false;
 }
 
+// If a new measurement was retrieved, sets _target_pos_rel_meas_NED and returns true
 bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, bool rangefinder_alt_valid)
 {
-    Vector3f target_vec_unit_body;
-    if (retrieve_los_meas(target_vec_unit_body)) {
+    Vector3f target_vec_unit;
+    VectorFrame target_vec_frame;
+    if (retrieve_los_meas(target_vec_unit, target_vec_frame)) {
         _inertial_data_delayed = (*_inertial_history)[0];
 
-        const bool target_vec_valid = target_vec_unit_body.projected(_approach_vector_body).dot(_approach_vector_body) > 0.0f;
-        const Vector3f target_vec_unit_ned = _inertial_data_delayed->Tbn * target_vec_unit_body;
+        // sanity check vector is pointing in the right direction
+        const bool target_vec_valid = target_vec_unit.projected(_approach_vector_body).dot(_approach_vector_body) > 0.0f;
+
+        // calculate 3D vector to target in NED frame
+        Vector3f target_vec_unit_ned;
+        switch (target_vec_frame) {
+        case VectorFrame::BODY_FRD:
+            // convert to NED
+            target_vec_unit_ned = _inertial_data_delayed->Tbn * target_vec_unit;
+            break;
+        case VectorFrame::LOCAL_FRD:
+            // rotate vector using delayed yaw
+            float roll_rad, pitch_rad, yaw_rad;
+            _inertial_data_delayed->Tbn.to_euler(&roll_rad, &pitch_rad, &yaw_rad);
+            target_vec_unit_ned = target_vec_unit;
+            target_vec_unit_ned.rotate_xy(-yaw_rad);
+            break;
+        }
+
         const Vector3f approach_vector_NED = _inertial_data_delayed->Tbn * _approach_vector_body;
         const bool alt_valid = (rangefinder_alt_valid && rangefinder_alt_m > 0.0f) || (_backend->distance_to_target() > 0.0f);
         if (target_vec_valid && alt_valid) {
@@ -680,7 +705,7 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
 
             // store the current relative down position so that if we need to retry landing, we know at this height landing target can be found
             const AP_AHRS &_ahrs = AP::ahrs();
-            Vector3f pos_NED;
+            Vector3p pos_NED;
             if (_ahrs.get_relative_position_NED_origin(pos_NED)) {
                 _last_target_pos_rel_origin_NED.z = pos_NED.z;
                 _last_vehicle_pos_NED = pos_NED;
@@ -691,6 +716,8 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
     return false;
 }
 
+// calculate target's position and velocity relative to the vehicle (used as input to position controller)
+// results are stored in_target_pos_rel_out_NE, _target_vel_rel_out_NE
 void AC_PrecLand::run_output_prediction()
 {
     _target_pos_rel_out_NE = _target_pos_rel_est_NE;
@@ -734,10 +761,10 @@ void AC_PrecLand::run_output_prediction()
     _target_pos_rel_out_NE.y += land_ofs_ned_m.y;
 
     // store the landing target as a offset from current position. This is used in landing retry
-    Vector2f last_target_loc_rel_origin_2d;
-    get_target_position_cm(last_target_loc_rel_origin_2d);
-    _last_target_pos_rel_origin_NED.x = last_target_loc_rel_origin_2d.x * 0.01f;
-    _last_target_pos_rel_origin_NED.y = last_target_loc_rel_origin_2d.y * 0.01f;
+    Vector2p last_target_loc_rel_origin_ne_m;
+    get_target_position_m(last_target_loc_rel_origin_ne_m);
+    _last_target_pos_rel_origin_NED.x = last_target_loc_rel_origin_ne_m.x;
+    _last_target_pos_rel_origin_NED.y = last_target_loc_rel_origin_ne_m.y;
 
     // record the last time there was a target output
     _last_valid_target_ms = AP_HAL::millis();
@@ -756,7 +783,7 @@ bool AC_PrecLand::get_target_location(Location &loc)
         return false;
     }
     loc.offset(_last_target_pos_rel_origin_NED.x, _last_target_pos_rel_origin_NED.y);
-    loc.alt -= _last_target_pos_rel_origin_NED.z*100;
+    loc.offset_up_m(-_last_target_pos_rel_origin_NED.z);
     return true;
 }
 
@@ -773,12 +800,12 @@ bool AC_PrecLand::get_target_velocity(Vector2f& target_vel)
     if ((EstimatorType)_estimator_type.get() == EstimatorType::RAW_SENSOR) {
         return false;
     }
-    Vector2f target_vel_rel_cms;
-    if (!get_target_velocity_relative_cms(target_vel_rel_cms)) {
+    Vector2f target_vel_rel_ms;
+    if (!get_target_velocity_relative_ms(target_vel_rel_ms)) {
         return false;
     }
     // return the absolute velocity
-    target_vel = (target_vel_rel_cms*0.01) + _last_veh_velocity_NED_ms.xy();
+    target_vel = (target_vel_rel_ms) + _last_veh_velocity_NED_ms.xy();
     return true;
 }
 
@@ -791,25 +818,25 @@ void AC_PrecLand::Write_Precland()
         return;
     }
 
-    Vector3f target_pos_meas;
-    Vector2f target_pos_rel;
-    Vector2f target_vel_rel;
-    get_target_position_relative_cm(target_pos_rel);
-    get_target_velocity_relative_cms(target_vel_rel);
-    get_target_position_measurement_cm(target_pos_meas);
+    Vector2f target_pos_rel_neu_m;
+    Vector2f target_vel_rel_neu_ms;
+    Vector3f target_pos_meas_neu_m;
+    get_target_position_relative_m(target_pos_rel_neu_m);
+    get_target_velocity_relative_ms(target_vel_rel_neu_ms);
+    get_target_position_measurement_m(target_pos_meas_neu_m);
 
     const struct log_Precland pkt {
         LOG_PACKET_HEADER_INIT(LOG_PRECLAND_MSG),
         time_us         : AP_HAL::micros64(),
         healthy         : healthy(),
         target_acquired : target_acquired(),
-        pos_x           : target_pos_rel.x,
-        pos_y           : target_pos_rel.y,
-        vel_x           : target_vel_rel.x,
-        vel_y           : target_vel_rel.y,
-        meas_x          : target_pos_meas.x,
-        meas_y          : target_pos_meas.y,
-        meas_z          : target_pos_meas.z,
+        pos_x           : target_pos_rel_neu_m.x,
+        pos_y           : target_pos_rel_neu_m.y,
+        vel_x           : target_vel_rel_neu_ms.x,
+        vel_y           : target_vel_rel_neu_ms.y,
+        meas_x          : target_pos_meas_neu_m.x,
+        meas_y          : target_pos_meas_neu_m.y,
+        meas_z          : target_pos_meas_neu_m.z,
         last_meas       : last_backend_los_meas_ms(),
         ekf_outcount    : ekf_outlier_count(),
         estimator       : (uint8_t)_estimator_type

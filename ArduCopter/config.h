@@ -93,8 +93,8 @@
 #endif
 
 // pre-arm baro vs inertial nav max alt disparity
-#ifndef PREARM_MAX_ALT_DISPARITY_CM
- # define PREARM_MAX_ALT_DISPARITY_CM       100     // barometer and inertial nav altitude must be within this many centimeters
+#ifndef PREARM_MAX_ALT_DISPARITY_M
+ # define PREARM_MAX_ALT_DISPARITY_M    1.0      // barometer and inertial nav altitude must be within this many meters
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -330,8 +330,8 @@
 #ifndef LAND_CANCEL_TRIGGER_THR
  # define LAND_CANCEL_TRIGGER_THR   700     // land is cancelled by input throttle above 700
 #endif
-#ifndef LAND_RANGEFINDER_MIN_ALT_CM
-#define LAND_RANGEFINDER_MIN_ALT_CM 200
+#ifndef LAND_RANGEFINDER_MIN_ALT_M
+#define LAND_RANGEFINDER_MIN_ALT_M  2.0
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -361,13 +361,21 @@
 //
 
 // Acro Mode
-#ifndef ACRO_LEVEL_MAX_ANGLE
- # define ACRO_LEVEL_MAX_ANGLE      3000 // maximum lean angle in trainer mode measured in centidegrees
+#ifndef ACRO_LEVEL_MAX_ANGLE_RAD
+ # define ACRO_LEVEL_MAX_ANGLE_RAD      radians(30.0)   // maximum lean angle in trainer mode measured in radians
 #endif
 
-#ifndef ACRO_LEVEL_MAX_OVERSHOOT
- # define ACRO_LEVEL_MAX_OVERSHOOT  1000 // maximum overshoot angle in trainer mode when full roll or pitch stick is held in centidegrees
+#ifdef ACRO_LEVEL_MAX_ANGLE
+#error "Please update your hwdef to use ACRO_LEVEL_MAX_ANGLE_RAD, not ACRO_LEVEL_MAX_ANGLE"
+#endif // ACRO_LEVEL_MAX_ANGLE
+
+#ifndef ACRO_LEVEL_MAX_OVERSHOOT_RAD
+ # define ACRO_LEVEL_MAX_OVERSHOOT_RAD  radians(10.0) // maximum overshoot angle in trainer mode when full roll or pitch stick is held in radians
 #endif
+
+#ifdef ACRO_LEVEL_MAX_OVERSHOOT
+#error "Please update your hwdef to use ACRO_LEVEL_MAX_OVERSHOOT_RAD, not ACRO_LEVEL_MAX_OVERSHOOT"
+#endif // ACRO_LEVEL_MAX_OVERSHOOT
 
 #ifndef ACRO_BALANCE_ROLL
  #define ACRO_BALANCE_ROLL          1.0f
@@ -406,8 +414,8 @@
  # define RTL_ALT                   1500    // default alt to return to home in cm, 0 = Maintain current altitude
 #endif
 
-#ifndef RTL_ALT_MIN
- # define RTL_ALT_MIN               30     // min height above ground for RTL (i.e 30cm)
+#ifndef RTL_ALT_MIN_M
+ # define RTL_ALT_MIN_M             0.30     // min height above ground for RTL (i.e 0.3 m)
 #endif
 
 #ifndef RTL_CLIMB_MIN_DEFAULT
@@ -431,13 +439,13 @@
  # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL
 #endif
 
-#ifndef YAW_LOOK_AHEAD_MIN_SPEED
- # define YAW_LOOK_AHEAD_MIN_SPEED  100             // minimum ground speed in cm/s required before copter is aimed at ground course
+#ifndef YAW_LOOK_AHEAD_MIN_SPEED_MS
+ # define YAW_LOOK_AHEAD_MIN_SPEED_MS 1     // minimum ground speed in m/s required before copter is aimed at ground course
 #endif
 
 // Super Simple mode
-#ifndef SUPER_SIMPLE_RADIUS
- # define SUPER_SIMPLE_RADIUS       1000
+#ifndef SUPER_SIMPLE_RADIUS_M
+ # define SUPER_SIMPLE_RADIUS_M       10.0
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -453,11 +461,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // Stop mode defaults
 //
-#ifndef BRAKE_MODE_SPEED_Z
- # define BRAKE_MODE_SPEED_Z     250 // z-axis speed in cm/s in Brake Mode
+#ifndef BRAKE_MODE_SPEED_Z_MS
+ # define BRAKE_MODE_SPEED_Z_MS       2.50 // z-axis speed in m/s in Brake Mode
 #endif
-#ifndef BRAKE_MODE_DECEL_RATE
- # define BRAKE_MODE_DECEL_RATE  750 // acceleration rate in cm/s/s in Brake Mode
+#ifndef BRAKE_MODE_DECEL_RATE_MSS
+ # define BRAKE_MODE_DECEL_RATE_MSS   7.50 // acceleration rate in m/s/s in Brake Mode
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -465,6 +473,7 @@
 //
 #ifndef POSHOLD_BRAKE_RATE_DEFAULT
  # define POSHOLD_BRAKE_RATE_DEFAULT    8       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
+ # define POSHOLD_BRAKE_RATE_MIN        4       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
 #endif
 #ifndef POSHOLD_BRAKE_ANGLE_DEFAULT
  # define POSHOLD_BRAKE_ANGLE_DEFAULT   3000    // default POSHOLD_BRAKE_ANGLE param value.  Max lean angle during braking in centi-degrees
@@ -500,11 +509,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // Throw mode configuration
 //
-#ifndef THROW_HIGH_SPEED
-# define THROW_HIGH_SPEED       500.0f  // vehicle much reach this total 3D speed in cm/s (or be free falling)
+#ifndef THROW_HIGH_SPEED_MS
+# define THROW_HIGH_SPEED_MS      5.0   // vehicle much reach this total 3D speed in cm/s (or be free falling)
 #endif
-#ifndef THROW_VERTICAL_SPEED
-# define THROW_VERTICAL_SPEED   50.0f   // motors start when vehicle reaches this total 3D speed in cm/s
+#ifndef THROW_VERTICAL_SPEED_MS
+# define THROW_VERTICAL_SPEED_MS  0.5   // motors start when vehicle reaches this total 3D speed in cm/s
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -525,6 +534,7 @@
     MASK_LOG_CURRENT | \
     MASK_LOG_RCOUT | \
     MASK_LOG_OPTFLOW | \
+    MASK_LOG_PID | \
     MASK_LOG_COMPASS | \
     MASK_LOG_CAMERA | \
     MASK_LOG_MOTBATT
@@ -574,8 +584,12 @@
 // Developer Items
 //
 
-#ifndef ADVANCED_FAILSAFE
-# define ADVANCED_FAILSAFE 0
+#ifndef AP_COPTER_ADVANCED_FAILSAFE_ENABLED
+# define AP_COPTER_ADVANCED_FAILSAFE_ENABLED 0
+#endif
+
+#ifndef AP_COPTER_AHRS_AUTO_TRIM_ENABLED
+# define AP_COPTER_AHRS_AUTO_TRIM_ENABLED 1
 #endif
 
 #ifndef CH_MODE_DEFAULT

@@ -42,9 +42,9 @@ Vector3f AP_AHRS::get_gyro_latest(void) const
 void AP_AHRS::set_trim(const Vector3f &new_trim)
 {
     const Vector3f trim {
-        constrain_float(new_trim.x, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT)),
-        constrain_float(new_trim.y, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT)),
-        constrain_float(new_trim.z, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT))
+        constrain_float(new_trim.x, radians(-AP_AHRS_TRIM_LIMIT), radians(AP_AHRS_TRIM_LIMIT)),
+        constrain_float(new_trim.y, radians(-AP_AHRS_TRIM_LIMIT), radians(AP_AHRS_TRIM_LIMIT)),
+        constrain_float(new_trim.z, radians(-AP_AHRS_TRIM_LIMIT), radians(AP_AHRS_TRIM_LIMIT))
     };
     _trim.set_and_save(trim);
 }
@@ -55,8 +55,8 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
     Vector3f trim = _trim.get();
 
     // add new trim
-    trim.x = constrain_float(trim.x + roll_in_radians, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
-    trim.y = constrain_float(trim.y + pitch_in_radians, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
+    trim.x = constrain_float(trim.x + roll_in_radians, radians(-AP_AHRS_TRIM_LIMIT), radians(AP_AHRS_TRIM_LIMIT));
+    trim.y = constrain_float(trim.y + pitch_in_radians, radians(-AP_AHRS_TRIM_LIMIT), radians(AP_AHRS_TRIM_LIMIT));
 
     // set new trim values
     _trim.set(trim);
@@ -71,7 +71,8 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
 void AP_AHRS::update_orientation()
 {
     const uint32_t now_ms = AP_HAL::millis();
-    if (now_ms - last_orientation_update_ms < 1000) {
+    if (last_orientation_update_ms != 0 &&
+        now_ms - last_orientation_update_ms < 1000) {
         // only update once/second
         return;
     }
@@ -156,6 +157,10 @@ void AP_AHRS::update_cd_values(void)
     yaw_sensor   = degrees(yaw) * 100;
     if (yaw_sensor < 0)
         yaw_sensor += 36000;
+
+    rpy_deg[0] = degrees(roll);
+    rpy_deg[1] = degrees(pitch);
+    rpy_deg[2] = wrap_360(degrees(yaw));  // we are probably already in trouble if this is required
 }
 
 /*
@@ -241,6 +246,13 @@ Vector2f AP_AHRS::earth_to_body2D(const Vector2f &ef) const
 Vector2f AP_AHRS::body_to_earth2D(const Vector2f &bf) const
 {
     return Vector2f(bf.x * _cos_yaw - bf.y * _sin_yaw,
+                    bf.x * _sin_yaw + bf.y * _cos_yaw);
+}
+
+// rotate a 2D vector from earth frame to body frame
+Vector2p AP_AHRS::body_to_earth2D_p(const Vector2p &bf) const
+{
+    return Vector2p(bf.x * _cos_yaw - bf.y * _sin_yaw,
                     bf.x * _sin_yaw + bf.y * _cos_yaw);
 }
 

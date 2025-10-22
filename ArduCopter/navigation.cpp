@@ -8,20 +8,20 @@ void Copter::run_nav_updates(void)
     update_super_simple_bearing(false);
 }
 
-// distance between vehicle and home in cm
-uint32_t Copter::home_distance()
+// distance between vehicle and home in m
+float Copter::home_distance_m()
 {
     if (position_ok()) {
-        _home_distance = current_loc.get_distance(ahrs.get_home()) * 100;
+        _home_distance_m = current_loc.get_distance(ahrs.get_home());
     }
-    return _home_distance;
+    return _home_distance_m;
 }
 
 // The location of home in relation to the vehicle in centi-degrees
-int32_t Copter::home_bearing()
+float Copter::home_bearing_rad()
 {
     if (position_ok()) {
-        _home_bearing = current_loc.get_bearing_to(ahrs.get_home());
+        _home_bearing_rad = current_loc.get_bearing(ahrs.get_home());
     }
-    return _home_bearing;
+    return _home_bearing_rad;
 }
