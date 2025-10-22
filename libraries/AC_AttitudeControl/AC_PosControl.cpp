@@ -1672,23 +1672,34 @@ void AC_PosControl::init_ekf_NE_reset()
 void AC_PosControl::handle_ekf_NE_reset()
 {
     // Check for EKF-reported NE position shift since last update
-    Vector2f pos_shift;
-    uint32_t reset_ms = _ahrs.getLastPosNorthEastReset(pos_shift);
+    Vector2f pos_shift_ne_m;
+    uint32_t reset_ms = _ahrs.getLastPosNorthEastReset(pos_shift_ne_m);
+    // todo: the actual difference in position and velocity estimation.
+    // This will prevent the need to pause error calculation for one cycle.
+
     if (reset_ms != _ekf_ne_reset_ms) {
-        // Reset NE controller to preserve relative position control during Loiter, PosHold, etc.
         // This ensures controller output remains continuous after EKF realigns the origin.
 
-        // ToDo: move EKF steps into the offsets for modes setting absolute position and velocity
-        // for this we need some sort of switch to select what type of EKF handling we want to use
+        // Reconstruct position target relative to the to new EKF estimation to maintain the current position error
+        Vector2p delta_pos_estimate_ne_m = _p_pos_ne_m.get_error().topostype() - (_pos_target_neu_m.xy() - _pos_estimate_neu_m.xy());
+        _pos_target_neu_m.xy() += delta_pos_estimate_ne_m;
 
-        // Reconstruct target and desired positions relative to new EKF origin
-        _pos_target_neu_m.xy() = _pos_estimate_neu_m.xy() + _p_pos_ne_m.get_error().topostype();
-        _pos_desired_neu_m.xy() = _pos_target_neu_m.xy() - _pos_offset_neu_m.xy();
+        // Reconstruct velocity target relative to the to new EKF estimation to maintain the current velocity error
+        Vector2f delta_vel_estimate_ne_ms = _pid_vel_ne_cm.get_error() * 0.01 - (_vel_target_neu_ms.xy() - _vel_estimate_neu_ms.xy());
+        _vel_target_neu_ms.xy() += delta_vel_estimate_ne_ms;
 
-        // Reconstruct velocity targets based on PID error and velocity estimate
-        _vel_target_neu_ms.xy() = _vel_estimate_neu_ms.xy() + _pid_vel_ne_cm.get_error() * 0.01;
-        _vel_desired_neu_ms.xy() = _vel_target_neu_ms.xy() - _vel_offset_neu_ms.xy();
-
+        switch (_ekf_reset_method) {
+        case EKFResetMethod::MoveTarget:
+            // Reset NE controller desired position and velocity to preserve actual position control during Loiter, PosHold, etc.
+            _pos_desired_neu_m.xy() += delta_pos_estimate_ne_m;
+            _vel_desired_neu_ms.xy() += delta_vel_estimate_ne_ms;
+            break;
+        case EKFResetMethod::MoveVehicle:
+            // Move the change in estimate into the offsest to move the aircraft to our new estimate smoothly during Auto, Guided, etc.
+            _pos_offset_neu_m.xy() += delta_pos_estimate_ne_m;
+            _vel_offset_neu_ms.xy() += delta_vel_estimate_ne_ms;
+            break;
+        }
         _ekf_ne_reset_ms = reset_ms;
     }
 }
@@ -1704,23 +1715,33 @@ void AC_PosControl::init_ekf_U_reset()
 void AC_PosControl::handle_ekf_U_reset()
 {
     // Check for EKF-reported Down-axis shift since last update
-    float alt_shift_d_m;
-    uint32_t reset_ms = _ahrs.getLastPosDownReset(alt_shift_d_m);
+    float pos_shift_d_m;
+    uint32_t reset_ms = _ahrs.getLastPosDownReset(pos_shift_d_m);
+    // todo: the actual difference in position and velocity estimation.
+    // This will prevent the need to pause error calculation for one cycle.
+
     if (reset_ms != 0 && reset_ms != _ekf_u_reset_ms) {
-        // Reset U controller to preserve continuity during relative-altitude modes (e.g., Loiter, PosHold).
-        // Compensates for EKF origin shift without abrupt position or velocity discontinuities.
+        // This ensures controller output remains continuous after EKF realigns the origin.
+        // Reconstruct position target relative to the to new EKF estimation to maintain the current position error
+        postype_t delta_pos_estimate_u_m = _p_pos_u_m.get_error() - (_pos_target_neu_m.z - _pos_estimate_neu_m.z);
+        _pos_target_neu_m.z += delta_pos_estimate_u_m;
 
-        // ToDo: move EKF steps into the offsets for modes setting absolute position and velocity
-        // for this we need some sort of switch to select what type of EKF handling we want to use
+        // Reconstruct velocity target relative to the to new EKF estimation to maintain the current velocity error
+        float delta_vel_estimate_u_ms = _pid_vel_u_cm.get_error() * 0.01 - (_vel_target_neu_ms.z - _vel_estimate_neu_ms.z);
+        _vel_target_neu_ms.z += delta_vel_estimate_u_ms;
 
-        // Reconstruct vertical position targets from measured altitude + P error
-        _pos_target_neu_m.z = _pos_estimate_neu_m.z + _p_pos_u_m.get_error();
-        _pos_desired_neu_m.z = _pos_target_neu_m.z - (_pos_offset_neu_m.z + _pos_terrain_u_m);
-
-        // Reconstruct vertical velocity targets from measured velocity + PID error
-        _vel_target_neu_ms.z = _vel_estimate_neu_ms.z + _pid_vel_u_cm.get_error() * 0.01;
-        _vel_desired_neu_ms.z = _vel_target_neu_ms.z - (_vel_offset_neu_ms.z + _vel_terrain_u_ms);
-
+        switch (_ekf_reset_method) {
+        case EKFResetMethod::MoveTarget:
+            // Reset U controller desired position and velocity to preserve actual position control during Loiter, PosHold, etc.
+            _pos_desired_neu_m.z += delta_pos_estimate_u_m;
+            _vel_desired_neu_ms.z += delta_vel_estimate_u_ms;
+            break;
+        case EKFResetMethod::MoveVehicle:
+            // Move the change in estimate into the offsest to move the aircraft to our new estimate smoothly during Auto, Guided, etc.
+            _pos_offset_neu_m.z += delta_pos_estimate_u_m;
+            _vel_offset_neu_ms.z += delta_vel_estimate_u_ms;
+            break;
+        }
         _ekf_u_reset_ms = reset_ms;
     }
 }
