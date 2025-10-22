@@ -203,7 +203,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _AUTO_CONFIG
     // @DisplayName: Automatic GPS configuration
     // @Description: Controls if the autopilot should automatically configure the GPS based on the parameters and default settings
-    // @Values: 0:Disables automatic configuration,1:Enable automatic configuration for Serial GPSes only,2:Enable automatic configuration for DroneCAN as well
+    // @Values: 0:Disables automatic configuration,1:Enable automatic configuration for Serial GPSes only,2:Enable automatic configuration for DroneCAN as well,3:Clear all configurations not set by ardupilot (UBlox only)
     // @User: Advanced
     AP_GROUPINFO("_AUTO_CONFIG", 13, AP_GPS, _auto_config, 1),
 
