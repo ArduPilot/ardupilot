@@ -2,30 +2,6 @@
 
 #include <hwdef.h>
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_DIY
-// no include required; it is all in hwdef.dat
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_BUZZ
-// no include required; it is all in hwdef.dat
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_ICARUS
-// no include required; it is all in hwdef.dat
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_EMPTY
-// no include required; it is all in hwdef.dat
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_TOMTE76
-// no include required; it is all in hwdef.dat
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_NICK
-// no include required; it is all in hwdef.dat
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3DEVKIT
-// no include required; it is all in hwdef.dat
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3EMPTY
-// no include required; it is all in hwdef.dat
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3M5STAMPFLY
-// no include required for stampfly; it is all in hwdef.dat
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_IMU_MODULE_V11
-// no include required; it is all in hwdef.dat
-#else
-#error "Invalid CONFIG_HAL_BOARD_SUBTYPE for esp32"
-#endif
-
 #ifndef HAL_BOARD_STATE_DIRECTORY
 #define HAL_BOARD_STATE_DIRECTORY "/SDCARD/APM"
 #endif
