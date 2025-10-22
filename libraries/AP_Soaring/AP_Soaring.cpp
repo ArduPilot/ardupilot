@@ -168,6 +168,13 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THML_FLAP", 22, SoaringController, soar_thermal_flap, 0),
 
+    // @Param: THML_MINRAD
+    // @DisplayName: Minimum thermal radius
+    // @Description: This sets the minimum radius of the modelled thermal. If set to zero then no limit is applied
+    // @Range: 1 100
+    // @User: Advanced
+    AP_GROUPINFO("THML_MINRAD", 23, SoaringController, soar_thermal_min_radius, 40),
+    
     AP_GROUPEND
 };
 
@@ -328,9 +335,8 @@ void SoaringController::update_thermalling()
     Vector3f wind_drift = _ahrs.wind_estimate()*deltaT*_vario.get_filtered_climb()/_ekf.X[0];
 
     // update the filter
-    _ekf.update(_vario.reading, current_position.x, current_position.y, wind_drift.x, wind_drift.y);
+    _ekf.update(_vario.reading, current_position.x, current_position.y, wind_drift.x, wind_drift.y, MAX(0.1, soar_thermal_min_radius));
 
-    
     _thermalability = (_ekf.X[0]*expf(-powf(get_thermalling_radius()/_ekf.X[1], 2))) - _vario.get_exp_thermalling_sink();
 
     _prev_update_time = AP_HAL::micros64();
