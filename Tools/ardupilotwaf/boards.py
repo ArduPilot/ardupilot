@@ -1134,7 +1134,7 @@ class esp32(Board):
 
         # this makes sure we get the correct subtype
         env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_%s' %  tt.upper() ,
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
         )
 
         if self.name.endswith("empty"):
