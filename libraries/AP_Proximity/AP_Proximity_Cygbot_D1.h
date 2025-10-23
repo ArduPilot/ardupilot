@@ -30,8 +30,8 @@ public:
     void update(void) override;
 
     // get maximum and minimum distances (in meters) of sensor
-    float distance_max() const override { return CYGBOT_MAX_RANGE_M; }
-    float distance_min() const override { return CYGBOT_MIN_RANGE_M; }
+    float distance_max_m() const override { return CYGBOT_MAX_RANGE_M; }
+    float distance_min_m() const override { return CYGBOT_MIN_RANGE_M; }
 
 private:
 

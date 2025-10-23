@@ -99,7 +99,7 @@ void AP_Proximity_RPLidarA2::update(void)
 }
 
 // get maximum distance (in meters) of sensor
-float AP_Proximity_RPLidarA2::distance_max() const
+float AP_Proximity_RPLidarA2::distance_max_m() const
 {
     switch (model) {
     case Model::UNKNOWN:
@@ -118,7 +118,7 @@ float AP_Proximity_RPLidarA2::distance_max() const
 }
 
 // get minimum distance (in meters) of sensor
-float AP_Proximity_RPLidarA2::distance_min() const
+float AP_Proximity_RPLidarA2::distance_min_m() const
 {
     switch (model) {
     case Model::UNKNOWN:
@@ -403,7 +403,7 @@ void AP_Proximity_RPLidarA2::parse_response_data()
             _last_face = face;
             _last_distance_valid = false;
         }
-        if (distance_m > distance_min()) {
+        if (distance_m > distance_min_m()) {
             // update shortest distance
             if (!_last_distance_valid || (distance_m < _last_distance_m)) {
                 _last_distance_m = distance_m;
