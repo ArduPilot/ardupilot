@@ -558,8 +558,8 @@ void GCS_MAVLINK::send_proximity()
     }
 
     // get min/max distances
-    const uint16_t dist_min = (uint16_t)(proximity->distance_min() * 100.0f); // minimum distance the sensor can measure in centimeters
-    const uint16_t dist_max = (uint16_t)(proximity->distance_max() * 100.0f); // maximum distance the sensor can measure in centimeters
+    const uint16_t dist_min_cm = (uint16_t)(proximity->distance_min_m() * 100.0f);  // minimum distance the sensor can measure in centimeters
+    const uint16_t dist_max_cm = (uint16_t)(proximity->distance_max_m() * 100.0f);  // maximum distance the sensor can measure in centimeters
 
     // send horizontal distances
     if (proximity->get_status() == AP_Proximity::Status::Good) {
@@ -579,8 +579,8 @@ void GCS_MAVLINK::send_proximity()
                 mavlink_msg_distance_sensor_send(
                         chan,
                         AP_HAL::millis(),                               // time since system boot
-                        dist_min,                                       // minimum distance the sensor can measure in centimeters
-                        dist_max,                                       // maximum distance the sensor can measure in centimeters
+                        dist_min_cm,                                    // minimum distance the sensor can measure in centimeters
+                        dist_max_cm,                                    // maximum distance the sensor can measure in centimeters
                         (uint16_t)(dist_array.distance[i] * 100.0f),    // current distance reading
                         MAV_DISTANCE_SENSOR_LASER,                      // type from MAV_DISTANCE_SENSOR enum
                         PROXIMITY_SENSOR_ID_START + i,                  // onboard ID of the sensor
@@ -592,21 +592,21 @@ void GCS_MAVLINK::send_proximity()
     }
 
     // send upward distance
-    float dist_up;
-    if (proximity->get_upward_distance(dist_up)) {
+    float dist_up_m;
+    if (proximity->get_upward_distance(dist_up_m)) {
         if (!HAVE_PAYLOAD_SPACE(chan, DISTANCE_SENSOR)) {
             return;
         }
         mavlink_msg_distance_sensor_send(
                 chan,
-                AP_HAL::millis(),                                         // time since system boot
-                dist_min,                                                 // minimum distance the sensor can measure in centimeters
-                dist_max,                                                 // maximum distance the sensor can measure in centimeters
-                (uint16_t)(dist_up * 100.0f),                             // current distance reading
-                MAV_DISTANCE_SENSOR_LASER,                                // type from MAV_DISTANCE_SENSOR enum
-                PROXIMITY_SENSOR_ID_START + PROXIMITY_MAX_DIRECTION + 1,  // onboard ID of the sensor
-                MAV_SENSOR_ROTATION_PITCH_90,                             // direction upwards
-                0,                                                        // Measurement covariance in centimeters, 0 for unknown / invalid readings
+                AP_HAL::millis(),                                           // time since system boot
+                dist_min_cm,                                                // minimum distance the sensor can measure in centimeters
+                dist_max_cm,                                                // maximum distance the sensor can measure in centimeters
+                (uint16_t)(dist_up_m * 100.0f),                             // current distance reading
+                MAV_DISTANCE_SENSOR_LASER,                                  // type from MAV_DISTANCE_SENSOR enum
+                PROXIMITY_SENSOR_ID_START + PROXIMITY_MAX_DIRECTION + 1,    // onboard ID of the sensor
+                MAV_SENSOR_ROTATION_PITCH_90,                               // direction upwards
+                0,                                                          // Measurement covariance in centimeters, 0 for unknown / invalid readings
                 0, 0, nullptr, 0);
     }
 }
