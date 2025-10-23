@@ -755,27 +755,27 @@ void AC_PosControl::update_NE_controller()
 // Sets maximum climb/descent rate (cm/s) and vertical acceleration (cm/s²) for the U-axis.
 // Descent rate may be positive or negative and is always interpreted as a descent.
 // See set_max_speed_accel_U_m() for full details.
-void AC_PosControl::set_max_speed_accel_U_cm(float speed_down_cms, float speed_up_cms, float accel_cmss)
+void AC_PosControl::set_max_speed_accel_U_cm(float vel_max_down_cms, float vel_max_up_cms, float accel_max_u_cmss)
 {
-    set_max_speed_accel_U_m(speed_down_cms * 0.01, speed_up_cms * 0.01, accel_cmss * 0.01);
+    set_max_speed_accel_U_m(vel_max_down_cms * 0.01, vel_max_up_cms * 0.01, accel_max_u_cmss * 0.01);
 }
 
 // Sets maximum climb/descent rate (m/s) and vertical acceleration (m/s²) for the U-axis.
 // These values are used for jerk-limited kinematic shaping of the vertical trajectory.
-void AC_PosControl::set_max_speed_accel_U_m(float speed_down_ms, float speed_up_ms, float accel_mss)
+void AC_PosControl::set_max_speed_accel_U_m(float vel_max_down_ms, float vel_max_up_ms, float accel_max_u_mss)
 {
-    // ensure speed_down_ms is always negative
-    speed_down_ms = -fabsf(speed_down_ms);
+    // ensure vel_max_down_ms is always negative
+    vel_max_down_ms = -fabsf(vel_max_down_ms);
 
     // sanity check and update
-    if (is_negative(speed_down_ms)) {
-        _vel_max_down_ms = speed_down_ms;
+    if (is_negative(vel_max_down_ms)) {
+        _vel_max_down_ms = vel_max_down_ms;
     }
-    if (is_positive(speed_up_ms)) {
-        _vel_max_up_ms = speed_up_ms;
+    if (is_positive(vel_max_up_ms)) {
+        _vel_max_up_ms = vel_max_up_ms;
     }
-    if (is_positive(accel_mss)) {
-        _accel_max_u_mss = accel_mss;
+    if (is_positive(accel_max_u_mss)) {
+        _accel_max_u_mss = accel_max_u_mss;
     }
 
     // ensure the vertical Jerk is not limited by the filters in the Z acceleration PID object
@@ -791,17 +791,17 @@ void AC_PosControl::set_max_speed_accel_U_m(float speed_down_ms, float speed_up_
 // Sets vertical correction velocity and acceleration limits (cm/s, cm/s²).
 // Should only be called during initialization to avoid discontinuities.
 // See set_correction_speed_accel_U_m() for full details.
-void AC_PosControl::set_correction_speed_accel_U_cm(float speed_down_cms, float speed_up_cms, float accel_cmss)
+void AC_PosControl::set_correction_speed_accel_U_cm(float vel_max_down_cms, float vel_max_up_cms, float accel_max_u_cmss)
 {
-    set_correction_speed_accel_U_m(speed_down_cms * 0.01, speed_up_cms * 0.01, accel_cmss * 0.01);
+    set_correction_speed_accel_U_m(vel_max_down_cms * 0.01, vel_max_up_cms * 0.01, accel_max_u_cmss * 0.01);
 }
 
 // Sets vertical correction velocity and acceleration limits (m/s, m/s²).
 // These values constrain the correction output of the PID controller.
-void AC_PosControl::set_correction_speed_accel_U_m(float speed_down_ms, float speed_up_ms, float accel_mss)
+void AC_PosControl::set_correction_speed_accel_U_m(float vel_max_down_ms, float vel_max_up_ms, float accel_max_u_mss)
 {
     // define maximum position error and maximum first and second differential limits
-    _p_pos_u_m.set_limits(-fabsf(speed_down_ms), speed_up_ms, accel_mss, 0.0f);
+    _p_pos_u_m.set_limits(-fabsf(vel_max_down_ms), vel_max_up_ms, accel_max_u_mss, 0.0f);
 }
 
 // Initializes U-axis controller to current position, velocity, and acceleration, disallowing descent.
@@ -870,7 +870,7 @@ void AC_PosControl::init_U_controller()
     _pid_vel_u_cm.reset_filter();
     _pid_vel_u_cm.set_integrator(0.0f);
 
-    _accel_target_neu_mss.z = constrain_float(get_measured_accel_U_mss(), -_accel_max_u_mss, _accel_max_u_mss);
+    _accel_target_neu_mss.z = constrain_float(get_estimate_accel_U_mss(), -_accel_max_u_mss, _accel_max_u_mss);
     _accel_desired_neu_mss.z = _accel_target_neu_mss.z - (_accel_offset_neu_mss.z + _accel_terrain_u_mss);
     _pid_accel_u_cm_to_kt.reset_filter();
 
@@ -878,7 +878,7 @@ void AC_PosControl::init_U_controller()
     // Remove the expected P term due to _accel_desired_neu_mss.z being constrained to _accel_max_u_mss
     // Remove the expected FF term due to non-zero _accel_target_neu_mss.z
     _pid_accel_u_cm_to_kt.set_integrator((_attitude_control.get_throttle_in() - _motors.get_throttle_hover()) * 10.0 * 100.0
-        - _pid_accel_u_cm_to_kt.kP() * (_accel_target_neu_mss.z - get_measured_accel_U_mss()) * 100.0
+        - _pid_accel_u_cm_to_kt.kP() * (_accel_target_neu_mss.z - get_estimate_accel_U_mss()) * 100.0
         - _pid_accel_u_cm_to_kt.ff() * _accel_target_neu_mss.z * 100.0);
 
     // initialise ekf z reset handler
@@ -891,7 +891,7 @@ void AC_PosControl::init_U_controller()
 // Sets the desired vertical acceleration in m/s² using jerk-limited shaping.
 // Smoothly transitions to the target acceleration from current kinematic state.
 // Constraints: max acceleration and jerk set via set_max_speed_accel_U_m().
-void AC_PosControl::input_accel_U_m(float accel_mss)
+void AC_PosControl::input_accel_U_m(float accel_u_mss)
 {
     // calculated increased maximum jerk if over speed
     float jerk_max_u_msss = _jerk_max_u_msss * calculate_overspeed_gain();
@@ -899,13 +899,13 @@ void AC_PosControl::input_accel_U_m(float accel_mss)
     // adjust desired alt if motors have not hit their limits
     update_pos_vel_accel(_pos_desired_neu_m.z, _vel_desired_neu_ms.z, _accel_desired_neu_mss.z, _dt_s, _limit_vector_neu.z, _p_pos_u_m.get_error(), _pid_vel_u_cm.get_error());
 
-    shape_accel(accel_mss, _accel_desired_neu_mss.z, jerk_max_u_msss, _dt_s);
+    shape_accel(accel_u_mss, _accel_desired_neu_mss.z, jerk_max_u_msss, _dt_s);
 }
 
 // Sets desired vertical velocity and acceleration (m/s, m/s²) using jerk-limited shaping.
 // Calculates required acceleration using current vertical kinematics.
 // If `limit_output` is true, limits apply to the combined (desired + correction) command.
-void AC_PosControl::input_vel_accel_U_m(float &vel_u_ms, float accel_mss, bool limit_output)
+void AC_PosControl::input_vel_accel_U_m(float &vel_u_ms, float accel_u_mss, bool limit_output)
 {
     // calculated increased maximum acceleration and jerk if over speed
     const float overspeed_gain = calculate_overspeed_gain();
@@ -915,25 +915,25 @@ void AC_PosControl::input_vel_accel_U_m(float &vel_u_ms, float accel_mss, bool l
     // adjust desired alt if motors have not hit their limits
     update_pos_vel_accel(_pos_desired_neu_m.z, _vel_desired_neu_ms.z, _accel_desired_neu_mss.z, _dt_s, _limit_vector_neu.z, _p_pos_u_m.get_error(), _pid_vel_u_cm.get_error());
 
-    shape_vel_accel(vel_u_ms, accel_mss,
+    shape_vel_accel(vel_u_ms, accel_u_mss,
                     _vel_desired_neu_ms.z, _accel_desired_neu_mss.z,
                     -constrain_float(accel_max_u_mss, 0.0, 7.5), accel_max_u_mss,
                     jerk_max_u_msss, _dt_s, limit_output);
 
-    update_vel_accel(vel_u_ms, accel_mss, _dt_s, 0.0, 0.0);
+    update_vel_accel(vel_u_ms, accel_u_mss, _dt_s, 0.0, 0.0);
 }
 
 // Generates a vertical trajectory using the given climb rate in cm/s and jerk-limited shaping.
 // Adjusts the internal target altitude based on integrated climb rate.
-// See set_pos_target_U_from_climb_rate_m() for full details.
-void AC_PosControl::set_pos_target_U_from_climb_rate_cm(float vel_u_cms)
+// See set_pos_target_U_from_climb_rate_ms() for full details.
+void AC_PosControl::set_pos_target_U_from_climb_rate_cms(float vel_u_cms)
 {
-    set_pos_target_U_from_climb_rate_m(vel_u_cms * 0.01);
+    set_pos_target_U_from_climb_rate_ms(vel_u_cms * 0.01);
 }
 
 // Generates a vertical trajectory using the given climb rate in m/s and jerk-limited shaping.
 // Target altitude is updated over time by integrating the climb rate.
-void AC_PosControl::set_pos_target_U_from_climb_rate_m(float vel_u_ms)
+void AC_PosControl::set_pos_target_U_from_climb_rate_ms(float vel_u_ms)
 {
     input_vel_accel_U_m(vel_u_ms, 0.0);
 }
@@ -952,11 +952,11 @@ void AC_PosControl::land_at_climb_rate_ms(float vel_u_ms, bool ignore_descent_li
 
 // Sets vertical position, velocity, and acceleration in cm using jerk-limited shaping.
 // See input_pos_vel_accel_U_m() for full details.
-void AC_PosControl::input_pos_vel_accel_U_cm(float &pos_u_cm, float &vel_u_cms, float accel_cmss, bool limit_output)
+void AC_PosControl::input_pos_vel_accel_U_cm(float &pos_u_cm, float &vel_u_cms, float accel_u_cmss, bool limit_output)
 {
     float pos_u_m = pos_u_cm * 0.01;
     float vel_u_ms = vel_u_cms * 0.01;
-    input_pos_vel_accel_U_m(pos_u_m, vel_u_ms, accel_cmss * 0.01, limit_output);
+    input_pos_vel_accel_U_m(pos_u_m, vel_u_ms, accel_u_cmss * 0.01, limit_output);
     pos_u_cm = pos_u_m * 100.0;
     vel_u_cms = vel_u_ms * 100.0;
 }
@@ -964,7 +964,7 @@ void AC_PosControl::input_pos_vel_accel_U_cm(float &pos_u_cm, float &vel_u_cms, 
 // Sets vertical position, velocity, and acceleration in meters using jerk-limited shaping.
 // Calculates required acceleration using current state and constraints.
 // If `limit_output` is true, limits are applied to combined (desired + correction) command.
-void AC_PosControl::input_pos_vel_accel_U_m(float &pos_u_m, float &vel_u_ms, float accel_mss, bool limit_output)
+void AC_PosControl::input_pos_vel_accel_U_m(float &pos_u_m, float &vel_u_ms, float accel_u_mss, bool limit_output)
 {
     // calculated increased maximum acceleration and jerk if over speed
     const float overspeed_gain = calculate_overspeed_gain();
@@ -974,14 +974,14 @@ void AC_PosControl::input_pos_vel_accel_U_m(float &pos_u_m, float &vel_u_ms, flo
     // adjust desired altitude if motors have not hit their limits
     update_pos_vel_accel(_pos_desired_neu_m.z, _vel_desired_neu_ms.z, _accel_desired_neu_mss.z, _dt_s, _limit_vector_neu.z, _p_pos_u_m.get_error(), _pid_vel_u_cm.get_error());
 
-    shape_pos_vel_accel(pos_u_m, vel_u_ms, accel_mss,
+    shape_pos_vel_accel(pos_u_m, vel_u_ms, accel_u_mss,
                         _pos_desired_neu_m.z, _vel_desired_neu_ms.z, _accel_desired_neu_mss.z,
                         _vel_max_down_ms, _vel_max_up_ms,
                         -constrain_float(accel_max_u_mss, 0.0, 7.5), accel_max_u_mss,
                         jerk_max_u_msss, _dt_s, limit_output);
 
     postype_t posp = pos_u_m;
-    update_pos_vel_accel(posp, vel_u_ms, accel_mss, _dt_s, 0.0, 0.0, 0.0);
+    update_pos_vel_accel(posp, vel_u_ms, accel_u_mss, _dt_s, 0.0, 0.0, 0.0);
     pos_u_m = posp;
 }
 
@@ -1085,28 +1085,28 @@ void AC_PosControl::update_U_controller()
     // Acceleration Controller
 
     // Gravity-compensated vertical acceleration measurement (positive = up)
-    const float measured_accel_u_mss = get_measured_accel_U_mss();
+    const float measured_accel_u_mss = get_estimate_accel_U_mss();
 
     // Ensure integrator can produce enough thrust to overcome hover throttle
     if (_motors.get_throttle_hover() * 1000.0 > _pid_accel_u_cm_to_kt.imax()) {
         _pid_accel_u_cm_to_kt.set_imax(_motors.get_throttle_hover() * 1000.0);
     }
-    float thr_out;
+    float thrust_u_norm;
     if (_vibe_comp_enabled) {
         // Use vibration-resistant throttle estimator (feedforward + scaled integrator)
-        thr_out = get_throttle_with_vibration_override();
+        thrust_u_norm = get_throttle_with_vibration_override();
     } else {
         // Standard PID update using vertical acceleration error
-        thr_out = _pid_accel_u_cm_to_kt.update_all(_accel_target_neu_mss.z * 100.0, measured_accel_u_mss * 100.0, _dt_s, (_motors.limit.throttle_lower || _motors.limit.throttle_upper)) * 0.001;
+        thrust_u_norm = _pid_accel_u_cm_to_kt.update_all(_accel_target_neu_mss.z * 100.0, measured_accel_u_mss * 100.0, _dt_s, (_motors.limit.throttle_lower || _motors.limit.throttle_upper)) * 0.001;
         // Include FF contribution to reduce delay
-        thr_out += _pid_accel_u_cm_to_kt.get_ff() * 0.001;
+        thrust_u_norm += _pid_accel_u_cm_to_kt.get_ff() * 0.001;
     }
-    thr_out += _motors.get_throttle_hover();
+    thrust_u_norm += _motors.get_throttle_hover();
 
     // Actuator commands
 
     // Send final throttle output to attitude controller (includes angle boost)
-    _attitude_control.set_throttle_out(thr_out, true, POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ);
+    _attitude_control.set_throttle_out(thrust_u_norm, true, POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ);
 
     // Check for vertical controller health
 
@@ -1359,27 +1359,27 @@ void AC_PosControl::get_stopping_point_NE_m(Vector2p &stopping_point_neu_m) cons
     stopping_point_neu_m = _pos_estimate_neu_m.xy();
     stopping_point_neu_m -= _pos_offset_neu_m.xy();
 
-    Vector2f curr_vel = _vel_estimate_neu_ms.xy();
-    curr_vel -= _vel_offset_neu_ms.xy();
+    Vector2f vel_estimate_ne_ms = _vel_estimate_neu_ms.xy();
+    vel_estimate_ne_ms -= _vel_offset_neu_ms.xy();
 
     // Compute velocity magnitude
-    float vel_total = curr_vel.length();
+    float speed_ne_ms = vel_estimate_ne_ms.length();
 
-    if (!is_positive(vel_total)) {
+    if (!is_positive(speed_ne_ms)) {
         return;
     }
 
     // Use current P gain and max accel to estimate stopping distance
     float kP = _p_pos_ne_m.kP();
-    const float stopping_dist = stopping_distance(constrain_float(vel_total, 0.0, _vel_max_ne_ms), kP, _accel_max_ne_mss);
-    if (!is_positive(stopping_dist)) {
+    const float stopping_dist_m = stopping_distance(constrain_float(speed_ne_ms, 0.0, _vel_max_ne_ms), kP, _accel_max_ne_mss);
+    if (!is_positive(stopping_dist_m)) {
         return;
     }
 
     // Project stopping distance along current velocity direction
     // todo: convert velocity to a unit vector instead.
-    const float t = stopping_dist / vel_total;
-    stopping_point_neu_m += (curr_vel * t).topostype();
+    const float stopping_time_s = stopping_dist_m / speed_ne_ms;
+    stopping_point_neu_m += (vel_estimate_ne_ms * stopping_time_s).topostype();
 }
 
 // Computes vertical stopping point in meters based on current velocity and acceleration.
@@ -1508,7 +1508,7 @@ void AC_PosControl::write_log()
         // Log Down-axis position control (PSCD)
         Write_PSCD(-_pos_desired_neu_m.z, -_pos_target_neu_m.z, -_pos_estimate_neu_m.z,
                    -_vel_desired_neu_ms.z, -_vel_target_neu_ms.z, -_vel_estimate_neu_ms.z,
-                   -_accel_desired_neu_mss.z, -_accel_target_neu_mss.z, -get_measured_accel_U_mss());
+                   -_accel_desired_neu_mss.z, -_accel_target_neu_mss.z, -get_estimate_accel_U_mss());
 
         // log down and terrain offsets if they are being used
         if (!is_zero(_pos_offset_neu_m.z)) {
