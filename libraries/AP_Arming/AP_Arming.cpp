@@ -1212,8 +1212,7 @@ bool AP_Arming::terrain_checks(bool report) const
 
     const AP_Terrain *terrain = AP_Terrain::get_singleton();
     if (terrain == nullptr) {
-        // this is also a system error, and it is already complaining
-        // about it.
+        check_failed(Check::PARAMETERS, report, "terrain disabled");
         return false;
     }
 
