@@ -303,9 +303,9 @@ end
 
 --- Initializes a CRSF menu system for the calling script.
 -- @param menu_definition (table) The menu definition table for this script.
-function helper.init(menu_definition)
+function helper.register_menu(menu_definition)
     if not (menu_definition and menu_definition.name and menu_definition.items) then
-        gcs:send_text(MAV_SEVERITY.ERROR, "CRSF: Invalid menu definition passed to helper.init().")
+        gcs:send_text(MAV_SEVERITY.ERROR, "CRSF: Invalid menu definition passed to helper.register_menu().")
         return
     end
 
@@ -322,12 +322,6 @@ function helper.init(menu_definition)
 
     -- Start this script's independent, persistent event loop.
     return event_loop, 2000
-end
-
--- Deprecated/Internal - kept for potential backward compatibility if needed
-function helper.register_menu(menu_definition)
-   gcs:send_text(MAV_SEVERITY.WARNING, "CRSF: register_menu is deprecated. Use init() instead.")
-   return helper.init(menu_definition)
 end
 
 return helper
