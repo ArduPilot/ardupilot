@@ -154,14 +154,14 @@ void Plane::fence_check()
                     // fly to the return point using _retalt
                     loc.set_alt_cm(home.alt + 100.0 * fence.get_return_altitude(),
                                    Location::AltFrame::ABSOLUTE);
-                } else if (fence.get_safe_alt_min() >= fence.get_safe_alt_max()) {
+                } else if (fence.get_safe_alt_min_m() >= fence.get_safe_alt_max_m()) {
                     // invalid min/max, use RTL_altitude
                     loc.set_alt_cm(home.alt + g.RTL_altitude*100,
                                    Location::AltFrame::ABSOLUTE);
                 } else {
                     // fly to the return point, with an altitude half way between
                     // min and max
-                    loc.set_alt_cm(home.alt + 100.0f * (fence.get_safe_alt_min() + fence.get_safe_alt_max()) / 2,
+                    loc.set_alt_cm(home.alt + 100.0f * (fence.get_safe_alt_min_m() + fence.get_safe_alt_max_m()) / 2,
                                    Location::AltFrame::ABSOLUTE);
                 }
 
