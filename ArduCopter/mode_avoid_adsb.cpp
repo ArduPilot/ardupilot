@@ -18,7 +18,7 @@ bool ModeAvoidADSB::init(const bool ignore_checks)
     return ModeGuided::init(ignore_checks);
 }
 
-bool ModeAvoidADSB::set_velocity(const Vector3f& velocity_neu_cm)
+bool ModeAvoidADSB::set_velocity_NEU_cms(const Vector3f& velocity_neu_cm)
 {
     // check flight mode
     if (copter.flightmode->mode_number() != Mode::Number::AVOID_ADSB) {

@@ -205,7 +205,7 @@ bool AP_Avoidance_Copter::handle_avoidance_vertical(const AP_Avoidance::Obstacle
     }
 
     // send target velocity
-    copter.mode_avoid_adsb.set_velocity(velocity_neu_cms);
+    copter.mode_avoid_adsb.set_velocity_NEU_cms(velocity_neu_cms);
     return true;
 }
 
@@ -231,7 +231,7 @@ bool AP_Avoidance_Copter::handle_avoidance_horizontal(const AP_Avoidance::Obstac
         velocity_neu_cms.x *= copter.wp_nav->get_default_speed_NE_cms();
         velocity_neu_cms.y *= copter.wp_nav->get_default_speed_NE_cms();
         // send target velocity
-        copter.mode_avoid_adsb.set_velocity(velocity_neu_cms);
+        copter.mode_avoid_adsb.set_velocity_NEU_cms(velocity_neu_cms);
         return true;
     }
 
@@ -263,7 +263,7 @@ bool AP_Avoidance_Copter::handle_avoidance_perpendicular(const AP_Avoidance::Obs
             }
         }
         // send target velocity
-        copter.mode_avoid_adsb.set_velocity(velocity_neu_cms);
+        copter.mode_avoid_adsb.set_velocity_NEU_cms(velocity_neu_cms);
         return true;
     }
 
