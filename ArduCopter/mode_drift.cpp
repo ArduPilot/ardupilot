@@ -63,12 +63,12 @@ void ModeDrift::run()
     get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
 
     // Grab inertial velocity (already m/s)
-    const Vector3f& vel_NEU_ms = pos_control->get_vel_estimate_NEU_ms();
+    const Vector3f& vel_neu_ms = pos_control->get_vel_estimate_NEU_ms();
 
     // rotate roll, pitch input from north facing to vehicle's perspective
     // body-frame components in m/s
-    float vel_right_ms   =  vel_NEU_ms.y * ahrs.cos_yaw() - vel_NEU_ms.x * ahrs.sin_yaw(); // body roll axis
-    float vel_forward_ms =  vel_NEU_ms.y * ahrs.sin_yaw() + vel_NEU_ms.x * ahrs.cos_yaw(); // body pitch axis
+    float vel_right_ms   =  vel_neu_ms.y * ahrs.cos_yaw() - vel_neu_ms.x * ahrs.sin_yaw(); // body roll axis
+    float vel_forward_ms =  vel_neu_ms.y * ahrs.sin_yaw() + vel_neu_ms.x * ahrs.cos_yaw(); // body pitch axis
 
     // gain scheduling for yaw
     const float vel_forward_2_ms = MIN(fabsf(vel_forward_ms), DRIFT_VEL_FORWARD_MIN_MS);
@@ -140,7 +140,7 @@ void ModeDrift::run()
         target_roll_rad, target_pitch_rad, target_yaw_rate_rads);
 
     // output pilot's throttle with angle boost (velz now m/s)
-    const float assisted_throttle = get_throttle_assist(vel_NEU_ms.z, get_pilot_desired_throttle());
+    const float assisted_throttle = get_throttle_assist(vel_neu_ms.z, get_pilot_desired_throttle());
     attitude_control->set_throttle_out(assisted_throttle, true, g.throttle_filt);
 }
 

@@ -13,13 +13,13 @@ void Copter::update_ground_effect_detector(void)
 
     // variable initialization
     uint32_t tnow_ms = millis();
-    float xy_des_speed_ms = 0.0f;
+    float des_speed_ne_ms = 0.0f;
     float des_climb_rate_ms = pos_control->get_vel_desired_NEU_ms().z;
 
     if (pos_control->is_active_NE()) {
         Vector3f vel_target_neu_ms = pos_control->get_vel_target_NEU_ms();
         vel_target_neu_ms.z = 0.0f;
-        xy_des_speed_ms = vel_target_neu_ms.length();
+        des_speed_ne_ms = vel_target_neu_ms.length();
     }
 
     // takeoff logic
@@ -54,7 +54,7 @@ void Copter::update_ground_effect_detector(void)
     bool small_angle_request = cosf(angle_target_rad.x) * cosf(angle_target_rad.y) > cosf(radians(7.5f));
     Vector3f vel_ned_ms;
     bool xy_speed_low = AP::ahrs().get_velocity_NED(vel_ned_ms) && (vel_ned_ms.xy().length() < 1.25);
-    bool xy_speed_demand_low = pos_control->is_active_NE() && xy_des_speed_ms <= 1.25;
+    bool xy_speed_demand_low = pos_control->is_active_NE() && des_speed_ne_ms <= 1.25;
     bool slow_horizontal = xy_speed_demand_low || (xy_speed_low && !pos_control->is_active_NE()) || (flightmode->mode_number() == Mode::Number::ALT_HOLD && small_angle_request);
 
     bool descent_demanded = pos_control->is_active_U() && des_climb_rate_ms < 0.0f;

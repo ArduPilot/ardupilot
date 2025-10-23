@@ -22,12 +22,12 @@ struct {
 } static guided_angle_state;
 
 struct Guided_Limit {
-    uint32_t timeout_ms;    // timeout (in seconds) from the time that guided is invoked
-    float alt_min_m;        // lower altitude limit in m above home (0 = no limit)
-    float alt_max_m;        // upper altitude limit in m above home (0 = no limit)
-    float horiz_max_m;      // horizontal position limit in m from where guided mode was initiated (0 = no limit)
-    uint32_t start_time_ms; // system time in milliseconds that control was handed to the external computer
-    Vector3p start_pos_neu_m;     // start position as a distance from home in m.  used for checking horiz_max limit
+    uint32_t timeout_ms;        // timeout (in seconds) from the time that guided is invoked
+    float alt_min_m;            // lower altitude limit in m above home (0 = no limit)
+    float alt_max_m;            // upper altitude limit in m above home (0 = no limit)
+    float horiz_max_m;          // horizontal position limit in m from where guided mode was initiated (0 = no limit)
+    uint32_t start_time_ms;     // system time in milliseconds that control was handed to the external computer
+    Vector3p start_pos_neu_m;   // start position as a distance from home in m.  used for checking horiz_max limit
 } static guided_limit;
 
 // controls which controller is run (pos or vel):
