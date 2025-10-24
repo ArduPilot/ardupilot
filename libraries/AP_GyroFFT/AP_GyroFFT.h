@@ -139,8 +139,6 @@ private:
         float _attenuation_cutoff;
         // SNR Threshold
         float _snr_threshold_db;
-        // indicates whether anything in this structure is valid:
-        bool valid;
     } _config;
 
     // smoothing filter that first takes the median from a sliding window and then
@@ -226,7 +224,7 @@ private:
     uint16_t get_available_samples(uint8_t axis) {
         return _sample_mode == 0 ?_ins->get_raw_gyro_window(axis).available() : _downsampled_gyro_data[axis].available();
     }
-    void update_parameters(bool force);
+    bool update_parameters(bool force);
     // semaphore for access to shared FFT data
     HAL_Semaphore _sem;
 
