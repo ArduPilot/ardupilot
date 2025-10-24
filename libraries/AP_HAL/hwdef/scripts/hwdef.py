@@ -4,6 +4,8 @@ base class for hwdef processing
 AP_FLAKE8_CLEAN
 '''
 
+from __future__ import annotations
+
 import os
 import re
 import shlex
@@ -17,7 +19,10 @@ class IncludeNotFoundException(Exception):
 
 
 class HWDef:
-    def __init__(self, quiet=False, outdir=None, hwdef=[]):
+    def __init__(self, quiet=False, outdir=None, hwdef: list | None = None):
+        if hwdef is None:
+            hwdef = []
+
         self.outdir = outdir
         self.hwdef = hwdef
         self.quiet = quiet
