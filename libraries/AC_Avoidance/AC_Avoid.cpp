@@ -76,7 +76,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Param{Copter, Rover}: BEHAVE
     // @DisplayName: Avoidance behaviour
     // @Description: Avoidance behaviour (slide or stop)
-    // @Values: 0:Slide,1:Stop
+    // @Values: 0:Slide,1:Stop,2:Smooth Slide,3:Smooth Stop
     // @User: Standard
     AP_GROUPINFO_FRAME("BEHAVE", 5, AC_Avoid, _behavior, AP_AVOID_BEHAVE_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_ROVER),
 
@@ -552,6 +552,13 @@ void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
  */
 void AC_Avoid::limit_velocity_2D(float kP, float accel_cmss, Vector2f &desired_vel_cms, const Vector2f& limit_direction, float limit_distance_cm, float dt)
 {
+
+    // 在函数开头添加模式检查
+    if (_behavior == BEHAVIOR_SMOOTH_STOP) {
+        adjust_velocity_smooth_stop(kP, accel_cmss, desired_vel_cms, limit_direction, limit_distance_cm, dt);
+        return;
+    }
+
     const float max_speed = get_max_speed(kP, accel_cmss, limit_distance_cm, dt);
     // project onto limit direction
     const float speed = desired_vel_cms * limit_direction;
@@ -567,6 +574,14 @@ void AC_Avoid::limit_velocity_2D(float kP, float accel_cmss, Vector2f &desired_v
  */
 void AC_Avoid::limit_velocity_3D(float kP, float accel_cmss, Vector3f &desired_vel_cms, const Vector3f& obstacle_vector, float margin_cm, float kP_z, float accel_cmss_z, float dt)
 {  
+
+    // 在函数开头添加模式检查
+    if (_behavior == BEHAVIOR_SMOOTH_STOP) {
+        adjust_velocity_proximity_smooth_stop(kP, accel_cmss, desired_vel_cms, obstacle_vector, margin_cm, kP_z, accel_cmss_z, dt);
+        return;
+    }
+
+
     if (desired_vel_cms.is_zero()) {
         // nothing to limit
         return;
@@ -849,6 +864,30 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
         }
         break;
     }
+
+    case BEHAVIOR_SMOOTH_STOP: {
+        // 使用平滑停止逻辑
+        const float stopping_dist = get_stopping_distance(kP, accel_cmss * 0.7f, desired_speed);
+        const Vector2f stopping_point_plus_margin = position_xy + desired_vel_cms*((3.0f + margin_cm + stopping_dist)/desired_speed);
+        
+        // 其余逻辑可以参考BEHAVIOR_STOP，但使用更保守的参数
+        if (dist_from_home >= fence_radius - margin_cm) {
+            if (stopping_point_plus_margin.length() >= dist_from_home) {
+                // 平滑减速到零
+                const float reduction = MAX(0.0f, 1.0f - (dist_from_home / (fence_radius - margin_cm)));
+                desired_vel_cms *= (1.0f - reduction * 0.5f);
+            }
+        } else {
+            Vector2f intersection;
+            if (Vector2f::circle_segment_intersection(position_xy, stopping_point_plus_margin, Vector2f(0.0f,0.0f), fence_radius - margin_cm, intersection)) {
+                const float distance_to_target = (intersection - position_xy).length();
+                const float max_speed = get_max_speed(kP, accel_cmss * 0.7f, distance_to_target, dt);
+                if (max_speed < desired_speed) {
+                    desired_vel_cms *= MAX(max_speed, 0.0f) / desired_speed;
+                }
+            }
+        }
+        break;
     }
 }
 
@@ -893,6 +932,63 @@ void AC_Avoid::adjust_velocity_inclusion_and_exclusion_polygons(float kP, float 
     }
     // desired backup velocity is sum of maximum velocity component in each quadrant 
     backup_vel = quad_1_back_vel + quad_2_back_vel + quad_3_back_vel + quad_4_back_vel;
+}
+
+void AC_Avoid::adjust_velocity_smooth_stop(float kP, float accel_cmss, Vector2f &desired_vel_cms, const Vector2f &limit_direction, float limit_distance_cm, float dt)
+{
+    f (desired_vel_cms.is_zero()) {
+        return;
+    }
+
+    // 使用更保守的减速曲线
+    const float conservative_accel = accel_cmss * 0.6f; // 降低加速度
+    const float max_speed = get_max_speed(kP, conservative_accel, limit_distance_cm, dt);
+    
+    // 投影到限制方向
+    const float speed = desired_vel_cms * limit_direction;
+    if (speed > max_speed) {
+        // 使用平滑的速度过渡而不是硬截断
+        const float reduction_factor = 0.3f + 0.7f * (max_speed / speed);
+        desired_vel_cms += limit_direction * (max_speed - speed) * reduction_factor;
+    }
+}
+
+void AC_Avoid::adjust_velocity_proximity_smooth_stop(float kP, float accel_cmss, Vector3f &desired_vel_cms, const Vector3f &obstacle_vector, float margin_cm, float kP_z, float accel_cmss_z, float dt)
+{
+    if (desired_vel_cms.is_zero()) {
+        return;
+    }
+
+    // 增加额外的安全边界
+    const float extended_margin = margin_cm * 1.5f;
+    const Vector2f limit_direction_xy{obstacle_vector.x, obstacle_vector.y};
+    
+    if (!limit_direction_xy.is_zero()) {
+        const float distance_from_fence_xy = MAX((limit_direction_xy.length() - extended_margin), 0.0f);
+        Vector2f velocity_xy{desired_vel_cms.x, desired_vel_cms.y};
+        adjust_velocity_smooth_stop(kP, accel_cmss, velocity_xy, limit_direction_xy.normalized(), distance_from_fence_xy, dt);
+        desired_vel_cms.x = velocity_xy.x;
+        desired_vel_cms.y = velocity_xy.y;
+    }
+    
+    // 垂直方向的平滑处理
+    if (!is_zero(desired_vel_cms.z) && !is_zero(obstacle_vector.z) &&
+        is_positive(desired_vel_cms.z) == is_positive(obstacle_vector.z)) {
+        
+        const float velocity_z_original = desired_vel_cms.z;
+        const float z_speed = fabsf(desired_vel_cms.z);
+        const float dist_z = MAX(fabsf(obstacle_vector.z) - extended_margin, 0.0f);
+        
+        if (!is_zero(dist_z)) {
+            const float conservative_accel_z = accel_cmss_z * 0.6f;
+            const float max_z_speed = get_max_speed(kP_z, conservative_accel_z, dist_z, dt);
+            desired_vel_cms.z = MIN(max_z_speed, z_speed);
+            
+            if (is_negative(velocity_z_original)) {
+                desired_vel_cms.z *= -1.0f;
+            }
+        }
+    }
 }
 
 /*

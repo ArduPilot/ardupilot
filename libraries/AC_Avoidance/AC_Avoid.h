@@ -110,9 +110,14 @@ public:
 
 private:
     // behaviour types (see BEHAVE parameter)
+
+    //liu add
+    //添加两种种新的避障行为：平滑的滑行避障、平滑的停止避障
     enum BehaviourType {
         BEHAVIOR_SLIDE = 0,
-        BEHAVIOR_STOP = 1
+        BEHAVIOR_STOP = 1,
+        BEHAVIOR_SMOOTH_SLIDE = 2,
+        BEHAVIOR_SMOOTH_STOP = 3
     };
 
     /*
@@ -130,6 +135,13 @@ private:
      * Adjusts the desired velocity for inclusion and exclusion polygon fences
      */
     void adjust_velocity_inclusion_and_exclusion_polygons(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &backup_vel, float dt);
+
+
+
+    // 新增平滑停止模式的专用函数
+    void adjust_velocity_smooth_stop(float kP, float accel_cmss, Vector2f &desired_vel_cms, const Vector2f& limit_direction, float limit_distance_cm, float dt);
+    void adjust_velocity_proximity_smooth_stop(float kP, float accel_cmss, Vector3f &desired_vel_cms, const Vector3f& obstacle_vector, float margin_cm, float kP_z, float accel_cmss_z, float dt);
+
 
     /*
      * Adjusts the desired velocity for the inclusion and exclusion circles
