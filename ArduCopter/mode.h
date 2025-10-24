@@ -806,7 +806,7 @@ public:
 
 protected:
     bool position_ok() override;
-    float get_pilot_desired_climb_rate_cms(void) const override;
+    float get_desired_climb_rate_ms(void) const override;
     void get_pilot_desired_rp_yrate_rad(float &des_roll_rad, float &des_pitch_rad, float &des_yaw_rate_rads) override;
     void init_z_limits() override;
 #if HAL_LOGGING_ENABLED
