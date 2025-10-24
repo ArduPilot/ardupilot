@@ -80,7 +80,7 @@ def parse_arguments():
     return args
 
 
-def check_file(file, metadata, skip=SkippedChecks()):
+def check_file(file, metadata, skip : SkippedChecks = None):
     """Checks a single parameter file against the metadata.
 
     Loads the parameters from the specified file and validates each parameter
@@ -96,6 +96,9 @@ def check_file(file, metadata, skip=SkippedChecks()):
     Returns:
         list: A list of error messages if any parameters are invalid.
     """
+    if skip is None:
+        skip = SkippedChecks()
+
     params, msgs = load_params(file, skip)
 
     for param in params:
@@ -126,7 +129,7 @@ def check_file(file, metadata, skip=SkippedChecks()):
     return msgs
 
 
-def check_param(name, value, metadata, skip=SkippedChecks()):
+def check_param(name, value, metadata, skip : SkippedChecks = None):
     """Checks a single parameter against its metadata definition.
 
     Validates the specified parameter. If the metadata contains multiple types
@@ -143,6 +146,8 @@ def check_param(name, value, metadata, skip=SkippedChecks()):
         str: An error message if the parameter is invalid, or None otherwise.
     """
     # List of checks with their corresponding skip flags and check functions
+    if skip is None:
+        skip = SkippedChecks()
     checks = [
         (
             'ReadOnly',
@@ -259,7 +264,7 @@ def check_values(name, value, metadata):
     return None
 
 
-def load_params(file, skip=SkippedChecks(), depth=0):
+def load_params(file, skip : SkippedChecks = None, depth=0):
     """Loads a parameter file and returns parameters and errors.
 
     Reads the specified parameter file, stripping out comments. It checks the
@@ -283,6 +288,9 @@ def load_params(file, skip=SkippedChecks(), depth=0):
             - errors (list): A list of error messages encountered during
               parsing.
     """
+    if skip is None:
+        skip = SkippedChecks()
+
     if depth > 10:
         raise ValueError("Too many levels of @include")
 
