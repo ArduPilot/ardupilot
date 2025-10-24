@@ -21,9 +21,9 @@ bool QAutoTune::init()
                           plane.quadplane.ahrs_view);
 }
 
-float QAutoTune::get_pilot_desired_climb_rate_cms(void) const
+float QAutoTune::get_desired_climb_rate_ms(void) const
 {
-    return plane.quadplane.get_pilot_desired_climb_rate_cms();
+    return plane.quadplane.get_pilot_desired_climb_rate_cms() * 0.01;
 }
 
 void QAutoTune::get_pilot_desired_rp_yrate_rad(float &des_roll_rad, float &des_pitch_rad, float &des_yaw_rate_rads)
