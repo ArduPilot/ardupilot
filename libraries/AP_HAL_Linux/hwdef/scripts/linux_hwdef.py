@@ -17,8 +17,8 @@ import hwdef  # noqa:E402
 
 class LinuxHWDef(hwdef.HWDef):
 
-    def __init__(self, quiet=False, outdir=None, hwdef=[]):
-        super(LinuxHWDef, self).__init__(quiet=quiet, outdir=outdir, hwdef=hwdef)
+    def __init__(self, **kwargs):
+        super(LinuxHWDef, self).__init__(**kwargs)
         # a list of LINUX_SPIDEV devices
         self.linux_spidev = []
 
