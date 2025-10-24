@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from __future__ import annotations
+
 '''
 Wrapper around elf_diff (https://github.com/noseglasses/elf_diff)
 to create a html report comparing an ArduPilot build across two
@@ -57,24 +59,36 @@ class SizeCompareBranches(object):
     def __init__(self,
                  branch=None,
                  master_branch="master",
-                 board=["MatekF405-Wing"],
-                 vehicle=["plane"],
+                 board: list | None = None,
+                 vehicle: list | None = None,
                  bin_dir=None,
                  run_elf_diff=True,
                  all_vehicles=False,
-                 exclude_board_glob=[],
+                 exclude_board_glob: list | None = None,
                  all_boards=False,
                  use_merge_base=True,
                  waf_consistent_builds=True,
                  show_empty=True,
                  show_unchanged=True,
-                 extra_hwdef=[],
-                 extra_hwdef_branch=[],
-                 extra_hwdef_master=[],
+                 extra_hwdef: list | None = None,
+                 extra_hwdef_branch: list | None = None,
+                 extra_hwdef_master: list | None = None,
                  parallel_copies=None,
                  jobs=None,
                  features=False,
                  ):
+        if board is None:
+            board = ["MatekF405-Wing"]
+        if vehicle is None:
+            vehicle = ["plane"]
+        if exclude_board_glob is None:
+            exclude_board_glob = []
+        if extra_hwdef is None:
+            extra_hwdef = []
+        if extra_hwdef_branch is None:
+            extra_hwdef_branch = []
+        if extra_hwdef_master is None:
+            extra_hwdef_master = []
 
         if branch is None:
             branch = self.find_current_git_branch_or_sha1()
@@ -550,7 +564,7 @@ class SizeCompareBranches(object):
             self.outdir = outdir
             self.vehicles_to_build = vehicles_to_build
             self.extra_hwdef_file = extra_hwdef
-            self.toolchain : str = toolchain
+            self.toolchain: str = toolchain
 
         def __str__(self):
             return f"Task({self.board}, {self.commitish}, {self.outdir}, {self.vehicles_to_build}, {self.extra_hwdef_file} {self.toolchain})"  # NOQA:E501
@@ -663,7 +677,7 @@ class SizeCompareBranches(object):
 
             self.run_program("SCB", elf_diff_commandline)
 
-    def pairs_from_task_results(self, task_results : list):
+    def pairs_from_task_results(self, task_results: list):
         pairs = {}
         for res in task_results:
             board = res.board
@@ -861,7 +875,7 @@ class SizeCompareBranches(object):
         x = ExtractFeatures(path)
         return x.extract()
 
-    def compare_results_features(self, result_master : Result, result_branch : Result):
+    def compare_results_features(self, result_master: Result, result_branch: Result):
         ret = {}
         for vehicle in result_master.vehicle.keys():
             # check for the difference in size (and identicality)

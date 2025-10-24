@@ -2,6 +2,8 @@
 AP_FLAKE8_CLEAN
 '''
 
+from __future__ import annotations
+
 import atexit
 import math
 import os
@@ -85,13 +87,19 @@ def waf_configure(board,
                   ekf_single=False,
                   postype_single=False,
                   force_32bit=False,
-                  extra_args=[],
+                  extra_args: list | None = None,
                   extra_hwdef=None,
                   ubsan=False,
                   ubsan_abort=False,
                   num_aux_imus=0,
                   dronecan_tests=False,
-                  extra_defines={}):
+                  extra_defines: dict | None = None):
+
+    if extra_args is None:
+        extra_args = []
+    if extra_defines is None:
+        extra_defines = {}
+
     cmd_configure = [relwaf(), "configure", "--board", board]
     if debug:
         cmd_configure.append('--debug')
@@ -144,8 +152,8 @@ def build_SITL(
         coverage=False,
         debug=False,
         ekf_single=False,
-        extra_configure_args=[],
-        extra_defines={},
+        extra_configure_args: list | None = None,
+        extra_defines: dict | None = None,
         j=None,
         math_check_indexes=False,
         postype_single=False,
@@ -155,6 +163,10 @@ def build_SITL(
         num_aux_imus=0,
         dronecan_tests=False,
 ):
+    if extra_configure_args is None:
+        extra_configure_args = []
+    if extra_defines is None:
+        extra_defines = {}
 
     # first configure
     if configure:
@@ -188,7 +200,10 @@ def build_SITL(
 def build_examples(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False,
                    ekf_single=False, postype_single=False, force_32bit=False, ubsan=False, ubsan_abort=False,
                    num_aux_imus=0, dronecan_tests=False,
-                   extra_configure_args=[]):
+                   extra_configure_args: list | None = None):
+    if extra_configure_args is None:
+        extra_configure_args = []
+
     # first configure
     if configure:
         waf_configure(board,
@@ -242,7 +257,9 @@ def build_tests(board,
                 ubsan_abort=False,
                 num_aux_imus=0,
                 dronecan_tests=False,
-                extra_configure_args=[]):
+                extra_configure_args: list | None = None):
+    if extra_configure_args is None:
+        extra_configure_args = []
 
     # first configure
     if configure:
@@ -412,21 +429,28 @@ def start_SITL(binary,
                model=None,
                speedup=1,
                sim_rate_hz=None,
-               defaults_filepath=[],
+               defaults_filepath: list | None = None,
                param_defaults=None,  # dictionary
                unhide_parameters=False,
                gdbserver=False,
-               breakpoints=[],
+               breakpoints: list | None = None,
                disable_breakpoints=False,
-               customisations=[],
+               customisations: list | None = None,
                lldb=False,
                strace=False,
                enable_fgview=False,
                supplementary=False,
                stdout_prefix=None,
                ):
-
     """Launch a SITL instance."""
+
+    if defaults_filepath is None:
+        defaults_filepath = []
+    if breakpoints is None:
+        breakpoints = []
+    if customisations is None:
+        customisations = []
+
     cmd = []
     # pexpect doesn't like pathlib:
     if cwd is not None:
@@ -634,11 +658,14 @@ def start_MAVProxy_SITL(atype,
                         aircraft=None,
                         setup=False,
                         master=None,
-                        options=[],
+                        options: list | None = None,
                         sitl_rcin_port=5501,
                         pexpect_timeout=60,
                         logfile=sys.stdout):
     """Launch mavproxy connected to a SITL instance."""
+    if options is None:
+        options = []
+
     if master is None:
         raise ValueError("Expected a master")
 

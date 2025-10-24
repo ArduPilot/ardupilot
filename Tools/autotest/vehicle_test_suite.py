@@ -5,6 +5,8 @@ AP_FLAKE8_CLEAN
 
 '''
 
+from __future__ import annotations
+
 import abc
 import copy
 import errno
@@ -1798,7 +1800,9 @@ class LocationInt(object):
 
 class Test(object):
     '''a test definition - information about a test'''
-    def __init__(self, function, kwargs={}, attempts=1, speedup=None):
+    def __init__(self, function, kwargs: dict | None = None, attempts=1, speedup=None):
+        if kwargs is None:
+            kwargs = {}
         self.name = function.__name__
         self.description = function.__doc__
         if self.description is None:
@@ -1860,7 +1864,7 @@ class TestSuite(abc.ABC):
                  gdbserver=False,
                  lldb=False,
                  strace=False,
-                 breakpoints=[],
+                 breakpoints: list | None = None,
                  disable_breakpoints=False,
                  viewerip=None,
                  use_map=False,
@@ -1868,7 +1872,7 @@ class TestSuite(abc.ABC):
                  logs_dir=None,
                  force_ahrs_type=None,
                  replay=False,
-                 sup_binaries=[],
+                 sup_binaries: list | None = None,
                  reset_after_every_test=False,
                  force_32bit=False,
                  ubsan=False,
@@ -1876,10 +1880,16 @@ class TestSuite(abc.ABC):
                  num_aux_imus=0,
                  dronecan_tests=False,
                  generate_junit=False,
-                 build_opts={},
+                 build_opts: dict | None = None,
                  enable_fgview=False,
-                 move_logs_on_test_failure : bool = False,
+                 move_logs_on_test_failure: bool = False,
                  ):
+        if breakpoints is None:
+            breakpoints = []
+        if sup_binaries is None:
+            sup_binaries = []
+        if build_opts is None:
+            build_opts = {}
 
         self.start_time = time.time()
 
@@ -3446,7 +3456,7 @@ class TestSuite(abc.ABC):
     class FailFastStatusText(MessageHook):
         '''watches STATUSTEXT message; any message matching passed-in
         patterns causes a NotAchievedException to be thrown'''
-        def __init__(self, suite, texts, regex : bool = False):
+        def __init__(self, suite, texts, regex: bool = False):
             super(TestSuite.FailFastStatusText, self).__init__(suite)
             if isinstance(texts, str):
                 texts = [texts]
@@ -6320,13 +6330,13 @@ class TestSuite(abc.ABC):
             return True
         return False
 
-    def set_parameter_bit(self, name : str, bit_offset : int) -> None:
+    def set_parameter_bit(self, name: str, bit_offset: int) -> None:
         '''set bit in parameter to true, preserving values of other bits'''
         value = int(self.get_parameter(name))
         value |= 1 << bit_offset
         self.set_parameter(name, value)
 
-    def clear_parameter_bit(self, name : str, bit_offset : int) -> None:
+    def clear_parameter_bit(self, name: str, bit_offset: int) -> None:
         '''set bit in parameter to true, preserving values of other bits'''
         value = int(self.get_parameter(name))
         value &= ~(1 << bit_offset)
@@ -7712,7 +7722,9 @@ class TestSuite(abc.ABC):
                                   (target, last_value))
                     last_fail_print = now
 
-    def validate_kwargs(self, kwargs, valid={}):
+    def validate_kwargs(self, kwargs, valid: dict | None = None):
+        if valid is None:
+            valid = {}
         for key in kwargs:
             if key not in valid:
                 raise NotAchievedException("Invalid kwarg %s" % str(key))
@@ -8546,8 +8558,11 @@ class TestSuite(abc.ABC):
     def assert_prearm_failure(self,
                               expected_statustext,
                               timeout=5,
-                              ignore_prearm_failures=[],
+                              ignore_prearm_failures: list | None = None,
                               other_prearm_failures_fatal=True):
+        if ignore_prearm_failures is None:
+            ignore_prearm_failures = []
+
         seen_statustext = False
         seen_command_ack = False
 
@@ -8586,7 +8601,9 @@ class TestSuite(abc.ABC):
             if self.mav.motors_armed():
                 raise NotAchievedException("Armed when we shouldn't have")
 
-    def assert_arm_failure(self, expected_statustext, timeout=5, ignore_prearm_failures=[]):
+    def assert_arm_failure(self, expected_statustext, timeout=5, ignore_prearm_failures: list = None):
+        if ignore_prearm_failures is None:
+            ignore_prearm_failures = []
         seen_statustext = False
         seen_command_ack = False
 
@@ -11698,7 +11715,7 @@ Also, ignores heartbeats not from our target system'''
                 0,  # yawrate
             )
 
-        def testpos(self, targetpos : mavutil.location, test_alt : bool, frame_name : str, frame):
+        def testpos(self, targetpos: mavutil.location, test_alt: bool, frame_name: str, frame):
             send_target_position(targetpos.lat, targetpos.lng, to_alt_frame(targetpos.alt, frame_name), frame)
             self.wait_location(
                 targetpos,
