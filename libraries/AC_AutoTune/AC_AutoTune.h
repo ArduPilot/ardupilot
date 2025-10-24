@@ -91,7 +91,7 @@ protected:
     virtual bool init(void) = 0;
 
     // get pilot input for desired climb rate
-    virtual float get_pilot_desired_climb_rate_cms(void) const = 0;
+    virtual float get_desired_climb_rate_ms(void) const = 0;
 
     // get pilot input for designed roll and pitch, and yaw rate
     virtual void get_pilot_desired_rp_yrate_rad(float &roll_rad, float &pitch_rad, float &yaw_rate_rads) = 0;
