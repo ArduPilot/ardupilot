@@ -20,8 +20,8 @@ import hwdef  # noqa:E402
 
 class ESP32HWDef(hwdef.HWDef):
 
-    def __init__(self, quiet=False, outdir=None, hwdef=[]):
-        super(ESP32HWDef, self).__init__(quiet=quiet, outdir=outdir, hwdef=hwdef)
+    def __init__(self, **kwargs):
+        super(ESP32HWDef, self).__init__(**kwargs)
         # lists of ESP32_SPIBUS buses and ESP32_SPIDEV devices
         self.esp32_spibus = []
         self.esp32_spidev = []
