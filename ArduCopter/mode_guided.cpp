@@ -127,6 +127,28 @@ bool ModeGuided::allows_weathervaning() const
 }
 #endif
 
+// determine EKF reset handling method based on Guide submode
+bool ModeGuided::move_vehicle_on_ekf_reset() const
+{
+        // call the correct auto controller
+    switch (guided_mode) {
+    case SubMode::TakeOff:
+    case SubMode::Accel:
+    case SubMode::VelAccel:
+    case SubMode::Angle:
+        // these submodes have no absolute position target so we reset the position target
+        return false;
+    case SubMode::WP:
+    case SubMode::Pos:
+    case SubMode::PosVelAccel:
+        // these submodes have absolute position targets so we smoothly slew the target upon an ekf reset
+        return true;
+    }
+
+    // should never reach here but just in case
+    return true;
+}
+
 // initialises position controller to implement take-off
 // takeoff_alt_m is interpreted as alt-above-home (in m) or alt-above-terrain if a rangefinder is available
 bool ModeGuided::do_user_takeoff_start_m(float takeoff_alt_m)

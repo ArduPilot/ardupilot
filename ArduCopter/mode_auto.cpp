@@ -222,6 +222,35 @@ bool ModeAuto::allows_weathervaning() const
 }
 #endif
 
+// determine EKF reset handling method based on Guide submode
+bool ModeAuto::move_vehicle_on_ekf_reset() const
+{
+        // call the correct auto controller
+    switch (_mode) {
+    case SubMode::TAKEOFF:
+    case SubMode::LAND:
+    case SubMode::RTL:
+    case SubMode::CIRCLE_MOVE_TO_EDGE:
+    case SubMode::CIRCLE:
+    case SubMode::NAVGUIDED:
+    case SubMode::LOITER:
+    case SubMode::LOITER_TO_ALT:
+#if AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED && AC_PAYLOAD_PLACE_ENABLED
+    case SubMode::NAV_PAYLOAD_PLACE:
+#endif
+    case SubMode::NAV_SCRIPT_TIME:
+    case SubMode::NAV_ATTITUDE_TIME:
+        // these submodes reset their targets so the vehicle does not physically move
+        return false;
+    case SubMode::WP:    
+        // these submodes smoothly move to maintain an absolute position
+        return true;
+    }
+
+    // should never reach here but just in case
+    return true;
+}
+
 // Go straight to landing sequence via DO_LAND_START, if succeeds pretend to be Auto RTL mode
 bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
 {
