@@ -49,7 +49,7 @@ prog_param_fields = re.compile(r"[ \t]*// @(\w+): ?([^\r\n]*)")
 # match e.g @Value{Copter}: 0=Volcano, 1=Peppermint
 prog_param_tagged_fields = re.compile(r"[ \t]*// @(\w+){([^}]+)}: ([^\r\n]*)")
 
-prog_groups = re.compile(r"@Group: *(\w+).*((?:\n[ \t]*// @(Path): (\S+))+)", re.MULTILINE)
+prog_groups = re.compile(r"@Group: *(\w*).*((?:\n[ \t]*// @(Path): (\S+))+)", re.MULTILINE)
 
 apm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
 
@@ -418,7 +418,7 @@ def process_library(vehicle, library, pathprefix=None):
                     setattr(p, field_name, field_value)
                 else:
                     error(f"unknown parameter metadata field '{field_name}'")
-            if not any(lib.name == parsed_l.name for parsed_l in libraries):
+            if not any(lib.Path == parsed_l.Path for parsed_l in libraries):
                 if do_append:
                     lib.set_name(library.name + lib.name)
                 debug("Group name: %s" % lib.name)
