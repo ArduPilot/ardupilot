@@ -26,6 +26,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <stdio.h>
 
+//LIU DEBUG
 #if !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
