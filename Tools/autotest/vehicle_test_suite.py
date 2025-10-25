@@ -304,7 +304,7 @@ class Telem(object):
             return False
         return True
 
-    def do_read(self):
+    def do_read(self) -> bytes:
         try:
             data = self.port.recv(1024)
         except socket.error as e:
@@ -316,7 +316,7 @@ class Telem(object):
             self.progress("EOF")
             self.connected = False
             return bytes()
-#        self.progress("Read %u bytes" % len(data))
+        # print(f"Read {len(data)=} bytes {type(data)=}")
         return data
 
     def do_write(self, some_bytes):
@@ -1218,9 +1218,9 @@ class FRSkyD(FRSky):
                         # try again in a little while
                         consume = 0
                         return
-                    if ord(self.buffer[1]) == 0x3E:
+                    if self.buffer[1] == 0x3E:
                         b = self.START_STOP_D
-                    elif ord(self.buffer[1]) == 0x3D:
+                    elif self.buffer[1] == 0x3D:
                         b = self.BYTESTUFF_D
                     else:
                         raise ValueError("Unknown stuffed byte")
