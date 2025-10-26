@@ -9,6 +9,7 @@ import abc
 import copy
 import errno
 import glob
+import io
 import math
 import os
 import pathlib
@@ -89,17 +90,6 @@ MAV_FRAMES_TO_TEST = [
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
 
-# Check python version for abstract base class
-if sys.version_info[0] >= 3 and sys.version_info[1] >= 4:
-    ABC = abc.ABC
-else:
-    ABC = abc.ABCMeta('ABC', (), {})
-
-if sys.version_info[0] >= 3:
-    import io as StringIO  # srsly, we just did that.
-else:
-    import StringIO
-
 try:
     from itertools import izip as zip
 except ImportError:
@@ -114,10 +104,6 @@ class ErrorException(Exception):
 
 class AutoTestTimeoutException(ErrorException):
     pass
-
-
-if sys.version_info[0] < 3:
-    ConnectionResetError = AutoTestTimeoutException
 
 
 class WaitModeTimeout(AutoTestTimeoutException):
@@ -779,11 +765,7 @@ class MSP_Generic(Telem):
 
     def update_read(self):
         for byte in self.do_read():
-            if sys.version_info[0] < 3:
-                c = byte[0]
-                byte = ord(c)
-            else:
-                c = chr(byte)
+            c = chr(byte)
             # print("Got (0x%02x) (%s) (%s) state=%s" % (byte, chr(byte), str(type(byte)), self.state))
             if self.state == self.STATE_IDLE:
                 # reset state
@@ -1862,7 +1844,7 @@ class ValgrindFailedResult(Result):
         return "Valgrind error detected"
 
 
-class TestSuite(ABC):
+class TestSuite(abc.ABC):
     """Base abstract class.
     It implements the common function for all vehicle types.
     """
@@ -8980,15 +8962,11 @@ Also, ignores heartbeats not from our target system'''
         return ''.join(traceback.format_stack())
 
     def get_exception_stacktrace(self, e):
-        if sys.version_info[0] >= 3:
-            ret = "%s\n" % e
-            ret += ''.join(traceback.format_exception(type(e),
-                                                      e,
-                                                      tb=e.__traceback__))
-            return ret
-
-        # Python2:
-        return traceback.format_exc(e)
+        ret = "%s\n" % e
+        ret += ''.join(traceback.format_exception(type(e),
+                                                  e,
+                                                  tb=e.__traceback__))
+        return ret
 
     def bin_logs(self):
         return glob.glob("logs/*.BIN")
@@ -9616,7 +9594,7 @@ Also, ignores heartbeats not from our target system'''
     def dump_message_verbose(self, m):
         '''return verbose dump of m.  Wraps the pymavlink routine which
         inconveniently takes a filehandle'''
-        f = StringIO.StringIO()
+        f = io.StringIO()
         mavutil.dump_message_verbose(f, m)
         return f.getvalue()
 
@@ -10632,7 +10610,7 @@ Also, ignores heartbeats not from our target system'''
         class Capturing(list):
             def __enter__(self):
                 self._stderr = sys.stderr
-                sys.stderr = self._stringio = StringIO.StringIO()
+                sys.stderr = self._stringio = io.StringIO()
                 return self
 
             def __exit__(self, *args):
