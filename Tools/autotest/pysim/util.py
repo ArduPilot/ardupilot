@@ -16,11 +16,6 @@ import time
 
 import pexpect
 
-if sys.version_info[0] >= 3:
-    ENCODING = 'ascii'
-else:
-    ENCODING = None
-
 RADIUS_OF_EARTH = 6378100.0  # in meters
 
 # List of open terminal windows for macosx
@@ -598,14 +593,14 @@ def start_SITL(binary,
         # meantime, return a dummy:
         return pexpect.spawn("true", ["true"],
                              logfile=pexpect_logfile,
-                             encoding=ENCODING,
+                             encoding='ascii',
                              timeout=5)
     else:
         print("Running: %s" % cmd_as_shell(cmd))
 
         first = cmd[0]
         rest = cmd[1:]
-        child = pexpect.spawn(str(first), rest, logfile=pexpect_logfile, encoding=ENCODING, timeout=5, cwd=cwd)
+        child = pexpect.spawn(str(first), rest, logfile=pexpect_logfile, encoding='ascii', timeout=5, cwd=cwd)
         pexpect_autoclose(child)
     if gdb or lldb:
         # if we run GDB we do so in an xterm.  "Waiting for
@@ -670,7 +665,7 @@ def start_MAVProxy_SITL(atype,
     print("PYTHONPATH: %s" % str(env['PYTHONPATH']))
     print("Running: %s" % cmd_as_shell(cmd))
 
-    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=logfile, encoding=ENCODING, timeout=pexpect_timeout, env=env)
+    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=logfile, encoding='ascii', timeout=pexpect_timeout, env=env)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     return ret
@@ -683,7 +678,7 @@ def start_PPP_daemon(ips, sockaddr):
     cmd = cmd.split()
     print("Running: %s" % cmd_as_shell(cmd))
 
-    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=sys.stdout, encoding=ENCODING, timeout=30)
+    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=sys.stdout, encoding='ascii', timeout=30)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     return ret

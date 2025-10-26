@@ -8,17 +8,12 @@ AP_FLAKE8_CLEAN
 '''
 
 import os
-import sys
 
 from pymavlink import mavutil, mavextra
 
 import vehicle_test_suite
 from vehicle_test_suite import NotAchievedException
-from vehicle_test_suite import AutoTestTimeoutException
 from math import degrees
-
-if sys.version_info[0] < 3:
-    ConnectionResetError = AutoTestTimeoutException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
