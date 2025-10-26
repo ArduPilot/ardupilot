@@ -176,12 +176,15 @@ void Copter::set_throttle_zero_flag(int16_t throttle_control)
     static uint32_t last_nonzero_throttle_ms = 0;
     uint32_t tnow_ms = millis();
 
-    // if not using throttle interlock and non-zero throttle and not E-stopped,
-    // or using motor interlock and it's enabled, then motors are running, 
-    // and we are flying. Immediately set as non-zero
-    if ((!ap.using_interlock && (throttle_control > 0) && !SRV_Channels::get_emergency_stop()) ||
-        (ap.using_interlock && motors->get_interlock()) ||
-        ap.armed_with_airmode_switch || air_mode == AirMode::AIRMODE_ENABLED) {
+    // if not using throttle interlock, and non-zero throttle, and not E-stopped,
+    // or if using motor interlock, and it's enabled, and (if multicopter) throttle > 0,
+    // or if in air mode (stabilisation active at idle throttle)
+    // Immediately set flag as non-zero
+    if ((!ap.using_interlock && (throttle_control > 0) && !SRV_Channels::get_emergency_stop()) 
+        || (ap.using_interlock && motors->get_interlock() && (FRAME_CONFIG == HELI_FRAME || throttle_control > 0))
+        || ap.armed_with_airmode_switch 
+        || air_mode == AirMode::AIRMODE_ENABLED)  
+        {
         last_nonzero_throttle_ms = tnow_ms;
         ap.throttle_zero = false;
     } else if (tnow_ms - last_nonzero_throttle_ms > THROTTLE_ZERO_DEBOUNCE_TIME_MS) {
