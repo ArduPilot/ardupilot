@@ -402,10 +402,11 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: CRt: climb rate
 // @Field: TMix: transition throttle mix value
 // @Field: Trn: Transition state: 0-AirspeedWait,1-Timer,2-Done / TailSitter: 0-FW Wait,1-VTOL Wait,2-Done
+// @FieldValueEnum: Trn: SLT_Transition::State
 // @Field: Ast: bitmask of assistance flags
 // @FieldBitmaskEnum: Ast: log_assistance_flags
 #if HAL_QUADPLANE_ENABLED
-    { LOG_QTUN_MSG, sizeof(QuadPlane::log_QControl_Tuning),
+    { LOG_QTUN_MSG, sizeof(QuadPlane::log_QTUN),
       "QTUN", "QffffffeccfBB", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DCRt,CRt,TMix,Trn,Ast", "s----mmmnn---", "F----00000---" , true },
 #endif
 
@@ -447,9 +448,11 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: Ts: throttle scaling used for tilt motors
 // @Field: Ss: speed scailing used for control surfaces method from Q_TAILSIT_GSCMSK
 // @Field: Tmin: minimum output throttle calculated from disk thoery gain scale with Q_TAILSIT_MIN_VO
+// @Field: Trn: transition state
+// @FieldValueEnum: Trn: Tailsitter_Transition::State
 #if HAL_QUADPLANE_ENABLED
-    { LOG_TSIT_MSG, sizeof(Tailsitter::log_tailsitter),
-      "TSIT", "Qfff",  "TimeUS,Ts,Ss,Tmin", "s---", "F---" , true },
+    { LOG_TSIT_MSG, sizeof(Tailsitter::log_TSIT),
+      "TSIT", "Qfffb",  "TimeUS,Ts,Ss,Tmin,Trn", "s----", "F----" , true },
 #endif
 
 // @LoggerMessage: TILT
