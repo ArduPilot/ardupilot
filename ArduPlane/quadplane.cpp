@@ -1725,7 +1725,7 @@ void QuadPlane::update(void)
             // otherwise full relax
             attitude_control->relax_attitude_controllers();
         }
-        // todo: do you want to set the throttle at this point?
+        // Zero throttle during disarmed state to prevent uncommanded movement
         pos_control->relax_U_controller(0);
     }
 
@@ -3435,7 +3435,7 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     plane.TECS_controller.set_pitch_max(transition_pitch_max);
     plane.TECS_controller.set_pitch_min(-transition_pitch_max);
 
-    // todo: why are you doing this, I want to delete it.
+    // Initialize altitude target to current altitude for smooth transition to forward flight
     set_alt_target_current();
 
 #if AP_FENCE_ENABLED

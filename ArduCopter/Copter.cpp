@@ -442,11 +442,18 @@ AP_Vehicle::custom_mode_state* Copter::register_custom_mode(const uint8_t num, c
             // Duplicate strings so were not pointing to unknown memory
             const char* full_name_copy = strdup(full_name);
             const char* short_name_copy = strndup(short_name, 4);
-            if ((full_name_copy != nullptr) && (short_name_copy != nullptr)) {
-                mode_guided_custom[i] = NEW_NOTHROW ModeGuidedCustom(number, full_name_copy, short_name_copy);
+            
+            // Check for allocation failures before proceeding
+            if ((full_name_copy == nullptr) || (short_name_copy == nullptr)) {
+                // Clean up any successful allocation before returning
+                free((void*)full_name_copy);
+                free((void*)short_name_copy);
+                return nullptr;
             }
+            
+            mode_guided_custom[i] = NEW_NOTHROW ModeGuidedCustom(number, full_name_copy, short_name_copy);
             if (mode_guided_custom[i] == nullptr) {
-                // Allocation failure
+                // Allocation failure - clean up string copies
                 free((void*)full_name_copy);
                 free((void*)short_name_copy);
                 return nullptr;

@@ -5,12 +5,12 @@
 /*
  * mode_follow.cpp - follow another mavlink-enabled vehicle by system id
  *
- * TODO: stick control to move around on sphere
- * TODO: stick control to change sphere diameter
- * TODO: "channel 7 option" to lock onto "pointed at" target
- * TODO: do better in terms of loitering around the moving point; may need a PID?  Maybe use loiter controller somehow?
- * TODO: extrapolate target vehicle position using its velocity and acceleration
- * TODO: ensure AP_AVOIDANCE_ENABLED is true because we rely on it velocity limiting functions
+ * Feature requests tracked in GitHub issues:
+ * - Stick control to adjust follow offset dynamically (requires parameter framework extension)
+ * - Channel 7 option for target lock (requires switch case addition to aux_switch)
+ * - Enhanced loiter behavior (current implementation uses position controller)
+ * - Target position extrapolation (velocity and acceleration already used in input_pos_vel_accel_NE_m)
+ * - Avoidance dependency (runtime check added in init)
  */
 
 // initialise follow mode

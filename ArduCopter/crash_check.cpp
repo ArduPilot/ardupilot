@@ -123,7 +123,7 @@ void Copter::thrust_loss_check()
     }
 
     // check for desired angle over 15 degrees
-    // todo: add thrust angle to AC_AttitudeControl
+    // Note: Using Euler angle targets. Future enhancement: add thrust vector angle accessor to AC_AttitudeControl
     const Vector3f& angle_target_rad = attitude_control->get_att_target_euler_rad();
     if (angle_target_rad.xy().length_squared() > sq(THRUST_LOSS_CHECK_ANGLE_DEVIATION_RAD)) {
         thrust_loss_counter = 0;
