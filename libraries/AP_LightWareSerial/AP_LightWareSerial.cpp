@@ -13,23 +13,23 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AP_Proximity_LightWareSerial.h"
+#include "AP_LightWareSerial.h"
 
-#if HAL_PROXIMITY_ENABLED
+#if AP_LIGHTWARESERIAL_ENABLED
+
 #include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/crc.h>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
-#define PROXIMITY_LIGHTWARE_HEADER    0xAA
+#define LIGHTWARE_HEADER    0xAA
 
 // send message to sensor
-void AP_Proximity_LightWareSerial::send_message(uint8_t msgid, bool write, const uint8_t *payload, uint16_t payload_len)
+void AP_LightWareSerial::send_message(uint8_t msgid, bool write, const uint8_t *payload, uint16_t payload_len)
 {
-    if ((_uart == nullptr) || (payload_len > PROXIMITY_LIGHTWARE_PAYLOAD_LEN_MAX)) {
+    if ((_uart == nullptr) || (payload_len > LIGHTWARE_PAYLOAD_LEN_MAX)) {
         return;
     }
 
@@ -39,8 +39,8 @@ void AP_Proximity_LightWareSerial::send_message(uint8_t msgid, bool write, const
     }
 
     // write header
-    _uart->write((uint8_t)PROXIMITY_LIGHTWARE_HEADER);
-    uint16_t crc = crc_xmodem_update(0, PROXIMITY_LIGHTWARE_HEADER);
+    _uart->write((uint8_t)LIGHTWARE_HEADER);
+    uint16_t crc = crc_xmodem_update(0, LIGHTWARE_HEADER);
 
     // write flags including payload length
     const uint16_t flags = ((payload_len+1) << 6) | (write ? 0x01 : 0);
@@ -69,16 +69,16 @@ void AP_Proximity_LightWareSerial::send_message(uint8_t msgid, bool write, const
 // process one byte received on serial port
 // returns true if a complete message has been received
 // state is stored in _msg structure
-bool AP_Proximity_LightWareSerial::parse_byte(uint8_t b)
+bool AP_LightWareSerial::parse_byte(uint8_t b)
 {
     // check that payload buffer is large enough
-    static_assert(ARRAY_SIZE(_msg.payload) == PROXIMITY_LIGHTWARE_PAYLOAD_LEN_MAX, "AP_Proximity_LightWareSerial: check _msg.payload array size");
+    static_assert(ARRAY_SIZE(_msg.payload) == LIGHTWARE_PAYLOAD_LEN_MAX, "AP_LightWareSerial: check _msg.payload array size");
 
     // process byte depending upon current state
     switch (_parse_state) {
 
     case ParseState::HEADER:
-        if (b == PROXIMITY_LIGHTWARE_HEADER) {
+        if (b == LIGHTWARE_HEADER) {
             _crc_expected = crc_xmodem_update(0, b);
             _parse_state = ParseState::FLAGS_L;
         }
@@ -94,7 +94,7 @@ bool AP_Proximity_LightWareSerial::parse_byte(uint8_t b)
         _msg.flags_high = b;
         _crc_expected = crc_xmodem_update(_crc_expected, b);
         _msg.payload_len = UINT16_VALUE(_msg.flags_high, _msg.flags_low) >> 6;
-        if ((_msg.payload_len == 0) || (_msg.payload_len > PROXIMITY_LIGHTWARE_PAYLOAD_LEN_MAX)) {
+        if ((_msg.payload_len == 0) || (_msg.payload_len > LIGHTWARE_PAYLOAD_LEN_MAX)) {
             // invalid payload length, abandon message
             _parse_state = ParseState::HEADER;
         } else {
@@ -141,4 +141,5 @@ bool AP_Proximity_LightWareSerial::parse_byte(uint8_t b)
     return false;
 }
 
-#endif // HAL_PROXIMITY_ENABLED
+#endif //AP_LIGHTWARESERIAL_ENABLED
+

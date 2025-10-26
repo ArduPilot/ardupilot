@@ -579,8 +579,15 @@ def validate(param, is_library=False):
         for i in valueList:
             i = i.replace(" ", "")
             values.append(i.partition(":")[0])
+
+        # Make sure all values are numbers
+        for value in values:
+            if not is_number(value):
+                error("Value not number: \"%s\"" % value)
+
         if (len(values) != len(set(values))):
             error("Duplicate values found" + str({x for x in values if values.count(x) > 1}))
+
     # Validate units
     if (hasattr(param, "Units")):
         if (param.__dict__["Units"] != "") and (param.__dict__["Units"] not in known_units):
@@ -590,9 +597,34 @@ def validate(param, is_library=False):
         if param.User.strip() not in ["Standard", "Advanced"]:
             error("unknown user (%s)" % param.User.strip())
 
+    # Validate description
     if (hasattr(param, "Description")):
         if not param.Description or not param.Description.strip():
             error("Empty Description (%s)" % param)
+
+    # Check range and values don't contradict one another
+    if (hasattr(param, "Range") and hasattr(param, "Values")):
+        # Get the min and max of values
+        valueList = param.__dict__["Values"].split(",")
+        values = [float(v.replace(" ", "").partition(":")[0]) for v in valueList]
+        minValue = min(values)
+        maxValue = max(values)
+
+        # Get min and max range
+        rangeValues = param.__dict__["Range"].split(" ")
+        minRange = float(rangeValues[0])
+        maxRange = float(rangeValues[1])
+
+        # Check values are within range
+        if minValue < minRange:
+            error("Range of %f to %f and value of: %f" % (minRange, maxRange, minValue))
+        if maxValue > maxRange:
+            error("Range of %f to %f and value of: %f" % (minRange, maxRange, maxValue))
+
+    # Validate increment
+    if (hasattr(param, "Increment")):
+        if not is_number(param.Increment):
+            error("Increment not number: \"%s\"" % param.Increment)
 
     required_fields = required_param_fields
     if is_library:

@@ -1,16 +1,19 @@
 #pragma once
 
-#include "AP_Proximity_Backend_Serial.h"
+#include "AP_LightWareSerial_config.h"
 
-#if HAL_PROXIMITY_ENABLED
-#define PROXIMITY_LIGHTWARE_PAYLOAD_LEN_MAX 256 // maximum payload size we can accept (in some configurations sensor may send as large as 1023)
+#if AP_LIGHTWARESERIAL_ENABLED
 
-class AP_Proximity_LightWareSerial : public AP_Proximity_Backend_Serial
+#include <AP_HAL/AP_HAL.h>
+#define LIGHTWARE_PAYLOAD_LEN_MAX 256 // maximum payload size we can accept (in some configurations sensor may send as large as 1023)
+
+class AP_LightWareSerial
 {
-
 public:
-    // constructor
-    using AP_Proximity_Backend_Serial::AP_Proximity_Backend_Serial;
+    AP_LightWareSerial(AP_HAL::UARTDriver *&uart_ref) :
+        _uart(uart_ref)
+    {
+    }
 
 protected:
 
@@ -42,11 +45,13 @@ protected:
         uint8_t flags_low;      // flags low byte
         uint8_t flags_high;     // flags high byte
         uint16_t payload_len;   // latest message payload length (1+ bytes in payload)
-        uint8_t payload[PROXIMITY_LIGHTWARE_PAYLOAD_LEN_MAX];   // payload
+        uint8_t payload[LIGHTWARE_PAYLOAD_LEN_MAX];   // payload
         uint8_t msgid;          // latest message's message id
         uint8_t crc_low;        // crc low byte
         uint8_t crc_high;       // crc high byte
     } _msg;
-};
 
-#endif // HAL_PROXIMITY_ENABLED
+private:
+    AP_HAL::UARTDriver *& _uart;
+};
+#endif // AP_LIGHTWARESERIAL_ENABLED

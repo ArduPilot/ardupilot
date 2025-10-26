@@ -1134,7 +1134,7 @@ class esp32(Board):
 
         # this makes sure we get the correct subtype
         env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_%s' %  tt.upper() ,
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
         )
 
         if self.name.endswith("empty"):
@@ -1189,9 +1189,6 @@ class esp32(Board):
                 HAL_PARAM_DEFAULTS_PATH='"@ROMFS/defaults.parm"',
             )
 
-        env.INCLUDES += [
-                cfg.srcnode.find_dir('libraries/AP_HAL_ESP32/boards').abspath(),
-            ]
         env.AP_PROGRAM_AS_STLIB = True
         #if cfg.options.enable_profile:
         #    env.CXXFLAGS += ['-pg',

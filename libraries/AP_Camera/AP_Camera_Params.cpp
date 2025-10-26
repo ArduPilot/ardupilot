@@ -63,6 +63,7 @@ const AP_Param::GroupInfo AP_Camera_Params::var_info[] = {
     // @DisplayName: Camera feedback pin
     // @Description: pin number to use for save accurate camera feedback messages. If set to -1 then don't use a pin flag for this, otherwise this is a pin number which if held high after a picture trigger order, will save camera messages when camera really takes a picture. A universal camera hot shoe is needed. The pin should be held high for at least 2 milliseconds for reliable trigger detection.  Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot. See also the CAMx_FEEDBCK_POL option.
     // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
+    // @Range: -1 127
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("_FEEDBAK_PIN", 8, AP_Camera_Params, feedback_pin, -1),
