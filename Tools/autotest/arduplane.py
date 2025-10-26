@@ -1348,6 +1348,155 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Fence not enabled after RC fail")
         self.do_fence_disable() # Ensure the fence is disabled after test
 
+    def ThrottleFailsafeIgnoreInAuto(self):
+        '''Test short failsafe is ignored in AUTO mode when FS_SHORT_ACTN=0'''
+        # This test addresses issue #19190:
+        # https://github.com/ArduPilot/ardupilot/issues/19190
+        # Regression where FS_SHORT_ACTN=0 didn't work in AUTO mode
+        
+        self.start_subtest("Test short failsafe ignored in AUTO with FS_SHORT_ACTN=0")
+        
+        # Setup parameters for test
+        self.set_parameters({
+            "FS_SHORT_ACTN": 0,  # No mode change in AUTO/GUIDED/LOITER
+            "FS_LONG_ACTN": 1,   # RTL on long failsafe
+            "FS_LONG_TIMEOUT": 10, # Long failsafe after 10 seconds
+            "THR_FS_VALUE": 960,
+            "THR_FAILSAFE": 1,   # Failsafe enabled
+            "RTL_AUTOLAND": 1,
+        })
+        
+        # Load a simple mission
+        self.load_sample_mission()
+        
+        # Arm and start mission in AUTO mode
+        self.change_mode("AUTO")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        
+        # Wait to get into the air and stabilized in AUTO
+        self.wait_altitude(50, 80, relative=True, timeout=60)
+        
+        # Verify we're in AUTO mode
+        self.wait_mode("AUTO", timeout=5)
+        
+        # Get current waypoint before triggering failsafe
+        start_waypoint = self.mav.waypoint_current()
+        
+        self.progress("Triggering short RC failsafe in AUTO mode")
+        self.context_collect("STATUSTEXT")
+        
+        # Trigger RC failsafe
+        self.set_parameter("SIM_RC_FAIL", 1)  # no pulses
+        
+        # Wait a bit (less than long failsafe timeout)
+        self.delay_sim_time(3)
+        
+        # Verify vehicle is STILL in AUTO mode (short failsafe ignored)
+        current_mode = self.get_mode()
+        if current_mode != "AUTO":
+            raise NotAchievedException(
+                f"Vehicle changed mode to {current_mode} but should stay in AUTO with FS_SHORT_ACTN=0"
+            )
+        
+        # Verify mission is still progressing
+        current_waypoint = self.mav.waypoint_current()
+        if current_waypoint == start_waypoint:
+            # It's okay if we're still on same waypoint if waypoint distance is far
+            self.progress("Still on same waypoint, checking mission is active")
+        
+        self.progress("Short failsafe correctly ignored in AUTO mode")
+        
+        # Wait for long failsafe to trigger (should switch to RTL)
+        self.progress("Waiting for long failsafe to trigger RTL")
+        self.wait_statustext("Long failsafe on", timeout=15, check_context=True)
+        self.wait_mode("RTL", timeout=5)
+        
+        self.progress("Long failsafe correctly triggered RTL")
+        
+        # Restore RC
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.delay_sim_time(1)
+        
+        # Clean up
+        self.change_mode("MANUAL")
+        self.disarm_vehicle(force=True)
+        
+        self.end_subtest("Short failsafe correctly ignored in AUTO mode")
+        
+        # Test the same behavior in GUIDED mode
+        self.start_subtest("Test short failsafe ignored in GUIDED with FS_SHORT_ACTN=0")
+        
+        self.takeoff(alt=80)
+        self.change_mode("GUIDED")
+        
+        # Set a guided waypoint
+        target_loc = self.home_relative_loc_ne(200, 200)
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+            p1=0,  # hold time
+            x=int(target_loc.lat * 1e7),
+            y=int(target_loc.lng * 1e7),
+            z=100,  # alt
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+        )
+        
+        self.delay_sim_time(2)
+        
+        # Trigger short failsafe
+        self.progress("Triggering short RC failsafe in GUIDED mode")
+        self.context_collect("STATUSTEXT")
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.delay_sim_time(3)
+        
+        # Verify vehicle is STILL in GUIDED mode
+        current_mode = self.get_mode()
+        if current_mode != "GUIDED":
+            raise NotAchievedException(
+                f"Vehicle changed mode to {current_mode} but should stay in GUIDED with FS_SHORT_ACTN=0"
+            )
+        
+        self.progress("Short failsafe correctly ignored in GUIDED mode")
+        
+        # Restore RC and clean up
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.delay_sim_time(1)
+        self.change_mode("MANUAL")
+        self.disarm_vehicle(force=True)
+        
+        self.end_subtest("Short failsafe correctly ignored in GUIDED mode")
+        
+        # Test that short failsafe DOES work when FS_SHORT_ACTN=1 (CIRCLE)
+        self.start_subtest("Test short failsafe triggers CIRCLE in AUTO with FS_SHORT_ACTN=1")
+        
+        self.set_parameter("FS_SHORT_ACTN", 1)  # CIRCLE mode
+        
+        # Start another mission
+        self.load_sample_mission()
+        self.change_mode("AUTO")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_altitude(50, 80, relative=True, timeout=60)
+        
+        # Trigger short failsafe
+        self.progress("Triggering short RC failsafe in AUTO mode with FS_SHORT_ACTN=1")
+        self.context_collect("STATUSTEXT")
+        self.set_parameter("SIM_RC_FAIL", 1)
+        
+        # Should switch to CIRCLE mode
+        self.wait_mode("CIRCLE", timeout=5)
+        self.progress("Short failsafe correctly triggered CIRCLE mode")
+        
+        # Restore RC and clean up
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.delay_sim_time(1)
+        self.change_mode("MANUAL")
+        self.disarm_vehicle(force=True)
+        
+        self.end_subtest("Short failsafe correctly triggered CIRCLE mode")
+        
+        self.reboot_sitl()
+
     def GCSFailsafe(self):
         '''Ensure Long-Failsafe works on GCS loss'''
         self.start_subtest("Test Failsafe: RTL")
@@ -7803,6 +7952,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.TestRCCamera,
             self.TestRCRelay,
             self.ThrottleFailsafe,
+            self.ThrottleFailsafeIgnoreInAuto,
             self.NeedEKFToArm,
             self.ThrottleFailsafeFence,
             self.SoaringClimbRate,
