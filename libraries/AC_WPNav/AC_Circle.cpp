@@ -292,12 +292,12 @@ void AC_Circle::get_closest_point_on_circle_NEU_cm(Vector3f& result_neu_cm, floa
     dist_cm = dist_m * 100.0;
 }
 
-// Returns the closest point on the circle to the vehicle's current position in meters.
+// Returns the closest point on the circle to the vehicle's stopping point in meters.
 // The result vector is updated with the NEU position of the closest point on the circle.
 // The altitude (z) is set to match the circle center's altitude.
-// dist_m is updated with the horizontal distance to the circle center.
+// dist_m is updated with the 3D distance to the circle edge from the stopping point.
 // If the vehicle is at the center, the point directly behind the vehicle (based on yaw) is returned.
-void AC_Circle::get_closest_point_on_circle_NEU_m(Vector3p& result_neu_m, float& dist_m) const
+void AC_Circle::get_closest_point_on_circle_NEU_m(Vector3p& result_neu_m, float& dist_to_edge_m) const
 {
     // Get vehicle stopping point from the position controller (in NEU frame, meters)
     Vector3p stopping_point_neu_m;
@@ -306,26 +306,29 @@ void AC_Circle::get_closest_point_on_circle_NEU_m(Vector3p& result_neu_m, float&
 
     // Compute vector from stopping point to the circle center
     Vector3f vec_to_center_neu_m = (stopping_point_neu_m - _center_neu_m).tofloat();
-    dist_m = vec_to_center_neu_m.length();
-
     // Return circle center if radius is zero (vehicle orbits in place)
     if (!is_positive(_radius_m)) {
         result_neu_m = _center_neu_m;
+        dist_to_edge_m = 0;
         return;
     }
 
+    const float dist_to_center_m_sq = vec_to_center_neu_m.length_squared();
     // Handle edge case: vehicle is at the exact center of the circle
-    if (is_zero(dist_m)) {
+    if (is_zero(dist_to_center_m_sq)) {
         result_neu_m.x = _center_neu_m.x - _radius_m * _ahrs.cos_yaw();
         result_neu_m.y = _center_neu_m.y - _radius_m * _ahrs.sin_yaw();
         result_neu_m.z = _center_neu_m.z;
+        dist_to_edge_m = (stopping_point_neu_m - result_neu_m).length();
         return;
     }
 
     // Calculate the closest point on the circle's edge by projecting out from center
-    result_neu_m.x = _center_neu_m.x + vec_to_center_neu_m.x / dist_m * _radius_m;
-    result_neu_m.y = _center_neu_m.y + vec_to_center_neu_m.y / dist_m * _radius_m;
+    const float dist_to_center_m_xy = vec_to_center_neu_m.xy().length();
+    result_neu_m.x = _center_neu_m.x + vec_to_center_neu_m.x / dist_to_center_m_xy * _radius_m;
+    result_neu_m.y = _center_neu_m.y + vec_to_center_neu_m.y / dist_to_center_m_xy * _radius_m;
     result_neu_m.z = _center_neu_m.z;
+    dist_to_edge_m = (stopping_point_neu_m - result_neu_m).length();
 }
 
 // Calculates angular velocity and acceleration limits based on the configured radius and rate.
