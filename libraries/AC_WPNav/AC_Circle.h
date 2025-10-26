@@ -122,10 +122,10 @@ public:
     // See get_closest_point_on_circle_NEU_m() for full details.
     void get_closest_point_on_circle_NEU_cm(Vector3f& result_NEU_cm, float& dist_cm) const;
 
-    // Returns the closest point on the circle to the vehicle's current position in meters.
+    // Returns the closest point on the circle to the vehicle's stopping point in meters.
     // The result vector is updated with the NEU position of the closest point on the circle.
     // The altitude (z) is set to match the circle center's altitude.
-    // dist_m is updated with the horizontal distance to the circle center.
+    // dist_m is updated with the 3D distance to the circle edge from the stopping point.
     // If the vehicle is at the center, the point directly behind the vehicle (based on yaw) is returned.
     void get_closest_point_on_circle_NEU_m(Vector3p& result_NEU_m, float& dist_m) const;
 
