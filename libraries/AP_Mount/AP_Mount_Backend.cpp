@@ -38,12 +38,19 @@ void AP_Mount_Backend::set_dev_id(uint32_t id)
     _params.dev_id.set_and_save(int32_t(id));
 }
 
+// update_mount_open_servo - should be called periodically to control the mount open/close servo
+void AP_Mount_Backend::update_mount_open_servo()
+{
+    // move mount to a "retracted position" into the fuselage or out of it
+    const bool mount_open = (_mode != MAV_MOUNT_MODE_RETRACT);
+    SRV_Channels::move_servo(_open_idx, mount_open, 0, 1);
+}
+
 // base implementation should be called from derived classes for common functionality
 void AP_Mount_Backend::update()
 {
-    // move mount to a "retracted position" into the fuselage or out of it
-    const bool mount_open = (_mode == MAV_MOUNT_MODE_RETRACT);
-    SRV_Channels::move_servo(_open_idx, mount_open, 0, 1);
+    // update mount open/close servo
+    update_mount_open_servo();
 
     // set target rate to zero if we have not received rate command for a while
     if ((get_mode() == MAV_MOUNT_MODE_MAVLINK_TARGETING) &&

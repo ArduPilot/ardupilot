@@ -54,6 +54,9 @@ public:
     // used for gimbals that need to read INS data at full rate
     virtual void update_fast() {}
 
+    // update_mount_open_servo - should be called periodically to control the mount open/close servo
+    void update_mount_open_servo();
+
     // return true if healthy
     virtual bool healthy() const { return true; }
 
