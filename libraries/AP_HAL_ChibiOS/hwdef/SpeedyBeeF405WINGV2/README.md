@@ -34,7 +34,7 @@ The SpeedyBeeF405WINGV2 is a flight controller produced by [SpeedyBee](http://ww
 
 ## UART Mapping
 
-The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
+The UARTs are marked RXn and TXn in the above pinouts. The RXn pin is the
 receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
  - SERIAL0 -> USB
