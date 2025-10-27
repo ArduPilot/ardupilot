@@ -261,7 +261,7 @@ bool NavEKF2_core::getPosD(postype_t &posD) const
     } else {
         // The origin height is static and corrections are applied to the local vertical position
         // so that height returned by getLLH() = height returned by getOriginLLH - posD
-        posD = outputDataNew.position.z + posOffsetNED.z + 0.01f * (float)EKF_origin.alt - (float)ekfGpsRefHgt;
+        posD = outputDataNew.position.z + posOffsetNED.z + EKF_origin.get_alt_m() - (float)ekfGpsRefHgt;
     }
 
     // Return the current height solution status
@@ -282,15 +282,15 @@ bool NavEKF2_core::getHAGL(float &HAGL) const
 // If a calculated location isn't available, return a raw GPS measurement
 // The status will return true if a calculation or raw measurement is available
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
-bool NavEKF2_core::getLLH(Location &loc) const
+bool NavEKF2_core::getLLH(AbsAltLocation &loc) const
 {
     const auto &gps = dal.gps();
-    Location origin;
+    AbsAltLocation origin;
     postype_t posD;
 
     if(getPosD(posD) && getOriginLLH(origin)) {
         // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
-        loc.set_alt_cm(origin.alt - posD*100, Location::AltFrame::ABSOLUTE);
+        loc.set_alt_m(origin.get_alt_m() - posD);
 
         // there are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no aiding)
         if (filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel) {
@@ -349,13 +349,13 @@ void NavEKF2_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGa
 
 
 // return the LLH location of the filters NED origin
-bool NavEKF2_core::getOriginLLH(Location &loc) const
+bool NavEKF2_core::getOriginLLH(AbsAltLocation &loc) const
 {
     if (validOrigin) {
         loc = EKF_origin;
         // report internally corrected reference height if enabled
         if ((frontend->_originHgtMode & (1<<2)) == 0) {
-            loc.alt = (int32_t)(100.0f * (float)ekfGpsRefHgt);
+            loc.set_alt_m(ekfGpsRefHgt);
         }
     }
     return validOrigin;

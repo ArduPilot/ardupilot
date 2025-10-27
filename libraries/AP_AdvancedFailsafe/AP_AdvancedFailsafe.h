@@ -158,7 +158,7 @@ protected:
     // have the failsafe values been setup?
     bool _failsafe_setup;
 
-    Location _first_location;
+    AbsAltLocation _first_location;
     bool _have_first_location;
     uint32_t _term_range_notice_ms;
 

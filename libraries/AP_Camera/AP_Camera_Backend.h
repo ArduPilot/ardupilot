@@ -166,7 +166,7 @@ protected:
     void prep_mavlink_msg_camera_feedback(uint64_t timestamp_us);
     struct {
         uint64_t timestamp_us;      // system time of most recent image
-        Location location;          // location where most recent image was taken
+        AbsAltLocation location;          // location where most recent image was taken
         float roll_deg;             // vehicle roll in degrees
         float pitch_deg;            // vehicle pitch in degrees
         float yaw_deg;              // vehicle yaw in degrees
@@ -206,7 +206,7 @@ protected:
     uint32_t feedback_trigger_logged_count; // number of times the feedback has been logged
     bool trigger_pending;           // true if a call to take_pic() was delayed due to the minimum time interval time
     uint32_t last_picture_time_ms;    // system time that photo was last taken
-    Location last_location;         // Location that last picture was taken at (used for trigg_dist calculation)
+    AbsAltLocation last_location;         // Location that last picture was taken at (used for trigg_dist calculation)
     uint16_t image_index;           // number of pictures taken since boot
     bool last_is_armed;             // stores last arm/disarm state. true if it was armed lastly
 };

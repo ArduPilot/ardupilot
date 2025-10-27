@@ -33,7 +33,7 @@ void Copter::ekf_check()
     static_assert(EKF_CHECK_ITERATIONS_MAX >= 7, "EKF_CHECK_ITERATIONS_MAX must be at least 7");
 
     // exit immediately if ekf has no origin yet - this assumes the origin can never become unset
-    Location temp_loc;
+    AbsAltLocation temp_loc;
     if (!ahrs.get_origin(temp_loc)) {
         return;
     }

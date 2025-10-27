@@ -465,7 +465,9 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 
 #if HAL_LOGGING_ENABLED
         // log target
-        copter.Log_Write_Guided_Position_Target(guided_mode, Vector3p(dest_loc.lat, dest_loc.lng, dest_loc.alt), (dest_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN), Vector3f(), Vector3f());
+        int32_t dest_loc_alt_cm = 0;
+        UNUSED_RESULT(dest_loc.get_alt_cm(dest_loc.get_alt_frame(), dest_loc_alt_cm));
+        copter.Log_Write_Guided_Position_Target(guided_mode, Vector3p(dest_loc.lat, dest_loc.lng, dest_loc_alt_cm), (dest_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN), Vector3f(), Vector3f());
 #endif
 
         send_notification = true;
@@ -514,7 +516,9 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 
     // log target
 #if HAL_LOGGING_ENABLED
-    copter.Log_Write_Guided_Position_Target(guided_mode, Vector3p(dest_loc.lat, dest_loc.lng, dest_loc.alt), guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
+    float dest_loc_alt_m c= 0;
+    UNUSED_RESULT(dest_loc.get_alt_cm(dest_loc.get_alt_frame(), dest_loc_alt_m));
+    copter.Log_Write_Guided_Position_Target(guided_mode, Vector3p(dest_loc.lat, dest_loc.lng, dest_loc_alt_cm), guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
 #endif
 
     send_notification = true;

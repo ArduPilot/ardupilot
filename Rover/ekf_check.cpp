@@ -27,7 +27,7 @@ static struct {
 void Rover::ekf_check()
 {
     // exit immediately if ekf has no origin yet - this assumes the origin can never become unset
-    Location temp_loc;
+    AbsAltLocation temp_loc;
     if (!ahrs.get_origin(temp_loc)) {
         return;
     }

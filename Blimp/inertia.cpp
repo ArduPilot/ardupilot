@@ -7,7 +7,7 @@ void Blimp::read_inertia()
     inertial_nav.update(vibration_check.high_vibes);
 
     // pull position from ahrs
-    Location loc;
+    AbsAltLocation loc;
     ahrs.get_location(loc);
     current_loc.lat = loc.lat;
     current_loc.lng = loc.lng;

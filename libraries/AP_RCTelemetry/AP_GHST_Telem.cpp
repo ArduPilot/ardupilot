@@ -264,11 +264,11 @@ void AP_GHST_Telem::calc_battery()
 void AP_GHST_Telem::calc_gps()
 {
     debug("GPS");
-    const Location &loc = AP::gps().location(0); // use the first gps instance (same as in send_mavlink_gps_raw)
+    const AbsAltLocation &loc = AP::gps().location(0); // use the first gps instance (same as in send_mavlink_gps_raw)
 
     _telem.gps.latitude = htole32(loc.lat);
     _telem.gps.longitude = htole32(loc.lng);
-    _telem.gps.altitude = htole16(constrain_int16(loc.alt / 100, 0, 5000) + 1000);
+    _telem.gps.altitude = htole16(constrain_int16(loc.get_alt_m(), 0, 5000) + 1000);
 
     _telem_size = sizeof(AP_GHST_Telem::GPSFrame);
     _telem_type = AP_RCProtocol_GHST::GHST_DL_GPS_PRIMARY;
@@ -285,7 +285,7 @@ void AP_GHST_Telem::calc_gps2()
 
     AP_AHRS &_ahrs = AP::ahrs();
     WITH_SEMAPHORE(_ahrs.get_semaphore());
-    Location loc;
+    AbsAltLocation loc;
 
     if (_ahrs.get_location(loc) && _ahrs.home_is_set()) {
         const Location &home_loc = _ahrs.get_home();

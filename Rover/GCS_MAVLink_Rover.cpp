@@ -78,6 +78,8 @@ void GCS_MAVLINK_Rover::send_position_target_global_int()
     if (!rover.control_mode->get_desired_location(target)) {
         return;
     }
+    float target_alt_m = 0;
+    UNUSED_RESULT(target.get_alt_m(Location::AltFrame::ABSOLUTE, target_alt_m));
     static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
     static constexpr uint16_t TYPE_MASK = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
                                           POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
@@ -89,7 +91,7 @@ void GCS_MAVLINK_Rover::send_position_target_global_int()
         TYPE_MASK, // ignore everything except the x/y/z components
         target.lat, // latitude as 1e7
         target.lng, // longitude as 1e7
-        target.alt * 0.01f, // altitude is sent as a float
+        target_alt_m, // altitude is sent as a float
         0.0f, // vx
         0.0f, // vy
         0.0f, // vz
@@ -212,7 +214,7 @@ void GCS_MAVLINK_Rover::send_water_depth()
 
     // get position
     const AP_AHRS &ahrs = AP::ahrs();
-    Location loc;
+    AbsAltLocation loc;
     IGNORE_RETURN(ahrs.get_location(loc));
 
     const auto num_sensors = rangefinder->num_sensors();
@@ -243,7 +245,7 @@ void GCS_MAVLINK_Rover::send_water_depth()
             sensor_healthy,     // sensor healthy
             loc.lat,            // latitude of vehicle
             loc.lng,            // longitude of vehicle
-            loc.alt * 0.01f,    // altitude of vehicle (MSL)
+            loc.get_alt_m(),    // altitude of vehicle (MSL)
             ahrs.get_roll_rad(),    // roll in radians
             ahrs.get_pitch_rad(),   // pitch in radians
             ahrs.get_yaw_rad(),     // yaw in radians
@@ -713,7 +715,7 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
     }
 
     // need ekf origin
-    Location ekf_origin;
+    AbsAltLocation ekf_origin;
     if (!rover.ahrs.get_origin(ekf_origin)) {
         return;
     }
