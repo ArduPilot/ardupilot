@@ -78,6 +78,12 @@ singleton AP_AHRS method get_posvelyaw_source_set uint8_t
 singleton AP_AHRS method get_quaternion boolean Quaternion'Null
 singleton AP_AHRS method handle_external_position_estimate boolean Location float'skip_check uint32_t'skip_check
 singleton AP_AHRS method handle_external_position_estimate depends AP_AHRS_EXTERNAL_ENABLED
+singleton AP_AHRS method set_fly_forward void boolean
+singleton AP_AHRS method get_fly_forward boolean
+singleton AP_AHRS method using_airspeed_sensor boolean
+singleton AP_AHRS method set_wind_estimation_enabled void boolean
+singleton AP_AHRS method get_wind_estimation_enabled boolean
+singleton AP_AHRS method writeDefaultAirSpeed void float'skip_check float'skip_check
 
 include AP_Arming/AP_Arming.h
 
