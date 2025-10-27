@@ -54,7 +54,7 @@ Fport can be connected to USART1 TX also, but will require an external bi-direct
    
 ## OSD Support
 
-The SpeedyBeeF405WINGV2 supports using its internal OSD using OSD_TYPE 1 (MAX7456 driver). External OSD support such as DJI or DisplayPort is supported using UART5 or any other free UART5. See :ref:`common-msp-osd-overview-4.2` for more info.
+The SpeedyBeeF405WINGV2 supports using its internal OSD using OSD_TYPE 1 (MAX7456 driver). HD VTX OSD support is enabled by default on SERIAL 3
 
 ## Analog Airspeed Input
 
