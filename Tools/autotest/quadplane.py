@@ -365,6 +365,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         # adjust tune so QAUTOTUNE can cope
         self.set_parameters({
+            "Q_AUTOTUNE_AGGR": 0.1,
+            "Q_AUTOTUNE_MIN_D": 0.0004,
             "Q_A_RAT_RLL_P" : 0.15,
             "Q_A_RAT_RLL_I" : 0.25,
             "Q_A_RAT_RLL_D" : 0.002,
