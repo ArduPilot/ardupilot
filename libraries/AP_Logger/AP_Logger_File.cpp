@@ -85,6 +85,7 @@ void AP_Logger_File::Init()
     }
     if (bufsize >= _writebuf_chunk && bufsize != desired_bufsize) {
         DEV_PRINTF("AP_Logger: reduced buffer %u/%u\n", (unsigned)bufsize, (unsigned)desired_bufsize);
+        _front._params.file_bufsize.set(bufsize);
     }
 
     if (!_writebuf.get_size()) {
