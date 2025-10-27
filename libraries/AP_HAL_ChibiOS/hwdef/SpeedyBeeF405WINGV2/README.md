@@ -39,7 +39,7 @@ receive pin for UARTn. The TXn pin is the transmit pin for UARTn.
 
  - SERIAL0 -> USB
  - SERIAL1 -> USART1 (MAVLink2,Telem1)
- - SERIAL2 -> USART2 (RX tied to inverted SBUS RC input, but can be used as normal UART if :ref:`BRD_ALT_CONFIG<>` =1) 
+ - SERIAL2 -> USART2 (MAVLink2,RX2 tied to inverted SBUS RC input and configured as a timer interrupt input, but can be used as normal UART if :ref:`BRD_ALT_CONFIG<>` =1 and protocols changed, see RC section below) 
  - SERIAL3 -> UART3 (MSP DisplayPort) (TX DMA capable)
  - SERIAL4 -> UART4 (User) (TX DMA capable)
  - SERIAL5 -> UART5 (GPS) (TX DMA capable)
