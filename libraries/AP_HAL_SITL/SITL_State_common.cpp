@@ -37,6 +37,7 @@
 #include <SITL/SIM_RF_NMEA.h>
 #include <SITL/SIM_RF_NoopLoop.h>
 #include <SITL/SIM_RF_RDS02UF.h>
+#include <SITL/SIM_RF_SinoSonar_Serial.h>
 #include <SITL/SIM_RF_TeraRanger_Serial.h>
 #include <SITL/SIM_RF_USD1_v0.h>
 #include <SITL/SIM_RF_USD1_v1.h>
@@ -68,6 +69,7 @@ static const struct {
 #if !defined(HAL_BUILD_AP_PERIPH)
     { "rf_mavlink", SITL::RF_MAVLink::create },
 #endif
+    { "sinosonar_serial", SITL::RF_SinoSonar_Serial::create },
     { "teraranger_serial", SITL::RF_TeraRanger_Serial::create },
     { "USD1_v0", SITL::RF_USD1_v0::create },
     { "USD1_v1", SITL::RF_USD1_v1::create },
