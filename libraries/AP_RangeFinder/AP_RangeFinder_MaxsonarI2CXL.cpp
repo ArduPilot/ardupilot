@@ -57,7 +57,8 @@ bool AP_RangeFinder_MaxsonarI2CXL::init(void)
     return true;
 }
 
-// start_reading() - ask sensor to make a range reading
+// start_reading() - ask sensor to make a range reading - must be
+// called with semaphore held
 bool AP_RangeFinder_MaxsonarI2CXL::start_reading()
 {
     uint8_t cmd = AP_RANGE_FINDER_MAXSONARI2CXL_COMMAND_TAKE_RANGE_READING;
@@ -69,9 +70,8 @@ bool AP_RangeFinder_MaxsonarI2CXL::start_reading()
 // read - return last value measured by sensor
 bool AP_RangeFinder_MaxsonarI2CXL::get_reading(uint16_t &reading_cm)
 {
-    be16_t val;
-
     // take range reading and read back results
+    be16_t val;
     bool ret = dev.transfer(nullptr, 0, (uint8_t *) &val, sizeof(val));
 
     if (ret) {
