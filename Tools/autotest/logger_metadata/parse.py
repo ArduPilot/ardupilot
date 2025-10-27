@@ -21,6 +21,23 @@ from enum_parse import EnumDocco
 topdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
 topdir = os.path.realpath(topdir)
 
+
+def natural_sort_key(text):
+    """
+    Generate a key for natural (human-friendly) sorting that handles embedded numbers.
+    
+    Converts strings like 'SERVO10' to ['SERVO', 10] so that numeric parts
+    are compared numerically rather than lexicographically.
+    
+    Example:
+        SERVO1, SERVO2, SERVO10, SERVO32 (correct numeric order)
+    instead of:
+        SERVO1, SERVO10, SERVO2, SERVO32 (incorrect alphabetic order)
+    """
+    def convert(text_part):
+        return int(text_part) if text_part.isdigit() else text_part.lower()
+    return [convert(c) for c in re.split(r'(\d+)', text)]
+
 # Regular expressions for finding message information in code comments
 re_loggermessage = re.compile(r"@LoggerMessage\s*:\s*([\w,]+)", re.MULTILINE)
 re_commentline = re.compile(r"\s*//")
@@ -469,7 +486,9 @@ class LoggerDocco(object):
                     new_doccos.append(tmpdocco)
             else:
                 new_doccos.append(docco)
-        new_doccos = sorted(new_doccos, key=lambda x : x.name)
+        # Sort using natural/numeric sorting to handle embedded numbers correctly
+        # This ensures SERVO10 comes before SERVO32 (not after due to string sort)
+        new_doccos = sorted(new_doccos, key=lambda x: natural_sort_key(x.name))
 
         # Try to attach the formats/units/multipliers
         for docco in new_doccos:
