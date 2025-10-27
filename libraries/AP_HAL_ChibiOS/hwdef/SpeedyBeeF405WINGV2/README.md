@@ -38,7 +38,7 @@ The UARTs are marked RXn and TXn in the above pinouts. The RXn pin is the
 receive pin for UARTn. The TXn pin is the transmit pin for UARTn.
 
  - SERIAL0 -> USB
- - SERIAL1 -> USART1 (Telem1)
+ - SERIAL1 -> USART1 (MAVLink2,Telem1)
  - SERIAL2 -> USART2 (RX tied to inverted SBUS RC input, but can be used as normal UART if :ref:`BRD_ALT_CONFIG<>` =1) 
  - SERIAL3 -> UART3 (MSP DisplayPort) (TX DMA capable)
  - SERIAL4 -> UART4 (User) (TX DMA capable)
