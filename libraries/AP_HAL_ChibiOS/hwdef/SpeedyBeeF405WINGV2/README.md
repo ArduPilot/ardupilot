@@ -62,7 +62,7 @@ The analog airspeed pin is "15"
 
 ## PWM Output
 
-The SpeedyBeeF405WingV2 supports up to 12 PWM outputs (PWM12 is the serial LED output, by default). All outputs support DShot.
+The SpeedyBeeF405WingV2 supports up to 12 PWM outputs (PWM12 is the serial LED output, by default). All outputs support DShot. Outputs 1-4 support bi-directional DShot.
 
 The PWM is in 5 groups:
 
