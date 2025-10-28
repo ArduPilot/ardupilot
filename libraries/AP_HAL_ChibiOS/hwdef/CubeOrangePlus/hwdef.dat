@@ -8,6 +8,9 @@ define SMPS_PWR
 
 include ../CubeOrange/hwdef.inc
 
+# Enable DroneCAN scripting bindings for Lua
+define HAL_ENABLE_DRONECAN_DRIVERS 1
+
 undef USB_STRING_PRODUCT
 undef USB_STRING_MANUFACTURER
 undef APJ_BOARD_ID
