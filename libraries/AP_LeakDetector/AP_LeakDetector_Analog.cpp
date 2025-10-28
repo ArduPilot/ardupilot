@@ -1,5 +1,6 @@
 #include "AP_LeakDetector_Analog.h"
 #include <AP_HAL/AP_HAL.h>
+#if AP_LEAKDETECTOR_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
@@ -18,3 +19,4 @@ void AP_LeakDetector_Analog::read()
         state.status = false;
     }
 }
+#endif // AP_LEAKDETECTOR_ENABLED
