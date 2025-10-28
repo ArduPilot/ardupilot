@@ -1258,6 +1258,35 @@ int lua_AP_Vehicle_set_target_velocity_NED(lua_State *L)
     lua_pushboolean(L, data);
     return 1;
 }
-#endif // AP_SCRIPTING_BINDING_VEHICLE_ENABLED
+
+int lua_custom_mode_state_allow_entry(lua_State *L)
+{
+    const int args = lua_gettop(L);
+
+    if (args > 3) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 1) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_Vehicle::custom_mode_state *ud = *check_AP_Vehicle__custom_mode_state(L, 1);
+
+    if (args == 1) {    // just return the value
+        lua_pushinteger(L, ud->allow_entry);
+        return 1;
+    }
+
+    ud->allow_entry = static_cast<bool>(lua_toboolean(L, 2));
+
+    if (args == 3) {
+        const char * data_3 = luaL_checkstring(L, 3);
+        free(ud->entry_denied_reason);
+        ud->entry_denied_reason = strdup(data_3);
+    }
+
+    return 0;
+}
+
+#endif // !defined(AP_SCRIPTING_BINDING_VEHICLE_ENABLED)
 
 #endif  // AP_SCRIPTING_ENABLED
