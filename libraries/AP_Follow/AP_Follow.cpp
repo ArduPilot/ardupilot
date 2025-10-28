@@ -617,23 +617,23 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
         return false;
     }
 
-    Location _target_location;
-    _target_location.lat = packet.lat;
-    _target_location.lng = packet.lon;
+    Location target_location;
+    target_location.lat = packet.lat;
+    target_location.lng = packet.lon;
 
     switch((Location::AltFrame)_alt_type) {
         case Location::AltFrame::ABSOLUTE:
-            _target_location.set_alt_cm(packet.alt * 0.1, Location::AltFrame::ABSOLUTE);
+            target_location.set_alt_cm(packet.alt * 0.1, Location::AltFrame::ABSOLUTE);
             break;
         case Location::AltFrame::ABOVE_HOME:
-            _target_location.set_alt_cm(packet.relative_alt * 0.1, Location::AltFrame::ABOVE_HOME);
+            target_location.set_alt_cm(packet.relative_alt * 0.1, Location::AltFrame::ABOVE_HOME);
             break;
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduCopter)
         case Location::AltFrame::ABOVE_TERRAIN:
             /// Altitude comes in as AMSL
-            _target_location.set_alt_cm(packet.alt * 0.1, Location::AltFrame::ABSOLUTE);
+            target_location.set_alt_cm(packet.alt * 0.1, Location::AltFrame::ABSOLUTE);
             // convert the incoming altitude to terrain altitude, but fail if there is no terrain data available
-            if (!_target_location.change_alt_frame(Location::AltFrame::ABOVE_TERRAIN)) {
+            if (!target_location.change_alt_frame(Location::AltFrame::ABOVE_TERRAIN)) {
                 return false;
             };
             break;
@@ -644,19 +644,10 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
     }
     
     // convert global location to local NED frame position
-    if (!_target_location.get_vector_from_origin_NEU(_target_pos_ned_m)) {
+    Vector3p target_pos_neu_m;
+    if (!target_location.get_vector_from_origin_NEU_m(target_pos_neu_m)) {
         return false;
     }
-    _target_pos_ned_m.z = -_target_pos_ned_m.z; // convert NEU -> NED
-    _target_pos_ned_m *= 0.01;  // convert from cm to meters
-
-    // decode target velocity components (in m/s)
-    _target_vel_ned_ms.x = packet.vx * 0.01f; // velocity north
-    _target_vel_ned_ms.y = packet.vy * 0.01f; // velocity east
-    _target_vel_ned_ms.z = packet.vz * 0.01f; // velocity down
-
-    // target acceleration not available in GLOBAL_POSITION_INT
-    _target_accel_ned_mss.zero();
 
     if (packet.hdg <= 36000) {
         // valid heading field available (in centi-degrees)
@@ -668,6 +659,17 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
         // no heading available: set heading rate to zero
         _target_heading_rate_degs = 0.0f;
     }
+
+    _target_pos_ned_m.xy() = target_pos_neu_m.xy(); 
+    _target_pos_ned_m.z = -target_pos_neu_m.z;
+
+    // decode target velocity components (cm/s converted to m/s)
+    _target_vel_ned_ms.x = packet.vx * 0.01f; // velocity north
+    _target_vel_ned_ms.y = packet.vy * 0.01f; // velocity east
+    _target_vel_ned_ms.z = packet.vz * 0.01f; // velocity down
+
+    // target acceleration not available in GLOBAL_POSITION_INT
+    _target_accel_ned_mss.zero();
 
     // apply jitter-corrected timestamp to this update
     _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
@@ -701,7 +703,7 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
     }
 
     // build Location object from latitude, longitude, and altitude (alt in meters)
-    const Location _target_location {
+    const Location target_location {
         packet.lat,
         packet.lon,
         int32_t(packet.alt * 100),  // convert meters to centimeters
@@ -709,34 +711,15 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
     };
 
     // convert global location to local NED frame position
-    if (!_target_location.get_vector_from_origin_NEU(_target_pos_ned_m)) {
+    Vector3p target_pos_neu_m;
+    if (!target_location.get_vector_from_origin_NEU_m(target_pos_neu_m)) {
         return false;
     }
-    _target_pos_ned_m *= 0.01; // convert from cm to meters
 
     // adjust Z coordinate to NED frame (NEU altitude -> NED)
     Location origin;
     if (!AP::ahrs().get_origin(origin)) {
         return false;
-    }
-    _target_pos_ned_m.z = -packet.alt + origin.alt * 0.01;
-
-    // decode velocity if available (bit 1 of est_capabilities)
-    if (packet.est_capabilities & (1<<1)) {
-        _target_vel_ned_ms.x = packet.vel[0]; // velocity north
-        _target_vel_ned_ms.y = packet.vel[1]; // velocity east
-        _target_vel_ned_ms.z = packet.vel[2]; // velocity down
-    } else {
-        _target_vel_ned_ms.zero();
-    }
-
-    // decode acceleration if available (bit 2 of est_capabilities)
-    if (packet.est_capabilities & (1 << 2)) {
-        _target_accel_ned_mss.x = packet.acc[0]; // acceleration north
-        _target_accel_ned_mss.y = packet.acc[1]; // acceleration east
-        _target_accel_ned_mss.z = packet.acc[2]; // acceleration down
-    } else {
-        _target_accel_ned_mss.zero();
     }
 
     // decode attitude if available (bit 3 of est_capabilities)
@@ -763,6 +746,27 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
     } else {
         // otherwise, default heading rate to zero
         _target_heading_rate_degs = 0.0f;
+    }
+
+    _target_pos_ned_m.xy() = target_pos_neu_m.xy();
+    _target_pos_ned_m.z = -packet.alt + origin.alt * 0.01;
+
+    // decode velocity if available (bit 1 of est_capabilities)
+    if (packet.est_capabilities & (1<<1)) {
+        _target_vel_ned_ms.x = packet.vel[0]; // velocity north
+        _target_vel_ned_ms.y = packet.vel[1]; // velocity east
+        _target_vel_ned_ms.z = packet.vel[2]; // velocity down
+    } else {
+        _target_vel_ned_ms.zero();
+    }
+
+    // decode acceleration if available (bit 2 of est_capabilities)
+    if (packet.est_capabilities & (1 << 2)) {
+        _target_accel_ned_mss.x = packet.acc[0]; // acceleration north
+        _target_accel_ned_mss.y = packet.acc[1]; // acceleration east
+        _target_accel_ned_mss.z = packet.acc[2]; // acceleration down
+    } else {
+        _target_accel_ned_mss.zero();
     }
 
     // apply jitter-corrected timestamp to this update
@@ -889,8 +893,8 @@ void AP_Follow::Log_Write_FOLL()
     Vector3f vel_estimate;
     UNUSED_RESULT(get_target_location_and_velocity(loc_estimate, vel_estimate));
 
-    Location _target_location;
-    UNUSED_RESULT(AP::ahrs().get_location_from_origin_offset_NED(_target_location, _target_pos_ned_m));
+    Location target_location;
+    UNUSED_RESULT(AP::ahrs().get_location_from_origin_offset_NED(target_location, _target_pos_ned_m));
 
     // log the lead target's reported position and vehicle's estimated position
     // @LoggerMessage: FOLL
@@ -912,9 +916,9 @@ void AP_Follow::Log_Write_FOLL()
                                 "F--B000--B-",    // mults
                                 "QLLifffLLib",    // fmt
                                 AP_HAL::micros64(),
-                                _target_location.lat,
-                                _target_location.lng,
-                                _target_location.alt,
+                                target_location.lat,
+                                target_location.lng,
+                                target_location.alt,
                                 (double)_target_vel_ned_ms.x,
                                 (double)_target_vel_ned_ms.y,
                                 (double)_target_vel_ned_ms.z,
