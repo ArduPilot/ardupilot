@@ -1252,6 +1252,8 @@ public:
 
     const char *name() const override { return full_name; }
     const char *name4() const override { return short_name; }
+    void run() override;
+    bool requires_GPS() const override { return !state.angle_only; }
 
     // State object which can be edited by scripting
     AP_Vehicle::custom_mode_state state;
