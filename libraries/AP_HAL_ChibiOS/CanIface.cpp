@@ -921,7 +921,7 @@ bool CANIface::init(const uint32_t bitrate, const CANIface::OperatingMode mode)
     /*
      * Hardware initialization (the hardware has already confirmed initialization mode, see above)
      */
-    can_->MCR = bxcan::MCR_ABOM | bxcan::MCR_AWUM | bxcan::MCR_INRQ;  // RM page 648
+    can_->MCR = bxcan::MCR_ABOM | bxcan::MCR_AWUM | bxcan::MCR_INRQ | bxcan::MCR_TXFP;  // RM page 648
 
     can_->BTR = ((timings.sjw & 3U)  << 24) |
                 ((timings.bs1 & 15U) << 16) |
