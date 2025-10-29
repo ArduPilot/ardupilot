@@ -276,6 +276,7 @@ public:
     // get a menu event filtered by event type, this adds the event to the outbound queue for processing
     uint8_t get_menu_event(uint8_t menu_events, uint8_t& param_id, ScriptedPayload& payload);
     // peek for a menu event filtered by event type, this makes no changes to the outbound queue
+    // returns the type of event at the head of the queue and the CRSF payload data from that event
     uint8_t peek_menu_event(uint8_t& param_id, ScriptedPayload& payload, uint8_t& events);
     // pop a menu event from the inbound queue and add to the outbound queue for processing via lua
     void pop_menu_event();
