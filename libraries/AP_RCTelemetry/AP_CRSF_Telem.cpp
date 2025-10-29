@@ -867,7 +867,7 @@ void AP_CRSF_Telem::process_pending_requests()
 {
 #if AP_CRSF_SCRIPTING_ENABLED
     // handle SCRIPTED parameter requests first, as they are now self-contained
-    if (calc_scripted_parameter()) {
+    if (_pending_request.frame_type == 0 && calc_scripted_parameter()) {
         // scripted request was popped from outbound_params and handled.
         _custom_telem.params_mode_start_ms = AP_HAL::millis();
         return;
@@ -1489,7 +1489,7 @@ bool AP_CRSF_Telem::calc_scripted_parameter()
     if (spw.type == ScriptedParameterEvents::PARAMETER_WRITE &&
         !(spw.param->length > 0 && spw.param->data[0] == ParameterType::COMMAND)) {
 
-        memcpy((uint8_t*)&_telem.ext.param_write.payload[idx], spw.payload.payload, spw.payload.payload_length);
+        memcpy((uint8_t*)_telem.ext.param_write.payload, spw.payload.payload, MIN(spw.payload.payload_length, 57));
         idx += spw.payload.payload_length;
 
         _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsHeader) + idx;
@@ -1501,7 +1501,7 @@ bool AP_CRSF_Telem::calc_scripted_parameter()
         if (spw.type == ScriptedParameterEvents::PARAMETER_WRITE) { // COMMAND type
             _telem.ext.param_entry.header.chunks_left = 0;
             _telem.ext.param_entry.payload[idx++] = spw.param->parent_id;
-            memcpy((uint8_t*)&_telem.ext.param_entry.payload[idx], spw.payload.payload, spw.payload.payload_length);
+            memcpy((uint8_t*)&_telem.ext.param_entry.payload[idx], spw.payload.payload, MIN(spw.payload.payload_length, 57-idx));
             idx += spw.payload.payload_length;
         } else { // READ type
             const uint8_t CHUNK_SIZE = 55;  // This wastes a byte on chunks > 0 but makes the maths easier
@@ -2031,7 +2031,7 @@ bool AP_CRSF_Telem::process_scripted_param_write(ParameterSettingsWriteFrame* wr
     // find the parameter to write
     ScriptedParameter* param = scripted_menus.find_parameter(write_frame->param_num);
 
-    if (param == nullptr) {
+    if (param == nullptr || length < 3) {
         return false;
     }
     ScriptedParameterWrite spw {
