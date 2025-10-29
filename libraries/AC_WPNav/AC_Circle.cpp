@@ -315,7 +315,7 @@ void AC_Circle::get_closest_point_on_circle_NEU_m(Vector3p& result_neu_m, float&
 
     const float dist_to_center_m_sq = vec_to_center_neu_m.length_squared();
     // Handle edge case: vehicle is at the exact center of the circle
-    if (is_zero(dist_to_center_m_sq)) {
+    if (dist_to_center_m_sq < sq(0.5)) {
         result_neu_m.x = _center_neu_m.x - _radius_m * _ahrs.cos_yaw();
         result_neu_m.y = _center_neu_m.y - _radius_m * _ahrs.sin_yaw();
         result_neu_m.z = _center_neu_m.z;
