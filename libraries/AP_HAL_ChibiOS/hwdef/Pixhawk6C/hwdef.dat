@@ -224,7 +224,7 @@ define HAL_HEATER_MAG_OFFSET {AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TY
 
 
 # we need to stop the probe of an IST8310 as an internal compass with PITCH_180
-define HAL_COMPASS_DISABLE_IST8310_INTERNAL_PROBE
+define AP_COMPASS_IST8310_INTERNAL_BUS_PROBING_ENABLED 0
 
 
 # SPI devices
