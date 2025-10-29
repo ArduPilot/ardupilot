@@ -754,15 +754,16 @@ userdata CRSFMenu method num_params uint8_t'skip_check
 userdata CRSFMenu manual add_parameter lua_CRSF_add_parameter 1 1
 userdata CRSFMenu manual add_menu lua_CRSF_add_menu 1 1
 
-singleton AP::crsf_telem() depends AP_CRSF_SCRIPTING_ENABLED
-singleton AP::crsf_telem() literal
-singleton AP::crsf_telem() rename crsf
-singleton AP::crsf_telem() manual add_menu lua_CRSF_add_root_menu 1 1
-singleton AP::crsf_telem() manual get_menu_event lua_CRSF_get_menu_event 1 3
-singleton AP::crsf_telem() manual peek_menu_event lua_CRSF_peek_menu_event 0 4
-singleton AP::crsf_telem() method pop_menu_event void
-singleton AP::crsf_telem() method send_response boolean
-singleton AP::crsf_telem() manual send_write_response lua_CRSF_send_response 1 1
+include AP_RCTelemetry/AP_CRSF_Telem.h
+singleton AP_CRSF_Telem depends AP_CRSF_SCRIPTING_ENABLED
+singleton AP_CRSF_Telem rename crsf
+singleton AP_CRSF_Telem semaphore
+singleton AP_CRSF_Telem manual add_menu lua_CRSF_add_root_menu 1 1
+singleton AP_CRSF_Telem manual get_menu_event lua_CRSF_get_menu_event 1 3
+singleton AP_CRSF_Telem manual peek_menu_event lua_CRSF_peek_menu_event 0 4
+singleton AP_CRSF_Telem method pop_menu_event void
+singleton AP_CRSF_Telem method send_response boolean
+singleton AP_CRSF_Telem manual send_write_response lua_CRSF_send_response 1 1
 
 include AP_DroneCAN/AP_DroneCAN.h
 global manual DroneCAN_get_FlexDebug lua_DroneCAN_get_FlexDebug 4 2 depends (HAL_ENABLE_DRONECAN_DRIVERS==1)
