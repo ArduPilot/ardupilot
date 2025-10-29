@@ -1,0 +1,179 @@
+# hw definition file for processing by chibios_pins.py
+# Cipherwing F4 (custom Omnibus F4 PRO–style) with STM32F405
+# mpu6000 / bmi270 / icm20689 IMU options, bmp280 barometer,
+# 7456 series OSD and NO sdcard
+
+BOARD_NAME CIPHERWINGF4
+
+MCU STM32F4xx STM32F405xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_OMNIBUSF4PRO
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+STM32_ST_USE_TIMER 5
+
+# flash size
+FLASH_SIZE_KB 1024
+FLASH_RESERVE_START_KB 64
+
+# order of I2C buses (moved to I2C1)
+I2C_ORDER I2C1
+
+# order of UARTs (include USART2 and UART5)
+SERIAL_ORDER OTG1 USART1 USART2 USART3 USART6 UART4 UART5
+
+# ---------- ADC ----------
+# VBAT stays on PC2
+PC2 BAT_VOLT_SENS ADC1 SCALE(1)
+
+# RSSI moved to PC1 (per request)
+PC1 RSSI_IN ADC1
+define BOARD_RSSI_ANA_PIN 1
+
+# (REMOVED to avoid conflict) Current sensor on PC1:
+# PC1 BAT_CURR_SENS ADC1 SCALE(1)
+
+# ---------- PWM outputs remapped to match requested INAV-style layout ----------
+# M1 PB0  TIM3_CH3
+# M2 PB1  TIM3_CH4
+# M3 PC8  TIM8_CH3
+# M4 PC9  TIM8_CH4
+# M5 PB14 TIM1_CH2N   (F405-valid replacement for TIM12_CH1)
+# M6 PA8  TIM1_CH1
+# M7 PB15 TIM1_CH3N   (F405-valid replacement for TIM12_CH2)
+# M8 PB7  TIM4_CH2
+PB0  TIM3_CH3   TIM3  PWM(1) GPIO(50)
+PB1  TIM3_CH4   TIM3  PWM(2) GPIO(51)
+PC8  TIM8_CH3   TIM8  PWM(3) GPIO(52)
+PC9  TIM8_CH4   TIM8  PWM(4) GPIO(53)
+PB14 TIM1_CH2N  TIM1  PWM(5) GPIO(54)
+PA8  TIM1_CH1   TIM1  PWM(6) GPIO(55)
+PB15 TIM1_CH3N  TIM1  PWM(7) GPIO(56)
+PB7  TIM4_CH2   TIM4  PWM(8) GPIO(57)
+
+# ---------- IMU on SPI1 with CS=PA4 ----------
+PA4 MPU6000_CS CS
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# ---------- I2C1 on PB8/PB9 (pullups). (Freed PB10/PB11 for USART3 ALTs) ----------
+PB8  I2C1_SCL I2C1 PULLUP
+PB9  I2C1_SDA I2C1 PULLUP
+
+# Keep USART3 available on PB10/PB11 via ALTs if needed
+PB10 USART3_TX USART3 ALT(1)
+PB11 USART3_RX USART3 ALT(1)
+PB10 USART3_TX USART3 ALT(4)
+PB11 USART3_RX USART3 ALT(4)
+
+# ---------- SPI2 / SD card REMOVED (per request) ----------
+# (PB15 SPI2_MOSI SPI2)
+# (PB14 SPI2_MISO SPI2)
+# (PB13 SPI2_SCK  SPI2)
+# (PB12 SDCARD_CS CS)
+
+# ---------- UARTs ----------
+PA10 USART1_RX USART1
+PA9  USART1_TX USART1
+
+PA3  USART2_RX USART2
+PA2  USART2_TX USART2
+
+PC6  USART6_TX USART6
+PC7  USART6_RX USART6
+
+# UART4 on PA0/PA1 via ALT configs
+PA0 UART4_TX UART4 ALT(2)
+PA0 UART4_TX UART4 ALT(3)
+PA1 UART4_RX UART4 ALT(3)
+PA0 UART4_TX UART4 ALT(4)
+PA1 UART4_RX UART4 ALT(4)
+
+# UART5 (valid pins on F405)
+PD2  UART5_RX UART5
+# TX intentionally unassigned (PC12 is SPI3_MOSI)
+
+# ---------- SWD ----------
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# ---------- OSD + BMP on SPI3 ----------
+PA15 OSD_CS CS
+PB3  BMP280_CS CS
+PC12 SPI3_MOSI SPI3
+PC11 SPI3_MISO SPI3
+PC10 SPI3_SCK  SPI3
+
+# ---------- LEDs / Beeper ----------
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
+PB5 LED_BLUE OUTPUT LOW GPIO(1)
+define HAL_GPIO_A_LED_PIN 1
+
+# dummy assignment required to allow AP_NOTIFY to use board led
+define HAL_GPIO_B_LED_PIN 2 
+
+PB4 TIM3_CH1 TIM3 GPIO(58) ALARM LOW
+
+# use LED-STRIP output as general purpose GPIO (PB6 kept for LED strip)
+PB6 GP_GPIO OUTPUT LOW GPIO(70)
+
+# ---------- USB ----------
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+PC5  VBUS INPUT OPENDRAIN
+
+# RCIN on PB8 removed because PB8 is now I2C1_SCL. Use a UART-based RC input (e.g., SBUS on USART1/USART6).
+# PB8 TIM4_CH3 TIM4 RCININT PULLDOWN LOW   (REMOVED)
+
+# ---------- SPI Device table (sdcard removed, ICM20689 added) ----------
+SPIDEV bmi270     SPI1 DEVID1 MPU6000_CS MODE3 1*MHZ 10*MHZ 
+SPIDEV mpu6000    SPI1 DEVID1 MPU6000_CS MODE3 1*MHZ  8*MHZ
+SPIDEV icm20689   SPI1 DEVID1 MPU6000_CS MODE3 1*MHZ  8*MHZ
+SPIDEV bmp280     SPI3 DEVID3 BMP280_CS  MODE3 1*MHZ  8*MHZ
+SPIDEV osd        SPI3 DEVID4 OSD_CS     MODE0 10*MHZ 10*MHZ
+
+# one IMU present on board. Allow MPU6000, BMI270, or ICM20689
+IMU Invensense SPI:mpu6000  ROTATION_YAW_180
+IMU BMI270     SPI:bmi270   ROTATION_ROLL_180
+IMU Invensense SPI:icm20689 ROTATION_YAW_180
+
+# one baro
+BARO BMP280 SPI:bmp280
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_BMP280_ENABLED 1
+
+# no built-in compass, but probe the i2c bus for all possible external compass types
+define ALLOW_ARM_NO_COMPASS
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+
+STORAGE_FLASH_PAGE 1
+define HAL_STORAGE_SIZE 15360
+
+define HAL_OS_FATFS_IO 0
+
+# ---------- default battery setup ----------
+# VBAT pin index unchanged
+define HAL_BATT_VOLT_PIN 12
+define HAL_BATT_VOLT_SCALE 11
+
+# Current sensor disabled (per request / to avoid conflict)
+define HAL_BATT_CURR_PIN -1
+define HAL_BATT_CURR_SCALE 0
+
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+
+# font for the osd
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
+
+# disable parachute and sprayer to save flash
+define HAL_PARACHUTE_ENABLED 0
+
+include ../include/minimize_fpv_osd.inc
+
