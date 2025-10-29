@@ -331,8 +331,8 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         stall_entry_time = AP_HAL::millis();
 
         const SRV_Channel* elevator = SRV_Channels::get_channel_for(SRV_Channel::k_elevator);
-        switch (ds_elev_src) {
-            case 0:
+        switch (get_elev_src()) {
+            case DeepstallElevSource::ELEV_PWM:
                 // legacy
                 if (elevator != nullptr) {
                     // take the last used elevator angle as the starting deflection
@@ -341,7 +341,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
                     initial_elevator_pwm = elevator->get_output_pwm();
                 }
                 break;
-            case 1:
+            case DeepstallElevSource::ELEV_NRM:
                 // channel invariant
                 initial_elevator_scaled = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
                 break;
@@ -370,9 +370,8 @@ bool AP_Landing_Deepstall::override_servos(void)
         slew_progress  = (AP_HAL::millis() - stall_entry_time) / (100.0f * slew_speed);
     }
 
-    switch (ds_elev_src) {
-        case 0:
-        {
+    switch (get_elev_src()) {
+        case DeepstallElevSource::ELEV_PWM:  {
             //legacy
             SRV_Channel* elevator = SRV_Channels::get_channel_for(SRV_Channel::k_elevator);
 
@@ -388,8 +387,7 @@ bool AP_Landing_Deepstall::override_servos(void)
                                     slew_progress, 0.0f, 1.0f));
             break;
         }
-        case 1:
-        {
+        case DeepstallElevSource::ELEV_NRM:  {
             // channel invariant elevator mixing
             SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, linear_interpolate(initial_elevator_scaled, elevator_norm*4500,
                                     slew_progress, 0.0f, 1.0f));

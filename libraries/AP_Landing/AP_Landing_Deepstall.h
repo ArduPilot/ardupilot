@@ -31,6 +31,16 @@ class AP_Landing;
 /// @brief  Class managing Plane Deepstall landing methods
 class AP_Landing_Deepstall
 {
+public:
+    // enum for ELEV_SRC parameter
+    enum class DeepstallElevSource {
+        ELEV_PWM = 0,
+        ELEV_NRM = 1,
+    };
+
+    // Return the elevator source
+    DeepstallElevSource get_elev_src() const { return (DeepstallElevSource)ds_elev_src.get(); }
+
 private:
     friend class AP_Landing;
 
