@@ -1,5 +1,5 @@
 # hw definition file for processing by chibios_pins.py
-# Cipherwing F4 (custom Omnibus F4 PRO–style) with STM32F405
+# Cipherwing F4 with STM32F405
 # mpu6000 / bmi270 / icm20689 IMU options, bmp280 barometer,
 # 7456 series OSD and NO sdcard
 
@@ -8,7 +8,8 @@ BOARD_NAME CIPHERWINGF4
 MCU STM32F4xx STM32F405xx
 
 # board ID. See Tools/AP_Bootloader/board_types.txt
-APJ_BOARD_ID AP_HW_OMNIBUSF4PRO
+APJ_BOARD_ID AP_HW_CIPHERWINGF4
+
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -93,10 +94,11 @@ PA1 UART4_RX UART4 ALT(3)
 PA0 UART4_TX UART4 ALT(4)
 PA1 UART4_RX UART4 ALT(4)
 
-# UART5 (valid pins on F405)
-PD2  UART5_RX UART5
-# TX intentionally unassigned (PC12 is SPI3_MOSI)
-
+# ---------- UART5 for SBUS (via BSS138 inverter) ----------
+PD2  UART5_RX UART5 INVERTED
+# TX intentionally unassigned
+define HAL_RCIN_UART 5
+define SERIAL_PORTS_RCIN_DEFAULT SERIAL5
 # ---------- SWD ----------
 PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
@@ -148,7 +150,7 @@ define AP_BARO_BMP280_ENABLED 1
 
 # no built-in compass, but probe the i2c bus for all possible external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
