@@ -1133,7 +1133,10 @@ AP_InertialSensor::detect_backends(void)
 
     _backends_detected = true;
 
-#if defined(HAL_CHIBIOS_ARCH_CUBE) && INS_MAX_INSTANCES > 2
+#if AP_INERTIALSENSOR_FORCE_ENABLE_NONISOLATED_INSTANCE
+#if INS_MAX_INSTANCES < 3
+#error AP_INERTIALSENSOR_FORCE_ENABLE_NONISOLATED_INSTANCE is not relevant for < 3 IMUs
+#endif
     // special case for Cubes, where the IMUs on the isolated
     // board could fail on some boards. If the user has INS_USE=1,
     // INS_USE2=1 and INS_USE3=0 then force INS_USE3 to 1. This is
