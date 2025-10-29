@@ -647,8 +647,7 @@ public:
     virtual void read_mode_switch();
 
     virtual bool in_rc_failsafe() const { return true; };
-    virtual bool has_valid_input() const { return false; };
-
+    virtual bool has_valid_input() const;
     virtual RC_Channel *get_arming_channel(void) const { return nullptr; };
 
     bool gcs_overrides_enabled() const { return _gcs_overrides_enabled; }
