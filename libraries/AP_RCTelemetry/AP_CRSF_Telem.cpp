@@ -443,6 +443,23 @@ void AP_CRSF_Telem::exit_scheduler_params_mode()
     enable_tx_entries();
 }
 
+bool AP_CRSF_Telem::should_enter_scheduler_params_mode() const
+{
+    if (hal.util->get_soft_armed()) {
+        return false;
+    }
+
+    if (_pending_request.frame_type > 0 && _pending_request.frame_type != AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO) {
+        return true;
+    }
+#if AP_CRSF_SCRIPTING_ENABLED
+    if (!ready_params.is_empty()) {
+        return true;
+    }
+#endif
+    return false;
+}
+
 void AP_CRSF_Telem::adjust_packet_weight(bool queue_empty)
 {
     uint32_t now_ms = AP_HAL::millis();
@@ -454,13 +471,7 @@ void AP_CRSF_Telem::adjust_packet_weight(bool queue_empty)
      We start a "fast parameter window" that we close after 5sec
     */
     bool expired = (now_ms - _custom_telem.params_mode_start_ms) > 5000;
-    if (!_custom_telem.params_mode_active
-        && ((_pending_request.frame_type > 0 && _pending_request.frame_type != AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO)
-#if AP_CRSF_SCRIPTING_ENABLED
-            || !ready_params.is_empty()
-#endif
-        )
-        && !hal.util->get_soft_armed()) {
+    if (!_custom_telem.params_mode_active && should_enter_scheduler_params_mode()) {
         // fast window start
         _custom_telem.params_mode_start_ms = now_ms;
         _custom_telem.params_mode_active = true;
@@ -481,11 +492,15 @@ bool AP_CRSF_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
 
     switch (idx) {
     case PARAMETERS:
+        if (_pending_request.frame_type > 0) {
+            return true;
+        }
 #if AP_CRSF_SCRIPTING_ENABLED
-        return _pending_request.frame_type > 0 || !ready_params.is_empty();
-#else
-        return _pending_request.frame_type > 0;
+        if (!ready_params.is_empty()) {
+            return true;
+        }
 #endif
+        return false;
     case VTX_PARAMETERS:
 #if AP_VIDEOTX_ENABLED
         return AP::vtx().have_params_changed() ||_vtx_power_change_pending || _vtx_freq_change_pending || _vtx_options_change_pending;
@@ -1253,6 +1268,10 @@ void AP_CRSF_Telem::calc_bind() {
 // return parameter information
 void AP_CRSF_Telem::calc_parameter() {
 #if OSD_PARAM_ENABLED
+#if AP_CRSF_SCRIPTING_ENABLED
+    WITH_SEMAPHORE(scr_sem);
+#endif
+
     _telem.ext.param_entry.header.destination = _param_request.origin;
     _telem.ext.param_entry.header.origin = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;
     size_t idx = 0;
@@ -1295,7 +1314,6 @@ void AP_CRSF_Telem::calc_parameter() {
     }
 
 #if AP_CRSF_SCRIPTING_ENABLED
-    { WITH_SEMAPHORE(scr_sem);
     // root folder request
     if (scripted_menus.next_menu != nullptr && _param_request.param_num == PARAMETER_MENU_ID) {
         _telem.ext.param_entry.header.param_num = PARAMETER_MENU_ID;
@@ -1348,8 +1366,6 @@ void AP_CRSF_Telem::calc_parameter() {
         _telem_pending = true;
         return;
     }
-}
-
 #endif // AP_CRSF_SCRIPTING_ENABLED
 
     AP_OSD* osd = AP::osd();
@@ -1816,8 +1832,6 @@ uint8_t AP_CRSF_Telem::peek_menu_event(uint8_t& param_id, ScriptedPayload& paylo
 // called from lua
 void AP_CRSF_Telem::pop_menu_event()
 {
-    WITH_SEMAPHORE(scr_sem);
-
     ScriptedParameterWrite spw;
     // Pop the event from the queue. We must check if it's empty in case of a race condition
     // where another script handled the event between our peek and pop.
@@ -1876,8 +1890,6 @@ bool AP_CRSF_Telem::send_write_response(uint8_t length, const char* data)
 // called from lua
 bool AP_CRSF_Telem::send_response()
 {
-    WITH_SEMAPHORE(scr_sem);
-
     ScriptedParameterWrite spw;
     if (outbound_params.pop(spw)) {
         // Update the object in the queue with the new data
@@ -1907,7 +1919,7 @@ AP_CRSF_Telem::ScriptedParameter* AP_CRSF_Telem::ScriptedMenu::find_parameter(ui
 // called from lua
 AP_CRSF_Telem::ScriptedParameter* AP_CRSF_Telem::ScriptedMenu::add_parameter(uint8_t length, const char* data)
 {
-    WITH_SEMAPHORE(AP::crsf_telem()->get_scripting_semamphore());
+    WITH_SEMAPHORE(AP::crsf_telem()->get_semaphore());
 
     ScriptedParameter* new_params = (ScriptedParameter*)mem_realloc(params,
         sizeof(ScriptedParameter) * num_params,
@@ -1949,7 +1961,7 @@ AP_CRSF_Telem::ScriptedMenu* AP_CRSF_Telem::ScriptedMenu::find_menu(uint8_t para
 
 bool AP_CRSF_Telem::ScriptedMenu::remove_menu(uint8_t param_num)
 {
-    WITH_SEMAPHORE(AP::crsf_telem()->get_scripting_semamphore());
+    WITH_SEMAPHORE(AP::crsf_telem()->get_semaphore());
 
     // find the parameter to write
     ScriptedMenu* prev = this;
@@ -1980,7 +1992,7 @@ AP_CRSF_Telem::ScriptedMenu::~ScriptedMenu()
 // called from lua
 AP_CRSF_Telem::ScriptedMenu* AP_CRSF_Telem::ScriptedMenu::add_menu(const char* menu_name, uint8_t size, uint8_t parent_menu)
 {
-    WITH_SEMAPHORE(AP::crsf_telem()->get_scripting_semamphore());
+    WITH_SEMAPHORE(AP::crsf_telem()->get_semaphore());
 
     // find the menu to create
     ScriptedMenu* tail = this;

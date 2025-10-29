@@ -263,7 +263,7 @@ public:
     ObjectBuffer<ScriptedParameterWrite> ready_params{8};   // parameter responses ready to be scheduled
     HAL_Semaphore scr_sem; // semaphore guarding access to the inbound and outbound queues
     // access so that submenus can serialize access from scripting
-    HAL_Semaphore& get_scripting_semamphore() { return scr_sem; }
+    HAL_Semaphore& get_semaphore() { return scr_sem; }
 
     void clear_menus();
     bool process_scripted_param_write(ParameterSettingsWriteFrame* write, uint8_t length);
@@ -432,6 +432,7 @@ private:
     // setup the scheduler for parameters download
     void enter_scheduler_params_mode();
     void exit_scheduler_params_mode();
+    bool should_enter_scheduler_params_mode() const;
     void disable_tx_entries();
     void enable_tx_entries();
 
