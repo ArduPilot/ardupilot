@@ -1,5 +1,8 @@
 
-define HAL_CHIBIOS_ARCH_CUBE 1
+# if the user has both isolated sensors enabled then force-enable the
+#  non-isolated IMU regardless of parameter setting.  This is done in
+#  case the isolated board fails.
+define AP_INERTIALSENSOR_FORCE_ENABLE_NONISOLATED_INSTANCE 1
 
 # USB setup
 USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
