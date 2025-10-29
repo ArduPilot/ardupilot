@@ -2,11 +2,6 @@
 
 bool ModeLoiter::_enter()
 {
-    // set _destination to reasonable stopping point
-    if (!g2.wp_nav.get_stopping_location(_destination)) {
-        return false;
-    }
-
     // initialise desired speed to current speed
     if (!attitude_control.get_forward_speed(_desired_speed)) {
         _desired_speed = 0.0f;
@@ -15,6 +10,36 @@ bool ModeLoiter::_enter()
     // initialise heading to current heading
     _desired_yaw_cd = ahrs.yaw_sensor;
 
+    return true;
+}
+
+// Enter mode and calculate a destination location
+bool ModeLoiter::enter(void)
+{
+    // Call the normal mode enter function from the base class
+    // which in turn will call the _enter() function above.
+    if (!Mode::enter()) {
+        return false;
+    }
+
+    // set _destination to reasonable stopping point
+    if (!g2.wp_nav.get_stopping_location(_destination)) {
+        return false;
+    }
+
+    return true;
+}
+
+// Enter mode and set destination location directly
+bool ModeLoiter::enter(const Location &destination)
+{
+    // Call the normal mode enter function from the base class
+    // which in turn will call the _enter() function above.
+    if (!Mode::enter()) {
+        return false;
+    }
+
+    _destination = destination;
     return true;
 }
 
