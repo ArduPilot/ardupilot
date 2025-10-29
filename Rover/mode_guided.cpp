@@ -386,8 +386,11 @@ void ModeGuided::set_steering_and_throttle(float steering, float throttle)
 
 bool ModeGuided::start_loiter()
 {
-    if (rover.mode_loiter.enter()) {
-        _guided_mode = SubMode::Loiter;
+    if (_guided_mode != SubMode::WP && rover.mode_loiter.enter()) {
+        return true;
+    } else {
+        // in SubMode::WP we have a destination location so we can pass it directly to the loiter controller
+        rover.mode_loiter.enter(g2.wp_nav.get_destination());
         return true;
     }
     return false;
