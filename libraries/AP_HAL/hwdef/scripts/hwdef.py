@@ -254,6 +254,8 @@ class HWDef:
             'HAL_DISABLE_LOOP_DELAY': 'HAL_DISABLE_LOOP_DELAY is no longer used; try "define HAL_SCHEDULER_LOOP_DELAY_ENABLED 0"',  # noqa:E501
             'HAL_EXTERNAL_AHRS_ENABLED': 'HAL_EXTERNAL_AHRS_ENABLED is no longer used; try "define AP_EXTERNAL_AHRS_ENABLED 1"',  # noqa:E501
             'HAL_PROBE_EXTERNAL_I2C_COMPASSES': 'HAL_PROBE_EXTERNAL_I2C_COMPASSES is no longer used; try "define AP_COMPASS_PROBING_ENABLED 1"',  # noqa:E501
+            'HAL_SKIP_AUTO_INTERNAL_I2C_PROBE': 'HAL_SKIP_AUTO_INTERNAL_I2C_PROBE is no longer used; try "define AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED 0',  # noqa:E501
+            'HAL_COMPASS_DISABLE_IST8310_INTERNAL_PROBE': 'HAL_COMPASS_DISABLE_IST8310_INTERNAL_PROBE is no longer used; try "define AP_COMPASS_IST8310_INTERNAL_BUS_PROBING_ENABLED 0"',  # noqa:E501
         }
 
     def assert_good_define(self, name):
