@@ -305,7 +305,7 @@ void AC_Circle::get_closest_point_on_circle_NEU_m(Vector3p& result_neu_m, float&
     _pos_control.get_stopping_point_U_m(stopping_point_neu_m.z);
 
     // Compute vector from stopping point to the circle center
-    Vector3f vec_to_center_neu_m = (stopping_point_neu_m - _center_neu_m).tofloat();
+    Vector3f vec_from_center_neu_m = (stopping_point_neu_m - _center_neu_m).tofloat();
     // Return circle center if radius is zero (vehicle orbits in place)
     if (!is_positive(_radius_m)) {
         result_neu_m = _center_neu_m;
@@ -313,7 +313,7 @@ void AC_Circle::get_closest_point_on_circle_NEU_m(Vector3p& result_neu_m, float&
         return;
     }
 
-    const float dist_to_center_m_sq = vec_to_center_neu_m.length_squared();
+    const float dist_to_center_m_sq = vec_from_center_neu_m.length_squared();
     // Handle edge case: vehicle is at the exact center of the circle
     if (dist_to_center_m_sq < sq(0.5)) {
         result_neu_m.x = _center_neu_m.x - _radius_m * _ahrs.cos_yaw();
@@ -324,9 +324,9 @@ void AC_Circle::get_closest_point_on_circle_NEU_m(Vector3p& result_neu_m, float&
     }
 
     // Calculate the closest point on the circle's edge by projecting out from center
-    const float dist_to_center_m_xy = vec_to_center_neu_m.xy().length();
-    result_neu_m.x = _center_neu_m.x + vec_to_center_neu_m.x / dist_to_center_m_xy * _radius_m;
-    result_neu_m.y = _center_neu_m.y + vec_to_center_neu_m.y / dist_to_center_m_xy * _radius_m;
+    const float dist_to_center_m_xy = vec_from_center_neu_m.xy().length();
+    result_neu_m.x = _center_neu_m.x + vec_from_center_neu_m.x / dist_to_center_m_xy * _radius_m;
+    result_neu_m.y = _center_neu_m.y + vec_from_center_neu_m.y / dist_to_center_m_xy * _radius_m;
     result_neu_m.z = _center_neu_m.z;
     dist_to_edge_m = (stopping_point_neu_m - result_neu_m).length();
 }
