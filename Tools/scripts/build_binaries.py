@@ -564,9 +564,8 @@ is bob we will attempt to checkout bob-AVR'''
                 # record some history about this build
                 self.history.record_build(githash, tag, vehicle, board, frame, bare_path, t0, time_taken_to_build)
 
-        # Generate parameter metadata for this vehicle if building stable
-        if tag == "stable":
-            self.generate_parameter_metadata_for_vehicle(tag, vehicle, vehicle_binaries_subdir)
+        # Generate parameter metadata for this vehicle
+        self.generate_parameter_metadata_for_vehicle(tag, vehicle, vehicle_binaries_subdir)
 
         self.checkout(vehicle, "latest")
 
@@ -698,7 +697,7 @@ is bob we will attempt to checkout bob-AVR'''
             # Run param_parse.py to generate metadata
             # Note: We're already at the correct git tag from the build process
             param_parse_path = os.path.join(topdir(), 'Tools', 'autotest',
-                                           'param_metadata', 'param_parse.py')
+                                            'param_metadata', 'param_parse.py')
 
             if not os.path.exists(param_parse_path):
                 self.progress(f"param_parse.py not found at {param_parse_path}")
@@ -739,17 +738,13 @@ is bob we will attempt to checkout bob-AVR'''
             self.progress(f"Created {dst_file}")
             return True
 
-        except Exception as e:
+        except (subprocess.CalledProcessError, IOError, FileNotFoundError, shutil.Error) as e:
             self.print_exception_caught(e)
             self.progress(f"Failed to generate pdef.xml for {git_tag}")
             return False
 
     def generate_parameter_metadata_for_vehicle(self, tag: str, vehicle_type: str, vehicle_binaries_subdir: str):
         '''generate parameter metadata XML file for the current stable version of a specific vehicle'''
-
-        if tag != "stable":
-            self.progress(f"Skipping parameter metadata for non-stable tag: {tag}")
-            return
 
         self.progress(f"Generating parameter metadata for {vehicle_type} {tag}")
 
@@ -776,7 +771,7 @@ is bob we will attempt to checkout bob-AVR'''
             git_tag = version_output
             version = parts[1]
 
-        except Exception as e:
+        except (subprocess.CalledProcessError, ValueError, IndexError) as e:
             self.print_exception_caught(e)
             self.progress(f"Failed to get version for {vehicle_type}")
             return
