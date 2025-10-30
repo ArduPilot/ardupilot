@@ -630,7 +630,7 @@ def add_dynamic_boards_chibios():
 
 def add_dynamic_boards_linux():
     '''add boards based on existence of hwdef.dat in subdirectories for '''
-    add_dynamic_boards_from_hwdef_dir(linux, 'libraries/AP_HAL_Linux/hwdef')
+    add_dynamic_boards_from_hwdef_dir(LinuxBoard, 'libraries/AP_HAL_Linux/hwdef')
 
 def add_dynamic_boards_from_hwdef_dir(base_type, hwdef_dir):
     '''add boards based on existence of hwdef.dat in subdirectory'''
@@ -1476,14 +1476,14 @@ class chibios(Board):
     def get_name(self):
         return self.name
 
-class linux(Board):
+class LinuxBoard(Board):
+    '''an abstract base class for Linux boards to inherit from'''
+    abstract = True
+
     def __init__(self):
         super().__init__()
 
-        if self.toolchain == 'native':
-            self.with_can = True
-        else:
-            self.with_can = False
+        self.with_can = True
 
     def configure(self, cfg):
         if hasattr(self, 'hwdef'):
@@ -1493,8 +1493,6 @@ class linux(Board):
         cfg.load('linux')
         if cfg.env.TOOLCHAIN:
             self.toolchain = cfg.env.TOOLCHAIN
-        elif cfg.options.board == 'linux':
-            pass  # set in __init__
         else:
             # default tool-chain for Linux-based boards:
             self.toolchain = 'arm-linux-gnueabihf'
@@ -1503,13 +1501,10 @@ class linux(Board):
         if cfg.env.WITH_CAN:
             self.with_can = True
 
-        super(linux, self).configure(cfg)
+        super().configure(cfg)
 
     def configure_env(self, cfg, env):
-
-        if cfg.options.board == 'linux':
-            self.with_can = True
-        super(linux, self).configure_env(cfg, env)
+        super().configure_env(cfg, env)
 
         env.BOARD_CLASS = "LINUX"
 
@@ -1558,12 +1553,7 @@ class linux(Board):
             env.DEFINES.update(
                 HAL_FORCE_32BIT = 0,
             )
-        if self.with_can and cfg.options.board == 'linux':
-            cfg.env.HAL_NUM_CAN_IFACES = 2
-            cfg.define('HAL_NUM_CAN_IFACES', 2)
-            cfg.define('HAL_CANFD_SUPPORTED', 1)
-            cfg.define('CANARD_ENABLE_CANFD', 1)
-        
+
         if self.with_can:
             env.DEFINES.update(CANARD_MULTI_IFACE=1,
                                CANARD_IFACE_ALL = 0x3)
@@ -1585,10 +1575,10 @@ class linux(Board):
         fun = getattr(module, 'pre_build', None)
         if fun:
             fun(bld)
-        super(linux, self).pre_build(bld)
+        super().pre_build(bld)
 
     def build(self, bld):
-        super(linux, self).build(bld)
+        super().build(bld)
         bld.load('linux')
         if bld.options.upload:
             waflib.Options.commands.append('rsync')
