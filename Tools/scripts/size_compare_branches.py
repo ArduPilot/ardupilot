@@ -229,6 +229,7 @@ class SizeCompareBranches(object):
             'bbbmini',
             'blue',
             'pocket',
+            'pocket2',
             'pxf',
             'bebop',
             'vnav',
