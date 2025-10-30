@@ -258,11 +258,6 @@ def kill_tasks_pkill(victims):
         run_cmd_blocking("pkill", cmd, quiet=True)
 
 
-class BobException(Exception):
-    """Handle Bob's Exceptions"""
-    pass
-
-
 def kill_tasks():
     """Clean up stray processes by name.  This is a shotgun approach"""
     progress("Killing tasks")
