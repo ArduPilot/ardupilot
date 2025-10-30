@@ -1,0 +1,71 @@
+# hw definition file for processing by chibios_hwdef.py for H757
+# CubeNode pin descriptions can be found at https://docs.cubepilot.org/user-guides/cubenode/pin-descriptions
+
+include ../CubeNode/hwdef.inc
+
+# CAN2
+PB5    CAN2_RX    CAN2
+PB6    CAN2_TX    CAN2
+
+# SERIAL
+
+# UART 1
+PE1 UART8_TX UART8
+PE0 UART8_RX UART8
+
+# UART 2
+PC6 USART6_TX USART6
+PC7 USART6_RX USART6
+
+# UART 3
+undef PE7
+undef PE8
+PE7 UART7_RX UART7
+PE8 UART7_TX UART7
+PE10 UART7_CTS UART7
+PE9 UART7_RTS UART7
+
+undef SERIAL_ORDER
+SERIAL_ORDER OTG1 UART8 USART6 UART7 OTG2
+
+# I2C
+PB8 I2C1_SCL I2C1 PULLUP
+PB7 I2C1_SDA I2C1 PULLUP
+
+I2C_ORDER I2C1
+
+# No Baro on the board, allow boot without
+define HAL_BARO_ALLOW_INIT_NO_BARO
+
+# LEDs
+PB1 LED_BLUE OUTPUT LOW GPIO(0)
+PB0 LED_GREEN OUTPUT LOW GPIO(1)
+PE6 LED_RED OUTPUT LOW GPIO(2)
+
+define AP_NOTIFY_GPIO_LED_3_ENABLED 1
+define HAL_GPIO_A_LED_PIN 0
+define HAL_GPIO_B_LED_PIN 1
+define HAL_GPIO_C_LED_PIN 2
+
+# PWM output for buzzer
+PA15 TIM2_CH1 TIM2 GPIO(77) ALARM
+
+# pins for SD card:
+PB14 SDMMC2_D0 SDMMC2
+PB15 SDMMC2_D1 SDMMC2
+PB3 SDMMC2_D2 SDMMC2
+PB4 SDMMC2_D3 SDMMC2
+PD6 SDMMC2_CK SDMMC2
+PD7 SDMMC2_CMD SDMMC2
+
+# Enable FAT filesystem support (needs a microSD defined via SDMMC).
+define HAL_OS_FATFS_IO 1
+define FATFS_HAL_DEVICE SDCD2
+
+# Defining some PWM pins. We also map these pins to GPIO
+PE14 TIM1_CH4 TIM1 PWM(1) GPIO(50)
+PE13 TIM1_CH3 TIM1 PWM(2) GPIO(51)
+PE11 TIM1_CH2 TIM1 PWM(3) GPIO(52)
+PD13 TIM4_CH2 TIM4 PWM(4) GPIO(53)
+PD14 TIM4_CH3 TIM4 PWM(5) GPIO(54)
+PD15 TIM4_CH4 TIM4 PWM(6) GPIO(55)
