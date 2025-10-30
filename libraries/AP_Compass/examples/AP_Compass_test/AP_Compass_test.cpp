@@ -46,11 +46,13 @@ static DummyVehicle vehicle;
 static Compass compass;
 static AP_SerialManager serial_manager;
 
+#if HAL_LOGGING_ENABLED
 static AP_Logger logger;
 AP_Int32 logger_bitmask;
 static const struct LogStructure log_structure[] = {
     LOG_COMMON_STRUCTURES
 };
+#endif  // HAL_LOGGING_ENABLED
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
@@ -64,7 +66,12 @@ static void setup()
 {
     hal.console->printf("Compass library test\n");
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    sitl.init();
+#endif  // CONFIG_HAL_BOARD
+#if HAL_LOGGING_ENABLED
     logger.init(logger_bitmask, log_structure, ARRAY_SIZE(log_structure));
+#endif  // HAL_LOGGING_ENABLED
     board_config.init();
     vehicle.ahrs.init();
     compass.init();
