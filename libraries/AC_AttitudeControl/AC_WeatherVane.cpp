@@ -239,3 +239,6 @@ void AC_WeatherVane::reset(void)
     last_check_ms = AP_HAL::millis();
 }
 
+void AC_WeatherVane::set_gain(float gain) {
+    _gain.set(gain);
+}

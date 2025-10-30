@@ -165,6 +165,31 @@ const AP_Param::GroupInfo Tailsitter::var_info[] = {
     // @Range: 0 15
     AP_GROUPINFO("MIN_VO", 22, Tailsitter, disk_loading_min_outflow, 0),
 
+    // @Param: WV_MGN
+    // @DisplayName: Tailsitter weathervane max gain
+    // @Description: Max gain to use while weathervaning
+    // @Range: 0 3
+    AP_GROUPINFO("WV_MGN", 23, Tailsitter, wvane_max_gain, 3.0),
+
+    // @Param: WV_HI
+    // @DisplayName: Tailsitter weathervane enable upper limit
+    // @Description: Max AHRS pitch angle to allow weathervaning in degrees (90 is vertical)
+    // @Units: deg
+    // @Range: 90 100
+    AP_GROUPINFO("WV_HI", 24, Tailsitter, wvane_pitch_hi, 92),
+
+    // @Param: WV_LO
+    // @DisplayName: Tailsitter  weathervane enable lower limit
+    // @Description: Min AHRS pitch angle to allow weathervaning in degrees (90 is vertical)
+    // @Range: 10 30
+    AP_GROUPINFO("WV_LO", 25, Tailsitter, wvane_pitch_low, 25),
+
+    // @Param: WV_MI
+    // @DisplayName: Tailsitter  weathervane enable middle limit
+    // @Description: Mid AHRS pitch angle to allow weathervaning in degrees with lower gain (90 is vertical)
+    // @Range: 45 60
+    AP_GROUPINFO("WV_MI", 26, Tailsitter, wvane_pitch_mid, 45),
+
     AP_GROUPEND
 };
 
@@ -438,6 +463,8 @@ void Tailsitter::output(void)
 
     tilt_left = 0.0f;
     tilt_right = 0.0f;
+    float pitch_cd = 0.0f, weathervane_gain = 0.0f, gain_slope = 0.0f;
+
     if (vectored_hover_gain > 0) {
         // thrust vectoring VTOL modes
         tilt_left = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorLeft);
@@ -462,16 +489,36 @@ void Tailsitter::output(void)
             tilt_left  = tilt_left * vectored_hover_gain;
             tilt_right = tilt_right * vectored_hover_gain;
         }
+
+        // Put limits on weathervaning basis pitch_cd,
+        // only allow if ahrs pitch between low and hi (vertical)
+        // example calc for default values:
+        // AHRS pitch range -> Weathervane gain output
+        // (45 - 92) -> 3.0
+        // (25 - 45) -> linearly scale between 0 - 3.0
+        // (0 - 25) -> 0
+        pitch_cd = quadplane.ahrs.pitch_sensor;
+        if (pitch_cd <= wvane_pitch_hi * 100 && pitch_cd >= wvane_pitch_mid * 100) {
+            weathervane_gain = wvane_max_gain;
+        } else if (pitch_cd < wvane_pitch_mid * 100 && pitch_cd >= wvane_pitch_low * 100) {
+            // scale from max_gain to 0 between pitch mid and pitch low while preventing div by zero
+            gain_slope = (pitch_cd - wvane_pitch_low * 100) / ((wvane_pitch_mid - wvane_pitch_low + FLT_EPSILON) * 100);
+            weathervane_gain = (wvane_max_gain) * gain_slope;
+        } else {
+            weathervane_gain = 0.0;
+            quadplane.weathervane->reset();
+        }
+        quadplane.weathervane->set_gain(weathervane_gain);
     }
     SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
     SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
 
     // Add logging for desired thrust vectoring angles
-    AP::logger().WriteStreaming("PHID", "TimeUS,DesL,DesR",
-            "sdd", // seconds, degrees
-            "F00", // micro (1e-6), no mult (1e0)
-            "Qff", // uint64_t, float
-            AP_HAL::micros64(), tilt_left/100, tilt_right/100);
+    AP::logger().WriteStreaming("PHID", "TimeUS,DesL,DesR,AhrsPitch,WVGain,WVGainS",
+            "sddd--", // seconds, degrees
+            "F00000", // micro (1e-6), no mult (1e0)
+            "Qfffff", // uint64_t, float
+            AP_HAL::micros64(), tilt_left/100, tilt_right/100,pitch_cd/100,weathervane_gain,gain_slope);
 
     // Check for saturated limits
     bool tilt_lim = _is_vectored && ((fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft)) >= SERVO_MAX) || (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorRight)) >= SERVO_MAX));
@@ -524,6 +571,8 @@ void Tailsitter::output(void)
  */
 bool Tailsitter::transition_fw_complete(void)
 {
+    // Get the difference in the pitch initial value to the current pitch setpoint to track the discontinuity
+    float fw_initial_pitch_diff = (transition->prev_fw_initial_pitch - transition->fw_transition_initial_pitch)*0.01f;
     if (!plane.arming.is_armed_and_safety_off()) {
         // instant transition when disarmed, no message
         return true;
@@ -537,7 +586,13 @@ bool Tailsitter::transition_fw_complete(void)
         return true;
     }
     uint32_t now = AP_HAL::millis();
-
+     // Guard for large initial pitch value, if there need to reset the initial pitch again
+    if(abs(fw_initial_pitch_diff)>10.0f){
+        gcs().send_text(MAV_SEVERITY_WARNING, "Transition FW, angle reset discontinuity");
+        transition->restart();
+        transition->prev_fw_initial_pitch = transition->fw_transition_initial_pitch;
+        transition->fw_transition_initial_pitch = constrain_float(quadplane.attitude_control->get_attitude_target_quat().get_euler_pitch() * degrees(100.0),-8500,8500);
+    }
     if (now - transition->fw_transition_start_ms > ((transition_angle_fw+(transition->fw_transition_initial_pitch*0.01f))/transition_rate_fw)*1500) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Transition FW done, timeout");
         gcs().send_text(MAV_SEVERITY_WARNING, "FW transition_initial_pitch: %f",(float)transition->fw_transition_initial_pitch*0.01f);
@@ -1015,6 +1070,7 @@ void Tailsitter_Transition::restart()
 {
     transition_state = TRANSITION_ANGLE_WAIT_FW;
     fw_transition_start_ms = AP_HAL::millis();
+    prev_fw_initial_pitch = fw_transition_initial_pitch;
     fw_transition_initial_pitch = constrain_float(quadplane.attitude_control->get_attitude_target_quat().get_euler_pitch() * degrees(100.0),-8500,8500);
 }
 

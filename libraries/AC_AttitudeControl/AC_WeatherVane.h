@@ -20,6 +20,9 @@ class AC_WeatherVane {
 
         static const struct AP_Param::GroupInfo var_info[];
 
+        // Change gain externally
+        void set_gain(float gain);
+
     private:
 
         // Different options for the direction that vehicle will turn into wind
