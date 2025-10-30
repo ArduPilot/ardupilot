@@ -179,6 +179,7 @@ class SizeCompareBranches(object):
             'Pixhawk1-1M-bdshot',
             'Pixhawk1-bdshot',
             'SITL_arm_linux_gnueabihf',
+            'SITL_x86_64_linux_gnu',
             'RADIX2HD',
             'canzero',
             't3-gem-o1',
@@ -209,57 +210,10 @@ class SizeCompareBranches(object):
             'MatekL431-Serial',  # uses USE_BOOTLOADER_FROM_BOARD
         ])
 
-        # blacklist all linux boards for bootloader build:
-        self.bootloader_blacklist.update(self.linux_board_names())
-        # ... and esp32 boards:
-        self.bootloader_blacklist.update(self.esp32_board_names())
-
-    def linux_board_names(self):
-        '''return a list of all Linux board names; FIXME: get this dynamically'''
-        # grep 'class.*[(]linux' Tools/ardupilotwaf/boards.py  | perl -pe "s/class (.*)\(linux\).*/            '\\1',/"
-        return [
-            'navigator',
-            'navigator64',
-            'erleboard',
-            'navio',
-            'navio2',
-            'edge',
-            'zynq',
-            'ocpoc_zynq',
-            'bbbmini',
-            'blue',
-            'pocket',
-            'pocket2',
-            'pxf',
-            'bebop',
-            'vnav',
-            'disco',
-            'erlebrain2',
-            'bhat',
-            'dark',
-            'pxfmini',
-            'aero',
-            'rst_zynq',
-            'obal',
-            'SITL_x86_64_linux_gnu',
-            'canzero',
-            't3-gem-o1',
-            'linux',
-            'pilotpi',
-        ]
-
-    def esp32_board_names(self):
-        return [
-            'esp32buzz',
-            'esp32empty',
-            'esp32tomte76',
-            'esp32nick',
-            'esp32s3devkit',
-            'esp32s3empty',
-            'esp32s3m5stampfly',
-            'esp32icarous',
-            'esp32diy',
-        ]
+        for board_name in self.board:
+            board = self.boards_by_name[board_name]
+            if board.hal in ["Linux", "ESP32"]:
+                self.bootloader_blacklist.add(board.name)
 
     def find_bin_dir(self, toolchain_prefix="arm-none-eabi-"):
         '''attempt to find where the arm-none-eabi tools are'''
