@@ -41,6 +41,7 @@ void loop(void);
 void setup(void)
 {
     // setup any board specific drivers
+    sitl.init();
     BoardConfig.init();
 
     hal.console->begin(115200);
