@@ -105,6 +105,7 @@ static ReplayGyroFFT replay;
 void setup()
 {
     hal.console->printf("ReplayGyroFFT\n");
+    sitl.init();
     board_config.init();   
     serial_manager.init();
 
