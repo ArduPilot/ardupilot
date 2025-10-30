@@ -364,6 +364,8 @@ AP_HW_LongbowF405                    1422
 
 AP_HW_MountainEagleH743              1444
 
+AP_HW_Lastivka                       1477
+
 AP_HW_StellarF4                      1500
 AP_HW_GEPRCF745BTHD                  1501
 AP_HW_GEPRC_TAKER_H743               1502
