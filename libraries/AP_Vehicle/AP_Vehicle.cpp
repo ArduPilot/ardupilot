@@ -27,6 +27,7 @@
 extern AP_IOMCU iomcu;
 #endif
 #include <AP_Scripting/AP_Scripting.h>
+#include <SITL/SITL.h>
 
 #define SCHED_TASK(func, rate_hz, max_time_micros, prio) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros, prio)
 
@@ -304,6 +305,10 @@ extern AP_Vehicle& vehicle;
  */
 void AP_Vehicle::setup()
 {
+#if AP_SIM_ENABLED
+    sitl.init();
+#endif
+
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
