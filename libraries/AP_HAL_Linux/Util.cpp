@@ -81,7 +81,7 @@ void Util::set_hw_rtc(uint64_t time_utc_usec)
     ts.tv_sec = time_utc_usec/1000000ULL;
     ts.tv_nsec = (time_utc_usec % 1000000ULL) * 1000ULL;
     clock_settime(CLOCK_REALTIME, &ts);
-#endif
+#endif  // AP_HAL_LINUX_SET_HW_RTC_ENABLED
 }
 
 bool Util::is_chardev_node(const char *path)
