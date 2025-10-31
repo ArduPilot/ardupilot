@@ -1795,7 +1795,7 @@ bool AP_Arming::crashdump_checks(bool report)
         return true;
     }
 
-    check_failed(Check::PARAMETERS, true, "CrashDump data detected");
+    check_failed(Check::PARAMETERS, report, "CrashDump data detected");
 
     return false;
 }
