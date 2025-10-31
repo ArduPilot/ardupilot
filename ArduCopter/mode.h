@@ -1906,12 +1906,12 @@ private:
 #endif  // AP_ADSB_AVOIDANCE_ENABLED
 
 #if MODE_FOLLOW_ENABLED
-class ModeFollow : public ModeGuided {
+class ModeFollow : public Mode {
 
 public:
 
     // inherit constructor
-    using ModeGuided::Mode;
+    using Mode::Mode;
     Number mode_number() const override { return Number::FOLLOW; }
 
     bool init(bool ignore_checks) override;
@@ -1922,6 +1922,16 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return false; }
     bool is_autopilot() const override { return true; }
+
+    // the following method's return value is dubious and should be evaluated:
+    bool has_user_takeoff(bool must_navigate) const override { return true; }
+    bool in_guided_mode() const override { return true; }
+
+    bool requires_terrain_failsafe() const override { return true; }
+
+    // Return true if the throttle high arming check can be skipped when arming from GCS or Scripting
+    bool allows_GCS_or_SCR_arming_with_throttle_high() const override { return true; }
+    // end the following method's return value is dubious and should be evaluated:
 
 protected:
 
