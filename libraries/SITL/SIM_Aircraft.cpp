@@ -1402,6 +1402,8 @@ bool Aircraft::set_pose(uint8_t instance, const Location &loc, const Quaternion 
     aircraft.smoothing.location = loc;
     aircraft.gyro = gyro_rads;
 
+    aircraft.set_pose_hook();
+
     return true;
 }
 
