@@ -280,6 +280,15 @@ void Plane::update_logging10(void)
         camera_mount.write_log();
     }
 #endif
+#if AP_RANGEFINDER_ENABLED
+    if (should_log(MASK_LOG_NTUN)) {
+        if (rangefinder.has_orientation(rangefinder_orientation()) &&
+            (g.rangefinder_landing.get() > 0)
+           ) {
+            Log_Write_RFNS();
+        }
+    }
+#endif
 }
 
 /*
