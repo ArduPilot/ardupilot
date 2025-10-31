@@ -192,6 +192,45 @@ void Plane::Log_Write_Nav_Tuning()
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
+#if AP_RANGEFINDER_ENABLED
+struct PACKED log_RFNS {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    bool in_use;
+    bool in_range;
+    uint8_t in_range_count;
+    bool have_initial_reading;
+    float initial_range;
+    float last_distance;
+    float correction;
+    float initial_correction;
+    float last_stable_correction;
+    uint32_t last_correction_time_ms;
+    float height_estimate;
+};
+
+// Write a Rangefinder State packet
+void Plane::Log_Write_RFNS()
+{
+    const struct log_RFNS pkt {
+        LOG_PACKET_HEADER_INIT(LOG_RFNS_MSG),
+        time_us                 : AP_HAL::micros64(),
+        in_use                  : rangefinder_state.in_use,
+        in_range                : rangefinder_state.in_range,
+        in_range_count          : rangefinder_state.in_range_count,
+        have_initial_reading    : rangefinder_state.have_initial_reading,
+        initial_range           : rangefinder_state.initial_range,
+        last_distance           : rangefinder_state.last_distance,
+        correction              : rangefinder_state.correction,
+        initial_correction      : rangefinder_state.initial_correction,
+        last_stable_correction  : rangefinder_state.last_stable_correction,
+        last_correction_time_ms : rangefinder_state.last_correction_time_ms,
+        height_estimate         : rangefinder_state.height_estimate
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+}
+#endif  // AP_RANGEFINDER_ENABLED
+
 struct PACKED log_Status {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -501,6 +540,25 @@ const struct LogStructure Plane::log_structure[] = {
     { LOG_OFG_MSG, sizeof(log_OFG_Guided),     
       "OFG", "QffffBffB",    "TimeUS,Arsp,ArspA,Alt,AltA,AltF,Hdg,HdgA,AltL", "snnmo-d--", "F--------" , true }, 
 #endif
+
+#if AP_RANGEFINDER_ENABLED
+// @LoggerMessage: RFNS
+// @Description: Rangefinder state
+// @Field: TimeUS: Time since system startup
+// @Field: InUse: Whether the rangefinder is in use.
+// @Field: InRng: Whether the rangefinder is in range.
+// @Field: IRCnt: Count of in-range measurements
+// @Field: Ms0OK: Whether there has been an initial measurement.
+// @Field: Ms0: The initial measured range
+// @Field: Dst: The last recorded distance
+// @Field: Cor: The rangefinder correction
+// @Field: Cor0: The initial rangefinder correction
+// @Field: CorL: The last stable correction
+// @Field: TimeCL: The last correction time
+// @Field: HE: Height estimate
+    { LOG_RFNS_MSG, sizeof(log_RFNS),
+        "RFNS", "QBBBBfffffIf", "TimeUS,InUse,InRng,IRCnt,Ms0OK,Ms0,Dst,Cor,Cor0,CorL,TimeCL,HE", "s----mmmmmsm", "F----00000C0", true },
+#endif  // AP_RANGEFINDER_ENABLED
 };
 
 uint8_t Plane::get_num_log_structures() const
