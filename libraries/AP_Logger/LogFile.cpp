@@ -170,6 +170,11 @@ void AP_Logger::Write_RCIN(void)
     if (rc().in_rc_failsafe()) {
         flags |= (uint8_t)AP_Logger::RCLoggingFlags::IN_RC_FAILSAFE;
     }
+#if AP_RCPROTOCOL_ENABLED
+    if (AP::RC().failsafe_active()) {
+        flags |= (uint8_t)AP_Logger::RCLoggingFlags::RC_PROTOCOL_FAILSAFE;
+    }
+#endif  // AP_RCPROTOCOL_ENABLED
 
     const struct log_RCI2 pkt2{
         LOG_PACKET_HEADER_INIT(LOG_RCI2_MSG),
