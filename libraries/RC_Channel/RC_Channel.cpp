@@ -71,7 +71,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("MIN",  1, RC_Channel, radio_min, 1100),
+    AP_GROUPINFO("MIN",  1, RC_Channel, radio_min, 800),
 
     // @Param: TRIM
     // @DisplayName: RC trim PWM
@@ -89,7 +89,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("MAX",  3, RC_Channel, radio_max, 1900),
+    AP_GROUPINFO("MAX",  3, RC_Channel, radio_max, 2200),
 
     // @Param: REVERSED
     // @DisplayName: RC reversed
