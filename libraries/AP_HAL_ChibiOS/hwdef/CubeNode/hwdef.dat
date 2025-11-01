@@ -30,3 +30,6 @@ define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
 #################################
 
 define HAL_MONITOR_THREAD_ENABLED 1
+
+# disable ADC for periph
+define HAL_USE_ADC FALSE

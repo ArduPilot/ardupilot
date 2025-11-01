@@ -44,7 +44,6 @@ PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
 
 # override following defines as needed
-define HAL_USE_ADC FALSE
 STORAGE_FLASH_PAGE 14
 define HAL_STORAGE_SIZE 32768
 
