@@ -61,7 +61,7 @@ Two CAN busses are available, transceivers are within the Node itself but termin
 
 # I2C
 
-A single I2C bus is provided, software pullup resistors are enabled.
+A single I2C bus is provided, software pullup resistors can be enabled but hardware pullup are recommended.
 
 ##### I2C
 
