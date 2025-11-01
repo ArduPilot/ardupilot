@@ -11,8 +11,6 @@ from pathlib import Path
 from collections import OrderedDict
 import subprocess
 
-import ap_persistent
-
 SOURCE_EXTS = [
     '*.S',
     '*.c',
@@ -708,16 +706,6 @@ arducopter and upload it to my board".
         help='Output all test programs.')
 
     g = opt.ap_groups['clean']
-
-    g.add_option('--clean-all-sigs',
-        action='store_true',
-        help='''Clean signatures for all tasks. By default, tasks that scan for
-implicit dependencies (like the compilation tasks) keep the dependency
-information across clean commands, so that that information is changed
-only when really necessary. Also, some tasks that don't really produce
-files persist their signature. This option avoids that behavior when
-cleaning the build.
-''')
 
     g.add_option('--asan',
         action='store_true',
