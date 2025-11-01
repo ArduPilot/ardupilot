@@ -58,7 +58,6 @@ def ch_dynamic_env(self):
 
     if not _dynamic_env_data:
         _load_dynamic_env_data(self.bld)
-    self.use += ' ch'
     self.env.append_value('INCLUDES', _dynamic_env_data['include_dirs'])
 
 
