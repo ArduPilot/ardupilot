@@ -425,6 +425,11 @@ bool Copter::set_target_rate_and_throttle(float roll_rate_dps, float pitch_rate_
 // set target roll pitch and yaw angles and roll pitch and yaw rates with throttle (for use by scripting)
 bool Copter::set_target_angle_and_rate_and_throttle(float roll_deg, float pitch_deg, float yaw_deg, float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps, float throttle)
 {
+    // exit if vehicle is not in Guided mode or Auto-Guided mode
+    if (!flightmode->in_guided_mode()) {
+        return false;
+    }
+
     Quaternion q;
     q.from_euler(radians(roll_deg),radians(pitch_deg),radians(yaw_deg));
 
