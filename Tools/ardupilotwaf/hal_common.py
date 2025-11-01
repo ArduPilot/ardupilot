@@ -4,8 +4,6 @@ Waf tool for functions common to the esp32, Linux and ChibiOS builds.
 AP_FLAKE8_CLEAN
 """
 
-import sys
-
 
 def load_env_vars(env, hwdef_env, kv_handler=None):
     '''load environment variables from the hwdef generator'''
@@ -33,17 +31,6 @@ def load_env_vars_handle_kv_pair(env, kv_pair):
     else:
         env[k] = v
         print("env set %s=%s" % (k, v))
-
-
-def common_dynamic_env(self):
-    # The generated files from configuration possibly don't exist if it's just
-    # a list command (TODO: figure out a better way to address that).
-    if self.bld.cmd == 'list':
-        return
-
-    def exec_command(self, cmd, **kw):
-        kw['stdout'] = sys.stdout
-        return super(exec_command, self).exec_command(cmd, **kw)
 
 
 def handle_hwdef_files(cfg, hwdef_files):
