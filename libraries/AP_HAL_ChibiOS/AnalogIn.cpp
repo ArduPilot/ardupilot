@@ -77,20 +77,8 @@ const AnalogIn::pin_info AnalogIn::pin_config[] = { HAL_ANALOG_PINS };
     #define ADC2_GRP1_NUM_CHANNELS ARRAY_SIZE(AnalogIn::pin_config_2)
 #endif
 
-#if defined(HAL_ANALOG3_PINS) || HAL_WITH_MCU_MONITORING
-#if HAL_WITH_MCU_MONITORING
-    // internal ADC channels (from H7 reference manual)
-    #define ADC3_VSENSE_CHAN 18
-    #define ADC3_VREFINT_CHAN 19
-    #define ADC3_VBAT4_CHAN 17
-    #define HAL_MCU_MONITORING_PINS {ADC3_VBAT4_CHAN, 252, 3.30/4096}, {ADC3_VSENSE_CHAN, 253, 3.30/4096}, {ADC3_VREFINT_CHAN, 254, 3.30/4096}
-#else
-    #define HAL_MCU_MONITORING_PINS
-#endif
-#ifndef HAL_ANALOG3_PINS
-    #define HAL_ANALOG3_PINS
-#endif
-    const AnalogIn::pin_info AnalogIn::pin_config_3[] = { HAL_ANALOG3_PINS HAL_MCU_MONITORING_PINS};
+#ifdef HAL_ANALOG3_PINS
+    const AnalogIn::pin_info AnalogIn::pin_config_3[] = { HAL_ANALOG3_PINS };
     #define ADC3_GRP1_NUM_CHANNELS ARRAY_SIZE(AnalogIn::pin_config_3)
 #endif
 
