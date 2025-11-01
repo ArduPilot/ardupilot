@@ -25,12 +25,6 @@ import hal_common
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ESP32/hwdef/scripts'))
 import esp32_hwdef  # noqa:501
 
-@feature('esp32_ap_library', 'esp32_ap_program')
-@before_method('process_source')
-def esp32_dynamic_env(self):
-    hal_common.common_dynamic_env(self)
-
-
 def configure(cfg):
     mcu_esp32s3 = True if (cfg.variant[0:7] == "esp32s3") else False
     target = "esp32s3" if mcu_esp32s3 else "esp32"
