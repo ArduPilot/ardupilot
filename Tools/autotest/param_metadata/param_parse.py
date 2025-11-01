@@ -439,8 +439,16 @@ for library in libraries:
 
     debug("Processed %u documented parameters" % len(library.params))
 
+
+def natural_sort_key(libname):
+    """Natural sort key used for sorting alphanumeric strings"""
+    # splitting string into parts (numeric , non-numeric)
+    parts = re.split(r'(\d+)', libname)
+    return tuple((int(p) if p.isdigit() else p) for p in parts)
+
+
 # sort libraries by name
-alllibs = sorted(alllibs, key=lambda x: x.name)
+alllibs = sorted(alllibs, key=lambda x: natural_sort_key(x.name))
 
 libraries = alllibs
 
