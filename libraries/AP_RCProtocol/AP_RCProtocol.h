@@ -269,6 +269,9 @@ public:
     void handle_radio_rc_channels(const mavlink_radio_rc_channels_t* packet);
 #endif
 
+    // Validate decoded RC input values against calibrated limits.
+    static bool validate_rc_input_range(const uint16_t* values, uint8_t count, uint8_t thr_idx, uint8_t data_ch_count);
+
 private:
     void check_added_uart(void);
 
