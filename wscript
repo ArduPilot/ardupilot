@@ -194,11 +194,6 @@ def options(opt):
         default=None,
         help='Override default toolchain used for the board. Use "native" for using the host toolchain.')
 
-    g.add_option('--disable-gccdeps',
-        action='store_true',
-        default=False,
-        help='Disable the use of GCC dependencies output method and use waf default method.')
-
     g.add_option('--enable-asserts',
         action='store_true',
         default=False,
