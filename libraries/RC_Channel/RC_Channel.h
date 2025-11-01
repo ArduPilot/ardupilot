@@ -673,10 +673,11 @@ public:
         USE_CRSF_LQ_AS_RSSI     = (1U << 11), // returns CRSF link quality as RSSI value, instead of RSSI
         CRSF_FM_DISARM_STAR     = (1U << 12), // when disarmed, add a star at the end of the flight mode in CRSF telemetry
         ELRS_420KBAUD           = (1U << 13), // use 420kbaud for ELRS protocol
+        PWM_CHECK_VALUE         = (1U << 14), // RC input PWM range validation
     };
 
     bool option_is_enabled(Option option) const {
-        return _options & uint32_t(option);
+        return (_options & uint32_t(option)) != 0U;
     }
 
     virtual bool arming_check_throttle() const {
