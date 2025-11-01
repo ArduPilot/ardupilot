@@ -14560,6 +14560,13 @@ RTL_ALT 111
             self.assert_receive_message('HEARTBEAT', mav=mav3, verbose=2)
             self.drain_mav()
 
+    def RCProtocolFailsafe(self):
+        '''ensure we failsafe when the RC protocol failsafe is set'''
+        self.takeoff(10, mode='LOITER')
+        self.set_parameter('SIM_RC_FAIL', 3)  # protocol failsafe
+        self.wait_mode('RTL')
+        self.wait_disarmed()
+
     def LUAConfigProfile(self):
         '''test the config_profiles.lua example script'''
         self.customise_SITL_commandline(
@@ -14938,6 +14945,7 @@ return update, 1000
             self.RPLidarA2,
             self.MISSION_OPTION_CLEAR_MISSION_AT_BOOT,
             self.SafetySwitch,
+            self.RCProtocolFailsafe,
             self.BrakeZ,
             self.MAV_CMD_DO_FLIGHTTERMINATION,
             self.MAV_CMD_DO_LAND_START,
