@@ -45,12 +45,11 @@ def configure(cfg):
     env.AP_PROGRAM_FEATURES += ['linux_ap_program']
 
     try:
-        hwdef_env, hwdef_files = generate_hwdef_h(env)
+        hwdef_obj = generate_hwdef_h(env)
     except Exception:
         traceback.print_exc()
-        cfg.fatal("Failed to generate hwdef")
-    hal_common.load_env_vars(cfg.env, hwdef_env)
-    hal_common.handle_hwdef_files(cfg, hwdef_files)
+        cfg.fatal("Failed to process hwdef.dat")
+    hal_common.process_hwdef_results(cfg, hwdef_obj)
 
 
 def generate_hwdef_h(env):
@@ -65,13 +64,15 @@ def generate_hwdef_h(env):
     hwdef = [env.HWDEF]
     if env.HWDEF_EXTRA:
         hwdef.append(env.HWDEF_EXTRA)
-    lh = linux_hwdef.LinuxHWDef(
+
+    hwdef_obj = linux_hwdef.LinuxHWDef(
         outdir=hwdef_out,
         hwdef=hwdef,
         quiet=False,
     )
-    lh.run()
-    return lh.env_vars, lh.output_files
+    hwdef_obj.run()
+
+    return hwdef_obj
 
 
 def pre_build(bld):

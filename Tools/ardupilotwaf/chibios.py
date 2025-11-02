@@ -574,12 +574,11 @@ def configure(cfg):
         env.DEFAULT_PARAMETERS = cfg.options.default_parameters
 
     try:
-        hwdef_env, hwdef_files = generate_hwdef_h(env)
+        hwdef_obj = generate_hwdef_h(env)
     except Exception:
         traceback.print_exc()
         cfg.fatal("Failed to process hwdef.dat")
-    hal_common.load_env_vars(env, hwdef_env)
-    hal_common.handle_hwdef_files(cfg, hwdef_files)
+    hal_common.process_hwdef_results(cfg, hwdef_obj)
 
     if env.DEBUG or env.DEBUG_SYMBOLS:
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_DEBUG_SYMBOLS=yes'
@@ -625,7 +624,7 @@ def generate_hwdef_h(env):
     if env.HWDEF_EXTRA:
         hwdef.append(env.HWDEF_EXTRA)
 
-    c = chibios_hwdef.ChibiOSHWDef(
+    hwdef_obj = chibios_hwdef.ChibiOSHWDef(
         outdir=hwdef_out,
         bootloader=bootloader_flag,
         signed_fw=bool(env.AP_SIGNED_FIRMWARE),
@@ -635,8 +634,9 @@ def generate_hwdef_h(env):
         default_params_filepath=str(env.DEFAULT_PARAMETERS),
         quiet=False,
     )
-    c.run()
-    return c.env_vars, c.output_files
+    hwdef_obj.run()
+
+    return hwdef_obj
 
 def pre_build(bld):
     '''pre-build hook to change dynamic sources'''
