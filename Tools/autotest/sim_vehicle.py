@@ -191,7 +191,7 @@ def under_macos():
 
 
 def under_vagrant():
-    return os.path.isfile("/ardupilot.vagrant")
+    return os.path.isdir("/vagrant")
 
 
 def under_wsl2():
