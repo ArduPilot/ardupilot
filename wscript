@@ -511,6 +511,7 @@ def configure(cfg):
     cfg.env.ENABLE_MALLOC_GUARD = cfg.options.enable_malloc_guard
     cfg.env.ENABLE_STATS = cfg.options.enable_stats
     cfg.env.SAVE_TEMPS = cfg.options.save_temps
+    cfg.env.CONSISTENT_BUILDS = cfg.options.consistent_builds
 
     extra_hwdef = cfg.options.extra_hwdef
     if extra_hwdef is not None and not os.path.exists(extra_hwdef):
@@ -629,6 +630,12 @@ def configure(cfg):
 
     cfg.start_msg('Coverage build')
     if cfg.env.COVERAGE:
+        cfg.end_msg('enabled')
+    else:
+        cfg.end_msg('disabled', color='YELLOW')
+
+    cfg.start_msg('Consistent build')
+    if cfg.env.CONSISTENT_BUILDS:
         cfg.end_msg('enabled')
     else:
         cfg.end_msg('disabled', color='YELLOW')

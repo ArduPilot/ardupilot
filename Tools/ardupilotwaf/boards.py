@@ -555,7 +555,7 @@ class Board:
         if cfg.options.ekf_single:
             env.CXXFLAGS += ['-DHAL_WITH_EKF_DOUBLE=0']
 
-        if cfg.options.consistent_builds:
+        if cfg.env.CONSISTENT_BUILDS:
             # if symbols are renamed we don't want them to affect the output:
             env.CXXFLAGS += ['-fno-rtti']
             # avoid different filenames for the same source file
