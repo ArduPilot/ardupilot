@@ -5,32 +5,16 @@ AP_FLAKE8_CLEAN
 """
 
 
-def load_env_vars(env, hwdef_env, kv_handler=None):
+def load_env_vars(env, hwdef_env):
     '''load environment variables from the hwdef generator'''
-    for kv in hwdef_env.items():
-        if kv_handler is not None:
-            kv_handler(env, kv)
-            continue
-        load_env_vars_handle_kv_pair(env, kv)
-
-
-def load_env_vars_handle_kv_pair(env, kv_pair):
-    '''handle a key/value pair out of the hwdef generator'''
-    (k, v) = kv_pair
-    if k in env:
-        if isinstance(env[k], dict):
-            a = v.split('=')
-            env[k][a[0]] = '='.join(a[1:])
-            print("env updated %s=%s" % (k, v))
-        elif isinstance(env[k], list):
-            env[k].append(v)
-            print("env appended %s=%s" % (k, v))
+    for k, v in hwdef_env.items():
+        if k in env:
+            # don't want to encourage modifications from the hwdef
+            raise ValueError(f"hwdef redefines environment variable {k} "
+                             f"with existing value {env[k]!r} to value {v!r}")
         else:
             env[k] = v
-            print("env added %s=%s" % (k, v))
-    else:
-        env[k] = v
-        print("env set %s=%s" % (k, v))
+            print("env set %s=%s" % (k, v))
 
 
 def handle_hwdef_files(cfg, hwdef_files):

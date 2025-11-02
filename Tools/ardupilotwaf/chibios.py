@@ -513,32 +513,6 @@ def setup_canperiph_build(cfg):
 
     cfg.get_board().with_can = True
 
-def load_env_vars_handle_kv_pair(env, kv_pair):
-    '''handle a key/value pair out of the hwdef generator'''
-    (k, v) = kv_pair
-    if k == 'ROMFS_FILES':
-        env.ROMFS_FILES += v
-        return
-    hal_common.load_env_vars_handle_kv_pair(env, kv_pair)
-
-def load_env_vars(env, hwdef_env):
-    '''load environment variables from the hwdef generator'''
-    hal_common.load_env_vars(env, hwdef_env, kv_handler=load_env_vars_handle_kv_pair)
-
-    if env.DEBUG or env.DEBUG_SYMBOLS:
-        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_DEBUG_SYMBOLS=yes'
-    if env.ENABLE_ASSERTS:
-        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_ASSERTS=yes'
-    if env.ENABLE_MALLOC_GUARD:
-        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_MALLOC_GUARD=yes'
-    if env.ENABLE_STATS:
-        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_STATS=yes'
-    if env.ENABLE_DFU_BOOT and env.BOOTLOADER:
-        env.CHIBIOS_BUILD_FLAGS += ' USE_ASXOPT=-DCRT0_ENTRY_HOOK=TRUE'
-    if env.AP_BOARD_START_TIME:
-        env.CHIBIOS_BUILD_FLAGS += ' AP_BOARD_START_TIME=0x%x' % env.AP_BOARD_START_TIME
-
-
 def setup_optimization(env):
     '''setup optimization flags for build'''
     if env.DEBUG:
@@ -604,8 +578,21 @@ def configure(cfg):
     except Exception:
         traceback.print_exc()
         cfg.fatal("Failed to process hwdef.dat")
-    load_env_vars(cfg.env, hwdef_env)
+    hal_common.load_env_vars(env, hwdef_env)
     hal_common.handle_hwdef_files(cfg, hwdef_files)
+
+    if env.DEBUG or env.DEBUG_SYMBOLS:
+        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_DEBUG_SYMBOLS=yes'
+    if env.ENABLE_ASSERTS:
+        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_ASSERTS=yes'
+    if env.ENABLE_MALLOC_GUARD:
+        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_MALLOC_GUARD=yes'
+    if env.ENABLE_STATS:
+        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_STATS=yes'
+    if env.ENABLE_DFU_BOOT and env.BOOTLOADER:
+        env.CHIBIOS_BUILD_FLAGS += ' USE_ASXOPT=-DCRT0_ENTRY_HOOK=TRUE'
+    if env.AP_BOARD_START_TIME:
+        env.CHIBIOS_BUILD_FLAGS += ' AP_BOARD_START_TIME=0x%x' % env.AP_BOARD_START_TIME
 
     if env.HAL_NUM_CAN_IFACES and not env.AP_PERIPH:
         setup_canmgr_build(cfg)
