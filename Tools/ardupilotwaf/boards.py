@@ -47,7 +47,6 @@ class Board:
 
     def configure(self, cfg):
         cfg.env.TOOLCHAIN = cfg.options.toolchain or self.toolchain
-        cfg.env.ROMFS_FILES = []
         if hasattr(self,'configure_toolchain'):
             self.configure_toolchain(cfg)
         else:
