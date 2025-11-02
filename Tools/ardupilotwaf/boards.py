@@ -596,13 +596,18 @@ class Board:
 
     def build(self, bld):
         git_hash_ext = bld.git_head_hash(short=True, hash_abbrev=16)
-        bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True))
-        bld.ap_version_append_str('GIT_VERSION_EXTENDED', git_hash_ext)
-        bld.ap_version_append_int('GIT_VERSION_INT', int("0x" + bld.git_head_hash(short=True), base=16))
-        bld.ap_version_append_str('AP_BUILD_ROOT', bld.srcnode.abspath())
-        import time
-        ltime = time.localtime()
+        bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True), "abcdef")
+        bld.ap_version_append_str('GIT_VERSION_EXTENDED', git_hash_ext, "0123456789abcdef")
+        bld.ap_version_append_int('GIT_VERSION_INT', int("0x" + bld.git_head_hash(short=True), base=16), 15)
+        # this build root is mostly used as a temporary directory by SIM_JSBSim and probably needs to go
+        bld.ap_version_append_str('AP_BUILD_ROOT', bld.srcnode.abspath(), "/tmp")
+
         if bld.env.build_dates:
+            if bld.options.consistent_builds:
+                raise ValueError("can't enable consistent builds and build dates")
+
+            import time
+            ltime = time.localtime()
             bld.ap_version_append_int('BUILD_DATE_YEAR', ltime.tm_year)
             bld.ap_version_append_int('BUILD_DATE_MONTH', ltime.tm_mon)
             bld.ap_version_append_int('BUILD_DATE_DAY', ltime.tm_mday)
@@ -1461,7 +1466,7 @@ class chibios(Board):
 
     def build(self, bld):
         super(chibios, self).build(bld)
-        bld.ap_version_append_str('CHIBIOS_GIT_VERSION', bld.git_submodule_head_hash('ChibiOS', short=True))
+        bld.ap_version_append_str('CHIBIOS_GIT_VERSION', bld.git_submodule_head_hash('ChibiOS', short=True), "12345678")
         bld.load('chibios')
 
     def pre_build(self, bld):
