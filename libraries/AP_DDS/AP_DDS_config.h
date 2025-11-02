@@ -165,6 +165,14 @@
 #define AP_DDS_ARM_CHECK_SERVER_ENABLED 1
 #endif
 
+#ifndef AP_DDS_ODOM_PUB_ENABLED
+#define AP_DDS_ODOM_PUB_ENABLED 1
+#endif
+
+#ifndef AP_DDS_DELAY_ODOM_TOPIC_MS
+#define AP_DDS_DELAY_ODOM_TOPIC_MS 33
+#endif
+
 // Whether to include Twist support
 #define AP_DDS_NEEDS_TWIST AP_DDS_VEL_CTRL_ENABLED || AP_DDS_LOCAL_VEL_PUB_ENABLED
 
