@@ -562,11 +562,10 @@ class Board:
             # affecting the compiler output:
             env.CXXFLAGS += ['-frandom-seed=4']  # ob. xkcd
 
-            # stop including a unique ID in the headers.  More useful
-            # when trying to find binary differences as the build-id
-            # appears to be a hash of the output products
-            # (ie. identical for identical compiler output):
-            env.LDFLAGS += ['-Wl,--build-id=bob']
+            # disable setting build ID in the ELF header. though if two binaries
+            # are identical they will have the same build ID, setting it avoids
+            # creating a difference if they are not in a way we care about.
+            env.LDFLAGS += ['-Wl,--build-id=none']
             # squash all line numbers to be the number 17
             env.CXXFLAGS += [
                 "-D__AP_LINE__=17",
