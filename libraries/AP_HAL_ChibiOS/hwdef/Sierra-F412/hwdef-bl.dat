@@ -50,9 +50,6 @@ PA12 CAN1_TX CAN1
 # use DNA
 define HAL_CAN_DEFAULT_NODE_ID 0
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
-
 # Add CS pins to ensure they are high in bootloader
 PB12 MAG_CS CS
 PA8 BARO_CS CS
