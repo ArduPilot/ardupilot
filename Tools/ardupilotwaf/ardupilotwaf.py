@@ -499,12 +499,22 @@ def ap_find_tests(bld, use=[], DOUBLE_PRECISION_SOURCES=[]):
 _versions = []
 
 @conf
-def ap_version_append_str(ctx, k, v):
-    ctx.env['AP_VERSION_ITEMS'] += [(k, '"{}"'.format(os.environ.get(k, v)))]
+def ap_version_append_str(ctx, k, v, consistent_v=None):
+    if ctx.env.CONSISTENT_BUILDS and consistent_v is not None:
+        v = consistent_v # override with consistent value
+    else:
+        v = os.environ.get(k, v) # use v unless defined in environment
+
+    ctx.env['AP_VERSION_ITEMS'] += [(k, f'"{v}"')]
 
 @conf
-def ap_version_append_int(ctx, k, v):
-    ctx.env['AP_VERSION_ITEMS'] += [(k, '{}'.format(os.environ.get(k, v)))]
+def ap_version_append_int(ctx, k, v, consistent_v=None):
+    if ctx.env.CONSISTENT_BUILDS and consistent_v is not None:
+        v = consistent_v # override with consistent value
+    else:
+        v = os.environ.get(k, v) # use v unless defined in environment
+
+    ctx.env['AP_VERSION_ITEMS'] += [(k, f'{v}')]
 
 @conf
 def write_version_header(ctx, tgt):

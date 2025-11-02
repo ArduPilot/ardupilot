@@ -418,7 +418,7 @@ configuration in order to save typing.
     g.add_option('--consistent-builds',
         action='store_true',
         default=False,
-        help='force consistent build outputs for things like __LINE__')
+        help='force consistent build outputs for things like __LINE__ and build hashes')
 
     g.add_option('--extra-hwdef',
 	    action='store',
