@@ -179,44 +179,29 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
     def RngfndQuality(self):
         """Check lua Range Finder quality information flow"""
-        self.context_push()
         self.context_collect('STATUSTEXT')
 
-        ex = None
-        try:
-            self.set_parameters({
-                "SCR_ENABLE": 1,
-                "RNGFND1_TYPE": 36,
-                "RNGFND1_ORIENT": 25,
-                "RNGFND1_MIN": 0.10,
-                "RNGFND1_MAX": 50.00,
-            })
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "RNGFND1_TYPE": 36,
+            "RNGFND1_ORIENT": 25,
+            "RNGFND1_MIN": 0.10,
+            "RNGFND1_MAX": 50.00,
+        })
 
-            self.install_example_script_context("rangefinder_quality_test.lua")
+        self.install_example_script_context("rangefinder_quality_test.lua")
 
-            # These string must match those sent by the lua test script.
-            complete_str = "#complete#"
-            failure_str = "!!failure!!"
+        # These string must match those sent by the lua test script.
+        complete_str = "#complete#"
+        failure_str = "!!failure!!"
 
-            self.reboot_sitl()
-
-            self.wait_statustext(complete_str, timeout=20, check_context=True)
-            found_failure = self.statustext_in_collections(failure_str)
-
-            if found_failure is not None:
-                raise NotAchievedException("RngfndQuality test failed: " + found_failure.text)
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-
-        self.context_pop()
-
-        # restart SITL RF driver
         self.reboot_sitl()
 
-        if ex:
-            raise ex
+        self.wait_statustext(complete_str, timeout=20, check_context=True)
+        found_failure = self.statustext_in_collections(failure_str)
+
+        if found_failure is not None:
+            raise NotAchievedException("RngfndQuality test failed: " + found_failure.text)
 
     def watch_distance_maintained(self, delta=0.3, timeout=5.0):
         """Watch and wait for the rangefinder reading to be maintained"""
