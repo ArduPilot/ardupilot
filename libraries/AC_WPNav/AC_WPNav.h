@@ -158,13 +158,15 @@ public:
 
     // Sets the current waypoint destination using a Location object.
     // Converts global coordinates to NEU position and sets destination.
+    // arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
     // Returns false if conversion fails (e.g. missing terrain data).
-    bool set_wp_destination_loc(const Location& destination);
+    bool set_wp_destination_loc(const Location& destination, float arc_rad = 0.0);
 
     // Sets the next waypoint destination using a Location object.
     // Converts global coordinates to NEU position and preloads the trajectory.
+    // arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
     // Returns false if conversion fails or terrain data is unavailable.
-    bool set_wp_destination_next_loc(const Location& destination);
+    bool set_wp_destination_next_loc(const Location& destination, float arc_rad = 0.0);
 
     // Gets the current waypoint destination as a Location object.
     // Altitude frame will be ABOVE_TERRAIN or ABOVE_ORIGIN depending on path configuration.
@@ -183,14 +185,16 @@ public:
     // Sets waypoint destination using NEU position vector in meters from EKF origin.
     // If `is_terrain_alt` is true, altitude is interpreted as height above terrain.
     // Reinitializes the current leg if interrupted, updates origin, and computes trajectory.
+    // arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
     // Returns false if terrain offset cannot be determined when required.
-    virtual bool set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt = false);
+    virtual bool set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt = false, float arc_rad = 0.0);
 
     // Sets the next waypoint destination using a NEU position vector in meters.
     // Only updates if terrain frame matches current leg.
     // Calculates trajectory preview for smoother transition into next segment.
     // Updates velocity handoff if previous leg is a spline.
-    bool set_wp_destination_next_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt = false);
+    // arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
+    bool set_wp_destination_next_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt = false, float arc_rad = 0.0);
 
     // Sets waypoint destination using a NED position vector in meters from EKF origin.
     // Converts internally to NEU. Terrain following is not used.

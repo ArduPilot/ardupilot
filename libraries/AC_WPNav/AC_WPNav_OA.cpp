@@ -37,10 +37,10 @@ bool AC_WPNav_OA::set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, 
 // - destination_neu_m: NEU offset from EKF origin in meters.
 // - is_terrain_alt: true if the Z component represents altitude above terrain.
 // - Resets OA state on success.
-bool AC_WPNav_OA::set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt)
+bool AC_WPNav_OA::set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt, float arc_ang_rad)
 {
     // Call base implementation to set destination and terrain-altitude flag
-    const bool ret = AC_WPNav::set_wp_destination_NEU_m(destination_neu_m, is_terrain_alt);
+    const bool ret = AC_WPNav::set_wp_destination_NEU_m(destination_neu_m, is_terrain_alt, arc_ang_rad);
 
     // If destination set successfully, reset OA state to inactive
     if (ret) {
