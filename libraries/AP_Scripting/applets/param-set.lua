@@ -53,6 +53,7 @@ mavlink:register_rx_msgid(PARAM_SET_ID)
 -- support for sending mavlink messages:
 
 local MAV_PARAM_ERROR = {
+    NO_ERROR             = 0,
     DOES_NOT_EXIST       = 1,
     VALUE_OUT_OF_RANGE   = 2,
     PERMISSION_DENIED    = 3,
