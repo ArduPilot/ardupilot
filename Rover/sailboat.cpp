@@ -102,7 +102,7 @@ const AP_Param::GroupInfo Sailboat::var_info[] = {
 
     // @Param: BEAR_AWAY_P
     // @DisplayName: Bear away gain
-    // @Description: If sailboat is trying to bear away, max heel is reduced by this much at 100% rudder
+    // @Description: If sailboat is trying to bear away, max heel target is reduced by 0 at 50% rudder to this much at 100% rudder
     // @Units: deg
     // @Range: 0 20
     // @Increment: 1
@@ -111,12 +111,12 @@ const AP_Param::GroupInfo Sailboat::var_info[] = {
 
     // @Param: TACK_TIME
     // @DisplayName: Auto tacking timeout
-    // @Description: Tacks in auto mode timeout if not successfully completed within this many milliseconds
-    // @Units: ms
-    // @Range: 1000 20000
-    // @Increment: 500
+    // @Description: This many seconds after a tack is initiated, a tack will timeout if not successfully completed, unless motor is available, in which case motor will kick on at this time to power through the tack for up to 2 times this value befoe timing out.
+    // @Units: s
+    // @Range: 1 20
+    // @Increment: 0.5
     // @User: Standard
-    AP_GROUPINFO("TACK_TIME", 11, Sailboat, tack_timeout_ms, 5000),
+    AP_GROUPINFO("TACK_TIME", 11, Sailboat, tack_timeout_s, 5),
 
     // @Param: TACK_ACQ
     // @DisplayName: sailboat auto tacking accuracy
@@ -213,25 +213,28 @@ void Sailboat::set_pilot_desired_mainsail()
 
 // Max heel angle set by a parameter sail_heel_angle_max
 //  but can be reduced to flatten boat when bearing away (turning downwind)
-float Sailboat::get_target_heel()
+float Sailboat::get_target_heel() const
 {
     // Read rudder state +1 to -1 positive is right turn
     // We don't always calculate the steering before the mainsail, so this may be from the last loop. 
     const float rudder = rover.g2.motors.get_steering() / 4500.0; // 
 
+    if (fabsf(rudder) <= 0.5) {
+        return sail_heel_angle_max;
+    }
+
     // get apparent wind, + is wind over starboard side, - is wind over port side
-    const float wind_dir_apparent = degrees(rover.g2.windvane.get_apparent_wind_direction_rad());
+    const float wind_dir_apparent = rover.g2.windvane.get_apparent_wind_direction_rad();
 
     // if rudder > 50 % and in bear-away direction, try to flatten the boat
     float sail_heel_angle_max_bear = sail_heel_angle_max;
 
-    if (fabsf(rudder) > 0.5) {
-        if ((rudder*wind_dir_apparent) < 0) {  // neg*pos=neg
-            // trying to bear away
-            sail_heel_angle_max_bear = sail_heel_angle_max - bear_away_gain*2.0*(fabsf(rudder)-0.5); // continuous function
-            sail_heel_angle_max_bear = MAX(0.0, sail_heel_angle_max_bear); // limit
-        }
+    if ((rudder*wind_dir_apparent) < 0) {  // neg*pos=neg
+        // trying to bear away
+        sail_heel_angle_max_bear = sail_heel_angle_max - bear_away_gain*2.0*(fabsf(rudder)-0.5); // continuous function
+        sail_heel_angle_max_bear = MAX(0.0, sail_heel_angle_max_bear); // limit
     }
+
 
     return sail_heel_angle_max_bear;
 }
@@ -387,7 +390,7 @@ void Sailboat::handle_tack_request_acro()
 float Sailboat::get_tack_heading_rad()
 {
     if (fabsf(wrap_PI(tack_heading_rad - rover.ahrs.get_yaw_rad())) < radians(tack_accuracy_deg) ||
-       ((AP_HAL::millis() - tack_request_ms) > tack_timeout_ms)) {
+       ((AP_HAL::millis() - tack_request_ms) > tack_timeout_s*1000.0f)) {
         clear_tack();
     }
 
@@ -534,9 +537,9 @@ float Sailboat::calc_heading(float desired_heading_cd)
         // check if we have reached target
         if (fabsf(wrap_PI(tack_heading_rad - rover.ahrs.get_yaw_rad())) <= radians(tack_accuracy_deg)) {
             clear_tack();
-        } else if ((now - auto_tack_start_ms) > tack_timeout_ms) {
+        } else if ((now - auto_tack_start_ms) > tack_timeout_s*1000.0f) {
             // tack has taken too long
-            if ((motor_state == UseMotor::USE_MOTOR_ASSIST) && (now - auto_tack_start_ms) < (3.0f * tack_timeout_ms)) {
+            if ((motor_state == UseMotor::USE_MOTOR_ASSIST) && (now - auto_tack_start_ms) < (3.0f * tack_timeout_s*1000.0f)) {
                 // if we have throttle available use it for another two time periods to get the tack done
                 tack_assist = true;
             } else {

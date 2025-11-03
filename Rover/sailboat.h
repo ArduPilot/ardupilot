@@ -84,7 +84,7 @@ public:
 
     // Max heel angle set by a parameter sail_heel_angle_max
     //  but can be reduced to flatten boat when bearing away (turning downwind)
-    float get_target_heel();
+    float get_target_heel() const;
 
     // set mainsail in auto modes
     void set_auto_mainsail(float desired_speed);
