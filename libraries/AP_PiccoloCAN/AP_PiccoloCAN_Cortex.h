@@ -22,19 +22,3 @@
 
 #include "AP_PiccoloCAN_config.h"
 #include "AP_PiccoloCAN_Device.h"
-#include "piccolo_protocol/ECUPackets.h"
-
-#define PICCOLO_CAN_ECU_ID_DEFAULT 0
-
-#if HAL_PICCOLO_CAN_ENABLE
-
-/*
- * Class representing an individual PiccoloCAN ECU
- */
-class AP_PiccoloCAN_ECU : public AP_PiccoloCAN_Device
-{
-public:
-    // TODO
-};
-
-#endif // HAL_PICCOLO_CAN_ENABLE
