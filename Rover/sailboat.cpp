@@ -102,7 +102,7 @@ const AP_Param::GroupInfo Sailboat::var_info[] = {
 
     // @Param: BEAR_AWAY_P
     // @DisplayName: Bear away gain
-    // @Description: If sailboat is trying to bear away, max heel target is reduced by 0 at 50% rudder to this much at 100% rudder
+    // @Description: If sailboat is trying to bear away, max heel target is reduced linearly from 0 at 50% rudder to this much at 100% rudder
     // @Units: deg
     // @Range: 0 20
     // @Increment: 1
