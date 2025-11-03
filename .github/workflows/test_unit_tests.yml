@@ -166,7 +166,7 @@ jobs:
           Tools/autotest/unittest/annotate_params_unittest.py
 
       - name: Archive buildlog artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: failure()
         with:
            name: fail-${{ matrix.toolchain }}-${{matrix.config}}
