@@ -52,23 +52,64 @@ void SCurve::init()
     time = 0.0f;
     num_segs = SEG_INIT;
     add_segment(num_segs, 0.0f, SegmentType::CONSTANT_JERK, 0.0f, 0.0f, 0.0f, 0.0f);
-    track.zero();
-    delta_unit.zero();
-    position_sq = 0.0f;
+
+    is_arc_segment = false;
+    seg_delta.zero();
+    seg_length = 0.0;
+    arc = {};
 }
 
-// generate a trigonometric track in 3D space that moves over a straight line
-// between two points defined by the origin and destination
-void SCurve::calculate_track(const Vector3p &origin, const Vector3p &destination,
+// generate a 3D trigonometric track defined by origin, destination, and arc angle in radians (0 = straight)
+// includes speed, acceleration, and jerk limits for horizontal and vertical motion
+void SCurve::calculate_track(const Vector3p &origin, const Vector3p &destination, float arc_ang_rad,
                              float speed_xy, float speed_up, float speed_down,
-                             float accel_xy, float accel_z,
+                             float accel_xy, float accel_z, float accel_c,
                              float snap_maximum, float jerk_maximum)
 {
     init();
 
     // leave track as zero length if origin and destination are equal or if the new track length squared is zero
-    const Vector3f track_temp = (destination - origin).tofloat();
-    if (track_temp.is_zero() || is_zero(track_temp.length_squared())) {
+    seg_delta = (destination - origin).tofloat();
+    if (seg_delta.is_zero() || is_zero(seg_delta.length_squared())) {
+        seg_delta.zero();
+        return;
+    }
+
+    const Vector2f chord = seg_delta.xy();
+    const float chord_length = seg_delta.xy().length();
+    if (!is_positive(chord_length) || fabsf(wrap_PI(arc_ang_rad)) < radians(1.0)) {
+        // straight segment
+        is_arc_segment = false;
+        arc.angle_rad = 0.0f;
+        arc.length_ne = chord_length;
+        arc.radius_ne = 0.0f;
+        arc.center_ne = Vector2f();
+        seg_length = seg_delta.length();
+    } else {
+        is_arc_segment = true;
+        arc.angle_rad = arc_ang_rad;
+        arc.radius_ne = fabsf(chord_length / (2.0f * fabsf(sinf(arc.angle_rad * 0.5f))));
+        const float center_offset = safe_sqrt(sq(arc.radius_ne) - sq(chord_length * 0.5f)); // perpendicular offset from chord to circle center
+        const float turn_dir = is_negative(arc.angle_rad) ? -1.0f : 1.0f; // -1 for CCW, 1 for CW 
+        const float center_side = (is_positive(wrap_PI(fabsf(arc.angle_rad)))) ? 1.0f : -1.0f; // -1 for CCW, 1 for CW
+        if (!is_zero(arc.radius_ne) && !is_zero(chord_length)) {
+            arc.center_ne = chord * 0.5f + Vector2f(-chord.y, chord.x) * (center_side * turn_dir * center_offset / chord_length);
+            arc.length_ne = arc.radius_ne * fabsf(arc.angle_rad);
+            seg_length = safe_sqrt(sq(seg_delta.z) + sq(arc.length_ne));
+            accel_c = is_positive(accel_c) ? accel_c : accel_xy;
+            speed_xy = MIN(speed_xy, safe_sqrt(accel_c * arc.radius_ne));
+        } else {
+            // straight segment
+            is_arc_segment = false;
+            arc.angle_rad = 0.0f;
+            arc.length_ne = chord_length;
+            arc.radius_ne = 0.0f;
+            arc.center_ne = Vector2f();
+            seg_length = seg_delta.length();
+        }
+    }
+    if (is_zero(seg_length)) {
+        seg_delta.zero();
         return;
     }
 
@@ -90,15 +131,7 @@ void SCurve::calculate_track(const Vector3p &origin, const Vector3p &destination
         return;
     }
 
-    track = track_temp;
-    const float track_length = track.length();
-    if (is_zero(track_length)) {
-        // avoid possible divide by zero
-        delta_unit.zero();
-    } else {
-        delta_unit = track.normalized();
-        add_segments(track_length);
-    }
+    add_segments(seg_length);
 
     // catch calculation errors
     if (!valid()) {
@@ -120,7 +153,7 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
     }
 
     // segment accelerations can not be changed after segment creation.
-    const float track_speed_max = kinematic_limit(delta_unit, speed_xy, speed_up, fabsf(speed_down));
+    const float track_speed_max = kinematic_limit(arc.length_ne, seg_delta.z, speed_xy, speed_up, fabsf(speed_down));
 
     if (is_equal(vel_max, track_speed_max)) {
         // new speed is equal to current speed maximum so no need to change anything
@@ -249,7 +282,7 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
 
         // add to constant velocity segment to end at the correct position
         const float dP = MAX(0.0f, Pend - segment[SEG_DECEL_END].end_pos);
-        const float t15 =  dP / segment[SEG_CONST].end_vel;
+        const float t15 = dP / segment[SEG_CONST].end_vel;
         for (uint8_t i = SEG_CONST; i <= SEG_DECEL_END; i++) {
             segment[i].end_time += t15;
             segment[i].end_pos += dP;
@@ -327,7 +360,7 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
 
     // add to constant velocity segment to end at the correct position
     const float dP = MAX(0.0f, Pend - segment[SEG_DECEL_END].end_pos);
-    const float t15 =  dP / segment[SEG_CONST].end_vel;
+    const float t15 = dP / segment[SEG_CONST].end_vel;
     for (uint8_t i = SEG_CONST; i <= SEG_DECEL_END; i++) {
         segment[i].end_time += t15;
         segment[i].end_pos += dP;
@@ -359,11 +392,10 @@ float SCurve::set_origin_speed_max(float speed)
     }
 
     const float Vm = segment[SEG_ACCEL_END].end_vel;
-    const float track_length = track.length();
     speed = MIN(speed, Vm);
 
     float Jm, tj, t2, t4, t6;
-    calculate_path(snap_max, jerk_max, speed, accel_max, Vm, track_length * 0.5f, Jm, tj, t2, t4, t6);
+    calculate_path(snap_max, jerk_max, speed, accel_max, Vm, seg_length * 0.5f, Jm, tj, t2, t4, t6);
 
     uint8_t seg = SEG_INIT;
     add_segment(seg, 0.0f, SegmentType::CONSTANT_JERK, 0.0f, 0.0f, speed, 0.0f);
@@ -375,8 +407,8 @@ float SCurve::set_origin_speed_max(float speed)
     segment[SEG_ACCEL_END].end_accel = 0.0f;
 
     // offset acceleration segment if we can't fit it all into half the original length
-    const float dPstart = MIN(0.0f, track_length * 0.5f - segment[SEG_ACCEL_END].end_pos);
-    const float dt =  dPstart / segment[SEG_ACCEL_END].end_vel;
+    const float dPstart = MIN(0.0f, seg_length * 0.5f - segment[SEG_ACCEL_END].end_pos);
+    const float dt = dPstart / segment[SEG_ACCEL_END].end_vel;
     for (uint8_t i = SEG_INIT; i <= SEG_ACCEL_END; i++) {
         segment[i].end_time += dt;
         segment[i].end_pos += dPstart;
@@ -395,7 +427,7 @@ float SCurve::set_origin_speed_max(float speed)
     seg = SEG_CONST;
     add_segment_const_jerk(seg, 0.0f, 0.0f);
 
-    calculate_path(snap_max, jerk_max, 0.0f, accel_max, segment[SEG_CONST].end_vel, track_length * 0.5f, Jm, tj, t2, t4, t6);
+    calculate_path(snap_max, jerk_max, 0.0f, accel_max, segment[SEG_CONST].end_vel, seg_length * 0.5f, Jm, tj, t2, t4, t6);
 
     add_segments_jerk(seg, tj, -Jm, t6);
     add_segment_const_jerk(seg, t4, 0.0f);
@@ -406,8 +438,8 @@ float SCurve::set_origin_speed_max(float speed)
     segment[SEG_DECEL_END].end_vel = MAX(0.0f, segment[SEG_DECEL_END].end_vel);
 
     // add to constant velocity segment to end at the correct position
-    const float dP = MAX(0.0f, track_length - segment[SEG_DECEL_END].end_pos);
-    const float t15 =  dP / segment[SEG_CONST].end_vel;
+    const float dP = MAX(0.0f, seg_length - segment[SEG_DECEL_END].end_pos);
+    const float t15 = dP / segment[SEG_CONST].end_vel;
     for (uint8_t i = SEG_CONST; i <= SEG_DECEL_END; i++) {
         segment[i].end_time += t15;
         segment[i].end_pos += dP;
@@ -441,11 +473,10 @@ void SCurve::set_destination_speed_max(float speed)
     }
 
     const float Vm = segment[SEG_CONST].end_vel;
-    const float track_length = track.length();
     speed = MIN(speed, Vm);
 
     float Jm, tj, t2, t4, t6;
-    calculate_path(snap_max, jerk_max, speed, accel_max, Vm, track_length * 0.5f, Jm, tj, t2, t4, t6);
+    calculate_path(snap_max, jerk_max, speed, accel_max, Vm, seg_length * 0.5f, Jm, tj, t2, t4, t6);
 
     uint8_t seg = SEG_CONST;
     add_segment_const_jerk(seg, 0.0f, 0.0f);
@@ -459,8 +490,8 @@ void SCurve::set_destination_speed_max(float speed)
     segment[SEG_DECEL_END].end_vel = MAX(0.0f, segment[SEG_DECEL_END].end_vel);
 
     // add to constant velocity segment to end at the correct position
-    const float dP = MAX(0.0f, track_length - segment[SEG_DECEL_END].end_pos);
-    const float t15 =  dP / segment[SEG_CONST].end_vel;
+    const float dP = MAX(0.0f, seg_length - segment[SEG_DECEL_END].end_pos);
+    const float t15 = dP / segment[SEG_CONST].end_vel;
     for (uint8_t i = SEG_CONST; i <= SEG_DECEL_END; i++) {
         segment[i].end_time += t15;
         segment[i].end_pos += dP;
@@ -527,7 +558,7 @@ bool SCurve::advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, floa
 // time has reached the end of the sequence
 bool SCurve::finished() const
 {
-    return ((time >= time_end()) || (position_sq >= track.length_squared()));
+    return time >= time_end();
 }
 
 // increment time pointer and return the position, velocity and acceleration vectors relative to the origin
@@ -537,10 +568,7 @@ void SCurve::move_from_pos_vel_accel(float dt, Vector3p &pos, Vector3f &vel, Vec
     float scurve_P1 = 0.0f;
     float scurve_V1, scurve_A1, scurve_J1;
     get_jerk_accel_vel_pos_at_time(time, scurve_J1, scurve_A1, scurve_V1, scurve_P1);
-    pos += delta_unit.topostype() * (postype_t)scurve_P1;
-    vel += delta_unit * scurve_V1;
-    accel += delta_unit * scurve_A1;
-    position_sq = sq(scurve_P1);
+    project_scurve_onto_track(scurve_A1, scurve_V1, scurve_P1, pos, vel, accel);
 }
 
 // increment time pointer and return the position, velocity and acceleration vectors relative to the destination
@@ -550,11 +578,8 @@ void SCurve::move_to_pos_vel_accel(float dt, Vector3p &pos, Vector3f &vel, Vecto
     float scurve_P1 = 0.0f;
     float scurve_V1, scurve_A1, scurve_J1;
     get_jerk_accel_vel_pos_at_time(time, scurve_J1, scurve_A1, scurve_V1, scurve_P1);
-    pos += delta_unit.topostype() * (postype_t)scurve_P1;
-    vel += delta_unit * scurve_V1;
-    accel += delta_unit * scurve_A1;
-    position_sq = sq(scurve_P1);
-    pos -= track.topostype();
+    project_scurve_onto_track(scurve_A1, scurve_V1, scurve_P1, pos, vel, accel);
+    pos -= seg_delta.topostype();
 }
 
 // return the position, velocity and acceleration vectors relative to the origin at a specified time along the path
@@ -563,9 +588,62 @@ void SCurve::move_from_time_pos_vel_accel(float time_now, Vector3p &pos, Vector3
     float scurve_P1 = 0.0f;
     float scurve_V1 = 0.0f, scurve_A1 = 0.0f, scurve_J1 = 0.0f;
     get_jerk_accel_vel_pos_at_time(time_now, scurve_J1, scurve_A1, scurve_V1, scurve_P1);
-    pos += delta_unit.topostype() * (postype_t)scurve_P1;
-    vel += delta_unit * scurve_V1;
-    accel += delta_unit * scurve_A1;
+    project_scurve_onto_track(scurve_A1, scurve_V1, scurve_P1, pos, vel, accel);
+}
+
+// project the straight-line S-curve motion profile onto the active track segment
+// converts scalar S-curve kinematics (A1, V1, P1) into 3D position, velocity and acceleration
+// along either a circular arc or straight segment
+void SCurve::project_scurve_onto_track(float scurve_A1, float scurve_V1, float scurve_P1, Vector3p &pos, Vector3f &vel, Vector3f &accel)
+{
+    if (is_zero(seg_length)) {
+        return;
+    }
+
+    if (is_arc_segment) {
+        // Arc segment projection
+        
+        // protect against divide by zero
+        if (!is_positive(arc.radius_ne)) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            ::printf("SCurve:: Arc radius is negative or zero\n");
+#endif
+            INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
+            init();
+            return;
+        }
+
+        Vector2f center_to_pos_ne = -arc.center_ne;
+        const float turn_dir = is_negative(arc.angle_rad) ? -1.0f : 1.0f; // -1 for CCW, 1 for CW 
+        // rotate by progress along the arc
+        center_to_pos_ne.rotate(turn_dir * fabsf(arc.angle_rad) * (scurve_P1 / seg_length));
+
+        // position
+        const float dz_ds = seg_delta.z / seg_length;
+        Vector3f delta_pos(arc.center_ne + center_to_pos_ne, scurve_P1 * dz_ds);
+        pos += delta_pos.topostype();
+
+        // direction unit (tangent + vertical slope)
+        Vector2f arc_tangent_ne = Vector2f(-center_to_pos_ne.y, center_to_pos_ne.x) * turn_dir;
+        arc_tangent_ne /= arc.radius_ne;
+        Vector3f path_unit(arc_tangent_ne.x, arc_tangent_ne.y, dz_ds);
+        path_unit.normalize();
+
+        // velocity & tangential accel
+        vel += path_unit * scurve_V1;
+        accel += path_unit * scurve_A1;
+
+        // centripetal accel
+        accel.xy() -= center_to_pos_ne * sq(scurve_V1 / arc.radius_ne);
+
+        return;
+    }
+
+    // Straight segment projection
+    const Vector3f path_unit = seg_delta.normalized();
+    pos += path_unit.topostype() * (postype_t)scurve_P1;
+    vel += path_unit * scurve_V1;
+    accel += path_unit * scurve_A1;
 }
 
 // time at the end of the sequence
@@ -891,7 +969,7 @@ void SCurve::calculate_path(float Sm, float Jm, float V0, float Am, float Vm, fl
         // @Field: t6_out: segment duration
 
 #if HAL_LOGGING_ENABLED
-        static bool logged_scve;  // only log once
+        static bool logged_scve; // only log once
         if (!logged_scve) {
             logged_scve = true;
             AP::logger().Write(
@@ -1106,7 +1184,7 @@ void SCurve::debug() const
                             (unsigned)i, (double)segment[i].end_time, (double)segment[i].seg_type, (double)segment[i].jerk_ref,
                             (double)segment[i].end_accel, (double)segment[i].end_vel, (double)segment[i].end_pos);
     }
-    ::printf("track x:%4.2f, y:%4.2f, z:%4.2f\n", (double)track.x, (double)track.y, (double)track.z);
-    ::printf("delta_unit x:%4.2f, y:%4.2f, z:%4.2f\n", (double)delta_unit.x, (double)delta_unit.y, (double)delta_unit.z);
+    ::printf("track x:%4.2f, y:%4.2f, z:%4.2f\n", (double)seg_delta.x, (double)seg_delta.y, (double)seg_delta.z);
+    ::printf("arc_center_ne x:%4.2f, y:%4.2f\n", (double)arc.center_ne.x, (double)arc.center_ne.y);
 }
 #endif
