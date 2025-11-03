@@ -8989,11 +8989,11 @@ Also, ignores heartbeats not from our target system'''
         return glob.glob("logs/*.BIN")
 
     def remove_bin_logs(self):
-        util.run_cmd('/bin/rm -f logs/*.BIN logs/LASTLOG.TXT')
+        util.run_cmd('rm -f logs/*.BIN logs/LASTLOG.TXT')
 
     def remove_ardupilot_terrain_cache(self):
         '''removes the terrain files ArduPilot keeps in its onboiard storage'''
-        util.run_cmd('/bin/rm -f %s' % util.reltopdir("terrain/*.DAT"))
+        util.run_cmd('rm -f %s' % util.reltopdir("terrain/*.DAT"))
 
     def check_logs(self, name):
         '''called to move relevant log files from our working directory to the
