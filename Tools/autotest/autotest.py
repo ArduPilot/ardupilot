@@ -404,7 +404,7 @@ def run_specific_test(step, *args, **kwargs):
 def run_step(step):
     """Run one step."""
     # remove old logs
-    util.run_cmd('/bin/rm -f logs/*.BIN logs/LASTLOG.TXT')
+    util.run_cmd('rm -f logs/*.BIN logs/LASTLOG.TXT')
 
     if step == "prerequisites":
         return test_prerequisites()
