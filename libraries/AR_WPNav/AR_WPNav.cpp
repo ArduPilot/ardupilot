@@ -249,11 +249,13 @@ bool AR_WPNav::set_desired_location(const Location& destination, Location next_d
     } else {
         _scurve_this_leg.calculate_track(Vector3p{origin_NE.x, origin_NE.y, 0.0f},              // origin
                                          Vector3p{destination_NE.x, destination_NE.y, 0.0f},    // destination
+                                         0.0, // arc length is zero for straight track
                                          _pos_control.get_speed_max(),
                                          _pos_control.get_speed_max(),  // speed up (not used)
                                          _pos_control.get_speed_max(),  // speed down (not used)
                                          _pos_control.get_accel_max(),  // forward back acceleration
                                          _pos_control.get_accel_max(),  // vertical accel (not used)
+                                         _pos_control.get_accel_max(),  // corner acceleration
                                          AR_WPNAV_SNAP_MAX,             // snap
                                          _pos_control.get_jerk_max());
     }
@@ -276,11 +278,13 @@ bool AR_WPNav::set_desired_location(const Location& destination, Location next_d
             next_destination_NE *= 0.01f;
             _scurve_next_leg.calculate_track(Vector3p{destination_NE.x, destination_NE.y, 0.0f},
                                              Vector3p{next_destination_NE.x, next_destination_NE.y, 0.0f},
+                                             0.0, // arc length is zero for straight track
                                              _pos_control.get_speed_max(),
                                              _pos_control.get_speed_max(),  // speed up (not used)
                                              _pos_control.get_speed_max(),  // speed down (not used)
                                              _pos_control.get_accel_max(),  // forward back acceleration
                                              _pos_control.get_accel_max(),  // vertical accel (not used)
+                                             _pos_control.get_accel_max(),  // corner accel
                                              AR_WPNAV_SNAP_MAX,             // snap
                                              _pos_control.get_jerk_max());
 
