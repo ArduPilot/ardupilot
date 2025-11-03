@@ -259,8 +259,9 @@ void AC_WPNav::set_speed_down_ms(float speed_down_ms)
 
 // Sets the current waypoint destination using a Location object.
 // Converts global coordinates to NEU position and sets destination.
+// arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
 // Returns false if conversion fails (e.g. missing terrain data).
-bool AC_WPNav::set_wp_destination_loc(const Location& destination)
+bool AC_WPNav::set_wp_destination_loc(const Location& destination, float arc_rad)
 {
     bool is_terrain_alt;
     Vector3p dest_neu_m;
@@ -271,13 +272,14 @@ bool AC_WPNav::set_wp_destination_loc(const Location& destination)
     }
 
     // apply destination as the active waypoint leg
-    return set_wp_destination_NEU_m(dest_neu_m, is_terrain_alt);
+    return set_wp_destination_NEU_m(dest_neu_m, is_terrain_alt, arc_rad);
 }
 
 // Sets the next waypoint destination using a Location object.
 // Converts global coordinates to NEU position and preloads the trajectory.
+// arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
 // Returns false if conversion fails or terrain data is unavailable.
-bool AC_WPNav::set_wp_destination_next_loc(const Location& destination)
+bool AC_WPNav::set_wp_destination_next_loc(const Location& destination, float arc_rad)
 {
     bool is_terrain_alt;
     Vector3p dest_neu_m;
@@ -288,7 +290,7 @@ bool AC_WPNav::set_wp_destination_next_loc(const Location& destination)
     }
 
     // apply destination as the next waypoint leg
-    return set_wp_destination_next_NEU_m(dest_neu_m, is_terrain_alt);
+    return set_wp_destination_next_NEU_m(dest_neu_m, is_terrain_alt, arc_rad);
 }
 
 // Gets the current waypoint destination as a Location object.
@@ -316,8 +318,9 @@ bool AC_WPNav::set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, boo
 // Sets waypoint destination using NEU position vector in meters from EKF origin.
 // If `is_terrain_alt` is true, altitude is interpreted as height above terrain.
 // Reinitializes the current leg if interrupted, updates origin, and computes trajectory.
+// arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
 // Returns false if terrain offset cannot be determined when required.
-bool AC_WPNav::set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt)
+bool AC_WPNav::set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt, float arc_rad)
 {
     // re-initialise if previous destination has been interrupted
     if (!is_active() || !_flags.reached_destination) {
@@ -368,9 +371,9 @@ bool AC_WPNav::set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool 
         _scurve_this_leg = _scurve_next_leg;
     } else {
         // Generate a new S-curve segment to the new destination
-        _scurve_this_leg.calculate_track(_origin_neu_m, _destination_neu_m,
+        _scurve_this_leg.calculate_track(_origin_neu_m, _destination_neu_m, arc_rad,
                                          _pos_control.get_max_speed_NE_ms(), _pos_control.get_max_speed_up_ms(), _pos_control.get_max_speed_down_ms(),
-                                         get_wp_acceleration_mss(), get_accel_U_mss(),
+                                         get_wp_acceleration_mss(), get_accel_U_mss(), get_corner_acceleration_mss(),
                                          _scurve_snap_max_mssss, _scurve_jerk_max_msss);
         if (!is_zero(origin_speed_m)) {
             // If we have a valid starting speed, seed it into the S-curve
@@ -391,7 +394,8 @@ bool AC_WPNav::set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool 
 // Only updates if terrain frame matches current leg.
 // Calculates trajectory preview for smoother transition into next segment.
 // Updates velocity handoff if previous leg is a spline.
-bool AC_WPNav::set_wp_destination_next_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt)
+// arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
+bool AC_WPNav::set_wp_destination_next_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt, float arc_rad)
 {
     // do not add next point if alt types don't match
     if (is_terrain_alt != _is_terrain_alt) {
@@ -399,9 +403,9 @@ bool AC_WPNav::set_wp_destination_next_NEU_m(const Vector3p& destination_neu_m, 
     }
 
     // Preload next S-curve leg with current speed and acceleration constraints
-    _scurve_next_leg.calculate_track(_destination_neu_m, destination_neu_m,
+    _scurve_next_leg.calculate_track(_destination_neu_m, destination_neu_m, arc_rad,
                                      _pos_control.get_max_speed_NE_ms(), _pos_control.get_max_speed_up_ms(), _pos_control.get_max_speed_down_ms(),
-                                     get_wp_acceleration_mss(), get_accel_U_mss(),
+                                     get_wp_acceleration_mss(), get_accel_U_mss(), get_corner_acceleration_mss(),
                                      _scurve_snap_max_mssss, _scurve_jerk_max_msss);
     if (_this_leg_is_spline) {
         const float this_leg_dest_speed_max_ms = _spline_this_leg.get_destination_speed_max();
