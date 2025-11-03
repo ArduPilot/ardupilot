@@ -61,7 +61,7 @@ enum ap_message : uint8_t {
     MSG_TERRAIN_REQUEST                =  39,
     MSG_TERRAIN_REPORT                 =  40,
 #endif  // AP_TERRAIN_AVAILABLE
-    MSG_BATTERY2                       =  41,
+    MSG_BATTERY2_UNUSED                =  41,
     MSG_CAMERA_FEEDBACK                =  42,
     MSG_CAMERA_INFORMATION             =  43,
     MSG_CAMERA_SETTINGS                =  44,

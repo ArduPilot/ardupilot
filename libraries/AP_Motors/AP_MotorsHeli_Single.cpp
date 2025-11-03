@@ -147,18 +147,21 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @DisplayName: DDFP Tail Rotor Motor Spin minimum
     // @Description: Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range.
     // @Values: 0.0:Low, 0.15:Default, 0.3:High
+    // @Range: 0.0 0.3
     // @User: Standard
 
     // @Param: DDFP_SPIN_MAX
     // @DisplayName: DDFP Tail Rotor Motor Spin maximum
     // @Description: Point at which the thrust saturates expressed as a number from 0 to 1 in the entire output range
     // @Values: 0.9:Low, 0.95:Default, 1.0:High
+    // @Range: 0.9 1.0
     // @User: Standard
 
     // @Param: DDFP_BAT_IDX
     // @DisplayName: DDFP Tail Rotor Battery compensation index
     // @Description: Which battery monitor should be used for doing compensation
     // @Values: 0:First battery, 1:Second battery
+    // @Range: 0 15
     // @User: Standard
 
     // @Param: DDFP_BAT_V_MAX

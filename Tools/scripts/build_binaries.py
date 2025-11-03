@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from __future__ import annotations
+
 """
 script to build the latest binaries for each vehicle type, ready to upload
 Peter Barker, August 2017
@@ -389,8 +391,10 @@ is bob we will attempt to checkout bob-AVR'''
                 pass
 
     def build_vehicle(self, tag, vehicle, boards, vehicle_binaries_subdir,
-                      binaryname, frames=[None]):
+                      binaryname, frames: list | None = None):
         '''build vehicle binaries'''
+        if frames is None:
+            frames = [None]
         self.progress("Building %s %s binaries (cwd=%s)" %
                       (vehicle, tag, os.getcwd()))
 

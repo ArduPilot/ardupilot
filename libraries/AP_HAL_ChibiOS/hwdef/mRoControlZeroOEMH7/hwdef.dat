@@ -230,7 +230,7 @@ SPIDEV bmi088_a    SPI5 DEVID2  BMI088_ACCEL_CS   MODE3  5*MHZ  5*MHZ
 SPIDEV icm20608    SPI1 DEVID2  ICM_20602_CS      MODE3  2*MHZ  4*MHZ
 SPIDEV icm20948    SPI1 DEVID1  ICM_20948_CS      MODE3  2*MHZ  4*MHZ
 
-# Enable RAMTROM parameter storage.
+# Enable RAMTRON parameter storage.
 define HAL_WITH_RAMTRON 1
 
 # Enable FAT filesystem support (needs a microSD defined via SDMMC).
@@ -262,4 +262,4 @@ BARO DPS280      SPI:dps310
 
 # 1 compass
 COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1

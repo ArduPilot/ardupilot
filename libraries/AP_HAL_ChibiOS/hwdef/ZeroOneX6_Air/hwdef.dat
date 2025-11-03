@@ -284,7 +284,7 @@ BARO ICP201XX I2C:0:0x64
 BARO ICP201XX I2C:2:0x63
 
 # compass
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 
 # builtin compass on ZeroOneX6_Air Series
 COMPASS IST8310 I2C:0:0x0E false ROTATION_NONE
@@ -302,7 +302,7 @@ IMU Invensensev3 SPI:icm45686_2 ROTATION_NONE
 define HAL_INS_HIGHRES_SAMPLE 7
 define HAL_DEFAULT_INS_FAST_SAMPLE 7
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_STORAGE_SIZE 32768
 define HAL_WITH_RAMTRON 1
 

@@ -253,7 +253,7 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 7
 
 # probe external I2C compasses plus some internal IST8310
 # we also probe some external IST8310 with a non-standard orientation
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 COMPASS RM3100 I2C:0:0x20 false ROTATION_NONE
 
 # baro
@@ -281,7 +281,7 @@ define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 define HAL_GPIO_A_LED_PIN 90
 define HAL_GPIO_B_LED_PIN 92
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_STORAGE_SIZE 32768
 define HAL_WITH_RAMTRON 1
 

@@ -1212,8 +1212,7 @@ bool AP_Arming::terrain_checks(bool report) const
 
     const AP_Terrain *terrain = AP_Terrain::get_singleton();
     if (terrain == nullptr) {
-        // this is also a system error, and it is already complaining
-        // about it.
+        check_failed(Check::PARAMETERS, report, "terrain disabled");
         return false;
     }
 
@@ -1796,7 +1795,7 @@ bool AP_Arming::crashdump_checks(bool report)
         return true;
     }
 
-    check_failed(Check::PARAMETERS, true, "CrashDump data detected");
+    check_failed(Check::PARAMETERS, report, "CrashDump data detected");
 
     return false;
 }

@@ -179,13 +179,13 @@ BARO MS5611 SPI:ms5611
 # two compasses
 COMPASS HMC5843 I2C:0:0x1e false ROTATION_YAW_90
 COMPASS LSM303D SPI:lsm9ds0_am ROTATION_PITCH_180_YAW_270
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 
 define HAL_CHIBIOS_ARCH_MINDPXV2 1
 
 define HAL_STORAGE_SIZE 16384
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_WITH_RAMTRON 1
 
 # allow to have have a dedicated safety switch pin

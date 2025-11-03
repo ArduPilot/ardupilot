@@ -41,10 +41,6 @@ class Flake8Checker(object):
             for filename in filenames:
                 if os.path.splitext(filename)[1] != ".py":
                     continue
-                if filename == 'env.py':
-                    # we are generating content into these files which
-                    # is not actually Python...
-                    continue
                 filepath = os.path.join(dirpath, filename)
                 content = pathlib.Path(filepath).read_text()
                 if "AP_FLAKE8_CLEAN" not in content:

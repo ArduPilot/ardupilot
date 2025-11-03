@@ -75,8 +75,11 @@ PERIPH_BOARDS = BoardList().find_ap_periph_boards(skip=periph_hwdefs_to_skip)
 ALL_VEHICLE_FIRMWARES = ['Sub', 'Plane', 'Blimp', 'Copter', 'Tracker', 'Rover']
 
 
-def check_boards(boards, firmwares, skip=SkippedChecks()):
+def check_boards(boards, firmwares, skip : SkippedChecks = None):
     '''Check parameter files for ChibiOS hwdef boards.'''
+    if skip is None:
+        skip = SkippedChecks()
+
     hwdef_dir = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
         '..', '..', 'libraries', 'AP_HAL_ChibiOS', 'hwdef'
@@ -94,13 +97,15 @@ def check_boards(boards, firmwares, skip=SkippedChecks()):
     return check_files(param_files, firmwares, skip=skip)
 
 
-def check_sitl(skip=SkippedChecks()):
+def check_sitl(skip : SkippedChecks = None):
     '''Check every parameter file that shows up in vehicleinfo.py
 
     Because this also provides us information about the intended firmware, we
     can check it strictly against the parameter metadata for that specific
     firmware, unlike the non-periph hwdef boards.
     '''
+    if skip is None:
+        skip = SkippedChecks()
     vinfo = VehicleInfo()
     vehicle_name = {
         'ArduCopter': 'Copter',
@@ -145,13 +150,15 @@ def check_sitl(skip=SkippedChecks()):
     return success
 
 
-def check_frame_params(skip=SkippedChecks()):
+def check_frame_params(skip : SkippedChecks = None):
     '''Check all files within Tools/Frame_params
 
     These don't contain any information about firmware (e.g. Copter, Plane,
     etc.), so we check them against all vehicles, but it would be a good idea
     to strictly check them against the intended firmware in the future.
     '''
+    if skip is None:
+        skip = SkippedChecks()
     frame_params_dir = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
         '..', '..', 'Tools', 'Frame_params'
@@ -170,8 +177,11 @@ def check_frame_params(skip=SkippedChecks()):
     return check_files(param_files, ALL_VEHICLE_FIRMWARES, skip=skip)
 
 
-def check_files(files, firmwares, skip=SkippedChecks()):
+def check_files(files, firmwares, skip : SkippedChecks = None):
     '''Check a list of parameter files against the metadata'''
+    if skip is None:
+        skip = SkippedChecks()
+
     metadata = get_metadata(firmwares)
     success = True
     for file in files:

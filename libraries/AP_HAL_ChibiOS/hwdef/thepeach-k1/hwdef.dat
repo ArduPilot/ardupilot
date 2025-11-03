@@ -1,11 +1,6 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F427xx
 
-# We set a specific HAL_BOARD_SUBTYPE, allowing for custom config in
-# drivers. For this to be used the subtype needs to be added to
-# AP_HAL/AP_HAL_Boards.h as well.
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
-
 # USB setup
 USB_VENDOR 0x35a7 # ONLY FOR USE BY ThePeach
 USB_PRODUCT 0x0001
@@ -234,7 +229,7 @@ IMU Invensense SPI:mpu9250 ROTATION_ROLL_180_YAW_90
 
 # compass as part
 COMPASS AK8963:probe_mpu9250 0 ROTATION_ROLL_180_YAW_90
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 
 define HAL_DEFAULT_INS_FAST_SAMPLE 3
 
@@ -257,7 +252,7 @@ define HAL_HAVE_SAFETY_SWITCH 1
 # This enables the use of a ramtron device for storage, if one is
 # found on SPI. You must have a ramtron entry in the SPI device table.
 
-# Enable RAMTROM parameter storage.
+# Enable RAMTRON parameter storage.
 define HAL_WITH_RAMTRON 1
 
 # Enable FAT filesystem support (needs a microSD defined via SDIO).

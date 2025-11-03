@@ -33,7 +33,7 @@ FLASH_RESERVE_START_KB 128
 # use FRAM for storage
 define HAL_STORAGE_SIZE 32768
 
-# Enable RAMTROM parameter storage.
+# Enable RAMTRON parameter storage.
 define HAL_WITH_RAMTRON 1
 
 # RC Input set for Interrupt not DMA
@@ -285,4 +285,4 @@ BARO DPS280      SPI:dps310
 # 1 compass
 COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180
 
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1

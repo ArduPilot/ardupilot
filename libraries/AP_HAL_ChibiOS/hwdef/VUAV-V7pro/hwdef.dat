@@ -228,7 +228,7 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 7
 
 # compasses
 
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 COMPASS RM3100 SPI:rm3100 false ROTATION_NONE
 
 # microSD support
@@ -251,7 +251,7 @@ define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN  2
 # use pixracer style 3-LED indicators
 define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_STORAGE_SIZE 32768
 define HAL_WITH_RAMTRON 1
 

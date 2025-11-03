@@ -1387,7 +1387,10 @@ void Compass::_detect_backends(void)
 #endif
 
 #if AP_COMPASS_SITL_ENABLED && !AP_TEST_DRONECAN_DRIVERS
-    ADD_BACKEND(DRIVER_SITL, NEW_NOTHROW AP_Compass_SITL());
+    // create several SITL compass backends:
+    for (uint8_t i=0; i<MAX_CONNECTED_MAGS; i++) {
+        ADD_BACKEND(DRIVER_SITL, NEW_NOTHROW AP_Compass_SITL(i));
+    }
 #endif
 
 #if AP_COMPASS_DRONECAN_ENABLED
@@ -1397,16 +1400,20 @@ void Compass::_detect_backends(void)
     CHECK_UNREG_LIMIT_RETURN;
 #endif
 
-#ifdef HAL_PROBE_EXTERNAL_I2C_COMPASSES
+#if AP_COMPASS_PROBING_ENABLED
     // allow boards to ask for external probing of all i2c compass types in hwdef.dat
     _probe_external_i2c_compasses();
     CHECK_UNREG_LIMIT_RETURN;
-#endif
+#endif  // AP_COMPASS_PROBING_ENABLED
 
 #if AP_COMPASS_MSP_ENABLED
     for (uint8_t i=0; i<8; i++) {
         if (msp_instance_mask & (1U<<i)) {
-            ADD_BACKEND(DRIVER_MSP, NEW_NOTHROW AP_Compass_MSP(i));
+            auto *backend = AP_Compass_MSP::probe(i);
+            if (backend == nullptr) {
+                continue;
+            }
+            ADD_BACKEND(DRIVER_MSP, backend);
         }
     }
 #endif

@@ -17,8 +17,8 @@ import hwdef  # noqa:E402
 
 class LinuxHWDef(hwdef.HWDef):
 
-    def __init__(self, quiet=False, outdir=None, hwdef=[]):
-        super(LinuxHWDef, self).__init__(quiet=quiet, outdir=outdir, hwdef=hwdef)
+    def __init__(self, **kwargs):
+        super(LinuxHWDef, self).__init__(**kwargs)
         # a list of LINUX_SPIDEV devices
         self.linux_spidev = []
 
@@ -31,8 +31,6 @@ class LinuxHWDef(hwdef.HWDef):
         self.write_IMU_config(f)
         self.write_MAG_config(f)
         self.write_BARO_config(f)
-
-        self.write_env_py(os.path.join(self.outdir, "env.py"))
 
     def process_line(self, line, depth):
         '''process one line of pin definition file'''

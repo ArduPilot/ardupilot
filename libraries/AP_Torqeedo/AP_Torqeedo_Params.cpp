@@ -16,6 +16,7 @@ const AP_Param::GroupInfo AP_Torqeedo_Params::var_info[] = {
     // @DisplayName: Torqeedo ON/Off pin
     // @Description: Pin number connected to Torqeedo's on/off pin. -1 to use serial port's RTS pin if available
     // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
+    // @Range: -1 127
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("ONOFF_PIN", 2, AP_Torqeedo_Params, pin_onoff, -1),
@@ -24,6 +25,7 @@ const AP_Param::GroupInfo AP_Torqeedo_Params::var_info[] = {
     // @DisplayName: Torqeedo DE pin
     // @Description: Pin number connected to RS485 to Serial converter's DE pin. -1 to use serial port's CTS pin if available
     // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
+    // @Range: -1 127
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("DE_PIN", 3, AP_Torqeedo_Params, pin_de, -1),

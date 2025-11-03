@@ -497,7 +497,7 @@ Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
     if (vel.is_zero()) {
         return vel;
     }
-    copter.ahrs.body_to_earth2D(vel);
+    vel = copter.ahrs.body_to_earth2D(vel);
 
     // Transform square input range to circular output
     // vel_scalar is the vector to the edge of the +- 1.0 square in the direction of the current input
@@ -601,8 +601,9 @@ float Mode::get_alt_above_ground_m(void) const
     if (copter.get_rangefinder_height_interpolated_m(alt_above_ground_m)) {
         return alt_above_ground_m;
     }
-    if (!pos_control->is_active_NE()) {
-        return copter.current_loc.alt;
+    if (!copter.current_loc.initialised()) {
+        // current loc uninitialised during startup, return zero
+        return 0;
     }
     if (copter.current_loc.get_alt_m(Location::AltFrame::ABOVE_TERRAIN, alt_above_ground_m)) {
         return alt_above_ground_m;

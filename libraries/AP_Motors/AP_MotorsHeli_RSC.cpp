@@ -601,8 +601,8 @@ void AP_MotorsHeli_RSC::write_log(void) const
 {
     // @LoggerMessage: HRSC
     // @Description: Helicopter related messages 
-    // @Field: I: Instance, 0=Main, 1=Tail
     // @Field: TimeUS: Time since system startup
+    // @Field: I: Instance, 0=Main, 1=Tail
     // @Field: DRRPM: Desired rotor speed
     // @Field: ERRPM: Estimated rotor speed
     // @Field: Gov: Governor Output
