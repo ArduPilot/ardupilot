@@ -19,6 +19,7 @@
 
 #include <AP_CANManager/AP_CANManager.h>
 
+#include "AP_PiccoloCAN_config.h"
 #include "AP_PiccoloCAN_Device.h"
 #include "piccolo_protocol/ServoPackets.h"
 
