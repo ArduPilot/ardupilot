@@ -274,7 +274,7 @@ void AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
             param_name_length += 2;
         }
         if (param_name_length > 16) {
-            FATAL("suffix is too long in %s", group_info[i].name);
+            FATAL("suffix is too long in %s (%u > 16)", group_info[i].name, param_name_length);
         }
         (*total_size) += size + sizeof(struct Param_header);
     }
@@ -1103,24 +1103,6 @@ bool AP_Param::get_param_by_index(void *obj_ptr, uint8_t idx, ap_var_type old_pt
     return AP_Param::find_old_parameter(&type_info, (AP_Param *)pvalue);
 }
 
-
-// Find a object by name.
-//
-AP_Param *
-AP_Param::find_object(const char *name)
-{
-    for (uint16_t i=0; i<_num_vars; i++) {
-        const auto &info = var_info(i);
-        if (strcasecmp(name, info.name) == 0) {
-            ptrdiff_t base;
-            if (!get_base(info, base)) {
-                return nullptr;
-            }
-            return (AP_Param *)base;
-        }
-    }
-    return nullptr;
-}
 
 // notify GCS of current value of parameter
 void AP_Param::notify() const {

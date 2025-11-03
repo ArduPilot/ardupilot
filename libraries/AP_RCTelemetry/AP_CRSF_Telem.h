@@ -332,6 +332,7 @@ public:
     static bool get_telem_data(AP_RCProtocol_CRSF::Frame* frame, bool is_tx_active);
     // start bind request
     void start_bind() { _bind_request_pending = true; }
+    bool bind_in_progress() { return _bind_request_pending;}
 
 private:
 

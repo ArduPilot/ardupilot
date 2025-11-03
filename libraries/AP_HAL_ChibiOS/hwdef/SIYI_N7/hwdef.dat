@@ -196,7 +196,7 @@ define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN 92
 
 define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_STORAGE_SIZE 32768
 define HAL_WITH_RAMTRON 1
 
@@ -218,7 +218,7 @@ define AP_COMPASS_IST8310_DEFAULT_ROTATION ROTATION_PITCH_180_YAW_270
 define HAL_HEATER_MAG_OFFSET {AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_I2C,0,0xe,0x0a),Vector3f(15,35,-6)}
 
 # also probe for external compasses
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 

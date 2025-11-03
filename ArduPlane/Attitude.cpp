@@ -15,7 +15,22 @@ float Plane::calc_speed_scaler(void)
         // ensure we have scaling over the full configured airspeed
         const float airspeed_min = MAX(aparm.airspeed_min, MIN_AIRSPEED_MIN);
         const float scale_min = MIN(0.5, g.scaling_speed / (2.0 * aparm.airspeed_max));
+#if HAL_QUADPLANE_ENABLED
+        float scale_max;
+        if (quadplane.is_flying_vtol()) {
+            // vtol aircraft can generate excessive large aero control surface deflections
+            // during VTOL operation because the low airspeed can create large speed scaler
+            // values at a flight condition where aero control surfaces have little influence.
+            const float stall_airspeed_1g = is_positive(aparm.airspeed_stall)
+                                            ? aparm.airspeed_stall : 0.7f * airspeed_min;
+            scale_max = g.scaling_speed / stall_airspeed_1g;
+        } else {
+            // use the legacy scaling limit for FW flight
+            scale_max = MAX(2.0, g.scaling_speed / (0.7 * airspeed_min));
+        }
+#else
         const float scale_max = MAX(2.0, g.scaling_speed / (0.7 * airspeed_min));
+#endif
         if (aspeed > 0.0001f) {
             speed_scaler = g.scaling_speed / aspeed;
         } else {
@@ -493,10 +508,10 @@ int16_t Plane::calc_nav_yaw_coordinated()
     int16_t commanded_rudder;
     bool using_rate_controller = false;
 
-    // Received an external msg that guides yaw in the last 3 seconds?
+    // Received an external msg that guides yaw within g2.guided_timeout?
     if (control_mode->is_guided_mode() &&
             plane.guided_state.last_forced_rpy_ms.z > 0 &&
-            millis() - plane.guided_state.last_forced_rpy_ms.z < 3000) {
+            millis() - plane.guided_state.last_forced_rpy_ms.z < g2.guided_timeout*1000.0f) {
         commanded_rudder = plane.guided_state.forced_rpy_cd.z;
     } else if (autotuning && g.acro_yaw_rate > 0 && yawController.rate_control_enabled()) {
         // user is doing an AUTOTUNE with yaw rate control

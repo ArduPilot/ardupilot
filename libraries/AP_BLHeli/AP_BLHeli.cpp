@@ -1639,7 +1639,7 @@ void AP_BLHeli::update_telemetry(void)
         // make sure we have a gap between frames
         telem_rate_us = 2000;
     }
-    if (!telem_uart_started) {
+    if (!telem_uart_started || !telem_uart->is_owned_by_current_thread()) {
         // we need to use begin() here to ensure the correct thread owns the uart
         telem_uart->begin(115200);
         telem_uart_started = true;
@@ -1673,6 +1673,8 @@ void AP_BLHeli::update_telemetry(void)
         read_telemetry_packet();
         last_telem_byte_read_us = 0;
     }
+    // we need to keep requesting telemetry even if we don't receive anything
+    // as the request mask will be reset next cycle.
     if (now - last_telem_request_us >= telem_rate_us) {
         // ask the next ESC for telemetry
         uint8_t idx_pos = last_telem_esc;

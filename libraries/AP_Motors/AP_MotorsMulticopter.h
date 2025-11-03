@@ -48,7 +48,7 @@ public:
     virtual float       get_throttle_hover() const override { return constrain_float(_throttle_hover, AP_MOTORS_THST_HOVER_MIN, AP_MOTORS_THST_HOVER_MAX); }
 
     // passes throttle directly to all motors for ESC calibration.
-    //   throttle_input is in the range of 0 ~ 1 where 0 will send get_pwm_output_min() and 1 will send get_pwm_output_max()
+    // throttle_input is in the range of 0 ~ 1 where 0 will send get_pwm_output_min() and 1 will send get_pwm_output_max()
     void                set_throttle_passthrough_for_esc_calibration(float throttle_input);
 
     // returns maximum thrust in the range 0 to 1
@@ -63,7 +63,7 @@ public:
     virtual void        output_motor_mask(float thrust, uint32_t mask, float rudder_dt);
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
-    //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+    // this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint32_t    get_motor_mask() override;
 
     // get minimum or maximum pwm value that can be output to motors
@@ -115,6 +115,16 @@ public:
 protected:
 
     // run spool logic
+    // advance the motor spool state machine once per cycle
+    // enforce arming/interlock and disarm-pwm safe-time guards
+    // shape two normalised scalars with monotonic ramps during normal operation
+    //  - _spin_up_ratio        controls motor spin/idle shaping
+    //  - _throttle_thrust_max  defines the moving throttle ceiling, limited by current draw
+    // both values are normalised between 0 and 1
+    // zero thrust while !armed() or !get_interlock()
+    // ramps are limited by the configured spool times (see minimum_spool_time)
+    // disarm or interlock drop immediately forces SHUT_DOWN for safety
+    // pre-takeoff checks may hold in GROUND_IDLE until cleared (get_spoolup_block())
     void                output_logic();
 
     // output_to_motors - sends commands to the motors
@@ -123,16 +133,24 @@ protected:
     // update the throttle input filter
     virtual void        update_throttle_filter() override;
 
-    // return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
+    // return current-limit as a normalised throttle [0..1] within the min..max range
+    // returns 1.0 when current limiting is disabled, disarmed, or telemetry is unavailable
     virtual float       get_current_limit_max_throttle();
 
-    // convert actuator output (0~1) range to pwm range
+    // convert normalised actuator output (0..1) to pwm
+    // in SHUT_DOWN: output 0 pwm when _disarm_disable_pwm && !armed(), else pwm_min
+    // in all other states: map [0..1] linearly between pwm_min and pwm_max
     int16_t             output_to_pwm(float _actuator_output);
 
-    // adds slew rate limiting to actuator output if MOT_SLEW_TIME > 0 and not shutdown
+    // slew limiting on motor outputs:
+    // - MOT_SLEW_UP_TIME = time to go 0 -> 1 (s); 0 disables up-slew limiting
+    // - MOT_SLEW_DN_TIME = time to go 1 -> 0 (s); 0 disables down-slew limiting
+    // - both times are constrained to 0..0.5 s
+    // - no slew limiting while in SHUT_DOWN to allow immediate motor de-energisation
     void                set_actuator_with_slew(float& actuator_output, float input);
 
-    // gradually increase actuator output to ground idle
+    // gradually increase actuator output to spin_min
+    // equals _spin_up_ratio * spin_min (constrained to [0..1])
     float               actuator_spin_up_to_ground_idle() const;
 
     // apply any thrust compensation for the frame
@@ -159,9 +177,9 @@ protected:
 
     // parameters
     AP_Int16            _yaw_headroom;          // yaw control is given at least this pwm range
-    AP_Float            _slew_up_time;          // throttle increase slew limitting
-    AP_Float            _slew_dn_time;          // throttle decrease slew limitting
-    AP_Float            _safe_time;             // Time for the esc when transitioning between zero pwm to minimum
+    AP_Float            _slew_up_time;          // throttle increase slew limiting
+    AP_Float            _slew_dn_time;          // throttle decrease slew limiting
+    AP_Float            _safe_time;             // delay after arming when pwm has been re-enabled (esc/servo startup window)
     AP_Float            _spin_arm;              // throttle out ratio which produces the armed spin rate.  (i.e. 0 ~ 1 ) of the full throttle range
     AP_Float            _batt_current_max;      // current over which maximum throttle is limited
     AP_Float            _batt_current_time_constant;    // Time constant used to limit the maximum current
@@ -185,12 +203,12 @@ protected:
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];    // true if motor is enabled
 
     // spool variables
-    float               _spin_up_ratio;      // throttle percentage (0 ~ 1) between zero and throttle_min
+    float               _spin_up_ratio;         // normalized spin scalar [0..1] between 0 and spin_min (used for ground-idle ramp)
 
     // battery voltage, current and air pressure compensation variables
     float               _throttle_limit;        // ratio of throttle limit between hover and maximum
-    float               _throttle_thrust_max;   // the maximum allowed throttle thrust 0.0 to 1.0 in the range throttle_min to throttle_max
-    float               _disarm_safe_timer;     // Timer for the esc when transitioning between zero pwm to minimum
+    float               _throttle_thrust_max;   // moving throttle ceiling [0..1] (bounded by current-limit)
+    float               _disarm_safe_timer;     // counts up to _safe_time after arming when pwm was disabled while disarmed
 
     // vehicle supplied callback for thrust compensation. Used for tiltrotors and tiltwings
     thrust_compensation_fn_t _thrust_compensation_callback;

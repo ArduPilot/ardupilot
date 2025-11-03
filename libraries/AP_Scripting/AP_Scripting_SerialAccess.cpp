@@ -24,6 +24,13 @@ void AP_Scripting_SerialAccess::begin(uint32_t baud)
     }
 }
 
+void AP_Scripting_SerialAccess::begin()
+{
+    if (!check_is_device_port()) {
+        stream->begin(stream->get_baud_rate());
+    }
+}
+
 void AP_Scripting_SerialAccess::configure_parity(uint8_t parity) {
     if (!check_is_device_port()) {
         stream->configure_parity(parity);

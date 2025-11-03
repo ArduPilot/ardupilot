@@ -728,7 +728,7 @@ def generate_tasklist(ctx, do_print=True):
             else:
                 if boards.is_board_based(board, boards.sitl):
                     task['targets'] = vehicles + ['replay']
-                elif boards.is_board_based(board, boards.linux):
+                elif boards.is_board_based(board, boards.LinuxBoard):
                     task['targets'] = vehicles
                 else:
                     task['targets'] = vehicles + ['bootloader']

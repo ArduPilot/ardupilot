@@ -461,7 +461,7 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
                 state.last_location_update_us = AP_HAL::micros();
                 if (!state.have_location) {
                     state.have_location = true;
-                } else if (!state.have_origin && cached.sensors.gps_data.fix_type >= AP_GPS_FixType::FIX_3D) {
+                } else if (!state.have_origin && cached.sensors.gps_data.fix_type >= AP_GPS_FixType::FIX_3D && SbgEkfStatus_is_fullNav(cached.sbg.sbgLogEkfNavData.status)) {
                     // this is in an else so that origin doesn't get set on the very very first sample, do it on the second one just to give us a tiny bit more chance of a better origin
                     state.origin = state.location;
                     state.have_origin = true;
@@ -594,6 +594,13 @@ void AP_ExternalAHRS_SBG::safe_copy_msg_to_object(uint8_t* dest, const uint16_t 
         memset(dest, 0, dest_len);
     }
     memcpy(dest, src, MIN(dest_len,src_len));
+}
+
+bool AP_ExternalAHRS_SBG::SbgEkfStatus_is_fullNav(const uint32_t ekfStatus)
+{
+    SbgEComSolutionMode solutionMode = (SbgEComSolutionMode)(ekfStatus & SBG_ECOM_LOG_EKF_SOLUTION_MODE_MASK);
+
+    return (solutionMode == SBG_ECOM_SOL_MODE_NAV_POSITION);
 }
 
 AP_GPS_FixType AP_ExternalAHRS_SBG::SbgGpsPosStatus_to_GpsFixType(const uint32_t gpsPosStatus)

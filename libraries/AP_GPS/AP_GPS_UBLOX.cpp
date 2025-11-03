@@ -2384,6 +2384,10 @@ uint8_t AP_GPS_UBLOX::populate_F9_gnss(void)
                     config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_GLO_L2_ENA, ena };
                 }
                 break;
+            case GNSS_NAVIC:
+                config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_NAVIC_ENA, ena };
+                config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_NAVIC_L5_ENA, ena };
+                break;
             // not supported or leave alone
             case GNSS_IMES:
             case GNSS_QZSS:

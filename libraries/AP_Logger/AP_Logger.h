@@ -13,6 +13,7 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Logger/LogStructure.h>
 #include <AP_Vehicle/ModeReason.h>
+#include <AP_RCProtocol/AP_RCProtocol.h>
 
 #include <stdint.h>
 
@@ -447,6 +448,7 @@ private:
     enum class RCLoggingFlags : uint8_t {
         HAS_VALID_INPUT = 1U<<0,  // true if the system is receiving good RC values
         IN_RC_FAILSAFE =  1U<<1,  // true if the system is current in RC failsafe
+        RC_PROTOCOL_FAILSAFE =  1U<<2,  // true if the RC Protocol library is indicating the RC receiver is indicating failsafe via its protocol
     };
 
     /*
