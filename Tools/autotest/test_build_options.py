@@ -297,6 +297,7 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('AP_WINCH_DAIWA_ENABLED')
             feature_define_whitelist.add('AP_WINCH_PWM_ENABLED')
             feature_define_whitelist.add(r'AP_MOTORS_FRAME_.*_ENABLED')
+            feature_define_whitelist.add('AP_MOTORS_TRI_ENABLED')
             feature_define_whitelist.add('AP_COPTER_ADVANCED_FAILSAFE_ENABLED')
             feature_define_whitelist.add('AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED')
             feature_define_whitelist.add('AP_COPTER_AHRS_AUTO_TRIM_ENABLED')
@@ -336,6 +337,11 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('HAL_PARACHUTE_ENABLED')
             # only Plane and Copter have AP_Motors:
             feature_define_whitelist.add(r'AP_MOTORS_TRI_ENABLED')
+            # other vehicles do not instantiate ADSB:
+            feature_define_whitelist.add('AP_ADSB_AVOIDANCE_ENABLED')
+            # only Plane and Copter instantiate the Motors library,
+            # required for these bindings:
+            feature_define_whitelist.add('AP_SCRIPTING_BINDING_MOTORS_ENABLED')
 
         if target.lower() not in ["rover", "copter"]:
             # only Plane and Copter instantiate Beacon
@@ -345,6 +351,7 @@ class TestBuildOptions(object):
             # only on Rover:
             feature_define_whitelist.add('HAL_TORQEEDO_ENABLED')
             feature_define_whitelist.add('AP_ROVER_ADVANCED_FAILSAFE_ENABLED')
+            feature_define_whitelist.add('AP_ROVER_AUTO_ARM_ONCE_ENABLED')
         if target.lower() != "sub":
             # only on Sub:
             feature_define_whitelist.add('AP_BARO_KELLERLD_ENABLED')
@@ -401,6 +408,13 @@ class TestBuildOptions(object):
             # missing the init call to the relay library:
             feature_define_whitelist.add(r'AP_RELAY_ENABLED')
             feature_define_whitelist.add(r'AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED')
+
+        if target.lower() in {"antennatracker", "blimp", "rover"}:
+            # these don't instantiate terrain
+            feature_define_whitelist.add('EK3_FEATURE_OPTFLOW_SRTM')
+
+        if target.lower() not in ["AP_Periph"]:
+            feature_define_whitelist.add(r'AP_PERIPH_.*')
 
         for some_re in feature_define_whitelist:
             if re.match(some_re, define):
@@ -579,11 +593,18 @@ class TestBuildOptions(object):
         resume_number = self.resume_number_from_progress_Path(progress_file)
         options = self.get_build_options_from_ardupilot_tree()
         count = 1
+        blacklisted_defines = {
+            'AP_NETWORKING_CAN_MCAST_ENABLED': "can't enable this without one of native-ethernet or PPP backends, don't want either in our deps!",  # noqa:E501
+            'AP_NETWORKING_CAPTURE_ENABLED': "can't enable this without one of native-ethernet or PPP backends, don't want either in our deps!",  # noqa:E501
+            'AP_NETWORKING_ENABLED': "can't enable this without one of native-ethernet or PPP backends, don't want either in our deps!",  # noqa:E501
+        }
         for feature in options:
             if resume_number is not None:
                 if count < resume_number:
                     count += 1
                     continue
+            if feature.define in blacklisted_defines:
+                continue
             if self.match_glob is not None:
                 if not fnmatch.fnmatch(feature.define, self.match_glob):
                     continue
