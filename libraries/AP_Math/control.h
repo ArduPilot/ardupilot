@@ -164,6 +164,11 @@ float stopping_distance(float velocity, float p, float accel_max);
 // Returns the maximum achievable magnitude in that direction without violating any axis constraint.
 float kinematic_limit(Vector3f direction, float max_xy, float max_z_pos, float max_z_neg);
 
+// compute the maximum allowed magnitude along a direction defined by segment_length_xy and segment_length_z components
+// constrained by independent horizontal (max_xy) and vertical (max_z_pos/max_z_neg) limits
+// returns the maximum achievable magnitude without exceeding any axis limit
+float kinematic_limit(float segment_length_xy, float segment_length_z, float max_xy, float max_z_pos, float max_z_neg);
+
 // Applies an exponential curve to a normalized input in the range [-1, 1].
 // - `expo` shapes the curve (0 = linear, closer to 1 = more curvature).
 // - Typically used for pilot stick input response shaping.
