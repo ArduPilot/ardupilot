@@ -249,3 +249,6 @@ BARO DPS280      SPI:dps310
 # 1 compass
 COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180
 define AP_COMPASS_PROBING_ENABLED 1
+
+# build ABIN for flash-from-bootloader support:
+env BUILD_ABIN True
