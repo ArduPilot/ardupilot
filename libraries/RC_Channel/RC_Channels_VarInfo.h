@@ -112,6 +112,15 @@ const AP_Param::GroupInfo RC_Channels::var_info[] = {
     // @Units: s
     AP_GROUPINFO_FRAME("_FS_TIMEOUT", 35, RC_CHANNELS_SUBCLASS, _fs_timeout, 1.0, AP_PARAM_FRAME_COPTER),
 
+    // @Param: CONVERSION
+    // @DisplayName: RC parameter conversion flags
+    // @Description: This is a hidden parameter which records whether we have done a parameter conversion or not
+    // @Range: 0 32766
+    // @Increment: 1
+    // @User: Advanced
+    // @ReadOnly: True
+    AP_GROUPINFO_FLAGS("CONVERSION",  36, RC_CHANNELS_SUBCLASS, _conversion, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
+
     AP_GROUPEND
 };
 
