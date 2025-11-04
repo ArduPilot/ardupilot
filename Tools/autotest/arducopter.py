@@ -14628,6 +14628,73 @@ local config_domains = {
             "BATT_CAPACITY in DMN_A is must-be-set but al"
         )
 
+    def LatchingAuxFunctionsTwoPos(self):
+        '''test latching aux switch functions'''
+        self.set_parameters({
+            "RC9_OPTION": 153,  # 153 is arm/disarm
+            "RC9_OPTIONS": 2,   # latching-two-position
+            "DISARM_DELAY": 0,
+        })
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm()
+
+        for i in range(3):
+            self.progress("Gesture - arm")
+            self.set_rc(9, 2000)
+            self.delay_sim_time(0.5, "arm gesture to debounce")
+            self.set_rc(9, 1000)
+            self.assert_armed()
+            self.delay_sim_time(30, "ensure we stay armed")
+            self.assert_armed()
+
+            self.progress("Gesture - disarm")
+            self.set_rc(9, 2000)
+            self.delay_sim_time(0.5, "disarm gesture to debounce")
+            self.set_rc(9, 1000)
+            self.assert_disarmed()
+            self.delay_sim_time(30, "ensure we stay disarmed")
+            self.assert_disarmed()
+
+    def LatchingAuxFunctionsThreePos(self):
+        '''test latching aux switch functions - three-position edition'''
+        self.set_parameters({
+            "RC9_OPTION": 90,  # 90 is EKF-source-set
+            "RC9_OPTIONS": 4,   # latching-three-position
+            "DISARM_DELAY": 0,
+        })
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm()
+
+        for i in range(3):
+            self.progress("Gesture - first")
+            self.context_push()
+            self.context_collect('STATUSTEXT')
+            self.set_rc(9, 2000)
+            self.delay_sim_time(0.5, "arm gesture to debounce")
+            self.set_rc(9, 1000)
+            self.wait_statustext("Using EKF Source Set 2", check_context=True)
+            self.context_pop()
+
+            self.progress("Gesture - second")
+            self.context_push()
+            self.context_collect('STATUSTEXT')
+            self.set_rc(9, 2000)
+            self.delay_sim_time(0.5, "arm gesture to debounce")
+            self.set_rc(9, 1000)
+            self.wait_statustext("Using EKF Source Set 3", check_context=True)
+            self.context_pop()
+
+            self.progress("Gesture - third")
+            self.context_push()
+            self.context_collect('STATUSTEXT')
+            self.set_rc(9, 2000)
+            self.delay_sim_time(0.5, "arm gesture to debounce")
+            self.set_rc(9, 1000)
+            self.wait_statustext("Using EKF Source Set 1", check_context=True)
+            self.context_pop()
+
     def ScriptParamRegistration(self):
         '''test parameter script registration'''
         self.set_parameters({
@@ -14776,6 +14843,8 @@ return update, 1000
             self.MountSolo,
             self.FlyMissionTwice,
             self.FlyMissionTwiceWithReset,
+            self.LatchingAuxFunctionsTwoPos,
+            self.LatchingAuxFunctionsThreePos,
             self.MissionIndexValidity,
             self.InvalidJumpTags,
             self.IMUConsistency,
