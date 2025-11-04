@@ -236,7 +236,7 @@ public:
         k_param_rpm_sensor_old = 232, // unused - moved to vehicle
 
         // RC_Mapper Library
-        k_param_rcmap, // Disabled
+        k_param_rcmap_old, // Disabled
 
         k_param_gcs4_unused,           // unused in ArduPilot-4.7
         k_param_gcs5_unused,           // unused in ArduPilot-4.7

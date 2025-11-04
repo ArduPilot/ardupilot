@@ -650,12 +650,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_Motors/AP_Motors6DOF.cpp,../libraries/AP_Motors/AP_MotorsMulticopter.cpp
     GOBJECT(motors, "MOT_",         AP_Motors6DOF),
 
-#if RCMAP_ENABLED
-    // @Group: RCMAP_
-    // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
-    GOBJECT(rcmap, "RCMAP_",        RCMapper),
-#endif
-
 #if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
@@ -883,6 +877,11 @@ void Sub::load_parameters()
         AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
     }
 #endif  // HAL_GCS_ENABLED
+
+    // PARAMETER_CONVERSION - Added: Feb-2024
+#if AP_RC_CHANNEL_ENABLED
+    rc().convert_rcmap_parameters(Parameters::k_param_rcmap_old);
+#endif  // AP_RC_CHANNEL_ENABLED
 }
 
 void Sub::convert_old_parameters()
