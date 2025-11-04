@@ -116,6 +116,9 @@ public:
 
     void       set_and_save_trim() { radio_trim.set_and_save_ifchanged(radio_in);}
 
+    // returns the RC channel number, where 1 is usually roll, 3 throttle etc
+    uint8_t ch_num() const { return ch_in + 1; }
+
     // set and save trim if changed
     void       set_and_save_radio_trim(int16_t val) { radio_trim.set_and_save_ifchanged(val);}
 
@@ -400,6 +403,7 @@ public:
         TRANSMITTER_TUNING = 219, // use a transmitter knob or slider for in-flight tuning
         TRANSMITTER_TUNING2 = 220, // use another transmitter knob or slider for in-flight tuning
 #endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
+        LATERAL_THR =        221,  // RC throttle command for sideways movement
 
         // inputs 248-249 are reserved for the Skybrush fork at
         // https://github.com/skybrush-io/ardupilot
@@ -436,6 +440,10 @@ public:
         // this must be higher than any aux function above
         AUX_FUNCTION_MAX =   317,
     };
+
+    void set_default_option(AUX_FUNC func) {
+        option.set_default((uint16_t) func);
+    }
 
     // auxiliary switch handling (n.b.: we store this as 2-bits!):
     enum class AuxSwitchPos : uint8_t {
@@ -609,6 +617,10 @@ public:
     // constructor
     RC_Channels(void);
 
+    // set defaults for roll/pitch/yaw/throttle control channels.
+    // Called *before* init!
+    void set_control_channel_defaults();
+
     __INITFUNC__ void init(void);
 
     // get singleton instance
@@ -773,6 +785,7 @@ public:
     RC_Channel &get_lateral_channel();
 
     bool seen_neutral_rudder() const { return have_seen_neutral_rudder; }
+    void convert_rcmap_parameters(uint32_t param_key);
 
     // returns true when pilot input should clear an active MAVLink override; vehicles override to define which axes count
     virtual bool has_pilot_input_for_override_clear();
@@ -805,6 +818,8 @@ private:
     AP_Int32  _options;
     AP_Int32  _protocols;
     AP_Float _fs_timeout;
+
+    AP_Int8 _conversion;
 
     // set to true if we see overrides or other RC input
     bool _has_ever_seen_rc_input;
@@ -841,6 +856,8 @@ private:
     // returns true if pilot stick input has exited any deadzone (or throttle moved)
     bool should_ignore_overrides(void);
     void set_override_start_throttle(int16_t pwm) { override_start_throttle = pwm; }
+
+    RC_Channel &get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func) const;
 };
 
 RC_Channels &rc();
