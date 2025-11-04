@@ -77,8 +77,8 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         return True
 
     def rc_option_value_for_arming_channel(self):
-        # Rover uses the "steer" channel for arming
-        return 205
+        # Rover uses the "roll" channel for arming
+        return 201
 
     ##########################################################
     #   TESTS DRIVE
