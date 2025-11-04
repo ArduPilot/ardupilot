@@ -58,7 +58,6 @@
 
 #include <AP_Navigation/AP_Navigation.h>
 #include <AP_L1_Control/AP_L1_Control.h>
-#include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_TECS/AP_TECS.h>
@@ -197,9 +196,6 @@ private:
     // Global parameters are all contained within the 'g' and 'g2' classes.
     Parameters g;
     ParametersG2 g2;
-
-    // mapping between input channels
-    RCMapper rcmap;
 
     // primary input channels
     RC_Channel *channel_roll;
