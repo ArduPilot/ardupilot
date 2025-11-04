@@ -1,6 +1,6 @@
 ArduPilot Rover Release Notes:
 ------------------------------------------------------------------
-Release 4.6.3-beta1 14-Oct-2025
+Release 4.6.3 04-Nov-2025 / 4.6.3-beta1 14-Oct-2025
 
 Changes from 4.6.2
 

@@ -429,7 +429,6 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
  */
 void FlightAxis::update(const struct sitl_input &input)
 {
-    last_input = input;
     exchange_data(input);
 
     double dt_seconds = state.m_currentPhysicsTime_SEC - last_time_s;

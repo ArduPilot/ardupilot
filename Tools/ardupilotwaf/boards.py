@@ -47,7 +47,6 @@ class Board:
 
     def configure(self, cfg):
         cfg.env.TOOLCHAIN = cfg.options.toolchain or self.toolchain
-        cfg.env.ROMFS_FILES = []
         if hasattr(self,'configure_toolchain'):
             self.configure_toolchain(cfg)
         else:
@@ -555,18 +554,17 @@ class Board:
         if cfg.options.ekf_single:
             env.CXXFLAGS += ['-DHAL_WITH_EKF_DOUBLE=0']
 
-        if cfg.options.consistent_builds:
+        if cfg.env.CONSISTENT_BUILDS:
             # if symbols are renamed we don't want them to affect the output:
             env.CXXFLAGS += ['-fno-rtti']
             # avoid different filenames for the same source file
             # affecting the compiler output:
             env.CXXFLAGS += ['-frandom-seed=4']  # ob. xkcd
 
-            # stop including a unique ID in the headers.  More useful
-            # when trying to find binary differences as the build-id
-            # appears to be a hash of the output products
-            # (ie. identical for identical compiler output):
-            env.LDFLAGS += ['-Wl,--build-id=bob']
+            # disable setting build ID in the ELF header. though if two binaries
+            # are identical they will have the same build ID, setting it avoids
+            # creating a difference if they are not in a way we care about.
+            env.LDFLAGS += ['-Wl,--build-id=none']
             # squash all line numbers to be the number 17
             env.CXXFLAGS += [
                 "-D__AP_LINE__=17",
@@ -596,13 +594,18 @@ class Board:
 
     def build(self, bld):
         git_hash_ext = bld.git_head_hash(short=True, hash_abbrev=16)
-        bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True))
-        bld.ap_version_append_str('GIT_VERSION_EXTENDED', git_hash_ext)
-        bld.ap_version_append_int('GIT_VERSION_INT', int("0x" + bld.git_head_hash(short=True), base=16))
-        bld.ap_version_append_str('AP_BUILD_ROOT', bld.srcnode.abspath())
-        import time
-        ltime = time.localtime()
+        bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True), "abcdef")
+        bld.ap_version_append_str('GIT_VERSION_EXTENDED', git_hash_ext, "0123456789abcdef")
+        bld.ap_version_append_int('GIT_VERSION_INT', int("0x" + bld.git_head_hash(short=True), base=16), 15)
+        # this build root is mostly used as a temporary directory by SIM_JSBSim and probably needs to go
+        bld.ap_version_append_str('AP_BUILD_ROOT', bld.srcnode.abspath(), "/tmp")
+
         if bld.env.build_dates:
+            if bld.options.consistent_builds:
+                raise ValueError("can't enable consistent builds and build dates")
+
+            import time
+            ltime = time.localtime()
             bld.ap_version_append_int('BUILD_DATE_YEAR', ltime.tm_year)
             bld.ap_version_append_int('BUILD_DATE_MONTH', ltime.tm_mon)
             bld.ap_version_append_int('BUILD_DATE_DAY', ltime.tm_mday)
@@ -1461,7 +1464,7 @@ class chibios(Board):
 
     def build(self, bld):
         super(chibios, self).build(bld)
-        bld.ap_version_append_str('CHIBIOS_GIT_VERSION', bld.git_submodule_head_hash('ChibiOS', short=True))
+        bld.ap_version_append_str('CHIBIOS_GIT_VERSION', bld.git_submodule_head_hash('ChibiOS', short=True), "12345678")
         bld.load('chibios')
 
     def pre_build(self, bld):
