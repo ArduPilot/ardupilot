@@ -41,9 +41,6 @@
 #ifndef AP_SUB_RC_ENABLED
 # define AP_SUB_RC_ENABLED 1
 #endif
-#ifndef RCMAP_ENABLED
-# define RCMAP_ENABLED AP_SUB_RC_ENABLED
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Throttle Failsafe
