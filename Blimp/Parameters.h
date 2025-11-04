@@ -177,7 +177,7 @@ public:
         k_param_radio_tuning, // unused
         k_param_rc_speed = 192,
         k_param_failsafe_gcs,
-        k_param_rcmap, // 199
+        k_param_rcmap_old, // 199
 
         //
         // 200: flight modes
