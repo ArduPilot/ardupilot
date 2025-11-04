@@ -446,6 +446,18 @@ public:
         uint16_t source_index;
     };
 
+    enum class ChannelOption : uint16_t {
+        LATCHING_2_POS = (1U<<1),
+        LATCHING_3_POS = (1U<<2),
+        TRIGGER_FALLING = (1U<<3),
+        // NO_TRIGGER_RISING = (1U<<4),
+    };
+    bool channel_option_is_enabled(ChannelOption opt) const {
+        return (uint16_t(channel_options) & uint16_t(opt)) != 0;
+    }
+    // if a channel is using latching Channel positions then adjust for trigger:
+    AuxSwitchPos adjust_latching_channel_option(AuxSwitchPos new_position) const;
+
     AuxSwitchPos get_aux_switch_pos() const;
 
     // aux position for stick gestures used by RunCam menus etc
@@ -531,6 +543,7 @@ private:
 
     AP_Int8     reversed;
     AP_Int16    dead_zone;
+    AP_Int8     channel_options;  // e.g. 3-position-latching
 
     ControlType type_in;
     int16_t     high_in;
@@ -735,10 +748,8 @@ public:
     void calibrating(bool b) { gcs_is_calibrating = b; }
     bool calibrating() { return gcs_is_calibrating; }
 
-#if AP_SCRIPTING_ENABLED
     // get last aux cached value for scripting. Returns false if never set, otherwise 0,1,2
     bool get_aux_cached(RC_Channel::AUX_FUNC aux_fn, uint8_t &pos);
-#endif
 
     // returns true if we've ever seen RC input, via overrides or via
     // AP_RCProtocol
@@ -792,14 +803,12 @@ private:
     // true if GCS is performing a RC calibration
     bool gcs_is_calibrating;
 
-#if AP_SCRIPTING_ENABLED
     // bitmask of last aux function value, 2 bits per function
     // value 0 means never set, otherwise level+1
     HAL_Semaphore aux_cache_sem;
     Bitmask<unsigned(RC_Channel::AUX_FUNC::AUX_FUNCTION_MAX)*2> aux_cached;
 
     void set_aux_cached(RC_Channel::AUX_FUNC aux_fn, RC_Channel::AuxSwitchPos pos);
-#endif
 
     RC_Channel &get_rcmap_channel_nonnull(uint8_t rcmap_number) const;
 
