@@ -134,6 +134,9 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
 
         //定义自适应参数初始值
         _J_x = 0.01f;_J_y = 0.01f;_J_z = 0.02f;
+        //初始化自适应率更新率
+        _dot_J_x=0.0f;_dot_J_y=0.0f;_dot_J_z=0.0f;
+
         //初始化归零控制器输出
         _pdnn_output.x = 0;
         _pdnn_output.y = 0;
@@ -225,55 +228,161 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
         float L_z_5 = (_X_z-_c_z_5).length(); //存储欧式距离
         _h_z_5 = expf(-L_z_5*L_z_5/(2*_b_z*_b_z));//z方向第5个隐藏层输出
 
-        //计算权重更新律
-        float _gamma_x = 80.0f;float c_R = 0.6f;
-        _dot_W_x_1 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_1;//x方向第1个权重更新律
-        _dot_W_x_2 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_2;//x方向第2个权重更新律
-        _dot_W_x_3 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_3;//x方向第3个权重更新律
-        _dot_W_x_4 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_4;//x方向第4个权重更新律
-        _dot_W_x_5 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_5;//x方向第5个权重更新律
+        //===================== 权重更新律（含死区 + 投影约束）=====================
+// —— 学习抑制与界约束参数（与 S-Function 保持一致）——
+const float c_R  = 0.6f;       // 复合误差系数
+const float zeta = 0.005f;    // 死区阈值：‖[e_R; e_Ω]‖ <= zeta → 停止学习
+const float Wmax = 500.0f;     // 权重范数上限（球半径）
 
-        float _gamma_y = 80.0f;
-        _dot_W_y_1 = _gamma_y * (_e_Omega.y + c_R * _e_R.y) * _h_y_1;//y方向第1个权重更新律
-        _dot_W_y_2 = _gamma_y * (_e_Omega.y + c_R * _e_R.y) * _h_y_2;//y方向第2个权重更新律
-        _dot_W_y_3 = _gamma_y * (_e_Omega.y + c_R * _e_R.y) * _h_y_3;//y方向第3个权重更新律
-        _dot_W_y_4 = _gamma_y * (_e_Omega.y + c_R * _e_R.y) * _h_y_4;//y方向第4个权重更新律
-        _dot_W_y_5 = _gamma_y * (_e_Omega.y + c_R * _e_R.y) * _h_y_5;//y方向第5个权重更新律
+//——— X 轴 ———
+{
+    // 1) 名义律 dW_nom = gamma * (e_Ω + c_R e_R) * h
+    const float _gamma_x = 120.0f;
+    const float z_x = _e_Omega.x + c_R * _e_R.x;
 
-        float _gamma_z = 50.0f;
-        _dot_W_z_1 = _gamma_z * (_e_Omega.z + c_R * _e_R.z) * _h_z_1;//z方向第1个权重更新律
-        _dot_W_z_2 = _gamma_z * (_e_Omega.z + c_R * _e_R.z) * _h_z_2;//z方向第2个权重更新律
-        _dot_W_z_3 = _gamma_z * (_e_Omega.z + c_R * _e_R.z) * _h_z_3;//z方向第3个权重更新律
-        _dot_W_z_4 = _gamma_z * (_e_Omega.z + c_R * _e_R.z) * _h_z_4;//z方向第4个权重更新律
-        _dot_W_z_5 = _gamma_z * (_e_Omega.z + c_R * _e_R.z) * _h_z_5;//z方向第5个权重更新律
+    float dW_nom_x1 = _gamma_x * z_x * _h_x_1;
+    float dW_nom_x2 = _gamma_x * z_x * _h_x_2;
+    float dW_nom_x3 = _gamma_x * z_x * _h_x_3;
+    float dW_nom_x4 = _gamma_x * z_x * _h_x_4;
+    float dW_nom_x5 = _gamma_x * z_x * _h_x_5;
 
-        //计算当前权重（求积分）
-        if (is_positive(dt)) { //检查时间步长是否有效
+    // 2) 死区：‖[e_R; e_Ω]‖ ≤ zeta → dW = 0
+    const Vector2f x_R(_e_R.x, _e_Omega.x);
+    const float xR_norm = x_R.length();
 
-        //x方向的权重
-          _W_x_1 += _dot_W_x_1 * dt;
-          //_W_x_1 += (W_x_1 - _W_x_1) * get_filt_D_alpha(dt);
-          _W_x_2 += _dot_W_x_2 * dt;
-          //_W_x_2 += (W_x_2 - _W_x_2) * get_filt_D_alpha(dt);
-          _W_x_3 += _dot_W_x_3 * dt;
-          //_W_x_3 += (W_x_3 - _W_x_3) * get_filt_D_alpha(dt);
-          _W_x_4 += _dot_W_x_4 * dt;
-          //W_x_4 += (W_x_4 - _W_x_4) * get_filt_D_alpha(dt);
-          _W_x_5 += _dot_W_x_5 * dt;
-          //_W_x_5 += (W_x_5 - _W_x_5) * get_filt_D_alpha(dt);
-          //y方向的权重
-          _W_y_1 += _dot_W_y_1 * dt;
-          _W_y_2 += _dot_W_y_2 * dt;
-          _W_y_3 += _dot_W_y_3 * dt;
-          _W_y_4 += _dot_W_y_4 * dt;
-          _W_y_5 += _dot_W_y_5 * dt;
-          //z方向的权重
-          _W_z_1 += _dot_W_z_1 * dt;
-          _W_z_2 += _dot_W_z_2 * dt;
-          _W_z_3 += _dot_W_z_3 * dt;
-          _W_z_4 += _dot_W_z_4 * dt;
-          _W_z_5 += _dot_W_z_5 * dt;
+    float dW_x1=0, dW_x2=0, dW_x3=0, dW_x4=0, dW_x5=0;
+    if (xR_norm <= zeta) {
+        dW_x1 = dW_x2 = dW_x3 = dW_x4 = dW_x5 = 0.0f;
+    } else {
+        // 3) 投影：在界内或边界且不向外 ⇒ 允许名义律；否则正交投影
+        const float Wnorm_x = sqrtf(_W_x_1*_W_x_1 + _W_x_2*_W_x_2 + _W_x_3*_W_x_3 + _W_x_4*_W_x_4 + _W_x_5*_W_x_5);
+        const float radial_x = dW_nom_x1*_W_x_1 + dW_nom_x2*_W_x_2 + dW_nom_x3*_W_x_3 + dW_nom_x4*_W_x_4 + dW_nom_x5*_W_x_5;
+
+        const bool W_in_x = (Wnorm_x < Wmax);
+        const bool W_eq_x = (!(Wnorm_x < Wmax) && !(Wnorm_x > Wmax));  // 等价于 Wnorm_x == Wmax，规避浮点 ==
+        const bool allow_nominal_x = W_in_x || (W_eq_x && (radial_x <= 0.0f));
+
+        if (allow_nominal_x) {
+            dW_x1 = dW_nom_x1; dW_x2 = dW_nom_x2; dW_x3 = dW_nom_x3; dW_x4 = dW_nom_x4; dW_x5 = dW_nom_x5;
+        } else {
+            // 严格投影：dW ← dW_nom - ((dW_nom^T W)/(W^T W)) W   （无 eps）
+            const float denom = (Wnorm_x * Wnorm_x);         // 若要更稳健可改成 fmaxf(denom, 1e-12f)
+            const float alpha = radial_x / denom;
+            dW_x1 = dW_nom_x1 - alpha * _W_x_1;
+            dW_x2 = dW_nom_x2 - alpha * _W_x_2;
+            dW_x3 = dW_nom_x3 - alpha * _W_x_3;
+            dW_x4 = dW_nom_x4 - alpha * _W_x_4;
+            dW_x5 = dW_nom_x5 - alpha * _W_x_5;
         }
+    }
+
+    // 4) 积分更新
+    if (is_positive(dt)) {
+        _W_x_1 += dW_x1 * dt;
+        _W_x_2 += dW_x2 * dt;
+        _W_x_3 += dW_x3 * dt;
+        _W_x_4 += dW_x4 * dt;
+        _W_x_5 += dW_x5 * dt;
+    }
+}
+
+//——— Y 轴 ———
+{
+    const float _gamma_y = 120.0f;
+    const float z_y = _e_Omega.y + c_R * _e_R.y;
+
+    float dW_nom_y1 = _gamma_y * z_y * _h_y_1;
+    float dW_nom_y2 = _gamma_y * z_y * _h_y_2;
+    float dW_nom_y3 = _gamma_y * z_y * _h_y_3;
+    float dW_nom_y4 = _gamma_y * z_y * _h_y_4;
+    float dW_nom_y5 = _gamma_y * z_y * _h_y_5;
+
+    const Vector2f y_R(_e_R.y, _e_Omega.y);
+    const float yR_norm = y_R.length();
+
+    float dW_y1=0, dW_y2=0, dW_y3=0, dW_y4=0, dW_y5=0;
+    if (yR_norm <= zeta) {
+        dW_y1 = dW_y2 = dW_y3 = dW_y4 = dW_y5 = 0.0f;
+    } else {
+        const float Wnorm_y = sqrtf(_W_y_1*_W_y_1 + _W_y_2*_W_y_2 + _W_y_3*_W_y_3 + _W_y_4*_W_y_4 + _W_y_5*_W_y_5);
+        const float radial_y = dW_nom_y1*_W_y_1 + dW_nom_y2*_W_y_2 + dW_nom_y3*_W_y_3 + dW_nom_y4*_W_y_4 + dW_nom_y5*_W_y_5;
+
+        const bool W_in_y = (Wnorm_y < Wmax);
+        const bool W_eq_y = (!(Wnorm_y < Wmax) && !(Wnorm_y > Wmax));
+        const bool allow_nominal_y = W_in_y || (W_eq_y && (radial_y <= 0.0f));
+
+        if (allow_nominal_y) {
+            dW_y1 = dW_nom_y1; dW_y2 = dW_nom_y2; dW_y3 = dW_nom_y3; dW_y4 = dW_nom_y4; dW_y5 = dW_nom_y5;
+        } else {
+            const float denom = (Wnorm_y * Wnorm_y);
+            const float alpha = radial_y / denom;
+            dW_y1 = dW_nom_y1 - alpha * _W_y_1;
+            dW_y2 = dW_nom_y2 - alpha * _W_y_2;
+            dW_y3 = dW_nom_y3 - alpha * _W_y_3;
+            dW_y4 = dW_nom_y4 - alpha * _W_y_4;
+            dW_y5 = dW_nom_y5 - alpha * _W_y_5;
+        }
+    }
+
+    if (is_positive(dt)) {
+        _W_y_1 += dW_y1 * dt;
+        _W_y_2 += dW_y2 * dt;
+        _W_y_3 += dW_y3 * dt;
+        _W_y_4 += dW_y4 * dt;
+        _W_y_5 += dW_y5 * dt;
+    }
+}
+
+
+//——— Z 轴 ———
+{
+    const float _gamma_z = 50.0f;
+    const float z_z = _e_Omega.z + c_R * _e_R.z;
+
+    float dW_nom_z1 = _gamma_z * z_z * _h_z_1;
+    float dW_nom_z2 = _gamma_z * z_z * _h_z_2;
+    float dW_nom_z3 = _gamma_z * z_z * _h_z_3;
+    float dW_nom_z4 = _gamma_z * z_z * _h_z_4;
+    float dW_nom_z5 = _gamma_z * z_z * _h_z_5;
+
+    const Vector2f z_R(_e_R.z, _e_Omega.z);
+    const float zR_norm = z_R.length();
+
+    float dW_z1=0, dW_z2=0, dW_z3=0, dW_z4=0, dW_z5=0;
+    if (zR_norm <= zeta) {
+        dW_z1 = dW_z2 = dW_z3 = dW_z4 = dW_z5 = 0.0f;
+    } else {
+        const float Wnorm_z = sqrtf(_W_z_1*_W_z_1 + _W_z_2*_W_z_2 + _W_z_3*_W_z_3 + _W_z_4*_W_z_4 + _W_z_5*_W_z_5);
+        const float radial_z = dW_nom_z1*_W_z_1 + dW_nom_z2*_W_z_2 + dW_nom_z3*_W_z_3 + dW_nom_z4*_W_z_4 + dW_nom_z5*_W_z_5;
+
+        const bool W_in_z = (Wnorm_z < Wmax);
+        const bool W_eq_z = (!(Wnorm_z < Wmax) && !(Wnorm_z > Wmax));
+        const bool allow_nominal_z = W_in_z || (W_eq_z && (radial_z <= 0.0f));
+
+        if (allow_nominal_z) {
+            dW_z1 = dW_nom_z1; dW_z2 = dW_nom_z2; dW_z3 = dW_nom_z3; dW_z4 = dW_nom_z4; dW_z5 = dW_nom_z5;
+        } else {
+            const float denom = (Wnorm_z * Wnorm_z);
+            const float alpha = radial_z / denom;
+            dW_z1 = dW_nom_z1 - alpha * _W_z_1;
+            dW_z2 = dW_nom_z2 - alpha * _W_z_2;
+            dW_z3 = dW_nom_z3 - alpha * _W_z_3;
+            dW_z4 = dW_nom_z4 - alpha * _W_z_4;
+            dW_z5 = dW_nom_z5 - alpha * _W_z_5;
+        }
+    }
+
+    if (is_positive(dt)) {
+        _W_z_1 += dW_z1 * dt;
+        _W_z_2 += dW_z2 * dt;
+        _W_z_3 += dW_z3 * dt;
+        _W_z_4 += dW_z4 * dt;
+        _W_z_5 += dW_z5 * dt;
+    }
+}
+
+//===================== 结束：权重更新律（死区 + 投影）=====================
+
 
          //计算神经网络输出_phi = W' * h
         _phi_x = _W_x_1 * _h_x_1 + _W_x_2 * _h_x_2 + _W_x_3 * _h_x_3 + _W_x_4 * _h_x_4 + _W_x_5 * _h_x_5; //x方向神经网络输出
@@ -398,9 +507,9 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
     //_pdnn_output.y = _J_y * (-_e_R.y * 40.0f - _e_Omega.y * 80.0f - 0.0f *_integrator.y - _geomrtry_output.y- 1.0f * _phi_y + 0.0f*Aug.y);
     //_pdnn_output.z = _J_z * (-_e_R.z * 40.0f - _e_Omega.z * 80.0f - 0.0f *_integrator.z - _geomrtry_output.z - 1.0f *_phi_z + 0.0f*Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
     
-    _pdnn_output.x = 0.01f * (-_e_R.x * 40.0f - _e_Omega.x * 80.0f - 0.0f * _integrator.x - _geomrtry_output.x - 1.0f *_phi_x + 0.0f*Aug.x); 
-    _pdnn_output.y = 0.01f * (-_e_R.y * 40.0f - _e_Omega.y * 80.0f - 0.0f *_integrator.y - _geomrtry_output.y- 1.0f * _phi_y + 0.0f*Aug.y);
-    _pdnn_output.z = 0.02f * (-_e_R.z * 40.0f - _e_Omega.z * 80.0f - 0.0f *_integrator.z - _geomrtry_output.z - 1.0f *_phi_z + 0.0f*Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
+    _pdnn_output.x = 0.01f * (-_e_R.x * 100.0f - _e_Omega.x * 80.0f - 0.0f * _integrator.x - _geomrtry_output.x - 1.0f *_phi_x + 0.0f*Aug.x); 
+    _pdnn_output.y = 0.01f * (-_e_R.y * 100.0f - _e_Omega.y * 80.0f - 0.0f *_integrator.y - _geomrtry_output.y- 1.0f * _phi_y + 0.0f*Aug.y);
+    _pdnn_output.z = 0.02f * (-_e_R.z * 100.0f - _e_Omega.z * 80.0f - 0.0f *_integrator.z - _geomrtry_output.z - 1.0f *_phi_z + 0.0f*Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
 
     return _pdnn_output; //返回pdnn控制器输出
 }
