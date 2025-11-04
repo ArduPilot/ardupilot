@@ -350,8 +350,8 @@ bool Plane::rc_failsafe_active(void) const
     if (!rc_throttle_value_ok()) {
         return true;
     }
-    if (millis() - failsafe.last_valid_rc_ms > 1000) {
-        // we haven't had a valid RC frame for 1 seconds
+    if (millis() - failsafe.last_valid_rc_ms > rc().get_fs_timeout_ms()) {
+        // we haven't had a valid RC frame for RC_FS_TIMEOUT seconds
         return true;
     }
     return false;
