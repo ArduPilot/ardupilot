@@ -117,7 +117,9 @@ void AP_Stats::update()
 {
     WITH_SEMAPHORE(sem);
     const uint32_t now_ms = AP_HAL::millis();
+#if AP_AHRS_ENABLED
     update_distance_flown();
+#endif  // AP_AHRS_ENABLED
     if (now_ms -  last_flush_ms > flush_interval_ms) {
         update_flighttime();
         update_runtime();
@@ -170,6 +172,7 @@ void AP_Stats::set_flying(const bool is_flying)
     }
 }
 
+#if AP_AHRS_ENABLED
 void AP_Stats::update_distance_flown()
 {
     if (!_flying_ms) {
@@ -214,6 +217,7 @@ void AP_Stats::update_distance_flown()
     _last_position = current_loc;
     _last_position_valid = true;
 }
+#endif  // AP_AHRS_ENABLED
 
 /*
   get time in flight since boot
