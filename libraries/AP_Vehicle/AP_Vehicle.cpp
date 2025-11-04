@@ -347,6 +347,11 @@ void AP_Vehicle::setup()
     G_Dt = scheduler.get_loop_period_s();
 #endif
 
+#if AP_RC_CHANNEL_ENABLED
+    // configure RC library defaults for roll/pitch/yaw channels.
+    // Needed before set_control_channels
+    rc().set_control_channel_defaults();
+#endif
     // this is here for Plane; its failsafe_check method requires the
     // RC channels to be set as early as possible for maximum
     // survivability.
