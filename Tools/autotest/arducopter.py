@@ -14231,8 +14231,14 @@ RTL_ALT 111
 
         self.wait_ready_to_arm()  # scripts will be ready by now!
         self.start_subtest("set RTL_ALT freely")
+        self.context_collect("STATUSTEXT")
         self.set_parameter("RTL_ALT", 23)
         self.set_parameter("RTL_ALT", 28)
+        # Ensure there are no scripting errors.
+        error = self.statustext_in_collections("Internal Error")
+        if error is not None:
+            raise NotAchievedException("Script errored out in positive test.")
+        self.context_stop_collecting("STATUSTEXT")
 
         self.start_subtest("Unable to set DISARM_DELAY freely")
         self.context_push()
