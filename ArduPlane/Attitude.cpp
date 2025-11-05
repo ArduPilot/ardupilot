@@ -537,7 +537,13 @@ int16_t Plane::calc_nav_yaw_coordinated()
     if (control_mode->is_guided_mode() &&
             plane.guided_state.last_forced_rpy_ms.z > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.z < g2.guided_timeout*1000.0f) {
-        commanded_rudder = plane.guided_state.forced_rpy_cd.z;
+        // Guided yaw: apply damping, no integrator
+        disable_integrator = true;
+        commanded_rudder = yawController.get_servo_out(speed_scaler, disable_integrator);
+        // add rudder mix from roll for coordination
+        commanded_rudder += SRV_Channels::get_output_scaled(SRV_Channel::k_aileron) * g.kff_rudder_mix;
+        // add external rudder command from guided input
+        commanded_rudder += plane.guided_state.forced_rpy_cd.z;
     } else if (autotuning && g.acro_yaw_rate > 0 && yawController.rate_control_enabled()) {
         // user is doing an AUTOTUNE with yaw rate control
         const float rudd_expo = rudder_in_expo(true);
