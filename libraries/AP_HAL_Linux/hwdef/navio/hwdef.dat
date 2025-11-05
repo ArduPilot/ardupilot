@@ -33,3 +33,5 @@ define UBLOX_SPEED_CHANGE  1
 
 // FIXME: use of this define should go away:
 define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_NAVIO
+
+define APM_LINUX_RCIN_RATE 500

@@ -58,3 +58,4 @@ LINUX_SPIDEV   "icm42688"   0     0        SPI_MODE_0   8     SPI_CS_KERNEL    1
 # support combined RCOutput system
 define HAL_LINUX_RCOUTPUT_MULTI_ENABLED 1
 
+define APM_LINUX_RCIN_RATE 500

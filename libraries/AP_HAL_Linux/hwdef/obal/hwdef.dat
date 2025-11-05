@@ -45,3 +45,5 @@ define HAL_BATT_CURR_SCALE                17.0f
 
 // FIXME: use of this define should go away:
 define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
+
+define APM_LINUX_RCIN_RATE 50
