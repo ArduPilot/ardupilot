@@ -11,11 +11,24 @@ import re
 import shlex
 import sys
 
+from dataclasses import dataclass
 
 class IncludeNotFoundException(Exception):
     def __init__(self, hwdef, includer):
         self.hwdef = hwdef
         self.includer = includer
+
+
+@dataclass
+class SPIDev():
+    name : str
+
+
+@dataclass
+class I2CDev():
+    busnum : int
+    busaddr : int
+    buses_to_probe : str
 
 
 class HWDef:
@@ -285,24 +298,52 @@ class HWDef:
 
     def parse_spi_device(self, dev):
         '''parse a SPI:xxx device item'''
+        o = self.spi_dev_to_object(dev)
+        return f'hal.spi->get_device("{o.name}")'
+
+    def spi_dev_to_object(self, dev):
         a = dev.split(':')
         if len(a) != 2:
             self.error("Bad SPI device: %s" % dev)
-        return 'hal.spi->get_device("%s")' % a[1]
+        return SPIDev(a[1]);
 
-    def parse_i2c_device(self, dev):
+    def i2c_dev_to_object(self, dev):
         '''parse a I2C:xxx:xxx device item'''
         a = dev.split(':')
         if len(a) != 3:
             self.error("Bad I2C device: %s" % dev)
         busaddr = int(a[2], base=0)
+
+        busnum = a[1]
+        buses_to_probe = 'SINGLE'
+        if busnum in {'ALL_INTERNAL', 'ALL', 'ALL_EXTERNAL'}:
+            # ... not a bus number at all
+            buses_to_probe = busnum
+            busnum = None
+        else:
+            busnum=int(busnum)
+
+        return I2CDev(
+            busaddr=busaddr,
+            busnum=busnum,
+            buses_to_probe=buses_to_probe,
+        )
+
+    def parse_i2c_device(self, dev):
+        '''parse a I2C:xxx:xxx device item'''
+        o = self.i2c_dev_to_object(dev)
+        a = ['x', o.buses_to_probe]
+        busaddr = o.busaddr
+
         if a[1] == 'ALL_EXTERNAL':
             return ('FOREACH_I2C_EXTERNAL(b)', 'GET_I2C_DEVICE(b,0x%02x)' % (busaddr))
         elif a[1] == 'ALL_INTERNAL':
             return ('FOREACH_I2C_INTERNAL(b)', 'GET_I2C_DEVICE(b,0x%02x)' % (busaddr))
         elif a[1] == 'ALL':
             return ('FOREACH_I2C(b)', 'GET_I2C_DEVICE(b,0x%02x)' % (busaddr))
-        busnum = int(a[1])
+        elif a[1] != 'SINGLE':
+            raise ValueError(f"Unknown buses_to_probe type {o.buses_to_probe=}")
+        busnum = o.busnum
         return ('', 'GET_I2C_DEVICE(%u,0x%02x)' % (busnum, busaddr))
 
     def seen_str(self, dev):
