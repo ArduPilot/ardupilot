@@ -202,10 +202,12 @@ bool AP_RangeFinder_LightWareI2C::init()
 {
     if (sf20_init()) {
         DEV_PRINTF("Found SF20 native Lidar\n");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Found SF20 native Lidar\n");
         return true;
     }
     if (legacy_init()) {
         DEV_PRINTF("Found SF20 legacy Lidar\n");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Found SF20 legacy Lidar\n");
         return true;
     }
     DEV_PRINTF("SF20 not found\n");
