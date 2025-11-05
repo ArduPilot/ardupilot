@@ -67,7 +67,7 @@ constexpr const char *AP_GPS_SBF::portIdentifiers[];
 constexpr const char* AP_GPS_SBF::_initialisation_blob[];
 constexpr const char* AP_GPS_SBF::sbas_on_blob[];
 
-const AP_GPS_SBF::SBF_Error_Map AP_GPS_SBF::sbf_error_map[] = {
+const AP_GPS_SBF::SBF_Error_Map AP_GPS_SBF::sbf_error_map[] {
     { AP_GPS_SBF::INVALIDCONFIG, AP_GPS::Errors::CONFIGURATION },
     { AP_GPS_SBF::SOFTWARE,      AP_GPS::Errors::SOFTWARE },
     { AP_GPS_SBF::ANTENNA,       AP_GPS::Errors::ANTENNA },
@@ -76,7 +76,7 @@ const AP_GPS_SBF::SBF_Error_Map AP_GPS_SBF::sbf_error_map[] = {
     { AP_GPS_SBF::CONGESTION,    AP_GPS::Errors::OUTPUT_CONGESTION },
 };
 
-const AP_GPS_SBF::Auth_State_Map AP_GPS_SBF::auth_state_map[] = {
+const AP_GPS_SBF::Auth_State_Map AP_GPS_SBF::auth_state_map[] {
     {0, AP_GPS::Authentication::DISABLED},
     {1, AP_GPS::Authentication::INITIALIZING},
     {2, AP_GPS::Authentication::INITIALIZING},
@@ -629,29 +629,37 @@ AP_GPS_SBF::process_message(void)
 
     case RFStatus:
     {
+#if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
+        
+        const uint16_t data_size = sbf_msg.length - 8;
+        if (data_size < offsetof(msg4092, RFBand)) {
+            break;
+        }
+
         const msg4092 &temp = sbf_msg.data.msg4092u;
         check_new_itow(temp.TOW, sbf_msg.length);
-#if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
-        if (temp.Flags==0) {
-            state.spoofing_state = static_cast<uint8_t>(AP_GPS::Spoofing::OK);
-        }
-        else {
-            state.spoofing_state = static_cast<uint8_t>(AP_GPS::Spoofing::DETECTED);
-        }
-        state.jamming_state = static_cast<uint8_t>(AP_GPS::Jamming::OK);
 
         if (temp.SBLength < sizeof(RFStatusRFBandSubBlock)) {
             break;
         }
 
+        const size_t sub_block_array_size = data_size - offsetof(msg4092, RFBand);
+        const size_t required_size = (size_t)temp.N * temp.SBLength;
+
+        if (sub_block_array_size < required_size) {
+            break;
+        }
+
+        if (temp.Flags==0) {
+            state.spoofing_state = static_cast<uint8_t>(AP_GPS::Spoofing::OK);
+        } else {
+            state.spoofing_state = static_cast<uint8_t>(AP_GPS::Spoofing::DETECTED);
+        }
+        state.jamming_state = static_cast<uint8_t>(AP_GPS::Jamming::OK);
+        
         const uint8_t *p = (const uint8_t *)&temp.RFBand;
-        const uint8_t *packet_end = (const uint8_t *)&temp + (sbf_msg.length - 8);
 
         for (uint8_t i = 0; i < temp.N; i++) {
-            if (p + temp.SBLength > packet_end) {
-                break;
-            }
-
             const RFStatusRFBandSubBlock &rf_band_data = *(const RFStatusRFBandSubBlock *)p;
 
             switch (rf_band_data.Info & (uint8_t)0b1111) {
@@ -674,9 +682,10 @@ AP_GPS_SBF::process_message(void)
 
     case GALAuthStatus:
     {
+#if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
         const msg4245 &temp = sbf_msg.data.msg4245u;
         check_new_itow(temp.TOW, sbf_msg.length);
-#if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
+
         state.authentication_state = static_cast<uint8_t>(AP_GPS::Authentication::UNKNOWN);
 
         const uint16_t osnma_status = temp.OSNMAStatus & (uint16_t)0b111;
