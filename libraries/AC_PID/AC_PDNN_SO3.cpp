@@ -56,7 +56,7 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
  
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Neural Networks变量声明和定义~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //设置默认RBF网络中心矩阵 Setting the centers of RBF c=Matrix5*2
-    float _c_1_1 = -1.0f; float _c_1_2 = -0.5f; float _c_1_3 = 0.0f; float _c_1_4 = 0.5f; float _c_1_5 = 1.0f; float _c_1_6 = 1.0f;
+    float _c_1_1 = -1.0f; float _c_1_2 = -0.5f; float _c_1_3 = 0.0f; float _c_1_4 = 0.5f; float _c_1_5 = 1.0f;
     float _c_2_1 = -10.0f; float _c_2_2 = -5.0f; float _c_2_3 = 0.0f; float _c_2_4 = 5.0f; float _c_2_5 = 10.0f; 
     //定义 特定方向 第j个 隐藏层对应的RBF网络中心（可以理解为上面RBF网络中心矩阵的第j列）
     Vector2f _c_x_1, _c_x_2, _c_x_3, _c_x_4, _c_x_5; //x方向
