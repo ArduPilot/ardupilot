@@ -291,7 +291,7 @@ void ToyMode::update()
     }
 
     bool reset_combination = left_action_button && right_action_button;
-    if (reset_combination && abs(copter.ahrs.roll_sensor) > 160) {
+    if (reset_combination && fabsf(copter.ahrs.get_roll_deg()) > 160) {
         /*
           if both shoulder buttons are pressed at the same time for 5
           seconds while the vehicle is inverted then we send a
