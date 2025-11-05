@@ -24,3 +24,5 @@ define HAL_LINUX_GPIO_RPI_ENABLED 1
 
 // FIXME: use of this define should go away:
 define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_DARK
+
+define APM_LINUX_RCIN_RATE 500

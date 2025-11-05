@@ -30,7 +30,6 @@
 #include "AP_InertialSensor_LSM9DS1.h"
 #include "AP_InertialSensor_Invensense.h"
 #include "AP_InertialSensor_SITL.h"
-#include "AP_InertialSensor_RST.h"
 #include "AP_InertialSensor_BMI055.h"
 #include "AP_InertialSensor_BMI088.h"
 #include "AP_InertialSensor_Invensensev2.h"
@@ -1134,7 +1133,10 @@ AP_InertialSensor::detect_backends(void)
 
     _backends_detected = true;
 
-#if defined(HAL_CHIBIOS_ARCH_CUBE) && INS_MAX_INSTANCES > 2
+#if AP_INERTIALSENSOR_FORCE_ENABLE_NONISOLATED_INSTANCE
+#if INS_MAX_INSTANCES < 3
+#error AP_INERTIALSENSOR_FORCE_ENABLE_NONISOLATED_INSTANCE is not relevant for < 3 IMUs
+#endif
     // special case for Cubes, where the IMUs on the isolated
     // board could fail on some boards. If the user has INS_USE=1,
     // INS_USE2=1 and INS_USE3=0 then force INS_USE3 to 1. This is
@@ -1486,7 +1488,7 @@ bool AP_InertialSensor::pre_arm_check_gyro_backend_rate_hz(char* fail_msg, uint1
         }
         const auto rate_hz = _backends[i]->get_gyro_backend_rate_hz();
         if (rate_hz < threshold && (AP_HAL::Device::devid_get_devtype(_gyro_id(i)) != AP_InertialSensor_Backend::DEVTYPE_SERIAL)) {
-            hal.util->snprintf(fail_msg, fail_msg_len, "Gyro %d rate %dHz < loop ratex1.8 %dHz",
+            hal.util->snprintf(fail_msg, fail_msg_len, "Gyro %d rate %dHz < loop rate*1.8 %dHz",
                                i, int(rate_hz), int(threshold));
             return false;
         }

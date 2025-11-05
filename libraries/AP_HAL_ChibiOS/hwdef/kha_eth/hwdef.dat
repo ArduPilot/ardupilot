@@ -23,9 +23,6 @@ env AP_PERIPH 1
 FLASH_RESERVE_START_KB 128
 FLASH_BOOTLOADER_LOAD_KB 128
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
-
 MAIN_STACK 0x2000
 PROCESS_STACK 0x6000
 
@@ -128,7 +125,6 @@ define HAL_DISABLE_ADC_DRIVER TRUE
 # ---------------------------------------------------------------------------------------------
 # AP_Periph - boiler-plate configurations that all HW AP-Periph need
 # ---------------------------------------------------------------------------------------------
-#define HAL_NO_GPIO_IRQ
 define HAL_PERIPH_SHOW_SERIAL_MANAGER_PARAMS
 
 #################################

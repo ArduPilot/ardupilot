@@ -62,8 +62,16 @@ private:
     Vector3f joint_angles;
 
     // physical constraints on joint angles in (roll, pitch, azimuth) order
-    Vector3f lower_joint_limits{radians(-40), radians(-135), radians(-7.5)};
-    Vector3f upper_joint_limits{radians(40),  radians(45),   radians(7.5)};
+    Vector3f lower_joint_limits{
+        float(radians(-40)),
+        float(radians(-135)),
+        float(radians(-7.5))
+    };
+    Vector3f upper_joint_limits{
+        float(radians(40)),
+        float(radians(45)),
+        float(radians(7.5))
+    };
 
     const float travelLimitGain = 20;
 

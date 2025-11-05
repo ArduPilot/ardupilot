@@ -2,7 +2,7 @@ include ../f303-periph/hwdef.inc
 
 
 # and support all external compass and baro types
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 
 # enable all features
 define AP_PERIPH_GPS_ENABLED 1

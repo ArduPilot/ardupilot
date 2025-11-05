@@ -15,7 +15,7 @@ const AP_Param::GroupInfo AP_SystemID::var_info[] = {
     // @DisplayName: System identification axis
     // @Description: Controls which axis are being excited.  Set to non-zero to see more parameters
     // @User: Standard
-    // @Values: 0:None, 1:Input Roll Angle, 2:Input Pitch Angle, 3:Input Yaw Angle, 4:Recovery Roll Angle, 5:Recovery Pitch Angle, 6:Recovery Yaw Angle, 7:Rate Roll, 8:Rate Pitch, 9:Rate Yaw, 10:Mixer Roll, 11:Mixer Pitch, 12:Mixer Yaw, 13:Mixer Thrust
+    // @Values: 0:None, 1:VTOL Input Roll Angle, 2:VTOL Input Pitch Angle, 3:VTOL Input Yaw Angle, 4:VTOL Recovery Roll Angle, 5:VTOL Recovery Pitch Angle, 6:VTOL Recovery Yaw Angle, 7:VTOL Rate Roll, 8:VTOL Rate Pitch, 9:VTOL Rate Yaw, 10:VTOL Mixer Roll, 11:VTOL Mixer Pitch, 12:VTOL Mixer Yaw, 13:VTOL Mixer Thrust, 20:FW Input Roll Angle, 21:FW Input Pitch Angle, 22:FW Mixer Roll, 23:FW Mixer Pitch
     AP_GROUPINFO_FLAGS("_AXIS", 1, AP_SystemID, axis, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: _MAGNITUDE
@@ -98,19 +98,50 @@ void AP_SystemID::start()
 {
     start_axis = axis;
 
-    // check if enabled
-    if (start_axis == AxisType::NONE) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: No axis selected");
-        return;
+    switch (start_axis) {
+        case AxisType::NONE:
+            // check if enabled
+            gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: No axis selected");
+            return;
+        case AxisType::INPUT_ROLL:
+        case AxisType::INPUT_PITCH:
+        case AxisType::INPUT_YAW:
+        case AxisType::RECOVER_ROLL:
+        case AxisType::RECOVER_PITCH:
+        case AxisType::RECOVER_YAW:
+        case AxisType::RATE_ROLL:
+        case AxisType::RATE_PITCH:
+        case AxisType::RATE_YAW:
+        case AxisType::MIX_ROLL:
+        case AxisType::MIX_PITCH:
+        case AxisType::MIX_YAW:
+        case AxisType::MIX_THROTTLE:
+            // Exits if the current flight mode or phase does not support system ID axis.
+            if (!plane.control_mode->supports_vtol_systemid()) {
+#if HAL_QUADPLANE_ENABLED
+                gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Axis not supported for this flight mode");
+#else
+                gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Axis not supported in Plane");
+#endif
+                return;
+            }
+            break;
+        case AxisType::FW_INPUT_ROLL:
+        case AxisType::FW_INPUT_PITCH:
+        case AxisType::FW_MIX_ROLL:
+        case AxisType::FW_MIX_PITCH:
+            // Exits if the currently flight mode or phase does not support system ID axis.
+            if (!plane.control_mode->supports_fw_systemid()) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Axis not supported for this flight mode");
+                return;
+            }
+            if (!plane.control_mode->allow_fw_systemid()) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Axis not supported for this flight phase");
+                return;
+            }
+            break;
     }
-    if (!plane.quadplane.enabled()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: only for quadplane");
-        return;
-    }
-    if (!plane.control_mode->supports_systemid()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Not supported in mode %s", plane.control_mode->name());
-        return;
-    }
+
     if (!hal.util->get_soft_armed()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: must be armed");
         return;
@@ -119,7 +150,11 @@ void AP_SystemID::start()
     attitude_offset_deg.zero();
     throttle_offset = 0;
 
-    restore.att_bf_feedforward = plane.quadplane.attitude_control->get_bf_feedforward();
+#if HAL_QUADPLANE_ENABLED
+    if (plane.quadplane.available()) {
+        restore.att_bf_feedforward = plane.quadplane.attitude_control->get_bf_feedforward();
+    }
+#endif
 
     waveform_time = 0;
     time_const_freq = 2.0 / frequency_start; // Two full cycles at the starting frequency
@@ -155,16 +190,19 @@ void AP_SystemID::stop()
         attitude_offset_deg.zero();
         throttle_offset = 0;
 
-        auto *attitude_control = plane.quadplane.attitude_control;
-        attitude_control->bf_feedforward(restore.att_bf_feedforward);
-        attitude_control->rate_bf_roll_sysid_rads(0);
-        attitude_control->rate_bf_pitch_sysid_rads(0);
-        attitude_control->rate_bf_yaw_sysid_rads(0);
-        plane.quadplane.pos_control->set_NE_control_scale_factor(1);
+#if HAL_QUADPLANE_ENABLED
+        if (plane.quadplane.available()) {
+            auto *attitude_control = plane.quadplane.attitude_control;
+            attitude_control->bf_feedforward(restore.att_bf_feedforward);
+            attitude_control->rate_bf_roll_sysid_rads(0);
+            attitude_control->rate_bf_pitch_sysid_rads(0);
+            attitude_control->rate_bf_yaw_sysid_rads(0);
+            plane.quadplane.pos_control->set_NE_control_scale_factor(1);
 
-        // re-initialise the XY controller so we take current position as target
-        plane.quadplane.pos_control->init_NE_controller();
-
+            // re-initialise the XY controller so we take current position as target
+            plane.quadplane.pos_control->init_NE_controller();
+        }
+#endif
         gcs().send_text(MAV_SEVERITY_INFO, "SystemID stopped");
     }
 }
@@ -172,8 +210,9 @@ void AP_SystemID::stop()
 /*
   update systemid - needs to be called at main loop rate
  */
-void AP_SystemID::update()
+void AP_SystemID::vtol_update()
 {
+#if HAL_QUADPLANE_ENABLED
     if (!running) {
         return;
     }
@@ -236,13 +275,109 @@ void AP_SystemID::update()
         case AxisType::MIX_THROTTLE:
             throttle_offset = waveform_sample;
             break;
+        default:
+            break;
     }
 
-    // reduce control in XY axis when in position controlled modes
+    // reduce control in NE axis when in position controlled modes
     plane.quadplane.pos_control->set_NE_control_scale_factor(xy_control_mul);
 
     if (log_subsample <= 0) {
         log_data();
+        // log attitude controller at the same rate
+        plane.quadplane.Log_Write_AttRate();
+
+        if (plane.should_log(MASK_LOG_ATTITUDE_FAST) && plane.should_log(MASK_LOG_ATTITUDE_MED)) {
+            log_subsample = 1;
+        } else if (plane.should_log(MASK_LOG_ATTITUDE_FAST)) {
+            log_subsample = 2;
+        } else if (plane.should_log(MASK_LOG_ATTITUDE_MED)) {
+            log_subsample = 4;
+        } else {
+            log_subsample = 8;
+        }
+    }
+    log_subsample -= 1;
+
+#endif
+}
+
+// Return true if a fixed wing system ID is currently running
+bool AP_SystemID::is_running_fw() const
+{
+    if (!is_running()) {
+        return false;
+    }
+
+    switch (start_axis) {
+        case AxisType::NONE:
+        case AxisType::INPUT_ROLL:
+        case AxisType::INPUT_PITCH:
+        case AxisType::INPUT_YAW:
+        case AxisType::RECOVER_ROLL:
+        case AxisType::RECOVER_PITCH:
+        case AxisType::RECOVER_YAW:
+        case AxisType::RATE_ROLL:
+        case AxisType::RATE_PITCH:
+        case AxisType::RATE_YAW:
+        case AxisType::MIX_ROLL:
+        case AxisType::MIX_PITCH:
+        case AxisType::MIX_YAW:
+        case AxisType::MIX_THROTTLE:
+            break;
+
+        case AxisType::FW_INPUT_ROLL:
+        case AxisType::FW_INPUT_PITCH:
+        case AxisType::FW_MIX_ROLL:
+        case AxisType::FW_MIX_PITCH:
+            return true;
+    }
+
+    return false;
+}
+
+/*
+  update systemid - needs to be called at main loop rate
+ */
+void AP_SystemID::fw_update()
+{
+    if (!plane.control_mode->allow_fw_systemid() || chirp_input.completed()) {
+        // Control mode change means chirp should be stopped, or
+        // Chirp is complete
+        stop();
+        return;
+    }
+
+    float const last_loop_time_s = AP::scheduler().get_last_loop_time_s();
+
+    waveform_time += last_loop_time_s;
+    waveform_sample = chirp_input.update(waveform_time, waveform_magnitude);
+    waveform_freq_rads = chirp_input.get_frequency_rads();
+
+    switch (start_axis) {
+        case AxisType::NONE:
+            // not possible, see start()
+            break;
+        case AxisType::FW_INPUT_ROLL:
+            plane.nav_roll_cd += waveform_sample * 100.0f;
+            break;
+        case AxisType::FW_INPUT_PITCH:
+            plane.nav_pitch_cd += waveform_sample * 100.0f;
+            break;
+        case AxisType::FW_MIX_ROLL:
+            output_offset.x = waveform_sample;
+            break;
+        case AxisType::FW_MIX_PITCH:
+            output_offset.y = waveform_sample;
+            break;
+        default:
+            break;
+    }
+
+    if (log_subsample <= 0) {
+        log_data();
+        log_plane_data();
+
         if (plane.should_log(MASK_LOG_ATTITUDE_FAST) && plane.should_log(MASK_LOG_ATTITUDE_MED)) {
             log_subsample = 1;
         } else if (plane.should_log(MASK_LOG_ATTITUDE_FAST)) {
@@ -294,12 +429,52 @@ void AP_SystemID::log_data() const
                                     delta_velocity.x * dt_vel_inv,
                                     delta_velocity.y * dt_vel_inv,
                                     delta_velocity.z * dt_vel_inv);
-
-        // log attitude controller at the same rate
-        plane.quadplane.Log_Write_AttRate();
     }
 #endif // HAL_LOGGING_ENABLED
 }
 
+// @LoggerMessage: SIDP
+// @Description: System ID data for Plane
+// @Field: TimeUS: Time since system startup
+// @Field: DRll: Desired Roll Angle
+// @Field: Rll: Roll Angle
+// @Field: DPit: Desired Pitch Angle
+// @Field: Pit: Pitch Angle
+// @Field: rdes: Desired Roll Rate
+// @Field: r: Measured Roll Rate
+// @Field: pdes: Desired Pitch Rate
+// @Field: p: Measured Pitch Rate
+// @Field: Aile: Aileron
+// @Field: Elev: Elevator
+// @Field: aspd: Speed_Scalar
+// @Field: eastas: EAS2TAS
+
+void AP_SystemID::log_plane_data() const
+{
+#if HAL_LOGGING_ENABLED
+   // int16_t pitch = plane.ahrs.pitch_sensor - plane.g.pitch_trim * 100;
+    float speed_scaler = plane.get_speed_scaler();
+    const auto &pitch_pid_info = plane.pitchController.get_pid_info();
+    const auto &roll_pid_info = plane.rollController.get_pid_info();
+
+    int16_t demanded_pitch = plane.nav_pitch_cd + int32_t(plane.g.pitch_trim * 100.0) + SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * plane.g.kff_throttle_to_pitch;
+    AP::logger().WriteStreaming("SIDP", "TimeUS,DRll,Rll,DPit,Pit,rdes,r,pdes,p,Aile,Elev,aspd,eastas",
+                                "soooooooooooo", "F------------", "Qffffffffffff",
+                                AP_HAL::micros64(),
+                                plane.nav_roll_cd * 0.01f,
+                                plane.ahrs.roll_sensor * 0.01f,
+                                demanded_pitch * 0.01f,
+                                plane.ahrs.pitch_sensor * 0.01f,
+                                roll_pid_info.target,
+                                degrees(plane.ahrs.get_gyro().x),
+                                pitch_pid_info.target,
+                                degrees(plane.ahrs.get_gyro().y),
+                                SRV_Channels::get_output_scaled(SRV_Channel::k_aileron) * 0.01f,
+                                SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) * 0.01f,
+                                speed_scaler,
+                                plane.ahrs.get_EAS2TAS());
+
+#endif // HAL_LOGGING_ENABLED
+}
 #endif // AP_PLANE_SYSTEMID_ENABLED
 

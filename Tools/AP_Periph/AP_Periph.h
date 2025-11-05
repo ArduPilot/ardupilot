@@ -417,15 +417,15 @@ public:
     AP_Notify notify;
     uint64_t vehicle_state = 1; // default to initialisation
     float yaw_earth;
-    uint32_t last_vehicle_state;
+    uint32_t last_vehicle_state_ms;
 
     // Handled under LUA script to control LEDs
     float get_yaw_earth() { return yaw_earth; }
-    uint32_t get_vehicle_state() { return vehicle_state; }
+    uint64_t get_vehicle_state() { return vehicle_state; }
 #elif defined(AP_SCRIPTING_ENABLED)
     // create dummy methods for the case when the user doesn't want to use the notify object
     float get_yaw_earth() { return 0.0; }
-    uint32_t get_vehicle_state() { return 0.0; }
+    uint64_t get_vehicle_state() { return 0; }
 #endif
 
 #if AP_SCRIPTING_ENABLED

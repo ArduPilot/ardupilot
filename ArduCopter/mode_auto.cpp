@@ -222,6 +222,35 @@ bool ModeAuto::allows_weathervaning() const
 }
 #endif
 
+// determine EKF reset handling method based on Guide submode
+bool ModeAuto::move_vehicle_on_ekf_reset() const
+{
+        // call the correct auto controller
+    switch (_mode) {
+    case SubMode::TAKEOFF:
+    case SubMode::LAND:
+    case SubMode::RTL:
+    case SubMode::CIRCLE_MOVE_TO_EDGE:
+    case SubMode::CIRCLE:
+    case SubMode::NAVGUIDED:
+    case SubMode::LOITER:
+    case SubMode::LOITER_TO_ALT:
+#if AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED && AC_PAYLOAD_PLACE_ENABLED
+    case SubMode::NAV_PAYLOAD_PLACE:
+#endif
+    case SubMode::NAV_SCRIPT_TIME:
+    case SubMode::NAV_ATTITUDE_TIME:
+        // these submodes reset their targets so the vehicle does not physically move
+        return false;
+    case SubMode::WP:    
+        // these submodes smoothly move to maintain an absolute position
+        return true;
+    }
+
+    // should never reach here but just in case
+    return true;
+}
+
 // Go straight to landing sequence via DO_LAND_START, if succeeds pretend to be Auto RTL mode
 bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
 {
@@ -340,7 +369,7 @@ bool ModeAuto::loiter_start()
     _mode = SubMode::LOITER;
 
     // calculate stopping point
-    Vector3f stopping_point_neu_m;
+    Vector3p stopping_point_neu_m;
     wp_nav->get_wp_stopping_point_NEU_m(stopping_point_neu_m);
 
     // initialise waypoint controller target to stopping point
@@ -424,11 +453,11 @@ bool ModeAuto::wp_start(const Location& dest_loc)
 {
     // init wpnav and set origin if transitioning from takeoff
     if (!wp_nav->is_active()) {
-        Vector3f stopping_point_neu_m;
+        Vector3p stopping_point_neu_m;
         if (_mode == SubMode::TAKEOFF) {
             Vector3p takeoff_complete_pos_neu_m;
             if (auto_takeoff.get_completion_pos_neu_m(takeoff_complete_pos_neu_m)) {
-                stopping_point_neu_m = takeoff_complete_pos_neu_m.tofloat();
+                stopping_point_neu_m = takeoff_complete_pos_neu_m;
             }
         }
         float des_speed_xy_ms = is_positive(desired_speed_override_ms.xy) ? desired_speed_override_ms.xy : 0;
@@ -514,7 +543,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
     copter.circle_nav->set_rate_degs(current_rate);
 
     // check our distance from edge of circle
-    Vector3f circle_edge_neu_m;
+    Vector3p circle_edge_neu_m;
     float dist_to_edge_m;
     copter.circle_nav->get_closest_point_on_circle_NEU_m(circle_edge_neu_m, dist_to_edge_m);
 
@@ -1562,7 +1591,7 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     const Location target_loc = loc_from_cmd(cmd, default_loc);
 
     if (!wp_start(target_loc)) {
-        // failure to set next destination can only be because of missing terrain data
+        // failure to set next destination can be because of missing terrain data or unhealthy rangefinder
         copter.failsafe_terrain_on_event();
         return;
     }

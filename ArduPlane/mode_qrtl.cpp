@@ -120,9 +120,9 @@ void ModeQRTL::run()
             quadplane.run_z_controller();
 
             // Climb done when stopping point reaches target altitude
-            Vector3p stopping_point;
-            pos_control->get_stopping_point_U_m(stopping_point.z);
-            Location stopping_loc = Location(stopping_point.tofloat() * 100.0, Location::AltFrame::ABOVE_ORIGIN);
+            Vector3p stopping_point_neu_m;
+            pos_control->get_stopping_point_U_m(stopping_point_neu_m.z);
+            Location stopping_loc = Location(stopping_point_neu_m.tofloat() * 100.0, Location::AltFrame::ABOVE_ORIGIN);
 
             ftype alt_diff;
             if (!stopping_loc.get_height_above(plane.next_WP_loc, alt_diff) || is_positive(alt_diff)) {

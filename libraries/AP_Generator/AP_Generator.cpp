@@ -19,6 +19,7 @@
 
 #if HAL_GENERATOR_ENABLED
 
+#include "AP_Generator_Cortex.h"
 #include "AP_Generator_IE_650_800.h"
 #include "AP_Generator_IE_2400.h"
 #include "AP_Generator_RichenPower.h"
@@ -45,6 +46,8 @@ const AP_Param::GroupInfo AP_Generator::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 2, AP_Generator, _options, 0),
 
+    // @Group:
+    // @Path: AP_Generator_Loweheiser.cpp
     AP_SUBGROUPVARPTR(_driver_ptr, "", 3, AP_Generator, backend_var_info),
 
     AP_GROUPEND
@@ -94,8 +97,14 @@ __INITFUNC__ void AP_Generator::init()
         case Type::LOWEHEISER:
             _driver_ptr = NEW_NOTHROW AP_Generator_Loweheiser(*this);
             break;
-#endif
-    }
+#endif // AP_GENERATOR_LOWEHEISER_ENABLED
+
+#if AP_GENERATOR_CORTEX_ENABLED
+        case Type::CORTEX:
+            _driver_ptr = NEW_NOTHROW AP_Generator_Cortex(*this);
+            break;
+#endif // AP_GENERATOR_CORTEX_ENABLED
+}
 
     if (_driver_ptr != nullptr) {
         _driver_ptr->init();

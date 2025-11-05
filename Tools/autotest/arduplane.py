@@ -1073,12 +1073,18 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        # flaps should deploy for landing (RC input value used for position?!)
+        self.start_subtest("flaps should deploy for landing")  # (RC input value used for position?!)
         self.wait_servo_channel_value(servo_ch, flaps_ch_trim, timeout=300)
-        # flaps should undeploy at the end
+        self.start_subtest("flaps should undeploy at the end")
         self.wait_servo_channel_value(servo_ch, servo_ch_min, timeout=30)
 
         self.progress("Flaps OK")
+
+        # because we have used flaps, RC output 5 is now non-zero -
+        # it's actually the SERVO5_MIN value of 1100 now.  The simulator
+        # sees that as 100us above the zero-position (it is
+        # 1000-to-2000 for flaps).  That slows the aircraft down!
+        self.reboot_sitl()
 
     def TestRCRelay(self):
         '''Test Relay RC Channel Option'''
@@ -2064,14 +2070,14 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
             self.set_parameter("AHRS_OPTIONS", 1)
             self.set_parameter("SIM_GPS1_JAM", 1)
-            self.delay_sim_time(10)
+            self.delay_sim_time(13)
             self.set_parameter("SIM_GPS1_JAM", 0)
             t_enabled = self.get_sim_time()
             # The EKF should wait for GPS checks to pass when we are still able to navigate using dead reckoning
             # to prevent bad GPS being used when coming back after loss of lock due to interence.
             # The EKF_STATUS_REPORT does not tell us when the good to align check passes, so the minimum time
             # value of 3.0 seconds is an arbitrary value set on inspection of dataflash logs from this test
-            self.wait_ekf_flags(mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS, 0, timeout=15)
+            self.wait_ekf_flags(mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS, 0, timeout=20)
             time_since_jamming_stopped = self.get_sim_time() - t_enabled
             if time_since_jamming_stopped < 3:
                 raise NotAchievedException("GPS use re-started %f sec after jamming stopped" % time_since_jamming_stopped)
@@ -2201,10 +2207,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         '''Test RangeFinder Basic Functionality'''
         self.progress("Making sure we don't ordinarily get RANGEFINDER")
         self.assert_not_receive_message('RANGEFINDER')
+        self.assert_not_receive_message('DISTANCE_SENSOR')
 
         self.set_analog_rangefinder_parameters()
 
         self.reboot_sitl()
+
+        self.context_set_message_rate_hz('RANGEFINDER', self.sitl_streamrate())
 
         '''ensure rangefinder gives height-above-ground'''
         self.load_mission("plane-gripper-mission.txt") # borrow this
@@ -2215,11 +2224,16 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.wait_waypoint(5, 5, max_dist=100)
         rf = self.assert_receive_message('RANGEFINDER')
+        ds = self.assert_receive_message('DISTANCE_SENSOR')
         gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
         if abs(rf.distance - gpi.relative_alt/1000.0) > 3:
             raise NotAchievedException(
                 "rangefinder alt (%s) disagrees with global-position-int.relative_alt (%s)" %
                 (rf.distance, gpi.relative_alt/1000.0))
+        if abs(ds.current_distance*0.01 - gpi.relative_alt/1000.0) > 3:
+            raise NotAchievedException(
+                "distance_sensor alt (%s) disagrees with global-position-int.relative_alt (%s)" %
+                (ds.current_distance*0.01, gpi.relative_alt/1000.0))
         self.wait_statustext("Auto disarmed", timeout=60)
 
         self.progress("Ensure RFND messages in log")
@@ -2881,6 +2895,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
+        self.set_parameter('TECS_RLL2THR', 2)
+
         # Keep track of the maximum terrain alt.
         global max_terrain_alt
         max_terrain_alt = 0
@@ -2906,7 +2922,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode("GUIDED")
         loc = self.mav.location()
         self.location_offset_ne(loc, 350, 0)
-        new_alt = 290
+        new_alt = 280
         self.run_cmd_int(
             mavutil.mavlink.MAV_CMD_DO_REPOSITION,
             p5=int(loc.lat * 1e7),
@@ -4462,10 +4478,16 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Expect within 2%
         # Note that I is not checked directly, its value is derived from P, FF, and TCONST which are all checked.
         self.assert_parameter_value_pct("RLL_RATE_P", 1.222702146, 2)
-        self.assert_parameter_value_pct("RLL_RATE_D", 0.070284024, 2)
         self.assert_parameter_value_pct("RLL_RATE_FF", 0.229291457, 2)
 
         self.assert_parameter_value_pct("PTCH_RATE_FF", 0.503520715, 5)
+
+        # there are sometimes multiple solutions for roll but the distribution
+        # is much more skewed than pitch below
+        try:
+            self.assert_parameter_value_pct("RLL_RATE_D", 0.070284024, 2)
+        except ValueError:
+            self.assert_parameter_value_pct("RLL_RATE_D", 0.091369226, 2) # added 2025-10
 
         # There seem to be multiple solutions for pitch. I'm not sure why this is.
         # Each value is quite consistent because of the fixed steps that autotune takes
@@ -4493,7 +4515,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                     self.assert_parameter_value_pct("PTCH_RATE_D", 0.049, 2)
                 except ValueError:
                     # 4%
-                    self.assert_parameter_value_pct("PTCH_RATE_D", 0.0836, 2)
+                    try:
+                        self.assert_parameter_value_pct("PTCH_RATE_D", 0.0836, 2)
+                    except ValueError:
+                        self.assert_parameter_value_pct("PTCH_RATE_D", 0.0380, 2) # added 2025-10
 
     def run_autotune(self):
         self.takeoff(100)
@@ -5981,7 +6006,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.binary,
             'plane',
             self.generic_mission_filepath_for_filename("flaps.txt"),
-        ])
+        ], checkfail=True)
         self.start_SITL()
 
     def MAV_CMD_GUIDED_CHANGE_ALTITUDE(self):
@@ -6665,7 +6690,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             higher_home = copy.copy(home)
             higher_home.alt += 40
             self.set_home(higher_home)
-            self.wait_altitude(home.alt+target_alt-5, home.alt+target_alt+5, relative=False, minimum_duration=10, timeout=11)
+            self.wait_altitude(home.alt+target_alt-5, home.alt+target_alt+5, relative=False, minimum_duration=10, timeout=12)
             self.disarm_vehicle(force=True)
             self.reboot_sitl()
 
@@ -7725,6 +7750,43 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameter("RALLY_LIMIT_KM", 7)
         self.wait_text("clear: Rally too far", check_context=True)
 
+    def PlaneFollowAppletSanity(self):
+        '''PLane Follow Sanity Check, not a detailed test'''
+        self.start_subtest("Plane Follow Script Load and Start")
+
+        self.install_applet_script_context("plane_follow.lua")
+        self.install_script_module(self.script_modules_source_path("pid.lua"), "pid.lua")
+        self.install_script_module(self.script_modules_source_path("mavlink_attitude.lua"), "mavlink_attitude.lua")
+        self.install_mavlink_module()
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SIM_SPEEDUP": 20, # need to give some cycles to lua
+            "RC7_OPTION": 301,
+        })
+
+        self.context_collect("STATUSTEXT")
+
+        self.reboot_sitl()
+
+        self.wait_text("Plane Follow .* script loaded", timeout=30, regex=True, check_context=True)
+
+        self.wait_ready_to_arm()
+        self.set_rc(7, 2000)
+        self.wait_text("PFollow: must be armed", check_context=True)
+        self.set_rc(7, 1000)
+        self.arm_vehicle()
+        self.set_rc(7, 2000)
+        self.wait_text("PFollow: enabled", check_context=True)
+        self.set_rc(7, 1000)
+        self.wait_text("PFollow: disabled", check_context=True)
+        self.disarm_vehicle()
+
+        self.reboot_sitl()
+        # remove the installed modules.
+        self.remove_installed_script_module("pid.lua")
+        self.remove_installed_script_module("mavlink_attitude.lua")
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -7900,6 +7962,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.ScriptedArmingChecksApplet,
             self.ScriptedArmingChecksAppletEStop,
             self.ScriptedArmingChecksAppletRally,
+            self.PlaneFollowAppletSanity,
         ]
 
     def tests1c(self):

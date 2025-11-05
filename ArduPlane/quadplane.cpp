@@ -112,7 +112,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: YAW_RATE_MAX
     // @DisplayName: Maximum yaw rate
-    // @Description: This is the maximum yaw rate for pilot input on rudder stick in degrees/second
+    // @Description: This is the maximum yaw rate for pilot input on rudder stick in degrees/second and weathervaning is limited to half of this value
     // @Units: deg/s
     // @Range: 50 500
     // @Increment: 1
@@ -953,7 +953,7 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
 
 #if AP_PLANE_SYSTEMID_ENABLED
         auto &systemid = plane.g2.systemid;
-        systemid.update();
+        systemid.vtol_update();
         offset_deg = systemid.get_attitude_offset_deg();
 #endif
 
@@ -3199,7 +3199,7 @@ void QuadPlane::waypoint_controller(void)
     const uint32_t now = AP_HAL::millis();
     if (!loc.same_loc_as(last_auto_target) ||
         now - last_loiter_ms > 500) {
-        wp_nav->set_wp_destination_NEU_m(poscontrol.target_neu_m.tofloat());
+        wp_nav->set_wp_destination_NEU_m(poscontrol.target_neu_m);
         last_auto_target = loc;
     }
     last_loiter_ms = now;

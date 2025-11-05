@@ -156,6 +156,14 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("NTF_FREQ", 12, AC_Fence, _notify_freq, static_cast<float>(AC_FENCE_NOTIFY_DEFAULT)),
 
+    // @Param: MARGIN_XY
+    // @DisplayName: Fence Horizontal Margin
+    // @Description: Distance that autopilot's should maintain from the fence in the horizontal plane to avoid a breach. If set to 0 then FENCE_MARGIN is used.
+    // @Units: m
+    // @Range: 0 50
+    // @User: Standard
+    AP_GROUPINFO("MARGIN_XY", 13,  AC_Fence,   _margin_xy, 0),
+
     AP_GROUPEND
 };
 
@@ -390,6 +398,12 @@ uint8_t AC_Fence::get_enabled_fences() const
     return _enabled_fences & present();
 }
 
+/// get_horizontal_margin - returns the fence margin in meters
+float AC_Fence::get_horizontal_margin() const
+{
+    return is_positive(_margin_xy.get()) ? _margin_xy.get() : _margin.get();
+}
+
 // additional checks for the polygon fence:
 bool AC_Fence::pre_arm_check_polygon(char *failure_msg, const uint8_t failure_msg_len) const
 {
@@ -403,7 +417,7 @@ bool AC_Fence::pre_arm_check_polygon(char *failure_msg, const uint8_t failure_ms
         return false;
     }
 
-    if (!_poly_loader.check_inclusion_circle_margin(_margin)) {
+    if (!_poly_loader.check_inclusion_circle_margin(get_horizontal_margin())) {
         hal.util->snprintf(failure_msg, failure_msg_len, "Polygon fence margin is greater than inclusion circle radius");
         return false;
     }
@@ -418,7 +432,7 @@ bool AC_Fence::pre_arm_check_circle(char *failure_msg, const uint8_t failure_msg
         hal.util->snprintf(failure_msg, failure_msg_len, "Invalid Circle FENCE_RADIUS value");
         return false;
     }
-    if (_circle_radius < _margin) {
+    if (_circle_radius < get_horizontal_margin()) {
         hal.util->snprintf(failure_msg, failure_msg_len, "Circle FENCE_MARGIN is greater than FENCE_RADIUS");
         return false;
     }
@@ -517,6 +531,11 @@ bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) c
         return false;
     }
 
+    if (_margin_xy < 0.0f) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "Invalid FENCE_MARGIN_XY value");
+        return false;
+    }
+
     if (_alt_max < _alt_min) {
         hal.util->snprintf(failure_msg, failure_msg_len, "FENCE_ALT_MAX < FENCE_ALT_MIN");
         return false;
@@ -565,7 +584,7 @@ bool AC_Fence::check_fence_alt_max()
         }
         // old breach
         return false;
-    } else if (_curr_alt >= _alt_max - _margin) {
+    } else if (_curr_alt >= get_safe_alt_max()) {
         record_margin_breach(AC_FENCE_TYPE_ALT_MAX);
     } else {
         clear_margin_breach(AC_FENCE_TYPE_ALT_MAX);
@@ -618,7 +637,7 @@ bool AC_Fence::check_fence_alt_min()
         }
         // old breach
         return false;
-    } else if (_curr_alt <= _alt_min + _margin) {
+    } else if (_curr_alt <= get_safe_alt_min()) {
         record_margin_breach(AC_FENCE_TYPE_ALT_MIN);
     } else {
         clear_margin_breach(AC_FENCE_TYPE_ALT_MIN);
@@ -654,7 +673,7 @@ bool AC_Fence::auto_enable_fence_floor()
     const float _curr_alt = -alt; // translate Down to Up
 
     // check if we are over the altitude fence
-    if (!floor_enabled() && _curr_alt >= _alt_min + _margin) {
+    if (!floor_enabled() && _curr_alt >= get_safe_alt_min()) {
         enable(true, AC_FENCE_TYPE_ALT_MIN, false);
         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Min Alt fence enabled (auto enable)");
         return true;
@@ -676,17 +695,13 @@ bool AC_Fence::check_fence_polygon()
 
     const bool was_breached = _breached_fences & AC_FENCE_TYPE_POLYGON;
 
-    Location loc;
-    const bool have_location = AP::ahrs().get_location(loc);
-
-    if (have_location && _poly_loader.breached(loc, _polygon_breach_distance)) {
+    if (_last_fence_check_loc_valid && _poly_loader.breached(_last_fence_check_loc, _polygon_breach_distance, _polygon_nearest_point)) {
         if (!was_breached) {
             record_breach(AC_FENCE_TYPE_POLYGON);
             return true;
         }
         return false;
-    } else if (option_enabled(OPTIONS::NOTIFY_MARGIN_BREACH)
-               && _polygon_breach_distance < 0 && fabsf(_polygon_breach_distance) < _margin) {
+    } else if (_polygon_breach_distance < 0 && fabsf(_polygon_breach_distance) < get_horizontal_margin()) {
         record_margin_breach(AC_FENCE_TYPE_POLYGON);
     } else {
         clear_margin_breach(AC_FENCE_TYPE_POLYGON);
@@ -713,6 +728,13 @@ bool AC_Fence::check_fence_circle()
     if (AP::ahrs().get_relative_position_NE_home(home)) {
         // we (may) remain breached if we can't update home
         _home_distance = home.length();
+
+        if (is_zero(home.length_squared())) {
+            _circle_breach_direction.x = _circle_radius;
+            _circle_breach_direction.y = 0.0f;
+        } else {
+            _circle_breach_direction = home.normalized() * _circle_radius.get()  - home;
+        }
     }
 
     // record distance outside/inside the fence
@@ -731,7 +753,7 @@ bool AC_Fence::check_fence_circle()
             return true;
         }
         return false;
-    } else if (_home_distance >= _circle_radius - _margin) {
+    } else if (_home_distance >= _circle_radius - get_horizontal_margin()) {
         record_margin_breach(AC_FENCE_TYPE_CIRCLE);
     } else {
         clear_margin_breach(AC_FENCE_TYPE_CIRCLE);
@@ -816,6 +838,9 @@ uint8_t AC_Fence::check(bool disable_auto_fences)
 
     // disable the (temporarily) disabled fences
     enable(false, disabled_fences, false);
+
+    // update the location at the time the check was made
+    _last_fence_check_loc_valid = AP::ahrs().get_location(_last_fence_check_loc);
 
     // maximum altitude fence check
     if (!(disabled_fences & AC_FENCE_TYPE_ALT_MAX) && check_fence_alt_max()) {
@@ -1001,6 +1026,36 @@ float AC_Fence::get_breach_distance(uint8_t fence_type) const
     return max;
 }
 
+/// get_breach_direction - returns direction to the closest fence breach in NED frame.
+/// fence_check_pos is the absolute position when the check was made.
+///  fence_type is a bitmask here.
+bool AC_Fence::get_breach_direction_NED(uint8_t fence_type, Vector3f& direction_to_closest, Location& fence_check_pos) const
+{
+    fence_type = fence_type & present();
+    if (_last_fence_check_loc_valid) {
+        fence_check_pos = _last_fence_check_loc;
+    }
+    float closest = FLT_MAX;
+
+    if (fence_type & AC_FENCE_TYPE_ALT_MAX && fabsf(_alt_max_breach_distance) < closest) {
+        direction_to_closest = Vector3f{0, 0, _alt_max_breach_distance};
+        closest = fabsf(_alt_max_breach_distance);
+    }
+    if (fence_type & AC_FENCE_TYPE_ALT_MIN && fabsf(_alt_min_breach_distance) < closest) {
+        direction_to_closest = Vector3f{0, 0, -_alt_min_breach_distance};
+        closest = fabsf(_alt_min_breach_distance);
+    }
+    if (fence_type & AC_FENCE_TYPE_CIRCLE && fabsf(_circle_breach_distance) < closest) {
+        direction_to_closest = Vector3f{_circle_breach_direction.x, _circle_breach_direction.y, 0};
+        closest = fabsf(_circle_breach_distance);
+    }
+    if (fence_type & AC_FENCE_TYPE_POLYGON && fabsf(_polygon_breach_distance) < closest) {
+        direction_to_closest = Vector3f{_polygon_nearest_point.x, _polygon_nearest_point.y, 0};
+        closest = fabsf(_polygon_breach_distance);
+    }
+    return _last_fence_check_loc_valid;
+}
+
 /// manual_recovery_start - caller indicates that pilot is re-taking manual control so fence should be disabled for 10 seconds
 ///     has no effect if no breaches have occurred
 void AC_Fence::manual_recovery_start()
@@ -1080,6 +1135,7 @@ bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) c
 uint8_t AC_Fence::check(bool disable_auto_fences) { return 0; }
 bool AC_Fence::check_destination_within_fence(const Location& loc) { return true; }
 float AC_Fence::get_breach_distance(uint8_t fence_type) const { return 0.0; }
+bool AC_Fence::get_breach_direction_NED(uint8_t fence_type, Vector3f& direction, Location& fence_check_pos) const { return false; }
 void AC_Fence::get_fence_names(uint8_t fences, ExpandingString& msg) { }
 void AC_Fence::print_fence_message(const char* msg, uint8_t fences) const {}
 

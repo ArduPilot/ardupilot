@@ -11,8 +11,6 @@ from pathlib import Path
 from collections import OrderedDict
 import subprocess
 
-import ap_persistent
-
 SOURCE_EXTS = [
     '*.S',
     '*.c',
@@ -54,6 +52,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_OpticalFlow',
     'AP_Param',
     'AP_Rally',
+    'AP_LightWareSerial',
     'AP_RangeFinder',
     'AP_Scheduler',
     'AP_SerialManager',
@@ -500,12 +499,22 @@ def ap_find_tests(bld, use=[], DOUBLE_PRECISION_SOURCES=[]):
 _versions = []
 
 @conf
-def ap_version_append_str(ctx, k, v):
-    ctx.env['AP_VERSION_ITEMS'] += [(k, '"{}"'.format(os.environ.get(k, v)))]
+def ap_version_append_str(ctx, k, v, consistent_v=None):
+    if ctx.env.CONSISTENT_BUILDS and consistent_v is not None:
+        v = consistent_v # override with consistent value
+    else:
+        v = os.environ.get(k, v) # use v unless defined in environment
+
+    ctx.env['AP_VERSION_ITEMS'] += [(k, f'"{v}"')]
 
 @conf
-def ap_version_append_int(ctx, k, v):
-    ctx.env['AP_VERSION_ITEMS'] += [(k, '{}'.format(os.environ.get(k, v)))]
+def ap_version_append_int(ctx, k, v, consistent_v=None):
+    if ctx.env.CONSISTENT_BUILDS and consistent_v is not None:
+        v = consistent_v # override with consistent value
+    else:
+        v = os.environ.get(k, v) # use v unless defined in environment
+
+    ctx.env['AP_VERSION_ITEMS'] += [(k, f'{v}')]
 
 @conf
 def write_version_header(ctx, tgt):
@@ -707,16 +716,6 @@ arducopter and upload it to my board".
         help='Output all test programs.')
 
     g = opt.ap_groups['clean']
-
-    g.add_option('--clean-all-sigs',
-        action='store_true',
-        help='''Clean signatures for all tasks. By default, tasks that scan for
-implicit dependencies (like the compilation tasks) keep the dependency
-information across clean commands, so that that information is changed
-only when really necessary. Also, some tasks that don't really produce
-files persist their signature. This option avoids that behavior when
-cleaning the build.
-''')
 
     g.add_option('--asan',
         action='store_true',

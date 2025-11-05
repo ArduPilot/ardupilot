@@ -163,6 +163,8 @@ jobs:
             toolchain: aarch64
           - config: linux
             toolchain: base # GCC
+          - config: t3-gem-o1
+            toolchain: aarch64
         exclude:
           - config: navigator
             toolchain: armhf

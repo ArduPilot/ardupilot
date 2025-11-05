@@ -410,7 +410,7 @@ void AP_CRSF_Telem::adjust_packet_weight(bool queue_empty)
 // WFQ scheduler
 bool AP_CRSF_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
 {
-    if (!process_rf_mode_changes()) {
+    if (!process_rf_mode_changes() && !_bind_request_pending) {
         return false;
     }
 

@@ -41,7 +41,7 @@ public:
 
     uint32_t device_baud() const override { return 9600; }
 
-    uint32_t packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen) override;
+    uint32_t packet_for_alt(float alt_m, uint8_t *buffer, uint8_t buflen) override;
 
     bool has_temperature() const override { return true; }
     uint32_t packet_for_temperature(float temperature, uint8_t *buffer, uint8_t buflen) override;

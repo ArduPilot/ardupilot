@@ -55,7 +55,7 @@ void ModeQLoiter::run()
         // we have an active landing target override
         Vector2f rel_origin;
         if (plane.next_WP_loc.get_vector_xy_from_origin_NE_cm(rel_origin)) {
-            quadplane.pos_control->set_pos_desired_NE_m(rel_origin * 0.01);
+            quadplane.pos_control->set_pos_desired_NE_m(rel_origin.topostype() * 0.01);
             last_target_loc_set_ms = 0;
         }
     }
@@ -137,7 +137,7 @@ void ModeQLoiter::run()
 
 #if AP_PLANE_SYSTEMID_ENABLED
     auto &systemid = plane.g2.systemid;
-    systemid.update();
+    systemid.vtol_update();
     target += systemid.get_attitude_offset_deg();
 #endif
 

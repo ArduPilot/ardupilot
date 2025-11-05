@@ -88,9 +88,9 @@ void finishServoPacket(void* pkt, int size, uint32_t packetID)
      * Note: The Device ID (lower 8 bits of the frame ID) will have to be inserted later
      */
 
-    uint32_t id = (((uint8_t) PiccoloCAN_MessageGroup::ACTUATOR) << 24) |       // CAN Group ID
-                  ((packetID & 0xFF) << 16) |                                       // Message ID
-                  (((uint8_t) PiccoloCAN_ActuatorType::SERVO) << 8);            // Actuator type
+    uint32_t id = (((uint8_t) PiccoloCAN_MessageGroup::ACTUATOR) << 24) |   // CAN Group ID
+                  ((packetID & 0xFF) << 16) |                               // Message ID
+                  (((uint8_t) PiccoloCAN_DeviceType::SERVO) << 8);          // Actuator type
 
     // Extended frame format
     id |= AP_HAL::CANFrame::FlagEFF;

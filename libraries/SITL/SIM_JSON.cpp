@@ -146,6 +146,36 @@ void JSON::output_servos(const struct sitl_input &input)
     This parser does not do any syntax checking, and is not at all
     general purpose
 */
+
+template <typename T>
+bool parse_array(const char *str, T &arr, int count) {
+    const char *p = str;
+
+    for (int i = 0; i < count; i++) {
+        // Skip to start of number
+        while (*p && *p != '-' && (*p < '0' || *p > '9'))
+            p++;
+
+        if (!*p) {
+            // End of string before we got all numbers
+            return false;
+        }
+
+        arr[i] = atof(p);
+
+        // Move past the number
+        while (*p && *p != ',' && *p != ']')
+            p++;
+
+        if (i < count - 1) { // expect comma between numbers
+            if (*p != ',') return false;
+            p++; // skip comma
+        }
+    }
+
+    return true;
+}
+
 uint32_t JSON::parse_sensors(const char *json)
 {
     uint32_t received_bitmask = 0;
@@ -213,31 +243,40 @@ uint32_t JSON::parse_sensors(const char *json)
                 break;
 
             case DATA_VECTOR3F: {
-                Vector3f *v = (Vector3f *)key.ptr;
-                if (sscanf(p, "[%f, %f, %f]", &v->x, &v->y, &v->z) != 3) {
+                Vector3<float> v;
+                if (!parse_array(p, v, ARRAY_SIZE(v))) {
                     printf("Failed to parse Vector3f for %s/%s\n", key.section, key.key);
                     return received_bitmask;
                 }
+                Vector3f *tv = (Vector3<float> *)key.ptr;
+                *tv = v;
                 //printf("%s/%s = %f, %f, %f\n", key.section, key.key, v->x, v->y, v->z);
                 break;
             }
 
             case DATA_VECTOR3D: {
-                Vector3d *v = (Vector3d *)key.ptr;
-                if (sscanf(p, "[%lf, %lf, %lf]", &v->x, &v->y, &v->z) != 3) {
-                    printf("Failed to parse Vector3f for %s/%s\n", key.section, key.key);
+                Vector3<double> v;
+                if (!parse_array(p, v, ARRAY_SIZE(v))) {
+                    printf("Failed to parse Vector3d for %s/%s\n", key.section, key.key);
                     return received_bitmask;
                 }
+                Vector3d *tv = (Vector3d *)key.ptr;
+                *tv = v;
                 //printf("%s/%s = %f, %f, %f\n", key.section, key.key, v->x, v->y, v->z);
                 break;
             }
 
             case QUATERNION: {
-                Quaternion *v = static_cast<Quaternion*>(key.ptr);
-                if (sscanf(p, "[%f, %f, %f, %f]", &(v->q1), &(v->q2), &(v->q3), &(v->q4)) != 4) {
+                VectorN<float, 4> v;
+                if (!parse_array(p, v, ARRAY_SIZE(v))) {
                     printf("Failed to parse Vector4f for %s/%s\n", key.section, key.key);
                     return received_bitmask;
                 }
+                Quaternion *tv = static_cast<Quaternion*>(key.ptr);
+                tv->q1 = v[0];
+                tv->q2 = v[1];
+                tv->q3 = v[2];
+                tv->q4 = v[3];
                 break;
             }
 

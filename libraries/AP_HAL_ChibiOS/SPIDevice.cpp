@@ -66,8 +66,8 @@ static const uint32_t bus_clocks[6] = {
 static const struct SPIDriverInfo {
     SPIDriver *driver;
     uint8_t busid; // used for device IDs in parameters
-    uint8_t dma_channel_rx;
     uint8_t dma_channel_tx;
+    uint8_t dma_channel_rx;
     ioline_t sck_line;
 } spi_devices[] = { HAL_SPI_BUS_LIST };
 
@@ -81,8 +81,8 @@ SPIBus::SPIBus(uint8_t _bus) :
     chMtxObjectInit(&dma_lock);
 
     // allow for sharing of DMA channels with other peripherals
-    dma_handle = NEW_NOTHROW Shared_DMA(spi_devices[bus].dma_channel_rx,
-                                spi_devices[bus].dma_channel_tx,
+    dma_handle = NEW_NOTHROW Shared_DMA(spi_devices[bus].dma_channel_tx,
+                                spi_devices[bus].dma_channel_rx,
                                 FUNCTOR_BIND_MEMBER(&SPIBus::dma_allocate, void, Shared_DMA *),
                                 FUNCTOR_BIND_MEMBER(&SPIBus::dma_deallocate, void, Shared_DMA *));
 

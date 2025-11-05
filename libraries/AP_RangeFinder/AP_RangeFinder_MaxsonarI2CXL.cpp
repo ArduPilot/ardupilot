@@ -25,8 +25,6 @@
 
 #if AP_RANGEFINDER_MAXSONARI2CXL_ENABLED
 
-#include <utility>
-
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
 

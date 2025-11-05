@@ -47,7 +47,6 @@ class Board:
 
     def configure(self, cfg):
         cfg.env.TOOLCHAIN = cfg.options.toolchain or self.toolchain
-        cfg.env.ROMFS_FILES = []
         if hasattr(self,'configure_toolchain'):
             self.configure_toolchain(cfg)
         else:
@@ -555,18 +554,17 @@ class Board:
         if cfg.options.ekf_single:
             env.CXXFLAGS += ['-DHAL_WITH_EKF_DOUBLE=0']
 
-        if cfg.options.consistent_builds:
+        if cfg.env.CONSISTENT_BUILDS:
             # if symbols are renamed we don't want them to affect the output:
             env.CXXFLAGS += ['-fno-rtti']
             # avoid different filenames for the same source file
             # affecting the compiler output:
             env.CXXFLAGS += ['-frandom-seed=4']  # ob. xkcd
 
-            # stop including a unique ID in the headers.  More useful
-            # when trying to find binary differences as the build-id
-            # appears to be a hash of the output products
-            # (ie. identical for identical compiler output):
-            env.LDFLAGS += ['-Wl,--build-id=bob']
+            # disable setting build ID in the ELF header. though if two binaries
+            # are identical they will have the same build ID, setting it avoids
+            # creating a difference if they are not in a way we care about.
+            env.LDFLAGS += ['-Wl,--build-id=none']
             # squash all line numbers to be the number 17
             env.CXXFLAGS += [
                 "-D__AP_LINE__=17",
@@ -596,13 +594,18 @@ class Board:
 
     def build(self, bld):
         git_hash_ext = bld.git_head_hash(short=True, hash_abbrev=16)
-        bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True))
-        bld.ap_version_append_str('GIT_VERSION_EXTENDED', git_hash_ext)
-        bld.ap_version_append_int('GIT_VERSION_INT', int("0x" + bld.git_head_hash(short=True), base=16))
-        bld.ap_version_append_str('AP_BUILD_ROOT', bld.srcnode.abspath())
-        import time
-        ltime = time.localtime()
+        bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True), "abcdef")
+        bld.ap_version_append_str('GIT_VERSION_EXTENDED', git_hash_ext, "0123456789abcdef")
+        bld.ap_version_append_int('GIT_VERSION_INT', int("0x" + bld.git_head_hash(short=True), base=16), 15)
+        # this build root is mostly used as a temporary directory by SIM_JSBSim and probably needs to go
+        bld.ap_version_append_str('AP_BUILD_ROOT', bld.srcnode.abspath(), "/tmp")
+
         if bld.env.build_dates:
+            if bld.options.consistent_builds:
+                raise ValueError("can't enable consistent builds and build dates")
+
+            import time
+            ltime = time.localtime()
             bld.ap_version_append_int('BUILD_DATE_YEAR', ltime.tm_year)
             bld.ap_version_append_int('BUILD_DATE_MONTH', ltime.tm_mon)
             bld.ap_version_append_int('BUILD_DATE_DAY', ltime.tm_mday)
@@ -630,7 +633,7 @@ def add_dynamic_boards_chibios():
 
 def add_dynamic_boards_linux():
     '''add boards based on existence of hwdef.dat in subdirectories for '''
-    add_dynamic_boards_from_hwdef_dir(linux, 'libraries/AP_HAL_Linux/hwdef')
+    add_dynamic_boards_from_hwdef_dir(LinuxBoard, 'libraries/AP_HAL_Linux/hwdef')
 
 def add_dynamic_boards_from_hwdef_dir(base_type, hwdef_dir):
     '''add boards based on existence of hwdef.dat in subdirectory'''
@@ -1134,7 +1137,7 @@ class esp32(Board):
 
         # this makes sure we get the correct subtype
         env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_%s' %  tt.upper() ,
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
         )
 
         if self.name.endswith("empty"):
@@ -1189,9 +1192,6 @@ class esp32(Board):
                 HAL_PARAM_DEFAULTS_PATH='"@ROMFS/defaults.parm"',
             )
 
-        env.INCLUDES += [
-                cfg.srcnode.find_dir('libraries/AP_HAL_ESP32/boards').abspath(),
-            ]
         env.AP_PROGRAM_AS_STLIB = True
         #if cfg.options.enable_profile:
         #    env.CXXFLAGS += ['-pg',
@@ -1227,8 +1227,6 @@ class esp32s3(esp32):
         if hasattr(self, 'hwdef'):
             cfg.env.HWDEF = self.hwdef
         super(esp32s3, self).configure_env(cfg, env)
-
-        cfg.load('esp32')
 
 class chibios(Board):
     abstract = True
@@ -1466,7 +1464,7 @@ class chibios(Board):
 
     def build(self, bld):
         super(chibios, self).build(bld)
-        bld.ap_version_append_str('CHIBIOS_GIT_VERSION', bld.git_submodule_head_hash('ChibiOS', short=True))
+        bld.ap_version_append_str('CHIBIOS_GIT_VERSION', bld.git_submodule_head_hash('ChibiOS', short=True), "12345678")
         bld.load('chibios')
 
     def pre_build(self, bld):
@@ -1481,14 +1479,14 @@ class chibios(Board):
     def get_name(self):
         return self.name
 
-class linux(Board):
+class LinuxBoard(Board):
+    '''an abstract base class for Linux boards to inherit from'''
+    abstract = True
+
     def __init__(self):
         super().__init__()
 
-        if self.toolchain == 'native':
-            self.with_can = True
-        else:
-            self.with_can = False
+        self.with_can = True
 
     def configure(self, cfg):
         if hasattr(self, 'hwdef'):
@@ -1498,8 +1496,6 @@ class linux(Board):
         cfg.load('linux')
         if cfg.env.TOOLCHAIN:
             self.toolchain = cfg.env.TOOLCHAIN
-        elif cfg.options.board == 'linux':
-            pass  # set in __init__
         else:
             # default tool-chain for Linux-based boards:
             self.toolchain = 'arm-linux-gnueabihf'
@@ -1508,13 +1504,10 @@ class linux(Board):
         if cfg.env.WITH_CAN:
             self.with_can = True
 
-        super(linux, self).configure(cfg)
+        super().configure(cfg)
 
     def configure_env(self, cfg, env):
-
-        if cfg.options.board == 'linux':
-            self.with_can = True
-        super(linux, self).configure_env(cfg, env)
+        super().configure_env(cfg, env)
 
         env.BOARD_CLASS = "LINUX"
 
@@ -1563,12 +1556,7 @@ class linux(Board):
             env.DEFINES.update(
                 HAL_FORCE_32BIT = 0,
             )
-        if self.with_can and cfg.options.board == 'linux':
-            cfg.env.HAL_NUM_CAN_IFACES = 2
-            cfg.define('HAL_NUM_CAN_IFACES', 2)
-            cfg.define('HAL_CANFD_SUPPORTED', 1)
-            cfg.define('CANARD_ENABLE_CANFD', 1)
-        
+
         if self.with_can:
             env.DEFINES.update(CANARD_MULTI_IFACE=1,
                                CANARD_IFACE_ALL = 0x3)
@@ -1590,10 +1578,10 @@ class linux(Board):
         fun = getattr(module, 'pre_build', None)
         if fun:
             fun(bld)
-        super(linux, self).pre_build(bld)
+        super().pre_build(bld)
 
     def build(self, bld):
-        super(linux, self).build(bld)
+        super().build(bld)
         bld.load('linux')
         if bld.options.upload:
             waflib.Options.commands.append('rsync')

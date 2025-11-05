@@ -207,7 +207,7 @@ COMPASS AK8963:probe_mpu9250 0 ROTATION_NONE
 COMPASS AK8963:probe_mpu9250 1 ROTATION_YAW_270
 
 # also problem all external compass types
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 
 # microSD support
 PG9 SDMMC2_D0 SDMMC2
@@ -232,7 +232,7 @@ define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 define HAL_GPIO_A_LED_PIN 90
 define HAL_GPIO_B_LED_PIN 92
   
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_STORAGE_SIZE 32768
 define HAL_WITH_RAMTRON 1
  

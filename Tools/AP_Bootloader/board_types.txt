@@ -13,6 +13,7 @@ TARGET_HW_PX4_FMU_V6                   52
 TARGET_HW_PX4_FMU_V6X                  53
 TARGET_HW_PX4_FMU_V6C                  56
 TARGET_HW_ARK_FMU_V6X                  57
+TARGET_HW_ARK_PI6X                     58
 TARGET_HW_ARK_FPV                      59
 TARGET_HW_MINDPX_V2                    88
 TARGET_HW_PX4_FLOW_V1                   6
@@ -320,9 +321,10 @@ AP_HW_JFB200                         1200
 AP_HW_SKYSTARSF405V2                 1201
 AP_HW_MicoAir743-Lite                1202
 AP_HW_X-MAV-AP-H743R1                1203
-AP_HW_ORQAH743PRO                    1204
+AP_HW_ORQAH7QUADCORE                 1204
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
+AP_HW_NUCLEO_H753ZI                  1207
 
 AP_HW_CSKY-PMU                       1212
 
@@ -330,6 +332,7 @@ AP_HW_MUPilot                        1222
 
 # IDs 1231-1240 reserved for YARI Robotics
 AP_HW_YARIV6X                        1234
+AP_HW_YARI_GNSS                      1235
 
 AP_HW_CBUnmanned-CM405-FC            1301
 
@@ -356,6 +359,8 @@ AP_HW_JHEMCUF405PRO                  1412
 
 AP_HW_TRITIUM_EAH743                 1415
 
+AP_HW_RadiolinkF405                  1417
+
 AP_HW_LongbowF405                    1422
 
 AP_HW_MountainEagleH743              1444
@@ -369,6 +374,7 @@ AP_HW_StellarF4V2                    1504
 AP_HW_HGLRCF405V4                    1524
 
 AP_HW_F4BY_F427                      1530
+AP_HW_F4BY_H743                      1531
 
 # IDs 1800-1809 reserved for Aerium Systems
 AP_HW_AERIUM_RADIAN_F405             1800
@@ -405,6 +411,9 @@ AP_HW_KRSHKF7_MINI                   4000
 # IDs 4200-4220 reserved for HAKRC
 AP_HW_HAKRC_F405                     4200
 AP_HW_HAKRC_F405Wing                 4201
+
+# IDs 4300-4309 reserved for AeroCogito
+AP_HW_AeroCogito-H7Digital           4300
 
 # IDs 4500-4509 reserved for Lumenier
 AP_HW_LUMENIER_LUX_F765_NDAA         4500
@@ -447,10 +456,15 @@ AP_HW_TBS_LUCID_H7                   5250
 AP_HW_TBS_LUCID_PRO                  5251
 AP_HW_TBS_L431_PERIPH                5252
 AP_HW_TBS_LUCID_H7_WING              5253
+AP_HW_TBS_LUCID_H7_WING_AIO          5254
 
 # IDs 5270-5279 reserved for SpeedyBee
 AP_HW_SpeedyBeeF405WINGV2            5270
 AP_HW_SpeedyBeeF405AIO               5271
+
+# IDs 5280-5289 reserved for LightDynamix
+AP_HW_Dynamix_PIXEL                  5280
+AP_HW_Dynamix_PYRO                   5281
 
 #IDs 5301-5399 reserved for Sierra Aerospace
 AP_HW_Sierra-TrueNavPro-G4           5301

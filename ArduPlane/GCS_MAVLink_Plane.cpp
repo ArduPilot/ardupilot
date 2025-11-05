@@ -1160,7 +1160,7 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
 
         Location::AltFrame frame;
         if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)pos_target.coordinate_frame, frame)) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "Invalid coord frame in SET_POSTION_TARGET_GLOBAL_INT");
+            gcs().send_text(MAV_SEVERITY_WARNING, "Invalid coord frame in SET_POSITION_TARGET_GLOBAL_INT");
             // Even though other parts of the command may be valid, reject the whole thing.
             return;
         }

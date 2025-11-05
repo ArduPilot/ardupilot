@@ -197,6 +197,7 @@ void updating_angle_p_up(float &tune_p, float tune_p_max, float tune_p_step_rati
     AP_Int8  axis_bitmask;      // Axis enable mask
     AP_Float aggressiveness;    // Target overshoot ratio (D tuning sensitivity)
     AP_Float min_d;             // Minimum allowed D gain
+    AP_Float gain_backoff;      // Fraction by which tuned P and D gains are reduced after each AutoTune stage (rate loop, then angle loop) to provide additional stability margin
     bool     ignore_next;       // Skip next result (used for rate overshoot handling)
 
     // Measurement and target values for each test step

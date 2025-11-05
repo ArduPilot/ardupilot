@@ -91,7 +91,7 @@ protected:
     virtual bool init(void) = 0;
 
     // get pilot input for desired climb rate
-    virtual float get_pilot_desired_climb_rate_cms(void) const = 0;
+    virtual float get_desired_climb_rate_ms(void) const = 0;
 
     // get pilot input for designed roll and pitch, and yaw rate
     virtual void get_pilot_desired_rp_yrate_rad(float &roll_rad, float &pitch_rad, float &yaw_rate_rads) = 0;
@@ -339,7 +339,7 @@ private:
     bool     pilot_override;             // true = pilot is overriding controls so we suspend tuning temporarily
     bool     use_poshold;                // true = enable position hold
     bool     have_position;              // true = start_position is value
-    Vector3f start_position_neu_m;             // target when holding position as an offset from EKF origin in cm in NEU frame
+    Vector3p start_position_neu_m;             // target when holding position as an offset from EKF origin in cm in NEU frame
 
     // variables
     uint32_t override_time;                         // the last time the pilot overrode the controls

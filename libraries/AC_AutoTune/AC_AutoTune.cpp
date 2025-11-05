@@ -244,7 +244,7 @@ void AC_AutoTune::run()
     get_pilot_desired_rp_yrate_rad(desired_roll_rad, desired_pitch_rad, desired_yaw_rate_rads);
 
     // Get pilot's desired climb rate
-    const float target_climb_rate_cms = get_pilot_desired_climb_rate_cms();
+    const float target_climb_rate_ms = get_desired_climb_rate_ms();
 
     const bool zero_rp_input = is_zero(desired_roll_rad) && is_zero(desired_pitch_rad);
     if (zero_rp_input) {
@@ -257,7 +257,7 @@ void AC_AutoTune::run()
     switch (mode) {
     case TuneMode::TUNING:
         // Detect pilot override
-        if (!zero_rp_input || !is_zero(desired_yaw_rate_rads) || !is_zero(target_climb_rate_cms)) {
+        if (!zero_rp_input || !is_zero(desired_yaw_rate_rads) || !is_zero(target_climb_rate_ms)) {
             if (!pilot_override) {
                 pilot_override = true;
                 // Restore original gains while pilot is in control
@@ -319,7 +319,7 @@ void AC_AutoTune::run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // Update vertical position controller with pilot climb rate input
-    pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_cms * 0.01);
+    pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_ms);
     pos_control->update_U_controller();
 }
 
@@ -706,7 +706,7 @@ void AC_AutoTune::get_poshold_attitude_rad(float &roll_out_rad, float &pitch_out
 
     if (!have_position) {
         have_position = true;
-        start_position_neu_m = pos_control->get_pos_estimate_NEU_m().tofloat();
+        start_position_neu_m = pos_control->get_pos_estimate_NEU_m();
     }
 
     // don't go past 10 degrees, as autotune result would deteriorate too much
@@ -719,7 +719,7 @@ void AC_AutoTune::get_poshold_attitude_rad(float &roll_out_rad, float &pitch_out
     // target position. That corresponds to a lean angle of 2.5 degrees
     const float yaw_dist_limit_m = 5.0;
 
-    Vector3f pos_error_neu_m = pos_control->get_pos_estimate_NEU_m().tofloat() - start_position_neu_m;
+    Vector3f pos_error_neu_m = (pos_control->get_pos_estimate_NEU_m() - start_position_neu_m).tofloat();
     pos_error_neu_m.z = 0;
     float dist_m = pos_error_neu_m.length();
     if (dist_m < 0.10) {

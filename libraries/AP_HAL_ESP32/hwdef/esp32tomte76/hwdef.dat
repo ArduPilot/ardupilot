@@ -1,0 +1,101 @@
+# This board is tomte76's version of esp32empty.h to work with an aliexpress WROOM32 devkit clone, mpu9255 spi, bmp280 i2c, micro sd on spi2 and NEO M8 clone on UART.
+
+define HAL_ESP32_BOARD_NAME "esp32-tomte76"
+
+//Protocols
+//list of protocols/enum:	ardupilot/libraries/AP_SerialManager/AP_SerialManager.h
+//default protocols:		ardupilot/libraries/AP_SerialManager/AP_SerialManager.cpp
+//ESP32 serials:		AP_HAL_ESP32/HAL_ESP32_Class.cpp
+
+//#define HAL_SERIAL0_PROTOCOL				SerialProtocol_MAVLink2			//A	UART0: Always: Console, MAVLink2
+//#define HAL_SERIAL0_BAUD				AP_SERIALMANAGER_CONSOLE_BAUD/1000	//115200
+
+//#define HAL_SERIAL1_PROTOCOL				SerialProtocol_MAVLink2			//C	WiFi:  TCP, UDP, or disable (depends on HAL_ESP32_WIFI)
+//#define HAL_SERIAL1_BAUD				AP_SERIALMANAGER_MAVLINK_BAUD/1000	//57600
+
+//#define HAL_SERIAL2_PROTOCOL				SerialProtocol_GPS			//D	UART2: Always: MAVLink2 on ESP32
+//#define HAL_SERIAL2_BAUD				AP_SERIALMANAGER_GPS_BAUD/1000		//38400
+
+//#define HAL_SERIAL3_PROTOCOL				SerialProtocol_GPS			//B	UART1: GPS1
+//#define HAL_SERIAL4_BAUD				AP_SERIALMANAGER_GPS_BAUD/1000		//38400, Can not define default baudrate here (by config only)
+
+//#define HAL_SERIAL4_PROTOCOL				SerialProtocol_None			//E
+//#define HAL_SERIAL4_BAUD				AP_SERIALMANAGER_GPS_BAUD/1000		//38400, Can not define default baudrate here (by config only)
+
+/*#define HAL_SERIAL5_PROTOCOL				SerialProtocol_None			//F
+#define HAL_SERIAL5_BAUD				(115200/1000)
+
+#define HAL_SERIAL6_PROTOCOL				SerialProtocol_None			//G
+#define HAL_SERIAL6_BAUD				(115200/1000)
+
+#define HAL_SERIAL7_PROTOCOL				SerialProtocol_None			//H
+#define HAL_SERIAL7_BAUD				(115200/1000)
+
+#define HAL_SERIAL8_PROTOCOL				SerialProtocol_None			//I
+#define HAL_SERIAL8_BAUD				(115200/1000)
+
+#define HAL_SERIAL9_PROTOCOL				SerialProtocol_None			//J
+define HAL_SERIAL9_BAUD				(115200/1000)*/
+
+# SPI Buses
+#            Host      DMA Channel     MOSI        MISO        SCLK
+ESP32_SPIBUS VSPI_HOST 2               GPIO_NUM_23 GPIO_NUM_19 GPIO_NUM_18
+
+# SPI Devices
+#            Name                Bus   Device  ChipSel      Mode LoSpeed HiSpeed
+ESP32_SPIDEV mpu9250             0     0       GPIO_NUM_5   0    2*MHZ   2*MHZ
+
+# i2c Buses
+#             Port       SDA         SCL          SPEED    INTERNAL SOFT
+ESP32_I2CBUS  I2C_NUM_0  GPIO_NUM_21 GPIO_NUM_22  400*KHZ  true     false
+
+#-----INS/IMU-----
+IMU Invensense SPI:mpu9250 ROTATION_NONE
+define HAL_INS_DEFAULT                              	HAL_INS_MPU9250_SPI
+define INS_MAX_INSTANCES 3  # only here for binary identicality
+
+#-----COMPASS-----
+COMPASS AK8963:probe_mpu9250 0 ROTATION_NONE
+define ALLOW_ARM_NO_COMPASS				1
+
+# -----BARO-----
+BARO BMP280 I2C:0:0x76
+define HAL_BARO_ALLOW_INIT_NO_BARO			1
+
+# RCIN
+define HAL_ESP32_RCIN					GPIO_NUM_36
+
+#RCOUT
+ESP32_RCOUT GPIO_NUM_25
+ESP32_RCOUT GPIO_NUM_27
+ESP32_RCOUT GPIO_NUM_33
+ESP32_RCOUT GPIO_NUM_32
+
+# WIFI
+define HAL_ESP32_WIFI					1	# 1-TCP, 2-UDP, comment this line = without wifi
+define WIFI_SSID					"ardupilot123"
+define WIFI_PWD					"ardupilot123"
+
+# UARTs
+ESP32_SERIAL  UART_NUM_0  GPIO_NUM_3   GPIO_NUM_1
+ESP32_SERIAL  UART_NUM_1  GPIO_NUM_16   GPIO_NUM_17
+
+# ADC
+
+# LED
+define BUILD_DEFAULT_LED_TYPE				Notify_LED_None
+
+# RMT pin number
+define HAL_ESP32_RMT_RX_PIN_NUMBER			4
+
+# SD CARD
+#           Host      DMACh MOSI        MISO        SCLK        CS
+ESP32_SDSPI HSPI_HOST 1     GPIO_NUM_13 GPIO_NUM_12 GPIO_NUM_14 GPIO_NUM_15
+
+define HAL_ESP32_SDCARD 				1
+
+define HAL_LOGGING_FILESYSTEM_ENABLED			1
+define HAL_LOGGING_DATAFLASH_ENABLED			0
+define HAL_LOGGING_MAVLINK_ENABLED			0
+
+define HAL_LOGGING_BACKENDS_DEFAULT			1

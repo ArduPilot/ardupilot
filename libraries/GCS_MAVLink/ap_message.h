@@ -49,7 +49,9 @@ enum ap_message : uint8_t {
     MSG_FENCE_STATUS                   =  32,
     MSG_SIMSTATE                       =  33,
     MSG_SIM_STATE                      =  34,
+#if AP_MAVLINK_MSG_HWSTATUS_ENABLED
     MSG_HWSTATUS                       =  35,
+#endif  // AP_MAVLINK_MSG_HWSTATUS_ENABLED
     MSG_WIND                           =  36,
 #if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
     MSG_RANGEFINDER                    =  37,
@@ -59,7 +61,7 @@ enum ap_message : uint8_t {
     MSG_TERRAIN_REQUEST                =  39,
     MSG_TERRAIN_REPORT                 =  40,
 #endif  // AP_TERRAIN_AVAILABLE
-    MSG_BATTERY2                       =  41,
+    MSG_BATTERY2_UNUSED                =  41,
     MSG_CAMERA_FEEDBACK                =  42,
     MSG_CAMERA_INFORMATION             =  43,
     MSG_CAMERA_SETTINGS                =  44,
