@@ -13,6 +13,7 @@ import sys
 
 from dataclasses import dataclass
 
+
 class IncludeNotFoundException(Exception):
     def __init__(self, hwdef, includer):
         self.hwdef = hwdef
@@ -29,6 +30,13 @@ class I2CDev():
     busnum : int
     busaddr : int
     buses_to_probe : str
+
+
+@dataclass
+class Baro():
+    driver : str
+    probe : str
+    devlist : list
 
 
 class HWDef:
@@ -69,6 +77,9 @@ class HWDef:
 
         # populate a stale defines map from define name to reason-it-is-bad
         self.stale_defines = self.get_stale_defines()
+
+        # members used to ensure we don't have duplicate sensors defined:
+        self.seen_BARO_lines = set()
 
     def is_int(self, str):
         '''check if a string is an integer'''
@@ -232,7 +243,7 @@ class HWDef:
             self.compass_list.append(a[1:])
 
         elif a[0] == 'BARO':
-            self.baro_list.append(a[1:])
+            self.process_line_BARO(line, depth, a)
 
     def process_line_undef(self, line, depth, a):
         for u in a[1:]:
@@ -249,6 +260,7 @@ class HWDef:
                 self.compass_list = []
             if u == 'BARO':
                 self.baro_list = []
+                self.seen_BARO_lines = set()
 
     def process_line_env(self, line, depth, a):
         self.progress("Adding environment %s" % ' '.join(a[1:]))
@@ -305,7 +317,7 @@ class HWDef:
         a = dev.split(':')
         if len(a) != 2:
             self.error("Bad SPI device: %s" % dev)
-        return SPIDev(a[1]);
+        return SPIDev(a[1])
 
     def i2c_dev_to_object(self, dev):
         '''parse a I2C:xxx:xxx device item'''
@@ -321,7 +333,7 @@ class HWDef:
             buses_to_probe = busnum
             busnum = None
         else:
-            busnum=int(busnum)
+            busnum = int(busnum)
 
         return I2CDev(
             busaddr=busaddr,
@@ -411,8 +423,10 @@ class HWDef:
             wrapper = ''
             a = driver.split(':')
             driver = a[0]
+
             if len(a) > 1 and a[1].startswith('probe'):
                 probe = a[1]
+
             for i in range(1, len(dev)):
                 if dev[i].startswith("SPI:"):
                     dev[i] = self.parse_spi_device(dev[i])
@@ -427,32 +441,103 @@ class HWDef:
         if len(devlist) > 0:
             f.write('#define HAL_MAG_PROBE_LIST %s\n\n' % ';'.join(devlist))
 
-    def write_BARO_config(self, f):
-        '''write barometer config defines'''
-        devlist = []
-        seen = set()
-        for dev in self.baro_list:
+    def process_line_BARO(self, line, depth, a):
+        if True:
+            dev = a[1:]
+            seen = self.seen_BARO_lines
+
             if self.seen_str(dev) in seen:
                 self.error("Duplicate BARO: %s" % self.seen_str(dev))
             seen.add(self.seen_str(dev))
             driver = dev[0]
             probe = 'probe'
-            wrapper = ''
             a = driver.split(':')
             driver = a[0]
             if len(a) > 1 and a[1].startswith('probe'):
                 probe = a[1]
-            for i in range(1, len(dev)):
-                if dev[i].startswith("SPI:"):
-                    dev[i] = self.parse_spi_device(dev[i])
-                elif dev[i].startswith("I2C:"):
-                    (wrapper, dev[i]) = self.parse_i2c_device(dev[i])
+            devlist = []
+            for d in dev[1:]:
+                if d.startswith("SPI:"):
+                    devlist.append(self.spi_dev_to_object(d))
+                elif d.startswith("I2C:"):
+                    devlist.append(self.i2c_dev_to_object(d))
+                elif re.match("0x[0-9A-F][0-9A-F]", d.lower()):
+                    # LPS2XH uses a single address to identify the IMU
+                    # which the baro is attached to...
+                    devlist.append(d)
+                else:
+                    raise ValueError(f"Unknown device ({dev=})")
+
+            b = Baro(
+                driver=driver,
+                probe=probe,
+                devlist=devlist,
+            )
+            self.baro_list.append(b)
+
+    def write_BARO_config(self, f):
+        '''write barometer config defines'''
+        devlist = []
+        for baro in self.baro_list:
+            driver = baro.driver
+            probe = baro.probe
+
+            args = ['*this']
+
             n = len(devlist)+1
+
+            args = []
+
+            if driver == "DPS280":
+                # special handling for DPS280; use a probe method of
+                # the correct signature to pass into probe_spi_dev:
+                probe = "probe_280"
+
+            backend_probe_method = f"AP_Baro_{driver}::{probe}"
+
+            if driver == "ICM20789":
+                baro_probe_method_name = "probe_icm20789"
+            elif driver == "LPS2XH" and probe == "probe_InvensenseIMU":
+                baro_probe_method_name = "probe_lps2xh_via_Invensense_IMU"
+            elif isinstance(baro.devlist[0], SPIDev):
+                baro_probe_method_name = "probe_spi_dev"
+            elif isinstance(baro.devlist[0], I2CDev):
+                baro_probe_method_name = "probe_i2c_dev"
+
+            args = []
+            if baro_probe_method_name == 'probe_spi_dev':
+                args.append(backend_probe_method)
+                expected_devices = 1
+            elif baro_probe_method_name == 'probe_i2c_dev':
+                args.append(backend_probe_method)
+                expected_devices = 1
+            elif baro_probe_method_name == 'probe_icm20789':
+                expected_devices = 2
+            elif baro_probe_method_name == 'probe_lps2xh_via_Invensense_IMU':
+                expected_devices = 2
+            else:
+                raise ValueError(f"probe method {baro_probe_method_name}")
+            if len(baro.devlist) != expected_devices:
+                raise ValueError("Expected {len(baro.devlist)} devices for {baro_probe_method_name}")
+
+            for dev in baro.devlist:
+                if isinstance(dev, I2CDev):
+                    if dev.buses_to_probe != 'SINGLE':
+                        # if you need to do more than SINGLE then create methods like
+                        # probe_i2c_on_external_buses(probe_fn, dev.busaddr)
+                        raise ValueError("Only SINGLE is handled at the moment")
+                    args.extend([str(dev.busnum), str(dev.busaddr)])
+                elif isinstance(dev, SPIDev):
+                    args.extend([f'"{dev.name}"'])
+                else:
+                    args.extend([str(dev)])
+
+            print(f"{args=}")
+            f.write(f'''
+#define HAL_BARO_PROBE{n} {baro_probe_method_name}({', '.join(args)}); RETURN_IF_NO_SPACE;
+''')
+
             devlist.append('HAL_BARO_PROBE%u' % n)
-            args = ['*this'] + dev[1:]
-            f.write(
-                '#define HAL_BARO_PROBE%u %s ADD_BACKEND(AP_Baro_%s::%s(%s))\n'
-                % (n, wrapper, driver, probe, ','.join(args)))
             f.write(f"#undef AP_BARO_{driver}_ENABLED\n#define AP_BARO_{driver}_ENABLED 1\n")
         if len(devlist) > 0:
             f.write('#define HAL_BARO_PROBE_LIST %s\n\n' % ';'.join(devlist))
