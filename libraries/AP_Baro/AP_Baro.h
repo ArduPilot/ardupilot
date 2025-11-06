@@ -343,6 +343,10 @@ private:
     void _probe_icm20789(AP_HAL::I2CDevice *i2c_dev, AP_HAL::Device *mpu_dev);
 #endif  // AP_BARO_ICM20789_ENABLED
 
+#if AP_BARO_LPS2XH_ENABLED
+    void probe_lps2xh_via_Invensense_IMU(uint8_t bus, uint8_t addr, uint8_t mpu_addr);
+#endif  // AP_BARO_LPS2XH_ENABLED
+
     AP_Int8                            _filter_range;  // valid value range from mean value
     AP_Int32                           _baro_probe_ext;
 
