@@ -408,10 +408,10 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
     float alt_target_m;
     bool alt_target_terrain = false;
     float current_alt_m = pos_control->get_pos_estimate_NEU_m().z;
-    float terrain_offset_m;   // terrain's altitude in m above the ekf origin
-    if ((dest_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) && wp_nav->get_terrain_offset_m(terrain_offset_m)) {
+    float terrain_u_m;   // terrain's altitude in m above the ekf origin
+    if ((dest_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) && wp_nav->get_terrain_U_m(terrain_u_m)) {
         // subtract terrain offset to convert vehicle's alt-above-ekf-origin to alt-above-terrain
-        current_alt_m -= terrain_offset_m;
+        current_alt_m -= terrain_u_m;
 
         // specify alt_target_m as alt-above-terrain
         alt_target_m = dest_loc.alt * 0.01;

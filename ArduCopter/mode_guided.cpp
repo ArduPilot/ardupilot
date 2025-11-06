@@ -400,8 +400,8 @@ bool ModeGuided::set_pos_NEU_m(const Vector3p& pos_neu_m, bool use_yaw, float ya
     // initialise terrain following if needed
     if (is_terrain_alt) {
         // get current alt above terrain
-        float origin_terr_offset_m;
-        if (!wp_nav->get_terrain_offset_m(origin_terr_offset_m)) {
+        float terrain_u_m;
+        if (!wp_nav->get_terrain_U_m(terrain_u_m)) {
             // if we don't have terrain altitude then stop
             init(true);
             return false;
@@ -409,7 +409,7 @@ bool ModeGuided::set_pos_NEU_m(const Vector3p& pos_neu_m, bool use_yaw, float ya
         // convert origin to alt-above-terrain if necessary
         if (!guided_is_terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
-            pos_control->init_pos_terrain_U_m(origin_terr_offset_m);
+            pos_control->init_pos_terrain_U_m(terrain_u_m);
         }
     } else {
         pos_control->init_pos_terrain_U_m(0.0);
@@ -513,8 +513,8 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
     // initialise terrain following if needed
     if (is_terrain_alt) {
         // get current alt above terrain
-        float origin_terr_offset_m;
-        if (!wp_nav->get_terrain_offset_m(origin_terr_offset_m)) {
+        float terrain_u_m;
+        if (!wp_nav->get_terrain_U_m(terrain_u_m)) {
             // if we don't have terrain altitude then stop
             init(true);
             return false;
@@ -522,7 +522,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         // convert origin to alt-above-terrain if necessary
         if (!guided_is_terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
-            pos_control->init_pos_terrain_U_m(origin_terr_offset_m);
+            pos_control->init_pos_terrain_U_m(terrain_u_m);
         }
     } else {
         pos_control->init_pos_terrain_U_m(0.0);
@@ -736,8 +736,8 @@ void ModeGuided::pos_control_run()
     }
 
     // calculate terrain adjustments
-    float terr_offset_m = 0.0f;
-    if (guided_is_terrain_alt && !wp_nav->get_terrain_offset_m(terr_offset_m)) {
+    float terrain_u_m = 0.0f;
+    if (guided_is_terrain_alt && !wp_nav->get_terrain_U_m(terrain_u_m)) {
         // failure to set destination can only be because of missing terrain data
         copter.failsafe_terrain_on_event();
         return;
@@ -761,7 +761,7 @@ void ModeGuided::pos_control_run()
     if (guided_is_terrain_alt) {
         terrain_margin_m = MIN(copter.wp_nav->get_terrain_margin_m(), 0.5 * fabsF(guided_pos_target_neu_m.z));
     }
-    pos_control->input_pos_NEU_m(guided_pos_target_neu_m, terr_offset_m, terrain_margin_m);
+    pos_control->input_pos_NEU_m(guided_pos_target_neu_m, terrain_u_m, terrain_margin_m);
 
     // run position controllers
     pos_control->update_NE_controller();
