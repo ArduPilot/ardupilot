@@ -170,9 +170,9 @@ AC_PrecLand_StateMachine::Status AC_PrecLand_StateMachine::retry_landing(Vector3
     Vector3p go_to_pos;
     const RetryAction retry_action = _precland->get_retry_behaviour();
     if (retry_action == RetryAction::GO_TO_TARGET_LOC) {
-        _precland->get_last_detected_landing_pos(go_to_pos);
+        _precland->get_last_detected_landing_pos_NED_m(go_to_pos);
     } else if (retry_action == RetryAction::GO_TO_LAST_LOC) {
-        _precland->get_last_vehicle_pos_when_target_detected(go_to_pos);
+        _precland->get_last_vehicle_pos_when_target_detected_NED_m(go_to_pos);
     }
 
     // add a little bit offset so the vehicle climbs slightly higher than where it was
