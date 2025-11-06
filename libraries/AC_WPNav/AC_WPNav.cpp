@@ -345,19 +345,19 @@ bool AC_WPNav::set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool 
         }
     } else {
         // Handle transition between terrain-relative and origin-relative altitude frames
-        float origin_terr_offset_u_m;
-        if (!get_terrain_offset_m(origin_terr_offset_u_m)) {
+        float terrain_u_m;
+        if (!get_terrain_U_m(terrain_u_m)) {
             return false;
         }
 
         // convert origin to alt-above-terrain if necessary
         if (is_terrain_alt) {
             // Convert origin.z to terrain-relative altitude
-            _origin_neu_m.z -= origin_terr_offset_u_m;
-            _pos_control.init_pos_terrain_U_m(origin_terr_offset_u_m);
+            _origin_neu_m.z -= terrain_u_m;
+            _pos_control.init_pos_terrain_U_m(terrain_u_m);
         } else {
             // Convert origin.z to origin-relative altitude
-            _origin_neu_m.z += origin_terr_offset_u_m;
+            _origin_neu_m.z += terrain_u_m;
             _pos_control.init_pos_terrain_U_m(0.0);
         }
     }
@@ -489,7 +489,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
 {
     // calculate terrain offset if using alt-above-terrain frame
     float terr_offset_u_m = 0.0f;
-    if (_is_terrain_alt && !get_terrain_offset_m(terr_offset_u_m)) {
+    if (_is_terrain_alt && !get_terrain_U_m(terr_offset_u_m)) {
         return false;
     }
 
@@ -712,7 +712,7 @@ bool AC_WPNav::force_stop_at_next_wp()
 // Returns terrain offset in meters above the EKF origin at the current position.
 // Positive values mean terrain lies above the EKF origin altitude.
 // Source may be rangefinder or terrain database depending on availability.
-bool AC_WPNav::get_terrain_offset_m(float& offset_m)
+bool AC_WPNav::get_terrain_U_m(float& terrain_u_m)
 {
     // determine terrain data source and compute offset accordingly
     switch (get_terrain_source()) {
@@ -722,19 +722,19 @@ bool AC_WPNav::get_terrain_offset_m(float& offset_m)
     case AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER:
         if (_rangefinder_healthy) {
             // return previously saved offset based on rangefinder
-            offset_m = _rangefinder_terrain_offset_m;
+            terrain_u_m = _rangefinder_terrain_u_m;
             return true;
         }
         return false;
 
     case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
 #if AP_TERRAIN_AVAILABLE
-        float terrain_alt_m = 0.0f;
+        float height_above_terrain_m = 0.0f;
         AP_Terrain *terrain = AP::terrain();
         if (terrain != nullptr &&
-            terrain->height_above_terrain(terrain_alt_m, true)) {
+            terrain->height_above_terrain(height_above_terrain_m, true)) {
             // compute offset as difference between current altitude and terrain height
-            offset_m = _pos_control.get_pos_estimate_NEU_m().z - terrain_alt_m;
+            terrain_u_m = _pos_control.get_pos_estimate_NEU_m().z - height_above_terrain_m;
             return true;
         }
 #endif
@@ -832,19 +832,19 @@ bool AC_WPNav::set_spline_destination_NEU_m(const Vector3p& destination_neu_m, b
         _origin_neu_m = _destination_neu_m;
 
         // get current alt above terrain
-        float origin_terr_offset_u_m;
-        if (!get_terrain_offset_m(origin_terr_offset_u_m)) {
+        float terrain_u_m;
+        if (!get_terrain_U_m(terrain_u_m)) {
             return false;
         }
 
         // convert origin to alt-above-terrain if necessary
         if (is_terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
-            _origin_neu_m.z -= origin_terr_offset_u_m;
-            _pos_control.init_pos_terrain_U_m(origin_terr_offset_u_m);
+            _origin_neu_m.z -= terrain_u_m;
+            _pos_control.init_pos_terrain_U_m(terrain_u_m);
         } else {
             // new destination is alt-above-ekf-origin, previous destination was alt-above-terrain
-            _origin_neu_m.z += origin_terr_offset_u_m;
+            _origin_neu_m.z += terrain_u_m;
             _pos_control.init_pos_terrain_U_m(0.0);
         }
     }
@@ -941,11 +941,11 @@ bool AC_WPNav::get_vector_NEU_m(const Location &loc, Vector3p &pos_from_origin_n
 
     // convert altitude
     if (loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) {
-        float terrain_alt_m;
-        if (!loc.get_alt_m(Location::AltFrame::ABOVE_TERRAIN, terrain_alt_m)) {
+        float terrain_u_m;
+        if (!loc.get_alt_m(Location::AltFrame::ABOVE_TERRAIN, terrain_u_m)) {
             return false;
         }
-        pos_from_origin_neu_m.z = terrain_alt_m;
+        pos_from_origin_neu_m.z = terrain_u_m;
         is_terrain_alt = true;
     } else {
         is_terrain_alt = false;

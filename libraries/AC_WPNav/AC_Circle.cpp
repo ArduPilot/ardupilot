@@ -219,15 +219,15 @@ bool AC_Circle::update_ms(float climb_rate_ms)
     _angle_total_rad += angle_change_rad;
 
     // calculate terrain adjustments
-    float terr_offset_m = 0.0f;
-    if (_is_terrain_alt && !get_terrain_offset_m(terr_offset_m)) {
+    float terrain_u_m = 0.0f;
+    if (_is_terrain_alt && !get_terrain_U_m(terrain_u_m)) {
         return false;
     }
 
     // calculate z-axis target
     float target_z_m;
     if (_is_terrain_alt) {
-        target_z_m = _center_neu_m.z + terr_offset_m;
+        target_z_m = _center_neu_m.z + terrain_u_m;
     } else {
         target_z_m = _pos_control.get_pos_desired_U_m();
     }
@@ -413,7 +413,7 @@ AC_Circle::TerrainSource AC_Circle::get_terrain_source() const
 // Returns terrain offset in meters above the EKF origin at the current position.
 // Positive values indicate terrain is above the EKF origin altitude.
 // Terrain source may be rangefinder or terrain database.
-bool AC_Circle::get_terrain_offset_m(float& offset_m)
+bool AC_Circle::get_terrain_U_m(float& terrain_u_m)
 {
     // Determine terrain source and calculate offset accordingly
     switch (get_terrain_source()) {
@@ -422,7 +422,7 @@ bool AC_Circle::get_terrain_offset_m(float& offset_m)
     case AC_Circle::TerrainSource::TERRAIN_FROM_RANGEFINDER:
         if (_rangefinder_healthy) {
             // Use last known healthy rangefinder terrain offset
-            offset_m = _rangefinder_terrain_offset_m;
+            terrain_u_m = _rangefinder_terrain_u_m;
             return true;
         }
         return false;
@@ -432,7 +432,7 @@ bool AC_Circle::get_terrain_offset_m(float& offset_m)
         AP_Terrain *terrain = AP_Terrain::get_singleton();
         if (terrain != nullptr && terrain->height_above_terrain(terr_alt_m, true)) {
             // Calculate offset from EKF origin altitude to terrain altitude
-            offset_m = _pos_control.get_pos_estimate_NEU_m().z - terr_alt_m;
+            terrain_u_m = _pos_control.get_pos_estimate_NEU_m().z - terr_alt_m;
             return true;
         }
 #endif
