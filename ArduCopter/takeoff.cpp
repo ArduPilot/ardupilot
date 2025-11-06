@@ -130,8 +130,8 @@ void _AutoTakeoff::run()
     }
 
     // get terrain offset
-    float terr_offset_m = 0.0f;
-    if (is_terrain_alt && !wp_nav->get_terrain_offset_m(terr_offset_m)) {
+    float terrain_u_m = 0.0f;
+    if (is_terrain_alt && !wp_nav->get_terrain_U_m(terrain_u_m)) {
         // trigger terrain failsafe
         copter.failsafe_terrain_on_event();
         return;
@@ -194,7 +194,7 @@ void _AutoTakeoff::run()
     pos_control->update_NE_controller();
 
     // command the aircraft to the take off altitude
-    float pos_u_m = complete_alt_m + terr_offset_m;
+    float pos_u_m = complete_alt_m + terrain_u_m;
     float vel_zero = 0.0;
     copter.pos_control->input_pos_vel_accel_U_m(pos_u_m, vel_zero, 0.0);
     
