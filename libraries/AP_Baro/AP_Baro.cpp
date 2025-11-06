@@ -557,6 +557,17 @@ void AP_Baro::probe_dev(AP_Baro_Backend* (*probefn)(AP_Baro&, AP_HAL::Device&), 
     }
 }
 
+#if AP_BARO_LPS2XH_ENABLED
+void AP_Baro::probe_lps2xh_via_Invensense_IMU(uint8_t bus, uint8_t addr, uint8_t mpu_addr)
+{
+    auto *i2c_dev = GET_I2C_DEVICE_PTR(bus, addr);
+    AP_Baro_Backend *backend = AP_Baro_LPS2XH::probe_InvensenseIMU(*this, *i2c_dev, mpu_addr);
+    if (!_add_backend(backend)) {
+        delete i2c_dev;
+    }
+}
+#endif  // AP_BARO_LPS2XH_ENABLED
+
 #if AP_BARO_ICM20789_ENABLED
 void AP_Baro::probe_icm20789(uint8_t bus, uint8_t addr, uint8_t mpu_bus, uint8_t mpu_addr)
 {
