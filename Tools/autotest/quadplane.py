@@ -693,6 +693,15 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         '''basic parameter checks'''
         self.test_parameter_checks_poscontrol("Q_P")
 
+        self.context_push()
+        self.set_parameters({
+            "Q_RTL_MODE": 1,
+            "RTL_AUTOLAND": 2,
+        })
+        self.assert_prearm_failure("unset one of RTL_AUTOLAND or Q_RTL_MODE")
+        self.context_pop()
+        self.wait_ready_to_arm()
+
     def rc_defaults(self):
         ret = super(AutoTestQuadPlane, self).rc_defaults()
         ret[3] = 1000
