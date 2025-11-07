@@ -332,7 +332,20 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("WOW_PIN",     25, SIM,  wow_pin, -1),
 
-    // vibration frequencies on each axis
+    // @Param: VIB_FREQ_X
+    // @DisplayName: Vibration frequency
+    // @Description: Frequency of vibration applied to IMU readings in SITL
+    // @Units: Hz
+
+    // @Param: VIB_FREQ_Y
+    // @DisplayName: Vibration frequency
+    // @Description: Frequency of vibration applied to IMU readings in SITL
+    // @Units: Hz
+
+    // @Param: VIB_FREQ_Z
+    // @DisplayName: Vibration frequency
+    // @Description: Frequency of vibration applied to IMU readings in SITL
+    // @Units: Hz
     AP_GROUPINFO("VIB_FREQ",   26, SIM,  vibe_freq, 0),
 
     // @Group: PARA_
