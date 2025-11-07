@@ -1220,7 +1220,7 @@ void ModeAuto::loiter_to_alt_run()
         pos_control->get_pos_U_p().kP(),
         pos_control->get_max_accel_U_mss(),
         G_Dt);
-    target_climb_rate_ms = constrain_float(target_climb_rate_ms, pos_control->get_max_speed_down_ms(), pos_control->get_max_speed_up_ms());
+    target_climb_rate_ms = constrain_float(target_climb_rate_ms, -pos_control->get_max_speed_down_ms(), pos_control->get_max_speed_up_ms());
 
     // get avoidance adjusted climb rate
     target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
@@ -1246,7 +1246,7 @@ void ModeAuto::nav_attitude_time_run()
     }
 
     // constrain climb rate
-    float target_climb_rate_ms = constrain_float(nav_attitude_time.climb_rate_ms, pos_control->get_max_speed_down_ms(), pos_control->get_max_speed_up_ms());
+    float target_climb_rate_ms = constrain_float(nav_attitude_time.climb_rate_ms, -pos_control->get_max_speed_down_ms(), pos_control->get_max_speed_up_ms());
 
     // get avoidance adjusted climb rate
     target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
