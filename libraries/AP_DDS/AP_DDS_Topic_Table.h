@@ -51,6 +51,9 @@ enum class TopicIndex: uint8_t {
 #if AP_DDS_CLOCK_PUB_ENABLED
     CLOCK_PUB,
 #endif // AP_DDS_CLOCK_PUB_ENABLED
+#if AP_DDS_SERVO_OUT_PUB_ENABLED
+    SERVO_OUT_PUB,
+#endif // AP_DDS_SERVO_OUT_PUB_ENABLED
 #if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
     GPS_GLOBAL_ORIGIN_PUB,
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
@@ -66,6 +69,9 @@ enum class TopicIndex: uint8_t {
 #if AP_DDS_VEL_CTRL_ENABLED
     VELOCITY_CONTROL_SUB,
 #endif // AP_DDS_VEL_CTRL_ENABLED
+#if AP_DDS_SERVO_IN_SUB_ENABLED
+    SERVO_IN_SUB,
+#endif // AP_DDS_SERVO_IN_SUB_ENABLED
 #if AP_DDS_GLOBAL_POS_CTRL_ENABLED
     GLOBAL_POSITION_SUB,
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
@@ -403,4 +409,40 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         },
     },
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
+#if AP_DDS_SERVO_OUT_PUB_ENABLED
+    {
+        .topic_id = to_underlying(TopicIndex::SERVO_OUT_PUB),
+        .pub_id = to_underlying(TopicIndex::SERVO_OUT_PUB),
+        .sub_id = to_underlying(TopicIndex::SERVO_OUT_PUB),
+        .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::SERVO_OUT_PUB), .type=UXR_DATAWRITER_ID},
+        .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::SERVO_OUT_PUB), .type=UXR_DATAREADER_ID},
+        .topic_rw = Topic_rw::DataWriter,
+        .topic_name = "rt/ap/servo_out",
+        .type_name = "ardupilot_msgs::msg::dds_::Servo_",
+        .qos = {
+            .durability = UXR_DURABILITY_VOLATILE,
+            .reliability = UXR_RELIABILITY_BEST_EFFORT,
+            .history = UXR_HISTORY_KEEP_LAST,
+            .depth = 5,
+        },
+    },
+#endif // AP_DDS_SERVO_OUT_PUB_ENABLED
+#if AP_DDS_SERVO_IN_SUB_ENABLED
+    {
+        .topic_id = to_underlying(TopicIndex::SERVO_IN_SUB),
+        .pub_id = to_underlying(TopicIndex::SERVO_IN_SUB),
+        .sub_id = to_underlying(TopicIndex::SERVO_IN_SUB),
+        .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::SERVO_IN_SUB), .type=UXR_DATAWRITER_ID},
+        .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::SERVO_IN_SUB), .type=UXR_DATAREADER_ID},
+        .topic_rw = Topic_rw::DataReader,
+        .topic_name = "rt/ap/servo_in",
+        .type_name = "ardupilot_msgs::msg::dds_::Servo_",
+        .qos = {
+            .durability = UXR_DURABILITY_VOLATILE,
+            .reliability = UXR_RELIABILITY_BEST_EFFORT,
+            .history = UXR_HISTORY_KEEP_LAST,
+            .depth = 5,
+        },
+    },
+#endif // AP_DDS_SERVO_IN_SUB_ENABLED
 };

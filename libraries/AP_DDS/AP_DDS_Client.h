@@ -53,6 +53,12 @@
 #if AP_DDS_CLOCK_PUB_ENABLED
 #include "rosgraph_msgs/msg/Clock.h"
 #endif // AP_DDS_CLOCK_PUB_ENABLED
+#if AP_DDS_SERVO_OUT_PUB_ENABLED
+#include "ardupilot_msgs/msg/Servo.h"
+#endif // AP_DDS_SERVO_OUT_PUB_ENABLED
+#if AP_DDS_SERVO_IN_SUB_ENABLED
+#include "ardupilot_msgs/msg/Servo.h"
+#endif // AP_DDS_SERVO_IN_SUB_ENABLED
 #if AP_DDS_PARAMETER_SERVER_ENABLED
 #include "rcl_interfaces/srv/SetParameters.h"
 #include "rcl_interfaces/msg/Parameter.h"
@@ -208,6 +214,19 @@ private:
     void write_clock_topic();
     static void update_topic(rosgraph_msgs_msg_Clock& msg);
 #endif // AP_DDS_CLOCK_PUB_ENABLED
+
+#if AP_DDS_SERVO_OUT_PUB_ENABLED
+    ardupilot_msgs_msg_Servo tx_servo_out_topic;
+    // The last ms timestamp AP_DDS wrote a servo output message
+    uint64_t last_servo_out_time_ms;
+    //! @brief Serialize the current servo outputs and publish to the IO stream(s)
+    void write_tx_servo_out_topic();
+    static bool update_topic(ardupilot_msgs_msg_Servo& msg);
+#endif // AP_DDS_SERVO_OUT_PUB_ENABLED
+
+#if AP_DDS_SERVO_IN_SUB_ENABLED
+    static ardupilot_msgs_msg_Servo rx_servo_topic;
+#endif // AP_DDS_SERVO_IN_SUB_ENABLED
 
 #if AP_DDS_STATUS_PUB_ENABLED
     ardupilot_msgs_msg_Status status_topic;

@@ -15,6 +15,12 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_AHRS/AP_AHRS.h>
+#if AP_DDS_SERVO_OUT_PUB_ENABLED
+#include <SRV_Channel/SRV_Channel.h>
+#endif // AP_DDS_SERVO_OUT_PUB_ENABLED
+#if AP_DDS_SERVO_IN_SUB_ENABLED
+#include <SRV_Channel/SRV_Channel.h>
+#endif // AP_DDS_SERVO_IN_SUB_ENABLED
 #if AP_DDS_ARM_SERVER_ENABLED
 #include <AP_Arming/AP_Arming.h>
 # endif // AP_DDS_ARM_SERVER_ENABLED
@@ -82,6 +88,9 @@ static constexpr uint16_t DELAY_GOAL_TOPIC_MS = AP_DDS_DELAY_GOAL_TOPIC_MS ;
 #if AP_DDS_CLOCK_PUB_ENABLED
 static constexpr uint16_t DELAY_CLOCK_TOPIC_MS =AP_DDS_DELAY_CLOCK_TOPIC_MS;
 #endif // AP_DDS_CLOCK_PUB_ENABLED
+#if AP_DDS_SERVO_OUT_PUB_ENABLED
+static constexpr uint16_t DELAY_SERVO_OUT_TOPIC_MS = AP_DDS_DELAY_SERVO_OUT_TOPIC_MS;
+#endif // AP_DDS_SERVO_OUT_PUB_ENABLED
 #if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 static constexpr uint16_t DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS = AP_DDS_DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS;
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
@@ -96,6 +105,9 @@ static constexpr uint16_t DELAY_STATUS_TOPIC_MS = AP_DDS_DELAY_STATUS_TOPIC_MS;
 #if AP_DDS_JOY_SUB_ENABLED
 sensor_msgs_msg_Joy AP_DDS_Client::rx_joy_topic {};
 #endif // AP_DDS_JOY_SUB_ENABLED
+#if AP_DDS_SERVO_IN_SUB_ENABLED
+ardupilot_msgs_msg_Servo AP_DDS_Client::rx_servo_topic {};
+#endif // AP_DDS_SERVO_IN_SUB_ENABLED
 #if AP_DDS_DYNAMIC_TF_SUB_ENABLED
 tf2_msgs_msg_TFMessage AP_DDS_Client::rx_dynamic_transforms_topic {};
 #endif // AP_DDS_DYNAMIC_TF_SUB_ENABLED
@@ -565,6 +577,29 @@ bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Rc& msg)
 }
 #endif // AP_DDS_RC_PUB_ENABLED
 
+#if AP_DDS_SERVO_OUT_PUB_ENABLED
+bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Servo& msg)
+{
+    WITH_SEMAPHORE(csem);
+    SRV_Channels *srv = SRV_Channels::get_singleton();
+    if (srv == nullptr) {
+        return false;
+    }
+
+    update_topic(msg.header.stamp);
+    msg.header.frame_id[0] = 0;
+
+    const uint8_t channels_size = MIN(MIN(msg.channels.size, NUM_SERVO_CHANNELS), 32U);
+    msg.channels.size = channels_size;
+
+    for (uint8_t i = 0; i < channels_size; i++) {
+        msg.channels.data[i] = srv->get_output_pwm_chan(i);
+    }
+
+    return true;
+}
+#endif // AP_DDS_SERVO_OUT_PUB_ENABLED
+
 #if AP_DDS_GEOPOSE_PUB_ENABLED
 void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
 {
@@ -880,6 +915,38 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         break;
     }
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
+#if AP_DDS_SERVO_IN_SUB_ENABLED
+    case topics[to_underlying(TopicIndex::SERVO_IN_SUB)].dr_id.id: {
+        const bool success = ardupilot_msgs_msg_Servo_deserialize_topic(ub, &rx_servo_topic);
+        if (success == false) {
+            break;
+        }
+
+        SRV_Channels *srv = SRV_Channels::get_singleton();
+        if (srv == nullptr) {
+            break;
+        }
+
+        const size_t channels_size = MIN(MIN(rx_servo_topic.channels.size, NUM_SERVO_CHANNELS), 32U);
+
+        for (size_t i = 0; i < channels_size; i++) {
+            const uint8_t channel = static_cast<uint8_t>(i);
+#if AP_DDS_SERVO_PROTECTED_CHANNELS > 0
+            if (channel < AP_DDS_SERVO_PROTECTED_CHANNELS) {
+                continue;
+            }
+#endif
+            const uint16_t pwm_value = rx_servo_topic.channels.data[i];
+            if (pwm_value == 0) {
+                continue;
+            }
+            if (pwm_value >= 800 && pwm_value <= 2200) {
+                srv->set_output_pwm_chan(channel, pwm_value);
+            }
+        }
+        break;
+    }
+#endif // AP_DDS_SERVO_IN_SUB_ENABLED
     }
 
 }
@@ -1640,6 +1707,22 @@ void AP_DDS_Client::write_tx_local_rc_topic()
     }
 }
 #endif // AP_DDS_RC_PUB_ENABLED
+#if AP_DDS_SERVO_OUT_PUB_ENABLED
+void AP_DDS_Client::write_tx_servo_out_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = ardupilot_msgs_msg_Servo_size_of_topic(&tx_servo_out_topic, 0);
+        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::SERVO_OUT_PUB)].dw_id, &ub, topic_size);
+        const bool success = ardupilot_msgs_msg_Servo_serialize_topic(&ub, &tx_servo_out_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+#endif // AP_DDS_SERVO_OUT_PUB_ENABLED
 #if AP_DDS_IMU_PUB_ENABLED
 void AP_DDS_Client::write_imu_topic()
 {
@@ -1821,6 +1904,14 @@ void AP_DDS_Client::update()
         write_clock_topic();
     }
 #endif // AP_DDS_CLOCK_PUB_ENABLED
+#if AP_DDS_SERVO_OUT_PUB_ENABLED
+    if (cur_time_ms - last_servo_out_time_ms > DELAY_SERVO_OUT_TOPIC_MS) {
+        last_servo_out_time_ms = cur_time_ms;
+        if (update_topic(tx_servo_out_topic)) {
+            write_tx_servo_out_topic();
+        }
+    }
+#endif // AP_DDS_SERVO_OUT_PUB_ENABLED
 #if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
     if (cur_time_ms - last_gps_global_origin_time_ms > DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS) {
         update_topic(gps_global_origin_topic);

@@ -1,0 +1,22 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from ardupilot_msgs/msg/Servo.msg
+// generated code does not contain a copyright notice
+
+
+module ardupilot_msgs {
+  module msg {
+    module dds_ {
+      @verbatim (language="comment", text=
+        "Servo output channels" "\n"
+        "This represents an array of servo outputs (PWM values)" "\n"
+        "channels: array of up to 32 servo channels" "\n"
+        "  - 0 means no command for this channel" "\n"
+        "  - Any value between 800 and 2200 is a valid PWM command in microseconds")
+      struct Servo_ {
+        std_msgs::msg::dds_::Header_ header;
+
+        sequence<uint16, 32> channels;
+      };
+    };
+  };
+};
