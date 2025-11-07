@@ -432,7 +432,7 @@ bool AC_Circle::get_terrain_U_m(float& terrain_u_m)
         AP_Terrain *terrain = AP_Terrain::get_singleton();
         if (terrain != nullptr && terrain->height_above_terrain(terr_alt_m, true)) {
             // Calculate offset from EKF origin altitude to terrain altitude
-            terrain_u_m = _pos_control.get_pos_estimate_NEU_m().z - terr_alt_m;
+            terrain_u_m = _pos_control.get_pos_estimate_U_m() - terr_alt_m;
             return true;
         }
 #endif

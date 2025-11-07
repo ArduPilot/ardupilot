@@ -734,7 +734,7 @@ bool AC_WPNav::get_terrain_U_m(float& terrain_u_m)
         if (terrain != nullptr &&
             terrain->height_above_terrain(height_above_terrain_m, true)) {
             // compute offset as difference between current altitude and terrain height
-            terrain_u_m = _pos_control.get_pos_estimate_NEU_m().z - height_above_terrain_m;
+            terrain_u_m = _pos_control.get_pos_estimate_U_m() - height_above_terrain_m;
             return true;
         }
 #endif
