@@ -560,7 +560,7 @@ void ModeAuto::auto_terrain_recover_run()
 
     /////////////////////
     // update z target //
-    position_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate);
+    position_control->set_pos_target_U_from_climb_rate_cms(target_climb_rate);
     position_control->update_U_controller();
 
     ////////////////////////////

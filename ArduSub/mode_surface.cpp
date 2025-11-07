@@ -54,7 +54,7 @@ void ModeSurface::run()
         float cmb_rate_cms = constrain_float(fabsf(sub.wp_nav.get_default_speed_up_cms()), 1, position_control->get_max_speed_up_cms());
 
         // update altitude target and call position controller
-        position_control->set_pos_target_U_from_climb_rate_cm(cmb_rate_cms);
+        position_control->set_pos_target_U_from_climb_rate_cms(cmb_rate_cms);
         position_control->update_U_controller();
     }
     // pilot has control for repositioning

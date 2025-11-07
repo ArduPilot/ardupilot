@@ -123,6 +123,6 @@ void ModeAlthold::control_depth() {
         }
     }
 
-    position_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cms);
+    position_control->set_pos_target_U_from_climb_rate_cms(target_climb_rate_cms);
     position_control->update_U_controller();
 }
