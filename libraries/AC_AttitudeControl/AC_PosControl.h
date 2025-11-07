@@ -23,7 +23,7 @@
 #define POSCONTROL_STOPPING_DIST_DOWN_MAX_M     2.0f    // max stopping distance (in m) vertically while descending
 
 #define POSCONTROL_SPEED_MS                     5.0f    // default horizontal speed in m/s
-#define POSCONTROL_SPEED_DOWN_MS                -1.5f   // default descent rate in m/s
+#define POSCONTROL_SPEED_DOWN_MS                1.5f    // default descent rate in m/s
 #define POSCONTROL_SPEED_UP_MS                  2.5f    // default climb rate in m/s
 
 #define POSCONTROL_ACCEL_U_MSS                  2.5f    // default vertical acceleration in m/s²
@@ -185,19 +185,23 @@ public:
     // Sets maximum climb/descent rate (cm/s) and vertical acceleration (cm/s²) for the U-axis.
     // Descent rate may be positive or negative and is always interpreted as a descent.
     // See set_max_speed_accel_U_m() for full details.
+    // All values should be positive.
     void set_max_speed_accel_U_cm(float vel_max_down_cms, float vel_max_up_cms, float accel_max_u_cmss);
 
     // Sets maximum climb/descent rate (m/s) and vertical acceleration (m/s²) for the U-axis.
     // These values are used for jerk-limited kinematic shaping of the vertical trajectory.
+    // All values should be positive.
     void set_max_speed_accel_U_m(float vel_max_down_ms, float vel_max_up_ms, float accel_max_u_mss);
 
     // Sets vertical correction velocity and acceleration limits (cm/s, cm/s²).
     // Should only be called during initialization to avoid discontinuities.
     // See set_correction_speed_accel_U_m() for full details.
+    // All values should be positive.
     void set_correction_speed_accel_U_cm(float vel_max_down_cms, float vel_max_up_cms, float accel_max_u_cmss);
 
     // Sets vertical correction velocity and acceleration limits (m/s, m/s²).
     // These values constrain the correction output of the PID controller.
+    // All values should be positive.
     void set_correction_speed_accel_U_m(float vel_max_down_ms, float vel_max_up_ms, float accel_max_u_mss);
 
     // Returns maximum vertical acceleration in m/s² used for shaping the climb/descent trajectory.
@@ -216,7 +220,7 @@ public:
     // Returns maximum climb rate in m/s used for shaping the vertical trajectory.
     float get_max_speed_up_ms() const { return _vel_max_up_ms; }
 
-    /// Returns maximum descent rate in m/s (typically negative).
+    /// Returns maximum descent rate in m/s (zero or positive).
     float get_max_speed_down_ms() const { return _vel_max_down_ms; }
 
     // Initializes U-axis controller to current position, velocity, and acceleration, disallowing descent.
