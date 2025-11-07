@@ -276,7 +276,7 @@ class uploader(object):
         self.identify_only = identify_only
 
         # open the port, keep the default timeout short so we can poll quickly
-        self.port = serial.Serial(portname, baudrate_bootloader, timeout=2.0, write_timeout=2.0)
+        self.port = serial.Serial(portname, baudrate_bootloader, timeout=2.0, write_timeout=2.0, exclusive=True)
         self.baudrate_bootloader = baudrate_bootloader
         if baudrate_bootloader_flash is not None:
             self.baudrate_bootloader_flash = baudrate_bootloader_flash
