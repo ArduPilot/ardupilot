@@ -33,11 +33,11 @@ uint32_t RF_Ainstein_LR_D1::packet_for_alt(float alt_m, uint8_t *buffer, uint8_t
     uint16_t alt_cm = alt_m * 100;
 
     uint8_t snr = (alt_cm == 0xFFFF) ? 0 : 100;
-    if (alt_cm > 52500) {
+    if (alt_m > 525) {
         // overheats at 525 metres:
         malfunction_alert |= 1U << 0;
     }
-    if (alt_cm > 50000) {
+    if (alt_m > 500) {
         // out of range @500m
         snr = 0;
     }
