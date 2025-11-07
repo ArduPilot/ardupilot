@@ -306,6 +306,9 @@ public:
     // Returns the estimated position in NEU frame, in meters relative to EKF origin.
     const Vector3p& get_pos_estimate_NEU_m() const { return _pos_estimate_neu_m; }
 
+    // Returns estimated altitude above EKF origin in meters.
+    float get_pos_estimate_U_m() const { return _pos_estimate_neu_m.z; }
+
     // Returns the target position in NEU frame, in meters relative to EKF origin.
     const Vector3p& get_pos_target_NEU_m() const { return _pos_target_neu_m; }
 
@@ -367,6 +370,9 @@ public:
     // Returns current velocity estimate in NEU frame in m/s.
     const Vector3f& get_vel_estimate_NEU_ms() const { return _vel_estimate_neu_ms; }
 
+    // Returns current velocity estimate (Up) in m/s.
+    float get_vel_estimate_U_ms() const { return _vel_estimate_neu_ms.z; }
+
     // Sets desired velocity in NEU frame in cm/s.
     // See set_vel_desired_NEU_ms() for full details.
     void set_vel_desired_NEU_cms(const Vector3f &vel_desired_neu_cms) { set_vel_desired_NEU_ms(vel_desired_neu_cms * 0.01); }
@@ -383,6 +389,9 @@ public:
 
     // Returns desired velocity in NEU frame in m/s.
     const Vector3f& get_vel_desired_NEU_ms() const { return _vel_desired_neu_ms; }
+
+    // Returns desired velocity (Up) in m/s.
+    float get_vel_desired_U_ms() const { return _vel_desired_neu_ms.z; }
 
     // Returns velocity target in NEU frame in cm/s.
     // See get_vel_target_NEU_ms() for full details.
