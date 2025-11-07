@@ -753,7 +753,6 @@ void AC_PosControl::update_NE_controller()
 ///
 
 // Sets maximum climb/descent rate (cm/s) and vertical acceleration (cm/s²) for the U-axis.
-// Descent rate may be positive or negative and is always interpreted as a descent.
 // See set_max_speed_accel_U_m() for full details.
 void AC_PosControl::set_max_speed_accel_U_cm(float vel_max_down_cms, float vel_max_up_cms, float accel_max_u_cmss)
 {
@@ -762,13 +761,11 @@ void AC_PosControl::set_max_speed_accel_U_cm(float vel_max_down_cms, float vel_m
 
 // Sets maximum climb/descent rate (m/s) and vertical acceleration (m/s²) for the U-axis.
 // These values are used for jerk-limited kinematic shaping of the vertical trajectory.
+// All values should be positive.
 void AC_PosControl::set_max_speed_accel_U_m(float vel_max_down_ms, float vel_max_up_ms, float accel_max_u_mss)
 {
-    // ensure vel_max_down_ms is always negative
-    vel_max_down_ms = -fabsf(vel_max_down_ms);
-
     // sanity check and update
-    if (is_negative(vel_max_down_ms)) {
+    if (is_positive(vel_max_down_ms)) {
         _vel_max_down_ms = vel_max_down_ms;
     }
     if (is_positive(vel_max_up_ms)) {
@@ -976,7 +973,7 @@ void AC_PosControl::input_pos_vel_accel_U_m(float &pos_u_m, float &vel_u_ms, flo
 
     shape_pos_vel_accel(pos_u_m, vel_u_ms, accel_u_mss,
                         _pos_desired_neu_m.z, _vel_desired_neu_ms.z, _accel_desired_neu_mss.z,
-                        _vel_max_down_ms, _vel_max_up_ms,
+                        -_vel_max_down_ms, _vel_max_up_ms,
                         -constrain_float(accel_max_u_mss, 0.0, 7.5), accel_max_u_mss,
                         jerk_max_u_msss, _dt_s, limit_output);
 
@@ -1019,7 +1016,7 @@ void AC_PosControl::update_offsets_U()
     // Shape offset trajectory (position/velocity/acceleration) using jerk-limited smoothing
     shape_pos_vel_accel(_pos_offset_target_neu_m.z, _vel_offset_target_neu_ms.z, _accel_offset_target_neu_mss.z,
         _pos_offset_neu_m.z, _vel_offset_neu_ms.z, _accel_offset_neu_mss.z,
-        get_max_speed_down_ms(), get_max_speed_up_ms(),
+        -get_max_speed_down_ms(), get_max_speed_up_ms(),
         -get_max_accel_U_mss(), get_max_accel_U_mss(),
         _jerk_max_u_msss, _dt_s, false);
 
@@ -1111,7 +1108,7 @@ void AC_PosControl::update_U_controller()
     // Check for vertical controller health
 
     // Update health indicator based on error magnitude vs configured speed range
-    float error_ratio = _pid_vel_u_cm.get_error() * 0.01 / _vel_max_down_ms;
+    float error_ratio = -_pid_vel_u_cm.get_error() * 0.01 / _vel_max_down_ms;
     _vel_u_control_ratio += _dt_s * 0.1f * (0.5 - error_ratio);
     _vel_u_control_ratio = constrain_float(_vel_u_control_ratio, 0.0f, 2.0f);
 
@@ -1578,7 +1575,7 @@ void AC_PosControl::update_terrain()
     // input shape horizontal position, velocity and acceleration offsets
     shape_pos_vel_accel(_pos_terrain_target_u_m, 0.0, 0.0,
         _pos_terrain_u_m, _vel_terrain_u_ms, _accel_terrain_u_mss,
-        get_max_speed_down_ms(), get_max_speed_up_ms(),
+        -get_max_speed_down_ms(), get_max_speed_up_ms(),
         -get_max_accel_U_mss(), get_max_accel_U_mss(),
         _jerk_max_u_msss, _dt_s, false);
 
@@ -1648,8 +1645,8 @@ void AC_PosControl::calculate_yaw_and_rate_yaw()
 float AC_PosControl::calculate_overspeed_gain()
 {
     // If desired descent speed exceeds configured max, scale acceleration/jerk proportionally
-    if (_vel_desired_neu_ms.z < _vel_max_down_ms && !is_zero(_vel_max_down_ms)) {
-        return POSCONTROL_OVERSPEED_GAIN_U * _vel_desired_neu_ms.z / _vel_max_down_ms;
+    if (_vel_desired_neu_ms.z < -_vel_max_down_ms && !is_zero(_vel_max_down_ms)) {
+        return -POSCONTROL_OVERSPEED_GAIN_U * _vel_desired_neu_ms.z / _vel_max_down_ms;
     }
 
     // If desired climb speed exceeds configured max, scale acceleration/jerk proportionally

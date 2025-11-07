@@ -23,7 +23,7 @@
 #define POSCONTROL_STOPPING_DIST_DOWN_MAX_M     2.0f    // max stopping distance (in m) vertically while descending
 
 #define POSCONTROL_SPEED_MS                     5.0f    // default horizontal speed in m/s
-#define POSCONTROL_SPEED_DOWN_MS                -1.5f   // default descent rate in m/s
+#define POSCONTROL_SPEED_DOWN_MS                1.5f    // default descent rate in m/s
 #define POSCONTROL_SPEED_UP_MS                  2.5f    // default climb rate in m/s
 
 #define POSCONTROL_ACCEL_U_MSS                  2.5f    // default vertical acceleration in m/s²
@@ -216,7 +216,7 @@ public:
     // Returns maximum climb rate in m/s used for shaping the vertical trajectory.
     float get_max_speed_up_ms() const { return _vel_max_up_ms; }
 
-    /// Returns maximum descent rate in m/s (typically negative).
+    /// Returns maximum descent rate in m/s (zero or positive).
     float get_max_speed_down_ms() const { return _vel_max_down_ms; }
 
     // Initializes U-axis controller to current position, velocity, and acceleration, disallowing descent.
