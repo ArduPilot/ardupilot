@@ -210,7 +210,7 @@ void _AutoTakeoff::run()
     // stopping distance from vel_threshold_fraction * max velocity
     const float stop_distance_m = 0.5 * sq(vel_threshold_fraction * copter.pos_control->get_max_speed_up_ms()) / copter.pos_control->get_max_accel_U_mss();
     bool reached_altitude = copter.pos_control->get_pos_desired_U_m() >= pos_u_m - stop_distance_m;
-    bool reached_climb_rate = copter.pos_control->get_vel_desired_NEU_ms().z < copter.pos_control->get_max_speed_up_ms() * vel_threshold_fraction;
+    bool reached_climb_rate = copter.pos_control->get_vel_desired_U_ms() < copter.pos_control->get_max_speed_up_ms() * vel_threshold_fraction;
     complete = reached_altitude && reached_climb_rate;
 
     // calculate completion for location in case it is needed for a smooth transition to wp_nav
