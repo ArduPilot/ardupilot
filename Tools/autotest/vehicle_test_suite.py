@@ -2687,9 +2687,6 @@ class TestSuite(abc.ABC):
             "SIM_MAG1_OFS_X",
             "SIM_MAG1_OFS_Y",
             "SIM_MAG1_OFS_Z",
-            "SIM_VIB_FREQ_X",
-            "SIM_VIB_FREQ_Y",
-            "SIM_VIB_FREQ_Z",
         ])
 
         vinfo_key = self.vehicleinfo_key()
