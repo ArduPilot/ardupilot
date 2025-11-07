@@ -210,6 +210,7 @@ private:
     AP_Int32 _options;
     AP_Float _flare_holdoff_hgt;
     AP_Float _hgt_dem_tconst;
+    AP_Int16  _thr_dn_pct_rate_lim;
 
     enum class Option {
         GLIDER_ONLY     = (1<<0),
