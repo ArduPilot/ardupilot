@@ -173,8 +173,8 @@ void AC_WPNav::wp_and_spline_init_m(float speed_ms, Vector3p stopping_point_neu_
     // initialise position controller speed and acceleration
     _pos_control.set_max_speed_accel_NE_m(_wp_desired_speed_ne_ms, get_wp_acceleration_mss());
     _pos_control.set_correction_speed_accel_NE_m(_wp_desired_speed_ne_ms, get_wp_acceleration_mss());
-    _pos_control.set_max_speed_accel_U_m(-get_default_speed_down_ms(), get_default_speed_up_ms(), get_accel_U_mss());
-    _pos_control.set_correction_speed_accel_U_m(-get_default_speed_down_ms(), get_default_speed_up_ms(), get_accel_U_mss());
+    _pos_control.set_max_speed_accel_U_m(get_default_speed_down_ms(), get_default_speed_up_ms(), get_accel_U_mss());
+    _pos_control.set_correction_speed_accel_U_m(get_default_speed_down_ms(), get_default_speed_up_ms(), get_accel_U_mss());
 
     // calculate jerk limit if not explicitly set by parameter
     if (!is_positive(_wp_jerk_msss)) {
