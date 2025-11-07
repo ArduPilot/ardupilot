@@ -563,7 +563,7 @@ void ModeGuided::guided_vel_control_run()
     // call velocity controller which includes z axis controller
     position_control->update_NE_controller();
 
-    position_control->set_pos_target_U_from_climb_rate_cm(position_control->get_vel_desired_NEU_cms().z);
+    position_control->set_pos_target_U_from_climb_rate_cms(position_control->get_vel_desired_NEU_cms().z);
     position_control->update_U_controller();
 
     float lateral_out, forward_out;
@@ -718,7 +718,7 @@ void ModeGuided::guided_angle_control_run()
     attitude_control->input_euler_angle_roll_pitch_yaw_cd(roll_in, pitch_in, yaw_in, true);
 
     // call position controller
-    position_control->set_pos_target_U_from_climb_rate_cm(climb_rate_cms);
+    position_control->set_pos_target_U_from_climb_rate_cms(climb_rate_cms);
     position_control->update_U_controller();
 }
 
@@ -811,10 +811,10 @@ float ModeGuided::get_auto_heading()
         float track_bearing = get_bearing_cd(sub.wp_nav.get_wp_origin_NEU_cm().xy(), sub.wp_nav.get_wp_destination_NEU_cm().xy());
 
         // Bearing from current position towards intermediate position target (centidegrees)
-        const Vector2f target_vel_xy = position_control->get_vel_target_NEU_cms().xy();
+        const Vector2f target_vel_ne_cms = position_control->get_vel_target_NEU_cms().xy();
         float angle_error = 0.0f;
-        if (target_vel_xy.length() >= position_control->get_max_speed_NE_cms() * 0.1f) {
-            const float desired_angle_cd = degrees(target_vel_xy.angle()) * 100.0f;
+        if (target_vel_ne_cms.length() >= position_control->get_max_speed_NE_cms() * 0.1f) {
+            const float desired_angle_cd = degrees(target_vel_ne_cms.angle()) * 100.0f;
             angle_error = wrap_180_cd(desired_angle_cd - track_bearing);
         }
         float angle_limited = constrain_float(angle_error, -g.xtrack_angle_limit * 100.0f, g.xtrack_angle_limit * 100.0f);
