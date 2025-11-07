@@ -685,7 +685,7 @@ Changes from 4.5.7
 - Scripts may receive mavlink messages which fail CRC (e.g messages which FC does not understand)
 - SD card formatting supported
 - Serial device simulation support (allows Lua to feed data to any supported serial protocol for e.g. sensor simulation)
-- set_target_throttle_rate_rpy allows rate control from scripts (new for Copter)
+- set_target_rate_and_throttle allows rate control from scripts (new for Copter)
 - sitl_standby_sim.lua example shows how to switch between redundant flight controllers using an RC switch
 - Slung payload oscillation suppression applet added (see copter-slung-payload.lua)
 - Temperature sensor bindings added
