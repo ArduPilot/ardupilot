@@ -407,7 +407,7 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
     // by default current_alt_m and alt_target_m are alt-above-EKF-origin
     float alt_target_m;
     bool alt_target_terrain = false;
-    float current_alt_m = pos_control->get_pos_estimate_NEU_m().z;
+    float current_alt_m = pos_control->get_pos_estimate_U_m();
     float terrain_u_m;   // terrain's altitude in m above the ekf origin
     if ((dest_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) && wp_nav->get_terrain_U_m(terrain_u_m)) {
         // subtract terrain offset to convert vehicle's alt-above-ekf-origin to alt-above-terrain
@@ -1370,7 +1370,7 @@ void PayloadPlace::run()
             break;
         }
         // calibrate the decent thrust after aircraft has reached constant decent rate and release if threshold is reached
-        if (pos_control->get_vel_desired_NEU_ms().z > -0.95 * descent_speed_ms) {
+        if (pos_control->get_vel_desired_U_ms() > -0.95 * descent_speed_ms) {
             // decent rate has not reached descent_speed_ms
             descent_established_time_ms = now_ms;
             break;

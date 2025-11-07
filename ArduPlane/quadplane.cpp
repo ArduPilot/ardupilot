@@ -1896,7 +1896,7 @@ void QuadPlane::update_throttle_hover()
     }
 
     // do not update while climbing or descending
-    if (!is_zero(pos_control->get_vel_desired_NEU_ms().z)) {
+    if (!is_zero(pos_control->get_vel_desired_U_ms())) {
         return;
     }
 
@@ -4115,7 +4115,7 @@ void QuadPlane::update_throttle_mix(void)
         bool accel_moving = (throttle_mix_accel_ef_filter.get().length() > LAND_CHECK_ACCEL_MOVING);
 
         // check for requested descent
-        bool descent_not_demanded = pos_control->get_vel_desired_NEU_ms().z >= 0.0f;
+        bool descent_not_demanded = pos_control->get_vel_desired_U_ms() >= 0.0f;
 
         bool use_mix_max = large_angle_request || large_angle_error || accel_moving || descent_not_demanded;
 
