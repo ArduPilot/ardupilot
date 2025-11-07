@@ -435,6 +435,32 @@ public:
             }
             return turns;
         }
+
+        /*
+          return the loiter time in seconds for a LOITER_TIME command
+          this has special handling for times > 255 seconds from cmd.p1 and type_specific_bits
+         */
+        float get_loiter_time_sec(void) const {
+            float time_sec = LOWBYTE(p1);
+            if (type_specific_bits & (1U<<2)) {
+                // time was stored divided by 4
+                time_sec *= 4.0;
+            }
+            return time_sec;
+        }
+
+        /*
+          return the loiter radius for a LOITER_TIME command
+          this has special handling for radius > 255m from cmd.p1 and type_specific_bits
+         */
+        float get_loiter_time_radius(void) const {
+            float radius = HIGHBYTE(p1);
+            if (type_specific_bits & (1U<<0)) {
+                // radius was stored divided by 10
+                radius *= 10.0;
+            }
+            return radius;
+        }
     };
 
 

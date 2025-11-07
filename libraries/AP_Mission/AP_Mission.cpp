@@ -1133,11 +1133,34 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     }
     break;
 
-    case MAV_CMD_NAV_LOITER_TIME:                       // MAV ID: 19
-        cmd.p1 = packet.param1;                         // loiter time in seconds uses all 16 bits, 8bit seconds is too small. No room for radius.
+    case MAV_CMD_NAV_LOITER_TIME: {                     // MAV ID: 19
+        // Pack time and radius into p1 similar to LOITER_TURNS
+        // Time is stored in seconds. Times > 255 are stored divided by 4
+        // Radius handling same as LOITER_TURNS
+        float time_sec = packet.param1;
+        uint8_t time_stored;
+        if (time_sec <= 255) {
+            time_stored = time_sec;
+        } else {
+            time_stored = MIN(255, time_sec * 0.25);
+            cmd.type_specific_bits |= (1U << 2);  // bit 2 indicates time needs *4
+        }
+        cmd.p1 = time_stored;  // store time in low byte of p1
+
+        // Pack radius into high byte of p1
+        uint8_t radius_m;
+        const float abs_radius = fabsf(packet.param3);
+        if (abs_radius <= 255) {
+            radius_m = abs_radius;
+        } else {
+            radius_m = MIN(255, abs_radius * 0.1);
+            cmd.type_specific_bits |= (1U << 0);  // bit 0 indicates radius needs *10
+        }
+        cmd.p1 |= (radius_m<<8);   // store radius in high byte of p1
         cmd.content.location.loiter_ccw = (packet.param3 < 0);
         cmd.content.location.loiter_xtrack = (packet.param4 > 0); // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
-        break;
+    }
+    break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:                  // MAV ID: 20
         break;
@@ -1648,15 +1671,25 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param4 = cmd.content.location.loiter_xtrack; // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
         break;
 
-    case MAV_CMD_NAV_LOITER_TIME:                       // MAV ID: 19
-        packet.param1 = cmd.p1;                         // loiter time in seconds
+    case MAV_CMD_NAV_LOITER_TIME: {                     // MAV ID: 19
+        // Unpack time from low byte of p1
+        float time_sec = LOWBYTE(cmd.p1);
+        if (cmd.type_specific_bits & (1U << 2)) {
+            time_sec *= 4;  // time was stored divided by 4
+        }
+        packet.param1 = time_sec;
+
+        // Unpack radius from high byte of p1
+        packet.param3 = HIGHBYTE(cmd.p1);
+        if (cmd.type_specific_bits & (1U << 0)) {
+            packet.param3 *= 10;  // radius was stored divided by 10
+        }
         if (cmd.content.location.loiter_ccw) {
-            packet.param3 = -1;
-        } else {
-            packet.param3 = 1;
+            packet.param3 *= -1;
         }
         packet.param4 = cmd.content.location.loiter_xtrack; // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
-        break;
+    }
+    break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:                  // MAV ID: 20
         break;
