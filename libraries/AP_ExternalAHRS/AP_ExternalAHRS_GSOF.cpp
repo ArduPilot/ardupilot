@@ -327,16 +327,16 @@ bool AP_ExternalAHRS_GSOF::times_healthy() const
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (!pos_time_healthy) {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s: GSOF pos time delayed by %lu ms", get_name(), uint64_t(now - last_pos_time_ms));
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s: GSOF pos time delayed by %f ms", get_name(), float(now - last_pos_time_ms));
     }
     if (!ins_full_nav_healthy) {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s: INS Full nav delayed by %lu ms", get_name(), uint64_t(now - last_ins_full_nav_ms));
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s: INS Full nav delayed by %f ms", get_name(), float(now - last_ins_full_nav_ms));
     }
     if (!ins_rms_healthy) {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s: INS rms delayed by %lu ms", get_name(), uint64_t(now - last_ins_rms_ms));
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s: INS rms delayed by %f ms", get_name(), float(now - last_ins_rms_ms));
     }
     if (!llh_msl_healthy) {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s: LLH MSL delayed by %lu ms", get_name(), uint64_t(now - last_llh_msl_ms));
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s: LLH MSL delayed by %f ms", get_name(), float(now - last_llh_msl_ms));
     }
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
