@@ -444,7 +444,7 @@ bool ModeZigZag::calculate_next_dest_m(Destination ab_dest, bool use_wpnav_alt, 
         next_dest_neu_m.z = wp_nav->get_wp_destination_NEU_m().z;
     } else {
         is_terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
-        next_dest_neu_m.z = pos_control->get_pos_desired_U_m();
+        next_dest_neu_m.z = pos_control->get_pos_desired_NEU_m().z;
         if (!is_terrain_alt) {
             next_dest_neu_m.z += pos_control->get_pos_terrain_U_m();
         }
@@ -488,12 +488,12 @@ bool ModeZigZag::calculate_side_dest_m(Vector3p& next_dest_neu_m, bool& is_terra
     float scalar = constrain_float(_side_dist_m, 0.1, 100.0) / AB_side_ne_m_length;
 
     // get distance from vehicle to start_pos_ne_m
-    const Vector2p curr_pos_ne_m = pos_control->get_pos_desired_NEU_m().xy();
-    next_dest_neu_m.xy() = curr_pos_ne_m + (AB_side_ne_m.topostype() * scalar);
+    const Vector3p curr_pos_neu_m = pos_control->get_pos_desired_NEU_m();
+    next_dest_neu_m.xy() = curr_pos_neu_m.xy() + (AB_side_ne_m.topostype() * scalar);
 
     // if we have a downward facing range finder then use terrain altitude targets
     is_terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
-    next_dest_neu_m.z = pos_control->get_pos_desired_U_m();
+    next_dest_neu_m.z = curr_pos_neu_m.z;
 
     return true;
 }
