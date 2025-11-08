@@ -2150,16 +2150,7 @@ class TestSuite(abc.ABC):
         count = self.count_expected_fence_lines_in_filepath(filepath)
         mavproxy.send('fence load %s\n' % filepath)
 #        self.mavproxy.expect("Loaded %u (geo-)?fence" % count)
-        tstart = self.get_sim_time_cached()
-        while True:
-            t2 = self.get_sim_time_cached()
-            if t2 - tstart > 10:
-                raise AutoTestTimeoutException("Failed to do load")
-            newcount = self.get_parameter("FENCE_TOTAL")
-            self.progress("fence total: %u want=%u" % (newcount, count))
-            if count == newcount:
-                break
-            self.delay_sim_time(1)
+        self.wait_parameter_value("FENCE_TOTAL", count, timeout=20)
 
     def get_fence_point(self, idx, target_system=1, target_component=1):
         self.mav.mav.fence_fetch_point_send(target_system,
