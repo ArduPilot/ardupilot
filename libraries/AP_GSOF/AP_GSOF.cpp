@@ -112,7 +112,7 @@ AP_GSOF::process_message(MsgTypes& parsed_msgs)
                 parse_vel(a);
                 break;
             case DOP:
-                parse_dop(a);     
+                parse_dop(a);
                 break;
             case POS_SIGMA:
                 parse_pos_sigma(a);
