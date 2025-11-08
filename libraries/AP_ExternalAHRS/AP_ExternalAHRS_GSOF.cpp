@@ -152,6 +152,13 @@ void AP_ExternalAHRS_GSOF::update_thread(void)
         if (parsed.get(AP_GSOF::INS_FULL_NAV)) {
             last_ins_full_nav_ms = now;
 
+            // The Trimble PX-1 is a tightly coupled GNSS-INS.
+            // Although generally we don't want to couple EKF's
+            // by populating EKF data from a GPS into ArduPilot's GPS
+            // which then goes to AP's EKF, this is the only approach.
+            // Extensive flight testing indicates good performance,
+            // and proper handling of failure of the PX-1 INS results
+            // in proper ignoring of the GPS data.
             gps_data.gps_week = ins_full_nav.gps_week;
             gps_data.ms_tow = ins_full_nav.gps_time_ms;
             gps_data.ned_vel_north = ins_full_nav.vel_n;
