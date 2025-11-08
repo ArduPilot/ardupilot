@@ -74,7 +74,7 @@ AP_ExternalAHRS_GSOF::AP_ExternalAHRS_GSOF(AP_ExternalAHRS *_frontend,
 
     auto &sm = AP::serialmanager();
     uart = sm.find_serial(AP_SerialManager::SerialProtocol_AHRS, 0);
-    if (!uart) {
+    if (uart == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, LOG_FMT, get_name(), "no UART");
         return;
     }
@@ -82,7 +82,7 @@ AP_ExternalAHRS_GSOF::AP_ExternalAHRS_GSOF(AP_ExternalAHRS *_frontend,
     port_num = sm.find_portnum(AP_SerialManager::SerialProtocol_AHRS, 0);
     pktbuf = NEW_NOTHROW uint8_t[AP_GSOF::MAX_PACKET_SIZE];
 
-    if (!pktbuf) {
+    if (pktbuf == nullptr) {
         AP_BoardConfig::allocation_error("GSOF ExternalAHRS");
     }
 
@@ -102,7 +102,7 @@ AP_ExternalAHRS_GSOF::AP_ExternalAHRS_GSOF(AP_ExternalAHRS *_frontend,
 // get serial port number for the uart
 int8_t AP_ExternalAHRS_GSOF::get_port(void) const
 {
-    if (!uart) {
+    if (uart == nullptr) {
         return -1;
     }
     return port_num;
@@ -113,7 +113,7 @@ void AP_ExternalAHRS_GSOF::update_thread(void)
     // TODO configure receiver to output expected data.
 
     auto last_debug = AP_HAL::millis();
-    size_t pps = 0;
+    uint32_t pps = 0;
 
     uart->begin(baudrate);
     
@@ -225,7 +225,7 @@ void AP_ExternalAHRS_GSOF::update_thread(void)
 
 void AP_ExternalAHRS_GSOF::check_initialise_state(void)
 {
-    const auto new_init_state = initialised();
+    const bool new_init_state = initialised();
     // Only send the message after fully booted up, otherwise it gets dropped.
     if (!last_init_state && new_init_state && AP_HAL::millis() > 5000) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, LOG_FMT, get_name(), "initialised.");

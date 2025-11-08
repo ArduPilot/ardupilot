@@ -22,7 +22,6 @@
 #if AP_EXTERNAL_AHRS_GSOF_ENABLED
 
 #include "AP_ExternalAHRS_backend.h"
-#include <AP_GPS/AP_GPS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_GSOF/AP_GSOF.h>
 

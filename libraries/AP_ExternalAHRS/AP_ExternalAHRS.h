@@ -82,7 +82,6 @@ public:
     const char* get_name() const;
 
     enum class AvailableSensor {
-        NONE = 0, // No sensors available
         GPS = (1U<<0),
         IMU = (1U<<1),
         BARO = (1U<<2),
