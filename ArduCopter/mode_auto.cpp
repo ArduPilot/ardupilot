@@ -1356,7 +1356,7 @@ void PayloadPlace::run()
         descent_established_time_ms = now_ms;
         descent_start_altitude_m = pos_control->get_pos_desired_U_m();
         // limiting the decent rate to the limit set in wp_nav is not necessary but done for safety
-        descent_speed_ms = MIN((is_positive(g2.pldp_descent_speed_ms)) ? g2.pldp_descent_speed_ms : abs(g.land_speed_cms) * 0.01, wp_nav->get_default_speed_down_ms());
+        descent_speed_ms = MIN((is_positive(g2.pldp_descent_speed_ms)) ? g2.pldp_descent_speed_ms : g.land_speed_cms * 0.01, wp_nav->get_default_speed_down_ms());
         descent_thrust_level = 1.0;
         state = State::Descent;
         FALLTHROUGH;
