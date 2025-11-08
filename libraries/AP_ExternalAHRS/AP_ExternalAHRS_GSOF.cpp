@@ -210,12 +210,12 @@ void AP_ExternalAHRS_GSOF::update_thread(void)
             undulation = ins_full_nav.altitude - llh_msl.altitude_msl;
         }
 
-        uint8_t instance;
         AP_GSOF::MsgTypes expected_gps;
         expected_gps.set(AP_GSOF::POS_TIME);
         expected_gps.set(AP_GSOF::INS_FULL_NAV);
         expected_gps.set(AP_GSOF::INS_RMS);
         expected_gps.set(AP_GSOF::LLH_MSL);
+        uint8_t instance;
         if (AP::gps().get_first_external_instance(instance) && parsed == expected_gps) {
             AP::gps().handle_external(gps_data, instance);
         }
