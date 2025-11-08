@@ -118,97 +118,99 @@ void AP_ExternalAHRS_GSOF::update_thread(void)
     uart->begin(baudrate);
     
     while (true) {
-        // TODO should we ever call begin() again?
-        while (uart->available() > 0) {
+        const auto available = uart->available();
+        if (available == 0) {
             hal.scheduler->delay_microseconds(100);
-            const uint8_t c = uart->read();
+            continue;
+        }
+        hal.scheduler->delay_microseconds(100);
+        const uint8_t c = uart->read();
 
-            AP_GSOF::MsgTypes parsed;
-            const auto parse_res = parse(c, parsed);
-            if (parse_res != PARSED_GSOF_DATA) {
-                continue;
+        AP_GSOF::MsgTypes parsed;
+        const auto parse_res = parse(c, parsed);
+        if (parse_res != PARSED_GSOF_DATA) {
+            continue;
+        }
+
+        auto const now = AP_HAL::millis();
+        pps++;
+
+        if (now - last_debug > 1000) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                "GSOF PPS: %lu, ins %u",
+                static_cast<unsigned long>(pps),
+                static_cast<uint16_t>(ins_full_nav.gnss_status));
+            last_debug = now;
+            pps = 0;
+        }
+        if (parsed.get(AP_GSOF::POS_TIME)) {
+            last_pos_time_ms = now;
+
+            gps_data.satellites_in_view = pos_time.num_sats;
+        }
+
+        if (parsed.get(AP_GSOF::INS_FULL_NAV)) {
+            last_ins_full_nav_ms = now;
+
+            gps_data.gps_week = ins_full_nav.gps_week;
+            gps_data.ms_tow = ins_full_nav.gps_time_ms;
+            gps_data.ned_vel_north = ins_full_nav.vel_n;
+            gps_data.ned_vel_east = ins_full_nav.vel_e;
+            gps_data.ned_vel_down = ins_full_nav.vel_d;
+            switch(ins_full_nav.gnss_status) {
+                case AP_GSOF::GnssStatus::FIX_NOT_AVAILABLE:
+                case AP_GSOF::GnssStatus::GNSS_SPS_MODE: // TODO Is this right?
+                    gps_data.fix_type = AP_GPS_FixType::NONE;
+                    break;
+                case AP_GSOF::GnssStatus::DGPS_SPS_MODE:
+                    gps_data.fix_type = AP_GPS_FixType::DGPS;
+                    break;
+                case AP_GSOF::GnssStatus::GNSS_PPS_MODE:
+                    gps_data.fix_type = AP_GPS_FixType::PPP;
+                    break;
+                case AP_GSOF::GnssStatus::FIXED_RTK_MODE:
+                    gps_data.fix_type = AP_GPS_FixType::RTK_FIXED;
+                    break;
+                case AP_GSOF::GnssStatus::FLOAT_RTK_MODE:
+                    gps_data.fix_type = AP_GPS_FixType::RTK_FLOAT;
+                    break;
+                case AP_GSOF::GnssStatus::DR_MODE:
+                    gps_data.fix_type = AP_GPS_FixType::NONE;
+                    break;
             }
-
-            auto const now = AP_HAL::millis();
-            pps++;
-
-            if (now - last_debug > 1000) {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                    "GSOF PPS: %lu, ins %u",
-                    static_cast<unsigned long>(pps),
-                    static_cast<uint16_t>(ins_full_nav.gnss_status));
-                last_debug = now;
-                pps = 0;
+            if (ins_full_nav.gnss_status != AP_GSOF::GnssStatus::FIX_NOT_AVAILABLE) {
+                // If fix is unavailble, the lat/lon may be zero, so don't post the data.
+                // To reproduce this condition, disconnect the GPS antenna and reboot the receiver.
+                post_filter();
             }
-            if (parsed.get(AP_GSOF::POS_TIME)) {
-                last_pos_time_ms = now;
+        }
+        if (parsed.get(AP_GSOF::INS_RMS)) {
+            last_ins_rms_ms = now;
 
-                gps_data.satellites_in_view = pos_time.num_sats;
-            }
+            gps_data.horizontal_pos_accuracy = Vector2d(ins_rms.pos_rms_n, ins_rms.pos_rms_e).length();
+            gps_data.vertical_pos_accuracy = ins_rms.pos_rms_d;
+            gps_data.horizontal_vel_accuracy = Vector2d(ins_rms.vel_rms_n, ins_rms.vel_rms_e).length();
+        }
+        if (parsed.get(AP_GSOF::LLH_MSL)) {
+            last_llh_msl_ms = now;
 
-            if (parsed.get(AP_GSOF::INS_FULL_NAV)) {
-                last_ins_full_nav_ms = now;
+            gps_data.longitude = static_cast<int32_t>(llh_msl.longitude * 1E7);
+            gps_data.latitude = static_cast<int32_t>(llh_msl.latitude * 1E7);
+            gps_data.msl_altitude = static_cast<int32_t>(llh_msl.altitude_msl * 1E2);
+        }
 
-                gps_data.gps_week = ins_full_nav.gps_week;
-                gps_data.ms_tow = ins_full_nav.gps_time_ms;
-                gps_data.ned_vel_north = ins_full_nav.vel_n;
-                gps_data.ned_vel_east = ins_full_nav.vel_e;
-                gps_data.ned_vel_down = ins_full_nav.vel_d;
-                switch(ins_full_nav.gnss_status) {
-                    case AP_GSOF::GnssStatus::FIX_NOT_AVAILABLE:
-                    case AP_GSOF::GnssStatus::GNSS_SPS_MODE: // TODO Is this right?
-                        gps_data.fix_type = AP_GPS_FixType::NONE;
-                        break;
-                    case AP_GSOF::GnssStatus::DGPS_SPS_MODE:
-                        gps_data.fix_type = AP_GPS_FixType::DGPS;
-                        break;
-                    case AP_GSOF::GnssStatus::GNSS_PPS_MODE:
-                        gps_data.fix_type = AP_GPS_FixType::PPP;
-                        break;
-                    case AP_GSOF::GnssStatus::FIXED_RTK_MODE:
-                        gps_data.fix_type = AP_GPS_FixType::RTK_FIXED;
-                        break;
-                    case AP_GSOF::GnssStatus::FLOAT_RTK_MODE:
-                        gps_data.fix_type = AP_GPS_FixType::RTK_FLOAT;
-                        break;
-                    case AP_GSOF::GnssStatus::DR_MODE:
-                        gps_data.fix_type = AP_GPS_FixType::NONE;
-                        break;
-                }
-                if (ins_full_nav.gnss_status != AP_GSOF::GnssStatus::FIX_NOT_AVAILABLE) {
-                    // If fix is unavailble, the lat/lon may be zero, so don't post the data.
-                    // To reproduce this condition, disconnect the GPS antenna and reboot the receiver.
-                    post_filter();
-                }
-            }
-            if (parsed.get(AP_GSOF::INS_RMS)) {
-                last_ins_rms_ms = now;
+        if (parsed.get(AP_GSOF::LLH_MSL) && parsed.get(AP_GSOF::INS_FULL_NAV)) {
+            undulation = ins_full_nav.altitude - llh_msl.altitude_msl;
+        }
 
-                gps_data.horizontal_pos_accuracy = Vector2d(ins_rms.pos_rms_n, ins_rms.pos_rms_e).length();
-                gps_data.vertical_pos_accuracy = ins_rms.pos_rms_d;
-                gps_data.horizontal_vel_accuracy = Vector2d(ins_rms.vel_rms_n, ins_rms.vel_rms_e).length();
-            }
-            if (parsed.get(AP_GSOF::LLH_MSL)) {
-                last_llh_msl_ms = now;
-
-                gps_data.longitude = static_cast<int32_t>(llh_msl.longitude * 1E7);
-                gps_data.latitude = static_cast<int32_t>(llh_msl.latitude * 1E7);
-                gps_data.msl_altitude = static_cast<int32_t>(llh_msl.altitude_msl * 1E2);
-            }
-
-            if (parsed.get(AP_GSOF::LLH_MSL) && parsed.get(AP_GSOF::INS_FULL_NAV)) {
-                undulation = ins_full_nav.altitude - llh_msl.altitude_msl;
-            }
-
-            uint8_t instance;
-            AP_GSOF::MsgTypes expected_gps;
-            expected_gps.set(AP_GSOF::POS_TIME);
-            expected_gps.set(AP_GSOF::INS_FULL_NAV);
-            expected_gps.set(AP_GSOF::INS_RMS);
-            expected_gps.set(AP_GSOF::LLH_MSL);
-            if (AP::gps().get_first_external_instance(instance) && parsed == expected_gps) {
-                AP::gps().handle_external(gps_data, instance);
-            }
+        uint8_t instance;
+        AP_GSOF::MsgTypes expected_gps;
+        expected_gps.set(AP_GSOF::POS_TIME);
+        expected_gps.set(AP_GSOF::INS_FULL_NAV);
+        expected_gps.set(AP_GSOF::INS_RMS);
+        expected_gps.set(AP_GSOF::LLH_MSL);
+        if (AP::gps().get_first_external_instance(instance) && parsed == expected_gps) {
+            AP::gps().handle_external(gps_data, instance);
         }
         check_initialise_state();
     }
