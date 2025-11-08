@@ -268,8 +268,8 @@ void AP_GSOF::log_pos_time() const
 
     // @LoggerMessage: GSPT
     // @Description: GPS Position Time Metadata from GSOF1
-    // @Field: TimeUS: Time since system startup
-    // @Field: TOWms: Time of week in milliseconds
+    // @Field: TimeUS: GPS Time since system startup [µs]
+    // @Field: TOWms: GPS Time of week [ms]
     // @Field: Week: GPS week number
     // @Field: Sats: Number of satellites
     // @Field: Flags1: Positioning flags byte 1
