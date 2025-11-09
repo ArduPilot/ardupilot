@@ -294,22 +294,10 @@ void AP_GSOF::log_ins_full_nav() const
     // @LoggerMessage: GSN1
     // @Description: GSOF49 Full INS Navigation Solution 1
     // @Field: TimeUS: Time since system startup [µs]
-    // @Field: GpsWeek: GPS week number since Jan 1980
-    // @Field: GpsTimeMs: GPS time of week [ms]
+    // @Field: GpsWk: GPS week number since Jan 1980
+    // @Field: GpsTs: GPS time of week [ms]
     // @Field: ImuStat: IMU alignment status (enum)
-    //          0=GPS_ONLY
-    //          1=COARSE_LEVELING
-    //          2=DEGRADED
-    //          3=ALIGNED
-    //          4=FULL_NAV
     // @Field: GStat: GNSS status (enum)
-    //          0=FIX_NOT_AVAILABLE
-    //          1=GNSS_SPS_MODE
-    //          2=DGPS_SPS_MODE
-    //          3=GNSS_PPS_MODE
-    //          4=FIXED_RTK_MODE
-    //          5=FLOAT_RTK_MODE
-    //          6=DR_MODE
     // @Field: Lat: Latitude [degrees]
     // @Field: Lng: Longitude [degrees]
     // @Field: Alt: Altitude in ITRF 2020 [meters]
