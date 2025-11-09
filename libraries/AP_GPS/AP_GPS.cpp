@@ -136,9 +136,7 @@ static_assert(static_cast<uint8_t>(AP_GPS::Spoofing::UNKNOWN) == (uint8_t)GPS_SP
 static_assert(static_cast<uint8_t>(AP_GPS::Spoofing::OK) == (uint8_t)GPS_SPOOFING_STATE_OK, "OK incorrect");
 static_assert(static_cast<uint8_t>(AP_GPS::Spoofing::DETECTED) == (uint8_t)GPS_SPOOFING_STATE_DETECTED, "DETECTED incorrect");
 static_assert(static_cast<uint8_t>(AP_GPS::Spoofing::MITIGATED) == (uint8_t)GPS_SPOOFING_STATE_MITIGATED, "MITIGATED incorrect");
-
 #endif
-
 
 // ensure that our own enum-class status is equivalent to the
 // ArduPilot-scoped AP_GPS_FixType enumeration:
@@ -1493,8 +1491,9 @@ void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
 #endif
 
 #if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
-void AP_GPS::send_mavlink_gnss_integrity(mavlink_channel_t chan, uint8_t instance) {
-    if(!state[instance].has_gnss_integrity) {
+void AP_GPS::send_mavlink_gnss_integrity(mavlink_channel_t chan, uint8_t instance)
+{
+    if (!state[instance].has_gnss_integrity) {
         return;
     }
 
