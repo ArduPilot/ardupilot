@@ -197,6 +197,7 @@ bool AP_BattMonitor_INA2XX::configure(DevType dtype)
         current_LSB = max_amps / (1U<<15);
         const uint16_t cal = 0.00512 / (current_LSB * rShunt);
         if (write_word(REG_231_CALIBRATION, cal)) {
+            dev_type = dtype;
             return true;
         }
         break;
