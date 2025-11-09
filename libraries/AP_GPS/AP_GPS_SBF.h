@@ -333,7 +333,7 @@ private:
     enum {
         SOFTWARE      = (1 << 3),   // set upon detection of a software warning or  error. This bit is reset by the command lif, error
         WATCHDOG      = (1 << 4),   // set when the watch-dog expired at least once since the last power-on.
-        ANTENNA       = (1 << 5),  // set when antenna overcurrent condition is detected
+        ANTENNA       = (1 << 5),   // set when antenna overcurrent condition is detected
         CONGESTION    = (1 << 6),   // set when an output data congestion has been detected on at least one of the communication ports of the receiver during the last second.
         MISSEDEVENT   = (1 << 8),   // set when an external event congestion has been detected during the last second. It indicates that the receiver is receiving too many events on its EVENTx pins.
         CPUOVERLOAD   = (1 << 9),   // set when the CPU load is larger than 90%. If this bit is set, receiver operation may be unreliable and the user must decrease the processing load by following the recommendations in the User Manual.
