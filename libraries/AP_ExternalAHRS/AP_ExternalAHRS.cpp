@@ -401,7 +401,7 @@ void AP_ExternalAHRS::update(void)
     WITH_SEMAPHORE(state.sem);
 #if HAL_LOGGING_ENABLED
     const uint32_t now_ms = AP_HAL::millis();
-    if (log_rate.get() > 0 && now_ms - last_log_ms >= uint32_t(1000U/log_rate.get())) {
+    if (enabled() && log_rate.get() > 0 && now_ms - last_log_ms >= uint32_t(1000U/log_rate.get())) {
         last_log_ms = now_ms;
 
         // @LoggerMessage: EAHR
