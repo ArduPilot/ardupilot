@@ -181,7 +181,7 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 17, AC_PrecLand, _options, 0),
 
-    // @Param: ORIENT
+    // @Param{Rover}: ORIENT
     // @DisplayName: Camera Orientation
     // @Description: Orientation of camera/sensor on body
     // @Values: 0:Forward, 4:Back, 25:Down
