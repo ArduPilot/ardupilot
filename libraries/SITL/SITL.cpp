@@ -546,7 +546,9 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Description: Scenario for thermalling simulation, for soaring
     AP_GROUPINFO("THML_SCENARI",  12, SIM,  thermal_scenario, 0),
 
-    // Buyoancy for submarines
+    // @Param{Sub}: BUOYANCY
+    // @DisplayName: Buoyancy
+    // @Description: Buyoancy for submarines
     AP_GROUPINFO_FRAME("BUOYANCY", 15, SIM, buoyancy, 1, AP_PARAM_FRAME_SUB),
 
     // @Param: RATE_HZ
