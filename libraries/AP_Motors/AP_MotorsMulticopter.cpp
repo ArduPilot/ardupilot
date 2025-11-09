@@ -156,7 +156,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SAFE_DISARM", 23, AP_MotorsMulticopter, _disarm_disable_pwm, 0),
 
-    // @Param: YAW_SV_ANGLE
+    // @Param{Copter,Plane}: YAW_SV_ANGLE
     // @DisplayName: Yaw Servo Max Lean Angle
     // @Description: Yaw servo's maximum lean angle (Tricopter only)
     // @Range: 5 80
