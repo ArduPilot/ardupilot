@@ -1493,7 +1493,7 @@ void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
 #if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
 void AP_GPS::send_mavlink_gnss_integrity(mavlink_channel_t chan, uint8_t instance)
 {
-    if (!state[instance].has_gnss_integrity) {
+    if (instance >= GPS_MAX_RECEIVERS || !state[instance].has_gnss_integrity) {
         return;
     }
 
