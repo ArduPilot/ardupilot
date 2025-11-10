@@ -3902,6 +3902,41 @@ void QuadPlane::guided_update(void)
             poscontrol.set_state(QPOS_POSITION2);
         }
         guided_takeoff = false;
+
+        // Formation flight control integration
+        if (plane.formation.is_active() && plane.control_mode == &plane.mode_guided) {
+            // Update formation controller with current state
+            Vector3p current_pos_ned_double;
+            if (plane.ahrs.get_relative_position_NED_origin(current_pos_ned_double)) {
+                // Convert double to float for formation controller
+                Vector3f current_pos_ned(current_pos_ned_double.x, current_pos_ned_double.y, current_pos_ned_double.z);
+                plane.formation.set_own_position(current_pos_ned);
+            }
+
+            // Run formation controller at 400Hz
+            plane.formation.update(plane.scheduler.get_loop_period_s());
+
+            // Get velocity command from formation controller
+            Vector3f vel_cmd_ned = plane.formation.get_velocity_command();
+
+            // Convert velocity command to position target
+            // Strategy: Update next_WP_loc to be in the direction of desired velocity
+            // This integrates the formation velocity command into the existing position controller
+            const float lookahead_time = 2.0f;  // 2 second lookahead for smoother tracking
+            Vector3f position_offset = vel_cmd_ned * lookahead_time;
+
+            // Get current position as Location
+            Location formation_target = plane.current_loc;
+
+            // Apply NED offset to create new target location
+            // Note: offsets are in meters
+            formation_target.offset(position_offset.x, position_offset.y);  // North, East
+            formation_target.alt += (int32_t)(-position_offset.z * 100.0f);  // Down (negative is up), convert to cm
+
+            // Update the guided waypoint target
+            plane.next_WP_loc = formation_target;
+        }
+
         // run VTOL position controller
         vtol_position_controller();
     }

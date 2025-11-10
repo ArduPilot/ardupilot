@@ -1046,6 +1046,56 @@ void GCS_MAVLINK_Plane::handle_message(const mavlink_message_t &msg)
         handle_set_position_target_global_int(msg);
         break;
 
+    case MAVLINK_MSG_ID_GLOBAL_POSITION_INT: {
+        // Forward lead aircraft telemetry to formation controller
+        // Only process if from lead aircraft (system ID 2)
+        if (msg.sysid != 2) {
+            break;  // Ignore our own position messages
+        }
+
+        mavlink_global_position_int_t packet;
+        mavlink_msg_global_position_int_decode(&msg, &packet);
+
+        // Convert to formation controller format
+        // Lat/lon in degrees (from 1e7 scaled integers)
+        float lead_lat = packet.lat * 1e-7f;
+        float lead_lon = packet.lon * 1e-7f;
+        float lead_alt = packet.alt * 1e-3f;  // mm to meters (absolute altitude)
+
+        // Velocity in m/s (from cm/s)
+        float lead_vn = packet.vx * 0.01f;  // North velocity
+        float lead_ve = packet.vy * 0.01f;  // East velocity
+        float lead_vd = packet.vz * 0.01f;  // Down velocity
+
+        // Update formation controller
+        plane.formation_controller.set_lead_state(lead_lat, lead_lon, lead_alt,
+                                                   lead_vn, lead_ve, lead_vd);
+
+        // Auto-enable formation control when we start receiving lead data
+        if (!plane.formation_controller.is_active()) {
+            plane.formation_controller.set_active(true);
+            gcs().send_text(MAV_SEVERITY_INFO, "Formation: Tracking lead aircraft (ID %d)", msg.sysid);
+        }
+        break;
+    }
+
+    case MAVLINK_MSG_ID_DISTANCE_SENSOR: {
+        // Forward UWB range to formation controller
+        mavlink_distance_sensor_t packet;
+        mavlink_msg_distance_sensor_decode(&msg, &packet);
+
+        // Only process UWB sensors (ID 0 or 10 are commonly used for UWB)
+        if (packet.id == 0 || packet.id == 10) {
+            float range_m = packet.current_distance * 0.01f;  // cm to meters
+
+            // Validate range is reasonable (0.1m to 500m)
+            if (range_m > 0.1f && range_m < 500.0f) {
+                plane.formation_controller.set_uwb_range(range_m);
+            }
+        }
+        break;
+    }
+
     default:
         GCS_MAVLINK::handle_message(msg);
         break;
@@ -1421,3 +1471,4 @@ uint8_t GCS_MAVLINK_Plane::send_available_mode(uint8_t index) const
 
     return mode_count;
 }
+

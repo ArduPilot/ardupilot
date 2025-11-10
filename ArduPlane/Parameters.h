@@ -290,6 +290,7 @@ public:
         k_param_kff_throttle_to_pitch,
         k_param_scaling_speed,
         k_param_quadplane,
+        k_param_formation,
         k_param_rtl_radius,
         k_param_land_then_servos_neutral,   // unused - moved to AP_Landing
         k_param_rc_15_old,

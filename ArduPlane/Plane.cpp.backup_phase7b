@@ -65,7 +65,6 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     FAST_TASK(update_control_mode),
     FAST_TASK(stabilize),
     FAST_TASK(set_servos),
-    FAST_TASK(update_formation_controller),  // NEW: 400 Hz formation control
     SCHED_TASK(read_radio,             50,    100,   6),
     SCHED_TASK(check_short_rc_failsafe,   50,    100,   9),
     SCHED_TASK(update_speed_height,    50,    200,  12),
@@ -1088,35 +1087,3 @@ Plane plane;
 AP_Vehicle& vehicle = plane;
 
 AP_HAL_MAIN_CALLBACKS(&plane);
-
-// Formation controller update - called at 400 Hz via FAST_TASK
-void Plane::update_formation_controller(void)
-{
-    if (!formation_controller.is_active()) {
-        return;
-    }
-
-    // Get current vehicle velocity
-    Vector3f current_vel;
-    if (!ahrs.get_velocity_NED(current_vel)) {
-        // No valid velocity estimate available
-        return;
-    }
-
-    // Get current heading in degrees
-    float current_heading = ahrs.yaw_sensor * 0.01f;  // Convert centidegrees to degrees
-
-    // Update formation controller (calculates waypoint + speed commands)
-    // Note: current_loc is a member variable updated by update_current_loc()
-    formation_controller.update(current_loc, current_vel, current_heading);
-
-    // Inject formation waypoint into GUIDED mode
-    if (control_mode == &mode_guided) {
-        Location formation_wp = formation_controller.get_formation_waypoint();
-        set_guided_WP(formation_wp);
-    }
-
-    // Inject formation airspeed command
-    float desired_speed_ms = formation_controller.get_desired_airspeed();
-    target_airspeed_cm = desired_speed_ms * 100.0f;  // Convert m/s to cm/s
-}

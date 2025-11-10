@@ -1,0 +1,94 @@
+/*
+   FlightDock Formation Controller
+   
+   Minimal formation flight controller integrated directly into ArduPlane.
+   Implements graduated speed control with range/10 rule for smooth intercept.
+   
+   Author: FlightDock Research Team
+   Date: November 2025
+   Version: 7B-Mini (Minimal Integration)
+*/
+
+#pragma once
+
+#include <AP_Math/AP_Math.h>
+#include <AP_Common/Location.h>
+
+class FormationController {
+public:
+    FormationController();
+    
+    // Initialize controller
+    void init();
+    
+    // Main 400 Hz update function
+    void update(const Location &current_loc, 
+                const Vector3f &current_vel,
+                float current_heading);
+    
+    // Set lead aircraft state (called when GLOBAL_POSITION_INT received)
+    void set_lead_state(float lat, float lon, float alt, 
+                       float vn, float ve, float vd);
+    
+    // Get formation waypoint command
+    Location get_formation_waypoint();
+    
+    // Get desired airspeed command
+    float get_desired_airspeed();
+    
+    // Check if formation mode is active
+    bool is_active() { return _active; }
+    
+    // Activate/deactivate formation mode
+    void set_active(bool active) { _active = active; }
+    
+    // Get diagnostic info
+    float get_range_to_lead() { return _range_to_lead; }
+    float get_closure_rate() { return _closure_rate; }
+    
+private:
+    // Formation parameters (from Phase 7A proven values)
+    const float FORMATION_OFFSET = 50.0f;      // Trail distance (m)
+    const float FORMATION_TOLERANCE = 5.0f;    // Acceptable error (m)
+    const float LEAD_SPEED = 24.7f;            // Lead aircraft speed (m/s)
+    const float PREDICT_TIME = 0.5f;           // Prediction horizon (s)
+    
+    // Speed control thresholds (graduated speed reduction)
+    const float INTERCEPT_THRESHOLD = 70.0f;   // Range for intercept phase
+    const float TRANSITION_THRESHOLD = 50.0f;  // Range for transition phase
+    
+    // Speed limits
+    const float MAX_APPROACH_SPEED = 32.0f;    // Maximum approach speed
+    const float MIN_CLOSURE_RATE = 0.5f;       // Minimum closure rate
+    const float MAX_CLOSURE_RATE = 8.0f;       // Maximum closure rate
+    
+    // State variables
+    bool _active;
+    uint32_t _last_update_ms;
+    
+    // Lead aircraft state
+    float _lead_lat;
+    float _lead_lon;
+    float _lead_alt;
+    float _lead_vn;  // North velocity (m/s)
+    float _lead_ve;  // East velocity (m/s)
+    float _lead_vd;  // Down velocity (m/s)
+    bool _lead_valid;
+    uint32_t _lead_last_update_ms;
+    
+    // Formation state
+    float _range_to_lead;
+    float _closure_rate;
+    float _last_range;
+    uint32_t _last_range_ms;
+    
+    // Calculated outputs
+    Location _formation_waypoint;
+    float _desired_airspeed;
+    
+    // Internal calculation functions
+    float calculate_range(const Location &loc1, const Location &loc2);
+    float calculate_closure_rate(float current_range, float dt);
+    float calculate_desired_speed(float range_to_lead);
+    Location calculate_formation_waypoint();
+};

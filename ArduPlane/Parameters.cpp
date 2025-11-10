@@ -807,6 +807,10 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(quadplane,           "Q_", QuadPlane),
 #endif
 
+    // @Group: FORM_
+    // @Path: ../libraries/AP_Formation/AP_Formation.cpp
+    GOBJECT(formation,           "FORM_", AP_Formation),
+
 #if AP_TUNING_ENABLED
     // @Group: TUNE_
     // @Path: tuning.cpp,../libraries/AP_Tuning/AP_Tuning.cpp
