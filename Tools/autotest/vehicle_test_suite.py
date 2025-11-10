@@ -2671,15 +2671,6 @@ class TestSuite(abc.ABC):
             "SIM_MAG1_OFS_Z",
         ])
 
-        vinfo_key = self.vehicleinfo_key()
-        if vinfo_key == "Rover":
-            ret.update([
-            ])
-        if vinfo_key == "ArduSub":
-            ret.update([
-                "SIM_BUOYANCY",
-            ])
-
         return ret
 
     def test_parameter_documentation_get_all_parameters(self):
