@@ -54,7 +54,8 @@ public:
     // Get diagnostic info
     float get_range_to_lead() { return _range_to_lead; }
     float get_closure_rate() { return _closure_rate; }
-    
+    float get_formation_distance_error() { return _range_to_lead; }
+
 private:
     // Formation parameters (from Phase 7A proven values)
     const float FORMATION_OFFSET = 50.0f;      // Trail distance (m)
