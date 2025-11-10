@@ -6,6 +6,7 @@ Check all default parameter files for all hwdef boards and sitl targets.
 AP_FLAKE8_CLEAN
 '''
 
+from __future__ import annotations
 import os
 import sys
 import glob
@@ -13,17 +14,17 @@ from board_list import BoardList
 from param_check import get_metadata, check_file, SkippedChecks
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../Tools', 'autotest'))
-from pysim.vehicleinfo import VehicleInfo # noqa: E402
+from pysim.vehicleinfo import VehicleInfo  # noqa: E402
 
 
-periph_hwdefs_to_skip = set([ # Most of these fail due to NET_ params
+periph_hwdefs_to_skip = set([  # Most of these fail due to NET_ params
     'BotBloxDroneNet',
     'CubeNode-ETH',
     'CubeRedPrimary-PPPGW',
-    'MatekG474-Periph', # Fails for RC_PORT
+    'MatekG474-Periph',  # Fails for RC_PORT
     'Pixhawk6X-PPPGW',
     'kha_eth',
-    'sw-boom-f407', # Fails for ESC_NUM_POLES*
+    'sw-boom-f407',  # Fails for ESC_NUM_POLES*
 ])
 
 sitl_params_to_skip = set([
@@ -75,7 +76,7 @@ PERIPH_BOARDS = BoardList().find_ap_periph_boards(skip=periph_hwdefs_to_skip)
 ALL_VEHICLE_FIRMWARES = ['Sub', 'Plane', 'Blimp', 'Copter', 'Tracker', 'Rover']
 
 
-def check_boards(boards, firmwares, skip : SkippedChecks = None):
+def check_boards(boards, firmwares, skip: SkippedChecks | None = None):
     '''Check parameter files for ChibiOS hwdef boards.'''
     if skip is None:
         skip = SkippedChecks()
@@ -97,7 +98,7 @@ def check_boards(boards, firmwares, skip : SkippedChecks = None):
     return check_files(param_files, firmwares, skip=skip)
 
 
-def check_sitl(skip : SkippedChecks = None):
+def check_sitl(skip: SkippedChecks | None = None):
     '''Check every parameter file that shows up in vehicleinfo.py
 
     Because this also provides us information about the intended firmware, we
@@ -150,7 +151,7 @@ def check_sitl(skip : SkippedChecks = None):
     return success
 
 
-def check_frame_params(skip : SkippedChecks = None):
+def check_frame_params(skip: SkippedChecks | None = None):
     '''Check all files within Tools/Frame_params
 
     These don't contain any information about firmware (e.g. Copter, Plane,
@@ -177,7 +178,7 @@ def check_frame_params(skip : SkippedChecks = None):
     return check_files(param_files, ALL_VEHICLE_FIRMWARES, skip=skip)
 
 
-def check_files(files, firmwares, skip : SkippedChecks = None):
+def check_files(files, firmwares, skip: SkippedChecks | None = None):
     '''Check a list of parameter files against the metadata'''
     if skip is None:
         skip = SkippedChecks()
