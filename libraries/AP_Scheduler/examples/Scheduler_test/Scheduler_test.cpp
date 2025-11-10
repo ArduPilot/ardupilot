@@ -17,6 +17,11 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 AP_Logger logger;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+SITL::SIM sitl;
+#endif
+
 class SchedTest {
 public:
     void setup();
