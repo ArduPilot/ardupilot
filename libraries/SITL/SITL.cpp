@@ -779,7 +779,35 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("MAG_ALY_HGT",    6, SIM,  mag_anomaly_hgt, 1.0f),
+    // @Param: MAG1_DIA_X
+    // @DisplayName: Mag1 soft-iron diagonal X component
+    // @Description: DIA_X in the mag1 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+
+    // @Param: MAG1_DIA_Y
+    // @DisplayName: Mag1 soft-iron diagonal Y component
+    // @Description: DIA_Y in the mag1 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+
+    // @Param: MAG1_DIA_Z
+    // @DisplayName: Mag1 soft-iron diagonal Z component
+    // @Description: DIA_Z in the mag1 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
     AP_GROUPINFO("MAG1_DIA",        7, SIM,  mag_diag[0], 0),
+    // @Param: MAG1_ODI_X
+    // @DisplayName: Mag1 soft-iron off-diagonal X component
+    // @Description: ODI_X in the mag1 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+
+    // @Param: MAG1_ODI_Y
+    // @DisplayName: Mag1 soft-iron off-diagonal Y component
+    // @Description: ODI_Y in the mag1 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+
+    // @Param: MAG1_ODI_Z
+    // @DisplayName: Mag1 soft-iron off-diagonal Z component
+    // @Description: ODI_Z in the mag1 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
     AP_GROUPINFO("MAG1_ODI",        8, SIM,  mag_offdiag[0], 0),
     // @Param: MAG1_ORIENT
     // @DisplayName: MAG1 Orientation
