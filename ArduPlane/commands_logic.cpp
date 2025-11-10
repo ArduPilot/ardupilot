@@ -263,7 +263,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
         return verify_loiter_turns(cmd);
 
     case MAV_CMD_NAV_LOITER_TIME:
-        return verify_loiter_time();
+        return verify_loiter_time(cmd);
 
     case MAV_CMD_NAV_LOITER_TO_ALT:
         return verify_loiter_to_alt(cmd);
@@ -481,7 +481,7 @@ void Plane::do_loiter_time(const AP_Mission::Mission_Command& cmd)
     loiter_set_direction_wp(cmd);
 
     // we set start_time_ms when we reach the waypoint
-    loiter.time_max_ms = cmd.p1 * (uint32_t)1000;     // convert sec to ms
+    loiter.time_max_ms = cmd.get_loiter_time_sec() * (uint32_t)1000;     // convert sec to ms
     condition_value = 1; // used to signify primary time goal not yet met
 }
 
@@ -703,11 +703,11 @@ bool Plane::verify_loiter_unlim(const AP_Mission::Mission_Command &cmd)
     return false;
 }
 
-bool Plane::verify_loiter_time()
+bool Plane::verify_loiter_time(const AP_Mission::Mission_Command &cmd)
 {
     bool result = false;
-    // mission radius is always aparm.loiter_radius
-    update_loiter(0);
+    // use radius from packed p1, or default to aparm.loiter_radius if 0
+    update_loiter(cmd.get_loiter_time_radius());
 
     if (loiter.start_time_ms == 0) {
         if (reached_loiter_target() && loiter.sum_cd > 1) {
