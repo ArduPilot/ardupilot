@@ -43,6 +43,7 @@
 #include "SIM_Temperature_TSYS01.h"
 #include "SIM_Temperature_TSYS03.h"
 #include "SIM_TeraRangerI2C.h"
+#include "SIM_TFS20L.h"
 #include "SIM_ToshibaLED.h"
 
 #include <signal.h>
@@ -126,6 +127,11 @@ static TeraRangerI2C terarangeri2c;
 static AS5600 as5600;  // AoA sensor
 #endif  // AP_SIM_AS5600_ENABLED
 
+#if AP_SIM_TFS20L_ENABLED
+static TFS20L tfs20l;  // Benewake TFS20L rangefinder
+#endif  // AP_SIM_TFS20L_ENABLED
+
+
 struct i2c_device_at_address {
     uint8_t bus;
     uint8_t addr;
@@ -198,6 +204,9 @@ struct i2c_device_at_address {
 #if AP_SIM_COMPASS_QMC5883L_ENABLED
     { 2, 0x0D, qmc5883l },
 #endif
+#if AP_SIM_TFS20L_ENABLED
+    { 0, 0x10, tfs20l },          // RNGFNDx_TYPE = 46, RNGFNDx_ADDR = 0x10
+#endif  // AP_SIM_TFS20L_ENABLED
 };
 
 void I2C::init()
