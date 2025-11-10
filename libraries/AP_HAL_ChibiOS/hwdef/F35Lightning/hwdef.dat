@@ -4,8 +4,8 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
-# board ID for firmware load
-APJ_BOARD_ID 135
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_F35LIGHTNING
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -70,8 +70,9 @@ define BOARD_RSSI_ANA_PIN 13
 #PA4 VDD_5V_SENS ADC1 SCALE(2)
 
 # LED
+define AP_NOTIFY_GPIO_LED_1_ENABLED 1
 PC10 LED OUTPUT HIGH GPIO(57)
-define HAL_GPIO_A_LED_PIN 57
+define AP_NOTIFY_GPIO_LED_1_PIN 57
 
 # SPI
 PA5 SPI1_SCK SPI1
@@ -133,7 +134,7 @@ BARO BMP280 SPI:bmp280
 
 # probe external compasses plus one in 9250
 COMPASS AK8963:probe_mpu9250 0 ROTATION_YAW_90
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 
 # no onboard SD, filesystem support disabled until flash logging implemented

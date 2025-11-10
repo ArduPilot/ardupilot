@@ -66,15 +66,15 @@ bool AP_Frsky_Telem::init(bool use_external_data)
     AP_HAL::UARTDriver *port;
     if ((port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_D, 0))) {
 #if AP_FRSKY_D_TELEM_ENABLED
-        _backend = new AP_Frsky_D(port);
+        _backend = NEW_NOTHROW AP_Frsky_D(port);
 #endif
     } else if ((port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_SPort, 0))) {
 #if AP_FRSKY_SPORT_TELEM_ENABLED
-        _backend = new AP_Frsky_SPort(port);
+        _backend = NEW_NOTHROW AP_Frsky_SPort(port);
 #endif
     } else if (use_external_data || (port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough, 0))) {
 #if AP_FRSKY_SPORT_PASSTHROUGH_ENABLED
-        _backend = new AP_Frsky_SPort_Passthrough(port, use_external_data, _frsky_parameters);
+        _backend = NEW_NOTHROW AP_Frsky_SPort_Passthrough(port, use_external_data, _frsky_parameters);
 #endif
     }
 
@@ -116,7 +116,7 @@ void AP_Frsky_Telem::try_create_singleton_for_external_data()
 {
     // try to allocate an AP_Frsky_Telem object only if we are disarmed
     if (!singleton && !hal.util->get_soft_armed()) {
-        new AP_Frsky_Telem();
+        NEW_NOTHROW AP_Frsky_Telem();
         // initialize the passthrough scheduler
         if (singleton) {
             singleton->init(true);

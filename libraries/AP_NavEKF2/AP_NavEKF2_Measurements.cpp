@@ -1,11 +1,12 @@
-#include <AP_HAL/AP_HAL.h>
-
 #include "AP_NavEKF2_core.h"
+
+#include "AP_NavEKF2.h"
+
 #include <GCS_MAVLink/GCS.h>
 #include <AP_DAL/AP_DAL.h>
 #include <AP_InternalError/AP_InternalError.h>
 
-extern const AP_HAL::HAL& hal;
+#if AP_RANGEFINDER_ENABLED
 
 
 /********************************************************
@@ -27,7 +28,7 @@ void NavEKF2_core::readRangeFinder(void)
         return;
     }
 
-    rngOnGnd = MAX(_rng->ground_clearance_cm_orient(ROTATION_PITCH_270) * 0.01f, 0.05f);
+    rngOnGnd = MAX(_rng->ground_clearance_orient(ROTATION_PITCH_270), 0.05f);
 
     // read range finder at 20Hz
     // TODO better way of knowing if it has new data
@@ -50,7 +51,7 @@ void NavEKF2_core::readRangeFinder(void)
                     rngMeasIndex[sensorIndex] = 0;
                 }
                 storedRngMeasTime_ms[sensorIndex][rngMeasIndex[sensorIndex]] = imuSampleTime_ms - 25;
-                storedRngMeas[sensorIndex][rngMeasIndex[sensorIndex]] = sensor->distance_cm() * 0.01f;
+                storedRngMeas[sensorIndex][rngMeasIndex[sensorIndex]] = sensor->distance();
             } else {
                 continue;
             }
@@ -110,6 +111,7 @@ void NavEKF2_core::readRangeFinder(void)
         }
     }
 }
+#endif
 
 // write the raw optical flow measurements
 // this needs to be called externally.
@@ -335,13 +337,13 @@ void NavEKF2_core::readIMUData()
     if (ins.use_accel(imu_index)) {
         accel_active = imu_index;
     } else {
-        accel_active = ins.get_primary_accel();
+        accel_active = ins.get_first_usable_accel();
     }
 
     if (ins.use_gyro(imu_index)) {
         gyro_active = imu_index;
     } else {
-        gyro_active = ins.get_primary_gyro();
+        gyro_active = ins.get_first_usable_gyro();
     }
 
     if (gyro_active != gyro_index_active) {
@@ -837,7 +839,7 @@ void NavEKF2_core::readRngBcnData()
 
             // set the range noise
             // TODO the range library should provide the noise/accuracy estimate for each beacon
-            rngBcnDataNew.rngErr = frontend->_rngBcnNoise;
+            rngBcnDataNew.rngErr = frontend->_rngBcnNoise.get();
 
             // set the range measurement
             rngBcnDataNew.rng = beacon->beacon_distance(index);

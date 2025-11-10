@@ -166,7 +166,7 @@ local function update()
    --[[ get rangefinder distance, and if PLND_ALT_CUTOFF is set then
       stop precland operation if below the cutoff
    --]]
-   local rngfnd_distance_m = rangefinder:distance_cm_orient(rangefinder_orient) * 0.01
+   local rngfnd_distance_m = rangefinder:distance_orient(rangefinder_orient)
    if PLND_ALT_CUTOFF:get() > 0 and rngfnd_distance_m < PLND_ALT_CUTOFF:get() then
       return
    end
@@ -218,7 +218,7 @@ local function update()
       return
    end
 
-   if xy_dist > PLND_XY_DIST_MAX:get() then
+   if PLND_XY_DIST_MAX:get() > 0 and xy_dist > PLND_XY_DIST_MAX:get() then
       -- pause descent till we are within the given radius
       vehicle:set_land_descent_rate(0)
    end

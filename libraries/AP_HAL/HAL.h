@@ -43,7 +43,9 @@ public:
         AP_HAL::Util*       _util,
         AP_HAL::OpticalFlow*_opticalflow,
         AP_HAL::Flash*      _flash,
-#if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
+#if AP_SIM_ENABLED
+        // note that not much of _simstate is used on AP_HAL_SITL, but
+        // more is being moved in!
         class AP_HAL::SIMState*   _simstate,
 #endif
 #if HAL_WITH_DSP
@@ -55,17 +57,6 @@ public:
         AP_HAL::CANIface** _can_ifaces)
 #endif
         :
-        serial_array{
-            _serial0,
-            _serial1,
-            _serial2,
-            _serial3,
-            _serial4,
-            _serial5,
-            _serial6,
-            _serial7,
-            _serial8,
-            _serial9},
         i2c_mgr(_i2c_mgr),
         spi(_spi),
         wspi(_wspi),
@@ -78,13 +69,24 @@ public:
         scheduler(_scheduler),
         util(_util),
         opticalflow(_opticalflow),
+        flash(_flash),
 #if HAL_WITH_DSP
         dsp(_dsp),
 #endif
-#if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
-        simstate(_simstate),
+        serial_array{
+            _serial0,
+            _serial1,
+            _serial2,
+            _serial3,
+            _serial4,
+            _serial5,
+            _serial6,
+            _serial7,
+            _serial8,
+            _serial9}
+#if AP_SIM_ENABLED
+            ,simstate(_simstate)
 #endif
-        flash(_flash)
     {
 #if HAL_NUM_CAN_IFACES > 0
         if (_can_ifaces == nullptr) {
@@ -148,7 +150,7 @@ private:
     AP_HAL::UARTDriver* serial_array[num_serial];
 
 public:
-#if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
+#if AP_SIM_ENABLED
     AP_HAL::SIMState *simstate;
 #endif
 

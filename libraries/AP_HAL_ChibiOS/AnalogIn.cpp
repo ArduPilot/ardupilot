@@ -136,6 +136,33 @@ float AnalogSource::read_latest()
     return _latest_value;
 }
 
+bool AnalogIn::valid_analog_pin(uint16_t pin) const
+{
+    if (pin == ANALOG_INPUT_NONE) {
+        return false;
+    }
+    for (uint8_t i=0; i<ADC_GRP1_NUM_CHANNELS; i++) {
+        if (AnalogIn::pin_config[i].analog_pin == pin) {
+            return true;
+        }
+    }
+#ifdef HAL_ANALOG2_PINS
+    for (uint8_t i=0; i<ADC2_GRP1_NUM_CHANNELS; i++) {
+        if (AnalogIn::pin_config_2[i].analog_pin == pin) {
+            return true;
+        }
+    }
+#endif
+#ifdef HAL_ANALOG3_PINS
+    for (uint8_t i=0; i<ADC3_GRP1_NUM_CHANNELS; i++) {
+        if (AnalogIn::pin_config_3[i].analog_pin == pin) {
+            return true;
+        }
+    }
+#endif
+
+    return false;
+}
 /*
   return scaling from ADC count to Volts
  */
@@ -761,6 +788,10 @@ void AnalogIn::_timer_tick(void)
         // note min/max swap due to inversion
         _mcu_voltage_min = 3.3 * VREFINT_CAL / float(_mcu_vrefint_max+0.001);
         _mcu_voltage_max = 3.3 * VREFINT_CAL / float(_mcu_vrefint_min+0.001);
+        
+        // reset min and max
+        _mcu_vrefint_max = 0;
+        _mcu_vrefint_min = 0;
     }
 #endif
 }
@@ -770,7 +801,7 @@ AP_HAL::AnalogSource* AnalogIn::channel(int16_t pin)
     WITH_SEMAPHORE(_semaphore);
     for (uint8_t j=0; j<ANALOG_MAX_CHANNELS; j++) {
         if (_channels[j] == nullptr) {
-            _channels[j] = new AnalogSource(pin);
+            _channels[j] = NEW_NOTHROW AnalogSource(pin);
             return _channels[j];
         }
     }
@@ -810,7 +841,7 @@ void AnalogIn::update_power_flags(void)
       for backup power)
     */
 #if defined(HAL_GPIO_PIN_VDD_BRICK2_VALID)
-    if (palReadLine(HAL_GPIO_PIN_VDD_BRICK_VALID) == 1) {
+    if (palReadLine(HAL_GPIO_PIN_VDD_BRICK2_VALID) == 1) {
         flags |= MAV_POWER_STATUS_SERVO_VALID;
     }
 #elif defined(HAL_GPIO_PIN_VDD_BRICK2_nVALID)
@@ -894,7 +925,7 @@ void AnalogIn::update_power_flags(void)
 #endif
 
     if (_power_flags != 0 &&
-        _power_flags != flags &&
+        (_power_flags&~MAV_POWER_STATUS_CHANGED) != (flags&~MAV_POWER_STATUS_CHANGED) &&
         hal.util->get_soft_armed()) {
         // the power status has changed while armed
         flags |= MAV_POWER_STATUS_CHANGED;

@@ -15,6 +15,10 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Notify_config.h"
+
+#if AP_NOTIFY_RCOUTPUTRGBLED_LED_ENABLED
+
 #include "RCOutputRGBLed.h"
 
 #include <AP_Math/AP_Math.h>
@@ -58,10 +62,12 @@ uint16_t RCOutputRGBLed::get_duty_cycle_for_color(const uint8_t color, const uin
     return  usec_period * color / _led_bright;
 }
 
+#if AP_NOTIFY_RCOUTPUTRGBLEDINVERTED_LED_ENABLED
 uint16_t RCOutputRGBLedInverted::get_duty_cycle_for_color(const uint8_t color, const uint16_t usec_period) const
 {
     return  usec_period * (255 - color) / _led_bright;
 }
+#endif  // AP_NOTIFY_RCOUTPUTRGBLEDINVERTED_LED_ENABLED
 
 
 bool RCOutputRGBLed::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
@@ -91,3 +97,4 @@ bool RCOutputRGBLed::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 
     return true;
 }
+#endif  // AP_NOTIFY_RCOUTPUTRGBLED_LED_ENABLED

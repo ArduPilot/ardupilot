@@ -81,18 +81,13 @@ void malloc_init(void)
 #endif
 
 #if defined(STM32H7)
-    // zero first 1k of ITCM. We leave 1k free to avoid addresses
-    // close to nullptr being valid. Zeroing it here means we can
-    // check for changes which indicate a write to an uninitialised
-    // object.  We start at address 0x1 as writing the first byte
-    // causes a fault
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
-#if defined(__GNUC__) &&  __GNUC__ >= 10
-#pragma GCC diagnostic ignored "-Wstringop-overflow"
-#endif
-    memset((void*)0x00000001, 0, 1023);
-#pragma GCC diagnostic pop
+    // zero first 1k of ITCM. We leave 1k free to avoid addresses close to
+    // nullptr being valid. Zeroing it here means we can check for changes
+    // which indicate a write to an uninitialised object.
+    for (int addr=0; addr<1024; addr+=4) {
+        // write using assembly so we don't invoke UB dereferencing nullptr
+        __asm__("\tstr %0, [%1]\n\t" : : "r"(0), "r"(addr));
+    }
 #endif
 
     uint8_t i;
@@ -585,7 +580,7 @@ void __wrap__free_r(void *rptr, void *ptr)
     return free(ptr);
 }
 
-#ifdef USE_POSIX
+#if HAL_USE_FATFS
 /*
   allocation functions for FATFS
  */
@@ -615,7 +610,7 @@ void ff_memfree(void* mblock)
 {
     free(mblock);
 }
-#endif // USE_POSIX
+#endif // HAL_USE_FATFS
 
 /*
   return true if a memory region is safe for a DMA operation

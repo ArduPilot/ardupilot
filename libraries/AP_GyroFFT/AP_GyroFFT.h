@@ -157,7 +157,7 @@ private:
         }
 
     private:
-        LowPassFilterFloat _lowpass_filter[XYZ_AXIS_COUNT];
+        LowPassFilterConstDtFloat _lowpass_filter[XYZ_AXIS_COUNT];
         FilterWithBuffer<float,3> _median_filter[XYZ_AXIS_COUNT];
     };
 
@@ -258,7 +258,7 @@ private:
         // filtered detected peak width
         Vector3f _center_bandwidth_hz_filtered[FrequencyPeak::MAX_TRACKED_PEAKS];
         // axes that still require noise calibration
-        uint8_t _noise_needs_calibration : 3;
+        uint8_t _noise_needs_calibration;
         // whether the analyzer is mid-cycle
         bool _analysis_started;
     };
@@ -292,7 +292,7 @@ private:
     // number of cycles over which to generate noise ensemble averages
     uint16_t _noise_calibration_cycles[XYZ_AXIS_COUNT];
     // current _sample_mode
-    uint8_t _current_sample_mode : 3;
+    uint8_t _current_sample_mode;
     // harmonic multiplier for two highest peaks
     float _harmonic_multiplier;
     // number of tracked peaks
@@ -311,7 +311,7 @@ private:
     // smoothing filter on the bandwidth
     MedianLowPassFilter3dFloat _center_bandwidth_filter[FrequencyPeak::MAX_TRACKED_PEAKS];
     // smoothing filter on the frequency fit
-    LowPassFilterFloat _harmonic_fit_filter[XYZ_AXIS_COUNT];
+    LowPassFilterConstDtFloat _harmonic_fit_filter[XYZ_AXIS_COUNT];
 
     // configured sampling rate
     uint16_t _fft_sampling_rate_hz;

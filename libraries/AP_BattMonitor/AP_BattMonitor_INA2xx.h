@@ -28,13 +28,15 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
+    AP_HAL::I2CDevice *dev;
 
     enum class DevType : uint8_t {
         UNKNOWN = 0,
         INA226,
         INA228,
         INA238,
+        INA231,
+        INA260,
     };
 
     static const uint8_t i2c_probe_addresses[];

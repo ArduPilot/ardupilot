@@ -22,8 +22,6 @@
 
 const AP_Param::GroupInfo AP_BattMonitor_ESC::var_info[] = {
 
-    // Param indexes must be between 36 and 39 to avoid conflict with other battery monitor param tables loaded by pointer
-
     // @Param: ESC_MASK
     // @DisplayName: ESC mask
     // @Description: If 0 all connected ESCs will be used. If non-zero, only those selected in will be used.
@@ -31,7 +29,7 @@ const AP_Param::GroupInfo AP_BattMonitor_ESC::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ESC_MASK", 36, AP_BattMonitor_ESC, _mask, 0),
 
-    // Param indexes must be between 36 and 39 to avoid conflict with other battery monitor param tables loaded by pointer
+    // CHECK/UPDATE INDEX TABLE IN AP_BattMonitor_Backend.cpp WHEN CHANGING OR ADDING PARAMETERS
 
     AP_GROUPEND
 };
@@ -59,8 +57,8 @@ void AP_BattMonitor_ESC::read(void)
     float voltage_sum = 0;
     float current_sum = 0;
     float temperature_sum = 0;
+    float consumed_mah_sum = 0.0;
     uint32_t highest_ms = 0;
-    _state.consumed_mah = delta_mah;
 
     const bool all_enabled = _mask == 0;
     for (uint8_t i=0; i<ESC_TELEM_MAX_ESCS; i++) {
@@ -77,7 +75,8 @@ void AP_BattMonitor_ESC::read(void)
         if (telem.get_consumption_mah(i, consumption_mah)) {
             // accumulate consumed_sum regardless of age, to cope with ESC
             // dropping out
-            _state.consumed_mah += consumption_mah;
+            consumed_mah_sum += consumption_mah;
+            have_consumed_mah = true;
         }
 
         if (telem.get_voltage(i, voltage)) {
@@ -87,6 +86,7 @@ void AP_BattMonitor_ESC::read(void)
 
         if (telem.get_current(i, current)) {
             current_sum += current;
+            have_current = true;
         }
 
         if (telem.get_temperature(i, temperature_cdeg)) {
@@ -117,10 +117,19 @@ void AP_BattMonitor_ESC::read(void)
     _state.last_time_micros = highest_ms * 1000;
     _state.temperature_time = highest_ms;
 
-    if (current_sum > 0) {
-        // if we have ever got a current value then we know we have a
-        // current sensor
-        have_current = true;
+    const uint32_t now_us = AP_HAL::micros();
+    const uint32_t dt_us = now_us - last_read_us;
+    last_read_us = now_us;
+
+    if (have_consumed_mah) {
+        // Report the cumulative consumed mah as reported by the ESCs
+        // delta_mah allows reset_remaining to function without being able to reset the values sent by the ESCs
+        _state.consumed_mah = delta_mah + consumed_mah_sum;
+
+    } else if (have_current) {
+        // ESCs provide current but not consumed mah, integrate manually
+        update_consumed(_state, dt_us);
+
     }
 }
 

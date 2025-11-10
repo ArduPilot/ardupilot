@@ -23,16 +23,16 @@ void ModeLoiter::update()
     // get distance (in meters) to destination
     _distance_to_destination = rover.current_loc.get_distance(_destination);
 
-    const float loiter_radius = rover.g2.sailboat.tack_enabled() ? g2.sailboat.get_loiter_radius() : g2.loit_radius;
+    const float loiter_radius = g2.sailboat.tack_enabled() ? g2.sailboat.get_loiter_radius() : g2.loit_radius;
 
     // if within loiter radius slew desired speed towards zero and use existing desired heading
     if (_distance_to_destination <= loiter_radius) {
         // sailboats should not stop unless motoring
-        const float desired_speed_within_radius = rover.g2.sailboat.tack_enabled() ? 0.1f : 0.0f;
+        const float desired_speed_within_radius = g2.sailboat.tack_enabled() ? 0.1f : 0.0f;
         _desired_speed = attitude_control.get_desired_speed_accel_limited(desired_speed_within_radius, rover.G_Dt);
 
         // if we have a sail but not trying to use it then point into the wind
-        if (!rover.g2.sailboat.tack_enabled() && rover.g2.sailboat.sail_enabled()) {
+        if (!g2.sailboat.tack_enabled() && g2.sailboat.sail_enabled()) {
             _desired_yaw_cd = degrees(g2.windvane.get_true_wind_direction_rad()) * 100.0f;
         }
     } else {

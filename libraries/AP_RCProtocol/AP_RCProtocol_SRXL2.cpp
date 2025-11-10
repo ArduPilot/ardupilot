@@ -45,7 +45,7 @@ AP_RCProtocol_SRXL2::AP_RCProtocol_SRXL2(AP_RCProtocol &_frontend) : AP_RCProtoc
 {
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     if (_singleton != nullptr) {
-        AP_HAL::panic("Duplicate SRXL2 handler\n");
+        AP_HAL::panic("Duplicate SRXL2 handler");
     }
 
     _singleton = this;
@@ -64,12 +64,12 @@ void AP_RCProtocol_SRXL2::_bootstrap(uint8_t device_id)
 
     // Init the local SRXL device
     if (!srxlInitDevice(device_id, SRXL_DEVICE_PRIORITY, SRXL_DEVICE_INFO, device_id)) {
-        AP_HAL::panic("Failed to initialize SRXL2 device\n");
+        AP_HAL::panic("Failed to initialize SRXL2 device");
     }
 
     // Init the SRXL bus: The bus index must always be < SRXL_NUM_OF_BUSES -- in this case, it can only be 0
     if (!srxlInitBus(0, 0, SRXL_SUPPORTED_BAUD_RATES)) {
-        AP_HAL::panic("Failed to initialize SRXL2 bus\n");
+        AP_HAL::panic("Failed to initialize SRXL2 bus");
     }
 
     _device_id = device_id;

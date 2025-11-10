@@ -45,9 +45,6 @@
 #define AP_MISSION_RESTART_DEFAULT          0       // resume the mission from the last command run by default
 
 #define AP_MISSION_OPTIONS_DEFAULT          0       // Do not clear the mission when rebooting
-#define AP_MISSION_MASK_MISSION_CLEAR       (1<<0)  // If set then Clear the mission on boot
-#define AP_MISSION_MASK_DIST_TO_LAND_CALC   (1<<1)  // Allow distance to best landing calculation to be run on failsafe
-#define AP_MISSION_MASK_CONTINUE_AFTER_LAND (1<<2)  // Allow mission to continue after land
 
 #define AP_MISSION_MAX_WP_HISTORY           7       // The maximum number of previous wp commands that will be stored from the active missions history
 #define LAST_WP_PASSED (AP_MISSION_MAX_WP_HISTORY-2)
@@ -510,6 +507,9 @@ public:
         return _commands_max;
     }
 
+    // Present - returns true if there is a mission currently loaded, ignoring home which is stored in index 0
+    bool present() const { return _cmd_total > 1; }
+
     /// start - resets current commands to point to the beginning of the mission
     ///     To-Do: should we validate the mission first and return true/false?
     void start();
@@ -634,11 +634,6 @@ public:
     ///     true is return if successful
     bool read_cmd_from_storage(uint16_t index, Mission_Command& cmd) const;
 
-    /// write_cmd_to_storage - write a command to storage
-    ///     cmd.index is used to calculate the storage location
-    ///     true is returned if successful
-    bool write_cmd_to_storage(uint16_t index, const Mission_Command& cmd);
-
     /// write_home_to_storage - writes the special purpose cmd 0 (home) to storage
     ///     home is taken directly from ahrs
     void write_home_to_storage();
@@ -709,6 +704,9 @@ public:
         _force_resume = force_resume;
     }
 
+    // returns true if configured to resume
+    bool is_resume() const { return _restart == 0 || _force_resume; }
+
     // get a reference to the AP_Mission semaphore, allowing an external caller to lock the
     // storage while working with multiple waypoints
     HAL_Semaphore &get_semaphore(void)
@@ -729,14 +727,24 @@ public:
     void reset_wp_history(void);
 
     /*
-      return true if MIS_OPTIONS is set to allow continue of mission
-      logic after a land and the next waypoint is a takeoff. If this
+      Option::FailsafeToBestLanding -  continue mission
+      logic after a land if the next waypoint is a takeoff. If this
       is false then after a landing is complete the vehicle should 
       disarm and mission logic should stop
      */
+    enum class Option {
+        CLEAR_ON_BOOT            = (1U<<0), // clear mission on vehicle boot
+        FAILSAFE_TO_BEST_LANDING = (1U<<1), // on failsafe, find fastest path along mission home
+        CONTINUE_AFTER_LAND      = (1U<<2), // continue running mission (do not disarm) after land if takeoff is next waypoint
+        DONT_ZERO_COUNTER        = (1U<<3), // don't zero counter on completion
+    };
+    bool option_is_set(Option option) const {
+        return (_options.get() & (uint16_t)option) != 0;
+    }
+
     bool continue_after_land_check_for_takeoff(void);
     bool continue_after_land(void) const {
-        return (_options.get() & AP_MISSION_MASK_CONTINUE_AFTER_LAND) != 0;
+        return option_is_set(Option::CONTINUE_AFTER_LAND);
     }
 
     // user settable parameters
@@ -769,6 +777,10 @@ public:
     }
 #endif
 
+#if HAL_LOGGING_ENABLED
+    void set_log_start_mission_item_bit(uint32_t bit) { log_start_mission_item_bit = bit; }
+#endif
+
 private:
     static AP_Mission *_singleton;
 
@@ -797,6 +809,11 @@ private:
     ///
     /// private methods
     ///
+
+    /// write_cmd_to_storage - write a command to storage
+    ///     cmd.index is used to calculate the storage location
+    ///     true is returned if successful
+    bool write_cmd_to_storage(uint16_t index, const Mission_Command& cmd);
 
     /// complete - mission is marked complete and clean-up performed including calling the mission_complete_fn
     void complete();
@@ -856,7 +873,7 @@ private:
 
     // Approximate the distance traveled to return to the mission path. DO_JUMP commands are observed in look forward.
     // Stop searching once reaching a landing or do-land-start
-    bool distance_to_mission_leg(uint16_t index, float &rejoin_distance, uint16_t &rejoin_index, const Location& current_loc);
+    bool distance_to_mission_leg(uint16_t index, uint16_t &search_remaining, float &rejoin_distance, uint16_t &rejoin_index, const Location& current_loc);
 
     // calculate the location of a resume cmd wp
     bool calc_rewind_pos(Mission_Command& rewind_cmd);
@@ -933,12 +950,18 @@ private:
     bool start_command_do_sprayer(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_scripting(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Mission_Command& cmd);
+    bool start_command_fence(const AP_Mission::Mission_Command& cmd);
 
     /*
       handle format conversion of storage format to allow us to update
       format to take advantage of new packing
      */
     void format_conversion(uint8_t tag_byte, const Mission_Command &cmd, PackedContent &packed_content) const;
+
+#if HAL_LOGGING_ENABLED
+    // if not -1, this bit in LOG_BITMASK specifies whether to log a message each time we start a command:
+    uint32_t log_start_mission_item_bit = -1;
+#endif
 };
 
 namespace AP

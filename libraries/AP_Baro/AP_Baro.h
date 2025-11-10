@@ -20,7 +20,6 @@
 
 // timeouts for health reporting
 #define BARO_TIMEOUT_MS                 500     // timeout in ms since last successful read
-#define BARO_DATA_CHANGE_TIMEOUT_MS     2000    // timeout in ms since last successful read that involved temperature of pressure changing
 
 class AP_Baro_Backend;
 
@@ -48,7 +47,7 @@ public:
     } baro_type_t;
 
     // initialise the barometer object, loading backend drivers
-    void init(void);
+    __INITFUNC__ void init(void);
 
     // update the barometer object, asking backends to push data to
     // the frontend
@@ -56,12 +55,8 @@ public:
 
     // healthy - returns true if sensor and derived altitude are good
     bool healthy(void) const { return healthy(_primary); }
-#ifdef HAL_BUILD_AP_PERIPH
-    // calibration and alt check not valid for AP_Periph
+
     bool healthy(uint8_t instance) const;
-#else
-    bool healthy(uint8_t instance) const;
-#endif
 
     // check if all baros are healthy - used for SYS_STATUS report
     bool all_healthy(void) const;
@@ -78,6 +73,9 @@ public:
 #if HAL_BARO_WIND_COMP_ENABLED
     // dynamic pressure in Pascal. Divide by 100 for millibars or hectopascals
     const Vector3f& get_dynamic_pressure(uint8_t instance) const { return sensors[instance].dynamic_pressure; }
+#endif
+#if (HAL_BARO_WIND_COMP_ENABLED || AP_BARO_THST_COMP_ENABLED)
+    float get_corrected_pressure(uint8_t instance) const { return sensors[instance].corrected_pressure; }
 #endif
 
     // temperature in degrees C
@@ -118,8 +116,10 @@ public:
     // EAS2TAS for SITL
     static float get_EAS2TAS_for_alt_amsl(float alt_amsl);
 
+#if AP_BARO_1976_STANDARD_ATMOSPHERE_ENABLED
     // lookup expected pressure for a given altitude. Used for SITL backend
     static void get_pressure_temperature_for_alt_amsl(float alt_amsl, float &pressure, float &temperature_K);
+#endif
 
     // lookup expected temperature in degrees C for a given altitude. Used for SITL backend
     static float get_temperatureC_for_alt_amsl(const float alt_amsl);
@@ -266,6 +266,8 @@ private:
         PROBE_BMP388=(1<<10),
         PROBE_SPL06 =(1<<11),
         PROBE_MSP   =(1<<12),
+        PROBE_BMP581=(1<<13),
+        PROBE_AUAV  =(1<<14),
     };
     
 #if HAL_BARO_WIND_COMP_ENABLED
@@ -283,7 +285,7 @@ private:
     };
 #endif
 
-    struct sensor {
+    struct {
         uint32_t last_update_ms;        // last update time in ms
         uint32_t last_change_ms;        // last update time in ms that included a change in reading from previous readings
         float pressure;                 // pressure in Pascal
@@ -299,6 +301,12 @@ private:
 #if HAL_BARO_WIND_COMP_ENABLED
         WindCoeff wind_coeff;
         Vector3f dynamic_pressure;      // calculated dynamic pressure
+#endif
+#if AP_BARO_THST_COMP_ENABLED
+        AP_Float mot_scale;             // thrust-based pressure scaling
+#endif
+#if (HAL_BARO_WIND_COMP_ENABLED || AP_BARO_THST_COMP_ENABLED)
+        float corrected_pressure;
 #endif
     } sensors[BARO_MAX_INSTANCES];
 
@@ -341,7 +349,9 @@ private:
     */
     float wind_pressure_correction(uint8_t instance);
 #endif
-
+#if AP_BARO_THST_COMP_ENABLED
+    float thrust_pressure_correction(uint8_t instance);
+#endif
     // Logging function
     void Write_Baro(void);
     void Write_Baro_instance(uint64_t time_us, uint8_t baro_instance);

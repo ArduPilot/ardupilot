@@ -48,7 +48,7 @@ AP_Baro_Backend *AP_Baro_FBM320::probe(AP_Baro &baro,
         return nullptr;
     }
 
-    AP_Baro_FBM320 *sensor = new AP_Baro_FBM320(baro, std::move(_dev));
+    AP_Baro_FBM320 *sensor = NEW_NOTHROW AP_Baro_FBM320(baro, std::move(_dev));
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;

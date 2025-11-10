@@ -28,6 +28,10 @@
 // enough for serial0 to serial9, plus IOMCU
 #define UART_MAX_DRIVERS 11
 
+#ifndef HAL_HAVE_LOW_NOISE_UART
+#define HAL_HAVE_LOW_NOISE_UART 0
+#endif
+
 class ChibiOS::UARTDriver : public AP_HAL::UARTDriver {
 public:
     UARTDriver(uint8_t serial_num);
@@ -38,6 +42,7 @@ public:
     bool is_initialized() override;
     bool tx_pending() override;
     uint32_t get_usb_baud() const override;
+    uint8_t get_usb_parity() const override;
 
     // disable TX/RX pins for unusued uart
     void disable_rxtx(void) const override;
@@ -45,9 +50,6 @@ public:
     uint32_t txspace() override;
     void _rx_timer_tick(void);
     void _tx_timer_tick(void);
-#if HAL_FORWARD_OTG2_SERIAL
-    void fwd_otg2_serial(void);
-#endif
 
     // control optional features
     bool set_options(uint16_t options) override;
@@ -74,9 +76,14 @@ public:
         int8_t txinv_gpio;
         uint8_t txinv_polarity;
         uint8_t endpoint_id;
+        uint8_t rts_alternative_function;
         uint8_t get_index(void) const {
             return uint8_t(this - &_serial_tab[0]);
         }
+
+#if HAL_HAVE_LOW_NOISE_UART
+        bool low_noise_line;
+#endif
     };
 
     bool wait_timeout(uint16_t n, uint32_t timeout_ms) override;
@@ -131,6 +138,11 @@ public:
      */
     bool is_dma_enabled() const override { return rx_dma_enabled && tx_dma_enabled; }
 
+    /*
+      check that the current thread owns the uart making certain operations possible
+     */
+    bool is_owned_by_current_thread() const override { return _uart_owner_thd == chThdGetSelfX(); }
+
 private:
     const SerialDef &sdef;
     bool rx_dma_enabled;
@@ -180,13 +192,14 @@ private:
 #endif
     ByteBuffer _readbuf{0};
     ByteBuffer _writebuf{0};
+    uint32_t _rts_threshold;
     HAL_Semaphore _write_mutex;
 #ifndef HAL_UART_NODMA
     const stm32_dma_stream_t* rxdma;
     const stm32_dma_stream_t* txdma;
 #endif
-    volatile bool _in_rx_timer;
-    volatile bool _in_tx_timer;
+    HAL_Semaphore tx_sem;
+    HAL_Semaphore rx_sem;
     volatile bool _rx_initialised;
     volatile bool _tx_initialised;
     volatile bool _device_initialised;
@@ -209,12 +222,12 @@ private:
     // statistics
     uint32_t _tx_stats_bytes;
     uint32_t _rx_stats_bytes;
+    uint32_t _rx_stats_dropped_bytes;
 
     // we remember config options from set_options to apply on sdStart()
     uint32_t _cr1_options;
     uint32_t _cr2_options;
     uint32_t _cr3_options;
-    uint16_t _last_options;
 
     // half duplex control. After writing we throw away bytes for 4 byte widths to
     // prevent reading our own bytes back
@@ -279,6 +292,14 @@ protected:
     // Getters for cumulative tx and rx counts
     uint32_t get_total_tx_bytes() const override { return _tx_stats_bytes; }
     uint32_t get_total_rx_bytes() const override { return _rx_stats_bytes; }
+    uint32_t get_total_dropped_rx_bytes() const override { return _rx_stats_dropped_bytes; }
+#if CH_CFG_USE_EVENTS == TRUE
+    uint32_t _rx_stats_framing_errors;
+    uint32_t _rx_stats_overrun_errors;
+    uint32_t _rx_stats_noise_errors;
+    event_listener_t err_listener;
+    bool err_listener_initialised;
+#endif
 #endif
 };
 

@@ -20,6 +20,12 @@
 #include <AP_HAL/SPIDevice.h>
 #include "AP_HAL_ESP32.h"
 
+#ifndef AP_HAL_SPI_ENABLED
+#define AP_HAL_SPI_ENABLED defined(HAL_ESP32_SPI_BUSES) || defined (HAL_ESP32_SDSPI)
+#endif  // AP_HAL_SPI_ENABLED
+
+#if AP_HAL_SPI_ENABLED
+
 #include "Semaphores.h"
 #include "Scheduler.h"
 #include "DeviceBus.h"
@@ -69,6 +75,8 @@ public:
                   uint8_t *recv, uint32_t recv_len) override;
     bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
                              uint32_t len) override;
+    /* See AP_HAL::SPIDevice::transfer_fullduplex() */
+    bool transfer_fullduplex(uint8_t *send_recv, uint32_t len) override;
     AP_HAL::Semaphore *get_semaphore() override;
     AP_HAL::Device::PeriodicHandle register_periodic_callback(
         uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;
@@ -85,15 +93,19 @@ private:
     void acquire_bus(bool accuire);
 };
 
+#if defined(HAL_ESP32_SPI_BUSES)
 class SPIDeviceManager : public AP_HAL::SPIDeviceManager
 {
 public:
     friend class SPIDevice;
 
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name) override;
+    AP_HAL::SPIDevice *get_device_ptr(const char *name) override;
 
 private:
     SPIBus *buses;
 };
-}
+#endif  // HAL_ESP32_SPI_BUSES
 
+} // end of namespace ESP32
+
+#endif  // AP_HAL_SPI_ENABLED

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/RingBuffer.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
@@ -40,7 +41,7 @@ public:
         "tcp:7",
         "tcp:8",
     };
-    std::vector<struct AP_Param::defaults_table_struct> cmdline_param;
+    ObjectArray<struct AP_Param::defaults_table_struct> cmdline_param{100};
 
     /* parse a home location string */
     static bool parse_home(const char *home_str,
@@ -86,8 +87,6 @@ private:
     uint16_t _fg_view_port;
     uint16_t _irlock_port;
 
-    bool _synthetic_clock_mode;
-
     bool _use_rtscts;
     bool _use_fg_view;
     
@@ -106,11 +105,6 @@ private:
     VectorN<readings_wind,wind_buffer_length> buffer_wind;
     uint32_t time_delta_wind;
     uint32_t delayed_time_wind;
-    uint32_t wind_start_delay_micros;
-    uint32_t last_wind_update_us;
-
-    // simulated GPS devices
-    SITL::GPS *gps[2];  // constrained by # of parameter sets
 
     // returns a voltage between 0V to 5V which should appear as the
     // voltage from the sensor

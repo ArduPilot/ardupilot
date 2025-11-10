@@ -53,6 +53,12 @@ public:
         bool backing_up = false;
         adjust_velocity(desired_vel_cms, backing_up, kP, accel_cmss, kP_z, accel_cmss_z, dt);
     }
+    void adjust_velocity_m(Vector3f &desired_vel_ms, float kP, float accel_mss, float kP_z, float accel_mss_z, float dt) {
+        bool backing_up = false;
+        Vector3f desired_vel_cms = desired_vel_ms * 100.0;
+        adjust_velocity(desired_vel_cms, backing_up, kP, accel_mss * 100.0, kP_z, accel_mss_z * 100.0, dt);
+        desired_vel_ms = desired_vel_cms * 0.01;
+    }
 
     // This method limits velocity and calculates backaway velocity from various supported fences
     // Also limits vertical velocity using adjust_velocity_z method
@@ -68,19 +74,12 @@ public:
 
     // adjust vertical climb rate so vehicle does not break the vertical fence
     void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float& backup_speed, float dt);
-    void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float dt) {
-        float backup_speed = 0.0f;
-        adjust_velocity_z(kP, accel_cmss, climb_rate_cms, backup_speed, dt);
-        if (!is_zero(backup_speed)) {
-            climb_rate_cms = MIN(climb_rate_cms, backup_speed);
-        }
-    }
-    
+    void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float dt);
 
     // adjust roll-pitch to push vehicle away from objects
-    // roll and pitch value are in centi-degrees
-    // angle_max is the user defined maximum lean angle for the vehicle in centi-degrees
-    void adjust_roll_pitch(float &roll, float &pitch, float angle_max);
+    // roll and pitch value are in radians
+    // veh_angle_max_rad is the user defined maximum lean angle for the vehicle in radians
+    void adjust_roll_pitch_rad(float &roll_rad, float &pitch_rad, float veh_angle_max_rad);
 
     // enable/disable proximity based avoidance
     void proximity_avoidance_enable(bool on_off) { _proximity_enabled = on_off; }
@@ -201,17 +200,17 @@ private:
      */
 
     // convert distance (in meters) to a lean percentage (in 0~1 range) for use in manual flight modes
-    float distance_to_lean_pct(float dist_m);
+    float distance_to_lean_norm(float dist_m);
 
     // returns the maximum positive and negative roll and pitch percentages (in -1 ~ +1 range) based on the proximity sensor
-    void get_proximity_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative);
+    void get_proximity_roll_pitch_norm(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative);
 
     // Logging function
     void Write_SimpleAvoidance(const uint8_t state, const Vector3f& desired_vel, const Vector3f& modified_vel, const bool back_up) const;
 
     // parameters
     AP_Int8 _enabled;
-    AP_Int16 _angle_max;           // maximum lean angle to avoid obstacles (only used in non-GPS flight modes)
+    AP_Int16 _angle_max_cd;        // maximum lean angle to avoid obstacles (only used in non-GPS flight modes)
     AP_Float _dist_max;            // distance (in meters) from object at which obstacle avoidance will begin in non-GPS modes
     AP_Float _margin;              // vehicle will attempt to stay this distance (in meters) from objects while in GPS modes
     AP_Int8 _behavior;             // avoidance behaviour (slide or stop)

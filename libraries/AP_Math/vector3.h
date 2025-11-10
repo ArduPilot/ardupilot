@@ -76,19 +76,19 @@ public:
     T        x, y, z;
 
     // trivial ctor
-    constexpr Vector3<T>()
+    constexpr Vector3()
         : x(0)
         , y(0)
         , z(0) {}
 
     // setting ctor
-    constexpr Vector3<T>(const T x0, const T y0, const T z0)
+    constexpr Vector3(const T x0, const T y0, const T z0)
         : x(x0)
         , y(y0)
         , z(z0) {}
 
     //Create a Vector3 from a Vector2 with z
-    constexpr Vector3<T>(const Vector2<T> &v0, const T z0)
+    constexpr Vector3(const Vector2<T> &v0, const T z0)
         : x(v0.x)
         , y(v0.y)
         , z(z0) {}

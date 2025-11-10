@@ -16,6 +16,9 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#if AP_FILESYSTEM_LITTLEFS_ENABLED
+#include <AP_Filesystem/AP_Filesystem_FlashMemory_LittleFS.h>
+#endif
 
 #include "AP_Logger.h"
 #include "AP_Logger_File.h"
@@ -64,7 +67,7 @@ void AP_Logger_File::ensure_log_directory_exists()
         ret = AP::FS().mkdir(_log_directory);
     }
     if (ret == -1 && errno != EEXIST) {
-        printf("Failed to create log directory %s : %s\n", _log_directory, strerror(errno));
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failed to create log directory %s : %s", _log_directory, strerror(errno));
     }
 }
 
@@ -173,7 +176,7 @@ void AP_Logger_File::periodic_1Hz()
          _front._params.disarm_ratemax > 0 ||
          _front._log_pause)) {
         // setup rate limiting if log rate max > 0Hz or log pause of streaming entries is requested
-        rate_limiter = new AP_Logger_RateLimiter(_front, _front._params.file_ratemax, _front._params.disarm_ratemax);
+        rate_limiter = NEW_NOTHROW AP_Logger_RateLimiter(_front, _front._params.file_ratemax, _front._params.disarm_ratemax);
     }
 }
 
@@ -367,50 +370,17 @@ void AP_Logger_File::Prep_MinSpace()
 }
 
 /*
-  construct a log file name given a log number. 
-  The number in the log filename will *not* be zero-padded.
-  Note: Caller must free.
- */
-char *AP_Logger_File::_log_file_name_short(const uint16_t log_num) const
-{
-    char *buf = nullptr;
-    if (asprintf(&buf, "%s/%u.BIN", _log_directory, (unsigned)log_num) == -1) {
-        return nullptr;
-    }
-    return buf;
-}
-
-/*
   construct a log file name given a log number.
   The number in the log filename will be zero-padded.
   Note: Caller must free.
  */
-char *AP_Logger_File::_log_file_name_long(const uint16_t log_num) const
+char *AP_Logger_File::_log_file_name(const uint16_t log_num) const
 {
     char *buf = nullptr;
     if (asprintf(&buf, "%s/%08u.BIN", _log_directory, (unsigned)log_num) == -1) {
         return nullptr;
     }
     return buf;
-}
-
-/*
-  return a log filename appropriate for the supplied log_num if a
-  filename exists with the short (not-zero-padded name) then it is the
-  appropirate name, otherwise the long (zero-padded) version is.
-  Note: Caller must free.
- */
-char *AP_Logger_File::_log_file_name(const uint16_t log_num) const
-{
-    char *filename = _log_file_name_short(log_num);
-    if (filename == nullptr) {
-        return nullptr;
-    }
-    if (file_exists(filename)) {
-        return filename;
-    }
-    free(filename);
-    return _log_file_name_long(log_num);
 }
 
 /*
@@ -461,7 +431,7 @@ bool AP_Logger_File::StartNewLogOK() const
     if (recent_open_error()) {
         return false;
     }
-#if !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !APM_BUILD_TYPE(APM_BUILD_Replay) && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     if (hal.scheduler->in_main_thread()) {
         return false;
     }
@@ -473,11 +443,6 @@ bool AP_Logger_File::StartNewLogOK() const
 bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
     WITH_SEMAPHORE(semaphore);
-
-    if (! WriteBlockCheckStartupMessages()) {
-        _dropped++;
-        return false;
-    }
 
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
     if (AP::FS().write(_write_fd, pBuffer, size) != size) {
@@ -680,6 +645,14 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
     return ret;
 }
 
+void AP_Logger_File::end_log_transfer()
+{
+    if (_read_fd != -1) {
+        AP::FS().close(_read_fd);
+        _read_fd = -1;
+    }
+}
+
 /*
   find size and date of a log
  */
@@ -802,7 +775,7 @@ void AP_Logger_File::start_new_log(void)
 
     // set _open_error here to avoid infinite recursion.  Simply
     // writing a prioritised block may try to open a log - which means
-    // if anything in the start_new_log path does a gcs().send_text()
+    // if anything in the start_new_log path does a GCS_SEND_TEXT()
     // (for example), you will end up recursing if we don't take
     // precautions.  We will reset _open_error if we actually manage
     // to open the log...
@@ -907,7 +880,7 @@ bool AP_Logger_File::write_lastlog_file(uint16_t log_num)
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 void AP_Logger_File::flush(void)
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#if APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 {
     uint32_t tnow = AP_HAL::millis();
     while (_write_fd != -1 && _initialised && !recent_open_error() && _writebuf.available()) {
@@ -971,6 +944,8 @@ void AP_Logger_File::io_timer(void)
         // least once per 2 seconds if data is available
         return;
     }
+
+#if !AP_FILESYSTEM_LITTLEFS_ENABLED // too expensive on littlefs, rely on ENOSPC below
     if (tnow - _free_space_last_check_time > _free_space_check_interval) {
         _free_space_last_check_time = tnow;
         last_io_operation = "disk_space_avail";
@@ -983,7 +958,7 @@ void AP_Logger_File::io_timer(void)
         }
         last_io_operation = "";
     }
-
+#endif
     _last_write_time = tnow;
     if (nbytes > _writebuf_chunk) {
         // be kind to the filesystem layer
@@ -994,6 +969,7 @@ void AP_Logger_File::io_timer(void)
     const uint8_t *head = _writebuf.readptr(size);
     nbytes = MIN(nbytes, size);
 
+#if !AP_FILESYSTEM_LITTLEFS_ENABLED
     // try to align writes on a 512 byte boundary to avoid filesystem reads
     if ((nbytes + _write_offset) % 512 != 0) {
         uint32_t ofs = (nbytes + _write_offset) % 512;
@@ -1001,7 +977,7 @@ void AP_Logger_File::io_timer(void)
             nbytes -= ofs;
         }
     }
-
+#endif
     last_io_operation = "write";
     if (!write_fd_semaphore.take(1)) {
         return;
@@ -1010,10 +986,21 @@ void AP_Logger_File::io_timer(void)
         write_fd_semaphore.give();
         return;
     }
+
+    uint32_t bytes_until_fsync = AP::FS().bytes_until_fsync(_write_fd);
+    if (bytes_until_fsync > 0 && nbytes > bytes_until_fsync) {
+        nbytes = bytes_until_fsync; // write exactly enough to sync
+    }
+
     ssize_t nwritten = AP::FS().write(_write_fd, head, nbytes);
     last_io_operation = "";
     if (nwritten <= 0) {
-        if ((tnow - _last_write_ms)/1000U > unsigned(_front._params.file_timeout)) {
+        if (errno == ENOSPC) {
+            DEV_PRINTF("Out of space for logging\n");
+            stop_logging();
+            _open_error_ms = AP_HAL::millis(); // prevent logging starting again for 5s
+            last_io_operation = "";
+        } else if ((tnow - _last_write_ms)/1000U > unsigned(_front._params.file_timeout)) {
             // if we can't write for LOG_FILE_TIMEOUT seconds we give up and close
             // the file. This allows us to cope with temporary write
             // failures caused by directory listing
@@ -1029,17 +1016,13 @@ void AP_Logger_File::io_timer(void)
         _last_write_ms = tnow;
         _write_offset += nwritten;
         _writebuf.advance(nwritten);
-        /*
-          the best strategy for minimizing corruption on microSD cards
-          seems to be to write in 4k chunks and fsync the file on each
-          chunk, ensuring the directory entry is updated after each
-          write.
-         */
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
-        last_io_operation = "fsync";
-        AP::FS().fsync(_write_fd);
-        last_io_operation = "";
-#endif
+
+        // we know nwritten > 0 so we won't sync if bytes_until_fsync == 0
+        if ((uint32_t)nwritten == bytes_until_fsync) {
+            last_io_operation = "fsync";
+            AP::FS().fsync(_write_fd);
+            last_io_operation = "";
+        }
 
 #if AP_RTC_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         // ChibiOS does not update mtime on writes, so if we opened
@@ -1074,7 +1057,7 @@ bool AP_Logger_File::io_thread_alive() const
     // disk.  Unfortunately these hardware devices do not obey our
     // SITL speedup options, so we allow for it here.
     SITL::SIM *sitl = AP::sitl();
-    if (sitl != nullptr) {
+    if (sitl != nullptr && sitl->speedup > 0) {
         timeout_ms *= sitl->speedup;
     }
 #endif

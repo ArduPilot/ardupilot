@@ -249,7 +249,7 @@ void Shared_DMA::dma_info(ExpandingString &str)
 {
     // no buffer allocated, start counting
     if (_contention_stats == nullptr) {
-        _contention_stats = new dma_stats[SHARED_DMA_MAX_STREAM_ID+1];
+        _contention_stats = NEW_NOTHROW dma_stats[SHARED_DMA_MAX_STREAM_ID+1];
         // return zeros on first fetch
     }
 

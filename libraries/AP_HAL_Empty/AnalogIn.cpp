@@ -33,7 +33,7 @@ void AnalogIn::init()
 {}
 
 AP_HAL::AnalogSource* AnalogIn::channel(int16_t n) {
-    return new AnalogSource(1.11);
+    return NEW_NOTHROW AnalogSource(1.11);
 }
 
 float AnalogIn::board_voltage(void)

@@ -85,7 +85,7 @@ private:
 sys_thread_t
 sys_thread_new(const char *name, lwip_thread_fn function, void *arg, int stacksize, int prio)
 {
-    auto *thread_data = new ThreadWrapper(function, arg);
+    auto *thread_data = NEW_NOTHROW ThreadWrapper(function, arg);
     if (!thread_data->create(name, stacksize, prio)) {
         AP_HAL::panic("lwip: Failed to start thread %s", name);
     }
@@ -120,7 +120,7 @@ sys_mbox_new(struct sys_mbox **mb, int size)
     struct sys_mbox *mbox;
     LWIP_UNUSED_ARG(size);
 
-    mbox = new sys_mbox;
+    mbox = NEW_NOTHROW sys_mbox;
     if (mbox == NULL) {
         return ERR_MEM;
     }
@@ -292,7 +292,7 @@ sys_arch_mbox_fetch(struct sys_mbox **mb, void **msg, u32_t timeout_ms)
 err_t
 sys_sem_new(sys_sem_t *sem, u8_t count)
 {
-    *sem = (sys_sem_t)new HAL_BinarySemaphore(count);
+    *sem = (sys_sem_t)NEW_NOTHROW HAL_BinarySemaphore(count);
     if (*sem == NULL) {
         return ERR_MEM;
     }
@@ -330,7 +330,7 @@ sys_sem_free(sys_sem_t *sem)
 err_t
 sys_mutex_new(sys_mutex_t *mutex)
 {
-    *mutex = (sys_mutex_t)new HAL_Semaphore;
+    *mutex = (sys_mutex_t)NEW_NOTHROW HAL_Semaphore;
     if (*mutex == nullptr) {
         return ERR_MEM;
     }

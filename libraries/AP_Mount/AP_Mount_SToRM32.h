@@ -3,9 +3,11 @@
  */
 #pragma once
 
-#include "AP_Mount_Backend.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_STORM32MAVLINK_ENABLED
+
+#include "AP_Mount_Backend.h"
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>

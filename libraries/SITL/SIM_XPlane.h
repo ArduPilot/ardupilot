@@ -18,13 +18,9 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
+#include "SIM_config.h"
 
-#ifndef HAL_SIM_XPLANE_ENABLED
-#define HAL_SIM_XPLANE_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
-#endif
-
-#if HAL_SIM_XPLANE_ENABLED
+#if AP_SIM_XPLANE_ENABLED
 
 #include <AP_HAL/utility/Socket_native.h>
 #include <AP_Filesystem/AP_Filesystem.h>
@@ -46,7 +42,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new XPlane(frame_str);
+        return NEW_NOTHROW XPlane(frame_str);
     }
 
 private:
@@ -139,4 +135,4 @@ private:
 } // namespace SITL
 
 
-#endif  // HAL_SIM_XPLANE_ENABLED
+#endif  // AP_SIM_XPLANE_ENABLED

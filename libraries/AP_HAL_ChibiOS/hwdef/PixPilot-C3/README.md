@@ -390,7 +390,7 @@ Then reboot.
 
 DroneCAN capability
 ===================
-There are 2 CAN ports which allow connecting two independant CAN bus outputs. Each of these can have multiple CAN peripheral devices connected. 
+There are 2 CAN ports which allow connecting two independent CAN bus outputs. Each of these can have multiple CAN peripheral devices connected. 
 
 Where to Buy
 ============

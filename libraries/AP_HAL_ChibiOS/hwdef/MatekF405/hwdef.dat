@@ -6,8 +6,8 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
-# board ID for firmware load
-APJ_BOARD_ID 125
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MATEKF405
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -25,6 +25,7 @@ I2C_ORDER I2C1
 SERIAL_ORDER OTG1 USART3 UART4 USART1 UART5 USART2
 
 # LEDs
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 PB9 LED_BLUE OUTPUT LOW GPIO(0)
 PA14 LED_GREEN OUTPUT LOW GPIO(1)
 
@@ -139,7 +140,7 @@ define AP_BARO_BMP280_ENABLED 1
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 

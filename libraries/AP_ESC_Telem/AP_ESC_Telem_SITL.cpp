@@ -71,13 +71,28 @@ void AP_ESC_Telem_SITL::update()
             .voltage = 16.8f,
             .current = 0.8f,
             .consumption_mah = 1.0f,
+            .motor_temp_cdeg = 3500,
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+            .input_duty = 1,
+            .output_duty = 2,
+            .flags = 3,
+            .power_percentage = 4,
+#endif
         };
 
         update_telem_data(motor, t,
             AP_ESC_Telem_Backend::TelemetryType::CURRENT
                 | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
                 | AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION
-                | AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
+                | AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE
+                | AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+                | AP_ESC_Telem_Backend::TelemetryType::POWER_PERCENTAGE
+                | AP_ESC_Telem_Backend::TelemetryType::INPUT_DUTY
+                | AP_ESC_Telem_Backend::TelemetryType::OUTPUT_DUTY
+                | AP_ESC_Telem_Backend::TelemetryType::FLAGS
+#endif
+                );
     }
 #endif
 }

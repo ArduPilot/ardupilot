@@ -654,6 +654,23 @@ TEST(MathTest, RANDOM16)
     EXPECT_NE(random_value, get_random16());
 }
 
+TEST(MathTest, RAND_FLOAT)
+{
+    // bodgy range checks
+    float lowest_value = 0;
+    float highest_value = 0;
+    for (auto i=0; i<1000; i++) {
+        const auto value = rand_float();
+        lowest_value = MIN(lowest_value, value);
+        highest_value = MAX(highest_value, value);
+    }
+    EXPECT_NEAR(-0.95, lowest_value, 0.05);
+    EXPECT_NEAR(0.95, highest_value, 0.05);
+    EXPECT_GE(lowest_value, -1.0);
+    EXPECT_LE(highest_value, 1.0);
+
+}
+
 TEST(MathTest, VELCORRECTION)
 {
     static constexpr Vector3F pos{1.0f, 1.0f, 0.0f};

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from __future__ import annotations
+
 """
 script to build the latest binaries for each vehicle type, ready to upload
 Peter Barker, August 2017
@@ -7,8 +9,6 @@ based on build_binaries.sh by Andrew Tridgell, March 2013
 
 AP_FLAKE8_CLEAN
 """
-
-from __future__ import print_function
 
 import datetime
 import optparse
@@ -391,8 +391,10 @@ is bob we will attempt to checkout bob-AVR'''
                 pass
 
     def build_vehicle(self, tag, vehicle, boards, vehicle_binaries_subdir,
-                      binaryname, frames=[None]):
+                      binaryname, frames: list | None = None):
         '''build vehicle binaries'''
+        if frames is None:
+            frames = [None]
         self.progress("Building %s %s binaries (cwd=%s)" %
                       (vehicle, tag, os.getcwd()))
 
@@ -548,7 +550,7 @@ is bob we will attempt to checkout bob-AVR'''
                         if not os.path.exists(tdir):
                             self.mkpath(tdir)
                         # must addfwversion even if path already
-                        # exists as we re-use the "beta" directories
+                        # exists as we reuse the "beta" directories
                         self.addfwversion(tdir, vehicle)
                         features_filepath = os.path.join(tdir, "features.txt")
                         if features_text is not None:
@@ -595,7 +597,7 @@ is bob we will attempt to checkout bob-AVR'''
         '''build Copter binaries'''
 
         boards = []
-        boards.extend(["aerofc-v1", "bebop"])
+        boards.extend(["aerofc-v1"])
         boards.extend(self.board_list.find_autobuild_boards('Copter'))
         self.build_vehicle(tag,
                            "ArduCopter",
@@ -607,7 +609,6 @@ is bob we will attempt to checkout bob-AVR'''
     def build_arduplane(self, tag):
         '''build Plane binaries'''
         boards = self.board_list.find_autobuild_boards('Plane')[:]
-        boards.append("disco")
         self.build_vehicle(tag,
                            "ArduPlane",
                            boards,
@@ -767,7 +768,7 @@ if __name__ == '__main__':
     tags = cmd_opts.tags
     if len(tags) == 0:
         # FIXME: wedge this defaulting into parser somehow
-        tags = ["stable", "beta-4.3", "beta", "latest"]
+        tags = ["stable", "beta", "latest"]
 
     bb = build_binaries(tags)
     bb.run()

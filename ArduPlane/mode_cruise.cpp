@@ -61,13 +61,13 @@ void ModeCruise::navigate()
 
     // check if we are moving in the direction of the front of the vehicle
     const int32_t ground_course_cd = plane.gps.ground_course_cd();
-    const bool moving_forwards = fabsf(wrap_PI(radians(ground_course_cd * 0.01) - plane.ahrs.get_yaw())) < M_PI_2;
+    const bool moving_forwards = fabsf(wrap_PI(cd_to_rad(ground_course_cd) - plane.ahrs.get_yaw_rad())) < M_PI_2;
 
     if (!locked_heading &&
         plane.channel_roll->get_control_in() == 0 &&
         plane.rudder_input() == 0 &&
         plane.gps.status() >= AP_GPS::GPS_OK_FIX_2D &&
-        plane.gps.ground_speed() >= 3 &&
+        plane.gps.ground_speed() >= GPS_GND_CRS_MIN_SPD &&
         moving_forwards &&
         lock_timer_ms == 0) {
         // user wants to lock the heading - start the timer

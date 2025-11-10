@@ -28,6 +28,7 @@
 #include <AC_PID/AC_PID.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -152,7 +153,12 @@ void AP_AutoTune::stop(void)
 
 const char *AP_AutoTune::axis_string(void) const
 {
-    switch (type) {
+    return axis_string(type);
+}
+
+const char *AP_AutoTune::axis_string(ATType _type)
+{
+    switch (_type) {
     case AUTOTUNE_ROLL:
         return "Roll";
     case AUTOTUNE_PITCH:
@@ -250,7 +256,7 @@ void AP_AutoTune::update(AP_PIDInfo &pinfo, float scaler, float angle_err_deg)
 #if HAL_LOGGING_ENABLED
     if (now - last_log_ms >= 40) {
         // log at 25Hz
-        struct log_ATRP pkt = {
+        const struct log_ATRP pkt {
             LOG_PACKET_HEADER_INIT(LOG_ATRP_MSG),
             time_us : AP_HAL::micros64(),
             type : uint8_t(type),

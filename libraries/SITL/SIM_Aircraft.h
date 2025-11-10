@@ -32,12 +32,19 @@
 #include "SIM_RichenPower.h"
 #include "SIM_Loweheiser.h"
 #include "SIM_FETtecOneWireESC.h"
+#include "SIM_Volz.h"
 #include "SIM_I2C.h"
 #include "SIM_Buzzer.h"
 #include "SIM_Battery.h"
 #include <Filter/Filter.h>
 #include "SIM_JSON_Master.h"
 #include "ServoModel.h"
+#include "SIM_GPIO_LED_1.h"
+#include "SIM_GPIO_LED_2.h"
+#include "SIM_GPIO_LED_3.h"
+#include "SIM_GPIO_LED_RGB.h"
+
+#define MAX_SIM_INSTANCES 16
 
 namespace SITL {
 
@@ -62,6 +69,9 @@ public:
      */
     void set_instance(uint8_t _instance) {
         instance = _instance;
+        if (instance < MAX_SIM_INSTANCES) {
+            instances[instance] = this;
+        }
     }
 
     /*
@@ -152,6 +162,9 @@ public:
     void set_loweheiser(Loweheiser *_loweheiser) { loweheiser = _loweheiser; }
 #endif
     void set_fetteconewireesc(FETtecOneWireESC *_fetteconewireesc) { fetteconewireesc = _fetteconewireesc; }
+#if AP_SIM_VOLZ_ENABLED
+    void set_volz(Volz *_volz) { volz = _volz; }
+#endif
     void set_ie24(IntelligentEnergy24 *_ie24) { ie24 = _ie24; }
     void set_gripper_servo(Gripper_Servo *_gripper) { gripper = _gripper; }
     void set_gripper_epm(Gripper_EPM *_gripper_epm) { gripper_epm = _gripper_epm; }
@@ -163,7 +176,25 @@ public:
     float get_battery_voltage() const { return battery_voltage; }
     float get_battery_temperature() const { return battery.get_temperature(); }
 
+    float ambient_temperature_degC() const;
+
     ADSB *adsb;
+
+    // takes a PWM range between 1000 and 2000 and returns a floating
+    // point value between -1 and 1
+    float normalise_servo_input(uint16_t input) const {
+        return 2*((input-1000)/1000.0f - 0.5f);
+    }
+
+    ServoModel servo_filter[16];
+
+    float get_airspeed_pitot() const { return airspeed_pitot; }
+
+    /*
+      used by scripting to control simulated aircraft position
+     */
+    static bool set_pose(uint8_t instance, const Location &loc, const Quaternion &quat,
+                         const Vector3f &velocity_ef, const Vector3f &gyro_rads);
 
 protected:
     SIM *sitl;
@@ -318,11 +349,23 @@ protected:
     void add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel);
     void add_twist_forces(Vector3f &rot_accel);
 
+    // add body-frame force due to payload
+    void add_external_forces(Vector3f &body_accel);
+
     // get local thermal updraft
     float get_local_updraft(const Vector3d &currentPos);
 
     // update EAS speeds
     void update_eas_airspeed();
+
+    // clamp support
+    class Clamp {
+    public:
+        bool clamped(class Aircraft&, const struct sitl_input &input);  // true if the vehicle is currently clamped down
+    private:
+        bool currently_clamped;
+        bool grab_attempted;  // avoid warning multiple times about missed grab
+    } clamp;
 
 private:
     uint64_t last_time_us;
@@ -344,8 +387,6 @@ private:
         Location location;
     } smoothing;
 
-    ServoModel servo_filter[16];
-
     Buzzer *buzzer;
     Sprayer *sprayer;
     Gripper_Servo *gripper;
@@ -356,6 +397,9 @@ private:
     Loweheiser *loweheiser;
 #endif
     FETtecOneWireESC *fetteconewireesc;
+#if AP_SIM_VOLZ_ENABLED
+    Volz *volz;
+#endif  // AP_SIM_VOLZ_ENABLED
 
     IntelligentEnergy24 *ie24;
     SIM_Precland *precland;
@@ -363,6 +407,23 @@ private:
 #if AP_TEST_DRONECAN_DRIVERS
     DroneCANDevice *dronecan;
 #endif
+
+
+#if AP_SIM_GPIO_LED_1_ENABLED
+    GPIO_LED_1 sim_led1{8};  // pin to match sitl.h
+#endif
+#if AP_SIM_GPIO_LED_2_ENABLED
+    GPIO_LED_2 sim_led2{13, 14};  // pins to match sitl.h
+#endif
+#if AP_SIM_GPIO_LED_3_ENABLED
+    GPIO_LED_3 sim_led3{13, 14, 15};  // pins to match sitl.h
+#endif
+#if AP_SIM_GPIO_LED_RGB_ENABLED
+    GPIO_LED_RGB sim_ledrgb{8, 9, 10};  // pins to match sitl.h
+#endif
+
+    static Aircraft *instances[MAX_SIM_INSTANCES];
+    HAL_Semaphore pose_sem;
 };
 
 } // namespace SITL

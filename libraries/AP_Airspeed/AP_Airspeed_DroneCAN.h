@@ -26,7 +26,7 @@ public:
     bool get_hygrometer(uint32_t &last_sample_ms, float &temperature, float &humidity) override;
 #endif
 
-    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
+    static bool subscribe_msgs(AP_DroneCAN* ap_dronecan);
 
     static AP_Airspeed_Backend* probe(AP_Airspeed &_frontend, uint8_t _instance, uint32_t previous_devid);
 

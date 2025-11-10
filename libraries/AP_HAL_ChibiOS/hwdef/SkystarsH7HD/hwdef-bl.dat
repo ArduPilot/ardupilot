@@ -4,8 +4,8 @@
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1075
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_SKYSTARSH7HD
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
@@ -38,8 +38,7 @@ PE4 LED_ACTIVITY OUTPUT HIGH
 define HAL_LED_ON 0
 define HAL_LED_OFF 1
 
-# default to all pins low to avoid ESD issues
-DEFAULTGPIO OUTPUT LOW PULLDOWN
+
 
 # Add CS pins to ensure they are high in bootloader
 PC15 BMI270_CS1 CS

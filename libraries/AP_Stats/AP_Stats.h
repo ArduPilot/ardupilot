@@ -5,6 +5,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_Common/Location.h>
 
 class AP_Stats
 {
@@ -19,6 +20,8 @@ public:
     uint32_t runtime; // total wallclock time spent running ArduPilot (seconds)
     uint32_t reset;   // last time AP_Stats parameters were reset (in seconds since AP_Stats Jan 1st 2016)
     uint32_t flttime_boot; // seconds in flight (or driving), at boot
+    uint32_t fltcount; // total number of takeoffs
+    float distance_flown_m; // total distance flown in meters
     
     void init();
 
@@ -55,6 +58,8 @@ private:
         AP_Int32 flttime;
         AP_Int32 runtime;
         AP_Int32 reset;
+        AP_Int32 fltcount;
+        AP_Float distance_flown_m;
     } params;
 
     void copy_variables_from_parameters();
@@ -65,8 +70,13 @@ private:
     uint64_t _flying_ms;
     uint64_t _last_runtime_ms;
 
+    Location _last_position;
+    bool _last_position_valid;
+    uint32_t _last_distance_update_ms;
+
     void update_flighttime();
     void update_runtime();
+    void update_distance_flown();
     HAL_Semaphore sem;
 };
 

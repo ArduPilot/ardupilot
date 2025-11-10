@@ -6,8 +6,8 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1137
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_FlywooF405Pro
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
@@ -118,8 +118,9 @@ PC8 TIM8_CH3 TIM8 PWM(8) GPIO(57)       # M8
 # LEDs
 PA9 TIM1_CH2 TIM1 PWM(9) GPIO(58) # M9
 
+define AP_NOTIFY_GPIO_LED_1_ENABLED 1
 PC14 LED0 OUTPUT LOW GPIO(90)
-define HAL_GPIO_A_LED_PIN 90
+define AP_NOTIFY_GPIO_LED_1_PIN 90
 
 # Dataflash setup
 SPIDEV dataflash SPI3 DEVID1 FLASH1_CS     MODE3 104*MHZ 104*MHZ
@@ -144,7 +145,7 @@ DMA_PRIORITY TIM3* TIM2* TIM8_UP SPI1* TIM1_UP
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 define HAL_DEFAULT_INS_FAST_SAMPLE 3
@@ -153,3 +154,4 @@ define HAL_FRAME_TYPE_DEFAULT 12
 
 include ../include/minimize_fpv_osd.inc
 
+define DEFAULT_NTF_LED_TYPES 455

@@ -112,12 +112,12 @@ AP_Compass_Backend *AP_Compass_HMC5843::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev
     if (!dev) {
         return nullptr;
     }
-    AP_HMC5843_BusDriver *bus = new AP_HMC5843_BusDriver_HALDevice(std::move(dev));
+    AP_HMC5843_BusDriver *bus = NEW_NOTHROW AP_HMC5843_BusDriver_HALDevice(std::move(dev));
     if (!bus) {
         return nullptr;
     }
 
-    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(bus, force_external, rotation);
+    AP_Compass_HMC5843 *sensor = NEW_NOTHROW AP_Compass_HMC5843(bus, force_external, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -132,13 +132,13 @@ AP_Compass_Backend *AP_Compass_HMC5843::probe_mpu6000(enum Rotation rotation)
     AP_InertialSensor &ins = *AP_InertialSensor::get_singleton();
 
     AP_HMC5843_BusDriver *bus =
-        new AP_HMC5843_BusDriver_Auxiliary(ins, HAL_INS_MPU60XX_SPI,
+        NEW_NOTHROW AP_HMC5843_BusDriver_Auxiliary(ins, HAL_INS_MPU60XX_SPI,
                                            HAL_COMPASS_HMC5843_I2C_ADDR);
     if (!bus) {
         return nullptr;
     }
 
-    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(bus, false, rotation);
+    AP_Compass_HMC5843 *sensor = NEW_NOTHROW AP_Compass_HMC5843(bus, false, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -196,15 +196,14 @@ bool AP_Compass_HMC5843::init()
 
     //register compass instance
     _bus->set_device_type(DEVTYPE_HMC5883);
-    if (!register_compass(_bus->get_bus_id(), _compass_instance)) {
+    if (!register_compass(_bus->get_bus_id())) {
         return false;
     }
-    set_dev_id(_compass_instance, _bus->get_bus_id());
 
-    set_rotation(_compass_instance, _rotation);
+    set_rotation(_rotation);
     
     if (_force_external) {
-        set_external(_compass_instance, true);
+        set_external(true);
     }
 
     // read from sensor at 75Hz
@@ -241,14 +240,14 @@ void AP_Compass_HMC5843::_timer()
     raw_field *= _gain_scale;
 
     // rotate to the desired orientation
-    if (is_external(_compass_instance)) {
+    if (is_external()) {
         raw_field.rotate(ROTATION_YAW_90);
     }
 
     // We expect to do reads at 10Hz, and  we get new data at most 75Hz, so we
     // don't expect to accumulate more than 8 before a read; let's make it
     // 14 to give more room for the initialization phase
-    accumulate_sample(raw_field, _compass_instance, 14);
+    accumulate_sample(raw_field, 14);
 }
 
 /*
@@ -266,7 +265,7 @@ void AP_Compass_HMC5843::read()
         return;
     }
 
-    drain_accumulated_samples(_compass_instance, &_scaling);
+    drain_accumulated_samples(&_scaling);
 }
 
 bool AP_Compass_HMC5843::_setup_sampling_mode()
@@ -334,9 +333,7 @@ bool AP_Compass_HMC5843::_check_whoami()
         // can't talk on bus
         return false;        
     }
-    if (id[0] != 'H' ||
-        id[1] != '4' ||
-        id[2] != '3') {
+    if (memcmp(id, "H43", 3) != 0) {
         // not a HMC5x83 device
         return false;
     }

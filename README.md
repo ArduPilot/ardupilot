@@ -18,6 +18,8 @@
 
 [![Autotest Status](https://autotest.ardupilot.org/autotest-badge.svg)](https://autotest.ardupilot.org/)
 
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10598/badge)](https://www.bestpractices.dev/projects/10598)
+
 ArduPilot is the most advanced, full-featured, and reliable open source autopilot software available.
 It has been under development since 2010 by a diverse team of professional engineers, computer scientists, and community contributors.
 Our autopilot software is capable of controlling almost any vehicle system imaginable, from conventional airplanes, quad planes, multi-rotors, and helicopters to rovers, boats, balance bots, and even submarines.
@@ -96,6 +98,7 @@ for reviewing patches on their specific area.
   - ***Vehicle***: Rover
 - [Willian Galvani](https://github.com/williangalvani):
   - ***Vehicle***: Sub
+  - ***Board***: Navigator
 - [Michael du Breuil](https://github.com/WickedShell):
   - ***Subsystem***: Batteries
   - ***Subsystem***: GPS

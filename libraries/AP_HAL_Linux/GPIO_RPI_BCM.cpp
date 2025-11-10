@@ -232,7 +232,7 @@ void GPIO_RPI_BCM::toggle(uint8_t pin)
 /* Alternative interface: */
 AP_HAL::DigitalSource* GPIO_RPI_BCM::channel(uint16_t n)
 {
-    return new DigitalSource(n);
+    return NEW_NOTHROW DigitalSource(n);
 }
 
 bool GPIO_RPI_BCM::usb_connected(void)

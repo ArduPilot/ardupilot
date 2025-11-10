@@ -1,0 +1,6 @@
+# Enable TSYS03
+TEMP1_TYPE    4
+TEMP1_SRC     3
+TEMP1_SRC_ID  1
+
+

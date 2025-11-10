@@ -56,7 +56,7 @@ AP_Baro_Backend *AP_Baro_DPS280::probe(AP_Baro &baro,
         return nullptr;
     }
 
-    AP_Baro_DPS280 *sensor = new AP_Baro_DPS280(baro, std::move(_dev));
+    AP_Baro_DPS280 *sensor = NEW_NOTHROW AP_Baro_DPS280(baro, std::move(_dev));
     if (sensor) {
         sensor->is_dps310 = _is_dps310;
     }

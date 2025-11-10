@@ -6,10 +6,6 @@
   #define MAV_SYSTEM_ID    1
 #endif
 
-#ifndef ARM_DELAY_MS
-  #define ARM_DELAY_MS  2000
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // FrSky telemetry support
 //
@@ -72,11 +68,10 @@
   #define RESET_SWITCH_CHAN_PWM    1750
 #endif
 
-#ifndef ADVANCED_FAILSAFE
-  #define ADVANCED_FAILSAFE DISABLED
+#ifndef AP_ROVER_ADVANCED_FAILSAFE_ENABLED
+  #define AP_ROVER_ADVANCED_FAILSAFE_ENABLED 0
 #endif
 
-#ifndef OSD_ENABLED
- #define OSD_ENABLED DISABLED
+#ifndef AP_ROVER_AUTO_ARM_ONCE_ENABLED
+#define AP_ROVER_AUTO_ARM_ONCE_ENABLED 1
 #endif
-

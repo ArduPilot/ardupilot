@@ -5,8 +5,8 @@
 # MCU class and specific type
 MCU STM32H7xx STM32H750xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1060
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_SPRACINGH7
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
@@ -169,7 +169,7 @@ DMA_PRIORITY SPI3* SPI2* TIM5*
 
 define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define ALLOW_ARM_NO_COMPASS
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 
 # two IMUs

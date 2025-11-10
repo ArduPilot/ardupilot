@@ -161,6 +161,7 @@ private:
     // statistics
     uint32_t _tx_stats_bytes;
     uint32_t _rx_stats_bytes;
+
 };
 
 #endif

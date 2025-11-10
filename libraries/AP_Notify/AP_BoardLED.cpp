@@ -12,12 +12,13 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include "AP_Notify_config.h"
+
+#if AP_NOTIFY_GPIO_LED_3_ENABLED
+
 #include "AP_BoardLED.h"
-
 #include "AP_Notify.h"
-
-#if (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN) && \
-     defined(HAL_GPIO_C_LED_PIN))
 
 static_assert((HAL_GPIO_A_LED_PIN != HAL_GPIO_B_LED_PIN) &&
               (HAL_GPIO_A_LED_PIN != HAL_GPIO_C_LED_PIN) &&
@@ -168,7 +169,5 @@ void AP_BoardLED::update(void)
             break;        
     }
 }
-#else
-bool AP_BoardLED::init(void) {return true;}
-void AP_BoardLED::update(void) {return;}
-#endif
+
+#endif  // AP_NOTIFY_GPIO_LED_3_ENABLED

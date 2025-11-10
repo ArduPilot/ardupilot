@@ -47,7 +47,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_TOFSenseF_I2C::detect(RangeFinder::RangeF
     }
 
     AP_RangeFinder_TOFSenseF_I2C *sensor
-        = new AP_RangeFinder_TOFSenseF_I2C(_state, _params, std::move(dev));
+        = NEW_NOTHROW AP_RangeFinder_TOFSenseF_I2C(_state, _params, std::move(dev));
     if (!sensor) {
         return nullptr;
     }

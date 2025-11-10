@@ -1,16 +1,12 @@
 --[[
  support package place for quadplanes
 --]]
--- luacheck: only 0
----@diagnostic disable: param-type-mismatch
-
 
 local PARAM_TABLE_KEY = 9
 local PARAM_TABLE_PREFIX = "PKG_"
 
 local MODE_AUTO = 10
 
-local NAV_TAKEOFF = 22
 local NAV_VTOL_PAYLOAD_PLACE = 94
 
 -- add a parameter and bind it to a variable
@@ -31,7 +27,6 @@ local Q_LAND_FINAL_ALT = Parameter("Q_LAND_FINAL_ALT")
 
 local MAV_SEVERITY_INFO = 6
 local MAV_SEVERITY_NOTICE = 5
-local MAV_SEVERITY_EMERGENCY = 0
 
 local RNG_ORIENT_DOWN = 25
 
@@ -113,7 +108,7 @@ function update()
    -- check the distance, if less than RNG_ORIENT_DOWN then release
    local dist_m
    if not landed then
-      dist_m = rangefinder:distance_cm_orient(RNG_ORIENT_DOWN) * 0.01
+      dist_m = rangefinder:distance_orient(RNG_ORIENT_DOWN)
    else
       dist_m = 0.0
    end

@@ -18,7 +18,7 @@
 
 #include "SIM_Morse.h"
 
-#if HAL_SIM_MORSE_ENABLED
+#if AP_SIM_MORSE_ENABLED
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -260,7 +260,7 @@ bool Morse::parse_sensors(const char *json)
 bool Morse::connect_sockets(void)
 {
     if (!sensors_sock) {
-        sensors_sock = new SocketAPM_native(false);
+        sensors_sock = NEW_NOTHROW SocketAPM_native(false);
         if (!sensors_sock) {
             AP_HAL::panic("Out of memory for sensors socket");
         }
@@ -279,7 +279,7 @@ bool Morse::connect_sockets(void)
         printf("Sensors connected\n");
     }
     if (!control_sock) {
-        control_sock = new SocketAPM_native(false);
+        control_sock = NEW_NOTHROW SocketAPM_native(false);
         if (!control_sock) {
             AP_HAL::panic("Out of memory for control socket");
         }
@@ -674,4 +674,4 @@ void Morse::send_report(void)
 }
 #endif  // HAL_GCS_ENABLED
 
-#endif  // HAL_SIM_MORSE_ENABLED
+#endif  // AP_SIM_MORSE_ENABLED

@@ -60,7 +60,11 @@ bool AP_Logger_Backend::Write_Format(const struct LogStructure *s)
 {
     struct log_Format pkt;
     Fill_Format(s, pkt);
-    return WriteCriticalBlock(&pkt, sizeof(pkt));
+    if (!WriteCriticalBlock(&pkt, sizeof(pkt))) {
+        return false;
+    }
+    _formats_written.set(s->msg_type);
+    return true;
 }
 
 /*
@@ -166,6 +170,11 @@ void AP_Logger::Write_RCIN(void)
     if (rc().in_rc_failsafe()) {
         flags |= (uint8_t)AP_Logger::RCLoggingFlags::IN_RC_FAILSAFE;
     }
+#if AP_RCPROTOCOL_ENABLED
+    if (AP::RC().failsafe_active()) {
+        flags |= (uint8_t)AP_Logger::RCLoggingFlags::RC_PROTOCOL_FAILSAFE;
+    }
+#endif  // AP_RCPROTOCOL_ENABLED
 
     const struct log_RCI2 pkt2{
         LOG_PACKET_HEADER_INIT(LOG_RCI2_MSG),
@@ -296,12 +305,13 @@ void AP_Logger::Write_Command(const mavlink_command_int_t &packet,
 }
 
 bool AP_Logger_Backend::Write_Mission_Cmd(const AP_Mission &mission,
-                                              const AP_Mission::Mission_Command &cmd)
+                                          const AP_Mission::Mission_Command &cmd,
+                                          LogMessages msgid)
 {
     mavlink_mission_item_int_t mav_cmd = {};
     AP_Mission::mission_cmd_to_mavlink_int(cmd,mav_cmd);
-    const struct log_Cmd pkt{
-        LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
+    const struct log_CMD pkt{
+        LOG_PACKET_HEADER_INIT(msgid),
         time_us         : AP_HAL::micros64(),
         command_total   : mission.num_commands(),
         sequence        : mav_cmd.seq,
@@ -446,31 +456,6 @@ bool AP_Logger_Backend::Write_Mode(uint8_t mode, const ModeReason reason)
     };
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
-
-/*
-  write servo status from CAN servo
- */
-void AP_Logger::Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct,
-                                  float pos_cmd, float voltage, float current, float mot_temp, float pcb_temp, uint8_t error)
-{
-    const struct log_CSRV pkt {
-        LOG_PACKET_HEADER_INIT(LOG_CSRV_MSG),
-        time_us     : time_us,
-        id          : id,
-        position    : position,
-        force       : force,
-        speed       : speed,
-        power_pct   : power_pct,
-        pos_cmd     : pos_cmd,
-        voltage     : voltage,
-        current     : current,
-        mot_temp    : mot_temp,
-        pcb_temp    : pcb_temp,
-        error       : error,
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
 
 // Write a Yaw PID packet
 void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)

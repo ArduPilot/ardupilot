@@ -33,7 +33,7 @@ Display_SITL::~Display_SITL()
 
 Display_SITL *Display_SITL::probe()
 {
-    Display_SITL *driver = new Display_SITL();
+    Display_SITL *driver = NEW_NOTHROW Display_SITL();
     if (!driver || !driver->hw_init()) {
         delete driver;
         return nullptr;
@@ -46,7 +46,7 @@ void Display_SITL::update_thread(void)
 {
     {
         WITH_SEMAPHORE(AP::notify().sf_window_mutex);
-        w = new sf::RenderWindow(sf::VideoMode(COLUMNS*SCALE, ROWS*SCALE), "Display");
+        w = NEW_NOTHROW sf::RenderWindow(sf::VideoMode(COLUMNS*SCALE, ROWS*SCALE), "Display");
     }
     if (!w) {
         AP_HAL::panic("Unable to create Display_SITL window");

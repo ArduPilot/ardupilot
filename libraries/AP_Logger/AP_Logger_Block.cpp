@@ -132,15 +132,7 @@ bool AP_Logger_Block::_WritePrioritisedBlock(const void *pBuffer, uint16_t size,
         return false;
     }
 
-    if (!WriteBlockCheckStartupMessages()) {
-        _dropped++;
-        return false;
-    }
-
-    if (!write_sem.take(1)) {
-         _dropped++;
-        return false;
-    }
+    WITH_SEMAPHORE(write_sem);
 
     const uint32_t space = writebuf.space();
 
@@ -155,7 +147,6 @@ bool AP_Logger_Block::_WritePrioritisedBlock(const void *pBuffer, uint16_t size,
         if (!must_dribble &&
             space < non_messagewriter_message_reserved_space(writebuf.get_size())) {
             // this message isn't dropped, it will be sent again...
-            write_sem.give();
             return false;
         }
         last_messagewrite_message_sent = now;
@@ -163,7 +154,6 @@ bool AP_Logger_Block::_WritePrioritisedBlock(const void *pBuffer, uint16_t size,
         // we reserve some amount of space for critical messages:
         if (!is_critical && space < critical_message_reserved_space(writebuf.get_size())) {
             _dropped++;
-            write_sem.give();
             return false;
         }
     }
@@ -171,13 +161,11 @@ bool AP_Logger_Block::_WritePrioritisedBlock(const void *pBuffer, uint16_t size,
     // if no room for entire message - drop it:
     if (space < size) {
         _dropped++;
-        write_sem.give();
         return false;
     }
 
     writebuf.write((uint8_t*)pBuffer, size);
     df_stats_gather(size, writebuf.space());
-    write_sem.give();
 
     return true;
 }
@@ -212,7 +200,7 @@ uint16_t AP_Logger_Block::ReadHeaders()
     // we are at the start of a file, read the file header
     if (df_FilePage == 1) {
         struct FileHeader fh;
-        BlockRead(0, &fh, sizeof(fh));
+        BlockRead(sizeof(ph), &fh, sizeof(fh));
         df_FileTime = fh.utc_secs;
         df_Read_BufferIdx += sizeof(fh);
     }
@@ -314,7 +302,7 @@ void AP_Logger_Block::periodic_1Hz()
          _front._params.disarm_ratemax > 0 ||
          _front._log_pause)) {
         // setup rate limiting if log rate max > 0Hz or log pause of streaming entries is requested
-        rate_limiter = new AP_Logger_RateLimiter(_front, _front._params.blk_ratemax, _front._params.disarm_ratemax);
+        rate_limiter = NEW_NOTHROW AP_Logger_RateLimiter(_front, _front._params.blk_ratemax, _front._params.disarm_ratemax);
     }
     
     if (!io_thread_alive()) {
@@ -553,7 +541,7 @@ void AP_Logger_Block::stop_logging_async(void)
 void AP_Logger_Block::start_new_log(void)
 {
     if (erase_started) {
-        // already erasing
+        // currently erasing
         return;
     }
 
@@ -938,7 +926,7 @@ void AP_Logger_Block::write_log_page()
 
 void AP_Logger_Block::flash_test()
 {
-    const uint32_t pages_to_check = 128;
+    uint32_t pages_to_check = 128;
     for (uint32_t i=1; i<=pages_to_check; i++) {
         if ((i-1) % df_PagePerBlock == 0) {
             printf("Block erase %u\n", get_block(i));
@@ -974,6 +962,19 @@ void AP_Logger_Block::flash_test()
                 i, bad_bytes, df_PageSize, buffer[first_bad_byte]);
         }
     }
+
+    // speed test
+    pages_to_check = 4096;  // 1mB / 8mB
+    for (uint32_t i=1; i<=pages_to_check; i++) {
+        if ((i-1) % df_PagePerBlock == 0) {
+            SectorErase(get_block(i));
+        }
+    }
+    uint32_t now_ms = AP_HAL::millis();
+    for (uint32_t i=1; i<=pages_to_check; i++) {
+        BufferToPage(i);
+    }
+    printf("Flash speed test: %ukB/s\n", unsigned((pages_to_check * df_PageSize * 1000) / (1024 * (AP_HAL::millis() - now_ms))));
 }
 
 #endif // HAL_LOGGING_BLOCK_ENABLED

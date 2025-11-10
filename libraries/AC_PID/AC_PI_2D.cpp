@@ -130,6 +130,7 @@ void AC_PI_2D::reset_I()
     _integrator.zero();
 }
 
+// Loads controller configuration from EEPROM, including gains and filter frequencies. (not used)
 void AC_PI_2D::load_gains()
 {
     _kp.load();
@@ -142,25 +143,13 @@ void AC_PI_2D::load_gains()
     calc_filt_alpha();
 }
 
-// save_gains - save gains to eeprom
+// Saves controller configuration from EEPROM, including gains and filter frequencies. (not used)
 void AC_PI_2D::save_gains()
 {
     _kp.save();
     _ki.save();
     _imax.save();
     _filt_hz.save();
-}
-
-/// Overload the function call operator to permit easy initialisation
-void AC_PI_2D::operator() (float p, float i, float imaxval, float input_filt_hz, float dt)
-{
-    _kp.set(p);
-    _ki.set(i);
-    _imax.set(fabsf(imaxval));
-    _filt_hz.set(input_filt_hz);
-    _dt = dt;
-    // calculate the input filter alpha
-    calc_filt_alpha();
 }
 
 // calc_filt_alpha - recalculate the input filter alpha

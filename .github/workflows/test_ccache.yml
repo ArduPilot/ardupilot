@@ -25,7 +25,6 @@ on:
       - 'Tools/GIT_Test/**'
       - 'Tools/gittools/**'
       - 'Tools/Hello/**'
-      - 'Tools/LogAnalyzer/**'
       - 'Tools/mavproxy_modules/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
@@ -136,7 +135,7 @@ jobs:
         gcc: [10]
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: 'recursive'
       - name: ccache test

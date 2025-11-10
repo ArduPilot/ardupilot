@@ -153,10 +153,10 @@ MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_do_fence_enable(const mavl
 
     switch ((uint16_t)mav_command_long.param1) {
         case 0:
-            fence->enable(false);
+            fence->enable_configured(false);
             return MAV_RESULT_ACCEPTED;
         case 1:
-            fence->enable(true);
+            fence->enable_configured(true);
             return MAV_RESULT_ACCEPTED;
         default:
             return MAV_RESULT_FAILED;

@@ -23,7 +23,7 @@
  */
 #include "AP_RunCam.h"
 
-#if HAL_RUNCAM_ENABLED
+#if AP_CAMERA_RUNCAM_ENABLED
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
@@ -36,7 +36,7 @@ const AP_Param::GroupInfo AP_RunCam::var_info[] = {
     // @DisplayName: RunCam device type
     // @Description: RunCam device type used to determine OSD menu structure and shutter options.
     // @Values: 0:Disabled, 1:RunCam Split Micro/RunCam with UART, 2:RunCam Split, 3:RunCam Split4 4k, 4:RunCam Hybrid/RunCam Thumb Pro, 5:Runcam 2 4k
-    AP_GROUPINFO_FLAGS("TYPE", 1, AP_RunCam, _cam_type, int(DeviceType::Disabled), AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("TYPE", 1, AP_RunCam, _cam_type, int(DeviceModel::SplitMicro), AP_PARAM_FLAG_ENABLE),
 
     // @Param: FEATURES
     // @DisplayName: RunCam features available
@@ -55,13 +55,13 @@ const AP_Param::GroupInfo AP_RunCam::var_info[] = {
     // @DisplayName: RunCam button delay before allowing further button presses
     // @Description: Time it takes for the a RunCam button press to be actived in ms. If this is too short then commands can get out of sync.
     // @User: Advanced
-    AP_GROUPINFO("BTN_DELAY", 4, AP_RunCam, _button_delay_ms, RUNCAM_DEFAULT_BUTTON_PRESS_DELAY),
+    AP_GROUPINFO("BTN_DELY", 4, AP_RunCam, _button_delay_ms, RUNCAM_DEFAULT_BUTTON_PRESS_DELAY),
 
     // @Param: MDE_DELAY
     // @DisplayName: RunCam mode delay before allowing further button presses
     // @Description: Time it takes for the a RunCam mode button press to be actived in ms. If a mode change first requires a video recording change then double this value is used. If this is too short then commands can get out of sync.
     // @User: Advanced
-    AP_GROUPINFO("MDE_DELAY", 5, AP_RunCam, _mode_delay_ms, 800),
+    AP_GROUPINFO("MDE_DELY", 5, AP_RunCam, _mode_delay_ms, 800),
 
     // @Param: CONTROL
     // @DisplayName: RunCam control option
@@ -118,13 +118,24 @@ AP_RunCam::Menu AP_RunCam::_menus[RUNCAM_MAX_DEVICE_TYPES] = {
 	{ 6, { 3, 10, 2, 2, 8 }}, // Runcam 2 4K
 };
 
-AP_RunCam::AP_RunCam()
+const char* AP_RunCam::_models[RUNCAM_MAX_DEVICE_TYPES] = {
+    "SplitMicro",
+    "Split",
+    "Split4k",
+    "Hybrid",
+    "Run24k"
+};
+
+AP_RunCam::AP_RunCam(AP_Camera &frontend, AP_Camera_Params &params, uint8_t instance, uint8_t runcam_instance)
+    : AP_Camera_Backend(frontend, params, instance), _runcam_instance(runcam_instance)
 {
     AP_Param::setup_object_defaults(this, var_info);
-    if (_singleton != nullptr) {
-        AP_HAL::panic("AP_RunCam must be singleton");
+    if (_singleton != nullptr && _singleton->_instance == instance) {
+        AP_HAL::panic("AP_RunCam instance must be a singleton %u", instance);
     }
-    _singleton = this;
+    if (_singleton == nullptr) {
+        _singleton = this;
+    }
     _cam_type.set(constrain_int16(_cam_type, 0, RUNCAM_MAX_DEVICE_TYPES));
     _video_recording = VideoOption(_cam_control_option & uint8_t(ControlOption::VIDEO_RECORDING_AT_BOOT));
 }
@@ -134,19 +145,19 @@ void AP_RunCam::init()
 {
     AP_SerialManager *serial_manager = AP_SerialManager::get_singleton();
     if (serial_manager) {
-        uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_RunCam, 0);
+        uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_RunCam, _runcam_instance);
     }
     if (uart != nullptr) {
         /*
           if the user has setup a serial port as a runcam then default
           type to the split micro (Andy's development platform!). This makes setup a bit easier for most
           users while still enabling parameters to be hidden for users
-          without a runcam
+          without a RunCam
          */
-        _cam_type.set_default(int8_t(DeviceType::SplitMicro));
+        _cam_type.set_default(int8_t(DeviceModel::SplitMicro));
         AP_Param::invalidate_count();
     }
-    if (_cam_type.get() == int8_t(DeviceType::Disabled)) {
+    if (_cam_type.get() == int8_t(DeviceModel::Disabled)) {
         uart = nullptr;
         return;
     }
@@ -156,7 +167,7 @@ void AP_RunCam::init()
     }
 
     // Split and Runcam 2 4k requires two mode presses to get into the menu
-    if (_cam_type.get() == int8_t(DeviceType::Split) || _cam_type.get() == int8_t(DeviceType::Run24k)) {
+    if (_cam_type.get() == int8_t(DeviceModel::Split) || _cam_type.get() == int8_t(DeviceModel::Run24k)) {
         _menu_enter_level = -1;
         _in_menu = -1;
     }
@@ -221,7 +232,7 @@ void AP_RunCam::osd_option() {
 // input update loop
 void AP_RunCam::update()
 {
-    if (uart == nullptr || _cam_type.get() == int8_t(DeviceType::Disabled)) {
+    if (uart == nullptr || _cam_type.get() == int8_t(DeviceModel::Disabled)) {
         return;
     }
 
@@ -451,10 +462,10 @@ void AP_RunCam::handle_in_menu(Event ev)
 // map rc input to an event
 AP_RunCam::Event AP_RunCam::map_rc_input_to_event() const
 {
-    const RC_Channel::AuxSwitchPos throttle = rc().get_channel_pos(AP::rcmap()->throttle());
-    const RC_Channel::AuxSwitchPos yaw = rc().get_channel_pos(AP::rcmap()->yaw());
-    const RC_Channel::AuxSwitchPos roll = rc().get_channel_pos(AP::rcmap()->roll());
-    const RC_Channel::AuxSwitchPos pitch = rc().get_channel_pos(AP::rcmap()->pitch());
+    const RC_Channel::AuxSwitchPos throttle = rc().get_throttle_channel().get_stick_gesture_pos();
+    const RC_Channel::AuxSwitchPos yaw = rc().get_yaw_channel().get_stick_gesture_pos();
+    const RC_Channel::AuxSwitchPos roll = rc().get_roll_channel().get_stick_gesture_pos();
+    const RC_Channel::AuxSwitchPos pitch = rc().get_pitch_channel().get_stick_gesture_pos();
 
     Event result = Event::NONE;
 
@@ -551,12 +562,12 @@ void AP_RunCam::handle_2_key_simulation_process(Event ev)
 
     case Event::IN_MENU_ENTER:
         // in a sub-menu and save-and-exit was selected
-        if (_in_menu > 1 && get_top_menu_length() > 0 && _sub_menu_pos == (get_sub_menu_length(_top_menu_pos) - 1) && DeviceType(_cam_type.get()) != DeviceType::Run24k) {
+        if (_in_menu > 1 && get_top_menu_length() > 0 && _sub_menu_pos == (get_sub_menu_length(_top_menu_pos) - 1) && DeviceModel(_cam_type.get()) != DeviceModel::Run24k) {
             simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_SIMULATE_WIFI_BTN, _button_delay_ms);
             _sub_menu_pos = 0;
             _in_menu--;
         // in the top-menu and save-and-exit was selected
-        } else if (_in_menu == 1 && get_top_menu_length() > 0 && _top_menu_pos == (get_top_menu_length() - 1) && DeviceType(_cam_type.get()) != DeviceType::Run24k) {
+        } else if (_in_menu == 1 && get_top_menu_length() > 0 && _top_menu_pos == (get_top_menu_length() - 1) && DeviceModel(_cam_type.get()) != DeviceModel::Run24k) {
             simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_SIMULATE_WIFI_BTN, _mode_delay_ms);
             _in_menu--;
             _state = State::EXITING_MENU;
@@ -712,7 +723,7 @@ void AP_RunCam::handle_5_key_simulation_response(const Request& request)
 
 // command to start recording
 AP_RunCam::ControlOperation AP_RunCam::start_recording_command() const {
-    if (DeviceType(_cam_type.get()) == DeviceType::Split4k || DeviceType(_cam_type.get()) == DeviceType::Hybrid || DeviceType(_cam_type.get()) == DeviceType::Run24k) {
+    if (DeviceModel(_cam_type.get()) == DeviceModel::Split4k || DeviceModel(_cam_type.get()) == DeviceModel::Hybrid || DeviceModel(_cam_type.get()) == DeviceModel::Run24k) {
         return ControlOperation::RCDEVICE_PROTOCOL_SIMULATE_POWER_BTN;
     } else {
         return ControlOperation::RCDEVICE_PROTOCOL_CHANGE_START_RECORDING;
@@ -721,7 +732,7 @@ AP_RunCam::ControlOperation AP_RunCam::start_recording_command() const {
 
 // command to stop recording
 AP_RunCam::ControlOperation AP_RunCam::stop_recording_command() const {
-    if (DeviceType(_cam_type.get()) == DeviceType::Split4k || DeviceType(_cam_type.get()) == DeviceType::Hybrid || DeviceType(_cam_type.get()) == DeviceType::Run24k) {
+    if (DeviceModel(_cam_type.get()) == DeviceModel::Split4k || DeviceModel(_cam_type.get()) == DeviceModel::Hybrid || DeviceModel(_cam_type.get()) == DeviceModel::Run24k) {
         return ControlOperation::RCDEVICE_PROTOCOL_SIMULATE_POWER_BTN;
     } else {
         return ControlOperation::RCDEVICE_PROTOCOL_CHANGE_STOP_RECORDING;
@@ -958,11 +969,11 @@ void AP_RunCam::parse_device_info(const Request& request)
     }
     if (_features > 0) {
         _state = State::INITIALIZED;
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RunCam initialized, features 0x%04X, %d-key OSD\n", _features.get(),
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RunCam initialized, features 0x%04X, %d-key OSD", _features.get(),
             has_5_key_OSD() ? 5 : has_2_key_OSD() ? 2 : 0);
     } else {
         // nothing as as nothing does
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RunCam device not found\n");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RunCam device not found");
     }
     debug("RunCam: initialized state: video: %d, osd: %d, cam: %d\n", int(_video_recording), int(_osd_option), int(_cam_control_option));
 }
@@ -1024,13 +1035,13 @@ bool AP_RunCam::request_pending(uint32_t now)
 AP_RunCam::Request::Request(AP_RunCam* device, Command commandID, uint8_t param,
     uint32_t timeout, uint16_t maxRetryTimes, parse_func_t parserFunc)
     : _recv_buf(device->_recv_buf),
-    _command(commandID),
-    _max_retry_times(maxRetryTimes),
-    _timeout_ms(timeout),
     _device(device),
+    _command(commandID),
     _param(param),
-    _parser_func(parserFunc),
     _recv_response_length(0),
+    _timeout_ms(timeout),
+    _max_retry_times(maxRetryTimes),
+    _parser_func(parserFunc),
     _result(RequestStatus::PENDING)
 {
     _request_timestamp_ms = AP_HAL::millis();
@@ -1058,8 +1069,88 @@ uint8_t AP_RunCam::Request::get_expected_response_length(const Command command) 
     return 0;
 }
 
+// AP_Camera API
+
+// return true if healthy
+bool AP_RunCam::healthy() const
+{
+    return camera_ready();
+}
+
+// momentary switch to change camera between picture and video modes
+void AP_RunCam::cam_mode_toggle()
+{
+
+}
+
+// entry point to actually take a picture.  returns true on success
+bool AP_RunCam::trigger_pic()
+{
+    return false;
+}
+
+// send camera information message to GCS
+void AP_RunCam::send_camera_information(mavlink_channel_t chan) const
+{
+    // exit immediately if not initialised
+    if (!camera_ready() || _cam_type.get() <= 0 || _cam_type.get() > int8_t(ARRAY_SIZE(_models))) {
+        return;
+    }
+
+    static const uint8_t vendor_name[32] = "RunCam";
+    uint8_t model_name[32] {};
+    strncpy((char *)model_name, _models[_cam_type.get()-1], MIN(sizeof(model_name), sizeof(_models[_cam_type.get()-1])));
+    const char cam_definition_uri[140] {};
+
+    // capability flags
+    uint32_t flags = 0;
+
+    if (has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_START_RECORDING)) {
+        flags = CAMERA_CAP_FLAGS_CAPTURE_VIDEO;
+    }
+
+    if (has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_CHANGE_MODE)) {
+        flags |= CAMERA_CAP_FLAGS_CAPTURE_IMAGE;
+    }
+
+    // send CAMERA_INFORMATION message
+    mavlink_msg_camera_information_send(
+        chan,
+        AP_HAL::millis(),       // time_boot_ms
+        vendor_name,            // vendor_name uint8_t[32]
+        model_name,             // model_name uint8_t[32]
+        0,                      // firmware version uint32_t
+        NaNf,                   // focal_length float (mm)
+        NaNf,                   // sensor_size_h float (mm)
+        NaNf,                   // sensor_size_v float (mm)
+        0,                      // resolution_h uint16_t (pix)
+        0,                      // resolution_v uint16_t (pix)
+        0,                      // lens_id uint8_t
+        flags,                  // flags uint32_t (CAMERA_CAP_FLAGS)
+        0,                      // cam_definition_version uint16_t
+        cam_definition_uri,     // cam_definition_uri char[140]
+        _instance + 1);         // gimbal_device_id uint8_t
+}
+
+// send camera settings message to GCS
+void AP_RunCam::send_camera_settings(mavlink_channel_t chan) const
+{
+    // exit immediately if not initialised
+    if (!camera_ready()) {
+        return;
+    }
+
+    // send CAMERA_SETTINGS message
+    mavlink_msg_camera_settings_send(
+        chan,
+        AP_HAL::millis(),   // time_boot_ms
+        _video_recording == VideoOption::RECORDING ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE, // camera mode (0:image, 1:video, 2:image survey)
+        NaNf,         // zoomLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf);              // focusLevel float, percentage from 0 to 100, NaN if unknown
+}
+
 AP_RunCam *AP::runcam() {
     return AP_RunCam::get_singleton();
 }
 
-#endif  // HAL_RUNCAM_ENABLED
+#endif  // AP_CAMERA_RUNCAM_ENABLED

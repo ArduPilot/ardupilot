@@ -161,7 +161,7 @@ T Vector2<T>::angle(const Vector2<T> &v2) const
 template <typename T>
 T Vector2<T>::angle(void) const
 {
-    return M_PI_2 + atan2F(-x, y);
+    return atan2F(y, x);
 }
 
 // find the intersection between two line segments
@@ -241,7 +241,7 @@ bool Vector2<T>::circle_segment_intersection(const Vector2<T>& seg_start, const 
     //       ->  o                     o ->              | -> |
     // FallShort (t1>1,t2>1), Past (t1<0,t2<0), CompletelyInside(t1<0, t2>1)
 
-    // intersection = new Vector3(E.x + t1 * d.x, secondPoint.y, E.y + t1 * d.y);
+    // intersection = NEW_NOTHROW Vector3(E.x + t1 * d.x, secondPoint.y, E.y + t1 * d.y);
     //   intersection.x = seg_start.x + t1 * seg_end_minus_start.x;
     //   intersection.y = seg_start.y + t1 * seg_end_minus_start.y;
 
@@ -457,4 +457,4 @@ template bool Vector2<long>::operator ==(const Vector2<long> &v) const;
 template bool Vector2<long>::operator !=(const Vector2<long> &v) const;
 template bool Vector2<int>::operator ==(const Vector2<int> &v) const;
 template bool Vector2<int>::operator !=(const Vector2<int> &v) const;
-
+template int32_t Vector2l::closest_distance_between_line_and_point_squared(Vector2l const&, Vector2l const&, Vector2l const&);

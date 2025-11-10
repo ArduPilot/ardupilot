@@ -18,7 +18,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Networking/AP_Networking_Config.h>
-#if AP_NETWORKING_SOCKETS_ENABLED
+#if AP_NETWORKING_SOCKETS_ENABLED || defined(AP_SOCKET_NATIVE_ENABLED)
 
 #ifndef SOCKET_CLASS_NAME
 #define SOCKET_CLASS_NAME SocketAPM
@@ -40,6 +40,7 @@
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <sys/select.h>
+#include <sys/time.h>
 #endif
 
 #include <errno.h>
@@ -99,7 +100,7 @@ void SOCKET_CLASS_NAME::make_sockaddr(const char *address, uint16_t port, struct
     sockaddr.sin_addr.s_addr = htonl(inet_str_to_addr(address));
 }
 
-#if !defined(HAL_BOOTLOADER_BUILD)
+#if !defined(HAL_BOOTLOADER_BUILD) || AP_NETWORKING_CAN_MCAST_ENABLED
 /*
   connect the socket
  */
@@ -158,6 +159,9 @@ bool SOCKET_CLASS_NAME::connect(const char *address, uint16_t port)
 
     ret = CALL_PREFIX(connect)(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
     if (ret != 0) {
+        if (errno == EINPROGRESS) {
+            pending_connect = true;
+        }
         return false;
     }
     connected = true;
@@ -166,7 +170,9 @@ bool SOCKET_CLASS_NAME::connect(const char *address, uint16_t port)
         // for bi-directional UDP broadcast we need 2 sockets
         struct sockaddr_in send_addr;
         socklen_t send_len = sizeof(send_addr);
-        ret = CALL_PREFIX(getsockname)(fd, (struct sockaddr *)&send_addr, &send_len);
+        if (CALL_PREFIX(getsockname)(fd, (struct sockaddr *)&send_addr, &send_len) == -1) {
+            return false;
+        }
         fd_in = CALL_PREFIX(socket)(AF_INET, SOCK_DGRAM, 0);
         if (fd_in == -1) {
             goto fail_multi;
@@ -186,7 +192,7 @@ fail_multi:
     fd_in = -1;
     return false;
 }
-#endif // HAL_BOOTLOADER_BUILD
+#endif // !defined(HAL_BOOTLOADER_BUILD) || AP_NETWORKING_CAN_MCAST_ENABLED
 
 /*
   connect the socket with a timeout
@@ -303,7 +309,27 @@ ssize_t SOCKET_CLASS_NAME::send(const void *buf, size_t size) const
 }
 
 /*
-  send some data
+  send some data with address as a uint32_t
+ */
+ssize_t SOCKET_CLASS_NAME::sendto(const void *buf, size_t size, uint32_t address, uint16_t port)
+{
+    if (fd == -1) {
+        return -1;
+    }
+    struct sockaddr_in sockaddr = {};
+
+#ifdef HAVE_SOCK_SIN_LEN
+    sockaddr.sin_len = sizeof(sockaddr);
+#endif
+    sockaddr.sin_port = htons(port);
+    sockaddr.sin_family = AF_INET;
+    sockaddr.sin_addr.s_addr = htonl(address);
+
+    return CALL_PREFIX(sendto)(fd, buf, size, 0, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+}
+
+/*
+  send some data with address as a string
  */
 ssize_t SOCKET_CLASS_NAME::sendto(const void *buf, size_t size, const char *address, uint16_t port)
 {
@@ -327,8 +353,12 @@ ssize_t SOCKET_CLASS_NAME::recv(void *buf, size_t size, uint32_t timeout_ms)
     socklen_t len = sizeof(struct sockaddr_in);
     int fin = get_read_fd();
     ssize_t ret;
-    ret = CALL_PREFIX(recvfrom)(fin, buf, size, MSG_DONTWAIT, (sockaddr *)&last_in_addr[0], &len);
-    if (ret <= 0) {
+    uint32_t in_addr[4] = {};
+    ret = CALL_PREFIX(recvfrom)(fin, buf, size, MSG_DONTWAIT, (sockaddr *)&in_addr[0], &len);
+    if (ret > 0) {
+        // only update last_in_addr if we received data
+        memcpy(last_in_addr, in_addr, sizeof(last_in_addr));
+    } else {
         if (!datagram && connected && ret == 0) {
             // remote host has closed connection
             connected = false;
@@ -378,6 +408,24 @@ const char *SOCKET_CLASS_NAME::last_recv_address(char *ip_addr_buf, uint8_t bufl
     }
     port = ntohs(sin.sin_port);
     return ret;
+}
+
+/*
+  return the IP address and port of the last received packet
+ */
+bool SOCKET_CLASS_NAME::last_recv_address(uint32_t &ip_addr, uint16_t &port) const
+{
+    const struct sockaddr_in &sin = *(struct sockaddr_in *)&last_in_addr[0];
+    if (sin.sin_family != AF_INET) {
+        return false;
+    }
+    ip_addr = ntohl(sin.sin_addr.s_addr);
+    port = ntohs(sin.sin_port);
+    if (ip_addr == 0 ||
+        port == 0) {
+        return false;
+    }
+    return true;
 }
 
 void SOCKET_CLASS_NAME::set_broadcast(void) const
@@ -434,6 +482,17 @@ bool SOCKET_CLASS_NAME::pollout(uint32_t timeout_ms)
     if (CALL_PREFIX(select)(fd+1, nullptr, &fds, nullptr, &tv) != 1) {
         return false;
     }
+
+    if (pending_connect) {
+        int sock_error = 0;
+        socklen_t len = sizeof(sock_error);
+        if (CALL_PREFIX(getsockopt)(fd, SOL_SOCKET, SO_ERROR, (void*)&sock_error, &len) == 0 &&
+            sock_error == 0) {
+            connected = true;
+        }
+        pending_connect = false;
+    }
+
     return true;
 }
 
@@ -467,7 +526,7 @@ SOCKET_CLASS_NAME *SOCKET_CLASS_NAME::accept(uint32_t timeout_ms)
     if (newfd == -1) {
         return nullptr;
     }
-    auto *ret = new SOCKET_CLASS_NAME(false, newfd);
+    auto *ret = NEW_NOTHROW SOCKET_CLASS_NAME(false, newfd);
     if (ret != nullptr) {
         ret->connected = true;
         ret->reuseaddress();
@@ -504,7 +563,7 @@ void SOCKET_CLASS_NAME::close(void)
  */
 SOCKET_CLASS_NAME *SOCKET_CLASS_NAME::duplicate(void)
 {
-    auto *ret = new SOCKET_CLASS_NAME(datagram, fd);
+    auto *ret = NEW_NOTHROW SOCKET_CLASS_NAME(datagram, fd);
     if (ret == nullptr) {
         return nullptr;
     }

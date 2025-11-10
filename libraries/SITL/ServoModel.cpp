@@ -81,7 +81,7 @@ float ServoModel::apply_filter(float v, float dt)
     if (sitl->servo.servo_delay > 0) {
         uint32_t delay_len = MAX(1,sitl->servo.servo_delay * sitl->loop_rate_hz);
         if (!delay) {
-            delay = new ObjectBuffer<float>();
+            delay = NEW_NOTHROW ObjectBuffer<float>();
         }
         if (delay->get_size() != delay_len) {
             delay->set_size(delay_len);
@@ -122,6 +122,12 @@ float ServoModel::filter_angle(uint16_t pwm, float dt)
 {
     const float v = (pwm - 0.5*(pwm_max+pwm_min))/(0.5*float(pwm_max - pwm_min));
     return apply_filter(v, dt);
+}
+
+// return pwm required for current angle
+float ServoModel::angle_pwm() const
+{
+    return angle() * (0.5*float(pwm_max - pwm_min)) + 0.5*(pwm_max+pwm_min);
 }
 
 void ServoModel::set_pwm_range(uint16_t _pwm_min, uint16_t _pwm_max)

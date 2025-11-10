@@ -17,7 +17,7 @@ public:
     static AP_RangeFinder_Backend_Serial *create(
         RangeFinder::RangeFinder_State &_state,
         AP_RangeFinder_Params &_params) {
-        return new AP_RangeFinder_Wasp(_state, _params);
+        return NEW_NOTHROW AP_RangeFinder_Wasp(_state, _params);
     }
 
     void update(void) override;

@@ -39,8 +39,10 @@ bool ModeSurftrak::init(bool ignore_checks)
 
     if (!sub.rangefinder_alt_ok()) {
         sub.gcs().send_text(MAV_SEVERITY_INFO, "waiting for a rangefinder reading");
+#if AP_RANGEFINDER_ENABLED
     } else if (sub.inertial_nav.get_position_z_up_cm() >= sub.g.surftrak_depth) {
         sub.gcs().send_text(MAV_SEVERITY_WARNING, "descend below %f meters to hold range", sub.g.surftrak_depth * 0.01f);
+#endif
     }
 
     return true;
@@ -49,7 +51,14 @@ bool ModeSurftrak::init(bool ignore_checks)
 void ModeSurftrak::run()
 {
     run_pre();
-    control_range();
+
+    if (!motors.armed()) {
+        // Forget rangefinder target
+        reset();
+    } else {
+        control_range();
+    }
+
     run_post();
 }
 
@@ -60,13 +69,14 @@ bool ModeSurftrak::set_rangefinder_target_cm(float target_cm)
 {
     bool success = false;
 
+#if AP_RANGEFINDER_ENABLED
     if (sub.control_mode != Number::SURFTRAK) {
         sub.gcs().send_text(MAV_SEVERITY_WARNING, "wrong mode, rangefinder target not set");
     } else if (sub.inertial_nav.get_position_z_up_cm() >= sub.g.surftrak_depth) {
         sub.gcs().send_text(MAV_SEVERITY_WARNING, "descend below %f meters to set rangefinder target", sub.g.surftrak_depth * 0.01f);
-    } else if (target_cm < (float)sub.rangefinder_state.min_cm) {
+    } else if (target_cm < sub.rangefinder_state.min*100) {
         sub.gcs().send_text(MAV_SEVERITY_WARNING, "rangefinder target below minimum, ignored");
-    } else if (target_cm > (float)sub.rangefinder_state.max_cm) {
+    } else if (target_cm > sub.rangefinder_state.max*100) {
         sub.gcs().send_text(MAV_SEVERITY_WARNING, "rangefinder target above maximum, ignored");
     } else {
         success = true;
@@ -78,12 +88,12 @@ bool ModeSurftrak::set_rangefinder_target_cm(float target_cm)
 
         // Initialize the terrain offset
         auto terrain_offset_cm = sub.inertial_nav.get_position_z_up_cm() - rangefinder_target_cm;
-        sub.pos_control.set_pos_offset_z_cm(terrain_offset_cm);
-        sub.pos_control.set_pos_offset_target_z_cm(terrain_offset_cm);
+        sub.pos_control.init_pos_terrain_U_cm(terrain_offset_cm);
 
     } else {
         reset();
     }
+#endif
 
     return success;
 }
@@ -93,19 +103,18 @@ void ModeSurftrak::reset()
     rangefinder_target_cm = INVALID_TARGET;
 
     // Reset the terrain offset
-    sub.pos_control.set_pos_offset_z_cm(0);
-    sub.pos_control.set_pos_offset_target_z_cm(0);
+    sub.pos_control.init_pos_terrain_U_cm(0);
 }
 
 /*
  * Main controller, call at 100hz+
  */
 void ModeSurftrak::control_range() {
-    float target_climb_rate_cm_s = sub.get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-    target_climb_rate_cm_s = constrain_float(target_climb_rate_cm_s, -sub.get_pilot_speed_dn(), g.pilot_speed_up);
+    float target_climb_rate_cms = sub.get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+    target_climb_rate_cms = constrain_float(target_climb_rate_cms, -sub.get_pilot_speed_dn(), g.pilot_speed_up);
 
     // Desired_climb_rate returns 0 when within the deadzone
-    if (fabsf(target_climb_rate_cm_s) < 0.05f)  {
+    if (fabsf(target_climb_rate_cms) < 0.05f)  {
         if (pilot_in_control) {
             // Pilot has released control; apply the delta to the rangefinder target
             set_rangefinder_target_cm(rangefinder_target_cm + inertial_nav.get_position_z_up_cm() - pilot_control_start_z_cm);
@@ -113,11 +122,11 @@ void ModeSurftrak::control_range() {
         }
         if (sub.ap.at_surface) {
             // Set target depth to 5 cm below SURFACE_DEPTH and reset
-            position_control->set_pos_target_z_cm(MIN(position_control->get_pos_target_z_cm(), g.surface_depth - 5.0f));
+            position_control->set_pos_desired_U_cm(MIN(position_control->get_pos_desired_U_cm(), g.surface_depth - 5.0f));
             reset();
         } else if (sub.ap.at_bottom) {
             // Set target depth to 10 cm above bottom and reset
-            position_control->set_pos_target_z_cm(MAX(inertial_nav.get_position_z_up_cm() + 10.0f, position_control->get_pos_target_z_cm()));
+            position_control->set_pos_desired_U_cm(MAX(inertial_nav.get_position_z_up_cm() + 10.0f, position_control->get_pos_desired_U_cm()));
             reset();
         } else {
             // Typical operation
@@ -130,10 +139,10 @@ void ModeSurftrak::control_range() {
     }
 
     // Set the target altitude from the climb rate and the terrain offset
-    position_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate_cm_s);
+    position_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cms);
 
     // Run the PID controllers
-    position_control->update_z_controller();
+    position_control->update_U_controller();
 }
 
 /*
@@ -141,6 +150,7 @@ void ModeSurftrak::control_range() {
  */
 void ModeSurftrak::update_surface_offset()
 {
+#if AP_RANGEFINDER_ENABLED
     if (sub.rangefinder_alt_ok()) {
         // Get the latest terrain offset
         float rangefinder_terrain_offset_cm = sub.rangefinder_state.rangefinder_terrain_offset_cm;
@@ -159,7 +169,8 @@ void ModeSurftrak::update_surface_offset()
             }
 
             // Set the offset target, AC_PosControl will do the rest
-            sub.pos_control.set_pos_offset_target_z_cm(rangefinder_terrain_offset_cm);
+            sub.pos_control.set_pos_terrain_target_U_cm(rangefinder_terrain_offset_cm);
         }
     }
+#endif  // AP_RANGEFINDER_ENABLED
 }

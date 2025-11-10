@@ -44,11 +44,6 @@ public:
     // set command line parameters to the eeprom on start
     virtual void set_cmdline_parameters() {};
 
-    // run a debug shall on the given stream if possible. This is used
-    // to support dropping into a debug shell to run firmware upgrade
-    // commands
-    virtual bool run_debug_shell(AP_HAL::BetterStream *stream) = 0;
-
     enum safety_state : uint8_t {
         SAFETY_NONE,
         SAFETY_DISARMED,
@@ -134,11 +129,6 @@ public:
     virtual bool toneAlarm_init(uint8_t types) { return false;}
     virtual void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) {}
 
-    /*
-      return a stream for access to a system shell, if available
-     */
-    virtual AP_HAL::BetterStream *get_shell_stream() { return nullptr; }
-
     /* Support for an imu heating system */
     virtual void set_imu_temp(float current) {}
 
@@ -153,18 +143,6 @@ public:
     };
     virtual void *malloc_type(size_t size, Memory_Type mem_type) { return calloc(1, size); }
     virtual void free_type(void *ptr, size_t size, Memory_Type mem_type) { return free(ptr); }
-
-#ifdef ENABLE_HEAP
-    // heap functions, note that a heap once alloc'd cannot be dealloc'd
-    virtual void *allocate_heap_memory(size_t size) = 0;
-    virtual void *heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size) = 0;
-#if USE_LIBC_REALLOC
-    virtual void *std_realloc(void *ptr, size_t new_size) { return realloc(ptr, new_size); }
-#else
-    virtual void *std_realloc(void *ptr, size_t new_size) = 0;
-#endif // USE_LIBC_REALLOC
-#endif // ENABLE_HEAP
-
 
     /**
        how much free memory do we have in bytes. If unknown return 4096
@@ -217,6 +195,9 @@ public:
     virtual void* last_crash_dump_ptr() const { return nullptr; }
 #endif
 
+    // get the system load
+    virtual bool get_system_load(float& avg_load, float& peak_load) const { return false; }
+
 #if HAL_ENABLE_DFU_BOOT
     virtual void boot_to_dfu(void) {}
 #endif
@@ -226,3 +207,8 @@ protected:
     bool soft_armed = false;
     uint32_t last_armed_change_ms;
 };
+
+extern "C" {
+    void AP_stack_overflow(const char *thread_name);
+    void AP_memory_guard_error(uint32_t size);
+}

@@ -1,6 +1,9 @@
-#include "AP_Mount_SToRM32_serial.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_STORM32SERIAL_ENABLED
+
+#include "AP_Mount_SToRM32_serial.h"
+
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
@@ -8,6 +11,8 @@
 // update mount position - should be called periodically
 void AP_Mount_SToRM32_serial::update()
 {
+    AP_Mount_Backend::update();
+
     // exit immediately if not initialised
     if (!_initialised) {
         return;
@@ -49,21 +54,10 @@ void AP_Mount_SToRM32_serial::update()
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING: {
-            // update targets using pilot's RC inputs
-            MountTarget rc_target;
-            get_rc_target(mnt_target.target_type, rc_target);
-            switch (mnt_target.target_type) {
-            case MountTargetType::ANGLE:
-                mnt_target.angle_rad = rc_target;
-                break;
-            case MountTargetType::RATE:
-                mnt_target.rate_rads = rc_target;
-                break;
-            }
+        case MAV_MOUNT_MODE_RC_TARGETING:
+            update_mnt_target_from_rc_target();
             resend_now = true;
             break;
-        }
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
@@ -119,7 +113,7 @@ void AP_Mount_SToRM32_serial::update()
 // get attitude as a quaternion.  returns true on success
 bool AP_Mount_SToRM32_serial::get_attitude_quaternion(Quaternion& att_quat)
 {
-    att_quat.from_euler(radians(_current_angle.x * 0.01f), radians(_current_angle.y * 0.01f), radians(_current_angle.z * 0.01f));
+    att_quat.from_euler(cd_to_rad(_current_angle.x), cd_to_rad(_current_angle.y), cd_to_rad(_current_angle.z));
     return true;
 }
 

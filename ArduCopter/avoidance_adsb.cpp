@@ -1,12 +1,19 @@
 #include "Copter.h"
 #include <AP_Notify/AP_Notify.h>
 
-#if HAL_ADSB_ENABLED
+#if HAL_ADSB_ENABLED || AP_ADSB_AVOIDANCE_ENABLED
 void Copter::avoidance_adsb_update(void)
 {
+#if HAL_ADSB_ENABLED
     adsb.update();
+#endif  // HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
     avoidance_adsb.update();
+#endif  // AP_ADSB_AVOIDANCE_ENABLED
 }
+#endif  // HAL_ADSB_ENABLED || AP_ADSB_AVOIDANCE_ENABLED
+
+#if AP_ADSB_AVOIDANCE_ENABLED
 
 #include <stdio.h>
 
@@ -25,7 +32,7 @@ MAV_COLLISION_ACTION AP_Avoidance_Copter::handle_avoidance(const AP_Avoidance::O
 
     // take no action in some flight modes
     if (copter.flightmode->mode_number() == Mode::Number::LAND ||
-#if MODE_THROW_ENABLED == ENABLED
+#if MODE_THROW_ENABLED
         copter.flightmode->mode_number() == Mode::Number::THROW ||
 #endif
         copter.flightmode->mode_number() == Mode::Number::FLIP) {
@@ -146,11 +153,11 @@ void AP_Avoidance_Copter::set_mode_else_try_RTL_else_LAND(Mode::Number mode)
     }
 }
 
-int32_t AP_Avoidance_Copter::get_altitude_minimum() const
+int32_t AP_Avoidance_Copter::get_altitude_minimum_cm() const
 {
-#if MODE_RTL_ENABLED == ENABLED
+#if MODE_RTL_ENABLED
     // do not descend if below RTL alt
-    return copter.g.rtl_altitude;
+    return copter.g.rtl_altitude_cm;
 #else
     return 0;
 #endif
@@ -186,19 +193,19 @@ bool AP_Avoidance_Copter::handle_avoidance_vertical(const AP_Avoidance::Obstacle
     }
 
     // get best vector away from obstacle
-    Vector3f velocity_neu;
+    Vector3f velocity_neu_cms;
     if (should_climb) {
-        velocity_neu.z = copter.wp_nav->get_default_speed_up();
+        velocity_neu_cms.z = copter.wp_nav->get_default_speed_up_cms();
     } else {
-        velocity_neu.z = -copter.wp_nav->get_default_speed_down();
+        velocity_neu_cms.z = -copter.wp_nav->get_default_speed_down_cms();
         // do not descend if below minimum altitude
-        if (copter.current_loc.alt < get_altitude_minimum()) {
-            velocity_neu.z = 0.0f;
+        if (copter.current_loc.alt < get_altitude_minimum_cm()) {
+            velocity_neu_cms.z = 0.0f;
         }
     }
 
     // send target velocity
-    copter.mode_avoid_adsb.set_velocity(velocity_neu);
+    copter.mode_avoid_adsb.set_velocity(velocity_neu_cms);
     return true;
 }
 
@@ -210,21 +217,21 @@ bool AP_Avoidance_Copter::handle_avoidance_horizontal(const AP_Avoidance::Obstac
     }
 
     // get best vector away from obstacle
-    Vector3f velocity_neu;
-    if (get_vector_perpendicular(obstacle, velocity_neu)) {
+    Vector3f velocity_neu_cms;
+    if (get_vector_perpendicular(obstacle, velocity_neu_cms)) {
         // remove vertical component
-        velocity_neu.z = 0.0f;
+        velocity_neu_cms.z = 0.0f;
         // check for divide by zero
-        if (is_zero(velocity_neu.x) && is_zero(velocity_neu.y)) {
+        if (is_zero(velocity_neu_cms.x) && is_zero(velocity_neu_cms.y)) {
             return false;
         }
         // re-normalise
-        velocity_neu.normalize();
+        velocity_neu_cms.normalize();
         // convert horizontal components to velocities
-        velocity_neu.x *= copter.wp_nav->get_default_speed_xy();
-        velocity_neu.y *= copter.wp_nav->get_default_speed_xy();
+        velocity_neu_cms.x *= copter.wp_nav->get_default_speed_NE_cms();
+        velocity_neu_cms.y *= copter.wp_nav->get_default_speed_NE_cms();
         // send target velocity
-        copter.mode_avoid_adsb.set_velocity(velocity_neu);
+        copter.mode_avoid_adsb.set_velocity(velocity_neu_cms);
         return true;
     }
 
@@ -240,27 +247,28 @@ bool AP_Avoidance_Copter::handle_avoidance_perpendicular(const AP_Avoidance::Obs
     }
 
     // get best vector away from obstacle
-    Vector3f velocity_neu;
-    if (get_vector_perpendicular(obstacle, velocity_neu)) {
+    Vector3f velocity_neu_cms;
+    if (get_vector_perpendicular(obstacle, velocity_neu_cms)) {
         // convert horizontal components to velocities
-        velocity_neu.x *= copter.wp_nav->get_default_speed_xy();
-        velocity_neu.y *= copter.wp_nav->get_default_speed_xy();
+        velocity_neu_cms.x *= copter.wp_nav->get_default_speed_NE_cms();
+        velocity_neu_cms.y *= copter.wp_nav->get_default_speed_NE_cms();
         // use up and down waypoint speeds
-        if (velocity_neu.z > 0.0f) {
-            velocity_neu.z *= copter.wp_nav->get_default_speed_up();
+        if (velocity_neu_cms.z > 0.0f) {
+            velocity_neu_cms.z *= copter.wp_nav->get_default_speed_up_cms();
         } else {
-            velocity_neu.z *= copter.wp_nav->get_default_speed_down();
+            velocity_neu_cms.z *= copter.wp_nav->get_default_speed_down_cms();
             // do not descend if below minimum altitude
-            if (copter.current_loc.alt < get_altitude_minimum()) {
-                velocity_neu.z = 0.0f;
+            if (copter.current_loc.alt < get_altitude_minimum_cm()) {
+                velocity_neu_cms.z = 0.0f;
             }
         }
         // send target velocity
-        copter.mode_avoid_adsb.set_velocity(velocity_neu);
+        copter.mode_avoid_adsb.set_velocity(velocity_neu_cms);
         return true;
     }
 
     // if we got this far we failed to set the new target
     return false;
 }
-#endif
+
+#endif  // AP_ADSB_AVOIDANCE_ENABLED

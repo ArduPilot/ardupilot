@@ -84,7 +84,7 @@ AP_InertialSensor_BMI088::probe(AP_InertialSensor &imu,
     if (!dev_accel || !dev_gyro) {
         return nullptr;
     }
-    auto sensor = new AP_InertialSensor_BMI088(imu, std::move(dev_accel), std::move(dev_gyro), rotation);
+    auto sensor = NEW_NOTHROW AP_InertialSensor_BMI088(imu, std::move(dev_accel), std::move(dev_gyro), rotation);
 
     if (!sensor) {
         return nullptr;
@@ -130,7 +130,7 @@ bool AP_InertialSensor_BMI088::read_accel_registers(uint8_t reg, uint8_t *data, 
     uint8_t b[len+2];
     b[0] = reg | 0x80;
     memset(&b[1], 0, len+1);
-    if (!dev_accel->transfer(b, len+2, b, len+2)) {
+    if (!dev_accel->transfer_fullduplex(b, len+2)) {
         return false;
     }
     memcpy(data, &b[2], len);

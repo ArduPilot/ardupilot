@@ -1,0 +1,226 @@
+# hw definition file for processing by chibios_hwdef.py
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_PixSurveyA2-IND 
+
+FLASH_SIZE_KB 2048
+
+# bootloader takes first sector
+FLASH_RESERVE_START_KB 128
+
+# order of I2C buses
+I2C_ORDER  I2C2 I2C1
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 UART7 OTG2
+
+# USB.
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+PA9 VBUS INPUT OPENDRAIN
+PC0 VBUS_nVALID INPUT PULLUP
+
+# telem1
+PD5 USART2_TX USART2
+PD6 USART2_RX USART2
+PD3 USART2_CTS USART2
+PD4 USART2_RTS USART2
+
+# telem2
+PD8 USART3_TX USART3
+PD9 USART3_RX USART3
+PD11 USART3_CTS USART3
+PD12 USART3_RTS USART3
+
+# GPS
+PA0 UART4_TX UART4
+PA1 UART4_RX UART4 NODMA
+
+# GPS2
+PE0 UART8_RX UART8
+PE1 UART8_TX UART8 NODMA
+
+# UART7
+PE7 UART7_RX UART7
+PE8 UART7_TX UART7
+
+# UART for IOMCU
+IOMCU_UART USART6
+PC6 USART6_TX USART6
+PC7 USART6_RX USART6
+
+# Now the VDD sense pin. This is used to sense primary board voltage.
+PA4 VDD_5V_SENS ADC1 SCALE(2)
+
+# This defines an output pin which will default to output HIGH. It is
+# a pin that enables peripheral power on this board. It starts in the
+# off state, then is pulled low to enable peripherals in
+# peripheral_power_enable()
+
+PE3 VDD_3V3_SENSORS_EN OUTPUT LOW
+# SWD debug
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# PWM output for buzzer
+PA15 TIM2_CH1 TIM2 GPIO(77) ALARM
+
+# CAN1
+PD0 CAN1_RX CAN1
+PD1 CAN1_TX CAN1
+
+# CAN2
+PB6 CAN2_TX CAN2
+PB12 CAN2_RX CAN2
+
+# I2C1
+PB8 I2C1_SCL I2C1
+PB9 I2C1_SDA I2C1
+
+# I2C2
+PB10 I2C2_SCL I2C2
+PB11 I2C2_SDA I2C2
+
+# SPI1.
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# SPI4.
+PE2 SPI4_SCK  SPI4
+PE5 SPI4_MISO SPI4
+PE6 SPI4_MOSI SPI4
+
+# SPI2
+PB13 SPI2_SCK SPI2
+PB14 SPI2_MISO SPI2
+PB15 SPI2_MOSI SPI2
+
+# This defines more ADC inputs.
+PA2 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PA3 BATT_CURRENT_SENS ADC1 SCALE(1)
+
+PC3 AUX_POWER ADC1 SCALE(1)
+PC4 AUX_ADC2 ADC1 SCALE(1)
+
+# More CS pins for more sensors. The labels for all CS pins need to
+# match the SPI device table later in this file.
+PC13 42688_EXT_CS CS
+PD7 BARO_EXT_CS CS
+PC2 40605_EXT_CS CS
+PE4 42688_CS CS
+PC14 BARO_CS CS
+PD10 FRAM_CS CS
+#PD2 SDCARD_CS CS
+
+PC1 42688_EXT_DRDY INPUT
+PC15 40605_EXT_DRDY INPUT
+PD15 42688_DRDY INPUT
+
+# Now we start defining some PWM pins. We also map these pins to GPIO
+# values, so users can set SERVOx_FUNCTION=-1 to determine which
+# PWM outputs on the primary MCU are set up as GPIOs.
+# To match HAL_PX4 we number the GPIOs for the PWM outputs
+# starting at 50.
+PE14 TIM1_CH4 TIM1 PWM(1) GPIO(50)
+PE13 TIM1_CH3 TIM1 PWM(2) GPIO(51) BIDIR
+PE11 TIM1_CH2 TIM1 PWM(3) GPIO(52)
+PE9  TIM1_CH1 TIM1 PWM(4) GPIO(53) BIDIR
+PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54) BIDIR
+PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55) BIDIR
+
+# Power flag pins: these tell the MCU the status of the various power
+# supplies that are available. The pin names need to exactly match the
+# names used in AnalogIn.cpp.
+PB2 VDD_BRICK_nVALID INPUT PULLUP
+PB7 VDD_BRICK2_nVALID INPUT PULLUP
+PE10 VDD_5V_HIPOWER_nOC INPUT PULLUP
+PE15 VDD_5V_PERIPH_nOC INPUT PULLUP
+
+SPIDEV BMP388           SPI1 DEVID3  BARO_CS      MODE3   20*MHZ 20*MHZ
+SPIDEV BMP388_ext       SPI4 DEVID2  BARO_EXT_CS  MODE3   20*MHZ 20*MHZ
+
+SPIDEV ICM40605_ext     SPI4 DEVID4  40605_EXT_CS MODE3   2*MHZ   8*MHZ
+SPIDEV ICM42688_ext     SPI4 DEVID5  42688_EXT_CS MODE3   2*MHZ   8*MHZ
+SPIDEV ICM42688         SPI1 DEVID6  42688_CS     MODE3   2*MHZ   8*MHZ
+
+SPIDEV ramtron          SPI2 DEVID10 FRAM_CS      MODE3   8*MHZ   8*MHZ
+
+# IMUs
+IMU Invensensev3 SPI:ICM42688         ROTATION_PITCH_180           
+IMU Invensensev3 SPI:ICM42688_ext     ROTATION_PITCH_180
+IMU Invensensev3 SPI:ICM40605_ext     ROTATION_PITCH_180
+
+define HAL_DEFAULT_INS_FAST_SAMPLE 7
+
+# two baros
+BARO BMP388 SPI:BMP388
+BARO BMP388 SPI:BMP388_ext
+
+define AP_COMPASS_PROBING_ENABLED 1
+define HAL_I2C_INTERNAL_MASK 1
+
+undef AP_FEATURE_SBUS_OUT
+
+# Enable FAT filesystem support.
+define HAL_OS_FATFS_IO 1
+AP_BOOTLOADER_FLASH_FROM_SD_ENABLED 
+
+# Now setup the default battery pins driver analog pins and default
+# scaling for the power brick.
+define HAL_BATT_MONITOR_DEFAULT 8
+
+define HAL_BATT2_MONITOR_DEFAULT 4
+define HAL_BATT2_VOLT_PIN 13
+define HAL_BATT2_CURR_PIN 4
+
+define HAL_BATT2_VOLT_SCALE 18.0
+define HAL_BATT2_CURR_SCALE 24.0
+
+
+PC8 SDMMC1_D0 SDMMC1
+PC9 SDMMC1_D1 SDMMC1
+PC10 SDMMC1_D2 SDMMC1
+PC11 SDMMC1_D3 SDMMC1
+PC12 SDMMC1_CK SDMMC1
+PD2 SDMMC1_CMD SDMMC1
+
+# allow to have have a dedicated safety switch pin
+define HAL_HAVE_SAFETY_SWITCH 1
+
+# Enable RAMTRON parameter storage.
+define HAL_WITH_RAMTRON 1
+define HAL_STORAGE_SIZE 32768
+
+# Setup the IMU heater
+define HAL_HAVE_IMU_HEATER 1
+define HAL_IMU_TEMP_DEFAULT 45
+define HAL_IMUHEAT_P_DEFAULT 50
+define HAL_IMUHEAT_I_DEFAULT 0.07
+define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 5
+
+# compensate for magnetic field generated by the heater on internal IST8310
+define HAL_HEATER_MAG_OFFSET {AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_I2C,0,0xe,0xa),Vector3f(0,2,-19)}
+
+# this board does not have heater detection pins, so force via features register
+define AP_IOMCU_FORCE_ENABLE_HEATER 1
+
+# Enable all IMUs to be used and therefore three active EKF Lanes
+define HAL_EKF_IMU_MASK_DEFAULT 7
+
+define HAL_OTG2_PROTOCOL SerialProtocol_SLCAN
+
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
+
+# enable support for dshot on iomcu
+ ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_dshot_highpolh.bin
+
+define HAL_WITH_IO_MCU_DSHOT 1
+
+DMA_NOSHARE SPI1* SPI4* USART6*

@@ -74,7 +74,7 @@ AP_Compass_Backend *AP_Compass_RM3100::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
     if (!dev) {
         return nullptr;
     }
-    AP_Compass_RM3100 *sensor = new AP_Compass_RM3100(std::move(dev), force_external, rotation);
+    AP_Compass_RM3100 *sensor = NEW_NOTHROW AP_Compass_RM3100(std::move(dev), force_external, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -145,17 +145,16 @@ bool AP_Compass_RM3100::init()
 
     /* register the compass instance in the frontend */
     dev->set_device_type(DEVTYPE_RM3100);
-    if (!register_compass(dev->get_bus_id(), compass_instance)) {
+    if (!register_compass(dev->get_bus_id())) {
         return false;
     }
-    set_dev_id(compass_instance, dev->get_bus_id());
 
-    DEV_PRINTF("RM3100: Found at address 0x%x as compass %u\n", dev->get_bus_address(), compass_instance);
-    
-    set_rotation(compass_instance, rotation);
+    DEV_PRINTF("RM3100: Found at address 0x%x as compass %u\n", dev->get_bus_address(), instance);
+
+    set_rotation(rotation);
 
     if (force_external) {
-        set_external(compass_instance, true);
+        set_external(true);
     }
     
     // call timer() at 80Hz
@@ -232,7 +231,7 @@ void AP_Compass_RM3100::timer()
              magz * _scaler
          };
 
-        accumulate_sample(field, compass_instance);
+        accumulate_sample(field);
     }
 
 check_registers:
@@ -241,7 +240,7 @@ check_registers:
 
 void AP_Compass_RM3100::read()
 {
-	drain_accumulated_samples(compass_instance);
+	drain_accumulated_samples();
 }
 
 #endif  // AP_COMPASS_RM3100_ENABLED

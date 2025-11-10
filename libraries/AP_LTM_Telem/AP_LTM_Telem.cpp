@@ -142,10 +142,12 @@ void AP_LTM_Telem::send_Sframe(void)
     const uint8_t flightmode = AP_Notify::flags.flight_mode; // flight mode
 
     uint8_t rssi = 0; // radio RSSI (%a)
+#if AP_RSSI_ENABLED
     AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
     if (ap_rssi) {
         rssi = ap_rssi->read_receiver_rssi_uint8();
     }
+#endif
 
     const uint8_t armstat = AP_Notify::flags.armed;                                     // 0: disarmed, 1: armed
     const uint8_t failsafe = AP_Notify::flags.failsafe_radio;                           // 0: normal,   1: failsafe
@@ -179,9 +181,9 @@ void AP_LTM_Telem::send_Aframe(void)
     {
         AP_AHRS &ahrs = AP::ahrs();
         WITH_SEMAPHORE(ahrs.get_semaphore());
-        pitch = roundf(ahrs.pitch_sensor * 0.01); // attitude pitch in degrees
-        roll = roundf(ahrs.roll_sensor * 0.01);   // attitude roll in degrees
-        heading = roundf(ahrs.yaw_sensor * 0.01); // heading in degrees
+        pitch = roundf(ahrs.get_pitch_deg()); // attitude pitch in degrees
+        roll = roundf(ahrs.get_roll_deg());   // attitude roll in degrees
+        heading = roundf(ahrs.get_yaw_deg()); // heading in degrees
     }
 #else
     pitch = 0;

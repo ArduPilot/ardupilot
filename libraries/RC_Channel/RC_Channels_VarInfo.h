@@ -104,11 +104,11 @@ const AP_Param::GroupInfo RC_Channels::var_info[] = {
     // @Bitmask: 0:All,1:PPM,2:IBUS,3:SBUS,4:SBUS_NI,5:DSM,6:SUMD,7:SRXL,8:SRXL2,9:CRSF,10:ST24,11:FPORT,12:FPORT2,13:FastSBUS,14:DroneCAN,15:Ghost,16:MAVRadio
     AP_GROUPINFO("_PROTOCOLS", 34, RC_CHANNELS_SUBCLASS, _protocols, 1),
 
-    // @Param: _FS_TIMEOUT
+    // @Param{Copter}: _FS_TIMEOUT
     // @DisplayName: RC Failsafe timeout
     // @Description: RC failsafe will trigger this many seconds after loss of RC
     // @User: Standard
-    // @Range: 0.5 10.0
+    // @Range: 0.1 10.0
     // @Units: s
     AP_GROUPINFO_FRAME("_FS_TIMEOUT", 35, RC_CHANNELS_SUBCLASS, _fs_timeout, 1.0, AP_PARAM_FRAME_COPTER),
 

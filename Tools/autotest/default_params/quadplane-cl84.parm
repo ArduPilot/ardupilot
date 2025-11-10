@@ -1,7 +1,6 @@
 Q_FRAME_CLASS    7
 Q_TILT_ENABLE    1
 Q_TILT_MASK      3
-Q_TILT_RATE      13
 Q_TILT_TYPE      1
 
 # 7 seconds to move servo

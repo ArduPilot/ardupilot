@@ -6,7 +6,7 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_FOXEERF405_V2
 
 # crystal frequency, setup to use external oscillator
@@ -27,8 +27,7 @@ SERIAL_ORDER OTG1
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
 
-# default to all pins low to avoid ESD issues
-DEFAULTGPIO OUTPUT LOW PULLDOWN
+
 
 
 # Chip select pins

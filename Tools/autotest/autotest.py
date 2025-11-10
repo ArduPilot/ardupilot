@@ -6,7 +6,6 @@ Andrew Tridgell, October 2011
 
  AP_FLAKE8_CLEAN
 """
-from __future__ import print_function
 import atexit
 import fnmatch
 import copy
@@ -39,8 +38,6 @@ from pymavlink.generator import mavtemplate
 from vehicle_test_suite import Test
 
 tester = None
-
-build_opts = None
 
 
 def buildlogs_dirpath():
@@ -98,7 +95,7 @@ def build_binaries():
 
 def build_examples(**kwargs):
     """Build examples."""
-    for target in 'Pixhawk1', 'navio', 'linux':
+    for target in 'Pixhawk1', 'navio', 'linux', 'sitl':
         print("Running build.examples for %s" % target)
         try:
             util.build_examples(target, **kwargs)
@@ -156,17 +153,17 @@ def run_unit_tests():
 
 def run_clang_scan_build():
     """Run Clang Scan-build utility."""
-    if util.run_cmd("scan-build python waf configure",
+    if util.run_cmd("scan-build python3 waf configure",
                     directory=util.reltopdir('.')) != 0:
         print("Failed scan-build-configure")
         return False
 
-    if util.run_cmd("scan-build python waf clean",
+    if util.run_cmd("scan-build python3 waf clean",
                     directory=util.reltopdir('.')) != 0:
         print("Failed scan-build-clean")
         return False
 
-    if util.run_cmd("scan-build python waf build",
+    if util.run_cmd("scan-build python3 waf build",
                     directory=util.reltopdir('.')) != 0:
         print("Failed scan-build-build")
         return False
@@ -238,7 +235,6 @@ def test_prerequisites():
 
 def alarm_handler(signum, frame):
     """Handle test timeout."""
-    global results, opts, tester
     try:
         print("Alarm handler called")
         if tester is not None:
@@ -278,6 +274,10 @@ __bin_names = {
     "CopterTests2b": "arducopter",
 
     "Plane": "arduplane",
+    "PlaneTests1a": "arduplane",
+    "PlaneTests1b": "arduplane",
+    "PlaneTests1c": "arduplane",
+
     "Rover": "ardurover",
     "Tracker": "antennatracker",
     "Helicopter": "arducopter-heli",
@@ -287,7 +287,9 @@ __bin_names = {
     "BalanceBot": "ardurover",
     "Sailboat": "ardurover",
     "SITLPeriphUniversal": ("sitl_periph_universal", "AP_Periph"),
+    "SITLPeriphBattMon": ("sitl_periph_battmon", "AP_Periph"),
     "CAN": "arducopter",
+    "BattCAN": "arducopter",
 }
 
 
@@ -350,6 +352,9 @@ tester_class_map = {
     "test.CopterTests2a": arducopter.AutoTestCopterTests2a, # 8m23s
     "test.CopterTests2b": arducopter.AutoTestCopterTests2b, # 8m18s
     "test.Plane": arduplane.AutoTestPlane,
+    "test.PlaneTests1a": arduplane.AutoTestPlaneTests1a,
+    "test.PlaneTests1b": arduplane.AutoTestPlaneTests1b,
+    "test.PlaneTests1c": arduplane.AutoTestPlaneTests1c,
     "test.QuadPlane": quadplane.AutoTestQuadPlane,
     "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
@@ -358,11 +363,15 @@ tester_class_map = {
     "test.Sub": ardusub.AutoTestSub,
     "test.Tracker": antennatracker.AutoTestTracker,
     "test.CAN": arducopter.AutoTestCAN,
+    "test.BattCAN": arducopter.AutoTestBattCAN,
 }
 
 supplementary_test_binary_map = {
     "test.CAN": ["sitl_periph_universal:AP_Periph:0:Tools/autotest/default_params/periph.parm,Tools/autotest/default_params/quad-periph.parm", # noqa: E501
                  "sitl_periph_universal:AP_Periph:1:Tools/autotest/default_params/periph.parm"],
+    "test.BattCAN": [
+        "sitl_periph_battmon:AP_Periph:0:Tools/autotest/default_params/periph-battmon.parm,Tools/autotest/default_params/quad-periph.parm", # noqa: E501
+    ],
 }
 
 
@@ -372,18 +381,22 @@ def run_specific_test(step, *args, **kwargs):
     if t is None:
         return []
     (testname, test) = t
+    tests = set()
+    tests.update(test.split(","))
 
     tester_class = tester_class_map[testname]
     global tester
     tester = tester_class(*args, **kwargs)
 
     # print("Got %s" % str(tester))
+    run = []
     for a in tester.tests():
         if not isinstance(a, Test):
             a = Test(a)
         print("Got %s" % (a.name))
-        if a.name == test:
-            return tester.autotest(tests=[a], allow_skips=False, step_name=step), tester
+        if a.name in tests:
+            run.append(a)
+    return tester.autotest(tests=run, allow_skips=False, step_name=step), tester
     print("Failed to find test %s on %s" % (test, testname))
     sys.exit(1)
 
@@ -391,7 +404,7 @@ def run_specific_test(step, *args, **kwargs):
 def run_step(step):
     """Run one step."""
     # remove old logs
-    util.run_cmd('/bin/rm -f logs/*.BIN logs/LASTLOG.TXT')
+    util.run_cmd('rm -f logs/*.BIN logs/LASTLOG.TXT')
 
     if step == "prerequisites":
         return test_prerequisites()
@@ -415,8 +428,6 @@ def run_step(step):
 
     if opts.Werror:
         build_opts['extra_configure_args'].append("--Werror")
-
-    build_opts = build_opts
 
     vehicle_binary = None
     board = "sitl"
@@ -444,6 +455,10 @@ def run_step(step):
     if step == 'build.SITLPeriphUniversal':
         vehicle_binary = 'bin/AP_Periph'
         board = 'sitl_periph_universal'
+
+    if step == 'build.SITLPeriphBattMon':
+        vehicle_binary = 'bin/AP_Periph'
+        board = 'sitl_periph_battmon'
 
     if step == 'build.Replay':
         return util.build_replay(board='SITL')
@@ -494,10 +509,10 @@ def run_step(step):
         "gdb": opts.gdb,
         "gdb_no_tui": opts.gdb_no_tui,
         "lldb": opts.lldb,
+        "strace": opts.strace,
         "gdbserver": opts.gdbserver,
         "breakpoints": opts.breakpoint,
         "disable_breakpoints": opts.disable_breakpoints,
-        "frame": opts.frame,
         "_show_test_timings": opts.show_test_timings,
         "force_ahrs_type": opts.force_ahrs_type,
         "num_aux_imus" : opts.num_aux_imus,
@@ -507,9 +522,12 @@ def run_step(step):
         "reset_after_every_test": opts.reset_after_every_test,
         "build_opts": copy.copy(build_opts),
         "generate_junit": opts.junit,
+        "enable_fgview": opts.enable_fgview,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
+
+    fly_opts["move_logs_on_test_failure"] = opts.move_logs_on_test_failure
 
     # handle "test.Copter" etc:
     if step in tester_class_map:
@@ -649,7 +667,6 @@ def write_webresults(results_to_write):
 
 def write_fullresults():
     """Write out full results set."""
-    global results
     results.addglob("Google Earth track", '*.kmz')
     results.addfile('Full Logs', 'autotest-output.txt')
     results.addglob('DataFlash Log', '*-log.bin')
@@ -689,7 +706,6 @@ def write_fullresults():
 
 def run_tests(steps):
     """Run a list of steps."""
-    global results
 
     corefiles = glob.glob("core*")
     corefiles.extend(glob.glob("ap-*.core"))
@@ -743,7 +759,6 @@ def run_tests(steps):
                         '<span class="failed-text">FAILED</span>',
                         time.time() - t1)
 
-        global tester
         if tester is not None and tester.rc_thread is not None:
             if passed:
                 print("BAD: RC Thread still alive after run_step")
@@ -823,7 +838,7 @@ if __name__ == "__main__":
         """Custom option parse class."""
 
         def format_epilog(self, formatter):
-            """Retun customized option parser epilog."""
+            """Return customized option parser epilog."""
             return self.epilog
 
     parser = MyOptionParser(
@@ -838,6 +853,10 @@ if __name__ == "__main__":
                       action='store_true',
                       default=False,
                       help='Run in autotest-server mode; dangerous!')
+    parser.add_option("--move-logs-on-test-failure",
+                      action='store_true',
+                      default=None,
+                      help='Move logs to ../buildlogs if a test fails')
     parser.add_option("--skip",
                       type='string',
                       default='',
@@ -853,6 +872,9 @@ if __name__ == "__main__":
     parser.add_option("--viewerip",
                       default=None,
                       help='IP address to send MAVLink and fg packets to')
+    parser.add_option("--enable-fgview",
+                      action='store_true',
+                      help="Enable FlightGear output")
     parser.add_option("--map",
                       action='store_true',
                       default=False,
@@ -865,10 +887,6 @@ if __name__ == "__main__":
                       default=None,
                       type='int',
                       help='maximum runtime in seconds')
-    parser.add_option("--frame",
-                      type='string',
-                      default=None,
-                      help='specify frame type')
     parser.add_option("--show-test-timings",
                       action="store_true",
                       default=False,
@@ -987,6 +1005,10 @@ if __name__ == "__main__":
                          default=False,
                          action='store_true',
                          help='run ArduPilot binaries under lldb')
+    group_sim.add_option("", "--strace",
+                         action='store_true',
+                         default=False,
+                         help="strace the ArduPilot binary")
     group_sim.add_option("-B", "--breakpoint",
                          type='string',
                          action="append",
@@ -1046,6 +1068,17 @@ if __name__ == "__main__":
         elif opts.gdb:
             opts.timeout = None
 
+    # default to moving logs when running in autotest-server mode:
+    if opts.move_logs_on_test_failure is None:
+        opts.move_logs_on_test_failure = opts.autotest_server
+
+        # temporarily default it to the old behaviour, but allow a
+        # user to test it by setting an environment variable:
+        if os.getenv("AP_AUTOTEST_MOVE_LOGS_ON_FAILURE") is not None:
+            opts.move_logs_on_test_failure = os.getenv("AP_AUTOTEST_MOVE_LOGS_ON_FAILURE") == "1"
+        else:
+            opts.move_logs_on_test_failure = True
+
     steps = [
         'prerequisites',
         'build.Binaries',
@@ -1086,6 +1119,9 @@ if __name__ == "__main__":
         'build.SITLPeriphUniversal',
         'test.CAN',
 
+        'build.SITLPeriphBattMon',
+        'test.BattCAN',
+
         # convertgps disabled as it takes 5 hours
         # 'convertgpx',
     ]
@@ -1099,6 +1135,10 @@ if __name__ == "__main__":
 
         'test.CopterTests2a',
         'test.CopterTests2b',
+
+        'test.PlaneTests1a',
+        'test.PlaneTests1b',
+        'test.PlaneTests1c',
 
         'clang-scan-build',
     ]

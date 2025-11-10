@@ -16,6 +16,9 @@
 #include "AP_Filesystem.h"
 
 #include "AP_Filesystem_config.h"
+
+#if AP_FILESYSTEM_FILE_READING_ENABLED
+
 #include <AP_HAL/HAL.h>
 #include <AP_HAL/Util.h>
 #include <AP_Math/AP_Math.h>
@@ -29,6 +32,9 @@ static AP_Filesystem_FATFS fs_local;
 #elif AP_FILESYSTEM_ESP32_ENABLED
 #include "AP_Filesystem_ESP32.h"
 static AP_Filesystem_ESP32 fs_local;
+#elif AP_FILESYSTEM_LITTLEFS_ENABLED
+#include "AP_Filesystem_FlashMemory_LittleFS.h"
+static AP_Filesystem_FlashMemory_LittleFS fs_local;
 #elif AP_FILESYSTEM_POSIX_ENABLED
 #include "AP_Filesystem_posix.h"
 static AP_Filesystem_Posix fs_local;
@@ -189,8 +195,17 @@ int AP_Filesystem::mkdir(const char *pathname)
 
 int AP_Filesystem::rename(const char *oldpath, const char *newpath)
 {
-    const Backend &backend = backend_by_path(oldpath);
-    return backend.fs.rename(oldpath, newpath);
+    const Backend &oldbackend = backend_by_path(oldpath);
+
+    // Don't need the backend again, but we also need to remove the backend pre-fix from the new path.
+    const Backend &newbackend = backend_by_path(newpath);
+
+    // Don't try and rename between backends.
+    if (&oldbackend != &newbackend) {
+        return -1;
+    }
+
+    return oldbackend.fs.rename(oldpath, newpath);
 }
 
 AP_Filesystem::DirHandle *AP_Filesystem::opendir(const char *pathname)
@@ -202,13 +217,15 @@ AP_Filesystem::DirHandle *AP_Filesystem::opendir(const char *pathname)
         (strlen(pathname) == 1 && pathname[0] == '/')) {
         virtual_dirent.backend_ofs = 0;
         virtual_dirent.d_off = 0;
+#if AP_FILESYSTEM_HAVE_DIRENT_DTYPE
         virtual_dirent.de.d_type = DT_DIR;
+#endif
     } else {
         virtual_dirent.backend_ofs = 255;
     }
 
     const Backend &backend = backend_by_path(pathname);
-    DirHandle *h = new DirHandle;
+    DirHandle *h = NEW_NOTHROW DirHandle;
     if (!h) {
         return nullptr;
     }
@@ -269,6 +286,14 @@ int AP_Filesystem::closedir(DirHandle *dirp)
     return ret;
 }
 
+// return number of bytes that should be written before fsync for optimal
+// streaming performance/robustness. if zero, any number can be written.
+uint32_t AP_Filesystem::bytes_until_fsync(int fd)
+{
+    const Backend &backend = backend_by_fd(fd);
+    return backend.fs.bytes_until_fsync(fd);
+}
+
 // return free disk space in bytes
 int64_t AP_Filesystem::disk_free(const char *path)
 {
@@ -321,19 +346,31 @@ bool AP_Filesystem::fgets(char *buf, uint8_t buflen, int fd)
 {
     const Backend &backend = backend_by_fd(fd);
 
+    // we will need to seek back to the right location at the end
+    auto offset_start = backend.fs.lseek(fd, 0, SEEK_CUR);
+    if (offset_start < 0) {
+        return false;
+    }
+
+    auto n = backend.fs.read(fd, buf, buflen);
+    if (n <= 0) {
+        return false;
+    }
+
     uint8_t i = 0;
-    for (; i<buflen-1; i++) {
-        if (backend.fs.read(fd, &buf[i], 1) <= 0) {
-            if (i==0) {
-                return false;
-            }
-            break;
-        }
+    for (; i < n; i++) {
         if (buf[i] == '\r' || buf[i] == '\n') {
             break;
         }
     }
     buf[i] = '\0';
+
+    // get back to the right offset
+    if (backend.fs.lseek(fd, offset_start+i+1, SEEK_SET) != offset_start+i+1) {
+        // we need to fail if we can't seek back or the caller may loop or get corrupt data
+        return false;
+    }
+
     return true;
 }
 
@@ -418,3 +455,4 @@ AP_Filesystem &FS()
 }
 }
 
+#endif // AP_FILESYSTEM_FILE_READING_ENABLED

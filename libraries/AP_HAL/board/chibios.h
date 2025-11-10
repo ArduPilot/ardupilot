@@ -4,6 +4,10 @@
 
 #define HAL_BOARD_NAME "ChibiOS"
 
+#ifdef HAL_HAVE_PIXRACER_LED
+#error "use AP_NOTIFY_GPIO_LED_RGB_ENABLED in place of HAL_HAVE_PIXRACER_LED (and rename your pins!)"
+#endif
+
 #if HAL_MEMORY_TOTAL_KB >= 1000
 #define HAL_MEM_CLASS HAL_MEM_CLASS_1000
 #elif HAL_MEMORY_TOTAL_KB >= 500
@@ -16,6 +20,14 @@
 #define HAL_MEM_CLASS HAL_MEM_CLASS_64
 #else
 #define HAL_MEM_CLASS HAL_MEM_CLASS_20
+#endif
+
+// FIXME: BOARD_FLASH_SIZE is not adjusted for flash pages used for
+// storage, for the bootloader sector or for wasted pages (eg. defunct
+// OSD storage page).  These all impact the amount of space we have
+// for storing program!
+#ifndef HAL_PROGRAM_SIZE_LIMIT_KB
+#define HAL_PROGRAM_SIZE_LIMIT_KB (BOARD_FLASH_SIZE+EXT_FLASH_SIZE_MB*1024)
 #endif
 
 #ifndef HAL_NUM_CAN_IFACES
@@ -94,10 +106,7 @@
 #define CHIBIOS_SHORT_BOARD_NAME CHIBIOS_BOARD_NAME
 #endif
 
-#ifndef CONFIG_HAL_BOARD_SUBTYPE
-// allow for generic boards
-#define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_GENERIC
-#endif
+#define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_NONE
 
 // we support RC serial for BLHeli pass-thru
 #ifndef HAL_SUPPORT_RCOUT_SERIAL
@@ -136,3 +145,34 @@
 #endif
 #define HAL_USE_QUADSPI (HAL_USE_QUADSPI1 || HAL_USE_QUADSPI2)
 #define HAL_USE_OCTOSPI (HAL_USE_OCTOSPI1 || HAL_USE_OCTOSPI2)
+
+#ifndef HAL_INS_RATE_LOOP
+#if defined(STM32H7) || defined(STM32F7) || (defined(STM32F4) \
+    && defined(INS_MAX_INSTANCES) && INS_MAX_INSTANCES == 1)
+/* F405 tested successfully with:
+   INS_GYRO_RATE = 1 (2kHz)
+   SCHED_LOOP_RATE = 200
+   FSTRATE_DIV = 2 (1kHz)
+   FSTRATE_ENABLE = 1
+   SERVO_DSHOT_RATE = 1 (1kHz)*/
+#define HAL_INS_RATE_LOOP 1
+#else
+#define HAL_INS_RATE_LOOP 0
+#endif
+#endif
+
+#ifndef AP_NOTIFY_TONEALARM_ENABLED
+#define AP_NOTIFY_TONEALARM_ENABLED ((defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM_ENABLED))
+#endif
+
+#ifndef AP_NOTIFY_BUZZER_ENABLED
+#define AP_NOTIFY_BUZZER_ENABLED 1
+#endif
+
+#ifndef AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
+#define AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED 0
+#endif  // AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
+
+#ifndef AP_CPU_IDLE_STATS_ENABLED
+#define AP_CPU_IDLE_STATS_ENABLED HAL_PROGRAM_SIZE_LIMIT_KB > 1024
+#endif

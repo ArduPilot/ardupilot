@@ -64,6 +64,10 @@ using namespace ChibiOS;
 #define HAL_RCIN_THREAD_ENABLED 1
 #endif
 
+#ifndef HAL_MONITOR_THREAD_ENABLED
+#define HAL_MONITOR_THREAD_ENABLED 1
+#endif
+
 extern const AP_HAL::HAL& hal;
 #ifndef HAL_NO_TIMER_THREAD
 THD_WORKING_AREA(_timer_thread_wa, TIMER_THD_WA_SIZE);
@@ -80,7 +84,7 @@ THD_WORKING_AREA(_io_thread_wa, IO_THD_WA_SIZE);
 #ifndef HAL_USE_EMPTY_STORAGE
 THD_WORKING_AREA(_storage_thread_wa, STORAGE_THD_WA_SIZE);
 #endif
-#ifndef HAL_NO_MONITOR_THREAD
+#if HAL_MONITOR_THREAD_ENABLED
 THD_WORKING_AREA(_monitor_thread_wa, MONITOR_THD_WA_SIZE);
 #endif
 
@@ -100,7 +104,7 @@ void Scheduler::init()
     chBSemObjectInit(&_timer_semaphore, false);
     chBSemObjectInit(&_io_semaphore, false);
 
-#ifndef HAL_NO_MONITOR_THREAD
+#if HAL_MONITOR_THREAD_ENABLED
     // setup the monitor thread - this is used to detect software lockups
     _monitor_thread_ctx = chThdCreateStatic(_monitor_thread_wa,
                      sizeof(_monitor_thread_wa),
@@ -407,7 +411,7 @@ bool Scheduler::in_expected_delay(void) const
     return false;
 }
 
-#ifndef HAL_NO_MONITOR_THREAD
+#if HAL_MONITOR_THREAD_ENABLED
 void Scheduler::_monitor_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
@@ -513,7 +517,7 @@ void Scheduler::_monitor_thread(void *arg)
 #endif
     }
 }
-#endif // HAL_NO_MONITOR_THREAD
+#endif  // HAL_MONITOR_THREAD_ENABLED
 
 void Scheduler::_rcin_thread(void *arg)
 {
@@ -591,7 +595,7 @@ void Scheduler::_io_thread(void* arg)
     }
 }
 
-#if defined(STM32H7)
+#if MEMCHECK_ENABLED
 /*
   the H7 has 64k of ITCM memory at address zero. We reserve 1k of it
   to prevent nullptr being valid. This function checks that memory is
@@ -599,28 +603,18 @@ void Scheduler::_io_thread(void* arg)
  */
 void Scheduler::check_low_memory_is_zero()
 {
-    const uint32_t *lowmem = nullptr;
-    // we start at address 0x1 as reading address zero causes a fault
-    for (uint16_t i=1; i<256; i++) {
-        if (lowmem[i] != 0) {
+    for (int addr=0; addr<1024; addr+=4) {
+        uint32_t val;
+        // read using assembly so we don't invoke UB dereferencing nullptr
+        __asm__("\tldr %0, [%1]\n\t" : "=r"(val) : "r"(addr));
+        if (val != 0) {
             // re-use memory guard internal error
             AP_memory_guard_error(1023);
             break;
         }
     }
-    // we can't do address 0, but can check next 3 bytes
-    const uint8_t *addr0 = (const uint8_t *)0;
-    for (uint8_t i=1; i<4; i++) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
-        if (addr0[i] != 0) {
-            AP_memory_guard_error(1023);
-            break;
-        }
-#pragma GCC diagnostic pop
-    }
 }
-#endif // STM32H7
+#endif // MEMCHECK_ENABLED
 
 void Scheduler::_storage_thread(void* arg)
 {
@@ -629,21 +623,21 @@ void Scheduler::_storage_thread(void* arg)
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(10000);
     }
-#if defined STM32H7
+#if MEMCHECK_ENABLED
     uint16_t memcheck_counter=0;
-#endif
+#endif  // MEMCHECK_ENABLED
     while (true) {
         sched->delay_microseconds(1000);
 
         // process any pending storage writes
         hal.storage->_timer_tick();
 
-#if defined STM32H7
+#if MEMCHECK_ENABLED
         if (memcheck_counter++ % 500 == 0) {
             // run check at 2Hz
             sched->check_low_memory_is_zero();
         }
-#endif
+#endif  // MEMCHECK_ENABLED
     }
 }
 
@@ -748,7 +742,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
   be used to prevent watchdog reset during expected long delays
   A value of zero cancels the previous expected delay
 */
-void Scheduler::_expect_delay_ms(uint32_t ms)
+void Scheduler::expect_delay_ms(uint32_t ms)
 {
     if (!in_main_thread()) {
         // only for main thread
@@ -757,8 +751,6 @@ void Scheduler::_expect_delay_ms(uint32_t ms)
 
     // pat once immediately
     watchdog_pat();
-
-    WITH_SEMAPHORE(expect_delay_sem);
 
     if (ms == 0) {
         if (expect_delay_nesting > 0) {
@@ -783,18 +775,6 @@ void Scheduler::_expect_delay_ms(uint32_t ms)
         // also put our priority below timer thread if we are boosted
         boost_end();
     }
-}
-
-/*
-  this is _expect_delay_ms() with check that we are in the main thread
- */
-void Scheduler::expect_delay_ms(uint32_t ms)
-{
-    if (!in_main_thread()) {
-        // only for main thread
-        return;
-    }
-    _expect_delay_ms(ms);
 }
 
 // pat the watchdog

@@ -7,8 +7,8 @@ MCU STM32F7xx STM32F767xx
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
-# board ID for firmware load
-APJ_BOARD_ID 1410
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_RadiolinkPIX6
 
 FLASH_RESERVE_START_KB 32
 
@@ -171,19 +171,19 @@ SPIDEV osd            SPI2 DEVID2  AT7456_CS    MODE0  10*MHZ 10*MHZ
 SPIDEV ramtron        SPI2 DEVID1  FRAM_CS      MODE3  8*MHZ  8*MHZ 
 
 # up to 2 IMUs
-IMU Invensensev3 SPI:imu2 ROTATION_YAW_90
+IMU Invensensev3 SPI:imu2 ROTATION_PITCH_180_YAW_270
 
-IMU BMI088 SPI:bmi088_a SPI:bmi088_g ROTATION_NONE
+IMU BMI088 SPI:bmi088_a SPI:bmi088_g ROTATION_PITCH_180
 
 define HAL_DEFAULT_INS_FAST_SAMPLE 1
 
 # probe external I2C compasses plus some internal IST8310
 # we also probe some external IST8310 with a non-standard orientation
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 
 # we need to stop the probe of an IST8310 as an internal compass with PITCH_180
-define HAL_COMPASS_DISABLE_IST8310_INTERNAL_PROBE
-COMPASS IST8310 I2C:ALL_INTERNAL:0x0E false ROTATION_ROLL_180
+define AP_COMPASS_IST8310_INTERNAL_BUS_PROBING_ENABLED 0
+COMPASS IST8310 I2C:ALL_INTERNAL:0x0E false ROTATION_YAW_180
 
 # one baro
 BARO SPL06     I2C:0:0x76
@@ -207,13 +207,13 @@ PC1 LED_GREEN OUTPUT GPIO(91)
 PC7 LED_BLUE OUTPUT GPIO(92)
 
 # setup for "pixracer" RGB LEDs
-define HAL_GPIO_A_LED_PIN 90
-define HAL_GPIO_B_LED_PIN 91
-define HAL_GPIO_C_LED_PIN 92
+define AP_NOTIFY_GPIO_LED_RGB_RED_PIN 90
+define AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN 91
+define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN 92
 
-define HAL_HAVE_PIXRACER_LED
+define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_STORAGE_SIZE 32768
 define HAL_WITH_RAMTRON 1
 
@@ -226,9 +226,6 @@ DMA_PRIORITY SDMMC* UART8* ADC* USART3_RX TIM1_UP USART2_RX USART1_RX TIM1_CH3 S
 
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
-
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
 

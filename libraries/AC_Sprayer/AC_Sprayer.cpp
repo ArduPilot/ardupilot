@@ -1,7 +1,8 @@
-#include "AC_Sprayer.h"
+#include "AC_Sprayer_config.h"
 
 #if HAL_SPRAYER_ENABLED
 
+#include "AC_Sprayer.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>

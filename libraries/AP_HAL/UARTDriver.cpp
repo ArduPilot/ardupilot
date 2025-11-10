@@ -165,6 +165,25 @@ uint64_t AP_HAL::UARTDriver::receive_time_constraint_us(uint16_t nbytes)
     return AP_HAL::micros64();
 }
 
+// Helper to check if flow control is enabled given the passed setting
+bool AP_HAL::UARTDriver::flow_control_enabled(enum flow_control flow_control_setting) const
+{
+    switch(flow_control_setting) {
+        case FLOW_CONTROL_ENABLE:
+        case FLOW_CONTROL_AUTO:
+            return true;
+        case FLOW_CONTROL_DISABLE:
+        case FLOW_CONTROL_RTS_DE:
+            break;
+    }
+    return false;
+}
+
+uint8_t AP_HAL::UARTDriver::get_parity(void)
+{
+    return AP_HAL::UARTDriver::parity;
+}
+
 #if HAL_UART_STATS_ENABLED
 // Take cumulative bytes and return the change since last call
 uint32_t AP_HAL::UARTDriver::StatsTracker::ByteTracker::update(uint32_t bytes)
@@ -192,6 +211,7 @@ void AP_HAL::UARTDriver::log_stats(const uint8_t inst, StatsTracker &stats, cons
     // Update tracking
     const uint32_t tx_bytes = stats.tx.update(total_tx_bytes);
     const uint32_t rx_bytes = stats.rx.update(total_rx_bytes);
+    const uint32_t rx_dropped_bytes = stats.rx_dropped.update(get_total_dropped_rx_bytes());
 
     // Assemble struct and log
     struct log_UART pkt {
@@ -200,6 +220,7 @@ void AP_HAL::UARTDriver::log_stats(const uint8_t inst, StatsTracker &stats, cons
         instance : inst,
         tx_rate  : float((tx_bytes * 1000) / dt_ms),
         rx_rate  : float((rx_bytes * 1000) / dt_ms),
+        rx_drop_rate : float((rx_dropped_bytes * 1000) / dt_ms),
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }

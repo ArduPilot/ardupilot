@@ -1,0 +1,78 @@
+# hw definition file for processing by chibios_pins.py
+
+# MCU class and specific type
+MCU STM32G4xx STM32G474xx
+
+FLASH_RESERVE_START_KB 0
+FLASH_BOOTLOADER_LOAD_KB 32
+
+# reserve some space for params
+APP_START_OFFSET_KB 4
+
+# 512k flash part
+FLASH_SIZE_KB 512
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_Holybro-DroneCAN-Airspeed
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# debug on USART1
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+define CH_CFG_ST_FREQUENCY 1000000
+
+# order of UARTs
+SERIAL_ORDER USART1
+
+# I2C buses
+I2C_ORDER I2C1
+
+# blue LED
+PB15 LED_BOOTLOADER OUTPUT HIGH
+define HAL_LED_ON 0
+
+#green LED, Power ON indicator, Low ON
+PA4 LED_GREEN OUTPUT LOW
+
+# I2C1 bus
+PB7 I2C1_SDA I2C1
+PA15 I2C1_SCL I2C1
+
+# USART1
+PA9  USART1_TX USART1
+PA10 USART1_RX USART1
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+define HAL_USE_SERIAL TRUE
+
+define STM32_SERIAL_USE_USART1 TRUE
+define STM32_SERIAL_USE_USART2 FALSE
+define STM32_SERIAL_USE_USART3 FALSE
+
+define HAL_USE_EMPTY_IO TRUE
+
+define DMA_RESERVE_SIZE 0
+
+# enable CAN support
+
+PB12 CAN2_RX CAN2
+PB13 CAN2_TX CAN2
+PB2 GPIO_CAN2_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+PB4 GPIO_CAN1_TERM OUTPUT PUSHPULL SPEED_LOW LOW
+
+# make bl baudrate match debug baudrate for easier debugging
+define BOOTLOADER_BAUDRATE 57600
+
+# use a smaller bootloader timeout
+define HAL_BOOTLOADER_TIMEOUT 2500
+
+

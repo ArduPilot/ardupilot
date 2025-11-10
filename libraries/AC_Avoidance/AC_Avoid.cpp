@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Increment: 10
     // @Range: 0 4500
     // @User: Standard
-    AP_GROUPINFO_FRAME("ANGLE_MAX", 2,  AC_Avoid, _angle_max, 1000, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+    AP_GROUPINFO_FRAME("ANGLE_MAX", 2,  AC_Avoid, _angle_max_cd, 1000, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
 
     // @Param{Copter}: DIST_MAX
     // @DisplayName: Avoidance distance maximum in non-GPS flight modes
@@ -370,6 +370,19 @@ void AC_Avoid::adjust_speed(float kP, float accel, float heading, float &speed, 
 }
 
 // adjust vertical climb rate so vehicle does not break the vertical fence
+void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float dt) {
+    float backup_speed = 0.0f;
+    adjust_velocity_z(kP, accel_cmss, climb_rate_cms, backup_speed, dt);
+    if (!is_zero(backup_speed)) {
+        if (is_negative(backup_speed)) {
+            climb_rate_cms = MIN(climb_rate_cms, backup_speed);
+        } else {
+            climb_rate_cms = MAX(climb_rate_cms, backup_speed);
+        }
+    }
+}
+
+// adjust vertical climb rate so vehicle does not break the vertical fence
 void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float& backup_speed, float dt)
 {
 #ifdef AP_AVOID_ENABLE_Z
@@ -379,29 +392,36 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
         return;
     }
     
-    // do not adjust climb_rate if level or descending
-    if (climb_rate_cms <= 0.0f) {
+    // do not adjust climb_rate if level
+    if (is_zero(climb_rate_cms)) {
         return;
     }
 
+    const AP_AHRS &_ahrs = AP::ahrs();
     // limit acceleration
     const float accel_cmss_limited = MIN(accel_cmss, AC_AVOID_ACCEL_CMSS_MAX);
 
-    bool limit_alt = false;
-    float alt_diff = 0.0f;   // distance from altitude limit to vehicle in metres (positive means vehicle is below limit)
-
-    const AP_AHRS &_ahrs = AP::ahrs();
-
+    bool limit_min_alt = false;
+    bool limit_max_alt = false;
+    float max_alt_diff = 0.0f; // distance from altitude limit to vehicle in metres (positive means vehicle is below limit)
+    float min_alt_diff = 0.0f;
 #if AP_FENCE_ENABLED
     // calculate distance below fence
     AC_Fence *fence = AP::fence();
-    if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0 && fence && (fence->get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) > 0) {
+    if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0 && fence) {
         // calculate distance from vehicle to safe altitude
         float veh_alt;
         _ahrs.get_relative_position_D_home(veh_alt);
-        // _fence.get_safe_alt_max() is UP, veh_alt is DOWN:
-        alt_diff = fence->get_safe_alt_max() + veh_alt;
-        limit_alt = true;
+        if ((fence->get_enabled_fences() & AC_FENCE_TYPE_ALT_MIN) > 0) {
+            // fence.get_safe_alt_max() is UP, veh_alt is DOWN:
+            min_alt_diff = -(fence->get_safe_alt_min() + veh_alt);
+            limit_min_alt = true;
+        }
+        if ((fence->get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) > 0) {
+            // fence.get_safe_alt_max() is UP, veh_alt is DOWN:
+            max_alt_diff = fence->get_safe_alt_max() + veh_alt;
+            limit_max_alt = true;
+        }
     }
 #endif
 
@@ -410,12 +430,12 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
     float alt_limit;
     float curr_alt;
     if (_ahrs.get_hgt_ctrl_limit(alt_limit) &&
-        _ahrs.get_relative_position_D_origin(curr_alt)) {
+        _ahrs.get_relative_position_D_origin_float(curr_alt)) {
         // alt_limit is UP, curr_alt is DOWN:
         const float ctrl_alt_diff = alt_limit + curr_alt;
-        if (!limit_alt || ctrl_alt_diff < alt_diff) {
-            alt_diff = ctrl_alt_diff;
-            limit_alt = true;
+        if (!limit_max_alt || ctrl_alt_diff < max_alt_diff) {
+            max_alt_diff = ctrl_alt_diff;
+            limit_max_alt = true;
         }
     }
 
@@ -425,39 +445,58 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
     AP_Proximity *proximity = AP::proximity();
     if (proximity && proximity_avoidance_enabled() && proximity->get_upward_distance(proximity_alt_diff)) {
         proximity_alt_diff -= _margin;
-        if (!limit_alt || proximity_alt_diff < alt_diff) {
-            alt_diff = proximity_alt_diff;
-            limit_alt = true;
+        if (!limit_max_alt || proximity_alt_diff < max_alt_diff) {
+            max_alt_diff = proximity_alt_diff;
+            limit_max_alt = true;
         }
     }
 #endif
 
     // limit climb rate
-    if (limit_alt) {
+    if (limit_max_alt || limit_min_alt) {
+        const float max_back_spd_cms = _backup_speed_z_max * 100.0;
         // do not allow climbing if we've breached the safe altitude
-        if (alt_diff <= 0.0f) {
+        if (max_alt_diff <= 0.0f && limit_max_alt) {
             climb_rate_cms = MIN(climb_rate_cms, 0.0f);
             // also calculate backup speed that will get us back to safe altitude
-            const float max_back_spd_cms = _backup_speed_z_max * 100.0;
             if (is_positive(max_back_spd_cms)) {
-                backup_speed = -1*(get_max_speed(kP, accel_cmss_limited, -alt_diff*100.0f, dt));
+                backup_speed = -1*(get_max_speed(kP, accel_cmss_limited, -max_alt_diff*100.0f, dt));
 
                 // Constrain to max backup speed
                 backup_speed = MAX(backup_speed, -max_back_spd_cms);
             }
             return;
+        // do not allow descending if we've breached the safe altitude
+        } else if (min_alt_diff <= 0.0f && limit_min_alt) {
+            climb_rate_cms =  MAX(climb_rate_cms, 0.0f);
+            // also calculate backup speed that will get us back to safe altitude
+            if (is_positive(max_back_spd_cms)) {
+                backup_speed = get_max_speed(kP, accel_cmss_limited, -min_alt_diff*100.0f, dt);
+
+                // Constrain to max backup speed
+                backup_speed = MIN(backup_speed, max_back_spd_cms);
+            }
+            return;
         }
 
         // limit climb rate
-        const float max_speed = get_max_speed(kP, accel_cmss_limited, alt_diff*100.0f, dt);
-        climb_rate_cms = MIN(max_speed, climb_rate_cms);
+        if (limit_max_alt) {
+            const float max_alt_max_speed = get_max_speed(kP, accel_cmss_limited, max_alt_diff*100.0f, dt);
+            climb_rate_cms = MIN(max_alt_max_speed, climb_rate_cms);
+        }
+
+        if (limit_min_alt) {
+            const float max_alt_min_speed = get_max_speed(kP, accel_cmss_limited, min_alt_diff*100.0f, dt);
+            climb_rate_cms = MAX(-max_alt_min_speed, climb_rate_cms);
+        }
     }
-# endif
+#endif
 }
 
 // adjust roll-pitch to push vehicle away from objects
-// roll and pitch value are in centi-degrees
-void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
+// roll and pitch value are in radians
+// veh_angle_max_rad is the user defined maximum lean angle for the vehicle in radians
+void AC_Avoid::adjust_roll_pitch_rad(float &roll_rad, float &pitch_rad, float veh_angle_max_rad)
 {
     // exit immediately if proximity based avoidance is disabled
     if (!proximity_avoidance_enabled()) {
@@ -465,7 +504,7 @@ void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
     }
 
     // exit immediately if angle max is zero
-    if (_angle_max <= 0.0f || veh_angle_max <= 0.0f) {
+    if (_angle_max_cd <= 0.0f || veh_angle_max_rad <= 0.0f) {
         return;
     }
 
@@ -475,32 +514,32 @@ void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
     float pitch_negative = 0.0f;   // minimum negative pitch value
 
     // get maximum positive and negative roll and pitch percentages from proximity sensor
-    get_proximity_roll_pitch_pct(roll_positive, roll_negative, pitch_positive, pitch_negative);
+    get_proximity_roll_pitch_norm(roll_positive, roll_negative, pitch_positive, pitch_negative);
 
-    // add maximum positive and negative percentages together for roll and pitch, convert to centi-degrees
-    Vector2f rp_out((roll_positive + roll_negative) * 4500.0f, (pitch_positive + pitch_negative) * 4500.0f);
+    // add maximum positive and negative percentages together for roll and pitch, convert to radians
+    Vector2f rp_out_rad((roll_positive + roll_negative) * radians(45.0), (pitch_positive + pitch_negative) * radians(45.0));
 
     // apply avoidance angular limits
     // the object avoidance lean angle is never more than 75% of the total angle-limit to allow the pilot to override
-    const float angle_limit = constrain_float(_angle_max, 0.0f, veh_angle_max * AC_AVOID_ANGLE_MAX_PERCENT);
-    float vec_len = rp_out.length();
-    if (vec_len > angle_limit) {
-        rp_out *= (angle_limit / vec_len);
+    const float angle_limit_rad = constrain_float(cd_to_rad(_angle_max_cd), 0.0f, veh_angle_max_rad * AC_AVOID_ANGLE_MAX_PERCENT);
+    float vec_length_rad = rp_out_rad.length();
+    if (vec_length_rad > angle_limit_rad) {
+        rp_out_rad *= (angle_limit_rad / vec_length_rad);
     }
 
     // add passed in roll, pitch angles
-    rp_out.x += roll;
-    rp_out.y += pitch;
+    rp_out_rad.x += roll_rad;
+    rp_out_rad.y += pitch_rad;
 
     // apply total angular limits
-    vec_len = rp_out.length();
-    if (vec_len > veh_angle_max) {
-        rp_out *= (veh_angle_max / vec_len);
+    vec_length_rad = rp_out_rad.length();
+    if (vec_length_rad > veh_angle_max_rad) {
+        rp_out_rad *= (veh_angle_max_rad / vec_length_rad);
     }
 
     // return adjusted roll, pitch
-    roll = rp_out.x;
-    pitch = rp_out.y;
+    roll_rad = rp_out_rad.x;
+    pitch_rad = rp_out_rad.y;
 }
 
 /*
@@ -738,7 +777,7 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
     // get the fence radius in cm
     const float fence_radius = _fence.get_radius() * 100.0f;
     // get the margin to the fence in cm
-    const float margin_cm = _fence.get_margin() * 100.0f;
+    const float margin_cm = _fence.get_horizontal_margin() * 100.0f;
 
     if (margin_cm > fence_radius) {
         return;
@@ -838,7 +877,7 @@ void AC_Avoid::adjust_velocity_inclusion_and_exclusion_polygons(float kP, float 
         const Vector2f* boundary = fence->polyfence().get_inclusion_polygon(i, num_points);
         Vector2f backup_vel_inc;
         // adjust velocity
-        adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, backup_vel_inc, boundary, num_points, fence->get_margin(), dt, true);
+        adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, backup_vel_inc, boundary, num_points, fence->get_horizontal_margin(), dt, true);
         find_max_quadrant_velocity(backup_vel_inc, quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel);
     }
 
@@ -849,7 +888,7 @@ void AC_Avoid::adjust_velocity_inclusion_and_exclusion_polygons(float kP, float 
         const Vector2f* boundary = fence->polyfence().get_exclusion_polygon(i, num_points);
         Vector2f backup_vel_exc;
         // adjust velocity
-        adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, backup_vel_exc, boundary, num_points, fence->get_margin(), dt, false);
+        adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, backup_vel_exc, boundary, num_points, fence->get_horizontal_margin(), dt, false);
         find_max_quadrant_velocity(backup_vel_exc, quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel);
     }
     // desired backup velocity is sum of maximum velocity component in each quadrant 
@@ -879,14 +918,14 @@ void AC_Avoid::adjust_velocity_inclusion_circles(float kP, float accel_cmss, Vec
 
     // get vehicle position
     Vector2f position_NE;
-    if (!AP::ahrs().get_relative_position_NE_origin(position_NE)) {
+    if (!AP::ahrs().get_relative_position_NE_origin_float(position_NE)) {
         // do not limit velocity if we don't have a position estimate
         return;
     }
     position_NE = position_NE * 100.0f;  // m to cm
 
     // get the margin to the fence in cm
-    const float margin_cm = fence->get_margin() * 100.0f;
+    const float margin_cm = fence->get_horizontal_margin() * 100.0f;
 
     // get desired speed
     const float desired_speed = desired_vel_cms.length();
@@ -1016,14 +1055,14 @@ void AC_Avoid::adjust_velocity_exclusion_circles(float kP, float accel_cmss, Vec
 
     // get vehicle position
     Vector2f position_NE;
-    if (!AP::ahrs().get_relative_position_NE_origin(position_NE)) {
+    if (!AP::ahrs().get_relative_position_NE_origin_float(position_NE)) {
         // do not limit velocity if we don't have a position estimate
         return;
     }
     position_NE = position_NE * 100.0f;  // m to cm
 
     // get the margin to the fence in cm
-    const float margin_cm = fence->get_margin() * 100.0f;
+    const float margin_cm = fence->get_horizontal_margin() * 100.0f;
 
     // for backing away
     Vector2f quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel;
@@ -1145,7 +1184,7 @@ void AC_Avoid::adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f
     float margin = 0;
 #if AP_FENCE_ENABLED
     if (AP::fence()) {
-        margin = AP::fence()->get_margin();
+        margin = AP::fence()->get_horizontal_margin();
     }
 #endif
     adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, backup_vel, boundary, num_points, margin, dt, true);
@@ -1306,7 +1345,7 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
 
     // do not adjust velocity if vehicle is outside the polygon fence
     Vector2f position_xy;
-    if (!_ahrs.get_relative_position_NE_origin(position_xy)) {
+    if (!_ahrs.get_relative_position_NE_origin_float(position_xy)) {
         // boundary is in earth frame but we have no idea
         // where we are
         return;
@@ -1437,7 +1476,7 @@ float AC_Avoid::get_stopping_distance(float kP, float accel_cmss, float speed_cm
 }
 
 // convert distance (in meters) to a lean percentage (in 0~1 range) for use in manual flight modes
-float AC_Avoid::distance_to_lean_pct(float dist_m)
+float AC_Avoid::distance_to_lean_norm(float dist_m)
 {
     // ignore objects beyond DIST_MAX
     if (dist_m < 0.0f || dist_m >= _dist_max || _dist_max <= 0.0f) {
@@ -1448,7 +1487,7 @@ float AC_Avoid::distance_to_lean_pct(float dist_m)
 }
 
 // returns the maximum positive and negative roll and pitch percentages (in -1 ~ +1 range) based on the proximity sensor
-void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative)
+void AC_Avoid::get_proximity_roll_pitch_norm(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative)
 {
 #if HAL_PROXIMITY_ENABLED
     AP_Proximity *proximity = AP::proximity();
@@ -1468,7 +1507,7 @@ void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_ne
         if (_proximity.get_object_angle_and_distance(i, ang_deg, dist_m)) {
             if (dist_m < _dist_max) {
                 // convert distance to lean angle (in 0 to 1 range)
-                const float lean_pct = distance_to_lean_pct(dist_m);
+                const float lean_pct = distance_to_lean_norm(dist_m);
                 // convert angle to roll and pitch lean percentages
                 const float angle_rad = radians(ang_deg);
                 const float roll_pct = -sinf(angle_rad) * lean_pct;

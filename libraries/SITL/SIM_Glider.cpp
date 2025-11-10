@@ -14,6 +14,26 @@
  */
 /*
   glider model for high altitude balloon drop
+
+  controls:
+    - servo6: balloon lift, 1000 for no lift, 2000 for maximum lift
+    - servo10: balloon cut, this cuts away the balloon when high
+
+  Note that the glider starts off in a lifted by tail pose, with pitch
+  -80 degrees. The balloon then lifts the glider above the ground. The
+  balloon automatically bursts at a height of SIM_GLD_BLN_BRST meters,
+  or can be cut away early with servo10.
+
+  The maximum rate of the balloon lift is in SIM_GLD_BLN_RATE, in m/s
+
+  To perform a takeoff first arm on the ground then use
+    servo set 6 2000
+  to release the ground hold. Use this to cut away the balloon:
+    servo set 10 2000
+
+  For an automatic mission, NAV_ALTITUDE_WAIT should be used to wait
+  for a desired altitude under balloon lift. Then a DO_SET_SERVO with
+  servo 10 and a value of 2000 to cut away the balloon.
  */
 
 #include "SIM_Glider.h"
@@ -39,7 +59,7 @@ const AP_Param::GroupInfo Glider::var_info[] = {
 
     // @Param: BLN_RATE
     // @DisplayName: balloon climb rate
-    // @Description: balloon climb rate
+    // @Description: balloon climb rate. If the value is less than zero then the balloon is disabled.
     // @Units: m/s
     AP_GROUPINFO("BLN_RATE",  2, Glider, balloon_rate, 5.5),
 
@@ -108,6 +128,14 @@ Vector3f Glider::getTorque(float inputAileron, float inputElevator, float inputR
 
 
 #if 0
+    // @LoggerMessage: GLT
+    // @Description: Simulated Glider Angles and coefficients
+    // @Field: TimeUS: Time since system startup
+    // @Field: Alpha: alpha angle
+    // @Field: Beta: beta angle
+    // @Field: Cl: lift coefficent
+    // @Field: Cm: roll coffecient
+    // @Field: Cn: yaw coefficient
     AP::logger().Write("GLT", "TimeUS,Alpha,Beta,Cl,Cm,Cn", "Qfffff",
                        AP_HAL::micros64(),
                        degrees(alpharad),
@@ -161,6 +189,23 @@ Vector3f Glider::getForce(float inputAileron, float inputElevator, float inputRu
             airspeed > 1) {
             last_drag_ms = now;
 #if HAL_LOGGING_ENABLED
+            // @LoggerMessage: SLD
+            // @Description: Simulated Glider Dropped Calculations
+            // @Field: TimeUS: Time since system startup
+            // @Field: AltFt: altitude in feet
+            // @Field: AltM: altitude in metres
+            // @Field: EAS: equivalent airspeed
+            // @Field: TAS: true airspeed
+            // @Field: AD: air density
+            // @Field: Fl: lift
+            // @Field: Fd: drag
+            // @Field: LD: lift/drag ratio
+            // @Field: Elev: elevator output
+            // @Field: AoA: angle of attack
+            // @Field: Fx: X-axis force
+            // @Field: Fy: Y-axis force
+            // @Field: Fz: Z-axis force
+            // @Field: q: air pressure
             AP::logger().Write("SLD", "TimeUS,AltFt,AltM,EAS,TAS,AD,Fl,Fd,LD,Elev,AoA,Fx,Fy,Fz,q", "Qffffffffffffff",
                                AP_HAL::micros64(),
                                (location.alt*0.01)/FEET_TO_METERS,
@@ -173,6 +218,23 @@ Vector3f Glider::getForce(float inputAileron, float inputElevator, float inputRu
                                degrees(alpharad),
                                Fx, Fy, Fz,
                                qPa);
+            // @LoggerMessage: SL2
+            // @Description: More Simulated Glider Dropped Calculations
+            // @Field: TimeUS: Time since system startup
+            // @Field: AltFt: altitude in feet
+            // @Field: KEAS: equivalent airspeed in knots
+            // @Field: KTAS: true airspeed in knots
+            // @Field: AD: air density
+            // @Field: Fl: lift
+            // @Field: Fd: drag
+            // @Field: LD: lift/drag ratio
+            // @Field: Elev: elevator output
+            // @Field: Ail: aileron output
+            // @Field: Rud: rudder output
+            // @Field: AoA: Angle of Attack
+            // @Field: SSA: Side Slip Angle
+            // @Field: q: air pressire
+            // @Field: Az: z-axis body-frame acceleration
             AP::logger().Write("SL2", "TimeUS,AltFt,KEAS,KTAS,AD,Fl,Fd,LD,Elev,Ail,Rud,AoA,SSA,q,Az", "Qffffffffffffff",
                                AP_HAL::micros64(),
                                (location.alt*0.01)/FEET_TO_METERS,
@@ -188,6 +250,12 @@ Vector3f Glider::getForce(float inputAileron, float inputElevator, float inputRu
                                qPa,
                                accel_body.z);
 
+            // @LoggerMessage: SCTL
+            // @Description: Simulated Glider Drop control outputs
+            // @Field: TimeUS: Time since system startup
+            // @Field: Ail: aileron output
+            // @Field: Elev: elevator output
+            // @Field: Rudd: rudder output
             AP::logger().Write("SCTL", "TimeUS,Ail,Elev,Rudd", "Qfff",
                                AP_HAL::micros64(),
                                degrees(aileron_rad),
@@ -211,7 +279,7 @@ void Glider::calculate_forces(const struct sitl_input &input, Vector3f &rot_acce
     float aileron  = 0.5*(filtered_servo_angle(input, 1) + filtered_servo_angle(input, 4));
     float elevator = filtered_servo_angle(input, 2);
     float rudder   = filtered_servo_angle(input, 3);
-    float balloon  = filtered_servo_range(input, 5);
+    float balloon  = MAX(0.0f, filtered_servo_range(input, 5)); // Don't let the balloon receive downwards commands.
     float balloon_cut = filtered_servo_range(input, 9);
 
     // Move balloon upwards using balloon velocity from channel 6
@@ -221,10 +289,10 @@ void Glider::calculate_forces(const struct sitl_input &input, Vector3f &rot_acce
         balloon_velocity = Vector3f(-wind_ef.x, -wind_ef.y, -wind_ef.z -balloon_rate * balloon);
         balloon_position += balloon_velocity * (1.0e-6 * (float)frame_time_us);
         const float height_AMSL = 0.01f * (float)home.alt - position.z;
-        // release at burst height or when channel 9 goes high
+        // release at burst height or when balloon cut output goes high
         if (hal.scheduler->is_system_initialized() &&
             (height_AMSL > balloon_burst_amsl || balloon_cut > 0.8)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "pre-release at %i m AMSL\n", (int)height_AMSL);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "pre-release at %i m AMSL", (int)height_AMSL);
             carriage_state = carriageState::PRE_RELEASE;
         }
     } else if (carriage_state == carriageState::PRE_RELEASE) {
@@ -234,7 +302,7 @@ void Glider::calculate_forces(const struct sitl_input &input, Vector3f &rot_acce
         if (balloon_velocity.length() < 0.5) {
             carriage_state = carriageState::RELEASED;
             use_smoothing = false;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "released at %.0f m AMSL\n", (0.01f * home.alt) - position.z);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "released at %.0f m AMSL", (0.01f * home.alt) - position.z);
         }
     } else if (carriage_state == carriageState::WAITING_FOR_PICKUP) {
         // Don't allow the balloon to drag sideways until the pickup
@@ -328,6 +396,11 @@ bool Glider::on_ground() const
  */
 bool Glider::update_balloon(float balloon, Vector3f &force, Vector3f &rot_accel)
 {
+    // by setting a negative balloon rate we disable the balloon
+    if (balloon_rate < 0) {
+        carriage_state = carriageState::RELEASED;
+    }
+    
     if (!hal.util->get_soft_armed()) {
         return false;
     }
@@ -360,7 +433,7 @@ bool Glider::update_balloon(float balloon, Vector3f &force, Vector3f &rot_accel)
     // NED unit vector pointing from tether attachment on plane to attachment on balloon
     Vector3f tether_unit_vec_ef = relative_position.normalized();
 
-    // NED velocity of attahment point on plane
+    // NED velocity of attachment point on plane
     Vector3f attachment_velocity_ef = velocity_ef + dcm * (gyro % tether_pos_bf);
 
     // NED velocity of attachment point on balloon as seen by observer on attachemnt point on plane

@@ -37,7 +37,6 @@ public:
         return static_cast<Util*>(util);
     }
 
-    bool run_debug_shell(AP_HAL::BetterStream *stream) override { return false; }
     uint32_t available_memory() override;
 
     // get path to custom defaults file for AP_Param
@@ -48,13 +47,6 @@ public:
     // Special Allocation Routines
     void *malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type) override;
     void free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type) override;
-
-#ifdef ENABLE_HEAP
-    // heap functions, note that a heap once alloc'd cannot be dealloc'd
-    virtual void *allocate_heap_memory(size_t size) override;
-    virtual void *heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size) override;
-    virtual void *std_realloc(void *ptr, size_t new_size) override;
-#endif // ENABLE_HEAP
 
     /*
       return state of safety switch, if applicable
@@ -143,10 +135,6 @@ private:
     FlashBootloader flash_bootloader() override;
 #endif
 
-#ifdef ENABLE_HEAP
-    static memory_heap_t scripting_heap;
-#endif // ENABLE_HEAP
-
     // stm32F4 and F7 have 20 total RTC backup registers. We use the first one for boot type
     // flags, so 19 available for persistent data
     static_assert(sizeof(persistent_data) <= 19*4, "watchdog persistent data too large");
@@ -165,6 +153,9 @@ private:
     void* last_crash_dump_ptr() const override;
 #endif
 
+    // get the system load
+    bool get_system_load(float& avg_load, float& peak_load) const override;
+
 #if HAL_ENABLE_DFU_BOOT
     void boot_to_dfu() override;
 #endif
@@ -172,9 +163,6 @@ private:
 #if HAL_UART_STATS_ENABLED
     struct uart_stats {
         AP_HAL::UARTDriver::StatsTracker serial[HAL_UART_NUM_SERIAL_PORTS];
-#if HAL_WITH_IO_MCU
-        AP_HAL::UARTDriver::StatsTracker io;
-#endif
         uint32_t last_ms;
     };
     uart_stats sys_uart_stats;

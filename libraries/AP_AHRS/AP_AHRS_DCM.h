@@ -41,8 +41,8 @@ public:
           _kp(kp),
           gps_gain(_gps_gain),
           beta(_beta),
-          _gps_use(gps_use),
-          _gps_minsats(gps_minsats)
+          _gps_minsats(gps_minsats),
+          _gps_use(gps_use)
     {
         _dcm_matrix.identity();
     }
@@ -78,20 +78,22 @@ public:
         return true;
     }
 
+    void set_external_wind_estimate(float speed, float direction);
+
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    bool airspeed_estimate(float &airspeed_ret) const override;
+    bool airspeed_EAS(float &airspeed_ret) const override;
 
     // return an airspeed estimate if available. return true
     // if we have an estimate from a specific sensor index
-    bool airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret) const override;
+    bool airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const override;
 
-    // return a synthetic airspeed estimate (one derived from sensors
+    // return a synthetic EAS estimate (one derived from sensors
     // other than an actual airspeed sensor), if available. return
     // true if we have a synthetic airspeed.  ret will not be modified
     // on failure.
-    bool synthetic_airspeed(float &ret) const WARN_IF_UNUSED {
-        ret = _last_airspeed;
+    bool synthetic_airspeed_EAS(float &ret) const WARN_IF_UNUSED {
+        ret = _last_airspeed_TAS;
         return true;
     }
 
@@ -120,9 +122,9 @@ public:
 
     // relative-origin functions for fallback in AP_InertialNav
     bool get_origin(Location &ret) const override;
-    bool get_relative_position_NED_origin(Vector3f &vec) const override;
-    bool get_relative_position_NE_origin(Vector2f &posNE) const override;
-    bool get_relative_position_D_origin(float &posD) const override;
+    bool get_relative_position_NED_origin(Vector3p &vec) const override;
+    bool get_relative_position_NE_origin(Vector2p &posNE) const override;
+    bool get_relative_position_D_origin(postype_t &posD) const override;
 
     void send_ekf_status_report(class GCS_MAVLINK &link) const override;
 
@@ -171,12 +173,12 @@ private:
     // DCM matrix from the eulers.  Called internally we may.
     void            reset(bool recover_eulers);
 
-    // airspeed_ret: will always be filled-in by get_unconstrained_airspeed_estimate which fills in airspeed_ret in this order:
+    // airspeed_ret: will always be filled-in by get_unconstrained_airspeed_EAS which fills in airspeed_ret in this order:
     //               airspeed as filled-in by an enabled airspeed sensor
     //               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
     //               Or if none of the above, fills-in using the previous airspeed estimate
     // Return false: if we are using the previous airspeed estimate
-    bool get_unconstrained_airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret) const;
+    bool get_unconstrained_airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const;
 
     // primary representation of attitude of board used for all inertial calculations
     Matrix3f _dcm_matrix;
@@ -260,13 +262,11 @@ private:
     Vector3f _last_fuse;
     Vector3f _last_vel;
     uint32_t _last_wind_time;
-    float _last_airspeed;
+    float _last_airspeed_TAS;
     uint32_t _last_consistent_heading;
 
     // estimated wind in m/s
     Vector3f _wind;
-
-    float _imu1_weight{0.5f};
 
     // last time AHRS failed in milliseconds
     uint32_t _last_failure_ms;

@@ -1,0 +1,5 @@
+*.deb
+pkg/DEB
+pkg/data
+pkg/control/control
+

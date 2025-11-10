@@ -16,6 +16,8 @@
 #include "AP_ExpandingArray.h"
 #include <AP_HAL/AP_HAL.h>
 
+#ifndef HAL_BOOTLOADER_BUILD
+
 extern const AP_HAL::HAL& hal;
 
 AP_ExpandingArrayGeneric::~AP_ExpandingArrayGeneric(void)
@@ -38,7 +40,10 @@ bool AP_ExpandingArrayGeneric::expand(uint16_t num_chunks)
             // fail if reallocating would leave less than 100 bytes of memory free
             return false;
         }
-        chunk_ptr_t *chunk_ptrs_new = (chunk_ptr_t*)hal.util->std_realloc((void*)chunk_ptrs, chunk_ptr_size * sizeof(chunk_ptr_t));
+        chunk_ptr_t *chunk_ptrs_new = (chunk_ptr_t*)mem_realloc((void*)chunk_ptrs,
+            chunk_count_max * sizeof(chunk_ptr_t),
+            chunk_ptr_size * sizeof(chunk_ptr_t));
+
         if (chunk_ptrs_new == nullptr) {
             return false;
         }
@@ -75,3 +80,5 @@ bool AP_ExpandingArrayGeneric::expand_to_hold(uint16_t num_items)
     uint16_t chunks_required = ((num_items - max_items()) / chunk_size) + 1;
     return expand(chunks_required);
 }
+
+#endif // HAL_BOOTLOADER_BUILD

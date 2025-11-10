@@ -62,6 +62,8 @@ bool AP_SmartAudio::init()
             return false;
         }
 
+        AP::vtx().set_provider_enabled(AP_VideoTX::VTXType::SmartAudio);
+
         return true;
     }
     return false;

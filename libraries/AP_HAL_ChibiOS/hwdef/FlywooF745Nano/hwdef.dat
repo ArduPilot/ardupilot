@@ -3,7 +3,7 @@
 
 include ../FlywooF745/hwdef.dat
 
-APJ_BOARD_ID 1042
+APJ_BOARD_ID AP_HW_FlywooF745Nano
 
 undef PB10 PB11 PB0 PB1
 undef DMA_PRIORITY

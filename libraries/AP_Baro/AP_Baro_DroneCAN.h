@@ -15,7 +15,7 @@ public:
 
     void update() override;
 
-    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
+    static bool subscribe_msgs(AP_DroneCAN* ap_dronecan);
     static AP_Baro_DroneCAN* get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, bool create_new);
     static AP_Baro_Backend* probe(AP_Baro &baro);
 

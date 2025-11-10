@@ -42,7 +42,7 @@ uint16_t ProfiLED::init_ports()
 {
     uint16_t mask = 0;
     for (uint16_t i=0; i<AP_NOTIFY_ProfiLED_MAX_INSTANCES; i++) {
-        const SRV_Channel::Aux_servo_function_t fn = (SRV_Channel::Aux_servo_function_t)((uint8_t)SRV_Channel::k_ProfiLED_1 + i);
+        const SRV_Channel::Function fn = (SRV_Channel::Function)((uint8_t)SRV_Channel::k_ProfiLED_1 + i);
         if (!SRV_Channels::function_assigned(fn)) {
             continue;
         }
@@ -75,7 +75,7 @@ ProfiLED_SPI::ProfiLED_SPI() :
 bool ProfiLED_SPI::init()
 {
     num_leds = pNotify->get_led_len() + 1; // for some reason we have to send an additional LED data
-    rgb = new ProfiLED_SPI::RGB[num_leds];
+    rgb = NEW_NOTHROW ProfiLED_SPI::RGB[num_leds];
     if (!rgb) {
         return false;
     }

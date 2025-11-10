@@ -21,15 +21,11 @@ AP_EFI_DroneCAN::AP_EFI_DroneCAN(AP_EFI &_frontend) :
 }
 
 // links the DroneCAN message to this backend
-void AP_EFI_DroneCAN::subscribe_msgs(AP_DroneCAN *ap_dronecan)
+bool AP_EFI_DroneCAN::subscribe_msgs(AP_DroneCAN *ap_dronecan)
 {
-    if (ap_dronecan == nullptr) {
-        return;
-    }
+    const auto driver_index = ap_dronecan->get_driver_index();
 
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &trampoline_status, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("status_sub");
-    }
+    return (Canard::allocate_sub_arg_callback(ap_dronecan, &trampoline_status, driver_index) != nullptr);
 }
 
 // Called from frontend to update with the readings received by handler
@@ -150,6 +146,9 @@ void AP_EFI_DroneCAN::handle_status(const uavcan_equipment_ice_reciprocating_Sta
         c.exhaust_gas_temperature = cs.exhaust_gas_temperature;
         c.lambda_coefficient = cs.lambda_coefficient;
     }
+
+    // Required for healthy message
+    istate.last_updated_ms = AP_HAL::millis();
 
     copy_to_frontend();
 }

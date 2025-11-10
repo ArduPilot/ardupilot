@@ -37,7 +37,7 @@ void ModeRTL::update()
         // send notification
         if (send_notification) {
             send_notification = false;
-            gcs().send_text(MAV_SEVERITY_INFO, "Reached destination");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Reached destination");
         }
 
         // we have reached the destination

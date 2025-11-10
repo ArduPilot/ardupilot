@@ -93,7 +93,7 @@ TimerPollable *PollerThread::add_timer(TimerPollable::PeriodicCb cb,
     if (!_poller) {
         return nullptr;
     }
-    TimerPollable *p = new TimerPollable(cb, wrapper);
+    TimerPollable *p = NEW_NOTHROW TimerPollable(cb, wrapper);
     if (!p || !p->setup_timer(timeout_usec) ||
         !_poller.register_pollable(p, POLLIN)) {
         delete p;

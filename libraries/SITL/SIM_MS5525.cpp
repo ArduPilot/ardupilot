@@ -1,3 +1,7 @@
+#include "SIM_config.h"
+
+#if AP_SIM_MS5525_ENABLED
+
 #include "SIM_MS5525.h"
 
 #include <SITL/SITL.h>
@@ -72,3 +76,5 @@ void MS5525::get_pressure_temperature_readings(float &P_Pa, float &Temp_C)
     const uint8_t instance = 0;  // TODO: work out which sensor this is
     P_Pa = AP::sitl()->state.airspeed_raw_pressure[instance] + AP::sitl()->airspeed[instance].offset;
 }
+
+#endif  // AP_SIM_MS5525_ENABLED

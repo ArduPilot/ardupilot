@@ -23,6 +23,7 @@ class AStyleChecker(object):
         self.directories_to_check = [
             'libraries/AP_DDS',
             'libraries/AP_ExternalControl',
+            'libraries/AP_GSOF',
         ]
         self.files_to_check = [
             pathlib.Path(s) for s in [
@@ -59,7 +60,7 @@ class AStyleChecker(object):
             self.progress("astyle check failed: (%s)" % (ret.stdout))
             self.retcode = 1
         if "Formatted" in ret.stdout:
-            self.progress("Files needing formatting found")
+            self.progress("Files needing formatting found.")
             print(ret.stdout)
             self.retcode = 1
 

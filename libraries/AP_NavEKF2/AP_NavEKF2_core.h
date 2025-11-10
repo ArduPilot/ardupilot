@@ -29,7 +29,8 @@
 #include <AP_Math/vectorN.h>
 #include <AP_NavEKF/AP_NavEKF_core_common.h>
 #include <AP_NavEKF/EKF_Buffer.h>
-#include <AP_DAL/AP_DAL.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_Beacon/AP_Beacon_config.h>
 
 #include "AP_NavEKF/EKFGSF_yaw.h"
 
@@ -70,12 +71,14 @@
 #endif
 
 // maximum number of downward facing rangefinder instances available
+#if AP_RANGEFINDER_ENABLED
 #if RANGEFINDER_MAX_INSTANCES > 1
 #define DOWNWARD_RANGEFINDER_MAX_INSTANCES 2
 #else
 #define DOWNWARD_RANGEFINDER_MAX_INSTANCES 1
 #endif
-    
+#endif
+
 class AP_AHRS;
 
 class NavEKF2_core : public NavEKF_core_common
@@ -105,12 +108,12 @@ public:
     // Write the last calculated NE position relative to the reference point (m).
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
-    bool getPosNE(Vector2f &posNE) const;
+    bool getPosNE(Vector2p &posNE) const;
 
     // Write the last calculated D position relative to the reference point (m).
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
-    bool getPosD(float &posD) const;
+    bool getPosD(postype_t &posD) const;
 
     // return NED velocity in m/s
     void getVelNED(Vector3f &vel) const;
@@ -339,7 +342,7 @@ public:
     
 private:
     EKFGSF_yaw *yawEstimator;
-    AP_DAL &dal;
+    class AP_DAL &dal;
 
     // Reference to the global EKF frontend for parameters
     class NavEKF2 *frontend;
@@ -700,9 +703,11 @@ private:
     // update inflight calculaton that determines if GPS data is good enough for reliable navigation
     void calcGpsGoodForFlight(void);
 
+#if AP_RANGEFINDER_ENABLED
     // Read the range finder and take new measurements if available
     // Apply a median filter to range finder data
     void readRangeFinder();
+#endif
 
     // check if the vehicle has taken off during optical flow navigation by looking at inertial and range finder data
     void detectOptFlowTakeoff(void);
@@ -1014,9 +1019,11 @@ private:
     ftype rngOnGnd;                         // Expected range finder reading in metres when vehicle is on ground
     uint32_t lastRngMeasTime_ms;            // Timestamp of last range measurement
     bool terrainHgtStable;                  // true when the terrain height is stable enough to be used as a height reference
+#if AP_RANGEFINDER_ENABLED
     ftype storedRngMeas[DOWNWARD_RANGEFINDER_MAX_INSTANCES][3];              // Ringbuffer of stored range measurements for dual range sensors
     uint32_t storedRngMeasTime_ms[DOWNWARD_RANGEFINDER_MAX_INSTANCES][3];    // Ringbuffers of stored range measurement times for dual range sensors
     uint8_t rngMeasIndex[DOWNWARD_RANGEFINDER_MAX_INSTANCES];                // Current range measurement ringbuffer index for dual range sensors
+#endif
 
     // Range Beacon Sensor Fusion
     EKF_obs_buffer_t<rng_bcn_elements> storedRangeBeacon; // Beacon range buffer

@@ -1,0 +1,40 @@
+include ../CubeNode/hwdef.dat
+
+# we need RTS/CTS for the PPP link
+undef PE0
+undef PE1
+undef PC12
+undef AP_PERIPH_IMU_ENABLED
+
+define AP_MAVLINKCAN_ENABLED 1
+
+# disable IMU
+def AP_PERIPH_IMU_ENABLED 0
+
+# need to use UART8 to get RTS/CTS
+PE1 UART8_TX UART8
+PE0 UART8_RX UART8
+PA10 UART8_RTS UART8
+PC12 UART8_CTS_GPIO UART8
+
+SERIAL_ORDER OTG1 UART8
+
+PA4 VDD_5V_SENS ADC1 SCALE(2)
+
+# LEDs
+undef PC11
+PC11 LED0 OUTPUT LOW GPIO(0)
+PB14 LED1 OUTPUT LOW GPIO(1)
+
+undef HAL_USE_ADC
+define HAL_USE_ADC TRUE
+define HAL_WITH_MCU_MONITORING 1
+
+# can optionally run at half clock
+# MCU_CLOCKRATE_MHZ 200
+
+include ../include/network_PPPGW.inc
+
+define AP_NETWORKING_TESTS_ENABLED 1
+
+define HAL_PERIPH_SHOW_SERIAL_MANAGER_PARAMS 1

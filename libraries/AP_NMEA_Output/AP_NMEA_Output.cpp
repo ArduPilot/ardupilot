@@ -17,7 +17,7 @@
 
  */
 
-#define ALLOW_DOUBLE_MATH_FUNCTIONS
+#define AP_MATH_ALLOW_DOUBLE_FUNCTIONS 1
 
 #include "AP_NMEA_Output.h"
 
@@ -251,9 +251,9 @@ void AP_NMEA_Output::update()
 #if AP_AHRS_ENABLED
     if ((_message_enable_bitmask.get() & static_cast<int16_t>(Enabled_Messages::PASHR)) != 0) {
         // get roll, pitch, yaw
-        const float roll_deg = wrap_180(degrees(ahrs.get_roll()));
-        const float pitch_deg = wrap_180(degrees(ahrs.get_pitch()));
-        const float yaw_deg = wrap_360(degrees(ahrs.get_yaw()));
+        const float roll_deg = wrap_180(ahrs.get_roll_deg());
+        const float pitch_deg = wrap_180(ahrs.get_pitch_deg());
+        const float yaw_deg = ahrs.get_yaw_deg();
         const float heave_m = 0; // instantaneous heave in meters
         const float roll_deg_accuracy = 0; // stddev of roll_deg;
         const float pitch_deg_accuracy = 0; // stddev of pitch_deg;

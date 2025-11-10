@@ -58,7 +58,6 @@ long apfs_ftell(APFS_FILE *stream);
 APFS_FILE *apfs_freopen(const char *pathname, const char *mode, APFS_FILE *stream);
 int apfs_remove(const char *pathname);
 int apfs_rename(const char *oldpath, const char *newpath);
-char *tmpnam(char s[L_tmpnam]);
 
 #undef stdin
 #undef stdout
@@ -78,6 +77,20 @@ char *tmpnam(char s[L_tmpnam]);
 #endif
 
 #define FILE APFS_FILE
+
+#ifndef __cplusplus
+/*
+  only redefine posix functions for C code (eg. lua).
+  for C++ use the AP_Filsystem APIs
+*/
+
+// on some platforms, some functions are implemented with macros. undefine
+// those which have caused macro redefinition warnings in the past.
+#undef clearerr
+#undef ferror
+#undef feof
+#undef getc
+
 #define fopen(p,m) apfs_fopen(p,m)
 #define fprintf(stream, format, args...) apfs_fprintf(stream, format, ##args)
 #define fflush(s) apfs_fflush(s)
@@ -90,7 +103,6 @@ char *tmpnam(char s[L_tmpnam]);
 #define ferror(stream) apfs_ferror(stream)
 #define fclose(stream) apfs_fclose(stream)
 #define tmpfile() apfs_tmpfile()
-#undef getc
 #define getc(stream) apfs_getc(stream)
 #define ungetc(c, stream) apfs_ungetc(c, stream)
 #define feof(stream) apfs_ferror(stream)
@@ -101,6 +113,7 @@ char *tmpnam(char s[L_tmpnam]);
 #define remove(pathname) apfs_remove(pathname)
 int sprintf(char *str, const char *format, ...);
 #endif
+#endif // __cplusplus
 
 #ifdef __cplusplus
 }

@@ -80,14 +80,6 @@ void AP_MotorsHeli_Quad::calculate_armed_scalars()
         _main_rotor._rsc_mode.save();
         _heliflags.save_rsc_mode = false;
     }
-
-    if (_heliflags.in_autorotation) {
-        _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
-        // set bailout ramp time
-        _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
-    }else {
-        _main_rotor.set_autorotation_flag(false);
-    }
 }
 
 // calculate_scalars
@@ -175,10 +167,6 @@ void AP_MotorsHeli_Quad::update_motor_control(AP_MotorsHeli_RSC::RotorControlSta
 //
 void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float collective_in, float yaw_out)
 {
-    // initialize limits flag
-    limit.throttle_lower = false;
-    limit.throttle_upper = false;
-
     // constrain collective input
     float collective_out = collective_in;
     if (collective_out <= 0.0f) {
@@ -197,11 +185,7 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     }
 
     // updates below land min collective flag
-    if (collective_out <= _collective_land_min_pct) {
-        _heliflags.below_land_min_coll = true;
-    } else {
-        _heliflags.below_land_min_coll = false;
-    }
+    _heliflags.below_land_min_coll = !is_positive(collective_out - _collective_land_min_pct);
 
     // updates takeoff collective flag based on 50% hover collective
     update_takeoff_collective_flag(collective_out);
@@ -279,3 +263,11 @@ void AP_MotorsHeli_Quad::servo_test()
 {
     // not implemented
 }
+
+#if HAL_LOGGING_ENABLED
+// heli motors logging - called at 10 Hz
+void AP_MotorsHeli_Quad::Log_Write(void)
+{
+    _main_rotor.write_log();
+}
+#endif

@@ -1,5 +1,5 @@
 /// @file	AC_PID_Basic.cpp
-/// @brief	Generic PID algorithm
+/// @brief	Lightweight PID controller with error and derivative filtering, integrator limit, and EEPROM gain storage.
 
 #include <AP_Math/AP_Math.h>
 #include <AP_InternalError/AP_InternalError.h>
@@ -26,7 +26,7 @@ const AP_Param::GroupInfo AC_PID_Basic::var_info[] = {
 
     // @Param: FLTE
     // @DisplayName: PID Error filter frequency in Hz
-    // @Description: Error filter frequency in Hz
+    // @Description: Low-pass filter frequency applied to the error (Hz)
     // @Units: Hz
     AP_GROUPINFO_FLAGS_DEFAULT_POINTER("FLTE", 3, AC_PID_Basic, _filt_E_hz, default_filt_E_hz),
 
@@ -37,7 +37,7 @@ const AP_Param::GroupInfo AC_PID_Basic::var_info[] = {
 
     // @Param: FLTD
     // @DisplayName: D term filter frequency in Hz
-    // @Description: D term filter frequency in Hz
+    // @Description: Low-pass filter frequency applied to the derivative (Hz)
     // @Units: Hz
     AP_GROUPINFO_FLAGS_DEFAULT_POINTER("FLTD", 5, AC_PID_Basic, _filt_D_hz, default_filt_D_hz),
 
@@ -71,13 +71,12 @@ float AC_PID_Basic::update_all(float target, float measurement, float dt, bool l
     return update_all(target, measurement, dt, (limit && is_negative(_integrator)), (limit && is_positive(_integrator)));
 }
 
-//  update_all - set target and measured inputs to PID controller and calculate outputs
-//  target and error are filtered
-//  the derivative is then calculated and filtered
-//  the integral is then updated based on the setting of the limit flag
+// Computes the PID output using a target and measurement input.
+// Applies filters to the error and derivative, then updates the integrator.
+// If `limit` is true, the integrator is allowed to shrink but not grow.
 float AC_PID_Basic::update_all(float target, float measurement, float dt, bool limit_neg, bool limit_pos)
 {
-    // don't process inf or NaN
+    // Return zero if inputs are invalid (NaN or infinite)
     if (!isfinite(target) || isnan(target) ||
         !isfinite(measurement) || isnan(measurement)) {
         INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
@@ -86,8 +85,9 @@ float AC_PID_Basic::update_all(float target, float measurement, float dt, bool l
 
     _target = target;
 
-    // reset input filter to value received
+    // Reset filter state to match current inputs (on first run or after reset)
     if (_reset_filter) {
+        // Reset filters to match the current inputs
         _reset_filter = false;
         _error = _target - measurement;
         _derivative = 0.0f;
@@ -95,7 +95,7 @@ float AC_PID_Basic::update_all(float target, float measurement, float dt, bool l
         float error_last = _error;
         _error += get_filt_E_alpha(dt) * ((_target - measurement) - _error);
 
-        // calculate and filter derivative
+        // Compute and low-pass filter the error derivative (D term)
         if (is_positive(dt)) {
             float derivative = (_error - error_last) / dt;
             _derivative += get_filt_D_alpha(dt) * (derivative - _derivative);
@@ -119,9 +119,9 @@ float AC_PID_Basic::update_all(float target, float measurement, float dt, bool l
     return P_out + _integrator + D_out + _target * _kff;
 }
 
-//  update_i - update the integral
-//  if limit_neg is true, the integral can only increase
-//  if limit_pos is true, the integral can only decrease
+// Updates the integrator using current error and dt.
+// If `limit_neg` is true, integrator may only increase.
+// If `limit_pos` is true, integrator may only decrease.
 void AC_PID_Basic::update_i(float dt, bool limit_neg, bool limit_pos)
 {
     if (!is_zero(_ki)) {
@@ -140,7 +140,7 @@ void AC_PID_Basic::reset_I()
     _integrator = 0.0; 
 }
 
-// save_gains - save gains to eeprom
+// Saves controller configuration from EEPROM, including gains and filter frequencies. (not used)
 void AC_PID_Basic::save_gains()
 {
     _kp.save();
@@ -152,28 +152,31 @@ void AC_PID_Basic::save_gains()
     _filt_D_hz.save();
 }
 
-// get_filt_T_alpha - get the target filter alpha
+// Returns alpha value for the error low-pass filter (based on filter frequency and dt)
 float AC_PID_Basic::get_filt_E_alpha(float dt) const
 {
     return calc_lowpass_alpha_dt(dt, _filt_E_hz);
 }
 
-// get_filt_D_alpha - get the derivative filter alpha
+// Returns alpha value for the derivative low-pass filter (based on filter frequency and dt)
 float AC_PID_Basic::get_filt_D_alpha(float dt) const
 {
     return calc_lowpass_alpha_dt(dt, _filt_D_hz);
 }
 
+// Sets integrator based on target, measurement, and desired total PID output.
 void AC_PID_Basic::set_integrator(float target, float measurement, float i)
 {
     set_integrator(target - measurement, i);
 }
 
+// Sets integrator using error and desired total output.
 void AC_PID_Basic::set_integrator(float error, float i)
 {
     set_integrator(i - error * _kp);
 }
 
+// Sets the integrator directly.
 void AC_PID_Basic::set_integrator(float i)
 {
     _integrator = constrain_float(i, -_kimax, _kimax);

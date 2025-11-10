@@ -52,7 +52,7 @@ void AP_OSD_SITL::load_font(void)
     for (uint16_t i=0; i<256; i++) {
         const uint8_t *c = &fd->data[i*54];
         // each pixel is 4 bytes, RGBA
-        sf::Uint8 *pixels = new sf::Uint8[char_width * char_height * 4];
+        sf::Uint8 *pixels = NEW_NOTHROW sf::Uint8[char_width * char_height * 4];
         if (!font[i].create(char_width, char_height)) {
             AP_HAL::panic("Failed to create texture");
         }
@@ -125,7 +125,7 @@ void AP_OSD_SITL::update_thread(void)
     load_font();
     {
         WITH_SEMAPHORE(AP::notify().sf_window_mutex);
-        w = new sf::RenderWindow(sf::VideoMode(video_cols*(char_width+char_spacing)*char_scale,
+        w = NEW_NOTHROW sf::RenderWindow(sf::VideoMode(video_cols*(char_width+char_spacing)*char_scale,
                                                video_lines*(char_height+char_spacing)*char_scale),
                                  "OSD");
     }
@@ -194,7 +194,7 @@ bool AP_OSD_SITL::init(void)
 
 AP_OSD_Backend *AP_OSD_SITL::probe(AP_OSD &osd)
 {
-    AP_OSD_SITL *backend = new AP_OSD_SITL(osd);
+    AP_OSD_SITL *backend = NEW_NOTHROW AP_OSD_SITL(osd);
     if (!backend) {
         return nullptr;
     }

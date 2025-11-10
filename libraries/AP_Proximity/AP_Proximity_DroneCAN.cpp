@@ -32,15 +32,11 @@ ObjectBuffer_TS<AP_Proximity_DroneCAN::ObstacleItem> AP_Proximity_DroneCAN::item
 
 
 //links the Proximity DroneCAN message to this backend
-void AP_Proximity_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+bool AP_Proximity_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    if (ap_dronecan == nullptr) {
-        return;
-    }
+    const auto driver_index = ap_dronecan->get_driver_index();
 
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_measurement, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("measurement_sub");
-    }
+    return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_measurement, driver_index) != nullptr);
 }
 
 //Method to find the backend relating to the node id
@@ -57,7 +53,7 @@ AP_Proximity_DroneCAN* AP_Proximity_DroneCAN::get_dronecan_backend(AP_DroneCAN* 
 
     AP_Proximity_DroneCAN* driver = nullptr;
     //Scan through the proximity type params to find DroneCAN with matching address.
-    for (uint8_t i = 0; i < PROXIMITY_MAX_INSTANCES; i++) {
+    for (uint8_t i = 0; i < AP_PROXIMITY_MAX_INSTANCES; i++) {
         if ((AP_Proximity::Type)prx->params[i].type.get() == AP_Proximity::Type::DroneCAN &&
             prx->params[i].address == address) {
             driver = (AP_Proximity_DroneCAN*)prx->drivers[i];
@@ -76,7 +72,7 @@ AP_Proximity_DroneCAN* AP_Proximity_DroneCAN::get_dronecan_backend(AP_DroneCAN* 
     }
 
     if (create_new) {
-        for (uint8_t i = 0; i < PROXIMITY_MAX_INSTANCES; i++) {
+        for (uint8_t i = 0; i < AP_PROXIMITY_MAX_INSTANCES; i++) {
             if ((AP_Proximity::Type)prx->params[i].type.get() == AP_Proximity::Type::DroneCAN &&
                 prx->params[i].address == address) {
                 WITH_SEMAPHORE(prx->detect_sem);
@@ -85,7 +81,7 @@ AP_Proximity_DroneCAN* AP_Proximity_DroneCAN::get_dronecan_backend(AP_DroneCAN* 
                     //it up as DroneCAN type
                     return nullptr;
                 }
-                prx->drivers[i] = new AP_Proximity_DroneCAN(*prx, prx->state[i], prx->params[i]);
+                prx->drivers[i] = NEW_NOTHROW AP_Proximity_DroneCAN(*prx, prx->state[i], prx->params[i]);
                 driver = (AP_Proximity_DroneCAN*)prx->drivers[i];
                 if (driver == nullptr) {
                     break;

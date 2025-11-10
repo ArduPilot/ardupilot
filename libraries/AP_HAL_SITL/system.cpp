@@ -33,11 +33,7 @@ void init()
     state.start_time_ns = ts_to_nsec(ts);
 }
 
-#if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(CYGWIN_BUILD)
-void panic(const char *errormsg, ...)
-#else
 void WEAK panic(const char *errormsg, ...)
-#endif
 {
     va_list ap;
 
@@ -54,6 +50,7 @@ void WEAK panic(const char *errormsg, ...)
     if (getenv("SITL_PANIC_EXIT")) {
         // this is used on the autotest server to prevent us waiting
         // 10 hours for a timeout
+        printf("panic and SITL_PANIC_EXIT set - exitting");
         exit(1);
     }
     for(;;);
@@ -65,13 +62,24 @@ static void run_command_on_ownpid(const char *commandname)
     // find dumpstack command:
     const char *command_filepath = commandname; // if we can't find it trust in PATH
     struct stat statbuf;
+    const char *custom_scripts_dir_path = getenv("AP_SCRIPTS_DIR_PATH");
+    char *custom_scripts_dir_path_pattern = nullptr;
+    if (custom_scripts_dir_path != nullptr) {
+        if (asprintf(&custom_scripts_dir_path_pattern, "%s/%%s", custom_scripts_dir_path) == -1) {
+            custom_scripts_dir_path_pattern = nullptr;
+        }
+    }
     const char *paths[] {
+        custom_scripts_dir_path_pattern,
         "Tools/scripts/%s",
         "APM/Tools/scripts/%s", // for autotest server
         "../Tools/scripts/%s", // when run from e.g. ArduCopter subdirectory
     };
     char buffer[60];
     for (uint8_t i=0; i<ARRAY_SIZE(paths); i++) {
+        if (paths[i] == nullptr) {
+            continue;
+        }
         // form up a filepath from each path and commandname; if it
         // exists, use it
         snprintf(buffer, sizeof(buffer), paths[i], commandname);
@@ -80,6 +88,7 @@ static void run_command_on_ownpid(const char *commandname)
             break;
         }
     }
+    free(custom_scripts_dir_path_pattern);
 
 	char progname[100];
 	int n = readlink("/proc/self/exe", progname, sizeof(progname)-1);
@@ -159,14 +168,6 @@ uint32_t micros()
 uint32_t millis()
 {
     return millis64() & 0xFFFFFFFF;
-}
-
-/*
-  we define a millis16() here to avoid an issue with sitl builds in cygwin
- */
-uint16_t millis16()
-{
-    return millis64() & 0xFFFF;
 }
     
 uint64_t micros64()

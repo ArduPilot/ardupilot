@@ -2,6 +2,8 @@
 
 #include <AP_RangeFinder/AP_RangeFinder.h>
 
+#if AP_RANGEFINDER_ENABLED
+
 #include <AP_Logger/LogStructure.h>
 
 class AP_RangeFinder_Backend;
@@ -18,8 +20,8 @@ public:
         Good
     };
 
-    int16_t ground_clearance_cm_orient(enum Rotation orientation) const;
-    int16_t max_distance_cm_orient(enum Rotation orientation) const;
+    float ground_clearance_orient(enum Rotation orientation) const;
+    float max_distance_orient(enum Rotation orientation) const;
 
     // return true if we have a range finder with the specified orientation
     bool has_orientation(enum Rotation orientation) const;
@@ -57,7 +59,7 @@ public:
         return (AP_DAL_RangeFinder::Status)_RRNI.status;
     }
 
-    uint16_t distance_cm() const { return _RRNI.distance_cm; }
+    float distance() const { return _RRNI.distance; }
 
     const Vector3f &get_pos_offset() const { return _RRNI.pos_offset; }
 
@@ -68,3 +70,5 @@ private:
 
     struct log_RRNI &_RRNI;
 };
+
+#endif  // AP_RANGEFINDER_ENABLED

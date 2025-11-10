@@ -24,12 +24,12 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
  - SERIAL0 -> USB
  - SERIAL1 -> UART1 (Telem1) (MSP DisplayPort)(DMA Capable)
- - SERIAL2 -> UART2 (Telem2) (connected to internal BT module, not useable by ArduPilot)
- - SERIAL3 -> UART3 (GPS)(DMA Capable)
+ - SERIAL2 -> UART2 (Telem2) (connected to internal BT module, not usable by ArduPilot)
+ - SERIAL3 -> UART3 (RCin)(DMA Capable)
  - SERIAL4 -> UART4 (GPS)
  - SERIAL5 -> not available
- - SERIAL6 -> UART6 (RX6 in RCinput, ALT config to use as UART input)
- - SERIAL7 -> UART7 RX pin only, ESC telem)(DMA Capable)
+ - SERIAL6 -> UART6 (TELEM)
+ - SERIAL7 -> UART7 (RX pin only, ESC telem)(DMA Capable)
 
 ## RC Input
 
@@ -52,7 +52,7 @@ The SDMODEL SDH7 V2 supports OSD using OSD_TYPE 1 (MAX7456 driver).The defaults 
 ## VTX Support
 
 The JST-GH-6P connector supports a standard DJI HD VTX connection. Pin 1 of the connector is 9v so be careful not to connect
-this to a peripheral requiring 5v. The 9v supply is controlled by RELAY_PIN2 set to GPIO 81 and is on by default. It can be configured to be operated by an RC switch by selecting the function RELAY2.
+this to a peripheral requiring 5v. The 9v supply is controlled by RELAY2_PIN set to GPIO 81 and is on by default. It can be configured to be operated by an RC switch by selecting the function RELAY2.
 
 ## Camera Control
 
@@ -83,7 +83,7 @@ to use DShot.
 
 ## Battery Monitoring
 
-The board has a builting voltage and current sensor. The current
+The board has a built-in voltage and current sensor. The current
 sensor can read up to 130 Amps. The voltage sensor can handle up to 6S
 LiPo batteries.
 

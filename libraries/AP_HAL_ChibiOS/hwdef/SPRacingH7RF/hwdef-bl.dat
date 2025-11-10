@@ -4,8 +4,8 @@
 # MCU class and specific type
 MCU STM32H7xx STM32H730xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1108
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_SPRACINGH7RF
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
@@ -56,7 +56,6 @@ OSPIDEV  w25q         OCTOSPI1 MODE3      130*MHZ   21           1
 
 define HAL_USE_EMPTY_STORAGE 1
 define HAL_STORAGE_SIZE 16384
-DEFAULTGPIO OUTPUT LOW PULLDOWN
 
 # Add CS pins to ensure they are high in bootloader
 PA15 ICM42688_CS CS

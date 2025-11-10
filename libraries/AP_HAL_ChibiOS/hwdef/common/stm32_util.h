@@ -191,6 +191,8 @@ extern stkalign_t __main_stack_end__;
 extern stkalign_t __main_thread_stack_base__;
 extern stkalign_t __main_thread_stack_end__;
 
+void stm32_disable_cm4_core(void);
+
 #ifdef __cplusplus
 }
 #endif

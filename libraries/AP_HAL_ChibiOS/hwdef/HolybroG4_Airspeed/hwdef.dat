@@ -1,0 +1,84 @@
+# hw definition file for processing by chibios_pins.py
+# MCU class and specific type
+
+# MCU class and specific type
+MCU STM32G4xx STM32G474xx
+
+FLASH_RESERVE_START_KB 36
+
+STORAGE_FLASH_PAGE 16
+define HAL_STORAGE_SIZE 800
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_Holybro-DroneCAN-Airspeed
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+define CH_CFG_ST_FREQUENCY 1000000
+
+# assume 512k flash part
+FLASH_SIZE_KB 512
+
+# debug on USART1
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+
+# order of UARTs
+SERIAL_ORDER USART1
+
+# I2C buses
+I2C_ORDER I2C1
+
+# LEDs
+# blue LED0 marked as ACT
+PB15 LED OUTPUT HIGH
+define HAL_LED_ON 0
+
+#green LED, Power ON indicator, Low ON
+PA4 LED_GREEN OUTPUT LOW
+
+# USART1, debug
+PA9  USART1_TX USART1
+PA10 USART1_RX USART1
+
+# I2C1 bus
+PB7 I2C1_SDA I2C1
+PA15 I2C1_SCL I2C1
+
+define HAL_I2C_INTERNAL_MASK 1
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+define HAL_USE_ADC FALSE
+define STM32_ADC_USE_ADC1 FALSE
+define HAL_DISABLE_ADC_DRIVER TRUE
+
+define DMA_RESERVE_SIZE 0
+
+# enable CAN support
+PB12 CAN2_RX CAN2
+PB13 CAN2_TX CAN2
+PB2 GPIO_CAN2_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+PB4 GPIO_CAN1_TERM OUTPUT PUSHPULL SPEED_LOW HIGH
+
+define HAL_DEVICE_THREAD_STACK 768
+
+# we setup a small defaults.parm
+define AP_PARAM_MAX_EMBEDDED_PARAM 256
+
+# Airspeed
+define AP_PERIPH_AIRSPEED_ENABLED 1
+
+# 10" DLVR sensor by default
+define HAL_AIRSPEED_TYPE_DEFAULT 10  
+define AIRSPEED_MAX_SENSORS 1
+
+# keep ROMFS uncompressed as we don't have enough RAM
+# to uncompress the bootloader at runtime
+env ROMFS_UNCOMPRESSED True

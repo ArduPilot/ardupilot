@@ -9,6 +9,7 @@
 #include <AP_Math/crc.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_HAL/CANIface.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -76,7 +77,7 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Param: TESTS
     // @DisplayName: Test enable flags
     // @Description: Enable/Disable networking tests
-    // @Bitmask: 0:UDP echo test,1:TCP echo test, 2:TCP discard test
+    // @Bitmask: 0:UDP echo test,1:TCP echo test, 2:TCP discard test, 3:TCP reflect test
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TESTS", 7,  AP_Networking,    param.tests,   0),
@@ -89,7 +90,7 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Networking options
     // @Description: Networking options
-    // @Bitmask: 0:EnablePPP Ethernet gateway
+    // @Bitmask: 0:EnablePPP Ethernet gateway, 1:Enable CAN1 multicast endpoint, 2:Enable CAN2 multicast endpoint, 3:Enable CAN1 multicast bridged, 4:Enable CAN2 multicast bridged, 5:DisablePPPTimeout, 6:DisablePPPEchoLimit, 7:Capture to file
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 9,  AP_Networking,    param.options, 0),
@@ -143,31 +144,31 @@ void AP_Networking::init()
     }
 #endif
 
-#if AP_NETWORKING_PPP_GATEWAY_ENABLED
+#if AP_NETWORKING_BACKEND_CHIBIOS && AP_NETWORKING_PPP_GATEWAY_ENABLED
     if (option_is_set(OPTION::PPP_ETHERNET_GATEWAY)) {
         /*
           when we are a PPP/Ethernet gateway we bring up the ethernet first
          */
-        backend = new AP_Networking_ChibiOS(*this);
-        backend_PPP = new AP_Networking_PPP(*this);
+        backend = NEW_NOTHROW AP_Networking_ChibiOS(*this);
+        backend_PPP = NEW_NOTHROW AP_Networking_PPP(*this);
     }
 #endif
 
 
 #if AP_NETWORKING_BACKEND_PPP
     if (backend == nullptr && AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_PPP, 0)) {
-        backend = new AP_Networking_PPP(*this);
+        backend = NEW_NOTHROW AP_Networking_PPP(*this);
     }
 #endif
 
 #if AP_NETWORKING_BACKEND_CHIBIOS
     if (backend == nullptr) {
-        backend = new AP_Networking_ChibiOS(*this);
+        backend = NEW_NOTHROW AP_Networking_ChibiOS(*this);
     }
 #endif
 #if AP_NETWORKING_BACKEND_SITL
     if (backend == nullptr) {
-        backend = new AP_Networking_SITL(*this);
+        backend = NEW_NOTHROW AP_Networking_SITL(*this);
     }
 #endif
 
@@ -198,8 +199,25 @@ void AP_Networking::init()
     start_tests();
 #endif
 
+#if AP_NETWORKING_CAN_MCAST_BRIDGING_ENABLED
+    if (option_is_set(OPTION::CAN1_MCAST_ENDPOINT) ||
+        option_is_set(OPTION::CAN2_MCAST_ENDPOINT)) {
+        // get mask of enabled buses
+        uint8_t bus_mask = 0;
+        if (option_is_set(OPTION::CAN1_MCAST_ENDPOINT)) {
+            bus_mask |= (1U<<0);
+        }
+        if (option_is_set(OPTION::CAN2_MCAST_ENDPOINT)) {
+            bus_mask |= (1U<<1);
+        }
+        mcast_server.start(bus_mask);
+    }
+#endif
+    
+#if AP_NETWORKING_REGISTER_PORT_ENABLED
     // init network mapped serialmanager ports
     ports_init();
+#endif
 }
 
 /*
@@ -457,5 +475,58 @@ void ap_networking_platform_assert(const char *msg, int line, const char *file)
     AP_HAL::panic("LWIP: %s: %s:%u", msg, file, line);
 }
 #endif
+
+#ifdef LWIP_HOOK_IP4_ROUTE
+#include <lwip/ip4_addr.h>
+struct netif *ap_networking_routing_hook(const struct ip4_addr *dest_ip)
+{
+    if (dest_ip == nullptr) {
+        return nullptr;
+    }
+    return AP::network().routing_hook(ntohl(dest_ip->addr));
+}
+#endif
+
+/*
+  check for custom routes
+ */
+struct netif *AP_Networking::routing_hook(uint32_t dest)
+{
+    if (backend) {
+        auto *iface = backend->routing_hook(dest);
+        if (iface != nullptr) {
+            return iface;
+        }
+    }
+#if AP_NETWORKING_PPP_GATEWAY_ENABLED
+    if (backend_PPP) {
+        auto *iface = backend_PPP->routing_hook(dest);
+        if (iface != nullptr) {
+            return iface;
+        }
+    }
+#endif
+    return nullptr;
+}
+
+// add new routes for an interface.
+// Returns true if the route is added or the route already exists
+bool AP_Networking::add_route(uint8_t backend_idx, uint8_t iface_idx, uint32_t dest_ip, uint8_t mask_len)
+{
+    if (backend_idx == 0 &&
+        backend != nullptr &&
+        backend->add_route(iface_idx, dest_ip, mask_len)) {
+        return true;
+    }
+#if AP_NETWORKING_PPP_GATEWAY_ENABLED
+    if (backend_idx == 1 &&
+        backend_PPP != nullptr &&
+        backend_PPP->add_route(iface_idx, dest_ip, mask_len)) {
+        return true;
+    }
+#endif
+    return false;
+}
+
 
 #endif // AP_NETWORKING_ENABLED

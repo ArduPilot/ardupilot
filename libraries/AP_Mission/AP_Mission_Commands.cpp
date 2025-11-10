@@ -13,6 +13,7 @@
 #include <AP_Scripting/AP_Scripting.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Mount/AP_Mount.h>
+#include <AC_Fence/AC_Fence.h>
 
 #if AP_RC_CHANNEL_ENABLED
 bool AP_Mission::start_command_do_aux_function(const AP_Mission::Mission_Command& cmd)
@@ -30,7 +31,7 @@ bool AP_Mission::start_command_do_aux_function(const AP_Mission::Mission_Command
     default:
         return false;
     }
-    rc().run_aux_function(function, pos, RC_Channel::AuxFuncTriggerSource::MISSION);
+    rc().run_aux_function(function, pos, RC_Channel::AuxFuncTrigger::Source::MISSION, cmd.index);
     return true;
 }
 #endif  // AP_RC_CHANNEL_ENABLED
@@ -329,8 +330,8 @@ bool AP_Mission::start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Miss
     }
 
     // handle angle target
-    const bool pitch_angle_valid = !isnan(cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg) && (fabsF(cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg) <= 90);
-    const bool yaw_angle_valid = !isnan(cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg) && (fabsF(cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg) <= 360);
+    const bool pitch_angle_valid = abs(cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg) <= 90;
+    const bool yaw_angle_valid = abs(cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg) <= 360;
     if (pitch_angle_valid && yaw_angle_valid) {
         mount->set_angle_target(gimbal_instance, 0, cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg, cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg, cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return true;
@@ -344,6 +345,32 @@ bool AP_Mission::start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Miss
 
 #endif // HAL_MOUNT_ENABLED
     // if we got this far then message is not handled
+    return false;
+}
+
+bool AP_Mission::start_command_fence(const AP_Mission::Mission_Command& cmd)
+{
+#if AP_FENCE_ENABLED
+    AC_Fence* fence = AP::fence();
+
+    if (fence == nullptr) {
+        return false;
+    }
+
+    if (cmd.p1 == uint8_t(AC_Fence::MavlinkFenceActions::DISABLE_FENCE)) {          // disable fence
+        uint8_t fences = fence->enable_configured(false);
+        fence->print_fence_message("disabled", fences);
+        return true;
+    } else if (cmd.p1 == uint8_t(AC_Fence::MavlinkFenceActions::ENABLE_FENCE)) {   // enable fence
+        uint8_t fences = fence->enable_configured(true);
+        fence->print_fence_message("enabled", fences);
+        return true;
+    } else if (cmd.p1 == uint8_t(AC_Fence::MavlinkFenceActions::DISABLE_ALT_MIN_FENCE)) {   // disable fence floor only
+        fence->disable_floor();
+        fence->print_fence_message("disabled", AC_FENCE_TYPE_ALT_MIN);
+        return true;
+    }
+#endif // AP_FENCE_ENABLED
     return false;
 }
 

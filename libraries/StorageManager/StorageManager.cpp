@@ -348,7 +348,7 @@ bool StorageAccess::attach_file(const char *filename, uint16_t size_kbyte)
         return false;
     }
     const uint32_t size = MIN(0xFFFFU, size_kbyte * 1024U);
-    auto *newfile = new FileStorage;
+    auto *newfile = NEW_NOTHROW FileStorage;
     if (newfile == nullptr) {
         AP_BoardConfig::allocation_error("StorageFile");
     }
@@ -358,7 +358,7 @@ bool StorageAccess::attach_file(const char *filename, uint16_t size_kbyte)
     if (newfile->fd == -1) {
         goto fail;
     }
-    newfile->buffer = new uint8_t[size];
+    newfile->buffer = NEW_NOTHROW uint8_t[size];
     if (newfile->buffer == nullptr) {
         AP_BoardConfig::allocation_error("StorageFile");
     }

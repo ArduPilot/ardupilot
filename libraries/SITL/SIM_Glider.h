@@ -39,7 +39,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new Glider(frame_str);
+        return NEW_NOTHROW Glider(frame_str);
     }
 
     bool on_ground() const override;

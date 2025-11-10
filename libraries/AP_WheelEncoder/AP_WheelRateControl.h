@@ -29,7 +29,6 @@
 #define AP_WHEEL_RATE_CONTROL_IMAX  1.00f
 #define AP_WHEEL_RATE_CONTROL_D     0.01f
 #define AP_WHEEL_RATE_CONTROL_FILT  0.00f
-#define AP_WHEEL_RATE_CONTROL_DT    0.02f
 #define AP_WHEEL_RATE_CONTROL_TIMEOUT_MS 200
 
 class AP_WheelRateControl {
@@ -61,8 +60,22 @@ private:
     // parameters
     AP_Int8         _enabled;   // top level enable/disable control
     AP_Float        _rate_max;  // wheel maximum rotation rate in rad/s
-    AC_PID          _rate_pid0{AP_WHEEL_RATE_CONTROL_P, AP_WHEEL_RATE_CONTROL_I, AP_WHEEL_RATE_CONTROL_D, AP_WHEEL_RATE_CONTROL_FF, AP_WHEEL_RATE_CONTROL_IMAX, AP_WHEEL_RATE_CONTROL_FILT, AP_WHEEL_RATE_CONTROL_FILT, AP_WHEEL_RATE_CONTROL_FILT, AP_WHEEL_RATE_CONTROL_DT};
-    AC_PID          _rate_pid1{AP_WHEEL_RATE_CONTROL_P, AP_WHEEL_RATE_CONTROL_I, AP_WHEEL_RATE_CONTROL_D, AP_WHEEL_RATE_CONTROL_FF, AP_WHEEL_RATE_CONTROL_IMAX, AP_WHEEL_RATE_CONTROL_FILT, AP_WHEEL_RATE_CONTROL_FILT, AP_WHEEL_RATE_CONTROL_FILT, AP_WHEEL_RATE_CONTROL_DT};
+
+    const AC_PID::Defaults rate_pid_defaults {
+        .p         = AP_WHEEL_RATE_CONTROL_P,
+        .i         = AP_WHEEL_RATE_CONTROL_I,
+        .d         = AP_WHEEL_RATE_CONTROL_D,
+        .ff        = AP_WHEEL_RATE_CONTROL_FF,
+        .imax      = AP_WHEEL_RATE_CONTROL_IMAX,
+        .filt_T_hz = AP_WHEEL_RATE_CONTROL_FILT,
+        .filt_E_hz = AP_WHEEL_RATE_CONTROL_FILT,
+        .filt_D_hz = AP_WHEEL_RATE_CONTROL_FILT,
+        .srmax     = 0,
+        .srtau     = 1.0
+    };
+
+    AC_PID          _rate_pid0{rate_pid_defaults};
+    AC_PID          _rate_pid1{rate_pid_defaults};
 
     // limit flags
     struct AP_MotorsUGV_limit {

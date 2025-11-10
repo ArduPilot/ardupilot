@@ -15,7 +15,7 @@ Featuring STM32F7 cpu, vibration isolation of IMUs, redundant IMUs,  integrated 
 - Sensors
   - Bosh BMI088 IMU (accel, gyro)
   - InvenSense ICM-42688 IMU (accel, gyro)
-  - SPL06 barometer
+  - SPA06 barometer
   - IST8310 magnetometer
 - Power
   - SMBUS/I2C Power Module Inputs(I2C)

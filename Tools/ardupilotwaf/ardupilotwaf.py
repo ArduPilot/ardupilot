@@ -1,14 +1,15 @@
 # encoding: utf-8
 
-from __future__ import print_function
-from waflib import Build, ConfigSet, Configure, Context, Errors, Logs, Options, Utils
+# flake8: noqa
+
+from waflib import Build, ConfigSet, Configure, Context, Errors, Logs, Options, Utils, Task
 from waflib.Configure import conf
 from waflib.Scripting import run_command
-from waflib.TaskGen import before_method, feature
+from waflib.TaskGen import before_method, after_method, feature
 import os.path, os
+from pathlib import Path
 from collections import OrderedDict
-
-import ap_persistent
+import subprocess
 
 SOURCE_EXTS = [
     '*.S',
@@ -16,8 +17,14 @@ SOURCE_EXTS = [
     '*.cpp',
 ]
 
+COMMON_VEHICLE_DEPENDENT_CAN_LIBRARIES = [
+    'AP_CANManager',
+    'AP_KDECAN',
+    'AP_PiccoloCAN',
+    'AP_PiccoloCAN/piccolo_protocol',
+]
+
 COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
-    'AP_Airspeed',
     'AP_AccelCal',
     'AP_ADC',
     'AP_AHRS',
@@ -26,15 +33,15 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_BattMonitor',
     'AP_BoardConfig',
     'AP_Camera',
-    'AP_CANManager',
     'AP_Common',
     'AP_Compass',
     'AP_Declination',
     'AP_GPS',
+    'AP_GSOF',
     'AP_HAL',
     'AP_HAL_Empty',
+    'AP_DDS',
     'AP_InertialSensor',
-    'AP_KDECAN',
     'AP_Math',
     'AP_Mission',
     'AP_DAL',
@@ -45,6 +52,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_OpticalFlow',
     'AP_Param',
     'AP_Rally',
+    'AP_LightWareSerial',
     'AP_RangeFinder',
     'AP_Scheduler',
     'AP_SerialManager',
@@ -66,6 +74,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_ICEngine',
     'AP_Networking',
     'AP_Frsky_Telem',
+    'AP_IBus_Telem',
     'AP_FlashStorage',
     'AP_Relay',
     'AP_ServoRelayEvents',
@@ -73,8 +82,6 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_SBusOut',
     'AP_IOMCU',
     'AP_Parachute',
-    'AP_PiccoloCAN',
-    'AP_PiccoloCAN/piccolo_protocol',
     'AP_RAMTRON',
     'AP_RCProtocol',
     'AP_Radio',
@@ -100,6 +107,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_EFI',
     'AP_Hott_Telem',
     'AP_ESC_Telem',
+    'AP_Servo_Telem',
     'AP_Stats',
     'AP_GyroFFT',
     'AP_RCTelemetry',
@@ -121,6 +129,8 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Beacon',
     'AP_Arming',
     'AP_RCMapper',
+    'AP_MultiHeap',
+    'AP_Follow',
 ]
 
 def get_legacy_defines(sketch_name, bld):
@@ -137,10 +147,27 @@ def get_legacy_defines(sketch_name, bld):
         'AP_BUILD_TARGET_NAME="' + sketch_name + '"',
     ]
 
+def set_double_precision_flags(flags):
+    # set up flags for double precision files:
+    # * remove all single precision constant flags
+    # * set define to allow double precision math in AP headers
+
+    flags = flags[:] # copy the list to avoid affecting other builds
+
+    # remove GCC and clang single precision constant flags
+    for opt in ('-fsingle-precision-constant', '-cl-single-precision-constant'):
+        while True: # might have multiple copies from different sources
+            try:
+                flags.remove(opt)
+            except ValueError:
+                break
+    flags.append("-DAP_MATH_ALLOW_DOUBLE_FUNCTIONS=1")
+
+    return flags
+
 IGNORED_AP_LIBRARIES = [
     'doc',
     'AP_Scripting', # this gets explicitly included when it is needed and should otherwise never be globbed in
-    'AP_DDS',
 ]
 
 
@@ -248,15 +275,88 @@ def ap_get_all_libraries(bld):
 def ap_common_vehicle_libraries(bld):
     libraries = COMMON_VEHICLE_DEPENDENT_LIBRARIES
 
-    if bld.env.DEST_BINFMT == 'pe':
-        libraries += [
-            'AC_Fence',
-            'AC_AttitudeControl',
-        ]
+    if bld.env.with_can or bld.env.HAL_NUM_CAN_IFACES:
+        libraries.extend(COMMON_VEHICLE_DEPENDENT_CAN_LIBRARIES)
 
     return libraries
 
 _grouped_programs = {}
+
+
+class upload_fw_blueos(Task.Task):
+    def run(self):
+        # this is rarely used, so we import requests here to avoid the overhead
+        import requests
+        binary_path = self.inputs[0].abspath()
+        # check if .apj file exists for chibios builds
+        if Path(binary_path + ".apj").exists():
+            binary_path = binary_path + ".apj"
+        bld = self.generator.bld
+        board = bld.bldnode.name.capitalize()
+        print(f"Uploading {binary_path} to BlueOS at {bld.options.upload_blueos} for board {board}")
+        url = f'{bld.options.upload_blueos}/ardupilot-manager/v1.0/install_firmware_from_file?board_name={board}'
+        files = {
+          'binary': open(binary_path, 'rb')
+        }
+        response = requests.post(url, files=files, verify=False)
+        if response.status_code != 200:
+            raise Errors.WafError(f"Failed to upload firmware to BlueOS: {response.status_code}: {response.text}")
+        print("Upload complete")
+
+    def keyword(self):
+          return "Uploading to BlueOS"
+
+class check_elf_symbols(Task.Task):
+    color='CYAN'
+    always_run = True
+    def keyword(self):
+        return "checking symbols"
+
+    def run(self):
+        '''
+        check for disallowed symbols in elf file, such as C++ exceptions
+        '''
+        elfpath = self.inputs[0].abspath()
+
+        if not self.env.CHECK_SYMBOLS:
+            # checking symbols disabled on this build
+            return
+
+        if not self.env.vehicle_binary or self.env.SIM_ENABLED:
+            # we only want to check symbols for vehicle binaries, allowing examples
+            # to use C++ exceptions. We also allow them in simulator builds
+            return
+
+        # we use string find on these symbols, so this catches all types of throw
+        # calls this should catch all uses of exceptions unless the compiler
+        # manages to inline them
+        blacklist = ['std::__throw',
+                     'operator new[](unsigned int)',
+                     'operator new[](unsigned long)',
+                     'operator new(unsigned int)',
+                     'operator new(unsigned long)']
+
+        nmout = subprocess.getoutput("%s -C %s" % (self.env.get_flat('NM'), elfpath))
+        for b in blacklist:
+            if nmout.find(b) != -1:
+                raise Errors.WafError("Disallowed symbol in %s: %s" % (elfpath, b))
+
+
+@feature('post_link')
+@after_method('process_source')
+def post_link(self):
+    '''
+    setup tasks to run after link stage
+    '''
+    self.link_task.always_run = True
+
+    link_output = self.link_task.outputs[0]
+
+    check_elf_task = self.create_task('check_elf_symbols', src=link_output)
+    check_elf_task.set_run_after(self.link_task)
+    if self.bld.options.upload_blueos and self.env["BOARD_CLASS"] == "LINUX":
+        _upload_task = self.create_task('upload_fw_blueos', src=link_output)
+        _upload_task.set_run_after(self.link_task)
 
 @conf
 def ap_program(bld,
@@ -279,7 +379,7 @@ def ap_program(bld,
     if use_legacy_defines:
         kw['defines'].extend(get_legacy_defines(bld.path.name, bld))
 
-    kw['features'] = kw.get('features', []) + bld.env.AP_PROGRAM_FEATURES
+    kw['features'] = kw.get('features', []) + bld.env.AP_PROGRAM_FEATURES + ['post_link']
 
     program_groups = Utils.to_list(program_groups)
 
@@ -394,24 +494,27 @@ def ap_find_tests(bld, use=[], DOUBLE_PRECISION_SOURCES=[]):
         )
         filename = os.path.basename(f.abspath())
         if filename in DOUBLE_PRECISION_SOURCES:
-            t.env.CXXFLAGS = t.env.CXXFLAGS[:]
-            single_precision_option='-fsingle-precision-constant'
-            if single_precision_option in t.env.CXXFLAGS:
-                t.env.CXXFLAGS.remove(single_precision_option)
-            single_precision_option='-cl-single-precision-constant'
-            if single_precision_option in t.env.CXXFLAGS:
-                t.env.CXXFLAGS.remove(single_precision_option)
-            t.env.CXXFLAGS.append("-DALLOW_DOUBLE_MATH_FUNCTIONS")
+            t.env.CXXFLAGS = set_double_precision_flags(t.env.CXXFLAGS)
 
 _versions = []
 
 @conf
-def ap_version_append_str(ctx, k, v):
-    ctx.env['AP_VERSION_ITEMS'] += [(k, '"{}"'.format(os.environ.get(k, v)))]
+def ap_version_append_str(ctx, k, v, consistent_v=None):
+    if ctx.env.CONSISTENT_BUILDS and consistent_v is not None:
+        v = consistent_v # override with consistent value
+    else:
+        v = os.environ.get(k, v) # use v unless defined in environment
+
+    ctx.env['AP_VERSION_ITEMS'] += [(k, f'"{v}"')]
 
 @conf
-def ap_version_append_int(ctx, k, v):
-    ctx.env['AP_VERSION_ITEMS'] += [(k, '{}'.format(os.environ.get(k, v)))]
+def ap_version_append_int(ctx, k, v, consistent_v=None):
+    if ctx.env.CONSISTENT_BUILDS and consistent_v is not None:
+        v = consistent_v # override with consistent value
+    else:
+        v = os.environ.get(k, v) # use v unless defined in environment
+
+    ctx.env['AP_VERSION_ITEMS'] += [(k, f'{v}')]
 
 @conf
 def write_version_header(ctx, tgt):
@@ -540,13 +643,14 @@ def _select_programs_from_group(bld):
         else:
             groups = ['bin']
 
+    possible_groups = list(_grouped_programs.keys())
+    possible_groups.remove('bin')       # Remove `bin` so as not to duplicate all items in bin
     if 'all' in groups:
-        groups = list(_grouped_programs.keys())
-        groups.remove('bin')       # Remove `bin` so as not to duplicate all items in bin
+        groups = possible_groups
 
     for group in groups:
         if group not in _grouped_programs:
-            bld.fatal('Group %s not found' % group)
+            bld.fatal(f'Group {group} not found, possible groups: {possible_groups}')
 
         target_names = _grouped_programs[group].keys()
 
@@ -586,7 +690,14 @@ arducopter and upload it to my board".
         action='store',
         dest='upload_port',
         default=None,
-        help='''Specify the port to be used with the --upload option. For example a port of /dev/ttyS10 indicates that serial port 10 shuld be used.
+        help='''Specify the port to be used with the --upload option. For example a port of /dev/ttyS10 indicates that serial port 10 should be used.
+''')
+
+    g.add_option('--upload-blueos',
+        action='store',
+        dest='upload_blueos',
+        default=None,
+        help='''Automatically upload to a BlueOS device. The argument is the url for the device. http://blueos.local for example.
 ''')
 
     g.add_option('--upload-force',
@@ -605,16 +716,6 @@ arducopter and upload it to my board".
         help='Output all test programs.')
 
     g = opt.ap_groups['clean']
-
-    g.add_option('--clean-all-sigs',
-        action='store_true',
-        help='''Clean signatures for all tasks. By default, tasks that scan for
-implicit dependencies (like the compilation tasks) keep the dependency
-information across clean commands, so that that information is changed
-only when really necessary. Also, some tasks that don't really produce
-files persist their signature. This option avoids that behavior when
-cleaning the build.
-''')
 
     g.add_option('--asan',
         action='store_true',

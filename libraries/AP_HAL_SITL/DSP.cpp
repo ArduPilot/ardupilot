@@ -39,7 +39,7 @@ extern const AP_HAL::HAL& hal;
 // initialize the FFT state machine
 AP_HAL::DSP::FFTWindowState* DSP::fft_init(uint16_t window_size, uint16_t sample_rate, uint8_t sliding_window_size)
 {
-    DSP::FFTWindowStateSITL* fft = new DSP::FFTWindowStateSITL(window_size, sample_rate, sliding_window_size);
+    DSP::FFTWindowStateSITL* fft = NEW_NOTHROW DSP::FFTWindowStateSITL(window_size, sample_rate, sliding_window_size);
     if (fft == nullptr || fft->_hanning_window == nullptr || fft->_rfft_data == nullptr || fft->_freq_bins == nullptr || fft->_derivative_freq_bins == nullptr) {
         delete fft;
         return nullptr;
@@ -71,7 +71,7 @@ DSP::FFTWindowStateSITL::FFTWindowStateSITL(uint16_t window_size, uint16_t sampl
         return;
     }
 
-    buf = new complexf[window_size];
+    buf = NEW_NOTHROW complexf[window_size];
 }
 
 DSP::FFTWindowStateSITL::~FFTWindowStateSITL()

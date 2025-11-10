@@ -14,15 +14,22 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include "AP_InertialSensor_config.h"
+
+#include "AP_InertialSensor_BMI160.h"
+
 #include <utility>
 
 #include <AP_HAL/AP_HAL.h>
 
 #include <AP_HAL/utility/sparse-endian.h>
-#include <AP_HAL_Linux/GPIO.h>
 #include <AP_Math/AP_Math.h>
 
-#include "AP_InertialSensor_BMI160.h"
+// need the Linux GPIO header for the Linux Aero target (BMI160_INT1_GPIO)
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#include <AP_HAL_Linux/GPIO.h>
+#endif
 
 /* Registers and bits definitions. The indented ones are the bits for the upper
  * register. */
@@ -97,9 +104,7 @@
 #define BMI160_READ_FLAG 0x80
 #define BMI160_HARDWARE_INIT_MAX_TRIES 5
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
-#    define BMI160_INT1_GPIO AERO_GPIO_BMI160_INT1
-#else
+#ifndef BMI160_INT1_GPIO
 #    define BMI160_INT1_GPIO -1
 #endif
 
@@ -135,7 +140,7 @@ AP_InertialSensor_BMI160::probe(AP_InertialSensor &imu,
     if (!dev) {
         return nullptr;
     }
-    auto sensor = new AP_InertialSensor_BMI160(imu, std::move(dev), rotation);
+    auto sensor = NEW_NOTHROW AP_InertialSensor_BMI160(imu, std::move(dev), rotation);
 
     if (!sensor) {
         return nullptr;
@@ -157,7 +162,7 @@ AP_InertialSensor_BMI160::probe(AP_InertialSensor &imu,
     if (!dev) {
         return nullptr;
     }
-    auto sensor = new AP_InertialSensor_BMI160(imu, std::move(dev), rotation);
+    auto sensor = NEW_NOTHROW AP_InertialSensor_BMI160(imu, std::move(dev), rotation);
 
     if (!sensor) {
         return nullptr;
@@ -201,8 +206,8 @@ void AP_InertialSensor_BMI160::start()
 
     _dev->get_semaphore()->give();
 
-    if (!_imu.register_accel(_accel_instance, BMI160_ODR_TO_HZ(BMI160_ODR), _dev->get_bus_id_devtype(DEVTYPE_BMI160)) ||
-        !_imu.register_gyro(_gyro_instance, BMI160_ODR_TO_HZ(BMI160_ODR),   _dev->get_bus_id_devtype(DEVTYPE_BMI160))) {
+    if (!_imu.register_accel(accel_instance, BMI160_ODR_TO_HZ(BMI160_ODR), _dev->get_bus_id_devtype(DEVTYPE_BMI160)) ||
+        !_imu.register_gyro(gyro_instance, BMI160_ODR_TO_HZ(BMI160_ODR),   _dev->get_bus_id_devtype(DEVTYPE_BMI160))) {
         return;
     }
 
@@ -213,8 +218,8 @@ void AP_InertialSensor_BMI160::start()
 
 bool AP_InertialSensor_BMI160::update()
 {
-    update_accel(_accel_instance);
-    update_gyro(_gyro_instance);
+    update_accel(accel_instance);
+    update_gyro(gyro_instance);
     return true;
 }
 
@@ -226,10 +231,10 @@ void AP_InertialSensor_BMI160::_check_err_reg()
 
     r = _dev->read_registers(BMI160_REG_ERR_REG, &v, 1);
     if (!r) {
-        AP_HAL::panic("BMI160: couldn't read ERR_REG\n");
+        AP_HAL::panic("BMI160: couldn't read ERR_REG");
     }
     if (v) {
-        AP_HAL::panic("BMI160: error detected on ERR_REG\n");
+        AP_HAL::panic("BMI160: error detected on ERR_REG");
     }
 #endif
 }
@@ -420,11 +425,11 @@ read_fifo_read_data:
         accel *= _accel_scale;
         gyro *= _gyro_scale;
 
-        _rotate_and_correct_accel(_accel_instance, accel);
-        _rotate_and_correct_gyro(_gyro_instance, gyro);
+        _rotate_and_correct_accel(accel_instance, accel);
+        _rotate_and_correct_gyro(gyro_instance, gyro);
 
-        _notify_new_accel_raw_sample(_accel_instance, accel);
-        _notify_new_gyro_raw_sample(_gyro_instance, gyro);
+        _notify_new_accel_raw_sample(accel_instance, accel);
+        _notify_new_gyro_raw_sample(gyro_instance, gyro);
     }
 
     if (excess) {

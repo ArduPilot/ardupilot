@@ -21,7 +21,7 @@ class AC_CustomControl_Backend;
 
 class AC_CustomControl {
 public:
-    AC_CustomControl(AP_AHRS_View*& ahrs, AC_AttitudeControl*& _att_control, AP_MotorsMulticopter*& motors, float dt);
+    AC_CustomControl(AP_AHRS_View*& ahrs, AC_AttitudeControl*& _att_control, AP_MotorsMulticopter*& motors);
 
     CLASS_NO_COPY(AC_CustomControl);  /* Do not allow copies */
 

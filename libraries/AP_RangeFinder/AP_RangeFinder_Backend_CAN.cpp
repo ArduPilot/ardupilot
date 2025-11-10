@@ -13,10 +13,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_RangeFinder_config.h"
+
+#if AP_RANGEFINDER_BACKEND_CAN_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include "AP_RangeFinder_Backend_CAN.h"
-
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
 
 const AP_Param::GroupInfo AP_RangeFinder_Backend_CAN::var_info[] = {
 
@@ -45,7 +47,7 @@ AP_RangeFinder_Backend_CAN::AP_RangeFinder_Backend_CAN(
 {
     AP_Param::setup_object_defaults(this, var_info);
     state.var_info = var_info;
-    multican_rangefinder = new MultiCAN{FUNCTOR_BIND_MEMBER(&AP_RangeFinder_Backend_CAN::handle_frame, bool, AP_HAL::CANFrame &), can_type, driver_name};
+    multican_rangefinder = NEW_NOTHROW MultiCAN{FUNCTOR_BIND_MEMBER(&AP_RangeFinder_Backend_CAN::handle_frame, bool, AP_HAL::CANFrame &), can_type, driver_name};
     if (multican_rangefinder == nullptr) {
         AP_BoardConfig::allocation_error("Failed to create rangefinder multican");
     }
@@ -87,4 +89,4 @@ bool AP_RangeFinder_Backend_CAN::is_correct_id(uint32_t id) const
     return true;
 }
 
-#endif // HAL_MAX_CAN_PROTOCOL_DRIVERS
+#endif  // AP_RANGEFINDER_BACKEND_CAN_ENABLED

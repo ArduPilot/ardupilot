@@ -36,6 +36,8 @@ namespace SITL {
 class RF_Benewake_TFmini : public RF_Benewake {
 public:
 
+    static SerialRangeFinder *create() { return NEW_NOTHROW RF_Benewake_TFmini(); }
+
     // see AP_RangeFinder_Benewake.cpp for definitions
     uint8_t byte4() const override { return 1; } // strength L
     uint8_t byte5() const override { return 1; } // strength H

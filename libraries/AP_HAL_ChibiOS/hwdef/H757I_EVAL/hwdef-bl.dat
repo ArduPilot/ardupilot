@@ -16,13 +16,10 @@ define SMPS_PWR
 # crystal frequency
 OSCILLATOR_HZ 25000000
 
-# board ID for firmware load
-APJ_BOARD_ID 146
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_H757I_EVAL
 
 FLASH_SIZE_KB 2048
-
-# setup build for a peripheral firmware
-env AP_PERIPH 1
 
 EXT_FLASH_SIZE_MB 32
 

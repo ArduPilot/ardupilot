@@ -48,7 +48,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_VL53L1X::detect(RangeFinder::RangeFinder_
     }
 
     AP_RangeFinder_VL53L1X *sensor
-        = new AP_RangeFinder_VL53L1X(_state, _params, std::move(dev));
+        = NEW_NOTHROW AP_RangeFinder_VL53L1X(_state, _params, std::move(dev));
 
     if (!sensor) {
         delete sensor;
@@ -81,7 +81,7 @@ bool AP_RangeFinder_VL53L1X::check_id(void)
         (v2 != 0xCC)) {
         return false;
     }
-    printf("Detected VL53L1X on bus 0x%x\n", dev->get_bus_id());
+    printf("Detected VL53L1X on bus 0x%x\n", unsigned(dev->get_bus_id()));
     return true;
 }
 

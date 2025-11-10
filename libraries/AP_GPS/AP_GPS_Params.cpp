@@ -25,15 +25,15 @@ const AP_Param::GroupInfo AP_GPS::Params::var_info[] = {
     // @Param: TYPE
     // @DisplayName: GPS type
     // @Description: GPS type
-    // @Values: 0:None,1:AUTO,2:uBlox,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:DroneCAN,10:SBF,11:GSOF,13:ERB,14:MAVLink,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP,20:AllyStar,21:ExternalAHRS,22:DroneCAN-MovingBaseline-Base,23:DroneCAN-MovingBaseline-Rover,24:UnicoreNMEA,25:UnicoreMovingBaselineNMEA,26:SBF-DualAntenna
+    // @Values: 0:None,1:AUTO,2:uBlox,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:DroneCAN,10:Septentrio(SBF),11:Trimble(GSOF),13:ERB,14:MAVLink,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP,20:AllyStar,21:ExternalAHRS,22:DroneCAN-MovingBaseline-Base,23:DroneCAN-MovingBaseline-Rover,24:UnicoreNMEA,25:UnicoreMovingBaselineNMEA,26:Septentrio-DualAntenna(SBF)
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO_FLAGS("TYPE",    1, AP_GPS::Params, type, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: GNSS_MODE
     // @DisplayName: GNSS system configuration
-    // @Description: Bitmask for what GNSS system to use on the first GPS (all unchecked or zero to leave GPS as configured)
-    // @Bitmask: 0:GPS,1:SBAS,2:Galileo,3:Beidou,4:IMES,5:QZSS,6:GLONASS
+    // @Description: Bitmask for what GNSS system to use (all unchecked or zero to leave GPS as configured)
+    // @Bitmask: 0:GPS,1:SBAS,2:Galileo,3:Beidou,4:IMES,5:QZSS,6:GLONASS,7:NAVIC
     // @User: Advanced
     AP_GROUPINFO("GNSS_MODE", 2, AP_GPS::Params, gnss_mode, 0),
 

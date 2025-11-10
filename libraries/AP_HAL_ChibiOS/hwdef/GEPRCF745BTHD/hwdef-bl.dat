@@ -1,0 +1,54 @@
+# hw definition file for processing by chibios_pins.py
+# for GEPRFF745-BT-HD bootloader
+
+# MCU class and specific type
+MCU STM32F7xx STM32F745xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_GEPRCF745BTHD
+
+# crystal frequency, setup to use external oscillator
+OSCILLATOR_HZ 8000000
+
+define STM32_LSECLK   32768U
+define STM32_LSEDRV   (3U << 3U)
+
+FLASH_SIZE_KB 1024
+
+# bootloader starts at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 96
+
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1
+
+# PA10 IO-debug-console
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+PD2 BUZZER OUTPUT LOW PULLDOWN
+
+PC13 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 0
+
+# Motors for esc init
+PB0   PWMOUT1 OUTPUT LOW
+PB1   PWMOUT2 OUTPUT LOW
+PB5   PWMOUT3 OUTPUT LOW
+PB4   PWMOUT4 OUTPUT LOW
+PD12  PWMOUT5 OUTPUT LOW
+PD13  PWMOUT6 OUTPUT LOW
+PC8   PWMOUT7 OUTPUT LOW
+PC9   PWMOUT8 OUTPUT LOW
+
+# Add CS pins to ensure they are high in bootloader
+PA15  SDCARD_CS   CS
+PE4   MAX7456_CS  CS
+PA4   MPU6000_CS  CS
+PB12  ICM42605_CS CS

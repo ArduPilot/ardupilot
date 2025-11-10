@@ -3,6 +3,9 @@
 #include <AP_Logger/AP_Logger.h>
 
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
+
+#if AP_RANGEFINDER_ENABLED
+
 #include "AP_DAL.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -12,8 +15,8 @@ AP_DAL_RangeFinder::AP_DAL_RangeFinder()
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     _RRNH.num_sensors = AP::rangefinder()->num_sensors();
-    _RRNI = new log_RRNI[_RRNH.num_sensors];
-    _backend = new AP_DAL_RangeFinder_Backend *[_RRNH.num_sensors];
+    _RRNI = NEW_NOTHROW log_RRNI[_RRNH.num_sensors];
+    _backend = NEW_NOTHROW AP_DAL_RangeFinder_Backend *[_RRNH.num_sensors];
     if (!_RRNI || !_backend) {
         goto failed;
     }
@@ -22,7 +25,7 @@ AP_DAL_RangeFinder::AP_DAL_RangeFinder()
     }
     for (uint8_t i=0; i<_RRNH.num_sensors; i++) {
         // this avoids having to discard a const....
-        _backend[i] = new AP_DAL_RangeFinder_Backend(_RRNI[i]);
+        _backend[i] = NEW_NOTHROW AP_DAL_RangeFinder_Backend(_RRNI[i]);
         if (!_backend[i]) {
             goto failed;
         }
@@ -33,7 +36,7 @@ failed:
 #endif
 }
 
-int16_t AP_DAL_RangeFinder::ground_clearance_cm_orient(enum Rotation orientation) const
+float AP_DAL_RangeFinder::ground_clearance_orient(enum Rotation orientation) const
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone)
     const auto *rangefinder = AP::rangefinder();
@@ -41,25 +44,25 @@ int16_t AP_DAL_RangeFinder::ground_clearance_cm_orient(enum Rotation orientation
     if (orientation != ROTATION_PITCH_270) {
         // the EKF only asks for this from a specific orientation.  Thankfully.
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-        return rangefinder->ground_clearance_cm_orient(orientation);
+        return rangefinder->ground_clearance_orient(orientation);
     }
 #endif
 
-    return _RRNH.ground_clearance_cm;
+    return _RRNH.ground_clearance;
 }
 
-int16_t AP_DAL_RangeFinder::max_distance_cm_orient(enum Rotation orientation) const
+float AP_DAL_RangeFinder::max_distance_orient(enum Rotation orientation) const
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone)
     if (orientation != ROTATION_PITCH_270) {
         const auto *rangefinder = AP::rangefinder();
         // the EKF only asks for this from a specific orientation.  Thankfully.
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-        return rangefinder->max_distance_cm_orient(orientation);
+        return rangefinder->max_distance_orient(orientation);
     }
 #endif
 
-    return _RRNH.max_distance_cm;
+    return _RRNH.max_distance;
 }
 
 void AP_DAL_RangeFinder::start_frame()
@@ -72,8 +75,8 @@ void AP_DAL_RangeFinder::start_frame()
     const log_RRNH old = _RRNH;
 
     // EKF only asks for this *down*.
-    _RRNH.ground_clearance_cm = rangefinder->ground_clearance_cm_orient(ROTATION_PITCH_270);
-    _RRNH.max_distance_cm = rangefinder->max_distance_cm_orient(ROTATION_PITCH_270);
+    _RRNH.ground_clearance = rangefinder->ground_clearance_orient(ROTATION_PITCH_270);
+    _RRNH.max_distance = rangefinder->max_distance_orient(ROTATION_PITCH_270);
 
     WRITE_REPLAY_BLOCK_IFCHANGED(RRNH, _RRNH, old);
 
@@ -99,7 +102,7 @@ void AP_DAL_RangeFinder_Backend::start_frame(AP_RangeFinder_Backend *backend) {
     _RRNI.orientation = backend->orientation();
     _RRNI.status = (uint8_t)backend->status();
     _RRNI.pos_offset = backend->get_pos_offset();
-    _RRNI.distance_cm = backend->distance_cm();
+    _RRNI.distance = backend->distance();
     WRITE_REPLAY_BLOCK_IFCHANGED(RRNI, _RRNI, old);
 }
 
@@ -132,8 +135,8 @@ void AP_DAL_RangeFinder::handle_message(const log_RRNH &msg)
 {
     _RRNH = msg;
     if (_RRNH.num_sensors > 0 && _RRNI == nullptr) {
-        _RRNI = new log_RRNI[_RRNH.num_sensors];
-        _backend = new AP_DAL_RangeFinder_Backend *[_RRNH.num_sensors];
+        _RRNI = NEW_NOTHROW log_RRNI[_RRNH.num_sensors];
+        _backend = NEW_NOTHROW AP_DAL_RangeFinder_Backend *[_RRNH.num_sensors];
     }
 }
 
@@ -142,7 +145,9 @@ void AP_DAL_RangeFinder::handle_message(const log_RRNI &msg)
     if (_RRNI != nullptr && msg.instance < _RRNH.num_sensors) {
         _RRNI[msg.instance] = msg;
         if (_backend != nullptr && _backend[msg.instance] == nullptr) {
-            _backend[msg.instance] = new AP_DAL_RangeFinder_Backend(_RRNI[msg.instance]);
+            _backend[msg.instance] = NEW_NOTHROW AP_DAL_RangeFinder_Backend(_RRNI[msg.instance]);
         }
     }
 }
+
+#endif  // AP_RANGEFINDER_ENABLED

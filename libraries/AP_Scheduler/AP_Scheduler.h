@@ -29,6 +29,7 @@
 #include <AP_HAL/Util.h>
 #include <AP_Math/AP_Math.h>
 #include "PerfInfo.h"       // loop perf monitoring
+#include <AP_InternalError/AP_InternalError.h>
 
 #if AP_SCHEDULER_EXTENDED_TASKINFO_ENABLED
 #define AP_SCHEDULER_NAME_INITIALIZER(_clazz,_name) .name = #_clazz "::" #_name,
@@ -142,6 +143,7 @@ public:
     // get the active main loop rate
     uint16_t get_loop_rate_hz(void) {
         if (_active_loop_rate_hz == 0) {
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             _active_loop_rate_hz = _loop_rate_hz;
         }
         return _active_loop_rate_hz;
@@ -149,6 +151,7 @@ public:
     // get the time-allowed-per-loop in microseconds
     uint32_t get_loop_period_us() {
         if (_loop_period_us == 0) {
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             _loop_period_us = 1000000UL / _loop_rate_hz;
         }
         return _loop_period_us;
@@ -156,6 +159,7 @@ public:
     // get the time-allowed-per-loop in seconds
     float get_loop_period_s() {
         if (is_zero(_loop_period_s)) {
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             _loop_period_s = 1.0f / _loop_rate_hz;
         }
         return _loop_period_s;
@@ -174,6 +178,11 @@ public:
     // get the time in seconds that the last loop took
     float get_last_loop_time_s(void) const {
         return _last_loop_time_s;
+    }
+
+    // get the time in microseconds that the current loop started
+    uint64_t get_loop_start_time_us(void) const {
+        return _loop_sample_time_us;
     }
 
     // get the amount of extra time being added on each loop
@@ -198,7 +207,7 @@ private:
     AP_Int16 _loop_rate_hz;
 
     // loop rate in Hz as set at startup
-    AP_Int16 _active_loop_rate_hz;
+    uint16_t _active_loop_rate_hz;
 
     // scheduler options
     AP_Int8 _options;
@@ -240,12 +249,15 @@ private:
     // number of ticks that _spare_micros is counted over
     uint8_t _spare_ticks;
 
-    // start of loop timing
+    // start of previous loop
     uint32_t _loop_timer_start_us;
 
     // time of last loop in seconds
     float _last_loop_time_s;
-    
+
+    // start of current loop
+    uint64_t _loop_sample_time_us;
+
     // bitmask bit which indicates if we should log PERF message
     uint32_t _log_performance_bit;
 

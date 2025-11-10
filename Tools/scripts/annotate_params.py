@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 """
 This script fetches online ArduPilot parameter documentation (if not cached) and adds it to the specified file

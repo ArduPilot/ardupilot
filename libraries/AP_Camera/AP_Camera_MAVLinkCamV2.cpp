@@ -29,6 +29,8 @@ bool AP_Camera_MAVLinkCamV2::trigger_pic()
 
     // prepare and send message
     mavlink_command_long_t pkt {};
+    pkt.target_system = _sysid;
+    pkt.target_component = _compid;
     pkt.command = MAV_CMD_IMAGE_START_CAPTURE;
     pkt.param3 = 1;             // number of images to take
     pkt.param4 = image_index+1; // starting sequence number
@@ -49,6 +51,8 @@ bool AP_Camera_MAVLinkCamV2::record_video(bool start_recording)
 
     // prepare and send message
     mavlink_command_long_t pkt {};
+    pkt.target_system = _sysid;
+    pkt.target_component = _compid;
 
     if (start_recording) {
         pkt.command = MAV_CMD_VIDEO_START_CAPTURE;
@@ -74,6 +78,8 @@ bool AP_Camera_MAVLinkCamV2::set_zoom(ZoomType zoom_type, float zoom_value)
 
     // prepare and send message
     mavlink_command_long_t pkt {};
+    pkt.target_system = _sysid;
+    pkt.target_component = _compid;
     pkt.command = MAV_CMD_SET_CAMERA_ZOOM;
     switch (zoom_type) {
     case ZoomType::RATE:
@@ -101,6 +107,8 @@ SetFocusResult AP_Camera_MAVLinkCamV2::set_focus(FocusType focus_type, float foc
 
     // prepare and send message
     mavlink_command_long_t pkt {};
+    pkt.target_system = _sysid;
+    pkt.target_component = _compid;
     pkt.command = MAV_CMD_SET_CAMERA_FOCUS;
     switch (focus_type) {
     case FocusType::RATE:
@@ -141,7 +149,7 @@ void AP_Camera_MAVLinkCamV2::handle_message(mavlink_channel_t chan, const mavlin
         const uint8_t fw_ver_build = (_cam_info.firmware_version & 0xFF000000) >> 24;
 
         // display camera info to user
-        gcs().send_text(MAV_SEVERITY_INFO, "Camera: %s.32 %s.32 fw:%u.%u.%u.%u",
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Camera: %.32s %.32s fw:%u.%u.%u.%u",
                 _cam_info.vendor_name,
                 _cam_info.model_name,
                 (unsigned)fw_ver_major,

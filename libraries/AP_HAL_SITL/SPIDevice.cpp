@@ -73,7 +73,7 @@ int SPIBus::_ioctl(uint8_t cs_pin, uint8_t ioctl_number, void *data)
 AP_HAL::Device::PeriodicHandle SPIBus::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
 {
     // mostly swiped from ChibiOS:
-    SPIBus::callback_info *callback = new SPIBus::callback_info;
+    SPIBus::callback_info *callback = NEW_NOTHROW SPIBus::callback_info;
     if (callback == nullptr) {
         return nullptr;
     }
@@ -123,8 +123,8 @@ SPIDesc SPIDeviceManager::device_table[] = {
     { "dataflash", 1, 0}
 };
 
-AP_HAL::OwnPtr<AP_HAL::SPIDevice>
-SPIDeviceManager::get_device(const char *name)
+AP_HAL::SPIDevice *
+SPIDeviceManager::get_device_ptr(const char *name)
 {
     // this was swiped from AP_HAL_ChibiOS
 
@@ -136,7 +136,7 @@ SPIDeviceManager::get_device(const char *name)
         }
     }
     if (i == ARRAY_SIZE(device_table)) {
-        return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(nullptr);
+        return nullptr;
     }
 
     SPIDesc &desc = device_table[i];
@@ -150,7 +150,7 @@ SPIDeviceManager::get_device(const char *name)
     }
     if (busp == nullptr) {
         // create a new one
-        busp = new SPIBus(desc.bus);
+        busp = NEW_NOTHROW SPIBus(desc.bus);
         if (busp == nullptr) {
             return nullptr;
         }
@@ -160,7 +160,7 @@ SPIDeviceManager::get_device(const char *name)
         buses = busp;
     }
 
-    return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(new SPIDevice(*busp, desc));
+    return NEW_NOTHROW SPIDevice(*busp, desc);
 }
 
 // void SPIDeviceManager::_timer_tick()

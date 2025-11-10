@@ -97,8 +97,9 @@ bool AP_RangeFinder_RDS02UF::get_reading(float &distance_m)
         }
     }
 
-    // reset buffer
-    body_length = 0;
+    // consume this message:
+    move_header_in_buffer(ARRAY_SIZE(u.parse_buffer));
+
     return true;
 }
 

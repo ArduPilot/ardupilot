@@ -1,5 +1,19 @@
 #pragma once
 
+/*
+  The DAL (Data Abstraction Layer) acts as an intermediary between ArduPilot's AHRS state estimators and its data sources.  Currently the only in-tree estimators using the DAL are the EKF2 and EKF3 estimators.
+
+  When LOG_REPLAY is set to 1 all data entering the DAL is logged into ArduPilot's onboard ("dataflash") log.  LOG_DISARMED should be set when LOG_REPLAY is set.  Data is recorded in "frames" corresponding to a run of the EKF update functions.
+
+  The logs produced in this manner can be "replayed" via a "replay" tool.  Data frames are read from the log and the estimator's update methods called to run an update cycle based on that data.
+
+  In this way estimator problems can be reproduced from logs from real vehicles.
+
+  Replay also allows for adjustment of the EKF's tunables to produce better estimates for given logs (and hopefully the vehicle the logs were produced from.
+
+  See also https://ardupilot.org/dev/docs/testing-with-replay.html
+*/
+
 #include "AP_DAL_InertialSensor.h"
 #include "AP_DAL_Baro.h"
 #include "AP_DAL_GPS.h"
@@ -65,7 +79,7 @@ public:
 
     static AP_DAL *get_singleton() {
         if (!_singleton) {
-            _singleton = new AP_DAL();
+            _singleton = NEW_NOTHROW AP_DAL();
         }
         return _singleton;
     }
@@ -87,8 +101,15 @@ public:
     void log_writeDefaultAirSpeed3(const float aspeed, const float uncertainty);
     void log_writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type);
 
-    enum class StateMask {
+    enum class RFRNFlags {
         ARMED = (1U<<0),
+        UNUSED = (1U<<1),
+        FLY_FORWARD = (1U<<2),
+        AHRS_AIRSPEED_SENSOR_ENABLED = (1U<<3),
+        OPTICALFLOW_ENABLED = (1U<<4),
+        WHEELENCODER_ENABLED = (1U<<5),
+        TAKEOFF_EXPECTED = (1U<<6),
+        TOUCHDOWN_EXPECTED = (1U<<7),
     };
 
     // EKF ID for timing checks
@@ -121,19 +142,23 @@ public:
     int snprintf(char* str, size_t size, const char *format, ...) const;
 
     // copied in AP_HAL/Util.h
-    enum Memory_Type {
-        MEM_DMA_SAFE,
-        MEM_FAST
+    enum class MemoryType : uint8_t {
+        DMA_SAFE = 0,
+        FAST     = 1,
     };
-    void *malloc_type(size_t size, enum Memory_Type mem_type) const;
+    void *malloc_type(size_t size, MemoryType mem_type) const;
+    void free_type(void *ptr, size_t size, MemoryType memtype) const;
 
     AP_DAL_InertialSensor &ins() { return _ins; }
     AP_DAL_Baro &baro() { return _baro; }
     AP_DAL_GPS &gps() { return _gps; }
 
+#if AP_RANGEFINDER_ENABLED
     AP_DAL_RangeFinder *rangefinder() {
         return _rangefinder;
     }
+#endif
+
     AP_DAL_Airspeed *airspeed() {
         return _airspeed;
     }
@@ -219,6 +244,9 @@ public:
     void writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius);
     void writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset);
 
+    // Write terrain altitude (derived from SRTM) in meters above the origin
+    void writeTerrainData(float alt_m);
+
     // Replay support:
     void handle_message(const log_RFRH &msg) {
         _RFRH = msg;
@@ -227,9 +255,12 @@ public:
     }
     void handle_message(const log_RFRN &msg) {
         _RFRN = msg;
-        _home.lat = msg.lat;
-        _home.lng = msg.lng;
-        _home.alt = msg.alt;
+        _home = {
+            msg.lat,
+            msg.lng,
+            msg.alt,
+            Location::AltFrame::ABSOLUTE
+        };
     }
     void handle_message(const log_RFRF &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
 
@@ -242,13 +273,13 @@ public:
 
     void handle_message(const log_RASH &msg) {
         if (_airspeed == nullptr) {
-            _airspeed = new AP_DAL_Airspeed;
+            _airspeed = NEW_NOTHROW AP_DAL_Airspeed;
         }
         _airspeed->handle_message(msg);
     }
     void handle_message(const log_RASI &msg) {
         if (_airspeed == nullptr) {
-            _airspeed = new AP_DAL_Airspeed;
+            _airspeed = NEW_NOTHROW AP_DAL_Airspeed;
         }
         _airspeed->handle_message(msg);
     }
@@ -261,16 +292,20 @@ public:
     }
 
     void handle_message(const log_RRNH &msg) {
+#if AP_RANGEFINDER_ENABLED
         if (_rangefinder == nullptr) {
-            _rangefinder = new AP_DAL_RangeFinder;
+            _rangefinder = NEW_NOTHROW AP_DAL_RangeFinder;
         }
         _rangefinder->handle_message(msg);
+#endif
     }
     void handle_message(const log_RRNI &msg) {
+#if AP_RANGEFINDER_ENABLED
         if (_rangefinder == nullptr) {
-            _rangefinder = new AP_DAL_RangeFinder;
+            _rangefinder = NEW_NOTHROW AP_DAL_RangeFinder;
         }
         _rangefinder->handle_message(msg);
+#endif
     }
 
     void handle_message(const log_RGPH &msg) {
@@ -293,7 +328,7 @@ public:
     void handle_message(const log_RBCH &msg) {
 #if AP_BEACON_ENABLED
         if (_beacon == nullptr) {
-            _beacon = new AP_DAL_Beacon;
+            _beacon = NEW_NOTHROW AP_DAL_Beacon;
         }
         _beacon->handle_message(msg);
 #endif
@@ -301,7 +336,7 @@ public:
     void handle_message(const log_RBCI &msg) {
 #if AP_BEACON_ENABLED
         if (_beacon == nullptr) {
-            _beacon = new AP_DAL_Beacon;
+            _beacon = NEW_NOTHROW AP_DAL_Beacon;
         }
         _beacon->handle_message(msg);
 #endif
@@ -309,7 +344,7 @@ public:
     void handle_message(const log_RVOH &msg) {
 #if HAL_VISUALODOM_ENABLED
         if (_visualodom == nullptr) {
-            _visualodom = new AP_DAL_VisualOdom;
+            _visualodom = NEW_NOTHROW AP_DAL_VisualOdom;
         }
         _visualodom->handle_message(msg);
 #endif
@@ -320,6 +355,7 @@ public:
     void handle_message(const log_RWOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
     void handle_message(const log_RBOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
     void handle_message(const log_RSLL &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
+    void handle_message(const log_RTER &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
 
     // map core number for replay
     uint8_t logging_core(uint8_t c) const;
@@ -346,6 +382,7 @@ private:
     struct log_RWOH _RWOH;
     struct log_RBOH _RBOH;
     struct log_RSLL _RSLL;
+    struct log_RTER _RTER;
 
     // cached variables for speed:
     uint32_t _micros;
@@ -358,7 +395,9 @@ private:
     AP_DAL_InertialSensor _ins;
     AP_DAL_Baro _baro;
     AP_DAL_GPS _gps;
+#if AP_RANGEFINDER_ENABLED
     AP_DAL_RangeFinder *_rangefinder;
+#endif
     AP_DAL_Compass _compass;
     AP_DAL_Airspeed *_airspeed;
 #if AP_BEACON_ENABLED

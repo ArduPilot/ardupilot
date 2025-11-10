@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file	AC_PD.h
-/// @brief	Generic P controller with EEPROM-backed storage of constants.
+/// @brief	Single-axis P controller with EEPROM-backed gain storage.
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -13,7 +13,8 @@
 class AC_P {
 public:
 
-    /// Constructor for P that saves its settings to EEPROM
+    /// Constructor for P controller with EEPROM-backed gain.
+    /// Parameters are initialized from defaults or EEPROM at runtime.
     ///
     /// @note	PIs must be named to avoid either multiple parameters with the
     ///			same name, or an overly complex constructor.
@@ -33,33 +34,23 @@ public:
     /// Positive error produces positive output.
     ///
     /// @param error	The measured error value
-    /// @param dt		The time delta in milliseconds (note
-    ///					that update interval cannot be more
-    ///					than 65.535 seconds due to limited range
-    ///					of the data type).
-    ///
     /// @returns		The updated control output.
     ///
     float       get_p(float error) const;
 
-    /// Load gain properties
-    ///
+    // Loads controller configuration from EEPROM, including gains and filter frequencies. (not used)
     void        load_gains();
 
-    /// Save gain properties
-    ///
+    // Saves controller configuration from EEPROM. Used by autotune to save gains before tuning.
     void        save_gains();
 
     /// @name	parameter accessors
     //@{
 
-    /// Overload the function call operator to permit relatively easy initialisation
-    void operator() (const float p) { _kp.set(p); }
-
     // accessors
     AP_Float    &kP() { return _kp; }
     const AP_Float &kP() const { return _kp; }
-    void        kP(const float v) { _kp.set(v); }
+    void        set_kP(const float v) { _kp.set(v); }
 
     static const struct AP_Param::GroupInfo        var_info[];
 

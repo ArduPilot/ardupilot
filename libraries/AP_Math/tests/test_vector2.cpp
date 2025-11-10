@@ -112,8 +112,18 @@ TEST(Vector2Test, angle)
     EXPECT_FLOAT_EQ(M_PI/2, Vector2f(0, 1).angle());
     EXPECT_FLOAT_EQ(M_PI/4, Vector2f(1, 1).angle());
     EXPECT_TRUE(is_zero(Vector2d(1, 0).angle()));
-    EXPECT_FLOAT_EQ(M_PI*5/4, Vector2f(-1, -1).angle());
-    EXPECT_FLOAT_EQ(M_PI*5/4, Vector2f(-5, -5).angle());
+    EXPECT_FLOAT_EQ(-M_PI*3/4, Vector2f(-1, -1).angle());
+    EXPECT_FLOAT_EQ(-M_PI*3/4, Vector2f(-5, -5).angle());
+
+    // test all cardinal and inter-cardinal points:
+    EXPECT_FLOAT_EQ(M_PI*0/4, Vector2f(1, 0).angle());
+    EXPECT_FLOAT_EQ(M_PI*1/4, Vector2f(1, 1).angle());
+    EXPECT_FLOAT_EQ(M_PI*2/4, Vector2f(0, 1).angle());
+    EXPECT_FLOAT_EQ(M_PI*3/4, Vector2f(-1, 1).angle());
+    EXPECT_FLOAT_EQ(M_PI*4/4, Vector2f(-1, 0).angle());
+    EXPECT_FLOAT_EQ(-M_PI*3/4, Vector2f(-1, -1).angle());
+    EXPECT_FLOAT_EQ(-M_PI*2/4, Vector2f(0, -1).angle());
+    EXPECT_FLOAT_EQ(-M_PI*1/4, Vector2f(1, -1).angle());
 
     EXPECT_FLOAT_EQ(M_PI/2, Vector2f(0.0f, 1.0f).angle(Vector2f(1.0f, 0.0f)));
     EXPECT_FLOAT_EQ(0.0f, Vector2f(0.5f, 0.5f).angle(Vector2f(0.5f, 0.5f)));

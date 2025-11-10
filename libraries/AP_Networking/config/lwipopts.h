@@ -69,6 +69,12 @@ extern "C"
 #define MEMP_MEM_MALLOC 1
 #define LWIP_NETCONN_SEM_PER_THREAD 0
 
+/**
+ * SO_REUSE==1: Enable SO_REUSEADDR option.
+ */
+#ifndef SO_REUSE
+#define SO_REUSE                   1
+#endif
 
 #define NO_SYS                     0
 #define LWIP_SOCKET                (NO_SYS==0)
@@ -111,6 +117,12 @@ extern "C"
 #define LWIP_NETIF_EXT_STATUS_CALLBACK  1
 
 #define USE_PPP 1
+
+// generate a regular LCP echo to keep link up
+#define LCP_ECHOINTERVAL                1
+
+// on 5 failed echos terminate link
+#define LCP_MAXECHOFAILS                5
 
 #define LWIP_TIMEVAL_PRIVATE 0
 #define LWIP_FD_SET_PRIVATE 0
@@ -335,6 +347,11 @@ a lot of data that needs to be copied, this should be set high. */
 /* ---------- NETBIOS options ---------- */
 #define LWIP_NETBIOS_RESPOND_NAME_QUERY 0
 
+/* routing hook */
+#define LWIP_HOOK_IP4_ROUTE ap_networking_routing_hook
+struct ip4_addr;
+struct netif *ap_networking_routing_hook(const struct ip4_addr *dest);
+
 /* ---------- PPP options ---------- */
 
 #ifndef PPP_SUPPORT
@@ -342,6 +359,12 @@ a lot of data that needs to be copied, this should be set high. */
 #endif
 
 #if PPP_SUPPORT
+
+// support PPP network capture
+struct pbuf;
+struct ppp_pcb_s;
+void ap_ppp_capture_hook(const struct ppp_pcb_s *pcb, const struct pbuf *pb);
+#define LWIP_PPP_CAPTURE_HOOK ap_ppp_capture_hook
 
 #define NUM_PPP                 1      /* Max PPP sessions. */
 

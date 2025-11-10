@@ -23,9 +23,7 @@
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
-#define BMI160_DEFAULT_ROTATION ROTATION_ROLL_180
-#else
+#ifndef BMI160_DEFAULT_ROTATION
 #define BMI160_DEFAULT_ROTATION ROTATION_NONE
 #endif
 
@@ -120,10 +118,7 @@ private:
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
     enum Rotation _rotation;
 
-    uint8_t _accel_instance;
     float _accel_scale;
-
-    uint8_t _gyro_instance;
     float _gyro_scale;
 
     AP_HAL::DigitalSource *_int1_pin;

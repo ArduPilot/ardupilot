@@ -19,6 +19,10 @@
 // not used. The data is sent to the neopixel in 24 'SPI bytes', where each
 // spi byte is formatted to appear as a single bit of data to the neopixel.
 
+#include "AP_Notify_config.h"
+
+#if AP_NOTIFY_NAVIGATOR_LED_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Notify/AP_Notify.h"
 #include "NavigatorLED.h"
@@ -79,3 +83,5 @@ void NavigatorLED::_setup_data(uint8_t red, uint8_t green, uint8_t blue)
         _data[16 + i] = (blue & (1<<(7-i))) ? LED_T1 : LED_T0;
     }
 }
+
+#endif  // AP_NOTIFY_NAVIGATOR_LED_ENABLED

@@ -18,13 +18,9 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
+#include "SIM_config.h"
 
-#ifndef HAL_SIM_JSBSIM_ENABLED
-#define HAL_SIM_JSBSIM_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
-#endif
-
-#if HAL_SIM_JSBSIM_ENABLED
+#if AP_SIM_JSBSIM_ENABLED
 
 #include <AP_HAL/utility/Socket_native.h>
 
@@ -44,7 +40,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new JSBSim(frame_str);
+        return NEW_NOTHROW JSBSim(frame_str);
     }
 
 private:
@@ -88,6 +84,10 @@ private:
     void drain_control_socket();
 };
 
+} // namespace SITL
+#endif  // AP_SIM_JSBSIM_ENABLED
+
+namespace SITL {
 /*
   FGNetFDM class from JSBSim
  */
@@ -183,6 +183,4 @@ public:
     void ByteSwap(void);
 };
 
-} // namespace SITL
-
-#endif  // HAL_SIM_JSBSIM_ENABLED
+}  // end namespace SITL

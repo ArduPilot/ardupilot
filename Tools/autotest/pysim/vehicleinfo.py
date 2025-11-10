@@ -1,3 +1,5 @@
+# flake8: noqa
+
 class VehicleInfo(object):
 
     def __init__(self):
@@ -128,6 +130,31 @@ class VehicleInfo(object):
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-dodecahexa.parm" ],
+            },
+            "dotriaconta_octaquad_x": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": [
+                    "default_params/copter.parm",
+                    "default_params/copter-dotriaconta_octaquad_x.parm",
+                ],
+                "frame_example_script": "MotorMatrix_dotriaconta_octaquad_x.lua",
+            },
+            "hexadeca-octa": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": [
+                    "default_params/copter.parm",
+                    "default_params/copter-hexadeca_octa.parm"
+                ],
+                "frame_example_script": "MotorMatrix_hexadeca_octa.lua",
+            },
+            "hexadeca-octa-cwx": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": [
+                    "default_params/copter.parm",
+                    "default_params/copter-hexadeca_octa.parm",
+                    "default_params/copter-hexadeca_octa_cwx.parm"
+                ],
+                "frame_example_script": "MotorMatrix_hexadeca_octa_cw_x.lua",
             },
             # SIM
             "IrisRos": {
@@ -339,6 +366,10 @@ class VehicleInfo(object):
                 "waf_target": "bin/arduplane",
                 "default_params_filename": ["models/plane.parm", "default_params/plane-dspoilers.parm"]
             },
+            "plane-redundant": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": ["models/plane.parm", "default_params/plane-redundant.parm"]
+            },
             "plane-soaring": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": ["models/plane.parm", "default_params/plane-soaring.parm"]
@@ -391,6 +422,11 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/rover.parm",
                                             "default_params/rover-skid.parm"],
             },
+            "rover-omni3mecanum": {
+                "waf_target": "bin/ardurover",
+                "default_params_filename": ["default_params/rover.parm",
+                                            "default_params/rover-omni3mecanum.parm"],
+            },
             "rover-vectored": {
                 "waf_target": "bin/ardurover",
                 "default_params_filename": ["default_params/rover.parm",
@@ -407,6 +443,12 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/rover.parm",
                                             "default_params/motorboat.parm"],
             },
+            "motorboat-skid": {
+                "waf_target": "bin/ardurover",
+                "default_params_filename": ["default_params/rover.parm",
+                                            "default_params/motorboat.parm",
+                                            "default_params/rover-skid.parm"],
+            },
             "sailboat": {
                 "waf_target": "bin/ardurover",
                 "default_params_filename": ["default_params/rover.parm",
@@ -421,14 +463,17 @@ class VehicleInfo(object):
                 "waf_target": "bin/ardurover",
                 "default_params_filename": ["default_params/rover.parm",
                                             "default_params/rover-skid.parm"],
+                "external": True,
             },
             "airsim-rover": {
                 "waf_target": "bin/ardurover",
                 "default_params_filename": ["default_params/rover.parm",
                                             "default_params/airsim-rover.parm"],
+                "external": True,
             },
             "calibration": {
                 "extra_mavlink_cmds": "module load sitl_calibration;",
+                "external": True,
             },
         },
     },
@@ -478,7 +523,7 @@ class VehicleInfo(object):
         return self.options[vehicle]["frames"][default_frame]["waf_target"]
 
     def options_for_frame(self, frame, vehicle, opts):
-        """Return informatiom about how to sitl for frame e.g. build-type==sitl"""
+        """Return information about how to sitl for frame e.g. build-type==sitl"""
         ret = None
         frames = self.options[vehicle]["frames"]
         if frame in frames:

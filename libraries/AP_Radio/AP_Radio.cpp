@@ -82,7 +82,7 @@ const AP_Param::GroupInfo AP_Radio::var_info[] = {
     // @Param: _STKMD
     // @DisplayName: Stick input mode
     // @Description: This selects between different stick input modes. The default is mode2, which has throttle on the left stick and pitch on the right stick. You can instead set mode1, which has throttle on the right stick and pitch on the left stick.
-    // @Values: 1:Mode1,2:Mode2
+    // @Values: 1:Mode1,2:Mode2,3:Mode3,4:Mode4
     // @User: Advanced
     AP_GROUPINFO("_STKMD", 10, AP_Radio, stick_mode, 2),
 
@@ -155,34 +155,34 @@ bool AP_Radio::init(void)
     switch (radio_type) {
 #if AP_RADIO_CYRF6936_ENABLED
     case RADIO_TYPE_CYRF6936:
-        driver = new AP_Radio_cypress(*this);
+        driver = NEW_NOTHROW AP_Radio_cypress(*this);
         break;
 #endif
 #if AP_RADIO_CC2500_ENABLED
     case RADIO_TYPE_CC2500:
-        driver = new AP_Radio_cc2500(*this);
+        driver = NEW_NOTHROW AP_Radio_cc2500(*this);
         break;
 #endif
 #if AP_RADIO_BK2425_ENABLED
     case RADIO_TYPE_BK2425:
-        driver = new AP_Radio_beken(*this);
+        driver = NEW_NOTHROW AP_Radio_beken(*this);
         break;
 #endif
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
+#if AP_RADIO_AUTO_ENABLED
     case RADIO_TYPE_AUTO:
         // auto-detect between cc2500 and beken radios
 #if AP_RADIO_CC2500_ENABLED
         if (AP_Radio_cc2500::probe()) {
-            driver = new AP_Radio_cc2500(*this);
+            driver = NEW_NOTHROW AP_Radio_cc2500(*this);
         }
 #endif
 #if AP_RADIO_BK2425_ENABLED
         if (driver == nullptr) {
-            driver = new AP_Radio_beken(*this);
+            driver = NEW_NOTHROW AP_Radio_beken(*this);
         }
 #endif
         break;
-#endif  // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
+#endif  // AP_RADIO_AUTO_ENABLED
     default:
         break;
     }

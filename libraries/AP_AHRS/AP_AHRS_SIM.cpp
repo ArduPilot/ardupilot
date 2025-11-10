@@ -41,7 +41,7 @@ bool AP_AHRS_SIM::wind_estimate(Vector3f &wind) const
     return true;
 }
 
-bool AP_AHRS_SIM::airspeed_estimate(float &airspeed_ret) const
+bool AP_AHRS_SIM::airspeed_EAS(float &airspeed_ret) const
 {
     if (_sitl == nullptr) {
         return false;
@@ -52,9 +52,9 @@ bool AP_AHRS_SIM::airspeed_estimate(float &airspeed_ret) const
     return true;
 }
 
-bool AP_AHRS_SIM::airspeed_estimate(uint8_t index, float &airspeed_ret) const
+bool AP_AHRS_SIM::airspeed_EAS(uint8_t index, float &airspeed_ret) const
 {
-    return airspeed_estimate(airspeed_ret);
+    return airspeed_EAS(airspeed_ret);
 }
 
 bool AP_AHRS_SIM::get_quaternion(Quaternion &quat) const
@@ -102,7 +102,7 @@ bool AP_AHRS_SIM::get_hagl(float &height) const
     return true;
 }
 
-bool AP_AHRS_SIM::get_relative_position_NED_origin(Vector3f &vec) const
+bool AP_AHRS_SIM::get_relative_position_NED_origin(Vector3p &vec) const
 {
     if (_sitl == nullptr) {
         return false;
@@ -114,27 +114,27 @@ bool AP_AHRS_SIM::get_relative_position_NED_origin(Vector3f &vec) const
         return false;
     }
 
-    const Vector2f diff2d = orgn.get_distance_NE(loc);
+    const Vector2p diff2d = orgn.get_distance_NE_postype(loc);
     const struct SITL::sitl_fdm &fdm = _sitl->state;
-    vec = Vector3f(diff2d.x, diff2d.y,
+    vec = Vector3p(diff2d.x, diff2d.y,
                    -(fdm.altitude - orgn.alt*0.01f));
 
     return true;
 }
 
-bool AP_AHRS_SIM::get_relative_position_NE_origin(Vector2f &posNE) const
+bool AP_AHRS_SIM::get_relative_position_NE_origin(Vector2p &posNE) const
 {
     Location loc, orgn;
     if (!get_location(loc) ||
         !get_origin(orgn)) {
         return false;
     }
-    posNE = orgn.get_distance_NE(loc);
+    posNE = orgn.get_distance_NE_postype(loc);
 
     return true;
 }
 
-bool AP_AHRS_SIM::get_relative_position_D_origin(float &posD) const
+bool AP_AHRS_SIM::get_relative_position_D_origin(postype_t &posD) const
 {
     if (_sitl == nullptr) {
         return false;
@@ -170,13 +170,6 @@ void AP_AHRS_SIM::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGain
     // same as EKF2 for no optical flow
     ekfGndSpdLimit = 400.0f;
     ekfNavVelGainScaler = 1.0f;
-}
-
-bool AP_AHRS_SIM::get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const
-{
-    magOffsets.zero();
-
-    return true;
 }
 
 void AP_AHRS_SIM::send_ekf_status_report(GCS_MAVLINK &link) const

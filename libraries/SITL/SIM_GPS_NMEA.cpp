@@ -9,6 +9,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include <time.h>
+#include <sys/time.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -73,7 +74,7 @@ void GPS_NMEA::publish(const GPS_Data *d)
                      lat_string,
                      lng_string,
                      d->have_lock?1:0,
-                     d->have_lock?_sitl->gps_numsats[instance]:3,
+                     d->have_lock?d->num_sats:3,
                      1.2,
                      d->altitude);
 
@@ -98,12 +99,12 @@ void GPS_NMEA::publish(const GPS_Data *d)
                      ground_track_deg,
                      dstring);
 
-    if (_sitl->gps_hdg_enabled[instance] == SITL::SIM::GPS_HEADING_HDT) {
+    if (_sitl->gps[instance].hdg_enabled == SITL::SIM::GPS_HEADING_HDT) {
         nmea_printf("$GPHDT,%.2f,T", d->yaw_deg);
     }
-    else if (_sitl->gps_hdg_enabled[instance] == SITL::SIM::GPS_HEADING_THS) {
+    else if (_sitl->gps[instance].hdg_enabled == SITL::SIM::GPS_HEADING_THS) {
         nmea_printf("$GPTHS,%.2f,%c,T", d->yaw_deg, d->have_lock ? 'A' : 'V');
-    } else if (_sitl->gps_hdg_enabled[instance] == SITL::SIM::GPS_HEADING_KSXT) {
+    } else if (_sitl->gps[instance].hdg_enabled == SITL::SIM::GPS_HEADING_KSXT) {
         // Unicore support
         // $KSXT,20211016083433.00,116.31296102,39.95817066,49.4911,223.57,-11.32,330.19,0.024,,1,3,28,27,,,,-0.012,0.021,0.020,,*2D
         nmea_printf("$KSXT,%04u%02u%02u%02u%02u%02u.%02u,%.8f,%.8f,%.4f,%.2f,%.2f,%.2f,%.2f,%.3f,%u,%u,%u,%u,,,,%.3f,%.3f,%.3f,,",
@@ -117,8 +118,8 @@ void GPS_NMEA::publish(const GPS_Data *d)
                     d->roll_deg,
                     d->have_lock?1:0, // 2=rtkfloat 3=rtkfixed,
                     3, // fixed rtk yaw solution,
-                    d->have_lock?_sitl->gps_numsats[instance]:3,
-                    d->have_lock?_sitl->gps_numsats[instance]:3,
+                    d->have_lock?d->num_sats:3,
+                    d->have_lock?d->num_sats:3,
                     d->speedE * 3.6,
                     d->speedN * 3.6,
                     -d->speedD * 3.6);

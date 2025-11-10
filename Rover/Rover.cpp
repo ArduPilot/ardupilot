@@ -37,7 +37,7 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-#define SCHED_TASK(func, _interval_ticks, _max_time_micros, _priority) SCHED_TASK_CLASS(Rover, &rover, func, _interval_ticks, _max_time_micros, _priority)
+#define SCHED_TASK(func, rate_hz, _max_time_micros, _priority) SCHED_TASK_CLASS(Rover, &rover, func, rate_hz, _max_time_micros, _priority)
 
 /*
   scheduler table - all regular tasks should be listed here.
@@ -70,7 +70,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     //         Function name,          Hz,     us,
     SCHED_TASK(read_radio,             50,    200,   3),
     SCHED_TASK(ahrs_update,           400,    400,   6),
+#if AP_RANGEFINDER_ENABLED
     SCHED_TASK(read_rangefinders,      50,    200,   9),
+#endif
 #if AP_OPTICALFLOW_ENABLED
     SCHED_TASK_CLASS(AP_OpticalFlow,      &rover.optflow,          update,         200, 160,  11),
 #endif
@@ -102,9 +104,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if AC_PRECLAND_ENABLED
     SCHED_TASK(update_precland,      400,     50,  70),
 #endif
-#if AP_RPM_ENABLED
-    SCHED_TASK_CLASS(AP_RPM,              &rover.rpm_sensor,       update,         10,  100,  72),
-#endif
 #if HAL_MOUNT_ENABLED
     SCHED_TASK_CLASS(AP_Mount,            &rover.camera_mount,     update,         50,  200,  75),
 #endif
@@ -112,14 +111,15 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Camera,           &rover.camera,           update,         50,  200,  78),
 #endif
     SCHED_TASK(gcs_failsafe_check,     10,    200,  81),
+#if AP_FENCE_ENABLED
     SCHED_TASK(fence_check,            10,    200,  84),
+#endif
     SCHED_TASK(ekf_check,              10,    100,  87),
     SCHED_TASK_CLASS(ModeSmartRTL,        &rover.mode_smartrtl,    save_position,   3,  200,  90),
     SCHED_TASK(one_second_loop,         1,   1500,  96),
 #if HAL_SPRAYER_ENABLED
     SCHED_TASK_CLASS(AC_Sprayer,          &rover.g2.sprayer,       update,          3,  90,  99),
 #endif
-    SCHED_TASK(compass_save,            0.1,  200, 105),
 #if HAL_LOGGING_ENABLED
     SCHED_TASK_CLASS(AP_Logger,           &rover.logger,           periodic_tasks, 50,  300, 108),
 #endif
@@ -132,7 +132,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #endif
     SCHED_TASK(crash_check,            10,    200, 123),
     SCHED_TASK(cruise_learn_update,    50,    200, 126),
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     SCHED_TASK(afs_fs_check,           10,    200, 129),
 #endif
 };
@@ -293,17 +293,6 @@ void Rover::nav_script_time_done(uint16_t id)
 }
 #endif // AP_SCRIPTING_ENABLED
 
-#if AP_STATS_ENABLED
-/*
-  update AP_Stats
-*/
-void Rover::stats_update(void)
-{
-    AP::stats()->set_flying(g2.motors.active());
-}
-#endif
-
-
 // update AHRS system
 void Rover::ahrs_update()
 {
@@ -331,6 +320,10 @@ void Rover::ahrs_update()
     } else if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         ground_speed = ahrs.groundspeed();
     }
+    
+#if AP_FOLLOW_ENABLED
+    g2.follow.update_estimates();
+#endif
 
 #if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
@@ -358,14 +351,14 @@ void Rover::gcs_failsafe_check(void)
         return;
     }
 
-    const uint32_t gcs_last_seen_ms = gcs().sysid_myggcs_last_seen_time_ms();
+    const uint32_t gcs_last_seen_ms = gcs().sysid_mygcs_last_seen_time_ms();
     if (gcs_last_seen_ms == 0) {
         // we've never seen the GCS, so we never failsafe for not seeing it
         return;
     }
 
     // calc time since last gcs update
-    // note: this only looks at the heartbeat from the device id set by g.sysid_my_gcs
+    // note: this only looks at the heartbeat from the device ids approved by gcs().sysid_is_gcs()
     const uint32_t last_gcs_update_ms = millis() - gcs_last_seen_ms;
     const uint32_t gcs_timeout_ms = uint32_t(constrain_float(g2.fs_gcs_timeout * 1000.0f, 0.0f, UINT32_MAX));
 
@@ -436,6 +429,50 @@ void Rover::update_logging2(void)
 }
 #endif  // HAL_LOGGING_ENABLED
 
+#if AP_ROVER_AUTO_ARM_ONCE_ENABLED
+void Rover::handle_auto_arm_once()
+{
+    if (arming.is_armed()) {
+        // never re-arm automatically if the user ever armed the vehicle
+        auto_arm_once.done = true;
+        return;
+    }
+    if (auto_arm_once.done) {
+        return;
+    }
+    switch (arming.arming_required()) {
+    case AP_Arming::Required::NO:
+    case AP_Arming::Required::YES_MIN_PWM:
+    case AP_Arming::Required::YES_ZERO_PWM:
+        // in case the user changes the require parameter at runtime,
+        // don't auto-arm:
+        auto_arm_once.done = true;
+        return;
+    case AP_Arming::Required::YES_AUTO_ARM_MIN_PWM:
+    case AP_Arming::Required::YES_AUTO_ARM_ZERO_PWM:
+        break;
+    }
+
+    // don't try to arm if prearms are not passing:
+    if (!arming.get_last_prearm_checks_result()) {
+        return;
+    }
+
+    const uint32_t now_ms = AP_HAL::millis();
+    // only attempt to auto arm once per 5 seconds:
+    if (now_ms - auto_arm_once.last_arm_attempt_ms < 5000) {
+        return;
+    }
+    auto_arm_once.last_arm_attempt_ms = now_ms;
+
+    if (!arming.arm(AP_Arming::Method::AUTO_ARM_ONCE)) {
+        return;
+    }
+
+    auto_arm_once.done = true;
+}
+#endif  // AP_ROVER_AUTO_ARM_ONCE_ENABLED
+
 /*
   once a second events
  */
@@ -444,7 +481,7 @@ void Rover::one_second_loop(void)
     set_control_channels();
 
     // cope with changes to aux functions
-    SRV_Channels::enable_aux_servos();
+    AP::srv().enable_aux_servos();
 
     // update notify flags
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
@@ -452,8 +489,9 @@ void Rover::one_second_loop(void)
     AP_Notify::flags.armed = arming.is_armed();
     AP_Notify::flags.flying = hal.util->get_soft_armed();
 
-    // cope with changes to mavlink system ID
-    mavlink_system.sysid = g.sysid_this_mav;
+#if AP_ROVER_AUTO_ARM_ONCE_ENABLED
+    handle_auto_arm_once();
+#endif  // AP_ROVER_AUTO_ARM_ONCE_ENABLED
 
     // attempt to update home position and baro calibration if not armed:
     if (!hal.util->get_soft_armed()) {
@@ -468,6 +506,11 @@ void Rover::one_second_loop(void)
     g2.wp_nav.set_turn_params(g2.turn_radius, g2.motors.have_skid_steering());
     g2.pos_control.set_turn_params(g2.turn_radius, g2.motors.have_skid_steering());
     g2.wheel_rate_control.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+
+#if AP_STATS_ENABLED
+    // Update stats "flying" time
+    AP::stats()->set_flying(g2.motors.active());
+#endif
 }
 
 void Rover::update_current_mode(void)

@@ -75,3 +75,4 @@ For fixed wing the following parameters are covered:
  - PTCH_RATE_*
  - RLL2SRV_TCONST
  - PTCH2SRV_TCONST
+ - all TECS parameters

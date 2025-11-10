@@ -46,12 +46,6 @@ T0_slope = -6.5E-3 (K/m')
 The tables list altitudes -5 km to 0 km using the same equations as 0 km to 11 km.
 */
 
-#ifndef AP_BARO_1976_STANDARD_ATMOSPHERE_ENABLED
-// default to using the extended functions when doing double precision EKF (which implies more flash space and faster MCU)
-// this allows for using the simple model with the --ekf-single configure option
-#define AP_BARO_1976_STANDARD_ATMOSPHERE_ENABLED HAL_WITH_EKF_DOUBLE
-#endif
-
 /*
   return altitude difference in meters between current pressure and a
   given base_pressure in Pascal. This is a simple atmospheric model
@@ -314,6 +308,7 @@ float AP_Baro::_get_EAS2TAS(void) const
 #endif
 }
 
+#if AP_BARO_1976_STANDARD_ATMOSPHERE_ENABLED || AP_SIM_ENABLED
 // lookup expected temperature in degrees C for a given altitude. Used for SITL backend
 float AP_Baro::get_temperatureC_for_alt_amsl(const float alt_amsl)
 {
@@ -329,6 +324,7 @@ float AP_Baro::get_pressure_for_alt_amsl(const float alt_amsl)
     get_pressure_temperature_for_alt_amsl(alt_amsl, pressure, temp_K);
     return pressure;
 }
+#endif // AP_BARO_1976_STANDARD_ATMOSPHERE_ENABLED
 
 /*
   return sea level pressure given a current altitude and pressure reading

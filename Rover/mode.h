@@ -19,7 +19,7 @@ public:
         LOITER       = 5,
         FOLLOW       = 6,
         SIMPLE       = 7,
-#if MODE_DOCK_ENABLED == ENABLED
+#if MODE_DOCK_ENABLED
         DOCK         = 8,
 #endif
         CIRCLE       = 9,
@@ -28,6 +28,7 @@ public:
         SMART_RTL    = 12,
         GUIDED       = 15,
         INITIALISING = 16,
+        // Mode number 30 reserved for "offboard" for external/lua control.
     };
 
     // Constructor
@@ -123,6 +124,9 @@ public:
 
     // execute the mission in reverse (i.e. backing up)
     void set_reversed(bool value);
+
+    // init reversed flag for autopilot mode
+    virtual void init_reversed_flag() { if (is_autopilot_mode()) { set_reversed(false); } }
 
     // handle tacking request (from auxiliary switch) in sailboats
     virtual void handle_tack_request();
@@ -277,16 +281,23 @@ public:
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4);
     void nav_script_time_done(uint16_t id);
 
+    // 
+    void init_reversed_flag() override {
+        if (!mission.is_resume()) {
+            set_reversed(false);
+        }
+    }
+
     AP_Mission mission{
         FUNCTOR_BIND_MEMBER(&ModeAuto::start_command, bool, const AP_Mission::Mission_Command&),
         FUNCTOR_BIND_MEMBER(&ModeAuto::verify_command_callback, bool, const AP_Mission::Mission_Command&),
         FUNCTOR_BIND_MEMBER(&ModeAuto::exit_mission, void)};
 
-    enum Mis_Done_Behave {
-        MIS_DONE_BEHAVE_HOLD      = 0,
-        MIS_DONE_BEHAVE_LOITER    = 1,
-        MIS_DONE_BEHAVE_ACRO      = 2,
-        MIS_DONE_BEHAVE_MANUAL    = 3
+    enum class DoneBehaviour : uint8_t {
+        HOLD      = 0,
+        LOITER    = 1,
+        ACRO      = 2,
+        MANUAL    = 3,
     };
 
 protected:
@@ -408,6 +419,9 @@ public:
     Number mode_number() const override { return Number::CIRCLE; }
     const char *name4() const override { return "CIRC"; }
 
+    // return the distance at which the vehicle is considered to be on track along the circle
+    float get_reached_distance() const;
+
     // initialise with specific center location, radius (in meters) and direction
     // replaces use of _enter when initialised from within Auto mode
     bool set_center(const Location& center_loc, float radius_m, bool dir_ccw);
@@ -447,6 +461,12 @@ protected:
     // initialise mode
     bool _enter() override;
 
+    // Update position controller targets driving to the circle edge
+    void update_drive_to_radius();
+
+    // Update position controller targets while circling
+    void update_circling();
+
     // initialise target_yaw_rad using the vehicle's position and yaw
     // if there is no current position estimate target_yaw_rad is set to vehicle yaw
     void init_target_yaw_rad();
@@ -483,6 +503,7 @@ protected:
     float angle_total_rad;  // total angle in radians that vehicle has circled
     bool reached_edge;      // true once vehicle has reached edge of circle
     float dist_to_edge_m;   // distance to edge of circle in meters (equivalent to crosstrack error)
+    bool tracking_back;     // true if the vehicle is trying to track back onto the circle
 };
 
 class ModeGuided : public Mode
@@ -792,7 +813,7 @@ protected:
     bool _enter() override { return false; };
 };
 
-#if MODE_FOLLOW_ENABLED == ENABLED
+#if MODE_FOLLOW_ENABLED
 class ModeFollow : public Mode
 {
 public:
@@ -852,7 +873,7 @@ private:
     float _desired_heading_cd;  // latest desired heading (in centi-degrees) from pilot
 };
 
-#if MODE_DOCK_ENABLED == ENABLED
+#if MODE_DOCK_ENABLED
 class ModeDock : public Mode
 {
 public:
@@ -890,14 +911,14 @@ protected:
     float apply_slowdown(float desired_speed);
 
     // calculate position of dock relative to the vehicle
-    bool calc_dock_pos_rel_vehicle_NE(Vector2f &dock_pos_rel_vehicle) const;
+    bool calc_dock_pos_rel_vehicle_NE_m(Vector2f &dock_pos_rel_vehicle_m) const;
 
     // we force the vehicle to use real dock target vector when this much close to the docking station
-    const float _force_real_target_limit_cm = 300.0f;
+    const float _force_real_target_limit_m = 3.0f;
     // acceptable lateral error in vehicle's position with respect to dock. This is used while slowing down the vehicle
-    const float _acceptable_pos_error_cm = 20.0f;
+    const float _acceptable_pos_error_m = 0.2f;
 
-    Vector2f _dock_pos_rel_origin_cm;   // position vector towards docking target relative to ekf origin
+    Vector2p _dock_pos_rel_origin_m;   // position vector towards docking target relative to ekf origin
     Vector2f _desired_heading_NE;       // unit vector in desired direction of docking
     bool _docking_complete = false;     // flag to mark docking complete when we are close enough to the dock
     bool _loitering = false; // true if we are loitering after mission completion

@@ -70,7 +70,7 @@ static int posix_fopen_modes_to_open(const char *mode)
 
 APFS_FILE *apfs_fopen(const char *pathname, const char *mode)
 {
-    APFS_FILE *f = new APFS_FILE;
+    APFS_FILE *f = NEW_NOTHROW APFS_FILE;
     if (!f) {
         return nullptr;
     }

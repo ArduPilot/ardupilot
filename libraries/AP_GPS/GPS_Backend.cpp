@@ -172,7 +172,7 @@ bool AP_GPS_Backend::should_log() const
 #endif
 
 
-#if HAL_GCS_ENABLED
+#if AP_GPS_GPS_RTK_SENDING_ENABLED || AP_GPS_GPS2_RTK_SENDING_ENABLED
 void AP_GPS_Backend::send_mavlink_gps_rtk(mavlink_channel_t chan)
 {
     const uint8_t instance = state.instance;
@@ -212,7 +212,8 @@ void AP_GPS_Backend::send_mavlink_gps_rtk(mavlink_channel_t chan)
             break;
     }
 }
-#endif
+#endif  // AP_GPS_GPS_RTK_SENDING_ENABLED || AP_GPS_GPS2_RTK_SENDING_ENABLED
+
 
 
 /*

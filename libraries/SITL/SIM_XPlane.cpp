@@ -16,9 +16,11 @@
   simulator connector for XPlane
 */
 
-#include "SIM_XPlane.h"
+#include "SIM_config.h"
 
-#if HAL_SIM_XPLANE_ENABLED
+#if AP_SIM_XPLANE_ENABLED
+
+#include "SIM_XPlane.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -116,7 +118,7 @@ XPlane::XPlane(const char *frame_str) :
 #endif
 
     if (!load_dref_map(XPLANE_JSON)) {
-        AP_HAL::panic("%s failed to load\n", XPLANE_JSON);
+        AP_HAL::panic("%s failed to load", XPLANE_JSON);
     }
 }
 
@@ -125,7 +127,7 @@ XPlane::XPlane(const char *frame_str) :
  */
 void XPlane::add_dref(const char *name, DRefType type, const AP_JSON::value &dref)
 {
-    struct DRef *d = new struct DRef;
+    struct DRef *d = NEW_NOTHROW struct DRef;
     if (d == nullptr) {
         AP_HAL::panic("out of memory for DRef %s", name);
     }
@@ -151,7 +153,7 @@ void XPlane::add_dref(const char *name, DRefType type, const AP_JSON::value &dre
 void XPlane::add_joyinput(const char *label, JoyType type, const AP_JSON::value &d)
 {
     if (strncmp(label, "axis", 4) == 0) {
-        struct JoyInput *j = new struct JoyInput;
+        struct JoyInput *j = NEW_NOTHROW struct JoyInput;
         if (j == nullptr) {
             AP_HAL::panic("out of memory for JoyInput %s", label);
         }
@@ -164,7 +166,7 @@ void XPlane::add_joyinput(const char *label, JoyType type, const AP_JSON::value 
         joyinputs = j;
     }
     if (strncmp(label, "button", 6) == 0) {
-        struct JoyInput *j = new struct JoyInput;
+        struct JoyInput *j = NEW_NOTHROW struct JoyInput;
         if (j == nullptr) {
             AP_HAL::panic("out of memory for JoyInput %s", label);
         }
@@ -206,6 +208,7 @@ bool XPlane::load_dref_map(const char *map_json)
     }
     AP_JSON::value *obj = AP_JSON::load_json(fname);
     if (obj == nullptr) {
+        free((void*)fname);
         return false;
     }
 
@@ -236,7 +239,8 @@ bool XPlane::load_dref_map(const char *map_json)
         const char *label = i->first.c_str();
         const auto &d = i->second;
         if (strchr(label, '/') != nullptr) {
-            const char *type_s = d.get("type").to_str().c_str();
+            const auto str = d.get("type").to_str();
+            const char *type_s = str.c_str();
             if (strcmp(type_s, "angle") == 0) {
                 add_dref(label, DRefType::ANGLE, d);
             } else if (strcmp(type_s, "range") == 0) {
@@ -700,4 +704,4 @@ void XPlane::update(const struct sitl_input &input)
     check_reload_dref();
 }
 
-#endif  // HAL_SIM_XPLANE_ENABLED
+#endif  // AP_SIM_XPLANE_ENABLED

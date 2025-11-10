@@ -6,7 +6,7 @@ The Aocoda-RC-H743Dual is a flight controller produced by [Aocoda-RC](https://ww
 
 - MCU：STM32H743VIH6
 - Gyro：MPU6000/BIM270x2
-- Baro：DPS310/MS56XX/BMP280
+- Baro：DPS310/MS5611/BMP280
 - Blackbox：128MB
 - PWM output：10CH
 - Servo：2CH

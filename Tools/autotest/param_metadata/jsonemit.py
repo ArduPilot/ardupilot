@@ -1,3 +1,5 @@
+# flake8: noqa
+
 import json
 import copy
 from emit import Emit
@@ -56,11 +58,18 @@ class JSONEmit(Emit):
                 name = name.split(':')[1]
 
             # Remove various unwanted keys
+            for key in list(param.__dict__.keys()):
+                if not self.should_emit_field(param, key):
+                    param.__dict__.pop(key)
             for key in 'real_path', 'SortValues', '__field_text':
                 try:
                     param.__dict__.pop(key)
                 except KeyError:
                     pass
+
+            # Remove __field_text key
+            if '__field_text' in param.__dict__:
+                param.__dict__.pop('__field_text')
 
             # Get range section if available
             range_json = {}

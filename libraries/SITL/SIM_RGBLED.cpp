@@ -17,7 +17,7 @@ void SIM_RGBLED::update_thread(void)
     sf::RenderWindow *w = nullptr;
     {
         WITH_SEMAPHORE(AP::notify().sf_window_mutex);
-        w = new sf::RenderWindow(sf::VideoMode(width, height), name);
+        w = NEW_NOTHROW sf::RenderWindow(sf::VideoMode(width, height), name);
     }
 
     if (w == nullptr) {

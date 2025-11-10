@@ -57,7 +57,7 @@ public:
         int32_t lon;
         uint16_t alt_m;
         uint16_t speed_cms;
-        int16_t ground_course_cd;
+        uint16_t ground_course_dd;
     } gps_state_t;
 
     typedef struct airspeed_state_s {
@@ -90,7 +90,7 @@ public:
     virtual void msp_displayport_release();
     virtual void msp_displayport_clear_screen();
     virtual void msp_displayport_draw_screen();
-    virtual void msp_displayport_write_string(uint8_t col, uint8_t row, bool blink, const char *string);
+    virtual void msp_displayport_write_string(uint8_t col, uint8_t row, bool blink, const char *string, const uint8_t font_table);
     virtual void msp_displayport_set_options(const uint8_t font_index, const uint8_t screen_resolution);
 #endif
 protected:

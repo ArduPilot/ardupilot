@@ -62,8 +62,6 @@ private:
     AP_HAL::OwnPtr<AP_HAL::Device> dev_accel;
     AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro;
 
-    uint8_t accel_instance;
-    uint8_t gyro_instance;
     enum Rotation rotation;
     uint8_t temperature_counter;
 };

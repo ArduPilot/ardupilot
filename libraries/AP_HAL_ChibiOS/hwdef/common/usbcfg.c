@@ -251,6 +251,18 @@ uint32_t get_usb_baud(uint16_t endpoint_id)
     }
     return 0;
 }
+
+/*
+    get the requested usb parity.  Valid if get_usb_baud() returned non-zero
+*/
+uint8_t get_usb_parity(uint16_t endpoint_id)
+{
+      if (endpoint_id == 0) {
+          return linecoding.bParityType;
+      }
+
+      return 0;
+}
 #endif
 /**
  * @brief   IN EP1 state.

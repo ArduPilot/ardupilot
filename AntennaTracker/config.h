@@ -3,14 +3,6 @@
 
 #include "defines.h"
 
-// Just so that it's completely clear...
-#define ENABLED                 1
-#define DISABLED                0
-
-// this avoids a very common config error
-#define ENABLE ENABLED
-#define DISABLE DISABLED
-
 #ifndef MAV_SYSTEM_ID
  // use 2 for antenna tracker by default
  # define MAV_SYSTEM_ID          2

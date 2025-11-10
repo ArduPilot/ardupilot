@@ -9,6 +9,7 @@
 #include "AC_CustomControl_PID.h"
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 
 // table of user settable parameters
 const AP_Param::GroupInfo AC_CustomControl::var_info[] = {
@@ -38,8 +39,7 @@ const AP_Param::GroupInfo AC_CustomControl::var_info[] = {
 
 const struct AP_Param::GroupInfo *AC_CustomControl::_backend_var_info[CUSTOMCONTROL_MAX_TYPES];
 
-AC_CustomControl::AC_CustomControl(AP_AHRS_View*& ahrs, AC_AttitudeControl*& att_control, AP_MotorsMulticopter*& motors, float dt) :
-    _dt(dt),
+AC_CustomControl::AC_CustomControl(AP_AHRS_View*& ahrs, AC_AttitudeControl*& att_control, AP_MotorsMulticopter*& motors) :
     _ahrs(ahrs),
     _att_control(att_control),
     _motors(motors)
@@ -49,17 +49,19 @@ AC_CustomControl::AC_CustomControl(AP_AHRS_View*& ahrs, AC_AttitudeControl*& att
 
 void AC_CustomControl::init(void)
 {
+    _dt = AP::scheduler().get_loop_period_s();
+
     switch (CustomControlType(_controller_type))
     {
         case CustomControlType::CONT_NONE:
             break;
         case CustomControlType::CONT_EMPTY: // This is template backend. Don't initialize it.
             // This is template backend. Don't initialize it.
-            // _backend = new AC_CustomControl_Empty(*this, _ahrs, _att_control, _motors, _dt);
+            // _backend = NEW_NOTHROW AC_CustomControl_Empty(*this, _ahrs, _att_control, _motors, _dt);
             // _backend_var_info[get_type()] = AC_CustomControl_Empty::var_info;
             break;
         case CustomControlType::CONT_PID:
-            _backend = new AC_CustomControl_PID(*this, _ahrs, _att_control, _motors, _dt);
+            _backend = NEW_NOTHROW AC_CustomControl_PID(*this, _ahrs, _att_control, _motors, _dt);
             _backend_var_info[get_type()] = AC_CustomControl_PID::var_info;
             break;
         default:
@@ -178,6 +180,12 @@ bool AC_CustomControl::is_safe_to_run(void) {
 
 // log when the custom controller is switch into
 void AC_CustomControl::log_switch(void) {
+    // @LoggerMessage: CC
+    // @Description: Custom Controller data
+    // @Field: TimeUS: Time since system startup
+    // @Field: Type: controller type
+    // @FieldValueEnum: Type: AC_CustomControl::CustomControlType
+    // @Field: Act: true if controller is active
     AP::logger().Write("CC", "TimeUS,Type,Act","QBB",
                             AP_HAL::micros64(),
                             _controller_type,

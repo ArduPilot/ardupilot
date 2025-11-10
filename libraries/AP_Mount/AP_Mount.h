@@ -47,6 +47,9 @@ class AP_Mount_Siyi;
 class AP_Mount_Scripting;
 class AP_Mount_Xacti;
 class AP_Mount_Viewpro;
+class AP_Mount_Topotek;
+class AP_Mount_CADDX;
+class AP_Mount_XFRobot;
 
 /*
   This is a workaround to allow the MAVLink backend access to the
@@ -67,6 +70,8 @@ class AP_Mount
     friend class AP_Mount_Scripting;
     friend class AP_Mount_Xacti;
     friend class AP_Mount_Viewpro;
+    friend class AP_Mount_Topotek;
+    friend class AP_Mount_CADDX;
 
 public:
     AP_Mount();
@@ -115,10 +120,19 @@ public:
 #if HAL_MOUNT_VIEWPRO_ENABLED
         Viewpro = 11,        /// Viewpro gimbal using a custom serial protocol
 #endif
+#if HAL_MOUNT_TOPOTEK_ENABLED
+        Topotek = 12,        /// Topotek gimbal using a custom serial protocol
+#endif
+#if HAL_MOUNT_CADDX_ENABLED
+        CADDX = 13,        /// CADDX gimbal using a custom serial protocol
+#endif
+#if HAL_MOUNT_XFROBOT_ENABLED
+        XFRobot = 14,        /// XFRobot gimbal using a custom serial protocol
+#endif
     };
 
     // init - detect and initialise all mounts
-    void init();
+    __INITFUNC__ void init();
 
     // update - give mount opportunity to update servos.  should be called at 10hz or higher
     void update();
@@ -201,6 +215,11 @@ public:
     bool get_poi(uint8_t instance, Quaternion &quat, Location &loc, Location &poi_loc) const;
 #endif
 
+    // get attitude as a quaternion.  returns true on success.
+    // att_quat will be an earth-frame quaternion rotated such that
+    // yaw is in body-frame.
+    bool get_attitude_quaternion(uint8_t instance, Quaternion& att_quat);
+
     // get mount's current attitude in euler angles in degrees.  yaw angle is in body-frame
     // returns true on success
     bool get_attitude_euler(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_bf_deg);
@@ -266,6 +285,15 @@ public:
     // send camera capture status message to GCS
     void send_camera_capture_status(uint8_t instance, mavlink_channel_t chan) const;
 
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+    // send camera thermal range message to GCS
+    void send_camera_thermal_range(uint8_t instance, mavlink_channel_t chan) const;
+#endif
+
+    // change camera settings not normally used by autopilot
+    // setting values from AP_Camera::Setting enum
+    bool change_setting(uint8_t instance, CameraSetting setting, float value);
+
     //
     // rangefinder
     //
@@ -297,12 +325,6 @@ private:
     AP_Mount_Backend *get_instance(uint8_t instance) const;
 
     void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg);
-#if AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED
-    void handle_mount_configure(const mavlink_message_t &msg);
-#endif
-#if AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED
-    void handle_mount_control(const mavlink_message_t &msg);
-#endif
 
     MAV_RESULT handle_command_do_mount_configure(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_mount_control(const mavlink_command_int_t &packet);

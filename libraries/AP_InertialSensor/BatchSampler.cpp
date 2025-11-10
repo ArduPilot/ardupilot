@@ -87,7 +87,9 @@ void AP_InertialSensor::BatchSampler::periodic()
     if (_sensor_mask == 0) {
         return;
     }
+#if HAL_LOGGING_ENABLED
     push_data_to_log();
+#endif
 }
 
 void AP_InertialSensor::BatchSampler::update_doing_sensor_rate_logging()
@@ -175,6 +177,7 @@ void AP_InertialSensor::BatchSampler::rotate_to_next_sensor()
     update_doing_sensor_rate_logging();
 }
 
+#if HAL_LOGGING_ENABLED
 void AP_InertialSensor::BatchSampler::push_data_to_log()
 {
     if (!initialised) {
@@ -266,6 +269,7 @@ bool AP_InertialSensor::BatchSampler::should_log(uint8_t _instance, IMU_SENSOR_T
     }
     return true;
 }
+#endif  // HAL_LOGGING_ENABLED
 
 void AP_InertialSensor::BatchSampler::sample(uint8_t _instance, AP_InertialSensor::IMU_SENSOR_TYPE _type, uint64_t sample_us, const Vector3f &_sample)
 {

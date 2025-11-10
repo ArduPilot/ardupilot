@@ -3,17 +3,15 @@
  */
 #pragma once
 
+#include "AP_Mount_config.h"
 
-#include <AP_HAL/AP_HAL.h>
+#if HAL_SOLO_GIMBAL_ENABLED
 
 #include "AP_Mount_Backend.h"
-#if HAL_SOLO_GIMBAL_ENABLED
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <RC_Channel/RC_Channel.h>
 #include "SoloGimbal.h"
-
 
 class AP_Mount_SoloGimbal : public AP_Mount_Backend
 {

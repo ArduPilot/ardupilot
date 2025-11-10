@@ -30,11 +30,10 @@ extern const AP_HAL::HAL &hal;
 
 #define SEG_INIT                0
 #define SEG_ACCEL_MAX           4
-#define SEG_TURN_IN             4
 #define SEG_ACCEL_END           7
 #define SEG_SPEED_CHANGE_END    14
 #define SEG_CONST               15
-#define SEG_TURN_OUT            15
+#define SEG_DECEL_START         15
 #define SEG_DECEL_END           22
 
 // constructor
@@ -60,7 +59,7 @@ void SCurve::init()
 
 // generate a trigonometric track in 3D space that moves over a straight line
 // between two points defined by the origin and destination
-void SCurve::calculate_track(const Vector3f &origin, const Vector3f &destination,
+void SCurve::calculate_track(const Vector3p &origin, const Vector3p &destination,
                              float speed_xy, float speed_up, float speed_down,
                              float accel_xy, float accel_z,
                              float snap_maximum, float jerk_maximum)
@@ -68,7 +67,7 @@ void SCurve::calculate_track(const Vector3f &origin, const Vector3f &destination
     init();
 
     // leave track as zero length if origin and destination are equal or if the new track length squared is zero
-    const Vector3f track_temp = destination - origin;
+    const Vector3f track_temp = (destination - origin).tofloat();
     if (track_temp.is_zero() || is_zero(track_temp.length_squared())) {
         return;
     }
@@ -486,7 +485,7 @@ void SCurve::set_destination_speed_max(float speed)
 // target_pos should be set to this segment's origin and it will be updated to the current position target
 // target_vel and target_accel are updated with new targets
 // returns true if vehicle has passed the apex of the corner
-bool SCurve::advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, float wp_radius, float accel_corner, bool fast_waypoint, float dt, Vector3f &target_pos, Vector3f &target_vel, Vector3f &target_accel)
+bool SCurve::advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, float wp_radius, float accel_corner, bool fast_waypoint, float dt, Vector3p &target_pos, Vector3f &target_vel, Vector3f &target_accel)
 {
     prev_leg.move_to_pos_vel_accel(dt, target_pos, target_vel, target_accel);
     move_from_pos_vel_accel(dt, target_pos, target_vel, target_accel);
@@ -495,23 +494,29 @@ bool SCurve::advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, floa
     // check for change of leg on fast waypoint
     const float time_to_destination = get_time_remaining();
     if (fast_waypoint 
-        && is_zero(next_leg.get_time_elapsed()) 
-        && (get_time_elapsed() >= time_turn_out() - next_leg.time_turn_in()) 
-        && (position_sq >= 0.25 * track.length_squared())) {
+        && is_zero(next_leg.get_time_elapsed()) // The next leg has not started
+        && (get_time_elapsed() >= time_decel_start()) // The current leg has started the deceleration phase
+        && (get_time_remaining() <= next_leg.time_accel_end()) // The current leg will finish before completion of the acceleration phase of the next leg
+        ) {
 
-        Vector3f turn_pos = -get_track();
+        // Calculate the position, velocity and acceleration at the turn mid point
+        Vector3p turn_pos = -get_track().topostype();
         Vector3f turn_vel, turn_accel;
         move_from_time_pos_vel_accel(get_time_elapsed() + time_to_destination * 0.5f, turn_pos, turn_vel, turn_accel);
         next_leg.move_from_time_pos_vel_accel(time_to_destination * 0.5f, turn_pos, turn_vel, turn_accel);
         const float speed_min = MIN(get_speed_along_track(), next_leg.get_speed_along_track());
-        if ((get_time_remaining() < next_leg.time_end() * 0.5f) && (turn_pos.length() < wp_radius) &&
-             (Vector2f{turn_vel.x, turn_vel.y}.length() < speed_min) &&
-             (Vector2f{turn_accel.x, turn_accel.y}.length() < accel_corner)) {
+        const float accel_z_lim = MIN(get_accel_z_max(), next_leg.get_accel_z_max());
+        if ((turn_pos.length() < wp_radius) // The turn mid point is within the waypoint radius
+            && (turn_vel.length() < speed_min) // The speed at the turn mid point is less than the minimum speed
+            && (Vector2f{turn_accel.x, turn_accel.y}.length() < accel_corner) // The acceleration at the turn mid point is less than the corner acceleration
+            && (fabsf(turn_accel.z) < accel_z_lim) // The vertical acceleration at the turn mid point is less than the maximum vertical acceleration
+            ) {
             next_leg.move_from_pos_vel_accel(dt, target_pos, target_vel, target_accel);
         }
     } else if (!is_zero(next_leg.get_time_elapsed())) {
         next_leg.move_from_pos_vel_accel(dt, target_pos, target_vel, target_accel);
         if (next_leg.get_time_elapsed() >= get_time_remaining()) {
+            // consider the current leg finished when we have passed half way through the turn between legs
             s_finished = true;
         }
     }
@@ -526,39 +531,39 @@ bool SCurve::finished() const
 }
 
 // increment time pointer and return the position, velocity and acceleration vectors relative to the origin
-void SCurve::move_from_pos_vel_accel(float dt, Vector3f &pos, Vector3f &vel, Vector3f &accel)
+void SCurve::move_from_pos_vel_accel(float dt, Vector3p &pos, Vector3f &vel, Vector3f &accel)
 {
     advance_time(dt);
     float scurve_P1 = 0.0f;
     float scurve_V1, scurve_A1, scurve_J1;
     get_jerk_accel_vel_pos_at_time(time, scurve_J1, scurve_A1, scurve_V1, scurve_P1);
-    pos += delta_unit * scurve_P1;
+    pos += delta_unit.topostype() * (postype_t)scurve_P1;
     vel += delta_unit * scurve_V1;
     accel += delta_unit * scurve_A1;
     position_sq = sq(scurve_P1);
 }
 
 // increment time pointer and return the position, velocity and acceleration vectors relative to the destination
-void SCurve::move_to_pos_vel_accel(float dt, Vector3f &pos, Vector3f &vel, Vector3f &accel)
+void SCurve::move_to_pos_vel_accel(float dt, Vector3p &pos, Vector3f &vel, Vector3f &accel)
 {
     advance_time(dt);
     float scurve_P1 = 0.0f;
     float scurve_V1, scurve_A1, scurve_J1;
     get_jerk_accel_vel_pos_at_time(time, scurve_J1, scurve_A1, scurve_V1, scurve_P1);
-    pos += delta_unit * scurve_P1;
+    pos += delta_unit.topostype() * (postype_t)scurve_P1;
     vel += delta_unit * scurve_V1;
     accel += delta_unit * scurve_A1;
     position_sq = sq(scurve_P1);
-    pos -= track;
+    pos -= track.topostype();
 }
 
 // return the position, velocity and acceleration vectors relative to the origin at a specified time along the path
-void SCurve::move_from_time_pos_vel_accel(float time_now, Vector3f &pos, Vector3f &vel, Vector3f &accel)
+void SCurve::move_from_time_pos_vel_accel(float time_now, Vector3p &pos, Vector3f &vel, Vector3f &accel)
 {
     float scurve_P1 = 0.0f;
     float scurve_V1 = 0.0f, scurve_A1 = 0.0f, scurve_J1 = 0.0f;
     get_jerk_accel_vel_pos_at_time(time_now, scurve_J1, scurve_A1, scurve_V1, scurve_P1);
-    pos += delta_unit * scurve_P1;
+    pos += delta_unit.topostype() * (postype_t)scurve_P1;
     vel += delta_unit * scurve_V1;
     accel += delta_unit * scurve_A1;
 }
@@ -599,22 +604,24 @@ bool SCurve::braking() const
     return time >= segment[SEG_CONST].end_time;
 }
 
-// return time offset used to initiate the turn onto leg
-float SCurve::time_turn_in() const
+// return time offset for the start of the constant speed section and end of the acceleration section
+// used to initiate the turn onto leg
+float SCurve::time_accel_end() const
 {
     if (num_segs != segments_max) {
         return 0.0;
     }
-    return segment[SEG_TURN_IN].end_time;
+    return segment[SEG_ACCEL_END].end_time;
 }
 
-// return time offset used to initiate the turn from leg
-float SCurve::time_turn_out() const
+// return time offset for the end of the constant speed section and start of the deceleration section
+// used to initiate the turn from leg
+float SCurve::time_decel_start() const
 {
     if (num_segs != segments_max) {
         return 0.0;
     }
-    return segment[SEG_TURN_OUT].end_time;
+    return segment[SEG_DECEL_START].end_time;
 }
 
 // increment the internal time
@@ -1030,7 +1037,7 @@ void SCurve::add_segment(uint8_t &index, float end_time, SegmentType seg_type, f
 // set speed and acceleration limits for the path
 // origin and destination are offsets from EKF origin
 // speed and acceleration parameters are given in horizontal, up and down.
-void SCurve::set_kinematic_limits(const Vector3f &origin, const Vector3f &destination,
+void SCurve::set_kinematic_limits(const Vector3p &origin, const Vector3p &destination,
                                   float speed_xy, float speed_up, float speed_down,
                                   float accel_xy, float accel_z)
 {
@@ -1041,12 +1048,13 @@ void SCurve::set_kinematic_limits(const Vector3f &origin, const Vector3f &destin
     accel_xy = fabsf(accel_xy);
     accel_z = fabsf(accel_z);
 
-    Vector3f direction = destination - origin;
+    Vector3f direction = (destination - origin).tofloat();
     const float track_speed_max = kinematic_limit(direction, speed_xy, speed_up, speed_down);
     const float track_accel_max = kinematic_limit(direction, accel_xy, accel_z, accel_z);
 
     vel_max = track_speed_max;
     accel_max = track_accel_max;
+    accel_z_max = accel_z;
 }
 
 // return true if the curve is valid.  Used to identify and protect against code errors

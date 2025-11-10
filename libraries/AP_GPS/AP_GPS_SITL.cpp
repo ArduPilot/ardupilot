@@ -15,12 +15,13 @@
 
 #include "AP_GPS_SITL.h"
 
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
 
 #include <ctype.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/time.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -116,4 +117,4 @@ bool AP_GPS_SITL::read(void)
     return true;
 }
 
-#endif  // HAL_SIM_GPS_ENABLED
+#endif  // AP_SIM_GPS_ENABLED

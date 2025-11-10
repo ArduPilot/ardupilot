@@ -113,7 +113,7 @@ AP_ADC_ADS1115::AP_ADC_ADS1115()
     , _gain(ADS1115_PGA_4P096)
     , _channel_to_read(0)
 {
-    _samples = new adc_report_s[_channels_number];
+    _samples = NEW_NOTHROW adc_report_s[_channels_number];
 }
 
 AP_ADC_ADS1115::~AP_ADC_ADS1115()
@@ -191,7 +191,6 @@ float AP_ADC_ADS1115::_convert_register_data_to_mv(int16_t word) const
         pga = ADS1115_MV_0P256C;
         break;
     default:
-        pga = 0.0f;
         DEV_PRINTF("Wrong gain");
         AP_HAL::panic("ADS1115: wrong gain selected");
         break;

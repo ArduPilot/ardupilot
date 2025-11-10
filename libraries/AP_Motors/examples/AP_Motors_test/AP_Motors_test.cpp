@@ -243,7 +243,7 @@ void setup()
                     ::printf("autorotation only supported by heli frame types, got %i\n", frame_class);
                     exit(1);
                 }
-                motors_heli->set_in_autorotation(!is_zero(value));
+                motors_heli->set_autorotation_active(!is_zero(value));
 
             } else {
                 ::printf("Expected \"frame_class\", \"yaw_headroom\" or \"throttle_avg_max\"\n");
@@ -261,7 +261,7 @@ void setup()
         }
 
         // motor initialisation
-        motors->set_dt(1.0/400.0);
+        motors->set_dt_s(1.0/400.0);
         motors->set_update_rate(490);
         motors->output_min();
 
@@ -298,7 +298,7 @@ void setup()
     }
 
     // motor initialisation
-    motors->set_dt(1.0/400.0);
+    motors->set_dt_s(1.0/400.0);
     motors->set_update_rate(490);
 
     char frame_and_type_string[30];
@@ -518,7 +518,7 @@ void stability_test()
     // arm motors
     motors->armed(true);
     motors->set_interlock(true);
-    SRV_Channels::enable_aux_servos();
+    AP::srv().enable_aux_servos();
 
     hal.console->printf("Roll,Pitch,Yaw,Thr,");
     for (uint8_t i=0; i<num_outputs; i++) {

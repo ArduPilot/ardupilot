@@ -1,6 +1,6 @@
 include ../MatekL431/hwdef.inc
 
-define HAL_PERIPH_ENABLE_SERIAL_OPTIONS
+define AP_PERIPH_SERIAL_OPTIONS_ENABLED 1
 
 # enable serial3 port with DMA
 undef PB10
@@ -17,3 +17,4 @@ define HAL_USE_ADC FALSE
 # make the UARTn numbers in parameters match the silkscreen
 undef SERIAL_ORDER
 SERIAL_ORDER EMPTY USART1 USART2 USART3
+USE_BOOTLOADER_FROM_BOARD MatekL431

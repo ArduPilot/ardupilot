@@ -29,6 +29,7 @@
 #if AP_PROXIMITY_LD06_ENABLED
 
 #include "AP_Proximity_Backend_Serial.h"
+#include <Filter/ModeFilter.h>
 
 #define MESSAGE_LENGTH_LD06         47
 
@@ -57,13 +58,22 @@ private:
 
     // Store and keep track of the bytes being read from the sensor
     uint8_t _response[MESSAGE_LENGTH_LD06];
-    bool _response_data;
     uint16_t _byte_count;
 
     // Store for error-tracking purposes
     uint32_t  _last_distance_received_ms;
 
-    // Boundary to store the measurements
-    AP_Proximity_Temp_Boundary _temp_boundary;
+    // distance filter applies to raw measurements
+    ModeFilterUInt16_Size3 _dist_filt_mm {1};
+
+    // face related variables
+    AP_Proximity_Boundary_3D::Face _last_face;///< last face requested
+    float _last_angle_deg;                    ///< yaw angle (in degrees) of _last_distance_m
+    float _last_distance_m;                   ///< shortest distance for _last_face
+    bool _last_distance_valid;                ///< true if _last_distance_m is valid
+
+    // angle and distance for the latest 2 degree sector
+    uint16_t _angle_2deg;
+    float _dist_2deg_m;
 };
 #endif // AP_PROXIMITY_LD06_ENABLED
