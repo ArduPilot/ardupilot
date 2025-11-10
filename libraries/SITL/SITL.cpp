@@ -1349,17 +1349,463 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 
     // the IMUT parameters must be last due to the enable parameters
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
+
+    // @Param: IMUT1_ENABLE
+    // @DisplayName: Enable simulated temperature disturbance for sensor data
+    // @Description: Enable the injection of temperature disturbance to the accelerometer and gyroscope data to simulate temperature calibration
+    // @Values: 0:Disable,1:Enabled, 2: Learn Calibration
+    // @User: Advanced
+
+    // @Param: IMUT1_ACC1_X
+    // @DisplayName: Applied simulated acceleration to accelerometer on X axis
+    // @Description: This is the applied simulated acceleration to the 1st accelerometer on the X axis
+    // @User: Advanced
+
+    // @Param: IMUT1_ACC1_Y
+    // @DisplayName: Applied simulated acceleration to accelerometer on Y axis
+    // @Description: This is the applied simulated acceleration to the 1st accelerometer on the Y axis
+    // @User: Advanced
+
+    // @Param: IMUT1_ACC1_Z
+    // @DisplayName: Applied simulated acceleration to accelerometer on Z axis
+    // @Description: This is the applied simulated acceleration to the 1st accelerometer on the Z axis
+    // @User: Advanced
+
+    // @Param: IMUT1_ACC2_X
+    // @DisplayName: Applied simulated acceleration to accelerometer on X axis
+    // @Description: This is the applied simulated acceleration to the 2nd accelerometer on the X axis
+    // @User: Advanced
+
+    // @Param: IMUT1_ACC2_Y
+    // @DisplayName: Applied simulated acceleration to accelerometer on Y axis
+    // @Description: This is the applied simulated acceleration to the 2nd accelerometer on the Y axis
+    // @User: Advanced
+
+    // @Param: IMUT1_ACC2_Z
+    // @DisplayName: Applied simulated acceleration to accelerometer on Z axis
+    // @Description: This is the applied simulated acceleration to the 2nd accelerometer on the Z axis
+    // @User: Advanced
+
+    // @Param: IMUT1_ACC3_X
+    // @DisplayName: Applied simulated acceleration to accelerometer on X axis
+    // @Description: This is the applied simulated acceleration to the 3rd accelerometer on the X axis
+    // @User: Advanced
+
+    // @Param: IMUT1_ACC3_Y
+    // @DisplayName: Applied simulated acceleration to accelerometer on Y axis
+    // @Description: This is the applied simulated acceleration to the 3rd accelerometer on the Y axis
+    // @User: Advanced
+
+    // @Param: IMUT1_ACC3_Z
+    // @DisplayName: Appled simulated acceleration to accelerometer on Z axis
+    // @Description: This is the applied simulated acceleration to the 3rd accelerometer on the Z axis
+    // @User: Advanced
+
+    // @Param: IMUT1_GYR1_X
+    // @DisplayName: Applied simulated angular rate to gyroscope on X axis
+    // @Description: This is the applied simulated angular rate to the 1st gyroscope on the X axis
+    // @User: Advanced
+
+    // @Param: IMUT1_GYR1_Y
+    // @DisplayName: Applied simulated angular rate to gyroscope on Y axis
+    // @Description: This is the applied simulated angular rate to the 1st gyroscope on the Y axis
+    // @User: Advanced
+
+    // @Param: IMUT1_GYR1_Z
+    // @DisplayName: Applied simulated angular rate to gyroscope on Z axis
+    // @Description: This is the applied simulated angular rate to the 1st gyroscope on the Z axis
+    // @User: Advanced
+
+    // @Param: IMUT1_GYR2_X
+    // @DisplayName: Applied simulated angular rate to gyroscope on X axis
+    // @Description: This is the applied simulated angular rate to the 2nd gyroscope on the X axis
+    // @User: Advanced
+
+    // @Param: IMUT1_GYR2_Y
+    // @DisplayName: Applied simulated angular rate to gyroscope on Y axis
+    // @Description: This is the applied simulated angular rate to the 2nd gyroscope on the Y axis
+    // @User: Advanced
+
+    // @Param: IMUT1_GYR2_Z
+    // @DisplayName: Applied simulated angular rate to gyroscope on Z axis
+    // @Description: This is the applied simulated angular rate to the 2nd gyroscope on the Z axis
+    // @User: Advanced
+
+    // @Param: IMUT1_GYR3_X
+    // @DisplayName: Applied simulated angular rate to gyroscope on X axis
+    // @Description: This is the applied simulated angular rate to the 3rd gyroscope on the X axis
+    // @User: Advanced
+
+    // @Param: IMUT1_GYR3_Y
+    // @DisplayName: Applied simulated angular rate to gyroscope on Y axis
+    // @Description: This is the applied simulated angular rate to the 3rd gyroscope on the Y axis
+    // @User: Advanced
+
+    // @Param: IMUT1_GYR3_Z
+    // @DisplayName: Applied simulated angular rate to gyroscope on Z axis
+    // @Description: This is the applied simulated angular rate to the 3rd gyroscope on the Z axis
+    // @User: Advanced
+
+    // @Param: IMUT1_TMAX
+    // @DisplayName: Simulated temperature calibration max
+    // @Description: The maximum simulated temperature that the calibration is valid for. This must be at least 10 degrees above TMIN for calibration
+    // @Units: degC
+    // @Range: -70 80
+    // @User: Advanced
+
+    // @Param: IMUT1_TMIN
+    // @DisplayName: Simulated temperature calibration min  
+    // @Description: The minimum simulated temperature that the calibration is valid for
+    // @Units: degC
+    // @Range: -70 80
+    // @User: Advanced
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SIM, AP_InertialSensor_TCal),
 #if INS_MAX_INSTANCES > 1
+
+    // @Param: IMUT2_ENABLE
+    // @CopyFieldsFrom: SIM_IMUT1_ENABLE
+    // @DisplayName: Enable simulated temperature disturbance for sensor data
+
+    // @Param: IMUT2_ACC1_X
+    // @CopyFieldsFrom: SIM_IMUT1_ACC1_X
+    // @DisplayName: Applied simulated acceleration to accelerometer on X axis
+
+    // @Param: IMUT2_ACC1_Y
+    // @CopyFieldsFrom: SIM_IMUT1_ACC1_Y
+    // @DisplayName: Applied simulated acceleration to accelerometer on Y axis
+
+    // @Param: IMUT2_ACC1_Z
+    // @CopyFieldsFrom: SIM_IMUT1_ACC1_Z
+    // @DisplayName: Applied simulated acceleration to accelerometer on Z axis
+
+    // @Param: IMUT2_ACC2_X
+    // @CopyFieldsFrom: SIM_IMUT1_ACC2_X
+    // @DisplayName: Applied simulated acceleration to accelerometer on X axis
+
+    // @Param: IMUT2_ACC2_Y
+    // @CopyFieldsFrom: SIM_IMUT1_ACC2_Y
+    // @DisplayName: Applied simulated acceleration to accelerometer on Y axis
+
+    // @Param: IMUT2_ACC2_Z
+    // @CopyFieldsFrom: SIM_IMUT1_ACC2_Z
+    // @DisplayName: Applied simulated acceleration to accelerometer on Z axis
+
+    // @Param: IMUT2_ACC3_X
+    // @CopyFieldsFrom: SIM_IMUT1_ACC3_X
+    // @DisplayName: Applied simulated acceleration to accelerometer on X axis
+
+    // @Param: IMUT2_ACC3_Y
+    // @CopyFieldsFrom: SIM_IMUT1_ACC3_Y
+    // @DisplayName: Applied simulated acceleration to accelerometer on Y axis
+
+    // @Param: IMUT2_ACC3_Z
+    // @CopyFieldsFrom: SIM_IMUT1_ACC3_Z
+    // @DisplayName: Appled simulated acceleration to accelerometer on Z axis
+
+    // @Param: IMUT2_GYR1_X
+    // @CopyFieldsFrom: SIM_IMUT1_GYR1_X
+    // @DisplayName: Applied simulated angular rate to gyroscope on X axis
+
+    // @Param: IMUT2_GYR1_Y
+    // @CopyFieldsFrom: SIM_IMUT1_GYR1_Y
+    // @DisplayName: Applied simulated angular rate to gyroscope on Y axis
+
+    // @Param: IMUT2_GYR1_Z
+    // @CopyFieldsFrom: SIM_IMUT1_GYR1_Z
+    // @DisplayName: Applied simulated angular rate to gyroscope on Z axis
+
+    // @Param: IMUT2_GYR2_X
+    // @CopyFieldsFrom: SIM_IMUT1_GYR2_X
+    // @DisplayName: Applied simulated angular rate to gyroscope on X axis
+
+    // @Param: IMUT2_GYR2_Y
+    // @CopyFieldsFrom: SIM_IMUT1_GYR2_Y
+    // @DisplayName: Applied simulated angular rate to gyroscope on Y axis
+
+    // @Param: IMUT2_GYR2_Z
+    // @CopyFieldsFrom: SIM_IMUT1_GYR2_Z
+    // @DisplayName: Applied simulated angular rate to gyroscope on Z axis
+
+    // @Param: IMUT2_GYR3_X
+    // @CopyFieldsFrom: SIM_IMUT1_GYR3_X
+    // @DisplayName: Applied simulated angular rate to gyroscope on X axis
+
+    // @Param: IMUT2_GYR3_Y
+    // @CopyFieldsFrom: SIM_IMUT1_GYR3_Y
+    // @DisplayName: Applied simulated angular rate to gyroscope on Y axis
+
+    // @Param: IMUT2_GYR3_Z
+    // @CopyFieldsFrom: SIM_IMUT1_GYR3_Z
+    // @DisplayName: Applied simulated angular rate to gyroscope on Z axis
+
+    // @Param: IMUT2_TMAX
+    // @CopyFieldsFrom: SIM_IMUT1_TMAX
+    // @DisplayName: Simulated temperature calibration max
+
+    // @Param: IMUT2_TMIN
+    // @CopyFieldsFrom: SIM_IMUT1_TMIN
+    // @DisplayName: Simulated temperature calibration min
     AP_SUBGROUPINFO(imu_tcal[1], "IMUT2_", 62, SIM, AP_InertialSensor_TCal),
 #endif
 #if INS_MAX_INSTANCES > 2
+
+    // @Param: IMUT3_ENABLE
+    // @CopyFieldsFrom: SIM_IMUT1_ENABLE
+    // @DisplayName: Enable simulated temperature disturbance for sensor data
+
+    // @Param: IMUT3_ACC1_X
+    // @CopyFieldsFrom: SIM_IMUT1_ACC1_X
+    // @DisplayName: Applied simulated acceleration to accelerometer on X axis
+
+    // @Param: IMUT3_ACC1_Y
+    // @CopyFieldsFrom: SIM_IMUT1_ACC1_Y
+    // @DisplayName: Applied simulated acceleration to accelerometer on Y axis
+
+    // @Param: IMUT3_ACC1_Z
+    // @CopyFieldsFrom: SIM_IMUT1_ACC1_Z
+    // @DisplayName: Applied simulated acceleration to accelerometer on Z axis
+
+    // @Param: IMUT3_ACC2_X
+    // @CopyFieldsFrom: SIM_IMUT1_ACC2_X
+    // @DisplayName: Applied simulated acceleration to accelerometer on X axis
+
+    // @Param: IMUT3_ACC2_Y
+    // @CopyFieldsFrom: SIM_IMUT1_ACC2_Y
+    // @DisplayName: Applied simulated acceleration to accelerometer on Y axis
+
+    // @Param: IMUT3_ACC2_Z
+    // @CopyFieldsFrom: SIM_IMUT1_ACC2_Z
+    // @DisplayName: Applied simulated acceleration to accelerometer on Z axis
+
+    // @Param: IMUT3_ACC3_X
+    // @CopyFieldsFrom: SIM_IMUT1_ACC3_X
+    // @DisplayName: Applied simulated acceleration to accelerometer on X axis
+
+    // @Param: IMUT3_ACC3_Y
+    // @CopyFieldsFrom: SIM_IMUT1_ACC3_Y
+    // @DisplayName: Applied simulated acceleration to accelerometer on Y axis
+
+    // @Param: IMUT3_ACC3_Z
+    // @CopyFieldsFrom: SIM_IMUT1_ACC3_Z
+    // @DisplayName: Appled simulated acceleration to accelerometer on Z axis
+
+    // @Param: IMUT3_GYR1_X
+    // @CopyFieldsFrom: SIM_IMUT1_GYR1_X
+    // @DisplayName: Applied simulated angular rate to gyroscope on X axis
+
+    // @Param: IMUT3_GYR1_Y
+    // @CopyFieldsFrom: SIM_IMUT1_GYR1_Y
+    // @DisplayName: Applied simulated angular rate to gyroscope on Y axis
+
+    // @Param: IMUT3_GYR1_Z
+    // @CopyFieldsFrom: SIM_IMUT1_GYR1_Z
+    // @DisplayName: Applied simulated angular rate to gyroscope on Z axis
+
+    // @Param: IMUT3_GYR2_X
+    // @CopyFieldsFrom: SIM_IMUT1_GYR2_X
+    // @DisplayName: Applied simulated angular rate to gyroscope on X axis
+
+    // @Param: IMUT3_GYR2_Y
+    // @CopyFieldsFrom: SIM_IMUT1_GYR2_Y
+    // @DisplayName: Applied simulated angular rate to gyroscope on Y axis
+
+    // @Param: IMUT3_GYR2_Z
+    // @CopyFieldsFrom: SIM_IMUT1_GYR2_Z
+    // @DisplayName: Applied simulated angular rate to gyroscope on Z axis
+
+    // @Param: IMUT3_GYR3_X
+    // @CopyFieldsFrom: SIM_IMUT1_GYR3_X
+    // @DisplayName: Applied simulated angular rate to gyroscope on X axis
+
+    // @Param: IMUT3_GYR3_Y
+    // @CopyFieldsFrom: SIM_IMUT1_GYR3_Y
+    // @DisplayName: Applied simulated angular rate to gyroscope on Y axis
+
+    // @Param: IMUT3_GYR3_Z
+    // @CopyFieldsFrom: SIM_IMUT1_GYR3_Z
+    // @DisplayName: Applied simulated angular rate to gyroscope on Z axis
+
+    // @Param: IMUT3_TMAX
+    // @CopyFieldsFrom: SIM_IMUT1_TMAX
+    // @DisplayName: Simulated temperature calibration max
+
+    // @Param: IMUT3_TMIN
+    // @CopyFieldsFrom: SIM_IMUT1_TMIN
+    // @DisplayName: Simulated temperature calibration min
     AP_SUBGROUPINFO(imu_tcal[2], "IMUT3_", 63, SIM, AP_InertialSensor_TCal),
 #endif
 #if INS_MAX_INSTANCES > 3
+
+    // @Param: IMUT4_ENABLE
+    // @CopyFieldsFrom: SIM_IMUT1_ENABLE
+    // @DisplayName: Enable simulated temperature disturbance for sensor data
+
+    // @Param: IMUT4_ACC1_X
+    // @CopyFieldsFrom: SIM_IMUT1_ACC1_X
+    // @DisplayName: Applied simulated acceleration to accelerometer on X axis
+
+    // @Param: IMUT4_ACC1_Y
+    // @CopyFieldsFrom: SIM_IMUT1_ACC1_Y
+    // @DisplayName: Applied simulated acceleration to accelerometer on Y axis
+
+    // @Param: IMUT4_ACC1_Z
+    // @CopyFieldsFrom: SIM_IMUT1_ACC1_Z
+    // @DisplayName: Applied simulated acceleration to accelerometer on Z axis
+
+    // @Param: IMUT4_ACC2_X
+    // @CopyFieldsFrom: SIM_IMUT1_ACC2_X
+    // @DisplayName: Applied simulated acceleration to accelerometer on X axis
+
+    // @Param: IMUT4_ACC2_Y
+    // @CopyFieldsFrom: SIM_IMUT1_ACC2_Y
+    // @DisplayName: Applied simulated acceleration to accelerometer on Y axis
+
+    // @Param: IMUT4_ACC2_Z
+    // @CopyFieldsFrom: SIM_IMUT1_ACC2_Z
+    // @DisplayName: Applied simulated acceleration to accelerometer on Z axis
+
+    // @Param: IMUT4_ACC3_X
+    // @CopyFieldsFrom: SIM_IMUT1_ACC3_X
+    // @DisplayName: Applied simulated acceleration to accelerometer on X axis
+
+    // @Param: IMUT4_ACC3_Y
+    // @CopyFieldsFrom: SIM_IMUT1_ACC3_Y
+    // @DisplayName: Applied simulated acceleration to accelerometer on Y axis
+
+    // @Param: IMUT4_ACC3_Z
+    // @CopyFieldsFrom: SIM_IMUT1_ACC3_Z
+    // @DisplayName: Appled simulated acceleration to accelerometer on Z axis
+
+    // @Param: IMUT4_GYR1_X
+    // @CopyFieldsFrom: SIM_IMUT1_GYR1_X
+    // @DisplayName: Applied simulated angular rate to gyroscope on X axis
+
+    // @Param: IMUT4_GYR1_Y
+    // @CopyFieldsFrom: SIM_IMUT1_GYR1_Y
+    // @DisplayName: Applied simulated angular rate to gyroscope on Y axis
+
+    // @Param: IMUT4_GYR1_Z
+    // @CopyFieldsFrom: SIM_IMUT1_GYR1_Z
+    // @DisplayName: Applied simulated angular rate to gyroscope on Z axis
+
+    // @Param: IMUT4_GYR2_X
+    // @CopyFieldsFrom: SIM_IMUT1_GYR2_X
+    // @DisplayName: Applied simulated angular rate to gyroscope on X axis
+
+    // @Param: IMUT4_GYR2_Y
+    // @CopyFieldsFrom: SIM_IMUT1_GYR2_Y
+    // @DisplayName: Applied simulated angular rate to gyroscope on Y axis
+
+    // @Param: IMUT4_GYR2_Z
+    // @CopyFieldsFrom: SIM_IMUT1_GYR2_Z
+    // @DisplayName: Applied simulated angular rate to gyroscope on Z axis
+
+    // @Param: IMUT4_GYR3_X
+    // @CopyFieldsFrom: SIM_IMUT1_GYR3_X
+    // @DisplayName: Applied simulated angular rate to gyroscope on X axis
+
+    // @Param: IMUT4_GYR3_Y
+    // @CopyFieldsFrom: SIM_IMUT1_GYR3_Y
+    // @DisplayName: Applied simulated angular rate to gyroscope on Y axis
+
+    // @Param: IMUT4_GYR3_Z
+    // @CopyFieldsFrom: SIM_IMUT1_GYR3_Z
+    // @DisplayName: Applied simulated angular rate to gyroscope on Z axis
+
+    // @Param: IMUT4_TMAX
+    // @CopyFieldsFrom: SIM_IMUT1_TMAX
+    // @DisplayName: Simulated temperature calibration max
+
+    // @Param: IMUT4_TMIN
+    // @CopyFieldsFrom: SIM_IMUT1_TMIN
+    // @DisplayName: Simulated temperature calibration min 
     AP_SUBGROUPINFO(imu_tcal[3], "IMUT4_", 60, SIM, AP_InertialSensor_TCal),
 #endif
 #if INS_MAX_INSTANCES > 4
+
+    // @Param: IMUT5_ENABLE
+    // @CopyFieldsFrom: SIM_IMUT1_ENABLE
+    // @DisplayName: Enable simulated temperature disturbance for sensor data
+
+    // @Param: IMUT5_ACC1_X
+    // @CopyFieldsFrom: SIM_IMUT1_ACC1_X
+    // @DisplayName: Applied simulated acceleration to accelerometer on X axis
+
+    // @Param: IMUT5_ACC1_Y
+    // @CopyFieldsFrom: SIM_IMUT1_ACC1_Y
+    // @DisplayName: Applied simulated acceleration to accelerometer on Y axis
+
+    // @Param: IMUT5_ACC1_Z
+    // @CopyFieldsFrom: SIM_IMUT1_ACC1_Z
+    // @DisplayName: Applied simulated acceleration to accelerometer on Z axis
+
+    // @Param: IMUT5_ACC2_X
+    // @CopyFieldsFrom: SIM_IMUT1_ACC2_X
+    // @DisplayName: Applied simulated acceleration to accelerometer on X axis
+
+    // @Param: IMUT5_ACC2_Y
+    // @CopyFieldsFrom: SIM_IMUT1_ACC2_Y
+    // @DisplayName: Applied simulated acceleration to accelerometer on Y axis
+
+    // @Param: IMUT5_ACC2_Z
+    // @CopyFieldsFrom: SIM_IMUT1_ACC2_Z
+    // @DisplayName: Applied simulated acceleration to accelerometer on Z axis
+
+    // @Param: IMUT5_ACC3_X
+    // @CopyFieldsFrom: SIM_IMUT1_ACC3_X
+    // @DisplayName: Applied simulated acceleration to accelerometer on X axis
+
+    // @Param: IMUT5_ACC3_Y
+    // @CopyFieldsFrom: SIM_IMUT1_ACC3_Y
+    // @DisplayName: Applied simulated acceleration to accelerometer on Y axis
+
+    // @Param: IMUT5_ACC3_Z
+    // @CopyFieldsFrom: SIM_IMUT1_ACC3_Z
+    // @DisplayName: Appled simulated acceleration to accelerometer on Z axis
+
+    // @Param: IMUT5_GYR1_X
+    // @CopyFieldsFrom: SIM_IMUT1_GYR1_X
+    // @DisplayName: Applied simulated angular rate to gyroscope on X axis
+
+    // @Param: IMUT5_GYR1_Y
+    // @CopyFieldsFrom: SIM_IMUT1_GYR1_Y
+    // @DisplayName: Applied simulated angular rate to gyroscope on Y axis
+
+    // @Param: IMUT5_GYR1_Z
+    // @CopyFieldsFrom: SIM_IMUT1_GYR1_Z
+    // @DisplayName: Applied simulated angular rate to gyroscope on Z axis
+
+    // @Param: IMUT5_GYR2_X
+    // @CopyFieldsFrom: SIM_IMUT1_GYR2_X
+    // @DisplayName: Applied simulated angular rate to gyroscope on X axis
+
+    // @Param: IMUT5_GYR2_Y
+    // @CopyFieldsFrom: SIM_IMUT1_GYR2_Y
+    // @DisplayName: Applied simulated angular rate to gyroscope on Y axis
+
+    // @Param: IMUT5_GYR2_Z
+    // @CopyFieldsFrom: SIM_IMUT1_GYR2_Z
+    // @DisplayName: Applied simulated angular rate to gyroscope on Z axis
+
+    // @Param: IMUT5_GYR3_X
+    // @CopyFieldsFrom: SIM_IMUT1_GYR3_X
+    // @DisplayName: Applied simulated angular rate to gyroscope on X axis
+
+    // @Param: IMUT5_GYR3_Y
+    // @CopyFieldsFrom: SIM_IMUT1_GYR3_Y
+    // @DisplayName: Applied simulated angular rate to gyroscope on Y axis
+
+    // @Param: IMUT5_GYR3_Z
+    // @CopyFieldsFrom: SIM_IMUT1_GYR3_Z
+    // @DisplayName: Applied simulated angular rate to gyroscope on Z axis
+
+    // @Param: IMUT5_TMAX
+    // @CopyFieldsFrom: SIM_IMUT1_TMAX
+    // @DisplayName: Simulated temperature calibration max
+
+    // @Param: IMUT5_TMIN
+    // @CopyFieldsFrom: SIM_IMUT1_TMIN
+    // @DisplayName: Simulated temperature calibration min 
     AP_SUBGROUPINFO(imu_tcal[4], "IMUT5_", 59, SIM, AP_InertialSensor_TCal),
 #endif
 #endif  // HAL_INS_TEMPERATURE_CAL_ENABLE
