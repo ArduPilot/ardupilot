@@ -101,6 +101,8 @@ void Copter::motors_output(bool full_push)
     if (ap.motor_test) {
         // check if we are performing the motor test
         motor_test_output();
+    } else if (ap.compass_mot) {
+        compassmot_output();
     } else {
         // send output signals to motors
         flightmode->output_to_motors();
