@@ -10530,6 +10530,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # ensure that the blended solution is always about half-way
         # between the two GPSs:
+        passes = 0
         current_ts = None
         while True:
             m = current_log_file.recv_match(type='GPS')
@@ -10553,8 +10554,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     if error > epsilon:
                         raise NotAchievedException("Blended diverged")
                 current_ts = None
+                passes += 1
 
-        if len(measurements) != 3:
+        if passes == 0:
             raise NotAchievedException("Did not see three GPS measurements!")
 
     def GPSWeightedBlending(self):
