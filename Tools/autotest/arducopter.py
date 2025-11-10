@@ -11392,6 +11392,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.check_attitudes_match()
             self.delay_sim_time(1)
 
+        self.do_RTL()
         self.context_pop()
         self.reboot_sitl()
 
@@ -14982,7 +14983,6 @@ return update, 1000
             "GroundEffectCompensation_takeOffExpected": "Flapping",
             "GroundEffectCompensation_touchDownExpected": "Flapping",
             "FlyMissionTwice": "See https://github.com/ArduPilot/ardupilot/pull/18561",
-            "GPSForYawCompassLearn": "Vehicle currently crashed in spectacular fashion",
             "CompassMot": "Causes an arithmetic exception in the EKF",
             "SMART_RTL_EnterLeave": "Causes a panic",
             "SMART_RTL_Repeat": "Currently fails due to issue with loop detection",
