@@ -808,6 +808,22 @@ def start_vehicle(binary, opts, stuff, spawns=None):
                 path = str(file)
 
             progress("Adding parameters from (%s)" % (str(file),))
+    if opts.param:
+        param_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
+        atexit.register(os.unlink, param_file.name)
+        param_dir = os.path.join(param_file.name)
+        single_params = []
+        for p in opts.param:
+            single_params.extend(p.split(','))
+        for sp in single_params:
+            sp.replace("=", " ")
+            sp = sp.strip()
+            param_file.write(f"{sp}\n")
+        if path is not None:
+            path += "," + str(param_dir)
+        else:
+            path = str(param_dir)
+
     if opts.OSDMSP:
         path += "," + os.path.join(root_dir, "libraries/AP_MSP/Tools/osdtest.parm")
         path += "," + os.path.join(autotest_dir, "default_params/msposd.parm")
@@ -1056,6 +1072,11 @@ parser.add_option("-C", "--sim_vehicle_sh_compatible",
                   default=False,
                   help="be compatible with the way sim_vehicle.sh works; "
                   "make this the first option")
+
+parser.add_option("-P", "--param",
+                  default=None,
+                  action='append',
+                  help="set some param with the format PARAM=VALUE")
 
 group_build = optparse.OptionGroup(parser, "Build options")
 group_build.add_option("-N", "--no-rebuild",
