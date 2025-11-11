@@ -774,6 +774,12 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
     // @User: Advanced
     AP_GROUPINFO("MAG_DELAY",      3, SIM,  mag_delay, 0),
     AP_GROUPINFO("MAG1_OFS",        4, SIM,  mag_ofs[0], 0),
+    // @Param: MAG_ALY
+    // @DisplayName: NED anomaly vector at ground level
+    // @Description: Simulates localized magnetic field distortions at ground level that decays with altitude.
+    // @Units: mGauss
+    // @User: Advanced
+    // @Vector3Parameter: 1
     AP_GROUPINFO("MAG_ALY",        5, SIM,  mag_anomaly_ned, 0),
     // @Param: MAG_ALY_HGT
     // @DisplayName: Magnetic anomaly height
