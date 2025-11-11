@@ -112,8 +112,10 @@ void AP_ExternalAHRS_GSOF::update_thread(void)
 {
     // TODO configure receiver to output expected data.
 
+#if AP_EXTERNALAHRS_GSOF_DEBUG_ENABLED
     auto last_debug = AP_HAL::millis();
     uint32_t pps = 0;
+#endif // AP_EXTERNALAHRS_GSOF_DEBUG_ENABLED
 
     uart->begin(baudrate);
     
@@ -133,6 +135,7 @@ void AP_ExternalAHRS_GSOF::update_thread(void)
         }
 
         auto const now = AP_HAL::millis();
+#if AP_EXTERNALAHRS_GSOF_DEBUG_ENABLED
         pps++;
 
         if (now - last_debug > 1000) {
@@ -143,6 +146,7 @@ void AP_ExternalAHRS_GSOF::update_thread(void)
             last_debug = now;
             pps = 0;
         }
+#endif // AP_EXTERNALAHRS_GSOF_DEBUG_ENABLED
         if (parsed.get(AP_GSOF::POS_TIME)) {
             last_pos_time_ms = now;
 
