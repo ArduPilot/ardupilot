@@ -1426,49 +1426,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("fence status incorrect; %s want=%u got=%u" %
                                            (name, want, got))
 
-    def wait_circling_point_with_radius(self, loc, want_radius, epsilon=5.0, min_circle_time=5, timeout=120):
-        on_radius_start_heading = None
-        average_radius = 0.0
-        circle_time_start = 0
-        done_time = False
-        done_angle = False
-        tstart = self.get_sim_time()
-        while True:
-            if self.get_sim_time() - tstart > timeout:
-                raise AutoTestTimeoutException("Did not get onto circle")
-            here = self.mav.location()
-            got_radius = self.get_distance(loc, here)
-            average_radius = 0.95*average_radius + 0.05*got_radius
-            on_radius = abs(got_radius - want_radius) < epsilon
-            m = self.assert_receive_message('VFR_HUD')
-            heading = m.heading
-            on_string = "off"
-            got_angle = ""
-            if on_radius_start_heading is not None:
-                got_angle = "%0.2f" % abs(on_radius_start_heading - heading) # FIXME
-                on_string = "on"
-
-            want_angle = 180 # we don't actually get this (angle-substraction issue.  But we get enough...
-            self.progress("wait-circling: got-r=%0.2f want-r=%f avg-r=%f %s want-a=%0.1f got-a=%s" %
-                          (got_radius, want_radius, average_radius, on_string, want_angle, got_angle))
-            if on_radius:
-                if on_radius_start_heading is None:
-                    on_radius_start_heading = heading
-                    average_radius = got_radius
-                    circle_time_start = self.get_sim_time()
-                    continue
-                if abs(on_radius_start_heading - heading) > want_angle: # FIXME
-                    done_angle = True
-                if self.get_sim_time() - circle_time_start > min_circle_time:
-                    done_time = True
-                if done_time and done_angle:
-                    return
-                continue
-            if on_radius_start_heading is not None:
-                average_radius = 0.0
-            on_radius_start_heading = None
-            circle_time_start = 0
-
     def MODE_SWITCH_RESET(self):
         '''test the MODE_SWITCH_RESET auxiliary function'''
         self.set_parameters({
@@ -6462,26 +6419,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.disarm_vehicle()
 
-    def start_flying_simple_rehome_mission(self, items):
-        '''uploads items, changes mode to auto, waits ready to arm and arms
-        vehicle.  If the first item it a takeoff you can expect the
-        vehicle to fly after this method returns
-        '''
-
-        self.upload_simple_relhome_mission(items)
-
-        self.change_mode('AUTO')
-        self.wait_ready_to_arm()
-
-        self.arm_vehicle()
-
     def InteractTest(self):
         '''just takeoff'''
 
         if self.mavproxy is None:
             raise NotAchievedException("Must be started with --map")
 
-        self.start_flying_simple_rehome_mission([
+        self.start_flying_simple_relhome_mission([
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, 0),
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 800, 0),
@@ -6517,7 +6461,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def MAV_CMD_NAV_RETURN_TO_LAUNCH(self):
         '''test receiving MAV_CMD_NAV_RETURN_TO_LAUNCH from GCS'''
         self.set_parameter('RTL_AUTOLAND', 1)
-        self.start_flying_simple_rehome_mission([
+        self.start_flying_simple_relhome_mission([
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
             (mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, 0, 0, 30),
             self.create_MISSION_ITEM_INT(
