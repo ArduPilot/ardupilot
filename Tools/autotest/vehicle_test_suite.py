@@ -4220,7 +4220,8 @@ class TestSuite(abc.ABC):
                 frame = mavutil.mavlink.MAV_FRAME_GLOBAL
             if opts.get('frame', None) is not None:
                 frame = opts.get('frame')
-            ret.append(self.create_MISSION_ITEM_INT(t, seq=seq, frame=frame, x=int(lat*1e7), y=int(lng*1e7), z=alt))
+            p1 = opts.get('p1', 0)  # should we pass `None` instead?
+            ret.append(self.create_MISSION_ITEM_INT(t, seq=seq, frame=frame, p1=p1, x=int(lat*1e7), y=int(lng*1e7), z=alt))
             seq += 1
 
         return ret
@@ -4239,6 +4240,33 @@ class TestSuite(abc.ABC):
             target_system=target_system,
             target_component=target_component)
         self.check_mission_upload_download(mission)
+
+    def start_flying_simple_relhome_mission(self, items):
+        '''uploads items, changes mode to auto, waits ready to arm and arms
+        vehicle.  If the first item it a takeoff you can expect the
+        vehicle to fly after this method returns.  On Copter AUTO_OPTIONS
+        should be 3.
+        '''
+
+        self.upload_simple_relhome_mission(items)
+        self.set_current_waypoint(0, check_afterwards=False)
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+
+        self.arm_vehicle()
+        # copter gets stuck in auto; if you run a mission to
+        # completion then the mission state machine ends up in a
+        # "done" state and you can't restart by just setting an
+        # earlier waypoint:
+        self.send_cmd(mavutil.mavlink.MAV_CMD_MISSION_START)
+
+    def fly_simple_relhome_mission(self, items):
+        '''uploads items, changes mode to auto, waits ready to arm and arms
+        vehicle.  Then waits for the vehicle to disarm.
+        '''
+        self.start_flying_simple_relhome_mission(items)
+        self.wait_disarmed()
 
     def get_mission_count(self):
         return self.get_parameter("MIS_TOTAL")
@@ -14745,6 +14773,58 @@ SERIAL5_BAUD 128
             self.create_junit_report(step_name, results, skip_list)
 
         return len(self.fail_list) == 0
+
+    def wait_circling_point_with_radius(self, loc, want_radius, epsilon=5.0, min_circle_time=5, timeout=120, track_angle=True):
+        on_radius_start_heading = None
+        average_radius = 0.0
+        done_time = False
+        done_angle = False
+        tstart = self.get_sim_time()
+        circle_time_start = tstart
+        while True:
+            now = self.get_sim_time()
+            if now - tstart > timeout:
+                raise AutoTestTimeoutException("Did not get onto circle")
+            here = self.mav.location()
+            got_radius = self.get_distance(loc, here)
+            average_radius = 0.95*average_radius + 0.05*got_radius
+            on_radius = abs(got_radius - want_radius) < epsilon
+            m = self.assert_receive_message('VFR_HUD')
+            heading = m.heading
+            on_string = "off"
+            got_angle = ""
+            if on_radius_start_heading is not None:
+                got_angle = "%0.2f" % abs(on_radius_start_heading - heading) # FIXME
+                on_string = "on"
+
+            want_angle = 180 # we don't actually get this (angle-substraction issue.  But we get enough...
+            got_circle_time = self.get_sim_time() - circle_time_start
+            bits = [
+                f"wait-circling: got-r={got_radius:.2f} want-r={want_radius}",
+                f"avg-r={average_radius} {on_string}",
+                f"t={got_circle_time:0.2f}/{min_circle_time}",
+            ]
+            if track_angle:
+                bits.append(f"want-a={want_angle:0.1f} got-a={got_angle}")
+
+            self.progress(" ".join(bits))
+            if on_radius:
+                if on_radius_start_heading is None:
+                    on_radius_start_heading = heading
+                    average_radius = got_radius
+                    circle_time_start = now
+                    continue
+                if abs(on_radius_start_heading - heading) > want_angle: # FIXME
+                    done_angle = True
+                if got_circle_time > min_circle_time:
+                    done_time = True
+                if not track_angle:
+                    done_angle = True
+                if done_time and done_angle:
+                    return
+                continue
+            on_radius_start_heading = None
+            circle_time_start = now
 
     def create_junit_report(self, test_name: str, results: List[Result], skip_list: List[Tuple[Test, Dict[str, str]]]) -> None:
         """Generate Junit report from the autotest results"""
