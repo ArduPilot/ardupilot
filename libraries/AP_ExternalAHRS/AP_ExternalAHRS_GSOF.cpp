@@ -92,11 +92,6 @@ AP_ExternalAHRS_GSOF::AP_ExternalAHRS_GSOF(AP_ExternalAHRS *_frontend,
 
     // Offer GPS even through it's a tightly coupled EKF.
     set_default_sensors(uint16_t(AP_ExternalAHRS::AvailableSensor::GPS));
-
-    hal.scheduler->delay(5000);
-    if (!initialised()) {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, LOG_FMT, get_name(), "missing data within 5s.");
-    }
 }
 
 // get serial port number for the uart
