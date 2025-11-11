@@ -5,6 +5,7 @@
 #include <poll.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
+#include <sys/file.h>
 #include <asm/ioctls.h>
 #include <asm/termbits.h>
 #include <unistd.h>
@@ -23,6 +24,10 @@ UARTDevice::~UARTDevice()
 bool UARTDevice::close()
 {
     if (_fd != -1) {
+        // Release flock (this happens automatically on close, but explicit is better)
+        flock(_fd, LOCK_UN);
+        // Release TIOCEXCL
+        ioctl(_fd, TIOCNXCL);
         if (::close(_fd) < 0) {
             return false;
         }
@@ -43,6 +48,20 @@ bool UARTDevice::open()
         return false;
     }
 
+    // Set exclusive access to prevent other processes from opening this port
+    // Try flock first (compatible with pyserial)
+    if (flock(_fd, LOCK_EX | LOCK_NB) != 0) {
+        if (errno == EWOULDBLOCK) {
+            ::fprintf(stderr, "Device %s is already locked by another process (flock)\n",
+                      _device_path);
+        } else {
+            ::fprintf(stderr, "Failed to set flock exclusive access on %s - %s\n",
+                      _device_path, strerror(errno));
+        }
+    }
+
+    // Also set TIOCEXCL for additional terminal-level exclusivity
+    ioctl(_fd, TIOCEXCL);
     _disable_crlf();
 
     return true;
