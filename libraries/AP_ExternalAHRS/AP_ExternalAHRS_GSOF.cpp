@@ -71,7 +71,6 @@ extern const AP_HAL::HAL &hal;
 AP_ExternalAHRS_GSOF::AP_ExternalAHRS_GSOF(AP_ExternalAHRS *_frontend,
         AP_ExternalAHRS::state_t &_state): AP_ExternalAHRS_backend(_frontend, _state)
 {
-
     auto &sm = AP::serialmanager();
     uart = sm.find_serial(AP_SerialManager::SerialProtocol_AHRS, 0);
     if (uart == nullptr) {
@@ -120,8 +119,11 @@ void AP_ExternalAHRS_GSOF::update_thread(void)
             hal.scheduler->delay_microseconds(100);
             continue;
         }
-        hal.scheduler->delay_microseconds(100);
-        const uint8_t c = uart->read();
+        uint8_t c;
+        if (!uart->read(c)) {
+                hal.scheduler->delay_microseconds(100);
+                continue;
+        }
 
         AP_GSOF::MsgTypes parsed;
         const auto parse_res = parse(c, parsed);
@@ -185,7 +187,7 @@ void AP_ExternalAHRS_GSOF::update_thread(void)
                     break;
             }
             if (ins_full_nav.gnss_status != AP_GSOF::GnssStatus::FIX_NOT_AVAILABLE) {
-                // If fix is unavailble, the lat/lon may be zero, so don't post the data.
+                // If fix is unavailable, the lat/lon may be zero, so don't post the data.
                 // To reproduce this condition, disconnect the GPS antenna and reboot the receiver.
                 post_filter();
             }

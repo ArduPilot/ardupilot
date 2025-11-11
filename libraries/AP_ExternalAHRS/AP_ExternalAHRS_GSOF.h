@@ -72,7 +72,7 @@ private:
     HAL_Semaphore sem;
 
     // Used to monitor initialization state.
-    bool last_init_state = false;
+    bool last_init_state;
 
     // The last time we received a message from the GNSS
     // containing AP_GSOF::POS_TIME.
