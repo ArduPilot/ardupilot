@@ -287,10 +287,13 @@ public:
     void Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& point);
     void Write_Winch(bool healthy, bool thread_end, bool moving, bool clutch, uint8_t mode, float desired_length, float length, float desired_rate, uint16_t tension, float voltage, int8_t temp);
 
+    //! @deprecated Use the other signature with units and mults
     void Write(const char *name, const char *labels, const char *fmt, ...);
     void Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
+    //! @deprecated Use the other signature with units and mults
     void WriteStreaming(const char *name, const char *labels, const char *fmt, ...);
     void WriteStreaming(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
+    //! @deprecated Use the other signature with units and mults
     void WriteCritical(const char *name, const char *labels, const char *fmt, ...);
     void WriteCritical(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
     void WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list, bool is_critical=false, bool is_streaming=false);
