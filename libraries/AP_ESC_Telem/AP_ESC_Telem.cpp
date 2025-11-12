@@ -667,7 +667,7 @@ uint16_t AP_ESC_Telem::merge_edt2_stress(uint16_t old_stress, uint16_t new_stres
 
 #endif // AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
 
-void AP_ESC_Telem::update()
+void AP_ESC_Telem::write_log()
 {
 #if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
@@ -796,7 +796,10 @@ void AP_ESC_Telem::update()
         }
     }
 #endif  // HAL_LOGGING_ENABLED
+}
 
+void AP_ESC_Telem::update()
+{
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
         // copy the last_updated_us timestamp to avoid any race issues
         const uint32_t last_updated_us = _rpm_data[i].last_update_us;
