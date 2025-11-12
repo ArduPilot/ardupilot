@@ -33,35 +33,35 @@ Location::Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, AltFr
 }
 
 #if AP_AHRS_ENABLED
-Location::Location(const Vector3f &ekf_offset_neu, AltFrame frame)
+Location::Location(const Vector3f &ekf_offset_neu_cm, AltFrame frame)
 {
     zero();
 
     // store alt and alt frame
-    set_alt_cm(ekf_offset_neu.z, frame);
+    set_alt_cm(ekf_offset_neu_cm.z, frame);
 
     // calculate lat, lon
     Location ekf_origin;
     if (AP::ahrs().get_origin(ekf_origin)) {
         lat = ekf_origin.lat;
         lng = ekf_origin.lng;
-        offset(ekf_offset_neu.x * 0.01, ekf_offset_neu.y * 0.01);
+        offset(ekf_offset_neu_cm.x * 0.01, ekf_offset_neu_cm.y * 0.01);
     }
 }
 
-Location::Location(const Vector3d &ekf_offset_neu, AltFrame frame)
+Location::Location(const Vector3d &ekf_offset_neu_cm, AltFrame frame)
 {
     zero();
 
     // store alt and alt frame
-    set_alt_cm(ekf_offset_neu.z, frame);
+    set_alt_cm(ekf_offset_neu_cm.z, frame);
 
     // calculate lat, lon
     Location ekf_origin;
     if (AP::ahrs().get_origin(ekf_origin)) {
         lat = ekf_origin.lat;
         lng = ekf_origin.lng;
-        offset(ekf_offset_neu.x * 0.01, ekf_offset_neu.y * 0.01);
+        offset(ekf_offset_neu_cm.x * 0.01, ekf_offset_neu_cm.y * 0.01);
     }
 }
 #endif  // AP_AHRS_ENABLED
