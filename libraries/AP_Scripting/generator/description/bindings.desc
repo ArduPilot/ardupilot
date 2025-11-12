@@ -480,6 +480,8 @@ userdata AP_ESC_Telem_Backend::TelemetryData field voltage float'skip_check writ
 userdata AP_ESC_Telem_Backend::TelemetryData field current float'skip_check write
 userdata AP_ESC_Telem_Backend::TelemetryData field consumption_mah float'skip_check write
 userdata AP_ESC_Telem_Backend::TelemetryData field motor_temp_cdeg int16_t'skip_check write
+userdata AP_ESC_Telem_Backend::TelemetryData field power_percentage uint8_t'skip_check write
+userdata AP_ESC_Telem_Backend::TelemetryData field power_percentage depends AP_EXTENDED_ESC_TELEM_ENABLED
 
 singleton AP_ESC_Telem depends HAL_WITH_ESC_TELEM == 1
 singleton AP_ESC_Telem rename esc_telem
