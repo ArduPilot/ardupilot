@@ -51,6 +51,9 @@ public:
         IntelT265    = 2,
         VOXL         = 3,
 #endif
+#if AP_VISUALODOM_PRECLAND_ENABLED
+        PrecLand     = 4,
+#endif
     };
 
     // detect and initialise any sensors

@@ -189,6 +189,35 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO_FRAME("ORIENT", 18, AC_PrecLand, _orient, AC_PRECLAND_ORIENT_DEFAULT, AP_PARAM_FRAME_ROVER | AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI), 
 
+#if AP_VISUALODOM_PRECLAND_ENABLED
+    // @Param: LATITUDE
+    // @DisplayName: Precision Landing target latitude
+    // @Description: Precision Landing target latitude
+    // @Units: deg
+    // @Increment: 0.000001
+    // @Range: -90 90
+    // @User: Advanced
+    AP_GROUPINFO("LATITUDE", 19, AC_PrecLand, _landing_loc_lat, 0),
+
+    // @Param: LONGITUDE
+    // @DisplayName: Precision Landing target latitude
+    // @Description: Precision Landing target latitude
+    // @Units: deg
+    // @Increment: 0.000001
+    // @Range: -180 180
+    // @User: Advanced
+    AP_GROUPINFO("LONGITUDE", 20, AC_PrecLand, _landing_loc_lon, 0),
+
+    // @Param: ALT
+    // @DisplayName: Precision Landing target altitude above sealevel in meters
+    // @Description: Precision Landing target altitude above sealevel in meters
+    // @Units: m
+    // @Increment: 1
+    // @Range: 0 10000
+    // @User: Advanced
+    AP_GROUPINFO("ALT", 21, AC_PrecLand, _landing_loc_alt, 0),
+#endif // AP_VISUALODOM_PRECLAND_ENABLED
+
     AP_GROUPEND
 };
 
@@ -647,6 +676,66 @@ bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit, VectorFrame& fram
     return false;
 }
 
+#if AP_VISUALODOM_PRECLAND_ENABLED
+
+// get the user-set landing position in NED frame relative to EKF origin
+bool AC_PrecLand::get_user_set_landing_position(Vector3f &landing_pos_ned) const
+{
+
+    // check if loc hasn't been set by user
+    if (is_zero(_landing_loc_lat) && is_zero(_landing_loc_lon) && is_zero(_landing_loc_alt)) {
+        return false;
+    }
+
+    // return origin
+    const Location landing_loc = Location{
+        int32_t(_landing_loc_lat * 1.0e7f),
+        int32_t(_landing_loc_lon * 1.0e7f),
+        int32_t(_landing_loc_alt * 100),
+        Location::AltFrame::ABSOLUTE
+    };
+
+    if (landing_loc.get_vector_from_origin_NEU_m(landing_pos_ned)) {
+        // convert to NED
+        landing_pos_ned.z = -landing_pos_ned.z;
+        return true;
+    }
+
+    return false; // failed to convert landing location to NEU vector
+}
+
+// When using a static landing target and downward-facing target detector,
+// the vehicle's position in world (target) frame is the inverse of the target's pose relative to the vehicle.
+// This can thus be used as a position measurement for the vehicle by EKF via the visual odometry library.
+// current_pos_NED is the current position of the vehicle in NED frame relative to the landing target
+void AC_PrecLand::send_pos_viso(const Vector3f& current_pos_NED)
+{
+
+    Vector3f landing_pos_ned;
+    if (!get_user_set_landing_position(landing_pos_ned)) {
+        // no user-set landing location
+        return;
+    }
+
+    // calculate current position relative to the landing target relative to EKF origin
+    const Vector3f current_pos_rel_origin_NED = current_pos_NED + landing_pos_ned;
+
+    AP_VisualOdom *visual_odom = AP::visualodom();
+    if (visual_odom != nullptr) {
+        if (visual_odom->get_type() != AP_VisualOdom::VisualOdom_Type::PrecLand) {
+            // this is not a precision land visual odometry, return
+            return;
+        }
+        // we do not have a attitude estimate, so we will use NaN quaternion. This is done to avoid changing the existing AP_VisualOdom interface
+        // EKF will not use this quaternion, but it will use the position estimate
+        Quaternion Q{NaNf, NaNf, NaNf, NaNf};
+        const uint32_t now = AP_HAL::millis();
+        visual_odom->handle_pose_estimate(now, now, current_pos_rel_origin_NED.x, current_pos_rel_origin_NED.y, current_pos_rel_origin_NED.z , Q, 0, 0, 0, 0);
+    }
+    return;
+}
+#endif // AP_VISUALODOM_PRECLAND_ENABLED
+
 // If a new measurement was retrieved, sets _target_pos_rel_meas_NED and returns true
 bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, bool rangefinder_alt_valid)
 {
@@ -710,6 +799,11 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
                 _last_target_pos_rel_origin_NED.z = pos_NED.z;
                 _last_vehicle_pos_NED = pos_NED;
             }
+
+#if AP_VISUALODOM_PRECLAND_ENABLED
+            // possibly update the visual odometry libary
+            send_pos_viso(-_target_pos_rel_meas_NED);
+#endif // AP_VISUALODOM_PRECLAND_ENABLED
             return true;
         }
     }

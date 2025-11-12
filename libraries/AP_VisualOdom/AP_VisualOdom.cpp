@@ -31,7 +31,7 @@ const AP_Param::GroupInfo AP_VisualOdom::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Visual odometry camera connection type
     // @Description: Visual odometry camera connection type
-    // @Values: 0:None,1:MAVLink,2:IntelT265,3:VOXL(ModalAI)
+    // @Values: 0:None,1:MAVLink,2:IntelT265,3:VOXL(ModalAI),4:PrecLand
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 0, AP_VisualOdom, _type, 0, AP_PARAM_FLAG_ENABLE),
@@ -136,8 +136,9 @@ void AP_VisualOdom::init()
     case VisualOdom_Type::None:
         // do nothing
         break;
-#if AP_VISUALODOM_MAV_ENABLED
+#if AP_VISUALODOM_MAV_ENABLED || AP_VISUALODOM_PRECLAND_ENABLED
     case VisualOdom_Type::MAV:
+    case VisualOdom_Type::PrecLand:
         _driver = NEW_NOTHROW AP_VisualOdom_MAV(*this);
         break;
 #endif
