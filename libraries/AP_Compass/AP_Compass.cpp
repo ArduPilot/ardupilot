@@ -1527,7 +1527,7 @@ void Compass::probe_dronecan_compasses(void)
     if (!_driver_enabled(DRIVER_UAVCAN)) {
         return;
     }
-    for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
+    for (uint8_t i=0; i<MAX_CONNECTED_MAGS; i++) {
         AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(i);
         if (_uavcan_backend) {
             _add_backend(_uavcan_backend);
