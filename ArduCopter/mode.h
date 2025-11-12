@@ -126,6 +126,7 @@ public:
     virtual void exit() {};
     virtual void run() = 0;
     virtual bool requires_GPS() const = 0;
+    virtual bool requires_position() const { return requires_GPS(); }
     virtual bool has_manual_throttle() const = 0;
     virtual bool allows_arming(AP_Arming::Method method) const = 0;
     virtual bool is_autopilot() const = 0;
@@ -1009,6 +1010,7 @@ public:
     void run(void) override;
 
     bool requires_GPS() const override { return false; }
+    bool requires_position() const override { return true; }
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
@@ -1342,7 +1344,8 @@ public:
     bool init(bool ignore_checks) override;
     void run() override;
 
-    bool requires_GPS() const override { return true; }
+    bool requires_GPS() const override { return false; }
+    bool requires_position() const override { return true; }
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
