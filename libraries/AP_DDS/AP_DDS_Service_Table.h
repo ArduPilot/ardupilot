@@ -16,8 +16,11 @@ enum class ServiceIndex: uint8_t {
 #endif // AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
 #if AP_DDS_PARAMETER_SERVER_ENABLED
     SET_PARAMETERS,
-    GET_PARAMETERS
+    GET_PARAMETERS,
 #endif // AP_DDS_PARAMETER_SERVER_ENABLED
+#if AP_DDS_GLIDING_SERVER_ENABLED
+    SET_GLIDING,
+#endif // AP_DDS_GLIDING_SERVER_ENABLED
 };
 
 static inline constexpr uint8_t to_underlying(const ServiceIndex index)
@@ -103,4 +106,16 @@ constexpr struct AP_DDS_Client::Service_table AP_DDS_Client::services[] = {
         .reply_topic_name = "rr/ap/get_parametersReply",
     },
 #endif // AP_DDS_PARAMETER_SERVER_ENABLED
+#if AP_DDS_GLIDING_SERVER_ENABLED
+    {
+        .req_id = to_underlying(ServiceIndex::SET_GLIDING),
+        .rep_id = to_underlying(ServiceIndex::SET_GLIDING),
+        .service_rr = Service_rr::Replier,
+        .service_name = "rs/ap/set_glidingService",
+        .request_type = "ardupilot_msgs::srv::dds_::SetGliding_Request_",
+        .reply_type = "ardupilot_msgs::srv::dds_::SetGliding_Response_",
+        .request_topic_name = "rq/ap/set_glidingRequest",
+        .reply_topic_name = "rr/ap/set_glidingReply",
+    },
+#endif // AP_DDS_GLIDING_SERVER_ENABLED
 };
