@@ -58,7 +58,7 @@ void ModeBrake::run()
     // call attitude controller
     attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), 0.0f);
 
-    pos_control->set_pos_target_U_from_climb_rate_m(0.0f);
+    pos_control->set_pos_target_U_from_climb_rate_ms(0.0f);
     pos_control->update_U_controller();
 
     // MAV_CMD_SOLO_BTN_PAUSE_CLICK (Solo only) is used to set the timeout.

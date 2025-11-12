@@ -1231,7 +1231,7 @@ void ModeAuto::loiter_to_alt_run()
 #endif
 
     // Send the commanded climb rate to the position controller
-    pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_ms);
+    pos_control->set_pos_target_U_from_climb_rate_ms(target_climb_rate_ms);
 
     pos_control->update_U_controller();
 }
@@ -1261,7 +1261,7 @@ void ModeAuto::nav_attitude_time_run()
     attitude_control->input_euler_angle_roll_pitch_yaw_rad(target_rp_rad.x, target_rp_rad.y, radians(nav_attitude_time.yaw_deg), true);
 
     // Send the commanded climb rate to the position controller
-    pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_ms);
+    pos_control->set_pos_target_U_from_climb_rate_ms(target_climb_rate_ms);
 
     pos_control->update_U_controller();
 }
