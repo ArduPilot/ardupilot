@@ -1575,7 +1575,12 @@ bool AP_AHRS::ensure_origin_is_set()
         return true;
     }
 
-    const Location loc = {
+    // don't allow setting all zeros
+    if (is_zero(_origin_lat.get()) && is_zero(_origin_lng.get()) && is_zero(_origin_alt.get())) {
+        return false;
+    }
+
+    const Location loc {
         int32_t(_origin_lat.get() * 1e7),
         int32_t(_origin_lng.get() * 1e7),
         int32_t(_origin_alt.get() * 100),
