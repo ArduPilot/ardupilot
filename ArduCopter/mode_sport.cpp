@@ -113,7 +113,7 @@ void ModeSport::run()
 #endif
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_ms);
+        pos_control->set_pos_target_U_from_climb_rate_ms(target_climb_rate_ms);
         break;
     }
 

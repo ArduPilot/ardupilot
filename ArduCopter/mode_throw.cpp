@@ -174,7 +174,7 @@ void ModeThrow::run()
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(0.0f, 0.0f, 0.0f);
 
         // call height controller
-        pos_control->set_pos_target_U_from_climb_rate_m(0.0f);
+        pos_control->set_pos_target_U_from_climb_rate_ms(0.0f);
         pos_control->update_U_controller();
 
         break;
@@ -194,7 +194,7 @@ void ModeThrow::run()
         attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), 0.0f);
 
         // call height controller
-        pos_control->set_pos_target_U_from_climb_rate_m(0.0f);
+        pos_control->set_pos_target_U_from_climb_rate_ms(0.0f);
         pos_control->update_U_controller();
 
         break;

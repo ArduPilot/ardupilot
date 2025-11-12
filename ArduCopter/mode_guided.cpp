@@ -757,11 +757,11 @@ void ModeGuided::pos_control_run()
         }
     }
 
-    float pos_offset_z_buffer_m = 0.0; // Vertical buffer size in m
+    float terrain_margin_m = 0.0; // Vertical buffer size in m
     if (guided_is_terrain_alt) {
-        pos_offset_z_buffer_m = MIN(copter.wp_nav->get_terrain_margin_m(), 0.5 * fabsF(guided_pos_target_neu_m.z));
+        terrain_margin_m = MIN(copter.wp_nav->get_terrain_margin_m(), 0.5 * fabsF(guided_pos_target_neu_m.z));
     }
-    pos_control->input_pos_NEU_m(guided_pos_target_neu_m, terr_offset_m, pos_offset_z_buffer_m);
+    pos_control->input_pos_NEU_m(guided_pos_target_neu_m, terr_offset_m, terrain_margin_m);
 
     // run position controllers
     pos_control->update_NE_controller();
@@ -1025,7 +1025,7 @@ void ModeGuided::angle_control_run()
     if (guided_angle_state.use_thrust) {
         attitude_control->set_throttle_out(guided_angle_state.thrust_norm, true, copter.g.throttle_filt);
     } else {
-        pos_control->set_pos_target_U_from_climb_rate_m(climb_rate_ms);
+        pos_control->set_pos_target_U_from_climb_rate_ms(climb_rate_ms);
         pos_control->update_U_controller();
     }
 }
