@@ -264,7 +264,7 @@ bool AC_Circle::update_ms(float climb_rate_ms)
         float target_u_m = target_neu_m.z;
         _pos_control.input_pos_vel_accel_U_m(target_u_m, zero_u, 0);
     } else {
-        _pos_control.set_pos_target_U_from_climb_rate_m(climb_rate_ms);
+        _pos_control.set_pos_target_U_from_climb_rate_ms(climb_rate_ms);
     }
 
     // update position controller
