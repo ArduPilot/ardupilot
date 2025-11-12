@@ -442,16 +442,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 )
                 last_print_time = now
 
-            if current_wp > 16:
+            if current_wp > 19:
                 raise NotAchievedException(
-                    "mission progressed beyond WP 16 before current longitude > "
+                    "mission progressed beyond WP 19 before current longitude > "
                     "desired long (%f)" % desired_long
                 )
 
             if (current_long > desired_long):
                 self.progress(
                     "Success: Copter traveled far enough east whilst traveling to "
-                    "WP 16 that we are likely flying a WP Arc"
+                    "WP 19 that we are likely flying a WP Arc"
                 )
                 break
 
