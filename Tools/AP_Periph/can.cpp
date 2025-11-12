@@ -1780,8 +1780,8 @@ void AP_Periph_FW::esc_telem_update()
         } else {
             pkt.temperature = nan;
         }
-        float rpm;
-        if (esc_telem.get_raw_rpm(i, rpm)) {
+        float rpm, error_rate;
+        if (esc_telem.get_raw_rpm(i, rpm, error_rate)) {
             pkt.rpm = rpm;
         }
 
