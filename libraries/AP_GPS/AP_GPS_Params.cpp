@@ -113,6 +113,14 @@ const AP_Param::GroupInfo AP_GPS::Params::var_info[] = {
     AP_GROUPINFO("CAN_OVRIDE", 9, AP_GPS::Params, override_node_id, 0),
 #endif
 
+#if AP_GPS_BLENDED_ENABLED
+    // @Param: BLEND_MASK
+    // @DisplayName: Blended backend include mask
+    // @Description: If this is a blended backend then this mask specifies which backends should be included in 
+    // @User: Advanced
+    AP_GROUPINFO("BLEND_MASK", 10, AP_GPS::Params, blend_mask, 255),
+#endif
+
     AP_GROUPEND
 };
 
