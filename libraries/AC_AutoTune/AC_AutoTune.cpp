@@ -319,7 +319,7 @@ void AC_AutoTune::run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // Update vertical position controller with pilot climb rate input
-    pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_ms);
+    pos_control->set_pos_target_U_from_climb_rate_ms(target_climb_rate_ms);
     pos_control->update_U_controller();
 }
 

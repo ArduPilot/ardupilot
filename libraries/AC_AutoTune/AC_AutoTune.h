@@ -336,13 +336,13 @@ private:
     // returns true if vehicle is close to level
     bool currently_level();
 
-    bool     pilot_override;             // true = pilot is overriding controls so we suspend tuning temporarily
-    bool     use_poshold;                // true = enable position hold
-    bool     have_position;              // true = start_position is value
-    Vector3p start_position_neu_m;             // target when holding position as an offset from EKF origin in cm in NEU frame
+    bool     pilot_override;        // true = pilot is overriding controls so we suspend tuning temporarily
+    bool     use_poshold;           // true = enable position hold
+    bool     have_position;         // true = start_position is value
+    Vector3p start_position_neu_m;  // target when holding position as an offset from EKF origin in cm in NEU frame
 
     // variables
-    uint32_t override_time;                         // the last time the pilot overrode the controls
+    uint32_t override_time;         // the last time the pilot overrode the controls
 
     // time in ms of last pilot override warning
     uint32_t last_pilot_override_warning;
