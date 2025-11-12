@@ -788,33 +788,33 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
     // @User: Advanced
     AP_GROUPINFO("MAG_ALY_HGT",    6, SIM,  mag_anomaly_hgt, 1.0f),
     // @Param: MAG1_DIA_X
-    // @DisplayName: Mag1 soft-iron diagonal X component
-    // @Description: DIA_X in the mag1 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @DisplayName: Magnetometer soft-iron diagonal X component
+    // @Description: DIA_X in the magnetometer soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
 
     // @Param: MAG1_DIA_Y
-    // @DisplayName: Mag1 soft-iron diagonal Y component
-    // @Description: DIA_Y in the mag1 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @DisplayName: Magnetometer soft-iron diagonal Y component
+    // @Description: DIA_Y in the magnetometer soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
 
     // @Param: MAG1_DIA_Z
-    // @DisplayName: Mag1 soft-iron diagonal Z component
-    // @Description: DIA_Z in the mag1 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @DisplayName: Magnetometer soft-iron diagonal Z component
+    // @Description: DIA_Z in the magnetometer soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     AP_GROUPINFO("MAG1_DIA",        7, SIM,  mag_diag[0], 0),
     // @Param: MAG1_ODI_X
-    // @DisplayName: Mag1 soft-iron off-diagonal X component
-    // @Description: ODI_X in the mag1 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @DisplayName: Magnetometer soft-iron off-diagonal X component
+    // @Description: ODI_X in the magnetometer soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
 
     // @Param: MAG1_ODI_Y
-    // @DisplayName: Mag1 soft-iron off-diagonal Y component
-    // @Description: ODI_Y in the mag1 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @DisplayName: Magnetometer soft-iron off-diagonal Y component
+    // @Description: ODI_Y in the magnetometer soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
 
     // @Param: MAG1_ODI_Z
-    // @DisplayName: Mag1 soft-iron off-diagonal Z component
-    // @Description: ODI_Z in the mag1 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @DisplayName: Magnetometer soft-iron off-diagonal Z component
+    // @Description: ODI_Z in the magnetometer soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     AP_GROUPINFO("MAG1_ODI",        8, SIM,  mag_offdiag[0], 0),
     // @Param: MAG1_ORIENT
@@ -887,7 +887,23 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
     AP_GROUPINFO("MAG1_FAIL",     26, SIM,  mag_fail[0], 0),
 #if HAL_COMPASS_MAX_SENSORS > 1
     AP_GROUPINFO("MAG2_OFS",      19, SIM,  mag_ofs[1], 0),
+    // @Param: MAG2_DIA_X
+    // @CopyFieldsFrom: SIM_MAG1_DIA_X
+
+    // @Param: MAG2_DIA_Y
+    // @CopyFieldsFrom: SIM_MAG1_DIA_Y
+
+    // @Param: MAG2_DIA_Z
+    // @CopyFieldsFrom: SIM_MAG1_DIA_Z
     AP_GROUPINFO("MAG2_DIA",      20, SIM,  mag_diag[1], 0),
+    // @Param: MAG2_ODI_X
+    // @CopyFieldsFrom: SIM_MAG1_ODI_X
+
+    // @Param: MAG2_ODI_Y
+    // @CopyFieldsFrom: SIM_MAG1_ODI_Y
+
+    // @Param: MAG2_ODI_Z
+    // @CopyFieldsFrom: SIM_MAG1_ODI_Z
     AP_GROUPINFO("MAG2_ODI",      21, SIM,  mag_offdiag[1], 0),
     // @Param: MAG2_ORIENT
     // @DisplayName: MAG2 Orientation
@@ -908,7 +924,23 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
 #endif
 #if HAL_COMPASS_MAX_SENSORS > 2
     AP_GROUPINFO("MAG3_OFS",      23, SIM,  mag_ofs[2], 0),
+    // @Param: MAG3_DIA_X
+    // @CopyFieldsFrom: SIM_MAG1_DIA_X
+
+    // @Param: MAG3_DIA_Y
+    // @CopyFieldsFrom: SIM_MAG1_DIA_Y
+
+    // @Param: MAG3_DIA_Z
+    // @CopyFieldsFrom: SIM_MAG1_DIA_Z
     AP_GROUPINFO("MAG3_DIA",      24, SIM,  mag_diag[2], 0),
+    // @Param: MAG3_ODI_X
+    // @CopyFieldsFrom: SIM_MAG1_ODI_X
+
+    // @Param: MAG3_ODI_Y
+    // @CopyFieldsFrom: SIM_MAG1_ODI_Y
+
+    // @Param: MAG3_ODI_Z
+    // @CopyFieldsFrom: SIM_MAG1_ODI_Z
     AP_GROUPINFO("MAG3_ODI",      25, SIM,  mag_offdiag[2], 0),
     // @Param: MAG3_FAIL
     // @DisplayName: MAG3 Failure
