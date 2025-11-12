@@ -178,9 +178,9 @@ void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, f
 
     // Convert predicted angles into an acceleration vector for braking/shaping
     const Vector3f predicted_euler_rad {_predicted_euler_angle_rad.x, _predicted_euler_angle_rad.y, _ahrs.yaw};
-    const Vector3f predicted_accel_neu_m = _pos_control.lean_angles_rad_to_accel_NEU_mss(predicted_euler_rad);
+    const Vector3f predicted_accel_neu_mss = _pos_control.lean_angles_rad_to_accel_NEU_mss(predicted_euler_rad);
 
-    _predicted_accel_ne_mss = predicted_accel_neu_m.xy();
+    _predicted_accel_ne_mss = predicted_accel_neu_mss.xy();
 
     if (loiter_option_is_set(LoiterOption::COORDINATED_TURN_ENABLED)) {
         Vector3f target_ang_vel_rads = _attitude_control.get_attitude_target_ang_vel();
