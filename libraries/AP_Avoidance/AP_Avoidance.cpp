@@ -323,8 +323,7 @@ float closest_approach_D_m(const Location &loc,
     } else if (delta_pos_d_cm <= 0 && delta_vel_d_ms <= 0) {
         dist_d_cm = fabsf(delta_pos_d_cm);
     } else {
-        // todo: Fix this. cm and m bug
-        dist_d_cm = fabsf(delta_pos_d_cm - delta_vel_d_ms * time_horizon_s);
+        dist_d_cm = fabsf(delta_pos_d_cm - delta_vel_d_ms * time_horizon_s * 100.0);
     }
 
     debug("   time_horizon: (%d)", time_horizon_s);
@@ -638,8 +637,7 @@ bool AP_Avoidance::get_vector_perpendicular(const AP_Avoidance::Obstacle *obstac
     if (obstacle->_velocity_ned_ms.length() < _low_velocity_threshold) {
         const Vector2f delta_pos_ne_m =  obstacle->_location.get_distance_NE(current_loc);
         const float delta_pos_u_cm = current_loc.alt - obstacle->_location.alt;
-        // todo: fix mixed m and cm
-        Vector3f delta_pos_neu_m = Vector3f{delta_pos_ne_m.x, delta_pos_ne_m.y, delta_pos_u_cm};
+        Vector3f delta_pos_neu_m = Vector3f{delta_pos_ne_m.x, delta_pos_ne_m.y, delta_pos_u_cm * 0.01};
         // avoid div by zero
         if (delta_pos_neu_m.is_zero()) {
             return false;
