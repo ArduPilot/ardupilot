@@ -235,28 +235,39 @@ void NavEKF3_core::Log_Write_Quaternion(uint64_t time_us) const
 // logs beacon information, one beacon per call
 void NavEKF3_core::Log_Write_Beacon(uint64_t time_us)
 {
-    if (core_index != frontend->primary) {
-        // log only primary instance for now
-        return;
-    }
-
     if (!statesInitialised || rngBcn.N == 0 || rngBcn.fusionReport == nullptr) {
         return;
     }
 
-    // Ensure that beacons are not skipped due to calling this function at a rate lower than the updates
-    if (rngBcn.fuseDataReportIndex >= rngBcn.N ||
-        rngBcn.fuseDataReportIndex > rngBcn.numFusionReports) {
-        rngBcn.fuseDataReportIndex = 0;
+    // Find new data to log
+    // Don't log the same data more than once and don't skip beacons
+    bool data_to_log = false;
+    for (uint8_t index=0; index<rngBcn.N; index++) {
+        if (rngBcn.newDataToLog[rngBcn.fuseDataReportIndex]) {
+            data_to_log = true;
+            break;
+        } else {
+            rngBcn.fuseDataReportIndex++;
+            if (rngBcn.fuseDataReportIndex >= rngBcn.N) {
+                rngBcn.fuseDataReportIndex = 0;
+            }
+        }
     }
 
-    const auto &report = rngBcn.fusionReport[rngBcn.fuseDataReportIndex];
-
-    // write range beacon fusion debug packet if the range value is non-zero
-    if (report.rng <= 0.0f) {
-        rngBcn.fuseDataReportIndex++;
+    if (!data_to_log) {
         return;
     }
+
+    if (rngBcn.fuseDataReportIndex >= rngBcn.fusionReport_length) {
+        return;
+    }
+    const auto &report = rngBcn.fusionReport[rngBcn.fuseDataReportIndex];
+
+#if EK3_FEATURE_WRITE_RANGE_TO_LOCATION
+    const ftype verticalOffset = rngBcn.usingRangeToLoc ? rngBcn.verticalOffset : rngBcn.receiverPos.z;
+#else
+    const ftype verticalOffset = rngBcn.receiverPos.z;
+#endif
 
     const struct log_XKF0 pkt10{
         LOG_PACKET_HEADER_INIT(LOG_XKF0_MSG),
@@ -274,10 +285,10 @@ void NavEKF3_core::Log_Write_Beacon(uint64_t time_us)
         offsetLow : (int16_t)(100*rngBcn.posDownOffsetMin),
         posN : (int16_t)(100*rngBcn.receiverPos.x),
         posE : (int16_t)(100*rngBcn.receiverPos.y),
-        posD : (int16_t)(100*rngBcn.receiverPos.z)
+        posD : (int16_t)(100*verticalOffset)
     };
     AP::logger().WriteBlock(&pkt10, sizeof(pkt10));
-    rngBcn.fuseDataReportIndex++;
+    rngBcn.newDataToLog[rngBcn.fuseDataReportIndex] = false;
 }
 #endif  // EK3_FEATURE_BEACON_FUSION
 
