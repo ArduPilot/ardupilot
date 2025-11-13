@@ -5,14 +5,13 @@ validate that parameter names do not exceed AP_MAX_NAME_SIZE
 This script parses ArduPilot C++ source to validate that all parameter names
 (including prefixes from nested groups) do not exceed the 16-character limit.
 
-AP_FLAKE8_CLEAN
-'''
-
 It recursively builds full parameter names and validates their length.
 
 Usage:
     python3 param_name_length_check.py <ardupilot_root_directory> [--verbose] [--warnings]
-"""
+
+AP_FLAKE8_CLEAN
+'''
 
 import re
 import sys
