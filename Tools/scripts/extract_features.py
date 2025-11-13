@@ -99,7 +99,14 @@ class ExtractFeatures(object):
             ('AP_BARO_{type}_ENABLED', r'AP_Baro_(?P<type>.*)::(_calculate|update)\b',),
 
             ('AP_MOTORS_TRI_ENABLED', 'AP_MotorsTri::set_frame_class_and_type'),
+            ('AP_MOTORS_COAX_ENABLED', 'AP_MotorsCoax::output_armed_stabilizing'),
+            ('AP_MOTORS_SINGLE_ENABLED', 'AP_MotorsSingle::output_armed_stabilizing'),
+            ('AP_MOTORS_TAILSITTER_ENABLED', 'AP_MotorsTailsitter::output_armed_stabilizing'),
             ('AP_MOTORS_FRAME_{type}_ENABLED', r'AP_MotorsMatrix::setup_(?P<type>.*)_matrix\b',),
+            ('AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED', 'AP_MotorsMatrix_6DoF_Scripting::output_armed_stabilizing',),
+            ('AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED', 'AP_MotorsMatrix::init',),
+            ('AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED', 'AP_MotorsMatrix_Scripting_Dynamic::add_motor',),
+            ('AP_PLANE_TAILSITTER_ENABLED', 'Tailsitter_Transition::update',),
 
             ('HAL_MSP_ENABLED', r'AP_MSP::init\b',),
             ('HAL_MSP_{type}_ENABLED', r'AP_(?P<type>.*)_MSP::update\b',),
@@ -344,6 +351,7 @@ class ExtractFeatures(object):
             'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF',  # this define changes single method body, hard to detect?
             'AP_PLANE_BLACKBOX_LOGGING', # no visible signature
             'AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED',  # no visible signature
+            'AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED',  # no symbol in code
         ])
         for option in build_options.BUILD_OPTIONS:
             if option.define in whitelist:
