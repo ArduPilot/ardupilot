@@ -287,6 +287,12 @@ submodules at specific revisions.
                  default=False,
                  help="Enables OpenDroneID")
 
+    g.add_option('--skip-param-check',
+                 dest='skip_param_check',
+                 action='store_true',
+                 default=False,
+                 help="Skip parameter name length validation during build")
+
     g.add_option('--enable-check-firmware', action='store_true',
                  default=False,
                  help="Enables firmware ID checking on boot")
@@ -512,6 +518,7 @@ def configure(cfg):
     cfg.env.ENABLE_STATS = cfg.options.enable_stats
     cfg.env.SAVE_TEMPS = cfg.options.save_temps
     cfg.env.CONSISTENT_BUILDS = cfg.options.consistent_builds
+    cfg.env.SKIP_PARAM_CHECK = cfg.options.skip_param_check
 
     extra_hwdef = cfg.options.extra_hwdef
     if extra_hwdef is not None and not os.path.exists(extra_hwdef):
@@ -906,7 +913,32 @@ def _load_pre_build(bld):
         return
     brd = bld.get_board()
     if getattr(brd, 'pre_build', None):
-        brd.pre_build(bld)    
+        brd.pre_build(bld)
+
+def _validate_param_names(bld):
+    '''validate parameter name lengths before build'''
+    # Skip validation if requested
+    if bld.env.SKIP_PARAM_CHECK:
+        return
+
+    # Skip validation for clean and configure commands
+    if bld.cmd in ['clean', 'distclean']:
+        return
+
+    import sys
+    import os
+
+    # Import the validation script
+    script_path = os.path.join(bld.srcnode.abspath(), 'Tools', 'scripts', 'param_name_length_check.py')
+    if not os.path.exists(script_path):
+        return
+
+    # Run the validator
+    print("Validating parameter name lengths...")
+    ret = subprocess.call([sys.executable, script_path, bld.srcnode.abspath()])
+
+    if ret != 0:
+        bld.fatal('Parameter name validation failed. Use --skip-param-check to bypass (not recommended).')
 
 def build(bld):
     if is_ci:
@@ -923,6 +955,9 @@ def build(bld):
         use=['mavlink'],
         cxxflags=['-include', 'ap_config.h'],
     )
+
+    # Validate parameter name lengths before build
+    _validate_param_names(bld)
 
     _load_pre_build(bld)
 
