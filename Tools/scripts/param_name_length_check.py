@@ -8,7 +8,12 @@ This script parses ArduPilot C++ source to validate that all parameter names
 AP_FLAKE8_CLEAN
 '''
 
-import os
+It recursively builds full parameter names and validates their length.
+
+Usage:
+    python3 param_name_length_check.py <ardupilot_root_directory> [--verbose] [--warnings]
+"""
+
 import re
 import sys
 import argparse
@@ -315,35 +320,31 @@ class ParamValidator(object):
         return self.errors, self.warnings
 
     def print_results(self):
-        '''print validation results'''
-        if self.verbose:
-            print(f"\nValidation Results:")
-            print("=" * 60)
+        """Print validation results"""
+        print("\nValidation Results:")
+        print("=" * 60)
 
         if self.warnings and self.show_warnings:
             print(f"\nWARNINGS: {len(self.warnings)} parameter(s) at exactly {self.MAX_NAME_LENGTH} characters:")
             for param in sorted(self.warnings, key=lambda p: p.full_name()):
                 print(f"  {param.full_name()} ({param.full_length()} chars)")
-                print(f"    Location: {param.file_path}:{param.line_number}")
-                if self.verbose:
-                    print(f"    Prefix: {''.join(param.prefix_chain)}")
-                    print(f"    Param: {param.name}")
-                    if param.is_vector3f:
-                        print(f"    Note: Vector3f parameter (adds 2 chars for _X/_Y/_Z suffix)")
+                print(f"    File: {param.file_path}:{param.line_number}")
+                print(f"    Prefix: {''.join(param.prefix_chain[:-1]) if len(param.prefix_chain) > 1 else '(none)'}")
+                print(f"    Param: {param.name}")
+                if param.is_vector3f:
+                    print("    Note: Vector3f parameter (adds 2 chars for _X/_Y/_Z suffix)")
+                print()
 
         if self.errors:
             print(f"\nERROR: {len(self.errors)} parameter(s) exceed {self.MAX_NAME_LENGTH} character limit:")
             for param in sorted(self.errors, key=lambda p: p.full_length(), reverse=True):
                 full_name = param.full_name()
-                print(f"  {full_name} ({param.full_length()} chars)")
-                print(f"    Location: {param.file_path}:{param.line_number}")
-                if self.verbose:
-                    print(f"    Prefix: {''.join(param.prefix_chain)} ({sum(len(p) for p in param.prefix_chain)} chars)")
-                    print(f"    Param: {param.name} ({len(param.name)} chars)")
-                    if param.is_vector3f:
-                        print(f"    Note: Vector3f parameter (adds 2 chars for _X/_Y/_Z suffix)")
-                    over_by = param.full_length() - self.MAX_NAME_LENGTH
-                    print(f"    Shorten by: {over_by} character{'s' if over_by > 1 else ''}")
+                print(f"  {full_name} ({param.full_length()} chars) - EXCEEDS LIMIT!")
+                print(f"    File: {param.file_path}:{param.line_number}")
+                print(f"    Prefix: {''.join(param.prefix_chain)} ({sum(len(p) for p in param.prefix_chain)} chars)")
+                print(f"    Param: {param.name} ({len(param.name)} chars)")
+                if param.is_vector3f:
+                    print("    Note: Vector3f parameter (adds 2 chars for _X/_Y/_Z suffix)")
 
             print(f"\nParameter validation failed: {len(self.errors)} parameter(s) exceed limit")
             return False
