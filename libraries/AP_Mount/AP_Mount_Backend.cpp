@@ -53,6 +53,23 @@ void AP_Mount_Backend::update()
         mnt_target.rate_rads.pitch = 0;
         mnt_target.rate_rads.yaw = 0;
     }
+    // location exists for mode
+    Location current_loc;
+    switch (_mode) {
+    case MAV_MOUNT_MODE_RETRACT:
+    case MAV_MOUNT_MODE_NEUTRAL:
+    case MAV_MOUNT_MODE_MAVLINK_TARGETING:
+    case MAV_MOUNT_MODE_RC_TARGETING:
+    case MAV_MOUNT_MODE_ENUM_END:
+        break;
+    case MAV_MOUNT_MODE_GPS_POINT:
+    case MAV_MOUNT_MODE_SYSID_TARGET:
+    case MAV_MOUNT_MODE_HOME_LOCATION:
+         if (!AP::ahrs().get_location(current_loc)) {
+             send_warning_to_GCS("not targeting, no location");
+         }
+    }
+ 
 }
 
 // return true if this mount accepts roll targets
