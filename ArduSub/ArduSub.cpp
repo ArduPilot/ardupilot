@@ -105,6 +105,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #if AP_GRIPPER_ENABLED
     SCHED_TASK_CLASS(AP_Gripper,          &sub.g2.gripper,   update,              10,  75,  75),
 #endif
+    SCHED_TASK(doppler_update,        0.1,   100,  74),
 #if STATS_ENABLED == ENABLED
     SCHED_TASK(stats_update,           1,    200,  76),
 #endif
@@ -178,6 +179,15 @@ void Sub::update_batt_compass()
         compass.read();
     }
 }
+
+
+void Sub::doppler_update()
+{
+    inertial_doppler.update();
+
+    inertial_doppler.send();
+}
+
 
 #if HAL_LOGGING_ENABLED
 // ten_hz_logging_loop

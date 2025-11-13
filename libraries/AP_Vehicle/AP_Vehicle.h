@@ -55,6 +55,7 @@
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_MSP/AP_MSP.h>
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
+#include <AP_Doppler_Telem/AP_Doppler_Parameters.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_VideoTX/AP_SmartAudio.h>
 #include <AP_VideoTX/AP_Tramp.h>
@@ -262,7 +263,7 @@ public:
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     AP_Frsky_Parameters frsky_parameters;
 #endif
-
+    AP_Doppler_Parameters doppler_parameters;
     /*
       Returns the pan and tilt for use by onvif camera in scripting
      */

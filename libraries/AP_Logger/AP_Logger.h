@@ -100,6 +100,7 @@ enum class LogDataID : uint8_t {
     AP_STATE = 7,
 // SYSTEM_TIME_SET = 8,
     INIT_SIMPLE_BEARING = 9,
+    DEPTH = 10,
 };
 
 enum class LogErrorSubsystem : uint8_t {

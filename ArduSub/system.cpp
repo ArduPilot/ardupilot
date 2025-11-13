@@ -144,8 +144,10 @@ void Sub::init_ardupilot()
     }
 
     leak_detector.init();
-
+    
     last_pilot_heading = ahrs.yaw_sensor;
+
+    inertial_doppler.init(serial_manager);
 
     // initialise rangefinder
 #if RANGEFINDER_ENABLED == ENABLED

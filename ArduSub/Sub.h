@@ -63,6 +63,8 @@
 #include <AP_LeakDetector/AP_LeakDetector.h> // Leak detector
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_Rally/AP_Rally.h>
+#include <AP_Doppler_Telem/AP_Doppler_Telem.h> // Doppler Velocity Log library
+#include <AP_Doppler_Telem/AP_Doppler_Parameters.h> // DVL parameters
 
 // Local modules
 #include "defines.h"
@@ -330,7 +332,7 @@ private:
 
     // Inertial Navigation
     AP_InertialNav inertial_nav;
-
+    AP_Doppler_Telem inertial_doppler;    
     AP_AHRS_View ahrs_view;
 
     // Attitude, Position and Waypoint navigation objects
@@ -387,6 +389,7 @@ private:
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 
+    void doppler_update();
     void run_rate_controller();
     void fifty_hz_loop();
     void update_batt_compass(void);
@@ -591,6 +594,7 @@ private:
     ModeSurface mode_surface;
     ModeMotordetect mode_motordetect;
     ModeSurftrak mode_surftrak;
+    ModeDephold mode_dephold;
 
     // Auto
     AutoSubMode auto_mode;   // controls which auto controller is run

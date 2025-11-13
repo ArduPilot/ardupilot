@@ -529,6 +529,7 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECTN(_gcs.chan_parameters[4],  gcs4,       "SR4_",     GCS_MAVLINK_Parameters),
 #endif
 
+  
 #if MAVLINK_COMM_NUM_BUFFERS >= 6
     // @Group: SR5_
     // @Path: GCS_Mavlink.cpp
@@ -745,6 +746,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Units: m
     // @User: Standard
     AP_GROUPINFO("ORIGIN_ALT", 21, ParametersG2, backup_origin_alt, 0),
+
+    AP_GROUPINFO("ROV_DEPTH_CM", 22, ParametersG2, rov_depth_cm, 10),
 
     AP_GROUPEND
 };

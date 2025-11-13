@@ -8,6 +8,7 @@
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
+#include <AP_Doppler_Telem/AP_Doppler_Parameters.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_OSD/AP_OSD.h>
@@ -251,6 +252,13 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../Filter/AP_Filter.cpp
     AP_SUBGROUPINFO(filters, "FILT", 26, AP_Vehicle, AP_Filters),
 #endif
+
+
+    // @Group: DOPPLER_
+    // @Path: ../AP_DOPPLER_Telem/AP_Doppler_Parameters.cpp
+    AP_SUBGROUPINFO(doppler_parameters, "Doppler_", 27, AP_Vehicle, AP_Doppler_Parameters),
+
+
     AP_GROUPEND
 };
 

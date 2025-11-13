@@ -19,6 +19,7 @@ def build(bld):
             'AP_TemperatureSensor',
             'AP_Arming',
             'AP_OSD',
+            'AP_Doppler_Telem',
         ],
     )
 

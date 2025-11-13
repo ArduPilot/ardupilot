@@ -50,7 +50,8 @@ public:
         POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
         MANUAL =       19,  // Pass-through input with no stabilization
         MOTOR_DETECT = 20,  // Automatically detect motors orientation
-        SURFTRAK =     21   // Track distance above seafloor (hold range)
+        SURFTRAK =     21,  // Track distance above seafloor (hold range)
+        DEPTH_HOLD =   22   // Hold current depth with manual horizontal control
     };
 
     // constructor
@@ -274,6 +275,28 @@ protected:
     const char *name4() const override { return "ALTH"; }
 };
 
+class ModeDephold : public Mode
+{
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+
+    virtual void run() override;
+
+    bool init(bool ignore_checks) override;
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return true; }
+    bool is_autopilot() const override { return false; }
+    void control_depth();
+
+protected:
+
+    
+    const char *name() const override { return "DEPTH_HOLD"; }
+    const char *name4() const override { return "DEPH"; }
+};
 
 class ModeSurftrak : public ModeAlthold
 {
