@@ -153,7 +153,7 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
     }
 
     // segment accelerations can not be changed after segment creation.
-    const float track_speed_max = kinematic_limit(arc.length_ne, seg_delta.z, speed_xy, speed_up, fabsf(speed_down));
+    const float track_speed_max = kinematic_limit(arc.length_ne, seg_delta.z, speed_xy, speed_up, speed_down);
 
     if (is_equal(vel_max, track_speed_max)) {
         // new speed is equal to current speed maximum so no need to change anything
@@ -1119,8 +1119,8 @@ void SCurve::set_kinematic_limits(const Vector3p &origin, const Vector3p &destin
                                   float speed_xy, float speed_up, float speed_down,
                                   float accel_xy, float accel_z)
 {
-    if (is_negative(speed_xy) ||is_negative(speed_up) ||is_negative(speed_down) ||is_negative(accel_xy) ||is_negative(accel_z)) {
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    if (is_negative(speed_xy) || is_negative(speed_up) || is_negative(speed_down) || is_negative(accel_xy) || is_negative(accel_z)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
     }
 
     Vector3f direction = (destination - origin).tofloat();

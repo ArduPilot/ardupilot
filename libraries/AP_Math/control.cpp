@@ -584,13 +584,9 @@ float kinematic_limit(Vector3f direction, float max_xy, float max_z_pos, float m
 float kinematic_limit(float segment_length_xy, float segment_length_z, float max_xy, float max_z_pos, float max_z_neg)
 {
     // Reject zero-length direction vectors or undefined limits
-    if (is_zero(max_xy) || is_zero(max_z_pos) || is_zero(max_z_neg)) {
+    if (!is_positive(max_xy) || !is_positive(max_z_pos) || !is_positive(max_z_neg)) {
         return 0.0;
     }
-
-    max_xy = fabsf(max_xy);
-    max_z_pos = fabsf(max_z_pos);
-    max_z_neg = fabsf(max_z_neg);
 
     const float length = safe_sqrt(sq(segment_length_xy) + sq(segment_length_z));
     // check for divide by zero.
