@@ -154,6 +154,34 @@ AP_Compass_DroneCAN* AP_Compass_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_d
             }
         }
     }
+    // Finally sort such that _detected_modules index matches
+    // stored priority in AP_Compass, this is needed if we have more
+    // than three compasses, this way we correctly detect the replacement/order-change
+    // compass by priority instance in AP_Compass::register_compass method.
+#if COMPASS_MAX_INSTANCES > 1
+    Compass &compass = AP::compass();
+    for (uint8_t prio_idx = 0; prio_idx < COMPASS_MAX_INSTANCES && prio_idx < MAX_CONNECTED_MAGS; prio_idx++) {
+        int32_t prio_id = compass._priority_did_stored_list._priv_instance[prio_idx];
+        if (prio_id == 0) {
+            // empty slot
+            continue;
+        }
+
+        // Find the module with this priority devid
+        for (uint8_t i = 0; i < MAX_CONNECTED_MAGS; i++) {
+            if ((int32_t)_detected_modules[i].devid == prio_id) {
+                // Swap to correct priority position
+                if (i != prio_idx) {
+                    tempslot = _detected_modules[prio_idx];
+                    _detected_modules[prio_idx] = _detected_modules[i];
+                    _detected_modules[i] = tempslot;
+                }
+                break;
+            }
+        }
+    }
+#endif
+
     return nullptr;
 }
 
