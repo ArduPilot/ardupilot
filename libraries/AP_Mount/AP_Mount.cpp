@@ -20,6 +20,7 @@
 #include "AP_Mount_Topotek.h"
 #include "AP_Mount_CADDX.h"
 #include "AP_Mount_XFRobot.h"
+#include "AP_Mount_Bmit.h"
 #include <stdio.h>
 #include <AP_Math/location.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -188,6 +189,14 @@ void AP_Mount::init()
             serial_instance++;
             break;
 #endif // HAL_MOUNT_XFROBOT_ENABLED
+
+#if HAL_MOUNT_BMIT_ENABLED
+        // check for Bmit mounts
+        case Type::BMIT:
+            _backends[instance] = NEW_NOTHROW AP_Mount_Bmit(*this, _params[instance], instance);
+            _num_instances++;
+            break;
+#endif // HAL_MOUNT_BMIT_ENABLED
         }
 
         // init new instance
