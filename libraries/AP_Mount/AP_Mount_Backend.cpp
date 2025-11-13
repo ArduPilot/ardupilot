@@ -916,6 +916,69 @@ bool AP_Mount_Backend::get_angle_target_to_sysid(MountTarget& angle_rad) const
     return get_angle_target_to_location(_target_sysid_location, angle_rad);
 }
 
+
+// method for the mount backends to call to update mnt_target based on
+// the mount mode.  Methods in here may be overridden by the derived
+// class to customise behaviour
+void AP_Mount_Backend::update_mnt_target()
+{
+    // change to RC_TARGETING mode if RC input has changed
+    set_rctargeting_on_rcinput_change();
+
+    switch (get_mode()) {
+    case MAV_MOUNT_MODE_RETRACT: {
+        // move mount to a "retracted" position.  To-Do: remove support and replace with a relaxed mode?
+        const Vector3f &angle_bf_target = _params.retract_angles.get();
+        mnt_target.target_type = MountTargetType::ANGLE;
+        mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
+        return;
+    }
+
+    case MAV_MOUNT_MODE_NEUTRAL: {
+        // move mount to a neutral position, typically pointing forward
+        const Vector3f &angle_bf_target = _params.neutral_angles.get();
+        mnt_target.target_type = MountTargetType::ANGLE;
+        mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
+        return;
+    }
+
+    case MAV_MOUNT_MODE_MAVLINK_TARGETING:
+        // point to the angles given by a mavlink message
+        // mavlink targets are stored while handling the incoming message
+        return;
+
+    case MAV_MOUNT_MODE_RC_TARGETING:
+        // RC radio manual angle control, but with stabilization from the AHRS
+        update_mnt_target_from_rc_target();
+        return;
+
+    case MAV_MOUNT_MODE_GPS_POINT:
+        // point mount to a GPS point given by the mission planner
+        if (get_angle_target_to_roi(mnt_target.angle_rad)) {
+            mnt_target.target_type = MountTargetType::ANGLE;
+        }
+        return;
+
+    case MAV_MOUNT_MODE_HOME_LOCATION:
+        // point mount to Home location
+        if (get_angle_target_to_home(mnt_target.angle_rad)) {
+            mnt_target.target_type = MountTargetType::ANGLE;
+        }
+        return;
+
+    case MAV_MOUNT_MODE_SYSID_TARGET:
+        // point mount to another vehicle
+        if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
+            mnt_target.target_type = MountTargetType::ANGLE;
+        }
+        return;
+    case MAV_MOUNT_MODE_ENUM_END:
+        break;
+    }
+    // we do not know this mode so raise internal error
+    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+}
+
 // get target rate in deg/sec. returns true on success
 bool AP_Mount_Backend::get_rate_target(float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame)
 {

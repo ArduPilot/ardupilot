@@ -263,6 +263,11 @@ protected:
     // called when mount mode is RC-targetting, updates the mnt_target object from RC inputs:
     void update_mnt_target_from_rc_target();
 
+    // method for the mount backends to call to update mnt_target based on
+    // the mount mode.  Methods in here may be overridden by the derived
+    // class to customise behaviour
+    void update_mnt_target();
+
     // returns true if user has configured a valid roll angle range
     // allows user to disable roll even on 3-axis gimbal
     bool roll_range_valid() const { return (_params.roll_angle_min < _params.roll_angle_max); }
