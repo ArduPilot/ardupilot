@@ -87,6 +87,11 @@ void AP_Logger_Backend::periodic_tasks()
     uint32_t now = AP_HAL::millis();
     if (now - _last_periodic_1Hz > 1000) {
         periodic_1Hz();
+        
+        // calculate how many packets were dropped in the last 1 second
+        _dropped_prev_second_total = _dropped - _dropped_last_second;
+        _dropped_last_second = _dropped;
+
         _last_periodic_1Hz = now;
     }
     if (now - _last_periodic_10Hz > 100) {

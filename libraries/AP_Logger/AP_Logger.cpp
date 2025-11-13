@@ -879,6 +879,18 @@ void AP_Logger::periodic_tasks() {
     handle_log_send();
 #endif
     FOR_EACH_BACKEND(periodic_tasks());
+
+    // check for dropped packets once per 10 seconds
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _last_dropped_check > 10000) {
+        for (uint8_t i=0; i<_next_backend; i++) {
+            const auto dropped = backends[i]->dropped_prev_second_total();
+            if (dropped > 50) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Logging: dropping %u pkts/sec. Reduce LOG_BITMASK", (unsigned)dropped);
+            }
+        }
+        _last_dropped_check = now_ms;
+    }
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
