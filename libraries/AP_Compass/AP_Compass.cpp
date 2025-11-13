@@ -991,6 +991,17 @@ bool Compass::register_compass(int32_t dev_id, uint8_t& instance)
 
     // This might be a replacement compass module, find any unregistered compass
     // instance and replace that
+    priority = _update_priority_list(dev_id);
+    // try to match priority and state index if possible, this ensure that compass order
+    // to state order while detection is preserved, this ensures that if compasses in priority
+    // list show up out of order during detection, it does not replace the state.
+    StateIndex priority_index = StateIndex(uint8_t(priority));
+    if (!_state[priority_index].registered && priority < COMPASS_MAX_INSTANCES) {
+        _state[priority_index].registered = true;
+        _state[priority_index].priority = priority;
+        instance = uint8_t(priority_index);
+        return true;
+    }
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
         priority = _update_priority_list(dev_id);
         if (!_state[i].registered && priority < COMPASS_MAX_INSTANCES) {

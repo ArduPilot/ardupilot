@@ -154,6 +154,7 @@ AP_Compass_DroneCAN* AP_Compass_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_d
             }
         }
     }
+
     return nullptr;
 }
 
