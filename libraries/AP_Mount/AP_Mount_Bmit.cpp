@@ -4,6 +4,7 @@
 
 #include "AP_Mount_Bmit.h"
 #include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
