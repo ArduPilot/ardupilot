@@ -153,7 +153,7 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
     }
 
     // segment accelerations can not be changed after segment creation.
-    const float track_speed_max = kinematic_limit(arc.length_ne, seg_delta.z, speed_xy, speed_up, fabsf(speed_down));
+    const float track_speed_max = kinematic_limit(arc.length_ne, seg_delta.z, speed_xy, speed_up, speed_down);
 
     if (is_equal(vel_max, track_speed_max)) {
         // new speed is equal to current speed maximum so no need to change anything
