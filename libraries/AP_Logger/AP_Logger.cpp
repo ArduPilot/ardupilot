@@ -879,6 +879,17 @@ void AP_Logger::periodic_tasks() {
     handle_log_send();
 #endif
     FOR_EACH_BACKEND(periodic_tasks());
+
+    // check for dropped packets once per 10 seconds
+    uint32_t now = AP_HAL::millis();
+    if (now - _last_dropped_check > 10000) {
+        for (uint8_t i=0; i<_next_backend; i++) {
+            if (backends[i]->dropped_prev_second_total() > 50) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Dataflash logging is dropping %u pkts/sec. Reduce LOG_BITMASK.", (unsigned)backends[i]->dropped_prev_second_total());
+            }
+        }
+        _last_dropped_check = now;
+    }
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX

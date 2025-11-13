@@ -473,6 +473,8 @@ private:
 
     bool _armed;
 
+    uint32_t _last_dropped_check;
+
     // state to help us not log unnecessary RCIN values:
     bool should_log_rcin2;
 
