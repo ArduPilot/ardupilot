@@ -563,4 +563,4 @@ AP_HW_CUBEORANGEPLUS_ODID           11063
 
 # do not allocate board IDs above 10,000 for non-ODID boards.
 # do not allocate board IDs above 19,999 in this file.
-AP_HW_OPTIMUS1411                          9995
+AP_HW_OPTIMUS1411                   7111

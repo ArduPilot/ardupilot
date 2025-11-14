@@ -1,6 +1,4 @@
 # hw definition file for processing by chibios_hwdef.py
-# for the HolybroV6C hardware
-
 
 # default to all pins low to avoid ESD issues
 #DEFAULTGPIO OUTPUT LOW PULLDOWN
@@ -14,10 +12,6 @@ OSCILLATOR_HZ 16000000
 # ChibiOS system timer
 STM32_ST_USE_TIMER 2
 
-# USB setup
-USB_VENDOR 0x3162 # ONLY FOR USE BY Holybro
-USB_PRODUCT 0x0053
-USB_STRING_MANUFACTURER "Holybro"
 
 # board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_OPTIMUS1411
