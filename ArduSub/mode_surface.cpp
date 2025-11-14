@@ -10,7 +10,7 @@ bool ModeSurface::init(bool ignore_checks)
     position_control->set_correction_speed_accel_U_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // initialise position and desired velocity
-    position_control->init_U_controller();
+    position_control->init_D_controller();
 
     return true;
 
@@ -26,7 +26,7 @@ void ModeSurface::run()
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
-        position_control->init_U_controller();
+        position_control->init_D_controller();
         return;
     }
 
@@ -55,7 +55,7 @@ void ModeSurface::run()
 
         // update altitude target and call position controller
         position_control->set_pos_target_U_from_climb_rate_cms(cmb_rate_cms);
-        position_control->update_U_controller();
+        position_control->update_D_controller();
     }
     // pilot has control for repositioning
     motors.set_forward(channel_forward->norm_input());
