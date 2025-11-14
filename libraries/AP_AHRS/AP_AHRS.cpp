@@ -373,9 +373,9 @@ void AP_AHRS::update_state(void)
     state.primary_core = _get_primary_core_index();
     state.wind_estimate_ok = _wind_estimate(state.wind_estimate);
     state.EAS2TAS = AP_AHRS_Backend::get_EAS2TAS();
-    state.airspeed_ok = _airspeed_EAS(state.airspeed, state.airspeed_estimate_type);
-    state.airspeed_true_ok = _airspeed_TAS(state.airspeed_true);
-    state.airspeed_vec_ok = _airspeed_TAS(state.airspeed_vec);
+    state.airspeed_EAS_ok = _airspeed_EAS(state.airspeed_EAS, state.airspeed_estimate_type);
+    state.airspeed_TAS_ok = _airspeed_TAS(state.airspeed_TAS);
+    state.airspeed_TAS_vec_ok = _airspeed_TAS(state.airspeed_TAS_vec);
     state.quat_ok = _get_quaternion(state.quat);
     state.secondary_attitude_ok = _get_secondary_attitude(state.secondary_attitude);
     state.secondary_quat_ok = _get_secondary_quaternion(state.secondary_quat);
@@ -1088,7 +1088,7 @@ bool AP_AHRS::_airspeed_TAS(float &airspeed_ret) const
         break;
     }
 
-    if (!airspeed_estimate(airspeed_ret)) {
+    if (!airspeed_EAS(airspeed_ret)) {
         return false;
     }
     airspeed_ret *= get_EAS2TAS();
@@ -1163,7 +1163,7 @@ bool AP_AHRS::airspeed_health_data(float &innovation, float &innovationVariance,
 // other than an actual airspeed sensor), if available. return
 // true if we have a synthetic airspeed.  ret will not be modified
 // on failure.
-bool AP_AHRS::synthetic_airspeed(float &ret) const
+bool AP_AHRS::dcm_synthetic_airspeed_EAS(float &ret) const
 {
 #if AP_AHRS_DCM_ENABLED
     return dcm.synthetic_airspeed_EAS(ret);
@@ -3633,35 +3633,35 @@ bool AP_AHRS::wind_estimate(Vector3f &wind) const
 
 // return an airspeed estimate if available. return true
 // if we have an estimate
-bool AP_AHRS::airspeed_estimate(float &airspeed_ret) const
+bool AP_AHRS::airspeed_EAS(float &airspeed_ret) const
 {
-    airspeed_ret = state.airspeed;
-    return state.airspeed_ok;
+    airspeed_ret = state.airspeed_EAS;
+    return state.airspeed_EAS_ok;
 }
 
 // return an airspeed estimate if available. return true
 // if we have an estimate
-bool AP_AHRS::airspeed_estimate(float &airspeed_ret, AP_AHRS::AirspeedEstimateType &type) const
+bool AP_AHRS::airspeed_EAS(float &airspeed_ret, AP_AHRS::AirspeedEstimateType &type) const
 {
-    airspeed_ret = state.airspeed;
+    airspeed_ret = state.airspeed_EAS;
     type = state.airspeed_estimate_type;
-    return state.airspeed_ok;
+    return state.airspeed_EAS_ok;
 }
 
 // return a true airspeed estimate (navigation airspeed) if
 // available. return true if we have an estimate
-bool AP_AHRS::airspeed_estimate_true(float &airspeed_ret) const
+bool AP_AHRS::airspeed_TAS(float &airspeed_ret) const
 {
-    airspeed_ret = state.airspeed_true;
-    return state.airspeed_true_ok;
+    airspeed_ret = state.airspeed_TAS;
+    return state.airspeed_TAS_ok;
 }
 
 // return estimate of true airspeed vector in body frame in m/s
 // returns false if estimate is unavailable
-bool AP_AHRS::airspeed_vector_true(Vector3f &vec) const
+bool AP_AHRS::airspeed_vector_TAS(Vector3f &vec) const
 {
-    vec = state.airspeed_vec;
-    return state.airspeed_vec_ok;
+    vec = state.airspeed_TAS_vec;
+    return state.airspeed_TAS_vec_ok;
 }
 
 // return the quaternion defining the rotation from NED to XYZ (body) axes
