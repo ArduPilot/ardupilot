@@ -32,6 +32,8 @@ public:
     Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, AltFrame frame);
     Location(const Vector3f &ekf_offset_neu_cm, AltFrame frame);
     Location(const Vector3d &ekf_offset_neu_cm, AltFrame frame);
+    Location(AltFrame frame, const Vector3f &ekf_offset_ned_m);
+    Location(AltFrame frame, const Vector3d &ekf_offset_ned_m);
 
     // set altitude
     void set_alt_cm(int32_t alt_cm, AltFrame frame);
@@ -88,6 +90,8 @@ public:
     bool get_vector_xy_from_origin_NE_m(T &vec_ne) const;
     template<typename T>
     bool get_vector_from_origin_NEU_m(T &vec_neu) const;
+    template<typename T>
+    bool get_vector_from_origin_NED_m(T &vec_ned) const;
 
     // return horizontal distance in meters between two locations
     ftype get_distance(const Location &loc2) const;
