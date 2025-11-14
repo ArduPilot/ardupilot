@@ -222,7 +222,7 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
             targets.z * 0.01,
             degrees(error_m.angle()),
             MIN(error_m.length(), UINT16_MAX),
-            (plane.control_mode != &plane.mode_qstabilize) ? quadplane.pos_control->get_pos_error_D_m() : 0,
+            (plane.control_mode != &plane.mode_qstabilize) ? -quadplane.pos_control->get_pos_error_D_m() : 0,
             plane.airspeed_error * 100,  // incorrect units; see PR#7933
             quadplane.wp_nav->crosstrack_error_m());
         return;
@@ -1232,7 +1232,7 @@ int16_t GCS_MAVLINK_Plane::high_latency_target_altitude() const
     const QuadPlane &quadplane = plane.quadplane;
     //return units are m
     if (quadplane.show_vtol_view()) {
-        return (plane.control_mode != &plane.mode_qstabilize) ? (global_position_current.alt * 0.01 + quadplane.pos_control->get_pos_error_D_m()) : 0;
+        return (plane.control_mode != &plane.mode_qstabilize) ? (global_position_current.alt * 0.01 - quadplane.pos_control->get_pos_error_D_m()) : 0;
     }
 #endif
     return 0.01 * (global_position_current.alt + plane.calc_altitude_error_cm());
