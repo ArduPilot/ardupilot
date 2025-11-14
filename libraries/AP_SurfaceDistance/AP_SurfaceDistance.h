@@ -8,7 +8,10 @@ class AP_SurfaceDistance {
 public:
     AP_SurfaceDistance(Rotation rot, uint8_t i) :
         instance(i),
-        rotation(rot)
+        rotation(rot),
+        floor_height_estimate_m(0.0f),
+        obstacle_counter(0),
+        last_floor_update_ms(0)
     {};
 
     void update();
@@ -31,6 +34,11 @@ public:
     int8_t glitch_count;                    // non-zero number indicates rangefinder is glitching
     uint32_t glitch_cleared_ms;             // system time glitch cleared
     float terrain_u_m;                      // filtered terrain offset (e.g. terrain's height above EKF origin)
+
+    // Obstacle detection state variables
+    float floor_height_estimate_m;          // smoothly tracked floor height (for obstacle vs floor discrimination)
+    int8_t obstacle_counter;                // counts consecutive samples suggesting obstacle (positive) or floor change (negative)
+    uint32_t last_floor_update_ms;          // time of last floor height estimate update (for rate limiting)
 
 private:
 #if HAL_LOGGING_ENABLED

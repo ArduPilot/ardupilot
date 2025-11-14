@@ -27,6 +27,85 @@
  # define RANGEFINDER_HEALTH_MIN 3          // number of good reads that indicates a healthy rangefinder
 #endif
 
+// Obstacle detection and floor tracking parameters
+#ifndef OBSTACLE_DETECTION_ENABLED
+ # define OBSTACLE_DETECTION_ENABLED 1      // enable obstacle detection (vs floor change discrimination)
+#endif
+
+#ifndef OBSTACLE_JUMP_THRESHOLD_M
+ # define OBSTACLE_JUMP_THRESHOLD_M 0.8f    // altitude changes > 0.8m are considered potential obstacles
+#endif
+
+#ifndef OBSTACLE_HYSTERESIS_SAMPLES
+ # define OBSTACLE_HYSTERESIS_SAMPLES 5     // require 5 consecutive samples to accept new floor height
+#endif
+
+#ifndef MAX_FLOOR_CHANGE_RATE_MS
+ # define MAX_FLOOR_CHANGE_RATE_MS 0.3f     // maximum floor change rate: 0.3 m/s (normal walking speed)
+#endif
+
+#ifndef FLOOR_TRACKING_TAU
+ # define FLOOR_TRACKING_TAU 0.1f           // time constant for smooth floor height tracking (10% per update)
+#endif
+
+// Detect obstacles vs floor changes and track floor height smoothly
+// This prevents altitude jumps when flying over objects (beds, tables, furniture)
+// Returns true if current reading is likely an obstacle (should be filtered out)
+static bool detect_obstacle_and_track_floor(float current_alt_m,
+                                            float& floor_height_estimate_m,
+                                            int8_t& obstacle_counter,
+                                            uint32_t& last_floor_update_ms,
+                                            uint32_t now_ms,
+                                            float dt)
+{
+#if OBSTACLE_DETECTION_ENABLED
+    // Calculate difference between current reading and tracked floor height
+    const float delta_m = current_alt_m - floor_height_estimate_m;
+    const bool potential_obstacle = (fabsf(delta_m) > OBSTACLE_JUMP_THRESHOLD_M);
+
+    if (potential_obstacle) {
+        // Check rate of change - real floor changes happen gradually
+        const float time_since_update_s = (now_ms - last_floor_update_ms) * 0.001f;
+        const float floor_change_rate_ms = (time_since_update_s > 0.01f) ?
+                                           fabsf(delta_m) / time_since_update_s : 0.0f;
+
+        // If change rate exceeds maximum expected floor gradient, likely an obstacle
+        if (floor_change_rate_ms > MAX_FLOOR_CHANGE_RATE_MS) {
+            // Increment obstacle counter (positive = likely obstacle)
+            obstacle_counter = constrain_int16(obstacle_counter + 1, -OBSTACLE_HYSTERESIS_SAMPLES, OBSTACLE_HYSTERESIS_SAMPLES);
+        } else {
+            // Slow change = legitimate floor change, decrement counter
+            obstacle_counter = constrain_int16(obstacle_counter - 1, -OBSTACLE_HYSTERESIS_SAMPLES, OBSTACLE_HYSTERESIS_SAMPLES);
+        }
+
+        // Only accept new floor height after enough samples confirm it's not an obstacle
+        if (abs(obstacle_counter) >= OBSTACLE_HYSTERESIS_SAMPLES) {
+            // Confirmed: this is a new floor level, not a temporary obstacle
+            floor_height_estimate_m = current_alt_m;
+            obstacle_counter = 0;
+            last_floor_update_ms = now_ms;
+            return false;  // Not an obstacle, accept reading
+        } else {
+            // Still uncertain, treat as obstacle for now
+            return true;  // Likely obstacle, filter it out
+        }
+    } else {
+        // Small change = normal variation, track floor smoothly with low-pass filter
+        obstacle_counter = 0;
+        const float alpha = dt / (dt + FLOOR_TRACKING_TAU);
+        floor_height_estimate_m += alpha * delta_m;
+        last_floor_update_ms = now_ms;
+        return false;  // Accept reading
+    }
+#else
+    // Obstacle detection disabled, always accept readings
+    floor_height_estimate_m = current_alt_m;
+    last_floor_update_ms = now_ms;
+    obstacle_counter = 0;
+    return false;
+#endif
+}
+
 void AP_SurfaceDistance::update()
 {
     WITH_SEMAPHORE(sem);
@@ -93,6 +172,31 @@ void AP_SurfaceDistance::update()
         alt_glitch_protected_m = alt_m;
         glitch_cleared_ms = now;
         reset_terrain = true;
+    }
+
+    // Obstacle detection: discriminate between obstacles (furniture, etc.) and real floor changes
+    // Initialize floor height estimate on first valid reading
+    if (last_floor_update_ms == 0 && alt_healthy) {
+        floor_height_estimate_m = alt_m;
+        last_floor_update_ms = now;
+        obstacle_counter = 0;
+    }
+
+    // Detect obstacles vs floor changes
+    const bool is_obstacle = detect_obstacle_and_track_floor(
+        alt_m,
+        floor_height_estimate_m,
+        obstacle_counter,
+        last_floor_update_ms,
+        now,
+        0.05f  // dt = 0.05s (20Hz update rate assumed)
+    );
+
+    // If obstacle detected, use tracked floor height to prevent altitude jumps
+    if (is_obstacle && alt_healthy) {
+        alt_m = floor_height_estimate_m;
+        alt_glitch_protected_m = floor_height_estimate_m;
+        // Don't reset terrain - we're intentionally ignoring this obstacle
     }
 
     // filter rangefinder altitude
@@ -167,19 +271,23 @@ void AP_SurfaceDistance::Log_Write(void) const
     // @Field: D: Raw Distance
     // @Field: FD: Filtered Distance
     // @Field: TO: Terrain Offset
+    // @Field: FH: Floor Height Estimate (obstacle detection)
+    // @Field: OC: Obstacle Counter (positive = likely obstacle)
 
     //Write to data flash log
     AP::logger().WriteStreaming("SURF",
-                                "TimeUS,I,St,D,FD,TO",
-                                "s#-mmm",
-                                "F--000",
-                                "QBBfff",
+                                "TimeUS,I,St,D,FD,TO,FH,OC",
+                                "s#-mmmm-",
+                                "F--0000-",
+                                "QBBffffb",
                                 AP_HAL::micros64(),
                                 instance,
                                 status,
                                 (float)alt_m,
                                 (float)alt_m_filt.get(),
-                                (float)terrain_u_m
+                                (float)terrain_u_m,
+                                (float)floor_height_estimate_m,
+                                (int8_t)obstacle_counter
                                 );
 }
 #endif  // HAL_LOGGING_ENABLED
