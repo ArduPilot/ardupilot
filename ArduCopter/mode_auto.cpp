@@ -550,7 +550,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
     // if more than 3m then fly to edge
     if (dist_to_edge_m > 3.0) {
         // convert circle_edge_ned_m to Location
-        Location circle_edge(circle_edge_ned_m * 100.0, Location::AltFrame::ABOVE_ORIGIN);
+        Location circle_edge{Location::AltFrame::ABOVE_ORIGIN, circle_edge_ned_m};
 
         // convert altitude to same as command
         circle_edge.copy_alt_from(circle_center);
@@ -1533,8 +1533,7 @@ void ModeAuto::subtract_pos_offsets(Location& target_loc) const
 {
     // subtract position controller offsets from target location
     const Vector3p& pos_ofs_ned_m = pos_control->get_pos_offset_NED_m();
-    Vector3p pos_ofs_ned_m_deleteme = Vector3p{pos_ofs_ned_m.x, pos_ofs_ned_m.y, -pos_ofs_ned_m.z};
-    target_loc.offset(-pos_ofs_ned_m_deleteme);
+    target_loc.offset(-pos_ofs_ned_m);
 }
 
 /********************************************************************************/

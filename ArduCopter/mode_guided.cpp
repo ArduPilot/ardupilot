@@ -362,7 +362,7 @@ bool ModeGuided::set_pos_NED_m(const Vector3p& pos_ned_m, bool use_yaw, float ya
 {
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
-    const Location dest_loc(pos_ned_m * 100.0, is_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+    const Location dest_loc{is_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN, pos_ned_m};
     if (!copter.fence.check_destination_within_fence(dest_loc)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
@@ -400,8 +400,8 @@ bool ModeGuided::set_pos_NED_m(const Vector3p& pos_ned_m, bool use_yaw, float ya
     // initialise terrain following if needed
     if (is_terrain_alt) {
         // get current alt above terrain
-        float terrain_u_m;
-        if (!wp_nav->get_terrain_U_m(terrain_u_m)) {
+        float terrain_d_m;
+        if (!wp_nav->get_terrain_D_m(terrain_d_m)) {
             // if we don't have terrain altitude then stop
             init(true);
             return false;
@@ -409,7 +409,7 @@ bool ModeGuided::set_pos_NED_m(const Vector3p& pos_ned_m, bool use_yaw, float ya
         // convert origin to alt-above-terrain if necessary
         if (!guided_is_terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
-            pos_control->init_pos_terrain_D_m(terrain_u_m);
+            pos_control->init_pos_terrain_D_m(terrain_d_m);
         }
     } else {
         pos_control->init_pos_terrain_D_m(0.0);
@@ -441,7 +441,7 @@ bool ModeGuided::get_wp(Location& destination) const
     case SubMode::WP:
         return wp_nav->get_oa_wp_destination(destination);
     case SubMode::Pos:
-        destination = Location(guided_pos_target_ned_m.tofloat(), guided_is_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+        destination = Location(guided_is_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN, guided_pos_target_ned_m);
         return true;
     case SubMode::Angle:
     case SubMode::TakeOff:
@@ -513,8 +513,8 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
     // initialise terrain following if needed
     if (is_terrain_alt) {
         // get current alt above terrain
-        float terrain_u_m;
-        if (!wp_nav->get_terrain_U_m(terrain_u_m)) {
+        float terrain_d_m;
+        if (!wp_nav->get_terrain_D_m(terrain_d_m)) {
             // if we don't have terrain altitude then stop
             init(true);
             return false;
@@ -522,7 +522,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         // convert origin to alt-above-terrain if necessary
         if (!guided_is_terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
-            pos_control->init_pos_terrain_D_m(terrain_u_m);
+            pos_control->init_pos_terrain_D_m(-terrain_d_m);
         }
     } else {
         pos_control->init_pos_terrain_D_m(0.0);
@@ -613,7 +613,7 @@ bool ModeGuided::set_pos_vel_accel_NED_m(const Vector3p& pos_ned_m, const Vector
 {
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
-    const Location dest_loc(pos_ned_m * 100.0, Location::AltFrame::ABOVE_ORIGIN);
+    const Location dest_loc(Location::AltFrame::ABOVE_ORIGIN, pos_ned_m);
     if (!copter.fence.check_destination_within_fence(dest_loc)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
@@ -736,8 +736,8 @@ void ModeGuided::pos_control_run()
     }
 
     // calculate terrain adjustments
-    float terrain_u_m = 0.0f;
-    if (guided_is_terrain_alt && !wp_nav->get_terrain_U_m(terrain_u_m)) {
+    float terrain_d_m = 0.0f;
+    if (guided_is_terrain_alt && !wp_nav->get_terrain_D_m(terrain_d_m)) {
         // failure to set destination can only be because of missing terrain data
         copter.failsafe_terrain_on_event();
         return;
@@ -761,7 +761,7 @@ void ModeGuided::pos_control_run()
     if (guided_is_terrain_alt) {
         terrain_margin_m = MIN(copter.wp_nav->get_terrain_margin_m(), 0.5 * fabsF(guided_pos_target_ned_m.z));
     }
-    pos_control->input_pos_NED_m(guided_pos_target_ned_m, terrain_u_m, terrain_margin_m);
+    pos_control->input_pos_NED_m(guided_pos_target_ned_m, terrain_d_m, terrain_margin_m);
 
     // run position controllers
     pos_control->NE_update_controller();
@@ -797,7 +797,7 @@ void ModeGuided::accel_control_run()
         pos_control->input_vel_accel_D_m(guided_vel_target_ned_ms.z, guided_accel_target_ned_mss.z, false);
     } else {
         // update position controller with new target
-        pos_control->input_accel_NE_m(guided_accel_target_ned_mss);
+        pos_control->input_accel_NE_m(guided_accel_target_ned_mss.xy());
         if (!stabilizing_vel_NE()) {
             // set position and velocity errors to zero
             pos_control->NE_stop_vel_stabilisation();
@@ -1096,12 +1096,12 @@ bool ModeGuided::limit_check()
     const Vector3p& curr_pos_ned_m = pos_control->get_pos_estimate_NED_m();
 
     // check if we have gone below min alt
-    if (!is_zero(guided_limit.alt_min_m) && (curr_pos_ned_m.z < guided_limit.alt_min_m)) {
+    if (!is_zero(guided_limit.alt_min_m) && (-curr_pos_ned_m.z < guided_limit.alt_min_m)) {
         return true;
     }
 
     // check if we have gone above max alt
-    if (!is_zero(guided_limit.alt_max_m) && (curr_pos_ned_m.z > guided_limit.alt_max_m)) {
+    if (!is_zero(guided_limit.alt_max_m) && (-curr_pos_ned_m.z > guided_limit.alt_max_m)) {
         return true;
     }
 
