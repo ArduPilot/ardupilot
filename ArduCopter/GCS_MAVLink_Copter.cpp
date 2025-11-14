@@ -189,17 +189,17 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
         AP_HAL::millis(), // time boot ms
         MAV_FRAME_LOCAL_NED, 
         type_mask,
-        target_pos_ned_m.x,   // x in metres
-        target_pos_ned_m.y,   // y in metres
-        -target_pos_ned_m.z,  // z in metres NED frame
-        target_vel_ned_ms.x,   // vx in m/s
-        target_vel_ned_ms.y,   // vy in m/s
-        -target_vel_ned_ms.z,  // vz in m/s NED frame
+        target_pos_ned_m.x,     // x in metres
+        target_pos_ned_m.y,     // y in metres
+        target_pos_ned_m.z,     // z in metres NED frame
+        target_vel_ned_ms.x,    // vx in m/s
+        target_vel_ned_ms.y,    // vy in m/s
+        target_vel_ned_ms.z,    // vz in m/s NED frame
         target_accel_ned_mss.x, // afx in m/s/s
         target_accel_ned_mss.y, // afy in m/s/s
-        -target_accel_ned_mss.z,// afz in m/s/s NED frame
-        0.0f, // yaw
-        0.0f); // yaw_rate
+        target_accel_ned_mss.z, // afz in m/s/s NED frame
+        0.0f,                   // yaw
+        0.0f);                  // yaw_rate
 #endif
 }
 
@@ -1066,7 +1066,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
     Vector3p pos_ned_m;
     if (!pos_ignore) {
         // convert to m
-        pos_ned_m = Vector3p{packet.x, packet.y, -packet.z};
+        pos_ned_m = Vector3p{packet.x, packet.y, packet.z};
         // rotate to body-frame if necessary
         if (packet.coordinate_frame == MAV_FRAME_BODY_NED ||
             packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
@@ -1082,15 +1082,14 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
                 copter.mode_guided.init(true);
                 return;
             }
-            pos_ned_m.xy() += rel_pos_ned_m.xy();
-            pos_ned_m.z -= rel_pos_ned_m.z;
+            pos_ned_m += rel_pos_ned_m;
         }
     }
 
     // prepare velocity
     Vector3f vel_ned_ms;
     if (!vel_ignore) {
-        vel_ned_ms = Vector3f{packet.vx, packet.vy, -packet.vz};
+        vel_ned_ms = Vector3f{packet.vx, packet.vy, packet.vz};
         if (!sane_vel_or_acc_vector(vel_ned_ms)) {
             // input is not valid so stop
             copter.mode_guided.init(true);
@@ -1105,7 +1104,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
     // prepare acceleration
     Vector3f accel_ned_mss;
     if (!acc_ignore) {
-        accel_ned_mss = Vector3f{packet.afx, packet.afy, -packet.afz};
+        accel_ned_mss = Vector3f{packet.afx, packet.afy, packet.afz};
         // rotate to body-frame if necessary
         if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
             accel_ned_mss.xy() = copter.ahrs.body_to_earth2D(accel_ned_mss.xy());
@@ -1188,7 +1187,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_global_int(const mav
     // prepare velocity
     Vector3f vel_ned_ms;
     if (!vel_ignore) {
-        vel_ned_ms = Vector3f{packet.vx, packet.vy, -packet.vz};
+        vel_ned_ms = Vector3f{packet.vx, packet.vy, packet.vz};
         if (!sane_vel_or_acc_vector(vel_ned_ms)) {
             // input is not valid so stop
             copter.mode_guided.init(true);
@@ -1199,7 +1198,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_global_int(const mav
     // prepare acceleration
     Vector3f accel_ned_mss;
     if (!acc_ignore) {
-        accel_ned_mss = Vector3f{packet.afx, packet.afy, -packet.afz};
+        accel_ned_mss = Vector3f{packet.afx, packet.afy, packet.afz};
     }
 
     // prepare yaw
@@ -1222,7 +1221,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_global_int(const mav
             return;
         }
         Vector3p pos_ned_m;
-        if (!loc.get_vector_from_origin_NEU_m(pos_ned_m)) {
+        if (!loc.get_vector_from_origin_NED_m(pos_ned_m)) {
             // input is not valid so stop
             copter.mode_guided.init(true);
             return;
@@ -1351,7 +1350,7 @@ int16_t GCS_MAVLINK_Copter::high_latency_target_altitude() const
 
     //return units are m
     if (copter.ap.initialised) {
-        return global_position_current.alt * 0.01 + copter.pos_control->get_pos_error_D_m();
+        return global_position_current.alt * 0.01 - copter.pos_control->get_pos_error_D_m();
     }
     return 0;
     
