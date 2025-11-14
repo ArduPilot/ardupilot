@@ -48,20 +48,39 @@
  # define FLOOR_TRACKING_TAU 0.1f           // time constant for smooth floor height tracking (10% per update)
 #endif
 
+#ifndef TILT_AGGRESSIVE_THRESHOLD
+ # define TILT_AGGRESSIVE_THRESHOLD 0.866f  // cos(30°) - above 30° tilt, be more aggressive with obstacle detection
+#endif
+
 // Detect obstacles vs floor changes and track floor height smoothly
 // This prevents altitude jumps when flying over objects (beds, tables, furniture)
+// Takes tilt into account - higher tilt angles make obstacle detection more sensitive
 // Returns true if current reading is likely an obstacle (should be filtered out)
 static bool detect_obstacle_and_track_floor(float current_alt_m,
                                             float& floor_height_estimate_m,
                                             int8_t& obstacle_counter,
                                             uint32_t& last_floor_update_ms,
                                             uint32_t now_ms,
-                                            float dt)
+                                            float dt,
+                                            float tilt_correction)
 {
 #if OBSTACLE_DETECTION_ENABLED
+    // Adjust sensitivity based on tilt angle
+    // Higher tilt = more likely to see obstacles early (like table edges when flying forward)
+    // So reduce threshold and be more aggressive with obstacle detection
+    float jump_threshold = OBSTACLE_JUMP_THRESHOLD_M;
+    float max_floor_rate = MAX_FLOOR_CHANGE_RATE_MS;
+
+    if (tilt_correction < TILT_AGGRESSIVE_THRESHOLD) {
+        // Tilt > 30° - reduce threshold by 30% to catch obstacles earlier
+        // Also reduce acceptable floor change rate
+        jump_threshold *= 0.7f;      // 0.8m → 0.56m threshold
+        max_floor_rate *= 0.7f;      // 0.3m/s → 0.21m/s max rate
+    }
+
     // Calculate difference between current reading and tracked floor height
     const float delta_m = current_alt_m - floor_height_estimate_m;
-    const bool potential_obstacle = (fabsf(delta_m) > OBSTACLE_JUMP_THRESHOLD_M);
+    const bool potential_obstacle = (fabsf(delta_m) > jump_threshold);
 
     if (potential_obstacle) {
         // Check rate of change - real floor changes happen gradually
@@ -70,7 +89,7 @@ static bool detect_obstacle_and_track_floor(float current_alt_m,
                                            fabsf(delta_m) / time_since_update_s : 0.0f;
 
         // If change rate exceeds maximum expected floor gradient, likely an obstacle
-        if (floor_change_rate_ms > MAX_FLOOR_CHANGE_RATE_MS) {
+        if (floor_change_rate_ms > max_floor_rate) {
             // Increment obstacle counter (positive = likely obstacle)
             obstacle_counter = constrain_int16(obstacle_counter + 1, -OBSTACLE_HYSTERESIS_SAMPLES, OBSTACLE_HYSTERESIS_SAMPLES);
         } else {
@@ -182,14 +201,15 @@ void AP_SurfaceDistance::update()
         obstacle_counter = 0;
     }
 
-    // Detect obstacles vs floor changes
+    // Detect obstacles vs floor changes (tilt-aware)
     const bool is_obstacle = detect_obstacle_and_track_floor(
         alt_m,
         floor_height_estimate_m,
         obstacle_counter,
         last_floor_update_ms,
         now,
-        0.05f  // dt = 0.05s (20Hz update rate assumed)
+        0.05f,            // dt = 0.05s (20Hz update rate assumed)
+        tilt_correction   // Pass tilt for adaptive thresholds
     );
 
     // If obstacle detected, use tracked floor height to prevent altitude jumps
