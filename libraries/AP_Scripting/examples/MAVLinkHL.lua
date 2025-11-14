@@ -546,8 +546,8 @@ function HLSatcom()
 
         hl2.heading = math.floor(wrap_360(math.deg(ahrs:get_yaw_rad())) / 2)
         hl2.throttle = math.floor(gcs:get_hud_throttle())
-        if ahrs:airspeed_estimate() ~= nil then
-            hl2.airspeed = math.abs(math.floor(ahrs:airspeed_estimate() * 5))
+        if ahrs:airspeed_EAS() ~= nil then
+            hl2.airspeed = math.abs(math.floor(ahrs:airspeed_EAS() * 5))
         end
         -- hl2.airspeed_sp = 0
         hl2.groundspeed = math.abs(math.floor(

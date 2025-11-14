@@ -3750,8 +3750,13 @@ function ahrs:earth_to_body(vector) end
 ---@return Vector3f_ud
 function ahrs:get_vibration() end
 
--- Return the estimated airspeed of the vehicle if available
+-- Return the Equivalent Air Speed of the vehicle if available
 ---@return number|nil -- airspeed in meters / second if available
+function ahrs:airspeed_EAS() end
+
+-- Return the Equivalent Air Speed of the vehicle if available
+---@return number|nil -- airspeed in meters / second if available
+---@deprecated -- airspeed_EAS
 function ahrs:airspeed_estimate() end
 
 -- desc
