@@ -50,6 +50,8 @@
 #include <time.h>
 #include <sys/time.h>
 
+#include <strings.h>
+
 #define FORCE_VERSION_H_INCLUDE
 #include "ap_version.h"
 
