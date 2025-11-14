@@ -48,6 +48,7 @@ public:
     // Positive values mean terrain lies above the EKF origin altitude.
     // Source may be rangefinder or terrain database depending on availability.
     bool get_terrain_U_m(float& terrain_u_m);
+    bool get_terrain_D_m(float& terrain_d_m);
 
     // Returns the terrain following altitude margin in meters.
     // Vehicle will stop if distance from target altitude exceeds this margin.
@@ -138,7 +139,7 @@ public:
 
     // Returns the destination waypoint vector in NEU frame, in centimeters from EKF origin.
     // See get_wp_destination_NED_m() for full details.
-    const Vector3f get_wp_destination_NEU_cm() const { return get_wp_destination_NED_m().tofloat() * 100.0; }
+    const Vector3f get_wp_destination_NEU_cm() const { return Vector3f(_destination_ned_m.x, _destination_ned_m.y, -_destination_ned_m.z) * 100.0; }
 
     // Returns the destination waypoint vector in NED frame, in meters from EKF origin.
     // Z is relative to terrain or EKF origin, depending on _is_terrain_alt.
@@ -146,7 +147,7 @@ public:
 
     // Returns the origin waypoint vector in NED frame, in centimeters from EKF origin.
     // See get_wp_origin_NED_m() for full details.
-    const Vector3f get_wp_origin_NEU_cm() const { return get_wp_origin_NED_m().tofloat() * 100.0; }
+    const Vector3f get_wp_origin_NEU_cm() const { return Vector3f(_origin_ned_m.x, _origin_ned_m.y, -_origin_ned_m.z) * 100.0; }
 
     // Returns the origin waypoint vector in NED frame, in meters from EKF origin.
     // This marks the start of the current waypoint leg.
@@ -195,14 +196,6 @@ public:
     // Updates velocity handoff if previous leg is a spline.
     // arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
     bool set_wp_destination_next_NED_m(const Vector3p& destination_ned_m, bool is_terrain_alt = false, float arc_rad = 0.0);
-
-    // Sets waypoint destination using a NED position vector in meters from EKF origin.
-    // Converts internally to NEU. Terrain following is not used.
-    bool set_wp_destination_NED_m_deleteme(const Vector3p& destination_NED_m);
-
-    // Sets the next waypoint destination using a NED position vector in meters from EKF origin.
-    // Converts to NEU internally. Terrain following is not applied.
-    bool set_wp_destination_next_NED_m_deleteme(const Vector3p& destination_NED_m);
 
     // Computes the horizontal stopping point in NE frame, returned in centimeters.
     // See get_wp_stopping_point_NE_m() for full details.
