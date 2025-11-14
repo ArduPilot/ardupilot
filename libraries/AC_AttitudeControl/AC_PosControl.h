@@ -204,10 +204,10 @@ public:
     float get_max_accel_D_mss() const { return _accel_max_d_mss; }
 
     // Returns maximum allowed positive (upward) position error in meters.
-    float get_pos_error_up_m() const { return _p_pos_d_m.get_error_max(); }
+    float get_pos_error_up_m() const { return _p_pos_d_m.get_error_min(); }
 
     // Returns maximum allowed negative (downward) position error in meters.
-    float get_pos_error_down_m() const { return _p_pos_d_m.get_error_min(); }
+    float get_pos_error_down_m() const { return _p_pos_d_m.get_error_max(); }
 
     // Returns maximum climb rate in cm/s.
     // See get_max_speed_up_ms() for full details.
@@ -307,7 +307,7 @@ public:
     const Vector3p& get_pos_estimate_NED_m() const { return _pos_estimate_ned_m; }
 
     // Returns estimated altitude above EKF origin in meters.
-    float get_pos_estimate_U_m() const { return _pos_estimate_ned_m.z; }
+    float get_pos_estimate_U_m() const { return -_pos_estimate_ned_m.z; }
 
     // Returns the target position in NED frame, in meters relative to EKF origin.
     const Vector3p& get_pos_target_NED_m() const { return _pos_target_ned_m; }
@@ -323,11 +323,11 @@ public:
     float get_pos_target_U_cm() const { return get_pos_target_U_m() * 100.0; }
 
     // Returns target altitude above EKF origin in meters.
-    float get_pos_target_U_m() const { return _pos_target_ned_m.z; }
+    float get_pos_target_U_m() const { return -_pos_target_ned_m.z; }
 
     // Sets desired altitude above EKF origin in centimeters.
     // See set_pos_desired_D_m() for full details.
-    void set_pos_desired_U_cm(float pos_desired_u_cm) { set_pos_desired_D_m(pos_desired_u_cm * 0.01); }
+    void set_pos_desired_U_cm(float pos_desired_u_cm) { set_pos_desired_D_m(-pos_desired_u_cm * 0.01); }
 
     // Sets desired altitude above EKF origin in meters.
     void set_pos_desired_D_m(float pos_desired_d_m) { _pos_desired_ned_m.z = pos_desired_d_m; }
@@ -337,7 +337,7 @@ public:
     float get_pos_desired_U_cm() const { return get_pos_desired_U_m() * 100.0; }
 
     // Returns desired altitude above EKF origin in meters.
-    float get_pos_desired_U_m() const { return _pos_desired_ned_m.z; }
+    float get_pos_desired_U_m() const { return -_pos_desired_ned_m.z; }
 
 
     /// Stopping Point
@@ -359,7 +359,7 @@ public:
 
     // Returns vertical position error (altitude) in centimeters.
     // See get_pos_error_D_m() for full details.
-    float get_pos_error_U_cm() const { return get_pos_error_D_m() * 100.0; }
+    float get_pos_error_U_cm() const { return -get_pos_error_D_m() * 100.0; }
 
     // Returns vertical position error (altitude) in meters.
     float get_pos_error_D_m() const { return _p_pos_d_m.get_error(); }
@@ -371,11 +371,11 @@ public:
     const Vector3f& get_vel_estimate_NED_ms() const { return _vel_estimate_ned_ms; }
 
     // Returns current velocity estimate (Up) in m/s.
-    float get_vel_estimate_U_ms() const { return _vel_estimate_ned_ms.z; }
+    float get_vel_estimate_U_ms() const { return -_vel_estimate_ned_ms.z; }
 
     // Sets desired velocity in NED frame in cm/s.
     // See set_vel_desired_NED_ms() for full details.
-    void set_vel_desired_NEU_cms(const Vector3f &vel_desired_neu_cms) { set_vel_desired_NED_ms(vel_desired_neu_cms * 0.01); }
+    void set_vel_desired_NEU_cms(const Vector3f &vel_desired_neu_cms) { set_vel_desired_NED_ms(Vector3f(vel_desired_neu_cms.x, vel_desired_neu_cms.y, -vel_desired_neu_cms.z) * 0.01); }
 
     // Sets desired velocity in NED frame in m/s.
     void set_vel_desired_NED_ms(const Vector3f &vel_desired_ned_ms) { _vel_desired_ned_ms = vel_desired_ned_ms; }
@@ -385,17 +385,17 @@ public:
 
     // Returns desired velocity in NED frame in cm/s.
     // See get_vel_desired_NED_ms() for full details.
-    const Vector3f get_vel_desired_NEU_cms() const { return get_vel_desired_NED_ms() * 100.0; }
+    const Vector3f get_vel_desired_NEU_cms() const { return Vector3f(_vel_desired_ned_ms.x, _vel_desired_ned_ms.y, -_vel_desired_ned_ms.z) * 100.0; }
 
     // Returns desired velocity in NED frame in m/s.
     const Vector3f& get_vel_desired_NED_ms() const { return _vel_desired_ned_ms; }
 
     // Returns desired velocity (Up) in m/s.
-    float get_vel_desired_U_ms() const { return _vel_desired_ned_ms.z; }
+    float get_vel_desired_U_ms() const { return -_vel_desired_ned_ms.z; }
 
     // Returns velocity target in NED frame in cm/s.
     // See get_vel_target_NED_ms() for full details.
-    const Vector3f get_vel_target_NEU_cms() const { return get_vel_target_NED_ms() * 100.0; }
+    const Vector3f get_vel_target_NEU_cms() const { return Vector3f(_vel_target_ned_ms.x, _vel_target_ned_ms.y, -_vel_target_ned_ms.z) * 100.0; }
 
     // Returns velocity target in NED frame in m/s.
     const Vector3f& get_vel_target_NED_ms() const { return _vel_target_ned_ms; }
@@ -408,7 +408,7 @@ public:
     float get_vel_target_U_cms() const { return get_vel_target_U_ms() * 100.0; }
 
     // Returns vertical velocity target (Up) in m/s.
-    float get_vel_target_U_ms() const { return _vel_target_ned_ms.z; }
+    float get_vel_target_U_ms() const { return -_vel_target_ned_ms.z; }
 
 
     /// Acceleration
@@ -424,7 +424,7 @@ public:
 
     // Sets the terrain target altitude above EKF origin in centimeters.
     // See set_pos_terrain_target_D_m() for full details.
-    void set_pos_terrain_target_U_cm(float pos_terrain_target_u_cm) { set_pos_terrain_target_D_m(pos_terrain_target_u_cm * 0.01); }
+    void set_pos_terrain_target_U_cm(float pos_terrain_target_u_cm) { set_pos_terrain_target_D_m(-pos_terrain_target_u_cm * 0.01); }
 
     // Sets the terrain target altitude above EKF origin in meters.
     void set_pos_terrain_target_D_m(float pos_terrain_target_d_m) { _pos_terrain_target_d_m = pos_terrain_target_d_m; }
@@ -589,9 +589,13 @@ public:
     // Zeros I-terms and aligns targets to current position.
     void standby_NED_reset();
 
+    // Returns measured vertical (Down) acceleration in m/s² (Earth frame, gravity-compensated).
+    // Positive = downward acceleration.
+    float get_estimated_accel_D_mss() const { return _ahrs.get_accel_ef().z + GRAVITY_MSS; }
+
     // Returns measured vertical (Up) acceleration in m/s² (Earth frame, gravity-compensated).
     // Positive = upward acceleration.
-    float get_estimated_accel_U_mss() const { return -(_ahrs.get_accel_ef().z + GRAVITY_MSS); }
+    float get_estimated_accel_U_mss() const { return -get_estimated_accel_D_mss(); }
 
     // Returns true if the requested forward pitch is limited by the configured tilt constraint.
     bool get_fwd_pitch_is_limited() const;
