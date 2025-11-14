@@ -64,6 +64,38 @@ Location::Location(const Vector3d &ekf_offset_neu_cm, AltFrame frame)
         offset(ekf_offset_neu_cm.x * 0.01, ekf_offset_neu_cm.y * 0.01);
     }
 }
+
+Location::Location(AltFrame frame, const Vector3f &ekf_offset_ned_m)
+{
+    zero();
+
+    // store alt and alt frame
+    set_alt_cm(-ekf_offset_ned_m.z * 100.0, frame);
+
+    // calculate lat, lon
+    Location ekf_origin;
+    if (AP::ahrs().get_origin(ekf_origin)) {
+        lat = ekf_origin.lat;
+        lng = ekf_origin.lng;
+        offset(ekf_offset_ned_m.x, ekf_offset_ned_m.y);
+    }
+}
+
+Location::Location(AltFrame frame, const Vector3d &ekf_offset_ned_m)
+{
+    zero();
+
+    // store alt and alt frame
+    set_alt_cm(-ekf_offset_ned_m.z * 100.0, frame);
+
+    // calculate lat, lon
+    Location ekf_origin;
+    if (AP::ahrs().get_origin(ekf_origin)) {
+        lat = ekf_origin.lat;
+        lng = ekf_origin.lng;
+        offset(ekf_offset_ned_m.x, ekf_offset_ned_m.y);
+    }
+}
 #endif  // AP_AHRS_ENABLED
 
 void Location::set_alt_cm(int32_t alt_cm, AltFrame frame)
@@ -315,6 +347,22 @@ bool Location::get_vector_xy_from_origin_NE_m(T &vec_ne) const
 template bool Location::get_vector_xy_from_origin_NE_m<Vector2f>(Vector2f &vec_ne) const;
 #if HAL_WITH_POSTYPE_DOUBLE
 template bool Location::get_vector_xy_from_origin_NE_m<Vector2p>(Vector2p &vec_ne) const;
+#endif
+
+template<typename T>
+bool Location::get_vector_from_origin_NED_m(T &vec_ned) const
+{
+    if (!get_vector_from_origin_NEU_cm(vec_ned)) {
+        return false;
+    }
+    vec_ned *= 0.01;
+    vec_ned.z *= -1.0;
+    return true;
+}
+// define for float and position vectors
+template bool Location::get_vector_from_origin_NED_m<Vector3f>(Vector3f &vec_ned) const;
+#if HAL_WITH_POSTYPE_DOUBLE
+template bool Location::get_vector_from_origin_NED_m<Vector3p>(Vector3p &vec_ned) const;
 #endif
 
 template<typename T>
