@@ -43,6 +43,10 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t &msg)
         return;
     }
 
+    if (packet.flags & SERIAL_CONTROL_FLAG_BLOCKING && hal.util->get_soft_armed()) {
+        packet.flags &= ~SERIAL_CONTROL_FLAG_BLOCKING;
+    }
+
     bool exclusive = (packet.flags & SERIAL_CONTROL_FLAG_EXCLUSIVE) != 0;
 
     switch (packet.device) {
@@ -165,7 +169,7 @@ more_data:
         return;
     }
 
-    if (packet.flags & SERIAL_CONTROL_FLAG_BLOCKING) {
+    if (flags & SERIAL_CONTROL_FLAG_BLOCKING) {
         while (!HAVE_PAYLOAD_SPACE(chan, SERIAL_CONTROL)) {
             hal.scheduler->delay(1);
         }
