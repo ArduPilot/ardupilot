@@ -1,0 +1,139 @@
+######################################
+# INDOOR ALTITUDE HOLD - PARAMETER FILE
+# Hardware: Holybro H-Flow (TOF + Lidar + Optical Flow)
+# ArduPilot Version: 4.x (obstacle detection enabled)
+# Branch: claude/ardupilot-indoor-altitude-hold-01MdpREHPEf2iRDqtmsRDV4h
+# Date: 2025-11-14
+######################################
+
+### === RANGEFINDER CONFIGURATION === ###
+# Primary: VL53L1X TOF (0-4m, high accuracy)
+RNGFND1_TYPE,31
+RNGFND1_MIN,0.10
+RNGFND1_MAX,4.00
+RNGFND1_GNDCLR,0.10
+RNGFND1_ORIENT,25
+RNGFND1_POS_X,0.00
+RNGFND1_POS_Y,0.00
+RNGFND1_POS_Z,0.00
+
+# Secondary: Lidar (0-30m, backup for outdoor)
+RNGFND2_TYPE,24
+RNGFND2_MIN,0.20
+RNGFND2_MAX,30.00
+RNGFND2_GNDCLR,0.10
+RNGFND2_ORIENT,25
+
+### === CAN BUS CONFIGURATION === ###
+CAN_P1_DRIVER,1
+CAN_D1_PROTOCOL,1
+CAN_P2_DRIVER,0
+
+### === OPTICAL FLOW CONFIGURATION === ###
+FLOW_TYPE,6
+FLOW_FXSCALER,0
+FLOW_FYSCALER,0
+FLOW_ORIENT_YAW,0
+FLOW_POS_X,0.00
+FLOW_POS_Y,0.00
+FLOW_POS_Z,0.00
+
+### === EKF3 SOURCE SELECTION === ###
+EK3_SRC1_POSZ,2
+EK3_SRC1_POSXY,0
+EK3_SRC1_VELXY,6
+EK3_SRC1_VELZ,0
+EK3_SRC1_YAW,1
+EK3_SRC2_POSZ,1
+EK3_SRC2_POSXY,0
+EK3_SRC2_VELXY,0
+EK3_SRC2_VELZ,0
+EK3_SRC3_POSZ,0
+EK3_SRC3_POSXY,0
+EK3_SRC3_VELXY,0
+
+### === EKF3 RANGEFINDER FUSION === ###
+EK3_RNG_M_NSE,0.15
+EK3_RNG_I_GATE,250
+EK3_RNG_USE_HGT,-1
+EK3_RNG_USE_SPD,2.0
+EK3_TERR_GRAD,0.05
+
+### === EKF3 OPTICAL FLOW FUSION === ###
+EK3_FLOW_USE,1
+EK3_FLOW_M_NSE,0.15
+EK3_FLOW_I_GATE,300
+EK3_FLOW_DELAY,10
+EK3_FLOW_MAX,2.5
+
+### === EKF3 BAROMETER (DE-WEIGHTED FOR INDOOR) === ###
+EK3_ALT_M_NSE,5.0
+EK3_HGT_DELAY,60
+
+### === POSITION CONTROLLER (ALTITUDE) === ###
+PSC_POSZ_P,1.5
+PSC_VELZ_P,5.0
+PSC_VELZ_I,0.5
+PSC_VELZ_D,0.0
+PSC_VELZ_IMAX,400
+PSC_VELZ_FF,0.0
+PSC_VELZ_FLTE,5.0
+PSC_VELZ_FLTD,5.0
+
+PSC_ACCZ_P,0.50
+PSC_ACCZ_I,1.00
+PSC_ACCZ_D,0.00
+PSC_ACCZ_IMAX,800
+PSC_ACCZ_FF,0.0
+PSC_ACCZ_FLTE,20.0
+PSC_ACCZ_FLTD,0.0
+
+### === VERTICAL SPEED LIMITS (INDOOR) === ###
+PILOT_ACCEL_Z,100
+PILOT_SPEED_UP,100
+PILOT_SPEED_DN,0
+PILOT_THR_BHV,0
+
+WPNAV_SPEED_UP,100
+WPNAV_SPEED_DN,100
+WPNAV_ACCEL_Z,100
+
+### === LOGGING === ###
+LOG_DISARMED,1
+LOG_BITMASK,393214
+LOG_FILE_DSRMROT,1
+
+### === SAFETY === ###
+ARMING_CHECK,1
+FENCE_ENABLE,0
+BATT_FS_LOW_ACT,0
+
+### === FLIGHT MODES === ###
+FLTMODE1,0
+FLTMODE2,2
+FLTMODE3,5
+FLTMODE4,6
+FLTMODE5,9
+FLTMODE6,0
+
+# Mode mapping:
+# 0 = STABILIZE
+# 2 = ALT_HOLD
+# 5 = LOITER (GPS veya optical flow)
+# 6 = RTL
+# 9 = LAND
+
+### === NOTES === ###
+# 1. Bu parametre dosyası Holybro H-Flow için optimize edilmiştir
+# 2. Diğer sensörler için RNGFND1_TYPE ve FLOW_TYPE değiştirin
+# 3. Indoor uçuş için düşük hız limitleri kullanılmıştır
+# 4. Outdoor uçuş için PILOT_SPEED_UP ve WPNAV değerlerini artırın
+# 5. GPS kullanıyorsanız EK3_SRC1_POSXY = 1 yapın
+# 6. Obstacle detection compile-time parametreleri AP_SurfaceDistance.cpp içindedir
+
+### === REVISION HISTORY === ###
+# v1.0 - 2025-11-14 - Initial configuration
+# - Obstacle detection enabled by default
+# - Tilt-aware threshold = 30°
+# - Jump threshold = 0.8m
+# - Hysteresis = 5 samples
