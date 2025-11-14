@@ -85,7 +85,6 @@ struct PACKED log_Control_Tuning {
     float throttle_dem;
     float airspeed_estimate;
     uint8_t airspeed_estimate_status;
-    float synthetic_airspeed;
     float EAS2TAS;
     int32_t groundspeed_undershoot;
 };
@@ -96,11 +95,6 @@ void Plane::Log_Write_Control_Tuning()
     float est_airspeed = 0;
     AP_AHRS::AirspeedEstimateType airspeed_estimate_type = AP_AHRS::AirspeedEstimateType::NO_NEW_ESTIMATE;
     ahrs.airspeed_EAS(est_airspeed, airspeed_estimate_type);
-
-    float synthetic_airspeed;
-    if (!ahrs.dcm_synthetic_airspeed_EAS(synthetic_airspeed)) {
-        synthetic_airspeed = logger.quiet_nan();
-    }
 
     int16_t pitch = ahrs.pitch_sensor - g.pitch_trim * 100;
 #if HAL_QUADPLANE_ENABLED
@@ -120,7 +114,6 @@ void Plane::Log_Write_Control_Tuning()
         throttle_dem    : TECS_controller.get_throttle_demand(),
         airspeed_estimate : est_airspeed,
         airspeed_estimate_status : (uint8_t)airspeed_estimate_type,
-        synthetic_airspeed : synthetic_airspeed,
         EAS2TAS            : ahrs.get_EAS2TAS(),
         groundspeed_undershoot  : groundspeed_undershoot,
     };
@@ -328,12 +321,11 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: As: airspeed estimate (or measurement if airspeed sensor healthy and ARSPD_USE>0)
 // @Field: AsT: airspeed type ( old estimate or source of new estimate)
 // @FieldValueEnum: AsT: AP_AHRS::AirspeedEstimateType
-// @Field: SAs: DCM's airspeed estimate, NaN if not available
 // @Field: E2T: equivalent to true airspeed ratio
 // @Field: GU: groundspeed undershoot when flying with minimum groundspeed
 
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
-      "CTUN", "QccccffffBffi",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThO,RdO,ThD,As,AsT,SAs,E2T,GU", "sdddd---n-n-n", "FBBBB---000-B" , true },
+      "CTUN", "QccccffffBfi",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThO,RdO,ThD,As,AsT,E2T,GU", "sdddd---n--n", "FBBBB---00-B" , true },
 
 // @LoggerMessage: NTUN
 // @Description: Navigation Tuning information - e.g. vehicle destination
