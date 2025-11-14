@@ -46,7 +46,7 @@ public:
 
     // Returns the circle center in centimeters from the EKF origin.
     // See get_center_NED_m() for full details.
-    const Vector3p get_center_NEU_cm() const { return get_center_NED_m()  * 100.0; }
+    const Vector3p get_center_NEU_cm() const { return Vector3p(_center_ned_m.x, _center_ned_m.y, -_center_ned_m.z) * 100.0; }
 
     // Returns the circle center in meters from the EKF origin.
     // Altitude frame is determined by `center_is_terrain_alt()`.
