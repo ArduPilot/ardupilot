@@ -49,7 +49,7 @@
 #endif
 
 #ifndef TILT_AGGRESSIVE_THRESHOLD
- # define TILT_AGGRESSIVE_THRESHOLD 0.866f  // cos(30°) - above 30° tilt, be more aggressive with obstacle detection
+ # define TILT_AGGRESSIVE_THRESHOLD 0.87f  // ~cos(30°) - tilt >= 30° enables more aggressive obstacle detection
 #endif
 
 // Detect obstacles vs floor changes and track floor height smoothly
@@ -71,8 +71,8 @@ static bool detect_obstacle_and_track_floor(float current_alt_m,
     float jump_threshold = OBSTACLE_JUMP_THRESHOLD_M;
     float max_floor_rate = MAX_FLOOR_CHANGE_RATE_MS;
 
-    if (tilt_correction < TILT_AGGRESSIVE_THRESHOLD) {
-        // Tilt > 30° - reduce threshold by 30% to catch obstacles earlier
+    if (tilt_correction <= TILT_AGGRESSIVE_THRESHOLD) {
+        // Tilt >= 30° - reduce threshold by 30% to catch obstacles earlier
         // Also reduce acceptable floor change rate
         jump_threshold *= 0.7f;      // 0.8m → 0.56m threshold
         max_floor_rate *= 0.7f;      // 0.3m/s → 0.21m/s max rate
