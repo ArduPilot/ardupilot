@@ -95,10 +95,10 @@ void Plane::Log_Write_Control_Tuning()
 {
     float est_airspeed = 0;
     AP_AHRS::AirspeedEstimateType airspeed_estimate_type = AP_AHRS::AirspeedEstimateType::NO_NEW_ESTIMATE;
-    ahrs.airspeed_estimate(est_airspeed, airspeed_estimate_type);
+    ahrs.airspeed_EAS(est_airspeed, airspeed_estimate_type);
 
     float synthetic_airspeed;
-    if (!ahrs.synthetic_airspeed(synthetic_airspeed)) {
+    if (!ahrs.dcm_synthetic_airspeed_EAS(synthetic_airspeed)) {
         synthetic_airspeed = logger.quiet_nan();
     }
 
