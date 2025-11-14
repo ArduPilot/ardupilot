@@ -14,8 +14,8 @@
  */
 
 /*
- * Crossfire protocol definitions - shared between AP_RCProtocol_CRSF and AP_CRSF_Telem
  * Crossfire constants provided by Team Black Sheep under terms of the 2-Clause BSD License
+ * AP_CRSF_Protocol.h - a stateless parser and encoder for the CRSF wire protocol
  */
 #pragma once
 
@@ -76,6 +76,7 @@ public:
 
     enum DeviceAddress {
         CRSF_ADDRESS_BROADCAST = 0x00,
+        CRSF_ADDRESS_SYNC_BYTE = 0xC8,
         CRSF_ADDRESS_USB = 0x10,
         CRSF_ADDRESS_TBS_CORE_PNP_PRO = 0x80,
         CRSF_ADDRESS_RESERVED1 = 0x8A,
@@ -189,8 +190,46 @@ public:
         uint8_t payload[58];   // largest possible frame is 60
     };
 
-    // get printable name for frame type (for debug)
+    struct VersionInfo {
+        uint8_t minor;
+        uint8_t major;
+        bool use_rf_mode;
+        ProtocolType protocol;
+    };
+
+    // protocol pure virtual base class
+    virtual ~AP_CRSF_Protocol() = 0;
+    virtual void update(void) = 0;
+
     static const char* get_frame_type(uint8_t byte, uint8_t subtype = 0);
+
+    // decode channels from the standard 11bit format (CRSFv2)
+    static void decode_11bit_channels(const uint8_t* payload, uint8_t nchannels, uint16_t *values);
+
+    // decode channels from variable bit length format (CRSFv3)
+    static void decode_variable_bit_channels(const uint8_t* payload, uint8_t frame_length, uint8_t nchannels, uint16_t *values);
+
+    // encode channels into a variable bit length format (CRSFv3)
+    // returns number of bytes written to payload
+    static uint8_t encode_variable_bit_channels(uint8_t *payload, const uint16_t *values, uint8_t nchannels);
+
+    // process a device info frame for version information
+    static bool process_device_info_frame(ParameterDeviceInfoFrame* info, VersionInfo* version, bool fakerx);
+
+    // encode a device info frame for version information
+    static uint32_t encode_device_info(ParameterDeviceInfoFrame& info, uint8_t num_params);
+
+    static void encode_device_info_frame(Frame& frame, DeviceAddress destination, DeviceAddress origin);
+
+    static void encode_ping_frame(Frame& frame, DeviceAddress destination, DeviceAddress origin);
+
+    static void encode_speed_proposal(uint32_t baudrate, Frame& frame, DeviceAddress destination, DeviceAddress origin);
+
+    static void encode_link_stats_tx_frame(uint32_t fps, Frame& frame, DeviceAddress destination, DeviceAddress origin);
+
+    static void encode_heartbeat_frame(Frame& frame, DeviceAddress origin);
 };
 
-#endif  // AP_CRSF_ENABLED
+inline AP_CRSF_Protocol::~AP_CRSF_Protocol() {};
+
+#endif // AP_CRSF_ENABLED
