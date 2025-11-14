@@ -86,9 +86,9 @@ void ModeFollow::run()
 
         pos_control->input_pos_vel_accel_NE_m(pos_ofs_ne_m, vel_ofs_ne_ms, accel_ofs_ne_mss, false);
 
-        float pos_ofs_d_m = -pos_ofs_ned_m.z;
-        float vel_ofs_d_ms = -vel_ofs_ned_ms.z;
-        float accel_ofs_d_mss = -accel_ofs_ned_mss.z;
+        float pos_ofs_d_m = pos_ofs_ned_m.z;
+        float vel_ofs_d_ms = vel_ofs_ned_ms.z;
+        float accel_ofs_d_mss = accel_ofs_ned_mss.z;
         pos_control->input_pos_vel_accel_D_m(pos_ofs_d_m, vel_ofs_d_ms, accel_ofs_d_mss, false);
 
         // Determine desired yaw behavior based on configured follow mode
@@ -131,8 +131,8 @@ void ModeFollow::run()
         Vector2f vel_ne_zero;
         Vector2f accel_ne_zero;
         pos_control->input_vel_accel_NE_m(vel_ne_zero, accel_ne_zero, false);
-        float vel_u_zero = 0.0;
-        pos_control->input_vel_accel_D_m(vel_u_zero, 0.0, false);
+        float vel_d_zero = 0.0;
+        pos_control->input_vel_accel_D_m(vel_d_zero, 0.0, false);
         yaw_rate_rads = 0.0f;
     }
 
