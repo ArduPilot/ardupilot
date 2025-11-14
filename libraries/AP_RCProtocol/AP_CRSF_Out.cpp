@@ -372,7 +372,7 @@ void AP_CRSF_Out::send_link_stats_tx(uint32_t fps)
 AP_CRSF_Out* AP_CRSF_Out::get_singleton()
 {
     if (!_singleton) {
-        _singleton = new AP_CRSF_Out();
+        _singleton = NEW_NOTHROW AP_CRSF_Out();
     }
     return _singleton;
 }

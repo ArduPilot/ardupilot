@@ -420,9 +420,16 @@ void AP_RCProtocol::check_added_uart(void)
     }
 }
 
+// called at 10Hz from AP_Vehicle::update_rc()
 void AP_RCProtocol::update()
 {
+#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if AP_RCPROTOCOL_CRSF_ENABLED
+    // update any CRSF direct-attach ports (VTX, RC Out)
+    AP_RCProtocol_CRSF::manager_init();
+#endif
     check_added_uart();
+#endif
 }
 
 // explicitly investigate a backend for data, as opposed to feeding
@@ -504,6 +511,7 @@ void AP_RCProtocol::announce_detected()
     GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "RCInput: decoding %s (%s)", name, src);
 }
 
+// called at 1KHz from the rcin thread
 bool AP_RCProtocol::new_input()
 {
     // if we have an extra UART from a SERIALn_PROTOCOL then check it for data
