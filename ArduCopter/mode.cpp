@@ -812,8 +812,7 @@ void Mode::precland_retry_position(const Vector3p &retry_pos_ned_m)
         }
     }
 
-    Vector3p retry_pos_neu_m_deleteme{retry_pos_ned_m.x, retry_pos_ned_m.y, -retry_pos_ned_m.z};
-    pos_control->input_pos_NED_m(retry_pos_neu_m_deleteme, 0.0f, 10.0);
+    pos_control->input_pos_NED_m(retry_pos_ned_m, 0.0f, 10.0);
 
     // run position controllers
     pos_control->NE_update_controller();
@@ -1052,5 +1051,5 @@ Location Mode::get_stopping_point() const
     Vector3p stopping_point_ned_m;
     copter.pos_control->get_stopping_point_NE_m(stopping_point_ned_m.xy());
     copter.pos_control->get_stopping_point_D_m(stopping_point_ned_m.z);
-    return Location { stopping_point_ned_m.tofloat() * 100.0, Location::AltFrame::ABOVE_ORIGIN };
+    return Location{Location::AltFrame::ABOVE_ORIGIN, stopping_point_ned_m};
 }
