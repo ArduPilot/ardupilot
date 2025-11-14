@@ -265,6 +265,13 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("OPTION",  6, RC_Channel, option, 0),
 
+    // @Param: OPTIONS
+    // @DisplayName: RC Channel Options
+    // @Description: Various options to change the behaviour of this RC channel
+    // @Bitmask: 0:TBA,1:Latching2Position,2:Latching3Position
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS",  7, RC_Channel, channel_options, 0),
+
     AP_GROUPEND
 };
 
@@ -956,6 +963,48 @@ const char *RC_Channel::string_for_aux_pos(AuxSwitchPos pos) const
 
 #endif // AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
 
+// if a channel is using latching Channel positions then adjust for trigger:
+RC_Channel::AuxSwitchPos RC_Channel::adjust_latching_channel_option(RC_Channel::AuxSwitchPos new_position) const
+{
+    const AUX_FUNC _option = (AUX_FUNC)option.get();
+
+    const bool latch2 = channel_option_is_enabled(ChannelOption::LATCHING_2_POS);
+    const bool latch3 = channel_option_is_enabled(ChannelOption::LATCHING_3_POS);
+    if (!latch2 && !latch3) {
+        // latching option not set
+        return new_position;
+    }
+
+    // cyle through to next position; run_aux_function will update
+    // the aux cache.
+    uint8_t pos = 0;  // we will assume lowest-position:
+    UNUSED_RESULT(rc().get_aux_cached(_option, pos));
+
+    // which edges are we triggered on?
+    if (!channel_option_is_enabled(ChannelOption::TRIGGER_FALLING)) {
+        // we only trigger on a rising edge:
+        if (new_position != AuxSwitchPos::HIGH) {
+            return AuxSwitchPos(pos);
+        }
+    }
+
+    if (latch2) {
+        if (pos == 2) {
+            pos = 0;
+        } else {
+            // 0 and 1 both go to high
+            pos = 2;
+        }
+    } else {  // latch3
+        pos++;
+        if (pos > 2) {
+            pos = 0;
+        }
+    }
+    return AuxSwitchPos(pos);
+}
+
+
 /*
   read an aux channel. Return true if a switch has changed
  */
@@ -993,6 +1042,9 @@ bool RC_Channel::read_aux()
     if (!debounce_completed((int8_t)new_position)) {
         return false;
     }
+
+    // see if this is latching; a debounced high value will shift between states.
+    new_position = adjust_latching_channel_option(new_position);
 
 #if AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
     // announce the change to the GCS:
