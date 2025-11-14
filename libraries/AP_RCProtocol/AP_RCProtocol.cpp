@@ -50,6 +50,13 @@
 
 extern const AP_HAL::HAL& hal;
 
+//#define RCPROTOCOL_DEBUG_DETECTION
+#ifdef RCPROTOCOL_DEBUG_DETECTION
+# define debug_detect(fmt, args...)	hal.console->printf("RC: " fmt "\n", ##args)
+#else
+# define debug_detect(fmt, args...)	do {} while(0)
+#endif
+
 void AP_RCProtocol::init()
 {
 #if AP_RCPROTOCOL_PPMSUM_ENABLED
@@ -202,10 +209,12 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
             const uint32_t frame_count2 = backend[i]->get_rc_frame_count();
             if (frame_count2 > frame_count) {
                 if (requires_3_frames((rcprotocol_t)i) && frame_count2 < 3) {
+                    debug_detect("Detected %s", protocol_name_from_protocol((rcprotocol_t)i));
                     continue;
                 }
                 _new_input = (input_count != backend[i]->get_rc_input_count());
                 _detected_protocol = (enum AP_RCProtocol::rcprotocol_t)i;
+                debug_detect("Locked on %s", protocol_name_from_protocol((rcprotocol_t)i));
                 for (uint8_t j = 0; j < ARRAY_SIZE(backend); j++) {
                     if (backend[j]) {
                         backend[j]->reset_rc_frame_count();
@@ -283,10 +292,12 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
             const uint32_t frame_count2 = backend[i]->get_rc_frame_count();
             if (frame_count2 > frame_count) {
                 if (requires_3_frames((rcprotocol_t)i) && frame_count2 < 3) {
+                    debug_detect("Detected %s", protocol_name_from_protocol((rcprotocol_t)i));
                     continue;
                 }
                 _new_input = (input_count != backend[i]->get_rc_input_count());
                 _detected_protocol = (enum AP_RCProtocol::rcprotocol_t)i;
+                debug_detect("Locked on %s", protocol_name_from_protocol((rcprotocol_t)i));
                 _last_input_ms = now;
                 _detected_with_bytes = true;
                 for (uint8_t j = 0; j < ARRAY_SIZE(backend); j++) {
@@ -380,6 +391,7 @@ void AP_RCProtocol::check_added_uart(void)
 
     uint32_t n = added.uart->available();
     n = MIN(n, 255U);
+    added.bytes_received += n;
     for (uint8_t i=0; i<n; i++) {
         int16_t b = added.uart->read();
         if (b >= 0) {
@@ -389,6 +401,8 @@ void AP_RCProtocol::check_added_uart(void)
     if (searching) {
         if (now - added.last_config_change_ms > 1000) {
             // change configs if not detected once a second
+            debug_detect("UART received %lu bytes at %lukBd", added.bytes_received, serial_configs[added.config_num].baud/1000);
+            added.bytes_received = 0;
             added.config_num++;
             if (added.config_num >= ARRAY_SIZE(serial_configs)) {
                 added.config_num = 0;
@@ -401,6 +415,7 @@ void AP_RCProtocol::check_added_uart(void)
         // protocols that want to be able to renegotiate should return false in is_rx_active()
         && !backend[_detected_protocol]->is_rx_active()
         && now - added.last_config_change_ms > 1000) {
+        debug_detect("UART connection lost at %lukBd", added.uart->get_baud_rate()/1000);
         added.opened = false;
     }
 }
