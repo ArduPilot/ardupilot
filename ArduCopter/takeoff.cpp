@@ -96,11 +96,11 @@ void Mode::_TakeOff::do_pilot_takeoff_ms(float& pilot_climb_rate_ms)
             copter.set_land_complete(false);
         }
     } else {
-        float pos_u_m = take_off_complete_alt_m;
-        float vel_d_ms = pilot_climb_rate_ms;
+        float pos_d_m = -take_off_complete_alt_m;
+        float vel_d_ms = -pilot_climb_rate_ms;
 
         // command the aircraft to the take off altitude and current pilot climb rate
-        copter.pos_control->input_pos_vel_accel_D_m(pos_u_m, vel_d_ms, 0);
+        copter.pos_control->input_pos_vel_accel_D_m(pos_d_m, vel_d_ms, 0.0);
 
         // stop take off early and return if negative climb rate is commanded or we are within 0.1% of our take off altitude
         if (is_negative(pilot_climb_rate_ms) ||
@@ -194,9 +194,9 @@ void _AutoTakeoff::run()
     pos_control->NE_update_controller();
 
     // command the aircraft to the take off altitude
-    float pos_u_m = complete_alt_m + terrain_u_m;
+    float pos_d_m = -(complete_alt_m + terrain_u_m);
     float vel_zero = 0.0;
-    copter.pos_control->input_pos_vel_accel_D_m(pos_u_m, vel_zero, 0.0);
+    copter.pos_control->input_pos_vel_accel_D_m(pos_d_m, vel_zero, 0.0);
     
     // run the vertical position controller and set output throttle
     pos_control->D_update_controller();
@@ -209,14 +209,14 @@ void _AutoTakeoff::run()
     const float vel_threshold_fraction = 0.1;
     // stopping distance from vel_threshold_fraction * max velocity
     const float stop_distance_m = 0.5 * sq(vel_threshold_fraction * copter.pos_control->get_max_speed_up_ms()) / copter.pos_control->D_get_max_accel_mss();
-    bool reached_altitude = copter.pos_control->get_pos_desired_U_m() >= pos_u_m - stop_distance_m;
+    bool reached_altitude = copter.pos_control->get_pos_desired_U_m() >= -pos_d_m - stop_distance_m;
     bool reached_climb_rate = copter.pos_control->get_vel_desired_U_ms() < copter.pos_control->get_max_speed_up_ms() * vel_threshold_fraction;
     complete = reached_altitude && reached_climb_rate;
 
     // calculate completion for location in case it is needed for a smooth transition to wp_nav
     if (complete) {
         const Vector3p& _complete_pos_ned_m = copter.pos_control->get_pos_desired_NED_m();
-        complete_pos_ned_m = Vector3p{_complete_pos_ned_m.x, _complete_pos_ned_m.y, pos_u_m};
+        complete_pos_ned_m = Vector3p{_complete_pos_ned_m.x, _complete_pos_ned_m.y, pos_d_m};
     }
 }
 

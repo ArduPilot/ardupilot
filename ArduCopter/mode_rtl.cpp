@@ -409,8 +409,8 @@ void ModeRTL::compute_return_target()
     // get position controller Z-axis offset in cm above EKF origin
     float pos_offset_d_m = pos_control->get_pos_offset_D_m();
 
-    // curr_alt_m is current altitude above home or above terrain depending upon use_terrain
-    float curr_alt_m = copter.current_loc.alt * 0.01 - pos_offset_d_m;
+    // curr_alt_m is current altitude, with any offset removed, above home or above terrain depending upon use_terrain
+    float curr_alt_m = copter.current_loc.alt * 0.01 + pos_offset_d_m;
 
     // determine altitude type of return journey (alt-above-home, alt-above-terrain using range finder or alt-above-terrain using terrain database)
     ReturnTargetAltType alt_type = ReturnTargetAltType::RELATIVE;
@@ -434,8 +434,8 @@ void ModeRTL::compute_return_target()
     // set curr_alt_m and return_target.alt from range finder
     if (alt_type == ReturnTargetAltType::RANGEFINDER) {
         if (copter.get_rangefinder_height_interpolated_m(curr_alt_m)) {
-            // subtract position controller offset
-            curr_alt_m -= pos_offset_d_m;
+            // remove position controller offset
+            curr_alt_m += pos_offset_d_m;
             // set return_target.alt
             rtl_path.return_target.set_alt_m(MAX(curr_alt_m + MAX(0.0, g.rtl_climb_min_cm * 0.01), MAX(g.rtl_altitude_cm * 0.01, RTL_ALT_MIN_M)), Location::AltFrame::ABOVE_TERRAIN);
         } else {

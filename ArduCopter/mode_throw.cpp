@@ -72,9 +72,9 @@ void ModeThrow::run()
         // initialise the demanded height below/above the throw height from user parameters
         // this allows for rapidly clearing surrounding obstacles
         if (g2.throw_type == ThrowType::Drop) {
-            pos_control->set_pos_desired_D_m(pos_control->get_pos_estimate_U_m() - g.throw_altitude_descend);
+            pos_control->set_pos_desired_D_m(pos_control->get_pos_estimate_NED_m().z + g.throw_altitude_descend);
         } else {
-            pos_control->set_pos_desired_D_m(pos_control->get_pos_estimate_U_m() + g.throw_altitude_ascend);
+            pos_control->set_pos_desired_D_m(pos_control->get_pos_estimate_NED_m().z - g.throw_altitude_ascend);
         }
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
