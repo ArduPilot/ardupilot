@@ -52,8 +52,9 @@ AC_Circle::AC_Circle(const AP_AHRS_View& ahrs, AC_PosControl& pos_control) :
 // See init_NED_m() for full details.
 void AC_Circle::init_NEU_cm(const Vector3p& center_neu_cm, bool is_terrain_alt, float rate_degs)
 {
-    // Convert input from cm to meters and delegate to meter-based initializer
-    init_NED_m(center_neu_cm * 0.01, is_terrain_alt, rate_degs);
+    // Convert input from NEU cm to NED meters and delegate to meter-based initializer
+    Vector3p center_ned_m = Vector3p{center_neu_cm.x, center_neu_cm.y, -center_neu_cm.z} * 0.01;
+    init_NED_m(center_ned_m, is_terrain_alt, rate_degs);
 }
 
 // Initializes circle flight mode using a specified center position in meters.
@@ -131,7 +132,7 @@ void AC_Circle::set_center(const Location& center)
 
         // Attempt to convert XY and Z to NEU frame with terrain altitude
         if (center.get_vector_xy_from_origin_NE_m(center_ne_m) && center.get_alt_m(Location::AltFrame::ABOVE_TERRAIN, terr_alt_m)) {
-            set_center_NED_m(Vector3p{center_ne_m.x, center_ne_m.y, terr_alt_m}, true);
+            set_center_NED_m(Vector3p{center_ne_m.x, center_ne_m.y, -terr_alt_m}, true);
         } else {
             // Conversion failed: fall back to current position and log error
             set_center_NED_m(_pos_control.get_pos_estimate_NED_m(), false);
@@ -140,7 +141,7 @@ void AC_Circle::set_center(const Location& center)
     } else {
         // Handle alt-above-origin, alt-above-home, or absolute altitudes
         Vector3p circle_center_ned_m;
-        if (!center.get_vector_from_origin_NEU_m(circle_center_ned_m)) {
+        if (!center.get_vector_from_origin_NED_m(circle_center_ned_m)) {
             // Conversion failed: fall back to current position and log error
             circle_center_ned_m = _pos_control.get_pos_estimate_NED_m();
             LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
@@ -227,9 +228,9 @@ bool AC_Circle::update_ms(float climb_rate_ms)
     // calculate z-axis target
     float target_d_m;
     if (_is_terrain_alt) {
-        target_d_m = _center_ned_m.z + terrain_u_m;
+        target_d_m = _center_ned_m.z - terrain_u_m;
     } else {
-        target_d_m = _pos_control.get_pos_desired_U_m();
+        target_d_m = -_pos_control.get_pos_desired_U_m();
     }
 
     // Construct target position centered on the circle center
@@ -280,15 +281,15 @@ bool AC_Circle::update_ms(float climb_rate_ms)
 // See get_closest_point_on_circle_NED_m() for full details.
 void AC_Circle::get_closest_point_on_circle_NEU_cm(Vector3f& result_neu_cm, float& dist_cm) const
 {
-    // Convert input arguments from cm to meters
-    Vector3p result_ned_m = result_neu_cm.topostype() * 0.01;
+    // Convert input arguments from neu cm to ned meters
+    Vector3p result_ned_m = Vector3p{result_neu_cm.x, result_neu_cm.y, -result_neu_cm.z} * 0.01;
     float dist_m = dist_cm * 0.01;
 
     // Compute closest point in meters
     get_closest_point_on_circle_NED_m(result_ned_m, dist_m);
 
-    // Convert results back to centimeters
-    result_neu_cm = result_ned_m.tofloat() * 100.0;
+    // Convert results back to neu centimeters
+    result_neu_cm = Vector3f(result_ned_m.x, result_ned_m.y, -result_ned_m.z) * 100.0;
     dist_cm = dist_m * 100.0;
 }
 
