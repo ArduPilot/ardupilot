@@ -304,7 +304,7 @@ bool AC_WPNav::get_wp_destination_loc(Location& destination) const
     }
 
     // convert NED waypoint to global Location format with appropriate altitude frame
-    destination = Location{get_wp_destination_NED_m() * 100.0, _is_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN};
+    destination = Location{_is_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN, get_wp_destination_NED_m()};
     return true;
 }
 
@@ -312,7 +312,8 @@ bool AC_WPNav::get_wp_destination_loc(Location& destination) const
 // See set_wp_destination_NED_m() for full details.
 bool AC_WPNav::set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt)
 {
-    return set_wp_destination_NED_m(destination_neu_cm.topostype() * 0.01, is_terrain_alt);
+    Vector3p destination_ned_m = Vector3p(destination_neu_cm.x, destination_neu_cm.y, -destination_neu_cm.z) * 0.01;
+    return set_wp_destination_NED_m(destination_ned_m, is_terrain_alt);
 }
 
 // Sets waypoint destination using NED position vector in meters from EKF origin.
@@ -345,19 +346,19 @@ bool AC_WPNav::set_wp_destination_NED_m(const Vector3p& destination_ned_m, bool 
         }
     } else {
         // Handle transition between terrain-relative and origin-relative altitude frames
-        float terrain_u_m;
-        if (!get_terrain_U_m(terrain_u_m)) {
+        float terrain_d_m;
+        if (!get_terrain_D_m(terrain_d_m)) {
             return false;
         }
 
         // convert origin to alt-above-terrain if necessary
         if (is_terrain_alt) {
             // Convert origin.z to terrain-relative altitude
-            _origin_ned_m.z -= terrain_u_m;
-            _pos_control.init_pos_terrain_D_m(terrain_u_m);
+            _origin_ned_m.z -= terrain_d_m;
+            _pos_control.init_pos_terrain_D_m(terrain_d_m);
         } else {
             // Convert origin.z to origin-relative altitude
-            _origin_ned_m.z += terrain_u_m;
+            _origin_ned_m.z += terrain_d_m;
             _pos_control.init_pos_terrain_D_m(0.0);
         }
     }
@@ -424,24 +425,6 @@ bool AC_WPNav::set_wp_destination_next_NED_m(const Vector3p& destination_ned_m, 
     return true;
 }
 
-// Sets waypoint destination using a NED position vector in meters from EKF origin.
-// Converts internally to NEU. Terrain following is not used.
-bool AC_WPNav::set_wp_destination_NED_m_deleteme(const Vector3p& destination_NED_m)
-{
-    // convert NED to NEU by inverting the Z axis
-    // terrain following is not used (altitude is relative to EKF origin)
-    return set_wp_destination_NED_m(Vector3p{destination_NED_m.x, destination_NED_m.y, -destination_NED_m.z}, false);
-}
-
-// Sets the next waypoint destination using a NED position vector in meters from EKF origin.
-// Converts to NEU internally. Terrain following is not applied.
-bool AC_WPNav::set_wp_destination_next_NED_m_deleteme(const Vector3p& destination_NED_m)
-{
-    // convert NED to NEU by inverting the Z axis
-    // terrain following is not used (altitude is relative to EKF origin)
-    return set_wp_destination_next_NED_m(Vector3p{destination_NED_m.x, destination_NED_m.y, -destination_NED_m.z}, false);
-}
-
 // Computes the horizontal stopping point in NE frame, returned in centimeters.
 // See get_wp_stopping_point_NE_m() for full details.
 void AC_WPNav::get_wp_stopping_point_NE_cm(Vector2f& stopping_point_ne_cm) const
@@ -465,11 +448,11 @@ void AC_WPNav::get_wp_stopping_point_NE_m(Vector2p& stopping_point_ne_m) const
 void AC_WPNav::get_wp_stopping_point_NEU_cm(Vector3f& stopping_point_neu_cm) const
 {
     // convert input from cm to m for internal calculation
-    Vector3p stopping_point_ned_m = stopping_point_neu_cm.topostype() * 0.01;
+    Vector3p stopping_point_ned_m = Vector3p(stopping_point_neu_cm.x, stopping_point_neu_cm.y, -stopping_point_neu_cm.z) * 0.01;
     // compute stopping point using meters
     get_wp_stopping_point_NED_m(stopping_point_ned_m);
     // convert result back to centimeters
-    stopping_point_neu_cm = stopping_point_ned_m.tofloat() * 100.0;
+    stopping_point_neu_cm = Vector3f(stopping_point_ned_m.x, stopping_point_ned_m.y, -stopping_point_ned_m.z) * 100.0;
 }
 
 // Computes the full 3D NED stopping point in meters based on current velocity and configured acceleration in all axes.
@@ -489,7 +472,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
 {
     // calculate terrain offset if using alt-above-terrain frame
     float terr_offset_d_m = 0.0f;
-    if (_is_terrain_alt && !get_terrain_U_m(terr_offset_d_m)) {
+    if (_is_terrain_alt && !get_terrain_D_m(terr_offset_d_m)) {
         return false;
     }
 
@@ -744,6 +727,14 @@ bool AC_WPNav::get_terrain_U_m(float& terrain_u_m)
     // unreachable fallback path
     return false;
 }
+bool AC_WPNav::get_terrain_D_m(float& terrain_d_m)
+{
+        if (!get_terrain_U_m(terrain_d_m)) {
+            return false;
+        }
+        terrain_d_m *= -1.0;
+        return true;
+}
 
 ///
 /// spline methods
@@ -832,19 +823,19 @@ bool AC_WPNav::set_spline_destination_NED_m(const Vector3p& destination_ned_m, b
         _origin_ned_m = _destination_ned_m;
 
         // get current alt above terrain
-        float terrain_u_m;
-        if (!get_terrain_U_m(terrain_u_m)) {
+        float terrain_d_m;
+        if (!get_terrain_D_m(terrain_d_m)) {
             return false;
         }
 
         // convert origin to alt-above-terrain if necessary
         if (is_terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
-            _origin_ned_m.z -= terrain_u_m;
-            _pos_control.init_pos_terrain_D_m(terrain_u_m);
+            _origin_ned_m.z -= terrain_d_m;
+            _pos_control.init_pos_terrain_D_m(terrain_d_m);
         } else {
             // new destination is alt-above-ekf-origin, previous destination was alt-above-terrain
-            _origin_ned_m.z += terrain_u_m;
+            _origin_ned_m.z += terrain_d_m;
             _pos_control.init_pos_terrain_D_m(0.0);
         }
     }
@@ -945,7 +936,7 @@ bool AC_WPNav::get_vector_NED_m(const Location &loc, Vector3p &pos_from_origin_n
         if (!loc.get_alt_m(Location::AltFrame::ABOVE_TERRAIN, terrain_u_m)) {
             return false;
         }
-        pos_from_origin_ned_m.z = terrain_u_m;
+        pos_from_origin_ned_m.z = -terrain_u_m;
         is_terrain_alt = true;
     } else {
         is_terrain_alt = false;
@@ -953,13 +944,12 @@ bool AC_WPNav::get_vector_NED_m(const Location &loc, Vector3p &pos_from_origin_n
         if (!loc.get_alt_m(Location::AltFrame::ABOVE_ORIGIN, origin_alt_m)) {
             return false;
         }
-        pos_from_origin_ned_m.z = origin_alt_m;
+        pos_from_origin_ned_m.z = -origin_alt_m;
         is_terrain_alt = false;
     }
 
     // set horizontal components (x/y) of NED vector after successful conversion
-    pos_from_origin_ned_m.x = loc_pos_from_origin_ned_m.x;
-    pos_from_origin_ned_m.y = loc_pos_from_origin_ned_m.y;
+    pos_from_origin_ned_m.xy() = loc_pos_from_origin_ned_m;
 
     return true;
 }
