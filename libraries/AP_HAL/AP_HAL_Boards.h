@@ -15,6 +15,7 @@
 // #define HAL_BOARD_F4LIGHT  11 // reserved
 #define HAL_BOARD_ESP32	   12
 #define HAL_BOARD_QURT     13
+#define HAL_BOARD_EMBOX    14
 #define HAL_BOARD_EMPTY    99
 
 /* Default board subtype is -1 */
@@ -140,6 +141,8 @@
     #include <AP_HAL/board/esp32.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_QURT
     #include <AP_HAL/board/qurt.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_EMBOX
+    #include <AP_HAL/board/embox.h>
 #else
 #error "Unknown CONFIG_HAL_BOARD type"
 #endif

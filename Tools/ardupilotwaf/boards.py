@@ -1789,79 +1789,87 @@ class QURT(Board):
         # get name of class
         return self.__class__.__name__
     
-# class embox(Board):
-#     def __init__(self):
-#         self.with_can = False
+class embox(Board):
+    def __init__(self):
+        self.with_can = False
 
-#     def configure_env(self, cfg, env):
-#         if cfg.options.board == 'embox':
-#             self.with_can = True
-#         super(embox, self).configure_env(cfg, env)
+    def configure_env(self, cfg, env):
+        if cfg.options.board == 'embox':
+            self.with_can = False
+        super(embox, self).configure_env(cfg, env)
 
-#         env.BOARD_CLASS = "EMBOX"
+        env.BOARD_CLASS = "EMBOX"
 
-#         env.DEFINES.update(
-#             CONFIG_HAL_BOARD = 'HAL_BOARD_EMBOX',
-#             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_EMBOX_NONE',
-#             AP_SIM_ENABLED = 0,
-#         )
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_EMBOX',
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_EMBOX_NONE',
+            AP_SIM_ENABLED = 0,
+        )
 
-#         if not cfg.env.DEBUG:
-#             env.CXXFLAGS += [
-#                 '-O3',
-#             ]
+        env.CXXFLAGS += ['-DHAL_WITH_EKF_DOUBLE=0']
 
-#         env.LIB += [
-#             'm',
-#         ]
+        if not cfg.env.DEBUG:
+            env.CXXFLAGS += [
+                '-O3',
+            ]
 
-#         cfg.check_librt(env)
-#         cfg.check_lttng(env)
-#         cfg.check_libdl(env)
-#         cfg.check_libiio(env)
+        env.LIB += [
+            'm',
+        ]
 
-#         # env.LINKFLAGS += ['-pthread',]
-#         env.AP_LIBRARIES += [
-#             'AP_HAL_Embox',
-#         ]
+        cfg.check_librt(env)
+        cfg.check_lttng(env)
+        cfg.check_libdl(env)
+        cfg.check_libiio(env)
 
-#         # wrap malloc to ensure memory is zeroed
-#         env.LINKFLAGS += ['-Wl,--wrap,malloc']
+        # NOTE disable pthread for embox
+        env.LINKFLAGS += ['-pthread']
+
+        # NOTE remove when on embox
+        # env.LINKFLAGS.remove('-Wl,--gc-sections')
+       
+        env.AP_LIBRARIES += [
+            'AP_HAL_Embox',
+        ]
+
+        # wrap malloc to ensure memory is zeroed
+        env.LINKFLAGS += ['-Wl,--wrap,malloc']
 
         
-#         env.DEFINES.update(
-#             HAL_FORCE_32BIT = 0,
-#         )
-#         if self.with_can and cfg.options.board == 'linux':
-#             cfg.env.HAL_NUM_CAN_IFACES = 2
-#             cfg.define('HAL_NUM_CAN_IFACES', 2)
-#             cfg.define('HAL_CANFD_SUPPORTED', 1)
-#             cfg.define('CANARD_ENABLE_CANFD', 1)
+        env.DEFINES.update(
+            HAL_FORCE_32BIT = 0,
+        )
+        if self.with_can and cfg.options.board == 'linux':
+            cfg.env.HAL_NUM_CAN_IFACES = 2
+            cfg.define('HAL_NUM_CAN_IFACES', 2)
+            cfg.define('HAL_CANFD_SUPPORTED', 1)
+            cfg.define('CANARD_ENABLE_CANFD', 1)
         
-#         if self.with_can:
-#             env.DEFINES.update(CANARD_MULTI_IFACE=1,
-#                                CANARD_IFACE_ALL = 0x3)
+        if self.with_can:
+            env.DEFINES.update(CANARD_MULTI_IFACE=1,
+                               CANARD_IFACE_ALL = 0x3)
 
-#         if cfg.options.apstatedir:
-#             cfg.define('AP_STATEDIR', cfg.options.apstatedir)
+        if cfg.options.apstatedir:
+            cfg.define('AP_STATEDIR', cfg.options.apstatedir)
 
-#         defaults_file = 'libraries/AP_HAL_Linux/boards/%s/defaults.parm' % self.get_name()
-#         if os.path.exists(defaults_file):
-#             env.ROMFS_FILES += [('defaults.parm', defaults_file)]
-#             env.DEFINES.update(
-#                 HAL_PARAM_DEFAULTS_PATH='"@ROMFS/defaults.parm"',
-#             )
+        defaults_file = 'libraries/AP_HAL_Linux/boards/%s/defaults.parm' % self.get_name()
+        if os.path.exists(defaults_file):
+            env.ROMFS_FILES += [('defaults.parm', defaults_file)]
+            env.DEFINES.update(
+                HAL_PARAM_DEFAULTS_PATH='"@ROMFS/defaults.parm"',
+            )
 
-#     def build(self, bld):
-#         super(embox, self).build(bld)
-#         if bld.options.upload:
-#             waflib.Options.commands.append('rsync')
-#             # Avoid infinite recursion
-#             bld.options.upload = False
+    def build(self, bld):
+        super(embox, self).build(bld)
+        if bld.options.upload:
+            waflib.Options.commands.append('rsync')
+            # Avoid infinite recursion
+            bld.options.upload = False
 
-#     def get_name(self):
-#         # get name of class
-#         return self.__class__.__name__
+    def get_name(self):
+        # get name of class
+        return self.__class__.__name__
+
 
 class sitl_embox(Board):
 
@@ -1964,6 +1972,7 @@ class sitl_embox(Board):
             'SITL',
         ]
 
+        env.LINKFLAGS.remove('-Wl,--gc-sections')
         env.LINKFLAGS += ['-Wl,--wrap,malloc']
         
         if cfg.options.enable_sfml:
