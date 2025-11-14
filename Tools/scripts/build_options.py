@@ -218,6 +218,7 @@ BUILD_OPTIONS = [
 
     Feature('Gimbal', 'MOUNT', 'HAL_MOUNT_ENABLED', 'Enable Camera Mounts', 0, None),
     Feature('Gimbal', 'ALEXMOS', 'HAL_MOUNT_ALEXMOS_ENABLED', 'Enable Alexmos gimbal', 0, "MOUNT"),
+    Feature('Gimbal', 'BMIT', 'HAL_MOUNT_BMIT_ENABLED', 'Enable Bmit gimbal', 0, "MOUNT"),
     Feature('Gimbal', 'CADDX', 'HAL_MOUNT_CADDX_ENABLED', 'Enable CADDX gimbal', 0, "MOUNT"),
     Feature('Gimbal', 'GREMSY', 'HAL_MOUNT_GREMSY_ENABLED', 'Enable Gremsy gimbal', 0, "MOUNT"),
     Feature('Gimbal', 'SERVO', 'HAL_MOUNT_SERVO_ENABLED', 'Enable Servo gimbal', 0, "MOUNT"),
