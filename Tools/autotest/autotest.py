@@ -30,6 +30,7 @@ import quadplane
 import balancebot
 import sailboat
 import helicopter
+import trusted_flight
 
 import examples
 from pysim import util
@@ -290,6 +291,7 @@ __bin_names = {
     "SITLPeriphBattMon": ("sitl_periph_battmon", "AP_Periph"),
     "CAN": "arducopter",
     "BattCAN": "arducopter",
+    "TrustedFlight": ("sitl", "arducopter")
 }
 
 
@@ -364,6 +366,7 @@ tester_class_map = {
     "test.Tracker": antennatracker.AutoTestTracker,
     "test.CAN": arducopter.AutoTestCAN,
     "test.BattCAN": arducopter.AutoTestBattCAN,
+    "test.TrustedFlight": trusted_flight.AutoTestTrustedFlight
 }
 
 supplementary_test_binary_map = {
@@ -459,6 +462,10 @@ def run_step(step):
     if step == 'build.SITLPeriphBattMon':
         vehicle_binary = 'bin/AP_Periph'
         board = 'sitl_periph_battmon'
+
+    if step == 'build.TrustedFlight':
+        vehicle_binary = 'bin/arducopter'
+        build_opts['extra_configure_args'].extend(['--enable-sitl-trusted-flight'])
 
     if step == 'build.Replay':
         return util.build_replay(board='SITL')
@@ -1121,6 +1128,9 @@ if __name__ == "__main__":
 
         'build.SITLPeriphBattMon',
         'test.BattCAN',
+
+        'build.TrustedFlight',
+        'test.TrustedFlight',
 
         # convertgps disabled as it takes 5 hours
         # 'convertgpx',

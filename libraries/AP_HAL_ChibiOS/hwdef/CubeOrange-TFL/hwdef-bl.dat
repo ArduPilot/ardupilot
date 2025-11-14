@@ -1,0 +1,9 @@
+include ../CubeOrange/hwdef-bl.dat
+
+# use a different board ID, so vehicles with OpenDroneID enabled are
+# prevented from loading the firmware without OpenDroneID enabled
+APJ_BOARD_ID AP_HW_CubeOrange_TFL
+
+# enable Trusted Flight
+define AP_TRUSTED_FLIGHT_ENABLED 1
+define AP_JWT_ENABLED 1
