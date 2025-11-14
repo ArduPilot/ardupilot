@@ -1,0 +1,18 @@
+# HC Robotics - HCR-523 CAN L1/L5 GPS + Magnetometer
+# STM32G491KEU6
+# GPS Module: uBlox NEO-F10T
+# Antenna: Taoglas GPVSF.25.8.A.08
+# Magnetometer: PNI RM3100 
+# CAN: 1 FDCAN 8Mbit
+# Backup Power: 11MF Super Cap
+# TimePulse signal and USB signals via JST Connector
+# 3 Status LEDs: Status (Blue), GPS Power (Green), MCU Power (Green)
+#
+# USB and CAN share the single UART on the F10T, it is muxed so that the USB will supercede the onboard MCU if connected
+###########################################################################################################################################################
+
+include ../HCR-5xx/hwdef.inc
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_HCR-523
+define CAN_APP_NODE_NAME "com.hcrobo.HCR-523"
