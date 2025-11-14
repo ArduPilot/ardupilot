@@ -530,6 +530,11 @@ void AP_VideoTX::change_power(int8_t position)
         }
     }
 
+    if (position == 5 && power < _max_power_mw) {
+        power = _max_power_mw;
+        debug("selected power %dmw", power);
+    }
+
     if (power == 0) {
         if (!hal.util->get_soft_armed()) {    // don't allow pitmode to be entered if already armed
             set_configured_options(get_configured_options() | uint8_t(VideoOptions::VTX_PITMODE));
