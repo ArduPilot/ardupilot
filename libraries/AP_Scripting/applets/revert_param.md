@@ -48,11 +48,11 @@ The script covers the following parameters on quadplanes:
  - Q_A_ANG_PIT_P
  - Q_A_ANG_YAW_P
  - Q_A_RATE_*_MAX
- - Q_P_ACCZ_*
- - Q_P_VELZ_*
- - Q_P_POSZ_*
- - Q_P_VELXY_*
- - Q_P_POSXY_*
+ - Q_P_ACCD_*
+ - Q_P_VELD_*
+ - Q_P_POSD_*
+ - Q_P_VELNE_*
+ - Q_P_POSNE_*
 
 The script covers the following parameters on copters:
 
@@ -63,11 +63,11 @@ The script covers the following parameters on copters:
  - ATC_ANG_PIT_P
  - ATC_ANG_YAW_P
  - ATC_RATE_*_MAX
- - PSC_ACCZ_*
- - PSC_VELZ_*
- - PSC_POSZ_*
- - PSC_VELXY_*
- - PSC_POSXY_*
+ - PSC_ACCD_*
+ - PSC_VELD_*
+ - PSC_POSD_*
+ - PSC_VELNE_*
+ - PSC_POSNE_*
 
 For fixed wing the following parameters are covered:
 
