@@ -154,7 +154,7 @@ float ModeDrift::get_throttle_assist(float vel_d_ms, float pilot_throttle_scaled
     if (pilot_throttle_scaled > DRIFT_THR_MIN && pilot_throttle_scaled < DRIFT_THR_MAX) {
         // calculate throttle assist gain
         thr_assist = 1.2f - ((float)fabsf(pilot_throttle_scaled - 0.5f) / 0.24f);
-        thr_assist = constrain_float(thr_assist, 0.0f, 1.0f) * -DRIFT_THR_ASSIST_GAIN_MS * vel_d_ms;
+        thr_assist = constrain_float(thr_assist, 0.0f, 1.0f) * DRIFT_THR_ASSIST_GAIN_MS * vel_d_ms;
 
         // ensure throttle assist never adjusts the throttle by more than 0.3 (≈300 pwm)
         thr_assist = constrain_float(thr_assist, -DRIFT_THR_ASSIST_MAX, DRIFT_THR_ASSIST_MAX);

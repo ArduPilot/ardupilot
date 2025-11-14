@@ -75,21 +75,16 @@ void ModeFollow::run()
     Vector3f vel_ofs_ned_ms;  // velocity of lead vehicle + offset
     Vector3f accel_ofs_ned_mss;  // accel of lead vehicle + offset
     if (g2.follow.get_ofs_pos_vel_accel_NED_m(pos_ofs_ned_m, vel_ofs_ned_ms, accel_ofs_ned_mss)) {
-        Vector2p pos_ofs_ne_m = pos_ofs_ned_m.xy();
-        Vector2f vel_ofs_ne_ms = vel_ofs_ned_ms.xy();
-        Vector2f accel_ofs_ne_mss = accel_ofs_ned_mss.xy();
 
         float target_heading_deg = 0.0f;
         float target_heading_rate_degs = 0.0f;
         g2.follow.get_target_heading_deg(target_heading_deg);
         g2.follow.get_target_heading_rate_degs(target_heading_rate_degs);
 
-        pos_control->input_pos_vel_accel_NE_m(pos_ofs_ne_m, vel_ofs_ne_ms, accel_ofs_ne_mss, false);
+        pos_control->input_pos_vel_accel_NE_m(pos_ofs_ned_m.xy(), vel_ofs_ned_ms.xy(), accel_ofs_ned_mss.xy(), false);
 
-        float pos_ofs_d_m = -pos_ofs_ned_m.z;
-        float vel_ofs_d_ms = -vel_ofs_ned_ms.z;
-        float accel_ofs_d_mss = -accel_ofs_ned_mss.z;
-        pos_control->input_pos_vel_accel_D_m(pos_ofs_d_m, vel_ofs_d_ms, accel_ofs_d_mss, false);
+        float pos_ofs_d_m = pos_ofs_ned_m.z;
+        pos_control->input_pos_vel_accel_D_m(pos_ofs_d_m, vel_ofs_ned_ms.z, accel_ofs_ned_mss.z, false);
 
         // Determine desired yaw behavior based on configured follow mode
         switch (g2.follow.get_yaw_behave()) {
@@ -114,8 +109,8 @@ void ModeFollow::run()
 
             case AP_Follow::YAW_BEHAVE_DIR_OF_FLIGHT: {
                 // Face the direction of travel
-                if (vel_ofs_ne_ms.length_squared() > 1.0) {
-                    yaw_rad = vel_ofs_ne_ms.angle();
+                if (vel_ofs_ned_ms.xy().length_squared() > 1.0) {
+                    yaw_rad = vel_ofs_ned_ms.xy().angle();
                 }
                 break;
             }
@@ -131,8 +126,8 @@ void ModeFollow::run()
         Vector2f vel_ne_zero;
         Vector2f accel_ne_zero;
         pos_control->input_vel_accel_NE_m(vel_ne_zero, accel_ne_zero, false);
-        float vel_u_zero = 0.0;
-        pos_control->input_vel_accel_D_m(vel_u_zero, 0.0, false);
+        float vel_d_zero = 0.0;
+        pos_control->input_vel_accel_D_m(vel_d_zero, 0.0, false);
         yaw_rate_rads = 0.0f;
     }
 
