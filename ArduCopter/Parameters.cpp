@@ -191,7 +191,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
-    GSCALAR(pilot_speed_up_cms,     "PILOT_SPEED_UP",   PILOT_VELZ_MAX),
+    GSCALAR(pilot_speed_up_cms,     "PILOT_SPEED_UP",   PILOT_SPEED_UP_DEFAULT),
 
     // @Param: PILOT_ACCEL_Z
     // @DisplayName: Pilot vertical acceleration
@@ -200,7 +200,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
-    GSCALAR(pilot_accel_u_cmss,  "PILOT_ACCEL_Z",    PILOT_ACCEL_Z_DEFAULT),
+    GSCALAR(pilot_accel_d_cmss,  "PILOT_ACCEL_Z",    PILOT_ACCEL_Z_DEFAULT),
 
     // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable

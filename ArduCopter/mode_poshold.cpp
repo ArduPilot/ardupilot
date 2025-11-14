@@ -25,12 +25,12 @@
 bool ModePosHold::init(bool ignore_checks)
 {
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
-    pos_control->set_correction_speed_accel_U_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
+    pos_control->D_set_max_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
+    pos_control->D_set_correction_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
 
     // initialise the vertical position controller
-    if (!pos_control->is_active_U()) {
-        pos_control->init_U_controller();
+    if (!pos_control->D_is_active()) {
+        pos_control->D_init_controller();
     }
 
     // initialise lean angles to current attitude
@@ -67,7 +67,7 @@ void ModePosHold::run()
     const uint32_t now_ms = AP_HAL::millis();
     float controller_to_pilot_roll_mix;     // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
     float controller_to_pilot_pitch_mix;    // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
-    const Vector3f& vel_neu_ms = pos_control->get_vel_estimate_NEU_ms();
+    const Vector3f& vel_ned_ms = pos_control->get_vel_estimate_NED_ms();
 
     // enforce minimum allowed value for poshold_brake_rate_degs
     if (g.poshold_brake_rate_degs < POSHOLD_BRAKE_RATE_MIN) {
@@ -75,7 +75,7 @@ void ModePosHold::run()
     }
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
+    pos_control->D_set_max_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
     loiter_nav->clear_pilot_desired_acceleration();
 
     // apply SIMPLE mode transform to pilot inputs
@@ -98,14 +98,14 @@ void ModePosHold::run()
     }
 
     // state machine
-    AltHoldModeState poshold_state = get_alt_hold_state_U_ms(target_climb_rate_ms);
+    AltHoldModeState poshold_state = get_alt_hold_state_D_ms(target_climb_rate_ms);
 
     switch (poshold_state) {
 
     case AltHoldModeState::MotorStopped:
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->reset_yaw_target_and_rate(false);
-        pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
+        pos_control->D_relax_controller(0.0f);   // forces throttle output to decay to zero
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
 
@@ -126,7 +126,7 @@ void ModePosHold::run()
 
     case AltHoldModeState::Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms_smoothly();
-        pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
+        pos_control->D_relax_controller(0.0f);   // forces throttle output to decay to zero
 
         // set poshold state to pilot override
         roll_mode = RPMode::PILOT_OVERRIDE;
@@ -166,13 +166,13 @@ void ModePosHold::run()
 #endif
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_U_from_climb_rate_ms(target_climb_rate_ms);
+        pos_control->D_set_pos_target_from_climb_rate_ms(target_climb_rate_ms);
         break;
     }
 
     // convert earth-frame velocities to body-frame (m/s)
-    float vel_fw_ms    = vel_neu_ms.x * ahrs.cos_yaw() + vel_neu_ms.y * ahrs.sin_yaw();
-    float vel_right_ms = -vel_neu_ms.x * ahrs.sin_yaw() + vel_neu_ms.y * ahrs.cos_yaw();
+    float vel_fw_ms    = vel_ned_ms.x * ahrs.cos_yaw() + vel_ned_ms.y * ahrs.sin_yaw();
+    float vel_right_ms = -vel_ned_ms.x * ahrs.sin_yaw() + vel_ned_ms.y * ahrs.cos_yaw();
 
     // If not in LOITER, retrieve latest wind compensation lean angles (radians) related to current yaw
     if (roll_mode != RPMode::LOITER || pitch_mode != RPMode::LOITER) {
@@ -378,7 +378,7 @@ void ModePosHold::run()
         pitch_mode = RPMode::BRAKE_TO_LOITER;
         brake.loiter_transition_start_time_ms = now_ms;
         // init loiter controller
-        loiter_nav->init_target_m((pos_control->get_pos_estimate_NEU_m().xy() - pos_control->get_pos_offset_NEU_m().xy()));
+        loiter_nav->init_target_m((pos_control->get_pos_estimate_NED_m().xy() - pos_control->get_pos_offset_NED_m().xy()));
         // set delay to start of wind compensation estimate updates
         wind_comp_start_time_ms = now_ms;
     }
@@ -487,7 +487,7 @@ void ModePosHold::run()
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(roll_rad, pitch_rad, target_yaw_rate_rads);
 
     // run the vertical position controller and set output throttle
-    pos_control->update_U_controller();
+    pos_control->D_update_controller();
 }
 
 // poshold_update_pilot_lean_angle - update the pilot's filtered lean angle with the latest raw input received
@@ -558,27 +558,27 @@ void ModePosHold::update_wind_comp_estimate()
     }
 
     // check horizontal velocity is low
-    if (pos_control->get_vel_estimate_NEU_ms().xy().length() > POSHOLD_WIND_COMP_ESTIMATE_SPEED_MAX_MS) {
+    if (pos_control->get_vel_estimate_NED_ms().xy().length() > POSHOLD_WIND_COMP_ESTIMATE_SPEED_MAX_MS) {
         return;
     }
 
     // get position controller accel target
-    const Vector3f& accel_target_neu_mss = pos_control->get_accel_target_NEU_mss();
+    const Vector3f& accel_target_ned_mss = pos_control->get_accel_target_NED_mss();
 
     // update wind compensation in earth-frame lean angles
     if (is_zero(wind_comp_ne_mss.x)) {
         // if wind compensation has not been initialised set it immediately to the pos controller's desired accel in north direction
-        wind_comp_ne_mss.x = accel_target_neu_mss.x;
+        wind_comp_ne_mss.x = accel_target_ned_mss.x;
     } else {
         // low pass filter the position controller's lean angle output
-        wind_comp_ne_mss.x = (1.0f - TC_WIND_COMP) * wind_comp_ne_mss.x + TC_WIND_COMP * accel_target_neu_mss.x;
+        wind_comp_ne_mss.x = (1.0f - TC_WIND_COMP) * wind_comp_ne_mss.x + TC_WIND_COMP * accel_target_ned_mss.x;
     }
     if (is_zero(wind_comp_ne_mss.y)) {
         // if wind compensation has not been initialised set it immediately to the pos controller's desired accel in north direction
-        wind_comp_ne_mss.y = accel_target_neu_mss.y;
+        wind_comp_ne_mss.y = accel_target_ned_mss.y;
     } else {
         // low pass filter the position controller's lean angle output
-        wind_comp_ne_mss.y = (1.0f - TC_WIND_COMP) * wind_comp_ne_mss.y + TC_WIND_COMP * accel_target_neu_mss.y;
+        wind_comp_ne_mss.y = (1.0f - TC_WIND_COMP) * wind_comp_ne_mss.y + TC_WIND_COMP * accel_target_ned_mss.y;
     }
 
     // limit acceleration
