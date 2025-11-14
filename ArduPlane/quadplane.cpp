@@ -583,7 +583,7 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "Q_LOIT_SPEED",     500 },
     { "Q_WP_SPEED",       500 },
     { "Q_WP_ACCEL",       100 },
-    { "Q_P_JERK_XY",      2   },
+    { "Q_P_JERK_NE",      2   },
     // lower rotational accel limits
     { "Q_A_ACCEL_R_MAX", 40000 },
     { "Q_A_ACCEL_P_MAX", 40000 },
@@ -1063,7 +1063,8 @@ void QuadPlane::check_yaw_reset(void)
 
 void QuadPlane::set_climb_rate_ms(float target_climb_rate_ms)
 {
-    pos_control->input_vel_accel_D_m(target_climb_rate_ms, 0, false);
+    float vel_d_m = -target_climb_rate_ms;
+    pos_control->input_vel_accel_D_m(vel_d_m, 0, false);
 }
 
 /*
@@ -2822,12 +2823,12 @@ void QuadPlane::vtol_position_controller(void)
                 }
             }
             float zero = 0;
-            float target_d_m = target_altitude_cm * 0.01;
+            float target_d_m = -target_altitude_cm * 0.01;
             pos_control->input_pos_vel_accel_D_m(target_d_m, zero, 0);
         } else if (plane.control_mode == &plane.mode_qrtl) {
             Location loc2 = loc;
             loc2.change_alt_frame(Location::AltFrame::ABOVE_ORIGIN);
-            float target_d_m = loc2.alt * 0.01;
+            float target_d_m = -(loc2.alt * 0.01);
             float zero = 0;
             pos_control->input_pos_vel_accel_D_m(target_d_m, zero, 0);
         } else {
@@ -3073,7 +3074,7 @@ void QuadPlane::setup_target_position(void)
     diff2d += poscontrol.correction_ne_m;
     poscontrol.target_ned_m.x = diff2d.x;
     poscontrol.target_ned_m.y = diff2d.y;
-    poscontrol.target_ned_m.z = (plane.next_WP_loc.alt - origin.alt) * 0.01;
+    poscontrol.target_ned_m.z = -(plane.next_WP_loc.alt - origin.alt) * 0.01;
 
     // set vertical speed and acceleration limits
     // All limits must be positive
@@ -3169,7 +3170,7 @@ void QuadPlane::takeoff_controller(void)
                                                                   plane.nav_pitch_cd,
                                                                   get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
 
-    float vel_d_ms = wp_nav->get_default_speed_up_ms();
+    float vel_u_ms = wp_nav->get_default_speed_up_ms();
     if (plane.control_mode == &plane.mode_guided && guided_takeoff) {
         // for guided takeoff we aim for a specific height with zero
         // velocity at that height
@@ -3178,14 +3179,14 @@ void QuadPlane::takeoff_controller(void)
             // a small margin to ensure we do move to the next takeoff
             // stage
             const int32_t margin_cm = 5;
-            float pos_d_m = (margin_cm + plane.next_WP_loc.alt - origin.alt) * 0.01;
-            vel_d_ms = 0;
+            float pos_d_m = -(margin_cm + plane.next_WP_loc.alt - origin.alt) * 0.01;
+            float vel_d_ms = 0.0;
             pos_control->input_pos_vel_accel_D_m(pos_d_m, vel_d_ms, 0);
         } else {
-            set_climb_rate_ms(vel_d_ms);
+            set_climb_rate_ms(vel_u_ms);
         }
     } else {
-        set_climb_rate_ms(vel_d_ms);
+        set_climb_rate_ms(vel_u_ms);
     }
 
     run_z_controller();
@@ -3767,7 +3768,6 @@ float QuadPlane::forward_throttle_pct()
     
     // work out the desired speed in forward direction
     Vector3f desired_velocity_ned_ms = pos_control->get_vel_desired_NED_ms();
-    desired_velocity_ned_ms.z *= -1;    // convert to NED m/s
 
     Vector3f vel_ned_ms;
     if (!plane.ahrs.get_velocity_NED(vel_ned_ms)) {
@@ -3944,7 +3944,7 @@ bool QuadPlane::guided_mode_enabled(void)
  */
 void QuadPlane::set_alt_target_current(void)
 {
-    pos_control->set_pos_desired_D_m(inertial_nav.get_position_z_up_cm() * 0.01);
+    pos_control->set_pos_desired_D_m(-inertial_nav.get_position_z_up_cm() * 0.01);
 }
 
 // user initiated takeoff for guided mode
@@ -4236,7 +4236,7 @@ bool SLT_Transition::show_vtol_view() const
 }
 
 /*
-  return the PILOT_VELZ_MAX_DN value if non zero, otherwise returns the PILOT_VELZ_MAX value.
+  return the PILOT_SPD_DN value if non zero, otherwise returns the PILOT_SPD_UP value.
   return is in cm/s
 */
 uint16_t QuadPlane::get_pilot_velocity_z_max_dn_m() const
