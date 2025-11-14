@@ -29,8 +29,9 @@ bool AC_WPNav_OA::get_oa_wp_destination(Location& destination) const
 // See set_wp_destination_NED_m() for full details.
 bool AC_WPNav_OA::set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt)
 {
-    // Convert input from centimeters to meters and delegate to meter version
-    return set_wp_destination_NED_m(destination_neu_cm.topostype() * 0.01, is_terrain_alt);
+    // Convert input from NEU centimeters to NED meters and delegate to meter version
+    Vector3p destination_ned_m = Vector3p(destination_neu_cm.x, destination_neu_cm.y, -destination_neu_cm.z) * 0.01;
+    return set_wp_destination_NED_m(destination_ned_m, is_terrain_alt);
 }
 
 // Sets the waypoint destination using NED coordinates in meters.
@@ -119,9 +120,9 @@ bool AC_WPNav_OA::update_wpnav()
         }
 
         // Convert backup path state to global Location objects for planner input
-        const Location origin_loc(_origin_oabak_ned_m * 100.0, _is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
-        const Location destination_loc(_destination_oabak_ned_m * 100.0, _is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
-        const Location next_destination_loc(_next_destination_oabak_ned_m * 100.0, _is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+        const Location origin_loc(_is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN, _origin_oabak_ned_m);
+        const Location destination_loc(_is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN, _destination_oabak_ned_m);
+        const Location next_destination_loc(_is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN, _next_destination_oabak_ned_m);
         Location oa_origin_new, oa_destination_new, oa_next_destination_new;
         bool dest_to_next_dest_clear = true;
         AP_OAPathPlanner::OAPathPlannerUsed path_planner_used = AP_OAPathPlanner::OAPathPlannerUsed::None;
@@ -179,7 +180,7 @@ bool AC_WPNav_OA::update_wpnav()
                 // calculate stopping point
                 Vector3p stopping_point_ned_m;
                 get_wp_stopping_point_NED_m(stopping_point_ned_m);
-                _oa_destination = Location(stopping_point_ned_m * 100.0f, Location::AltFrame::ABOVE_ORIGIN);
+                _oa_destination = Location(Location::AltFrame::ABOVE_ORIGIN, stopping_point_ned_m);
                 _oa_next_destination.zero();
                 if (set_wp_destination_NED_m(stopping_point_ned_m, false)) {
                     _oa_state = oa_retstate;
@@ -201,8 +202,8 @@ bool AC_WPNav_OA::update_wpnav()
                 // Dijkstra's.  Action is only needed if path planner has just became active or the target destination's lat or lon has changed
                 // Interpolate altitude and set new target if different or first OA success
                 if ((_oa_state != AP_OAPathPlanner::OA_SUCCESS) || !oa_destination_new.same_latlon_as(_oa_destination)) {
-                    Location origin_oabak_loc(_origin_oabak_ned_m * 100.0, _is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
-                    Location destination_oabak_loc(_destination_oabak_ned_m * 100, _is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+                    Location origin_oabak_loc(_is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN, _origin_oabak_ned_m);
+                    Location destination_oabak_loc(_is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN, _destination_oabak_ned_m);
                     oa_destination_new.linearly_interpolate_alt(origin_oabak_loc, destination_oabak_loc);
 
                     // set new OA adjusted destination
@@ -218,7 +219,7 @@ bool AC_WPNav_OA::update_wpnav()
                     if ((oa_ptr->get_options() & AP_OAPathPlanner::OA_OPTION_FAST_WAYPOINTS) && !oa_next_destination_new.is_zero()) {
                         // calculate oa_next_destination_new's altitude using linear interpolation between original origin and destination
                         // this "next destination" is still an intermediate point between the origin and destination
-                        Location next_destination_oabak_loc(_next_destination_oabak_ned_m * 100.0, _is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+                        Location next_destination_oabak_loc(_is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN, _next_destination_oabak_ned_m);
                         oa_next_destination_new.linearly_interpolate_alt(origin_oabak_loc, destination_oabak_loc);
                         if (set_wp_destination_next_loc(oa_next_destination_new)) {
                             _oa_next_destination = oa_next_destination_new;
@@ -236,8 +237,8 @@ bool AC_WPNav_OA::update_wpnav()
                 target_alt_loc.linearly_interpolate_alt(origin_loc, destination_loc);
 
                 // Get terrain offset if needed
-                float terrain_u_m = 0;
-                if (_is_terrain_alt_oabak && !get_terrain_U_m(terrain_u_m)) {
+                float terrain_d_m = 0;
+                if (_is_terrain_alt_oabak && !get_terrain_D_m(terrain_d_m)) {
                     // trigger terrain failsafe
                     return false;
                 }
@@ -254,7 +255,7 @@ bool AC_WPNav_OA::update_wpnav()
                 Vector3p destination_ned_m{destination_ne_m.x, destination_ne_m.y, target_alt_loc_alt_m};
 
                 // pass the desired position directly to the position controller
-                _pos_control.input_pos_NED_m(destination_ned_m, terrain_u_m, 10.0);
+                _pos_control.input_pos_NED_m(destination_ned_m, terrain_d_m, 10.0);
 
                 // update horizontal position controller (vertical is updated in vehicle code)
                 _pos_control.NE_update_controller();
@@ -269,7 +270,7 @@ bool AC_WPNav_OA::update_wpnav()
 
                 // Convert final destination to NEU offset and push to position controller
                 Vector3p destination_ned_m;
-                if (!_oa_destination.get_vector_from_origin_NEU_m(destination_ned_m)) {
+                if (!_oa_destination.get_vector_from_origin_NED_m(destination_ned_m)) {
                     // this should never happen because we can only get here if we have an EKF origin
                     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                     return false;
