@@ -6,6 +6,15 @@
 
 class AP_SurfaceDistance {
 public:
+
+    // assemble bitmask assistance, definition is used to generate log documentation
+    enum class Surface_Distance_Status : uint8_t {
+        Enabled         = 1U<<0, // true if rangefinder has been set to enable by vehicle
+        Unhealthy       = 1U<<1, // true if rangefinder is considered unhealthy
+        Stale_Data      = 1U<<2, // true if the last healthy rangefinder reading is no longer valid
+        Glitch_Detected = 1U<<3, // true if a measurement glitch detected
+    };
+    
     AP_SurfaceDistance(Rotation rot, uint8_t i) :
         instance(i),
         rotation(rot)
