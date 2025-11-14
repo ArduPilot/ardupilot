@@ -381,6 +381,11 @@ AP_HW_F4BY_H743                      1531
 AP_HW_AERIUM_RADIAN_F405             1800
 AP_HW_AERIUM_RADIAN_H743             1801
 
+#IDs 1850-1869 reserved for Arkin Labs 
+AP_HW_A2M6X                          1850
+AP_HW_A2M6X_NANO                     1855
+AP_HW_A2M6X_V2                       1860
+
 # IDs 1950-1979 reserved for HC Robotics
 AP_HW_HCR-504                        1950
 AP_HW_HCR-506                        1951
