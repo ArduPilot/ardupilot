@@ -213,7 +213,7 @@ public:
     // other than an actual airspeed sensor), if available. return
     // true if we have a synthetic airspeed.  ret will not be modified
     // on failure.
-    bool dcm_synthetic_airspeed_EAS(float &ret) const WARN_IF_UNUSED;
+    bool dcm_synthetic_airspeed_TAS(float &ret) const WARN_IF_UNUSED;
 
     // true if compass is being used
     bool use_compass();
