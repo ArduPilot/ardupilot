@@ -514,7 +514,7 @@ bool AP_CRSF_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
     case GENERAL_COMMAND:
         return _baud_rate_request.pending || _bind_request_pending;
     case VERSION_PING:
-        return _crsf_version.pending && AP::crsf()->is_detected(); // only send pings if protocol has been detected
+        return _crsf_version.pending && AP::crsf() && AP::crsf()->is_detected(); // only send pings if protocol has been detected
     case HEARTBEAT:
         return true; // always send heartbeat if enabled
     case DEVICE_PING:
@@ -744,7 +744,7 @@ void AP_CRSF_Telem::process_vtx_telem_frame(VTXTelemetryFrame* vtx)
 #endif  // AP_VIDEOTX_ENABLED
 
 // request for device info
-void AP_CRSF_Telem::process_ping_frame(ParameterPingFrame* ping)
+void AP_CRSF_Telem::process_ping_frame(AP_CRSF_Protocol::ParameterPingFrame* ping)
 {
     debug("process_ping_frame: %d -> %d", ping->origin, ping->destination);
     if (ping->destination != 0 && ping->destination != AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
@@ -757,52 +757,12 @@ void AP_CRSF_Telem::process_ping_frame(ParameterPingFrame* ping)
 }
 
 // request for device info
-void AP_CRSF_Telem::process_device_info_frame(ParameterDeviceInfoFrame* info)
+void AP_CRSF_Telem::process_device_info_frame(AP_CRSF_Protocol::ParameterDeviceInfoFrame* info)
 {
     debug("process_device_info_frame: 0x%x -> 0x%x", info->origin, info->destination);
-    if (info->destination != 0 && info->destination != AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
-        return; // request was not for us
-    }
 
-    // we are only interested in RC device info for firmware version detection
-    if (info->origin != 0 && info->origin != AP_CRSF_Protocol::CRSF_ADDRESS_CRSF_RECEIVER) {
+    if (!AP_CRSF_Protocol::process_device_info_frame(info, &_crsf_version, false)) {
         return;
-    }
-    /*
-        Payload size is 58:
-        char[] Device name ( Null-terminated string, max len is 42 )
-        uint32_t Serial number
-        uint32_t Hardware ID
-        uint32_t Firmware ID (0x00:0x00:0xAA:0xBB AA=major, BB=minor)
-        uint8_t Parameters count
-        uint8_t Parameter version number
-    */
-    // get the terminator of the device name string
-    const uint8_t offset = strnlen((char*)info->payload,42U);
-    if (strncmp((char*)info->payload, "Tracer", 6) == 0) {
-        _crsf_version.protocol = AP_CRSF_Protocol::ProtocolType::PROTOCOL_TRACER;
-    } else if (strncmp((char*)&info->payload[offset+1], "ELRS", 4) == 0) {
-        // ELRS magic number is ELRS encoded in the serial number
-        // 0x45 'E' 0x4C 'L' 0x52 'R' 0x53 'S'
-        _crsf_version.protocol = AP_CRSF_Protocol::ProtocolType::PROTOCOL_ELRS;
-    }
-
-    if (!is_elrs()) {
-        /*
-            fw major ver = offset + terminator (8bits) + serial (32bits) + hw id (32bits) + 3rd byte of sw id = 11bytes
-            fw minor ver = offset + terminator (8bits) + serial (32bits) + hw id (32bits) + 4th byte of sw id = 12bytes
-        */
-        _crsf_version.major = info->payload[offset+11];
-        _crsf_version.minor = info->payload[offset+12];
-    } else {
-        // ELRS does not populate the version field so cook up something sensible
-        _crsf_version.major = 1;
-        _crsf_version.minor = 0;
-    }
-
-    // should we use rf_mode reported by link statistics?
-    if (is_elrs() || (!is_tracer() && (_crsf_version.major > 3 || (_crsf_version.major == 3 && _crsf_version.minor >= 72)))) {
-        _crsf_version.use_rf_mode = true;
     }
 
     _crsf_version.pending = false;
@@ -810,7 +770,7 @@ void AP_CRSF_Telem::process_device_info_frame(ParameterDeviceInfoFrame* info)
 }
 
 // request for a general command
-void AP_CRSF_Telem::process_command_frame(CommandFrame* command)
+void AP_CRSF_Telem::process_command_frame(AP_CRSF_Protocol::CommandFrame* command)
 {
     debug("process_command_frame: 0x%x -> 0x%x: 0x%x", command->origin, command->destination, command->payload[0]);
     if (command->destination != 0 && command->destination != AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
@@ -827,7 +787,7 @@ void AP_CRSF_Telem::process_command_frame(CommandFrame* command)
             uint32_t baud_rate = command->payload[2] << 24 | command->payload[3] << 16
                 | command->payload[4] << 8 | command->payload[5];
             _baud_rate_request.port_id = command->payload[1];
-            _baud_rate_request.valid = AP::crsf()->change_baud_rate(baud_rate);
+            _baud_rate_request.valid = crsf->change_baud_rate(baud_rate);
             _baud_rate_request.pending = true;
             debug("requested baud rate change %lu", baud_rate);
             break;
@@ -1164,35 +1124,22 @@ void AP_CRSF_Telem::calc_flight_mode()
 // return device information about ArduPilot
 void AP_CRSF_Telem::calc_device_info() {
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+    debug("calc_device_info: %u -> %u", DeviceAddress::CRSF_ADDRESS_FLIGHT_CONTROLLER, _param_request.origin);
+
     _telem.ext.info.destination = _param_request.origin;
     _telem.ext.info.origin = AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER;
 
-    const AP_FWVersion &fwver = AP::fwversion();
-    // write out the name with version, max width is 60 - 18 = the meaning of life
-    int32_t n = strlen(fwver.fw_short_string);
-    strncpy((char*)_telem.ext.info.payload, fwver.fw_short_string, 41);
-    n = MIN(n + 1, 42);
-
-    put_be32_ptr(&_telem.ext.info.payload[n], // serial number
-        uint32_t(fwver.major) << 24 | uint32_t(fwver.minor) << 16 | uint32_t(fwver.patch) << 8 | uint32_t(fwver.fw_type));
-    n += 4;
-    put_be32_ptr(&_telem.ext.info.payload[n], // hardware id
-        uint32_t(fwver.vehicle_type) << 24 | uint32_t(fwver.board_type) << 16 | uint32_t(fwver.board_subtype));
-    n += 4;
-    put_be32_ptr(&_telem.ext.info.payload[n], fwver.os_sw_version);   // software id
-    n += 4;
+    uint8_t nparams = 0;
 #if OSD_PARAM_ENABLED
-    _telem.ext.info.payload[n] = AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS; // param count
+    nparams = AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS; // param count
 #if AP_CRSF_SCRIPTING_ENABLED
     for (ScriptedMenu* m = &scripted_menus; m != nullptr; m = m->next_menu) {
-        _telem.ext.info.payload[n] += m->num_params;
+        nparams += m->num_params;
     }
 #endif // AP_CRSF_SCRIPTING_ENABLED
-    n++;
-#else
-    _telem.ext.info.payload[n++] = 0; // param count
 #endif
-    _telem.ext.info.payload[n++] = 0;   // param version
+
+    uint32_t n = AP_CRSF_Protocol::encode_device_info(_telem.ext.info, nparams);
 
     _telem_size = n + 2;
     _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAM_DEVICE_INFO;
@@ -2198,7 +2145,7 @@ void AP_CRSF_Telem::calc_status_text()
     }
 
     _telem_type = get_custom_telem_frame_id();
-    _telem.bcast.custom_telem.status_text.sub_type = AP_RCProtocol_CRSF::CustomTelemSubTypeID::CRSF_AP_CUSTOM_TELEM_STATUS_TEXT;
+    _telem.bcast.custom_telem.status_text.sub_type = AP_CRSF_Protocol::CustomTelemSubTypeID::CRSF_AP_CUSTOM_TELEM_STATUS_TEXT;
     _telem.bcast.custom_telem.status_text.severity = _statustext.next.severity;
     // Note: snprintf() always terminates the string
     hal.util->snprintf(_telem.bcast.custom_telem.status_text.text, AP_CRSF_Telem::PASSTHROUGH_STATUS_TEXT_FRAME_MAX_SIZE, "%s", _statustext.next.text);
@@ -2220,7 +2167,7 @@ void AP_CRSF_Telem::get_single_packet_passthrough_telem_data()
     if (!AP_Frsky_Telem::get_telem_data(&packet, packet_count, 1)) {
         return;
     }
-    _telem.bcast.custom_telem.single_packet_passthrough.sub_type = AP_RCProtocol_CRSF::CustomTelemSubTypeID::CRSF_AP_CUSTOM_TELEM_SINGLE_PACKET_PASSTHROUGH;
+    _telem.bcast.custom_telem.single_packet_passthrough.sub_type = AP_CRSF_Protocol::CustomTelemSubTypeID::CRSF_AP_CUSTOM_TELEM_SINGLE_PACKET_PASSTHROUGH;
     _telem.bcast.custom_telem.single_packet_passthrough.appid = packet.appid;
     _telem.bcast.custom_telem.single_packet_passthrough.data = packet.data;
     _telem_size = sizeof(AP_CRSF_Telem::PassthroughSinglePacketFrame);
@@ -2244,7 +2191,7 @@ void AP_CRSF_Telem::get_multi_packet_passthrough_telem_data(uint8_t size)
     if (!AP_Frsky_Telem::get_telem_data(buffer, count, size)) {
         return;
     }
-    _telem.bcast.custom_telem.multi_packet_passthrough.sub_type = AP_RCProtocol_CRSF::CustomTelemSubTypeID::CRSF_AP_CUSTOM_TELEM_MULTI_PACKET_PASSTHROUGH;
+    _telem.bcast.custom_telem.multi_packet_passthrough.sub_type = AP_CRSF_Protocol::CustomTelemSubTypeID::CRSF_AP_CUSTOM_TELEM_MULTI_PACKET_PASSTHROUGH;
     for (uint8_t idx=0; idx<count; idx++) {
         _telem.bcast.custom_telem.multi_packet_passthrough.packets[idx].appid = buffer[idx].appid;
         _telem.bcast.custom_telem.multi_packet_passthrough.packets[idx].data = buffer[idx].data;
@@ -2259,7 +2206,7 @@ void AP_CRSF_Telem::get_multi_packet_passthrough_telem_data(uint8_t size)
   fetch CRSF frame data
   if is_tx_active is true then this will be a request for telemetry after receiving an RC frame
  */
-bool AP_CRSF_Telem::_get_telem_data(AP_RCProtocol_CRSF::Frame* data, bool is_tx_active)
+bool AP_CRSF_Telem::_get_telem_data(const AP_RCProtocol_CRSF* crsf_port, AP_CRSF_Protocol::Frame* data, bool is_tx_active)
 {
     memset(&_telem, 0, sizeof(TelemetryPayload));
     // update telemetry tasks if we either lost or regained the transmitter
@@ -2301,12 +2248,12 @@ bool AP_CRSF_Telem::process_frame(AP_RCProtocol_CRSF::FrameType frame_type, void
 /*
   fetch data for an external transport, such as CRSF
  */
-bool AP_CRSF_Telem::get_telem_data(AP_RCProtocol_CRSF::Frame* data, bool is_tx_active)
+bool AP_CRSF_Telem::get_telem_data(const AP_RCProtocol_CRSF* crsf_port, AP_CRSF_Protocol::Frame* data, bool is_tx_active)
 {
     if (!get_singleton()) {
         return false;
     }
-    return singleton->_get_telem_data(data, is_tx_active);
+    return singleton->_get_telem_data(crsf_port, data, is_tx_active);
 }
 
 AP_CRSF_Telem *AP_CRSF_Telem::get_singleton(void) {
@@ -2329,5 +2276,3 @@ namespace AP {
 };
 
 #endif  // HAL_CRSF_TELEM_ENABLED
-
-
