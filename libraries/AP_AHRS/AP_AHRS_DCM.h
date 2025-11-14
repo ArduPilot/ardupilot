@@ -88,15 +88,6 @@ public:
     // if we have an estimate from a specific sensor index
     bool airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const override;
 
-    // return a synthetic EAS estimate (one derived from sensors
-    // other than an actual airspeed sensor), if available. return
-    // true if we have a synthetic airspeed.  ret will not be modified
-    // on failure.
-    bool synthetic_airspeed_EAS(float &ret) const WARN_IF_UNUSED {
-        ret = _last_airspeed_TAS;
-        return true;
-    }
-
     // return a ground vector estimate in meters/second, in North/East order
     Vector2f groundspeed_vector() override;
 

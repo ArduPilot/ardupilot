@@ -209,12 +209,6 @@ public:
         return AP_AHRS_Backend::airspeed_sensor_enabled(airspeed_index);
     }
 
-    // return a synthetic (equivalent) airspeed estimate (one derived from sensors
-    // other than an actual airspeed sensor), if available. return
-    // true if we have a synthetic airspeed.  ret will not be modified
-    // on failure.
-    bool dcm_synthetic_airspeed_EAS(float &ret) const WARN_IF_UNUSED;
-
     // true if compass is being used
     bool use_compass();
 

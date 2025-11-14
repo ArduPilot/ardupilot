@@ -1159,18 +1159,6 @@ bool AP_AHRS::airspeed_health_data(float &innovation, float &innovationVariance,
     return false;
 }
 
-// return a synthetic EAS estimate (one derived from sensors
-// other than an actual airspeed sensor), if available. return
-// true if we have a synthetic airspeed.  ret will not be modified
-// on failure.
-bool AP_AHRS::dcm_synthetic_airspeed_EAS(float &ret) const
-{
-#if AP_AHRS_DCM_ENABLED
-    return dcm.synthetic_airspeed_EAS(ret);
-#endif
-    return false;
-}
-
 // true if compass is being used
 bool AP_AHRS::use_compass(void)
 {
