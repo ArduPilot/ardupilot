@@ -698,6 +698,7 @@ void Aircraft::update_model(const struct sitl_input &input)
     }
 }
 
+
 /*
   update the simulation attitude and relative position
  */
@@ -712,7 +713,6 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     air_density = SSL_AIR_DENSITY / sq(eas2tas);
 
     const float delta_time = frame_time_us * 1.0e-6f;
-
     // update eas2tas and air density
     eas2tas = AP_Baro::get_EAS2TAS_for_alt_amsl(location.alt*0.01);
     air_density = AP_Baro::get_air_density_for_alt_amsl(location.alt*0.01);

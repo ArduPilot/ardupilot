@@ -25,6 +25,7 @@ void AP_DAL_Baro::start_frame()
         RBRI.last_update_ms = baro.get_last_update(i);
         RBRI.healthy = baro.healthy(i);
         RBRI.altitude = baro.get_altitude(i);
+        RBRI.pos_offset = baro.get_baro_pos_offset();
         WRITE_REPLAY_BLOCK_IFCHANGED(RBRI, _RBRI[i], old);
     }
 }
