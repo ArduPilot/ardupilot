@@ -5,6 +5,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
+static constexpr float FILTER_KOEF = 0.1f; 
 
 #ifndef AP_BARO_DATA_CHANGE_TIMEOUT_MS
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
@@ -18,6 +19,7 @@ extern const AP_HAL::HAL& hal;
 AP_Baro_Backend::AP_Baro_Backend(AP_Baro &baro) : 
     _frontend(baro) 
 {
+    _glitch_filter.init(FILTER_KOEF, 1000.0f, 1.0f);
 }
 
 void AP_Baro_Backend::update_healthy_flag(uint8_t instance)
@@ -73,7 +75,7 @@ void AP_Baro_Backend::_copy_to_frontend(uint8_t instance, float pressure, float 
     _frontend.sensors[instance].last_update_ms = now;
 }
 
-static constexpr float FILTER_KOEF = 0.1f;
+
 
 /* Check that the baro value is valid by using a mean filter. If the
  * value is further than filter_range from mean value, it is
@@ -81,30 +83,12 @@ static constexpr float FILTER_KOEF = 0.1f;
 */
 bool AP_Baro_Backend::pressure_ok(float press)
 {
-    
-    if (isinf(press) || isnan(press)) {
-        return false;
-    }
-
+   
     const float range = (float)_frontend.get_filter_range();
+    
     if (range <= 0) {
         return true;
     }
 
-    bool ret = true;
-    if (is_zero(_mean_pressure)) {
-        _mean_pressure = press;
-    } else {
-        const float d = fabsf(_mean_pressure - press) / (_mean_pressure + press);  // diff divide by mean value in percent ( with the * 200.0f on later line)
-        float koeff = FILTER_KOEF;
-
-        if (d * 200.0f > range) {  // check the difference from mean value outside allowed range
-            // printf("\nBaro pressure error: mean %f got %f\n", (double)_mean_pressure, (double)press );
-            ret = false;
-            koeff /= (d * 10.0f);  // 2.5 and more, so one bad sample never change mean more than 4%
-            _error_count++;
-        }
-        _mean_pressure = _mean_pressure * (1 - koeff) + press * koeff; // complimentary filter 1/k
-    }
-    return ret;
+    return !_glitch_filter.is_glitch(range, press);
 }
