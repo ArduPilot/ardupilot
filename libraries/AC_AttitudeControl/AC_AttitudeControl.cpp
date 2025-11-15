@@ -1252,10 +1252,6 @@ Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(const Vector3f
         rate_target_ang_vel.z = angleP_yaw * attitude_error_rot_vec_rad.z;
     }
 
-    // reset angle P scaling, saving used value
-    _angle_P_scale_used = _angle_P_scale;
-    _angle_P_scale = VECTORF_111;
-
     return rate_target_ang_vel;
 }
 
