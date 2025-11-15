@@ -92,23 +92,23 @@ void Copter::tuning(const RC_Channel *tuning_ch, int8_t tuning_param, float tuni
 
     // Altitude and throttle tuning
     case TUNING_ALTITUDE_HOLD_KP:
-        pos_control->get_pos_U_p().set_kP(tuning_value);
+        pos_control->get_pos_D_p().set_kP(tuning_value);
         break;
 
     case TUNING_THROTTLE_RATE_KP:
-        pos_control->get_vel_U_pid().set_kP(tuning_value);
+        pos_control->get_vel_D_pid().set_kP(tuning_value);
         break;
 
     case TUNING_ACCEL_Z_KP:
-        pos_control->get_accel_U_pid().set_kP(tuning_value);
+        pos_control->get_accel_D_pid().set_kP(tuning_value);
         break;
 
     case TUNING_ACCEL_Z_KI:
-        pos_control->get_accel_U_pid().set_kI(tuning_value);
+        pos_control->get_accel_D_pid().set_kI(tuning_value);
         break;
 
     case TUNING_ACCEL_Z_KD:
-        pos_control->get_accel_U_pid().set_kD(tuning_value);
+        pos_control->get_accel_D_pid().set_kD(tuning_value);
         break;
 
     // Loiter and navigation tuning

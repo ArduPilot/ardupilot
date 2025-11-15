@@ -23,7 +23,7 @@ private:
     void set_mode_else_try_RTL_else_LAND(Mode::Number mode);
 
     // get minimum limit altitude allowed on descend
-    int32_t get_altitude_minimum_cm() const;
+    float get_altitude_minimum_m() const;
 
 protected:
     // override avoidance handler
