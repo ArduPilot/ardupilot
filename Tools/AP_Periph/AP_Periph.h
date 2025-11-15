@@ -422,10 +422,6 @@ public:
     // Handled under LUA script to control LEDs
     float get_yaw_earth() { return yaw_earth; }
     uint64_t get_vehicle_state() { return vehicle_state; }
-#elif defined(AP_SCRIPTING_ENABLED)
-    // create dummy methods for the case when the user doesn't want to use the notify object
-    float get_yaw_earth() { return 0.0; }
-    uint64_t get_vehicle_state() { return 0; }
 #endif
 
 #if AP_SCRIPTING_ENABLED
