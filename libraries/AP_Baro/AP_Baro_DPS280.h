@@ -6,7 +6,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
-#include <AP_HAL/utility/OwnPtr.h>
 
 #ifndef HAL_BARO_DPS280_I2C_ADDR
  #define HAL_BARO_DPS280_I2C_ADDR  0x76
@@ -17,16 +16,16 @@
 
 class AP_Baro_DPS280 : public AP_Baro_Backend {
 public:
-    AP_Baro_DPS280(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    AP_Baro_DPS280(AP_Baro &baro, AP_HAL::Device &dev);
 
     /* AP_Baro public interface: */
     void update() override;
 
-    static AP_Baro_Backend *probe_280(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev) {
-        return probe(baro, std::move(dev), false);
+    static AP_Baro_Backend *probe_280(AP_Baro &baro, AP_HAL::Device &dev) {
+        return probe(baro, dev, false);
     }
 
-    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, bool _is_dps310=false);
+    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::Device &dev, bool _is_dps310=false);
 
 protected:
     bool init(bool _is_dps310);
@@ -39,7 +38,7 @@ protected:
     void set_config_registers(void);
     void check_health();
 
-    AP_HAL::OwnPtr<AP_HAL::Device> dev;
+    AP_HAL::Device *dev;
 
     uint8_t instance;
 
@@ -69,7 +68,7 @@ class AP_Baro_DPS310 : public AP_Baro_DPS280 {
     // like DPS280 but workaround for temperature bug
 public:
     using AP_Baro_DPS280::AP_Baro_DPS280;
-    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::Device &dev);
 };
 
 

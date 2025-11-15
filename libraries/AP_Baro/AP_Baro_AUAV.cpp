@@ -16,24 +16,18 @@
 
 #if AP_BARO_AUAV_ENABLED
 
-#include <utility>
-
 extern const AP_HAL::HAL &hal;
 
-AP_Baro_AUAV::AP_Baro_AUAV(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> _dev)
+AP_Baro_AUAV::AP_Baro_AUAV(AP_Baro &baro, AP_HAL::Device *_dev)
     : AP_Baro_Backend(baro)
-    , dev(std::move(_dev))
+    , dev(_dev)
 {
-    i2c_dev = (AP_HAL::I2CDevice*)dev.get();
+    i2c_dev = (AP_HAL::I2CDevice*)dev;
 }
 
-AP_Baro_Backend *AP_Baro_AUAV::probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> _dev)
+AP_Baro_Backend *AP_Baro_AUAV::probe(AP_Baro &baro, AP_HAL::Device &_dev)
 {
-    if (!_dev) {
-        return nullptr;
-    }
-
-    AP_Baro_AUAV *sensor = NEW_NOTHROW AP_Baro_AUAV(baro, std::move(_dev));
+    AP_Baro_AUAV *sensor = NEW_NOTHROW AP_Baro_AUAV(baro, &_dev);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
