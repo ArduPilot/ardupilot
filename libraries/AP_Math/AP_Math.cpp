@@ -278,7 +278,11 @@ T constrain_value_line(const T amt, const T low, const T high, uint32_t line)
 #endif
         return (low + high) / 2;
     }
-
+#if AP_INTERNALERROR_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (low > high) {
+        AP::internalerror().error(AP_InternalError::error_t::constraining_nan, line);
+    }
+#endif  // AP_INTERNALERROR_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (amt < low) {
         return low;
     }
