@@ -103,6 +103,7 @@ public:
         k_param__gcs,
         k_param_battery_tag,
         k_param_servo_command_timeout_ms,
+        k_param_servo_telem_msg_rate,
     };
 
     AP_Int16 format_version;
@@ -195,6 +196,9 @@ public:
 #endif
 #endif
     AP_Int16 servo_command_timeout_ms;
+#endif
+#if AP_SERVO_TELEM_ENABLED
+    AP_Int16 servo_telem_msg_rate;
 #endif
 
     AP_Int8 debug;
