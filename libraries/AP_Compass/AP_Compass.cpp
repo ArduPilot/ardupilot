@@ -991,6 +991,17 @@ bool Compass::register_compass(int32_t dev_id, uint8_t& instance)
 
     // This might be a replacement compass module, find any unregistered compass
     // instance and replace that
+    priority = _update_priority_list(dev_id);
+    // try to match priority and state index if possible, this ensure that dronecan order
+    // to state order while detection is preserved, this is a minor duplication of what 
+    // we do after calibration anyways.
+    StateIndex priority_index = StateIndex(uint8_t(priority));
+    if (!_state[priority_index].registered && priority < COMPASS_MAX_INSTANCES) {
+        _state[priority_index].registered = true;
+        _state[priority_index].priority = priority;
+        instance = uint8_t(priority_index);
+        return true;
+    }
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
         priority = _update_priority_list(dev_id);
         if (!_state[i].registered && priority < COMPASS_MAX_INSTANCES) {
@@ -1527,7 +1538,7 @@ void Compass::probe_dronecan_compasses(void)
     if (!_driver_enabled(DRIVER_UAVCAN)) {
         return;
     }
-    for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
+    for (uint8_t i=0; i<MAX_CONNECTED_MAGS; i++) {
         AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(i);
         if (_uavcan_backend) {
             _add_backend(_uavcan_backend);
