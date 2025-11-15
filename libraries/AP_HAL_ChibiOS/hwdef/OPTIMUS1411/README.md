@@ -2,4 +2,4 @@
 
 MCU STM32H743
 
-#OPTIMUS1411 is a custom flight controller based on STM32H743 MCU
+#OPTIMUS1411 is a flight controller based on STM32H743 MCU
