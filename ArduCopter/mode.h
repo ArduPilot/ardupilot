@@ -1895,7 +1895,7 @@ public:
     bool allows_arming(AP_Arming::Method method) const override { return false; }
     bool is_autopilot() const override { return true; }
 
-    bool set_velocity_NEU_cms(const Vector3f& velocity_neu_cms);
+    bool set_velocity_NEU_ms(const Vector3f& velocity_neu_cms);
 
 protected:
 

@@ -10,8 +10,8 @@
 bool ModeBrake::init(bool ignore_checks)
 {
     // initialise pos controller speed and acceleration
-    pos_control->set_max_speed_accel_NE_m(pos_control->get_vel_estimate_NEU_ms().length(), BRAKE_MODE_DECEL_RATE_MSS);
-    pos_control->set_correction_speed_accel_NE_m(pos_control->get_vel_estimate_NEU_ms().length(), BRAKE_MODE_DECEL_RATE_MSS);
+    pos_control->set_max_speed_accel_NE_m(pos_control->get_vel_estimate_NEU_ms().xy().length(), BRAKE_MODE_DECEL_RATE_MSS);
+    pos_control->set_correction_speed_accel_NE_m(pos_control->get_vel_estimate_NEU_ms().xy().length(), BRAKE_MODE_DECEL_RATE_MSS);
 
     // initialise position controller
     pos_control->init_NE_controller();

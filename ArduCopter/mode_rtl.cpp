@@ -310,7 +310,7 @@ void ModeRTL::descent_run()
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if we've reached within 20cm of final altitude
-    _state_complete = labs(rtl_path.descent_target.alt * 0.01 - pos_control->get_pos_estimate_NEU_m().z) < 0.2;
+    _state_complete = labs(rtl_path.descent_target.alt * 0.01 - pos_control->get_pos_estimate_U_m()) < 0.2;
 }
 
 // land_start - initialise controllers to loiter over home
