@@ -154,6 +154,10 @@ public:
         return _dropped;
     }
 
+    uint32_t dropped_prev_second_total(void) const {
+        return _dropped_prev_second_total;
+    }
+
     /*
      * Write support
      */
@@ -274,6 +278,9 @@ private:
     bool ensure_format_emitted(const void *pBuffer, uint16_t size);
     bool emit_format_for_type(LogMessages a_type);
     Bitmask<256> _formats_written;
+
+    uint32_t _dropped_prev_second_total;
+    uint32_t _dropped_last_second;
 
 };
 
