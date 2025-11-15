@@ -240,6 +240,12 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
             return false;
         }
 
+        // pilot-speed-up parameter check
+        if (copter.g.land_speed_cms <= 0) {
+            check_failed(Check::PARAMETERS, display_failure, "Check LAND_SPEED");
+            return false;
+        }
+
         #if FRAME_CONFIG == HELI_FRAME
         char fail_msg[100]{};
         // check input manager parameters

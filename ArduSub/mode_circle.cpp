@@ -16,8 +16,8 @@ bool ModeCircle::init(bool ignore_checks)
     // initialize speeds and accelerations
     position_control->set_max_speed_accel_NE_cm(sub.wp_nav.get_default_speed_NE_cms(), sub.wp_nav.get_wp_acceleration_cmss());
     position_control->set_correction_speed_accel_NE_cm(sub.wp_nav.get_default_speed_NE_cms(), sub.wp_nav.get_wp_acceleration_cmss());
-    position_control->set_max_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    position_control->set_correction_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->set_max_speed_accel_U_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->set_correction_speed_accel_U_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // initialise circle controller including setting the circle center based on vehicle speed
     sub.circle_nav.init();
@@ -34,7 +34,7 @@ void ModeCircle::run()
 
     // update parameters, to allow changing at runtime
     position_control->set_max_speed_accel_NE_cm(sub.wp_nav.get_default_speed_NE_cms(), sub.wp_nav.get_wp_acceleration_cmss());
-    position_control->set_max_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->set_max_speed_accel_U_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
@@ -82,5 +82,5 @@ void ModeCircle::run()
 
     // update altitude target and call position controller
     position_control->set_pos_target_U_from_climb_rate_cms(target_climb_rate);
-    position_control->update_U_controller();
+    position_control->update_D_controller();
 }

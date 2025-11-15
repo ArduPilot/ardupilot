@@ -17,17 +17,17 @@ bool ModePoshold::init(bool ignore_checks)
     // initialize vertical speeds and acceleration
     position_control->set_max_speed_accel_NE_cm(g.pilot_speed, g.pilot_accel_z);
     position_control->set_correction_speed_accel_NE_cm(g.pilot_speed, g.pilot_accel_z);
-    position_control->set_max_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    position_control->set_correction_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->set_max_speed_accel_U_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->set_correction_speed_accel_U_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // initialise position and desired velocity
     position_control->init_NE_controller_stopping_point();
-    position_control->init_U_controller();
+    position_control->init_D_controller();
 
     // Stop all thrusters
     attitude_control->set_throttle_out(0.5f ,true, g.throttle_filt);
     attitude_control->relax_attitude_controllers();
-    position_control->relax_U_controller(0.5f);
+    position_control->relax_D_controller(0.5f);
 
     sub.last_pilot_heading = ahrs.yaw_sensor;
 
@@ -46,7 +46,7 @@ void ModePoshold::run()
         attitude_control->set_throttle_out(0.5f ,true, g.throttle_filt);
         attitude_control->relax_attitude_controllers();
         position_control->init_NE_controller_stopping_point();
-        position_control->relax_U_controller(0.5f);
+        position_control->relax_D_controller(0.5f);
         sub.last_pilot_heading = ahrs.yaw_sensor;
         return;
     }

@@ -316,9 +316,7 @@ bool Copter::set_target_pos_NED(const Vector3f& target_pos_ned_m, bool use_yaw, 
         return false;
     }
 
-    const Vector3p pos_neu_m{target_pos_ned_m.x, target_pos_ned_m.y, -target_pos_ned_m.z};
-
-    return mode_guided.set_pos_NEU_m(pos_neu_m, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), yaw_relative, is_terrain_alt);
+    return mode_guided.set_pos_NED_m(target_pos_ned_m.topostype(), use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), yaw_relative, is_terrain_alt);
 }
 
 // set target position and velocity (for use by scripting)
@@ -329,10 +327,7 @@ bool Copter::set_target_posvel_NED(const Vector3f& target_pos_ned_m, const Vecto
         return false;
     }
 
-    const Vector3p pos_neu_m{target_pos_ned_m.x, target_pos_ned_m.y, -target_pos_ned_m.z};
-    const Vector3f vel_neu_ms{target_vel_ned_ms.x, target_vel_ned_ms.y, -target_vel_ned_ms.z};
-
-    return mode_guided.set_pos_vel_accel_NEU_m(pos_neu_m, vel_neu_ms, Vector3f());
+    return mode_guided.set_pos_vel_accel_NED_m(target_pos_ned_m.topostype(), target_vel_ned_ms, Vector3f());
 }
 
 // set target position, velocity and acceleration (for use by scripting)
@@ -343,11 +338,7 @@ bool Copter::set_target_posvelaccel_NED(const Vector3f& target_pos_ned_m, const 
         return false;
     }
 
-    const Vector3p pos_neu_m{target_pos_ned_m.x, target_pos_ned_m.y, -target_pos_ned_m.z};
-    const Vector3f vel_neu_ms{target_vel_ned_ms.x, target_vel_ned_ms.y, -target_vel_ned_ms.z};
-    const Vector3f accel_neu_mss{target_accel_ned_mss.x, target_accel_ned_mss.y, -target_accel_ned_mss.z};
-
-    return mode_guided.set_pos_vel_accel_NEU_m(pos_neu_m, vel_neu_ms, accel_neu_mss, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), yaw_relative);
+    return mode_guided.set_pos_vel_accel_NED_m(target_pos_ned_m.topostype(), target_vel_ned_ms, target_accel_ned_mss, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), yaw_relative);
 }
 
 bool Copter::set_target_velocity_NED(const Vector3f& target_vel_ned_ms)
@@ -357,8 +348,7 @@ bool Copter::set_target_velocity_NED(const Vector3f& target_vel_ned_ms)
         return false;
     }
 
-    const Vector3f vel_neu_ms{target_vel_ned_ms.x, target_vel_ned_ms.y, -target_vel_ned_ms.z};
-    mode_guided.set_vel_NEU_ms(vel_neu_ms);
+    mode_guided.set_vel_NED_ms(target_vel_ned_ms);
     return true;
 }
 
@@ -370,10 +360,7 @@ bool Copter::set_target_velaccel_NED(const Vector3f& target_vel_ned_ms, const Ve
         return false;
     }
 
-    const Vector3f vel_neu_ms{target_vel_ned_ms.x, target_vel_ned_ms.y, -target_vel_ned_ms.z};
-    const Vector3f accel_neu_mss{target_accel_ned_mss.x, target_accel_ned_mss.y, -target_accel_ned_mss.z};
-
-    mode_guided.set_vel_accel_NEU_m(vel_neu_ms, accel_neu_mss, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), relative_yaw);
+    mode_guided.set_vel_accel_NED_m(target_vel_ned_ms, target_accel_ned_mss, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), relative_yaw);
     return true;
 }
 
@@ -798,7 +785,7 @@ void Copter::one_hz_loop()
     if (!using_rate_thread) {
         attitude_control->set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
     }
-    pos_control->get_accel_U_pid().set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+    pos_control->get_accel_D_pid().set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
 #if AC_CUSTOMCONTROL_MULTI_ENABLED
     custom_control.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
 #endif

@@ -121,14 +121,14 @@ bool ModeSystemId::init(bool ignore_checks)
         }
 
         // set vertical speed and acceleration limits
-        pos_control->set_max_speed_accel_U_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_U_mss());
-        pos_control->set_correction_speed_accel_U_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_U_mss());
+        pos_control->set_max_speed_accel_D_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_D_mss());
+        pos_control->set_correction_speed_accel_D_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_D_mss());
 
         // initialise the vertical position controller
-        if (!pos_control->is_active_U()) {
-            pos_control->init_U_controller();
+        if (!pos_control->is_active_D()) {
+            pos_control->init_D_controller();
         }
-        target_pos_ne_m = pos_control->get_pos_estimate_NEU_m().xy();
+        target_pos_ne_m = pos_control->get_pos_estimate_NED_m().xy();
     }
 
     att_bf_feedforward = attitude_control->get_bf_feedforward();
@@ -375,10 +375,10 @@ void ModeSystemId::run()
         attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), target_yaw_rate_rads, false);
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_U_from_climb_rate_ms(target_climb_rate_ms);
+        pos_control->set_pos_target_D_from_climb_rate_ms(target_climb_rate_ms);
 
         // run the vertical position controller and set output throttle
-        pos_control->update_U_controller();
+        pos_control->update_D_controller();
     }
 
     if (log_subsample <= 0) {

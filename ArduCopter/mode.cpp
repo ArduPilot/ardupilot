@@ -589,8 +589,8 @@ void Mode::make_safe_ground_handling(bool force_throttle_unlimited)
 
     pos_control->relax_velocity_controller_NE();
     pos_control->update_NE_controller();
-    pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
-    pos_control->update_U_controller();
+    pos_control->relax_D_controller(0.0f);   // forces throttle output to decay to zero
+    pos_control->update_D_controller();
     // we may need to move this out
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(0.0f, 0.0f, 0.0f);
 }
@@ -625,21 +625,21 @@ void Mode::land_run_vertical_control(bool pause_descent)
         // do not ignore limits until we have slowed down for landing
         ignore_descent_limit = (MAX(g2.land_alt_low_cm, 100) * 0.01 > get_alt_above_ground_m()) || copter.ap.land_complete_maybe;
 
-        float max_land_descent_vel_d_ms;
+        float max_land_descent_speed_ms;
         if (g.land_speed_high_cms > 0) {
-            max_land_descent_vel_d_ms = -g.land_speed_high_cms * 0.01;
+            max_land_descent_speed_ms = g.land_speed_high_cms * 0.01;
         } else {
-            max_land_descent_vel_d_ms = pos_control->get_max_speed_down_ms();
+            max_land_descent_speed_ms = pos_control->get_max_speed_down_ms();
         }
 
         // Don't speed up for landing.
-        max_land_descent_vel_d_ms = MIN(max_land_descent_vel_d_ms, -abs(g.land_speed_cms) * 0.01);
+        max_land_descent_speed_ms = MAX(max_land_descent_speed_ms, g.land_speed_cms * 0.01);
 
         // Compute a vertical velocity demand such that the vehicle approaches g2.land_alt_low_cm. Without the below constraint, this would cause the vehicle to hover at g2.land_alt_low_cm.
-        climb_rate_ms = sqrt_controller(MAX(g2.land_alt_low_cm, 100) * 0.01 - get_alt_above_ground_m(), pos_control->get_pos_U_p().kP(), pos_control->get_max_accel_U_mss(), G_Dt);
+        climb_rate_ms = sqrt_controller(MAX(g2.land_alt_low_cm, 100) * 0.01 - get_alt_above_ground_m(), pos_control->get_pos_D_p().kP(), pos_control->get_max_accel_D_mss(), G_Dt);
 
         // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
-        climb_rate_ms = constrain_float(climb_rate_ms, max_land_descent_vel_d_ms, -abs(g.land_speed_cms) * 0.01);
+        climb_rate_ms = constrain_float(climb_rate_ms, -max_land_descent_speed_ms, -g.land_speed_cms * 0.01);
 
 #if AC_PRECLAND_ENABLED
         const bool navigating = pos_control->is_active_NE();
@@ -650,7 +650,7 @@ void Mode::land_run_vertical_control(bool pause_descent)
             Vector2p target_pos_ne_m;
             float target_error_m = 0.0f;
             if (copter.precland.get_target_position_m(target_pos_ne_m)) {
-                const Vector2p current_pos_ne_m = pos_control->get_pos_estimate_NEU_m().xy();
+                const Vector2p current_pos_ne_m = pos_control->get_pos_estimate_NED_m().xy();
                 // target is this many m away from the vehicle
                 target_error_m = (target_pos_ne_m - current_pos_ne_m).tofloat().length();
             }
@@ -667,7 +667,7 @@ void Mode::land_run_vertical_control(bool pause_descent)
                 // compute desired descent velocity
                 const float precland_acceptable_error_m = 0.15;
                 const float precland_min_descent_speed_ms = 0.1;
-                const float max_descent_speed_ms = abs(g.land_speed_cms) * 0.005;
+                const float max_descent_speed_ms = g.land_speed_cms * 0.005;
                 const float land_slowdown_ms = MAX(0.0f, target_error_m * (max_descent_speed_ms / precland_acceptable_error_m));
                 climb_rate_ms = MIN(-precland_min_descent_speed_ms, -max_descent_speed_ms + land_slowdown_ms);
             }
@@ -677,7 +677,7 @@ void Mode::land_run_vertical_control(bool pause_descent)
 
     // update altitude target and call position controller
     pos_control->land_at_climb_rate_ms(climb_rate_ms, ignore_descent_limit);
-    pos_control->update_U_controller();
+    pos_control->update_D_controller();
 }
 
 void Mode::land_run_horizontal_control()
@@ -735,10 +735,10 @@ void Mode::land_run_horizontal_control()
         Vector2p target_pos_ne_m;
         Vector2f target_vel_ne_ms;
         if (!copter.precland.get_target_position_m(target_pos_ne_m)) {
-            target_pos_ne_m = pos_control->get_pos_estimate_NEU_m().xy();
+            target_pos_ne_m = pos_control->get_pos_estimate_NED_m().xy();
         }
          // get the velocity of the target
-        copter.precland.get_target_velocity_ms(pos_control->get_vel_estimate_NEU_ms().xy(), target_vel_ne_ms);
+        copter.precland.get_target_velocity_ms(pos_control->get_vel_estimate_NED_ms().xy(), target_vel_ne_ms);
 
         Vector2f accel_zero;
         // target vel will remain zero if landing target is stationary
@@ -812,12 +812,11 @@ void Mode::precland_retry_position(const Vector3p &retry_pos_ned_m)
         }
     }
 
-    Vector3p retry_pos_neu_m{retry_pos_ned_m.x, retry_pos_ned_m.y, -retry_pos_ned_m.z};
-    pos_control->input_pos_NEU_m(retry_pos_neu_m, 0.0f, 10.0);
+    pos_control->input_pos_NED_m(retry_pos_ned_m, 0.0f, 10.0);
 
     // run position controllers
     pos_control->update_NE_controller();
-    pos_control->update_U_controller();
+    pos_control->update_D_controller();
 
     // call attitude controller
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
@@ -909,7 +908,7 @@ float Mode::get_avoidance_adjusted_climbrate_ms(float target_rate_ms)
 {
 #if AP_AVOIDANCE_ENABLED
     float target_rate_cms = target_rate_ms * 100.0;
-    AP::ac_avoid()->adjust_velocity_z(pos_control->get_pos_U_p().kP(), pos_control->get_max_accel_U_mss() * 100.0, target_rate_cms, G_Dt);
+    AP::ac_avoid()->adjust_velocity_z(pos_control->get_pos_D_p().kP(), pos_control->get_max_accel_D_mss() * 100.0, target_rate_cms, G_Dt);
     return target_rate_cms * 0.01;
 #else
     return target_rate_ms;
@@ -922,7 +921,7 @@ void Mode::output_to_motors()
     motors->output();
 }
 
-Mode::AltHoldModeState Mode::get_alt_hold_state_U_ms(float target_climb_rate_ms)
+Mode::AltHoldModeState Mode::get_alt_hold_state_D_ms(float target_climb_rate_ms)
 {
     // Alt Hold State Machine Determination
     if (!motors->armed()) {
@@ -1031,16 +1030,16 @@ float Mode::get_pilot_speed_dn_ms() const
     return copter.get_pilot_speed_dn() * 0.01;
 }
 
-float Mode::get_pilot_accel_U_mss() const
+float Mode::get_pilot_accel_D_mss() const
 {
-    return g.pilot_accel_u_cmss * 0.01;
+    return g.pilot_accel_d_cmss * 0.01;
 }
 
 // Return stopping point as a location with above origin alt frame
 Location Mode::get_stopping_point() const
 {
-    Vector3p stopping_point_neu_m;
-    copter.pos_control->get_stopping_point_NE_m(stopping_point_neu_m.xy());
-    copter.pos_control->get_stopping_point_U_m(stopping_point_neu_m.z);
-    return Location { stopping_point_neu_m.tofloat() * 100.0, Location::AltFrame::ABOVE_ORIGIN };
+    Vector3p stopping_point_ned_m;
+    copter.pos_control->get_stopping_point_NE_m(stopping_point_ned_m.xy());
+    copter.pos_control->get_stopping_point_D_m(stopping_point_ned_m.z);
+    return Location(Location::AltFrame::ABOVE_ORIGIN, stopping_point_ned_m);
 }

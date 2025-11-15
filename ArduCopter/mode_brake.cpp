@@ -10,19 +10,19 @@
 bool ModeBrake::init(bool ignore_checks)
 {
     // initialise pos controller speed and acceleration
-    pos_control->set_max_speed_accel_NE_m(pos_control->get_vel_estimate_NEU_ms().length(), BRAKE_MODE_DECEL_RATE_MSS);
-    pos_control->set_correction_speed_accel_NE_m(pos_control->get_vel_estimate_NEU_ms().length(), BRAKE_MODE_DECEL_RATE_MSS);
+    pos_control->set_max_speed_accel_NE_m(pos_control->get_vel_estimate_NED_ms().xy().length(), BRAKE_MODE_DECEL_RATE_MSS);
+    pos_control->set_correction_speed_accel_NE_m(pos_control->get_vel_estimate_NED_ms().xy().length(), BRAKE_MODE_DECEL_RATE_MSS);
 
     // initialise position controller
     pos_control->init_NE_controller();
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_m(BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_DECEL_RATE_MSS);
-    pos_control->set_correction_speed_accel_U_m(BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_DECEL_RATE_MSS);
+    pos_control->set_max_speed_accel_D_m(BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_DECEL_RATE_MSS);
+    pos_control->set_correction_speed_accel_D_m(BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_DECEL_RATE_MSS);
 
     // initialise the vertical position controller
-    if (!pos_control->is_active_U()) {
-        pos_control->init_U_controller();
+    if (!pos_control->is_active_D()) {
+        pos_control->init_D_controller();
     }
 
     _timeout_ms = 0;
@@ -37,7 +37,7 @@ void ModeBrake::run()
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_ground_handling();
-        pos_control->relax_U_controller(0.0f);
+        pos_control->relax_D_controller(0.0f);
         return;
     }
 
@@ -58,8 +58,8 @@ void ModeBrake::run()
     // call attitude controller
     attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), 0.0f);
 
-    pos_control->set_pos_target_U_from_climb_rate_ms(0.0f);
-    pos_control->update_U_controller();
+    pos_control->set_pos_target_D_from_climb_rate_ms(0.0f);
+    pos_control->update_D_controller();
 
     // MAV_CMD_SOLO_BTN_PAUSE_CLICK (Solo only) is used to set the timeout.
     if (_timeout_ms != 0 && millis()-_timeout_start >= _timeout_ms) {
