@@ -156,7 +156,9 @@ private:
     RC_Channel *rc_channel_manual_throttle;
     RC_Channel *rc_channel_starter_motor;
     uint32_t last_rc_channel_check;
+    bool rc_channel_starter_state_prev; // The state of the user-requested starter switch, at the last time we checked.
     uint32_t last_start_time_ms;
+    bool starter_requested_user; // Whether we have a new (unserved) starter request by the user.
 
     // user-configurable parameters:
     AP_Int32 time_until_maintenance;
@@ -166,6 +168,7 @@ private:
     AP_Float temp_required_for_run;
     AP_Float temp_required_for_idle;
     AP_Float temp_for_overtemp_warning;
+    AP_Int8 auto_start;
 
     // update runtime and maintenance-required time
     void update_stats();
