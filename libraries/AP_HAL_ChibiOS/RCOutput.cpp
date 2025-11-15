@@ -1816,7 +1816,7 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
     dmaSetRequestSource(group.dma, group.dma_up_channel);
 #endif
     dmaStreamSetPeripheral(group.dma, &(group.pwm_drv->tim->DMAR));
-    stm32_cacheBufferFlush(group.dma_buffer, buffer_length);
+    stm32_cacheBufferFlush(group.dma_buffer, (buffer_length+31)&~31);
     dmaStreamSetMemory0(group.dma, group.dma_buffer);
     dmaStreamSetTransactionSize(group.dma, buffer_length / sizeof(dmar_uint_t));
 #if STM32_DMA_ADVANCED
