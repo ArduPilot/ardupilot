@@ -178,6 +178,7 @@ public:
 #if AP_MAVLINK_FTP_ENABLED
     friend class GCS_FTP;
 #endif
+    friend class MAVLink_routing;
 
     GCS_MAVLINK(AP_HAL::UARTDriver &uart);
     virtual ~GCS_MAVLINK() {}
@@ -229,7 +230,8 @@ public:
     }
 
     // packetReceived is called on any successful decode of a mavlink message
-    virtual void packetReceived(const mavlink_status_t &status,
+    virtual void packetReceived(uint8_t framing_status,
+                                const mavlink_status_t &status,
                                 const mavlink_message_t &msg);
 
     // send a mavlink_message_t out this GCS_MAVLINK connection.
@@ -529,6 +531,7 @@ protected:
         MAVLINK2_SIGNING_DISABLED = (1U << 0),
         NO_FORWARD                = (1U << 1),  // don't forward MAVLink data to or from this device
         NOSTREAMOVERRIDE          = (1U << 2),  // ignore REQUEST_DATA_STREAM messages (eg. from GCSs)
+        FORWARD_BAD_CRC           = (1U << 3), // forward mavlink packets that don't pass CRC
     };
     bool option_enabled(Option option) const {
         return options & static_cast<uint16_t>(option);
