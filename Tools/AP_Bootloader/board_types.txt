@@ -325,6 +325,7 @@ AP_HW_ORQAH7QUADCORE                 1204
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
 AP_HW_NUCLEO_H753ZI                  1207
+AP_HW_OPTIMUS1411                    1208
 
 AP_HW_CSKY-PMU                       1212
 
@@ -563,4 +564,4 @@ AP_HW_CUBEORANGEPLUS_ODID           11063
 
 # do not allocate board IDs above 10,000 for non-ODID boards.
 # do not allocate board IDs above 19,999 in this file.
-AP_HW_OPTIMUS1411                   7111
+
