@@ -3488,6 +3488,11 @@ void GCS_MAVLINK::send_vfr_hud()
  */
 MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
+    if ((packet.target_component != MAV_COMP_ID_ALL) && (packet.target_component != mavlink_system.compid)) {
+        // Make sure reboot/shutdown commands sent to a component don't cause the autopilot to reboot.
+        return MAV_RESULT_DENIED;
+    }
+
     if (is_equal(packet.param1, 42.0f) &&
         is_equal(packet.param2, 24.0f) &&
         is_equal(packet.param3, 71.0f)) {
