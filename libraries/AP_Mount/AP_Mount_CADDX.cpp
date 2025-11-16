@@ -137,9 +137,23 @@ void AP_Mount_CADDX::send_target_angles(const MountTarget& angle_target_rad)
 
     // byte 2's lower 3 bits are mode
     // lower 5 bits are sensitivity but always left as zero
-    uint8_t mode = (uint8_t)LockMode::TILT_LOCK | (uint8_t)LockMode::ROLL_LOCK;
+    uint8_t mode = 0; //start with everything bf locked
+    // yaw_is_ef (from switch or elsewhere)
+    // its really a mount lock to earth frame
+    // CADDX yaw lock is not required and is duplication since we get yaw via get_bf_yaw, the gimbal accs would be fighting our yaw target potentially
     if (angle_target_rad.yaw_is_ef) {
-        mode |= (uint8_t)LockMode::YAW_LOCK;
+        mode = (uint8_t)LockMode::PITCH_LOCK | (uint8_t)LockMode::ROLL_LOCK;
+    }
+    // if yaw is not locked then see if we set pitch and roll lock independtly
+    if (!angle_target_rad.pitch_is_ef) {
+        mode ^= (uint8_t)LockMode::PITCH_LOCK;
+    }
+    if (!angle_target_rad.roll_is_ef) {
+        mode ^= (uint8_t)LockMode::ROLL_LOCK;
+    }
+    // if the option is set force BF lock on pitch and roll axes, but yaw target still can be ef locked via MOUNT_LOCK or GCS. 
+    if (option_set(Options::FPV_RP_LOCK)) {
+        mode = 0; // set gimbal mode to FPV in pitch and roll unconditionally if option set, setting yaw_is_ef results in ef yaw targeting
     }
     set_attitude_cmd_buf[2] = mode & 0x07;
 
