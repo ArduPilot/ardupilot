@@ -263,7 +263,7 @@ local terrain_altitude = terrain:height_above_terrain(true)
 local terrain_max_exceeded = false
 local groundspeed_vector = ahrs:groundspeed_vector()
 local groundspeed_current = groundspeed_vector:length()
-local airspeed_current = ahrs:airspeed_estimate()
+local airspeed_current = ahrs:airspeed_EAS()
 local airspeed_desired = airspeed_current
 
 local now_ms = millis()
@@ -1218,7 +1218,7 @@ function Update()
     current_heading_deg = math.deg(Get_Yaw_Function(ahrs) or 0)
     groundspeed_vector = ahrs:groundspeed_vector()
     groundspeed_current = groundspeed_vector:length()
-    airspeed_current = ahrs:airspeed_estimate()
+    airspeed_current = ahrs:airspeed_EAS()
 
     -- save the previous target location only if in auto mode, if restoring it in AUTO mode
     -- don't update it if already pitching or quading because the altitude change will mess up the history

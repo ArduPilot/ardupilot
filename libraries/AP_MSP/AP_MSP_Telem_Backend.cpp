@@ -255,7 +255,7 @@ void AP_MSP_Telem_Backend::update_airspeed(airspeed_state_t &airspeed_state)
 {
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
-    airspeed_state.airspeed_have_estimate = ahrs.airspeed_estimate(airspeed_state.airspeed_estimate_ms);
+    airspeed_state.airspeed_have_estimate = ahrs.airspeed_EAS(airspeed_state.airspeed_estimate_ms);
     if (!airspeed_state.airspeed_have_estimate) {
         airspeed_state.airspeed_estimate_ms = 0.0;
     }

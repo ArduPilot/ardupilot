@@ -97,12 +97,12 @@ public:
         return ahrs.wind_estimate(wind);
     }
 
-    bool airspeed_estimate(float &airspeed_ret) const WARN_IF_UNUSED {
-        return ahrs.airspeed_estimate(airspeed_ret);
+    bool airspeed_EAS(float &airspeed_ret) const WARN_IF_UNUSED {
+        return ahrs.airspeed_EAS(airspeed_ret);
     }
 
-    bool airspeed_estimate_true(float &airspeed_ret) const WARN_IF_UNUSED {
-        return ahrs.airspeed_estimate_true(airspeed_ret);
+    bool airspeed_TAS(float &airspeed_ret) const WARN_IF_UNUSED {
+        return ahrs.airspeed_TAS(airspeed_ret);
     }
 
     float get_EAS2TAS(void) const {

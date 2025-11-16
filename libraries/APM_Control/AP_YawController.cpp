@@ -212,7 +212,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
         bank_angle = constrain_float(bank_angle,-1.3962634f,1.3962634f);
     }
     const AP_AHRS &_ahrs = AP::ahrs();
-    if (!_ahrs.airspeed_estimate(aspeed)) {
+    if (!_ahrs.airspeed_EAS(aspeed)) {
         // If no airspeed available use average of min and max
         aspeed = 0.5f*(float(aspd_min) + float(aparm.airspeed_max));
     }
@@ -306,7 +306,7 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
     float aspeed;
     float old_I = rate_pid.get_i();
 
-    if (!_ahrs.airspeed_estimate(aspeed)) {
+    if (!_ahrs.airspeed_EAS(aspeed)) {
         aspeed = 0;
     }
     bool underspeed = aspeed <= float(aparm.airspeed_min);

@@ -707,7 +707,7 @@ void Tailsitter::speed_scaling(void)
         // https://web.mit.edu/16.unified/www/FALL/thermodynamics/notes/node86.html
 
         float airspeed;
-        if (!quadplane.ahrs.airspeed_estimate(airspeed)) {
+        if (!quadplane.ahrs.airspeed_EAS(airspeed)) {
             // No airspeed estimate, use throttle scaling
             spd_scaler = throttle_scaler;
 
@@ -832,7 +832,7 @@ void Tailsitter_Transition::update()
     const uint32_t now = millis();
 
     float aspeed;
-    bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
+    bool have_airspeed = quadplane.ahrs.airspeed_EAS(aspeed);
     quadplane.assisted_flight = quadplane.assist.should_assist(aspeed, have_airspeed);
 
     if (transition_state != State::DONE) {
@@ -897,7 +897,7 @@ void Tailsitter_Transition::VTOL_update()
 
     if (transition_state == State::ANGLE_WAIT_VTOL) {
         float aspeed;
-        bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
+        bool have_airspeed = quadplane.ahrs.airspeed_EAS(aspeed);
         // provide assistance in forward flight portion of tailsitter transition
         quadplane.assisted_flight = quadplane.assist.should_assist(aspeed, have_airspeed);
         if (!quadplane.tailsitter.transition_vtol_complete()) {

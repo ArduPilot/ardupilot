@@ -146,7 +146,7 @@ void Plane::calc_airspeed_errors()
     // NOTE:  we use the airspeed estimate function not direct sensor
     //        as TECS may be using synthetic airspeed
     float airspeed_measured = 0.1;
-    if (ahrs.airspeed_estimate(airspeed_measured)) {
+    if (ahrs.airspeed_EAS(airspeed_measured)) {
         smoothed_airspeed = MAX(0.1, smoothed_airspeed * 0.8f + airspeed_measured * 0.2f);
     }
 

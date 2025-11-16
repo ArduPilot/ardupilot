@@ -235,7 +235,7 @@ float GCS_MAVLINK_Copter::vfr_hud_airspeed() const
 #endif
     
     Vector3f airspeed_vec_bf;
-    if (AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
+    if (AP::ahrs().airspeed_vector_TAS(airspeed_vec_bf)) {
         // we are running the EKF3 wind estimation code which can give
         // us an airspeed estimate
         return airspeed_vec_bf.length();
@@ -1329,7 +1329,7 @@ MAV_LANDED_STATE GCS_MAVLINK_Copter::landed_state() const
 void GCS_MAVLINK_Copter::send_wind() const
 {
     Vector3f airspeed_vec_bf;
-    if (!AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
+    if (!AP::ahrs().airspeed_vector_TAS(airspeed_vec_bf)) {
         // if we don't have an airspeed estimate then we don't have a
         // valid wind estimate on copters
         return;
@@ -1392,7 +1392,7 @@ uint8_t GCS_MAVLINK_Copter::high_latency_wind_speed() const
     Vector3f airspeed_vec_bf;
     Vector3f wind;
     // return units are m/s*5
-    if (AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
+    if (AP::ahrs().airspeed_vector_TAS(airspeed_vec_bf)) {
         wind = AP::ahrs().wind_estimate();
         return wind.length() * 5;
     }
@@ -1404,7 +1404,7 @@ uint8_t GCS_MAVLINK_Copter::high_latency_wind_direction() const
     Vector3f airspeed_vec_bf;
     Vector3f wind;
     // return units are deg/2
-    if (AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
+    if (AP::ahrs().airspeed_vector_TAS(airspeed_vec_bf)) {
         wind = AP::ahrs().wind_estimate();
         // need to convert -180->180 to 0->360/2
         return wrap_360(degrees(atan2f(-wind.y, -wind.x))) / 2;

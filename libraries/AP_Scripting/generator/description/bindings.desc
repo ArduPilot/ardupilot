@@ -61,7 +61,8 @@ singleton AP_AHRS method get_relative_position_NED_origin_float rename get_relat
 singleton AP_AHRS method get_relative_position_D_home void float'Ref
 singleton AP_AHRS method home_is_set boolean
 singleton AP_AHRS method healthy boolean
-singleton AP_AHRS method airspeed_estimate boolean float'Null
+singleton AP_AHRS method airspeed_EAS boolean float'Null
+singleton AP_AHRS method airspeed_EAS alias airspeed_estimate
 singleton AP_AHRS method get_vibration Vector3f
 singleton AP_AHRS method earth_to_body Vector3f Vector3f
 singleton AP_AHRS method body_to_earth Vector3f Vector3f
