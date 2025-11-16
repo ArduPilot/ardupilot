@@ -161,9 +161,10 @@ public:
     // get air density / sea level density - decreases as altitude climbs
     float get_air_density_ratio(void) const;
     
-    // return an (equivalent) airspeed estimate if available. return true
-    // if we have an estimate
-    bool airspeed_estimate(float &airspeed_ret) const;
+    // return an (equivalent) airspeed estimate if available. return
+    // true if airspeed_ret is valid.  This value may be derived from
+    // airspeed data or synthesised from other sources.
+    bool airspeed_EAS(float &airspeed_ret) const;
 
     enum AirspeedEstimateType : uint8_t {
         NO_NEW_ESTIMATE = 0,
@@ -173,20 +174,24 @@ public:
         SIM = 4,
     };
 
-    // return an airspeed estimate if available. return true
-    // if we have an estimate
-    bool airspeed_estimate(float &airspeed_ret, AirspeedEstimateType &type) const;
+    // return an (equivalent) airspeed estimate if available. return
+    // true if airspeed_ret is valid. This value may be derived from
+    // airspeed data or synthesised from other sources (the type
+    // return parameter allows you to distinguish).
+    bool airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &type) const;
 
     // return true if the current AHRS airspeed estimate (from airspeed_estimate method) is directly derived from an airspeed sensor
     bool using_airspeed_sensor() const;
 
-    // return a true airspeed estimate (navigation airspeed) if
-    // available. return true if we have an estimate
-    bool airspeed_estimate_true(float &airspeed_ret) const;
+    // return a true airspeed (navigation airspeed) if
+    // available. return true if airspeed_ret is valid.  This value
+    // may be derived from actual airspeed sensor data or synthesized
+    // from other sources.
+    bool airspeed_TAS(float &airspeed_ret) const;
 
     // return estimate of true airspeed vector in body frame in m/s
     // returns false if estimate is unavailable
-    bool airspeed_vector_true(Vector3f &vec) const;
+    bool airspeed_vector_TAS(Vector3f &vec) const;
 
     // return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed
     // returns false if the data is unavailable
@@ -208,7 +213,7 @@ public:
     // other than an actual airspeed sensor), if available. return
     // true if we have a synthetic airspeed.  ret will not be modified
     // on failure.
-    bool synthetic_airspeed(float &ret) const WARN_IF_UNUSED;
+    bool dcm_synthetic_airspeed_EAS(float &ret) const WARN_IF_UNUSED;
 
     // true if compass is being used
     bool use_compass();
@@ -1000,13 +1005,13 @@ private:
         Vector3f wind_estimate;
         bool wind_estimate_ok;
         float EAS2TAS;
-        bool airspeed_ok;
-        float airspeed;
+        bool airspeed_EAS_ok;
+        float airspeed_EAS;
         AirspeedEstimateType airspeed_estimate_type;
-        bool airspeed_true_ok;
-        float airspeed_true;
-        Vector3f airspeed_vec;
-        bool airspeed_vec_ok;
+        bool airspeed_TAS_ok;
+        float airspeed_TAS;
+        Vector3f airspeed_TAS_vec;
+        bool airspeed_TAS_vec_ok;
         Quaternion quat;
         bool quat_ok;
         Vector3f secondary_attitude;

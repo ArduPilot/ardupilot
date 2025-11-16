@@ -156,7 +156,7 @@ bool Mode::enter()
 #if HAL_QUADPLANE_ENABLED
         if (quadplane.enabled()) {
             float aspeed;
-            bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
+            bool have_airspeed = quadplane.ahrs.airspeed_EAS(aspeed);
             quadplane.assisted_flight = quadplane.assist.should_assist(aspeed, have_airspeed);
         }
 

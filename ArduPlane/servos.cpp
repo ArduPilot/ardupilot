@@ -690,7 +690,7 @@ void Plane::set_servos_flaps(void)
     if (has_target_airspeed || flap_actual_speed) {
         int16_t flapSpeedSource = 0;
         float est_airspeed;
-        bool have_airspeed = ahrs.airspeed_estimate(est_airspeed);
+        bool have_airspeed = ahrs.airspeed_EAS(est_airspeed);
         if (has_target_airspeed && ahrs.using_airspeed_sensor()) {
             flapSpeedSource = target_airspeed_cm * 0.01f;
             if (flap_actual_speed) {

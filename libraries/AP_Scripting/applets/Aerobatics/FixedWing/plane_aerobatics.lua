@@ -2394,7 +2394,7 @@ function do_path()
    local ahrs_pos = ahrs:get_position()
    local ahrs_gyro = ahrs:get_gyro()
    local ahrs_velned = ahrs:get_velocity_NED()
-   local ahrs_airspeed = ahrs:airspeed_estimate()
+   local ahrs_airspeed = ahrs:airspeed_EAS()
    --[[
       ahrs_quat is the quaterion which when used with quat_earth_to_body() rotates a vector
       from earth to body frame. It needs to be the inverse of ahrs:get_quaternion()

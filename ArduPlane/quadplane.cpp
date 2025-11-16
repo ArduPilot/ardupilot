@@ -1429,7 +1429,7 @@ float QuadPlane::assist_climb_rate_cms(void) const
 float QuadPlane::desired_auto_yaw_rate_cds(bool body_frame) const
 {
     float aspeed;
-    if (!ahrs.airspeed_estimate(aspeed) || aspeed < plane.aparm.airspeed_min) {
+    if (!ahrs.airspeed_EAS(aspeed) || aspeed < plane.aparm.airspeed_min) {
         aspeed = plane.aparm.airspeed_min;
     }
     if (aspeed < 1) {
@@ -1454,7 +1454,7 @@ void SLT_Transition::update()
     }
 
     float aspeed;
-    bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
+    bool have_airspeed = quadplane.ahrs.airspeed_EAS(aspeed);
 
     /*
       see if we should provide some assistance
@@ -1919,7 +1919,7 @@ void QuadPlane::update_throttle_hover()
     // calc average throttle if we are in a level hover and low airspeed
     if (throttle > 0.0f && fabsf(inertial_nav.get_velocity_z_up_cms()) < 60 &&
         labs(ahrs_view->roll_sensor) < 500 && labs(ahrs_view->pitch_sensor) < 500 &&
-        ahrs.airspeed_estimate(aspeed) && aspeed < plane.aparm.airspeed_min * 0.3) {
+        ahrs.airspeed_EAS(aspeed) && aspeed < plane.aparm.airspeed_min * 0.3) {
         // Can we set the time constant automatically
         motors->update_throttle_hover(0.01f);
 #if HAL_GYROFFT_ENABLED
@@ -2363,7 +2363,7 @@ void QuadPlane::vtol_position_controller(void)
         const float distance_m = plane.auto_state.wp_distance;
         const float closing_speed_ms = closing_vel_ne_ms.length();
         const float desired_closing_speed_ms = desired_closing_vel_ne_ms.length();
-        if (!plane.ahrs.airspeed_estimate(aspeed_ms)) {
+        if (!plane.ahrs.airspeed_EAS(aspeed_ms)) {
             aspeed_ms = groundspeed_ms;
         }
 
@@ -2954,7 +2954,7 @@ void QuadPlane::assign_tilt_to_fwd_thr(void)
     // Prevent the wing from being overloaded when braking from high speed in a VTOL mode
     float nav_pitch_upper_limit_cd = 100.0f * q_bck_pitch_lim;
     float aspeed;
-    if (is_positive(q_bck_pitch_lim) && ahrs.airspeed_estimate(aspeed)) {
+    if (is_positive(q_bck_pitch_lim) && ahrs.airspeed_EAS(aspeed)) {
         const float reference_speed = MAX(plane.aparm.airspeed_min, MIN_AIRSPEED_MIN);
         float speed_scaler = sq(reference_speed / MAX(aspeed, 0.1f));
         nav_pitch_upper_limit_cd *= speed_scaler;
@@ -4486,7 +4486,7 @@ bool SLT_Transition::set_VTOL_roll_pitch_limit(int32_t& roll_cd, int32_t& pitch_
      */
     float airspeed;
     if (pitch_cd > angle_max &&
-        plane.ahrs.airspeed_estimate(airspeed) && airspeed < 0.5 * plane.aparm.airspeed_min) {
+        plane.ahrs.airspeed_EAS(airspeed) && airspeed < 0.5 * plane.aparm.airspeed_min) {
         const float max_limit_cd = linear_interpolate(angle_max, 4500,
                                                       airspeed,
                                                       0, 0.5 * plane.aparm.airspeed_min);
@@ -4735,7 +4735,7 @@ void QuadPlane::setup_rp_fw_angle_gains(void)
     }
 
     float aspeed;
-    if (!ahrs.airspeed_estimate(aspeed)) {
+    if (!ahrs.airspeed_EAS(aspeed)) {
         // can't get airspeed, no scaling of VTOL angle gains
         return;
     }

@@ -1862,7 +1862,7 @@ void AP_OSD_Screen::draw_sidebars(uint8_t x, uint8_t y)
     float alt = 0.0f;
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
-    bool have_speed_estimate = ahrs.airspeed_estimate(aspd);
+    bool have_speed_estimate = ahrs.airspeed_EAS(aspd);
     if (!have_speed_estimate) { aspd = 0.0f; }
     ahrs.get_relative_position_D_home(alt);
     float scaled_aspd = u_scale(SPEED, aspd);
@@ -1966,7 +1966,7 @@ void AP_OSD_Screen::draw_aspeed(uint8_t x, uint8_t y)
     float aspd = 0.0f;
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
-    bool have_estimate = ahrs.airspeed_estimate(aspd);
+    bool have_estimate = ahrs.airspeed_EAS(aspd);
     if (have_estimate) {
         backend->write(x, y, false, "%c%4d%c", SYMBOL(SYM_ASPD), (int)u_scale(SPEED, aspd), u_icon(SPEED));
     } else {
