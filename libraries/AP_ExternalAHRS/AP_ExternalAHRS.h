@@ -88,6 +88,13 @@ public:
     // get serial port number, -1 for not enabled
     int8_t get_port(AvailableSensor sensor) const;
 
+    enum class TempCal {
+        DoesntProvideTemp,
+        IsNotTempCalibrated,
+        IsTempCalibrated
+    };
+
+
     struct state_t {
         HAL_Semaphore sem;
 
@@ -102,7 +109,6 @@ public:
         bool have_origin;
         bool have_location;
         bool have_velocity;
-
         uint32_t last_location_update_us;
     } state;
 
@@ -162,6 +168,7 @@ public:
         Vector3f accel;
         Vector3f gyro;
         float temperature;
+        TempCal TempCalibration = TempCal::IsNotTempCalibrated;
     } ins_data_message_t;
 
     typedef struct {

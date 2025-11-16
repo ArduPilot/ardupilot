@@ -233,7 +233,9 @@ public:
 
     // get the accel filter rate in Hz
     uint16_t get_accel_filter_hz(void) const { return _accel_filter_cutoff; }
-
+private:
+    bool externally_temperature_calibrated = false;
+public:
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     // setup the notch for throttle based tracking
     bool setup_throttle_gyro_harmonic_notch(float center_freq_hz, float lower_freq_hz, float ref, uint8_t harmonics);
@@ -429,6 +431,7 @@ public:
 #if AP_EXTERNAL_AHRS_ENABLED
     // handle external AHRS data
     void handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt);
+    AP_ExternalAHRS::TempCal TempCalibration;
 #endif
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
