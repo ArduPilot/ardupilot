@@ -1,0 +1,34 @@
+Waf: Entering directory `/home/madhavi/Task/ardupilot/build/FIRSTTASK'
+Padded 12 bytes for bootloader.bin to 39968
+Embedding file bootloader.bin:/home/madhavi/Task/ardupilot/Tools/bootloaders/FIRSTTASK_bl.bin
+Embedding file defaults.parm:/home/madhavi/Task/ardupilot/build/FIRSTTASK/processed_defaults.parm
+Embedding file hwdef.dat:/home/madhavi/Task/ardupilot/build/FIRSTTASK/hw.dat
+Embedding file io_firmware.bin:Tools/IO_Firmware/iofirmware_f103_lowpolh.bin
+Embedding file io_firmware_dshot.bin:Tools/IO_Firmware/iofirmware_f103_dshot_lowpolh.bin
+Generating compile_commands.json
+Build commands will be stored in build/FIRSTTASK/compile_commands.json
+Generating compile_commands.json
+Build commands will be stored in build/FIRSTTASK/compile_commands.json
+[1192/1199] Linking build/FIRSTTASK/bin/ardurover
+/opt/gcc-arm-none-eabi-12.2/bin/../lib/gcc/arm-none-eabi/12.2.1/../../../../arm-none-eabi/bin/ld: warning: bin/ardurover has a LOAD segment with RWX permissions
+
+[1193/1199] Generating bin/ardurover.bin
+[1194/1199] checking symbols build/FIRSTTASK/bin/ardurover
+[1195/1199] app_descriptor set_app_descriptor: build/FIRSTTASK/bin/ardurover build/FIRSTTASK/bin/ardurover.bin
+No APP_DESCRIPTOR found
+[1196/1199] apj_gen build/FIRSTTASK/bin/ardurover.bin
+[1197/1199] bin cleanup build/FIRSTTASK/bin/ardurover.bin
+[1198/1199] Generating bin/ardurover.abin
+[1199/1199] Generating bin/ardurover_with_bl.hex
+githash 3d217a6d3437267635a72a94926e62c544665fbd md5 9dfc7e47b669767fb900cc2f22108dfa
+Created bin/ardurover.abin
+
+Waf: Leaving directory `/home/madhavi/Task/ardupilot/build/FIRSTTASK'
+
+BUILD SUMMARY
+Build directory: /home/madhavi/Task/ardupilot/build/FIRSTTASK
+Target         Text (B)  Data (B)  BSS (B)  Total Flash Used (B)  Free Flash (B)  External Flash Used (B)
+---------------------------------------------------------------------------------------------------------
+bin/ardurover   1633429      2808   521616               1636237          329832  Not Applicable         
+
+'rover' finished successfully (12.303s)
