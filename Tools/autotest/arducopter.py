@@ -2755,6 +2755,32 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.reboot_sitl()
 
+    def OpticalFlowNoGPS(self):
+        '''test optical flow doesn't supply location'''
+
+        self.set_parameters({
+            'SIM_GPS1_ENABLE': 0,
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "GPS1_TYPE": 0,
+        })
+
+        self.set_analog_rangefinder_parameters()
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+
+        self.reboot_sitl()
+
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW, True, True, True, verbose=True)
+
+        self.change_mode('STABILIZE')
+        self.wait_ready_to_arm(require_absolute=False)
+        self.arm_vehicle()
+        self.change_mode('LOITER')
+        self.set_rc(3, 1800)
+        self.delay_sim_time(10)
+        self.change_mode('LAND')
+        self.wait_disarmed()
+
     def OpticalFlow(self):
         '''test OpticalFlow in flight'''
         self.start_subtest("Make sure no crash if no rangefinder")
@@ -12239,6 +12265,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.ModeCircle,
              self.MagFail,
              self.OpticalFlow,
+             self.OpticalFlowNoGPS,
              self.OpticalFlowLocation,
              self.OpticalFlowLimits,
              self.OpticalFlowCalibration,
