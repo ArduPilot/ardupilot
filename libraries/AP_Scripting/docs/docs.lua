@@ -2369,6 +2369,10 @@ function ESCTelemetryData_ud:voltage(value) end
 ---@param value integer
 function ESCTelemetryData_ud:temperature_cdeg(value) end
 
+-- set power percentage
+---@param pct integer -- range of 0 to 255
+function ESCTelemetryData_ud:power_percentage(pct) end
+
 -- desc
 esc_telem = {}
 
