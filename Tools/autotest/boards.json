@@ -1,0 +1,7 @@
+{
+  "board_id": 5902,
+  "board_name": "FIRSTTASK",
+  "description": "Custom STM32H743 Board",
+  "supported_builds": ["ArduPlane", "Copter", "Rover"]
+}
+
