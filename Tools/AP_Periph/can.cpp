@@ -1781,8 +1781,10 @@ void AP_Periph_FW::esc_telem_update()
             pkt.temperature = nan;
         }
         float rpm;
-        if (esc_telem.get_raw_rpm(i, rpm)) {
+        float error_rate;
+        if (esc_telem.get_raw_rpm_and_error_rate(i, rpm, error_rate)) {
             pkt.rpm = rpm;
+            pkt.error_count = error_rate;
         }
 
 #if AP_EXTENDED_ESC_TELEM_ENABLED
@@ -1791,8 +1793,6 @@ void AP_Periph_FW::esc_telem_update()
             pkt.power_rating_pct = power_rating_pct;
         }
 #endif
-
-        pkt.error_count = 0;
 
         uint8_t buffer[UAVCAN_EQUIPMENT_ESC_STATUS_MAX_SIZE];
         uint16_t total_size = uavcan_equipment_esc_Status_encode(&pkt, buffer, !canfdout());
