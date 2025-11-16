@@ -7731,6 +7731,15 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.remove_installed_script_module("pid.lua")
         self.remove_installed_script_module("mavlink_attitude.lua")
 
+    def PreflightRebootComponent(self):
+        '''Ensure that PREFLIGHT_REBOOT commands sent to components don't reboot Autopilot'''
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN,
+            p1=1, # Reboot autopilot
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+            target_compid=mavutil.mavlink.MAV_COMP_ID_GIMBAL
+        )
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -7907,6 +7916,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.ScriptedArmingChecksAppletEStop,
             self.ScriptedArmingChecksAppletRally,
             self.PlaneFollowAppletSanity,
+            self.PreflightRebootComponent,
         ]
 
     def tests1c(self):
