@@ -252,14 +252,18 @@ void AP_Logger::init(const AP_Int32 &log_bitmask, const struct LogStructure *str
 #endif
 };
 
+    uint8_t remaining_types = _params.backend_types;
     for (const auto &backend_config : backend_configs) {
-        if ((_params.backend_types & uint8_t(backend_config.type)) == 0) {
-            continue;
+        uint8_t type = uint8_t(backend_config.type);
+        if ((remaining_types & type) == 0) {
+            continue; // skip if not enabled
         }
+        remaining_types &= ~type; // remember that we processed this type
         if (_next_backend == LOGGER_MAX_BACKENDS) {
-            AP_BoardConfig::config_error("Too many backends");
+            AP_BoardConfig::config_error("Too many logger backends");
             return;
         }
+
         LoggerMessageWriter_DFLogStart *message_writer =
             NEW_NOTHROW LoggerMessageWriter_DFLogStart();
         if (message_writer == nullptr)  {
@@ -270,6 +274,11 @@ void AP_Logger::init(const AP_Int32 &log_bitmask, const struct LogStructure *str
             AP_BoardConfig::allocation_error("logger backend");
         }
         _next_backend++;
+    }
+
+    if (remaining_types) { // there was a type we didn't process
+        AP_BoardConfig::config_error("Unknown logger backend");
+        return;
     }
 
     for (uint8_t i=0; i<_next_backend; i++) {
