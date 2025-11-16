@@ -60,7 +60,7 @@ public:
     void periodic_1Hz() override;
     void periodic_fullrate() override;
 
-    // this method is used when reporting system status over mavlink
+    // this method is used for mavlink system status and arming checks
     bool logging_failed() const override;
 
     bool logging_started(void) const override { return _write_fd != -1; }

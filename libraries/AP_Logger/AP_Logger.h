@@ -359,9 +359,8 @@ public:
     const struct UnitStructure *unit(uint16_t num) const;
     const struct MultiplierStructure *multiplier(uint16_t num) const;
 
-    // methods for mavlink SYS_STATUS message (send_sys_status)
-    // these methods cover only the first logging backend used -
-    // typically AP_Logger_File.
+    // methods for mavlink SYS_STATUS message (update_sensor_status_flags) and
+    // arming checks. these cover all backends.
     bool logging_present() const;
     bool logging_enabled() const;
     bool logging_failed() const;
