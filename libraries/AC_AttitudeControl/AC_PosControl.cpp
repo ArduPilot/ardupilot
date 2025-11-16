@@ -1371,7 +1371,7 @@ void AC_PosControl::get_stopping_point_NE_m(Vector2p &stopping_point_neu_m) cons
 
     // Use current P gain and max accel to estimate stopping distance
     float kP = _p_pos_ne_m.kP();
-    const float stopping_dist_m = stopping_distance(constrain_float(speed_ne_ms, 0.0, _vel_max_ne_ms), kP, _accel_max_ne_mss);
+    const float stopping_dist_m = stopping_distance(speed_ne_ms, kP, _accel_max_ne_mss);
     if (!is_positive(stopping_dist_m)) {
         return;
     }
