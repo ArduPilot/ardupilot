@@ -6531,7 +6531,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 #if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
     case MSG_GNSS_INTEGRITY:
         CHECK_PAYLOAD_SIZE(GNSS_INTEGRITY);
-        AP::gps().send_mavlink_gnss_integrity(chan, 0);
+        AP::gps().send_mavlink_gnss_integrity(chan, AP::gps().primary_sensor());
         break;
 #endif  // AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
 #if AP_AHRS_ENABLED
