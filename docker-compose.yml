@@ -19,6 +19,7 @@ services:
     volumes:
       - .:/ardupilot
       - ./logs:/tmp/buildlogs
+      - ./sitl_logs:/ardupilot/logs
       - sitl-eeprom:/ardupilot/eeprom
     environment:
       # ========================================
@@ -82,10 +83,21 @@ services:
         echo "ArduPilot SITL Docker Container"
         echo "========================================="
 
+        # Create logs directory for SITL (prevents PreArm: Logging failed)
+        mkdir -p /ardupilot/logs
+        chmod 777 /ardupilot/logs
+        echo "Created logs directory at /ardupilot/logs"
+
         # Generate parameter file from environment variables
         PARAM_FILE="/tmp/docker_params.parm"
         echo "# Auto-generated ArduPilot parameters from Docker environment" > $$PARAM_FILE
         echo "# Generated at: $$(date)" >> $$PARAM_FILE
+        echo "" >> $$PARAM_FILE
+
+        # Logging configuration to prevent PreArm errors
+        echo "# Logging Configuration" >> $$PARAM_FILE
+        echo "LOG_DISARMED 1" >> $$PARAM_FILE
+        echo "LOG_BACKEND_TYPE 1" >> $$PARAM_FILE
         echo "" >> $$PARAM_FILE
 
         # DDS Parameters (verified from AP_DDS_Client.cpp)
