@@ -211,6 +211,73 @@ void AP_GPS_Backend::send_mavlink_gps_rtk(mavlink_channel_t chan)
 #endif  // AP_GPS_GPS_RTK_SENDING_ENABLED || AP_GPS_GPS2_RTK_SENDING_ENABLED
 
 
+#if AP_GPS_GNSS_SENDING_ENABLED
+void AP_GPS_Backend::send_mavlink_gnss(GCS_MAVLINK &link)
+{
+    const AP_GPS_FixType fix_type = state.status;
+    float alt_amsl = NaNf;
+    float alt_ellipsoid = NaNf;
+    if (fix_type >= AP_GPS_FixType::FIX_3D) {
+        // the heights the receiver reported, whichever one location.alt
+        // holds
+        if (state.have_height_amsl) {
+            alt_amsl = state.height_amsl;
+        }
+        if (state.have_height_ellipsoid) {
+            alt_ellipsoid = state.height_ellipsoid;
+        }
+    }
+    // one-sigma standard deviation in mm/s; UINT16_MAX is unknown
+    uint16_t vel_acc_mms = UINT16_MAX;
+    if (state.have_speed_accuracy) {
+        vel_acc_mms = MIN(state.speed_accuracy * 1000, UINT16_MAX - 1);
+    }
+    const MAV_GNSS_DATUM datum = fix_type >= AP_GPS_FixType::FIX_2D ? MAV_GNSS_DATUM_WGS84 : MAV_GNSS_DATUM_UNKNOWN;
+    // GNSS yaw is 0..35999 with 0 as north; UINT16_MAX means this
+    // receiver does not provide yaw, UINT16_MAX-1 that it is
+    // configured to but cannot currently:
+    uint16_t yaw_cd = UINT16_MAX;
+    // one-sigma yaw standard deviation in cdeg; UINT16_MAX is unknown
+    uint16_t yaw_acc_cd = UINT16_MAX;
+    if (AP::gps().have_gps_yaw_configured(state.instance)) {
+        float yaw_deg, yaw_accuracy_deg;
+        uint32_t yaw_time_ms;
+        if (AP::gps().gps_yaw_deg(state.instance, yaw_deg, yaw_accuracy_deg, yaw_time_ms)) {
+            yaw_cd = wrap_360_cd(yaw_deg * 100);
+            // gps_yaw_deg() substitutes a default when the receiver
+            // gives no accuracy; only send the receiver's own
+            const auto &yaw_state = AP::gps().state[AP::gps().yaw_source_instance(state.instance)];
+            if (yaw_state.have_gps_yaw_accuracy) {
+                yaw_acc_cd = MIN(yaw_accuracy_deg * 100, UINT16_MAX - 1);
+            }
+        } else {
+            yaw_cd = UINT16_MAX - 1;
+        }
+    }
+    mavlink_msg_gnss_send(
+        link.get_chan(),
+        AP_HAL::millis(),
+        state.instance,
+        (uint8_t)fix_type,
+        state.location.lat,
+        state.location.lng,
+        alt_amsl,
+        alt_ellipsoid,
+        datum,
+        MAV_GNSS_GEOID_MODEL_UNKNOWN,  // no driver reports its geoid model yet
+        state.ground_speed,
+        state.have_vertical_velocity ? -state.velocity.z : NaNf,  // NED down -> up
+        state.ground_course * 100,  // degrees*100
+        state.num_sats,
+        yaw_cd,
+        state.have_horizontal_accuracy ? state.horizontal_accuracy : NaNf, // one-sigma standard deviation in m
+        state.have_vertical_accuracy ? state.vertical_accuracy : NaNf,     // one-sigma standard deviation in m
+        vel_acc_mms,
+        yaw_acc_cd
+        );
+}
+#endif  // AP_GPS_GNSS_SENDING_ENABLED
+
 
 /*
   set a timestamp based on arrival time on uart at current byte,
