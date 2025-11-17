@@ -1,0 +1,213 @@
+version: '3.8'
+
+services:
+  ardupilot-sitl:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BASE_IMAGE: ubuntu
+        TAG: "22.04"
+        SKIP_AP_GRAPHIC_ENV: 1
+        SKIP_AP_EXT_ENV: 0
+        SKIP_AP_COV_ENV: 1
+        SKIP_AP_GIT_CHECK: 1
+        DO_AP_STM_ENV: 0
+    container_name: ardupilot-sitl
+    network_mode: host
+    working_dir: /ardupilot
+    volumes:
+      - .:/ardupilot
+      - ./logs:/tmp/buildlogs
+      - sitl-eeprom:/ardupilot/eeprom
+    environment:
+      # ========================================
+      # SITL Command-Line Options (sim_vehicle.py)
+      # ========================================
+      - VEHICLE=${VEHICLE:-ArduCopter}
+      - MODEL=${MODEL:-quad}
+      - SPEEDUP=${SPEEDUP:-1}
+      - INSTANCE=${INSTANCE:-0}
+      - SIM_ADDRESS=${SIM_ADDRESS:-127.0.0.1}
+      - ENABLE_DDS=${ENABLE_DDS:-1}
+      - WIPE=${WIPE:-0}
+      - SYNTHETIC_CLOCK=${SYNTHETIC_CLOCK:-0}
+      - SLAVE=${SLAVE:-0}
+      - SYSID=${SYSID:-}
+      - HOME_LOCATION=${HOME_LOCATION:-}
+      - CUSTOM_DEFAULTS=${CUSTOM_DEFAULTS:-}
+
+      # ========================================
+      # ArduPilot Build Options
+      # ========================================
+      - SKIP_BUILD=${SKIP_BUILD:-0}
+      - BUILD_TARGET=${BUILD_TARGET:-sitl}
+      - WAF_CONFIGURE_OPTS=${WAF_CONFIGURE_OPTS:-}
+      - BUILD_JOBS=${BUILD_JOBS:-}
+
+      # ========================================
+      # ArduPilot Parameters (written to .parm file)
+      # These are ACTUAL ArduPilot parameters from source
+      # ========================================
+      # DDS Parameters (from libraries/AP_DDS/AP_DDS_Client.cpp)
+      - DDS_ENABLE=${DDS_ENABLE:-1}
+      - DDS_UDP_PORT=${DDS_UDP_PORT:-2019}
+      - DDS_IP0=${DDS_IP0:-127}
+      - DDS_IP1=${DDS_IP1:-0}
+      - DDS_IP2=${DDS_IP2:-0}
+      - DDS_IP3=${DDS_IP3:-1}
+      - DDS_DOMAIN_ID=${DDS_DOMAIN_ID:-0}
+      - DDS_TIMEOUT_MS=${DDS_TIMEOUT_MS:-1000}
+      - DDS_MAX_RETRY=${DDS_MAX_RETRY:-10}
+
+      # Serial Protocol for DDS (if using serial instead of UDP)
+      - SERIAL1_PROTOCOL=${SERIAL1_PROTOCOL:-}
+      - SERIAL1_BAUD=${SERIAL1_BAUD:-}
+
+      # ========================================
+      # MAVProxy Options
+      # ========================================
+      - MAVPROXY_ENABLED=${MAVPROXY_ENABLED:-0}
+      - MAVPROXY_OUT=${MAVPROXY_OUT:-127.0.0.1:14550}
+      - MAVPROXY_MASTER=${MAVPROXY_MASTER:-tcp:127.0.0.1:5760}
+      - MAVPROXY_SITL=${MAVPROXY_SITL:-127.0.0.1:5501}
+
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+        source /home/ardupilot/.ardupilot_env
+
+        echo "========================================="
+        echo "ArduPilot SITL Docker Container"
+        echo "========================================="
+
+        # Generate parameter file from environment variables
+        PARAM_FILE="/tmp/docker_params.parm"
+        echo "# Auto-generated ArduPilot parameters from Docker environment" > $$PARAM_FILE
+        echo "# Generated at: $$(date)" >> $$PARAM_FILE
+        echo "" >> $$PARAM_FILE
+
+        # DDS Parameters (verified from AP_DDS_Client.cpp)
+        if [ "$${ENABLE_DDS}" = "1" ]; then
+          echo "# DDS Configuration" >> $$PARAM_FILE
+          echo "DDS_ENABLE $${DDS_ENABLE}" >> $$PARAM_FILE
+          echo "DDS_UDP_PORT $${DDS_UDP_PORT}" >> $$PARAM_FILE
+          echo "DDS_IP0 $${DDS_IP0}" >> $$PARAM_FILE
+          echo "DDS_IP1 $${DDS_IP1}" >> $$PARAM_FILE
+          echo "DDS_IP2 $${DDS_IP2}" >> $$PARAM_FILE
+          echo "DDS_IP3 $${DDS_IP3}" >> $$PARAM_FILE
+          echo "DDS_DOMAIN_ID $${DDS_DOMAIN_ID}" >> $$PARAM_FILE
+          echo "DDS_TIMEOUT_MS $${DDS_TIMEOUT_MS}" >> $$PARAM_FILE
+          echo "DDS_MAX_RETRY $${DDS_MAX_RETRY}" >> $$PARAM_FILE
+        fi
+
+        # Serial Protocol for DDS (optional)
+        if [ -n "$${SERIAL1_PROTOCOL}" ]; then
+          echo "SERIAL1_PROTOCOL $${SERIAL1_PROTOCOL}" >> $$PARAM_FILE
+        fi
+        if [ -n "$${SERIAL1_BAUD}" ]; then
+          echo "SERIAL1_BAUD $${SERIAL1_BAUD}" >> $$PARAM_FILE
+        fi
+
+        echo "Generated parameter file:"
+        cat $$PARAM_FILE
+        echo ""
+
+        # Build ArduPilot if not skipping
+        if [ "$${SKIP_BUILD}" != "1" ]; then
+          echo "========================================="
+          echo "Building ArduPilot for SITL"
+          echo "========================================="
+
+          cd /ardupilot
+
+          # Configure waf
+          WAF_OPTS="--board $${BUILD_TARGET}"
+          if [ "$${ENABLE_DDS}" = "1" ]; then
+            WAF_OPTS="$$WAF_OPTS --enable-DDS"
+          fi
+          if [ -n "$${WAF_CONFIGURE_OPTS}" ]; then
+            WAF_OPTS="$$WAF_OPTS $${WAF_CONFIGURE_OPTS}"
+          fi
+
+          echo "Configuring: ./waf configure $$WAF_OPTS"
+          ./waf configure $$WAF_OPTS
+
+          # Build vehicle
+          BUILD_CMD=""
+          case "$${VEHICLE}" in
+            ArduCopter) BUILD_CMD="copter" ;;
+            ArduPlane) BUILD_CMD="plane" ;;
+            ArduRover|Rover) BUILD_CMD="rover" ;;
+            ArduSub) BUILD_CMD="sub" ;;
+            AntennaTracker) BUILD_CMD="antennatracker" ;;
+            Blimp) BUILD_CMD="blimp" ;;
+            *) BUILD_CMD="copter" ;;
+          esac
+
+          JOBS_OPT=""
+          if [ -n "$${BUILD_JOBS}" ]; then
+            JOBS_OPT="-j$${BUILD_JOBS}"
+          fi
+
+          echo "Building: ./waf $$BUILD_CMD $$JOBS_OPT"
+          ./waf $$BUILD_CMD $$JOBS_OPT
+
+          echo "Build completed successfully"
+        else
+          echo "Skipping build (SKIP_BUILD=1)"
+        fi
+
+        echo "========================================="
+        echo "Starting SITL"
+        echo "========================================="
+
+        # Build sim_vehicle.py command
+        SIM_CMD="python3 Tools/autotest/sim_vehicle.py"
+        SIM_CMD="$$SIM_CMD -v $${VEHICLE}"
+        SIM_CMD="$$SIM_CMD --model $${MODEL}"
+        SIM_CMD="$$SIM_CMD --speedup $${SPEEDUP}"
+        SIM_CMD="$$SIM_CMD --instance $${INSTANCE}"
+        SIM_CMD="$$SIM_CMD --sim-address=$${SIM_ADDRESS}"
+        SIM_CMD="$$SIM_CMD --slave $${SLAVE}"
+        SIM_CMD="$$SIM_CMD --add-param-file $$PARAM_FILE"
+
+        if [ "$${ENABLE_DDS}" = "1" ]; then
+          SIM_CMD="$$SIM_CMD --enable-DDS"
+        fi
+
+        if [ "$${WIPE}" = "1" ]; then
+          SIM_CMD="$$SIM_CMD -w"
+        fi
+
+        if [ "$${SYNTHETIC_CLOCK}" = "1" ]; then
+          SIM_CMD="$$SIM_CMD --synthetic-clock"
+        fi
+
+        if [ -n "$${SYSID}" ]; then
+          SIM_CMD="$$SIM_CMD --sysid $${SYSID}"
+        fi
+
+        if [ -n "$${HOME_LOCATION}" ]; then
+          SIM_CMD="$$SIM_CMD --home $${HOME_LOCATION}"
+        fi
+
+        if [ -n "$${CUSTOM_DEFAULTS}" ]; then
+          SIM_CMD="$$SIM_CMD --add-param-file $${CUSTOM_DEFAULTS}"
+        fi
+
+        if [ "$${MAVPROXY_ENABLED}" = "1" ]; then
+          SIM_CMD="$$SIM_CMD --out $${MAVPROXY_OUT}"
+        else
+          SIM_CMD="$$SIM_CMD --no-mavproxy"
+        fi
+
+        echo "Running: $$SIM_CMD"
+        echo ""
+
+        exec $$SIM_CMD
+
+volumes:
+  sitl-eeprom:
+    driver: local
