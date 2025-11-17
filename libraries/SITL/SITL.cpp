@@ -332,20 +332,11 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("WOW_PIN",     25, SIM,  wow_pin, -1),
 
-    // @Param: VIB_FREQ_X
+    // @Param: VIB_FREQ
     // @DisplayName: Vibration frequency
     // @Description: Frequency of vibration applied to IMU readings in SITL
     // @Units: Hz
-
-    // @Param: VIB_FREQ_Y
-    // @DisplayName: Vibration frequency
-    // @Description: Frequency of vibration applied to IMU readings in SITL
-    // @Units: Hz
-
-    // @Param: VIB_FREQ_Z
-    // @DisplayName: Vibration frequency
-    // @Description: Frequency of vibration applied to IMU readings in SITL
-    // @Units: Hz
+    // @Vector3Parameter: 1
     AP_GROUPINFO("VIB_FREQ",   26, SIM,  vibe_freq, 0),
 
     // @Group: PARA_
@@ -1171,59 +1162,27 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     AP_GROUPINFO("ACC_FILE_RW", 30, SIM, accel_file_rw, INSFileMode::INS_FILE_NONE),
 #endif
 
-    // @Param: GYR1_BIAS_X
-    // @DisplayName: First Gyro bias on X axis
-    // @Description: First Gyro bias on X axis
+    // @Param: GYR1_BIAS
+    // @DisplayName: First Gyro bias
+    // @Description: First Gyro bias on
     // @Units: rad/s
     // @User: Advanced
-
-    // @Param: GYR1_BIAS_Y
-    // @DisplayName: First Gyro bias on Y axis
-    // @Description: First Gyro bias on Y axis
-    // @Units: rad/s
-    // @User: Advanced
-
-    // @Param: GYR1_BIAS_Z
-    // @DisplayName: First Gyro bias on Z axis
-    // @Description: First Gyro bias on Z axis
-    // @Units: rad/s
-    // @User: Advanced
-
-
+    // @Vector3Parameter: 1
     AP_GROUPINFO("GYR1_BIAS",     31, SIM, gyro_bias[0], 0),
 #if INS_MAX_INSTANCES > 1
-    // @Param: GYR2_BIAS_X
-    // @CopyFieldsFrom: SIM_GYR1_BIAS_X
-    // @DisplayName: Second Gyro bias on X axis
-    // @Description: Second Gyro bias on X axis
-
-    // @Param: GYR2_BIAS_Y
-    // @CopyFieldsFrom: SIM_GYR1_BIAS_Y
-    // @DisplayName: Second Gyro bias on Y axis
-    // @Description: Second Gyro bias on Y axis
-
-    // @Param: GYR2_BIAS_Z
-    // @CopyFieldsFrom: SIM_GYR1_BIAS_Z
-    // @DisplayName: Second Gyro bias on Z axis
-    // @Description: Second Gyro bias on Z axis
+    // @Param: GYR2_BIAS
+    // @CopyFieldsFrom: SIM_GYR1_BIAS
+    // @DisplayName: Second Gyro bias
+    // @Description: Second Gyro bias on
+    // @Vector3Parameter: 1
     AP_GROUPINFO("GYR2_BIAS",     32, SIM, gyro_bias[1], 0),
 #endif
 #if INS_MAX_INSTANCES > 2
-    // @Param: GYR3_BIAS_X
-    // @CopyFieldsFrom: SIM_GYR1_BIAS_X
-    // @DisplayName: Third Gyro bias on X axis
-    // @Description: Third Gyro bias on X axis
-
-    // @Param: GYR3_BIAS_Y
-    // @CopyFieldsFrom: SIM_GYR1_BIAS_Y
-    // @DisplayName: Third Gyro bias on Y axis
-    // @Description: Third Gyro bias on Y axis
-
-    // @Param: GYR3_BIAS_Z
-    // @CopyFieldsFrom: SIM_GYR1_BIAS_Z
-    // @DisplayName: Third Gyro bias on Z axis
-    // @Description: Third Gyro bias on Z axis
-
+    // @Param: GYR3_BIAS
+    // @CopyFieldsFrom: SIM_GYR1_BIAS
+    // @DisplayName: Third Gyro bias
+    // @Description: Third Gyro bias on
+    // @Vector3Parameter: 1
     AP_GROUPINFO("GYR3_BIAS",     33, SIM, gyro_bias[2], 0),
 #endif
 
@@ -1263,21 +1222,11 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @Vector3Parameter: 1
     AP_GROUPINFO("ACC4_BIAS",    39, SIM, accel_bias[3], 0),
 
-    // @Param: GYR4_BIAS_X
-    // @CopyFieldsFrom: SIM_GYR1_BIAS_X
-    // @DisplayName: Fourth Gyro bias on X axis
-    // @Description: Fourth Gyro bias on X axis
-
-    // @Param: GYR4_BIAS_Y
-    // @CopyFieldsFrom: SIM_GYR1_BIAS_Y
-    // @DisplayName: Fourth Gyro bias on Y axis
-    // @Description: Fourth Gyro bias on Y axis
-
-    // @Param: GYR4_BIAS_Z
-    // @CopyFieldsFrom: SIM_GYR1_BIAS_Z
-    // @DisplayName: Fourth Gyro bias on Z axis
-    // @Description: Fourth Gyro bias on Z axis
-
+    // @Param: GYR4_BIAS
+    // @CopyFieldsFrom: SIM_GYR1_BIAS
+    // @DisplayName: Fourth Gyro bias
+    // @Description: Fourth Gyro bias on
+    // @Vector3Parameter: 1
     AP_GROUPINFO("GYR4_BIAS",    40, SIM, gyro_bias[3], 0),
 
 #endif
@@ -1319,21 +1268,11 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @Vector3Parameter: 1
     AP_GROUPINFO("ACC5_BIAS",    46, SIM, accel_bias[4], 0),
 
-    // @Param: GYR5_BIAS_X
-    // @CopyFieldsFrom: SIM_GYR1_BIAS_X
-    // @DisplayName: Fifth Gyro bias on X axis
-    // @Description: Fifth Gyro bias on X axis
-
-    // @Param: GYR5_BIAS_Y
-    // @CopyFieldsFrom: SIM_GYR1_BIAS_Y
-    // @DisplayName: Fifth Gyro bias on Y axis
-    // @Description: Fifth Gyro bias on Y axis
-
-    // @Param: GYR5_BIAS_Z
-    // @CopyFieldsFrom: SIM_GYR1_BIAS_Z
-    // @DisplayName: Fifth Gyro bias on Z axis
-    // @Description: Fifth Gyro bias on Z axis
-
+    // @Param: GYR5_BIAS
+    // @CopyFieldsFrom: SIM_GYR1_BIAS
+    // @DisplayName: Fifth Gyro bias
+    // @Description: Fifth Gyro bias on
+    // @Vector3Parameter: 1
     AP_GROUPINFO("GYR5_BIAS",    47, SIM, gyro_bias[4], 0),
 #endif
 
