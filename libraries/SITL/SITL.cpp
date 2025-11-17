@@ -764,6 +764,11 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
     // @Units: ms
     // @User: Advanced
     AP_GROUPINFO("MAG_DELAY",      3, SIM,  mag_delay, 0),
+    // @Param: MAG1_OFS
+    // @DisplayName: Magnetometer offset applied to SITL
+    // @Description: Magnetometer offset injected into the simulation
+    // @User: Advanced
+    // @Vector3Parameter: 1
     AP_GROUPINFO("MAG1_OFS",        4, SIM,  mag_ofs[0], 0),
     // @Param: MAG_ALY
     // @DisplayName: NED anomaly vector at ground level
@@ -877,6 +882,10 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
     // @User: Advanced
     AP_GROUPINFO("MAG1_FAIL",     26, SIM,  mag_fail[0], 0),
 #if HAL_COMPASS_MAX_SENSORS > 1
+
+    // @Param: MAG2_OFS
+    // @CopyFieldsFrom: SIM_MAG1_OFS
+    // @Vector3Parameter: 1
     AP_GROUPINFO("MAG2_OFS",      19, SIM,  mag_ofs[1], 0),
     // @Param: MAG2_DIA_X
     // @CopyFieldsFrom: SIM_MAG1_DIA_X
@@ -914,6 +923,10 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
     AP_GROUPINFO("MAG2_SCALING",  28, SIM,  mag_scaling[1], 1),
 #endif
 #if HAL_COMPASS_MAX_SENSORS > 2
+
+    // @Param: MAG3_OFS
+    // @CopyFieldsFrom: SIM_MAG1_OFS
+    // @Vector3Parameter: 1
     AP_GROUPINFO("MAG3_OFS",      23, SIM,  mag_ofs[2], 0),
     // @Param: MAG3_DIA_X
     // @CopyFieldsFrom: SIM_MAG1_DIA_X
@@ -1163,7 +1176,7 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 #endif
 
     // @Param: GYR1_BIAS
-    // @DisplayName: First Gyro bias
+    // @DisplayName: First Gyro bias on
     // @Description: First Gyro bias on
     // @Units: rad/s
     // @User: Advanced
@@ -1172,7 +1185,7 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 #if INS_MAX_INSTANCES > 1
     // @Param: GYR2_BIAS
     // @CopyFieldsFrom: SIM_GYR1_BIAS
-    // @DisplayName: Second Gyro bias
+    // @DisplayName: Second Gyro bias on
     // @Description: Second Gyro bias on
     // @Vector3Parameter: 1
     AP_GROUPINFO("GYR2_BIAS",     32, SIM, gyro_bias[1], 0),
@@ -1180,8 +1193,8 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 #if INS_MAX_INSTANCES > 2
     // @Param: GYR3_BIAS
     // @CopyFieldsFrom: SIM_GYR1_BIAS
-    // @DisplayName: Third Gyro bias
-    // @Description: Third Gyro bias on
+    // @DisplayName: Third Gyro bias on X axis
+    // @Description: Third Gyro bias on X axis
     // @Vector3Parameter: 1
     AP_GROUPINFO("GYR3_BIAS",     33, SIM, gyro_bias[2], 0),
 #endif
@@ -1224,7 +1237,7 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 
     // @Param: GYR4_BIAS
     // @CopyFieldsFrom: SIM_GYR1_BIAS
-    // @DisplayName: Fourth Gyro bias
+    // @DisplayName: Fourth Gyro bias on
     // @Description: Fourth Gyro bias on
     // @Vector3Parameter: 1
     AP_GROUPINFO("GYR4_BIAS",    40, SIM, gyro_bias[3], 0),
@@ -1270,7 +1283,7 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 
     // @Param: GYR5_BIAS
     // @CopyFieldsFrom: SIM_GYR1_BIAS
-    // @DisplayName: Fifth Gyro bias
+    // @DisplayName: Fifth Gyro bias on
     // @Description: Fifth Gyro bias on
     // @Vector3Parameter: 1
     AP_GROUPINFO("GYR5_BIAS",    47, SIM, gyro_bias[4], 0),
