@@ -122,6 +122,15 @@ services:
 
           cd /ardupilot
 
+          # Initialize git submodules (required for waf and other dependencies)
+          echo "Initializing git submodules..."
+          if [ -d ".git" ]; then
+            git submodule update --init --recursive
+            echo "Git submodules initialized"
+          else
+            echo "Warning: Not a git repository, skipping submodule init"
+          fi
+
           # Configure waf
           WAF_OPTS="--board $${BUILD_TARGET}"
           if [ "$${ENABLE_DDS}" = "1" ]; then
@@ -132,7 +141,12 @@ services:
           fi
 
           echo "Configuring: ./waf configure $$WAF_OPTS"
-          ./waf configure $$WAF_OPTS
+          # Run configure with retry in case submodules need to be fetched
+          if ! ./waf configure $$WAF_OPTS; then
+            echo "First configure attempt failed, retrying..."
+            sleep 2
+            ./waf configure $$WAF_OPTS
+          fi
 
           # Build vehicle
           BUILD_CMD=""
