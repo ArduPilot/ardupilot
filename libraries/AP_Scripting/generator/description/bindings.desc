@@ -480,6 +480,8 @@ userdata AP_ESC_Telem_Backend::TelemetryData field voltage float'skip_check writ
 userdata AP_ESC_Telem_Backend::TelemetryData field current float'skip_check write
 userdata AP_ESC_Telem_Backend::TelemetryData field consumption_mah float'skip_check write
 userdata AP_ESC_Telem_Backend::TelemetryData field motor_temp_cdeg int16_t'skip_check write
+userdata AP_ESC_Telem_Backend::TelemetryData field power_percentage uint8_t'skip_check write
+userdata AP_ESC_Telem_Backend::TelemetryData field power_percentage depends AP_EXTENDED_ESC_TELEM_ENABLED
 
 singleton AP_ESC_Telem depends HAL_WITH_ESC_TELEM == 1
 singleton AP_ESC_Telem rename esc_telem
@@ -765,7 +767,9 @@ include ../Tools/AP_Periph/AP_Periph.h depends defined(HAL_BUILD_AP_PERIPH)
 singleton AP_Periph_FW depends defined(HAL_BUILD_AP_PERIPH)
 singleton AP_Periph_FW rename periph
 singleton AP_Periph_FW method get_yaw_earth float
+singleton AP_Periph_FW method get_yaw_earth depends AP_PERIPH_NOTIFY_ENABLED
 singleton AP_Periph_FW method get_vehicle_state uint64_t
+singleton AP_Periph_FW method get_vehicle_state depends AP_PERIPH_NOTIFY_ENABLED
 singleton AP_Periph_FW method can_printf void "%s"'literal string
 singleton AP_Periph_FW method reboot void boolean
 
