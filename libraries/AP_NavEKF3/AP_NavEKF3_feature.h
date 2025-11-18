@@ -9,6 +9,7 @@
 #include <AP_Beacon/AP_Beacon_config.h>
 #include <AP_AHRS/AP_AHRS_config.h>
 #include <AP_OpticalFlow/AP_OpticalFlow_config.h>
+#include <AP_Baro/AP_Baro_config.h>
 
 // define for when to include all features
 #define EK3_FEATURE_ALL APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) || APM_BUILD_TYPE(APM_BUILD_Replay)
@@ -50,4 +51,9 @@
 // Optical flow using SRTM terrain data
 #ifndef EK3_FEATURE_OPTFLOW_SRTM
 #define EK3_FEATURE_OPTFLOW_SRTM EK3_FEATURE_OPTFLOW_FUSION
+#endif
+
+// EKF3 baro position offset compensation
+#ifndef EK3_FEATURE_BARO_POSITION_COMPENSATION_ENABLED
+#define EK3_FEATURE_BARO_POSITION_COMPENSATION_ENABLED AP_BARO_POSITION_COMPENSATION_ENABLED
 #endif
