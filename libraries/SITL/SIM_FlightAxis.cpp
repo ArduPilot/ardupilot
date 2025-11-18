@@ -213,11 +213,14 @@ bool FlightAxis::soap_request_start(const char *action, const char *fmt, ...)
     va_end(ap);
 
     // consumer/producer pattern
-    while (socks.is_empty()) {
+    while (sock == nullptr) {
         socks_outsem.wait_blocking();
+        sock = socknext;
+        socknext = nullptr;
+        socks_insem.signal();
     }
 
-    if (!socks.pop(sock)) {
+    if (sock == nullptr) {
         return false;
     }
     socks_insem.signal();
@@ -754,7 +757,7 @@ void FlightAxis::socket_creator(void)
 {
     socket_pid = getpid();
     while (true) {
-        while (!socks.space()) {
+        while (socknext != nullptr) {
             socks_insem.wait_blocking();
         }
         auto *sck = NEW_NOTHROW SocketAPM_native(false);
@@ -767,18 +770,13 @@ void FlightAxis::socket_creator(void)
           than this and we are better off trying for a new socket
          */
         if (!sck->connect_timeout(controller_ip, controller_port, 10)) {
-            ::printf("connect failed (stack=%u)\n", socks.available());
+            ::printf("connect failed\n");
             delete sck;
             usleep(500);
             continue;
         }
         sck->set_blocking(false);
-        if (!socks.push(sck)) {
-            // bad?!
-            delete sck;
-            usleep(500);
-            continue;
-        }
+        socknext = sck;
         socks_outsem.signal();
     }
 }
