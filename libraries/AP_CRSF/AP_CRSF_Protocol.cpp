@@ -271,15 +271,17 @@ void AP_CRSF_Protocol::encode_speed_proposal(uint32_t baudrate, Frame& frame, De
 // request for device info
 bool AP_CRSF_Protocol::process_device_info_frame(ParameterDeviceInfoFrame* info, VersionInfo* version, bool fakerx)
 {
-    const uint8_t destination = fakerx ? CRSF_ADDRESS_CRSF_RECEIVER : CRSF_ADDRESS_FLIGHT_CONTROLLER;
     const uint8_t origin = fakerx ? CRSF_ADDRESS_FLIGHT_CONTROLLER : CRSF_ADDRESS_CRSF_RECEIVER;
 
-    if (info->destination != 0 && info->destination != destination) {
+    if ((fakerx && info->destination != 0 && info->destination != CRSF_ADDRESS_CRSF_RECEIVER && info->destination != CRSF_ADDRESS_RADIO_TRANSMITTER)
+        || (!fakerx && info->destination != 0 && info->destination != CRSF_ADDRESS_FLIGHT_CONTROLLER)) {
+        debug("process_device_info_frame(): rejected destination 0x%x -> %s", info->destination, info->payload);
         return false; // request was not for us
     }
 
     // we are only interested in RC device info for firmware version detection
     if (info->origin != 0 && info->origin != origin) {
+        debug("process_device_info_frame(0x%x != 0x%x): rejected origin %s", info->origin, origin, info->payload);
         return false;
     }
 
@@ -303,12 +305,18 @@ bool AP_CRSF_Protocol::process_device_info_frame(ParameterDeviceInfoFrame* info,
     }
 
     if (version->protocol != ProtocolType::PROTOCOL_ELRS) {
-        /*
-            fw major ver = offset + terminator (8bits) + serial (32bits) + hw id (32bits) + 3rd byte of sw id = 11bytes
-            fw minor ver = offset + terminator (8bits) + serial (32bits) + hw id (32bits) + 4th byte of sw id = 12bytes
-        */
-        version->major = info->payload[offset+11];
-        version->minor = info->payload[offset+12];
+        if (strncmp((char*)info->payload, "Betaflight", 10) == 0) {
+            version->major = info->payload[11] - '0';
+            version->minor = info->payload[13] - '0';
+            version->is_betaflight = true;
+        } else {
+            /*
+                fw major ver = offset + terminator (8bits) + serial (32bits) + hw id (32bits) + 3rd byte of sw id = 11bytes
+                fw minor ver = offset + terminator (8bits) + serial (32bits) + hw id (32bits) + 4th byte of sw id = 12bytes
+            */
+            version->major = info->payload[offset+11];
+            version->minor = info->payload[offset+12];
+        }
     } else {
         // ELRS does not populate the version field so cook up something sensible
         version->major = 1;

@@ -93,7 +93,7 @@ private:
     // send a baudrate proposal
     void send_speed_proposal(uint32_t baudrate);
     // send a ping frame
-    void send_ping_frame();
+    void send_ping_frame(bool force = false);
     // send a device info frame
     void send_device_info();
     // send the link stats frame
