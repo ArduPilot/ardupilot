@@ -451,7 +451,7 @@ bool ModeAuto::check_trigger(void)
 
 bool ModeAuto::start_loiter()
 {
-    if (rover.mode_loiter.enter()) {
+    if (rover.mode_loiter.enter(g2.wp_nav.get_destination())) {
         _submode = SubMode::Loiter;
         return true;
     }
