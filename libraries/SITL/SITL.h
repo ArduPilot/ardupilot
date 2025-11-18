@@ -428,6 +428,7 @@ public:
     AP_Vector3f imu_pos_offset;     // XYZ position of the IMU accelerometer relative to the body frame origin (m)
     AP_Vector3f rngfnd_pos_offset;  // XYZ position of the range finder zero range datum relative to the body frame origin (m)
     AP_Vector3f optflow_pos_offset; // XYZ position of the optical flow sensor focal point relative to the body frame origin (m)
+    AP_Vector3f baro_pos_offset;    // XYZ position of the barometer relative to the body frame origin (m)
 
     // barometer temperature control
     AP_Float temp_start;            // [deg C] Barometer start temperature

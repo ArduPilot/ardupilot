@@ -335,6 +335,9 @@ protected:
     // update wind vector
     void update_wind(const struct sitl_input &input);
 
+    //  offset the barometer altitude
+    void baro_alt_offset(float &altitude) const;
+
     // return filtered servo input as -1 to 1 range
     float filtered_servo_angle(const struct sitl_input &input, uint8_t idx);
     float filtered_servo_range(const struct sitl_input &input, uint8_t idx);
