@@ -32,6 +32,7 @@
 #include <GCS_MAVLink/GCS.h>
 
 //#define CRSF_RCOUT_DEBUG
+//#define CRSF_RCOUT_DEBUG_FRAME
 #ifdef CRSF_RCOUT_DEBUG
 # include <AP_HAL/AP_HAL.h>
 extern const AP_HAL::HAL& hal;
@@ -279,7 +280,7 @@ void AP_CRSF_Out::loop()
             debug_rcout("Connection lost, checking liveness");
             _last_liveness_check_us = now;
             _state = State::HEALTH_CHECK_PING;
-            send_ping_frame();
+            send_ping_frame(true);
         }
         break;
 
@@ -298,7 +299,7 @@ void AP_CRSF_Out::loop()
 
 bool AP_CRSF_Out::decode_crsf_packet(const AP_CRSF_Protocol::Frame& _frame)
 {
-#ifdef CRSF_RCOUT_DEBUG
+#ifdef CRSF_RCOUT_DEBUG_FRAME
     hal.console->printf("CRSFOut: received %s:", AP_CRSF_Protocol::get_frame_type(_frame.type));
     uint8_t* fptr = (uint8_t*)&_frame;
     for (uint8_t i = 0; i < _frame.length + 2; i++) {
@@ -367,11 +368,11 @@ void AP_CRSF_Out::send_rc_frame()
     _crsf_port->write_frame(&frame);
 }
 
-void AP_CRSF_Out::send_ping_frame()
+void AP_CRSF_Out::send_ping_frame(bool force)
 {
     // only send pings at 50Hz max
     uint32_t now_ms = AP_HAL::millis();
-    if (now_ms - _last_ping_frame_ms < 20) {
+    if (now_ms - _last_ping_frame_ms < 20 && !force) {
         return;
     }
     _last_ping_frame_ms = now_ms;
@@ -399,7 +400,7 @@ void AP_CRSF_Out::send_speed_proposal(uint32_t baudrate)
 
 void AP_CRSF_Out::send_device_info()
 {
-    debug_rcout("send_device_info(%u)");
+    debug_rcout("send_device_info()");
 
     AP_CRSF_Protocol::Frame frame;
     AP_CRSF_Protocol::encode_device_info_frame(frame, DeviceAddress::CRSF_ADDRESS_FLIGHT_CONTROLLER, DeviceAddress::CRSF_ADDRESS_CRSF_RECEIVER);
@@ -409,7 +410,7 @@ void AP_CRSF_Out::send_device_info()
 
 void AP_CRSF_Out::send_link_stats_tx(uint32_t fps)
 {
-    debug_rcout("send_link_stats_tx(%u)");
+    debug_rcout("send_link_stats_tx()");
 
     AP_CRSF_Protocol::Frame frame;
     AP_CRSF_Protocol::encode_link_stats_tx_frame(fps, frame, DeviceAddress::CRSF_ADDRESS_FLIGHT_CONTROLLER, DeviceAddress::CRSF_ADDRESS_CRSF_RECEIVER);
