@@ -142,8 +142,12 @@ public:
     // get target angle in deg. returns true on success
     bool get_angle_target(float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame);
 
+#if AP_SCRIPTING_ENABLED
+    // get mount target location. returns true on success
+    bool get_location_target(Location &target_loc);
+#endif
+
     // accessors for scripting backends
-    virtual bool get_location_target(Location &target_loc) { return false; }
     virtual void set_attitude_euler(float roll_deg, float pitch_deg, float yaw_bf_deg) {};
 
     // write mount log packet
@@ -336,11 +340,9 @@ private:
 #endif
 
     Location _roi_target;           // roi target location
-    bool _roi_target_set;           // true if the roi target has been set
 
     uint8_t _target_sysid;          // sysid to track
     Location _target_sysid_location;// sysid target location
-    bool _target_sysid_location_set;// true if _target_sysid has been set
 
     uint32_t _last_warning_ms;      // system time of last warning sent to GCS
 
