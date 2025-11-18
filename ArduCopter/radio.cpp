@@ -113,12 +113,12 @@ void Copter::read_radio()
         // not timed out yet
         return;
     }
-    if (!g.failsafe_throttle) {
+    if (g.failsafe_throttle == FS_THR_DISABLED) {
         // throttle failsafe not enabled
         return;
     }
-    if (!rc().has_ever_seen_rc_input() && !motors->armed()) {
-        // we only failsafe if we are armed OR we have ever seen an RC receiver
+    if (!rc().has_ever_seen_rc_input()) {
+        // we only failsafe if we have ever seen an RC receiver
         return;
     }
 
@@ -140,7 +140,7 @@ void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
     if (throttle_pwm < (uint16_t)g.failsafe_throttle_value) {
 
         // if we are already in failsafe or motors not armed pass through throttle and exit
-        if (failsafe.radio || !(rc().has_ever_seen_rc_input() || motors->armed())) {
+        if (failsafe.radio) {
             return;
         }
 
