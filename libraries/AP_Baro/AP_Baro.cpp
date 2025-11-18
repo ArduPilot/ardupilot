@@ -230,6 +230,14 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 #endif
 #endif  // HAL_BARO_WIND_COMP_ENABLED
 
+#if AP_BARO_POSITION_COMPENSATION_ENABLED
+    // @Param: BARO_POS
+    // @DisplayName: Baro Pos
+    // @Description: XYZ position of the barometer relative to the body frame origin
+    // @Units: m
+    // @Vector3Parameter: 1
+    AP_GROUPINFO("_POS", 21, AP_Baro,  pos_offset, 0),
+#endif  // AP_BARO_POSITION_COMPENSATION_ENABLED
 #if AP_FIELD_ELEVATION_ENABLED
     // @Param: _FIELD_ELV
     // @DisplayName: field elevation

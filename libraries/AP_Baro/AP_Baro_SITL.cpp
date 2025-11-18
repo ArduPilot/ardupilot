@@ -65,6 +65,21 @@ void AP_Baro_SITL::_timer()
         // barometer is disabled
         return;
     }
+    
+    // sensor position offset in body frame
+    const Vector3f relPosSensorBF = _sitl->baro_pos_offset;
+
+    // n.b. the following code is assuming rotation-pitch-270:
+    // adjust altitude for position of the sensor on the vehicle if position offset is non-zero
+    if (!relPosSensorBF.is_zero()) {
+        // get a rotation matrix following DCM conventions (body to earth)
+        Matrix3f rotmat;
+        _sitl->state.quaternion.rotation_matrix(rotmat);
+        // rotate the offset into earth frame
+        const Vector3f relPosSensorEF = rotmat * relPosSensorBF;
+        // correct the altitude at the sensor
+        sim_alt -= relPosSensorEF.z;
+    }
 
     const auto drift_delta_t_ms = now - last_drift_delta_t_ms;
     last_drift_delta_t_ms = now;
