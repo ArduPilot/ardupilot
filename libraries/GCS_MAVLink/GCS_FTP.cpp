@@ -108,7 +108,11 @@ bool GCS_FTP::send_reply(const Transaction &reply)
     if (!HAVE_PAYLOAD_SPACE(reply.chan, FILE_TRANSFER_PROTOCOL)) {
         return false;
     }
-    uint8_t payload[251] = {};
+    mavlink_file_transfer_protocol_t pkt {};
+    pkt.target_network = 0;
+    pkt.target_system = reply.sysid;
+    pkt.target_component = reply.compid;
+    uint8_t *payload = pkt.payload;
     put_le16_ptr(payload, reply.seq_number);
     payload[2] = reply.session;
     payload[3] = static_cast<uint8_t>(reply.opcode);
@@ -116,11 +120,8 @@ bool GCS_FTP::send_reply(const Transaction &reply)
     payload[5] = static_cast<uint8_t>(reply.req_opcode);
     payload[6] = reply.burst_complete ? 1 : 0;
     put_le32_ptr(&payload[8], reply.offset);
-    memcpy(&payload[12], reply.data, sizeof(reply.data));
-    mavlink_msg_file_transfer_protocol_send(
-        reply.chan,
-        0, reply.sysid, reply.compid,
-        payload);
+    memcpy(&pkt.payload[12], reply.data, sizeof(reply.data));
+    mavlink_msg_file_transfer_protocol_send_struct(reply.chan, &pkt);
     return true;
 }
 
@@ -145,7 +146,7 @@ void GCS_FTP::Session::push_reply(Transaction &reply)
     last_send_ms = AP_HAL::millis(); // Used to detect active FTP session
 
     while (!send_reply(reply)) {
-        hal.scheduler->delay(2);
+        hal.scheduler->delay_microseconds(100);
     }
 
     if (reply.req_opcode == FTP_OP::TerminateSession) {
@@ -590,7 +591,7 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
         }
 
         // this transfer size is enough for a full parameter file with max parameters
-        const uint32_t transfer_size = 500;
+        const uint32_t transfer_size = 2000;
         for (uint32_t i = 0; (i < transfer_size); i++) {
             // fill the buffer
             const ssize_t read_bytes = AP::FS().read(fd, reply.data, MIN(sizeof(reply.data), max_read));
@@ -624,7 +625,9 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
             // prep the reply to be used again
             reply.seq_number++;
 
-            hal.scheduler->delay(burst_delay_ms);
+            if (burst_delay_ms > 0) {
+                hal.scheduler->delay(burst_delay_ms);
+            }
         }
 
         if (reply.opcode != FTP_OP::Nack) {
