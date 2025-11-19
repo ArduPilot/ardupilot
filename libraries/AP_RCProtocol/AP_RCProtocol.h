@@ -134,6 +134,14 @@ public:
         _disabled_for_pulses |= (1U<<(uint8_t)protocol);
     }
 
+#if AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+    void set_throttle_channel_and_failsafe_value(uint8_t channel, uint16_t value, bool value_is_maximum=false) {
+        throttle_failsafe.channel = channel;
+        throttle_failsafe.channel_value = value;
+        throttle_failsafe.channel_value_is_maximum = value_is_maximum;
+    }
+#endif  // AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+
 #if !defined(__clang__)
 // in the case we've disabled most backends then the "return true" in
 // the following method can never be reached, and the compiler gets
@@ -296,6 +304,22 @@ private:
         uint32_t last_config_change_ms;
         uint8_t config_num;
     } added;
+
+#if AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+    // throttle failsafe channel and value.  This channel is almost
+    // certainly the throttle channel.  When we read a frame and the
+    // specified channel is below the supplied value we consider that
+    // input to be invalid.  This supports receivers that supply "bind
+    // time values" when they have lost contact with the
+    // transmitter. UINT8_MAX is a flag value meaning the user has not
+    // supplied a channel
+    struct {
+        uint8_t channel = UINT8_MAX;
+        uint16_t channel_value = UINT16_MAX;
+        bool channel_value_is_maximum;
+        uint8_t counter;  // counter to add some hysteresis in our response
+    } throttle_failsafe;
+#endif  // AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
 
     // allowed RC protocols mask (first bit means "all")
     uint32_t rc_protocols_mask;
