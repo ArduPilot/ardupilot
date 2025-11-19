@@ -357,9 +357,8 @@ void AP_GyroFFT::init(uint16_t loop_rate_hz)
 
     // finally we are done
     _initialized = true;
-    update_parameters(true);
     // start running FFTs
-    if (start_update_thread()) {
+    if (update_parameters(true) && start_update_thread()) {
         set_analysis_enabled(true);
     }
 }
@@ -527,23 +526,34 @@ bool AP_GyroFFT::start_analysis() {
 }
 
 // update calculated values of dynamic parameters - runs at 1Hz
-void AP_GyroFFT::update_parameters(bool force)
+bool AP_GyroFFT::update_parameters(bool force)
 {
     if (!_initialized && !force) {
-        return;
+        return false;
     }
 #if AP_ARMING_ENABLED
     // lock contention is very costly, so don't allow configuration
     // updates while flying
     if (AP::arming().is_armed() && !force) {
-        return;
+        return false;
     }
 #endif
 
+    if (_fft_min_hz >= _fft_max_hz) {
+        // the parameters were just configured badly
+        return false;
+    }
+
+    const float nyquist_limit_hz = _fft_sampling_rate_hz * 0.48;
+    if (_fft_min_hz >= nyquist_limit_hz) {
+        // we don't get data fast enough to run an FFT above the
+        // minumum configured frequency
+        return false;
+    }
+
     WITH_SEMAPHORE(_sem);
 
-    // don't allow MAXHZ to go to Nyquist
-    _fft_max_hz.set(MIN(_fft_max_hz, _fft_sampling_rate_hz * 0.48));
+    _fft_max_hz.set(MIN(_fft_max_hz, nyquist_limit_hz));
     _config._snr_threshold_db = _snr_threshold_db;
     _config._fft_min_hz = _fft_min_hz;
     _config._fft_max_hz = _fft_max_hz;
@@ -553,6 +563,8 @@ void AP_GyroFFT::update_parameters(bool force)
     _config._fft_end_bin = MIN(ceilf(_fft_max_hz.get() / _state->_bin_resolution), _state->_bin_count);
     // actual attenuation from the db value
     _config._attenuation_cutoff = powf(10.0f, -_attenuation_power_db * 0.1f);
+
+    return true;
 }
 
 // thread for processing gyro data via FFT
@@ -616,12 +628,6 @@ bool AP_GyroFFT::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len)
     // still calibrating noise so not ready
     if (_global_state._noise_needs_calibration) {
         hal.util->snprintf(failure_msg, failure_msg_len, "FFT calibrating noise");
-        return false;
-    }
-
-    // make sure the frequency maximum is below Nyquist
-    if (_fft_max_hz > _fft_sampling_rate_hz * 0.5f) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "FFT config MAXHZ %dHz > %dHz", _fft_max_hz.get(), _fft_sampling_rate_hz / 2);
         return false;
     }
 
