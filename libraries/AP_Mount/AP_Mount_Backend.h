@@ -85,6 +85,14 @@ public:
     // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
     void set_yaw_lock(bool yaw_lock) { _yaw_lock = yaw_lock; }
 
+    // set pitch_lock used in RC_TARGETING mode.  If true, the gimbal's tilt target is maintained in earth-frame meaning it will lock onto an earth-frame
+    // If false (aka "follow") the gimbal's tilt is maintained in body-frame meaning it will tilt with the vehicle
+    void set_pitch_lock(bool pitch_lock) { _pitch_lock = pitch_lock; }
+
+    // set roll_lock used in RC_TARGETING mode.  If true, the gimbal's roll target is maintained in earth-frame meaning it will lock onto an earth-frame
+    // If false (aka "follow") the gimbal's tilt is maintained in body-frame meaning it will roll with the vehicle
+    void set_roll_lock(bool roll_lock) { _roll_lock = roll_lock; }
+
     // set angle target in degrees
     // roll and pitch are in earth-frame
     // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
@@ -230,6 +238,8 @@ protected:
         float roll;
         float pitch;
         float yaw;
+        bool pitch_is_ef; //only changed and used by CADDX currently
+        bool roll_is_ef; //only changed and used  by CADDX currently
         bool yaw_is_ef;
 
         // return body-frame yaw angle from a mount target (in radians)
@@ -246,6 +256,7 @@ protected:
     enum class Options : uint8_t {
         RCTARGETING_LOCK_FROM_PREVMODE = (1U << 0), // RC_TARGETING mode's lock/follow state maintained from previous mode
         NEUTRAL_ON_RC_FS               = (1U << 1), // move mount to netral position on RC failsafe
+        FPV_LOCK                       = (1U << 2), // if mount supports, force body frame FPV lock on yaw/roll/pitch unconditionally in RC Targeting mode
     };
     bool option_set(Options opt) const { return (_params.options.get() & (uint8_t)opt) != 0; }
 
@@ -307,6 +318,11 @@ protected:
         MountTarget rate_rads;      // rate target in rad/s
         uint32_t last_rate_request_ms;
     } mnt_target;
+    
+    // RP earth frame locks accessible by backend
+    bool _pitch_lock = true;              // pitch_lock used in RC_TARGETING mode. True if the gimbal's tilt target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
+    bool _roll_lock = true;               // roll_lock used in RC_TARGETING mode. True if the gimbal's roll target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
+    
 
 private:
 

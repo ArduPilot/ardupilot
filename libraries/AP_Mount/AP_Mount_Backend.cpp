@@ -117,6 +117,12 @@ void AP_Mount_Backend::update_mnt_target_from_rc_target()
 
     MountTarget rc_target;
     get_rc_target(mnt_target.target_type, rc_target);
+    // if the option is set, force BF lock on yaw, pitch and roll axes (FPV lock) 
+    if (option_set(Options::FPV_LOCK)) {
+        _yaw_lock = false;
+        _roll_lock = false;
+        _pitch_lock = false;
+    }
     switch (mnt_target.target_type) {
     case MountTargetType::ANGLE:
         mnt_target.angle_rad = rc_target;
@@ -694,8 +700,10 @@ void AP_Mount_Backend::get_rc_target(MountTargetType& target_type, MountTarget& 
     float roll_in, pitch_in, yaw_in;
     get_rc_input(roll_in, pitch_in, yaw_in);
 
-    // yaw frame
+    // frame locks
     target_rpy.yaw_is_ef = _yaw_lock;
+    target_rpy.roll_is_ef = _roll_lock;
+    target_rpy.pitch_is_ef = _pitch_lock;
 
     // if RC_RATE is zero, targets are angle
     if (_params.rc_rate_max <= 0) {
@@ -759,6 +767,8 @@ bool AP_Mount_Backend::get_angle_target_to_location(const Location &loc, MountTa
     angle_rad.pitch = atan2f(GPS_vector_z, target_distance);
     angle_rad.yaw = atan2f(GPS_vector_x, GPS_vector_y);
     angle_rad.yaw_is_ef = true;
+    angle_rad.pitch_is_ef = true;
+    angle_rad.roll_is_ef = true;
 
     return true;
 }

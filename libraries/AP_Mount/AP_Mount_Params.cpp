@@ -168,8 +168,8 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
 
     // @Param: _OPTIONS
     // @DisplayName: Mount options
-    // @Description: Mount options bitmask
-    // @Bitmask: 0:RC lock state from previous mode, 1:Return to neutral angles on RC failsafe
+    // @Description: Mount options bitmask, note bit 2 only impacts RC targetting mode
+    // @Bitmask: 0:RC lock state from previous mode, 1:Return to neutral angles on RC failsafe, 2:Force FPV (bf) lock on roll and pitch
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 16, AP_Mount_Params, options, 0),
 
