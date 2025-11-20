@@ -210,7 +210,7 @@ bool AP_ESC_Telem::get_rpm(uint8_t esc_index, float& rpm) const
 }
 
 // get an individual ESC's raw rpm if available, returns true on success
-bool AP_ESC_Telem::get_raw_rpm(uint8_t esc_index, float& rpm) const
+bool AP_ESC_Telem::get_raw_rpm_and_error_rate(uint8_t esc_index, float& rpm, float& error_rate) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS) {
         return false;
@@ -223,6 +223,7 @@ bool AP_ESC_Telem::get_raw_rpm(uint8_t esc_index, float& rpm) const
     }
 
     rpm = rpmdata.rpm;
+    error_rate = rpmdata.error_rate;
     return true;
 }
 
@@ -688,7 +689,8 @@ void AP_ESC_Telem::update()
                 float rpm = AP::logger().quiet_nanf();
                 get_rpm(i, rpm);
                 float raw_rpm = AP::logger().quiet_nanf();
-                get_raw_rpm(i, raw_rpm);
+                float rpm_error_rate = AP::logger().quiet_nanf();
+                get_raw_rpm_and_error_rate(i, raw_rpm, rpm_error_rate);
 
                 // Write ESC status messages
                 //   id starts from 0
@@ -710,7 +712,7 @@ void AP_ESC_Telem::update()
                     esc_temp    : telemdata.temperature_cdeg,
                     current_tot : telemdata.consumption_mah,
                     motor_temp  : telemdata.motor_temp_cdeg,
-                    error_rate  : rpmdata.error_rate
+                    error_rate  : rpm_error_rate
                 };
                 AP::logger().WriteBlock(&pkt, sizeof(pkt));
 
