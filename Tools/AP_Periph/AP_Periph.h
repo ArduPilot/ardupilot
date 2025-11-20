@@ -355,6 +355,10 @@ public:
 #endif
 #endif
 
+#if AP_PERIPH_ACTUATOR_TELEM_ENABLED
+    void actuator_telem_update();
+#endif
+
     SRV_Channels servo_channels;
     bool rcout_has_new_data_to_update;
 
