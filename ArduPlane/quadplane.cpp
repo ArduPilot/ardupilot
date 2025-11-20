@@ -2261,12 +2261,17 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
         auto &qp = plane.quadplane;
         pilot_correction_done = false;
         // handle resets needed for when the state changes
+        if (state != QPOS_POSITION1) {
+            // clear starting location if changing out of POS1
+            pos1_start_loc.zero();
+        }
         if (s == QPOS_POSITION1) {
             reached_wp_speed = false;
             // never do a rate reset, if attitude control is not active it will be automatically reset before running, see: last_att_control_ms
             // if it is active then the rate control should not be reset at all
             qp.attitude_control->reset_yaw_target_and_rate(false);
             pos1_speed_limit_ms = plane.ahrs.groundspeed_vector().length();
+            pos1_start_loc = plane.current_loc;
             done_accel_init = false;
         } else if (s == QPOS_AIRBRAKE) {
             // start with zero integrator on vertical throttle
@@ -2285,6 +2290,11 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
             last_pos_reset_ms = plane.ahrs.getLastPosNorthEastReset(rpos);
             qp.landing_detect.land_start_ms = 0;
             qp.landing_detect.lower_limit_start_ms = 0;
+        } else if (s == QPOS_POSITION2) {
+            // make sure there is a valid starting point
+            if (pos1_start_loc.is_zero()) {
+                pos1_start_loc = plane.current_loc;
+            }
         }
         // double log to capture the state change
 #if HAL_LOGGING_ENABLED
@@ -2529,15 +2539,32 @@ void QuadPlane::vtol_position_controller(void)
             break;
         }
 
-        const Vector2f wp_distance_ne_m = plane.current_loc.get_distance_NE(loc);
-        const float wp_distance_m = wp_distance_ne_m.length();
+        Location origin;
+        if (!ahrs.get_origin(origin)) {
+            origin.zero();
+        }
+        const Vector2p start_ne_m = origin.get_distance_NE(poscontrol.pos1_start_loc).topostype();
+        const Vector2p travel_ne_m = poscontrol.target_neu_m.xy() - start_ne_m;
+        const Vector2p travel_ne_norm = travel_ne_m.normalized();
+        const Vector2p rel_pos_ne_m = origin.get_distance_NE(plane.current_loc).topostype() - start_ne_m;
+
+        // Use the postion controller to target the closest point on the travel direction vector
+        // For a vehicle alligned to the travel direction this will result in only roll commands
+        // This allows the position controller to only be used to keep the vehicle on track
+        // It never trys to speed up or slow down due to position error (unless in overshoot)
+        ftype travel_dist_m = rel_pos_ne_m.dot(travel_ne_norm);
+        if (poscontrol.overshoot || (travel_dist_m > travel_ne_m.length())) {
+            // Never allow target postion to got beyond final destination
+            travel_dist_m = travel_ne_m.length();
+            poscontrol.overshoot = true;
+        }
+        Vector2p target_pos_ne_m = (start_ne_m + travel_ne_norm * travel_dist_m);
+
+        // distance from target to destination
+        const float wp_distance_m = travel_ne_m.length() - travel_dist_m;
         const Vector2f rel_groundspeed_vector_ne_ms = landing_closing_velocity_NE_ms();
         const float rel_groundspeed_sq = rel_groundspeed_vector_ne_ms.length_squared();
-        float closing_groundspeed_ms = 0;
-
-        if (wp_distance_m > 0.1) {
-            closing_groundspeed_ms = rel_groundspeed_vector_ne_ms * wp_distance_ne_m.normalized();
-        }
+        const float closing_groundspeed_ms = rel_groundspeed_vector_ne_ms.dot(travel_ne_norm.tofloat());
 
         // calculate speed we should be at to reach the position2
         // target speed at the position2 distance threshold, assuming
@@ -2548,81 +2575,8 @@ void QuadPlane::vtol_position_controller(void)
 
         // maximum configured VTOL speed
         const float wp_speed_ms = MAX(1.0, wp_nav->get_default_speed_NE_ms());
-        const float scaled_wp_speed_ms = get_scaled_wp_speed(degrees(wp_distance_ne_m.angle()));
 
-        // limit target speed to a the pos1 speed limit, which starts out at the initial speed
-        // but is adjusted if we start putting our nose down. We always allow at least twice
-        // the WP speed
-        approach_speed_ms = MIN(MAX(poscontrol.pos1_speed_limit_ms, 2 * wp_speed_ms), approach_speed_ms);
-
-        if (poscontrol.reached_wp_speed ||
-            rel_groundspeed_sq < sq(wp_speed_ms) ||
-            wp_speed_ms > 1.35*scaled_wp_speed_ms) {
-            // once we get below the Q_WP_SPEED then we don't want to
-            // speed up again. At that point we should fly within the
-            // limits of the configured VTOL controller we also apply
-            // this limit when we are more than 45 degrees off the
-            // target in yaw, which is when we start to become
-            // unstable
-            approach_speed_ms = MIN(approach_speed_ms, scaled_wp_speed_ms);
-            poscontrol.reached_wp_speed = true;
-        }
-
-        // run fixed wing navigation
-        plane.nav_controller->update_waypoint(plane.current_loc, loc);
-
-        Vector2f target_speed_ne_ms;
-        Vector2f target_accel_ne_mss;
-        bool have_target_yaw = false;
-        float target_yaw_deg;
-        const float approach_accel_mss = MIN(accel_needed(wp_distance_m, sq(closing_groundspeed_ms)), transition_decel_mss * 2);
-        if (wp_distance_m > 0.1) {
-            Vector2f diff_wp_norm = wp_distance_ne_m.normalized();
-            target_speed_ne_ms = diff_wp_norm * approach_speed_ms;
-            target_accel_ne_mss = diff_wp_norm * (-approach_accel_mss);
-            target_yaw_deg = degrees(diff_wp_norm.angle());
-            const float yaw_err_deg = wrap_180(target_yaw_deg - plane.ahrs.get_yaw_deg());
-            bool overshoot = (closing_groundspeed_ms < 0 || fabsf(yaw_err_deg) > 60);
-            if (overshoot && !poscontrol.overshoot) {
-                gcs().send_text(MAV_SEVERITY_INFO,"VTOL Overshoot d=%.1f cs=%.1f yerr=%.1f",
-                                wp_distance_m, closing_groundspeed_ms, yaw_err_deg);
-                poscontrol.overshoot = true;
-                pos_control->set_accel_desired_NE_mss(Vector2f());
-            }
-            if (poscontrol.overshoot) {
-                /* we have overshot the landing point or our nose is
-                   off by more than 60 degrees. Zero target accel and
-                   point nose at the landing point. Set target speed
-                   to our position2 threshold speed
-                */
-                target_accel_ne_mss.zero();
-
-                // allow up to the WP speed when we are further away, slowing to the pos2 target speed
-                // when we are close
-                approach_speed_ms = linear_interpolate(position2_target_speed_ms, wp_speed_ms,
-                                                  wp_distance_m,
-                                                  position2_dist_threshold_m*1.5,
-                                                  2*position2_dist_threshold_m + stopping_distance_m(rel_groundspeed_sq));
-
-                target_speed_ne_ms = diff_wp_norm * approach_speed_ms;
-                have_target_yaw = true;
-
-                // adjust target yaw angle for wind. We calculate yaw based on the target speed
-                // we want assuming no speed scaling due to direction
-                const Vector2f wind_ms = plane.ahrs.wind_estimate().xy();
-                const float gnd_speed_ms = plane.ahrs.groundspeed();
-                Vector2f target_speed_xy = landing_velocity_ne_ms + diff_wp_norm * gnd_speed_ms - wind_ms;
-                target_yaw_deg = degrees(target_speed_xy.angle());
-            }
-        }
-        const float target_speed_ms = target_speed_ne_ms.length();
-
-        target_speed_ne_ms += landing_velocity_ne_ms;
-        poscontrol.target_speed_ms = target_speed_ms;
-        poscontrol.target_accel_mss = approach_accel_mss;
-
-        if (!poscontrol.reached_wp_speed &&
-            rel_groundspeed_sq < sq(target_speed_ms) &&
+        if (rel_groundspeed_sq < sq(approach_speed_ms) &&
             rel_groundspeed_sq > sq(2*wp_speed_ms) &&
             plane.nav_pitch_cd < 0) {
             // we have slowed down more than expected, likely due to
@@ -2632,8 +2586,21 @@ void QuadPlane::vtol_position_controller(void)
             poscontrol.pos1_speed_limit_ms = sqrtf(rel_groundspeed_sq);
         }
 
+        // limit target speed to a the pos1 speed limit, which starts out at the initial speed
+        // but is adjusted if we start putting our nose down. We always allow at least twice
+        // the WP speed
+        approach_speed_ms = MIN(MAX(poscontrol.pos1_speed_limit_ms, 2*wp_speed_ms), approach_speed_ms);
+
+        const float approach_accel_mss = MIN(accel_needed(wp_distance_m, sq(closing_groundspeed_ms)), transition_decel_mss * 2);
+
+        Vector2f target_speed_ne_ms = travel_ne_norm.tofloat() * approach_speed_ms;
+        Vector2f target_accel_ne_mss = travel_ne_norm.tofloat() * approach_accel_mss * -1;
+
+        poscontrol.target_speed_ms = approach_speed_ms;
+        poscontrol.target_accel_mss = approach_accel_mss;
+
         // use input shaping and abide by accel and jerk limits
-        pos_control->input_vel_accel_NE_m(target_speed_ne_ms, target_accel_ne_mss);
+        pos_control->input_pos_vel_accel_NE_m(target_pos_ne_m, target_speed_ne_ms, target_accel_ne_mss, false);
 
         // run horizontal velocity controller
         run_xy_controller(MAX(approach_accel_mss, transition_decel_mss)*1.5);
@@ -2647,7 +2614,7 @@ void QuadPlane::vtol_position_controller(void)
             poscontrol.done_accel_init = true;
             pos_control->set_accel_desired_NE_mss(target_accel_ne_mss);
         }
-        
+
         // nav roll and pitch are controller by position controller
         plane.nav_roll_cd = pos_control->get_roll_cd();
         plane.nav_pitch_cd = pos_control->get_pitch_cd();
@@ -2658,23 +2625,22 @@ void QuadPlane::vtol_position_controller(void)
             pos_control->set_externally_limited_NE();
         }
 
+        // adjust target yaw angle for wind
+        const Vector2f target_airspeed_ne_ms = (pos_control->get_vel_target_NEU_ms().xy()) - plane.ahrs.wind_estimate().xy();
+        float target_yaw_cd = rad_to_cd(target_airspeed_ne_ms.angle());
+
         // call attitude controller
         disable_yaw_rate_time_constant();
 
         // setup scaling of roll and pitch angle P gains to match fixed wing gains
         setup_rp_fw_angle_gains();
 
-        if (have_target_yaw) {
-            attitude_control->input_euler_angle_roll_pitch_yaw_cd(plane.nav_roll_cd,
-                                                               plane.nav_pitch_cd,
-                                                               target_yaw_deg * 100, true);
-        } else {
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(plane.nav_roll_cd,
-                                                                          plane.nav_pitch_cd,
-                                                                          desired_auto_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
-        }
-        if ((plane.auto_state.wp_distance < position2_dist_threshold_m) && tiltrotor.tilt_angle_achieved() &&
-            fabsf(rel_groundspeed_sq) < sq(3 * position2_target_speed_ms)) {
+        attitude_control->input_euler_angle_roll_pitch_yaw_cd(plane.nav_roll_cd,
+                                                              plane.nav_pitch_cd,
+                                                              target_yaw_cd, true);
+
+        if ((ahrs.groundspeed_vector().length_squared() < sq(wp_speed_ms)) && tiltrotor.tilt_angle_achieved()) {
+            // Slowed down within bounds of full position controller
             // if continuous tiltrotor only advance to position 2 once tilts have finished moving
             poscontrol.set_state(QPOS_POSITION2);
             poscontrol.pilot_correction_done = false;
@@ -2686,7 +2652,58 @@ void QuadPlane::vtol_position_controller(void)
     }
 
     case QPOS_POSITION2:
-    case QPOS_LAND_ABORT:
+    case QPOS_LAND_ABORT: {
+        setup_target_position();
+
+        Location origin;
+        if (!ahrs.get_origin(origin)) {
+            origin.zero();
+        }
+        const Vector2p start_ne_m = origin.get_distance_NE(poscontrol.pos1_start_loc).topostype();
+        const Vector2p travel_ne_m = poscontrol.target_neu_m.xy() - start_ne_m;
+        const Vector2p travel_ne_norm = travel_ne_m.normalized();
+        const Vector2p rel_pos_ne_m = origin.get_distance_NE(plane.current_loc).topostype() - start_ne_m;
+
+        // Advance target position to destination at WP speed
+        const float wp_speed_ms = MAX(1.0, wp_nav->get_default_speed_NE_ms());
+        ftype travel_dist_m = rel_pos_ne_m.dot(travel_ne_norm) + poscontrol.time_since_state_start_ms() * 0.001 * wp_speed_ms;
+        if (poscontrol.overshoot || (travel_dist_m > travel_ne_m.length())) {
+            // Never allow target postion to got beyond final destination
+            travel_dist_m = travel_ne_m.length();
+            poscontrol.overshoot = true;
+        }
+        Vector2p target_pos_ne_m = start_ne_m + travel_ne_norm * travel_dist_m;
+
+        Vector2f zero;
+        Vector2f vel_ne_ms = poscontrol.target_vel_ms.xy() + landing_velocity_ne_ms;
+        pos_control->input_pos_vel_accel_NE_m(target_pos_ne_m, vel_ne_ms, zero);
+
+        // also run fixed wing navigation
+        plane.nav_controller->update_waypoint(plane.current_loc, loc);
+
+        update_land_positioning();
+
+        run_xy_controller(transition_decel_mss*1.5);
+
+        // nav roll and pitch are controlled by position controller
+        plane.nav_roll_cd = pos_control->get_roll_cd();
+        plane.nav_pitch_cd = pos_control->get_pitch_cd();
+
+        if (transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {
+            pos_control->set_externally_limited_NE();
+        }
+
+        // adjust target yaw angle for wind
+        const Vector2f target_airspeed_ne_ms = (pos_control->get_vel_target_NEU_ms().xy()) - plane.ahrs.wind_estimate().xy();
+        float target_yaw_cd = rad_to_cd(target_airspeed_ne_ms.angle());
+
+        disable_yaw_rate_time_constant();
+        attitude_control->input_euler_angle_roll_pitch_yaw_cd(plane.nav_roll_cd,
+                                                              plane.nav_pitch_cd,
+                                                              target_yaw_cd, true);
+        break;
+    }
+
     case QPOS_LAND_DESCEND: {
         setup_target_position();
         /*
