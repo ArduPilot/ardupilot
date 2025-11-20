@@ -940,15 +940,7 @@ void AC_PosControl::D_set_pos_target_from_climb_rate_cms(float climb_rate_cms)
 
 // Generates a vertical trajectory using the given climb rate in m/s and jerk-limited shaping.
 // Target altitude is updated over time by integrating the climb rate.
-void AC_PosControl::D_set_pos_target_from_climb_rate_ms(float climb_rate_ms)
-{
-    float vel_d_ms = -climb_rate_ms;
-    input_vel_accel_D_m(vel_d_ms, 0.0);
-}
-
-// Descends at a given rate (m/s) using jerk-limited shaping for landing.
-// Used during final descent phase to ensure smooth touchdown.
-void AC_PosControl::D_land_at_climb_rate_ms(float climb_rate_ms, bool ignore_descent_limit)
+void AC_PosControl::D_set_pos_target_from_climb_rate_ms(float climb_rate_ms, bool ignore_descent_limit)
 {
     if (ignore_descent_limit) {
         // turn off limits in the down (positive z) direction
