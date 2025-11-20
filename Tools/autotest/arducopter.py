@@ -9975,6 +9975,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.progress("Should be unhealthy while we don't send messages")
             self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION, True, True, False)
 
+            # we are interacting with the autopilot, reduce chance of
+            # hitting timeouts on supplied data:
+            self.set_parameter("SIM_SPEEDUP", 1)
             self.progress("Should be healthy while we're sending good messages")
             tstart = self.get_sim_time()
             while True:
@@ -15205,7 +15208,7 @@ return update, 1000
             self.GPSBlendingLog,
             self.GPSBlendingAffinity,
             self.DataFlash,
-            Test(self.DataFlashErase, attempts=8),
+            self.DataFlashErase,
             self.Callisto,
             self.PerfInfo,
             self.ModeAllowsEntryWhenNoPilotInput,
