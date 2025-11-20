@@ -797,7 +797,7 @@ void ModeGuided::accel_control_run()
         pos_control->input_vel_accel_D_m(guided_vel_target_ned_ms.z, guided_accel_target_ned_mss.z, false);
     } else {
         // update position controller with new target
-        pos_control->input_accel_NE_m(guided_accel_target_ned_mss);
+        pos_control->input_accel_NE_m(guided_accel_target_ned_mss.xy());
         if (!stabilizing_vel_NE()) {
             // set position and velocity errors to zero
             pos_control->NE_stop_vel_stabilisation();
