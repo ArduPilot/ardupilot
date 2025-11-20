@@ -140,8 +140,7 @@ public:
     // Sets the desired NE-plane acceleration in m/s² using jerk-limited shaping.
     // Smoothly transitions to the specified acceleration from current kinematic state.
     // Constraints: max acceleration and jerk set via NE_set_max_speed_accel_m().
-// todo: change to Vector2f
-    void input_accel_NE_m(const Vector3f& accel_ned_msss);
+    void input_accel_NE_m(const Vector2f& accel_ned_msss);
 
     // Sets desired NE-plane velocity and acceleration (cm/s, cm/s²) using jerk-limited shaping.
     // See input_vel_accel_NE_m() for full details.

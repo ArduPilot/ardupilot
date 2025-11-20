@@ -560,10 +560,10 @@ void AC_PosControl::NE_init_controller()
 // Sets the desired NE-plane acceleration in m/s² using jerk-limited shaping.
 // Smoothly transitions to the specified acceleration from current kinematic state.
 // Constraints: max acceleration and jerk set via NE_set_max_speed_accel_m().
-void AC_PosControl::input_accel_NE_m(const Vector3f& accel_ned_mss)
+void AC_PosControl::input_accel_NE_m(const Vector2f& accel_ned_mss)
 {
     update_pos_vel_accel_xy(_pos_desired_ned_m.xy(), _vel_desired_ned_ms.xy(), _accel_desired_ned_mss.xy(), _dt_s, _limit_vector_ned.xy(), _p_pos_ne_m.get_error(), _pid_vel_ne_m.get_error());
-    shape_accel_xy(accel_ned_mss.xy(), _accel_desired_ned_mss.xy(), _jerk_max_ne_msss, _dt_s);
+    shape_accel_xy(accel_ned_mss, _accel_desired_ned_mss.xy(), _jerk_max_ne_msss, _dt_s);
 }
 
 // Sets desired NE-plane velocity and acceleration (cm/s, cm/s²) using jerk-limited shaping.
