@@ -606,7 +606,6 @@ uint8_t AP_InertialSensor_ZeroOnex::register_read(uint16_t addr, uint32_t* value
     return 1;
 }
 
-// Non-data registers are the only writable ones and are 16 bit or less
 void AP_InertialSensor_ZeroOnex::register_write(uint16_t addr, uint32_t value)
 {
     uint8_t tbuf[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -623,39 +622,7 @@ void AP_InertialSensor_ZeroOnex::register_write(uint16_t addr, uint32_t value)
     wait_direct_busy();
 }
 
-// The SPI protocol (SafeSPI) is 48bit out-of-frame. This means read return frames will be received on the next transfer.
-uint64_t AP_InertialSensor_ZeroOnex::transfer_spi_frame(uint64_t frame)
-{
-    uint16_t buf[3];
-    for (int index = 0; index < 3; index++) {
-        uint16_t lower_byte = (frame >> (index << 4)) & 0xFF;
-        uint16_t upper_byte = (frame >> ((index << 4) + 8)) & 0xFF;
-        buf[3 - index - 1] = (lower_byte << 8) | upper_byte;
-    }
 
-    dev->transfer((uint8_t*)buf, 6, (uint8_t*)buf, 6);
-
-    uint64_t value = {};
-    for (int index = 0; index < 3; index++) {
-        uint16_t lower_byte = buf[index] & 0xFF;
-        uint16_t upper_byte = (buf[index] >> 8) & 0xFF;
-        value |= (uint64_t)(upper_byte | (lower_byte << 8)) << ((3 - index - 1) << 4);
-    }
-
-    return value;
-}
-uint8_t AP_InertialSensor_ZeroOnex::calculate_crc8(uint64_t frame)
-{
-    uint64_t data = frame & 0xFFFFFFFFFF00LL;
-    uint8_t crc = 0xFF;
-
-    for (int i = 47; i >= 0; i--) {
-        uint8_t data_bit = data >> i & 0x01;
-        crc = crc & 0x80 ? (uint8_t)((crc << 1) ^ 0x2F) ^ data_bit : (uint8_t)(crc << 1) | data_bit;
-    }
-
-    return crc;
-}
 void AP_InertialSensor_ZeroOnex::fpga_read_fifo8(uint16_t reg, uint8_t* value, uint8_t size) 
 {
     uint8_t wbuf[32];

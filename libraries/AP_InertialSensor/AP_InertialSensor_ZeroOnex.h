@@ -83,8 +83,6 @@ struct RegisterConfig {
     void read_status_registers();
     uint8_t register_read(uint16_t addr, uint32_t* value);
     void register_write(uint16_t addr, uint32_t value);
-    uint64_t transfer_spi_frame(uint64_t frame);
-    uint8_t calculate_crc8(uint64_t frame);
     void fpga_read_fifo8(uint16_t reg, uint8_t* value, uint8_t size) ;
     void fpga_write_reg8(uint16_t reg, uint8_t value) ;
     uint8_t fpga_read_reg8(uint16_t reg) ;
