@@ -148,7 +148,7 @@ void AP_Compass_LIS2MDL::timer()
         Vector3f field{
             (float)data.magx * range_scale,
             (float)data.magy * range_scale,
-            (float)data.magz * range_scale,
+            (float)-data.magz * range_scale,
         };
 
         accumulate_sample(field, instance);
