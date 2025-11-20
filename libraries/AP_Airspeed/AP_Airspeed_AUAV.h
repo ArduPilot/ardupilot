@@ -36,7 +36,7 @@ public:
         Absolute,
     };
 
-    AUAV_Pressure_sensor(AP_HAL::I2CDevice *&_dev, Type _type);
+    AUAV_Pressure_sensor(AP_HAL::Device *&_dev, Type _type);
 
     // start a measurement
     // Return true if successful
@@ -76,7 +76,7 @@ public:
     bool read_register(uint8_t cmd, uint16_t &result);
 
 private:
-    AP_HAL::I2CDevice *&dev;
+    AP_HAL::Device *&dev;
 
     Type type;
 
@@ -121,7 +121,7 @@ private:
 
     uint32_t last_sample_time_ms;
     bool measurement_requested;
-    AP_HAL::I2CDevice *_dev;
+    AP_HAL::Device *_dev;
 
     AUAV_Pressure_sensor sensor { _dev, AUAV_Pressure_sensor::Type::Differential };
 
