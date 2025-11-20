@@ -521,6 +521,17 @@ protected:
     // check for motor noise at a particular frequency
     void check_motor_noise();
 
+#if HAL_WITH_ESC_TELEM
+    // code common to multiple vehicles which ensures ESC telemetry is
+    // reporting that all motors are performing.
+    bool motors_takeoff_check(float rpm_min, float rpm_max);
+    // state for takeoff_check:
+    struct {
+        uint32_t warning_ms;
+    } takeoff_check_state;
+
+#endif
+
     ModeReason control_mode_reason = ModeReason::UNKNOWN;
 
 #if AP_SIM_ENABLED
