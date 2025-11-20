@@ -439,9 +439,11 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // 24: TAILSIT_RAT_FW
     // 25: TAILSIT_RAT_VT
 
+#if AP_MOTORS_TAILSITTER_ENABLED
     // @Group: TAILSIT_
     // @Path: tailsitter.cpp
     AP_SUBGROUPINFO(tailsitter, "TAILSIT_", 26, QuadPlane, Tailsitter),
+#endif  // AP_MOTORS_TAILSITTER_ENABLED
 
     // @Group: TILT_
     // @Path: tiltrotor.cpp
@@ -676,22 +678,37 @@ bool QuadPlane::setup(void)
       also saves memory when not in use
      */
     switch ((AP_Motors::motor_frame_class)frame_class) {
+#if AP_MOTORS_FRAME_QUAD_ENABLED
     case AP_Motors::MOTOR_FRAME_QUAD:
         setup_default_channels(4);
         break;
+#endif  // AP_MOTORS_FRAME_QUAD_ENABLED
+#if AP_MOTORS_FRAME_HEXA_ENABLED
     case AP_Motors::MOTOR_FRAME_HEXA:
         setup_default_channels(6);
         break;
+#endif  // AP_MOTORS_FRAME_HEXA_ENABLED
+#if AP_MOTORS_FRAME_OCTA_ENABLED || AP_MOTORS_FRAME_OCTAQUAD_ENABLED
+#if AP_MOTORS_FRAME_OCTA_ENABLED
     case AP_Motors::MOTOR_FRAME_OCTA:
+#endif  // AP_MOTORS_FRAME_OCTA_ENABLED
+#if AP_MOTORS_FRAME_OCTAQUAD_ENABLED
     case AP_Motors::MOTOR_FRAME_OCTAQUAD:
+#endif  // AP_MOTORS_FRAME_OCTAQUAD_ENABLED
         setup_default_channels(8);
         break;
+#endif  // AP_MOTORS_FRAME_OCTA_ENABLED || AP_MOTORS_FRAME_OCTAQUAD_ENABLED
+#if AP_MOTORS_FRAME_Y6_ENABLED
     case AP_Motors::MOTOR_FRAME_Y6:
         setup_default_channels(7);
         break;
+#endif  // AP_MOTORS_FRAME_Y6_ENABLED
+#if AP_MOTORS_FRAME_DECA_ENABLED
     case AP_Motors::MOTOR_FRAME_DECA:
         setup_default_channels(10);
         break;
+#endif  // AP_MOTORS_FRAME_DECA_ENABLED
+#if AP_MOTORS_FRAME_TRI_ENABLED
     case AP_Motors::MOTOR_FRAME_TRI:
         SRV_Channels::set_default_function(CH_5, SRV_Channel::k_motor1);
         SRV_Channels::set_default_function(CH_6, SRV_Channel::k_motor2);
@@ -699,9 +716,16 @@ bool QuadPlane::setup(void)
         SRV_Channels::set_default_function(CH_11, SRV_Channel::k_motor7);
         AP_Param::set_frame_type_flags(AP_PARAM_FRAME_TRICOPTER);
         break;
+#endif  // AP_MOTORS_FRAME_TRI_ENABLED
+#if AP_MOTORS_FRAME_TAILSITTER_ENABLED
     case AP_Motors::MOTOR_FRAME_TAILSITTER:
+#endif  // AP_MOTORS_FRAME_TAILSITTER_ENABLED
+#if AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED
     case AP_Motors::MOTOR_FRAME_SCRIPTING_MATRIX:
+#endif  // AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED
+#if AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED
     case AP_Motors::MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX:
+#endif  // AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED
         break;
     default:
         AP_BoardConfig::config_error("Unsupported Q_FRAME_CLASS %u", (unsigned int)(frame_class.get()));
@@ -713,27 +737,31 @@ bool QuadPlane::setup(void)
     }
 
     switch ((AP_Motors::motor_frame_class)frame_class) {
-#if AP_MOTORS_TRI_ENABLED
+#if AP_MOTORS_FRAME_TRI_ENABLED
     case AP_Motors::MOTOR_FRAME_TRI:
         motors = NEW_NOTHROW AP_MotorsTri(rc_speed);
         motors_var_info = AP_MotorsTri::var_info;
         break;
-#endif  // AP_MOTORS_TRI_ENABLED
+#endif  // AP_MOTORS_FRAME_TRI_ENABLED
+#if AP_MOTORS_FRAME_TAILSITTER_ENABLED
     case AP_Motors::MOTOR_FRAME_TAILSITTER:
         // this is a duo-motor tailsitter
         tailsitter.tailsitter_motors = NEW_NOTHROW AP_MotorsTailsitter(rc_speed);
         motors = tailsitter.tailsitter_motors;
         motors_var_info = AP_MotorsTailsitter::var_info;
         break;
+#endif  // AP_MOTORS_FRAME_TAILSITTER_ENABLED
+#if AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED
     case AP_Motors::MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX:
-#if AP_SCRIPTING_ENABLED
             motors = NEW_NOTHROW AP_MotorsMatrix_Scripting_Dynamic(plane.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsMatrix_Scripting_Dynamic::var_info;
-#endif // AP_SCRIPTING_ENABLED
             break;
+#endif  // AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED
     default:
+#if AP_MOTORS_MATRIX_ENABLED
         motors = NEW_NOTHROW AP_MotorsMatrix(rc_speed);
         motors_var_info = AP_MotorsMatrix::var_info;
+#endif  // AP_MOTORS_MATRIX_ENABLED
         break;
     }
 
