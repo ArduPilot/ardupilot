@@ -676,7 +676,7 @@ void Mode::land_run_vertical_control(bool pause_descent)
     }
 
     // update altitude target and call position controller
-    pos_control->D_land_at_climb_rate_ms(climb_rate_ms, ignore_descent_limit);
+    pos_control->D_set_pos_target_from_climb_rate_ms(climb_rate_ms, ignore_descent_limit);
     pos_control->D_update_controller();
 }
 
