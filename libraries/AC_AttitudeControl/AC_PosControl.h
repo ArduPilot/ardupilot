@@ -265,12 +265,7 @@ public:
 
     // Generates a vertical trajectory using the given climb rate in m/s and jerk-limited shaping.
     // Target altitude is updated over time by integrating the climb rate.
-    void D_set_pos_target_from_climb_rate_ms(float climb_rate_ms);
-
-    // Descends at a given rate (m/s) using jerk-limited shaping for landing.
-    // Used during final descent phase to ensure smooth touchdown.
-// todo: remove and add ignore_descent_limit to D_set_pos_target_from_climb_rate_ms.
-    void D_land_at_climb_rate_ms(float climb_rate_ms, bool ignore_descent_limit);
+    void D_set_pos_target_from_climb_rate_ms(float climb_rate_ms, bool ignore_descent_limit = false);
 
     // Sets vertical position, velocity, and acceleration in cm using jerk-limited shaping.
     // See input_pos_vel_accel_D_m() for full details.
