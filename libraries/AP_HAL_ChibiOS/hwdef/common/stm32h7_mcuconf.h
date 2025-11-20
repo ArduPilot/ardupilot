@@ -423,6 +423,9 @@
 #define STM32_ADC_USE_ADC3                  TRUE
 #endif
 #endif
+#if !defined(STM32_ADC_ADC3_USE_BDMA)
+#define STM32_ADC_ADC3_USE_BDMA             TRUE
+#endif
 #define STM32_ADC_ADC12_DMA_PRIORITY        2
 #define STM32_ADC_ADC3_DMA_PRIORITY         2
 #define STM32_ADC_ADC12_IRQ_PRIORITY        5
