@@ -9361,6 +9361,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "GEN_IDLE_TH_H": 40,
             "GEN_RUN_TEMP": 60,
             "GEN_IDLE_TEMP": 80,
+            "GEN_AUTO_START": 1,
         })
 
         self.reboot_sitl()
