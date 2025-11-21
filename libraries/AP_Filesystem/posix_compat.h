@@ -31,13 +31,7 @@ extern "C" {
   these are here to allow lua to build on HAL_ChibiOS
  */
 
-typedef struct apfs_file {
-    int fd;
-    bool error;
-    bool eof;
-    int16_t unget;
-    char *tmpfile_name;
-} APFS_FILE;
+typedef struct apfs_file APFS_FILE;
 
 APFS_FILE *apfs_fopen(const char *pathname, const char *mode);
 int apfs_fprintf(APFS_FILE *stream, const char *format, ...);
