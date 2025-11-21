@@ -579,11 +579,7 @@ class HWDef:
             driver = baro.driver
             probe = baro.probe
 
-            args = ['*this']
-
             n = len(devlist)+1
-
-            args = []
 
             if driver == "DPS280":
                 # special handling for DPS280; use a probe method of
