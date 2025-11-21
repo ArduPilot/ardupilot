@@ -60,6 +60,7 @@
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_ICEngine/AP_ICEngine.h>
+#include <AP_TrustedFlight/AP_TrustedFlight.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -1592,6 +1593,19 @@ bool AP_Arming::opendroneid_checks(bool display_failure)
 }
 #endif  // AP_OPENDRONEID_ENABLED
 
+#if AP_TRUSTED_FLIGHT_ENABLED
+// Trusted Flight Checks
+bool AP_Arming::trusted_flight_checks(bool display_failure)
+{
+    char failure_msg[100] {};
+    if (!AP::trusted_flight().pre_arm_check(failure_msg, sizeof(failure_msg))) {
+        check_failed(display_failure, "TrustedFlight: %s", failure_msg);
+        return false;
+    }
+    return true;
+}
+#endif  // AP_TRUSTED_FLIGHT_ENABLED
+
 //Check for multiple RC in serial protocols
 bool AP_Arming::serial_protocol_checks(bool display_failure)
 {
@@ -1654,6 +1668,9 @@ bool AP_Arming::pre_arm_checks(bool report)
 #endif
 #if AP_GPS_ENABLED
         &  gps_checks(report)
+#endif
+#if AP_TRUSTED_FLIGHT_ENABLED
+        &  trusted_flight_checks(report)
 #endif
 #if AP_BATTERY_ENABLED
         &  battery_checks(report)
@@ -1804,6 +1821,9 @@ bool AP_Arming::crashdump_checks(bool report)
 bool AP_Arming::mandatory_checks(bool report)
 {
     bool ret = true;
+#if AP_TRUSTED_FLIGHT_ENABLED
+   ret &= trusted_flight_checks(report);
+#endif
 #if AP_OPENDRONEID_ENABLED
     ret &= opendroneid_checks(report);
 #endif
