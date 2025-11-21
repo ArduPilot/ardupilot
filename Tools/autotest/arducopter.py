@@ -15459,6 +15459,7 @@ return update, 1000
             self.GyroFFTPostFilter,
             self.GyroFFTMotorNoiseCheck,
             self.CompassReordering,
+            self.SixCompassCalibrationAndReordering,
             self.CRSF,
             self.MotorTest,
             self.AltEstimation,
