@@ -219,7 +219,7 @@ void GCS_MAVLINK_Sub::send_pid_tuning()
         }
     }
     if (g.gcs_pid_mask & 8) {
-        const AP_PIDInfo &pid_info = sub.pos_control.get_accel_U_pid().get_pid_info();
+        const AP_PIDInfo &pid_info = sub.pos_control.D_get_accel_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ACCZ,
                                     pid_info.target*0.01f,
                                     -(ahrs.get_accel_ef().z + GRAVITY_MSS),

@@ -566,7 +566,7 @@ float stopping_distance(float velocity, float p, float accel_max)
 // - `direction` should be a non-zero vector indicating desired direction of travel.
 // - Limits: max_xy, max_z_pos (upward), max_z_neg (downward)
 // Returns the maximum achievable magnitude in that direction without violating any axis constraint.
-float kinematic_limit(Vector3f direction, float max_xy, float max_z_pos, float max_z_neg)
+float kinematic_limit(Vector3f direction, float max_xy, float max_z_neg, float max_z_pos)
 {
     // Reject zero-length direction vectors or undefined limits
     if (is_zero(direction.length_squared())) {
@@ -575,13 +575,13 @@ float kinematic_limit(Vector3f direction, float max_xy, float max_z_pos, float m
 
     const float segment_length_xy = direction.xy().length();
     
-    return kinematic_limit(segment_length_xy, direction.z, max_xy, max_z_pos, max_z_neg);
+    return kinematic_limit(segment_length_xy, direction.z, max_xy, max_z_neg, max_z_pos);
 }
 
 // compute the maximum allowed magnitude along a direction defined by segment_length_xy and segment_length_z components
 // constrained by independent horizontal (max_xy) and vertical (max_z_pos/max_z_neg) limits
 // returns the maximum achievable magnitude without exceeding any axis limit
-float kinematic_limit(float segment_length_xy, float segment_length_z, float max_xy, float max_z_pos, float max_z_neg)
+float kinematic_limit(float segment_length_xy, float segment_length_z, float max_xy, float max_z_neg, float max_z_pos)
 {
     // Reject zero-length direction vectors or undefined limits
     if (is_zero(max_xy) || is_zero(max_z_pos) || is_zero(max_z_neg)) {
@@ -647,10 +647,9 @@ float input_expo(float input, float expo)
 }
 
 // Converts a lean angle (radians) to horizontal acceleration in m/s².
-// Assumes flat Earth and small angle approximation: a = g * tan(θ)
 float angle_rad_to_accel_mss(float angle_rad)
 {
-    // Convert lean angle to horizontal acceleration assuming flat-Earth and small-angle
+    // Convert lean angle to horizontal acceleration
     return GRAVITY_MSS * tanf(angle_rad);
 }
 
