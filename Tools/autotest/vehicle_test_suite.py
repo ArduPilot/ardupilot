@@ -6307,6 +6307,78 @@ class TestSuite(abc.ABC):
             return
         raise ValueError("Failed to set parameters (%s)" % want)
 
+    def reorder_compass_appearance(self, device_ids):
+        """
+        Set compass appearance order by mapping device IDs to SIM_MAGx_DEVID parameters.
+
+        Args:
+            device_ids: List of device IDs in desired order
+
+        Example:
+            # Swap compass 2 and compass 4
+            original_ids = self.get_sim_mag_devids(6)
+            # Reorder: [dev1, dev4, dev3, dev2, dev5, dev6]
+            reordered = [original_ids[0], original_ids[3], original_ids[2],
+                        original_ids[1], original_ids[4], original_ids[5]]
+            self.reorder_compass_appearance(reordered)
+        """
+        # Build parameter dictionary
+        params = {}
+        for i, dev_id in enumerate(device_ids):
+            param_name = f"SIM_MAG{i + 1}_DEVID"
+            params[param_name] = dev_id
+
+        # Apply the parameters
+        self.set_parameters(params)
+
+    def check_mag_devids_detected(self, num_compasses):
+        """
+        Check if all SIM_MAGx_DEVID values are present in COMPASS_DEV_ID parameters.
+
+        Args:
+            num_compasses: Number of compasses to check
+
+        Raises:
+            NotAchievedException: If any SIM_MAG device ID is not found in COMPASS_DEV_ID slots
+        """
+        # Fetch SIM_MAGx_DEVID values
+        sim_device_ids = self.get_sim_mag_devids(num_compasses)
+
+        # Fetch COMPASS_DEV_ID values
+        compass_dev_ids = []
+        for i in range(1, num_compasses + 1):
+            suffix = "" if i == 1 else str(i)
+            dev_id = self.get_parameter(f"COMPASS_DEV_ID{suffix}")
+            self.progress(f"COMPASS_DEV_ID{suffix} = {dev_id}")
+            compass_dev_ids.append(dev_id)
+
+        # Check that each SIM_MAG device ID is present in COMPASS_DEV_ID
+        for sim_id in sim_device_ids:
+            if sim_id not in compass_dev_ids:
+                raise NotAchievedException(
+                    f"SIM_MAG device ID {sim_id} not found in COMPASS_DEV_ID slots. "
+                    f"SIM IDs: {sim_device_ids}, COMPASS IDs: {compass_dev_ids}"
+                )
+
+        self.progress(f"All {num_compasses} compass device IDs detected")
+
+    def get_sim_mag_devids(self, num_compasses):
+        """
+        Fetch list of device IDs from SIM_MAGx_DEVID parameters.
+
+        Args:
+            num_compasses: Number of compasses to fetch
+
+        Returns:
+            List of device IDs from SIM_MAG1_DEVID through SIM_MAGn_DEVID
+        """
+        device_ids = []
+        for i in range(1, num_compasses + 1):
+            dev_id = self.get_parameter(f"SIM_MAG{i}_DEVID")
+            device_ids.append(dev_id)
+            self.progress(f"SIM_MAG{i}_DEVID = {dev_id}")
+        return device_ids
+
     # FIXME: modify assert_parameter_value to take epsilon_pct instead:
     def assert_parameter_value_pct(self, name, expected_value, max_error_percent):
         value = self.get_parameter_direct(name, verbose=False)
@@ -10268,16 +10340,11 @@ Also, ignores heartbeats not from our target system'''
         self.context_push()
 
         total_compasses = 6
-        active_compasses = 3
 
         self.progress("Setting up 6 simulated I2C compasses with calibration")
 
         # Fetch existing SIM_MAGx_DEVID values
-        device_ids = []
-        for i in range(1, total_compasses + 1):
-            dev_id = self.get_parameter(f"SIM_MAG{i}_DEVID")
-            device_ids.append(dev_id)
-            self.progress(f"SIM_MAG{i}_DEVID = {dev_id}")
+        device_ids = self.get_sim_mag_devids(total_compasses)
 
         # disable force saving dev_ids for subsequent boots
         self.set_parameter("SIM_MAG_SAVE_IDS", 0)
@@ -10287,81 +10354,71 @@ Also, ignores heartbeats not from our target system'''
 
         # Verify all 6 compasses are detected (stored in DEV_ID parameters)
         self.progress("Verifying 6 compasses detected in DEV_ID slots")
-        for i in range(1, total_compasses + 1):
-            suffix = "" if i == 1 else str(i)
-            dev_id = self.get_parameter(f"COMPASS_DEV_ID{suffix}")
-            self.progress(f"Initial: COMPASS_DEV_ID{suffix} = {dev_id}")
-            if dev_id == 0:
-                raise NotAchievedException(f"Compass {i} not detected in DEV_ID{suffix}")
-
-        # Get current PRIO IDs (only 3 of them)
-        self.progress("Reading current compass priority order")
-        prio_ids = []
-        for i in range(1, active_compasses + 1):
-            prio_id = self.get_parameter(f"COMPASS_PRIO{i}_ID")
-            prio_ids.append(prio_id)
-            self.progress(f"COMPASS_PRIO{i}_ID = {prio_id}")
-
-        # Select compass 4 to be at priority 3
-        # Also swap SIM_MAG2_DEVID and SIM_MAG4_DEVID
-        # Result: priority order becomes 1 -> 2 -> 4
-        # Appearance changed to 1 -> 4 -> 3 -> 2 -> 5 -> 6
-        self.progress("Reordering compasses: putting compass 4 at priority 3, also changing appearance order")
-
-        swap_params = {
-            "COMPASS_PRIO3_ID": device_ids[3],  # Put compass 4 at priority 3
-            "SIM_MAG2_DEVID": device_ids[3],  # change appearance order
-            "SIM_MAG4_DEVID": device_ids[1],  # change appearance order
-        }
-
-        self.set_parameters(swap_params)
+        self.check_mag_devids_detected(total_compasses)
 
         # Reboot to apply changes
         self.progress("Rebooting to apply reordering")
         self.reboot_sitl()
 
-        # Check for compass prearm messages
-        # We expect "PreArm: Compass not calibrated" but NOT "PreArm: Compass x not found"
-        self.progress("Waiting for compass prearm message")
-        self.context_collect("STATUSTEXT")
-        msg = self.wait_statustext("PreArm: Compass", timeout=60, check_context=True)
+        def wait_correct_compass_prearm_message():
+            # Check for correct compass prearm messages
+            # We expect "PreArm: Compass not calibrated" but NOT
+            # "PreArm: Compass x not found" or any other compass prearm message
+            self.progress("Waiting for compass prearm message")
+            self.context_collect("STATUSTEXT")
+            msg = self.wait_statustext("PreArm: Compass", timeout=60, check_context=True)
 
-        # Check if we got the expected message or an unexpected one
-        if "not found" in msg.text.lower():
-            self.context_clear_collection("STATUSTEXT")
-            raise NotAchievedException(f"Unexpected compass not found: {msg.text}")
-        elif "not calibrated" in msg.text.lower():
-            self.progress(f"Got expected prearm failure: {msg.text}")
-        else:
-            self.context_clear_collection("STATUSTEXT")
-            raise NotAchievedException(f"Unexpected compass prearm message: {msg.text}")
+            # Check if we got the expected message or an unexpected one
+            if "not found" in msg.text.lower():
+                self.context_clear_collection("STATUSTEXT")
+                raise NotAchievedException(f"Unexpected compass not found: {msg.text}")
+            elif "not calibrated" in msg.text.lower():
+                self.progress(f"Got expected prearm failure: {msg.text}")
+            else:
+                self.context_clear_collection("STATUSTEXT")
+                raise NotAchievedException(f"Unexpected compass prearm message: {msg.text}")
 
-        self.context_clear_collection("STATUSTEXT")
+            self.context_clear_collection("STATUSTEXT")
+
+        # Change appearance order: swap positions 2 and 4
+        # Reorder: [dev1, dev4, dev3, dev2, dev5, dev6]
+        reordered = [device_ids[0], device_ids[3], device_ids[2],
+                     device_ids[1], device_ids[4], device_ids[5]]
+        self.reorder_compass_appearance(reordered)
+
+        # Set priority for compass 4
+        self.set_parameter("COMPASS_PRIO3_ID", device_ids[3])
+
+        self.reboot_sitl()
+        wait_correct_compass_prearm_message()
 
         # Verify all 6 compasses are still present (in any DEV_ID slot)
         self.progress("Verifying all 6 compasses still present after reordering")
+        self.check_mag_devids_detected(total_compasses)
 
-        detected_dev_ids = []
-        for i in range(1, total_compasses + 1):
-            suffix = "" if i == 1 else str(i)
-            dev_id = self.get_parameter(f"COMPASS_DEV_ID{suffix}")
-            self.progress(f"After reorder: COMPASS_DEV_ID{suffix} = {dev_id}")
+        self.reorder_compass_appearance(reordered)
+        self.progress("Setting priorities to use last three compasses")
+        self.set_parameters({
+            "COMPASS_PRIO1_ID": device_ids[3],
+            "COMPASS_PRIO2_ID": device_ids[4],
+            "COMPASS_PRIO3_ID": device_ids[5],
+        })
+        self.reboot_sitl()
+        wait_correct_compass_prearm_message()
+        self.check_mag_devids_detected(total_compasses)
 
-            if dev_id == 0:
-                raise NotAchievedException(f"Empty DEV_ID slot at position {i}")
+        # revert to original
+        self.progress("Reverting to original compass priorities")
+        self.reorder_compass_appearance(device_ids)
+        self.set_parameters({
+            "COMPASS_PRIO1_ID": device_ids[0],
+            "COMPASS_PRIO2_ID": device_ids[1],
+            "COMPASS_PRIO3_ID": device_ids[2],
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
 
-            detected_dev_ids.append(dev_id)
-
-        # Verify all original device IDs are present
-        for original_id in device_ids:
-            if original_id not in detected_dev_ids:
-                raise NotAchievedException(
-                    f"Compass with device ID {original_id} not found after reordering. "
-                    f"Found: {detected_dev_ids}"
-                )
-
-        self.progress(f"All 6 compasses still present. Detected IDs: {detected_dev_ids}")
-        self.progress("Test passed: Compass reordering detected, prearm failure as expected")
+        self.progress("SixCompassCalibrationAndReordering completed successfully")
         self.context_pop()
 
     # something about SITLCompassCalibration appears to fail
