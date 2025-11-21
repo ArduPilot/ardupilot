@@ -115,7 +115,7 @@ float AC_InputManager_Heli::get_pilot_desired_collective(int16_t control_in)
 
     // ramp function
     if (transition){
-        float dt = 1/(float)_loop_rate;
+        float dt = 2/(float)_loop_rate;
         _timer -= dt;
         _timer = constrain_float(_timer, 0.0f, 1.0f);
         _ramp = (3*_timer*_timer)-(2*_timer*_timer*_timer);
