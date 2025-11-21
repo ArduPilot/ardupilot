@@ -34,9 +34,8 @@ protected:
     void timer();
 
     AP_HAL::Device *dev;
-    AP_HAL::I2CDevice *i2c_dev;
 
-    AUAV_Pressure_sensor sensor { i2c_dev, AUAV_Pressure_sensor::Type::Absolute };
+    AUAV_Pressure_sensor sensor { dev, AUAV_Pressure_sensor::Type::Absolute };
 
     uint8_t instance;
 
