@@ -24,6 +24,10 @@ void setup(void)
     // display welcome message
     hal.console->printf("Toshiba LED test ver 0.1\n");
 
+#if AP_SIM_ENABLED
+    sitl.init();
+#endif  // AP_SIM_ENABLED
+
     // initialise LED
     if (!toshiba_led.init()) {
         hal.console->printf("Failed to initialise Toshiba LED\n");
