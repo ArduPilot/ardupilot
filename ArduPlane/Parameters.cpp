@@ -1283,6 +1283,22 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("GUIDED_TIMEOUT", 40, ParametersG2, guided_timeout, 3.0f),
 
+    // @Param: FD_SPD_MODE
+    // @DisplayName: FlightDock TECS speed override mode
+    // @Description: When set to 1, TECS uses FD_SPD_TARGET as the cruise speed setpoint instead of stock logic. When 0, TECS behaves exactly as stock ArduPlane. This is a FlightDock-specific parameter for formation flight speed control.
+    // @Values: 0:Disabled (stock behavior), 1:Override active
+    // @User: Advanced
+    AP_GROUPINFO("FD_SPD_MODE", 41, ParametersG2, fd_spd_mode, 0),
+
+    // @Param: FD_SPD_TARGET
+    // @DisplayName: FlightDock target cruise speed
+    // @Description: Desired cruise speed (m/s) when FD_SPD_MODE=1. This value is constrained to [AIRSPEED_MIN, AIRSPEED_MAX] before use. Used by FlightDock formation controller for dynamic speed control.
+    // @Units: m/s
+    // @Range: 15 40
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("FD_SPD_TARGET", 42, ParametersG2, fd_spd_target, 24.7f),
+
     AP_GROUPEND
 };
 
