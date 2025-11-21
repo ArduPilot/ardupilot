@@ -26,7 +26,10 @@ public:
 
       This returns true if the message should be processed locally
     */
-    bool check_and_forward(class GCS_MAVLINK &link, const mavlink_message_t &msg);
+    bool check_and_forward(uint8_t framing_status,
+                           class GCS_MAVLINK &link,
+                           const mavlink_status_t &status,
+                           const mavlink_message_t &msg);
 
     /*
       send a MAVLink message to all components with this vehicle's system id
@@ -73,6 +76,10 @@ private:
     void handle_heartbeat(GCS_MAVLINK &link, const mavlink_message_t &msg);
 
     void send_to_components(const char *pkt, const mavlink_msg_entry_t *entry, uint8_t pkt_len);
+
+    // forward a message to learned routes.  Returns true if the
+    // message should be processed locally.
+    bool forward(GCS_MAVLINK &in_link, const mavlink_message_t &msg);
 
     // check for Gopro in Solo gimbal status
     bool gopro_status_check; // default is none
