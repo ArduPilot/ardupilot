@@ -1,3 +1,7 @@
+#include "AnalogIn_config.h"
+
+#if AP_HAL_LINUX_ANALOGIN_ADS1115_ENABLED
+
 #include "AnalogIn_ADS1115.h"
 
 AnalogSource_ADS1115::AnalogSource_ADS1115(int16_t pin):
@@ -91,3 +95,5 @@ void AnalogIn_ADS1115::_update()
 
     _last_update_timestamp = AP_HAL::micros();
 }
+
+#endif  // AP_HAL_LINUX_ANALOGIN_ADS1115_ENABLED
