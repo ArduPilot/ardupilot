@@ -20,6 +20,15 @@
 
 #if AP_TERRAIN_AVAILABLE
 
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+// note that this check is also in AP_Terrain.cpp:
+#ifndef AP_TERRAIN_DUMMY_METHODS_ENABLED
+#define AP_TERRAIN_DUMMY_METHODS_ENABLED !(APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN))
+#endif  // AP_TERRAIN_DUMMY_METHODS_ENABLED
+
+#if !AP_TERRAIN_DUMMY_METHODS_ENABLED
+
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
@@ -380,5 +389,11 @@ void AP_Terrain::io_timer(void)
         break;
     }
 }
+
+#else  // we will use dummy methods
+
+void AP_Terrain::schedule_disk_io(void) {}
+
+#endif  // AP_TERRAIN_DUMMY_METHODS_ENABLED
 
 #endif // AP_TERRAIN_AVAILABLE
