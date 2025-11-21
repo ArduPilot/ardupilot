@@ -2636,6 +2636,8 @@ void QuadPlane::vtol_position_controller(void)
 
         // use input shaping and abide by accel and jerk limits
         pos_control->input_vel_accel_NE_m(target_speed_ne_ms, target_accel_ne_mss);
+        // During POS1, we only want to control velocity and acceleration
+        pos_control->stop_pos_NE_stabilisation();
 
         // run horizontal velocity controller
         run_xy_controller(MAX(approach_accel_mss, transition_decel_mss)*1.5);
