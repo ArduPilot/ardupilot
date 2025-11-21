@@ -72,6 +72,7 @@ class CompassLearn;
 class Compass
 {
 friend class AP_Compass_Backend;
+friend class AP_Compass_DroneCAN;
 public:
     Compass();
 
