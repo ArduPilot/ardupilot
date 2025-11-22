@@ -19,6 +19,8 @@ public:
 
     static AP_Arming *get_singleton();
 
+    __INITFUNC__ void init(void) { }
+
     void update();
 
     enum class Check {
@@ -95,8 +97,6 @@ public:
         YES_AUTO_ARM_MIN_PWM = 3,
         YES_AUTO_ARM_ZERO_PWM = 4,
     };
-
-    void init(void);
 
     // these functions should not be used by Copter which holds the armed state in the motors library
     Required arming_required() const;
