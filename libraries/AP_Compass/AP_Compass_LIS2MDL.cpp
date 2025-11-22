@@ -63,7 +63,7 @@ AP_Compass_LIS2MDL::AP_Compass_LIS2MDL(AP_HAL::OwnPtr<AP_HAL::Device> _dev,
 // @brief Initialize the sensor
 bool AP_Compass_LIS2MDL::init()
 {
-    dev->get_semaphore()->take_blocking();
+    WITH_SEMAPHORE(dev->get_semaphore());
 
     if (dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
         // LIS2MDL SPI reads are MSb=1, autoincrement.
@@ -77,7 +77,6 @@ bool AP_Compass_LIS2MDL::init()
     if (!dev->read_registers(ADDR_WHO_AM_I, &whoami, 1) ||
         whoami != ID_WHO_AM_I) {
         // not a LIS2MDL
-        dev->get_semaphore()->give();
         return false;
     }
 
@@ -94,8 +93,6 @@ bool AP_Compass_LIS2MDL::init()
 
     // lower retries for run
     dev->set_retries(3);
-
-    dev->get_semaphore()->give();
 
     /* register the compass instance in the frontend */
     dev->set_device_type(DEVTYPE_LIS2MDL);
