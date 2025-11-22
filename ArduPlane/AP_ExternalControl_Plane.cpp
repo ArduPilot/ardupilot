@@ -7,6 +7,7 @@
 #if AP_EXTERNAL_CONTROL_ENABLED
 
 #include "Plane.h"
+#include "quadplane.h"
 
 /*
   Sets the target global position for a loiter point.
@@ -36,6 +37,32 @@ bool AP_ExternalControl_Plane::set_airspeed(const float airspeed)
 #else 
   return false;
 #endif
+}
+
+/*
+    Request gliding
+*/
+bool AP_ExternalControl_Plane::request_gliding(bool gliding_requested)
+{
+    // The command is only valid in guided mode.
+    if (plane.control_mode != &plane.mode_guided) {
+        return false;
+    }
+
+    // Assume we always want motor to launch.
+    if (!plane.is_flying()) {
+        return false;
+    }
+
+    // Don't allow gliding when in a VTOL mode.
+#if HAL_QUADPLANE_ENABLED
+    if (!plane.quadplane.in_assisted_flight()) {
+        return false;
+    }
+#endif // HAL_QUADPLANE_ENABLED
+
+    plane.TECS_controller.set_gliding_requested_flag(gliding_requested);
+    return true;
 }
 
 #endif // AP_EXTERNAL_CONTROL_ENABLED
