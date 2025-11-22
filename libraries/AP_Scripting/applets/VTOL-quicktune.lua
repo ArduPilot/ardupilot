@@ -184,13 +184,9 @@ local OPTIONS_TWO_POSITION = (1<<0)
 
 local INS_GYRO_FILTER  = bind_param("INS_GYRO_FILTER")
 
-local RCMAP_ROLL       = bind_param("RCMAP_ROLL")
-local RCMAP_PITCH      = bind_param("RCMAP_PITCH")
-local RCMAP_YAW        = bind_param("RCMAP_YAW")
-
-local RCIN_ROLL  = rc:get_channel(RCMAP_ROLL:get())
-local RCIN_PITCH = rc:get_channel(RCMAP_PITCH:get())
-local RCIN_YAW   = rc:get_channel(RCMAP_YAW:get())
+local RCIN_ROLL  = rc:find_channel_for_option(201)
+local RCIN_PITCH = rc:find_channel_for_option(202)
+local RCIN_YAW   = rc:find_channel_for_option(204)
 
 local UPDATE_RATE_HZ = 40
 local STAGE_DELAY = 4.0

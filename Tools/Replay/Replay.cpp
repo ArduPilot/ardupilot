@@ -94,6 +94,34 @@ void ReplayVehicle::load_parameters(void)
 
 GCS_Dummy _gcs;
 
+// need to instantiate RC_Channels; AP_Vehicle wants to call methods
+// on the rc() singleton.  Specifying AP_RC_CHANNEL_ENABLED as 0 turns
+// out to be hard.
+
+class RC_Channel_Replay : public RC_Channel
+{
+};
+class RC_Channels_Replay : public RC_Channels
+{
+public:
+    int8_t flight_mode_channel_number() const override { return 0; }
+    RC_Channel_Replay *channel(const uint8_t chan) override {
+        if (chan >= NUM_RC_CHANNELS) {
+            return nullptr;
+        }
+        return &obj_channels[chan];
+    }
+    RC_Channel_Replay obj_channels[NUM_RC_CHANNELS];
+};
+// defining these two macros and including the
+// RC_Channels_VarInfo header defines the parameter information common
+// to all vehicle types
+#define RC_CHANNELS_SUBCLASS RC_Channels_Replay
+#define RC_CHANNEL_SUBCLASS RC_Channel_Replay
+
+#include <RC_Channel/RC_Channels_VarInfo.h>
+RC_Channels_Replay _rc_channels;
+
 #if AP_ADVANCEDFAILSAFE_ENABLED
 AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
 bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) { return false; }
