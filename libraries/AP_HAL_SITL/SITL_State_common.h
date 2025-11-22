@@ -17,6 +17,7 @@
 #include <SITL/SIM_VectorNav.h>
 #include <SITL/SIM_MicroStrain.h>
 #include <SITL/SIM_InertialLabs.h>
+#include <SITL/SIM_SensAItion.h>
 #include <SITL/SIM_AIS.h>
 #include <SITL/SIM_GPS.h>
 
@@ -157,6 +158,9 @@ public:
 
     // simulated InertialLabs INS
     SITL::InertialLabs *inertiallabs;
+
+    // simulated SensAItion system:
+    SITL::SensAItion *sensaition;
 
 #if AP_SIM_JSON_MASTER_ENABLED
     // Ride along instances via JSON SITL backend
