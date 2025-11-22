@@ -936,7 +936,7 @@ class ChibiOSHWDef(hwdef.HWDef):
             f.write('#define HAL_USE_SDC FALSE\n')
             self.build_flags.append('USE_FATFS=no')
         if 'OTG1' in self.bytype:
-            if self.get_mcu_config('STM32_OTG2_IS_OTG1', False) is not None:
+            if self.get_mcu_config('STM32_OTG2_IS_OTG1', False) is not None or self.env_vars.get('STM32_OTGHS_AS_OTG1'):
                 f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
                 f.write('#define STM32_OTG2_IS_OTG1                  TRUE\n')
             else:
