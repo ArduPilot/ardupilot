@@ -171,6 +171,50 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("FUNCTION",  5, SRV_Channel, function, 0),
 
+#if AP_PERIPH_ACTUATOR_TELEM_ENABLED
+    // @Param: TELEM_RATE
+    // @DisplayName: Actuator Telemetry rate
+    // @Description: Actuator Telemetry update rate in Hz for this servo channel.
+    // @Units: Hz
+    // @Range: 1 100
+    // @User: Standard
+    AP_GROUPINFO("TELEM_RATE",  6, SRV_Channel, _telem_rate, AP_PERIPH_ACTUATOR_TELEM_RATE_DEFAULT),
+
+    // @Param: CURR_PIN
+    // @DisplayName: Current sensing pin
+    // @Description: Analog input pin number for current sensing on this servo channel. Set to -1 to disable current sensing.
+    // @Values: -1:Disabled
+    // @Range: -1 15
+    // @User: Standard
+    // @RebootRequired: True
+    AP_GROUPINFO("CURR_PIN",    7, SRV_Channel, _curr_pin, -1),
+
+    // @Param: AMP_OFFSET
+    // @DisplayName: Current sensor offset
+    // @Description: Voltage offset at zero current on the current sensor for this servo channel. Used to calibrate analog current sensors.
+    // @Units: V
+    // @Range: -10 10
+    // @User: Standard
+    AP_GROUPINFO("AMP_OFFSET",  8, SRV_Channel, _curr_amp_offset, 0),
+
+    // @Param: AMP_PERVLT
+    // @DisplayName: Amps per volt
+    // @Description: Number of amps that a 1V reading on the current sensor corresponds to for this servo channel. This is the current sensor scale factor.
+    // @Units: A/V
+    // @Range: 0 100
+    // @User: Standard
+    AP_GROUPINFO("AMP_PERVLT",  9, SRV_Channel, _curr_amp_per_volt, 0),
+
+
+    // @Param: CURR_MAX
+    // @DisplayName: Maximum current
+    // @Description: Maximum expected current draw for this servo channel in amps. Used for scaling and safety limits.
+    // @Units: A
+    // @Range: 0 100
+    // @User: Standard
+    AP_GROUPINFO("CURR_MAX",    10, SRV_Channel, _curr_max, 0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -399,3 +443,33 @@ int8_t SRV_Channel::get_motor_num(void) const
     }
     return -1;
 }
+
+#if AP_PERIPH_ACTUATOR_TELEM_ENABLED
+// return the current in amps for this channel
+float SRV_Channel::get_current_ampere(void) const
+{
+    // Check if ADC channel is configured
+    if (_curr_pin > 0 && _curr_pin_analog_source == nullptr) {
+        _curr_pin_analog_source = hal.analogin->channel(_curr_pin);
+        if (_curr_pin_analog_source == nullptr) {
+            return 0.0f;
+        }
+        if (!_curr_pin_analog_source->set_pin(_curr_pin)) {
+            return 0.0f;
+        }
+    } else if (_curr_pin <= 0 || _curr_pin_analog_source == nullptr) {
+        return 0.0f;
+    }
+
+    float adc_voltage = _curr_pin_analog_source->voltage_average();
+    float current = (adc_voltage - _curr_amp_offset) * _curr_amp_per_volt;
+
+    return current;
+}
+
+//return preset maximum current in amps for this channel
+float SRV_Channel::get_current_max_ampere(void) const
+{
+    return _curr_max;
+}
+#endif

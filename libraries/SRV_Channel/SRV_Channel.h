@@ -313,6 +313,15 @@ public:
     // used by DO_SET_SERVO commands
     void ignore_small_rcin_changes() { ign_small_rcin_changes = true; }
 
+#if AP_PERIPH_ACTUATOR_TELEM_ENABLED
+    // get current in amperes by reading ADC
+    float get_current_ampere(void) const;
+    // get maximum expected current in amperes
+    float get_current_max_ampere(void) const;
+    // get telemetry update rate in Hz
+    int16_t get_telem_rate(void) const { return _telem_rate; }
+#endif
+
 private:
     AP_Int16 servo_min;
     AP_Int16 servo_max;
@@ -320,6 +329,15 @@ private:
     // reversal, following convention that 1 means reversed, 0 means normal
     AP_Int8 reversed;
     AP_Enum16<Function> function;
+
+#if AP_PERIPH_ACTUATOR_TELEM_ENABLED
+    AP_Int16 _telem_rate;        // telemetry update rate in Hz
+    AP_Int8 _curr_pin;           // current sensor ADC channel
+    AP_Float _curr_amp_offset;   // current sensor offset
+    AP_Float _curr_amp_per_volt; // current sensor scale in amps per volt
+    AP_Float _curr_max;          // maximum expected current in amps
+    mutable AP_HAL::AnalogSource *_curr_pin_analog_source;  // analog source for current (mutable for lazy init)
+#endif
 
     // a pending output value as PWM
     uint16_t output_pwm;
