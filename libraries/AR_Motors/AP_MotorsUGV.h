@@ -192,6 +192,9 @@ private:
     // use rate controller to achieve desired throttle
     float get_rate_controlled_throttle(SRV_Channel::Function function, float throttle, float dt);
 
+    // return power_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
+    float get_power_limit_max_throttle(float dt);
+
     // external references
     AP_WheelRateControl &_rate_controller;
 
@@ -210,11 +213,13 @@ private:
     AP_Float _speed_scale_base;  // speed above which steering is scaled down when using regular steering/throttle vehicles.  zero to disable speed scaling
     AP_Float _steering_throttle_mix; // Steering vs Throttle priorisation.  Higher numbers prioritise steering, lower numbers prioritise throttle.  Only valid for Skid Steering vehicles
     AP_Float _reverse_delay; // delay in seconds when reversing motor
+    AP_Float _batt_power_time_constant;    // Time constant used to limit the battery power
 
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500
     float   _throttle;  // requested throttle as a value from -100 to 100
     float   _throttle_prev; // throttle input from previous iteration
+    float   _throttle_limit = 1.0f;  // used for current limiting
     bool    _scale_steering = true; // true if we should scale steering by speed or angle
     float   _lateral;  // requested lateral input as a value from -100 to +100
     float   _roll;      // requested roll as a value from -1 to +1
