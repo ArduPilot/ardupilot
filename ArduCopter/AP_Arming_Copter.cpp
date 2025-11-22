@@ -582,7 +582,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
         const Compass &_compass = AP::compass();
         // check compass health
         if (!_compass.healthy()) {
-            check_failed(true, "Compass not healthy");
+            check_failed(true, "Compass %d not healthy", _compass.get_first_usable() + 1);
             return false;
         }
     }
