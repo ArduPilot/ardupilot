@@ -9944,7 +9944,7 @@ Also, ignores heartbeats not from our target system'''
                 self.set_parameter("COMPASS_ORIENT%d" % count, 0)
 
             # Only care about compass prearm
-            self.set_parameter("ARMING_CHECK", 4)
+            self.set_parameter("ARMING_SKIPCHK", ~(1 << 2))
 
         #################################################
         def do_test_mag_cal(mavproxy, params, compass_tnumber):
@@ -10770,8 +10770,8 @@ Also, ignores heartbeats not from our target system'''
         '''Arm features'''
         # TEST ARMING/DISARM
         self.delay_sim_time(12)  # wait for gyros/accels to be happy
-        if self.get_parameter("ARMING_CHECK") != 1.0 and not self.is_sub():
-            raise ValueError("Arming check should be 1")
+        if self.get_parameter("ARMING_SKIPCHK") != 0 and not self.is_sub():
+            raise ValueError("Arming skipped checks should be 0")
         if not self.is_sub() and not self.is_tracker():
             self.set_parameter("ARMING_RUDDER", 2)  # allow arm and disarm with rudder on first tests
         if self.is_copter():
