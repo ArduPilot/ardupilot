@@ -329,6 +329,8 @@ struct PACKED log_Guided_Position_Target {
     float accel_target_x;
     float accel_target_y;
     float accel_target_z;
+    float yaw_target;
+    float yaw_rate_target;
 };
 
 // guided attitude target logging
@@ -360,7 +362,7 @@ struct PACKED log_Rate_Thread_Dt {
 // pos_target_m is lat, lon, alt OR offset from ekf origin in m
 // terrain should be 0 if pos_target_m.z is alt-above-ekf-origin, 1 if alt-above-terrain
 // vel_target_ms is m/s
-void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode submode, const Vector3p& pos_target_m, bool is_terrain_alt, const Vector3f& vel_target_ms, const Vector3f& accel_target_mss)
+void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode submode, const Vector3p& pos_target_m, bool is_terrain_alt, const Vector3f& vel_target_ms, const Vector3f& accel_target_mss, const float yaw_target_rad, const float yaw_rate_target_rads)
 {
     const log_Guided_Position_Target pkt {
         LOG_PACKET_HEADER_INIT(LOG_GUIDED_POSITION_TARGET_MSG),
@@ -375,7 +377,9 @@ void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode submode, const
         vel_target_z    : vel_target_ms.z,
         accel_target_x  : accel_target_mss.x,
         accel_target_y  : accel_target_mss.y,
-        accel_target_z  : accel_target_mss.z
+        accel_target_z  : accel_target_mss.z,
+        yaw_target      : wrap_360(degrees(yaw_target_rad)),
+        yaw_rate_target  : yaw_rate_target_rads,
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -543,7 +547,7 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: aZ: Target acceleration, Z-Axis
 
     { LOG_GUIDED_POSITION_TARGET_MSG, sizeof(log_Guided_Position_Target),
-      "GUIP",  "QBfffbffffff",    "TimeUS,Type,pX,pY,pZ,Terrain,vX,vY,vZ,aX,aY,aZ", "s-mmm-nnnooo", "F-000-000000" , true },
+      "GUIP",  "QBfffbffffffff",    "TimeUS,Type,pX,pY,pZ,Terrain,vX,vY,vZ,aX,aY,aZ,y,yR", "s-mmm-nnnooodE", "F-000-00000000" , true },
 
 // @LoggerMessage: GUIA
 // @Description: Guided mode attitude target information
