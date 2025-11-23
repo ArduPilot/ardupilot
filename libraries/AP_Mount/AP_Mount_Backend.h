@@ -304,6 +304,11 @@ protected:
         uint32_t last_rate_request_ms;
     } mnt_target;
 
+    Location _roi_target;           // roi target location
+
+    uint8_t _target_sysid;          // sysid to track
+    Location _target_sysid_location;// sysid target location
+
 private:
 
     // get pilot input (in the range -1 to +1) received through RC
@@ -334,13 +339,6 @@ private:
         Quaternion att_quat;      // attitude quaternion of the gimbal
     } poi_calculation;
 #endif
-
-    Location _roi_target;           // roi target location
-    bool _roi_target_set;           // true if the roi target has been set
-
-    uint8_t _target_sysid;          // sysid to track
-    Location _target_sysid_location;// sysid target location
-    bool _target_sysid_location_set;// true if _target_sysid has been set
 
     uint32_t _last_warning_ms;      // system time of last warning sent to GCS
 
