@@ -336,7 +336,11 @@ static void handle_file_read_response(CanardInstance* ins, CanardRxTransfer* tra
             fw_update.node_id = 0;
             flash_write_flush();
             flash_set_keep_unlocked(false);
+#if AP_CHECK_FIRMWARE_ENABLED
             const auto ok = check_good_firmware();
+#else
+            const auto ok = check_fw_result_t::CHECK_FW_OK;
+#endif
             node_status.vendor_specific_status_code = uint8_t(ok);
             if (ok == check_fw_result_t::CHECK_FW_OK) {
                 jump_to_app();
@@ -805,7 +809,11 @@ bool can_check_update(void)
 
 void can_start()
 {
+#if AP_CHECK_FIRMWARE_ENABLED
     node_status.vendor_specific_status_code = uint8_t(check_good_firmware());
+#else
+    node_status.vendor_specific_status_code = uint8_t(check_fw_result_t::CHECK_FW_OK);
+#endif
     node_status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_MAINTENANCE;
 
 #if HAL_USE_CAN
