@@ -105,7 +105,20 @@ void AP_AIS::init()
 // update AIS, expected to be called at 20hz
 void AP_AIS::update()
 {
-    if (!_uart || !enabled()) {
+    if (!enabled()) {
+        return;
+    }
+
+    // remove expired items from the list
+    const uint32_t now_ms =  AP_HAL::millis();
+    const uint32_t timeout_ms = MAX(_time_out.get(), 1) * 1000;
+    for (uint16_t i = 0; i < _list.max_items(); i++) {
+        if (_list[i].last_update_ms != 0 && now_ms - _list[i].last_update_ms >= timeout_ms) {
+            clear_list_item(i);
+        }
+    }
+
+    if (_uart == nullptr) {
         return;
     }
 
@@ -230,20 +243,7 @@ void AP_AIS::update()
                 }
             }
         }
-    }
-
-    // remove expired items from the list
-    const uint32_t now =  AP_HAL::millis();
-    const uint32_t timeout = _time_out * 1000;
-    if (now < timeout) {
-        return;
-    }
-    const uint32_t deadline = now - timeout;
-    for (uint16_t i = 0; i < _list.max_items(); i++) {
-        if (_list[i].last_update_ms < deadline && _list[i].last_update_ms != 0) {
-            clear_list_item(i);
-        }
-    }
+    } // while
 }
 
 // Send a AIS mavlink message
@@ -271,6 +271,33 @@ void AP_AIS::send(mavlink_channel_t chan)
                 return;
         }
     }
+}
+
+void AP_AIS::handle_message(const mavlink_ais_vessel_t &packet)
+{
+    if (!enabled()) {
+        return;
+    }
+
+    int32_t lat = 0;
+    int32_t lon = 0;
+    if (packet.flags & AIS_FLAGS_POSITION_ACCURACY) {
+        //  the closer items will take priority over further items.
+        lat = packet.lat;
+        lon = packet.lon;
+    }
+
+    uint16_t index;
+    if (!get_vessel_index(packet.MMSI, index, lat, lon)) {
+        // not found and not enough memory to add it
+        return;
+    }
+    memcpy(&_list[index].info, &packet, sizeof(_list[index].info));
+    _list[index].last_update_ms = AP_HAL::millis() - packet.tslc * 1000;
+
+#if AP_OADATABASE_ENABLED
+    send_to_object_avoidance_database(_list[index]);
+#endif
 }
 
 #if AP_OADATABASE_ENABLED
@@ -1043,6 +1070,7 @@ bool AP_AIS::enabled() const { return false; }
 void AP_AIS::init() {};
 void AP_AIS::update() {};
 void AP_AIS::send(mavlink_channel_t chan) {};
+void AP_AIS::handle_message(const mavlink_ais_vessel_t &packet) {};
 
 AP_AIS *AP_AIS::get_singleton() { return nullptr; }
 
