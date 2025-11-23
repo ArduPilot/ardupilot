@@ -23,6 +23,8 @@
 
 #include "AP_RCProtocol.h"
 #include "AP_RCProtocol_CRSF.h"
+#include "AP_CRSF_Protocol.h"
+#include "AP_CRSF_Out.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
@@ -44,7 +46,6 @@
 #define CRSF_SUBSET_RC_RES_CONF_11B                 1
 #define CRSF_SUBSET_RC_RES_BITS_11B                 11
 #define CRSF_SUBSET_RC_RES_MASK_11B                 0x07FF
-#define CRSF_SUBSET_RC_CHANNEL_SCALE_11B            0.5f
 #define CRSF_SUBSET_RC_RES_CONF_12B                 2
 #define CRSF_SUBSET_RC_RES_BITS_12B                 12
 #define CRSF_SUBSET_RC_RES_MASK_12B                 0x0FFF
@@ -89,61 +90,6 @@ extern const AP_HAL::HAL& hal;
 //#define CRSF_DEBUG_PARAMS
 #if defined(CRSF_DEBUG) || defined(CRSF_DEBUG_TELEM) || defined(CRSF_DEBUG_PARAMS)
 # define debug(fmt, args...)	hal.console->printf("CRSF: " fmt "\n", ##args)
-static const char* get_frame_type(uint8_t byte, uint8_t subtype = 0)
-{
-    switch(byte) {
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_GPS:
-        return "GPS";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_BATTERY_SENSOR:
-        return "BATTERY";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_HEARTBEAT:
-        return "HEARTBEAT";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VTX:
-        return "VTX";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VTX_TELEM:
-        return "VTX_TELEM";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_PING:
-        return "PING";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND:
-        return "COMMAND";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_ATTITUDE:
-        return "ATTITUDE";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_FLIGHT_MODE:
-        return "FLIGHT_MODE";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO:
-        return "DEVICE_INFO";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_READ:
-        return "PARAM_READ";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
-        return "SETTINGS_ENTRY";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_LINK_STATISTICS:
-        return "LINK_STATS";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
-        return "RC";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
-        return "RCv3";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_RC_CHANNELS_PACKED_11BIT:
-        return "RCv3_11BIT";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_LINK_STATISTICS_RX:
-        return "LINK_STATSv3_RX";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_LINK_STATISTICS_TX:
-        return "LINK_STATSv3_TX";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_WRITE:
-        return "PARAM_WRITE";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_AP_CUSTOM_TELEM_LEGACY:
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_AP_CUSTOM_TELEM:
-        switch (subtype) {
-        case AP_RCProtocol_CRSF::CRSF_AP_CUSTOM_TELEM_SINGLE_PACKET_PASSTHROUGH:
-            return "AP_CUSTOM_SINGLE";
-        case AP_RCProtocol_CRSF::CRSF_AP_CUSTOM_TELEM_STATUS_TEXT:
-            return "AP_CUSTOM_TEXT";
-        case AP_RCProtocol_CRSF::CRSF_AP_CUSTOM_TELEM_MULTI_PACKET_PASSTHROUGH:
-            return "AP_CUSTOM_MULTI";
-        }
-        return "AP_CUSTOM";
-    }
-    return "UNKNOWN";
-}
 #else
 # define debug(fmt, args...)	do {} while(0)
 #endif
@@ -165,36 +111,86 @@ const uint16_t AP_RCProtocol_CRSF::RF_MODE_RATES[RFMode::RF_MODE_MAX_MODES] = {
     4, 25, 50, 100, 100, 150, 200, 250, 333, 500, 250, 500, 500, 1000, 50  // ELRS
 };
 
-AP_RCProtocol_CRSF* AP_RCProtocol_CRSF::_singleton;
+// Manager for CRSF instances
+AP_RCProtocol_CRSF* AP_RCProtocol_CRSF::Manager_State::_instances[SERIALMANAGER_NUM_PORTS];
+AP_RCProtocol_CRSF* AP_RCProtocol_CRSF::Manager_State::_rcin_singleton = nullptr;
+uint32_t AP_RCProtocol_CRSF::Manager_State::_last_manager_check_ms;
 
-AP_RCProtocol_CRSF::AP_RCProtocol_CRSF(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend)
+// Manager init to find all configured CRSF ports
+void AP_RCProtocol_CRSF::manager_init()
 {
-#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
-    if (_singleton != nullptr) {
-        AP_HAL::panic("Duplicate CRSF handler");
+    if (AP_HAL::millis() - Manager_State::_last_manager_check_ms < 1000) {
+        return;
     }
 
-    _singleton = this;
-#else
-    if (_singleton == nullptr) {
-        _singleton = this;
-    }
+    AP_SerialManager &serial_manager = AP::serialmanager();
+
+    for (uint8_t i = 0; i < SERIALMANAGER_MAX_PORTS; i++) {
+        const AP_SerialManager::UARTState* port_state = serial_manager.get_state_by_id(i);
+        if (port_state == nullptr) continue;
+        AP_SerialManager::SerialProtocol protocol = port_state->get_protocol();
+        AP_HAL::UARTDriver* uart = serial_manager.get_serial_by_id(i);
+        PortMode mode;
+
+        if (protocol == AP_SerialManager::SerialProtocol_CRSF) {
+            mode = PortMode::DIRECT_VTX;
+#if AP_CRSF_OUT_ENABLED
+        } else if (protocol == AP_SerialManager::SerialProtocol_CRSF_Output) {
+            mode = PortMode::DIRECT_RCOUT;
 #endif
-#if HAL_CRSF_TELEM_ENABLED && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
-    _uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_CRSF, 0);
-    if (_uart) {
-        start_uart();
-    }
+        } else {
+            continue;
+        }
+
+        if (uart != nullptr) {
+            // prevent creating duplicate instances
+            if (Manager_State::_instances[i] == nullptr) {
+                Manager_State::_instances[i] = NEW_NOTHROW AP_RCProtocol_CRSF(AP::RC(), mode, uart);
+#if AP_CRSF_OUT_ENABLED
+                if (protocol == AP_SerialManager::SerialProtocol_CRSF_Output) {
+                    AP::crsf_out()->init();
+                }
 #endif
+            }
+        }
+    }
+    Manager_State::_last_manager_check_ms = AP_HAL::millis();
 }
 
-AP_RCProtocol_CRSF::~AP_RCProtocol_CRSF() {
-    _singleton = nullptr;
+// constructor for RCIN "passthrough" mode
+AP_RCProtocol_CRSF::AP_RCProtocol_CRSF(AP_RCProtocol &_frontend) :
+    AP_RCProtocol_Backend(_frontend),
+    _mode(PortMode::PASSTHROUGH_RCIN),
+    _uart(nullptr)
+{
+    // This is the RCIN instance, register it as the singleton
+    Manager_State::_rcin_singleton = this;
+}
+
+// constructor for "direct-attach" modes
+AP_RCProtocol_CRSF::AP_RCProtocol_CRSF(AP_RCProtocol &_frontend, PortMode mode, AP_HAL::UARTDriver* uart) :
+    AP_RCProtocol_Backend(_frontend),
+    _mode(mode),
+    _uart(uart)
+{
+    start_uart();
+}
+
+AP_RCProtocol_CRSF::~AP_RCProtocol_CRSF()
+{
+    for (uint8_t i = 0; i < SERIALMANAGER_NUM_PORTS; i++) {
+        if (Manager_State::_instances[i] == this) {
+            Manager_State::_instances[i] = nullptr;
+        }
+    }
+    if (Manager_State::_rcin_singleton == this) {
+        Manager_State::_rcin_singleton = nullptr;
+    }
 }
 
 // get the protocol string
-const char* AP_RCProtocol_CRSF::get_protocol_string(ProtocolType protocol) const {
-    if (protocol == ProtocolType::PROTOCOL_ELRS) {
+const char* AP_RCProtocol_CRSF::get_protocol_string(AP_CRSF_Protocol::ProtocolType protocol) const {
+    if (protocol == AP_CRSF_Protocol::ProtocolType::PROTOCOL_ELRS) {
         return "ELRS";
     } else if (_crsf_v3_active) {
         return "CRSFv3";
@@ -204,27 +200,33 @@ const char* AP_RCProtocol_CRSF::get_protocol_string(ProtocolType protocol) const
 }
 
 // return the link rate as defined by the LinkStatistics
-uint16_t AP_RCProtocol_CRSF::get_link_rate(ProtocolType protocol) const {
-    if (protocol == ProtocolType::PROTOCOL_ELRS) {
-        return RF_MODE_RATES[_link_status.rf_mode + RFMode::CRSF_RF_MAX_MODES];
-    } else if (protocol == ProtocolType::PROTOCOL_TRACER) {
-        return 250;
-    } else {
-        return RF_MODE_RATES[_link_status.rf_mode];
+uint16_t AP_RCProtocol_CRSF::get_link_rate(AP_CRSF_Protocol::ProtocolType protocol) const {
+    if (_link_status.fps > 0) { // new way - direct linkn rate
+        return _link_status.fps * 10;
     }
+
+    if (protocol == AP_CRSF_Protocol::ProtocolType::PROTOCOL_ELRS) {
+        return RF_MODE_RATES[_link_status.rf_mode + RFMode::CRSF_RF_MAX_MODES];
+    }
+
+    if (protocol == AP_CRSF_Protocol::ProtocolType::PROTOCOL_TRACER) {
+        return 250;
+    }
+
+    return RF_MODE_RATES[_link_status.rf_mode];
 }
 
-// process a byte provided by a uart from rc stack
+// process a byte provided by a uart from rc stack (Passthrough mode)
 void AP_RCProtocol_CRSF::process_byte(uint8_t byte, uint32_t baudrate)
 {
     // reject RC data if we have been configured for standalone mode
-    if ((baudrate != CRSF_BAUDRATE && baudrate != CRSF_BAUDRATE_1MBIT && baudrate != CRSF_BAUDRATE_2MBIT) || _uart) {
+    if (_mode != PortMode::PASSTHROUGH_RCIN || (baudrate != CRSF_BAUDRATE && baudrate != CRSF_BAUDRATE_1MBIT && baudrate != CRSF_BAUDRATE_2MBIT)) {
         return;
     }
     _process_byte(byte);
 }
 
-// process a byte provided by a uart
+// process a byte from any source
 void AP_RCProtocol_CRSF::_process_byte(uint8_t byte)
 {
     //debug("process_byte(0x%x)", byte);
@@ -268,8 +270,19 @@ bool AP_RCProtocol_CRSF::check_frame(uint32_t timestamp_us)
         return true;
     }
 
-    if (_frame.device_address != DeviceAddress::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
-        return false;
+#if AP_CRSF_OUT_ENABLED
+    // in RCOUT mode, we are the master, so frames will be addressed from the FC
+    if (_mode == PortMode::DIRECT_RCOUT) {
+        if (_frame.device_address != DeviceAddress::CRSF_ADDRESS_FLIGHT_CONTROLLER &&
+            _frame.device_address != DeviceAddress::CRSF_ADDRESS_RADIO_TRANSMITTER) {
+            return false;
+        }
+    } else
+#endif
+    {
+        if (_frame.device_address != DeviceAddress::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
+            return false;
+        }
     }
 
     // check validity of the length byte if we have received it
@@ -347,39 +360,52 @@ void AP_RCProtocol_CRSF::skip_to_next_frame(uint32_t timestamp_us)
     check_frame(timestamp_us);
 }
 
+// called at 1KHz from new_input() by the rcin thread
 void AP_RCProtocol_CRSF::update(void)
 {
-    // if we are in standalone mode, process data from the uart
-    if (_uart) {
+    // if we are in direct attach mode, process data from the uart
+    if (_mode != PortMode::PASSTHROUGH_RCIN) {
         uint32_t now = AP_HAL::millis();
         // for some reason it's necessary to keep trying to start the uart until we get data
         if (now - _last_uart_start_time_ms > 1000U && _last_frame_time_us == 0) {
             start_uart();
             _last_uart_start_time_ms = now;
         }
-        uint32_t n = _uart->available();
-        n = MIN(n, 255U);
-        for (uint8_t i = 0; i < n; i++) {
-            int16_t b = _uart->read();
-            if (b >= 0) {
-                _process_byte(uint8_t(b));
+        if (_uart) {
+#if AP_CRSF_OUT_ENABLED
+            AP::crsf_out()->update();
+#endif
+            uint32_t n = _uart->available();
+            for (uint32_t i = 0; i < n; i++) {
+                int16_t b = _uart->read();
+                if (b >= 0) {
+                    _process_byte(uint8_t(b));
+                }
+            }
+        }
+    } else {
+        for (uint8_t i = 0; i < SERIALMANAGER_NUM_PORTS; i++) {
+            if (Manager_State::_instances[i] != nullptr && Manager_State::_instances[i]->_mode != PortMode::PASSTHROUGH_RCIN) {
+                Manager_State::_instances[i]->update();
             }
         }
     }
 
     // never received RC frames, but have received CRSF frames so make sure we give the telemetry opportunity to run
-    uint32_t now = AP_HAL::micros();
-    if ((_last_frame_time_us > 0
+    if (_mode == PortMode::PASSTHROUGH_RCIN) {
+        uint32_t now = AP_HAL::micros();
+        if ((_last_frame_time_us > 0
 #if HAL_CRSF_TELEM_ENABLED
-         || bind_in_progress()
+            || bind_in_progress()
 #endif
-        ) && (!get_rc_input_count() || !is_tx_active())
-        && now - _last_frame_time_us > CRSF_INTER_FRAME_TIME_US_250HZ) {
-        // don't send telemetry unless the UART we are dealing with is configured to send it
-        AP_HAL::UARTDriver *uart = get_available_UART();
-        if (_uart || (uart && (uart->get_baud_rate() == CRSF_BAUDRATE || uart->get_baud_rate() == ELRS_BAUDRATE))) {
-            process_telemetry(false);
-            _last_frame_time_us = now;
+            ) && (!get_rc_input_count() || !is_tx_active())
+            && now - _last_frame_time_us > CRSF_INTER_FRAME_TIME_US_250HZ) {
+            // don't send telemetry unless the UART we are dealing with is configured to send it
+            AP_HAL::UARTDriver *uart = get_available_UART();
+            if (_uart || (uart && (uart->get_baud_rate() == CRSF_BAUDRATE || uart->get_baud_rate() == ELRS_BAUDRATE))) {
+                process_telemetry(false);
+                _last_frame_time_us = now;
+            }
         }
     }
 
@@ -390,7 +416,7 @@ void AP_RCProtocol_CRSF::update(void)
 }
 
 // write out a frame of any type
-void AP_RCProtocol_CRSF::write_frame(Frame* frame)
+void AP_RCProtocol_CRSF::write_frame(AP_CRSF_Protocol::Frame* frame) const
 {
     AP_HAL::UARTDriver *uart = get_current_UART();
 
@@ -398,11 +424,7 @@ void AP_RCProtocol_CRSF::write_frame(Frame* frame)
         return;
     }
     // calculate crc
-    uint8_t crc = crc8_dvb_s2(0, frame->type);
-    for (uint8_t i = 0; i < frame->length - 2; i++) {
-        crc = crc8_dvb_s2(crc, frame->payload[i]);
-    }
-    frame->payload[frame->length - 2] = crc;
+    frame->payload[frame->length - 2] = crc8_dvb_s2_update(0, &frame->type, frame->length-1);
 
     uart->write((uint8_t*)frame, frame->length + 2);
     uart->flush();
@@ -410,13 +432,13 @@ void AP_RCProtocol_CRSF::write_frame(Frame* frame)
 #if defined(CRSF_DEBUG) || defined(CRSF_DEBUG_PARAMS)
 #ifdef CRSF_DEBUG_PARAMS
     switch (frame->type) {
-        case CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
-        case CRSF_FRAMETYPE_PARAMETER_READ:
-        case CRSF_FRAMETYPE_PARAMETER_WRITE:
-        case CRSF_FRAMETYPE_COMMAND:
+        case FrameType::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
+        case FrameType::CRSF_FRAMETYPE_PARAMETER_READ:
+        case FrameType::CRSF_FRAMETYPE_PARAMETER_WRITE:
+        case FrameType::CRSF_FRAMETYPE_COMMAND:
 #endif
-
-        hal.console->printf("CRSF: writing %s:", get_frame_type(frame->type, frame->payload[0]));
+    if (_mode == PortMode::DIRECT_RCOUT) {
+        hal.console->printf("CRSF: writing %s @%lukbaud -> 0x%x:", AP_CRSF_Protocol::get_frame_type(frame->type, frame->payload[0]), _uart->get_baud_rate()/1000, frame->device_address);
         for (uint8_t i = 0; i < frame->length + 2; i++) {
             uint8_t val = ((uint8_t*)frame)[i];
 #ifdef CRSF_DEBUG_CHARS
@@ -430,6 +452,7 @@ void AP_RCProtocol_CRSF::write_frame(Frame* frame)
 #endif
         }
         hal.console->printf("\n");
+    }
 #ifdef CRSF_DEBUG_PARAMS
     }
 #endif
@@ -439,7 +462,7 @@ void AP_RCProtocol_CRSF::write_frame(Frame* frame)
 bool AP_RCProtocol_CRSF::decode_crsf_packet()
 {
 #ifdef CRSF_DEBUG
-    hal.console->printf("CRSF: received %s:", get_frame_type(_frame.type));
+    hal.console->printf("CRSF: received %s:", AP_CRSF_Protocol::get_frame_type(_frame.type));
     uint8_t* fptr = (uint8_t*)&_frame;
     for (uint8_t i = 0; i < _frame.length + 2; i++) {
 #ifdef CRSF_DEBUG_CHARS
@@ -456,50 +479,62 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
 #endif
 
     bool rc_active = false;
+#if HAL_CRSF_TELEM_ENABLED
+    bool decoded = false;
+#if AP_CRSF_OUT_ENABLED
+    if (_mode == PortMode::DIRECT_RCOUT) {
+        decoded = AP::crsf_out()->decode_crsf_packet(_frame);
+    }
+#endif
+#endif
 
     switch (_frame.type) {
-        case CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
+        case FrameType::CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
             // scale factors defined by TBS - TICKS_TO_US(x) ((x - 992) * 5 / 8 + 1500)
-            decode_11bit_channels((const uint8_t*)(&_frame.payload), CRSF_MAX_CHANNELS, _channels, 5U, 8U, 880U);
+            AP_CRSF_Protocol::decode_11bit_channels((const uint8_t*)(&_frame.payload), MAX_CHANNELS, _channels);
             _crsf_v3_active = false;
-            rc_active = !_uart; // only accept RC data if we are not in standalone mode
+            rc_active = true;
             break;
-        case CRSF_FRAMETYPE_LINK_STATISTICS:
+        case FrameType::CRSF_FRAMETYPE_LINK_STATISTICS:
             process_link_stats_frame((uint8_t*)&_frame.payload);
             break;
-        case CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
-            decode_variable_bit_channels((const uint8_t*)(&_frame.payload), _frame.length, CRSF_MAX_CHANNELS, _channels);
-            _crsf_v3_active = true;
-            rc_active = !_uart; // only accept RC data if we are not in standalone mode
+        case FrameType::CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
+            if (_mode == PortMode::PASSTHROUGH_RCIN) {
+                AP_CRSF_Protocol::decode_variable_bit_channels((const uint8_t*)(&_frame.payload), _frame.length, MAX_CHANNELS, _channels);
+                _crsf_v3_active = true;
+                rc_active = true;
+            }
             break;
-        case CRSF_FRAMETYPE_LINK_STATISTICS_RX:
+        case FrameType::CRSF_FRAMETYPE_LINK_STATISTICS_RX:
             process_link_stats_rx_frame((uint8_t*)&_frame.payload);
             break;
-        case CRSF_FRAMETYPE_LINK_STATISTICS_TX:
+        case FrameType::CRSF_FRAMETYPE_LINK_STATISTICS_TX:
             process_link_stats_tx_frame((uint8_t*)&_frame.payload);
             break;
+
         default:
             break;
     }
+        
 #if HAL_CRSF_TELEM_ENABLED
-    if (AP_CRSF_Telem::process_frame(FrameType(_frame.type), (uint8_t*)&_frame.payload, _frame.length - 2U)) {
+    if (!decoded && AP_CRSF_Telem::process_frame(FrameType(_frame.type), (uint8_t*)&_frame.payload, _frame.length - 2U)) {
 #if defined(CRSF_DEBUG_TELEM) || defined(CRSF_DEBUG_PARAMS)
         switch (_frame.type) {
-            case CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
-            case CRSF_FRAMETYPE_LINK_STATISTICS:
-            case CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
-            case CRSF_FRAMETYPE_LINK_STATISTICS_RX:
-            case CRSF_FRAMETYPE_LINK_STATISTICS_TX:
+            case FrameType::CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
+            case FrameType::CRSF_FRAMETYPE_LINK_STATISTICS:
+            case FrameType::CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
+            case FrameType::CRSF_FRAMETYPE_LINK_STATISTICS_RX:
+            case FrameType::CRSF_FRAMETYPE_LINK_STATISTICS_TX:
                 break;
 #ifdef CRSF_DEBUG_PARAMS
-            case CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
-            case CRSF_FRAMETYPE_PARAMETER_READ:
-            case CRSF_FRAMETYPE_PARAMETER_WRITE:
-            case CRSF_FRAMETYPE_COMMAND:
+            case FrameType::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
+            case FrameType::CRSF_FRAMETYPE_PARAMETER_READ:
+            case FrameType::CRSF_FRAMETYPE_PARAMETER_WRITE:
+            case FrameType::CRSF_FRAMETYPE_COMMAND:
 #else
             default:
 #endif
-                hal.console->printf("CRSF: received %s:", get_frame_type(_frame.type));
+                hal.console->printf("CRSF: received %s:", AP_CRSF_Protocol::get_frame_type(_frame.type));
                 uint8_t* fptr = (uint8_t*)&_frame;
                 for (uint8_t i = 0; i < _frame.length + 2; i++) {
                     hal.console->printf(" 0x%x", fptr[i]);
@@ -522,6 +557,7 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
             hal.scheduler->delay(4);
             // change the baud rate
             uart->begin(_new_baud_rate);
+            debug("baud rate set to %luk baud\n", _new_baud_rate/1000);
         }
         _new_baud_rate = 0;
     }
@@ -530,97 +566,42 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
     return rc_active;
 }
 
-/*
-  decode channels from the standard 11bit format (used by CRSF, SBUS, FPort and FPort2)
-  must be used on multiples of 8 channels
-*/
-void AP_RCProtocol_CRSF::decode_variable_bit_channels(const uint8_t* payload, uint8_t frame_length, uint8_t nchannels, uint16_t *values)
+#if AP_CRSF_OUT_ENABLED
+
+void AP_RCProtocol_CRSF::reset_bootstrap_baudrate()
 {
-    const SubsetChannelsFrame* channel_data = (const SubsetChannelsFrame*)payload;
-
-    // get the channel resolution settings
-    uint8_t channelBits;
-    uint16_t channelMask;
-    float channelScale;
-
-    switch (channel_data->res_configuration) {
-    case CRSF_SUBSET_RC_RES_CONF_10B:
-        channelBits = CRSF_SUBSET_RC_RES_BITS_10B;
-        channelMask = CRSF_SUBSET_RC_RES_MASK_10B;
-        channelScale = CRSF_SUBSET_RC_CHANNEL_SCALE_10B;
-        break;
-    default:
-    case CRSF_SUBSET_RC_RES_CONF_11B:
-        channelBits = CRSF_SUBSET_RC_RES_BITS_11B;
-        channelMask = CRSF_SUBSET_RC_RES_MASK_11B;
-        channelScale = CRSF_SUBSET_RC_CHANNEL_SCALE_11B;
-        break;
-    case CRSF_SUBSET_RC_RES_CONF_12B:
-        channelBits = CRSF_SUBSET_RC_RES_BITS_12B;
-        channelMask = CRSF_SUBSET_RC_RES_MASK_12B;
-        channelScale = CRSF_SUBSET_RC_CHANNEL_SCALE_12B;
-        break;
-    case CRSF_SUBSET_RC_RES_CONF_13B:
-        channelBits = CRSF_SUBSET_RC_RES_BITS_13B;
-        channelMask = CRSF_SUBSET_RC_RES_MASK_13B;
-        channelScale = CRSF_SUBSET_RC_CHANNEL_SCALE_13B;
-        break;
-    }
-
-    // calculate the number of channels packed
-    uint8_t numOfChannels = MIN(uint8_t(((frame_length - 2) * 8 - CRSF_SUBSET_RC_STARTING_CHANNEL_BITS) / channelBits), CRSF_MAX_CHANNELS);
-
-    // unpack the channel data
-    uint8_t bitsMerged = 0;
-    uint32_t readValue = 0;
-    uint8_t readByteIndex = 1;
-
-    for (uint8_t n = 0; n < numOfChannels; n++) {
-        while (bitsMerged < channelBits) {
-            // check for corrupt frame
-            if (readByteIndex >= CRSF_FRAME_PAYLOAD_MAX) {
-                return;
-            }
-            uint8_t readByte = payload[readByteIndex++];
-            readValue |= ((uint32_t) readByte) << bitsMerged;
-            bitsMerged += 8;
-        }
-        // check for corrupt frame
-        if (uint8_t(channel_data->starting_channel + n) >= CRSF_MAX_CHANNELS) {
-            return;
-        }
-        _channels[channel_data->starting_channel + n] =
-            uint16_t(channelScale * float(uint16_t(readValue & channelMask)) + 988);
-        readValue >>= channelBits;
-        bitsMerged -= channelBits;
+    AP_HAL::UARTDriver *uart = get_current_UART();
+    if (uart) {
+        uart->begin(get_bootstrap_baud_rate());
     }
 }
 
-// send out telemetry
-bool AP_RCProtocol_CRSF::process_telemetry(bool check_constraint)
-{
+#endif
 
+// send out telemetry
+bool AP_RCProtocol_CRSF::process_telemetry(bool check_constraint) const
+{
+#if HAL_CRSF_TELEM_ENABLED
     AP_HAL::UARTDriver *uart = get_current_UART();
     if (!uart) {
         return false;
     }
 
     if (!telem_available) {
-#if HAL_CRSF_TELEM_ENABLED
-        if (AP_CRSF_Telem::get_telem_data(&_telemetry_frame, is_tx_active())) {
+        if (AP_CRSF_Telem::get_telem_data(this, (AP_CRSF_Protocol::Frame*)&_telemetry_frame, is_tx_active())) {
             telem_available = true;
         } else {
             return false;
         }
-#else
-        return false;
-#endif
     }
-    write_frame(&_telemetry_frame);
+    write_frame((AP_CRSF_Protocol::Frame*)&_telemetry_frame);
     // get fresh telem_data in the next call
     telem_available = false;
 
     return true;
+#else
+    return false;
+#endif
 }
 
 #if AP_OSD_LINK_STATS_EXTENSIONS_ENABLED
@@ -694,18 +675,23 @@ void AP_RCProtocol_CRSF::process_link_stats_rx_frame(const void* data)
 // process link statistics to get TX RSSI
 void AP_RCProtocol_CRSF::process_link_stats_tx_frame(const void* data)
 {
-    const LinkStatisticsTXFrame* link = (const LinkStatisticsTXFrame*)data;
+    const AP_CRSF_Protocol::LinkStatisticsTXFrame* link = (const AP_CRSF_Protocol::LinkStatisticsTXFrame*)data;
 
     if (_use_lq_for_rssi) {
         _link_status.rssi = derive_scaled_lq_value(link->link_quality);
     } else {
         _link_status.rssi = link->rssi_percent * 255.0f * 0.01f;
     }
+
+    _link_status.fps = link->fps;
 }
 
 // start the uart if we have one
 void AP_RCProtocol_CRSF::start_uart()
 {
+    if (!_uart) {
+        return;
+    }
     _uart->configure_parity(0);
     _uart->set_stop_bits(1);
     _uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
@@ -716,7 +702,7 @@ void AP_RCProtocol_CRSF::start_uart()
 // change the baudrate of the protocol if we are able
 bool AP_RCProtocol_CRSF::change_baud_rate(uint32_t baudrate)
 {
-    AP_HAL::UARTDriver* uart = get_available_UART();
+    AP_HAL::UARTDriver* uart = get_current_UART();
     if (uart == nullptr) {
         return false;
     }
@@ -737,11 +723,11 @@ bool AP_RCProtocol_CRSF::change_baud_rate(uint32_t baudrate)
 // change the bootstrap baud rate to ELRS standard if configured
 void AP_RCProtocol_CRSF::process_handshake(uint32_t baudrate)
 {
-    AP_HAL::UARTDriver *uart = get_current_UART();
+    AP_HAL::UARTDriver *uart = get_available_UART();
 
     // only change the baudrate if we are bootstrapping CRSF
-    if (uart == nullptr
-        || baudrate != CRSF_BAUDRATE
+    if (_mode != PortMode::PASSTHROUGH_RCIN || uart == nullptr ||
+        baudrate != CRSF_BAUDRATE
         || baudrate == get_bootstrap_baud_rate()
         || uart->get_baud_rate() == get_bootstrap_baud_rate()
         || !protocol_enabled(AP_RCProtocol::CRSF)) {
@@ -779,10 +765,32 @@ bool AP_RCProtocol_CRSF::bind_in_progress(void)
 }
 #endif
 
+// Static singleton accessor for RCIN (legacy)
+AP_RCProtocol_CRSF* AP_RCProtocol_CRSF::get_rcin_singleton()
+{
+    // The RCIN instance is created by the frontend and registers itself.
+    return Manager_State::_rcin_singleton;
+}
+
+#if AP_CRSF_OUT_ENABLED
+// Static singleton accessor for direct attach ports
+AP_RCProtocol_CRSF* AP_RCProtocol_CRSF::get_direct_attach_singleton(AP_SerialManager::SerialProtocol protocol, uint8_t instance)
+{
+    manager_init(); // ensure manager is running
+    const int8_t port_num = AP::serialmanager().find_portnum(protocol, instance);
+    if (port_num >= 0 && port_num < SERIALMANAGER_NUM_PORTS) {
+        return Manager_State::_instances[port_num];
+    }
+    return nullptr;
+}
+#endif
+
 namespace AP {
+    // legacy accessor
     AP_RCProtocol_CRSF* crsf() {
-        return AP_RCProtocol_CRSF::get_singleton();
+        return AP_RCProtocol_CRSF::get_rcin_singleton();
     }
 };
 
 #endif  // AP_RCPROTOCOL_CRSF_ENABLED
+

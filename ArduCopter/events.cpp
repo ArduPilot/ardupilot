@@ -39,6 +39,9 @@ void Copter::failsafe_radio_on_event()
         case FS_THR_ENABLED_BRAKE_OR_LAND:
             desired_action = FailsafeAction::BRAKE_LAND;
             break;
+        case FS_THR_ENABLED_DISARM:
+            desired_action = FailsafeAction::DISARM;
+            break;
         default:
             desired_action = FailsafeAction::LAND;
     }
@@ -461,7 +464,7 @@ void Copter::set_mode_brake_or_land_with_pause(ModeReason reason)
 }
 
 bool Copter::should_disarm_on_failsafe() {
-    if (ap.in_arming_delay) {
+    if (ap.in_arming_delay || g.failsafe_throttle == FS_THR_ENABLED_DISARM) {
         return true;
     }
 
@@ -513,6 +516,9 @@ void Copter::do_failsafe_action(FailsafeAction action, ModeReason reason){
             break;
         case FailsafeAction::BRAKE_LAND:
             set_mode_brake_or_land_with_pause(reason);
+            break;
+        case FailsafeAction::DISARM:
+            arming.disarm(AP_Arming::Method::RADIOFAILSAFE);
             break;
     }
 
