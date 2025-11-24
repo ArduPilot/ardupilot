@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
 
     // @Param: THR_MIN
     // @DisplayName: Throttle minimum
-    // @Description: Throttle minimum percentage the autopilot will apply. This is useful for handling a deadzone around low throttle and for preventing internal combustion motors cutting out during missions.
+    // @Description: Throttle minimum percentage the autopilot will apply. This is useful for handling a deadzone around low throttle and for preventing internal combustion motors cutting out during missions. Must be less than MOT_THR_MAX.
     // @Units: %
     // @Range: 0 20
     // @Increment: 1
@@ -65,7 +65,7 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @DisplayName: Throttle maximum
     // @Description: Throttle maximum percentage the autopilot will apply. This can be used to prevent overheating an ESC or motor on an electric rover
     // @Units: %
-    // @Range: 30 100
+    // @Range: 5 100
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("THR_MAX", 6, AP_MotorsUGV, _throttle_max, 100),
@@ -573,8 +573,8 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
 // sanity check parameters
 void AP_MotorsUGV::sanity_check_parameters()
 {
-    _throttle_min.set(constrain_int16(_throttle_min, 0, 20));
-    _throttle_max.set(constrain_int16(_throttle_max, 30, 100));
+    _throttle_max.set(constrain_int16(_throttle_max, 5, 100));
+    _throttle_min.set(constrain_int16(_throttle_min, 0, MIN(20, _throttle_max)));
     _vector_angle_max.set(constrain_float(_vector_angle_max, 0.0f, 90.0f));
 }
 
