@@ -39,6 +39,15 @@ class Baro():
     devlist : list
 
 
+@dataclass(frozen=True)
+class Compass():
+    driver: str
+    probe: str
+    devlist: list
+    force_external: str  # should be bool eventually
+    rotation: str
+
+
 class HWDef:
     def __init__(self, quiet=False, outdir=None, hwdef: list | None = None):
         if hwdef is None:
@@ -80,6 +89,7 @@ class HWDef:
 
         # members used to ensure we don't have duplicate sensors defined:
         self.seen_BARO_lines = set()
+        self.seen_COMPASS_lines = set()
 
     def is_int(self, str):
         '''check if a string is an integer'''
@@ -240,7 +250,7 @@ class HWDef:
             self.imu_list.append(a[1:])
 
         elif a[0] == 'COMPASS':
-            self.compass_list.append(a[1:])
+            self.process_line_COMPASS(line, depth, a)
 
         elif a[0] == 'BARO':
             self.process_line_BARO(line, depth, a)
@@ -258,6 +268,7 @@ class HWDef:
                 self.imu_list = []
             if u == 'COMPASS':
                 self.compass_list = []
+                self.seen_COMPASS_lines = set()
             if u == 'BARO':
                 self.baro_list = []
                 self.seen_BARO_lines = set()
@@ -410,33 +421,113 @@ class HWDef:
                 self.write_defaulting_define(f, 'INS_MAX_INSTANCES', len(devlist))
             f.write('#define HAL_INS_PROBE_LIST %s\n\n' % ';'.join(devlist))
 
-    def write_MAG_config(self, f):
-        '''write MAG config defines'''
-        devlist = []
-        seen = set()
-        for dev in self.compass_list:
+    def process_line_COMPASS(self, line, depth, a):
+        orig_a = a
+        if True:
+            dev = a[1:]
+            seen = self.seen_COMPASS_lines
+
             if self.seen_str(dev) in seen:
                 self.error("Duplicate MAG: %s" % self.seen_str(dev))
             seen.add(self.seen_str(dev))
             driver = dev[0]
+            dev = dev[1:]
             probe = 'probe'
-            wrapper = ''
             a = driver.split(':')
             driver = a[0]
 
             if len(a) > 1 and a[1].startswith('probe'):
                 probe = a[1]
 
-            for i in range(1, len(dev)):
-                if dev[i].startswith("SPI:"):
-                    dev[i] = self.parse_spi_device(dev[i])
-                elif dev[i].startswith("I2C:"):
-                    (wrapper, dev[i]) = self.parse_i2c_device(dev[i])
+            expected_device_count = 1
+            if driver == 'AK09916' and probe != 'probe':
+                expected_device_count = 0
+            elif driver == 'AK8963' and probe == 'probe_mpu9250':
+                expected_device_count = 1
+            elif driver == 'AK8963' and probe != 'probe':
+                expected_device_count = 0
+
+            devlist = []
+            for i in range(0, expected_device_count):
+                d = dev[0]
+                dev = dev[1:]
+                if d.startswith("SPI:"):
+                    devlist.append(self.spi_dev_to_object(d))
+                elif d.startswith("I2C:"):
+                    devlist.append(self.i2c_dev_to_object(d))
+                elif driver == 'AK8963' and probe == 'probe_mpu9250' and d.isdigit():
+                    devlist.append(d)
+                else:
+                    raise ValueError(f"Unknown device ({d=}) ({orig_a=})")
+
+            # some compass backends take force-external, some don't:
+            if len(dev) == 2:
+                (force_external, rotation) = dev
+            elif len(dev) == 1:
+                force_external = None
+                (rotation,) = dev
+            else:
+                raise ValueError(f"Pieces left over from ({orig_a=}): ({dev=})")
+
+            c = Compass(
+                driver=driver,
+                probe=probe,
+                devlist=devlist,
+                force_external=force_external,
+                rotation=rotation,
+            )
+            self.compass_list.append(c)
+
+    def write_MAG_config(self, f):
+        '''write MAG config defines'''
+        devlist = []
+        for compass in self.compass_list:
+            driver = compass.driver
+            probe = compass.probe
+            wrapper = ''
+            if len(compass.devlist) > 0:
+                if isinstance(compass.devlist[0], I2CDev):
+                    buses_to_probe = compass.devlist[0].buses_to_probe
+                    if buses_to_probe == 'ALL':
+                        wrapper = 'FOREACH_I2C(b)'
+                    elif buses_to_probe == 'ALL_EXTERNAL':
+                        wrapper = 'FOREACH_I2C_EXTERNAL(b)'
+                    elif buses_to_probe == 'ALL_INTERNAL':
+                        wrapper = 'FOREACH_I2C_INTERNAL(b)'
+                    elif buses_to_probe == 'SINGLE':
+                        pass
+                    elif isinstance(buses_to_probe, int):
+                        pass
+                    else:
+                        raise ValueError(f"Unexpected buses_to_probe {buses_to_probe=}")
+
             n = len(devlist)+1
             devlist.append('HAL_MAG_PROBE%u' % n)
+
+            args = []
+            for dev in compass.devlist:
+                if isinstance(dev, I2CDev):
+                    if dev.buses_to_probe == 'SINGLE':
+                        busnum = str(dev.busnum)
+                    elif dev.buses_to_probe in {'ALL', 'ALL_EXTERNAL', 'ALL_INTERNAL'}:
+                        busnum = 'b'
+                    else:
+                        raise ValueError("Unexpected {buses_to_probe=}")
+                    args.extend(["GET_I2C_DEVICE(%s,0x%02x)" % (busnum, dev.busaddr)])
+                elif isinstance(dev, SPIDev):
+                    args.extend([f'hal.spi->get_device("{dev.name}")'])
+                elif dev.isdigit():
+                    args.extend([str(dev)])
+                else:
+                    raise ValueError("unexpected devbit {dev=}")
+
+            if compass.force_external is not None:
+                args.append(str(compass.force_external))
+            args.append(str(compass.rotation))
+
             f.write(
                 '#define HAL_MAG_PROBE%u %s ADD_BACKEND(DRIVER_%s, AP_Compass_%s::%s(%s))\n'
-                % (n, wrapper, driver, driver, probe, ','.join(dev[1:])))
+                % (n, wrapper, driver, driver, probe, ','.join(args)))
             f.write(f"#undef AP_COMPASS_{driver}_ENABLED\n#define AP_COMPASS_{driver}_ENABLED 1\n")
         if len(devlist) > 0:
             f.write('#define HAL_MAG_PROBE_LIST %s\n\n' % ';'.join(devlist))
