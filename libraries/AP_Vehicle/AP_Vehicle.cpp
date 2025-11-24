@@ -291,6 +291,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(rpm_sensor, "RPM", 32, AP_Vehicle, AP_RPM),
 #endif
 
+#if AP_CRSF_OUT_ENABLED
+    // @Group: CRSF_OUT_
+    // @Path: ../AP_CRSF/AP_CRSF_OutManager.cpp
+    AP_SUBGROUPINFO(crsf_out, "CRSF_OUT_", 33, AP_Vehicle, AP_CRSF_OutManager),
+#endif
+
     AP_GROUPEND
 };
 
@@ -700,6 +706,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if AP_ARMING_ENABLED
     SCHED_TASK(update_arming,          1,     50, 253),
+#endif
+#if AP_CRSF_OUT_ENABLED
+    SCHED_TASK_CLASS(AP_CRSF_OutManager,  &vehicle.crsf_out, init,                      1, 100, 253),
 #endif
 };
 
