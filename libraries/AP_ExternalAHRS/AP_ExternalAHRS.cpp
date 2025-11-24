@@ -287,10 +287,13 @@ bool AP_ExternalAHRS::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) 
             return false;
         }
     }
-
-    if (!state.have_origin) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "ExternalAHRS: No origin");
-	    return false;
+    AP_AHRS &ahrs = AP::ahrs();
+    if (ahrs.get_ekf_type() == static_cast<int8_t>(AP_AHRS::EKFType::EXTERNAL)) {
+        // when using EAHRS as the EKF source, we must have a valid position origin
+        if (!state.have_origin) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "ExternalAHRS: No origin");
+            return false;
+        }
     }
     return true;
 }
