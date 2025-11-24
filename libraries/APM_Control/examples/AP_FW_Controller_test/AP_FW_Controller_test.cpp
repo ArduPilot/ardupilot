@@ -103,7 +103,7 @@ bool disable_integrator = false;
 float calc_speed_scaler()
 {
     float aspeed;
-    if (!ahrs.airspeed_estimate(aspeed)) {
+    if (!ahrs.airspeed_EAS(aspeed)) {
         return 1.0;
     }
 
@@ -223,7 +223,7 @@ void setup()
 
     // Print AHRS state
     float airspeed = -1;
-    bool airspeed_ok = ahrs.airspeed_estimate(airspeed);
+    bool airspeed_ok = ahrs.airspeed_EAS(airspeed);
     ::printf("AHRS - roll: %f, pitch: %f, airspeed: %f, airspeed OK: %i, EAS2TAS %f, gyro: { %f, %f, %f }\n", ahrs.get_roll_deg(), ahrs.get_pitch_deg(), airspeed, airspeed_ok, ahrs.get_EAS2TAS(), ahrs.get_gyro().x, ahrs.get_gyro().y, ahrs.get_gyro().z);
 
     // Header for results

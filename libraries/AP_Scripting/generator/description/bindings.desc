@@ -61,7 +61,8 @@ singleton AP_AHRS method get_relative_position_NED_origin_float rename get_relat
 singleton AP_AHRS method get_relative_position_D_home void float'Ref
 singleton AP_AHRS method home_is_set boolean
 singleton AP_AHRS method healthy boolean
-singleton AP_AHRS method airspeed_estimate boolean float'Null
+singleton AP_AHRS method airspeed_EAS boolean float'Null
+singleton AP_AHRS method airspeed_EAS alias airspeed_estimate
 singleton AP_AHRS method get_vibration Vector3f
 singleton AP_AHRS method earth_to_body Vector3f Vector3f
 singleton AP_AHRS method body_to_earth Vector3f Vector3f
@@ -480,6 +481,8 @@ userdata AP_ESC_Telem_Backend::TelemetryData field voltage float'skip_check writ
 userdata AP_ESC_Telem_Backend::TelemetryData field current float'skip_check write
 userdata AP_ESC_Telem_Backend::TelemetryData field consumption_mah float'skip_check write
 userdata AP_ESC_Telem_Backend::TelemetryData field motor_temp_cdeg int16_t'skip_check write
+userdata AP_ESC_Telem_Backend::TelemetryData field power_percentage uint8_t'skip_check write
+userdata AP_ESC_Telem_Backend::TelemetryData field power_percentage depends AP_EXTENDED_ESC_TELEM_ENABLED
 
 singleton AP_ESC_Telem depends HAL_WITH_ESC_TELEM == 1
 singleton AP_ESC_Telem rename esc_telem
@@ -751,12 +754,16 @@ userdata CRSFMenu method num_params uint8_t'skip_check
 userdata CRSFMenu manual add_parameter lua_CRSF_add_parameter 1 1
 userdata CRSFMenu manual add_menu lua_CRSF_add_menu 1 1
 
-singleton AP::crsf_telem() depends AP_CRSF_SCRIPTING_ENABLED
-singleton AP::crsf_telem() literal
-singleton AP::crsf_telem() rename crsf
-singleton AP::crsf_telem() manual add_menu lua_CRSF_add_root_menu 1 1
-singleton AP::crsf_telem() manual get_menu_event lua_CRSF_get_menu_event 1 3
-singleton AP::crsf_telem() manual send_write_response lua_CRSF_send_response 1 1
+include AP_RCTelemetry/AP_CRSF_Telem.h
+singleton AP_CRSF_Telem depends AP_CRSF_SCRIPTING_ENABLED
+singleton AP_CRSF_Telem rename crsf
+singleton AP_CRSF_Telem semaphore
+singleton AP_CRSF_Telem manual add_menu lua_CRSF_add_root_menu 1 1
+singleton AP_CRSF_Telem manual get_menu_event lua_CRSF_get_menu_event 1 3
+singleton AP_CRSF_Telem manual peek_menu_event lua_CRSF_peek_menu_event 0 4
+singleton AP_CRSF_Telem method pop_menu_event void
+singleton AP_CRSF_Telem method send_response boolean
+singleton AP_CRSF_Telem manual send_write_response lua_CRSF_send_response 1 1
 
 include AP_DroneCAN/AP_DroneCAN.h
 global manual DroneCAN_get_FlexDebug lua_DroneCAN_get_FlexDebug 4 2 depends (HAL_ENABLE_DRONECAN_DRIVERS==1)
@@ -765,7 +772,9 @@ include ../Tools/AP_Periph/AP_Periph.h depends defined(HAL_BUILD_AP_PERIPH)
 singleton AP_Periph_FW depends defined(HAL_BUILD_AP_PERIPH)
 singleton AP_Periph_FW rename periph
 singleton AP_Periph_FW method get_yaw_earth float
+singleton AP_Periph_FW method get_yaw_earth depends AP_PERIPH_NOTIFY_ENABLED
 singleton AP_Periph_FW method get_vehicle_state uint64_t
+singleton AP_Periph_FW method get_vehicle_state depends AP_PERIPH_NOTIFY_ENABLED
 singleton AP_Periph_FW method can_printf void "%s"'literal string
 singleton AP_Periph_FW method reboot void boolean
 

@@ -393,12 +393,14 @@ def run_specific_test(step, *args, **kwargs):
     for a in tester.tests():
         if not isinstance(a, Test):
             a = Test(a)
-        print("Got %s" % (a.name))
+        # print("Got %s" % (a.name))
         if a.name in tests:
             run.append(a)
+            tests.remove(a.name)
+    if len(tests):
+        print(f"Failed to find tests {tests}")
+        sys.exit(1)
     return tester.autotest(tests=run, allow_skips=False, step_name=step), tester
-    print("Failed to find test %s on %s" % (test, testname))
-    sys.exit(1)
 
 
 def run_step(step):

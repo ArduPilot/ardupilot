@@ -573,7 +573,7 @@ private:
     uint32_t last_pidz_active_ms;
     uint32_t last_pidz_init_ms;
 
-    // throttle scailing for vectored motors in FW flighy
+    // throttle scaling for vectored motors in FW flight
     float FW_vector_throttle_scaling(void);
 
     void afs_terminate(void);

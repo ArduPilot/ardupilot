@@ -10,8 +10,9 @@ bool ModeQLoiter::_enter()
     loiter_nav->init_target();
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_m(-quadplane.get_pilot_velocity_z_max_dn_m(), quadplane.pilot_speed_z_max_up_ms, quadplane.pilot_accel_z_mss);
-    pos_control->set_correction_speed_accel_U_m(-quadplane.get_pilot_velocity_z_max_dn_m(), quadplane.pilot_speed_z_max_up_ms, quadplane.pilot_accel_z_mss);
+    // All limits must be positive
+    pos_control->set_max_speed_accel_U_m(quadplane.get_pilot_velocity_z_max_dn_m(), quadplane.pilot_speed_z_max_up_ms, quadplane.pilot_accel_z_mss);
+    pos_control->set_correction_speed_accel_U_m(quadplane.get_pilot_velocity_z_max_dn_m(), quadplane.pilot_speed_z_max_up_ms, quadplane.pilot_accel_z_mss);
 
     quadplane.init_throttle_wait();
 
@@ -107,7 +108,8 @@ void ModeQLoiter::run()
     quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_m(-quadplane.get_pilot_velocity_z_max_dn_m(), quadplane.pilot_speed_z_max_up_ms, quadplane.pilot_accel_z_mss);
+    // All limits must be positive
+    pos_control->set_max_speed_accel_U_m(quadplane.get_pilot_velocity_z_max_dn_m(), quadplane.pilot_speed_z_max_up_ms, quadplane.pilot_accel_z_mss);
 
     // process pilot's roll and pitch input
     float target_roll_cd, target_pitch_cd;

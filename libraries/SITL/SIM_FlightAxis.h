@@ -202,11 +202,8 @@ private:
 
     const char *controller_ip = "127.0.0.1";
     uint16_t controller_port = 18083;
-
-    // a list of sockets used to reduce inter-packet latency
-    ObjectBuffer_TS<SocketAPM_native*> socks{2};
+    SocketAPM_native *socknext;
     SocketAPM_native *sock;
-
     char replybuf[10000];
     pid_t socket_pid;
     uint32_t sock_error_count;
