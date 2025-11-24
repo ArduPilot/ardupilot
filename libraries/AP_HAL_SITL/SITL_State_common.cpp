@@ -227,7 +227,13 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         if (vectornav != nullptr) {
             AP_HAL::panic("Only one VectorNav at a time");
         }
-        vectornav = NEW_NOTHROW SITL::VectorNav();
+        vectornav = NEW_NOTHROW SITL::VectorNav(SITL::VectorNav::VNModel::VN300);
+        return vectornav;
+    } else if (streq(name, "VectorNav_VN100")) {
+        if (vectornav != nullptr) {
+            AP_HAL::panic("Only one VectorNav at a time");
+        }
+        vectornav = NEW_NOTHROW SITL::VectorNav(SITL::VectorNav::VNModel::VN100);
         return vectornav;
     } else if (streq(name, "MicroStrain5")) {
         if (microstrain5 != nullptr) {
