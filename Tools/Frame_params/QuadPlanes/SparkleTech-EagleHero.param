@@ -84,10 +84,10 @@ Q_M_SLEW_UP_TIME 0.2
 Q_M_THST_EXPO    0.7
 Q_M_THST_HOVER   0.19841
 
-Q_P_ACCZ_I       0.5
-Q_P_ACCZ_P       0.15
-Q_P_POSZ_P       0.5
-Q_P_VELZ_P       2.5
+Q_P_D_ACC_I       0.05
+Q_P_D_ACC_P       0.015
+Q_P_D_POS_P       0.5
+Q_P_D_VEL_P       2.5
 
 Q_TRANS_DECEL    1.5
 
