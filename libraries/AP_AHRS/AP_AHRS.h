@@ -452,7 +452,7 @@ public:
     void set_alt_measurement_noise(float noise);
 
     // get the selected ekf type, for allocation decisions
-    int8_t get_ekf_type(void) const {
+    int8_t configured_ekf_type(void) const {
         return _ekf_type;
     }
 
