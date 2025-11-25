@@ -53,7 +53,6 @@
 #include <AC_WPNav/AC_Loiter.h>             // ArduCopter Loiter Mode Library
 #include <AC_WPNav/AC_Circle.h>             // circle navigation library
 #include <AP_Declination/AP_Declination.h>  // ArduPilot Mega Declination Helper Library
-#include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 #include <AP_BattMonitor/AP_BattMonitor.h>  // Battery monitor library
 #include <AP_LandingGear/AP_LandingGear.h>  // Landing Gear library
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
@@ -397,8 +396,6 @@ private:
     // This is the state of the flight control system
     // There are multiple states defined such as STABILIZE, ACRO,
     Mode *flightmode;
-
-    RCMapper rcmap;
 
     // inertial nav alt when we armed
     float arming_altitude_m;

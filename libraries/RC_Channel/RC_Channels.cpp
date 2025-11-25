@@ -48,15 +48,24 @@ RC_Channels::RC_Channels(void)
         AP_HAL::panic("RC_Channels must be singleton");
     }
     _singleton = this;
+
 }
 
-void RC_Channels::init(void)
+void RC_Channels::set_control_channel_defaults()
 {
-    // setup ch_in on channels
+    // setup ch_in on channels.  Plane needs this initialisation early!
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
         channel(i)->ch_in = i;
     }
 
+    channel(0)->set_default_option(RC_Channel::AUX_FUNC::ROLL);
+    channel(1)->set_default_option(RC_Channel::AUX_FUNC::PITCH);
+    channel(2)->set_default_option(RC_Channel::AUX_FUNC::THROTTLE);
+    channel(3)->set_default_option(RC_Channel::AUX_FUNC::YAW);
+}
+
+void RC_Channels::init(void)
+{
     init_aux_all();
 }
 
@@ -327,9 +336,9 @@ void RC_Channels::set_aux_cached(RC_Channel::AUX_FUNC aux_fn, RC_Channel::AuxSwi
 // invalid option has been chosen somehow then the returned channel
 // will be a dummy channel.
 static RC_Channel dummy_rcchannel;
-RC_Channel &RC_Channels::get_rcmap_channel_nonnull(uint8_t rcmap_number) const
+RC_Channel &RC_Channels::get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func)
 {
-    RC_Channel *ret = RC_Channels::rc_channel(rcmap_number-1);
+    RC_Channel *ret = find_channel_for_option(func);
     if (ret != nullptr) {
         return *ret;
     }
@@ -337,19 +346,19 @@ RC_Channel &RC_Channels::get_rcmap_channel_nonnull(uint8_t rcmap_number) const
 }
 RC_Channel &RC_Channels::get_roll_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->roll());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::ROLL);
 };
 RC_Channel &RC_Channels::get_pitch_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->pitch());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::PITCH);
 };
 RC_Channel &RC_Channels::get_throttle_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->throttle());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::THROTTLE);
 };
 RC_Channel &RC_Channels::get_yaw_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->yaw());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::YAW);
 };
 RC_Channel &RC_Channels::get_forward_channel() const
 {

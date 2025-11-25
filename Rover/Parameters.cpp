@@ -212,9 +212,7 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECT(relay,                  "RELAY", AP_Relay),
 #endif
 
-    // @Group: RCMAP_
-    // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
-    GOBJECT(rcmap,                 "RCMAP_",         RCMapper),
+    // RCMAP was ehre
 
     // SR0 through SR6 were here
 
@@ -890,4 +888,8 @@ void Rover::load_parameters(void)
     }
 #endif  // HAL_GCS_ENABLED
 
+    // PARAMETER_CONVERSION - Added: Feb-2024 for Rover-4.6
+#if AP_RC_CHANNEL_ENABLED
+    rc().convert_rcmap_parameters(Parameters::k_param_rcmap_old);
+#endif  // AP_RC_CHANNEL_ENABLED
 }
