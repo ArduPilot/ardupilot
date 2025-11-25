@@ -422,6 +422,7 @@ class Board:
             '-Warray-bounds',
         ]
 
+        use_prefix_map = False
         if 'clang++' in cfg.env.COMPILER_CXX:
             env.CXXFLAGS += [
                 '-fcolor-diagnostics',
@@ -452,6 +453,8 @@ class Board:
                 '-Werror=implicit-fallthrough',
                 '-cl-single-precision-constant',
             ]
+            if self.cc_version_gte(cfg, 10, 0):
+                use_prefix_map = True
         else:
             env.CXXFLAGS += [
                 '-Wno-format-contains-nul',
@@ -469,6 +472,8 @@ class Board:
                     '-Werror=maybe-uninitialized',
                     '-Werror=duplicated-cond',
                 ]
+            if self.cc_version_gte(cfg, 8, 0):
+                use_prefix_map = True
             if self.cc_version_gte(cfg, 8, 4):
                 env.CXXFLAGS += [
                     '-Werror=sizeof-pointer-div',
@@ -480,6 +485,19 @@ class Board:
                 env.CFLAGS += [
                     '-Werror=use-after-free',
                 ]
+
+        if use_prefix_map:
+            # fixes to make __FILE__ and similar produce things that
+            # are repeatable:
+
+            # these have effect when using --out:
+            cfg.env.CXXFLAGS += ['-ffile-prefix-map=%s=.' % cfg.srcnode.abspath()]
+            cfg.env.CFLAGS += ['-ffile-prefix-map=%s=.' % cfg.srcnode.abspath()]
+
+            # these have effect when not using --out
+            cfg.env.CXXFLAGS += ['-ffile-prefix-map=%s=.' % "../.."]
+            cfg.env.CFLAGS += ['-ffile-prefix-map=%s=.' % "../.."]
+
 
         if cfg.options.Werror:
             errors = ['-Werror',
