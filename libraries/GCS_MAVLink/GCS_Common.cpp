@@ -4569,6 +4569,7 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 
 #if AP_OPTICALFLOW_ENABLED
     case MAVLINK_MSG_ID_OPTICAL_FLOW:
+    case MAVLINK_MSG_ID_OPTICAL_FLOW_RAD:
         handle_optical_flow(msg);
         break;
 #endif
@@ -6573,6 +6574,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
         send_opticalflow();
         break;
+
     case MSG_OPTICAL_FLOW_RAD:
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW_RAD);
         handle_optical_flow_rad(msg);

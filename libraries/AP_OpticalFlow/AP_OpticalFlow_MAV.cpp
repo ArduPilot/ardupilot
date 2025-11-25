@@ -97,38 +97,38 @@ void AP_OpticalFlow_MAV::update(void)
 }
 
 // handle OPTICAL_FLOW mavlink messages
+
 void AP_OpticalFlow_MAV::handle_msg(const mavlink_message_t &msg)
 {
-    mavlink_optical_flow_t packet;
-    mavlink_msg_optical_flow_decode(&msg, &packet);
+    if (msg.msgid == MAVLINK_MSG_ID_OPTICAL_FLOW_RAD) {
+        // Correctly decode the RADIAL message
+        mavlink_optical_flow_rad_t packet;
+        mavlink_msg_optical_flow_rad_decode(&msg, &packet);
 
-    // record time message was received
-    // ToDo: add jitter correction
-    latest_frame_us = AP_HAL::micros64();
+        struct AP_OpticalFlow::OpticalFlow_state state {};
+        state.device_id = msg.sysid;
+        state.timestamp_us = packet.time_usec;
+        state.surface_quality = packet.quality;
+        
+        // Use the integrated radian values from the packet
+        state.flowRate = {packet.integrated_x, packet.integrated_y};
+        state.bodyRate = {packet.integrated_xgyro, packet.integrated_ygyro};
+        
+        // Pass to the frontend handler
+        _update_frontend(state);
 
-    // use flow_rate_x/y fields if non-zero values are ever provided
-    if (!flow_sum_is_rads && (!is_zero(packet.flow_rate_x) || !is_zero(packet.flow_rate_y))) {
-        flow_sum_is_rads = true;
-        flow_sum.zero();
-        quality_sum = 0;
-        count = 0;
-    }
-
-    // add sensor values to sum
-    if (flow_sum_is_rads) {
-        // higher precision flow_rate_x/y fields are used
-        flow_sum.x += packet.flow_rate_x;
-        flow_sum.y += packet.flow_rate_y;
-    } else {
-        // lower precision flow_x/y fields are used
+    } else if (msg.msgid == MAVLINK_MSG_ID_OPTICAL_FLOW) {
+        // Handle the standard (older) message
+        mavlink_optical_flow_t packet;
+        mavlink_msg_optical_flow_decode(&msg, &packet);
+        
+        latest_frame_us = packet.time_usec;
         flow_sum.x += packet.flow_x;
         flow_sum.y += packet.flow_y;
+        quality_sum += packet.quality;
+        count++;
+        flow_sum_is_rads = false;
     }
-    quality_sum += packet.quality;
-    count++;
-
-    // take sensor id from message
-    sensor_id = packet.sensor_id;
 }
 
-#endif  // AP_OPTICALFLOW_MAV_ENABLED
+#endif // AP_OPTICALFLOW_MAV_ENABLED
