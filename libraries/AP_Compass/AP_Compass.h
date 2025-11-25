@@ -380,7 +380,6 @@ private:
     bool register_compass(int32_t dev_id, uint8_t& instance) WARN_IF_UNUSED;
 
     // load backend drivers
-    bool _add_backend(AP_Compass_Backend *backend);
     __INITFUNC__ void _probe_external_i2c_compasses(void);
     __INITFUNC__ void _detect_backends(void);
     __INITFUNC__ void probe_i2c_spi_compasses(void);
