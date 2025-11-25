@@ -526,7 +526,7 @@ class HWDef:
             args.append(str(compass.rotation))
 
             f.write(
-                '#define HAL_MAG_PROBE%u %s {ADD_BACKEND(DRIVER_%s, AP_Compass_%s::%s(%s));RETURN_IF_NO_SPACE;}\n'
+                '#define HAL_MAG_PROBE%u %s {add_backend(DRIVER_%s, AP_Compass_%s::%s(%s));RETURN_IF_NO_SPACE;}\n'
                 % (n, wrapper, driver, driver, probe, ','.join(args)))
             f.write(f"#undef AP_COMPASS_{driver}_ENABLED\n#define AP_COMPASS_{driver}_ENABLED 1\n")
         if len(devlist) > 0:
