@@ -493,17 +493,20 @@ class Board:
             use_prefix_map = False
 
         if use_prefix_map:
-            # fixes to make __FILE__ and similar produce things that
-            # are repeatable:
+            # fixes to make __FILE__ and debug paths repeatable in .elf/.bin
 
-            # these have effect when using --out:
-            cfg.env.CXXFLAGS += ['-ffile-prefix-map=%s=.' % cfg.srcnode.abspath()]
-            cfg.env.CFLAGS += ['-ffile-prefix-map=%s=.' % cfg.srcnode.abspath()]
+            # build root including variant (e.g. by default build/sitl)
+            bldnode = cfg.bldnode.make_node(cfg.variant)
+            # compute source root path from the perspective of the exact build
+            # root above. this path is (as far as we can tell) what waf
+            # prefixes source files with when passing them to the compiler
+            file_prefix = str(cfg.srcnode.path_from(bldnode))
 
-            # these have effect when not using --out
-            cfg.env.CXXFLAGS += ['-ffile-prefix-map=%s=.' % "../.."]
-            cfg.env.CFLAGS += ['-ffile-prefix-map=%s=.' % "../.."]
-
+            # now tell the compiler to remap that prefix to `../..` (the prefix
+            # by default) so any stored source paths are independent of
+            # wherever the build dir is and the debugger can find the source
+            cfg.env.CFLAGS += [f"-ffile-prefix-map={file_prefix}=../.."]
+            cfg.env.CXXFLAGS += [f"-ffile-prefix-map={file_prefix}=../.."]
 
         if cfg.options.Werror:
             errors = ['-Werror',
