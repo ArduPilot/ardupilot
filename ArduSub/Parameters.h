@@ -444,7 +444,7 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "PSC_JERK_D",          50.0f},
     { "WPNAV_SPEED",         100.0f},
     { "PILOT_SPEED_UP",      100.0f},
-    { "PSC_VELNE_P",         6.0f},
+    { "PSC_NE_VEL_P",         6.0f},
     { "EK3_SRC1_VELZ",       0},
 #if AP_SUB_RC_ENABLED
     { "RC_PROTOCOLS",        0},
