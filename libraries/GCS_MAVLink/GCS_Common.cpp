@@ -1140,6 +1140,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #endif
 #if AP_OPTICALFLOW_ENABLED
         { MAVLINK_MSG_ID_OPTICAL_FLOW,          MSG_OPTICAL_FLOW},
+        { MAVLINK_MSG_ID_OPTICAL_FLOW_RAD,      MSG_OPTICAL_FLOW_RAD},
 #endif
 #if COMPASS_CAL_ENABLED
         { MAVLINK_MSG_ID_MAG_CAL_PROGRESS,      MSG_MAG_CAL_PROGRESS},
@@ -6571,6 +6572,10 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_OPTICAL_FLOW:
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
         send_opticalflow();
+        break;
+    case MSG_OPTICAL_FLOW_RAD:
+        CHECK_PAYLOAD_SIZE(OPTICAL_FLOW_RAD);
+        handle_optical_flow_rad(msg);
         break;
 #endif
 
