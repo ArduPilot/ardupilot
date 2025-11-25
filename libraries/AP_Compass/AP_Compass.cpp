@@ -1045,21 +1045,6 @@ Compass::StateIndex Compass::_get_state_id(Compass::Priority priority) const
 #endif
 }
 
-bool Compass::_add_backend(AP_Compass_Backend *backend)
-{
-    if (!backend) {
-        return false;
-    }
-
-    if (_backend_count == COMPASS_MAX_BACKEND) {
-        return false;
-    }
-
-    _backends[_backend_count++] = backend;
-
-    return true;
-}
-
 /*
   return true if a driver type is enabled
  */
@@ -1102,7 +1087,16 @@ void Compass::add_backend(Compass::DriverType driver_type, AP_Compass_Backend *b
     if (!_driver_enabled(driver_type)) {
         return;
     }
-    _add_backend(backend);
+
+    if (!backend) {
+        return;
+    }
+
+    if (_backend_count == COMPASS_MAX_BACKEND) {
+        return;
+    }
+
+    _backends[_backend_count++] = backend;
 }
 
 #define GET_I2C_DEVICE(bus, address) _have_i2c_driver(bus, address)?nullptr:hal.i2c_mgr->get_device(bus, address)
@@ -1575,7 +1569,7 @@ void Compass::probe_dronecan_compasses(void)
     for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
         AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(i);
         if (_uavcan_backend) {
-            _add_backend(_uavcan_backend);
+            add_backend(DRIVER_UAVCAN, _uavcan_backend);
         }
 #if COMPASS_MAX_UNREG_DEV > 0
         if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV)  {
@@ -1609,7 +1603,7 @@ void Compass::probe_dronecan_compasses(void)
 
                 AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(j);
                 if (_uavcan_backend) {
-                    _add_backend(_uavcan_backend);
+                    add_backend(DRIVER_UAVCAN, _uavcan_backend);
                     // we also need to remove the id from unreg list
                     remove_unreg_dev_id(detected_devid);
                 } else {
@@ -1745,7 +1739,7 @@ Compass::_detect_runtime(void)
         for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
             AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(i);
             if (_uavcan_backend) {
-                _add_backend(_uavcan_backend);
+                add_backend(DRIVER_UAVCAN, _uavcan_backend);
             }
             RETURN_IF_NO_SPACE;
         }
