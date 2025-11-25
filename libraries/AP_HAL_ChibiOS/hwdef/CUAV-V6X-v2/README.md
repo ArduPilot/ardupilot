@@ -19,7 +19,7 @@ The CUAV-V6X-v2 is an upgraded version of CUAV-V6X flight controller. It has the
 ## Features
 
 - STM32H753 microcontroller
-- 3 IMUs: IIM42652 and BMI088 and ICM45686
+- 3 IMUs: one IIM42652 with an external crystal oscillator, BMI088 and ICM45686
 - builtin RM3100 magnetometer
 - 2 barometers: BMP581 and ICP20100
 - microSD card slot
@@ -56,9 +56,9 @@ RC input is configured on the port marked DSM/SBUS RC and PPM IN for all unidire
 
 ## PWM Output
 
-The CUAV-V6X-v2 supports up to 16 PWM outputs. First 8 outputs (labelled M1 to M8) are the "main" outputs. It controlled by a dedicated STM32F103 IO controller. All support Bi-Directional DShot.
+The CUAV-V6X-v2 supports up to 16 PWM outputs. First 8 outputs (labelled M1 to M8) are the "main" outputs. It controlled by a dedicated STM32F103 IO controller.
 
-The remaining 8 outputs (labelled A1 to A8) are the "auxiliary" outputs. These are directly attached to the STM32H753 and support all PWM protocols. The first 6 of the auxiliary PWM outputs support BDShot.
+The remaining 8 outputs (labelled A1 to A8) are the "auxiliary" outputs. These are directly attached to the STM32H753. A1 to A6 support all PWM protocols and Bi-Directional DShot. A7 and A8 only support PWM.
 
 The 8 main PWM outputs are in 3 groups:
 
