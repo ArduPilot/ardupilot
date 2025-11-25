@@ -325,6 +325,7 @@ AP_HW_ORQAH7QUADCORE                 1204
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
 AP_HW_NUCLEO_H753ZI                  1207
+AP_HW_DAKEFPVH743_SLIM               1208
 
 AP_HW_CSKY-PMU                       1212
 
