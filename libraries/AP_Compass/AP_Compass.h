@@ -502,7 +502,8 @@ private:
 };
 
     bool _driver_enabled(enum DriverType driver_type);
-    
+    void add_backend(DriverType driver_type, AP_Compass_Backend *backend);
+
     // backend objects
     AP_Compass_Backend *_backends[COMPASS_MAX_BACKEND];
     uint8_t     _backend_count;
