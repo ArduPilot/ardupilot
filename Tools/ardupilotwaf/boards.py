@@ -486,6 +486,12 @@ class Board:
                     '-Werror=use-after-free',
                 ]
 
+        if cfg.env.TOOLCHAIN == "custom":
+            # the QURT board stuff should be extracting the compiler
+            # version properly.  In the meantime, here's a really
+            # awesome thing:
+            use_prefix_map = False
+
         if use_prefix_map:
             # fixes to make __FILE__ and similar produce things that
             # are repeatable:
