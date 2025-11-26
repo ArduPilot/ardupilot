@@ -3050,15 +3050,20 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             })
 
     def OpticalFlowLocation(self):
-        '''test optical flow doesn't supply location'''
+        '''test optical flow does supply location'''
 
         self.context_push()
 
         self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW, False, False, False, verbose=True)
 
-        self.start_subtest("Make sure no crash if no rangefinder")
-        self.set_parameter("SIM_FLOW_ENABLE", 1)
-        self.set_parameter("FLOW_TYPE", 10)
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 3,
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "AHRS_ORIGIN_LAT": -35.362938,
+            "AHRS_ORIGIN_LNG": 149.165085,
+            "AHRS_ORIGIN_ALT": 584.0805053710938
+        })
 
         self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
 
@@ -3068,7 +3073,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.change_mode('LOITER')
         self.delay_sim_time(5)
-        self.wait_statustext("Need Position Estimate", timeout=300)
+        self.wait_ready_to_arm(require_absolute=False, timeout=300)
 
         self.context_pop()
 
