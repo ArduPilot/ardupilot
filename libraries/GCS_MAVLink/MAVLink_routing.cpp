@@ -137,13 +137,9 @@ bool MAVLink_routing::check_and_forward(uint8_t framing_status,
         return true;
     }
 
-    const bool from_private_channel = in_link.is_private();
-
     if (msg.msgid == MAVLINK_MSG_ID_HEARTBEAT) {
         // heartbeat needs special handling
-        if (!from_private_channel) {
-            handle_heartbeat(in_link, msg);
-        }
+        handle_heartbeat(in_link, msg);
         return true;
     }
 
@@ -177,8 +173,7 @@ bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
 
     // don't ever forward data from a private channel
     // unless a Gopro camera is connected to a Solo gimbal
-    const bool from_private_channel = in_link.is_private();
-    bool should_process_locally = from_private_channel;
+    bool should_process_locally = in_link.is_private();
 #if HAL_SOLO_GIMBAL_ENABLED
     if (gopro_status_check) {
         should_process_locally = false;
@@ -392,6 +387,12 @@ void MAVLink_routing::learn_route(GCS_MAVLINK &in_link, const mavlink_message_t 
 */
 void MAVLink_routing::handle_heartbeat(GCS_MAVLINK &link, const mavlink_message_t &msg)
 {
+    if (link.is_private()) {
+        // don't forward (or learn routes to other nodes) from
+        // heartbeats received on private links.
+        return;
+    }
+
     uint16_t mask = GCS_MAVLINK::active_channel_mask() & ~GCS_MAVLINK::private_channel_mask();
 
     const mavlink_channel_t in_channel = link.get_chan();
