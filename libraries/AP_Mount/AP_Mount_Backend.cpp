@@ -454,7 +454,7 @@ void AP_Mount_Backend::write_log(uint64_t timestamp_us)
         return;
     }
 
-    const auto nanf = AP::logger().quiet_nanf();
+    const auto nanf = AP_Logger::quiet_nanf();
 
     // get_attitude_quaternion and convert to Euler angles
     float roll = nanf;
