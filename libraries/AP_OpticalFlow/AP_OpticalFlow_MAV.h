@@ -22,6 +22,10 @@ public:
     // get update from mavlink
     void handle_msg(const mavlink_message_t &msg) override;
 
+#if AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+    void handle_msg_rad(const mavlink_message_t &msg) override;
+#endif
+
     // detect if the sensor is available
     static AP_OpticalFlow_MAV *detect(AP_OpticalFlow &_frontend);
 
