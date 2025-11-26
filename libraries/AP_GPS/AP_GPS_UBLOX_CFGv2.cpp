@@ -107,6 +107,7 @@ void AP_GPS_UBLOX_CFGv2::update()
             if (AP_HAL::millis() - _last_request_time > 200) {
                 _last_request_time = AP_HAL::millis();
                 ubx_backend._request_version();
+                ubx_backend._request_unique_id();
             }
             if (_identify_module()) {
                 _last_request_time = 0; // immediate next state

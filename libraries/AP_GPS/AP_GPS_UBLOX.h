@@ -579,6 +579,13 @@ private:
         uint32_t accEst;
     };
 
+    // SEC-UNIQID message (0x27 0x03)
+    struct PACKED ubx_sec_uniqid {
+        uint8_t version;
+        uint8_t reserved[3];
+        uint8_t uniqueId[6];
+    };
+
     // UBX-MON-COMMS structures (per UBX spec)
     struct PACKED ubx_mon_comms_port_block {
         uint16_t portId;       // 8 + n*40
@@ -641,6 +648,7 @@ private:
         ubx_ack_nack nack;
         ubx_tim_tm2 tim_tm2;
         ubx_mon_comms_header mon_comms;
+        ubx_sec_uniqid sec_uniqid;
     } _buffer;
 
     enum class RELPOSNED {
@@ -667,6 +675,7 @@ private:
         CLASS_MON = 0x0A,
         CLASS_RXM = 0x02,
         CLASS_TIM = 0x0d,
+        CLASS_SEC = 0x27,
         MSG_ACK_NACK = 0x00,
         MSG_ACK_ACK = 0x01,
         MSG_POSLLH = 0x2,
@@ -697,7 +706,8 @@ private:
         MSG_NAV_SVINFO = 0x30,
         MSG_RXM_RAW = 0x10,
         MSG_RXM_RAWX = 0x15,
-        MSG_TIM_TM2 = 0x03
+        MSG_TIM_TM2 = 0x03,
+        MSG_SEC_UNIQID = 0x03
     };
     enum ubx_gnss_identifier {
         GNSS_GPS     = 0x00,
@@ -814,6 +824,9 @@ private:
     struct ubx_mon_ver _version;
     char            _module[UBLOX_MODULE_LEN];
     char            _protver[UBLOX_PROTVER_LEN];
+    bool            _have_unique_id;
+    uint8_t         _unique_id[6];
+    uint8_t         _unique_id_len;
     uint32_t        _unconfigured_messages {CONFIG_ALL};
     uint8_t         _hardware_generation { UBLOX_UNKNOWN_HARDWARE_GENERATION };
     uint8_t         _hardware_variant;
@@ -863,6 +876,7 @@ private:
     void        _request_next_config(void);
     void        _request_port(void);
     void        _request_version(void);
+    void        _request_unique_id(void);
     void        _save_cfg(void);
     void        _verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
     void        _check_new_itow(uint32_t itow);

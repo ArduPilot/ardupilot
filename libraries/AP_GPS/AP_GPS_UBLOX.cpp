@@ -1524,6 +1524,34 @@ AP_GPS_UBLOX::_parse_gps(void)
         return false;
     }
 
+    if (_class == CLASS_SEC) {
+        switch(_msg_id) {
+        case MSG_SEC_UNIQID:
+            // version 0x01 has 5-byte unique ID, version 0x02 has 6-byte unique ID
+            if (_buffer.sec_uniqid.version == 0x01 && _payload_length == 9) {
+                _have_unique_id = true;
+                _unique_id_len = 5;
+                memcpy(_unique_id, _buffer.sec_uniqid.uniqueId, 5);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "u-blox %d unique id: %02x%02x%02x%02x%02x",
+                              state.instance + 1,
+                              _unique_id[0], _unique_id[1], _unique_id[2],
+                              _unique_id[3], _unique_id[4]);
+            } else if (_buffer.sec_uniqid.version == 0x02 && _payload_length == 10) {
+                _have_unique_id = true;
+                _unique_id_len = 6;
+                memcpy(_unique_id, _buffer.sec_uniqid.uniqueId, 6);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "u-blox %d unique id: %02x%02x%02x%02x%02x%02x",
+                              state.instance + 1,
+                              _unique_id[0], _unique_id[1], _unique_id[2],
+                              _unique_id[3], _unique_id[4], _unique_id[5]);
+            }
+            break;
+        default:
+            unexpected_message();
+        }
+        return false;
+    }
+
 #if UBLOX_RXM_RAW_LOGGING
     if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAW && gps._raw_data != 0) {
         log_rxm_raw(_buffer.rxm_raw);
@@ -2205,6 +2233,12 @@ void
 AP_GPS_UBLOX::_request_version(void)
 {
     _send_message(CLASS_MON, MSG_MON_VER, nullptr, 0);
+}
+
+void
+AP_GPS_UBLOX::_request_unique_id(void)
+{
+    _send_message(CLASS_SEC, MSG_SEC_UNIQID, nullptr, 0);
 }
 
 void
