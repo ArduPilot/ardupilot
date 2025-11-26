@@ -37,6 +37,7 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RSSI/AP_RSSI.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Camera/AP_RunCam.h>
 
 // macro for easy use of var_info2
 #define AP_SUBGROUPINFO2(element, name, idx, thisclazz, elclazz) { name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info2 }, AP_PARAM_FLAG_NESTED_OFFSET, idx, AP_PARAM_GROUP }
@@ -78,7 +79,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Param: _SW_METHOD
     // @DisplayName: Screen switch method
     // @Description: This sets the method used to switch different OSD screens.
-    // @Values: 0: switch to next screen if channel value was changed, 1: select screen based on pwm ranges specified for each screen, 2: switch to next screen after low to high transition and every 1s while channel value is high
+    // @Values: 0: switch to next screen if channel value was changed, 1: select screen based on pwm ranges specified for each screen, 2: switch to next screen after low to high transition and every 1s while channel value is high, 3: switches to next screen if the sticks in the next position: roll - middle, pitch - high, throttle - middle, yaw - left. Keeps toggling to next screen every 1s while sticks in mentioned positions
     // @User: Standard
     AP_GROUPINFO("_SW_METHOD", 7, AP_OSD, sw_method, AP_OSD::TOGGLE),
 
@@ -541,17 +542,23 @@ void AP_OSD::update_current_screen()
         was_failsafe = false;
     }
 
-    if (rc_channel == 0) {
+    if (rc_channel == 0 && sw_method != STICKS_INPUT) {
         return;
     }
 
 #if AP_RC_CHANNEL_ENABLED
-    RC_Channel *channel = RC_Channels::rc_channel(rc_channel-1);
-    if (channel == nullptr) {
-        return;
+    int16_t channel_value = 0;
+    RC_Channel *channel = nullptr;
+
+    if (sw_method != STICKS_INPUT) {
+        channel = RC_Channels::rc_channel(rc_channel-1);
+        if (channel == nullptr) {
+            return;
+        }
+
+        channel_value = channel->get_radio_in();
     }
 
-    int16_t channel_value = channel->get_radio_in();
     switch (sw_method) {
     //switch to next screen if channel value was changed
     default:
@@ -597,6 +604,32 @@ void AP_OSD::update_current_screen()
             }
         } else {
             last_switch_ms = 0;
+        }
+        break;
+    case STICKS_INPUT:
+        if (!AP_Notify::flags.armed && !AP::runcam()->in_menu()) {
+            auto &rc_channels = rc();
+            auto &roll = rc_channels.get_roll_channel();
+            auto &pitch = rc_channels.get_pitch_channel();
+            auto &yaw = rc_channels.get_yaw_channel();
+            auto &throttle = rc_channels.get_throttle_channel();
+            if (roll.get_aux_switch_pos() == RC_Channel::AuxSwitchPos::MIDDLE &&
+                pitch.get_aux_switch_pos() == RC_Channel::AuxSwitchPos::HIGH &&
+                yaw.get_aux_switch_pos() == RC_Channel::AuxSwitchPos::LOW &&
+                throttle.get_aux_switch_pos() == RC_Channel::AuxSwitchPos::MIDDLE) {
+                if (switch_debouncer) {
+                    uint32_t now = AP_HAL::millis();
+                    if (now - last_switch_ms > 1000) {
+                        next_screen();
+                        last_switch_ms = now;
+                    }
+                } else {
+                    switch_debouncer = true;
+                    return;
+                }
+            } else {
+                last_switch_ms = 0;
+            }
         }
         break;
     }
