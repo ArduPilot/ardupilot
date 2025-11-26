@@ -17,7 +17,7 @@
 
 #include "AP_PiccoloCAN_Cortex.h"
 
-#if HAL_PICCOLO_CAN_ENABLE
+#if AP_PICCOLOCAN_ENABLED
 
 // Protocol files for the Cortex controller
 #include <AP_PiccoloCAN/piccolo_protocol/CortexDefines.h>
@@ -91,4 +91,4 @@ uint32_t getCortexPacketID(const void* pkt)
     return (uint32_t) ((frame->id >> 16) & 0xFF);
 }
 
-#endif // HAL_PICCOLO_CAN_ENABLE
+#endif // AP_PICCOLOCAN_ENABLED
