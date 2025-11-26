@@ -1272,15 +1272,17 @@ void Compass::_probe_external_i2c_compasses(void)
     // external lis2mdl
 #if AP_COMPASS_LIS2MDL_EXTERNAL_BUS_PROBING_ENABLED
     FOREACH_I2C_EXTERNAL(i) {
-        ADD_BACKEND(DRIVER_LIS2MDL, AP_Compass_LIS2MDL::probe(GET_I2C_DEVICE(i, HAL_COMPASS_LIS2MDL_I2C_ADDR),
+        add_backend(DRIVER_LIS2MDL, AP_Compass_LIS2MDL::probe(GET_I2C_DEVICE(i, HAL_COMPASS_LIS2MDL_I2C_ADDR),
                     true, ROTATION_NONE));
+        RETURN_IF_NO_SPACE;
     }
 #endif
     // internal lis2mdl
 #if AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
     FOREACH_I2C_INTERNAL(i) {
-        ADD_BACKEND(DRIVER_LIS2MDL, AP_Compass_LIS2MDL::probe(GET_I2C_DEVICE(i, HAL_COMPASS_LIS2MDL_I2C_ADDR),
+        add_backend(DRIVER_LIS2MDL, AP_Compass_LIS2MDL::probe(GET_I2C_DEVICE(i, HAL_COMPASS_LIS2MDL_I2C_ADDR),
                     all_external, ROTATION_NONE));
+        RETURN_IF_NO_SPACE;
     }
 #endif
 #endif  // AP_COMPASS_LIS2MDL_ENABLED
