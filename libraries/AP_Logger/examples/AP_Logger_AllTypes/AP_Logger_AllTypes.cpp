@@ -243,7 +243,7 @@ void AP_LoggerTest_AllTypes::Log_Write_TypeMessages_Log_Write()
         );
 
     // emit a message which contains NaNs:
-    logger.Write("NANS", "f,d,bf,bd", "fdfd",  logger.quiet_nanf(), logger.quiet_nan(), NAN, NAN);
+    logger.Write("NANS", "f,d,bf,bd", "fdfd",  AP_Logger::quiet_nanf(), AP_Logger::quiet_nan(), NAN, NAN);
 
     flush_logger(logger);
 

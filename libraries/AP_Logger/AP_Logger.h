@@ -380,8 +380,8 @@ public:
     void handle_log_send();
     bool in_log_download() const;
 
-    float quiet_nanf() const { return NaNf; } // "AR"
-    double quiet_nan() const { return nan("0x4152445550490a"); } // "ARDUPI"
+    static float quiet_nanf() { return NaNf; } // "AR"
+    static double quiet_nan() { return nan("0x4152445550490a"); } // "ARDUPI"
 
     // returns true if msg_type is associated with a message
     bool msg_type_in_use(uint8_t msg_type) const;

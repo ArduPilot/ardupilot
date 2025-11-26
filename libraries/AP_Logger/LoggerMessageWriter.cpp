@@ -68,7 +68,7 @@ void LoggerMessageWriter_DFLogStart::reset()
     _next_unit_to_send = 0;
     _next_multiplier_to_send = 0;
     _next_format_unit_to_send = 0;
-    param_default = AP::logger().quiet_nanf();
+    param_default = AP_Logger::quiet_nanf();
     ap = AP_Param::first(&token, &type, &param_default);
 }
 
@@ -132,7 +132,7 @@ void LoggerMessageWriter_DFLogStart::process()
             if (!_logger_backend->Write_Parameter(ap, token, type, param_default)) {
                 return;
             }
-            param_default = AP::logger().quiet_nanf();
+            param_default = AP_Logger::quiet_nanf();
             ap = AP_Param::next_scalar(&token, &type, &param_default);
             if (check_process_limit(start_us)) {
                 return; // call me again!
