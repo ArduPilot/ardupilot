@@ -1356,7 +1356,7 @@ local RC_Channel_ud = {}
 ---@return number
 function RC_Channel_ud:norm_input_ignore_trim() end
 
--- desc
+-- Override RC channel value.  Be wary using this override as it effectively disables RC failsafes
 ---@param PWM integer
 function RC_Channel_ud:set_override(PWM) end
 
