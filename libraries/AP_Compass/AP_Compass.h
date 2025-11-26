@@ -72,6 +72,7 @@ class CompassLearn;
 class Compass
 {
 friend class AP_Compass_Backend;
+friend class AP_Compass_DroneCAN;
 public:
     Compass();
 
@@ -379,7 +380,6 @@ private:
     bool register_compass(int32_t dev_id, uint8_t& instance) WARN_IF_UNUSED;
 
     // load backend drivers
-    bool _add_backend(AP_Compass_Backend *backend);
     __INITFUNC__ void _probe_external_i2c_compasses(void);
     __INITFUNC__ void _detect_backends(void);
     __INITFUNC__ void probe_i2c_spi_compasses(void);
@@ -494,10 +494,15 @@ private:
 #if AP_COMPASS_IIS2MDC_ENABLED
         DRIVER_IIS2MDC  =22,
 #endif
+#if AP_COMPASS_LIS2MDL_ENABLED
+        DRIVER_LIS2MDL  =23,
+#endif
+
 };
 
     bool _driver_enabled(enum DriverType driver_type);
-    
+    void add_backend(DriverType driver_type, AP_Compass_Backend *backend);
+
     // backend objects
     AP_Compass_Backend *_backends[COMPASS_MAX_BACKEND];
     uint8_t     _backend_count;

@@ -470,9 +470,9 @@ const char *AP_Networking::address_to_str(uint32_t addr)
 }
 
 #ifdef LWIP_PLATFORM_ASSERT
-void ap_networking_platform_assert(const char *msg, int line, const char *file)
+void ap_networking_platform_assert(const char *msg, int line)
 {
-    AP_HAL::panic("LWIP: %s: %s:%u", msg, file, line);
+    AP_HAL::panic("LWIP: %s: %u", msg, line);
 }
 #endif
 
