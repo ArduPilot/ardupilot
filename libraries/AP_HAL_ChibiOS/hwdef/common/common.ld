@@ -107,6 +107,8 @@ SECTIONS
     .textalign : ONLY_IF_RO
     {
         . = ALIGN(8);
+        /* Fix alignment padding issue */
+        LONG(0);
     } > flash
 
     /* Legacy symbol, not used anywhere.*/
