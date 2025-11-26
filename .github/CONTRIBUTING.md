@@ -21,6 +21,12 @@ If you are reading this page, you are possibly interested in contributing to our
 
 Please see our [wiki article](https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html).
 
+# Addressing ArduPilot github Issues
+
+We use github's Issue tracking feature to keep a list of outstanding Bugs and Feature Requests.  We specifically label some issues as [good first issues](https://github.com/ArduPilot/ardupilot/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22) because they are straight forward tasks that someone new to the codebase may be able to deal with.
+
+We typically do not assign issues - *particularly* "Good First Issue"s to specific contributors - if you feel you can contribute towards resolving an issue, simply work on it and create a PR which addresses it.
+
 # Development Team
 
 The ArduPilot project is open source and [maintained](https://github.com/ArduPilot/ardupilot#maintainers) by a team of volunteers.
