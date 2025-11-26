@@ -33,6 +33,8 @@ AP_OpticalFlow_MAV *AP_OpticalFlow_MAV::detect(AP_OpticalFlow &_frontend)
 // read latest values from sensor and fill in x,y and totals.
 void AP_OpticalFlow_MAV::update(void)
 {
+    //gyroscope integration is not required for OPTICAL_FLOW_RAD
+#if !AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
     // record gyro values as long as they are being used
     // the sanity check of dt below ensures old gyro values are not used
     if (gyro_sum_count < 1000) {
@@ -41,6 +43,7 @@ void AP_OpticalFlow_MAV::update(void)
         gyro_sum.y += gyro.y;
         gyro_sum_count++;
     }
+#endif
 
     // return without updating state if no readings
     if (count == 0) {
@@ -130,5 +133,34 @@ void AP_OpticalFlow_MAV::handle_msg(const mavlink_message_t &msg)
     // take sensor id from message
     sensor_id = packet.sensor_id;
 }
+
+#if AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+void AP_OpticalFlow_MAV::handle_msg_rad(const mavlink_message_t &msg)
+{
+    mavlink_optical_flow_rad_t packet;
+    mavlink_msg_optical_flow_rad_decode(&msg, &packet);
+
+	// record time message was received
+    // TODO: dt between frames which is calculated in update state function
+    // is already stored in OPTICAL_FLOW_RAD message and can be taken from there
+    // instead of calculating it manually
+    latest_frame_us = AP_HAL::micros64();
+
+    flow_sum_is_rads = true;
+
+	// OPTICAL_FLOW_RAD contains already calculated integrated values
+	// so it is not required to integrate them in msg handling
+    quality_sum = packet.quality;
+	flow_sum = Vector2f(packet.integrated_x, packet.integrated_y);
+	gyro_sum = Vector2f(packet.integrated_xgyro, packet.integrated_ygyro);
+	sensor_id = packet.sensor_id;
+
+    // flow is already integrated so flow samples count will be equal to one
+    count = 1;
+    gyro_sum_count = 1;
+
+
+}
+#endif
 
 #endif  // AP_OPTICALFLOW_MAV_ENABLED
