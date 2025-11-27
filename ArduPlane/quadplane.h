@@ -1,10 +1,6 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef HAL_QUADPLANE_ENABLED
-#define HAL_QUADPLANE_ENABLED 1
-#endif
+#include "config.h"
 
 #if HAL_QUADPLANE_ENABLED
 

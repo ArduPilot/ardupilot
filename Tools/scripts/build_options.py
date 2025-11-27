@@ -231,6 +231,11 @@ BUILD_OPTIONS = [
     Feature('Gimbal', 'XFROBOT', 'HAL_MOUNT_XFROBOT_ENABLED', 'Enable XFRobot gimbal', 0, "MOUNT"),
     Feature('Gimbal', 'VIEWPRO', 'HAL_MOUNT_VIEWPRO_ENABLED', 'Enable Viewpro gimbal', 0, "MOUNT"),
 
+    # note that while there's only one Frame for an AP_Motors backend
+    # subclass we can turn off the entire backend using the define for
+    # that subclass.  That simplifies the cbs interface, but it does
+    # mean we are mis-naming motor backends as frames in this list:
+    Feature('VTOL Frame', 'TAILSITTER', 'AP_MOTORS_TAILSITTER_ENABLED', 'Tailsitters', 0, "QUADPLANE"),
     Feature('VTOL Frame', 'TRI', 'AP_MOTORS_TRI_ENABLED', 'TriCopters', 0, None),
     Feature('VTOL Frame', 'QUAD', 'AP_MOTORS_FRAME_QUAD_ENABLED', 'QUAD', 1, None),
     Feature('VTOL Frame', 'HEXA', 'AP_MOTORS_FRAME_HEXA_ENABLED', 'HEXA', 0, None),
@@ -239,6 +244,12 @@ BUILD_OPTIONS = [
     Feature('VTOL Frame', 'DODECAHEXA', 'AP_MOTORS_FRAME_DODECAHEXA_ENABLED', 'DODECAHEXA', 0, None),
     Feature('VTOL Frame', 'Y6', 'AP_MOTORS_FRAME_Y6_ENABLED', 'Y6', 0, None),
     Feature('VTOL Frame', 'OCTAQUAD', 'AP_MOTORS_FRAME_OCTAQUAD_ENABLED', 'OCTAQUAD', 0, None),
+    Feature('VTOL Frame', 'SINGLE', 'AP_MOTORS_SINGLE_ENABLED', 'SINGLE', 0, None),
+    Feature('VTOL Frame', 'COAX', 'AP_MOTORS_COAX_ENABLED', 'COAX', 0, None),
+    Feature('VTOL Frame', '6DOF_SCRIPTING', 'AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED', '6DOF_SCRIPTING', 0, 'SCRIPTING'),
+    Feature('VTOL Frame', 'DYNAMIC_SCRIPTING', 'AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED', 'DYNAMIC_SCRIPTING', 0, 'SCRIPTING'),  # noqa: E501
+    Feature('VTOL Frame', 'SCRIPTING_MATRIX', 'AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED', 'SCRIPTING_MATRIX', 0, 'SCRIPTING'),  # noqa: E501
+    # Feature('VTOL Frame', '6DOF', 'AP_MOTORS_FRAME_6DOF_ENABLED', 'Sub 6DOF', 0, None),  # Sub fails to build without this  # noqa: E501
 
     Feature('Payload', 'GRIPPER', 'AP_GRIPPER_ENABLED', 'Enable Gripper', 0, None),
     Feature('Payload', 'SPRAYER', 'HAL_SPRAYER_ENABLED', 'Enable Sprayer', 0, None),
@@ -262,6 +273,7 @@ BUILD_OPTIONS = [
     Feature('Plane', 'QUICKTUNE', 'AP_QUICKTUNE_ENABLED', 'Enable VTOL quicktune', 0, None),
     Feature('Plane', 'AUTOLAND_MODE', 'MODE_AUTOLAND_ENABLED', 'Enable Fixed Wing Autolanding mode', 0, None),
     Feature('Plane', 'PLANE_SYSTEMID', 'AP_PLANE_SYSTEMID_ENABLED', 'Enable systemID support', 0, 'QUADPLANE,Logging'),  # NOQA:E501
+    Feature('Plane', 'PLANE_TAILSITTER', 'AP_PLANE_TAILSITTER_ENABLED', 'Enable quadplane tailsitter', 0, 'QUADPLANE,TAILSITTER'),  # NOQA:E501
 
     Feature('RC', 'RC_Protocol', 'AP_RCPROTOCOL_ENABLED', "Enable Serial RC Protocols", 0, None),   # NOQA: E501
     Feature('RC', 'RC_CRSF', 'AP_RCPROTOCOL_CRSF_ENABLED', "Enable CRSF", 0, "RC_Protocol"),   # NOQA: E501
