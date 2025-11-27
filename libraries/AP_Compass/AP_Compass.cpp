@@ -3,6 +3,7 @@
 #if AP_COMPASS_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/I2CDevice.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/I2CDevice.h>
 #endif
