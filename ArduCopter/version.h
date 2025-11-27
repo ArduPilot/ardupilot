@@ -8,7 +8,7 @@
 
 
 
-#define THISFIRMWARE "MA_Copter-V4.3.0.11_PreRelease_LL"
+#define THISFIRMWARE "MA_Copter-V4.3.0.11"
 
 // the following line is parsed by the autotest scripts
 #define FIRMWARE_VERSION 4,3,0,FIRMWARE_VERSION_TYPE_OFFICIAL
