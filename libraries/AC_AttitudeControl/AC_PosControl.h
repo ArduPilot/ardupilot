@@ -616,8 +616,6 @@ public:
     // Sets artificial NE velocity disturbance in m/s.
     void set_disturb_vel_NE_ms(const Vector2f& disturb_vel_ms) { _disturb_vel_ne_ms = disturb_vel_ms; }
 
-    static const struct AP_Param::GroupInfo var_info[];
-
     // Logs position controller state along the North axis to PSCN..
     // Logs desired, target, and actual position [m], velocity [m/s], and acceleration [m/s²].
     static void Write_PSCN(float pos_desired_m, float pos_target_m, float pos_m, float vel_desired_ms, float vel_target_ms, float vel_ms, float accel_desired_mss, float accel_target_mss, float accel_mss);
@@ -646,9 +644,13 @@ public:
     // Logs target and actual offset for position [m], velocity [m/s], and acceleration [m/s²].
     static void Write_PSOT(float pos_target_offset_m, float pos_offset_m, float vel_target_offset_ms, float vel_offset_ms, float accel_target_offset_mss, float accel_offset_mss);
 
+    // perform any required parameter conversions
+    void convert_parameters();
 
     // Returns pointer to the global AC_PosControl singleton.
     static AC_PosControl *get_singleton(void) { return _singleton; }
+
+    static const struct AP_Param::GroupInfo var_info[];
 
 protected:
 
