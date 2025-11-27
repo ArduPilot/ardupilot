@@ -234,8 +234,12 @@ public:
     // get target angle in deg. returns true on success
     bool get_angle_target(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame);
 
-    // accessors for scripting backends and logging
+#if AP_SCRIPTING_ENABLED
+    // get mount target location. returns true on success
     bool get_location_target(uint8_t instance, Location& target_loc);
+#endif
+
+    // accessors for scripting backends and logging
     void set_attitude_euler(uint8_t instance, float roll_deg, float pitch_deg, float yaw_bf_deg);
 
     // write mount log packet for all backends

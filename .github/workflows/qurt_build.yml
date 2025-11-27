@@ -145,7 +145,7 @@ jobs:
     if: github.repository == 'ArduPilot/ardupilot'
     runs-on: 'ardupilot-qurt'
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: 'recursive'
 

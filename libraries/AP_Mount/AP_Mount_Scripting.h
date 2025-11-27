@@ -34,7 +34,6 @@ public:
     bool has_pan_control() const override { return yaw_range_valid(); };
 
     // accessors for scripting backends
-    bool get_location_target(Location& _target_loc) override;
     void set_attitude_euler(float roll_deg, float pitch_deg, float yaw_bf_deg) override;
 
 protected:
@@ -48,8 +47,6 @@ private:
     uint32_t last_update_ms;        // system time of last call to one of the get_ methods.  Used for health reporting
     Vector3f current_angle_deg;     // current gimbal angles in degrees (x=roll, y=pitch, z=yaw)
 
-    Location target_loc;            // target location
-    bool target_loc_valid;          // true if target_loc holds a valid target location
 };
 
 #endif // HAL_MOUNT_SCRIPTING_ENABLED

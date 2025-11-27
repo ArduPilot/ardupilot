@@ -30,7 +30,6 @@ void AP_Mount_Scripting::update()
             const Vector3f &angle_bf_target = _params.retract_angles.get();
             mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
             mnt_target.target_type = MountTargetType::ANGLE;
-            target_loc_valid = false;
             break;
         }
 
@@ -39,20 +38,17 @@ void AP_Mount_Scripting::update()
             const Vector3f &angle_bf_target = _params.neutral_angles.get();
             mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
             mnt_target.target_type = MountTargetType::ANGLE;
-            target_loc_valid = false;
             break;
         }
 
         // point to the angles given by a mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
             // mavlink targets should have been already stored while handling the message
-            target_loc_valid = false;
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
         case MAV_MOUNT_MODE_RC_TARGETING:
             update_mnt_target_from_rc_target();
-            target_loc_valid = false;
             break;
 
         // point mount to a GPS point given by the mission planner
@@ -88,17 +84,6 @@ bool AP_Mount_Scripting::healthy() const
 {
     // healthy if scripting backend has updated actual angles recently
     return (AP_HAL::millis() - last_update_ms <= AP_MOUNT_SCRIPTING_TIMEOUT_MS);
-}
-
-// return target location if available
-// returns true if a target location is available and fills in target_loc argument
-bool AP_Mount_Scripting::get_location_target(Location &_target_loc)
-{
-    if (target_loc_valid) {
-        _target_loc = target_loc;
-        return true;
-    }
-    return false;
 }
 
 // update mount's actual angles (to be called by script communicating with mount)
