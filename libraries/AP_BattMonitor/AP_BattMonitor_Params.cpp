@@ -21,6 +21,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Param: MONITOR
     // @DisplayName: Battery monitoring
     // @Description: Controls enabling monitoring of the battery's voltage and current
+    // @SortValues: AlphabeticalZeroAtTop
     // @Values: 0:Disabled
     // @Values: 3:Analog Voltage Only
     // @Values: 4:Analog Voltage and Current
