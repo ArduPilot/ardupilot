@@ -77,6 +77,7 @@ local node_cycles = {}
 
 local gcs_connect_time = nil
 local sent_report = false
+local have_tag = false
 
 -- report battery tags to GCS at 30s after first GCS connection
 local GCS_REPORT_TIME_S = 30
@@ -93,6 +94,8 @@ local function check_batterytag(bus)
     if not serial_num then
         return
     end
+
+    have_tag = true
 
     if num_cycles > highest_cycles then
         highest_cycles = num_cycles
@@ -178,6 +181,10 @@ local function update()
         end
         check_globaltime()
         check_GCS()
+        if auth_id and not have_tag and millis():tofloat() * 0.001 > 15 then
+            -- no tag found after 15s, setup arming failure
+            arming:set_aux_auth_failed(auth_id, string.format("Battery Tag not connected"))
+        end
     end
     return update, 200
 end
