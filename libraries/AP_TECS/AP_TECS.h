@@ -401,7 +401,7 @@ private:
 
     // variables used for precision landing pitch control
     float _hgt_at_start_of_flare;
-    float _hgt_rate_at_flare_entry;
+    float _hgt_rate_dem_at_flare_entry;
     float _hgt_afe;
     float _pitch_min_at_flare_entry;
 
