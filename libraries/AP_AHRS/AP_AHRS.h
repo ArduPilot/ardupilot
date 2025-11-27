@@ -808,7 +808,7 @@ private:
     uint32_t start_time_ms;
     uint8_t _ekf_flags; // bitmask from Flags enumeration
 
-    EKFType ekf_type(void) const;
+    EKFType configured_ekf_type(void) const;
     void update_DCM();
 
     /*
