@@ -79,7 +79,7 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.opticalflow_enabled = AP::opticalflow() && AP::opticalflow()->enabled();
 #endif
     _RFRN.wheelencoder_enabled = AP::wheelencoder() && (AP::wheelencoder()->num_sensors() > 0);
-    _RFRN.ekf_type = ahrs.configured_ekf_type();
+    _RFRN.ekf_type = ahrs.ekf_type_parameter_value();
     WRITE_REPLAY_BLOCK_IFCHANGED(RFRN, _RFRN, old);
 
     // update body conversion

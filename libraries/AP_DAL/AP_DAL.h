@@ -135,7 +135,7 @@ public:
     uint32_t available_memory() const { return _RFRN.available_memory; }
 #endif
 
-    int8_t configured_ekf_type(void) const {
+    int8_t ekf_type_parameter_value(void) const {
         return _RFRN.ekf_type;
     }
 
