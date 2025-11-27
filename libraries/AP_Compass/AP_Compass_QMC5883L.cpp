@@ -57,7 +57,7 @@
 #define QMC5883L_REG_ID 0x0D
 #define QMC5883_ID_VAL 0xFF
 
-AP_Compass_Backend *AP_Compass_QMC5883L::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_QMC5883L::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                                bool force_external,
                                                enum Rotation rotation)
 {
