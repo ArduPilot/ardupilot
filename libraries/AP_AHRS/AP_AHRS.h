@@ -451,8 +451,10 @@ public:
     // set and save the ALT_M_NSE parameter value
     void set_alt_measurement_noise(float noise);
 
-    // get the selected ekf type, for allocation decisions
-    int8_t configured_ekf_type(void) const {
+    // get the value of the parameter used to select the prefered
+    // estimator.  Should not generally be used, see
+    // configured_ekf_type instead.
+    int8_t ekf_type_parameter_value(void) const {
         return _ekf_type;
     }
 
