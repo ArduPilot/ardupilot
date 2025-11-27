@@ -1952,7 +1952,7 @@ void AP_AHRS::get_relative_position_D_home(float &posD) const
   canonicalise _ekf_type, forcing it to be 0, 2 or 3
   type 1 has been deprecated
  */
-AP_AHRS::EKFType AP_AHRS::ekf_type(void) const
+AP_AHRS::EKFType AP_AHRS::configured_ekf_type(void) const
 {
     EKFType type = (EKFType)_ekf_type.get();
     switch (type) {
@@ -2002,7 +2002,7 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
 {
     EKFType ret = fallback_active_EKF_type();
 
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         return EKFType::DCM;
@@ -2254,7 +2254,7 @@ bool AP_AHRS::healthy(void) const
     // If EKF is started we switch away if it reports unhealthy. This could be due to bad
     // sensor data. If EKF reversion is inhibited, we only switch across if the EKF encounters
     // an internal processing error, but not for bad sensor data.
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
@@ -2323,7 +2323,7 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
 #if AP_AHRS_EXTERNAL_ENABLED
     // Always check external AHRS if enabled
     // it is a source for IMU data even if not being used as direct AHRS replacement
-    if (AP::externalAHRS().enabled() || (ekf_type() == EKFType::EXTERNAL)) {
+    if (AP::externalAHRS().enabled() || (ekf_type_parameter_value() == int8_t(EKFType::EXTERNAL))) {
         if (!AP::externalAHRS().pre_arm_check(failure_msg, failure_msg_len)) {
             return false;
         }
@@ -2335,12 +2335,12 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
     }
 
     // ensure we're using the configured backend, but bypass in compass-less cases:
-    if (ekf_type() != active_EKF_type() && AP::compass().use_for_yaw()) {
+    if (configured_ekf_type() != active_EKF_type() && AP::compass().use_for_yaw()) {
         hal.util->snprintf(failure_msg, failure_msg_len, "not using configured AHRS type");
         return false;
     }
 
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
         return ret;
@@ -2383,7 +2383,7 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
 // true if the AHRS has completed initialisation
 bool AP_AHRS::initialised(void) const
 {
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         return true;
@@ -2416,7 +2416,7 @@ bool AP_AHRS::initialised(void) const
 // get_filter_status : returns filter status as a series of flags
 bool AP_AHRS::get_filter_status(nav_filter_status &status) const
 {
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         return dcm.get_filter_status(status);
@@ -2580,7 +2580,7 @@ float AP_AHRS::getControlScaleZ(void) const
 // true if offsets are valid
 bool AP_AHRS::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 {
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         return false;
@@ -2668,7 +2668,7 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
 
 #if HAL_NAVEKF2_AVAILABLE
     // check primary vs ekf2
-    if (ekf_type() == EKFType::TWO || active_EKF_type() == EKFType::TWO) {
+    if (ekf_type_parameter_value() == int8_t(EKFType::TWO) || active_EKF_type() == EKFType::TWO) {
         for (uint8_t i = 0; i < EKF2.activeCores(); i++) {
             Quaternion ekf2_quat;
             EKF2.getQuaternionBodyToNED(i, ekf2_quat);
@@ -2695,7 +2695,7 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
 
 #if HAL_NAVEKF3_AVAILABLE
     // check primary vs ekf3
-    if (ekf_type() == EKFType::THREE || active_EKF_type() == EKFType::THREE) {
+    if (configured_ekf_type() == EKFType::THREE || active_EKF_type() == EKFType::THREE) {
         for (uint8_t i = 0; i < EKF3.activeCores(); i++) {
             Quaternion ekf3_quat;
             EKF3.getQuaternionBodyToNED(i, ekf3_quat);
@@ -2737,7 +2737,7 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
         // and if not using an external yaw source (DCM does not support external yaw sources)
         bool using_noncompass_for_yaw = false;
 #if HAL_NAVEKF3_AVAILABLE
-        using_noncompass_for_yaw = (ekf_type() == EKFType::THREE) && EKF3.using_noncompass_for_yaw();
+        using_noncompass_for_yaw = (configured_ekf_type() == EKFType::THREE) && EKF3.using_noncompass_for_yaw();
 #endif
         if (!always_use_EKF() && !using_noncompass_for_yaw) {
             Vector3f angle_diff;
@@ -2895,8 +2895,8 @@ bool AP_AHRS::resetHeightDatum(void)
 {
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
-    
-    switch (ekf_type()) {
+
+    switch (configured_ekf_type()) {
 
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
@@ -2940,7 +2940,7 @@ bool AP_AHRS::resetHeightDatum(void)
 // send a EKF_STATUS_REPORT for configured EKF
 void AP_AHRS::send_ekf_status_report(GCS_MAVLINK &link) const
 {
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         // send zero status report
@@ -3014,7 +3014,7 @@ bool AP_AHRS::_get_origin(EKFType type, Location &ret) const
  */
 bool AP_AHRS::_get_origin(Location &ret) const
 {
-    if (_get_origin(ekf_type(), ret)) {
+    if (_get_origin(configured_ekf_type(), ret)) {
         return true;
     }
     if (hal.util->get_soft_armed() && _get_origin(active_EKF_type(), ret)) {
@@ -3158,7 +3158,7 @@ void AP_AHRS::set_terrain_hgt_stable(bool stable)
 // boolean false is returned if innovations are not available
 bool AP_AHRS::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
 {
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         // We are not using an EKF so no data
@@ -3194,7 +3194,7 @@ bool AP_AHRS::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &
 // returns true when the state estimates are significantly degraded by vibration
 bool AP_AHRS::is_vibration_affected() const
 {
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         return EKF3.isVibrationAffected();
@@ -3222,7 +3222,7 @@ bool AP_AHRS::is_vibration_affected() const
 // boolean false is returned if variances are not available
 bool AP_AHRS::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
 {
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         // We are not using an EKF so no data
@@ -3263,7 +3263,7 @@ bool AP_AHRS::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3
 // returns true on success and results are placed in innovations and variances arguments
 bool AP_AHRS::get_vel_innovations_and_variances_for_source(uint8_t source, Vector3f &innovations, Vector3f &variances) const
 {
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         // We are not using an EKF so no data
