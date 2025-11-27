@@ -145,7 +145,7 @@ jobs:
       fail-fast: false  # don't cancel if a job from the matrix fails
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: 'recursive'
           path: src/ardupilot

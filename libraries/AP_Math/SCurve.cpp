@@ -68,6 +68,13 @@ void SCurve::calculate_track(const Vector3p &origin, const Vector3p &destination
 {
     init();
 
+    // ensure arguments are positive
+    speed_xy = fabsf(speed_xy);
+    speed_up = fabsf(speed_up);
+    speed_down = fabsf(speed_down);
+    accel_xy = fabsf(accel_xy);
+    accel_z = fabsf(accel_z);
+
     // leave track as zero length if origin and destination are equal or if the new track length squared is zero
     seg_delta = (destination - origin).tofloat();
     if (seg_delta.is_zero() || is_zero(seg_delta.length_squared())) {
@@ -147,13 +154,18 @@ void SCurve::calculate_track(const Vector3p &origin, const Vector3p &destination
 // set maximum velocity and re-calculate the path using these limits
 void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
 {
+    // ensure arguments are positive
+    speed_xy = fabsf(speed_xy);
+    speed_up = fabsf(speed_up);
+    speed_down = fabsf(speed_down);
+
     // return immediately if zero length path
     if (num_segs != segments_max) {
         return;
     }
 
     // segment accelerations can not be changed after segment creation.
-    const float track_speed_max = kinematic_limit(arc.length_ne, seg_delta.z, speed_xy, speed_up, fabsf(speed_down));
+    const float track_speed_max = kinematic_limit(arc.length_ne, seg_delta.z, speed_xy, speed_up, speed_down);
 
     if (is_equal(vel_max, track_speed_max)) {
         // new speed is equal to current speed maximum so no need to change anything
@@ -386,6 +398,9 @@ float SCurve::set_origin_speed_max(float speed)
         return 0.0f;
     }
 
+    // ensure speed is positive
+    speed = fabsf(speed);
+
     // avoid re-calculating if unnecessary
     if (is_equal(segment[SEG_INIT].end_vel, speed)) {
         return speed;
@@ -466,6 +481,9 @@ void SCurve::set_destination_speed_max(float speed)
     if (num_segs != segments_max) {
         return;
     }
+    
+    // ensure speed is positive
+    speed = fabsf(speed);
 
     // avoid re-calculating if unnecessary
     if (is_equal(segment[segments_max-1].end_vel, speed)) {
@@ -1119,13 +1137,6 @@ void SCurve::set_kinematic_limits(const Vector3p &origin, const Vector3p &destin
                                   float speed_xy, float speed_up, float speed_down,
                                   float accel_xy, float accel_z)
 {
-    // ensure arguments are positive
-    speed_xy = fabsf(speed_xy);
-    speed_up = fabsf(speed_up);
-    speed_down = fabsf(speed_down);
-    accel_xy = fabsf(accel_xy);
-    accel_z = fabsf(accel_z);
-
     Vector3f direction = (destination - origin).tofloat();
     const float track_speed_max = kinematic_limit(direction, speed_xy, speed_up, speed_down);
     const float track_accel_max = kinematic_limit(direction, accel_xy, accel_z, accel_z);

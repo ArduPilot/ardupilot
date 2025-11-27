@@ -522,7 +522,7 @@ bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Airspeed& msg)
     // As a consequence, to follow ROS REP 103, it is necessary to invert Y and Z
     Vector3f true_airspeed_vec_bf;
     bool is_airspeed_available {false};
-    if (ahrs.airspeed_vector_true(true_airspeed_vec_bf)) {
+    if (ahrs.airspeed_vector_TAS(true_airspeed_vec_bf)) {
         msg.true_airspeed.x = true_airspeed_vec_bf[0];
         msg.true_airspeed.y = -true_airspeed_vec_bf[1];
         msg.true_airspeed.z = -true_airspeed_vec_bf[2];

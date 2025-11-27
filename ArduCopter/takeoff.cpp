@@ -52,7 +52,7 @@ void Mode::_TakeOff::start_m(float alt_m)
 {
     // initialise takeoff state
     _running = true;
-    take_off_start_alt_m = copter.pos_control->get_pos_desired_U_m();
+    take_off_start_alt_m = copter.pos_control->get_pos_estimate_U_m();
     take_off_complete_alt_m  = take_off_start_alt_m + alt_m;
 }
 
@@ -86,8 +86,8 @@ void Mode::_TakeOff::do_pilot_takeoff_ms(float& pilot_climb_rate_ms)
         copter.pos_control->init_U_controller();
         if (throttle_norm >= MIN(copter.g2.takeoff_throttle_max, 0.9) || 
             (copter.pos_control->get_estimate_accel_U_mss() >= 0.5 * copter.pos_control->get_max_accel_U_mss()) ||
-            (copter.pos_control->get_vel_desired_NEU_ms().z >= constrain_float(pilot_climb_rate_ms, copter.pos_control->get_max_speed_up_ms() * 0.1, copter.pos_control->get_max_speed_up_ms() * 0.5)) || 
-            (is_positive(take_off_complete_alt_m - take_off_start_alt_m) && copter.pos_control->get_pos_desired_U_m() - take_off_start_alt_m > 0.5 * (take_off_complete_alt_m - take_off_start_alt_m))) {
+            (copter.pos_control->get_vel_estimate_U_ms() >= constrain_float(pilot_climb_rate_ms, copter.pos_control->get_max_speed_up_ms() * 0.1, copter.pos_control->get_max_speed_up_ms() * 0.5)) || 
+            (is_positive(take_off_complete_alt_m - take_off_start_alt_m) && copter.pos_control->get_pos_estimate_U_m() - take_off_start_alt_m > 0.5 * (take_off_complete_alt_m - take_off_start_alt_m))) {
             // throttle > 90%
             // acceleration > 50% maximum acceleration
             // velocity > 10% maximum velocity && commanded climb rate
@@ -125,7 +125,7 @@ void _AutoTakeoff::run()
         // do not spool down tradheli when on the ground with motor interlock enabled
         copter.flightmode->make_safe_ground_handling(copter.is_tradheli() && motors->get_interlock());
         // update auto_takeoff_no_nav_alt_m
-        no_nav_alt_m = pos_control->get_pos_estimate_NEU_m().z + g2.wp_navalt_min_m;
+        no_nav_alt_m = pos_control->get_pos_estimate_U_m() + g2.wp_navalt_min_m;
         return;
     }
 
@@ -151,7 +151,7 @@ void _AutoTakeoff::run()
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), 0.0);
         // update auto_takeoff_no_nav_alt_m
-        no_nav_alt_m = pos_control->get_pos_estimate_NEU_m().z + g2.wp_navalt_min_m;
+        no_nav_alt_m = pos_control->get_pos_estimate_U_m() + g2.wp_navalt_min_m;
         return;
     }
     
@@ -168,8 +168,8 @@ void _AutoTakeoff::run()
         attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), 0.0);
         if (throttle >= MIN(copter.g2.takeoff_throttle_max, 0.9) || 
             (copter.pos_control->get_estimate_accel_U_mss() >= 0.5 * copter.pos_control->get_max_accel_U_mss()) ||
-            (copter.pos_control->get_vel_desired_NEU_ms().z >= 0.1 * copter.pos_control->get_max_speed_up_ms()) || 
-            ( no_nav_active && (pos_control->get_pos_estimate_NEU_m().z >= no_nav_alt_m))) {
+            (copter.pos_control->get_vel_estimate_U_ms() >= 0.1 * copter.pos_control->get_max_speed_up_ms()) || 
+            ( no_nav_active && (pos_control->get_pos_estimate_U_m() >= no_nav_alt_m))) {
             // throttle > 90%
             // acceleration > 50% maximum acceleration
             // velocity > 10% maximum velocity
@@ -182,7 +182,7 @@ void _AutoTakeoff::run()
     // check if we are not navigating because of low altitude
     if (no_nav_active) {
         // check if vehicle has reached no_nav_alt threshold
-        if (pos_control->get_pos_estimate_NEU_m().z >= no_nav_alt_m) {
+        if (pos_control->get_pos_estimate_U_m() >= no_nav_alt_m) {
             no_nav_active = false;
         }
         pos_control->relax_velocity_controller_NE();
@@ -210,7 +210,7 @@ void _AutoTakeoff::run()
     // stopping distance from vel_threshold_fraction * max velocity
     const float stop_distance_m = 0.5 * sq(vel_threshold_fraction * copter.pos_control->get_max_speed_up_ms()) / copter.pos_control->get_max_accel_U_mss();
     bool reached_altitude = copter.pos_control->get_pos_desired_U_m() >= pos_u_m - stop_distance_m;
-    bool reached_climb_rate = copter.pos_control->get_vel_desired_NEU_ms().z < copter.pos_control->get_max_speed_up_ms() * vel_threshold_fraction;
+    bool reached_climb_rate = copter.pos_control->get_vel_desired_U_ms() < copter.pos_control->get_max_speed_up_ms() * vel_threshold_fraction;
     complete = reached_altitude && reached_climb_rate;
 
     // calculate completion for location in case it is needed for a smooth transition to wp_nav
@@ -228,7 +228,7 @@ void _AutoTakeoff::start_m(float _complete_alt_m, bool _is_terrain_alt)
     complete = false;
     // initialise auto_takeoff_no_nav_alt_m
     const auto &g2 = copter.g2;
-    no_nav_alt_m = copter.pos_control->get_pos_estimate_NEU_m().z + g2.wp_navalt_min_m;
+    no_nav_alt_m = copter.pos_control->get_pos_estimate_U_m() + g2.wp_navalt_min_m;
     if ((g2.wp_navalt_min_m > 0) && (copter.flightmode->is_disarmed_or_landed() || !copter.motors->get_interlock())) {
         // we are not flying, climb with no navigation to current alt-above-ekf-origin + wp_navalt_min_m
         no_nav_active = true;

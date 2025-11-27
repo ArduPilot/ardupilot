@@ -104,8 +104,9 @@ void ModeGuided::guided_vel_control_start()
     sub.guided_mode = Guided_Velocity;
 
     // initialize vertical maximum speeds and acceleration
-    position_control->set_max_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    position_control->set_correction_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    // All limits must be positive
+    position_control->set_max_speed_accel_U_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->set_correction_speed_accel_U_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // initialise velocity controller
     position_control->init_U_controller();
@@ -123,6 +124,7 @@ void ModeGuided::guided_posvel_control_start()
     sub.guided_mode = Guided_PosVel;
 
     // set vertical speed and acceleration
+    // All limits must be positive
     position_control->set_max_speed_accel_U_cm(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
     position_control->set_correction_speed_accel_U_cm(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
 
@@ -142,6 +144,7 @@ void ModeGuided::guided_angle_control_start()
     sub.guided_mode = Guided_Angle;
 
     // set vertical speed and acceleration
+    // All limits must be positive
     position_control->set_max_speed_accel_U_cm(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
     position_control->set_correction_speed_accel_U_cm(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
 

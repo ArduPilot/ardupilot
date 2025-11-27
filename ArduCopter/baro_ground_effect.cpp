@@ -14,12 +14,11 @@ void Copter::update_ground_effect_detector(void)
     // variable initialization
     uint32_t tnow_ms = millis();
     float des_speed_ne_ms = 0.0f;
-    float des_climb_rate_ms = pos_control->get_vel_desired_NEU_ms().z;
+    float des_climb_rate_ms = pos_control->get_vel_desired_U_ms();
 
     if (pos_control->is_active_NE()) {
         Vector3f vel_target_neu_ms = pos_control->get_vel_target_NEU_ms();
-        vel_target_neu_ms.z = 0.0f;
-        des_speed_ne_ms = vel_target_neu_ms.length();
+        des_speed_ne_ms = vel_target_neu_ms.xy().length();
     }
 
     // takeoff logic

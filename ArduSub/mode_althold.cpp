@@ -8,8 +8,9 @@ bool ModeAlthold::init(bool ignore_checks) {
 
     // initialize vertical maximum speeds and acceleration
     // sets the maximum speed up and down returned by position controller
-    position_control->set_max_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    position_control->set_correction_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    // All limits must be positive
+    position_control->set_max_speed_accel_U_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->set_correction_speed_accel_U_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // initialise position and desired velocity
     position_control->init_U_controller();
@@ -33,7 +34,8 @@ void ModeAlthold::run_pre()
     uint32_t tnow = AP_HAL::millis();
 
     // initialize vertical speeds and acceleration
-    position_control->set_max_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    // All limits must be positive
+    position_control->set_max_speed_accel_U_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);

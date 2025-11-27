@@ -186,7 +186,6 @@ void AP_Mount_Backend::set_roi_target(const Location &target_loc)
 {
     // set the target gps location
     _roi_target = target_loc;
-    _roi_target_set = true;
 
     // set the mode to GPS tracking mode
     set_mode(MAV_MOUNT_MODE_GPS_POINT);
@@ -201,7 +200,7 @@ void AP_Mount_Backend::set_roi_target(const Location &target_loc)
 void AP_Mount_Backend::clear_roi_target()
 {
     // clear the target GPS location
-    _roi_target_set = false;
+    _roi_target.zero();
 
     // reset the mode if in GPS tracking mode
     if (get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
@@ -441,7 +440,6 @@ bool AP_Mount_Backend::handle_global_position_int(uint8_t msg_sysid, const mavli
     _target_sysid_location.lng = packet.lon;
     // global_position_int.alt is *UP*, so is location.
     _target_sysid_location.set_alt_cm(packet.alt*0.1, Location::AltFrame::ABSOLUTE);
-    _target_sysid_location_set = true;
 
     return true;
 }
@@ -769,7 +767,7 @@ bool AP_Mount_Backend::get_angle_target_to_location(const Location &loc, MountTa
 // returns true on success, false on failure
 bool AP_Mount_Backend::get_angle_target_to_roi(MountTarget& angle_rad) const
 {
-    if (!_roi_target_set) {
+    if (!_roi_target.initialised()) {
         return false;
     }
     return get_angle_target_to_location(_roi_target, angle_rad);
@@ -899,7 +897,7 @@ bool AP_Mount_Backend::get_angle_target_to_home(MountTarget& angle_rad) const
 bool AP_Mount_Backend::get_angle_target_to_sysid(MountTarget& angle_rad) const
 {
     // exit immediately if sysid is not set or no location available
-    if (!_target_sysid_location_set) {
+    if (!_target_sysid_location.initialised()) {
         return false;
     }
     if (!_target_sysid) {
@@ -933,6 +931,38 @@ bool AP_Mount_Backend::get_angle_target(float& roll_deg, float& pitch_deg, float
     }
     return false;
 }
+
+#if AP_SCRIPTING_ENABLED
+// return target location if available
+// returns true if a target location is available and fills in target_loc argument
+bool AP_Mount_Backend::get_location_target(Location &_target_loc)
+{
+    switch (get_mode()) {
+        case MAV_MOUNT_MODE_GPS_POINT:
+            _target_loc = _roi_target;
+            return _roi_target.initialised();
+
+        case MAV_MOUNT_MODE_HOME_LOCATION:
+            if (AP::ahrs().home_is_set()) {
+                _target_loc = AP::ahrs().get_home();
+                return true;
+            }
+            break;
+
+        case MAV_MOUNT_MODE_SYSID_TARGET:
+            _target_loc = _target_sysid_location;
+            return _target_sysid_location.initialised();
+
+        case MAV_MOUNT_MODE_RETRACT:
+        case MAV_MOUNT_MODE_NEUTRAL:
+        case MAV_MOUNT_MODE_MAVLINK_TARGETING:
+        case MAV_MOUNT_MODE_RC_TARGETING:
+        case MAV_MOUNT_MODE_ENUM_END:
+            break;
+    }
+    return false;
+}
+#endif
 
 // sent warning to GCS.  Warnings are throttled to at most once every 30 seconds
 void AP_Mount_Backend::send_warning_to_GCS(const char* warning_str)

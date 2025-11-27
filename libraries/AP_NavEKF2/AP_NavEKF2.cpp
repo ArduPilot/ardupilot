@@ -630,7 +630,7 @@ bool NavEKF2::InitialiseFilter(void)
 
     initFailure = InitFailures::UNKNOWN;
     if (_enable == 0) {
-        if (AP::dal().get_ekf_type() == 2) {
+        if (AP::dal().configured_ekf_type() == 2) {
             initFailure = InitFailures::NO_ENABLE;
         }
         return false;

@@ -731,7 +731,7 @@ void Tiltrotor::update_yaw_target(void)
       the desired bank angle given the airspeed
      */
     float aspeed;
-    bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
+    bool have_airspeed = quadplane.ahrs.airspeed_EAS(aspeed);
     if (have_airspeed && labs(plane.nav_roll_cd)>1000) {
         float dt = (now - transition_yaw_set_ms) * 0.001;
         // calculate the yaw rate to achieve the desired turn rate

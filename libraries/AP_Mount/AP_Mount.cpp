@@ -719,7 +719,8 @@ bool AP_Mount::get_angle_target(uint8_t instance, float& roll_deg, float& pitch_
     return backend->get_angle_target(roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame);
 }
 
-// accessors for scripting backends and logging
+#if AP_SCRIPTING_ENABLED
+// get mount target location. returns true on success
 bool AP_Mount::get_location_target(uint8_t instance, Location& target_loc)
 {
     auto *backend = get_instance(instance);
@@ -728,7 +729,9 @@ bool AP_Mount::get_location_target(uint8_t instance, Location& target_loc)
     }
     return backend->get_location_target(target_loc);
 }
+#endif
 
+// accessory for scripting backends and logging
 void AP_Mount::set_attitude_euler(uint8_t instance, float roll_deg, float pitch_deg, float yaw_bf_deg)
 {
     auto *backend = get_instance(instance);

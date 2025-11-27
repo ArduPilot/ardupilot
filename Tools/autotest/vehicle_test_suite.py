@@ -2537,27 +2537,7 @@ class TestSuite(abc.ABC):
             17 # squawk
         )
 
-    def get_sim_parameter_documentation_get_whitelist(self):
-        # common parameters
-        ret = set([
-            "SIM_MAG2_OFS_X",
-            "SIM_MAG2_OFS_Y",
-            "SIM_MAG2_OFS_Z",
-            "SIM_MAG3_OFS_X",
-            "SIM_MAG3_OFS_Y",
-            "SIM_MAG3_OFS_Z",
-            "SIM_MAG1_OFS_X",
-            "SIM_MAG1_OFS_Y",
-            "SIM_MAG1_OFS_Z",
-        ])
-
-        return ret
-
     def test_parameter_documentation_get_all_parameters(self):
-        # this is a set of SIM_parameters which we know aren't currently
-        # documented - but they really should be.  We use this whitelist
-        # to ensure any new SIM_ parameters added are documented
-        sim_parameters_missing_documentation = self.get_sim_parameter_documentation_get_whitelist()
 
         xml_filepath = os.path.join(self.buildlogs_dirpath(), "apm.pdef.xml")
         param_parse_filepath = os.path.join(self.rootdir(), 'Tools', 'autotest', 'param_metadata', 'param_parse.py')
@@ -2590,20 +2570,11 @@ class TestSuite(abc.ABC):
 
         fail = False
         for param in parameters.keys():
-            if param.startswith("SIM_"):
-                if param in sim_parameters_missing_documentation:
-                    if param in htree:
-                        self.progress("%s is in both XML and whitelist; remove it from the whitelist" % param)
-                        fail = True
-                    # hopefully these get documented sometime....
-                    continue
             if param not in htree:
                 self.progress("%s not in XML" % param)
                 fail = True
         if fail:
             raise NotAchievedException("Downloaded parameters missing in XML")
-
-        self.progress("There are %u SIM_ parameters left to document" % len(sim_parameters_missing_documentation))
 
         # FIXME: this should be doable if we filter out e.g BRD_* and CAN_*?
 #        self.progress("Checking no extra parameters present in XML")
@@ -4229,7 +4200,8 @@ class TestSuite(abc.ABC):
                 frame = mavutil.mavlink.MAV_FRAME_GLOBAL
             if opts.get('frame', None) is not None:
                 frame = opts.get('frame')
-            ret.append(self.create_MISSION_ITEM_INT(t, seq=seq, frame=frame, x=int(lat*1e7), y=int(lng*1e7), z=alt))
+            p1 = opts.get('p1', 0)  # should we pass `None` instead?
+            ret.append(self.create_MISSION_ITEM_INT(t, seq=seq, frame=frame, p1=p1, x=int(lat*1e7), y=int(lng*1e7), z=alt))
             seq += 1
 
         return ret
@@ -4248,6 +4220,33 @@ class TestSuite(abc.ABC):
             target_system=target_system,
             target_component=target_component)
         self.check_mission_upload_download(mission)
+
+    def start_flying_simple_relhome_mission(self, items):
+        '''uploads items, changes mode to auto, waits ready to arm and arms
+        vehicle.  If the first item it a takeoff you can expect the
+        vehicle to fly after this method returns.  On Copter AUTO_OPTIONS
+        should be 3.
+        '''
+
+        self.upload_simple_relhome_mission(items)
+        self.set_current_waypoint(0, check_afterwards=False)
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+
+        self.arm_vehicle()
+        # copter gets stuck in auto; if you run a mission to
+        # completion then the mission state machine ends up in a
+        # "done" state and you can't restart by just setting an
+        # earlier waypoint:
+        self.send_cmd(mavutil.mavlink.MAV_CMD_MISSION_START)
+
+    def fly_simple_relhome_mission(self, items):
+        '''uploads items, changes mode to auto, waits ready to arm and arms
+        vehicle.  Then waits for the vehicle to disarm.
+        '''
+        self.start_flying_simple_relhome_mission(items)
+        self.wait_disarmed()
 
     def get_mission_count(self):
         return self.get_parameter("MIS_TOTAL")
@@ -5766,6 +5765,29 @@ class TestSuite(abc.ABC):
         else:
             return None
 
+    def test_takeoff_check_mode(self, mode, user_takeoff=False, force_disarm=False):
+        # stabilize check
+        self.progress("Motor takeoff check in %s" % mode)
+        self.change_mode(mode)
+        self.zero_throttle()
+        self.wait_ready_to_arm()
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.arm_vehicle()
+        if user_takeoff:
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+                p7=10,
+            )
+        else:
+            self.set_rc(3, 1700)
+        # we may never see ourselves as armed in a heartbeat
+        self.wait_statustext("Takeoff blocked: ESC RPM out of range", check_context=True)
+        self.context_pop()
+        self.zero_throttle()
+        self.disarm_vehicle(force=force_disarm)
+        self.wait_disarmed()
+
     def set_safetyswitch_on(self, **kwargs):
         self.set_safetyswitch(1, **kwargs)
 
@@ -6284,6 +6306,78 @@ class TestSuite(abc.ABC):
         if len(want) == 0:
             return
         raise ValueError("Failed to set parameters (%s)" % want)
+
+    def reorder_compass_appearance(self, device_ids):
+        """
+        Set compass appearance order by mapping device IDs to SIM_MAGx_DEVID parameters.
+
+        Args:
+            device_ids: List of device IDs in desired order
+
+        Example:
+            # Swap compass 2 and compass 4
+            original_ids = self.get_sim_mag_devids(6)
+            # Reorder: [dev1, dev4, dev3, dev2, dev5, dev6]
+            reordered = [original_ids[0], original_ids[3], original_ids[2],
+                        original_ids[1], original_ids[4], original_ids[5]]
+            self.reorder_compass_appearance(reordered)
+        """
+        # Build parameter dictionary
+        params = {}
+        for i, dev_id in enumerate(device_ids):
+            param_name = f"SIM_MAG{i + 1}_DEVID"
+            params[param_name] = dev_id
+
+        # Apply the parameters
+        self.set_parameters(params)
+
+    def check_mag_devids_detected(self, num_compasses):
+        """
+        Check if all SIM_MAGx_DEVID values are present in COMPASS_DEV_ID parameters.
+
+        Args:
+            num_compasses: Number of compasses to check
+
+        Raises:
+            NotAchievedException: If any SIM_MAG device ID is not found in COMPASS_DEV_ID slots
+        """
+        # Fetch SIM_MAGx_DEVID values
+        sim_device_ids = self.get_sim_mag_devids(num_compasses)
+
+        # Fetch COMPASS_DEV_ID values
+        compass_dev_ids = []
+        for i in range(1, num_compasses + 1):
+            suffix = "" if i == 1 else str(i)
+            dev_id = self.get_parameter(f"COMPASS_DEV_ID{suffix}")
+            self.progress(f"COMPASS_DEV_ID{suffix} = {dev_id}")
+            compass_dev_ids.append(dev_id)
+
+        # Check that each SIM_MAG device ID is present in COMPASS_DEV_ID
+        for sim_id in sim_device_ids:
+            if sim_id not in compass_dev_ids:
+                raise NotAchievedException(
+                    f"SIM_MAG device ID {sim_id} not found in COMPASS_DEV_ID slots. "
+                    f"SIM IDs: {sim_device_ids}, COMPASS IDs: {compass_dev_ids}"
+                )
+
+        self.progress(f"All {num_compasses} compass device IDs detected")
+
+    def get_sim_mag_devids(self, num_compasses):
+        """
+        Fetch list of device IDs from SIM_MAGx_DEVID parameters.
+
+        Args:
+            num_compasses: Number of compasses to fetch
+
+        Returns:
+            List of device IDs from SIM_MAG1_DEVID through SIM_MAGn_DEVID
+        """
+        device_ids = []
+        for i in range(1, num_compasses + 1):
+            dev_id = self.get_parameter(f"SIM_MAG{i}_DEVID")
+            device_ids.append(dev_id)
+            self.progress(f"SIM_MAG{i}_DEVID = {dev_id}")
+        return device_ids
 
     # FIXME: modify assert_parameter_value to take epsilon_pct instead:
     def assert_parameter_value_pct(self, name, expected_value, max_error_percent):
@@ -10239,6 +10333,92 @@ Also, ignores heartbeats not from our target system'''
             (3, 1),
         ])
 
+        self.context_pop()
+
+    def SixCompassCalibrationAndReordering(self):
+        '''Test reordering of 6 simulated compasses by changing priority and appearance order'''
+        self.context_push()
+
+        total_compasses = 6
+
+        self.progress("Setting up 6 simulated I2C compasses with calibration")
+
+        # Fetch existing SIM_MAGx_DEVID values
+        device_ids = self.get_sim_mag_devids(total_compasses)
+
+        # disable force saving dev_ids for subsequent boots
+        self.set_parameter("SIM_MAG_SAVE_IDS", 0)
+
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # Verify all 6 compasses are detected (stored in DEV_ID parameters)
+        self.progress("Verifying 6 compasses detected in DEV_ID slots")
+        self.check_mag_devids_detected(total_compasses)
+
+        # Reboot to apply changes
+        self.progress("Rebooting to apply reordering")
+        self.reboot_sitl()
+
+        def wait_correct_compass_prearm_message():
+            # Check for correct compass prearm messages
+            # We expect "PreArm: Compass not calibrated" but NOT
+            # "PreArm: Compass x not found" or any other compass prearm message
+            self.progress("Waiting for compass prearm message")
+            self.context_collect("STATUSTEXT")
+            msg = self.wait_statustext("PreArm: Compass", timeout=60, check_context=True)
+
+            # Check if we got the expected message or an unexpected one
+            if "not found" in msg.text.lower():
+                self.context_clear_collection("STATUSTEXT")
+                raise NotAchievedException(f"Unexpected compass not found: {msg.text}")
+            elif "not calibrated" in msg.text.lower():
+                self.progress(f"Got expected prearm failure: {msg.text}")
+            else:
+                self.context_clear_collection("STATUSTEXT")
+                raise NotAchievedException(f"Unexpected compass prearm message: {msg.text}")
+
+            self.context_clear_collection("STATUSTEXT")
+
+        # Change appearance order: swap positions 2 and 4
+        # Reorder: [dev1, dev4, dev3, dev2, dev5, dev6]
+        reordered = [device_ids[0], device_ids[3], device_ids[2],
+                     device_ids[1], device_ids[4], device_ids[5]]
+        self.reorder_compass_appearance(reordered)
+
+        # Set priority for compass 4
+        self.set_parameter("COMPASS_PRIO3_ID", device_ids[3])
+
+        self.reboot_sitl()
+        wait_correct_compass_prearm_message()
+
+        # Verify all 6 compasses are still present (in any DEV_ID slot)
+        self.progress("Verifying all 6 compasses still present after reordering")
+        self.check_mag_devids_detected(total_compasses)
+
+        self.reorder_compass_appearance(reordered)
+        self.progress("Setting priorities to use last three compasses")
+        self.set_parameters({
+            "COMPASS_PRIO1_ID": device_ids[3],
+            "COMPASS_PRIO2_ID": device_ids[4],
+            "COMPASS_PRIO3_ID": device_ids[5],
+        })
+        self.reboot_sitl()
+        wait_correct_compass_prearm_message()
+        self.check_mag_devids_detected(total_compasses)
+
+        # revert to original
+        self.progress("Reverting to original compass priorities")
+        self.reorder_compass_appearance(device_ids)
+        self.set_parameters({
+            "COMPASS_PRIO1_ID": device_ids[0],
+            "COMPASS_PRIO2_ID": device_ids[1],
+            "COMPASS_PRIO3_ID": device_ids[2],
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.progress("SixCompassCalibrationAndReordering completed successfully")
         self.context_pop()
 
     # something about SITLCompassCalibration appears to fail
@@ -14754,6 +14934,58 @@ SERIAL5_BAUD 128
             self.create_junit_report(step_name, results, skip_list)
 
         return len(self.fail_list) == 0
+
+    def wait_circling_point_with_radius(self, loc, want_radius, epsilon=5.0, min_circle_time=5, timeout=120, track_angle=True):
+        on_radius_start_heading = None
+        average_radius = 0.0
+        done_time = False
+        done_angle = False
+        tstart = self.get_sim_time()
+        circle_time_start = tstart
+        while True:
+            now = self.get_sim_time()
+            if now - tstart > timeout:
+                raise AutoTestTimeoutException("Did not get onto circle")
+            here = self.mav.location()
+            got_radius = self.get_distance(loc, here)
+            average_radius = 0.95*average_radius + 0.05*got_radius
+            on_radius = abs(got_radius - want_radius) < epsilon
+            m = self.assert_receive_message('VFR_HUD')
+            heading = m.heading
+            on_string = "off"
+            got_angle = ""
+            if on_radius_start_heading is not None:
+                got_angle = "%0.2f" % abs(on_radius_start_heading - heading) # FIXME
+                on_string = "on"
+
+            want_angle = 180 # we don't actually get this (angle-substraction issue.  But we get enough...
+            got_circle_time = self.get_sim_time() - circle_time_start
+            bits = [
+                f"wait-circling: got-r={got_radius:.2f} want-r={want_radius}",
+                f"avg-r={average_radius} {on_string}",
+                f"t={got_circle_time:0.2f}/{min_circle_time}",
+            ]
+            if track_angle:
+                bits.append(f"want-a={want_angle:0.1f} got-a={got_angle}")
+
+            self.progress(" ".join(bits))
+            if on_radius:
+                if on_radius_start_heading is None:
+                    on_radius_start_heading = heading
+                    average_radius = got_radius
+                    circle_time_start = now
+                    continue
+                if abs(on_radius_start_heading - heading) > want_angle: # FIXME
+                    done_angle = True
+                if got_circle_time > min_circle_time:
+                    done_time = True
+                if not track_angle:
+                    done_angle = True
+                if done_time and done_angle:
+                    return
+                continue
+            on_radius_start_heading = None
+            circle_time_start = now
 
     def create_junit_report(self, test_name: str, results: List[Result], skip_list: List[Tuple[Test, Dict[str, str]]]) -> None:
         """Generate Junit report from the autotest results"""

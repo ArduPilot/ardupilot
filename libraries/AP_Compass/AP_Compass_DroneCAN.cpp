@@ -105,7 +105,7 @@ AP_Compass_DroneCAN* AP_Compass_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_d
     if (ap_dronecan == nullptr) {
         return nullptr;
     }
-    for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(_detected_modules); i++) {
         if (_detected_modules[i].driver &&
             _detected_modules[i].ap_dronecan == ap_dronecan &&
             _detected_modules[i].node_id == node_id &&
@@ -116,7 +116,7 @@ AP_Compass_DroneCAN* AP_Compass_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_d
 
     bool already_detected = false;
     // Check if there's an empty spot for possible registration
-    for (uint8_t i = 0; i < COMPASS_MAX_BACKEND; i++) {
+    for (uint8_t i = 0; i < ARRAY_SIZE(_detected_modules); i++) {
         if (_detected_modules[i].ap_dronecan == ap_dronecan && 
             _detected_modules[i].node_id == node_id &&
             _detected_modules[i].sensor_id == sensor_id) {
@@ -126,7 +126,7 @@ AP_Compass_DroneCAN* AP_Compass_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_d
         }
     }
     if (!already_detected) {
-        for (uint8_t i = 0; i < COMPASS_MAX_BACKEND; i++) {
+        for (uint8_t i = 0; i < ARRAY_SIZE(_detected_modules); i++) {
             if (nullptr == _detected_modules[i].ap_dronecan) {
                 _detected_modules[i].ap_dronecan = ap_dronecan;
                 _detected_modules[i].node_id = node_id;
@@ -145,7 +145,7 @@ AP_Compass_DroneCAN* AP_Compass_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_d
     // we do this, so that we have repeatable compass
     // registration, especially in cases of extraneous
     // CAN compass is connected.
-    for (uint8_t i = 1; i < COMPASS_MAX_BACKEND; i++) {
+    for (uint8_t i = 1; i < ARRAY_SIZE(_detected_modules); i++) {
         for (uint8_t j = i; j > 0; j--) {
             if (_detected_modules[j].node_id > _detected_modules[j-1].node_id) {
                 tempslot = _detected_modules[j];
@@ -154,6 +154,7 @@ AP_Compass_DroneCAN* AP_Compass_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_d
             }
         }
     }
+
     return nullptr;
 }
 
