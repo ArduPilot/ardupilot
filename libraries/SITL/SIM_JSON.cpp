@@ -176,9 +176,9 @@ bool parse_array(const char *str, T &arr, int count) {
     return true;
 }
 
-uint32_t JSON::parse_sensors(const char *json)
+uint64_t JSON::parse_sensors(const char *json)
 {
-    uint32_t received_bitmask = 0;
+    uint64_t received_bitmask = 0;
 
 #if SITL_JSON_DEBUG && AP_FILESYSTEM_FILE_WRITING_ENABLED
     // it is useful in some environments to be able to get a copy of the raw
@@ -223,7 +223,7 @@ uint32_t JSON::parse_sensors(const char *json)
         }
 
         // record the keys that are found
-        received_bitmask |= 1U << i;
+        received_bitmask |= 1ULL << i;
 
         p += strlen(key.key)+2;
         switch (key.type) {
@@ -335,7 +335,7 @@ void JSON::recv_fdm(const struct sitl_input &input)
         return;
     }
 
-    const uint32_t received_bitmask = parse_sensors((const char *)(p1+1));
+    const uint64_t received_bitmask = parse_sensors((const char *)(p1+1));
     if (received_bitmask == 0) {
         // did not receive one of the mandatory fields
         printf("Did not contain all mandatory fields\n");
@@ -353,7 +353,7 @@ void JSON::recv_fdm(const struct sitl_input &input)
         printf("\nJSON received:\n");
         for (uint16_t i=0; i<ARRAY_SIZE(keytable); i++) {
             struct keytable &key = keytable[i];
-            if ((received_bitmask &  1U << i) == 0) {
+            if ((received_bitmask &  1ULL << i) == 0) {
                 continue;
             }
             if (strcmp(key.section, "") == 0) {
@@ -424,7 +424,7 @@ void JSON::recv_fdm(const struct sitl_input &input)
 
     // update range finder distances
     for (uint8_t i=7; i<13; i++) {
-        if ((received_bitmask &  1U << i) == 0) {
+        if ((received_bitmask &  1ULL << i) == 0) {
             continue;
         }
         rangefinder_m[i-7] = state.rng[i-7];
