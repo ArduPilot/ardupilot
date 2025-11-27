@@ -33,4 +33,4 @@ The following parameters should be set on the autopilot (and then reboot the aut
 The board comes pre-installed with an ArduPilot compatible bootloader and the Ardupilot peripheral firmware. Firmware for YARI_GNSS can be found [here](https://firmware.ardupilot.org) in sub-folders labeled “YARI_GNSS". Subsequently, you can update firmware with Mission Planner or [DroneCAN GUI](https://github.com/dronecan/gui_tool).
 
 ### More Information
-[YARI Robotics Docs](https://yari-robotics.gitbook.io)
+Check the YARI Robotics Documentation for [YARI M9N GNSS](https://docs.yarirobotics.com/yari-m9n-gnss) and [YARI F10N GNSS](https://docs.yarirobotics.com/yari-f10n-gnss).
