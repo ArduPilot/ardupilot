@@ -1785,3 +1785,68 @@ bool AC_PosControl::has_good_timing(void) const
     // real boards are assumed to have good timing
     return true;
 }
+
+// perform any required parameter conversions
+void AC_PosControl::convert_parameters()
+{
+    // find param table key
+    uint16_t k_param_psc_key;
+    if (!AP_Param::find_key_by_pointer(this, k_param_psc_key)) {
+        return;
+    }
+
+    // return immediately if parameter conversion has already been performed
+    if (_pid_accel_d_m.kP().configured()) {
+        return;
+    }
+
+    // PARAMETER_CONVERSION - Added: Nov-2024 for 4.7
+    // parameters that are simply moved
+    static const AP_Param::ConversionInfo conversion_info[] = {
+        { k_param_psc_key, 4035, AP_PARAM_FLOAT, "PSC_D_VEL_P" },   // PSC_VELZ_P moved to PSC_D_VEL_P
+        { k_param_psc_key, 67, AP_PARAM_FLOAT, "PSC_D_VEL_I" },     // PSC_VELZ_I moved to PSC_D_VEL_I
+        { k_param_psc_key, 259, AP_PARAM_FLOAT, "PSC_D_VEL_D" },    // PSC_VELZ_D moved to PSC_D_VEL_D
+        { k_param_psc_key, 195, AP_PARAM_FLOAT, "PSC_D_VEL_FLTE" }, // PSC_VELZ_FLTE moved to PSC_D_VEL_FLTE
+        { k_param_psc_key, 323, AP_PARAM_FLOAT, "PSC_D_VEL_FLTD" }, // PSC_VELZ_FLTD moved to PSC_D_VEL_FLTD
+        { k_param_psc_key, 387, AP_PARAM_FLOAT, "PSC_D_VEL_FF" },   // PSC_VELZ_FF moved to PSC_D_VEL_FF
+        { k_param_psc_key, 260, AP_PARAM_FLOAT, "PSC_D_ACC_FF" },   // PSC_ACCZ_FF moved to PSC_D_ACC_FF
+        { k_param_psc_key, 580, AP_PARAM_FLOAT, "PSC_D_ACC_FLTT" }, // PSC_ACCZ_FLTT moved to PSC_D_ACC_FLTT
+        { k_param_psc_key, 644, AP_PARAM_FLOAT, "PSC_D_ACC_FLTE" }, // PSC_ACCZ_FLTE moved to PSC_D_ACC_FLTE
+        { k_param_psc_key, 708, AP_PARAM_FLOAT, "PSC_D_ACC_FLTD" }, // PSC_ACCZ_FLTD moved to PSC_D_ACC_FLTD
+        { k_param_psc_key, 772, AP_PARAM_FLOAT, "PSC_D_ACC_SMAX" }, // PSC_ACCZ_SMAX moved to PSC_D_ACC_SMAX
+        { k_param_psc_key, 836, AP_PARAM_FLOAT, "PSC_D_ACC_PDMX" }, // PSC_ACCZ_PDMX moved to PSC_D_ACC_PDMX
+        { k_param_psc_key, 900, AP_PARAM_FLOAT, "PSC_D_ACC_D_FF" }, // PSC_ACCZ_D_FF moved to PSC_D_ACC_D_FF
+        { k_param_psc_key, 1037, AP_PARAM_INT8, "PSC_D_ACC_NEF" },  // PSC_ACCZ_D_NEF moved to PSC_D_ACC_NEF
+        { k_param_psc_key, 973, AP_PARAM_INT8, "PSC_D_ACC_NTF" },   // PSC_ACCZ_D_NTF moved to PSC_D_ACC_NTF
+        { k_param_psc_key, 4038, AP_PARAM_FLOAT, "PSC_NE_VEL_P" },  // PSC_VELXY_P moved to PSC_NE_VEL_P
+        { k_param_psc_key, 70, AP_PARAM_FLOAT, "PSC_NE_VEL_I" },    // PSC_VELXY_I moved to PSC_NE_VEL_I
+        { k_param_psc_key, 262, AP_PARAM_FLOAT, "PSC_NE_VEL_D" },   // PSC_VELXY_D moved to PSC_NE_VEL_D
+        { k_param_psc_key, 198, AP_PARAM_FLOAT, "PSC_NE_VEL_FLTE" },// PSC_VELXY_FLTE moved to PSC_NE_VEL_FLTE
+        { k_param_psc_key, 326, AP_PARAM_FLOAT, "PSC_NE_VEL_FLTD" },// PSC_VELXY_FLTD moved to PSC_NE_VEL_FLTD
+        { k_param_psc_key, 390, AP_PARAM_FLOAT, "PSC_NE_VEL_FF" },  // PSC_VELXY_FF moved to PSC_NE_VEL_FF
+    };
+    AP_Param::convert_old_parameters(conversion_info, ARRAY_SIZE(conversion_info));
+
+    // parameters moved and scaled by 0.1
+    static const AP_Param::ConversionInfo conversion_info_01[] = {
+        { k_param_psc_key, 4036, AP_PARAM_FLOAT, "PSC_D_ACC_P" },   // PSC_ACCZ_P moved to PSC_D_ACC_P
+        { k_param_psc_key, 68, AP_PARAM_FLOAT, "PSC_D_ACC_I" },     // PSC_ACCZ_I moved to PSC_D_ACC_I
+        { k_param_psc_key, 132, AP_PARAM_FLOAT, "PSC_D_ACC_D" },    // PSC_ACCZ_D moved to PSC_D_ACC_D
+    };
+    AP_Param::convert_old_parameters_scaled(conversion_info_01, ARRAY_SIZE(conversion_info_01), 0.1, 0);
+
+    // store PSC_D_ACC_P as flag that parameter conversion was completed
+    _pid_accel_d_m.kP().save(true);
+
+    // parameters moved and scaled by 0.01
+    static const AP_Param::ConversionInfo conversion_info_001[] = {
+        { k_param_psc_key, 131, AP_PARAM_FLOAT, "PSC_D_VEL_IMAX" },     // PSC_ACCZ_P moved to PSC_D_VEL_IMAX
+        { k_param_psc_key, 134, AP_PARAM_FLOAT, "PSC_NE_VEL_IMAX" },    // PSC_VELXY_IMAX moved to PSC_NE_VEL_IMAX
+    };
+    AP_Param::convert_old_parameters_scaled(conversion_info_001, ARRAY_SIZE(conversion_info_001), 0.01, 0);
+
+    // parameters moved and scaled by 0.001
+    // PSC_ACCZ_IMAX replaced by PSC_D_ACC_IMAX
+    static const AP_Param::ConversionInfo psc_d_acc_imax_info = { k_param_psc_key, 324, AP_PARAM_FLOAT, "PSC_D_ACC_IMAX" };
+    AP_Param::convert_old_parameter(&psc_d_acc_imax_info, 0.001f);
+}
