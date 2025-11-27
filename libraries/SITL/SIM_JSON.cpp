@@ -385,8 +385,25 @@ void JSON::recv_fdm(const struct sitl_input &input)
     accel_body = state.imu.accel_body;
     gyro = state.imu.gyro;
     velocity_ef = state.velocity;
-    position = state.position;
-    position.xy() += origin.get_distance_NE_double(home);
+
+    if ((received_bitmask & (LATITUDE | LONGITUDE | ALTITUDE)) == (LATITUDE | LONGITUDE | ALTITUDE)) {
+        Location new_loc;
+        new_loc.lat = state.latitude * 1.0e7;
+        new_loc.lng = state.longitude * 1.0e7;
+        new_loc.alt = state.altitude * 100.0;
+        new_loc.relative_alt = false;
+        new_loc.origin_alt = false;
+        new_loc.terrain_alt = false;
+
+        if (!home_is_set) {
+            set_start_location(new_loc, 0.0f);
+        }
+
+        position = origin.get_distance_NED_double(new_loc);
+    } else {
+        position = state.position;
+        position.xy() += origin.get_distance_NE_double(home);
+    }
 
     if (received_bitmask & TIME_SYNC) {
         if (use_time_sync != !state.no_time_sync) {

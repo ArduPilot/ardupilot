@@ -35,7 +35,7 @@ public:
         return NEW_NOTHROW JSON(frame_str);
     }
 
-    /*  Create and set in/out socket for JSON generic simulator */
+    /* Create and set in/out socket for JSON generic simulator */
     void set_interface_ports(const char* address, const int port_in, const int port_out) override;
 
 private:
@@ -91,6 +91,9 @@ private:
 
     struct {
         double timestamp_s;
+        double latitude;
+        double longitude;
+        double altitude;
         struct {
             Vector3f gyro;
             Vector3f accel_body;
@@ -120,11 +123,14 @@ private:
         void *ptr;
         enum data_type type;
         bool required;
-    } keytable[32] {
+    } keytable[36] {
         { "", "timestamp", &state.timestamp_s, DATA_DOUBLE, true },
+        { "", "latitude", &state.latitude, DATA_DOUBLE, false },
+        { "", "longitude", &state.longitude, DATA_DOUBLE, false },
+        { "", "altitude", &state.altitude, DATA_DOUBLE, false },
         { "imu", "gyro",    &state.imu.gyro, DATA_VECTOR3F, true },
         { "imu", "accel_body", &state.imu.accel_body, DATA_VECTOR3F, true },
-        { "", "position", &state.position, DATA_VECTOR3D, true },
+        { "", "position", &state.position, DATA_VECTOR3D, false },
         { "", "attitude", &state.attitude, DATA_VECTOR3F, false },
         { "", "quaternion", &state.quaternion, QUATERNION, false },
         { "", "velocity", &state.velocity, DATA_VECTOR3F, true },
