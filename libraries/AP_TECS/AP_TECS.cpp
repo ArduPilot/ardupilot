@@ -620,7 +620,7 @@ void AP_TECS::_update_height_demand(void)
             _flare_hgt_dem_adj = _hgt_dem;
             _flare_hgt_dem_ideal = _height;
             _hgt_at_start_of_flare = _hgt_afe;
-            _hgt_rate_at_flare_entry = _climb_rate;
+            _hgt_rate_dem_at_flare_entry = _hgt_rate_dem;
             _flare_initialised = true;
         }
 
@@ -634,7 +634,7 @@ void AP_TECS::_update_height_demand(void)
         } else {
             p = 1.0f;
         }
-        _hgt_rate_dem = _hgt_rate_at_flare_entry * (1.0f - p) - land_sink_rate_adj * p;
+        _hgt_rate_dem = _hgt_rate_dem_at_flare_entry * (1.0f - p) - land_sink_rate_adj * p;
 
         _flare_hgt_dem_ideal += _DT * _hgt_rate_dem; // the ideal height profile to follow
         _flare_hgt_dem_adj   += _DT * _hgt_rate_dem; // the demanded height profile that includes the pre-flare height tracking offset
@@ -1189,7 +1189,7 @@ void AP_TECS::_initialise_states(float hgt_afe)
 
         // misc variables used for alternative precision landing pitch control
         _hgt_at_start_of_flare    = 0.0f;
-        _hgt_rate_at_flare_entry  = 0.0f;
+        _hgt_rate_dem_at_flare_entry  = 0.0f;
         _hgt_afe                  = 0.0f;
         _pitch_min_at_flare_entry = 0.0f;
 
