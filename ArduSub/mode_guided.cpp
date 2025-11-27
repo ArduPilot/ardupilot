@@ -17,7 +17,9 @@ struct {
     float pitch_cd;
     float yaw_cd;
     float climb_rate_cms;
-} static guided_angle_state = {0,0.0f, 0.0f, 0.0f, 0.0f};
+    float speed_forward_cms;
+    float speed_lateral_cms;
+} static guided_angle_state = {0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
 
 struct Guided_Limit {
     uint32_t timeout_ms;  // timeout (in seconds) from the time that guided is invoked
@@ -717,6 +719,8 @@ void ModeGuided::guided_angle_control_run()
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_yaw_cd(roll_in, pitch_in, yaw_in, true);
 
+    motors.set_lateral(guided_angle_state.speed_lateral_cms * 0.01);
+    motors.set_forward(guided_angle_state.speed_forward_cms * 0.01);
     // call position controller
     position_control->set_pos_target_U_from_climb_rate_cm(climb_rate_cms);
     position_control->update_U_controller();
@@ -733,6 +737,12 @@ void ModeGuided::guided_limit_clear()
     guided_limit.horiz_max_cm = 0.0f;
 }
 
+void ModeGuided::set_vel_NEU_ms(const Vector3f& vel_neu_ms) {
+    guided_angle_state.speed_forward_cms = vel_neu_ms.x * 100.0f;
+    guided_angle_state.speed_lateral_cms = vel_neu_ms.y * 100.0f;
+    guided_angle_state.climb_rate_cms = vel_neu_ms.z * 100.0f;
+    guided_angle_state.update_time_ms = AP_HAL::millis();
+}
 
 // set_auto_yaw_mode - sets the yaw mode for auto
 void ModeGuided::set_auto_yaw_mode(autopilot_yaw_mode yaw_mode)
