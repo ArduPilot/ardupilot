@@ -307,6 +307,19 @@ void JSON::recv_fdm(const struct sitl_input &input)
     // Receive sensor packet
     ssize_t ret = sock.recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, UDP_TIMEOUT_MS);
     uint32_t wait_ms = UDP_TIMEOUT_MS;
+
+    if (state.no_lockstep && ret <= 0) {
+        // in no_lockstep mode do not block waiting for data; advance time using SITL loop rate
+        if (sitl != nullptr && sitl->loop_rate_hz > 0) {
+            frame_time_us = (uint32_t)(1000000.0f / sitl->loop_rate_hz);
+        } else {
+            frame_time_us = 10000; // fallback to 10ms
+        }
+        time_now_us += frame_time_us;
+        time_advance();
+        return;
+    }
+
     while (ret <= 0) {
         //printf("No JSON sensor message received - %s\n", strerror(errno));
         ret = sock.recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, UDP_TIMEOUT_MS);
@@ -384,6 +397,17 @@ void JSON::recv_fdm(const struct sitl_input &input)
                 // otherwise EKF is likely to diverge
                 AP_Param::set_default_by_name("AHRS_EKF_TYPE", 10);
             }
+        }
+    }
+
+    // Handle lockstep setting from JSON
+    if (received_bitmask & LOCKSTEP) {
+        // state.no_lockstep is true when we DON'T want lockstep
+        // So we need to check if it changed and act accordingly
+        if (state.no_lockstep != last_no_lockstep) {
+            last_no_lockstep = state.no_lockstep;
+            printf("Lockstep mode changed: no_lockstep=%d (lockstep %s)\n", 
+                   int(state.no_lockstep), state.no_lockstep ? "DISABLED" : "ENABLED");
         }
     }
 
@@ -469,8 +493,10 @@ void JSON::recv_fdm(const struct sitl_input &input)
     time_now_us += deltat * 1.0e6;
 
     if (is_positive(deltat) && deltat < 0.1) {
-        // time in us to hz
-        if (use_time_sync) {
+        // Only adjust frame time if we want lockstep
+        // When no_lockstep is true, skip adjust_frame_time to let SITL run free
+        if (use_time_sync && !state.no_lockstep) {
+            // time in us to hz
             adjust_frame_time(1.0 / deltat);
         }
         // match actual frame rate with desired speedup
@@ -561,7 +587,8 @@ void JSON::update(const struct sitl_input &input)
     update_mag_field_bf();
 
     // allow for changes in physics step
-    if (use_time_sync) {
+    // Only adjust frame time if lockstep is enabled (no_lockstep is false)
+    if (use_time_sync && !state.no_lockstep) {
         adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
     }
 
