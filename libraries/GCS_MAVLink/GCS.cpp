@@ -535,7 +535,7 @@ void GCS::update_sensor_status_flags()
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL && AP_AHRS_ENABLED
-    if (ahrs.ekf_type_parameter_value() == 10) {
+    if (ahrs.configured_ekf_type() == AP_AHRS::EKFType::SIM) {
         // always show EKF type 10 as healthy. This prevents spurious error
         // messages in xplane and other simulators that use EKF type 10
         control_sensors_health |= MAV_SYS_STATUS_AHRS | MAV_SYS_STATUS_SENSOR_GPS | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_3D_GYRO;
