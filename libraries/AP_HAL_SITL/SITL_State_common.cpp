@@ -42,6 +42,7 @@
 #include <SITL/SIM_RF_USD1_v0.h>
 #include <SITL/SIM_RF_USD1_v1.h>
 #include <SITL/SIM_RF_Wasp.h>
+#include <SITL/SIM_RF_LightWare_GRF.h>
 
 using namespace HALSITL;
 
@@ -55,6 +56,7 @@ static const struct {
     { "benewake_tf03", SITL::RF_Benewake_TF03::create },
     { "benewake_tfmini", SITL::RF_Benewake_TFmini::create },
     { "blping", SITL::RF_BLping::create },
+    { "lightware_grf", SITL::RF_LightWareGRF::create },
     { "gyus42v2", SITL::RF_GYUS42v2::create },
     { "jre", SITL::RF_JRE::create },
     { "lanbao", SITL::RF_Lanbao::create },
