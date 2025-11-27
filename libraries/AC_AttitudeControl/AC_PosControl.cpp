@@ -91,6 +91,48 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @User: Standard
     AP_SUBGROUPINFO(_p_pos_d_m, "_D_POS_", 2, AC_PosControl, AC_P_1D),
 
+    // 3 was _VELZ_ which has become _D_VEL_
+
+    // 4 was _ACCZ_ which has become _D_ACC_
+
+    // @Param: _NE_POS_P
+    // @DisplayName: Position (horizontal) controller P gain
+    // @Description: Position controller P gain.  Converts the distance (in the latitude direction) to the target location into a desired speed which is then passed to the loiter latitude rate controller
+    // @Range: 0.500 2.000
+    // @User: Standard
+    AP_SUBGROUPINFO(_p_pos_ne_m, "_NE_POS_", 5, AC_PosControl, AC_P_2D),
+
+    // 6 was _VELXY_ which has become _NE_VEL_
+
+    // @Param: _ANGLE_MAX
+    // @DisplayName: Position Control Angle Max
+    // @Description: Maximum lean angle autopilot can request.  Set to zero to use ANGLE_MAX parameter value
+    // @Units: deg
+    // @Range: 0 45
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_ANGLE_MAX", 7, AC_PosControl, _lean_angle_max_deg, 0.0f),
+
+    // IDs 8,9 used for _TC_XY and _TC_Z in beta release candidate
+
+    // @Param: _JERK_NE
+    // @DisplayName: Jerk limit for the horizontal kinematic input shaping
+    // @Description: Jerk limit of the horizontal kinematic path generation used to determine how quickly the aircraft varies the acceleration target
+    // @Units: m/s/s/s
+    // @Range: 1 20
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_JERK_NE", 10, AC_PosControl, _shaping_jerk_ne_msss, POSCONTROL_JERK_NE_MSSS),
+
+    // @Param: _JERK_D
+    // @DisplayName: Jerk limit for the vertical kinematic input shaping
+    // @Description: Jerk limit of the vertical kinematic path generation used to determine how quickly the aircraft varies the acceleration target
+    // @Units: m/s/s/s
+    // @Range: 5 50
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_JERK_D", 11, AC_PosControl, _shaping_jerk_d_msss, POSCONTROL_JERK_D_MSSS),
+
     // @Param: _D_VEL_P
     // @DisplayName: Velocity (down) controller P gain
     // @Description: Velocity (down) controller P gain.  Converts the difference between desired vertical speed and actual speed into a desired acceleration that is passed to the throttle acceleration controller
@@ -137,7 +179,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
-    AP_SUBGROUPINFO(_pid_vel_d_m, "_D_VEL_", 3, AC_PosControl, AC_PID_Basic),
+    AP_SUBGROUPINFO(_pid_vel_d_m, "_D_VEL_", 12, AC_PosControl, AC_PID_Basic),
 
     // @Param: _D_ACC_P
     // @DisplayName: Acceleration (down) controller P gain
@@ -227,15 +269,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Description: Accel (down) Error notch filter index
     // @Range: 1 8
     // @User: Advanced
-
-    AP_SUBGROUPINFO(_pid_accel_d_m, "_D_ACC_", 4, AC_PosControl, AC_PID),
-
-    // @Param: _NE_POS_P
-    // @DisplayName: Position (horizontal) controller P gain
-    // @Description: Position controller P gain.  Converts the distance (in the latitude direction) to the target location into a desired speed which is then passed to the loiter latitude rate controller
-    // @Range: 0.500 2.000
-    // @User: Standard
-    AP_SUBGROUPINFO(_p_pos_ne_m, "_NE_POS_", 5, AC_PosControl, AC_P_2D),
+    AP_SUBGROUPINFO(_pid_accel_d_m, "_D_ACC_", 13, AC_PosControl, AC_PID),
 
     // @Param: _NE_VEL_P
     // @DisplayName: Velocity (horizontal) P gain
@@ -286,36 +320,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Range: 0 6
     // @Increment: 0.01
     // @User: Advanced
-    AP_SUBGROUPINFO(_pid_vel_ne_m, "_NE_VEL_", 6, AC_PosControl, AC_PID_2D),
-
-    // @Param: _ANGLE_MAX
-    // @DisplayName: Position Control Angle Max
-    // @Description: Maximum lean angle autopilot can request.  Set to zero to use ANGLE_MAX parameter value
-    // @Units: deg
-    // @Range: 0 45
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("_ANGLE_MAX", 7, AC_PosControl, _lean_angle_max_deg, 0.0f),
-
-    // IDs 8,9 used for _TC_XY and _TC_Z in beta release candidate
-
-    // @Param: _JERK_NE
-    // @DisplayName: Jerk limit for the horizontal kinematic input shaping
-    // @Description: Jerk limit of the horizontal kinematic path generation used to determine how quickly the aircraft varies the acceleration target
-    // @Units: m/s/s/s
-    // @Range: 1 20
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("_JERK_NE", 10, AC_PosControl, _shaping_jerk_ne_msss, POSCONTROL_JERK_NE_MSSS),
-
-    // @Param: _JERK_D
-    // @DisplayName: Jerk limit for the vertical kinematic input shaping
-    // @Description: Jerk limit of the vertical kinematic path generation used to determine how quickly the aircraft varies the acceleration target
-    // @Units: m/s/s/s
-    // @Range: 5 50
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("_JERK_D", 11, AC_PosControl, _shaping_jerk_d_msss, POSCONTROL_JERK_D_MSSS),
+    AP_SUBGROUPINFO(_pid_vel_ne_m, "_NE_VEL_", 14, AC_PosControl, AC_PID_2D),
 
     AP_GROUPEND
 };
