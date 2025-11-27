@@ -42,6 +42,7 @@
 #include <SITL/SIM_RF_USD1_v0.h>
 #include <SITL/SIM_RF_USD1_v1.h>
 #include <SITL/SIM_RF_Wasp.h>
+#include <SITL/SIM_RF_LightWare_GRF.h>
 
 using namespace HALSITL;
 
@@ -62,6 +63,7 @@ static const struct {
     { "leddarone", SITL::RF_LeddarOne::create },
     { "lightwareserial-binary", SITL::RF_LightWareSerialBinary::create },
     { "lightwareserial", SITL::RF_LightWareSerial::create },
+    { "lightware_grf", SITL::RF_LightWareGRF::create },
     { "maxsonarseriallv", SITL::RF_MaxsonarSerialLV::create },
     { "nmea", SITL::RF_NMEA::create },
     { "nmea", SITL::RF_NMEA::create },
