@@ -2335,7 +2335,8 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
     }
 
     // ensure we're using the configured backend, but bypass in compass-less cases:
-    if (configured_ekf_type() != active_EKF_type() && AP::compass().use_for_yaw()) {
+    if (_ekf_type != int8_t(configured_ekf_type()) ||
+        (configured_ekf_type() != active_EKF_type() && AP::compass().use_for_yaw())) {
         hal.util->snprintf(failure_msg, failure_msg_len, "not using configured AHRS type");
         return false;
     }
