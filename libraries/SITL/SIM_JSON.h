@@ -110,6 +110,7 @@ private:
         } wind_vane_apparent;
         float airspeed;
         bool no_time_sync;
+        bool no_lockstep;
     } state;
 
     // table to aid parsing of JSON sensor data
@@ -138,6 +139,7 @@ private:
         {"windvane","speed", &state.wind_vane_apparent.speed, DATA_FLOAT, false},
         {"", "airspeed", &state.airspeed, DATA_FLOAT, false},
         {"", "no_time_sync", &state.no_time_sync, BOOLEAN, false},
+        {"", "no_lockstep", &state.no_lockstep, BOOLEAN, false},
         { "rc", "rc_1", &state.rc[0], DATA_FLOAT, false },
         { "rc", "rc_2", &state.rc[1], DATA_FLOAT, false },
         { "rc", "rc_3", &state.rc[2], DATA_FLOAT, false },
@@ -196,6 +198,8 @@ private:
     uint64_t last_received_bitmask;
 
     uint32_t last_debug_ms;
+
+    bool last_no_lockstep;
 };
 
 }
