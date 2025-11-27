@@ -440,7 +440,9 @@ class HWDef:
                 probe = a[1]
 
             expected_device_count = 1
-            if driver == 'AK09916' and probe != 'probe':
+            if driver == 'AK09916' and probe == 'probe_ICM20948':
+                expected_device_count = 1
+            elif driver == 'AK09916' and probe != 'probe':
                 expected_device_count = 0
             elif driver == 'AK8963' and probe == 'probe_mpu9250':
                 expected_device_count = 1
@@ -455,7 +457,9 @@ class HWDef:
                     devlist.append(self.spi_dev_to_object(d))
                 elif d.startswith("I2C:"):
                     devlist.append(self.i2c_dev_to_object(d))
-                elif driver == 'AK8963' and probe == 'probe_mpu9250' and d.isdigit():
+                elif ((driver == 'AK8963' and probe == 'probe_mpu9250') or
+                      (driver == 'AK09916' and probe == 'probe_ICM20948') and
+                      d.isdigit()):
                     devlist.append(d)
                 else:
                     raise ValueError(f"Unknown device ({d=}) ({orig_a=})")
