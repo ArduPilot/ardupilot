@@ -155,16 +155,18 @@ AP_GPS_UBLOX::~AP_GPS_UBLOX()
 }
 
 #if GPS_MOVING_BASELINE
+#define UBX_CFG_ENTRY(KEY_CLASS, KEY, TYPE, VALUE) \
+    { ConfigKey::KEY_CLASS##_##KEY, VALUE },
 /*
   config for F9 GPS in moving baseline base role
   See ZED-F9P integration manual section 3.1.5.6.1
  */
 const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Base_uart1[] {
-    UBX_CFG_MB_BASE_UART1
+    UBX_CFG_MB_BASE_UART1(UBX_CFG_ENTRY)
 };
 
 const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Base_uart2[] {
-    UBX_CFG_MB_BASE_UART2
+    UBX_CFG_MB_BASE_UART2(UBX_CFG_ENTRY)
 };
 
 
@@ -175,11 +177,11 @@ const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Base_uart2[] {
   data from a GPS previously configured as a base
  */
 const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Rover_uart1[] {
-    UBX_CFG_MB_ROVER_UART1
+    UBX_CFG_MB_ROVER_UART1(UBX_CFG_ENTRY)
 };
 
 const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Rover_uart2[] {
-    UBX_CFG_MB_ROVER_UART2
+    UBX_CFG_MB_ROVER_UART2(UBX_CFG_ENTRY)
 };
 #endif // GPS_MOVING_BASELINE
 
