@@ -99,6 +99,7 @@ void AP_GPS_UBLOX_CFGv2::update()
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO,
                                  "GPS %d: u-blox resetting to default config",
                                  ubx_backend.state.instance + 1);
+                _valget_position = 0;  // reset position for new fetch cycle
                 fetch_all_config();
             }
             break;
@@ -342,6 +343,7 @@ void AP_GPS_UBLOX_CFGv2::process_valget_byte(uint8_t byte)
         _valget_value_count = 0;
         _valget_key = 0;
         _valget_value = 0;
+        _valget_kv_count = 0;
     }
 
     if (_valget_abort) {
@@ -398,6 +400,7 @@ void AP_GPS_UBLOX_CFGv2::process_valget_byte(uint8_t byte)
         if (_valget_value_count == _valget_value_expected) {
             // Deliver this key/value
             _handle_valget_kv((ConfigKey)_valget_key, _valget_value, _valget_value_expected);
+            _valget_kv_count++;
             // reset for next pair
             _valget_key = 0;
             _valget_value = 0;
@@ -421,6 +424,21 @@ void AP_GPS_UBLOX_CFGv2::process_valget_complete(bool success)
     _valget_in_progress = false;
     _valget_abort = false;
 
+    // Check if we got a full response (64 KV pairs) and need to continue
+    if (success && _valget_kv_count >= 64) {
+        // More config to fetch, increment position and request again
+        _valget_position += 64;
+        if (curr_state == States::RESET_MODULE) {
+            fetch_all_config();
+        }
+        return;
+    }
+
+    // Reset position when wildcard response complete (< 64 KV pairs)
+    if (success && _valget_kv_count < 64) {
+        _valget_position = 0;  // reset for next layer/cycle
+    }
+
     if (success) {
         // processing complete
         // move processing config to active config
@@ -428,13 +446,18 @@ void AP_GPS_UBLOX_CFGv2::process_valget_complete(bool success)
 
         switch (curr_state) {
             case States::RESET_MODULE:
-                if (!_is_reset_required && (fetch_config_layer == ConfigLayer::CFG_LAYER_FLASH)) {
+                if (_is_reset_required) {
+                    // waiting for VALDEL ACK, don't fetch again
+                    break;
+                }
+                if (fetch_config_layer == ConfigLayer::CFG_LAYER_FLASH) {
                     // no reset needed, move to IDENTIFY_MODULE
                     curr_state = States::IDENTIFY_MODULE;
                     _module_reset[ubx_backend.state.instance] = true;
                     _last_request_time = 0; // immediate next state
                 } else {
                     fetch_config_layer = ConfigLayer::CFG_LAYER_FLASH;
+                    _valget_position = 0;  // reset position for new layer
                     fetch_all_config();
                     _last_request_time = 0; // immediate next state
                 }
@@ -481,12 +504,13 @@ void AP_GPS_UBLOX_CFGv2::_handle_valget_kv(ConfigKey key, uint64_t value, uint8_
 {
     if (curr_state == States::RESET_MODULE) {
         // check if the key is in init list or signal key, if not we need a reset
-        if (!_init_common_cfg_list(true, key) && ((key & 0xFFFFLU) != (ConfigKey::CFG_SIGNAL_GPS_ENA & 0xFFFFLU))) {
+        if (!_init_common_cfg_list(true, key) && ((key & 0x0FFF0000LU) != (ConfigKey::CFG_SIGNAL_GPS_ENA & 0x0FFF0000LU))) {
             // not in init list, ignore
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS %d: Found unexpected valget key 0x%08x reset required",
                     ubx_backend.state.instance + 1,
                     (uint32_t)key);
             _is_reset_required = true;
+            _valget_abort = true;  // stop processing remaining KV pairs
             delete_and_reset_config();
             return;
         }
@@ -508,7 +532,7 @@ void AP_GPS_UBLOX_CFGv2::_handle_valget_kv(ConfigKey key, uint64_t value, uint8_
 // Request a configuration group via CFG-VALGET
 bool AP_GPS_UBLOX_CFGv2::_request_cfg_group(ConfigKey group, ConfigLayer layer)
 {
-    struct {
+    struct PACKED {
         struct AP_GPS_UBLOX::ubx_cfg_valget msg;
         uint32_t key;
     } msg {};
@@ -833,14 +857,33 @@ bool AP_GPS_UBLOX_CFGv2::_init_common_cfg_list(bool check_only, uint32_t key_to_
     // Fill with expected configuration based on module type
     if (module < Module::SINGLE_UART_LAST) {
         UBX_CFG_COMMON_UART(INIT_CFG_PUSH_INDEXED)
+        // check if rover or base
+        if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE) {
+            UBX_CFG_MB_BASE_UART1(INIT_CFG_PUSH_INDEXED)
+        } else {
+            UBX_CFG_MB_ROVER_UART1(INIT_CFG_PUSH_INDEXED)
+        }
     } else {
         // Dual-UART modules configuration depends on detected port
         switch (ubx_backend._ublox_port) {
         case 2: // UART1
             UBX_CFG_COMMON_UART1(INIT_CFG_PUSH_INDEXED)
+            if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE && !ubx_backend.mb_use_uart2()) {
+                UBX_CFG_MB_BASE_UART1(INIT_CFG_PUSH_INDEXED)
+            } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE && ubx_backend.mb_use_uart2()) {
+                // this allows rover to connect to UART2 to directly
+                UBX_CFG_MB_BASE_UART2(INIT_CFG_PUSH_INDEXED)
+            } else {
+                UBX_CFG_MB_ROVER_UART1(INIT_CFG_PUSH_INDEXED)
+            }
             break;
         case 3: // UART2
             UBX_CFG_COMMON_UART2(INIT_CFG_PUSH_INDEXED)
+            if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE) {
+                UBX_CFG_MB_BASE_UART2(INIT_CFG_PUSH_INDEXED)
+            } else {
+                UBX_CFG_MB_ROVER_UART2(INIT_CFG_PUSH_INDEXED)
+            }
             break;
         default:
             break;
@@ -933,8 +976,7 @@ bool AP_GPS_UBLOX_CFGv2::_request_common_cfg()
 
     valget_msg.msg.version = 0;
     valget_msg.msg.layers = 0; // RAM layer
-    valget_msg.msg.reserved[0] = 0;
-    valget_msg.msg.reserved[1] = 0;
+    valget_msg.msg.position = 0;
 
     // Extract all keys from current _common_cfg buffer
     uint16_t key_count = 0;
@@ -1030,13 +1072,17 @@ void AP_GPS_UBLOX_CFGv2::handle_cfg_nack(uint8_t msg_id)
     switch (msg_id) {
         case AP_GPS_UBLOX::MSG_CFG_VALGET:
             if (curr_state == States::RESET_MODULE) {
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "GPS %d: CFG-VALGET NACK received, unsupported layer %s",
-                      ubx_backend.state.instance + 1, fetch_config_layer == ConfigLayer::CFG_LAYER_FLASH ? "FLASH" : "BBR");
                 if (fetch_config_layer == ConfigLayer::CFG_LAYER_BBR) {
                     // try FLASH layer
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS %d: CFG-VALGET NACK for BBR, trying FLASH",
+                          ubx_backend.state.instance + 1);
                     fetch_config_layer = ConfigLayer::CFG_LAYER_FLASH;
+                    _valget_position = 0;
                     fetch_all_config();
                 } else if (!_is_reset_required) {
+                    // FLASH layer also not supported, skip reset check
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS %d: CFG-VALGET NACK for FLASH, skipping reset check",
+                          ubx_backend.state.instance + 1);
                     curr_state = States::IDENTIFY_MODULE;
                     _module_reset[ubx_backend.state.instance] = true;
                     _last_request_time = 0; // immediate next state
@@ -1051,18 +1097,25 @@ void AP_GPS_UBLOX_CFGv2::handle_cfg_nack(uint8_t msg_id)
 bool AP_GPS_UBLOX_CFGv2::fetch_all_config()
 {
     // request all config by sending VALGET with key=0xFFFFFFFF
-    struct {
+    struct PACKED {
         AP_GPS_UBLOX::ubx_cfg_valget msg;
         uint32_t key;
     } msg {};
     if (ubx_backend.port->txspace() < 2*((uint16_t)(sizeof(AP_GPS_UBLOX::ubx_header)+sizeof(msg)+2))) {
         return false;
     }
+
+    // don't send if a VALGET is already in progress
+    if (_valget_in_progress) {
+        return false;
+    }
+
     msg.msg.version = 0;
     msg.msg.layers = fetch_config_layer;
-    msg.key = 0xFFFFFFFF;
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: Requesting all config (%s)", ubx_backend.state.instance + 1,
-          (fetch_config_layer == ConfigLayer::CFG_LAYER_FLASH) ? "FLASH" : "BBR");
+    msg.msg.position = _valget_position;
+    msg.key = 0x0FFF0000; // all keys
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: Requesting all config (%s) pos=%u", ubx_backend.state.instance + 1,
+          (fetch_config_layer == ConfigLayer::CFG_LAYER_FLASH) ? "FLASH" : "BBR", _valget_position);
     return !ubx_backend._send_message(AP_GPS_UBLOX::CLASS_CFG, AP_GPS_UBLOX::MSG_CFG_VALGET, &msg, sizeof(msg));
 }
 
@@ -1078,7 +1131,7 @@ bool AP_GPS_UBLOX_CFGv2::delete_and_reset_config()
             .transaction = 0x00,
             .reserved0 = 0x00
         },
-        .key = 0xFFFFFFFF
+        .key = 0x0FFF0000 // all keys
     };
 
     if (ubx_backend.port->txspace() < (uint16_t)(sizeof(AP_GPS_UBLOX::ubx_header) + sizeof(valdel_all) + 2)) {

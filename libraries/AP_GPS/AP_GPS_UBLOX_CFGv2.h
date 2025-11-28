@@ -257,6 +257,8 @@ private:
     uint8_t _valget_key_count;           // bytes of current key seen
     uint8_t _valget_value_expected;      // expected value length for current key
     uint8_t _valget_value_count;         // bytes of current value seen
+    uint8_t _valget_kv_count;            // count of key-value pairs in current response
+    uint16_t _valget_position;           // position for next VALGET request (increments by 64)
     uint32_t _valget_key;                // current key (little-endian)
     uint64_t _valget_value;              // current value (little-endian)
 
