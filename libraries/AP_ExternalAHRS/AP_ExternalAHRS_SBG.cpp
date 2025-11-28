@@ -504,7 +504,7 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
                 cached.sensors.gps_data.ned_vel_north = cached.sbg.sbgLogGpsVel.velocity[0];
                 cached.sensors.gps_data.ned_vel_east = cached.sbg.sbgLogGpsVel.velocity[1];
                 cached.sensors.gps_data.ned_vel_down = cached.sbg.sbgLogGpsVel.velocity[2];
-                cached.sensors.gps_data.horizontal_vel_accuracy = Vector2f(cached.sensors.gps_data.ned_vel_north, cached.sensors.gps_data.ned_vel_east).length();
+                cached.sensors.gps_data.horizontal_vel_accuracy = Vector2f(cached.sbg.sbgLogGpsVel.velocityAcc[0], cached.sbg.sbgLogGpsVel.velocityAcc[1]).length();
                 // unused - cached.sbg.sbgLogGpsVel.course
                 // unused - cached.sbg.sbgLogGpsVel.courseAcc
                 updated_gps = true;
