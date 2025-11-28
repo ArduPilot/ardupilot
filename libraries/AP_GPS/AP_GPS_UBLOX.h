@@ -297,7 +297,7 @@ private:
     struct PACKED ubx_cfg_valget {
         uint8_t version;
         uint8_t layers;
-        uint8_t reserved[2];
+        uint16_t position;
         // variable length data, check buffer length
     };
     struct PACKED ubx_cfg_valdel {
