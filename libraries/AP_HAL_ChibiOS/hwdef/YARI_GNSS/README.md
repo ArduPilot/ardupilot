@@ -1,7 +1,7 @@
 # YARI GNSS
 
 ### Introduction
-YARI GNSS module is a Dronecan module developed by [YARI Robotics](https://yarirobotics.com). It comes with a standard precision GNSS receiver, magnetometer, barometer, IMU, buzzer, and safety switch. The module is available in two variants: [YARI GNSS (NEO-M9N)](https://yarirobotics.com/products/yari-gnss-module-m9n) with single-band (L1) support, and [YARI GNSS (NEO-F10N)](https://yarirobotics.com/products/yari-gnss-module-f10n) with dual-band (L1/L5) support.
+YARI GNSS module is a Dronecan module developed by [YARI Robotics](https://yarirobotics.com). It comes with a standard precision GNSS receiver, magnetometer, barometer, IMU, buzzer, and safety switch. The module is available in two variants: [YARI M9N GNSS](https://yarirobotics.com/products/yari-m9n-gnss) with single-band (L1) support, and [YARI F10N GNSS](https://yarirobotics.com/products/yari-f10n-gnss) with dual-band (L1/L5) support.
 
 ![YARI GNSS](images/product.png)
 
