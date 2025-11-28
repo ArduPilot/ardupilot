@@ -1042,7 +1042,8 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
     if (packet.coordinate_frame != MAV_FRAME_LOCAL_NED &&
         packet.coordinate_frame != MAV_FRAME_LOCAL_OFFSET_NED &&
         packet.coordinate_frame != MAV_FRAME_BODY_NED &&
-        packet.coordinate_frame != MAV_FRAME_BODY_OFFSET_NED) {
+        packet.coordinate_frame != MAV_FRAME_BODY_OFFSET_NED &&
+        packet.coordinate_frame != MAV_FRAME_BODY_FRD) {
         // input is not valid so stop
         copter.mode_guided.init(true);
         return;
@@ -1099,6 +1100,10 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
         // rotate to body-frame if necessary
         if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
             vel_neu_ms.xy() = copter.ahrs.body_to_earth2D(vel_neu_ms.xy());
+        } else if (packet.coordinate_frame == MAV_FRAME_BODY_FRD) {
+            vel_neu_ms.z = -vel_neu_ms.z;
+            vel_neu_ms = AP::ahrs().get_rotation_body_to_ned() * vel_neu_ms;
+            vel_neu_ms.z = -vel_neu_ms.z;
         }
     }
 
