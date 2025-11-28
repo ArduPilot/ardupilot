@@ -468,7 +468,6 @@ void AP_CRSF_Out::send_heartbeat()
     _crsf_port->write_frame(&frame);
 }
 
-
 namespace AP {
     AP_CRSF_Out* crsf_out() {
         return AP_CRSF_Out::get_singleton();
