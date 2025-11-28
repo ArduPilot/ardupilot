@@ -484,9 +484,12 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
 
                 state.location = Location(cached.sbg.sbgLogEkfNavData.position[0]*1e7, cached.sbg.sbgLogEkfNavData.position[1]*1e7, cached.sbg.sbgLogEkfNavData.position[2]*1e2, Location::AltFrame::ABSOLUTE);
                 state.last_location_update_us = AP_HAL::micros();
-                if (!state.have_location) {
+
+                ekf_is_full_nav = SbgEkfStatus_is_fullNav(cached.sbg.sbgLogEkfNavData.status);
+
+                if (!state.have_location && ekf_is_full_nav) {
                     state.have_location = true;
-                } else if (!state.have_origin && cached.sensors.gps_data.fix_type >= AP_GPS_FixType::FIX_3D && SbgEkfStatus_is_fullNav(cached.sbg.sbgLogEkfNavData.status)) {
+                } else if (!state.have_origin && cached.sensors.gps_data.fix_type >= AP_GPS_FixType::FIX_3D && ekf_is_full_nav) {
                     // this is in an else so that origin doesn't get set on the very very first sample, do it on the second one just to give us a tiny bit more chance of a better origin
                     state.origin = state.location;
                     state.have_origin = true;
