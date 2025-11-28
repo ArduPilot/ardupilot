@@ -1,6 +1,8 @@
 # hw definition file for processing by chibios_hwdef.py
 # for the TAIPHOON flight controller
 
+# New board 20250818
+
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
@@ -9,7 +11,7 @@ OSCILLATOR_HZ 8000000
 
 # board ID. See Tools/AP_Bootloader/board_types.txt
 # APJ_BOARD_ID AP_HW_Morakot
-APJ_BOARD_ID AP_HW_Morakot # Test with fake board
+APJ_BOARD_ID AP_HW_ZeroOne_X6 # Test with fake board
 
 # ChibiOS system timer
 # STM32_ST_USE_TIMER 2
@@ -100,5 +102,4 @@ define HAL_BATT_MONITOR_DEFAULT 21
 
 # DFU bootloader support
 ENABLE_DFU_BOOT 1
-# define AP_BOOTLOADER_FLASHING_ENABLED 1
 

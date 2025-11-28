@@ -43,13 +43,13 @@ Engineered, tested, and manufactured in Taiwan, the Morakot Flight Controller me
 UART Mapping
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 - SERIAL0 -> USB (MAVLink2)
-- SERIAL1 -> USART1 (DisplayPort, DMA-enabled)
-- SERIAL2 -> USART2 (MAVLink1-Telem1, DMA-enabled)
-- SERIAL3 -> USART3 (MAVLink2-Telem2(default)/S.BUS, DMA-enabled)
-- SERIAL4 -> UART5  (GPS, DMA-enabled)
+- SERIAL1 -> USART1 (VTX, DMA-enabled)
+- SERIAL2 -> USART2 (Telem, DMA-enabled)
+- SERIAL3 -> USART3(S.BUS, DMA-enabled)
+- SERIAL4 -> UART5 (GPS, DMA-enabled)
 - SERIAL5->  USART6 (ESCTelemetry2, DMA-enabled)
-- SERIAL6 -> UART7  (MAVLink-Telem3 (default)/ ESCTelemetry1, DMA-enabled)
-- SERIAL7 -> UART8  (RC Input,  DMA-enabled)
+- SERIAL6 -> UART7 (Telem2/ ESCTelemetry1, DMA-enabled)
+- SERIAL7 -> UART8 (RC Input,  DMA-enabled)
 
 ### VTX Support
 The JST-GH 7p connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 12v so be careful not to connect this to a peripheral that can not tolerate this voltage.
@@ -159,13 +159,11 @@ Note: connector pinout not in same order as standard HD VTX cabling
 
 ## RC Input
 
-RC input is via SERIAL7 on the RC connector. Unidirectional protocols can be connected to R8. Bi-Directional Protocols will use the T8 pin also.
+RC input is received through the UART interface and supports CRSF, ELRS, and S.BUS signals.
 
-- PPM is supported.  
-- SBUS/DSM/SRXL connects to the RX3 pin.  
-- FPort requires connection to TX3. Set :ref:`SERIAL7_OPTIONS<SERIAL3_OPTIONS>` = 7  
-- CRSF/ELRS also requires both TX3 and RX3 connections and provides telemetry automatically.
-In order to use the SBUS pin on the HD VTX connector, you must change SERIAL7_PROTOCOL to something other than "23" and set SERILA3_PROTOCOL to "23".
+ArduPilot Configuration
+
+In ArduPilot, the following parameters must be configured:
 
 - Use VTX RX interface as RC input
 ```
