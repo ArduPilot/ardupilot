@@ -116,6 +116,31 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
                     "Altitude not maintained: want %.2f (+/- %.2f) got=%.2f" %
                     (previous_altitude, delta, m.alt))
 
+    def watch_position_maintained(self, delta=0.3, timeout=5.0):
+        """Watch and wait for the actual position to be maintained
+
+        Keyword Arguments:
+            delta {float} -- Maximum distance allows in meters
+            timeout {float} -- Timeout time in simulation seconds (default: {5.0})
+
+        Raises:
+            NotAchievedException: Exception when position fails to hold inside the time and
+                position range
+        """
+        tstart = self.get_sim_time_cached()
+        previous_position = self.assert_receive_message('SIMSTATE')
+
+        self.progress('Position to be watched: (%f, %f)' % (previous_position.lat, previous_position.lng))
+        while True:
+            m = self.assert_receive_message('SIMSTATE')
+            if self.get_sim_time_cached() - tstart > timeout:
+                self.progress('Position hold done')
+                return
+            if self.get_distance_int(previous_position, m) > delta:
+                raise NotAchievedException(
+                    "Position not maintained: got %f meters too far from the previous position after %f seconds " %
+                    (self.get_distance_int(previous_position, m), self.get_sim_time_cached() - tstart))
+
     def AltitudeHold(self):
         """Test ALT_HOLD mode"""
         self.wait_ready_to_arm()
@@ -339,7 +364,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         def get_true_distance():
             """Return the True distance from the simulated range finder"""
-            m_true = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=3.0)
+            m_true = self.assert_receive_message(type='STATUSTEXT', timeout=3.0)
             if m_true is None:
                 return m_true
             idx_tr = m_true.text.find('#TR#')
@@ -1243,6 +1268,142 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.disarm_vehicle()
         self.context_pop()
 
+    def wait_for_distance(self, distance, timeout=100):
+        original_location = self.assert_receive_message(type='GLOBAL_POSITION_INT')
+        original_location.lat *= 1e-7
+        original_location.lon *= 1e-7
+        start = self.get_sim_time()
+        while self.get_sim_time() - start < timeout:
+            current_location = self.assert_receive_message(type='GLOBAL_POSITION_INT')
+            current_location.lat *= 1e-7
+            current_location.lon *= 1e-7
+            print(current_location)
+            if self.get_distance(original_location, current_location) > distance:
+                self.progress("Distance: %s reached in %s seconds" % (distance, self.get_sim_time() - start))
+                return
+        raise NotAchievedException("Distance: %s not reached in %s seconds" % (distance, timeout))
+
+    def IgnoreGPSDrift(self):
+        """ Test GPS-DVL integration. DVL (VISO) should be able to filter the GPS noise.
+        this tests switching over to VISO, running for a bit with no sensors, re-enabling viso,
+        and finally surfacing, where we expect the GPS position will be used to fix the drift
+        resulting of running with no positioning sensors."""
+
+        self.customise_SITL_commandline(["--serial5=sim:vicon:"])
+
+        # configure EKF to use external nav instead of GPS
+        self.set_parameters({
+            "EK3_SRC1_POSXY": 3,
+            "EK3_SRC1_VELXY": 6,
+            "EK3_SRC1_POSZ": 1,
+            "EK3_SRC1_VELZ": 0,
+
+            "VISO_TYPE": 1,
+            # "VISO_VEL_M_NSE": 0.000001,
+            "SERIAL5_PROTOCOL": 1,
+            "SIM_VICON_TMASK": 8,  # send VISION_POSITION_DELTA
+            # "SIM_VICON_TMASK": 2,  # send VISION_SPEED_ESTIMATE
+            # "SIM_VICON_TMASK": 10,  # send VISION_SPEED_ESTIMATE AND VISION_POSITION_DELTA
+            # "EK3_VELNE_M_NSE": 0.001,
+
+            "GPS1_TYPE": 1,
+            "SIM_GPS1_DRFTALT": 3,
+            "SIM_GPS1_ACC": 0.3,
+            "SIM_GPS1_ENABLE": 1,
+            "SIM_GPS1_TYPE": 1,
+            "SIM_GPS1_NSE": 0.3,
+
+            "GPS2_TYPE": 0,
+
+            "EK3_POSNE_M_NSE": 100,
+
+        })
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('POSHOLD')
+        self.set_parameter("SIM_GPS1_NSE", 1.5)
+        self.watch_position_maintained(delta=1.0, timeout=60.0)
+        # dive down to 10m
+        self.set_rc(Joystick.Throttle, 1300)
+        self.wait_altitude(altitude_min=-10, altitude_max=-9, relative=False, timeout=60)
+        self.set_rc(Joystick.Throttle, 1500)
+
+        # disable GPS
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 0,
+        })
+
+        self.set_rc(Joystick.Forward, 1900)
+
+        # lets drive gps-less for 10 meters
+        self.wait_for_distance(10, timeout=60)
+        self.set_rc(Joystick.Forward, 1500)
+
+        # surface
+        self.set_rc(Joystick.Throttle, 1900)
+        self.wait_altitude(altitude_min=-0.5, altitude_max=1, relative=False, timeout=60)
+        self.set_rc(Joystick.Throttle, 1500)
+
+        # re-enable GPS
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 1,
+        })
+
+        # allow 2 meters of drift
+        self.watch_position_maintained(delta=2, timeout=60.0)
+
+        # move forward for 10 seconds
+        self.set_rc(Joystick.Forward, 1900)
+        self.wait_for_distance(10, timeout=60)
+        self.set_rc(Joystick.Forward, 1500)
+
+        # now lets try something worse. lets drive for a bit without either GPS or vision
+        # we expect the position to be corrected once we surface with GPS re-enabled
+
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 0,
+        })
+        # dive until 10m
+        self.set_rc(Joystick.Throttle, 1300)
+        self.wait_altitude(altitude_min=-10, altitude_max=-9, relative=False, timeout=60)
+        self.set_rc(Joystick.Throttle, 1500)
+
+        # drive for 10 meters
+        self.set_rc(Joystick.Forward, 1900)
+        self.wait_for_distance(10, timeout=60)
+        self.set_parameters({
+            "SIM_VICON_TMASK": 0,
+        })
+        self.progress("We should now be dead reckoning")
+        self.delay_sim_time(5)
+
+        # stop moving. can we fool it?
+        self.set_rc(Joystick.Forward, 1500)
+        self.delay_sim_time(10)
+        # this should cause a jump in position once we re-surface
+
+        # start moving again
+        self.set_rc(Joystick.Forward, 1900)
+        self.delay_sim_time(5)
+        self.set_parameters({
+            "SIM_VICON_TMASK": 10,
+        })
+        self.delay_sim_time(10)
+        self.set_rc(Joystick.Forward, 1500)
+        # surface
+        self.set_rc(Joystick.Throttle, 1900)
+        self.wait_altitude(altitude_min=-0.5, altitude_max=1, relative=False, timeout=60)
+        self.set_rc(Joystick.Throttle, 1500)
+
+        # re-enable GPS
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 1,
+        })
+        self.wait_for_distance(5, timeout=60)
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -1282,6 +1443,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.SHT3X,
             self.SurfaceSensorless,
             self.GPSForYaw,
+            self.IgnoreGPSDrift,
         ])
 
         return ret
