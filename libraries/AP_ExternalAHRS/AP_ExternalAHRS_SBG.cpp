@@ -636,20 +636,20 @@ AP_GPS_FixType AP_ExternalAHRS_SBG::SbgGpsPosStatus_to_GpsFixType(const uint32_t
             return AP_GPS_FixType::NONE;
 
         case SBG_ECOM_POS_SINGLE:           /*!< Single point solution position. */
+        case SBG_ECOM_POS_FIXED:            /*!< Fixed location solution position. */
             return AP_GPS_FixType::FIX_3D;
 
         case SBG_ECOM_POS_PSRDIFF:          /*!< Standard Pseudorange Differential Solution (DGPS). */
         case SBG_ECOM_POS_SBAS:             /*!< SBAS satellite used for differential corrections. */
-        case SBG_ECOM_POS_OMNISTAR:         /*!< Omnistar VBS Position (L1 sub-meter). */
             return AP_GPS_FixType::DGPS;
 
         case SBG_ECOM_POS_RTK_FLOAT:        /*!< Floating RTK ambiguity solution (20 cms RTK). */
         case SBG_ECOM_POS_PPP_FLOAT:        /*!< Precise Point Positioning with float ambiguities. */
+        case SBG_ECOM_POS_OMNISTAR:         /*!< Omnistar VBS Position (L1 sub-meter). */
             return AP_GPS_FixType::RTK_FLOAT;
 
         case SBG_ECOM_POS_RTK_INT:          /*!< Integer RTK ambiguity solution (2 cms RTK). */
         case SBG_ECOM_POS_PPP_INT:          /*!< Precise Point Positioning with fixed ambiguities. */
-        case SBG_ECOM_POS_FIXED:            /*!< Fixed location solution position. */
             return AP_GPS_FixType::RTK_FIXED;
     }
     return AP_GPS_FixType::NONE;
