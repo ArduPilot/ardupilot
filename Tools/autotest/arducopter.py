@@ -10567,6 +10567,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             ("nooploop_tofsense", 37),
             ("ainsteinlrd1", 42),
             ("rds02uf", 43),
+            ("lightware_grf", 45),
         ]
         # you can use terrain - if you don't the vehicle just uses a
         # plane based on home.
