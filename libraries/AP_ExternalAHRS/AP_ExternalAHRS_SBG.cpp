@@ -28,6 +28,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_Common/time.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <GCS_MAVLink/GCS.h>
@@ -282,6 +283,30 @@ bool AP_ExternalAHRS_SBG::parse_byte(const uint8_t data, sbgMessage &msg, SBG_PA
     return false;
 }
 
+uint16_t AP_ExternalAHRS_SBG::make_gps_week(const SbgLogUtcData *utc_data)
+{
+    const struct tm tm {
+        .tm_sec = utc_data->second,
+        .tm_min = utc_data->minute,
+        .tm_hour = utc_data->hour,
+        .tm_mday = utc_data->day,
+        .tm_mon  = utc_data->month - 1,
+        .tm_year = utc_data->year - 1900,
+    };
+
+
+    // convert from time structure to unix time
+    const time_t unix_time = ap_mktime(&tm);
+
+    // convert to time since GPS epoch
+    const uint32_t gps_time = unix_time - ((utc_data->gpsTimeOfWeek + UNIX_OFFSET_MSEC) / 1000);
+
+    // get GPS week
+    const uint16_t gps_week = gps_time / AP_SEC_PER_WEEK;
+
+    return gps_week;
+}
+
 void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
 {
     const uint32_t now_ms = AP_HAL::millis();
@@ -392,7 +417,7 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
 #endif // AP_RTC_ENABLED
 
                 cached.sensors.gps_data.ms_tow = cached.sbg.sbgLogUtcData.gpsTimeOfWeek;
-                cached.sensors.gps_data.gps_week = cached.sbg.sbgLogUtcData.gpsTimeOfWeek / AP_MSEC_PER_WEEK;
+                cached.sensors.gps_data.gps_week = make_gps_week(&cached.sbg.sbgLogUtcData);
                 updated_gps = true;
                 break;
             
@@ -487,7 +512,6 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
                 safe_copy_msg_to_object((uint8_t*)&cached.sbg.sbgLogGpsPos, sizeof(cached.sbg.sbgLogGpsPos), msg.data, msg.len);
 
                 cached.sensors.gps_data.ms_tow = cached.sbg.sbgLogGpsPos.timeOfWeek;
-                cached.sensors.gps_data.gps_week = cached.sbg.sbgLogGpsPos.timeOfWeek / AP_MSEC_PER_WEEK;
                 cached.sensors.gps_data.latitude = cached.sbg.sbgLogGpsPos.latitude * 1E7;
                 cached.sensors.gps_data.longitude = cached.sbg.sbgLogGpsPos.longitude * 1E7;
                 cached.sensors.gps_data.msl_altitude = cached.sbg.sbgLogGpsPos.altitude * 100;
