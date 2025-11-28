@@ -2752,6 +2752,8 @@ class TestSuite(abc.ABC):
                         continue
                     if "#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED" in line:
                         continue
+                    if "#if AP_RANGEFINDER_ENABLED" in line:
+                        continue
                     if "#end" in line:
                         continue
                     if "LOG_COMMON_STRUCTURES" in line:
