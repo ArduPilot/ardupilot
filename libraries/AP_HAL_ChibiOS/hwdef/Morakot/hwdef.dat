@@ -49,7 +49,6 @@ define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_MSP_DisplayPort
 # USART2
 PD5  USART2_TX USART2
 PD6  USART2_RX USART2
-define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_None 
 
 # USART3 (S.BUS)
 PD8  USART3_TX USART3 # Original
@@ -128,7 +127,7 @@ define HAL_I2C_INTERNAL_MASK 1
 # Barometer
 BARO BMP388 I2C:0:0x76
 
-# Builtin Compass (Define many type compass drivers)
+# Builtin Compass
 define AP_COMPASS_IIS2MDC_ENABLED 1
 COMPASS IIS2MDC I2C:0:0x1E false ROTATION_NONE
 COMPASS QMC5883L I2C:0:0xd true ROTATION_NONE # GPS compass
