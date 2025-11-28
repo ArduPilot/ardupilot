@@ -97,8 +97,8 @@ void AP_GPS_UBLOX_CFGv2::update()
             if (AP_HAL::millis() - _last_request_time > 500) {
                 _last_request_time = AP_HAL::millis();
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                                 "GPS %u: u-blox resetting to default config",
-                                 unsigned(ubx_backend.state.instance) + 1);
+                                 "GPS %d: u-blox resetting to default config",
+                                 ubx_backend.state.instance + 1);
                 _valget_position = 0;  // reset position for new fetch cycle
                 fetch_all_config();
             }
