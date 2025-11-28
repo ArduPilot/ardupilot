@@ -761,5 +761,16 @@ bool AP_ExternalAHRS_SBG::send_AirData(AP_HAL::UARTDriver *_uart)
     return send_sbgMessage(_uart, msg);
 }
 
+// get variances
+bool AP_ExternalAHRS_SBG::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
+{
+    velVar = cached.sensors.gps_data.horizontal_vel_accuracy * vel_gate_scale;
+    posVar = cached.sensors.gps_data.horizontal_pos_accuracy * pos_gate_scale;
+    hgtVar = cached.sensors.gps_data.vertical_pos_accuracy * hgt_gate_scale;
+    magVar.zero(); // Not provided, set to 0.
+    tasVar = 0;
+    return true;
+}
+
 #endif  // AP_EXTERNAL_AHRS_SBG_ENABLED
 

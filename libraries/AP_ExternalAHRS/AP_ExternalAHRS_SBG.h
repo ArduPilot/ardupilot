@@ -42,8 +42,7 @@ public:
 
     void get_filter_status(nav_filter_status &status) const override;
 
-    // TODO: implement this
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override { return false; };
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override;
 
     // check for new data
     void update() override { }
