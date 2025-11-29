@@ -83,8 +83,8 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
         return false;
     }
 
-    //are arming checks disabled?
-    if (checks_to_perform == 0) {
+    // are arming checks disabled?
+    if (all_checks_skipped()) {
         return mandatory_checks(report);
     }
 
@@ -115,8 +115,8 @@ bool AP_Arming_Rover::arm_checks(AP_Arming::Method method)
         }
     }
 
-    //are arming checks disabled?
-    if (checks_to_perform == 0) {
+    // are arming checks disabled?
+    if (all_checks_skipped()) {
         return true;
     }
     return AP_Arming::arm_checks(method);
