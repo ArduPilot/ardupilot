@@ -208,6 +208,13 @@ public:
     }
 #endif
 
+    // get altitude in alt max frame
+    bool get_alt_U_in_alt_max_frame(float &alt) const { return get_alt_U_in_frame(alt, (Location::AltFrame)_alt_max_type.get()); }
+    // get altitude in alt min frame
+    bool get_alt_U_in_alt_min_frame(float &alt) const { return get_alt_U_in_frame(alt, (Location::AltFrame)_alt_min_type.get()); }
+    // get alt max frame
+    Location::AltFrame get_alt_max_frame() const { return (Location::AltFrame)_alt_max_type.get(); }
+
 private:
     static AC_Fence *_singleton;
 
