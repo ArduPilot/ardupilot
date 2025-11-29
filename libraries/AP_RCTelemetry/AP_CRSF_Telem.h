@@ -19,6 +19,7 @@
 #if HAL_CRSF_TELEM_ENABLED
 
 #include <AP_OSD/AP_OSD.h>
+#include <AP_RCProtocol/AP_CRSF_Protocol.h>
 #include <AP_RCProtocol/AP_RCProtocol_CRSF.h>
 #include "AP_RCTelemetry.h"
 #include <AP_HAL/utility/sparse-endian.h>
@@ -42,6 +43,11 @@ public:
     static const uint8_t PASSTHROUGH_STATUS_TEXT_FRAME_MAX_SIZE = 50U;
     static const uint8_t PASSTHROUGH_MULTI_PACKET_FRAME_MAX_SIZE = 9U;
     static const uint8_t CRSF_RX_DEVICE_PING_MAX_RETRY = 50U;
+
+    using FrameType = AP_CRSF_Protocol::FrameType;
+    using DeviceAddress = AP_CRSF_Protocol::DeviceAddress;
+    using CommandID = AP_CRSF_Protocol::CommandID;
+    using CommandGeneral = AP_CRSF_Protocol::CommandGeneral;
 
     // Broadcast frame definitions courtesy of TBS
     struct PACKED GPSFrame {   // curious fact, calling this GPS makes sizeof(GPS) return 1!
@@ -107,27 +113,6 @@ public:
 
     struct PACKED FlightModeFrame {
         char flight_mode[16]; // ( Null-terminated string )
-    };
-
-    // CRSF_FRAMETYPE_COMMAND
-    struct PACKED CommandFrame {
-        uint8_t destination;
-        uint8_t origin;
-        uint8_t command_id;
-        uint8_t payload[9]; // 8 maximum for LED command + crc8
-    };
-
-    // CRSF_FRAMETYPE_PARAM_DEVICE_PING
-    struct PACKED ParameterPingFrame {
-        uint8_t destination;
-        uint8_t origin;
-    };
-
-    // CRSF_FRAMETYPE_PARAM_DEVICE_INFO
-    struct PACKED ParameterDeviceInfoFrame {
-        uint8_t destination;
-        uint8_t origin;
-        uint8_t payload[58];   // largest possible frame is 60
     };
 
     enum ParameterType : uint8_t
@@ -331,9 +316,9 @@ public:
     };
 
     union PACKED ExtendedFrame {
-        CommandFrame command;
-        ParameterPingFrame ping;
-        ParameterDeviceInfoFrame info;
+        AP_CRSF_Protocol::CommandFrame command;
+        AP_CRSF_Protocol::ParameterPingFrame ping;
+        AP_CRSF_Protocol::ParameterDeviceInfoFrame info;
         ParameterSettingsEntry param_entry;
         ParameterSettingsReadFrame param_read;
         ParameterSettingsWriteFrame param_write;
@@ -348,14 +333,14 @@ public:
     const char* get_protocol_string() const { return AP::crsf()->get_protocol_string(_crsf_version.protocol); }
 
     // is the current protocol ELRS?
-    bool is_elrs() const { return _crsf_version.protocol == AP_RCProtocol_CRSF::ProtocolType::PROTOCOL_ELRS; }
+    bool is_elrs() const { return _crsf_version.protocol == AP_CRSF_Protocol::ProtocolType::PROTOCOL_ELRS; }
     // is the current protocol Tracer?
-    bool is_tracer() const { return _crsf_version.protocol == AP_RCProtocol_CRSF::ProtocolType::PROTOCOL_TRACER; }
+    bool is_tracer() const { return _crsf_version.protocol == AP_CRSF_Protocol::ProtocolType::PROTOCOL_TRACER; }
 
     // Process a frame from the CRSF protocol decoder
     static bool process_frame(AP_RCProtocol_CRSF::FrameType frame_type, void* data, uint8_t length);
     // get next telemetry data for external consumers of SPort data
-    static bool get_telem_data(AP_RCProtocol_CRSF::Frame* frame, bool is_tx_active);
+    static bool get_telem_data(const AP_RCProtocol_CRSF* crsf_port, AP_CRSF_Protocol::Frame* frame, bool is_tx_active);
     // start bind request
     void start_bind() { _bind_request_pending = true; }
     bool bind_in_progress() { return _bind_request_pending;}
@@ -421,11 +406,11 @@ private:
 
     void process_vtx_frame(VTXFrame* vtx);
     void process_vtx_telem_frame(VTXTelemetryFrame* vtx);
-    void process_ping_frame(ParameterPingFrame* ping);
+    void process_ping_frame(AP_CRSF_Protocol::ParameterPingFrame* ping);
     void process_param_read_frame(ParameterSettingsReadFrame* read);
     void process_param_write_frame(ParameterSettingsWriteFrame* write, uint8_t length);
-    void process_device_info_frame(ParameterDeviceInfoFrame* info);
-    void process_command_frame(CommandFrame* command);
+    void process_device_info_frame(AP_CRSF_Protocol::ParameterDeviceInfoFrame* info);
+    void process_command_frame(AP_CRSF_Protocol::CommandFrame* command);
 
     // setup ready for passthrough operation
     void setup_wfq_scheduler(void) override;
@@ -438,7 +423,7 @@ private:
     void enable_tx_entries();
 
     // get next telemetry data for external consumers
-    bool _get_telem_data(AP_RCProtocol_CRSF::Frame* data, bool is_tx_active);
+    bool _get_telem_data(const AP_RCProtocol_CRSF* crsf_port, AP_CRSF_Protocol::Frame* data, bool is_tx_active);
     bool _process_frame(AP_RCProtocol_CRSF::FrameType frame_type, void* data, uint8_t length);
 
     TelemetryPayload _telem;
@@ -458,16 +443,12 @@ private:
     bool _is_tx_active;
 
     struct {
-        uint8_t destination = AP_RCProtocol_CRSF::CRSF_ADDRESS_BROADCAST;
+        uint8_t destination = AP_CRSF_Protocol::CRSF_ADDRESS_BROADCAST;
         uint8_t frame_type;
     } _pending_request;
 
-    struct {
-        uint8_t minor;
-        uint8_t major;
+    struct CRSFVersion : public AP_CRSF_Protocol::VersionInfo {
         uint8_t retry_count;
-        bool use_rf_mode;
-        AP_RCProtocol_CRSF::ProtocolType protocol;
         bool pending = true;
         uint32_t last_request_info_ms;
     } _crsf_version;
@@ -503,3 +484,4 @@ namespace AP {
 };
 
 #endif
+

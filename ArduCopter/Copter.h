@@ -607,7 +607,8 @@ private:
         SMARTRTL_LAND      = 4,
         TERMINATE          = 5,
         AUTO_DO_LAND_START = 6,
-        BRAKE_LAND         = 7
+        BRAKE_LAND         = 7,
+        DISARM             = 8
     };
 
     enum class FailsafeOption {
