@@ -367,8 +367,18 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
     fence_requires_gps = (copter.fence.get_enabled_fences() & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON)) > 0;
 #endif
 
+    // check if we only require position and the EKF thinks we are ok
+    const auto &ahrs = AP::ahrs();
+    char failure_msg[100] = {};
+    if (copter.flightmode->requires_position() && copter.position_ok() && !ahrs.pre_arm_check(true, failure_msg, sizeof(failure_msg))) {
+        check_failed(display_failure, "AHRS: %s", failure_msg);
+        return false;
+    }
+
     // check if flight mode requires GPS
-    bool mode_requires_gps = copter.flightmode->requires_GPS() || fence_requires_gps || (copter.simple_mode == Copter::SimpleMode::SUPERSIMPLE);
+    bool mode_requires_gps = copter.flightmode->requires_GPS() || fence_requires_gps || (copter.simple_mode == Copter::SimpleMode::SUPERSIMPLE)
+                            // skip GPS checks if we only require position and our position is ok
+                            || (copter.flightmode->requires_position() && !copter.position_ok());
 
     // call parent gps checks
     if (mode_requires_gps) {
@@ -568,7 +578,7 @@ bool AP_Arming_Copter::alt_checks(bool display_failure)
 //  has side-effect that logging is started
 bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 {
-    const auto &ahrs = AP::ahrs();
+    auto &ahrs = AP::ahrs();
 
     // always check if inertial nav has started and is ready
     if (!ahrs.healthy()) {
@@ -644,6 +654,11 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
     // check if safety switch has been pushed
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
         check_failed(true, "Safety Switch");
+        return false;
+    }
+
+    if (copter.flightmode->requires_position() && !ahrs.ensure_origin_is_set()) {
+        check_failed(true, "No origin set");
         return false;
     }
 

@@ -231,6 +231,9 @@ public:
         return (uint16_t(_options.get()) & uint16_t(option)) != 0;
     }
 
+    // update the field elevation
+    void update_field_elevation(bool force = false);
+
 private:
     // singleton
     static AP_Baro *_singleton;
@@ -371,8 +374,6 @@ private:
     // Logging function
     void Write_Baro(void);
     void Write_Baro_instance(uint64_t time_us, uint8_t baro_instance);
-
-    void update_field_elevation();
 
     // atmosphere model functions
     float get_altitude_difference_extended(float base_pressure, float pressure) const;
