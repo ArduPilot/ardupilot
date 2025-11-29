@@ -531,6 +531,10 @@ void AP_Vehicle::setup()
     rpm_sensor.init();
 #endif
 
+#if AP_ARMING_ENABLED
+    AP::arming().init();
+#endif
+
     // invalidate count in case an enable parameter changed during
     // initialisation
     AP_Param::invalidate_count();
