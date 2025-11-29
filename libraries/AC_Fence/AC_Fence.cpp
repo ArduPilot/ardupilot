@@ -633,7 +633,7 @@ bool AC_Fence::check_fence_alt_max()
     }
 
     float _curr_alt_u_m;
-    if (!get_alt_U_in_frame(_curr_alt_u_m, (Location::AltFrame)_alt_max_type.get())) {
+    if (!get_alt_U_in_alt_max_frame(_curr_alt_u_m)) {
         // if we can't get the alt then it is a breach
         return true;
     }
@@ -686,7 +686,7 @@ bool AC_Fence::check_fence_alt_min()
     }
 
     float _curr_alt_u_m;
-    if (!get_alt_U_in_frame(_curr_alt_u_m, (Location::AltFrame)_alt_min_type.get())) {
+    if (!get_alt_U_in_alt_min_frame(_curr_alt_u_m)) {
         // if we can't get the alt then it is a breach
         return true;
     }
@@ -744,7 +744,7 @@ bool AC_Fence::auto_enable_fence_floor()
     }
 
     float _curr_alt_u_m;
-    if (!get_alt_U_in_frame(_curr_alt_u_m, (Location::AltFrame)_alt_min_type.get())) {
+    if (!get_alt_U_in_alt_min_frame(_curr_alt_u_m)) {
         // if we can't get the alt then don't enable yet
         return true;
     }
