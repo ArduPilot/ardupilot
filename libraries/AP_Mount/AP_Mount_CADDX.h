@@ -38,9 +38,9 @@ private:
 
     // lock mode enum
     enum class LockMode {
-        TILT_LOCK = (1<<0),
-        ROLL_LOCK = (1<<1),
-        YAW_LOCK  = (1<<2),
+        PITCH_LOCK = (1<<0),
+        ROLL_LOCK  = (1<<1),
+        YAW_LOCK   = (1<<2),
     };
 
     // send_target_angles

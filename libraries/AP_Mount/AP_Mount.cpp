@@ -302,6 +302,33 @@ void AP_Mount::set_yaw_lock(uint8_t instance, bool yaw_lock)
     backend->set_yaw_lock(yaw_lock);
 }
 
+// set roll_lock used in RC_TARGETING mode.  If true, the gimbal's roll target is maintained in earth-frame
+// If false (aka "follow") the gimbal's roll is maintained in body-frame meaning it will rotate with the vehicle
+void AP_Mount::set_roll_lock(uint8_t instance, bool roll_lock)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+
+    // call backend's set_roll_lock
+    backend->set_roll_lock(roll_lock);
+}
+
+// set pitch_lock used in RC_TARGETING mode.  If true, the gimbal's tilt target is maintained in earth-frame
+// If false (aka "follow") the gimbal's tilt is maintained in body-frame meaning it will tilt with the vehicle
+void AP_Mount::set_pitch_lock(uint8_t instance, bool pitch_lock)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+
+    // call backend's set_pitch_lock
+    backend->set_pitch_lock(pitch_lock);
+}
+
+
 // set angle target in degrees
 // roll and pitch are in earth-frame
 // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame

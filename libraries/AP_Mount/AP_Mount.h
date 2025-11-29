@@ -165,6 +165,14 @@ public:
     void set_mode_to_default() { set_mode_to_default(_primary); }
     void set_mode_to_default(uint8_t instance);
 
+    // set pitch_lock used in RC_TARGETING mode.  If true, the gimbal's pitch target is maintained in earth-frame (horizon does not move up and down) rather than body frame
+    void set_pitch_lock(bool pitch_lock) { set_pitch_lock(_primary, pitch_lock); }
+    void set_pitch_lock(uint8_t instance, bool pitch_lock);
+
+    // set roll_lock used in RC_TARGETING mode.  If true, the gimbal's roll target is maintained in earth-frame (horizon does not rotate) rather than body frame
+    void set_roll_lock(bool roll_lock) { set_roll_lock(_primary, roll_lock); }
+    void set_roll_lock(uint8_t instance, bool roll_lock);
+
     // set yaw_lock used in RC_TARGETING mode.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
     // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
     void set_yaw_lock(bool yaw_lock) { set_yaw_lock(_primary, yaw_lock); }
