@@ -2323,7 +2323,7 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
 #if AP_AHRS_EXTERNAL_ENABLED
     // Always check external AHRS if enabled
     // it is a source for IMU data even if not being used as direct AHRS replacement
-    if (AP::externalAHRS().enabled() || (ekf_type_parameter_value() == int8_t(EKFType::EXTERNAL))) {
+    if (AP::externalAHRS().enabled() || (configured_ekf_type() == EKFType::EXTERNAL)) {
         if (!AP::externalAHRS().pre_arm_check(failure_msg, failure_msg_len)) {
             return false;
         }
@@ -2335,7 +2335,8 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
     }
 
     // ensure we're using the configured backend, but bypass in compass-less cases:
-    if (configured_ekf_type() != active_EKF_type() && AP::compass().use_for_yaw()) {
+    if (_ekf_type != int8_t(configured_ekf_type()) ||
+        (configured_ekf_type() != active_EKF_type() && AP::compass().use_for_yaw())) {
         hal.util->snprintf(failure_msg, failure_msg_len, "not using configured AHRS type");
         return false;
     }
@@ -2668,7 +2669,7 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
 
 #if HAL_NAVEKF2_AVAILABLE
     // check primary vs ekf2
-    if (ekf_type_parameter_value() == int8_t(EKFType::TWO) || active_EKF_type() == EKFType::TWO) {
+    if (configured_ekf_type() == EKFType::TWO || active_EKF_type() == EKFType::TWO) {
         for (uint8_t i = 0; i < EKF2.activeCores(); i++) {
             Quaternion ekf2_quat;
             EKF2.getQuaternionBodyToNED(i, ekf2_quat);
