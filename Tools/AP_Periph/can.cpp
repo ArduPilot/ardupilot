@@ -1906,6 +1906,71 @@ void AP_Periph_FW::apd_esc_telem_update()
 
 }
 #endif // AP_PERIPH_ESC_APD_ENABLED
+
+#if AP_PERIPH_ACTUATOR_TELEM_ENABLED
+void AP_Periph_FW::actuator_telem_update()
+{
+#if HAL_PWM_COUNT > 0
+    static uint32_t last_telem_update_ms[HAL_PWM_COUNT];
+    const uint32_t now_ms = AP_HAL::millis();
+
+    for (uint8_t i = 0; i < HAL_PWM_COUNT; i++) {
+        const auto *channel = servo_channels.srv_channel(i);
+        if (channel == nullptr) {
+            continue;
+        }
+
+        const SRV_Channel::Function function = channel->get_function();
+        // Only send for configured actuator functions
+        if (function < SRV_Channel::k_rcin1 || function > SRV_Channel::k_rcin16) {
+            continue;
+        }
+
+        // Check per-channel telemetry rate
+        const int16_t telem_rate = channel->get_telem_rate();
+        if (telem_rate <= 0) {
+            continue;  // telemetry disabled for this channel
+        }
+
+        const uint32_t period_ms = 1000 / constrain_int16(telem_rate, 1, 1000);
+        if (now_ms - last_telem_update_ms[i] < period_ms) {
+            continue;  // not time yet for this channel
+        }
+        last_telem_update_ms[i] = now_ms;
+
+        const uint8_t actuator_id = function - SRV_Channel::k_rcin1 + 1;
+        const float current_amp = channel->get_current_ampere();
+        const float max_current_amp = channel->get_current_max_ampere();
+
+        uavcan_equipment_actuator_Status pkt {};
+        pkt.actuator_id = actuator_id;
+
+        pkt.position = 0; // Not available
+        pkt.force = 0;    // Not available
+        pkt.speed = 0;    // Not available
+
+        // Calculate power rating percentage from current
+        if (max_current_amp > 0 && current_amp >= 0) {
+            // Power rating as percentage of max current (0-100)
+            pkt.power_rating_pct = constrain_int16(current_amp / max_current_amp * 100.0f, 0, 100);
+        } else {
+            pkt.power_rating_pct = UAVCAN_EQUIPMENT_ACTUATOR_STATUS_POWER_RATING_PCT_UNKNOWN;
+        }
+
+        // Encode and broadcast
+        uint8_t buffer[UAVCAN_EQUIPMENT_ACTUATOR_STATUS_MAX_SIZE];
+        uint16_t total_size = uavcan_equipment_actuator_Status_encode(&pkt, buffer, !canfdout());
+
+        canard_broadcast(UAVCAN_EQUIPMENT_ACTUATOR_STATUS_SIGNATURE,
+                         UAVCAN_EQUIPMENT_ACTUATOR_STATUS_ID,
+                         CANARD_TRANSFER_PRIORITY_LOW,
+                         &buffer[0],
+                         total_size);
+    }
+#endif
+}
+#endif // AP_PERIPH_ACTUATOR_TELEM_ENABLED
+
 #endif // AP_PERIPH_RC_OUT_ENABLED
 
 void AP_Periph_FW::can_update()

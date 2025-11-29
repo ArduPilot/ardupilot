@@ -208,6 +208,9 @@ void AP_Periph_FW::rcout_update()
     esc_telem_extended_update(now_ms);
 #endif
 #endif
+#if AP_PERIPH_ACTUATOR_TELEM_ENABLED
+    actuator_telem_update();
+#endif
 }
 
 #if AP_SIM_ENABLED
