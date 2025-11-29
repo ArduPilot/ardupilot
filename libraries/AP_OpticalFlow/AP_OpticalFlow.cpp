@@ -226,6 +226,21 @@ void AP_OpticalFlow::handle_msg(const mavlink_message_t &msg)
     }
 }
 
+#if AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+
+void AP_OpticalFlow::handle_msg_rad(const mavlink_message_t &msg)
+{
+    // exit immediately if not enabled
+    if (!enabled()){
+        return;
+    }
+
+    if (backend != nullptr) {
+        backend->handle_msg_rad(msg);
+    }
+}
+#endif
+
 #if HAL_MSP_OPTICALFLOW_ENABLED
 void AP_OpticalFlow::handle_msp(const MSP::msp_opflow_data_message_t &pkt)
 {

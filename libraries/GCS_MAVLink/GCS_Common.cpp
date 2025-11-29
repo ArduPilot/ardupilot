@@ -4193,6 +4193,16 @@ void GCS_MAVLINK::handle_optical_flow(const mavlink_message_t &msg)
 }
 #endif
 
+#if AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+void GCS_MAVLINK::handle_optical_flow_rad(const mavlink_message_t &msg)
+{
+    AP_OpticalFlow *optflow = AP::opticalflow();
+    if (optflow == nullptr) {
+        return;
+    }
+    optflow->handle_msg_rad(msg);
+}
+#endif // AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
 
 #if AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
 /*
@@ -4542,6 +4552,12 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 #if AP_OPTICALFLOW_ENABLED
     case MAVLINK_MSG_ID_OPTICAL_FLOW:
         handle_optical_flow(msg);
+        break;
+#endif
+
+#if AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+    case MAVLINK_MSG_ID_OPTICAL_FLOW_RAD:
+        handle_optical_flow_rad(msg);
         break;
 #endif
 

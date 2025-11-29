@@ -42,6 +42,11 @@ public:
     // handle optical flow mavlink messages
     virtual void handle_msg(const mavlink_message_t &msg) {}
 
+#if AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+    // handle optical flow rad mavlink messages
+    virtual void handle_msg_rad(const mavlink_message_t &msg) {}
+#endif
+
 #if HAL_MSP_OPTICALFLOW_ENABLED
     // handle optical flow msp messages
     virtual void handle_msp(const MSP::msp_opflow_data_message_t &pkt) {}
