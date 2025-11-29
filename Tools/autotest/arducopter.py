@@ -8949,16 +8949,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.reboot_sitl()
 
-        # turn off GPS arming checks.  This may be considered a
-        # bug that we need to do this.
-        old_arming_check = int(self.get_parameter("ARMING_CHECK"))
-        if old_arming_check == 1:
-            old_arming_check = 1 ^ 25 - 1
-        new_arming_check = int(old_arming_check) & ~(1 << 3)
-        self.set_parameter("ARMING_CHECK", new_arming_check)
-
-        self.reboot_sitl()
-
         # require_absolute=True infers a GPS is present
         self.wait_ready_to_arm(require_absolute=False)
 
@@ -11153,7 +11143,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         new_onboard_logs = sorted(self.log_list())
 
         log_difference = [x for x in new_onboard_logs if x not in old_onboard_logs]
-        return log_difference[2]
+        return log_difference[1] # index depends on the reboots and ordering thereof in BeaconPosition!
 
     def test_replay_optical_flow_bit(self):
         self.set_parameters({
