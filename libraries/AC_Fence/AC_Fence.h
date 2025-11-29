@@ -208,6 +208,13 @@ public:
     }
 #endif
 
+    // get altitude in alt max frame
+    bool get_alt_U_in_alt_max_frame(float &alt) const { return get_alt_U_in_frame(alt, (Location::AltFrame)_alt_max_type.get()); }
+    // get altitude in alt min frame
+    bool get_alt_U_in_alt_min_frame(float &alt) const { return get_alt_U_in_frame(alt, (Location::AltFrame)_alt_min_type.get()); }
+    // get alt max frame
+    Location::AltFrame get_alt_max_frame() const { return (Location::AltFrame)_alt_max_type.get(); }
+
 private:
     static AC_Fence *_singleton;
 
@@ -238,6 +245,9 @@ private:
     /// retrieve the current NED position relative to home
     bool get_current_position_NED(Vector3f& currpos) const;
 
+    // get altitude in FENCE_ALT_TYPE frame
+    bool get_alt_U_in_frame(float &alt, Location::AltFrame alt_frame) const;
+
     // additional checks for the different fence types:
     bool pre_arm_check_polygon(char *failure_msg, const uint8_t failure_msg_len) const;
     bool pre_arm_check_circle(char *failure_msg, const uint8_t failure_msg_len) const;
@@ -263,6 +273,8 @@ private:
     AP_Int16        _ret_altitude;      // return to this altitude
     AP_Int16        _options;           // options bitmask, see OPTIONS enum
     AP_Float        _notify_freq;       // margin notification frequency
+    AP_Enum<Location::AltFrame> _alt_max_type;  // altitude max frame type
+    AP_Enum<Location::AltFrame> _alt_min_type;  // altitude min frame type
 
     // backup fences
     float           _alt_max_backup_m;          // backup altitude upper limit in meters used to refire the breach if the vehicle continues to move further away
