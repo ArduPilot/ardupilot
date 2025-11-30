@@ -34,7 +34,7 @@ const AP_Param::GroupInfo AP_Generator::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Generator type
     // @Description: Generator type
-    // @Values: 0:Disabled, 1:IE 650w 800w Fuel Cell, 2:IE 2.4kW Fuel Cell, 3: Richenpower, 4: Loweheiser
+    // @Values: 0:Disabled, 1:IE 650w 800w Fuel Cell, 2:IE 2.4kW Fuel Cell, 3: Richenpower, 4: Loweheiser, 5:CORTEX
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_Generator, _type, 0, AP_PARAM_FLAG_ENABLE),
