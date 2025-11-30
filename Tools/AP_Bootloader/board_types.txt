@@ -330,6 +330,7 @@ AP_HW_DAKEFPVH743_SLIM               1208
 AP_HW_CSKY-PMU                       1212
 
 AP_HW_MUPilot                        1222
+AP_HW_ATLAS_CONTROL                  1223
 
 # IDs 1231-1240 reserved for YARI Robotics
 AP_HW_YARIV6X                        1234
