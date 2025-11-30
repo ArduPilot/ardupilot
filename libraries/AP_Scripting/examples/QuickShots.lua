@@ -98,6 +98,7 @@ function calcWps()
 	startWp = ahrs:get_position()
 	if not startWp then
 		gcs:send_text(6, "ahrs:get_position() null")
+		return
 	end
 
 	--gcs:send_text(6, string.format("gcs_location %f %f %d", gcs_location:lat()/1e7, gcs_location:lng()/1e7, gcs_location:alt()/1000) )
@@ -107,7 +108,7 @@ function calcWps()
 		bearing = math.deg(roiWP:get_bearing(startWp))
 	else
 		gcs:send_text(6, "no gcs location, estimate roi")
-		bearing = 180 + math.deg(ahrs:get_yaw())
+		bearing = 180 + math.deg(ahrs:get_yaw_rad())
 		roiWP = startWp:copy()
 		roiWP:offset_bearing(bearing, -roiDistance)
 	end
