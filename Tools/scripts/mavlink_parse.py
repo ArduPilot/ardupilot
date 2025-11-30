@@ -197,7 +197,7 @@ class MAVLinkDetector:
     # Convert markdown hyperlinks into rst syntax
     RST_INTRO = MARKDOWN_INTRO.replace('[', '`').replace('](', ' <').replace(')', '>`_')
 
-    VEHICLES = ('AntennaTracker', 'ArduCopter', 'ArduPlane', 'ArduSub', 'Rover')
+    VEHICLES = ('AntennaTracker', 'ArduCopter', 'ArduPlane', 'ArduSub', 'Blimp', 'Rover')
 
     def __init__(self, common_files, vehicle='ALL',
                  exclude_libraries=['SITL', 'AP_Scripting']):
