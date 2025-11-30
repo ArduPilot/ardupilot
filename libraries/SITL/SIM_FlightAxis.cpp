@@ -49,6 +49,14 @@ const AP_Param::GroupInfo FlightAxis::var_info[] = {
     AP_GROUPEND
 };
 
+/*
+  we use a thread for socket creation to reduce the impact of socket
+  creation latency. These condition variables are used to synchronise
+  the thread
+ */
+static HAL_BinarySemaphore sockcond1;
+static HAL_BinarySemaphore sockcond2;
+
 // the asprintf() calls are not worth checking for SITL
 #pragma GCC diagnostic ignored "-Wunused-result"
 
@@ -188,7 +196,6 @@ bool FlightAxis::soap_request_start(const char *action, const char *fmt, ...)
     va_list ap;
     char *req1;
 
-    // we keep sock around to let the data flow.  But not for too long:
     if (sock) {
         delete sock;
         sock = nullptr;
@@ -198,8 +205,12 @@ bool FlightAxis::soap_request_start(const char *action, const char *fmt, ...)
     vasprintf(&req1, fmt, ap);
     va_end(ap);
 
-    while (!socks.pop(sock)) {
-        usleep(50);
+    while (sock == nullptr) {
+        sockcond1.wait_blocking();
+
+        sock = socknext;
+        socknext = nullptr;
+        sockcond2.signal();
     }
 
     char *req;
@@ -615,9 +626,10 @@ void FlightAxis::socket_creator(void)
 {
     socket_pid = getpid();
     while (true) {
-        if (!socks.space()) {
-            usleep(500);
-            continue;
+        {
+            while (socknext != nullptr) {
+                sockcond2.wait_blocking();
+            }
         }
         auto *sck = NEW_NOTHROW SocketAPM_native(false);
         if (sck == nullptr) {
@@ -635,12 +647,8 @@ void FlightAxis::socket_creator(void)
             continue;
         }
         sck->set_blocking(false);
-        if (!socks.push(sck)) {
-            // bad?!
-            delete sck;
-            usleep(500);
-            continue;
-        }
+        socknext = sck;
+        sockcond1.signal();
     }
 }
 

@@ -26,8 +26,9 @@ public:
     // Sets the waypoint destination using NEU coordinates in meters.
     // - destination_neu_m: NEU offset from EKF origin in meters.
     // - is_terrain_alt: true if the Z component represents altitude above terrain.
+    // arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
     // - Resets OA state on success.
-    bool set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt = false) override;
+    bool set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt = false, float arc_rad = 0.0) override;
 
     // Returns the horizontal distance to the final destination in centimeters.
     // See get_wp_distance_to_destination_m() for full details.

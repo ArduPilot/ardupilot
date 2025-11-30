@@ -171,7 +171,7 @@ float AP_RollController::get_measured_rate() const
 float AP_RollController::get_airspeed() const
 {
     float aspeed;
-    if (!AP::ahrs().airspeed_estimate(aspeed)) {
+    if (!AP::ahrs().airspeed_EAS(aspeed)) {
         // If no airspeed available use 0
         aspeed = 0.0;
     }

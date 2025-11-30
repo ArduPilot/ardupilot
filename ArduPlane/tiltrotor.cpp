@@ -413,8 +413,8 @@ void Tiltrotor::write_log()
 
     if (type != TILT_TYPE_VECTORED_YAW) {
         // Left and right tilt are invalid
-        pkt.front_left_tilt = plane.logger.quiet_nanf();
-        pkt.front_right_tilt = plane.logger.quiet_nanf();
+        pkt.front_left_tilt = AP_Logger::quiet_nanf();
+        pkt.front_right_tilt = AP_Logger::quiet_nanf();
 
     } else {
         // Calculate tilt angle from servo outputs
@@ -731,7 +731,7 @@ void Tiltrotor::update_yaw_target(void)
       the desired bank angle given the airspeed
      */
     float aspeed;
-    bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
+    bool have_airspeed = quadplane.ahrs.airspeed_EAS(aspeed);
     if (have_airspeed && labs(plane.nav_roll_cd)>1000) {
         float dt = (now - transition_yaw_set_ms) * 0.001;
         // calculate the yaw rate to achieve the desired turn rate

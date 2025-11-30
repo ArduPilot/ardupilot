@@ -8,7 +8,7 @@
 float Plane::calc_speed_scaler(void)
 {
     float aspeed, speed_scaler;
-    if (ahrs.airspeed_estimate(aspeed)) {
+    if (ahrs.airspeed_EAS(aspeed)) {
         if (aspeed > auto_state.highest_airspeed && arming.is_armed_and_safety_off()) {
             auto_state.highest_airspeed = aspeed;
         }

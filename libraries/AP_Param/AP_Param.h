@@ -428,7 +428,7 @@ public:
     }
 
     // returns storage space used:
-    static uint16_t storage_used() { return sentinal_offset; }
+    static uint16_t storage_used() { return sentinel_offset; }
 
     // returns storage space :
     static uint16_t storage_size() { return _storage.size(); }
@@ -630,7 +630,7 @@ private:
     };
     static_assert(sizeof(struct EEPROM_header) == 4, "Bad EEPROM_header size!");
 
-    static uint16_t sentinal_offset;
+    static uint16_t sentinel_offset;
 
 /* This header is prepended to a variable stored in EEPROM.
  *  The meaning is as follows:
@@ -657,9 +657,9 @@ private:
     static const uint8_t        _group_level_shift = 6;
     static const uint8_t        _group_bits  = 18;
 
-    static const uint16_t       _sentinal_key   = 0x1FF;
-    static const uint8_t        _sentinal_type  = 0x1F;
-    static const uint8_t        _sentinal_group = 0xFF;
+    static const uint16_t       _sentinel_key   = 0x1FF;
+    static const uint8_t        _sentinel_type  = 0x1F;
+    static const uint8_t        _sentinel_group = 0xFF;
 
     static uint16_t             _frame_type_flags;
 
@@ -736,10 +736,10 @@ private:
                                     ptrdiff_t group_offset,
                                     const struct GroupInfo *group_info,
                                     enum ap_var_type *ptype);
-    static void                 write_sentinal(uint16_t ofs);
+    static void                 write_sentinel(uint16_t ofs);
     static uint16_t             get_key(const Param_header &phdr);
     static void                 set_key(Param_header &phdr, uint16_t key);
-    static bool                 is_sentinal(const Param_header &phrd);
+    static bool                 is_sentinel(const Param_header &phrd);
     static bool                 scan(
                                     const struct Param_header *phdr,
                                     uint16_t *pofs);

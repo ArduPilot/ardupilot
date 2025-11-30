@@ -6,8 +6,9 @@ bool ModeSurface::init(bool ignore_checks)
     nobaro_mode = !sub.control_check_barometer();
 
     // initialize vertical speeds and acceleration
-    position_control->set_max_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    position_control->set_correction_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    // All limits must be positive
+    position_control->set_max_speed_accel_U_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->set_correction_speed_accel_U_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // initialise position and desired velocity
     position_control->init_U_controller();
@@ -54,7 +55,7 @@ void ModeSurface::run()
         float cmb_rate_cms = constrain_float(fabsf(sub.wp_nav.get_default_speed_up_cms()), 1, position_control->get_max_speed_up_cms());
 
         // update altitude target and call position controller
-        position_control->set_pos_target_U_from_climb_rate_cm(cmb_rate_cms);
+        position_control->set_pos_target_U_from_climb_rate_cms(cmb_rate_cms);
         position_control->update_U_controller();
     }
     // pilot has control for repositioning

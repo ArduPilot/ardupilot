@@ -16,8 +16,10 @@
 #ifndef HAL_LOGGER_WRITE_CHUNK_SIZE
 #if AP_FILESYSTEM_LITTLEFS_ENABLED
 #define HAL_LOGGER_WRITE_CHUNK_SIZE 2048
+#elif AP_FILESYSTEM_FATFS_ENABLED
+#define HAL_LOGGER_WRITE_CHUNK_SIZE (AP_Filesystem_FATFS::get_io_size())
 #else
-#define HAL_LOGGER_WRITE_CHUNK_SIZE 4096
+#define HAL_LOGGER_WRITE_CHUNK_SIZE AP_FATFS_MIN_IO_SIZE
 #endif
 #endif
 
@@ -60,7 +62,7 @@ public:
     void periodic_1Hz() override;
     void periodic_fullrate() override;
 
-    // this method is used when reporting system status over mavlink
+    // this method is used for mavlink system status and arming checks
     bool logging_failed() const override;
 
     bool logging_started(void) const override { return _write_fd != -1; }

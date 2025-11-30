@@ -325,6 +325,7 @@ AP_HW_ORQAH7QUADCORE                 1204
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
 AP_HW_NUCLEO_H753ZI                  1207
+AP_HW_DAKEFPVH743_SLIM               1208
 
 AP_HW_CSKY-PMU                       1212
 
@@ -380,6 +381,11 @@ AP_HW_F4BY_H743                      1531
 AP_HW_AERIUM_RADIAN_F405             1800
 AP_HW_AERIUM_RADIAN_H743             1801
 
+#IDs 1850-1869 reserved for Arkin Labs 
+AP_HW_A2M6X                          1850
+AP_HW_A2M6X_NANO                     1855
+AP_HW_A2M6X_V2                       1860
+
 # IDs 1950-1979 reserved for HC Robotics
 AP_HW_HCR-504                        1950
 AP_HW_HCR-506                        1951
@@ -404,6 +410,8 @@ AP_HW_AET-H743-Basic                 2024
 AP_HW_BOTWINGF405                    2501
 
 AP_HW_SakuraRC-H743                  2714
+
+AP_HW_SkyRukh_Surge_H7               2815
 
 # IDs 4000-4009 reserved for Karshak Drones
 AP_HW_KRSHKF7_MINI                   4000

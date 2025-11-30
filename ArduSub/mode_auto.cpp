@@ -458,6 +458,7 @@ bool ModeAuto::auto_terrain_recover_start()
     position_control->relax_U_controller(motors.get_throttle_hover());
 
     // initialize vertical maximum speeds and acceleration
+    // All limits must be positive
     position_control->set_max_speed_accel_U_cm(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
     position_control->set_correction_speed_accel_U_cm(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
 
@@ -560,7 +561,7 @@ void ModeAuto::auto_terrain_recover_run()
 
     /////////////////////
     // update z target //
-    position_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate);
+    position_control->set_pos_target_U_from_climb_rate_cms(target_climb_rate);
     position_control->update_U_controller();
 
     ////////////////////////////

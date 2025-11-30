@@ -128,11 +128,11 @@ void ModeFollow::run()
         }
     } else {
         // Target data is invalid; hold position using zero velocity and acceleration inputs
-        Vector2f vel_zero;
-        Vector2f accel_zero;
-        pos_control->input_vel_accel_NE_m(vel_zero, accel_zero, false);
-        float velz = 0.0;
-        pos_control->input_vel_accel_U_m(velz, 0.0, false);
+        Vector2f vel_ne_zero;
+        Vector2f accel_ne_zero;
+        pos_control->input_vel_accel_NE_m(vel_ne_zero, accel_ne_zero, false);
+        float vel_u_zero = 0.0;
+        pos_control->input_vel_accel_U_m(vel_u_zero, 0.0, false);
         yaw_rate_rads = 0.0f;
     }
 

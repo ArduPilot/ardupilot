@@ -41,10 +41,11 @@ void QAutoTune::get_pilot_desired_rp_yrate_rad(float &des_roll_rad, float &des_p
 void QAutoTune::init_z_limits()
 {
     // set vertical speed and acceleration limits
-    plane.quadplane.pos_control->set_max_speed_accel_U_m(-plane.quadplane.get_pilot_velocity_z_max_dn_m(),
+    // All limits must be positive
+    plane.quadplane.pos_control->set_max_speed_accel_U_m(plane.quadplane.get_pilot_velocity_z_max_dn_m(),
                                                        plane.quadplane.pilot_speed_z_max_up_ms,
                                                        plane.quadplane.pilot_accel_z_mss);
-    plane.quadplane.pos_control->set_correction_speed_accel_U_m(-plane.quadplane.get_pilot_velocity_z_max_dn_m(),
+    plane.quadplane.pos_control->set_correction_speed_accel_U_m(plane.quadplane.get_pilot_velocity_z_max_dn_m(),
                                                               plane.quadplane.pilot_speed_z_max_up_ms,
                                                               plane.quadplane.pilot_accel_z_mss);
 }

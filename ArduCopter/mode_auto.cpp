@@ -407,11 +407,11 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
     // by default current_alt_m and alt_target_m are alt-above-EKF-origin
     float alt_target_m;
     bool alt_target_terrain = false;
-    float current_alt_m = pos_control->get_pos_estimate_NEU_m().z;
-    float terrain_offset_m;   // terrain's altitude in m above the ekf origin
-    if ((dest_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) && wp_nav->get_terrain_offset_m(terrain_offset_m)) {
+    float current_alt_m = pos_control->get_pos_estimate_U_m();
+    float terrain_u_m;   // terrain's altitude in m above the ekf origin
+    if ((dest_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) && wp_nav->get_terrain_U_m(terrain_u_m)) {
         // subtract terrain offset to convert vehicle's alt-above-ekf-origin to alt-above-terrain
-        current_alt_m -= terrain_offset_m;
+        current_alt_m -= terrain_u_m;
 
         // specify alt_target_m as alt-above-terrain
         alt_target_m = dest_loc.alt * 0.01;
@@ -709,6 +709,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_WAYPOINT:                  // 16  Navigate to Waypoint
+    case MAV_CMD_NAV_ARC_WAYPOINT:              // 36 Navigate to waypoint via an arc
         do_nav_wp(cmd);
         break;
 
@@ -947,6 +948,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_WAYPOINT:
+    case MAV_CMD_NAV_ARC_WAYPOINT:
         cmd_complete = verify_nav_wp(cmd);
         break;
 
@@ -1218,7 +1220,7 @@ void ModeAuto::loiter_to_alt_run()
         pos_control->get_pos_U_p().kP(),
         pos_control->get_max_accel_U_mss(),
         G_Dt);
-    target_climb_rate_ms = constrain_float(target_climb_rate_ms, pos_control->get_max_speed_down_ms(), pos_control->get_max_speed_up_ms());
+    target_climb_rate_ms = constrain_float(target_climb_rate_ms, -pos_control->get_max_speed_down_ms(), pos_control->get_max_speed_up_ms());
 
     // get avoidance adjusted climb rate
     target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
@@ -1229,7 +1231,7 @@ void ModeAuto::loiter_to_alt_run()
 #endif
 
     // Send the commanded climb rate to the position controller
-    pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_ms);
+    pos_control->set_pos_target_U_from_climb_rate_ms(target_climb_rate_ms);
 
     pos_control->update_U_controller();
 }
@@ -1244,7 +1246,7 @@ void ModeAuto::nav_attitude_time_run()
     }
 
     // constrain climb rate
-    float target_climb_rate_ms = constrain_float(nav_attitude_time.climb_rate_ms, pos_control->get_max_speed_down_ms(), pos_control->get_max_speed_up_ms());
+    float target_climb_rate_ms = constrain_float(nav_attitude_time.climb_rate_ms, -pos_control->get_max_speed_down_ms(), pos_control->get_max_speed_up_ms());
 
     // get avoidance adjusted climb rate
     target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
@@ -1259,7 +1261,7 @@ void ModeAuto::nav_attitude_time_run()
     attitude_control->input_euler_angle_roll_pitch_yaw_rad(target_rp_rad.x, target_rp_rad.y, radians(nav_attitude_time.yaw_deg), true);
 
     // Send the commanded climb rate to the position controller
-    pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_ms);
+    pos_control->set_pos_target_U_from_climb_rate_ms(target_climb_rate_ms);
 
     pos_control->update_U_controller();
 }
@@ -1368,7 +1370,7 @@ void PayloadPlace::run()
             break;
         }
         // calibrate the decent thrust after aircraft has reached constant decent rate and release if threshold is reached
-        if (pos_control->get_vel_desired_NEU_ms().z > -0.95 * descent_speed_ms) {
+        if (pos_control->get_vel_desired_U_ms() > -0.95 * descent_speed_ms) {
             // decent rate has not reached descent_speed_ms
             descent_established_time_ms = now_ms;
             break;
@@ -1599,7 +1601,11 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
     // this is the delay, stored in seconds
-    loiter_time_max = cmd.p1;
+    if (cmd.id == MAV_CMD_NAV_ARC_WAYPOINT) {
+        loiter_time_max = 0;
+    } else {
+        loiter_time_max = cmd.p1;
+    }
 
     // set next destination if necessary
     if (!set_next_wp(cmd, target_loc)) {
@@ -1616,8 +1622,9 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 // returns true on success, false on failure which should only happen due to a failure to retrieve terrain data
 bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const Location &default_loc)
 {
-    // do not add next wp if current command has a delay meaning the vehicle will stop at the destination
-    if (current_cmd.p1 > 0) {
+    // Do not add the next WP if the current command includes a delay (p1 > 0).
+    // Only MAV_CMD_NAV_WAYPOINT and MAV_CMD_NAV_SPLINE_WAYPOINT use p1 as a delay.
+    if (current_cmd.p1 > 0 && (current_cmd.id == MAV_CMD_NAV_WAYPOINT || current_cmd.id == MAV_CMD_NAV_SPLINE_WAYPOINT)) {
         return true;
     }
 
@@ -1645,6 +1652,12 @@ bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const
         bool next_next_dest_loc_is_spline;
         get_spline_from_cmd(next_cmd, default_loc, next_dest_loc, next_next_dest_loc, next_next_dest_loc_is_spline);
         return wp_nav->set_spline_destination_next_loc(next_dest_loc, next_next_dest_loc, next_next_dest_loc_is_spline);
+    }
+    case MAV_CMD_NAV_ARC_WAYPOINT: {
+        const Location dest_loc = loc_from_cmd(current_cmd, default_loc);
+        const Location next_dest_loc = loc_from_cmd(next_cmd, dest_loc);
+        const float arc_angle_rad = next_cmd.get_arc_angle_rad();
+        return wp_nav->set_wp_destination_next_loc(next_dest_loc, arc_angle_rad);
     }
     case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_LAND:

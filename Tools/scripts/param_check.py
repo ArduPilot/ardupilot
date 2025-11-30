@@ -29,6 +29,7 @@ AP_FLAKE8_CLEAN
 
 """
 
+from __future__ import annotations
 import os
 import json
 import re
@@ -80,7 +81,7 @@ def parse_arguments():
     return args
 
 
-def check_file(file, metadata, skip : SkippedChecks = None):
+def check_file(file, metadata, skip: SkippedChecks | None = None):
     """Checks a single parameter file against the metadata.
 
     Loads the parameters from the specified file and validates each parameter
@@ -129,7 +130,7 @@ def check_file(file, metadata, skip : SkippedChecks = None):
     return msgs
 
 
-def check_param(name, value, metadata, skip : SkippedChecks = None):
+def check_param(name, value, metadata, skip: SkippedChecks | None = None):
     """Checks a single parameter against its metadata definition.
 
     Validates the specified parameter. If the metadata contains multiple types
@@ -264,7 +265,7 @@ def check_values(name, value, metadata):
     return None
 
 
-def load_params(file, skip : SkippedChecks = None, depth=0):
+def load_params(file, skip: SkippedChecks | None = None, depth=0):
     """Loads a parameter file and returns parameters and errors.
 
     Reads the specified parameter file, stripping out comments. It checks the
@@ -484,7 +485,7 @@ def main():
     metadata = get_metadata(args.vehicle.split(','))
 
     # Dictionary to store error messages for each file
-    messages = {} # {filename: [error messages]}
+    messages = {}  # {filename: [error messages]}
 
     # Check each file, and store any error messages
     for file in args.files:
@@ -507,4 +508,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main() # pragma: no cover
+    main()  # pragma: no cover

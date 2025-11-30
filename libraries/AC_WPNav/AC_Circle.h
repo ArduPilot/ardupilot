@@ -146,12 +146,12 @@ public:
     bool roi_at_center() const { return (_options.get() & CircleOptions::ROI_AT_CENTER) != 0; }
 
     // Sets rangefinder terrain offset (in centimeters) above EKF origin.
-    // See set_rangefinder_terrain_offset_m() for full details.
-    void set_rangefinder_terrain_offset_cm(bool use, bool healthy, float terrain_offset_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_terrain_offset_m = terrain_offset_cm * 0.01;}
+    // See set_rangefinder_terrain_U_m() for full details.
+    void set_rangefinder_terrain_U_cm(bool use, bool healthy, float terrain_u_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_terrain_u_m = terrain_u_cm * 0.01;}
 
     // Sets rangefinder terrain offset (in meters) above EKF origin.
     // Used for terrain-relative altitude tracking during circular flight.
-    void set_rangefinder_terrain_offset_m(bool use, bool healthy, float terrain_offset_m) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_terrain_offset_m = terrain_offset_m;}
+    void set_rangefinder_terrain_U_m(bool use, bool healthy, float terrain_u_m) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_terrain_u_m = terrain_u_m;}
 
     // Checks if the circle radius parameter has changed.
     // If so, updates internal `_radius_m` and stores the new parameter value.
@@ -183,7 +183,7 @@ private:
     // Returns terrain offset in meters above the EKF origin at the current position.
     // Positive values indicate terrain is above the EKF origin altitude.
     // Terrain source may be rangefinder or terrain database.
-    bool get_terrain_offset_m(float& offset_m);
+    bool get_terrain_U_m(float& terrain_u_m);
 
     // references to inertial nav and ahrs libraries
     const AP_AHRS_View&         _ahrs;
@@ -218,5 +218,5 @@ private:
     bool  _is_terrain_alt;               // True if _center_neu_m.z is relative to terrain height; false if relative to EKF origin.
     bool  _rangefinder_available;        // True if rangefinder is available and enabled.
     bool  _rangefinder_healthy;          // True if rangefinder reading is within valid operating range.
-    float _rangefinder_terrain_offset_m; // Terrain height above EKF origin (meters), from rangefinder or terrain database.
+    float _rangefinder_terrain_u_m; // Terrain height above EKF origin (meters), from rangefinder or terrain database.
 };

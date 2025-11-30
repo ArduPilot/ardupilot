@@ -148,4 +148,5 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 1
 # Motor order implies Betaflight/X for standard ESCs
 define HAL_FRAME_TYPE_DEFAULT 12
 define HAL_OS_FATFS_IO 1
+define HAL_LOGGER_MIN_MB_FREE 25
 define DEFAULT_NTF_LED_TYPES 455

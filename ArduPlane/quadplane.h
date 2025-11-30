@@ -573,7 +573,7 @@ private:
     uint32_t last_pidz_active_ms;
     uint32_t last_pidz_init_ms;
 
-    // throttle scailing for vectored motors in FW flighy
+    // throttle scaling for vectored motors in FW flight
     float FW_vector_throttle_scaling(void);
 
     void afs_terminate(void);
@@ -625,6 +625,12 @@ private:
 
     // AHRS alt for land abort and package place, meters
     float land_descend_start_alt_m;
+
+#if HAL_WITH_ESC_TELEM
+    // optionally block auto takeoff until all motors are spinning as expected
+    AP_Int16 takeoff_rpm_min;
+    AP_Int16 takeoff_rpm_max;
+#endif
 
     // min alt for navigation in takeoff
     AP_Float takeoff_navalt_min_m;

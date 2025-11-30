@@ -23,7 +23,7 @@
 #define POSCONTROL_STOPPING_DIST_DOWN_MAX_M     2.0f    // max stopping distance (in m) vertically while descending
 
 #define POSCONTROL_SPEED_MS                     5.0f    // default horizontal speed in m/s
-#define POSCONTROL_SPEED_DOWN_MS                -1.5f   // default descent rate in m/s
+#define POSCONTROL_SPEED_DOWN_MS                1.5f    // default descent rate in m/s
 #define POSCONTROL_SPEED_UP_MS                  2.5f    // default climb rate in m/s
 
 #define POSCONTROL_ACCEL_U_MSS                  2.5f    // default vertical acceleration in m/s²
@@ -82,20 +82,24 @@ public:
 
     // Sets maximum horizontal speed (cm/s) and acceleration (cm/s²) for NE-axis shaping.
     // Can be called anytime; transitions are handled smoothly.
+    // All arguments should be positive.
     // See set_max_speed_accel_NE_m() for full details.
     void set_max_speed_accel_NE_cm(float speed_cms, float accel_cmss);
 
     // Sets maximum horizontal speed (m/s) and acceleration (m/s²) for NE-axis shaping.
     // These values constrain the kinematic trajectory used by the lateral controller.
+    // All arguments should be positive.
     void set_max_speed_accel_NE_m(float speed_ms, float accel_mss);
 
     // Sets horizontal correction limits for velocity (cm/s) and acceleration (cm/s²).
     // Should be called only during initialization to avoid control discontinuities.
+    // All arguments should be positive.
     // See set_correction_speed_accel_NE_m() for full details.
     void set_correction_speed_accel_NE_cm(float speed_cms, float accel_cmss);
 
     // Sets horizontal correction limits for velocity (m/s) and acceleration (m/s²).
     // These values constrain the PID correction path, not the desired trajectory.
+    // All arguments should be positive.
     void set_correction_speed_accel_NE_m(float speed_ms, float accel_mss);
 
     // Returns maximum horizontal speed in cm/s.
@@ -185,20 +189,24 @@ public:
     // Sets maximum climb/descent rate (cm/s) and vertical acceleration (cm/s²) for the U-axis.
     // Descent rate may be positive or negative and is always interpreted as a descent.
     // See set_max_speed_accel_U_m() for full details.
-    void set_max_speed_accel_U_cm(float speed_down_cms, float speed_up_cms, float accel_cmss);
+    // All values must be positive.
+    void set_max_speed_accel_U_cm(float decent_speed_max_cms, float climb_speed_max_cms, float accel_max_u_cmss);
 
     // Sets maximum climb/descent rate (m/s) and vertical acceleration (m/s²) for the U-axis.
     // These values are used for jerk-limited kinematic shaping of the vertical trajectory.
-    void set_max_speed_accel_U_m(float speed_down_ms, float speed_up_ms, float accel_mss);
+    // All values must be positive.
+    void set_max_speed_accel_U_m(float decent_speed_max_ms, float climb_speed_max_ms, float accel_max_u_mss);
 
     // Sets vertical correction velocity and acceleration limits (cm/s, cm/s²).
     // Should only be called during initialization to avoid discontinuities.
     // See set_correction_speed_accel_U_m() for full details.
-    void set_correction_speed_accel_U_cm(float speed_down_cms, float speed_up_cms, float accel_cmss);
+    // All values must be positive.
+    void set_correction_speed_accel_U_cm(float decent_speed_max_cms, float climb_speed_max_cms, float accel_max_u_cmss);
 
     // Sets vertical correction velocity and acceleration limits (m/s, m/s²).
     // These values constrain the correction output of the PID controller.
-    void set_correction_speed_accel_U_m(float speed_down_ms, float speed_up_ms, float accel_mss);
+    // All values must be positive.
+    void set_correction_speed_accel_U_m(float decent_speed_max_ms, float climb_speed_max_ms, float accel_max_u_mss);
 
     // Returns maximum vertical acceleration in m/s² used for shaping the climb/descent trajectory.
     float get_max_accel_U_mss() const { return _accel_max_u_mss; }
@@ -216,7 +224,7 @@ public:
     // Returns maximum climb rate in m/s used for shaping the vertical trajectory.
     float get_max_speed_up_ms() const { return _vel_max_up_ms; }
 
-    /// Returns maximum descent rate in m/s (typically negative).
+    /// Returns maximum descent rate in m/s (zero or positive).
     float get_max_speed_down_ms() const { return _vel_max_down_ms; }
 
     // Initializes U-axis controller to current position, velocity, and acceleration, disallowing descent.
@@ -250,17 +258,12 @@ public:
 
     // Generates a vertical trajectory using the given climb rate in cm/s and jerk-limited shaping.
     // Adjusts the internal target altitude based on integrated climb rate.
-    // See set_pos_target_U_from_climb_rate_m() for full details.
-    void set_pos_target_U_from_climb_rate_cm(float vel_u_cms);
+    // See set_pos_target_U_from_climb_rate_ms() for full details.
+    void set_pos_target_U_from_climb_rate_cms(float vel_u_cms);
 
     // Generates a vertical trajectory using the given climb rate in m/s and jerk-limited shaping.
     // Target altitude is updated over time by integrating the climb rate.
-    void set_pos_target_U_from_climb_rate_m(float vel_u_ms);
-
-    // Descends at a given rate (cm/s) using jerk-limited shaping for landing.
-    // If `ignore_descent_limit` is true, descent output is not limited by the configured max.
-    // See land_at_climb_rate_ms() for full details.
-    void land_at_climb_rate_cms(float vel_u_cms, bool ignore_descent_limit);
+    void set_pos_target_U_from_climb_rate_ms(float vel_u_ms);
 
     // Descends at a given rate (m/s) using jerk-limited shaping for landing.
     // Used during final descent phase to ensure smooth touchdown.
@@ -310,6 +313,9 @@ public:
 
     // Returns the estimated position in NEU frame, in meters relative to EKF origin.
     const Vector3p& get_pos_estimate_NEU_m() const { return _pos_estimate_neu_m; }
+
+    // Returns estimated altitude above EKF origin in meters.
+    float get_pos_estimate_U_m() const { return _pos_estimate_neu_m.z; }
 
     // Returns the target position in NEU frame, in meters relative to EKF origin.
     const Vector3p& get_pos_target_NEU_m() const { return _pos_target_neu_m; }
@@ -372,6 +378,9 @@ public:
     // Returns current velocity estimate in NEU frame in m/s.
     const Vector3f& get_vel_estimate_NEU_ms() const { return _vel_estimate_neu_ms; }
 
+    // Returns current velocity estimate (Up) in m/s.
+    float get_vel_estimate_U_ms() const { return _vel_estimate_neu_ms.z; }
+
     // Sets desired velocity in NEU frame in cm/s.
     // See set_vel_desired_NEU_ms() for full details.
     void set_vel_desired_NEU_cms(const Vector3f &vel_desired_neu_cms) { set_vel_desired_NEU_ms(vel_desired_neu_cms * 0.01); }
@@ -388,6 +397,9 @@ public:
 
     // Returns desired velocity in NEU frame in m/s.
     const Vector3f& get_vel_desired_NEU_ms() const { return _vel_desired_neu_ms; }
+
+    // Returns desired velocity (Up) in m/s.
+    float get_vel_desired_U_ms() const { return _vel_desired_neu_ms.z; }
 
     // Returns velocity target in NEU frame in cm/s.
     // See get_vel_target_NEU_ms() for full details.
@@ -587,7 +599,7 @@ public:
 
     // Returns measured vertical (Up) acceleration in m/s² (Earth frame, gravity-compensated).
     // Positive = upward acceleration.
-    float get_measured_accel_U_mss() const { return -(_ahrs.get_accel_ef().z + GRAVITY_MSS); }
+    float get_estimate_accel_U_mss() const { return -(_ahrs.get_accel_ef().z + GRAVITY_MSS); }
 
     // Returns true if the requested forward pitch is limited by the configured tilt constraint.
     bool get_fwd_pitch_is_limited() const;
@@ -697,8 +709,8 @@ protected:
     AP_Float        _lean_angle_max_deg;    // Maximum autopilot commanded angle (in degrees). Set to zero for Angle Max
     AP_Float        _shaping_jerk_ne_msss;  // Jerk limit of the ne kinematic path generation in m/s³ used to determine how quickly the aircraft varies the acceleration target
     AP_Float        _shaping_jerk_u_msss;   // Jerk limit of the u kinematic path generation in m/s³ used to determine how quickly the aircraft varies the acceleration target
-    AC_P_2D         _p_pos_ne_m;            // XY axis position controller to convert target distance (cm) to target velocity (cm/s)
-    AC_P_1D         _p_pos_u_m;             // Z axis position controller to convert target altitude (cm) to target climb rate (cm/s)
+    AC_P_2D         _p_pos_ne_m;            // XY axis position controller to convert target distance (m) to target velocity (m/s)
+    AC_P_1D         _p_pos_u_m;             // Z axis position controller to convert target altitude (m) to target climb rate (m/s)
     AC_PID_2D       _pid_vel_ne_cm;         // XY axis velocity controller to convert target velocity (cm/s) to target acceleration (cm/s²)
     AC_PID_Basic    _pid_vel_u_cm;          // Z axis velocity controller to convert target climb rate (cm/s) to target acceleration (cm/s²)
     AC_PID          _pid_accel_u_cm_to_kt;  // Z axis acceleration controller to convert target acceleration (cm/s²) to throttle output (0 to 1000)

@@ -37,10 +37,10 @@ bool AC_WPNav_OA::set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, 
 // - destination_neu_m: NEU offset from EKF origin in meters.
 // - is_terrain_alt: true if the Z component represents altitude above terrain.
 // - Resets OA state on success.
-bool AC_WPNav_OA::set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt)
+bool AC_WPNav_OA::set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt, float arc_ang_rad)
 {
     // Call base implementation to set destination and terrain-altitude flag
-    const bool ret = AC_WPNav::set_wp_destination_NEU_m(destination_neu_m, is_terrain_alt);
+    const bool ret = AC_WPNav::set_wp_destination_NEU_m(destination_neu_m, is_terrain_alt, arc_ang_rad);
 
     // If destination set successfully, reset OA state to inactive
     if (ret) {
@@ -236,8 +236,8 @@ bool AC_WPNav_OA::update_wpnav()
                 target_alt_loc.linearly_interpolate_alt(origin_loc, destination_loc);
 
                 // Get terrain offset if needed
-                float terr_offset_m = 0;
-                if (_is_terrain_alt_oabak && !get_terrain_offset_m(terr_offset_m)) {
+                float terrain_u_m = 0;
+                if (_is_terrain_alt_oabak && !get_terrain_U_m(terrain_u_m)) {
                     // trigger terrain failsafe
                     return false;
                 }
@@ -254,7 +254,7 @@ bool AC_WPNav_OA::update_wpnav()
                 Vector3p destination_neu_m{destination_ne_m.x, destination_ne_m.y, target_alt_loc_alt_m};
 
                 // pass the desired position directly to the position controller
-                _pos_control.input_pos_NEU_m(destination_neu_m, terr_offset_m, 10.0);
+                _pos_control.input_pos_NEU_m(destination_neu_m, terrain_u_m, 10.0);
 
                 // update horizontal position controller (vertical is updated in vehicle code)
                 _pos_control.update_NE_controller();

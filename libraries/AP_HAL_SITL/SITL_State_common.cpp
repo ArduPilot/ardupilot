@@ -22,6 +22,7 @@
 #include "SITL_State_common.h"
 
 #include <SITL/SIM_RF_Ainstein_LR_D1.h>
+#include <SITL/SIM_RF_Ainstein_LR_D1_v19.h>
 #include <SITL/SIM_RF_Benewake_TF02.h>
 #include <SITL/SIM_RF_Benewake_TF03.h>
 #include <SITL/SIM_RF_Benewake_TFmini.h>
@@ -49,6 +50,7 @@ static const struct {
     SITL::SerialRangeFinder *(*createfn)();
 }  serial_rangefinder_definitions[] {
     { "ainsteinlrd1", SITL::RF_Ainstein_LR_D1::create },
+    { "ainsteinlrd1_v19", SITL::RF_Ainstein_LR_D1_v19::create },
     { "benewake_tf02", SITL::RF_Benewake_TF02::create },
     { "benewake_tf03", SITL::RF_Benewake_TF03::create },
     { "benewake_tfmini", SITL::RF_Benewake_TFmini::create },
@@ -225,7 +227,13 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         if (vectornav != nullptr) {
             AP_HAL::panic("Only one VectorNav at a time");
         }
-        vectornav = NEW_NOTHROW SITL::VectorNav();
+        vectornav = NEW_NOTHROW SITL::VectorNav(SITL::VectorNav::VNModel::VN300);
+        return vectornav;
+    } else if (streq(name, "VectorNav_VN100")) {
+        if (vectornav != nullptr) {
+            AP_HAL::panic("Only one VectorNav at a time");
+        }
+        vectornav = NEW_NOTHROW SITL::VectorNav(SITL::VectorNav::VNModel::VN100);
         return vectornav;
     } else if (streq(name, "MicroStrain5")) {
         if (microstrain5 != nullptr) {

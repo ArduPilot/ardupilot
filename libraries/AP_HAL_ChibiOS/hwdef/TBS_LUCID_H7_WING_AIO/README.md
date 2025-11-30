@@ -40,26 +40,26 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
  - SERIAL3 -> UART3 (DisplayPort, DMA-enabled)
  - SERIAL4 -> UART4 (RC Input, DMA-enabled)
  - SERIAL6 -> UART6 (GPS, DMA-enabled)
- - SERIAL7 -> UART7 (ESC)
+ - SERIAL7 -> UART7 (ESC, RX-only)
  - SERIAL8 -> UART8 (MAVLink2)
  - SERIAL9 -> USB (SLCAN)
 
 ## RC Input
 
-RC input is configured by default via the USART6 RX input. It supports all serial RC protocols except PPM.
+RC input is configured by default via the USART4 RX input. It supports all serial RC protocols except PPM.
 
-* For FPort the receiver must be tied to the USART4 TX6 pin , :ref:`RSSI_TYPE<RSSI_TYPE>` set to 3, :ref:`SERIAL4_OPTIONS <SERIAL4_OPTIONS>` = "7" (invert TX/RX, half duplex).
-* For full duplex CRSF/ELRS use both TX6 and RX6, and :ref:`RSSI_TYPE<RSSI_TYPE>` set to 3 and provides telemetry.
+* For FPort the receiver must be tied to the USART4 TX pin , :ref:`RSSI_TYPE<RSSI_TYPE>` set to 3, :ref:`SERIAL4_OPTIONS <SERIAL4_OPTIONS>` = "7" (invert TX/RX, half duplex).
+* For full duplex CRSF/ELRS use both TX4 and RX4, and :ref:`RSSI_TYPE<RSSI_TYPE>` set to 3 and provides telemetry.
  
 If SBUS is used on HD VTX connector (DJI TX), then :ref:`SERIAL1_PROTOCOl<SERIAL1_PROTOCOl>` should be set to "23" and :ref:`SERIAL4_PROTOCOL<SERIAL4_PROTOCOL>` changed to something else. If UART1 is used for something else, be sure the RX2 pin on the HD VTX connector is left open.
 
 ## FrSky Telemetry
  
-FrSky Telemetry is supported using an unused UART, such as the T1 pin (UART1 transmit).
-Using UART1 you would need to set the following parameters to enable support for FrSky S.PORT:
+FrSky Telemetry is supported using an unused UART, such as the T2 pin (UART2 transmit).
+Using UART2 you would need to set the following parameters to enable support for FrSky S.PORT:
  
- - :ref:`SERIAL1_PROTOCOL<SERIAL1_PROTOCOL>` 10
- - :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` 7
+ - :ref:`SERIAL2_PROTOCOL<SERIAL1_PROTOCOL>` 10
+ - :ref:`SERIAL2_OPTIONS<SERIAL1_OPTIONS>` 7
   
 ## OSD Support
 
@@ -67,22 +67,20 @@ The TBS Lucid H7 Wing AIO supports analog OSD using its onboard MAX7456 and simu
 
 ## PWM Output
 
-The TBS Lucid H7 Wing AIO supports up to 13 PWM or DShot outputs. The pads for motor output
-M1 to M4 are provided on both the motor connectors and on separate pads, plus
-M9-13 on a separate pads for LED strip and other PWM outputs.
+The TBS Lucid H7 Wing AIO supports up to 8 PWM or DShot outputs. Motor outputs
+M1-M6 are provided in the servo housing, plus M7 and M13 (LED strip output) on separate pads near the main ESC output.
 
 The PWM is in 4 groups:
 
  - PWM 1-2   in group1
  - PWM 3-4   in group2
  - PWM 5-6   in group3
- - PWM 7-10  in group4
- - PWM 11-12 in group5 (only supports PWM protocols)
- - PWM 13    in group6 (Serial LED by default)
+ - PWM 7     in group4
+ - PWM 13    in group5 (Serial LED by default)
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
-to use DShot. Channels 1-10 support bi-directional dshot.
+to use DShot. Channels 1-7 support bi-directional dshot.
 
 ## Battery Monitoring
 

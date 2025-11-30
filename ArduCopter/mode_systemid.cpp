@@ -375,7 +375,7 @@ void ModeSystemId::run()
         attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), target_yaw_rate_rads, false);
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_ms);
+        pos_control->set_pos_target_U_from_climb_rate_ms(target_climb_rate_ms);
 
         // run the vertical position controller and set output throttle
         pos_control->update_U_controller();

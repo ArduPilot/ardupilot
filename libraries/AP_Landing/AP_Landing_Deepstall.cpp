@@ -362,7 +362,7 @@ bool AP_Landing_Deepstall::override_servos(void)
 
     // use the current airspeed to dictate the travel limits
     float airspeed;
-    if (!landing.ahrs.airspeed_estimate(airspeed)) {
+    if (!landing.ahrs.airspeed_EAS(airspeed)) {
         airspeed = 0; // safely forces control to the deepstall steering since we don't have an estimate
     }
 

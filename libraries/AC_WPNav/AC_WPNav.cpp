@@ -173,8 +173,8 @@ void AC_WPNav::wp_and_spline_init_m(float speed_ms, Vector3p stopping_point_neu_
     // initialise position controller speed and acceleration
     _pos_control.set_max_speed_accel_NE_m(_wp_desired_speed_ne_ms, get_wp_acceleration_mss());
     _pos_control.set_correction_speed_accel_NE_m(_wp_desired_speed_ne_ms, get_wp_acceleration_mss());
-    _pos_control.set_max_speed_accel_U_m(-get_default_speed_down_ms(), get_default_speed_up_ms(), get_accel_U_mss());
-    _pos_control.set_correction_speed_accel_U_m(-get_default_speed_down_ms(), get_default_speed_up_ms(), get_accel_U_mss());
+    _pos_control.set_max_speed_accel_U_m(get_default_speed_down_ms(), get_default_speed_up_ms(), get_accel_U_mss());
+    _pos_control.set_correction_speed_accel_U_m(get_default_speed_down_ms(), get_default_speed_up_ms(), get_accel_U_mss());
 
     // calculate jerk limit if not explicitly set by parameter
     if (!is_positive(_wp_jerk_msss)) {
@@ -259,8 +259,9 @@ void AC_WPNav::set_speed_down_ms(float speed_down_ms)
 
 // Sets the current waypoint destination using a Location object.
 // Converts global coordinates to NEU position and sets destination.
+// arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
 // Returns false if conversion fails (e.g. missing terrain data).
-bool AC_WPNav::set_wp_destination_loc(const Location& destination)
+bool AC_WPNav::set_wp_destination_loc(const Location& destination, float arc_rad)
 {
     bool is_terrain_alt;
     Vector3p dest_neu_m;
@@ -271,13 +272,14 @@ bool AC_WPNav::set_wp_destination_loc(const Location& destination)
     }
 
     // apply destination as the active waypoint leg
-    return set_wp_destination_NEU_m(dest_neu_m, is_terrain_alt);
+    return set_wp_destination_NEU_m(dest_neu_m, is_terrain_alt, arc_rad);
 }
 
 // Sets the next waypoint destination using a Location object.
 // Converts global coordinates to NEU position and preloads the trajectory.
+// arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
 // Returns false if conversion fails or terrain data is unavailable.
-bool AC_WPNav::set_wp_destination_next_loc(const Location& destination)
+bool AC_WPNav::set_wp_destination_next_loc(const Location& destination, float arc_rad)
 {
     bool is_terrain_alt;
     Vector3p dest_neu_m;
@@ -288,7 +290,7 @@ bool AC_WPNav::set_wp_destination_next_loc(const Location& destination)
     }
 
     // apply destination as the next waypoint leg
-    return set_wp_destination_next_NEU_m(dest_neu_m, is_terrain_alt);
+    return set_wp_destination_next_NEU_m(dest_neu_m, is_terrain_alt, arc_rad);
 }
 
 // Gets the current waypoint destination as a Location object.
@@ -316,8 +318,9 @@ bool AC_WPNav::set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, boo
 // Sets waypoint destination using NEU position vector in meters from EKF origin.
 // If `is_terrain_alt` is true, altitude is interpreted as height above terrain.
 // Reinitializes the current leg if interrupted, updates origin, and computes trajectory.
+// arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
 // Returns false if terrain offset cannot be determined when required.
-bool AC_WPNav::set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt)
+bool AC_WPNav::set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt, float arc_rad)
 {
     // re-initialise if previous destination has been interrupted
     if (!is_active() || !_flags.reached_destination) {
@@ -342,19 +345,19 @@ bool AC_WPNav::set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool 
         }
     } else {
         // Handle transition between terrain-relative and origin-relative altitude frames
-        float origin_terr_offset_u_m;
-        if (!get_terrain_offset_m(origin_terr_offset_u_m)) {
+        float terrain_u_m;
+        if (!get_terrain_U_m(terrain_u_m)) {
             return false;
         }
 
         // convert origin to alt-above-terrain if necessary
         if (is_terrain_alt) {
             // Convert origin.z to terrain-relative altitude
-            _origin_neu_m.z -= origin_terr_offset_u_m;
-            _pos_control.init_pos_terrain_U_m(origin_terr_offset_u_m);
+            _origin_neu_m.z -= terrain_u_m;
+            _pos_control.init_pos_terrain_U_m(terrain_u_m);
         } else {
             // Convert origin.z to origin-relative altitude
-            _origin_neu_m.z += origin_terr_offset_u_m;
+            _origin_neu_m.z += terrain_u_m;
             _pos_control.init_pos_terrain_U_m(0.0);
         }
     }
@@ -368,9 +371,9 @@ bool AC_WPNav::set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool 
         _scurve_this_leg = _scurve_next_leg;
     } else {
         // Generate a new S-curve segment to the new destination
-        _scurve_this_leg.calculate_track(_origin_neu_m, _destination_neu_m,
+        _scurve_this_leg.calculate_track(_origin_neu_m, _destination_neu_m, arc_rad,
                                          _pos_control.get_max_speed_NE_ms(), _pos_control.get_max_speed_up_ms(), _pos_control.get_max_speed_down_ms(),
-                                         get_wp_acceleration_mss(), get_accel_U_mss(),
+                                         get_wp_acceleration_mss(), get_accel_U_mss(), get_corner_acceleration_mss(),
                                          _scurve_snap_max_mssss, _scurve_jerk_max_msss);
         if (!is_zero(origin_speed_m)) {
             // If we have a valid starting speed, seed it into the S-curve
@@ -391,7 +394,8 @@ bool AC_WPNav::set_wp_destination_NEU_m(const Vector3p& destination_neu_m, bool 
 // Only updates if terrain frame matches current leg.
 // Calculates trajectory preview for smoother transition into next segment.
 // Updates velocity handoff if previous leg is a spline.
-bool AC_WPNav::set_wp_destination_next_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt)
+// arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
+bool AC_WPNav::set_wp_destination_next_NEU_m(const Vector3p& destination_neu_m, bool is_terrain_alt, float arc_rad)
 {
     // do not add next point if alt types don't match
     if (is_terrain_alt != _is_terrain_alt) {
@@ -399,9 +403,9 @@ bool AC_WPNav::set_wp_destination_next_NEU_m(const Vector3p& destination_neu_m, 
     }
 
     // Preload next S-curve leg with current speed and acceleration constraints
-    _scurve_next_leg.calculate_track(_destination_neu_m, destination_neu_m,
+    _scurve_next_leg.calculate_track(_destination_neu_m, destination_neu_m, arc_rad,
                                      _pos_control.get_max_speed_NE_ms(), _pos_control.get_max_speed_up_ms(), _pos_control.get_max_speed_down_ms(),
-                                     get_wp_acceleration_mss(), get_accel_U_mss(),
+                                     get_wp_acceleration_mss(), get_accel_U_mss(), get_corner_acceleration_mss(),
                                      _scurve_snap_max_mssss, _scurve_jerk_max_msss);
     if (_this_leg_is_spline) {
         const float this_leg_dest_speed_max_ms = _spline_this_leg.get_destination_speed_max();
@@ -485,7 +489,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
 {
     // calculate terrain offset if using alt-above-terrain frame
     float terr_offset_u_m = 0.0f;
-    if (_is_terrain_alt && !get_terrain_offset_m(terr_offset_u_m)) {
+    if (_is_terrain_alt && !get_terrain_U_m(terr_offset_u_m)) {
         return false;
     }
 
@@ -708,7 +712,7 @@ bool AC_WPNav::force_stop_at_next_wp()
 // Returns terrain offset in meters above the EKF origin at the current position.
 // Positive values mean terrain lies above the EKF origin altitude.
 // Source may be rangefinder or terrain database depending on availability.
-bool AC_WPNav::get_terrain_offset_m(float& offset_m)
+bool AC_WPNav::get_terrain_U_m(float& terrain_u_m)
 {
     // determine terrain data source and compute offset accordingly
     switch (get_terrain_source()) {
@@ -718,19 +722,19 @@ bool AC_WPNav::get_terrain_offset_m(float& offset_m)
     case AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER:
         if (_rangefinder_healthy) {
             // return previously saved offset based on rangefinder
-            offset_m = _rangefinder_terrain_offset_m;
+            terrain_u_m = _rangefinder_terrain_u_m;
             return true;
         }
         return false;
 
     case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
 #if AP_TERRAIN_AVAILABLE
-        float terrain_alt_m = 0.0f;
+        float height_above_terrain_m = 0.0f;
         AP_Terrain *terrain = AP::terrain();
         if (terrain != nullptr &&
-            terrain->height_above_terrain(terrain_alt_m, true)) {
+            terrain->height_above_terrain(height_above_terrain_m, true)) {
             // compute offset as difference between current altitude and terrain height
-            offset_m = _pos_control.get_pos_estimate_NEU_m().z - terrain_alt_m;
+            terrain_u_m = _pos_control.get_pos_estimate_U_m() - height_above_terrain_m;
             return true;
         }
 #endif
@@ -828,19 +832,19 @@ bool AC_WPNav::set_spline_destination_NEU_m(const Vector3p& destination_neu_m, b
         _origin_neu_m = _destination_neu_m;
 
         // get current alt above terrain
-        float origin_terr_offset_u_m;
-        if (!get_terrain_offset_m(origin_terr_offset_u_m)) {
+        float terrain_u_m;
+        if (!get_terrain_U_m(terrain_u_m)) {
             return false;
         }
 
         // convert origin to alt-above-terrain if necessary
         if (is_terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
-            _origin_neu_m.z -= origin_terr_offset_u_m;
-            _pos_control.init_pos_terrain_U_m(origin_terr_offset_u_m);
+            _origin_neu_m.z -= terrain_u_m;
+            _pos_control.init_pos_terrain_U_m(terrain_u_m);
         } else {
             // new destination is alt-above-ekf-origin, previous destination was alt-above-terrain
-            _origin_neu_m.z += origin_terr_offset_u_m;
+            _origin_neu_m.z += terrain_u_m;
             _pos_control.init_pos_terrain_U_m(0.0);
         }
     }
@@ -937,11 +941,11 @@ bool AC_WPNav::get_vector_NEU_m(const Location &loc, Vector3p &pos_from_origin_n
 
     // convert altitude
     if (loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) {
-        float terrain_alt_m;
-        if (!loc.get_alt_m(Location::AltFrame::ABOVE_TERRAIN, terrain_alt_m)) {
+        float terrain_u_m;
+        if (!loc.get_alt_m(Location::AltFrame::ABOVE_TERRAIN, terrain_u_m)) {
             return false;
         }
-        pos_from_origin_neu_m.z = terrain_alt_m;
+        pos_from_origin_neu_m.z = terrain_u_m;
         is_terrain_alt = true;
     } else {
         is_terrain_alt = false;

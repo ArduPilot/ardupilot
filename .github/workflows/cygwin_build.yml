@@ -145,7 +145,7 @@ jobs:
     runs-on: 'windows-latest'
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: 'recursive'
       - name: Prepare ccache timestamp
@@ -220,7 +220,7 @@ jobs:
           fail: true
 
       - name: Archive build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: binaries
           path: artifacts

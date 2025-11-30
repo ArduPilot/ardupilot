@@ -15,8 +15,8 @@ bool ModeAltHold::init(bool ignore_checks)
     }
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_m(-get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
-    pos_control->set_correction_speed_accel_U_m(-get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
+    pos_control->set_max_speed_accel_U_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
+    pos_control->set_correction_speed_accel_U_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
 
     return true;
 }
@@ -26,7 +26,7 @@ bool ModeAltHold::init(bool ignore_checks)
 void ModeAltHold::run()
 {
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_m(-get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
+    pos_control->set_max_speed_accel_U_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
 
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
@@ -93,7 +93,7 @@ void ModeAltHold::run()
 #endif
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_ms);
+        pos_control->set_pos_target_U_from_climb_rate_ms(target_climb_rate_ms);
         break;
     }
 

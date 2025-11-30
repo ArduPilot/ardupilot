@@ -755,7 +755,7 @@ function Update()
    end
    local current_altitude = current_location:alt() * 0.01
 
-   local vehicle_airspeed = ahrs:airspeed_estimate()
+   local vehicle_airspeed = ahrs:airspeed_EAS()
    local current_target = vehicle:get_target_location()
 
    target_location, target_velocity = follow:get_target_location_and_velocity()
