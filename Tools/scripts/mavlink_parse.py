@@ -37,6 +37,7 @@ class MAVLinkMessage:
     name: str
     source: str
     dialect: MAVLinkDialect = MAVLinkDialect.UNKNOWN
+    id_number: int | None = None
 
     PREFIX = 'MAVLINK_MSG_ID_'
 
@@ -44,19 +45,25 @@ class MAVLinkMessage:
     #  Function is required because of Python's class scoping rules.
     #  See https://stackoverflow.com/questions/13905741.
     def _get_known_messages(prefix):
-        ''' Returns a dictionary of {dialect: {messages}} given 'prefix'. '''
-        return {
-            dialect: set(m for m in dir(globals()[dialect])
-                         if m.startswith(prefix))
-            for dialect in MAVLinkDialect
-            if dialect != MAVLinkDialect.UNKNOWN
-        }
+        ''' Returns a dictionary of {dialect: {message: id}} given 'prefix'. '''
+        dialects = {}
+        for dialect in MAVLinkDialect:
+            if dialect == MAVLinkDialect.UNKNOWN: continue
+            mavlink_module = globals()[dialect]
+            dialects[dialect] = {
+                message: getattr(mavlink_module, message)
+                for message in dir(mavlink_module)
+                if message.startswith(prefix)
+            }
+        return dialects
     KNOWN_DIALECTS = _get_known_messages(PREFIX)
 
-    # Try to determine dialect if initialised without one specified.
+    # Try to determine dialect and ID number if initialised without them specified.
     def __post_init__(self):
         if self.dialect == MAVLinkDialect.UNKNOWN:
             self.determine_dialect()
+        if self.id_number is None:
+            self.determine_id()
 
     @property
     def id_name(self):
@@ -66,9 +73,13 @@ class MAVLinkMessage:
         for dialect, message_set in self.KNOWN_DIALECTS.items():
             if self.id_name in message_set:
                 self.dialect = dialect
+                self.id_number = message_set[self.id_name]
                 break # dialect found, no need to continue searching
         else:
             self.dialect = MAVLinkDialect.UNKNOWN
+
+    def determine_id(self):
+        self.id_number = self.KNOWN_DIALECTS.get(self.dialect, {}).get(self.id_name, None)
 
     def as_tuple(self):
         return astuple(self)
@@ -81,8 +92,8 @@ class MAVLinkMessage:
         ''' Yields known messages that are not included in 'supported'. '''
         offset = len(cls.PREFIX) if remove_prefix else 0
         known_missing = set() # don't double-count for supersets
-        for dialect, message_set in cls.KNOWN_DIALECTS.items():
-            missing_names = message_set - supported - known_missing
+        for dialect, messages in cls.KNOWN_DIALECTS.items():
+            missing_names = set(messages) - supported - known_missing
             for name in missing_names:
                 yield cls(name[offset:], 'UNSUPPORTED', dialect)
             known_missing |= missing_names
@@ -226,13 +237,16 @@ class MAVLinkDetector:
 
             named_types = ('float', 'int') if folder in vehicles else ()
             for type_ in named_types:
+                message = f'NAMED_VALUE_{type_.upper()}'
+                mavlink_name = MAVLinkMessage.PREFIX + message
+                id_number = MAVLinkMessage.KNOWN_DIALECTS['common'][mavlink_name]
                 substring = f'named_{type_}s'
                 method = getattr(self, f'find_{substring}')
                 names = getattr(self, substring)
                 new_names = set(method(text)) - names.keys()
                 for name in new_names:
-                    names[name] = MAVLinkMessage(f'NAMED_VALUE_{type_.upper()}:{name}',
-                                                 source, MAVLinkDialect.COMMON)
+                    names[name] = MAVLinkMessage(f'{message}:{name}', source,
+                                                 MAVLinkDialect.COMMON, id_number)
             
             for method, data, type_ in (
                 (self.find_incoming_messages, self.incoming_messages, 'messages'),
@@ -370,7 +384,7 @@ class MAVLinkDetector:
                           **export_options, **iter_options)
 
     def export_csv(self, file, iterable, **ignore):
-        file.write('MAVLinkMessage,CodeSource,MAVLinkDialect,MessageType\n')
+        file.write('MAVLinkID,MessageName,CodeSource,MAVLinkDialect,MessageType\n')
         for data in iterable:
             match data:
                 case str():
@@ -432,10 +446,10 @@ class MAVLinkDetector:
                     )
                     print(f'## {heading}',
                           self.get_description(type_),
-                          f'\nMAVLink Message | {source_header} | MAVLink Dialect',
-                          '--- | --- | ---', sep='\n', file=file)
+                          f'\nID | MAVLink Message | {source_header} | MAVLink Dialect',
+                          '--- | --- | --- | ---', sep='\n', file=file)
                 case MAVLinkMessage() as message:
-                    name, source, dialect = message.as_tuple()
+                    name, source, dialect, id_number = message.as_tuple()
                     if dialect != MAVLinkDialect.UNKNOWN:
                         msg_url = self.MAVLINK_URL.format(dialect=dialect,
                                                           message_name=name.split(':')[0])
@@ -446,8 +460,10 @@ class MAVLinkDetector:
                         code_url = self.ARDUPILOT_URL.format(branch=branch,
                                                              source=base+source)
                         source = f'[{source}]({code_url})'
+                    if id_number is None:
+                        id_number = '??'
 
-                    print(name, source, dialect, sep=' | ', file=file)
+                    print(f'#{id_number}', name, source, dialect, sep=' | ', file=file)
 
     def export_rst(self, file, iterable, branch='master', header=None, 
                         use_intro=True, **extra_kwargs):
@@ -500,10 +516,10 @@ class MAVLinkDetector:
                     print(f'\n.. _{reference}:\n\n{heading}\n{"="*len(heading)}\n',
                           self.get_description(type_).replace('`','``'),
                           '\n.. csv-table::',
-                          f'  :header: MAVLink Message, {source_header}, MAVLink Dialect\n\n',
+                          f'  :header: ID, MAVLink Message, {source_header}, MAVLink Dialect\n\n',
                           sep='\n', file=file)
                 case MAVLinkMessage() as message:
-                    name, source, dialect = message.as_tuple()
+                    name, source, dialect, id_number = message.as_tuple()
                     if dialect != MAVLinkDialect.UNKNOWN:
                         msg_url = self.MAVLINK_URL.format(dialect=dialect,
                                                           message_name=name.split(':')[0])
@@ -514,8 +530,10 @@ class MAVLinkDetector:
                         code_url = self.ARDUPILOT_URL.format(branch=branch,
                                                              source=base+source)
                         source = f'`{source} <{code_url}>`_'
+                    if id_number is None:
+                        id_number = '??'
 
-                    print(f'  {name}', source, dialect, sep=', ', file=file)
+                    print(f'  #{id_number}', name, source, dialect, sep=', ', file=file)
 
 
 if __name__ == '__main__':
