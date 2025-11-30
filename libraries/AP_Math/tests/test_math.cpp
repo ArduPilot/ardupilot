@@ -551,6 +551,25 @@ TEST(MathWrapTest, Angle2PI)
     EXPECT_NEAR(1,    wrap_2PI((short)1), accuracy);
 }
 
+TEST(MathWrapTest, AngleNeg2PI_2PI)
+{
+    const float accuracy = 1.0e-5;
+
+    EXPECT_NEAR(1.f,    wrap_neg2PI_2PI(1.f), accuracy);
+    EXPECT_NEAR(-4.f,   wrap_neg2PI_2PI(-4.f), accuracy);
+    EXPECT_NEAR(M_PI,   wrap_neg2PI_2PI(M_PI), accuracy);
+    EXPECT_NEAR(-M_PI,  wrap_neg2PI_2PI(-M_PI), accuracy);
+    EXPECT_NEAR(0.f,    wrap_neg2PI_2PI(M_2PI), accuracy);
+    EXPECT_NEAR(0.f,    wrap_neg2PI_2PI(-M_2PI), accuracy);
+    EXPECT_NEAR(0.f,    wrap_neg2PI_2PI(M_2PI * 5), accuracy);
+    EXPECT_NEAR(0.f,    wrap_neg2PI_2PI(-M_2PI * 5), accuracy);
+    EXPECT_NEAR(1.f,    wrap_neg2PI_2PI(M_2PI + 1.f), accuracy);
+    EXPECT_NEAR(-1.f,   wrap_neg2PI_2PI(-M_2PI - 1.f), accuracy);
+    EXPECT_NEAR(1.f,    wrap_neg2PI_2PI(M_2PI * 4 + 1.f), accuracy);
+    EXPECT_NEAR(-1.f,   wrap_neg2PI_2PI(-M_2PI * 4 - 1.f), accuracy);
+    EXPECT_NEAR(1.f,    wrap_neg2PI_2PI((short)1), accuracy);
+}
+
 TEST(MathTest, ASin)
 {
     const float accuracy = 1.0e-5;
