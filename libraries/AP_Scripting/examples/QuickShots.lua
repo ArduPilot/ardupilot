@@ -96,6 +96,7 @@ end
 
 function calcWps()
 	startWp = ahrs:get_position()
+	
 	if not startWp then
 		gcs:send_text(6, "ahrs:get_position() null")
 		return
