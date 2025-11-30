@@ -197,7 +197,7 @@ bool AP_Avoidance::check_startup()
 void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
                                 const MAV_COLLISION_SRC src,
                                 const uint32_t src_id,
-                                const Location &loc,
+                                const AbsAltLocation &loc,
                                 const Vector3f &vel_ned_ms)
 {
     if (! check_startup()) {
@@ -246,7 +246,7 @@ void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
 void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
                                 const MAV_COLLISION_SRC src,
                                 const uint32_t src_id,
-                                const Location &loc,
+                                const AbsAltLocation &loc,
                                 const float cog,
                                 const float speed_ne_ms,
                                 const float speed_d_ms)
@@ -270,7 +270,7 @@ void AP_Avoidance::get_adsb_samples()
     AP_ADSB::adsb_vehicle_t vehicle;
     while (_adsb.next_sample(vehicle)) {
         uint32_t src_id = src_id_for_adsb_vehicle(vehicle);
-        Location loc = _adsb.get_location(vehicle);
+        AbsAltLocation loc = _adsb.get_location(vehicle);
         add_obstacle(vehicle.last_update_ms,
                    MAV_COLLISION_SRC_ADSB,
                    src_id,
@@ -307,15 +307,15 @@ float closest_approach_NE_m(const Location &loc,
 }
 
 // returns the closest these objects will get in the body z axis (in metres)
-float closest_approach_D_m(const Location &loc,
+float closest_approach_D_m(const AbsAltLocation &loc,
                          const Vector3f &vel_ned_ms,
-                         const Location &obstacle_loc,
+                         const AbsAltLocation &obstacle_loc,
                          const Vector3f &obstacle_vel_ned_ms,
                          const uint8_t time_horizon_s)
 {
 
     float delta_vel_d_ms = obstacle_vel_ned_ms[2] - vel_ned_ms[2];
-    float delta_pos_d_cm = obstacle_loc.alt - loc.alt;
+    float delta_pos_d_cm = obstacle_loc.get_alt_cm() - loc.get_alt_cm();
 
     float dist_d_cm;
     if (delta_pos_d_cm >= 0 && delta_vel_d_ms >= 0) {
@@ -334,12 +334,12 @@ float closest_approach_D_m(const Location &loc,
     return dist_d_cm * 0.01f;
 }
 
-void AP_Avoidance::update_threat_level(const Location &loc,
+void AP_Avoidance::update_threat_level(const AbsAltLocation &loc,
                                        const Vector3f &vel_ned_ms,
                                        AP_Avoidance::Obstacle &obstacle)
 {
 
-    Location &obstacle_loc = obstacle._location;
+    AbsAltLocation &obstacle_loc = obstacle._location;
     Vector3f &obstacle_vel_ned_ms = obstacle._velocity_ned_ms;
 
     obstacle.threat_level = MAV_COLLISION_THREAT_LEVEL_NONE;
@@ -461,7 +461,7 @@ void AP_Avoidance::check_for_threats()
 {
     const AP_AHRS &_ahrs = AP::ahrs();
 
-    Location loc;
+    AbsAltLocation loc;
     if (!_ahrs.get_location(loc)) {
         // if we don't know our own location we can't determine any threat level
         return;
@@ -545,9 +545,9 @@ void AP_Avoidance::handle_avoidance_local(AP_Avoidance::Obstacle *threat)
         new_threat_level = threat->threat_level;
         if (new_threat_level == MAV_COLLISION_THREAT_LEVEL_HIGH) {
             action = (MAV_COLLISION_ACTION)_fail_action.get();
-            Location loc;
+            AbsAltLocation loc;
             if (action != MAV_COLLISION_ACTION_NONE && _fail_altitude_min_m > 0 &&
-                AP::ahrs().get_location(loc) && ((loc.alt * 0.01f) < _fail_altitude_min_m)) {
+                AP::ahrs().get_location(loc) && (loc.get_alt_m() < _fail_altitude_min_m)) {
                 // disable avoidance when close to ground, report only
                 action = MAV_COLLISION_ACTION_REPORT;
 			}
@@ -598,11 +598,10 @@ void AP_Avoidance::handle_msg(const mavlink_message_t &msg)
     // inform AP_Avoidance we have a new player
     mavlink_global_position_int_t packet;
     mavlink_msg_global_position_int_decode(&msg, &packet);
-    const Location loc {
+    const AbsAltLocation loc {
         packet.lat,
         packet.lon,
         int32_t(packet.alt * 0.1),  // mm -> cm
-        Location::AltFrame::ABSOLUTE
     };
     const Vector3f vel_ned_ms {
         packet.vx * 0.01f, // cm to m
@@ -624,7 +623,7 @@ bool AP_Avoidance::get_vector_perpendicular(const AP_Avoidance::Obstacle *obstac
         return false;
     }
 
-    Location current_loc;
+    AbsAltLocation current_loc;
     if (!AP::ahrs().get_location(current_loc)) {
         // we should not get to here!  If we don't know our position
         // we can't know if there are any threats, for starters!
@@ -636,7 +635,7 @@ bool AP_Avoidance::get_vector_perpendicular(const AP_Avoidance::Obstacle *obstac
     // Instead, we will fly directly away from them
     if (obstacle->_velocity_ned_ms.length() < _low_velocity_threshold) {
         const Vector2f delta_pos_ne_m =  obstacle->_location.get_distance_NE(current_loc);
-        const float delta_pos_u_cm = current_loc.alt - obstacle->_location.alt;
+        const float delta_pos_u_cm = current_loc.get_alt_cm() - obstacle->_location.get_alt_cm();
         Vector3f delta_pos_neu_m = Vector3f{delta_pos_ne_m.x, delta_pos_ne_m.y, delta_pos_u_cm * 0.01};
         // avoid div by zero
         if (delta_pos_neu_m.is_zero()) {
@@ -658,10 +657,10 @@ bool AP_Avoidance::get_vector_perpendicular(const AP_Avoidance::Obstacle *obstac
 
 // helper functions to calculate 3D destination to get us away from obstacle
 // v1_ned is NED
-Vector3f AP_Avoidance::perpendicular_neu_m(const Location &p1, const Vector3f &v1_ned, const Location &p2)
+Vector3f AP_Avoidance::perpendicular_neu_m(const AbsAltLocation &p1, const Vector3f &v1_ned, const AbsAltLocation &p2)
 {
     const Vector2f delta_p_ne_m = p1.get_distance_NE(p2);
-    Vector3f delta_p_neu_m = Vector3f(delta_p_ne_m[0], delta_p_ne_m[1], (p2.alt - p1.alt) * 0.01f); //check this line
+    Vector3f delta_p_neu_m = Vector3f(delta_p_ne_m[0], delta_p_ne_m[1], (p2.get_alt_cm() - p1.get_alt_cm()) * 0.01f); //check this line
     Vector3f v1_neu = Vector3f(v1_ned[0], v1_ned[1], -v1_ned[2]);
     Vector3f ret_neu_m = Vector3f::perpendicular(delta_p_neu_m, v1_neu);
     return ret_neu_m;

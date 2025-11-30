@@ -10,7 +10,7 @@ void Copter::read_inertia()
 #endif
 
     // pull position from ahrs
-    Location loc;
+    AbsAltLocation loc;
     ahrs.get_location(loc);
     current_loc.lat = loc.lat;
     current_loc.lng = loc.lng;

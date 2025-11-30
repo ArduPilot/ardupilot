@@ -137,17 +137,20 @@ struct PACKED log_OFG_Guided {
 // Write a OFG Guided packet.
 void Plane::Log_Write_OFG_Guided()
 {
+    const auto alt_frame = guided_state.target_location.get_alt_frame();
+    float alt_m = 0;
+    UNUSED_RESULT(guided_state.target_location.get_alt_m(alt_frame, alt_m));
     struct log_OFG_Guided pkt = {
         LOG_PACKET_HEADER_INIT(LOG_OFG_MSG),
         time_us                : AP_HAL::micros64(),
         target_airspeed_cm     : (float)guided_state.target_airspeed_cm*(float)0.01,
         target_airspeed_accel  : guided_state.target_airspeed_accel,
-        target_alt             : guided_state.target_location.alt * 0.01,
+        target_alt             : alt_m,
         target_alt_rate        : guided_state.target_alt_rate,
         target_mav_frame       : guided_state.target_mav_frame,
         target_heading         : guided_state.target_heading,
         target_heading_limit   : guided_state.target_heading_accel_limit,
-        target_alt_frame       : static_cast<uint8_t>(guided_state.target_location.get_alt_frame()),
+        target_alt_frame       : static_cast<uint8_t>(alt_frame),
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -173,6 +176,10 @@ struct PACKED log_Nav_Tuning {
 // Write a navigation tuning packet
 void Plane::Log_Write_Nav_Tuning()
 {
+    int32_t target_alt_wp_cm = 0;
+    if (next_WP_loc.initialised()) {
+        UNUSED_RESULT(next_WP_loc.get_alt_cm(next_WP_loc.get_alt_frame(), target_alt_wp_cm));
+    }
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NTUN_MSG),
         time_us             : AP_HAL::micros64(),
@@ -185,7 +192,7 @@ void Plane::Log_Write_Nav_Tuning()
         airspeed_error      : airspeed_error,
         target_lat          : next_WP_loc.lat,
         target_lng          : next_WP_loc.lng,
-        target_alt_wp       : next_WP_loc.alt,
+        target_alt_wp       : target_alt_wp_cm,
         target_alt_tecs     : tecs_target_alt_cm,
         target_airspeed     : target_airspeed_cm,
     };

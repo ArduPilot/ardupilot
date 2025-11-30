@@ -1393,7 +1393,7 @@ bool NavEKF3::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 // If a calculated location isn't available, return a raw GPS measurement
 // The status will return true if a calculation or raw measurement is available
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
-bool NavEKF3::getLLH(Location &loc) const
+bool NavEKF3::getLLH(AbsAltLocation &loc) const
 {
     if (!core) {
         return false;
@@ -1404,7 +1404,7 @@ bool NavEKF3::getLLH(Location &loc) const
 // Return the latitude and longitude and height used to set the NED origin
 // All NED positions calculated by the filter are relative to this location
 // Returns false if the origin has not been set
-bool NavEKF3::getOriginLLH(Location &loc) const
+bool NavEKF3::getOriginLLH(AbsAltLocation &loc) const
 {
     if (!core) {
         return false;
@@ -1420,7 +1420,7 @@ bool NavEKF3::getOriginLLH(Location &loc) const
 // All NED positions calculated by the filter will be relative to this location
 // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
 // Returns false if the filter has rejected the attempt to set the origin
-bool NavEKF3::setOriginLLH(const Location &loc)
+bool NavEKF3::setOriginLLH(const AbsAltLocation &loc)
 {
     dal.log_SetOriginLLH3(loc);
 
@@ -1441,7 +1441,7 @@ bool NavEKF3::setOriginLLH(const Location &loc)
     return ret;
 }
 
-bool NavEKF3::setLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms)
+bool NavEKF3::setLatLng(const AbsAltLocation &loc, float posAccuracy, uint32_t timestamp_ms)
 {
 #if EK3_FEATURE_POSITION_RESET
     dal.log_SetLatLng(loc, posAccuracy, timestamp_ms);

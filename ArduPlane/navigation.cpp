@@ -29,7 +29,7 @@ void Plane::loiter_angle_update(void)
     } else if (loiter.sum_cd == 0) {
         // use 1 cd for initial delta
         loiter_delta_cd = 1;
-        loiter.start_lap_alt_cm = current_loc.alt;
+        loiter.start_lap_alt_cm = current_loc.get_alt_cm();
         loiter.next_sum_lap_cd = lap_check_interval_cd;
     } else {
         loiter_delta_cd = target_bearing_cd - loiter.old_target_bearing_cd;
@@ -62,7 +62,7 @@ void Plane::loiter_angle_update(void)
             reached_target_alt = true;
         } else
 #endif
-        if (!terrain_status_ok && labs(current_loc.alt - target_altitude.amsl_cm) < 500) {
+        if (!terrain_status_ok && labs(current_loc.get_alt_cm() - target_altitude.amsl_cm) < 500) {
             reached_target_alt = true;
         }
     }
@@ -74,8 +74,8 @@ void Plane::loiter_angle_update(void)
 
     } else if (!loiter.reached_target_alt && labs(loiter.sum_cd) >= loiter.next_sum_lap_cd) {
         // check every few laps for scenario where up/downward inhibit you from loitering up/down for too long
-        loiter.unable_to_achieve_target_alt = labs(current_loc.alt - loiter.start_lap_alt_cm) < 500;
-        loiter.start_lap_alt_cm = current_loc.alt;
+        loiter.unable_to_achieve_target_alt = labs(current_loc.get_alt_cm() - loiter.start_lap_alt_cm) < 500;
+        loiter.start_lap_alt_cm = current_loc.get_alt_cm();
         loiter.next_sum_lap_cd += lap_check_interval_cd;
     }
 }
@@ -437,7 +437,7 @@ void Plane::update_fbwb_speed_height(void)
             } else {
                 // we're in soaring mode climbing back to altitude. Set target to SOAR_ALT_CUTOFF plus 10m to ensure we positively climb
                 // through SOAR_ALT_CUTOFF, thus triggering throttle suppression and return to glide.
-                target_altitude.amsl_cm = 100*plane.g2.soaring_controller.get_alt_cutoff() + 1000 + AP::ahrs().get_home().alt;
+                target_altitude.amsl_cm = 100*plane.g2.soaring_controller.get_alt_cutoff() + 1000 + AP::ahrs().get_home().get_alt_cm();
             }
         }
 #endif

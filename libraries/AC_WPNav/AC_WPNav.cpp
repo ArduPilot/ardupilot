@@ -298,8 +298,8 @@ bool AC_WPNav::set_wp_destination_next_loc(const Location& destination, float ar
 // Returns false if origin is not set or coordinate conversion fails.
 bool AC_WPNav::get_wp_destination_loc(Location& destination) const
 {
-    // retrieve global origin for coordinate conversion
-    if (!AP::ahrs().get_origin(destination)) {
+    AbsAltLocation abs_loc;
+    if (!AP::ahrs().get_origin(abs_loc)) {
         return false;
     }
 

@@ -188,7 +188,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
 // Sets the EKF's NE horizontal position states and their corresponding variances from a supplied WGS-84 location and optionally uncertainty
 // The altitude element of the location is not used. If accuracy is not known should be passed as NaN.
 // Returns true if the set was successful
-bool NavEKF3_core::setLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms)
+bool NavEKF3_core::setLatLng(const AbsAltLocation &loc, float posAccuracy, uint32_t timestamp_ms)
 {
     if ((imuSampleTime_ms - lastGpsPosPassTime_ms) < frontend->deadReckonDeclare_ms ||
         (PV_AidingMode == AID_NONE)
@@ -384,7 +384,7 @@ bool NavEKF3_core::resetHeightDatum(void)
             // if we don't have GPS lock then we shouldn't be doing a
             // resetHeightDatum, but if we do then the best option is
             // to maintain the old error
-            EKF_origin.alt += (int32_t)(100.0f * oldHgt);
+            EKF_origin.set_alt_m(oldHgt);
         } else {
             // if we have a good GPS lock then reset to the GPS
             // altitude. This ensures the reported AMSL alt from
@@ -392,7 +392,7 @@ bool NavEKF3_core::resetHeightDatum(void)
             // that the relative alt is zero
             EKF_origin.copy_alt_from(dal.gps().location());
         }
-        ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
+        ekfGpsRefHgt = EKF_origin.get_alt_m();
     }
 
     // set the terrain state to zero (on ground). The adjustment for
@@ -1338,7 +1338,7 @@ void NavEKF3_core::selectHeightForFusion()
             // correct sensor so that local position height adjusts to match GPS
             if (frontend->_originHgtMode & (1 << 1) && frontend->_originHgtMode & (1 << 2)) {
                 // offset has to be applied to the measurement, not the NED origin
-                hgtMea += (float)(ekfGpsRefHgt - 0.01 * (double)EKF_origin.alt);
+                hgtMea += ekfGpsRefHgt - EKF_origin.get_alt_m();
             }
             velPosObs[5] = -hgtMea;
             // enable fusion
@@ -1368,7 +1368,7 @@ void NavEKF3_core::selectHeightForFusion()
         hgtMea = baroDataDelayed.hgt - baroHgtOffset;
         // correct sensor so that local position height adjusts to match GPS
         if (frontend->_originHgtMode & (1 << 0) && frontend->_originHgtMode & (1 << 2)) {
-            hgtMea += (float)(ekfGpsRefHgt - 0.01 * (double)EKF_origin.alt);
+            hgtMea += (float)(ekfGpsRefHgt - (double)EKF_origin.get_alt_m());
         }
         // enable fusion
         fuseHgtData = true;

@@ -247,7 +247,7 @@ void StratoBlimp::calculate_forces(const struct sitl_input &input, Vector3f &bod
 
     Vector3f drag_linear, drag_rotaccel;
     get_drag(velocity_air_bf, gyro,
-             location.alt*0.01,
+             location.get_alt_m(),
              drag_linear, drag_rotaccel);
 
     body_acc += drag_linear;
@@ -257,7 +257,7 @@ void StratoBlimp::calculate_forces(const struct sitl_input &input, Vector3f &bod
         released = true;
     }
     if (released) {
-        Vector3f lift_thrust_ef{0, 0, -get_lift(location.alt*0.01)};
+        Vector3f lift_thrust_ef{0, 0, -get_lift(location.get_alt_m())};
         Vector3f lift_thrust_bf = dcm.transposed() * lift_thrust_ef;
 
         body_acc += lift_thrust_bf / mass;
@@ -276,7 +276,7 @@ void StratoBlimp::calculate_forces(const struct sitl_input &input, Vector3f &bod
  */
 void StratoBlimp::update(const struct sitl_input &input)
 {
-    air_density = get_air_density(location.alt*0.01);
+    air_density = get_air_density(location.get_alt_m());
     EAS2TAS = sqrtf(SSL_AIR_DENSITY / air_density);
 
     calculate_coefficients();

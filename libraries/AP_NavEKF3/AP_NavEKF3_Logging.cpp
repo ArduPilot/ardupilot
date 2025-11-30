@@ -21,7 +21,7 @@ void NavEKF3_core::Log_Write_XKF1(uint64_t time_us) const
     Vector3f velNED;
     Vector3f gyroBias;
     float posDownDeriv;
-    Location originLLH;
+    AbsAltLocation originLLH;
     getEulerAngles(euler);
     getVelNED(velNED);
     getPosNE(posNE);
@@ -29,7 +29,7 @@ void NavEKF3_core::Log_Write_XKF1(uint64_t time_us) const
     getGyroBias(gyroBias);
     posDownDeriv = getPosDownDerivative();
     if (!getOriginLLH(originLLH)) {
-        originLLH.alt = 0;
+        originLLH.set_alt_m(0);
     }
     const struct log_XKF1 pkt{
         LOG_PACKET_HEADER_INIT(LOG_XKF1_MSG),
@@ -48,7 +48,7 @@ void NavEKF3_core::Log_Write_XKF1(uint64_t time_us) const
         gyrX    : (int16_t)(100*degrees(gyroBias.x)), // cd/sec, displayed as deg/sec due to format string
         gyrY    : (int16_t)(100*degrees(gyroBias.y)), // cd/sec, displayed as deg/sec due to format string
         gyrZ    : (int16_t)(100*degrees(gyroBias.z)), // cd/sec, displayed as deg/sec due to format string
-        originHgt : originLLH.alt // WGS-84 altitude of EKF origin in cm
+        originHgt : originLLH.get_alt_cm() // WGS-84 altitude of EKF origin in cm
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }

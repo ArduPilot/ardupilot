@@ -22,8 +22,8 @@ void Copter::update_home_from_EKF()
 // set_home_to_current_location_inflight - set home to current GPS location (horizontally) and EKF origin vertically
 void Copter::set_home_to_current_location_inflight() {
     // get current location from EKF
-    Location temp_loc;
-    Location ekf_origin;
+    AbsAltLocation temp_loc;
+    AbsAltLocation ekf_origin;
     if (ahrs.get_location(temp_loc) && ahrs.get_origin(ekf_origin)) {
         temp_loc.copy_alt_from(ekf_origin);
         if (!set_home(temp_loc, false)) {
@@ -39,7 +39,7 @@ void Copter::set_home_to_current_location_inflight() {
 // set_home_to_current_location - set home to current GPS location
 bool Copter::set_home_to_current_location(bool lock) {
     // get current location from EKF
-    Location temp_loc;
+    AbsAltLocation temp_loc;
     if (ahrs.get_location(temp_loc)) {
         if (!set_home(temp_loc, lock)) {
             return false;
@@ -55,10 +55,10 @@ bool Copter::set_home_to_current_location(bool lock) {
 
 // set_home - sets ahrs home (used for RTL) to specified location
 //  returns true if home location set successfully
-bool Copter::set_home(const Location& loc, bool lock)
+bool Copter::set_home(const AbsAltLocation& loc, bool lock)
 {
     // check EKF origin has been set
-    Location ekf_origin;
+    AbsAltLocation ekf_origin;
     if (!ahrs.get_origin(ekf_origin)) {
         return false;
     }
