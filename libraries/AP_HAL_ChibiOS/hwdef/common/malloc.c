@@ -427,8 +427,11 @@ size_t mem_available(void)
     // get memory available on main heap
     chHeapStatus(NULL, &totalp, NULL);
 
+    memory_area_t map;
+
     // we also need to add in memory that is not yet allocated to the heap
-    totalp += chCoreGetStatusX();
+    chCoreGetStatusX(&map);
+    totalp += map.size;
 
     // now our own heaps
     for (i=1; i<NUM_MEMORY_REGIONS; i++) {

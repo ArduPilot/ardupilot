@@ -186,10 +186,10 @@ void stm32_flash_protect_flash(bool bootloader, bool protect);
 void stm32_flash_unprotect_flash(void);
 
 // allow stack view code to show free ISR stack
-extern stkalign_t __main_stack_base__;
-extern stkalign_t __main_stack_end__;
-extern stkalign_t __main_thread_stack_base__;
-extern stkalign_t __main_thread_stack_end__;
+extern stkline_t __main_stack_base__;
+extern stkline_t __main_stack_end__;
+extern stkline_t __main_thread_stack_base__;
+extern stkline_t __main_thread_stack_end__;
 
 void stm32_disable_cm4_core(void);
 
