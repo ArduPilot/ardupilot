@@ -342,6 +342,8 @@ class Board:
             env.CFLAGS += [
                 '-g',
                 '-O0',
+                '-ggdb3',
+                '-fno-omit-frame-pointer'
             ]
             env.DEFINES.update(
                 HAL_DEBUG_BUILD = 1,
