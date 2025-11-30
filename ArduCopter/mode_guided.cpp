@@ -385,7 +385,8 @@ bool ModeGuided::set_pos_NEU_m(const Vector3p& pos_neu_m, bool use_yaw, float ya
 
 #if HAL_LOGGING_ENABLED
         // log target
-        copter.Log_Write_Guided_Position_Target(guided_mode, pos_neu_m, is_terrain_alt, Vector3f(), Vector3f());
+        AC_AttitudeControl::HeadingCommand yaw_command = auto_yaw.get_heading();
+        copter.Log_Write_Guided_Position_Target(guided_mode, pos_neu_m, is_terrain_alt, Vector3f(), Vector3f(), yaw_command.yaw_angle_rad, yaw_command.yaw_rate_rads);
 #endif
         send_notification = true;
         return true;
@@ -427,7 +428,8 @@ bool ModeGuided::set_pos_NEU_m(const Vector3p& pos_neu_m, bool use_yaw, float ya
 
 #if HAL_LOGGING_ENABLED
     // log target
-    copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_m, guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
+    AC_AttitudeControl::HeadingCommand yaw_command = auto_yaw.get_heading();
+    copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_m, guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss, yaw_command.yaw_angle_rad, yaw_command.yaw_rate_rads);
 #endif
 
     send_notification = true;
@@ -487,7 +489,8 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 
 #if HAL_LOGGING_ENABLED
         // log target
-        copter.Log_Write_Guided_Position_Target(guided_mode, Vector3p(dest_loc.lat, dest_loc.lng, dest_loc.alt), (dest_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN), Vector3f(), Vector3f());
+        AC_AttitudeControl::HeadingCommand yaw_command = auto_yaw.get_heading();
+        copter.Log_Write_Guided_Position_Target(guided_mode, Vector3p(dest_loc.lat, dest_loc.lng, dest_loc.alt), (dest_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN), Vector3f(), Vector3f(), yaw_command.yaw_angle_rad, yaw_command.yaw_rate_rads);
 #endif
 
         send_notification = true;
@@ -534,9 +537,10 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
     guided_accel_target_neu_mss.zero();
     update_time_ms = millis();
 
-    // log target
 #if HAL_LOGGING_ENABLED
-    copter.Log_Write_Guided_Position_Target(guided_mode, Vector3p(dest_loc.lat, dest_loc.lng, dest_loc.alt), guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
+    // log target
+    AC_AttitudeControl::HeadingCommand yaw_command = auto_yaw.get_heading();
+    copter.Log_Write_Guided_Position_Target(guided_mode, Vector3p(dest_loc.lat, dest_loc.lng, dest_loc.alt), guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss, yaw_command.yaw_angle_rad, yaw_command.yaw_rate_rads);
 #endif
 
     send_notification = true;
@@ -565,7 +569,8 @@ void ModeGuided::set_accel_NEU_mss(const Vector3f& accel_neu_mss, bool use_yaw, 
 #if HAL_LOGGING_ENABLED
     // log target
     if (log_request) {
-        copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_m, guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
+        AC_AttitudeControl::HeadingCommand yaw_command = auto_yaw.get_heading();
+        copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_m, guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss, yaw_command.yaw_angle_rad, yaw_command.yaw_rate_rads);
     }
 #endif
 }
@@ -597,7 +602,8 @@ void ModeGuided::set_vel_accel_NEU_m(const Vector3f& vel_neu_ms, const Vector3f&
 #if HAL_LOGGING_ENABLED
     // log target
     if (log_request) {
-        copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_m, guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
+        AC_AttitudeControl::HeadingCommand yaw_command = auto_yaw.get_heading();
+        copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_m, guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss, yaw_command.yaw_angle_rad, yaw_command.yaw_rate_rads);
     }
 #endif
 }
@@ -637,7 +643,8 @@ bool ModeGuided::set_pos_vel_accel_NEU_m(const Vector3p& pos_neu_m, const Vector
 
 #if HAL_LOGGING_ENABLED
     // log target
-    copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_m, guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss);
+    AC_AttitudeControl::HeadingCommand yaw_command = auto_yaw.get_heading();
+    copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_neu_m, guided_is_terrain_alt, guided_vel_target_neu_ms, guided_accel_target_neu_mss, yaw_command.yaw_angle_rad, yaw_command.yaw_rate_rads);
 #endif
     return true;
 }
