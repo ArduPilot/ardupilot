@@ -179,7 +179,7 @@ void Plane::ahrs_update()
     pitch_limit_min = aparm.pitch_limit_min;
 
     bool rotate_limits = true;
-#if HAL_QUADPLANE_ENABLED
+#if AP_PLANE_TAILSITTER_ENABLED
     if (quadplane.tailsitter.active()) {
         rotate_limits = false;
     }

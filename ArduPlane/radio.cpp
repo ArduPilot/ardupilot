@@ -152,7 +152,7 @@ void Plane::read_radio()
         }
     }
 
-#if HAL_QUADPLANE_ENABLED
+#if AP_PLANE_TAILSITTER_ENABLED
     // potentially swap inputs for tailsitters
     quadplane.tailsitter.check_input();
 #endif
