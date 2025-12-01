@@ -191,3 +191,46 @@ jobs:
           ./waf
           ccache -s
           ccache -z
+
+  test-sitl:
+    needs: build
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: 'recursive'
+      - name: Install Prerequisites
+        shell: bash
+        run: |
+          export DO_AP_STM_ENV=0
+          Tools/environment_install/install-prereqs-mac.sh -y
+          source ~/.bash_profile
+      # Put ccache into github cache for faster build
+      - name: Prepare ccache timestamp
+        id: ccache_cache_timestamp
+        shell: bash
+        run: |
+          NOW=$(date -u +"%F-%T")
+          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
+      - name: ccache cache files
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ${{github.workflow}}-ccache-sitl-${{steps.ccache_cache_timestamp.outputs.timestamp}}
+          restore-keys: ${{github.workflow}}-ccache-sitl-
+      - name: setup ccache
+        run: |
+          . .github/workflows/ccache.env
+      - name: Install MAVProxy and pymavlink
+        shell: bash
+        run: |
+          source ~/.bash_profile
+          python3 -m pip install --progress-bar off mavproxy
+          git submodule update --init --recursive --depth 1
+          (cd modules/mavlink/pymavlink && python3 -m pip install --progress-bar off .)
+      - name: Run Plane autotest
+        shell: bash
+        run: |
+          source ~/.bash_profile
+          export PATH="/github/home/.local/bin:$PATH"
+          Tools/autotest/autotest.py build.Plane test.Plane.MainFlight
