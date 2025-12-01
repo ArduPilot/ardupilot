@@ -60,7 +60,7 @@
 #endif
 
 // scale factor for top layer to prevent beat frequency between top and bottom
-// layers of co-rotating motors
+// layers of co-rotating motors. Must be less than 1.0
 #ifndef AP_MOTORS_FRAME_OCTAQUAD_COROTATING_SCALE_FACTOR
 #define AP_MOTORS_FRAME_OCTAQUAD_COROTATING_SCALE_FACTOR 0.9
 #endif
