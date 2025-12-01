@@ -160,6 +160,23 @@ int lua_mavlink_register_rx_msgid(lua_State *L) {
     return 1;
 }
 
+inline bool _lua_mavlink_send_chan_common(const mavlink_channel_t chan, const mavlink_msg_entry_t *entry, const char *packet);
+inline bool _lua_mavlink_send_chan_common(const mavlink_channel_t chan, const mavlink_msg_entry_t *entry, const char *packet) {
+    WITH_SEMAPHORE(comm_chan_lock(chan));
+    if (comm_get_txspace(chan) >= (GCS_MAVLINK::packet_overhead_chan(chan) + entry->max_msg_len)) {
+        _mav_finalize_message_chan_send(chan,
+                                        entry->msgid,
+                                        packet,
+                                        entry->min_msg_len,
+                                        entry->max_msg_len,
+                                        entry->crc_extra);
+
+        return true;
+    } else {
+        return false;
+    }
+}
+
 int lua_mavlink_send_chan(lua_State *L) {
     fix_dot_access_never_add_another_call(L, "mavlink");
 
@@ -186,19 +203,44 @@ int lua_mavlink_send_chan(lua_State *L) {
         return luaL_error(L, "Unknown MAVLink message ID (%d)", msgid);
     }
 
-    WITH_SEMAPHORE(comm_chan_lock(chan));
-    if (comm_get_txspace(chan) >= (GCS_MAVLINK::packet_overhead_chan(chan) + entry->max_msg_len)) {
-        _mav_finalize_message_chan_send(chan,
-                                        entry->msgid,
-                                        packet,
-                                        entry->min_msg_len,
-                                        entry->max_msg_len,
-                                        entry->crc_extra);
+    bool message_sent = _lua_mavlink_send_chan_common(chan, entry, packet);
+    lua_pushboolean(L, message_sent);
 
-        lua_pushboolean(L, true);
-    } else {
-        lua_pushboolean(L, false);
+    return 1;
+}
+
+int lua_mavlink_send_chan_unknown(lua_State *L) {
+
+    // Allow : and . access
+    const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
+
+    binding_argcheck(L, 6+arg_offset);
+
+    const mavlink_channel_t chan = (mavlink_channel_t)get_uint32(L, 1+arg_offset, 0, MAVLINK_COMM_NUM_BUFFERS - 1);
+
+    // Check if the channel is valid
+    if (chan >= gcs().num_gcs()) {
+        // Return nil
+        return 0;
     }
+
+    const uint32_t msgid = get_uint32(L, 2+arg_offset, 0, (1 << 24) - 1);
+
+    const char *packet = luaL_checkstring(L, 3+arg_offset);
+
+    const uint8_t min_msg_len = get_uint8_t(L, 4+arg_offset);
+    const uint8_t max_msg_len = get_uint8_t(L, 5+arg_offset);
+    const uint8_t crc_extra = get_uint8_t(L, 6+arg_offset);
+
+    mavlink_msg_entry_t entry_instance = {
+        .msgid = msgid,
+        .crc_extra = crc_extra,
+        .min_msg_len = min_msg_len,
+        .max_msg_len = max_msg_len,
+        // Other entries of mavlink_msg_entry_t aren't required to send
+    };
+    bool message_sent = _lua_mavlink_send_chan_common(chan, &entry_instance, packet);
+    lua_pushboolean(L, message_sent);
 
     return 1;
 }
