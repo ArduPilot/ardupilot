@@ -558,10 +558,6 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECTVARPTR(motors, "MOT_",      &copter.motors_var_info),
 #endif
 
-    // @Group: RCMAP_
-    // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
-    GOBJECT(rcmap, "RCMAP_",        RCMapper),
-
 #if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
@@ -1358,6 +1354,11 @@ void Copter::load_parameters(void)
         AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
     }
 #endif  // HAL_GCS_ENABLED
+
+#if AP_RC_CHANNEL_ENABLED
+    // PARAMETER_CONVERSION - Added: Feb-2024 for Copter-4.6
+    rc().convert_rcmap_parameters(Parameters::k_param_rcmap_old);
+#endif  // AP_RC_CHANNEL_ENABLED
 
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);

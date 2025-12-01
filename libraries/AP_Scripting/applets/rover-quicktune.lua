@@ -156,10 +156,8 @@ local SPEED_FF_SPEED_MIN = bind_add_param('SPEED_MIN', 12, 0.5)
 -- other vehicle parameters used by this script
 local INS_GYRO_FILTER  = bind_param("INS_GYRO_FILTER")
 local GCS_PID_MASK     = bind_param("GCS_PID_MASK")
-local RCMAP_ROLL       = bind_param("RCMAP_ROLL")
-local RCMAP_THROTTLE   = bind_param("RCMAP_THROTTLE")
-local RCIN_ROLL  = rc:get_channel(RCMAP_ROLL:get())
-local RCIN_THROTTLE = rc:get_channel(RCMAP_THROTTLE:get())
+local RCIN_ROLL        = rc:find_channel_for_option(201)  -- see RC_Channel.h
+local RCIN_THROTTLE    = rc:find_channel_for_option(203)  -- see RC_Channel.h
 
 -- definitions
 local UPDATE_RATE_HZ = 40           -- this script updates at 40hz

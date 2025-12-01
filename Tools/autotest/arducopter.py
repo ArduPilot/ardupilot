@@ -126,9 +126,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def is_copter(self):
         return True
 
-    def get_stick_arming_channel(self):
-        return int(self.get_parameter("RCMAP_YAW"))
-
     def get_disarm_delay(self):
         return int(self.get_parameter("DISARM_DELAY"))
 

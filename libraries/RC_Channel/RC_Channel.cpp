@@ -252,6 +252,8 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Plane}: 184: System ID Chirp
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
+    // @Values{Copter}: 203:Throttle
+    // @Values{Copter}: 204:Yaw
     // @Values{Rover}: 207:MainSail
     // @Values{Rover, Plane}:  208:Flap
     // @Values{Plane}: 209:VTOL Forward Throttle
@@ -753,6 +755,13 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #if HAL_GENERATOR_ENABLED
     case AUX_FUNC::LOWEHEISER_THROTTLE:
 #endif
+        break;
+
+    // not really aux functions:
+    case AUX_FUNC::ROLL:
+    case AUX_FUNC::PITCH:
+    case AUX_FUNC::YAW:
+    case AUX_FUNC::THROTTLE:
         break;
 
     // these functions require explicit initialization
@@ -2076,6 +2085,67 @@ void RC_Channels::convert_options(const RC_Channel::AUX_FUNC old_option, const R
             c->option.set_and_save((int16_t)new_option);
         }
     }
+}
+
+
+// PARAMETER_CONVERSION - Added: Feb-2024 for ArduPilot 4.7
+void RC_Channels::convert_rcmap_parameters(uint32_t param_key)
+{
+    if (_conversion & 0b1) {
+        // conversion has already been done
+        return;
+    }
+    // mark conversion as having been done:
+    _conversion.set_and_save(_conversion | 0b1);
+
+    // for each of RCMap's parameters,
+    static const struct {
+        uint8_t idx;
+        RC_Channel::AUX_FUNC func;
+    } func_map[] {
+        { 0, RC_Channel::AUX_FUNC::ROLL },
+        { 1, RC_Channel::AUX_FUNC::PITCH },
+        { 2, RC_Channel::AUX_FUNC::THROTTLE },
+        { 3, RC_Channel::AUX_FUNC::YAW },
+        { 4, RC_Channel::AUX_FUNC::FWD_THR },
+        { 5, RC_Channel::AUX_FUNC::LATERAL_THR },
+   };
+    for (auto &map : func_map) {
+        struct AP_Param::ConversionInfo info;
+        info.old_key = param_key;
+        info.type = AP_PARAM_INT8;
+        info.new_name = nullptr;
+        info.old_group_element = map.idx;
+
+        uint8_t old_value;
+        AP_Param *ap = (AP_Param *)&old_value;
+
+        if (!AP_Param::find_old_parameter(&info, ap)) {
+            // the parameter wasn't set in the old eeprom
+            continue;
+        }
+
+        RC_Channel *c = channel(old_value-1);
+        if (c == nullptr) {
+            // old value was invalid
+            continue;
+        }
+
+        AP_Int16 &option = c->option;
+
+        if (!option.configured_in_storage() &&
+            RC_Channel::AUX_FUNC(option.get()) == map.func) {
+            // don't over-write default values
+            continue;
+        }
+
+        // force-overwrite the value:
+        option.set_and_save((uint16_t)map.func);
+    }
+
+    // we need to flush here to prevent a later set_default_by_name()
+    // causing a save to be done on a converted parameter
+    AP_Param::flush();
 }
 
 #endif  // AP_RC_CHANNEL_ENABLED
