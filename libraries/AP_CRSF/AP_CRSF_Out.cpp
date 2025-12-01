@@ -75,7 +75,7 @@ bool AP_CRSF_Out::init(AP_HAL::UARTDriver* uart)
     const uint16_t rate = _frontend._rate_hz.get();
     if (rate > 0) {
         _frame_interval_us = 1000000UL / rate;
-        _heartbeat_to_frame_ratio = MAX(1, rate / DEFAULT_CRSF_OUTPUT_RATE);
+        _heartbeat_to_frame_ratio = MAX(1U, rate / DEFAULT_CRSF_OUTPUT_RATE);
     } else {
         _frame_interval_us = 1000000UL / DEFAULT_CRSF_OUTPUT_RATE;
         _heartbeat_to_frame_ratio = 1;
