@@ -54,3 +54,6 @@ define HAL_PARAM_DEFAULTS_PATH     "/opt/ardupilot/etc/ardupilot.parm"
 
 // FIXME: use of this define should go away:
 define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_T3_GEM_O1
+
+define AP_HAL_LINUX_ANALOGIN_ADS1115_ENABLED 1
+define AP_HAL_LINUX_ANALOGIN_CLASS AnalogIn_ADS1115
