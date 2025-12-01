@@ -254,6 +254,10 @@ public:
     // from which to decide the origin on its own
     bool set_origin(const Location &loc) WARN_IF_UNUSED;
 
+    // Set the origin to the last recorded location if there is one
+    // This is useful for position controlled modes without GPS
+    bool ensure_origin_is_set();
+
 #if AP_AHRS_POSITION_RESET_ENABLED
     // Set the EKF's NE horizontal position states and their corresponding variances from the supplied WGS-84 location
     // and 1-sigma horizontal position uncertainty. This can be used when the EKF is dead reckoning to periodically
@@ -757,6 +761,9 @@ private:
 
     AP_Enum<GPSUse> _gps_use;
     AP_Int8 _gps_minsats;
+    AP_Float _origin_lat;
+    AP_Float _origin_lng;
+    AP_Float _origin_alt;
 
     EKFType active_EKF_type(void) const { return state.active_EKF; }
 
@@ -979,6 +986,10 @@ private:
     // returns an EKF type to be used as active if we decide the
     // primary is not good enough.
     EKFType fallback_active_EKF_type(void) const;
+   
+    // Record the current valid origin
+    // This is useful for position controlled modes without GPS
+    void record_origin();
 
     /*
       state updated at the end of each update() call
