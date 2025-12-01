@@ -128,7 +128,7 @@ void AP_CRSF_Out::crsf_out_thread()
         uint8_t frame_ratio = _heartbeat_to_frame_ratio;
 
         // if we have not negotiated a faster baudrate do not go above the default output rate
-        if (_frontend._rate_hz.get() > DEFAULT_CRSF_OUTPUT_RATE && _uart->get_baud_rate() == CRSF_BAUDRATE) {
+        if (uint16_t(_frontend._rate_hz.get()) > DEFAULT_CRSF_OUTPUT_RATE && _uart->get_baud_rate() == CRSF_BAUDRATE) {
             next_run = _last_frame_us + 1000000UL / DEFAULT_CRSF_OUTPUT_RATE;
             frame_ratio = 1;
         }
