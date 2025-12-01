@@ -65,7 +65,7 @@
 
 extern const AP_HAL::HAL &hal;
 
-AP_Compass_Backend *AP_Compass_BMM150::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev, bool force_external, enum Rotation rotation)
+AP_Compass_Backend *AP_Compass_BMM150::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev, bool force_external, enum Rotation rotation)
 {
     if (!dev) {
         return nullptr;
