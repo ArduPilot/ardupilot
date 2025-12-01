@@ -4200,7 +4200,7 @@ void GCS_MAVLINK::handle_optical_flow_rad(const mavlink_message_t &msg)
     if (optflow == nullptr) {
         return;
     }
-    optflow->handle_msg_rad(msg);
+    optflow->handle_msg_optical_flow_rad(msg);
 }
 #endif // AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
 

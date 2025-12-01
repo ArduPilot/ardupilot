@@ -18,28 +18,47 @@ public:
 
     // read latest values from sensor and fill in x,y and totals.
     void update(void) override;
+    AP_OpticalFlow::OpticalFlow_state update_msg_optical_flow();
 
     // get update from mavlink
     void handle_msg(const mavlink_message_t &msg) override;
 
 #if AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
-    void handle_msg_rad(const mavlink_message_t &msg) override;
-#endif
+    void handle_msg_optical_flow_rad(const mavlink_message_t &msg) override;
+    AP_OpticalFlow::OpticalFlow_state update_msg_optical_flow_rad();
+#endif // AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
 
     // detect if the sensor is available
     static AP_OpticalFlow_MAV *detect(AP_OpticalFlow &_frontend);
 
 private:
 
+    // OPTICAL_FLOW state variables
     uint64_t prev_frame_us;             // system time of last message when update was last called
     uint64_t latest_frame_us;           // system time of most recent messages processed
     Vector2f flow_sum;                  // sum of sensor's flow_x and flow_y values since last call to update
     bool flow_sum_is_rads;              // true if flow_sum holds values in rad/s, if false flow_sum holds dpi
     uint16_t quality_sum;               // sum of sensor's quality values since last call to update
     uint16_t count;                     // number of sensor readings since last call to update
-    uint8_t sensor_id;                  // sensor_id received in latest mavlink message
+    uint8_t sensor_id;                  // sensor_id received in latest OPTICAL_FLOW message
     Vector2f gyro_sum;                  // sum of gyro sensor values since last frame from flow sensor
     uint16_t gyro_sum_count;            // number of gyro sensor values in sum
+
+
+
+#if AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+
+    // OPTICAL_FLOW_RAD state variables
+    Vector2f flow_rad_integral_sum;       // sum of all integrated_x and integrated_y values since last call to update
+    Vector2f rate_gyro_rad_integral_sum;  // sum of all integrated_xgyro/integrated_ygyro values since last update
+    uint32_t integration_time_sum_rad_us; // sum of all integratation_time_us values used to obtain average flow
+    uint16_t quality_rad_sum;             // sum of sensor quality values since last call to update
+    uint16_t count_rad;                   // number of sensor readings since last call to update
+    uint8_t sensor_id_rad;                // sensor_id received in last OPTICAL_FLOW_RAD message
+
+
+
+#endif // AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
 };
 
 #endif  // AP_OPTICALFLOW_MAV_ENABLED
