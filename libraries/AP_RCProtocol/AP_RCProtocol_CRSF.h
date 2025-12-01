@@ -241,7 +241,7 @@ private:
     bool check_frame(uint32_t timestamp_us);
     void skip_to_next_frame(uint32_t timestamp_us);
     bool decode_crsf_packet();
-    bool process_telemetry(bool check_constraint = true) const;
+    bool process_telemetry(bool check_constraint = true);
     void process_link_stats_frame(const void* data);
     void process_link_stats_rx_frame(const void* data);
     void process_link_stats_tx_frame(const void* data);
@@ -259,7 +259,7 @@ private:
     uint32_t _last_uart_start_time_ms;
     uint32_t _last_rx_frame_time_us;
     uint32_t _start_frame_time_us;
-    mutable bool telem_available;
+    bool telem_available;
     uint32_t _new_baud_rate;
     bool _crsf_v3_active;
     PortMode _mode;

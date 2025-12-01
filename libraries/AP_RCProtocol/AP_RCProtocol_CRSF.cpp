@@ -529,7 +529,7 @@ void AP_RCProtocol_CRSF::reset_bootstrap_baudrate()
 #endif
 
 // send out telemetry
-bool AP_RCProtocol_CRSF::process_telemetry(bool check_constraint) const
+bool AP_RCProtocol_CRSF::process_telemetry(bool check_constraint)
 {
 #if HAL_CRSF_TELEM_ENABLED
     AP_HAL::UARTDriver *uart = get_current_UART();
