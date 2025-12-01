@@ -740,7 +740,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @Param: OPTIONS
     // @DisplayName: Optional EKF behaviour
     // @Description: EKF optional behaviour. Bit 0 (JammingExpected): Setting JammingExpected will change the EKF behaviour such that if dead reckoning navigation is possible it will require the preflight alignment GPS quality checks controlled by EK3_GPS_CHECK and EK3_CHECK_SCALE to pass before resuming GPS use if GPS lock is lost for more than 2 seconds to prevent bad position estimate. Bit 1 (Manual lane switching): DANGEROUS – If enabled, this disables automatic lane switching. If the active lane becomes unhealthy, no automatic switching will occur. Users must manually set EK3_PRIMARY to change lanes. No health checks will be performed on the selected lane. Use with extreme caution.  Bit 2 (Optflow may use terrain alt): Terrain SRTM data will be used if the vehicle climbs above the rangefinder's range allowing optical flow to be used at higher altitudes.
-    // @Bitmask: 0:JammingExpected, 1:ManualLaneSwitching, 2:Optflow may use terrain alt
+    // @Bitmask: 0:JammingExpected, 1:ManualLaneSwitching, 2:Optflow may use terrain alt,3:DisableRangeFusion,4:DisableSetLatLng,5:EnableRangeToLocHgtOffset,6:LimitRngToLocUpdate
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  11, NavEKF3, _options, 0),
 
@@ -1444,8 +1444,14 @@ bool NavEKF3::setOriginLLH(const Location &loc)
 bool NavEKF3::setLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms)
 {
 #if EK3_FEATURE_POSITION_RESET
+    WITH_SEMAPHORE(_write_mutex);
+
     dal.log_SetLatLng(loc, posAccuracy, timestamp_ms);
 
+    if (_options & (int32_t)NavEKF3::Options::DisableSetLatLng) {
+        return false;
+    }
+    
     if (!core) {
         return false;
     }
@@ -2113,6 +2119,28 @@ void NavEKF3::writeDefaultAirSpeed(float airspeed, float uncertainty)
         core[i].writeDefaultAirSpeed(airspeed, uncertainty);
     }
 }
+
+#if EK3_FEATURE_WRITE_RANGE_TO_LOCATION
+// Write a range measurement and 1-sigma uncertainty in metres to a location.
+void NavEKF3::writeRangeToLocation(const float range, const float uncertainty, const Location &loc, const uint32_t timeStamp_ms, const uint8_t index)
+{
+    WITH_SEMAPHORE(_write_mutex);
+
+    // ignore any data if the EKF is not started
+    if (!core) {
+        return;
+    }
+
+    AP::dal().log_writeRangeToLocation(range, uncertainty, loc, timeStamp_ms, index);
+
+    if (_options & (int32_t)NavEKF3::Options::DisableRangeFusion) {
+        return;
+    }
+    for (uint8_t i=0; i<num_cores; i++) {
+        core[i].writeRangeToLocation(range, uncertainty, loc, timeStamp_ms, index);
+    }
+}
+#endif
 
 // returns true when the yaw angle has been aligned
 bool NavEKF3::yawAlignmentComplete(void) const
