@@ -55,7 +55,7 @@ void AP_OpticalFlow_MAV::update(void)
         gyro_sum_count = 0;
     }
 
-#ifdef AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+#if AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
     if (count_rad != 0 && (quality_rad_sum / count_rad) > state.surface_quality) {
         // state quality is better from OPTICAL_FLOW_RAD, so we can take it instead
         state = update_msg_optical_flow_rad();
