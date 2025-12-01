@@ -1278,6 +1278,83 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter('FS_OPTIONS', 0)
         self.progress("All GCS failsafe tests complete")
 
+    def GCSTimesyncFailsafe(self, timeout=360):
+        '''Test GCS Failsafe based on TIMESYNC responses'''
+
+        # Define message hook to answer TIMESYNC requests
+        def timesync_answer_hook(mav, msg):
+            if msg.get_type() == 'TIMESYNC' and msg.tc1 == 0:
+                # This is a request from vehicle; send response
+                self.progress(f"Sending timesync response (ts1={msg.ts1})")
+                self.mav.mav.timesync_send(
+                    int(self.get_sim_time_cached() * 1000000),  # tc1 = our timestamp in microseconds
+                    int(msg.ts1)  # ts1 = echo back the vehicle's timestamp
+                )
+            return True
+
+        # Change to GUIDED mode and wait ready to arm
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+
+        # Setup parameters
+        self.set_parameters({
+            'MAV_GCS_SYSID': self.mav.source_system,
+            'SIM_SPEEDUP': 1,  # Run at speedup 1 to avoid race conditions
+            'MAV_OPTIONS': 2,  # Enable bit 1 (TIMESYNC_BASED_FAILSAFE)
+            'FS_OPTIONS': 0,
+        })
+        self.setGCSfailsafe(1)  # Enable GCS failsafe with RTL action
+
+        # Install hook in a context to answer timesync requests
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.install_message_hook_context(timesync_answer_hook)
+
+        self.start_subtest("GCS timesync-based failsafe: verify no failsafe with responses")
+
+        # Takeoff and move away in GUIDED mode
+        self.takeoff(3, mode='GUIDED')
+        # Move 3m north, 4m west, 5m up
+        self.fly_guided_move_local(3, -4, 5)
+
+        # Wait to ensure no failsafe while hook is active
+        self.progress("Waiting to verify no failsafe while answering TIMESYNC")
+        self.delay_sim_time(10)
+        self.assert_mode("GUIDED")
+        self.progress("No failsafe triggered while answering TIMESYNC - GOOD")
+
+        self.end_subtest("No failsafe while answering TIMESYNC")
+
+        # Remove the hook by popping context, which should trigger failsafe
+        self.start_subtest("GCS timesync-based failsafe: verify failsafe triggers without responses")
+
+        self.progress("Removing TIMESYNC answer hook, waiting for failsafe")
+        self.context_pop()
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.wait_statustext("GCS Failsafe", timeout=30, check_context=True)
+        self.wait_mode("RTL", timeout=10)
+        self.context_pop()
+
+        self.end_subtest("GCS timesync-based failsafe triggered successfully")
+
+        # Install hook again to clear failsafe
+        self.start_subtest("GCS timesync-based failsafe: verify failsafe clears with responses")
+
+        self.progress("Re-installing TIMESYNC answer hook to clear failsafe")
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.install_message_hook_context(timesync_answer_hook)
+
+        self.wait_statustext("GCS Failsafe Cleared", timeout=30, check_context=True)
+        self.context_pop()
+
+        self.end_subtest("GCS timesync-based failsafe cleared successfully")
+
+        # RTL and land
+        self.do_RTL()
+
     def CustomController(self, timeout=300):
         '''Test Custom Controller'''
         self.progress("Configure custom controller parameters")
@@ -12799,6 +12876,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.ThrottleFailsafe,
              self.ThrottleFailsafePassthrough,
              self.GCSFailsafe,
+             self.GCSTimesyncFailsafe,
              self.CustomController,
              self.WPArcs,
              self.WPArcs2,
