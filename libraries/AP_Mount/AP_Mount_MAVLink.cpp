@@ -35,7 +35,7 @@ void AP_Mount_MAVLink::update()
             mnt_target.target_type = MountTargetType::ANGLE;
             mnt_target.angle_rad.set(Vector3f{0,0,0}, false);
             send_gimbal_device_retract();
-            break;
+            return;
 
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL: {
