@@ -57,6 +57,10 @@ void setup()
 {
     hal.console->printf("GPS AUTO library test\n");
 
+#if AP_SIM_ENABLED
+    sitl.init();
+#endif  // AP_SIM_ENABLED
+
     board_config.init();
 
 #if AP_NOTIFY_GPIO_LED_3_ENABLED
