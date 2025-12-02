@@ -97,8 +97,8 @@ void AP_GPS_UBLOX_CFGv2::update()
             if (AP_HAL::millis() - _last_request_time > 500) {
                 _last_request_time = AP_HAL::millis();
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                                 "GPS %d: u-blox resetting to default config",
-                                 ubx_backend.state.instance + 1);
+                                 "GPS %u: u-blox resetting to default config",
+                                 unsigned(ubx_backend.state.instance) + 1);
                 _valget_position = 0;  // reset position for new fetch cycle
                 fetch_all_config();
             }
@@ -120,8 +120,8 @@ void AP_GPS_UBLOX_CFGv2::update()
         case States::IDENTIFY_SIGNALS:
             if (AP_HAL::millis() - _last_request_time > 550) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                                 "GPS %d: u-blox identifying signals",
-                                 ubx_backend.state.instance + 1);
+                                 "GPS %u: u-blox identifying signals",
+                                 unsigned(ubx_backend.state.instance) + 1);
                 _last_request_time = AP_HAL::millis();
                 _request_cfg_group(ConfigKey::CFG_SIGNAL_GPS_ENA, ConfigLayer::CFG_LAYER_RAM);
             }
@@ -136,8 +136,8 @@ void AP_GPS_UBLOX_CFGv2::update()
             } else {
                 // continue to next state
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                                 "GPS %d: u-blox signals configured",
-                                 ubx_backend.state.instance + 1);
+                                 "GPS %u: u-blox signals configured",
+                                 unsigned(ubx_backend.state.instance) + 1);
                 curr_state = States::IDENTIFY_UART_PORT;
                 _last_request_time = 0; // immediate next state
             }
@@ -159,8 +159,8 @@ void AP_GPS_UBLOX_CFGv2::update()
             }
         }
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                    "GPS %d: u-blox fetching config",
-                    ubx_backend.state.instance + 1);
+                    "GPS %u: u-blox fetching config",
+                    unsigned(ubx_backend.state.instance) + 1);
         FALLTHROUGH; // fallthrough to next state
         case States::FETCH_COMMON_CONFIG:
             if (AP_HAL::millis() - _last_request_time > 200) {
@@ -187,8 +187,8 @@ bool AP_GPS_UBLOX_CFGv2::_identify_module()
 {
     if (strlen(ubx_backend._module) != 0) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                    "GPS %d: u-blox module: %s",
-                    ubx_backend.state.instance + 1,
+                    "GPS %u: u-blox module: %s",
+                    unsigned(ubx_backend.state.instance) + 1,
                     ubx_backend._module);
 
         // check if module contains the model string
@@ -221,20 +221,20 @@ bool AP_GPS_UBLOX_CFGv2::_identify_module()
     // check protocol version
     if (strlen(ubx_backend._protver) != 0) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                    "GPS %d: u-blox protocol: %s",
-                    ubx_backend.state.instance + 1,
+                    "GPS %u: u-blox protocol: %s",
+                    unsigned(ubx_backend.state.instance) + 1,
                     ubx_backend._protver);
         // convert the version string to a float
         float protver = atof(ubx_backend._protver);
         if (protver >= 23.01f) {
             // protocol version 23.01 and above supports CFG-VALGET/VALSET
             GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                        "GPS %d: u-blox protocol supports CFG-VALGET/VALSET",
-                        ubx_backend.state.instance + 1);
+                        "GPS %u: u-blox protocol supports CFG-VALGET/VALSET",
+                        unsigned(ubx_backend.state.instance) + 1);
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
-                        "GPS %d: u-blox protocol too old for CFG-VALGET/VALSET",
-                        ubx_backend.state.instance + 1);
+                        "GPS %u: u-blox protocol too old for CFG-VALGET/VALSET",
+                        unsigned(ubx_backend.state.instance) + 1);
             // we cannot proceed with configuration
             curr_state = States::FAILED;
             return false;
@@ -242,8 +242,8 @@ bool AP_GPS_UBLOX_CFGv2::_identify_module()
         if (protver >= 40.00f) {
             // protocol version 40.00 and above only support CFG-VALGET/VALSET
             GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                        "GPS %d: Legacy config unsupported",
-                        ubx_backend.state.instance + 1);
+                        "GPS %u: Legacy config unsupported",
+                        unsigned(ubx_backend.state.instance) + 1);
             ubx_backend._legacy_cfg_unsupported = true;
         }
         // move to next state
@@ -484,8 +484,8 @@ void AP_GPS_UBLOX_CFGv2::process_valget_complete(bool success)
                     if (_common_cfg.get_size() == 0) {
                         curr_state = States::CONFIGURED;
                         GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                                     "GPS %d: u-blox configured",
-                                     ubx_backend.state.instance + 1);
+                                     "GPS %u: u-blox configured",
+                                     unsigned(ubx_backend.state.instance) + 1);
                     } else {
                         // More configs to verify, stay in FETCH state
                         Debug("Batch verified, continuing with next batch (%u bytes)", (unsigned)_common_cfg.get_size());
@@ -506,9 +506,9 @@ void AP_GPS_UBLOX_CFGv2::_handle_valget_kv(ConfigKey key, uint64_t value, uint8_
         // check if the key is in init list or signal key, if not we need a reset
         if (!_init_common_cfg_list(true, key) && ((key & 0x0FFF0000LU) != (ConfigKey::CFG_SIGNAL_GPS_ENA & 0x0FFF0000LU))) {
             // not in init list, ignore
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS %d: Found unexpected valget key 0x%08x reset required",
-                    ubx_backend.state.instance + 1,
-                    (uint32_t)key);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS %u: Found unexpected valget key 0x%08x reset required",
+                    unsigned(ubx_backend.state.instance) + 1,
+                    (unsigned)key);
             _is_reset_required = true;
             _valget_abort = true;  // stop processing remaining KV pairs
             delete_and_reset_config();
@@ -649,8 +649,8 @@ void AP_GPS_UBLOX_CFGv2::_publish_supported_constellations()
     }
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s", buf);
     GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                 "GPS %d: Signal Mode: 0x%08lx/0x%08lx",
-                 ubx_backend.state.instance + 1,
+                 "GPS %u: Signal Mode: 0x%08lx/0x%08lx",
+                 unsigned(ubx_backend.state.instance) + 1,
                  (unsigned long)_cfg.enabled_signals,
                  (unsigned long)_cfg.supported_signals);
 
@@ -696,8 +696,8 @@ bool AP_GPS_UBLOX_CFGv2::_send_signal_cfg()
     if (desired_gnss != ubx_backend.params.gnss_mode) {
         ubx_backend.params.gnss_mode.set_and_save(desired_gnss);
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                    "GPS %d: GNSS mode cleared unavailable constellations: 0x%02x -> 0x%02x",
-                    ubx_backend.state.instance + 1,
+                    "GPS %u: GNSS mode cleared unavailable constellations: 0x%02x -> 0x%02x",
+                    unsigned(ubx_backend.state.instance) + 1,
                     (unsigned)ubx_backend.params.gnss_mode,
                     (unsigned)desired_gnss);
     }
@@ -705,8 +705,8 @@ bool AP_GPS_UBLOX_CFGv2::_send_signal_cfg()
     if (desired_signals != (uint32_t)ubx_backend.params.sig_mode && ubx_backend.params.sig_mode != 0) {
         ubx_backend.params.sig_mode.set_and_save(desired_signals);
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                    "GPS %d: Signal mode cleared unavailable signals: 0x%08lx -> 0x%08lx",
-                    ubx_backend.state.instance + 1,
+                    "GPS %u: Signal mode cleared unavailable signals: 0x%08lx -> 0x%08lx",
+                    unsigned(ubx_backend.state.instance) + 1,
                     (unsigned long)ubx_backend.params.sig_mode,
                     (unsigned long)desired_signals);
     }
@@ -715,15 +715,15 @@ bool AP_GPS_UBLOX_CFGv2::_send_signal_cfg()
     // Log configuration changes
     if (desired_gnss != _cfg.enabled_gnss) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                    "GPS %d: updating GNSS Mode 0x%02x -> 0x%02x",
-                    ubx_backend.state.instance + 1,
+                    "GPS %u: updating GNSS Mode 0x%02x -> 0x%02x",
+                    unsigned(ubx_backend.state.instance) + 1,
                     (unsigned)_cfg.enabled_gnss,
                     (unsigned)desired_gnss);
     }
     if (desired_signals != _cfg.enabled_signals) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                    "GPS %d: updating Signal Mode 0x%08lx -> 0x%08lx",
-                    ubx_backend.state.instance + 1,
+                    "GPS %u: updating Signal Mode 0x%08lx -> 0x%08lx",
+                    unsigned(ubx_backend.state.instance) + 1,
                     (unsigned long)_cfg.enabled_signals,
                     (unsigned long)desired_signals);
     }
@@ -740,7 +740,7 @@ bool AP_GPS_UBLOX_CFGv2::_send_signal_cfg()
             uint8_t desired_val = (desired_gnss & (1U << AP_GPS_UBLOX::GNSS_##NAME)) ? 1U : 0U; \
             if (curr_val != desired_val) { \
                 if (packed_cfg.push<ConfigKey::CFG_SIGNAL_##NAME##_ENA>(curr_val, desired_val)) { \
-                    Debug("GPS %d: pushed GNSS %s %d -> %d", ubx_backend.state.instance + 1, #NAME, curr_val, desired_val); \
+                    Debug("GPS %u: pushed GNSS %s %d -> %d", unsigned(ubx_backend.state.instance) + 1, #NAME, curr_val, desired_val); \
                 } \
             } \
         }
@@ -749,7 +749,7 @@ bool AP_GPS_UBLOX_CFGv2::_send_signal_cfg()
 
     if (desired_signals == 0) {
         // no signals to be configured
-        Debug("GPS %d: no signals to be configured", ubx_backend.state.instance + 1);
+        Debug("GPS %u: no signals to be configured", unsigned(ubx_backend.state.instance) + 1);
         goto exit;
     }
 
@@ -760,7 +760,7 @@ bool AP_GPS_UBLOX_CFGv2::_send_signal_cfg()
             uint8_t desired_val = (desired_signals & (1UL << (INDEX))) ? 1U : 0U; \
             if (curr_val != desired_val) { \
                 if (packed_cfg.push<ConfigKey::CFG_SIGNAL_##NAME##_ENA>(curr_val, desired_val)) { \
-                    Debug("GPS %d: pushed signal %s %d -> %d", ubx_backend.state.instance + 1, #NAME, curr_val, desired_val); \
+                    Debug("GPS %u: pushed signal %s %d -> %d", unsigned(ubx_backend.state.instance) + 1, #NAME, curr_val, desired_val); \
                 } \
             } \
         }
@@ -1052,8 +1052,8 @@ void AP_GPS_UBLOX_CFGv2::handle_cfg_ack(uint8_t msg_id)
     switch (msg_id) {
         case AP_GPS_UBLOX::MSG_CFG_VALDEL:
             if (curr_state == States::RESET_MODULE) {
-                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS %d: CFG-VALDEL acknowledged, resetting module",
-                      ubx_backend.state.instance + 1);
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS %u: CFG-VALDEL acknowledged, resetting module",
+                      unsigned(ubx_backend.state.instance) + 1);
                 // Send controlled software reset
                 _send_reset(0x0000, AP_GPS_UBLOX::RESET_SW_CONTROLLED);
                 // move back to SERIAL ONLY Config and transition to IDENTIFY_MODULE
@@ -1074,15 +1074,15 @@ void AP_GPS_UBLOX_CFGv2::handle_cfg_nack(uint8_t msg_id)
             if (curr_state == States::RESET_MODULE) {
                 if (fetch_config_layer == ConfigLayer::CFG_LAYER_BBR) {
                     // try FLASH layer
-                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS %d: CFG-VALGET NACK for BBR, trying FLASH",
-                          ubx_backend.state.instance + 1);
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS %u: CFG-VALGET NACK for BBR, trying FLASH",
+                          unsigned(ubx_backend.state.instance) + 1);
                     fetch_config_layer = ConfigLayer::CFG_LAYER_FLASH;
                     _valget_position = 0;
                     fetch_all_config();
                 } else if (!_is_reset_required) {
                     // FLASH layer also not supported, skip reset check
-                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS %d: CFG-VALGET NACK for FLASH, skipping reset check",
-                          ubx_backend.state.instance + 1);
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS %u: CFG-VALGET NACK for FLASH, skipping reset check",
+                          unsigned(ubx_backend.state.instance) + 1);
                     curr_state = States::IDENTIFY_MODULE;
                     _module_reset[ubx_backend.state.instance] = true;
                     _last_request_time = 0; // immediate next state
@@ -1114,7 +1114,7 @@ bool AP_GPS_UBLOX_CFGv2::fetch_all_config()
     msg.msg.layers = fetch_config_layer;
     msg.msg.position = _valget_position;
     msg.key = 0x0FFF0000; // all keys
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: Requesting all config (%s) pos=%u", ubx_backend.state.instance + 1,
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %u: Requesting all config (%s) pos=%u", unsigned(ubx_backend.state.instance) + 1,
           (fetch_config_layer == ConfigLayer::CFG_LAYER_FLASH) ? "FLASH" : "BBR", _valget_position);
     return !ubx_backend._send_message(AP_GPS_UBLOX::CLASS_CFG, AP_GPS_UBLOX::MSG_CFG_VALGET, &msg, sizeof(msg));
 }
@@ -1139,8 +1139,8 @@ bool AP_GPS_UBLOX_CFGv2::delete_and_reset_config()
     }
 
     GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
-                  "GPS %d: Deleting all config and resetting",
-                  ubx_backend.state.instance + 1);
+                  "GPS %u: Deleting all config and resetting",
+                  unsigned(ubx_backend.state.instance) + 1);
 
     return ubx_backend._send_message(AP_GPS_UBLOX::CLASS_CFG,
                                      AP_GPS_UBLOX::MSG_CFG_VALDEL,
