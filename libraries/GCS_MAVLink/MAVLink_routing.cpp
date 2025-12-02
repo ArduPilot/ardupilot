@@ -109,7 +109,10 @@ bool MAVLink_routing::check_and_forward(uint8_t framing_status,
     case MAVLINK_FRAMING_OK:
         break;
     case MAVLINK_FRAMING_BAD_CRC:
-        if (in_link.option_enabled(GCS_MAVLINK::Option::FORWARD_BAD_CRC)) {
+        if (in_link.option_enabled(GCS_MAVLINK::Option::FORWARD_BAD_CRC) &&
+            msg.msgid != MAVLINK_MSG_ID_RADIO &&
+            msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS &&
+            msg.msgid != MAVLINK_MSG_ID_ADSB_VEHICLE) {
             forward(in_link, msg);
         }
         return false;  // do not process locally
@@ -146,6 +149,14 @@ bool MAVLink_routing::check_and_forward(uint8_t framing_status,
         }
         return true;
     }
+
+    /*
+     * Note that if you are looking at handling routing especially for
+     * certain packets here then you may need to add your message to
+     * the list of IDs we will not forward *even if* the option to
+     * send bad-CRC packets has been set (this is in a switch
+     * statement, above).
+     */
 
 #if HAL_ADSB_ENABLED
     if (msg.msgid == MAVLINK_MSG_ID_ADSB_VEHICLE) {
