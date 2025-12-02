@@ -231,7 +231,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Plane}: 160:Weathervane Enable
     // @Values{Copter}: 161:Turbine Start(heli)
     // @Values{Copter, Rover, Plane}: 162:FFT Tune
-    // @Values{Copter, Rover, Plane, Sub}: 163:Mount Lock
+    // @Values{Copter, Rover, Plane, Sub}: 163:Mount Yaw Lock
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 164:Pause Stream Logging
     // @Values{Copter, Rover, Plane, Sub}: 165:Arm/Emergency Motor Stop
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 166:Camera Record Video, 167:Camera Zoom, 168:Camera Manual Focus, 169:Camera Auto Focus
@@ -250,6 +250,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 182: AHRS AutoTrim
     // @Values{Plane}: 183: AUTOLAND mode
     // @Values{Plane}: 184: System ID Chirp
+    // @Values{Copter, Rover, Plane, Blimp, Sub}:  185:Mount Roll/Pitch Lock
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
