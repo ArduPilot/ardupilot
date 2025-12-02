@@ -504,6 +504,8 @@ AP_HW_MATEKH743SE                    5501
 AP_HW_ZeroOne_X6                     5600
 AP_HW_ZeroOne_PMU                    5601
 AP_HW_ZeroOne_GNSS                   5602
+AP_HW_ZeroOne_M9                     5610
+AP_HW_ZeroOne_A3                     5620
 
 #IDs 5700-5710 reserved for DroneBuild  
 AP_HW_DroneBuild_G1                  5700
