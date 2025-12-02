@@ -3,7 +3,19 @@
 import os
 import re
 import fnmatch
+import sys
 from collections.abc import Collection
+from typing import Optional
+
+# Add the hwdef scripts directory to the path to import HWDef base class
+_hwdef_scripts_path = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    '..', '..', 'libraries', 'AP_HAL', 'hwdef', 'scripts'
+)
+if _hwdef_scripts_path not in sys.path:
+    sys.path.insert(0, _hwdef_scripts_path)
+
+from hwdef import HWDef  # noqa: E402
 
 '''
 list of boards for build_binaries.py and custom build server
@@ -237,6 +249,68 @@ class BoardList(object):
                 continue
             ret.append(x.name)
         return sorted(list(ret))
+
+    def get_HWDef_instance(self, board: Board, quiet: bool = True) -> Optional[HWDef]:
+        '''
+        Return an instance of the appropriate HWDef subclass for the given board.
+
+        Args:
+            board: A Board instance
+            quiet: If True, suppress hwdef processing output (default: True)
+
+        Returns:
+            An instance of ChibiOSHWDef, LinuxHWDef, ESP32HWDef, or None for SITL boards
+
+        Raises:
+            ValueError: If the board's HAL is unknown or if hwdef file doesn't exist
+        '''
+        # SITL boards don't have hwdef files
+        if board.hal == "AP_HAL_SITL":
+            return None
+
+        # Determine the hwdef directory path based on the HAL type
+        hwdef_dir = None
+        for hdir in self.hwdef_dir:
+            for hal in 'ChibiOS', 'Linux', 'ESP32':
+                if board.hal == hal and f"AP_HAL_{hal}" in hdir:
+                    hwdef_dir = hdir
+                    break
+            if hwdef_dir is not None:
+                break
+
+        if hwdef_dir is None:
+            raise ValueError(f"Could not find hwdef directory for board {board.name} with HAL {board.hal}")
+
+        # Construct the path to the hwdef.dat file
+        hwdef_path = os.path.join(hwdef_dir, board.name, "hwdef.dat")
+
+        if not os.path.exists(hwdef_path):
+            raise ValueError(f"hwdef.dat not found at {hwdef_path}")
+
+        scripts_path = os.path.join(
+            os.path.dirname(hwdef_dir), "hwdef", "scripts"
+        )
+        if scripts_path not in sys.path:
+            sys.path.insert(0, scripts_path)
+
+        # Import the appropriate HWDef subclass and return an instance
+        if board.hal == "ChibiOS":
+            # Import ChibiOS hwdef module
+            from chibios_hwdef import ChibiOSHWDef
+            return ChibiOSHWDef(hwdef=[hwdef_path], quiet=quiet)
+
+        elif board.hal == "Linux":
+            # Import Linux hwdef module
+            from linux_hwdef import LinuxHWDef
+            return LinuxHWDef(hwdef=[hwdef_path], quiet=quiet)
+
+        elif board.hal == "ESP32":
+            # Import ESP32 hwdef module
+            from esp32_hwdef import ESP32HWDef
+            return ESP32HWDef(hwdef=[hwdef_path], quiet=quiet)
+
+        else:
+            raise ValueError(f"Unknown HAL type: {board.hal}")
 
 
 AUTOBUILD_BOARDS = BoardList().find_autobuild_boards()
