@@ -72,6 +72,7 @@
 #include <Filter/AP_Filter.h>
 #include <AP_Stats/AP_Stats.h>              // statistics library
 #include <AP_DDS/AP_DDS_config.h>
+#include <AP_TrustedFlight/AP_TrustedFlight.h>
 #if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
 #endif
@@ -424,6 +425,10 @@ protected:
 
 #if AP_OPENDRONEID_ENABLED
     AP_OpenDroneID opendroneid;
+#endif
+
+#if AP_TRUSTED_FLIGHT_ENABLED
+    AP_TrustedFlight trusted_flight;
 #endif
 
 #if HAL_MSP_ENABLED
