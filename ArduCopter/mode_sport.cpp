@@ -10,8 +10,8 @@
 bool ModeSport::init(bool ignore_checks)
 {
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    pos_control->set_correction_speed_accel_U_cmss(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control->set_max_speed_accel_U_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
+    pos_control->set_correction_speed_accel_U_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
 
     // initialise the vertical position controller
     if (!pos_control->is_active_U()) {
@@ -26,50 +26,49 @@ bool ModeSport::init(bool ignore_checks)
 void ModeSport::run()
 {
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control->set_max_speed_accel_U_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
 
     // apply SIMPLE mode transform
     update_simple_mode();
 
     // get pilot's desired roll and pitch rates
-
-    // calculate rate requests
-    float target_roll_rate_cds = channel_roll->norm_input_dz() * g2.command_model_acro_rp.get_rate() * 100.0;
-    float target_pitch_rate_cds = channel_pitch->norm_input_dz() * g2.command_model_acro_rp.get_rate() * 100.0;
-
-    // get attitude targets
-    const Vector3f att_target_cd = attitude_control->get_att_target_euler_cd();
-
-    // Calculate trainer mode earth frame rate command for roll
-    int32_t roll_angle = wrap_180_cd(att_target_cd.x);
-    target_roll_rate_cds -= constrain_int32(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_roll;
-
-    // Calculate trainer mode earth frame rate command for pitch
-    int32_t pitch_angle = wrap_180_cd(att_target_cd.y);
-    target_pitch_rate_cds -= constrain_int32(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_pitch;
-
-    const float angle_max = copter.aparm.angle_max;
-    if (roll_angle > angle_max){
-        target_roll_rate_cds +=  sqrt_controller(angle_max - roll_angle, g2.command_model_acro_rp.get_rate() * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_roll_max_cdss(), G_Dt);
-    }else if (roll_angle < -angle_max) {
-        target_roll_rate_cds +=  sqrt_controller(-angle_max - roll_angle, g2.command_model_acro_rp.get_rate() * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_roll_max_cdss(), G_Dt);
-    }
-
-    if (pitch_angle > angle_max){
-        target_pitch_rate_cds +=  sqrt_controller(angle_max - pitch_angle, g2.command_model_acro_rp.get_rate() * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_pitch_max_cdss(), G_Dt);
-    }else if (pitch_angle < -angle_max) {
-        target_pitch_rate_cds +=  sqrt_controller(-angle_max - pitch_angle, g2.command_model_acro_rp.get_rate() * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_pitch_max_cdss(), G_Dt);
-    }
+    float target_roll_rads = channel_roll->norm_input_dz() * radians(g2.command_model_acro_rp.get_rate());
+    float target_pitch_rads = channel_pitch->norm_input_dz() * radians(g2.command_model_acro_rp.get_rate());
 
     // get pilot's desired yaw rate
-    float target_yaw_rate_cds = rad_to_cd(get_pilot_desired_yaw_rate_rads());
+    float target_yaw_rads = get_pilot_desired_yaw_rate_rads();
+
+    // get attitude targets
+    const Vector3f att_target_euler_rad = attitude_control->get_att_target_euler_rad();
+
+    // Calculate trainer mode earth frame rate command for roll
+    float roll_angle_rad = wrap_PI(att_target_euler_rad.x);
+    target_roll_rads -= constrain_float(roll_angle_rad, -ACRO_LEVEL_MAX_ANGLE_RAD, ACRO_LEVEL_MAX_ANGLE_RAD) * g.acro_balance_roll;
+
+    // Calculate trainer mode earth frame rate command for pitch
+    float pitch_angle_rad = wrap_PI(att_target_euler_rad.y);
+    target_pitch_rads -= constrain_float(pitch_angle_rad, -ACRO_LEVEL_MAX_ANGLE_RAD, ACRO_LEVEL_MAX_ANGLE_RAD) * g.acro_balance_pitch;
+
+    const float angle_max_rad = attitude_control->lean_angle_max_rad();
+
+    if (roll_angle_rad > angle_max_rad){
+        target_roll_rads +=  sqrt_controller(angle_max_rad - roll_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / ACRO_LEVEL_MAX_OVERSHOOT_RAD, attitude_control->get_accel_roll_max_radss(), G_Dt);
+    }else if (roll_angle_rad < -angle_max_rad) {
+        target_roll_rads +=  sqrt_controller(-angle_max_rad - roll_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / ACRO_LEVEL_MAX_OVERSHOOT_RAD, attitude_control->get_accel_roll_max_radss(), G_Dt);
+    }
+
+    if (pitch_angle_rad > angle_max_rad){
+        target_pitch_rads +=  sqrt_controller(angle_max_rad - pitch_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / ACRO_LEVEL_MAX_OVERSHOOT_RAD, attitude_control->get_accel_pitch_max_radss(), G_Dt);
+    }else if (pitch_angle_rad < -angle_max_rad) {
+        target_pitch_rads +=  sqrt_controller(-angle_max_rad - pitch_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / ACRO_LEVEL_MAX_OVERSHOOT_RAD, attitude_control->get_accel_pitch_max_radss(), G_Dt);
+    }
 
     // get pilot desired climb rate
-    float target_climb_rate_cms = get_pilot_desired_climb_rate();
-    target_climb_rate_cms = constrain_float(target_climb_rate_cms, -get_pilot_speed_dn(), g.pilot_speed_up);
+    float target_climb_rate_ms = get_pilot_desired_climb_rate_ms();
+    target_climb_rate_ms = constrain_float(target_climb_rate_ms, -get_pilot_speed_dn_ms(), get_pilot_speed_up_ms());
 
     // Sport State Machine Determination
-    AltHoldModeState sport_state = get_alt_hold_state(target_climb_rate_cms);
+    AltHoldModeState sport_state = get_alt_hold_state_U_ms(target_climb_rate_ms);
 
     // State Machine
     switch (sport_state) {
@@ -92,21 +91,21 @@ void ModeSport::run()
     case AltHoldModeState::Takeoff:
         // initiate take-off
         if (!takeoff.running()) {
-            takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+            takeoff.start_m(constrain_float(g.pilot_takeoff_alt_cm * 0.01, 0.0, 10.0));
         }
 
         // get avoidance adjusted climb rate
-        target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
+        target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
 
         // set position controller targets adjusted for pilot input
-        takeoff.do_pilot_takeoff(target_climb_rate_cms);
+        takeoff.do_pilot_takeoff_ms(target_climb_rate_ms);
         break;
 
     case AltHoldModeState::Flying:
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // get avoidance adjusted climb rate
-        target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
+        target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
 
 #if AP_RANGEFINDER_ENABLED
         // update the vertical offset based on the surface measurement
@@ -114,12 +113,12 @@ void ModeSport::run()
 #endif
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cms);
+        pos_control->set_pos_target_U_from_climb_rate_ms(target_climb_rate_ms);
         break;
     }
 
     // call attitude controller
-    attitude_control->input_euler_rate_roll_pitch_yaw_cds(target_roll_rate_cds, target_pitch_rate_cds, target_yaw_rate_cds);
+    attitude_control->input_euler_rate_roll_pitch_yaw_rads(target_roll_rads, target_pitch_rads, target_yaw_rads);
 
     // run the vertical position controller and set output throttle
     pos_control->update_U_controller();

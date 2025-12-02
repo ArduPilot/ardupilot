@@ -34,17 +34,17 @@ struct PACKED log_Camera {
     int32_t  altitude;
     int32_t  altitude_rel;
     int32_t  altitude_gps;
-    int16_t  roll;
-    int16_t  pitch;
-    uint16_t yaw;
+    float  roll;
+    float  pitch;
+    float yaw;
 };
 
 #if AP_CAMERA_ENABLED
 #define LOG_STRUCTURE_FROM_CAMERA \
     { LOG_CAMERA_MSG, sizeof(log_Camera), \
-      "CAM", "QBHIHLLeeeccC","TimeUS,I,Img,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,R,P,Y", "s#---DUmmmddd", "F----GGBBBBBB" }, \
+      "CAM", "QBHIHLLeeefff","TimeUS,I,Img,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,R,P,Y", "s#---DUmmmddd", "F----GGBBB000" }, \
     { LOG_TRIGGER_MSG, sizeof(log_Camera), \
-      "TRIG", "QBHIHLLeeeccC","TimeUS,I,Img,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,R,P,Y", "s#---DUmmmddd", "F----GGBBBBBB" },
+      "TRIG", "QBHIHLLeeefff","TimeUS,I,Img,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,R,P,Y", "s#---DUmmmddd", "F----GGBBB000" },
 #else
 #define LOG_STRUCTURE_FROM_CAMERA
 #endif

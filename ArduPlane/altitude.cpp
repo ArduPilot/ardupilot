@@ -83,16 +83,9 @@ void Plane::setup_alt_slope(void)
             break;
         }
 
-        // we only do glide slide handling in AUTO when above 20m or
-        // when descending. The 20 meter threshold is arbitrary, and
-        // is basically to prevent situations where we try to slowly
-        // gain height at low altitudes, potentially hitting
-        // obstacles.
-        if (adjusted_relative_altitude_cm() > 2000 || above_location_current(next_WP_loc)) {
-            set_offset_altitude_location(prev_WP_loc, next_WP_loc);
-        } else {
-            reset_offset_altitude();
-        }
+        // otherwise we set up an altitude slope for this leg
+        set_offset_altitude_location(prev_WP_loc, next_WP_loc);
+
         break;
     default:
         reset_offset_altitude();
@@ -115,7 +108,7 @@ int32_t Plane::get_RTL_altitude_cm() const
   return relative altitude in meters (relative to terrain, if available,
   or home otherwise)
  */
-float Plane::relative_ground_altitude(bool use_rangefinder_if_available, bool use_terrain_if_available)
+float Plane::relative_ground_altitude(enum RangeFinderUse use_rangefinder, bool use_terrain_if_available)
 {
 #if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
    float height_AGL;
@@ -126,13 +119,13 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available, bool us
 #endif // AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
 
 #if AP_RANGEFINDER_ENABLED
-   if (use_rangefinder_if_available && rangefinder_state.in_range) {
+   if (rangefinder_use(use_rangefinder) && rangefinder_state.in_range) {
         return rangefinder_state.height_estimate;
    }
 #endif
 
 #if HAL_QUADPLANE_ENABLED && AP_RANGEFINDER_ENABLED
-   if (use_rangefinder_if_available && quadplane.in_vtol_land_final() &&
+   if (rangefinder_use(use_rangefinder) && quadplane.in_vtol_land_final() &&
        rangefinder.status_orient(rangefinder_orientation()) == RangeFinder::Status::OutOfRangeLow) {
        // a special case for quadplane landing when rangefinder goes
        // below minimum. Consider our height above ground to be zero
@@ -163,13 +156,29 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available, bool us
     return relative_altitude;
 }
 
+/*
+  return true if we should use the rangefinder for a specific use case
+ */
+bool Plane::rangefinder_use(enum RangeFinderUse use_rangefinder) const
+{
+    const uint8_t use = uint8_t(g.rangefinder_landing.get());
+    if (use == uint8_t(RangeFinderUse::NONE)) {
+        return false;
+    }
+    if (use & uint8_t(RangeFinderUse::ALL)) {
+        // if ALL bit is set then ignore other bits
+        return true;
+    }
+    return (use & uint8_t(use_rangefinder)) != 0;
+}
+
 // Helper for above method using terrain if the vehicle is currently terrain following
-float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
+float Plane::relative_ground_altitude(enum RangeFinderUse use_rangefinder)
 {
 #if AP_TERRAIN_AVAILABLE
-    return relative_ground_altitude(use_rangefinder_if_available, target_altitude.terrain_following);
+    return relative_ground_altitude(use_rangefinder, target_altitude.terrain_following);
 #else
-    return relative_ground_altitude(use_rangefinder_if_available, false);
+    return relative_ground_altitude(use_rangefinder, false);
 #endif
 }
 
@@ -295,6 +304,17 @@ void Plane::change_target_altitude(int32_t change_cm)
 void Plane::set_target_altitude_proportion(const Location &loc, float proportion)
 {
     set_target_altitude_location(loc);
+
+    // Only do altitude slope handling when above CLIMB_SLOPE_HGT or when
+    // descending. This is meant to prevent situations where the aircraft tries
+    // to slowly gain height at low altitudes, potentially hitting obstacles.
+    if (target_altitude.offset_cm > 0 &&
+        (adjusted_relative_altitude_cm() <
+         (g2.waypoint_climb_slope_height_min * 100))) {
+        // Early return to ensure a full-rate climb past CLIMB_SLOPE_HGT
+        return;
+    }
+
     proportion = constrain_float(proportion, 0.0f, 1.0f);
     change_target_altitude(-target_altitude.offset_cm*proportion);
 
@@ -392,11 +412,11 @@ void Plane::check_fbwb_altitude(void)
     // taking fence max and min altitude (with margin)
     const uint8_t enabled_fences = plane.fence.get_enabled_fences();
     if ((enabled_fences & AC_FENCE_TYPE_ALT_MIN) != 0) {
-        min_alt_cm = plane.fence.get_safe_alt_min()*100.0;
+        min_alt_cm = plane.fence.get_safe_alt_min_m()*100.0;
         should_check_min = true;
     }
     if ((enabled_fences & AC_FENCE_TYPE_ALT_MAX) != 0) {
-        max_alt_cm = plane.fence.get_safe_alt_max()*100.0;
+        max_alt_cm = plane.fence.get_safe_alt_max_m()*100.0;
         should_check_max = true;
     }
 #endif
@@ -667,7 +687,7 @@ float Plane::rangefinder_correction(void)
     }
 
     // for now we only support the rangefinder for landing 
-    bool using_rangefinder = (g.rangefinder_landing && flight_stage == AP_FixedWing::FlightStage::LAND);
+    bool using_rangefinder = (rangefinder_use(RangeFinderUse::TAKEOFF_LANDING) && flight_stage == AP_FixedWing::FlightStage::LAND);
     if (!using_rangefinder) {
         return 0;
     }
@@ -682,7 +702,7 @@ float Plane::rangefinder_correction(void)
 void Plane::rangefinder_terrain_correction(float &height)
 {
 #if AP_TERRAIN_AVAILABLE
-    if (!g.rangefinder_landing ||
+    if (!rangefinder_use(RangeFinderUse::TAKEOFF_LANDING) ||
         flight_stage != AP_FixedWing::FlightStage::LAND ||
         !terrain_enabled_in_current_mode()) {
         return;
@@ -765,7 +785,7 @@ void Plane::rangefinder_height_update(void)
 #endif
             if (!rangefinder_state.in_use &&
                 flightstage_good_for_rangefinder_landing &&
-                g.rangefinder_landing) {
+                rangefinder_use(RangeFinderUse::TAKEOFF_LANDING)) {
                 rangefinder_state.in_use = true;
                 gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)rangefinder_state.height_estimate);
             }
@@ -795,7 +815,7 @@ void Plane::rangefinder_height_update(void)
         if (now - rangefinder_state.last_correction_time_ms > 5000) {
             rangefinder_state.correction = correction;
             rangefinder_state.initial_correction = correction;
-            if (g.rangefinder_landing) {
+            if (rangefinder_use(RangeFinderUse::TAKEOFF_LANDING)) {
                 landing.set_initial_slope();
             }
             rangefinder_state.last_correction_time_ms = now;
@@ -931,7 +951,7 @@ float Plane::get_landing_height(bool &rangefinder_active)
 #if AP_RANGEFINDER_ENABLED
     // possibly correct with rangefinder
     height -= rangefinder_correction();
-    rangefinder_active = g.rangefinder_landing && rangefinder_state.in_range;
+    rangefinder_active = rangefinder_use(RangeFinderUse::TAKEOFF_LANDING) && rangefinder_state.in_range;
 #endif
 
     return height;

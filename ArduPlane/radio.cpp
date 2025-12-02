@@ -116,60 +116,6 @@ void Plane::init_rc_out_aux()
     SRV_Channels::setup_failsafe_trim_all_non_motors();
 }
 
-/*
-  check for pilot input on rudder stick for arming/disarming
-*/
-void Plane::rudder_arm_disarm_check()
-{
-    const int16_t rudder_in = channel_rudder->get_control_in();
-    if (rudder_in == 0) {
-        // remember if we've seen neutral rudder, used for VTOL auto-takeoff
-        seen_neutral_rudder = true;
-    }
-	if (!arming.is_armed()) {
-		// when not armed, full right rudder starts arming counter
-        if (rudder_in > 4000) {
-			uint32_t now = millis();
-
-			if (rudder_arm_timer == 0 ||
-				now - rudder_arm_timer < 3000) {
-
-				if (rudder_arm_timer == 0) {
-                    rudder_arm_timer = now;
-                }
-			} else {
-				//time to arm!
-				arming.arm(AP_Arming::Method::RUDDER);
-                rudder_arm_timer = 0;
-                seen_neutral_rudder = false;
-                takeoff_state.rudder_takeoff_warn_ms = now;
-            }
-		} else {
-			// not at full right rudder
-			rudder_arm_timer = 0;
-		}
-	} else {
-		// full left rudder starts disarming counter
-        if (rudder_in < -4000) {
-			uint32_t now = millis();
-
-			if (rudder_arm_timer == 0 ||
-				now - rudder_arm_timer < 3000) {
-				if (rudder_arm_timer == 0) {
-                    rudder_arm_timer = now;
-                }
-			} else {
-				//time to disarm!
-				arming.disarm(AP_Arming::Method::RUDDER);
-				rudder_arm_timer = 0;
-			}
-		} else {
-			// not at full left rudder
-			rudder_arm_timer = 0;
-		}
-    }
-}
-
 void Plane::read_radio()
 {
     if (!rc().read_input()) {
@@ -205,8 +151,6 @@ void Plane::read_radio()
             throttle_nudge = (aparm.throttle_max - aparm.throttle_cruise) * nudge;
         }
     }
-
-    rudder_arm_disarm_check();
 
 #if HAL_QUADPLANE_ENABLED
     // potentially swap inputs for tailsitters
@@ -287,7 +231,7 @@ void Plane::control_failsafe()
     const bool has_had_input = rc().has_had_rc_receiver() || rc().has_had_rc_override();
     if ((g.throttle_fs_enabled != ThrFailsafe::Enabled && !failsafe.rc_failsafe) || (allow_failsafe_bypass && !has_had_input)) {
         // If throttle fs not enabled and not in failsafe, or 
-        // not flying and disarmed, don't trigger failsafe check until RC has been received for the fist time  
+        // not flying and disarmed, don't trigger failsafe check until RC has been received for the first time  
         return;
     }
 
@@ -406,8 +350,8 @@ bool Plane::rc_failsafe_active(void) const
     if (!rc_throttle_value_ok()) {
         return true;
     }
-    if (millis() - failsafe.last_valid_rc_ms > 1000) {
-        // we haven't had a valid RC frame for 1 seconds
+    if (millis() - failsafe.last_valid_rc_ms > rc().get_fs_timeout_ms()) {
+        // we haven't had a valid RC frame for RC_FS_TIMEOUT seconds
         return true;
     }
     return false;

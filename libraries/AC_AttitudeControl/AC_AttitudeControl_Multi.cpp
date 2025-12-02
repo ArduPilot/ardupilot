@@ -344,7 +344,7 @@ void AC_AttitudeControl_Multi::update_althold_lean_angle_max(float throttle_in)
     }
 
     float althold_lean_angle_max = acosf(constrain_float(throttle_in / (AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX * thr_max), 0.0f, 1.0f));
-    _althold_lean_angle_max_rad = _althold_lean_angle_max_rad + (_dt / (_dt + _angle_limit_tc)) * (althold_lean_angle_max - _althold_lean_angle_max_rad);
+    _althold_lean_angle_max_rad = _althold_lean_angle_max_rad + (_dt_s / (_dt_s + _angle_limit_tc)) * (althold_lean_angle_max - _althold_lean_angle_max_rad);
 }
 
 void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_angle_boost, float filter_cutoff)
@@ -404,10 +404,10 @@ void AC_AttitudeControl_Multi::update_throttle_gain_boost()
     // Boost PD and Angle P on very rapid throttle changes
     if (_motors.get_throttle_slew_rate() > AC_ATTITUDE_CONTROL_THR_G_BOOST_THRESH) {
         const float pd_boost = constrain_float(_throttle_gain_boost + 1.0f, 1.0, 2.0);
-        set_PD_scale_mult(Vector3f(pd_boost, pd_boost, 1.0f));
+        set_PD_scale_mult(Vector3f{pd_boost, pd_boost, 1.0f});
 
         const float angle_p_boost = constrain_float((_throttle_gain_boost + 1.0f) * (_throttle_gain_boost + 1.0f), 1.0, 4.0);
-        set_angle_P_scale_mult(Vector3f(angle_p_boost, angle_p_boost, 1.0f));
+        set_angle_P_scale_mult(Vector3f{angle_p_boost, angle_p_boost, 1.0f});
     }
 }
 
@@ -417,10 +417,10 @@ void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
     // slew _throttle_rpy_mix to _throttle_rpy_mix_desired
     if (_throttle_rpy_mix < _throttle_rpy_mix_desired) {
         // increase quickly (i.e. from 0.1 to 0.9 in 0.4 seconds)
-        _throttle_rpy_mix += MIN(2.0f * _dt, _throttle_rpy_mix_desired - _throttle_rpy_mix);
+        _throttle_rpy_mix += MIN(2.0f * _dt_s, _throttle_rpy_mix_desired - _throttle_rpy_mix);
     } else if (_throttle_rpy_mix > _throttle_rpy_mix_desired) {
         // reduce more slowly (from 0.9 to 0.1 in 1.6 seconds)
-        _throttle_rpy_mix -= MIN(0.5f * _dt, _throttle_rpy_mix - _throttle_rpy_mix_desired);
+        _throttle_rpy_mix -= MIN(0.5f * _dt_s, _throttle_rpy_mix - _throttle_rpy_mix_desired);
 
         // if the mix is still higher than that being used, reset immediately
         const float throttle_hover = _motors.get_throttle_hover();
@@ -455,16 +455,18 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro_rads,
     _rate_gyro_rads = gyro_rads;
     _rate_gyro_time_us = AP_HAL::micros64();
 
-    _motors.set_roll(get_rate_roll_pid().update_all(ang_vel_body.x, gyro_rads.x,  dt, _motors.limit.roll, _pd_scale.x) + _actuator_sysid.x);
+    _motors.set_roll(get_rate_roll_pid().update_all(ang_vel_body.x, gyro_rads.x,  dt, _motors.limit.roll, _pd_scale.x, _i_scale.x) + _actuator_sysid.x);
     _motors.set_roll_ff(get_rate_roll_pid().get_ff());
 
-    _motors.set_pitch(get_rate_pitch_pid().update_all(ang_vel_body.y, gyro_rads.y,  dt, _motors.limit.pitch, _pd_scale.y) + _actuator_sysid.y);
+    _motors.set_pitch(get_rate_pitch_pid().update_all(ang_vel_body.y, gyro_rads.y,  dt, _motors.limit.pitch, _pd_scale.y, _i_scale.y) + _actuator_sysid.y);
     _motors.set_pitch_ff(get_rate_pitch_pid().get_ff());
 
-    _motors.set_yaw(get_rate_yaw_pid().update_all(ang_vel_body.z, gyro_rads.z,  dt, _motors.limit.yaw, _pd_scale.z) + _actuator_sysid.z);
+    _motors.set_yaw(get_rate_yaw_pid().update_all(ang_vel_body.z, gyro_rads.z,  dt, _motors.limit.yaw, _pd_scale.z, _i_scale.z) + _actuator_sysid.z);
     _motors.set_yaw_ff(get_rate_yaw_pid().get_ff()*_feedforward_scalar);
 
     _pd_scale_used = _pd_scale;
+    _i_scale_used = _i_scale;
+    _angle_P_scale_used = _angle_P_scale;
 }
 
 // reset the rate controller target loop updates
@@ -473,13 +475,15 @@ void AC_AttitudeControl_Multi::rate_controller_target_reset()
     _sysid_ang_vel_body_rads.zero();
     _actuator_sysid.zero();
     _pd_scale = VECTORF_111;
+    _i_scale = VECTORF_111;
+    _angle_P_scale = VECTORF_111;
 }
 
 // run the rate controller using the configured _dt and latest gyro_rads
 void AC_AttitudeControl_Multi::rate_controller_run()
 {
     Vector3f gyro_latest_rads = _ahrs.get_gyro_latest();
-    rate_controller_run_dt(gyro_latest_rads, _dt);
+    rate_controller_run_dt(gyro_latest_rads, _dt_s);
 }
 
 // sanity check parameters.  should be called once before takeoff

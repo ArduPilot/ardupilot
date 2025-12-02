@@ -25,7 +25,7 @@
 extern const AP_HAL::HAL& hal;
 
 #define AR_PIVOT_TIMEOUT_MS     100 // pivot controller timesout and reset target if not called within this many milliseconds
-#define AR_PIVOT_ANGLE_DEFAULT  60  // default PIVOT_ANGLE parameter value
+#define AR_PIVOT_ANGLE_DEFAULT  0   // default PIVOT_ANGLE parameter value (disabled by default)
 #define AR_PIVOT_ANGLE_ACCURACY 5   // vehicle will pivot to within this many degrees of destination
 #define AR_PIVOT_RATE_DEFAULT   60  // default PIVOT_RATE parameter value
 #define AR_PIVOT_DELAY_DEFAULT  0   // default PIVOT_DELAY parameter value

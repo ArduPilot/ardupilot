@@ -249,6 +249,13 @@ Vector2f AP_AHRS::body_to_earth2D(const Vector2f &bf) const
                     bf.x * _sin_yaw + bf.y * _cos_yaw);
 }
 
+// rotate a 2D vector from earth frame to body frame
+Vector2p AP_AHRS::body_to_earth2D_p(const Vector2p &bf) const
+{
+    return Vector2p(bf.x * _cos_yaw - bf.y * _sin_yaw,
+                    bf.x * _sin_yaw + bf.y * _cos_yaw);
+}
+
 #if HAL_LOGGING_ENABLED
 // log ahrs home and EKF origin
 void AP_AHRS::Log_Write_Home_And_Origin()

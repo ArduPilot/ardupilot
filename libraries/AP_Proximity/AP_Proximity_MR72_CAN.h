@@ -28,8 +28,8 @@ public:
     bool parse_distance_message(AP_HAL::CANFrame &frame);
 
     // get maximum and minimum distances (in meters) of sensor
-    float distance_max() const override { return MR72_MAX_RANGE_M; }
-    float distance_min() const override { return MR72_MIN_RANGE_M; }
+    float distance_max_m() const override { return MR72_MAX_RANGE_M; }
+    float distance_min_m() const override { return MR72_MIN_RANGE_M; }
 
     static const struct AP_Param::GroupInfo var_info[];
 

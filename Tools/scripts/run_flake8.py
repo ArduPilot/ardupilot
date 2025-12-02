@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Runs flake8 over Python files which contain a marker indicating
@@ -40,10 +40,6 @@ class Flake8Checker(object):
         for (dirpath, dirnames, filenames) in os.walk("."):
             for filename in filenames:
                 if os.path.splitext(filename)[1] != ".py":
-                    continue
-                if filename == 'env.py':
-                    # we are generating content into these files which
-                    # is not actually Python...
                     continue
                 filepath = os.path.join(dirpath, filename)
                 content = pathlib.Path(filepath).read_text()

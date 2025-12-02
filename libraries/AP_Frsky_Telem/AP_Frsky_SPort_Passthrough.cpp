@@ -246,7 +246,7 @@ bool AP_Frsky_SPort_Passthrough::is_packet_ready(uint8_t idx, bool queue_empty)
     {
         float a;
         WITH_SEMAPHORE(AP::ahrs().get_semaphore());
-        if (AP::ahrs().airspeed_estimate_true(a)) {
+        if (AP::ahrs().airspeed_TAS(a)) {
             // if we have an airspeed estimate then we have a valid wind estimate
             packet_ready = true;
         }
@@ -655,7 +655,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_velandyaw(void)
     {
         WITH_SEMAPHORE(_ahrs.get_semaphore());
         hspeed_m = _ahrs.groundspeed(); // default is to use groundspeed
-        airspeed_estimate_true = AP::ahrs().airspeed_estimate_true(airspeed_m);
+        airspeed_estimate_true = AP::ahrs().airspeed_TAS(airspeed_m);
     }
     bool option_airspeed_enabled = (_frsky_parameters->_options & frsky_options_e::OPTION_AIRSPEED_AND_GROUNDSPEED) != 0;
     // airspeed estimate + airspeed option disabled (default) => send airspeed (we give priority to airspeed over groundspeed)

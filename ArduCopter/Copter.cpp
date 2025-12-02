@@ -159,7 +159,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #endif
     SCHED_TASK(update_batt_compass,   10,    120, 15),
     SCHED_TASK_CLASS(RC_Channels, (RC_Channels*)&copter.g2.rc_channels, read_aux_all,    10,  50,  18),
-    SCHED_TASK(arm_motors_check,      10,     50, 21),
 #if TOY_MODE_ENABLED
     SCHED_TASK_CLASS(ToyMode,              &copter.g2.toy_mode,         update,          10,  50,  24),
 #endif
@@ -226,9 +225,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if HAL_LOGGING_ENABLED
     SCHED_TASK_CLASS(AP_Scheduler,         &copter.scheduler,           update_logging, 0.1,  75, 126),
 #endif
-#if AP_RPM_ENABLED
-    SCHED_TASK_CLASS(AP_RPM,               &copter.rpm_sensor,          update,          40, 200, 129),
-#endif
 #if AP_TEMPCALIBRATION_ENABLED
     SCHED_TASK_CLASS(AP_TempCalibration,   &copter.g2.temp_calibration, update,          10, 100, 135),
 #endif
@@ -294,14 +290,14 @@ bool Copter::set_target_location(const Location& target_loc)
 }
 
 // start takeoff to given altitude (for use by scripting)
-bool Copter::start_takeoff(const float alt)
+bool Copter::start_takeoff(const float alt_m)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!flightmode->in_guided_mode()) {
         return false;
     }
 
-    if (mode_guided.do_user_takeoff_start(alt * 100.0f)) {
+    if (mode_guided.do_user_takeoff_start_m(alt_m)) {
         copter.set_auto_armed(true);
         return true;
     }
@@ -313,73 +309,71 @@ bool Copter::start_takeoff(const float alt)
 #if AP_SCRIPTING_ENABLED
 #if MODE_GUIDED_ENABLED
 // set target position (for use by scripting)
-bool Copter::set_target_pos_NED(const Vector3f& target_pos, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool terrain_alt)
+bool Copter::set_target_pos_NED(const Vector3f& target_pos_ned_m, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool is_terrain_alt)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!flightmode->in_guided_mode()) {
         return false;
     }
 
-    const Vector3f pos_neu_cm(target_pos.x * 100.0f, target_pos.y * 100.0f, -target_pos.z * 100.0f);
+    const Vector3p pos_neu_m{target_pos_ned_m.x, target_pos_ned_m.y, -target_pos_ned_m.z};
 
-    return mode_guided.set_destination(pos_neu_cm, use_yaw, yaw_deg * 100.0, use_yaw_rate, yaw_rate_degs * 100.0, yaw_relative, terrain_alt);
+    return mode_guided.set_pos_NEU_m(pos_neu_m, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), yaw_relative, is_terrain_alt);
 }
 
 // set target position and velocity (for use by scripting)
-bool Copter::set_target_posvel_NED(const Vector3f& target_pos, const Vector3f& target_vel)
+bool Copter::set_target_posvel_NED(const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!flightmode->in_guided_mode()) {
         return false;
     }
 
-    const Vector3f pos_neu_cm(target_pos.x * 100.0f, target_pos.y * 100.0f, -target_pos.z * 100.0f);
-    const Vector3f vel_neu_cms(target_vel.x * 100.0f, target_vel.y * 100.0f, -target_vel.z * 100.0f);
+    const Vector3p pos_neu_m{target_pos_ned_m.x, target_pos_ned_m.y, -target_pos_ned_m.z};
+    const Vector3f vel_neu_ms{target_vel_ned_ms.x, target_vel_ned_ms.y, -target_vel_ned_ms.z};
 
-    return mode_guided.set_destination_posvelaccel(pos_neu_cm, vel_neu_cms, Vector3f());
+    return mode_guided.set_pos_vel_accel_NEU_m(pos_neu_m, vel_neu_ms, Vector3f());
 }
 
 // set target position, velocity and acceleration (for use by scripting)
-bool Copter::set_target_posvelaccel_NED(const Vector3f& target_pos, const Vector3f& target_vel, const Vector3f& target_accel, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative)
+bool Copter::set_target_posvelaccel_NED(const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms, const Vector3f& target_accel_ned_mss, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!flightmode->in_guided_mode()) {
         return false;
     }
 
-    const Vector3f pos_neu_cm(target_pos.x * 100.0f, target_pos.y * 100.0f, -target_pos.z * 100.0f);
-    const Vector3f vel_neu_cms(target_vel.x * 100.0f, target_vel.y * 100.0f, -target_vel.z * 100.0f);
-    const Vector3f accel_neu_cms(target_accel.x * 100.0f, target_accel.y * 100.0f, -target_accel.z * 100.0f);
+    const Vector3p pos_neu_m{target_pos_ned_m.x, target_pos_ned_m.y, -target_pos_ned_m.z};
+    const Vector3f vel_neu_ms{target_vel_ned_ms.x, target_vel_ned_ms.y, -target_vel_ned_ms.z};
+    const Vector3f accel_neu_mss{target_accel_ned_mss.x, target_accel_ned_mss.y, -target_accel_ned_mss.z};
 
-    return mode_guided.set_destination_posvelaccel(pos_neu_cm, vel_neu_cms, accel_neu_cms, use_yaw, yaw_deg * 100.0, use_yaw_rate, yaw_rate_degs * 100.0, yaw_relative);
+    return mode_guided.set_pos_vel_accel_NEU_m(pos_neu_m, vel_neu_ms, accel_neu_mss, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), yaw_relative);
 }
 
-bool Copter::set_target_velocity_NED(const Vector3f& vel_ned)
+bool Copter::set_target_velocity_NED(const Vector3f& target_vel_ned_ms)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!flightmode->in_guided_mode()) {
         return false;
     }
 
-    // convert vector to neu in cm
-    const Vector3f vel_neu_cms(vel_ned.x * 100.0f, vel_ned.y * 100.0f, -vel_ned.z * 100.0f);
-    mode_guided.set_velocity(vel_neu_cms);
+    const Vector3f vel_neu_ms{target_vel_ned_ms.x, target_vel_ned_ms.y, -target_vel_ned_ms.z};
+    mode_guided.set_vel_NEU_ms(vel_neu_ms);
     return true;
 }
 
 // set target velocity and acceleration (for use by scripting)
-bool Copter::set_target_velaccel_NED(const Vector3f& target_vel, const Vector3f& target_accel, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool relative_yaw)
+bool Copter::set_target_velaccel_NED(const Vector3f& target_vel_ned_ms, const Vector3f& target_accel_ned_mss, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool relative_yaw)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!flightmode->in_guided_mode()) {
         return false;
     }
 
-    // convert vector to neu in cm
-    const Vector3f vel_neu_cms(target_vel.x * 100.0f, target_vel.y * 100.0f, -target_vel.z * 100.0f);
-    const Vector3f accel_neu_cms(target_accel.x * 100.0f, target_accel.y * 100.0f, -target_accel.z * 100.0f);
+    const Vector3f vel_neu_ms{target_vel_ned_ms.x, target_vel_ned_ms.y, -target_vel_ned_ms.z};
+    const Vector3f accel_neu_mss{target_accel_ned_mss.x, target_accel_ned_mss.y, -target_accel_ned_mss.z};
 
-    mode_guided.set_velaccel(vel_neu_cms, accel_neu_cms, use_yaw, yaw_deg * 100.0, use_yaw_rate, yaw_rate_degs * 100.0, relative_yaw);
+    mode_guided.set_vel_accel_NEU_m(vel_neu_ms, accel_neu_mss, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), relative_yaw);
     return true;
 }
 
@@ -474,7 +468,7 @@ AP_Vehicle::custom_mode_state* Copter::register_custom_mode(const uint8_t num, c
 // circle mode controls
 bool Copter::get_circle_radius(float &radius_m)
 {
-    radius_m = circle_nav->get_radius_cm() * 0.01f;
+    radius_m = circle_nav->get_radius_m();
     return true;
 }
 
@@ -486,9 +480,9 @@ bool Copter::set_circle_rate(float rate_degs)
 #endif
 
 // set desired speed (m/s). Used for scripting.
-bool Copter::set_desired_speed(float speed)
+bool Copter::set_desired_speed(float speed_ms)
 {
-    return flightmode->set_speed_xy(speed * 100.0f);
+    return flightmode->set_speed_NE_ms(speed_ms);
 }
 
 #if MODE_AUTO_ENABLED
@@ -739,8 +733,10 @@ void Copter::three_hz_loop()
     // check for deadreckoning failsafe
     failsafe_deadreckon_check();
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
     //update transmitter based in flight tuning
     tuning();
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
     // check if avoidance should be enabled based on alt
     low_alt_avoidance();
@@ -828,7 +824,7 @@ void Copter::init_simple_bearing()
     simple_sin_yaw = ahrs.sin_yaw();
 
     // initialise super simple heading (i.e. heading towards home) to be 180 deg from simple mode heading
-    super_simple_last_bearing = wrap_360_cd(ahrs.yaw_sensor+18000);
+    super_simple_last_bearing_rad = wrap_2PI(ahrs.get_yaw_rad() + radians(180.0));
     super_simple_cos_yaw = simple_cos_yaw;
     super_simple_sin_yaw = simple_sin_yaw;
 
@@ -874,27 +870,28 @@ void Copter::update_simple_mode(void)
 }
 
 // update_super_simple_bearing - adjusts simple bearing based on location
-// should be called after home_bearing has been updated
+// should be called after home_bearing_rad has been updated
 void Copter::update_super_simple_bearing(bool force_update)
 {
     if (!force_update) {
         if (simple_mode != SimpleMode::SUPERSIMPLE) {
             return;
         }
-        if (home_distance() < SUPER_SIMPLE_RADIUS) {
+        if (home_distance_m() < SUPER_SIMPLE_RADIUS_M) {
             return;
         }
     }
 
-    const int32_t bearing = home_bearing();
+    const float bearing_rad = home_bearing_rad();
 
     // check the bearing to home has changed by at least 5 degrees
-    if (labs(super_simple_last_bearing - bearing) < 500) {
+    // todo: consider updating this continuously
+    if (fabsf(wrap_PI(super_simple_last_bearing_rad - bearing_rad)) < radians(5.0)) {
         return;
     }
 
-    super_simple_last_bearing = bearing;
-    const float angle_rad = cd_to_rad(super_simple_last_bearing + 18000);
+    super_simple_last_bearing_rad = bearing_rad;
+    const float angle_rad = super_simple_last_bearing_rad + radians(180.0);
     super_simple_cos_yaw = cosf(angle_rad);
     super_simple_sin_yaw = sinf(angle_rad);
 }
@@ -938,7 +935,7 @@ bool Copter::get_wp_distance_m(float &distance) const
 bool Copter::get_wp_bearing_deg(float &bearing) const
 {
     // see GCS_MAVLINK_Copter::send_nav_controller_output()
-    bearing = flightmode->wp_bearing() * 0.01;
+    bearing = flightmode->wp_bearing_deg();
     return true;
 }
 
@@ -946,7 +943,7 @@ bool Copter::get_wp_bearing_deg(float &bearing) const
 bool Copter::get_wp_crosstrack_error_m(float &xtrack_error) const
 {
     // see GCS_MAVLINK_Copter::send_nav_controller_output()
-    xtrack_error = flightmode->crosstrack_error() * 0.01;
+    xtrack_error = flightmode->crosstrack_error_m() * 0.01;
     return true;
 }
 

@@ -58,7 +58,7 @@ const AP_Param::GroupInfo AP_TemperatureSensor_Params::var_info[] = {
     // @Param: SRC
     // @DisplayName: Sensor Source
     // @Description: Sensor Source is used to designate which device's temperature report will be replaced by this temperature sensor's data. If 0 (None) then the data is only available via log. In the future a new Motor temperature report will be created for returning data directly.
-    // @Values: 0: None, 1:ESC, 2:Motor, 3:Battery Index, 4:Battery ID/SerialNumber, 5:CAN based Pitot tube, 6:DroneCAN-out on AP_Periph
+    // @Values: 0: None, 1:ESC, 2:Motor, 3:Battery Index, 4:Battery ID/SerialNumber, 5:CAN based Pitot tube, 6:DroneCAN-out on AP_Periph, 7:Servo motor, 8:Servo PCB
     // @User: Standard
     AP_GROUPINFO("SRC", 4, AP_TemperatureSensor_Params, source, (float)Source::None),
 

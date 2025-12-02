@@ -66,6 +66,26 @@ int lua_CRSF_get_menu_event(lua_State *L)
     return 3;
 }
 
+int lua_CRSF_peek_menu_event(lua_State *L)
+{
+    binding_argcheck(L, 1);
+
+    uint8_t param = 0;
+    uint8_t events = 0;
+    AP_CRSF_Telem::ScriptedPayload payload {};
+    const uint8_t count = AP::crsf_telem()->peek_menu_event(param, payload, events);
+
+#if 4 > LUA_MINSTACK
+    luaL_checkstack(L, 4, nullptr);
+#endif
+
+    lua_pushinteger(L, count);
+    lua_pushinteger(L, param);
+    lua_pushlstring(L, (const char*)payload.payload, payload.payload_length);
+    lua_pushinteger(L, events);
+    return 4;
+}
+
 int lua_CRSF_send_response(lua_State *L)
 {
     binding_argcheck(L, 2);

@@ -90,7 +90,7 @@ public:
     static AP_DroneCAN *get_dronecan(uint8_t driver_index);
     bool prearm_check(char* fail_msg, uint8_t fail_msg_len) const;
 
-    __INITFUNC__ void init(uint8_t driver_index, bool enable_filters) override;
+    __INITFUNC__ void init(uint8_t driver_index) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
 
     // add an 11 bit auxillary driver
@@ -151,6 +151,7 @@ public:
         USE_HOBBYWING_ESC         = (1U<<7),
         ENABLE_STATS              = (1U<<8),
         ENABLE_FLEX_DEBUG         = (1U<<9),
+        ALLOW_EXTENDED_AUX        = (1U<<10),
     };
 
     // check if a option is set

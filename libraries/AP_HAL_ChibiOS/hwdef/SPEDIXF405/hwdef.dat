@@ -119,6 +119,7 @@ PC9 TIM8_CH4 TIM8 PWM(8) GPIO(57)       # M8
 
 # LEDs
 PA8 TIM1_CH1 TIM1 PWM(9) GPIO(58) # M9
+define DEFAULT_NTF_LED_TYPES 455
 
 define AP_NOTIFY_GPIO_LED_1_ENABLED 1
 PC14 LED0 OUTPUT LOW GPIO(90)
@@ -152,7 +153,7 @@ BARO SPL06 I2C:0:0x76
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 define HAL_DEFAULT_INS_FAST_SAMPLE 3
@@ -160,3 +161,4 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 3
 define HAL_FRAME_TYPE_DEFAULT 12
 
 include ../include/minimize_fpv_osd.inc
+

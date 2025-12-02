@@ -70,15 +70,18 @@ uint64_t Util::get_hw_rtc() const
     return (seconds * 1000000ULL + nanoseconds/1000ULL);
 }
 
+#ifndef AP_HAL_LINUX_SET_HW_RTC_ENABLED
+#define AP_HAL_LINUX_SET_HW_RTC_ENABLED 1
+#endif  // AP_HAL_LINUX_SET_HW_RTC_ENABLED
+
 void Util::set_hw_rtc(uint64_t time_utc_usec)
 {
-// don't reset the HW clock time on people's laptops.
-#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
+#if AP_HAL_LINUX_SET_HW_RTC_ENABLED
     timespec ts;
     ts.tv_sec = time_utc_usec/1000000ULL;
     ts.tv_nsec = (time_utc_usec % 1000000ULL) * 1000ULL;
     clock_settime(CLOCK_REALTIME, &ts);
-#endif
+#endif  // AP_HAL_LINUX_SET_HW_RTC_ENABLED
 }
 
 bool Util::is_chardev_node(const char *path)

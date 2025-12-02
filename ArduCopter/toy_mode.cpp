@@ -291,7 +291,7 @@ void ToyMode::update()
     }
 
     bool reset_combination = left_action_button && right_action_button;
-    if (reset_combination && abs(copter.ahrs.roll_sensor) > 160) {
+    if (reset_combination && fabsf(copter.ahrs.get_roll_deg()) > 160) {
         /*
           if both shoulder buttons are pressed at the same time for 5
           seconds while the vehicle is inverted then we send a
@@ -803,7 +803,7 @@ void ToyMode::action_arm(void)
         // we want GPS and checks are passing, arm and enable fence
         copter.fence.enable(true, AC_FENCE_ALL_FENCES);
 #endif
-        copter.arming.arm(AP_Arming::Method::RUDDER);
+        copter.arming.arm(AP_Arming::Method::TOYMODE);
         if (!copter.motors->armed()) {
             AP_Notify::events.arming_failed = true;
             gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: GPS arming failed");
@@ -819,7 +819,7 @@ void ToyMode::action_arm(void)
         // non-GPS mode
         copter.fence.enable(false, AC_FENCE_ALL_FENCES);
 #endif
-        copter.arming.arm(AP_Arming::Method::RUDDER);
+        copter.arming.arm(AP_Arming::Method::TOYMODE);
         if (!copter.motors->armed()) {
             AP_Notify::events.arming_failed = true;
             gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: non-GPS arming failed");

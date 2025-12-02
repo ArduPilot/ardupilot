@@ -463,7 +463,11 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
     }
     flash_write_flush();
     flash_set_keep_unlocked(false);
+#if AP_CHECK_FIRMWARE_ENABLED
     const auto ok = check_good_firmware();
+#else
+    const auto ok = check_fw_result_t::CHECK_FW_OK;
+#endif
     if (ok == check_fw_result_t::CHECK_FW_OK) {
         need_launch = true;
         status_printf("Flash done: OK");

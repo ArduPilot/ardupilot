@@ -18,7 +18,7 @@ void Plane::init_ardupilot()
     // initialise rc channels including setting mode
     // CONVERSION: Added for upgrade to ArduPlane 4.2, Sep 2021
 #if HAL_QUADPLANE_ENABLED
-    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, (quadplane.enabled() && quadplane.option_is_set(QuadPlane::OPTION::AIRMODE_UNUSED) && (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr)) ? RC_Channel::AUX_FUNC::ARMDISARM_AIRMODE : RC_Channel::AUX_FUNC::ARMDISARM);
+    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, (quadplane.enabled() && quadplane.option_is_set(QuadPlane::Option::AIRMODE_UNUSED) && (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr)) ? RC_Channel::AUX_FUNC::ARMDISARM_AIRMODE : RC_Channel::AUX_FUNC::ARMDISARM);
 #else
     rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
 #endif
@@ -48,10 +48,6 @@ void Plane::init_ardupilot()
 
 #if AP_RSSI_ENABLED
     rssi.init();
-#endif
-
-#if AP_RPM_ENABLED
-    rpm_sensor.init();
 #endif
 
     // setup telem slots with serial ports
@@ -353,17 +349,15 @@ bool Plane::set_mode_by_number(const Mode::Number new_mode_number, const ModeRea
 void Plane::check_long_failsafe()
 {
     const uint32_t gcs_last_seen_ms = gcs().sysid_mygcs_last_seen_time_ms();
+    const uint32_t rc_last_seen_ms = failsafe.last_valid_rc_ms;
     const uint32_t tnow = millis();
     // only act on changes
     // -------------------
-    if (failsafe.state != FAILSAFE_LONG && failsafe.state != FAILSAFE_GCS && flight_stage != AP_FixedWing::FlightStage::LAND) {
-        uint32_t radio_timeout_ms = failsafe.last_valid_rc_ms;
-        if (failsafe.state == FAILSAFE_SHORT) {
-            // time is relative to when short failsafe enabled
-            radio_timeout_ms = failsafe.short_timer_ms;
-        }
+    if (failsafe.state != FAILSAFE_LONG &&
+        failsafe.state != FAILSAFE_GCS &&
+        flight_stage != AP_FixedWing::FlightStage::LAND) {
         if (failsafe.rc_failsafe &&
-            (tnow - radio_timeout_ms) > g.fs_timeout_long*1000) {
+            (tnow - rc_last_seen_ms) > g.fs_timeout_long*1000) {
             failsafe_long_on_event(FAILSAFE_LONG, ModeReason::RADIO_FAILSAFE);
         } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_AUTO && control_mode == &mode_auto &&
                    gcs_last_seen_ms != 0 &&
@@ -382,11 +376,6 @@ void Plane::check_long_failsafe()
         }
     } else {
         float timeout_seconds = g.fs_timeout_long;
-        if (g.fs_action_short != FS_ACTION_SHORT_DISABLED) {
-            // avoid dropping back into short timeout
-            timeout_seconds = g.fs_timeout_short;
-        }
-        // We do not change state but allow for user to change mode
         if (failsafe.state == FAILSAFE_GCS && 
             (tnow - gcs_last_seen_ms) < timeout_seconds*1000) {
             failsafe_long_off_event(ModeReason::GCS_FAILSAFE);
@@ -397,22 +386,20 @@ void Plane::check_long_failsafe()
     }
 }
 
-void Plane::check_short_failsafe()
+void Plane::check_short_rc_failsafe()
 {
-    // only act on changes
-    // -------------------
     if (g.fs_action_short != FS_ACTION_SHORT_DISABLED &&
-       failsafe.state == FAILSAFE_NONE &&
-       flight_stage != AP_FixedWing::FlightStage::LAND) {
+        failsafe.state == FAILSAFE_NONE &&
+        flight_stage != AP_FixedWing::FlightStage::LAND) {
         // The condition is checked and the flag rc_failsafe is set in radio.cpp
-        if(failsafe.rc_failsafe) {
-            failsafe_short_on_event(FAILSAFE_SHORT, ModeReason::RADIO_FAILSAFE);
+        if (failsafe.rc_failsafe) {
+            rc_failsafe_short_on_event();
         }
     }
 
     if(failsafe.state == FAILSAFE_SHORT) {
         if(!failsafe.rc_failsafe || g.fs_action_short == FS_ACTION_SHORT_DISABLED) {
-            failsafe_short_off_event(ModeReason::RADIO_FAILSAFE);
+            rc_failsafe_short_off_event();
         }
     }
 }

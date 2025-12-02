@@ -146,7 +146,7 @@ public:
         k_param_crash_detection_enable,
         k_param_land_abort_throttle_enable, // unused - moved to AP_Landing
         k_param_rssi = 97,
-        k_param_rpm_sensor,
+        k_param_rpm_sensor_old, // unused - moved to vehicle
         k_param_parachute,
         k_param_arming = 100,
         k_param_parachute_channel, // unused - moved to RC option
@@ -275,7 +275,7 @@ public:
         k_param_rc_12_old,
         k_param_fs_batt_voltage, // unused - moved to AP_BattMonitor
         k_param_fs_batt_mah,     // unused - moved to AP_BattMonitor
-        k_param_fs_timeout_short,
+        k_param_fs_timeout_short_unused, // unused
         k_param_fs_timeout_long,
         k_param_rc_13_old,
         k_param_rc_14_old,
@@ -414,7 +414,6 @@ public:
     // Failsafe
     AP_Int8 fs_action_short;
     AP_Int8 fs_action_long;
-    AP_Float fs_timeout_short;
     AP_Float fs_timeout_long;
     AP_Int8 gcs_heartbeat_fs_enabled;
 
@@ -522,6 +521,8 @@ public:
 
     AP_Int32 flight_options;
 
+    AP_Int16 waypoint_climb_slope_height_min;
+
     AP_Int8 takeoff_throttle_accel_count;
     AP_Int8 takeoff_timeout;
 
@@ -566,6 +567,8 @@ public:
     // guided yaw heading PID
     AC_PID guidedHeading{5000.0,  0.0,   0.0, 0 ,  10.0,   5.0,  5.0 ,  5.0  , 0.0};
 #endif
+
+    AP_Float guided_timeout;
 
 #if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
     AP_Follow follow;

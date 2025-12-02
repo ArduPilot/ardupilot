@@ -31,7 +31,7 @@ COMPASS HMC5843 SPI:hmc5843 false ROTATION_PITCH_180
 COMPASS LSM303D SPI:lsm9ds0_am ROTATION_NONE
 
 # also probe for external compasses
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 
 # produce this error if we are on a 1M board
 undef BOARD_CHECK_F427_USE_1M

@@ -59,6 +59,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_ICEngine/AP_ICEngine.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -167,7 +168,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Arming options
     // @Description: Options that can be applied to change arming behaviour
-    // @Bitmask: 0:Disable prearm display,1:Do not send status text on state change
+    // @Bitmask: 0:Disable prearm display,1:Do not send status text on state change,2:Skip IMU consistency checks when ICE motor running
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 9,   AP_Arming, _arming_options, 0),
 
@@ -488,16 +489,34 @@ bool AP_Arming::ins_checks(bool report)
             return false;
         }
 
-        // check all accelerometers point in roughly same direction
-        if (!ins_accels_consistent(ins)) {
-            check_failed(Check::INS, report, "Accels inconsistent");
-            return false;
+        bool run_imu_consistency_check = true;
+#if AP_ICENGINE_ENABLED
+        if (option_enabled(Option::SKIP_IMU_CONSISTENCY_ICE_RUNNING)) {
+            // ICE motors can greatly disturb the IMU, so we get arming failures
+            // due to gyro (and sometimes accel) inconsistency. Allow this check to be
+            // disabled while the motor is running
+            auto ice = AP::ice();
+            if (ice != nullptr) {
+                const auto ice_state = ice->get_state();
+                if (ice_state == AP_ICEngine::ICE_STARTING || ice_state == AP_ICEngine::ICE_RUNNING) {
+                    run_imu_consistency_check = false;
+                }
+            }
         }
+#endif
 
-        // check all gyros are giving consistent readings
-        if (!ins_gyros_consistent(ins)) {
-            check_failed(Check::INS, report, "Gyros inconsistent");
-            return false;
+        if (run_imu_consistency_check) {
+            // check all accelerometers point in roughly same direction
+            if (!ins_accels_consistent(ins)) {
+                check_failed(Check::INS, report, "Accels inconsistent");
+                return false;
+            }
+
+            // check all gyros are giving consistent readings
+            if (!ins_gyros_consistent(ins)) {
+                check_failed(Check::INS, report, "Gyros inconsistent");
+                return false;
+            }
         }
 
         // no arming while doing temp cal
@@ -568,7 +587,7 @@ bool AP_Arming::compass_checks(bool report)
         }
 
         if (!_compass.healthy()) {
-            check_failed(Check::COMPASS, report, "Compass not healthy");
+            check_failed(Check::COMPASS, report, "Compass %d not healthy",  _compass.get_first_usable() + 1);
             return false;
         }
         // check compass learning is on or offsets have been set
@@ -1193,8 +1212,7 @@ bool AP_Arming::terrain_checks(bool report) const
 
     const AP_Terrain *terrain = AP_Terrain::get_singleton();
     if (terrain == nullptr) {
-        // this is also a system error, and it is already complaining
-        // about it.
+        check_failed(Check::PARAMETERS, report, "terrain disabled");
         return false;
     }
 
@@ -1777,7 +1795,7 @@ bool AP_Arming::crashdump_checks(bool report)
         return true;
     }
 
-    check_failed(Check::PARAMETERS, true, "CrashDump data detected");
+    check_failed(Check::PARAMETERS, report, "CrashDump data detected");
 
     return false;
 }
@@ -1799,6 +1817,17 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 {
     if (armed) { //already armed
         return false;
+    }
+
+    if (method == Method::RUDDER) {
+        switch (get_rudder_arming_type()) {
+        case AP_Arming::RudderArming::IS_DISABLED:
+            //parameter disallows rudder arming/disabling
+            return false;
+        case AP_Arming::RudderArming::ARMONLY:
+        case AP_Arming::RudderArming::ARMDISARM:
+            break;
+        }
     }
 
     running_arming_checks = true;  // so we show Arm: rather than Disarm: in messages
@@ -1864,6 +1893,17 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 {
     if (!armed) { // already disarmed
         return false;
+    }
+    if (method == AP_Arming::Method::RUDDER) {
+        // if throttle is not down, then pilot cannot rudder arm/disarm
+        if (rc().get_throttle_channel().get_control_in() > 0) {
+            return false;
+        }
+        // option must be enabled:
+        if (get_rudder_arming_type() != AP_Arming::RudderArming::ARMDISARM) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Disarm: rudder disarm disabled");
+            return false;
+        }
     }
     armed = false;
     _last_disarm_method = method;
@@ -2057,6 +2097,7 @@ void AP_Arming::check_forced_logging(const AP_Arming::Method method)
             return;
 
         case Method::RUDDER:
+        case Method::TOYMODE:
         case Method::MAVLINK:
         case Method::AUXSWITCH:
         case Method::MOTORTEST:

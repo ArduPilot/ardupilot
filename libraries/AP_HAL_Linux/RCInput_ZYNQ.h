@@ -7,6 +7,12 @@
 
 #include "RCInput.h"
 
+#if AP_RCPROTOCOL_ZYNQ_ENABLED
+
+#ifndef RCIN_ZYNQ_TICK_PER_US
+#define RCIN_ZYNQ_TICK_PER_US 100
+#endif
+
 namespace Linux {
 
 class RCInput_ZYNQ : public RCInput {
@@ -15,13 +21,8 @@ public:
     void _timer_tick(void) override;
 
 private:
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OCPOC_ZYNQ
-    static const int TICK_PER_US=50;
-    static const int TICK_PER_S=50000000;
-#else
-    static const int TICK_PER_US=100;
-    static const int TICK_PER_S=100000000;
-#endif
+    static const int TICK_PER_US = RCIN_ZYNQ_TICK_PER_US;
+    static const int TICK_PER_S = RCIN_ZYNQ_TICK_PER_US * 1e6;
 
     // Memory mapped keyhole register to pulse input FIFO
     volatile uint32_t *pulse_input;
@@ -31,3 +32,5 @@ private:
 };
 
 }
+
+#endif  // AP_RCPROTOCOL_ZYNQ_ENABLED

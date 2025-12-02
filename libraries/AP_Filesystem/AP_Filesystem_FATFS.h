@@ -57,7 +57,11 @@ public:
     bool format(void) override;
     AP_Filesystem_Backend::FormatStatus get_format_status() const override;
 
+    static void set_io_size(uint32_t _io_size) { io_size = _io_size; }
+    static uint32_t get_io_size() { return io_size; }
+
 private:
+    static uint32_t io_size;
     void format_handler(void);
     FormatStatus format_status;
 };

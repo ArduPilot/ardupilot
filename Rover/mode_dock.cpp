@@ -112,19 +112,19 @@ void ModeDock::update()
         return;
     }
 
-    const bool real_dock_in_sight = rover.precland.get_target_position_cm(_dock_pos_rel_origin_cm);
-    Vector2f dock_pos_rel_vehicle_cm;
-    if (!calc_dock_pos_rel_vehicle_NE(dock_pos_rel_vehicle_cm)) {
+    const bool real_dock_in_sight = rover.precland.get_target_position_m(_dock_pos_rel_origin_m);
+    Vector2f dock_pos_rel_vehicle_m;
+    if (!calc_dock_pos_rel_vehicle_NE_m(dock_pos_rel_vehicle_m)) {
         g2.motors.set_throttle(0.0f);
         g2.motors.set_steering(0.0f);
         return;
     }
 
-    _distance_to_destination = dock_pos_rel_vehicle_cm.length() * 0.01f;
+    _distance_to_destination = dock_pos_rel_vehicle_m.length();
 
     // we force the vehicle to use real dock as target when we are too close to the dock
     // note that heading correction does not work when we force real target
-    const bool force_real_target = _distance_to_destination < _force_real_target_limit_cm * 0.01f;
+    const bool force_real_target = _distance_to_destination < _force_real_target_limit_m;
 
     // if we are close enough to the dock or the target is not in sight when we strictly require it
     // we mark the docking to be completed so that the vehicle stops
@@ -142,7 +142,7 @@ void ModeDock::update()
         return;
     }
 
-    Vector2f target_cm = _dock_pos_rel_origin_cm;
+    Vector2f target_m = _dock_pos_rel_origin_m.tofloat();
 
     // ***** HEADING CORRECTION *****
     // to make to vehicle dock from a given direction we simulate a virtual moving target on the line of approach
@@ -152,11 +152,11 @@ void ModeDock::update()
     // as the vehicle tries to reach this target, this target appears to move towards the dock and at last it is sandwiched b/w dock and vehicle
     // since this target is moving along desired direction of approach, the vehicle also comes on that line while following it
     if  (!force_real_target && hdg_corr_enable) {
-        const float correction_vec_mag = hdg_corr_weight * dock_pos_rel_vehicle_cm.projected(_desired_heading_NE).length();
-        target_cm = _dock_pos_rel_origin_cm - _desired_heading_NE * correction_vec_mag;
+        const float correction_vec_mag = hdg_corr_weight * dock_pos_rel_vehicle_m.projected(_desired_heading_NE).length();
+        target_m = _dock_pos_rel_origin_m.tofloat() - _desired_heading_NE * correction_vec_mag;
     }
 
-    const Vector2p target_pos { target_cm.topostype() * 0.01 };
+    const Vector2p target_pos { target_m.topostype() };
     g2.pos_control.input_pos_target(target_pos, rover.G_Dt);
     g2.pos_control.update(rover.G_Dt);
 
@@ -187,14 +187,14 @@ void ModeDock::update()
             "DOCK",
             "TimeUS,DockX,DockY,DockDist,TPosX,TPosY,DSpd,DTrnRt",
             "smmmmmnE",
-            "FBB0BB00",
+            "F0000000",
             "Qfffffff",
             AP_HAL::micros64(),
-            _dock_pos_rel_origin_cm.x,
-            _dock_pos_rel_origin_cm.y,
+            (float)_dock_pos_rel_origin_m.x,
+            (float)_dock_pos_rel_origin_m.y,
             _distance_to_destination,
-            target_cm.x,
-            target_cm.y,
+            target_m.x,
+            target_m.y,
             desired_speed,
             desired_turn_rate);
 #endif
@@ -209,15 +209,15 @@ float ModeDock::apply_slowdown(float desired_speed)
         return desired_speed;
     }
 
-    Vector3f target_vec_rel_vehicle_NED;
-    if(!calc_dock_pos_rel_vehicle_NE(target_vec_rel_vehicle_NED.xy())) {
+    Vector3f target_vec_rel_vehicle_ned_m;
+    if(!calc_dock_pos_rel_vehicle_NE_m(target_vec_rel_vehicle_ned_m.xy())) {
         return desired_speed;
     }
 
     const Matrix3f &body_to_ned = AP::ahrs().get_rotation_body_to_ned();
-    Vector3f target_vec_body = body_to_ned.mul_transpose(target_vec_rel_vehicle_NED);
-    const float target_error_cm = fabsf(target_vec_body.y);
-    float error_ratio = target_error_cm / _acceptable_pos_error_cm;
+    Vector3f target_vec_body = body_to_ned.mul_transpose(target_vec_rel_vehicle_ned_m);
+    const float target_error_m = fabsf(target_vec_body.y);
+    float error_ratio = target_error_m / _acceptable_pos_error_m;
     error_ratio = constrain_float(error_ratio, 0.0f, 1.0f);
 
     const float dock_slow_dist_max_m = 15.0f;
@@ -246,13 +246,13 @@ float ModeDock::apply_slowdown(float desired_speed)
 // we need this method here because there can be a window during heading correction when we might lose the target
 // during that window precland won't be able to give us this vector
 // we can calculate it based on most recent value from precland because the dock is assumed stationary wrt ekf origin
-bool ModeDock::calc_dock_pos_rel_vehicle_NE(Vector2f &dock_pos_rel_vehicle) const {
+bool ModeDock::calc_dock_pos_rel_vehicle_NE_m(Vector2f &dock_pos_rel_vehicle_m) const {
     Vector2f current_pos_m;
     if (!AP::ahrs().get_relative_position_NE_origin_float(current_pos_m)) {
         return false;
     }
  
-    dock_pos_rel_vehicle = _dock_pos_rel_origin_cm - current_pos_m * 100.0f;
+    dock_pos_rel_vehicle_m = _dock_pos_rel_origin_m.tofloat() - current_pos_m;
     return true;
 }
 #endif // MODE_DOCK_ENABLED

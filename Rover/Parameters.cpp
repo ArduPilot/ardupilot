@@ -50,6 +50,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @DisplayName: Auto mode trigger pin
     // @Description: pin number to use to enable the throttle in auto mode. If set to -1 then don't use a trigger, otherwise this is a pin number which if held low in auto mode will enable the motor to run. If the switch is released while in AUTO then the motor will stop again. This can be used in combination with INITIAL_MODE to give a 'press button to start' rover with no receiver.
     // @Values: -1:Disabled,0:APM TriggerPin0,1:APM TriggerPin1,2:APM TriggerPin2,3:APM TriggerPin3,4:APM TriggerPin4,5:APM TriggerPin5,6:APM TriggerPin6,7:APM TriggerPin7,8:APM TriggerPin8,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
+    // @Range: -1 127
     // @User: Standard
     GSCALAR(auto_trigger_pin,        "AUTO_TRIGGER_PIN", -1),
 
@@ -292,12 +293,6 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECTN(ahrs.EKF3, NavEKF3, "EK3_", NavEKF3),
 #endif
 
-#if AP_RPM_ENABLED
-    // @Group: RPM
-    // @Path: ../libraries/AP_RPM/AP_RPM.cpp
-    GOBJECT(rpm_sensor, "RPM", AP_RPM),
-#endif
-
     // @Group: MIS_
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
     GOBJECTN(mode_auto.mission, mission, "MIS_", AP_Mission),
@@ -470,7 +465,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FRAME_TYPE
     // @DisplayName: Frame Type
     // @Description: Frame Type
-    // @Values: 0:Undefined,1:Omni3,2:OmniX,3:OmniPlus,4:Omni3Mecanum
+    // @Values: 0:Default,1:Omni3,2:OmniX,3:OmniPlus,4:Omni3Mecanum
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("FRAME_TYPE", 24, ParametersG2, frame_type, 0),
@@ -865,6 +860,11 @@ void Rover::load_parameters(void)
     // PARAMETER_CONVERSION - Added: Feb-2024 for Rover-4.6
 #if HAL_LOGGING_ENABLED
     AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, true);
+#endif
+
+    // PARAMETER_CONVERSION - Added: July-2025 for ArduPilot-4.7
+#if AP_RPM_ENABLED
+    AP_Param::convert_class(g.k_param_rpm_sensor_old, &rpm_sensor, rpm_sensor.var_info, 0, true, true);
 #endif
 
     static const AP_Param::TopLevelObjectConversion toplevel_conversions[] {

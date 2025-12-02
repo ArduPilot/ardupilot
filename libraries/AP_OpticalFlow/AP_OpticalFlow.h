@@ -134,7 +134,7 @@ private:
     OpticalFlow_backend *backend;
 
     struct AP_OpticalFlow_Flags {
-        uint8_t healthy     : 1;    // true if sensor is healthy
+        bool healthy;               // true if sensor is healthy
     } _flags;
 
     // parameters
@@ -145,6 +145,7 @@ private:
     AP_Vector3f _pos_offset;        // position offset of the flow sensor in the body frame
     AP_Int8  _address;              // address on the bus (allows selecting between 8 possible I2C addresses for px4flow)
     AP_Float  _height_override;              // height of the sensor above the ground. Only used in rover
+    AP_Int16 _options;              // options parameter
 
     // method called by backend to update frontend state:
     void update_state(const OpticalFlow_state &state);

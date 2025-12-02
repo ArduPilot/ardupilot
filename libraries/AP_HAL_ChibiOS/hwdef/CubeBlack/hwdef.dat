@@ -4,7 +4,10 @@
 
 include ../fmuv3/hwdef.dat
 
-define HAL_CHIBIOS_ARCH_CUBE 1
+# if the user has both isolated sensors enabled then force-enable the
+#  non-isolated IMU regardless of parameter setting.  This is done in
+#  case the isolated board fails.
+define AP_INERTIALSENSOR_FORCE_ENABLE_NONISOLATED_INSTANCE 1
 
 env OPTIMIZE -O2
 
@@ -75,7 +78,7 @@ COMPASS AK8963:probe_mpu9250 1 ROTATION_YAW_270
 COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180_YAW_90
 
 # also probe for external compasses
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 
 # This defines an output pin which will default to output HIGH. It is
 # a pin that enables peripheral power on this board. It starts in the

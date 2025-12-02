@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # flake8: noqa
 
@@ -227,8 +227,7 @@ This list is automatically generated from the latest ardupilot source code, and 
            reference=reference)
 
         for param in g.params:
-            if getattr(param, "Legacy", False):
-                # do not emit legacy parameters to the Wiki
+            if not self.should_emit_param(param):
                 continue
             if not hasattr(param, 'DisplayName') or not hasattr(param, 'Description'):
                 continue

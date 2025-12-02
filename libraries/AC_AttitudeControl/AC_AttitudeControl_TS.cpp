@@ -34,7 +34,7 @@ void AC_AttitudeControl_TS::relax_attitude_controllers(bool exclude_pitch)
         // set target attitude to zero pitch with (approximate) current roll and yaw
         // by rotating the current_attitude quaternion by the error in desired pitch
         Quaternion pitch_rotation;
-        pitch_rotation.from_axis_angle(Vector3f(0, -1, 0), current_eulers.y);
+        pitch_rotation.from_axis_angle(Vector3f{0, -1, 0}, current_eulers.y);
         _attitude_target = current_attitude * pitch_rotation;
         _attitude_target.normalize();
         _attitude_target.to_euler(_euler_angle_target_rad.x, _euler_angle_target_rad.y, _euler_angle_target_rad.z);
@@ -96,7 +96,7 @@ void AC_AttitudeControl_TS::input_euler_rate_yaw_euler_angle_pitch_bf_roll_rad(b
     if (error_ratio > 1) {
         yaw_rate_rads /= (error_ratio * error_ratio);
     }
-    _euler_angle_target_rad.z = wrap_PI(_euler_angle_target_rad.z + yaw_rate_rads * _dt);
+    _euler_angle_target_rad.z = wrap_PI(_euler_angle_target_rad.z + yaw_rate_rads * _dt_s);
 
     // init attitude target to desired euler yaw and pitch with zero roll
     _attitude_target.from_euler(0, euler_pitch_rad, _euler_angle_target_rad.z);
@@ -104,14 +104,14 @@ void AC_AttitudeControl_TS::input_euler_rate_yaw_euler_angle_pitch_bf_roll_rad(b
     // apply body-frame yaw/roll (this is roll/yaw for a tailsitter in forward flight)
     // rotate body_roll_rad axis by |sin(pitch angle)|
     Quaternion bf_roll_Q;
-    bf_roll_Q.from_axis_angle(Vector3f(0, 0, spitch * body_roll_rad));
+    bf_roll_Q.from_axis_angle(Vector3f{0, 0, spitch * body_roll_rad});
 
     // rotate body_yaw axis by cos(pitch angle)
     Quaternion bf_yaw_Q;
     if (plane_controls) {
-        bf_yaw_Q.from_axis_angle(Vector3f(cpitch, 0, 0), euler_yaw_rate_rads);
+        bf_yaw_Q.from_axis_angle(Vector3f{cpitch, 0, 0}, euler_yaw_rate_rads);
     } else {
-        bf_yaw_Q.from_axis_angle(Vector3f(-cpitch * body_roll_rad, 0, 0));
+        bf_yaw_Q.from_axis_angle(Vector3f{-cpitch * body_roll_rad, 0, 0});
     }
     _attitude_target = _attitude_target * bf_roll_Q * bf_yaw_Q;
 

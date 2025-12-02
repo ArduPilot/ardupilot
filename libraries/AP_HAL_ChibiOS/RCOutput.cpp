@@ -58,6 +58,8 @@ extern const AP_HAL::HAL& hal;
 extern AP_IOMCU iomcu;
 #endif
 
+// to use this make sure you have a logic analyser on GPIO outputs 54 and 55
+// set the servo output for these channels as "GPIO", on a Pixhawk these would be FMU outputs 5/6
 #define RCOU_SERIAL_TIMING_DEBUG 0
 #define LED_THD_WA_SIZE 256
 #ifndef HAL_NO_LED_THREAD
@@ -844,6 +846,13 @@ void RCOutput::push_local(void)
 
 uint16_t RCOutput::read(uint8_t chan)
 {
+#if AP_SIM_ENABLED
+    // FIXME: if on_hardware_output_enable_mask then read from hardware etc
+    if (chan < ARRAY_SIZE(hal.simstate->pwm_output)) {
+        return hal.simstate->pwm_output[chan];
+    }
+    return 0;
+#endif  // AP_SIM_ENABLED
     if (chan >= max_channels) {
         return 0;
     }
@@ -861,6 +870,13 @@ void RCOutput::read(uint16_t* period_us, uint8_t len)
     if (len > max_channels) {
         len = max_channels;
     }
+#if AP_SIM_ENABLED
+    // FIXME: if on_hardware_output_enable_mask then read from hardware etc
+    for (uint8_t i=0; i<MIN(len, ARRAY_SIZE(hal.simstate->pwm_output)); i++) {
+        period_us[i] = hal.simstate->pwm_output[i];
+    }
+    return;
+#endif  // AP_SIM_ENABLED
 #if HAL_WITH_IO_MCU
     for (uint8_t i=0; i<MIN(len, chan_offset); i++) {
         period_us[i] = iomcu.read_channel(i);
@@ -1800,7 +1816,7 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
     dmaSetRequestSource(group.dma, group.dma_up_channel);
 #endif
     dmaStreamSetPeripheral(group.dma, &(group.pwm_drv->tim->DMAR));
-    stm32_cacheBufferFlush(group.dma_buffer, buffer_length);
+    stm32_cacheBufferFlush(group.dma_buffer, (buffer_length+31)&~31);
     dmaStreamSetMemory0(group.dma, group.dma_buffer);
     dmaStreamSetTransactionSize(group.dma, buffer_length / sizeof(dmar_uint_t));
 #if STM32_DMA_ADVANCED
@@ -1889,6 +1905,10 @@ __RAMFUNC__ void RCOutput::dma_up_irq_callback(void *p, uint32_t flags)
  */
 void RCOutput::dma_cancel(pwm_group& group)
 {
+    if (group.dma == nullptr) {
+        return;
+    }
+
     chSysLock();
     dmaStreamDisable(group.dma);
 #ifdef HAL_WITH_BIDIR_DSHOT
@@ -1932,7 +1952,7 @@ void RCOutput::dma_cancel(pwm_group& group)
   until serial_end() has been called
 */
 #if HAL_SERIAL_ESC_COMM_ENABLED
-#define BYTE_BITS 10
+#define BYTE_BITS 10U
 
 bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint32_t chanmask)
 {
@@ -2026,7 +2046,9 @@ void RCOutput::fill_DMA_buffer_byte(dmar_uint_t *buffer, uint8_t stride, uint8_t
     }
 }
 
-#define BYTE_TIME(bitus) (bitus *  (BYTE_BITS + 2))   // timeout should come well after the next start bit
+// timeout should come well after the next start bit, on BlueJay start to start is about 624us
+// timeout behaviour can be stressed by setting this to BYTE_BITS + 2
+#define BYTE_TIME(bitus) (bitus *  (BYTE_BITS + 3U))
 
 /*
   send one serial byte, blocking call, should be called with the DMA lock held
@@ -2121,6 +2143,8 @@ HAL_BinarySemaphore RCOutput::serial_sem;
  */
 void RCOutput::serial_bit_irq(void)
 {
+    chSysLockFromISR();
+
     uint16_t now = AP_HAL::micros16();
     uint8_t bit = palReadLine(irq.line);
     bool send_signal = false;
@@ -2128,8 +2152,6 @@ void RCOutput::serial_bit_irq(void)
 #if RCOU_SERIAL_TIMING_DEBUG
     palWriteLine(HAL_GPIO_LINE_GPIO55, bit);
 #endif
-
-    chSysLockFromISR();
 
     // value of completed byte (includes start and stop bits)
     uint16_t byteval = 0;
@@ -2180,6 +2202,7 @@ void RCOutput::serial_bit_irq(void)
         if ((byteval & 0x201) != 0x200) {
             // wrong start/stop bits
             byteval = BAD_BYTE;
+            chVTResetI(&irq.serial_timeout);
         } else {
             // seen the last bit so setup the timeout for the next byte
             chVTSetI(&irq.serial_timeout, chTimeUS2I(BYTE_TIME(irq.bit_time_tick)), serial_byte_timeout, irq.waiter);
@@ -2198,6 +2221,16 @@ void RCOutput::serial_bit_irq(void)
 void RCOutput::serial_byte_timeout(virtual_timer_t* vt, void *ctx)
 {
     chSysLockFromISR();
+
+    // avoid a ChibiOS race in timer signalling, if all is well it should not be armed at this point
+    if (chVTIsArmedI(vt)) {
+        chSysUnlockFromISR();
+        return;
+    }
+#if RCOU_SERIAL_TIMING_DEBUG
+    palToggleLine(HAL_GPIO_LINE_GPIO54);
+    palToggleLine(HAL_GPIO_LINE_GPIO54);
+#endif
     uint16_t byteval = irq.bitmask | (((1U<<BYTE_BITS)-1) & ~((1U<<irq.nbits)-1));
     // we can accept a byte with a timeout if the last bit was 1
     // and the start bit is set correctly
@@ -2207,6 +2240,11 @@ void RCOutput::serial_byte_timeout(virtual_timer_t* vt, void *ctx)
         // wrong start/stop bits
         byteval = BAD_BYTE;
     }
+
+    // we are assuming we read the byte so reset in case there is another read
+    irq.nbits = 0;
+    irq.bitmask = 0;
+    irq.last_bit = 0;
 
     serial_buffer.write((uint8_t*)&byteval, 2);
     chSysUnlockFromISR();
@@ -2222,7 +2260,7 @@ bool RCOutput::serial_read_byte(uint8_t &b, uint32_t timeout_us)
         // consumer/producer pattern
         if (serial_buffer.is_empty()) {
             if (!serial_sem.wait(timeout_us)) {
-                return false;  // no data after 2ms
+                return false;  // no data after timeout_us
             }
         }
 

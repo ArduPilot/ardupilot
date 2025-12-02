@@ -240,7 +240,7 @@ void Tailsitter::setup()
 
         // Do not allow arming in forward flight modes
         // motors will become active due to assisted flight airmode, the vehicle will try very hard to get level
-        quadplane.options.set(quadplane.options.get() | int32_t(QuadPlane::OPTION::ONLY_ARM_IN_QMODE_OR_AUTO));
+        quadplane.options.set(quadplane.options.get() | int32_t(QuadPlane::Option::ONLY_ARM_IN_QMODE_OR_AUTO));
     }
 
     transition = NEW_NOTHROW Tailsitter_Transition(quadplane, motors, *this);
@@ -273,7 +273,7 @@ bool Tailsitter::active(void)
         return true;
     }
     // check if we are in ANGLE_WAIT fixed wing transition
-    if (transition->transition_state == Tailsitter_Transition::TRANSITION_ANGLE_WAIT_FW) {
+    if (transition->transition_state == Tailsitter_Transition::State::ANGLE_WAIT_FW) {
         return true;
     }
     return false;
@@ -367,16 +367,16 @@ void Tailsitter::output(void)
     // handle Copter controller
     // the MultiCopter rate controller has already been run in an earlier call
     // to motors_output() from quadplane.update(), unless we are in assisted flight
-    // tailsitter in TRANSITION_ANGLE_WAIT_FW is not really in assisted flight, its still in a VTOL mode
-    if (quadplane.assisted_flight && (transition->transition_state != Tailsitter_Transition::TRANSITION_ANGLE_WAIT_FW)) {
+    // tailsitter in Tailsitter_Transition::State::ANGLE_WAIT_FW is not really in assisted flight, its still in a VTOL mode
+    if (quadplane.assisted_flight && (transition->transition_state != Tailsitter_Transition::State::ANGLE_WAIT_FW)) {
         quadplane.hold_stabilize(throttle);
         quadplane.motors_output(true);
 
-        if (quadplane.option_is_set(QuadPlane::OPTION::TAILSIT_Q_ASSIST_MOTORS_ONLY)) {
+        if (quadplane.option_is_set(QuadPlane::Option::TAILSIT_Q_ASSIST_MOTORS_ONLY)) {
             // only use motors for Q assist, control surfaces remain under plane control. Zero copter I terms and use plane.
             // Smoothly relax to zero so there is no step change in output, must also set limit flags so integrator cannot build faster than the relax.
             // Assume there is always roll control surfaces, otherwise motors only assist should not be set.
-            const float dt = quadplane.attitude_control->get_dt();
+            const float dt = quadplane.attitude_control->get_dt_s();
 
             // VTOL yaw / FW roll
             quadplane.attitude_control->get_rate_yaw_pid().relax_integrator(0.0, dt, AC_ATTITUDE_RATE_RELAX_TC);
@@ -608,7 +608,7 @@ bool Tailsitter::in_vtol_transition(uint32_t now) const
     if (!enabled() || !quadplane.in_vtol_mode()) {
         return false;
     }
-    if (transition->transition_state == Tailsitter_Transition::TRANSITION_ANGLE_WAIT_VTOL) {
+    if (transition->transition_state == Tailsitter_Transition::State::ANGLE_WAIT_VTOL) {
         return true;
     }
     if ((now != 0) && ((now - transition->last_vtol_mode_ms) > 1000)) {
@@ -623,7 +623,7 @@ bool Tailsitter::in_vtol_transition(uint32_t now) const
  */
 bool Tailsitter::is_in_fw_flight(void) const
 {
-    return enabled() && !quadplane.in_vtol_mode() && transition->transition_state == Tailsitter_Transition::TRANSITION_DONE;
+    return enabled() && !quadplane.in_vtol_mode() && transition->transition_state == Tailsitter_Transition::State::DONE;
 }
 
 /*
@@ -707,7 +707,7 @@ void Tailsitter::speed_scaling(void)
         // https://web.mit.edu/16.unified/www/FALL/thermodynamics/notes/node86.html
 
         float airspeed;
-        if (!quadplane.ahrs.airspeed_estimate(airspeed)) {
+        if (!quadplane.ahrs.airspeed_EAS(airspeed)) {
             // No airspeed estimate, use throttle scaling
             spd_scaler = throttle_scaler;
 
@@ -832,10 +832,10 @@ void Tailsitter_Transition::update()
     const uint32_t now = millis();
 
     float aspeed;
-    bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
+    bool have_airspeed = quadplane.ahrs.airspeed_EAS(aspeed);
     quadplane.assisted_flight = quadplane.assist.should_assist(aspeed, have_airspeed);
 
-    if (transition_state < TRANSITION_DONE) {
+    if (transition_state != State::DONE) {
         // during transition we ask TECS to use a synthetic
         // airspeed. Otherwise the pitch limits will throw off the
         // throttle calculation which is driven by pitch
@@ -844,9 +844,9 @@ void Tailsitter_Transition::update()
 
     switch (transition_state) {
 
-    case TRANSITION_ANGLE_WAIT_FW: {
+    case State::ANGLE_WAIT_FW: {
         if (tailsitter.transition_fw_complete()) {
-            transition_state = TRANSITION_DONE;
+            transition_state = State::DONE;
             if (plane.arming.is_armed_and_safety_off()) {
                 fw_limit_start_ms = now;
                 fw_limit_initial_pitch = constrain_float(quadplane.ahrs.pitch_sensor,-8500,8500);
@@ -871,11 +871,11 @@ void Tailsitter_Transition::update()
         break;
     }
 
-    case TRANSITION_ANGLE_WAIT_VTOL:
+    case State::ANGLE_WAIT_VTOL:
         // nothing to do, this is handled in the fixed wing attitude controller
         break;
 
-    case TRANSITION_DONE:
+    case State::DONE:
         break;
     }
 }
@@ -891,13 +891,13 @@ void Tailsitter_Transition::VTOL_update()
           the nose up before we start trying to fly as a
           multicopter
          */
-        transition_state = TRANSITION_ANGLE_WAIT_VTOL;
+        transition_state = State::ANGLE_WAIT_VTOL;
     }
     last_vtol_mode_ms = now;
 
-    if (transition_state == TRANSITION_ANGLE_WAIT_VTOL) {
+    if (transition_state == State::ANGLE_WAIT_VTOL) {
         float aspeed;
-        bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
+        bool have_airspeed = quadplane.ahrs.airspeed_EAS(aspeed);
         // provide assistance in forward flight portion of tailsitter transition
         quadplane.assisted_flight = quadplane.assist.should_assist(aspeed, have_airspeed);
         if (!quadplane.tailsitter.transition_vtol_complete()) {
@@ -924,11 +924,11 @@ bool Tailsitter_Transition::show_vtol_view() const
 {
     bool show_vtol = quadplane.in_vtol_mode();
 
-    if (show_vtol && (transition_state == TRANSITION_ANGLE_WAIT_VTOL)) {
+    if (show_vtol && (transition_state == State::ANGLE_WAIT_VTOL)) {
         // in a vtol mode but still transitioning from forward flight
         return false;
     }
-    if (!show_vtol && (transition_state == TRANSITION_ANGLE_WAIT_FW)) {
+    if (!show_vtol && (transition_state == State::ANGLE_WAIT_FW)) {
         // not in VTOL mode but still transitioning from VTOL
         return true;
     }
@@ -948,7 +948,7 @@ void Tailsitter_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& na
         nav_pitch_cd = constrain_float(vtol_transition_initial_pitch + (tailsitter.transition_rate_vtol * dt) * 0.1f, -8500, 8500);
         nav_roll_cd = 0;
 
-    } else if (transition_state == TRANSITION_DONE) {
+    } else if (transition_state == State::DONE) {
         // still in FW, reset transition starting point
         vtol_transition_start_ms = now;
         vtol_transition_initial_pitch = constrain_float(plane.nav_pitch_cd,-8500,8500);
@@ -974,7 +974,7 @@ bool Tailsitter_Transition::allow_stick_mixing() const
         return false;
     }
     // Transitioning into fixed wing flight, levelling off
-    if ((transition_state == TRANSITION_DONE) && (fw_limit_start_ms != 0)) {
+    if ((transition_state == State::DONE) && (fw_limit_start_ms != 0)) {
         return false;
     }
     return true;
@@ -1015,7 +1015,7 @@ bool Tailsitter_Transition::set_VTOL_roll_pitch_limit(int32_t& nav_roll_cd, int3
 // setup for the transition back to fixed wing
 void Tailsitter_Transition::restart()
 {
-    transition_state = TRANSITION_ANGLE_WAIT_FW;
+    transition_state = State::ANGLE_WAIT_FW;
     fw_transition_start_ms = AP_HAL::millis();
     fw_transition_initial_pitch = constrain_float(quadplane.attitude_control->get_attitude_target_quat().get_euler_pitch() * degrees(100.0),-8500,8500);
 }
@@ -1023,7 +1023,7 @@ void Tailsitter_Transition::restart()
 // force state to FW and setup for the transition back to VTOL
 void Tailsitter_Transition::force_transition_complete()
 {
-    transition_state = TRANSITION_DONE;
+    transition_state = State::DONE;
     vtol_transition_start_ms = AP_HAL::millis();
     vtol_transition_initial_pitch = constrain_float(plane.nav_pitch_cd,-8500,8500);
     fw_limit_start_ms = 0;
@@ -1034,13 +1034,13 @@ void Tailsitter_Transition::force_transition_complete()
 MAV_VTOL_STATE Tailsitter_Transition::get_mav_vtol_state() const
 {
     switch (transition_state) {
-        case TRANSITION_ANGLE_WAIT_VTOL:
+        case State::ANGLE_WAIT_VTOL:
             return MAV_VTOL_STATE_TRANSITION_TO_MC;
 
-        case TRANSITION_DONE:
+        case State::DONE:
             return MAV_VTOL_STATE_FW;
 
-        case TRANSITION_ANGLE_WAIT_FW: {
+        case State::ANGLE_WAIT_FW: {
             if (quadplane.in_vtol_mode()) {
                 return MAV_VTOL_STATE_MC;
             }

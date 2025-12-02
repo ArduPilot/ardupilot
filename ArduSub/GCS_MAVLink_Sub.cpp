@@ -107,6 +107,8 @@ void GCS_MAVLINK_Sub::send_scaled_pressure3()
 #if AP_TEMPERATURE_SENSOR_ENABLED
     float temperature;
     if (!sub.temperature_sensor.get_temperature(temperature)) {
+        // Fall back to original behaviour
+        GCS_MAVLINK::send_scaled_pressure3();
         return;
     }
     mavlink_msg_scaled_pressure3_send(
@@ -116,6 +118,9 @@ void GCS_MAVLINK_Sub::send_scaled_pressure3()
         0,
         temperature * 100,
         0); // TODO: use differential pressure temperature
+#else
+    // Fall back to standard behaviour
+    GCS_MAVLINK::send_scaled_pressure3();
 #endif
 }
 
@@ -133,7 +138,7 @@ bool GCS_MAVLINK_Sub::send_info()
 
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
     send_named_float("TetherTrn",
-                     sub.quarter_turn_count/4);
+                     (float)sub.quarter_turn_count / 4);
 
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
     send_named_float("Lights1",
@@ -412,15 +417,24 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_CONDITION_YAW(const mavlink_command_i
 
 MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_DO_CHANGE_SPEED(const mavlink_command_int_t &packet)
 {
-        // param1 : unused
-        // param2 : new speed in m/s
-        // param3 : unused
-        // param4 : unused
-        if (packet.param2 > 0.0f) {
-            sub.wp_nav.set_speed_NE_cms(packet.param2 * 100.0f);
+    if (!is_positive(packet.param2)) {
+        // Target speed must be larger than zero
+        return MAV_RESULT_DENIED;
+    }
+
+    switch (SPEED_TYPE(packet.param1)) {
+        case SPEED_TYPE_CLIMB_SPEED:
+        case SPEED_TYPE_DESCENT_SPEED:
+        case SPEED_TYPE_ENUM_END:
+            break;
+
+        case SPEED_TYPE_AIRSPEED: // Airspeed is treated as ground speed for GCS compatibility
+        case SPEED_TYPE_GROUNDSPEED:
+            sub.wp_nav.set_speed_NE_cms(packet.param2 * 100.0);
             return MAV_RESULT_ACCEPTED;
-        }
-        return MAV_RESULT_FAILED;
+    }
+
+    return MAV_RESULT_DENIED;
 }
 
 MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_MISSION_START(const mavlink_command_int_t &packet)
@@ -448,7 +462,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
     switch (msg.msgid) {
 
     case MAVLINK_MSG_ID_MANUAL_CONTROL: {     // MAV ID: 69
-        if (msg.sysid != gcs().sysid_gcs()) {
+        if (!gcs().sysid_is_gcs(msg.sysid)) {
             break;    // Only accept control from our gcs
         }
         mavlink_manual_control_t packet;
@@ -484,7 +498,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
     }
 
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE: {     // MAV ID: 70
-        if (msg.sysid != gcs().sysid_gcs()) {
+        if (!gcs().sysid_is_gcs(msg.sysid)) {
             break;    // Only accept control from our gcs
         }
 

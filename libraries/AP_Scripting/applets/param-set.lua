@@ -50,6 +50,72 @@ mavlink:init(5, 1)
 local PARAM_SET_ID = 23
 mavlink:register_rx_msgid(PARAM_SET_ID)
 
+-- support for sending mavlink messages:
+
+local MAV_PARAM_ERROR = {
+    NO_ERROR             = 0,
+    DOES_NOT_EXIST       = 1,
+    VALUE_OUT_OF_RANGE   = 2,
+    PERMISSION_DENIED    = 3,
+    COMPONENT_NOT_FOUND  = 4,
+    READ_ONLY            = 5
+}
+
+-- mavlink message definition
+local param_error_msgid = 345
+local messages = {}
+messages[param_error_msgid] = { -- PARAM_ERROR
+   { "param_index", "<h" },
+   { "target_system", "<B" },
+   { "target_component", "<B" },
+   { "param_id", "<c16" },
+   { "error", "<B" },
+}
+
+function encode(msgid, message, messages_array)
+  local message_map = messages_array[msgid]
+  if not message_map then
+    -- we don't know how to encode this message, bail on it
+    error("Unknown MAVLink message " .. msgid)
+  end
+
+  local packString = "<"
+  local packedTable = {}
+  local packedIndex = 1
+  for i,v in ipairs(message_map) do
+    if v[3] then
+      packString = (packString .. string.rep(string.sub(v[2], 2), v[3]))
+      for j = 1, v[3] do
+        packedTable[packedIndex] = message[message_map[i][1]][j]
+        packedIndex = packedIndex + 1
+      end
+    else
+      packString = (packString .. string.sub(v[2], 2))
+      packedTable[packedIndex] = message[message_map[i][1]]
+      packedIndex = packedIndex + 1
+    end
+  end
+
+  return string.pack(packString, table.unpack(packedTable))
+end
+
+-- send PARAM_ERROR message to GCS
+function send_param_error_response(chan, target_system, target_component, param_id, param_error)
+  -- prepare message
+  local msg = {
+      target_system = target_system,
+      target_component = target_component,
+      param_id = param_id,
+      param_index = -1,
+      error = param_error
+  }
+
+  -- send PARAM_ERROR mavlink message
+  local encoded_msg = encode(param_error_msgid, msg, messages)
+  mavlink:send_chan(chan, param_error_msgid, encoded_msg)
+end
+-- end support for sending mavlink messages
+
 -- handle PARAM_SET message
 local parameters_which_can_be_set = {}
 parameters_which_can_be_set["MAV_OPTIONS"] = true
@@ -85,6 +151,8 @@ local function should_set_parameter_id(param_id)
     return parameters_which_can_be_set[param_id]
 end
 
+-- handle an attempt by a GCS to set name to value.  Returns a value
+-- from the MAV_ERROR enumeration, 0 on no error:
 local function handle_param_set(name, value)
     -- we will not receive packets in here for the wrong system ID /
     --   component ID; this is handled by ArduPilot's MAVLink routing
@@ -93,11 +161,13 @@ local function handle_param_set(name, value)
     -- check for this specific ID:
     if not should_set_parameter_id(name) then
         gcs:send_text(MAV_SEVERITY.WARNING, string.format("%s: param set denied (%s)", TEXT_PREFIX_STR, name))
-        return
+        return MAV_PARAM_ERROR.PERMISSION_DENIED
     end
 
     param:set_and_save(name, value)
     gcs:send_text(MAV_SEVERITY.WARNING, string.format("%s: param set applied", TEXT_PREFIX_STR))
+
+    return MAV_PARAM_ERROR.NO_ERROR
 end
 
 -- display welcome message
@@ -136,7 +206,7 @@ local function update()
 
     -- consume all available mavlink messages
     while true do
-        local msg, _ = mavlink:receive_chan()
+        local msg, chan, _ = mavlink:receive_chan()
         if msg == nil then
             break
         end
@@ -144,7 +214,11 @@ local function update()
         local param_value, _, _, param_id, _ = string.unpack("<fBBc16B", string.sub(msg, 13, 36))
         param_id = string.gsub(param_id, string.char(0), "")
 
-        handle_param_set(param_id, param_value)
+        param_error = handle_param_set(param_id, param_value)
+        if param_error ~= 0 then
+           sysid, compid = string.unpack("<BBB", msg, 8)
+           send_param_error_response(chan, sysid, compid, param_id, param_error)
+        end
     end
 end
 

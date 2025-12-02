@@ -38,6 +38,40 @@ void AP_Mount_Backend::set_dev_id(uint32_t id)
     _params.dev_id.set_and_save(int32_t(id));
 }
 
+// base implementation should be called from derived classes for common functionality
+void AP_Mount_Backend::update()
+{
+    // move mount to a "retracted position" into the fuselage or out of it
+    const bool mount_open = (_mode == MAV_MOUNT_MODE_RETRACT);
+    SRV_Channels::move_servo(_open_idx, mount_open, 0, 1);
+
+    // set target rate to zero if we have not received rate command for a while
+    if ((get_mode() == MAV_MOUNT_MODE_MAVLINK_TARGETING) &&
+        (mnt_target.target_type == MountTargetType::RATE) &&
+        (AP_HAL::millis() - mnt_target.last_rate_request_ms > 3000)) {
+        mnt_target.rate_rads.roll = 0;
+        mnt_target.rate_rads.pitch = 0;
+        mnt_target.rate_rads.yaw = 0;
+    }
+    // location exists for mode
+    Location current_loc;
+    switch (_mode) {
+    case MAV_MOUNT_MODE_RETRACT:
+    case MAV_MOUNT_MODE_NEUTRAL:
+    case MAV_MOUNT_MODE_MAVLINK_TARGETING:
+    case MAV_MOUNT_MODE_RC_TARGETING:
+    case MAV_MOUNT_MODE_ENUM_END:
+        break;
+    case MAV_MOUNT_MODE_GPS_POINT:
+    case MAV_MOUNT_MODE_SYSID_TARGET:
+    case MAV_MOUNT_MODE_HOME_LOCATION:
+         if (!AP::ahrs().get_location(current_loc)) {
+             send_warning_to_GCS("not targeting, no location");
+         }
+    }
+ 
+}
+
 // return true if this mount accepts roll targets
 bool AP_Mount_Backend::has_roll_control() const
 {
@@ -83,6 +117,12 @@ void AP_Mount_Backend::update_mnt_target_from_rc_target()
 
     MountTarget rc_target;
     get_rc_target(mnt_target.target_type, rc_target);
+    // if the option is set, force BF lock on yaw, pitch and roll axes (FPV lock) 
+    if (option_set(Options::FPV_LOCK)) {
+        _yaw_lock = false;
+        _roll_lock = false;
+        _pitch_lock = false;
+    }
     switch (mnt_target.target_type) {
     case MountTargetType::ANGLE:
         mnt_target.angle_rad = rc_target;
@@ -136,6 +176,7 @@ void AP_Mount_Backend::set_rate_target(float roll_degs, float pitch_degs, float 
     mnt_target.rate_rads.pitch = radians(pitch_degs);
     mnt_target.rate_rads.yaw = radians(yaw_degs);
     mnt_target.rate_rads.yaw_is_ef = yaw_is_earth_frame;
+    mnt_target.last_rate_request_ms = AP_HAL::millis();
 
     // set the mode to mavlink targeting
     set_mode(MAV_MOUNT_MODE_MAVLINK_TARGETING);
@@ -151,7 +192,6 @@ void AP_Mount_Backend::set_roi_target(const Location &target_loc)
 {
     // set the target gps location
     _roi_target = target_loc;
-    _roi_target_set = true;
 
     // set the mode to GPS tracking mode
     set_mode(MAV_MOUNT_MODE_GPS_POINT);
@@ -166,7 +206,7 @@ void AP_Mount_Backend::set_roi_target(const Location &target_loc)
 void AP_Mount_Backend::clear_roi_target()
 {
     // clear the target GPS location
-    _roi_target_set = false;
+    _roi_target.zero();
 
     // reset the mode if in GPS tracking mode
     if (get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
@@ -406,7 +446,6 @@ bool AP_Mount_Backend::handle_global_position_int(uint8_t msg_sysid, const mavli
     _target_sysid_location.lng = packet.lon;
     // global_position_int.alt is *UP*, so is location.
     _target_sysid_location.set_alt_cm(packet.alt*0.1, Location::AltFrame::ABSOLUTE);
-    _target_sysid_location_set = true;
 
     return true;
 }
@@ -421,7 +460,7 @@ void AP_Mount_Backend::write_log(uint64_t timestamp_us)
         return;
     }
 
-    const auto nanf = AP::logger().quiet_nanf();
+    const auto nanf = AP_Logger::quiet_nanf();
 
     // get_attitude_quaternion and convert to Euler angles
     float roll = nanf;
@@ -535,7 +574,7 @@ void AP_Mount_Backend::calculate_poi()
         // iteratively move test_loc forward until its alt-above-sea-level is below terrain-alt-above-sea-level
         const float dist_increment_m = MAX(terrain->get_grid_spacing(), 10);
         const float mount_pitch_deg = degrees(quat.get_euler_pitch());
-        const float mount_yaw_ef_deg = wrap_180(degrees(quat.get_euler_yaw()) + degrees(ahrs.get_yaw_rad()));
+        const float mount_yaw_ef_deg = wrap_180(degrees(quat.get_euler_yaw()) + ahrs.get_yaw_deg());
         float total_dist_m = 0;
         bool get_terrain_alt_success = true;
         float prev_terrain_amsl_m = terrain_amsl_m;
@@ -661,8 +700,10 @@ void AP_Mount_Backend::get_rc_target(MountTargetType& target_type, MountTarget& 
     float roll_in, pitch_in, yaw_in;
     get_rc_input(roll_in, pitch_in, yaw_in);
 
-    // yaw frame
+    // frame locks
     target_rpy.yaw_is_ef = _yaw_lock;
+    target_rpy.roll_is_ef = _roll_lock;
+    target_rpy.pitch_is_ef = _pitch_lock;
 
     // if RC_RATE is zero, targets are angle
     if (_params.rc_rate_max <= 0) {
@@ -726,6 +767,8 @@ bool AP_Mount_Backend::get_angle_target_to_location(const Location &loc, MountTa
     angle_rad.pitch = atan2f(GPS_vector_z, target_distance);
     angle_rad.yaw = atan2f(GPS_vector_x, GPS_vector_y);
     angle_rad.yaw_is_ef = true;
+    angle_rad.pitch_is_ef = true;
+    angle_rad.roll_is_ef = true;
 
     return true;
 }
@@ -734,7 +777,7 @@ bool AP_Mount_Backend::get_angle_target_to_location(const Location &loc, MountTa
 // returns true on success, false on failure
 bool AP_Mount_Backend::get_angle_target_to_roi(MountTarget& angle_rad) const
 {
-    if (!_roi_target_set) {
+    if (!_roi_target.initialised()) {
         return false;
     }
     return get_angle_target_to_location(_roi_target, angle_rad);
@@ -864,7 +907,7 @@ bool AP_Mount_Backend::get_angle_target_to_home(MountTarget& angle_rad) const
 bool AP_Mount_Backend::get_angle_target_to_sysid(MountTarget& angle_rad) const
 {
     // exit immediately if sysid is not set or no location available
-    if (!_target_sysid_location_set) {
+    if (!_target_sysid_location.initialised()) {
         return false;
     }
     if (!_target_sysid) {
@@ -898,6 +941,38 @@ bool AP_Mount_Backend::get_angle_target(float& roll_deg, float& pitch_deg, float
     }
     return false;
 }
+
+#if AP_SCRIPTING_ENABLED
+// return target location if available
+// returns true if a target location is available and fills in target_loc argument
+bool AP_Mount_Backend::get_location_target(Location &_target_loc)
+{
+    switch (get_mode()) {
+        case MAV_MOUNT_MODE_GPS_POINT:
+            _target_loc = _roi_target;
+            return _roi_target.initialised();
+
+        case MAV_MOUNT_MODE_HOME_LOCATION:
+            if (AP::ahrs().home_is_set()) {
+                _target_loc = AP::ahrs().get_home();
+                return true;
+            }
+            break;
+
+        case MAV_MOUNT_MODE_SYSID_TARGET:
+            _target_loc = _target_sysid_location;
+            return _target_sysid_location.initialised();
+
+        case MAV_MOUNT_MODE_RETRACT:
+        case MAV_MOUNT_MODE_NEUTRAL:
+        case MAV_MOUNT_MODE_MAVLINK_TARGETING:
+        case MAV_MOUNT_MODE_RC_TARGETING:
+        case MAV_MOUNT_MODE_ENUM_END:
+            break;
+    }
+    return false;
+}
+#endif
 
 // sent warning to GCS.  Warnings are throttled to at most once every 30 seconds
 void AP_Mount_Backend::send_warning_to_GCS(const char* warning_str)

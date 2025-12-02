@@ -106,10 +106,7 @@
 #define CHIBIOS_SHORT_BOARD_NAME CHIBIOS_BOARD_NAME
 #endif
 
-#ifndef CONFIG_HAL_BOARD_SUBTYPE
-// allow for generic boards
-#define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_GENERIC
-#endif
+#define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_NONE
 
 // we support RC serial for BLHeli pass-thru
 #ifndef HAL_SUPPORT_RCOUT_SERIAL
@@ -175,3 +172,18 @@
 #ifndef AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
 #define AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED 0
 #endif  // AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
+
+#ifndef AP_CPU_IDLE_STATS_ENABLED
+#define AP_CPU_IDLE_STATS_ENABLED HAL_PROGRAM_SIZE_LIMIT_KB > 1024
+#endif
+
+#if defined(STM32H7) && HAL_MEM_CLASS >= HAL_MEM_CLASS_1000
+// 32k gives huge performance improvements on boards that can cope
+// the memory check excludes things like STM32H750 and STM32H730
+#ifndef AP_FATFS_MAX_IO_SIZE
+#define AP_FATFS_MAX_IO_SIZE 32768
+#endif
+#ifndef AP_FATFS_MIN_IO_SIZE
+#define AP_FATFS_MIN_IO_SIZE 4096
+#endif
+#endif

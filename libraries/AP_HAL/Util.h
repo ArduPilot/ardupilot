@@ -5,10 +5,6 @@
 #include "AP_HAL_Namespace.h"
 #include <AP_Logger/AP_Logger_config.h>
 
-#ifndef ENABLE_HEAP
-#define ENABLE_HEAP 0
-#endif
-
 class ExpandingString;
 
 class AP_HAL::Util {
@@ -148,17 +144,6 @@ public:
     virtual void *malloc_type(size_t size, Memory_Type mem_type) { return calloc(1, size); }
     virtual void free_type(void *ptr, size_t size, Memory_Type mem_type) { return free(ptr); }
 
-#if ENABLE_HEAP
-    /*
-      heap functions used by non-scripting
-     */
-#if USE_LIBC_REALLOC
-    virtual void *std_realloc(void *ptr, uint32_t new_size) { return realloc(ptr, new_size); }
-#else
-    virtual void *std_realloc(void *ptr, uint32_t new_size) = 0;
-#endif // USE_LIBC_REALLOC
-#endif
-
     /**
        how much free memory do we have in bytes. If unknown return 4096
      */
@@ -209,6 +194,9 @@ public:
     virtual size_t last_crash_dump_size() const { return 0; }
     virtual void* last_crash_dump_ptr() const { return nullptr; }
 #endif
+
+    // get the system load
+    virtual bool get_system_load(float& avg_load, float& peak_load) const { return false; }
 
 #if HAL_ENABLE_DFU_BOOT
     virtual void boot_to_dfu(void) {}

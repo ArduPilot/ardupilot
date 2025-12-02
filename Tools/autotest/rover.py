@@ -16,6 +16,7 @@ import time
 import vehicle_test_suite
 
 from pysim import util
+from pysim import vehicleinfo
 
 from vehicle_test_suite import AutoTestTimeoutException
 from vehicle_test_suite import NotAchievedException
@@ -201,6 +202,68 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.disarm_vehicle()
         self.progress("Loiter or Hold as throttle failsafe OK")
 
+    def PARAM_ERROR(self):
+        '''test PARAM_ERROR mavlink message'''
+        self.start_subtest("Non-existent parameter (get)")
+        self.context_push()
+        self.context_collect('PARAM_ERROR')
+        self.install_messageprinter_handlers_context(['PARAM_ERROR'])
+        self.send_get_parameter_direct("BOB")
+        self.assert_received_message_field_values('PARAM_ERROR', {
+            "target_system": 250,
+            "target_component": 250,
+            "param_id": 'BOB',
+            "param_index": -1,
+            "error": mavutil.mavlink.MAV_PARAM_ERROR_DOES_NOT_EXIST,
+        }, check_context=True, very_verbose=True)
+        self.context_pop()
+
+        self.start_subtest("Non-existent parameter (get-by-id)")
+        self.context_push()
+        self.context_collect('PARAM_ERROR')
+        self.install_messageprinter_handlers_context(['PARAM_ERROR'])
+        non_existent_param_index = 32764  # hopefully, anyway....
+        self.mav.mav.param_request_read_send(
+            self.sysid_thismav(),
+            1,
+            bytes("", 'ascii'),
+            non_existent_param_index
+        )
+        self.assert_received_message_field_values('PARAM_ERROR', {
+            "target_system": 250,
+            "target_component": 250,
+            "param_id": '',
+            "param_index": non_existent_param_index,
+            "error": mavutil.mavlink.MAV_PARAM_ERROR_DOES_NOT_EXIST,
+        }, check_context=True, very_verbose=True)
+        self.context_pop()
+
+        self.start_subtest("Non-existent parameter (set)")
+        self.context_push()
+        self.context_collect('PARAM_ERROR')
+        self.send_set_parameter_direct("BOB", 1)
+        self.assert_received_message_field_values('PARAM_ERROR', {
+            "target_system": 250,
+            "target_component": 250,
+            "param_id": 'BOB',
+            "param_index": -1,
+            "error": mavutil.mavlink.MAV_PARAM_ERROR_DOES_NOT_EXIST,
+        }, check_context=True, very_verbose=True)
+        self.context_pop()
+
+        self.start_subtest("Try to set a bad parameter value")
+        self.context_push()
+        self.context_collect('PARAM_ERROR')
+        self.send_set_parameter_direct("SPRAY_ENABLE", float("nan"))
+        self.assert_received_message_field_values('PARAM_ERROR', {
+            "target_system": 250,
+            "target_component": 250,
+            "param_id": 'SPRAY_ENABLE',
+            "param_index": -1,
+            "error": mavutil.mavlink.MAV_PARAM_ERROR_VALUE_OUT_OF_RANGE,
+        }, check_context=True, very_verbose=True)
+        self.context_pop()
+
     def Sprayer(self):
         """Test sprayer functionality."""
         rc_ch = 5
@@ -317,14 +380,14 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
     #################################################
     # AUTOTEST ALL
     #################################################
-    def drive_mission(self, filename, strict=True):
+    def drive_mission(self, filename, strict=True, ignore_MANUAL_mode_change=False):
         """Drive a mission from a file."""
         self.progress("Driving mission %s" % filename)
         wp_count = self.load_mission(filename, strict=strict)
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.change_mode('AUTO')
-        self.wait_waypoint(1, wp_count-1, max_dist=5)
+        self.wait_waypoint(1, wp_count-1, max_dist=5, ignore_MANUAL_mode_change=ignore_MANUAL_mode_change)
         self.wait_statustext("Mission Complete", timeout=600)
         self.disarm_vehicle()
         self.progress("Mission OK")
@@ -3571,17 +3634,17 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def GCSMission(self):
         '''check MAVProxy's waypoint handling of missions'''
-
+        # vehicle with state may have non-zero MISSION_CURRENT.seq, so reboot
+        self.reboot_sitl()
         target_system = 1
         target_component = 1
         mavproxy = self.start_mavproxy()
+        self.wait_parameter_value('MIS_TOTAL', 1)
         mavproxy.send('wp clear\n')
-        self.delay_sim_time(1)
-        if self.get_parameter("MIS_TOTAL") != 0:
-            raise NotAchievedException("Failed to clear mission")
-        m = self.assert_receive_message('MISSION_CURRENT', timeout=5, verbose=True)
-        if m.seq != 0:
-            raise NotAchievedException("Bad mission current")
+        self.wait_parameter_value('MIS_TOTAL', 0)
+        self.assert_received_message_field_values('MISSION_CURRENT', {
+            "seq": 0,
+        }, timeout=5, verbose=True)
         self.load_mission_using_mavproxy(mavproxy, "rover-gripper-mission.txt")
         set_wp = 1
         mavproxy.send('wp set %u\n' % set_wp)
@@ -3702,6 +3765,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
         self.check_mission_waypoint_items_same(items_with_split_in,
                                                downloaded_items)
+
+        mavproxy.send('wp clear\n')
+        self.wait_parameter_value('MIS_TOTAL', 0)
 
         self.stop_mavproxy(mavproxy)
 
@@ -5934,7 +6000,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_ready_to_arm()
         if self.mavproxy is not None:
             self.mavproxy.send('script /tmp/post-locations.scr\n')
+        self.context_push()
+        self.context_set_message_rate_hz('RANGEFINDER', self.sitl_streamrate())
         m = self.assert_receive_message('RANGEFINDER', very_verbose=True)
+        self.context_pop()
         if m.voltage == 0:
             raise NotAchievedException("Did not get non-zero voltage")
         want_range = 10
@@ -6836,6 +6905,82 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.delay_sim_time(1000)
 
+    def ManyMAVLinkConnections(self):
+        '''test testing >8 MAVLink connections'''
+        self.set_parameters({
+            "SERIAL3_PROTOCOL": 2,
+            "SERIAL4_PROTOCOL": 2,
+            "SERIAL5_PROTOCOL": 2,
+            "SERIAL6_PROTOCOL": 2,
+            "SERIAL7_PROTOCOL": 2,
+
+            "NET_ENABLE": 1,
+
+            "NET_P1_TYPE": 4,
+            "NET_P1_IP0": 127,
+            "NET_P1_IP1": 0,
+            "NET_P1_IP2": 0,
+            "NET_P1_IP3": 1,
+            "NET_P1_PORT": 6700,
+            "NET_P1_PROTOCOL": 2,
+
+            "NET_P2_TYPE": 4,
+            "NET_P2_IP0": 127,
+            "NET_P2_IP1": 0,
+            "NET_P2_IP2": 0,
+            "NET_P2_IP3": 1,
+            "NET_P2_PORT": 6701,
+            "NET_P2_PROTOCOL": 2,
+
+            "NET_P3_TYPE": 4,
+            "NET_P3_IP0": 127,
+            "NET_P3_IP1": 0,
+            "NET_P3_IP2": 0,
+            "NET_P3_IP3": 1,
+            "NET_P3_PORT": 6702,
+            "NET_P3_PROTOCOL": 2,
+
+            "NET_P4_TYPE": 4,
+            "NET_P4_IP0": 127,
+            "NET_P4_IP1": 0,
+            "NET_P4_IP2": 0,
+            "NET_P4_IP3": 1,
+            "NET_P4_PORT": 6703,
+            "NET_P4_PROTOCOL": 2,
+
+            "SCR_ENABLE": 1,
+        })
+
+        self.install_example_script_context("simple_loop.lua")
+        self.customise_SITL_commandline([
+            "--serial3=tcp:4",
+            "--serial4=tcp:1",
+        ])
+
+        self.wait_statustext("hello, world")
+        conns = {}
+        for port in 5761, 5762, 5763, 5764, 5765, 5766, 5767, 6700, 6701, 6702, 6703:
+            cstring = f"tcp:localhost:{port}"
+            self.progress(f"Connecting to {cstring}")
+            c = mavutil.mavlink_connection(
+                cstring,
+                robust_parsing=True,
+                source_system=7,
+                source_component=7,
+            )
+            conns[port] = c
+
+        for repeats in range(1, 5):
+            for (port, conn) in conns.items():
+                while True:
+                    self.progress(f"Checking port {port}")
+                    m = self.assert_receive_message('STATUSTEXT', mav=conn, timeout=120)
+                    self.drain_all_pexpects()
+                    self.drain_mav()
+                    if m.text == "hello, world":
+                        self.progress(f"Received {m.text} from port {port}")
+                        break
+
     def REQUIRE_LOCATION_FOR_ARMING(self):
         '''check DriveOption::REQUIRE_POSITION_FOR_ARMING works'''
         self.context_push()
@@ -6860,6 +7005,30 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.assert_prearm_failure("waiting for home", other_prearm_failures_fatal=False)
         self.context_pop()
         self.reboot_sitl()
+
+    def SafetySwitch(self):
+        '''check safety switch works'''
+        self.start_subtest("Make sure we don't start moving when safety switch enabled")
+        self.wait_ready_to_arm()
+        self.set_rc(1, 2000)
+        self.wait_armed()
+        self.set_rc(1, 1500)
+        self.set_safetyswitch_on()
+        self.wait_groundspeed(0, 0.1, minimum_duration=2)
+        self.set_safetyswitch_off()
+        self.disarm_vehicle()
+
+        self.start_subtest("Make sure we stop moving when safety switch enabled")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(3, 1700)
+        self.wait_groundspeed(5, 100, minimum_duration=2)
+        self.set_safetyswitch_on()
+        self.wait_groundspeed(0, 0.1, minimum_duration=2)
+        self.set_safetyswitch_off()
+        self.wait_groundspeed(5, 100, minimum_duration=2)
+        self.set_rc(3, 1500)
+        self.disarm_vehicle()
 
     def GetMessageInterval(self):
         '''check that the two methods for requesting a MESSAGE_INTERVAL message are equivalent'''
@@ -6886,6 +7055,97 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
                 if m.interval_us != interval_us:
                     raise NotAchievedException(f"Unexpected interval_us (want={interval_us}, got={m.interval_us})")
+
+    def ScriptingLocationBindings(self):
+        '''test scripting bindings'''
+        self.install_script_content_context("test-scripting-bindings.lua", """
+function main()
+  here = ahrs:get_location()
+  if here == nil then
+     gcs:send_text(0, "Need location")
+     return
+  end
+  if here.alt == 0 then
+     gcs:send_text(0, "zero altitude?!")
+     return
+  end
+  ALT_FRAME = { ABSOLUTE = 0, ABOVE_HOME = 1, ABOVE_ORIGIN = 2, ABOVE_TERRAIN = 3 }
+  here:set_alt_m(12.34, ALT_FRAME.ABSOLUTE)
+  want = 1234
+  if here:alt() ~= want then
+     gcs:send_text(0, string.format("Bad altitude" .. here:alt() .. " want " .. want))
+     return
+  end
+  gcs:send_text(0, "Tests OK")
+end
+function update()
+  main()
+  return update, 1000
+end
+
+return update()
+""")
+        self.set_parameter('SCR_ENABLE', 1)
+        self.reboot_sitl()
+        self.wait_statustext('Tests OK')
+
+    def DriveEachFrame(self):
+        '''drive each frame (except BalanceBot) in a mission to ensure basic functionality'''
+        vinfo = vehicleinfo.VehicleInfo()
+        vinfo_options = vinfo.options[self.vehicleinfo_key()]
+        known_broken_frames = {
+            "balancebot": "needs special stay-upright code",
+            "motorboat-skid": "gets stuck between waypoints 2 and 3",
+        }
+        for frame in sorted(vinfo_options["frames"].keys()):
+            self.start_subtest("Testing frame (%s)" % str(frame))
+            if frame in known_broken_frames:
+                self.progress("Actually, no I'm not - it is known-broken (%s)" %
+                              (known_broken_frames[frame]))
+                continue
+            frame_bits = vinfo_options["frames"][frame]
+            print("frame_bits: %s" % str(frame_bits))
+            if frame_bits.get("external", False):
+                self.progress("Actually, no I'm not - it is an external simulation")
+                continue
+            model = frame_bits.get("model", frame)
+            defaults = self.model_defaults_filepath(frame)
+            if not isinstance(defaults, list):
+                defaults = [defaults]
+            self.customise_SITL_commandline(
+                [],
+                defaults_filepath=defaults,
+                model=model,
+                wipe=True,
+            )
+            mission_file = "basic.txt"
+            self.wait_ready_to_arm()
+            self.set_parameters({
+                "MIS_DONE_BEHAVE": 3,
+                "SIM_WIND_SPD": 10,
+            })
+            self.arm_vehicle()
+            self.drive_mission(mission_file, strict=False, ignore_MANUAL_mode_change=True)
+            self.wait_mode('MANUAL')
+
+            if self.distance_to_home() > 2:
+                raise NotAchievedException("Did not get home!")
+
+    def AP_ROVER_AUTO_ARM_ONCE_ENABLED(self):
+        '''test Rover arm-once-when-ready behaviour'''
+        # do a little dance so we don't arm after setting the parameter:
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.disarm_vehicle()
+        self.set_parameter("ARMING_REQUIRE", 3)
+        self.reboot_sitl()
+        self.wait_armed(timeout=120)
+        self.disarm_vehicle()
+        vehicle_test_suite.WaitAndMaintainDisarmed(
+            self,
+            minimum_duration=10,
+            timeout=30,
+        ).run()
 
     def tests(self):
         '''return list of all tests'''
@@ -6970,7 +7230,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.RoverInitialMode,
             self.DriveMaxRCIN,
             self.NoArmWithoutMissionItems,
+            self.PARAM_ERROR,
             self.CompassPrearms,
+            self.ManyMAVLinkConnections,
             self.MAV_CMD_DO_SET_REVERSE,
             self.MAV_CMD_GET_HOME_POSITION,
             self.MAV_CMD_DO_FENCE_ENABLE,
@@ -6978,6 +7240,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.NetworkingWebServer,
             self.NetworkingWebServerPPP,
             self.RTL_SPEED,
+            self.ScriptingLocationBindings,
             self.MissionRetransfer,
             self.FenceFullAndPartialTransfer,
             self.MissionPolyEnabledPreArm,
@@ -6988,7 +7251,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.BatteryInvalid,
             self.REQUIRE_LOCATION_FOR_ARMING,
             self.GetMessageInterval,
+            self.SafetySwitch,
             self.ThrottleFailsafe,
+            self.DriveEachFrame,
+            self.AP_ROVER_AUTO_ARM_ONCE_ENABLED,
         ])
         return ret
 

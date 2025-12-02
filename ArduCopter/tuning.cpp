@@ -1,39 +1,60 @@
 #include "Copter.h"
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
 /*
  * Function to update various parameters in flight using the TRANSMITTER_TUNING channel knob
  * This should not be confused with the AutoTune feature which can be found in control_autotune.cpp
  */
 
-// tuning - updates parameters based on the ch6 TRANSMITTER_TUNING channel knob's position
+// tuning - updates parameters based on the TRANSMITTER_TUNING channel knob's position
 //  should be called at 3.3hz
 void Copter::tuning()
 {
-    const RC_Channel *rc_tuning = rc().find_channel_for_option(RC_Channel::AUX_FUNC::TRANSMITTER_TUNING);
+    tuning(rc_tuning, g.rc_tuning_param, g2.rc_tuning_min.get(), g2.rc_tuning_max.get());
+    tuning(rc_tuning2, g2.rc_tuning2_param, g2.rc_tuning2_min.get(), g2.rc_tuning2_max.get());
+}
 
-    // exit immediately if tuning channel is not set
-    if (rc_tuning == nullptr) {
+bool Copter::being_tuned(int8_t tuning_param) const
+{
+    if (g.rc_tuning_param == tuning_param) {
+        return true;
+    }
+    if (g2.rc_tuning2_param == tuning_param) {
+        return true;
+    }
+    return false;
+}
+
+void Copter::tuning(const RC_Channel *tuning_ch, int8_t tuning_param, float tuning_min, float tuning_max)
+{
+    if (tuning_ch == nullptr) {
+        // tuning channel is not set - don't know where to take input value from
         return;
     }
-    
-    // exit immediately if the tuning function is not set or min and max are both zero
-    if ((g.radio_tuning <= 0) || (is_zero(g2.tuning_min.get()) && is_zero(g2.tuning_max.get()))) {
+
+    if (tuning_param <= 0) {
+        // no parameter set for tuning
         return;
     }
 
-    // exit immediately when radio failsafe is invoked or transmitter has not been turned on
-    if (!rc().has_valid_input() || rc_tuning->get_radio_in() == 0) {
+    if (is_equal(tuning_min, tuning_max)) {
+        // endpoints are equal, there is no parameter value range to tune across
         return;
     }
 
-    const uint16_t radio_in = rc_tuning->get_radio_in();
-    float tuning_value = linear_interpolate(g2.tuning_min, g2.tuning_max, radio_in, rc_tuning->get_radio_min(), rc_tuning->get_radio_max());
-    
+    float norm_in;
+    if (!tuning_ch->norm_input_ignore_trim(norm_in)) {
+        // unable to get input for this channel (eg. in RC failsafe)
+        return;
+    }
+
+    const float tuning_value = linear_interpolate(tuning_min, tuning_max, norm_in, -1, 1);
+
 #if HAL_LOGGING_ENABLED
-    Log_Write_Parameter_Tuning(g.radio_tuning, tuning_value, g2.tuning_min, g2.tuning_max);
+    Log_Write_PTUN(tuning_param, tuning_value, tuning_min, tuning_max, norm_in);
 #endif
 
-    switch(g.radio_tuning) {
+    switch(tuning_param) {
 
     // Roll, Pitch tuning
     case TUNING_STABILIZE_ROLL_PITCH_KP:
@@ -198,7 +219,9 @@ void Copter::tuning()
         break;
 
     case TUNING_LOITER_MAX_XY_SPEED:
-        loiter_nav->set_speed_max_NE_cms(tuning_value);
+        loiter_nav->set_speed_max_NE_ms(tuning_value * 0.01);
         break;
     }
 }
+
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED

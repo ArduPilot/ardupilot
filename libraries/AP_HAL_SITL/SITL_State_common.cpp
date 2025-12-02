@@ -22,6 +22,7 @@
 #include "SITL_State_common.h"
 
 #include <SITL/SIM_RF_Ainstein_LR_D1.h>
+#include <SITL/SIM_RF_Ainstein_LR_D1_v19.h>
 #include <SITL/SIM_RF_Benewake_TF02.h>
 #include <SITL/SIM_RF_Benewake_TF03.h>
 #include <SITL/SIM_RF_Benewake_TFmini.h>
@@ -41,6 +42,7 @@
 #include <SITL/SIM_RF_USD1_v0.h>
 #include <SITL/SIM_RF_USD1_v1.h>
 #include <SITL/SIM_RF_Wasp.h>
+#include <SITL/SIM_RF_LightWare_GRF.h>
 
 using namespace HALSITL;
 
@@ -49,6 +51,7 @@ static const struct {
     SITL::SerialRangeFinder *(*createfn)();
 }  serial_rangefinder_definitions[] {
     { "ainsteinlrd1", SITL::RF_Ainstein_LR_D1::create },
+    { "ainsteinlrd1_v19", SITL::RF_Ainstein_LR_D1_v19::create },
     { "benewake_tf02", SITL::RF_Benewake_TF02::create },
     { "benewake_tf03", SITL::RF_Benewake_TF03::create },
     { "benewake_tfmini", SITL::RF_Benewake_TFmini::create },
@@ -60,6 +63,7 @@ static const struct {
     { "leddarone", SITL::RF_LeddarOne::create },
     { "lightwareserial-binary", SITL::RF_LightWareSerialBinary::create },
     { "lightwareserial", SITL::RF_LightWareSerial::create },
+    { "lightware_grf", SITL::RF_LightWareGRF::create },
     { "maxsonarseriallv", SITL::RF_MaxsonarSerialLV::create },
     { "nmea", SITL::RF_NMEA::create },
     { "nmea", SITL::RF_NMEA::create },
@@ -225,7 +229,13 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         if (vectornav != nullptr) {
             AP_HAL::panic("Only one VectorNav at a time");
         }
-        vectornav = NEW_NOTHROW SITL::VectorNav();
+        vectornav = NEW_NOTHROW SITL::VectorNav(SITL::VectorNav::VNModel::VN300);
+        return vectornav;
+    } else if (streq(name, "VectorNav_VN100")) {
+        if (vectornav != nullptr) {
+            AP_HAL::panic("Only one VectorNav at a time");
+        }
+        vectornav = NEW_NOTHROW SITL::VectorNav(SITL::VectorNav::VNModel::VN100);
         return vectornav;
     } else if (streq(name, "MicroStrain5")) {
         if (microstrain5 != nullptr) {
@@ -297,7 +307,7 @@ void SITL_State_Common::sim_update(void)
         adsb->update(*sitl_model);
     }
 #endif  // AP_SIM_ADSB_ENABLED
-#if !defined(HAL_BUILD_AP_PERIPH)
+#if AP_SIM_VICON_ENABLED
     if (vicon != nullptr) {
         Quaternion attitude;
         sitl_model->get_attitude(attitude);
@@ -306,7 +316,7 @@ void SITL_State_Common::sim_update(void)
                       sitl_model->get_velocity_ef(),
                       attitude);
     }
-#endif
+#endif  // AP_SIM_VICON_ENABLED
     for (uint8_t i=0; i<num_serial_rangefinders; i++) {
         serial_rangefinders[i]->update(sitl_model->rangefinder_range());
     }

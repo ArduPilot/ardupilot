@@ -2,6 +2,7 @@
 
 #include <AP_Math/AP_Math.h>
 #include <AP_RTC/AP_RTC.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 const extern AP_HAL::HAL& hal;
 
@@ -39,6 +40,21 @@ const AP_Param::GroupInfo AP_Stats::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_RESET",    3, AP_Stats, params.reset, 1),
 
+    // @Param: _FLTCNT
+    // @DisplayName: Total Flight Count
+    // @Description: Total number of flights
+    // @ReadOnly: True
+    // @User: Standard
+    AP_GROUPINFO("_FLTCNT",    4, AP_Stats, params.fltcount, 0),
+
+    // @Param: _DISTFLWN
+    // @DisplayName: Total Distance Flown
+    // @Description: Estimate of total distance flown since statistics reset
+    // @Units: m
+    // @ReadOnly: True
+    // @User: Standard
+    AP_GROUPINFO("_DISTFLWN",    5, AP_Stats, params.distance_flown_m, 0),
+
     AP_GROUPEND
 };
 
@@ -57,6 +73,8 @@ void AP_Stats::copy_variables_from_parameters()
     runtime = params.runtime;
     reset = params.reset;
     flttime_boot = flttime;
+    fltcount = params.fltcount;
+    distance_flown_m = params.distance_flown_m;
 }
 
 void AP_Stats::init()
@@ -67,11 +85,12 @@ void AP_Stats::init()
     copy_variables_from_parameters();
 }
 
-
 void AP_Stats::flush()
 {
     params.flttime.set_and_save_ifchanged(flttime);
     params.runtime.set_and_save_ifchanged(runtime);
+    params.fltcount.set_and_save_ifchanged(fltcount);
+    params.distance_flown_m.set_and_save_ifchanged(distance_flown_m);
     last_flush_ms = AP_HAL::millis();
 }
 
@@ -98,6 +117,9 @@ void AP_Stats::update()
 {
     WITH_SEMAPHORE(sem);
     const uint32_t now_ms = AP_HAL::millis();
+#if AP_AHRS_ENABLED
+    update_distance_flown();
+#endif  // AP_AHRS_ENABLED
     if (now_ms -  last_flush_ms > flush_interval_ms) {
         update_flighttime();
         update_runtime();
@@ -113,6 +135,8 @@ void AP_Stats::update()
         params.bootcount.set_and_save_ifchanged(0);
         params.flttime.set_and_save_ifchanged(0);
         params.runtime.set_and_save_ifchanged(0);
+        params.fltcount.set_and_save_ifchanged(0);
+        params.distance_flown_m.set_and_save_ifchanged(0);
         uint32_t system_clock = 0; // in seconds
 #if AP_RTC_ENABLED
         uint64_t rtc_clock_us;
@@ -125,25 +149,75 @@ void AP_Stats::update()
 #endif
         params.reset.set_and_save_ifchanged(system_clock);
         copy_variables_from_parameters();
+        // Reset distance tracking state
+        _last_position_valid = false;
     }
-
 }
 
 void AP_Stats::set_flying(const bool is_flying)
 {
     if (is_flying) {
         if (!_flying_ms) {
+            fltcount += 1;
             _flying_ms = AP_HAL::millis();
         }
     } else {
         if (_flying_ms) {
             update_flighttime();
             update_runtime();
+            update_distance_flown();
             flush();
         }
         _flying_ms = 0;
     }
 }
+
+#if AP_AHRS_ENABLED
+void AP_Stats::update_distance_flown()
+{
+    if (!_flying_ms) {
+        // Dont count unless flying
+        _last_position_valid = false;
+        return;
+    }
+
+    // Run at 1Hz to reduce how much GPS variance is counted as distance
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _last_distance_update_ms < 1000) {
+        return;
+    }
+    _last_distance_update_ms = now_ms;
+
+    const AP_AHRS &ahrs = AP::ahrs();
+    if (!ahrs.healthy()) {
+        _last_position_valid = false;
+        return;
+    }
+
+    Location current_loc;
+    if (!ahrs.get_location(current_loc)) {
+        _last_position_valid = false;
+        return;
+    }
+
+    if (_last_position_valid) {
+        float delta_m = _last_position.get_distance_NED(current_loc).length();
+
+        // Avoid counting small distances that are probably error
+        if (delta_m >= 0.5) {
+            // Dont blindly add large distances that are likely just gross error / spoofing
+            // Assumes vehicle traveling below mach ~0.9
+            if (delta_m > 300.0f) {
+                delta_m = 300.0f;
+            }
+            distance_flown_m += delta_m;
+        }
+    }
+
+    _last_position = current_loc;
+    _last_position_valid = true;
+}
+#endif  // AP_AHRS_ENABLED
 
 /*
   get time in flight since boot

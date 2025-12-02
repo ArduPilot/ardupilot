@@ -156,7 +156,7 @@ public:
     static uint8_t next_interface;
 
     // Initialise CAN Peripheral
-    __INITFUNC__ bool init(const uint32_t bitrate, const OperatingMode mode) override;
+    __INITFUNC__ bool init(const uint32_t bitrate) override;
 
     // Put frame into Tx FIFO returns negative on error, 0 on buffer full, 
     // 1 on successfully pushing a frame into FIFO
@@ -168,11 +168,6 @@ public:
     int16_t receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_us,
                     CanIOFlags& out_flags) override;
 
-#if !defined(HAL_BOOTLOADER_BUILD)
-    // Set Filters to ignore frames not to be handled by us
-    bool configureFilters(const CanFilterConfig* filter_configs,
-                          uint16_t num_configs) override;
-#endif
     // In BxCAN the Busoff error is cleared automatically,
     // so always return false
     bool is_busoff() const override
@@ -181,12 +176,6 @@ public:
     }
 
     void clear_rx() override;
-
-    // Get number of Filter configurations
-    uint16_t getNumFilters() const override
-    {
-        return NumFilters;
-    }
 
     // Get total number of Errors discovered
 #if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)

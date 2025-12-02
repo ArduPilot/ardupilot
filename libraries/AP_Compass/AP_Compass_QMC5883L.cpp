@@ -115,18 +115,17 @@ bool AP_Compass_QMC5883L::init()
 
     //register compass instance
     _dev->set_device_type(DEVTYPE_QMC5883L);
-    if (!register_compass(_dev->get_bus_id(), _instance)) {
+    if (!register_compass(_dev->get_bus_id())) {
         return false;
     }
-    set_dev_id(_instance, _dev->get_bus_id());
 
     printf("%s found on bus %u id %u address 0x%02x\n", name,
            _dev->bus_num(), unsigned(_dev->get_bus_id()), _dev->get_bus_address());
 
-    set_rotation(_instance, _rotation);
+    set_rotation(_rotation);
 
     if (_force_external) {
-        set_external(_instance, true);
+        set_external(true);
     }
 
     //Enable 100HZ
@@ -191,16 +190,16 @@ void AP_Compass_QMC5883L::timer()
     Vector3f field = Vector3f{x * range_scale , y * range_scale, z * range_scale };
 
     // rotate to the desired orientation
-    if (is_external(_instance)) {
+    if (is_external()) {
         field.rotate(ROTATION_YAW_90);
     }
 
-    accumulate_sample(field, _instance, 20);
+    accumulate_sample(field, 20);
 }
 
 void AP_Compass_QMC5883L::read()
 {
-    drain_accumulated_samples(_instance);
+    drain_accumulated_samples();
 }
 
 void AP_Compass_QMC5883L::_dump_registers()

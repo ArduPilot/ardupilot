@@ -16,7 +16,6 @@
 
 #if AP_BARO_MS56XX_ENABLED
 
-#include <utility>
 #include <stdio.h>
 
 #include <AP_Math/AP_Math.h>
@@ -57,12 +56,14 @@ static const uint8_t ADDR_CMD_CONVERT_TEMPERATURE = ADDR_CMD_CONVERT_D2_OSR1024;
 /*
   constructor
  */
-AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
+AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_HAL::Device &dev)
     : AP_Baro_Backend(baro)
-    , _dev(std::move(dev))
+    , _dev(&dev)
 {
 }
 
+// convenience methods for derivative classes to call.  Will free
+// sensor if it can't init it.
 AP_Baro_Backend *AP_Baro_MS56XX::_probe(AP_Baro &baro, AP_Baro_MS56XX *sensor)
 {
     if (!sensor || !sensor->_init()) {
@@ -73,43 +74,39 @@ AP_Baro_Backend *AP_Baro_MS56XX::_probe(AP_Baro &baro, AP_Baro_MS56XX *sensor)
 }
 
 #if AP_BARO_MS5611_ENABLED
-AP_Baro_Backend *AP_Baro_MS5611::probe(AP_Baro &baro,
-                                       AP_HAL::OwnPtr<AP_HAL::Device> dev)
+AP_Baro_Backend *AP_Baro_MS5611::probe(AP_Baro &baro, AP_HAL::Device &dev)
 {
 #if AP_BARO_MS5607_ENABLED
     /*
       cope with vendors substituting a MS5607 for a MS5611 on Pixhawk1 'clone' boards
      */
     if (AP::baro().option_enabled(AP_Baro::Options::TreatMS5611AsMS5607)) {
-        return _probe(baro, NEW_NOTHROW AP_Baro_MS5607(baro, std::move(dev)));
+        return _probe(baro, NEW_NOTHROW AP_Baro_MS5607(baro, dev));
     }
 #endif  // AP_BARO_MS5607_ENABLED
 
-    return _probe(baro, NEW_NOTHROW AP_Baro_MS5611(baro, std::move(dev)));
+    return _probe(baro, NEW_NOTHROW AP_Baro_MS5611(baro, dev));
 }
 #endif  // AP_BARO_MS5611_ENABLED
 
 #if AP_BARO_MS5607_ENABLED
-AP_Baro_Backend *AP_Baro_MS5607::probe(AP_Baro &baro,
-                                       AP_HAL::OwnPtr<AP_HAL::Device> dev)
+AP_Baro_Backend *AP_Baro_MS5607::probe(AP_Baro &baro, AP_HAL::Device &dev)
 {
-    return _probe(baro, NEW_NOTHROW AP_Baro_MS5607(baro, std::move(dev)));
+    return _probe(baro, NEW_NOTHROW AP_Baro_MS5607(baro, dev));
 }
 #endif  // AP_BARO_MS5607_ENABLED
 
 #if AP_BARO_MS5637_ENABLED
-AP_Baro_Backend *AP_Baro_MS5637::probe(AP_Baro &baro,
-                                       AP_HAL::OwnPtr<AP_HAL::Device> dev)
+AP_Baro_Backend *AP_Baro_MS5637::probe(AP_Baro &baro, AP_HAL::Device &dev)
 {
-    return _probe(baro, NEW_NOTHROW AP_Baro_MS5637(baro, std::move(dev)));
+    return _probe(baro, NEW_NOTHROW AP_Baro_MS5637(baro, dev));
 }
 #endif  // AP_BARO_MS5637_ENABLED
 
 #if AP_BARO_MS5837_ENABLED
-AP_Baro_Backend *AP_Baro_MS5837::probe(AP_Baro &baro,
-                                       AP_HAL::OwnPtr<AP_HAL::Device> dev)
+AP_Baro_Backend *AP_Baro_MS5837::probe(AP_Baro &baro, AP_HAL::Device &dev)
 {
-    return _probe(baro, NEW_NOTHROW AP_Baro_MS5837(baro, std::move(dev)));
+    return _probe(baro, NEW_NOTHROW AP_Baro_MS5837(baro, dev));
 }
 
 bool AP_Baro_MS5837::_init()

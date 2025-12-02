@@ -218,10 +218,10 @@ bool AC_WeatherVane::get_yaw_out(float &yaw_output, const int16_t pilot_yaw, con
             break;
     }
 
-    if (!active_msg_sent) {
+    if (active_msg_dir != dir) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Weathervane Active: %s", dir_string);
         (void)dir_string;  // in case GCS is disabled
-        active_msg_sent = true;
+        active_msg_dir = dir;
     }
 
     // Slew output and apply gain
@@ -234,7 +234,7 @@ bool AC_WeatherVane::get_yaw_out(float &yaw_output, const int16_t pilot_yaw, con
 void AC_WeatherVane::reset(void)
 {
     last_output = 0;
-    active_msg_sent = false;
+    active_msg_dir = Direction::OFF;
     first_activate_ms = 0;
     last_check_ms = AP_HAL::millis();
 }

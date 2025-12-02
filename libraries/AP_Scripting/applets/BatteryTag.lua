@@ -40,27 +40,53 @@ local BTAG_ENABLE = bind_add_param('ENABLE',  1, 1)
 --]]
 local BTAG_MAX_CYCLES = bind_add_param('MAX_CYCLES',  2, 400)
 
+--[[
+  // @Param: BTAG_CUR_CYCLES
+  // @DisplayName: current battery cycles
+  // @Description: this is the highest value for battery cycles for all connected batteries
+  // @Range: 0 10000
+  // @User: Advanced
+--]]
+local BTAG_CUR_CYCLES = bind_add_param('CUR_CYCLES',  3, 0)
+
 if BTAG_ENABLE:get() == 0 then
     return
 end
 
 -- a handle for receiving BatteryTag messages
-local batterytag_handle = DroneCAN_Handle(0, BATTERYTAG_SIGNATURE, BATTERYTAG_ID)
-batterytag_handle:subscribe()
+local batterytag_handles = {
+    DroneCAN_Handle(0, BATTERYTAG_SIGNATURE, BATTERYTAG_ID),
+    DroneCAN_Handle(1, BATTERYTAG_SIGNATURE, BATTERYTAG_ID)
+}
+for bus, _ in pairs(batterytag_handles) do
+    batterytag_handles[bus]:subscribe()
+end
 
 -- a handle for sending GlobalTime messages
-local globaltime_handle = DroneCAN_Handle(0, GLOBALTIME_SIGNATURE, GLOBALTIME_ID)
+local globaltime_handles = {
+    DroneCAN_Handle(0, GLOBALTIME_SIGNATURE, GLOBALTIME_ID),
+    DroneCAN_Handle(1, GLOBALTIME_SIGNATURE, GLOBALTIME_ID)
+}
 
 -- ID for an arming check
 local auth_id = arming:get_aux_auth_id()
 
 local highest_cycles = 0
 
+local node_cycles = {}
+
+local gcs_connect_time = nil
+local sent_report = false
+local have_tag = false
+
+-- report battery tags to GCS at 30s after first GCS connection
+local GCS_REPORT_TIME_S = 30
+
 --[[
     check for BatteryTag messages
 --]]
-local function check_batterytag()
-    local payload, nodeid = batterytag_handle:check_message()
+local function check_batterytag(bus)
+    local payload, nodeid = batterytag_handles[bus]:check_message()
     if not payload then
         return
     end
@@ -69,7 +95,17 @@ local function check_batterytag()
         return
     end
 
-    highest_cycles = math.max(num_cycles, highest_cycles)
+    have_tag = true
+
+    if num_cycles > highest_cycles then
+        highest_cycles = num_cycles
+        BTAG_CUR_CYCLES:set_and_save(highest_cycles)
+    end
+    local node_tag = string.format("%d:%d", bus, nodeid)
+    if not node_cycles[node_tag] then
+       gcs:send_text(MAV_SEVERITY.INFO, string.format("BatteryTag: Node %s, Cycles %d", node_tag, num_cycles))
+    end
+    node_cycles[node_tag] = num_cycles
 
     -- log battery information
     logger:write("BTAG",
@@ -113,13 +149,42 @@ local function check_globaltime()
     local usec_hi,usec_lo = utc_usec:split()
     local payload8 = string.pack("II", usec_lo:toint(), usec_hi:toint())
     local payload7 = string.sub(payload8, 1, 7)
-    globaltime_handle:broadcast(payload7)
+    for bus, _ in pairs(globaltime_handles) do
+        globaltime_handles[bus]:broadcast(payload7)
+    end
+end
+
+--[[
+   update GCS connection status
+--]]
+local function check_GCS()
+   if not gcs_connect_time then
+      local last_seen = gcs:last_seen()
+      if last_seen ~= 0 then
+         gcs_connect_time = last_seen
+      end
+   elseif not sent_report and #node_cycles and
+      millis() - gcs_connect_time >= GCS_REPORT_TIME_S*1000
+   then
+      -- report battery tags at GCS_REPORT_TIME_S seconds
+      sent_report = true
+      for node_tag, cycles in pairs(node_cycles) do
+         gcs:send_text(MAV_SEVERITY.INFO, string.format("BatteryTag: Node %s, Cycles %d", node_tag, cycles))
+      end
+   end
 end
 
 local function update()
     if BTAG_ENABLE:get() ~= 0 then
-        check_batterytag()
+        for bus, _ in pairs(batterytag_handles) do
+            check_batterytag(bus)
+        end
         check_globaltime()
+        check_GCS()
+        if auth_id and not have_tag and millis():tofloat() * 0.001 > 15 then
+            -- no tag found after 15s, setup arming failure
+            arming:set_aux_auth_failed(auth_id, string.format("Battery Tag not connected"))
+        end
     end
     return update, 200
 end

@@ -230,17 +230,6 @@ void Sub::do_nav_wp(const AP_Mission::Mission_Command& cmd)
         target_loc.lat = current_loc.lat;
         target_loc.lng = current_loc.lng;
     }
-    // use current altitude if not provided
-    if (target_loc.alt == 0) {
-        // set to current altitude but in command's alt frame
-        int32_t curr_alt;
-        if (current_loc.get_alt_cm(target_loc.get_alt_frame(),curr_alt)) {
-            target_loc.set_alt_cm(curr_alt, target_loc.get_alt_frame());
-        } else {
-            // default to current altitude as alt-above-home
-            target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
-        }
-    }
 
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
@@ -309,24 +298,6 @@ void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
         target_loc.lng = temp_loc.lng;
     }
 
-    // In mavproxy misseditor: Abs = 0 = ALT_FRAME_ABSOLUTE
-    //                         Rel = 1 = ALT_FRAME_ABOVE_HOME
-    //                         AGL = 3 = ALT_FRAME_ABOVE_TERRAIN
-    //    2 = ALT_FRAME_ABOVE_ORIGIN, not an option in mavproxy misseditor
-
-    // use current altitude if not provided
-    // To-Do: use z-axis stopping point instead of current alt
-    if (target_loc.alt == 0) {
-        // set to current altitude but in command's alt frame
-        int32_t curr_alt;
-        if (current_loc.get_alt_cm(target_loc.get_alt_frame(),curr_alt)) {
-            target_loc.set_alt_cm(curr_alt, target_loc.get_alt_frame());
-        } else {
-            // default to current altitude as alt-above-home
-            target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
-        }
-    }
-
     // start way point navigator and provide it the desired location
     mode_auto.auto_wp_start(target_loc);
 }
@@ -342,20 +313,6 @@ void Sub::do_circle(const AP_Mission::Mission_Command& cmd)
         circle_center.lat = current_loc.lat;
         circle_center.lng = current_loc.lng;
     }
-
-    // default target altitude to current altitude if not provided
-    if (circle_center.alt == 0) {
-        int32_t curr_alt;
-        if (current_loc.get_alt_cm(circle_center.get_alt_frame(),curr_alt)) {
-            // circle altitude uses frame from command
-            circle_center.set_alt_cm(curr_alt,circle_center.get_alt_frame());
-        } else {
-            // default to current altitude above origin
-            circle_center.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
-            LOGGER_WRITE_ERROR(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
-        }
-    }
-
     // calculate radius
     uint16_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
     if (cmd.type_specific_bits & (1U << 0)) {
@@ -527,11 +484,6 @@ bool Sub::verify_circle(const AP_Mission::Mission_Command& cmd)
             Vector3f circle_center;
             UNUSED_RESULT(cmd.content.location.get_vector_from_origin_NEU_cm(circle_center));
 
-            // set target altitude if not provided
-            if (is_zero(circle_center.z)) {
-                circle_center.z = inertial_nav.get_position_z_up_cm();
-            }
-
             // set lat/lon position if not provided
             if (cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
                 circle_center.xy() = inertial_nav.get_position_xy_cm();
@@ -672,7 +624,7 @@ void Sub::do_change_speed(const AP_Mission::Mission_Command& cmd)
 
 void Sub::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
-    if (cmd.p1 == 1 || (cmd.content.location.lat == 0 && cmd.content.location.lng == 0 && cmd.content.location.alt == 0)) {
+    if (cmd.p1 == 1 || !cmd.content.location.initialised()) {
         if (!set_home_to_current_location(false)) {
             // silently ignore this failure
         }

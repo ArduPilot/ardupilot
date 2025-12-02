@@ -13,11 +13,13 @@ Use the "hl_mode" variable to control the behaviour of the script:
 Use the MAVLink High Latency Control ("link hl on|off" in MAVProxy) to control
 whether to send or not
 
+Change the use_mavlink2 variable to true to use MAVLink 2 instead of MAVLink 1
+
 Caveats:
 -This will send HIGH_LATENCY2 packets in place of HEARTBEAT packets
 -A single HIGH_LATENCY2 packet will be send every 5 sec
--MAVLink 1 will be used, as it's slightly more efficient (50 vs 52 bytes for a HL2 message)
 -The param SCR_VM_I_COUNT may need to be increased in some circumstances
+-This script does not handle MAVLink 2 signing, so it will not work with GCS that require signed packets
 
 Written by Stephen Dade (stephen_dade@hotmail.com)
 --]]
@@ -39,6 +41,9 @@ local time_last_tx = millis():tofloat() * 0.001
 
 local hl_mode = 0
 local link_lost_for = 0
+
+-- set to true to use MAVLink 2 instead of MAVLink 1
+local use_mavlink2 = false
 
 -- enable high latency mode from here, instead of having to enable from GCS
 if hl_mode == 0 then
@@ -74,6 +79,8 @@ local function MAVLinkProcessor()
     local _mavdecodestate = 0 -- 0=looking for marker, 1=getting header,2=getting payload,3=getting crc
     PROTOCOL_MARKER_V1 = 0xFE
     HEADER_LEN_V1 = 6
+    PROTOCOL_MARKER_V2 = 0xFD
+    HEADER_LEN_V2 = 10
     local _txseqid = 0
 
     -- AUTOGEN from MAVLink generator
@@ -84,6 +91,14 @@ local function MAVLinkProcessor()
     _crc_extra[73] = 0x26
     _crc_extra[11] = 0x59
     _crc_extra[41] = 0x1c
+
+    local _payload_size = {}
+    _payload_size[75] = 35
+    _payload_size[76] = 33
+    _payload_size[235] = 42
+    _payload_size[73] = 38
+    _payload_size[11] = 6
+    _payload_size[41] = 4
 
     local _messages = {}
     _messages[75] = { -- COMMAND_INT
@@ -142,19 +157,23 @@ local function MAVLinkProcessor()
         _mavbuffer = _mavbuffer .. string.char(byte)
 
         -- check if this is a start of packet
-        if _mavdecodestate == 0 and byte == PROTOCOL_MARKER_V1 then
+        if _mavdecodestate == 0 and ((use_mavlink2 and byte == PROTOCOL_MARKER_V2) or (not use_mavlink2 and byte == PROTOCOL_MARKER_V1)) then
             -- we have a packet start, discard the buffer before this byte
             _mavbuffer = string.char(byte)
             _mavdecodestate = 1
-            return
+            return false
         end
 
         -- if we have a full header, try parsing
-        if #_mavbuffer == HEADER_LEN_V1 and _mavdecodestate == 1 then
+        if _mavdecodestate == 1 and ((not use_mavlink2 and #_mavbuffer == HEADER_LEN_V1) or (use_mavlink2 and #_mavbuffer == HEADER_LEN_V2)) then
             local read_marker = 1
             _, read_marker = string.unpack("<B", _mavbuffer, read_marker)
             _payload_len, read_marker = string.unpack("<B", _mavbuffer,
                                                       read_marker) -- payload is always the second byte
+            if use_mavlink2 then
+                -- ignore the 2 bytes of flags
+                read_marker = read_marker + 2
+            end
             -- fetch seq/sysid/compid
             _mavresult.seq, read_marker =
                 string.unpack("<B", _mavbuffer, read_marker)
@@ -163,24 +182,35 @@ local function MAVLinkProcessor()
             _mavresult.compid, read_marker =
                 string.unpack("<B", _mavbuffer, read_marker)
             -- fetch the message id
-            _mavresult.msgid, _ =
-                string.unpack("<B", _mavbuffer, read_marker)
+            if use_mavlink2 then
+                _mavresult.msgid, _ =
+                    string.unpack("<I3", _mavbuffer, read_marker)
+            else
+                _mavresult.msgid, _ =
+                    string.unpack("<B", _mavbuffer, read_marker)
+            end
 
             _mavdecodestate = 2
-            return
+            return false
         end
 
         -- get payload
-        if _mavdecodestate == 2 and #_mavbuffer ==
+        if _mavdecodestate == 2 and not use_mavlink2 and #_mavbuffer ==
             (_payload_len + HEADER_LEN_V1) then
             _mavdecodestate = 3
             _mavresult.payload = string.sub(_mavbuffer, HEADER_LEN_V1 + 1)
-            return
+            return false
+        elseif _mavdecodestate == 2 and use_mavlink2 and  #_mavbuffer ==
+            (_payload_len + HEADER_LEN_V2) then
+            _mavdecodestate = 3
+            _mavresult.payload = string.sub(_mavbuffer, HEADER_LEN_V2 + 1)
+            return false
         end
 
         -- get crc, then process if CRC ok
-        if _mavdecodestate == 3 and #_mavbuffer ==
-            (_payload_len + HEADER_LEN_V1 + 2) then
+        if _mavdecodestate == 3 and ((not use_mavlink2 and #_mavbuffer ==
+            (_payload_len + HEADER_LEN_V1 + 2)) or (use_mavlink2 and
+            #_mavbuffer == (_payload_len + HEADER_LEN_V2 + 2))) then
             _mavdecodestate = 0
             _mavresult.crc = string.sub(_mavbuffer, -2, -1)
 
@@ -203,7 +233,20 @@ local function MAVLinkProcessor()
                                       self.bytesToString(_mavbuffer, -2, -1) ..
                                       ", " .. self.bytesToString(calccrc, 1, 2))
                     _mavbuffer = ""
-                    return
+                    return true
+                end
+            end
+
+            -- verify payload length before unpacking
+            if #_mavresult.payload ~= _payload_size[_mavresult.msgid] then
+                if use_mavlink2 then
+                    -- re-add the truncated 0 bytes
+                    _mavresult.payload = _mavresult.payload ..
+                        string.rep("\0", _payload_size[_mavresult.msgid] - #_mavresult.payload)
+                else
+                    _mavbuffer = ""
+                    _mavdecodestate = 0
+                    return true
                 end
             end
 
@@ -223,6 +266,7 @@ local function MAVLinkProcessor()
                                                              offset)
                 end
             end
+
             -- only process COMMAND_LONG and COMMAND_INT and  MISSION_ITEM_INT messages
             if _mavresult.msgid == self.MISSION_ITEM_INT then
                 -- goto somewhere (guided mode target)
@@ -299,9 +343,10 @@ local function MAVLinkProcessor()
         end
 
         -- packet too big ... start again
-        if #_mavbuffer > 263 then 
+        if (not use_mavlink2 and #_mavbuffer > 263) or (use_mavlink2 and #_mavbuffer > 280) then 
             _mavbuffer = ""
             _mavdecodestate = 0
+            return true
         end
         return false
     end
@@ -315,7 +360,7 @@ local function MAVLinkProcessor()
     end
 
     function self.createMAVLink(message, msgid)
-        -- generate a mavlink message (V1 only)
+        -- generate a mavlink message
 
         -- create the payload
         local message_map = _messages[msgid]
@@ -345,10 +390,28 @@ local function MAVLinkProcessor()
 
         local payload = string.pack(packString, table.unpack(packedTable))
 
+        --if mavlink2, truncate any trailing 0 bytes
+        if use_mavlink2 then
+            local payload_len = #payload
+            while payload_len > 0 and payload:byte(payload_len) == 0 do
+                payload = string.sub(payload, 1, payload_len - 1)
+                payload_len = payload_len - 1
+            end
+        end
+
         -- create the header. Assume componentid of 1
-        local header = string.pack('<BBBBBB', PROTOCOL_MARKER_V1, #payload,
-                                   _txseqid, param:get('MAV_SYSID'), 1,
-                                   msgid)
+        local header
+        if use_mavlink2 then
+            -- MAVLink 2 header
+            header = string.pack('<BBBBBBBI3', PROTOCOL_MARKER_V2, #payload,
+                                0, 0, _txseqid, param:get('MAV_SYSID'), 1,
+                                msgid)
+        else
+            -- MAVLink 1 header
+            header = string.pack('<BBBBBB', PROTOCOL_MARKER_V1, #payload,
+                                _txseqid, param:get('MAV_SYSID'), 1,
+                                msgid)
+        end
 
         -- generate the CRC
         local crc_extra_msg = _crc_extra[msgid]
@@ -405,11 +468,12 @@ end
 local mavlink = MAVLinkProcessor()
 
 function HLSatcom()
-    -- read in any bytes from GCS and and send to MAVLink processor
-    -- only read in 1 packet at a time to avoid time overruns
-    while port:available() > 0 do
-        local byte = port:read()
-        if mavlink.parseMAVLink(byte) then break end
+    -- read in any bytes from GCS and and send to MAVLink processor, up to max of 100 bytes at a time to prevent timeouts
+    local n_bytes = math.min(port:available():toint(), 100)
+    while n_bytes > 0 do
+        read = port:read()
+        n_bytes = n_bytes - 1
+        mavlink.parseMAVLink(read)
     end
 
     -- if mode 1 and there's been no mavlink traffic for 5000 ms, enable high latency
@@ -482,8 +546,8 @@ function HLSatcom()
 
         hl2.heading = math.floor(wrap_360(math.deg(ahrs:get_yaw_rad())) / 2)
         hl2.throttle = math.floor(gcs:get_hud_throttle())
-        if ahrs:airspeed_estimate() ~= nil then
-            hl2.airspeed = math.abs(math.floor(ahrs:airspeed_estimate() * 5))
+        if ahrs:airspeed_EAS() ~= nil then
+            hl2.airspeed = math.abs(math.floor(ahrs:airspeed_EAS() * 5))
         end
         -- hl2.airspeed_sp = 0
         hl2.groundspeed = math.abs(math.floor(

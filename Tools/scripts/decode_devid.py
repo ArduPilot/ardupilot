@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # flake8: noqa
 
@@ -71,6 +71,7 @@ compass_types = {
     0x16 : "DEVTYPE_QMC5883P",
     0x17 : "DEVTYPE_BMM350",
     0x18 : "DEVTYPE_IIS2MDC",
+    0x19 : "DEVTYPE_LIS2MDL",
 }
 
 imu_types = {

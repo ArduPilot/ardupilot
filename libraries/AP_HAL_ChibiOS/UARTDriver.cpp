@@ -387,6 +387,8 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
             }
             _device_initialised = true;
         }
+        // USB has flow control
+        _flow_control = FLOW_CONTROL_ENABLE;
 #endif
     } else {
 #if HAL_USE_SERIAL == TRUE

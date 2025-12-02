@@ -163,6 +163,8 @@ jobs:
             toolchain: aarch64
           - config: linux
             toolchain: base # GCC
+          - config: t3-gem-o1
+            toolchain: aarch64
         exclude:
           - config: navigator
             toolchain: armhf
@@ -171,7 +173,7 @@ jobs:
 
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: 'recursive'
       # Put ccache into github cache for faster build

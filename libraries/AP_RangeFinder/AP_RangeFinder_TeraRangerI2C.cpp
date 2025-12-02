@@ -19,7 +19,6 @@
 
 #if AP_RANGEFINDER_TRI2C_ENABLED
 
-#include <utility>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/crc.h>
 

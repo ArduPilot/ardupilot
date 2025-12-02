@@ -15,13 +15,19 @@
 #define MAVLINK_START_UART_SEND(chan, size) comm_send_lock(chan, size)
 #define MAVLINK_END_UART_SEND(chan, size) comm_send_unlock(chan)
 
-#if HAL_PROGRAM_SIZE_LIMIT_KB > 1024
+#ifndef MAVLINK_COMM_NUM_BUFFERS
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#define MAVLINK_COMM_NUM_BUFFERS 16
+#elif HAL_PROGRAM_SIZE_LIMIT_KB > 1024
 // allow 8 telemetry ports, allowing for extra networking or CAN ports
 #define MAVLINK_COMM_NUM_BUFFERS 8
 #else
 // allow five telemetry ports
 #define MAVLINK_COMM_NUM_BUFFERS 5
 #endif
+#endif  // MAVLINK_COMM_NUM_BUFFERS
+
+typedef uint32_t mavlink_channel_mask_t;
 
 #define MAVLINK_GET_CHANNEL_BUFFER 1
 #define MAVLINK_GET_CHANNEL_STATUS 1
@@ -70,7 +76,14 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len);
 uint16_t comm_get_txspace(mavlink_channel_t chan);
 
 #define MAVLINK_USE_CONVENIENCE_FUNCTIONS
+
+#pragma GCC diagnostic push
+// mavlink relies on strncpy() supporting deliberate truncation
+#if !defined(__clang__)  // avoid -Wunknown-warning-option
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif  // clang
 #include "include/mavlink/v2.0/all/mavlink.h"
+#pragma GCC diagnostic pop
 
 // lock and unlock a channel, for multi-threaded mavlink send
 void comm_send_lock(mavlink_channel_t chan, uint16_t size);

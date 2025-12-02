@@ -601,7 +601,7 @@ int16_t AP_RCProtocol::get_rx_link_quality(void) const
 void AP_RCProtocol::start_bind()
 {
     for (uint8_t i = 0; i < ARRAY_SIZE(backend); i++) {
-        if (backend[i] != nullptr) {
+        if (backend[i] != nullptr && protocol_enabled((rcprotocol_t)i)) {
             backend[i]->start_bind();
         }
     }

@@ -66,7 +66,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     FAST_TASK(stabilize),
     FAST_TASK(set_servos),
     SCHED_TASK(read_radio,             50,    100,   6),
-    SCHED_TASK(check_short_failsafe,   50,    100,   9),
+    SCHED_TASK(check_short_rc_failsafe,   50,    100,   9),
     SCHED_TASK(update_speed_height,    50,    200,  12),
     SCHED_TASK(update_throttle_hover, 100,     90,  24),
     SCHED_TASK_CLASS(RC_Channels,     (RC_Channels*)&plane.g2.rc_channels, read_mode_switch,           7,    100, 27),
@@ -99,9 +99,6 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(one_second_loop,         1,    400,  90),
     SCHED_TASK(three_hz_loop,           3,     75,  93),
     SCHED_TASK(check_long_failsafe,     3,    400,  96),
-#if AP_RPM_ENABLED
-    SCHED_TASK_CLASS(AP_RPM,           &plane.rpm_sensor,     update,     10, 100,  99),
-#endif
 #if AP_AIRSPEED_AUTOCAL_ENABLE
     SCHED_TASK(airspeed_ratio_update,   1,    100,  102),
 #endif // AP_AIRSPEED_AUTOCAL_ENABLE
@@ -319,6 +316,10 @@ void Plane::update_logging25(void)
 
     if (should_log(MASK_LOG_IMU))
         AP::ins().Write_Vibration();
+
+#if AP_PLANE_BLACKBOX_LOGGING
+    Log_Write_Blackbox();
+#endif
 }
 #endif  // HAL_LOGGING_ENABLED
 
@@ -380,13 +381,6 @@ void Plane::one_second_loop()
             
             // reset the landing altitude correction
             landing.alt_offset = 0;
-    }
-
-    // this ensures G_Dt is correct, catching startup issues with constructors
-    // calling the scheduler methods
-    if (!is_equal(1.0f/scheduler.get_loop_rate_hz(), scheduler.get_loop_period_s()) ||
-        !is_equal(G_Dt, scheduler.get_loop_period_s())) {
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     }
 
     const float loop_rate = AP::scheduler().get_filtered_loop_rate_hz();
@@ -843,7 +837,7 @@ bool Plane::get_wp_distance_m(float &distance) const
     }
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_mode()) {
-        distance = quadplane.using_wp_nav() ? quadplane.wp_nav->get_wp_distance_to_destination_cm() * 0.01 : 0;
+        distance = quadplane.using_wp_nav() ? quadplane.wp_nav->get_wp_distance_to_destination_m() : 0;
         return true;
     }
 #endif
@@ -875,7 +869,7 @@ bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
     }
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_mode()) {
-        xtrack_error = quadplane.using_wp_nav() ? quadplane.wp_nav->crosstrack_error() : 0;
+        xtrack_error = quadplane.using_wp_nav() ? quadplane.wp_nav->crosstrack_error_m() : 0;
         return true;
     }
 #endif
@@ -960,7 +954,7 @@ bool Plane::set_velocity_match(const Vector2f &velocity)
 {
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_mode() || quadplane.in_vtol_land_sequence()) {
-        quadplane.poscontrol.velocity_match = velocity;
+        quadplane.poscontrol.velocity_match_ms = velocity;
         quadplane.poscontrol.last_velocity_match_ms = AP_HAL::millis();
         return true;
     }
@@ -974,7 +968,7 @@ bool Plane::set_land_descent_rate(float descent_rate)
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_land_descent() ||
         control_mode == &mode_qland) {
-        quadplane.poscontrol.override_descent_rate = descent_rate;
+        quadplane.poscontrol.override_descent_rate_ms = descent_rate;
         quadplane.poscontrol.last_override_descent_ms = AP_HAL::millis();
         return true;
     }
@@ -1016,8 +1010,8 @@ bool Plane::is_taking_off() const
 }
 
 #if HAL_QUADPLANE_ENABLED
-bool Plane::start_takeoff(const float alt) {
-    return plane.quadplane.available() && quadplane.do_user_takeoff(alt);
+bool Plane::start_takeoff(const float alt_m) {
+    return plane.quadplane.available() && quadplane.do_user_takeoff(alt_m);
 }
 #endif
 

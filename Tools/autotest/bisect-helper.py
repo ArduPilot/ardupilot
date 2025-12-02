@@ -68,13 +68,11 @@ import traceback
 
 
 def get_exception_stacktrace(e):
-    if sys.version_info[0] >= 3:
-        ret = "%s\n" % e
-        ret += ''.join(traceback.format_exception(type(e),
-                                                  value=e,
-                                                  tb=e.__traceback__))
-        return ret
-    return traceback.format_exc(e)
+    ret = "%s\n" % e
+    ret += ''.join(traceback.format_exception(type(e),
+                                              value=e,
+                                              tb=e.__traceback__))
+    return ret
 
 
 class Bisect(object):

@@ -202,12 +202,12 @@ void CANIface::_confirmSentFrame()
     }
 }
 
-bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate, const OperatingMode mode)
+bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate)
 {
-    return init(bitrate, mode);
+    return init(bitrate);
 }
 
-bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
+bool CANIface::init(const uint32_t bitrate)
 {
     const auto *_sitl = AP::sitl();
     if (_sitl == nullptr) {

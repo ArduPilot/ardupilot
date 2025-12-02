@@ -163,7 +163,7 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 7
 BARO BMP388 SPI:BMP388
 BARO BMP388 SPI:BMP388_ext
 
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 1
 
 undef AP_FEATURE_SBUS_OUT
@@ -171,9 +171,6 @@ undef AP_FEATURE_SBUS_OUT
 # Enable FAT filesystem support.
 define HAL_OS_FATFS_IO 1
 AP_BOOTLOADER_FLASH_FROM_SD_ENABLED 
-
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # Now setup the default battery pins driver analog pins and default
 # scaling for the power brick.
@@ -197,7 +194,7 @@ PD2 SDMMC1_CMD SDMMC1
 # allow to have have a dedicated safety switch pin
 define HAL_HAVE_SAFETY_SWITCH 1
 
-# Enable RAMTROM parameter storage.
+# Enable RAMTRON parameter storage.
 define HAL_WITH_RAMTRON 1
 define HAL_STORAGE_SIZE 32768
 

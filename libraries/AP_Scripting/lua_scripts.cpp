@@ -251,9 +251,6 @@ void lua_scripts::create_sandbox(lua_State *L) {
     lua_pushstring(L, "io");
     luaopen_io(L);
     lua_settable(L, -3);
-    lua_pushstring(L, "utf8");
-    luaopen_utf8(L);
-    lua_settable(L, -3);
     lua_pushstring(L, "package");
     luaopen_package(L);
     lua_settable(L, -3);
@@ -522,10 +519,11 @@ void lua_scripts::run(void) {
     lua_setmetatable(L, -2);  /* set table as metatable for strings */
     lua_pop(L, 1);  /* pop dummy string */
 
-#ifndef HAL_CONSOLE_DISABLED
-    const int loaded_mem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
-    DEV_PRINTF("Lua: State memory usage: %i + %i\n", inital_mem, loaded_mem - inital_mem);
-#endif
+    if (option_is_set(AP_Scripting::DebugOption::RUNTIME_MSG)) {
+        const int loaded_mem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Lua: State memory usage: %i + %i\n",
+            inital_mem, loaded_mem - inital_mem);
+    }
 
     // Scan the filesystem in an appropriate manner and autostart scripts
     // Skip those directores disabled with SCR_DIR_DISABLE param

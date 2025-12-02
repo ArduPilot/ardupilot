@@ -220,13 +220,17 @@ public:
         ScriptedParameter* params;
         ScriptedMenu* next_menu;    // linked list of menus to make addition/removal/modification easy
 
+        // public API called from lua
+        ScriptedMenu* add_menu(const char* menu_name, uint8_t size, uint8_t parent_menu);
+        ScriptedParameter* add_parameter(uint8_t length, const char* data);
+
+        // private API
         ScriptedMenu(const char* menu_name, uint8_t size, uint8_t parent_menu);
         ~ScriptedMenu();
+        ScriptedParameter* find_parameter(uint8_t param_num);
         ScriptedMenu* find_menu(uint8_t param_num);
         bool remove_menu(uint8_t param_num);
-        ScriptedMenu* add_menu(const char* menu_name, uint8_t size, uint8_t parent_menu);
-        ScriptedParameter* find_parameter(uint8_t param_num);
-        ScriptedParameter* add_parameter(uint8_t length, const char* data);
+
         void dump_structure(uint8_t indent);
         ScriptedMenu() {}
     };
@@ -242,22 +246,44 @@ public:
 
     struct ScriptedParameterWrite {
         ScriptedParameterEvents type;
-        ParameterSettingsHeader settings;
+        uint8_t destination;
+        uint8_t origin;
+        uint8_t param_num;
+        uint8_t param_chunk;
         ScriptedParameter* param;
         ScriptedPayload payload;
     };
 
-    ObjectBuffer<ScriptedParameterWrite> inbound_params{8};
-    ObjectBuffer<ScriptedParameterWrite> outbound_params{8};
+    // scripted menus represent a complicated dance between the transmitter, flight controller and lua
+    // lua-in-the-loop requires mediation via outbound_params whereas direct responses can pass straight to
+    // ready_params. This is made more complicated by the protocol not being request-response - requests to
+    // read can be interleaved with ongoing requests to write
+    ObjectBuffer<ScriptedParameterWrite> inbound_params{8}; // parameter requests waiting to be processed
+    ObjectBuffer<ScriptedParameterWrite> outbound_params{8};// parameter repsonses waiting to be processed
+    ObjectBuffer<ScriptedParameterWrite> ready_params{8};   // parameter responses ready to be scheduled
+    HAL_Semaphore scr_sem; // semaphore guarding access to the inbound and outbound queues
+    // access so that submenus can serialize access from scripting
+    HAL_Semaphore& get_semaphore() { return scr_sem; }
 
-    ScriptedMenu* add_menu(const char* name);
     void clear_menus();
     bool process_scripted_param_write(ParameterSettingsWriteFrame* write, uint8_t length);
     bool process_scripted_param_read(ParameterSettingsReadFrame* read);
-    uint8_t get_menu_event(uint8_t menu_events, uint8_t& param_id, ScriptedPayload& payload);
-    bool send_write_response(uint8_t length, const char* data);
-    void send_response(const ScriptedParameterWrite& spw);
     void dump_menu_structure();
+
+    // public API called from lua
+    // add a scripted sub-menu to this menu
+    ScriptedMenu* add_menu(const char* name);
+    // get a menu event filtered by event type, this adds the event to the outbound queue for processing
+    uint8_t get_menu_event(uint8_t menu_events, uint8_t& param_id, ScriptedPayload& payload);
+    // peek for a menu event filtered by event type, this makes no changes to the outbound queue
+    // returns the type of event at the head of the queue and the CRSF payload data from that event
+    uint8_t peek_menu_event(uint8_t& param_id, ScriptedPayload& payload, uint8_t& events);
+    // pop a menu event from the inbound queue and add to the outbound queue for processing via lua
+    void pop_menu_event();
+    // send a new response from the first item in the outbound queueu
+    bool send_write_response(uint8_t length, const char* data);
+    // send a generic response from the first item in the outbound queue
+    bool send_response();
 #endif
 
     // Frame to hold passthrough telemetry
@@ -332,6 +358,7 @@ public:
     static bool get_telem_data(AP_RCProtocol_CRSF::Frame* frame, bool is_tx_active);
     // start bind request
     void start_bind() { _bind_request_pending = true; }
+    bool bind_in_progress() { return _bind_request_pending;}
 
 private:
 
@@ -375,6 +402,9 @@ private:
     void calc_command_response();
     void calc_bind();
     void calc_parameter();
+#if AP_CRSF_SCRIPTING_ENABLED
+    bool calc_scripted_parameter();
+#endif
 #if HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
     void calc_text_selection( AP_OSD_ParamSetting* param, uint8_t chunk);
 #endif
@@ -403,6 +433,7 @@ private:
     // setup the scheduler for parameters download
     void enter_scheduler_params_mode();
     void exit_scheduler_params_mode();
+    bool should_enter_scheduler_params_mode() const;
     void disable_tx_entries();
     void enable_tx_entries();
 

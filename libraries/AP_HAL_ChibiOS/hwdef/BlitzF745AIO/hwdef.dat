@@ -144,10 +144,11 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # Barometer setup
 BARO DPS310 I2C:1:0x76
+BARO SPL06 I2C:1:0x76
         
 # no built-in compass
 define ALLOW_ARM_NO_COMPASS
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 
 # save some flash

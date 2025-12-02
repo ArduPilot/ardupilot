@@ -911,14 +911,14 @@ protected:
     float apply_slowdown(float desired_speed);
 
     // calculate position of dock relative to the vehicle
-    bool calc_dock_pos_rel_vehicle_NE(Vector2f &dock_pos_rel_vehicle) const;
+    bool calc_dock_pos_rel_vehicle_NE_m(Vector2f &dock_pos_rel_vehicle_m) const;
 
     // we force the vehicle to use real dock target vector when this much close to the docking station
-    const float _force_real_target_limit_cm = 300.0f;
+    const float _force_real_target_limit_m = 3.0f;
     // acceptable lateral error in vehicle's position with respect to dock. This is used while slowing down the vehicle
-    const float _acceptable_pos_error_cm = 20.0f;
+    const float _acceptable_pos_error_m = 0.2f;
 
-    Vector2f _dock_pos_rel_origin_cm;   // position vector towards docking target relative to ekf origin
+    Vector2p _dock_pos_rel_origin_m;   // position vector towards docking target relative to ekf origin
     Vector2f _desired_heading_NE;       // unit vector in desired direction of docking
     bool _docking_complete = false;     // flag to mark docking complete when we are close enough to the dock
     bool _loitering = false; // true if we are loitering after mission completion

@@ -9,3 +9,4 @@ define HAL_PERIPH_HWESC_SERIAL_PORT 2
 
 # bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0
+USE_BOOTLOADER_FROM_BOARD MatekL431

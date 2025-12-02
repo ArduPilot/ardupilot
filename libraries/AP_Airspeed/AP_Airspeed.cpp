@@ -119,7 +119,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: _PRIMARY
     // @DisplayName: Primary airspeed sensor
     // @Description: This selects which airspeed sensor will be the primary if multiple sensors are found
-    // @Values: 0:FirstSensor,1:2ndSensor
+    // @Values: 0:FirstSensor, 1:2nd Sensor, 2:3rd Sensor, 3:4th Sensor, 4:5th Sensor, 5:6th Sensor
     // @User: Advanced
     AP_GROUPINFO("_PRIMARY", 10, AP_Airspeed, primary_sensor, 0),
 #endif
@@ -159,7 +159,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_WIND_GATE", 26, AP_Airspeed, _wind_gate, 5.0f),
     
-    // @Param: _OFF_PCNT
+    // @Param{Plane}: _OFF_PCNT
     // @DisplayName: Maximum offset cal speed error 
     // @Description: The maximum percentage speed change in airspeed reports that is allowed due to offset changes between calibrations before a warning is issued. This potential speed error is in percent of AIRSPEED_MIN. 0 disables. Helps warn of calibrations without pitot being covered.
     // @Range: 0.0 10.0
@@ -180,6 +180,30 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 #endif
 
     // index 30 is used by enable at the top of the table
+
+#if AIRSPEED_MAX_SENSORS > 2
+    // @Group: 3_
+    // @Path: AP_Airspeed_Params.cpp
+    AP_SUBGROUPINFO(param[2], "3_", 31, AP_Airspeed, AP_Airspeed_Params),
+#endif
+
+#if AIRSPEED_MAX_SENSORS > 3
+    // @Group: 4_
+    // @Path: AP_Airspeed_Params.cpp
+    AP_SUBGROUPINFO(param[3], "4_", 32, AP_Airspeed, AP_Airspeed_Params),
+#endif
+
+#if AIRSPEED_MAX_SENSORS > 4
+    // @Group: 5_
+    // @Path: AP_Airspeed_Params.cpp
+    AP_SUBGROUPINFO(param[4], "5_", 33, AP_Airspeed, AP_Airspeed_Params),
+#endif
+
+#if AIRSPEED_MAX_SENSORS > 5
+    // @Group: 6_
+    // @Path: AP_Airspeed_Params.cpp
+    AP_SUBGROUPINFO(param[5], "6_", 34, AP_Airspeed, AP_Airspeed_Params),
+#endif
 
     AP_GROUPEND
 };
@@ -485,7 +509,7 @@ void AP_Airspeed::allocate()
 }
 
 // get a temperature reading if possible
-bool AP_Airspeed::get_temperature(uint8_t i, float &temperature)
+bool AP_Airspeed::get_temperature(uint8_t i, float &temperature) const
 {
     if (!enabled(i)) {
         return false;
@@ -995,7 +1019,7 @@ bool AP_Airspeed::arming_checks(size_t buflen, char *buffer) const
 const AP_Param::GroupInfo AP_Airspeed::var_info[] = { AP_GROUPEND };
 
 void AP_Airspeed::update() {};
-bool AP_Airspeed::get_temperature(uint8_t i, float &temperature) { return false; }
+bool AP_Airspeed::get_temperature(uint8_t i, float &temperature) const { return false; }
 void AP_Airspeed::calibrate(bool in_startup) {}
 AP_Airspeed::CalibrationState AP_Airspeed::get_calibration_state() const { return CalibrationState::NOT_STARTED; }
 bool AP_Airspeed::use(uint8_t i) const { return false; }

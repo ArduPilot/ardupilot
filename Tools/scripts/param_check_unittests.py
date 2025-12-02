@@ -6,6 +6,7 @@ Parameter File Checker Unit Tests
 AP_FLAKE8_CLEAN
 """
 
+from __future__ import annotations
 import os
 import time
 import unittest
@@ -236,7 +237,7 @@ class TestParamCheck(unittest.TestCase):
 
         # Test Bitmask
         del metadata['ReadOnly']  # Remove ReadOnly to test the next priority
-        self.assertIsNone(check_param('PARAM', 256.0, metadata, skip)) # 256 would fail the other checks, but pass bitmask
+        self.assertIsNone(check_param('PARAM', 256.0, metadata, skip))  # 256 would fail the other checks, but pass bitmask
         self.assertEqual(check_param('PARAM', 1.5, metadata, skip), 'PARAM: 1.5 is not an integer')
         self.assertEqual(check_param('PARAM', -1, metadata, skip), 'PARAM: -1 is negative')
         self.assertEqual(
@@ -249,7 +250,7 @@ class TestParamCheck(unittest.TestCase):
 
         # Test Range
         del metadata['Bitmask']  # Remove Bitmask to test the next priority
-        self.assertIsNone(check_param('PARAM', 50, metadata, skip)) # 50 will fail the values check, but pass the range check
+        self.assertIsNone(check_param('PARAM', 50, metadata, skip))  # 50 will fail the values check, but pass the range check
         self.assertEqual(check_param('PARAM', 101, metadata, skip), 'PARAM: 101 is above maximum value 100.0')
         self.assertEqual(check_param('PARAM', -1, metadata, skip), 'PARAM: -1 is below minimum value 0.0')
         skip.no_range = True
@@ -264,7 +265,7 @@ class TestParamCheck(unittest.TestCase):
 
         # Test parameter with no range, bitmask, or value restrictions
         del metadata['Values']
-        self.assertIsNone(check_param('PARAM', 0, metadata, skip)) # Should pass no matter what
+        self.assertIsNone(check_param('PARAM', 0, metadata, skip))  # Should pass no matter what
 
     @patch('param_check.check_param')
     def test_check_file(self, mock_check_param):

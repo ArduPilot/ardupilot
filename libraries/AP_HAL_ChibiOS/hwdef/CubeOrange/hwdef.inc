@@ -1,5 +1,8 @@
 
-define HAL_CHIBIOS_ARCH_CUBE 1
+# if the user has both isolated sensors enabled then force-enable the
+#  non-isolated IMU regardless of parameter setting.  This is done in
+#  case the isolated board fails.
+define AP_INERTIALSENSOR_FORCE_ENABLE_NONISOLATED_INSTANCE 1
 
 # USB setup
 USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
@@ -256,7 +259,7 @@ COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180_YAW_90
 define HAL_HEATER_MAG_OFFSET {AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SPI,4,1,9),Vector3f(10,30,-235)}
 
 # also probe for external compasses
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 
 define HAL_CHIBIOS_ARCH_FMUV3 1
 
@@ -265,7 +268,7 @@ define BOARD_TYPE_DEFAULT 3
 # allow to have have a dedicated safety switch pin
 define HAL_HAVE_SAFETY_SWITCH 1
 
-# Enable RAMTROM parameter storage.
+# Enable RAMTRON parameter storage.
 define HAL_WITH_RAMTRON 1
 
 # Setup the IMU heater

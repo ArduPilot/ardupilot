@@ -327,6 +327,7 @@ void Sub::failsafe_gcs_check()
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"GCS Failsafe Cleared");
         }
         failsafe.gcs = false;
+        AP_Notify::flags.failsafe_gcs = false;
         return;
     }
 
@@ -337,7 +338,7 @@ void Sub::failsafe_gcs_check()
     // Send a warning every 30 seconds
     if (tnow - failsafe.last_gcs_warn_ms > 30000) {
         failsafe.last_gcs_warn_ms = tnow;
-        gcs().send_text(MAV_SEVERITY_WARNING, "MYGCS: %u, heartbeat lost", unsigned(gcs().sysid_gcs()));
+        gcs().send_text(MAV_SEVERITY_WARNING, "MYGCS: heartbeat lost");
     }
 
     // do nothing if we have already triggered the failsafe action, or if the motors are disarmed
@@ -346,6 +347,7 @@ void Sub::failsafe_gcs_check()
     }
 
     failsafe.gcs = true;
+    AP_Notify::flags.failsafe_gcs = true;
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_OCCURRED);
 
     // handle failsafe action

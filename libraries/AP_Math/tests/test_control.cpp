@@ -6,6 +6,7 @@
 #include <AP_Math/control.h>
 
 #include <fenv.h>
+#include <signal.h>
 #include <setjmp.h>
 
 TEST(Control, test_control)

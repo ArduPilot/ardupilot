@@ -28,8 +28,19 @@
 // used to pack structures
 #define PACKED __attribute__((__packed__))
 
+#if !defined(CYGWIN_BUILD)
 // used to weaken symbols
 #define WEAK __attribute__((__weak__))
+#else
+// cygwin cannot properly support weak symbols allegedly due to Windows
+// executable format limitations
+// (see https://www.cygwin.com/faq.html#faq.programming.linker ). fortunately
+// we only use weak symbols for tests and some HAL stuff which SITL and
+// therefore cygwin does not need to override. in the event that overriding is
+// attempted the link will fail with a symbol redefinition error hopefully
+// suggesting that an alternate approach is needed.
+#define WEAK
+#endif
 
 // used to mark a function that may be unused in some builds
 #define UNUSED_FUNCTION __attribute__((unused))
@@ -189,3 +200,4 @@ template <typename T> void BIT_CLEAR (T& value, uint8_t bitnumber) noexcept {
 #define NEW_NOTHROW new(std::nothrow)
 #endif
 
+void * WEAK mem_realloc(void *ptr, size_t old_size, size_t new_size);

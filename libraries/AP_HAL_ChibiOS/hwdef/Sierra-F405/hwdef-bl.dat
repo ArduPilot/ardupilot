@@ -53,9 +53,6 @@ PA12 CAN1_TX CAN1
 # use DNA
 define HAL_CAN_DEFAULT_NODE_ID 0
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
-
 # Add CS pins to ensure they are high in bootloader
 PB12 MAG_CS CS
 PA8 BARO_CS CS
@@ -68,7 +65,6 @@ define STM32_SERIAL_USE_USART1 TRUE
 define STM32_SERIAL_USE_USART2 TRUE
 define STM32_SERIAL_USE_USART3 FALSE
 
-define HAL_NO_GPIO_IRQ
 define HAL_USE_EMPTY_IO TRUE
 
 # make bl baudrate match debug baudrate for easier debugging

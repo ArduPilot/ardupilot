@@ -48,10 +48,6 @@ public:
     void *malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type) override;
     void free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type) override;
 
-#if ENABLE_HEAP
-    void *std_realloc(void *ptr, uint32_t new_size) override;
-#endif // ENABLE_HEAP
-
     /*
       return state of safety switch, if applicable
      */
@@ -156,6 +152,9 @@ private:
     size_t last_crash_dump_size() const override;
     void* last_crash_dump_ptr() const override;
 #endif
+
+    // get the system load
+    bool get_system_load(float& avg_load, float& peak_load) const override;
 
 #if HAL_ENABLE_DFU_BOOT
     void boot_to_dfu() override;

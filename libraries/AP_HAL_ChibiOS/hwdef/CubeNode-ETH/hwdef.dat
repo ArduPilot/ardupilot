@@ -5,7 +5,8 @@ undef PE0
 undef PE1
 undef PC12
 undef AP_PERIPH_IMU_ENABLED
-undef HAL_GCS_ENABLED
+
+define AP_MAVLINKCAN_ENABLED 1
 
 # disable IMU
 def AP_PERIPH_IMU_ENABLED 0
@@ -33,8 +34,6 @@ define HAL_WITH_MCU_MONITORING 1
 # MCU_CLOCKRATE_MHZ 200
 
 include ../include/network_PPPGW.inc
-
-define HAL_MONITOR_THREAD_ENABLED 1
 
 define AP_NETWORKING_TESTS_ENABLED 1
 

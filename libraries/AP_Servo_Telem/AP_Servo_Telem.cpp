@@ -80,7 +80,7 @@ void AP_Servo_Telem::update_telem_data(const uint8_t servo_index, const Telemetr
     if (new_data.present(TelemetryData::Types::PCB_TEMP)) {
         telemdata.pcb_temperature_cdeg = new_data.pcb_temperature_cdeg;
     }
-    if (new_data.present(TelemetryData::Types::PCB_TEMP)) {
+    if (new_data.present(TelemetryData::Types::STATUS)) {
         telemdata.status_flags = new_data.status_flags;
     }
 
@@ -123,15 +123,15 @@ void AP_Servo_Telem::write_log()
             LOG_PACKET_HEADER_INIT(LOG_CSRV_MSG),
             time_us     : now_us,
             id          : i,
-            position    : telemdata.present(TelemetryData::Types::MEASURED_POSITION)  ? telemdata.measured_position             : AP::logger().quiet_nanf(),
-            force       : telemdata.present(TelemetryData::Types::FORCE)              ? telemdata.force                         : AP::logger().quiet_nanf(),
-            speed       : telemdata.present(TelemetryData::Types::SPEED)              ? telemdata.speed                         : AP::logger().quiet_nanf(),
+            position    : telemdata.present(TelemetryData::Types::MEASURED_POSITION)  ? telemdata.measured_position             : AP_Logger::quiet_nanf(),
+            force       : telemdata.present(TelemetryData::Types::FORCE)              ? telemdata.force                         : AP_Logger::quiet_nanf(),
+            speed       : telemdata.present(TelemetryData::Types::SPEED)              ? telemdata.speed                         : AP_Logger::quiet_nanf(),
             power_pct   : telemdata.duty_cycle,
-            pos_cmd     : telemdata.present(TelemetryData::Types::COMMANDED_POSITION) ? telemdata.command_position              : AP::logger().quiet_nanf(),
-            voltage     : telemdata.present(TelemetryData::Types::VOLTAGE)            ? telemdata.voltage                       : AP::logger().quiet_nanf(),
-            current     : telemdata.present(TelemetryData::Types::CURRENT)            ? telemdata.current                       : AP::logger().quiet_nanf(),
-            mot_temp    : telemdata.present(TelemetryData::Types::MOTOR_TEMP)         ? telemdata.motor_temperature_cdeg * 0.01 : AP::logger().quiet_nanf(),
-            pcb_temp    : telemdata.present(TelemetryData::Types::PCB_TEMP)           ? telemdata.pcb_temperature_cdeg * 0.01   : AP::logger().quiet_nanf(),
+            pos_cmd     : telemdata.present(TelemetryData::Types::COMMANDED_POSITION) ? telemdata.command_position              : AP_Logger::quiet_nanf(),
+            voltage     : telemdata.present(TelemetryData::Types::VOLTAGE)            ? telemdata.voltage                       : AP_Logger::quiet_nanf(),
+            current     : telemdata.present(TelemetryData::Types::CURRENT)            ? telemdata.current                       : AP_Logger::quiet_nanf(),
+            mot_temp    : telemdata.present(TelemetryData::Types::MOTOR_TEMP)         ? telemdata.motor_temperature_cdeg * 0.01 : AP_Logger::quiet_nanf(),
+            pcb_temp    : telemdata.present(TelemetryData::Types::PCB_TEMP)           ? telemdata.pcb_temperature_cdeg * 0.01   : AP_Logger::quiet_nanf(),
             error       : telemdata.status_flags,
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));

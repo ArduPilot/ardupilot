@@ -64,7 +64,6 @@ private:
     void timer();
     void accumulate_field(Vector3f &field);
 
-    uint8_t compass_instance;
     bool force_external;
     Vector3f offset;
     uint16_t measure_count;

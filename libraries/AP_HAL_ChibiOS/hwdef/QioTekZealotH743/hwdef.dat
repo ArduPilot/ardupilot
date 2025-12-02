@@ -191,7 +191,7 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 5
 # look for I2C compass
 COMPASS IST8310 I2C:0:0x0E false ROTATION_ROLL_180_YAW_270
 COMPASS QMC5883L I2C:0:0x0D false ROTATION_ROLL_180_YAW_270
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 
 
 # LED setup is similar to PixRacer
@@ -218,7 +218,7 @@ PE6  EXTERN_GPIO4 OUTPUT GPIO(4)
 # enable FAT filesystem support
 define HAL_OS_FATFS_IO 1
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_STORAGE_SIZE 32768
 define HAL_WITH_RAMTRON 1
 

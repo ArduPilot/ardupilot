@@ -1,0 +1,99 @@
+# https://shop.m5stack.com/products/m5stamp-fly-with-m5stamps3
+
+# GROVE EXPANSION
+#
+# The Stampfly has two Seeed Studio Grove connectors to attach peripherals. By
+# default, the left (red) connector is I2C (with no other devices on the bus)
+# and the right (black) connector is SERIAL3. However, the two signal pins in
+# each can be reassigned by editing this file.
+#
+# Grove Red (I2C)
+# 1 (toward front): GPIO_NUM_15, SCL (has 4.7kΩ pullup to 3.3V)
+# 2               : GPIO_NUM_13, SDA (has 4.7kΩ pullup to 3.3V)
+# 3               : +V (+5V if plugged into USB, else +Vbat)
+# 4 (toward rear) : GND
+#
+# Grove Black (SERIAL3)
+# 1 (toward rear) : GPIO_NUM_1, RX
+# 2               : GPIO_NUM_2, TX
+# 3               : +V (+5V if plugged into USB, else +Vbat)
+# 4 (toward front): GND
+
+# SPI Buses; https://docs.espressif.com/projects/esp-idf/en/v5.3.4/esp32/api-reference/peripherals/spi_master.html
+#            Host      DMA Channel     MOSI        MISO        SCLK
+ESP32_SPIBUS SPI2_HOST SPI_DMA_CH_AUTO GPIO_NUM_14 GPIO_NUM_43 GPIO_NUM_44
+
+# the optical flow sensor (pixartflow) is on the same bus as the main IMU so
+# a) we have to list it here so its CS gets deasserted and the IMU can talk, but
+# b) we name it something the driver won't find because it's too slow and ties up the bus
+
+# SPI Devices
+#            Name                Bus   Device  ChipSel      Mode LoSpeed HiSpeed
+ESP32_SPIDEV bmi270              0     0       GPIO_NUM_46  3    10*MHZ  10*MHZ
+ESP32_SPIDEV pixartflow_disabled 0     1       GPIO_NUM_12  3     2*MHZ   2*MHZ
+
+# i2c Buses
+#             Port       SDA         SCL         SPEED    INTERNAL SOFT
+ESP32_I2CBUS  I2C_NUM_0  GPIO_NUM_3  GPIO_NUM_4  400*KHZ  true     false
+ESP32_I2CBUS  I2C_NUM_1  GPIO_NUM_13 GPIO_NUM_15 400*KHZ  false    false
+
+# one IMU:
+IMU BMI270 SPI:bmi270 ROTATION_ROLL_180_YAW_90
+
+# one Baro:
+BARO BMP280 I2C:0:0x76
+
+# HARDWARE UARTS. UART 0 apparently goes over USB? so we assign it to pins we
+# don't have mapped to anything. might be fixable in the HAL...
+# UART 1 (SERIAL3) is the black grove connector
+#             PORT        RXPIN        TXPIN
+ESP32_SERIAL  UART_NUM_0  GPIO_NUM_18  GPIO_NUM_17
+ESP32_SERIAL  UART_NUM_1  GPIO_NUM_1   GPIO_NUM_2
+
+# RC Output (r-up, l-down, l-up, r-down (quad X order))
+ESP32_RCOUT GPIO_NUM_42
+ESP32_RCOUT GPIO_NUM_10
+ESP32_RCOUT GPIO_NUM_5
+ESP32_RCOUT GPIO_NUM_41
+
+# the stampfly does not have an Airspeed sensor:
+define AP_AIRSPEED_ENABLED 0
+
+define HAL_ESP32_BOARD_NAME "esp32s3m5stampfly"
+
+define AP_COMPASS_ENABLE_DEFAULT 0
+define ALLOW_ARM_NO_COMPASS
+
+# no ADC
+
+define AP_BATTERY_INA3221_ENABLED 1
+define HAL_BATTMON_INA3221_SHUNT_OHMS 0.01
+define HAL_BATTMON_INA3221_SHUNT_CONV_TIME_SEL HAL_BATTMON_INA3221_CONV_TIME_4156US
+define HAL_BATTMON_INA3221_BUS_CONV_TIME_SEL HAL_BATTMON_INA3221_CONV_TIME_4156US
+define HAL_BATTMON_INA3221_AVG_MODE_SEL HAL_BATTMON_INA3221_AVG_MODE_16
+
+# 2 use udp, 1 use tcp...  for udp,client needs to connect as UDPCL in missionplanner etc to 192.168.4.1 port 14550
+define HAL_ESP32_WIFI 2
+
+define WIFI_SSID "ardupilot123"
+define WIFI_PWD "ardupilot123"
+
+# rcin on what pin? enable AP_RCPROTOCOL_ENABLED below if using
+# currently on another unmapped pin
+# define HAL_ESP32_RCIN GPIO_NUM_16
+define HAL_ESP32_RMT_RX_PIN_NUMBER GPIO_NUM_16
+
+
+# log over MAVLink by default
+define HAL_LOGGING_FILESYSTEM_ENABLED 0
+define HAL_LOGGING_DATAFLASH_ENABLED 0
+define HAL_LOGGING_MAVLINK_ENABLED 1
+define HAL_LOGGING_BACKENDS_DEFAULT 2
+
+define AP_RCPROTOCOL_ENABLED 0
+
+define AP_FILESYSTEM_ESP32_ENABLED 0
+define AP_SCRIPTING_ENABLED 0
+
+# This is a board that's not really intended for anything other than copter
+AUTOBUILD_TARGETS Copter

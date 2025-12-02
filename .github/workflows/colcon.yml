@@ -145,7 +145,7 @@ jobs:
       fail-fast: false  # don't cancel if a job from the matrix fails
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: 'recursive'
           path: src/ardupilot
@@ -191,7 +191,7 @@ jobs:
       - name: install Micro-XRCE-DDS-Gen from source
         run: |
           cd /tmp
-          git clone --depth 1 --recurse-submodules --branch v4.7.0 https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git
+          git clone --depth 1 --recurse-submodules --branch v4.7.1 https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git
           cd Micro-XRCE-DDS-Gen
           ./gradlew assemble
       - name: Build with colcon
@@ -203,6 +203,9 @@ jobs:
       - name: Test with colcon
         shell: 'bash'
         run: |
+          # force on debugging so we can see ros2 launch internal errors
+          sed -i'' "s|debug: bool = False|debug: bool = True|g" /opt/ros/humble/lib/python3.10/site-packages/launch/launch_service.py
+
           source install/setup.bash
           colcon test --python-testing "pytest" --pytest-args " --verbose" " --stepwise" --executor sequential --parallel-workers 0 --base-paths src/ardupilot --event-handlers=console_cohesion+
       - name: Report colcon test results
