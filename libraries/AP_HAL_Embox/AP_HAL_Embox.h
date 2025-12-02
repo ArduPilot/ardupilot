@@ -18,4 +18,8 @@
  * When creating a new HAL, declare a new HAL_BOARD_ in AP_HAL/AP_HAL_Boards.h
  */
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_EMBOX
+
 #include "HAL_Embox_Class.h"
+
+#endif // CONFIG_HAL_BOARD

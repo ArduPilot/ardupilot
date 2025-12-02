@@ -14,5 +14,12 @@
 #define HAL_HAVE_SERVO_VOLTAGE 0
 #define HAL_HAVE_SAFETY_SWITCH 1
 
+#define HAL_NUM_CAN_IFACES 0
+// #define HAL_WITH_MCU_MONITORING 0
+// #define HAL_USE_QUADSPI 0
+
+#ifdef __cplusplus
+#include <AP_HAL_Embox/Semaphores.h>
 #define HAL_Semaphore Embox::Semaphore
 #define HAL_BinarySemaphore Embox::BinarySemaphore
+#endif
