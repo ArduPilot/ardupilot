@@ -57,6 +57,15 @@
 #define HAL_AHRS_EKF_TYPE_DEFAULT 3
 #endif
 
+#ifndef HAL_AHRS_OPTIONS_DEFAULT
+  #if APM_BUILD_TYPE(APM_BUILD_Rover)
+    // DISABLE_DCM_FALLBACK_FW | DISABLE_DCM_FALLBACK_VTOL
+    #define HAL_AHRS_OPTIONS_DEFAULT 3
+  #else
+    #define HAL_AHRS_OPTIONS_DEFAULT 0
+  #endif
+#endif
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // index 0 and 1 are for old parameters that are no longer not used
@@ -198,7 +207,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Description: This controls optional AHRS behaviour. Setting DisableDCMFallbackFW will change the AHRS behaviour for fixed wing aircraft in fly-forward flight to not fall back to DCM when the EKF stops navigating. Setting DisableDCMFallbackVTOL will change the AHRS behaviour for fixed wing aircraft in non fly-forward (VTOL) flight to not fall back to DCM when the EKF stops navigating. Setting DontDisableAirspeedUsingEKF disables the EKF based innovation check for airspeed consistency
     // @Bitmask: 0:DisableDCMFallbackFW, 1:DisableDCMFallbackVTOL, 2:DontDisableAirspeedUsingEKF
     // @User: Advanced
-    AP_GROUPINFO("OPTIONS",  18, AP_AHRS, _options, 0),
+    AP_GROUPINFO("OPTIONS",  18, AP_AHRS, _options, HAL_AHRS_OPTIONS_DEFAULT),
     
     AP_GROUPEND
 };
