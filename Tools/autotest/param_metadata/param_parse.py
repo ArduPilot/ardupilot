@@ -487,7 +487,7 @@ def clean_param(param):
         param.Values = ",".join(new_valueList)
 
     if hasattr(param, "Vector3Parameter"):
-        delattr(param, "Vector3Parameter")
+        del param.Vector3Parameter
 
 
 def do_copy_values(vehicle_params, libraries, param):
@@ -680,7 +680,7 @@ for library in libraries:
             param.path = param.path.rsplit('/')[-1].rsplit('.')[0]
         else:
             # not a duplicate, so delete attribute.
-            delattr(param, "path")
+            del param.path
 
 for library in libraries:
     for param in library.params:
