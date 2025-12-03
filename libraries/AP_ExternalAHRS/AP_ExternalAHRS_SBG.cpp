@@ -404,7 +404,7 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
                 {
                     const uint32_t utc_epoch_sec = AP::rtc().date_fields_to_clock_s(
                         cached.sbg.utc.year,
-                        cached.sbg.utc.month,
+                        cached.sbg.utc.month - 1,
                         cached.sbg.utc.day,
                         cached.sbg.utc.hour,
                         cached.sbg.utc.minute,
