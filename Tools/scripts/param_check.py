@@ -399,7 +399,7 @@ def generate_metadata(vehicle):
 
     try:
         subprocess.run(
-            ['python3', metadata_script, f'--vehicle={vehicle}', '--format=json'],
+            ['python3', metadata_script, f'--vehicle={vehicle}', '--format=json', '--no-legacy-params'],
             check=True,
             capture_output=True,
             text=True
