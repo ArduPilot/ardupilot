@@ -171,8 +171,6 @@ BARO BMP388 I2C:1:0x76
 
 define HAL_OS_FATFS_IO 1
 
-define BOARD_PWM_COUNT_DEFAULT 9
-
 define HAL_STORAGE_SIZE 16384
 
 include ../include/minimize_fpv_osd.inc

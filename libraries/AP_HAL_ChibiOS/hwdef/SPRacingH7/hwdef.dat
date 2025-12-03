@@ -186,8 +186,6 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 define HAL_OS_FATFS_IO 1
 
-define BOARD_PWM_COUNT_DEFAULT 11
-
 define HAL_STORAGE_SIZE 16384
 
 define DEFAULT_NTF_LED_TYPES 257
