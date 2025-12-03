@@ -1,4 +1,4 @@
-#NOTE: eLAB LAB445 Parameter defaults (Copter-3.4.6 and higher)
+#NOTE: eLAB LAB445 Parameter defaults
 ANGLE_MAX,3500
 ATC_ACCEL_P_MAX,95000
 ATC_ACCEL_R_MAX,100000
