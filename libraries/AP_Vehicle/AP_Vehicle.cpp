@@ -707,7 +707,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if AP_ARMING_ENABLED
     SCHED_TASK(update_arming,          1,     50, 253),
 #endif
-#if AP_RCPROTOCOL_ENABLED
+#if AP_CRSF_OUT_ENABLED
     SCHED_TASK_CLASS(AP_CRSF_OutManager,  &vehicle.crsf_out, init,                      1, 100, 253),
 #endif
 };
