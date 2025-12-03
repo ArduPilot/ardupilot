@@ -17,8 +17,8 @@
 
 ./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduPlane -A --serial5=sim:hirth --speedup=1
 param set SERIAL5_PROTOCOL 24
-param set SIM_EFI_TYPE 6
-param set EFI_TYPE 6
+param set SIM_EFI_TYPE 8
+param set EFI_TYPE 8
 reboot
 status EFI_STATUS
 
