@@ -284,6 +284,7 @@ class HWDef:
     def get_stale_defines(self):
         '''returns a map with a stale define and a comment as to what to do about it'''
         return {
+            'HAL_COMPASS_DEFAULT': 'HAL_COMPASS_DEFAULT is no longer used; remove it from your hwdef',
             'HAL_NO_GCS': 'HAL_NO_GCS is no longer used; try "define HAL_GCS_ENABLED 0"',
             'HAL_NO_LOGGING': 'HAL_NO_LOGGING is no longer used; try "define HAL_LOGGING_ENABLED 0"',
             'HAL_NO_UARTDRIVER': 'HAL_NO_UARTDRIVER is no longer used; try "define AP_HAL_UARTDRIVER_ENABLED 0"',
