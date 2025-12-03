@@ -12,6 +12,7 @@ import shlex
 import sys
 
 from dataclasses import dataclass
+from typing import Dict
 
 
 class IncludeNotFoundException(Exception):
@@ -68,6 +69,9 @@ class HWDef:
 
         # output lines:
         self.all_lines = []
+
+        # all defines
+        self.defines: Dict[str, str] = {}
 
         # integer defines
         self.intdefines = {}
@@ -301,16 +305,21 @@ class HWDef:
     def process_line_define(self, line, depth, a):
         # defines are currently written out a little haphazardly, but
         # we do the sanity checks here:
-        result = re.match(r'define\s*([A-Z_0-9]+)\s*', line)
-        if result is not None:
-            # ensure that stale defines aren't introduced into hwdef files:
-            name = result.group(1)
-            self.assert_good_define(name)
+        result = re.match(r'define\s*([A-Z_0-9]+)\s*(?:\s*(.*))?', line)
+        if result is None:
+            return
+        # ensure that stale defines aren't introduced into hwdef files:
+        name = result.group(1)
+        self.assert_good_define(name)
+
+        value = result.group(2)
+        if value is not None and len(value) == 0:
+            value = None
+        self.defines[result.group(1)] = value
 
         # extract numerical defines for processing by other parts of the script
-        result = re.match(r'define\s*([A-Z_0-9]+)\s+([0-9]+)', line)
-        if result:
-            (name, intvalue) = (result.group(1), int(result.group(2)))
+        if value is not None and value.isnumeric():
+            intvalue = int(value)
             if name in self.intdefines and self.intdefines[name] == intvalue:
                 msg = f"{name} already in defines with same value"
                 if depth == 0:
