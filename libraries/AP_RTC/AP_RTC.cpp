@@ -221,7 +221,7 @@ uint32_t AP_RTC::date_fields_to_clock_s(uint16_t year, uint8_t month, uint8_t da
 {
     struct tm tm {};
     tm.tm_year = year - 1900;
-    tm.tm_mon = month;
+    tm.tm_mon = month - 1;
     tm.tm_mday = day;
     tm.tm_hour = hour;
     tm.tm_min = min;
