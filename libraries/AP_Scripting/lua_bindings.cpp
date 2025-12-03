@@ -562,7 +562,7 @@ int AP_Logger_Write(lua_State *L) {
 
     AP_logger->WriteBlock(buffer,msg_len);
 
-    luaM_free(L, buffer);
+    luaM_freemem(L, buffer, msg_len);
 
     return 0;
 }
