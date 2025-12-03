@@ -151,10 +151,16 @@ public:
     /// get_action - getter for user requested action on limit breach
     Action get_action() const { return _action; }
 
-    /// get_safe_alt - returns maximum safe altitude (i.e. alt_max - margin)
+    /// get_safe_alt - returns maximum safe altitude in relative frame
+    float get_relative_safe_alt_max_m() const { return _safe_alt_max_m; }
+
+    /// get_safe_alt_min_m - returns the minimum safe altitude in relative frame
+    float get_relative_safe_alt_min_m() const { return _safe_alt_min_m; }
+
+    /// get_safe_alt_max_m - returns maximum safe altitude in alt max frame (i.e. alt_max - margin)
     float get_safe_alt_max_m() const { return _alt_max_m - _margin_m; }
 
-    /// get_safe_alt_min_m - returns the minimum safe altitude (i.e. alt_min + margin)
+    /// get_safe_alt_min_m - returns the minimum safe altitude in alt min frame (i.e. alt_min + margin)
     float get_safe_alt_min_m() const { return _alt_min_m + _margin_m; }
 
     /// get_radius_m - returns the fence radius in meters
@@ -230,6 +236,9 @@ private:
     /// check_fence_circle - true if circle fence has been newly breached
     bool check_fence_circle();
 
+    /// update safe alt min
+    void update_safe_alt_min();
+
     /// record_breach - update breach bitmask, time and count
     void record_breach(uint8_t fence_type);
 
@@ -294,6 +303,8 @@ private:
     // other internal variables
     float           _home_distance_m;   // distance from home in meters (provided by main code)
     float           _fence_distance_m;  // distance to the nearest fence
+    float           _safe_alt_max_m;    // calculated safe alt max
+    float           _safe_alt_min_m;    // calculated safe alt min
 
     // breach information
     uint8_t         _breached_fences;       // bitmask holding the fence types that were breached (i.e. AC_FENCE_TYPE_ALT_MIN, AC_FENCE_TYPE_CIRCLE)

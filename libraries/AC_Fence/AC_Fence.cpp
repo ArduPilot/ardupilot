@@ -467,6 +467,14 @@ bool AC_Fence::pre_arm_check_alt(char *failure_msg, const uint8_t failure_msg_le
         hal.util->snprintf(failure_msg, failure_msg_len, "Invalid FENCE_ALT_MIN value");
         return false;
     }
+#if AP_TERRAIN_AVAILABLE
+    AP_Terrain* terrain = AP::terrain();
+    if ((_alt_min_type == Location::AltFrame::ABOVE_TERRAIN || _alt_max_type == Location::AltFrame::ABOVE_TERRAIN)
+        && (terrain == nullptr || !terrain->enabled() || !terrain->pre_arm_checks(failure_msg, failure_msg_len))) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "Terrain fences enabled, but no terrain");
+        return false;
+    }
+#endif
     return true;
 }
 
@@ -615,10 +623,22 @@ bool AC_Fence::get_alt_U_in_frame(float &alt, Location::AltFrame alt_frame) cons
         // no terrain available
         return false;
 #endif
-        // note that unknown frames are treated as ABOVE_HOME
     }
     }
     return true;
+}
+
+// update safe alt min
+void AC_Fence::update_safe_alt_min()
+{
+    // update safe alt min, failure to get home will have already breached above
+    if (_alt_min_type == Location::AltFrame::ABSOLUTE) {
+        float home_alt;
+        UNUSED_RESULT(AP::ahrs().get_home().get_alt_m(Location::AltFrame::ABSOLUTE, home_alt));
+        _safe_alt_min_m = _alt_min_m - home_alt - _margin_m;
+    } else {
+        _safe_alt_min_m = _alt_min_m - _margin_m;
+    }
 }
 
 /// returns true if we have freshly breached the maximum altitude
@@ -640,6 +660,15 @@ bool AC_Fence::check_fence_alt_max()
 
     // record distance above/below breach
     _alt_max_breach_distance_m = _curr_alt_u_m - _alt_max_m;
+
+    // update safe alt max, failure to get home will have already breached above
+    if (_alt_max_type == Location::AltFrame::ABSOLUTE) {
+        float home_alt;
+        UNUSED_RESULT(AP::ahrs().get_home().get_alt_m(Location::AltFrame::ABSOLUTE, home_alt));
+        _safe_alt_max_m = _alt_max_m - home_alt - _margin_m;
+    } else {
+        _safe_alt_max_m = _alt_max_m - _margin_m;
+    }
 
     // check if we are over the altitude fence
     if (_curr_alt_u_m >= _alt_max_m) {
@@ -693,6 +722,9 @@ bool AC_Fence::check_fence_alt_min()
 
     // record distance above/below breach
     _alt_min_breach_distance_m = _alt_min_m - _curr_alt_u_m;
+
+    // update safe alt min, failure to get home will have already breached above
+    update_safe_alt_min();
 
     // check if we are under the altitude fence
     if (_curr_alt_u_m <= _alt_min_m) {
@@ -748,6 +780,9 @@ bool AC_Fence::auto_enable_fence_floor()
         // if we can't get the alt then don't enable yet
         return true;
     }
+
+    // update safe alt min, failure to get home will have already breached above
+    update_safe_alt_min();
 
     // check if we are over the altitude fence
     if (!floor_enabled() && _curr_alt_u_m >= get_safe_alt_min_m()) {
@@ -970,7 +1005,7 @@ bool AC_Fence::check_destination_within_fence(const Location& loc)
     // Altitude fence check - Fence Ceiling
     if ((get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX)) {
         int32_t alt_above_home_cm;
-        if (loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_above_home_cm)) {
+        if (loc.get_alt_cm(_alt_max_type, alt_above_home_cm)) {
             if ((alt_above_home_cm * 0.01f) > _alt_max_m) {
                 return false;
             }
@@ -980,7 +1015,7 @@ bool AC_Fence::check_destination_within_fence(const Location& loc)
     // Altitude fence check - Fence Floor
     if ((get_enabled_fences() & AC_FENCE_TYPE_ALT_MIN)) {
         int32_t alt_above_home_cm;
-        if (loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_above_home_cm)) {
+        if (loc.get_alt_cm(_alt_min_type, alt_above_home_cm)) {
             if ((alt_above_home_cm * 0.01f) < _alt_min_m) {
                 return false;
             }
@@ -1139,6 +1174,11 @@ void AC_Fence::manual_recovery_start()
 {
     // return immediate if we haven't breached a fence
     if (!_breached_fences) {
+        return;
+    }
+
+    // Not armed so return
+    if (!hal.util->get_soft_armed()) {
         return;
     }
 
