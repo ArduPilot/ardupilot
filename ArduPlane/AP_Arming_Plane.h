@@ -33,7 +33,7 @@ public:
     void update_soft_armed();
     bool get_delay_arming() const { return delay_arming; };
 
-    // mandatory checks that cannot be bypassed.  This function will only be called if ARMING_CHECK is zero or arming forced
+    // mandatory checks that cannot be bypassed.  This function will only be called if ARMING_SKIPCHK skips all or arming forced
     bool mandatory_checks(bool display_failure) override;
 
 protected:
