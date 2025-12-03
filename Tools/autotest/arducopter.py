@@ -1957,18 +1957,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "timed out after %u seconds" % (home_distance, timeout,))
 
     # MaxAltFence - fly up until you hit the fence ceiling
-    def MaxAltFence(self):
-        '''Test Max Alt Fence'''
-        self.takeoff(10, mode="LOITER")
-        """Hold loiter position."""
+    def max_alt_fence_frame(self, frame, alt, expected_breach_alt, terrain=0):
+        self.start_subtest("Test Max Alt Fence in frame %u" % frame)
 
         # enable fence, disable avoidance
         self.set_parameters({
             "FENCE_ENABLE": 1,
             "AVOID_ENABLE": 0,
             "FENCE_TYPE": 1,
+            "FENCE_ALT_MAX_TP": frame,
+            "FENCE_ALT_MAX": alt,
+            "FENCE_ENABLE" : 1,
+            "TERRAIN_ENABLE": terrain,
+            "SIM_TERRAIN": terrain,
         })
 
+        if terrain == 1:
+            self.install_terrain_handlers_context()
+
+        self.takeoff(10, mode="LOITER")
+        """Hold loiter position."""
         self.change_alt(10)
 
         # first east
@@ -1990,9 +1998,29 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # wait for fence to trigger
         self.wait_mode('RTL', timeout=120)
 
+        # verify breach occurred at expected altitude
+        self.assert_altitude(expected_breach_alt, accuracy=5)
+
         self.wait_rtl_complete()
 
         self.zero_throttle()
+
+    # MaxAltFence - fly up until you hit the fence ceiling
+    def MaxAltFence(self):
+        '''Test Max Alt Fences'''
+        self.poll_home_position(quiet=False)
+        home_loc = self.mav.location()
+        origin_alt = home_loc.alt
+
+        self.max_alt_fence_frame(0, origin_alt + 80, origin_alt + 80)      # absolute
+        self.max_alt_fence_frame(1, 100, origin_alt + 100)                 # above home
+
+        # set home 50m higher than origin to test that frame 2 uses origin not home
+        home_loc.alt = origin_alt + 50
+        self.set_home(home_loc)
+        self.max_alt_fence_frame(2, 120, origin_alt + 120)                 # above origin
+
+        self.max_alt_fence_frame(3, 90, origin_alt + 90, terrain=1)        # above terrain
 
     # MaxAltFence - fly up and make sure fence action does not trigger
     # Also check that the vehicle will not try and descend too fast when trying to backup from a max alt fence due to avoidance
@@ -2047,8 +2075,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.do_RTL()
 
     # fly_alt_min_fence_test - fly down until you hit the fence floor
-    def MinAltFence(self):
+    def min_alt_fence_frame(self, frame, alt, terrain=0):
         '''Test Min Alt Fence'''
+
+        if terrain == 1:
+            self.set_parameters({
+                "TERRAIN_ENABLE": terrain,
+                "SIM_TERRAIN": terrain,
+            })
+            self.install_terrain_handlers_context()
+
         self.takeoff(30, mode="LOITER", timeout=60)
 
         # enable fence, disable avoidance
@@ -2056,7 +2092,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "AVOID_ENABLE": 0,
             "FENCE_ENABLE" : 1,
             "FENCE_TYPE": 8,
-            "FENCE_ALT_MIN": 20,
+            "FENCE_ALT_MIN": alt,
+            "FENCE_ALT_MIN_TP": frame,
         })
 
         self.change_alt(30)
@@ -2090,6 +2127,24 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.do_fence_disable()
 
         self.zero_throttle()
+
+    def MinAltFence(self):
+        '''Test Min Alt Fences'''
+        self.poll_home_position(quiet=False)
+        home_loc = self.mav.location()
+        self.set_home(home_loc)
+
+        self.min_alt_fence_frame(0, home_loc.alt + 20)    # absolute
+        self.min_alt_fence_frame(3, 20, 1) # above terrain
+        self.min_alt_fence_frame(2, 20)    # above origin
+
+        # set origin below home alt - test should still pass
+        nz = mavutil.location(home_loc.lat, home_loc.lng, home_loc.alt - 20, 270)
+        self.set_origin(nz)
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 1,
+        })
+        self.min_alt_fence_frame(1, 20)    # above home
 
     # MinAltFenceAvoid - fly down and make sure fence action does not trigger
     # Also check that the vehicle will not try and ascend too fast when trying to backup from a min alt fence due to avoidance
@@ -13074,6 +13129,21 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.MAV_CMD_NAV_VTOL_LAND,
              self.clear_roi,
              self.ReadOnlyDefaults,
+             self.FenceRelativePreArms,
+             self.FenceRelativeToHomeMaxAlt,
+             self.FenceRelativeToHomeMinAlt,
+             self.FenceRelativeToHomeMaxAltOriginAbove,
+             self.FenceRelativeToHomeMinAltOriginAbove,
+             self.FenceRelativeToHomeCliff,
+             self.FenceRelativeToOriginMaxAlt,
+             self.FenceRelativeToOriginMinAlt,
+             self.FenceRelativeToOriginMaxAltHomeAbove,
+             self.FenceRelativeToOriginMinAltHomeAbove,
+             self.FenceRelativeToAMSLMaxAlt,
+             self.FenceRelativeToAMSLMinAlt,
+             self.FenceRelativeToAMSLCliff,
+             self.FenceRelativeToTerrainMaxAlt,
+             self.FenceRelativeToTerrainMinAlt,
         ])
         return ret
 
@@ -15509,6 +15579,15 @@ RTL_ALT_M 111
         self.reboot_sitl()
         if ex is not None:
             raise ex
+
+    def FenceRelative_TakeoffMode(self):
+        '''method for the FenceRelative test to call'''
+        return 'LOITER'
+
+    def FenceRelative_params(self):
+        ret = super().FenceRelative_params()
+        ret["AVOID_ENABLE"] = 0
+        return ret
 
     def RCProtocolFailsafe(self):
         '''ensure we failsafe when the RC protocol failsafe is set'''
