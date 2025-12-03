@@ -332,6 +332,8 @@ AP_HW_CSKY-PMU                       1212
 
 AP_HW_MUPilot                        1222
 
+AP_HW_HWH7                           1223
+
 # IDs 1231-1240 reserved for YARI Robotics
 AP_HW_YARIV6X                        1234
 AP_HW_YARI_GNSS                      1235
