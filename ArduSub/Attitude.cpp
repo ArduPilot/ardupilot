@@ -94,15 +94,15 @@ float Sub::get_pilot_desired_climb_rate(float throttle_control)
         return 0.0f;
     }
 
-    float mid_stick = channel_throttle->get_control_mid();
-    float deadband_top = mid_stick + g.throttle_deadzone * gain;
-    float deadband_bottom = mid_stick - g.throttle_deadzone * gain;
-
     // ensure a reasonable throttle value
     throttle_control = constrain_float(throttle_control,0.0f,1000.0f);
 
     // ensure a reasonable deadzone
     g.throttle_deadzone.set(constrain_int16(g.throttle_deadzone, 0, 400));
+
+    float mid_stick = channel_throttle->get_control_mid();
+    float deadband_top = mid_stick + g.throttle_deadzone * gain;
+    float deadband_bottom = mid_stick - g.throttle_deadzone * gain;
 
     // check throttle is above, below or in the deadband
     if (throttle_control < deadband_bottom) {

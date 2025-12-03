@@ -247,13 +247,15 @@ bool AR_WPNav::set_desired_location(const Location& destination, Location next_d
         // skip recalculating this leg by simply shifting next leg
         _scurve_this_leg = _scurve_next_leg;
     } else {
-        _scurve_this_leg.calculate_track(Vector3f{origin_NE.x, origin_NE.y, 0.0f},              // origin
-                                         Vector3f{destination_NE.x, destination_NE.y, 0.0f},    // destination
+        _scurve_this_leg.calculate_track(Vector3p{origin_NE.x, origin_NE.y, 0.0f},              // origin
+                                         Vector3p{destination_NE.x, destination_NE.y, 0.0f},    // destination
+                                         0.0, // arc length is zero for straight track
                                          _pos_control.get_speed_max(),
                                          _pos_control.get_speed_max(),  // speed up (not used)
                                          _pos_control.get_speed_max(),  // speed down (not used)
                                          _pos_control.get_accel_max(),  // forward back acceleration
                                          _pos_control.get_accel_max(),  // vertical accel (not used)
+                                         _pos_control.get_accel_max(),  // corner acceleration
                                          AR_WPNAV_SNAP_MAX,             // snap
                                          _pos_control.get_jerk_max());
     }
@@ -274,13 +276,15 @@ bool AR_WPNav::set_desired_location(const Location& destination, Location next_d
                 return false;
             }
             next_destination_NE *= 0.01f;
-            _scurve_next_leg.calculate_track(Vector3f{destination_NE.x, destination_NE.y, 0.0f},
-                                             Vector3f{next_destination_NE.x, next_destination_NE.y, 0.0f},
+            _scurve_next_leg.calculate_track(Vector3p{destination_NE.x, destination_NE.y, 0.0f},
+                                             Vector3p{next_destination_NE.x, next_destination_NE.y, 0.0f},
+                                             0.0, // arc length is zero for straight track
                                              _pos_control.get_speed_max(),
                                              _pos_control.get_speed_max(),  // speed up (not used)
                                              _pos_control.get_speed_max(),  // speed down (not used)
                                              _pos_control.get_accel_max(),  // forward back acceleration
                                              _pos_control.get_accel_max(),  // vertical accel (not used)
+                                             _pos_control.get_accel_max(),  // corner accel
                                              AR_WPNAV_SNAP_MAX,             // snap
                                              _pos_control.get_jerk_max());
 
@@ -436,16 +440,16 @@ void AR_WPNav::advance_wp_target_along_track(const Location &current_loc, float 
     _track_scalar_dt += (track_scaler_dt - _track_scalar_dt) * (dt / track_scaler_tc);
 
     // target position, velocity and acceleration from straight line or spline calculators
-    Vector3f target_pos_3d_ftype{origin_NE.x, origin_NE.y, 0.0f};
+    Vector3p target_pos_3d{origin_NE.x, origin_NE.y, 0.0f};
     Vector3f target_vel, target_accel;
 
     // update target position, velocity and acceleration
     const float wp_radius = MAX(_radius, _turn_radius);
-    bool s_finished = _scurve_this_leg.advance_target_along_track(_scurve_prev_leg, _scurve_next_leg, wp_radius, _pos_control.get_lat_accel_max(), _fast_waypoint, _track_scalar_dt * dt, target_pos_3d_ftype, target_vel, target_accel);
+    bool s_finished = _scurve_this_leg.advance_target_along_track(_scurve_prev_leg, _scurve_next_leg, wp_radius, _pos_control.get_lat_accel_max(), _fast_waypoint, _track_scalar_dt * dt, target_pos_3d, target_vel, target_accel);
 
     // pass new target to the position controller
     init_pos_control_if_necessary();
-    Vector2p target_pos_ptype{target_pos_3d_ftype.x, target_pos_3d_ftype.y};
+    Vector2p target_pos_ptype{target_pos_3d.x, target_pos_3d.y};
     _pos_control.set_pos_vel_accel_target(target_pos_ptype, target_vel.xy(), target_accel.xy());
 
     // check if we've reached the waypoint

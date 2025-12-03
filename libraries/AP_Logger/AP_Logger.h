@@ -13,6 +13,7 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Logger/LogStructure.h>
 #include <AP_Vehicle/ModeReason.h>
+#include <AP_RCProtocol/AP_RCProtocol.h>
 
 #include <stdint.h>
 
@@ -286,10 +287,13 @@ public:
     void Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& point);
     void Write_Winch(bool healthy, bool thread_end, bool moving, bool clutch, uint8_t mode, float desired_length, float length, float desired_rate, uint16_t tension, float voltage, int8_t temp);
 
+    //! @deprecated Use the other signature with units and mults
     void Write(const char *name, const char *labels, const char *fmt, ...);
     void Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
+    //! @deprecated Use the other signature with units and mults
     void WriteStreaming(const char *name, const char *labels, const char *fmt, ...);
     void WriteStreaming(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
+    //! @deprecated Use the other signature with units and mults
     void WriteCritical(const char *name, const char *labels, const char *fmt, ...);
     void WriteCritical(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
     void WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list, bool is_critical=false, bool is_streaming=false);
@@ -355,9 +359,8 @@ public:
     const struct UnitStructure *unit(uint16_t num) const;
     const struct MultiplierStructure *multiplier(uint16_t num) const;
 
-    // methods for mavlink SYS_STATUS message (send_sys_status)
-    // these methods cover only the first logging backend used -
-    // typically AP_Logger_File.
+    // methods for mavlink SYS_STATUS message (update_sensor_status_flags) and
+    // arming checks. these cover all backends.
     bool logging_present() const;
     bool logging_enabled() const;
     bool logging_failed() const;
@@ -377,8 +380,8 @@ public:
     void handle_log_send();
     bool in_log_download() const;
 
-    float quiet_nanf() const { return NaNf; } // "AR"
-    double quiet_nan() const { return nan("0x4152445550490a"); } // "ARDUPI"
+    static float quiet_nanf() { return NaNf; } // "AR"
+    static double quiet_nan() { return nan("0x4152445550490a"); } // "ARDUPI"
 
     // returns true if msg_type is associated with a message
     bool msg_type_in_use(uint8_t msg_type) const;
@@ -447,6 +450,7 @@ private:
     enum class RCLoggingFlags : uint8_t {
         HAS_VALID_INPUT = 1U<<0,  // true if the system is receiving good RC values
         IN_RC_FAILSAFE =  1U<<1,  // true if the system is current in RC failsafe
+        RC_PROTOCOL_FAILSAFE =  1U<<2,  // true if the RC Protocol library is indicating the RC receiver is indicating failsafe via its protocol
     };
 
     /*

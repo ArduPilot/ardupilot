@@ -128,6 +128,12 @@ void Battery::init_voltage(float voltage)
     set_initial_SoC(voltage);
 }
 
+void Battery::init_capacity(float capacity)
+{
+    capacity_Ah = capacity;
+    set_initial_SoC(voltage_set);
+}
+
 void Battery::set_current(float current)
 {
     uint64_t now = AP_HAL::micros64();

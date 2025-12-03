@@ -294,6 +294,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: EKF failsafe variance threshold
     // @Description: Allows setting the maximum acceptable compass and velocity variance
     // @Values: 0.6:Strict, 0.8:Default, 1.0:Relaxed
+    // @Range: 0.6 1.0
     // @User: Advanced
     GSCALAR(fs_ekf_thresh, "FS_EKF_THRESH",    FS_EKF_THRESHOLD_DEFAULT),
 
@@ -533,6 +534,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: Acro Expo
     // @Description: Acro roll/pitch Expo to allow faster rotation when stick at edges
     // @Values: 0:Disabled,0.1:Very Low,0.2:Low,0.3:Medium,0.4:High,0.5:Very High
+    // @Range: -0.5 0.95
     // @User: Advanced
     GSCALAR(acro_expo,  "ACRO_EXPO",    ACRO_EXPO_DEFAULT),
 
@@ -708,12 +710,6 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(osd, "OSD", AP_OSD),
 #endif
 
-#if AP_RPM_ENABLED
-    // @Group: RPM
-    // @Path: ../libraries/AP_RPM/AP_RPM.cpp
-    GOBJECT(rpm_sensor, "RPM", AP_RPM),
-#endif
-
 #if AP_RSSI_ENABLED
     // @Group: RSSI_
     // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp
@@ -834,6 +830,11 @@ void Sub::load_parameters()
     // PARAMETER_CONVERSION - Added: Mar-2022
 #if AP_FENCE_ENABLED
     AP_Param::convert_class(g.k_param_fence_old, &fence, fence.var_info, 0, true);
+#endif
+
+    // PARAMETER_CONVERSION - Added: July-2025 for ArduPilot-4.7
+#if AP_RPM_ENABLED
+    AP_Param::convert_class(g.k_param_rpm_sensor_old, &rpm_sensor, rpm_sensor.var_info, 0, true, true);
 #endif
 
     static const AP_Param::G2ObjectConversion g2_conversions[] {

@@ -29,6 +29,8 @@ public:
     virtual void init() = 0;
     virtual AP_HAL::AnalogSource* channel(int16_t n) = 0;
 
+    virtual bool valid_analog_pin(uint16_t pin) const { return false; }
+
     // board 5V rail voltage in volts
     virtual float board_voltage(void) = 0;
 

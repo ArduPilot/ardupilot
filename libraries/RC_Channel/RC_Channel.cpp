@@ -60,6 +60,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Torqeedo/AP_Torqeedo.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Parachute/AP_Parachute_config.h>
+#include <AP_Scripting/AP_Scripting.h>
 #define SWITCH_DEBOUNCE_TIME_MS  200
 
 const AP_Param::GroupInfo RC_Channel::var_info[] = {
@@ -125,7 +126,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane}: 16:AUTO Mode
     // @Values{Copter}: 17:AUTOTUNE Mode
     // @Values{Copter, Blimp}: 18:LAND Mode
-    // @Values{Copter, Rover}: 19:Gripper Release
+    // @Values{Copter, Rover}: 19:Gripper
     // @Values{Copter}: 21:Parachute Enable
     // @Values{Copter, Plane}: 22:Parachute Release
     // @Values{Copter}: 23:Parachute 3pos
@@ -230,7 +231,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Plane}: 160:Weathervane Enable
     // @Values{Copter}: 161:Turbine Start(heli)
     // @Values{Copter, Rover, Plane}: 162:FFT Tune
-    // @Values{Copter, Rover, Plane, Sub}: 163:Mount Lock
+    // @Values{Copter, Rover, Plane, Sub}: 163:Mount Yaw Lock
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 164:Pause Stream Logging
     // @Values{Copter, Rover, Plane, Sub}: 165:Arm/Emergency Motor Stop
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 166:Camera Record Video, 167:Camera Zoom, 168:Camera Manual Focus, 169:Camera Auto Focus
@@ -248,7 +249,8 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Plane}: 181: QuickTune
     // @Values{Copter}: 182: AHRS AutoTrim
     // @Values{Plane}: 183: AUTOLAND mode
-    // @Values{Plane}: 184: System ID Chirp (Quadplane only)
+    // @Values{Plane}: 184: System ID Chirp
+    // @Values{Copter, Rover, Plane, Blimp, Sub}:  185:Mount Roll/Pitch Lock
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
@@ -259,7 +261,8 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Sub}: 212:Mount1 Roll, 213:Mount1 Pitch, 214:Mount1 Yaw, 215:Mount2 Roll, 216:Mount2 Pitch, 217:Mount2 Yaw
     // @Values{Copter, Rover, Plane, Blimp, Sub}:  218:Loweheiser throttle
     // @Values{Copter}: 219:Transmitter Tuning
-    // @Values{Copter, Rover, Plane, Sub}: 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8, 308:Scripting9, 309:Scripting10, 310:Scripting11, 311:Scripting12, 312:Scripting13, 313:Scripting14, 314:Scripting15, 315:Scripting16
+    // @Values{All-Vehicles}: 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8, 308:Scripting9, 309:Scripting10, 310:Scripting11, 311:Scripting12, 312:Scripting13, 313:Scripting14, 314:Scripting15, 315:Scripting16
+    // @Values{All-Vehicles}: 316:Stop-Restart Scripting
     // @User: Standard
     AP_GROUPINFO("OPTION",  6, RC_Channel, option, 0),
 
@@ -461,6 +464,23 @@ float RC_Channel::norm_input_ignore_trim() const
     return constrain_float(ret, -1.0f, 1.0f);
 }
 
+
+bool RC_Channel::norm_input_ignore_trim(float &norm_in) const
+{
+    if (!rc().has_valid_input()) {
+        return false;
+    }
+    if (radio_in == 0) {
+        return false;
+    }
+    if (radio_max <= radio_min) {
+        // sanity check min and max to avoid divide by zero
+        return false;
+    }
+    norm_in = norm_input_ignore_trim();
+    return true;
+}
+
 /*
   get percentage input from 0 to 100. This ignores the trim value.
  */
@@ -655,7 +675,9 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::DISARM:
 #endif
     case AUX_FUNC::DO_NOTHING:
-#if AP_LANDINGGEAR_ENABLED
+#if AP_GRIPPER_ENABLED
+    case AUX_FUNC::GRIPPER:
+#endif
     case AUX_FUNC::LANDING_GEAR:
 #endif
     case AUX_FUNC::LOST_VEHICLE_SOUND:
@@ -700,6 +722,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::SCRIPTING_14:
     case AUX_FUNC::SCRIPTING_15:
     case AUX_FUNC::SCRIPTING_16:
+    case AUX_FUNC::STOP_RESTART_SCRIPTING:
 #endif
 #if AP_VIDEOTX_ENABLED
     case AUX_FUNC::VTX_POWER:
@@ -744,10 +767,6 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #if AP_GPS_ENABLED
     case AUX_FUNC::GPS_DISABLE:
     case AUX_FUNC::GPS_DISABLE_YAW:
-#endif
-#if AP_GRIPPER_ENABLED
-    case AUX_FUNC::GRIPPER:
-#endif
 #if AP_INERTIALSENSOR_KILL_IMU_ENABLED
     case AUX_FUNC::KILL_IMU1:
     case AUX_FUNC::KILL_IMU2:
@@ -772,7 +791,8 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #if HAL_MOUNT_ENABLED
     case AUX_FUNC::RETRACT_MOUNT1:
     case AUX_FUNC::RETRACT_MOUNT2:
-    case AUX_FUNC::MOUNT_LOCK:
+    case AUX_FUNC::MOUNT_YAW_LOCK:
+    case AUX_FUNC::MOUNT_RP_LOCK:
 #endif
 #if HAL_LOGGING_ENABLED
     case AUX_FUNC::LOG_PAUSE:
@@ -893,7 +913,8 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::TURBINE_START, "Turbine Start"},
     { AUX_FUNC::FFT_NOTCH_TUNE, "FFT Notch Tuning"},
 #if HAL_MOUNT_ENABLED
-    { AUX_FUNC::MOUNT_LOCK, "MountLock"},
+    { AUX_FUNC::MOUNT_YAW_LOCK, "Mount Yaw Lock"},
+    { AUX_FUNC::MOUNT_RP_LOCK, "Mount Roll/Pitch Lock"},
 #endif
 #if HAL_LOGGING_ENABLED
     { AUX_FUNC::LOG_PAUSE, "Pause Stream Logging"},
@@ -1763,12 +1784,23 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         do_aux_function_retract_mount(ch_flag, 1);
         break;
 
-    case AUX_FUNC::MOUNT_LOCK: {
+    case AUX_FUNC::MOUNT_YAW_LOCK: {
         AP_Mount *mount = AP::mount();
         if (mount == nullptr) {
             break;
         }
         mount->set_yaw_lock(ch_flag == AuxSwitchPos::HIGH);
+        break;
+    }
+
+    case AUX_FUNC::MOUNT_RP_LOCK: {
+        AP_Mount *mount = AP::mount();
+        if (mount == nullptr) {
+            break;
+        }
+        //low is FPV:no ef locks,high is HORIZON lock:roll/pitch ef lock,mid is only pitch ef lock
+        mount->set_pitch_lock(ch_flag != AuxSwitchPos::LOW);
+        mount->set_roll_lock(ch_flag == AuxSwitchPos::HIGH);
         break;
     }
 
@@ -1879,7 +1911,26 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
     }
 #endif
 
-    // do nothing for these functions
+#if AP_SCRIPTING_ENABLED
+    case AUX_FUNC::STOP_RESTART_SCRIPTING: {
+        AP_Scripting *scr = AP::scripting();
+        if (scr != nullptr) {
+            switch (ch_flag) {
+            case AuxSwitchPos::HIGH:
+                scr->stop();
+                break;
+            case AuxSwitchPos::MIDDLE:
+                break;
+            case AuxSwitchPos::LOW:
+                scr->restart_all();
+                break;
+            }
+        }
+        break;
+    }
+#endif
+
+// do nothing for these functions
 #if HAL_MOUNT_ENABLED
     case AUX_FUNC::MOUNT1_ROLL:
     case AUX_FUNC::MOUNT1_PITCH:

@@ -47,8 +47,8 @@ public:
     void update(void) override;
 
     // Get the max and min distances for the sensor being used
-    float distance_max() const override { return MAX_READ_DISTANCE_LD06; }
-    float distance_min() const override { return MIN_READ_DISTANCE_LD06; }
+    float distance_max_m() const override { return MAX_READ_DISTANCE_LD06; }
+    float distance_min_m() const override { return MIN_READ_DISTANCE_LD06; }
 
 private:
 

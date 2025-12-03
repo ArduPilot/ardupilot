@@ -25,11 +25,11 @@
 
 using namespace SITL;
 
-VectorNav::VectorNav() :
+VectorNav::VectorNav(VNModel VN_Name) :
     SerialDevice::SerialDevice()
 {
+    model = VN_Name;
 }
-
 
 struct PACKED VN_IMU_packet_sim {
     static constexpr uint8_t header[]{0x01, 0x21, 0x07};
@@ -73,6 +73,15 @@ struct PACKED VN_INS_gnss_packet_sim {
     uint8_t fix2;
 };
 constexpr uint8_t VN_INS_gnss_packet_sim::header[];
+
+struct PACKED VN_AHRS_ekf_packet_sim {
+    static constexpr uint8_t header[]{0x11, 0x01, 0x00, 0x06, 0x01};
+    uint64_t timeStartup;
+    float ypr[3];
+    float quaternion[4];
+    float yprU[3];
+};
+constexpr uint8_t VN_AHRS_ekf_packet_sim::header[];
 
 /*
   get timeval using simulation time
@@ -235,6 +244,42 @@ void VectorNav::send_ins_gnss_packet(void)
     write_to_autopilot((const char *)&crc2, sizeof(crc2));
 }
 
+void VectorNav::send_ahrs_packet(void)
+{
+    const auto &fdm = _sitl->state;
+
+    struct VN_AHRS_ekf_packet_sim pkt{};
+    pkt.timeStartup = AP_HAL::micros() * 1e3;
+
+    pkt.ypr[0] = fdm.yawDeg;
+    pkt.ypr[1] = fdm.pitchDeg;
+    pkt.ypr[2] = fdm.rollDeg;
+
+    pkt.quaternion[0] = fdm.quaternion.q2;
+    pkt.quaternion[1] = fdm.quaternion.q3;
+    pkt.quaternion[2] = fdm.quaternion.q4;
+    pkt.quaternion[3] = fdm.quaternion.q1;
+
+    pkt.yprU[0] = 0.03;
+    pkt.yprU[1] = 0.03;
+    pkt.yprU[2] = 0.15;
+
+    const uint8_t sync = 0xFA;
+    write_to_autopilot((const char*)&sync, 1);
+    write_to_autopilot((const char*)VN_AHRS_ekf_packet_sim::header,
+                       sizeof(VN_AHRS_ekf_packet_sim::header));
+    write_to_autopilot((const char*)&pkt, sizeof(pkt));
+
+    uint16_t crc = crc16_ccitt(VN_AHRS_ekf_packet_sim::header,
+                               sizeof(VN_AHRS_ekf_packet_sim::header), 0);
+    crc = crc16_ccitt((const uint8_t*)&pkt, sizeof(pkt), crc);
+
+    uint16_t crc_swapped;
+    swab(&crc, &crc_swapped, 2);
+
+    write_to_autopilot((const char*)&crc_swapped, sizeof(crc_swapped));
+}
+
 void VectorNav::nmea_printf(const char *fmt, ...)
 {
     va_list ap;
@@ -262,15 +307,21 @@ void VectorNav::update(void)
         last_imu_pkt_us = now;
         send_imu_packet();
     }
-    
-    if (now - last_ekf_pkt_us >= 20000) {
-        last_ekf_pkt_us = now;
-        send_ins_ekf_packet();
-    }
-    
-    if (now - last_gnss_pkt_us >= 200000) {
-        last_gnss_pkt_us = now;
-        send_ins_gnss_packet();
+
+    if (model == VNModel::VN300) {
+        if (now - last_ekf_pkt_us >= 20000) {
+            last_ekf_pkt_us = now;
+            send_ins_ekf_packet();
+        }
+        if (now - last_gnss_pkt_us >= 200000) {
+            last_gnss_pkt_us = now;
+            send_ins_gnss_packet();
+        }
+    } else {
+        if (now - last_ahrs_pkt_us >= 20000) {
+            last_ahrs_pkt_us = now;
+            send_ahrs_packet();
+        }
     }
 
     char receive_buf[50];
@@ -286,7 +337,11 @@ void VectorNav::update(void)
         // intercept device-version query, respond with simulated version:
         const char *ver_query_string = "$VNRRG,01";
         if (strncmp(receive_buf, ver_query_string, strlen(ver_query_string)) == 0) {
-            nmea_printf("$VNRRG,01,VN-300-SITL");
+            if (model == VNModel::VN100) {
+                nmea_printf("$VNRRG,01,VN-100-SITL");
+            } else {
+                nmea_printf("$VNRRG,01,VN-300-SITL");
+            }
             // consume the query so we don't "respond" twice:
             memmove(&receive_buf[0], &receive_buf[strlen(ver_query_string)], n - strlen(ver_query_string));
             n -= strlen(ver_query_string);

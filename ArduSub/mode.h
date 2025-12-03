@@ -75,16 +75,8 @@ public:
 
     // returns a unique number specific to this mode
     virtual Mode::Number number() const = 0;
-
-    // functions for reporting to GCS
-    virtual bool get_wp(Location &loc) { return false; }
-    virtual int32_t wp_bearing() const { return 0; }
-    virtual float wp_distance_m() const { return 0.0f; }
-    virtual float crosstrack_error() const { return 0.0f; }
-
   
     // pilot input processing
-    void get_pilot_desired_accelerations(float &right_out, float &front_out) const;
     void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
 
 

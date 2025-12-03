@@ -15,8 +15,16 @@ install your own using https://github.com/ArduPilot/UDPProxy
 
 # Supported Hardware
 
-Currently the only modem that is supported is the SIM76xx series of
-modems from SimCom.
+The driver currently supports:
+
+ - all SimCom SIM7600 variants
+ - SimCom A7670
+ - Quectel EC200
+ - Air780
+
+There are some limitations:
+ - the Air780 does not support signal level monitoring
+ - the SimCom A7670 only supports TCP connections, not PPP
 
 # Parameters
 
@@ -202,3 +210,58 @@ strength information and data transfer statistics.
 
 A NAMED_VALUE_FLOAT MAVLink message "LTE_RSSI" is sent with the RSSI
 signal strength.
+
+# Notes on specific modems
+
+Each modem has it's own unique behaviour. Some of the key differences
+are listed below.
+
+## SIM7070G
+
+The SIM7070G is a CAT-M modem, meaning you must have a special CAT-M
+capable SIM. A normal data SIM won't work at all. I recommend the SIMs
+from https://hologram.io
+
+The baud rate of the SIM7070G as set by the AP+IPR AT
+command is "sticky", it persists over a power cycle. This means if you
+change the LTE_BAUD or LTE_IBAUD parameters then you can get stuck
+where you can't connect as the script won't be trying the right
+baudrate. You should connect on USB with a terminal program and use:
+
+ - AT+IPR?
+ - AT+IPR=115200
+
+that will reset the baud rate. Note that the USB port on the SIM7070G
+does not care what baud rate you connect on, so you can always use it
+for recovery.
+
+Some SIM7070G modems also have a problem with the level shifting of
+the UART which can cause issues with reliable communcation. I have
+found some modems only work at a max of 230400 baud.
+
+You may also need to enable roaming using:
+
+- AT+CREG=2
+- AT+CGREG=2
+
+may need NET_OPTIONS=64 as high load prevents LCP echo replies
+
+Also note that all the SIM7070G modems I have (and all SimCom modems
+I've tried) have reversed TX/RX labels on the UART. You need to
+connect the flight controller TX to the SIM7070G TX and RX to RX.
+
+## SIM7600
+
+The SIM7600 is a CAT-1 modem, so it can use any data SIM. I recommend
+using a multi-carrier SIM (eg. the SIMs from https://hologram.io ) to
+maximimise the number of cell towers you can use.
+
+Depending on your SIM and carrier you may need to enable roaming
+using:
+
+- AT+CREG=2
+- AT+CGREG=2
+
+Also note that all the SIM7600 modems I have (and all SimCom modems
+I've tried) have reversed TX/RX labels on the UART. You need to
+connect the flight controller TX to the SIM7070G TX and RX to RX.

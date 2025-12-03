@@ -72,8 +72,8 @@ void AP_Proximity_Boundary_3D::set_face_attributes(const Face &face, float pitch
         }
     }
 
-    _angle[face.layer][face.sector] = angle;
-    _pitch[face.layer][face.sector] = pitch;
+    _angle_deg[face.layer][face.sector] = angle;
+    _pitch_deg[face.layer][face.sector] = pitch;
     _distance[face.layer][face.sector] = distance;
     _distance_valid[face.layer][face.sector] = true;
     _prx_instance[face.layer][face.sector] = prx_instance;
@@ -355,7 +355,7 @@ bool AP_Proximity_Boundary_3D::get_closest_object(float& angle_deg, float &dista
     }
 
     if (closest_found) {
-        angle_deg = _angle[closest_layer][closest_sector];
+        angle_deg = _angle_deg[closest_layer][closest_sector];
         distance = _distance[closest_layer][closest_sector];
     }
     return closest_found;
@@ -372,7 +372,7 @@ uint8_t AP_Proximity_Boundary_3D::get_horizontal_object_count() const
 bool AP_Proximity_Boundary_3D::get_horizontal_object_angle_and_distance(uint8_t object_number, float &angle_deg, float &distance) const
 {
     if ((object_number < PROXIMITY_NUM_SECTORS) && _distance_valid[PROXIMITY_MIDDLE_LAYER][object_number]) {
-        angle_deg = _angle[PROXIMITY_MIDDLE_LAYER][object_number];
+        angle_deg = _angle_deg[PROXIMITY_MIDDLE_LAYER][object_number];
         distance = _filtered_distance[PROXIMITY_MIDDLE_LAYER][object_number].get();
         return true;
     }
@@ -387,8 +387,8 @@ bool AP_Proximity_Boundary_3D::get_obstacle_info(uint8_t obstacle_num, float &an
     const uint8_t layer = obstacle_num / PROXIMITY_NUM_SECTORS;
     const uint8_t sector = obstacle_num % PROXIMITY_NUM_SECTORS;
     if (_distance_valid[layer][sector]) {
-        angle_deg = _angle[layer][sector];
-        pitch_deg = _pitch[layer][sector];
+        angle_deg = _angle_deg[layer][sector];
+        pitch_deg = _pitch_deg[layer][sector];
         distance = _filtered_distance[layer][sector].get();
         return true;
     }
@@ -451,12 +451,12 @@ void AP_Proximity_Temp_Boundary::reset()
 
 // add a distance to the temp boundary if it is shorter than any other provided distance since the last time the boundary was reset
 // pitch and yaw are in degrees, distance is in meters
-void AP_Proximity_Temp_Boundary::add_distance(const AP_Proximity_Boundary_3D::Face &face, float pitch, float yaw, float distance)
+void AP_Proximity_Temp_Boundary::add_distance(const AP_Proximity_Boundary_3D::Face &face, float pitch_deg, float yaw_deg, float distance_m)
 {
-    if (face.valid() && distance < _distances[face.layer][face.sector]) {
-        _distances[face.layer][face.sector] = distance;
-        _angle[face.layer][face.sector] = yaw;
-        _pitch[face.layer][face.sector] = pitch;
+    if (face.valid() && distance_m < _distances[face.layer][face.sector]) {
+        _distances[face.layer][face.sector] = distance_m;
+        _angle_deg[face.layer][face.sector] = yaw_deg;
+        _pitch_deg[face.layer][face.sector] = pitch_deg;
     }
 }
 
@@ -468,7 +468,7 @@ void AP_Proximity_Temp_Boundary::update_3D_boundary(uint8_t prx_instance, AP_Pro
         for (uint8_t sector=0; sector < PROXIMITY_NUM_SECTORS; sector++) {
             if (_distances[layer][sector] < FLT_MAX) {
                 AP_Proximity_Boundary_3D::Face face{layer, sector};
-                boundary.set_face_attributes(face, _pitch[layer][sector], _angle[layer][sector], _distances[layer][sector], prx_instance);
+                boundary.set_face_attributes(face, _pitch_deg[layer][sector], _angle_deg[layer][sector], _distances[layer][sector], prx_instance);
             }
         }
     }

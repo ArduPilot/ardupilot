@@ -16,7 +16,8 @@ class Board(object):
     def __init__(self, name):
         self.name = name
         self.is_ap_periph = False
-        self.toolchain = 'arm-eabi-none'  # FIXME: try to remove this?
+        self.toolchain = 'arm-none-eabi'  # FIXME: try to remove this?
+        self.hal = None  # filled in below
         self.autobuild_targets = [
             'Tracker',
             'Blimp',
@@ -26,6 +27,12 @@ class Board(object):
             'Rover',
             'Sub',
         ]
+        SITL_toolchain = {
+            "SITL_x86_64_linux_gnu": "x86_64-linux-gnu",
+            "SITL_arm_linux_gnueabihf": "arm-linux-gnueabihf",
+        }
+        if name in SITL_toolchain:
+            self.toolchain = SITL_toolchain[name]
 
 
 def in_boardlist(boards : Collection[str], board : str) -> bool:
@@ -65,7 +72,7 @@ class BoardList(object):
         )
 
         self.hwdef_dir = []
-        for haldir in 'AP_HAL_ChibiOS', 'AP_HAL_Linux':
+        for haldir in 'AP_HAL_ChibiOS', 'AP_HAL_Linux', 'AP_HAL_ESP32':
             self.hwdef_dir.append(os.path.join(realpath, haldir, "hwdef"))
 
     def __init__(self):
@@ -76,6 +83,8 @@ class BoardList(object):
             Board("SITL_x86_64_linux_gnu"),
             Board("SITL_arm_linux_gnueabihf"),
         ]
+        for b in self.boards:
+            b.hal = "AP_HAL_SITL"
 
         for hwdef_dir in self.hwdef_dir:
             self.add_hwdefs_from_hwdef_dir(hwdef_dir)
@@ -131,8 +140,19 @@ class BoardList(object):
                     board.toolchain = 'arm-linux-gnueabihf'
                 elif "ChibiOS" in hwdef_dir:
                     board.toolchain = 'arm-none-eabi'
+                elif "ESP32" in hwdef_dir:
+                    board.toolchain = 'xtensa-esp32-elf'
                 else:
-                    raise ValueError(f"Unable to determine toolchain for {adir}")
+                    raise ValueError(f"Unable to determine toolchain for {hwdef_dir}")
+
+            if "Linux" in hwdef_dir:
+                board.hal = "Linux"
+            elif "ChibiOS" in hwdef_dir:
+                board.hal = "ChibiOS"
+            elif "ESP32" in hwdef_dir:
+                board.hal = "ESP32"
+            else:
+                raise ValueError(f"Unable to determine HAL for {hwdef_dir}")
 
     def read_hwdef(self, filepath):
         fh = open(filepath)

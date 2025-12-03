@@ -276,6 +276,7 @@ __bin_names = {
     "Plane": "arduplane",
     "PlaneTests1a": "arduplane",
     "PlaneTests1b": "arduplane",
+    "PlaneTests1c": "arduplane",
 
     "Rover": "ardurover",
     "Tracker": "antennatracker",
@@ -353,6 +354,7 @@ tester_class_map = {
     "test.Plane": arduplane.AutoTestPlane,
     "test.PlaneTests1a": arduplane.AutoTestPlaneTests1a,
     "test.PlaneTests1b": arduplane.AutoTestPlaneTests1b,
+    "test.PlaneTests1c": arduplane.AutoTestPlaneTests1c,
     "test.QuadPlane": quadplane.AutoTestQuadPlane,
     "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
@@ -379,26 +381,32 @@ def run_specific_test(step, *args, **kwargs):
     if t is None:
         return []
     (testname, test) = t
+    tests = set()
+    tests.update(test.split(","))
 
     tester_class = tester_class_map[testname]
     global tester
     tester = tester_class(*args, **kwargs)
 
     # print("Got %s" % str(tester))
+    run = []
     for a in tester.tests():
         if not isinstance(a, Test):
             a = Test(a)
-        print("Got %s" % (a.name))
-        if a.name == test:
-            return tester.autotest(tests=[a], allow_skips=False, step_name=step), tester
-    print("Failed to find test %s on %s" % (test, testname))
-    sys.exit(1)
+        # print("Got %s" % (a.name))
+        if a.name in tests:
+            run.append(a)
+            tests.remove(a.name)
+    if len(tests):
+        print(f"Failed to find tests {tests}")
+        sys.exit(1)
+    return tester.autotest(tests=run, allow_skips=False, step_name=step), tester
 
 
 def run_step(step):
     """Run one step."""
     # remove old logs
-    util.run_cmd('/bin/rm -f logs/*.BIN logs/LASTLOG.TXT')
+    util.run_cmd('rm -f logs/*.BIN logs/LASTLOG.TXT')
 
     if step == "prerequisites":
         return test_prerequisites()
@@ -503,6 +511,7 @@ def run_step(step):
         "gdb": opts.gdb,
         "gdb_no_tui": opts.gdb_no_tui,
         "lldb": opts.lldb,
+        "strace": opts.strace,
         "gdbserver": opts.gdbserver,
         "breakpoints": opts.breakpoint,
         "disable_breakpoints": opts.disable_breakpoints,
@@ -519,6 +528,8 @@ def run_step(step):
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
+
+    fly_opts["move_logs_on_test_failure"] = opts.move_logs_on_test_failure
 
     # handle "test.Copter" etc:
     if step in tester_class_map:
@@ -844,6 +855,10 @@ if __name__ == "__main__":
                       action='store_true',
                       default=False,
                       help='Run in autotest-server mode; dangerous!')
+    parser.add_option("--move-logs-on-test-failure",
+                      action='store_true',
+                      default=None,
+                      help='Move logs to ../buildlogs if a test fails')
     parser.add_option("--skip",
                       type='string',
                       default='',
@@ -992,6 +1007,10 @@ if __name__ == "__main__":
                          default=False,
                          action='store_true',
                          help='run ArduPilot binaries under lldb')
+    group_sim.add_option("", "--strace",
+                         action='store_true',
+                         default=False,
+                         help="strace the ArduPilot binary")
     group_sim.add_option("-B", "--breakpoint",
                          type='string',
                          action="append",
@@ -1050,6 +1069,17 @@ if __name__ == "__main__":
             opts.timeout *= 10
         elif opts.gdb:
             opts.timeout = None
+
+    # default to moving logs when running in autotest-server mode:
+    if opts.move_logs_on_test_failure is None:
+        opts.move_logs_on_test_failure = opts.autotest_server
+
+        # temporarily default it to the old behaviour, but allow a
+        # user to test it by setting an environment variable:
+        if os.getenv("AP_AUTOTEST_MOVE_LOGS_ON_FAILURE") is not None:
+            opts.move_logs_on_test_failure = os.getenv("AP_AUTOTEST_MOVE_LOGS_ON_FAILURE") == "1"
+        else:
+            opts.move_logs_on_test_failure = True
 
     steps = [
         'prerequisites',
@@ -1110,6 +1140,7 @@ if __name__ == "__main__":
 
         'test.PlaneTests1a',
         'test.PlaneTests1b',
+        'test.PlaneTests1c',
 
         'clang-scan-build',
     ]

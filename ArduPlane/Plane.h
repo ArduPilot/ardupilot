@@ -226,6 +226,7 @@ private:
     Rotation rangefinder_orientation(void) const {
         return Rotation(g2.rangefinder_land_orient.get());
     }
+
 #endif
 
 #if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
@@ -240,11 +241,6 @@ private:
 #endif // AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
 
     float get_landing_height(bool &using_rangefinder);
-
-
-#if AP_RPM_ENABLED
-    AP_RPM rpm_sensor;
-#endif
 
     AP_TECS TECS_controller{ahrs, aparm, landing, MASK_LOG_TECS};
     AP_L1_Control L1_controller{ahrs, &TECS_controller};
@@ -377,9 +373,6 @@ private:
         // number of low throttle values
         uint8_t throttle_counter;
 
-        // A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
-        uint32_t short_timer_ms;
-
         uint32_t last_valid_rc_ms;
 
         //keeps track of the last valid rc as it relates to the AFS system
@@ -437,6 +430,7 @@ private:
     // The amount current ground speed is below min ground speed.  Centimeters per second
     int32_t groundspeed_undershoot;
     bool groundspeed_undershoot_is_valid;
+    float last_groundspeed_undershoot_offset;
 
     // speed scaler for control surfaces, updated at 10Hz
     float surface_speed_scaler = 1.0;
@@ -581,7 +575,7 @@ private:
     } nav_scripting;
 #endif
 
-    struct {
+    struct GuidedState {
         // roll pitch yaw commanded from external controller in centidegrees
         Vector3l forced_rpy_cd;
         // last time we heard from the external controller
@@ -599,6 +593,9 @@ private:
 
         // altitude adjustments
         Location target_location;
+        // target_location altitude is uses to hold some flag values:
+        bool target_location_alt_is_minus_one() const;
+
         float target_alt_rate;
         uint32_t target_alt_time_ms = 0;
         uint8_t target_mav_frame = -1;
@@ -736,7 +733,7 @@ private:
         bool reached_target_alt;
 
         // check for scenarios where updrafts can keep you from loitering down indefinitely.
-        bool unable_to_acheive_target_alt;
+        bool unable_to_achieve_target_alt;
 
         // start time of the loiter.  Milliseconds.
         uint32_t start_time_ms;
@@ -892,11 +889,13 @@ private:
     // Attitude.cpp
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
+    void apply_load_factor_roll_limits(void);
     void adjust_altitude_target();
     void setup_alt_slope(void);
     int32_t get_RTL_altitude_cm() const;
-    float relative_ground_altitude(bool use_rangefinder_if_available);
-    float relative_ground_altitude(bool use_rangefinder_if_available, bool use_terrain_if_available);
+    bool rangefinder_use(enum RangeFinderUse rangefinder_use) const;
+    float relative_ground_altitude(enum RangeFinderUse rangefinder_use);
+    float relative_ground_altitude(enum RangeFinderUse rangefinder_use, bool use_terrain_if_available);
     void set_target_altitude_current(void);
     void set_target_altitude_location(const Location &loc);
     int32_t relative_target_altitude_cm(void);
@@ -960,6 +959,10 @@ private:
     void Log_Write_RC(void);
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Write_AETR();
+
+#if AP_PLANE_BLACKBOX_LOGGING
+    void Log_Write_Blackbox(void);
+#endif
 #endif
 
     // Parameters.cpp
@@ -1000,7 +1003,7 @@ private:
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
 #if HAL_QUADPLANE_ENABLED
     // vtol takeoff from AP_Vehicle for quadplane.
-    bool start_takeoff(const float alt) override;
+    bool start_takeoff(const float alt_m) override;
     bool verify_landing_vtol_approach(const AP_Mission::Mission_Command& cmd);
 #endif
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
@@ -1053,9 +1056,9 @@ private:
     bool autotuning;
 
     // events.cpp
-    void failsafe_short_on_event(enum failsafe_state fstype, ModeReason reason);
+    void rc_failsafe_short_on_event();
     void failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason);
-    void failsafe_short_off_event(ModeReason reason);
+    void rc_failsafe_short_off_event();
     void failsafe_long_off_event(ModeReason reason);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
     bool failsafe_in_landing_sequence() const;  // returns true if the vehicle is in landing sequence.  Intended only for use in failsafe code.
@@ -1136,7 +1139,7 @@ private:
     bool set_mode(const uint8_t mode, const ModeReason reason) override;
     bool set_mode_by_number(const Mode::Number new_mode_number, const ModeReason reason);
     void check_long_failsafe();
-    void check_short_failsafe();
+    void check_short_rc_failsafe();
     void startup_INS(void);
     bool should_log(uint32_t mask);
     int8_t throttle_percentage(void);

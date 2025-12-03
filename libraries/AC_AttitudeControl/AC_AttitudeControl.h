@@ -90,64 +90,52 @@ public:
     virtual const AC_PID& get_rate_pitch_pid() const = 0;
     virtual const AC_PID& get_rate_yaw_pid() const = 0;
 
-    // get the roll acceleration limit in centidegrees/s/s or radians/s/s
-    float get_accel_roll_max_cdss() const { return _accel_roll_max_cdss; }
+    // get the roll acceleration limit in radians/s/s
     float get_accel_roll_max_radss() const { return cd_to_rad(_accel_roll_max_cdss); }
 
-    // Sets the roll acceleration limit in centidegrees/s/s
-    void set_accel_roll_max_cdss(float accel_roll_max) { _accel_roll_max_cdss.set(accel_roll_max); }
+    // Sets the roll acceleration limit in radians/s/s
+    void set_accel_roll_max_radss(float accel_roll_max_radss) { _accel_roll_max_cdss.set(rad_to_cd(accel_roll_max_radss)); }
 
-    // Sets and saves the roll acceleration limit in centidegrees/s/s
-    void save_accel_roll_max_cdss(float accel_roll_max) { _accel_roll_max_cdss.set_and_save(accel_roll_max); }
+    // Sets and saves the roll acceleration limit in radians/s/s
+    void save_accel_roll_max_radss(float accel_roll_max_radss) { _accel_roll_max_cdss.set_and_save(rad_to_cd(accel_roll_max_radss)); }
 
-    // get the pitch acceleration limit in centidegrees/s/s or radians/s/s
-    float get_accel_pitch_max_cdss() const { return _accel_pitch_max_cdss; }
+    // get the pitch acceleration limit in radians/s/s
     float get_accel_pitch_max_radss() const { return cd_to_rad(_accel_pitch_max_cdss); }
 
-    // Sets the pitch acceleration limit in centidegrees/s/s
-    void set_accel_pitch_max_cdss(float accel_pitch_max) { _accel_pitch_max_cdss.set(accel_pitch_max); }
+    // Sets the pitch acceleration limit in radians/s/s
+    void set_accel_pitch_max_radss(float accel_pitch_max_radss) { _accel_pitch_max_cdss.set(rad_to_cd(accel_pitch_max_radss)); }
 
-    // Sets and saves the pitch acceleration limit in centidegrees/s/s
-    void save_accel_pitch_max_cdss(float accel_pitch_max) { _accel_pitch_max_cdss.set_and_save(accel_pitch_max); }
+    // Sets and saves the pitch acceleration limit in radians/s/s
+    void save_accel_pitch_max_radss(float accel_pitch_max_radss) { _accel_pitch_max_cdss.set_and_save(rad_to_cd(accel_pitch_max_radss)); }
 
-    // get the yaw acceleration limit in centidegrees/s/s or radians/s/s
-    float get_accel_yaw_max_cdss() const { return _accel_yaw_max_cdss; }
+    // get the yaw acceleration limit in radians/s/s
     float get_accel_yaw_max_radss() const { return cd_to_rad(_accel_yaw_max_cdss); }
 
-    // Sets the yaw acceleration limit in centidegrees/s/s
-    void set_accel_yaw_max_cdss(float accel_yaw_max) { _accel_yaw_max_cdss.set(accel_yaw_max); }
+    // Sets the yaw acceleration limit in radians/s/s
+    void set_accel_yaw_max_radss(float accel_yaw_max_radss) { _accel_yaw_max_cdss.set(rad_to_cd(accel_yaw_max_radss)); }
 
-    // Sets and saves the yaw acceleration limit in centidegrees/s/s
-    void save_accel_yaw_max_cdss(float accel_yaw_max) { _accel_yaw_max_cdss.set_and_save(accel_yaw_max); }
+    // Sets and saves the yaw acceleration limit in radians/s/s
+    void save_accel_yaw_max_radss(float accel_yaw_max_radss) { _accel_yaw_max_cdss.set_and_save(rad_to_cd(accel_yaw_max_radss)); }
 
     // get the roll angular velocity limit in radians/s
     float get_ang_vel_roll_max_rads() const { return radians(_ang_vel_roll_max_degs); }
-    // get the roll angular velocity limit in degrees/s
-    float get_ang_vel_roll_max_degs() const { return _ang_vel_roll_max_degs; }
 
-    // set the roll angular velocity limit in degrees/s
-    void set_ang_vel_roll_max_degs(float vel_roll_max) { _ang_vel_roll_max_degs.set(vel_roll_max); }
+    // set the roll angular velocity limit in radians/s
+    void set_ang_vel_roll_max_rads(float vel_roll_max_rads) { _ang_vel_roll_max_degs.set(degrees(vel_roll_max_rads)); }
 
     // get the pitch angular velocity limit in radians/s
     float get_ang_vel_pitch_max_rads() const { return radians(_ang_vel_pitch_max_degs); }
-    // get the pitch angular velocity limit in degrees/s
-    float get_ang_vel_pitch_max_degs() const { return _ang_vel_pitch_max_degs; }
 
-    // set the pitch angular velocity limit in degrees/s
-    void set_ang_vel_pitch_max_degs(float vel_pitch_max) { _ang_vel_pitch_max_degs.set(vel_pitch_max); }
+    // set the pitch angular velocity limit in radians/s
+    void set_ang_vel_pitch_max_rads(float vel_pitch_max_rads) { _ang_vel_pitch_max_degs.set(degrees(vel_pitch_max_rads)); }
 
     // get the yaw angular velocity limit in radians/s
     float get_ang_vel_yaw_max_rads() const { return radians(_ang_vel_yaw_max_degs); }
-    // get the yaw angular velocity limit in degrees/s
-    float get_ang_vel_yaw_max_degs() const { return _ang_vel_yaw_max_degs; }
 
-    // set the yaw angular velocity limit in degrees/s
-    void set_ang_vel_yaw_max_degs(float vel_yaw_max) { _ang_vel_yaw_max_degs.set(vel_yaw_max); }
+    // set the yaw angular velocity limit in radians/s
+    void set_ang_vel_yaw_max_rads(float vel_yaw_max_rads) { _ang_vel_yaw_max_degs.set(degrees(vel_yaw_max_rads)); }
 
-    // get the slew yaw rate limit in deg/s
-    float get_slew_yaw_max_degs() const;
-
-    // get the slew yaw rate limit in rad/s
+    // get the slew yaw rate limit in radians/s
     float get_slew_yaw_max_rads() const;
 
     // get the rate control input smoothing time constant
@@ -229,10 +217,6 @@ public:
     // Outputs are passed to the rate controller via shaped angular velocity targets.
     virtual void input_euler_angle_roll_pitch_yaw_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad, float euler_yaw_angle_rad, bool slew_yaw);
 
-    // Sets desired roll, pitch, and yaw angular rates (in centidegrees/s).
-    // See input_euler_rate_roll_pitch_yaw_rads() for full details.
-    void input_euler_rate_roll_pitch_yaw_cds(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds);
-
     // Sets desired roll, pitch, and yaw angular rates (in radians/s).
     // This command is used to apply angular rate targets in the earth frame.
     // The inputs are shaped using acceleration limits and time constants.
@@ -278,35 +262,19 @@ public:
     // dictates VTOL rates. No smoothing or shaping is applied.
     void input_rate_bf_roll_pitch_yaw_no_shaping_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads);
 
-    // Applies a one-time angular offset in body-frame roll/pitch/yaw angles (in centidegrees).
-    // See input_angle_step_bf_roll_pitch_yaw_rad() for full details.
-    void input_angle_step_bf_roll_pitch_yaw_cd(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd);
-
     // Applies a one-time angular offset in body-frame roll/pitch/yaw angles (in radians).
     // Used for initiating step responses during autotuning or manual test inputs.
     virtual void input_angle_step_bf_roll_pitch_yaw_rad(float roll_angle_step_bf_rad, float pitch_angle_step_bf_rad, float yaw_angle_step_bf_rad);
-
-    // Applies a one-time angular velocity offset in body-frame roll/pitch/yaw (in centidegrees/s).
-    // See input_rate_step_bf_roll_pitch_yaw_rads() for full details.
-    void input_rate_step_bf_roll_pitch_yaw_cds(float roll_rate_step_bf_cds, float pitch_rate_step_bf_cds, float yaw_rate_step_bf_cds);
     
     // Applies a one-time angular velocity offset in body-frame roll/pitch/yaw (in radians/s).
     // Used to apply discrete disturbances or step inputs for system identification.
     virtual void input_rate_step_bf_roll_pitch_yaw_rads(float roll_rate_step_bf_rads, float pitch_rate_step_bf_rads, float yaw_rate_step_bf_rads);
-
-    // Sets desired thrust vector and heading rate (in centidegrees/s).
-    // See input_thrust_vector_rate_heading_rads() for full details.
-    void input_thrust_vector_rate_heading_cds(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw = true);
 
     // Sets desired thrust vector and heading rate (in radians/s).
     // Used for tilt-based navigation with independent yaw control.
     // The thrust vector defines the desired orientation (e.g., pointing direction for vertical thrust),
     // while the heading rate adjusts yaw. The input is shaped by acceleration and slew limits.
     virtual void input_thrust_vector_rate_heading_rads(const Vector3f& thrust_vector, float heading_rate_rads, bool slew_yaw = true);
-
-    // Sets desired thrust vector and heading (in centidegrees) with heading rate (in centidegrees/s).
-    // See input_thrust_vector_heading_rad() for full details.
-    void input_thrust_vector_heading_cd(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds);
 
     // Sets desired thrust vector and heading (in radians) with heading rate (in radians/s).
     // Used for advanced attitude control where thrust direction is separated from yaw orientation.
@@ -511,10 +479,8 @@ public:
     // tail rotor thrust in hover. Overloaded by AC_Attitude_Heli to return angle.
     float get_roll_trim_rad() { return cd_to_rad(get_roll_trim_cd()); }
 
-    // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
-    // this assumes a maximum deflection rate of 45 degrees per second or pi/4 rad/s.
-    void passthrough_bf_roll_pitch_rate_yaw_cds(float roll_passthrough_cds, float pitch_passthrough_cds, float yaw_rate_bf_cds);
-    virtual void passthrough_bf_roll_pitch_rate_yaw_rads(float roll_passthrough_rads, float pitch_passthrough_rads, float yaw_rate_bf_rads) {};
+    // passthrough_bf_roll_pitch_rate_yaw_norm - roll, pitch and yaw passed through directly to the motor mixers
+    virtual void passthrough_bf_roll_pitch_rate_yaw_norm(float roll_passthrough_norm, float pitch_passthrough_norm, float yaw_passthrough_norm) {};
 
     // provide feedback on whether arming would be a good idea right now:
     bool pre_arm_checks(const char *param_prefix,
@@ -554,6 +520,15 @@ public:
     // than one type of scale factor to be applied for different
     // purposes
     void set_PD_scale_mult(const Vector3f &pd_scale) { _pd_scale *= pd_scale; }
+
+    // setup a one loop I scale multiplier, multiplying by any
+    // previously applied scale from this loop. This allows for more
+    // than one type of scale factor to be applied for different
+    // purposes
+    void set_I_scale_mult(const Vector3f &i_scale) { _i_scale *= i_scale; }
+
+    // scale I to represent the control given by angle P
+    void scale_I_to_angle_P();
 
     // write RATE message
     void Write_Rate(const AC_PosControl &pos_control) const;
@@ -704,6 +679,12 @@ protected:
 
     // Proportional-Derivative gains this loop (for logging/debugging)
     Vector3f            _pd_scale_used;
+
+    // Integrator gains applied dynamically per axis
+    Vector3f            _i_scale{1,1,1};
+
+    // Integrator gains this loop (for logging/debugging)
+    Vector3f            _i_scale_used;
 
     // Ratio of normal to reduced rate controller gain when landed to suppress ground resonance
     float               _landed_gain_ratio;

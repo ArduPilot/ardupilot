@@ -5,7 +5,7 @@ void Copter::read_barometer(void)
 {
     barometer.update();
 
-    baro_alt = barometer.get_altitude() * 100.0f;
+    baro_alt_m = barometer.get_altitude();
 }
 
 #if AP_RANGEFINDER_ENABLED
@@ -13,11 +13,11 @@ void Copter::init_rangefinder(void)
 {
    rangefinder.set_log_rfnd_bit(MASK_LOG_CTUN);
    rangefinder.init(ROTATION_PITCH_270);
-   rangefinder_state.alt_cm_filt.set_cutoff_frequency(g2.rangefinder_filt);
+   rangefinder_state.alt_m_filt.set_cutoff_frequency(g2.rangefinder_filt);
    rangefinder_state.enabled = rangefinder.has_orientation(ROTATION_PITCH_270);
 
    // upward facing range finder
-   rangefinder_up_state.alt_cm_filt.set_cutoff_frequency(g2.rangefinder_filt);
+   rangefinder_up_state.alt_m_filt.set_cutoff_frequency(g2.rangefinder_filt);
    rangefinder_up_state.enabled = rangefinder.has_orientation(ROTATION_PITCH_90);
 }
 
@@ -31,7 +31,7 @@ void Copter::read_rangefinder(void)
 
 #if HAL_PROXIMITY_ENABLED
     if (rangefinder_state.enabled_and_healthy() || rangefinder_state.data_stale()) {
-        g2.proximity.set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
+        g2.proximity.set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_m_filt.get() * 100.0);
     }
 #endif
 }
@@ -53,25 +53,25 @@ bool Copter::rangefinder_up_ok() const
 // terrain offset is the terrain's height above the EKF origin
 void Copter::update_rangefinder_terrain_offset()
 {
-    float terrain_offset_cm = rangefinder_state.inertial_alt_cm - rangefinder_state.alt_cm_glitch_protected;
-    rangefinder_state.terrain_offset_cm += (terrain_offset_cm - rangefinder_state.terrain_offset_cm) * (copter.G_Dt / MAX(copter.g2.surftrak_tc, copter.G_Dt));
+    float terrain_u_m = rangefinder_state.ref_pos_u_m - rangefinder_state.alt_glitch_protected_m;
+    rangefinder_state.terrain_u_m += (terrain_u_m - rangefinder_state.terrain_u_m) * (copter.G_Dt / MAX(copter.g2.surftrak_tc, copter.G_Dt));
 
-    terrain_offset_cm = rangefinder_up_state.inertial_alt_cm + rangefinder_up_state.alt_cm_glitch_protected;
-    rangefinder_up_state.terrain_offset_cm += (terrain_offset_cm - rangefinder_up_state.terrain_offset_cm) * (copter.G_Dt / MAX(copter.g2.surftrak_tc, copter.G_Dt));
+    terrain_u_m = rangefinder_up_state.ref_pos_u_m + rangefinder_up_state.alt_glitch_protected_m;
+    rangefinder_up_state.terrain_u_m += (terrain_u_m - rangefinder_up_state.terrain_u_m) * (copter.G_Dt / MAX(copter.g2.surftrak_tc, copter.G_Dt));
 
     if (rangefinder_state.alt_healthy || rangefinder_state.data_stale()) {
-        wp_nav->set_rangefinder_terrain_offset_cm(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.terrain_offset_cm);
+        wp_nav->set_rangefinder_terrain_U_m(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.terrain_u_m);
 #if MODE_CIRCLE_ENABLED
-        circle_nav->set_rangefinder_terrain_offset_cm(rangefinder_state.enabled && wp_nav->rangefinder_used(), rangefinder_state.alt_healthy, rangefinder_state.terrain_offset_cm);
+        circle_nav->set_rangefinder_terrain_U_m(rangefinder_state.enabled && wp_nav->rangefinder_used(), rangefinder_state.alt_healthy, rangefinder_state.terrain_u_m);
 #endif
     }
 }
 
 // helper function to get inertially interpolated rangefinder height.
-bool Copter::get_rangefinder_height_interpolated_cm(int32_t& ret) const
+bool Copter::get_rangefinder_height_interpolated_m(float& height_m) const
 {
 #if AP_RANGEFINDER_ENABLED
-    return rangefinder_state.get_rangefinder_height_interpolated_cm(ret);
+    return rangefinder_state.get_rangefinder_height_interpolated_m(height_m);
 #else
     return false;
 #endif

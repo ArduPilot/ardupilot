@@ -709,7 +709,7 @@ void AP_Periph_FW::handle_notify_state(CanardInstance* canard_instance, CanardRx
         yaw_earth = radians((float)tmp * 0.01f);
     }
     vehicle_state = msg.vehicle_state;
-    last_vehicle_state = AP_HAL::millis();
+    last_vehicle_state_ms = AP_HAL::millis();
 }
 #endif // AP_PERIPH_NOTIFY_ENABLED
 
@@ -1708,9 +1708,9 @@ void AP_Periph_FW::can_start()
 #endif
         if (can_iface_periph[i] != nullptr) {
 #if HAL_CANFD_SUPPORTED
-            can_iface_periph[i]->init(g.can_baudrate[i], g.can_fdbaudrate[i]*1000000U, AP_HAL::CANIface::NormalMode);
+            can_iface_periph[i]->init(g.can_baudrate[i], g.can_fdbaudrate[i]*1000000U);
 #else
-            can_iface_periph[i]->init(g.can_baudrate[i], AP_HAL::CANIface::NormalMode);
+            can_iface_periph[i]->init(g.can_baudrate[i]);
 #endif
         }
     }
@@ -1781,8 +1781,10 @@ void AP_Periph_FW::esc_telem_update()
             pkt.temperature = nan;
         }
         float rpm;
-        if (esc_telem.get_raw_rpm(i, rpm)) {
+        float error_rate;
+        if (esc_telem.get_raw_rpm_and_error_rate(i, rpm, error_rate)) {
             pkt.rpm = rpm;
+            pkt.error_count = error_rate;
         }
 
 #if AP_EXTENDED_ESC_TELEM_ENABLED
@@ -1791,8 +1793,6 @@ void AP_Periph_FW::esc_telem_update()
             pkt.power_rating_pct = power_rating_pct;
         }
 #endif
-
-        pkt.error_count = 0;
 
         uint8_t buffer[UAVCAN_EQUIPMENT_ESC_STATUS_MAX_SIZE];
         uint16_t total_size = uavcan_equipment_esc_Status_encode(&pkt, buffer, !canfdout());

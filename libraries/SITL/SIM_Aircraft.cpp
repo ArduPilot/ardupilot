@@ -1011,7 +1011,12 @@ void Aircraft::smooth_sensors(void)
  */
 float Aircraft::filtered_servo_angle(const struct sitl_input &input, uint8_t idx)
 {
-    uint16_t pwm = input.servos[idx] == 0 ? 1500 : input.servos[idx];
+    uint16_t pwm =  input.servos[idx];
+    if (pwm == 0) {
+        // invalid input, servo does not move, apply current value.
+        // glad we have a zero-momentum system.
+        pwm = servo_filter[idx].angle_pwm();
+    }
     return servo_filter[idx].filter_angle(pwm, frame_time_us * 1.0e-6);
 }
 
@@ -1063,7 +1068,9 @@ bool Aircraft::Clamp::clamped(Aircraft &aircraft, const struct sitl_input &input
     }
     const uint16_t servo_pos = input.servos[clamp_idx];
     bool new_clamped = currently_clamped;
-    if (servo_pos < 1200) {
+    if (servo_pos == 0) {
+        // invalid value, do nothing
+    } else if (servo_pos < 1200) {
         if (currently_clamped) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SITL: Clamp: released vehicle");
             new_clamped = false;

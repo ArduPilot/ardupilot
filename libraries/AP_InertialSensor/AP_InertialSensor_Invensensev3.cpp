@@ -130,12 +130,14 @@ extern const AP_HAL::HAL& hal;
 
 // ICM42xxx specific registers
 #define INV3REG_42XXX_INTF_CONFIG1  0x4d
+#define INV3REG_42XXX_INTF_CONFIG5  0x7b    // bank1
 
 // WHOAMI values
 #define INV3_ID_ICM40605      0x33
 #define INV3_ID_ICM40609      0x3b
 #define INV3_ID_ICM42605      0x42
-#define INV3_ID_ICM42688      0x47
+#define INV3_ID_ICM42688_P    0x47
+#define INV3_ID_ICM42688_V    0xDB
 #define INV3_ID_IIM42652      0x6f
 #define INV3_ID_IIM42653      0x56
 #define INV3_ID_ICM42670      0x67
@@ -873,7 +875,20 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling(void)
           producing constant output which causes a DC gyro bias
         */
         const uint8_t v = register_read(INV3REG_42XXX_INTF_CONFIG1);
+#if defined(INVENSENSEV3_CLKIN_BITMASK)
+        uint8_t intf_config1 = (v & 0x3F) | 0x40;
+        // we only support setting RTC mode on IIM42652 now
+        if ((INVENSENSEV3_CLKIN_BITMASK & (1U << gyro_instance)) && (inv3_type == Invensensev3_Type::IIM42652)) {
+            intf_config1 |= 0x04;   // enable RTC mode
+            // setup pin9 function to CLKIN
+            const uint8_t intf_config5 = register_read_bank(1, INV3REG_42XXX_INTF_CONFIG5);
+            register_write_bank(1, INV3REG_42XXX_INTF_CONFIG5, (intf_config5 & ~0x06) | 0x04);
+        }
+
+        register_write(INV3REG_42XXX_INTF_CONFIG1, intf_config1, true);
+#else
         register_write(INV3REG_42XXX_INTF_CONFIG1, (v & 0x3F) | 0x40, true);
+#endif
         break;
     }
     case Invensensev3_Type::ICM40605:
@@ -993,7 +1008,8 @@ bool AP_InertialSensor_Invensensev3::check_whoami(void)
     case INV3_ID_ICM40609:
         inv3_type = Invensensev3_Type::ICM40609;
         return true;
-    case INV3_ID_ICM42688:
+    case INV3_ID_ICM42688_P:
+    case INV3_ID_ICM42688_V:
         inv3_type = Invensensev3_Type::ICM42688;
         return true;
     case INV3_ID_ICM42605:

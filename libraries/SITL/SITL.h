@@ -151,6 +151,7 @@ public:
         SITL_RCFail_None = 0,
         SITL_RCFail_NoPulses = 1,
         SITL_RCFail_Throttle950 = 2,
+        SITL_RCFail_Protocol_Fail_Bit_Set = 3,
     };
 
     enum GPSHeading {
@@ -326,6 +327,7 @@ public:
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
 
+#if AP_SIM_VICON_ENABLED
     class ViconParms {
     public:
         ViconParms(void) {
@@ -346,6 +348,7 @@ public:
         AP_Int16 rate_hz;     // vicon data rate in Hz
     };
     ViconParms vicon;
+#endif  // AP_SIM_VICON_ENABLED
 
     // physics model parameters
     class ModelParm {

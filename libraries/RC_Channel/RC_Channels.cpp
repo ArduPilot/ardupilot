@@ -60,6 +60,17 @@ void RC_Channels::init(void)
     init_aux_all();
 }
 
+bool RC_Channels::has_valid_input() const
+{
+    // the vehicles override this method and check many more
+    // things, but also call this method:
+    if (!has_ever_seen_rc_input()) {
+        return false;
+    }
+
+    return true;
+}
+
 uint8_t RC_Channels::get_radio_in(uint16_t *chans, const uint8_t num_channels)
 {
     memset(chans, 0, num_channels*sizeof(*chans));

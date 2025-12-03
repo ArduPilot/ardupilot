@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 setup board.h for Linux
 
@@ -17,8 +17,8 @@ import hwdef  # noqa:E402
 
 class LinuxHWDef(hwdef.HWDef):
 
-    def __init__(self, quiet=False, outdir=None, hwdef=[]):
-        super(LinuxHWDef, self).__init__(quiet=quiet, outdir=outdir, hwdef=hwdef)
+    def __init__(self, **kwargs):
+        super(LinuxHWDef, self).__init__(**kwargs)
         # a list of LINUX_SPIDEV devices
         self.linux_spidev = []
 
@@ -31,8 +31,6 @@ class LinuxHWDef(hwdef.HWDef):
         self.write_IMU_config(f)
         self.write_MAG_config(f)
         self.write_BARO_config(f)
-
-        self.write_env_py(os.path.join(self.outdir, "env.py"))
 
     def process_line(self, line, depth):
         '''process one line of pin definition file'''
@@ -57,23 +55,9 @@ class LinuxHWDef(hwdef.HWDef):
     def process_line_linux_spidev(self, line, depth, a):
         self.linux_spidev.append(a[1:])
 
-    def write_SPI_config_define_line_for_dev(self, define_name, dev, n):
-        '''return a #define line for a SPI config line used in a SPI device table'''
-        (name, bus, subdev, mode, bits_per_word, cs_pin, lowspeed, highspeed) = dev
-
-#        return f'#define {define_name} SPIDesc("name")\n'
-
-        # sck_pin = self.bylabel['SPI%s_SCK' % n]
-        # sck_line = 'PAL_LINE(GPIO%s,%uU)' % (sck_pin.port, sck_pin.pin)
-        # return f'#define {define_name} {{ &SPID{n}, {n}, STM32_SPI_SPI{n}_DMA_STREAMS, {sck_line} }}\n'
-
     def write_SPI_device_table(self, f):
         '''write SPI device table'''
-        if len(self.linux_spidev) == 0:
-            # until all are converted
-            return
 
-        f.write('\n// SPI device table\n')
         devlist = []
         for dev in self.linux_spidev:
             if len(dev) != 8:
@@ -92,14 +76,11 @@ class LinuxHWDef(hwdef.HWDef):
                 f'#define HAL_SPI_DEVICE{len(devlist)+1} SPIDesc({name:12s}, {bus}, {subdev}, {mode}, {bits_per_word}, {cs_pin}, {lowspeed:6s}, {highspeed:6s})\n'  # noqa
             )
             devlist.append('HAL_SPI_DEVICE%u' % (len(devlist)+1))
-        f.write('#define HAL_SPI_DEVICE_LIST %s\n\n' % ','.join(devlist))
-        f.write("\n")
+
+        self.write_device_table(f, "spi devices", "HAL_SPI_DEVICE_LIST", devlist)
 
     def write_SPI_config(self, f):
         '''write SPI config defines'''
-
-        if len(self.linux_spidev) == 0:
-            return
 
         self.write_SPI_device_table(f)
 

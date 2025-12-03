@@ -25,7 +25,7 @@ FLASH_SIZE_KB 1024
 define HAL_STORAGE_SIZE 15360
 STORAGE_FLASH_PAGE 1
 
-# enable FLASH/RAMTROM parameter storage
+# enable FLASH/RAMTRON parameter storage
 #define HAL_WITH_DATAFLASH 1
 # enable logging to dataflash
 #define HAL_LOGGING_DATAFLASH_ENABLED 1
@@ -179,7 +179,7 @@ define BOARD_RSSI_ANA_PIN 10
 # probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 

@@ -187,7 +187,7 @@ void AP_Landing_Deepstall::do_land(const AP_Mission::Mission_Command& cmd, const
 
     if (!landing_point.relative_alt && !landing_point.terrain_alt) {
         approach_alt_offset = cmd.p1;
-        landing_point.alt += approach_alt_offset * 100;
+        landing_point.offset_up_m(approach_alt_offset);
     } else {
         approach_alt_offset = 0.0f;
     }
@@ -362,7 +362,7 @@ bool AP_Landing_Deepstall::override_servos(void)
 
     // use the current airspeed to dictate the travel limits
     float airspeed;
-    if (!landing.ahrs.airspeed_estimate(airspeed)) {
+    if (!landing.ahrs.airspeed_EAS(airspeed)) {
         airspeed = 0; // safely forces control to the deepstall steering since we don't have an estimate
     }
 

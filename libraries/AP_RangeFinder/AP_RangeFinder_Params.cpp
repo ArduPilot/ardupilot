@@ -15,7 +15,53 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @DisplayName: Rangefinder type
     // @Description: Type of connected rangefinder
     // @SortValues: AlphabeticalZeroAtTop
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLite-I2C,5:PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:USD1_Serial,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X or VL53L1X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:Benewake-Serial,21:LidarLightV3HP,22:PWM,23:BlueRoboticsPing,24:DroneCAN,25:BenewakeTFminiPlus-I2C,26:LanbaoPSK-CM8JL65-CC5,27:BenewakeTF03,28:VL53L1X-ShortRange,29:LeddarVu8-Serial,30:HC-SR04,31:GYUS42v2,32:MSP,33:USD1_CAN,34:Benewake_CAN,35:TeraRangerSerial,36:Lua_Scripting,37:NoopLoop_TOFSense,38:NoopLoop_TOFSense_CAN,39:NRA24_CAN,40:NoopLoop_TOFSenseF_I2C,41:JRE_Serial,42:Ainstein_LR_D1,43:RDS02UF,44:HexsoonRadar,100:SITL
+    // @Values: 0:None
+    // @Values: 1:Analog
+    // @Values: 2:MaxbotixI2C
+    // @Values: 3:LidarLite-I2C
+    // @Values: 5:PWM
+    // @Values: 6:BBB-PRU
+    // @Values: 7:LightWareI2C
+    // @Values: 8:LightWareSerial
+    // @Values: 9:Bebop
+    // @Values: 10:MAVLink
+    // @Values: 11:USD1_Serial
+    // @Values: 12:LeddarOne
+    // @Values: 13:MaxbotixSerial
+    // @Values: 14:TeraRangerI2C
+    // @Values: 15:LidarLiteV3-I2C
+    // @Values: 16:VL53L0X or VL53L1X
+    // @Values: 17:NMEA
+    // @Values: 18:WASP-LRF
+    // @Values: 19:BenewakeTF02
+    // @Values: 20:BenewakeTFmini-Serial
+    // @Values: 21:LidarLightV3HP
+    // @Values: 22:PWM
+    // @Values: 23:BlueRoboticsPing
+    // @Values: 24:DroneCAN
+    // @Values: 25:BenewakeTFmini-I2C
+    // @Values: 26:LanbaoPSK-CM8JL65-CC5
+    // @Values: 27:BenewakeTF03
+    // @Values: 28:VL53L1X-ShortRange
+    // @Values: 29:LeddarVu8-Serial
+    // @Values: 30:HC-SR04
+    // @Values: 31:GYUS42v2
+    // @Values: 32:MSP
+    // @Values: 33:USD1_CAN
+    // @Values: 34:Benewake_CAN
+    // @Values: 35:TeraRangerSerial
+    // @Values: 36:Lua_Scripting
+    // @Values: 37:NoopLoop_TOFSense
+    // @Values: 38:NoopLoop_TOFSense_CAN
+    // @Values: 39:NRA24_CAN
+    // @Values: 40:NoopLoop_TOFSenseF_I2C
+    // @Values: 41:JRE_Serial
+    // @Values: 42:Ainstein_LR_D1
+    // @Values: 43:RDS02UF
+    // @Values: 44:HexsoonRadar
+    // @Values: 45:LightWare-GRF
+    // @Values: 46:BenewakeTFS20L
+    // @Values: 100:SITL
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_RangeFinder_Params, type, 0, AP_PARAM_FLAG_ENABLE),
 
@@ -23,6 +69,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @DisplayName: Rangefinder pin
     // @Description: Analog or PWM input pin that rangefinder is connected to. Analog RSSI or Airspeed ports can be used for Analog inputs (some autopilots provide others also), Non-IOMCU Servo/MotorOutputs can be used for PWM input when configured as "GPIOs". Values for some autopilots are given as examples. Search wiki for "Analog pins" for analog pin or "GPIOs", if PWM input type, to determine pin number.
     // @Values: -1:Not Used,11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6,103:Pixhawk SBUS
+    // @Range: -1 127
     // @User: Standard
     AP_GROUPINFO("PIN",     2, AP_RangeFinder_Params, pin, -1),
 
@@ -69,6 +116,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @DisplayName: Rangefinder stop pin
     // @Description: Digital pin that enables/disables rangefinder measurement for the pwm rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This is used to enable powersaving when out of range. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @Values: -1:Not Used,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
+    // @Range: -1 127
     // @User: Standard
     AP_GROUPINFO("STOP_PIN", 8, AP_RangeFinder_Params, stop_pin, -1),
 

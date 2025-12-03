@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''
 AP_FLAKE8_CLEAN
@@ -110,6 +110,7 @@ brand_map = {
     "MicoAir743" : ("MicoAir H743 v1.3", "MicoAir"),
     "MicoAir743-AIO" : ("MicoAir H743 AIO", "MicoAir"),
     "MicoAir743v2" : ("MicoAir H743 v2.0", "MicoAir"),
+    "MicoAir743-Lite" : ("MicoAir H743 Lite v1.1", "MicoAir"),
     "GEPRCF745BTHD": ("TAKER F745 BT", "GEPRC"),
     "GEPRC_TAKER_H743": ("TAKER H743 BT", "GEPRC"),
 }

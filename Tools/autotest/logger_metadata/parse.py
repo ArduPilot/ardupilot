@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''
 AP_FLAKE8_CLEAN
@@ -40,6 +40,7 @@ re_full_messagedef = re.compile(r'\s*LOG_\w+\s*,\s*\w+\([^)]+\)[\s\\]*,' +
                                 r'[\s\\]*"?([\w,]+)"?[\s\\]*,' +
                                 f'{re_deffield},{re_deffield}',
                                 re.MULTILINE)
+re_names_define = re.compile(r'#define\s+(\w+_LABELS)\s+"([\w,]+)"')
 re_fmt_define = re.compile(r'#define\s+(\w+_FMT)\s+"([\w\-#?%]+)"')
 re_units_define = re.compile(r'#define\s+(\w+_UNITS)\s+"([\w\-#?%]+)"')
 re_mults_define = re.compile(r'#define\s+(\w+_MULTS)\s+"([\w\-#?%]+)"')
@@ -94,6 +95,7 @@ class LoggerDocco(object):
             emit_md.MDEmitter(),
         ]
         self.msg_fmts_list = {}
+        self.msg_names_list = {}
         self.msg_units_list = {}
         self.msg_mults_list = {}
 
@@ -173,6 +175,25 @@ class LoggerDocco(object):
 
         def set_vehicles(self, vehicles):
             self.vehicles = vehicles
+
+        def set_field_names(self, fields):
+            ''' Check that the field ordering matches the defined fields '''
+            fields = fields.split(",")
+            # First check that the number of fields match
+            if len(fields) != len(self.fields_order):
+                print(f"Error: Mismatch in number of fields in message {self.name}: ", file=sys.stderr, end='')
+                print(f"{len(self.fields_order)} vs {len(fields)}", file=sys.stderr)
+                sys.exit(1)
+            # Now check that each field name matches
+            err = False
+            for idx in range(0, len(fields)):
+                if fields[idx] != self.fields_order[idx]:
+                    print(f"Error: Field order mismatch in log message {self.name}: ", file=sys.stderr, end='')
+                    print(f"field={idx+1}: {fields[idx]} vs {self.fields_order[idx]}", file=sys.stderr)
+                    err = True
+            # Exit if we had any name mismatch errors
+            if err:
+                sys.exit(1)
 
         def set_fmts(self, fmts):
             # If no fields are defined, do nothing
@@ -292,6 +313,7 @@ class LoggerDocco(object):
         d = re_full_messagedef.search(messagedef)
         if d is not None:
             self.msg_fmts_list[d.group(1)] = d.group(2)
+            self.msg_names_list[d.group(1)] = d.group(3)
             self.msg_units_list[d.group(1)] = d.group(4)
             self.msg_mults_list[d.group(1)] = d.group(5)
             return
@@ -301,8 +323,10 @@ class LoggerDocco(object):
             if d.group(1) in self.msg_fmts_list:
                 return
             if d.group(5) is None:
+                self.msg_names_list[d.group(1)] = d.group(2)
                 self.msg_fmts_list[d.group(1)] = d.group(3)
             else:
+                self.msg_names_list[d.group(1)] = d.group(2)
                 self.msg_fmts_list[d.group(1)] = d.group(6)
                 self.msg_units_list[d.group(1)] = d.group(3)
                 self.msg_mults_list[d.group(1)] = d.group(5)
@@ -359,6 +383,9 @@ class LoggerDocco(object):
                 messagedef = self.search_messagedef_start(line, messagedef)
 
                 # Check for fmt/unit/mult #define
+                u = re_names_define.search(line)
+                if u is not None:
+                    self.msg_names_list[u.group(1)] = u.group(2)
                 u = re_fmt_define.search(line)
                 if u is not None:
                     self.msg_fmts_list[u.group(1)] = u.group(2)
@@ -446,6 +473,15 @@ class LoggerDocco(object):
 
         # Try to attach the formats/units/multipliers
         for docco in new_doccos:
+            # Check that the field names are correctly ordered
+            if docco.name in self.msg_names_list:
+                if "LABELS" in self.msg_names_list[docco.name]:
+                    if self.msg_names_list[docco.name] in self.msg_names_list:
+                        docco.set_field_names(self.msg_names_list[self.msg_names_list[docco.name]])
+                else:
+                    docco.set_field_names(self.msg_names_list[docco.name])
+            else:
+                print(f"No field names found for message {docco.name}")
             # Apply the Formats to the docco
             if docco.name in self.msg_fmts_list:
                 if "FMT" in self.msg_fmts_list[docco.name]:

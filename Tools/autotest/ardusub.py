@@ -8,17 +8,12 @@ AP_FLAKE8_CLEAN
 '''
 
 import os
-import sys
 
 from pymavlink import mavutil, mavextra
 
 import vehicle_test_suite
 from vehicle_test_suite import NotAchievedException
-from vehicle_test_suite import AutoTestTimeoutException
 from math import degrees
-
-if sys.version_info[0] < 3:
-    ConnectionResetError = AutoTestTimeoutException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -184,56 +179,50 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
     def RngfndQuality(self):
         """Check lua Range Finder quality information flow"""
-        self.context_push()
         self.context_collect('STATUSTEXT')
 
-        ex = None
-        try:
-            self.set_parameters({
-                "SCR_ENABLE": 1,
-                "RNGFND1_TYPE": 36,
-                "RNGFND1_ORIENT": 25,
-                "RNGFND1_MIN": 0.10,
-                "RNGFND1_MAX": 50.00,
-            })
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "RNGFND1_TYPE": 36,
+            "RNGFND1_ORIENT": 25,
+            "RNGFND1_MIN": 0.10,
+            "RNGFND1_MAX": 50.00,
+        })
 
-            self.install_example_script_context("rangefinder_quality_test.lua")
+        self.install_example_script_context("rangefinder_quality_test.lua")
 
-            # These string must match those sent by the lua test script.
-            complete_str = "#complete#"
-            failure_str = "!!failure!!"
+        # These string must match those sent by the lua test script.
+        complete_str = "#complete#"
+        failure_str = "!!failure!!"
 
-            self.reboot_sitl()
-
-            self.wait_statustext(complete_str, timeout=20, check_context=True)
-            found_failure = self.statustext_in_collections(failure_str)
-
-            if found_failure is not None:
-                raise NotAchievedException("RngfndQuality test failed: " + found_failure.text)
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-
-        self.context_pop()
-
-        # restart SITL RF driver
         self.reboot_sitl()
 
-        if ex:
-            raise ex
+        self.wait_statustext(complete_str, timeout=20, check_context=True)
+        found_failure = self.statustext_in_collections(failure_str)
+
+        if found_failure is not None:
+            raise NotAchievedException("RngfndQuality test failed: " + found_failure.text)
 
     def watch_distance_maintained(self, delta=0.3, timeout=5.0):
         """Watch and wait for the rangefinder reading to be maintained"""
         tstart = self.get_sim_time_cached()
+        self.context_push()
+        self.context_set_message_rate_hz('RANGEFINDER', self.sitl_streamrate())
         previous_distance = self.assert_receive_message('RANGEFINDER').distance
+        previous_distance_ds = self.assert_receive_message('DISTANCE_SENSOR').current_distance * 0.01  # cm -> m
         self.progress('Distance to be watched: %.2f' % previous_distance)
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 self.progress('Distance hold done: %f' % previous_distance)
+                self.context_pop()
                 return
             m = self.assert_receive_message('RANGEFINDER')
             if abs(m.distance - previous_distance) > delta:
+                raise NotAchievedException(
+                    "Distance not maintained: want %.2f (+/- %.2f) got=%.2f" %
+                    (previous_distance, delta, m.distance))
+            m = self.assert_receive_message('DISTANCE_SENSOR')
+            if abs(m.current_distance*0.01 - previous_distance_ds) > delta:
                 raise NotAchievedException(
                     "Distance not maintained: want %.2f (+/- %.2f) got=%.2f" %
                     (previous_distance, delta, m.distance))

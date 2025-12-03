@@ -281,7 +281,18 @@ void Copter::failsafe_terrain_set_status(bool data_ok)
 void Copter::failsafe_terrain_on_event()
 {
     failsafe.terrain = true;
-    gcs().send_text(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain data missing");
+    switch (wp_nav->get_terrain_source()) {
+    case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain %s", "data missing");
+        break;
+    case AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER:
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain %s", "Rangefinder Unhealthy");
+        break;
+    case AC_WPNav::TerrainSource::TERRAIN_UNAVAILABLE:
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain %s", "Unavailable");
+        break;
+    }
+
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::FAILSAFE_OCCURRED);
 
     if (should_disarm_on_failsafe()) {

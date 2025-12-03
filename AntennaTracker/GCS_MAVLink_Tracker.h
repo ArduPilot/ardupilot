@@ -19,6 +19,7 @@ protected:
         return 0; // what if we have been picked up and carried somewhere?
     }
 
+    void send_attitude_target() override;
     void send_nav_controller_output() const override;
     void send_pid_tuning() override;
 

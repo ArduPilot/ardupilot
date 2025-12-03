@@ -82,7 +82,7 @@ to use DShot. Channels 1-10 support bi-directional dshot.
 ## Battery Monitoring
 
 The board has a built-in voltage sensor and external current sensor input. The current
-sensor can read up to 130 Amps. The voltage sensor can handle up to 6S
+sensor can read up to 130 Amps (analog signal is directly input to the ADC). The voltage sensor can handle up to 6S
 LiPo batteries.
 
 The correct battery setting parameters are:
@@ -112,7 +112,7 @@ The TBS LUCID H7 does not have a builtin compass, but you can attach an external
 
 ## VTX power control
 
-GPIO 81 controls the VSW pins which can be set to output either VBAT or 5V via a board jumper. Setting this GPIO high removes voltage supply to pins. RELAY2 is configured by default to control this GPIO and is low by default.
+GPIO 81 controls the VSW pins which can be set to output either VBAT or 5V via a board jumper. Setting this GPIO low removes voltage supply to pins. RELAY2 is configured by default to control this GPIO and is low by default.
 
 GPIO 83 controls the VTX BEC output to pins marked "9V" and is included on the HD VTX connector. Setting this GPIO low removes voltage supply to this pin/pad.
 

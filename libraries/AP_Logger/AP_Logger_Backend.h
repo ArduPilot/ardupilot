@@ -168,7 +168,7 @@ public:
     // values contained in arg_list:
     bool Write(uint8_t msg_type, va_list arg_list, bool is_critical=false, bool is_streaming=false);
 
-    // these methods are used when reporting system status over mavlink
+    // these methods are used for mavlink system status and arming checks
     virtual bool logging_enabled() const;
     virtual bool logging_failed() const = 0;
 

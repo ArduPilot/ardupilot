@@ -107,6 +107,8 @@ void GCS_MAVLINK_Sub::send_scaled_pressure3()
 #if AP_TEMPERATURE_SENSOR_ENABLED
     float temperature;
     if (!sub.temperature_sensor.get_temperature(temperature)) {
+        // Fall back to original behaviour
+        GCS_MAVLINK::send_scaled_pressure3();
         return;
     }
     mavlink_msg_scaled_pressure3_send(
@@ -116,6 +118,9 @@ void GCS_MAVLINK_Sub::send_scaled_pressure3()
         0,
         temperature * 100,
         0); // TODO: use differential pressure temperature
+#else
+    // Fall back to standard behaviour
+    GCS_MAVLINK::send_scaled_pressure3();
 #endif
 }
 
@@ -133,7 +138,7 @@ bool GCS_MAVLINK_Sub::send_info()
 
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
     send_named_float("TetherTrn",
-                     sub.quarter_turn_count/4);
+                     (float)sub.quarter_turn_count / 4);
 
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
     send_named_float("Lights1",
@@ -457,7 +462,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
     switch (msg.msgid) {
 
     case MAVLINK_MSG_ID_MANUAL_CONTROL: {     // MAV ID: 69
-        if (msg.sysid != gcs().sysid_gcs()) {
+        if (!gcs().sysid_is_gcs(msg.sysid)) {
             break;    // Only accept control from our gcs
         }
         mavlink_manual_control_t packet;
@@ -493,7 +498,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
     }
 
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE: {     // MAV ID: 70
-        if (msg.sysid != gcs().sysid_gcs()) {
+        if (!gcs().sysid_is_gcs(msg.sysid)) {
             break;    // Only accept control from our gcs
         }
 

@@ -263,6 +263,12 @@ public:
     */
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms);
 
+    /*
+     * Write terrain altitude (derived from SRTM) in meters above the origin
+     * only used by optical flow when out of rangefinder range
+     */
+    void writeTerrainData(float alt_m);
+
     // Set to true if the terrain underneath is stable enough to be used as a height reference
     // in combination with a range finder. Set to false if the terrain underneath the vehicle
     // cannot be used as a height reference. Use to prevent range finder operation otherwise
@@ -457,8 +463,9 @@ private:
 
     // enum for processing options
     enum class Option {
-        JammingExpected     = (1<<0),
-        ManualLaneSwitch   = (1<<1),
+        JammingExpected         = (1<<0),
+        ManualLaneSwitch        = (1<<1),
+        OptflowMayUseTerrainAlt = (1<<2),
     };
     bool option_is_enabled(Option option) const {
         return (_options & (uint32_t)option) != 0;

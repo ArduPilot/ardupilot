@@ -229,7 +229,7 @@ bool AC_PolyFence_loader::breached() const
 
 // check if a position (expressed as lat/lng) is within the boundary
 //   returns true if location is outside the boundary
-bool AC_PolyFence_loader::breached(const Location& loc, float& distance_outside_fence) const
+bool AC_PolyFence_loader::breached(const Location& loc, float& distance_outside_fence, Vector2f& fence_direction) const
 {
     if (!loaded() || total_fence_count() == 0) {
         return false;
@@ -248,9 +248,8 @@ bool AC_PolyFence_loader::breached(const Location& loc, float& distance_outside_
     // check we are inside each inclusion zone:
     for (uint8_t i=0; i<_num_loaded_inclusion_boundaries; i++) {
         const InclusionBoundary &boundary = _loaded_inclusion_boundary[i];
-        float distance;
-        bool valid_distance = Polygon_closest_distance_point(boundary.points, boundary.count, scaled_pos, distance);
-        distance *= 0.01f; // convert back to meters
+        bool valid_distance = Polygon_closest_distance_point(boundary.points, boundary.count, scaled_pos, fence_direction);
+        float distance = fence_direction.length() * 0.01f; // convert back to meters
         if (Polygon_outside(pos, boundary.points_lla, boundary.count)) {
             num_inclusion_outside++;
             if (valid_distance) {
@@ -268,9 +267,8 @@ bool AC_PolyFence_loader::breached(const Location& loc, float& distance_outside_
     // check we are outside each exclusion zone:
     for (uint8_t i=0; i<_num_loaded_exclusion_boundaries; i++) {
         const ExclusionBoundary &boundary = _loaded_exclusion_boundary[i];
-        float distance;
-        bool valid_distance = Polygon_closest_distance_point(boundary.points, boundary.count, scaled_pos, distance);
-        distance *= 0.01f; // convert back to meters
+        bool valid_distance = Polygon_closest_distance_point(boundary.points, boundary.count, scaled_pos, fence_direction);
+        float distance = fence_direction.length() * 0.01f; // convert back to meters
         if (!Polygon_outside(pos, boundary.points_lla, boundary.count)) {
             if (valid_distance) {
                 distance_outside_fence = distance;
@@ -1705,7 +1703,7 @@ bool AC_PolyFence_loader::get_inclusion_circle(uint8_t index, Vector2f &center_p
 void AC_PolyFence_loader::handle_msg(GCS_MAVLINK &link, const mavlink_message_t& msg) {};
 
 bool AC_PolyFence_loader::breached() const { return false; }
-bool AC_PolyFence_loader::breached(const Location& loc, float& distance_outside_fence) const { return false; }
+bool AC_PolyFence_loader::breached(const Location& loc, float& distance_outside_fence, Vector2f& fence_direction) const { return false; }
 
 uint16_t AC_PolyFence_loader::max_items() const { return 0; }
 

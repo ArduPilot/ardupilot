@@ -76,7 +76,7 @@ def update_openocd_cfg(cfg):
         openocd_target = ''
         if mcu_type.startswith("STM32H7"):
             if mcu_type in H7_DUAL_BANK_LIST:
-                openocd_target = 'stm32h7_dual_bank.cfg'
+                openocd_target = 'stm32h7x_dual_bank.cfg'
             else:
                 openocd_target = 'stm32h7x.cfg'
         elif mcu_type.startswith("STM32F7"):
@@ -95,7 +95,10 @@ def update_openocd_cfg(cfg):
                 f.write("source [find interface/stlink.cfg]\n")
                 f.write(f"source [find target/{openocd_target}]\n")
                 f.write("init\n")
-                f.write("$_TARGETNAME configure -rtos auto\n")
+                if mcu_type.startswith("STM32H7"):
+                    f.write("stm32h7x.cpu0 configure -rtos auto\n")
+                else:
+                    f.write("$_TARGETNAME configure -rtos auto\n")
 
 def init_launch_json_if_not_exist(cfg):
     launch_json_path = os.path.join(cfg.srcnode.abspath(), '.vscode', 'launch.json')

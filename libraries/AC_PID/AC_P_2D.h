@@ -30,7 +30,7 @@ public:
     void set_error_max(float error_max);
 
     // Returns the current error clamp limit in controller units.
-    float get_error_max() { return _error_max; }
+    float get_error_max() const { return _error_max; }
 
     // Saves controller configuration from EEPROM. (not used)
     void save_gains() { _kp.save(); }

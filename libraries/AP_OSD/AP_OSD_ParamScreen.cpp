@@ -258,7 +258,7 @@ void AP_OSD_ParamScreen::draw_parameter(uint8_t number, uint8_t x, uint8_t y)
             break;
         }
         case AP_PARAM_INT32: {
-           int32_t val = ((AP_Int16*)p)->get();
+           int32_t val = ((AP_Int32*)p)->get();
             if (metadata != nullptr && val >= 0 && val < metadata->values_max) {
                 backend->write(value_pos, y, value_blink, "%s", metadata->values[val]);
             } else {

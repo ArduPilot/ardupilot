@@ -177,12 +177,12 @@
 
 enum ap_var_type {
     AP_PARAM_NONE    = 0,
-    AP_PARAM_INT8,
-    AP_PARAM_INT16,
-    AP_PARAM_INT32,
-    AP_PARAM_FLOAT,
-    AP_PARAM_VECTOR3F,
-    AP_PARAM_GROUP
+    AP_PARAM_INT8    = 1,
+    AP_PARAM_INT16   = 2,
+    AP_PARAM_INT32   = 3,
+    AP_PARAM_FLOAT   = 4,
+    AP_PARAM_VECTOR3F= 5,
+    AP_PARAM_GROUP   = 6,
 };
 
 
@@ -384,14 +384,6 @@ public:
     static bool find_top_level_key_by_pointer(const void *ptr, uint16_t &key);
 
 
-    /// Find a object in the top level var_info table
-    ///
-    /// If the variable has no name, it cannot be found by this interface.
-    ///
-    /// @param  name            The full name of the variable to be found.
-    ///
-    static AP_Param * find_object(const char *name);
-
     /// Notify GCS of current parameter value
     ///
     void notify() const;
@@ -436,7 +428,7 @@ public:
     }
 
     // returns storage space used:
-    static uint16_t storage_used() { return sentinal_offset; }
+    static uint16_t storage_used() { return sentinel_offset; }
 
     // returns storage space :
     static uint16_t storage_size() { return _storage.size(); }
@@ -522,7 +514,7 @@ public:
     // is_top_level: Is true if the class had its own top level key, param_key. It is false if the class was a subgroup
     static void         convert_class(uint16_t param_key, void *object_pointer,
                                         const struct AP_Param::GroupInfo *group_info,
-                                        uint16_t old_index, bool is_top_level);
+                                        uint16_t old_index, bool is_top_level, bool recurse_sub_groups = false);
 
     /*
       fetch a parameter value based on the index within a group. This
@@ -638,7 +630,7 @@ private:
     };
     static_assert(sizeof(struct EEPROM_header) == 4, "Bad EEPROM_header size!");
 
-    static uint16_t sentinal_offset;
+    static uint16_t sentinel_offset;
 
 /* This header is prepended to a variable stored in EEPROM.
  *  The meaning is as follows:
@@ -665,9 +657,9 @@ private:
     static const uint8_t        _group_level_shift = 6;
     static const uint8_t        _group_bits  = 18;
 
-    static const uint16_t       _sentinal_key   = 0x1FF;
-    static const uint8_t        _sentinal_type  = 0x1F;
-    static const uint8_t        _sentinal_group = 0xFF;
+    static const uint16_t       _sentinel_key   = 0x1FF;
+    static const uint8_t        _sentinel_type  = 0x1F;
+    static const uint8_t        _sentinel_group = 0xFF;
 
     static uint16_t             _frame_type_flags;
 
@@ -744,10 +736,10 @@ private:
                                     ptrdiff_t group_offset,
                                     const struct GroupInfo *group_info,
                                     enum ap_var_type *ptype);
-    static void                 write_sentinal(uint16_t ofs);
+    static void                 write_sentinel(uint16_t ofs);
     static uint16_t             get_key(const Param_header &phdr);
     static void                 set_key(Param_header &phdr, uint16_t key);
-    static bool                 is_sentinal(const Param_header &phrd);
+    static bool                 is_sentinel(const Param_header &phrd);
     static bool                 scan(
                                     const struct Param_header *phdr,
                                     uint16_t *pofs);

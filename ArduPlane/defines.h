@@ -160,6 +160,8 @@ enum FlightOptions {
     ENABLE_LOITER_ALT_CONTROL = (1<<12),
     INDICATE_WAITING_FOR_RUDDER_NEUTRAL = (1<<13),
     IMMEDIATE_CLIMB_IN_AUTO = (1<<14),
+    FLAP_ACTUAL_SPEED = (1<<15),
+    ENABLE_FULL_AERO_LF_ROLL_LIMITS = (1<<16),
 };
 
 enum CrowFlapOptions {
@@ -188,3 +190,15 @@ enum class FenceAutoEnable : uint8_t {
     AutoDisableFloorOnly=2,
     WhenArmed=3
 };
+
+/*
+  bitmask of options for RGFND_LANDING
+ */
+enum class RangeFinderUse : uint8_t {
+    NONE    = 0U,
+    ALL     = (1U<<0),
+    TAKEOFF_LANDING = (1U<<1),
+    ASSIST  = (1U<<2),
+    CLIMB   = (1U<<3),
+};
+

@@ -161,9 +161,9 @@ public:
 
     // FFT support access
 #if HAL_GYROFFT_ENABLED
-    const Vector3f& get_gyro_for_fft(void) const { return _gyro_for_fft[_first_usable_gyro]; }
+    const Vector3f& get_gyro_for_fft(void) const { return _gyro_for_fft[_primary]; }
     FloatBuffer&  get_raw_gyro_window(uint8_t instance, uint8_t axis) { return _gyro_window[instance][axis]; }
-    FloatBuffer&  get_raw_gyro_window(uint8_t axis) { return get_raw_gyro_window(_first_usable_gyro, axis); }
+    FloatBuffer&  get_raw_gyro_window(uint8_t axis) { return get_raw_gyro_window(_primary, axis); }
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     bool has_fft_notch() const;
 #endif

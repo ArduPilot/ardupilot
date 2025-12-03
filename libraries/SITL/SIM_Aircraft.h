@@ -180,6 +180,12 @@ public:
 
     ADSB *adsb;
 
+    // takes a PWM range between 1000 and 2000 and returns a floating
+    // point value between -1 and 1
+    float normalise_servo_input(uint16_t input) const {
+        return 2*((input-1000)/1000.0f - 0.5f);
+    }
+
     ServoModel servo_filter[16];
 
     float get_airspeed_pitot() const { return airspeed_pitot; }

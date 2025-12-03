@@ -58,7 +58,7 @@ const AP_Param::GroupInfo AP_Terrain::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Terrain options
     // @Description: Options to change behaviour of terrain system
-    // @Bitmask: 0:Disable Download
+    // @Bitmask: 0:Disable Download,1:Disable Disk
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",   2, AP_Terrain, options, 0),
 
@@ -364,7 +364,7 @@ void AP_Terrain::update(void)
     // just schedule any needed disk IO
     schedule_disk_io();
 
-    const AP_AHRS &ahrs = AP::ahrs();
+    AP_AHRS &ahrs = AP::ahrs();
 
     // try to ensure the home location is populated
     float height;
@@ -377,6 +377,9 @@ void AP_Terrain::update(void)
     if (pos_valid && terrain_valid) {
         last_current_loc_height = height;
         have_current_loc_height = true;
+
+        // send terrain altitude to AHRS for optical flow when rangefinder is out of range
+        ahrs.writeTerrainAMSL(height);
     }
 
     // check for pending mission data

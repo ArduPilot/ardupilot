@@ -162,18 +162,17 @@ bool AP_Compass_IST8308::init()
 
     //register compass instance
     _dev->set_device_type(DEVTYPE_IST8308);
-    if (!register_compass(_dev->get_bus_id(), _instance)) {
+    if (!register_compass(_dev->get_bus_id())) {
         return false;
     }
-    set_dev_id(_instance, _dev->get_bus_id());
 
     printf("%s found on bus %u id %u address 0x%02x\n", name,
            _dev->bus_num(), unsigned(_dev->get_bus_id()), _dev->get_bus_address());
 
-    set_rotation(_instance, _rotation);
+    set_rotation(_rotation);
 
     if (_force_external) {
-        set_external(_instance, true);
+        set_external(true);
     }
 
     _dev->register_periodic_callback(SAMPLING_PERIOD_USEC,
@@ -215,12 +214,12 @@ void AP_Compass_IST8308::timer()
     /* Resolution: 0.1515 µT/LSB - already convert to milligauss */
     Vector3f field = Vector3f{x * 1.515f, y * 1.515f, z * 1.515f};
 
-    accumulate_sample(field, _instance);
+    accumulate_sample(field);
 }
 
 void AP_Compass_IST8308::read()
 {
-    drain_accumulated_samples(_instance);
+    drain_accumulated_samples();
 }
 
 #endif  // AP_COMPASS_IST8308_ENABLED

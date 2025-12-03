@@ -73,3 +73,11 @@
 #include <AP_Mission/AP_Mission_config.h>
 #define AP_FILESYSTEM_MISSION_ENABLED AP_MISSION_ENABLED
 #endif
+
+#ifndef AP_FATFS_MAX_IO_SIZE
+#define AP_FATFS_MAX_IO_SIZE 4096
+#endif
+
+#ifndef AP_FATFS_MIN_IO_SIZE
+#define AP_FATFS_MIN_IO_SIZE 4096
+#endif

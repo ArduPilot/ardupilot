@@ -90,6 +90,16 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-octaquad.parm" ],
             },
+            "octa-quad-cor": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "default_params/copter-octaquad-cor.parm" ],
+            },
+            "octa-quad-cw-cor": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "default_params/copter-octaquad-cw-cor.parm" ],
+            },
             "octa": {
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
@@ -463,14 +473,17 @@ class VehicleInfo(object):
                 "waf_target": "bin/ardurover",
                 "default_params_filename": ["default_params/rover.parm",
                                             "default_params/rover-skid.parm"],
+                "external": True,
             },
             "airsim-rover": {
                 "waf_target": "bin/ardurover",
                 "default_params_filename": ["default_params/rover.parm",
                                             "default_params/airsim-rover.parm"],
+                "external": True,
             },
             "calibration": {
                 "extra_mavlink_cmds": "module load sitl_calibration;",
+                "external": True,
             },
         },
     },

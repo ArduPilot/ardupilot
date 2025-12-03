@@ -522,7 +522,7 @@ bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Airspeed& msg)
     // As a consequence, to follow ROS REP 103, it is necessary to invert Y and Z
     Vector3f true_airspeed_vec_bf;
     bool is_airspeed_available {false};
-    if (ahrs.airspeed_vector_true(true_airspeed_vec_bf)) {
+    if (ahrs.airspeed_vector_TAS(true_airspeed_vec_bf)) {
         msg.true_airspeed.x = true_airspeed_vec_bf[0];
         msg.true_airspeed.y = -true_airspeed_vec_bf[1];
         msg.true_airspeed.z = -true_airspeed_vec_bf[2];
@@ -659,7 +659,6 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
     } else {
         initialize(msg.orientation);
     }
-    msg.orientation_covariance[0] = -1;
 
     uint8_t accel_index = ahrs.get_primary_accel_index();
     uint8_t gyro_index = ahrs.get_primary_gyro_index();
@@ -674,8 +673,6 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
     msg.angular_velocity.x = gyro_data.x;
     msg.angular_velocity.y = gyro_data.y;
     msg.angular_velocity.z = gyro_data.z;
-    msg.angular_velocity_covariance[0] = -1;
-    msg.linear_acceleration_covariance[0] = -1;
 }
 #endif // AP_DDS_IMU_PUB_ENABLED
 
@@ -744,6 +741,7 @@ bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Status& msg)
     is_message_changed |= (last_status_msg_.failsafe_size != msg.failsafe_size);
     is_message_changed |= (last_status_msg_.external_control != msg.external_control);
 
+    const auto timestamp = AP_HAL::millis64();
     if ( is_message_changed ) {
         last_status_msg_.flying = msg.flying;
         last_status_msg_.armed  = msg.armed;
@@ -751,6 +749,12 @@ bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Status& msg)
         last_status_msg_.vehicle_type = msg.vehicle_type;
         last_status_msg_.failsafe_size = msg.failsafe_size;
         last_status_msg_.external_control = msg.external_control;
+        last_status_publish_time_ms = timestamp;
+        update_topic(msg.header.stamp);
+        return true;
+    } else if (timestamp - last_status_publish_time_ms > DELAY_STATUS_TOPIC_MS * 5) {
+        // Publish the status message at 2Hz even if no change is detected.
+        last_status_publish_time_ms = timestamp;
         update_topic(msg.header.stamp);
         return true;
     } else {
@@ -1230,6 +1234,18 @@ void AP_DDS_Client::main_loop(void)
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s transport invalid, exiting", msg_prefix);
             return;
         }
+        // If using UDP, check if the network is active before proceeding
+        // not applicable for SITL, which doesn't use AP_Networking
+#if AP_DDS_UDP_ENABLED && !AP_NETWORKING_BACKEND_SITL
+        if (!is_using_serial) {
+            const auto &network = AP::network();
+            if (network.get_ip_active() == 0) {
+                hal.scheduler->delay(1000);
+                continue;
+            }
+
+        }
+#endif
 
         // check ping
         if (ping_max_retry == 0) {

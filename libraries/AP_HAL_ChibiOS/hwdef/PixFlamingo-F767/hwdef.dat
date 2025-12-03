@@ -187,7 +187,7 @@ IMU Invensense SPI:mpu6500 ROTATION_ROLL_180
 COMPASS LIS3MDL SPI:lis3mdl false ROTATION_NONE
 
 # also probe all types of external I2C compasses
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 
 

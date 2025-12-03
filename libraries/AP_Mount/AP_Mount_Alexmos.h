@@ -223,7 +223,7 @@ private:
     } _buffer,_current_parameters;
 
     AP_HAL::UARTDriver *_port;
-    bool _initialised : 1;
+    bool _initialised;
 
     // result of the get_boardinfo
     uint8_t _board_version;
@@ -236,7 +236,7 @@ private:
     Vector3f _current_angle;
 
     // CMD_READ_PARAMS has been called once
-    bool _param_read_once : 1;
+    bool _param_read_once;
 
     // Serial Protocol Variables
     uint8_t _checksum;
@@ -246,6 +246,6 @@ private:
     uint8_t _payload_counter;
 
     // confirmed that last command was ok
-    bool _last_command_confirmed : 1;
+    bool _last_command_confirmed;
 };
 #endif // HAL_MOUNT_ALEXMOS_ENABLED

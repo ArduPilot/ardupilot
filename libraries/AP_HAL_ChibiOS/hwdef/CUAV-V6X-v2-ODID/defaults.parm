@@ -1,0 +1,12 @@
+# enforce OpenDroneID on DroneCAN. Note that we need to lock down key parameters
+# to ensure the integrity of the RemoteID system
+DID_ENABLE 1 @READONLY
+DID_OPTIONS 5 @READONLY
+DID_MAVPORT -1 @READONLY
+DID_CANDRIVER 1 @READONLY
+AHRS_EKF_TYPE 3 @READONLY
+BATT_MONITOR=8
+CAN_P1_DRIVER=1
+CAN_P2_DRIVER=1
+GPS1_TYPE 1
+GPS2_TYPE 0

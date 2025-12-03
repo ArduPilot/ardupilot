@@ -93,6 +93,8 @@ public:
         MOTOR_FRAME_TYPE_NYT_X = 17, // X frame, no differential torque for yaw
         MOTOR_FRAME_TYPE_BF_X_REV = 18, // X frame, betaflight ordering, reversed motors
         MOTOR_FRAME_TYPE_Y4 = 19, //Y4 Quadrotor frame
+        MOTOR_FRAME_TYPE_X_COR = 20, // X8 co-rotating, old motor ordering
+        MOTOR_FRAME_TYPE_CW_X_COR = 21, // X8 co-rotating, clockwise motor ordering
     };
 
 
@@ -195,15 +197,15 @@ public:
 
     // structure for holding motor limit flags
     struct AP_Motors_limit {
-        bool roll;           // we have reached roll or pitch limit
-        bool pitch;          // we have reached roll or pitch limit
-        bool yaw;            // we have reached yaw limit
-        bool throttle_lower; // we have reached throttle's lower limit
-        bool throttle_upper; // we have reached throttle's upper limit
+        bool roll;                    // we have reached roll or pitch limit
+        bool pitch;                   // we have reached roll or pitch limit
+        bool yaw;                     // we have reached yaw limit
+        bool throttle_lower;          // we have reached throttle's lower limit
+        bool throttle_upper;          // we have reached throttle's upper limit
+        void set_all(bool flag);      // set all limits
+        void set_rpy(bool flag);      // set limits for roll pitch yaw
+        void set_throttle(bool flag); // set limits for throttle upper and lower
     } limit;
-
-    // set limit flag for pitch, roll and yaw
-    void set_limit_flag_pitch_roll_yaw(bool flag);
 
 #if AP_SCRIPTING_ENABLED
     // set limit flag for pitch, roll and yaw

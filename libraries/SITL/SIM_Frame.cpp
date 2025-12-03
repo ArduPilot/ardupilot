@@ -233,6 +233,30 @@ static Motor octa_quad_motors[] =
     Motor(AP_MOTORS_MOT_8, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6)
 };
 
+static Motor octa_quad_corotating_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
+    Motor(AP_MOTORS_MOT_2,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7),
+    Motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5),
+    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3),
+    Motor(AP_MOTORS_MOT_5,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  8),
+    Motor(AP_MOTORS_MOT_6,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2),
+    Motor(AP_MOTORS_MOT_7,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
+    Motor(AP_MOTORS_MOT_8, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6)
+};
+
+static Motor octa_quad_cw_corotating_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
+    Motor(AP_MOTORS_MOT_2,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2),
+    Motor(AP_MOTORS_MOT_3,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3),
+    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
+    Motor(AP_MOTORS_MOT_5, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5),
+    Motor(AP_MOTORS_MOT_6, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6),
+    Motor(AP_MOTORS_MOT_7,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7),
+    Motor(AP_MOTORS_MOT_8,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  8),
+};
+
 static Motor octa_quad_cw_x_motors[] =
 {
     Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
@@ -244,6 +268,7 @@ static Motor octa_quad_cw_x_motors[] =
     Motor(AP_MOTORS_MOT_7,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 7),
     Motor(AP_MOTORS_MOT_8,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  8)
 };
+
 
 static Motor dodeca_hexa_motors[] =
 {
@@ -400,6 +425,8 @@ static Frame supported_frames[] =
     Frame("octa-cwx",  8, octa_cw_x_motors),
     Frame("octa-dji",  8, octa_dji_x_motors),
     Frame("octa-quad-cwx",8, octa_quad_cw_x_motors),
+    Frame("octa-quad-cor", 8, octa_quad_corotating_motors),
+    Frame("octa-quad-cw-cor", 8, octa_quad_cw_corotating_motors),
     Frame("octa-quad", 8, octa_quad_motors),
     Frame("octa",      8, octa_motors),
     Frame("deca",     10, deca_motors),
@@ -701,6 +728,10 @@ void Frame::current_and_voltage(float &voltage, float &current)
     if (!is_equal(last_param_voltage,param_voltage)) {
         battery->init_voltage(param_voltage);
         last_param_voltage = param_voltage;
+    }
+    const float param_capacity = AP::sitl()->batt_capacity_ah;
+    if (!is_equal(battery->get_capacity(), param_capacity)) {
+        battery->init_capacity(param_capacity);
     }
     voltage = battery->get_voltage();
     current = 0;

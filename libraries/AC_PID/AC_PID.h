@@ -62,7 +62,7 @@ public:
     // Computes the PID output using a target and measurement input.
     // Applies filters to the target and error, calculates the derivative and updates the integrator.
     // If `limit` is true, the integrator is allowed to shrink but not grow.
-    float update_all(float target, float measurement, float dt, bool limit = false, float pd_scale = 1.0f);
+    float update_all(float target, float measurement, float dt, bool limit = false, float pd_scale = 1.0f, float i_scale = 1.0f);
 
     // Computes the PID output from an error input only (target assumed to be zero).
     // Applies error filtering and updates the derivative and integrator.
@@ -75,6 +75,8 @@ public:
     float get_i() const;
     float get_d() const;
     float get_ff() const;
+    float get_ff_component() const;
+    float get_dff_component() const;
 
     // Used to fully zero the I term between mode changes or initialization
     void reset_I();
@@ -157,7 +159,7 @@ protected:
 
     // Updates the integrator based on current error and dt.
     // If `limit` is true, the integrator is only allowed to shrink to avoid wind-up.
-    void update_i(float dt, bool limit);
+    void update_i(float dt, bool limit, float i_scale = 1.0f);
 
     // parameters
     AP_Float _kp;

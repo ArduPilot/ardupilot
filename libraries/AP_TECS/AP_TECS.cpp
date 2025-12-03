@@ -442,7 +442,7 @@ void AP_TECS::_update_speed(float DT)
 
     // Equivalent airspeed
     float _EAS;
-    if (!use_airspeed || !_ahrs.airspeed_estimate(_EAS)) {
+    if (!use_airspeed || !_ahrs.airspeed_EAS(_EAS)) {
         // If no airspeed available use average of min and max
         _EAS = constrain_float(aparm.airspeed_cruise.get(), (float)aparm.airspeed_min.get(), (float)aparm.airspeed_max.get());
     }
@@ -618,7 +618,7 @@ void AP_TECS::_update_height_demand(void)
 
         if (!_flare_initialised) {
             _flare_hgt_dem_adj = _hgt_dem;
-            _flare_hgt_dem_ideal = _hgt_afe;
+            _flare_hgt_dem_ideal = _height;
             _hgt_at_start_of_flare = _hgt_afe;
             _hgt_rate_at_flare_entry = _climb_rate;
             _flare_initialised = true;
@@ -641,9 +641,6 @@ void AP_TECS::_update_height_demand(void)
 
         // fade across to the ideal height profile
         _hgt_dem = _flare_hgt_dem_adj * (1.0f - p) + _flare_hgt_dem_ideal * p;
-
-        // correct for offset between height above ground and height above datum used by control loops
-        _hgt_dem += (_hgt_afe - _height);
     }
 }
 

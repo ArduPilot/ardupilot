@@ -7,6 +7,7 @@
 
 int lua_CRSF_new_menu(lua_State *L);
 int lua_CRSF_get_menu_event(lua_State *L);
+int lua_CRSF_peek_menu_event(lua_State *L);
 int lua_CRSF_send_response(lua_State *L);
 int lua_CRSF_add_parameter(lua_State *L);
 int lua_CRSF_add_menu(lua_State *L);

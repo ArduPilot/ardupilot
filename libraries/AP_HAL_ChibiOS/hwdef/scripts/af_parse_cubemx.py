@@ -61,7 +61,7 @@ def parse_af_table(fname, table):
         sys.exit(1)
 
     for row in csvt:
-        pin = re.findall('\w\w\d+', row[1])  # Strip function after pin like 'PC14-OSC32_IN'
+        pin = re.findall(r'\w\w\d+', row[1])  # Strip function after pin like 'PC14-OSC32_IN'
         if len(pin) == 0:
             continue
         elif not is_pin(pin[0]):

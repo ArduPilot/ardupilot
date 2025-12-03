@@ -91,7 +91,7 @@ protected:
     virtual bool init(void) = 0;
 
     // get pilot input for desired climb rate
-    virtual float get_pilot_desired_climb_rate_cms(void) const = 0;
+    virtual float get_desired_climb_rate_ms(void) const = 0;
 
     // get pilot input for designed roll and pitch, and yaw rate
     virtual void get_pilot_desired_rp_yrate_rad(float &roll_rad, float &pitch_rad, float &yaw_rate_rads) = 0;
@@ -284,15 +284,15 @@ protected:
     LowPassFilterFloat  rotation_rate_filt; // filtered rotation rate in radians/second
 
     // backup of currently being tuned parameter values
-    float    orig_roll_rp, orig_roll_ri, orig_roll_rd, orig_roll_rff, orig_roll_dff, orig_roll_fltt, orig_roll_smax, orig_roll_sp, orig_roll_accel, orig_roll_rate;
-    float    orig_pitch_rp, orig_pitch_ri, orig_pitch_rd, orig_pitch_rff, orig_pitch_dff, orig_pitch_fltt, orig_pitch_smax, orig_pitch_sp, orig_pitch_accel, orig_pitch_rate;
-    float    orig_yaw_rp, orig_yaw_ri, orig_yaw_rd, orig_yaw_rff, orig_yaw_dff, orig_yaw_fltt, orig_yaw_smax, orig_yaw_rLPF, orig_yaw_sp, orig_yaw_accel, orig_yaw_rate;
+    float    orig_roll_rp, orig_roll_ri, orig_roll_rd, orig_roll_rff, orig_roll_dff, orig_roll_fltt, orig_roll_smax, orig_roll_sp, orig_roll_accel_radss, orig_roll_rate_rads;
+    float    orig_pitch_rp, orig_pitch_ri, orig_pitch_rd, orig_pitch_rff, orig_pitch_dff, orig_pitch_fltt, orig_pitch_smax, orig_pitch_sp, orig_pitch_accel_radss, orig_pitch_rate_rads;
+    float    orig_yaw_rp, orig_yaw_ri, orig_yaw_rd, orig_yaw_rff, orig_yaw_dff, orig_yaw_fltt, orig_yaw_smax, orig_yaw_rLPF, orig_yaw_sp, orig_yaw_accel_radss, orig_yaw_rate_rads;
     bool     orig_bf_feedforward;
 
     // currently being tuned parameter values
-    float    tune_roll_rp, tune_roll_rd, tune_roll_sp, tune_roll_accel;
-    float    tune_pitch_rp, tune_pitch_rd, tune_pitch_sp, tune_pitch_accel;
-    float    tune_yaw_rp, tune_yaw_rLPF, tune_yaw_sp, tune_yaw_accel;
+    float    tune_roll_rp, tune_roll_rd, tune_roll_sp, tune_roll_accel_radss;
+    float    tune_pitch_rp, tune_pitch_rd, tune_pitch_sp, tune_pitch_accel_radss;
+    float    tune_yaw_rp, tune_yaw_rLPF, tune_yaw_sp, tune_yaw_accel_radss;
     float    tune_roll_rff, tune_pitch_rff, tune_yaw_rd, tune_yaw_rff;
 
     uint32_t last_announce_ms;
@@ -336,13 +336,13 @@ private:
     // returns true if vehicle is close to level
     bool currently_level();
 
-    bool     pilot_override;             // true = pilot is overriding controls so we suspend tuning temporarily
-    bool     use_poshold;                // true = enable position hold
-    bool     have_position;              // true = start_position is value
-    Vector3f start_position;             // target when holding position as an offset from EKF origin in cm in NEU frame
+    bool     pilot_override;        // true = pilot is overriding controls so we suspend tuning temporarily
+    bool     use_poshold;           // true = enable position hold
+    bool     have_position;         // true = start_position is value
+    Vector3p start_position_neu_m;  // target when holding position as an offset from EKF origin in cm in NEU frame
 
     // variables
-    uint32_t override_time;                         // the last time the pilot overrode the controls
+    uint32_t override_time;         // the last time the pilot overrode the controls
 
     // time in ms of last pilot override warning
     uint32_t last_pilot_override_warning;

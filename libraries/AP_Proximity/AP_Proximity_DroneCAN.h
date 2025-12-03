@@ -18,8 +18,8 @@ public:
     void update(void) override;
 
     // get maximum and minimum distances (in meters) of sensor
-    float distance_max() const override;
-    float distance_min() const override;
+    float distance_max_m() const override;
+    float distance_min_m() const override;
 
     static AP_Proximity_DroneCAN* get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t address, bool create_new);
 

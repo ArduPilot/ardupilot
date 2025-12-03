@@ -7,11 +7,6 @@
 # MCU class and specific type
 MCU STM32F7xx STM32F777xx
 
-# we set a specific HAL_BOARD_SUBTYPE, allowing for custom config in
-# drivers. For this to be used the subtype needs to be added to
-# AP_HAL/AP_HAL_Boards.h as well
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
-
 # Set Proper Sensor Orientation
 define BOARD_TYPE_DEFAULT 20
 
@@ -387,7 +382,7 @@ define HAL_HAVE_SAFETY_SWITCH 1
 # this enables the use of a ramtron device for storage, if one is
 # found on SPI. You must have a ramtron entry in the SPI device table
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_WITH_RAMTRON 1
 
 # setup for the possibility of an IMU heater as the The CUBE has

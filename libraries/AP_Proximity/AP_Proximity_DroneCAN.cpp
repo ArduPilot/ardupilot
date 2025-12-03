@@ -134,7 +134,7 @@ void AP_Proximity_DroneCAN::update(void)
 }
 
 // get maximum and minimum distances (in meters)
-float AP_Proximity_DroneCAN::distance_max() const
+float AP_Proximity_DroneCAN::distance_max_m() const
 {
     if (is_zero(params.max_m)) {
         // GCS will not report correct correct value if max isn't set properly
@@ -144,7 +144,7 @@ float AP_Proximity_DroneCAN::distance_max() const
     return params.max_m;
 }
 
-float AP_Proximity_DroneCAN::distance_min() const
+float AP_Proximity_DroneCAN::distance_min_m() const
 {
     return params.min_m;
 }

@@ -150,7 +150,7 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 3
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
@@ -160,8 +160,7 @@ define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 BARO  SPL06  I2C:0:0x76
 
 define HAL_OS_FATFS_IO 1
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
+define HAL_LOGGER_MIN_MB_FREE 25
 
 # setup for OSD
 define OSD_ENABLED 1
@@ -181,3 +180,4 @@ define AP_BARO_MS5637_ENABLED 1
 # need to probe external baros even 'though we're minimised to allow custom build options:
 undef AP_BARO_PROBE_EXTERNAL_I2C_BUSES
 define AP_BARO_PROBE_EXTERNAL_I2C_BUSES 1
+define DEFAULT_NTF_LED_TYPES 455

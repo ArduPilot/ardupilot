@@ -22,9 +22,15 @@ set -ex
 c_compiler=${CC:-gcc}
 cxx_compiler=${CXX:-g++}
 
+# we want processes to exit in CI.  If we don't end up calling
+# alarm_handler and not getting the binaries in the failure archive on
+# github.
+export SITL_PANIC_EXIT=1
+
 export BUILDROOT=/tmp/ci.build
 rm -rf $BUILDROOT
 export GIT_VERSION="abcdef"
+export GIT_VERSION_EXTENDED="0123456789abcdef"
 export GIT_VERSION_INT="15"
 export CHIBIOS_GIT_VERSION="12345667"
 export CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime"
@@ -171,6 +177,10 @@ for t in $CI_BUILD_TARGET; do
        run_autotest "Plane" "build.Plane" "test.PlaneTests1b"
         continue
     fi
+    if [ "$t" == "sitltest-plane-tests1c" ]; then
+       run_autotest "Plane" "build.Plane" "test.PlaneTests1c"
+        continue
+    fi
     if [ "$t" == "sitltest-quadplane" ]; then
         run_autotest "QuadPlane" "build.Plane" "test.QuadPlane"
         continue
@@ -178,6 +188,7 @@ for t in $CI_BUILD_TARGET; do
     if [ "$t" == "sitltest-rover" ]; then
         sudo apt-get update || /bin/true
         sudo apt-get install -y ppp || /bin/true
+        pppd --help # fail with `command not found` if ppp install failed
         run_autotest "Rover" "build.Rover" "test.Rover"
         continue
     fi

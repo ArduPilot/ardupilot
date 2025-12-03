@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from __future__ import annotations
+
 '''
 Wrapper around elf_diff (https://github.com/noseglasses/elf_diff)
 to create a html report comparing an ArduPilot build across two
@@ -13,7 +15,7 @@ How to use?
 Starting in the ardupilot directory.
 ~/ardupilot $ python Tools/scripts/size_compare_branches.py --branch=[PR_BRANCH_NAME] --vehicle=copter
 
-Output is placed into ../ELF_DIFF_[VEHICLE_NAME]
+Output is placed into ELF_DIFF_[VEHICLE_NAME]
 '''
 
 import copy
@@ -57,24 +59,36 @@ class SizeCompareBranches(object):
     def __init__(self,
                  branch=None,
                  master_branch="master",
-                 board=["MatekF405-Wing"],
-                 vehicle=["plane"],
+                 board: list | None = None,
+                 vehicle: list | None = None,
                  bin_dir=None,
                  run_elf_diff=True,
                  all_vehicles=False,
-                 exclude_board_glob=[],
+                 exclude_board_glob: list | None = None,
                  all_boards=False,
                  use_merge_base=True,
                  waf_consistent_builds=True,
                  show_empty=True,
                  show_unchanged=True,
-                 extra_hwdef=[],
-                 extra_hwdef_branch=[],
-                 extra_hwdef_master=[],
+                 extra_hwdef: list | None = None,
+                 extra_hwdef_branch: list | None = None,
+                 extra_hwdef_master: list | None = None,
                  parallel_copies=None,
                  jobs=None,
                  features=False,
                  ):
+        if board is None:
+            board = ["MatekF405-Wing"]
+        if vehicle is None:
+            vehicle = ["plane"]
+        if exclude_board_glob is None:
+            exclude_board_glob = []
+        if extra_hwdef is None:
+            extra_hwdef = []
+        if extra_hwdef_branch is None:
+            extra_hwdef_branch = []
+        if extra_hwdef_master is None:
+            extra_hwdef_master = []
 
         if branch is None:
             branch = self.find_current_git_branch_or_sha1()
@@ -97,9 +111,6 @@ class SizeCompareBranches(object):
         self.parallel_copies = parallel_copies
         self.jobs = jobs
         self.features = features
-
-        if self.bin_dir is None:
-            self.bin_dir = self.find_bin_dir()
 
         self.boards_by_name = {}
         for board in board_list.BoardList().boards:
@@ -168,8 +179,10 @@ class SizeCompareBranches(object):
             'Pixhawk1-1M-bdshot',
             'Pixhawk1-bdshot',
             'SITL_arm_linux_gnueabihf',
+            'SITL_x86_64_linux_gnu',
             'RADIX2HD',
             'canzero',
+            't3-gem-o1',
             'CUAV-Pixhack-v3',  # uses USE_BOOTLOADER_FROM_BOARD
             'kha_eth',  # no hwdef-bl.dat
             'TBS-L431-Airspeed',  # uses USE_BOOTLOADER_FROM_BOARD
@@ -177,63 +190,36 @@ class SizeCompareBranches(object):
             'TBS-L431-CurrMon',  # uses USE_BOOTLOADER_FROM_BOARD
             'TBS-L431-PWM',  # uses USE_BOOTLOADER_FROM_BOARD
             'ARKV6X-bdshot',  # uses USE_BOOTLOADER_FROM_BOARD
+
+            'MatekL431-ADSB',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-Airspeed',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-APDTelem',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-AUAV',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-BatteryTag',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-BattMon',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-bdshot',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-DShot',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-EFI',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-GPS',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-HWTelem',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-MagHiRes',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-Periph',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-Proximity',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-Rangefinder',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-RC',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-Serial',  # uses USE_BOOTLOADER_FROM_BOARD
         ])
 
-        # blacklist all linux boards for bootloader build:
-        self.bootloader_blacklist.update(self.linux_board_names())
-        # ... and esp32 boards:
-        self.bootloader_blacklist.update(self.esp32_board_names())
+        for board_name in self.board:
+            board = self.boards_by_name[board_name]
+            if board.hal in ["Linux", "ESP32"]:
+                self.bootloader_blacklist.add(board.name)
 
-    def linux_board_names(self):
-        '''return a list of all Linux board names; FIXME: get this dynamically'''
-        # grep 'class.*[(]linux' Tools/ardupilotwaf/boards.py  | perl -pe "s/class (.*)\(linux\).*/            '\\1',/"
-        return [
-            'navigator',
-            'navigator64',
-            'erleboard',
-            'navio',
-            'navio2',
-            'edge',
-            'zynq',
-            'ocpoc_zynq',
-            'bbbmini',
-            'blue',
-            'pocket',
-            'pxf',
-            'bebop',
-            'vnav',
-            'disco',
-            'erlebrain2',
-            'bhat',
-            'dark',
-            'pxfmini',
-            'aero',
-            'rst_zynq',
-            'obal',
-            'SITL_x86_64_linux_gnu',
-            'canzero',
-            'linux',
-            'pilotpi',
-        ]
-
-    def esp32_board_names(self):
-        return [
-            'esp32buzz',
-            'esp32empty',
-            'esp32tomte76',
-            'esp32nick',
-            'esp32s3devkit',
-            'esp32s3empty',
-            'esp32s3m5stampfly',
-            'esp32icarous',
-            'esp32diy',
-        ]
-
-    def find_bin_dir(self):
+    def find_bin_dir(self, toolchain_prefix="arm-none-eabi-"):
         '''attempt to find where the arm-none-eabi tools are'''
-        binary = shutil.which("arm-none-eabi-g++")
+        binary = shutil.which(toolchain_prefix + "g++")
         if binary is None:
-            raise Exception("No arm-none-eabi-g++?")
+            return None
         return os.path.dirname(binary)
 
     # vast amounts of stuff copied into here from build_binaries.py
@@ -324,6 +310,7 @@ class SizeCompareBranches(object):
         consistent_build_envs = {
             "CHIBIOS_GIT_VERSION": "12345678",
             "GIT_VERSION": "abcdef",
+            "GIT_VERSION_EXTENDED": "0123456789abcdef",
             "GIT_VERSION_INT": "15",
         }
         for (n, v) in consistent_build_envs.items():
@@ -532,7 +519,7 @@ class SizeCompareBranches(object):
             self.outdir = outdir
             self.vehicles_to_build = vehicles_to_build
             self.extra_hwdef_file = extra_hwdef
-            self.toolchain : str = toolchain
+            self.toolchain: str = toolchain
 
         def __str__(self):
             return f"Task({self.board}, {self.commitish}, {self.outdir}, {self.vehicles_to_build}, {self.extra_hwdef_file} {self.toolchain})"  # NOQA:E501
@@ -610,6 +597,13 @@ class SizeCompareBranches(object):
                 toolchain = ""
             else:
                 toolchain += "-"
+
+            if self.bin_dir is None:
+                self.bin_dir = self.find_bin_dir(toolchain_prefix=toolchain)
+            if self.bin_dir is None:
+                self.progress(f"Gtoolchain: {self.toolchain}")
+                raise ValueError("Crap")
+
             elf_diff_commandline = [
                 "time",
                 "python3",
@@ -618,7 +612,7 @@ class SizeCompareBranches(object):
                 f'--bin_prefix={toolchain}',
                 "--old_alias", "%s %s" % (master_branch, elf_filename),
                 "--new_alias", "%s %s" % (branch, elf_filename),
-                "--html_dir", "../ELF_DIFF_%s_%s" % (board, vehicle_name),
+                "--html_dir", "ELF_DIFF_%s_%s" % (board, vehicle_name),
             ]
 
             try:
@@ -638,7 +632,7 @@ class SizeCompareBranches(object):
 
             self.run_program("SCB", elf_diff_commandline)
 
-    def pairs_from_task_results(self, task_results : list):
+    def pairs_from_task_results(self, task_results: list):
         pairs = {}
         for res in task_results:
             board = res.board
@@ -684,10 +678,7 @@ class SizeCompareBranches(object):
             if "master" not in pair or "branch" not in pair:
                 # probably incomplete:
                 continue
-            try:
-                self.elf_diff_results(pair["master"], pair["branch"])
-            except Exception as e:
-                print(f"Exception calling elf_diff: {e}")
+            self.elf_diff_results(pair["master"], pair["branch"])
 
     def emit_csv_for_results(self, results):
         '''emit dictionary of dictionaries as a CSV'''
@@ -793,7 +784,6 @@ class SizeCompareBranches(object):
 
             result.vehicle[vehicle] = {}
             v = result.vehicle[vehicle]
-            v["bin_filename"] = self.vehicle_map[vehicle] + '.bin'
 
             elf_dirname = "bin"
             if vehicle == 'bootloader':
@@ -807,10 +797,19 @@ class SizeCompareBranches(object):
                     self.progress("Have source trees")
                 except FileNotFoundError:
                     pass
-            v["bin_dir"] = os.path.join(elf_basedir, task.board, "bin")
-            elf_dir = os.path.join(elf_basedir, task.board, elf_dirname)
-            v["elf_dir"] = elf_dir
-            v["elf_filename"] = self.vehicle_map[vehicle]
+            bin_dirname = "bin"
+            bin_filename = self.vehicle_map[vehicle] + '.bin'
+            elf_filename = self.vehicle_map[vehicle]
+            esp32_elf_dirname = "esp-idf_build"
+            if os.path.exists(os.path.join(elf_basedir, task.board, esp32_elf_dirname)):
+                bin_filename = "ardupilot.bin"
+                elf_dirname = esp32_elf_dirname
+                bin_dirname = elf_dirname
+                elf_filename = "ardupilot.elf"
+            v["bin_dir"] = os.path.join(elf_basedir, task.board, bin_dirname)
+            v["bin_filename"] = bin_filename
+            v["elf_dir"] = os.path.join(elf_basedir, task.board, elf_dirname)
+            v["elf_filename"] = elf_filename
 
         return result
 
@@ -831,7 +830,7 @@ class SizeCompareBranches(object):
         x = ExtractFeatures(path)
         return x.extract()
 
-    def compare_results_features(self, result_master : Result, result_branch : Result):
+    def compare_results_features(self, result_master: Result, result_branch: Result):
         ret = {}
         for vehicle in result_master.vehicle.keys():
             # check for the difference in size (and identicality)

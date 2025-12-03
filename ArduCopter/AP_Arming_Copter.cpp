@@ -141,7 +141,7 @@ bool AP_Arming_Copter::barometer_checks(bool display_failure)
         float pos_d_m = 0;
         UNUSED_RESULT(AP::ahrs().get_relative_position_D_origin_float(pos_d_m));
         if (using_baro_ref) {
-            if (fabsf(-pos_d_m * 100.0 - copter.baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
+            if (fabsf(-pos_d_m - copter.baro_alt_m) > PREARM_MAX_ALT_DISPARITY_M) {
                 check_failed(Check::BARO, display_failure, "Altitude disparity");
                 ret = false;
             }
@@ -226,14 +226,16 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
 
         // acro balance parameter check
 #if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
-        if ((copter.g.acro_balance_roll > copter.attitude_control->get_angle_roll_p().kP()) || (copter.g.acro_balance_pitch > copter.attitude_control->get_angle_pitch_p().kP())) {
+        if (is_negative(copter.g.acro_balance_roll) || is_negative(copter.g.acro_balance_pitch) ||
+            (copter.g.acro_balance_roll > copter.attitude_control->get_angle_roll_p().kP()) || 
+            (copter.g.acro_balance_pitch > copter.attitude_control->get_angle_pitch_p().kP())) {
             check_failed(Check::PARAMETERS, display_failure, "Check ACRO_BAL_ROLL/PITCH");
             return false;
         }
 #endif
 
         // pilot-speed-up parameter check
-        if (copter.g.pilot_speed_up <= 0) {
+        if (copter.g.pilot_speed_up_cms <= 0) {
             check_failed(Check::PARAMETERS, display_failure, "Check PILOT_SPEED_UP");
             return false;
         }
@@ -282,7 +284,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
                     return false;
                 }
                 // check if RTL_ALT is higher than rangefinder's max range
-                if (copter.g.rtl_altitude > copter.rangefinder.max_distance_orient(ROTATION_PITCH_270) * 100) {
+                if (copter.g.rtl_altitude_cm > copter.rangefinder.max_distance_orient(ROTATION_PITCH_270) * 100) {
                     check_failed(Check::PARAMETERS, display_failure, failure_template, "RTL_ALT (in cm) above RNGFND_MAX (in metres)");
                     return false;
                 }
@@ -580,7 +582,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
         const Compass &_compass = AP::compass();
         // check compass health
         if (!_compass.healthy()) {
-            check_failed(true, "Compass not healthy");
+            check_failed(true, "Compass %d not healthy", _compass.get_first_usable() + 1);
             return false;
         }
     }
@@ -625,7 +627,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
         // check throttle is not too high - skips checks if arming from GCS/scripting in Guided,Guided_NoGPS or Auto 
         if (!((AP_Arming::method_is_GCS(method) || method == AP_Arming::Method::SCRIPTING) && copter.flightmode->allows_GCS_or_SCR_arming_with_throttle_high())) {
             // above top of deadband is too always high
-            if (copter.get_pilot_desired_climb_rate() > 0.0f) {
+            if (copter.get_pilot_desired_climb_rate_ms() > 0.0f) {
                 check_failed(Check::RC, true, "%s too high", rc_item);
                 return false;
             }

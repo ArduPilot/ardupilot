@@ -15,6 +15,8 @@ extern const AP_HAL::HAL& hal;
 // update mount position - should be called periodically
 void AP_Mount_SToRM32::update()
 {
+    AP_Mount_Backend::update();
+
     // exit immediately if not initialised
     if (!_initialised) {
         find_gimbal();

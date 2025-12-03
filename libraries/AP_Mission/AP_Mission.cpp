@@ -922,6 +922,7 @@ bool AP_Mission::stored_in_location(uint16_t id)
     case MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION:
     case MAV_CMD_NAV_FENCE_RETURN_POINT:
     case MAV_CMD_NAV_RALLY_POINT:
+    case MAV_CMD_NAV_ARC_WAYPOINT:
         return true;
     default:
         return false;
@@ -1024,6 +1025,9 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
         break;
     case MAV_CMD_NAV_TAKEOFF:
         nan_mask = ~(1 << 3); // param 4 can be nan
+        break;
+    case MAV_CMD_NAV_ARC_WAYPOINT:
+        nan_mask = ~((1 << 1) | (1 << 2) | (1 << 3)); // param 2,3 & 4 can be nan
         break;
     case MAV_CMD_NAV_VTOL_TAKEOFF:
         nan_mask = ~(1 << 3); // param 4 can be nan
@@ -1164,6 +1168,11 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.p1 = fabsf(packet.param2);                  // param2 is radius in meters
         cmd.content.location.loiter_ccw = (packet.param2 < 0);
         cmd.content.location.loiter_xtrack = (packet.param4 > 0); // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
+        break;
+
+    case MAV_CMD_NAV_ARC_WAYPOINT:                      // MAV ID: 36
+        cmd.content.location.loiter_ccw = is_negative(packet.param1); // re-use loiter_cw for arc direction
+        cmd.p1 = fabsf(packet.param1);                  // arc angle in deg
         break;
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:                   // MAV ID: 82
@@ -1685,6 +1694,11 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param4 = cmd.content.location.loiter_xtrack; // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
         break;
 
+    case MAV_CMD_NAV_ARC_WAYPOINT: {                    // MAV ID: 36
+        const float sign = cmd.content.location.loiter_ccw == 0 ? 1.0 : -1.0; // Mavlink command specifies positiive is CW
+        packet.param1 = float(cmd.p1) * sign;
+        break;
+    }
     case MAV_CMD_NAV_SPLINE_WAYPOINT:                   // MAV ID: 82
         packet.param1 = cmd.p1;                         // delay at waypoint in seconds
         break;
@@ -2788,6 +2802,8 @@ const char *AP_Mission::Mission_Command::type() const
         return "WP";
     case MAV_CMD_NAV_SPLINE_WAYPOINT:
         return "SplineWP";
+    case MAV_CMD_NAV_ARC_WAYPOINT:
+        return "ArcWP";
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         return "RTL";
     case MAV_CMD_NAV_LOITER_UNLIM:
@@ -3105,7 +3121,7 @@ bool AP_Mission::calc_rewind_pos(Mission_Command& rewind_cmd)
 
     // calculate the resume wp position
     rewind_cmd.content.location.offset(dist_vec.x * leg_percent, dist_vec.y * leg_percent);
-    rewind_cmd.content.location.alt -= dist_vec.z * leg_percent * 100; //(cm)
+    rewind_cmd.content.location.offset_up_m(-dist_vec.z * leg_percent);
 
     // The rewind_cmd.index has the index of the 'last passed wp' from the history array.  This ensures that the mission order
     // continues as planned without further intervention.  The resume wp is not written to memory so will not perminantely change the mission.

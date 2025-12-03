@@ -211,20 +211,20 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
     if (quadplane.show_vtol_view() && quadplane.using_wp_nav()) {
         const Vector3f &targets = quadplane.attitude_control->get_att_target_euler_cd();
 
-        const Vector2f& curr_pos = quadplane.inertial_nav.get_position_xy_cm();
-        const Vector2f& target_pos = quadplane.pos_control->get_pos_target_NEU_cm().xy().tofloat();
-        const Vector2f error = (target_pos - curr_pos) * 0.01;
+        const Vector2f& curr_pos_m = quadplane.inertial_nav.get_position_xy_cm() * 0.01;
+        const Vector2f& target_pos_m = quadplane.pos_control->get_pos_target_NEU_m().xy().tofloat();
+        const Vector2f error_m = (target_pos_m - curr_pos_m);
 
         mavlink_msg_nav_controller_output_send(
             chan,
             targets.x * 0.01,
             targets.y * 0.01,
             targets.z * 0.01,
-            degrees(error.angle()),
-            MIN(error.length(), UINT16_MAX),
-            (plane.control_mode != &plane.mode_qstabilize) ? quadplane.pos_control->get_pos_error_U_cm() * 0.01 : 0,
+            degrees(error_m.angle()),
+            MIN(error_m.length(), UINT16_MAX),
+            (plane.control_mode != &plane.mode_qstabilize) ? quadplane.pos_control->get_pos_error_U_m() : 0,
             plane.airspeed_error * 100,  // incorrect units; see PR#7933
-            quadplane.wp_nav->crosstrack_error());
+            quadplane.wp_nav->crosstrack_error_m());
         return;
     }
 #endif
@@ -291,7 +291,7 @@ float GCS_MAVLINK_Plane::vfr_hud_airspeed() const
 
     // airspeed estimates are OK:
     float aspeed;
-    if (AP::ahrs().airspeed_estimate(aspeed)) {
+    if (AP::ahrs().airspeed_EAS(aspeed)) {
         return aspeed;
     }
 
@@ -511,7 +511,7 @@ void GCS_MAVLINK_Plane::handle_change_alt_request(Location &location)
     plane.fix_terrain_WP(location, __LINE__);
 
     if (location.terrain_alt) {
-        plane.next_WP_loc.set_alt_cm(location.alt, Location::AltFrame::ABOVE_TERRAIN);
+        plane.next_WP_loc.copy_alt_from(location);
     } else {
         // convert to absolute alt
         float abs_alt_m;
@@ -1160,7 +1160,7 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
 
         Location::AltFrame frame;
         if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)pos_target.coordinate_frame, frame)) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "Invalid coord frame in SET_POSTION_TARGET_GLOBAL_INT");
+            gcs().send_text(MAV_SEVERITY_WARNING, "Invalid coord frame in SET_POSITION_TARGET_GLOBAL_INT");
             // Even though other parts of the command may be valid, reject the whole thing.
             return;
         }
@@ -1232,7 +1232,7 @@ int16_t GCS_MAVLINK_Plane::high_latency_target_altitude() const
     const QuadPlane &quadplane = plane.quadplane;
     //return units are m
     if (quadplane.show_vtol_view()) {
-        return (plane.control_mode != &plane.mode_qstabilize) ? 0.01 * (global_position_current.alt + quadplane.pos_control->get_pos_error_U_cm()) : 0;
+        return (plane.control_mode != &plane.mode_qstabilize) ? (global_position_current.alt * 0.01 + quadplane.pos_control->get_pos_error_U_m()) : 0;
     }
 #endif
     return 0.01 * (global_position_current.alt + plane.calc_altitude_error_cm());

@@ -78,9 +78,6 @@
 #define AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) || AP_PERIPH_NCP5623_LED_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_NCP5623_BGR_LED_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_TOSHIBA_LED_WITHOUT_NOTIFY_ENABLED)
 
 #if AP_PERIPH_NOTIFY_ENABLED
-    #if !AP_PERIPH_RC_OUT_ENABLED && !defined(HAL_PERIPH_NOTIFY_WITHOUT_RCOUT)
-        #error "AP_PERIPH_NOTIFY_ENABLED requires AP_PERIPH_RC_OUT_ENABLED"
-    #endif
     #if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED
         #error "You cannot enable AP_PERIPH_NOTIFY_ENABLED and AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED at the same time. Notify already includes it"
     #endif
@@ -420,15 +417,11 @@ public:
     AP_Notify notify;
     uint64_t vehicle_state = 1; // default to initialisation
     float yaw_earth;
-    uint32_t last_vehicle_state;
+    uint32_t last_vehicle_state_ms;
 
     // Handled under LUA script to control LEDs
     float get_yaw_earth() { return yaw_earth; }
-    uint32_t get_vehicle_state() { return vehicle_state; }
-#elif defined(AP_SCRIPTING_ENABLED)
-    // create dummy methods for the case when the user doesn't want to use the notify object
-    float get_yaw_earth() { return 0.0; }
-    uint32_t get_vehicle_state() { return 0.0; }
+    uint64_t get_vehicle_state() { return vehicle_state; }
 #endif
 
 #if AP_SCRIPTING_ENABLED
