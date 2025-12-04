@@ -1816,8 +1816,8 @@ void AC_PosControl::convert_parameters()
         { k_param_psc_key, 772, AP_PARAM_FLOAT, "PSC_D_ACC_SMAX" }, // PSC_ACCZ_SMAX moved to PSC_D_ACC_SMAX
         { k_param_psc_key, 836, AP_PARAM_FLOAT, "PSC_D_ACC_PDMX" }, // PSC_ACCZ_PDMX moved to PSC_D_ACC_PDMX
         { k_param_psc_key, 900, AP_PARAM_FLOAT, "PSC_D_ACC_D_FF" }, // PSC_ACCZ_D_FF moved to PSC_D_ACC_D_FF
-        { k_param_psc_key, 1037, AP_PARAM_INT8, "PSC_D_ACC_NEF" },  // PSC_ACCZ_D_NEF moved to PSC_D_ACC_NEF
-        { k_param_psc_key, 973, AP_PARAM_INT8, "PSC_D_ACC_NTF" },   // PSC_ACCZ_D_NTF moved to PSC_D_ACC_NTF
+        { k_param_psc_key, 1028, AP_PARAM_INT8, "PSC_D_ACC_NEF" },  // PSC_ACCZ_NEF moved to PSC_D_ACC_NEF
+        { k_param_psc_key, 964, AP_PARAM_INT8, "PSC_D_ACC_NTF" },   // PSC_ACCZ_NTF moved to PSC_D_ACC_NTF
         { k_param_psc_key, 4038, AP_PARAM_FLOAT, "PSC_NE_VEL_P" },  // PSC_VELXY_P moved to PSC_NE_VEL_P
         { k_param_psc_key, 70, AP_PARAM_FLOAT, "PSC_NE_VEL_I" },    // PSC_VELXY_I moved to PSC_NE_VEL_I
         { k_param_psc_key, 262, AP_PARAM_FLOAT, "PSC_NE_VEL_D" },   // PSC_VELXY_D moved to PSC_NE_VEL_D
@@ -1840,7 +1840,7 @@ void AC_PosControl::convert_parameters()
 
     // parameters moved and scaled by 0.01
     static const AP_Param::ConversionInfo conversion_info_001[] = {
-        { k_param_psc_key, 131, AP_PARAM_FLOAT, "PSC_D_VEL_IMAX" },     // PSC_ACCZ_P moved to PSC_D_VEL_IMAX
+        { k_param_psc_key, 131, AP_PARAM_FLOAT, "PSC_D_VEL_IMAX" },     // PSC_VELZ_IMAX moved to PSC_D_VEL_IMAX
         { k_param_psc_key, 134, AP_PARAM_FLOAT, "PSC_NE_VEL_IMAX" },    // PSC_VELXY_IMAX moved to PSC_NE_VEL_IMAX
     };
     AP_Param::convert_old_parameters_scaled(conversion_info_001, ARRAY_SIZE(conversion_info_001), 0.01, 0);
