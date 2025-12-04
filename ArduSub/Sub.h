@@ -547,6 +547,9 @@ private:
     void convert_old_parameters(void);
     void update_actuators_from_jsbuttons();
     void update_lights_from_rcin();
+#if LEAKDETECTOR_MAX_INSTANCES > 0
+    void update_leak_pins();
+#endif
     bool handle_do_motor_test(mavlink_command_int_t command);
     bool init_motor_test();
     bool verify_motor_test();
