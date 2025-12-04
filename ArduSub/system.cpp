@@ -159,6 +159,9 @@ void Sub::init_ardupilot()
 #if LEAKDETECTOR_MAX_INSTANCES > 0
     update_leak_pins();
 #endif
+#if AP_RELAY_ENABLED
+    update_relay_pins();
+#endif
     // flag that initialisation has completed
     ap.initialised = true;
 }
