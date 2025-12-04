@@ -1004,3 +1004,26 @@ void Sub::update_leak_pins() {
     }
 }
 #endif
+
+#if AP_RELAY_ENABLED
+void Sub::update_relay_pins() {
+    for (uint8_t instance = 0; instance < AP_RELAY_NUM_RELAYS; instance++) {
+        if (relay.get_gpio_pin(instance) > 0) {
+            uint8_t servo_channel;
+            if (hal.gpio->pin_to_servo_channel(relay.get_gpio_pin(instance), servo_channel)) {
+                if (relay.enabled(instance) && !SRV_Channels::is_GPIO(servo_channel)) {
+                    if (SRV_Channels::channel_function(servo_channel) == SRV_Channel::Aux_servo_function_t::k_none) {
+                        gcs().send_text(MAV_SEVERITY_INFO, "Relay %u pin (servo %u) auto-set to GPIO", instance + 1, servo_channel + 1);
+                        char param_name[20];
+                        snprintf(param_name, sizeof(param_name), "SERVO%u_FUNCTION", servo_channel + 1);
+                        AP_Param::set_and_save_by_name(param_name, static_cast<int>(SRV_Channel::Aux_servo_function_t::k_GPIO));
+                    }
+                    else {
+                        gcs().send_text(MAV_SEVERITY_WARNING, "Relay %u error. Please set SERVO%u_FUNCTION to GPIO", instance + 1, servo_channel + 1);
+                    }
+                }
+            }
+        }
+    }
+}
+#endif
