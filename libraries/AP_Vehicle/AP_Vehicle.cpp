@@ -292,12 +292,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
 #endif
 
 #if AP_CRSF_OUT_ENABLED
-    // @Group: CRSF
-    // @Path: ../AP_RCProtocol/AP_CRSF_OutManager.cpp
+    // @Group: CRSF_OUT_
+    // @Path: ../AP_CRSF/AP_CRSF_OutManager.cpp
     AP_SUBGROUPINFO(crsf_out, "CRSF_OUT_", 33, AP_Vehicle, AP_CRSF_OutManager),
 #endif
 
-AP_GROUPEND
+    AP_GROUPEND
 };
 
 // reference to the vehicle. using AP::vehicle() here does not work on clang
