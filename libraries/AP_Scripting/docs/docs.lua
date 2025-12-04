@@ -2752,6 +2752,12 @@ function vehicle:set_target_posvelaccel_NED(target_pos, target_vel, target_accel
 ---@return boolean
 function vehicle:set_target_posvel_NED(target_pos, target_vel) end
 
+-- Sets the target position and velocity in a guided mode, with ABOVE_TERRAIN frame.
+---@param target_pos Vector3f_ud
+---@param target_vel Vector3f_ud
+---@return boolean
+function vehicle:set_target_posvel_terrain(target_pos, target_vel) end
+
 -- desc
 ---@param target_pos Vector3f_ud
 ---@param use_yaw boolean

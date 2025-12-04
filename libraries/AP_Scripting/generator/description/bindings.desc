@@ -360,6 +360,7 @@ singleton AP_Vehicle method get_target_location boolean Location'Null
 singleton AP_Vehicle method update_target_location boolean Location Location
 singleton AP_Vehicle method set_target_pos_NED boolean Vector3f boolean float -360 +360 boolean float'skip_check boolean boolean
 singleton AP_Vehicle method set_target_posvel_NED boolean Vector3f Vector3f
+singleton AP_Vehicle method set_target_posvel_terrain boolean Vector3f Vector3f
 singleton AP_Vehicle method set_target_posvelaccel_NED boolean Vector3f Vector3f Vector3f boolean float -360 +360 boolean float'skip_check boolean
 singleton AP_Vehicle method set_target_velaccel_NED boolean Vector3f Vector3f boolean float -360 +360 boolean float'skip_check boolean
 singleton AP_Vehicle method set_target_velocity_NED boolean Vector3f
