@@ -1325,10 +1325,15 @@ bool AP_DDS_Client::init_transport()
     bool initTransportStatus = ddsSerialInit();
     is_using_serial = initTransportStatus;
 
+    if (is_using_serial) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Using Serial", msg_prefix);
+    }
+
 #if AP_DDS_UDP_ENABLED
     // fallback to UDP if available
     if (!initTransportStatus) {
         initTransportStatus = ddsUdpInit();
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Using UDP", msg_prefix);
     }
 #endif
 
@@ -1431,7 +1436,15 @@ bool AP_DDS_Client::create()
             requests[1] = pub_req_id;
             requests[2] = dwriter_req_id;
 
-            if (!uxr_run_session_until_all_status(&session, requestTimeoutMs, requests, status, nRequests)) {
+            bool success = false;
+            for (uint8_t retry = 0; retry < 3; retry++) {
+                success = uxr_run_session_until_all_status(&session, requestTimeoutMs * (retry + 1), requests, status, nRequests);
+                if (success) {
+                    break;
+                }
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Topic/Pub/Writer session request retry for index '%u'", msg_prefix, i);
+            }
+            if (!success) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Topic/Pub/Writer session request failure for index '%u'", msg_prefix, i);
                 for (uint8_t s = 0 ; s < nRequests; s++) {
                     GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Status '%d' result '%u'", msg_prefix, s, status[s]);
@@ -1459,7 +1472,15 @@ bool AP_DDS_Client::create()
             requests[1] = sub_req_id;
             requests[2] = dreader_req_id;
 
-            if (!uxr_run_session_until_all_status(&session, requestTimeoutMs, requests, status, nRequests)) {
+            bool success = false;
+            for (uint8_t retry = 0; retry < 3; retry++) {
+                success = uxr_run_session_until_all_status(&session, requestTimeoutMs * (retry + 1), requests, status, nRequests);
+                if (success) {
+                    break;
+                }
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Topic/Sub/Reader session request retry for index '%u'", msg_prefix, i);
+            }
+            if (!success) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Topic/Sub/Reader session request failure for index '%u'", msg_prefix, i);
                 for (uint8_t s = 0 ; s < nRequests; s++) {
                     GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Status '%d' result '%u'", msg_prefix, s, status[s]);
@@ -1491,7 +1512,15 @@ bool AP_DDS_Client::create()
             uint16_t request = replier_req_id;
             uint8_t status;
 
-            if (!uxr_run_session_until_all_status(&session, requestTimeoutMs, &request, &status, 1)) {
+            bool success = false;
+            for (uint8_t retry = 0; retry < 3; retry++) {
+                success = uxr_run_session_until_all_status(&session, requestTimeoutMs * (retry + 1), &request, &status, 1);
+                if (success) {
+                    break;
+                }
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Service/Replier session request retry for index '%u'", msg_prefix, i);
+            }
+            if (!success) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Service/Replier session request failure for index '%u'", msg_prefix, i);
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Status result '%u'", msg_prefix, status);
                 // TODO add a failure log message sharing the status results
