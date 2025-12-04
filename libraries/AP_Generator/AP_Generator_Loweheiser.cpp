@@ -219,16 +219,6 @@ void AP_Generator_Loweheiser::update_runstate()
         break;
     }
 
-    if (isnan(packet.efi_clt)) {
-        // we don't know what the temperature is..... command idle
-        // until we know what the temperature is.  This can happen
-        // because the EFI is actually powered off when we command the
-        // generator to stop.  Moving to IDLE should start it up so we
-        // can get the data we need:
-        commanded_runstate = RunState::IDLE;
-        return;
-    }
-
     // consider changing the commanded runstate to the pilot desired
     // runstate:
     commanded_runstate = RunState::IDLE;
