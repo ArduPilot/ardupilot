@@ -318,7 +318,7 @@ bool ModeThrow::throw_attitude_good() const
 bool ModeThrow::throw_height_good() const
 {
     // Check that we are within 0.5m of the demanded height
-    return (pos_control->get_pos_error_D_m() < 0.5);
+    return (fabsf(pos_control->get_pos_error_D_m()) < 0.5);
 }
 
 bool ModeThrow::throw_position_good() const
