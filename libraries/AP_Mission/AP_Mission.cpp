@@ -231,7 +231,7 @@ bool AP_Mission::starts_with_takeoff_cmd()
 /*
     return true if MIS_OPTIONS is set to allow continue of mission
     logic after a land and the next waypoint is a takeoff. If this
-    is false then after a landing is complete the vehicle should 
+    is false then after a landing is complete the vehicle should
     disarm and mission logic should stop
 */
 bool AP_Mission::continue_after_land_check_for_takeoff()
@@ -1034,6 +1034,9 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
         break;
     case MAV_CMD_NAV_VTOL_LAND:
         nan_mask = ~((1 << 2) | (1 << 3)); // param 3 and 4 can be nan
+        break;
+    case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+        nan_mask = 0xf0; // param 1-4 can be nan
         break;
     default:
         nan_mask = 0xff;
