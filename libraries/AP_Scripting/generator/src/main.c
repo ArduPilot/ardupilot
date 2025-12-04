@@ -2732,7 +2732,7 @@ void emit_argcheck_helper(void) {
   fprintf(source, "    }\n");
 
   // Print generic warning
-  fprintf(source, "    lua_scripts::set_and_print_new_error_message(MAV_SEVERITY_WARNING, \"Warning: userdate creation does not take arguments, will be fatal in future\");\n");
+  fprintf(source, "    lua_scripts::set_and_print_new_error_message(MAV_SEVERITY_WARNING, \"Warning: userdata creation does not take arguments, will be fatal in future\");\n");
 
   fprintf(source, "    return true;\n");
   fprintf(source, "}\n\n");
