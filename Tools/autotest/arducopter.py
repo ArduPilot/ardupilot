@@ -5864,7 +5864,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             else:
                 # rotate delta_ef from NED to Local FRD
                 rotmat_yaw = Matrix3()
-                rotmat_yaw.rotate_yaw(self.mav.messages["ATTITUDE"].yaw)
+                rotmat_yaw.rotate_yaw(-self.mav.messages["ATTITUDE"].yaw) # negative yaw for earth->body
                 delta_local_frd = rotmat_yaw * delta_ef
                 angle_x = math.atan2(delta_local_frd.y, delta_local_frd.z)
                 angle_y = -math.atan2(delta_local_frd.x, delta_local_frd.z)
