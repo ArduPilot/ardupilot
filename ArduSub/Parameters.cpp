@@ -980,3 +980,27 @@ void Sub::update_lights_from_rcin()
         }
     }
 }
+
+#if LEAKDETECTOR_MAX_INSTANCES > 0
+
+void Sub::update_leak_pins() {
+    for (uint8_t instance = 0; instance < LEAKDETECTOR_MAX_INSTANCES; instance++) {
+        if (leak_detector.get_pin(instance) > 0) {
+            uint8_t servo_channel;
+            if (hal.gpio->pin_to_servo_channel(leak_detector.get_pin(instance), servo_channel)) {
+                if (!SRV_Channels::is_GPIO(servo_channel)) {
+                    char param_name[20];
+                    if (SRV_Channels::channel_function(servo_channel) == SRV_Channel::Aux_servo_function_t::k_none) {
+                        gcs().send_text(MAV_SEVERITY_INFO, "Leak detector %u pin (servo %u) auto-set to GPIO", instance + 1, servo_channel + 1);
+                        snprintf(param_name, sizeof(param_name), "SERVO%u_FUNCTION", servo_channel + 1);
+                        AP_Param::set_and_save_by_name(param_name, static_cast<int>(SRV_Channel::Aux_servo_function_t::k_GPIO));
+                    }
+                    else {
+                        gcs().send_text(MAV_SEVERITY_WARNING, "Leak detector %u error. Please set SERVO%u_FUNCTION to GPIO", instance + 1, servo_channel + 1);
+                    }
+                }
+            }
+        }
+    }
+}
+#endif

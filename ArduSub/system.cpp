@@ -179,8 +179,11 @@ void Sub::init_ardupilot()
 
     g2.actuators.initialize_actuators();
 
-    // flag that initialisation has completed
     update_lights_from_rcin();
+#if LEAKDETECTOR_MAX_INSTANCES > 0
+    update_leak_pins();
+#endif
+    // flag that initialisation has completed
     ap.initialised = true;
 }
 
