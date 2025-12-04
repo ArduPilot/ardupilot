@@ -930,3 +930,33 @@ void Sub::update_leak_pins()
     }
 }
 #endif
+
+#if AP_RELAY_ENABLED
+// PARAMETER_CONVERSION - Added: Dec-2025
+// Deals with relay getting misconfigured when updating from Sub 4.1
+void Sub::update_relay_pins()
+{
+    for (uint8_t instance = 0; instance < AP_RELAY_NUM_RELAYS; instance++) {
+        uint8_t servo_channel;
+        uint8_t pin;
+        if (!relay.get_pin_by_instance(instance, pin) || !hal.gpio->pin_to_servo_channel(pin, servo_channel)) {
+            // instance does not use pin or pin does not map to a servo channel
+            continue;
+        }
+        if (!relay.enabled(instance) || SRV_Channels::is_GPIO(servo_channel)) {
+            // instance is not enabled or servo channel is already set to GPIO
+            continue;
+        }
+        if (SRV_Channels::channel_function(servo_channel) != SRV_Channel::Function::k_none) {
+            // servo channel is already set to a function
+            gcs().send_text(MAV_SEVERITY_WARNING, "Relay %u error. Please set SERVO%u_FUNCTION to GPIO", instance + 1, servo_channel + 1);
+            continue;
+        }
+        // servo channel is disabled, let's set it to GPIO for the user
+        gcs().send_text(MAV_SEVERITY_INFO, "Relay %u pin (servo %u) auto-set to GPIO", instance + 1, servo_channel + 1);
+        char param_name[20];
+        snprintf(param_name, sizeof(param_name), "SERVO%u_FUNCTION", servo_channel + 1);
+        AP_Param::set_and_save_by_name(param_name, static_cast<int>(SRV_Channel::Function::k_GPIO));
+    }
+}
+#endif
