@@ -8,6 +8,7 @@ def build(bld):
         ap_libraries=bld.ap_common_vehicle_libraries() + [
             'AC_AttitudeControl',
             'AC_WPNav',
+            'AP_Actuators',
             'AP_Camera',
             'AP_InertialNav',
             'AP_JSButton',

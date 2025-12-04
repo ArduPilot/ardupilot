@@ -5,7 +5,7 @@
 #include <AP_Common/AP_Common.h>
 
 #include <AP_Arming/AP_Arming.h>
-#include "actuators.h"
+#include <AP_Actuators/actuators.h>
 // Global parameter class.
 //
 class Parameters {

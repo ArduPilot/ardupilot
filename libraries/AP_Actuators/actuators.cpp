@@ -1,8 +1,10 @@
-#include "Sub.h"
 #include "actuators.h"
+#include <SRV_Channel/SRV_Channel.h>
+#include <AP_Math/AP_Math.h>
 
+// Singleton instance
+Actuators *Actuators::_singleton;
 
- 
 const AP_Param::GroupInfo Actuators::var_info[] = {
 
     // @Param: 1_INC
@@ -51,6 +53,7 @@ const AP_Param::GroupInfo Actuators::var_info[] = {
 };
 
 Actuators::Actuators() {
+    _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -144,4 +147,12 @@ void Actuators::center_actuator(uint8_t actuator_num) {
         return;
     }
     aux_actuator_value[actuator_num] = 0.5;
+}
+
+void Actuators::set_actuator(uint8_t actuator_num, float value) {
+    if (actuator_num >= ACTUATOR_CHANNELS) {
+        return;
+    }
+    aux_actuator_value[actuator_num] = constrain_float((value + 1)*0.5f, 0.0f, 1.0f);
+    update_actuators();
 }
