@@ -132,6 +132,10 @@ bool AP_Generator_Loweheiser::generator_ok_to_run() const
 // "stop" state:
 bool AP_Generator_Loweheiser::generator_ok_to_stop() const
 {
+    // We have somehow lost comms, or something else is wrong. Allow shutdown.
+    if (isnan(packet.efi_clt)) {
+        return true;
+    }
     return packet.efi_clt <= temp_required_for_idle;
 }
 
@@ -384,7 +388,6 @@ void AP_Generator_Loweheiser::command_generator()
     uint8_t run_electric_starter = 0;
     uint8_t desired_engine_state = 0;
 
-    bool user_controlled_starter = false;
     switch (commanded_runstate) {
     case RunState::STOP:
         // the variable initialisation above is sufficient
@@ -420,20 +423,20 @@ void AP_Generator_Loweheiser::command_generator()
             rc().has_valid_input()) {
             throttle = rc_channel_manual_throttle->percent_input();
             // honour an electric start channel, too:
-            if (rc_channel_starter_motor != nullptr) {
-                user_controlled_starter = true;
-                switch (rc_channel_starter_motor->get_aux_switch_pos()) {
-                case RC_Channel::AuxSwitchPos::LOW:
-                case RC_Channel::AuxSwitchPos::MIDDLE:
-                    break;
-                case RC_Channel::AuxSwitchPos::HIGH:
-                    run_electric_starter = 1;
-                    break;
-                }
-            }
         } else {
             // no manual throttle in play
             throttle = idle_throttle;
+        }
+        if ((rc_channel_starter_motor != nullptr) &&
+            rc().has_valid_input()) {
+            switch (rc_channel_starter_motor->get_aux_switch_pos()) {
+            case RC_Channel::AuxSwitchPos::LOW:
+            case RC_Channel::AuxSwitchPos::MIDDLE:
+                break;
+            case RC_Channel::AuxSwitchPos::HIGH:
+                run_electric_starter = 1;
+                break;
+            }
         }
         desired_engine_state = 1;
         break;
@@ -441,30 +444,6 @@ void AP_Generator_Loweheiser::command_generator()
         desired_engine_state = 1;
         desired_governor_state = 1;
         break;
-    }
-
-    // if our desired run state is not "stop", and the RPM is zero,
-    // then consider running the starter motor.  Run motor for 5s.
-    if (!user_controlled_starter && commanded_runstate != RunState::STOP) {
-        bool configure_for_start = false;
-        if (last_start_time_ms == 0) {
-            if (is_zero(packet.efi_rpm)) {
-                gcs().send_text(MAV_SEVERITY_INFO, "LH: running starter motor");
-                last_start_time_ms = now_ms;
-                configure_for_start = true;
-            }
-        } else if (now_ms - last_start_time_ms < 5000) {
-            configure_for_start = true;
-        } else if (now_ms - last_start_time_ms > 20000) {
-            last_start_time_ms = 0;
-        }
-
-        if (configure_for_start) {
-            run_electric_starter = 1;
-            desired_governor_state = 0;
-            // force the throttle to the idle throttle for starting:
-            throttle = idle_throttle;
-        }
     }
 
     // actually send the packet:
