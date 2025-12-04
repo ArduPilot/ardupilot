@@ -1,0 +1,16 @@
+package ext_project.ardupilot
+
+@AutoCmd
+@CxxCmd(name="arducopter", help="TODO")
+@BuildDepends(embox.lib.libstdcxx)
+@Build(stage=2, script="$(EXTERNAL_MAKE) configure build install")
+module arducopter {
+	option string board="sitl"
+
+	source "^BUILD/extbld/^MOD_PATH/install/arducopter.o"
+
+	@NoRuntime depends embox.lib.libstdcxx
+	@NoRuntime depends embox.compat.posix.stubs
+	@NoRuntime depends embox.compat.posix.ipc.pipe
+	@NoRuntime depends embox.compat.posix.proc.fork
+}

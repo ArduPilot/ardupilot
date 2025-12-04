@@ -478,6 +478,16 @@ class Board:
                 '-Wl,--gc-sections',
             ]
 
+        # needed for Embox
+        env.CFLAGS.remove('-Werror=undef')
+        env.CFLAGS.remove('-Werror=shadow')
+        env.CFLAGS.remove('-Werror=parentheses')
+        env.CXXFLAGS.remove('-Werror=undef')
+        env.CXXFLAGS.remove('-Werror=shadow')
+        env.CXXFLAGS.remove('-Werror=parentheses')
+        env.LINKFLAGS.remove('-Wl,--gc-sections')
+        self.with_can = False
+
         if self.with_can:
             # for both AP_Perip and main fw enable deadlines
             env.DEFINES.update(CANARD_ENABLE_DEADLINE = 1)
