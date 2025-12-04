@@ -156,6 +156,9 @@ void Sub::init_ardupilot()
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
     g2.actuators.initialize_actuators();
 
+#if LEAKDETECTOR_MAX_INSTANCES > 0
+    update_leak_pins();
+#endif
     // flag that initialisation has completed
     ap.initialised = true;
 }
