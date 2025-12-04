@@ -1,0 +1,13 @@
+#pragma once
+
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_ACTUATORS_ENABLED
+#define AP_ACTUATORS_ENABLED 1
+#endif
+
+#ifndef AP_ACTUATORS_MAX_INSTANCES
+#define AP_ACTUATORS_MAX_INSTANCES 6
+#endif
+
+#define ACTUATOR_DEFAULT_INCREMENT 0.01
