@@ -145,6 +145,7 @@ bool AP_Generator_Loweheiser::should_emergency_stop()
 {
     const char *estop_reason = nullptr;
 
+    // If the vehicle crashes then we assume the pilot wants to stop the motor.
     if (AP::vehicle()->is_crashed()) {
         estop_reason = "crash";
     }
@@ -174,12 +175,6 @@ bool AP_Generator_Loweheiser::should_emergency_stop()
 // generator is at and other information
 void AP_Generator_Loweheiser::update_runstate()
 {
-    // If the vehicle crashes then we assume the pilot wants to stop
-    // the motor. This is done as a once-off when the crash is
-    // detected to allow the operator to rearm the vehicle, or we end
-    // up in a catch-22 situation where we force the stop state on the
-    // generator so they can't arm and can't start the generator
-    // because the vehicle is crashed.
     if (should_emergency_stop()) {
         commanded_runstate = RunState::STOP;
         return;
@@ -217,16 +212,6 @@ void AP_Generator_Loweheiser::update_runstate()
             return;
         }
         break;
-    }
-
-    if (isnan(packet.efi_clt)) {
-        // we don't know what the temperature is..... command idle
-        // until we know what the temperature is.  This can happen
-        // because the EFI is actually powered off when we command the
-        // generator to stop.  Moving to IDLE should start it up so we
-        // can get the data we need:
-        commanded_runstate = RunState::IDLE;
-        return;
     }
 
     // consider changing the commanded runstate to the pilot desired
