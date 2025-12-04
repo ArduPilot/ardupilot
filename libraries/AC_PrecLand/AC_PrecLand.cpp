@@ -671,7 +671,7 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
             float roll_rad, pitch_rad, yaw_rad;
             _inertial_data_delayed->Tbn.to_euler(&roll_rad, &pitch_rad, &yaw_rad);
             target_vec_unit_ned = target_vec_unit;
-            target_vec_unit_ned.rotate_xy(-yaw_rad);
+            target_vec_unit_ned.rotate_xy(yaw_rad);
             break;
         }
 
