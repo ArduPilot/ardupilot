@@ -12,6 +12,7 @@
 #include "config.h"
 #include "pullup.h"
 #include "systemid.h"
+#include "mixing.h"
 
 #ifndef AP_QUICKTUNE_ENABLED
 #define AP_QUICKTUNE_ENABLED HAL_QUADPLANE_ENABLED
