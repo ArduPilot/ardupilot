@@ -18,6 +18,8 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Notify/AP_Notify.h>
+#include <AP_Logger/AP_Logger.h>
+#include <cstdint>
 
 #define AP_MOTORS_SLEW_FILTER_CUTOFF 50.0f
 
@@ -278,6 +280,29 @@ void AP_Motors::set_frame_string(const char * str) {
     if (custom_frame_string != nullptr) {
         strncpy(custom_frame_string, str, len);
     }
+}
+#endif
+
+#if HAL_LOGGING_ENABLED
+void AP_Motors::Log_Write_SPOL() {
+
+    bool spool_state_changed{_spool_state != _logged_spool_state};
+    bool des_spool_state_changed{_spool_desired != _logged_spool_desired};
+
+    // Log only changes.
+    if (!spool_state_changed && !des_spool_state_changed) return;
+
+    _logged_spool_state = _spool_state;
+    _logged_spool_desired = _spool_desired;
+
+    const struct log_SPOL pkt {
+        LOG_PACKET_HEADER_INIT(LOG_SPOL_MSG),
+        time_us         : AP_HAL::micros64(),
+        spool_state     : (uint8_t)_spool_state,
+        des_spool_state : (uint8_t)_spool_desired
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+
 }
 #endif
 
