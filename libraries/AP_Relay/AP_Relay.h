@@ -86,13 +86,14 @@ private:
     void set_defaults();
     void convert_params();
 
-    void set_pin_by_instance(uint8_t instance, bool value);
+    // Set the instance state, accounting for configured inversion
+    void set_instance_state(uint8_t instance, bool value);
 
-    // Set relay state from pin number
-    void set_pin(const int16_t pin, const bool value);
+    // Directly set the state of the specified pin
+    void set_pin_state(const int16_t pin, const bool value);
 
-    // Get relay state from pin number
-    bool get_pin(const int16_t pin) const;
+    // Get the state of the specified pin
+    bool get_pin_state(const int16_t pin) const;
 
 #if AP_RELAY_DRONECAN_ENABLED
     // Virtual DroneCAN pins
@@ -108,10 +109,10 @@ private:
         bool populate_next_command(uint8_t &index, uavcan_equipment_hardpoint_Command &msg) const;
 
         // Set DroneCAN relay state from pin number
-        void set_pin(const int16_t pin, const bool value);
+        void set_pin_state(const int16_t pin, const bool value);
 
         // Get relay state from pin number
-        bool get_pin(const int16_t pin) const;
+        bool get_pin_state(const int16_t pin) const;
 
     private:
 
