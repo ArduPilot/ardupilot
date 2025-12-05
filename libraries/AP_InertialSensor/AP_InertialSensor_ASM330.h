@@ -7,7 +7,7 @@
 #include "AP_InertialSensor_Backend.h"
 
 /* enable debug to see a register dump on startup */
-#define ASM330_DEBUG 0
+#define AP_INERTIALSENSOR_AMS330_DEBUG_ENABLED 0
 
 class AP_InertialSensor_ASM330 : public AP_InertialSensor_Backend
 {
@@ -47,40 +47,40 @@ private:
         A_SCALE_16G
     };
 
-    bool _init_sensor();
-    bool _hardware_init();
+    bool init_sensor();
+    bool hardware_init();
 
-    uint8_t _register_read(uint8_t reg);
-    void _register_write(uint8_t reg, uint8_t val, bool checked=false);
+    uint8_t register_read(uint8_t reg);
+    void register_write(uint8_t reg, uint8_t val, bool checked=false);
 
-    bool _chip_reset();
-    void _fifo_reset();
+    bool chip_reset();
+    void fifo_reset();
 
-    void _common_init();
-    void _fifo_init();
-    void _gyro_init(gyro_scale scale);
-    void _accel_init(accel_scale scale);
+    void common_init();
+    void fifo_init();
+    void gyro_init(enum gyro_scale scale);
+    void accel_init(enum accel_scale scale);
 
-    uint16_t _get_count_fifo_unread_data();
+    uint16_t get_count_fifo_unread_data();
 
-    void _set_gyro_scale(gyro_scale scale);
-    void _set_accel_scale(accel_scale scale);
+    void set_gyro_scale(enum gyro_scale scale);
+    void set_accel_scale(enum accel_scale scale);
 
-    void _poll_data();
+    void poll_data();
 
-    void _update_transaction_g(struct sensor_raw_data raw_data);
-    void _update_transaction_x(struct sensor_raw_data raw_data);
+    void update_transaction_g(struct sensor_raw_data raw_data);
+    void update_transaction_x(struct sensor_raw_data raw_data);
 
-    #if ASM330_DEBUG
-    void _dump_registers();
+    #if AP_INERTIALSENSOR_AMS330_DEBUG_ENABLED
+    void dump_registers();
     #endif
 
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
-    AP_HAL::Semaphore *_spi_sem;
-    float _gyro_scale;
-    float _accel_scale;
-    enum Rotation _rotation;
+    AP_HAL::OwnPtr<AP_HAL::Device> dev;
+    AP_HAL::Semaphore *spi_sem;
+    float gyro_scale;
+    float accel_scale;
+    enum Rotation rot;
 
-    float _temperature_degc;
-    LowPassFilter2pFloat _temperature_filter;
+    float temperature_degc;
+    LowPassFilter2pFloat temperature_filter = {1000, 1};
 };

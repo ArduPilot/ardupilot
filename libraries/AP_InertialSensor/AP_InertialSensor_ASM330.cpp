@@ -22,27 +22,26 @@ extern const AP_HAL::HAL& hal;
 #define ACCEL_SCALE     (A_SCALE_16G)
 
 AP_InertialSensor_ASM330::AP_InertialSensor_ASM330(AP_InertialSensor &imu,
-                                                   AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                                   AP_HAL::OwnPtr<AP_HAL::Device> device,
                                                    enum Rotation rotation)
     : AP_InertialSensor_Backend(imu)
-    , _dev(std::move(dev))
-    , _rotation(rotation)
-    , _temp_filter(1000, 1)
+    , dev(std::move(device))
+    , rot(rotation)
 {
 }
 
-AP_InertialSensor_Backend *AP_InertialSensor_ASM330::probe(AP_InertialSensor &_imu,
-                                                           AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_InertialSensor_Backend *AP_InertialSensor_ASM330::probe(AP_InertialSensor &imu,
+                                                           AP_HAL::OwnPtr<AP_HAL::Device> device,
                                                            enum Rotation rotation)
 {
-    if (!dev) {
+    if (!device) {
         return nullptr;
     }
 
     AP_InertialSensor_ASM330 *sensor =
-        NEW_NOTHROW AP_InertialSensor_ASM330(_imu,std::move(dev),
-                                                rotation);
-    if (!sensor || !sensor->_init_sensor()) {
+        NEW_NOTHROW AP_InertialSensor_ASM330(imu,std::move(device),
+                                             rotation);
+    if (!sensor || !sensor->init_sensor()) {
         delete sensor;
         return nullptr;
     }
@@ -50,58 +49,56 @@ AP_InertialSensor_Backend *AP_InertialSensor_ASM330::probe(AP_InertialSensor &_i
     return sensor;
 }
 
-bool AP_InertialSensor_ASM330::_init_sensor()
+bool AP_InertialSensor_ASM330::init_sensor()
 {
-    bool success = _hardware_init();
+    bool success = hardware_init();
 
-#if ASM330_DEBUG
-    _dump_registers();
+#if AP_INERTIALSENSOR_AMS330_DEBUG_ENABLED
+    dump_registers();
 #endif
     return success;
 }
 
 bool AP_InertialSensor_ASM330::hardware_init()
 {
-    WITH_SEMAPHORE(_spi_sem);
-
-    uint8_t tries;
-    uint8_t whoami;
+    WITH_SEMAPHORE(spi_sem);
 
     // set flag for reading registers
-    _dev->set_read_flag(0x80);
+    dev->set_read_flag(0x80);
 
-    whoami = _register_read(ASM330_REG_WHO_AM_I);
+    uint8_t whoami = register_read(ASM330_REG_WHO_AM_I);
     if (whoami != WHO_AM_I) {
         DEV_PRINTF("ASM330: unexpected acc/gyro WHOAMI 0x%x\n", whoami);
         return false;
     }
 
-    _dev->set_speed(AP_HAL::Device::SPEED_LOW);
+    dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
+    uint8_t tries;
     for (tries = 0; tries < 5; tries++) {
-        if (_chip_reset()) {
-            _common_init();
-            _fifo_init();
-            _gyro_init(GYRO_SCALE);
-            _accel_init(ACCEL_SCALE);
+        if (chip_reset()) {
+            common_init();
+            fifo_init();
+            gyro_init(GYRO_SCALE);
+            accel_init(ACCEL_SCALE);
 
-            _set_gyro_scale(GYRO_SCALE);
-            _set_accel_scale(ACCEL_SCALE);
+            set_gyro_scale(GYRO_SCALE);
+            set_accel_scale(ACCEL_SCALE);
 
             hal.scheduler->delay(50);
 
             // if samples == 0 -> FIFO empty
-            if (_get_count_fifo_unread_data() > 0) {
+            if (get_count_fifo_unread_data() > 0) {
                 break;
             }
 
-#if ASM330_DEBUG
-            _dump_registers();
+#if AP_INERTIALSENSOR_AMS330_DEBUG_ENABLED
+            dump_registers();
 #endif
         }
     }
 
-    _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+    dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
     if (tries == 5) {
         DEV_PRINTF("Failed to boot ASM330 5 times\n\n");
@@ -116,41 +113,41 @@ bool AP_InertialSensor_ASM330::hardware_init()
  */
 void AP_InertialSensor_ASM330::start(void)
 {
-    if (!_imu.register_gyro(gyro_instance, 3333, _dev->get_bus_id_devtype(DEVTYPE_INS_ASM330)) ||
-        !_imu.register_accel(accel_instance, 3333, _dev->get_bus_id_devtype(DEVTYPE_INS_ASM330))) {
+    if (!_imu.register_gyro(gyro_instance, 3333, dev->get_bus_id_devtype(DEVTYPE_INS_ASM330)) ||
+        !_imu.register_accel(accel_instance, 3333, dev->get_bus_id_devtype(DEVTYPE_INS_ASM330))) {
         return;
     }
 
-    set_accel_orientation(accel_instance, _rotation);
-    set_gyro_orientation(gyro_instance, _rotation);
+    set_accel_orientation(accel_instance, rot);
+    set_gyro_orientation(gyro_instance, rot);
 
-    _fifo_reset();
+    fifo_reset();
 
     // start the timer process to read samples
-    _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_ASM330::_poll_data, void));
+    dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_ASM330::poll_data, void));
 }
 
-uint8_t AP_InertialSensor_ASM330::_register_read(uint8_t reg)
+uint8_t AP_InertialSensor_ASM330::register_read(uint8_t reg)
 {
     uint8_t val = 0;
-    _dev->read_registers(reg, &val, 1);
+    dev->read_registers(reg, &val, 1);
     return val;
 }
 
-void AP_InertialSensor_ASM330::_register_write(uint8_t reg, uint8_t val, bool checked)
+void AP_InertialSensor_ASM330::register_write(uint8_t reg, uint8_t val, bool checked)
 {
-    _dev->write_register(reg, val, checked);
+    dev->write_register(reg, val, checked);
 }
 
-bool AP_InertialSensor_ASM330::_chip_reset()
+bool AP_InertialSensor_ASM330::chip_reset()
 {
     // CTRL3_C(12h) : 01h
     //      SW_RESET = 1b (reset device)
-    _register_write(ASM330_REG_CTRL3_C, ASM330_REG_CTRL3_C_SW_RESET_RESET);
+    register_write(ASM330_REG_CTRL3_C, ASM330_REG_CTRL3_C_SW_RESET_RESET);
     hal.scheduler->delay(1);
 
     for (int tries = 0; tries < 5; tries++) {
-        uint8_t ctrl3_c = _register_read(ASM330_REG_CTRL3_C);
+        uint8_t ctrl3_c = register_read(ASM330_REG_CTRL3_C);
         if ((ctrl3_c & 0x01) == ASM330_REG_CTRL3_C_SW_RESET_NORMAL) {
             return true;
         }
@@ -161,24 +158,24 @@ bool AP_InertialSensor_ASM330::_chip_reset()
     return false;
 }
 
-void AP_InertialSensor_ASM330::_fifo_reset()
+void AP_InertialSensor_ASM330::fifo_reset()
 {
-    uint8_t fifo_ctrl4 = _register_read(ASM330_REG_FIFO_CTRL4);
+    uint8_t fifo_ctrl4 = register_read(ASM330_REG_FIFO_CTRL4);
 
     // FIFO_MODE is Bypass mode
-    _register_write(ASM330_REG_FIFO_CTRL4, fifo_ctrl4 |
+    register_write(ASM330_REG_FIFO_CTRL4, fifo_ctrl4 |
                                            ASM330_REG_FIFO_CTRL4_FIFO_MODE_BYPASS);
     hal.scheduler->delay(1);
 
     // Revert FIFO_MODE
-    _register_write(ASM330_REG_FIFO_CTRL4, fifo_ctrl4);
+    register_write(ASM330_REG_FIFO_CTRL4, fifo_ctrl4);
     hal.scheduler->delay(1);
 
     notify_accel_fifo_reset(accel_instance);
     notify_gyro_fifo_reset(gyro_instance);
 }
 
-void AP_InertialSensor_ASM330::_common_init()
+void AP_InertialSensor_ASM330::common_init()
 {
     // CTRL3_C(12h) : 44h
     //      BOOT      = 0b (Reboots memory content is normal mode)
@@ -188,68 +185,68 @@ void AP_InertialSensor_ASM330::_common_init()
     //      SIM       = 0b (SPI is 4-wire interface)
     //      IF_INC    = 1b (Register address automatically incremented Enable)
     //      SW_RESET  = 0b (Software reset is normal mode)
-    _register_write(ASM330_REG_CTRL3_C, ASM330_REG_CTRL3_C_BOOT_NORMAL |
-                                        ASM330_REG_CTRL3_C_BDU_ENABLE |
-                                        ASM330_REG_CTRL3_C_H_LACTIVE_ACTIVE_HIGH |
-                                        ASM330_REG_CTRL3_C_PP_OD_PP |
-                                        ASM330_REG_CTRL3_C_SIM_4_WIRE |
-                                        ASM330_REG_CTRL3_C_IF_INC_ENABLE |
-                                        ASM330_REG_CTRL3_C_SW_RESET_NORMAL);
+    register_write(ASM330_REG_CTRL3_C, ASM330_REG_CTRL3_C_BOOT_NORMAL |
+                                       ASM330_REG_CTRL3_C_BDU_ENABLE |
+                                       ASM330_REG_CTRL3_C_H_LACTIVE_ACTIVE_HIGH |
+                                       ASM330_REG_CTRL3_C_PP_OD_PP |
+                                       ASM330_REG_CTRL3_C_SIM_4_WIRE |
+                                       ASM330_REG_CTRL3_C_IF_INC_ENABLE |
+                                       ASM330_REG_CTRL3_C_SW_RESET_NORMAL);
     hal.scheduler->delay(1);
 
     // CTRL4_C(13h) : 00h
-    _register_write(ASM330_REG_CTRL4_C, 0x00);
+    register_write(ASM330_REG_CTRL4_C, 0x00);
     hal.scheduler->delay(1);
 
     // CTRL5_C(14h) : 00h
-    _register_write(ASM330_REG_CTRL5_C, 0x00);
+    register_write(ASM330_REG_CTRL5_C, 0x00);
     hal.scheduler->delay(1);
 
     // CTRL6_C(15h) : 00h
-    _register_write(ASM330_REG_CTRL6_C, 0x00);
+    register_write(ASM330_REG_CTRL6_C, 0x00);
     hal.scheduler->delay(1);
 
     // CTRL10_C(19h) : 00h
-    _register_write(ASM330_REG_CTRL10_C, 0x00);
+    register_write(ASM330_REG_CTRL10_C, 0x00);
     hal.scheduler->delay(1);
 }
 
-void AP_InertialSensor_ASM330::_fifo_init()
+void AP_InertialSensor_ASM330::fifo_init()
 {
     // FIFO_CTRL1(07h) : 00h
-    _register_write(ASM330_REG_FIFO_CTRL1, 0x00);
+    register_write(ASM330_REG_FIFO_CTRL1, 0x00);
     hal.scheduler->delay(1);
 
     // FIFO_CTRL2(08h) : 00h
-    _register_write(ASM330_REG_FIFO_CTRL2, 0x00);
+    register_write(ASM330_REG_FIFO_CTRL2, 0x00);
     hal.scheduler->delay(1);
 
     // FIFO_CTRL3(09h) : 99h
     //      BDR_GY = 1001b (3333Hz)
     //      BDR_XL = 1001b (3333Hz)
-    _register_write(ASM330_REG_FIFO_CTRL3, ASM330_REG_FIFO_CTRL3_BDR_GY_3333Hz |
-                                           ASM330_REG_FIFO_CTRL3_BDR_XL_3333Hz);
+    register_write(ASM330_REG_FIFO_CTRL3, ASM330_REG_FIFO_CTRL3_BDR_GY_3333Hz |
+                                          ASM330_REG_FIFO_CTRL3_BDR_XL_3333Hz);
     hal.scheduler->delay(1);
 
     // FIFO_CTRL4(0Ah) : 06h
     //      DEC_TS_BATCH = 00b (timestamp not batched)
     //      ODR_T_BATCH  = 00b (temperature not batched)
     //      FIFO_MODE    = 110b (Continuous mode)
-    _register_write(ASM330_REG_FIFO_CTRL4, ASM330_REG_FIFO_CTRL4_DEC_TS_BATCH_NOT_BATCH |
-                                           ASM330_REG_FIFO_CTRL4_ODR_T_BATCH_NOT_BATCH |
-                                           ASM330_REG_FIFO_CTRL4_FIFO_MODE_CONT);
+    register_write(ASM330_REG_FIFO_CTRL4, ASM330_REG_FIFO_CTRL4_DEC_TS_BATCH_NOT_BATCH |
+                                          ASM330_REG_FIFO_CTRL4_ODR_T_BATCH_NOT_BATCH |
+                                          ASM330_REG_FIFO_CTRL4_FIFO_MODE_CONT);
     hal.scheduler->delay(1);
 }
 
-void AP_InertialSensor_ASM330::_gyro_init(gyro_scale scale)
+void AP_InertialSensor_ASM330::gyro_init(enum gyro_scale scale)
 {
     // CTRL7_G(16h) : 00h
     //      HP_EN_G        = 0b (HPF disabled)
     //      HPM_G          = 00b (HPF cutoff 16mHz)
     //      USR_OFF_ON_OUT = 0b (accelerometer user offset correction block bypassed)
-    _register_write(ASM330_REG_CTRL7_G, ASM330_REG_CTRL7_G_HP_EN_G_DISABLE |
-                                        ASM330_REG_CTRL7_G_HPM_G_16mHz |
-                                        ASM330_REG_CTRL7_G_USR_OFF_ON_OUT_BYPASS);
+    register_write(ASM330_REG_CTRL7_G, ASM330_REG_CTRL7_G_HP_EN_G_DISABLE |
+                                       ASM330_REG_CTRL7_G_HPM_G_16mHz |
+                                       ASM330_REG_CTRL7_G_USR_OFF_ON_OUT_BYPASS);
     hal.scheduler->delay(1);
 
     // CTRL2_G(11h) : 1001XXX0b
@@ -276,12 +273,12 @@ void AP_InertialSensor_ASM330::_gyro_init(gyro_scale scale)
         break;
     }
 
-    _register_write(ASM330_REG_CTRL2_G, ASM330_REG_CTRL2_G_ODR_G_3333Hz |
-                                        fs_g);
+    register_write(ASM330_REG_CTRL2_G, ASM330_REG_CTRL2_G_ODR_G_3333Hz |
+                                       fs_g);
     hal.scheduler->delay(1);
 }
 
-void AP_InertialSensor_ASM330::_accel_init(accel_scale scale)
+void AP_InertialSensor_ASM330::accel_init(enum accel_scale scale)
 {
     // CTRL8_XL(17h) : 02h
     //      HPCF_XL           = 000b (ODR / 4)
@@ -289,11 +286,11 @@ void AP_InertialSensor_ASM330::_accel_init(accel_scale scale)
     //      FASTSETTL_MODE_XL = 0b (LPF2 and HPF fast-setting Mode Disable)
     //      HP_SLOPE_XL_EN    = 0b (Slope filter / HPF Disable)
     //      LOW_PASS_ON_6D    = 0b (ODR/2 low-pass filtered data sent to 6D interrupt function)
-    _register_write(ASM330_REG_CTRL8_XL, ASM330_REG_CTRL8_XL_HPCF_XL_ODR_PER_4 |
-                                         ASM330_REG_CTRL8_XL_HP_REF_MODE_XL_DISABLE |
-                                         ASM330_REG_CTRL8_XL_FASTSETTL_MODE_XL_DISABLE |
-                                         ASM330_REG_CTRL8_XL_HP_SLOPE_XL_EN_DISABLE |
-                                         ASM330_REG_CTRL8_XL_LOW_PASS_ON_6D_LPF1);
+    register_write(ASM330_REG_CTRL8_XL, ASM330_REG_CTRL8_XL_HPCF_XL_ODR_PER_4 |
+                                        ASM330_REG_CTRL8_XL_HP_REF_MODE_XL_DISABLE |
+                                        ASM330_REG_CTRL8_XL_FASTSETTL_MODE_XL_DISABLE |
+                                        ASM330_REG_CTRL8_XL_HP_SLOPE_XL_EN_DISABLE |
+                                        ASM330_REG_CTRL8_XL_LOW_PASS_ON_6D_LPF1);
     hal.scheduler->delay(1);
 
     // CTRL9_XL(18h) : E0h
@@ -303,12 +300,12 @@ void AP_InertialSensor_ASM330::_accel_init(accel_scale scale)
     //      DEN_XL_G    = 0b (DEN pin info stamped in the gyroscope axis)
     //      DEN_XL_EN   = 0b (Extends DEN functionality to accelerometer sensor Disabled)
     //      DEN_LH      = 0b (active low)
-    _register_write(ASM330_REG_CTRL9_XL, ASM330_REG_CTRL9_XL_DEN_X_ENABLE |
-                                         ASM330_REG_CTRL9_XL_DEN_Y_ENABLE |
-                                         ASM330_REG_CTRL9_XL_DEN_Z_ENABLE |
-                                         ASM330_REG_CTRL9_XL_DEN_XL_G_GYRO |
-                                         ASM330_REG_CTRL9_XL_DEN_XL_EN_EXT_DISABLE |
-                                         ASM330_REG_CTRL9_XL_DEN_LH_ACTIVE_LOW);
+    register_write(ASM330_REG_CTRL9_XL, ASM330_REG_CTRL9_XL_DEN_X_ENABLE |
+                                        ASM330_REG_CTRL9_XL_DEN_Y_ENABLE |
+                                        ASM330_REG_CTRL9_XL_DEN_Z_ENABLE |
+                                        ASM330_REG_CTRL9_XL_DEN_XL_G_GYRO |
+                                        ASM330_REG_CTRL9_XL_DEN_XL_EN_EXT_DISABLE |
+                                        ASM330_REG_CTRL9_XL_DEN_LH_ACTIVE_LOW);
     hal.scheduler->delay(1);
 
     // CTRL1_XL(10h) :  1001XX00b
@@ -333,19 +330,19 @@ void AP_InertialSensor_ASM330::_accel_init(accel_scale scale)
         break;
     }
 
-    _register_write(ASM330_REG_CTRL1_XL, ASM330_REG_CTRL1_XL_ODR_XL_3333Hz |
-                                         fs_xl |
-                                         ASM330_REG_CTRL1_XL_LPF2_XL_EN_DISABLE);
+    register_write(ASM330_REG_CTRL1_XL, ASM330_REG_CTRL1_XL_ODR_XL_3333Hz |
+                                        fs_xl |
+                                        ASM330_REG_CTRL1_XL_LPF2_XL_EN_DISABLE);
     hal.scheduler->delay(1);
 }
 
-uint16_t AP_InertialSensor_ASM330::_get_count_fifo_unread_data()
+uint16_t AP_InertialSensor_ASM330::get_count_fifo_unread_data()
 {
-    const uint8_t _reg = ASM330_REG_FIFO_STATUS1 | 0x80;
+    const uint8_t reg = ASM330_REG_FIFO_STATUS1 | 0x80;
     uint16_t tmp;
     uint16_t samples;
 
-    if (_dev->transfer(&_reg, 1, (uint8_t *)&tmp, sizeof(tmp))) {
+    if (dev->transfer(&reg, 1, (uint8_t *)&tmp, sizeof(tmp))) {
         samples = (uint16_t)(tmp & 0x03FF);
     } else {
         DEV_PRINTF("ASM330: error reading fifo status\n");
@@ -355,7 +352,7 @@ uint16_t AP_InertialSensor_ASM330::_get_count_fifo_unread_data()
     return samples;
 }
 
-void AP_InertialSensor_ASM330::_set_gyro_scale(gyro_scale scale)
+void AP_InertialSensor_ASM330::set_gyro_scale(enum gyro_scale scale)
 {
     float scale_val = 0.0f;
 
@@ -382,13 +379,13 @@ void AP_InertialSensor_ASM330::_set_gyro_scale(gyro_scale scale)
     }
 
     /* convert mdps/digit to dps/digit */
-    _gyro_scale = scale_val / 1000.0f;
+    gyro_scale = scale_val / 1000.0f;
 
     /* convert dps/digit to (rad/s)/digit */
-    _gyro_scale *= DEG_TO_RAD;
+    gyro_scale *= DEG_TO_RAD;
 }
 
-void AP_InertialSensor_ASM330::_set_accel_scale(accel_scale scale)
+void AP_InertialSensor_ASM330::set_accel_scale(enum accel_scale scale)
 {
     float scale_val = 0.0f;
 
@@ -410,23 +407,23 @@ void AP_InertialSensor_ASM330::_set_accel_scale(accel_scale scale)
         break;
     }
 
-    _accel_scale = scale_val / 32768.0f;
+    accel_scale = scale_val / 32768.0f;
 
     /* convert to G/LSB to (m/s/s)/LSB */
-    _accel_scale *= GRAVITY_MSS;
+    accel_scale *= GRAVITY_MSS;
 }
 
 /**
  * Timer process to poll for new data from the ASM330.
  */
-void AP_InertialSensor_ASM330::_poll_data()
+void AP_InertialSensor_ASM330::poll_data()
 {
-    const uint16_t samples = _get_count_fifo_unread_data();
+    const uint16_t samples = get_count_fifo_unread_data();
     for (uint16_t i = 0; i < samples; i++) {
         const uint8_t fifo_reg = ASM330_REG_FIFO_DATA_OUT_TAG | 0x80;
         uint8_t fifo_tmp[7] = {0, 0, 0, 0, 0, 0, 0};
 
-        if (!_dev->transfer(&fifo_reg, 1, (uint8_t *)&fifo_tmp, sizeof(fifo_tmp))) {
+        if (!dev->transfer(&fifo_reg, 1, (uint8_t *)&fifo_tmp, sizeof(fifo_tmp))) {
             DEV_PRINTF("ASM330: error reading fifo data\n");
             return;
         }
@@ -440,10 +437,10 @@ void AP_InertialSensor_ASM330::_poll_data()
 
         switch (tag) {
         case 0x01:
-            _update_transaction_g(raw_data);
+            update_transaction_g(raw_data);
             break;
         case 0x02:
-            _update_transaction_x(raw_data);
+            update_transaction_x(raw_data);
             break;
         default:
             // unused fifo data
@@ -454,8 +451,8 @@ void AP_InertialSensor_ASM330::_poll_data()
 
     const uint8_t temp_reg = ASM330_REG_OUT_TEMP_L | 0x80;
     int16_t temp_tmp;
-    if (_dev->transfer(&temp_reg, 1, (uint8_t *)&temp_tmp, sizeof(temp_tmp))) {
-        _temp_degc = _temp_filter.apply((float)temp_tmp / 256.0f + 25.0f);
+    if (dev->transfer(&temp_reg, 1, (uint8_t *)&temp_tmp, sizeof(temp_tmp))) {
+        temperature_degc = temperature_filter.apply((float)temp_tmp / 256.0f + 25.0f);
     } else {
         DEV_PRINTF("ASM330: error reading temp data\n");
     }
@@ -463,8 +460,8 @@ void AP_InertialSensor_ASM330::_poll_data()
 
     // check next register value for correctness
     AP_HAL::Device::checkreg reg;
-    if (!_dev->check_next_register(reg)) {
-        log_register_change(_dev->get_bus_id(), reg);
+    if (!dev->check_next_register(reg)) {
+        log_register_change(dev->get_bus_id(), reg);
         _inc_accel_error_count(accel_instance);
     }
 }
@@ -472,19 +469,19 @@ void AP_InertialSensor_ASM330::_poll_data()
 /*
  *  update raw data
  */
-void AP_InertialSensor_ASM330::_update_transaction_g(struct sensor_raw_data raw_data)
+void AP_InertialSensor_ASM330::update_transaction_g(struct sensor_raw_data raw_data)
 {
     Vector3f gyro_data(raw_data.x, -raw_data.y, -raw_data.z);
-    gyro_data *= _gyro_scale;
+    gyro_data *= gyro_scale;
 
     _rotate_and_correct_gyro(gyro_instance, gyro_data);
     _notify_new_gyro_raw_sample(gyro_instance, gyro_data);
 }
 
-void AP_InertialSensor_ASM330::_update_transaction_x(struct sensor_raw_data raw_data)
+void AP_InertialSensor_ASM330::update_transaction_x(struct sensor_raw_data raw_data)
 {
     Vector3f accel_data(raw_data.x, -raw_data.y, -raw_data.z);
-    accel_data *= _accel_scale;
+    accel_data *= accel_scale;
 
     _rotate_and_correct_accel(accel_instance, accel_data);
     _notify_new_accel_raw_sample(accel_instance, accel_data);
@@ -495,22 +492,22 @@ bool AP_InertialSensor_ASM330::update()
     update_gyro(gyro_instance);
     update_accel(accel_instance);
 
-    _publish_temperature(accel_instance, _temp_degc);
+    _publish_temperature(accel_instance, temperature_degc);
     return true;
 }
 
-#if ASM330_DEBUG
+#if AP_INERTIALSENSOR_AMS330_DEBUG_ENABLED
 /*
  *  dump all config registers - used for debug
 */
-void AP_InertialSensor_ASM330::_dump_registers(void)
+void AP_InertialSensor_ASM330::dump_registers(void)
 {
     hal.console->println("ASM330 registers:");
 
-    const uint8_t first = ASM330_REG_FUNC_CFG_ACCESS;
+    const uint8_t first = ASM330_REG_01_RESERVED;
     const uint8_t last = ASM330_REG_FIFO_DATA_OUT_Z_H;
     for (uint8_t reg=first; reg<=last; reg++) {
-        uint8_t v = _register_read(reg);
+        uint8_t v = register_read(reg);
         hal.console->printf("%02x:%02x ", reg, v);
         if ((reg - (first-1)) % 16 == 0) {
             hal.console->println("");
