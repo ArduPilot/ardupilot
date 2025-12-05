@@ -33,11 +33,11 @@
 #include "AP_Proximity_RPLidarA2.h"
 
 #include <AP_HAL/AP_HAL.h>
-#include "AP_Proximity_RPLidarA2.h"
 #include <AP_InternalError/AP_InternalError.h>
 
 #include <ctype.h>
 #include <stdio.h>
+#include <string.h>
 
 #define RP_DEBUG_LEVEL 0
 
@@ -75,15 +75,6 @@ void AP_Proximity_RPLidarA2::update(void)
         return;
     }
 
-    // request device info 3sec after reset
-    // required for S1 support that sends only 9 bytes after a reset (A1,A2 send 63)
-    uint32_t now_ms = AP_HAL::millis();
-    if ((_state == State::RESET) && (now_ms - _last_reset_ms > 3000)) {
-        send_request_for_device_info();
-        _state = State::AWAITING_RESPONSE;
-        _byte_count = 0;
-    }
-
     get_readings();
 
     // check for timeout and set health status
@@ -113,6 +104,8 @@ float AP_Proximity_RPLidarA2::distance_max_m() const
         return 12.0f;
     case Model::S1:
         return 40.0f;
+    case Model::S2:
+        return 50.0f;
     }
     return 0.0f;
 }
@@ -129,18 +122,23 @@ float AP_Proximity_RPLidarA2::distance_min_m() const
     case Model::C1:
     case Model::S1:
         return 0.2f;
+    case Model::S2:
+        return 0.05f;
     }
     return 0.0f;
 }
 
+// reset lidar
 void AP_Proximity_RPLidarA2::reset_rplidar()
 {
     static const uint8_t tx_buffer[2] {RPLIDAR_PREAMBLE, RPLIDAR_CMD_RESET};
     _uart->write(tx_buffer, 2);
     Debug(1, "LIDAR reset");
-    // To-Do: ensure delay of 8m after sending reset request
     _last_reset_ms =  AP_HAL::millis();
-    reset();
+    _state = State::RESET;
+    _sync_error = 0;
+    _express_stream_len = 0;
+    _descriptor_pos = 0;
 }
 
 // set Lidar into SCAN mode
@@ -149,6 +147,40 @@ void AP_Proximity_RPLidarA2::send_scan_mode_request()
     static const uint8_t tx_buffer[2] {RPLIDAR_PREAMBLE, RPLIDAR_CMD_SCAN};
     _uart->write(tx_buffer, 2);
     Debug(1, "Sent scan mode request");
+}
+
+// send EXPRESS_SCAN request for Dense mode
+void AP_Proximity_RPLidarA2::send_express_scan_request()
+{
+    const uint8_t cmd = RPLIDAR_CMD_EXPRESS_SCAN;
+    const uint8_t payload_size = 5;
+
+    // working_mode = 0
+    // For S2 this selects Dense capsulated data.
+    uint8_t payload[5] {};
+    payload[0] = 0; // working_mode = 0
+    payload[1] = 0;
+    payload[2] = 0;
+    payload[3] = 0;
+    payload[4] = 0;
+
+    uint8_t checksum = 0;
+    checksum ^= RPLIDAR_PREAMBLE;
+    checksum ^= cmd;
+    checksum ^= payload_size;
+    for (uint8_t i = 0; i < sizeof(payload); i++) {
+        checksum ^= payload[i];
+    }
+
+    uint8_t tx_buffer[2 + 1 + 5 + 1];
+    tx_buffer[0] = RPLIDAR_PREAMBLE;
+    tx_buffer[1] = cmd;
+    tx_buffer[2] = payload_size;
+    memcpy(&tx_buffer[3], payload, sizeof(payload));
+    tx_buffer[3 + sizeof(payload)] = checksum;
+
+    _uart->write(tx_buffer, sizeof(tx_buffer));
+    Debug(1, "Sent EXPRESS (Dense) scan request");
 }
 
 // send request for sensor health
@@ -167,160 +199,225 @@ void AP_Proximity_RPLidarA2::send_request_for_device_info()
     Debug(1, "Sent device information request");
 }
 
-void AP_Proximity_RPLidarA2::consume_bytes(uint16_t count)
-{
-    if (count > _byte_count) {
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-        _byte_count = 0;
-        return;
-    }
-    _byte_count -= count;
-    if (_byte_count) {
-        memmove((void*)&_payload[0], (void*)&_payload[count], _byte_count);
-    }
-}
-
-void AP_Proximity_RPLidarA2::reset()
-{
-    _state = State::RESET;
-    _byte_count = 0;
-}
-
-bool AP_Proximity_RPLidarA2::make_first_byte_in_payload(uint8_t desired_byte)
-{
-    if (_byte_count == 0) {
-        return false;
-    }
-    if (_payload[0] == desired_byte) {
-        return true;
-    }
-    for (auto i=1; i<_byte_count; i++) {
-        if (_payload[i] == desired_byte) {
-            consume_bytes(i);
-            return true;
-        }
-    }
-    // just not in our buffer.  Throw everything away:
-    _byte_count = 0;
-    return false;
-}
-
 void AP_Proximity_RPLidarA2::get_readings()
 {
-    Debug(2, "             CURRENT STATE: %u ", (unsigned)_state);
-    const uint32_t nbytes = _uart->available();
-    if (nbytes == 0) {
-        return;
-    }
-    const uint32_t bytes_to_read = MIN(nbytes, sizeof(_payload)-_byte_count);
-    if (bytes_to_read == 0) {
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-        reset();
-        return;
-    }
-    const uint32_t bytes_read = _uart->read(&_payload[_byte_count], bytes_to_read);
-    if (bytes_read == 0) {
-        // this is bad; we were told there were bytes available
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-        reset();
-        return;
-    }
-    _byte_count += bytes_read;
-
-    uint32_t previous_loop_byte_count = UINT32_MAX;
-    while (_byte_count) {
-        if (_byte_count >= previous_loop_byte_count) {
-            // this is a serious error, we should always consume some
-            // bytes.  Avoid looping forever.
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            _uart = nullptr;
-            return;
-        }
-        previous_loop_byte_count = _byte_count;
-
+    uint16_t _bytes_read = 0;
+    Debug(2, "CURRENT STATE: %u ", (unsigned)_state);
+    while (_uart->available() && _bytes_read < MAX_BYTES_CONSUME) {
         switch(_state){
         case State::RESET: {
-            // looking for 0x52 at start of buffer; the 62 following
-            // bytes are "information"
-            if (!make_first_byte_in_payload('R')) { // that's 'R' as in RPiLidar
+            if (AP_HAL::millis() - _last_reset_ms < 1000) {
                 return;
             }
-            if (_byte_count < 63) {
-                return;
-            }
-#if RP_DEBUG_LEVEL
-            // optionally spit out via mavlink the 63-bytes of cruft
-            // that is spat out on device reset
-            Debug(1, "Got RPLidar Information");
-            char xbuffer[64]{};
-            memcpy((void*)xbuffer, (void*)&_payload.information, 63);
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RPLidar: (%s)", xbuffer);
-#endif
-            // 63 is the magic number of bytes in the spewed-out
-            // reset data ... so now we'll just drop that stuff on
-            // the floor.
-            consume_bytes(63);
+            _uart->discard_input();
+            _express_stream_len = 0;
+            _descriptor_pos = 0;
             send_request_for_device_info();
             _state = State::AWAITING_RESPONSE;
             continue;
         }
-        case State::AWAITING_RESPONSE:
-            if (_payload[0] != RPLIDAR_PREAMBLE) {
-                // this is a protocol error.  Reset.
-                reset();
-                return;
-            }
 
-            // descriptor packet has 7 byte in total
-            if (_byte_count < sizeof(_descriptor)) {
-                return;
+        case State::AWAITING_RESPONSE: {
+            // stream-based descriptor parser:
+            // - search for preamble 0xA5
+            // - then accumulate 7-byte descriptor
+            // - do not hard-reset on stray bytes; resynchronise instead
+            while (_uart->available() && _bytes_read < MAX_BYTES_CONSUME) {
+                const uint8_t b = _uart->read();
+                _bytes_read++;
+
+                if (_descriptor_pos == 0) {
+                    if (b != RPLIDAR_PREAMBLE) {
+                        Debug(2, "skipping stray byte 0x%02X in descriptor", unsigned(b));
+                        continue;
+                    }
+                    _payload.descriptor.bytes[0] = b;
+                    _descriptor_pos = 1;
+                    continue;
+                }
+
+                // fill remaining descriptor bytes
+                _payload.descriptor.bytes[_descriptor_pos++] = b;
+
+                // still not enough for a full descriptor
+                if (_descriptor_pos < sizeof(_descriptor)) {
+                    continue;
+                }
+
+                // full descriptor received
+                _descriptor_pos = 0;
+
+                if (_payload.descriptor.bytes[1] != 0x5A) {
+                    Debug(2, "unknown descriptor header2=0x%02X",
+                          unsigned(_payload.descriptor.bytes[1]));
+                    continue;
+                }
+
+                const uint8_t data_type = _payload.descriptor.bytes[6];
+                Debug(2, "LIDAR descriptor data_type=0x%02x", (unsigned)data_type);
+
+                switch (data_type) {
+                case 0x81: // 5-byte scan data
+                    _state = State::AWAITING_SCAN_DATA;
+                    break;
+
+                case 0x85: // dense capsulated express data
+                    if (_use_dense_express) {
+                        _state = State::AWAITING_EXPRESS_DATA;
+                    }
+                    break;
+
+                case 0x04: // device info
+                    _state = State::AWAITING_DEVICE_INFO;
+                    break;
+
+                case 0x06: // health
+                    _state = State::AWAITING_HEALTH;
+                    break;
+
+                default:
+                    // unknown descriptor type; ignore and keep consuming
+                    Debug(1, "Unknown descriptor data_type=0x%02x", (unsigned)data_type);
+                    break;
+                }
+                break;
             }
-            // identify the payload data after the descriptor
-            static const _descriptor SCAN_DATA_DESCRIPTOR[] {
-                { RPLIDAR_PREAMBLE, 0x5A, 0x05, 0x00, 0x00, 0x40, 0x81 }
-            };
-            static const _descriptor HEALTH_DESCRIPTOR[] {
-                { RPLIDAR_PREAMBLE, 0x5A, 0x03, 0x00, 0x00, 0x00, 0x06 }
-            };
-            static const _descriptor DEVICE_INFO_DESCRIPTOR[] {
-                { RPLIDAR_PREAMBLE, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x04 }
-            };
-            Debug(2,"LIDAR descriptor found");
-            if (memcmp((void*)&_payload[0], SCAN_DATA_DESCRIPTOR, sizeof(_descriptor)) == 0) {
-                _state = State::AWAITING_SCAN_DATA;
-            } else if (memcmp((void*)&_payload[0], DEVICE_INFO_DESCRIPTOR, sizeof(_descriptor)) == 0) {
-                _state = State::AWAITING_DEVICE_INFO;
-            } else if (memcmp((void*)&_payload[0], HEALTH_DESCRIPTOR, sizeof(_descriptor)) == 0) {
-                _state = State::AWAITING_HEALTH;
-            } else {
-                // unknown descriptor.  Ignore it.
-            }
-            consume_bytes(sizeof(_descriptor));
             break;
+        }
 
         case State::AWAITING_DEVICE_INFO:
-            if (_byte_count < sizeof(_payload.device_info)) {
+            if (_uart->available() < sizeof(_payload.device_info)) {
                 return;
             }
+            _uart->read(&_payload[0], sizeof(_payload.device_info));
+            _bytes_read += sizeof(_payload.device_info);
             parse_response_device_info();
-            consume_bytes(sizeof(_payload.device_info));
             break;
 
         case State::AWAITING_SCAN_DATA:
-            if (_byte_count < sizeof(_payload.sensor_scan)) {
+            if (_uart->available() < sizeof(_payload.sensor_scan)) {
                 return;
             }
+            _uart->read(&_payload[0], sizeof(_payload.sensor_scan));
+            _bytes_read += sizeof(_payload.sensor_scan);
             parse_response_data();
-            consume_bytes(sizeof(_payload.sensor_scan));
             break;
 
         case State::AWAITING_HEALTH:
-            if (_byte_count < sizeof(_payload.sensor_health)) {
+            if (_uart->available() < sizeof(_payload.sensor_health)) {
                 return;
             }
+            _uart->read(&_payload[0], sizeof(_payload.sensor_health));
+            _bytes_read += sizeof(_payload.sensor_health);
             parse_response_health();
-            consume_bytes(sizeof(_payload.sensor_health));
             break;
+
+        case State::AWAITING_EXPRESS_DATA: {
+            // 1) append new bytes from UART into the Express/Dense stream buffer
+            while (_uart->available() && _bytes_read < MAX_BYTES_CONSUME) {
+                if (_express_stream_len >= EXPRESS_STREAM_BUFFER_SIZE) {
+                    // prevent buffer overflow: keep the newest half of the data
+                    const uint16_t keep = EXPRESS_STREAM_BUFFER_SIZE / 2;
+                    memmove(_express_stream,
+                            _express_stream + (_express_stream_len - keep),
+                            keep);
+                    _express_stream_len = keep;
+                    Debug(1, "EXPRESS stream overflow, dropping old data");
+                }
+
+                const uint16_t space = EXPRESS_STREAM_BUFFER_SIZE - _express_stream_len;
+                const uint16_t to_read = MIN(space, uint16_t(MAX_BYTES_CONSUME - _bytes_read));
+
+                if (to_read == 0) {
+                    break;
+                }
+
+                const uint16_t n = _uart->read(_express_stream + _express_stream_len, to_read);
+                if (n == 0) {
+                    break;
+                }
+
+                _express_stream_len += n;
+                _bytes_read += n;
+            }
+
+            // 2) scan the stream buffer for valid headers and process full blocks
+            uint16_t idx = 0;
+
+            while (_express_stream_len >= idx + 2) {
+                // search for a header candidate (upper nibbles 0xA / 0x5)
+                while (idx + 1 < _express_stream_len) {
+                    const uint8_t b0 = _express_stream[idx];
+                    const uint8_t b1 = _express_stream[idx + 1];
+                    if ((b0 >> 4) == 0x0A && (b1 >> 4) == 0x05) {
+                        // header candidate found
+                        break;
+                    }
+                    idx++;
+                }
+
+                if (idx + 1 >= _express_stream_len) {
+                    // no header candidate found, drop all accumulated data
+                    if (_express_stream_len > 0) {
+                        Debug(1, "EXPRESS: no header candidate, dropping %u bytes", unsigned(_express_stream_len));
+                    }
+                    _express_stream_len = 0;
+                    return;
+                }
+
+                // idx now points to a header candidate
+                if (_express_stream_len - idx < EXPRESS_BLOCK_SIZE) {
+                    // not enough bytes for a full block
+                    // move remaining bytes to the front and wait for more data
+                    if (idx > 0) {
+                        memmove(_express_stream,
+                                _express_stream + idx,
+                                _express_stream_len - idx);
+                        _express_stream_len -= idx;
+                    }
+                    return;
+                }
+
+                // pointer to the candidate block
+                uint8_t *blk = _express_stream + idx;
+
+                if (!verify_cabin_checksum(blk, EXPRESS_BLOCK_SIZE)) {
+                    // upper nibbles match but checksum is invalid
+                    // advance by one byte and try to resynchronise
+                    Debug(1, "EXPRESS/DENSE checksum error");
+                    _sync_error++;
+
+                    if (_sync_error > 10) {
+                        reset_rplidar();
+                        _express_stream_len = 0;
+                        return;
+                    }
+
+                    idx++;
+                    continue;
+                }
+
+                // valid block found
+                _sync_error = 0;
+                parse_response_express(blk);
+
+                // consume this block and look for the next one
+                idx += EXPRESS_BLOCK_SIZE;
+            }
+
+            // compact any remaining unprocessed bytes to the front of the buffer
+            if (idx > 0 && idx <= _express_stream_len) {
+                const uint16_t remaining = _express_stream_len - idx;
+                if (remaining > 0) {
+                    memmove(_express_stream,
+                            _express_stream + idx,
+                            remaining);
+                }
+                _express_stream_len = remaining;
+            }
+
+            return;
+        }
         }
     }
 }
@@ -350,11 +447,23 @@ void AP_Proximity_RPLidarA2::parse_response_device_info()
         model = Model::S1;
         device_type = "S1";
         break;
+    case 0x71:
+        model = Model::S2;
+        device_type = "S2";
+        break;
     default:
+        model = Model::UNKNOWN;
         Debug(1, "Unknown device (%u)", _payload.device_info.model);
     }
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RPLidar %s hw=%u fw=%u.%u", device_type, _payload.device_info.hardware, _payload.device_info.firmware_minor, _payload.device_info.firmware_major);
-    send_scan_mode_request();
+
+    // enable Dense EXPRESS path
+    _use_dense_express = (model == Model::S2);
+    if (_use_dense_express) {
+        send_express_scan_request();
+    } else {
+        send_scan_mode_request();
+    }
     _state = State::AWAITING_RESPONSE;
 }
 
@@ -362,12 +471,13 @@ void AP_Proximity_RPLidarA2::parse_response_data()
 {
     if (_sync_error) {
         // out of 5-byte sync mask -> catch new revolution
-        Debug(1, "       OUT OF SYNC");
+        Debug(1, "OUT OF SYNC");
         // on first revolution bit 1 = 1, bit 2 = 0 of the first byte
         if ((_payload[0] & 0x03) == 0x01) {
             _sync_error = 0;
-            Debug(1, "                  RESYNC");
+            Debug(1, "RESYNC");
         } else {
+            Debug(1, "NO RESYNC");
             return;
         }
     }
@@ -418,11 +528,133 @@ void AP_Proximity_RPLidarA2::parse_response_data()
 
 void AP_Proximity_RPLidarA2::parse_response_health()
 {
-    // health issue if status is "3" ->HW error
+    // health issue if status is "3" -> HW error
     if (_payload.sensor_health.status == 3) {
         Debug(1, "LIDAR Error");
     }
     Debug(1, "LIDAR Healthy");
+}
+
+// verify Dense capsulated (Express) block checksum
+bool AP_Proximity_RPLidarA2::verify_cabin_checksum(const uint8_t *buf, size_t len)
+{
+    if (buf == nullptr || len < 2) {
+        return false;
+    }
+
+    const uint8_t b0 = buf[0];
+    const uint8_t b1 = buf[1];
+
+    // upper nibbles must match sync1=0xA, sync2=0x5
+    if ((b0 >> 4) != 0x0A || (b1 >> 4) != 0x05) {
+        Debug(1, "EXPRESS header mismatch: len=%u b0=0x%02X b1=0x%02X", unsigned(len), unsigned(b0), unsigned(b1));
+        return false;
+    }
+
+    // checksum: XOR of bytes [2..len-1]
+    uint8_t checksum = 0;
+    for (size_t i = 2; i < len; i++) {
+        checksum ^= buf[i];
+    }
+
+    // sync1/sync2 and checksum nibbles (dense format)
+    const uint8_t sync1 = 0x0A;
+    const uint8_t sync2 = 0x05;
+
+    const uint8_t encoded_b0 = uint8_t((sync1 << 4) | (checksum & 0x0F));
+    const uint8_t encoded_b1 = uint8_t((sync2 << 4) | ((checksum >> 4) & 0x0F));
+
+    const bool ok = (b0 == encoded_b0) && (b1 == encoded_b1);
+#if RP_DEBUG_LEVEL
+    if (!ok) {
+        Debug(1, "EXPRESS checksum error: len=%u b0=0x%02X b1=0x%02X chk=0x%02X enc0=0x%02X enc1=0x%02X",
+              unsigned(len), unsigned(b0), unsigned(b1),
+              unsigned(checksum), unsigned(encoded_b0), unsigned(encoded_b1));
+    } else {
+        Debug(2, "EXPRESS checksum ok: chk=0x%02X", unsigned(checksum));
+    }
+#endif
+    return ok;
+}
+
+// parse Dense capsulated Express block
+void AP_Proximity_RPLidarA2::parse_response_express(const uint8_t *buf)
+{
+    if (buf == nullptr) {
+        return;
+    }
+
+    // start_angle_q6: 16-bit, Q6 format at bytes [2..3]
+    const uint16_t start_angle_q6 = (uint16_t)buf[2] | ((uint16_t)buf[3] << 8);
+    const float start_angle_deg_raw = start_angle_q6 / 64.0f; // Q6 -> degrees
+
+    const float angle_sign = (params.orientation == 1) ? -1.0f : 1.0f;
+    const float angle_deg = wrap_360(start_angle_deg_raw * angle_sign + params.yaw_correction);
+
+    // cabins: 40 cabins * 2-byte distance (mm) starting at buf[4]
+    const uint8_t *cab = buf + 4;
+    static constexpr int NUM_CABINS = 40;
+
+    bool  have_distance = false;
+    float min_distance_m = 0.0f;
+
+    for (int i = 0; i < NUM_CABINS; i++) {
+        const uint16_t dist_mm =
+            (uint16_t)cab[0] | ((uint16_t)cab[1] << 8);
+        cab += 2;
+
+        if (dist_mm == 0) {
+            // zero means invalid or out-of-range
+            continue;
+        }
+
+        const float d_m = dist_mm * 0.001f; // mm -> m
+        if (d_m <= 0.0f) {
+            continue;
+        }
+
+        if (!have_distance || d_m < min_distance_m) {
+            min_distance_m = d_m;
+            have_distance = true;
+        }
+    }
+
+    if (!have_distance) {
+        return;
+    }
+
+    _last_distance_received_ms = AP_HAL::millis();
+
+    if (ignore_reading(angle_deg, min_distance_m)) {
+        return;
+    }
+
+    const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(angle_deg);
+
+    if (face != _last_face) {
+        // distance is for a new face, the previous one can be updated now
+        if (_last_distance_valid) {
+            frontend.boundary.set_face_attributes(_last_face, _last_angle_deg, _last_distance_m, state.instance);
+        } else {
+            // reset distance from last face
+            frontend.boundary.reset_face(face, state.instance);
+        }
+
+        // initialize the new face
+        _last_face = face;
+        _last_distance_valid = false;
+    }
+
+    if (min_distance_m > distance_min_m()) {
+        // update shortest distance
+        if (!_last_distance_valid || (min_distance_m < _last_distance_m)) {
+            _last_distance_m = min_distance_m;
+            _last_distance_valid = true;
+            _last_angle_deg = angle_deg;
+        }
+        // update OA database
+        database_push(_last_angle_deg, _last_distance_m);
+    }
 }
 
 #endif // AP_PROXIMITY_RPLIDARA2_ENABLED

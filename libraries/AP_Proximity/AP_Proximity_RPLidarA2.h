@@ -70,26 +70,37 @@ private:
         AWAITING_SCAN_DATA,
         AWAITING_HEALTH,
         AWAITING_DEVICE_INFO,
+        AWAITING_EXPRESS_DATA,
     } _state = State::RESET;
+
+    static constexpr uint16_t MAX_BYTES_CONSUME = 1024;
+    // Dense capsulated block size (S2 EXPRESS/DENSE mode)
+    static constexpr uint16_t EXPRESS_BLOCK_SIZE = 84;
+    // Stream buffer size for Express/Dense data
+    static constexpr uint16_t EXPRESS_STREAM_BUFFER_SIZE = 2048;
 
     // send request for something from sensor
     void send_request_for_health();
     void send_scan_mode_request();
     void send_request_for_device_info();
+    void send_express_scan_request();
 
     void parse_response_data();
     void parse_response_health();
     void parse_response_device_info();
+    void parse_response_express(const uint8_t *buf);
 
     void get_readings();
     void reset_rplidar();
-    void reset();
 
-    // remove bytes from read buffer:
-    void consume_bytes(uint16_t count);
+    // verify Dense capsulated (Express) block checksum and header nibbles
+    bool verify_cabin_checksum(const uint8_t *buf, size_t len);
+
+    // Express/Dense stream buffer used to re-synchronise to block boundaries
+    uint8_t  _express_stream[EXPRESS_STREAM_BUFFER_SIZE] {};
+    uint16_t _express_stream_len;
 
     uint8_t _sync_error;
-    uint16_t _byte_count;
 
     // request related variables
     uint32_t  _last_distance_received_ms;     ///< system time of last distance measurement received from sensor
@@ -100,6 +111,9 @@ private:
     float _last_angle_deg;                    ///< yaw angle (in degrees) of _last_distance_m
     float _last_distance_m;                   ///< shortest distance for _last_face
     bool _last_distance_valid;                ///< true if _last_distance_m is valid
+
+    // use Dense EXPRESS_SCAN path
+    bool _use_dense_express = false;
 
     struct PACKED _device_info {
         uint8_t model;
@@ -127,25 +141,13 @@ private:
         uint8_t bytes[7];
     };
 
-    // we don't actually *need* to store this.  If we don't, _payload
-    // can be just 7 bytes, but that doesn't make for efficient
-    // reading.  It also simplifies the state machine to have the read
-    // buffer at least this big.  Note that we force the buffer to a
-    // larger size below anyway.
-    struct PACKED _rpi_information {
-        uint8_t bytes[63];
-    };
-
     union PACKED {
         DEFINE_BYTE_ARRAY_METHODS
         _sensor_scan sensor_scan;
         _sensor_health sensor_health;
         _descriptor descriptor;
-        _rpi_information information;
         _device_info device_info;
-        uint8_t forced_buffer_size[256]; // just so we read(...) efficiently
     } _payload;
-    static_assert(sizeof(_payload) >= 63, "Needed for parsing out reboot data");
 
     enum class Model {
         UNKNOWN,
@@ -154,9 +156,10 @@ private:
         A2M12,
         C1,
         S1,
+        S2,
     } model = Model::UNKNOWN;
 
-    bool make_first_byte_in_payload(uint8_t desired_byte);
+    uint8_t _descriptor_pos = 0;
 };
 
 #endif // AP_PROXIMITY_RPLIDARA2_ENABLED
