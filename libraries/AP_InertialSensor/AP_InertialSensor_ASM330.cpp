@@ -61,7 +61,7 @@ bool AP_InertialSensor_ASM330::init_sensor()
 
 bool AP_InertialSensor_ASM330::hardware_init()
 {
-    WITH_SEMAPHORE(spi_sem);
+    WITH_SEMAPHORE(dev->get_semaphore());
 
     // set flag for reading registers
     dev->set_read_flag(0x80);

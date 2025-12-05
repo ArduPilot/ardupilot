@@ -76,7 +76,6 @@ private:
     #endif
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
-    AP_HAL::Semaphore *spi_sem;
     float gyro_scale;
     float accel_scale;
     enum Rotation rot;
