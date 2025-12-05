@@ -81,6 +81,6 @@ private:
     float _accel_scale;
     enum Rotation _rotation;
 
-    float _temp_degc;
-    LowPassFilter2pFloat _temp_filter;
+    float _temperature_degc;
+    LowPassFilter2pFloat _temperature_filter;
 };

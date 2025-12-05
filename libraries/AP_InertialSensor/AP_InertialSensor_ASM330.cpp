@@ -29,7 +29,6 @@ AP_InertialSensor_ASM330::AP_InertialSensor_ASM330(AP_InertialSensor &imu,
     , _rotation(rotation)
     , _temp_filter(1000, 1)
 {
-    _temp_degc = 0.0F;
 }
 
 AP_InertialSensor_Backend *AP_InertialSensor_ASM330::probe(AP_InertialSensor &_imu,
@@ -53,8 +52,6 @@ AP_InertialSensor_Backend *AP_InertialSensor_ASM330::probe(AP_InertialSensor &_i
 
 bool AP_InertialSensor_ASM330::_init_sensor()
 {
-    _spi_sem = _dev->get_semaphore();
-
     bool success = _hardware_init();
 
 #if ASM330_DEBUG
@@ -63,9 +60,9 @@ bool AP_InertialSensor_ASM330::_init_sensor()
     return success;
 }
 
-bool AP_InertialSensor_ASM330::_hardware_init()
+bool AP_InertialSensor_ASM330::hardware_init()
 {
-    _spi_sem->take_blocking();
+    WITH_SEMAPHORE(_spi_sem);
 
     uint8_t tries;
     uint8_t whoami;
@@ -76,7 +73,7 @@ bool AP_InertialSensor_ASM330::_hardware_init()
     whoami = _register_read(ASM330_REG_WHO_AM_I);
     if (whoami != WHO_AM_I) {
         DEV_PRINTF("ASM330: unexpected acc/gyro WHOAMI 0x%x\n", whoami);
-        goto fail_whoami;
+        return false;
     }
 
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
@@ -108,16 +105,10 @@ bool AP_InertialSensor_ASM330::_hardware_init()
 
     if (tries == 5) {
         DEV_PRINTF("Failed to boot ASM330 5 times\n\n");
-        goto fail_tries;
+        return false;
     }
 
-    _spi_sem->give();
     return true;
-
-fail_tries:
-fail_whoami:
-    _spi_sem->give();
-    return false;
 }
 
 /*
@@ -440,10 +431,9 @@ void AP_InertialSensor_ASM330::_poll_data()
             return;
         }
 
-        uint8_t tag;
         struct sensor_raw_data raw_data;
 
-        tag = (uint8_t)((fifo_tmp[0] & 0xF8) >> 3);
+        const uint8_t tag = (uint8_t)((fifo_tmp[0] & 0xF8) >> 3);
         raw_data.x = (int16_t)(fifo_tmp[1] + (fifo_tmp[2] << 8));
         raw_data.y = (int16_t)(fifo_tmp[3] + (fifo_tmp[4] << 8));
         raw_data.z = (int16_t)(fifo_tmp[5] + (fifo_tmp[6] << 8));
