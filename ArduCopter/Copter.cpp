@@ -636,6 +636,9 @@ void Copter::loop_rate_logging()
     if (should_log(MASK_LOG_IMU_FAST)) {
         AP::ins().Write_IMU();
     }
+    if (should_log(MASK_LOG_MOTBATT)) {
+        motors->Log_Write_SPOL();
+    }
 }
 
 // ten_hz_logging_loop
