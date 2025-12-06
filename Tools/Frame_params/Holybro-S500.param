@@ -1,5 +1,4 @@
-#Note: Holybro S500 param for ArduPilot Copter 4.1
-ACRO_YAW_P,1.5
+#Note: Holybro S500 param for ArduPilot Copter
 ANGLE_MAX,3500
 ATC_ACCEL_P_MAX,70000
 ATC_ACCEL_R_MAX,70000

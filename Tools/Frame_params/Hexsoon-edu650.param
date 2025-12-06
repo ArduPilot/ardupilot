@@ -1,6 +1,5 @@
-#NOTE: Hexsoon EDU650 params for ArduPilot Copter 4.5 (and higher)
+#NOTE: Hexsoon EDU650 params for ArduPilot Copter
 ANGLE_MAX,3000
-ACRO_YAW_P,2.6
 ATC_ACCEL_P_MAX,86000
 ATC_ACCEL_R_MAX,86000
 ATC_ACCEL_Y_MAX,15000
