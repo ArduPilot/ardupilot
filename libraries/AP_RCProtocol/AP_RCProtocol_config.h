@@ -4,6 +4,7 @@
 #include <AP_Frsky_Telem/AP_Frsky_config.h>
 #include <GCS_MAVLink/GCS_config.h>
 #include <AP_Radio/AP_Radio_config.h>
+#include <SRV_Channel/SRV_Channel_config.h>
 
 #ifndef AP_RCPROTOCOL_ENABLED
 #define AP_RCPROTOCOL_ENABLED 1
@@ -99,3 +100,4 @@
 #ifndef AP_RCPROTOCOL_FDM_ENABLED
 #define AP_RCPROTOCOL_FDM_ENABLED AP_RCPROTOCOL_BACKEND_DEFAULT_ENABLED && (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif
+
