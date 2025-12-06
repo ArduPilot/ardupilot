@@ -265,12 +265,16 @@ bool Compass::send_mag_cal_progress(const GCS_MAVLINK& link)
 
             next_cal_progress_idx[chan] = compass_id;
 
+            const Vector3f& compass_vec = AP::compass().get_field(uint8_t(compass_id));
+
             mavlink_msg_mag_cal_progress_send(
                 link.get_chan(),
                 uint8_t(compass_id),
                 _get_cal_mask(),
                 (uint8_t)cal_state.status, cal_state.attempt, cal_state.completion_pct, cal_state.completion_mask,
-                0.0f, 0.0f, 0.0f
+                compass_vec.x,
+                compass_vec.y,
+                compass_vec.z
             );
         } else {
             next_cal_progress_idx[chan] = compass_id;
