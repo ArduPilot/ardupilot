@@ -63,12 +63,12 @@ void ModeDrift::run()
     get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
 
     // Grab inertial velocity (already m/s)
-    const Vector3f& vel_neu_ms = pos_control->get_vel_estimate_NEU_ms();
+    const Vector3f& vel_ned_ms = pos_control->get_vel_estimate_NED_ms();
 
     // rotate roll, pitch input from north facing to vehicle's perspective
     // body-frame components in m/s
-    float vel_right_ms   =  vel_neu_ms.y * ahrs.cos_yaw() - vel_neu_ms.x * ahrs.sin_yaw(); // body roll axis
-    float vel_forward_ms =  vel_neu_ms.y * ahrs.sin_yaw() + vel_neu_ms.x * ahrs.cos_yaw(); // body pitch axis
+    float vel_right_ms   =  vel_ned_ms.y * ahrs.cos_yaw() - vel_ned_ms.x * ahrs.sin_yaw(); // body roll axis
+    float vel_forward_ms =  vel_ned_ms.y * ahrs.sin_yaw() + vel_ned_ms.x * ahrs.cos_yaw(); // body pitch axis
 
     // gain scheduling for yaw
     const float vel_forward_2_ms = MIN(fabsf(vel_forward_ms), DRIFT_VEL_FORWARD_MIN_MS);
@@ -140,12 +140,12 @@ void ModeDrift::run()
         target_roll_rad, target_pitch_rad, target_yaw_rate_rads);
 
     // output pilot's throttle with angle boost (velz now m/s)
-    const float assisted_throttle = get_throttle_assist(vel_neu_ms.z, get_pilot_desired_throttle());
+    const float assisted_throttle = get_throttle_assist(vel_ned_ms.z, get_pilot_desired_throttle());
     attitude_control->set_throttle_out(assisted_throttle, true, g.throttle_filt);
 }
 
-// get_throttle_assist - return throttle output (range 0 ~ 1) based on pilot input and z-axis velocity
-float ModeDrift::get_throttle_assist(float vel_u_ms, float pilot_throttle_scaled)
+// get_throttle_assist - return throttle output (range 0 ~ 1) based on pilot input and D-axis velocity (positive down)
+float ModeDrift::get_throttle_assist(float vel_d_ms, float pilot_throttle_scaled)
 {
     // throttle assist - adjusts throttle to slow the vehicle's vertical velocity
     //      Only active when pilot's throttle is between 0.213 ~ 0.787
@@ -154,7 +154,7 @@ float ModeDrift::get_throttle_assist(float vel_u_ms, float pilot_throttle_scaled
     if (pilot_throttle_scaled > DRIFT_THR_MIN && pilot_throttle_scaled < DRIFT_THR_MAX) {
         // calculate throttle assist gain
         thr_assist = 1.2f - ((float)fabsf(pilot_throttle_scaled - 0.5f) / 0.24f);
-        thr_assist = constrain_float(thr_assist, 0.0f, 1.0f) * -DRIFT_THR_ASSIST_GAIN_MS * vel_u_ms;
+        thr_assist = constrain_float(thr_assist, 0.0f, 1.0f) * DRIFT_THR_ASSIST_GAIN_MS * vel_d_ms;
 
         // ensure throttle assist never adjusts the throttle by more than 0.3 (≈300 pwm)
         thr_assist = constrain_float(thr_assist, -DRIFT_THR_ASSIST_MAX, DRIFT_THR_ASSIST_MAX);

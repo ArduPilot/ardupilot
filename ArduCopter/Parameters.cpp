@@ -191,7 +191,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
-    GSCALAR(pilot_speed_up_cms,     "PILOT_SPEED_UP",   PILOT_VELZ_MAX),
+    GSCALAR(pilot_speed_up_cms,     "PILOT_SPEED_UP",   PILOT_SPEED_UP_DEFAULT),
 
     // @Param: PILOT_ACCEL_Z
     // @DisplayName: Pilot vertical acceleration
@@ -200,7 +200,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
-    GSCALAR(pilot_accel_u_cmss,  "PILOT_ACCEL_Z",    PILOT_ACCEL_Z_DEFAULT),
+    GSCALAR(pilot_accel_d_cmss,  "PILOT_ACCEL_Z",    PILOT_ACCEL_Z_DEFAULT),
 
     // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable
@@ -1368,7 +1368,7 @@ void Copter::convert_pid_parameters(void)
 {
     const AP_Param::ConversionInfo angle_and_filt_conversion_info[] = {
         // PARAMETER_CONVERSION - Added: Aug-2021
-        { Parameters::k_param_pi_vel_xy, 3, AP_PARAM_FLOAT, "PSC_VELXY_FLTE" },
+        { Parameters::k_param_pi_vel_xy, 3, AP_PARAM_FLOAT, "PSC_NE_VEL_FLTE" },
     };
 
     // convert angle controller gain and filter without scaling
@@ -1386,10 +1386,10 @@ void Copter::convert_pid_parameters(void)
         { "LOIT_SPEED", 3000.0f },
         { "PHLD_BRAKE_ANGLE", 800.0f },
         { "PHLD_BRAKE_RATE", 4.0f },
-        { "PSC_ACCZ_P", 0.28f },
-        { "PSC_VELXY_D", 0.0f },
-        { "PSC_VELXY_I", 0.5f },
-        { "PSC_VELXY_P", 1.0f },
+        { "PSC_D_ACC_P", 0.028f },
+        { "PSC_NE_VEL_D", 0.0f },
+        { "PSC_NE_VEL_I", 0.5f },
+        { "PSC_NE_VEL_P", 1.0f },
         { "RC8_OPTION", 32 },
         { "RC_OPTIONS", 0 },
         { "ATC_RAT_RLL_ILMI", 0.05},
