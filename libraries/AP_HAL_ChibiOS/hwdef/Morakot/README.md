@@ -68,7 +68,7 @@ The JST-GH 7p connector supports a DJI Air Unit / HD VTX connection. Protocol de
 - [Morakot documentation](https://taiphoon-com.gitbook.io/taiphoon.com-docs/flight-stack/morakot-flight-controller)
 
 ## Connetions
-#### ESC1 UART7 - 8 Pin JST-GH
+#### ESC1 - 8 Pin JST-GH
 | Pin | Signal Name     | Voltage      |
 |-----|-----------------|--------------|
 | 1   | VBAT IN         | 12V-33.6V    |
