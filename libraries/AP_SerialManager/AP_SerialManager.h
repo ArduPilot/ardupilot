@@ -230,6 +230,8 @@ private:
     // setup any special options
     void set_options(uint16_t i);
 
+    uint16_t get_options(uint16_t i);
+
     bool init_console_done;
 
     void convert_parameters();

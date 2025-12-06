@@ -802,6 +802,12 @@ void AP_SerialManager::set_options(uint16_t i)
     }
 }
 
+uint16_t AP_SerialManager::get_options(uint16_t i)
+{
+    struct UARTState &opt = state[i];
+    return opt.options;
+}
+
 // get the passthru ports if enabled
 bool AP_SerialManager::get_passthru(AP_HAL::UARTDriver *&port1, AP_HAL::UARTDriver *&port2, uint8_t &timeout_s,
                                     uint32_t &baud1, uint32_t &baud2)
