@@ -223,9 +223,8 @@ class SizeCompareBranches(BuildScriptBase):
             return None
         return os.path.dirname(binary)
 
-    def progress(self, string):
-        '''pretty-print progress'''
-        print("SCB: %s" % string)
+    def progress_prefix(self):
+        return 'SCB'
 
     def build_branch_into_dir(self, board, branch, vehicle, outdir, source_dir=None, extra_hwdef=None, jobs=None):
         self.run_git(["checkout", branch], show_output=False, source_dir=source_dir)
