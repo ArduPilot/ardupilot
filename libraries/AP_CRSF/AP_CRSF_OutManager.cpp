@@ -11,6 +11,8 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Code by Andy Piper <github@andypiper.com>
  */
 
 #include "AP_CRSF_config.h"
@@ -42,14 +44,13 @@ AP_CRSF_OutManager::AP_CRSF_OutManager(void)
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-AP_CRSF_Out* AP_CRSF_OutManager::create_instance(AP_HAL::UARTDriver* uart)
+AP_CRSF_Out* AP_CRSF_OutManager::create_instance(AP_HAL::UARTDriver& uart)
 {
 #if AP_CRSF_OUT_ENABLED
     AP_CRSF_Out* crsf_out = NEW_NOTHROW AP_CRSF_Out(uart, _num_instances, *this);
     if (crsf_out == nullptr) {
         return nullptr;
     }
-    crsf_out->init(uart);
     return crsf_out;
 #else
     return nullptr;
@@ -69,7 +70,7 @@ void AP_CRSF_OutManager::update()
 
 AP_CRSF_OutManager::~AP_CRSF_OutManager()
 {
-    for (uint8_t i = 0; i < SERIALMANAGER_NUM_PORTS; i++) {
+    for (uint8_t i = 0; i < _num_instances; i++) {
         delete _instances[i];
         _instances[i] = nullptr;
     }
@@ -80,7 +81,11 @@ void AP_CRSF_OutManager::init()
 {
     AP_SerialManager &serial_manager = AP::serialmanager();
 
-    for (uint8_t i = 0; i < SERIALMANAGER_MAX_PORTS; i++) {
+    for (uint8_t i = _num_instances; i < SERIALMANAGER_MAX_PORTS; i++) {
+        if (_instances[i] != nullptr) {
+            continue;
+        }
+
         const AP_SerialManager::UARTState* port_state = serial_manager.get_state_by_id(i);
 
         if (port_state == nullptr) {
@@ -90,7 +95,7 @@ void AP_CRSF_OutManager::init()
         AP_SerialManager::SerialProtocol protocol = port_state->get_protocol();
         AP_HAL::UARTDriver* uart = serial_manager.get_serial_by_id(i);
 
-        if (_instances[i] != nullptr) {
+        if (uart == nullptr) {
             continue;
         }
 
@@ -99,7 +104,7 @@ void AP_CRSF_OutManager::init()
             _num_instances++;
 #if AP_CRSF_OUT_ENABLED
         } else if (protocol == AP_SerialManager::SerialProtocol_CRSF_Output) {
-            _instances[i] = create_instance(uart);
+            _instances[i] = create_instance(*uart);
             _num_instances++;
         }
 #endif

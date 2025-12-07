@@ -11,6 +11,8 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Code by Andy Piper <github@andypiper.com>
  */
 
 /*
@@ -20,6 +22,8 @@
 #include "AP_CRSF_config.h"
 
 #if AP_CRSF_ENABLED
+
+#pragma GCC optimize("O2")
 
 #include "AP_CRSF_Protocol.h"
 #include <AP_RCProtocol/AP_RCProtocol_CRSF.h>
