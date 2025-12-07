@@ -134,4 +134,4 @@ class BuildScriptBase:
 
     def progress(self, string):
         '''pretty-print progress'''
-        print(f"{self.__class__.__name__}: {string}")
+        print(f"{self.progress_prefix()}: {string}")

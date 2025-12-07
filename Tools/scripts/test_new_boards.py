@@ -26,9 +26,9 @@ class TestNewBoards(BuildScriptBase):
         super().__init__()
         self.master_branch: str = master_branch
 
-    def progress(self, string: str) -> None:
+    def progress_prefix(self) -> str:
         '''pretty-print progress'''
-        print("TNB: %s" % string)
+        return 'TNB'
 
     def get_new_hwdef_paths(self) -> Set[str]:
         '''returns list of newly added hwdef filepaths relative to the root.
