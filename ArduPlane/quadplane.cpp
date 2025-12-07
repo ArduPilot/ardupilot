@@ -2746,6 +2746,7 @@ void QuadPlane::vtol_position_controller(void)
     }
 
     case QPOS_LAND_FINAL:
+        setup_target_position();
         update_land_positioning();
 
         // relax when close to the ground
@@ -3087,7 +3088,8 @@ void QuadPlane::setup_target_position(void)
     if (!ahrs.get_origin(origin)) {
         origin.zero();
     }
-    if (!in_vtol_land_approach() || poscontrol.get_state() > QPOS_APPROACH) {
+    if ((!in_vtol_land_approach() || poscontrol.get_state() > QPOS_APPROACH) &&
+        poscontrol.get_state() != QPOS_LAND_FINAL) {
         set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     }
 
