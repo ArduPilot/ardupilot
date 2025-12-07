@@ -3048,9 +3048,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "EK3_SRC1_VELXY": 5,
                 "EK3_SRC1_VELZ": 0,
             })
+        self.set_analog_rangefinder_parameters()    # optical flow cannot be used for position without a rangefinder
 
     def OpticalFlowLocation(self):
-        '''test optical flow does supply location'''
+        '''test optical flow *does* supply location'''
 
         self.context_push()
 
@@ -3060,13 +3061,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "AHRS_EKF_TYPE": 3,
             "SIM_FLOW_ENABLE": 1,
             "FLOW_TYPE": 10,
+            "GPS1_TYPE": 0,
             "AHRS_ORIGIN_LAT": -35.362938,
             "AHRS_ORIGIN_LNG": 149.165085,
             "AHRS_ORIGIN_ALT": 584.0805053710938
         })
 
         self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
-
         self.reboot_sitl()
 
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW, True, True, True, verbose=True)
@@ -3074,6 +3075,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('LOITER')
         self.delay_sim_time(5)
         self.wait_ready_to_arm(require_absolute=False, timeout=300)
+        self.arm_vehicle() # check we can arm
+        self.disarm_vehicle(force=True)
 
         self.context_pop()
 
@@ -3148,8 +3151,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
 
         self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
-
-        self.set_analog_rangefinder_parameters()
 
         self.reboot_sitl()
 
@@ -13593,15 +13594,34 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             want_result=mavutil.mavlink.MAV_RESULT_DENIED,
         )
 
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 3,
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "GPS1_TYPE": 0,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.reboot_sitl()
+
+        # the problem is that with a GPS enabled we will always have a position estimate
+        # as far as the EKF is concerned, but turning it off will not let us be ready to arm
+        # in loiter. To get around this we configure loiter for relative positioning
+        # which means we can check the source set behaviour without being affected by the
+        # absence of the GPS
         self.change_mode('LOITER')
-        self.wait_ready_to_arm()
+        self.wait_ready_to_arm(require_absolute=False)
 
         run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2)
+        self.assert_prearm_failure('AHRS: waiting for home')
 
-        self.assert_prearm_failure('Need Position Estimate')
         run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 1)
+        self.wait_ready_to_arm(require_absolute=False)
 
-        self.wait_ready_to_arm()
+        # now check that if we add in a GPS source that we get the appropriate prearm error
+        self.set_parameters({
+            "EK3_SRC1_POSXY": 3,
+        })
+        self.assert_prearm_failure('EK3 sources require GPS')
 
     def MAV_CMD_SET_EKF_SOURCE_SET(self):
         '''test setting of source sets using mavlink command'''
