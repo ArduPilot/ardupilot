@@ -85,6 +85,7 @@ bool AP_CRSF_Out::init(AP_HAL::UARTDriver* uart)
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_CRSF_Out::crsf_out_thread, void), "crsf", 2048, AP_HAL::Scheduler::PRIORITY_RCOUT, 1)) {
         delete _crsf_port;
+        _crsf_port = nullptr;
         debug_rcout("Failed to create CRSF_Out thread");
         return false;
     }
@@ -94,7 +95,7 @@ bool AP_CRSF_Out::init(AP_HAL::UARTDriver* uart)
 
 bool AP_CRSF_Out::should_do_status_update()
 {
-    uint32_t now_ms = AP_HAL::millis();
+    const uint32_t now_ms = AP_HAL::millis();
     if (now_ms - _last_status_update_ms > 1000) {
         _last_status_update_ms = now_ms;
         return true;
