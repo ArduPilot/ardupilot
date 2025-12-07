@@ -11,6 +11,8 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Code by Andy Piper <github@andypiper.com>
  */
 
 /*
@@ -39,7 +41,7 @@ class AP_CRSF_OutManager;
 class AP_CRSF_Out : public AP_CRSF_Protocol {
 public:
     // constructor for serial interaction
-    AP_CRSF_Out(AP_HAL::UARTDriver* uart, uint8_t instance, AP_CRSF_OutManager& frontend);
+    AP_CRSF_Out(AP_HAL::UARTDriver& uart, uint8_t instance, AP_CRSF_OutManager& frontend);
 
     ~AP_CRSF_Out() override {}
 
@@ -47,7 +49,7 @@ public:
     CLASS_NO_COPY(AP_CRSF_Out);
 
     // one-time initialisation
-    bool init(AP_HAL::UARTDriver* uart);
+    bool init(AP_HAL::UARTDriver& uart);
 
     // rc periodic update, called from loop
     void update() override;
@@ -124,7 +126,7 @@ private:
 
     // pointer to the CRSF protocol engine instance for our assigned UART
     AP_RCProtocol_CRSF* _crsf_port;
-    AP_HAL::UARTDriver* _uart;
+    AP_HAL::UARTDriver& _uart;
     AP_CRSF_OutManager& _frontend;
 };
 

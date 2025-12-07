@@ -11,6 +11,8 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Code by Andy Piper <github@andypiper.com>
  */
 
 /*
@@ -49,23 +51,27 @@ AP_CRSF_Out* AP_CRSF_Out::_singleton;
 
 extern const AP_HAL::HAL& hal;
 
-AP_CRSF_Out::AP_CRSF_Out(AP_HAL::UARTDriver* uart, uint8_t instance, AP_CRSF_OutManager& frontend) :
+AP_CRSF_Out::AP_CRSF_Out(AP_HAL::UARTDriver& uart, uint8_t instance, AP_CRSF_OutManager& frontend) :
     _instance_idx(instance), _uart(uart), _frontend(frontend)
 {
-    if (_singleton == nullptr) {
-        _singleton = this;
+    // in the future we could consider supporting multiple output handlers
+    if (_singleton != nullptr) {
+        AP_HAL::panic("Duplicate CRSF_Out handler");
     }
+
+    _singleton = this;
+
     init(uart);
 }
 
 // Initialise the CRSF output driver
-bool AP_CRSF_Out::init(AP_HAL::UARTDriver* uart)
+bool AP_CRSF_Out::init(AP_HAL::UARTDriver& uart)
 {
     if (_state != State::WAITING_FOR_PORT) {
         return false;
     }
 
-    _crsf_port = NEW_NOTHROW AP_RCProtocol_CRSF(AP::RC(), AP_RCProtocol_CRSF::PortMode::DIRECT_RCOUT, uart);
+    _crsf_port = NEW_NOTHROW AP_RCProtocol_CRSF(AP::RC(), AP_RCProtocol_CRSF::PortMode::DIRECT_RCOUT, &uart);
 
     if (_crsf_port == nullptr) {
         debug_rcout("Init failed: could not create CRSF output port");
@@ -85,6 +91,7 @@ bool AP_CRSF_Out::init(AP_HAL::UARTDriver* uart)
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_CRSF_Out::crsf_out_thread, void), "crsf", 2048, AP_HAL::Scheduler::PRIORITY_RCOUT, 1)) {
         delete _crsf_port;
+        _crsf_port = nullptr;
         debug_rcout("Failed to create CRSF_Out thread");
         return false;
     }
@@ -94,7 +101,7 @@ bool AP_CRSF_Out::init(AP_HAL::UARTDriver* uart)
 
 bool AP_CRSF_Out::should_do_status_update()
 {
-    uint32_t now_ms = AP_HAL::millis();
+    const uint32_t now_ms = AP_HAL::millis();
     if (now_ms - _last_status_update_ms > 1000) {
         _last_status_update_ms = now_ms;
         return true;
@@ -121,30 +128,31 @@ void AP_CRSF_Out::crsf_out_thread()
         }
 #endif
 
-        const uint32_t now = AP_HAL::micros();
+        const uint32_t now_us = AP_HAL::micros();
 
-        // Calculate time remaining until the next scheduled frame to maintain precise rate
-        uint32_t next_run = _last_frame_us + _frame_interval_us;
+        uint32_t interval_us = _frame_interval_us;
         uint8_t frame_ratio = _heartbeat_to_frame_ratio;
 
         // if we have not negotiated a faster baudrate do not go above the default output rate
-        if (uint16_t(_frontend._rate_hz.get()) > DEFAULT_CRSF_OUTPUT_RATE && _uart->get_baud_rate() == CRSF_BAUDRATE) {
-            next_run = _last_frame_us + 1000000UL / DEFAULT_CRSF_OUTPUT_RATE;
+        if (uint16_t(_frontend._rate_hz.get()) > DEFAULT_CRSF_OUTPUT_RATE && _uart.get_baud_rate() == CRSF_BAUDRATE) {
+            interval_us = 1000000UL / DEFAULT_CRSF_OUTPUT_RATE;
             frame_ratio = 1;
+        }
+
+        const uint32_t timeout_remaining_us = AP_HAL::timeout_remaining(_last_frame_us, now_us, interval_us);
+        if (timeout_remaining_us > 0) {
+            hal.scheduler->delay_microseconds(timeout_remaining_us);
         }
 
         // Check for overrun - if we are late by more than 50% of an interval,
         // give up on the old timeline and reset.
-        if (now > next_run + (_frame_interval_us / 2)) {
-             next_run = now; 
+        if (AP_HAL::timeout_remaining(_last_frame_us, now_us, interval_us + interval_us/2) == 0) {
+            _last_frame_us = now_us;
+        } else {
+            // Use scheduled frame time to maintain precise rate
+            _last_frame_us = _last_frame_us + interval_us;  // this may wrap, but that is still correct
         }
 
-        if (now < next_run) {
-            hal.scheduler->delay_microseconds(next_run - now);
-        }
-
-        // last time we sent and received a frame
-        _last_frame_us = next_run;
 #ifdef CRSF_RCOUT_DEBUG
         num_frames++;
 #endif
