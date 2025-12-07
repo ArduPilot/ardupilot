@@ -29,7 +29,17 @@ extern "C" {
 #include "lua/src/lmem.h"
 }
 
-extern const AP_HAL::HAL& hal;
+// fix up . access to pretend it was : access by inserting a dummy element at
+// the start of the stack. don't ever add another call, this is purely for
+// legacy compatibility! (though many places semantically SHOULD use dots...)
+static void fix_dot_access_never_add_another_call(lua_State *L, const char *tname) {
+    if (luaL_testudata(L, 1, tname) != NULL) {
+        return; // expected type is at start of stack, : was used, nothing to do
+    }
+
+    lua_pushnil(L); // put nil at start of stack, shifting other elements up
+    lua_insert(L, 1);
+}
 
 // millis
 int lua_millis(lua_State *L) {
@@ -51,15 +61,13 @@ int lua_micros(lua_State *L) {
 
 #if HAL_GCS_ENABLED
 int lua_mavlink_init(lua_State *L) {
+    fix_dot_access_never_add_another_call(L, "mavlink");
 
-    // Allow : and . access
-    const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
-
-    binding_argcheck(L, 2+arg_offset);
+    binding_argcheck(L, 3);
     // get the depth of receive queue
-    const uint32_t queue_size = get_uint32(L, 1+arg_offset, 0, 25);
+    const uint32_t queue_size = get_uint32(L, 2, 0, 25);
     // get number of msgs to accept
-    const uint32_t num_msgs = get_uint32(L, 2+arg_offset, 0, 25);
+    const uint32_t num_msgs = get_uint32(L, 3, 0, 25);
 
     struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
     bool failed = false;
@@ -92,11 +100,9 @@ int lua_mavlink_init(lua_State *L) {
 }
 
 int lua_mavlink_receive_chan(lua_State *L) {
+    fix_dot_access_never_add_another_call(L, "mavlink");
 
-    // Allow : and . access
-    const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
-
-    binding_argcheck(L, arg_offset);
+    binding_argcheck(L, 1);
 
     struct AP_Scripting::mavlink_msg msg;
     ObjectBuffer<struct AP_Scripting::mavlink_msg> *rx_buffer = AP::scripting()->mavlink_data.rx_buffer;
@@ -117,13 +123,11 @@ int lua_mavlink_receive_chan(lua_State *L) {
 }
 
 int lua_mavlink_register_rx_msgid(lua_State *L) {
+    fix_dot_access_never_add_another_call(L, "mavlink");
 
-    // Allow : and . access
-    const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
+    binding_argcheck(L, 2);
 
-    binding_argcheck(L, 1+arg_offset);
-
-    const uint32_t msgid = get_uint32(L, 1+arg_offset, 0, (1 << 24) - 1);
+    const uint32_t msgid = get_uint32(L, 2, 0, (1 << 24) - 1);
 
     struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
 
@@ -156,13 +160,11 @@ int lua_mavlink_register_rx_msgid(lua_State *L) {
 }
 
 int lua_mavlink_send_chan(lua_State *L) {
+    fix_dot_access_never_add_another_call(L, "mavlink");
 
-    // Allow : and . access
-    const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
+    binding_argcheck(L, 4);
 
-    binding_argcheck(L, 3+arg_offset);
-
-    const mavlink_channel_t chan = (mavlink_channel_t)get_uint32(L, 1+arg_offset, 0, MAVLINK_COMM_NUM_BUFFERS - 1);
+    const mavlink_channel_t chan = (mavlink_channel_t)get_uint32(L, 2, 0, MAVLINK_COMM_NUM_BUFFERS - 1);
 
     // Check if the channel is valid
     if (chan >= gcs().num_gcs()) {
@@ -170,9 +172,9 @@ int lua_mavlink_send_chan(lua_State *L) {
         return 0;
     }
 
-    const uint32_t msgid = get_uint32(L, 2+arg_offset, 0, (1 << 24) - 1);
+    const uint32_t msgid = get_uint32(L, 3, 0, (1 << 24) - 1);
 
-    const char *packet = luaL_checkstring(L, 3+arg_offset);
+    const char *packet = luaL_checkstring(L, 4);
 
     // FIXME: The data that's in this mavlink_msg_entry_t should be provided from the script, which allows
     //        sending entirely new messages as outputs. At the moment we can only encode messages that
@@ -201,13 +203,11 @@ int lua_mavlink_send_chan(lua_State *L) {
 }
 
 int lua_mavlink_block_command(lua_State *L) {
+    fix_dot_access_never_add_another_call(L, "mavlink");
 
-    // Allow : and . access
-    const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
+    binding_argcheck(L, 2);
 
-    binding_argcheck(L, 1+arg_offset);
-
-    const uint16_t id = get_uint16_t(L, 1+arg_offset);
+    const uint16_t id = get_uint16_t(L, 2);
 
     // Check if ID is already registered
     if (AP::scripting()->is_handling_command(id)) {
@@ -270,18 +270,17 @@ int AP_Logger_Write(lua_State *L) {
         return luaL_argerror(L, 1, "logger not supported on this firmware");
     }
 
-    // Allow : and . access
-    const int arg_offset = (luaL_testudata(L, 1, "logger") != NULL) ? 1 : 0;
+    fix_dot_access_never_add_another_call(L, "logger");
 
-    // check we have at least 4 arguments passed in
-    const int args = lua_gettop(L) - arg_offset;
-    if (args < 4) {
+    // check we have at least 5 arguments passed in
+    const int args = lua_gettop(L);
+    if (args < 5) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    const char * name = luaL_checkstring(L, 1 + arg_offset);
-    const char * labels = luaL_checkstring(L, 2 + arg_offset);
-    const char * fmt = luaL_checkstring(L, 3 + arg_offset);
+    const char * name = luaL_checkstring(L, 2);
+    const char * labels = luaL_checkstring(L, 3);
+    const char * fmt = luaL_checkstring(L, 4);
 
     // cheack the name, labels and format are not too long
     if (strlen(name) >= LS_NAME_SIZE) {
@@ -310,10 +309,10 @@ int AP_Logger_Write(lua_State *L) {
     }
 
     bool have_units = false;
-    if (args - 5 == length) {
+    if (args - 6 == length) {
         // check if there are enough arguments for units and multiplyers
         have_units = true;
-    } else if (args - 3 != length) {
+    } else if (args - 4 != length) {
         // check the number of arguments matches the length of the foramt string
         return luaL_argerror(L, args, "format does not match No. of arguments");
     }
@@ -339,8 +338,8 @@ int AP_Logger_Write(lua_State *L) {
     } else {
         // read in units and multiplers strings
         field_start += 2;
-        const char * units = luaL_checkstring(L, 4 + arg_offset);
-        const char * multipliers = luaL_checkstring(L, 5 + arg_offset);
+        const char * units = luaL_checkstring(L, 5);
+        const char * multipliers = luaL_checkstring(L, 6);
 
         if (length != strlen(units)) {
             return luaL_error(L, "units must be same length as format");
@@ -386,10 +385,10 @@ int AP_Logger_Write(lua_State *L) {
     memcpy(&buffer[offset], &now, sizeof(uint64_t));
     offset += sizeof(uint64_t);
 
-    for (uint8_t i=field_start; i<=args; i++) {
+    for (uint8_t i=field_start; i<=args-1; i++) {
         uint8_t charlen = 0;
         uint8_t index = have_units ? i-5 : i-3;
-        uint8_t arg_index = i + arg_offset;
+        uint8_t arg_index = i + 1;
         switch(fmt_cat[index]) {
             // logger variable types not available to scripting
             // 'd': double
@@ -569,33 +568,31 @@ int AP_Logger_Write(lua_State *L) {
 #endif // HAL_LOGGING_ENABLED
 
 int lua_get_i2c_device(lua_State *L) {
+    fix_dot_access_never_add_another_call(L, "i2c");
 
-    // Allow : and . access
-    const int arg_offset = (luaL_testudata(L, 1, "i2c") != NULL) ? 1 : 0;
-
-    const int args = lua_gettop(L) - arg_offset;
-    if (args < 2) {
+    const int args = lua_gettop(L);
+    if (args < 3) {
         return luaL_argerror(L, args, "require i2c bus and address");
     }
-    if (args > 4) {
+    if (args > 5) {
         return luaL_argerror(L, args, "too many arguments");
     }
 
-    const lua_Integer bus_in = get_integer(L, 1 + arg_offset, 0, 4);
+    const lua_Integer bus_in = get_integer(L, 2, 0, 4);
     const uint8_t bus = static_cast<uint8_t>(bus_in);
 
-    const lua_Integer address_in = get_integer(L, 2 + arg_offset, 0, 128);
+    const lua_Integer address_in = get_integer(L, 3, 0, 128);
     const uint8_t address = static_cast<uint8_t>(address_in);
 
     // optional arguments, use the same defaults as the hal get_device function
     uint32_t bus_clock = 400000;
     bool use_smbus = false;
 
-    if (args > 2) {
-        bus_clock = coerce_to_uint32_t(L, 3 + arg_offset);
+    if (args > 3) {
+        bus_clock = coerce_to_uint32_t(L, 4);
 
-        if (args > 3) {
-            use_smbus = static_cast<bool>(lua_toboolean(L, 4 + arg_offset));
+        if (args > 4) {
+            use_smbus = static_cast<bool>(lua_toboolean(L, 5));
         }
     }
 
@@ -690,13 +687,11 @@ int AP_HAL__I2CDevice_transfer(lua_State *L) {
 
 #if AP_SCRIPTING_CAN_SENSOR_ENABLED
 int lua_get_CAN_device(lua_State *L) {
+    fix_dot_access_never_add_another_call(L, "CAN");
 
-    // Allow : and . access
-    const int arg_offset = (luaL_testudata(L, 1, "CAN") != NULL) ? 1 : 0;
+    binding_argcheck(L, 2);
 
-    binding_argcheck(L, 1 + arg_offset);
-
-    const uint32_t raw_buffer_len = get_uint32(L, 1 + arg_offset, 1, 25);
+    const uint32_t raw_buffer_len = get_uint32(L, 2, 1, 25);
     const uint32_t buffer_len = static_cast<uint32_t>(raw_buffer_len);
 
     auto *scripting = AP::scripting();
@@ -720,13 +715,11 @@ int lua_get_CAN_device(lua_State *L) {
 }
 
 int lua_get_CAN_device2(lua_State *L) {
+    fix_dot_access_never_add_another_call(L, "CAN");
 
-    // Allow : and . access
-    const int arg_offset = (luaL_testudata(L, 1, "CAN") != NULL) ? 1 : 0;
+    binding_argcheck(L, 2);
 
-    binding_argcheck(L, 1 + arg_offset);
-
-    const uint32_t raw_buffer_len = get_uint32(L, 1 + arg_offset, 1, 25);
+    const uint32_t raw_buffer_len = get_uint32(L, 2, 1, 25);
     const uint32_t buffer_len = static_cast<uint32_t>(raw_buffer_len);
 
     auto *scripting = AP::scripting();
@@ -752,12 +745,11 @@ int lua_get_CAN_device2(lua_State *L) {
 
 #if AP_SERIALMANAGER_ENABLED
 int lua_serial_find_serial(lua_State *L) {
-    // Allow : and . access
-    const int arg_offset = (luaL_testudata(L, 1, "serial") != NULL) ? 1 : 0;
+    fix_dot_access_never_add_another_call(L, "serial");
 
-    binding_argcheck(L, 1 + arg_offset);
+    binding_argcheck(L, 2);
 
-    uint8_t instance = get_uint8_t(L, 1 + arg_offset);
+    uint8_t instance = get_uint8_t(L, 2);
 
     AP_SerialManager *mgr = &AP::serialmanager();
     AP_HAL::UARTDriver *driver_stream = mgr->find_serial(
@@ -779,13 +771,12 @@ int lua_serial_find_serial(lua_State *L) {
 
 #if AP_SCRIPTING_SERIALDEVICE_ENABLED
 int lua_serial_find_simulated_device(lua_State *L) {
-    // Allow : and . access
-    const int arg_offset = (luaL_testudata(L, 1, "serial") != NULL) ? 1 : 0;
+    fix_dot_access_never_add_another_call(L, "serial");
 
-    binding_argcheck(L, 2 + arg_offset);
+    binding_argcheck(L, 3);
 
-    const int8_t protocol = (int8_t)get_uint32(L, 1 + arg_offset, 0, INT8_MAX);
-    uint32_t instance = get_uint16_t(L, 2 + arg_offset);
+    const int8_t protocol = (int8_t)get_uint32(L, 2, 0, INT8_MAX);
+    uint32_t instance = get_uint16_t(L, 3);
 
     auto *scripting = AP::scripting();
     AP_Scripting_SerialDevice::Port *device_stream = nullptr;
