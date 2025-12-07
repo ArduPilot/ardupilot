@@ -76,7 +76,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
 
     // @Param{Copter, Plane, Sub}: ALT_MAX
     // @DisplayName: Fence Maximum Altitude
-    // @Description: Maximum altitude allowed before geofence triggers. See FENCE_ALT_TYPE for reference frame.
+    // @Description: Maximum altitude allowed before geofence triggers. See FENCE_ALT_MAX_TP for reference frame.
     // @Units: m
     // @Range: 10 1000
     // @Increment: 1
@@ -108,7 +108,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
 
     // @Param{Copter, Plane, Sub}: ALT_MIN
     // @DisplayName: Fence Minimum Altitude
-    // @Description: Minimum altitude allowed before geofence triggers. See FENCE_ALT_TYPE for reference frame.
+    // @Description: Minimum altitude allowed before geofence triggers. See FENCE_ALT_MIN_TP for reference frame.
     // @Units: m
     // @Range: -100 100
     // @Increment: 1
