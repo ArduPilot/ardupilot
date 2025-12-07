@@ -387,7 +387,7 @@ public:
     bool msg_type_in_use(uint8_t msg_type) const;
 
     // calculate the length of a message using fields specified in
-    // fmt; includes the message header
+    // fmt; includes the message header. returns -1 on on error.
     int16_t Write_calc_msg_len(const char *fmt) const;
 
     // this structure looks much like struct LogStructure in

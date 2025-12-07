@@ -1370,8 +1370,8 @@ bool AP_Logger::fill_logstructure(struct LogStructure &logstruct, const uint8_t 
  * Tools/Replay/MsgHandler.cpp */
 int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
 {
-    uint8_t len =  LOG_PACKET_HEADER_LEN;
-    for (uint8_t i=0; i<strlen(fmt); i++) {
+    size_t len = LOG_PACKET_HEADER_LEN;
+    for (size_t i=0; i<strlen(fmt); i++) {
         switch(fmt[i]) {
         case 'a' : len += sizeof(int16_t[32]); break;
         case 'b' : len += sizeof(int8_t); break;
@@ -1401,7 +1401,10 @@ int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
             return -1;
         }
     }
-    return len;
+    if (len > LOG_PACKET_MAX_LEN) {
+        return -1;
+    }
+    return (int16_t)len;
 }
 
 /*
