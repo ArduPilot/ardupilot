@@ -158,6 +158,9 @@ public:
     // Apply an altitude offset, to compensate for changes in home alt.
     void offset_altitude(const float alt_offset);
 
+    // Return true if airspeed should be used
+    bool use_airspeed() const;
+
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
