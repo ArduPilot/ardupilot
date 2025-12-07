@@ -78,6 +78,10 @@ int lua_mavlink_init(lua_State *L) {
         }
         if (data.accept_msg_ids == nullptr) {
             data.accept_msg_ids = NEW_NOTHROW uint32_t[num_msgs];
+            if (data.accept_msg_ids != nullptr) {
+                data.accept_msg_ids_size = num_msgs;
+                memset(data.accept_msg_ids, UINT32_MAX, sizeof(int) * num_msgs);
+            }
         }
         if ((data.rx_buffer == nullptr) || (data.accept_msg_ids == nullptr)) {
             delete data.rx_buffer;
@@ -86,9 +90,6 @@ int lua_mavlink_init(lua_State *L) {
             data.accept_msg_ids = nullptr;
             data.accept_msg_ids_size = 0;
             failed = true;
-        } else {
-            data.accept_msg_ids_size = num_msgs;
-            memset(data.accept_msg_ids, UINT32_MAX, sizeof(int) * num_msgs);
         }
     } // release semaphore here as luaL_error will NOT do that!
 
