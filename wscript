@@ -313,6 +313,16 @@ submodules at specific revisions.
                  default=False,
                  help="Enable littlefs for filesystem access on SITL (under construction)")
 
+    g.add_option('--trusted-flight-issuer', 
+                 type='string',
+                 default=None,
+                 help="Aerobridge trusted flight valid token issuer")
+
+    g.add_option('--trusted-flight-key', 
+                 type='string',
+                 default=None,
+                 help="trusted flight public key")
+
     g = opt.ap_groups['linux']
 
     linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
@@ -394,6 +404,11 @@ configuration in order to save typing.
         action='store_true',
         default=False,
         help='Use flash storage emulation.')
+
+    g.add_option('--enable-sitl-trusted-flight', 
+                 action='store_true',
+                 default=False,
+                 help="Enable Aerobridge trusted flight for SITL")
 
     g.add_option('--ekf-double',
         action='store_true',
@@ -589,6 +604,12 @@ def configure(cfg):
 
     cfg.start_msg('Unit tests')
     if cfg.env.HAS_GTEST:
+        cfg.end_msg('enabled')
+    else:
+        cfg.end_msg('disabled', color='YELLOW')
+
+    cfg.start_msg('Trusted Flight')
+    if (cfg.options.trusted_flight_issuer and cfg.options.trusted_flight_key) or cfg.options.enable_sitl_trusted_flight:
         cfg.end_msg('enabled')
     else:
         cfg.end_msg('disabled', color='YELLOW')
