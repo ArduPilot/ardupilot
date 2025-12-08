@@ -315,6 +315,11 @@ void AP_Periph_FW::init()
 #if AP_SCRIPTING_ENABLED
     scripting.init();
 #endif
+
+#if AP_PERIPH_ACTUATOR_TELEM_ENABLED
+    actuator_telem.init();
+#endif
+
     start_ms = AP_HAL::millis();
 }
 
@@ -503,6 +508,10 @@ void AP_Periph_FW::update()
 
 #if AP_PERIPH_RCIN_ENABLED
     rcin_update();
+#endif
+
+#if AP_PERIPH_ACTUATOR_TELEM_ENABLED
+    actuator_telem.update();
 #endif
 
 #if AP_PERIPH_BATTERY_BALANCE_ENABLED
