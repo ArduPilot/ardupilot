@@ -370,6 +370,9 @@
 #ifndef AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED
 #define AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED 0
 #endif
+#ifndef AP_PERIPH_ACTUATOR_TELEM_ENABLED
+#define AP_PERIPH_ACTUATOR_TELEM_ENABLED 0
+#endif
 
 /*
  * turning on of ArduPilot features based on which AP_Periph features
