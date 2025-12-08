@@ -1578,8 +1578,8 @@ void Compass::probe_ak09916_via_icm20948(uint8_t i2c_bus, uint8_t ak09916_addr, 
         return;
     }
     auto *backend = AP_Compass_AK09916::probe_ICM20948(
-        GET_I2C_DEVICE(i2c_bus, HAL_COMPASS_AK09916_I2C_ADDR),
-        GET_I2C_DEVICE(i2c_bus, HAL_COMPASS_ICM20948_I2C_ADDR),
+        GET_I2C_DEVICE(i2c_bus, ak09916_addr),
+        GET_I2C_DEVICE(i2c_bus, icm20948_addr),
         external,
         rotation
         );
