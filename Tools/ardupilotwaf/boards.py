@@ -1038,6 +1038,7 @@ class sitl_periph(sitl):
             AP_PERIPH_BUZZER_ENABLED = 0,
             AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED = 0,
             AP_PERIPH_RTC_GLOBALTIME_ENABLED = 0,
+            AP_PERIPH_ACTUATOR_TELEM_ENABLED = 0,
         )
 
         try:
