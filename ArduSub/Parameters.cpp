@@ -834,6 +834,14 @@ void Sub::convert_old_parameters()
     SRV_Channels::upgrade_parameters();
 }
 
+// Helper function to set servo function by channel number, 1-indexed
+static void set_servo_function(uint8_t channel, SRV_Channel::Aux_servo_function_t function)
+{
+    char param_name[20];
+    snprintf(param_name, sizeof(param_name), "SERVO%u_FUNCTION", channel);
+    AP_Param::set_and_save_by_name(param_name, static_cast<int>(function));
+}
+
 
 void Sub::update_actuators_from_jsbuttons()
 {
@@ -921,9 +929,7 @@ void Sub::update_actuators_from_jsbuttons()
 
       if (has_assigned_button) {
           // Assign actuator function to preserve legacy behavior
-          char param_name[20];
-          snprintf(param_name, sizeof(param_name), "SERVO%u_FUNCTION", channel);
-          AP_Param::set_and_save_by_name(param_name, static_cast<int>(target_function));
+          set_servo_function(channel, target_function);
       }
   }
 }
@@ -972,9 +978,7 @@ void Sub::update_lights_from_rcin()
         for (uint8_t func_idx = 0; func_idx < FUNCTIONS_PER_LIGHT; func_idx++) {
             if (sub.jsbutton_function_is_assigned(lights_button_functions[light][func_idx])) {
                 // We have buttons assined to lights. set the channel to the new, dedicated lights function.
-                char param_name[20];
-                snprintf(param_name, sizeof(param_name), "SERVO%u_FUNCTION", existing_channel + 1);
-                AP_Param::set_and_save_by_name(param_name, static_cast<int>(lights_functions[light]));
+                set_servo_function(existing_channel + 1, lights_functions[light]);
                 break;
             }
         }
@@ -989,11 +993,9 @@ void Sub::update_leak_pins() {
             uint8_t servo_channel;
             if (hal.gpio->pin_to_servo_channel(leak_detector.get_pin(instance), servo_channel)) {
                 if (!SRV_Channels::is_GPIO(servo_channel)) {
-                    char param_name[20];
                     if (SRV_Channels::channel_function(servo_channel) == SRV_Channel::Aux_servo_function_t::k_none) {
                         gcs().send_text(MAV_SEVERITY_INFO, "Leak detector %u pin (servo %u) auto-set to GPIO", instance + 1, servo_channel + 1);
-                        snprintf(param_name, sizeof(param_name), "SERVO%u_FUNCTION", servo_channel + 1);
-                        AP_Param::set_and_save_by_name(param_name, static_cast<int>(SRV_Channel::Aux_servo_function_t::k_GPIO));
+                        set_servo_function(servo_channel + 1, SRV_Channel::Aux_servo_function_t::k_GPIO);
                     }
                     else {
                         gcs().send_text(MAV_SEVERITY_WARNING, "Leak detector %u error. Please set SERVO%u_FUNCTION to GPIO", instance + 1, servo_channel + 1);
@@ -1014,9 +1016,7 @@ void Sub::update_relay_pins() {
                 if (relay.enabled(instance) && !SRV_Channels::is_GPIO(servo_channel)) {
                     if (SRV_Channels::channel_function(servo_channel) == SRV_Channel::Aux_servo_function_t::k_none) {
                         gcs().send_text(MAV_SEVERITY_INFO, "Relay %u pin (servo %u) auto-set to GPIO", instance + 1, servo_channel + 1);
-                        char param_name[20];
-                        snprintf(param_name, sizeof(param_name), "SERVO%u_FUNCTION", servo_channel + 1);
-                        AP_Param::set_and_save_by_name(param_name, static_cast<int>(SRV_Channel::Aux_servo_function_t::k_GPIO));
+                        set_servo_function(servo_channel + 1, SRV_Channel::Aux_servo_function_t::k_GPIO);
                     }
                     else {
                         gcs().send_text(MAV_SEVERITY_WARNING, "Relay %u error. Please set SERVO%u_FUNCTION to GPIO", instance + 1, servo_channel + 1);
