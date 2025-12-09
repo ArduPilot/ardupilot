@@ -36,36 +36,10 @@ sitl_params_to_skip = set([
 ])
 
 frame_params_to_skip = set([
-    'QuadPlanes/XPlane-Alia.parm',
     'SkyWalkerX8.param',
-    'TradHeli_Copter36_Upgrade-MP.param',
     'SkyWalkerX8_ReverseThrust.param',
-    'Solo_Copter-3.5_GreenCube.param',
-    'eLAB_LAB470_AC35.param',
-    'ArduRoller-balancebot.param',
-    'eLAB_VEK_AI_Rover.param',
-    'AION_R1_Rover.param',
-    'HK-HydroProInception-Rover350.param',
-    'Holybro-kospi1.param',
-    'intel-aero-rtf.param',
     'EFlight_Convergence.param',
     'WLToys_V383_HeliQuad.param',
-    'ThunderTiger-ToyotaHilux-Rover.param',
-    'deset-mapping-boat.param',
-    'TradHeli_Copter36_Setup-MP.param',
-    'eLAB_LAB445_AC34.param',
-    'boogie-board-boat.param',
-    '3DR_Iris+_AC34.param',
-    'intel-aero-rtf-cb.param',
-    'eLAB_EX700_AC34.param',
-    'HK-hydrotek-Rover331.param',
-    'DJI_AGRAS_MG-1_AC413.param',
-    'eLAB_EX1050_AC34.param',
-    'Solo_Copter-3.6_GreenCube.param',
-    'Parrot_Disco/Parrot_Disco.param',
-    'QuadPlanes/Mugin_EV350.param',
-    'QuadPlanes/Aerofox_AYK320.param',
-    'QuadPlanes/Foxtech_GreatShark.param',
 ])
 
 
