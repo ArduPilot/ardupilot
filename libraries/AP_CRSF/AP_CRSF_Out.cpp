@@ -122,30 +122,31 @@ void AP_CRSF_Out::crsf_out_thread()
         }
 #endif
 
-        const uint32_t now = AP_HAL::micros();
+        const uint32_t now_us = AP_HAL::micros();
 
-        // Calculate time remaining until the next scheduled frame to maintain precise rate
-        uint32_t next_run = _last_frame_us + _frame_interval_us;
+        uint32_t interval_us = _frame_interval_us;
         uint8_t frame_ratio = _heartbeat_to_frame_ratio;
 
         // if we have not negotiated a faster baudrate do not go above the default output rate
         if (uint16_t(_frontend._rate_hz.get()) > DEFAULT_CRSF_OUTPUT_RATE && _uart->get_baud_rate() == CRSF_BAUDRATE) {
-            next_run = _last_frame_us + 1000000UL / DEFAULT_CRSF_OUTPUT_RATE;
+            interval_us = 1000000UL / DEFAULT_CRSF_OUTPUT_RATE;
             frame_ratio = 1;
+        }
+
+        const uint32_t timeout_remaining_us = AP_HAL::timeout_remaining(_last_frame_us, now_us, interval_us);
+        if (timeout_remaining_us > 0) {
+            hal.scheduler->delay_microseconds(timeout_remaining_us);
         }
 
         // Check for overrun - if we are late by more than 50% of an interval,
         // give up on the old timeline and reset.
-        if (now > next_run + (_frame_interval_us / 2)) {
-             next_run = now; 
+        if (AP_HAL::timeout_remaining(_last_frame_us, now_us, interval_us + interval_us/2) == 0) {
+            _last_frame_us = now_us;
+        } else {
+            // Use scheduled frame tiem to maintain precise rate
+            _last_frame_us = _last_frame_us + interval_us;  // this may wrap, but that is still correct
         }
 
-        if (now < next_run) {
-            hal.scheduler->delay_microseconds(next_run - now);
-        }
-
-        // last time we sent and received a frame
-        _last_frame_us = next_run;
 #ifdef CRSF_RCOUT_DEBUG
         num_frames++;
 #endif
