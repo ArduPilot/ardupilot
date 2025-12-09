@@ -414,3 +414,7 @@
 #ifndef AP_CPU_IDLE_STATS_ENABLED
 #define AP_CPU_IDLE_STATS_ENABLED 0
 #endif
+
+#ifndef AP_CRSF_OUT_ENABLED
+#define AP_CRSF_OUT_ENABLED 0
+#endif
