@@ -46,7 +46,9 @@ public:
     enum class PortMode : uint8_t {
         PASSTHROUGH_RCIN,
         DIRECT_VTX,
+#if AP_CRSF_OUT_ENABLED
         DIRECT_RCOUT,
+#endif
     };
 
     // Constructor for RCIN "passthrough" mode (called by AP_RCProtocol)

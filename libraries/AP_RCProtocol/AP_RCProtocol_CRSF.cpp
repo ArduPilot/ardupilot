@@ -387,8 +387,7 @@ void AP_RCProtocol_CRSF::write_frame(AP_CRSF_Protocol::Frame* frame) const
         case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_WRITE:
         case AP_CRSF_Protocol::CRSF_FRAMETYPE_COMMAND:
 #endif
-    if (_mode == PortMode::DIRECT_RCOUT) {
-        hal.console->printf("CRSF: writing %s @%lukbaud -> 0x%x:", AP_CRSF_Protocol::get_frame_type(frame->type, frame->payload[0]), _uart->get_baud_rate()/1000, frame->device_address);
+        hal.console->printf("CRSF: writing %s @%ukbaud:", AP_CRSF_Protocol::get_frame_type(frame->type, frame->payload[0]), unsigned(_uart->get_baud_rate()/1000));
         for (uint8_t i = 0; i < frame->length + 2; i++) {
             uint8_t val = ((uint8_t*)frame)[i];
 #ifdef CRSF_DEBUG_CHARS
@@ -402,7 +401,6 @@ void AP_RCProtocol_CRSF::write_frame(AP_CRSF_Protocol::Frame* frame) const
 #endif
         }
         hal.console->printf("\n");
-    }
 #ifdef CRSF_DEBUG_PARAMS
     }
 #endif
@@ -507,7 +505,7 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
             hal.scheduler->delay(4);
             // change the baud rate
             uart->begin(_new_baud_rate);
-            debug("baud rate set to %luk baud\n", _new_baud_rate/1000);
+            debug("baud rate set to %uk baud\n", unsigned(_new_baud_rate/1000));
         }
         _new_baud_rate = 0;
     }
