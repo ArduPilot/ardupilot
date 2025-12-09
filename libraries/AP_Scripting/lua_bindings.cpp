@@ -274,7 +274,7 @@ int AP_Logger_Write(lua_State *L) {
     fix_dot_access_never_add_another_call(L, "logger");
 
     // check we have at least 5 arguments passed in
-    const int args = lua_gettop(L);
+    const size_t args = lua_gettop(L);
     if (args < 5) {
         return luaL_argerror(L, args, "too few arguments");
     }
@@ -287,33 +287,33 @@ int AP_Logger_Write(lua_State *L) {
     if (strlen(name) >= LS_NAME_SIZE) {
         return luaL_error(L, "Name must be 4 or less chars long");
     }
-    uint8_t length = strlen(labels);
-    if (length >= (LS_LABELS_SIZE - 7)) { // need 7 chars to add 'TimeUS,'
+    size_t labels_length = strlen(labels);
+    if (labels_length >= (LS_LABELS_SIZE - 7)) { // need 7 chars to add 'TimeUS,'
         return luaL_error(L, "labels must be less than 58 chars long");
     }
     // Count the number of commas
-    uint8_t commas = 1;
-    for (uint8_t i=0; i<length; i++) {
+    size_t commas = 1;
+    for (size_t i=0; i<labels_length; i++) {
         if (labels[i] == ',') {
             commas++;
         }
     }
 
-    length = strlen(fmt);
-    if (length >= (LS_FORMAT_SIZE - 1)) { // need 1 char to add timestamp
+    size_t fmt_length = strlen(fmt);
+    if (fmt_length >= (LS_FORMAT_SIZE - 1)) { // need 1 char to add timestamp
         return luaL_error(L, "format must be less than 15 chars long");
     }
 
     // check the number of arguments matches the number of values in the label
-    if (length != commas) {
+    if (fmt_length != commas) {
         return luaL_argerror(L, args, "label does not match format");
     }
 
     bool have_units = false;
-    if (args - 6 == length) {
+    if (args - 6 == fmt_length) {
         // check if there are enough arguments for units and multiplyers
         have_units = true;
-    } else if (args - 4 != length) {
+    } else if (args - 4 != fmt_length) {
         // check the number of arguments matches the length of the foramt string
         return luaL_argerror(L, args, "format does not match No. of arguments");
     }
@@ -335,17 +335,16 @@ int AP_Logger_Write(lua_State *L) {
     if (!have_units) {
         // ask for a mesage type
         f = AP_logger->msg_fmt_for_name(name, label_cat, nullptr, nullptr, fmt_cat, true, true);
-
     } else {
         // read in units and multiplers strings
         field_start += 2;
         const char * units = luaL_checkstring(L, 5);
         const char * multipliers = luaL_checkstring(L, 6);
 
-        if (length != strlen(units)) {
+        if (fmt_length != strlen(units)) {
             return luaL_error(L, "units must be same length as format");
         }
-        if (length != strlen(multipliers)) {
+        if (fmt_length != strlen(multipliers)) {
             return luaL_error(L, "multipliers must be same length as format");
         }
 
