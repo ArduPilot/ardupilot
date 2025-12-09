@@ -1266,9 +1266,22 @@ void SIM::simstate_send(mavlink_channel_t chan) const
                               radians(state.pitchRate),
                               radians(state.yawRate),
                               state.latitude*1.0e7,
-                              state.longitude*1.0e7,
-                              alt_msl,
-                              relative_alt);
+                              state.longitude*1.0e7);
+
+    mavlink_msg_eagle_simstate_send(chan,
+                                    ToRad(state.rollDeg),
+                                    ToRad(state.pitchDeg),
+                                    ToRad(yaw),
+                                    state.xAccel,
+                                    state.yAccel,
+                                    state.zAccel,
+                                    radians(state.rollRate),
+                                    radians(state.pitchRate),
+                                    radians(state.yawRate),
+                                    state.latitude*1.0e7,
+                                    state.longitude*1.0e7,
+                                    alt_msl,
+                                    relative_alt);
 }
 
 /* report SITL state via MAVLink SIM_STATE */
