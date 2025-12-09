@@ -507,7 +507,6 @@ void lua_scripts::run(void) {
 #endif
 
     lua_atpanic(L, atpanic);
-    load_generated_bindings(L);
 
     // set up string metatable. we set up one for all scripts that no script has
     // access to, as it's impossible to set up one per-script and we don't want

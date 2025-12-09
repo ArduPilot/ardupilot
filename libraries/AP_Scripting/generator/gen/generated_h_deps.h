@@ -2,7 +2,6 @@
 
 // for inclusion by the generated .h
 
-void load_generated_bindings(lua_State *L);
 void load_generated_sandbox(lua_State *L);
 int binding_argcheck(lua_State *L, int expected_arg_count);
 int field_argerror(lua_State *L);
@@ -16,3 +15,4 @@ float get_number(lua_State *L, int arg_num, float min_val, float max_val);
 uint32_t get_uint32(lua_State *L, int arg_num, uint32_t min_val, uint32_t max_val);
 void * new_ap_object(lua_State *L, size_t size, const char * name);
 void ** check_ap_object(lua_State *L, int arg_num, const char * name);
+void set_userdata_metatable(lua_State *L, const char * name);
