@@ -120,9 +120,9 @@ bool AC_WPNav_OA::update_wpnav()
         }
 
         // Convert backup path state to global Location objects for planner input
-        const Location origin_loc(_is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN, _origin_oabak_ned_m);
-        const Location destination_loc(_is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN, _destination_oabak_ned_m);
-        const Location next_destination_loc(_is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN, _next_destination_oabak_ned_m);
+        const Location origin_loc = Location::from_ekf_offset_NED_m(_origin_oabak_ned_m, _is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+        const Location destination_loc = Location::from_ekf_offset_NED_m(_destination_oabak_ned_m, _is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+        const Location next_destination_loc = Location::from_ekf_offset_NED_m(_next_destination_oabak_ned_m, _is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
         Location oa_origin_new, oa_destination_new, oa_next_destination_new;
         bool dest_to_next_dest_clear = true;
         AP_OAPathPlanner::OAPathPlannerUsed path_planner_used = AP_OAPathPlanner::OAPathPlannerUsed::None;
@@ -180,7 +180,7 @@ bool AC_WPNav_OA::update_wpnav()
                 // calculate stopping point
                 Vector3p stopping_point_ned_m;
                 get_wp_stopping_point_NED_m(stopping_point_ned_m);
-                _oa_destination = Location(Location::AltFrame::ABOVE_ORIGIN, stopping_point_ned_m);
+                _oa_destination = Location::from_ekf_offset_NED_m(stopping_point_ned_m, Location::AltFrame::ABOVE_ORIGIN);
                 _oa_next_destination.zero();
                 if (set_wp_destination_NED_m(stopping_point_ned_m, false)) {
                     _oa_state = oa_retstate;
@@ -202,8 +202,8 @@ bool AC_WPNav_OA::update_wpnav()
                 // Dijkstra's.  Action is only needed if path planner has just became active or the target destination's lat or lon has changed
                 // Interpolate altitude and set new target if different or first OA success
                 if ((_oa_state != AP_OAPathPlanner::OA_SUCCESS) || !oa_destination_new.same_latlon_as(_oa_destination)) {
-                    Location origin_oabak_loc(_is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN, _origin_oabak_ned_m);
-                    Location destination_oabak_loc(_is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN, _destination_oabak_ned_m);
+                    Location origin_oabak_loc = Location::from_ekf_offset_NED_m(_origin_oabak_ned_m, _is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+                    Location destination_oabak_loc = Location::from_ekf_offset_NED_m(_destination_oabak_ned_m, _is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
                     oa_destination_new.linearly_interpolate_alt(origin_oabak_loc, destination_oabak_loc);
 
                     // set new OA adjusted destination
