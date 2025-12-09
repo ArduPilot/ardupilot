@@ -122,7 +122,7 @@ void ModeQRTL::run()
             // Climb done when stopping point reaches target altitude
             Vector3p stopping_point_ned_m;
             pos_control->get_stopping_point_D_m(stopping_point_ned_m.z);
-            Location stopping_loc{Location::AltFrame::ABOVE_ORIGIN, stopping_point_ned_m};
+            Location stopping_loc = Location::from_ekf_offset_NED_m(stopping_point_ned_m, Location::AltFrame::ABOVE_ORIGIN);
 
             ftype alt_diff;
             if (!stopping_loc.get_height_above(plane.next_WP_loc, alt_diff) || is_positive(alt_diff)) {
