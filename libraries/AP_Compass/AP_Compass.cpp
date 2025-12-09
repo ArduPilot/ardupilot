@@ -1335,8 +1335,7 @@ void Compass::_probe_external_i2c_compasses(void)
 #if AP_COMPASS_MMC5XX3_ENABLED
     // external i2c bus
     FOREACH_I2C_EXTERNAL(i) {
-        add_backend(DRIVER_MMC5XX3, AP_Compass_MMC5XX3::probe(GET_I2C_DEVICE(i, HAL_COMPASS_MMC5xx3_I2C_ADDR),
-                    true, ROTATION_NONE));
+        probe_i2c_dev(DRIVER_MMC5XX3, AP_Compass_MMC5XX3::probe, i, HAL_COMPASS_MMC5xx3_I2C_ADDR, true, ROTATION_NONE);
         RETURN_IF_NO_SPACE;
     }
 #endif  // AP_COMPASS_MMC5XX3_ENABLED (MMC5983MA)
