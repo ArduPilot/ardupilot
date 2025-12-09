@@ -71,7 +71,7 @@ public:
     ///     by the kinematic shaping.
     void set_max_speed_accel_xy(float speed_cms, float accel_cmss);
 
-    /// set_max_speed_accel_xy - set the position controller correction velocity and acceleration limit
+    /// set_correction_speed_accel_xy - set the position controller correction velocity and acceleration limit
     ///     This should be done only during initialisation to avoid discontinuities
     void set_correction_speed_accel_xy(float speed_cms, float accel_cmss);
 
