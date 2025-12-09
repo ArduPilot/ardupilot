@@ -143,7 +143,7 @@ void AP_CRSF_Out::crsf_out_thread()
         if (AP_HAL::timeout_remaining(_last_frame_us, now_us, interval_us + interval_us/2) == 0) {
             _last_frame_us = now_us;
         } else {
-            // Use scheduled frame tiem to maintain precise rate
+            // Use scheduled frame time to maintain precise rate
             _last_frame_us = _last_frame_us + interval_us;  // this may wrap, but that is still correct
         }
 
