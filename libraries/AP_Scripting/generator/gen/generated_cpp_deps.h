@@ -72,13 +72,6 @@ uint32_t get_uint32(lua_State *L, int arg_num, uint32_t min_val, uint32_t max_va
     return lua_unint32;
 }
 
-void * new_ap_object(lua_State *L, size_t size, const char * name) {
-    void * ud = lua_newuserdata(L, size);
-    luaL_getmetatable(L, name);
-    lua_setmetatable(L, -2);
-    return ud;
-}
-
 void ** check_ap_object(lua_State *L, int arg_num, const char * name) {
     void ** data = (void **)luaL_checkudata(L, arg_num, name);
     if (*data == NULL) {
