@@ -65,37 +65,19 @@ Location::Location(const Vector3d &ekf_offset_neu_cm, AltFrame frame)
     }
 }
 
-Location::Location(AltFrame frame, const Vector3f &ekf_offset_ned_m)
+// named constructors
+Location Location::from_ekf_offset_NED_m(const Vector3f& ekf_offset_ned_m, AltFrame frame)
 {
-    zero();
-
-    // store alt and alt frame
-    set_alt_cm(-ekf_offset_ned_m.z * 100.0, frame);
-
-    // calculate lat, lon
-    Location ekf_origin;
-    if (AP::ahrs().get_origin(ekf_origin)) {
-        lat = ekf_origin.lat;
-        lng = ekf_origin.lng;
-        offset(ekf_offset_ned_m.x, ekf_offset_ned_m.y);
-    }
+    const Vector3f ekf_offset_neu_cm(ekf_offset_ned_m.x * 100.0, ekf_offset_ned_m.y * 100.0, -ekf_offset_ned_m.z * 100.0);
+    return Location(ekf_offset_neu_cm, frame);
 }
 
-Location::Location(AltFrame frame, const Vector3d &ekf_offset_ned_m)
+Location Location::from_ekf_offset_NED_m(const Vector3d& ekf_offset_ned_m, AltFrame frame)
 {
-    zero();
-
-    // store alt and alt frame
-    set_alt_cm(-ekf_offset_ned_m.z * 100.0, frame);
-
-    // calculate lat, lon
-    Location ekf_origin;
-    if (AP::ahrs().get_origin(ekf_origin)) {
-        lat = ekf_origin.lat;
-        lng = ekf_origin.lng;
-        offset(ekf_offset_ned_m.x, ekf_offset_ned_m.y);
-    }
+    const Vector3d ekf_offset_neu_cm(ekf_offset_ned_m.x * 100.0, ekf_offset_ned_m.y * 100.0, -ekf_offset_ned_m.z * 100.0);
+    return Location(ekf_offset_neu_cm, frame);
 }
+
 #endif  // AP_AHRS_ENABLED
 
 void Location::set_alt_cm(int32_t alt_cm, AltFrame frame)
