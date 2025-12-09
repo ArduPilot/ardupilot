@@ -304,7 +304,7 @@ bool AC_WPNav::get_wp_destination_loc(Location& destination) const
     }
 
     // convert NED waypoint to global Location format with appropriate altitude frame
-    destination = Location{_is_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN, get_wp_destination_NED_m()};
+    destination = Location::from_ekf_offset_NED_m(get_wp_destination_NED_m(), _is_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
     return true;
 }
 
