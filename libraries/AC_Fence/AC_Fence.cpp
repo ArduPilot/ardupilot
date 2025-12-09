@@ -1244,7 +1244,7 @@ uint8_t AC_Fence::present() const { return 0; }
 uint8_t AC_Fence::get_enabled_fences() const { return 0; }
 
 bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const  { return true; }
-
+bool AC_Fence::terrain_database_required() const { return false; }
 uint8_t AC_Fence::check(bool disable_auto_fences) { return 0; }
 bool AC_Fence::check_destination_within_fence(const Location& loc) { return true; }
 float AC_Fence::get_breach_distance(uint8_t fence_type) const { return 0.0; }
