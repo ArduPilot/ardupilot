@@ -402,8 +402,7 @@ int AP_Logger_Write(lua_State *L) {
                 int isnum;
                 const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
                 if (!isnum || (tmp1 < INT8_MIN) || (tmp1 > INT8_MAX)) {
-                    luaL_argerror(L, arg_index, "argument out of range");
-                    // no return
+                    return luaL_argerror(L, arg_index, "argument out of range");
                 }
                 int8_t tmp = static_cast<int8_t>(tmp1);
                 memcpy(&buffer[offset], &tmp, sizeof(int8_t));
@@ -415,8 +414,7 @@ int AP_Logger_Write(lua_State *L) {
                 int isnum;
                 const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
                 if (!isnum || (tmp1 < INT16_MIN) || (tmp1 > INT16_MAX)) {
-                    luaL_argerror(L, arg_index, "argument out of range");
-                    // no return
+                    return luaL_argerror(L, arg_index, "argument out of range");
                 }
                 int16_t tmp = static_cast<int16_t>(tmp1);
                 memcpy(&buffer[offset], &tmp, sizeof(int16_t));
@@ -428,8 +426,7 @@ int AP_Logger_Write(lua_State *L) {
                 int isnum;
                 const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
                 if (!isnum || (tmp1 < 0) || (tmp1 > UINT16_MAX)) {
-                    luaL_argerror(L, arg_index, "argument out of range");
-                    // no return
+                    return luaL_argerror(L, arg_index, "argument out of range");
                 }
                 uint16_t tmp = static_cast<uint16_t>(tmp1);
                 memcpy(&buffer[offset], &tmp, sizeof(uint16_t));
@@ -442,8 +439,7 @@ int AP_Logger_Write(lua_State *L) {
                 int isnum;
                 const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
                 if (!isnum) {
-                    luaL_argerror(L, arg_index, "argument out of range");
-                    // no return
+                    return luaL_argerror(L, arg_index, "argument out of range");
                 }
                 const int32_t tmp = tmp1;
                 memcpy(&buffer[offset], &tmp, sizeof(int32_t));
@@ -454,8 +450,7 @@ int AP_Logger_Write(lua_State *L) {
                 int isnum;
                 const lua_Number tmp1 = lua_tonumberx(L, arg_index, &isnum);
                 if (!isnum) {
-                    luaL_argerror(L, arg_index, "argument out of range");
-                    // no return
+                    return luaL_argerror(L, arg_index, "argument out of range");
                 }
                 const float tmp = tmp1;
                 memcpy(&buffer[offset], &tmp, sizeof(float));
@@ -476,8 +471,7 @@ int AP_Logger_Write(lua_State *L) {
                         tmp1 = lua_toboolean(L, arg_index);
 
                     } else {
-                        luaL_argerror(L, arg_index, "argument out of range");
-                        // no return
+                        return luaL_argerror(L, arg_index, "argument out of range");
                     }
                 }
                 uint8_t tmp = static_cast<uint8_t>(tmp1);
@@ -499,8 +493,7 @@ int AP_Logger_Write(lua_State *L) {
                     } else {
                         const lua_Number v_float = lua_tonumberx(L, arg_index, &success);
                         if (!success || (v_float < 0) || (v_float > float(UINT32_MAX))) {
-                            luaL_argerror(L, arg_index, "argument out of range");
-                            // no return
+                            return luaL_argerror(L, arg_index, "argument out of range");
                         }
                         tmp = v_float;
                     }
@@ -512,8 +505,7 @@ int AP_Logger_Write(lua_State *L) {
             case 'Q': { // uint64_t
                 void * ud = luaL_testudata(L, arg_index, "uint64_t");
                 if (ud == nullptr) {
-                    luaL_argerror(L, arg_index, "argument out of range");
-                    // no return
+                    return luaL_argerror(L, arg_index, "argument out of range");
                 }
                 uint64_t tmp = *static_cast<uint64_t *>(ud);
                 memcpy(&buffer[offset], &tmp, sizeof(uint64_t));
@@ -529,20 +521,17 @@ int AP_Logger_Write(lua_State *L) {
                 break;
             }
             default: {
-                luaL_error(L, "%c unsupported format",fmt_cat[index]);
-                // no return
+                return luaL_error(L, "%c unsupported format",fmt_cat[index]);
             }
         }
         if (charlen != 0) {
             size_t slen;
             const char *tmp = lua_tolstring(L, arg_index, &slen);
             if (tmp == nullptr) {
-                luaL_argerror(L, arg_index, "argument out of range");
-                // no return
+                return luaL_argerror(L, arg_index, "argument out of range");
             }
             if (slen > charlen) {
-                luaL_error(L, "arg %d too long for %c format",arg_index,fmt_cat[index]);
-                // no return
+                return luaL_error(L, "arg %d too long for %c format",arg_index,fmt_cat[index]);
             }
             memcpy(&buffer[offset], tmp, slen);
             memset(&buffer[offset+slen], 0, charlen-slen);
