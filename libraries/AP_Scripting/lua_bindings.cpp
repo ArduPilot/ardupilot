@@ -311,10 +311,10 @@ int AP_Logger_Write(lua_State *L) {
 
     bool have_units = false;
     if (args - 6 == fmt_length) {
-        // check if there are enough arguments for units and multiplyers
+        // check if there are enough arguments for units and multipliers
         have_units = true;
     } else if (args - 4 != fmt_length) {
-        // check the number of arguments matches the length of the foramt string
+        // check the number of arguments matches the length of the format string
         return luaL_argerror(L, args, "format does not match No. of arguments");
     }
 
@@ -327,10 +327,10 @@ int AP_Logger_Write(lua_State *L) {
     uint8_t field_start = 4;
     struct AP_Logger::log_write_fmt *f;
     if (!have_units) {
-        // ask for a mesage type (will duplicate incoming strings if necessary)
+        // ask for a message type (will duplicate incoming strings if necessary)
         f = AP_logger->msg_fmt_for_name(name, label_cat, nullptr, nullptr, fmt_cat, true, true);
     } else {
-        // read in units and multiplers strings
+        // read in units and multipliers strings
         field_start += 2;
         const char * units = luaL_checkstring(L, 5);
         const char * multipliers = luaL_checkstring(L, 6);
@@ -342,13 +342,13 @@ int AP_Logger_Write(lua_State *L) {
             return luaL_error(L, "multipliers must be same length as format");
         }
 
-        // prepend timestamp to units and multiplyers
+        // prepend timestamp to units and multipliers
         char units_cat[LS_FORMAT_SIZE];
         char multipliers_cat[LS_FORMAT_SIZE];
         snprintf(units_cat, sizeof(units_cat), "s%s", units);
         snprintf(multipliers_cat, sizeof(multipliers_cat), "F%s", multipliers);
 
-        // ask for a mesage type (will duplicate incoming strings if necessary)
+        // ask for a message type (will duplicate incoming strings if necessary)
         f = AP_logger->msg_fmt_for_name(name, label_cat, units_cat, multipliers_cat, fmt_cat, true, true);
     }
 
@@ -461,7 +461,6 @@ int AP_Logger_Write(lua_State *L) {
                     // Also allow boolean
                     if (!isnum && lua_isboolean(L, arg_index)) {
                         tmp1 = lua_toboolean(L, arg_index);
-
                     } else {
                         return luaL_argerror(L, arg_index, "argument out of range");
                     }
@@ -513,7 +512,7 @@ int AP_Logger_Write(lua_State *L) {
                 break;
             }
             default: {
-                return luaL_error(L, "%c unsupported format",fmt_cat[index]);
+                return luaL_error(L, "%c unsupported format", fmt_cat[index]);
             }
         }
         if (charlen != 0) {
@@ -523,7 +522,7 @@ int AP_Logger_Write(lua_State *L) {
                 return luaL_argerror(L, arg_index, "argument out of range");
             }
             if (slen > charlen) {
-                return luaL_error(L, "arg %d too long for %c format",arg_index,fmt_cat[index]);
+                return luaL_error(L, "arg %d too long for %c format", arg_index, fmt_cat[index]);
             }
             memcpy(&buffer[offset], tmp, slen);
             memset(&buffer[offset+slen], 0, charlen-slen);
@@ -533,7 +532,7 @@ int AP_Logger_Write(lua_State *L) {
 
     AP_logger->Safe_Write_Emit_FMT(f);
 
-    AP_logger->WriteBlock(buffer,msg_len);
+    AP_logger->WriteBlock(buffer, msg_len);
 
     return 0;
 }
