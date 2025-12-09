@@ -2570,77 +2570,9 @@ void emit_type_index_with_operators(struct userdata * data, char * meta_name) {
 }
 
 void emit_loaders(void) {
-
   emit_type_index_with_operators(parsed_userdata, "userdata");
   emit_type_index(parsed_singletons, "singleton");
   emit_type_index(parsed_ap_objects, "ap_object");
-
-  fprintf(source, "static int binding_index(lua_State *L) {\n");
-  fprintf(source, "    const char * name = luaL_checkstring(L, 2);\n");
-  fprintf(source, "\n");
-  fprintf(source, "    bool found = false;\n");
-  fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(singleton_fun); i++) {\n");
-  fprintf(source, "        if (strcmp(name, singleton_fun[i].name) == 0) {\n");
-  fprintf(source, "            lua_newuserdata(L, 0);\n");
-  fprintf(source, "            if (luaL_newmetatable(L, name)) { // need to create metatable\n");
-  fprintf(source, "                lua_pushcfunction(L, singleton_fun[i].func);\n");
-  fprintf(source, "                lua_setfield(L, -2, \"__index\");\n");
-  fprintf(source, "            }\n");
-  fprintf(source, "            lua_setmetatable(L, -2);\n");
-  fprintf(source, "            found = true;\n");
-  fprintf(source, "            break;\n");
-  fprintf(source, "        }\n");
-  fprintf(source, "    }\n");
-  fprintf(source, "    if (!found) {\n");
-  fprintf(source, "        for (uint32_t i = 0; i < ARRAY_SIZE(new_userdata); i++) {\n");
-  fprintf(source, "            if (strcmp(name, new_userdata[i].name) == 0) {\n");
-  fprintf(source, "                lua_pushcfunction(L, new_userdata[i].fun);\n");
-  fprintf(source, "                found = true;\n");
-  fprintf(source, "                break;\n");
-  fprintf(source, "            }\n");
-  fprintf(source, "        }\n");
-  fprintf(source, "    }\n");
-  fprintf(source, "    if (!found) {\n");
-  fprintf(source, "        return 0;\n");
-  fprintf(source, "    }\n");
-  fprintf(source, "\n");
-  fprintf(source, "    // store found value to avoid a re-index\n");
-  fprintf(source, "    lua_pushvalue(L, -2);\n");
-  fprintf(source, "    lua_pushvalue(L, -2);\n");
-  fprintf(source, "    lua_settable(L, -5);\n");
-  fprintf(source, "\n");
-  fprintf(source, "    return 1;\n");
-  fprintf(source, "}\n\n");
-
-  fprintf(source, "void load_generated_bindings(lua_State *L) {\n");
-  fprintf(source, "    luaL_checkstack(L, 5, nullptr);\n"); // this is more stack space then we need, but should never fail
-  fprintf(source, "    // userdata metatables\n");
-  fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(userdata_fun); i++) {\n");
-  fprintf(source, "        luaL_newmetatable(L, userdata_fun[i].name);\n");
-  fprintf(source, "        lua_pushcfunction(L, userdata_fun[i].func);\n");
-  fprintf(source, "        lua_setfield(L, -2, \"__index\");\n");
-
-  fprintf(source, "        if (userdata_fun[i].operators != nullptr) {\n");
-  fprintf(source, "            luaL_setfuncs(L, userdata_fun[i].operators, 0);\n");
-  fprintf(source, "        }\n");
-
-  fprintf(source, "        lua_pop(L, 1);\n");
-  fprintf(source, "    }\n");
-  fprintf(source, "\n");
-
-  fprintf(source, "    // ap object metatables\n");
-  fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(ap_object_fun); i++) {\n");
-  fprintf(source, "        luaL_newmetatable(L, ap_object_fun[i].name);\n");
-  fprintf(source, "        lua_pushcfunction(L, ap_object_fun[i].func);\n");
-  fprintf(source, "        lua_setfield(L, -2, \"__index\");\n");
-
-  fprintf(source, "        lua_pop(L, 1);\n");
-  fprintf(source, "    }\n");
-  fprintf(source, "\n");
-
-  fprintf(source, "    // singletons and userdata creation funcs are loaded dynamically\n");
-
-  fprintf(source, "}\n\n");
 }
 
 void emit_userdata_new_funcs(void) {
@@ -2675,126 +2607,6 @@ void emit_userdata_new_funcs(void) {
     }
   }
   fprintf(source, "};\n\n");
-}
-
-void emit_sandbox(void) {
-  fprintf(source, "void load_generated_sandbox(lua_State *L) {\n");
-  fprintf(source, "    lua_createtable(L, 0, 1);\n");
-  fprintf(source, "    lua_pushcfunction(L, binding_index);\n");
-  fprintf(source, "    lua_setfield(L, -2, \"__index\");\n");
-  fprintf(source, "    lua_setmetatable(L, -2);\n");
-  fprintf(source, "}\n");
-}
-
-void emit_argcheck_helper(void) {
-  // tagging this with NOINLINE can save a large amount of flash
-  // but until we need it we will allow the compiler to choose to inline this for us
-  fprintf(source, "int binding_argcheck(lua_State *L, int expected_arg_count) {\n");
-  fprintf(source, "    const int args = lua_gettop(L);\n");
-  fprintf(source, "    if (args > expected_arg_count) {\n");
-  fprintf(source, "        return luaL_argerror(L, args, \"too many arguments\");\n");
-  fprintf(source, "    } else if (args < expected_arg_count) {\n");
-  fprintf(source, "        return luaL_argerror(L, args, \"too few arguments\");\n");
-  fprintf(source, "    }\n");
-  fprintf(source, "    return 0;\n");
-  fprintf(source, "}\n\n");
-
-  fprintf(source, "int field_argerror(lua_State *L) {\n");
-  fprintf(source, "    return binding_argcheck(L, -1); // force too many args error\n");
-  fprintf(source, "}\n\n");
-
-  // emit warning if augments are parsed
-  fprintf(source, "bool userdata_zero_arg_check(lua_State *L) {\n");
-  fprintf(source, "    if (lua_gettop(L) == 0) {\n");
-  fprintf(source, "        return false;\n");
-  fprintf(source, "    }\n");
-
-  // Try and get debug info
-  fprintf(source, "    lua_Debug ar;\n");
-
-  // Line number and file name
-  fprintf(source, "    if (lua_getstack(L, 1, &ar)) {\n");
-  fprintf(source, "        lua_getinfo(L, \"Sl\", &ar);\n");
-  fprintf(source, "        if (ar.currentline != 0) {\n");
-
-  // Function name
-  fprintf(source, "            if (lua_getstack(L, 0, &ar)) {\n");
-  fprintf(source, "                lua_getinfo(L, \"n\", &ar);\n");
-  fprintf(source, "                if (ar.name != NULL) {\n");
-
-  // Print warning with debug info
-  fprintf(source, "                    lua_scripts::set_and_print_new_error_message(MAV_SEVERITY_WARNING, \"%%s:%%d Warning: %%s does not take arguments, will be fatal in future\", ar.short_src, ar.currentline, ar.name);\n");
-  fprintf(source, "                    return true;\n");
-
-  fprintf(source, "                }\n");
-  fprintf(source, "            }\n");
-  fprintf(source, "        }\n");
-  fprintf(source, "    }\n");
-
-  // Print generic warning
-  fprintf(source, "    lua_scripts::set_and_print_new_error_message(MAV_SEVERITY_WARNING, \"Warning: userdata creation does not take arguments, will be fatal in future\");\n");
-
-  fprintf(source, "    return true;\n");
-  fprintf(source, "}\n\n");
-
-  fprintf(source, "lua_Integer get_integer(lua_State *L, int arg_num, lua_Integer min_val, lua_Integer max_val) {\n");
-  fprintf(source, "    const lua_Integer lua_int = luaL_checkinteger(L, arg_num);\n");
-  fprintf(source, "    luaL_argcheck(L, (lua_int >= min_val) && (lua_int <= max_val), arg_num, \"out of range\");\n");
-  fprintf(source, "    return lua_int;\n");
-  fprintf(source, "}\n\n");
-
-  fprintf(source, "// helpers for full range types\n");
-  fprintf(source, "int8_t get_int8_t(lua_State *L, int arg_num) {\n");
-  fprintf(source, "    return static_cast<int8_t>(get_integer(L, arg_num, INT8_MIN, INT8_MAX));\n");
-  fprintf(source, "}\n\n");
-
-  fprintf(source, "int16_t get_int16_t(lua_State *L, int arg_num) {\n");
-  fprintf(source, "    return static_cast<int16_t>(get_integer(L, arg_num, INT16_MIN, INT16_MAX));\n");
-  fprintf(source, "}\n\n");
-
-  fprintf(source, "uint8_t get_uint8_t(lua_State *L, int arg_num) {\n");
-  fprintf(source, "    return static_cast<uint8_t>(get_integer(L, arg_num, 0, UINT8_MAX));\n");
-  fprintf(source, "}\n\n");
-
-  fprintf(source, "uint16_t get_uint16_t(lua_State *L, int arg_num) {\n");
-  fprintf(source, "    return static_cast<uint16_t>(get_integer(L, arg_num, 0, UINT16_MAX));\n");
-  fprintf(source, "}\n\n");
-
-  fprintf(source, "float get_number(lua_State *L, int arg_num, float min_val, float max_val) {\n");
-  fprintf(source, "    const float lua_num = luaL_checknumber(L, arg_num);\n");
-  fprintf(source, "    luaL_argcheck(L, (lua_num >= min_val) && (lua_num <= max_val), arg_num, \"out of range\");\n");
-  fprintf(source, "    return lua_num;\n");
-  fprintf(source, "}\n\n");
-
-  fprintf(source, "uint32_t get_uint32(lua_State *L, int arg_num, uint32_t min_val, uint32_t max_val) {\n");
-  fprintf(source, "    const uint32_t lua_unint32 = coerce_to_uint32_t(L, arg_num);\n");
-  fprintf(source, "    luaL_argcheck(L, (lua_unint32 >= min_val) && (lua_unint32 <= max_val), arg_num, \"out of range\");\n");
-  fprintf(source, "    return lua_unint32;\n");
-  fprintf(source, "}\n\n");
-
-  fprintf(source, "void * new_ap_object(lua_State *L, size_t size, const char * name) {\n");
-  fprintf(source, "    void * ud = lua_newuserdata(L, size);\n");
-  fprintf(source, "    luaL_getmetatable(L, name);\n");
-  fprintf(source, "    lua_setmetatable(L, -2);\n");
-  fprintf(source, "    return ud;\n");
-  fprintf(source, "}\n\n");
-
-  fprintf(source, "void ** check_ap_object(lua_State *L, int arg_num, const char * name) {\n");
-  fprintf(source, "    void ** data = (void **)luaL_checkudata(L, arg_num, name);\n");
-  fprintf(source, "    if (*data == NULL) {\n");
-  fprintf(source, "        luaL_error(L, \"internal error: %%s is null\", name); // does not return\n");
-  fprintf(source, "    }\n");
-  fprintf(source, "    return data;\n");
-  fprintf(source, "}\n\n");
-
-}
-
-void emit_not_supported_helper(void) {
-  fprintf(source, "static int not_supported_error(lua_State *L, int arg, const char* name) {\n");
-  fprintf(source, "    char error_msg[50];\n");
-  fprintf(source, "    snprintf(error_msg, sizeof(error_msg), \"%%s not supported on this firmware\", name);\n");
-  fprintf(source, "    return luaL_argerror(L, arg, error_msg);\n");
-  fprintf(source, "}\n\n");
 }
 
 void emit_docs_type(struct type type, const char *prefix, const char *suffix) {
@@ -3054,54 +2866,6 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
   }
 }
 
-
-void emit_index_helpers(void) {
-  fprintf(source, "static int load_function(lua_State *L, const luaL_Reg *list, const uint8_t length) {\n");
-  fprintf(source, "    const char * name = luaL_checkstring(L, 2);\n");
-  fprintf(source, "    for (uint8_t i = 0; i < length; i++) {\n");
-  fprintf(source, "        if (strcmp(name,list[i].name) == 0) {\n");
-  fprintf(source, "            lua_pushcfunction(L, list[i].func);\n");
-  fprintf(source, "            return 1;\n");
-  fprintf(source, "        }\n");
-  fprintf(source, "    }\n");
-  fprintf(source, "    return 0;\n");
-  fprintf(source, "}\n\n");
-
-  // If enough stuff is defined out we can end up with no enums.
-  // Rather than work out which defines we would need, just ignore the unused function error.
-  fprintf(source, "#pragma GCC diagnostic push\n");
-  fprintf(source, "#pragma GCC diagnostic ignored \"-Wunused-function\"\n");
-
-  fprintf(source, "static int load_enum(lua_State *L, const userdata_enum *list, const uint8_t length) {\n");
-  fprintf(source, "    const char * name = luaL_checkstring(L, 2);\n");
-  fprintf(source, "    for (uint8_t i = 0; i < length; i++) {\n");
-  fprintf(source, "        if (strcmp(name,list[i].name) == 0) {\n");
-  fprintf(source, "            lua_pushinteger(L, list[i].value);\n");
-  fprintf(source, "            return 1;\n");
-  fprintf(source, "        }\n");
-  fprintf(source, "    }\n");
-  fprintf(source, "    return 0;\n");
-  fprintf(source, "}\n");
-
-  fprintf(source, "#pragma GCC diagnostic pop\n\n");
-
-}
-
-void emit_structs(void) {
-  // emit the enum header
-  fprintf(source, "struct userdata_enum {\n");
-  fprintf(source, "    const char *name;\n");
-  fprintf(source, "    int value;\n");
-  fprintf(source, "};\n\n");
-
-  // emit the meta table header
-  fprintf(source, "struct userdata_meta {\n");
-  fprintf(source, "    const char *name;\n");
-  fprintf(source, "    lua_CFunction func;\n");
-  fprintf(source, "    const luaL_Reg *operators;\n");
-  fprintf(source, "};\n\n");
-}
-
 char * output_path = NULL;
 char * docs_path = NULL;
 
@@ -3198,10 +2962,11 @@ int main(int argc, char **argv) {
 
   // for set_and_print_new_error_message deprecate warning
   fprintf(source, "#include <AP_Scripting/lua_scripts.h>\n");
-  fprintf(source, "\n");
+  // for the various utility methods
+  fprintf(source, "#include <AP_Scripting/generator/gen/generated_cpp_deps.h>\n\n");
+
   // the generated source uses the Scheduler singleton:
   fprintf(source, "#include <AP_Scheduler/AP_Scheduler.h>\n");
-
   fprintf(source, "extern const AP_HAL::HAL& hal;\n");
 
   trace(TRACE_GENERAL, "Starting emission");
@@ -3209,14 +2974,6 @@ int main(int argc, char **argv) {
   emit_headers(source);
 
   fprintf(source, "\n\n");
-
-  emit_argcheck_helper();
-
-  emit_not_supported_helper();
-
-  emit_structs();
-
-  emit_index_helpers();
 
   emit_userdata_allocators();
 
@@ -3243,7 +3000,8 @@ int main(int argc, char **argv) {
   emit_userdata_new_funcs();
   emit_loaders();
 
-  emit_sandbox();
+  // after everything is defined
+  fprintf(source, "#include <AP_Scripting/generator/gen/generated_cpp_loader.h>\n\n");
 
   fprintf(source, "#endif  // AP_SCRIPTING_ENABLED\n");
 
@@ -3262,26 +3020,12 @@ int main(int argc, char **argv) {
   fprintf(header, "#if AP_SCRIPTING_ENABLED\n\n");
   fprintf(header, "#include <AP_Vehicle/AP_Vehicle_Type.h> // needed for APM_BUILD_TYPE #if\n");
   emit_headers(header);
-  fprintf(header, "#include <AP_Scripting/lua/src/lua.hpp>\n");
+  fprintf(header, "\n#include <AP_Scripting/lua/src/lua.hpp>\n");
+  fprintf(header, "#include <AP_Scripting/generator/gen/generated_h_deps.h>\n");
   fprintf(header, "#include <new>\n\n");
 
   emit_userdata_declarations();
   emit_ap_object_declarations();
-
-  fprintf(header, "void load_generated_bindings(lua_State *L);\n");
-  fprintf(header, "void load_generated_sandbox(lua_State *L);\n");
-  fprintf(header, "int binding_argcheck(lua_State *L, int expected_arg_count);\n");
-  fprintf(header, "int field_argerror(lua_State *L);\n");
-  fprintf(header, "bool userdata_zero_arg_check(lua_State *L);\n");
-  fprintf(header, "lua_Integer get_integer(lua_State *L, int arg_num, lua_Integer min_val, lua_Integer max_val);\n");
-  fprintf(header, "int8_t get_int8_t(lua_State *L, int arg_num);\n");
-  fprintf(header, "int16_t get_int16_t(lua_State *L, int arg_num);\n");
-  fprintf(header, "uint8_t get_uint8_t(lua_State *L, int arg_num);\n");
-  fprintf(header, "uint16_t get_uint16_t(lua_State *L, int arg_num);\n");
-  fprintf(header, "float get_number(lua_State *L, int arg_num, float min_val, float max_val);\n");
-  fprintf(header, "uint32_t get_uint32(lua_State *L, int arg_num, uint32_t min_val, uint32_t max_val);\n");
-  fprintf(header, "void * new_ap_object(lua_State *L, size_t size, const char * name);\n");
-  fprintf(header, "void ** check_ap_object(lua_State *L, int arg_num, const char * name);\n");
 
   struct userdata * node = parsed_singletons;
   while (node) {
