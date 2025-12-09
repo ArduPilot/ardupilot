@@ -219,7 +219,6 @@ bool AC_WPNav_OA::update_wpnav()
                     if ((oa_ptr->get_options() & AP_OAPathPlanner::OA_OPTION_FAST_WAYPOINTS) && !oa_next_destination_new.is_zero()) {
                         // calculate oa_next_destination_new's altitude using linear interpolation between original origin and destination
                         // this "next destination" is still an intermediate point between the origin and destination
-                        Location next_destination_oabak_loc(_is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN, _next_destination_oabak_ned_m);
                         oa_next_destination_new.linearly_interpolate_alt(origin_oabak_loc, destination_oabak_loc);
                         if (set_wp_destination_next_loc(oa_next_destination_new)) {
                             _oa_next_destination = oa_next_destination_new;
