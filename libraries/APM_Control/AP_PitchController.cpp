@@ -20,6 +20,8 @@
 #include "AP_PitchController.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -156,6 +158,22 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
     // @User: Advanced
 
     AP_SUBGROUPINFO(rate_pid, "_RATE_", 11, AP_PitchController, AC_PID),
+
+    // @Param: _NOR_GLIM
+    // @DisplayName: Normal accln limit
+    // @Description: Maximum allowed normal g when airspeed = SCALING_SPEED. When flying faster or slower than SCALING_SPEED the limit is adjusted for dynamic pressure. Use this to prevent wing stall. Use this to stay within angle of attack limits.
+    // @Units: g
+    // @Range: 1.5 5.0
+    // @User: Standard
+    AP_GROUPINFO("_NOR_GLIM", 12, AP_PitchController, acro_normal_g_lim, 2.0f),
+
+    // @Param: _NOR_TAU
+    // @DisplayName: Normal accln time constant
+    // @Description: Time constant of the normal accleration control loop.
+    // @Units: s
+    // @Range: 0.1 1.0
+    // @User: Standard
+    AP_GROUPINFO("_NOR_TAU", 13, AP_PitchController, accln_tconst, 0.5f),
 
     AP_GROUPEND
 };
@@ -332,4 +350,149 @@ void AP_PitchController::convert_pid()
     rate_pid.kP().set_and_save_ifchanged(old_d);
     rate_pid.kD().set_and_save_ifchanged(0);
     rate_pid.kIMAX().set_and_save_ifchanged(old_imax/4500.0);
+}
+
+/*
+  Return an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
+  A positive demand is up
+  Inputs are:
+  1) up accln in m/s/s - 0
+  2) control gain scaler = scaling_speed / aspeed
+  3) minimum allowed pitch angle in deg
+  4) maximum allowed pitch angle in deg
+*/
+float AP_PitchController::get_servo_out_accln(float up_accln, float scaler, float pitch_angle_min, float pitch_angle_max, float pitch_trim_deg)
+{
+    Vector3f vdot_dem_clipped = Vector3f(0.0f, 0.0f, -constrain_float(up_accln, -7.0f, 7.0f));
+
+    const AP_AHRS &ahrs = AP::ahrs();
+
+    // calculate predicted horizontal accel assuming coordinated turn
+    const float roll_lim_rad = radians(aparm.roll_limit);
+    const float right_accel = (GRAVITY_MSS - vdot_dem_clipped.z) * tanf(constrain_float(ahrs.get_roll_rad(), -roll_lim_rad, roll_lim_rad));
+    vdot_dem_clipped.x = - right_accel * ahrs.sin_yaw();
+    vdot_dem_clipped.y = right_accel * ahrs.cos_yaw();
+
+    // get Euler angles for a 321 rotation sequence
+    const Matrix3f Tnb = ahrs.get_rotation_body_to_ned();
+    float rollAngle, pitchAngle, yawAngle;
+    Tnb.to_euler(&rollAngle, &pitchAngle, &yawAngle);
+
+    Vector3f velRateDemBF; // demanded velocity rate of change - body frame
+    Vector3f acclnDemBF; // demanded specific force - body frame
+
+    // add gravity to make it a specific force demand
+    Vector3f acc_dem_NED = vdot_dem_clipped;
+    acc_dem_NED.z -= GRAVITY_MSS;
+
+    // rotate into body frame
+    velRateDemBF = ahrs.earth_to_body(vdot_dem_clipped);
+    acclnDemBF = ahrs.earth_to_body(acc_dem_NED); // specific force vector
+
+    bool is_clipped = false;
+
+    // limit specific forces to avoid exceeding aerodynamic limits
+    //  aerodynamic forces scale with speed^2
+    const float specificForceScaler = 1.0f / sq(scaler);
+    const float normalLoadFactorLim = MAX(acro_normal_g_lim, 1.1f);
+    // allow a minimum normal g to allow height to be maintained
+    const float acclnLimZ = GRAVITY_MSS * MAX(normalLoadFactorLim * specificForceScaler, 1.1f);
+    if (acclnDemBF.z > acclnLimZ) {
+        acclnDemBF.z = acclnLimZ;
+    } else if (acclnDemBF.z < -acclnLimZ) {
+        acclnDemBF.z = -acclnLimZ;
+    }
+
+    // specific force error vector
+    Vector3f acclnErrBF = acclnDemBF - ahrs.get_accel();
+
+    // true airspeed is required to predict the turn rate
+    float TAS;
+    if (!ahrs.airspeed_TAS(TAS)) {
+        // shouldn't get here in normal flight but if we do pick cruise speed
+        TAS = aparm.airspeed_cruise * ahrs.get_EAS2TAS();
+    } else {
+        TAS = constrain_float(TAS, aparm.airspeed_min * ahrs.get_EAS2TAS(), aparm.airspeed_max * ahrs.get_EAS2TAS());
+    }
+
+    // calculate predicted body frame pitch rate
+    const float pitchRateDemFF = - velRateDemBF.z / TAS;
+
+    uint32_t tnow = AP_HAL::millis();
+    uint32_t dt_msec = tnow - _last_t;
+    if (_last_t == 0 || dt_msec > 1000) {
+        dt_msec = 0;
+        accln_err_integral = 0.0f;
+    }
+    _last_t = tnow;
+
+    // correct body frame pitch rate using integral of acceleration error
+    const float normalAcclnErrGain = 1.0f / (accln_tconst * TAS);
+    float normalAcclnErrIntegDelta = - acclnErrBF.z * normalAcclnErrGain * 0.001f * (float)dt_msec;
+    if (clip_direction > 0 ||  pitchRateDemFF + accln_err_integral > radians(gains.rmax_pos)) {
+        normalAcclnErrIntegDelta = MIN(normalAcclnErrIntegDelta, 0.0f);
+    } else if (clip_direction < 0 ||  pitchRateDemFF + accln_err_integral < - radians(gains.rmax_neg)) {
+        normalAcclnErrIntegDelta = MAX(normalAcclnErrIntegDelta, 0.0f);
+    }
+    accln_err_integral += normalAcclnErrIntegDelta;
+    float desired_rate_dps = degrees(pitchRateDemFF + accln_err_integral);
+
+    // apply upper and lower pitch angle rate required to respect pitch angle limits
+    if (gains.tau < 0.05f) {
+        gains.tau.set(0.05f);
+    }
+    const float pitch_deg = ahrs.get_pitch_deg();
+    float pitch_rate_max_dps = (pitch_angle_max + pitch_trim_deg - pitch_deg) / gains.tau;
+    float pitch_rate_min_dps = (pitch_angle_min + pitch_trim_deg - pitch_deg) / gains.tau;
+    if (desired_rate_dps > pitch_rate_max_dps) {
+        desired_rate_dps = pitch_rate_max_dps;
+        clip_direction = 1;
+        is_clipped = true;
+    } else if (desired_rate_dps < pitch_rate_min_dps) {
+        desired_rate_dps = pitch_rate_min_dps;
+        clip_direction = -1;
+        is_clipped = true;
+    }
+
+    // clear clip direction if none recorded
+    if (!is_clipped) {
+        clip_direction = 0;
+    }
+
+    static uint32_t last_log_ms = 0;
+    uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_log_ms > 40) {
+        last_log_ms = now_ms;
+        // @LoggerMessage: ACC1
+        // @Vehicles: Plane
+        // @Description: Pitch controller acceleration control log
+        // @Field: TimeUS: Time since system startup
+        // @Field: VRDBF: velocity rate demand body frame Z component
+        // @Field: ADBF: acceleration demand body frame Z component
+        // @Field: AEBF: acceleration error body frame Z component
+        // @Field: gain: acceleration error to pitch rate gain
+        // @Field: PRDFF: pitch rate demand feedforward
+        // @Field: AEI: acceleration error integral
+        // @Field: PRmin: minimum pitch rate from pitch angle limit
+        // @Field: PRmax: maximum pitch rate from pitch angle limit
+        // @Field: DR: final desired pitch rate
+        // @Field: clip: rate limit clip indicator
+#if HAL_LOGGING_ENABLED
+        AP::logger().WriteStreaming("ACC1","TimeUS,VRDBF,ADBF,AEBF,gain,PRDFF,AEI,PRmin,PRmax,DR,clip",
+                                    "Qfffffffffb",
+                                    AP_HAL::micros64(),
+                                    (double)velRateDemBF.z,
+                                    (double)acclnDemBF.z,
+                                    (double)acclnErrBF.z,
+                                    (double)normalAcclnErrGain,
+                                    (double)pitchRateDemFF,
+                                    (double)accln_err_integral,
+                                    (double)pitch_rate_min_dps,
+                                    (double)pitch_rate_max_dps,
+                                    (double)desired_rate_dps,
+                                    (int8_t)clip_direction);
+#endif // HAL_LOGGING_ENABLED
+    }
+
+    return get_rate_out(desired_rate_dps, scaler);
 }
