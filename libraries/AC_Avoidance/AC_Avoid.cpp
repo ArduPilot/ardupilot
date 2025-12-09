@@ -412,7 +412,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
         // calculate distance from vehicle to safe altitude
         if ((fence->get_enabled_fences() & AC_FENCE_TYPE_ALT_MIN) > 0) {
             float veh_alt_m;
-            if (fence->get_alt_U_in_alt_min_frame(veh_alt_m)) {
+            if (fence->get_alt_in_alt_min_frame(veh_alt_m)) {
                 // fence.get_safe_alt_max_m() is UP, veh_alt_m is UP:
                 min_alt_diff_m = veh_alt_m - fence->get_safe_alt_min_m();
                 limit_min_alt = true;
@@ -420,7 +420,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
         }
         if ((fence->get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) > 0) {
             float veh_alt_m;
-            if (fence->get_alt_U_in_alt_max_frame(veh_alt_m)) {
+            if (fence->get_alt_in_alt_max_frame(veh_alt_m)) {
                 // fence.get_safe_alt_max_m() is UP, veh_alt_m is UP:
                 max_alt_diff_m = fence->get_safe_alt_max_m() - veh_alt_m;
                 limit_max_alt = true;
