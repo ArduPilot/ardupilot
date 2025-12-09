@@ -1346,9 +1346,10 @@ void emit_userdata_allocators(void) {
     // New method used internally
     fprintf(source, "%s * new_%s(lua_State *L) {\n", node->name, node->sanitized_name);
     fprintf(source, "    void *ud = lua_newuserdata(L, sizeof(%s));\n", node->name);
+    // convince compiler to remove null check on the new, lua_newuserdata can't return null
+    fprintf(source, "    if (!ud) { __builtin_unreachable(); } // elide constructor null check\n");
     fprintf(source, "    new (ud) %s();\n", node->name);
-    fprintf(source, "    luaL_getmetatable(L, \"%s\");\n", node->rename ? node->rename :  node->name);
-    fprintf(source, "    lua_setmetatable(L, -2);\n");
+    fprintf(source, "    set_userdata_metatable(L, \"%s\");\n", node->rename ? node->rename :  node->name);
     fprintf(source, "    return (%s *)ud;\n", node->name);
     fprintf(source, "}\n");
 

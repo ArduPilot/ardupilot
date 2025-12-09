@@ -21,6 +21,26 @@ void * new_ap_object(lua_State *L, size_t size, const char * name) {
     return ud;
 }
 
+void set_userdata_metatable(lua_State *L, const char * name) {
+    if (luaL_newmetatable(L, name)) { // metatable just created, set it up
+        for (uint32_t i = 0; i < ARRAY_SIZE(userdata_fun); i++) {
+            if (strcmp(name, userdata_fun[i].name) == 0) {
+                lua_pushcfunction(L, userdata_fun[i].func);
+                lua_setfield(L, -2, "__index");
+                if (userdata_fun[i].operators != nullptr) {
+                    luaL_setfuncs(L, userdata_fun[i].operators, 0);
+                }
+                break;
+            }
+        }
+        // if no name matched, the metatable will be pointless but otherwise
+        // valid, so it's safe to continue. since this function isn't
+        // accessible to user code, it's probably not worth raising an error.
+    }
+    // correct metatable is on stack regardless of if we just set it up
+    lua_setmetatable(L, -2);
+}
+
 static int binding_index(lua_State *L) {
     const char * name = luaL_checkstring(L, 2);
 
@@ -56,23 +76,6 @@ static int binding_index(lua_State *L) {
     lua_settable(L, -5);
 
     return 1;
-}
-
-void load_generated_bindings(lua_State *L) {
-    luaL_checkstack(L, 5, nullptr);
-    // userdata metatables
-    for (uint32_t i = 0; i < ARRAY_SIZE(userdata_fun); i++) {
-        luaL_newmetatable(L, userdata_fun[i].name);
-        lua_pushcfunction(L, userdata_fun[i].func);
-        lua_setfield(L, -2, "__index");
-        if (userdata_fun[i].operators != nullptr) {
-            luaL_setfuncs(L, userdata_fun[i].operators, 0);
-        }
-        lua_pop(L, 1);
-    }
-
-    // ap_object metatables, singletons and userdata creation funcs are loaded
-    // dynamically
 }
 
 void load_generated_sandbox(lua_State *L) {
