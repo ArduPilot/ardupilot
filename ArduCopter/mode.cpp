@@ -1051,5 +1051,5 @@ Location Mode::get_stopping_point() const
     Vector3p stopping_point_ned_m;
     copter.pos_control->get_stopping_point_NE_m(stopping_point_ned_m.xy());
     copter.pos_control->get_stopping_point_D_m(stopping_point_ned_m.z);
-    return Location{Location::AltFrame::ABOVE_ORIGIN, stopping_point_ned_m};
+    return Location::from_ekf_offset_NED_m(stopping_point_ned_m, Location::AltFrame::ABOVE_ORIGIN);
 }

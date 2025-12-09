@@ -550,7 +550,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
     // if more than 3m then fly to edge
     if (dist_to_edge_m > 3.0) {
         // convert circle_edge_ned_m to Location
-        Location circle_edge{Location::AltFrame::ABOVE_ORIGIN, circle_edge_ned_m};
+        Location circle_edge = Location::from_ekf_offset_NED_m(circle_edge_ned_m, Location::AltFrame::ABOVE_ORIGIN);
 
         // convert altitude to same as command
         circle_edge.copy_alt_from(circle_center);
