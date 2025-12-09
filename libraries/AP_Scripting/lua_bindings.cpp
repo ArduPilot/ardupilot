@@ -320,20 +320,14 @@ int AP_Logger_Write(lua_State *L) {
 
     // prepend timestamp to format and labels
     char label_cat[LS_LABELS_SIZE];
-    strcpy(label_cat,"TimeUS,");
-    strcat(label_cat,labels);
     char fmt_cat[LS_FORMAT_SIZE];
-    strcpy(fmt_cat,"Q");
-    strcat(fmt_cat,fmt);
-
-    // Need to declare these here so they don't go out of scope
-    char units_cat[LS_FORMAT_SIZE];
-    char multipliers_cat[LS_FORMAT_SIZE];
+    snprintf(label_cat, sizeof(label_cat), "TimeUS,%s", labels);
+    snprintf(fmt_cat, sizeof(fmt_cat), "Q%s", fmt);
 
     uint8_t field_start = 4;
     struct AP_Logger::log_write_fmt *f;
     if (!have_units) {
-        // ask for a mesage type
+        // ask for a mesage type (will duplicate incoming strings if necessary)
         f = AP_logger->msg_fmt_for_name(name, label_cat, nullptr, nullptr, fmt_cat, true, true);
     } else {
         // read in units and multiplers strings
@@ -349,13 +343,12 @@ int AP_Logger_Write(lua_State *L) {
         }
 
         // prepend timestamp to units and multiplyers
-        strcpy(units_cat,"s");
-        strcat(units_cat,units);
+        char units_cat[LS_FORMAT_SIZE];
+        char multipliers_cat[LS_FORMAT_SIZE];
+        snprintf(units_cat, sizeof(units_cat), "s%s", units);
+        snprintf(multipliers_cat, sizeof(multipliers_cat), "F%s", multipliers);
 
-        strcpy(multipliers_cat,"F");
-        strcat(multipliers_cat,multipliers);
-
-        // ask for a mesage type
+        // ask for a mesage type (will duplicate incoming strings if necessary)
         f = AP_logger->msg_fmt_for_name(name, label_cat, units_cat, multipliers_cat, fmt_cat, true, true);
     }
 
