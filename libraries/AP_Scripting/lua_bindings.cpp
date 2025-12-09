@@ -372,8 +372,11 @@ int AP_Logger_Write(lua_State *L) {
         return luaL_argerror(L, args, "unknown format");
     }
 
-    // note that luaM_malloc will never return null, it will fault instead
-    char *buffer = (char*)luaM_malloc(L, msg_len);
+    // lua buffers are ~512 bytes on stack. in the unlikely event packets get
+    // expanded past that, this function should be rewritten to use one.
+    static_assert(LOG_PACKET_MAX_LEN <= sizeof(luaL_Buffer), "packets are too long");
+
+    char buffer[LOG_PACKET_MAX_LEN]; // constant buffer size optimizes better
 
     // add logging headers
     uint8_t offset = 0;
@@ -399,7 +402,6 @@ int AP_Logger_Write(lua_State *L) {
                 int isnum;
                 const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
                 if (!isnum || (tmp1 < INT8_MIN) || (tmp1 > INT8_MAX)) {
-                    luaM_free(L, buffer);
                     luaL_argerror(L, arg_index, "argument out of range");
                     // no return
                 }
@@ -413,7 +415,6 @@ int AP_Logger_Write(lua_State *L) {
                 int isnum;
                 const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
                 if (!isnum || (tmp1 < INT16_MIN) || (tmp1 > INT16_MAX)) {
-                    luaM_free(L, buffer);
                     luaL_argerror(L, arg_index, "argument out of range");
                     // no return
                 }
@@ -427,7 +428,6 @@ int AP_Logger_Write(lua_State *L) {
                 int isnum;
                 const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
                 if (!isnum || (tmp1 < 0) || (tmp1 > UINT16_MAX)) {
-                    luaM_free(L, buffer);
                     luaL_argerror(L, arg_index, "argument out of range");
                     // no return
                 }
@@ -442,7 +442,6 @@ int AP_Logger_Write(lua_State *L) {
                 int isnum;
                 const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
                 if (!isnum) {
-                    luaM_free(L, buffer);
                     luaL_argerror(L, arg_index, "argument out of range");
                     // no return
                 }
@@ -455,7 +454,6 @@ int AP_Logger_Write(lua_State *L) {
                 int isnum;
                 const lua_Number tmp1 = lua_tonumberx(L, arg_index, &isnum);
                 if (!isnum) {
-                    luaM_free(L, buffer);
                     luaL_argerror(L, arg_index, "argument out of range");
                     // no return
                 }
@@ -478,7 +476,6 @@ int AP_Logger_Write(lua_State *L) {
                         tmp1 = lua_toboolean(L, arg_index);
 
                     } else {
-                        luaM_free(L, buffer);
                         luaL_argerror(L, arg_index, "argument out of range");
                         // no return
                     }
@@ -502,7 +499,6 @@ int AP_Logger_Write(lua_State *L) {
                     } else {
                         const lua_Number v_float = lua_tonumberx(L, arg_index, &success);
                         if (!success || (v_float < 0) || (v_float > float(UINT32_MAX))) {
-                            luaM_free(L, buffer);
                             luaL_argerror(L, arg_index, "argument out of range");
                             // no return
                         }
@@ -516,7 +512,6 @@ int AP_Logger_Write(lua_State *L) {
             case 'Q': { // uint64_t
                 void * ud = luaL_testudata(L, arg_index, "uint64_t");
                 if (ud == nullptr) {
-                    luaM_free(L, buffer);
                     luaL_argerror(L, arg_index, "argument out of range");
                     // no return
                 }
@@ -534,7 +529,6 @@ int AP_Logger_Write(lua_State *L) {
                 break;
             }
             default: {
-                luaM_free(L, buffer);
                 luaL_error(L, "%c unsupported format",fmt_cat[index]);
                 // no return
             }
@@ -543,12 +537,10 @@ int AP_Logger_Write(lua_State *L) {
             size_t slen;
             const char *tmp = lua_tolstring(L, arg_index, &slen);
             if (tmp == nullptr) {
-                luaM_free(L, buffer);
                 luaL_argerror(L, arg_index, "argument out of range");
                 // no return
             }
             if (slen > charlen) {
-                luaM_free(L, buffer);
                 luaL_error(L, "arg %d too long for %c format",arg_index,fmt_cat[index]);
                 // no return
             }
@@ -561,8 +553,6 @@ int AP_Logger_Write(lua_State *L) {
     AP_logger->Safe_Write_Emit_FMT(f);
 
     AP_logger->WriteBlock(buffer,msg_len);
-
-    luaM_free(L, buffer);
 
     return 0;
 }
