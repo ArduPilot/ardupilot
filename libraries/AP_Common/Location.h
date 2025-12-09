@@ -32,8 +32,10 @@ public:
     Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, AltFrame frame);
     Location(const Vector3f &ekf_offset_neu_cm, AltFrame frame);
     Location(const Vector3d &ekf_offset_neu_cm, AltFrame frame);
-    Location(AltFrame frame, const Vector3f &ekf_offset_ned_m);
-    Location(AltFrame frame, const Vector3d &ekf_offset_ned_m);
+
+    // named constructors
+    static Location from_ekf_offset_NED_m(const Vector3f& ekf_offset_ned_m, AltFrame frame);
+    static Location from_ekf_offset_NED_m(const Vector3d& ekf_offset_ned_m, AltFrame frame);
 
     // set altitude
     void set_alt_cm(int32_t alt_cm, AltFrame frame);
