@@ -10,64 +10,64 @@ extern const AP_HAL::HAL& hal;
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
  // default gains for Plane
- # define POSCONTROL_POS_D_P                    1.0f    // vertical position controller P gain default
- # define POSCONTROL_VEL_D_P                    5.0f    // vertical velocity controller P gain default
- # define POSCONTROL_VEL_D_IMAX                 10.0f   // vertical velocity controller IMAX gain default
- # define POSCONTROL_VEL_D_FILT_HZ              5.0f    // vertical velocity controller input filter
- # define POSCONTROL_VEL_D_FILT_D_HZ            5.0f    // vertical velocity controller input filter for D
- # define POSCONTROL_ACC_D_P                    0.3f    // vertical acceleration controller P gain default
- # define POSCONTROL_ACC_D_I                    1.0f    // vertical acceleration controller I gain default
- # define POSCONTROL_ACC_D_D                    0.0f    // vertical acceleration controller D gain default
- # define POSCONTROL_ACC_D_IMAX                 0.8f    // vertical acceleration controller IMAX gain default
- # define POSCONTROL_ACC_D_FILT_HZ              10.0f   // vertical acceleration controller input filter default
- # define POSCONTROL_ACC_D_DT                   0.02f   // vertical acceleration controller dt default
- # define POSCONTROL_POS_NE_P                   0.5f    // horizontal position controller P gain default
- # define POSCONTROL_VEL_NE_P                   0.7f    // horizontal velocity controller P gain default
- # define POSCONTROL_VEL_NE_I                   0.35f   // horizontal velocity controller I gain default
- # define POSCONTROL_VEL_NE_D                   0.17f   // horizontal velocity controller D gain default
- # define POSCONTROL_VEL_NE_IMAX                10.0f   // horizontal velocity controller IMAX gain default
- # define POSCONTROL_VEL_NE_FILT_HZ             5.0f    // horizontal velocity controller input filter
- # define POSCONTROL_VEL_NE_FILT_D_HZ           5.0f    // horizontal velocity controller input filter for D
+ # define POSCONTROL_D_POS_P                    1.0f    // vertical position controller P gain default
+ # define POSCONTROL_D_VEL_P                    5.0f    // vertical velocity controller P gain default
+ # define POSCONTROL_D_VEL_IMAX                 10.0f   // vertical velocity controller IMAX gain default
+ # define POSCONTROL_D_VEL_FILT_HZ              5.0f    // vertical velocity controller input filter
+ # define POSCONTROL_D_VEL_FILT_D_HZ            5.0f    // vertical velocity controller input filter for D
+ # define POSCONTROL_D_ACC_P                    0.03f   // vertical acceleration controller P gain default
+ # define POSCONTROL_D_ACC_I                    0.1f    // vertical acceleration controller I gain default
+ # define POSCONTROL_D_ACC_D                    0.0f    // vertical acceleration controller D gain default
+ # define POSCONTROL_D_ACC_IMAX                 0.8f    // vertical acceleration controller IMAX gain default
+ # define POSCONTROL_D_ACC_FILT_HZ              10.0f   // vertical acceleration controller input filter default
+ # define POSCONTROL_D_ACC_DT                   0.02f   // vertical acceleration controller dt default
+ # define POSCONTROL_NE_POS_P                   0.5f    // horizontal position controller P gain default
+ # define POSCONTROL_NE_VEL_P                   0.7f    // horizontal velocity controller P gain default
+ # define POSCONTROL_NE_VEL_I                   0.35f   // horizontal velocity controller I gain default
+ # define POSCONTROL_NE_VEL_D                   0.17f   // horizontal velocity controller D gain default
+ # define POSCONTROL_NE_VEL_IMAX                10.0f   // horizontal velocity controller IMAX gain default
+ # define POSCONTROL_NE_VEL_FILT_HZ             5.0f    // horizontal velocity controller input filter
+ # define POSCONTROL_NE_VEL_FILT_D_HZ           5.0f    // horizontal velocity controller input filter for D
 #elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
  // default gains for Sub
- # define POSCONTROL_POS_D_P                    3.0f    // vertical position controller P gain default
- # define POSCONTROL_VEL_D_P                    8.0f    // vertical velocity controller P gain default
- # define POSCONTROL_VEL_D_IMAX                 10.0f   // vertical velocity controller IMAX gain default
- # define POSCONTROL_VEL_D_FILT_HZ              5.0f    // vertical velocity controller input filter
- # define POSCONTROL_VEL_D_FILT_D_HZ            5.0f    // vertical velocity controller input filter for D
- # define POSCONTROL_ACC_D_P                    0.5f    // vertical acceleration controller P gain default
- # define POSCONTROL_ACC_D_I                    0.1f    // vertical acceleration controller I gain default
- # define POSCONTROL_ACC_D_D                    0.0f    // vertical acceleration controller D gain default
- # define POSCONTROL_ACC_D_IMAX                 0.1f    // vertical acceleration controller IMAX gain default
- # define POSCONTROL_ACC_D_FILT_HZ              20.0f   // vertical acceleration controller input filter default
- # define POSCONTROL_ACC_D_DT                   0.0025f // vertical acceleration controller dt default
- # define POSCONTROL_POS_NE_P                   1.0f    // horizontal position controller P gain default
- # define POSCONTROL_VEL_NE_P                   1.0f    // horizontal velocity controller P gain default
- # define POSCONTROL_VEL_NE_I                   0.5f    // horizontal velocity controller I gain default
- # define POSCONTROL_VEL_NE_D                   0.0f    // horizontal velocity controller D gain default
- # define POSCONTROL_VEL_NE_IMAX                10.0f   // horizontal velocity controller IMAX gain default
- # define POSCONTROL_VEL_NE_FILT_HZ             5.0f    // horizontal velocity controller input filter
- # define POSCONTROL_VEL_NE_FILT_D_HZ           5.0f    // horizontal velocity controller input filter for D
+ # define POSCONTROL_D_POS_P                    3.0f    // vertical position controller P gain default
+ # define POSCONTROL_D_VEL_P                    8.0f    // vertical velocity controller P gain default
+ # define POSCONTROL_D_VEL_IMAX                 10.0f   // vertical velocity controller IMAX gain default
+ # define POSCONTROL_D_VEL_FILT_HZ              5.0f    // vertical velocity controller input filter
+ # define POSCONTROL_D_VEL_FILT_D_HZ            5.0f    // vertical velocity controller input filter for D
+ # define POSCONTROL_D_ACC_P                    0.05f   // vertical acceleration controller P gain default
+ # define POSCONTROL_D_ACC_I                    0.01f   // vertical acceleration controller I gain default
+ # define POSCONTROL_D_ACC_D                    0.0f    // vertical acceleration controller D gain default
+ # define POSCONTROL_D_ACC_IMAX                 0.1f    // vertical acceleration controller IMAX gain default
+ # define POSCONTROL_D_ACC_FILT_HZ              20.0f   // vertical acceleration controller input filter default
+ # define POSCONTROL_D_ACC_DT                   0.0025f // vertical acceleration controller dt default
+ # define POSCONTROL_NE_POS_P                   1.0f    // horizontal position controller P gain default
+ # define POSCONTROL_NE_VEL_P                   1.0f    // horizontal velocity controller P gain default
+ # define POSCONTROL_NE_VEL_I                   0.5f    // horizontal velocity controller I gain default
+ # define POSCONTROL_NE_VEL_D                   0.0f    // horizontal velocity controller D gain default
+ # define POSCONTROL_NE_VEL_IMAX                10.0f   // horizontal velocity controller IMAX gain default
+ # define POSCONTROL_NE_VEL_FILT_HZ             5.0f    // horizontal velocity controller input filter
+ # define POSCONTROL_NE_VEL_FILT_D_HZ           5.0f    // horizontal velocity controller input filter for D
 #else
  // default gains for Copter / TradHeli
- # define POSCONTROL_POS_D_P                    1.0f    // vertical position controller P gain default
- # define POSCONTROL_VEL_D_P                    5.0f    // vertical velocity controller P gain default
- # define POSCONTROL_VEL_D_IMAX                 10.0f   // vertical velocity controller IMAX gain default
- # define POSCONTROL_VEL_D_FILT_HZ              5.0f    // vertical velocity controller input filter
- # define POSCONTROL_VEL_D_FILT_D_HZ            5.0f    // vertical velocity controller input filter for D
- # define POSCONTROL_ACC_D_P                    0.05f   // vertical acceleration controller P gain default
- # define POSCONTROL_ACC_D_I                    0.1f    // vertical acceleration controller I gain default
- # define POSCONTROL_ACC_D_D                    0.0f    // vertical acceleration controller D gain default
- # define POSCONTROL_ACC_D_IMAX                 0.8f    // vertical acceleration controller IMAX gain default
- # define POSCONTROL_ACC_D_FILT_HZ              20.0f   // vertical acceleration controller input filter default
- # define POSCONTROL_ACC_D_DT                   0.0025f // vertical acceleration controller dt default
- # define POSCONTROL_POS_NE_P                   1.0f    // horizontal position controller P gain default
- # define POSCONTROL_VEL_NE_P                   2.0f    // horizontal velocity controller P gain default
- # define POSCONTROL_VEL_NE_I                   1.0f    // horizontal velocity controller I gain default
- # define POSCONTROL_VEL_NE_D                   0.25f   // horizontal velocity controller D gain default
- # define POSCONTROL_VEL_NE_IMAX                10.0f   // horizontal velocity controller IMAX gain default
- # define POSCONTROL_VEL_NE_FILT_HZ             5.0f    // horizontal velocity controller input filter
- # define POSCONTROL_VEL_NE_FILT_D_HZ           5.0f    // horizontal velocity controller input filter for D
+ # define POSCONTROL_D_POS_P                    1.0f    // vertical position controller P gain default
+ # define POSCONTROL_D_VEL_P                    5.0f    // vertical velocity controller P gain default
+ # define POSCONTROL_D_VEL_IMAX                 10.0f   // vertical velocity controller IMAX gain default
+ # define POSCONTROL_D_VEL_FILT_HZ              5.0f    // vertical velocity controller input filter
+ # define POSCONTROL_D_VEL_FILT_D_HZ            5.0f    // vertical velocity controller input filter for D
+ # define POSCONTROL_D_ACC_P                    0.05f   // vertical acceleration controller P gain default
+ # define POSCONTROL_D_ACC_I                    0.1f    // vertical acceleration controller I gain default
+ # define POSCONTROL_D_ACC_D                    0.0f    // vertical acceleration controller D gain default
+ # define POSCONTROL_D_ACC_IMAX                 0.8f    // vertical acceleration controller IMAX gain default
+ # define POSCONTROL_D_ACC_FILT_HZ              20.0f   // vertical acceleration controller input filter default
+ # define POSCONTROL_D_ACC_DT                   0.0025f // vertical acceleration controller dt default
+ # define POSCONTROL_NE_POS_P                   1.0f    // horizontal position controller P gain default
+ # define POSCONTROL_NE_VEL_P                   2.0f    // horizontal velocity controller P gain default
+ # define POSCONTROL_NE_VEL_I                   1.0f    // horizontal velocity controller I gain default
+ # define POSCONTROL_NE_VEL_D                   0.25f   // horizontal velocity controller D gain default
+ # define POSCONTROL_NE_VEL_IMAX                10.0f   // horizontal velocity controller IMAX gain default
+ # define POSCONTROL_NE_VEL_FILT_HZ             5.0f    // horizontal velocity controller input filter
+ # define POSCONTROL_NE_VEL_FILT_D_HZ           5.0f    // horizontal velocity controller input filter for D
 #endif
 
 // vibration compensation gains
@@ -85,9 +85,10 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // POS_ACC_XY_FILT was here.
 
     // @Param: _D_POS_P
-    // @DisplayName: Position (down) controller P gain
-    // @Description: Position (down) controller P gain.  Converts the difference between the desired altitude and actual altitude into a climb or descent rate which is passed to the throttle rate controller
-    // @Range: 1.000 3.000
+    // @DisplayName: Position (vertical) controller P gain
+    // @Description: Position (vertical) controller P gain. Converts the difference between the desired altitude and actual altitude into a climb or descent rate which is passed to the throttle rate controller. Previously _POSZ_P.
+    // @Range: 0.50 4.00
+    // @Increment: 0.01
     // @User: Standard
     AP_SUBGROUPINFO(_p_pos_d_m, "_D_POS_", 2, AC_PosControl, AC_P_1D),
 
@@ -97,8 +98,9 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
 
     // @Param: _NE_POS_P
     // @DisplayName: Position (horizontal) controller P gain
-    // @Description: Position controller P gain.  Converts the distance (in the latitude direction) to the target location into a desired speed which is then passed to the loiter latitude rate controller
-    // @Range: 0.500 2.000
+    // @Description: Position controller P gain. Converts the distance (in the latitude direction) to the target location into a desired speed which is then passed to the loiter latitude rate controller. Previously _POSXY_P.
+    // @Range: 0.50 4.00
+    // @Increment: 0.01
     // @User: Standard
     AP_SUBGROUPINFO(_p_pos_ne_m, "_NE_POS_", 5, AC_PosControl, AC_P_2D),
 
@@ -106,7 +108,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
 
     // @Param: _ANGLE_MAX
     // @DisplayName: Position Control Angle Max
-    // @Description: Maximum lean angle autopilot can request.  Set to zero to use ANGLE_MAX parameter value
+    // @Description: Maximum lean angle autopilot can request. Set to zero to use ANGLE_MAX parameter value
     // @Units: deg
     // @Range: 0 45
     // @Increment: 1
@@ -119,7 +121,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @DisplayName: Jerk limit for the horizontal kinematic input shaping
     // @Description: Jerk limit of the horizontal kinematic path generation used to determine how quickly the aircraft varies the acceleration target
     // @Units: m/s/s/s
-    // @Range: 1 20
+    // @Range: 1 50
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("_JERK_NE", 10, AC_PosControl, _shaping_jerk_ne_msss, POSCONTROL_JERK_NE_MSSS),
@@ -128,196 +130,206 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @DisplayName: Jerk limit for the vertical kinematic input shaping
     // @Description: Jerk limit of the vertical kinematic path generation used to determine how quickly the aircraft varies the acceleration target
     // @Units: m/s/s/s
-    // @Range: 5 50
+    // @Range: 1 50
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("_JERK_D", 11, AC_PosControl, _shaping_jerk_d_msss, POSCONTROL_JERK_D_MSSS),
 
     // @Param: _D_VEL_P
-    // @DisplayName: Velocity (down) controller P gain
-    // @Description: Velocity (down) controller P gain.  Converts the difference between desired vertical speed and actual speed into a desired acceleration that is passed to the throttle acceleration controller
-    // @Range: 1.000 8.000
+    // @DisplayName: Velocity (vertical) controller P gain
+    // @Description: Velocity (vertical) controller P gain. Converts the difference between desired vertical speed and actual speed into a desired acceleration that is passed to the throttle acceleration controller. Previously _VELZ_P.
+    // @Range: 1.0 10.0
+    // @Increment: 0.1
     // @User: Standard
 
     // @Param: _D_VEL_I
-    // @DisplayName: Velocity (down) controller I gain
-    // @Description: Velocity (down) controller I gain.  Corrects long-term difference in desired velocity to a target acceleration
-    // @Range: 0.02 1.00
-    // @Increment: 0.01
+    // @DisplayName: Velocity (vertical) controller I gain
+    // @Description: Velocity (vertical) controller I gain. Corrects long-term difference in desired velocity to a target acceleration. Previously _VELZ_I.
+    // @Range: 0.00 10.0
+    // @Increment: 0.1
     // @User: Advanced
 
     // @Param: _D_VEL_IMAX
-    // @DisplayName: Velocity (down) controller I gain maximum
-    // @Description: Velocity (down) controller I gain maximum.  Constrains the target acceleration that the I gain will output
-    // @Range: 1.000 8.000
+    // @DisplayName: Velocity (vertical) controller I gain maximum
+    // @Description: Velocity (vertical) controller I gain maximum. Constrains the target acceleration that the I gain will output. If upgrading from 4.6 this is _VELZ_IMAX * 0.01.
+    // @Range: 1.000 10.000
+    // @Increment: 0.1
     // @User: Standard
 
     // @Param: _D_VEL_D
-    // @DisplayName: Velocity (down) controller D gain
-    // @Description: Velocity (down) controller D gain.  Corrects short-term changes in velocity
-    // @Range: 0.00 1.00
-    // @Increment: 0.001
+    // @DisplayName: Velocity (vertical) controller D gain
+    // @Description: Velocity (vertical) controller D gain. Corrects short-term changes in velocity. Previously _VELZ_D.
+    // @Range: 0.00 2.00
+    // @Increment: 0.01
     // @User: Advanced
 
     // @Param: _D_VEL_FF
-    // @DisplayName: Velocity (down) controller Feed Forward gain
-    // @Description: Velocity (down) controller Feed Forward gain.  Produces an output that is proportional to the magnitude of the target
-    // @Range: 0 1
+    // @DisplayName: Velocity (vertical) controller Feed Forward gain
+    // @Description: Velocity (vertical) controller Feed Forward gain. Produces an output that is proportional to the magnitude of the target. Previously _VELZ_FF.
+    // @Range: 0.00 2.00
     // @Increment: 0.01
     // @User: Advanced
 
     // @Param: _D_VEL_FLTE
-    // @DisplayName: Velocity (down) error filter
-    // @Description: Velocity (down) error filter.  This filter (in Hz) is applied to the input for P and I terms
+    // @DisplayName: Velocity (vertical) error filter
+    // @Description: Velocity (vertical) error filter. This filter (in Hz) is applied to the input for P and I terms. Previously _VELZ_FLTE.
     // @Range: 0 100
+    // @Increment: 1.0
     // @Units: Hz
     // @User: Advanced
 
     // @Param: _D_VEL_FLTD
-    // @DisplayName: Velocity (down) input filter for D term
-    // @Description: Velocity (down) input filter for D term.  This filter (in Hz) is applied to the input for D terms
+    // @DisplayName: Velocity (vertical) input filter for D term
+    // @Description: Velocity (vertical) input filter for D term. This filter (in Hz) is applied to the input for D terms. Previously _VELZ_FLTD.
     // @Range: 0 100
+    // @Increment: 1.0
     // @Units: Hz
     // @User: Advanced
     AP_SUBGROUPINFO(_pid_vel_d_m, "_D_VEL_", 12, AC_PosControl, AC_PID_Basic),
 
     // @Param: _D_ACC_P
-    // @DisplayName: Acceleration (down) controller P gain
-    // @Description: Acceleration (down) controller P gain.  Converts the difference between desired vertical acceleration and actual acceleration into a motor output
-    // @Range: 0.200 1.500
-    // @Increment: 0.05
+    // @DisplayName: Acceleration (vertical) controller P gain
+    // @Description: Acceleration (vertical) controller P gain. Converts the difference between desired vertical acceleration and actual acceleration into a motor output. If upgrading from 4.6 this is _ACCZ_P * 0.1.
+    // @Range: 0.010 0.250
+    // @Increment: 0.001
     // @User: Standard
 
     // @Param: _D_ACC_I
-    // @DisplayName: Acceleration (down) controller I gain
-    // @Description: Acceleration (down) controller I gain.  Corrects long-term difference in desired vertical acceleration and actual acceleration
-    // @Range: 0.000 3.000
+    // @DisplayName: Acceleration (vertical) controller I gain
+    // @Description: Acceleration (vertical) controller I gain. Corrects long-term difference in desired vertical acceleration and actual acceleration. If upgrading from 4.6 this is _ACCZ_I * 0.1.
+    // @Range: 0.000 0.500
+    // @Increment: 0.001
     // @User: Standard
 
     // @Param: _D_ACC_IMAX
-    // @DisplayName: Acceleration (down) controller I gain maximum
-    // @Description: Acceleration (down) controller I gain maximum.  Constrains the maximum pwm that the I term will generate
-    // @Range: 0 1
+    // @DisplayName: Acceleration (vertical) controller I gain maximum
+    // @Description: Acceleration (vertical) controller I gain maximum. Constrains the maximum pwm that the I term will generate. If upgrading from 4.6 this is _ACCZ_IMAX * 0.001.
+    // @Range: 0.0 1.0
+    // @Increment: 0.01
     // @Units: d%
     // @User: Standard
 
     // @Param: _D_ACC_D
-    // @DisplayName: Acceleration (down) controller D gain
-    // @Description: Acceleration (down) controller D gain.  Compensates for short-term change in desired vertical acceleration vs actual acceleration
-    // @Range: 0.000 0.400
+    // @DisplayName: Acceleration (vertical) controller D gain
+    // @Description: Acceleration (vertical) controller D gain. Compensates for short-term change in desired vertical acceleration vs actual acceleration. If upgrading from 4.6 this is _ACCZ_D * 0.1.
+    // @Range: 0.000 0.100
+    // @Increment: 0.001
     // @User: Standard
 
     // @Param: _D_ACC_FF
-    // @DisplayName: Acceleration (down) controller feed forward
-    // @Description: Acceleration (down) controller feed forward
-    // @Range: 0 0.5
+    // @DisplayName: Acceleration (vertical) controller feed forward
+    // @Description: Acceleration (vertical) controller feed forward. If upgrading from 4.6 this is _ACCZ_FF * 0.1.
+    // @Range: 0.000 0.100
     // @Increment: 0.001
     // @User: Standard
 
     // @Param: _D_ACC_FLTT
-    // @DisplayName: Acceleration (down) controller target frequency in Hz
-    // @Description: Acceleration (down) controller target frequency in Hz
+    // @DisplayName: Acceleration (vertical) controller target frequency in Hz
+    // @Description: Acceleration (vertical) controller target frequency in Hz. Previously _ACCZ_FLTT.
     // @Range: 1 50
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
 
     // @Param: _D_ACC_FLTE
-    // @DisplayName: Acceleration (down) controller error frequency in Hz
-    // @Description: Acceleration (down) controller error frequency in Hz
+    // @DisplayName: Acceleration (vertical) controller error frequency in Hz
+    // @Description: Acceleration (vertical) controller error frequency in Hz. Previously _ACCZ_FLTE.
     // @Range: 1 100
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
 
     // @Param: _D_ACC_FLTD
-    // @DisplayName: Acceleration (down) controller derivative frequency in Hz
-    // @Description: Acceleration (down) controller derivative frequency in Hz
+    // @DisplayName: Acceleration (vertical) controller derivative frequency in Hz
+    // @Description: Acceleration (vertical) controller derivative frequency in Hz. Previously _ACCZ_FLTD.
     // @Range: 1 100
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
 
     // @Param: _D_ACC_SMAX
-    // @DisplayName: Accel (down) slew rate limit
+    // @DisplayName: Accel (vertical) slew rate limit
     // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
-    // @Range: 0 200
-    // @Increment: 0.5
+    // @Range: 0 100
+    // @Increment: 0.1
     // @User: Advanced
 
     // @Param: _D_ACC_PDMX
-    // @DisplayName: Acceleration (down) controller PD sum maximum
-    // @Description: Acceleration (down) controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
-    // @Range: 0 1
+    // @DisplayName: Acceleration (vertical) controller PD sum maximum
+    // @Description: Acceleration (vertical) controller PD sum maximum. The maximum/minimum value that the sum of the P and D term can output. If upgrading from 4.6 this is _ACCZ_P * 0.1.
+    // @Range: 0.00 1.00
+    // @Increment: 0.01
     // @Units: d%
 
     // @Param: _D_ACC_D_FF
-    // @DisplayName: Accel (down) Derivative FeedForward Gain
-    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
-    // @Range: 0 0.02
-    // @Increment: 0.0001
+    // @DisplayName: Accel (vertical) Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target. If upgrading from 4.6 this is _ACCZ_P * 0.1.
+    // @Range: 0.000 0.050
+    // @Increment: 0.001
     // @User: Advanced
 
     // @Param: _D_ACC_NTF
-    // @DisplayName: Accel (down) Target notch filter index
-    // @Description: Accel (down) Target notch filter index
+    // @DisplayName: Accel (vertical) Target notch filter index
+    // @Description: Accel (vertical) Target notch filter index. If upgrading from 4.6 this is Previously _ACCZ_NTF.
     // @Range: 1 8
     // @User: Advanced
 
     // @Param: _D_ACC_NEF
-    // @DisplayName: Accel (down) Error notch filter index
-    // @Description: Accel (down) Error notch filter index
+    // @DisplayName: Accel (vertical) Error notch filter index
+    // @Description: Accel (vertical) Error notch filter index. If upgrading from 4.6 this is Previously _ACCZ_NEF.
     // @Range: 1 8
     // @User: Advanced
     AP_SUBGROUPINFO(_pid_accel_d_m, "_D_ACC_", 13, AC_PosControl, AC_PID),
 
     // @Param: _NE_VEL_P
     // @DisplayName: Velocity (horizontal) P gain
-    // @Description: Velocity (horizontal) P gain.  Converts the difference between desired and actual velocity to a target acceleration
-    // @Range: 0.1 6.0
-    // @Increment: 0.1
+    // @Description: Velocity (horizontal) P gain. Converts the difference between desired and actual velocity to a target acceleration. Previously _VELXY_P.
+    // @Range: 0.10 10.00
+    // @Increment: 0.01
     // @User: Advanced
 
     // @Param: _NE_VEL_I
     // @DisplayName: Velocity (horizontal) I gain
-    // @Description: Velocity (horizontal) I gain.  Corrects long-term difference between desired and actual velocity to a target acceleration
-    // @Range: 0.02 1.00
+    // @Description: Velocity (horizontal) I gain. Corrects long-term difference between desired and actual velocity to a target acceleration. Previously _VELXY_I.
+    // @Range: 0.10 10.00
     // @Increment: 0.01
     // @User: Advanced
 
     // @Param: _NE_VEL_D
     // @DisplayName: Velocity (horizontal) D gain
-    // @Description: Velocity (horizontal) D gain.  Corrects short-term changes in velocity
+    // @Description: Velocity (horizontal) D gain. Corrects short-term changes in velocity. Previously _VELXY_D.
     // @Range: 0.00 1.00
-    // @Increment: 0.001
+    // @Increment: 0.01
     // @User: Advanced
 
     // @Param: _NE_VEL_IMAX
     // @DisplayName: Velocity (horizontal) integrator maximum
-    // @Description: Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
-    // @Range: 0 4500
-    // @Increment: 10
-    // @Units: cm/s/s
+    // @Description: Velocity (horizontal) integrator maximum. Constrains the target acceleration that the I gain will output. If upgrading from 4.6 this is _VELXY_IMAX * 0.01.
+    // @Range: 0 10
+    // @Increment: 1
+    // @Units: m/s/s
     // @User: Advanced
 
     // @Param: _NE_VEL_FLTE
     // @DisplayName: Velocity (horizontal) input filter
-    // @Description: Velocity (horizontal) input filter.  This filter (in Hz) is applied to the input for P and I terms
+    // @Description: Velocity (horizontal) input filter. This filter (in Hz) is applied to the input for P and I terms. Previously _VELXY_FLTE.
     // @Range: 0 100
+    // @Increment: 1
     // @Units: Hz
     // @User: Advanced
 
     // @Param: _NE_VEL_FLTD
     // @DisplayName: Velocity (horizontal) input filter
-    // @Description: Velocity (horizontal) input filter.  This filter (in Hz) is applied to the input for D term
+    // @Description: Velocity (horizontal) input filter. This filter (in Hz) is applied to the input for D term. Previously _VELXY_FLTD.
     // @Range: 0 100
+    // @Increment: 1
     // @Units: Hz
     // @User: Advanced
 
     // @Param: _NE_VEL_FF
     // @DisplayName: Velocity (horizontal) feed forward gain
-    // @Description: Velocity (horizontal) feed forward gain.  Converts the difference between desired velocity to a target acceleration
-    // @Range: 0 6
+    // @Description: Velocity (horizontal) feed forward gain. Converts the difference between desired velocity to a target acceleration. Previously _VELXY_FF.
+    // @Range: 0.10 10.00
     // @Increment: 0.01
     // @User: Advanced
     AP_SUBGROUPINFO(_pid_vel_ne_m, "_NE_VEL_", 14, AC_PosControl, AC_PID_2D),
@@ -333,11 +345,11 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_Motors& motors, AC_Att
     _ahrs(ahrs),
     _motors(motors),
     _attitude_control(attitude_control),
-    _p_pos_ne_m(POSCONTROL_POS_NE_P),
-    _p_pos_d_m(POSCONTROL_POS_D_P),
-    _pid_vel_ne_m(POSCONTROL_VEL_NE_P, POSCONTROL_VEL_NE_I, POSCONTROL_VEL_NE_D, 0.0f, POSCONTROL_VEL_NE_IMAX, POSCONTROL_VEL_NE_FILT_HZ, POSCONTROL_VEL_NE_FILT_D_HZ),
-    _pid_vel_d_m(POSCONTROL_VEL_D_P, 0.0f, 0.0f, 0.0f, POSCONTROL_VEL_D_IMAX, POSCONTROL_VEL_D_FILT_HZ, POSCONTROL_VEL_D_FILT_D_HZ),
-    _pid_accel_d_m(POSCONTROL_ACC_D_P, POSCONTROL_ACC_D_I, POSCONTROL_ACC_D_D, 0.0f, POSCONTROL_ACC_D_IMAX, 0.0f, POSCONTROL_ACC_D_FILT_HZ, 0.0f),
+    _p_pos_ne_m(POSCONTROL_NE_POS_P),
+    _p_pos_d_m(POSCONTROL_D_POS_P),
+    _pid_vel_ne_m(POSCONTROL_NE_VEL_P, POSCONTROL_NE_VEL_I, POSCONTROL_NE_VEL_D, 0.0f, POSCONTROL_NE_VEL_IMAX, POSCONTROL_NE_VEL_FILT_HZ, POSCONTROL_NE_VEL_FILT_D_HZ),
+    _pid_vel_d_m(POSCONTROL_D_VEL_P, 0.0f, 0.0f, 0.0f, POSCONTROL_D_VEL_IMAX, POSCONTROL_D_VEL_FILT_HZ, POSCONTROL_D_VEL_FILT_D_HZ),
+    _pid_accel_d_m(POSCONTROL_D_ACC_P, POSCONTROL_D_ACC_I, POSCONTROL_D_ACC_D, 0.0f, POSCONTROL_D_ACC_IMAX, 0.0f, POSCONTROL_D_ACC_FILT_HZ, 0.0f),
     _vel_max_ne_ms(POSCONTROL_SPEED_MS),
     _vel_max_up_ms(POSCONTROL_SPEED_UP_MS),
     _vel_max_down_ms(POSCONTROL_SPEED_DOWN_MS),
