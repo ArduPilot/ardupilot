@@ -124,6 +124,33 @@ static double timestamp_sec()
     return tval.tv_sec + (tval.tv_usec*1.0e-6);
 }
 
+#if defined(CYGWIN_BUILD)
+#include <windows.h>
+
+/*
+  usleep on cygwin is broken for small times: https://stackoverflow.com/questions/6254703/thread-sleep-for-less-than-1-millisecond
+  the solution is to define our own busy wait sleep
+ */
+static void us_wait(int64_t microseconds) {
+    LARGE_INTEGER frequency;
+    LARGE_INTEGER start_time, current_time;
+
+    QueryPerformanceFrequency(&frequency); // Get the frequency of the performance counter
+    QueryPerformanceCounter(&start_time);  // Get the current time
+
+    // Calculate the number of ticks required for the specified microseconds
+    int64_t ticks_to_wait = (int64_t)microseconds * frequency.QuadPart / 1000000;
+    int64_t end_ticks = start_time.QuadPart + ticks_to_wait;
+
+    // Busy-wait until the desired time has elapsed
+    do {
+        QueryPerformanceCounter(&current_time);
+    } while (current_time.QuadPart < end_ticks);
+}
+#else
+#define us_wait(x) usleep(x)
+#endif
+
 FlightAxis::FlightAxis(const char *frame_str) :
     Aircraft(frame_str)
 {
@@ -316,7 +343,7 @@ bool FlightAxis::exchange_data(const struct sitl_input &input)
     if (sock) {
         bool ret = process_reply_message();
         if (ret) {
-            usleep(250);
+            us_wait(250);
             send_request_message(input);
         }
         return ret;
@@ -762,7 +789,7 @@ void FlightAxis::socket_creator(void)
         }
         auto *sck = NEW_NOTHROW SocketAPM_native(false);
         if (sck == nullptr) {
-            usleep(500);
+            us_wait(500);
             continue;
         }
         /*
@@ -772,7 +799,7 @@ void FlightAxis::socket_creator(void)
         if (!sck->connect_timeout(controller_ip, controller_port, 10)) {
             ::printf("connect failed\n");
             delete sck;
-            usleep(500);
+            us_wait(500);
             continue;
         }
         sck->set_blocking(false);
