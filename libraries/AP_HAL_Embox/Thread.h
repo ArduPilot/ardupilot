@@ -41,10 +41,6 @@ public:
 
     bool is_started() const { return _started; }
 
-    size_t get_stack_usage();
-
-    bool set_stack_size(size_t stack_size);
-
     void set_auto_free(bool auto_free) { _auto_free = auto_free; }
 
     virtual bool stop() { return false; }
@@ -60,8 +56,6 @@ protected:
      * some initialization or teardown for the thread.
      */
     virtual bool _run();
-
-    void _poison_stack();
 
     task_t _task;
     bool _started = false;

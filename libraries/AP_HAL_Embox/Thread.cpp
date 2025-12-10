@@ -52,10 +52,6 @@ namespace Embox {
         return true;
     }
 
-    size_t Thread::get_stack_usage() {
-        return 0;
-    }
-
     bool Thread::start(const char* name, int policy, int prio) {
         if (_started) {
             return false;
@@ -74,18 +70,11 @@ namespace Embox {
                           name, strerror(r));
         }
 
-        // if (_stack_size) {
-        //     if (pthread_attr_setstacksize(&attr, _stack_size) != 0) {
-        //         return false;
-        //     }
-        // }
-
         r = pthread_create(&_ctx, &attr, &Thread::_run_trampoline, this);
         if (r != 0) {
             AP_HAL::panic("Failed to create thread '%s': %s",
                           name, strerror(r));
         }
-        pthread_attr_destroy(&attr);
 
         _started = true;
 
@@ -117,16 +106,6 @@ namespace Embox {
         }
 
         _period_usec = hz_to_usec(rate_hz);
-
-        return true;
-    }
-
-    bool Thread::set_stack_size(size_t stack_size) {
-        if (_started) {
-            return false;
-        }
-
-        _stack_size = MAX(stack_size, (size_t)PTHREAD_STACK_MIN);
 
         return true;
     }
