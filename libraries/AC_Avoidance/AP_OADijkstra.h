@@ -26,6 +26,9 @@ public:
     // set fence margin (in meters) used when creating "safe positions" within the polygon fence
     void set_fence_margin(float margin) { _static_data.set_fence_margin(margin); }
 
+    // set wp radius (in meters) used when advancing to next point on path
+    void set_wpradius(float radius) { _wpradius = MAX(radius, 0.1); }
+    
     // trigger Dijkstra's to recalculate shortest path based on current location 
     void recalculate_path() { _shortest_path_ok = false; }
 
@@ -67,6 +70,7 @@ private:
     Location _next_destination_prev;// next_destination of previous iterations (used to determine if path should be re-calculated)
     uint8_t _path_idx_returned;     // index into _path array which gives location vehicle should be currently moving towards
     bool _dest_to_next_dest_clear;  // true if path from dest to next_dest is clear (i.e. does not intersects a fence)
+    float _wpradius = 2.0;          // radius used to decide when to advance to next point on path
 
 #if HAL_LOGGING_ENABLED
     // Logging functions

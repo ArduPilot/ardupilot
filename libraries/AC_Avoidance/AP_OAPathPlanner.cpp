@@ -71,6 +71,15 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
     // @Path: AP_OABendyRuler.cpp
     AP_SUBGROUPPTR(_oabendyruler, "BR_", 6, AP_OAPathPlanner, AP_OABendyRuler),
 
+    // @Param: DIJK_RADIUS
+    // @DisplayName: Object Avoidance Dijkstras radius
+    // @Description: Dijkstras uses this waypoint radius when advancing to the next point on the path
+    // @Units: m
+    // @Range: 0.1 10
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("DIJK_RADIUS", 11, AP_OAPathPlanner, _dijkstras_wpradius, 2),
+
     AP_GROUPEND
 };
 
@@ -409,6 +418,7 @@ void AP_OAPathPlanner::handle_avoidance_requests()
             return;
         }
         _oadijkstra->set_fence_margin(_margin_max);
+        _oadijkstra->set_wpradius(_dijkstras_wpradius);
         const AP_OADijkstra::AP_OADijkstra_State dijkstra_state = _oadijkstra->update(avoidance_request2.current_loc,
                                                                                       avoidance_request2.destination,
                                                                                       avoidance_request2.next_destination,
@@ -446,6 +456,7 @@ void AP_OAPathPlanner::handle_avoidance_requests()
         }
 #if AP_FENCE_ENABLED
         _oadijkstra->set_fence_margin(_margin_max);
+        _oadijkstra->set_wpradius(_dijkstras_wpradius);
         const AP_OADijkstra::AP_OADijkstra_State dijkstra_state = _oadijkstra->update(avoidance_request2.current_loc,
                                                                                       avoidance_request2.destination,
                                                                                       avoidance_request2.next_destination,
