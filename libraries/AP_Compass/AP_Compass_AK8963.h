@@ -21,11 +21,11 @@ class AP_Compass_AK8963 : public AP_Compass_Backend
 {
 public:
     /* Probe for AK8963 standalone on I2C bus */
-    static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+    static AP_Compass_Backend *probe(AP_HAL::Device &dev,
                                      enum Rotation rotation);
 
     /* Probe for AK8963 on auxiliary bus of MPU9250, connected through I2C */
-    static AP_Compass_Backend *probe_mpu9250(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+    static AP_Compass_Backend *probe_mpu9250(AP_HAL::Device &dev,
                                              enum Rotation rotation);
 
     /* Probe for AK8963 on auxiliary bus of MPU9250, connected through SPI */
@@ -45,7 +45,7 @@ public:
     };
 
 private:
-    AP_Compass_AK8963(AP_AK8963_BusDriver *bus,
+    AP_Compass_AK8963(AP_AK8963_BusDriver &bus,
                       enum Rotation rotation);
 
     bool init();
@@ -92,7 +92,7 @@ public:
 class AP_AK8963_BusDriver_HALDevice: public AP_AK8963_BusDriver
 {
 public:
-    AP_AK8963_BusDriver_HALDevice(AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    AP_AK8963_BusDriver_HALDevice(AP_HAL::Device &dev);
 
     virtual bool block_read(uint8_t reg, uint8_t *buf, uint32_t size) override;
     virtual bool register_read(uint8_t reg, uint8_t *val) override;
@@ -112,7 +112,7 @@ public:
     }
     
 private:
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device *_dev;
 };
 
 class AP_AK8963_BusDriver_Auxiliary : public AP_AK8963_BusDriver

@@ -20,7 +20,6 @@
 #if AP_COMPASS_MMC3416_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
-#include <utility>
 #include <AP_Math/AP_Math.h>
 #include <stdio.h>
 #include <AP_Logger/AP_Logger.h>
@@ -43,14 +42,11 @@ extern const AP_HAL::HAL &hal;
 // datasheet says 50ms min for refill
 #define MIN_DELAY_SET_RESET 50
 
-AP_Compass_Backend *AP_Compass_MMC3416::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_Backend *AP_Compass_MMC3416::probe(AP_HAL::Device &dev,
                                               bool force_external,
                                               enum Rotation rotation)
 {
-    if (!dev) {
-        return nullptr;
-    }
-    AP_Compass_MMC3416 *sensor = NEW_NOTHROW AP_Compass_MMC3416(std::move(dev), force_external, rotation);
+    AP_Compass_MMC3416 *sensor = NEW_NOTHROW AP_Compass_MMC3416(dev, force_external, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -59,10 +55,10 @@ AP_Compass_Backend *AP_Compass_MMC3416::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev
     return sensor;
 }
 
-AP_Compass_MMC3416::AP_Compass_MMC3416(AP_HAL::OwnPtr<AP_HAL::Device> _dev,
+AP_Compass_MMC3416::AP_Compass_MMC3416(AP_HAL::Device &_dev,
                                        bool _force_external,
                                        enum Rotation _rotation)
-    : dev(std::move(_dev))
+    : dev(&_dev)
     , force_external(_force_external)
     , rotation(_rotation)
 {

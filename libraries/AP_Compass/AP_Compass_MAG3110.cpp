@@ -16,8 +16,6 @@
 
 #if AP_COMPASS_MAG3110_ENABLED
 
-#include <utility>
-
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <stdio.h>
@@ -82,18 +80,15 @@ RUS:
 
 
 
-AP_Compass_MAG3110::AP_Compass_MAG3110(AP_HAL::OwnPtr<AP_HAL::Device> dev)
-    : _dev(std::move(dev))
+AP_Compass_MAG3110::AP_Compass_MAG3110(AP_HAL::Device &dev)
+    : _dev(&dev)
 {
 }
 
-AP_Compass_Backend *AP_Compass_MAG3110::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_Backend *AP_Compass_MAG3110::probe(AP_HAL::Device &dev,
                                               enum Rotation rotation)
 {
-    if (!dev) {
-        return nullptr;
-    }
-    AP_Compass_MAG3110 *sensor = NEW_NOTHROW AP_Compass_MAG3110(std::move(dev));
+    AP_Compass_MAG3110 *sensor = NEW_NOTHROW AP_Compass_MAG3110(dev);
     if (!sensor || !sensor->init(rotation)) {
         delete sensor;
         return nullptr;

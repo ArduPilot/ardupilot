@@ -18,7 +18,6 @@
 #if AP_COMPASS_AK8963_ENABLED
 
 #include <assert.h>
-#include <utility>
 
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
@@ -51,9 +50,9 @@
 
 extern const AP_HAL::HAL &hal;
 
-AP_Compass_AK8963::AP_Compass_AK8963(AP_AK8963_BusDriver *bus,
+AP_Compass_AK8963::AP_Compass_AK8963(AP_AK8963_BusDriver &bus,
                                      enum Rotation rotation)
-    : _bus(bus)
+    : _bus(&bus)
     , _rotation(rotation)
 {
 }
@@ -63,19 +62,17 @@ AP_Compass_AK8963::~AP_Compass_AK8963()
     delete _bus;
 }
 
-AP_Compass_Backend *AP_Compass_AK8963::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_Backend *AP_Compass_AK8963::probe(AP_HAL::Device &dev,
                                              enum Rotation rotation)
 {
-    if (!dev) {
-        return nullptr;
-    }
-    AP_AK8963_BusDriver *bus = NEW_NOTHROW AP_AK8963_BusDriver_HALDevice(std::move(dev));
+    AP_AK8963_BusDriver *bus = NEW_NOTHROW AP_AK8963_BusDriver_HALDevice(dev);
     if (!bus) {
         return nullptr;
     }
 
-    AP_Compass_AK8963 *sensor = NEW_NOTHROW AP_Compass_AK8963(bus, rotation);
+    AP_Compass_AK8963 *sensor = NEW_NOTHROW AP_Compass_AK8963(*bus, rotation);
     if (!sensor || !sensor->init()) {
+        // TODO: do we need to "delete bus;" here?
         delete sensor;
         return nullptr;
     }
@@ -83,12 +80,9 @@ AP_Compass_Backend *AP_Compass_AK8963::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
     return sensor;
 }
 
-AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(AP_HAL::Device &dev,
                                                      enum Rotation rotation)
 {
-    if (!dev) {
-        return nullptr;
-    }
 #if AP_INERTIALSENSOR_ENABLED
     AP_InertialSensor &ins = *AP_InertialSensor::get_singleton();
 
@@ -96,7 +90,7 @@ AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(AP_HAL::OwnPtr<AP_HAL::Devi
     ins.detect_backends();
 #endif
 
-    return probe(std::move(dev), rotation);
+    return probe(dev, rotation);
 }
 
 AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(uint8_t mpu9250_instance,
@@ -111,8 +105,9 @@ AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(uint8_t mpu9250_instance,
         return nullptr;
     }
 
-    AP_Compass_AK8963 *sensor = NEW_NOTHROW AP_Compass_AK8963(bus, rotation);
+    AP_Compass_AK8963 *sensor = NEW_NOTHROW AP_Compass_AK8963(*bus, rotation);
     if (!sensor || !sensor->init()) {
+        // TODO: do we need to "delete bus" here?
         delete sensor;
         return nullptr;
     }
@@ -280,8 +275,8 @@ bool AP_Compass_AK8963::_calibrate()
 }
 
 /* AP_HAL::Device implementation of the AK8963 */
-AP_AK8963_BusDriver_HALDevice::AP_AK8963_BusDriver_HALDevice(AP_HAL::OwnPtr<AP_HAL::Device> dev)
-    : _dev(std::move(dev))
+AP_AK8963_BusDriver_HALDevice::AP_AK8963_BusDriver_HALDevice(AP_HAL::Device &dev)
+    : _dev(&dev)
 {
 }
 
