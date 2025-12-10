@@ -1,3 +1,5 @@
+#include "HAL_Embox_Class.h"
+
 #include <assert.h>
 #include <cstdio>
 
@@ -6,15 +8,15 @@
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 
-#include "AP_HAL_Embox/I2CDevice.h"
-#include "AP_HAL_Embox/RCInput.h"
-#include "AP_HAL_Embox/RCOutput.h"
-#include "AP_HAL_Embox/SPIDevice.h"
-#include "AP_HAL_Embox/Scheduler.h"
-#include "AP_HAL_Embox/Storage.h"
-#include "AP_HAL_Embox/UARTDriver.h"
-#include "AP_HAL_Embox/Util.h"
-#include "HAL_Embox_Class.h"
+#include "GPIO.h"
+#include "I2CDevice.h"
+#include "RCInput.h"
+#include "RCOutput.h"
+#include "SPIDevice.h"
+#include "Scheduler.h"
+#include "Storage.h"
+#include "UARTDriver.h"
+#include "Util.h"
 
 using namespace Embox;
 
@@ -35,7 +37,7 @@ static Empty::AnalogIn analogIn;
 
 static Storage storageDriver;
 
-static Empty::GPIO gpioDriver;
+static GPIO gpioDriver;
 
 static RCInput rcinDriver;
 static RCOutput rcoutDriver;
