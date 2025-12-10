@@ -305,10 +305,6 @@ extern AP_Vehicle& vehicle;
  */
 void AP_Vehicle::setup()
 {
-#if AP_SIM_ENABLED
-    sitl.init();
-#endif
-
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
