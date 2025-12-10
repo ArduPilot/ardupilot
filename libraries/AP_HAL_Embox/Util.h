@@ -1,28 +1,95 @@
 #pragma once
 
+#include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
+#include "Semaphores.h"
+
 namespace Embox {
+
     class Util : public AP_HAL::Util {
     public:
-        /*
-          set HW RTC in UTC microseconds
-         */
-        void set_hw_rtc(uint64_t time_utc_usec) override {
+        static Util* from(AP_HAL::Util* util) {
+            return static_cast<Util*>(util);
         }
 
-        /*
-          get system clock in UTC microseconds
+        void init(int argc, char* const* argv);
+
+        /**
+           return commandline arguments, if available
          */
-        uint64_t get_hw_rtc() const override {
-            return 0;
+        void commandline_arguments(uint8_t& argc, char* const*& argv) override;
+
+        /*
+          get/set system clock in UTC microseconds
+         */
+        void set_hw_rtc(uint64_t time_utc_usec) override;
+        uint64_t get_hw_rtc() const override;
+
+        const char* get_custom_log_directory() const override final {
+            return custom_log_directory;
         }
+        const char* get_custom_terrain_directory() const override final {
+            return custom_terrain_directory;
+        }
+        const char* get_custom_storage_directory() const override final {
+            return custom_storage_directory;
+        }
+
+        void set_custom_log_directory(const char* _custom_log_directory) {
+            custom_log_directory = _custom_log_directory;
+        }
+        void set_custom_terrain_directory(const char* _custom_terrain_directory) {
+            custom_terrain_directory = _custom_terrain_directory;
+        }
+        void set_custom_storage_directory(const char* _custom_storage_directory) {
+            custom_storage_directory = _custom_storage_directory;
+        }
+        void set_custom_defaults_path(const char* _custom_defaults) {
+            custom_defaults = _custom_defaults;
+        }
+
+        // get path to custom defaults file for AP_Param
+        const char* get_custom_defaults_file() const override final {
+            return custom_defaults;
+        }
+
+        /* Parse cpu set in the form 0; 0,2; or 0-2 */
+        bool parse_cpu_set(const char* s, cpu_set_t* cpu_set) const;
+
+        bool is_chardev_node(const char* path);
+        void set_imu_temp(float current) override;
+        void set_imu_target_temp(int8_t* target) override;
 
         uint32_t available_memory(void) override;
 
+        bool get_system_id(char buf[50]) override;
+        bool get_system_id_unformatted(uint8_t buf[], uint8_t& len) override;
+
         /*
-          return state of safety switch, if applicable
+         * Write a string as specified by @fmt to the file in @path. Note this
+         * should not be used on hot path since it will open, write and close the
+         * file for each call.
          */
-        enum safety_state safety_switch_state(void) override;
+        int write_file(const char* path, const char* fmt, ...) FMT_PRINTF(3, 4);
+
+        /*
+         * Read a string as specified by @fmt from the file in @path. Note this
+         * should not be used on hot path since it will open, read and close the
+         * file for each call.
+         */
+        int read_file(const char* path, const char* fmt, ...) FMT_SCANF(3, 4);
+
+        // fills data with random values of requested size
+        bool get_random_vals(uint8_t* data, size_t size) override;
+
+    private:
+        int saved_argc;
+        char* const* saved_argv;
+        const char* custom_log_directory = nullptr;
+        const char* custom_terrain_directory = nullptr;
+        const char* custom_storage_directory = nullptr;
+        const char* custom_defaults = HAL_PARAM_DEFAULTS_PATH;
     };
+
 } // namespace Embox

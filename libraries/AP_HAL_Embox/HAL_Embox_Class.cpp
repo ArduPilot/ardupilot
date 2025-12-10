@@ -1,5 +1,8 @@
 
 
+#include "AP_HAL_Embox/RCInput.h"
+#include "AP_HAL_Embox/RCOutput.h"
+#include "AP_HAL_Embox/Scheduler.h"
 #include "AP_HAL_Embox/Storage.h"
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_EMBOX
