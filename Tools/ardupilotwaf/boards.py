@@ -1813,21 +1813,11 @@ class embox(Board):
                 '-Os',
             ]
 
-        env.LIB += [
-            'm',
-        ]
-
         cfg.check_librt(env)
         cfg.check_lttng(env)
         cfg.check_libdl(env)
         cfg.check_libiio(env)
 
-        # NOTE disable pthread for embox
-        env.LINKFLAGS += ['-pthread']
-
-        # NOTE remove when on embox
-        # env.LINKFLAGS.remove('-Wl,--gc-sections')
-       
         env.AP_LIBRARIES += [
             'AP_HAL_Embox',
         ]
