@@ -443,7 +443,7 @@ void AP_TECS::_update_speed(float DT)
     // Equivalent airspeed
     float _EAS;
     if (!should_use_airspeed || !_ahrs.airspeed_EAS(_EAS)) {
-        // If no airspeed available use average of min and max
+        // If no airspeed available, assume we are at cruise speed.
         _EAS = constrain_float(aparm.airspeed_cruise.get(), (float)aparm.airspeed_min.get(), (float)aparm.airspeed_max.get());
     }
 
