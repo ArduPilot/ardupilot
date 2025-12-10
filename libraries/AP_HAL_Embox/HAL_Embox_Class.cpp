@@ -1,19 +1,17 @@
-
-
-#include "AP_HAL_Embox/RCInput.h"
-#include "AP_HAL_Embox/RCOutput.h"
-#include "AP_HAL_Embox/Scheduler.h"
-#include "AP_HAL_Embox/Storage.h"
-#include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_EMBOX
-
 #include <assert.h>
+#include <cstdio>
 
+#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/getopt_cpp.h>
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 
 #include "AP_HAL_Embox/I2CDevice.h"
+#include "AP_HAL_Embox/RCInput.h"
+#include "AP_HAL_Embox/RCOutput.h"
 #include "AP_HAL_Embox/SPIDevice.h"
+#include "AP_HAL_Embox/Scheduler.h"
+#include "AP_HAL_Embox/Storage.h"
 #include "AP_HAL_Embox/UARTDriver.h"
 #include "AP_HAL_Embox/Util.h"
 #include "HAL_Embox_Class.h"
@@ -28,10 +26,10 @@ static UARTDriver serial1Driver(false);
 static I2CDeviceManager i2c_mgr_instance;
 static SPIDeviceManager spi_mgr_instance;
 
-// static UARTDriver* serialDrivers[] = {
-//     &serial0Driver,
-//     &serial1Driver,
-// };
+static UARTDriver* serialDrivers[] = {
+    &serial0Driver,
+    &serial1Driver,
+};
 
 static Empty::AnalogIn analogIn;
 
@@ -84,21 +82,87 @@ HAL_Embox::HAL_Embox() : AP_HAL::HAL(
 }
 
 void HAL_Embox::run(int argc, char* const argv[], Callbacks* callbacks) const {
-    /* initialize all drivers and private members here.
-     * up to the programmer to do this in the correct order.
-     * Scheduler should likely come first. */
+    enum long_options {
+        CMDLINE_SERIAL0 = 1, // must be in 0-9 order and numbered consecutively
+        CMDLINE_SERIAL1,
+
+    };
+
+    int opt;
+    const struct GetOptLong::option options[] = {
+        {"serial0", true, 0, CMDLINE_SERIAL0},
+        {"serial1", true, 0, CMDLINE_SERIAL1},
+        {"log-directory", true, 0, 'l'},
+        {"terrain-directory", true, 0, 't'},
+        {"storage-directory", true, 0, 's'},
+        {"module-directory", true, 0, 'M'},
+        {"defaults", true, 0, 'd'},
+        {"help", false, 0, 'h'},
+        {0, false, 0, 0}};
+
+    GetOptLong gopt(argc, argv, "l:t:s:he:SM:",
+                    options);
+
+    /*
+      parse command line options
+     */
+    while ((opt = gopt.getoption()) != -1) {
+        switch (opt) {
+        case CMDLINE_SERIAL0:
+        case CMDLINE_SERIAL1:
+            serialDrivers[opt - CMDLINE_SERIAL0]->set_device_path(gopt.optarg);
+            break;
+        case 'l':
+            utilInstance.set_custom_log_directory(gopt.optarg);
+            break;
+        case 't':
+            utilInstance.set_custom_terrain_directory(gopt.optarg);
+            break;
+        case 's':
+            utilInstance.set_custom_storage_directory(gopt.optarg);
+            break;
+        case 'd':
+            utilInstance.set_custom_defaults_path(gopt.optarg);
+            break;
+        case 'h':
+            exit(0);
+        default:
+            printf("Unknown option '%c'\n", (char)opt);
+            exit(1);
+        }
+    }
+
+    // NOTE: signal handlers are only set before the main loop, so
+    // that if anything before the loops hangs, the default signals
+    // can still stop the process proprely, although without proper
+    // teardown.
+    // This isn't perfect, but still prevents an unkillable process.
+
     scheduler->init();
     gpio->init();
     rcout->init();
     rcin->init();
     serial(0)->begin(115200);
+    analogin->init();
+    utilInstance.init(argc + gopt.optind - 1, &argv[gopt.optind - 1]);
 
-    callbacks->setup();
+    // NOTE: See commit 9f5b4ffca ("AP_HAL_Linux_Class: Correct
+    // deadlock, and infinite loop in setup()") for details about the
+    // order of scheduler initialize and setup on Linux.
     scheduler->set_system_initialized();
 
-    for (;;) {
+    callbacks->setup();
+
+    setup_signal_handlers();
+
+    while (!_should_exit) {
         callbacks->loop();
     }
+
+    // At least try to stop all PWM before shutting down
+    rcout->force_safety_on();
+    rcin->teardown();
+    Scheduler::from(scheduler)->teardown();
 }
 void HAL_Embox::setup_signal_handlers() const {
     struct sigaction sa = {};
@@ -122,5 +186,3 @@ const AP_HAL::HAL& AP_HAL::get_HAL() {
 AP_HAL::HAL& AP_HAL::get_HAL_mutable() {
     return hal_embox;
 }
-
-#endif
