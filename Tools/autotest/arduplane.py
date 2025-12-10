@@ -7731,6 +7731,60 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.remove_installed_script_module("pid.lua")
         self.remove_installed_script_module("mavlink_attitude.lua")
 
+    def TECSAccelControl(self):
+        '''Test TECS height acceleration control via scripting'''
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "RC7_OPTION": 305,  # scripting aux function for TECS control
+        })
+        self.install_example_script_context('TECS_accel_control.lua')
+        self.reboot_sitl()
+
+        self.wait_text("Loaded TECS height accel control switch", check_context=True)
+        self.wait_ready_to_arm()
+
+        # load mission with significant height changes
+        num_wp = self.load_generic_mission("CMAC-height-changes.txt") - 1
+
+        # fly mission with standard TECS first (switch low)
+        self.set_rc(7, 1000)
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+        self.wait_waypoint(1, num_wp, max_dist=100, timeout=300)
+        self.change_mode('LOITER')
+        self.progress("Completed mission with standard TECS")
+
+        # enable height accel control (switch high)
+        self.set_rc(7, 2000)
+        self.wait_text("TECS height accel control enabled", check_context=True)
+
+        # verify TECS_OPTIONS bit is set
+        tecs_options = self.get_parameter('TECS_OPTIONS')
+        if (int(tecs_options) & 4) == 0:
+            raise NotAchievedException("TECS_OPTIONS bit 2 not set after enabling")
+
+        # fly the mission again with height accel control
+        self.set_current_waypoint(1)
+        self.change_mode('AUTO')
+        self.wait_waypoint(1, num_wp, max_dist=100, timeout=300)
+        self.progress("Completed mission with height accel control")
+
+        # disable height accel control (switch low)
+        self.set_rc(7, 1000)
+        self.wait_text("TECS height accel control disabled", check_context=True)
+
+        # verify TECS_OPTIONS bit is cleared
+        tecs_options = self.get_parameter('TECS_OPTIONS')
+        if (int(tecs_options) & 4) != 0:
+            raise NotAchievedException("TECS_OPTIONS bit 2 not cleared after disabling")
+
+        self.fly_home_land_and_disarm()
+        self.context_pop()
+        self.reboot_sitl()
+
     def PreflightRebootComponent(self):
         '''Ensure that PREFLIGHT_REBOOT commands sent to components don't reboot Autopilot'''
         self.run_cmd_int(
@@ -7917,6 +7971,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.ScriptedArmingChecksAppletRally,
             self.PlaneFollowAppletSanity,
             self.PreflightRebootComponent,
+            self.TECSAccelControl,
         ]
 
     def tests1c(self):
