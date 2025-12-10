@@ -1496,6 +1496,17 @@ void Compass::probe_ak8963_via_mpu9250(uint8_t imu_instance, Rotation rotation)
     auto *backend = AP_Compass_AK8963::probe_mpu9250(imu_instance, rotation);
     add_backend(DRIVER_AK8963, backend);  // add_backend does nullptr check
 }
+void Compass::probe_ak8963_via_mpu9250(uint8_t i2c_bus, uint8_t ak8963_addr, Rotation rotation)
+{
+    if (!_driver_enabled(DRIVER_AK8963)) {
+        return;
+    }
+    auto *backend = AP_Compass_AK8963::probe_mpu9250(
+        GET_I2C_DEVICE(i2c_bus, ak8963_addr),
+        rotation
+    );
+    add_backend(DRIVER_AK8963, backend);  // add_backend does nullptr check
+}
 #endif  // AP_COMPASS_AK8963_ENABLED
 
 #if AP_COMPASS_AK09916_ENABLED && AP_COMPASS_ICM20948_ENABLED
@@ -1525,6 +1536,17 @@ void Compass::probe_ak09916_via_icm20948(uint8_t ins_instance, Rotation rotation
     add_backend(DRIVER_AK09916, backend);
 }
 
+void Compass::probe_ak09916_via_icm20948_i2c(uint8_t ins_instance, Rotation rotation)
+{
+    if (!_driver_enabled(DRIVER_AK09916)) {
+        return;
+    }
+
+    auto *backend = AP_Compass_AK09916::probe_ICM20948_I2C(ins_instance, rotation);
+
+    add_backend(DRIVER_AK09916, backend);
+}
+
 #endif  // #if AP_COMPASS_AK09916_ENABLED && AP_COMPASS_ICM20948_ENABLED
 
 void Compass::probe_i2c_dev(DriverType driver_type, probe_i2c_dev_probefn_t probefn, uint8_t i2c_bus, uint8_t i2c_addr, bool external, Rotation rotation)
@@ -1541,6 +1563,18 @@ void Compass::probe_i2c_dev(DriverType driver_type, probe_i2c_dev_probefn_t prob
     add_backend(driver_type, backend);  // add_backend does nullptr check
 }
 
+// short-lived method which expects a probe function that doesn't
+// offer the ability to specify the compass as external:
+void Compass::probe_i2c_dev(DriverType driver_type, probe_i2c_dev_noexternal_probefn_t probefn, uint8_t i2c_bus, uint8_t i2c_addr, Rotation rotation)
+{
+    if (!_driver_enabled(driver_type)) {
+        return;
+    }
+    auto *backend = probefn(GET_I2C_DEVICE(i2c_bus, i2c_addr), rotation);
+
+    add_backend(driver_type, backend);  // add_backend does nullptr check
+}
+
 void Compass::probe_spi_dev(DriverType driver_type, probe_spi_dev_probefn_t probefn, const char *name, bool external, Rotation rotation)
 {
     if (!_driver_enabled(driver_type)) {
@@ -1551,7 +1585,7 @@ void Compass::probe_spi_dev(DriverType driver_type, probe_spi_dev_probefn_t prob
     add_backend(driver_type, backend);  // add_backend does nullptr check
 }
 
-// short-lived method which expectes a probe function that doesn't
+// short-lived method which expects a probe function that doesn't
 // offer the ability to specify an external rotation:
 void Compass::probe_spi_dev(DriverType driver_type, probe_spi_dev_noexternal_probefn_t probefn, const char *name, Rotation rotation)
 {
