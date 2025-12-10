@@ -49,20 +49,17 @@
 
 extern const AP_HAL::HAL &hal;
 
-AP_Compass_LSM9DS1::AP_Compass_LSM9DS1(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_LSM9DS1::AP_Compass_LSM9DS1(AP_HAL::Device &dev,
                                        enum Rotation rotation)
-    : _dev(std::move(dev))
+    : _dev(&dev)
     , _rotation(rotation)
 {
 }
 
-AP_Compass_Backend *AP_Compass_LSM9DS1::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_Backend *AP_Compass_LSM9DS1::probe(AP_HAL::Device &dev,
                                               enum Rotation rotation)
 {
-    if (!dev) {
-        return nullptr;
-    }
-    AP_Compass_LSM9DS1 *sensor = NEW_NOTHROW AP_Compass_LSM9DS1(std::move(dev), rotation);
+    AP_Compass_LSM9DS1 *sensor = NEW_NOTHROW AP_Compass_LSM9DS1(dev, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;

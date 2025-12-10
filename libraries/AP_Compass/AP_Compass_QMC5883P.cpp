@@ -73,14 +73,11 @@
 #define DEBUG 0
 #endif
 
-AP_Compass_Backend *AP_Compass_QMC5883P::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_Backend *AP_Compass_QMC5883P::probe(AP_HAL::Device &dev,
         bool force_external,
         enum Rotation rotation)
 {
-    if (!dev) {
-        return nullptr;
-    }
-    AP_Compass_QMC5883P *sensor = NEW_NOTHROW AP_Compass_QMC5883P(std::move(dev),force_external,rotation);
+    AP_Compass_QMC5883P *sensor = NEW_NOTHROW AP_Compass_QMC5883P(dev, force_external, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -88,10 +85,10 @@ AP_Compass_Backend *AP_Compass_QMC5883P::probe(AP_HAL::OwnPtr<AP_HAL::Device> de
     return sensor;
 }
 
-AP_Compass_QMC5883P::AP_Compass_QMC5883P(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_QMC5883P::AP_Compass_QMC5883P(AP_HAL::Device &dev,
         bool force_external,
         enum Rotation rotation)
-    : _dev(std::move(dev))
+    : _dev(&dev)
     , _rotation(rotation)
     , _force_external(force_external)
 {

@@ -48,14 +48,14 @@ class AP_Compass_AK09916 : public AP_Compass_Backend
 {
 public:
     /* Probe for AK09916 standalone on I2C bus */
-    static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+    static AP_Compass_Backend *probe(AP_HAL::Device &dev,
                                      bool force_external,
                                      enum Rotation rotation);
 
 #if AP_COMPASS_ICM20948_ENABLED
     /* Probe for AK09916 on auxiliary bus of ICM20948, connected through I2C */
-    static AP_Compass_Backend *probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                             AP_HAL::OwnPtr<AP_HAL::Device> dev_icm,
+    static AP_Compass_Backend *probe_ICM20948(AP_HAL::Device &dev,
+                                             AP_HAL::Device &dev_icm,
                                              bool force_external,
                                              enum Rotation rotation);
 
@@ -84,7 +84,7 @@ public:
     };
 
 private:
-    AP_Compass_AK09916(AP_AK09916_BusDriver *bus, bool force_external,
+    AP_Compass_AK09916(AP_AK09916_BusDriver &bus, bool force_external,
                        enum Rotation rotation);
 
     bool init();
@@ -141,7 +141,7 @@ public:
 class AP_AK09916_BusDriver_HALDevice: public AP_AK09916_BusDriver
 {
 public:
-    AP_AK09916_BusDriver_HALDevice(AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    AP_AK09916_BusDriver_HALDevice(AP_HAL::Device &dev);
 
     virtual bool block_read(uint8_t reg, uint8_t *buf, uint32_t size) override;
     virtual bool register_read(uint8_t reg, uint8_t *val) override;
@@ -173,7 +173,7 @@ public:
     }
     
 private:
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device *_dev;
 };
 
 class AP_AK09916_BusDriver_Auxiliary : public AP_AK09916_BusDriver

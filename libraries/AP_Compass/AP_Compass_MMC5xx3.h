@@ -33,18 +33,18 @@
 class AP_Compass_MMC5XX3 : public AP_Compass_Backend
 {
 public:
-    static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+    static AP_Compass_Backend *probe(AP_HAL::Device &dev,
                                      bool force_external,
                                      enum Rotation rotation);
 
     static constexpr const char *name = "MMC5983";
 
 private:
-    AP_Compass_MMC5XX3(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+    AP_Compass_MMC5XX3(AP_HAL::Device &dev,
                        bool force_external,
                        enum Rotation rotation);
 
-    AP_HAL::OwnPtr<AP_HAL::Device> dev;
+    AP_HAL::Device *dev;
 
     enum class MMCState {
         STATE_SET,

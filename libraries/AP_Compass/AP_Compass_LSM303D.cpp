@@ -17,8 +17,6 @@
 
 #if AP_COMPASS_LSM303D_ENABLED
 
-#include <utility>
-
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
@@ -153,18 +151,15 @@ extern const AP_HAL::HAL &hal;
 #define LSM303D_MAG_DEFAULT_RANGE_GA          2
 #define LSM303D_MAG_DEFAULT_RATE            100
 
-AP_Compass_LSM303D::AP_Compass_LSM303D(AP_HAL::OwnPtr<AP_HAL::Device> dev)
-    : _dev(std::move(dev))
+AP_Compass_LSM303D::AP_Compass_LSM303D(AP_HAL::Device &dev)
+    : _dev(&dev)
 {
 }
 
-AP_Compass_Backend *AP_Compass_LSM303D::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_Backend *AP_Compass_LSM303D::probe(AP_HAL::Device &dev,
                                               enum Rotation rotation)
 {
-    if (!dev) {
-        return nullptr;
-    }
-    AP_Compass_LSM303D *sensor = NEW_NOTHROW AP_Compass_LSM303D(std::move(dev));
+    AP_Compass_LSM303D *sensor = NEW_NOTHROW AP_Compass_LSM303D(dev);
     if (!sensor || !sensor->init(rotation)) {
         delete sensor;
         return nullptr;

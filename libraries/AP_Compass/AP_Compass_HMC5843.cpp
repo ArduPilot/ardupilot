@@ -26,7 +26,6 @@
 #if AP_COMPASS_HMC5843_ENABLED
 
 #include <assert.h>
-#include <utility>
 #include <stdio.h>
 
 #include <AP_Math/AP_Math.h>
@@ -92,9 +91,9 @@ extern const AP_HAL::HAL& hal;
 #define HMC5843_REG_ID_A 0x0A
 
 
-AP_Compass_HMC5843::AP_Compass_HMC5843(AP_HMC5843_BusDriver *bus,
+AP_Compass_HMC5843::AP_Compass_HMC5843(AP_HMC5843_BusDriver &bus,
                                        bool force_external, enum Rotation rotation)
-    : _bus(bus)
+    : _bus(&bus)
     , _rotation(rotation)
     , _force_external(force_external)
 {
@@ -105,20 +104,18 @@ AP_Compass_HMC5843::~AP_Compass_HMC5843()
     delete _bus;
 }
 
-AP_Compass_Backend *AP_Compass_HMC5843::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_Backend *AP_Compass_HMC5843::probe(AP_HAL::Device &dev,
                                               bool force_external,
                                               enum Rotation rotation)
 {
-    if (!dev) {
-        return nullptr;
-    }
-    AP_HMC5843_BusDriver *bus = NEW_NOTHROW AP_HMC5843_BusDriver_HALDevice(std::move(dev));
+    AP_HMC5843_BusDriver *bus = NEW_NOTHROW AP_HMC5843_BusDriver_HALDevice(dev);
     if (!bus) {
         return nullptr;
     }
 
-    AP_Compass_HMC5843 *sensor = NEW_NOTHROW AP_Compass_HMC5843(bus, force_external, rotation);
+    AP_Compass_HMC5843 *sensor = NEW_NOTHROW AP_Compass_HMC5843(*bus, force_external, rotation);
     if (!sensor || !sensor->init()) {
+        // TODO: do we need to "delete bus;" here?
         delete sensor;
         return nullptr;
     }
@@ -138,7 +135,7 @@ AP_Compass_Backend *AP_Compass_HMC5843::probe_mpu6000(enum Rotation rotation)
         return nullptr;
     }
 
-    AP_Compass_HMC5843 *sensor = NEW_NOTHROW AP_Compass_HMC5843(bus, false, rotation);
+    AP_Compass_HMC5843 *sensor = NEW_NOTHROW AP_Compass_HMC5843(*bus, false, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -452,8 +449,8 @@ bool AP_Compass_HMC5843::_calibrate()
 }
 
 /* AP_HAL::Device implementation of the HMC5843 */
-AP_HMC5843_BusDriver_HALDevice::AP_HMC5843_BusDriver_HALDevice(AP_HAL::OwnPtr<AP_HAL::Device> dev)
-    : _dev(std::move(dev))
+AP_HMC5843_BusDriver_HALDevice::AP_HMC5843_BusDriver_HALDevice(AP_HAL::Device &dev)
+    : _dev(&dev)
 {
     // set read and auto-increment flags on SPI
     if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
