@@ -651,11 +651,11 @@ AP_GPS_SBF::process_message(void)
         }
 
         if (temp.Flags==0) {
-            state.spoofing_state = static_cast<uint8_t>(AP_GPS::Spoofing::NOT_SPOOFED);
+            state.spoofing_state = static_cast<uint8_t>(AP_GPS::Spoofing::OK);
         } else {
             state.spoofing_state = static_cast<uint8_t>(AP_GPS::Spoofing::DETECTED);
         }
-        state.jamming_state = static_cast<uint8_t>(AP_GPS::Jamming::NOT_JAMMED);
+        state.jamming_state = static_cast<uint8_t>(AP_GPS::Jamming::OK);
         
         const uint8_t *p = (const uint8_t *)&temp.RFBand;
 
@@ -666,7 +666,7 @@ AP_GPS_SBF::process_message(void)
             case 1:
             case 2:
                 // As long as there is indicated but unmitigated jamming in one band, don't report the overall state as mitigated
-                if (state.jamming_state == static_cast<uint8_t>(AP_GPS::Jamming::NOT_JAMMED)) {
+                if (state.jamming_state == static_cast<uint8_t>(AP_GPS::Jamming::OK)) {
                     state.jamming_state = static_cast<uint8_t>(AP_GPS::Jamming::MITIGATED);
                 }
                 break;
