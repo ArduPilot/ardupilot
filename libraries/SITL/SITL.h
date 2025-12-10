@@ -127,6 +127,11 @@ public:
     static SIM *get_singleton() { return _singleton; }
 
     void init() {
+        if (init_done) {
+            return;
+        }
+        init_done = true;
+
         AP_Param::setup_object_defaults(this, var_info);
         AP_Param::setup_object_defaults(this, var_info2);
         AP_Param::setup_object_defaults(this, var_info3);
@@ -149,6 +154,7 @@ public:
             mag_ofs[i].set(Vector3f(5, 13, -18));
         }
     }
+    bool init_done;
 
     enum SITL_RCFail {
         SITL_RCFail_None = 0,
