@@ -9340,15 +9340,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline(["--serial5=sim:loweheiser"])
 
         self.set_parameters({
-            "GEN_IDLE_TH": 25,
-            "GEN_IDLE_TH_H": 40,
-            "GEN_RUN_TEMP": 60,
-            "GEN_IDLE_TEMP": 80,
+            "GEN_LHIDLE_TH": 25,
+            "GEN_LHIDLE_TH_H": 40,
+            "GEN_LHRUN_TEMP": 60,
+            "GEN_LHIDLE_TEMP": 80,
         })
 
         self.reboot_sitl()
 
-        self.assert_parameter_value("GEN_IDLE_TH", 25)
+        self.assert_parameter_value("GEN_LHIDLE_TH", 25)
 
         self.delay_sim_time(10)  # so we can actually receive messages...
 
