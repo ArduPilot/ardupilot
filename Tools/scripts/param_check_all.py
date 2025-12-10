@@ -36,8 +36,6 @@ sitl_params_to_skip = set([
 ])
 
 frame_params_to_skip = set([
-    'SkyWalkerX8.param',
-    'SkyWalkerX8_ReverseThrust.param',
     'EFlight_Convergence.param',
     'WLToys_V383_HeliQuad.param',
 ])
