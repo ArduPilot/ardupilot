@@ -427,6 +427,9 @@ void NavEKF3_core::InitialiseVariables()
     EKFGSF_yaw_valid_count = 0;
 
     effectiveMagCal = effective_magCal();
+
+    fly_forward_start_ms = 0;
+    fly_forward_active = false;
 }
 
 // Use a function call rather than a constructor to initialise variables because it enables the filter to be re-started in flight if necessary.
