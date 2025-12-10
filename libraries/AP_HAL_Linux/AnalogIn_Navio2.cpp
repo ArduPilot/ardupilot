@@ -1,3 +1,7 @@
+#include "AnalogIn_config.h"
+
+#if AP_HAL_LINUX_ANALOGIN_NAVIO2_ENABLED
+
 #include <cstdio>
 #include <cstdlib>
 #include <errno.h>
@@ -125,3 +129,5 @@ void AnalogIn_Navio2::init()
     _board_voltage_pin = channel(0);
     _servorail_pin = channel(1);
 }
+
+#endif  // AP_HAL_LINUX_ANALOGIN_NAVIO2_ENABLED
