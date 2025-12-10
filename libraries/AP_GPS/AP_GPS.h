@@ -154,6 +154,8 @@ public:
         GPS_OK_FIX_3D_DGPS = 4,      ///< Receiving valid messages and 3D lock with differential improvements
         GPS_OK_FIX_3D_RTK_FLOAT = 5, ///< Receiving valid messages and 3D RTK Float
         GPS_OK_FIX_3D_RTK_FIXED = 6, ///< Receiving valid messages and 3D RTK Fixed
+        GPS_OK_FIX_TYPE_STATIC = 7,     ///< Receiving valid messages and static fixed, typically used for base stations
+        GPS_OK_FIX_TYPE_PPP = 8,        ///< Receiving valid messages and PPP, 3D position.
     };
 
     // GPS navigation engine settings. Not all GPS receivers support
@@ -312,6 +314,10 @@ public:
             return '5';
         case AP_GPS::GPS_OK_FIX_3D_RTK_FIXED:
             return '6';
+        case AP_GPS::GPS_OK_FIX_TYPE_STATIC:
+            return '7';
+        case AP_GPS::GPS_OK_FIX_TYPE_PPP:
+            return '8';
         }
         // should never reach here; compiler flags guarantees this.
         return '?';
