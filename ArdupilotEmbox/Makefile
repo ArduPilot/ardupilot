@@ -1,5 +1,11 @@
 
-ARDUPILOT_BOARD := $(call option_get,STRING,board)
+ardupilot_board := $(call option_get,STRING,board)
+
+ifeq (1,$(call option_get,BOOLEAN,debug))
+ardupilot_debug := --debug
+else
+ardupilot_debug := --disable-Logging
+endif
 
 $(CONFIGURE):
 	cd ../ && ( \
@@ -7,10 +13,10 @@ $(CONFIGURE):
 		./waf distclean ; \
 		./waf configure \
 			--toolchain=$(TOOLCHAIN_DIR)/embox \
-			--board $(ARDUPILOT_BOARD) \
+			--board $(ardupilot_board) \
 			--disable-networking \
 			--static \
-			--debug \
+			$(ardupilot_debug) \
 	)
 	touch $@
 
@@ -21,7 +27,7 @@ $(BUILD):
 	touch $@
 
 $(INSTALL):
-	cd ../build/$(ARDUPILOT_BOARD) && ( \
+	cd ../build/$(ardupilot_board) && ( \
 		$(EMBOX_GCC) -fno-exceptions -Wl,--wrap,malloc \
 			bin/arducopter \
 			-o $(PKG_INSTALL_DIR)/arducopter.o \
