@@ -58,8 +58,6 @@ namespace Embox {
         bool parse_cpu_set(const char* s, cpu_set_t* cpu_set) const;
 
         bool is_chardev_node(const char* path);
-        void set_imu_temp(float current) override;
-        void set_imu_target_temp(int8_t* target) override;
 
         uint32_t available_memory(void) override;
 
