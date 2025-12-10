@@ -50,9 +50,6 @@ void AP_Mount_SToRM32::update()
         // point to the angles given by a mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
             // mnt_target should have already been populated by set_angle_target() or set_rate_target(). Update target angle from rate if necessary
-            if (mnt_target.target_type == MountTargetType::RATE) {
-                update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
-            }
             resend_now = true;
             break;
 
@@ -89,6 +86,11 @@ void AP_Mount_SToRM32::update()
         default:
             // we do not know this mode so do nothing
             break;
+    }
+
+    // update angle targets from angle rates
+    if (mnt_target.target_type == MountTargetType::RATE) {
+        update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
     }
 
     // resend target angles at least once per second
