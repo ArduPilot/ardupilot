@@ -52,7 +52,7 @@ const AP_Param::GroupInfo FlightAxis::var_info[] = {
     // @DisplayName: FlightAxis IMU synthetic sample rate
     // @Description: FlightAxis IMU synthetic sample rate
     // @User: Advanced
-    AP_GROUPINFO("SAMPLEHZ", 2, FlightAxis, _samplehz, 5000),
+    AP_GROUPINFO("SAMPLEHZ", 2, FlightAxis, _samplehz, 2000),
     AP_GROUPEND
 };
 
@@ -158,7 +158,7 @@ FlightAxis::FlightAxis(const char *frame_str) :
     AP_Param::setup_object_defaults(this, var_info);
 
     use_time_sync = false;
-    sync_imus_to_frames = true;
+    flightaxis_sync_imus_to_frames = true;  // tell the IMUs to advance on each frame that is processed
     rate_hz = 250 / target_speedup;
     if(strstr(frame_str, "helidemix") != nullptr) {
         _options.set(_options | uint32_t(Option::HeliDemix));
@@ -247,11 +247,6 @@ bool FlightAxis::soap_request_start(const char *action, const char *fmt, ...)
         socknext = nullptr;
         sock_insem.signal();
     }
-
-    if (sock == nullptr) {
-        return false;
-    }
-    sock_insem.signal();
 
     char *req;
     asprintf(&req, R"(POST / HTTP/1.1
@@ -490,8 +485,6 @@ bool FlightAxis::process_reply_message()
 
 bool FlightAxis::wait_for_sample(const struct sitl_input &input)
 {
-    uint32_t frame_count = 0;
-    uint32_t frame_tries = 0;
     double dt_seconds = 0;
     const float SAMPLE_INTERVAL_S = 1.0f / _samplehz.get();
     const float SAMPLE_INTERVAL_MIN_S = (SAMPLE_INTERVAL_S/2);   // smallest interval before moving on to the next
@@ -516,12 +509,10 @@ bool FlightAxis::wait_for_sample(const struct sitl_input &input)
                 if (is_zero(last_time_s)) {
                     last_time_s = state.m_currentPhysicsTime_SEC - SAMPLE_INTERVAL_S;
                 }
-                frame_count++;
                 dt_seconds = next_state.m_currentPhysicsTime_SEC - last_dt_sample_s;
                 last_delta_time_s = next_state.m_currentPhysicsTime_SEC - last_time_s;
                 last_dt_sample_s = next_state.m_currentPhysicsTime_SEC;
             }
-            frame_tries++;
         } while (is_zero(dt_seconds));
         // adjust the sample interval so that the number of samples in a frame is an integer
         // this prevents very small dt's which can cause havoc with flight control
@@ -546,7 +537,7 @@ bool FlightAxis::wait_for_sample(const struct sitl_input &input)
 // @LoggerMessage: RF
 // @Description: RealFlight mode messages
 // @Field: TimeUS: Time since system startup
-// @Field: Dt: delta time between this frame and the previous frae=me
+// @Field: Dt: delta time between this frame and the previous frame
 // @Field: Fps: frames-per-second implied by the current delta time
         AP::logger().WriteStreaming("RF", "TimeUS,Dt,Fps", "QdI", time_now, dt, uint32_t(roundf(1/dt)));
     }
