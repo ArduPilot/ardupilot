@@ -85,6 +85,7 @@ EXT_HW_RADIOLINK_MINI_PIX               3
 # the values come from the APJ_BOARD_ID in the hwdef files here:
 # https://github.com/ArduPilot/ardupilot/tree/master/libraries/AP_HAL_ChibiOS/hwdef
 
+AP_HW_PI0STFALIA                       21
 AP_HW_CUBEYELLOW                      120
 AP_HW_OMNIBUSF7V2                     121
 AP_HW_KAKUTEF4                        122
