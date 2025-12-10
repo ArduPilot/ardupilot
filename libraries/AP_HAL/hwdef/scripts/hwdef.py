@@ -595,8 +595,12 @@ class HWDef:
             if len(a) > 1 and a[1].startswith('probe'):
                 probe = a[1]
 
+            # these two are aliases:
+            if probe == 'probe_ICM20948_SPI':
+                probe = 'probe_ICM20948'
+
             expected_device_count = 1
-            if driver == 'AK09916' and probe == 'probe_ICM20948':
+            if driver == 'AK09916' and probe in {'probe_ICM20948', 'probe_ICM20948_I2C'}:
                 expected_device_count = 1
             elif driver == 'AK09916' and probe != 'probe':
                 expected_device_count = 0
@@ -626,7 +630,7 @@ class HWDef:
                 elif d.startswith("I2C:"):
                     devlist.append(self.i2c_dev_to_object(d))
                 elif ((driver == 'AK8963' and probe == 'probe_mpu9250') or
-                      (driver == 'AK09916' and probe == 'probe_ICM20948') and
+                      (driver == 'AK09916' and probe in {'probe_ICM20948', 'probe_ICM20948_I2C'}) and
                       d.isdigit()):
                     devlist.append(d)
                 else:
@@ -676,33 +680,71 @@ class HWDef:
             n = len(devlist)+1
             devlist.append('HAL_MAG_PROBE%u' % n)
 
-            args = []
-            for dev in compass.devlist:
-                if isinstance(dev, I2CDev):
-                    if dev.buses_to_probe == 'SINGLE':
-                        busnum = str(dev.busnum)
-                    elif dev.buses_to_probe in {'ALL', 'ALL_EXTERNAL', 'ALL_INTERNAL'}:
-                        busnum = 'b'
-                    else:
-                        raise ValueError("Unexpected {buses_to_probe=}")
-                    args.extend(["GET_I2C_DEVICE(%s,0x%02x)" % (busnum, dev.busaddr)])
-                elif isinstance(dev, SPIDev):
-                    args.extend([f'hal.spi->get_device("{dev.name}")'])
-                elif dev.isdigit():
-                    args.extend([str(dev)])
+            def i2c_dev_as_arguments_string(dev):
+                if dev.buses_to_probe == 'SINGLE':
+                    busnum = str(dev.busnum)
+                elif dev.buses_to_probe in {'ALL', 'ALL_EXTERNAL', 'ALL_INTERNAL'}:
+                    busnum = 'b'
                 else:
-                    raise ValueError("unexpected devbit {dev=}")
+                    raise ValueError(f"Unexpected {dev.buses_to_probe=}")
+                return "%s, 0x%02x" % (busnum, dev.busaddr)
 
-            if compass.force_external is not None:
-                args.append(str(compass.force_external))
-            args.append(str(compass.rotation))
+            args = []
+            if probe == "probe":
+                for dev in compass.devlist:
+                    if isinstance(dev, I2CDev):
+                        compass_probe_method = 'probe_i2c_dev'
+                        args.append(f"DRIVER_{compass.driver}")
+                        args.append(f'AP_Compass_{compass.driver}::probe')
+                        args.append(i2c_dev_as_arguments_string(dev))
+                    elif isinstance(dev, SPIDev):
+                        compass_probe_method = 'probe_spi_dev'
+                        args.append(f"DRIVER_{compass.driver}")
+                        args.append(f'AP_Compass_{compass.driver}::probe')
+                        args.append(f'"{dev.name}"')
+                    else:
+                        raise ValueError(f"unexpected devbit {dev=}")
 
-            f.write(
-                '''#define HAL_MAG_PROBE%u %s \\
-                    if (_driver_enabled(DRIVER_%s)) { \\
-                        {add_backend(DRIVER_%s, AP_Compass_%s::%s(%s));RETURN_IF_NO_SPACE;} \\
-                    }\n'''
-                % (n, wrapper, driver, driver, driver, probe, ','.join(args)))
+                if compass.force_external is not None:
+                    args.append(str(compass.force_external))
+                args.append(str(compass.rotation))
+            elif probe == 'probe_ICM20948':
+                compass_probe_method = 'probe_ak09916_via_icm20948'
+                if len(compass.devlist) != 1:
+                    raise ValueError(f"Expected exactly one device for {probe} ({compass.devlist=})")
+                if isinstance(compass.devlist[0], I2CDev):
+                    devstring = i2c_dev_as_arguments_string(compass.devlist[0])
+                else:
+                    devstring = compass.devlist[0]
+                args.append(devstring)
+                if compass.force_external is not None:
+                    args.append(str(compass.force_external))
+                args.append(str(compass.rotation))
+            elif probe == 'probe_ICM20948_I2C':
+                compass_probe_method = 'probe_ak09916_via_icm20948_i2c'
+                if len(compass.devlist) != 1 or not compass.devlist[0].isdigit():
+                    raise ValueError(f"Expected an IMU instance number for {probe} ({compass.devlist=})")
+                args.append(compass.devlist[0])
+                args.append(str(compass.rotation))
+            elif probe == 'probe_mpu9250':
+                compass_probe_method = 'probe_ak8963_via_mpu9250'
+                if len(compass.devlist) != 1:
+                    raise ValueError(f"Expected exactly one device for {probe} ({compass.devlist=})")
+                if isinstance(compass.devlist[0], I2CDev):
+                    devstring = i2c_dev_as_arguments_string(compass.devlist[0])
+                else:
+                    devstring = compass.devlist[0]
+                args.append(devstring)
+                if compass.force_external is not None:
+                    args.append(str(compass.force_external))
+                args.append(str(compass.rotation))
+            else:
+                raise ValueError(f"Unknown probe method {probe=}")
+
+            probe_call = f'{compass_probe_method}({", ".join(args)})'
+            f.write(f'#define HAL_MAG_PROBE{n} if (_driver_enabled(DRIVER_{driver})) '
+                    f'{{ {wrapper} {{{probe_call};RETURN_IF_NO_SPACE;}} }}\n')
+
             f.write(f"#undef AP_COMPASS_{driver}_ENABLED\n#define AP_COMPASS_{driver}_ENABLED 1\n")
         if len(devlist) > 0:
             f.write('#define HAL_MAG_PROBE_LIST %s\n\n' % ';'.join(devlist))
