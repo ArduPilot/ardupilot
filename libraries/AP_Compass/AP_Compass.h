@@ -506,10 +506,16 @@ private:
     // helper probe functions
     void probe_ak09916_via_icm20948(uint8_t i2c_bus, uint8_t ak09916_addr, uint8_t icm20948_addr, bool external, Rotation rotation);
     void probe_ak09916_via_icm20948(uint8_t ins_instance, Rotation rotation);
+    void probe_ak8963_via_mpu9250(uint8_t i2c_bus, uint8_t ak8963_addr, Rotation rotation);
     void probe_ak8963_via_mpu9250(uint8_t imu_instance, Rotation rotation);
 
     using probe_i2c_dev_probefn_t = AP_Compass_Backend* (*)(AP_HAL::OwnPtr<AP_HAL::Device>, bool, Rotation);
     void probe_i2c_dev(DriverType driver_type, probe_i2c_dev_probefn_t probefn, uint8_t i2c_bus, uint8_t i2c_addr, bool external, Rotation rotation);
+
+    // short-lived method which expectes a probe function that doesn't
+    // offer the ability to specify the compass as external:
+    using probe_i2c_dev_noexternal_probefn_t = AP_Compass_Backend* (*)(AP_HAL::OwnPtr<AP_HAL::Device>, Rotation);
+    void probe_i2c_dev(DriverType driver_type, probe_i2c_dev_noexternal_probefn_t, uint8_t i2c_bus, uint8_t i2c_addr, Rotation rotation);
 
     using probe_spi_dev_probefn_t = AP_Compass_Backend* (*)(AP_HAL::OwnPtr<AP_HAL::Device>, bool, Rotation);
     void probe_spi_dev(DriverType driver_type, probe_spi_dev_probefn_t probefn, const char *name, bool external, Rotation rotation);
