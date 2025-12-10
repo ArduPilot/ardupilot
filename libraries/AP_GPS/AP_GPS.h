@@ -183,7 +183,7 @@ public:
     /// static_assert in AP_GPS.cpp
     enum class Jamming {
         UNKNOWN =   0, ///< The GPS receiver does not provide GPS signal jamming info
-        OK =        1, ///< The GPS receiver detected no signal jamming
+        NOT_JAMMED =        1, ///< The GPS receiver detected no signal jamming
         MITIGATED = 2, ///< The GPS receiver detected and mitigated signal jamming
         DETECTED =  3, ///< The GPS receiver detected signal jamming
     };
@@ -192,7 +192,7 @@ public:
     /// static_assert in AP_GPS.cpp
     enum class Spoofing {
         UNKNOWN =   0, ///< The GPS receiver does not provide GPS signal spoofing info
-        OK =        1, ///< The GPS receiver detected no signal spoofing
+        NOT_SPOOFED =        1, ///< The GPS receiver detected no signal spoofing
         MITIGATED = 2, ///< The GPS receiver detected and mitigated signal spoofing
         DETECTED =  3, ///< The GPS receiver detected signal spoofing but still has a fix
     };

@@ -128,12 +128,12 @@ static_assert(static_cast<uint8_t>(AP_GPS::Authentication::OK) == (uint8_t)GPS_A
 static_assert(static_cast<uint8_t>(AP_GPS::Authentication::DISABLED) == (uint8_t)GPS_AUTHENTICATION_STATE_DISABLED, "DISABLED incorrect");
 
 static_assert(static_cast<uint8_t>(AP_GPS::Jamming::UNKNOWN) == (uint8_t)GPS_JAMMING_STATE_UNKNOWN, "UNKNOWN incorrect");
-static_assert(static_cast<uint8_t>(AP_GPS::Jamming::OK) == (uint8_t)GPS_JAMMING_STATE_OK, "OK incorrect");
+static_assert(static_cast<uint8_t>(AP_GPS::Jamming::NOT_JAMMED) == (uint8_t)GPS_JAMMING_STATE_NOT_JAMMED, "NOT_JAMMED incorrect");
 static_assert(static_cast<uint8_t>(AP_GPS::Jamming::DETECTED) == (uint8_t)GPS_JAMMING_STATE_DETECTED, "DETECTED incorrect");
 static_assert(static_cast<uint8_t>(AP_GPS::Jamming::MITIGATED) == (uint8_t)GPS_JAMMING_STATE_MITIGATED, "MITIGATED incorrect");
 
 static_assert(static_cast<uint8_t>(AP_GPS::Spoofing::UNKNOWN) == (uint8_t)GPS_SPOOFING_STATE_UNKNOWN, "UNKNOWN incorrect");
-static_assert(static_cast<uint8_t>(AP_GPS::Spoofing::OK) == (uint8_t)GPS_SPOOFING_STATE_OK, "OK incorrect");
+static_assert(static_cast<uint8_t>(AP_GPS::Spoofing::NOT_SPOOFED) == (uint8_t)GPS_SPOOFING_STATE_NOT_SPOOFED, "NOT_SPOOFED incorrect");
 static_assert(static_cast<uint8_t>(AP_GPS::Spoofing::DETECTED) == (uint8_t)GPS_SPOOFING_STATE_DETECTED, "DETECTED incorrect");
 static_assert(static_cast<uint8_t>(AP_GPS::Spoofing::MITIGATED) == (uint8_t)GPS_SPOOFING_STATE_MITIGATED, "MITIGATED incorrect");
 #endif
