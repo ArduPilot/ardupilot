@@ -88,10 +88,10 @@ Q_M_BAT_VOLT_MIN 40
 Q_M_THST_HOVER   0.338
 
 # soften VTOL position controller
-Q_P_POSXY_P      0.5
-Q_P_VELXY_D      0.17
-Q_P_VELXY_I      0.35
-Q_P_VELXY_P      0.7
+Q_P_NE_POS_P      0.5
+Q_P_NE_VEL_D      0.17
+Q_P_NE_VEL_I      0.35
+Q_P_NE_VEL_P      0.7
 
 Q_RTL_ALT        40
 Q_TRANS_DECEL    1.5
