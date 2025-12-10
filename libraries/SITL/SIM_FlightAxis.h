@@ -29,8 +29,6 @@
 
 namespace SITL {
 
-#define SAMPLES_PER_FRAME 10
-
 /*
   a FlightAxis simulator
  */

@@ -378,8 +378,9 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
         is_smoothed = true;
     }
     fdm.timestamp_us = time_now_us;
-    if (sync_imus_to_frames) {
-        fdm.frame_num++;
+    // keep track of the number of frames processed so that the IMUs can follow
+    if (flightaxis_sync_imus_to_frames) {
+        fdm.flightaxis_imu_frame_num++;
     }
 
     if (fdm.home.lat == 0 && fdm.home.lng == 0) {
