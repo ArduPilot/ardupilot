@@ -665,7 +665,7 @@ AP_GPS_SBF::process_message(void)
             switch (rf_band_data.Info & (uint8_t)0b1111) {
             case 1:
             case 2:
-                // As long as there is indicated but unmitigated spoofing in one band, don't report the overall state as mitigated
+                // As long as there is indicated but unmitigated jamming in one band, don't report the overall state as mitigated
                 if (state.jamming_state == static_cast<uint8_t>(AP_GPS::Jamming::OK)) {
                     state.jamming_state = static_cast<uint8_t>(AP_GPS::Jamming::MITIGATED);
                 }

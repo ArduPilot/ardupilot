@@ -119,7 +119,7 @@ static_assert(static_cast<uint32_t>(AP_GPS::Errors::SOFTWARE) == (uint32_t)GPS_S
 static_assert(static_cast<uint32_t>(AP_GPS::Errors::ANTENNA) == (uint32_t)GPS_SYSTEM_ERROR_ANTENNA, "ANTENNA incorrect");
 static_assert(static_cast<uint32_t>(AP_GPS::Errors::EVENT_CONGESTION) == (uint32_t)GPS_SYSTEM_ERROR_EVENT_CONGESTION, "EVENT_CONGESTION incorrect");
 static_assert(static_cast<uint32_t>(AP_GPS::Errors::CPU_OVERLOAD) == (uint32_t)GPS_SYSTEM_ERROR_CPU_OVERLOAD, "CPU_OVERLOAD incorrect");
-static_assert(static_cast<uint32_t>(AP_GPS::Errors::OUTPUT_CONGESTION) == (uint32_t)GPS_SYSTEM_ERROR_OUTPUT_CONGESTION, "OUTPUT_CONGESTION inccorect");
+static_assert(static_cast<uint32_t>(AP_GPS::Errors::OUTPUT_CONGESTION) == (uint32_t)GPS_SYSTEM_ERROR_OUTPUT_CONGESTION, "OUTPUT_CONGESTION incorrect");
 
 static_assert(static_cast<uint8_t>(AP_GPS::Authentication::UNKNOWN) == (uint8_t)GPS_AUTHENTICATION_STATE_UNKNOWN, "UNKNOWN incorrect");
 static_assert(static_cast<uint8_t>(AP_GPS::Authentication::INITIALIZING) == (uint8_t)GPS_AUTHENTICATION_STATE_INITIALIZING, "INITIALIZING incorrect");
