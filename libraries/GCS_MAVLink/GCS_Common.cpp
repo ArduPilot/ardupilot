@@ -6529,10 +6529,17 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 #endif  // AP_GPS_GPS2_RTK_SENDING_ENABLED
 #if AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
-    case MSG_GNSS_INTEGRITY:
+    case MSG_GNSS_INTEGRITY:{
         CHECK_PAYLOAD_SIZE(GNSS_INTEGRITY);
-        AP::gps().send_mavlink_gnss_integrity(chan, AP::gps().primary_sensor());
+        AP_GPS &gps = AP::gps();
+
+        for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+            if (gps.status(i) > AP_GPS::NO_GPS) {
+                gps.send_mavlink_gnss_integrity(chan, i);
+            }
+        }
         break;
+    }
 #endif  // AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED
 #if AP_AHRS_ENABLED
     case MSG_LOCAL_POSITION:
