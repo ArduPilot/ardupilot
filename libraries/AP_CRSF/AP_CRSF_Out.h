@@ -23,7 +23,9 @@
 #if AP_CRSF_OUT_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/MinimalScheduler.h>
 #include <AP_Param/AP_Param.h>
+#include <GCS_MAVLink/GCS.h>
 #include "AP_CRSF_Protocol.h"
 #include "AP_CRSF_OutManager.h"
 
@@ -51,9 +53,6 @@ public:
 
     // rc periodic update, called from loop
     void update() override;
-
-    // main loop for the CRSF output thread
-    void loop();
 
     // main loop for the CRSF output thread
     void crsf_out_thread();
@@ -86,8 +85,8 @@ private:
         FAILED,
     };
 
-    bool should_do_status_update();
-
+    // main loop for the CRSF output thread
+    void run_state_machine();
     // sends RC frames at the configured rate
     void send_rc_frame();
     // send a baudrate proposal
@@ -97,9 +96,10 @@ private:
     // send a device info frame
     void send_device_info();
     // send the link stats frame
-    void send_link_stats_tx(uint32_t fps);
+    void send_link_stats_tx();
     // low bandwidth heartbeat to provoke telemetry return
     void send_heartbeat();
+    bool should_do_status_update();
 
     static AP_CRSF_Out* _singleton;
     static uint8_t _num_instances;
@@ -126,6 +126,21 @@ private:
     AP_RCProtocol_CRSF* _crsf_port;
     AP_HAL::UARTDriver* _uart;
     AP_CRSF_OutManager& _frontend;
+
+    TickScheduler _scheduler;
+
+    enum TaskIds {
+        LINK_STATS,
+        RC_FRAME,
+        NUM_TASKS
+    };
+
+    SchedulerTask _tasks[NUM_TASKS]
+    {
+        { FUNCTOR_BIND_MEMBER(&AP_CRSF_Out::send_link_stats_tx, void), 2, true },
+        { FUNCTOR_BIND_MEMBER(&AP_CRSF_Out::send_rc_frame, void), 250, true },
+    };
+
 };
 
 namespace AP {
