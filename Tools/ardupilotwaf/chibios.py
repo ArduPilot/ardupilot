@@ -378,6 +378,9 @@ class generate_apj(Task.Task):
             # we omit build_time when we don't have build_dates so that apj
             # file is identical for same git hash and compiler
             d["build_time"] = int(time.time())
+        if self.env.AP_SIGNED_FIRMWARE and self.env.PRIVATE_KEY:
+            # The firmware file was signed during the build process, so set the flag
+            d['signed_firmware'] = True
         apj_file = self.outputs[0].abspath()
         f = open(apj_file, "w")
         f.write(json.dumps(d, indent=4))
