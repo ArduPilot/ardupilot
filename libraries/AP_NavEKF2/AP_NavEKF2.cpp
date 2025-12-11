@@ -1206,6 +1206,12 @@ bool NavEKF2::use_compass(void) const
     return core[primary].use_compass();
 }
 
+// are we using a gps?
+bool NavEKF2::using_gps(void) const
+{
+    return _fusionModeGPS != 3;
+}
+
 // write the raw optical flow measurements
 // rawFlowQuality is a measured of quality between 0 and 255, with 255 being the best quality
 // rawFlowRates are the optical flow rates in rad/sec about the X and Y sensor axes.
