@@ -214,7 +214,7 @@ public:
 
     // encode channels into a variable bit length format (CRSFv3)
     // returns number of bytes written to payload
-    static uint8_t encode_variable_bit_channels(uint8_t *payload, const uint16_t *values, uint8_t nchannels);
+    static uint8_t encode_variable_bit_channels(uint8_t *payload, const uint16_t *values, uint8_t nchannels, uint8_t start_chan = 0);
 
     // process a device info frame for version information
     static bool process_device_info_frame(ParameterDeviceInfoFrame* info, VersionInfo* version, bool fakerx);

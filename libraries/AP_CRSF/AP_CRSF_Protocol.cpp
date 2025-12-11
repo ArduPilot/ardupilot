@@ -172,7 +172,7 @@ void AP_CRSF_Protocol::decode_variable_bit_channels(const uint8_t* payload, uint
 }
 
 // encode 16 channels of PWM values into a CRSFv3 variable bit length frame payload
-uint8_t AP_CRSF_Protocol::encode_variable_bit_channels(uint8_t *payload, const uint16_t *values, uint8_t nchannels)
+uint8_t AP_CRSF_Protocol::encode_variable_bit_channels(uint8_t *payload, const uint16_t *values, uint8_t nchannels, uint8_t start_chan)
 {
     // We will use 11-bit resolution which is standard for CRSFv3
     const uint8_t channelBits = CRSF_SUBSET_RC_RES_BITS_11B;
@@ -180,7 +180,7 @@ uint8_t AP_CRSF_Protocol::encode_variable_bit_channels(uint8_t *payload, const u
     AP_RCProtocol_CRSF::SubsetChannelsFrame* channel_data = (AP_RCProtocol_CRSF::SubsetChannelsFrame*)payload;
     memset(payload, 0, 23); // 1 byte header + 22 bytes for 16 channels
 
-    channel_data->starting_channel = 0;
+    channel_data->starting_channel = start_chan;
     channel_data->res_configuration = CRSF_SUBSET_RC_RES_CONF_11B;
 
     uint32_t writeValue = 0;
