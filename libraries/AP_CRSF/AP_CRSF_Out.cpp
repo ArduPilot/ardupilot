@@ -52,9 +52,14 @@ extern const AP_HAL::HAL& hal;
 AP_CRSF_Out::AP_CRSF_Out(AP_HAL::UARTDriver* uart, uint8_t instance, AP_CRSF_OutManager& frontend) :
     _instance_idx(instance), _uart(uart), _frontend(frontend)
 {
-    if (_singleton == nullptr) {
-        _singleton = this;
+    // in the future we could consider supporting multiple output handlers
+    // but since EAHRS is a singleton this may have limited utility
+    if (_singleton != nullptr) {
+        AP_HAL::panic("Duplicate CRSF_Out handler");
     }
+
+    _singleton = this;
+
     init(uart);
 }
 
