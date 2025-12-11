@@ -61,9 +61,6 @@ void AP_Mount_SoloGimbal::update()
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
             // targets are stored while handling the incoming mavlink message
             _gimbal.set_lockedToBody(false);
-            if (mnt_target.target_type == MountTargetType::RATE) {
-                update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
-            }
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
@@ -99,6 +96,10 @@ void AP_Mount_SoloGimbal::update()
         default:
             // we do not know this mode so do nothing
             break;
+    }
+
+    if (mnt_target.target_type == MountTargetType::RATE) {
+        update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
     }
 }
 
