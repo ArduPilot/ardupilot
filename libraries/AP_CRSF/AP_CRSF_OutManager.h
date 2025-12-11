@@ -55,6 +55,7 @@ private:
     AP_CRSF_Protocol* _instances[SERIALMANAGER_NUM_PORTS];
 
     AP_Int16 _rate_hz;
+    AP_Float _reporting_rate_hz;
 };
 
 #endif // AP_CRSF_OUT_ENABLED
