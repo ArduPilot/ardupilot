@@ -376,9 +376,9 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
     }
 
     // check if flight mode requires GPS
-    bool mode_requires_gps = copter.flightmode->requires_GPS() || fence_requires_gps || (copter.simple_mode == Copter::SimpleMode::SUPERSIMPLE)
+    bool mode_requires_gps = fence_requires_gps || (copter.simple_mode == Copter::SimpleMode::SUPERSIMPLE)
                             // skip GPS checks if we only require position and our position is ok
-                            || (copter.flightmode->requires_position() && !copter.position_ok());
+                            || (copter.flightmode->requires_position() && (!copter.position_ok() || ahrs.using_gps()));
 
     // call parent gps checks
     if (mode_requires_gps) {
@@ -459,15 +459,17 @@ bool AP_Arming_Copter::proximity_checks(bool display_failure) const
 bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
 {
     // check if flight mode requires GPS
-    bool mode_requires_gps = copter.flightmode->requires_GPS();
+    bool mode_requires_position = copter.flightmode->requires_position();
 
     // always check if inertial nav has started and is ready
     const auto &ahrs = AP::ahrs();
     char failure_msg[100] = {};
-    if (!ahrs.pre_arm_check(mode_requires_gps, failure_msg, sizeof(failure_msg))) {
+    if (!ahrs.pre_arm_check(mode_requires_position, failure_msg, sizeof(failure_msg))) {
         check_failed(display_failure, "AHRS: %s", failure_msg);
         return false;
     }
+
+    bool mode_requires_gps = mode_requires_position && ahrs.using_gps();
 
     // check if fence requires GPS
     bool fence_requires_gps = false;
@@ -657,7 +659,8 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
         return false;
     }
 
-    if (copter.flightmode->requires_position() && !ahrs.ensure_origin_is_set()) {
+    // Last ditch to get an origin if the GPS has not already provided one
+    if (copter.flightmode->requires_position() && !ahrs.set_origin_from_params_maybe()) {
         check_failed(true, "No origin set");
         return false;
     }
