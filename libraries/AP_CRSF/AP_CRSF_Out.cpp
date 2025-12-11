@@ -354,7 +354,7 @@ void AP_CRSF_Out::send_aux_rc_frame()
 // sends RC frames at the configured rate
 void AP_CRSF_Out::send_rc_frame(uint8_t start_chan, uint8_t nchan)
 {
-    uint16_t channels[nchan] {};
+    uint16_t channels[CRSF_MAX_CHANNELS] {};
     for (uint8_t i = start_chan; i < start_chan + nchan; ++i) {
         SRV_Channel *c = SRV_Channels::srv_channel(i);
         if (c != nullptr) {
