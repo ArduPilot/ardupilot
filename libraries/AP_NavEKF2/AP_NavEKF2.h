@@ -172,6 +172,9 @@ public:
     // reporting via ahrs.use_compass()
     bool use_compass(void) const;
 
+    // are we using a gps?
+    bool using_gps(void) const;
+
     // write the raw optical flow measurements
     // rawFlowQuality is a measured of quality between 0 and 255, with 255 being the best quality
     // rawFlowRates are the optical flow rates in rad/sec about the X and Y sensor axes.
