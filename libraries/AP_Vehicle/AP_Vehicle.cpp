@@ -433,6 +433,11 @@ void AP_Vehicle::setup()
     AP::gripper().init();
 #endif
 
+#if AP_CRSF_OUT_ENABLED
+    // call crsf_out init before init_ardupilot and after extrenalAHRS to allow for external sensors
+    crsf_out.init();
+#endif
+
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
 
