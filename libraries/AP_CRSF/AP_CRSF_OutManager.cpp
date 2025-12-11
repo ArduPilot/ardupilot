@@ -49,7 +49,6 @@ AP_CRSF_Out* AP_CRSF_OutManager::create_instance(AP_HAL::UARTDriver* uart)
     if (crsf_out == nullptr) {
         return nullptr;
     }
-    crsf_out->init(uart);
     return crsf_out;
 #else
     return nullptr;
