@@ -31,7 +31,7 @@
 #include <AP_RCProtocol/AP_RCProtocol_CRSF.h>
 #include <GCS_MAVLink/GCS.h>
 
-#define CRSF_RCOUT_DEBUG
+//#define CRSF_RCOUT_DEBUG
 //#define CRSF_RCOUT_DEBUG_FRAME
 #ifdef CRSF_RCOUT_DEBUG
 # include <AP_HAL/AP_HAL.h>
@@ -186,7 +186,7 @@ void AP_CRSF_Out::run_state_machine()
         // ArduPilot requires 3 good RC frames before it considers the protocol
         // detected, so keep sending RC frames until the rx registers as active
         // because we received something back
-        send_rc_frame();
+        send_aetr_rc_frame();
 
         if (should_do_status_update()) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CRSFOut: waiting for RC lock");
@@ -238,6 +238,7 @@ void AP_CRSF_Out::run_state_machine()
                 _baud_neg_start_us = 0;
             } else { // NEGOTIATING_1M
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "CRSFOut: baud negotiation failed, using 416kBd");
+                _scheduler.init(_tasks, DEFAULT_CRSF_OUTPUT_RATE);
                 _state = State::RUNNING;
             }
             break;
@@ -337,13 +338,24 @@ bool AP_CRSF_Out::decode_crsf_packet(const AP_CRSF_Protocol::Frame& _frame)
     return true;
 }
 
-// sends RC frames at the configured rate
-void AP_CRSF_Out::send_rc_frame()
+// send control frame, this goes out at the loop rate and so
+// needs to be kept small
+void AP_CRSF_Out::send_aetr_rc_frame()
 {
-    uint16_t channels[CRSF_MAX_CHANNELS] {};
-    const uint8_t nchan = MIN(NUM_SERVO_CHANNELS, (uint8_t)CRSF_MAX_CHANNELS);
+    send_rc_frame(0, 4);
+}
 
-    for (uint8_t i = 0; i < nchan; ++i) {
+// send aux frame, this can go out at a low rate - 50Hz
+void AP_CRSF_Out::send_aux_rc_frame()
+{
+    send_rc_frame(4, MIN(NUM_SERVO_CHANNELS, (uint8_t)CRSF_MAX_CHANNELS) - 4);
+}
+
+// sends RC frames at the configured rate
+void AP_CRSF_Out::send_rc_frame(uint8_t start_chan, uint8_t nchan)
+{
+    uint16_t channels[nchan] {};
+    for (uint8_t i = start_chan; i < start_chan + nchan; ++i) {
         SRV_Channel *c = SRV_Channels::srv_channel(i);
         if (c != nullptr) {
             channels[i] = c->get_output_pwm();
@@ -356,7 +368,7 @@ void AP_CRSF_Out::send_rc_frame()
 
     frame.device_address = DeviceAddress::CRSF_ADDRESS_SYNC_BYTE;
     frame.type = FrameType::CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED;
-    uint8_t payload_len = AP_CRSF_Protocol::encode_variable_bit_channels(frame.payload, channels, nchan);
+    uint8_t payload_len = AP_CRSF_Protocol::encode_variable_bit_channels(frame.payload, channels, nchan, start_chan);
     frame.length = payload_len + 2; // +1 for type, +1 for CRC
 
     _crsf_port->write_frame(&frame);

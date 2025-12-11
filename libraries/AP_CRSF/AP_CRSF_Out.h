@@ -88,7 +88,11 @@ private:
     // main loop for the CRSF output thread
     void run_state_machine();
     // sends RC frames at the configured rate
-    void send_rc_frame();
+    void send_rc_frame(uint8_t start_chan, uint8_t nchan);
+    // send control frame
+    void send_aetr_rc_frame();
+    // send aux frame
+    void send_aux_rc_frame();
     // send a baudrate proposal
     void send_speed_proposal(uint32_t baudrate);
     // send a ping frame
@@ -131,14 +135,16 @@ private:
 
     enum TaskIds {
         LINK_STATS,
-        RC_FRAME,
+        AETR_RC_FRAME,
+        AUX_RC_FRAME,
         NUM_TASKS
     };
 
     SchedulerTask _tasks[NUM_TASKS]
     {
         { FUNCTOR_BIND_MEMBER(&AP_CRSF_Out::send_link_stats_tx, void), 2, true },
-        { FUNCTOR_BIND_MEMBER(&AP_CRSF_Out::send_rc_frame, void), 250, true },
+        { FUNCTOR_BIND_MEMBER(&AP_CRSF_Out::send_aetr_rc_frame, void), 400, true },
+        { FUNCTOR_BIND_MEMBER(&AP_CRSF_Out::send_aux_rc_frame, void), 50, true },
     };
 
 };
