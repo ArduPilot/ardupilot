@@ -25,7 +25,9 @@
 #if AP_CRSF_OUT_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/MinimalScheduler.h>
 #include <AP_Param/AP_Param.h>
+#include <GCS_MAVLink/GCS.h>
 #include "AP_CRSF_Protocol.h"
 #include "AP_CRSF_OutManager.h"
 
@@ -54,8 +56,8 @@ public:
     // rc periodic update, called from loop
     void update() override;
 
-    // main loop for the CRSF output thread
-    void loop();
+    // PWM push called from SRV_Channels::push
+    void push();
 
     // main loop for the CRSF output thread
     void crsf_out_thread();
@@ -88,20 +90,29 @@ private:
         FAILED,
     };
 
-    bool should_do_status_update();
+    // main loop for the CRSF output thread
+    void run_state_machine();
+    void update_rates_status();
 
     // sends RC frames at the configured rate
-    void send_rc_frame();
+    void send_rc_frame(uint8_t start_chan, uint8_t nchan);
+    // send control frame
+    void send_aetr_rc_frame();
+    // send aux frame
+    void send_aux_rc_frame();
     // send a baudrate proposal
     void send_speed_proposal(uint32_t baudrate);
+    // send a latency ping frame
+    void send_latency_ping_frame();
     // send a ping frame
     void send_ping_frame(bool force = false);
     // send a device info frame
     void send_device_info();
     // send the link stats frame
-    void send_link_stats_tx(uint32_t fps);
+    void send_link_stats_tx();
     // low bandwidth heartbeat to provoke telemetry return
     void send_heartbeat();
+    bool should_do_status_update();
 
     static AP_CRSF_Out* _singleton;
     static uint8_t _num_instances;
@@ -116,7 +127,14 @@ private:
     uint32_t _target_baudrate;
     uint32_t _last_liveness_check_us;
     uint32_t _last_ping_frame_ms;
-    uint8_t _instance_idx;
+    uint8_t _instance_idx = 0; // Instance index (0, 1, 2...) for multi-instance use
+    // rate counters
+    uint32_t _last_rate_update_ms;
+    uint16_t _rate_rc_counter;
+    uint32_t _last_latency_ping_us;
+    uint32_t _latency_us;
+    // latch for PWM push
+    volatile bool _pwm_is_fresh;
 
     AP_CRSF_Protocol::VersionInfo version;
     BaudNegotiationResult _baud_negotiation_result;
@@ -128,6 +146,27 @@ private:
     AP_RCProtocol_CRSF* _crsf_port;
     AP_HAL::UARTDriver& _uart;
     AP_CRSF_OutManager& _frontend;
+
+    TickScheduler _scheduler;
+
+    enum TaskIds {
+        AETR_RC_FRAME,
+        AUX_RC_FRAME,
+        LINK_STATS,
+        LATENCY_PING,
+        REPORTING,
+        NUM_TASKS
+    };
+
+    TickSchedulerTask _tasks[NUM_TASKS]
+    {   // tasks are in priority order
+        { FUNCTOR_BIND_MEMBER(&AP_CRSF_Out::send_aetr_rc_frame, void), 50, true },  // 50Hz is a fallback rate in case push() does not fire
+        { FUNCTOR_BIND_MEMBER(&AP_CRSF_Out::send_aux_rc_frame, void), 50, true },
+        { FUNCTOR_BIND_MEMBER(&AP_CRSF_Out::send_link_stats_tx, void), 2, true },
+        { FUNCTOR_BIND_MEMBER(&AP_CRSF_Out::send_latency_ping_frame, void), 1, true },
+        { FUNCTOR_BIND_MEMBER(&AP_CRSF_Out::update_rates_status, void), 0, true },
+    };
+
 };
 
 namespace AP {
