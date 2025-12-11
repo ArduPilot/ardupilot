@@ -28,6 +28,13 @@ $(BUILD):
 
 $(INSTALL):
 	cd ../build/$(ardupilot_board) && ( \
+		EMBOX_GCC_LINK=full $(EMBOX_GCC) -fno-exceptions -Wl,--wrap,malloc \
+			bin/arducopter \
+			-Wl,--cref -Wl,-Map $(PKG_INSTALL_DIR)/arducopter_full.map \
+			-o $(PKG_INSTALL_DIR)/arducopter_full.o \
+			-static lib/libArduCopter_libs.a \
+	)
+	cd ../build/$(ardupilot_board) && ( \
 		$(EMBOX_GCC) -fno-exceptions -Wl,--wrap,malloc \
 			bin/arducopter \
 			-o $(PKG_INSTALL_DIR)/arducopter.o \
