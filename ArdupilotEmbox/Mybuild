@@ -6,6 +6,8 @@ package ext_project.ardupilot
 @Build(stage=2, script="$(EXTERNAL_MAKE) configure build install")
 module arducopter {
 	option boolean debug=true
+	option boolean scripting=false
+	option boolean networking=false
 	option string board="sitl"
 
 	source "^BUILD/extbld/^MOD_PATH/install/arducopter.o"

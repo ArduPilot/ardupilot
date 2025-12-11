@@ -1,10 +1,19 @@
 
 ardupilot_board := $(call option_get,STRING,board)
+ardupilot_flags := 
 
 ifeq (1,$(call option_get,BOOLEAN,debug))
-ardupilot_debug := --debug
+ardupilot_flags += --debug
 else
-ardupilot_debug := --disable-Logging
+ardupilot_flags += --disable-Logging
+endif
+
+ifeq (0,$(call option_get,BOOLEAN,scripting))
+ardupilot_flags += --disable-scripting
+endif
+
+ifeq (0,$(call option_get,BOOLEAN,networking))
+ardupilot_flags += --disable-networking
 endif
 
 $(CONFIGURE):
@@ -14,9 +23,8 @@ $(CONFIGURE):
 		./waf configure \
 			--toolchain=$(TOOLCHAIN_DIR)/embox \
 			--board $(ardupilot_board) \
-			--disable-networking \
+			$(ardupilot_flags) \
 			--static \
-			$(ardupilot_debug) \
 	)
 	touch $@
 
