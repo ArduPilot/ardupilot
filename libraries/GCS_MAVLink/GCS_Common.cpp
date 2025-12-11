@@ -3880,8 +3880,15 @@ void GCS_MAVLINK::handle_system_time_message(const mavlink_message_t &msg)
     mavlink_msg_system_time_decode(&msg, &packet);
 
     AP::rtc().set_utc_usec(packet.time_unix_usec, AP_RTC::SOURCE_MAVLINK_SYSTEM_TIME);
+#if HAL_LOGGING_ENABLED
+    AP_Logger *logger = AP_Logger::get_singleton();
+    uint64_t time_unix = 0;
+    if (logger != nullptr && AP::rtc().get_utc_usec(time_unix)) {
+        logger->Write("UTC", "TimeUS,UnixTimeUS", "ss", "FF", "QQ", AP_HAL::micros64(), time_unix);
+    }
+#endif  // HAL_LOGGING_ENABLED
 }
-#endif
+#endif  // AP_RTC_ENABLED
 
 #if AP_CAMERA_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_int_t &packet)
