@@ -38,6 +38,18 @@ public:
 
 protected:
 
+    // Solo only supports ANGLE targets, but also can lock itself to the body for "retracted"
+    uint8_t natively_supported_mount_target_types() const override {
+        return (
+            (1U<<unsigned(MountTargetType::ANGLE)) |
+            (1U<<unsigned(MountTargetType::RETRACTED))
+            );
+    };
+
+    // send angle target in radians to gimbal
+    void send_target_angles(const MountAngleTarget& angle_rad) override;
+    void send_target_retracted() override;
+
     // returns true if heart beat should be suppressed for this gimbal
     bool suppress_heartbeat() const override { return true; }
 
