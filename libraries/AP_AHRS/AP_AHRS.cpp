@@ -1562,6 +1562,8 @@ bool AP_AHRS::set_origin(const Location &loc)
     return success;
 }
 
+// Record the current valid origin to parameters
+// This may save the user from having to set the origin manually when using position controlled modes without GPS
 void AP_AHRS::record_origin()
 {
     _origin_lat.set_and_save_ifchanged(state.origin.lat * 1.0e-7);
@@ -1569,7 +1571,7 @@ void AP_AHRS::record_origin()
     _origin_alt.set_and_save_ifchanged(state.origin.alt * 1.0e-2);
 }
 
-bool AP_AHRS::ensure_origin_is_set()
+bool AP_AHRS::set_origin_from_params_maybe()
 {
     if (state.origin_ok) {  // we already have an origin
         return true;
@@ -3619,6 +3621,34 @@ bool AP_AHRS::using_extnav_for_yaw(void) const
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         return EKF3.using_extnav_for_yaw();
+#endif
+#if AP_AHRS_SIM_ENABLED
+    case EKFType::SIM:
+#endif
+#if AP_AHRS_EXTERNAL_ENABLED
+    case EKFType::EXTERNAL:
+#endif
+        return false;
+    }
+    // since there is no default case above, this is unreachable
+    return false;
+}
+
+// check if using gps
+bool AP_AHRS::using_gps(void) const
+{
+    switch (active_EKF_type()) {
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        return EKF2.using_gps();
+#endif
+#if AP_AHRS_DCM_ENABLED
+    case EKFType::DCM:
+        return _gps_use != GPSUse::Disable;
+#endif
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        return EKF3.using_gps();
 #endif
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:

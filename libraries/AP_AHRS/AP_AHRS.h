@@ -256,7 +256,7 @@ public:
 
     // Set the origin to the last recorded location if there is one
     // This is useful for position controlled modes without GPS
-    bool ensure_origin_is_set();
+    bool set_origin_from_params_maybe();
 
 #if AP_AHRS_POSITION_RESET_ENABLED
     // Set the EKF's NE horizontal position states and their corresponding variances from the supplied WGS-84 location
@@ -451,6 +451,9 @@ public:
 
     // check if external nav is providing yaw
     bool using_extnav_for_yaw(void) const;
+
+    // check if GPS is being used to estimate position or velocity
+    bool using_gps(void) const;
 
     // set and save the ALT_M_NSE parameter value
     void set_alt_measurement_noise(float noise);
@@ -987,8 +990,8 @@ private:
     // primary is not good enough.
     EKFType fallback_active_EKF_type(void) const;
    
-    // Record the current valid origin
-    // This is useful for position controlled modes without GPS
+    // Record the current valid origin to parameters
+    // This may save the user from having to set the origin manually when using position controlled modes without GPS
     void record_origin();
 
     /*
