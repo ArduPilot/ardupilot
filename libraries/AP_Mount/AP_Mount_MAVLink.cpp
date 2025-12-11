@@ -23,62 +23,14 @@ void AP_Mount_MAVLink::update()
         return;
     }
 
-    // change to RC_TARGETING mode if RC input has changed
-    set_rctargeting_on_rcinput_change();
+    update_mnt_target();
 
-    // update based on mount mode
-    switch (get_mode()) {
-
-        // move mount to a "retracted" position.  We disable motors
-        case MAV_MOUNT_MODE_RETRACT:
-            // handled below
-            mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.angle_rad.set(Vector3f{0,0,0}, false);
-            send_gimbal_device_retract();
-            return;
-
-        // move mount to a neutral position, typically pointing forward
-        case MAV_MOUNT_MODE_NEUTRAL: {
-            const Vector3f &angle_bf_target = _params.neutral_angles.get();
-            mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
-            break;
-        }
-
-        case MAV_MOUNT_MODE_MAVLINK_TARGETING: {
-            // mavlink targets are stored while handling the incoming message set_angle_target() or set_rate_target()
-            break;
-        }
-
-        // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING:
-            update_mnt_target_from_rc_target();
-            break;
-
-        // point mount to a GPS point given by the mission planner
-        case MAV_MOUNT_MODE_GPS_POINT:
-            if (get_angle_target_to_roi(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        // point mount to Home location
-        case MAV_MOUNT_MODE_HOME_LOCATION:
-            if (get_angle_target_to_home(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        // point mount to another vehicle
-        case MAV_MOUNT_MODE_SYSID_TARGET:
-            if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        default:
-            // unknown mode so do nothing
-            break;
+    // FIXME: create and use MountTargetType::RETRACTED
+    if (get_mode() == MAV_MOUNT_MODE_RETRACT) {
+        mnt_target.target_type = MountTargetType::ANGLE;
+        mnt_target.angle_rad.set(Vector3f{0,0,0}, false);
+        send_gimbal_device_retract();
+        return;
     }
 
     // send target angles or rates depending on the target type
