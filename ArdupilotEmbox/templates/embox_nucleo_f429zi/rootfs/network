@@ -1,0 +1,7 @@
+iface eth0 inet static
+	address 192.168.2.128
+	netmask 255.255.255.0
+	gateway 192.168.2.1
+	hwaddress aa:bb:cc:dd:ee:02
+
+#iface eth0 inet dhcp
