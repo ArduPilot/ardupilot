@@ -452,6 +452,9 @@ public:
     // check if external nav is providing yaw
     bool using_extnav_for_yaw(void) const;
 
+    // check if GPS is required
+    bool using_gps(void) const;
+
     // set and save the ALT_M_NSE parameter value
     void set_alt_measurement_noise(float noise);
 
