@@ -32,16 +32,12 @@ void AP_Mount_Servo::update()
 
     update_mnt_target();
 
-    // send target angles or rates depending on the target type
-    switch (mnt_target.target_type) {
-        case MountTargetType::RATE:
-            update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
-            FALLTHROUGH;
-        case MountTargetType::ANGLE:
-            // update _angle_bf_output_rad based on angle target
-            update_angle_outputs(mnt_target.angle_rad);
-            break;
-    }
+    send_target_to_gimbal();
+}
+
+void AP_Mount_Servo::send_target_angles(const MountAngleTarget& angle_rad)
+{
+    update_angle_outputs(mnt_target.angle_rad);
 
     // write the results to the servos
     move_servo(_roll_idx, degrees(_angle_bf_output_rad.x)*10, _params.roll_angle_min*10, _params.roll_angle_max*10);

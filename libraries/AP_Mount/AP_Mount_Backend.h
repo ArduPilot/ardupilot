@@ -228,8 +228,8 @@ public:
 protected:
 
     enum class MountTargetType {
-        ANGLE,
-        RATE,
+        ANGLE     = 0,
+        RATE      = 1,
     };
 
     // class for a single angle or rate target
@@ -258,6 +258,29 @@ protected:
         float yaw;       // roll rate in radians/second
         bool yaw_is_ef;  // if set then `yaw` is a rate in earth frame
     };
+
+    // returns a bitmask of MountTargetTypes which this backend supports
+    // FIXME: make this pure-virtual
+    virtual uint8_t natively_supported_mount_target_types() const { return 0; };
+
+    // returns true if the backend natively supports type.  e.g. if
+    // "type" here is "MountTargetType::ANGLE" and the backend has
+    // indicated support of angles in the
+    // natively_supported_mount_target_types() bitmask then we can can
+    // send_angle_targets on the backend and have that work (meaning
+    // the backend has overrriden that method).
+    bool natively_supports(MountTargetType type) const {
+        uint8_t supported = natively_supported_mount_target_types();
+        return (supported & (1U<<(uint8_t(type)))) != 0;
+    }
+
+    // looks at what MountTargetTypes this mount supports, may convert
+    // to supported mount target type from unsupported
+    void send_target_to_gimbal();
+
+    // FIXME: make it an internal error for these to ever be called:
+    virtual void send_target_angles(const MountAngleTarget &angle_rad) { }
+    virtual void send_target_rates(const MountRateTarget &rate_rads) { }
 
     // options parameter bitmask handling
     enum class Options : uint8_t {
