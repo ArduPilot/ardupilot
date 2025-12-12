@@ -428,18 +428,7 @@ float Sub::get_alt_rel() const
 
     // get relative position
     float posD;
-    if (ahrs.get_relative_position_D_origin_float(posD)) {
-        if (ahrs.home_is_set()) {
-            // adjust to the home position
-            auto home = ahrs.get_home();
-            posD -= static_cast<float>(home.alt) * 0.01f;
-        }
-    } else {
-        // fall back to the barometer reading
-        posD = -AP::baro().get_altitude();
-    }
-
-    // convert down to up
+    ahrs.get_relative_position_D_home(posD);
     return -posD;
 }
 
