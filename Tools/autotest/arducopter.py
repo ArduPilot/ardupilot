@@ -8456,6 +8456,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_270: 762,
                 mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_315: 790,
             }),
+            ('rplidars2', 5, {
+                mavutil.mavlink.MAV_SENSOR_ROTATION_NONE: 274,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_45: 256,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_90: 1129,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_135: 677,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_180: 625,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_225: 967,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_270: 760,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_315: 765,
+            }),
             ('terarangertower', 3, {
                 mavutil.mavlink.MAV_SENSOR_ROTATION_NONE: 450,
                 mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_45: 282,

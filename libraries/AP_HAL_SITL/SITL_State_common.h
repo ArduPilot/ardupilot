@@ -29,6 +29,7 @@
 #include <SITL/SIM_PS_LD06.h>
 #include <SITL/SIM_PS_RPLidarA2.h>
 #include <SITL/SIM_PS_RPLidarA1.h>
+#include <SITL/SIM_PS_RPLidarS2.h>
 #include <SITL/SIM_PS_TeraRangerTower.h>
 #include <SITL/SIM_PS_LightWare_SF45B.h>
 
@@ -126,11 +127,18 @@ public:
     SITL::PS_RPLidarA2 *rplidara2;
 #endif
 
-    // simulated FETtec OneWire ESCs:
-    SITL::FETtecOneWireESC *fetteconewireesc;
-
+#if AP_SIM_PS_RPLIDARA1_ENABLED
     // simulated RPLidarA1:
     SITL::PS_RPLidarA1 *rplidara1;
+#endif
+
+#if AP_SIM_PS_RPLIDARS2_ENABLED
+    // simulated RPLidarS2:
+    SITL::PS_RPLidarS2 *rplidars2;
+#endif
+
+    // simulated FETtec OneWire ESCs:
+    SITL::FETtecOneWireESC *fetteconewireesc;
 
 #if AP_SIM_PS_LIGHTWARE_SF45B_ENABLED
     // simulated SF45B proximity sensor:
