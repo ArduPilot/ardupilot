@@ -102,11 +102,11 @@ void AP_Mount_Servo::update_angle_outputs(const MountAngleTarget& angle_rad)
     _angle_bf_output_rad.z = yaw_bf_rad;
 
     // do no stabilization in retract or neutral:
-    switch (get_mode()) {
-    case MAV_MOUNT_MODE_RETRACT:
-    case MAV_MOUNT_MODE_NEUTRAL:
+    switch (mnt_target.target_type) {
+    case MountTargetType::NEUTRAL:
+    case MountTargetType::RETRACTED:
         return;
-    case MAV_MOUNT_MODE_MAVLINK_TARGETING...MAV_MOUNT_MODE_ENUM_END:
+    default:
         break;
     }
 

@@ -848,6 +848,10 @@ uint16_t AP_Mount_Backend::get_gimbal_device_flags() const
         case MountTargetType::ANGLE:
             yaw_lock_state = mnt_target.angle_rad.yaw_is_ef;
             break;
+        case MountTargetType::RETRACTED:
+        case MountTargetType::NEUTRAL:
+            yaw_lock_state = false;  // not locked onto the scenery
+            break;
         }
         break;
     case MAV_MOUNT_MODE_RC_TARGETING:
@@ -865,8 +869,8 @@ uint16_t AP_Mount_Backend::get_gimbal_device_flags() const
         break;
     }
 
-    const uint16_t flags = (get_mode() == MAV_MOUNT_MODE_RETRACT ? GIMBAL_DEVICE_FLAGS_RETRACT : 0) |
-                           (get_mode() == MAV_MOUNT_MODE_NEUTRAL ? GIMBAL_DEVICE_FLAGS_NEUTRAL : 0) |
+    const uint16_t flags = (mnt_target.target_type == MountTargetType::RETRACTED ? GIMBAL_DEVICE_FLAGS_RETRACT : 0) |
+                           (mnt_target.target_type == MountTargetType::NEUTRAL ? GIMBAL_DEVICE_FLAGS_NEUTRAL : 0) |
                            GIMBAL_DEVICE_FLAGS_ROLL_LOCK | // roll angle is always earth-frame
                            GIMBAL_DEVICE_FLAGS_PITCH_LOCK| // pitch angle is always earth-frame, yaw_angle is always body-frame
                            GIMBAL_DEVICE_FLAGS_YAW_IN_VEHICLE_FRAME | // yaw angle is always in vehicle-frame
@@ -913,13 +917,10 @@ void AP_Mount_Backend::update_mnt_target()
     mnt_target.fresh = false;
 
     switch (get_mode()) {
-    case MAV_MOUNT_MODE_RETRACT: {
+    case MAV_MOUNT_MODE_RETRACT:
         // move mount to a "retracted" position.  To-Do: remove support and replace with a relaxed mode?
-        const Vector3f &angle_bf_target = _params.retract_angles.get();
-        mnt_target.target_type = MountTargetType::ANGLE;
-        mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
+        mnt_target.target_type = MountTargetType::RETRACTED;
         return;
-    }
 
     case MAV_MOUNT_MODE_NEUTRAL: {
         // move mount to a neutral position, typically pointing forward
@@ -982,6 +983,12 @@ void AP_Mount_Backend::send_target_to_gimbal()
         case MountTargetType::RATE:
             send_target_rates(mnt_target.rate_rads);
             return;
+        case MountTargetType::RETRACTED:
+            send_target_retracted();
+            return;
+        case MountTargetType::NEUTRAL:
+            send_target_neutral();
+            return;
         }
         return;  // should not reach this as all cases return
     }
@@ -1002,6 +1009,22 @@ void AP_Mount_Backend::send_target_to_gimbal()
             return;
         }
         break;
+    case MountTargetType::RETRACTED: {
+        // just use the parameter values
+        // we update mnt_target for reporting purposes
+        const Vector3f &angle_bf_target = _params.retract_angles.get();
+        mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
+        send_target_angles(mnt_target.angle_rad);
+        break;
+    }
+    case MountTargetType::NEUTRAL: {
+        // just use the parameter values
+        // we update mnt_target for reporting purposes
+        const Vector3f &angle_bf_target = _params.neutral_angles.get();
+        mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
+        send_target_angles(mnt_target.angle_rad);
+        break;
+    }
     }
 
     send_warning_to_GCS("Failed to convert mount target to command gimbal");

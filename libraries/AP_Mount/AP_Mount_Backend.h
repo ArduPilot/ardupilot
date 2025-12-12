@@ -230,6 +230,8 @@ protected:
     enum class MountTargetType {
         ANGLE     = 0,
         RATE      = 1,
+        RETRACTED = 2,
+        NEUTRAL   = 3,
     };
 
     // class for a single angle or rate target
@@ -281,6 +283,8 @@ protected:
     // FIXME: make it an internal error for these to ever be called:
     virtual void send_target_angles(const MountAngleTarget &angle_rad) { }
     virtual void send_target_rates(const MountRateTarget &rate_rads) { }
+    virtual void send_target_retracted() { }
+    virtual void send_target_neutral() { }
 
     // options parameter bitmask handling
     enum class Options : uint8_t {
