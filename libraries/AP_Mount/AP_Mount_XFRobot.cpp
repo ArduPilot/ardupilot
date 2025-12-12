@@ -355,7 +355,7 @@ void AP_Mount_XFRobot::process_packet()
 }
 
 // send_target_angles
-void AP_Mount_XFRobot::send_target_angles(const MountTarget& angle_target_rad)
+void AP_Mount_XFRobot::send_target_angles(const MountAngleTarget& angle_target_rad)
 {
     // exit immediately if not initialised or not enough space to send packet
     if (!_initialised || _uart->txspace() < sizeof(SetAttitudePacket)) {

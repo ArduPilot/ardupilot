@@ -739,7 +739,7 @@ void AP_Mount_Topotek::request_gimbal_model_name()
 }
 
 // send angle target in radians to gimbal
-void AP_Mount_Topotek::send_angle_target(const MountTarget& angle_rad)
+void AP_Mount_Topotek::send_angle_target(const MountAngleTarget& angle_rad)
 {
     // gimbal's earth-frame angle control drifts so always use body frame
     // set gimbal's lock state if it has changed
@@ -783,7 +783,7 @@ void AP_Mount_Topotek::send_angle_target(const MountTarget& angle_rad)
 }
 
 // send rate target in rad/s to gimbal
-void AP_Mount_Topotek::send_rate_target(const MountTarget& rate_rads)
+void AP_Mount_Topotek::send_rate_target(const MountRateTarget& rate_rads)
 {
     // set gimbal's lock state if it has changed
     if (!set_gimbal_lock(rate_rads.yaw_is_ef)) {

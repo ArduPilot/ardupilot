@@ -48,7 +48,7 @@ protected:
 private:
 
     // update body-frame angle outputs from earth-frame targets
-    void update_angle_outputs(const MountTarget& angle_rad);
+    void update_angle_outputs(const MountAngleTarget& angle_rad);
 
     ///  moves servo with the given function id to the specified angle.  all angles are in body-frame and degrees * 10
     void move_servo(uint8_t rc, int16_t angle, int16_t angle_min, int16_t angle_max);

@@ -155,7 +155,7 @@ void AP_Mount_Alexmos::get_boardinfo()
 /*
   control_axis : send new angle target to the gimbal at a fixed speed of 30 deg/s
 */
-void AP_Mount_Alexmos::control_axis(const MountTarget& angle_target_rad)
+void AP_Mount_Alexmos::control_axis(const MountAngleTarget& angle_target_rad)
 {
     alexmos_parameters outgoing_buffer;
     outgoing_buffer.angle_speed.mode = AP_MOUNT_ALEXMOS_MODE_ANGLE;

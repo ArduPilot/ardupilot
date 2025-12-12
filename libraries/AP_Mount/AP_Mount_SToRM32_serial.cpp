@@ -66,7 +66,7 @@ bool AP_Mount_SToRM32_serial::can_send(bool with_control) {
 
 
 // send_target_angles
-void AP_Mount_SToRM32_serial::send_target_angles(const MountTarget& angle_target_rad)
+void AP_Mount_SToRM32_serial::send_target_angles(const MountAngleTarget& angle_target_rad)
 {
 
     static cmd_set_angles_struct cmd_set_angles_data = {

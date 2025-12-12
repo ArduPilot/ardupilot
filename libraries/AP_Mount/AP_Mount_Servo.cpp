@@ -93,7 +93,7 @@ bool AP_Mount_Servo::get_attitude_quaternion(Quaternion& att_quat)
 // private methods
 
 // update body-frame angle outputs from earth-frame angle targets
-void AP_Mount_Servo::update_angle_outputs(const MountTarget& angle_rad)
+void AP_Mount_Servo::update_angle_outputs(const MountAngleTarget& angle_rad)
 {
     const AP_AHRS &ahrs = AP::ahrs();
 

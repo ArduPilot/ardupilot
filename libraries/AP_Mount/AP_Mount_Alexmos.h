@@ -45,7 +45,7 @@ private:
     void get_boardinfo();
 
     // send new angles to the gimbal at a fixed speed of 30 deg/s
-    void control_axis(const MountTarget& angle_target_rad);
+    void control_axis(const MountAngleTarget& angle_target_rad);
 
     // read_params - read current profile profile_id and global parameters from the gimbal settings
     void read_params(uint8_t profile_id);
