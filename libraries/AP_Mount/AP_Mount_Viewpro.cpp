@@ -77,14 +77,7 @@ void AP_Mount_Viewpro::update()
     update_mnt_target();
 
     // send target angles or rates depending on the target type
-    switch (mnt_target.target_type) {
-        case MountTargetType::ANGLE:
-            send_target_angles(mnt_target.angle_rad.pitch, mnt_target.angle_rad.yaw, mnt_target.angle_rad.yaw_is_ef);
-            break;
-        case MountTargetType::RATE:
-            send_target_rates(mnt_target.rate_rads.pitch, mnt_target.rate_rads.yaw, mnt_target.rate_rads.yaw_is_ef);
-            break;
-    }
+    send_target_to_gimbal();
 }
 
 // return true if healthy
@@ -444,12 +437,15 @@ bool AP_Mount_Viewpro::send_comm_config_cmd(CommConfigCmd cmd)
 }
 
 // send target pitch and yaw rates to gimbal
-// yaw_is_ef should be true if yaw_rads target is an earth frame rate, false if body_frame
-bool AP_Mount_Viewpro::send_target_rates(float pitch_rads, float yaw_rads, bool yaw_is_ef)
+void AP_Mount_Viewpro::send_target_rates(const MountRateTarget &rate_rads)
 {
+    const float pitch_rads = rate_rads.pitch;
+    const float yaw_rads = rate_rads.yaw;
+    const bool yaw_is_ef = rate_rads.yaw_is_ef;
+
     // set lock value
     if (!set_lock(yaw_is_ef)) {
-        return false;
+        return;
     }
 
     // scale pitch and yaw to values gimbal understands
@@ -467,16 +463,19 @@ bool AP_Mount_Viewpro::send_target_rates(float pitch_rads, float yaw_rads, bool 
     };
 
     // send targets to gimbal
-    return send_packet(a1_packet.bytes, sizeof(a1_packet.bytes));
+    send_packet(a1_packet.bytes, sizeof(a1_packet.bytes));
 }
 
 // send target pitch and yaw angles to gimbal
-// yaw_is_ef should be true if yaw_rad target is an earth frame angle, false if body_frame
-bool AP_Mount_Viewpro::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_is_ef)
+void AP_Mount_Viewpro::send_target_angles(const MountAngleTarget &angle_rad)
 {
+    const float pitch_rad = angle_rad.pitch;
+    const float yaw_rad = angle_rad.yaw;
+    bool yaw_is_ef = angle_rad.yaw_is_ef;
+
     // gimbal does not support lock in angle control mode
     if (!set_lock(false)) {
-        return false;
+        return;
     }
 
     // convert yaw angle to body-frame
@@ -505,7 +504,7 @@ bool AP_Mount_Viewpro::send_target_angles(float pitch_rad, float yaw_rad, bool y
     };
 
     // send targets to gimbal
-    return send_packet(a1_packet.bytes, sizeof(a1_packet.bytes));
+    send_packet(a1_packet.bytes, sizeof(a1_packet.bytes));
 }
 
 // send camera command, affected image sensor and value (e.g. zoom speed)

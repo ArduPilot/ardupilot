@@ -44,7 +44,7 @@ private:
     };
 
     // send_target_angles
-    void send_target_angles(const MountAngleTarget& angle_target_rad);
+    void send_target_angles(const MountAngleTarget& angle_target_rad) override;
 
     // internal variables
     uint32_t _last_send_ms;     // system time of last do_mount_control sent to gimbal

@@ -34,14 +34,7 @@ void AP_Mount_MAVLink::update()
     }
 
     // send target angles or rates depending on the target type
-    switch (mnt_target.target_type) {
-        case MountTargetType::ANGLE:
-            send_gimbal_device_set_attitude(mnt_target.angle_rad.roll, mnt_target.angle_rad.pitch, mnt_target.angle_rad.yaw, mnt_target.angle_rad.yaw_is_ef);
-            break;
-        case MountTargetType::RATE:
-            send_gimbal_device_set_rate(mnt_target.rate_rads.roll, mnt_target.rate_rads.pitch, mnt_target.rate_rads.yaw, mnt_target.rate_rads.yaw_is_ef);
-            break;
-    }
+    send_target_to_gimbal();
 }
 
 // return true if healthy
@@ -231,9 +224,13 @@ void AP_Mount_MAVLink::send_gimbal_device_retract() const
 }
 
 // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to control rate
-// earth_frame should be true if yaw_rads target is an earth frame rate, false if body_frame
-void AP_Mount_MAVLink::send_gimbal_device_set_rate(float roll_rads, float pitch_rads, float yaw_rads, bool earth_frame) const
+void AP_Mount_MAVLink::send_target_rates(const MountRateTarget &rate_rads)
 {
+    const float roll_rads = rate_rads.roll;
+    const float pitch_rads = rate_rads.pitch;
+    const float yaw_rads = rate_rads.yaw;
+    const bool earth_frame = rate_rads.yaw_is_ef;
+
     // prepare flags
     const uint16_t flags = earth_frame ? (GIMBAL_DEVICE_FLAGS_ROLL_LOCK | GIMBAL_DEVICE_FLAGS_PITCH_LOCK | GIMBAL_DEVICE_FLAGS_YAW_LOCK) : 0;
 
@@ -251,9 +248,13 @@ void AP_Mount_MAVLink::send_gimbal_device_set_rate(float roll_rads, float pitch_
 }
 
 // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to control attitude
-// earth_frame should be true if yaw_rad target is in earth frame angle, false if body_frame
-void AP_Mount_MAVLink::send_gimbal_device_set_attitude(float roll_rad, float pitch_rad, float yaw_rad, bool earth_frame) const
+void AP_Mount_MAVLink::send_target_angles(const MountAngleTarget &angle_rad)
 {
+    const float roll_rad = angle_rad.roll;
+    const float pitch_rad = angle_rad.pitch;
+    const float yaw_rad = angle_rad.yaw;
+    const bool earth_frame = angle_rad.yaw_is_ef;
+
     // exit immediately if not initialised
     if (!_initialised) {
         return;

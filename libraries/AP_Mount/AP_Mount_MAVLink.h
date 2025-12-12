@@ -37,6 +37,11 @@ public:
 
 protected:
 
+    // MVAVLink can send either rates or angles
+    uint8_t natively_supported_mount_target_types() const override {
+        return NATIVE_ANGLES_AND_RATES_ONLY;
+    };
+
     // get attitude as a quaternion.  returns true on success
     bool get_attitude_quaternion(Quaternion& att_quat) override;
 
@@ -56,12 +61,10 @@ private:
     void send_gimbal_device_retract() const;
 
     // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to control rate
-    // earth_frame should be true if yaw_rads target is an earth frame rate, false if body_frame
-    void send_gimbal_device_set_rate(float roll_rads, float pitch_rads, float yaw_rads, bool earth_frame) const;
+    void send_target_rates(const MountRateTarget &rate_rads) override;
 
     // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to control attitude
-    // earth_frame should be true if yaw_rad target is an earth frame angle, false if body_frame
-    void send_gimbal_device_set_attitude(float roll_rad, float pitch_rad, float yaw_rad, bool earth_frame) const;
+    void send_target_angles(const MountAngleTarget &angle_rad) override;
 
     // internal variables
     bool _got_device_info;          // true once gimbal has provided device info

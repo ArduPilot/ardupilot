@@ -38,6 +38,13 @@ public:
 
 protected:
 
+    // Scripting doesn't actually send anything (the script polls the
+    // library for the targets)
+    uint8_t natively_supported_mount_target_types() const override {
+        return NATIVE_ANGLES_ONLY;
+    };
+    void send_target_angles(const MountAngleTarget &angle_rad) override {};
+
     // get attitude as a quaternion.  returns true on success
     bool get_attitude_quaternion(Quaternion& att_quat) override;
 

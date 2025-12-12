@@ -36,7 +36,7 @@ protected:
 private:
 
     // send_target_angles
-    void send_target_angles(const MountAngleTarget& angle_target_rad);
+    void send_target_angles(const MountAngleTarget& angle_target_rad) override;
 
     // send read data request
     void get_angles();

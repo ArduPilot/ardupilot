@@ -99,6 +99,11 @@ public:
 
 protected:
 
+    // Viewpro can send either rates or angles
+    uint8_t natively_supported_mount_target_types() const override {
+        return NATIVE_ANGLES_AND_RATES_ONLY;
+    };
+
     // get attitude as a quaternion.  returns true on success
     bool get_attitude_quaternion(Quaternion& att_quat) override;
 
@@ -356,12 +361,10 @@ private:
     bool send_comm_config_cmd(CommConfigCmd cmd);
 
     // send target pitch and yaw rates to gimbal
-    // yaw_is_ef should be true if yaw_rads target is an earth frame rate, false if body_frame
-    bool send_target_rates(float pitch_rads, float yaw_rads, bool yaw_is_ef);
+    void send_target_rates(const MountRateTarget &rate_rads) override;
 
     // send target pitch and yaw angles to gimbal
-    // yaw_is_ef should be true if yaw_rad target is an earth frame angle, false if body_frame
-    bool send_target_angles(float pitch_rad, float yaw_rad, bool yaw_is_ef);
+    void send_target_angles(const MountAngleTarget &angle_rad) override;
 
     // send camera command, affected image sensor and value (e.g. zoom speed)
     bool send_camera_command(ImageSensor img_sensor, CameraCommand cmd, uint8_t value, LRFCommand lrf_cmd = LRFCommand::NO_ACTION);
