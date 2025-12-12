@@ -182,10 +182,10 @@ private:
     void request_gimbal_model_name();
 
     // send angle target in radians to gimbal
-    void send_angle_target(const MountTarget& angle_rad);
+    void send_angle_target(const MountAngleTarget& angle_rad);
 
     // send rate target in rad/s to gimbal
-    void send_rate_target(const MountTarget& rate_rads);
+    void send_rate_target(const MountRateTarget& rate_rads);
 
     // send time and date to gimbal
     bool send_time_to_gimbal();
