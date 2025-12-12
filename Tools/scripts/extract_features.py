@@ -268,6 +268,7 @@ class ExtractFeatures(object):
             ('AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED', 'GCS_MAVLINK::send_flight_information'),
             ('AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED', r'GCS_MAVLINK::send_rangefinder'),
             ('AP_MAVLINK_SIGNING_ENABLED', r'GCS_MAVLINK::load_signing_key'),
+            ('AP_MAVLINK_MSG_GNSS_INTEGRITY_ENABLED', 'AP_GPS::send_mavlink_gnss_integrity'),
 
             ('AP_DRONECAN_HIMARK_SERVO_SUPPORT', 'AP_DroneCAN::SRV_send_himark'),
             ('AP_DRONECAN_HOBBYWING_ESC_SUPPORT', 'AP_DroneCAN::hobbywing_ESC_update'),
