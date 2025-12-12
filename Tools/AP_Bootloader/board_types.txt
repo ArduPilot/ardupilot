@@ -333,6 +333,7 @@ AP_HW_CORVON_V5                      1211
 AP_HW_CSKY-PMU                       1212
 
 AP_HW_MUPilot                        1222
+AP_HW_ATLAS_CONTROL                  1227
 
 AP_HW_HWH7                           1223
 
