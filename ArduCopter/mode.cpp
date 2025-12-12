@@ -302,7 +302,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 #endif
 
     if (!ignore_checks &&
-        new_flightmode->requires_GPS() &&
+        new_flightmode->requires_position() &&
         !copter.position_ok()) {
         mode_change_failed(new_flightmode, "requires position");
         return false;
