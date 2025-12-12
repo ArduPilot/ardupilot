@@ -315,7 +315,7 @@ void Copter::update_throttle_mix()
         const bool landing = flightmode->is_landing();
 
         if (((large_angle_request || get_force_flying()) && !landing) || large_angle_error || accel_moving || descent_not_demanded) {
-            attitude_control->set_throttle_mix_max(pos_control->get_vel_U_control_ratio());
+            attitude_control->set_throttle_mix_max(pos_control->get_vel_D_control_ratio());
         } else {
             attitude_control->set_throttle_mix_min();
         }

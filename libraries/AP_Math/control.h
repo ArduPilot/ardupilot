@@ -162,7 +162,7 @@ float stopping_distance(float velocity, float p, float accel_max);
 // - `direction` should be a non-zero vector indicating desired direction of travel.
 // - Limits: max_xy, max_z_pos (upward), max_z_neg (downward)
 // Returns the maximum achievable magnitude in that direction without violating any axis constraint.
-float kinematic_limit(Vector3f direction, float max_xy, float max_z_pos, float max_z_neg);
+float kinematic_limit(Vector3f direction, float max_xy, float max_z_neg, float max_z_pos);
 
 // compute the maximum allowed magnitude along a direction defined by segment_length_xy and segment_length_z components
 // constrained by independent horizontal (max_xy) and vertical (max_z_pos/max_z_neg) limits

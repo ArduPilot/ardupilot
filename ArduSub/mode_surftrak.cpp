@@ -139,10 +139,10 @@ void ModeSurftrak::control_range() {
     }
 
     // Set the target altitude from the climb rate and the terrain offset
-    position_control->set_pos_target_U_from_climb_rate_cms(target_climb_rate_cms);
+    position_control->D_set_pos_target_from_climb_rate_cms(target_climb_rate_cms);
 
     // Run the PID controllers
-    position_control->update_U_controller();
+    position_control->D_update_controller();
 }
 
 /*
