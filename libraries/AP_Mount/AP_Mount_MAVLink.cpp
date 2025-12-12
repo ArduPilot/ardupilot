@@ -25,15 +25,7 @@ void AP_Mount_MAVLink::update()
 
     update_mnt_target();
 
-    // FIXME: create and use MountTargetType::RETRACTED
-    if (get_mode() == MAV_MOUNT_MODE_RETRACT) {
-        mnt_target.target_type = MountTargetType::ANGLE;
-        mnt_target.angle_rad.set(Vector3f{0,0,0}, false);
-        send_gimbal_device_retract();
-        return;
-    }
-
-    // send target angles or rates depending on the target type
+    // send target angles/rates/retract depending on the target type
     send_target_to_gimbal();
 }
 
@@ -208,8 +200,13 @@ bool AP_Mount_MAVLink::start_sending_attitude_to_gimbal()
 }
 
 // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to command gimbal to retract (aka relax)
-void AP_Mount_MAVLink::send_gimbal_device_retract() const
+void AP_Mount_MAVLink::send_target_retracted()
 {
+    // update the target angles.  These may be absolutely bogus, of
+    // course, but may be useful in logs to see what the gimbal was
+    // doing.  This is also preserving existing behaviour in a change...
+    mnt_target.angle_rad.set(Vector3f{0,0,0}, false);
+
     const mavlink_gimbal_device_set_attitude_t pkt {
         {NAN, NAN, NAN, NAN},  // attitude
         0,   // angular velocity x

@@ -37,9 +37,14 @@ public:
 
 protected:
 
-    // MVAVLink can send either rates or angles
+    // MVAVLink can send either rates or angles, and can also be
+    // directly commanded to move to a retracted state
     uint8_t natively_supported_mount_target_types() const override {
-        return NATIVE_ANGLES_AND_RATES_ONLY;
+        return (
+            (1U<<unsigned(MountTargetType::ANGLE)) |
+            (1U<<unsigned(MountTargetType::RATE)) |
+            (1U<<unsigned(MountTargetType::RETRACTED))
+            );
     };
 
     // get attitude as a quaternion.  returns true on success
@@ -58,7 +63,7 @@ private:
     bool start_sending_attitude_to_gimbal();
 
     // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to command gimbal to retract (aka relax)
-    void send_gimbal_device_retract() const;
+    void send_target_retracted() override;
 
     // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to control rate
     void send_target_rates(const MountRateTarget &rate_rads) override;
