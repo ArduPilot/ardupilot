@@ -151,7 +151,9 @@ private:
     const uint8_t num_flight_modes = 6;
 #endif
 
+#if AP_LEAKDETECTOR_ENABLED
     AP_LeakDetector leak_detector;
+#endif
 
     struct {
         bool enabled;

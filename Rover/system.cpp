@@ -150,6 +150,10 @@ void Rover::init_ardupilot()
         rover.g2.mis_done_behave.set_default(uint8_t(ModeAuto::DoneBehaviour::LOITER));
     }
 
+#if AP_LEAKDETECTOR_ENABLED
+    rover.g2.leak_detector.init();
+#endif
+
     // flag that initialisation has completed
     initialised = true;
 }
