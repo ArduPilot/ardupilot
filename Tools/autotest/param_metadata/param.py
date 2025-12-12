@@ -139,6 +139,10 @@ known_units = {
              'litres'  : 'litres',
              'Ohm'     : 'Ohm',
              'N'       : 'Newtons',
+             'g'       : 'Gravities',
+             '1/s^2'   : 'per second squared',
+             '1/(m/s)' : 'inverse meters/second',
+             '1/m'     : 'inverse meters',
              }
 
 required_param_fields = [
