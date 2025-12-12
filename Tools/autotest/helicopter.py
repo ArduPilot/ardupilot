@@ -528,44 +528,6 @@ class AutoTestHelicopter(AutoTestCopter):
 
         self.context_pop()
 
-    def mission_item_home(self, target_system, target_component):
-        '''returns a mission_item_int which can be used as home in a mission'''
-        return self.mav.mav.mission_item_int_encode(
-            target_system,
-            target_component,
-            0, # seq
-            mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
-            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
-            0, # current
-            0, # autocontinue
-            3, # p1
-            0, # p2
-            0, # p3
-            0, # p4
-            int(1.0000 * 1e7), # latitude
-            int(2.0000 * 1e7), # longitude
-            31.0000, # altitude
-            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
-
-    def mission_item_takeoff(self, target_system, target_component):
-        '''returns a mission_item_int which can be used as takeoff in a mission'''
-        return self.mav.mav.mission_item_int_encode(
-            target_system,
-            target_component,
-            1, # seq
-            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
-            0, # current
-            0, # autocontinue
-            0, # p1
-            0, # p2
-            0, # p3
-            0, # p4
-            int(1.0000 * 1e7), # latitude
-            int(1.0000 * 1e7), # longitude
-            31.0000, # altitude
-            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
-
     def mission_item_rtl(self, target_system, target_component):
         '''returns a mission_item_int which can be used as takeoff in a mission'''
         return self.mav.mav.mission_item_int_encode(
@@ -637,7 +599,7 @@ class AutoTestHelicopter(AutoTestCopter):
             # slot 0 is home
             self.mission_item_home(target_system=target_system, target_component=target_component),
             # slot 1 is takeoff
-            self.mission_item_takeoff(target_system=target_system, target_component=target_component),
+            self.mission_item_copter_takeoff(target_system=target_system, target_component=target_component),
             # now three spline waypoints right on top of one another:
             copy.copy(wp2_by_three),
             copy.copy(wp2_by_three),
@@ -711,7 +673,7 @@ class AutoTestHelicopter(AutoTestCopter):
             # slot 0 is home
             self.mission_item_home(target_system=target_system, target_component=target_component),
             # slot 1 is takeoff
-            self.mission_item_takeoff(target_system=target_system, target_component=target_component),
+            self.mission_item_copter_takeoff(target_system=target_system, target_component=target_component),
             wp2,
             wp3,
             wp4,
