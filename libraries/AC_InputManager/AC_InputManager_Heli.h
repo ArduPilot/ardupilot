@@ -67,9 +67,6 @@ private:
     // ramp factor from previous mode to current mode collective output
     float _ramp = 0;
 
-    // countdown timer
-    float _timer = 0;
-
     AP_Int16        _heli_stab_col_min;             // minimum collective pitch setting at zero throttle input in Stabilize mode
     AP_Int16        _heli_stab_col_low;             // collective pitch setting at mid-low throttle input in Stabilize mode
     AP_Int16        _heli_stab_col_high;            // collective pitch setting at mid-high throttle input in Stabilize mode

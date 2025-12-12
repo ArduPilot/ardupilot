@@ -110,23 +110,21 @@ float AC_InputManager_Heli::get_pilot_desired_collective(int16_t control_in)
     if (init_transition_ramp) {
     	init_transition_ramp = false;
         transition = true;
-        _timer = 1;
+        _ramp = 1;
     }
 
     // ramp function
-    if (transition){
+    if (transition) {
         float dt = 1/(float)_loop_rate;
         // factor 2 to transition over a time span of 0.5s
-        _timer -= 2*dt;
-        _timer = constrain_float(_timer, 0.0f, 1.0f);
-        //function to re-map _timer output to s-shape behavior(derivative =0 at transition begin/finish)
-        _ramp = (3*_timer*_timer)-(2*_timer*_timer*_timer);
-        if(is_zero(_timer)){
+        _ramp -= 2*dt;
+        _ramp = constrain_float(_ramp, 0.0f, 1.0f);
+        if(is_zero(_ramp)){
             transition = false;
         }
     }
 
-    if(_im_flags_heli.use_stab_col){
+    if (_im_flags_heli.use_stab_col) {
         _new_flightmode_col_output = stab_col_out;
     } else {
         _new_flightmode_col_output = acro_col_out;
