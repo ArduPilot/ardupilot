@@ -14,6 +14,10 @@ enum class ServiceIndex: uint8_t {
 #if AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
     TAKEOFF,
 #endif // AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
+#if AP_DDS_IMAGE_CAPTURE_SERVER_ENABLED
+    IMAGE_START_CAPTURE,
+    IMAGE_STOP_CAPTURE,
+#endif // AP_DDS_IMAGE_CAPTURE_SERVER_ENABLED
 #if AP_DDS_PARAMETER_SERVER_ENABLED
     SET_PARAMETERS,
     GET_PARAMETERS
@@ -81,6 +85,28 @@ constexpr struct AP_DDS_Client::Service_table AP_DDS_Client::services[] = {
         .reply_topic_name = "rr/ap/experimental/takeoffReply",
     },
 #endif // AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
+#if AP_DDS_IMAGE_CAPTURE_SERVER_ENABLED
+    {
+        .req_id = to_underlying(ServiceIndex::IMAGE_START_CAPTURE),
+        .rep_id = to_underlying(ServiceIndex::IMAGE_START_CAPTURE),
+        .service_rr = Service_rr::Replier,
+        .service_name = "rs/ap/image_capture/start_captureService",
+        .request_type = "ardupilot_msgs::srv::dds_::ImageStartCapture_Request_",
+        .reply_type = "ardupilot_msgs::srv::dds_::ImageStartCapture_Response_",
+        .request_topic_name = "rq/ap/image_capture/start_captureRequest",
+        .reply_topic_name = "rr/ap/image_capture/start_captureReply",
+    },
+    {
+        .req_id = to_underlying(ServiceIndex::IMAGE_STOP_CAPTURE),
+        .rep_id = to_underlying(ServiceIndex::IMAGE_STOP_CAPTURE),
+        .service_rr = Service_rr::Replier,
+        .service_name = "rs/ap/image_capture/stop_captureService",
+        .request_type = "ardupilot_msgs::srv::dds_::ImageStopCapture_Request_",
+        .reply_type = "ardupilot_msgs::srv::dds_::ImageStopCapture_Response_",
+        .request_topic_name = "rq/ap/image_capture/stop_captureRequest",
+        .reply_topic_name = "rr/ap/image_capture/stop_captureReply",
+    },
+#endif // AP_DDS_IMAGE_CAPTURE_SERVER_ENABLED
 #if AP_DDS_PARAMETER_SERVER_ENABLED
     {
         .req_id = to_underlying(ServiceIndex::SET_PARAMETERS),
