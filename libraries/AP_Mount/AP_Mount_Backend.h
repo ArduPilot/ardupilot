@@ -339,10 +339,6 @@ private:
     // get pilot input (in the range -1 to +1) received through RC
     void get_rc_input(float& roll_in, float& pitch_in, float& yaw_in) const;
 
-    // get angle or rate targets from pilot RC
-    // target_type will be either ANGLE or RATE, rpy will be the target angle in deg or rate in deg/s
-    void get_rc_target(MountTargetType& target_type, MountTarget& rpy) const;
-
     // get angle targets (in radians) to a Location
     // returns true on success, false on failure
     bool get_angle_target_to_location(const Location &loc, MountTarget& angle_rad) const WARN_IF_UNUSED;
