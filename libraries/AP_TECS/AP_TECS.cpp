@@ -246,7 +246,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Extra TECS options
     // @Description: This allows the enabling of special features in the speed/height controller.
-    // @Bitmask: 0:GliderOnly,1:AllowDescentSpeedup
+    // @Bitmask: 0:GliderOnly,1:AllowDescentSpeedup,2:DoAcclnControl,3:InhibitClipStatus
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 28, AP_TECS, _options, 0),
 
@@ -290,6 +290,44 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Increment: 0.2
     // @User: Advanced
     AP_GROUPINFO("HDEM_TCONST", 33, AP_TECS, _hgt_dem_tconst, 3.0f),
+
+    // @Param: HGT_ACC_BW
+    // @DisplayName: Acceleration Control Mode Height Gain
+    // @Description: This sets the gain from height error to height acceleration used when TECS_OPTIONS bit 2 is set.
+    // @Range: 0.1 1.0
+    // @Units: 1/s^2
+    // @User: Advanced
+    AP_GROUPINFO("HGT_ACC_BW", 34, AP_TECS, _hgt_accln_gain, 0.4f),
+
+    // @Param: HGT_ACC_DMP
+    // @DisplayName: Acceleration Control Mode Height Damping Ratio
+    // @Description: This sets the damping ratio of the height acceleration control loop used when TECS_OPTIONS bit 2 is set.
+    // @Range: 0.5 1.1
+    // @User: Advanced
+    AP_GROUPINFO("HGT_ACC_DMP", 35, AP_TECS, _hgt_accln_damping_ratio, 0.85f),
+
+    // @Param: THR_PID_P
+    // @DisplayName: Throttle PID P gain
+    // @Description: Gain from speed error to throttle fraction used when TECS_OPTIONS bit 2 is set.
+    // @Range: 0.01 1.0
+    // @Units: 1/(m/s)
+    // @User: Advanced
+    AP_GROUPINFO("THR_PID_P", 36, AP_TECS, _thr_pid_p_gain, 0.1f),
+
+    // @Param: THR_PID_I
+    // @DisplayName: Throttle PID I gain
+    // @Description: Gain from speed error integral to throttle fraction used when TECS_OPTIONS bit 2 is set.
+    // @Units: 1/m
+    // @Range: 0.0 1.0
+    // @User: Advanced
+    AP_GROUPINFO("THR_PID_I", 37, AP_TECS, _thr_pid_i_gain, 0.1f),
+
+    // @Param: THR_PID_D
+    // @DisplayName: Throttle PID D gain
+    // @Description: Gain from speed error derivative to throttle fraction used when TECS_OPTIONS bit 2 is set.
+    // @Range: 0.0 0.1
+    // @User: Advanced
+    AP_GROUPINFO("THR_PID_D", 38, AP_TECS, _thr_pid_d, 0.05f),
 
     AP_GROUPEND
 };
@@ -906,6 +944,11 @@ void AP_TECS::constrain_throttle() {
     } else {
         _thr_clip_status = clipStatus::NONE;
     }
+    _alt_thr_clip_status = _thr_clip_status;
+    if (option_is_set(Option::HGT_ACCLN_CTRL) ||
+        option_is_set(Option::INHIBIT_CLIPSTATUS)) {
+        _thr_clip_status = clipStatus::NONE;
+    }
 }
 
 float AP_TECS::_get_i_gain(void)
@@ -945,7 +988,12 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge, float pi
     const float pitch_demand_hpf = _pitch_dem - _pitch_demand_lpf.get();
     _pitch_measured_lpf.apply(_ahrs.get_pitch_rad(), _DT);
     const float pitch_corrected_lpf = _pitch_measured_lpf.get() - radians(pitch_trim_deg);
-    const float pitch_blended = pitch_demand_hpf + pitch_corrected_lpf;
+    float pitch_blended;
+    if (option_is_set(Option::HGT_ACCLN_CTRL)) {
+        pitch_blended = pitch_corrected_lpf;
+    } else {
+        pitch_blended = pitch_demand_hpf + pitch_corrected_lpf;
+    }
 
     if (pitch_blended > 0.0f && _PITCHmaxf > 0.0f)
     {
@@ -1046,10 +1094,20 @@ void AP_TECS::_update_pitch(void)
     const float SEBdot_dem_max = _maxClimbRate * GRAVITY_MSS;
     if (SEBdot_dem < SEBdot_dem_min) {
         SEBdot_dem = SEBdot_dem_min;
-        _SEBdot_dem_clip = clipStatus::MIN;
+        // The vertical accln control method is incompatible with the height demand
+        // profile mechanism controlled by _SEBdot_dem_clip
+        if (!option_is_set(Option::HGT_ACCLN_CTRL) &&
+            !option_is_set(Option::INHIBIT_CLIPSTATUS)) {
+            _SEBdot_dem_clip = clipStatus::MIN;
+        }
     } else if (SEBdot_dem > SEBdot_dem_max) {
         SEBdot_dem = SEBdot_dem_max;
-        _SEBdot_dem_clip = clipStatus::MAX;
+        // The vertical accln control method is incompatible with the height demand
+        // profile mechanism controlled by _SEBdot_dem_clip
+        if (!option_is_set(Option::HGT_ACCLN_CTRL) &&
+            !option_is_set(Option::INHIBIT_CLIPSTATUS)) {
+            _SEBdot_dem_clip = clipStatus::MAX;
+        }
     } else {
         _SEBdot_dem_clip = clipStatus::NONE;
     }
@@ -1219,6 +1277,8 @@ void AP_TECS::_initialise_states(float hgt_afe)
         _pitch_demand_lpf.reset(_ahrs.get_pitch_rad());
         _pitch_measured_lpf.reset(_ahrs.get_pitch_rad());
 
+        _thr_PID_I_term = 0.0f;
+
     } else if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
         
         if (!_flag_throttle_forced) {
@@ -1250,6 +1310,8 @@ void AP_TECS::_initialise_states(float hgt_afe)
             _flags.reset          = true;
             _flag_have_reset_after_takeoff  = true;
         }
+
+        _thr_PID_I_term = 0.0f;
     }
 
     if (_flight_stage != AP_FixedWing::FlightStage::TAKEOFF && _flight_stage != AP_FixedWing::FlightStage::ABORT_LANDING) {
@@ -1354,14 +1416,22 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Calculate pitch demand
     _update_pitch();
 
-    // Calculate throttle demand - use simple pitch to throttle if no airspeed estimate.
-    if (use_airspeed()) {
-        _update_throttle_with_airspeed();
-        _use_synthetic_airspeed_once = false;
-        _using_airspeed_for_throttle = true;
+    if (option_is_set(Option::HGT_ACCLN_CTRL)) {
+        _update_throttle_accel(throttle_nudge, pitch_trim_deg);
     } else {
-        _update_throttle_without_airspeed(throttle_nudge, pitch_trim_deg);
-        _using_airspeed_for_throttle = false;
+        // Calculate throttle demand - use simple pitch to throttle if no
+        // airspeed sensor.
+        // Note that caller can demand the use of
+        // synthetic airspeed for one loop if needed. This is required
+        // during QuadPlane transition when pitch is constrained
+        if (use_airspeed()) {
+            _update_throttle_with_airspeed();
+            _use_synthetic_airspeed_once = false;
+            _using_airspeed_for_throttle = true;
+        } else {
+            _update_throttle_without_airspeed(throttle_nudge, pitch_trim_deg);
+            _using_airspeed_for_throttle = false;
+        }
     }
 
     // Detect bad descent due to demanded airspeed being too high
