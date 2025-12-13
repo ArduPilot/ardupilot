@@ -21,6 +21,8 @@
 
 #if AP_RCPROTOCOL_CRSF_ENABLED
 
+#pragma GCC optimize("O2")
+
 #include "AP_CRSF_Protocol.h"
 #include <AP_RCProtocol/AP_RCProtocol_CRSF.h>
 #include <AP_HAL/AP_HAL.h>
