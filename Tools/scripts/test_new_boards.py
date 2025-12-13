@@ -108,6 +108,7 @@ class TestNewBoards(BuildScriptBase):
             if hwdef_idx + 1 >= len(parts):
                 raise ValueError(f"No board name after hwdef in path: {hwdef_filepath}")
             board_name = parts[hwdef_idx + 1]
+
             if board_name not in boards_to_test:
                 boards_to_test[board_name] = BoardToTest()
             if hwdef_filepath.endswith('hwdef-bl.dat'):
@@ -117,6 +118,30 @@ class TestNewBoards(BuildScriptBase):
 
         # Build each unique board (find it in board list as an additional check)
         bl = board_list.BoardList()
+
+        # First pass: check for README.md for non-AP_Periph boards
+        for hwdef_filepath in hwdef_filepaths:
+            # Extract board name from path like libraries/AP_HAL_ChibiOS/hwdef/BoardName/hwdef.dat
+            parts = hwdef_filepath.split('/')
+            hwdef_idx = parts.index('hwdef')
+            board_name = parts[hwdef_idx + 1]
+
+            # Find the board object to check if it's AP_Periph
+            board = None
+            for b in bl.boards:
+                if b.name == board_name:
+                    board = b
+                    break
+
+            if board is None:
+                raise ValueError(f"Board {board_name} not found in board list")
+
+            # Only require README.md for non-AP_Periph boards
+            if not board.is_ap_periph:
+                hwdef_dir = os.path.join(*parts[:hwdef_idx + 2])
+                readme_path = os.path.join(hwdef_dir, 'README.md')
+                if not os.path.exists(readme_path):
+                    raise ValueError(f"Missing README.md for new board: {readme_path} does not exist")
         for board_name in sorted(boards_to_test.keys()):
             # Find the board object
             board = None
