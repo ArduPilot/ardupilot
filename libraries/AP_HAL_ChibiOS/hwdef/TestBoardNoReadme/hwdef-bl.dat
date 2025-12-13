@@ -1,0 +1,17 @@
+# Bootloader hwdef for test board
+
+# MCU class and specific type
+MCU STM32F4xx STM32F427xx
+
+# board ID for firmware load
+APJ_BOARD_ID 1234
+
+FLASH_SIZE_KB 2048
+
+# bootloader loads at start of flash
+FLASH_RESERVE_START_KB 0
+
+# USB setup
+USB_VENDOR 0x0483 # ST
+USB_PRODUCT 0x5740
+USB_STRING_MANUFACTURER "TestManufacturer"
