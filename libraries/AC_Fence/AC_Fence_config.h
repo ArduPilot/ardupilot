@@ -4,12 +4,12 @@
 
 #include <GCS_MAVLink/GCS_config.h>
 
-// Enabled 0 is compiled out
-// Enabled 1 is always enabled on all vehicles
-// Enabled 2 is enabled with dummy methods for tracker and blimp
-
 #ifndef AP_FENCE_ENABLED
-#define AP_FENCE_ENABLED 2
+#define AP_FENCE_ENABLED 1
+#endif
+
+#if AP_FENCE_ENABLED == 2
+#error "AP_FENCE_ENABLED no longer supports the value 2. For toggling dummy methods in AC_Fence, use AC_FENCE_DUMMY_METHODS_ENABLED instead."
 #endif
 
 // CODE_REMOVAL

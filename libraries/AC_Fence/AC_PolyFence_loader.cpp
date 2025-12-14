@@ -5,8 +5,10 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
+// AC_FENCE_DUMMY_METHODS_ENABLED helps compiling the binaries with dummy methods for blimp and tracker
+// It might be defined at multiple places; ensure consistency while changing definition
 #ifndef AC_FENCE_DUMMY_METHODS_ENABLED
-#define AC_FENCE_DUMMY_METHODS_ENABLED  (!(APM_BUILD_TYPE(APM_BUILD_Rover) | APM_BUILD_COPTER_OR_HELI | APM_BUILD_TYPE(APM_BUILD_ArduPlane) | APM_BUILD_TYPE(APM_BUILD_ArduSub) | (AP_FENCE_ENABLED == 1)))
+#define AC_FENCE_DUMMY_METHODS_ENABLED  (APM_BUILD_TYPE(APM_BUILD_Blimp) | APM_BUILD_TYPE(APM_BUILD_AntennaTracker))
 #endif
 
 #if !AC_FENCE_DUMMY_METHODS_ENABLED
@@ -1711,9 +1713,7 @@ bool AC_PolyFence_loader::write_fence(const AC_PolyFenceItem *new_items, uint16_
 
 void AC_PolyFence_loader::update() {};
 
-#if AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
 bool AC_PolyFence_loader::get_return_point(Vector2l &ret) { return false; }
-#endif
 
 #endif // #if AC_FENCE_DUMMY_METHODS_ENABLED
 #endif // AP_FENCE_ENABLED
