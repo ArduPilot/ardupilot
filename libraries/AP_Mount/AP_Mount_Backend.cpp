@@ -202,6 +202,17 @@ void AP_Mount_Backend::set_roi_target(const Location &target_loc)
     }
 }
 
+// set yaw lock - sets the _yaw_lock variable and captures current earth frame heading of mount for targeting in RC Targeting mode
+void AP_Mount_Backend::set_yaw_lock(bool yaw_lock)
+{
+    // if yaw not locked already, capture mount's earth frame heading for later possible use
+    if (!_yaw_lock) {
+       _yaw_lock_heading_rad = mnt_target.angle_rad.get_ef_yaw();
+    }   
+    _yaw_lock = yaw_lock;
+ }
+
+
 // clear_roi_target - clears target location that mount should attempt to point towards
 void AP_Mount_Backend::clear_roi_target()
 {
@@ -717,8 +728,12 @@ void AP_Mount_Backend::get_rc_target(MountTargetType& target_type, MountTarget& 
 
         // yaw angle
         if (target_rpy.yaw_is_ef) {
+            if (option_set(Options::HOLD_YAW_LOCK_DIR)) {
+                target_rpy.yaw = _yaw_lock_heading_rad;
+            } else {
             // if yaw is earth-frame pilot yaw input control angle from -180 to +180 deg
-            target_rpy.yaw = yaw_in * M_PI;
+                target_rpy.yaw = yaw_in * M_PI;
+            }
         } else {
             // yaw target in body frame so apply body frame limits
             target_rpy.yaw = radians(((yaw_in + 1.0f) * 0.5f * (_params.yaw_angle_max - _params.yaw_angle_min) + _params.yaw_angle_min));
