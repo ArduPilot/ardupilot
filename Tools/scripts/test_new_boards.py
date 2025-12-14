@@ -108,6 +108,13 @@ class TestNewBoards(BuildScriptBase):
             if hwdef_idx + 1 >= len(parts):
                 raise ValueError(f"No board name after hwdef in path: {hwdef_filepath}")
             board_name = parts[hwdef_idx + 1]
+
+            # Check for README.md in the hwdef directory
+            hwdef_dir = os.path.join(*parts[:hwdef_idx + 2])
+            readme_path = os.path.join(hwdef_dir, 'README.md')
+            if not os.path.exists(readme_path):
+                raise ValueError(f"Missing README.md for new board: {readme_path} does not exist")
+
             if board_name not in boards_to_test:
                 boards_to_test[board_name] = BoardToTest()
             if hwdef_filepath.endswith('hwdef-bl.dat'):
