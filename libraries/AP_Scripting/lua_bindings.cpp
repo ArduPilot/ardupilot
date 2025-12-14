@@ -450,11 +450,7 @@ int AP_Logger_Write(lua_State *L) {
                 break;
             }
             case 'Q': { // uint64_t
-                void * ud = luaL_testudata(L, arg_index, "uint64_t");
-                if (ud == nullptr) {
-                    return luaL_argerror(L, arg_index, "argument out of range");
-                }
-                uint64_t tmp = *static_cast<uint64_t *>(ud);
+                uint64_t tmp = coerce_to_uint64_t(L, arg_index);
                 memcpy(&buffer[offset], &tmp, sizeof(uint64_t));
                 offset += sizeof(uint64_t);
                 break;
