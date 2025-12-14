@@ -2911,6 +2911,9 @@ class TestSuite(abc.ABC):
                 "TEC2",  # only Plane has TECS
                 "TEC3",  # only Plane has TECS
                 "TEC4",  # only Plane has TECS
+                "TEC5",  # only Plane has TECS
+                "TEC6",  # only Plane has TECS
+                "ACC1",  # only Plane has acceleration pitch control
                 "SOAR",  # only Planes can truly soar
                 "SORC",  # soaring is pure magic
                 "QBRK",  # quadplane

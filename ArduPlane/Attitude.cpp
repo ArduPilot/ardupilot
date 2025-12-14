@@ -265,8 +265,13 @@ float Plane::stabilize_pitch_get_pitch_out()
         demanded_pitch = landing.get_pitch_cd();
     }
 
-    return pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, speed_scaler, disable_integrator,
+    float up_accel_demand;
+    if (should_run_tecs() && TECS_controller.get_height_accel_demand(up_accel_demand)) {
+        return pitchController.get_servo_out_accln(up_accel_demand, speed_scaler, TECS_controller.get_pitch_min(), TECS_controller.get_pitch_max(), g.pitch_trim);
+    } else {
+        return pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, speed_scaler, disable_integrator,
                                          ground_mode && !(plane.flight_option_enabled(FlightOptions::DISABLE_GROUND_PID_SUPPRESSION)));
+    }
 }
 
 /*
