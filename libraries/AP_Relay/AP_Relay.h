@@ -73,6 +73,8 @@ public:
     // see if the relay is enabled
     bool enabled(AP_Relay_Params::FUNCTION function) const;
 
+    int8_t get_gpio_pin(uint8_t instance) const { return _params[instance].pin.get(); }
+
 private:
     static AP_Relay *singleton;
 
