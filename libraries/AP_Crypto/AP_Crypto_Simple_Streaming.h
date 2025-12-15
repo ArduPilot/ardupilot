@@ -7,10 +7,25 @@
 
 #pragma once
 
+#include "AP_Crypto_config.h"
+
+#if defined(AP_CRYPTO_ENABLED) && AP_CRYPTO_ENABLED
+
 #include <stdint.h>
 #include <stddef.h>
 
-#if AP_CRYPTO_ENABLED
+// Define ssize_t if not available (for embedded systems)
+#ifndef _SSIZE_T_DEFINED
+#ifdef _WIN32
+#include <basetsd.h>
+typedef SSIZE_T ssize_t;
+#else
+#include <unistd.h>
+#ifndef _SSIZE_T
+typedef int ssize_t;
+#endif
+#endif
+#endif
 
 /*
   Streaming encryption context for simple XOR cipher
