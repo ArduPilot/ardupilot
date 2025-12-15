@@ -179,8 +179,10 @@ bool sdcard_init()
 void sdcard_stop(void)
 {
 #if HAL_USE_FATFS
-    // unmount
-    f_mount(nullptr, "/", 1);
+    if (sdcard_running) {
+        // unmount
+        f_mount(nullptr, "/", 1);
+    }
 #endif
 #if HAL_USE_SDC
 #if STM32_SDC_USE_SDMMC2 == TRUE
