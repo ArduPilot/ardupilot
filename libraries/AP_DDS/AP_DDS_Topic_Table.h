@@ -69,6 +69,9 @@ enum class TopicIndex: uint8_t {
 #if AP_DDS_GLOBAL_POS_CTRL_ENABLED
     GLOBAL_POSITION_SUB,
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
+#if AP_DDS_ODOM_PUB_ENABLED
+    ODOM_PUB,
+#endif // AP_DDS_ODOM_PUB_ENABLED
 };
 
 static inline constexpr uint8_t to_underlying(const TopicIndex index)
@@ -403,4 +406,22 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         },
     },
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
+#if AP_DDS_ODOM_PUB_ENABLED
+    {
+        .topic_id = to_underlying(TopicIndex::ODOM_PUB),
+        .pub_id = to_underlying(TopicIndex::ODOM_PUB),
+        .sub_id = to_underlying(TopicIndex::ODOM_PUB),
+        .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::ODOM_PUB), .type=UXR_DATAWRITER_ID},
+        .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::ODOM_PUB), .type=UXR_DATAREADER_ID},
+        .topic_rw = Topic_rw::DataWriter,
+        .topic_name = "rt/ap/odometry",
+        .type_name = "nav_msgs::msg::dds_::Odometry_",
+        .qos = {
+            .durability = UXR_DURABILITY_VOLATILE,
+            .reliability = UXR_RELIABILITY_BEST_EFFORT,
+            .history = UXR_HISTORY_KEEP_LAST,
+            .depth = 5,
+        },
+    },
+#endif // AP_DDS_ODOM_PUB_ENABLED
 };
