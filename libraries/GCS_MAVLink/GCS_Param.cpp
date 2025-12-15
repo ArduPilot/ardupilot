@@ -24,6 +24,7 @@
 #include "GCS.h"
 #include <AP_Logger/AP_Logger.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Crypto/AP_Crypto_Params.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -79,10 +80,34 @@ GCS_MAVLINK::queued_param_send()
         char param_name[AP_MAX_NAME_SIZE];
         _queued_parameter->copy_name_token(_queued_parameter_token, param_name, sizeof(param_name), true);
 
+        // Special handling for LEIGH_KEY: return 0 when encryption is enabled (security)
+        // Return actual value when LEIGH_CRYPT_LVL is 0 (encryption disabled)
+        bool is_leigh_key = (strcmp(param_name, "LEIGH_KEY") == 0);
+        float param_value;
+        if (is_leigh_key) {
+#if AP_CRYPTO_ENABLED
+            // Check if encryption is enabled - if LEIGH_CRYPT_LVL is 0, return actual value
+            AP_Crypto_Params *crypto_params = AP_Crypto_Params::get_singleton();
+            if (crypto_params != nullptr && crypto_params->leigh_crypt_lvl.get() == 0) {
+                // Encryption disabled - safe to return actual value
+                param_value = _queued_parameter->cast_to_float(_queued_parameter_type);
+            } else {
+                // Encryption enabled - return 0 for security
+                param_value = 0.0f;
+            }
+#else
+            // AP_CRYPTO not enabled - return 0 for security
+            param_value = 0.0f;
+#endif
+        } else {
+            // Get parameter value normally
+            param_value = _queued_parameter->cast_to_float(_queued_parameter_type);
+        }
+
         mavlink_msg_param_value_send(
             chan,
             param_name,
-            _queued_parameter->cast_to_float(_queued_parameter_type),
+            param_value,
             mav_param_type(_queued_parameter_type),
             _queued_parameter_count,
             _queued_parameter_index);
@@ -411,7 +436,28 @@ void GCS_MAVLINK::param_io_timer(void)
     reply.src_component_id = req.src_component_id;
     reply.param_name[AP_MAX_NAME_SIZE] = 0;
     if (vp != nullptr) {
-        reply.value = vp->cast_to_float(reply.p_type);
+        // Special handling for LEIGH_KEY: return 0 when encryption is enabled (security)
+        // Return actual value when LEIGH_CRYPT_LVL is 0 (encryption disabled)
+        bool is_leigh_key = (strcmp(reply.param_name, "LEIGH_KEY") == 0);
+        if (is_leigh_key) {
+#if AP_CRYPTO_ENABLED
+            // Check if encryption is enabled - if LEIGH_CRYPT_LVL is 0, return actual value
+            AP_Crypto_Params *crypto_params = AP_Crypto_Params::get_singleton();
+            if (crypto_params != nullptr && crypto_params->leigh_crypt_lvl.get() == 0) {
+                // Encryption disabled - safe to return actual value
+                reply.value = vp->cast_to_float(reply.p_type);
+            } else {
+                // Encryption enabled - return 0 for security
+                reply.value = 0.0f;
+            }
+#else
+            // AP_CRYPTO not enabled - return 0 for security
+            reply.value = 0.0f;
+#endif
+        } else {
+            // Get parameter value normally
+            reply.value = vp->cast_to_float(reply.p_type);
+        }
         reply.param_error = MAV_PARAM_ERROR_NO_ERROR;
     } else {
         reply.value = NaNf;

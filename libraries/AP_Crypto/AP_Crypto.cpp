@@ -15,7 +15,7 @@
 
 #include "AP_Crypto.h"
 
-#if AP_CRYPTO_ENABLED
+#if defined(AP_CRYPTO_ENABLED) && AP_CRYPTO_ENABLED
 
 #include <AP_CheckFirmware/monocypher.h>
 #include <AP_HAL/AP_HAL.h>

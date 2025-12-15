@@ -41,12 +41,6 @@ const struct AP_Param::GroupInfo AP_Crypto_Params::var_info[] = {
     // @Range: 0 3
     // @Bitmask: 0:Log Files,1:USB Terminal
     // @User: Standard
-    // @Param: LEIGH_CRYPT_LVL
-    // @DisplayName: Encryption Control Level
-    // @Description: Bitmask to selectively control what gets encrypted. Bit 0 (0x01): Enable encryption for log files written to SD card. Bit 1 (0x02): Enable encryption for USB terminal output (log downloads). Value 0 disables all AP_CRYPTO encryption when writing log files and USB terminal output. When set to 0, LEIGH_KEY parameter value becomes readable via MAVLink for debugging purposes.
-    // @Range: 0 3
-    // @Bitmask: 0:Log Files,1:USB Terminal
-    // @User: Standard
     AP_GROUPINFO("LEIGH_CRYPT_LVL", 2, AP_Crypto_Params, leigh_crypt_lvl, 0),
     
     AP_GROUPEND

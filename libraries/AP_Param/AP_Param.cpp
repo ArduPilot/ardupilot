@@ -2237,27 +2237,27 @@ void AP_Param::set_float(float value, enum ap_var_type var_type)
         return;
     }
 
-    // add a small amount before casting parameter values
-    // from float to integer to avoid truncating to the
-    // next lower integer value.
-    float rounding_addition = 0.01f;
-        
     // handle variables with standard type IDs
     if (var_type == AP_PARAM_FLOAT) {
         ((AP_Float *)this)->set(value);
     } else if (var_type == AP_PARAM_INT32) {
-        if (value < 0) rounding_addition = -rounding_addition;
-        float v = value+rounding_addition;
-        v = constrain_float(v, INT32_MIN, INT32_MAX);
+        // Use proper rounding for INT32 to avoid precision loss with large integers
+        // lroundf() rounds to nearest integer and returns long, which can be safely cast to int32_t
+        // This avoids precision loss that can occur with float->int32_t conversion
+        long rounded = lroundf(value);
+        // Constrain to INT32 range before casting
+        if (rounded > INT32_MAX) rounded = INT32_MAX;
+        if (rounded < INT32_MIN) rounded = INT32_MIN;
+        int32_t v = (int32_t)rounded;
         ((AP_Int32 *)this)->set(v);
     } else if (var_type == AP_PARAM_INT16) {
-        if (value < 0) rounding_addition = -rounding_addition;
-        float v = value+rounding_addition;
+        // Use proper rounding for INT16
+        float v = roundf(value);
         v = constrain_float(v, INT16_MIN, INT16_MAX);
         ((AP_Int16 *)this)->set(v);
     } else if (var_type == AP_PARAM_INT8) {
-        if (value < 0) rounding_addition = -rounding_addition;
-        float v = value+rounding_addition;
+        // Use proper rounding for INT8
+        float v = roundf(value);
         v = constrain_float(v, INT8_MIN, INT8_MAX);
         ((AP_Int8 *)this)->set(v);
     }

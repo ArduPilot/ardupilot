@@ -6,7 +6,7 @@
 
 #include "AP_Crypto_Simple.h"
 
-#if AP_CRYPTO_ENABLED
+#if defined(AP_CRYPTO_ENABLED) && AP_CRYPTO_ENABLED
 
 #include <string.h>
 #include <AP_CheckFirmware/monocypher.h>  // Only for SHA-256 equivalent (BLAKE2b for key derivation)

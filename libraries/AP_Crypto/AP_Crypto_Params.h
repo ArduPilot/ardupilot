@@ -28,13 +28,6 @@
 #define LEIGH_CRYPT_USB_TERMINAL  0x02  // Bit 1: Encrypt USB terminal output (log downloads)
 
 /*
-  Bitmask constants for LEIGH_CRYPT_LEVEL parameter
-  These bits control what gets encrypted:
-*/
-#define LEIGH_CRYPT_LOG_FILES     0x01  // Bit 0: Encrypt log files written to SD card
-#define LEIGH_CRYPT_USB_TERMINAL  0x02  // Bit 1: Encrypt USB terminal output (log downloads)
-
-/*
   AP_Crypto_Params - Parameter class for AP_Crypto
 
   This class manages the LEIGH_KEY parameter which allows setting
