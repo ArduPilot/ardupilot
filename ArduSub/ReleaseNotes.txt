@@ -1,12 +1,16 @@
 APM:Sub Release Notes:
 
+Sub-4.5.7
+ - Add automatic fix for Leak detector and Relays being disabled after updating from 4.1
+ - Add fix so users with 3 baros can still get their data via SCALED_PRESSURE3
+
 Sub-4.5.6
  - Add migration from hardcoded servo_functions for lights and actuators
  - Untie Lights control from RCIN channels
 
 Sub-4.5.5
  - Implement Actuator support
- - Bum waf submodule for easier building
+ - Bump waf submodule for easier building
 
 Sub-4.5.4
  - Allow setting absolute camera zoom/focus via MAVLink
