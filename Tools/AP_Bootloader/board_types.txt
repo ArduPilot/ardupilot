@@ -330,7 +330,7 @@ AP_HW_AIRBRAIN_H743                  1209
 AP_HW_Morakot                        1210
 AP_HW_CORVON_V5                      1211
 
-AP_HW_CSKY-PMU                       1212
+AP_HW_CSKY_PMU                       1212
 
 AP_HW_MUPilot                        1222
 AP_HW_ATLAS_CONTROL                  1227
