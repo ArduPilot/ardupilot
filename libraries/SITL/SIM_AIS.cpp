@@ -233,7 +233,7 @@ void AIS::init_vessel(ais_vessel &vessel, const Location &vehicle_loc, const flo
     vessel.info.MMSI = rand() & 0x3FFFFFFF;
 
     // Set nav status and type
-    vessel.info.navigational_status = UNDER_WAY;
+    vessel.info.navigational_status = AIS_NAV_STATUS_UNDER_WAY;
     vessel.info.type = AIS_TYPE_CARGO;
 
     // 90% chance of having valid dimensions
