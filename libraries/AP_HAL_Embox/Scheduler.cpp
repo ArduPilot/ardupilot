@@ -87,7 +87,7 @@ void Scheduler::init() {
 
     _main_ctx = pthread_self();
 
-    init_realtime();
+    //init_realtime();
 
     /* set barrier to N + 1 threads: worker threads + main */
     unsigned n_threads = ARRAY_SIZE(sched_table) + 1;

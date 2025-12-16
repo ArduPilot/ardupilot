@@ -57,20 +57,20 @@ namespace Embox {
             return false;
         }
 
-        struct sched_param param = {.sched_priority = prio};
-        pthread_attr_t attr;
+        // struct sched_param param = {.sched_priority = prio};
+        // pthread_attr_t attr;
         int r;
 
-        pthread_attr_init(&attr);
+        // pthread_attr_init(&attr);
 
-        if ((r = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED)) != 0 ||
-            (r = pthread_attr_setschedpolicy(&attr, policy)) != 0 ||
-            (r = pthread_attr_setschedparam(&attr, &param)) != 0) {
-            AP_HAL::panic("Failed to set attributes for thread '%s': %s",
-                          name, strerror(r));
-        }
+        // if ((r = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED)) != 0 ||
+        //     (r = pthread_attr_setschedpolicy(&attr, policy)) != 0 ||
+        //     (r = pthread_attr_setschedparam(&attr, &param)) != 0) {
+        //     AP_HAL::panic("Failed to set attributes for thread '%s': %s",
+        //                   name, strerror(r));
+        // }
 
-        r = pthread_create(&_ctx, &attr, &Thread::_run_trampoline, this);
+        r = pthread_create(&_ctx, NULL, &Thread::_run_trampoline, this);
         if (r != 0) {
             AP_HAL::panic("Failed to create thread '%s': %s",
                           name, strerror(r));
