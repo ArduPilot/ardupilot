@@ -1557,7 +1557,6 @@ private:
     bool _state_complete = false; // set to true if the current state is completed
 
     struct {
-        // NEU w/ Z element alt-above-ekf-origin unless use_terrain is true in which case Z element is alt-above-terrain
         Location origin_point;
         Location climb_target;
         Location return_target;
@@ -2019,8 +2018,8 @@ private:
     bool calculate_side_dest_m(Vector3p& next_dest_ned_m, bool& is_terrain_alt) const;
     void move_to_side();
 
-    Vector2p dest_A_ne_m;    // in NEU frame in m relative to ekf origin
-    Vector2p dest_B_ne_m;    // in NEU frame in m relative to ekf origin
+    Vector2p dest_A_ne_m;    // in NE frame in m relative to ekf origin
+    Vector2p dest_B_ne_m;    // in NE frame in m relative to ekf origin
     Vector3p current_dest_ned_m; // current target destination (use for resume after suspending)
     bool current_is_terr_alt;
 
