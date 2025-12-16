@@ -9,7 +9,6 @@
 #if defined(AP_CRYPTO_ENABLED) && AP_CRYPTO_ENABLED
 
 #include <string.h>
-#include <AP_CheckFirmware/monocypher.h>  // For BLAKE2b (or implement SHA-256)
 
 bool AP_Crypto_Simple_Streaming::streaming_encrypt_init(SimpleXORStreamEncrypt *ctx, const uint8_t key[32])
 {
