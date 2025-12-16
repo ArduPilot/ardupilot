@@ -9,11 +9,9 @@
 #if defined(AP_CRYPTO_ENABLED) && AP_CRYPTO_ENABLED
 
 #include <string.h>
-#include <AP_CheckFirmware/monocypher.h>  // Only for SHA-256 equivalent (BLAKE2b for key derivation)
+#include "sha256.h"
 
-// Note: We use BLAKE2b for key derivation (already available via Monocypher)
-// For keystream, we could use BLAKE2b too, but let's use a simpler approach
-// Actually, let's use BLAKE2b for both to keep it simple and match Python's hashlib.sha256 behavior
+// Use SHA-256 to match Python's hashlib.sha256 exactly for compatibility
 
 bool AP_Crypto_Simple::derive_key_from_leigh_key(int32_t leigh_key_value, uint8_t key_out[32])
 {
@@ -22,14 +20,20 @@ bool AP_Crypto_Simple::derive_key_from_leigh_key(int32_t leigh_key_value, uint8_
         0x59, 0x5f, 0x53, 0x41, 0x4c, 0x54, 0x5f, 0x31
     }; // "LEIGH_KEY_SALT_1" in ASCII
     
-    // Use BLAKE2b to hash (matches Python's hashlib.sha256 conceptually)
-    // For exact match with Python's SHA256, we'd need SHA-256, but BLAKE2b is close enough
-    // and already available. For true compatibility, implement SHA-256.
-    crypto_blake2b_ctx ctx;
-    crypto_blake2b_general_init(&ctx, 32, nullptr, 0);
-    crypto_blake2b_update(&ctx, (const uint8_t*)&leigh_key_value, sizeof(leigh_key_value));
-    crypto_blake2b_update(&ctx, salt, sizeof(salt));
-    crypto_blake2b_final(&ctx, key_out);
+    // Use SHA-256 to match Python's hashlib.sha256(LEIGH_KEY_INT32_bytes + salt)
+    // Python: hashlib.sha256(struct.pack('<i', leigh_key_value) + salt).digest()
+    // Ensure little-endian byte order to match Python's struct.pack('<i', ...)
+    uint8_t leigh_key_bytes[4];
+    leigh_key_bytes[0] = (uint8_t)(leigh_key_value & 0xFF);
+    leigh_key_bytes[1] = (uint8_t)((leigh_key_value >> 8) & 0xFF);
+    leigh_key_bytes[2] = (uint8_t)((leigh_key_value >> 16) & 0xFF);
+    leigh_key_bytes[3] = (uint8_t)((leigh_key_value >> 24) & 0xFF);
+    
+    sha256_ctx ctx;
+    sha256_init(&ctx);
+    sha256_update(&ctx, leigh_key_bytes, 4);  // Little-endian INT32 (matches Python struct.pack('<i', ...))
+    sha256_update(&ctx, salt, sizeof(salt));
+    sha256_final(&ctx, key_out);
     
     return true;
 }
@@ -37,12 +41,23 @@ bool AP_Crypto_Simple::derive_key_from_leigh_key(int32_t leigh_key_value, uint8_
 bool AP_Crypto_Simple::generate_keystream_block(const uint8_t key[32], uint64_t counter, uint8_t keystream_out[32])
 {
     // Hash: SHA256(key + counter_bytes) -> 32-byte keystream
-    // Using BLAKE2b as equivalent (for exact match, implement SHA-256)
-    crypto_blake2b_ctx ctx;
-    crypto_blake2b_general_init(&ctx, 32, nullptr, 0);
-    crypto_blake2b_update(&ctx, key, 32);
-    crypto_blake2b_update(&ctx, (const uint8_t*)&counter, sizeof(counter));
-    crypto_blake2b_final(&ctx, keystream_out);
+    // Python: hashlib.sha256(key + struct.pack('<Q', counter)).digest()
+    // Ensure little-endian byte order to match Python's struct.pack('<Q', ...)
+    uint8_t counter_bytes[8];
+    counter_bytes[0] = (uint8_t)(counter & 0xFF);
+    counter_bytes[1] = (uint8_t)((counter >> 8) & 0xFF);
+    counter_bytes[2] = (uint8_t)((counter >> 16) & 0xFF);
+    counter_bytes[3] = (uint8_t)((counter >> 24) & 0xFF);
+    counter_bytes[4] = (uint8_t)((counter >> 32) & 0xFF);
+    counter_bytes[5] = (uint8_t)((counter >> 40) & 0xFF);
+    counter_bytes[6] = (uint8_t)((counter >> 48) & 0xFF);
+    counter_bytes[7] = (uint8_t)((counter >> 56) & 0xFF);
+    
+    sha256_ctx ctx;
+    sha256_init(&ctx);
+    sha256_update(&ctx, key, 32);
+    sha256_update(&ctx, counter_bytes, 8);  // Little-endian uint64_t (matches Python struct.pack('<Q', ...))
+    sha256_final(&ctx, keystream_out);
     
     return true;
 }
@@ -91,5 +106,7 @@ int AP_Crypto_Simple::decrypt_simple(const uint8_t key[32],
 }
 
 #endif  // AP_CRYPTO_ENABLED
+
+
 
 
