@@ -24,6 +24,14 @@ static Util utilInstance;
 
 static UARTDriver serial0Driver(true);
 static UARTDriver serial1Driver(false);
+static UARTDriver serial2Driver(false);
+static UARTDriver serial3Driver(false);
+static UARTDriver serial4Driver(false);
+static UARTDriver serial5Driver(false);
+static UARTDriver serial6Driver(false);
+static UARTDriver serial7Driver(false);
+static UARTDriver serial8Driver(false);
+static UARTDriver serial9Driver(false);
 
 static I2CDeviceManager i2c_mgr_instance;
 static SPIDeviceManager spi_mgr_instance;
@@ -31,6 +39,14 @@ static SPIDeviceManager spi_mgr_instance;
 static UARTDriver* serialDrivers[] = {
     &serial0Driver,
     &serial1Driver,
+    &serial2Driver,
+    &serial3Driver,
+    &serial4Driver,
+    &serial5Driver,
+    &serial6Driver,
+    &serial7Driver,
+    &serial8Driver,
+    &serial9Driver,
 };
 
 static Empty::AnalogIn analogIn;
@@ -54,14 +70,14 @@ static Empty::WSPIDeviceManager wspi_mgr_instance;
 HAL_Embox::HAL_Embox() : AP_HAL::HAL(
                              &serial0Driver,
                              &serial1Driver,
-                             nullptr,
-                             nullptr,
-                             nullptr,
-                             nullptr,
-                             nullptr,
-                             nullptr,
-                             nullptr,
-                             nullptr,
+                             &serial2Driver,
+                             &serial3Driver,
+                             &serial4Driver,
+                             &serial5Driver,
+                             &serial6Driver,
+                             &serial7Driver,
+                             &serial8Driver,
+                             &serial9Driver,
                              &i2c_mgr_instance,
                              &spi_mgr_instance,
                              &wspi_mgr_instance,
