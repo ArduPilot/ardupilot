@@ -15,7 +15,7 @@
    Base class for RPLidar support
  */
 /*
-  Simulator for the RPLidarA2 proximity sensor
+  Simulator for the RPLidar proximity sensor
 
 ./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --serial5=sim:rplidara2 --speedup=1 -l 51.8752066,14.6487840,54.15,0 --map
 
@@ -47,7 +47,7 @@ rc 2 1450
 
 #include "SIM_config.h"
 
-#if AP_SIM_PS_RPLIDARA2_ENABLED || AP_SIM_PS_RPLIDARA1_ENABLED
+#if AP_SIM_PS_RPLIDARA2_ENABLED || AP_SIM_PS_RPLIDARA1_ENABLED || AP_SIM_PS_RPLIDARS2_ENABLED
 
 #include "SIM_SerialProximitySensor.h"
 
@@ -70,7 +70,12 @@ private:
 
     void update_input();
     void update_output(const Location &location);
+
+    // 5-byte scan output
     void update_output_scan(const Location &location);
+
+    // dense express scan output (40 samples per packet)
+    void update_output_express_dense(const Location &location);
 
     uint32_t last_scan_output_time_ms;
 
@@ -104,21 +109,23 @@ private:
 
     static const uint8_t PREAMBLE = 0xA5;
 
-    enum class Command {
+    enum class Command : uint8_t {
         STOP = 0x25,
         SCAN = 0x20,
         FORCE_SCAN = 0x21,
         RESET = 0x40,
         GET_DEVICE_INFO = 0x50,
         GET_HEALTH = 0x52,
+        EXPRESS_SCAN = 0x82,
     };
 
     void move_preamble_in_buffer();
 
-    enum class DataType {
-        Unknown04 = 0x04, // uint8_t ?!
-        Unknown06 = 0x06, // uint8_t ?!
-        Unknown81 = 0x81, // uint8_t ?!
+    enum class DataType : uint8_t {
+        Unknown04 = 0x04,   // device info
+        Unknown06 = 0x06,   // health
+        Unknown81 = 0x81,   // scan (5-byte)
+        Unknown85 = 0x85    // dense express scan
     };
 
     enum class SendMode {
@@ -135,6 +142,16 @@ private:
     static const constexpr char *FIRMWARE_INFO = "R12345678901234567890123456789012345678901234567890123456789012";
     uint8_t _firmware_info_offset;
 
+    // scan type
+    enum class ScanMode {
+        SCAN = 0,
+        EXPRESS_SCAN_DENSE = 1,
+    };
+    ScanMode _scan_mode = ScanMode::SCAN;
+
+    // state for dense express packets (current start angle in degrees)
+    float _express_w_i_deg = 0.0f;
+
     // methods for sub-classes to implement:
     virtual uint8_t device_info_model() const = 0;
     virtual uint8_t max_range() const = 0;
@@ -142,4 +159,4 @@ private:
 
 };
 
-#endif  // AP_SIM_PS_RPLIDARA2_ENABLED || AP_SIM_PS_RPLIDARA1_ENABLED
+#endif  // AP_SIM_PS_RPLIDARA2_ENABLED || AP_SIM_PS_RPLIDARA1_ENABLED || AP_SIM_PS_RPLIDARS2_ENABLED
