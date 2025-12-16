@@ -1,0 +1,7 @@
+# Vimdrones L431 BMS (battery management system) parameter defaults
+
+CAN_NODE 0 
+CAN_BAUDRATE 1000000
+
+# Battery Monitor Settings
+BATT_MONITOR 32
