@@ -17,8 +17,7 @@ void Copter::update_ground_effect_detector(void)
     float des_climb_rate_ms = pos_control->get_vel_desired_U_ms();
 
     if (pos_control->NE_is_active()) {
-        Vector3f vel_target_ned_ms = pos_control->get_vel_target_NED_ms();
-        des_speed_ne_ms = vel_target_ned_ms.xy().length();
+        des_speed_ne_ms = pos_control->get_vel_target_NED_ms().xy().length();
     }
 
     // takeoff logic
