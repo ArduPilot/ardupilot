@@ -6,14 +6,10 @@ script to determine what features have been built into an ArduPilot binary
 AP_FLAKE8_CLEAN
 """
 import argparse
-import os
 import re
-import string
-import subprocess
 import sys
-import time
 import build_options
-import select
+from build_script_base import BuildScriptBase
 
 
 if sys.version_info[0] < 3:
@@ -22,13 +18,14 @@ else:
     running_python3 = True
 
 
-class ExtractFeatures(object):
+class ExtractFeatures(BuildScriptBase):
 
     class FindString(object):
         def __init__(self, string):
             self.string = string
 
     def __init__(self, filename, nm="arm-none-eabi-nm", strings="strings"):
+        super().__init__()
         self.filename = filename
         self.nm = nm
         self.strings = strings
@@ -332,9 +329,9 @@ class ExtractFeatures(object):
             ('AP_SCRIPTING_BINDING_MOTORS_ENABLED', 'AP__motors___index'),
         ]
 
-    def progress(self, msg):
-        """Pretty-print progress."""
-        print("EF: %s" % msg)
+    def progress_prefix(self):
+        """Return prefix for progress messages."""
+        return 'EF'
 
     def validate_features_list(self):
         '''ensures that every define present in build_options.py could be
@@ -359,59 +356,6 @@ class ExtractFeatures(object):
             if not matched:
                 raise ValueError("feature (%s) is not matched in extract_features" %
                                  (option.define))
-
-    def run_program(self, prefix, cmd_list, show_output=True, env=None):
-        """Swiped from build_binaries.py."""
-        if show_output:
-            self.progress("Running (%s)" % " ".join(cmd_list))
-        p = subprocess.Popen(
-            cmd_list,
-            stdin=None,
-            stdout=subprocess.PIPE,
-            close_fds=True,
-            stderr=subprocess.PIPE,
-            env=env)
-        stderr = bytearray()
-        output = ""
-        while True:
-            # read all of stderr:
-            while True:
-                (rin, _, _) = select.select([p.stderr.fileno()], [], [], 0)
-                if p.stderr.fileno() not in rin:
-                    break
-                new = p.stderr.read()
-                if len(new) == 0:
-                    break
-                stderr += new
-
-            x = p.stdout.readline()
-            if len(x) == 0:
-                (rin, _, _) = select.select([p.stderr.fileno()], [], [], 0)
-                if p.stderr.fileno() in rin:
-                    stderr += p.stderr.read()
-
-                returncode = os.waitpid(p.pid, 0)
-                if returncode:
-                    break
-                    # select not available on Windows... probably...
-                time.sleep(0.1)
-                continue
-            if running_python3:
-                x = bytearray(x)
-                x = filter(lambda x: chr(x) in string.printable, x)
-                x = "".join([chr(c) for c in x])
-            output += x
-            x = x.rstrip()
-            if show_output:
-                print("%s: %s" % (prefix, x))
-        (_, status) = returncode
-        if status != 0:
-            stderr = stderr.decode('utf-8')
-            self.progress("Process failed (%s) (%s)" %
-                          (str(returncode), stderr))
-            raise subprocess.CalledProcessError(
-                status, cmd_list, output=str(output), stderr=str(stderr))
-        return output
 
     class Symbols(object):
         def __init__(self):
