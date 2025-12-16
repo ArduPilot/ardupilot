@@ -2251,14 +2251,22 @@ void AP_Param::set_float(float value, enum ap_var_type var_type)
         int32_t v = (int32_t)rounded;
         ((AP_Int32 *)this)->set(v);
     } else if (var_type == AP_PARAM_INT16) {
-        // Use proper rounding for INT16
-        float v = roundf(value);
-        v = constrain_float(v, INT16_MIN, INT16_MAX);
+        // Use proper rounding for INT16 to avoid precision loss
+        // lroundf() rounds to nearest integer and returns long, which can be safely cast to int16_t
+        long rounded = lroundf(value);
+        // Constrain to INT16 range before casting
+        if (rounded > INT16_MAX) rounded = INT16_MAX;
+        if (rounded < INT16_MIN) rounded = INT16_MIN;
+        int16_t v = (int16_t)rounded;
         ((AP_Int16 *)this)->set(v);
     } else if (var_type == AP_PARAM_INT8) {
-        // Use proper rounding for INT8
-        float v = roundf(value);
-        v = constrain_float(v, INT8_MIN, INT8_MAX);
+        // Use proper rounding for INT8 to avoid precision loss
+        // lroundf() rounds to nearest integer and returns long, which can be safely cast to int8_t
+        long rounded = lroundf(value);
+        // Constrain to INT8 range before casting
+        if (rounded > INT8_MAX) rounded = INT8_MAX;
+        if (rounded < INT8_MIN) rounded = INT8_MIN;
+        int8_t v = (int8_t)rounded;
         ((AP_Int8 *)this)->set(v);
     }
 }

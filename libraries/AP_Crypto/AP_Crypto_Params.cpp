@@ -15,12 +15,12 @@
 
 #include "AP_Crypto_Params.h"
 
-#if AP_CRYPTO_ENABLED
+#if defined(AP_CRYPTO_ENABLED) && AP_CRYPTO_ENABLED
 
 #include <AP_Param/AP_Param.h>
-#include <AP_CheckFirmware/monocypher.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Crypto/AP_Crypto.h>
+#include <AP_Crypto/sha256.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -29,7 +29,7 @@ AP_Crypto_Params *AP_Crypto_Params::_singleton = nullptr;
 const struct AP_Param::GroupInfo AP_Crypto_Params::var_info[] = {
     // @Param: LEIGH_KEY
     // @DisplayName: Encryption Key
-    // @Description: Encryption key for file encryption. INT32 value used to derive 32-byte encryption key via BLAKE2b. Supports full INT32 range including values like 74768361. When set via MAVLink, the INT32 value is hashed with salt "LEIGH_KEY_SALT_1" using BLAKE2b to produce a 32-byte key which is stored in secure storage.
+    // @Description: Encryption key for file encryption. INT32 value used to derive 32-byte encryption key via SHA-256. Supports full INT32 range including values like 74768361. When set via MAVLink, the INT32 value is hashed with salt "LEIGH_KEY_SALT_1" using SHA-256 to produce a 32-byte key which is stored in secure storage. Matches Python's hashlib.sha256(struct.pack('<i', value) + salt).digest() for compatibility.
     // @Range: -2147483648 2147483647
     // @Units: INT_32
     // @User: Standard
@@ -58,19 +58,27 @@ AP_Crypto_Params::AP_Crypto_Params()
 void AP_Crypto_Params::handle_key_set(int32_t value)
 {
     // Derive a 32-byte key from the INT32 value
-    // Use BLAKE2b to hash the value with a salt
+    // Use SHA-256 to match AP_Crypto_Simple::derive_key_from_leigh_key() and Python
     uint8_t key[32];
     const uint8_t salt[16] = {
         0x4c, 0x45, 0x49, 0x47, 0x48, 0x5f, 0x4b, 0x45,
         0x59, 0x5f, 0x53, 0x41, 0x4c, 0x54, 0x5f, 0x31
     }; // "LEIGH_KEY_SALT_1" in ASCII
     
-    // Hash the INT32 value + salt to get 32-byte key
-    crypto_blake2b_ctx ctx;
-    crypto_blake2b_general_init(&ctx, 32, nullptr, 0); // 32-byte output
-    crypto_blake2b_update(&ctx, (const uint8_t*)&value, sizeof(value));
-    crypto_blake2b_update(&ctx, salt, sizeof(salt));
-    crypto_blake2b_final(&ctx, key);
+    // Use SHA-256 to match Python's hashlib.sha256(LEIGH_KEY_INT32_bytes + salt)
+    // Python: hashlib.sha256(struct.pack('<i', value) + salt).digest()
+    // Ensure little-endian byte order to match Python's struct.pack('<i', ...)
+    uint8_t leigh_key_bytes[4];
+    leigh_key_bytes[0] = (uint8_t)(value & 0xFF);
+    leigh_key_bytes[1] = (uint8_t)((value >> 8) & 0xFF);
+    leigh_key_bytes[2] = (uint8_t)((value >> 16) & 0xFF);
+    leigh_key_bytes[3] = (uint8_t)((value >> 24) & 0xFF);
+    
+    sha256_ctx ctx;
+    sha256_init(&ctx);
+    sha256_update(&ctx, leigh_key_bytes, 4);  // Little-endian INT32 (matches Python struct.pack('<i', ...))
+    sha256_update(&ctx, salt, sizeof(salt));
+    sha256_final(&ctx, key);
     
     // Store the derived key
     AP_Crypto::store_key(key);
