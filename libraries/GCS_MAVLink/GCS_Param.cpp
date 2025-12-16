@@ -311,7 +311,9 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
         return;
     }
 
+    // Get the old value normally
     float old_value = vp->cast_to_float(var_type);
+    bool is_leigh_key = (strcmp(key, "LEIGH_KEY") == 0);
 
     if (!vp->allow_set_via_mavlink(parameter_flags)) {
         // don't warn the user about this failure if we are dropping
@@ -346,9 +348,27 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
         AP_Param::invalidate_count();
     }
 
+    // Special handling for LEIGH_KEY
+    // When set, extract the value and store the derived key
+    if (is_leigh_key) {
+        AP_Crypto_Params *crypto_params = AP_Crypto_Params::get_singleton();
+        if (crypto_params != nullptr) {
+            // Get the key value
+            int32_t key_value = crypto_params->leigh_key.get();
+            
+            // Derive and store the 32-byte key from the INT32 value
+            crypto_params->handle_key_set(key_value);
+        }
+        
+        // Send PARAM_VALUE with the actual value (now readable)
+        send_parameter_value(key, var_type, vp->cast_to_float(var_type));
+        return;
+    }
+
 #if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger != nullptr) {
+        // Log the actual parameter value
         logger->Write_Parameter(key, vp->cast_to_float(var_type));
     }
 #endif

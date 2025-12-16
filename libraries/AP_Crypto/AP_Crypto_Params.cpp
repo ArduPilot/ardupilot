@@ -29,7 +29,7 @@ AP_Crypto_Params *AP_Crypto_Params::_singleton = nullptr;
 const struct AP_Param::GroupInfo AP_Crypto_Params::var_info[] = {
     // @Param: LEIGH_KEY
     // @DisplayName: Encryption Key
-    // @Description: Encryption key for file encryption. INT32 value used to derive 32-byte encryption key via BLAKE2b. Supports full INT32 range including values like 74768361. When set via MAVLink, the INT32 value is hashed with salt "LEIGH_KEY_SALT_1" using BLAKE2b to produce a 32-byte key which is stored in secure storage. When LEIGH_CRYPT_LVL is 0, this parameter's value is readable via MAVLink; otherwise, it returns 0 for security.
+    // @Description: Encryption key for file encryption. INT32 value used to derive 32-byte encryption key via BLAKE2b. Supports full INT32 range including values like 74768361. When set via MAVLink, the INT32 value is hashed with salt "LEIGH_KEY_SALT_1" using BLAKE2b to produce a 32-byte key which is stored in secure storage.
     // @Range: -2147483648 2147483647
     // @Units: INT_32
     // @User: Standard

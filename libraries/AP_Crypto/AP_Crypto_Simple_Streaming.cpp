@@ -8,7 +8,6 @@
 
 #if defined(AP_CRYPTO_ENABLED) && AP_CRYPTO_ENABLED
 
-#include "AP_Crypto_Simple.h"
 #include <string.h>
 #include <AP_CheckFirmware/monocypher.h>  // For BLAKE2b (or implement SHA-256)
 
@@ -136,5 +135,7 @@ void AP_Crypto_Simple_Streaming::streaming_decrypt_cleanup(SimpleXORStreamDecryp
 }
 
 #endif  // AP_CRYPTO_ENABLED
+
+
 
 

@@ -7,12 +7,10 @@
 
 #pragma once
 
-#include "AP_Crypto_config.h"
-
-#if defined(AP_CRYPTO_ENABLED) && AP_CRYPTO_ENABLED
-
 #include <stdint.h>
 #include <stddef.h>
+
+#if defined(AP_CRYPTO_ENABLED) && AP_CRYPTO_ENABLED
 
 /*
   Simple XOR encryption using counter-based keystream
@@ -79,5 +77,7 @@ public:
 };
 
 #endif  // AP_CRYPTO_ENABLED
+
+
 
 

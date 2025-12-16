@@ -16,7 +16,7 @@
 
 #include "AP_Crypto_config.h"
 
-#if defined(AP_CRYPTO_ENABLED) && AP_CRYPTO_ENABLED
+#if AP_CRYPTO_ENABLED
 
 #include <stdint.h>
 #include <stddef.h>
