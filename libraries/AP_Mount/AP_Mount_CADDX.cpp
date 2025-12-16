@@ -61,7 +61,7 @@ void AP_Mount_CADDX::send_target_angles(const MountAngleTarget& angle_target_rad
     const uint16_t roll_target_cmd = constrain_uint16(wrap_2PI(angle_target_rad.roll) * scalar, AXIS_MIN, AXIS_MAX);
     const uint16_t pitch_target_cmd = constrain_uint16(wrap_2PI(angle_target_rad.pitch) * scalar, AXIS_MIN, AXIS_MAX);
     const uint16_t yaw_target_cmd = constrain_uint16(wrap_2PI(angle_target_rad.get_bf_yaw()) * scalar, AXIS_MIN, AXIS_MAX);
-
+    
     // prepare packet to send to gimbal
     uint8_t set_attitude_cmd_buf[SET_ATTITUDE_BUF_SIZE] {};
 
