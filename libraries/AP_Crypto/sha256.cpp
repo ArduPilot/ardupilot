@@ -6,9 +6,14 @@
  */
 
 #include "sha256.h"
+#include "AP_Crypto_config.h"
 #include <string.h>
 
 #if defined(AP_CRYPTO_ENABLED) && AP_CRYPTO_ENABLED
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define SHA256_BLOCK_SIZE 64
 #define SHA256_DIGEST_SIZE 32
@@ -154,6 +159,10 @@ void sha256(const uint8_t *data, size_t len, uint8_t hash[32])
     sha256_update(&ctx, data, len);
     sha256_final(&ctx, hash);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif  // AP_CRYPTO_ENABLED
 
