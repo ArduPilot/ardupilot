@@ -224,7 +224,7 @@ private:
     } segment[segments_max];
 
     bool is_arc_segment;    // true if this segment is a circular arc, false if straight line
-    Vector3f seg_delta;     // total displacement vector from start to end point (NEU frame)
+    Vector3f seg_delta;     // total displacement vector from start to end point (NED frame)
     float seg_length;       // 3D scalar length of the path (arc length + vertical component)
 
     struct {
