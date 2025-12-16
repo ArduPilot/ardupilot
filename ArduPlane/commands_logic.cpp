@@ -1141,7 +1141,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 if (ahrs.get_velocity_NED(vel_NED)) {
                     const Vector2f target_vec = current_loc.get_distance_NE(cmd.content.location);
                     const float angle_err = fabsf(wrap_180(degrees(vel_NED.xy().angle(target_vec))));
-                    lined_up = (angle_err < 30);
+                    lined_up = (angle_err < quadplane.fw_land_accept_angle);
                 }
 
                 if (past_finish_line && (lined_up || half_radius)) {

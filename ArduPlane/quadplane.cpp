@@ -572,6 +572,15 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     AP_GROUPINFO("TKOFF_RPM_MAX", 41, QuadPlane, takeoff_rpm_max, 0),
 #endif
 
+    // @Param: FW_LND_ANGLE
+    // @DisplayName: Quadplane fixed wing landing acceptance angle
+    // @Description: This is the angle from a track towards the landing point at the center of the spiral landing circle that must be achieved to switch to QRTL for the final landing approach. Some vehicles may benefit from a smaller angle to ensure good line up with the center of the circle.
+    // @Units: deg
+    // @Range: 5 40
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("FW_LND_ANGLE", 42, QuadPlane, fw_land_accept_angle, 30),
+    
     AP_GROUPEND
 };
 

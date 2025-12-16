@@ -337,6 +337,9 @@ private:
     // fw landing approach radius
     AP_Float fw_land_approach_radius_m;
 
+    // fw landing acceptance angle before QRTL
+    AP_Float fw_land_accept_angle;
+    
     AP_Int16 rc_speed;
 
     // VTOL assistance in a forward flight mode
