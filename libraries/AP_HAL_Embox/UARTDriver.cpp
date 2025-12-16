@@ -79,11 +79,11 @@ void UARTDriver::_allocate_buffers(uint16_t rxS, uint16_t txS) {
      * write GPS config packets
      */
 
-    if (rxS < 8192) {
-        rxS = 8192;
+    if (rxS < 4096) {
+        rxS = 4096;
     }
-    if (txS < 32000) {
-        txS = 32000;
+    if (txS < 4096) {
+        txS = 4096;
     }
 
     if (_writebuf.set_size(txS) && _readbuf.set_size(rxS)) {
