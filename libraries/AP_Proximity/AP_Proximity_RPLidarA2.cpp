@@ -154,6 +154,33 @@ void AP_Proximity_RPLidarA2::send_scan_mode_request()
     Debug(1, "Sent scan mode request");
 }
 
+// send EXPRESS_SCAN request for Dense mode
+void AP_Proximity_RPLidarA2::send_express_scan_request()
+{
+    const uint8_t cmd = RPLIDAR_CMD_EXPRESS_SCAN;
+    const uint8_t payload_size = 5;
+    uint8_t payload[payload_size] {};
+
+    uint8_t checksum = 0;
+    checksum ^= RPLIDAR_PREAMBLE;
+    checksum ^= cmd;
+    checksum ^= payload_size;
+    for (uint8_t i = 0; i < sizeof(payload); i++) {
+        checksum ^= payload[i];
+    }
+
+    // 2 (preamble + cmd) + 1 (payload_size field) + payload_size + 1 (checksum)
+    uint8_t tx_buffer[2 + 1 + payload_size + 1];
+    tx_buffer[0] = RPLIDAR_PREAMBLE;
+    tx_buffer[1] = cmd;
+    tx_buffer[2] = payload_size;
+    memcpy(&tx_buffer[3], payload, sizeof(payload));
+    tx_buffer[3 + sizeof(payload)] = checksum;
+
+    _uart->write(tx_buffer, sizeof(tx_buffer));
+    Debug(1, "Sent EXPRESS (Dense) scan request");
+}
+
 // send request for sensor health
 void AP_Proximity_RPLidarA2::send_request_for_health()                                    //not called yet
 {
@@ -187,6 +214,9 @@ void AP_Proximity_RPLidarA2::reset()
 {
     _state = State::RESET;
     _byte_count = 0;
+    _sync_error = 0;
+    _use_dense_express = false;
+    _express_stream_len = 0;
 }
 
 bool AP_Proximity_RPLidarA2::make_first_byte_in_payload(uint8_t desired_byte)
@@ -288,6 +318,9 @@ void AP_Proximity_RPLidarA2::get_readings()
             static const _descriptor DEVICE_INFO_DESCRIPTOR[] {
                 { RPLIDAR_PREAMBLE, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x04 }
             };
+            static const _descriptor EXPRESS_DATA_DESCRIPTOR[] {
+                { RPLIDAR_PREAMBLE, 0x5A, 0x54, 0x00, 0x00, 0x40, 0x85 }
+            };
             Debug(2,"LIDAR descriptor found");
             if (memcmp((void*)&_payload[0], SCAN_DATA_DESCRIPTOR, sizeof(_descriptor)) == 0) {
                 _state = State::AWAITING_SCAN_DATA;
@@ -295,6 +328,10 @@ void AP_Proximity_RPLidarA2::get_readings()
                 _state = State::AWAITING_DEVICE_INFO;
             } else if (memcmp((void*)&_payload[0], HEALTH_DESCRIPTOR, sizeof(_descriptor)) == 0) {
                 _state = State::AWAITING_HEALTH;
+            } else if (_use_dense_express && memcmp((void*)&_payload[0], EXPRESS_DATA_DESCRIPTOR, sizeof(_descriptor)) == 0) {
+                _state = State::AWAITING_EXPRESS_DATA;
+                _express_stream_len = 0;
+                _sync_error = 0;
             } else {
                 // unknown descriptor.  Ignore it.
             }
@@ -323,6 +360,10 @@ void AP_Proximity_RPLidarA2::get_readings()
             }
             parse_response_health();
             consume_bytes(sizeof(_payload.sensor_health));
+            break;
+
+        case State::AWAITING_EXPRESS_DATA:
+            handle_express_data();
             break;
         }
     }
@@ -361,7 +402,15 @@ void AP_Proximity_RPLidarA2::parse_response_device_info()
         Debug(1, "Unknown device (%u)", _payload.device_info.model);
     }
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RPLidar %s hw=%u fw=%u.%u", device_type, _payload.device_info.hardware, _payload.device_info.firmware_minor, _payload.device_info.firmware_major);
-    send_scan_mode_request();
+
+    // enable Dense EXPRESS path
+    _use_dense_express = (model == Model::S2);
+    if (_use_dense_express) {
+        _express_stream_len = 0;
+        send_express_scan_request();
+    } else {
+        send_scan_mode_request();
+    }
     _state = State::AWAITING_RESPONSE;
 }
 
@@ -430,6 +479,227 @@ void AP_Proximity_RPLidarA2::parse_response_health()
         Debug(1, "LIDAR Error");
     }
     Debug(1, "LIDAR Healthy");
+}
+
+// verify Dense capsulated (Express) block checksum
+bool AP_Proximity_RPLidarA2::verify_cabin_checksum(const uint8_t *buf, size_t len)
+{
+    if (buf == nullptr) {
+        return false;
+    }
+
+    uint8_t checksum = 0;
+    for (size_t i = sizeof(_express_header); i < len; i++) {
+        checksum ^= buf[i];
+    }
+
+    const uint8_t expected_b0 = uint8_t((EXPRESS_SYNC1 << 4) | (checksum & 0x0F));
+    const uint8_t expected_b1 = uint8_t((EXPRESS_SYNC2 << 4) | ((checksum >> 4) & 0x0F));
+
+    return (buf[0] == expected_b0) && (buf[1] == expected_b1);
+}
+
+
+// parse Dense capsulated Express block
+void AP_Proximity_RPLidarA2::parse_response_express(const uint8_t *buf)
+{
+    if (buf == nullptr) {
+        return;
+    }
+
+    // start_angle_q6: 16-bit, Q6 format at bytes [2..3]
+    const uint16_t start_angle_q6 = (uint16_t)buf[2] | ((uint16_t)buf[3] << 8);
+    const float start_angle_deg_raw = start_angle_q6 / 64.0f; // Q6 -> degrees
+
+    const float angle_sign = (params.orientation == 1) ? -1.0f : 1.0f;
+    const float angle_deg = wrap_360(start_angle_deg_raw * angle_sign + params.yaw_correction);
+
+    // cabins: 40 cabins * 2-byte distance (mm) starting at buf[4]
+    const uint8_t *cab = buf + 4;
+    static constexpr int NUM_CABINS = 40;
+
+    bool  have_distance = false;
+    float min_distance_m = 0.0f;
+
+    for (int i = 0; i < NUM_CABINS; i++) {
+        const uint16_t dist_mm = (uint16_t)cab[0] | ((uint16_t)cab[1] << 8);
+        cab += 2;
+        if (dist_mm == 0) {
+            continue;
+        }
+        const float d_m = dist_mm * 0.001f;
+
+        if (!have_distance || d_m < min_distance_m) {
+            min_distance_m = d_m;
+            have_distance = true;
+        }
+    }
+
+    _last_distance_received_ms = AP_HAL::millis();
+
+    if (!have_distance || ignore_reading(angle_deg, min_distance_m)) {
+        return;
+    }
+
+    const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(angle_deg);
+
+    if (face != _last_face) {
+        // distance is for a new face, the previous one can be updated now
+        if (_last_distance_valid) {
+            frontend.boundary.set_face_attributes(_last_face, _last_angle_deg, _last_distance_m, state.instance);
+        } else {
+            // reset distance from last face
+            frontend.boundary.reset_face(face, state.instance);
+        }
+
+        // initialize the new face
+        _last_face = face;
+        _last_distance_valid = false;
+    }
+
+    if (min_distance_m > distance_min_m()) {
+        // update shortest distance
+        if (!_last_distance_valid || (min_distance_m < _last_distance_m)) {
+            _last_distance_m = min_distance_m;
+            _last_distance_valid = true;
+            _last_angle_deg = angle_deg;
+        }
+        // update OA database
+        database_push(_last_angle_deg, _last_distance_m);
+    }
+}
+
+void AP_Proximity_RPLidarA2::handle_express_data()
+{
+    auto ensure_space = [&](uint16_t need) {
+        if (_express_stream_len + need <= EXPRESS_STREAM_BUFFER_SIZE) {
+            return;
+        }
+        const uint16_t keep = EXPRESS_STREAM_BUFFER_SIZE / 2;
+        memmove(_express_stream, _express_stream + (_express_stream_len - keep), keep);
+        _express_stream_len = keep;
+        _sync_error = 0;
+        Debug(1, "EXPRESS stream overflow, dropping old data");
+    };
+
+    uint16_t bytes_read_total = 0;
+
+    if (_byte_count > 0) {
+        ensure_space(_byte_count);
+        const uint16_t space = EXPRESS_STREAM_BUFFER_SIZE - _express_stream_len;
+        const uint16_t to_copy = MIN(space, _byte_count);
+        if (to_copy > 0) {
+            memcpy(_express_stream + _express_stream_len, (const uint8_t *)&_payload[0], to_copy);
+            _express_stream_len += to_copy;
+        }
+        _byte_count = 0;
+    }
+
+    while (_uart->available() && bytes_read_total < EXPRESS_MAX_BYTES_CONSUME) {
+        const uint16_t remaining = uint16_t(EXPRESS_MAX_BYTES_CONSUME - bytes_read_total);
+        uint16_t space = EXPRESS_STREAM_BUFFER_SIZE - _express_stream_len;
+        if (space == 0) {
+            ensure_space(1);
+            space = EXPRESS_STREAM_BUFFER_SIZE - _express_stream_len;
+            if (space == 0) {
+                break;
+            }
+        }
+        const uint16_t to_read = MIN(space, remaining);
+
+        if (to_read == 0) {
+            break;
+        }
+
+        const uint16_t n = _uart->read(_express_stream + _express_stream_len, to_read);
+        if (n == 0) {
+            break;
+        }
+
+        _express_stream_len += n;
+        bytes_read_total += n;
+    }
+
+    // scan the stream buffer for valid headers and process full blocks
+    uint16_t idx = 0;
+
+    while (_express_stream_len >= idx + 2) {
+        // search for a header candidate (upper nibbles 0xA / 0x5)
+        while (idx + 1 < _express_stream_len) {
+            const uint8_t b0 = _express_stream[idx];
+            const uint8_t b1 = _express_stream[idx + 1];
+            if ((b0 >> 4) == EXPRESS_SYNC1 && (b1 >> 4) == EXPRESS_SYNC2) {
+                // header candidate found
+                break;
+            }
+            idx++;
+        }
+
+        if (idx + 1 >= _express_stream_len) {
+            // no header candidate found, drop all accumulated data
+            if (_express_stream_len > 0) {
+                Debug(1, "EXPRESS: no header candidate, dropping %u bytes", unsigned(_express_stream_len));
+            }
+            if (_express_stream_len > 0) {
+                _express_stream[0] = _express_stream[_express_stream_len - 1];
+                _express_stream_len = 1;
+            } else {
+                _express_stream_len = 0;
+            }
+            _sync_error = 0;
+            return;
+        }
+
+        // idx now points to a header candidate
+        if (_express_stream_len - idx < EXPRESS_BLOCK_SIZE) {
+            // not enough bytes for a full block
+            // move remaining bytes to the front and wait for more data
+            if (idx > 0) {
+                memmove(_express_stream,
+                        _express_stream + idx,
+                        _express_stream_len - idx);
+                _express_stream_len -= idx;
+            }
+            return;
+        }
+
+        // pointer to the candidate block
+        uint8_t *blk = _express_stream + idx;
+
+        if (!verify_cabin_checksum(blk, EXPRESS_BLOCK_SIZE)) {
+            // upper nibbles match but checksum is invalid
+            // advance by one byte and try to resynchronise
+            Debug(1, "EXPRESS/DENSE checksum error");
+            _sync_error++;
+
+            if (_sync_error > 10) {
+                reset_rplidar();
+                _express_stream_len = 0;
+                return;
+            }
+
+            idx++;
+            continue;
+        }
+
+        // valid block found
+        _sync_error = 0;
+        parse_response_express(blk);
+
+        // consume this block and look for the next one
+        idx += EXPRESS_BLOCK_SIZE;
+    }
+
+    // compact any remaining unprocessed bytes to the front of the buffer
+    if (idx > 0 && idx <= _express_stream_len) {
+        const uint16_t remaining = _express_stream_len - idx;
+        if (remaining > 0) {
+            memmove(_express_stream,
+                    _express_stream + idx,
+                    remaining);
+        }
+        _express_stream_len = remaining;
+    }
 }
 
 #endif // AP_PROXIMITY_RPLIDARA2_ENABLED

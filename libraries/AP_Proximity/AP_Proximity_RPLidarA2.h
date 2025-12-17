@@ -70,26 +70,45 @@ private:
         AWAITING_SCAN_DATA,
         AWAITING_HEALTH,
         AWAITING_DEVICE_INFO,
+        AWAITING_EXPRESS_DATA,
     } _state = State::RESET;
+
+    // Dense capsulated block size (EXPRESS/DENSE mode)
+    static constexpr uint16_t EXPRESS_BLOCK_SIZE = 84;
+    // Express/Dense capsule sync nibbles (upper 4 bits)
+    static constexpr uint8_t EXPRESS_SYNC1 = 0x0A;
+    static constexpr uint8_t EXPRESS_SYNC2 = 0x05;
+
+    static constexpr uint16_t EXPRESS_STREAM_BUFFER_SIZE = 8192;
+    static constexpr uint16_t EXPRESS_MAX_BYTES_CONSUME = 4096;
 
     // send request for something from sensor
     void send_request_for_health();
     void send_scan_mode_request();
     void send_request_for_device_info();
+    void send_express_scan_request();
 
     void parse_response_data();
     void parse_response_health();
     void parse_response_device_info();
+    void parse_response_express(const uint8_t *buf);
 
     void get_readings();
     void reset_rplidar();
     void reset();
+    void handle_express_data();
 
     // remove bytes from read buffer:
     void consume_bytes(uint16_t count);
 
+    // verify Dense capsulated (Express) block checksum
+    bool verify_cabin_checksum(const uint8_t *buf, size_t len);
+
     uint8_t _sync_error;
     uint16_t _byte_count;
+
+    uint8_t _express_stream[EXPRESS_STREAM_BUFFER_SIZE];
+    uint16_t _express_stream_len;
 
     // request related variables
     uint32_t  _last_distance_received_ms;     ///< system time of last distance measurement received from sensor
@@ -100,6 +119,9 @@ private:
     float _last_angle_deg;                    ///< yaw angle (in degrees) of _last_distance_m
     float _last_distance_m;                   ///< shortest distance for _last_face
     bool _last_distance_valid;                ///< true if _last_distance_m is valid
+
+    // use Dense EXPRESS_SCAN path
+    bool _use_dense_express = false;
 
     struct PACKED _device_info {
         uint8_t model;
@@ -123,6 +145,12 @@ private:
         uint16_t error_code;                  ///< the related error code
     };
 
+    // Express/Dense capsule sync header (2 bytes)
+    struct PACKED _express_header {
+        uint8_t sync1_checksum_low;   // upper nibble = 0xA
+        uint8_t sync2_checksum_high;  // upper nibble = 0x5
+    };
+
     struct PACKED _descriptor {
         uint8_t bytes[7];
     };
@@ -143,6 +171,7 @@ private:
         _descriptor descriptor;
         _rpi_information information;
         _device_info device_info;
+        _express_header express_header;
         uint8_t forced_buffer_size[256]; // just so we read(...) efficiently
     } _payload;
     static_assert(sizeof(_payload) >= 63, "Needed for parsing out reboot data");
