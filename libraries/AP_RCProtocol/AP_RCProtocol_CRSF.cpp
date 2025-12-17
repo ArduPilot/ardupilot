@@ -18,11 +18,13 @@
  */
 
 #include "AP_RCProtocol_config.h"
+#include <AP_CRSF/AP_CRSF_config.h>
 
 #if AP_RCPROTOCOL_CRSF_ENABLED
 
 #include "AP_RCProtocol.h"
 #include "AP_RCProtocol_CRSF.h"
+#include <AP_CRSF.AP_CRSF_Protocol.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
@@ -44,7 +46,6 @@
 #define CRSF_SUBSET_RC_RES_CONF_11B                 1
 #define CRSF_SUBSET_RC_RES_BITS_11B                 11
 #define CRSF_SUBSET_RC_RES_MASK_11B                 0x07FF
-#define CRSF_SUBSET_RC_CHANNEL_SCALE_11B            0.5f
 #define CRSF_SUBSET_RC_RES_CONF_12B                 2
 #define CRSF_SUBSET_RC_RES_BITS_12B                 12
 #define CRSF_SUBSET_RC_RES_MASK_12B                 0x0FFF
@@ -89,61 +90,6 @@ extern const AP_HAL::HAL& hal;
 //#define CRSF_DEBUG_PARAMS
 #if defined(CRSF_DEBUG) || defined(CRSF_DEBUG_TELEM) || defined(CRSF_DEBUG_PARAMS)
 # define debug(fmt, args...)	hal.console->printf("CRSF: " fmt "\n", ##args)
-static const char* get_frame_type(uint8_t byte, uint8_t subtype = 0)
-{
-    switch(byte) {
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_GPS:
-        return "GPS";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_BATTERY_SENSOR:
-        return "BATTERY";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_HEARTBEAT:
-        return "HEARTBEAT";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VTX:
-        return "VTX";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VTX_TELEM:
-        return "VTX_TELEM";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_PING:
-        return "PING";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND:
-        return "COMMAND";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_ATTITUDE:
-        return "ATTITUDE";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_FLIGHT_MODE:
-        return "FLIGHT_MODE";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO:
-        return "DEVICE_INFO";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_READ:
-        return "PARAM_READ";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
-        return "SETTINGS_ENTRY";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_LINK_STATISTICS:
-        return "LINK_STATS";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
-        return "RC";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
-        return "RCv3";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_RC_CHANNELS_PACKED_11BIT:
-        return "RCv3_11BIT";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_LINK_STATISTICS_RX:
-        return "LINK_STATSv3_RX";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_LINK_STATISTICS_TX:
-        return "LINK_STATSv3_TX";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_WRITE:
-        return "PARAM_WRITE";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_AP_CUSTOM_TELEM_LEGACY:
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_AP_CUSTOM_TELEM:
-        switch (subtype) {
-        case AP_RCProtocol_CRSF::CRSF_AP_CUSTOM_TELEM_SINGLE_PACKET_PASSTHROUGH:
-            return "AP_CUSTOM_SINGLE";
-        case AP_RCProtocol_CRSF::CRSF_AP_CUSTOM_TELEM_STATUS_TEXT:
-            return "AP_CUSTOM_TEXT";
-        case AP_RCProtocol_CRSF::CRSF_AP_CUSTOM_TELEM_MULTI_PACKET_PASSTHROUGH:
-            return "AP_CUSTOM_MULTI";
-        }
-        return "AP_CUSTOM";
-    }
-    return "UNKNOWN";
-}
 #else
 # define debug(fmt, args...)	do {} while(0)
 #endif
@@ -193,8 +139,8 @@ AP_RCProtocol_CRSF::~AP_RCProtocol_CRSF() {
 }
 
 // get the protocol string
-const char* AP_RCProtocol_CRSF::get_protocol_string(ProtocolType protocol) const {
-    if (protocol == ProtocolType::PROTOCOL_ELRS) {
+const char* AP_RCProtocol_CRSF::get_protocol_string(AP_CRSF_Protocol::ProtocolType protocol) const {
+    if (protocol == AP_CRSF_Protocol::ProtocolType::PROTOCOL_ELRS) {
         return "ELRS";
     } else if (_crsf_v3_active) {
         return "CRSFv3";
@@ -204,17 +150,23 @@ const char* AP_RCProtocol_CRSF::get_protocol_string(ProtocolType protocol) const
 }
 
 // return the link rate as defined by the LinkStatistics
-uint16_t AP_RCProtocol_CRSF::get_link_rate(ProtocolType protocol) const {
-    if (protocol == ProtocolType::PROTOCOL_ELRS) {
-        return RF_MODE_RATES[_link_status.rf_mode + RFMode::CRSF_RF_MAX_MODES];
-    } else if (protocol == ProtocolType::PROTOCOL_TRACER) {
-        return 250;
-    } else {
-        return RF_MODE_RATES[_link_status.rf_mode];
+uint16_t AP_RCProtocol_CRSF::get_link_rate(AP_CRSF_Protocol::ProtocolType protocol) const {
+    if (_link_status.fps > 0) { // new way - direct linkn rate
+        return _link_status.fps * 10;
     }
+
+    if (protocol == AP_CRSF_Protocol::ProtocolType::PROTOCOL_ELRS) {
+        return RF_MODE_RATES[_link_status.rf_mode + RFMode::CRSF_RF_MAX_MODES];
+    }
+
+    if (protocol == AP_CRSF_Protocol::ProtocolType::PROTOCOL_TRACER) {
+        return 250;
+    }
+
+    return RF_MODE_RATES[_link_status.rf_mode];
 }
 
-// process a byte provided by a uart from rc stack
+// process a byte provided by a uart from rc stack (Passthrough mode)
 void AP_RCProtocol_CRSF::process_byte(uint8_t byte, uint32_t baudrate)
 {
     // reject RC data if we have been configured for standalone mode
@@ -390,7 +342,7 @@ void AP_RCProtocol_CRSF::update(void)
 }
 
 // write out a frame of any type
-void AP_RCProtocol_CRSF::write_frame(Frame* frame)
+void AP_RCProtocol_CRSF::write_frame(AP_CRSF_Protocol::Frame* frame) const
 {
     AP_HAL::UARTDriver *uart = get_current_UART();
 
@@ -398,11 +350,7 @@ void AP_RCProtocol_CRSF::write_frame(Frame* frame)
         return;
     }
     // calculate crc
-    uint8_t crc = crc8_dvb_s2(0, frame->type);
-    for (uint8_t i = 0; i < frame->length - 2; i++) {
-        crc = crc8_dvb_s2(crc, frame->payload[i]);
-    }
-    frame->payload[frame->length - 2] = crc;
+    frame->payload[frame->length - 2] = crc8_dvb_s2_update(0, &frame->type, frame->length-1);
 
     uart->write((uint8_t*)frame, frame->length + 2);
     uart->flush();
@@ -410,10 +358,10 @@ void AP_RCProtocol_CRSF::write_frame(Frame* frame)
 #if defined(CRSF_DEBUG) || defined(CRSF_DEBUG_PARAMS)
 #ifdef CRSF_DEBUG_PARAMS
     switch (frame->type) {
-        case CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
-        case CRSF_FRAMETYPE_PARAMETER_READ:
-        case CRSF_FRAMETYPE_PARAMETER_WRITE:
-        case CRSF_FRAMETYPE_COMMAND:
+        case FrameType::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
+        case FrameType::CRSF_FRAMETYPE_PARAMETER_READ:
+        case FrameType::CRSF_FRAMETYPE_PARAMETER_WRITE:
+        case FrameType::CRSF_FRAMETYPE_COMMAND:
 #endif
 
         hal.console->printf("CRSF: writing %s:", get_frame_type(frame->type, frame->payload[0]));
@@ -439,7 +387,7 @@ void AP_RCProtocol_CRSF::write_frame(Frame* frame)
 bool AP_RCProtocol_CRSF::decode_crsf_packet()
 {
 #ifdef CRSF_DEBUG
-    hal.console->printf("CRSF: received %s:", get_frame_type(_frame.type));
+    hal.console->printf("CRSF: received %s:", AP_CRSF_Protocol::get_frame_type(_frame.type));
     uint8_t* fptr = (uint8_t*)&_frame;
     for (uint8_t i = 0; i < _frame.length + 2; i++) {
 #ifdef CRSF_DEBUG_CHARS
@@ -456,50 +404,53 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
 #endif
 
     bool rc_active = false;
+    bool decoded = false;
 
     switch (_frame.type) {
-        case CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
+        case FrameType::CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
             // scale factors defined by TBS - TICKS_TO_US(x) ((x - 992) * 5 / 8 + 1500)
-            decode_11bit_channels((const uint8_t*)(&_frame.payload), CRSF_MAX_CHANNELS, _channels, 5U, 8U, 880U);
+            AP_CRSF_Protocol::decode_11bit_channels((const uint8_t*)(&_frame.payload), MAX_CHANNELS, _channels);
             _crsf_v3_active = false;
-            rc_active = !_uart; // only accept RC data if we are not in standalone mode
+            rc_active = true;
             break;
-        case CRSF_FRAMETYPE_LINK_STATISTICS:
+        case FrameType::CRSF_FRAMETYPE_LINK_STATISTICS:
             process_link_stats_frame((uint8_t*)&_frame.payload);
             break;
-        case CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
-            decode_variable_bit_channels((const uint8_t*)(&_frame.payload), _frame.length, CRSF_MAX_CHANNELS, _channels);
+        case FrameType::CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
+            AP_CRSF_Protocol::decode_variable_bit_channels((const uint8_t*)(&_frame.payload), _frame.length, MAX_CHANNELS, _channels);
             _crsf_v3_active = true;
-            rc_active = !_uart; // only accept RC data if we are not in standalone mode
+            rc_active = true;
             break;
-        case CRSF_FRAMETYPE_LINK_STATISTICS_RX:
+        case FrameType::CRSF_FRAMETYPE_LINK_STATISTICS_RX:
             process_link_stats_rx_frame((uint8_t*)&_frame.payload);
             break;
-        case CRSF_FRAMETYPE_LINK_STATISTICS_TX:
+        case FrameType::CRSF_FRAMETYPE_LINK_STATISTICS_TX:
             process_link_stats_tx_frame((uint8_t*)&_frame.payload);
             break;
+
         default:
             break;
     }
+        
 #if HAL_CRSF_TELEM_ENABLED
-    if (AP_CRSF_Telem::process_frame(FrameType(_frame.type), (uint8_t*)&_frame.payload, _frame.length - 2U)) {
+    if (!decoded && AP_CRSF_Telem::process_frame(FrameType(_frame.type), (uint8_t*)&_frame.payload, _frame.length - 2U)) {
 #if defined(CRSF_DEBUG_TELEM) || defined(CRSF_DEBUG_PARAMS)
         switch (_frame.type) {
-            case CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
-            case CRSF_FRAMETYPE_LINK_STATISTICS:
-            case CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
-            case CRSF_FRAMETYPE_LINK_STATISTICS_RX:
-            case CRSF_FRAMETYPE_LINK_STATISTICS_TX:
+            case FrameType::CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
+            case FrameType::CRSF_FRAMETYPE_LINK_STATISTICS:
+            case FrameType::CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
+            case FrameType::CRSF_FRAMETYPE_LINK_STATISTICS_RX:
+            case FrameType::CRSF_FRAMETYPE_LINK_STATISTICS_TX:
                 break;
 #ifdef CRSF_DEBUG_PARAMS
-            case CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
-            case CRSF_FRAMETYPE_PARAMETER_READ:
-            case CRSF_FRAMETYPE_PARAMETER_WRITE:
-            case CRSF_FRAMETYPE_COMMAND:
+            case FrameType::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
+            case FrameType::CRSF_FRAMETYPE_PARAMETER_READ:
+            case FrameType::CRSF_FRAMETYPE_PARAMETER_WRITE:
+            case FrameType::CRSF_FRAMETYPE_COMMAND:
 #else
             default:
 #endif
-                hal.console->printf("CRSF: received %s:", get_frame_type(_frame.type));
+                hal.console->printf("CRSF: received %s:", AP_CRSF_Protocol::get_frame_type(_frame.type));
                 uint8_t* fptr = (uint8_t*)&_frame;
                 for (uint8_t i = 0; i < _frame.length + 2; i++) {
                     hal.console->printf(" 0x%x", fptr[i]);
@@ -530,97 +481,30 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
     return rc_active;
 }
 
-/*
-  decode channels from the standard 11bit format (used by CRSF, SBUS, FPort and FPort2)
-  must be used on multiples of 8 channels
-*/
-void AP_RCProtocol_CRSF::decode_variable_bit_channels(const uint8_t* payload, uint8_t frame_length, uint8_t nchannels, uint16_t *values)
-{
-    const SubsetChannelsFrame* channel_data = (const SubsetChannelsFrame*)payload;
-
-    // get the channel resolution settings
-    uint8_t channelBits;
-    uint16_t channelMask;
-    float channelScale;
-
-    switch (channel_data->res_configuration) {
-    case CRSF_SUBSET_RC_RES_CONF_10B:
-        channelBits = CRSF_SUBSET_RC_RES_BITS_10B;
-        channelMask = CRSF_SUBSET_RC_RES_MASK_10B;
-        channelScale = CRSF_SUBSET_RC_CHANNEL_SCALE_10B;
-        break;
-    default:
-    case CRSF_SUBSET_RC_RES_CONF_11B:
-        channelBits = CRSF_SUBSET_RC_RES_BITS_11B;
-        channelMask = CRSF_SUBSET_RC_RES_MASK_11B;
-        channelScale = CRSF_SUBSET_RC_CHANNEL_SCALE_11B;
-        break;
-    case CRSF_SUBSET_RC_RES_CONF_12B:
-        channelBits = CRSF_SUBSET_RC_RES_BITS_12B;
-        channelMask = CRSF_SUBSET_RC_RES_MASK_12B;
-        channelScale = CRSF_SUBSET_RC_CHANNEL_SCALE_12B;
-        break;
-    case CRSF_SUBSET_RC_RES_CONF_13B:
-        channelBits = CRSF_SUBSET_RC_RES_BITS_13B;
-        channelMask = CRSF_SUBSET_RC_RES_MASK_13B;
-        channelScale = CRSF_SUBSET_RC_CHANNEL_SCALE_13B;
-        break;
-    }
-
-    // calculate the number of channels packed
-    uint8_t numOfChannels = MIN(uint8_t(((frame_length - 2) * 8 - CRSF_SUBSET_RC_STARTING_CHANNEL_BITS) / channelBits), CRSF_MAX_CHANNELS);
-
-    // unpack the channel data
-    uint8_t bitsMerged = 0;
-    uint32_t readValue = 0;
-    uint8_t readByteIndex = 1;
-
-    for (uint8_t n = 0; n < numOfChannels; n++) {
-        while (bitsMerged < channelBits) {
-            // check for corrupt frame
-            if (readByteIndex >= CRSF_FRAME_PAYLOAD_MAX) {
-                return;
-            }
-            uint8_t readByte = payload[readByteIndex++];
-            readValue |= ((uint32_t) readByte) << bitsMerged;
-            bitsMerged += 8;
-        }
-        // check for corrupt frame
-        if (uint8_t(channel_data->starting_channel + n) >= CRSF_MAX_CHANNELS) {
-            return;
-        }
-        _channels[channel_data->starting_channel + n] =
-            uint16_t(channelScale * float(uint16_t(readValue & channelMask)) + 988);
-        readValue >>= channelBits;
-        bitsMerged -= channelBits;
-    }
-}
-
 // send out telemetry
-bool AP_RCProtocol_CRSF::process_telemetry(bool check_constraint)
+bool AP_RCProtocol_CRSF::process_telemetry(bool check_constraint) const
 {
-
+#if HAL_CRSF_TELEM_ENABLED
     AP_HAL::UARTDriver *uart = get_current_UART();
     if (!uart) {
         return false;
     }
 
     if (!telem_available) {
-#if HAL_CRSF_TELEM_ENABLED
-        if (AP_CRSF_Telem::get_telem_data(&_telemetry_frame, is_tx_active())) {
+        if (AP_CRSF_Telem::get_telem_data(this, (AP_CRSF_Protocol::Frame*)&_telemetry_frame, is_tx_active())) {
             telem_available = true;
         } else {
             return false;
         }
-#else
-        return false;
-#endif
     }
-    write_frame(&_telemetry_frame);
+    write_frame((AP_CRSF_Protocol::Frame*)&_telemetry_frame);
     // get fresh telem_data in the next call
     telem_available = false;
 
     return true;
+#else
+    return false;
+#endif
 }
 
 #if AP_OSD_LINK_STATS_EXTENSIONS_ENABLED
@@ -694,18 +578,23 @@ void AP_RCProtocol_CRSF::process_link_stats_rx_frame(const void* data)
 // process link statistics to get TX RSSI
 void AP_RCProtocol_CRSF::process_link_stats_tx_frame(const void* data)
 {
-    const LinkStatisticsTXFrame* link = (const LinkStatisticsTXFrame*)data;
+    const AP_CRSF_Protocol::LinkStatisticsTXFrame* link = (const AP_CRSF_Protocol::LinkStatisticsTXFrame*)data;
 
     if (_use_lq_for_rssi) {
         _link_status.rssi = derive_scaled_lq_value(link->link_quality);
     } else {
         _link_status.rssi = link->rssi_percent * 255.0f * 0.01f;
     }
+
+    _link_status.fps = link->fps;
 }
 
 // start the uart if we have one
 void AP_RCProtocol_CRSF::start_uart()
 {
+    if (!_uart) {
+        return;
+    }
     _uart->configure_parity(0);
     _uart->set_stop_bits(1);
     _uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
