@@ -290,7 +290,12 @@ class SizeCompareBranches(BuildScriptBase):
             else:
                 if board_info.is_ap_periph:
                     continue
-                if vehicle.lower() not in [x.lower() for x in board_info.autobuild_targets]:
+                # Map vehicle name to autobuild target name
+                # antennatracker (waf target) -> Tracker (autobuild target)
+                vehicle_for_autobuild = vehicle
+                if vehicle.lower() == 'antennatracker':
+                    vehicle_for_autobuild = 'tracker'
+                if vehicle_for_autobuild.lower() not in [x.lower() for x in board_info.autobuild_targets]:
                     continue
             vehicles_to_build.append(vehicle)
 

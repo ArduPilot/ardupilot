@@ -441,10 +441,10 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "RC8_OPTION",          213},   // MOUNT1_PITCH
     { "MOT_PWM_MIN",         1100},
     { "MOT_PWM_MAX",         1900},
-    { "PSC_JERK_Z",          50.0f},
+    { "PSC_JERK_D",          50.0f},
     { "WPNAV_SPEED",         100.0f},
     { "PILOT_SPEED_UP",      100.0f},
-    { "PSC_VELXY_P",         6.0f},
+    { "PSC_NE_VEL_P",         6.0f},
     { "EK3_SRC1_VELZ",       0},
 #if AP_SUB_RC_ENABLED
     { "RC_PROTOCOLS",        0},

@@ -185,10 +185,10 @@ static const struct AP_Param::defaults_table_struct defaults_table_tailsitter[] 
     { "Q_TRANS_DECEL",    6 },
     { "Q_A_ACCEL_P_MAX",    30000},
     { "Q_A_ACCEL_R_MAX",    30000},
-    { "Q_P_POSXY_P",        0.5},
-    { "Q_P_VELXY_P",        1.0},
-    { "Q_P_VELXY_I",        0.5},
-    { "Q_P_VELXY_D",        0.25},
+    { "Q_P_NE_POS_P",        0.5},
+    { "Q_P_NE_VEL_P",        1.0},
+    { "Q_P_NE_VEL_I",        0.5},
+    { "Q_P_NE_VEL_D",        0.25},
     
 };
 
