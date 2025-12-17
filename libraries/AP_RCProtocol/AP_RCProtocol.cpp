@@ -607,6 +607,59 @@ void AP_RCProtocol::start_bind()
     }
 }
 
+/**
+ * @brief Validate decoded RC input values against calibrated limits.
+ *
+ * This method ensures that each decoded RC channel value lies within
+ * the calibrated min/max range defined in RC_Channel.
+ * It prevents corrupted or unsafe PWM values from being accepted.
+ *
+ * - Throttle channel below min is allowed (used for cutoff).
+ * - Only valid data channels are checked (e.g. SBUS = 16ch, CRSF = 16ch, etc.)
+ *
+ * @param values        pointer to decoded RC channel values (µs)
+ * @param chancount     total number of decoded channels
+ * @param thr_idx       throttle channel index (0-based)
+ * @param data_ch_count number of data channels (e.g., 16 for SBUS, 18 if including switches)
+ * @return              true if all checked channels are within range, false otherwise
+ */
+bool AP_RCProtocol::validate_rc_input_range(const uint16_t* values,
+                                            uint8_t chancount,
+                                            uint8_t thr_idx,
+                                            uint8_t data_ch_count)
+{
+#if !AP_RC_CHANNEL_ENABLED
+    // RC_Channel not available (e.g., IOMCU build)
+    return true;
+#endif
+    
+    // Determine the number of valid data channels
+    // (e.g., in SBUS, the first 16 of 18 channels are analog channels)
+    const uint8_t pwm_ch_nums = (chancount > data_ch_count)
+                                ? (chancount - (chancount - data_ch_count))
+                                : chancount;
+
+    for (uint8_t i = 0; i < pwm_ch_nums; i++) {
+        RC_Channel *ch = rc().channel(i);
+        if (ch == nullptr) {
+            continue;   // Skip if the channel does not exist
+        }
+
+        const uint16_t v = values[i];
+
+        // Reject if the value is outside the calibrated range
+        if (v > ch->get_radio_max() || v < ch->get_radio_min()) {
+            // Allow throttle channel below minimum (used for cutoff or failsafe)
+            if (i == thr_idx && v < ch->get_radio_min()) {
+                continue;
+            }
+
+            return false;
+        }
+    }
+    return true;
+}
+
 #endif  // AP_RCPROTOCOL_ENABLED
 
 /*
