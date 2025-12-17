@@ -38,6 +38,7 @@ void AP_Periph_FW::can_battery_update(void)
         uavcan_equipment_power_BatteryInfo pkt {};
 
         // if a battery serial number is assigned, use that as the ID. Else, use the index.
+        // batteries should start their serial numbers at numbers above 255 to avoid conflicts with the battery index offset method of populating the serial number
         const int32_t serial_number = battery_lib.get_serial_number(i);
         pkt.battery_id = (serial_number >= 0) ? serial_number : i+1;
 
@@ -108,6 +109,7 @@ void AP_Periph_FW::can_battery_send_cells(uint8_t instance)
     pkt->timestamp.usec = AP_HAL::micros();
 
     // if a battery serial number is assigned, use that as the ID. Else, use the index.
+    // batteries should start their serial numbers at numbers above 255 to avoid conflicts with the battery index offset method of populating the serial number
     const int32_t serial_number = battery_lib.get_serial_number(instance);
     pkt->battery_id = (serial_number >= 0) ? serial_number : instance+1;
 
