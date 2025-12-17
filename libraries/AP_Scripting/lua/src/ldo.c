@@ -10,7 +10,7 @@
 #include "lprefix.h"
 
 
-#include <setjmp.h>
+#include <AP_HAL/ap_setjmp.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -71,9 +71,9 @@
 #else							/* }{ */
 
 /* ISO C handling with long jumps */
-#define LUAI_THROW(L,c)		longjmp((c)->b, 1)
-#define LUAI_TRY(L,c,a)		if (setjmp((c)->b) == 0) { a }
-#define luai_jmpbuf		jmp_buf
+#define LUAI_THROW(L,c)		ap_longjmp((c)->b, 1)
+#define LUAI_TRY(L,c,a)		if (ap_setjmp((c)->b) == 0) { a }
+#define luai_jmpbuf		ap_jmp_buf
 
 #endif							/* } */
 
