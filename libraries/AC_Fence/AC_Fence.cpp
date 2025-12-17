@@ -577,51 +577,24 @@ bool AC_Fence::get_alt_in_frame(float &alt, Location::AltFrame alt_frame) const
 {
     const auto &ahrs = AP::ahrs();
 
-    ahrs.get_relative_position_D_home(alt);
-
-    // translate to +ve up
-    alt = -alt;
-
-    /*
-      convert to desired altitude frame
-     */
-    switch (alt_frame) {
-    case Location::AltFrame::ABOVE_HOME:
-        break;
-    case Location::AltFrame::ABOVE_ORIGIN:
+    if (alt_frame == Location::AltFrame::ABOVE_HOME || alt_frame == Location::AltFrame::ABOVE_ORIGIN) {
         // try and get it relative origin
         if (!ahrs.get_relative_position_D_origin_float(alt)) {
             // treat as a breach if origin not known
             return false;
         }
         alt = -alt;
-        break;
-    case Location::AltFrame::ABSOLUTE: {
-        float home_alt;
-        if (!ahrs.get_home().get_alt_m(Location::AltFrame::ABSOLUTE, home_alt)) {
-            // treat not known home alt as a breach
-            return false;
+        return true;
+    }
+
+    Location loc;
+    if (AP::ahrs().get_location(loc)) {
+        if (loc.get_alt_m(alt_frame, alt)) {
+            return true;
         }
-        alt += home_alt;
-        break;
     }
-    case Location::AltFrame::ABOVE_TERRAIN: {
-#if AP_TERRAIN_AVAILABLE
-        // get height above ground level with extrapolation. We extrapolate to prevent
-        // a fence breach due to a momentary cache miss in the terrain library
-        auto *terrain = AP::terrain();
-        if (terrain == nullptr || !terrain->height_above_terrain(alt, true)) {
-            // treat not known home alt as a breach
-            return false;
-        }
-        break;
-#else
-        // no terrain available
-        return false;
-#endif
-    }
-    }
-    return true;
+
+    return false;
 }
 
 // update safe alt min - home *must* be set before this function is called with absolute reference frames
