@@ -19,6 +19,7 @@
 #pragma once
 
 #include "AP_RCProtocol_config.h"
+#include <AP_CRSF/AP_CRSF_config.h>
 #include <AP_RCTelemetry/AP_RCTelemetry_config.h>
 
 #if AP_RCPROTOCOL_CRSF_ENABLED
@@ -35,6 +36,8 @@
 #define ELRS_BAUDRATE      420000U
 #define CRSF_TX_TIMEOUT    500000U   // the period after which the transmitter is considered disconnected (matches copters failsafe)
 #define CRSF_RX_TIMEOUT    150000U   // the period after which the receiver is considered disconnected (>ping frequency)
+
+class AP_CRSF_Protocol;
 
 class AP_RCProtocol_CRSF : public AP_RCProtocol_Backend {
 public:
@@ -180,6 +183,7 @@ public:
         int16_t rssi = -1;
         int16_t link_quality = -1;
         uint8_t rf_mode;
+        uint8_t fps;    // fps / 10
 #if AP_OSD_LINK_STATS_EXTENSIONS_ENABLED
         // Add the extra data fields to be used by the OSD panels
         int16_t tx_power = -1;
@@ -197,10 +201,13 @@ public:
     }
 
     // return the link rate as defined by the LinkStatistics
-    uint16_t get_link_rate(ProtocolType protocol) const;
+    uint16_t get_link_rate(AP_CRSF_Protocol::ProtocolType protocol) const;
 
     // return the protocol string
-    const char* get_protocol_string(ProtocolType protocol) const;
+    const char* get_protocol_string(AP_CRSF_Protocol::ProtocolType protocol) const;
+
+    // write a CRSF Frame structure to the managed uart
+    void write_frame(AP_CRSF_Protocol::Frame* frame) const;
 
 private:
     Frame _frame;
@@ -216,16 +223,13 @@ private:
     bool check_frame(uint32_t timestamp_us);
     void skip_to_next_frame(uint32_t timestamp_us);
     bool decode_crsf_packet();
-    bool process_telemetry(bool check_constraint = true);
+    bool process_telemetry(bool check_constraint = true) const;
     void process_link_stats_frame(const void* data);
     void process_link_stats_rx_frame(const void* data);
     void process_link_stats_tx_frame(const void* data);
-    // crsf v3 decoding
-    void decode_variable_bit_channels(const uint8_t* data, uint8_t frame_length, uint8_t nchannels, uint16_t *values);
 
-    void write_frame(Frame* frame);
     void start_uart();
-    AP_HAL::UARTDriver* get_current_UART() { return (_uart ? _uart : get_available_UART()); }
+    AP_HAL::UARTDriver* get_current_UART() const { return (_uart ? _uart : get_available_UART()); }
 
     uint16_t _channels[CRSF_MAX_CHANNELS];    /* buffer for extracted RC channel data as pulsewidth in microseconds */
 
@@ -234,7 +238,7 @@ private:
     uint32_t _last_uart_start_time_ms;
     uint32_t _last_rx_frame_time_us;
     uint32_t _start_frame_time_us;
-    bool telem_available;
+    mutable bool telem_available;
     uint32_t _new_baud_rate;
     bool _crsf_v3_active;
 
