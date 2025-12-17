@@ -1954,7 +1954,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "timed out after %u seconds" % (home_distance, timeout,))
 
     # MaxAltFence - fly up until you hit the fence ceiling
-    def max_alt_fence_frame(self, frame, alt, terrain=0):
+    def max_alt_fence_frame(self, frame, alt, expected_breach_alt, terrain=0):
         self.start_subtest("Test Max Alt Fence in frame %u" % frame)
 
         # enable fence, disable avoidance
@@ -1995,6 +1995,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # wait for fence to trigger
         self.wait_mode('RTL', timeout=120)
 
+        # verify breach occurred at expected altitude
+        self.assert_altitude(expected_breach_alt, accuracy=5)
+
         self.wait_rtl_complete()
 
         self.zero_throttle()
@@ -2004,11 +2007,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''Test Max Alt Fences'''
         self.poll_home_position(quiet=False)
         home_loc = self.mav.location()
+        origin_alt = home_loc.alt
 
-        self.max_alt_fence_frame(0, home_loc.alt + 100)    # absolute
-        self.max_alt_fence_frame(1, 100)    # above home
-        self.max_alt_fence_frame(2, 100)    # above origin
-        self.max_alt_fence_frame(3, 100, 1) # above terrain
+        self.max_alt_fence_frame(0, origin_alt + 80, origin_alt + 80)      # absolute
+        self.max_alt_fence_frame(1, 100, origin_alt + 100)                 # above home
+
+        # set home 50m higher than origin to test that frame 2 uses origin not home
+        home_loc.alt = origin_alt + 50
+        self.set_home(home_loc)
+        self.max_alt_fence_frame(2, 120, origin_alt + 120)                 # above origin
+
+        self.max_alt_fence_frame(3, 90, origin_alt + 90, terrain=1)        # above terrain
 
     # MaxAltFence - fly up and make sure fence action does not trigger
     # Also check that the vehicle will not try and descend too fast when trying to backup from a max alt fence due to avoidance
@@ -2120,6 +2129,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''Test Min Alt Fences'''
         self.poll_home_position(quiet=False)
         home_loc = self.mav.location()
+        self.set_home(home_loc)
 
         self.min_alt_fence_frame(0, home_loc.alt + 20)    # absolute
         self.min_alt_fence_frame(1, 20)    # above home
