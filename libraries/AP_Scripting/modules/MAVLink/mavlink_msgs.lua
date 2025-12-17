@@ -68,6 +68,9 @@ end
 ---@return table|nil -- a table representing the contents of the message, or nill if decode failed
 function mavlink_msgs.decode(message, msg_map)
   local result = mavlink_msgs.decode_header(message)
+  if(msg_map[result.msgid]==nil) then
+  	return nil
+  end
   local message_map = require("MAVLink/mavlink_msg_" .. msg_map[result.msgid])
   if not message_map then
     -- we don't know how to decode this message, bail on it
@@ -154,6 +157,10 @@ function mavlink_msgs.encode(msgname, message)
       packedTable[packedIndex] = message[message_map.fields[i][1]]
       packedIndex = packedIndex + 1
     end
+  end
+  
+  if message_map.crc_extra ~= nil and message_map.min_len ~= nil and message_map.max_len ~=nil then
+	  return message_map.id, string.pack(packString, table.unpack(packedTable)), message_map.crc_extra, message_map.min_len, message_map.max_len
   end
   return message_map.id, string.pack(packString, table.unpack(packedTable))
 end

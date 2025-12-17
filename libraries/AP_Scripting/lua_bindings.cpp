@@ -162,8 +162,14 @@ int lua_mavlink_register_rx_msgid(lua_State *L) {
 
 int lua_mavlink_send_chan(lua_State *L) {
     fix_dot_access_never_add_another_call(L, "mavlink");
+    
+    const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
 
-    binding_argcheck(L, 4);
+    const int arg_count = lua_gettop(L);
+    if (arg_count != 4 && arg_count !=7) {
+        lua_pushboolean(L, false);
+        return luaL_argerror(L, arg_count, "send_chan requires 4 or 7 arguments");
+    }
 
     const mavlink_channel_t chan = (mavlink_channel_t)get_uint32(L, 2, 0, MAVLINK_COMM_NUM_BUFFERS - 1);
 
@@ -174,31 +180,54 @@ int lua_mavlink_send_chan(lua_State *L) {
     }
 
     const uint32_t msgid = get_uint32(L, 3, 0, (1 << 24) - 1);
+    uint8_t crc_extra=0;
+    uint8_t min_msg_len=0;
+    uint8_t max_msg_len=0;
+    if(arg_count==7)
+        {
+        crc_extra = get_uint8_t(L,4+arg_offset);
+        min_msg_len=get_uint8_t(L,5+arg_offset);
+        max_msg_len=get_uint8_t(L,6+arg_offset);
+        }
 
     const char *packet = luaL_checkstring(L, 4);
 
-    // FIXME: The data that's in this mavlink_msg_entry_t should be provided from the script, which allows
-    //        sending entirely new messages as outputs. At the moment we can only encode messages that
-    //        are known at compile time. This is fine as a starting point as this is symmetrical to the
-    //        decoding side of the scripting support
     const mavlink_msg_entry_t *entry = mavlink_get_msg_entry(msgid);
-    if (entry == nullptr) {
-        return luaL_error(L, "Unknown MAVLink message ID (%d)", msgid);
-    }
 
-    WITH_SEMAPHORE(comm_chan_lock(chan));
-    if (comm_get_txspace(chan) >= (GCS_MAVLINK::packet_overhead_chan(chan) + entry->max_msg_len)) {
-        _mav_finalize_message_chan_send(chan,
-                                        entry->msgid,
-                                        packet,
-                                        entry->min_msg_len,
-                                        entry->max_msg_len,
-                                        entry->crc_extra);
 
-        lua_pushboolean(L, true);
-    } else {
-        lua_pushboolean(L, false);
+    if(arg_count==4)
+    {
+        if (entry == nullptr) {
+            return luaL_error(L, "Unknown MAVLink message ID (%d)", msgid);
+        }
+        if (comm_get_txspace(chan) >= (GCS_MAVLINK::packet_overhead_chan(chan) + entry->max_msg_len)) {
+            _mav_finalize_message_chan_send(chan,
+                                            entry->msgid,
+                                            packet,
+                                            entry->min_msg_len,
+                                            entry->max_msg_len,
+                                            entry->crc_extra);
+
+            lua_pushboolean(L, true);
+        } else {
+            lua_pushboolean(L, false);
+        }
     }
+    else
+    {
+        if (comm_get_txspace(chan) >= (GCS_MAVLINK::packet_overhead_chan(chan) + max_msg_len)) {
+            _mav_finalize_message_chan_send(chan,
+                                            msgid,
+                                            packet,
+                                            min_msg_len,
+                                            max_msg_len,
+                                            crc_extra);
+
+            lua_pushboolean(L, true);
+        } else {
+            lua_pushboolean(L, false);
+        }       
+     }
 
     return 1;
 }
@@ -233,6 +262,40 @@ int lua_mavlink_block_command(lua_State *L) {
     lua_pushboolean(L, true);
     return 1;
 }
+
+int lua_mavlink_hook_message_request(lua_State *L) {
+
+    // Allow : and . access
+    const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
+
+    binding_argcheck(L, 1+arg_offset);
+
+    const uint32_t msgid = get_uint32(L, 1+arg_offset,0,(1<<24)-1);
+
+    // Check if ID is already registered
+    if (AP::scripting()->is_hooked_message_request(msgid)) {
+        lua_pushboolean(L, true);
+        return 1;
+    }
+
+    // Add new list item
+    AP_Scripting::req_message_hook_list *new_item = new AP_Scripting::req_message_hook_list;
+    if (new_item == nullptr) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+    new_item->msgid = msgid;
+
+    {
+        WITH_SEMAPHORE(AP::scripting()->mavlink_req_message_hook_list_sem);
+        new_item->next = AP::scripting()->mavlink_req_message_hook_list;
+        AP::scripting()->mavlink_req_message_hook_list = new_item;
+    }
+
+    lua_pushboolean(L, true);
+    return 1;
+}
+
 #endif // HAL_GCS_ENABLED
 
 #if AP_MISSION_ENABLED
