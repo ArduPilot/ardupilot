@@ -1924,6 +1924,20 @@ void GCS_MAVLINK::raw_packetReceived(uint8_t framing_status,
     handle_message(msg);
 }
 
+bool GCS_MAVLINK::should_send_timesync_request(const uint32_t tnow_ms) const
+{
+    if (is_private()) {
+        return false;
+    }
+#if HAL_HIGH_LATENCY2_ENABLED
+    if (is_high_latency_link) {
+        return false;
+    }
+#endif  // HAL_HIGH_LATENCY2_ENABLED
+
+    return tnow_ms - _timesync_request.last_sent_ms > _timesync_request.interval_ms;
+}
+
 void
 GCS_MAVLINK::update_receive(uint32_t max_time_us)
 {
@@ -2002,13 +2016,15 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
 
     const uint32_t tnow = AP_HAL::millis();
 
-    // send a timesync message every 10 seconds; this is for data
-    // collection purposes
-#if HAL_HIGH_LATENCY2_ENABLED
-    if (tnow - _timesync_request.last_sent_ms > _timesync_request.interval_ms && !is_private() && !is_high_latency_link) {
-#else
-    if (tnow - _timesync_request.last_sent_ms > _timesync_request.interval_ms && !is_private()) {
-#endif
+    // magically update the rate at which we send timesyncs based on
+    // whether we are using it for failsafe or not:
+    if (gcs().option_is_enabled(GCS::Option::TIMESYNC_BASED_FAILSAFE)) {
+        _timesync_request.interval_ms = 1000;
+    } else {
+        _timesync_request.interval_ms = 10000;
+    }
+
+    if (should_send_timesync_request(tnow)) {
         if (HAVE_PAYLOAD_SPACE(chan, TIMESYNC)) {
             send_timesync();
             _timesync_request.last_sent_ms = tnow;
@@ -3765,6 +3781,11 @@ void GCS_MAVLINK::handle_timesync(const mavlink_message_t &msg)
                         msg.sysid,
                         round_trip_time_us*0.001f);
 #endif
+
+        if (gcs().sysid_is_gcs(msg.sysid)) {
+            // response is from our GCS; update when-received timestamp
+            gcs().received_timesync_response_from_sysid_gcs();
+        }
 
 #if HAL_LOGGING_ENABLED
         const uint64_t round_trip_time_us = (timesync_receive_timestamp_ns() - _timesync_request.sent_ts1)*0.001f;
