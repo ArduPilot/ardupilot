@@ -5372,6 +5372,16 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
         // Scripting has registered to receive this command, do not procces it internaly
         return;
     }
+    switch(packet.command)
+    {
+        case MAV_CMD_SET_MESSAGE_INTERVAL:
+        case MAV_CMD_GET_MESSAGE_INTERVAL:
+        case MAV_CMD_REQUEST_MESSAGE:
+            if(scripting != nullptr && scripting->is_hooked_message_request((uint32_t)packet.param1))
+                return;
+        default:
+            break;
+    }
 #endif
 
     hal.util->persistent_data.last_mavlink_cmd = packet.command;
@@ -5863,6 +5873,16 @@ void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
     if (scripting != nullptr && scripting->is_handling_command(packet.command)) {
         // Scripting has registered to receive this command, do not procces it internaly
         return;
+    }
+    switch(packet.command)
+    {
+        case MAV_CMD_SET_MESSAGE_INTERVAL:
+        case MAV_CMD_GET_MESSAGE_INTERVAL:
+        case MAV_CMD_REQUEST_MESSAGE:
+            if(scripting != nullptr && scripting->is_hooked_message_request((uint32_t)packet.param1))
+                return;
+        default:
+            break;
     }
 #endif
 
