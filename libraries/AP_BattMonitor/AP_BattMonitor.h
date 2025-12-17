@@ -82,6 +82,14 @@ public:
         Critical
     };
 
+    // power states
+    enum class ChargingState : uint8_t {
+        UNKNOWN = 0,
+        IDLE,
+        CHARGING,
+        DISCHARGING
+    };
+
     // Battery monitor driver types
     using Type = AP_BattMonitor_Params::Type;
 
@@ -128,6 +136,7 @@ public:
         bool        has_time_remaining;        // time_remaining is only valid if this is true
         uint8_t     state_of_health_pct;       // state of health (SOH) in percent
         bool        has_state_of_health_pct;   // state_of_health_pct is only valid if this is true
+        ChargingState charging_state;          // Charging state (unknown, idle, charging, discharging)
         uint8_t     instance;                  // instance number of this backend
         Type        type;                      // allocated instance type
         const struct AP_Param::GroupInfo *var_info;
@@ -264,6 +273,10 @@ public:
 
     // return true if state of health (as a percentage) can be provided and fills in soh_pct argument
     bool get_state_of_health_pct(uint8_t instance, uint8_t &soh_pct) const;
+
+    // get charging state (idle, charging, discharging)
+    ChargingState get_charging_state() const { return get_charging_state(AP_BATT_PRIMARY_INSTANCE); }
+    ChargingState get_charging_state(uint8_t instance) const { return state[instance].charging_state; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
