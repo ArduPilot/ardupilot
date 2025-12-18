@@ -518,6 +518,23 @@ bool AP_Scripting::is_handling_command(uint16_t cmd_id)
 
     return false;
 }
+
+bool AP_Scripting::is_hooked_message_request(uint32_t msgid)
+{
+    WITH_SEMAPHORE(mavlink_req_message_hook_list_sem);
+
+    // Look in linked list to see if id is registered
+    if (mavlink_req_message_hook_list != nullptr) {
+        for (req_message_hook_list *item = mavlink_req_message_hook_list; item; item = item->next) {
+            if (item->msgid == msgid) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 #endif // HAL_GCS_ENABLED
 
 // Update called at 1Hz from AP_Vehicle
