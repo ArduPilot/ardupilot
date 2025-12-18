@@ -2458,7 +2458,7 @@ uint8_t AP_GPS_UBLOX::populate_F9_gnss(void)
 // return true if GPS is capable of F9 config
 bool AP_GPS_UBLOX::supports_F9_config(void) const
 {
-    return _hardware_generation == UBLOX_F9 || _hardware_generation == UBLOX_M10;
+    return _hardware_generation == UBLOX_F9 || _hardware_generation == UBLOX_M10 || _hardware_generation == UBLOX_F20 || _hardware_generation == UBLOX_X20;
 }
 
 // return true if GPS is capable of F9 config
