@@ -967,6 +967,9 @@ void AP_Mount_Topotek::gimbal_track_analyse()
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s started", send_message_prefix, tracking_str);
         _is_tracking = true;
         break;
+    case TrackingStatus::LENS_UNSUPPORT_TRACK:
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s unsupported lens", send_message_prefix, tracking_str);
+        break;
     }
 }
 

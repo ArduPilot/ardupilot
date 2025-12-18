@@ -154,7 +154,8 @@ private:
     enum class TrackingStatus : uint8_t {
         STOPPED_TRACKING = 0x30,                // not tracking
         WAITING_FOR_TRACKING = 0x31,            // wait to track command status
-        TRACKING_IN_PROGRESS = 0x32             // the status is being tracked.
+        TRACKING_IN_PROGRESS = 0x32,            // the status is being tracked
+        LENS_UNSUPPORT_TRACK = 0x34,            // this lens does not support tracking
     };
 
     // identifier bytes
