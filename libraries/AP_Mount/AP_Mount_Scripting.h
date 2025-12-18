@@ -41,7 +41,7 @@ protected:
     // Scripting doesn't actually send anything (the script polls the
     // library for the targets)
     uint8_t natively_supported_mount_target_types() const override {
-        return (1U<<unsigned(MountTargetType::ANGLE));
+        return NATIVE_ANGLES_ONLY;
     };
     void send_target_angles(const MountAngleTarget &angle_rad) override {};
 

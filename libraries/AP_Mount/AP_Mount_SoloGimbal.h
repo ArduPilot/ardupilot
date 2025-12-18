@@ -40,10 +40,7 @@ protected:
 
     // Solo only supports ANGLE targets, but also can lock itself to the body for "retracted"
     uint8_t natively_supported_mount_target_types() const override {
-        return (
-            (1U<<unsigned(MountTargetType::ANGLE)) |
-            (1U<<unsigned(MountTargetType::RETRACTED))
-            );
+        return NATIVE_ANGLES_AND_RATES_ONLY;
     };
 
     // send angle target in radians to gimbal

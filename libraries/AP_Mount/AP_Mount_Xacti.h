@@ -88,10 +88,7 @@ protected:
 
     // Xacti can send either rates or angles
     uint8_t natively_supported_mount_target_types() const override {
-        return (
-            (1U<<unsigned(MountTargetType::ANGLE)) |
-            (1U<<unsigned(MountTargetType::RATE))
-            );
+        return NATIVE_ANGLES_AND_RATES_ONLY;
     };
 
 private:

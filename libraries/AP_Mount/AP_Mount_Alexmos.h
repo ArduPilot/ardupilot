@@ -35,9 +35,7 @@ protected:
 
     // servo only natively supports angles:
     uint8_t natively_supported_mount_target_types() const override {
-        return (
-            (1U<<unsigned(MountTargetType::ANGLE))
-            );
+        return NATIVE_ANGLES_ONLY;
     };
 
 private:

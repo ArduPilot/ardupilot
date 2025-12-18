@@ -264,6 +264,13 @@ protected:
     // returns a bitmask of MountTargetTypes which this backend supports
     // FIXME: make this pure-virtual
     virtual uint8_t natively_supported_mount_target_types() const { return 0; };
+    // some static const masks to try to make the backends easier to read:
+    static constexpr uint8_t NATIVE_ANGLES_ONLY = (1U << uint8_t(MountTargetType::ANGLE));
+    static constexpr uint8_t NATIVE_RATES_ONLY = (1U << uint8_t(MountTargetType::RATE));
+    static constexpr uint8_t NATIVE_ANGLES_AND_RATES_ONLY = (
+        1U << uint8_t(MountTargetType::ANGLE) |
+        1U << uint8_t(MountTargetType::RATE)
+    );
 
     // returns true if the backend natively supports type.  e.g. if
     // "type" here is "MountTargetType::ANGLE" and the backend has
