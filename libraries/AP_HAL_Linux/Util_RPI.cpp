@@ -59,7 +59,7 @@ void UtilRPI::_get_board_type_using_peripheral_base()
         char ranges_path[256] {};
 
         while ((entry = readdir(dir)) != nullptr) {
-            if (strncmp(entry->d_name, "soc", 4) == 0) {
+            if (strncmp(entry->d_name, "soc", 3) == 0) {
                 snprintf(ranges_path, sizeof(ranges_path), "%s/%s/ranges", base_path, entry->d_name);
                 break;
             }
