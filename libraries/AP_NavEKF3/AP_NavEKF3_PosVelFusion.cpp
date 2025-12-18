@@ -745,7 +745,7 @@ void NavEKF3_core::FuseVelPosNED()
             // Use GPS reported position accuracy if available and floor at value set by GPS position noise parameter
 #if EK3_FEATURE_EXTERNAL_NAV
             if (extNavUsedForPos) {
-                R_OBS[3] = sq(constrain_ftype(extNavDataDelayed.posErr, 0.01f, 100.0f));
+                R_OBS[3] = sq(constrain_ftype(extNavDataDelayed.posErr, 0.01f, 250.0f));
             } else
 #endif
             if (gpsPosAccuracy > 0.0f) {
