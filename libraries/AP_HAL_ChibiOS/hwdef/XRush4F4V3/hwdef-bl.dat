@@ -1,7 +1,7 @@
 # hw definition file for processing by chibios_hwdef.py
 # for XRush4 F4 V3 hardware.
-# With F405 MCU, ICM42688 IMU, BMP280 BARO and AT7456E series OSD
-# by CO «CF TECHNO4» and .agentstwo.nerukhomosti
+# With F405 MCU, ICM42688 IMU, BMP280/DPS310 BARO and AT7456E series OSD
+# by CO «CF TECHNO4» and .agentstwo.nerukhomosti for science boosting
 
 MCU STM32F4xx STM32F405xx
 
@@ -15,9 +15,9 @@ FLASH_USE_MAX_KB 16
 
 FLASH_RESERVE_START_KB 0
 
-PB5 LED_BOOTLOADER OUTPUT LOW
-PB4 LED_GREEN OUTPUT LOW
-define HAL_LED_ON 0
+PC14 LED_BOOTLOADER OUTPUT HIGH
+PC15 LED_GREEN OUTPUT HIGH
+define HAL_LED_ON 1
 
 FLASH_BOOTLOADER_LOAD_KB 64
 

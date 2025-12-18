@@ -146,6 +146,6 @@ To flash firmware initially, connect USB while holding the bootloader button and
 
 Additional
 ==========
-uk_UA: [україномовна документація та прошивки в репозиторії](https://github.com/CO-CF-TECHNO4/XRush4-ArduPilot)
+uk_UA: [CO «CF TECHNO4»](https://github.com/CO-CF-TECHNO4/ardupilot)
 
 [Xrush4_F4V3_Manual_Rev.2.0](https://xrush4.tech/wp-content/uploads/2025/05/Xrush4_F4V3_Manual_Rev.2.0.pdf)
