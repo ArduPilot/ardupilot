@@ -44,7 +44,7 @@ bool AP_Mount_CADDX::get_attitude_quaternion(Quaternion& att_quat)
 }
 
 // send_target_angles
-void AP_Mount_CADDX::send_target_angles(const MountTarget& angle_target_rad)
+void AP_Mount_CADDX::send_target_angles(const MountAngleTarget& angle_target_rad)
 {
     // exit immediately if not initialised
     if (!_initialised) {

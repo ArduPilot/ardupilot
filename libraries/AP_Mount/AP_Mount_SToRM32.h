@@ -36,7 +36,7 @@ private:
     void find_gimbal();
 
     // send_do_mount_control with latest angle targets
-    void send_do_mount_control(const MountTarget& angle_target_rad);
+    void send_do_mount_control(const MountAngleTarget& angle_target_rad);
 
     // internal variables
     bool _initialised;              // true once the driver has been initialised

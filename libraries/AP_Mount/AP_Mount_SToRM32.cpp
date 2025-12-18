@@ -66,7 +66,7 @@ void AP_Mount_SToRM32::find_gimbal()
 }
 
 // send_do_mount_control - send a COMMAND_LONG containing a do_mount_control message
-void AP_Mount_SToRM32::send_do_mount_control(const MountTarget& angle_target_rad)
+void AP_Mount_SToRM32::send_do_mount_control(const MountAngleTarget& angle_target_rad)
 {
     // exit immediately if not initialised
     if (!_initialised) {

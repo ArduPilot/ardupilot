@@ -719,7 +719,7 @@ void AP_Mount_Backend::get_rc_input(float& roll_in, float& pitch_in, float& yaw_
 
 // get angle targets (in radians) to a Location
 // returns true on success, false on failure
-bool AP_Mount_Backend::get_angle_target_to_location(const Location &loc, MountTarget& angle_rad) const
+bool AP_Mount_Backend::get_angle_target_to_location(const Location &loc, MountAngleTarget& angle_rad) const
 {
     // exit immediately if vehicle's location is unavailable
     Location current_loc;
@@ -758,7 +758,7 @@ bool AP_Mount_Backend::get_angle_target_to_location(const Location &loc, MountTa
 
 // get angle targets (in radians) to ROI location
 // returns true on success, false on failure
-bool AP_Mount_Backend::get_angle_target_to_roi(MountTarget& angle_rad) const
+bool AP_Mount_Backend::get_angle_target_to_roi(MountAngleTarget& angle_rad) const
 {
     if (!_roi_target.initialised()) {
         return false;
@@ -767,7 +767,7 @@ bool AP_Mount_Backend::get_angle_target_to_roi(MountTarget& angle_rad) const
 }
 
 // return body-frame yaw angle from a mount target
-float AP_Mount_Backend::MountTarget::get_bf_yaw() const
+float AP_Mount_Backend::MountAngleTarget::get_bf_yaw() const
 {
     if (yaw_is_ef) {
         // convert to body-frame
@@ -779,7 +779,7 @@ float AP_Mount_Backend::MountTarget::get_bf_yaw() const
 }
 
 // return earth-frame yaw angle from a mount target
-float AP_Mount_Backend::MountTarget::get_ef_yaw() const
+float AP_Mount_Backend::MountAngleTarget::get_ef_yaw() const
 {
     if (yaw_is_ef) {
         // target is already earth-frame
@@ -791,7 +791,7 @@ float AP_Mount_Backend::MountTarget::get_ef_yaw() const
 }
 
 // sets roll, pitch, yaw and yaw_is_ef
-void AP_Mount_Backend::MountTarget::set(const Vector3f& rpy, bool yaw_is_ef_in)
+void AP_Mount_Backend::MountAngleTarget::set(const Vector3f& rpy, bool yaw_is_ef_in)
 {
     roll  = rpy.x;
     pitch = rpy.y;
@@ -802,7 +802,7 @@ void AP_Mount_Backend::MountTarget::set(const Vector3f& rpy, bool yaw_is_ef_in)
 // update angle targets using a given rate target
 // the resulting angle_rad yaw frame will match the rate_rad yaw frame
 // assumes a 50hz update rate
-void AP_Mount_Backend::update_angle_target_from_rate(const MountTarget& rate_rad, MountTarget& angle_rad) const
+void AP_Mount_Backend::update_angle_target_from_rate(const MountRateTarget& rate_rad, MountAngleTarget& angle_rad) const
 {
     // update roll and pitch angles and apply limits
     angle_rad.roll = constrain_float(angle_rad.roll + rate_rad.roll * AP_MOUNT_UPDATE_DT, radians(_params.roll_angle_min), radians(_params.roll_angle_max));
@@ -848,6 +848,10 @@ uint16_t AP_Mount_Backend::get_gimbal_device_flags() const
         case MountTargetType::ANGLE:
             yaw_lock_state = mnt_target.angle_rad.yaw_is_ef;
             break;
+        case MountTargetType::RETRACTED:
+        case MountTargetType::NEUTRAL:
+            yaw_lock_state = false;  // not locked onto the scenery
+            break;
         }
         break;
     case MAV_MOUNT_MODE_RC_TARGETING:
@@ -865,8 +869,8 @@ uint16_t AP_Mount_Backend::get_gimbal_device_flags() const
         break;
     }
 
-    const uint16_t flags = (get_mode() == MAV_MOUNT_MODE_RETRACT ? GIMBAL_DEVICE_FLAGS_RETRACT : 0) |
-                           (get_mode() == MAV_MOUNT_MODE_NEUTRAL ? GIMBAL_DEVICE_FLAGS_NEUTRAL : 0) |
+    const uint16_t flags = (mnt_target.target_type == MountTargetType::RETRACTED ? GIMBAL_DEVICE_FLAGS_RETRACT : 0) |
+                           (mnt_target.target_type == MountTargetType::NEUTRAL ? GIMBAL_DEVICE_FLAGS_NEUTRAL : 0) |
                            GIMBAL_DEVICE_FLAGS_ROLL_LOCK | // roll angle is always earth-frame
                            GIMBAL_DEVICE_FLAGS_PITCH_LOCK| // pitch angle is always earth-frame, yaw_angle is always body-frame
                            GIMBAL_DEVICE_FLAGS_YAW_IN_VEHICLE_FRAME | // yaw angle is always in vehicle-frame
@@ -876,7 +880,7 @@ uint16_t AP_Mount_Backend::get_gimbal_device_flags() const
 
 // get angle targets (in radians) to home location
 // returns true on success, false on failure
-bool AP_Mount_Backend::get_angle_target_to_home(MountTarget& angle_rad) const
+bool AP_Mount_Backend::get_angle_target_to_home(MountAngleTarget& angle_rad) const
 {
     // exit immediately if home is not set
     if (!AP::ahrs().home_is_set()) {
@@ -887,7 +891,7 @@ bool AP_Mount_Backend::get_angle_target_to_home(MountTarget& angle_rad) const
 
 // get angle targets (in radians) to a vehicle with sysid of  _target_sysid
 // returns true on success, false on failure
-bool AP_Mount_Backend::get_angle_target_to_sysid(MountTarget& angle_rad) const
+bool AP_Mount_Backend::get_angle_target_to_sysid(MountAngleTarget& angle_rad) const
 {
     // exit immediately if sysid is not set or no location available
     if (!_target_sysid_location.initialised()) {
@@ -913,13 +917,10 @@ void AP_Mount_Backend::update_mnt_target()
     mnt_target.fresh = false;
 
     switch (get_mode()) {
-    case MAV_MOUNT_MODE_RETRACT: {
+    case MAV_MOUNT_MODE_RETRACT:
         // move mount to a "retracted" position.  To-Do: remove support and replace with a relaxed mode?
-        const Vector3f &angle_bf_target = _params.retract_angles.get();
-        mnt_target.target_type = MountTargetType::ANGLE;
-        mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
+        mnt_target.target_type = MountTargetType::RETRACTED;
         return;
-    }
 
     case MAV_MOUNT_MODE_NEUTRAL: {
         // move mount to a neutral position, typically pointing forward
@@ -970,6 +971,65 @@ void AP_Mount_Backend::update_mnt_target()
     // we do not know this mode so raise internal error
     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
 }
+
+void AP_Mount_Backend::send_target_to_gimbal()
+{
+    // the easy case, where the gimbal natively supports the MntTargetType:
+    if (natively_supports(mnt_target.target_type)) {
+        switch (mnt_target.target_type) {
+        case MountTargetType::ANGLE:
+            send_target_angles(mnt_target.angle_rad);
+            return;
+        case MountTargetType::RATE:
+            send_target_rates(mnt_target.rate_rads);
+            return;
+        case MountTargetType::RETRACTED:
+            send_target_retracted();
+            return;
+        case MountTargetType::NEUTRAL:
+            send_target_neutral();
+            return;
+        }
+        return;  // should not reach this as all cases return
+    }
+
+    // the more difficult case where we need to convert to something
+    // the gimbal understands:
+    switch (mnt_target.target_type) {
+    case MountTargetType::ANGLE:
+        // we don't know how to convert ANGLE to anything else.  Note
+        // that the Siyi backend *does* convert angles to rates, so we
+        // could potentially swipe code into here.
+        break;
+    case MountTargetType::RATE:
+        if (natively_supports(MountTargetType::ANGLE)) {
+            // we integrate the rates into the angle:
+            update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
+            send_target_angles(mnt_target.angle_rad);
+            return;
+        }
+        break;
+    case MountTargetType::RETRACTED: {
+        // just use the parameter values
+        // we update mnt_target for reporting purposes
+        const Vector3f &angle_bf_target = _params.retract_angles.get();
+        mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
+        send_target_angles(mnt_target.angle_rad);
+        break;
+    }
+    case MountTargetType::NEUTRAL: {
+        // just use the parameter values
+        // we update mnt_target for reporting purposes
+        const Vector3f &angle_bf_target = _params.neutral_angles.get();
+        mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
+        send_target_angles(mnt_target.angle_rad);
+        break;
+    }
+    }
+
+    send_warning_to_GCS("Failed to convert mount target to command gimbal");
+}
+
 
 // get target rate in deg/sec. returns true on success
 bool AP_Mount_Backend::get_rate_target(float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame)

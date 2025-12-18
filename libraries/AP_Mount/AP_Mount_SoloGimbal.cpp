@@ -36,71 +36,24 @@ void AP_Mount_SoloGimbal::update()
         return;
     }
 
-    // change to RC_TARGETING mode if RC input has changed
-    set_rctargeting_on_rcinput_change();
+    update_mnt_target();
 
-    // update based on mount mode
-    switch(get_mode()) {
-        // move mount to a "retracted" position.  we do not implement a separate servo based retract mechanism
-        case MAV_MOUNT_MODE_RETRACT:
-            _gimbal.set_lockedToBody(true);
-            mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.angle_rad.set(Vector3f{0,0,0}, false);
-            break;
+    send_target_to_gimbal();
+}
 
-        // move mount to a neutral position, typically pointing forward
-        case MAV_MOUNT_MODE_NEUTRAL: {
-            _gimbal.set_lockedToBody(false);
-            const Vector3f &target = _params.neutral_angles.get();
-            mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.angle_rad.set(target*DEG_TO_RAD, false);
-            break;
-        }
+// send angle target in radians to gimbal
+void AP_Mount_SoloGimbal::send_target_angles(const MountAngleTarget& angle_rad)
+{
+    // angles are *actually* inserted into the gimbal in
+    // handle_gimbal_report, not here!
 
-        // point to the angles given by a mavlink message
-        case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            // targets are stored while handling the incoming mavlink message
-            _gimbal.set_lockedToBody(false);
-            break;
+    // since angles are now valid, we can unlock from the body:
+    _gimbal.set_lockedToBody(false);
+ }
 
-        // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING:
-            _gimbal.set_lockedToBody(false);
-            update_mnt_target_from_rc_target();
-            break;
-
-        // point mount to a GPS point given by the mission planner
-        case MAV_MOUNT_MODE_GPS_POINT:
-            if (get_angle_target_to_roi(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-                _gimbal.set_lockedToBody(false);
-            }
-            break;
-
-        // point mount to Home location
-        case MAV_MOUNT_MODE_HOME_LOCATION:
-            if (get_angle_target_to_home(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-                _gimbal.set_lockedToBody(false);
-            }
-            break;
-
-        // point mount to another vehicle
-        case MAV_MOUNT_MODE_SYSID_TARGET:
-            if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-                _gimbal.set_lockedToBody(false);
-            }
-            break;
-
-        default:
-            // we do not know this mode so do nothing
-            break;
-    }
-
-    if (mnt_target.target_type == MountTargetType::RATE) {
-        update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
-    }
+void AP_Mount_SoloGimbal::send_target_retracted()
+{
+    _gimbal.set_lockedToBody(true);
 }
 
 // get attitude as a quaternion.  returns true on success
