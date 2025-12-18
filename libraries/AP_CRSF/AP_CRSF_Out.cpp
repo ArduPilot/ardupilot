@@ -11,6 +11,8 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Code by Andy Piper <github@andypiper.com>
  */
 
 /*
@@ -50,11 +52,10 @@ AP_CRSF_Out* AP_CRSF_Out::_singleton;
 
 extern const AP_HAL::HAL& hal;
 
-AP_CRSF_Out::AP_CRSF_Out(AP_HAL::UARTDriver* uart, uint8_t instance, AP_CRSF_OutManager& frontend) :
+AP_CRSF_Out::AP_CRSF_Out(AP_HAL::UARTDriver& uart, uint8_t instance, AP_CRSF_OutManager& frontend) :
     _instance_idx(instance), _uart(uart), _frontend(frontend)
 {
     // in the future we could consider supporting multiple output handlers
-    // but since EAHRS is a singleton this may have limited utility
     if (_singleton != nullptr) {
         AP_HAL::panic("Duplicate CRSF_Out handler");
     }
@@ -65,13 +66,13 @@ AP_CRSF_Out::AP_CRSF_Out(AP_HAL::UARTDriver* uart, uint8_t instance, AP_CRSF_Out
 }
 
 // Initialise the CRSF output driver
-bool AP_CRSF_Out::init(AP_HAL::UARTDriver* uart)
+bool AP_CRSF_Out::init(AP_HAL::UARTDriver& uart)
 {
     if (_state != State::WAITING_FOR_PORT) {
         return false;
     }
 
-    _crsf_port = NEW_NOTHROW AP_RCProtocol_CRSF(AP::RC(), AP_RCProtocol_CRSF::PortMode::DIRECT_RCOUT, uart);
+    _crsf_port = NEW_NOTHROW AP_RCProtocol_CRSF(AP::RC(), AP_RCProtocol_CRSF::PortMode::DIRECT_RCOUT, &uart);
 
     if (_crsf_port == nullptr) {
         debug_rcout("Init failed: could not create CRSF output port");
@@ -140,7 +141,7 @@ void AP_CRSF_Out::crsf_out_thread()
         uint32_t interval_us = _frame_interval_us;
 
         // if we have not negotiated a faster baudrate do not go above the default output rate
-        if (uint16_t(_frontend._rate_hz.get()) > DEFAULT_CRSF_OUTPUT_RATE && _uart->get_baud_rate() == CRSF_BAUDRATE) {
+        if (uint16_t(_frontend._rate_hz.get()) > DEFAULT_CRSF_OUTPUT_RATE && _uart.get_baud_rate() == CRSF_BAUDRATE) {
             interval_us = 1000000UL / DEFAULT_CRSF_OUTPUT_RATE;
         }
 

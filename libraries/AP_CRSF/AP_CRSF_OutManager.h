@@ -11,6 +11,8 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Code by Andy Piper <github@andypiper.com>
  */
 
 /*
@@ -38,7 +40,7 @@ public:
     ~AP_CRSF_OutManager();
 
     // constructor for serial interaction
-    AP_CRSF_Out* create_instance(AP_HAL::UARTDriver* uart);
+    AP_CRSF_Out* create_instance(AP_HAL::UARTDriver& uart);
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_CRSF_OutManager);
