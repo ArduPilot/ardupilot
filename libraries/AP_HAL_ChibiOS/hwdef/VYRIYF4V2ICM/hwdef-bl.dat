@@ -5,7 +5,7 @@
 MCU STM32F4xx STM32F405xx
 
 # board ID. See Tools/AP_Bootloader/board_types.txt
-APJ_BOARD_ID AP_HW_VYRIYF4V2BMI
+APJ_BOARD_ID AP_HW_VYRIYF405V2
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
