@@ -5566,12 +5566,45 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_location(const mavlink_command
     if (!location_from_command_t(packet, roi_loc)) {
         return MAV_RESULT_DENIED;
     }
+
+#if HAL_MOUNT_ENABLED
+    // check for specific gimbal device id (NaN or negative means primary/unspecified)
+    if (!isnan(packet.param1) && packet.param1 >= 1) {
+        AP_Mount *mount = AP::mount();
+        if (mount == nullptr) {
+            return MAV_RESULT_UNSUPPORTED;
+        }
+        const uint8_t gimbal_device_id = packet.param1;
+        // sanity check location
+        if (!roi_loc.check_latlng()) {
+            return MAV_RESULT_FAILED;
+        }
+        mount->set_roi_target(gimbal_device_id - 1, roi_loc);
+        return MAV_RESULT_ACCEPTED;
+    }
+#endif  // HAL_MOUNT_ENABLED
+
+    // fall back to vehicle ROI handling (e.g. vehicle yaw)
     return handle_command_do_set_roi(roi_loc);
 }
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_none(const mavlink_command_int_t &packet)
 {
     // param1 : gimbal device id (0 is primary, 1 is 1st gimbal, 2 is 2nd, etc)
+#if HAL_MOUNT_ENABLED
+    // check for specific gimbal device id (NaN or negative means primary/unspecified)
+    if (!isnan(packet.param1) && packet.param1 >= 1) {
+        AP_Mount *mount = AP::mount();
+        if (mount == nullptr) {
+            return MAV_RESULT_UNSUPPORTED;
+        }
+        const uint8_t gimbal_device_id = packet.param1;
+        mount->clear_roi_target(gimbal_device_id - 1);
+        return MAV_RESULT_ACCEPTED;
+    }
+#endif  // HAL_MOUNT_ENABLED
+
+    // fall back to vehicle ROI handling with zero location to clear
     Location zero_loc;
     return handle_command_do_set_roi(zero_loc);
 }
