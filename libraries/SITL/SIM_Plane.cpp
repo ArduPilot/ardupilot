@@ -542,6 +542,9 @@ void Plane::update(const struct sitl_input &input)
 
     update_external_payload(input);
 
+    // Battery backend
+    battery.set_current(battery_current);
+
     // update lat/lon/altitude
     update_position();
     time_advance();
