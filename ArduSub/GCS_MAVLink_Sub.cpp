@@ -457,21 +457,11 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_DO_MOTOR_TEST(const mavlink_command_i
         return MAV_RESULT_ACCEPTED;
 }
 
-void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
+// this is called on receipt of a MANUAL_CONTROL packet and is
+// expected to call manual_override to override RC input on desired
+// axes.
+void GCS_MAVLINK_Sub::handle_manual_control_axes(const mavlink_manual_control_t &packet, const uint32_t tnow)
 {
-    switch (msg.msgid) {
-
-    case MAVLINK_MSG_ID_MANUAL_CONTROL: {     // MAV ID: 69
-        if (!gcs().sysid_is_gcs(msg.sysid)) {
-            break;    // Only accept control from our gcs
-        }
-        mavlink_manual_control_t packet;
-        mavlink_msg_manual_control_decode(&msg, &packet);
-
-        if (packet.target != gcs().sysid_this_mav()) {
-            break; // only accept control aimed at us
-        }
-
         sub.transform_manual_control_to_rc_override(
             packet.x,
             packet.y,
@@ -491,11 +481,11 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
         );
 
         sub.failsafe.last_pilot_input_ms = AP_HAL::millis();
-        // a RC override message is considered to be a 'heartbeat'
-        // from the ground station for failsafe purposes
-        sysid_mygcs_seen(AP_HAL::millis());
-        break;
-    }
+}
+
+void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
+{
+    switch (msg.msgid) {
 
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE: {     // MAV ID: 70
         if (!gcs().sysid_is_gcs(msg.sysid)) {
