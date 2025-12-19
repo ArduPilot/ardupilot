@@ -79,6 +79,8 @@ class MDEmit(Emit):
         t = '\n\n# %s' % tag
         
         for param in g.params:
+            if not self.should_emit_param(param):
+                continue
             if not hasattr(param, 'DisplayName') or not hasattr(param, 'Description'):
                 continue
             d = param.__dict__

@@ -523,6 +523,9 @@ void Copter::allocate_motors(void)
     convert_prx_parameters();
 #endif
 
+    // upgrade position controller parameters
+    copter.pos_control->convert_parameters();
+
     // param count could have changed
     AP_Param::invalidate_count();
 }

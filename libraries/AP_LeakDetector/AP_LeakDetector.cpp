@@ -115,3 +115,11 @@ void AP_LeakDetector::set_detect()
 {
     _last_detect_ms = AP_HAL::millis();
 }
+
+int8_t AP_LeakDetector::get_pin(uint8_t instance) const
+{
+    if (instance >= LEAKDETECTOR_MAX_INSTANCES) {
+        return 0;
+    }
+    return _pin[instance];
+}

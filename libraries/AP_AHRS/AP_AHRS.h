@@ -451,11 +451,6 @@ public:
     // set and save the ALT_M_NSE parameter value
     void set_alt_measurement_noise(float noise);
 
-    // get the selected ekf type, for allocation decisions
-    int8_t configured_ekf_type(void) const {
-        return _ekf_type;
-    }
-
     enum class EKFType : uint8_t {
 #if AP_AHRS_DCM_ENABLED
         DCM = 0,
@@ -473,6 +468,10 @@ public:
         EXTERNAL = 11,
 #endif
     };
+
+    // returns a canonicalised and valid EKFType, as opposed to the raw
+    // parameter value which may be any value the user has set
+    EKFType configured_ekf_type(void) const;
 
     // set the selected ekf type, for RC aux control
     void set_ekf_type(EKFType ahrs_type) {
@@ -806,7 +805,6 @@ private:
     uint32_t start_time_ms;
     uint8_t _ekf_flags; // bitmask from Flags enumeration
 
-    EKFType ekf_type(void) const;
     void update_DCM();
 
     /*

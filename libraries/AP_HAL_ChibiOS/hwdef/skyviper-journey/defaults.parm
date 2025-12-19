@@ -107,7 +107,7 @@ FENCE_RADIUS  100
 FENCE_ALT_MAX  50
 
 # arming
-ARMING_CHECK   25586
+ARMING_SKIPCHK 2071564
 DISARM_DELAY   8
 
 # IMU
@@ -208,10 +208,10 @@ RC3_DZ              15
 RC4_DZ              15
 
 # pos control
-PSC_POSXY_P           0.7
-PSC_VELXY_I           0.3
-PSC_VELXY_P           0.6
-PSC_VELXY_FLTE        1.0
+PSC_NE_POS_P           0.7
+PSC_NE_VEL_I           0.3
+PSC_NE_VEL_P           0.6
+PSC_NE_VEL_FLTE        1.0
 LOIT_ACC_MAX         800
 LOIT_SPEED           800
 RTL_SPEED            600
@@ -225,7 +225,7 @@ GPS_HDOP_GOOD        160
 # throw mode
 THROW_NEXTMODE       5
 
-PSC_ACCZ_FLTE 5.0000
-PSC_ACCZ_P 1.0000
-PSC_POSZ_P 0.5000
-PSC_VELZ_P 1.0000
+PSC_D_ACC_FLTE 5.0000
+PSC_D_ACC_P 0.1000
+PSC_D_POS_P 0.5000
+PSC_D_VEL_P 1.0000

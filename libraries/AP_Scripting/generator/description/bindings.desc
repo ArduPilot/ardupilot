@@ -362,9 +362,10 @@ singleton AP_Vehicle method set_target_pos_NED boolean Vector3f boolean float -3
 singleton AP_Vehicle method set_target_posvel_NED boolean Vector3f Vector3f
 singleton AP_Vehicle method set_target_posvelaccel_NED boolean Vector3f Vector3f Vector3f boolean float -360 +360 boolean float'skip_check boolean
 singleton AP_Vehicle method set_target_velaccel_NED boolean Vector3f Vector3f boolean float -360 +360 boolean float'skip_check boolean
-singleton AP_Vehicle method set_target_velocity_NED boolean Vector3f
+singleton AP_Vehicle manual set_target_velocity_NED lua_AP_Vehicle_set_target_velocity_NED 2 1
 singleton AP_Vehicle method set_target_angle_and_climbrate boolean float -180 180 float -90 90 float -360 360 float'skip_check boolean float'skip_check
 singleton AP_Vehicle method set_target_rate_and_throttle boolean float'skip_check float'skip_check float'skip_check float'skip_check
+singleton AP_Vehicle method set_target_angle_and_rate_and_throttle boolean float -180 180 float -90 90 float -360 360 float'skip_check float'skip_check float'skip_check float'skip_check
 singleton AP_Vehicle method get_circle_radius boolean float'Null
 singleton AP_Vehicle method set_circle_rate boolean float'skip_check
 singleton AP_Vehicle method set_steering_and_throttle boolean float -1 1 float -1 1
@@ -422,6 +423,7 @@ ap_object RC_Channel method norm_input float
 ap_object RC_Channel method norm_input_dz float
 ap_object RC_Channel method get_aux_switch_pos uint8_t
 ap_object RC_Channel method norm_input_ignore_trim float
+-- be wary using this binding as it effectively disables RC failsafes!
 ap_object RC_Channel method set_override void uint16_t 0 2200 0'literal
 
 include RC_Channel/RC_Channel.h
@@ -792,6 +794,7 @@ singleton AP::motors() method get_pitch_ff float
 singleton AP::motors() method get_yaw float
 singleton AP::motors() method get_yaw_ff float
 singleton AP::motors() method get_throttle float
+singleton AP::motors() method get_throttle_in float
 singleton AP::motors() method get_forward float
 singleton AP::motors() method get_lateral float
 singleton AP::motors() method get_spool_state uint8_t
@@ -1061,6 +1064,12 @@ singleton AC_Fence method get_margin_breaches uint8_t
 singleton AC_Fence method get_margin_breach_time uint32_t
 singleton AC_Fence method get_breach_distance float uint8_t'skip_check
 singleton AC_Fence method get_breach_direction_NED boolean uint8_t'skip_check Vector3f'Null Location'Null
+singleton AC_Fence method get_safe_alt_min_m float
+singleton AC_Fence method get_safe_alt_min_m rename get_safe_alt_min
+singleton AC_Fence method get_safe_alt_max_m float
+singleton AC_Fence method get_safe_alt_max_m rename get_safe_alt_max
+singleton AC_Fence method present uint8_t
+singleton AC_Fence method get_enabled_fences uint8_t
 
 include AP_Rally/AP_Rally.h depends HAL_RALLY_ENABLED
 

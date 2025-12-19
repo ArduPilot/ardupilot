@@ -80,9 +80,9 @@ Q_M_BAT_VOLT_MIN 18.6
 
 Q_M_THST_EXPO    0.7
 Q_M_THST_HOVER   0.445192
-Q_P_JERK_Z       2
-Q_P_POSXY_P      0.7
-Q_P_VELXY_P      1
+Q_P_JERK_D       2
+Q_P_NE_POS_P      0.7
+Q_P_NE_VEL_P      1
 
 Q_RTL_ALT        60
 

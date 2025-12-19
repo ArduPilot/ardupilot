@@ -122,7 +122,7 @@ public:
         k_param_rally,
         k_param_poshold_brake_rate_degs,
         k_param_poshold_brake_angle_max,
-        k_param_pilot_accel_u_cmss,
+        k_param_pilot_accel_d_cmss,
         k_param_serial0_baud,           // deprecated - remove
         k_param_serial1_baud,           // deprecated - remove
         k_param_serial2_baud,           // deprecated - remove
@@ -422,7 +422,7 @@ public:
     AP_Int16        land_speed_cms;
     AP_Int16        land_speed_high_cms;
     AP_Int16        pilot_speed_up_cms;         // maximum vertical ascending velocity the pilot may request
-    AP_Int16        pilot_accel_u_cmss;         // vertical acceleration the pilot may request
+    AP_Int16        pilot_accel_d_cmss;         // vertical acceleration the pilot may request
 
     // Throttle
     //

@@ -29,7 +29,6 @@ int lua_CRSF_new_menu(lua_State *L)
     binding_argcheck(L, 1);
 
     const char * name = luaL_checkstring(L, 1);
-    void *ud = lua_newuserdata(L, sizeof(CRSFMenu));
 
     AP_CRSF_Telem::ScriptedMenu* menu = AP::crsf_telem()->add_menu(name);
 
@@ -37,9 +36,7 @@ int lua_CRSF_new_menu(lua_State *L)
         return luaL_error(L, "No menu named: %s", name);
     }
 
-    new (ud) CRSFMenu(menu);
-    luaL_getmetatable(L, "CRSFMenu");
-    lua_setmetatable(L, -2);
+    *new_CRSFMenu(L) = CRSFMenu(menu);
 
     return 1;
 }

@@ -93,6 +93,8 @@ public:
         MOTOR_FRAME_TYPE_NYT_X = 17, // X frame, no differential torque for yaw
         MOTOR_FRAME_TYPE_BF_X_REV = 18, // X frame, betaflight ordering, reversed motors
         MOTOR_FRAME_TYPE_Y4 = 19, //Y4 Quadrotor frame
+        MOTOR_FRAME_TYPE_X_COR = 20, // X8 co-rotating, old motor ordering
+        MOTOR_FRAME_TYPE_CW_X_COR = 21, // X8 co-rotating, clockwise motor ordering
     };
 
 
@@ -152,6 +154,7 @@ public:
     float               get_throttle_out() const { return _throttle_out; }
     virtual bool        get_thrust(uint8_t motor_num, float& thr_out) const { return false; }
     virtual bool        get_raw_motor_throttle(uint8_t motor_num, float& thr_out) const { return false; }
+    float               get_throttle_in() const { return _throttle_in; }
     float               get_throttle() const { return constrain_float(_throttle_filter.get(), 0.0f, 1.0f); }
     float               get_throttle_bidirectional() const { return constrain_float(2 * (_throttle_filter.get() - 0.5f), -1.0f, 1.0f); }
     float               get_throttle_slew_rate() const { return _throttle_slew_rate; }

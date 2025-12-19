@@ -41,7 +41,7 @@ void loop(void)
 
     GCS_MAVLINK *dummy_link = gcs().chan(0);
 
-    if (!routing.check_and_forward(*dummy_link, msg)) {
+    if (!routing.check_and_forward(uint8_t(MAVLINK_FRAMING_OK), *dummy_link, msg)) {
         hal.console->printf("heartbeat should be processed locally\n");
         err_count++;
     }
@@ -49,7 +49,7 @@ void loop(void)
     // incoming non-targetted message
     mavlink_attitude_t attitude = {0};
     mavlink_msg_attitude_encode_status(3, 1, &status, &msg, &attitude);
-    if (!routing.check_and_forward(*dummy_link, msg)) {
+    if (!routing.check_and_forward(uint8_t(MAVLINK_FRAMING_OK), *dummy_link, msg)) {
         hal.console->printf("attitude should be processed locally\n");
         err_count++;
     }
@@ -59,7 +59,7 @@ void loop(void)
     param_set.target_system = mavlink_system.sysid+1;
     param_set.target_component = mavlink_system.compid;
     mavlink_msg_param_set_encode_status(3, 1, &status, &msg, &param_set);
-    if (routing.check_and_forward(*dummy_link, msg)) {
+    if (routing.check_and_forward(uint8_t(MAVLINK_FRAMING_OK), *dummy_link, msg)) {
         hal.console->printf("param set 1 should not be processed locally\n");
         err_count++;
     }
@@ -68,7 +68,7 @@ void loop(void)
     param_set.target_system = mavlink_system.sysid;
     param_set.target_component = mavlink_system.compid;
     mavlink_msg_param_set_encode_status(3, 1, &status, &msg, &param_set);
-    if (!routing.check_and_forward(*dummy_link, msg)) {
+    if (!routing.check_and_forward(uint8_t(MAVLINK_FRAMING_OK), *dummy_link, msg)) {
         hal.console->printf("param set 2 should be processed locally\n");
         err_count++;
     }
@@ -78,7 +78,7 @@ void loop(void)
     param_set.target_system = mavlink_system.sysid;
     param_set.target_component = mavlink_system.compid+1;
     mavlink_msg_param_set_encode_status(3, 1, &status, &msg, &param_set);
-    if (!routing.check_and_forward(*dummy_link, msg)) {
+    if (!routing.check_and_forward(uint8_t(MAVLINK_FRAMING_OK), *dummy_link, msg)) {
         hal.console->printf("param set 3 should be processed locally\n");
         err_count++;
     }
@@ -87,7 +87,7 @@ void loop(void)
     param_set.target_system = 0;
     param_set.target_component = mavlink_system.compid+1;
     mavlink_msg_param_set_encode_status(3, 1, &status, &msg, &param_set);
-    if (!routing.check_and_forward(*dummy_link, msg)) {
+    if (!routing.check_and_forward(uint8_t(MAVLINK_FRAMING_OK), *dummy_link, msg)) {
         hal.console->printf("param set 4 should be processed locally\n");
         err_count++;
     }

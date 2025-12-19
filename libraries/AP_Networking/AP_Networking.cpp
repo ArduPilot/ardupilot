@@ -470,10 +470,17 @@ const char *AP_Networking::address_to_str(uint32_t addr)
 }
 
 #ifdef LWIP_PLATFORM_ASSERT
-void ap_networking_platform_assert(const char *msg, int line, const char *file)
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || defined(HAL_DEBUG_BUILD)
+void ap_networking_platform_assert(const char *msg, int line)
 {
-    AP_HAL::panic("LWIP: %s: %s:%u", msg, file, line);
+    AP_HAL::panic("LWIP:%u %s", line, msg);
 }
+#else
+void ap_networking_platform_assert(int line)
+{
+    AP_HAL::panic("LWIP:%u", line);
+}
+#endif
 #endif
 
 #ifdef LWIP_HOOK_IP4_ROUTE

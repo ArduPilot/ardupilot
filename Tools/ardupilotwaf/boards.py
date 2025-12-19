@@ -331,6 +331,7 @@ class Board:
                 '-Werror=implicit-fallthrough',
                 '-cl-single-precision-constant',
                 '-Wno-vla-extension',
+                '-ftrapping-math',  # prevent re-ordering of sanity checks
             ]
         else:
             env.CFLAGS += [
@@ -422,6 +423,7 @@ class Board:
             '-Warray-bounds',
         ]
 
+        use_prefix_map = False
         if 'clang++' in cfg.env.COMPILER_CXX:
             env.CXXFLAGS += [
                 '-fcolor-diagnostics',
@@ -451,7 +453,10 @@ class Board:
                 '-Wno-gnu-variable-sized-type-not-at-end',
                 '-Werror=implicit-fallthrough',
                 '-cl-single-precision-constant',
+                '-ftrapping-math',  # prevent re-ordering of sanity checks
             ]
+            if self.cc_version_gte(cfg, 10, 0):
+                use_prefix_map = True
         else:
             env.CXXFLAGS += [
                 '-Wno-format-contains-nul',
@@ -469,6 +474,8 @@ class Board:
                     '-Werror=maybe-uninitialized',
                     '-Werror=duplicated-cond',
                 ]
+            if self.cc_version_gte(cfg, 8, 0):
+                use_prefix_map = True
             if self.cc_version_gte(cfg, 8, 4):
                 env.CXXFLAGS += [
                     '-Werror=sizeof-pointer-div',
@@ -480,6 +487,28 @@ class Board:
                 env.CFLAGS += [
                     '-Werror=use-after-free',
                 ]
+
+        if cfg.env.TOOLCHAIN == "custom":
+            # the QURT board stuff should be extracting the compiler
+            # version properly.  In the meantime, here's a really
+            # awesome thing:
+            use_prefix_map = False
+
+        if use_prefix_map:
+            # fixes to make __FILE__ and debug paths repeatable in .elf/.bin
+
+            # build root including variant (e.g. by default build/sitl)
+            bldnode = cfg.bldnode.make_node(cfg.variant)
+            # compute source root path from the perspective of the exact build
+            # root above. this path is (as far as we can tell) what waf
+            # prefixes source files with when passing them to the compiler
+            file_prefix = str(cfg.srcnode.path_from(bldnode))
+
+            # now tell the compiler to remap that prefix to `../..` (the prefix
+            # by default) so any stored source paths are independent of
+            # wherever the build dir is and the debugger can find the source
+            cfg.env.CFLAGS += [f"-ffile-prefix-map={file_prefix}=../.."]
+            cfg.env.CXXFLAGS += [f"-ffile-prefix-map={file_prefix}=../.."]
 
         if cfg.options.Werror:
             errors = ['-Werror',
@@ -1009,6 +1038,7 @@ class sitl_periph(sitl):
             AP_PERIPH_BUZZER_ENABLED = 0,
             AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED = 0,
             AP_PERIPH_RTC_GLOBALTIME_ENABLED = 0,
+            AP_PERIPH_ACTUATOR_TELEM_ENABLED = 0,
         )
 
         try:

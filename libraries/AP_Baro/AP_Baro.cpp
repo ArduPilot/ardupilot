@@ -1008,6 +1008,9 @@ void AP_Baro::update_field_elevation(void)
             Location origin;
             if (!armed && AP::ahrs().get_origin(origin)) {
                 _field_elevation_active = origin.alt * 0.01;
+                if (is_zero(_field_elevation_active)) {
+                    _field_elevation_active = 0.001f; // prevent zero value so that we don't keep trying to auto-set
+                }
                 new_field_elev = true;
             }
         } else if (fabsf(_field_elevation_active-_field_elevation) > 1.0 &&

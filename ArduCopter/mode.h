@@ -20,7 +20,7 @@ class _AutoTakeoff {
 public:
     void run();
     void start_m(float complete_alt_m, bool is_terrain_alt);
-    bool get_completion_pos_neu_m(Vector3p& pos_neu_m);
+    bool get_completion_pos_ned_m(Vector3p& pos_ned_m);
 
     bool complete;          // true when takeoff is complete
 
@@ -32,7 +32,7 @@ private:
     // auto takeoff variables
     float complete_alt_m;          // completion altitude expressed in m above ekf origin or above terrain (depending upon auto_takeoff_terrain_alt)
     bool is_terrain_alt;            // true if altitudes are above terrain
-    Vector3p complete_pos_neu_m;   // target takeoff position as offset from ekf origin in m
+    Vector3p complete_pos_ned_m;   // target takeoff position as offset from ekf origin in m
 };
 
 #if AC_PAYLOAD_PLACE_ENABLED
@@ -256,7 +256,7 @@ protected:
         Landed_Pre_Takeoff,
         Flying
     };
-    AltHoldModeState get_alt_hold_state_U_ms(float target_climb_rate_ms);
+    AltHoldModeState get_alt_hold_state_D_ms(float target_climb_rate_ms);
 
     // convenience references to avoid code churn in conversion:
     Parameters &g;
@@ -313,7 +313,7 @@ public:
         enum class Mode {
             HOLD =             0,   // hold zero yaw rate
             LOOK_AT_NEXT_WP =  1,   // point towards next waypoint (no pilot input accepted)
-            ROI =              2,   // point towards a location held in roi_neu_m (no pilot input accepted)
+            ROI =              2,   // point towards a location held in roi_ned_m (no pilot input accepted)
             FIXED =            3,   // point towards a particular angle (no pilot input accepted)
             LOOK_AHEAD =       4,   // point in the direction the copter is moving
             RESET_TO_ARMED_YAW = 5, // point towards heading at time motors were armed
@@ -370,7 +370,7 @@ public:
         Mode _last_mode;
 
         // Yaw will point at this location if mode is set to Mode::ROI
-        Vector3f roi_neu_m;
+        Vector3f roi_ned_m;
 
         // yaw used for YAW_FIXED yaw_mode
         float _fixed_yaw_offset_rad;
@@ -394,15 +394,33 @@ public:
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base
     // class.
+
+    // Returns the pilot’s commanded climb rate in m/s.
     float get_pilot_desired_climb_rate_ms() const;
+
+    // Returns the throttle level to maintain altitude (excluding takeoff boost).
     float get_non_takeoff_throttle() const;
+
+    // Updates simple/super-simple heading reference based on current yaw and mode.
     void update_simple_mode();
+
+    // Requests a mode change with the specified reason; returns true if accepted.
     bool set_mode(Mode::Number mode, ModeReason reason);
+
+    // Sets the “land complete” state flag.
     void set_land_complete(bool b);
+
+    // Returns a reference to the GCS interface for Copter.
     GCS_Copter &gcs() const;
+
+    // Returns the pilot’s maximum upward speed in m/s.
     float get_pilot_speed_up_ms() const;
+
+    // Returns the pilot’s maximum downward speed in m/s.
     float get_pilot_speed_dn_ms() const;
-    float get_pilot_accel_U_mss() const;
+
+    // Returns the pilot’s vertical acceleration limit in m/s².
+    float get_pilot_accel_D_mss() const;
     // end pass-through functions
 };
 
@@ -928,7 +946,7 @@ protected:
 
 private:
 
-    float get_throttle_assist(float vel_u_ms, float pilot_throttle_scaled);
+    float get_throttle_assist(float vel_d_ms, float pilot_throttle_scaled);
 
 };
 
@@ -1105,19 +1123,19 @@ public:
     //             IF false: climb_rate_ms_or_thrust represents climb_rate (m/s)
     void set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel, float climb_rate_ms_or_thrust, bool use_thrust);
 
-    bool set_pos_NEU_m(const Vector3p& pos_neu_m, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool is_terrain_alt = false);
+    bool set_pos_NED_m(const Vector3p& pos_ned_m, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool is_terrain_alt = false);
     bool set_destination(const Location& dest_loc, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
     bool get_wp(Location &loc) const override;
-    void set_accel_NEU_mss(const Vector3f& accel_neu_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
-    void set_vel_NEU_ms(const Vector3f& vel_neu_ms, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
-    void set_vel_accel_NEU_m(const Vector3f& vel_neu_ms, const Vector3f& accel_neu_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
-    bool set_pos_vel_NEU_m(const Vector3p& pos_neu_m, const Vector3f& vel_neu_ms, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
-    bool set_pos_vel_accel_NEU_m(const Vector3p& pos_neu_m, const Vector3f& vel_neu_ms, const Vector3f& accel_neu_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
+    void set_accel_NED_mss(const Vector3f& accel_ned_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
+    void set_vel_NED_ms(const Vector3f& vel_ned_ms, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
+    void set_vel_accel_NED_m(const Vector3f& vel_ned_ms, const Vector3f& accel_ned_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
+    bool set_pos_vel_NED_m(const Vector3p& pos_ned_m, const Vector3f& vel_ned_ms, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
+    bool set_pos_vel_accel_NED_m(const Vector3p& pos_ned_m, const Vector3f& vel_ned_ms, const Vector3f& accel_ned_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
 
     // get position, velocity and acceleration targets
-    const Vector3p& get_target_pos_NEU_m() const;
-    const Vector3f& get_target_vel_NEU_ms() const;
-    const Vector3f& get_target_accel_NEU_mss() const;
+    const Vector3p& get_target_pos_NED_m() const;
+    const Vector3f& get_target_vel_NED_ms() const;
+    const Vector3f& get_target_accel_NED_mss() const;
 
     // returns true if GUIDED_OPTIONS param suggests SET_ATTITUDE_TARGET's "thrust" field should be interpreted as thrust instead of climb rate
     bool set_attitude_target_provides_thrust() const;
@@ -1539,7 +1557,6 @@ private:
     bool _state_complete = false; // set to true if the current state is completed
 
     struct {
-        // NEU w/ Z element alt-above-ekf-origin unless use_terrain is true in which case Z element is alt-above-terrain
         Location origin_point;
         Location climb_target;
         Location return_target;
@@ -1998,12 +2015,12 @@ private:
     bool reached_destination();
     bool calculate_next_dest_m(Destination ab_dest, bool use_wpnav_alt, Vector3p& next_dest, bool& is_terrain_alt) const;
     void spray(bool b);
-    bool calculate_side_dest_m(Vector3p& next_dest_neu_m, bool& is_terrain_alt) const;
+    bool calculate_side_dest_m(Vector3p& next_dest_ned_m, bool& is_terrain_alt) const;
     void move_to_side();
 
-    Vector2p dest_A_ne_m;    // in NEU frame in m relative to ekf origin
-    Vector2p dest_B_ne_m;    // in NEU frame in m relative to ekf origin
-    Vector3p current_dest_neu_m; // current target destination (use for resume after suspending)
+    Vector2p dest_A_ne_m;    // in NE frame in m relative to ekf origin
+    Vector2p dest_B_ne_m;    // in NE frame in m relative to ekf origin
+    Vector3p current_dest_ned_m; // current target destination (use for resume after suspending)
     bool current_is_terr_alt;
 
     // parameters

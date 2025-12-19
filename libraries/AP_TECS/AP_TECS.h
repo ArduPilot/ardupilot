@@ -158,6 +158,9 @@ public:
     // Apply an altitude offset, to compensate for changes in home alt.
     void offset_altitude(const float alt_offset);
 
+    // Return true if airspeed should be used
+    bool use_airspeed() const;
+
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -401,7 +404,7 @@ private:
 
     // variables used for precision landing pitch control
     float _hgt_at_start_of_flare;
-    float _hgt_rate_at_flare_entry;
+    float _hgt_rate_dem_at_flare_entry;
     float _hgt_afe;
     float _pitch_min_at_flare_entry;
 

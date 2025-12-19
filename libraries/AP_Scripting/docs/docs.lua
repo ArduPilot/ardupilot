@@ -1356,7 +1356,7 @@ local RC_Channel_ud = {}
 ---@return number
 function RC_Channel_ud:norm_input_ignore_trim() end
 
--- desc
+-- Override RC channel value.  Be wary using this override as it effectively disables RC failsafes
 ---@param PWM integer
 function RC_Channel_ud:set_override(PWM) end
 
@@ -1829,6 +1829,10 @@ function motors:get_forward() end
 -- get throttle motor output
 ---@return number
 function motors:get_throttle() end
+
+-- get thrust motor input
+---@return number
+function motors:get_throttle_in() end
 
 -- get throttle motor output
 ---@return integer
@@ -2718,10 +2722,22 @@ function vehicle:set_target_angle_and_climbrate(roll_deg, pitch_deg, yaw_deg, cl
 ---@return boolean -- true if successful
 function vehicle:set_target_rate_and_throttle(roll_rate_dps, pitch_rate_dps, yaw_rate_dps, throttle) end
 
+-- Set vehicle's roll, pitch, and yaw angles and rates with throttle in guided mode
+---@param roll_deg number -- roll angle in degrees from -180 to 180
+---@param pitch_deg number -- pitch angle in degrees from -90 to 90
+---@param yaw_deg number -- yaw angle in degrees from -360 to 360
+---@param roll_rate_dps number -- roll rate in degrees per second
+---@param pitch_rate_dps number -- pitch rate in degrees per second
+---@param yaw_rate_dps number -- yaw rate in degrees per second
+---@param throttle number -- throttle demand 0.0 to 1.0
+---@return boolean -- true on success
+function vehicle:set_target_angle_and_rate_and_throttle(roll_deg, pitch_deg, yaw_deg, roll_rate_dps, pitch_rate_dps, yaw_rate_dps, throttle) end
+
 -- Sets the target velocity using a Vector3f object in a guided mode.
 ---@param vel_ned Vector3f_ud -- North, East, Down meters / second
+---@param align_yaw_to_target? boolean -- optionally align the yaw to the target, defaults to false: yaw is not changed. Only used on Copter.
 ---@return boolean -- true on success
-function vehicle:set_target_velocity_NED(vel_ned) end
+function vehicle:set_target_velocity_NED(vel_ned, align_yaw_to_target) end
 
 -- desc
 ---@param target_vel Vector3f_ud
@@ -4027,6 +4043,30 @@ function fence:get_margin_breach_time() end
 ---| 4 # Polygon
 ---| 8 # Minimum altitude
 function fence:get_breaches() end
+
+-- Returns minimum safe altitude in meters above home alt frame (i.e. alt_min + margin)
+---@return number 
+function fence:get_safe_alt_min() end
+
+-- Returns maximum safe altitude in meters above home alt frame (i.e. alt_max - margin)
+---@return number 
+function fence:get_safe_alt_max() end
+
+-- Returns configured fences
+---@return integer fence_type bitmask
+---| 1 # Maximim altitude
+---| 2 # Circle
+---| 4 # Polygon
+---| 8 # Minimum altitude
+function fence:present() end
+
+-- Returns enabled fences
+---@return integer fence_type bitmask
+---| 1 # Maximim altitude
+---| 2 # Circle
+---| 4 # Polygon
+---| 8 # Minimum altitude
+function fence:get_enabled_fences() end
 
 -- Returns the type bitmask of any fence whose margins have been crossed
 ---@return integer fence_type bitmask

@@ -130,7 +130,7 @@ private:
     void process_packet();
 
     // send_target_angles
-    void send_target_angles(const MountTarget& angle_target_rad);
+    void send_target_angles(const MountAngleTarget& angle_target_rad);
 
     // send simple (1byte) command to gimbal (e.g. take pic, start recording)
     // returns true on success, false on failure to send

@@ -7,7 +7,6 @@ AP_FLAKE8_CLEAN
 """
 
 from __future__ import annotations
-import os
 import time
 import unittest
 import subprocess
@@ -119,23 +118,17 @@ class TestParamCheck(unittest.TestCase):
         # When the function calls getmtime, it will return the current time
         mock_getmtime.side_effect = lambda path: time.time()
 
-        # Call the function
-        metadata = generate_metadata('Plane')
-
-        # Test subprocess was called correctly
-        metadata_script = os.path.join(
-            os.path.dirname(__file__), '../autotest/param_metadata/param_parse.py'
-        )
-        metadata_script = os.path.abspath(metadata_script)
-        mock_run.assert_called_once_with(
-            ['python3', metadata_script, '--vehicle=Plane', '--format=json'],
-            check=True,
-            capture_output=True,
-            text=True
-        )
+        # Check the arguments passed to param_parse.py
+        for vehicle in ['Plane', 'Copter']:
+            generate_metadata(vehicle)
+            call_args, _ = mock_run.call_args
+            arglist = call_args[0]
+            self.assertIn(f'--vehicle={vehicle}', arglist)
+            self.assertIn('--no-legacy-params', arglist)
 
         # Test that the metadata was loaded and that the json was flattened
         # (and that the json version was stripped out)
+        metadata = generate_metadata('Plane')
         self.assertEqual(metadata, {'PARAM1': {}, 'PARAM2': {}})
 
         # Test that we raise a runtime error if the metadata file exists but is

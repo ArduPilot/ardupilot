@@ -231,7 +231,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Plane}: 160:Weathervane Enable
     // @Values{Copter}: 161:Turbine Start(heli)
     // @Values{Copter, Rover, Plane}: 162:FFT Tune
-    // @Values{Copter, Rover, Plane, Sub}: 163:Mount Lock
+    // @Values{Copter, Rover, Plane, Sub}: 163:Mount Yaw Lock
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 164:Pause Stream Logging
     // @Values{Copter, Rover, Plane, Sub}: 165:Arm/Emergency Motor Stop
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 166:Camera Record Video, 167:Camera Zoom, 168:Camera Manual Focus, 169:Camera Auto Focus
@@ -250,6 +250,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 182: AHRS AutoTrim
     // @Values{Plane}: 183: AUTOLAND mode
     // @Values{Plane}: 184: System ID Chirp
+    // @Values{Copter, Rover, Plane, Blimp, Sub}:  185:Mount Roll/Pitch Lock
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
@@ -790,7 +791,8 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #if HAL_MOUNT_ENABLED
     case AUX_FUNC::RETRACT_MOUNT1:
     case AUX_FUNC::RETRACT_MOUNT2:
-    case AUX_FUNC::MOUNT_LOCK:
+    case AUX_FUNC::MOUNT_YAW_LOCK:
+    case AUX_FUNC::MOUNT_RP_LOCK:
 #endif
 #if HAL_LOGGING_ENABLED
     case AUX_FUNC::LOG_PAUSE:
@@ -911,7 +913,8 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::TURBINE_START, "Turbine Start"},
     { AUX_FUNC::FFT_NOTCH_TUNE, "FFT Notch Tuning"},
 #if HAL_MOUNT_ENABLED
-    { AUX_FUNC::MOUNT_LOCK, "MountLock"},
+    { AUX_FUNC::MOUNT_YAW_LOCK, "Mount Yaw Lock"},
+    { AUX_FUNC::MOUNT_RP_LOCK, "Mount Roll/Pitch Lock"},
 #endif
 #if HAL_LOGGING_ENABLED
     { AUX_FUNC::LOG_PAUSE, "Pause Stream Logging"},
@@ -1781,12 +1784,23 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         do_aux_function_retract_mount(ch_flag, 1);
         break;
 
-    case AUX_FUNC::MOUNT_LOCK: {
+    case AUX_FUNC::MOUNT_YAW_LOCK: {
         AP_Mount *mount = AP::mount();
         if (mount == nullptr) {
             break;
         }
         mount->set_yaw_lock(ch_flag == AuxSwitchPos::HIGH);
+        break;
+    }
+
+    case AUX_FUNC::MOUNT_RP_LOCK: {
+        AP_Mount *mount = AP::mount();
+        if (mount == nullptr) {
+            break;
+        }
+        //low is FPV:no ef locks,high is HORIZON lock:roll/pitch ef lock,mid is only pitch ef lock
+        mount->set_pitch_lock(ch_flag != AuxSwitchPos::LOW);
+        mount->set_roll_lock(ch_flag == AuxSwitchPos::HIGH);
         break;
     }
 

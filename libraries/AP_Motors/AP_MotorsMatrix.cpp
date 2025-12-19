@@ -444,7 +444,10 @@ void AP_MotorsMatrix::check_for_failed_motor(float throttle_thrust_best_plus_adj
         thrust_balance = rpyt_high * number_motors / rpyt_sum;
     }
     // ensure thrust balance does not activate for multirotors with less than 6 motors
-    if (number_motors >= 6 && thrust_balance >= 1.5f && _thrust_balanced) {
+    // also disable for co-rotating frames which have intentionally different throttle factors
+    const bool is_corotating = _active_frame_type == MOTOR_FRAME_TYPE_X_COR ||
+                               _active_frame_type == MOTOR_FRAME_TYPE_CW_X_COR;
+    if (number_motors >= 6 && thrust_balance >= 1.5f && _thrust_balanced && !is_corotating) {
         _thrust_balanced = false;
     }
     if (thrust_balance <= 1.25f && !_thrust_balanced) {
@@ -1079,6 +1082,51 @@ bool AP_MotorsMatrix::setup_octaquad_matrix(motor_frame_type frame_type)
             {  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  8 },
         };
         add_motors(motors, ARRAY_SIZE(motors));
+        break;
+    }
+    case MOTOR_FRAME_TYPE_X_COR: {
+        static_assert(AP_MOTORS_FRAME_OCTAQUAD_COROTATING_SCALE_FACTOR < 1.0, "AP_MOTORS_FRAME_OCTAQUAD_COROTATING_SCALE_FACTOR must be less than 1.0");
+        _frame_type_string = "X_COR";
+        static const AP_MotorsMatrix::MotorDef motors[] {
+            {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1 },
+            {  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7 },
+            { -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5 },
+            {  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3 },
+            {  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  8 },
+            {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2 },
+            {  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4 },
+            { -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6 },
+        };
+        add_motors(motors, ARRAY_SIZE(motors));
+        // scale top layer to prevent a beat frequency between layers in co-rotating setups
+        for (uint8_t i=0; i<4; i++) {
+            _roll_factor[i] *= AP_MOTORS_FRAME_OCTAQUAD_COROTATING_SCALE_FACTOR;
+            _pitch_factor[i] *= AP_MOTORS_FRAME_OCTAQUAD_COROTATING_SCALE_FACTOR;
+            _yaw_factor[i] *= AP_MOTORS_FRAME_OCTAQUAD_COROTATING_SCALE_FACTOR;
+            _throttle_factor[i] *= AP_MOTORS_FRAME_OCTAQUAD_COROTATING_SCALE_FACTOR;
+        }
+        break;
+    }
+    case MOTOR_FRAME_TYPE_CW_X_COR: {
+        _frame_type_string = "CW_X_COR";
+        static const AP_MotorsMatrix::MotorDef motors[] {
+            {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1 },
+            {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2 },
+            {  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3 },
+            {  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4 },
+            { -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5 },
+            { -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6 },
+            {  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7 },
+            {  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  8 },
+        };
+        add_motors(motors, ARRAY_SIZE(motors));
+        // scale top layer to prevent a beat frequency between layers in co-rotating setups
+        for (uint8_t i=0; i<8; i += 2) {
+            _roll_factor[i] *= AP_MOTORS_FRAME_OCTAQUAD_COROTATING_SCALE_FACTOR;
+            _pitch_factor[i] *= AP_MOTORS_FRAME_OCTAQUAD_COROTATING_SCALE_FACTOR;
+            _yaw_factor[i] *= AP_MOTORS_FRAME_OCTAQUAD_COROTATING_SCALE_FACTOR;
+            _throttle_factor[i] *= AP_MOTORS_FRAME_OCTAQUAD_COROTATING_SCALE_FACTOR;
+        }
         break;
     }
     default:

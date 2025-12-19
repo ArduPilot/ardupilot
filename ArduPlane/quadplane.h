@@ -515,7 +515,7 @@ private:
         uint32_t time_since_state_start_ms() const {
             return AP_HAL::millis() - last_state_change_ms;
         }
-        Vector3p target_neu_m;
+        Vector3p target_ned_m;
         Vector2f correction_ne_m;
         Vector3f target_vel_ms;
         bool slow_descent;
@@ -625,6 +625,12 @@ private:
 
     // AHRS alt for land abort and package place, meters
     float land_descend_start_alt_m;
+
+#if HAL_WITH_ESC_TELEM
+    // optionally block auto takeoff until all motors are spinning as expected
+    AP_Int16 takeoff_rpm_min;
+    AP_Int16 takeoff_rpm_max;
+#endif
 
     // min alt for navigation in takeoff
     AP_Float takeoff_navalt_min_m;

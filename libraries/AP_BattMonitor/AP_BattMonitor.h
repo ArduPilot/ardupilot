@@ -208,6 +208,14 @@ public:
     bool overpower_detected() const;
     bool overpower_detected(uint8_t instance) const;
 
+#if AP_BATTERY_WATT_MAX_ENABLED
+    /// get_watt_max - returns maximum power in watts
+    float get_watt_max() const { return get_watt_max(AP_BATT_PRIMARY_INSTANCE); }
+    float get_watt_max(uint8_t instance) const {
+        return _params[instance]._watt_max;
+    }
+#endif // AP_BATTERY_WATT_MAX_ENABLED
+
     // cell voltages in millivolts
     bool has_cell_voltages() const { return has_cell_voltages(AP_BATT_PRIMARY_INSTANCE); }
     bool has_cell_voltages(const uint8_t instance) const;
@@ -216,7 +224,7 @@ public:
 
     // get once cell voltage (for scripting)
     bool get_cell_voltage(uint8_t instance, uint8_t cell, float &voltage) const;
-
+    
     // temperature
     bool get_temperature(float &temperature) const { return get_temperature(temperature, AP_BATT_PRIMARY_INSTANCE); }
     bool get_temperature(float &temperature, const uint8_t instance) const;
