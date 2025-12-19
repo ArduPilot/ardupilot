@@ -7003,13 +7003,15 @@ class TestSuite(abc.ABC):
     def assert_mode(self, mode):
         self.wait_mode(mode, timeout=0)
 
-    def change_mode(self, mode, timeout=60):
+    def change_mode(self, mode, timeout=60, expect_mode=None):
         '''change vehicle flightmode'''
+        if expect_mode is None:
+            expect_mode = mode
         self.wait_heartbeat()
         self.progress("Changing mode to %s" % mode)
         self.send_cmd_do_set_mode(mode)
         tstart = self.get_sim_time()
-        while not self.mode_is(mode):
+        while not self.mode_is(expect_mode):
             custom_num = self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s custom=%u" % (
                 self.mav.flightmode, mode, custom_num))
@@ -15238,3 +15240,29 @@ SERIAL5_BAUD 128
             "SERVO%u_FUNCTION" % pitch_servo: 7, # pitch
             "SERVO%u_FUNCTION" % yaw_servo: 6, # yaw
         })
+
+    class WatchServoOutputs(MessageHook):
+        '''watches servo outputs for specific values'''
+
+        def __init__(self, suite, channel_hash, epsilon=0, fail_fast=True):
+            super().__init__(suite)
+            self.channel_hash = channel_hash
+            self.epsilon = epsilon
+            self.fail_fast = fail_fast
+            self.exc = None
+
+        def hook_removed(self):
+            if self.exc is not None:
+                raise self.exc
+
+        def process(self, mav, m):
+            if m.get_type() != 'SERVO_OUTPUT_RAW':
+                return
+            for n, want_v in self.channel_hash.items():
+                fieldname = f"servo{str(n)}_raw"
+                got_v = getattr(m, fieldname)
+                if abs(got_v - want_v) <= self.epsilon:
+                    continue
+                self.exc = NotAchievedException(f"SERVO_OUTPUT_RAW.{fieldname}={got_v} != {want_v=}")
+                if self.fail_fast:
+                    raise self.exc
