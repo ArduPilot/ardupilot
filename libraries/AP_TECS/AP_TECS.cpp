@@ -1413,12 +1413,13 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Calculate specific energy quantitiues
     _update_energies();
 
-    // Calculate pitch demand
-    _update_pitch();
 
     if (option_is_set(Option::HGT_ACCLN_CTRL)) {
         _update_throttle_accel(throttle_nudge, pitch_trim_deg);
     } else {
+        // Calculate pitch demand
+        _update_pitch();
+
         // Calculate throttle demand - use simple pitch to throttle if no
         // airspeed sensor.
         // Note that caller can demand the use of
