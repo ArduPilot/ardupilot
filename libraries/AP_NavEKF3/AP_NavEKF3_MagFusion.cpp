@@ -582,6 +582,8 @@ void NavEKF3_core::FuseMagnetometer()
     }
 
     Vector24 H_MAG;
+    // index of H_MAG which is exactly 1, for more efficient computation below
+    int H_MAG_unit_index;
     for (uint8_t obsIndex = 0; obsIndex <= 2; obsIndex++) {
 
         if (obsIndex == 0) {
@@ -597,6 +599,7 @@ void NavEKF3_core::FuseMagnetometer()
             H_MAG[19] = 1.0f;
             H_MAG[20] = 0.0f;
             H_MAG[21] = 0.0f;
+            H_MAG_unit_index = 19;
 
             // calculate Kalman gain
             const Vector5 SK_MX {
@@ -679,6 +682,7 @@ void NavEKF3_core::FuseMagnetometer()
             H_MAG[19] = 0.0f;
             H_MAG[20] = 1.0f;
             H_MAG[21] = 0.0f;
+            H_MAG_unit_index = 20;
 
             // calculate Kalman gain
             const Vector5 SK_MY {
@@ -763,6 +767,7 @@ void NavEKF3_core::FuseMagnetometer()
             H_MAG[19] = 0.0f;
             H_MAG[20] = 0.0f;
             H_MAG[21] = 1.0f;
+            H_MAG_unit_index = 21;
 
             // calculate Kalman gain
             const Vector5 SK_MZ {
@@ -847,9 +852,9 @@ void NavEKF3_core::FuseMagnetometer()
                 res += (Kfusion[i] * H_MAG[16]) * P[16][j];
                 res += (Kfusion[i] * H_MAG[17]) * P[17][j];
                 res += (Kfusion[i] * H_MAG[18]) * P[18][j];
-                res += (Kfusion[i] * H_MAG[19]) * P[19][j];
-                res += (Kfusion[i] * H_MAG[20]) * P[20][j];
-                res += (Kfusion[i] * H_MAG[21]) * P[21][j];
+                // one value in H is always 1, and the others not mentioned here
+                // are zero, so we can skip that H product to save an operation.
+                res += Kfusion[i] * P[H_MAG_unit_index][j];
                 KHP[i][j] = res;
             }
         }
