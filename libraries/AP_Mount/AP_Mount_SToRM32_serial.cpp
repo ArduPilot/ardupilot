@@ -27,7 +27,7 @@ void AP_Mount_SToRM32_serial::update()
         update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
     }
 
-    if ((AP_HAL::millis() - _last_send) > AP_MOUNT_STORM32_SERIAL_RESEND_MS*2) {
+    if ((AP_HAL::millis() - _last_send) > AP_MOUNT_STORM32_SERIAL_TIMEOUT_MS) {
         _reply_type = ReplyType_UNKNOWN;
     }
     if (can_send()) {
