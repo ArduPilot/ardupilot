@@ -833,36 +833,21 @@ void NavEKF3_core::FuseMagnetometer()
             // this can be used by other fusion processes to avoid fusing on the same frame as this expensive step
             magFusePerformed = true;
         }
-        // correct the covariance P = (I - K*H)*P
-        // take advantage of the empty columns in KH to reduce the
-        // number of operations
-        for (unsigned i = 0; i<=stateIndexLim; i++) {
-            for (unsigned j = 0; j<=3; j++) {
-                KH[i][j] = Kfusion[i] * H_MAG[j];
-            }
-            for (unsigned j = 4; j<=15; j++) {
-                KH[i][j] = 0.0f;
-            }
-            for (unsigned j = 16; j<=21; j++) {
-                KH[i][j] = Kfusion[i] * H_MAG[j];
-            }
-            for (unsigned j = 22; j<=23; j++) {
-                KH[i][j] = 0.0f;
-            }
-        }
+        // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
+        // the zero elements of H to reduce the number of operations.
         for (unsigned j = 0; j<=stateIndexLim; j++) {
             for (unsigned i = 0; i<=stateIndexLim; i++) {
                 ftype res = 0;
-                res += KH[i][0] * P[0][j];
-                res += KH[i][1] * P[1][j];
-                res += KH[i][2] * P[2][j];
-                res += KH[i][3] * P[3][j];
-                res += KH[i][16] * P[16][j];
-                res += KH[i][17] * P[17][j];
-                res += KH[i][18] * P[18][j];
-                res += KH[i][19] * P[19][j];
-                res += KH[i][20] * P[20][j];
-                res += KH[i][21] * P[21][j];
+                res += (Kfusion[i] * H_MAG[0]) * P[0][j];
+                res += (Kfusion[i] * H_MAG[1]) * P[1][j];
+                res += (Kfusion[i] * H_MAG[2]) * P[2][j];
+                res += (Kfusion[i] * H_MAG[3]) * P[3][j];
+                res += (Kfusion[i] * H_MAG[16]) * P[16][j];
+                res += (Kfusion[i] * H_MAG[17]) * P[17][j];
+                res += (Kfusion[i] * H_MAG[18]) * P[18][j];
+                res += (Kfusion[i] * H_MAG[19]) * P[19][j];
+                res += (Kfusion[i] * H_MAG[20]) * P[20][j];
+                res += (Kfusion[i] * H_MAG[21]) * P[21][j];
                 KHP[i][j] = res;
             }
         }
