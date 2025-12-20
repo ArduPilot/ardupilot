@@ -37,7 +37,7 @@ class ADSB_Vehicle {
 public:
     bool initialised = false;
 
-    const Location &get_location() const;  // return vehicle absolute location
+    const AbsAltLocation &get_location() const;  // return vehicle absolute location
     // return earth-frame vehicle velocity:
     bool velocity(Vector3F &ret) const { ret = velocity_ef; return true; }
 
@@ -49,7 +49,7 @@ private:
     void update(const class Aircraft &aircraft, float delta_t);
 
     Vector3p position; // NED from origin
-    Location location;
+    AbsAltLocation location;
 
     ADSB_EMITTER_TYPE type;
     uint64_t stationary_object_created_ms; // allows expiring of slow/stationary objects

@@ -839,11 +839,11 @@ bool AP_Mount_Topotek::send_time_to_gimbal()
 bool AP_Mount_Topotek::send_location_info()
 {
     // get current location
-    Location loc;
-    int32_t alt_amsl_cm = 0;
-    if (!AP::ahrs().get_location(loc) || !loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_amsl_cm)) {
+    AbsAltLocation loc;
+    if (!AP::ahrs().get_location(loc)) {
         return false;
     }
+    const int32_t alt_amsl_cm = loc.get_alt_cm();
 
     // convert latitude and longitude to positive angles in degrees
     const double latitude = labs(loc.lat) * 1e-7;

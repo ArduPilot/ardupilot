@@ -514,8 +514,8 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_gps_status(void)
     // GPS receiver advanced status (0: no advanced fix, 1: GPS_OK_FIX_3D_DGPS, 2: GPS_OK_FIX_3D_RTK_FLOAT, 3: GPS_OK_FIX_3D_RTK_FIXED)
     gps_status |= ((gps.status() > GPS_STATUS_LIMIT) ? gps.status()-GPS_STATUS_LIMIT : 0)<<GPS_ADVSTATUS_OFFSET;
     // Altitude MSL in dm
-    const Location &loc = gps.location();
-    gps_status |= prep_number(roundf(loc.alt * 0.1f),2,2)<<GPS_ALTMSL_OFFSET;
+    const AbsAltLocation &loc = gps.location();
+    gps_status |= prep_number(roundf(loc.get_alt_cm() * 0.1f),2,2)<<GPS_ALTMSL_OFFSET;
     return gps_status;
 }
 
@@ -607,10 +607,10 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_ap_status(void)
 uint32_t AP_Frsky_SPort_Passthrough::calc_home(void)
 {
     uint32_t home = 0;
-    Location loc;
-    Location home_loc;
+    AbsAltLocation loc;
+    AbsAltLocation home_loc;
     bool got_position = false;
-    float _relative_home_altitude = 0;
+    int32_t _relative_home_altitude_cm = 0;
 
     {
         AP_AHRS &_ahrs = AP::ahrs();
@@ -628,14 +628,10 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_home(void)
             home |= (((uint8_t)roundf(loc.get_bearing_to(home_loc) * 0.00333f)) & HOME_BEARING_LIMIT)<<HOME_BEARING_OFFSET;
         }
         // altitude between vehicle and home_loc
-        _relative_home_altitude = loc.alt;
-        if (!loc.relative_alt) {
-            // loc.alt has home altitude added, remove it
-            _relative_home_altitude -= home_loc.alt;
-        }
+        UNUSED_RESULT(loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, _relative_home_altitude_cm));
     }
     // altitude above home in decimeters
-    home |= prep_number(roundf(_relative_home_altitude * 0.1f), 3, 2)<<HOME_ALT_OFFSET;
+    home |= prep_number(roundf(_relative_home_altitude_cm * 0.1f), 3, 2)<<HOME_ALT_OFFSET;
     return home;
 }
 

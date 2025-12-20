@@ -12,7 +12,7 @@ bool ModeRTL::_enter()
 
     // set target to the closest rally point or home
 #if HAL_RALLY_ENABLED
-    if (!g2.wp_nav.set_desired_location(g2.rally.calc_best_rally_or_home_location(rover.current_loc, ahrs.get_home().alt))) {
+    if (!g2.wp_nav.set_desired_location(g2.rally.calc_best_rally_or_home_location(rover.current_loc, ahrs.get_home().get_alt_cm()))) {
         return false;
     }
 #else

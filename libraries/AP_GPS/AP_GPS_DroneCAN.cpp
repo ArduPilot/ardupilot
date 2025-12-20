@@ -377,9 +377,6 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
     }
 
     if (process) {
-        Location loc = { };
-        loc.lat = msg.latitude_deg_1e8 / 10;
-        loc.lng = msg.longitude_deg_1e8 / 10;
         const int32_t alt_amsl_cm = msg.height_msl_mm / 10;
         // if ellipsoid height is not supported by the GPS driver (or always
         // with older releases), AP_Periph reports height_ellipsoid_mm == height_msl_mm .
@@ -392,7 +389,11 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
         if (seen_valid_height_ellipsoid) {
             interim_state.undulation = (msg.height_msl_mm - msg.height_ellipsoid_mm) * 0.001;
         }
-        interim_state.location = loc;
+        interim_state.location = AbsAltLocation{
+            int32_t(msg.latitude_deg_1e8 / 10),
+            int32_t(msg.longitude_deg_1e8 / 10),
+            0
+        };
         set_alt_amsl_cm(interim_state, alt_amsl_cm);
 
         handle_velocity(msg.ned_velocity[0], msg.ned_velocity[1], msg.ned_velocity[2]);

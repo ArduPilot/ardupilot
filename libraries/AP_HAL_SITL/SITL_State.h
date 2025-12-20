@@ -45,12 +45,12 @@ public:
 
     /* parse a home location string */
     static bool parse_home(const char *home_str,
-                           Location &loc,
+                           AbsAltLocation &loc,
                            float &yaw_degrees);
 
     /* lookup a location in locations.txt */
     static bool lookup_location(const char *home_str,
-                                Location &loc,
+                                AbsAltLocation &loc,
                                 float &yaw_degrees);
     
     uint8_t get_instance() const { return _instance; }

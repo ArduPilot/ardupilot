@@ -166,7 +166,7 @@ private:
     RC_Channels_Rover &rc() { return g2.rc_channels; }
 
     // The rover's current location
-    Location current_loc;
+    AbsAltLocation current_loc;
 
     // Camera
 #if AP_CAMERA_ENABLED
@@ -292,7 +292,7 @@ private:
 
     // commands.cpp
     bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
-    bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
+    bool set_home(const AbsAltLocation& loc, bool lock) override WARN_IF_UNUSED;
     void update_home();
 
     // crash_check.cpp

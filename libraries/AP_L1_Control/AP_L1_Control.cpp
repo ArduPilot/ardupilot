@@ -206,7 +206,7 @@ void AP_L1_Control::_prevent_indecision(float &Nu)
 void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &next_WP, float dist_min)
 {
 
-    Location _current_loc;
+    AbsAltLocation _current_loc;
     float Nu;
     float xtrackVel;
     float ltrackVel;
@@ -351,7 +351,7 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
 {
     const float radius_unscaled = radius;
 
-    Location _current_loc;
+    AbsAltLocation _current_loc;
 
     // scale loiter radius with square of EAS2TAS to allow us to stay
     // stable at high altitude

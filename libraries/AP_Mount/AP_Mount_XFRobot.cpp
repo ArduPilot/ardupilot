@@ -424,7 +424,7 @@ void AP_Mount_XFRobot::send_target_angles(const MountAngleTarget& angle_target_r
     // byte 38~41: longitude of vehicle (int32, 1E7)
     // byte 42~45: latitude of vehicle (int32, 1E7)
     // byte 46~49: altitude of vehicle (int32, mm)
-    Location veh_loc;
+    AbsAltLocation veh_loc;
     if (AP::ahrs().get_location(veh_loc)) {
         // longitude
         set_attitude_packet.content.main.longitude = htole32(veh_loc.lng);

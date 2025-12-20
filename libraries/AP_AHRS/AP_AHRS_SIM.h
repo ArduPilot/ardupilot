@@ -99,7 +99,7 @@ public:
     bool get_filter_status(nav_filter_status &status) const override;
 
     // relative-origin functions for fallback in AP_InertialNav
-    bool get_origin(Location &ret) const override;
+    bool get_origin(AbsAltLocation &ret) const override;
     bool get_relative_position_NED_origin(Vector3p &vec) const override;
     bool get_relative_position_NE_origin(Vector2p &posNE) const override;
     bool get_relative_position_D_origin(postype_t &posD) const override;
@@ -113,7 +113,7 @@ public:
 private:
 
     // dead-reckoning support
-    bool get_location(Location &loc) const;
+    bool get_location(AbsAltLocation &loc) const;
 
 #if HAL_NAVEKF3_AVAILABLE
     // a reference to the EKF3 backend that we can use to send in

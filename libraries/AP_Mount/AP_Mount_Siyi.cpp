@@ -1236,7 +1236,7 @@ void AP_Mount_Siyi::send_attitude_position(void)
         int32_t alt_msl, alt_ellipsoid;
         Vector3l velocity_ned_int32;
     } position;
-    Location loc;
+    AbsAltLocation loc;
     Vector3f velocity_ned;
     float undulation = 0;
     if (!ahrs.get_location(loc) ||
@@ -1248,7 +1248,7 @@ void AP_Mount_Siyi::send_attitude_position(void)
     position.time_boot_ms = now_ms;
     position.lat = loc.lat;
     position.lon = loc.lng;
-    position.alt_msl = loc.alt;
+    position.alt_msl = loc.get_alt_cm();
     position.alt_ellipsoid = position.alt_msl - undulation*100;
 
     // convert velocity to int32 and scale to mm/s

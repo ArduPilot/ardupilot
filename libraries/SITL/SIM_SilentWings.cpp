@@ -195,11 +195,10 @@ void SilentWings::process_packet()
     airspeed = pkt.v_eas;
     airspeed_pitot = pkt.v_eas;
     const float alt_abs_m = pkt.altitude_msl;
-    Location curr_location{
+    AbsAltLocation curr_location{
         int32_t(pkt.position_latitude * 1.0e7),
         int32_t(pkt.position_longitude * 1.0e7),
-        int32_t(alt_abs_m * 100.0f),
-        Location::AltFrame::ABSOLUTE
+        int32_t(alt_abs_m * 100.0f)
     };
     ground_level = alt_abs_m - pkt.altitude_ground;
     Vector3f posdelta = origin.get_distance_NED(curr_location);
@@ -210,9 +209,9 @@ void SilentWings::process_packet()
 
     // In case Silent Wings' reported location and our location calculated using an offset from the home location diverge, we need
     // to reset the home location.
-    if (curr_location.get_distance(location) > 4 || abs(curr_location.alt - location.alt)*0.01f > 2.0f || !home_initialized) {
+    if (curr_location.get_distance(location) > 4 || abs(curr_location.get_alt_m() - location.get_alt_m()) > 2.0f || !home_initialized) {
         printf("SilentWings home reset dist=%f alt=%.1f/%.1f\n",
-               curr_location.get_distance(location), curr_location.alt*0.01f, location.alt*0.01f);
+               curr_location.get_distance(location), curr_location.get_alt_m(), location.get_alt_m());
         // reset home location
         // Resetting altitude reference point in flight can throw off a bunch
         // of important calculations, so let the home altitude always be 0m MSL

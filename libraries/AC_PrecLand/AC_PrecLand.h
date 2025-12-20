@@ -10,6 +10,7 @@
 #include "PosVelEKF.h"
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AC_PrecLand/AC_PrecLand_StateMachine.h>
+#include <AP_Common/Location.h>
 
 // declare backend classes
 class AC_PrecLand_Backend;
@@ -121,7 +122,7 @@ public:
       get target location lat/lon. Note that altitude in returned
       location is not reliable
      */
-    bool get_target_location(Location &loc);
+    bool get_target_location(AbsAltLocation &loc);
 
     /*
       get the absolute velocity of the target in m/s.

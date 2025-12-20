@@ -645,7 +645,7 @@ void Plane::update_alt()
             // ensure we do the initial climb in RTL. We add an extra
             // 10m in the demanded height to push TECS to climb
             // quickly
-            tecs_target_alt_cm = MAX(tecs_target_alt_cm, prev_WP_loc.alt - home.alt) + (g2.rtl_climb_min+10)*100;
+            tecs_target_alt_cm = MAX(tecs_target_alt_cm, prev_WP_loc_abs_alt_m()*100 - home.get_alt_cm()) + (g2.rtl_climb_min+10)*100;
         }
 
         TECS_controller.update_pitch_throttle(tecs_target_alt_cm,
@@ -1073,6 +1073,31 @@ void Plane::update_quicktune(void)
     quicktune.update(control_mode->supports_quicktune());
 }
 #endif
+
+// convenience function which returns next_WP_loc is in the
+// absolute frame and returns its altitude.  If it is not it
+// raises and internal error and returns the raw altitude from the
+// location object.
+float Plane::WP_loc_abs_alt_m(const Location &loc) const
+{
+    float ret;
+    if (loc.get_alt_m(Location::AltFrame::ABSOLUTE, ret)) {
+        return ret;
+    }
+
+    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    // come up with *something*
+    UNUSED_RESULT(loc.get_alt_m(loc.get_alt_frame(), ret));
+    return ret;
+}
+float Plane::next_WP_loc_abs_alt_m() const
+{
+    return WP_loc_abs_alt_m(plane.next_WP_loc);
+}
+float Plane::prev_WP_loc_abs_alt_m() const
+{
+    return WP_loc_abs_alt_m(plane.prev_WP_loc);
+}
 
 /*
   constructor for main Plane class

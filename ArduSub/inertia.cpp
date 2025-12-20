@@ -8,7 +8,7 @@ void Sub::read_inertia()
     sub.pos_control.update_estimates();
 
     // pull position from ahrs
-    Location loc;
+    AbsAltLocation loc;
     ahrs.get_location(loc);
     current_loc.lat = loc.lat;
     current_loc.lng = loc.lng;
@@ -18,7 +18,7 @@ void Sub::read_inertia()
         return;
     }
 
-    current_loc.alt = inertial_nav.get_position_z_up_cm();
+    current_loc.set_alt_cm(inertial_nav.get_position_z_up_cm(), Location::AltFrame::ABOVE_ORIGIN);
 
     // get velocity, altitude is always absolute frame, referenced from
     // water's surface

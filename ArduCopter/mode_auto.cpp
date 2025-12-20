@@ -87,7 +87,7 @@ void ModeAuto::run()
     // start or update mission
     if (waiting_to_start) {
         // don't start the mission until we have an origin
-        Location loc;
+        AbsAltLocation loc;
         if (copter.ahrs.get_origin(loc)) {
             // start/resume the mission (based on MIS_RESTART parameter)
             mission.start_or_resume();
@@ -413,8 +413,8 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
         // subtract terrain offset to convert vehicle's alt-above-ekf-origin to alt-above-terrain
         current_alt_m -= terrain_u_m;
 
-        // specify alt_target_m as alt-above-terrain
-        alt_target_m = dest_loc.alt * 0.01;
+        // specify alt_target_cm as alt-above-terrain
+        UNUSED_RESULT(dest_loc.get_alt_m(dest_loc.get_alt_frame(), alt_target_m));
         alt_target_terrain = true;
     } else {
         // set horizontal target
@@ -427,7 +427,9 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
             // this failure could only happen if take-off alt was specified as an alt-above terrain and we have no terrain data
             LOGGER_WRITE_ERROR(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
             // fall back to altitude above current altitude
-            alt_target_m = current_alt_m + dest.alt * 0.01;
+            int32_t dest_alt_m = 0;
+            UNUSED_RESULT(dest.get_alt_cm(dest.get_alt_frame(), dest_alt_m));
+            alt_target_m = current_alt_m + dest_alt_m;
         }
     }
 
@@ -1200,7 +1202,7 @@ void ModeAuto::loiter_to_alt_run()
 
         loiter_to_alt.loiter_start_done = true;
     }
-    const float alt_error_m = copter.current_loc.alt * 0.01 - loiter_to_alt.alt_m;
+    const float alt_error_m = copter.current_alt_above_home_m() - loiter_to_alt.alt_m;
     if (fabsf(alt_error_m) < 0.05) { // random numbers R US
         loiter_to_alt.reached_alt = true;
     } else if (alt_error_m * loiter_to_alt.alt_error_m < 0) {
@@ -1521,9 +1523,9 @@ bool ModeAuto::shift_alt_to_current_alt(Location& target_loc) const
         // this could fail due missing terrain database alt
         return false;
     }
-
     // set target_loc's alt minus position offset (if any)
-    target_loc.set_alt_m(currloc.alt * 0.01 - pos_control->get_pos_offset_U_m(), currloc.get_alt_frame());
+    target_loc.copy_alt_from(currloc);
+    target_loc.offset_up_m(-pos_control->get_pos_offset_U_m());
     return true;
 }
 
@@ -1558,7 +1560,9 @@ Location ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Lo
         ret.lng = default_loc.lng;
     }
     // use default altitude if not provided in cmd
-    if (ret.alt == 0) {
+    int32_t ret_alt_cm = 0;
+    UNUSED_RESULT(ret.get_alt_cm(ret.get_alt_frame(), ret_alt_cm));
+    if (ret_alt_cm == 0) {
         // set to default_loc's altitude but in command's alt frame
         // note that this may use the terrain database
         float default_alt_m;
@@ -1689,7 +1693,7 @@ void ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
         if (!shift_alt_to_current_alt(target_loc)) {
             // this can only fail due to missing terrain database alt or rangefinder alt
             // use current alt-above-home and report error
-            target_loc.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
+            target_loc.set_alt_m(copter.current_alt_above_home_m(), Location::AltFrame::ABOVE_HOME);
             LOGGER_WRITE_ERROR(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Land: no terrain data, using alt-above-home");
         }
@@ -2008,7 +2012,9 @@ void ModeAuto::do_set_home(const AP_Mission::Mission_Command& cmd)
             // ignore failure
         }
     } else {
-        if (!copter.set_home(cmd.content.location, false)) {
+        AbsAltLocation abs_alt_loc;
+        UNUSED_RESULT(abs_alt_loc.from(cmd.content.location));
+        if (!copter.set_home(abs_alt_loc, false)) {
             // ignore failure
         }
     }
@@ -2075,7 +2081,7 @@ void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
         if (!shift_alt_to_current_alt(target_loc)) {
             // this can only fail due to missing terrain database alt or rangefinder alt
             // use current alt-above-home and report error
-            target_loc.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
+            target_loc.set_alt_m(copter.current_alt_above_home_m(), Location::AltFrame::ABOVE_HOME);
             LOGGER_WRITE_ERROR(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
             gcs().send_text(MAV_SEVERITY_CRITICAL, "PayloadPlace: no terrain data, using alt-above-home");
         }
