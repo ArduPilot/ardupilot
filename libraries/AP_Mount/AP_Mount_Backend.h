@@ -362,11 +362,6 @@ protected:
         MountAngleTarget angle_rad; // angle target in radians
         MountRateTarget rate_rads;  // rate target in rad/s
         uint32_t last_rate_request_ms;
-
-        // 'fresh' indicates that the MountTarget data in this
-        // structure has been updated in this loop; some backends use
-        // this to gate whether to send data to the device or not.
-        bool fresh;
     } mnt_target;
     
     // RP earth frame locks accessible by backend

@@ -53,7 +53,7 @@ private:
 
     //void add_next_reply(ReplyType reply_type);
     uint8_t get_reply_size(ReplyType reply_type);
-    bool can_send(bool with_control);
+    bool can_send();
 
     struct PACKED SToRM32_reply_data_struct {
         uint16_t state;
