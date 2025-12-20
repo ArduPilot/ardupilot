@@ -27,25 +27,15 @@ void AP_Mount_SToRM32_serial::update()
         update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
     }
 
-    // resend target angles at least once per second
-    const bool resend_now = mnt_target.fresh || ((AP_HAL::millis() - _last_send) > AP_MOUNT_STORM32_SERIAL_RESEND_MS);
-
     if ((AP_HAL::millis() - _last_send) > AP_MOUNT_STORM32_SERIAL_RESEND_MS*2) {
         _reply_type = ReplyType_UNKNOWN;
     }
-    if (can_send(resend_now)) {
-        if (resend_now) {
+    if (can_send()) {
             send_target_angles(mnt_target.angle_rad);
             get_angles();
             _reply_type = ReplyType_ACK;
             _reply_counter = 0;
             _reply_length = get_reply_size(_reply_type);
-        } else {
-            get_angles();
-            _reply_type = ReplyType_DATA;
-            _reply_counter = 0;
-            _reply_length = get_reply_size(_reply_type);
-        }
     }
 }
 
@@ -56,11 +46,9 @@ bool AP_Mount_SToRM32_serial::get_attitude_quaternion(Quaternion& att_quat)
     return true;
 }
 
-bool AP_Mount_SToRM32_serial::can_send(bool with_control) {
+bool AP_Mount_SToRM32_serial::can_send() {
     uint16_t required_tx = 1;
-    if (with_control) {
-        required_tx += sizeof(AP_Mount_SToRM32_serial::cmd_set_angles_struct);
-    }
+    required_tx += sizeof(AP_Mount_SToRM32_serial::cmd_set_angles_struct);
     return (_reply_type == ReplyType_UNKNOWN) && (_uart->txspace() >= required_tx);
 }
 
