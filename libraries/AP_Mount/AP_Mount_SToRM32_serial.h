@@ -13,7 +13,9 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 
-#define AP_MOUNT_STORM32_SERIAL_RESEND_MS   1000    // resend angle targets to gimbal once per second
+// timeout for no-response-received (gimbal only sends data when we
+// send it data first)
+#define AP_MOUNT_STORM32_SERIAL_TIMEOUT_MS   2000
 
 class AP_Mount_SToRM32_serial : public AP_Mount_Backend_Serial
 {
