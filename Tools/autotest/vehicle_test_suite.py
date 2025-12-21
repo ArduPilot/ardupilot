@@ -5613,7 +5613,7 @@ class TestSuite(abc.ABC):
 
         tstart = self.get_sim_time()
         while True:
-            if tstart - self.get_sim_time_cached() > timeout:
+            if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Failed to set RC values")
             m = self.mav.recv_match(type='RC_CHANNELS', blocking=True, timeout=1)
             if m is None:
