@@ -749,6 +749,25 @@ public:
 private:
     void motor_test_stop();
 
+    // check for loss of thrust and trigger thrust boost in motors library
+    void thrust_loss_check(bool reset);
+
+    // Thrust loss variables
+    struct ThrustLoss {
+        // number of iterations vehicle may have lost thrust
+        uint16_t counter;
+
+        // Options parameter and helper
+        AP_Int32 options;
+        enum class Option {
+            DISABLED = (1<<0),
+            VTOL_ONLY = (1<<1),
+        };
+        bool option_is_set(Option option) const {
+            return (options.get() & int32_t(option)) != 0;
+        }
+    } thrust_loss;
+
     static QuadPlane *_singleton;
 };
 
