@@ -24,12 +24,8 @@ void AP_Mount_SToRM32::update()
 
     AP_Mount_Backend::update_mnt_target();
 
-    // update angle targets from angle rates
-    if (mnt_target.target_type == MountTargetType::RATE) {
-        update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
-    }
-
-    send_do_mount_control(mnt_target.angle_rad);
+    // send target angles (which may be derived from other target types)
+    AP_Mount_Backend::send_target_to_gimbal();
 }
 
 // get attitude as a quaternion.  returns true on success
@@ -61,8 +57,8 @@ void AP_Mount_SToRM32::find_gimbal()
     }
 }
 
-// send_do_mount_control - send a COMMAND_LONG containing a do_mount_control message
-void AP_Mount_SToRM32::send_do_mount_control(const MountAngleTarget& angle_target_rad)
+// send_target_angles - send a COMMAND_LONG containing a do_mount_control message
+void AP_Mount_SToRM32::send_target_angles(const MountAngleTarget& angle_target_rad)
 {
     // exit immediately if not initialised
     if (!_initialised) {

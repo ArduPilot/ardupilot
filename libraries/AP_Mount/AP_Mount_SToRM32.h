@@ -35,8 +35,13 @@ private:
     // search for gimbal in GCS_MAVLink routing table
     void find_gimbal();
 
+    // SToRM32 can only send angles:
+    uint8_t natively_supported_mount_target_types() const override {
+        return NATIVE_ANGLES_ONLY;
+    };
+
     // send_do_mount_control with latest angle targets
-    void send_do_mount_control(const MountAngleTarget& angle_target_rad);
+    void send_target_angles(const MountAngleTarget& angle_target_rad) override;
 
     // internal variables
     bool _initialised;              // true once the driver has been initialised
