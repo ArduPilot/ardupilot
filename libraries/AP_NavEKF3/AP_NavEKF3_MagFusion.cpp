@@ -835,8 +835,10 @@ void NavEKF3_core::FuseMagnetometer()
         }
         // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
         // the zero elements of H to reduce the number of operations.
-        for (unsigned j = 0; j<=stateIndexLim; j++) {
-            for (unsigned i = 0; i<=stateIndexLim; i++) {
+        for (unsigned i = 0; i<=stateIndexLim; i++) {
+            // j as the inner loop allows the compiler to hoist the KH product
+            // to save computation, and do the inner indexing more efficiently.
+            for (unsigned j = 0; j<=stateIndexLim; j++) {
                 ftype res = 0;
                 res += (Kfusion[i] * H_MAG[0]) * P[0][j];
                 res += (Kfusion[i] * H_MAG[1]) * P[1][j];
