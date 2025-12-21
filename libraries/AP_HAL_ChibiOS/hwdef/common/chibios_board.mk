@@ -129,16 +129,17 @@ endif
 CSRC = $(sort $(ALLCSRC))
 
 CSRC += $(HWDEF)/common/stubs.c \
-	   $(HWDEF)/common/board.c \
-	   $(HWDEF)/common/usbcfg.c \
-	   $(HWDEF)/common/usbcfg_dualcdc.c \
-	   $(HWDEF)/common/usbcfg_common.c \
-	   $(HWDEF)/common/flash.c \
-	   $(HWDEF)/common/malloc.c \
-	   $(HWDEF)/common/hrt.c \
-       $(HWDEF)/common/stm32_util.c \
-       $(HWDEF)/common/bouncebuffer.c \
-       $(HWDEF)/common/watchdog.c
+        $(HWDEF)/common/board.c \
+        $(HWDEF)/common/usbcfg.c \
+        $(HWDEF)/common/usbcfg_dualcdc.c \
+        $(HWDEF)/common/usbcfg_common.c \
+        $(HWDEF)/common/flash.c \
+        $(HWDEF)/common/malloc.c \
+        $(HWDEF)/common/hrt.c \
+        $(HWDEF)/common/stm32_util.c \
+        $(HWDEF)/common/bouncebuffer.c \
+        $(HWDEF)/common/watchdog.c \
+        $(HWDEF)/common/sysperf.c
 
 ifeq ($(USE_USB_MSD),yes)
 CSRC += $(CHIBIOS)/os/various/scsi_bindings/lib_scsi.c \

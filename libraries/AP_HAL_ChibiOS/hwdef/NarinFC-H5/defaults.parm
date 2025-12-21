@@ -1,0 +1,12 @@
+# temperature control. We need lower P/I values
+# to prevent oscillation of the BMI088 temperature
+# the ADIS16470 is factory temperature calibrated,
+# but the BMI088 isn't, so temperature control is still
+# worthwhile
+BRD_HEAT_TARG 45
+BRD_HEAT_P 50
+BRD_HEAT_I 0.07
+
+# turn on the CAN power monitoring(default)
+CAN_P1_DRIVER 1
+BATT_MONITOR 8

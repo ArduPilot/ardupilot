@@ -3,9 +3,12 @@
 */
 #pragma once
 
-#include "AP_Mount_Backend.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_ALEXMOS_ENABLED
+
+#include "AP_Mount_Backend.h"
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
@@ -30,6 +33,11 @@ protected:
     // get attitude as a quaternion.  returns true on success
     bool get_attitude_quaternion(Quaternion& att_quat) override;
 
+    // servo only natively supports angles:
+    uint8_t natively_supported_mount_target_types() const override {
+        return NATIVE_ANGLES_ONLY;
+    };
+
 private:
 
     // get_angles -
@@ -42,7 +50,7 @@ private:
     void get_boardinfo();
 
     // send new angles to the gimbal at a fixed speed of 30 deg/s
-    void control_axis(const MountTarget& angle_target_rad);
+    void send_target_angles(const MountAngleTarget& angle_rad) override;
 
     // read_params - read current profile profile_id and global parameters from the gimbal settings
     void read_params(uint8_t profile_id);
@@ -220,7 +228,7 @@ private:
     } _buffer,_current_parameters;
 
     AP_HAL::UARTDriver *_port;
-    bool _initialised : 1;
+    bool _initialised;
 
     // result of the get_boardinfo
     uint8_t _board_version;
@@ -233,7 +241,7 @@ private:
     Vector3f _current_angle;
 
     // CMD_READ_PARAMS has been called once
-    bool _param_read_once : 1;
+    bool _param_read_once;
 
     // Serial Protocol Variables
     uint8_t _checksum;
@@ -243,6 +251,6 @@ private:
     uint8_t _payload_counter;
 
     // confirmed that last command was ok
-    bool _last_command_confirmed : 1;
+    bool _last_command_confirmed;
 };
 #endif // HAL_MOUNT_ALEXMOS_ENABLED

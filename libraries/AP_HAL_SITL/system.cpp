@@ -33,11 +33,7 @@ void init()
     state.start_time_ns = ts_to_nsec(ts);
 }
 
-#if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(CYGWIN_BUILD)
-void panic(const char *errormsg, ...)
-#else
 void WEAK panic(const char *errormsg, ...)
-#endif
 {
     va_list ap;
 
@@ -54,6 +50,7 @@ void WEAK panic(const char *errormsg, ...)
     if (getenv("SITL_PANIC_EXIT")) {
         // this is used on the autotest server to prevent us waiting
         // 10 hours for a timeout
+        printf("panic and SITL_PANIC_EXIT set - exitting");
         exit(1);
     }
     for(;;);
@@ -171,14 +168,6 @@ uint32_t micros()
 uint32_t millis()
 {
     return millis64() & 0xFFFFFFFF;
-}
-
-/*
-  we define a millis16() here to avoid an issue with sitl builds in cygwin
- */
-uint16_t millis16()
-{
-    return millis64() & 0xFFFF;
 }
     
 uint64_t micros64()

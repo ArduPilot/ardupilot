@@ -1,7 +1,7 @@
 #pragma once
 
 #include <GCS_MAVLink/GCS.h>
-#include "GCS_Mavlink.h"
+#include "GCS_MAVLink_Sub.h"
 
 class GCS_Sub : public GCS
 {
@@ -25,8 +25,6 @@ public:
 
 protected:
 
-    uint8_t sysid_this_mav() const override;
-
     // minimum amount of time (in microseconds) that must remain in
     // the main scheduler loop before we are allowed to send any
     // mavlink messages.  We want to prioritise the main flight
@@ -35,9 +33,8 @@ protected:
         return 250;
     }
 
-    GCS_MAVLINK_Sub *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
-                                             AP_HAL::UARTDriver &uart) override {
-        return NEW_NOTHROW GCS_MAVLINK_Sub(params, uart);
+    GCS_MAVLINK_Sub *new_gcs_mavlink_backend(AP_HAL::UARTDriver &uart) override {
+        return NEW_NOTHROW GCS_MAVLINK_Sub(uart);
     }
 
 };

@@ -36,7 +36,7 @@ AP_AHRS_View::AP_AHRS_View(AP_AHRS &_ahrs, enum Rotation _rotation, float pitch_
         y_angle =  270;
         break;
     default:
-        AP_HAL::panic("Unsupported AHRS view %u\n", (unsigned)rotation);
+        AP_HAL::panic("Unsupported AHRS view %u", (unsigned)rotation);
     }
 
     _pitch_trim_deg = pitch_trim_deg;

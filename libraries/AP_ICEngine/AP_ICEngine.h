@@ -27,6 +27,7 @@
 #include <AP_RPM/AP_RPM_config.h>
 #include <AP_HAL/I2CDevice.h>
 #include <AP_Relay/AP_Relay_config.h>
+#include <RC_Channel/RC_Channel.h>
 
 #if AP_ICENGINE_TCA9554_STARTER_ENABLED
 #include "AP_ICEngine_TCA9554.h"
@@ -63,16 +64,18 @@ public:
     // handle DO_ENGINE_CONTROL messages via MAVLink or mission
     bool engine_control(float start_control, float cold_start, float height_delay, uint32_t flags);
 
-    // update min throttle for idle governor
-    void update_idle_governor(int8_t &min_throttle);
-
     // do we have throttle while disarmed enabled?
     bool allow_throttle_while_disarmed(void) const;
+
+    // Handle incoming aux function trigger
+    void do_aux_function(const RC_Channel::AuxFuncTrigger &trigger);
 
 #if AP_RELAY_ENABLED
     // Needed for param conversion from relay numbers to functions
     bool get_legacy_ignition_relay_index(int8_t &num);
 #endif
+
+    int8_t get_min_throttle_pct() const { return min_throttle_pct; }
 
     static AP_ICEngine *get_singleton() { return _singleton; }
 
@@ -84,7 +87,13 @@ private:
 
     enum ICE_State state;
 
+    // Minimum throttle for idle (from idle_percent or idle governor)
+    int8_t min_throttle_pct;
+
 #if AP_RPM_ENABLED
+    // update min throttle for idle governor
+    void update_idle_governor(int8_t &min_throttle);
+
     // filter for RPM value
     LowPassFilterConstDtFloat _rpm_filter;
     float filtered_rpm_value;
@@ -95,7 +104,7 @@ private:
 
     // min pwm on start channel for engine stop
     AP_Int16 start_chan_min_pwm;
-    
+
 #if AP_RPM_ENABLED
     // which RPM instance to use
     AP_Int8 rpm_instance;
@@ -149,7 +158,7 @@ private:
     float height_required;
 
     // we are waiting for valid height data
-    bool height_pending:1;
+    bool height_pending;
 
     bool allow_single_start_while_disarmed;
 
@@ -169,9 +178,8 @@ private:
         return (options & uint16_t(option)) != 0;
     }
 
-    // start_chan debounce
-    uint16_t start_chan_last_value = 1500;
-    uint32_t start_chan_last_ms;
+    // Last aux function value
+    RC_Channel::AuxSwitchPos aux_pos = RC_Channel::AuxSwitchPos::MIDDLE;
 
 #if AP_ICENGINE_TCA9554_STARTER_ENABLED
     AP_ICEngine_TCA9554 tca9554_starter;

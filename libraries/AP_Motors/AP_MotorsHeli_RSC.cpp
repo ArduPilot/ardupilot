@@ -457,7 +457,7 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
     }
 
     // if rotor ramp and runup are both at full speed, then run-up has been completed
-    if (!_runup_complete && (_rotor_ramp_output >= 1.0f) && (_rotor_runup_output >= 1.0f)) {
+    if (!_runup_complete && (_rotor_ramp_output >= 1.0f) && (_rotor_runup_output >= 1.0f) && (_control_mode == ROTOR_CONTROL_MODE_AUTOTHROTTLE ? _governor_engage : true)) {
         _runup_complete = true;
     }
     // if rotor speed is less than critical speed, then run-up is not complete
@@ -601,8 +601,8 @@ void AP_MotorsHeli_RSC::write_log(void) const
 {
     // @LoggerMessage: HRSC
     // @Description: Helicopter related messages 
-    // @Field: I: Instance, 0=Main, 1=Tail
     // @Field: TimeUS: Time since system startup
+    // @Field: I: Instance, 0=Main, 1=Tail
     // @Field: DRRPM: Desired rotor speed
     // @Field: ERRPM: Estimated rotor speed
     // @Field: Gov: Governor Output

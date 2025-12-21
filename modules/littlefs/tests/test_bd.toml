@@ -1,0 +1,248 @@
+# These tests don't really test littlefs at all, they are here only to make
+# sure the underlying block device is working.
+#
+# Note we use 251, a prime, in places to avoid aliasing powers of 2.
+# 
+
+[cases.test_bd_one_block]
+defines.READ = ['READ_SIZE', 'BLOCK_SIZE']
+defines.PROG = ['PROG_SIZE', 'BLOCK_SIZE']
+code = '''
+    uint8_t buffer[lfs_max(READ, PROG)];
+
+    // write data
+    cfg->erase(cfg, 0) => 0;
+    for (lfs_off_t i = 0; i < cfg->block_size; i += PROG) {
+        for (lfs_off_t j = 0; j < PROG; j++) {
+            buffer[j] = (i+j) % 251;
+        }
+        cfg->prog(cfg, 0, i, buffer, PROG) => 0;
+    }
+
+    // read data
+    for (lfs_off_t i = 0; i < cfg->block_size; i += READ) {
+        cfg->read(cfg, 0, i, buffer, READ) => 0;
+
+        for (lfs_off_t j = 0; j < READ; j++) {
+            LFS_ASSERT(buffer[j] == (i+j) % 251);
+        }
+    }
+'''
+
+[cases.test_bd_two_block]
+defines.READ = ['READ_SIZE', 'BLOCK_SIZE']
+defines.PROG = ['PROG_SIZE', 'BLOCK_SIZE']
+code = '''
+    uint8_t buffer[lfs_max(READ, PROG)];
+    lfs_block_t block;
+
+    // write block 0
+    block = 0;
+    cfg->erase(cfg, block) => 0;
+    for (lfs_off_t i = 0; i < cfg->block_size; i += PROG) {
+        for (lfs_off_t j = 0; j < PROG; j++) {
+            buffer[j] = (block+i+j) % 251;
+        }
+        cfg->prog(cfg, block, i, buffer, PROG) => 0;
+    }
+
+    // read block 0
+    block = 0;
+    for (lfs_off_t i = 0; i < cfg->block_size; i += READ) {
+        cfg->read(cfg, block, i, buffer, READ) => 0;
+
+        for (lfs_off_t j = 0; j < READ; j++) {
+            LFS_ASSERT(buffer[j] == (block+i+j) % 251);
+        }
+    }
+
+    // write block 1
+    block = 1;
+    cfg->erase(cfg, block) => 0;
+    for (lfs_off_t i = 0; i < cfg->block_size; i += PROG) {
+        for (lfs_off_t j = 0; j < PROG; j++) {
+            buffer[j] = (block+i+j) % 251;
+        }
+        cfg->prog(cfg, block, i, buffer, PROG) => 0;
+    }
+
+    // read block 1
+    block = 1;
+    for (lfs_off_t i = 0; i < cfg->block_size; i += READ) {
+        cfg->read(cfg, block, i, buffer, READ) => 0;
+
+        for (lfs_off_t j = 0; j < READ; j++) {
+            LFS_ASSERT(buffer[j] == (block+i+j) % 251);
+        }
+    }
+
+    // read block 0 again
+    block = 0;
+    for (lfs_off_t i = 0; i < cfg->block_size; i += READ) {
+        cfg->read(cfg, block, i, buffer, READ) => 0;
+
+        for (lfs_off_t j = 0; j < READ; j++) {
+            LFS_ASSERT(buffer[j] == (block+i+j) % 251);
+        }
+    }
+'''
+
+[cases.test_bd_last_block]
+defines.READ = ['READ_SIZE', 'BLOCK_SIZE']
+defines.PROG = ['PROG_SIZE', 'BLOCK_SIZE']
+code = '''
+    uint8_t buffer[lfs_max(READ, PROG)];
+    lfs_block_t block;
+
+    // write block 0
+    block = 0;
+    cfg->erase(cfg, block) => 0;
+    for (lfs_off_t i = 0; i < cfg->block_size; i += PROG) {
+        for (lfs_off_t j = 0; j < PROG; j++) {
+            buffer[j] = (block+i+j) % 251;
+        }
+        cfg->prog(cfg, block, i, buffer, PROG) => 0;
+    }
+
+    // read block 0
+    block = 0;
+    for (lfs_off_t i = 0; i < cfg->block_size; i += READ) {
+        cfg->read(cfg, block, i, buffer, READ) => 0;
+
+        for (lfs_off_t j = 0; j < READ; j++) {
+            LFS_ASSERT(buffer[j] == (block+i+j) % 251);
+        }
+    }
+
+    // write block n-1
+    block = cfg->block_count-1;
+    cfg->erase(cfg, block) => 0;
+    for (lfs_off_t i = 0; i < cfg->block_size; i += PROG) {
+        for (lfs_off_t j = 0; j < PROG; j++) {
+            buffer[j] = (block+i+j) % 251;
+        }
+        cfg->prog(cfg, block, i, buffer, PROG) => 0;
+    }
+
+    // read block n-1
+    block = cfg->block_count-1;
+    for (lfs_off_t i = 0; i < cfg->block_size; i += READ) {
+        cfg->read(cfg, block, i, buffer, READ) => 0;
+
+        for (lfs_off_t j = 0; j < READ; j++) {
+            LFS_ASSERT(buffer[j] == (block+i+j) % 251);
+        }
+    }
+
+    // read block 0 again
+    block = 0;
+    for (lfs_off_t i = 0; i < cfg->block_size; i += READ) {
+        cfg->read(cfg, block, i, buffer, READ) => 0;
+
+        for (lfs_off_t j = 0; j < READ; j++) {
+            LFS_ASSERT(buffer[j] == (block+i+j) % 251);
+        }
+    }
+'''
+
+[cases.test_bd_powers_of_two]
+defines.READ = ['READ_SIZE', 'BLOCK_SIZE']
+defines.PROG = ['PROG_SIZE', 'BLOCK_SIZE']
+code = '''
+    uint8_t buffer[lfs_max(READ, PROG)];
+
+    // write/read every power of 2
+    lfs_block_t block = 1;
+    while (block < cfg->block_count) {
+        // write
+        cfg->erase(cfg, block) => 0;
+        for (lfs_off_t i = 0; i < cfg->block_size; i += PROG) {
+            for (lfs_off_t j = 0; j < PROG; j++) {
+                buffer[j] = (block+i+j) % 251;
+            }
+            cfg->prog(cfg, block, i, buffer, PROG) => 0;
+        }
+
+        // read
+        for (lfs_off_t i = 0; i < cfg->block_size; i += READ) {
+            cfg->read(cfg, block, i, buffer, READ) => 0;
+
+            for (lfs_off_t j = 0; j < READ; j++) {
+                LFS_ASSERT(buffer[j] == (block+i+j) % 251);
+            }
+        }
+
+        block *= 2;
+    }
+
+    // read every power of 2 again
+    block = 1;
+    while (block < cfg->block_count) {
+        // read
+        for (lfs_off_t i = 0; i < cfg->block_size; i += READ) {
+            cfg->read(cfg, block, i, buffer, READ) => 0;
+
+            for (lfs_off_t j = 0; j < READ; j++) {
+                LFS_ASSERT(buffer[j] == (block+i+j) % 251);
+            }
+        }
+
+        block *= 2;
+    }
+'''
+
+[cases.test_bd_fibonacci]
+defines.READ = ['READ_SIZE', 'BLOCK_SIZE']
+defines.PROG = ['PROG_SIZE', 'BLOCK_SIZE']
+code = '''
+    uint8_t buffer[lfs_max(READ, PROG)];
+
+    // write/read every fibonacci number on our device
+    lfs_block_t block = 1;
+    lfs_block_t block_ = 1;
+    while (block < cfg->block_count) {
+        // write
+        cfg->erase(cfg, block) => 0;
+        for (lfs_off_t i = 0; i < cfg->block_size; i += PROG) {
+            for (lfs_off_t j = 0; j < PROG; j++) {
+                buffer[j] = (block+i+j) % 251;
+            }
+            cfg->prog(cfg, block, i, buffer, PROG) => 0;
+        }
+
+        // read
+        for (lfs_off_t i = 0; i < cfg->block_size; i += READ) {
+            cfg->read(cfg, block, i, buffer, READ) => 0;
+
+            for (lfs_off_t j = 0; j < READ; j++) {
+                LFS_ASSERT(buffer[j] == (block+i+j) % 251);
+            }
+        }
+
+        lfs_block_t nblock = block + block_;
+        block_ = block;
+        block = nblock;
+    }
+
+    // read every fibonacci number again
+    block = 1;
+    block_ = 1;
+    while (block < cfg->block_count) {
+        // read
+        for (lfs_off_t i = 0; i < cfg->block_size; i += READ) {
+            cfg->read(cfg, block, i, buffer, READ) => 0;
+
+            for (lfs_off_t j = 0; j < READ; j++) {
+                LFS_ASSERT(buffer[j] == (block+i+j) % 251);
+            }
+        }
+
+        lfs_block_t nblock = block + block_;
+        block_ = block;
+        block = nblock;
+    }
+'''
+
+
+
+

@@ -3,9 +3,11 @@
  */
 #pragma once
 
-#include "AP_Mount_Backend_Serial.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_STORM32SERIAL_ENABLED
+
+#include "AP_Mount_Backend_Serial.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
@@ -34,7 +36,7 @@ protected:
 private:
 
     // send_target_angles
-    void send_target_angles(const MountTarget& angle_target_rad);
+    void send_target_angles(const MountAngleTarget& angle_target_rad) override;
 
     // send read data request
     void get_angles();

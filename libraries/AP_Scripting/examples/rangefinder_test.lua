@@ -19,13 +19,26 @@ function update()
 end
 
 function info(rotation)
-  local ground_clearance = rangefinder:ground_clearance_cm_orient(rotation)
-  local distance_min = rangefinder:min_distance_cm_orient(rotation)
-  local distance_max = rangefinder:max_distance_cm_orient(rotation)
+  local ground_clearance = rangefinder:ground_clearance_orient(rotation)
+  local distance_min = rangefinder:min_distance_orient(rotation)
+  local distance_max = rangefinder:max_distance_orient(rotation)
   local offset = rangefinder:get_pos_offset_orient(rotation)
-  local distance_cm = rangefinder:distance_cm_orient(rotation)
+  local distance = rangefinder:distance_orient(rotation)
 
-  gcs:send_text(0, string.format("Rotation %d %.0f cm range %d - %d offset %.0f %.0f %.0f ground clearance %.0f", rotation, distance_cm, distance_min, distance_max, offset:x(), offset:y(), offset:z(), ground_clearance))
+  gcs:send_text(
+    0,
+    string.format(
+      "rot=%d distance=%.2f min=%.2f max=%.2f offset=(%.0f,%.0f,%.0f) ground-clearance=%.2f",
+      rotation,
+      distance,
+      distance_min,
+      distance_max,
+      offset:x(),
+      offset:y(),
+      offset:z(),
+      ground_clearance
+    )
+  )
 end
 
 return update(), 1000 -- first message may be displayed 1 seconds after start-up

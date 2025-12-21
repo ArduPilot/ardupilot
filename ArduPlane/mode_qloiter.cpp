@@ -10,8 +10,9 @@ bool ModeQLoiter::_enter()
     loiter_nav->init_target();
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_speed_z_max_up*100, quadplane.pilot_accel_z*100);
-    pos_control->set_correction_speed_accel_z(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_speed_z_max_up*100, quadplane.pilot_accel_z*100);
+    // All limits must be positive
+    pos_control->D_set_max_speed_accel_m(quadplane.get_pilot_velocity_z_max_dn_m(), quadplane.pilot_speed_z_max_up_ms, quadplane.pilot_accel_z_mss);
+    pos_control->D_set_correction_speed_accel_m(quadplane.get_pilot_velocity_z_max_dn_m(), quadplane.pilot_speed_z_max_up_ms, quadplane.pilot_accel_z_mss);
 
     quadplane.init_throttle_wait();
 
@@ -54,8 +55,8 @@ void ModeQLoiter::run()
     if (last_pos_set_ms != 0 && now - last_pos_set_ms < precland_timeout_ms) {
         // we have an active landing target override
         Vector2f rel_origin;
-        if (plane.next_WP_loc.get_vector_xy_from_origin_NE(rel_origin)) {
-            quadplane.pos_control->set_pos_desired_xy_cm(rel_origin);
+        if (plane.next_WP_loc.get_vector_xy_from_origin_NE_cm(rel_origin)) {
+            quadplane.pos_control->set_pos_desired_NE_m(rel_origin.topostype() * 0.01);
             last_target_loc_set_ms = 0;
         }
     }
@@ -64,8 +65,8 @@ void ModeQLoiter::run()
     if (last_vel_set_ms != 0 && now - last_vel_set_ms < precland_timeout_ms) {
         // we have an active landing velocity override
         Vector2f target_accel;
-        Vector2f target_speed_xy_cms{quadplane.poscontrol.velocity_match.x*100, quadplane.poscontrol.velocity_match.y*100};
-        quadplane.pos_control->input_vel_accel_xy(target_speed_xy_cms, target_accel);
+        Vector2f target_speed_xy_ms{quadplane.poscontrol.velocity_match_ms.x, quadplane.poscontrol.velocity_match_ms.y};
+        quadplane.pos_control->input_vel_accel_NE_m(target_speed_xy_ms, target_accel);
         quadplane.poscontrol.last_velocity_match_ms = 0;
     }
 #endif // AC_PRECLAND_ENABLED
@@ -80,7 +81,7 @@ void ModeQLoiter::run()
         quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0, true, 0);
         quadplane.relax_attitude_control();
-        pos_control->relax_z_controller(0);
+        pos_control->D_relax_controller(0);
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
 
@@ -107,27 +108,28 @@ void ModeQLoiter::run()
     quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_speed_z_max_up*100, quadplane.pilot_accel_z*100);
+    // All limits must be positive
+    pos_control->D_set_max_speed_accel_m(quadplane.get_pilot_velocity_z_max_dn_m(), quadplane.pilot_speed_z_max_up_ms, quadplane.pilot_accel_z_mss);
 
     // process pilot's roll and pitch input
     float target_roll_cd, target_pitch_cd;
     quadplane.get_pilot_desired_lean_angles(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
-    loiter_nav->set_pilot_desired_acceleration(target_roll_cd, target_pitch_cd);
+    loiter_nav->set_pilot_desired_acceleration_cd(target_roll_cd, target_pitch_cd);
     
     // run loiter controller
-    if (!pos_control->is_active_xy()) {
-        pos_control->init_xy_controller();
+    if (!pos_control->NE_is_active()) {
+        pos_control->NE_init_controller();
     }
     loiter_nav->update();
 
     // nav roll and pitch are controller by loiter controller
-    plane.nav_roll_cd = loiter_nav->get_roll();
-    plane.nav_pitch_cd = loiter_nav->get_pitch();
+    plane.nav_roll_cd = loiter_nav->get_roll_cd();
+    plane.nav_pitch_cd = loiter_nav->get_pitch_cd();
 
     plane.quadplane.assign_tilt_to_fwd_thr();
 
     if (quadplane.transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {
-        pos_control->set_externally_limited_xy();
+        pos_control->NE_set_externally_limited();
     }
 
     // Pilot input, use yaw rate time constant
@@ -137,12 +139,12 @@ void ModeQLoiter::run()
 
 #if AP_PLANE_SYSTEMID_ENABLED
     auto &systemid = plane.g2.systemid;
-    systemid.update();
+    systemid.vtol_update();
     target += systemid.get_attitude_offset_deg();
 #endif
 
     // call attitude controller with conservative smoothing gain of 4.0f
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target.x*100,
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target.x*100,
                                                                   target.y*100,
                                                                   target.z*100);
 
@@ -157,20 +159,20 @@ void ModeQLoiter::run()
             }
 #endif  // AP_ICENGINE_ENABLED
         }
-        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
-        float descent_rate_cms = quadplane.landing_descent_rate_cms(height_above_ground);
+        float height_above_ground = plane.relative_ground_altitude(RangeFinderUse::TAKEOFF_LANDING);
+        float descent_rate_ms = quadplane.landing_descent_rate_ms(height_above_ground);
 
-        if (poscontrol.get_state() == QuadPlane::QPOS_LAND_FINAL && !quadplane.option_is_set(QuadPlane::OPTION::DISABLE_GROUND_EFFECT_COMP)) {
+        if (poscontrol.get_state() == QuadPlane::QPOS_LAND_FINAL && !quadplane.option_is_set(QuadPlane::Option::DISABLE_GROUND_EFFECT_COMP)) {
             ahrs.set_touchdown_expected(true);
         }
 
-        pos_control->land_at_climb_rate_cm(-descent_rate_cms, descent_rate_cms>0);
+        pos_control->D_set_pos_target_from_climb_rate_ms(-descent_rate_ms, descent_rate_ms>0);
         quadplane.check_land_complete();
     } else if (plane.control_mode == &plane.mode_guided && quadplane.guided_takeoff) {
-        quadplane.set_climb_rate_cms(0);
+        quadplane.set_climb_rate_ms(0);
     } else {
         // update altitude target and call position controller
-        quadplane.set_climb_rate_cms(quadplane.get_pilot_desired_climb_rate_cms());
+        quadplane.set_climb_rate_ms(quadplane.get_pilot_desired_climb_rate_cms() * 0.01);
     }
     quadplane.run_z_controller();
 

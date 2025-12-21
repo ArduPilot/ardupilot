@@ -17,7 +17,7 @@
 #include <iostream>
 #include <string>
 
-#include "SocketExample.cpp"
+#include "SocketExample.h"
 
 class libAP_JSON {
 public:

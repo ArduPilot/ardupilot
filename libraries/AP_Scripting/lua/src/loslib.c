@@ -177,7 +177,7 @@ static int os_rename (lua_State *L) {
 
 
 static int os_tmpname (lua_State *L) {
-  char buff[LUA_TMPNAMBUFSIZE];
+  char buff[LUA_TMPNAMBUFSIZE] = {0};
   int err;
   lua_tmpnam(buff, err);
   if (err)

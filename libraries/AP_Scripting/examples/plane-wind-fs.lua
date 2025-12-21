@@ -135,7 +135,7 @@ local function time_to_home()
     local effective_speed = home_airspeed + tail_wind
 
     -- Estimate the extra distance required to turn
-    local yaw = ahrs:get_yaw()
+    local yaw = ahrs:get_yaw_rad()
     -- this is the estimated angle we have to turn to be at the home bearing and crab angle
     local turn_angle_rad = bearing - crab_angle - yaw 
     -- wrap to +- PI
@@ -300,7 +300,7 @@ function update()
   end
 
   -- check airspeed
-  local air_speed_in = ahrs:airspeed_estimate()
+  local air_speed_in = ahrs:airspeed_EAS()
   if not air_speed_in then
     error("Could not read airspeed")
   end

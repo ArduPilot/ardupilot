@@ -9,8 +9,8 @@ FLASH_BOOTLOADER_LOAD_KB 22
 # reserve some space for params
 APP_START_OFFSET_KB 4
 
-# board ID for firmware load
-APJ_BOARD_ID 1046
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_HITEC_AIRSPEED
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -26,8 +26,6 @@ PA6 LED_BOOTLOADER OUTPUT LOW
 define HAL_LED_ON 1
 
 define HAL_USE_SERIAL FALSE
-
-define HAL_NO_GPIO_IRQ
 
 define HAL_USE_EMPTY_IO TRUE
 define PORT_INT_REQUIRED_STACK 64

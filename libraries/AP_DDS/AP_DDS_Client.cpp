@@ -4,7 +4,9 @@
 #if AP_DDS_ENABLED
 #include <uxr/client/util/ping.h>
 
+#if AP_DDS_NEEDS_GPS
 #include <AP_GPS/AP_GPS.h>
+#endif // AP_DDS_NEEDS_GPS
 #include <AP_HAL/AP_HAL.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_RTC/AP_RTC.h>
@@ -17,6 +19,7 @@
 #include <AP_Arming/AP_Arming.h>
 # endif // AP_DDS_ARM_SERVER_ENABLED
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Common/AP_FWVersion.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 
 #if AP_DDS_ARM_SERVER_ENABLED
@@ -31,6 +34,9 @@
 #if AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
 #include "ardupilot_msgs/srv/Takeoff.h"
 #endif // AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
+#if AP_DDS_RC_PUB_ENABLED
+#include "AP_RSSI/AP_RSSI.h"
+#endif // AP_DDS_RC_PUB_ENABLED
 
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_DDS_ExternalControl.h"
@@ -64,9 +70,15 @@ static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = AP_DDS_DELAY_LOCAL_VEL
 #if AP_DDS_AIRSPEED_PUB_ENABLED
 static constexpr uint16_t DELAY_AIRSPEED_TOPIC_MS = AP_DDS_DELAY_AIRSPEED_TOPIC_MS;
 #endif // AP_DDS_AIRSPEED_PUB_ENABLED
+#if AP_DDS_RC_PUB_ENABLED
+static constexpr uint16_t DELAY_RC_TOPIC_MS = AP_DDS_DELAY_RC_TOPIC_MS;
+#endif // AP_DDS_RC_PUB_ENABLED
 #if AP_DDS_GEOPOSE_PUB_ENABLED
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = AP_DDS_DELAY_GEO_POSE_TOPIC_MS;
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
+#if AP_DDS_GOAL_PUB_ENABLED
+static constexpr uint16_t DELAY_GOAL_TOPIC_MS = AP_DDS_DELAY_GOAL_TOPIC_MS ;
+#endif // AP_DDS_GOAL_PUB_ENABLED
 #if AP_DDS_CLOCK_PUB_ENABLED
 static constexpr uint16_t DELAY_CLOCK_TOPIC_MS =AP_DDS_DELAY_CLOCK_TOPIC_MS;
 #endif // AP_DDS_CLOCK_PUB_ENABLED
@@ -74,6 +86,9 @@ static constexpr uint16_t DELAY_CLOCK_TOPIC_MS =AP_DDS_DELAY_CLOCK_TOPIC_MS;
 static constexpr uint16_t DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS = AP_DDS_DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS;
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 static constexpr uint16_t DELAY_PING_MS = 500;
+#if AP_DDS_STATUS_PUB_ENABLED
+static constexpr uint16_t DELAY_STATUS_TOPIC_MS = AP_DDS_DELAY_STATUS_TOPIC_MS;
+#endif // AP_DDS_STATUS_PUB_ENABLED
 
 // Define the subscriber data members, which are static class scope.
 // If these are created on the stack in the subscriber,
@@ -81,7 +96,9 @@ static constexpr uint16_t DELAY_PING_MS = 500;
 #if AP_DDS_JOY_SUB_ENABLED
 sensor_msgs_msg_Joy AP_DDS_Client::rx_joy_topic {};
 #endif // AP_DDS_JOY_SUB_ENABLED
+#if AP_DDS_DYNAMIC_TF_SUB_ENABLED
 tf2_msgs_msg_TFMessage AP_DDS_Client::rx_dynamic_transforms_topic {};
+#endif // AP_DDS_DYNAMIC_TF_SUB_ENABLED
 #if AP_DDS_VEL_CTRL_ENABLED
 geometry_msgs_msg_TwistStamped AP_DDS_Client::rx_velocity_control_topic {};
 #endif // AP_DDS_VEL_CTRL_ENABLED
@@ -155,6 +172,7 @@ const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
     AP_GROUPEND
 };
 
+#if AP_DDS_STATIC_TF_PUB_ENABLED | AP_DDS_LOCAL_POSE_PUB_ENABLED | AP_DDS_GEOPOSE_PUB_ENABLED | AP_DDS_IMU_PUB_ENABLED
 static void initialize(geometry_msgs_msg_Quaternion& q)
 {
     q.x = 0.0;
@@ -162,6 +180,7 @@ static void initialize(geometry_msgs_msg_Quaternion& q)
     q.z = 0.0;
     q.w = 1.0;
 }
+#endif // AP_DDS_STATIC_TF_PUB_ENABLED | AP_DDS_LOCAL_POSE_PUB_ENABLED | AP_DDS_GEOPOSE_PUB_ENABLED | AP_DDS_IMU_PUB_ENABLED
 
 AP_DDS_Client::~AP_DDS_Client()
 {
@@ -198,7 +217,6 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
 
     auto &gps = AP::gps();
     WITH_SEMAPHORE(gps.get_semaphore());
-
     if (!gps.is_healthy(instance)) {
         msg.status.status = -1; // STATUS_NO_FIX
         msg.status.service = 0; // No services supported
@@ -208,12 +226,11 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
 
     // No update is needed
     const auto last_fix_time_ms = gps.last_fix_time_ms(instance);
-    if (last_nav_sat_fix_time_ms == last_fix_time_ms) {
+    if (last_nav_sat_fix_time_ms[instance] == last_fix_time_ms) {
         return false;
     } else {
-        last_nav_sat_fix_time_ms = last_fix_time_ms;
+        last_nav_sat_fix_time_ms[instance] = last_fix_time_ms;
     }
-
 
     update_topic(msg.header.stamp);
     static_assert(GPS_MAX_RECEIVERS <= 9, "GPS_MAX_RECEIVERS is greater than 9");
@@ -367,9 +384,9 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_
     if (battery.current_amps(current, instance)) {
         if (percentage == 100) {
             msg.power_supply_status = 4;   //POWER_SUPPLY_STATUS_FULL
-        } else if (current < 0.0) {
+        } else if (is_negative(current)) {
             msg.power_supply_status = 1;   //POWER_SUPPLY_STATUS_CHARGING
-        } else if (current > 0.0) {
+        } else if (is_positive(current)) {
             msg.power_supply_status = 2;   //POWER_SUPPLY_STATUS_DISCHARGING
         } else {
             msg.power_supply_status = 3;   //POWER_SUPPLY_STATUS_NOT_CHARGING
@@ -487,7 +504,7 @@ void AP_DDS_Client::update_topic(geometry_msgs_msg_TwistStamped& msg)
 }
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
 #if AP_DDS_AIRSPEED_PUB_ENABLED
-bool AP_DDS_Client::update_topic(geometry_msgs_msg_Vector3Stamped& msg)
+bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Airspeed& msg)
 {
     update_topic(msg.header.stamp);
     STRCPY(msg.header.frame_id, BASE_LINK_FRAME_ID);
@@ -505,15 +522,48 @@ bool AP_DDS_Client::update_topic(geometry_msgs_msg_Vector3Stamped& msg)
     // As a consequence, to follow ROS REP 103, it is necessary to invert Y and Z
     Vector3f true_airspeed_vec_bf;
     bool is_airspeed_available {false};
-    if (ahrs.airspeed_vector_true(true_airspeed_vec_bf)) {
-        msg.vector.x = true_airspeed_vec_bf[0];
-        msg.vector.y = -true_airspeed_vec_bf[1];
-        msg.vector.z = -true_airspeed_vec_bf[2];
+    if (ahrs.airspeed_vector_TAS(true_airspeed_vec_bf)) {
+        msg.true_airspeed.x = true_airspeed_vec_bf[0];
+        msg.true_airspeed.y = -true_airspeed_vec_bf[1];
+        msg.true_airspeed.z = -true_airspeed_vec_bf[2];
+        msg.eas_2_tas = ahrs.get_EAS2TAS();
         is_airspeed_available = true;
     }
     return is_airspeed_available;
 }
 #endif // AP_DDS_AIRSPEED_PUB_ENABLED
+
+#if AP_DDS_RC_PUB_ENABLED
+bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Rc& msg)
+{
+    update_topic(msg.header.stamp);
+    AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
+    auto rc = RC_Channels::get_singleton();
+    static int16_t counter = 0;
+
+    // Is connected if not in failsafe.
+    // This is only valid if the RC has been connected at least once
+    msg.is_connected = !rc->in_rc_failsafe();
+    // Receiver RSSI is reported between 0.0 and 1.0.
+    msg.receiver_rssi = static_cast<uint8_t>(ap_rssi->read_receiver_rssi()*100.f);
+
+    // Limit the max number of available channels to 8
+    msg.channels_size = MIN(static_cast<uint32_t>(rc->get_valid_channel_count()), 32U);
+    msg.active_overrides_size = msg.channels_size;
+    if (msg.channels_size) {
+        for (uint8_t i = 0; i < static_cast<uint8_t>(msg.channels_size); i++) {
+            msg.channels[i] = rc->rc_channel(i)->get_radio_in();
+            msg.active_overrides[i] = rc->rc_channel(i)->has_override();
+        }
+    } else {
+        // If no channels are available, the RC is disconnected.
+        msg.is_connected = false;
+    }
+
+    // Return true if Radio is connected, or once every 10 steps to reduce useless traffic.
+    return msg.is_connected ? true : (counter++ % 10 == 0);
+}
+#endif // AP_DDS_RC_PUB_ENABLED
 
 #if AP_DDS_GEOPOSE_PUB_ENABLED
 void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
@@ -556,6 +606,39 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
 }
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
 
+#if AP_DDS_GOAL_PUB_ENABLED
+bool AP_DDS_Client::update_topic_goal(geographic_msgs_msg_GeoPointStamped& msg)
+{
+    const auto &vehicle = AP::vehicle();
+    update_topic(msg.header.stamp);
+    Location target_loc;
+    // Exit if no target is available.
+    if (!vehicle->get_target_location(target_loc)) {
+        return false;
+    }
+    target_loc.change_alt_frame(Location::AltFrame::ABSOLUTE);
+    msg.position.latitude = target_loc.lat * 1e-7;
+    msg.position.longitude = target_loc.lng * 1e-7;
+    msg.position.altitude = target_loc.alt * 1e-2;
+
+    // Check whether the goal has changed or if the topic has never been published.
+    const double tolerance_lat_lon = 1e-8; // One order of magnitude smaller than the target's resolution.
+    const double distance_alt = 1e-3;
+    if (abs(msg.position.latitude - prev_goal_msg.position.latitude) >  tolerance_lat_lon ||
+        abs(msg.position.longitude - prev_goal_msg.position.longitude) >  tolerance_lat_lon ||
+        abs(msg.position.altitude - prev_goal_msg.position.altitude) > distance_alt ||
+        prev_goal_msg.header.stamp.sec == 0 ) {
+        update_topic(prev_goal_msg.header.stamp);
+        prev_goal_msg.position.latitude = msg.position.latitude;
+        prev_goal_msg.position.longitude = msg.position.longitude;
+        prev_goal_msg.position.altitude = msg.position.altitude;
+        return true;
+    } else {
+        return false;
+    }
+}
+#endif // AP_DDS_GOAL_PUB_ENABLED
+
 #if AP_DDS_IMU_PUB_ENABLED
 void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
 {
@@ -576,7 +659,6 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
     } else {
         initialize(msg.orientation);
     }
-    msg.orientation_covariance[0] = -1;
 
     uint8_t accel_index = ahrs.get_primary_accel_index();
     uint8_t gyro_index = ahrs.get_primary_gyro_index();
@@ -591,8 +673,6 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
     msg.angular_velocity.x = gyro_data.x;
     msg.angular_velocity.y = gyro_data.y;
     msg.angular_velocity.z = gyro_data.z;
-    msg.angular_velocity_covariance[0] = -1;
-    msg.linear_acceleration_covariance[0] = -1;
 }
 #endif // AP_DDS_IMU_PUB_ENABLED
 
@@ -623,6 +703,65 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPointStamped& msg)
 }
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 
+#if AP_DDS_STATUS_PUB_ENABLED
+bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Status& msg)
+{
+    // Fill the new message.
+    const auto &vehicle = AP::vehicle();
+    const auto &battery = AP::battery();
+    msg.vehicle_type = static_cast<uint8_t>(AP::fwversion().vehicle_type);
+    msg.armed = hal.util->get_soft_armed();
+    msg.mode = vehicle->get_mode();
+    msg.flying = vehicle->get_likely_flying();
+    msg.external_control = true; // Always true for now. To be filled after PR#28429.
+    uint8_t fs_iter = 0;
+    msg.failsafe_size = 0;
+    if (rc().in_rc_failsafe()) {
+        msg.failsafe[fs_iter++] = Status::FS_RADIO;
+    }
+    if (battery.has_failsafed()) {
+        msg.failsafe[fs_iter++] = Status::FS_BATTERY;
+    }
+    // TODO: replace flag with function.
+    if (AP_Notify::flags.failsafe_gcs) {
+        msg.failsafe[fs_iter++] = Status::FS_GCS;
+    }
+    // TODO: replace flag with function.
+    if (AP_Notify::flags.failsafe_ekf) {
+        msg.failsafe[fs_iter++] = Status::FS_EKF;
+    }
+    msg.failsafe_size = fs_iter;
+
+    // Compare with the previous one.
+    bool is_message_changed {false};
+    is_message_changed |= (last_status_msg_.flying != msg.flying);
+    is_message_changed |= (last_status_msg_.armed != msg.armed);
+    is_message_changed |= (last_status_msg_.mode != msg.mode);
+    is_message_changed |= (last_status_msg_.vehicle_type != msg.vehicle_type);
+    is_message_changed |= (last_status_msg_.failsafe_size != msg.failsafe_size);
+    is_message_changed |= (last_status_msg_.external_control != msg.external_control);
+
+    const auto timestamp = AP_HAL::millis64();
+    if ( is_message_changed ) {
+        last_status_msg_.flying = msg.flying;
+        last_status_msg_.armed  = msg.armed;
+        last_status_msg_.mode  = msg.mode;
+        last_status_msg_.vehicle_type = msg.vehicle_type;
+        last_status_msg_.failsafe_size = msg.failsafe_size;
+        last_status_msg_.external_control = msg.external_control;
+        last_status_publish_time_ms = timestamp;
+        update_topic(msg.header.stamp);
+        return true;
+    } else if (timestamp - last_status_publish_time_ms > DELAY_STATUS_TOPIC_MS * 5) {
+        // Publish the status message at 2Hz even if no change is detected.
+        last_status_publish_time_ms = timestamp;
+        update_topic(msg.header.stamp);
+        return true;
+    } else {
+        return false;
+    }
+}
+#endif // AP_DDS_STATUS_PUB_ENABLED
 /*
   start the DDS thread
  */
@@ -769,7 +908,13 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         }
 
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for %sing received", msg_prefix, arm_motors_request.arm ? "arm" : "disarm");
-        arm_motors_response.result = arm_motors_request.arm ? AP::arming().arm(AP_Arming::Method::DDS) : AP::arming().disarm(AP_Arming::Method::DDS);
+#if AP_EXTERNAL_CONTROL_ENABLED
+        const bool do_checks = true;
+        arm_motors_response.result = arm_motors_request.arm ? AP_DDS_External_Control::arm(AP_Arming::Method::DDS, do_checks) : AP_DDS_External_Control::disarm(AP_Arming::Method::DDS, do_checks);
+        if (!arm_motors_response.result) {
+            // TODO #23430 handle arm failure through rosout, throttled.
+        }
+#endif // AP_EXTERNAL_CONTROL_ENABLED
 
         const uxrObjectId replier_id = {
             .id = services[to_underlying(ServiceIndex::ARMING_MOTORS)].rep_id,
@@ -908,15 +1053,15 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
             // bool, string, byte_array, bool_array, integer_array, double_array and string_array
             bool param_isnan = true;
             bool param_isinf = true;
-            float param_value;
+            float param_value = 0.0f;
             switch (param.value.type) {
-            case PARAMETER_INTEGER: {
+            case ParameterType::PARAMETER_INTEGER: {
                 param_isnan = isnan(param.value.integer_value);
                 param_isinf = isinf(param.value.integer_value);
                 param_value = float(param.value.integer_value);
                 break;
             }
-            case PARAMETER_DOUBLE: {
+            case ParameterType::PARAMETER_DOUBLE: {
                 param_isnan = isnan(param.value.double_value);
                 param_isinf = isinf(param.value.double_value);
                 param_value = float(param.value.double_value);
@@ -967,8 +1112,9 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
             .type = UXR_REPLIER_ID
         };
 
-        uint32_t reply_size = rcl_interfaces_srv_SetParameters_Response_size_of_topic(&set_parameter_response, 0U);
-        uint8_t reply_buffer[reply_size] {};
+        const uint32_t reply_size = rcl_interfaces_srv_SetParameters_Response_size_of_topic(&set_parameter_response, 0U);
+        uint8_t reply_buffer[reply_size];
+        memset(reply_buffer, 0, reply_size * sizeof(uint8_t));
         ucdrBuffer reply_ub;
 
         ucdr_init_buffer(&reply_ub, reply_buffer, reply_size);
@@ -1009,38 +1155,38 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
 
             vp = AP_Param::find(param_key, &var_type);
             if (vp == nullptr) {
-                get_parameters_response.values[i].type = PARAMETER_NOT_SET;
+                get_parameters_response.values[i].type = ParameterType::PARAMETER_NOT_SET;
                 successful_read &= false;
                 continue;
             }
 
             switch (var_type) {
             case AP_PARAM_INT8: {
-                get_parameters_response.values[i].type = PARAMETER_INTEGER;
+                get_parameters_response.values[i].type = ParameterType::PARAMETER_INTEGER;
                 get_parameters_response.values[i].integer_value = ((AP_Int8 *)vp)->get();
                 successful_read &= true;
                 break;
             }
             case AP_PARAM_INT16: {
-                get_parameters_response.values[i].type = PARAMETER_INTEGER;
+                get_parameters_response.values[i].type = ParameterType::PARAMETER_INTEGER;
                 get_parameters_response.values[i].integer_value = ((AP_Int16 *)vp)->get();
                 successful_read &= true;
                 break;
             }
             case AP_PARAM_INT32: {
-                get_parameters_response.values[i].type = PARAMETER_INTEGER;
+                get_parameters_response.values[i].type = ParameterType::PARAMETER_INTEGER;
                 get_parameters_response.values[i].integer_value = ((AP_Int32 *)vp)->get();
                 successful_read &= true;
                 break;
             }
             case AP_PARAM_FLOAT: {
-                get_parameters_response.values[i].type = PARAMETER_DOUBLE;
+                get_parameters_response.values[i].type = ParameterType::PARAMETER_DOUBLE;
                 get_parameters_response.values[i].double_value = vp->cast_to_float(var_type);
                 successful_read &= true;
                 break;
             }
             default: {
-                get_parameters_response.values[i].type = PARAMETER_NOT_SET;
+                get_parameters_response.values[i].type = ParameterType::PARAMETER_NOT_SET;
                 successful_read &= false;
                 break;
             }
@@ -1052,8 +1198,9 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
             .type = UXR_REPLIER_ID
         };
 
-        uint32_t reply_size = rcl_interfaces_srv_GetParameters_Response_size_of_topic(&get_parameters_response, 0U);
-        uint8_t reply_buffer[reply_size] {};
+        const uint32_t reply_size = rcl_interfaces_srv_GetParameters_Response_size_of_topic(&get_parameters_response, 0U);
+        uint8_t reply_buffer[reply_size];
+        memset(reply_buffer, 0, reply_size * sizeof(uint8_t));
         ucdrBuffer reply_ub;
 
         ucdr_init_buffer(&reply_ub, reply_buffer, reply_size);
@@ -1087,6 +1234,18 @@ void AP_DDS_Client::main_loop(void)
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s transport invalid, exiting", msg_prefix);
             return;
         }
+        // If using UDP, check if the network is active before proceeding
+        // not applicable for SITL, which doesn't use AP_Networking
+#if AP_DDS_UDP_ENABLED && !AP_NETWORKING_BACKEND_SITL
+        if (!is_using_serial) {
+            const auto &network = AP::network();
+            if (network.get_ip_active() == 0) {
+                hal.scheduler->delay(1000);
+                continue;
+            }
+
+        }
+#endif
 
         // check ping
         if (ping_max_retry == 0) {
@@ -1360,7 +1519,7 @@ void AP_DDS_Client::write_time_topic()
         const bool success = builtin_interfaces_msg_Time_serialize_topic(&ub, &time_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: XRCE_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: XRCE_Client failed to serialize");
         }
     }
 }
@@ -1376,7 +1535,7 @@ void AP_DDS_Client::write_nav_sat_fix_topic()
         const bool success = sensor_msgs_msg_NavSatFix_serialize_topic(&ub, &nav_sat_fix_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }
@@ -1393,7 +1552,7 @@ void AP_DDS_Client::write_static_transforms()
         const bool success = tf2_msgs_msg_TFMessage_serialize_topic(&ub, &tx_static_transforms_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }
@@ -1410,7 +1569,7 @@ void AP_DDS_Client::write_battery_state_topic()
         const bool success = sensor_msgs_msg_BatteryState_serialize_topic(&ub, &battery_state_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }
@@ -1427,7 +1586,7 @@ void AP_DDS_Client::write_local_pose_topic()
         const bool success = geometry_msgs_msg_PoseStamped_serialize_topic(&ub, &local_pose_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }
@@ -1444,7 +1603,7 @@ void AP_DDS_Client::write_tx_local_velocity_topic()
         const bool success = geometry_msgs_msg_TwistStamped_serialize_topic(&ub, &tx_local_velocity_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }
@@ -1455,16 +1614,32 @@ void AP_DDS_Client::write_tx_local_airspeed_topic()
     WITH_SEMAPHORE(csem);
     if (connected) {
         ucdrBuffer ub {};
-        const uint32_t topic_size = geometry_msgs_msg_Vector3Stamped_size_of_topic(&tx_local_airspeed_topic, 0);
+        const uint32_t topic_size = ardupilot_msgs_msg_Airspeed_size_of_topic(&tx_local_airspeed_topic, 0);
         uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::LOCAL_AIRSPEED_PUB)].dw_id, &ub, topic_size);
-        const bool success = geometry_msgs_msg_Vector3Stamped_serialize_topic(&ub, &tx_local_airspeed_topic);
+        const bool success = ardupilot_msgs_msg_Airspeed_serialize_topic(&ub, &tx_local_airspeed_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
+        }
+    }
+}
+#endif // AP_DDS_AIRSPEED_PUB_ENABLED
+#if AP_DDS_RC_PUB_ENABLED
+void AP_DDS_Client::write_tx_local_rc_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = ardupilot_msgs_msg_Rc_size_of_topic(&tx_local_rc_topic, 0);
+        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::LOCAL_RC_PUB)].dw_id, &ub, topic_size);
+        const bool success = ardupilot_msgs_msg_Rc_serialize_topic(&ub, &tx_local_rc_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
             // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
         }
     }
 }
-#endif // AP_DDS_AIRSPEED_PUB_ENABLED
+#endif // AP_DDS_RC_PUB_ENABLED
 #if AP_DDS_IMU_PUB_ENABLED
 void AP_DDS_Client::write_imu_topic()
 {
@@ -1476,7 +1651,7 @@ void AP_DDS_Client::write_imu_topic()
         const bool success = sensor_msgs_msg_Imu_serialize_topic(&ub, &imu_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }
@@ -1493,7 +1668,7 @@ void AP_DDS_Client::write_geo_pose_topic()
         const bool success = geographic_msgs_msg_GeoPoseStamped_serialize_topic(&ub, &geo_pose_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }
@@ -1510,7 +1685,7 @@ void AP_DDS_Client::write_clock_topic()
         const bool success = rosgraph_msgs_msg_Clock_serialize_topic(&ub, &clock_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }
@@ -1526,11 +1701,44 @@ void AP_DDS_Client::write_gps_global_origin_topic()
         uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::GPS_GLOBAL_ORIGIN_PUB)].dw_id, &ub, topic_size);
         const bool success = geographic_msgs_msg_GeoPointStamped_serialize_topic(&ub, &gps_global_origin_topic);
         if (!success) {
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
+
+#if AP_DDS_GOAL_PUB_ENABLED
+void AP_DDS_Client::write_goal_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = geographic_msgs_msg_GeoPointStamped_size_of_topic(&goal_topic, 0);
+        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::GOAL_PUB)].dw_id, &ub, topic_size);
+        const bool success = geographic_msgs_msg_GeoPointStamped_serialize_topic(&ub, &goal_topic);
+        if (!success) {
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
+        }
+    }
+}
+#endif // AP_DDS_GOAL_PUB_ENABLED
+
+#if AP_DDS_STATUS_PUB_ENABLED
+void AP_DDS_Client::write_status_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = ardupilot_msgs_msg_Status_size_of_topic(&status_topic, 0);
+        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::STATUS_PUB)].dw_id, &ub, topic_size);
+        const bool success = ardupilot_msgs_msg_Status_serialize_topic(&ub, &status_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
+        }
+    }
+}
+#endif // AP_DDS_STATUS_PUB_ENABLED
 
 void AP_DDS_Client::update()
 {
@@ -1545,9 +1753,10 @@ void AP_DDS_Client::update()
     }
 #endif // AP_DDS_TIME_PUB_ENABLED
 #if AP_DDS_NAVSATFIX_PUB_ENABLED
-    constexpr uint8_t gps_instance = 0;
-    if (update_topic(nav_sat_fix_topic, gps_instance)) {
-        write_nav_sat_fix_topic();
+    for (uint8_t gps_instance = 0; gps_instance < GPS_MAX_INSTANCES; gps_instance++) {
+        if (update_topic(nav_sat_fix_topic, gps_instance)) {
+            write_nav_sat_fix_topic();
+        }
     }
 #endif // AP_DDS_NAVSATFIX_PUB_ENABLED
 #if AP_DDS_BATTERY_STATE_PUB_ENABLED
@@ -1583,6 +1792,14 @@ void AP_DDS_Client::update()
         }
     }
 #endif // AP_DDS_AIRSPEED_PUB_ENABLED
+#if AP_DDS_RC_PUB_ENABLED
+    if (cur_time_ms - last_rc_time_ms > DELAY_RC_TOPIC_MS) {
+        last_rc_time_ms = cur_time_ms;
+        if (update_topic(tx_local_rc_topic)) {
+            write_tx_local_rc_topic();
+        }
+    }
+#endif // AP_DDS_RC_PUB_ENABLED
 #if AP_DDS_IMU_PUB_ENABLED
     if (cur_time_ms - last_imu_time_ms > DELAY_IMU_TOPIC_MS) {
         update_topic(imu_topic);
@@ -1611,6 +1828,22 @@ void AP_DDS_Client::update()
         write_gps_global_origin_topic();
     }
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
+#if AP_DDS_GOAL_PUB_ENABLED
+    if (cur_time_ms - last_goal_time_ms > DELAY_GOAL_TOPIC_MS) {
+        if (update_topic_goal(goal_topic)) {
+            write_goal_topic();
+        }
+        last_goal_time_ms = cur_time_ms;
+    }
+#endif // AP_DDS_GOAL_PUB_ENABLED
+#if AP_DDS_STATUS_PUB_ENABLED
+    if (cur_time_ms - last_status_check_time_ms > DELAY_STATUS_TOPIC_MS) {
+        if (update_topic(status_topic)) {
+            write_status_topic();
+        }
+        last_status_check_time_ms = cur_time_ms;
+    }
+#endif // AP_DDS_STATUS_PUB_ENABLED
 
     status_ok = uxr_run_session_time(&session, 1);
 }

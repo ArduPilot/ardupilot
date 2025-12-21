@@ -49,7 +49,7 @@ to use DShot.
 
 ## Battery Monitoring
 
-The board has a builting voltage sensor. The voltage sensor can handle up to 6S
+The board has a built-in voltage sensor. The voltage sensor can handle up to 6S
 LiPo batteries.
 
 The correct battery setting parameters are:
@@ -62,7 +62,7 @@ The correct battery setting parameters are:
 
 ## Compass
 
-The Mamba F405 MK2 does not have a builting compass, but you can attach an external compass using I2C on the SDA and SCL pads.
+The Mamba F405 MK2 does not have a built-in compass, but you can attach an external compass using I2C on the SDA and SCL pads.
 
 ## Alternate settings
 

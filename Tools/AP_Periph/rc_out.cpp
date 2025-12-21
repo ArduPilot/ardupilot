@@ -13,8 +13,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <AP_HAL/AP_HAL.h>
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
 #include "AP_Periph.h"
+#if AP_SIM_ENABLED
+#include <dronecan_msgs.h>
+#endif
 
 // magic value from UAVCAN driver packet
 // dsdl/uavcan/equipment/esc/1030.RawCommand.uavcan
@@ -22,7 +25,9 @@
 #define UAVCAN_ESC_MAX_VALUE    8191
 
 #define SERVO_OUT_RCIN_MAX      32  // note that we allow for more than is in the enum
-#define SERVO_OUT_MOTOR_MAX     12  // SRV_Channel::k_motor1 ... SRV_Channel::k_motor8, SRV_Channel::k_motor9 ... SRV_Channel::k_motor12
+#ifndef SERVO_OUT_MOTOR_MAX
+#define SERVO_OUT_MOTOR_MAX     32  // SRV_Channel::k_motor1 ... SRV_Channel::k_motor8, SRV_Channel::k_motor9 ... SRV_Channel::k_motor12, SRV_Channel::k_motor13 ... SRV_Channel::k_motor32
+#endif
 
 extern const AP_HAL::HAL &hal;
 
@@ -43,12 +48,12 @@ void AP_Periph_FW::rcout_init()
 
 #if HAL_PWM_COUNT > 0
     for (uint8_t i=0; i<HAL_PWM_COUNT; i++) {
-        servo_channels.set_default_function(i, SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + i));
+        servo_channels.set_default_function(i, SRV_Channel::Function(SRV_Channel::k_rcin1 + i));
     }
 #endif
 
     for (uint8_t i=0; i<SERVO_OUT_RCIN_MAX; i++) {
-        SRV_Channels::set_angle(SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + i), 1000);
+        SRV_Channels::set_angle(SRV_Channel::Function(SRV_Channel::k_rcin1 + i), 1000);
     }
 
     uint32_t esc_mask = 0;
@@ -108,20 +113,32 @@ void AP_Periph_FW::rcout_esc(int16_t *rc, uint8_t num_channels)
 void AP_Periph_FW::rcout_srv_unitless(uint8_t actuator_id, const float command_value)
 {
 #if HAL_PWM_COUNT > 0
-    const SRV_Channel::Aux_servo_function_t function = SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + actuator_id - 1);
+    const SRV_Channel::Function function = SRV_Channel::Function(SRV_Channel::k_rcin1 + actuator_id - 1);
     SRV_Channels::set_output_norm(function, command_value);
 
+    // Add to mask of channels that will be cleared if no commands are received
+    actuator.mask |= SRV_Channels::get_output_channel_mask(function);
+
     rcout_has_new_data_to_update = true;
+#if AP_SIM_ENABLED
+    sim_update_actuator(actuator_id);
+#endif
 #endif
 }
 
 void AP_Periph_FW::rcout_srv_PWM(uint8_t actuator_id, const float command_value)
 {
 #if HAL_PWM_COUNT > 0
-    const SRV_Channel::Aux_servo_function_t function = SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + actuator_id - 1);
+    const SRV_Channel::Function function = SRV_Channel::Function(SRV_Channel::k_rcin1 + actuator_id - 1);
     SRV_Channels::set_output_pwm(function, uint16_t(command_value+0.5));
 
+    // Add to mask of channels that will be cleared if no commands are received
+    actuator.mask |= SRV_Channels::get_output_channel_mask(function);
+
     rcout_has_new_data_to_update = true;
+#if AP_SIM_ENABLED
+    sim_update_actuator(actuator_id);
+#endif
 #endif
 }
 
@@ -139,6 +156,7 @@ void AP_Periph_FW::rcout_update()
 {
     uint32_t now_ms = AP_HAL::millis();
 
+    // Timeout for ESC commands
     const uint16_t esc_timeout_ms = g.esc_command_timeout_ms >= 0 ? g.esc_command_timeout_ms : 0; // Don't allow negative timeouts!
     const bool has_esc_rawcommand_timed_out = esc_timeout_ms != 0 && ((now_ms - last_esc_raw_command_ms) >= esc_timeout_ms);
     if (last_esc_num_channels > 0 && has_esc_rawcommand_timed_out) {
@@ -147,8 +165,28 @@ void AP_Periph_FW::rcout_update()
         memset(esc_output, 0, sizeof(esc_output));
         rcout_esc(esc_output, last_esc_num_channels);
 
+        // Don't need to run again until new commands have been received
+        last_esc_num_channels = 0;
+    }
+
+    // Timeout for servo actuator commands
+    const uint16_t servo_timeout_ms = g.servo_command_timeout_ms >= 0 ? g.servo_command_timeout_ms : 0; // Don't allow negative timeouts!
+    const bool has_servo_timed_out = servo_timeout_ms != 0 && ((now_ms - actuator.last_command_ms) >= servo_timeout_ms);
+    if (has_servo_timed_out && (actuator.mask != 0)) {
+#if HAL_PWM_COUNT > 0
+        // Output 0 PWM for each channel in the mask
+        for (uint8_t i = 0; i < HAL_PWM_COUNT; i++) {
+            if (((1U<<i) & actuator.mask) != 0) {
+                SRV_Channels::set_output_pwm_chan(i, 0);
+            }
+        }
+
         // register that the output has been changed
         rcout_has_new_data_to_update = true;
+#endif
+
+        // Don't need to run again until new commands have been received
+        actuator.mask = 0;
     }
 
     if (!rcout_has_new_data_to_update) {
@@ -172,4 +210,46 @@ void AP_Periph_FW::rcout_update()
 #endif
 }
 
-#endif // HAL_PERIPH_ENABLE_RC_OUT
+#if AP_SIM_ENABLED
+/*
+  update simulation of servos, sending actuator status
+*/
+void AP_Periph_FW::sim_update_actuator(uint8_t actuator_id)
+{
+    sim_actuator.mask |= 1U << (actuator_id - 1);
+
+    // send status at 10Hz
+    const uint32_t period_ms = 100;
+    const uint32_t now_ms = AP_HAL::millis();
+
+    if (now_ms - sim_actuator.last_send_ms < period_ms) {
+        return;
+    }
+    sim_actuator.last_send_ms = now_ms;
+
+    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
+        if ((sim_actuator.mask & (1U<<i)) == 0) {
+            continue;
+        }
+        const SRV_Channel::Function function = SRV_Channel::Function(SRV_Channel::k_rcin1 + i);
+        uavcan_equipment_actuator_Status pkt {};
+        pkt.actuator_id = i + 1;
+        // assume 45 degree angle for simulation
+        pkt.position = radians(SRV_Channels::get_output_norm(function) * 45);
+        pkt.force = 0;
+        pkt.speed = 0;
+        pkt.power_rating_pct = UAVCAN_EQUIPMENT_ACTUATOR_STATUS_POWER_RATING_PCT_UNKNOWN;
+
+        uint8_t buffer[UAVCAN_EQUIPMENT_ACTUATOR_STATUS_MAX_SIZE];
+        uint16_t total_size = uavcan_equipment_actuator_Status_encode(&pkt, buffer, !canfdout());
+
+        canard_broadcast(UAVCAN_EQUIPMENT_ACTUATOR_STATUS_SIGNATURE,
+                         UAVCAN_EQUIPMENT_ACTUATOR_STATUS_ID,
+                         CANARD_TRANSFER_PRIORITY_LOW,
+                         &buffer[0],
+                         total_size);
+    }
+}
+#endif // AP_SIM_ENABLED
+
+#endif // AP_PERIPH_RC_OUT_ENABLED

@@ -1,0 +1,274 @@
+
+[cases.test_interspersed_files]
+defines.SIZE = [10, 100]
+defines.FILES = [4, 10, 26] 
+code = '''
+    lfs_t lfs;
+    lfs_file_t files[FILES];
+    const char alphas[] = "abcdefghijklmnopqrstuvwxyz";
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    for (int j = 0; j < FILES; j++) {
+        char path[1024];
+        sprintf(path, "%c", alphas[j]);
+        lfs_file_open(&lfs, &files[j], path,
+                LFS_O_WRONLY | LFS_O_CREAT | LFS_O_EXCL) => 0;
+    }
+
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < FILES; j++) {
+            lfs_file_write(&lfs, &files[j], &alphas[j], 1) => 1;
+        }
+    }
+
+    for (int j = 0; j < FILES; j++) {
+        lfs_file_close(&lfs, &files[j]);
+    }
+
+    lfs_dir_t dir;
+    lfs_dir_open(&lfs, &dir, "/") => 0;
+    struct lfs_info info;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    for (int j = 0; j < FILES; j++) {
+        char path[1024];
+        sprintf(path, "%c", alphas[j]);
+        lfs_dir_read(&lfs, &dir, &info) => 1;
+        assert(strcmp(info.name, path) == 0);
+        assert(info.type == LFS_TYPE_REG);
+        assert(info.size == SIZE);
+    }
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    for (int j = 0; j < FILES; j++) {
+        char path[1024];
+        sprintf(path, "%c", alphas[j]);
+        lfs_file_open(&lfs, &files[j], path, LFS_O_RDONLY) => 0;
+    }
+
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < FILES; j++) {
+            uint8_t buffer[1024];
+            lfs_file_read(&lfs, &files[j], buffer, 1) => 1;
+            assert(buffer[0] == alphas[j]);
+        }
+    }
+
+    for (int j = 0; j < FILES; j++) {
+        lfs_file_close(&lfs, &files[j]);
+    }
+    
+    lfs_unmount(&lfs) => 0;
+'''
+
+[cases.test_interspersed_remove_files]
+defines.SIZE = [10, 100]
+defines.FILES = [4, 10, 26]
+code = '''
+    lfs_t lfs;
+    const char alphas[] = "abcdefghijklmnopqrstuvwxyz";
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    for (int j = 0; j < FILES; j++) {
+        char path[1024];
+        sprintf(path, "%c", alphas[j]);
+        lfs_file_t file;
+        lfs_file_open(&lfs, &file, path,
+                LFS_O_WRONLY | LFS_O_CREAT | LFS_O_EXCL) => 0;
+        for (int i = 0; i < SIZE; i++) {
+            lfs_file_write(&lfs, &file, &alphas[j], 1) => 1;
+        }
+        lfs_file_close(&lfs, &file);
+    }
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, "zzz", LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    for (int j = 0; j < FILES; j++) {
+        lfs_file_write(&lfs, &file, (const void*)"~", 1) => 1;
+        lfs_file_sync(&lfs, &file) => 0;
+
+        char path[1024];
+        sprintf(path, "%c", alphas[j]);
+        lfs_remove(&lfs, path) => 0;
+    }
+    lfs_file_close(&lfs, &file);
+
+    lfs_dir_t dir;
+    lfs_dir_open(&lfs, &dir, "/") => 0;
+    struct lfs_info info;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "zzz") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == FILES);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_file_open(&lfs, &file, "zzz", LFS_O_RDONLY) => 0;
+    for (int i = 0; i < FILES; i++) {
+        uint8_t buffer[1024];
+        lfs_file_read(&lfs, &file, buffer, 1) => 1;
+        assert(buffer[0] == '~');
+    }
+    lfs_file_close(&lfs, &file);
+    
+    lfs_unmount(&lfs) => 0;
+'''
+
+[cases.test_interspersed_remove_inconveniently]
+defines.SIZE = [10, 100]
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_file_t files[3];
+    lfs_file_open(&lfs, &files[0], "e", LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_open(&lfs, &files[1], "f", LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_open(&lfs, &files[2], "g", LFS_O_WRONLY | LFS_O_CREAT) => 0;
+
+    for (int i = 0; i < SIZE/2; i++) {
+        lfs_file_write(&lfs, &files[0], (const void*)"e", 1) => 1;
+        lfs_file_write(&lfs, &files[1], (const void*)"f", 1) => 1;
+        lfs_file_write(&lfs, &files[2], (const void*)"g", 1) => 1;
+    }
+
+    lfs_remove(&lfs, "f") => 0;
+
+    for (int i = 0; i < SIZE/2; i++) {
+        lfs_file_write(&lfs, &files[0], (const void*)"e", 1) => 1;
+        lfs_file_write(&lfs, &files[1], (const void*)"f", 1) => 1;
+        lfs_file_write(&lfs, &files[2], (const void*)"g", 1) => 1;
+    }
+
+    lfs_file_close(&lfs, &files[0]);
+    lfs_file_close(&lfs, &files[1]);
+    lfs_file_close(&lfs, &files[2]);
+
+    lfs_dir_t dir;
+    lfs_dir_open(&lfs, &dir, "/") => 0;
+    struct lfs_info info;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "e") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == SIZE);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "g") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == SIZE);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_file_open(&lfs, &files[0], "e", LFS_O_RDONLY) => 0;
+    lfs_file_open(&lfs, &files[1], "g", LFS_O_RDONLY) => 0;
+    for (int i = 0; i < SIZE; i++) {
+        uint8_t buffer[1024];
+        lfs_file_read(&lfs, &files[0], buffer, 1) => 1;
+        assert(buffer[0] == 'e');
+        lfs_file_read(&lfs, &files[1], buffer, 1) => 1;
+        assert(buffer[0] == 'g');
+    }
+    lfs_file_close(&lfs, &files[0]);
+    lfs_file_close(&lfs, &files[1]);
+    
+    lfs_unmount(&lfs) => 0;
+'''
+
+[cases.test_interspersed_reentrant_files]
+defines.SIZE = [10, 100]
+defines.FILES = [4, 10, 26] 
+reentrant = true
+defines.POWERLOSS_BEHAVIOR = [
+    'LFS_EMUBD_POWERLOSS_NOOP',
+    'LFS_EMUBD_POWERLOSS_OOO',
+]
+code = '''
+    lfs_t lfs;
+    lfs_file_t files[FILES];
+    const char alphas[] = "abcdefghijklmnopqrstuvwxyz";
+
+    int err = lfs_mount(&lfs, cfg);
+    if (err) {
+        lfs_format(&lfs, cfg) => 0;
+        lfs_mount(&lfs, cfg) => 0;
+    }
+
+    for (int j = 0; j < FILES; j++) {
+        char path[1024];
+        sprintf(path, "%c", alphas[j]);
+        lfs_file_open(&lfs, &files[j], path,
+                LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND) => 0;
+    }
+
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < FILES; j++) {
+            lfs_ssize_t size = lfs_file_size(&lfs, &files[j]);
+            assert(size >= 0);
+            if ((int)size <= i) {
+                lfs_file_write(&lfs, &files[j], &alphas[j], 1) => 1;
+                lfs_file_sync(&lfs, &files[j]) => 0;
+            }
+        }
+    }
+
+    for (int j = 0; j < FILES; j++) {
+        lfs_file_close(&lfs, &files[j]);
+    }
+
+    lfs_dir_t dir;
+    lfs_dir_open(&lfs, &dir, "/") => 0;
+    struct lfs_info info;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    for (int j = 0; j < FILES; j++) {
+        char path[1024];
+        sprintf(path, "%c", alphas[j]);
+        lfs_dir_read(&lfs, &dir, &info) => 1;
+        assert(strcmp(info.name, path) == 0);
+        assert(info.type == LFS_TYPE_REG);
+        assert(info.size == SIZE);
+    }
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    for (int j = 0; j < FILES; j++) {
+        char path[1024];
+        sprintf(path, "%c", alphas[j]);
+        lfs_file_open(&lfs, &files[j], path, LFS_O_RDONLY) => 0;
+    }
+
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < FILES; j++) {
+            uint8_t buffer[1024];
+            lfs_file_read(&lfs, &files[j], buffer, 1) => 1;
+            assert(buffer[0] == alphas[j]);
+        }
+    }
+
+    for (int j = 0; j < FILES; j++) {
+        lfs_file_close(&lfs, &files[j]);
+    }
+    
+    lfs_unmount(&lfs) => 0;
+'''

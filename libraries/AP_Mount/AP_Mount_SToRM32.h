@@ -3,9 +3,11 @@
  */
 #pragma once
 
-#include "AP_Mount_Backend.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_STORM32MAVLINK_ENABLED
+
+#include "AP_Mount_Backend.h"
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
@@ -34,7 +36,7 @@ private:
     void find_gimbal();
 
     // send_do_mount_control with latest angle targets
-    void send_do_mount_control(const MountTarget& angle_target_rad);
+    void send_do_mount_control(const MountAngleTarget& angle_target_rad);
 
     // internal variables
     bool _initialised;              // true once the driver has been initialised

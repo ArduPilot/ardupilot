@@ -45,7 +45,7 @@ bool VideoIn::get_frame(Frame &frame)
 {
     if (!_streaming) {
         if (!_set_streaming(true)) {
-            AP_HAL::panic("couldn't start streaming\n");
+            AP_HAL::panic("couldn't start streaming");
             return false;
         }
         _streaming = true;

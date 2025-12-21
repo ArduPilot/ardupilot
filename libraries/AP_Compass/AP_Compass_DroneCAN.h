@@ -14,7 +14,7 @@ public:
 
     void        read(void) override;
 
-    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
+    static bool subscribe_msgs(AP_DroneCAN* ap_dronecan);
     static AP_Compass_Backend* probe(uint8_t index);
     static uint32_t get_detected_devid(uint8_t index) { return _detected_modules[index].devid; }
     static void handle_magnetic_field(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_ahrs_MagneticFieldStrength& msg);
@@ -42,7 +42,7 @@ private:
         uint8_t sensor_id;
         AP_Compass_DroneCAN *driver;
         uint32_t devid;
-    } _detected_modules[COMPASS_MAX_BACKEND];
+    } _detected_modules[MAX_CONNECTED_MAGS];
 
     static HAL_Semaphore _sem_registry;
 };

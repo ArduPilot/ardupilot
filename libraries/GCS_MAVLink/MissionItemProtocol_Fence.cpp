@@ -52,36 +52,37 @@ bool MissionItemProtocol_Fence::get_item_as_mission_item(uint16_t seq,
         ret_cmd = MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION;
         p1 = fenceitem.radius;
         break;
+#if AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
     case AC_PolyFenceType::CIRCLE_EXCLUSION_INT:
     case AC_PolyFenceType::CIRCLE_INCLUSION_INT:
         // should never have an AC_PolyFenceItem with these types
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         FALLTHROUGH;
+#endif  // AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
     case AC_PolyFenceType::END_OF_STORAGE:
         return false;
     }
 
-    ret_packet.command = ret_cmd;
-    ret_packet.param1 = p1;
-    ret_packet.x = fenceitem.loc.x;
-    ret_packet.y = fenceitem.loc.y;
-    ret_packet.z = 0;
-    ret_packet.mission_type = MAV_MISSION_TYPE_FENCE;
+    ret_packet = {
+        param1: p1,
+        x: fenceitem.loc.x,
+        y: fenceitem.loc.y,
+        z: 0,
+        seq: seq,
+        command: uint16_t(ret_cmd),
+        mission_type: MAV_MISSION_TYPE_FENCE,
+    };
 
     return true;
 }
 
-MAV_MISSION_RESULT MissionItemProtocol_Fence::get_item(const GCS_MAVLINK &_link,
-                                                       const mavlink_message_t &msg,
-                                                       const mavlink_mission_request_int_t &packet,
-                                                       mavlink_mission_item_int_t &ret_packet)
+MAV_MISSION_RESULT MissionItemProtocol_Fence::get_item(uint16_t seq, mavlink_mission_item_int_t &ret_packet)
 {
-    const auto num_stored_items = _fence.polyfence().num_stored_items();
-    if (packet.seq > num_stored_items) {
+    if (seq >= _fence.polyfence().num_stored_items()) {
         return MAV_MISSION_INVALID_SEQUENCE;
     }
 
-    if (!get_item_as_mission_item(packet.seq, ret_packet)) {
+    if (!get_item_as_mission_item(seq, ret_packet)) {
         return MAV_MISSION_ERROR;
     }
 

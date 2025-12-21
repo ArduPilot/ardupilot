@@ -18,17 +18,14 @@
 #if AP_RANGEFINDER_TERARANGER_SERIAL_ENABLED
 
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
 #include <ctype.h>
 
-extern const AP_HAL::HAL& hal;
-
 #define FRAME_HEADER 0x54
 #define FRAME_LENGTH 5
-#define DIST_MAX_CM 3000
-#define OUT_OF_RANGE_ADD_CM 1000
+#define DIST_MAX 30.00
+#define OUT_OF_RANGE_ADD 10.00
 #define STATUS_MASK 0x1F
 #define DISTANCE_ERROR 0x0001
 
@@ -77,7 +74,7 @@ bool AP_RangeFinder_TeraRanger_Serial::get_reading(float &reading_m)
                 if (crc == linebuf[FRAME_LENGTH-1]) {
                     // calculate distance
                     uint16_t dist = ((uint16_t)linebuf[1] << 8) | linebuf[2];
-                    if (dist >= DIST_MAX_CM *10) {
+                    if (dist >= DIST_MAX *1000) {
                         // this reading is out of range and a bad read
                         bad_read++;
                     } else {
@@ -107,7 +104,7 @@ bool AP_RangeFinder_TeraRanger_Serial::get_reading(float &reading_m)
     if (bad_read > 0) {
         // if a bad read has occurred this update overwrite return with larger of
         // driver defined maximum range for the model and user defined max range + 1m
-        reading_m = MAX(DIST_MAX_CM, max_distance_cm() + OUT_OF_RANGE_ADD_CM) * 0.01f;
+        reading_m = MAX(DIST_MAX, max_distance() + OUT_OF_RANGE_ADD);
         return true;
     }
 

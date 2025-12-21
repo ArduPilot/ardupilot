@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''
 Run autotest repeatedly at different speedups to help find best default speedup

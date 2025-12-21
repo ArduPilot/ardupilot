@@ -13,6 +13,7 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 #include "AP_Airspeed.h"
 
@@ -25,7 +26,6 @@ Airspeed_Calibration::Airspeed_Calibration()
     , Q0(0.01f)
     , Q1(0.0000005f)
     , state(0, 0, 0)
-    , DT(1)
 {
 }
 
@@ -119,6 +119,13 @@ void AP_Airspeed::update_calibration(uint8_t i, const Vector3f &vground, int16_t
 #if AP_AIRSPEED_AUTOCAL_ENABLE
     if (!param[i].autocal && !calibration_enabled) {
         // auto-calibration not enabled
+        return;
+    }
+
+    if (param[i].use == 2 && !is_zero(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle))) {
+        // special case for gliders with airspeed sensors behind the
+        // propeller. Allow airspeed to be disabled when throttle is
+        // running
         return;
     }
 

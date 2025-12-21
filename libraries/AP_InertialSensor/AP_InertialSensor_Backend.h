@@ -53,6 +53,15 @@ public:
      */
     virtual bool update() = 0; /* front end */
 
+    // if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    /*
+     * Update the filter parameters. Called by the frontend to propagate
+     * filter parameters to the frontend structure via the
+     * update_gyro_filters() and update_accel_filters() functions
+     */
+    void update_filters() __RAMFUNC__; /* front end */
+    // endif AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+
     /*
      * optional function to accumulate more samples. This is needed for drivers that don't use a timer to gather samples
      */
@@ -81,7 +90,7 @@ public:
     // get a startup banner to output to the GCS
     virtual bool get_output_banner(char* banner, uint8_t banner_len) { return false; }
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     virtual void handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt) {}
 #endif
 
@@ -142,6 +151,7 @@ public:
         DEVTYPE_INS_ICM42670 = 0x3A,
         DEVTYPE_INS_ICM45686 = 0x3B,
         DEVTYPE_INS_SCHA63T  = 0x3C,
+        DEVTYPE_INS_IIM42653 = 0x3D,
     };
 
 protected:
@@ -157,6 +167,8 @@ protected:
     // instance numbers of accel and gyro data
     uint8_t gyro_instance;
     uint8_t accel_instance;
+    bool is_primary = true;
+    uint32_t last_primary_update_us;
 
     void _rotate_and_correct_accel(uint8_t instance, Vector3f &accel) __RAMFUNC__;
     void _rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro) __RAMFUNC__;
@@ -231,9 +243,6 @@ protected:
     // return true if the sensors are still converging and sampling rates could change significantly
     bool sensors_converging() const;
 
-    // set accelerometer max absolute offset for calibration
-    void _set_accel_max_abs_offset(uint8_t instance, float offset);
-
     // get accelerometer raw sample rate.
     float _accel_raw_sample_rate(uint8_t instance) const {
         return _imu._accel_raw_sample_rates[instance];
@@ -287,6 +296,10 @@ protected:
     // common accel update function for all backends
     void update_accel(uint8_t instance) __RAMFUNC__; /* front end */
     void update_accel_filters(uint8_t instance) __RAMFUNC__; /* front end */
+
+    // catch updates to the primary gyro and accel
+    void update_primary() __RAMFUNC__; /* backend */
+    virtual void set_primary(bool _is_primary) {}
 
     // support for updating filter at runtime
     uint16_t _last_accel_filter_hz;

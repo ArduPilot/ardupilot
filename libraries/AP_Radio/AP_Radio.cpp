@@ -82,7 +82,7 @@ const AP_Param::GroupInfo AP_Radio::var_info[] = {
     // @Param: _STKMD
     // @DisplayName: Stick input mode
     // @Description: This selects between different stick input modes. The default is mode2, which has throttle on the left stick and pitch on the right stick. You can instead set mode1, which has throttle on the right stick and pitch on the left stick.
-    // @Values: 1:Mode1,2:Mode2
+    // @Values: 1:Mode1,2:Mode2,3:Mode3,4:Mode4
     // @User: Advanced
     AP_GROUPINFO("_STKMD", 10, AP_Radio, stick_mode, 2),
 
@@ -168,7 +168,7 @@ bool AP_Radio::init(void)
         driver = NEW_NOTHROW AP_Radio_beken(*this);
         break;
 #endif
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
+#if AP_RADIO_AUTO_ENABLED
     case RADIO_TYPE_AUTO:
         // auto-detect between cc2500 and beken radios
 #if AP_RADIO_CC2500_ENABLED
@@ -182,7 +182,7 @@ bool AP_Radio::init(void)
         }
 #endif
         break;
-#endif  // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
+#endif  // AP_RADIO_AUTO_ENABLED
     default:
         break;
     }

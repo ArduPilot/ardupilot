@@ -23,6 +23,11 @@
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_EFI_ThrottleLinearisation.h"
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_EFI_LOWEHEISER_ENABLED
+#define AP_EFI_LOWEHEISER_ENABLED 0
+#endif
 
 #include "AP_EFI_Backend.h"
 #include "AP_EFI_State.h"
@@ -87,7 +92,9 @@ public:
 #if AP_EFI_SERIAL_LUTAN_ENABLED
         Lutan      = 3,
 #endif
-        // LOWEHEISER = 4,
+#if AP_EFI_LOWEHEISER_ENABLED
+        LOWEHEISER = 4,
+#endif
 #if AP_EFI_DRONECAN_ENABLED
         DroneCAN = 5,
 #endif

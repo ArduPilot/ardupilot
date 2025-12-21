@@ -97,8 +97,8 @@ fi
 
 . ~/.profile
 
-python -m pip install --progress-bar off --user -U argparse pyserial pexpect future lxml
-python -m pip install --progress-bar off --user -U intelhex
-python -m pip install --progress-bar off --user -U numpy
-python -m pip install --progress-bar off --user -U edn_format
-python -m pip install --progress-bar off --user -U empy==3.3.4
+python3 -m pip install --progress-bar off --user -U argparse pyserial pexpect future lxml
+python3 -m pip install --progress-bar off --user -U intelhex
+python3 -m pip install --progress-bar off --user -U numpy
+python3 -m pip install --progress-bar off --user -U edn_format
+python3 -m pip install --progress-bar off --user -U empy==3.3.4

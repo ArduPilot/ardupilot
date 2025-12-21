@@ -5,8 +5,8 @@
 # MCU class and specific type
 MCU STM32F7xx STM32F745xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1027
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_FlywooF745
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
@@ -137,7 +137,7 @@ SPIDEV bmi270 SPI4 DEVID4 MPU6000_CS MODE3  1*MHZ  8*MHZ
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 
 # one IMU

@@ -1,0 +1,8 @@
+#pragma once
+
+#include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_ADSB/AP_ADSB.h>
+
+#ifndef AP_ADSB_AVOIDANCE_ENABLED
+#define AP_ADSB_AVOIDANCE_ENABLED HAL_ADSB_ENABLED
+#endif  // AP_ADSB_AVOIDANCE_ENABLED

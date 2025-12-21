@@ -1,6 +1,9 @@
-#include "AP_Mount_Siyi.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_SIYI_ENABLED
+
+#include "AP_Mount_Siyi.h"
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
@@ -36,6 +39,8 @@ const AP_Mount_Siyi::HWInfo AP_Mount_Siyi::hardware_lookup_table[] {
 // update mount position - should be called periodically
 void AP_Mount_Siyi::update()
 {
+    AP_Mount_Backend::update();
+
     // exit immediately if not initialised
     if (!_initialised) {
         return;
@@ -97,81 +102,11 @@ void AP_Mount_Siyi::update()
     // run zoom control
     update_zoom_control();
 
-    // change to RC_TARGETING mode if RC input has changed
-    set_rctargeting_on_rcinput_change();
-
-    // Get the target angles or rates first depending on the current mount mode
-    switch (get_mode()) {
-        case MAV_MOUNT_MODE_RETRACT: {
-            const Vector3f &angle_bf_target = _params.retract_angles.get();
-            mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
-            break;
-        }
-
-        case MAV_MOUNT_MODE_NEUTRAL: {
-            const Vector3f &angle_bf_target = _params.neutral_angles.get();
-            mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
-            break;
-        }
-
-        case MAV_MOUNT_MODE_MAVLINK_TARGETING: {
-            // mavlink targets are stored while handling the incoming message
-            break;
-        }
-
-        case MAV_MOUNT_MODE_RC_TARGETING: {
-            // update targets using pilot's RC inputs
-            MountTarget rc_target;
-            get_rc_target(mnt_target.target_type, rc_target);
-            switch (mnt_target.target_type) {
-            case MountTargetType::ANGLE:
-                mnt_target.angle_rad = rc_target;
-                break;
-            case MountTargetType::RATE:
-                mnt_target.rate_rads = rc_target;
-                break;
-            }
-            break;
-        }
-
-        // point mount to a GPS point given by the mission planner
-        case MAV_MOUNT_MODE_GPS_POINT:
-            if (get_angle_target_to_roi(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        // point mount to Home location
-        case MAV_MOUNT_MODE_HOME_LOCATION:
-            if (get_angle_target_to_home(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        // point mount to another vehicle
-        case MAV_MOUNT_MODE_SYSID_TARGET:
-            if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        default:
-            // we do not know this mode so raise internal error
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            break;
-    }
+    // update based on mount mode
+    update_mnt_target();
 
     // send target angles or rates depending on the target type
-    switch (mnt_target.target_type) {
-        case MountTargetType::ANGLE:
-            send_target_angles(mnt_target.angle_rad.pitch, mnt_target.angle_rad.yaw, mnt_target.angle_rad.yaw_is_ef);
-            break;
-        case MountTargetType::RATE:
-            send_target_rates(mnt_target.rate_rads.pitch, mnt_target.rate_rads.yaw, mnt_target.rate_rads.yaw_is_ef);
-            break;
-    }
+    send_target_to_gimbal();
 }
 
 // return true if healthy
@@ -696,18 +631,24 @@ bool AP_Mount_Siyi::set_motion_mode(const GimbalMotionMode mode, const bool forc
 }
 
 // send target pitch and yaw rates to gimbal
-// yaw_is_ef should be true if yaw_rads target is an earth frame rate, false if body_frame
-void AP_Mount_Siyi::send_target_rates(float pitch_rads, float yaw_rads, bool yaw_is_ef)
+void AP_Mount_Siyi::send_target_rates(const MountRateTarget &rate_rads)
 {
+    const float pitch_rads = rate_rads.pitch;
+    const float yaw_rads = rate_rads.yaw;
+    const bool yaw_is_ef = rate_rads.yaw_is_ef;
+
     const float pitch_rate_scalar = constrain_float(100.0 * pitch_rads / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
     const float yaw_rate_scalar = constrain_float(100.0 * yaw_rads / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
     rotate_gimbal(pitch_rate_scalar, yaw_rate_scalar, yaw_is_ef);
 }
 
 // send target pitch and yaw angles to gimbal
-// yaw_is_ef should be true if yaw_rad target is an earth frame angle, false if body_frame
-void AP_Mount_Siyi::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_is_ef)
+void AP_Mount_Siyi::send_target_angles(const MountAngleTarget &angle_rad)
 {
+    const float pitch_rad = angle_rad.pitch;
+    const float yaw_rad = angle_rad.yaw;
+    bool yaw_is_ef = angle_rad.yaw_is_ef;
+
     // stop gimbal if no recent actual angles
     uint32_t now_ms = AP_HAL::millis();
     if (now_ms - _last_current_angle_rad_ms >= 200) {
@@ -727,7 +668,7 @@ void AP_Mount_Siyi::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_
     const float pitch_rate_scalar = constrain_float(100.0 * pitch_err_rad * AP_MOUNT_SIYI_PITCH_P / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
 
     // convert yaw angle to body-frame
-    float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().get_yaw()) : yaw_rad;
+    float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().get_yaw_rad()) : yaw_rad;
 
     // enforce body-frame yaw angle limits.  If beyond limits always use body-frame control
     const float yaw_bf_min = radians(_params.yaw_angle_min);
@@ -1207,9 +1148,7 @@ void AP_Mount_Siyi::check_firmware_version() const
     FirmwareVersion minimum_ver {};
     switch (_hardware_model) {
         case HardwareModel::A8:
-            minimum_ver.camera.major = 0;
-            minimum_ver.camera.minor = 2;
-            minimum_ver.camera.patch = 1;
+        	minimum_ver.camera = {.major = 0, .minor = 2, .patch = 1};
             break;
 
         case HardwareModel::ZT6:
@@ -1280,9 +1219,9 @@ void AP_Mount_Siyi::send_attitude_position(void)
     const uint32_t now_ms = AP_HAL::millis();
 
     attitude.time_boot_ms = now_ms;
-    attitude.roll = ahrs.get_roll();
-    attitude.pitch = ahrs.get_pitch();
-    attitude.yaw = ahrs.get_yaw();
+    attitude.roll = ahrs.get_roll_rad();
+    attitude.pitch = ahrs.get_pitch_rad();
+    attitude.yaw = ahrs.get_yaw_rad();
     attitude.rollspeed = gyro.x;
     attitude.pitchspeed = gyro.y;
     attitude.yawspeed = gyro.z;

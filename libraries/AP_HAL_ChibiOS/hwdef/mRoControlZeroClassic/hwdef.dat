@@ -18,16 +18,14 @@ MCU STM32H7xx STM32H743xx
 # USB setup
 USB_STRING_MANUFACTURER "mRo"
 
-# board ID for firmware load
-APJ_BOARD_ID 1022
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MRO_CTRL_ZERO_CLASSIC
 
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
 FLASH_SIZE_KB 2048
 
-# with 2M flash we can afford to optimize for speed
-env OPTIMIZE -O2
 
 # start on 2th sector (1st sector for bootloader)
 FLASH_RESERVE_START_KB 128
@@ -35,7 +33,7 @@ FLASH_RESERVE_START_KB 128
 # use FRAM for storage
 define HAL_STORAGE_SIZE 32768
 
-# Enable RAMTROM parameter storage.
+# Enable RAMTRON parameter storage.
 define HAL_WITH_RAMTRON 1
 
 # RC Input set for Interrupt not DMA
@@ -282,9 +280,9 @@ IMU Invensense SPI:icm20608 ROTATION_ROLL_180_YAW_90
 IMU Invensensev2 SPI:icm20948 ROTATION_ROLL_180_YAW_90
 
 # 1 baro
-BARO DPS280      SPI:dps310
+BARO DPS310      SPI:dps310
 
 # 1 compass
 COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180
 
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1

@@ -7,8 +7,8 @@ FLASH_RESERVE_START_KB 0
 # two sectors for bootloader, two for storage
 FLASH_BOOTLOADER_LOAD_KB 64
 
-# board ID for firmware load
-APJ_BOARD_ID 82
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID TARGET_HW_ARK_CAN_RTK_GPS
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -46,11 +46,7 @@ define STM32_SERIAL_USE_USART1 FALSE
 define STM32_SERIAL_USE_USART2 TRUE
 define STM32_SERIAL_USE_USART3 FALSE
 
-define HAL_NO_GPIO_IRQ
 define HAL_USE_EMPTY_IO TRUE
-
-# avoid timer and RCIN threads to save memory
-define HAL_NO_TIMER_THREAD
 
 define DMA_RESERVE_SIZE 0
 

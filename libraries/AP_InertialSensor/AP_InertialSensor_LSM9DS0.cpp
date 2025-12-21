@@ -424,7 +424,7 @@ bool AP_InertialSensor_LSM9DS0::_init_sensor()
     if (_drdy_pin_num_a >= 0) {
         _drdy_pin_a = hal.gpio->channel(_drdy_pin_num_a);
         if (_drdy_pin_a == nullptr) {
-            AP_HAL::panic("LSM9DS0: null accel data-ready GPIO channel\n");
+            AP_HAL::panic("LSM9DS0: null accel data-ready GPIO channel");
         }
 
         _drdy_pin_a->mode(HAL_GPIO_INPUT);
@@ -433,7 +433,7 @@ bool AP_InertialSensor_LSM9DS0::_init_sensor()
     if (_drdy_pin_num_g >= 0) {
         _drdy_pin_g = hal.gpio->channel(_drdy_pin_num_g);
         if (_drdy_pin_g == nullptr) {
-            AP_HAL::panic("LSM9DS0: null gyro data-ready GPIO channel\n");
+            AP_HAL::panic("LSM9DS0: null gyro data-ready GPIO channel");
         }
 
         _drdy_pin_g->mode(HAL_GPIO_INPUT);
@@ -523,8 +523,6 @@ void AP_InertialSensor_LSM9DS0::start(void)
         set_gyro_orientation(gyro_instance, _rotation_g);
     }
     set_accel_orientation(accel_instance, _rotation_a);
-    
-    _set_accel_max_abs_offset(accel_instance, 5.0f);
 
     /* start the timer process to read samples */
     _dev_gyro->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_LSM9DS0::_poll_data, void));

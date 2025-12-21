@@ -18,10 +18,13 @@
 #if AP_SCRIPTING_ENABLED
 
 #include <AP_Scripting/AP_Scripting.h>
+#include <AP_RCTelemetry/AP_CRSF_Telem.h>
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Arming/AP_Arming.h>
 
 #include "lua_scripts.h"
+#include "AP_Scripting_helpers.h"
 
 // ensure that we have a set of stack sizes, and enforce constraints around it
 // except for the minimum size, these are allowed to be defined by the build system
@@ -317,6 +320,10 @@ void AP_Scripting::thread(void) {
             // receive
             _serialdevice.clear();
 #endif
+#if AP_ARMING_ENABLED && AP_ARMING_AUX_AUTH_ENABLED
+            // Clear any dangling pre-arms from previous script loads
+            AP_Arming::get_singleton()->reset_all_aux_auths();
+#endif
             // run won't return while scripting is still active
             lua->run();
 
@@ -356,6 +363,10 @@ void AP_Scripting::thread(void) {
         // clear data in serial buffers that hasn't been transmitted
         _serialdevice.clear();
 #endif
+
+#if AP_CRSF_SCRIPTING_ENABLED
+        AP::crsf_telem()->clear_menus();
+#endif // AP_CRSF_SCRIPTING_ENABLED
         
         // Clear blocked commands
         {

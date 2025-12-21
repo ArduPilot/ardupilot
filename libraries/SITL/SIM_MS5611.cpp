@@ -1,3 +1,7 @@
+#include "SIM_config.h"
+
+#if AP_SIM_MS5611_ENABLED
+
 #include "SIM_MS5611.h"
 
 #include <SITL/SITL.h>
@@ -121,3 +125,5 @@ void MS5611::get_pressure_temperature_readings(float &P_Pa, float &Temp_C)
     // TO DO add in wind correction by inheritting from AP_Baro_SITL_Generic?
     // P_Pa += AP_Baro_SITL::wind_pressure_correction(instance);
 }
+
+#endif  // AP_SIM_MS5611_ENABLED

@@ -16,9 +16,11 @@
     Simulator Connector for JSON based interfaces
 */
 
-#include "SIM_JSON.h"
+#include "SIM_config.h"
 
-#if HAL_SIM_JSON_ENABLED
+#if AP_SIM_JSON_ENABLED
+
+#include "SIM_JSON.h"
 
 #include <stdio.h>
 #include <arpa/inet.h>
@@ -28,8 +30,11 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_HAL/utility/replace.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 #define UDP_TIMEOUT_MS 100
+
+#define SITL_JSON_DEBUG 0
 
 extern const AP_HAL::HAL& hal;
 
@@ -141,9 +146,55 @@ void JSON::output_servos(const struct sitl_input &input)
     This parser does not do any syntax checking, and is not at all
     general purpose
 */
+
+template <typename T>
+bool parse_array(const char *str, T &arr, int count) {
+    const char *p = str;
+
+    for (int i = 0; i < count; i++) {
+        // Skip to start of number
+        while (*p && *p != '-' && (*p < '0' || *p > '9'))
+            p++;
+
+        if (!*p) {
+            // End of string before we got all numbers
+            return false;
+        }
+
+        arr[i] = atof(p);
+
+        // Move past the number
+        while (*p && *p != ',' && *p != ']')
+            p++;
+
+        if (i < count - 1) { // expect comma between numbers
+            if (*p != ',') return false;
+            p++; // skip comma
+        }
+    }
+
+    return true;
+}
+
 uint32_t JSON::parse_sensors(const char *json)
 {
     uint32_t received_bitmask = 0;
+
+#if SITL_JSON_DEBUG && AP_FILESYSTEM_FILE_WRITING_ENABLED
+    // it is useful in some environments to be able to get a copy of the raw
+    // JSON data
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_debug_ms >= 1000) {
+        // dump received JSON at 1Hz for easy debugging
+        last_debug_ms = now_ms;
+        auto &fs = AP::FS();
+        int fd = fs.open("json_debug.txt", O_WRONLY|O_CREAT|O_TRUNC);
+        if (fd != -1) {
+            fs.write(fd, json, strlen(json));
+            fs.close(fd);
+        }
+    }
+#endif
 
     //printf("%s\n", json);
     for (uint16_t i=0; i<ARRAY_SIZE(keytable); i++) {
@@ -192,39 +243,55 @@ uint32_t JSON::parse_sensors(const char *json)
                 break;
 
             case DATA_VECTOR3F: {
-                Vector3f *v = (Vector3f *)key.ptr;
-                if (sscanf(p, "[%f, %f, %f]", &v->x, &v->y, &v->z) != 3) {
+                Vector3<float> v;
+                if (!parse_array(p, v, ARRAY_SIZE(v))) {
                     printf("Failed to parse Vector3f for %s/%s\n", key.section, key.key);
                     return received_bitmask;
                 }
+                Vector3f *tv = (Vector3<float> *)key.ptr;
+                *tv = v;
                 //printf("%s/%s = %f, %f, %f\n", key.section, key.key, v->x, v->y, v->z);
                 break;
             }
 
             case DATA_VECTOR3D: {
-                Vector3d *v = (Vector3d *)key.ptr;
-                if (sscanf(p, "[%lf, %lf, %lf]", &v->x, &v->y, &v->z) != 3) {
-                    printf("Failed to parse Vector3f for %s/%s\n", key.section, key.key);
+                Vector3<double> v;
+                if (!parse_array(p, v, ARRAY_SIZE(v))) {
+                    printf("Failed to parse Vector3d for %s/%s\n", key.section, key.key);
                     return received_bitmask;
                 }
+                Vector3d *tv = (Vector3d *)key.ptr;
+                *tv = v;
                 //printf("%s/%s = %f, %f, %f\n", key.section, key.key, v->x, v->y, v->z);
                 break;
             }
 
             case QUATERNION: {
-                Quaternion *v = static_cast<Quaternion*>(key.ptr);
-                if (sscanf(p, "[%f, %f, %f, %f]", &(v->q1), &(v->q2), &(v->q3), &(v->q4)) != 4) {
+                VectorN<float, 4> v;
+                if (!parse_array(p, v, ARRAY_SIZE(v))) {
                     printf("Failed to parse Vector4f for %s/%s\n", key.section, key.key);
                     return received_bitmask;
                 }
+                Quaternion *tv = static_cast<Quaternion*>(key.ptr);
+                tv->q1 = v[0];
+                tv->q2 = v[1];
+                tv->q3 = v[2];
+                tv->q4 = v[3];
                 break;
             }
 
-            case BOOLEAN:
-                *((bool *)key.ptr) = strtoull(p, nullptr, 10) != 0;
+            case BOOLEAN: {
+                bool *b = (bool *)key.ptr;
+                if (strncasecmp(p, "true", 4) == 0) {
+                    *b = true;
+                } else if (strncasecmp(p, "false", 5) == 0) {
+                    *b = false;
+                } else {
+                    *b = strtoull(p, nullptr, 10) != 0;
+                }
                 //printf("%s/%s = %i\n", key.section, key.key, *((unit8_t *)key.ptr));
                 break;
-
+            }
         }
     }
 
@@ -307,7 +374,18 @@ void JSON::recv_fdm(const struct sitl_input &input)
     velocity_ef = state.velocity;
     position = state.position;
     position.xy() += origin.get_distance_NE_double(home);
-    use_time_sync = !state.no_time_sync;
+
+    if (received_bitmask & TIME_SYNC) {
+        if (use_time_sync != !state.no_time_sync) {
+            use_time_sync = !state.no_time_sync;
+            printf("Forcing use_time_sync=%d\n", int(use_time_sync));
+            if (!use_time_sync) {
+                // if not using time sync then default EKF type to 10, as
+                // otherwise EKF is likely to diverge
+                AP_Param::set_default_by_name("AHRS_EKF_TYPE", 10);
+            }
+        }
+    }
 
     // deal with euler or quaternion attitude
     if ((received_bitmask & QUAT_ATT) != 0) {
@@ -337,6 +415,10 @@ void JSON::recv_fdm(const struct sitl_input &input)
         update_eas_airspeed();
     }
 
+    if ((received_bitmask & WIND_VEL) != 0) {
+        wind_ef = state.velocity_wind;
+    }
+
     // Convert from a meters from origin physics to a lat long alt
     update_position();
 
@@ -354,6 +436,25 @@ void JSON::recv_fdm(const struct sitl_input &input)
     }
     if ((received_bitmask & WIND_SPD) != 0) {
         wind_vane_apparent.speed = state.wind_vane_apparent.speed;
+    }
+
+    // update RC input
+    static_assert(ARRAY_SIZE(state.rc) <= ARRAY_SIZE(rcin), "JSON rc in size mismatch");
+    uint8_t rc_chan_count = 0;
+    for (uint8_t i=0; i<ARRAY_SIZE(state.rc); i++) {
+        if ((received_bitmask & (RC_1 << i)) != 0) {
+            rcin[i] = (state.rc[i] - 1000.0f) / 1000.0f;
+            rc_chan_count = i+1;
+        }
+    }
+    rcin_chan_count = rc_chan_count;
+
+    // update battery state
+    if ((received_bitmask & BAT_VOLT) != 0) {
+        battery_voltage = state.bat_volt; 
+    }
+    if ((received_bitmask & BAT_AMP) != 0) {
+        battery_current = state.bat_amp; 
     }
 
     double deltat;
@@ -460,7 +561,9 @@ void JSON::update(const struct sitl_input &input)
     update_mag_field_bf();
 
     // allow for changes in physics step
-    adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
+    if (use_time_sync) {
+        adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
+    }
 
 #if 0
     // report frame rate
@@ -470,4 +573,4 @@ void JSON::update(const struct sitl_input &input)
 #endif
 }
 
-#endif  // HAL_SIM_JSON_ENABLED
+#endif  // AP_SIM_JSON_ENABLED

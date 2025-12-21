@@ -1,6 +1,9 @@
-#include "AP_Mount_Xacti.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_XACTI_ENABLED
+
+#include "AP_Mount_Xacti.h"
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
@@ -21,7 +24,6 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_XACTI_DEBUG 0
 #define debug(fmt, args ...) do { if (AP_MOUNT_XACTI_DEBUG) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xacti: " fmt, ## args); } } while (0)
 
-bool AP_Mount_Xacti::_subscribed = false;
 AP_Mount_Xacti::DetectedModules AP_Mount_Xacti::_detected_modules[];
 HAL_Semaphore AP_Mount_Xacti::_sem_registry;
 const char* AP_Mount_Xacti::send_text_prefix = "Xacti:";
@@ -110,82 +112,11 @@ void AP_Mount_Xacti::update()
         return;
     }
 
-    // change to RC_TARGETING mode if RC input has changed
-    set_rctargeting_on_rcinput_change();
-
     // update based on mount mode
-    switch (get_mode()) {
-        // move mount to a "retracted" position.  To-Do: remove support and replace with a relaxed mode?
-        case MAV_MOUNT_MODE_RETRACT: {
-            const Vector3f &angle_bf_target = _params.retract_angles.get();
-            mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
-            break;
-        }
-
-        case MAV_MOUNT_MODE_NEUTRAL: {
-            const Vector3f &angle_bf_target = _params.neutral_angles.get();
-            mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
-            break;
-        }
-
-        case MAV_MOUNT_MODE_MAVLINK_TARGETING: {
-            // mavlink targets are set while handling the incoming message
-            break;
-        }
-
-        case MAV_MOUNT_MODE_RC_TARGETING: {
-            // update targets using pilot's RC inputs
-            MountTarget rc_target;
-            get_rc_target(mnt_target.target_type, rc_target);
-            switch (mnt_target.target_type) {
-            case MountTargetType::ANGLE:
-                mnt_target.angle_rad = rc_target;
-                break;
-            case MountTargetType::RATE:
-                mnt_target.rate_rads = rc_target;
-                break;
-            }
-            break;
-        }
-
-        // point mount to a GPS point given by the mission planner
-        case MAV_MOUNT_MODE_GPS_POINT:
-            if (get_angle_target_to_roi(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        // point mount to Home location
-        case MAV_MOUNT_MODE_HOME_LOCATION:
-            if (get_angle_target_to_home(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        // point mount to another vehicle
-        case MAV_MOUNT_MODE_SYSID_TARGET:
-            if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        default:
-            // we do not know this mode so raise internal error
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            break;
-    }
+    update_mnt_target();
 
     // send target angles or rates depending on the target type
-    switch (mnt_target.target_type) {
-        case MountTargetType::ANGLE:
-            send_target_angles(mnt_target.angle_rad.pitch, mnt_target.angle_rad.yaw, mnt_target.angle_rad.yaw_is_ef);
-            break;
-        case MountTargetType::RATE:
-            send_target_rates(mnt_target.rate_rads.pitch, mnt_target.rate_rads.yaw, mnt_target.rate_rads.yaw_is_ef);
-            break;
-    }
+    send_target_to_gimbal();
 }
 
 // return true if healthy
@@ -406,44 +337,37 @@ bool AP_Mount_Xacti::get_attitude_quaternion(Quaternion& att_quat)
 }
 
 // send target pitch and yaw rates to gimbal
-// yaw_is_ef should be true if yaw_rads target is an earth frame rate, false if body_frame
-void AP_Mount_Xacti::send_target_rates(float pitch_rads, float yaw_rads, bool yaw_is_ef)
+void AP_Mount_Xacti::send_target_rates(const MountRateTarget &rate_rads)
 {
+    const float pitch_rads = rate_rads.pitch;
+    const float yaw_rads = rate_rads.yaw;
+
     // send gimbal rate target to gimbal
     send_gimbal_control(3, degrees(pitch_rads) * 100, degrees(yaw_rads) * 100);
 }
 
 // send target pitch and yaw angles to gimbal
-// yaw_is_ef should be true if yaw_rad target is an earth frame angle, false if body_frame
-void AP_Mount_Xacti::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_is_ef)
+void AP_Mount_Xacti::send_target_angles(const MountAngleTarget &angle_rad)
 {
+    const float pitch_rad = angle_rad.pitch;
+    const float yaw_rad = angle_rad.yaw;
+    const bool yaw_is_ef = angle_rad.yaw_is_ef;
+
     // convert yaw to body frame
-    const float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().get_yaw()) : yaw_rad;
+    const float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().get_yaw_rad()) : yaw_rad;
 
     // send angle target to gimbal
     send_gimbal_control(2, degrees(pitch_rad) * 100, degrees(yaw_bf_rad) * 100);
 }
 
 // subscribe to Xacti DroneCAN messages
-void AP_Mount_Xacti::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+bool AP_Mount_Xacti::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    // return immediately if DroneCAN is unavailable
-    if (ap_dronecan == nullptr) {
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s DroneCAN subscribe failed", send_text_prefix);
-        return;
-    }
+    const auto driver_index = ap_dronecan->get_driver_index();
 
-    _subscribed = true;
-
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_gimbal_attitude_status, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("gimbal_attitude_status_sub");
-        _subscribed = false;
-    }
-
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_gnss_status_req, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("gnss_status_req_sub");
-        _subscribed = false;
-    }
+    return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_gimbal_attitude_status, driver_index) != nullptr)
+        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_gnss_status_req, driver_index) != nullptr)
+    ;
 }
 
 // register backend in detected modules array used to map DroneCAN port and node id to backend

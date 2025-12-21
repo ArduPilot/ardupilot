@@ -36,6 +36,8 @@ public:
     struct dirent *readdir(void *dirp) override;
     int closedir(void *dirp) override;
 
+    uint32_t bytes_until_fsync(int fd) override;
+
     // return free disk space in bytes, -1 on error
     int64_t disk_free(const char *path) override;
 
@@ -55,7 +57,11 @@ public:
     bool format(void) override;
     AP_Filesystem_Backend::FormatStatus get_format_status() const override;
 
+    static void set_io_size(uint32_t _io_size) { io_size = _io_size; }
+    static uint32_t get_io_size() { return io_size; }
+
 private:
+    static uint32_t io_size;
     void format_handler(void);
     FormatStatus format_status;
 };

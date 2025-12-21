@@ -9,8 +9,8 @@ local msg_map = {}
 msg_map[COMMAND_ACK_ID] = "COMMAND_ACK"
 msg_map[COMMAND_LONG_ID] = "COMMAND_LONG"
 
--- initialize MAVLink rx with number of messages, and buffer depth
-mavlink:init(1, 10)
+-- initialize MAVLink rx with buffer depth and number of rx message IDs to register
+mavlink:init(10, 1)
 
 -- register message id to receive
 mavlink:register_rx_msgid(COMMAND_LONG_ID)

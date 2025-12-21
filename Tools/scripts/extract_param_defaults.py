@@ -47,7 +47,7 @@ def parse_arguments(args=None):
                         help='Display version information and exit.',
                         )
     parser.add_argument('-i', '--sysid', type=int, default=-1,
-                        help='System ID for qgcs output format. Defaults to SYSID_THISMAV if defined else 1.',
+                        help='System ID for qgcs output format. Defaults to MAV_SYSID if defined else 1.',
                         )
     parser.add_argument('-c', '--compid', type=int, default=-1,
                         help='Component ID for qgcs output format. Defaults to 1.',
@@ -160,8 +160,8 @@ def output_params(defaults: Dict[str, float], format_type: str = 'missionplanner
     """
     if format_type == "qgcs":
         if sysid == -1:
-            if 'SYSID_THISMAV' in defaults:
-                sysid = defaults['SYSID_THISMAV']
+            if 'MAV_SYSID' in defaults:
+                sysid = defaults['MAV_SYSID']
             else:
                 sysid = 1  # if unspecified, default to 1
         if compid == -1:

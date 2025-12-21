@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+# flake8: noqa
+
 """
 Waf tool for defining ardupilot's submodules, so that they are kept up to date.
 Submodules can be considered dynamic sources, since they are updated during the
@@ -156,10 +158,10 @@ def _post_fun(bld):
 def git_submodule_post_fun(bld):
     bld.add_post_fun(_post_fun)
 
-def _git_head_hash(ctx, path, short=False):
+def _git_head_hash(ctx, path, short=False, hash_abbrev=8):
     cmd = [ctx.env.get_flat('GIT'), 'rev-parse']
     if short:
-        cmd.append('--short=8')
+        cmd.append(f'--short={hash_abbrev}')
     cmd.append('HEAD')
     try:
         out = ctx.cmd_and_log(cmd, quiet=Context.BOTH, cwd=path)
@@ -170,10 +172,10 @@ def _git_head_hash(ctx, path, short=False):
     return out.strip()
 
 @conf
-def git_submodule_head_hash(self, name, short=False):
+def git_submodule_head_hash(self, name, short=False, hash_abbrev=8):
     module_node = self.srcnode.make_node(os.path.join('modules', name))
-    return _git_head_hash(self, module_node.abspath(), short=short)
+    return _git_head_hash(self, module_node.abspath(), short=short, hash_abbrev=hash_abbrev)
 
 @conf
-def git_head_hash(self, short=False):
-    return _git_head_hash(self, self.srcnode.abspath(), short=short)
+def git_head_hash(self, short=False, hash_abbrev=8):
+    return _git_head_hash(self, self.srcnode.abspath(), short=short, hash_abbrev=hash_abbrev)

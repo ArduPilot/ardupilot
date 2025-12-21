@@ -53,7 +53,7 @@ to use DShot.
 
 ## Battery Monitoring
 
-The board has a builting voltage sensor. The voltage sensor can handle up to 6S
+The board has a built-in voltage sensor. The voltage sensor can handle up to 6S
 LiPo batteries.
 
 The correct battery setting parameters are:

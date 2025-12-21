@@ -1,0 +1,61 @@
+# PilotPi HAT for raspberry pi
+
+# References:
+# website:          https://blog.rctoysky.com/?p=690
+# schematic/layout: https://github.com/SalimTerryLi/PilotPi_PCB/
+# PX4 page:         https://docs.px4.io/main/en/flight_controller/raspberry_pi_pilotpi.html
+
+define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_PILOTPI
+env TOOLCHAIN aarch64-linux-gnu
+env OPTIMIZE -march=native -fomit-frame-pointer -ftree-vectorize
+
+
+# IMU: ICM42688P
+IMU Invensensev3 SPI:icm42688 ROTATION_PITCH_180
+
+# Compass: IST8310
+COMPASS IST8310 I2C:1:0x0f false ROTATION_YAW_180
+define AP_COMPASS_PROBING_ENABLED 1
+# We don't want any probing on the internal buses
+define HAL_LINUX_I2C_INTERNAL_BUS_MASK 0
+
+
+# Baro: MS5611
+# address of MS5611 is 0b1110110 | 0bCx with C = inverted CSB pins
+BARO MS5611 I2C:1:0b1110110
+
+# PWM: PCA9685
+
+
+# ADC: ADS1115
+
+
+# Battery Voltage Monitor:
+define AP_BATTERY_ANALOG_ENABLED          AP_BATTERY_BACKEND_DEFAULT_ENABLED
+define HAL_BATT_MONITOR_DEFAULT           AP_BattMonitor::Type::ANALOG_VOLTAGE_ONLY
+define HAL_BATT_VOLT_PIN                  2
+define HAL_BATT_CURR_PIN                  -1
+define HAL_BATT_VOLT_SCALE                5.7f
+define HAL_BATT_CURR_SCALE                0.0f
+
+
+# directories
+define HAL_BOARD_STORAGE_DIRECTORY "/home/ardupilot/ardupilot/storage"
+define HAL_BOARD_LOG_DIRECTORY "/home/ardupilot/ardupilot/logs"
+define HAL_BOARD_TERRAIN_DIRECTORY "/home/ardupilot/ardupilot/terrain"
+define HAL_PARAM_DEFAULTS_PATH "/home/ardupilot/ardupilot/ardupilot.parm"
+define SCRIPTING_DIRECTORY "/home/ardupilot/ardupilot/scripts"
+
+# GPIO
+define HAL_LINUX_GPIO_SYSFS_ENABLED 1
+define HAL_LINUX_GPIO_PILOTPI_ENABLED 1
+
+# SPI devices
+
+#              NAME         BUS   SUBDEV   MODE         BPW   CS_PIN           LOWSPD   HIGHSPD
+LINUX_SPIDEV   "icm42688"   0     0        SPI_MODE_0   8     SPI_CS_KERNEL    1*MHZ    24*MHZ
+
+# support combined RCOutput system
+define HAL_LINUX_RCOUTPUT_MULTI_ENABLED 1
+
+define APM_LINUX_RCIN_RATE 500

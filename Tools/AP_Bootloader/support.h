@@ -6,7 +6,7 @@
 #define LED_BOOTLOADER	2
 
 #ifndef AP_FLASH_ECC_CHECK_ENABLED
-#define AP_FLASH_ECC_CHECK_ENABLED defined(STM32H7) && CH_CFG_USE_HEAP && !defined(STORAGE_FLASH_START_PAGE)
+#define AP_FLASH_ECC_CHECK_ENABLED defined(STM32H7) && CH_CFG_USE_HEAP
 #endif
 
 /* board info forwarded from board-specific code to booloader */
@@ -22,7 +22,7 @@ extern struct boardinfo board_info;
 void init_uarts(void);
 int16_t cin(unsigned timeout_ms);
 int cin_word(uint32_t *wp, unsigned timeout_ms);
-void cout(uint8_t *data, uint32_t len);
+void cout(const uint8_t *data, uint32_t len);
 void port_setbaud(uint32_t baudrate);
 #if defined(BOOTLOADER_FORWARD_OTG2_SERIAL)
 bool update_otg2_serial_forward(void);

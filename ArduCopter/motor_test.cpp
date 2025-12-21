@@ -82,10 +82,14 @@ void Copter::motor_test_output()
         }
 
         // sanity check throttle values
-        if (pwm >= RC_Channel::RC_MIN_LIMIT_PWM && pwm <= RC_Channel::RC_MAX_LIMIT_PWM) {
-            // turn on motor to specified pwm value
-            motors->output_test_seq(motor_test_seq, pwm);
-        } else {
+        if (pwm < RC_Channel::RC_MIN_LIMIT_PWM || pwm > RC_Channel::RC_MAX_LIMIT_PWM) {
+            motor_test_stop();
+            return;
+        }
+
+        // turn on motor to specified pwm value
+        if (!motors->output_test_seq(motor_test_seq, pwm)) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Motor Test: cancelled");
             motor_test_stop();
         }
     }
@@ -155,9 +159,9 @@ MAV_RESULT Copter::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t
         } else {
             // start test
             gcs().send_text(MAV_SEVERITY_INFO, "starting motor test");
-            ap.motor_test = true;
 
             EXPECT_DELAY_MS(3000);
+
             // enable and arm motors
             if (!motors->armed()) {
                 motors->output_min();  // output lowest possible value to motors
@@ -168,10 +172,11 @@ MAV_RESULT Copter::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t
             // disable throttle and gps failsafe
             g.failsafe_throttle.set(FS_THR_DISABLED);
             g.failsafe_gcs.set(FS_GCS_DISABLED);
-            g.fs_ekf_action.set(0);
+            g.fs_ekf_action.set(FS_EKF_ACTION_REPORT_ONLY);
 
             // turn on notify leds
             AP_Notify::flags.esc_calibration = true;
+            ap.motor_test = true;
         }
     }
 
@@ -203,9 +208,6 @@ void Copter::motor_test_stop()
 
     gcs().send_text(MAV_SEVERITY_INFO, "finished motor test");    
 
-    // flag test is complete
-    ap.motor_test = false;
-
     // disarm motors
     motors->armed(false);
     hal.util->set_soft_armed(false);
@@ -225,4 +227,7 @@ void Copter::motor_test_stop()
 
     // turn off notify leds
     AP_Notify::flags.esc_calibration = false;
+
+    // flag test is complete
+    ap.motor_test = false;
 }

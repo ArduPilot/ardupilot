@@ -17,6 +17,9 @@ This model assumes you will setup a steering/throttle rover
   SERVO1_FUNCTION 26
   SERVO3_FUNCTION 70
 '''
+
+# flake8: noqa
+
 from morse.builder import *
 
 # use the Hummer

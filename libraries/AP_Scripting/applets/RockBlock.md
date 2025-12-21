@@ -26,7 +26,10 @@ The script adds the following parameters:
 
 ## RCK_FORCEHL
 
-Automatically enables High Latency mode if not already enabled
+Mode of operation:
+- 0 = start disabled, can be enabled via MAV_CMD_CONTROL_HIGH_LATENCY
+- 1 = start enabled, can be disabled via MAV_CMD_CONTROL_HIGH_LATENCY
+- 2 = enabled on loss of telemetry (GCS) link for RCK_TIMEOUT seconds
 
 ## RCK_PERIOD
 
@@ -39,3 +42,9 @@ Sends Rockblock debug text to GCS via statustexts
 ## RCK_ENABLE
 
 Enables the modem transmission
+
+## RCK_TIMEOUT
+
+If RCK_FORCEHL=2, this is the number of seconds of no-messages from the GCS until High Latency mode is auto-enabled
+
+When GCS messages are recieved again, High Latency mode is auto-disabled.

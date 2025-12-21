@@ -64,6 +64,9 @@ private:
 
     uint32_t last_check_ms;
 
+    // last tuning value scaled
+    float old_value;
+    
     void Log_Write_Parameter_Tuning(float value);
     
     // the parameter we are tuning
@@ -76,7 +79,7 @@ private:
     uint8_t current_set;
 
     // true if tune has changed
-    bool changed:1;
+    bool changed;
 
     // mask of params in set that need reverting
     uint32_t need_revert;

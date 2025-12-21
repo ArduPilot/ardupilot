@@ -120,7 +120,7 @@ be able to use Python from the Windows Command Prompt.
 After installing Python, start the Command Prompt and install the BrainFPV Firmware Packer
 using the following command:
 
-    pip install https://github.com/BrainFPV/brainfpv_fw_packer/archive/main.zip
+    python3 -m pip install https://github.com/BrainFPV/brainfpv_fw_packer/archive/main.zip
 
 After installing it, you can use the following command to convert the "arducopter.elf" (or other vehicle elf file)
 file to a "arducopter.bin" file that can be used with the RADIX 2 HD:

@@ -130,13 +130,13 @@ void Copter::failsafe_gcs_check()
         return;
     }
 
-    const uint32_t gcs_last_seen_ms = gcs().sysid_myggcs_last_seen_time_ms();
+    const uint32_t gcs_last_seen_ms = gcs().sysid_mygcs_last_seen_time_ms();
     if (gcs_last_seen_ms == 0) {
         return;
     }
 
     // calc time since last gcs update
-    // note: this only looks at the heartbeat from the device id set by g.sysid_my_gcs
+    // note: this only looks at the heartbeat from the device id set by sysid_mygcs
     const uint32_t last_gcs_update_ms = millis() - gcs_last_seen_ms;
     const uint32_t gcs_timeout_ms = uint32_t(constrain_float(g2.fs_gcs_timeout * 1000.0f, 0.0f, UINT32_MAX));
 
@@ -281,7 +281,18 @@ void Copter::failsafe_terrain_set_status(bool data_ok)
 void Copter::failsafe_terrain_on_event()
 {
     failsafe.terrain = true;
-    gcs().send_text(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain data missing");
+    switch (wp_nav->get_terrain_source()) {
+    case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain %s", "data missing");
+        break;
+    case AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER:
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain %s", "Rangefinder Unhealthy");
+        break;
+    case AC_WPNav::TerrainSource::TERRAIN_UNAVAILABLE:
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain %s", "Unavailable");
+        break;
+    }
+
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::FAILSAFE_OCCURRED);
 
     if (should_disarm_on_failsafe()) {
@@ -298,9 +309,7 @@ void Copter::failsafe_terrain_on_event()
 // check for gps glitch failsafe
 void Copter::gpsglitch_check()
 {
-    // get filter status
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
-    bool gps_glitching = filt_status.flags.gps_glitching;
+    const bool gps_glitching = AP::ahrs().has_status(AP_AHRS::Status::GPS_GLITCHING);
 
     // log start or stop of gps glitch.  AP_Notify update is handled from within AP_AHRS
     if (ap.gps_glitching != gps_glitching) {
@@ -322,7 +331,7 @@ void Copter::failsafe_deadreckon_check()
     const char* dr_prefix_str = "Dead Reckoning";
 
     // get EKF filter status
-    bool ekf_dead_reckoning = inertial_nav.get_filter_status().flags.dead_reckoning;
+    const bool ekf_dead_reckoning = AP::ahrs().has_status(AP_AHRS::Status::DEAD_RECKONING);
 
     // alert user to start or stop of dead reckoning
     const uint32_t now_ms = AP_HAL::millis();

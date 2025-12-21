@@ -23,6 +23,9 @@
 #include "driver/gpio.h"
 #include "driver/uart.h"
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 namespace ESP32
 {
 
@@ -91,6 +94,8 @@ private:
     uint64_t _receive_timestamp[2];
     uint8_t _receive_timestamp_idx;
     uint32_t _baudrate;
+
+    const tskTaskControlBlock* _uart_owner_thd;
 
     void _receive_timestamp_update(void);
 

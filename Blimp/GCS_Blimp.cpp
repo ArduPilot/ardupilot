@@ -2,11 +2,6 @@
 
 #include "Blimp.h"
 
-uint8_t GCS_Blimp::sysid_this_mav() const
-{
-    return blimp.g.sysid_this_mav;
-}
-
 const char* GCS_Blimp::frame_string() const
 {
     return blimp.get_frame_string();

@@ -4,8 +4,6 @@
 -- Throttle thresholds also allow automatic enable and disable of stop motors
 -- slew up and down times allow to configure how fast the motors are disabled and re-enabled
 
--- luacheck: only 0
----@diagnostic disable: cast-local-type
 
 
 -- Config
@@ -38,12 +36,6 @@ local slew_up = (pwm_range / slew_up_time) * (10/1000)
 if throttle_off_threshold < 100 then
   assert((throttle_off_threshold < throttle_on_threshold) and (throttle_on_threshold < 100), "throttle on and off thresholds not configured correctly")
 end
-
--- clear vars we don't need anymore
-slew_down_time = nil
-slew_up_time = nil
-pwm_range = nil
-
 
 for i = 1, #stop_motors do
   -- Check for a valid motor number
@@ -84,7 +76,7 @@ assert(#stop_motor_chan == #stop_motors, "Lua: could not find all motors to stop
 assert(#run_motor_fun > 0, "Lua: cannot stop all motors")
 
 -- keep track of last time in a VTOL mode, this allows to delay switching after a transition/assist
-local last_vtol_active = 0
+local last_vtol_active = uint32_t(0)
 
 -- current action
 local script_enabled = false

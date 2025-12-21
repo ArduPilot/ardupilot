@@ -47,7 +47,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
                                   ))));
 
     // GPS sensing can have large delays and should not be included if disabled
-    if (frontend->sources.usingGPS()) {
+    if (frontend->sources.usingGPS(core_index)) {
         // Wait for the configuration of all GPS units to be confirmed. Until this has occurred the GPS driver cannot provide a correct time delay
         float gps_delay_sec = 0;
         if (!dal.gps().get_lag(selected_gps, gps_delay_sec)) {
@@ -544,8 +544,8 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     ResetHeight();
 
     // initialise sources
-    posxy_source_last = frontend->sources.getPosXYSource();
-    yaw_source_last = frontend->sources.getYawSource();
+    posxy_source_last = frontend->sources.getPosXYSource(core_index);
+    yaw_source_last = frontend->sources.getYawSource(core_index);
 
     // define Earth rotation vector in the NED navigation frame
     calcEarthRateNED(earthRateNED, dal.get_home().lat);
@@ -1873,6 +1873,22 @@ void NavEKF3_core::ForceSymmetry()
 // if states are inactive, zero the corresponding off-diagonals
 void NavEKF3_core::ConstrainVariances()
 {
+    // Covariance constraints as of March 2025
+    // This table assumes normal operations, there are additional constraints for specific failure modes like "badIMUdata" and "inhibitDelAngBiasStates".
+    // +----------------------------------------------------------------------------------------------+
+    // | State Index  |      State Name                 |  State Units  | Variance Constraint Range   |
+    // +----------------------------------------------------------------------------------------------+
+    // |  0 .. 3      | Attitude Quaternion             | unitless      | [0.0, 1.0]                  |
+    // |  4 .. 5      | Velocity (North, East)          | m/s           | [1e-4, 1e3]                 |
+    // |  6           | Velocity (Down)                 | m/s           | dynamic                     |
+    // |  7 .. 9      | Position (North, East, Down)    | m             | [1e-4, 1e6]                 |
+    // | 10 .. 12     | Gyro Bias (X, Y, Z)             | rad           | [0.0, (0.175 * dtEkfAvg)^2] |
+    // | 13 .. 15     | Accel Bias (X, Y, Z)            | m/s^2         | dynamic                     |
+    // | 16 .. 18     | Earth Magnetic Field (X, Y, Z)  | Gauss         | [0.0, 0.01]                 |
+    // | 19 .. 21     | Body Magnetic Field (X, Y, Z)   | Gauss         | [0.0, 0.01]                 |
+    // | 22 .. 23     | Wind Velocity (North, East)     | m/s           | [0.0, 400]                  |
+    // +----------------------------------------------------------------------------------------------+
+
     for (uint8_t i=0; i<=3; i++) P[i][i] = constrain_ftype(P[i][i],0.0,1.0); // attitude error
     for (uint8_t i=4; i<=5; i++) P[i][i] = constrain_ftype(P[i][i], VEL_STATE_MIN_VARIANCE, 1.0e3); // NE velocity
 
@@ -1996,6 +2012,23 @@ void NavEKF3_core::MagTableConstrain(void)
 // constrain states to prevent ill-conditioning
 void NavEKF3_core::ConstrainStates()
 {
+    // State constraints as of March 2025
+    // This table documents the limits applied to each EKF state.
+    // These are designed to keep state estimates within physically realistic bounds and prevent divergence.
+    // +---------------------------------------------------------------------------------------------------------+
+    // | State Index  |      State Name                 |  State Units  | State Constraint Range                 |
+    // +---------------------------------------------------------------------------------------------------------+
+    // |  0 .. 3      | Attitude Quaternion             | unitless      | [-1.0, 1.0]                            |
+    // |  4 .. 6      | Velocity (North, East, Down)    | m/s           | [-500, 500]                            |
+    // |  7 .. 8      | Position (North, East)          | m             | [-50e6,50e6]                           |
+    // |  9 (z)       | Position (Down / Altitude)      | m             | [-40000, 10000]                        |
+    // | 10 .. 12     | Gyro Bias (X, Y, Z)             | rad           | [-0.5, 0.5] * dtEkfAvg                 |
+    // | 13 .. 15     | Accel Bias (X, Y, Z)            | m/s²          | [-_accBiasLim, _accBiasLim] * dtEkfAvg |
+    // | 16 .. 18     | Earth Magnetic Field (X, Y, Z)  | Gauss         | [-1.0, 1.0]                            | or constrained by MagTableConstrain() if available
+    // | 19 .. 21     | Body Magnetic Field (X, Y, Z)   | Gauss         | [-0.5, 0.5]                            |
+    // | 22 .. 23     | Wind Velocity (North, East)     | m/s           | [-100, 100]                            |
+    // +---------------------------------------------------------------------------------------------------------+
+
     // quaternions are limited between +-1
     for (uint8_t i=0; i<=3; i++) statesArray[i] = constrain_ftype(statesArray[i],-1.0f,1.0f);
     // velocity limit 500 m/sec (could set this based on some multiple of max airspeed * EAS2TAS)

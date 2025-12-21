@@ -1,0 +1,30 @@
+include ../VM-L431/hwdef.inc
+
+define CAN_APP_NODE_NAME "com.vimdrones.srv-hub-4ch-p"
+SERIAL_ORDER USART1
+PB6 USART1_TX USART1 NODMA
+PB7 USART1_RX USART1 NODMA
+
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+
+define HAL_USE_ADC TRUE
+
+#Servo VCC Current Sampling
+define AP_PERIPH_ACTUATOR_TELEM_ENABLED 1
+define STM32_ADC_USE_ADC1 TRUE
+PA4 ACT1_CURRENT_SENS ADC1 SCALE(1) # Current Sampling on PWM(1)
+PA5 ACT2_CURRENT_SENS ADC1 SCALE(1) # Current Sampling on PWM(2)
+PA6 ACT3_CURRENT_SENS ADC1 SCALE(1) # Current Sampling on PWM(3)
+PA7 ACT4_CURRENT_SENS ADC1 SCALE(1) # Current Sampling on PWM(4)
+
+define AP_PERIPH_RC_OUT_ENABLED 1
+
+# --------------------- PWM -----------------------
+PA15  TIM2_CH1  TIM2 PWM(1) GPIO(50)
+PB3   TIM2_CH2  TIM2 PWM(2) GPIO(51)
+PA2   TIM2_CH3  TIM2 PWM(3) GPIO(52)
+PA3   TIM2_CH4  TIM2 PWM(4) GPIO(53)
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0

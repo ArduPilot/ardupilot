@@ -7,6 +7,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AP_Logger.h"
+#include <AP_RCProtocol/AP_RCProtocol.h>
 
 #if HAL_LOGGER_FENCE_ENABLED
     #include <AC_Fence/AC_Fence.h>
@@ -67,7 +68,7 @@ void LoggerMessageWriter_DFLogStart::reset()
     _next_unit_to_send = 0;
     _next_multiplier_to_send = 0;
     _next_format_unit_to_send = 0;
-    param_default = AP::logger().quiet_nanf();
+    param_default = AP_Logger::quiet_nanf();
     ap = AP_Param::first(&token, &type, &param_default);
 }
 
@@ -131,7 +132,7 @@ void LoggerMessageWriter_DFLogStart::process()
             if (!_logger_backend->Write_Parameter(ap, token, type, param_default)) {
                 return;
             }
-            param_default = AP::logger().quiet_nanf();
+            param_default = AP_Logger::quiet_nanf();
             ap = AP_Param::next_scalar(&token, &type, &param_default);
             if (check_process_limit(start_us)) {
                 return; // call me again!
@@ -336,7 +337,15 @@ void LoggerMessageWriter_WriteSysInfo::process() {
         FALLTHROUGH;
 
     case Stage::RC_PROTOCOL: {
+#if CONFIG_HAL_BOARD != HAL_BOARD_LINUX
+#if AP_RCPROTOCOL_ENABLED
+        const char *prot = AP::RC().detected_protocol_name();
+#else
+        const char *prot = nullptr;
+#endif
+#else  // this is not hal-chibios
         const char *prot = hal.rcin->protocol();
+#endif
         if (prot == nullptr) {
             prot = "None";
         }

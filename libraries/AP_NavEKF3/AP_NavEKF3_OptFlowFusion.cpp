@@ -59,7 +59,7 @@ void NavEKF3_core::SelectFlowFusion()
 
     // Fuse optical flow data into the main filter
     if (flowDataToFuse && tiltOK) {
-        const bool fuse_optflow = (frontend->_flowUse == FLOW_USE_NAV) && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW);
+        const bool fuse_optflow = (frontend->_flowUse == FLOW_USE_NAV) && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW, core_index);
         // Set the flow noise used by the fusion processes
         R_LOS = sq(MAX(frontend->_flowNoise, 0.05f));
         // Fuse the optical flow X and Y axis data into the main filter sequentially
@@ -121,7 +121,7 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
             ftype q3 = stateStruct.quat[3]; // quaternion at optical flow measurement time
 
             // Set range finder measurement noise variance. TODO make this a function of range and tilt to allow for sensor, alignment and AHRS errors
-            ftype R_RNG = frontend->_rngNoise;
+            ftype R_RNG = frontend->_rngNoise.get();
 
             // calculate Kalman gain
             ftype SK_RNG = sq(q0) - sq(q1) - sq(q2) + sq(q3);
@@ -296,6 +296,14 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
 
     // constrain height above ground to be above range measured on ground
     ftype heightAboveGndEst = MAX((terrainState - pd), rngOnGnd);
+
+#if EK3_FEATURE_OPTFLOW_SRTM
+    // if ground offset (aka terrainState) is not valid, use SRTM altitude
+    terrain_srtm_alt_valid = ((imuSampleTime_ms - terrain_srtm_alt_ms) < 5000);
+    if (!gndOffsetValid && terrain_srtm_alt_valid) {
+        heightAboveGndEst = MAX((terrain_srtm_alt - pd), rngOnGnd);
+    }
+#endif
 
     // calculate range from ground plain to centre of sensor fov assuming flat earth
     ftype range = constrain_ftype((heightAboveGndEst/prevTnb.c.z),rngOnGnd,1000.0f);

@@ -61,7 +61,7 @@
 #define UBLOX_MAX_EXTENSIONS 8
 #define UBLOX_GNSS_SETTINGS 1
 #ifndef UBLOX_TIM_TM2_LOGGING
-    #define UBLOX_TIM_TM2_LOGGING (BOARD_FLASH_SIZE>1024)
+    #define UBLOX_TIM_TM2_LOGGING (HAL_PROGRAM_SIZE_LIMIT_KB>1024)
 #endif
 
 #define UBLOX_MAX_GNSS_CONFIG_BLOCKS 7
@@ -695,7 +695,8 @@ private:
         GNSS_BEIDOU  = 0x03,
         GNSS_IMES    = 0x04,
         GNSS_QZSS    = 0x05,
-        GNSS_GLONASS = 0x06
+        GNSS_GLONASS = 0x06,
+        GNSS_NAVIC   = 0x07,
     };
     enum ubs_nav_fix_type {
         FIX_NONE = 0,

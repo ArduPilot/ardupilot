@@ -41,10 +41,6 @@ AP_BoardLED board_led;
 // create fake gcs object
 GCS_Dummy _gcs;                                                 //gcs stands for Ground Control Station
 
-const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
-        AP_GROUPEND
-};
-
 #if AP_SIM_ENABLED
 SITL::SIM sitl;
 AP_Baro baro;
@@ -60,6 +56,10 @@ static AP_SerialManager serial_manager;
 void setup()
 {
     hal.console->printf("GPS AUTO library test\n");
+
+#if AP_SIM_ENABLED
+    sitl.init();
+#endif  // AP_SIM_ENABLED
 
     board_config.init();
 

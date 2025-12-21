@@ -30,11 +30,13 @@ public:
         NONE                        = 0,
         TSYS01                      = 1,
         MCP9600                     = 2,
-        MAX31865                    = 3,
+        MAX31865_2_or_4_wire        = 3,
         TSYS03                      = 4,
         ANALOG                      = 5,
         DRONECAN                    = 6,
         MLX90614                    = 7,
+        SHT3x                       = 8,
+        MAX31865_3_wire             = 9,
     };
 
     // option to map to another system component
@@ -46,6 +48,8 @@ public:
         Battery_ID_SerialNumber     = 4,
         Pitot_tube                  = 5,
         DroneCAN                    = 6,
+        Servo_Motor                 = 7,
+        Servo_PCB                   = 8,
     };
 
     AP_Enum<Type> type;             // 0=disabled, others see frontend enum TYPE

@@ -1,0 +1,56 @@
+[cases.bench_superblocks_found]
+# support benchmarking with files
+defines.N = [0, 1024]
+defines.FILE_SIZE = 8
+defines.CHUNK_SIZE = 8
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+
+    // create files?
+    lfs_mount(&lfs, cfg) => 0;
+    char name[256];
+    uint8_t buffer[CHUNK_SIZE];
+    for (lfs_size_t i = 0; i < N; i++) {
+        sprintf(name, "file%08x", i);
+        lfs_file_t file;
+        lfs_file_open(&lfs, &file, name,
+                LFS_O_WRONLY | LFS_O_CREAT | LFS_O_EXCL) => 0;
+
+        for (lfs_size_t j = 0; j < FILE_SIZE; j += CHUNK_SIZE) {
+            for (lfs_size_t k = 0; k < CHUNK_SIZE; k++) {
+                buffer[k] = i+j+k;
+            }
+            lfs_file_write(&lfs, &file, buffer, CHUNK_SIZE) => CHUNK_SIZE;
+        }
+
+        lfs_file_close(&lfs, &file) => 0;
+    }
+    lfs_unmount(&lfs) => 0;
+
+    BENCH_START();
+    lfs_mount(&lfs, cfg) => 0;
+    BENCH_STOP();
+
+    lfs_unmount(&lfs) => 0;
+'''
+
+[cases.bench_superblocks_missing]
+code = '''
+    lfs_t lfs;
+
+    BENCH_START();
+    int err = lfs_mount(&lfs, cfg);
+    assert(err != 0);
+    BENCH_STOP();
+'''
+
+[cases.bench_superblocks_format]
+code = '''
+    lfs_t lfs;
+
+    BENCH_START();
+    lfs_format(&lfs, cfg) => 0;
+    BENCH_STOP();
+'''
+

@@ -1,5 +1,74 @@
 ArduPilot Plane Release Notes:
 ------------------------------------------------------------------
+Release 4.6.3 04-Nov-2025 / 4.6.3-beta1 14-Oct-2025
+
+Changes from 4.6.2
+
+1) Board specific changes
+
+- Accton Godwit G-A1 support
+- ARK FPV, ARK Pi6X, and ARKV6X Extended Range support
+- Blitz Wing H743 and H743 Pro I2C pullup fixes
+- Blitz Wing H743 and H743 Pro now use SPA06 barometer
+- BOTWINGF405 support
+- Brahma F4 support
+- CUAV OpenDroneID support
+- CUAV-7-Nano now uses IIM-42653 accel/gyro
+- CUAV-X25-EVO support
+- DAKEFPV H743 and H743 Pro support
+- GEPRC TAKER H743 BT support
+- Orqa FC 3030 H7 QuadCore support
+- RadiolinkF405 support
+- S-Vehicle E2-Plus support
+- SequreH743 now uses DPS310 and DPS368 baro
+- SIYI N7 now uses ICM45686 accel/gyro
+- SkystarsF405v2 support
+- SPEDIX H743 analog VTX enabled
+- TBS LUCID H7 fix VSW control
+- TBS Lucid H7 Wing AIO support
+- ZeroOne X6 bi-directional DShot support
+
+2) Driver bug fixes and enhancements
+
+- DJI goggles support for iNAV multi-page fonts
+- Gremsy mounts cope with NaN in device information
+- OSD can now be controlled over DroneCAN serial passthrough
+
+3) Copter specific fixes
+
+- Correct setting of deadzone on RC tuning channel
+
+4) Plane specific fixes and enhancements
+
+- Added option to disable IMU check with ICE running
+- Fix landing flare when using rangefinder
+- Fix landing slope when when a rangefinder exists, but is not in use
+- For gliders with airspeed sensors mounted behind the prop, disable airspeed calibration when throttle is not idle
+- Improve TECS behavior when using MIN_GROUNDSPEED
+- Make RNGFND_LANDING a bitmask
+- Quadplane terrain avoidance applet
+- Remove roll-rate limit in fixed-wing recovery
+
+5) Bug Fixes and minor enhancements
+
+- Correct starting of CAN multicast server
+- Cygwin SITL stability fixes
+- Data race in parameter creation fixed
+- ECC check no longer causes firmware wipe if error is recoverable or if only param pages impacted
+- FFT uses primary gyro instead of first available
+- GPS blending fix when one GPS loses lock
+- Harmonic notch filter fixes for scripted motor mixers
+- Lua applet for arming checks
+- Lua binding for getting rally points
+- More BLHeli passthrough fixes
+- Networking stack overflow (and subsequent watchdog) fixed
+- Pre-arm check for system initialization
+- Printing extremely small numbers no longer causes an infinite loop
+- Raspberry Pi 5 board-type detection fixed
+- Scripting fix for parameter indices being registered out of order
+- Septentrio GPS fixes
+- SimNet simulator support
+------------------------------------------------------------------
 Release 4.6.2 17-Jul-2025 / 4.6.2-beta2 02-Jul-2025
 
 Changes from 4.6.2-beta1
@@ -616,7 +685,7 @@ Changes from 4.5.7
 - Scripts may receive mavlink messages which fail CRC (e.g messages which FC does not understand)
 - SD card formatting supported
 - Serial device simulation support (allows Lua to feed data to any supported serial protocol for e.g. sensor simulation)
-- set_target_throttle_rate_rpy allows rate control from scripts (new for Copter)
+- set_target_rate_and_throttle allows rate control from scripts (new for Copter)
 - sitl_standby_sim.lua example shows how to switch between redundant flight controllers using an RC switch
 - Slung payload oscillation suppression applet added (see copter-slung-payload.lua)
 - Temperature sensor bindings added

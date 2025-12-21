@@ -44,27 +44,27 @@ void ModeSmartRTL::update()
         case SmartRTLState::PathFollow:
             // load point if required
             if (_load_point) {
-                Vector3f dest_NED;
+                Vector3p dest_NED;
                 if (!g2.smart_rtl.pop_point(dest_NED)) {
                     // if not more points, we have reached home
-                    gcs().send_text(MAV_SEVERITY_INFO, "Reached destination");
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Reached destination");
                     smart_rtl_state = SmartRTLState::StopAtHome;
                     break;
                 } else {
                     // peek at the next point.  this can fail if the IO task currently has the path semaphore
-                    Vector3f next_dest_NED;
+                    Vector3p next_dest_NED;
                     if (g2.smart_rtl.peek_point(next_dest_NED)) {
-                        if (!g2.wp_nav.set_desired_location_NED(dest_NED, next_dest_NED)) {
+                        if (!g2.wp_nav.set_desired_location_NED(dest_NED.tofloat(), next_dest_NED.tofloat())) {
                             // this should never happen because the EKF origin should already be set
-                            gcs().send_text(MAV_SEVERITY_INFO, "SmartRTL: failed to set destination");
+                            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SmartRTL: failed to set destination");
                             smart_rtl_state = SmartRTLState::Failure;
                             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                         }
                     } else {
                         // no next point so add only immediate point
-                        if (!g2.wp_nav.set_desired_location_NED(dest_NED)) {
+                        if (!g2.wp_nav.set_desired_location_NED(dest_NED.tofloat())) {
                             // this should never happen because the EKF origin should already be set
-                            gcs().send_text(MAV_SEVERITY_INFO, "SmartRTL: failed to set destination");
+                            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SmartRTL: failed to set destination");
                             smart_rtl_state = SmartRTLState::Failure;
                             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                         }

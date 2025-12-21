@@ -38,20 +38,9 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Advanced
     GSCALAR(format_version, "FORMAT_VERSION",   0),
 
-    // @Param: SYSID_THISMAV
-    // @DisplayName: MAVLink system ID of this vehicle
-    // @Description: Allows setting an individual MAVLink system id for this vehicle to distinguish it from others on the same network
-    // @Range: 1 255
-    // @User: Advanced
-    GSCALAR(sysid_this_mav, "SYSID_THISMAV",   MAV_SYSTEM_ID),
+    // SYSID_THISMAV was here
 
-    // @Param: SYSID_MYGCS
-    // @DisplayName: My ground station number
-    // @Description: Allows restricting radio overrides to only come from my ground station
-    // @Range: 1 255
-    // @Increment: 1
-    // @User: Advanced
-    GSCALAR(sysid_my_gcs,   "SYSID_MYGCS",     255),
+    // SYSID_MYGCS was here
 
     // @Param: PILOT_THR_FILT
     // @DisplayName: Throttle filter cutoff
@@ -59,7 +48,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Advanced
     // @Units: Hz
     // @Range: 0 10
-    // @Increment: .5
+    // @Increment: 0.5
     GSCALAR(throttle_filt,  "PILOT_THR_FILT",     0),
 
     // AP_SerialManager was here
@@ -106,7 +95,75 @@ const AP_Param::Info Sub::var_info[] = {
     // @Values: 0:Disabled,1:Warn only
     // @User: Standard
     GSCALAR(failsafe_temperature, "FS_TEMP_ENABLE", FS_TEMP_DISABLED),
+    
+#if AP_SUB_RC_ENABLED        
+    // @Param: FS_THR_ENABLE
+    // @DisplayName: Throttle Failsafe Enable
+    // @Description: The throttle failsafe allows you to configure a software RC failsafe activated by a setting on the throttle input channel. It also enables RC failsafe on absence of RC signals being recieved.
+    // @Values:  0:Disabled,1: Force effective control inputs to trim positions and prevent arming,2:Surface and hold on surface on failsafe 
+    // @User: Standard
+    GSCALAR(failsafe_throttle,  "FS_THR_ENABLE",   0),
 
+    // @Param: FS_THR_VALUE
+    // @DisplayName: Throttle Failsafe Value
+    // @Description: The PWM level in microseconds on channel 3 below which throttle failsafe triggers
+    // @Range: 910 1100
+    // @Units: PWM
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(failsafe_throttle_value, "FS_THR_VALUE",  FS_THR_VALUE_DEFAULT),
+    
+    // @Param: FLTMODE1
+    // @DisplayName: Flight Mode 1
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is <= 1230
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,7:Circle,9:Surface,16:PosHold,19:Manual,20:Motor Detect,21:SurfTrak
+    // @User: Standard
+    GSCALAR(flight_mode1, "FLTMODE1",               (uint8_t)FLIGHT_MODE_1),
+
+    // @Param: FLTMODE2
+    // @CopyFieldsFrom: FLTMODE1
+    // @DisplayName: Flight Mode 2
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1230, <= 1360
+    GSCALAR(flight_mode2, "FLTMODE2",               (uint8_t)FLIGHT_MODE_2),
+
+    // @Param: FLTMODE3
+    // @CopyFieldsFrom: FLTMODE1
+    // @DisplayName: Flight Mode 3
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1360, <= 1490
+    GSCALAR(flight_mode3, "FLTMODE3",               (uint8_t)FLIGHT_MODE_3),
+
+    // @Param: FLTMODE4
+    // @CopyFieldsFrom: FLTMODE1
+    // @DisplayName: Flight Mode 4
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1490, <= 1620
+    GSCALAR(flight_mode4, "FLTMODE4",               (uint8_t)FLIGHT_MODE_4),
+
+    // @Param: FLTMODE5
+    // @CopyFieldsFrom: FLTMODE1
+    // @DisplayName: Flight Mode 5
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1620, <= 1749
+    GSCALAR(flight_mode5, "FLTMODE5",               (uint8_t)FLIGHT_MODE_5),
+
+    // @Param: FLTMODE6
+    // @CopyFieldsFrom: FLTMODE1
+    // @DisplayName: Flight Mode 6
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >=1750
+    GSCALAR(flight_mode6, "FLTMODE6",               (uint8_t)FLIGHT_MODE_6),
+
+    // @Param: FLTMODE_CH
+    // @DisplayName: Flightmode channel
+    // @Description: RC Channel to use for flight mode control
+    // @Values: 0:Disabled,5:Channel5,6:Channel6,7:Channel7,8:Channel8,9:Channel9,10:Channel 10,11:Channel 11,12:Channel 12,13:Channel 13,14:Channel 14,15:Channel 15
+    // @User: Advanced
+    GSCALAR(flight_mode_chan, "FLTMODE_CH",         0),
+
+    // @Param: THR_ARM_POS
+    // @DisplayName: Throttle arming position
+    // @Description: Determines if throttle must be at min or within trim value to arm, if RC checks and RC_OPTION for "0" throttle are enabled.
+    // @User: Standard
+    // @Bitmask: 0:Throttle at or below min, 1: Throttle within a dead zone of RC trim value
+    GSCALAR(thr_arming_position, "THR_ARM_POS", 1),    
+#endif
     // @Param: FS_PRESS_MAX
     // @DisplayName: Internal Pressure Failsafe Threshold
     // @Description: The maximum internal pressure allowed before triggering failsafe. Failsafe action is determined by FS_PRESS_ENABLE parameter
@@ -120,6 +177,14 @@ const AP_Param::Info Sub::var_info[] = {
     // @Units: degC
     // @User: Standard
     GSCALAR(failsafe_temperature_max, "FS_TEMP_MAX", FS_TEMP_MAX_DEFAULT),
+
+    // @Param: SURFACE_MAX_THR
+    // @DisplayName: Surface Maximum Throttle
+    // @Description: Maximum throttle value when the vehicle is at the surface. This value is used to scale throttle linearly from 1. (full) to min as the vehicle approaches the surface. The attenuation starts at 1 meter from surface.  Only upwards throttle is limited.
+    // @Range: 0.0 1.0
+    // @User: Standard
+    // @Increment: 0.01
+    GSCALAR(surface_max_throttle, "SURFACE_MAX_THR", 0.1f),
 
     // @Param: FS_TERRAIN_ENAB
     // @DisplayName: Terrain Failsafe Enable
@@ -175,6 +240,15 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(pilot_speed_dn,     "PILOT_SPEED_DN",   0),
 
+    // @Param: PILOT_SPEED
+    // @DisplayName: Pilot maximum horizontal speed
+    // @Description: The maximum horizontal velocity the pilot may request in cm/s
+    // @Units: cm/s
+    // @Range: 10 500
+    // @Increment: 10
+    // @User: Standard
+    GSCALAR(pilot_speed,     "PILOT_SPEED",   PILOT_SPEED_DEFAULT),
+
     // @Param: PILOT_ACCEL_Z
     // @DisplayName: Pilot vertical acceleration
     // @Description: The vertical acceleration used when pilot is controlling the altitude
@@ -220,6 +294,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: EKF failsafe variance threshold
     // @Description: Allows setting the maximum acceptable compass and velocity variance
     // @Values: 0.6:Strict, 0.8:Default, 1.0:Relaxed
+    // @Range: 0.6 1.0
     // @User: Advanced
     GSCALAR(fs_ekf_thresh, "FS_EKF_THRESH",    FS_EKF_THRESHOLD_DEFAULT),
 
@@ -459,6 +534,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: Acro Expo
     // @Description: Acro roll/pitch Expo to allow faster rotation when stick at edges
     // @Values: 0:Disabled,0.1:Very Low,0.2:Low,0.3:Medium,0.4:High,0.5:Very High
+    // @Range: -0.5 0.95
     // @User: Advanced
     GSCALAR(acro_expo,  "ACRO_EXPO",    ACRO_EXPO_DEFAULT),
 
@@ -505,46 +581,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @Group: PSC
     // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
     GOBJECT(pos_control, "PSC", AC_PosControl),
-
-    // @Group: SR0_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[0],  gcs0,       "SR0_",     GCS_MAVLINK_Parameters),
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 2
-    // @Group: SR1_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[1],  gcs1,       "SR1_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 3
-    // @Group: SR2_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[2],  gcs2,       "SR2_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 4
-    // @Group: SR3_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[3],  gcs3,       "SR3_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 5
-    // @Group: SR4_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[4],  gcs4,       "SR4_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 6
-    // @Group: SR5_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[5],  gcs5,       "SR5_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 7
-    // @Group: SR6_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[6],  gcs6,       "SR6_",     GCS_MAVLINK_Parameters),
-#endif
 
     // @Group: AHRS_
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
@@ -668,10 +704,16 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(optflow,   "FLOW", AP_OpticalFlow),
 #endif
 
-#if AP_RPM_ENABLED
-    // @Group: RPM
-    // @Path: ../libraries/AP_RPM/AP_RPM.cpp
-    GOBJECT(rpm_sensor, "RPM", AP_RPM),
+#if OSD_ENABLED || OSD_PARAM_ENABLED
+    // @Group: OSD
+    // @Path: ../libraries/AP_OSD/AP_OSD.cpp
+    GOBJECT(osd, "OSD", AP_OSD),
+#endif
+
+#if AP_RSSI_ENABLED
+    // @Group: RSSI_
+    // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp
+    GOBJECT(rssi, "RSSI_",  AP_RSSI),
 #endif
 
     // @Group: NTF_
@@ -685,6 +727,12 @@ const AP_Param::Info Sub::var_info[] = {
     // @Group:
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
     PARAM_VEHICLE_INFO,
+
+#if HAL_GCS_ENABLED
+    // @Group: MAV
+    // @Path: ../libraries/GCS_MAVLink/GCS.cpp
+    GOBJECT(_gcs,           "MAV",  GCS),
+#endif
 
     AP_VAREND
 };
@@ -735,6 +783,18 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ORIGIN_ALT", 21, ParametersG2, backup_origin_alt, 0),
 
+    // @Param: SFC_NOBARO_THST
+    // @DisplayName: Surface mode throttle output when no barometer is available
+    // @Description: Surface mode throttle output when no borometer is available. 100% is full throttle. -100% is maximum throttle downwards
+    // @Units: %
+    // @User: Standard
+    // @Range: -100 100
+    AP_GROUPINFO("SFC_NOBARO_THST", 22, ParametersG2, surface_nobaro_thrust, 10),
+
+    // @Group: ACTUATOR
+    // @Path: ../ArduSub/actuators.cpp
+    AP_SUBGROUPINFO(actuators, "ACTUATOR", 23, ParametersG2, Actuators),
+
     AP_GROUPEND
 };
 
@@ -751,7 +811,6 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_fs_batt_mah,       0,      AP_PARAM_FLOAT,  "BATT_LOW_MAH" },
     { Parameters::k_param_failsafe_battery_enabled,       0,      AP_PARAM_INT8,  "BATT_FS_LOW_ACT" },
     { Parameters::k_param_compass_enabled_deprecated,       0,      AP_PARAM_INT8, "COMPASS_ENABLE" },
-    { Parameters::k_param_arming,            2,     AP_PARAM_INT16,  "ARMING_CHECK" },
 };
 
 void Sub::load_parameters()
@@ -770,6 +829,11 @@ void Sub::load_parameters()
     // PARAMETER_CONVERSION - Added: Mar-2022
 #if AP_FENCE_ENABLED
     AP_Param::convert_class(g.k_param_fence_old, &fence, fence.var_info, 0, true);
+#endif
+
+    // PARAMETER_CONVERSION - Added: July-2025 for ArduPilot-4.7
+#if AP_RPM_ENABLED
+    AP_Param::convert_class(g.k_param_rpm_sensor_old, &rpm_sensor, rpm_sensor.var_info, 0, true, true);
 #endif
 
     static const AP_Param::G2ObjectConversion g2_conversions[] {
@@ -806,6 +870,18 @@ void Sub::load_parameters()
     };
 
     AP_Param::convert_toplevel_objects(toplevel_conversions, ARRAY_SIZE(toplevel_conversions));
+
+#if HAL_GCS_ENABLED
+    // Move parameters into new MAV_ parameter namespace
+    // PARAMETER_CONVERSION - Added: Mar-2025
+    {
+        static const AP_Param::ConversionInfo gcs_conversion_info[] {
+            { Parameters::k_param_sysid_this_mav_old, 0, AP_PARAM_INT16,  "MAV_SYSID" },
+            { Parameters::k_param_sysid_my_gcs_old, 0, AP_PARAM_INT16, "MAV_GCS_SYSID" },
+        };
+        AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
+    }
+#endif  // HAL_GCS_ENABLED
 }
 
 void Sub::convert_old_parameters()
@@ -821,3 +897,66 @@ void Sub::convert_old_parameters()
 
     SRV_Channels::upgrade_parameters();
 }
+
+#if LEAKDETECTOR_MAX_INSTANCES > 0
+// PARAMETER_CONVERSION - Added: Dec-2025
+// Deals with leak detector getting misconfigured when updating from Sub 4.1
+void Sub::update_leak_pins()
+{
+    for (uint8_t instance = 0; instance < LEAKDETECTOR_MAX_INSTANCES; instance++) {
+        if (leak_detector.get_pin(instance) <= 0) {
+            // leak detector does not use pin
+            continue;
+        }
+        uint8_t servo_channel;
+        if (!hal.gpio->pin_to_servo_channel(leak_detector.get_pin(instance), servo_channel)) {
+            // leak detector pin does not map to a servo channel
+            continue;
+        }
+        if (SRV_Channels::is_GPIO(servo_channel)) {
+            // servo channel is already set to GPIO
+            continue;
+        }
+        if (SRV_Channels::channel_function(servo_channel) != SRV_Channel::Function::k_none) {
+            // servo channel is already set to a function
+            gcs().send_text(MAV_SEVERITY_WARNING, "Leak detector %u error. Please set SERVO%u_FUNCTION to GPIO", instance + 1, servo_channel + 1);
+            continue;
+        }
+        // servo channel is disabled, let's set it to GPIO for the user
+        gcs().send_text(MAV_SEVERITY_INFO, "Leak detector %u pin (servo %u) auto-set to GPIO", instance + 1, servo_channel + 1);
+        char param_name[20];
+        snprintf(param_name, sizeof(param_name), "SERVO%u_FUNCTION", servo_channel + 1);
+        AP_Param::set_and_save_by_name(param_name, static_cast<int>(SRV_Channel::Function::k_GPIO));
+    }
+}
+#endif
+
+#if AP_RELAY_ENABLED
+// PARAMETER_CONVERSION - Added: Dec-2025
+// Deals with relay getting misconfigured when updating from Sub 4.1
+void Sub::update_relay_pins()
+{
+    for (uint8_t instance = 0; instance < AP_RELAY_NUM_RELAYS; instance++) {
+        uint8_t servo_channel;
+        uint8_t pin;
+        if (!relay.get_pin_by_instance(instance, pin) || !hal.gpio->pin_to_servo_channel(pin, servo_channel)) {
+            // instance does not use pin or pin does not map to a servo channel
+            continue;
+        }
+        if (!relay.enabled(instance) || SRV_Channels::is_GPIO(servo_channel)) {
+            // instance is not enabled or servo channel is already set to GPIO
+            continue;
+        }
+        if (SRV_Channels::channel_function(servo_channel) != SRV_Channel::Function::k_none) {
+            // servo channel is already set to a function
+            gcs().send_text(MAV_SEVERITY_WARNING, "Relay %u error. Please set SERVO%u_FUNCTION to GPIO", instance + 1, servo_channel + 1);
+            continue;
+        }
+        // servo channel is disabled, let's set it to GPIO for the user
+        gcs().send_text(MAV_SEVERITY_INFO, "Relay %u pin (servo %u) auto-set to GPIO", instance + 1, servo_channel + 1);
+        char param_name[20];
+        snprintf(param_name, sizeof(param_name), "SERVO%u_FUNCTION", servo_channel + 1);
+        AP_Param::set_and_save_by_name(param_name, static_cast<int>(SRV_Channel::Function::k_GPIO));
+    }
+}
+#endif

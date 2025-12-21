@@ -1,0 +1,306 @@
+# Tests for recovering from conditions which shouldn't normally
+# happen during normal operation of littlefs
+
+# invalid pointer tests (outside of block_count)
+
+[cases.test_evil_invalid_tail_pointer]
+defines.TAIL_TYPE = ['LFS_TYPE_HARDTAIL', 'LFS_TYPE_SOFTTAIL']
+defines.INVALSET = [0x3, 0x1, 0x2]
+in = "lfs.c"
+code = '''
+    // create littlefs
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+
+    // change tail-pointer to invalid pointers
+    lfs_init(&lfs, cfg) => 0;
+    lfs_mdir_t mdir;
+    lfs_dir_fetch(&lfs, &mdir, (lfs_block_t[2]){0, 1}) => 0;
+    lfs_dir_commit(&lfs, &mdir, LFS_MKATTRS(
+            {LFS_MKTAG(LFS_TYPE_HARDTAIL, 0x3ff, 8),
+                (lfs_block_t[2]){
+                    (INVALSET & 0x1) ? 0xcccccccc : 0,
+                    (INVALSET & 0x2) ? 0xcccccccc : 0}})) => 0;
+    lfs_deinit(&lfs) => 0;
+
+    // test that mount fails gracefully
+    lfs_mount(&lfs, cfg) => LFS_ERR_CORRUPT;
+'''
+
+[cases.test_evil_invalid_dir_pointer]
+defines.INVALSET = [0x3, 0x1, 0x2]
+in = "lfs.c"
+code = '''
+    // create littlefs
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    // make a dir
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_mkdir(&lfs, "dir_here") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // change the dir pointer to be invalid
+    lfs_init(&lfs, cfg) => 0;
+    lfs_mdir_t mdir;
+    lfs_dir_fetch(&lfs, &mdir, (lfs_block_t[2]){0, 1}) => 0;
+    // make sure id 1 == our directory
+    uint8_t buffer[1024];
+    lfs_dir_get(&lfs, &mdir,
+            LFS_MKTAG(0x700, 0x3ff, 0),
+            LFS_MKTAG(LFS_TYPE_NAME, 1, strlen("dir_here")), buffer)
+                => LFS_MKTAG(LFS_TYPE_DIR, 1, strlen("dir_here"));
+    assert(memcmp((char*)buffer, "dir_here", strlen("dir_here")) == 0);
+    // change dir pointer
+    lfs_dir_commit(&lfs, &mdir, LFS_MKATTRS(
+            {LFS_MKTAG(LFS_TYPE_DIRSTRUCT, 1, 8),
+                (lfs_block_t[2]){
+                    (INVALSET & 0x1) ? 0xcccccccc : 0,
+                    (INVALSET & 0x2) ? 0xcccccccc : 0}})) => 0;
+    lfs_deinit(&lfs) => 0;
+
+    // test that accessing our bad dir fails, note there's a number
+    // of ways to access the dir, some can fail, but some don't
+    lfs_mount(&lfs, cfg) => 0;
+    struct lfs_info info;
+    lfs_stat(&lfs, "dir_here", &info) => 0;
+    assert(strcmp(info.name, "dir_here") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+
+    lfs_dir_t dir;
+    lfs_dir_open(&lfs, &dir, "dir_here") => LFS_ERR_CORRUPT;
+    lfs_stat(&lfs, "dir_here/file_here", &info) => LFS_ERR_CORRUPT;
+    lfs_dir_open(&lfs, &dir, "dir_here/dir_here") => LFS_ERR_CORRUPT;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, "dir_here/file_here",
+            LFS_O_RDONLY) => LFS_ERR_CORRUPT;
+    lfs_file_open(&lfs, &file, "dir_here/file_here",
+            LFS_O_WRONLY | LFS_O_CREAT) => LFS_ERR_CORRUPT;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[cases.test_evil_invalid_file_pointer]
+in = "lfs.c"
+defines.SIZE = [10, 1000, 100000] # faked file size
+code = '''
+    // create littlefs
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    // make a file
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, "file_here",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // change the file pointer to be invalid
+    lfs_init(&lfs, cfg) => 0;
+    lfs_mdir_t mdir;
+    lfs_dir_fetch(&lfs, &mdir, (lfs_block_t[2]){0, 1}) => 0;
+    // make sure id 1 == our file
+    uint8_t buffer[1024];
+    lfs_dir_get(&lfs, &mdir,
+            LFS_MKTAG(0x700, 0x3ff, 0),
+            LFS_MKTAG(LFS_TYPE_NAME, 1, strlen("file_here")), buffer)
+                => LFS_MKTAG(LFS_TYPE_REG, 1, strlen("file_here"));
+    assert(memcmp((char*)buffer, "file_here", strlen("file_here")) == 0);
+    // change file pointer
+    lfs_dir_commit(&lfs, &mdir, LFS_MKATTRS(
+            {LFS_MKTAG(LFS_TYPE_CTZSTRUCT, 1, sizeof(struct lfs_ctz)),
+                &(struct lfs_ctz){0xcccccccc, lfs_tole32(SIZE)}})) => 0;
+    lfs_deinit(&lfs) => 0;
+
+    // test that accessing our bad file fails, note there's a number
+    // of ways to access the dir, some can fail, but some don't
+    lfs_mount(&lfs, cfg) => 0;
+    struct lfs_info info;
+    lfs_stat(&lfs, "file_here", &info) => 0;
+    assert(strcmp(info.name, "file_here") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == SIZE);
+
+    lfs_file_open(&lfs, &file, "file_here", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, SIZE) => LFS_ERR_CORRUPT;
+    lfs_file_close(&lfs, &file) => 0;
+
+    // any allocs that traverse CTZ must unfortunately must fail
+    if (SIZE > 2*BLOCK_SIZE) {
+        lfs_mkdir(&lfs, "dir_here") => LFS_ERR_CORRUPT;
+    }
+    lfs_unmount(&lfs) => 0;
+'''
+
+[cases.test_evil_invalid_ctz_pointer] # invalid pointer in CTZ skip-list test
+defines.SIZE = ['2*BLOCK_SIZE', '3*BLOCK_SIZE', '4*BLOCK_SIZE']
+in = "lfs.c"
+code = '''
+    // create littlefs
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    // make a file
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, "file_here",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    for (int i = 0; i < SIZE; i++) {
+        char c = 'c';
+        lfs_file_write(&lfs, &file, &c, 1) => 1;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+    // change pointer in CTZ skip-list to be invalid
+    lfs_init(&lfs, cfg) => 0;
+    lfs_mdir_t mdir;
+    lfs_dir_fetch(&lfs, &mdir, (lfs_block_t[2]){0, 1}) => 0;
+    // make sure id 1 == our file and get our CTZ structure
+    uint8_t buffer[4*BLOCK_SIZE];
+    lfs_dir_get(&lfs, &mdir,
+            LFS_MKTAG(0x700, 0x3ff, 0),
+            LFS_MKTAG(LFS_TYPE_NAME, 1, strlen("file_here")), buffer)
+                => LFS_MKTAG(LFS_TYPE_REG, 1, strlen("file_here"));
+    assert(memcmp((char*)buffer, "file_here", strlen("file_here")) == 0);
+    struct lfs_ctz ctz;
+    lfs_dir_get(&lfs, &mdir,
+            LFS_MKTAG(0x700, 0x3ff, 0),
+            LFS_MKTAG(LFS_TYPE_STRUCT, 1, sizeof(struct lfs_ctz)), &ctz)
+                => LFS_MKTAG(LFS_TYPE_CTZSTRUCT, 1, sizeof(struct lfs_ctz));
+    lfs_ctz_fromle32(&ctz);
+    // rewrite block to contain bad pointer
+    uint8_t bbuffer[BLOCK_SIZE];
+    cfg->read(cfg, ctz.head, 0, bbuffer, BLOCK_SIZE) => 0;
+    uint32_t bad = lfs_tole32(0xcccccccc);
+    memcpy(&bbuffer[0], &bad, sizeof(bad));
+    memcpy(&bbuffer[4], &bad, sizeof(bad));
+    cfg->erase(cfg, ctz.head) => 0;
+    cfg->prog(cfg, ctz.head, 0, bbuffer, BLOCK_SIZE) => 0;
+    lfs_deinit(&lfs) => 0;
+
+    // test that accessing our bad file fails, note there's a number
+    // of ways to access the dir, some can fail, but some don't
+    lfs_mount(&lfs, cfg) => 0;
+    struct lfs_info info;
+    lfs_stat(&lfs, "file_here", &info) => 0;
+    assert(strcmp(info.name, "file_here") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == SIZE);
+
+    lfs_file_open(&lfs, &file, "file_here", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, SIZE) => LFS_ERR_CORRUPT;
+    lfs_file_close(&lfs, &file) => 0;
+
+    // any allocs that traverse CTZ must unfortunately must fail
+    if (SIZE > 2*BLOCK_SIZE) {
+        lfs_mkdir(&lfs, "dir_here") => LFS_ERR_CORRUPT;
+    }
+    lfs_unmount(&lfs) => 0;
+'''
+
+
+[cases.test_evil_invalid_gstate_pointer]
+defines.INVALSET = [0x3, 0x1, 0x2]
+in = "lfs.c"
+code = '''
+    // create littlefs
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+
+    // create an invalid gstate
+    lfs_init(&lfs, cfg) => 0;
+    lfs_mdir_t mdir;
+    lfs_dir_fetch(&lfs, &mdir, (lfs_block_t[2]){0, 1}) => 0;
+    lfs_fs_prepmove(&lfs, 1, (lfs_block_t [2]){
+            (INVALSET & 0x1) ? 0xcccccccc : 0,
+            (INVALSET & 0x2) ? 0xcccccccc : 0});
+    lfs_dir_commit(&lfs, &mdir, NULL, 0) => 0;
+    lfs_deinit(&lfs) => 0;
+
+    // test that mount fails gracefully
+    // mount may not fail, but our first alloc should fail when
+    // we try to fix the gstate
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_mkdir(&lfs, "should_fail") => LFS_ERR_CORRUPT;
+    lfs_unmount(&lfs) => 0;
+'''
+
+# cycle detection/recovery tests
+
+[cases.test_evil_mdir_loop] # metadata-pair threaded-list loop test
+in = "lfs.c"
+code = '''
+    // create littlefs
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+
+    // change tail-pointer to point to ourself
+    lfs_init(&lfs, cfg) => 0;
+    lfs_mdir_t mdir;
+    lfs_dir_fetch(&lfs, &mdir, (lfs_block_t[2]){0, 1}) => 0;
+    lfs_dir_commit(&lfs, &mdir, LFS_MKATTRS(
+            {LFS_MKTAG(LFS_TYPE_HARDTAIL, 0x3ff, 8),
+                (lfs_block_t[2]){0, 1}})) => 0;
+    lfs_deinit(&lfs) => 0;
+
+    // test that mount fails gracefully
+    lfs_mount(&lfs, cfg) => LFS_ERR_CORRUPT;
+'''
+
+[cases.test_evil_mdir_loop2] # metadata-pair threaded-list 2-length loop test
+in = "lfs.c"
+code = '''
+    // create littlefs with child dir
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_mkdir(&lfs, "child") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // find child
+    lfs_init(&lfs, cfg) => 0;
+    lfs_mdir_t mdir;
+    lfs_block_t pair[2];
+    lfs_dir_fetch(&lfs, &mdir, (lfs_block_t[2]){0, 1}) => 0;
+    lfs_dir_get(&lfs, &mdir,
+            LFS_MKTAG(0x7ff, 0x3ff, 0),
+            LFS_MKTAG(LFS_TYPE_DIRSTRUCT, 1, sizeof(pair)), pair)
+                => LFS_MKTAG(LFS_TYPE_DIRSTRUCT, 1, sizeof(pair));
+    lfs_pair_fromle32(pair);
+    // change tail-pointer to point to root
+    lfs_dir_fetch(&lfs, &mdir, pair) => 0;
+    lfs_dir_commit(&lfs, &mdir, LFS_MKATTRS(
+            {LFS_MKTAG(LFS_TYPE_HARDTAIL, 0x3ff, 8),
+                (lfs_block_t[2]){0, 1}})) => 0;
+    lfs_deinit(&lfs) => 0;
+
+    // test that mount fails gracefully
+    lfs_mount(&lfs, cfg) => LFS_ERR_CORRUPT;
+'''
+
+[cases.test_evil_mdir_loop_child] # metadata-pair threaded-list 1-length child loop test
+in = "lfs.c"
+code = '''
+    // create littlefs with child dir
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_mkdir(&lfs, "child") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // find child
+    lfs_init(&lfs, cfg) => 0;
+    lfs_mdir_t mdir;
+    lfs_block_t pair[2];
+    lfs_dir_fetch(&lfs, &mdir, (lfs_block_t[2]){0, 1}) => 0;
+    lfs_dir_get(&lfs, &mdir,
+            LFS_MKTAG(0x7ff, 0x3ff, 0),
+            LFS_MKTAG(LFS_TYPE_DIRSTRUCT, 1, sizeof(pair)), pair)
+                => LFS_MKTAG(LFS_TYPE_DIRSTRUCT, 1, sizeof(pair));
+    lfs_pair_fromle32(pair);
+    // change tail-pointer to point to ourself
+    lfs_dir_fetch(&lfs, &mdir, pair) => 0;
+    lfs_dir_commit(&lfs, &mdir, LFS_MKATTRS(
+            {LFS_MKTAG(LFS_TYPE_HARDTAIL, 0x3ff, 8), pair})) => 0;
+    lfs_deinit(&lfs) => 0;
+
+    // test that mount fails gracefully
+    lfs_mount(&lfs, cfg) => LFS_ERR_CORRUPT;
+'''

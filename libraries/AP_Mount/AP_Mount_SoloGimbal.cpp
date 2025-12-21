@@ -29,6 +29,8 @@ void AP_Mount_SoloGimbal::update_fast()
 // update mount position - should be called periodically
 void AP_Mount_SoloGimbal::update()
 {
+    AP_Mount_Backend::update();
+
     // exit immediately if not initialised
     if (!_initialised) {
         return;
@@ -59,26 +61,13 @@ void AP_Mount_SoloGimbal::update()
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
             // targets are stored while handling the incoming mavlink message
             _gimbal.set_lockedToBody(false);
-            if (mnt_target.target_type == MountTargetType::RATE) {
-                update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
-            }
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING: {
+        case MAV_MOUNT_MODE_RC_TARGETING:
             _gimbal.set_lockedToBody(false);
-            MountTarget rc_target;
-            get_rc_target(mnt_target.target_type, rc_target);
-            switch (mnt_target.target_type) {
-            case MountTargetType::ANGLE:
-                mnt_target.angle_rad = rc_target;
-                break;
-            case MountTargetType::RATE:
-                mnt_target.rate_rads = rc_target;
-                break;
-            }
+            update_mnt_target_from_rc_target();
             break;
-        }
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
@@ -107,6 +96,10 @@ void AP_Mount_SoloGimbal::update()
         default:
             // we do not know this mode so do nothing
             break;
+    }
+
+    if (mnt_target.target_type == MountTargetType::RATE) {
+        update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
     }
 }
 

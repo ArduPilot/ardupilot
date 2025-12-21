@@ -70,7 +70,7 @@ mkdir -p copter1
 
 # create default parameter file for the leader
 cat <<EOF > copter1/leader.parm
-SYSID_THISMAV 1
+MAV_SYSID 1
 AUTO_OPTIONS 7
 EOF
 
@@ -90,7 +90,7 @@ for i in $(seq $NCOPTERS); do
 
     # create default parameter file for the follower
     cat <<EOF > copter$i/follow.parm
-SYSID_THISMAV $SYSID
+MAV_SYSID $SYSID
 FOLL_ENABLE 1
 FOLL_OFS_X $(echo "-5*$i" | bc -l)
 FOLL_OFS_TYPE 1

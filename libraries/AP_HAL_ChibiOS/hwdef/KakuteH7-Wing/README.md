@@ -74,7 +74,7 @@ to use DShot.
 
 ## Battery Monitoring
 
-The board has a builting voltage and current sensor. The current
+The board has a built-in voltage and current sensor. The current
 sensor can read up to ?? Amps. The voltage sensor can handle up to 6S
 LiPo batteries.
 

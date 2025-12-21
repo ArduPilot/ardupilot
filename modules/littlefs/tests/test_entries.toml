@@ -1,0 +1,642 @@
+# These tests are for some specific corner cases with neighboring inline files.
+# Note that these tests are intended for 512 byte inline sizes. They should
+# still pass with other inline sizes but wouldn't be testing anything.
+
+defines.CACHE_SIZE = 512
+if = 'CACHE_SIZE % PROG_SIZE == 0 && CACHE_SIZE == 512'
+
+[cases.test_entries_grow]
+code = '''
+    uint8_t wbuffer[1024];
+    uint8_t rbuffer[1024];
+
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+
+    // write hi0 20
+    char path[1024];
+    lfs_size_t size;
+    sprintf(path, "hi0"); size = 20;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi1 20
+    sprintf(path, "hi1"); size = 20;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi2 20
+    sprintf(path, "hi2"); size = 20;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi3 20
+    sprintf(path, "hi3"); size = 20;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+
+    // read hi1 20
+    sprintf(path, "hi1"); size = 20;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi1 200
+    sprintf(path, "hi1"); size = 200;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+
+    // read hi0 20
+    sprintf(path, "hi0"); size = 20;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // read hi1 200
+    sprintf(path, "hi1"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // read hi2 20
+    sprintf(path, "hi2"); size = 20;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // read hi3 20
+    sprintf(path, "hi3"); size = 20;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_unmount(&lfs) => 0;
+'''
+
+[cases.test_entries_shrink]
+code = '''
+    uint8_t wbuffer[1024];
+    uint8_t rbuffer[1024];
+
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+
+    // write hi0 20
+    char path[1024];
+    lfs_size_t size;
+    sprintf(path, "hi0"); size = 20;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi1 200
+    sprintf(path, "hi1"); size = 200;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi2 20
+    sprintf(path, "hi2"); size = 20;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi3 20
+    sprintf(path, "hi3"); size = 20;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+
+    // read hi1 200
+    sprintf(path, "hi1"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi1 20
+    sprintf(path, "hi1"); size = 20;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+
+    // read hi0 20
+    sprintf(path, "hi0"); size = 20;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // read hi1 20
+    sprintf(path, "hi1"); size = 20;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // read hi2 20
+    sprintf(path, "hi2"); size = 20;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // read hi3 20
+    sprintf(path, "hi3"); size = 20;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_unmount(&lfs) => 0;
+'''
+
+[cases.test_entries_spill]
+code = '''
+    uint8_t wbuffer[1024];
+    uint8_t rbuffer[1024];
+
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+
+    // write hi0 200
+    char path[1024];
+    lfs_size_t size;
+    sprintf(path, "hi0"); size = 200;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi1 200
+    sprintf(path, "hi1"); size = 200;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi2 200
+    sprintf(path, "hi2"); size = 200;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi3 200
+    sprintf(path, "hi3"); size = 200;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+
+    // read hi0 200
+    sprintf(path, "hi0"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // read hi1 200
+    sprintf(path, "hi1"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // read hi2 200
+    sprintf(path, "hi2"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // read hi3 200
+    sprintf(path, "hi3"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_unmount(&lfs) => 0;
+'''
+
+[cases.test_entries_push_spill]
+code = '''
+    uint8_t wbuffer[1024];
+    uint8_t rbuffer[1024];
+
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+
+    // write hi0 200
+    char path[1024];
+    lfs_size_t size;
+    sprintf(path, "hi0"); size = 200;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi1 20
+    sprintf(path, "hi1"); size = 20;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi2 200
+    sprintf(path, "hi2"); size = 200;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi3 200
+    sprintf(path, "hi3"); size = 200;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+
+    // read hi1 20
+    sprintf(path, "hi1"); size = 20;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi1 200
+    sprintf(path, "hi1"); size = 200;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+
+    // read hi0 200
+    sprintf(path, "hi0"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // read hi1 200
+    sprintf(path, "hi1"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // read hi2 200
+    sprintf(path, "hi2"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // read hi3 200
+    sprintf(path, "hi3"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_unmount(&lfs) => 0;
+'''
+
+[cases.test_entries_push_spill_two]
+code = '''
+    uint8_t wbuffer[1024];
+    uint8_t rbuffer[1024];
+
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+
+    // write hi0 200
+    char path[1024];
+    lfs_size_t size;
+    sprintf(path, "hi0"); size = 200;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi1 20
+    sprintf(path, "hi1"); size = 20;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi2 200
+    sprintf(path, "hi2"); size = 200;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi3 200
+    sprintf(path, "hi3"); size = 200;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi4 200
+    sprintf(path, "hi4"); size = 200;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+
+    // read hi1 20
+    sprintf(path, "hi1"); size = 20;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi1 200
+    sprintf(path, "hi1"); size = 200;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+
+    // read hi0 200
+    sprintf(path, "hi0"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // read hi1 200
+    sprintf(path, "hi1"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // read hi2 200
+    sprintf(path, "hi2"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // read hi3 200
+    sprintf(path, "hi3"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // read hi4 200
+    sprintf(path, "hi4"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_unmount(&lfs) => 0;
+'''
+
+[cases.test_entries_drop]
+code = '''
+    uint8_t wbuffer[1024];
+    uint8_t rbuffer[1024];
+
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+
+    // write hi0 200
+    char path[1024];
+    lfs_size_t size;
+    sprintf(path, "hi0"); size = 200;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi1 200
+    sprintf(path, "hi1"); size = 200;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi2 200
+    sprintf(path, "hi2"); size = 200;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+    // write hi3 200
+    sprintf(path, "hi3"); size = 200;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_remove(&lfs, "hi1") => 0;
+    struct lfs_info info;
+    lfs_stat(&lfs, "hi1", &info) => LFS_ERR_NOENT;
+    // read hi0 200
+    sprintf(path, "hi0"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // read hi2 200
+    sprintf(path, "hi2"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // read hi3 200
+    sprintf(path, "hi3"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_remove(&lfs, "hi2") => 0;
+    lfs_stat(&lfs, "hi2", &info) => LFS_ERR_NOENT;
+    // read hi0 200
+    sprintf(path, "hi0"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    // read hi3 200
+    sprintf(path, "hi3"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_remove(&lfs, "hi3") => 0;
+    lfs_stat(&lfs, "hi3", &info) => LFS_ERR_NOENT;
+    // read hi0 200
+    sprintf(path, "hi0"); size = 200;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_remove(&lfs, "hi0") => 0;
+    lfs_stat(&lfs, "hi0", &info) => LFS_ERR_NOENT;
+
+    lfs_unmount(&lfs) => 0;
+'''
+
+[cases.test_entries_create_too_big]
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+
+    lfs_mount(&lfs, cfg) => 0;
+    char path[1024];
+    memset(path, 'm', 200);
+    path[200] = '\0';
+
+    lfs_size_t size = 400;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    uint8_t wbuffer[1024];
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_close(&lfs, &file) => 0;
+
+    size = 400;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    uint8_t rbuffer[1024];
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[cases.test_entries_resize_too_big]
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+
+    lfs_mount(&lfs, cfg) => 0;
+    char path[1024];
+    memset(path, 'm', 200);
+    path[200] = '\0';
+
+    lfs_size_t size = 40;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    uint8_t wbuffer[1024];
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_close(&lfs, &file) => 0;
+
+    size = 40;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    uint8_t rbuffer[1024];
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+
+    size = 400;
+    lfs_file_open(&lfs, &file, path,
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+    memset(wbuffer, 'c', size);
+    lfs_file_write(&lfs, &file, wbuffer, size) => size;
+    lfs_file_close(&lfs, &file) => 0;
+
+    size = 400;
+    lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, rbuffer, size) => size;
+    memcmp(rbuffer, wbuffer, size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''

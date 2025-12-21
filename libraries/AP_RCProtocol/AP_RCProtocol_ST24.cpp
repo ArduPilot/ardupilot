@@ -168,13 +168,13 @@ void AP_RCProtocol_ST24::_process_byte(uint8_t byte)
                     values[chan_index] = ((uint16_t)d->channel[i] << 4);
                     values[chan_index] |= ((uint16_t)(0xF0 & d->channel[i + 1]) >> 4);
                     /* convert values to 1000-2000 ppm encoding in a not too sloppy fashion */
-                    values[chan_index] = (uint16_t)(values[chan_index] * ST24_SCALE_FACTOR + .5f) + ST24_SCALE_OFFSET;
+                    values[chan_index] = (uint16_t)(values[chan_index] * ST24_SCALE_FACTOR + 0.5f) + ST24_SCALE_OFFSET;
                     chan_index++;
 
                     values[chan_index] = ((uint16_t)d->channel[i + 2]);
                     values[chan_index] |= (((uint16_t)(0x0F & d->channel[i + 1])) << 8);
                     /* convert values to 1000-2000 ppm encoding in a not too sloppy fashion */
-                    values[chan_index] = (uint16_t)(values[chan_index] * ST24_SCALE_FACTOR + .5f) + ST24_SCALE_OFFSET;
+                    values[chan_index] = (uint16_t)(values[chan_index] * ST24_SCALE_FACTOR + 0.5f) + ST24_SCALE_OFFSET;
                     chan_index++;
                 }
                 add_input(num_values, values, false);//AP_RCProtocol: Fix the issue of ST24 receiver not working
@@ -199,13 +199,13 @@ void AP_RCProtocol_ST24::_process_byte(uint8_t byte)
                     values[chan_index] = ((uint16_t)d->channel[i] << 4);
                     values[chan_index] |= ((uint16_t)(0xF0 & d->channel[i + 1]) >> 4);
                     /* convert values to 1000-2000 ppm encoding in a not too sloppy fashion */
-                    values[chan_index] = (uint16_t)(values[chan_index] * ST24_SCALE_FACTOR + .5f) + ST24_SCALE_OFFSET;
+                    values[chan_index] = (uint16_t)(values[chan_index] * ST24_SCALE_FACTOR + 0.5f) + ST24_SCALE_OFFSET;
                     chan_index++;
 
                     values[chan_index] = ((uint16_t)d->channel[i + 2]);
                     values[chan_index] |= (((uint16_t)(0x0F & d->channel[i + 1])) << 8);
                     /* convert values to 1000-2000 ppm encoding in a not too sloppy fashion */
-                    values[chan_index] = (uint16_t)(values[chan_index] * ST24_SCALE_FACTOR + .5f) + ST24_SCALE_OFFSET;
+                    values[chan_index] = (uint16_t)(values[chan_index] * ST24_SCALE_FACTOR + 0.5f) + ST24_SCALE_OFFSET;
                     chan_index++;
                 }
                 add_input(num_values, values, false);//AP_RCProtocol: Fix the issue of ST24 receiver not working

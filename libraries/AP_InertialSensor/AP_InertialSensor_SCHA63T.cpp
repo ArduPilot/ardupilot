@@ -428,12 +428,12 @@ bool AP_InertialSensor_SCHA63T::read_register(uint8_t uno_due, reg_scha63t reg_a
     switch (uno_due) {
     case SCHA63T_UNO:
         memcpy(buf, cmd, 4);
-        ret = dev_uno->transfer(buf, 4, buf, 4);
+        ret = dev_uno->transfer_fullduplex(buf, 4);
         memcpy(val, buf, 4);
         break;
     case SCHA63T_DUE:
         memcpy(buf, cmd, 4);
-        ret = dev_due->transfer(buf, 4, buf, 4);
+        ret = dev_due->transfer_fullduplex(buf, 4);
         memcpy(val, buf, 4);
         break;
     default:
@@ -454,7 +454,6 @@ bool AP_InertialSensor_SCHA63T::read_register(uint8_t uno_due, reg_scha63t reg_a
 bool AP_InertialSensor_SCHA63T::write_register(uint8_t uno_due, reg_scha63t reg_addr, uint16_t val)
 {
     bool ret = false;
-    uint8_t res[4];
     uint8_t cmd[4];
 
     cmd[0] = reg_addr << 2;
@@ -467,13 +466,11 @@ bool AP_InertialSensor_SCHA63T::write_register(uint8_t uno_due, reg_scha63t reg_
     switch (uno_due) {
     case SCHA63T_UNO:
         memcpy(buf, cmd, 4);
-        ret = dev_uno->transfer(buf, 4, buf, 4);
-        memcpy(res, buf, 4);
+        ret = dev_uno->transfer_fullduplex(buf, 4);
         break;
     case SCHA63T_DUE:
         memcpy(buf, cmd, 4);
-        ret = dev_due->transfer(buf, 4, buf, 4);
-        memcpy(res, buf, 4);
+        ret = dev_due->transfer_fullduplex(buf, 4);
         break;
     default:
         break;

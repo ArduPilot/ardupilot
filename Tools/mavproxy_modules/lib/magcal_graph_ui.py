@@ -12,6 +12,9 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# flake8: noqa
+
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_wxagg import FigureCanvas
 from mpl_toolkits.mplot3d import Axes3D

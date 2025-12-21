@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+# flake8: noqa
 '''
 convert a betaflight unified configuration file into a hwdef.dat
 currently very approximate, file requires cleanup afterwards
@@ -367,13 +369,15 @@ define HAL_BATT_CURR_SCALE %.1f
     nmotors = 0
     # PIN  TIMx_CHy TIMx PWM(p) GPIO(g)
     for pin, motor in functions["MOTOR"].items():
+        if not pin in timers:
+            continue
         timer = timers[pin]
         nmotors = max(nmotors, int(motor[0]))
         # for safety don't share the _UP channel
         dma_noshare[timer[1] + '_UP'] =  timer[1] + '_UP'
         f.write("%s %s_%s %s PWM(%s) GPIO(%s)" % (motor[1], timer[1], timer[2], timer[1], motor[0], 49+int(motor[0])))
         # on H7 we can reasonably safely assign bi-dir channel
-        if mcuclass == "H7" and (int(timer[2][2:]) == 1 or int(timer[2][2:]) == 3):
+        if not timer[2][2:].endswith("N") and mcuclass == "H7" and (int(timer[2][2:]) == 1 or int(timer[2][2:]) == 3):
             f.write(" BIDIR # M%s\n" % (motor[0]))
         else:
             f.write("       # M%s\n" % (motor[0]))
@@ -439,7 +443,7 @@ BARO %s I2C:%s:0x76
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 define HAL_DEFAULT_INS_FAST_SAMPLE 3

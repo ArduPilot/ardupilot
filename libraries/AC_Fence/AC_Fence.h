@@ -19,16 +19,6 @@
 #define AC_FENCE_ARMING_FENCES  (AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON)
 #define AC_FENCE_ALL_FENCES (AC_FENCE_ARMING_FENCES | AC_FENCE_TYPE_ALT_MIN)
 
-// valid actions should a fence be breached
-#define AC_FENCE_ACTION_REPORT_ONLY                 0       // report to GCS that boundary has been breached but take no further action
-#define AC_FENCE_ACTION_RTL_AND_LAND                1       // return to launch and, if that fails, land
-#define AC_FENCE_ACTION_ALWAYS_LAND                 2       // always land
-#define AC_FENCE_ACTION_SMART_RTL                   3       // smartRTL, if that fails, RTL, it that still fails, land
-#define AC_FENCE_ACTION_BRAKE                       4       // brake, if that fails, land
-#define AC_FENCE_ACTION_SMART_RTL_OR_LAND           5       // SmartRTL, if that fails, Land
-#define AC_FENCE_ACTION_GUIDED                      6       // guided mode, with target waypoint as fence return point
-#define AC_FENCE_ACTION_GUIDED_THROTTLE_PASS        7       // guided mode, but pilot retains manual throttle control
-
 // give up distance
 #define AC_FENCE_GIVE_UP_DISTANCE                   100.0f  // distance outside the fence at which we should give up and just land.  Note: this is not used by library directly but is intended to be used by the main code
 
@@ -36,6 +26,19 @@ class AC_Fence
 {
 public:
     friend class AC_PolyFence_loader;
+
+// valid actions should a fence be breached
+    enum class Action {
+        REPORT_ONLY          = 0, // report to GCS that boundary has been breached but take no further action
+        RTL_AND_LAND         = 1, // return to launch and, if that fails, land
+        ALWAYS_LAND          = 2, // always land
+        SMART_RTL            = 3, // smartRTL, if that fails, RTL, and if that still fails, land
+        BRAKE                = 4, // brake, if that fails, land
+        SMART_RTL_OR_LAND    = 5, // SmartRTL, if that fails, Land
+        GUIDED               = 6, // guided mode, with target waypoint as fence return point
+        GUIDED_THROTTLE_PASS = 7, // guided mode, but pilot retains manual throttle control
+        AUTOLAND_OR_RTL      = 8, // fixed wing autoland,if enabled, or RTL
+    };
 
     enum class AutoEnable : uint8_t
     {
@@ -130,24 +133,35 @@ public:
     /// get_breach_count - returns number of times we have breached the fence
     uint16_t get_breach_count() const { return _breach_count; }
 
+    /// get_breaches - returns bitmask of the fence types that have had their margins breached
+    uint8_t get_margin_breaches() const { return _breached_fence_margins; }
+
+    /// get_margin_breach_time - returns time the fence margin was breached
+    uint32_t get_margin_breach_time() const { return _margin_breach_time; }
+
     /// get_breach_distance - returns maximum distance in meters outside
     /// of the given fences.  fence_type is a bitmask here.
     float get_breach_distance(uint8_t fence_type) const;
 
+    /// get_breach_direction_NED - returns direction in meters outside/inside
+    /// of the given fences.  fence_check_pos is the absolute position when the check was made.
+    // fence_type is a bitmask.
+    bool get_breach_direction_NED(uint8_t fence_type, Vector3f& direction, Location& fence_check_pos) const;
+
     /// get_action - getter for user requested action on limit breach
-    uint8_t get_action() const { return _action.get(); }
+    Action get_action() const { return _action; }
 
     /// get_safe_alt - returns maximum safe altitude (i.e. alt_max - margin)
-    float get_safe_alt_max() const { return _alt_max - _margin; }
+    float get_safe_alt_max_m() const { return _alt_max_m - _margin_m; }
 
-    /// get_safe_alt_min - returns the minimum safe altitude (i.e. alt_min + margin)
-    float get_safe_alt_min() const { return _alt_min + _margin; }
+    /// get_safe_alt_min_m - returns the minimum safe altitude (i.e. alt_min + margin)
+    float get_safe_alt_min_m() const { return _alt_min_m + _margin_m; }
 
-    /// get_radius - returns the fence radius in meters
-    float get_radius() const { return _circle_radius.get(); }
+    /// get_radius_m - returns the fence radius in meters
+    float get_radius_m() const { return _circle_radius_m.get(); }
 
-    /// get_margin - returns the fence margin in meters
-    float get_margin() const { return _margin.get(); }
+    /// get_margin_ne_m - returns the horizontal fence margin in meters
+    float get_margin_ne_m() const;
 
     /// get_return_rally - returns whether returning to fence return point or rally point
     uint8_t get_return_rally() const { return _ret_rally; }
@@ -177,6 +191,7 @@ public:
     enum class OPTIONS {
         DISABLE_MODE_CHANGE = 1U << 0,
         INCLUSION_UNION = 1U << 1,
+        NOTIFY_MARGIN_BREACH = 1U << 2,
     };
     static bool option_enabled(OPTIONS opt, const AP_Int16 &options) {
         return (options.get() & int16_t(opt)) != 0;
@@ -211,8 +226,17 @@ private:
     /// record_breach - update breach bitmask, time and count
     void record_breach(uint8_t fence_type);
 
-    /// clear_breach - update breach bitmask, time and count
+    /// clear_breach - update breach bitmask
     void clear_breach(uint8_t fence_type);
+
+    /// record_margin_breach - update margin breach bitmask
+    void record_margin_breach(uint8_t fence_type);
+
+    /// clear_margin_breach - update margin breach bitmask
+    void clear_margin_breach(uint8_t fence_type);
+
+    /// retrieve the current NED position relative to home
+    bool get_current_position_NED(Vector3f& currpos) const;
 
     // additional checks for the different fence types:
     bool pre_arm_check_polygon(char *failure_msg, const uint8_t failure_msg_len) const;
@@ -222,40 +246,51 @@ private:
     bool floor_enabled() const { return _enabled_fences & AC_FENCE_TYPE_ALT_MIN; }
 
     // parameters
-    uint8_t         _enabled_fences;        // fences that are currently enabled/disabled
-    bool            _last_enabled;          // value of enabled last time we checked
-    AP_Int8         _enabled;               // overall feature control
-    AP_Int8         _auto_enabled;          // top level flag for auto enabling fence
-    uint8_t         _last_auto_enabled;     // value of auto_enabled last time we checked
-    AP_Int8         _configured_fences;     // bit mask holding which fences are enabled
-    AP_Int8         _action;                // recovery action specified by user
-    AP_Float        _alt_max;               // altitude upper limit in meters
-    AP_Float        _alt_min;               // altitude lower limit in meters
-    AP_Float        _circle_radius;         // circle fence radius in meters
-    AP_Float        _margin;                // distance in meters that autopilot's should maintain from the fence to avoid a breach
-    AP_Int8         _total;                 // number of polygon points saved in eeprom
-    AP_Int8         _ret_rally;             // return to fence return point or rally point/home
-    AP_Int16        _ret_altitude;          // return to this altitude
-    AP_Int16        _options;               // options bitmask, see OPTIONS enum
+    uint8_t         _enabled_fences;    // fences that are currently enabled/disabled
+    bool            _last_enabled;      // value of enabled last time we checked
+    AP_Int8         _enabled;           // overall feature control
+    AP_Int8         _auto_enabled;      // top level flag for auto enabling fence
+    uint8_t         _last_auto_enabled; // value of auto_enabled last time we checked
+    AP_Int8         _configured_fences; // bit mask holding which fences are enabled
+    AP_Enum<Action> _action;            // recovery action specified by user
+    AP_Float        _alt_max_m;         // altitude upper limit in meters
+    AP_Float        _alt_min_m;         // altitude lower limit in meters
+    AP_Float        _circle_radius_m;   // circle fence radius in meters
+    AP_Float        _margin_m;          // distance in meters that autopilot's should maintain from the fence to avoid a breach
+    AP_Float        _margin_ne_m;       // distance in meters that autopilot's should maintain from the horizontal fence to avoid a breach
+    AP_Int8         _total;             // number of polygon points saved in eeprom
+    AP_Int8         _ret_rally;         // return to fence return point or rally point/home
+    AP_Int16        _ret_altitude;      // return to this altitude
+    AP_Int16        _options;           // options bitmask, see OPTIONS enum
+    AP_Float        _notify_freq;       // margin notification frequency
 
     // backup fences
-    float           _alt_max_backup;        // backup altitude upper limit in meters used to refire the breach if the vehicle continues to move further away
-    float           _alt_min_backup;        // backup altitude lower limit in meters used to refire the breach if the vehicle continues to move further away
-    float           _circle_radius_backup;  // backup circle fence radius in meters used to refire the breach if the vehicle continues to move further away
+    float           _alt_max_backup_m;          // backup altitude upper limit in meters used to refire the breach if the vehicle continues to move further away
+    float           _alt_min_backup_m;          // backup altitude lower limit in meters used to refire the breach if the vehicle continues to move further away
+    float           _circle_radius_backup_m;    // backup circle fence radius in meters used to refire the breach if the vehicle continues to move further away
 
-    // breach distances
-    float           _alt_max_breach_distance;   // distance above the altitude max
-    float           _alt_min_breach_distance;   // distance below the altitude min
-    float           _circle_breach_distance;    // distance beyond the circular fence
+    // breach distances - negative means distance to fence
+    float           _alt_max_breach_distance_m; // distance above the altitude max
+    float           _alt_min_breach_distance_m; // distance below the altitude min
+    float           _circle_breach_distance_m;  // distance beyond the circular fence
+    float           _polygon_breach_distance_m; // distance beyond the polygon fence
+    Vector2f        _polygon_nearest_point;     // direction towards the polygon breach
+    Vector2f        _circle_breach_direction;   // direction towards the circle breach
+    Location        _last_fence_check_loc;      // position used in the last fence check
+    bool            _last_fence_check_loc_valid;// whether the position determined in the last fence check was valid
 
     // other internal variables
-    float           _home_distance;         // distance from home in meters (provided by main code)
+    float           _home_distance_m;   // distance from home in meters (provided by main code)
+    float           _fence_distance_m;  // distance to the nearest fence
 
     // breach information
-    uint8_t         _breached_fences;       // bitmask holding the fence type that was breached (i.e. AC_FENCE_TYPE_ALT_MIN, AC_FENCE_TYPE_CIRCLE)
+    uint8_t         _breached_fences;       // bitmask holding the fence types that were breached (i.e. AC_FENCE_TYPE_ALT_MIN, AC_FENCE_TYPE_CIRCLE)
+    uint8_t         _breached_fence_margins; // bitmask holding the fence types that have margin breaches (i.e. AC_FENCE_TYPE_ALT_MIN, AC_FENCE_TYPE_CIRCLE)
     uint32_t        _breach_time;           // time of last breach in milliseconds
+    uint32_t        _margin_breach_time;    // time of last margin breach in milliseconds
     uint16_t        _breach_count;          // number of times we have breached the fence
     uint32_t _last_breach_notify_sent_ms;  // last time we sent a message about newly-breaching the fences
+    uint32_t _last_margin_breach_notify_sent_ms;  // last time we sent a message about newly-breaching the fences
 
     uint32_t        _manual_recovery_start_ms;  // system time in milliseconds that pilot re-took manual control
 

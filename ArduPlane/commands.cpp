@@ -32,8 +32,8 @@ void Plane::set_next_WP(const Location &loc)
         next_WP_loc.lat = current_loc.lat;
         next_WP_loc.lng = current_loc.lng;
         // additionally treat zero altitude as current altitude
-        if (next_WP_loc.alt == 0) {
-            next_WP_loc.set_alt_cm(current_loc.alt, Location::AltFrame::ABSOLUTE);
+        if (next_WP_loc.alt_is_zero()) {
+            next_WP_loc.copy_alt_from(current_loc);
         }
     }
 
@@ -56,7 +56,7 @@ void Plane::set_next_WP(const Location &loc)
     // zero out our loiter vals to watch for missed waypoints
     loiter_angle_reset();
 
-    setup_glide_slope();
+    setup_alt_slope();
     setup_turn_angle();
 
     // update plane.target_altitude straight away, or if we are too
@@ -90,7 +90,7 @@ void Plane::set_guided_WP(const Location &loc)
     // -----------------------------------------------
     set_target_altitude_current();
 
-    setup_glide_slope();
+    setup_alt_slope();
     setup_turn_angle();
 
     // disable crosstrack, head directly to the point
@@ -164,9 +164,6 @@ bool Plane::set_home_persistently(const Location &loc)
     if (!AP::ahrs().set_home(loc)) {
         return false;
     }
-
-    // Save Home to EEPROM
-    mission.write_home_to_storage();
 
     return true;
 }

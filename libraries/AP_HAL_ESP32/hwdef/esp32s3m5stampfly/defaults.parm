@@ -1,0 +1,46 @@
+# drone specific settings
+FRAME_CLASS 1
+MOT_PWM_TYPE 3 # brushed motor PWM
+RC_SPEED 32000 # as fast as ardupilot supports (more would be nice)
+LOG_BACKEND_TYPE 2 # mavlink logging
+ARMING_SKIPCHK 1024 # disable logging check (in the event log rx is not up)
+LOG_DISARMED 1
+SCHED_LOOP_RATE 150 # flash won't go faster :(
+
+# mavlink RC control
+FS_THR_ENABLE 0 # not wanted for mavlink control
+RC1_MIN 1101 # avoid calibration needed warning
+RC_OPTIONS 96 # ignore rpy stick positions during arming, nice for crap controllers
+
+# tuning parameters from mission planner's wizard
+ATC_ACCEL_P_MAX 200200
+ATC_ACCEL_R_MAX 200200
+ATC_ACCEL_Y_MAX 33800
+ATC_RAT_PIT_FLTD 67
+ATC_RAT_PIT_FLTT 67
+ATC_RAT_RLL_FLTD 67
+ATC_RAT_RLL_FLTT 67
+ATC_RAT_YAW_FLTD 0
+ATC_RAT_YAW_FLTE 2
+ATC_RAT_YAW_FLTT 67
+INS_GYRO_FILTER 134
+MOT_THST_EXPO 0.45
+
+# battery monitoring settings
+BATT_ARM_MAH    0
+BATT_ARM_VOLT   0
+BATT_CAPACITY   300
+BATT_CHANNEL    2
+BATT_CRT_MAH    0
+BATT_CRT_VOLT   0
+BATT_FS_CRT_ACT 0
+BATT_FS_LOW_ACT 0
+BATT_FS_VOLTSRC 0
+BATT_I2C_ADDR   64
+BATT_I2C_BUS    0
+BATT_LOW_MAH    0
+BATT_LOW_TIMER  10
+BATT_LOW_VOLT   3.4
+BATT_MONITOR    30
+BATT_OPTIONS    0
+BATT_SERIAL_NUM -1

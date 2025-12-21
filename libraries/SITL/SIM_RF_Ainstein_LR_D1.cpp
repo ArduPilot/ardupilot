@@ -20,7 +20,7 @@
 
 using namespace SITL;
 
-uint32_t RF_Ainstein_LR_D1::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
+uint32_t RF_Ainstein_LR_D1::packet_for_alt(float alt_m, uint8_t *buffer, uint8_t buflen)
 {
     const uint8_t PACKET_LEN = 32;
 
@@ -30,7 +30,20 @@ uint32_t RF_Ainstein_LR_D1::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uin
 
     uint8_t malfunction_alert = 0;
 
-    const uint8_t snr = (alt_cm == 0xFFFF) ? 0 : 100;
+    uint16_t alt_cm = alt_m * 100;
+
+    uint8_t snr = (alt_cm == 0xFFFF) ? 0 : 100;
+    if (alt_m > 525) {
+        // overheats at 525 metres:
+        malfunction_alert |= 1U << 0;
+    }
+    if (alt_m > 500) {
+        // out of range @500m
+        snr = 0;
+    }
+    if (alt_m*100 > 65535) {
+        malfunction_alert |= 1U << 7;  // AltitudeReading alert
+    }
 
     buffer[0] = 0xEB;  // packet header msb
     buffer[1] = 0x90;  // packet header lsb

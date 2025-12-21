@@ -37,12 +37,16 @@ public:
         ICM42605, // No HiRes
         ICM40605, // No HiRes
         IIM42652, // HiRes 19bit
+        IIM42653, // HiRes 19bit
         ICM42670, // HiRes 19bit
         ICM45686  // HiRes 20bit
     };
 
     // acclerometers on Invensense sensors will return values up to 32G
     const uint16_t multiplier_accel = INT16_MAX/(32*GRAVITY_MSS);
+
+protected:
+    void set_primary(bool _is_primary) override;
 
 private:
     AP_InertialSensor_Invensensev3(AP_InertialSensor &imu,

@@ -6,7 +6,7 @@
 * Init and run calls for zigzag flight mode
 */
 
-#define ZIGZAG_WP_RADIUS_CM 300
+#define ZIGZAG_WP_RADIUS_M 3.0
 #define ZIGZAG_LINE_INFINITY -1
 
 const AP_Param::GroupInfo ModeZigZag::var_info[] = {
@@ -32,7 +32,7 @@ const AP_Param::GroupInfo ModeZigZag::var_info[] = {
     // @Units: s
     // @Range: 0 127
     // @User: Advanced
-    AP_GROUPINFO("WP_DELAY", 3, ModeZigZag, _wp_delay, 0),
+    AP_GROUPINFO("WP_DELAY", 3, ModeZigZag, _wp_delay_s, 0),
 
     // @Param: SIDE_DIST
     // @DisplayName: Sideways distance in ZigZag auto
@@ -40,7 +40,7 @@ const AP_Param::GroupInfo ModeZigZag::var_info[] = {
     // @Units: m
     // @Range: 0.1 100
     // @User: Advanced
-    AP_GROUPINFO("SIDE_DIST", 4, ModeZigZag, _side_dist, 4),
+    AP_GROUPINFO("SIDE_DIST", 4, ModeZigZag, _side_dist_m, 4),
 
     // @Param: DIRECTION
     // @DisplayName: Sideways direction in ZigZag auto
@@ -67,35 +67,31 @@ ModeZigZag::ModeZigZag(void) : Mode()
 // initialise zigzag controller
 bool ModeZigZag::init(bool ignore_checks)
 {
-    if (!copter.failsafe.radio) {
-        // apply simple mode transform to pilot inputs
-        update_simple_mode();
+    // apply simple mode transform to pilot inputs
+    update_simple_mode();
 
-        // convert pilot input to lean angles
-        float target_roll, target_pitch;
-        get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+    // convert pilot input to lean angles
+    float target_roll_rad, target_pitch_rad;
+    get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, loiter_nav->get_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
 
-        // process pilot's roll and pitch input
-        loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
-    } else {
-        // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
-        loiter_nav->clear_pilot_desired_acceleration();
-    }
+    // process pilot's roll and pitch input
+    loiter_nav->set_pilot_desired_acceleration_rad(target_roll_rad, target_pitch_rad);
+
     loiter_nav->init_target();
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    pos_control->set_correction_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control->D_set_max_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
+    pos_control->D_set_correction_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
 
     // initialise the vertical position controller
-    if (!pos_control->is_active_z()) {
-        pos_control->init_z_controller();
+    if (!pos_control->D_is_active()) {
+        pos_control->D_init_controller();
     }
 
     // initialise waypoint state
     stage = STORING_POINTS;
-    dest_A.zero();
-    dest_B.zero();
+    dest_A_ne_m.zero();
+    dest_B_ne_m.zero();
 
     // initialize zigzag auto
     init_auto();
@@ -115,11 +111,11 @@ void ModeZigZag::exit()
 void ModeZigZag::run()
 {
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control->D_set_max_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
 
     // set the direction and the total number of lines
     zigzag_direction = (Direction)constrain_int16(_direction, 0, 3);
-    line_num = constrain_int16(_line_num, ZIGZAG_LINE_INFINITY, 32767);
+    line_num = constrain_int16(_line_num, ZIGZAG_LINE_INFINITY, INT16_MAX);
 
     // auto control
     if (stage == AUTO) {
@@ -161,7 +157,7 @@ void ModeZigZag::run()
 void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
 {
     // get current position as an offset from EKF origin
-    const Vector2f curr_pos = pos_control->get_pos_desired_cm().xy().tofloat();
+    const Vector2p curr_pos_ned_m = pos_control->get_pos_desired_NED_m().xy();
 
     // handle state machine changes
     switch (stage) {
@@ -169,20 +165,20 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
         case STORING_POINTS:
             if (ab_dest == Destination::A) {
                 // store point A
-                dest_A = curr_pos;
+                dest_A_ne_m = curr_pos_ned_m;
                 gcs().send_text(MAV_SEVERITY_INFO, "%s: point A stored", name());
                 LOGGER_WRITE_EVENT(LogEvent::ZIGZAG_STORE_A);
             } else {
                 // store point B
-                dest_B = curr_pos;
+                dest_B_ne_m = curr_pos_ned_m;
                 gcs().send_text(MAV_SEVERITY_INFO, "%s: point B stored", name());
                 LOGGER_WRITE_EVENT(LogEvent::ZIGZAG_STORE_B);
             }
             // if both A and B have been stored advance state
-            if (!dest_A.is_zero() && !dest_B.is_zero() && !is_zero((dest_B - dest_A).length_squared())) {
+            if (!dest_A_ne_m.is_zero() && !dest_B_ne_m.is_zero() && !is_zero((dest_B_ne_m - dest_A_ne_m).length_squared())) {
                 stage = MANUAL_REGAIN;
                 spray(false);
-            } else if (!dest_A.is_zero() || !dest_B.is_zero()) {
+            } else if (!dest_A_ne_m.is_zero() || !dest_B_ne_m.is_zero()) {
                 // if only A or B have been stored, spray on
                 spray(true);
             }
@@ -191,11 +187,11 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
         case AUTO:
         case MANUAL_REGAIN:
             // A and B have been defined, move vehicle to destination A or B
-            Vector3f next_dest;
-            bool terr_alt;
-            if (calculate_next_dest(ab_dest, stage == AUTO, next_dest, terr_alt)) {
-                wp_nav->wp_and_spline_init();
-                if (wp_nav->set_wp_destination(next_dest, terr_alt)) {
+            Vector3p next_dest_ned_m;
+            bool is_terrain_alt;
+            if (calculate_next_dest_m(ab_dest, stage == AUTO, next_dest_ned_m, is_terrain_alt)) {
+                wp_nav->wp_and_spline_init_m();
+                if (wp_nav->set_wp_destination_NED_m(next_dest_ned_m, is_terrain_alt)) {
                     stage = AUTO;
                     auto_stage = AutoState::AB_MOVING;
                     ab_dest_stored = ab_dest;
@@ -216,16 +212,16 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
 
 void ModeZigZag::move_to_side()
 {
-    if (!dest_A.is_zero() && !dest_B.is_zero() && !is_zero((dest_B - dest_A).length_squared())) {
-        Vector3f next_dest;
-        bool terr_alt;
-        if (calculate_side_dest(next_dest, terr_alt)) {
-            wp_nav->wp_and_spline_init();
-            if (wp_nav->set_wp_destination(next_dest, terr_alt)) {
+    if (!dest_A_ne_m.is_zero() && !dest_B_ne_m.is_zero() && !is_zero((dest_B_ne_m - dest_A_ne_m).length_squared())) {
+        Vector3p next_dest_ned_m;
+        bool is_terrain_alt;
+        if (calculate_side_dest_m(next_dest_ned_m, is_terrain_alt)) {
+            wp_nav->wp_and_spline_init_m();
+            if (wp_nav->set_wp_destination_NED_m(next_dest_ned_m, is_terrain_alt)) {
                 stage = AUTO;
                 auto_stage = AutoState::SIDEWAYS;
-                current_dest = next_dest;
-                current_terr_alt = terr_alt;
+                current_dest_ned_m = next_dest_ned_m;
+                current_is_terr_alt = is_terrain_alt;
                 reach_wp_time_ms = 0;
                 char const *dir[] = {"forward", "right", "backward", "left"};
                 gcs().send_text(MAV_SEVERITY_INFO, "%s: moving to %s", name(), dir[(uint8_t)zigzag_direction]);
@@ -242,8 +238,8 @@ void ModeZigZag::return_to_manual_control(bool maintain_target)
         spray(false);
         loiter_nav->clear_pilot_desired_acceleration();
         if (maintain_target) {
-            const Vector3f& wp_dest = wp_nav->get_wp_destination();
-            loiter_nav->init_target(wp_dest.xy());
+            const Vector3p& wp_dest_ned_m = wp_nav->get_wp_destination_NED_m();
+            loiter_nav->init_target_m(wp_dest_ned_m.xy());
 #if AP_RANGEFINDER_ENABLED
             if (copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy()) {
                 copter.surface_tracking.external_init();
@@ -257,15 +253,11 @@ void ModeZigZag::return_to_manual_control(bool maintain_target)
     }
 }
 
-// fly the vehicle to closest point on line perpendicular to dest_A or dest_B
+// fly the vehicle to closest point on line perpendicular to dest_A_ne_m or dest_B_ne_m
 void ModeZigZag::auto_control()
 {
     // process pilot's yaw input
-    float target_yaw_rate = 0;
-    if (!copter.failsafe.radio) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate();
-    }
+    const float target_yaw_rate_rads = get_pilot_desired_yaw_rate_rads();
 
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -275,11 +267,11 @@ void ModeZigZag::auto_control()
 
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle
-    pos_control->update_z_controller();
+    pos_control->D_update_controller();
 
     // call attitude controller
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(wp_nav->get_roll_rad(), wp_nav->get_pitch_rad(), target_yaw_rate_rads);
 
     // if wpnav failed (because of lack of terrain data) switch back to pilot control for next iteration
     if (!wpnav_ok) {
@@ -290,32 +282,28 @@ void ModeZigZag::auto_control()
 // manual_control - process manual control
 void ModeZigZag::manual_control()
 {
-    float target_yaw_rate = 0.0f;
-    float target_climb_rate = 0.0f;
+    float target_yaw_rate_rads = 0.0f;
+    float target_climb_rate_ms = 0.0f;
 
     // process pilot inputs unless we are in radio failsafe
-    if (!copter.failsafe.radio) {
-        float target_roll, target_pitch;
-        // apply SIMPLE mode transform to pilot inputs
-        update_simple_mode();
+    float target_roll_rad, target_pitch_rad;
 
-        // convert pilot input to lean angles
-        get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+    // apply SIMPLE mode transform to pilot inputs
+    update_simple_mode();
 
-        // process pilot's roll and pitch input
-        loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate();
+    // convert pilot input to lean angles
+    get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, loiter_nav->get_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
 
-        // get pilot desired climb rate
-        target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-        // make sure the climb rate is in the given range, prevent floating point errors
-        target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
-    } else {
-        // clear out pilot desired acceleration in case radio failsafe event occurs and we
-        // do not switch to RTL for some reason
-        loiter_nav->clear_pilot_desired_acceleration();
-    }
+    // process pilot's roll and pitch input
+    loiter_nav->set_pilot_desired_acceleration_rad(target_roll_rad, target_pitch_rad);
+
+    // get pilot's desired yaw rate
+    target_yaw_rate_rads = get_pilot_desired_yaw_rate_rads();
+
+    // get pilot desired climb rate
+    target_climb_rate_ms = get_pilot_desired_climb_rate_ms();
+    // make sure the climb rate is in the given range, prevent floating point errors
+    target_climb_rate_ms = constrain_float(target_climb_rate_ms, -get_pilot_speed_dn_ms(), get_pilot_speed_up_ms());
 
     // relax loiter target if we might be landed
     if (copter.ap.land_complete_maybe) {
@@ -323,7 +311,7 @@ void ModeZigZag::manual_control()
     }
 
     // Loiter State Machine Determination
-    AltHoldModeState althold_state = get_alt_hold_state(target_climb_rate);
+    AltHoldModeState althold_state = get_alt_hold_state_D_ms(target_climb_rate_ms);
 
     // althold state machine
     switch (althold_state) {
@@ -331,28 +319,28 @@ void ModeZigZag::manual_control()
     case AltHoldModeState::MotorStopped:
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->reset_yaw_target_and_rate();
-        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
+        pos_control->D_relax_controller(0.0f);   // forces throttle output to decay to zero
         loiter_nav->init_target();
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(loiter_nav->get_roll_rad(), loiter_nav->get_pitch_rad(), target_yaw_rate_rads);
         break;
 
     case AltHoldModeState::Takeoff:
         // initiate take-off
         if (!takeoff.running()) {
-            takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+            takeoff.start_m(constrain_float(g.pilot_takeoff_alt_cm * 0.01, 0.0, 10.0));
         }
 
         // get avoidance adjusted climb rate
-        target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+        target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
 
         // run loiter controller
         loiter_nav->update();
 
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(loiter_nav->get_roll_rad(), loiter_nav->get_pitch_rad(), target_yaw_rate_rads);
 
         // set position controller targets adjusted for pilot input
-        takeoff.do_pilot_takeoff(target_climb_rate);
+        takeoff.do_pilot_takeoff_ms(target_climb_rate_ms);
         break;
 
     case AltHoldModeState::Landed_Ground_Idle:
@@ -362,8 +350,8 @@ void ModeZigZag::manual_control()
     case AltHoldModeState::Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms_smoothly();
         loiter_nav->init_target();
-        attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate);
-        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
+        attitude_control->input_thrust_vector_rate_heading_rads(loiter_nav->get_thrust_vector(), target_yaw_rate_rads);
+        pos_control->D_relax_controller(0.0f);   // forces throttle output to decay to zero
         break;
 
     case AltHoldModeState::Flying:
@@ -374,10 +362,10 @@ void ModeZigZag::manual_control()
         loiter_nav->update();
 
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(loiter_nav->get_roll_rad(), loiter_nav->get_pitch_rad(), target_yaw_rate_rads);
 
         // get avoidance adjusted climb rate
-        target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+        target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
 
 #if AP_RANGEFINDER_ENABLED
         // update the vertical offset based on the surface measurement
@@ -385,12 +373,12 @@ void ModeZigZag::manual_control()
 #endif
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);
+        pos_control->D_set_pos_target_from_climb_rate_ms(target_climb_rate_ms);
         break;
     }
 
     // run the vertical position controller and set output throttle
-    pos_control->update_z_controller();
+    pos_control->D_update_controller();
 }
 
 // return true if vehicle is within a small area around the destination
@@ -402,7 +390,7 @@ bool ModeZigZag::reached_destination()
     }
 
     // check distance to destination
-    if (wp_nav->get_wp_distance_to_destination() > ZIGZAG_WP_RADIUS_CM) {
+    if (wp_nav->get_wp_distance_to_destination_m() > ZIGZAG_WP_RADIUS_M) {
         return false;
     }
 
@@ -411,54 +399,54 @@ bool ModeZigZag::reached_destination()
     if (reach_wp_time_ms == 0) {
         reach_wp_time_ms = now;
     }
-    return ((now - reach_wp_time_ms) >= (uint16_t)constrain_int16(_wp_delay, 0, 127) * 1000);
+    return ((now - reach_wp_time_ms) >= (uint16_t)constrain_int16(_wp_delay_s, 0, 127) * 1000);
 }
 
 // calculate next destination according to vector A-B and current position
 // use_wpnav_alt should be true if waypoint controller's altitude target should be used, false for position control or current altitude target
-// terrain_alt is returned as true if the next_dest should be considered a terrain alt
-bool ModeZigZag::calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Vector3f& next_dest, bool& terrain_alt) const
+// is_terrain_alt is returned as true if the next_dest_ned_m.z is relative to the terrain surface
+bool ModeZigZag::calculate_next_dest_m(Destination ab_dest, bool use_wpnav_alt, Vector3p& next_dest_ned_m, bool& is_terrain_alt) const
 {
-    // define start_pos as either destination A or B
-    Vector2f start_pos = (ab_dest == Destination::A) ? dest_A : dest_B;
+    // define start_pos_ne_m as either destination A or B
+    Vector2p start_pos_ne_m = (ab_dest == Destination::A) ? dest_A_ne_m : dest_B_ne_m;
 
     // calculate vector from A to B
-    Vector2f AB_diff = dest_B - dest_A;
+    Vector2f AB_diff_ne_m = (dest_B_ne_m - dest_A_ne_m).tofloat();
 
     // check distance between A and B
-    if (is_zero(AB_diff.length_squared())) {
+    if (is_zero(AB_diff_ne_m.length_squared())) {
         return false;
     }
 
-    // get distance from vehicle to start_pos
-    const Vector2f curr_pos2d = pos_control->get_pos_desired_cm().xy().tofloat();
-    Vector2f veh_to_start_pos = curr_pos2d - start_pos;
+    // get distance from vehicle to start_pos_ne_m
+    const Vector2p curr_pos_ne_m = pos_control->get_pos_desired_NED_m().xy();
+    Vector2p veh_to_start_pos_ne_m = (curr_pos_ne_m - start_pos_ne_m);
 
-    // lengthen AB_diff so that it is at least as long as vehicle is from start point
+    // lengthen AB_diff_ne_m so that it is at least as long as vehicle is from start point
     // we need to ensure that the lines perpendicular to AB are long enough to reach the vehicle
     float scalar = 1.0f;
-    if (veh_to_start_pos.length_squared() > AB_diff.length_squared()) {
-        scalar = veh_to_start_pos.length() / AB_diff.length();
+    if (veh_to_start_pos_ne_m.length_squared() > AB_diff_ne_m.length_squared()) {
+        scalar = veh_to_start_pos_ne_m.length() / AB_diff_ne_m.length();
     }
 
-    // create a line perpendicular to AB but originating at start_pos
-    Vector2f perp1 = start_pos + Vector2f(-AB_diff[1] * scalar, AB_diff[0] * scalar);
-    Vector2f perp2 = start_pos + Vector2f(AB_diff[1] * scalar, -AB_diff[0] * scalar);
+    // create a line perpendicular to AB but originating at start_pos_ne_m
+    Vector2p perp1 = start_pos_ne_m + Vector2p(-AB_diff_ne_m[1] * scalar, AB_diff_ne_m[0] * scalar);
+    Vector2p perp2 = start_pos_ne_m + Vector2p(AB_diff_ne_m[1] * scalar, -AB_diff_ne_m[0] * scalar);
 
     // find the closest point on the perpendicular line
-    const Vector2f closest2d = Vector2f::closest_point(curr_pos2d, perp1, perp2);
-    next_dest.x = closest2d.x;
-    next_dest.y = closest2d.y;
+    const Vector2p closest2d_ne_m = Vector2p::closest_point(curr_pos_ne_m, perp1, perp2);
+    next_dest_ned_m.x = closest2d_ne_m.x;
+    next_dest_ned_m.y = closest2d_ne_m.y;
 
     if (use_wpnav_alt) {
         // get altitude target from waypoint controller
-        terrain_alt = wp_nav->origin_and_destination_are_terrain_alt();
-        next_dest.z = wp_nav->get_wp_destination().z;
+        is_terrain_alt = wp_nav->origin_and_destination_are_terrain_alt();
+        next_dest_ned_m.z = wp_nav->get_wp_destination_NED_m().z;
     } else {
-        terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
-        next_dest.z = pos_control->get_pos_desired_z_cm();
-        if (!terrain_alt) {
-            next_dest.z += pos_control->get_pos_terrain_cm();
+        is_terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
+        next_dest_ned_m.z = pos_control->get_pos_desired_NED_m().z;
+        if (!is_terrain_alt) {
+            next_dest_ned_m.z += pos_control->get_pos_terrain_D_m();
         }
     }
 
@@ -466,45 +454,46 @@ bool ModeZigZag::calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Ve
 }
 
 // calculate side destination according to vertical vector A-B and current position
-// terrain_alt is returned as true if the next_dest should be considered a terrain alt
-bool ModeZigZag::calculate_side_dest(Vector3f& next_dest, bool& terrain_alt) const
+// is_terrain_alt is returned as true if the next_dest_ned_m.z is relative to the terrain surfaces
+bool ModeZigZag::calculate_side_dest_m(Vector3p& next_dest_ned_m, bool& is_terrain_alt) const
 {
     // calculate vector from A to B
-    Vector2f AB_diff = dest_B - dest_A;
+    Vector2f AB_diff_ne_m = (dest_B_ne_m - dest_A_ne_m).tofloat();
 
     // calculate a vertical right or left vector for AB from the current yaw direction
-    Vector2f AB_side;
+    Vector2f AB_side_ne_m;
     if (zigzag_direction == Direction::RIGHT || zigzag_direction == Direction::LEFT) {
-        float yaw_ab_sign = (-ahrs.sin_yaw() * AB_diff[1]) + (ahrs.cos_yaw() * -AB_diff[0]);
+        float yaw_ab_sign = (-ahrs.sin_yaw() * AB_diff_ne_m[1]) + (ahrs.cos_yaw() * -AB_diff_ne_m[0]);
         if (is_positive(yaw_ab_sign * (zigzag_direction == Direction::RIGHT ? 1 : -1))) {
-            AB_side = Vector2f(AB_diff[1], -AB_diff[0]);
+            AB_side_ne_m = Vector2f(AB_diff_ne_m[1], -AB_diff_ne_m[0]);
         } else {
-            AB_side = Vector2f(-AB_diff[1], AB_diff[0]);
+            AB_side_ne_m = Vector2f(-AB_diff_ne_m[1], AB_diff_ne_m[0]);
         }
     } else {
-        float yaw_ab_sign = (ahrs.cos_yaw() * AB_diff[1]) + (ahrs.sin_yaw() * -AB_diff[0]);
+        float yaw_ab_sign = (ahrs.cos_yaw() * AB_diff_ne_m[1]) + (ahrs.sin_yaw() * -AB_diff_ne_m[0]);
         if (is_positive(yaw_ab_sign * (zigzag_direction == Direction::FORWARD ? 1 : -1))) {
-            AB_side = Vector2f(AB_diff[1], -AB_diff[0]);
+            AB_side_ne_m = Vector2f(AB_diff_ne_m[1], -AB_diff_ne_m[0]);
         } else {
-            AB_side = Vector2f(-AB_diff[1], AB_diff[0]);
+            AB_side_ne_m = Vector2f(-AB_diff_ne_m[1], AB_diff_ne_m[0]);
         }
     }
 
     // check distance the vertical vector between A and B
-    if (is_zero(AB_side.length_squared())) {
+    float AB_side_ne_m_length = AB_side_ne_m.length();
+    if (is_zero(AB_side_ne_m_length)) {
         return false;
     }
 
-    // adjust AB_side length to zigzag_side_dist
-    float scalar = constrain_float(_side_dist, 0.1f, 100.0f) * 100 / safe_sqrt(AB_side.length_squared());
+    // adjust AB_side_ne_m length to zigzag_side_dist
+    float scalar = constrain_float(_side_dist_m, 0.1, 100.0) / AB_side_ne_m_length;
 
-    // get distance from vehicle to start_pos
-    const Vector2f curr_pos2d = pos_control->get_pos_desired_cm().xy().tofloat();
-    next_dest.xy() = curr_pos2d + (AB_side * scalar);
+    // get distance from vehicle to start_pos_ne_m
+    const Vector3p curr_pos_ned_m = pos_control->get_pos_desired_NED_m();
+    next_dest_ned_m.xy() = curr_pos_ned_m.xy() + (AB_side_ne_m.topostype() * scalar);
 
     // if we have a downward facing range finder then use terrain altitude targets
-    terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
-    next_dest.z = pos_control->get_pos_desired_z_cm();
+    is_terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
+    next_dest_ned_m.z = curr_pos_ned_m.z;
 
     return true;
 }
@@ -530,8 +519,8 @@ void ModeZigZag::run_auto()
             line_count--;
             save_or_move_to_destination(ab_dest_stored);
         } else if (auto_stage == AutoState::SIDEWAYS) {
-            wp_nav->wp_and_spline_init();
-            if (wp_nav->set_wp_destination(current_dest, current_terr_alt)) {
+            wp_nav->wp_and_spline_init_m();
+            if (wp_nav->set_wp_destination_NED_m(current_dest_ned_m, current_is_terr_alt)) {
                 stage = AUTO;
                 reach_wp_time_ms = 0;
                 char const *dir[] = {"forward", "right", "backward", "left"};
@@ -576,17 +565,17 @@ void ModeZigZag::spray(bool b)
 #endif
 }
 
-uint32_t ModeZigZag::wp_distance() const
+float ModeZigZag::wp_distance_m() const
 {
-    return is_auto ? wp_nav->get_wp_distance_to_destination() : 0;
+    return is_auto ? wp_nav->get_wp_distance_to_destination_m() : 0.0f;
 }
-int32_t ModeZigZag::wp_bearing() const
+float ModeZigZag::wp_bearing_deg() const
 {
-    return is_auto ? wp_nav->get_wp_bearing_to_destination() : 0;
+    return is_auto ? degrees(wp_nav->get_wp_bearing_to_destination_rad()) : 0;
 }
-float ModeZigZag::crosstrack_error() const
+float ModeZigZag::crosstrack_error_m() const
 {
-    return is_auto ? wp_nav->crosstrack_error() : 0;
+    return is_auto ? wp_nav->crosstrack_error_m() : 0;
 }
 
 #endif // MODE_ZIGZAG_ENABLED

@@ -16,9 +16,11 @@
   simulator connector for webots simulator
 */
 
-#include "SIM_Webots.h"
+#include "SIM_config.h"
 
-#if HAL_SIM_WEBOTS_ENABLED
+#if AP_SIM_WEBOTS_ENABLED
+
+#include "SIM_Webots.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -535,4 +537,4 @@ void Webots::report_FPS(void)
     // }
 }
 
-#endif // HAL_SIM_WEBOTS_ENABLED
+#endif  // AP_SIM_WEBOTS_ENABLED

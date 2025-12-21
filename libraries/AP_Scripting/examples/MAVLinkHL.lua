@@ -5,21 +5,26 @@ This script requires 1 serial port:
 A "Script" serial port to connect directly to the GCS
 
 Usage:
+Use the "hl_mode" variable to control the behaviour of the script:
+0 = start enabled, can be disabled via MAV_CMD_CONTROL_HIGH_LATENCY
+1 = enabled on loss of telemetry link for 5 seconds (default)
+2 = start disabled, can be enabled via MAV_CMD_CONTROL_HIGH_LATENCY
+
 Use the MAVLink High Latency Control ("link hl on|off" in MAVProxy) to control
 whether to send or not
-The script will, however, automatically enable MAVLink High Latency Control upon start
+
+Change the use_mavlink2 variable to true to use MAVLink 2 instead of MAVLink 1
 
 Caveats:
 -This will send HIGH_LATENCY2 packets in place of HEARTBEAT packets
 -A single HIGH_LATENCY2 packet will be send every 5 sec
--MAVLink 1 will be used, as it's slightly more efficient (50 vs 52 bytes for a HL2 message)
 -The param SCR_VM_I_COUNT may need to be increased in some circumstances
+-This script does not handle MAVLink 2 signing, so it will not work with GCS that require signed packets
 
 Written by Stephen Dade (stephen_dade@hotmail.com)
 --]]
 
 ---@diagnostic disable: need-check-nil
----@diagnostic disable: cast-local-type
 
 
 local port = serial:find_serial(0)
@@ -34,8 +39,23 @@ port:set_flow_control(0)
 
 local time_last_tx = millis():tofloat() * 0.001
 
+local hl_mode = 0
+local link_lost_for = 0
+
+-- set to true to use MAVLink 2 instead of MAVLink 1
+local use_mavlink2 = false
+
 -- enable high latency mode from here, instead of having to enable from GCS
-gcs:enable_high_latency_connections(true)
+if hl_mode == 0 then
+    gcs:enable_high_latency_connections(true)
+end
+
+--[[
+Returns true if the value is NaN, false otherwise
+--]]
+local function isNaN (x)
+    return (x ~= x)
+  end
 
 --[[
 Lua Object for decoding and encoding MAVLink (V1 only) messages
@@ -48,7 +68,8 @@ local function MAVLinkProcessor()
         COMMAND_INT = 75,
         HIGH_LATENCY2 = 235,
         MISSION_ITEM_INT = 73,
-        SET_MODE = 11
+        SET_MODE = 11,
+        MISSION_SET_CURRENT = 41
     }
 
     -- private fields
@@ -58,6 +79,8 @@ local function MAVLinkProcessor()
     local _mavdecodestate = 0 -- 0=looking for marker, 1=getting header,2=getting payload,3=getting crc
     PROTOCOL_MARKER_V1 = 0xFE
     HEADER_LEN_V1 = 6
+    PROTOCOL_MARKER_V2 = 0xFD
+    HEADER_LEN_V2 = 10
     local _txseqid = 0
 
     -- AUTOGEN from MAVLink generator
@@ -67,6 +90,15 @@ local function MAVLinkProcessor()
     _crc_extra[235] = 0xb3
     _crc_extra[73] = 0x26
     _crc_extra[11] = 0x59
+    _crc_extra[41] = 0x1c
+
+    local _payload_size = {}
+    _payload_size[75] = 35
+    _payload_size[76] = 33
+    _payload_size[235] = 42
+    _payload_size[73] = 38
+    _payload_size[11] = 6
+    _payload_size[41] = 4
 
     local _messages = {}
     _messages[75] = { -- COMMAND_INT
@@ -102,6 +134,9 @@ local function MAVLinkProcessor()
     _messages[11] = { -- SET_MODE
         { "custom_mode", "<I4" }, { "target_system", "<B" }, { "base_mode", "<B" },
     }
+    _messages[41] = { -- MISSION_SET_CURRENT
+        { "seq", "<I2" }, { "target_system", "<B" }, { "target_component", "<B" },
+    }
     function self.getSeqID() return _txseqid end
 
     function self.generateCRC(buffer)
@@ -121,42 +156,61 @@ local function MAVLinkProcessor()
         -- returns true if a packet was decoded, false otherwise
         _mavbuffer = _mavbuffer .. string.char(byte)
 
-        -- parse buffer to find MAVLink packets
-        if #_mavbuffer == 1 and string.byte(_mavbuffer, 1) == PROTOCOL_MARKER_V1 and
-            _mavdecodestate == 0 then
-            -- we have a packet start
+        -- check if this is a start of packet
+        if _mavdecodestate == 0 and ((use_mavlink2 and byte == PROTOCOL_MARKER_V2) or (not use_mavlink2 and byte == PROTOCOL_MARKER_V1)) then
+            -- we have a packet start, discard the buffer before this byte
+            _mavbuffer = string.char(byte)
             _mavdecodestate = 1
-            return
+            return false
         end
 
         -- if we have a full header, try parsing
-        if #_mavbuffer == HEADER_LEN_V1 and _mavdecodestate == 1 then
+        if _mavdecodestate == 1 and ((not use_mavlink2 and #_mavbuffer == HEADER_LEN_V1) or (use_mavlink2 and #_mavbuffer == HEADER_LEN_V2)) then
             local read_marker = 1
             _, read_marker = string.unpack("<B", _mavbuffer, read_marker)
             _payload_len, read_marker = string.unpack("<B", _mavbuffer,
                                                       read_marker) -- payload is always the second byte
+            if use_mavlink2 then
+                -- ignore the 2 bytes of flags
+                read_marker = read_marker + 2
+            end
             -- fetch seq/sysid/compid
-            _mavresult.seq, _mavresult.sysid, _mavresult.compid, read_marker =
-                string.unpack("<BBB", _mavbuffer, read_marker)
-            -- fetch the message id
-            _mavresult.msgid, _ =
+            _mavresult.seq, read_marker =
                 string.unpack("<B", _mavbuffer, read_marker)
+            _mavresult.sysid, read_marker =
+                string.unpack("<B", _mavbuffer, read_marker)
+            _mavresult.compid, read_marker =
+                string.unpack("<B", _mavbuffer, read_marker)
+            -- fetch the message id
+            if use_mavlink2 then
+                _mavresult.msgid, _ =
+                    string.unpack("<I3", _mavbuffer, read_marker)
+            else
+                _mavresult.msgid, _ =
+                    string.unpack("<B", _mavbuffer, read_marker)
+            end
 
             _mavdecodestate = 2
-            return
+            return false
         end
 
         -- get payload
-        if _mavdecodestate == 2 and #_mavbuffer ==
+        if _mavdecodestate == 2 and not use_mavlink2 and #_mavbuffer ==
             (_payload_len + HEADER_LEN_V1) then
             _mavdecodestate = 3
             _mavresult.payload = string.sub(_mavbuffer, HEADER_LEN_V1 + 1)
-            return
+            return false
+        elseif _mavdecodestate == 2 and use_mavlink2 and  #_mavbuffer ==
+            (_payload_len + HEADER_LEN_V2) then
+            _mavdecodestate = 3
+            _mavresult.payload = string.sub(_mavbuffer, HEADER_LEN_V2 + 1)
+            return false
         end
 
         -- get crc, then process if CRC ok
-        if _mavdecodestate == 3 and #_mavbuffer ==
-            (_payload_len + HEADER_LEN_V1 + 2) then
+        if _mavdecodestate == 3 and ((not use_mavlink2 and #_mavbuffer ==
+            (_payload_len + HEADER_LEN_V1 + 2)) or (use_mavlink2 and
+            #_mavbuffer == (_payload_len + HEADER_LEN_V2 + 2))) then
             _mavdecodestate = 0
             _mavresult.crc = string.sub(_mavbuffer, -2, -1)
 
@@ -179,7 +233,20 @@ local function MAVLinkProcessor()
                                       self.bytesToString(_mavbuffer, -2, -1) ..
                                       ", " .. self.bytesToString(calccrc, 1, 2))
                     _mavbuffer = ""
-                    return
+                    return true
+                end
+            end
+
+            -- verify payload length before unpacking
+            if #_mavresult.payload ~= _payload_size[_mavresult.msgid] then
+                if use_mavlink2 then
+                    -- re-add the truncated 0 bytes
+                    _mavresult.payload = _mavresult.payload ..
+                        string.rep("\0", _payload_size[_mavresult.msgid] - #_mavresult.payload)
+                else
+                    _mavbuffer = ""
+                    _mavdecodestate = 0
+                    return true
                 end
             end
 
@@ -199,6 +266,7 @@ local function MAVLinkProcessor()
                                                              offset)
                 end
             end
+
             -- only process COMMAND_LONG and COMMAND_INT and  MISSION_ITEM_INT messages
             if _mavresult.msgid == self.MISSION_ITEM_INT then
                 -- goto somewhere (guided mode target)
@@ -216,60 +284,70 @@ local function MAVLinkProcessor()
                 end
             elseif _mavresult.msgid == self.SET_MODE then
                 vehicle:set_mode(_mavresult.custom_mode)
-            elseif _mavresult.msgid == self.COMMAND_LONG or _mavresult.msgid ==
-                self.COMMAND_INT then
-                if _mavresult.command == 400 then -- MAV_CMD_COMPONENT_ARM_DISARM
-                    if _mavresult.param1 == 1 then
-                        arming:arm()
-                    elseif _mavresult.param1 == 0 then
-                        arming:disarm()
-                    end
-                elseif _mavresult.command == 176 then -- MAV_CMD_DO_SET_MODE
-                    vehicle:set_mode(_mavresult.param2)
-                elseif _mavresult.command == 20 then -- MAV_CMD_NAV_RETURN_TO_LAUNCH (Mode RTL) may vary depending on frame
-                    if FWVersion:type() == 2 then -- copter
-                        vehicle:set_mode(6)
-                    elseif FWVersion:type() == 3 then -- plane
-                        vehicle:set_mode(11)
-                    elseif FWVersion:type() == 1 then -- rover
-                        vehicle:set_mode(11)
-                    end
-                elseif _mavresult.command == 21 then -- MAV_CMD_NAV_LAND (Mode LAND) may vary depending on frame
-                    if FWVersion:type() == 2 then -- copter
-                        vehicle:set_mode(9)
-                    elseif FWVersion:type() == 12 then -- blimp
-                        vehicle:set_mode(0)
-                    end
-                elseif _mavresult.command == 22 then -- MAV_CMD_NAV_TAKEOFF
-                    vehicle:start_takeoff(_mavresult.param7)
-                elseif _mavresult.command == 84 then -- MAV_CMD_NAV_VTOL_TAKEOFF
-                    vehicle:start_takeoff(_mavresult.param7)
-                elseif _mavresult.command == 85 then -- MAV_CMD_NAV_VTOL_LAND (Mode QLAND)
-                    vehicle:set_mode(20)
-                elseif _mavresult.command == 300 then -- MAV_CMD_MISSION_START --mode auto and then start mission
-                    if FWVersion:type() == 2 then -- copter
-                        vehicle:set_mode(3)
-                    elseif FWVersion:type() == 3 then -- plane
-                        vehicle:set_mode(10)
-                    elseif FWVersion:type() == 1 then -- rover
-                        vehicle:set_mode(10)
-                    elseif FWVersion:type() == 7 then -- sub
-                        vehicle:set_mode(3)
-                    end
-                elseif _mavresult.command == 2600 then -- MAV_CMD_CONTROL_HIGH_LATENCY
-                    if _mavresult.param1 == 1 then
-                        gcs:enable_high_latency_connections(true)
-                    else
-                        gcs:enable_high_latency_connections(false)
-                    end
+            elseif _mavresult.msgid == self.COMMAND_LONG then
+                --- need to do a little conversion here. Taken from convert_COMMAND_LONG_to_COMMAND_INT()
+                local command_long_stores_location = 0
+                if (_mavresult.command == 179 or       -- MAV_CMD_DO_SET_HOME
+                    _mavresult.command ==  201 or      -- MAV_CMD_DO_SET_ROI
+                    _mavresult.command ==  195 or      -- MAV_CMD_DO_SET_ROI_LOCATION
+                    _mavresult.command ==  192 or      -- MAV_CMD_DO_REPOSITION
+                    _mavresult.command ==  43003) then -- MAV_CMD_EXTERNAL_POSITION_ESTIMATE
+                    command_long_stores_location = 1
                 end
+                local int_frame_conv = 0       -- MAV_FRAME_GLOBAL
+                if (_mavresult.command ==  195) then       -- MAV_CMD_DO_SET_ROI_LOCATION
+                    int_frame_conv = 3         -- MAV_FRAME_GLOBAL_RELATIVE_ALT
+                elseif (_mavresult.command ==  179) then   -- MAV_CMD_DO_SET_HOME
+                    int_frame_conv = 0        -- MAV_FRAME_GLOBAL
+                elseif (_mavresult.command ==  201) then   -- MAV_CMD_DO_SET_ROI
+                    int_frame_conv = 3        -- MAV_FRAME_GLOBAL_RELATIVE_ALT
+                elseif (_mavresult.command ==  42006) then   -- MAV_CMD_FIXED_MAG_CAL_YAW
+                    int_frame_conv = 3        -- MAV_FRAME_GLOBAL_RELATIVE_ALT
+                end
+                local int_x = _mavresult.param5
+                local int_y = _mavresult.param6
+                if isNaN(int_x) then
+                    int_x = 0
+                end
+                if isNaN(int_y) then
+                    int_y = 0
+                end
+                if command_long_stores_location == 1 then
+                    int_x = 1E7 * int_x
+                    int_y = 1E7 * int_y
+                end
+                gcs:run_command_int(_mavresult.command, { p1 = _mavresult.param1,
+                                                          p2 = _mavresult.param2,
+                                                          p3 = _mavresult.param3,
+                                                          p4 = _mavresult.param4,
+                                                          x = int_x,
+                                                          y = int_y,
+                                                          z = _mavresult.param7,
+                                                          int_frame = int_frame_conv,
+                                                          current = 0,
+                                                          autocontinue = 0 })
+            elseif _mavresult.msgid == self.COMMAND_INT then
+                gcs:run_command_int(_mavresult.command, { p1 = _mavresult.param1,
+                                                          p2 = _mavresult.param2,
+                                                          p3 = _mavresult.param3,
+                                                          p4 = _mavresult.param4,
+                                                          x = _mavresult.x,
+                                                          y = _mavresult.y,
+                                                          z = _mavresult.z,
+                                                          frame = _mavresult.frame })
+            elseif _mavresult.msgid == self.MISSION_SET_CURRENT then
+                mission:set_current_cmd(_mavresult.seq)
             end
             _mavbuffer = ""
             return true
         end
 
         -- packet too big ... start again
-        if #_mavbuffer > 263 then _mavbuffer = "" end
+        if (not use_mavlink2 and #_mavbuffer > 263) or (use_mavlink2 and #_mavbuffer > 280) then 
+            _mavbuffer = ""
+            _mavdecodestate = 0
+            return true
+        end
         return false
     end
 
@@ -282,7 +360,7 @@ local function MAVLinkProcessor()
     end
 
     function self.createMAVLink(message, msgid)
-        -- generate a mavlink message (V1 only)
+        -- generate a mavlink message
 
         -- create the payload
         local message_map = _messages[msgid]
@@ -312,10 +390,28 @@ local function MAVLinkProcessor()
 
         local payload = string.pack(packString, table.unpack(packedTable))
 
+        --if mavlink2, truncate any trailing 0 bytes
+        if use_mavlink2 then
+            local payload_len = #payload
+            while payload_len > 0 and payload:byte(payload_len) == 0 do
+                payload = string.sub(payload, 1, payload_len - 1)
+                payload_len = payload_len - 1
+            end
+        end
+
         -- create the header. Assume componentid of 1
-        local header = string.pack('<BBBBBB', PROTOCOL_MARKER_V1, #payload,
-                                   _txseqid, param:get('SYSID_THISMAV'), 1,
-                                   msgid)
+        local header
+        if use_mavlink2 then
+            -- MAVLink 2 header
+            header = string.pack('<BBBBBBBI3', PROTOCOL_MARKER_V2, #payload,
+                                0, 0, _txseqid, param:get('MAV_SYSID'), 1,
+                                msgid)
+        else
+            -- MAVLink 1 header
+            header = string.pack('<BBBBBB', PROTOCOL_MARKER_V1, #payload,
+                                _txseqid, param:get('MAV_SYSID'), 1,
+                                msgid)
+        end
 
         -- generate the CRC
         local crc_extra_msg = _crc_extra[msgid]
@@ -372,11 +468,25 @@ end
 local mavlink = MAVLinkProcessor()
 
 function HLSatcom()
-    -- read in any bytes from GCS and and send to MAVLink processor
-    -- only read in 1 packet at a time to avoid time overruns
-    while port:available() > 0 do
-        local byte = port:read()
-        if mavlink.parseMAVLink(byte) then break end
+    -- read in any bytes from GCS and and send to MAVLink processor, up to max of 100 bytes at a time to prevent timeouts
+    local n_bytes = math.min(port:available():toint(), 100)
+    while n_bytes > 0 do
+        read = port:read()
+        n_bytes = n_bytes - 1
+        mavlink.parseMAVLink(read)
+    end
+
+    -- if mode 1 and there's been no mavlink traffic for 5000 ms, enable high latency
+    if hl_mode == 1 then
+        -- link lost time = boot time - GCS last seen time
+        link_lost_for = (millis()- gcs:last_seen()):toint()
+        -- gcs:last_seen() is set to millis() during boot (on plane). 0 on rover/copter
+        -- So if it's less than 10000 assume no GCS packet received since boot
+        if link_lost_for > 5000 and not gcs:get_high_latency_status() and gcs:last_seen() > 10000 then
+            gcs:enable_high_latency_connections(true)
+        elseif link_lost_for < 5000 and gcs:get_high_latency_status() then
+            gcs:enable_high_latency_connections(false)
+        end
     end
 
     -- send HL2 packet every 5 sec
@@ -434,10 +544,10 @@ function HLSatcom()
             hl2.failure_flags = hl2.failure_flags + 256 -- HL_FAILURE_FLAG_RC_RECEIVER
         end
 
-        hl2.heading = math.floor(wrap_360(math.deg(ahrs:get_yaw())) / 2)
+        hl2.heading = math.floor(wrap_360(math.deg(ahrs:get_yaw_rad())) / 2)
         hl2.throttle = math.floor(gcs:get_hud_throttle())
-        if ahrs:airspeed_estimate() ~= nil then
-            hl2.airspeed = math.abs(math.floor(ahrs:airspeed_estimate() * 5))
+        if ahrs:airspeed_EAS() ~= nil then
+            hl2.airspeed = math.abs(math.floor(ahrs:airspeed_EAS() * 5))
         end
         -- hl2.airspeed_sp = 0
         hl2.groundspeed = math.abs(math.floor(

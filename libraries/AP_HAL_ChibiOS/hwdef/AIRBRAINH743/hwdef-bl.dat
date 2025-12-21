@@ -1,0 +1,42 @@
+
+# hw definition file for processing by chibios_hwdef.py
+# for AIRBRAINH743 hardware.
+# thanks to betaflight for pin information
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_AIRBRAIN_H743
+
+# crystal frequency, setup to use external oscillator
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 2048
+
+# bootloader starts at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 384
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1
+
+# PA10 IO-debug-console
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# default to all pins low to avoid ESD issues
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+
+# Chip select pins
+PD4 FLASH1_CS CS
+PA3 GYRO1_CS CS
+
+PD11 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 0

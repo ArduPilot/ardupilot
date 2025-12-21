@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# flake8: noqa
+
 import enum
 import io
 import sys
@@ -81,6 +83,7 @@ class BoardSubType(enum.Enum):
     LINUX_VNAV = 1024
     LINUX_OBAL = 1025
     LINUX_CANZERO = 1026
+    LINUX_T3_GEM_O1 = 1029
     CHIBIOS_SKYVIPER_F412 = 5000
     CHIBIOS_FMUV3 = 5001
     CHIBIOS_FMUV4 = 5002

@@ -1,0 +1,662 @@
+
+# simple file seek
+[cases.test_seek_read]
+defines = [
+    {COUNT=132, SKIP=4},
+    {COUNT=132, SKIP=128},
+    {COUNT=200, SKIP=10},
+    {COUNT=200, SKIP=100},
+    {COUNT=4,   SKIP=1},
+    {COUNT=4,   SKIP=2},
+]
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, "kitty",
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND) => 0;
+    size_t size = strlen("kittycatcat");
+    uint8_t buffer[1024];
+    memcpy(buffer, "kittycatcat", size);
+    for (int j = 0; j < COUNT; j++) {
+        lfs_file_write(&lfs, &file, buffer, size);
+    }
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_file_open(&lfs, &file, "kitty", LFS_O_RDONLY) => 0;
+
+    lfs_soff_t pos = -1;
+    size = strlen("kittycatcat");
+    for (int i = 0; i < SKIP; i++) {
+        lfs_file_read(&lfs, &file, buffer, size) => size;
+        memcmp(buffer, "kittycatcat", size) => 0;
+        pos = lfs_file_tell(&lfs, &file);
+    }
+    assert(pos >= 0);
+
+    lfs_file_seek(&lfs, &file, pos, LFS_SEEK_SET) => pos;
+    lfs_file_read(&lfs, &file, buffer, size) => size;
+    memcmp(buffer, "kittycatcat", size) => 0;
+
+    lfs_file_rewind(&lfs, &file) => 0;
+    lfs_file_read(&lfs, &file, buffer, size) => size;
+    memcmp(buffer, "kittycatcat", size) => 0;
+
+    lfs_file_seek(&lfs, &file, 0, LFS_SEEK_CUR) => size;
+    lfs_file_read(&lfs, &file, buffer, size) => size;
+    memcmp(buffer, "kittycatcat", size) => 0;
+
+    lfs_file_seek(&lfs, &file, size, LFS_SEEK_CUR) => 3*size;
+    lfs_file_read(&lfs, &file, buffer, size) => size;
+    memcmp(buffer, "kittycatcat", size) => 0;
+
+    lfs_file_seek(&lfs, &file, pos, LFS_SEEK_SET) => pos;
+    lfs_file_read(&lfs, &file, buffer, size) => size;
+    memcmp(buffer, "kittycatcat", size) => 0;
+
+    lfs_file_seek(&lfs, &file, -size, LFS_SEEK_CUR) => pos;
+    lfs_file_read(&lfs, &file, buffer, size) => size;
+    memcmp(buffer, "kittycatcat", size) => 0;
+
+    lfs_file_seek(&lfs, &file, -size, LFS_SEEK_END) >= 0 => 1;
+    lfs_file_read(&lfs, &file, buffer, size) => size;
+    memcmp(buffer, "kittycatcat", size) => 0;
+
+    size = lfs_file_size(&lfs, &file);
+    lfs_file_seek(&lfs, &file, 0, LFS_SEEK_CUR) => size;
+
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+# simple file seek and write
+[cases.test_seek_write]
+defines = [
+    {COUNT=132, SKIP=4},
+    {COUNT=132, SKIP=128},
+    {COUNT=200, SKIP=10},
+    {COUNT=200, SKIP=100},
+    {COUNT=4,   SKIP=1},
+    {COUNT=4,   SKIP=2},
+]
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, "kitty",
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND) => 0;
+    size_t size = strlen("kittycatcat");
+    uint8_t buffer[1024];
+    memcpy(buffer, "kittycatcat", size);
+    for (int j = 0; j < COUNT; j++) {
+        lfs_file_write(&lfs, &file, buffer, size);
+    }
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_file_open(&lfs, &file, "kitty", LFS_O_RDWR) => 0;
+
+    lfs_soff_t pos = -1;
+    size = strlen("kittycatcat");
+    for (int i = 0; i < SKIP; i++) {
+        lfs_file_read(&lfs, &file, buffer, size) => size;
+        memcmp(buffer, "kittycatcat", size) => 0;
+        pos = lfs_file_tell(&lfs, &file);
+    }
+    assert(pos >= 0);
+
+    memcpy(buffer, "doggodogdog", size);
+    lfs_file_seek(&lfs, &file, pos, LFS_SEEK_SET) => pos;
+    lfs_file_write(&lfs, &file, buffer, size) => size;
+
+    lfs_file_seek(&lfs, &file, pos, LFS_SEEK_SET) => pos;
+    lfs_file_read(&lfs, &file, buffer, size) => size;
+    memcmp(buffer, "doggodogdog", size) => 0;
+
+    lfs_file_rewind(&lfs, &file) => 0;
+    lfs_file_read(&lfs, &file, buffer, size) => size;
+    memcmp(buffer, "kittycatcat", size) => 0;
+
+    lfs_file_seek(&lfs, &file, pos, LFS_SEEK_SET) => pos;
+    lfs_file_read(&lfs, &file, buffer, size) => size;
+    memcmp(buffer, "doggodogdog", size) => 0;
+
+    lfs_file_seek(&lfs, &file, -size, LFS_SEEK_END) >= 0 => 1;
+    lfs_file_read(&lfs, &file, buffer, size) => size;
+    memcmp(buffer, "kittycatcat", size) => 0;
+
+    size = lfs_file_size(&lfs, &file);
+    lfs_file_seek(&lfs, &file, 0, LFS_SEEK_CUR) => size;
+
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+# boundary seek and reads
+[cases.test_seek_boundary_read]
+defines.COUNT = 132
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, "kitty",
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND) => 0;
+    size_t size = strlen("kittycatcat");
+    uint8_t buffer[1024];
+    memcpy(buffer, "kittycatcat", size);
+    for (int j = 0; j < COUNT; j++) {
+        lfs_file_write(&lfs, &file, buffer, size);
+    }
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_file_open(&lfs, &file, "kitty", LFS_O_RDONLY) => 0;
+
+    size = strlen("kittycatcat");
+    const lfs_soff_t offsets[] = {
+        512,
+        1024-4,
+        512+1,
+        1024-4+1,
+        512-1,
+        1024-4-1,
+
+        512-strlen("kittycatcat"),
+        1024-4-strlen("kittycatcat"),
+        512-strlen("kittycatcat")+1,
+        1024-4-strlen("kittycatcat")+1,
+        512-strlen("kittycatcat")-1,
+        1024-4-strlen("kittycatcat")-1,
+
+        strlen("kittycatcat")*(COUNT-2)-1,
+    };
+
+    for (unsigned i = 0; i < sizeof(offsets) / sizeof(offsets[0]); i++) {
+        lfs_soff_t off = offsets[i];
+        // read @ offset
+        lfs_file_seek(&lfs, &file, off, LFS_SEEK_SET) => off;
+        lfs_file_read(&lfs, &file, buffer, size) => size;
+        memcmp(buffer,
+                &"kittycatcatkittycatcat"[off % strlen("kittycatcat")],
+                size) => 0;
+        // read after
+        lfs_file_seek(&lfs, &file, off+strlen("kittycatcat")+1, LFS_SEEK_SET)
+                => off+strlen("kittycatcat")+1;
+        lfs_file_read(&lfs, &file, buffer, size) => size;
+        memcmp(buffer,
+                &"kittycatcatkittycatcat"[(off+1) % strlen("kittycatcat")],
+                size) => 0;
+        // read before
+        lfs_file_seek(&lfs, &file, off-strlen("kittycatcat")-1, LFS_SEEK_SET)
+                => off-strlen("kittycatcat")-1;
+        lfs_file_read(&lfs, &file, buffer, size) => size;
+        memcmp(buffer,
+                &"kittycatcatkittycatcat"[(off-1) % strlen("kittycatcat")],
+                size) => 0;
+
+        // read @ 0
+        lfs_file_seek(&lfs, &file, 0, LFS_SEEK_SET) => 0;
+        lfs_file_read(&lfs, &file, buffer, size) => size;
+        memcmp(buffer, "kittycatcat", size) => 0;
+
+        // read @ offset
+        lfs_file_seek(&lfs, &file, off, LFS_SEEK_SET) => off;
+        lfs_file_read(&lfs, &file, buffer, size) => size;
+        memcmp(buffer,
+                &"kittycatcatkittycatcat"[off % strlen("kittycatcat")],
+                size) => 0;
+        // read after
+        lfs_file_seek(&lfs, &file, off+strlen("kittycatcat")+1, LFS_SEEK_SET)
+                => off+strlen("kittycatcat")+1;
+        lfs_file_read(&lfs, &file, buffer, size) => size;
+        memcmp(buffer,
+                &"kittycatcatkittycatcat"[(off+1) % strlen("kittycatcat")],
+                size) => 0;
+        // read before
+        lfs_file_seek(&lfs, &file, off-strlen("kittycatcat")-1, LFS_SEEK_SET)
+                => off-strlen("kittycatcat")-1;
+        lfs_file_read(&lfs, &file, buffer, size) => size;
+        memcmp(buffer,
+                &"kittycatcatkittycatcat"[(off-1) % strlen("kittycatcat")],
+                size) => 0;
+
+        // sync
+        lfs_file_sync(&lfs, &file) => 0;
+
+        // read @ 0
+        lfs_file_seek(&lfs, &file, 0, LFS_SEEK_SET) => 0;
+        lfs_file_read(&lfs, &file, buffer, size) => size;
+        memcmp(buffer, "kittycatcat", size) => 0;
+
+        // read @ offset
+        lfs_file_seek(&lfs, &file, off, LFS_SEEK_SET) => off;
+        lfs_file_read(&lfs, &file, buffer, size) => size;
+        memcmp(buffer,
+                &"kittycatcatkittycatcat"[off % strlen("kittycatcat")],
+                size) => 0;
+        // read after
+        lfs_file_seek(&lfs, &file, off+strlen("kittycatcat")+1, LFS_SEEK_SET)
+                => off+strlen("kittycatcat")+1;
+        lfs_file_read(&lfs, &file, buffer, size) => size;
+        memcmp(buffer,
+                &"kittycatcatkittycatcat"[(off+1) % strlen("kittycatcat")],
+                size) => 0;
+        // read before
+        lfs_file_seek(&lfs, &file, off-strlen("kittycatcat")-1, LFS_SEEK_SET)
+                => off-strlen("kittycatcat")-1;
+        lfs_file_read(&lfs, &file, buffer, size) => size;
+        memcmp(buffer,
+                &"kittycatcatkittycatcat"[(off-1) % strlen("kittycatcat")],
+                size) => 0;
+    }
+
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+# boundary seek and writes
+[cases.test_seek_boundary_write]
+defines.COUNT = 132
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, "kitty",
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND) => 0;
+    size_t size = strlen("kittycatcat");
+    uint8_t buffer[1024];
+    memcpy(buffer, "kittycatcat", size);
+    for (int j = 0; j < COUNT; j++) {
+        lfs_file_write(&lfs, &file, buffer, size);
+    }
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_file_open(&lfs, &file, "kitty", LFS_O_RDWR) => 0;
+
+    size = strlen("hedgehoghog");
+    const lfs_soff_t offsets[] = {
+        512,
+        1024-4,
+        512+1,
+        1024-4+1,
+        512-1,
+        1024-4-1,
+
+        512-strlen("kittycatcat"),
+        1024-4-strlen("kittycatcat"),
+        512-strlen("kittycatcat")+1,
+        1024-4-strlen("kittycatcat")+1,
+        512-strlen("kittycatcat")-1,
+        1024-4-strlen("kittycatcat")-1,
+
+        strlen("kittycatcat")*(COUNT-2)-1,
+    };
+
+    for (unsigned i = 0; i < sizeof(offsets) / sizeof(offsets[0]); i++) {
+        lfs_soff_t off = offsets[i];
+        // write @ offset
+        memcpy(buffer, "hedgehoghog", size);
+        lfs_file_seek(&lfs, &file, off, LFS_SEEK_SET) => off;
+        lfs_file_write(&lfs, &file, buffer, size) => size;
+
+        // read @ offset
+        lfs_file_seek(&lfs, &file, off, LFS_SEEK_SET) => off;
+        lfs_file_read(&lfs, &file, buffer, size) => size;
+        memcmp(buffer, "hedgehoghog", size) => 0;
+
+        // read @ 0
+        lfs_file_seek(&lfs, &file, 0, LFS_SEEK_SET) => 0;
+        lfs_file_read(&lfs, &file, buffer, size) => size;
+        memcmp(buffer, "kittycatcat", size) => 0;
+
+        // read @ offset
+        lfs_file_seek(&lfs, &file, off, LFS_SEEK_SET) => off;
+        lfs_file_read(&lfs, &file, buffer, size) => size;
+        memcmp(buffer, "hedgehoghog", size) => 0;
+
+        lfs_file_sync(&lfs, &file) => 0;
+
+        // read @ 0
+        lfs_file_seek(&lfs, &file, 0, LFS_SEEK_SET) => 0;
+        lfs_file_read(&lfs, &file, buffer, size) => size;
+        memcmp(buffer, "kittycatcat", size) => 0;
+
+        // read @ offset
+        lfs_file_seek(&lfs, &file, off, LFS_SEEK_SET) => off;
+        lfs_file_read(&lfs, &file, buffer, size) => size;
+        memcmp(buffer, "hedgehoghog", size) => 0;
+    }
+
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+# out of bounds seek
+[cases.test_seek_out_of_bounds]
+defines = [
+    {COUNT=132, SKIP=4},
+    {COUNT=132, SKIP=128},
+    {COUNT=200, SKIP=10},
+    {COUNT=200, SKIP=100},
+    {COUNT=4,   SKIP=2},
+    {COUNT=4,   SKIP=3},
+]
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, "kitty",
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND) => 0;
+    size_t size = strlen("kittycatcat");
+    uint8_t buffer[1024];
+    memcpy(buffer, "kittycatcat", size);
+    for (int j = 0; j < COUNT; j++) {
+        lfs_file_write(&lfs, &file, buffer, size);
+    }
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_file_open(&lfs, &file, "kitty", LFS_O_RDWR) => 0;
+
+    size = strlen("kittycatcat");
+    lfs_file_size(&lfs, &file) => COUNT*size;
+    lfs_file_seek(&lfs, &file, (COUNT+SKIP)*size,
+            LFS_SEEK_SET) => (COUNT+SKIP)*size;
+    lfs_file_read(&lfs, &file, buffer, size) => 0;
+
+    memcpy(buffer, "porcupineee", size);
+    lfs_file_write(&lfs, &file, buffer, size) => size;
+
+    lfs_file_seek(&lfs, &file, (COUNT+SKIP)*size,
+            LFS_SEEK_SET) => (COUNT+SKIP)*size;
+    lfs_file_read(&lfs, &file, buffer, size) => size;
+    memcmp(buffer, "porcupineee", size) => 0;
+
+    lfs_file_seek(&lfs, &file, COUNT*size,
+            LFS_SEEK_SET) => COUNT*size;
+    lfs_file_read(&lfs, &file, buffer, size) => size;
+    memcmp(buffer, "\0\0\0\0\0\0\0\0\0\0\0", size) => 0;
+
+    lfs_file_seek(&lfs, &file, -((COUNT+SKIP)*size),
+            LFS_SEEK_CUR) => LFS_ERR_INVAL;
+    lfs_file_tell(&lfs, &file) => (COUNT+1)*size;
+
+    lfs_file_seek(&lfs, &file, -((COUNT+2*SKIP)*size),
+            LFS_SEEK_END) => LFS_ERR_INVAL;
+    lfs_file_tell(&lfs, &file) => (COUNT+1)*size;
+
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+# inline write and seek
+[cases.test_seek_inline_write]
+defines.SIZE = [2, 4, 128, 132]
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, "tinykitty",
+            LFS_O_RDWR | LFS_O_CREAT) => 0;
+    int j = 0;
+    int k = 0;
+
+    uint8_t buffer[1024];
+    memcpy(buffer, "abcdefghijklmnopqrstuvwxyz", 26);
+    for (unsigned i = 0; i < SIZE; i++) {
+        lfs_file_write(&lfs, &file, &buffer[j++ % 26], 1) => 1;
+        lfs_file_tell(&lfs, &file) => i+1;
+        lfs_file_size(&lfs, &file) => i+1;
+    }
+
+    lfs_file_seek(&lfs, &file, 0, LFS_SEEK_SET) => 0;
+    lfs_file_tell(&lfs, &file) => 0;
+    lfs_file_size(&lfs, &file) => SIZE;
+    for (unsigned i = 0; i < SIZE; i++) {
+        uint8_t c;
+        lfs_file_read(&lfs, &file, &c, 1) => 1;
+        c => buffer[k++ % 26];
+    }
+
+    lfs_file_sync(&lfs, &file) => 0;
+    lfs_file_tell(&lfs, &file) => SIZE;
+    lfs_file_size(&lfs, &file) => SIZE;
+
+    lfs_file_seek(&lfs, &file, 0, LFS_SEEK_SET) => 0;
+    for (unsigned i = 0; i < SIZE; i++) {
+        lfs_file_write(&lfs, &file, &buffer[j++ % 26], 1) => 1;
+        lfs_file_tell(&lfs, &file) => i+1;
+        lfs_file_size(&lfs, &file) => SIZE;
+        lfs_file_sync(&lfs, &file) => 0;
+        lfs_file_tell(&lfs, &file) => i+1;
+        lfs_file_size(&lfs, &file) => SIZE;
+        if (i < SIZE-2) {
+            uint8_t c[3];
+            lfs_file_seek(&lfs, &file, -1, LFS_SEEK_CUR) => i;
+            lfs_file_read(&lfs, &file, &c, 3) => 3;
+            lfs_file_tell(&lfs, &file) => i+3;
+            lfs_file_size(&lfs, &file) => SIZE;
+            lfs_file_seek(&lfs, &file, i+1, LFS_SEEK_SET) => i+1;
+            lfs_file_tell(&lfs, &file) => i+1;
+            lfs_file_size(&lfs, &file) => SIZE;
+        }
+    }
+
+    lfs_file_seek(&lfs, &file, 0, LFS_SEEK_SET) => 0;
+    lfs_file_tell(&lfs, &file) => 0;
+    lfs_file_size(&lfs, &file) => SIZE;
+    for (unsigned i = 0; i < SIZE; i++) {
+        uint8_t c;
+        lfs_file_read(&lfs, &file, &c, 1) => 1;
+        c => buffer[k++ % 26];
+    }
+
+    lfs_file_sync(&lfs, &file) => 0;
+    lfs_file_tell(&lfs, &file) => SIZE;
+    lfs_file_size(&lfs, &file) => SIZE;
+
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+# file seek and write with power-loss
+[cases.test_seek_reentrant_write]
+# must be power-of-2 for quadratic probing to be exhaustive
+defines.COUNT = [4, 64, 128]
+reentrant = true
+defines.POWERLOSS_BEHAVIOR = [
+    'LFS_EMUBD_POWERLOSS_NOOP',
+    'LFS_EMUBD_POWERLOSS_OOO',
+]
+code = '''
+    lfs_t lfs;
+    int err = lfs_mount(&lfs, cfg);
+    if (err) {
+        lfs_format(&lfs, cfg) => 0;
+        lfs_mount(&lfs, cfg) => 0;
+    }
+    lfs_file_t file;
+    uint8_t buffer[1024];
+    err = lfs_file_open(&lfs, &file, "kitty", LFS_O_RDONLY);
+    assert(!err || err == LFS_ERR_NOENT);
+    if (!err) {
+        if (lfs_file_size(&lfs, &file) != 0) {
+            lfs_file_size(&lfs, &file) => 11*COUNT;
+            for (int j = 0; j < COUNT; j++) {
+                memset(buffer, 0, 11+1);
+                lfs_file_read(&lfs, &file, buffer, 11) => 11;
+                assert(memcmp(buffer, "kittycatcat", 11) == 0 ||
+                       memcmp(buffer, "doggodogdog", 11) == 0);
+            }
+        }
+        lfs_file_close(&lfs, &file) => 0;
+    }
+
+    lfs_file_open(&lfs, &file, "kitty", LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    if (lfs_file_size(&lfs, &file) == 0) {
+        for (int j = 0; j < COUNT; j++) {
+            strcpy((char*)buffer, "kittycatcat");
+            size_t size = strlen((char*)buffer);
+            lfs_file_write(&lfs, &file, buffer, size) => size;
+        }
+    }
+    lfs_file_close(&lfs, &file) => 0;
+
+    strcpy((char*)buffer, "doggodogdog");
+    size_t size = strlen((char*)buffer);
+
+    lfs_file_open(&lfs, &file, "kitty", LFS_O_RDWR) => 0;
+    lfs_file_size(&lfs, &file) => COUNT*size;
+    // seek and write using quadratic probing to touch all
+    // 11-byte words in the file
+    lfs_off_t off = 0;
+    for (int j = 0; j < COUNT; j++) {
+        off = (5*off + 1) % COUNT;
+        lfs_file_seek(&lfs, &file, off*size, LFS_SEEK_SET) => off*size;
+        lfs_file_read(&lfs, &file, buffer, size) => size;
+        assert(memcmp(buffer, "kittycatcat", size) == 0 ||
+               memcmp(buffer, "doggodogdog", size) == 0);
+        if (memcmp(buffer, "doggodogdog", size) != 0) {
+            lfs_file_seek(&lfs, &file, off*size, LFS_SEEK_SET) => off*size;
+            strcpy((char*)buffer, "doggodogdog");
+            lfs_file_write(&lfs, &file, buffer, size) => size;
+            lfs_file_seek(&lfs, &file, off*size, LFS_SEEK_SET) => off*size;
+            lfs_file_read(&lfs, &file, buffer, size) => size;
+            assert(memcmp(buffer, "doggodogdog", size) == 0);
+            lfs_file_sync(&lfs, &file) => 0;
+            lfs_file_seek(&lfs, &file, off*size, LFS_SEEK_SET) => off*size;
+            lfs_file_read(&lfs, &file, buffer, size) => size;
+            assert(memcmp(buffer, "doggodogdog", size) == 0);
+        }
+    }
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_open(&lfs, &file, "kitty", LFS_O_RDWR) => 0;
+    lfs_file_size(&lfs, &file) => COUNT*size;
+    for (int j = 0; j < COUNT; j++) {
+        lfs_file_read(&lfs, &file, buffer, size) => size;
+        assert(memcmp(buffer, "doggodogdog", size) == 0);
+    }
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+
+# test possible overflow/underflow conditions
+#
+# note these need -fsanitize=undefined to consistently detect
+# overflow/underflow conditions
+
+[cases.test_seek_filemax]
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, "kitty",
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND) => 0;
+    uint8_t buffer[1024];
+    strcpy((char*)buffer, "kittycatcat");
+    size_t size = strlen((char*)buffer);
+    lfs_file_write(&lfs, &file, buffer, size) => size;
+
+    // seek with LFS_SEEK_SET
+    lfs_file_seek(&lfs, &file, LFS_FILE_MAX, LFS_SEEK_SET) => LFS_FILE_MAX;
+
+    // seek with LFS_SEEK_CUR
+    lfs_file_seek(&lfs, &file, 0, LFS_SEEK_CUR) => LFS_FILE_MAX;
+
+    // the file hasn't changed size, so seek end takes us back to the offset=0
+    lfs_file_seek(&lfs, &file, +10, LFS_SEEK_END) => size+10;
+
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[cases.test_seek_underflow]
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, "kitty",
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND) => 0;
+    uint8_t buffer[1024];
+    strcpy((char*)buffer, "kittycatcat");
+    size_t size = strlen((char*)buffer);
+    lfs_file_write(&lfs, &file, buffer, size) => size;
+
+    // underflow with LFS_SEEK_CUR, should error
+    lfs_file_seek(&lfs, &file, -(size+10), LFS_SEEK_CUR) => LFS_ERR_INVAL;
+    lfs_file_seek(&lfs, &file, -LFS_FILE_MAX, LFS_SEEK_CUR) => LFS_ERR_INVAL;
+    lfs_file_seek(&lfs, &file, -(size+LFS_FILE_MAX), LFS_SEEK_CUR)
+            => LFS_ERR_INVAL;
+
+    // underflow with LFS_SEEK_END, should error
+    lfs_file_seek(&lfs, &file, -(size+10), LFS_SEEK_END) => LFS_ERR_INVAL;
+    lfs_file_seek(&lfs, &file, -LFS_FILE_MAX, LFS_SEEK_END) => LFS_ERR_INVAL;
+    lfs_file_seek(&lfs, &file, -(size+LFS_FILE_MAX), LFS_SEEK_END)
+            => LFS_ERR_INVAL;
+
+    // file pointer should not have changed
+    lfs_file_tell(&lfs, &file) => size;
+
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[cases.test_seek_overflow]
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, "kitty",
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND) => 0;
+    uint8_t buffer[1024];
+    strcpy((char*)buffer, "kittycatcat");
+    size_t size = strlen((char*)buffer);
+    lfs_file_write(&lfs, &file, buffer, size) => size;
+
+    // seek to LFS_FILE_MAX
+    lfs_file_seek(&lfs, &file, LFS_FILE_MAX, LFS_SEEK_SET) => LFS_FILE_MAX;
+
+    // overflow with LFS_SEEK_CUR, should error
+    lfs_file_seek(&lfs, &file, +10, LFS_SEEK_CUR) => LFS_ERR_INVAL;
+    lfs_file_seek(&lfs, &file, +LFS_FILE_MAX, LFS_SEEK_CUR) => LFS_ERR_INVAL;
+
+    // LFS_SEEK_SET/END don't care about the current file position, but we can
+    // still overflow with a large offset
+
+    // overflow with LFS_SEEK_SET, should error
+    lfs_file_seek(&lfs, &file,
+            +((uint32_t)LFS_FILE_MAX+10),
+            LFS_SEEK_SET) => LFS_ERR_INVAL;
+    lfs_file_seek(&lfs, &file,
+            +((uint32_t)LFS_FILE_MAX+(uint32_t)LFS_FILE_MAX),
+            LFS_SEEK_SET) => LFS_ERR_INVAL;
+
+    // overflow with LFS_SEEK_END, should error
+    lfs_file_seek(&lfs, &file, +(LFS_FILE_MAX-size+10), LFS_SEEK_END)
+            => LFS_ERR_INVAL;
+    lfs_file_seek(&lfs, &file, +(LFS_FILE_MAX-size+LFS_FILE_MAX), LFS_SEEK_END)
+            => LFS_ERR_INVAL;
+
+    // file pointer should not have changed
+    lfs_file_tell(&lfs, &file) => LFS_FILE_MAX;
+
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''

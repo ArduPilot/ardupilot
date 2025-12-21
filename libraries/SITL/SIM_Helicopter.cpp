@@ -381,7 +381,6 @@ float Helicopter::update_rpm(float curr_rpm, float throttle, float &engine_torqu
     static float rotor_runup_output;
     static uint8_t motor_status;
     float accel_scale;
-    float input_torque;
     float auto_ss_torque;
     float descent_torque;
     float rotor_torque;
@@ -390,7 +389,6 @@ float Helicopter::update_rpm(float curr_rpm, float throttle, float &engine_torqu
 
     //use this to make rpm model more realistic
     accel_scale = 100.0f;
-    input_torque = 0.0f;
 
     // calculate aerodynamic rotor drag torque
     rotor_torque = (sq(curr_rpm * 0.104667f) * (torque_mpog + torque_scale * powf(fabsf(collective),1.5f))) / izz;
@@ -415,13 +413,13 @@ float Helicopter::update_rpm(float curr_rpm, float throttle, float &engine_torqu
         engine_torque = 1.20f * throttle * engine_torque_max;
 
         // model clutch on gas heli 
+        float input_torque;
         if (throttle >= 0.15f && rpm_engine > curr_rpm) {
             input_torque = engine_torque;
         } else {
             input_torque = 0.0f;
         }
 
-        rpm_dot = 0.0f;
         // help spool down quickly go to zero
         if (throttle <= 0.15f && curr_rpm < 300) {
             rpm_dot = - 40.0f;
@@ -473,6 +471,7 @@ float Helicopter::update_rpm(float curr_rpm, float throttle, float &engine_torqu
         engine_torque = 0.333f * rotor_runup_output * engine_torque_max;
 
         // manage input torque so descent torque combined with engine torque doesn't allow rotor to overspeed
+        float input_torque;
         if (rotor_runup_output >= 1.0f && curr_rpm > nominal_rpm - 100.0f) {
             // want the rpm to seek the nominal rpm so set the input torque to only be that for nominal RPM
             input_torque = rotor_torque * sq(nominal_rpm / curr_rpm);
@@ -482,7 +481,6 @@ float Helicopter::update_rpm(float curr_rpm, float throttle, float &engine_torqu
             input_torque = engine_torque + descent_torque;
         }
 
-        rpm_dot = 0.0f;
         // Help spool down quickly got to zero 
         if (rotor_runup_output <= 0.0f && curr_rpm < 300) {
             rpm_dot = - 40.0f;

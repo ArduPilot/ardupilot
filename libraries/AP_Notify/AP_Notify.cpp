@@ -42,6 +42,7 @@
 #include "ProfiLED.h"
 #include "ScriptingLED.h"
 #include "DShotLED.h"
+#include "ProfiLED_IOMCU.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -89,33 +90,11 @@ AP_Notify *AP_Notify::_singleton;
 #endif
 
 #ifndef DEFAULT_NTF_LED_TYPES
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-  #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
-    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS |\
-                                    Notify_LED_PCA9685LED_I2C_External)
-
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
-    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS |\
-                                    DRONECAN_LEDS)
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
-        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
-        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET || \
-        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
-        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI || \
-        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
-        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO || \
-        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1 || \
-        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_CANZERO
-    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board)
-
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
-    #define DEFAULT_NTF_LED_TYPES (Notify_LED_ToshibaLED_I2C_External)
-  #endif  // board subtype
-#endif  // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-#endif  // defined (DEFAULT_NTF_LED_TYPES)
-
-#ifndef DEFAULT_NTF_LED_TYPES
-    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
+    #if HAL_WITH_IO_MCU && AP_IOMCU_PROFILED_SUPPORT_ENABLED
+      #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | Notify_LED_ProfiLED_IOMCU | I2C_LEDS)
+    #else
+        #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
+    #endif
 #endif // DEFAULT_NTF_LED_TYPES
 
 #ifndef BUZZER_ENABLE_DEFAULT
@@ -203,7 +182,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: LED_TYPES
     // @DisplayName: LED Driver Types
     // @Description: Controls what types of LEDs will be enabled
-    // @Bitmask: 0:Built-in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:DroneCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting, 11:DShot, 12:ProfiLED_SPI, 13:LP5562 External, 14: LP5562 Internal, 15:IS31FL3195 External, 16: IS31FL3195 Internal, 17: DiscreteRGB, 18: NeoPixelRGB
+    // @Bitmask: 0:Built-in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:DroneCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting, 11:DShot, 12:ProfiLED_SPI, 13:LP5562 External, 14: LP5562 Internal, 15:IS31FL3195 External, 16: IS31FL3195 Internal, 17: DiscreteRGB, 18: NeoPixelRGB, 19:ProfiLED_IOMCU
     // @User: Advanced
     AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, DEFAULT_NTF_LED_TYPES),
 
@@ -368,6 +347,11 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(NEW_NOTHROW DShotLED());
                 break;
 #endif
+#if HAL_WITH_IO_MCU && AP_IOMCU_PROFILED_SUPPORT_ENABLED
+            case Notify_LED_ProfiLED_IOMCU:
+                ADD_BACKEND(NEW_NOTHROW ProfiLED_IOMCU());
+                break;
+#endif
 #if AP_NOTIFY_LP5562_ENABLED
             case Notify_LED_LP5562_I2C_External:
                 FOREACH_I2C_EXTERNAL(b) {
@@ -408,46 +392,19 @@ void AP_Notify::add_backends(void)
     ADD_BACKEND(NEW_NOTHROW Display());
 #endif
 
-// ChibiOS noise makers
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+// Noise makers:
+#if AP_NOTIFY_BUZZER_ENABLED
     ADD_BACKEND(NEW_NOTHROW Buzzer());
+#endif
+
 #if AP_NOTIFY_TONEALARM_ENABLED
     ADD_BACKEND(NEW_NOTHROW AP_ToneAlarm());
 #endif
 
-// ESP32 noise makers
-#elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32
-    ADD_BACKEND(NEW_NOTHROW Buzzer());
 
-// Linux noise makers
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-  #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_CANZERO
-    // No noise makers, keep this though to ensure that the final else is safe
-
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
-        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET || \
-        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
-    ADD_BACKEND(NEW_NOTHROW Buzzer());
-
-  #else // other linux
-    ADD_BACKEND(NEW_NOTHROW AP_ToneAlarm());
-  #endif
-
-#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    ADD_BACKEND(NEW_NOTHROW AP_ToneAlarm());
-    ADD_BACKEND(NEW_NOTHROW Buzzer());
 #ifdef WITH_SITL_RGBLED
     ADD_BACKEND(NEW_NOTHROW SITL_SFML_LED());
 #endif
-#endif // Noise makers
-
 }
 
 // initialisation

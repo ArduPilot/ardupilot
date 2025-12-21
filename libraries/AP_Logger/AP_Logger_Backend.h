@@ -139,6 +139,7 @@ public:
     }
     bool Write_Message(const char *message);
     bool Write_MessageF(const char *fmt, ...);
+    bool Write_MessageChunk(uint8_t id, const char *messagechunk, uint8_t chunk_seq);
     bool Write_Mission_Cmd(const AP_Mission &mission,
                            const AP_Mission::Mission_Command &cmd,
                            LogMessages id);
@@ -168,7 +169,7 @@ public:
     // values contained in arg_list:
     bool Write(uint8_t msg_type, va_list arg_list, bool is_critical=false, bool is_streaming=false);
 
-    // these methods are used when reporting system status over mavlink
+    // these methods are used for mavlink system status and arming checks
     virtual bool logging_enabled() const;
     virtual bool logging_failed() const = 0;
 
@@ -275,6 +276,7 @@ private:
     bool emit_format_for_type(LogMessages a_type);
     Bitmask<256> _formats_written;
 
+    uint8_t msg_id;  // the ID of the next MSG message that will be logged
 };
 
 #endif  // HAL_LOGGING_ENABLED

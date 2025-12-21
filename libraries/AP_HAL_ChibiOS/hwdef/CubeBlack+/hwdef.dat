@@ -4,8 +4,8 @@
 
 include ../CubeBlack/hwdef.dat
 
-# board ID for firmware load
-APJ_BOARD_ID 1003
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_CUBEBLACKPLUS
 
 # USB setup
 USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
@@ -19,4 +19,4 @@ IMU Invensensev2 SPI:icm20948_ext ROTATION_PITCH_180
 IMU Invensense SPI:mpu9250 ROTATION_YAW_270
 
 undef ROMFS
-ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_highpolh.bin
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_cube_highpolh.bin

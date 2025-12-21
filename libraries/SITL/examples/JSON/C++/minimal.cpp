@@ -20,7 +20,7 @@
 #include <chrono>
 #include <stdlib.h>
 
-#include "libAP_JSON.cpp"
+#include "libAP_JSON.h"
 
 uint16_t servo_out[16];
 
@@ -67,6 +67,12 @@ int main() {
         ap.setWindvane(1 , 1);
         ap.setRangefinder(rangefinder_example, 6);
 
+        /* 
+        When the drone is on a surface the accelerometer of the imu senses the counteracting 
+        force of the flat surface pushing up against gravity, thus an upward acceleration 
+        of 9.81 m/s^2. In the FRD body reference frame (z-axis pointing down) this is an 
+        acceleration of -9.81 m/s^2.
+        */
         // send with the required
         ap.SendState(timestamp,
                      0, 0, 0,    // gyro

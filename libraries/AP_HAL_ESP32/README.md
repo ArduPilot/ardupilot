@@ -20,7 +20,6 @@ Tools/environment_install/install-prereqs-arch.sh
 # from: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/linux-setup.html
 sudo apt-get install git wget flex bison gperf cmake ninja-build ccache libffi-dev libssl-dev dfu-util
 sudo apt-get install python3 python3-pip python3-setuptools
-sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
 
 #or
 sudo pacman -S --needed gcc git make flex bison gperf python-pip cmake ninja ccache dfu-util libusb
@@ -68,11 +67,11 @@ https://docs.espressif.com/projects/esp-idf/en/latest/get-started/ -
 in expansion of macro 'configSUPPORT_STATIC_ALLOCATION'
 warning: "CONFIG_SUPPORT_STATIC_ALLOCATION" is not defined
 
-this means your 'sdkconfig' file that the IDF relies on is perhaps a bit out of date or out of sync with your IDF.
+this means your 'sdkconfig' file that the IDF relies on is perhaps a bit out of date or out of sync with your IDF. This should not happen, please file a bug if it does!
 
-You can simply remove sdkconfig file and idf build system will recreate it using sdkconfig.defaults, which should fix the problem.
+Changing the sdkconfig.defaults file will cause the sdkconfig to be deleted and regenerated. The sdkconfig will also be regenerated if it is manually deleted.
 
-If you need to change sdkconfig, you can edit sdkconfig manually or to use ninja menuconfig: 
+If you need to change sdkconfig (which will not cause it to be deleted), you can edit sdkconfig manually or to use ninja menuconfig: 
 
 So double check you are using the correct IDF version:
 ```
@@ -86,12 +85,14 @@ press [tab] then enter on the [exit]  box to exit the app
 done.    the 'sdkconfig' file in this folder should have been updated
 cd ../../../..
 
-If you want to make changes to sdkconfig (sdkconfig is in git ignore list) permanent and to commit them back in git, you should edit sdkconfig.defaults manually or to use ninja save-defconfig tool after menuconfig.
+If you want to make changes to sdkconfig (sdkconfig is in the build dir) permanent and to commit them back in git, you should edit sdkconfig.defaults manually or use ninja save-defconfig tool after menuconfig and replace sdkconfig.defaults with defconfig.
 
-5. Recommanded way to flash the firmware :
+5. Recommended way to flash the firmware :
 ```
 ESPBAUD=921600 ./waf plane --upload
 ```
+
+If the port isn't autodetected, it can be manually specified, e.g. `ESPPORT=/dev/tty<port> ESPBAUD=921600 ./waf plane --upload`.
 
 6. The espressif esp-idf original project is built at `cd build/esp32{BOARD}/esp-idf_build/`.
 You can use your default build system (make or ninja) to build other esp-idf target.
@@ -148,7 +149,7 @@ The ardupilot.elf contains all symbol. The cmake provide a stripped version as a
 ## Test hardware
 Currently esp32 dev board with connected gy-91 10dof sensor board is supported. Pinout (consult UARTDriver.cpp and SPIDevice.cpp for reference):
 
-### Uart connecion/s
+### Uart connection/s
 Internally connected on most devboards, just for reference.
 
 After flashing the esp32 , u can connect with a terminal app of your preference to the same COM port  ( eg /dev/ttyUSB0) at a baud rate of 115200, software flow control, 8N1 common uart settings, and get to see the output from hal.console->printf("...") and other console messages.
@@ -319,10 +320,10 @@ Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a
 - [x] TCP mavlink over wifi (choose tcp or udp at compile time , not both)
 - [x] parameter storage in a esp32 flash partition area
 - [x] Custom boards build
-- [x] Perfomance optimization
+- [x] Performance optimization
 - [x] SdCard mounts but ardupilot logging to SD does not
 - [x] waf can upload to your board with --upload now
-- [X] PWM output driver works, but it appears that throttle supression when disarmed does not.
+- [X] PWM output driver works, but it appears that throttle suppression when disarmed does not.
 - [X] AnalogIn driver - partial progress not really tested or documented
 - [X] Finish waf commands to build seamlessly and wrap all function of esp-idf without command voodoo
 
@@ -388,7 +389,7 @@ parttool.py --partition-table-file partitions.csv get_partition_info --partition
 # then backup ardupilot 'storage' area (its a partition, see partitions.csv) to a file on disk:
 esptool.py read_flash 0x3e0000 0x20000 storage.bin
 
-# restore the storage.bin to your device... basiclly the same flash command as used in esp32.py but different offset and file:
+# restore the storage.bin to your device... basically the same flash command as used in esp32.py but different offset and file:
 esptool.py --chip esp32 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect 0x3e0000 storage.bin
 
 

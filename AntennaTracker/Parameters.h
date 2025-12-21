@@ -44,10 +44,10 @@ public:
         k_param_format_version = 0,
         k_param_software_type,      // deprecated
 
-        k_param_gcs0 = 100,         // stream rates for SERIAL0
-        k_param_gcs1,               // stream rates for SERIAL1
-        k_param_sysid_this_mav,
-        k_param_sysid_my_gcs,
+        k_param_gcs0_unused = 100,  // unused in ArduPilot-4.7
+        k_param_gcs1_unused,        // unused in ArduPilot-4.7
+        k_param_sysid_this_mav_old,
+        k_param_sysid_my_gcs_old,
         k_param_serial0_baud,       // deprecated
         k_param_serial1_baud,       // deprecated
         k_param_imu,
@@ -60,7 +60,7 @@ public:
         k_param_sitl,
         k_param_pidPitch_old,   // deprecated
         k_param_pidYaw_old,     // deprecated
-        k_param_gcs2,               // stream rates for SERIAL2
+        k_param_gcs2_unused,        // unused in ArduPilot-4.7
         k_param_serial2_baud,       // deprecated
 
         k_param_yaw_slew_time,
@@ -85,7 +85,7 @@ public:
         k_param_pitch_range,	//deprecated
         k_param_distance_min,
         k_param_sysid_target,       // 138
-        k_param_gcs3,               // stream rates for fourth MAVLink port
+        k_param_gcs3_unused,        // unused in ArduPilot-4.7
         k_param_log_bitmask,        // 140
         k_param_notify,
         k_param_can_mgr,
@@ -97,9 +97,9 @@ public:
         k_param_mavlink_update_rate,
         k_param_pitch_min,
         k_param_pitch_max,
-        k_param_gcs4,
-        k_param_gcs5,
-        k_param_gcs6,
+        k_param_gcs4_unused,        // unused in ArduPilot-4.7
+        k_param_gcs5_unused,        // unused in ArduPilot-4.7
+        k_param_gcs6_unused,        // unused in ArduPilot-4.7
 
         //
         // 200 : Radio settings
@@ -133,14 +133,13 @@ public:
         k_param_logger = 253, // 253 - Logging Group
 
         k_param_vehicle = 257, // vehicle common block of parameters
+        k_param__gcs = 258,
     };
 
     AP_Int16 format_version;
 
     // Telemetry control
     //
-    AP_Int16 sysid_this_mav;
-    AP_Int16 sysid_my_gcs;
     AP_Int16 sysid_target;
 
     AP_Float yaw_slew_time;

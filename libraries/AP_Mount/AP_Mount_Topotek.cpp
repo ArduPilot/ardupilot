@@ -1,6 +1,8 @@
-#include "AP_Mount_Topotek.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_TOPOTEK_ENABLED
+
+#include "AP_Mount_Topotek.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -55,6 +57,8 @@ const char* AP_Mount_Topotek::send_message_prefix = "Mount: Topotek";
 // update mount position - should be called periodically
 void AP_Mount_Topotek::update()
 {
+    AP_Mount_Backend::update();
+
     // exit immediately if not initialised
     if (!_initialised) {
         return;
@@ -118,9 +122,6 @@ void AP_Mount_Topotek::update()
         break;
     }
 
-    // change to RC_TARGETING mode if RC input has changed
-    set_rctargeting_on_rcinput_change();
-
     // handle tracking state
     if (_is_tracking) {
         // cancel tracking if mode has changed
@@ -133,80 +134,10 @@ void AP_Mount_Topotek::update()
     _last_mode = _mode;
 
     // update based on mount mode
-    switch (get_mode()) {
-        // move mount to a "retracted" position.  To-Do: remove support and replace with a relaxed mode?
-        case MAV_MOUNT_MODE_RETRACT: {
-            const Vector3f &angle_bf_target = _params.retract_angles.get();
-            mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
-            break;
-        }
-
-        // move mount to a neutral position, typically pointing forward
-        case MAV_MOUNT_MODE_NEUTRAL: {
-            const Vector3f &angle_bf_target = _params.neutral_angles.get();
-            mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
-            break;
-        }
-
-        // point to the angles given by a mavlink message
-        case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            // mavlink targets are stored while handling the incoming message
-            break;
-
-        // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING: {
-            // update targets using pilot's RC inputs
-            MountTarget rc_target;
-            get_rc_target(mnt_target.target_type, rc_target);
-            switch (mnt_target.target_type) {
-            case MountTargetType::ANGLE:
-                mnt_target.angle_rad = rc_target;
-                break;
-            case MountTargetType::RATE:
-                mnt_target.rate_rads = rc_target;
-                break;
-            }
-            break;
-        }
-
-        // point mount to a GPS point given by the mission planner
-        case MAV_MOUNT_MODE_GPS_POINT:
-            if (get_angle_target_to_roi(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        // point mount to Home location
-        case MAV_MOUNT_MODE_HOME_LOCATION:
-            if (get_angle_target_to_home(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        // point mount to another vehicle
-        case MAV_MOUNT_MODE_SYSID_TARGET:
-            if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        default:
-            // we do not know this mode so raise internal error
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            break;
-    }
+    update_mnt_target();
 
     // send target angles or rates depending on the target type
-    switch (mnt_target.target_type) {
-        case MountTargetType::ANGLE:
-            send_angle_target(mnt_target.angle_rad);
-            break;
-        case MountTargetType::RATE:
-            send_rate_target(mnt_target.rate_rads);
-            break;
-    }
+    send_target_to_gimbal();
 }
 
 // return true if healthy
@@ -801,7 +732,7 @@ void AP_Mount_Topotek::request_gimbal_model_name()
 }
 
 // send angle target in radians to gimbal
-void AP_Mount_Topotek::send_angle_target(const MountTarget& angle_rad)
+void AP_Mount_Topotek::send_target_angles(const MountAngleTarget& angle_rad)
 {
     // gimbal's earth-frame angle control drifts so always use body frame
     // set gimbal's lock state if it has changed
@@ -845,7 +776,7 @@ void AP_Mount_Topotek::send_angle_target(const MountTarget& angle_rad)
 }
 
 // send rate target in rad/s to gimbal
-void AP_Mount_Topotek::send_rate_target(const MountTarget& rate_rads)
+void AP_Mount_Topotek::send_target_rates(const MountRateTarget& rate_rads)
 {
     // set gimbal's lock state if it has changed
     if (!set_gimbal_lock(rate_rads.yaw_is_ef)) {
@@ -950,7 +881,7 @@ bool AP_Mount_Topotek::send_location_info()
 
     // prepare and send vehicle yaw
     // sample command: #tpUD5wAZI359.9, similar format to $GPRMC
-    const float veh_yaw_deg = wrap_360(degrees(AP::ahrs().get_yaw()));
+    const float veh_yaw_deg = AP::ahrs().get_yaw_deg();
     uint8_t databuff_azimuth[6];
     hal.util->snprintf((char*)databuff_azimuth, ARRAY_SIZE(databuff_azimuth), "%05.1f", veh_yaw_deg);
     if (!send_variablelen_packet(HeaderType::VARIABLE_LEN, AddressByte::SYSTEM_AND_IMAGE, AP_MOUNT_TOPOTEK_ID3CHAR_SET_AZIMUTH, true, (uint8_t*)databuff_azimuth, ARRAY_SIZE(databuff_azimuth)-1)) {
@@ -969,9 +900,9 @@ void AP_Mount_Topotek::gimbal_angle_analyse()
     int16_t roll_angle_cd = hexchar4_to_int16(_msg_buff[18], _msg_buff[19], _msg_buff[20], _msg_buff[21]);
 
     // convert cd to radians
-    _current_angle_rad.x = radians(roll_angle_cd * 0.01);
-    _current_angle_rad.y = radians(pitch_angle_cd * 0.01);
-    _current_angle_rad.z = radians(yaw_angle_cd * 0.01);
+    _current_angle_rad.x = cd_to_rad(roll_angle_cd);
+    _current_angle_rad.y = cd_to_rad(pitch_angle_cd);
+    _current_angle_rad.z = cd_to_rad(yaw_angle_cd);
     _last_current_angle_ms = AP_HAL::millis();
 
     return;
