@@ -572,6 +572,13 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     AP_GROUPINFO("TKOFF_RPM_MAX", 41, QuadPlane, takeoff_rpm_max, 0),
 #endif
 
+    // @Param: THRST_LOSS_OPT
+    // @DisplayName: VTOL thrust loss detection options
+    // @Description: Configuration for thrust loss detection detection, this results in "Potential VTOL Thrust Loss" warnings. This detection also allows the motor mixer to ignore the failed motor allowing better use of the remaining motors.
+    // @Bitmask: 0: Disable thrust loss detection.
+    // @Bitmask: 1: Disable thrust loss detection in transtions and fixed wing modes. Thrust loss detection will only run in VTOL modes.
+    AP_GROUPINFO("THRST_LOSS_OPT", 42, QuadPlane, thrust_loss.options, 0),
+
     AP_GROUPEND
 };
 
@@ -2017,6 +2024,10 @@ void QuadPlane::motors_output(bool run_rate_controller)
     update_throttle_suppression();
 
     motors->output();
+
+    // Run thrust loss check, reset if motors have not been active
+    const bool motors_inactive = (now - last_motors_active_ms) > 100;
+    thrust_loss_check(motors_inactive);
 
     // remember when motors were last active for throttle suppression
     if (motors->get_throttle() > 0.01f || tiltrotor.motors_active()) {
@@ -4877,6 +4888,79 @@ void QuadPlane::Log_Write_AttRate()
     attitude_control->Write_ANG();
     attitude_control->Write_Rate(*pos_control);
 
+}
+
+// check for loss of thrust and trigger thrust boost in motors library
+void QuadPlane::thrust_loss_check(bool reset)
+{
+    // Clear counter if reset
+    if (reset) {
+        thrust_loss.counter = 0;
+        return;
+    }
+
+    // Return if disabled, either completly or in the current flight mode
+    if (thrust_loss.option_is_set(ThrustLoss::Option::DISABLED) ||
+          (thrust_loss.option_is_set(ThrustLoss::Option::VTOL_ONLY) && !in_vtol_mode())) {
+        thrust_loss.counter = 0;
+        return;
+    }
+
+    // return if already engaged, disarmed, not flying, or motors not active
+    if (motors->get_thrust_boost() || !motors->armed() || !plane.is_flying() || (motors->get_desired_spool_state() != AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED)) {
+        thrust_loss.counter = 0;
+        return;
+    }
+
+    // check for desired angle under 15 degrees
+    const Vector3f& angle_target_rad = attitude_control->get_att_target_euler_rad();
+    if (angle_target_rad.xy().length_squared() > sq(radians(15.0))) {
+        thrust_loss.counter = 0;
+        return;
+    }
+
+    // check for throttle over 90% or throttle saturation
+    if ((attitude_control->get_throttle_in() < 0.9) && (!motors->limit.throttle_upper)) {
+        thrust_loss.counter = 0;
+        return;
+    }
+
+    // check throttle is over 25% to prevent checks triggering from thrust limitations caused by low commanded throttle
+    if ((attitude_control->get_throttle_in() < 0.25f)) {
+        thrust_loss.counter = 0;
+        return;
+    }
+
+    // check for descent
+    Vector3f vel_NED;
+    if (!ahrs.get_velocity_NED(vel_NED) || !is_positive(vel_NED.z)) {
+        // we have no vertical velocity estimate and/or we are not descending
+        thrust_loss.counter = 0;
+        return;
+    }
+
+    // check for angle error over 30 degrees to ensure the aircraft has attitude control
+    const float angle_error = attitude_control->get_att_error_angle_deg();
+    if (angle_error >= 30.0) {
+        thrust_loss.counter = 0;
+        return;
+    }
+
+    // the aircraft is descending with low requested roll and pitch, at full available throttle, with attitude control
+    // we may have lost thrust
+    thrust_loss.counter++;
+
+    // check if thrust loss for 1 second
+    if (thrust_loss.counter >= plane.scheduler.get_loop_rate_hz()) {
+        // reset counter
+        thrust_loss.counter = 0;
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::THRUST_LOSS_CHECK, LogErrorCode::FAILSAFE_OCCURRED);
+        // send message to gcs
+        gcs().send_text(MAV_SEVERITY_EMERGENCY, "Potential VTOL Thrust Loss (%u)", motors->get_lost_motor() + 1);
+        // enable thrust loss handling
+        motors->set_thrust_boost(true);
+        // the motors library disables this when it is no longer needed to achieve the commanded output
+    }
 }
 
 #endif  // HAL_QUADPLANE_ENABLED
