@@ -22,20 +22,11 @@ void AP_Mount_SToRM32_serial::update()
 
     AP_Mount_Backend::update_mnt_target();
 
-    // update angle targets from angle rates
-    if (mnt_target.target_type == MountTargetType::RATE) {
-        update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
-    }
+    // send target angles (which may be derived from other target types)
+    AP_Mount_Backend::send_target_to_gimbal();
 
     if ((AP_HAL::millis() - _last_send) > AP_MOUNT_STORM32_SERIAL_TIMEOUT_MS) {
         _reply_type = ReplyType_UNKNOWN;
-    }
-    if (can_send()) {
-            send_target_angles(mnt_target.angle_rad);
-            get_angles();
-            _reply_type = ReplyType_ACK;
-            _reply_counter = 0;
-            _reply_length = get_reply_size(_reply_type);
     }
 }
 
@@ -56,6 +47,9 @@ bool AP_Mount_SToRM32_serial::can_send() {
 // send_target_angles
 void AP_Mount_SToRM32_serial::send_target_angles(const MountAngleTarget& angle_target_rad)
 {
+    if (!can_send()) {
+        return;
+    }
 
     static cmd_set_angles_struct cmd_set_angles_data = {
         0xFA,
@@ -93,6 +87,17 @@ void AP_Mount_SToRM32_serial::send_target_angles(const MountAngleTarget& angle_t
 
     // store time of send
     _last_send = AP_HAL::millis();
+
+    // we pipeline commands.  We have sent in a command to set angles,
+    // now fetch data from the device:
+    get_angles();
+    // we expect an ACK back for the set-angles command.  A state
+    // machine in read_incoming will move us to ReplyType_DATA once
+    // the ACK has been received.
+    _reply_type = ReplyType_ACK;
+    _reply_counter = 0;
+    _reply_length = get_reply_size(_reply_type);
+
 }
 
 void AP_Mount_SToRM32_serial::get_angles() {

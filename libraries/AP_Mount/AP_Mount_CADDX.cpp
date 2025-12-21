@@ -23,12 +23,8 @@ void AP_Mount_CADDX::update()
 
     AP_Mount_Backend::update_mnt_target();
 
-    // update angle targets from angle rates
-    if (mnt_target.target_type == MountTargetType::RATE) {
-        update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
-    }
-
-    send_target_angles(mnt_target.angle_rad);
+    // send target angles (which may be derived from other target types)
+    AP_Mount_Backend::send_target_to_gimbal();
 }
 
 // get attitude as a quaternion.  returns true on success
