@@ -489,11 +489,20 @@
 // PosHold parameter defaults
 //
 #ifndef POSHOLD_BRAKE_RATE_DEFAULT
- # define POSHOLD_BRAKE_RATE_DEFAULT    8       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
- # define POSHOLD_BRAKE_RATE_MIN        4       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
+ #if FRAME_CONFIG == HELI_FRAME
+  # define POSHOLD_BRAKE_RATE_DEFAULT    4       // default POSHOLD_BRAKE_RATE param value for tradheli.  Rotation rate during braking in deg/sec
+  # define POSHOLD_BRAKE_RATE_MIN        4       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
+ #else
+  # define POSHOLD_BRAKE_RATE_DEFAULT    8       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
+  # define POSHOLD_BRAKE_RATE_MIN        4       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
+ #endif
 #endif
 #ifndef POSHOLD_BRAKE_ANGLE_DEFAULT
- # define POSHOLD_BRAKE_ANGLE_DEFAULT   3000    // default POSHOLD_BRAKE_ANGLE param value.  Max lean angle during braking in centi-degrees
+ #if FRAME_CONFIG == HELI_FRAME
+  # define POSHOLD_BRAKE_ANGLE_DEFAULT  800    // default POSHOLD_BRAKE_ANGLE param value for tradheli.  Max lean angle during braking in centi-degrees
+ #else
+  # define POSHOLD_BRAKE_ANGLE_DEFAULT   3000    // default POSHOLD_BRAKE_ANGLE param value.  Max lean angle during braking in centi-degrees
+ #endif
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
