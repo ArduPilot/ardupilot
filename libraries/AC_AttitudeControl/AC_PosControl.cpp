@@ -418,7 +418,7 @@ void AC_PosControl::set_max_speed_accel_xy(float speed_cms, float accel_cmss)
     const float snap_max_cmssss = MIN(_attitude_control.get_accel_roll_max_radss(), _attitude_control.get_accel_pitch_max_radss()) * GRAVITY_MSS * 100.0;
 
     // get specified jerk limit
-    _jerk_max_xy_cmsss = _shaping_jerk_xy * 100.0;
+    _jerk_max_xy_cmsss = get_shaping_jerk_xy_cmsss();
 
     // limit maximum jerk based on maximum angular rate
     if (is_positive(jerk_max_cmsss) && _attitude_control.get_bf_feedforward()) {
