@@ -820,14 +820,18 @@ class uploader(object):
                 mcu = F4_IDS[family]
                 MCU_REV_STM32F4_REV_A = 0x1000
                 MCU_REV_STM32F4_REV_Z = 0x1001
-                MCU_REV_STM32F4_REV_Y = 0x1003
-                MCU_REV_STM32F4_REV_1 = 0x1007
+                MCU_REV_STM32F4_REV_1 = 0x1003
+                MCU_REV_STM32F4_REV_2 = 0x1007
+                MCU_REV_STM32F4_REV_Y = 0x100F
+                MCU_REV_STM32F4_REV_5 = 0x101F
                 MCU_REV_STM32F4_REV_3 = 0x2001
                 revs = {
                     MCU_REV_STM32F4_REV_A: ("A", True),
                     MCU_REV_STM32F4_REV_Z: ("Z", True),
                     MCU_REV_STM32F4_REV_Y: ("Y", True),
                     MCU_REV_STM32F4_REV_1: ("1", True),
+                    MCU_REV_STM32F4_REV_2: ("2", True),
+                    MCU_REV_STM32F4_REV_5: ("5", True),
                     MCU_REV_STM32F4_REV_3: ("3", False),
                 }
                 rev = (chip & 0xFFFF0000) >> 16
