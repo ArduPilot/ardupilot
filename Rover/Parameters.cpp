@@ -589,6 +589,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(torqeedo, "TRQ", 49, ParametersG2, AP_Torqeedo),
 #endif
 
+    // @Group: EZK_
+    // @Path: ../libraries/AP_EZKontrolCAN/AP_EZKontrolCAN.cpp
+    AP_SUBGROUPINFO(ezkontrol_can, "EZK_", 50, ParametersG2, AP_EZKontrolCAN),
+
     // @Group: PSC
     // @Path: ../libraries/APM_Control/AR_PosControl.cpp
     AP_SUBGROUPINFO(pos_control, "PSC", 51, ParametersG2, AR_PosControl),
@@ -677,6 +681,7 @@ ParametersG2::ParametersG2(void)
 #endif
     wheel_rate_control(wheel_encoder),
     motors(wheel_rate_control),
+    ezkontrol_can(),
     attitude_control(),
     smart_rtl(),
 #if HAL_PROXIMITY_ENABLED

@@ -7,6 +7,7 @@
 #include "AC_Sprayer/AC_Sprayer.h"
 #include <AP_AIS/AP_AIS.h>
 #include <AP_Beacon/AP_Beacon.h>
+#include <AP_EZKontrolCAN/AP_EZKontrolCAN.h>
 #include <AP_Follow/AP_Follow.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include "AP_Rally.h"
@@ -308,6 +309,9 @@ public:
 
     // Motor library
     AP_MotorsUGV motors;
+
+    // EZKontrol CAN motor backend
+    AP_EZKontrolCAN ezkontrol_can;
 
     // steering and throttle controller
     AR_AttitudeControl attitude_control;
