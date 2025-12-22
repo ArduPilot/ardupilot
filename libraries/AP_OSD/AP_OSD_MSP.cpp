@@ -96,12 +96,12 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "OSD_VSPEED_X",        1.0 },
     { "OSD_VSPEED_Y",        1.0 },
 
-#if HAVE_AP_BLHELI_SUPPORT
+#if AP_BLHELI_ENABLED
     //OSD_ESC_TMP
     { "OSD_BLHTEMP_EN",       1.0 },
     { "OSD_BLHTEMP_X",        1.0 },
     { "OSD_BLHTEMP_Y",        1.0 },
-#endif
+#endif  // AP_BLHELI_ENABLED
 
     //OSD_RTC_DATETIME
     { "OSD_CLK_EN",       1.0 },
