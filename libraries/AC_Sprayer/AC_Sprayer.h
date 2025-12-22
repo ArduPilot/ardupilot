@@ -28,6 +28,7 @@
 #define AC_SPRAYER_DEFAULT_SPEED_MIN        100     ///< we must be travelling at least 1m/s to begin spraying
 #define AC_SPRAYER_DEFAULT_TURN_ON_DELAY    100     ///< delay between when we reach the minimum speed and we begin spraying.  This reduces the likelihood of constantly turning on/off the pump
 #define AC_SPRAYER_DEFAULT_SHUT_OFF_DELAY   1000    ///< shut-off delay in milli seconds.  This reduces the likelihood of constantly turning on/off the pump
+#define AC_SPRAYER_DEFAULT_OPTIONS         0       ///< default sprayer options bitmask
 
 /// @class  AC_Sprayer
 /// @brief  Object managing a crop sprayer comprised of a spinner and a pump both controlled by pwm
@@ -58,12 +59,16 @@ public:
     /// set_pump_rate - sets desired quantity of spray when travelling at 1m/s as a percentage of the pumps maximum rate
     void set_pump_rate(float pct_at_1ms) { _pump_pct_1ms.set(pct_at_1ms); }
 
+    /// set_failsafe_active - set to true if we are in failsafe mode
+    void set_failsafe_active(bool b);
+
     /// update - adjusts servo positions based on speed and requested quantity
     void update();
 
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    static constexpr uint16_t OPTIONS_DISABLE_ON_FAILSAFE = 1U << 0; ///< disable sprayer when in failsafe
 
     // parameters
     AP_Int8         _enabled;               ///< top level enable/disable control
@@ -71,12 +76,14 @@ private:
     AP_Int8         _pump_min_pct;          ///< minimum pump rate (expressed as a percentage from 0 to 100)
     AP_Int16        _spinner_pwm;           ///< pwm rate of spinner
     AP_Float        _speed_min;             ///< minimum speed in cm/s above which the sprayer will be started
+    AP_Int16        _options;               ///< sprayer options bitmask
 
     /// flag bitmask
     struct sprayer_flags_type {
-        uint8_t spraying    : 1;            ///< 1 if we are currently spraying
-        uint8_t testing     : 1;            ///< 1 if we are testing the sprayer and should output a minimum value
-        uint8_t running     : 1;            ///< 1 if we are permitted to run sprayer
+        uint8_t spraying         : 1;            ///< 1 if we are currently spraying
+        uint8_t testing          : 1;            ///< 1 if we are testing the sprayer and should output a minimum value
+        uint8_t running          : 1;            ///< 1 if we are permitted to run sprayer
+        uint8_t failsafe_active  : 1;            ///< 1 if we are in failsafe mode
     } _flags;
 
     // internal variables

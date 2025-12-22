@@ -63,6 +63,10 @@ void Copter::set_failsafe_radio(bool b)
             failsafe_radio_on_event();
         }
 
+#if HAL_SPRAYER_ENABLED
+    sprayer.set_failsafe_active(failsafe.radio || failsafe.gcs);
+#endif
+
         // update AP_Notify
         AP_Notify::flags.failsafe_radio = b;
     }
@@ -72,10 +76,15 @@ void Copter::set_failsafe_radio(bool b)
 // ---------------------------------------------
 void Copter::set_failsafe_gcs(bool b)
 {
-    failsafe.gcs = b;
+    if(failsafe.gcs != b) {
+        failsafe.gcs = b;
+#if HAL_SPRAYER_ENABLED
+        sprayer.set_failsafe_active(failsafe.radio || failsafe.gcs);
+#endif
 
-    // update AP_Notify
-    AP_Notify::flags.failsafe_gcs = b;
+        // update AP_Notify
+        AP_Notify::flags.failsafe_gcs = b;
+    }
 }
 
 // ---------------------------------------------
