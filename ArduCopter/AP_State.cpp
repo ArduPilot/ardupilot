@@ -78,8 +78,9 @@ void Copter::set_failsafe_gcs(bool b)
 {
     if(failsafe.gcs != b) {
         failsafe.gcs = b;
+        
 #if HAL_SPRAYER_ENABLED
-        sprayer.set_failsafe_active(failsafe.radio || failsafe.gcs);
+    sprayer.set_failsafe_active(failsafe.radio || failsafe.gcs);
 #endif
 
         // update AP_Notify
