@@ -35,6 +35,7 @@ class AP_ExternalAHRS {
 public:
     friend class AP_ExternalAHRS_backend;
     friend class AP_ExternalAHRS_VectorNav;
+    friend class AP_ExternalAHRS_SensAItion;
 
     AP_ExternalAHRS();
 
@@ -64,6 +65,9 @@ public:
 #endif
         // 9 reserved for EulerNav
         // 10 reserved for Aeron
+#if AP_EXTERNAL_AHRS_SENSAITION_ENABLED
+        SensAItion = 11,
+#endif
     };
 
     static AP_ExternalAHRS *get_singleton(void) {
@@ -137,7 +141,7 @@ public:
     } baro_data_message_t;
 
     typedef struct {
-        Vector3f field;
+        Vector3f field; // Magnetic flux density (mgauss)
     } mag_data_message_t;
 
     typedef struct {
@@ -178,6 +182,7 @@ protected:
 
     enum class OPTIONS {
         VN_UNCOMP_IMU = 1U << 0,
+        SENSAITION_INS = 1U << 1
     };
     bool option_is_set(OPTIONS option) const { return (options.get() & int32_t(option)) != 0; }
 
