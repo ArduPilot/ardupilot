@@ -19,10 +19,13 @@ public:
 
     static AP_Arming *get_singleton();
 
+    __INITFUNC__ void init(void);
+
     void update();
 
     enum class Check {
-        ALL         = (1U << 0),
+        // 0 used to be ALL, though it could be reused as the SKIPCHK conversion
+        // never sets it. check_mask would also need updating.
         BARO        = (1U << 1),
         COMPASS     = (1U << 2),
         GPS         = (1U << 3),
@@ -43,6 +46,7 @@ public:
         VISION      = (1U << 18),
         FFT         = (1U << 19),
         OSD         = (1U << 20),
+        CHECK_LAST  = (1U << 21), // must be last
     };
 
     enum class Method {
@@ -96,8 +100,6 @@ public:
         YES_AUTO_ARM_ZERO_PWM = 4,
     };
 
-    void init(void);
-
     // these functions should not be used by Copter which holds the armed state in the motors library
     Required arming_required() const;
     virtual bool arm(AP_Arming::Method method, bool do_arming_checks=true);
@@ -111,6 +113,10 @@ public:
 
     // get bitmask of enabled checks
     uint32_t get_enabled_checks() const;
+    // return if all checks are enabled, enabling all changes arming logic slightly
+    bool all_checks_enabled() const;
+    // return if all checks are set as skipped, skipping all changes arming logic slightly
+    bool should_skip_all_checks() const { return get_enabled_checks() == 0; }
 
     // pre_arm_checks() is virtual so it can be modified in a vehicle specific subclass
     virtual bool pre_arm_checks(bool report);
@@ -176,7 +182,7 @@ protected:
 
     // Parameters
     AP_Enum<Required>       require;
-    AP_Int32                checks_to_perform;      // bitmask for which checks are required
+    AP_Int32                checks_to_skip; // bitmask for which checks should be skipped
     AP_Float                accel_error_threshold;
     AP_Int8                 _rudder_arming;
     AP_Int32                _required_mission_items;
@@ -271,7 +277,7 @@ protected:
     bool visodom_checks(bool report) const;
     bool disarm_switch_checks(bool report) const;
 
-    // mandatory checks that cannot be bypassed.  This function will only be called if ARMING_CHECK is zero or arming forced
+    // mandatory checks that cannot be bypassed.  This function will only be called if ARMING_SKIPCHK skips all or arming forced
     virtual bool mandatory_checks(bool report);
 
     // returns true if a particular check is enabled

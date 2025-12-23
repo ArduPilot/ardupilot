@@ -16,11 +16,11 @@ void AP_OABendyRuler::Write_OABendyRuler(const uint8_t type, const bool active, 
 
     float oa_dest_alt;
     if (!oa_dest.get_alt_m(Location::AltFrame::ABOVE_ORIGIN, oa_dest_alt)) {
-        oa_dest_alt = logger.quiet_nanf();
+        oa_dest_alt = AP_Logger::quiet_nanf();
     }
     float final_alt;
     if (!final_dest.get_alt_m(Location::AltFrame::ABOVE_ORIGIN, final_alt)) {
-        final_alt = logger.quiet_nanf();
+        final_alt = AP_Logger::quiet_nanf();
     }
 
     const struct log_OABendyRuler pkt{

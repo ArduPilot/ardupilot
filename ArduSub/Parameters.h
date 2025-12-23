@@ -418,9 +418,10 @@ extern const AP_Param::Info        var_info[];
 // Sub-specific default parameters
 static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "BRD_SAFETY_DEFLT",    0 },
-    { "ARMING_CHECK",        uint32_t(AP_Arming::Check::RC) |
-                             uint32_t(AP_Arming::Check::VOLTAGE) |
-                             uint32_t(AP_Arming::Check::BATTERY)},
+    { "ARMING_SKIPCHK",      (~(uint32_t(AP_Arming::Check::RC) |
+                                uint32_t(AP_Arming::Check::VOLTAGE) |
+                                uint32_t(AP_Arming::Check::BATTERY))
+                               ) & ((1U<<24)-1)}, // keep within float range but disable future checks
     { "CIRCLE_RATE",         2.0f},
     { "ATC_ACCEL_Y_MAX",     110000.0f},
     { "ATC_RATE_Y_MAX",      180.0f},

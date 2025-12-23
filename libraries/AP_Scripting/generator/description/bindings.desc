@@ -422,6 +422,7 @@ ap_object RC_Channel method norm_input float
 ap_object RC_Channel method norm_input_dz float
 ap_object RC_Channel method get_aux_switch_pos uint8_t
 ap_object RC_Channel method norm_input_ignore_trim float
+-- be wary using this binding as it effectively disables RC failsafes!
 ap_object RC_Channel method set_override void uint16_t 0 2200 0'literal
 
 include RC_Channel/RC_Channel.h
@@ -1061,6 +1062,12 @@ singleton AC_Fence method get_margin_breaches uint8_t
 singleton AC_Fence method get_margin_breach_time uint32_t
 singleton AC_Fence method get_breach_distance float uint8_t'skip_check
 singleton AC_Fence method get_breach_direction_NED boolean uint8_t'skip_check Vector3f'Null Location'Null
+singleton AC_Fence method get_safe_alt_min_m float
+singleton AC_Fence method get_safe_alt_min_m rename get_safe_alt_min
+singleton AC_Fence method get_safe_alt_max_m float
+singleton AC_Fence method get_safe_alt_max_m rename get_safe_alt_max
+singleton AC_Fence method present uint8_t
+singleton AC_Fence method get_enabled_fences uint8_t
 
 include AP_Rally/AP_Rally.h depends HAL_RALLY_ENABLED
 

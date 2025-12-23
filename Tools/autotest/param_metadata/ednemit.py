@@ -34,6 +34,8 @@ class EDNEmit(Emit):
 
     def emit(self, g):
         for param in g.params:
+            if not self.should_emit_param(param):
+                continue
             output_dict = dict()
             # lowercase all keywords
             for key in param.__dict__.keys():

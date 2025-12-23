@@ -172,7 +172,10 @@ class generate_bin(Task.Task):
                 return ret
             return ret
         else:
-            cmd = [self.env.get_flat('OBJCOPY'), '-O', 'binary', self.inputs[0].relpath(),  self.outputs[0].relpath()]
+            # use --gap-fill 0xFF so gaps match erased flash, avoiding CRC
+            # mismatch when loading via GDB vs bootloader/DroneCAN
+            cmd = [self.env.get_flat('OBJCOPY'), '-O', 'binary', '--gap-fill', '0xFF',
+                   self.inputs[0].relpath(), self.outputs[0].relpath()]
             self.exec_command(cmd)
 
     '''list sections and split into two binaries based on section's location in internal, external or in ram'''
@@ -218,8 +221,10 @@ class generate_bin(Task.Task):
         else:
             Logs.error("Couldn't find .text section")
         # create intf binary
+        # use --gap-fill 0xFF so gaps match erased flash, avoiding CRC
+        # mismatch when loading via GDB vs bootloader/DroneCAN
         if len(intf_sections):
-            cmd = "'{}' {} -O binary {} {}".format(self.env.get_flat('OBJCOPY'),
+            cmd = "'{}' {} --gap-fill 0xFF -O binary {} {}".format(self.env.get_flat('OBJCOPY'),
                                                 ' '.join(intf_sections), self.inputs[0].relpath(), self.outputs[0].relpath())
         else:
             cmd = "cp /dev/null {}".format(self.outputs[0].relpath())
@@ -227,7 +232,7 @@ class generate_bin(Task.Task):
         if (ret < 0):
             return ret
         # create extf binary
-        cmd = "'{}' {} -O binary {} {}".format(self.env.get_flat('OBJCOPY'),
+        cmd = "'{}' {} --gap-fill 0xFF -O binary {} {}".format(self.env.get_flat('OBJCOPY'),
                                                 ' '.join(extf_sections), self.inputs[0].relpath(), self.outputs[1].relpath())
         return self.exec_command(cmd)
 

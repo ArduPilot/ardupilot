@@ -10,7 +10,7 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
     // @DisplayName: Mount Type
     // @Description: Mount Type
     // @SortValues: AlphabeticalZeroAtTop
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:Gremsy, 7:BrushlessPWM, 8:Siyi, 9:Scripting, 10:Xacti, 11:Viewpro, 12:Topotek, 13:CADDX, 14:XFRobot
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:MAVLink (Gremsy/AVT), 7:BrushlessPWM, 8:Siyi, 9:Scripting, 10:Xacti, 11:Viewpro, 12:Topotek, 13:CADDX, 14:XFRobot
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_Mount_Params, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -168,8 +168,8 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
 
     // @Param: _OPTIONS
     // @DisplayName: Mount options
-    // @Description: Mount options bitmask
-    // @Bitmask: 0:RC lock state from previous mode, 1:Return to neutral angles on RC failsafe
+    // @Description: Mount options bitmask, note bit 2 only impacts RC targetting mode
+    // @Bitmask: 0:RC lock state from previous mode, 1:Return to neutral angles on RC failsafe, 2:Force FPV (bf) lock on roll and pitch
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 16, AP_Mount_Params, options, 0),
 

@@ -84,6 +84,8 @@ class XmlEmit(Emit):
         xml_parameters = etree.SubElement(self.current_element, 'parameters', name=g.reference)  # i.e. ArduPlane
 
         for param in g.params:
+            if not self.should_emit_param(param):
+                continue
             # Begin our parameter node
             if hasattr(param, 'DisplayName'):
                 xml_param = etree.SubElement(xml_parameters, 'param', humanName=param.DisplayName, name=param.name)  # i.e. ArduPlane (ArduPlane:FOOPARM)

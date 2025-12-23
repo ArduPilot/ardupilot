@@ -20,6 +20,7 @@
 
 #include <AP_Logger/AP_Logger.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_Servo_Telem/AP_Servo_Telem.h>
 
 /*
   All backends use the same parameter table and set of indices. Therefore, two
@@ -85,6 +86,10 @@ void AP_TemperatureSensor_Backend::update_external_libraries(const float tempera
 #if HAL_WITH_ESC_TELEM
     AP_ESC_Telem_Backend::TelemetryData t;
 #endif
+#if AP_SERVO_TELEM_ENABLED
+    AP_Servo_Telem *servo_telem;
+    AP_Servo_Telem::TelemetryData servo_telem_data;
+#endif
 
     switch ((AP_TemperatureSensor_Params::Source)_params.source.get()) {
 #if HAL_WITH_ESC_TELEM
@@ -110,6 +115,28 @@ void AP_TemperatureSensor_Backend::update_external_libraries(const float tempera
         case AP_TemperatureSensor_Params::Source::DroneCAN:
             // Label only, used by AP_Periph
             break;
+
+#if AP_SERVO_TELEM_ENABLED
+        case AP_TemperatureSensor_Params::Source::Servo_Motor:
+            servo_telem = AP_Servo_Telem::get_singleton();
+            if (servo_telem == nullptr) {
+                break;
+            }
+            servo_telem_data.motor_temperature_cdeg = temperature * 100;
+            servo_telem_data.present_types = AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP;
+            servo_telem->update_telem_data(_params.source_id-1, servo_telem_data);
+            break;
+
+        case AP_TemperatureSensor_Params::Source::Servo_PCB:
+            servo_telem = AP_Servo_Telem::get_singleton();
+            if (servo_telem == nullptr) {
+                break;
+            }
+            servo_telem_data.pcb_temperature_cdeg = temperature * 100;
+            servo_telem_data.present_types = AP_Servo_Telem::TelemetryData::Types::PCB_TEMP;
+            servo_telem->update_telem_data(_params.source_id-1, servo_telem_data);
+            break;
+#endif // AP_SERVO_TELEM_ENABLED
 
         case AP_TemperatureSensor_Params::Source::None:
         case AP_TemperatureSensor_Params::Source::Pitot_tube:

@@ -73,6 +73,8 @@ public:
     // see if the relay is enabled
     bool enabled(AP_Relay_Params::FUNCTION function) const;
 
+    bool get_pin_by_instance(uint8_t instance, uint8_t &pin) const;
+
 private:
     static AP_Relay *singleton;
 

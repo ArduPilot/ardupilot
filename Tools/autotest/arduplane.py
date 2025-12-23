@@ -7197,11 +7197,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameter("SIM_ARSPD_FAIL", 0)
         self.fly_home_land_and_disarm()
 
-    def RudderArmingWithArmingChecksZero(self):
-        '''check we can't arm with rudder even if checks are disabled'''
+    def RudderArmingWithArmingChecksSkipped(self):
+        '''check we can't arm with rudder even if all checks are skipped'''
         self.set_parameters({
             "ARMING_RUDDER": 0,
-            "ARMING_CHECK": 0,
+            "ARMING_SKIPCHK": -1,
             "RC4_REVERSED": 0,
         })
         self.reboot_sitl()
@@ -7909,7 +7909,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.DO_CHANGE_ALTITUDE,
             self.SET_POSITION_TARGET_GLOBAL_INT_for_altitude,
             self.MAV_CMD_NAV_LOITER_TURNS_zero_turn,
-            self.RudderArmingWithArmingChecksZero,
+            self.RudderArmingWithArmingChecksSkipped,
             self.TerrainLoiterToCircle,
             self.FenceDoubleBreach,
             self.ScriptedArmingChecksApplet,

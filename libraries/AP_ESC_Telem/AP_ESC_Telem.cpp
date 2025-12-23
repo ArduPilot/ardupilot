@@ -686,10 +686,10 @@ void AP_ESC_Telem::update()
                 _last_telem_log_ms[i] = telemdata.last_update_ms;
                 _last_rpm_log_us[i] = rpmdata.last_update_us;
 
-                float rpm = AP::logger().quiet_nanf();
+                float rpm = AP_Logger::quiet_nanf();
                 get_rpm(i, rpm);
-                float raw_rpm = AP::logger().quiet_nanf();
-                float rpm_error_rate = AP::logger().quiet_nanf();
+                float raw_rpm = AP_Logger::quiet_nanf();
+                float rpm_error_rate = AP_Logger::quiet_nanf();
                 get_raw_rpm_and_error_rate(i, raw_rpm, rpm_error_rate);
 
                 // Write ESC status messages

@@ -81,6 +81,7 @@ void SIMState::update()
 {
     static bool init_done;
     if (!init_done) {
+        AP::sitl()->init();
         init_done = true;
         sitl_model = SITL::AP_SIM_FRAME_CLASS::create(AP_SIM_FRAME_STRING);
     }

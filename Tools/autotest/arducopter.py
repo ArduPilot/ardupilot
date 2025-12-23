@@ -3898,7 +3898,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
 
         self.context_push()
-        self.set_parameter("ARMING_CHECK", 1 << 3)
+        # enable only GPS arming check during ordering test
+        self.set_parameter("ARMING_SKIPCHK", ~(1 << 3))
         self.context_collect('STATUSTEXT')
 
         self.reboot_sitl()
@@ -3972,7 +3973,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.context_stop_collecting('STATUSTEXT')
         self.progress("############################### All GPS Order Cases Tests Passed")
         self.progress("############################### Test Healthy Prearm check")
-        self.set_parameter("ARMING_CHECK", 1)
+        self.set_parameter("ARMING_SKIPCHK", 0)
         self.stop_sup_program(instance=0)
         self.start_sup_program(instance=0, args="-M")
         self.stop_sup_program(instance=1)
@@ -8949,16 +8950,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.reboot_sitl()
 
-        # turn off GPS arming checks.  This may be considered a
-        # bug that we need to do this.
-        old_arming_check = int(self.get_parameter("ARMING_CHECK"))
-        if old_arming_check == 1:
-            old_arming_check = 1 ^ 25 - 1
-        new_arming_check = int(old_arming_check) & ~(1 << 3)
-        self.set_parameter("ARMING_CHECK", new_arming_check)
-
-        self.reboot_sitl()
-
         # require_absolute=True infers a GPS is present
         self.wait_ready_to_arm(require_absolute=False)
 
@@ -10567,6 +10558,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             ("nooploop_tofsense", 37),
             ("ainsteinlrd1", 42),
             ("rds02uf", 43),
+            ("lightware_grf", 45),
         ]
         # you can use terrain - if you don't the vehicle just uses a
         # plane based on home.
@@ -10984,7 +10976,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_gps_disable(position_vertical=True)
 
         # turn off arming checks (mandatory arming checks will still be run)
-        self.set_parameter("ARMING_CHECK", 0)
+        self.set_parameter("ARMING_SKIPCHK", -1)
 
         # delay 12 sec to allow EKF to lose altitude estimate
         self.delay_sim_time(12)
@@ -11152,7 +11144,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         new_onboard_logs = sorted(self.log_list())
 
         log_difference = [x for x in new_onboard_logs if x not in old_onboard_logs]
-        return log_difference[2]
+        return log_difference[1] # index depends on the reboots and ordering thereof in BeaconPosition!
 
     def test_replay_optical_flow_bit(self):
         self.set_parameters({
@@ -14745,6 +14737,51 @@ RTL_ALT 111
 
         self.do_RTL(timeout=600)
 
+    def mission_NAV_LOITER_TURNS(self):
+        '''test that loiter turns basically works'''
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
+                p1=1,
+                p3=30,
+                z=30,  # circle is 10m higher than takeoff
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.change_mode('AUTO')
+        self.set_parameter('AUTO_OPTIONS', 3)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_disarmed()
+
+    def mission_NAV_LOITER_TURNS_off_center(self):
+        '''test that loiter turns basically works - copter on edge of circle'''
+        self.start_subtest("Start circle when on edge of circle")
+        radius = 30
+        self.wait_ready_to_arm()
+        here = self.mav.location()
+        circle_centre_loc = self.offset_location_ne(here, radius, 0)
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
+                p1=1,
+                p3=radius,
+                x=int(circle_centre_loc.lat*1e7),
+                y=int(circle_centre_loc.lng*1e7),
+                z=30,  # circle is 10m higher than takeoff
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.change_mode('AUTO')
+        self.set_parameter('AUTO_OPTIONS', 3)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_disarmed()
+
     def AHRSAutoTrim(self):
         '''calibrate AHRS trim using RC input'''
         self.progress("Making earth frame same as body frame")  # because I'm lazy
@@ -15542,6 +15579,8 @@ return update, 1000
             self.DynamicRpmNotches, # Do not add attempts to this - failure is sign of a bug
             self.DynamicRpmNotchesRateThread,
             self.PIDNotches,
+            self.mission_NAV_LOITER_TURNS,
+            self.mission_NAV_LOITER_TURNS_off_center,
             self.StaticNotches,
             self.LuaParamSet,
             self.RefindGPS,

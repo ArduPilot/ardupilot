@@ -94,8 +94,33 @@ detect a reset of the flight controller, which implies a reset of its
 routing table.
 
 */
-bool MAVLink_routing::check_and_forward(GCS_MAVLINK &in_link, const mavlink_message_t &msg)
+bool MAVLink_routing::check_and_forward(uint8_t framing_status,
+                                        GCS_MAVLINK &in_link,
+                                        const mavlink_message_t &msg)
 {
+    // handle the case of loopback of our own messages, due to
+    // incorrect serial configuration.
+    if (msg.sysid == mavlink_system.sysid &&
+        msg.compid == mavlink_system.compid) {
+        return false;  // do not process locally
+    }
+
+    switch (framing_status) {
+    case MAVLINK_FRAMING_OK:
+        break;
+    case MAVLINK_FRAMING_BAD_CRC:
+        if (in_link.option_enabled(GCS_MAVLINK::Option::FORWARD_BAD_CRC) &&
+            msg.msgid != MAVLINK_MSG_ID_RADIO &&
+            msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS &&
+            msg.msgid != MAVLINK_MSG_ID_ADSB_VEHICLE) {
+            forward(in_link, msg);
+        }
+        return false;  // do not process locally
+    case MAVLINK_FRAMING_BAD_SIGNATURE:
+    default:
+        return false;  // do not process locally
+    }
+
 #if HAL_SOLO_GIMBAL_ENABLED
     // check if a Gopro is connected. If yes, we allow the routing
     // of mavlink messages to a private channel (Solo Gimbal case)
@@ -104,13 +129,6 @@ bool MAVLink_routing::check_and_forward(GCS_MAVLINK &in_link, const mavlink_mess
        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "GoPro in Solo gimbal detected");
     }
 #endif // HAL_SOLO_GIMBAL_ENABLED
-
-    // handle the case of loopback of our own messages, due to
-    // incorrect serial configuration.
-    if (msg.sysid == mavlink_system.sysid &&
-        msg.compid == mavlink_system.compid) {
-        return false;
-    }
 
     // learn new routes including private channels
     // so that find_mav_type works for all channels
@@ -132,6 +150,14 @@ bool MAVLink_routing::check_and_forward(GCS_MAVLINK &in_link, const mavlink_mess
         return true;
     }
 
+    /*
+     * Note that if you are looking at handling routing especially for
+     * certain packets here then you may need to add your message to
+     * the list of IDs we will not forward *even if* the option to
+     * send bad-CRC packets has been set (this is in a switch
+     * statement, above).
+     */
+
 #if HAL_ADSB_ENABLED
     if (msg.msgid == MAVLINK_MSG_ID_ADSB_VEHICLE) {
         // if enabled ADSB packets are not forwarded, they have their own stream rate
@@ -142,6 +168,12 @@ bool MAVLink_routing::check_and_forward(GCS_MAVLINK &in_link, const mavlink_mess
     }
 #endif
 
+    return forward(in_link, msg);
+}
+
+bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
+                              const mavlink_message_t &msg)
+{
     // extract the targets for this packet
     int16_t target_system = -1;
     int16_t target_component = -1;
@@ -156,6 +188,7 @@ bool MAVLink_routing::check_and_forward(GCS_MAVLINK &in_link, const mavlink_mess
 
     // don't ever forward data from a private channel
     // unless a Gopro camera is connected to a Solo gimbal
+    const bool from_private_channel = in_link.is_private();
     bool should_process_locally = from_private_channel;
 #if HAL_SOLO_GIMBAL_ENABLED
     if (gopro_status_check) {

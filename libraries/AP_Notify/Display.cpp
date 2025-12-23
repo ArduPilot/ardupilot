@@ -338,7 +338,14 @@ bool Display::init(void)
     FOREACH_I2C(i) {
         switch (pNotify->_display_type) {
         case DISPLAY_SSD1306: {
-            _driver = Display_SSD1306_I2C::probe(std::move(hal.i2c_mgr->get_device(i, NOTIFY_DISPLAY_I2C_ADDR)));
+            const auto dev_ptr = hal.i2c_mgr->get_device_ptr(i, NOTIFY_DISPLAY_I2C_ADDR);
+            if (dev_ptr == nullptr) {
+                break;
+            }
+            _driver = Display_SSD1306_I2C::probe(*dev_ptr);
+            if (_driver == nullptr) {
+                delete dev_ptr;
+            }
             break;
         }
         case DISPLAY_SH1106: {

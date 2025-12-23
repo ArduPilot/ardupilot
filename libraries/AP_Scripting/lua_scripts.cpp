@@ -502,12 +502,7 @@ void lua_scripts::run(void) {
         return;
     }
 
-#ifndef HAL_CONSOLE_DISABLED
-    const int inital_mem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
-#endif
-
     lua_atpanic(L, atpanic);
-    load_generated_bindings(L);
 
     // set up string metatable. we set up one for all scripts that no script has
     // access to, as it's impossible to set up one per-script and we don't want
@@ -521,8 +516,7 @@ void lua_scripts::run(void) {
 
     if (option_is_set(AP_Scripting::DebugOption::RUNTIME_MSG)) {
         const int loaded_mem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
-        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Lua: State memory usage: %i + %i\n",
-            inital_mem, loaded_mem - inital_mem);
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Lua: State memory usage: %i\n", loaded_mem);
     }
 
     // Scan the filesystem in an appropriate manner and autostart scripts

@@ -48,4 +48,12 @@ bool GPIO_Navigator::pinAllowed(uint8_t pin)
     return false;
 }
 
+bool GPIO_Navigator::pin_to_servo_channel(uint8_t pin, uint8_t& servo_ch) const
+{
+    if (1 <= pin && pin <= 16) {
+        servo_ch = pin - 1;
+        return true;
+    }
+    return false;
+}
 #endif  // HAL_LINUX_GPIO_NAVIGATOR_ENABLED

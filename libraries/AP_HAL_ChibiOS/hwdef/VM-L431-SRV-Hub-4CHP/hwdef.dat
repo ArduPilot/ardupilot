@@ -8,14 +8,15 @@ PB7 USART1_RX USART1 NODMA
 STDOUT_SERIAL SD1
 STDOUT_BAUDRATE 57600
 
-define HAL_USE_ADC FALSE 
+define HAL_USE_ADC TRUE
 
-#Servo VCC Current Sampling, for future development
-# define STM32_ADC_USE_ADC1 TRUE
-# PA4 SPARE1_ADC1 ADC1 SCALE(1) # Current Sampling on PWM(1)
-# PA5 SPARE2_ADC1 ADC1 SCALE(1) # Current Sampling on PWM(2)
-# PA6 SPARE3_ADC1 ADC1 SCALE(1) # Current Sampling on PWM(3)
-# PA7 SPARE4_ADC1 ADC1 SCALE(1) # Current Sampling on PWM(4)
+#Servo VCC Current Sampling
+define AP_PERIPH_ACTUATOR_TELEM_ENABLED 1
+define STM32_ADC_USE_ADC1 TRUE
+PA4 ACT1_CURRENT_SENS ADC1 SCALE(1) # Current Sampling on PWM(1)
+PA5 ACT2_CURRENT_SENS ADC1 SCALE(1) # Current Sampling on PWM(2)
+PA6 ACT3_CURRENT_SENS ADC1 SCALE(1) # Current Sampling on PWM(3)
+PA7 ACT4_CURRENT_SENS ADC1 SCALE(1) # Current Sampling on PWM(4)
 
 define AP_PERIPH_RC_OUT_ENABLED 1
 

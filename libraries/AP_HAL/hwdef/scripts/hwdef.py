@@ -284,6 +284,7 @@ class HWDef:
     def get_stale_defines(self):
         '''returns a map with a stale define and a comment as to what to do about it'''
         return {
+            'HAL_COMPASS_DEFAULT': 'HAL_COMPASS_DEFAULT is no longer used; remove it from your hwdef',
             'HAL_NO_GCS': 'HAL_NO_GCS is no longer used; try "define HAL_GCS_ENABLED 0"',
             'HAL_NO_LOGGING': 'HAL_NO_LOGGING is no longer used; try "define HAL_LOGGING_ENABLED 0"',
             'HAL_NO_UARTDRIVER': 'HAL_NO_UARTDRIVER is no longer used; try "define AP_HAL_UARTDRIVER_ENABLED 0"',
@@ -292,6 +293,7 @@ class HWDef:
             'HAL_PROBE_EXTERNAL_I2C_COMPASSES': 'HAL_PROBE_EXTERNAL_I2C_COMPASSES is no longer used; try "define AP_COMPASS_PROBING_ENABLED 1"',  # noqa:E501
             'HAL_SKIP_AUTO_INTERNAL_I2C_PROBE': 'HAL_SKIP_AUTO_INTERNAL_I2C_PROBE is no longer used; try "define AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED 0',  # noqa:E501
             'HAL_COMPASS_DISABLE_IST8310_INTERNAL_PROBE': 'HAL_COMPASS_DISABLE_IST8310_INTERNAL_PROBE is no longer used; try "define AP_COMPASS_IST8310_INTERNAL_BUS_PROBING_ENABLED 0"',  # noqa:E501
+            'BOARD_PWM_COUNT_DEFAULT': 'BOARD_PWM_COUNT_DEFAULT is no longer used; remove it from your hwdef files',
         }
 
     def assert_good_define(self, name):
@@ -440,7 +442,9 @@ class HWDef:
                 probe = a[1]
 
             expected_device_count = 1
-            if driver == 'AK09916' and probe != 'probe':
+            if driver == 'AK09916' and probe == 'probe_ICM20948':
+                expected_device_count = 1
+            elif driver == 'AK09916' and probe != 'probe':
                 expected_device_count = 0
             elif driver == 'AK8963' and probe == 'probe_mpu9250':
                 expected_device_count = 1
@@ -455,7 +459,9 @@ class HWDef:
                     devlist.append(self.spi_dev_to_object(d))
                 elif d.startswith("I2C:"):
                     devlist.append(self.i2c_dev_to_object(d))
-                elif driver == 'AK8963' and probe == 'probe_mpu9250' and d.isdigit():
+                elif ((driver == 'AK8963' and probe == 'probe_mpu9250') or
+                      (driver == 'AK09916' and probe == 'probe_ICM20948') and
+                      d.isdigit()):
                     devlist.append(d)
                 else:
                     raise ValueError(f"Unknown device ({d=}) ({orig_a=})")
@@ -573,11 +579,7 @@ class HWDef:
             driver = baro.driver
             probe = baro.probe
 
-            args = ['*this']
-
             n = len(devlist)+1
-
-            args = []
 
             if driver == "DPS280":
                 # special handling for DPS280; use a probe method of

@@ -6991,18 +6991,17 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.reboot_sitl()
         self.change_mode('MANUAL')
         self.wait_prearm_sys_status_healthy()
-        self.assert_home_position_not_set()
         self.arm_vehicle()
         self.disarm_vehicle()
 
         self.change_mode('GUIDED')
-        self.assert_prearm_failure("waiting for home", other_prearm_failures_fatal=False)
+        self.assert_prearm_failure("Need Position Estimate", other_prearm_failures_fatal=False)
 
         self.change_mode('MANUAL')
         self.set_parameters({
             "ARMING_NEED_LOC": 1,
         })
-        self.assert_prearm_failure("waiting for home", other_prearm_failures_fatal=False)
+        self.assert_prearm_failure("Need Position Estimate", other_prearm_failures_fatal=False)
         self.context_pop()
         self.reboot_sitl()
 

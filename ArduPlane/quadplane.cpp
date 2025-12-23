@@ -2623,14 +2623,18 @@ void QuadPlane::vtol_position_controller(void)
                                                   2*position2_dist_threshold_m + stopping_distance_m(rel_groundspeed_sq));
 
                 target_speed_ne_ms = diff_wp_norm * approach_speed_ms;
-                have_target_yaw = true;
-
-                // adjust target yaw angle for wind. We calculate yaw based on the target speed
-                // we want assuming no speed scaling due to direction
+                
+                // adjust target yaw angle into the apparent wind
                 const Vector2f wind_ms = plane.ahrs.wind_estimate().xy();
-                const float gnd_speed_ms = plane.ahrs.groundspeed();
-                Vector2f target_speed_xy = landing_velocity_ne_ms + diff_wp_norm * gnd_speed_ms - wind_ms;
-                target_yaw_deg = degrees(target_speed_xy.angle());
+                const Vector2f airspeed_ne_ms = plane.ahrs.groundspeed_vector() - wind_ms;
+                if (airspeed_ne_ms.length_squared() < 1) {
+                    // Don't cause unpredictable yaw swings if the airspeed vector
+                    // is very small; let the weathervane logic handle it instead.
+                    have_target_yaw = false;
+                } else {
+                    have_target_yaw = true;
+                    target_yaw_deg = degrees(airspeed_ne_ms.angle());
+                }
             }
         }
         const float target_speed_ms = target_speed_ne_ms.length();
@@ -2742,6 +2746,7 @@ void QuadPlane::vtol_position_controller(void)
     }
 
     case QPOS_LAND_FINAL:
+        setup_target_position();
         update_land_positioning();
 
         // relax when close to the ground
@@ -3083,7 +3088,8 @@ void QuadPlane::setup_target_position(void)
     if (!ahrs.get_origin(origin)) {
         origin.zero();
     }
-    if (!in_vtol_land_approach() || poscontrol.get_state() > QPOS_APPROACH) {
+    if ((!in_vtol_land_approach() || poscontrol.get_state() > QPOS_APPROACH) &&
+        poscontrol.get_state() != QPOS_LAND_FINAL) {
         set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     }
 

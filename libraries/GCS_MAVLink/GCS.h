@@ -178,6 +178,7 @@ public:
 #if AP_MAVLINK_FTP_ENABLED
     friend class GCS_FTP;
 #endif
+    friend class MAVLink_routing;
 
     GCS_MAVLINK(AP_HAL::UARTDriver &uart);
     virtual ~GCS_MAVLINK() {}
@@ -228,9 +229,17 @@ public:
                                      mission_type);
     }
 
-    // packetReceived is called on any successful decode of a mavlink message
+    // packetReceived is called on any successful decode of a mavlink
+    // message where the framing is correct (so CRC matches, for
+    // example).
     virtual void packetReceived(const mavlink_status_t &status,
                                 const mavlink_message_t &msg);
+
+    // raw_packetReceived is called on any successful decode of a mavlink
+    // message.
+    void raw_packetReceived(uint8_t framing_status,
+                            const mavlink_status_t &status,
+                            const mavlink_message_t &msg);
 
     // send a mavlink_message_t out this GCS_MAVLINK connection.
     void send_message(uint32_t msgid, const char *pkt) {
@@ -529,6 +538,7 @@ protected:
         MAVLINK2_SIGNING_DISABLED = (1U << 0),
         NO_FORWARD                = (1U << 1),  // don't forward MAVLink data to or from this device
         NOSTREAMOVERRIDE          = (1U << 2),  // ignore REQUEST_DATA_STREAM messages (eg. from GCSs)
+        FORWARD_BAD_CRC           = (1U << 3),  // forward mavlink packets that don't pass CRC
     };
     bool option_enabled(Option option) const {
         return options & static_cast<uint16_t>(option);
@@ -665,7 +675,13 @@ protected:
         const uint16_t interval_ms = 10000;
     }  _timesync_request;
 
-    void handle_statustext(const mavlink_message_t &msg) const;
+    void handle_statustext(const mavlink_message_t &msg);
+    struct {
+        uint8_t last_src_system;
+        uint8_t last_src_component;
+        uint8_t last_id; // ID from the mavlink packet
+        uint8_t msg_id;  // ID used in our logs
+    } statustext_chunking;
     void handle_named_value(const mavlink_message_t &msg) const;
 
     bool telemetry_delayed() const;

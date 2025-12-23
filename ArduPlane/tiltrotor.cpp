@@ -413,8 +413,8 @@ void Tiltrotor::write_log()
 
     if (type != TILT_TYPE_VECTORED_YAW) {
         // Left and right tilt are invalid
-        pkt.front_left_tilt = plane.logger.quiet_nanf();
-        pkt.front_right_tilt = plane.logger.quiet_nanf();
+        pkt.front_left_tilt = AP_Logger::quiet_nanf();
+        pkt.front_right_tilt = AP_Logger::quiet_nanf();
 
     } else {
         // Calculate tilt angle from servo outputs

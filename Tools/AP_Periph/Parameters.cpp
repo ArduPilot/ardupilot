@@ -617,6 +617,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(g_rcin, "RC",  Parameters_RCIN),
 #endif
 
+#if AP_PERIPH_ACTUATOR_TELEM_ENABLED
+    // @Group: ACT
+    // @Path: actuator_telem.cpp
+    GOBJECT(actuator_telem, "ACT", ActuatorTelem),
+#endif
+
 #if AP_PERIPH_BATTERY_BALANCE_ENABLED
     // @Group: BAL
     // @Path: batt_balance.cpp

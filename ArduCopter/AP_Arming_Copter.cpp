@@ -69,7 +69,7 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
     }
 
     // if pre arm checks are disabled run only the mandatory checks
-    if (checks_to_perform == 0) {
+    if (should_skip_all_checks()) {
         return mandatory_checks(display_failure);
     }
 
@@ -595,7 +595,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
     }
 
     // succeed if arming checks are disabled
-    if (checks_to_perform == 0) {
+    if (should_skip_all_checks()) {
         return true;
     }
 
@@ -653,7 +653,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
     return AP_Arming::arm_checks(method);
 }
 
-// mandatory checks that will be run if ARMING_CHECK is zero or arming forced
+// mandatory checks that will be run if ARMING_SKIPCHK skips all or arming forced
 bool AP_Arming_Copter::mandatory_checks(bool display_failure)
 {
     // call mandatory gps checks and update notify status because regular gps checks will not run

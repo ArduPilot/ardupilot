@@ -18,6 +18,7 @@ public:
     void    pinMode(uint8_t pin, uint8_t output, uint8_t alt) override;
     uint8_t read(uint8_t pin) override;
     void    write(uint8_t pin, uint8_t value) override;
+    bool    pin_to_servo_channel(uint8_t pin, uint8_t& servo_ch) const override;
 private:
     uint8_t AllowedGPIOS[3] = {
         RPI_GPIO_<18>(), // Aux Output for PWMs

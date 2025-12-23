@@ -310,6 +310,12 @@ void AP_InertialSensor_SITL::generate_gyro()
 
 void AP_InertialSensor_SITL::timer_update(void)
 {
+    // on some simulations (RealFlight) the aircraft sim decides when a new sample is available.
+    if (sitl->state.flightaxis_imu_frame_num > 0) {
+        update_from_frame();
+        return;
+    }
+
     uint64_t now = AP_HAL::micros64();
 #if 0
     // insert a 1s pause in IMU data. This triggers a pause in EK2
@@ -321,6 +327,7 @@ void AP_InertialSensor_SITL::timer_update(void)
     if (sitl == nullptr) {
         return;
     }
+
     if (now >= next_accel_sample) {
         if (((1U << accel_instance) & sitl->accel_fail_mask) == 0) {
 #if AP_SIM_INS_FILE_ENABLED
@@ -357,6 +364,26 @@ void AP_InertialSensor_SITL::timer_update(void)
                 }
             }
         }
+    }
+}
+
+void AP_InertialSensor_SITL::update_from_frame(void)
+{
+    if (sitl == nullptr) {
+        return;
+    }
+
+    if (flightaxis_imu_frame_num == sitl->state.flightaxis_imu_frame_num) {
+        return;
+    }
+
+    flightaxis_imu_frame_num = sitl->state.flightaxis_imu_frame_num;
+
+    if (((1U << accel_instance) & sitl->accel_fail_mask) == 0) {
+        generate_accel();
+    }
+    if (((1U << gyro_instance) & sitl->gyro_fail_mask) == 0) {
+        generate_gyro();
     }
 }
 

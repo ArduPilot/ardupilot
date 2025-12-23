@@ -20,63 +20,7 @@ void AP_Mount_Scripting::update()
 {
     AP_Mount_Backend::update();
 
-    // change to RC_TARGETING mode if RC input has changed
-    set_rctargeting_on_rcinput_change();
-
-    // update based on mount mode
-    switch (get_mode()) {
-        // move mount to a "retracted" position.  To-Do: remove support and replace with a relaxed mode?
-        case MAV_MOUNT_MODE_RETRACT: {
-            const Vector3f &angle_bf_target = _params.retract_angles.get();
-            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
-            mnt_target.target_type = MountTargetType::ANGLE;
-            break;
-        }
-
-        // move mount to a neutral position, typically pointing forward
-        case MAV_MOUNT_MODE_NEUTRAL: {
-            const Vector3f &angle_bf_target = _params.neutral_angles.get();
-            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
-            mnt_target.target_type = MountTargetType::ANGLE;
-            break;
-        }
-
-        // point to the angles given by a mavlink message
-        case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            // mavlink targets should have been already stored while handling the message
-            break;
-
-        // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING:
-            update_mnt_target_from_rc_target();
-            break;
-
-        // point mount to a GPS point given by the mission planner
-        case MAV_MOUNT_MODE_GPS_POINT:
-            if (get_angle_target_to_roi(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        // point mount to Home location
-        case MAV_MOUNT_MODE_HOME_LOCATION:
-            if (get_angle_target_to_home(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        // point mount to another vehicle
-        case MAV_MOUNT_MODE_SYSID_TARGET:
-            if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        default:
-            // we do not know this mode so raise internal error
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            break;
-    }
+    update_mnt_target();
 }
 
 // return true if healthy

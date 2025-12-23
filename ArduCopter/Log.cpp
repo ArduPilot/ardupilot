@@ -30,7 +30,7 @@ void Copter::Log_Write_Control_Tuning()
     float terr_alt = 0.0f;
 #if AP_TERRAIN_AVAILABLE
     if (!terrain.height_above_terrain(terr_alt, true)) {
-        terr_alt = logger.quiet_nan();
+        terr_alt = AP_Logger::quiet_nanf();
     }
 #endif
     float des_alt_m = 0.0f;
@@ -43,11 +43,11 @@ void Copter::Log_Write_Control_Tuning()
     float desired_rangefinder_alt_m;
 #if AP_RANGEFINDER_ENABLED
     if (!surface_tracking.get_target_dist_for_logging(desired_rangefinder_alt_m)) {
-        desired_rangefinder_alt_m = AP::logger().quiet_nan();
+        desired_rangefinder_alt_m = AP_Logger::quiet_nanf();
     }
 #else
     // get surface tracking alts
-    desired_rangefinder_alt_m = AP::logger().quiet_nan();
+    desired_rangefinder_alt_m = AP_Logger::quiet_nanf();
 #endif
 
     struct log_Control_Tuning pkt = {
@@ -64,7 +64,7 @@ void Copter::Log_Write_Control_Tuning()
 #if AP_RANGEFINDER_ENABLED
         rangefinder_alt     : surface_tracking.get_dist_for_logging(),
 #else
-        rangefinder_alt     : AP::logger().quiet_nanf(),
+        rangefinder_alt     : AP_Logger::quiet_nanf(),
 #endif
         terr_alt            : terr_alt,
         target_climb_rate   : int16_t(target_climb_rate_ms * 100.0),
