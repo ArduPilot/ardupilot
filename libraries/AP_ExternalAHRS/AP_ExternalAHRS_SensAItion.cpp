@@ -22,6 +22,7 @@
 #if AP_EXTERNAL_AHRS_SENSAITION_ENABLED
 
 #include <float.h>
+#include <math.h>
 
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <GCS_MAVLink/GCS.h>
@@ -260,8 +261,8 @@ void AP_ExternalAHRS_SensAItion::handle_imu(const AP_ExternalAHRS_SensAItion_Par
     // ArduPlane has an internal check that triggers an error if there are too many barometer
     // readings with the same value. Therefore, we don't send them again unless there
     // has been a relevant change.
-    const bool pressure_changed = fabs(_baro.pressure_pa - meas.air_pressure_p) > MINIMUM_INTERESTING_BAROMETER_CHANGE_p;
-    const bool temp_changed = fabs(_baro.temperature - meas.temperature_degc) > MINIMUM_INTERESTING_TEMP_CHANGE_degc;
+    const bool pressure_changed = fabsf(_baro.pressure_pa - meas.air_pressure_p) > MINIMUM_INTERESTING_BAROMETER_CHANGE_p;
+    const bool temp_changed = fabsf(_baro.temperature - meas.temperature_degc) > MINIMUM_INTERESTING_TEMP_CHANGE_degc;
     if (pressure_changed || temp_changed) {
         _baro.instance = 0;
         _baro.pressure_pa = meas.air_pressure_p;
