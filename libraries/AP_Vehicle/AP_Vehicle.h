@@ -86,6 +86,11 @@
 #include <AP_RPM/AP_RPM.h>
 #endif
 
+#include <AP_CRSF/AP_CRSF_config.h>
+#if AP_CRSF_OUT_ENABLED
+#include <AP_CRSF/AP_CRSF_OutManager.h>
+#endif
+
 #include <AP_IBus_Telem/AP_IBus_Telem.h>
 
 class AP_DDS_Client;
@@ -502,6 +507,10 @@ protected:
     AP_RPM rpm_sensor;
 #endif
 
+#if AP_CRSF_OUT_ENABLED
+    AP_CRSF_OutManager crsf_out;
+#endif
+
     static const struct AP_Param::GroupInfo var_info[];
 #if AP_SCHEDULER_ENABLED
     static const struct AP_Scheduler::Task scheduler_tasks[];
@@ -518,6 +527,9 @@ protected:
 
     // call the arming library's update function
     void update_arming();
+
+    // call the RC library's update function
+    void update_rc();
 
     // check for motor noise at a particular frequency
     void check_motor_noise();
