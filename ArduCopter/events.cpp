@@ -491,6 +491,13 @@ bool Copter::should_disarm_on_failsafe() {
 
 void Copter::do_failsafe_action(FailsafeAction action, ModeReason reason){
 
+#if HAL_SPRAYER_ENABLED
+    // Any failsafe that results in an actual action should stop spraying, the pilot can manually re-enable later.
+    if (action != FailsafeAction::NONE) {
+        sprayer.run(false);
+    }
+#endif
+
     // Execute the specified desired_action
     switch (action) {
         case FailsafeAction::NONE:
