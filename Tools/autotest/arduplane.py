@@ -3129,6 +3129,56 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         '''Test InertialLabs EAHRS support'''
         self.fly_external_AHRS("ILabs", 5, "ap1.txt")
 
+    def KebniSensAItionExternalINS(self):
+        '''Test Kebni SensAItion External INS mode. Or in Ardupilot terminology, ExternalAHRS mode.'''
+        self.set_parameters({
+            "EAHRS_OPTIONS": 2  # INS mode -> Bit 1 set
+        })
+        self.fly_external_AHRS("SensAItionINS", 11, "ap1.txt")
+
+    def KebniSensAItionExternalIMU(self):
+        '''Test Kebni SensAItion External IMU-only mode'''
+        self.customise_SITL_commandline(["--serial4=sim:SensAItion"])
+
+        self.set_parameters({
+            # External AHRS configuration (IMU-only mode at 1000Hz)
+            "EAHRS_TYPE": 11,         # SensAItion External AHRS type
+            "EAHRS_SENSORS": 14,      # IMU(2) + Baro(4) + Compass(8) = 14
+            "EAHRS_OPTIONS": 0,      # Legacy IMU mode
+            "SERIAL4_PROTOCOL": 36,   # External AHRS protocol
+            "SERIAL4_BAUD": 460800,   # 460800 baud
+            "GPS1_TYPE": 1,           # Use SITL GPS for position data
+            "AHRS_EKF_TYPE": 3,       # Internal EKF3 (fed by external IMU)
+            "EK3_PRIMARY": 0,         # Use external IMU (SensAItion) as primary
+            "EK3_OPTIONS": 2,         # Disable EK3 lane switching
+
+            # Ultra high-rate INS filtering
+            "INS_GYR_CAL": 1,
+        })
+        self.reboot_sitl()
+        self.delay_sim_time(10)
+
+        self.progress("Running accelcal")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+            p5=4,
+            timeout=10,
+        )
+
+        # Wait for EKF3 with external IMU to converge
+        expected_flags = (mavutil.mavlink.ESTIMATOR_ATTITUDE |
+                          mavutil.mavlink.ESTIMATOR_VELOCITY_HORIZ |
+                          mavutil.mavlink.ESTIMATOR_VELOCITY_VERT |
+                          mavutil.mavlink.ESTIMATOR_POS_HORIZ_REL |
+                          mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS |
+                          mavutil.mavlink.ESTIMATOR_POS_VERT_ABS)
+        self.wait_ekf_flags(expected_flags, 0, timeout=60)
+
+        self.wait_ready_to_arm(timeout=120)
+        self.arm_vehicle()
+        self.fly_mission("ap1.txt", mission_timeout=120)
+        self.disarm_vehicle(force=True)
+
     def GpsSensorPreArmEAHRS(self):
         '''Test pre-arm checks related to EAHRS_SENSORS using the MicroStrain7 driver'''
         self.customise_SITL_commandline(["--serial4=sim:MicroStrain7"])
@@ -7820,6 +7870,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MicroStrainEAHRS5,
             self.MicroStrainEAHRS7,
             self.InertialLabsEAHRS,
+            self.KebniSensAItionExternalINS,
+            self.KebniSensAItionExternalIMU,
             self.GpsSensorPreArmEAHRS,
             self.Deadreckoning,
             self.EKFlaneswitch,
