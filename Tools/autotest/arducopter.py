@@ -12615,6 +12615,142 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if not lines[-2].startswith("AP_CRSF_OutManager::init"):
             raise NotAchievedException("Expected CRSF out last not (%s)" % lines[-2])
 
+    def CRSFOutTwoVehicle(self):
+        '''Test CRSF output between two vehicles'''
+        self.context_push()
+        self.speedup = 1
+        original_speedup = self.speedup  # FIXME: do this better
+        ex = None
+        rx_sitl = None
+        try:
+            # Get a port for the CRSF connection between vehicles
+            crsf_port = self.spare_network_port()
+
+            # Start the RX vehicle FIRST (it listens on the TCP port)
+            # Note: start_SITL waits for "Waiting for " before returning,
+            # so the RX vehicle is already listening when it returns.
+            self.progress("Starting TX vehicle with CRSF output on port %u" % crsf_port)
+            rx_rundir = util.reltopdir('rx-copter')
+            if not os.path.exists(rx_rundir):
+                os.mkdir(rx_rundir)
+            rx_sitl = util.start_SITL(
+                self.binary,
+                cwd=rx_rundir,
+                model=self.frame,
+                home=self.sitl_home(),
+                speedup=self.speedup,
+                defaults_filepath=self.defaults_filepath(),
+                gdb=self.gdb,
+                wipe=True,
+                customisations=[
+                    '--serial0=tcp:0',
+                    "-I1",  # instance 1
+                    '--serial1', 'tcp:2',
+                    "--serial5=tcp:%u" % crsf_port,  # listen for CRSF connection
+                ],
+                param_defaults={
+                    "SYSID_THISMAV": 2,
+                    "SERIAL1_PROTOCOL": 2,
+                    "SERIAL5_PROTOCOL": 23,
+                    "RC_PROTOCOLS": 512,
+                    "SIM_SPEEDUP": self.speedup,
+                    "INITIAL_MODE": 0,
+                    "MAV1_RC_CHAN": 10,
+                    "MAV1_EXTRA1": 10,
+                    "MAV2_RC_CHAN": 10,
+                    "MAV2_EXTRA1": 10,
+                },
+            )
+            self.expect_list_add(rx_sitl)
+            self.progress("Connect to the serial port on the server, which should be talking mavlink")
+            self.drain_mav()
+            mav2 = mavutil.mavlink_connection(
+                "tcp:localhost:5772",
+                robust_parsing=True,
+                source_system=9,
+                source_component=9,
+            )
+            self.assert_receive_message("HEARTBEAT", mav=mav2, very_verbose=True, timeout=5)
+            self.drain_mav()
+
+            self.progress("RX vehicle started and listening on port %u" % crsf_port)
+
+            # Now configure the main vehicle (TX) to connect to RX
+            self.set_parameters({
+                "CRSF_OUT_RPT_HZ": 1,
+                "SERVO1_FUNCTION": 124,
+                "SERVO2_FUNCTION": 125,
+                "SERVO3_FUNCTION": 126,
+                "SERVO4_FUNCTION": 127,
+                "SERVO5_FUNCTION": 55,
+                "SERVO6_FUNCTION": 56,
+                "SERVO7_FUNCTION": 57,
+                "SERVO8_FUNCTION": 58,
+                "SERVO9_FUNCTION": 59,
+                "SERVO10_FUNCTION": 60,
+                "SERVO11_FUNCTION": 61,
+                "SERVO12_FUNCTION": 62,
+                "SERVO13_FUNCTION": 33,
+                "SERVO14_FUNCTION": 34,
+                "SERVO15_FUNCTION": 35,
+                "SERVO16_FUNCTION": 36,
+                "SERIAL5_PROTOCOL": 51 # CRSF_Output
+            })
+
+            self.customise_SITL_commandline([
+                "--serial5=tcpclient:127.0.0.1:%u" % crsf_port
+            ])
+
+            self.set_rc(1, 1500)
+            self.set_rc(2, 1500)
+            self.set_rc(3, 1000)
+            self.set_rc(4, 1500)
+            self.set_rc(5, 1563)    # canary channel
+
+            self.context_collect('STATUSTEXT')
+
+            # Wait for the TX vehicle to show a negotiated CRSF connection
+            # The TX should output "CRSFOut: waiting for RC lock" then eventually negotiate
+            self.progress("Waiting for TX vehicle CRSF output activity")
+            self.wait_statustext("CRSFOut: RC: [0-9]+Hz,.*", regex=True, check_context=True, timeout=10)
+            self.progress("TX vehicle started CRSF output - connection established")
+
+            # Give time for negotiation
+            self.delay_sim_time(10)
+
+            # On the RX side, verify we're receiving RC channels
+            self.progress("Checking RX vehicle receives RC channels")
+            # Put vehicle in stabilize so that there are actually some outputs on channel 1-4
+            self.change_mode('STABILIZE')
+
+            num_packets = 0
+            while True:
+                m = self.assert_receive_message('RC_CHANNELS', mav=mav2, very_verbose=True, timeout=10)
+                if m.chan5_raw == 1563: # check the canary channel
+                    break
+                num_packets = num_packets + 1
+                if num_packets > 100:
+                    raise NotAchievedException("Did not receive channel5 with 1563us value")
+
+            self.progress("Received RC_CHANNELS: chan1=%u chan2=%u chan3=%u" %
+                          (m.chan1_raw, m.chan2_raw, m.chan3_raw))
+
+            self.progress("CRSF two-vehicle test passed")
+
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+        finally:
+            self.speedup = original_speedup
+            if rx_sitl is not None:
+                self.progress("Stopping RX vehicle")
+                self.expect_list_remove(rx_sitl)
+                util.pexpect_close(rx_sitl)
+        self.context_pop()
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
     def RTL_TO_RALLY(self, target_system=1, target_component=1):
         '''Check RTL to rally point'''
         self.wait_ready_to_arm()
@@ -15804,6 +15940,7 @@ return update, 1000
             self.PLDNoParameters,
             self.PeriphMultiUARTTunnel,
             self.EKF3SRCPerCore,
+            self.CRSFOutTwoVehicle,
         ])
         return ret
 
