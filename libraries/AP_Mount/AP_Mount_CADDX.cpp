@@ -5,7 +5,6 @@
 #include "AP_Mount_CADDX.h"
 #include <AP_HAL/AP_HAL.h>
 
-#define AP_MOUNT_CADDX_RESEND_MS   1000    // resend angle targets to gimbal once per second
 #define SET_ATTITUDE_HEADER1 0xA5
 #define SET_ATTITUDE_HEADER2 0x5A
 #define SET_ATTITUDE_BUF_SIZE 10
@@ -29,10 +28,7 @@ void AP_Mount_CADDX::update()
         update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
     }
 
-    // resend target angles at least once per second
-    if (mnt_target.fresh || ((AP_HAL::millis() - _last_send_ms) > AP_MOUNT_CADDX_RESEND_MS)) {
-        send_target_angles(mnt_target.angle_rad);
-    }
+    send_target_angles(mnt_target.angle_rad);
 }
 
 // get attitude as a quaternion.  returns true on success
@@ -107,9 +103,6 @@ void AP_Mount_CADDX::send_target_angles(const MountAngleTarget& angle_target_rad
 
     // send packet to gimbal
     _uart->write(set_attitude_cmd_buf, sizeof(set_attitude_cmd_buf));
-
-    // store time of send
-    _last_send_ms = AP_HAL::millis();
 }
 
 #endif // HAL_MOUNT_CADDX_ENABLED

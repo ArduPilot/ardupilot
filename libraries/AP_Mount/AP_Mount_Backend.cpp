@@ -908,10 +908,6 @@ void AP_Mount_Backend::update_mnt_target()
     // change to RC_TARGETING mode if RC input has changed
     set_rctargeting_on_rcinput_change();
 
-    // note that not all backends currently use "fresh".  We should
-    // change this to have all backends use this or none use it.
-    mnt_target.fresh = false;
-
     switch (get_mode()) {
     case MAV_MOUNT_MODE_RETRACT: {
         // move mount to a "retracted" position.  To-Do: remove support and replace with a relaxed mode?
@@ -932,20 +928,17 @@ void AP_Mount_Backend::update_mnt_target()
     case MAV_MOUNT_MODE_MAVLINK_TARGETING:
         // point to the angles given by a mavlink message
         // mavlink targets are stored while handling the incoming message
-        mnt_target.fresh = true;
         return;
 
     case MAV_MOUNT_MODE_RC_TARGETING:
         // RC radio manual angle control, but with stabilization from the AHRS
         update_mnt_target_from_rc_target();
-        mnt_target.fresh = true;
         return;
 
     case MAV_MOUNT_MODE_GPS_POINT:
         // point mount to a GPS point given by the mission planner
         if (get_angle_target_to_roi(mnt_target.angle_rad)) {
             mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.fresh = true;
         }
         return;
 
@@ -953,7 +946,6 @@ void AP_Mount_Backend::update_mnt_target()
         // point mount to Home location
         if (get_angle_target_to_home(mnt_target.angle_rad)) {
             mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.fresh = true;
         }
         return;
 
@@ -961,7 +953,6 @@ void AP_Mount_Backend::update_mnt_target()
         // point mount to another vehicle
         if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
             mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.fresh = true;
         }
         return;
     case MAV_MOUNT_MODE_ENUM_END:
