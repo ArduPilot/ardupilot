@@ -266,6 +266,19 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         inertiallabs = NEW_NOTHROW SITL::InertialLabs();
         return inertiallabs;
 
+    } else if (streq(name, "SensAItion")) {
+        if (sensaition != nullptr) {
+            AP_HAL::panic("Only one SensAItion at a time");
+        }
+        sensaition = NEW_NOTHROW SITL::SensAItion(false);
+        return sensaition;
+    } else if (streq(name, "SensAItionINS")) {
+        if (sensaition != nullptr) {
+            AP_HAL::panic("Only one SensAItion at a time");
+        }
+        sensaition = NEW_NOTHROW SITL::SensAItion(true);
+        return sensaition;
+
 #if AP_SIM_AIS_ENABLED
     } else if (streq(name, "AIS")) {
         if ((ais != nullptr) || (ais_replay != nullptr)) {
@@ -395,6 +408,10 @@ void SITL_State_Common::sim_update(void)
 
     if (vectornav != nullptr) {
         vectornav->update();
+    }
+
+    if (sensaition != nullptr) {
+        sensaition->update();
     }
 
     if (microstrain5 != nullptr) {
