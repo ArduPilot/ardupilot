@@ -12564,6 +12564,83 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if not lines[-2].startswith("AP_CRSF_OutManager::init"):
             raise NotAchievedException("Expected CRSF out last not (%s)" % lines[-2])
 
+    def CRSFOutTwoVehicle(self):
+        '''Test CRSF output between two vehicles'''
+        self.context_push()
+        ex = None
+        tx_sitl = None
+        try:
+            # Get a port for the CRSF connection between vehicles
+            crsf_port = self.spare_network_port()
+
+            # Start the TX vehicle FIRST (it listens on the TCP port)
+            # Protocol 51 is CRSF_Output
+            # Note: start_SITL waits for "Waiting for " before returning,
+            # so the TX vehicle is already listening when it returns.
+            self.progress("Starting TX vehicle with CRSF output on port %u" % crsf_port)
+            tx_rundir = util.reltopdir(f'tx-copter')
+            if not os.path.exists(tx_rundir):
+                os.mkdir(tx_rundir)
+            tx_sitl = util.start_SITL(
+                self.binary,
+                cwd=tx_rundir,
+                model=self.frame,
+                home=self.sitl_home(),
+                speedup=self.speedup,
+                defaults_filepath=self.defaults_filepath(),
+                wipe=True,
+                customisations=[
+                    "-I1",  # instance 1
+                    "--serial5=tcpclient:127.0.0.1:%u" % crsf_port,  # listen for CRSF connection
+                ],
+                param_defaults={
+                    "SYSID_THISMAV": 2,
+                    "SERIAL5_PROTOCOL": 51,  # CRSF_Output
+                    "SIM_SPEEDUP": self.speedup,
+                },
+            )
+            self.expect_list_add(tx_sitl)
+            self.progress("TX vehicle started and listening on port %u" % crsf_port)
+
+            # Now configure the main vehicle (RX) to connect to TX
+            # Protocol 29 is CRSF input
+            self.customise_SITL_commandline([
+                "--serial5=tcp:%u" % crsf_port
+            ])
+
+            self.set_parameter("SERIAL5_PROTOCOL", 23)
+            self.reboot_sitl()
+
+            # Wait for the TX vehicle to show CRSF output status
+            # The TX should output "CRSFOut: waiting for RC lock" then eventually negotiate
+            self.progress("Waiting for TX vehicle CRSF output activity")
+            tx_sitl.expect("CRSFOut:", timeout=60)
+            self.progress("TX vehicle started CRSF output - connection established")
+
+            # Give time for negotiation
+            self.delay_sim_time(10)
+
+            # On the RX side, verify we're receiving RC channels
+            self.progress("Checking RX vehicle receives RC channels")
+            m = self.assert_receive_message('RC_CHANNELS', timeout=10)
+            self.progress("Received RC_CHANNELS: chan1=%u chan2=%u chan3=%u" %
+                          (m.chan1_raw, m.chan2_raw, m.chan3_raw))
+
+            self.progress("CRSF two-vehicle test passed")
+
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+        finally:
+            if tx_sitl is not None:
+                self.progress("Stopping TX vehicle")
+                self.expect_list_remove(tx_sitl)
+                util.pexpect_close(tx_sitl)
+        self.context_pop()
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
     def RTL_TO_RALLY(self, target_system=1, target_component=1):
         '''Check RTL to rally point'''
         self.wait_ready_to_arm()
@@ -15594,6 +15671,7 @@ return update, 1000
             self.CompassReordering,
             self.SixCompassCalibrationAndReordering,
             self.CRSF,
+            self.CRSFOutTwoVehicle,
             self.MotorTest,
             self.AltEstimation,
             self.EKFSource,
