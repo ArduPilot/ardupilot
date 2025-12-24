@@ -18,6 +18,10 @@
 #define AP_PERIPH_NET_PPP_BAUD_DEFAULT 12500000
 #endif
 
+#ifndef HAL_PERIPH_NETWORK_PASSTHRU_ENABLE_PARITY_STOP_BITS
+#define HAL_PERIPH_NETWORK_PASSTHRU_ENABLE_PARITY_STOP_BITS 0
+#endif
+
 class Networking_Periph {
 public:
     Networking_Periph() {
@@ -44,10 +48,13 @@ private:
 
         void init();
         void update();
-        
+
         static const struct AP_Param::GroupInfo var_info[];
 
     private:
+        // configure a serial port for passthru
+        void configure_serial_port(AP_HAL::UARTDriver *port, uint32_t baud, uint32_t options, int8_t parity, int8_t stop_bits);
+
         AP_Int8 enabled;
         AP_Int8 ep1;
         AP_Int8 ep2;
@@ -55,6 +62,12 @@ private:
         AP_Int32 baud2;
         AP_Int32 options1;
         AP_Int32 options2;
+#if HAL_PERIPH_NETWORK_PASSTHRU_ENABLE_PARITY_STOP_BITS
+        AP_Int8 parity1;
+        AP_Int8 stop_bits1;
+        AP_Int8 parity2;
+        AP_Int8 stop_bits2;
+#endif
 
         AP_HAL::UARTDriver *port1;
         AP_HAL::UARTDriver *port2;
