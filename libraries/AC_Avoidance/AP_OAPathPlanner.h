@@ -67,7 +67,7 @@ public:
 
     // enumerations for _TYPE parameter
     enum OAPathPlanTypes {
-        OA_PATHPLAN_DISABLED = 0,
+        OA_PATHPLAN_REPORT_ONLY = 0,
         OA_PATHPLAN_BENDYRULER = 1,
         OA_PATHPLAN_DIJKSTRA = 2,
         OA_PATHPLAN_DJIKSTRA_BENDYRULER = 3,
