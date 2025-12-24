@@ -185,11 +185,6 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
 
 void NavEKF3_core::Log_Write_XKF5(uint64_t time_us) const
 {
-    if (core_index != frontend->primary) {
-        // log only primary instance for now
-        return;
-    }
-
     const struct log_XKF5 pkt5{
         LOG_PACKET_HEADER_INIT(LOG_XKF5_MSG),
         time_us : time_us,
@@ -235,11 +230,6 @@ void NavEKF3_core::Log_Write_Quaternion(uint64_t time_us) const
 // logs beacon information, one beacon per call
 void NavEKF3_core::Log_Write_Beacon(uint64_t time_us)
 {
-    if (core_index != frontend->primary) {
-        // log only primary instance for now
-        return;
-    }
-
     if (!statesInitialised || rngBcn.N == 0 || rngBcn.fusionReport == nullptr) {
         return;
     }
@@ -284,11 +274,6 @@ void NavEKF3_core::Log_Write_Beacon(uint64_t time_us)
 #if EK3_FEATURE_BODY_ODOM
 void NavEKF3_core::Log_Write_BodyOdom(uint64_t time_us)
 {
-    if (core_index != frontend->primary) {
-        // log only primary instance for now
-        return;
-    }
-
     const uint32_t updateTime_ms = MAX(bodyOdmDataDelayed.time_ms,wheelOdmDataDelayed.time_ms);
     if (updateTime_ms > lastUpdateTime_ms) {
         const struct log_XKFD pkt11{
@@ -310,11 +295,6 @@ void NavEKF3_core::Log_Write_BodyOdom(uint64_t time_us)
 
 void NavEKF3_core::Log_Write_State_Variances(uint64_t time_us)
 {
-    if (core_index != frontend->primary) {
-        // log only primary instance for now
-        return;
-    }
-
     if (AP::dal().millis() - lastEkfStateVarLogTime_ms > 490) {
         lastEkfStateVarLogTime_ms = AP::dal().millis();
         const struct log_XKV pktv1{
