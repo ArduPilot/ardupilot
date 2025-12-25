@@ -69,11 +69,11 @@ void SCurve::calculate_track(const Vector3p &origin, const Vector3p &destination
     init();
 
     // ensure arguments are positive
-    speed_xy = fabsf(speed_xy);
-    speed_up = fabsf(speed_up);
-    speed_down = fabsf(speed_down);
-    accel_xy = fabsf(accel_xy);
-    accel_z = fabsf(accel_z);
+    speed_xy = std::abs(speed_xy);
+    speed_up = std::abs(speed_up);
+    speed_down = std::abs(speed_down);
+    accel_xy = std::abs(accel_xy);
+    accel_z = std::abs(accel_z);
 
     // leave track as zero length if origin and destination are equal or if the new track length squared is zero
     seg_delta = (destination - origin).tofloat();
@@ -84,7 +84,7 @@ void SCurve::calculate_track(const Vector3p &origin, const Vector3p &destination
 
     const Vector2f chord = seg_delta.xy();
     const float chord_length = seg_delta.xy().length();
-    if (!is_positive(chord_length) || fabsf(wrap_PI(arc_ang_rad)) < radians(1.0)) {
+    if (!is_positive(chord_length) || std::abs(wrap_PI(arc_ang_rad)) < radians(1.0)) {
         // straight segment
         is_arc_segment = false;
         arc.angle_rad = 0.0f;
@@ -95,13 +95,13 @@ void SCurve::calculate_track(const Vector3p &origin, const Vector3p &destination
     } else {
         is_arc_segment = true;
         arc.angle_rad = arc_ang_rad;
-        arc.radius_ne = fabsf(chord_length / (2.0f * fabsf(sinf(arc.angle_rad * 0.5f))));
+        arc.radius_ne = std::abs(chord_length / (2.0f * std::abs(sinf(arc.angle_rad * 0.5f))));
         const float center_offset = safe_sqrt(sq(arc.radius_ne) - sq(chord_length * 0.5f)); // perpendicular offset from chord to circle center
         const float turn_dir = is_negative(arc.angle_rad) ? -1.0f : 1.0f; // -1 for CCW, 1 for CW 
-        const float center_side = (is_positive(wrap_PI(fabsf(arc.angle_rad)))) ? 1.0f : -1.0f; // -1 for CCW, 1 for CW
+        const float center_side = (is_positive(wrap_PI(std::abs(arc.angle_rad)))) ? 1.0f : -1.0f; // -1 for CCW, 1 for CW
         if (!is_zero(arc.radius_ne) && !is_zero(chord_length)) {
             arc.center_ne = chord * 0.5f + Vector2f(-chord.y, chord.x) * (center_side * turn_dir * center_offset / chord_length);
-            arc.length_ne = arc.radius_ne * fabsf(arc.angle_rad);
+            arc.length_ne = arc.radius_ne * std::abs(arc.angle_rad);
             seg_length = safe_sqrt(sq(seg_delta.z) + sq(arc.length_ne));
             accel_c = is_positive(accel_c) ? accel_c : accel_xy;
             speed_xy = MIN(speed_xy, safe_sqrt(accel_c * arc.radius_ne));
@@ -155,9 +155,9 @@ void SCurve::calculate_track(const Vector3p &origin, const Vector3p &destination
 void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
 {
     // ensure arguments are positive
-    speed_xy = fabsf(speed_xy);
-    speed_up = fabsf(speed_up);
-    speed_down = fabsf(speed_down);
+    speed_xy = std::abs(speed_xy);
+    speed_up = std::abs(speed_up);
+    speed_down = std::abs(speed_down);
 
     // return immediately if zero length path
     if (num_segs != segments_max) {
@@ -321,7 +321,7 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
         float t2 = 0;
         float t4 = 0;
         float t6 = 0;
-        float jerk_time = MIN(powf((fabsf(vel_max - segment[SEG_ACCEL_END].end_vel) * M_PI) / (4 * snap_max), 1/3), jerk_max * M_PI / (2 * snap_max));
+        float jerk_time = MIN(powf((std::abs(vel_max - segment[SEG_ACCEL_END].end_vel) * M_PI) / (4 * snap_max), 1/3), jerk_max * M_PI / (2 * snap_max));
         if ((vel_max < segment[SEG_ACCEL_END].end_vel) && (jerk_time*12.0f < L/segment[SEG_ACCEL_END].end_vel)) {
             // we have a problem here with small segments.
             calculate_path(snap_max, jerk_max, vel_max, accel_max, segment[SEG_ACCEL_END].end_vel, L * 0.5f, Jm, tj, t6, t4, t2);
@@ -399,7 +399,7 @@ float SCurve::set_origin_speed_max(float speed)
     }
 
     // ensure speed is positive
-    speed = fabsf(speed);
+    speed = std::abs(speed);
 
     // avoid re-calculating if unnecessary
     if (is_equal(segment[SEG_INIT].end_vel, speed)) {
@@ -483,7 +483,7 @@ void SCurve::set_destination_speed_max(float speed)
     }
     
     // ensure speed is positive
-    speed = fabsf(speed);
+    speed = std::abs(speed);
 
     // avoid re-calculating if unnecessary
     if (is_equal(segment[segments_max-1].end_vel, speed)) {
@@ -558,7 +558,7 @@ bool SCurve::advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, floa
         if ((turn_pos.length() < wp_radius) // The turn mid point is within the waypoint radius
             && (turn_vel.length() < speed_min) // The speed at the turn mid point is less than the minimum speed
             && (Vector2f{turn_accel.x, turn_accel.y}.length() < accel_corner) // The acceleration at the turn mid point is less than the corner acceleration
-            && (fabsf(turn_accel.z) < accel_z_lim) // The vertical acceleration at the turn mid point is less than the maximum vertical acceleration
+            && (std::abs(turn_accel.z) < accel_z_lim) // The vertical acceleration at the turn mid point is less than the maximum vertical acceleration
             ) {
             next_leg.move_from_pos_vel_accel(dt, target_pos, target_vel, target_accel);
         }
@@ -634,7 +634,7 @@ void SCurve::project_scurve_onto_track(float scurve_A1, float scurve_V1, float s
         Vector2f center_to_pos_ne = -arc.center_ne;
         const float turn_dir = is_negative(arc.angle_rad) ? -1.0f : 1.0f; // -1 for CCW, 1 for CW 
         // rotate by progress along the arc
-        center_to_pos_ne.rotate(turn_dir * fabsf(arc.angle_rad) * (scurve_P1 / seg_length));
+        center_to_pos_ne.rotate(turn_dir * std::abs(arc.angle_rad) * (scurve_P1 / seg_length));
 
         // position
         const float dz_ds = seg_delta.z / seg_length;
@@ -915,7 +915,7 @@ void SCurve::calculate_path(float Sm, float Jm, float V0, float Am, float Vm, fl
     float At = MIN(MIN(Am, 
         (Vm - V0) / (2.0f * tj) ), 
         (L + 4.0f * V0 * tj) / (4.0f * sq(tj)) );
-    if (fabsf(At) < Jm * tj) {
+    if (std::abs(At) < Jm * tj) {
         if (is_zero(V0)) {
             // we do not have a solution for non-zero initial velocity
             tj = MIN( MIN( MIN( tj,

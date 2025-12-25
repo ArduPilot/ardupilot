@@ -338,13 +338,13 @@ bool AC_AutoTune::currently_level()
     // relax threshold if we pass AUTOTUNE_LEVEL_TIMEOUT_MS
     const float threshold_mul = constrain_float((float)(now_ms - level_start_time_ms) / (float)AUTOTUNE_LEVEL_TIMEOUT_MS, 0.0, 2.0);
 
-    if (fabsf(ahrs_view->get_roll_rad() - desired_roll_rad) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_ANGLE_CD)) {
+    if (std::abs(ahrs_view->get_roll_rad() - desired_roll_rad) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_ANGLE_CD)) {
         return false;
     }
-    if (fabsf(ahrs_view->get_pitch_rad() - desired_pitch_rad) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_ANGLE_CD)) {
+    if (std::abs(ahrs_view->get_pitch_rad() - desired_pitch_rad) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_ANGLE_CD)) {
         return false;
     }
-    if (fabsf(wrap_PI(ahrs_view->get_yaw_rad() - desired_yaw_rad)) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_ANGLE_CD)) {
+    if (std::abs(wrap_PI(ahrs_view->get_yaw_rad() - desired_yaw_rad)) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_ANGLE_CD)) {
         return false;
     }
     if (ahrs_view->get_gyro().x > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_RP_CD)) {
@@ -756,7 +756,7 @@ void AC_AutoTune::get_poshold_attitude_rad(float &roll_out_rad, float &pitch_out
         target_yaw_rad += radians(90);
     }
     // go to the nearest 180 degree mark, with 5 degree slop to prevent oscillation
-    if (fabsf(yaw_out_rad - target_yaw_rad) > radians(95.0)) {
+    if (std::abs(yaw_out_rad - target_yaw_rad) > radians(95.0)) {
         target_yaw_rad += radians(180.0);
     }
 
