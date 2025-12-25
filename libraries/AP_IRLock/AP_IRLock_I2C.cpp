@@ -42,7 +42,7 @@ void AP_IRLock_I2C::init(int8_t bus)
         // default to i2c external bus
         bus = 1;
     }
-    dev = std::move(hal.i2c_mgr->get_device(bus, IRLOCK_I2C_ADDRESS));
+    dev = hal.i2c_mgr->get_device(bus, IRLOCK_I2C_ADDRESS);
     if (!dev) {
         return;
     }

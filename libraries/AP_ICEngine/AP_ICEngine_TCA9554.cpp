@@ -32,7 +32,7 @@ extern const AP_HAL::HAL& hal;
  */
 bool AP_ICEngine_TCA9554::TCA9554_init()
 {
-    dev_TCA9554 = std::move(hal.i2c_mgr->get_device(TCA9554_I2C_BUS, TCA9554_I2C_ADDR));
+    dev_TCA9554 = hal.i2c_mgr->get_device(TCA9554_I2C_BUS, TCA9554_I2C_ADDR);
     if (!dev_TCA9554) {
         return false;
     }
