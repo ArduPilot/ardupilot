@@ -226,7 +226,7 @@ bool Mode::AutoYaw::reached_fixed_yaw_target()
     }
 
     // Within 2 deg of target
-    return (fabsf(wrap_PI(_yaw_angle_rad - copter.ahrs.get_yaw_rad())) <= radians(2));
+    return (std::abs(wrap_PI(_yaw_angle_rad - copter.ahrs.get_yaw_rad())) <= radians(2));
 }
 
 // yaw_rad - returns target heading depending upon auto_yaw.mode()

@@ -216,7 +216,7 @@ AC_PrecLand_StateMachine::Status AC_PrecLand_StateMachine::retry_landing(Vector3
         // z_target is in "D" frame
         const float z_target = go_to_pos.z + RETRY_OFFSET_ALT_M;
         retry_pos_m = Vector3p{pos.x, pos.y, z_target};
-        if (fabsf(pos.z - retry_pos_m.z) < MAX_POS_ERROR_M) {
+        if (std::abs(pos.z - retry_pos_m.z) < MAX_POS_ERROR_M) {
             // we have descended to the original height where we started the climb from
             _retry_state = RetryLanding::COMPLETE;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PrecLand: Retry Completed");
