@@ -191,7 +191,7 @@ private:
     };
     uint32_t last_received_bitmask;
 
-    uint32_t last_debug_ms;
+
 };
 
 }
