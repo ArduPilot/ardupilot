@@ -4,9 +4,6 @@
 # MCU class and specific type
 MCU STM32H7xx STM32H7A3xx
 
-# board ID. See Tools/AP_Bootloader/board_types.txt
-APJ_BOARD_ID AP_HW_MatekH7A3
-
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 16000000
 
@@ -159,9 +156,6 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # --------------------- SD & FLASH ----------------------
 SPIDEV sdcard    SPI2 DEVID3 SD_CS      MODE0 400*KHZ 25*MHZ
-SPIDEV dataflash SPI2 DEVID1 FLASH_CS   MODE3 104*MHZ  104*MHZ
-
-DATAFLASH littlefs:w25nxx
 
 # ----------------- I2C compass & Baro -----------------
 # no built-in compass, but probe the i2c bus for all possible
