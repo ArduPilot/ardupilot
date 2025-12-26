@@ -1,0 +1,30 @@
+.program extended_spi
+.side_set 1 opt
+
+out pins, 1 side 0 [5] ; Stall here on empty (sideset proceeds even if
+in pins, 1  side 1  [4] ; instruction stalls, so we stall with SCK low)
+
+% c-sdk {
+#include "hardware/gpio.h"
+static inline void pio_spi_init(PIO pio, uint sm, uint prog_offs, uint n_bits,
+								float clkdiv, uint pin_sck, uint pin_mosi, uint pin_miso) {
+	pio_sm_config c = extended_spi_program_get_default_config(prog_offs);
+	sm_config_set_out_pins(&c, pin_mosi, 1);
+	sm_config_set_in_pins(&c, pin_miso);
+	sm_config_set_sideset_pins(&c, pin_sck);
+	// Only support MSB-first in this example code (shift to left, auto push/pull, threshold=nbits)
+	sm_config_set_out_shift(&c, false, true, n_bits);
+	sm_config_set_in_shift(&c, false, true, n_bits);
+	sm_config_set_clkdiv(&c, clkdiv);
+	// MOSI, SCK output are low, MISO is input
+	pio_sm_set_pins_with_mask(pio, sm, 0, (1u << pin_sck) | (1u << pin_mosi));
+	pio_sm_set_pindirs_with_mask(pio, sm, (1u << pin_sck) | (1u << pin_mosi), (1u << pin_sck) | (1u << pin_mosi) | (1u << pin_miso));
+	pio_gpio_init(pio, pin_mosi);
+	pio_gpio_init(pio, pin_miso);
+	pio_gpio_init(pio, pin_sck);
+	// SPI is synchronous, so bypass input synchroniser to reduce input delay.
+	hw_set_bits(&pio->input_sync_bypass, 1u << pin_miso);
+	pio_sm_init(pio, sm, prog_offs, &c);
+	pio_sm_set_enabled(pio, sm, true);
+}
+%}

@@ -669,6 +669,10 @@ def add_dynamic_boards_sitl():
     '''add boards based on existence of hwdef.dat in subdirectories for '''
     add_dynamic_boards_from_hwdef_dir(SITLBoard, 'libraries/AP_HAL_SITL/hwdef')
 
+def add_dynamic_boards_rp2350():
+    '''add boards based on existence of hwdef.dat in subdirectories for RP2350'''
+    add_dynamic_boards_from_hwdef_dir(rp2350, 'libraries/AP_HAL_RP/hwdef')
+
 def add_dynamic_boards_from_hwdef_dir(base_type, hwdef_dir):
     '''add boards based on existence of hwdef.dat in subdirectory'''
     dirname, dirlist, filenames = next(os.walk(hwdef_dir))
@@ -699,6 +703,7 @@ def get_boards_names():
     add_dynamic_boards_esp32()
     add_dynamic_boards_linux()
     add_dynamic_boards_sitl()
+    add_dynamic_boards_rp2350()
 
     return sorted(list(_board_classes.keys()), key=str.lower)
 
@@ -1575,3 +1580,75 @@ class QURT(Board):
         # get name of class
         return self.__class__.__name__
     
+class rp2350(Board):
+    abstract = True
+    toolchain = 'arm-none-eabi'
+
+    def configure(self, cfg):
+        super(rp2350, self).configure(cfg)
+        if cfg.env.TOOLCHAIN:
+            self.toolchain = cfg.env.TOOLCHAIN
+        else:
+            # default tool-chain for rp2350-based boards:
+            self.toolchain = 'arm-none-eabi'
+
+    def configure_env(self, cfg, env):
+        env.BOARD_CLASS = "RP2350"
+
+        def expand_path(p):
+            print("USING PICO C/C++ SDK:"+str(env.PICO_SDK))
+            return cfg.root.find_dir(env.PICO_SDK+p).abspath()
+        try:
+            env.PICO_SDK = os.environ['PICO_SDK_PATH']
+        except:
+            env.PICO_SDK = cfg.srcnode.abspath()+"/modules/pico/pico_sdk"
+
+        super(rp2350, self).configure_env(cfg, env)
+        cfg.load('rp2350')
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_RP2350',
+        )
+
+        # this makes sure we get the correct subtype
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
+        )
+
+        if self.name.endswith("empty"):
+            # for empty targets build as SIM-on-HW
+            env.DEFINES.update(AP_SIM_ENABLED = 1)
+            env.AP_LIBRARIES += [
+                'SITL',
+            ]
+        else:
+            env.DEFINES.update(AP_SIM_ENABLED = 0)
+
+        env.AP_LIBRARIES += [
+            'AP_HAL_RP',
+        ]
+
+        env.CFLAGS.remove('-Werror=undef')
+        env.CXXFLAGS.remove('-Werror=undef')
+        env.CXXFLAGS.remove('-Werror=shadow')
+
+        # wrap malloc to ensure memory is zeroed
+        # note that this also needs to be done in the CMakeLists.txt files
+        env.LINKFLAGS += ['-Wl,--wrap,malloc']
+
+        env.AP_PROGRAM_AS_STLIB = True
+
+    def pre_build(self, bld):
+        '''pre-build hook that gets called before dynamic sources'''
+        from waflib.Context import load_tool
+        module = load_tool('rp2350', [], with_sys_path=True)
+        fun = getattr(module, 'pre_build', None)
+        if fun:
+            fun(bld)
+        super(rp2350, self).pre_build(bld)
+
+    def build(self, bld):
+        super(rp2350, self).build(bld)
+        bld.load('rp2350')
+
+    def get_name(self):
+        return self.__class__.__name__

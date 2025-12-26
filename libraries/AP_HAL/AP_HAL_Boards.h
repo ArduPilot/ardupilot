@@ -16,6 +16,7 @@
 // #define HAL_BOARD_F4LIGHT  11 // reserved
 #define HAL_BOARD_ESP32	   12
 #define HAL_BOARD_QURT     13
+#define HAL_BOARD_RP2350   14
 #define HAL_BOARD_EMPTY    99
 // @LoggerEnumEnd
 
@@ -141,6 +142,8 @@
     #include <AP_HAL/board/esp32.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_QURT
     #include <AP_HAL/board/qurt.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_RP2350
+    #include <AP_HAL/board/rp2350.h>
 #else
 #error "Unknown CONFIG_HAL_BOARD type"
 #endif
