@@ -1368,22 +1368,16 @@ void NavEKF3_core::FuseDeclination(ftype declErr)
         innovation = -0.5f;
     }
 
-    // correct the covariance P = (I - K*H)*P
-    // take advantage of the empty columns in KH to reduce the
-    // number of operations
+    // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
+    // the zero elements of H to reduce the number of operations.
     for (unsigned i = 0; i<=stateIndexLim; i++) {
-        for (unsigned j = 0; j<=15; j++) {
-            KH[i][j] = 0.0f;
-        }
-        KH[i][16] = Kfusion[i] * H_DECL[16];
-        KH[i][17] = Kfusion[i] * H_DECL[17];
-        for (unsigned j = 18; j<=23; j++) {
-            KH[i][j] = 0.0f;
-        }
-    }
-    for (unsigned j = 0; j<=stateIndexLim; j++) {
-        for (unsigned i = 0; i<=stateIndexLim; i++) {
-            KHP[i][j] = KH[i][16] * P[16][j] + KH[i][17] * P[17][j];
+        // j as the inner loop allows the compiler to hoist the KH product
+        // to save computation, and do the inner indexing more efficiently.
+        for (unsigned j = 0; j<=stateIndexLim; j++) {
+            ftype res = 0;
+            res += (Kfusion[i] * H_DECL[16]) * P[16][j];
+            res += (Kfusion[i] * H_DECL[17]) * P[17][j];
+            KHP[i][j] = res;
         }
     }
 
