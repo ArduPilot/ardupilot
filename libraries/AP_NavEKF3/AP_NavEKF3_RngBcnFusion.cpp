@@ -498,18 +498,16 @@ void NavEKF3_core::FuseRngBcnStatic()
             rngBcn.receiverPos.y -= K_RNG[1] * rngBcn.innov;
             rngBcn.receiverPos.z -= K_RNG[2] * rngBcn.innov;
 
-            // calculate the covariance correction
+            // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
+            // the zero elements of H to reduce the number of operations.
             for (unsigned i = 0; i<=2; i++) {
+                // j as the inner loop allows the compiler to hoist the KH product
+                // to save computation, and do the inner indexing more efficiently.
                 for (unsigned j = 0; j<=2; j++) {
-                    KH[i][j] = K_RNG[i] * H_RNG[j];
-                }
-            }
-            for (unsigned j = 0; j<=2; j++) {
-                for (unsigned i = 0; i<=2; i++) {
                     ftype res = 0;
-                    res += KH[i][0] * rngBcn.receiverPosCov[0][j];
-                    res += KH[i][1] * rngBcn.receiverPosCov[1][j];
-                    res += KH[i][2] * rngBcn.receiverPosCov[2][j];
+                    res += (K_RNG[i] * H_RNG[0]) * rngBcn.receiverPosCov[0][j];
+                    res += (K_RNG[i] * H_RNG[1]) * rngBcn.receiverPosCov[1][j];
+                    res += (K_RNG[i] * H_RNG[2]) * rngBcn.receiverPosCov[2][j];
                     KHP[i][j] = res;
                 }
             }
