@@ -1,0 +1,61 @@
+# hw definition file for processing by rp_hwdef.py
+# for Kolibri hardware.
+
+# MCU type
+MCU RP2350A
+
+define HAL_RP_BOARD_NAME "Kolibri"
+define AP_SCRIPTING_ENABLED 0
+define HAL_HAVE_FILESYSTEM 0
+define AP_FILESYSTEM_ENABLED 0
+define HAL_USE_EMPTY_STORAGE 1
+
+# LittleFS on MT29F2G08ABD
+# define AP_FILESYSTEM_LITTLEFS_ENABLED 1
+# define HAL_HAVE_FILESYSTEM 1
+# define HAL_FLASH_FS_BLOCK_SIZE 135168
+# define HAL_FLASH_FS_PAGE_SIZE 2112
+# define HAL_FLASH_FS_SIZE_KB 278784
+# define HAL_FLASH_FS_READ_SIZE 512
+
+# define HAL_FLASH_FS_BLOCK_SIZE 131072
+# define HAL_FLASH_FS_PAGE_SIZE 2048
+# define HAL_FLASH_FS_SIZE_KB 262144
+
+# SPI Buses
+#             Host      DMA Channel     MOSI   MISO   SCLK
+RP2350_SPIBUS SPI0_HOST SPI_DMA_CH_AUTO GPIO_3 GPIO_4 GPIO_2
+
+# i2c Buses
+#             Port SDA     SCL     SPEED    INTERNAL SOFT
+RP2350_I2CBUS I2C0 GPIO_24 GPIO_25 400*KHZ  true     false
+
+# SPI Devices
+#             Name     Bus   Device  ChipSel      Mode LoSpeed HiSpeed
+RP2350_SPIDEV icm42688  0     0      GPIO_5       0    2*MHZ   8*MHZ
+
+# RP2350_SPIDEV flash_ext 0     0      GPIO_1       3    2*MHZ   20*MHZ
+
+
+#-----INS/IMU-----
+IMU Invensense SPI:mpu9250 ROTATION_NONE
+# IMU Invensense SPI:mpu9250 ROTATION_ROLL_180
+define HAL_INS_DEFAULT HAL_INS_MPU9250_SPI
+define INS_MAX_INSTANCES 3  # only here for binary identicality
+
+#-----COMPASS-----
+COMPASS AK8963:probe_mpu9250 0 ROTATION_NONE
+define AP_COMPASS_AK8963_ENABLED TRUE
+define AP_COMPASS_PROBING_ENABLED 1
+
+# -----BARO-----
+BARO BMP280 I2C:0:0x77
+define HAL_BARO_ALLOW_INIT_NO_BARO 1
+
+# rcin on what pin?
+define HAL_RP_RCIN GPIO_14
+
+#-----UARTS-----
+#            port        RX           TX
+RP_SERIAL  UART_NUM_0  GPIO_17  GPIO_16
+RP_SERIAL  UART_NUM_1  GPIO_9  	GPIO_8
