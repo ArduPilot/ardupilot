@@ -30,7 +30,6 @@ extern const AP_HAL::HAL& hal;
 #define ENABLE_DEBUG_MODULE 0
 
 bool lua_scripts::overtime;
-ap_jmp_buf lua_scripts::panic_jmp;
 char *lua_scripts::error_msg_buf;
 HAL_Semaphore lua_scripts::error_msg_buf_sem;
 uint8_t lua_scripts::print_error_count;
@@ -128,12 +127,6 @@ void lua_scripts::set_and_print_new_error_message(MAV_SEVERITY severity, const c
 
     error_msg_buf_sem.give();
     print_error(severity);
-}
-
-int lua_scripts::atpanic(lua_State *L) {
-    set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "Panic: %s", get_error_object_message(L));
-    ap_longjmp(panic_jmp, 1);
-    return 0;
 }
 
 // helper for print and log of runtime stats
@@ -421,7 +414,7 @@ void lua_scripts::remove_script(lua_State *L, script_info *script) {
     }
     
     if (L != nullptr) {
-        // state could be null if we are force killing all scripts
+        // state will be nullptr when we are tearing down
         luaL_unref(L, LUA_REGISTRYINDEX, script->env_ref);
         luaL_unref(L, LUA_REGISTRYINDEX, script->run_ref);
     }
@@ -472,31 +465,12 @@ void *lua_scripts::alloc(void *ud, void *ptr, size_t osize, size_t nsize) {
 }
 
 void lua_scripts::run(void) {
-    bool succeeded_initial_load = false;
-
     if (!_heap.available()) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Lua: Unable to allocate a heap");
         return;
     }
 
-    // panic should be hooked first
-    if (ap_setjmp(panic_jmp)) {
-        if (!succeeded_initial_load) {
-            return;
-        }
-        if (lua_state != nullptr) {
-            lua_close(lua_state); // shutdown the old state
-        }
-        // remove all the old scheduled scripts
-        for (script_info *script = scripts; script != nullptr; script = scripts) {
-            remove_script(nullptr, script);
-        }
-        scripts = nullptr;
-        overtime = false;
-    }
-
-    lua_state = lua_newstate(alloc, NULL);
-    lua_State *L = lua_state;
+    lua_State *L = lua_newstate(alloc, NULL);
     if (L == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Lua: Couldn't allocate a lua state");
         return;
@@ -504,13 +478,6 @@ void lua_scripts::run(void) {
     // initialize the state with a pointer to us for ls_* callback trampolines
     // (see ls_object_from_state)
     *static_cast<lua_scripts**>(lua_getextraspace(L)) = this;
-
-    lua_atpanic(L, atpanic);
-
-#ifndef __clang_analyzer__
-    succeeded_initial_load = true;
-#endif // __clang_analyzer__
-
 
     // call main engine function in protected mode now that Lua itself is ready.
     // this catches any errors raised by the code between here and Lua scripts.
@@ -522,22 +489,22 @@ void lua_scripts::run(void) {
     }
     // we are now finished with Lua, tear everything down
 
-    if (lua_state != nullptr) {
-        lua_close(lua_state); // shutdown the old state
-        lua_state = nullptr;
+    lua_close(L); // shut down the state
+    L = nullptr;
+
+    while (scripts != nullptr) { // remove all scripts from the engine list
+        remove_script(nullptr, scripts);
     }
 
-    // make sure all scripts have been removed
-    while (scripts != nullptr) {
-        remove_script(lua_state, scripts);
-    }
-
+    // free error message
     error_msg_buf_sem.take_blocking();
     if (error_msg_buf != nullptr) {
         _heap.deallocate(error_msg_buf);
         error_msg_buf = nullptr;
     }
     error_msg_buf_sem.give();
+
+    // heap is now empty
 }
 
 int lua_scripts::run_engine(lua_State *L) {
