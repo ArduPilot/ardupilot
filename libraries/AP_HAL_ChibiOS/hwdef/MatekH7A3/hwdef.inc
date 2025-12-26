@@ -154,9 +154,6 @@ define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 
-# --------------------- SD & FLASH ----------------------
-SPIDEV sdcard    SPI2 DEVID3 SD_CS      MODE0 400*KHZ 25*MHZ
-
 # ----------------- I2C compass & Baro -----------------
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
