@@ -244,7 +244,6 @@ void NavEKF3_core::InitialiseVariables()
     lastKnownPositionD = 0;
     prevTnb.zero();
     memset(&P[0][0], 0, sizeof(P));
-    memset(&KH[0][0], 0, sizeof(KH));
     memset(&KHP[0][0], 0, sizeof(KHP));
     memset(&nextP[0][0], 0, sizeof(nextP));
     flowDataValid = false;
