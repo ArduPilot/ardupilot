@@ -1,0 +1,3 @@
+# hw definition file for Matek H7A3 bootloader
+
+include hwdef-bl.inc
