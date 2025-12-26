@@ -340,6 +340,7 @@ AP_HW_HWH7                           1223
 # IDs 1231-1240 reserved for YARI Robotics
 AP_HW_YARIV6X                        1234
 AP_HW_YARI_GNSS                      1235
+AP_HW_YARI_RTK_GNSS                  1236
 
 AP_HW_CBUnmanned-CM405-FC            1301
 
