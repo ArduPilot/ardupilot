@@ -30,7 +30,7 @@ extern const AP_HAL::HAL& hal;
 #define ENABLE_DEBUG_MODULE 0
 
 bool lua_scripts::overtime;
-jmp_buf lua_scripts::panic_jmp;
+ap_jmp_buf lua_scripts::panic_jmp;
 char *lua_scripts::error_msg_buf;
 HAL_Semaphore lua_scripts::error_msg_buf_sem;
 uint8_t lua_scripts::print_error_count;
@@ -132,7 +132,7 @@ void lua_scripts::set_and_print_new_error_message(MAV_SEVERITY severity, const c
 
 int lua_scripts::atpanic(lua_State *L) {
     set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "Panic: %s", get_error_object_message(L));
-    longjmp(panic_jmp, 1);
+    ap_longjmp(panic_jmp, 1);
     return 0;
 }
 
@@ -480,7 +480,7 @@ void lua_scripts::run(void) {
     }
 
     // panic should be hooked first
-    if (setjmp(panic_jmp)) {
+    if (ap_setjmp(panic_jmp)) {
         if (!succeeded_initial_load) {
             return;
         }

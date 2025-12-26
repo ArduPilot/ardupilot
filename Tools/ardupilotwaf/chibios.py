@@ -723,7 +723,8 @@ def build(bld):
                  'fopen', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
                  'clearerr', 'fseek', 'ferror', 'fclose', 'tmpfile', 'getc', 'ungetc', 'feof',
                 'ftell', 'freopen', 'remove', 'vfprintf', 'vfprintf_r', 'fscanf',
-                '_gettimeofday', '_times', '_times_r', '_gettimeofday_r', 'time', 'clock']
+                '_gettimeofday', '_times', '_times_r', '_gettimeofday_r', 'time', 'clock',
+                'setjmp']
 
     # these functions use global state that is not thread safe
     blacklist += ['gmtime']
