@@ -501,8 +501,48 @@ void lua_scripts::run(void) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Lua: Couldn't allocate a lua state");
         return;
     }
+    // initialize the state with a pointer to us for ls_* callback trampolines
+    // (see ls_object_from_state)
+    *static_cast<lua_scripts**>(lua_getextraspace(L)) = this;
 
     lua_atpanic(L, atpanic);
+
+#ifndef __clang_analyzer__
+    succeeded_initial_load = true;
+#endif // __clang_analyzer__
+
+
+    // call main engine function in protected mode now that Lua itself is ready.
+    // this catches any errors raised by the code between here and Lua scripts.
+    // our current function must not use any Lua API which can raise an error!
+    lua_pushcfunction(L, &ls_run_engine);
+    if (lua_pcall(L, 0, 0, 0) != LUA_OK) { // no args, returns, or msg handler
+        set_and_print_new_error_message(MAV_SEVERITY_CRITICAL,
+            "Engine Error: %s", get_error_object_message(L));
+    }
+    // we are now finished with Lua, tear everything down
+
+    if (lua_state != nullptr) {
+        lua_close(lua_state); // shutdown the old state
+        lua_state = nullptr;
+    }
+
+    // make sure all scripts have been removed
+    while (scripts != nullptr) {
+        remove_script(lua_state, scripts);
+    }
+
+    error_msg_buf_sem.take_blocking();
+    if (error_msg_buf != nullptr) {
+        _heap.deallocate(error_msg_buf);
+        error_msg_buf = nullptr;
+    }
+    error_msg_buf_sem.give();
+}
+
+int lua_scripts::run_engine(lua_State *L) {
+    // run our scripting engine now that the Lua state is initialized. we are in
+    // Lua protected mode and can safely call functions that may raise errors.
 
     // set up string metatable. we set up one for all scripts that no script has
     // access to, as it's impossible to set up one per-script and we don't want
@@ -536,10 +576,6 @@ void lua_scripts::run(void) {
     if (!loaded) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Lua: All directory's disabled see SCR_DIR_DISABLE");
     }
-
-#ifndef __clang_analyzer__
-    succeeded_initial_load = true;
-#endif // __clang_analyzer__
 
     uint32_t expansion_size = 0;
 
@@ -630,22 +666,7 @@ void lua_scripts::run(void) {
         }
     }
 
-    // make sure all scripts have been removed
-    while (scripts != nullptr) {
-        remove_script(lua_state, scripts);
-    }
-
-    if (lua_state != nullptr) {
-        lua_close(lua_state); // shutdown the old state
-        lua_state = nullptr;
-    }
-
-    error_msg_buf_sem.take_blocking();
-    if (error_msg_buf != nullptr) {
-        _heap.deallocate(error_msg_buf);
-        error_msg_buf = nullptr;
-    }
-    error_msg_buf_sem.give();
+    return 0; // no results
 }
 
 // Return the file checksums of running and loaded scripts
