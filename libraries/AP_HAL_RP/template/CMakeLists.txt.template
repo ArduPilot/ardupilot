@@ -1,0 +1,107 @@
+# CMake project file generated for {mcu_name.upper()} with FreeRTOS support
+cmake_minimum_required(VERSION 3.13)
+
+set(PICO_PLATFORM rp2350-arm-s)
+
+# Initialize the Raspberry Pi Pico SDK (sets PICO_SDK_PATH automatically if defined externally)
+include(pico_sdk_import.cmake)
+include(FreeRTOS_Kernel_import.cmake)
+
+project({project_name} C CXX ASM)
+
+# Set the target board variant (this might be deprecated/ignored by newer SDKs in favor of env var)
+# We assume the user has set PICO_BOARD environment variable correctly for 2350 variants.
+# set(PICO_BOARD {board_variant}) 
+
+# Initialize the SDK
+pico_sdk_init()
+
+# Add executable with source files
+add_executable(${CMAKE_PROJECT_NAME}
+    {source_list_str}
+)
+
+if(NOT DEFINED ARDUPILOT_CMD)
+    set(ARDUPILOT_CMD "none")
+endif()
+
+# Generate PIO headers
+
+# Get a list of all .pio files in the pioasm directory
+file(GLOB PIO_FILES "${CMAKE_CURRENT_LIST_DIR}/pioasm/*.pio")
+
+# Iterate over the found files in a loop
+foreach(PIO_FILE ${PIO_FILES})
+    # Call the generation function for each file
+    # PIO_FILE contains the full path to the file
+    pico_generate_pio_header(${CMAKE_PROJECT_NAME} ${PIO_FILE})
+    # Output a message for verification in the console
+    message(STATUS "Generated PIO header for: ${PIO_FILE}")
+endforeach()
+
+message("WAF_BUILD_TARGET=${WAF_BUILD_TARGET}")
+
+string(REGEX MATCH "^(examples|tool)/" IS_EXAMPLE "${WAF_BUILD_TARGET}")
+
+if (IS_EXAMPLE)
+    string(REPLACE "/" ";" A ${WAF_BUILD_TARGET})
+    list(GET A 0 EXAMPLE_BASE)
+    list(GET A 1 EXAMPLE_NAME)
+    message("Building ${EXAMPLE_BASE} ${EXAMPLE_NAME}")
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE "${ARDUPILOT_LIB}/${EXAMPLE_BASE}/lib${EXAMPLE_NAME}.a")
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE "${ARDUPILOT_LIB}/libap.a")
+ELSEIF(${ARDUPILOT_CMD} STREQUAL "plane")
+    message("Building for plane")
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE "${ARDUPILOT_BIN}/libarduplane.a")
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE "${ARDUPILOT_LIB}/libArduPlane_libs.a")
+ELSEIF(${ARDUPILOT_CMD} STREQUAL "copter")
+    message("Building for copter")
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE "${ARDUPILOT_BIN}/libarducopter.a")
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE "${ARDUPILOT_LIB}/libArduCopter_libs.a")
+ELSEIF(${ARDUPILOT_CMD} STREQUAL "rover")
+    message("Building for rover")
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE "${ARDUPILOT_BIN}/libardurover.a")
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE "${ARDUPILOT_LIB}/libRover_libs.a")
+ELSEIF(${ARDUPILOT_CMD} STREQUAL "sub")
+    message("Building for submarine")
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE "${ARDUPILOT_BIN}/libardusub.a")
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE "${ARDUPILOT_LIB}/libArduSub_libs.a")
+ENDIF()
+
+add_custom_target(showinc ALL
+        COMMAND echo
+        "$<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INCLUDE_DIRECTORIES>"
+        > includes.list
+    VERBATIM
+    BYPRODUCTS includes.list
+    COMMAND_EXPAND_LISTS
+)
+
+# Add include directories
+target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}
+    ${FREERTOS_KERNEL_PATH}/include
+    ${FREERTOS_KERNEL_PATH}/portable/ThirdParty/Community-Supported-Ports/GCC/RP2350_ARM_NTZ/non_secure
+)
+
+# Link the FreeRTOS kernel library
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
+    pico_stdlib
+    pico_multicore
+    hardware_spi
+    hardware_i2c
+    hardware_dma
+    hardware_pio
+    hardware_interp
+    hardware_timer
+    hardware_watchdog
+    hardware_clocks
+    FreeRTOS-Kernel
+    FreeRTOS-Kernel-Heap4
+)
+# Add USB support if needed (adjust as necessary for your board setup)
+pico_enable_stdio_usb(${CMAKE_PROJECT_NAME} 0)
+pico_enable_stdio_uart(${CMAKE_PROJECT_NAME} 1)
+
+# Add the standard Pico build steps to create UF2
+pico_add_extra_outputs(${CMAKE_PROJECT_NAME})
