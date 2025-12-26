@@ -1189,20 +1189,18 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
         magHealth = true;
     }
 
-    // correct the covariance using P = P - K*H*P taking advantage of the fact that only the first 3 elements in H are non zero
-    // calculate K*H*P
-    for (uint8_t row = 0; row <= stateIndexLim; row++) {
-        for (uint8_t column = 0; column <= 3; column++) {
-            KH[row][column] = Kfusion[row] * H_YAW[column];
-        }
-    }
-    for (uint8_t row = 0; row <= stateIndexLim; row++) {
-        for (uint8_t column = 0; column <= stateIndexLim; column++) {
-            ftype tmp = KH[row][0] * P[0][column];
-            tmp += KH[row][1] * P[1][column];
-            tmp += KH[row][2] * P[2][column];
-            tmp += KH[row][3] * P[3][column];
-            KHP[row][column] = tmp;
+    // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
+    // the zero elements of H to reduce the number of operations.
+    for (unsigned i = 0; i<=stateIndexLim; i++) {
+        // j as the inner loop allows the compiler to hoist the KH product
+        // to save computation, and do the inner indexing more efficiently.
+        for (unsigned j = 0; j<=stateIndexLim; j++) {
+            ftype res = 0;
+            res += (Kfusion[i] * H_YAW[0]) * P[0][j];
+            res += (Kfusion[i] * H_YAW[1]) * P[1][j];
+            res += (Kfusion[i] * H_YAW[2]) * P[2][j];
+            res += (Kfusion[i] * H_YAW[3]) * P[3][j];
+            KHP[i][j] = res;
         }
     }
 
