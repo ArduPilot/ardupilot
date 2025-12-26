@@ -41,6 +41,23 @@ UART 3 has flow control.
 
 Second USB endpoint
 
+# Other potential ports:
+
+PA9 USART1_TX?
+
+# This is the pin that senses USB being connected. It is an input pin
+# setup as OPENDRAIN.
+PA9 VBUS INPUT OPENDRAIN
+
+# RX pin is not exposed
+PB10 USART3_TX => pin 58
+
+# Not on V1 CubeNode? Maybe mis-labeled on footprint PB3 on there twice?
+PB9 UART4_TX => pin 59
+PB8 UART4_RX => pin 5 => clash with i2c
+
+
+
 # CAN
 
 Two CAN busses are available, transceivers are within the Node itself but termination resistors are not.
@@ -69,6 +86,21 @@ A single I2C bus is provided, software pullup resistors can be enabled but hardw
 | -------- | ---------- | -------- |
 | PB8      | 5          | I2C1_SCL |
 | PB7      | 6          | I2C1_SDA |
+
+PB9 I2C1_SDA => pin 59
+
+PB10 I2C2_SCL => pin 58
+
+PC9 I2C3_SDA => pin 30
+PA8 I2C3_SCL => pin 10 # also wired to PA10? Meant for RC IN?
+
+PF14 I2C4_SCL => pin 38
+PD12 I2C4_SCL => pin 35
+
+PF15 I2C4_SDA => pin 41
+PD13 I2C4_SDA => pin 34
+PB7 I2C4_SDA => pin 6
+PB9 I2C4_SDA => pin 59
 
 # LEDs
 
