@@ -1087,7 +1087,8 @@ int lua_range_finder_handle_script_msg(lua_State *L) {
 #endif  // AP_RANGEFINDER_ENABLED
 
 /*
-  lua wants to abort, and doesn't have access to a panic function
+  Lua raised an error outside protected mode. Outside protected mode, our code
+  doesn't call functions which can raise errors, so this shouldn't happen (tm).
  */
 void lua_abort()
 {
@@ -1095,11 +1096,7 @@ void lua_abort()
 #if AP_SIM_ENABLED
     AP_HAL::panic("lua_abort called");
 #else
-    if (!hal.util->get_soft_armed()) {
-        AP_HAL::panic("lua_abort called");
-    }
-    // abort while flying, all we can do is loop
-    while (true) {
+    while (true) { // scripts will stop but the rest of the system will run
         hal.scheduler->delay(1000);
     }
 #endif
