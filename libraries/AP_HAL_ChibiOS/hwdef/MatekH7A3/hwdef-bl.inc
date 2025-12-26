@@ -4,9 +4,6 @@
 # MCU class and specific type
 MCU STM32H7xx STM32H7A3xx
 
-# board ID. See Tools/AP_Bootloader/board_types.txt
-APJ_BOARD_ID AP_HW_MatekH7A3
-
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 16000000
 
