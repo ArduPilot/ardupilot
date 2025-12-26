@@ -31,6 +31,14 @@
 
 #include "lua/src/lua.hpp"
 
+class lua_scripts;
+
+static inline lua_scripts* ls_object_from_state(lua_State *L) {
+    // the state extra space stores a pointer to the lua_scripts object the
+    // state is a part of, used for ls_* callback trampolines.
+    return *static_cast<lua_scripts**>(lua_getextraspace(L));
+}
+
 class lua_scripts
 {
 public:
@@ -49,6 +57,11 @@ public:
     static bool overtime; // script exceeded it's execution slot, and we are bailing out
 
 private:
+
+    static int ls_run_engine(lua_State *L) {
+        return ls_object_from_state(L)->run_engine(L);
+    };
+    int run_engine(lua_State *L);
 
     void create_sandbox(lua_State *L);
 
