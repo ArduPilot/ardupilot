@@ -99,6 +99,8 @@ void GCS_MAVLINK_Sub::send_scaled_pressure3()
 #if AP_TEMPERATURE_SENSOR_ENABLED
     float temperature;
     if (!sub.temperature_sensor.get_temperature(temperature)) {
+        // Fall back to original behaviour
+        GCS_MAVLINK::send_scaled_pressure3();
         return;
     }
     mavlink_msg_scaled_pressure3_send(
@@ -108,6 +110,9 @@ void GCS_MAVLINK_Sub::send_scaled_pressure3()
         0,
         temperature * 100,
         0); // TODO: use differential pressure temperature
+#else
+    // Fall back to standard behaviour
+    GCS_MAVLINK::send_scaled_pressure3();
 #endif
 }
 
@@ -129,7 +134,7 @@ bool GCS_MAVLINK_Sub::send_info()
 
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
     send_named_float("Lights1",
-                     SRV_Channels::get_output_norm(SRV_Channel::k_rcin9) / 2.0f + 0.5f);
+                     SRV_Channels::get_output_norm(SRV_Channel::k_lights1) / 2.0f + 0.5f);
 
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
     send_named_float("Lights2",

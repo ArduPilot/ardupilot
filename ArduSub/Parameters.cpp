@@ -833,3 +833,197 @@ void Sub::convert_old_parameters()
 
     SRV_Channels::upgrade_parameters();
 }
+
+// Helper function to set servo function by channel number, 1-indexed
+static void set_servo_function(uint8_t channel, SRV_Channel::Aux_servo_function_t function)
+{
+    char param_name[20];
+    snprintf(param_name, sizeof(param_name), "SERVO%u_FUNCTION", channel);
+    AP_Param::set_and_save_by_name(param_name, static_cast<int>(function));
+}
+
+
+void Sub::update_actuators_from_jsbuttons()
+{
+  /*
+  This function is used to update parameters from Sub 4.5.4 to the newer actuators implementation.
+  servo_1_in/min/dec/etc.. were hard-coded to work only on channels 9,10,11. this update means we now have to change
+  these functions to the corresponding actuator function to keep the same functionality.
+  For each of SERVO9,10,11, if they are set to DISABLED, check if there are joystick buttons set to actuator functions.
+  if so, and no other channel is set to that actuator function, set the servo to the actuator function.
+  */
+
+  // Configuration constants
+  const uint8_t FIRST_LEGACY_CHANNEL = 9;
+  const uint8_t NUM_LEGACY_ACTUATORS = 3;
+  const size_t FUNCTIONS_PER_SERVO = 9;
+
+  // Legacy servo button functions mapped to actuators 1-3
+  static constexpr JSButton::button_function_t servo_functions[NUM_LEGACY_ACTUATORS][FUNCTIONS_PER_SERVO] = {
+      {   // Actuator 1 (was servo_1_*)
+          JSButton::button_function_t::k_servo_1_inc,
+          JSButton::button_function_t::k_servo_1_dec,
+          JSButton::button_function_t::k_servo_1_min,
+          JSButton::button_function_t::k_servo_1_max,
+          JSButton::button_function_t::k_servo_1_center,
+          JSButton::button_function_t::k_servo_1_min_momentary,
+          JSButton::button_function_t::k_servo_1_max_momentary,
+          JSButton::button_function_t::k_servo_1_min_toggle,
+          JSButton::button_function_t::k_servo_1_max_toggle
+      },
+      {   // Actuator 2 (was servo_2_*)
+          JSButton::button_function_t::k_servo_2_inc,
+          JSButton::button_function_t::k_servo_2_dec,
+          JSButton::button_function_t::k_servo_2_min,
+          JSButton::button_function_t::k_servo_2_max,
+          JSButton::button_function_t::k_servo_2_center,
+          JSButton::button_function_t::k_servo_2_min_momentary,
+          JSButton::button_function_t::k_servo_2_max_momentary,
+          JSButton::button_function_t::k_servo_2_min_toggle,
+          JSButton::button_function_t::k_servo_2_max_toggle
+      },
+      {   // Actuator 3 (was servo_3_*)
+          JSButton::button_function_t::k_servo_3_inc,
+          JSButton::button_function_t::k_servo_3_dec,
+          JSButton::button_function_t::k_servo_3_min,
+          JSButton::button_function_t::k_servo_3_max,
+          JSButton::button_function_t::k_servo_3_center,
+          JSButton::button_function_t::k_servo_3_min_momentary,
+          JSButton::button_function_t::k_servo_3_max_momentary,
+          JSButton::button_function_t::k_servo_3_min_toggle,
+          JSButton::button_function_t::k_servo_3_max_toggle
+      }
+  };
+
+  // Target actuator functions for assignment
+  static constexpr SRV_Channel::Aux_servo_function_t actuator_functions[NUM_LEGACY_ACTUATORS] = {
+      SRV_Channel::Aux_servo_function_t::k_actuator1,
+      SRV_Channel::Aux_servo_function_t::k_actuator2,
+      SRV_Channel::Aux_servo_function_t::k_actuator3
+  };
+
+  // Process legacy channels 9-11
+  for (uint8_t actuator_idx = 0; actuator_idx < NUM_LEGACY_ACTUATORS; actuator_idx++) {
+      const uint8_t channel = FIRST_LEGACY_CHANNEL + actuator_idx;
+      const auto target_function = actuator_functions[actuator_idx];
+
+      // Skip if actuator function already assigned to any channel
+      uint8_t existing_channel;
+      if (SRV_Channels::find_channel(target_function, existing_channel)) {
+          continue;
+      }
+
+      // Skip if channel is not disabled
+      if (SRV_Channels::channel_function(channel - 1) != SRV_Channel::Aux_servo_function_t::k_none) {
+          continue;
+      }
+
+      // Check if any servo/actuator buttons are assigned
+      bool has_assigned_button = false;
+      for (size_t func_idx = 0; func_idx < FUNCTIONS_PER_SERVO; func_idx++) {
+          if (sub.jsbutton_function_is_assigned(servo_functions[actuator_idx][func_idx])) {
+              has_assigned_button = true;
+              break;
+          }
+      }
+
+      if (has_assigned_button) {
+          // Assign actuator function to preserve legacy behavior
+          set_servo_function(channel, target_function);
+      }
+  }
+}
+
+void Sub::update_lights_from_rcin()
+{
+    /*
+    Maps older systems from using RCIN9 and RCIN10 to using lights1 and lights2.
+    This is only done if there are joystick buttons assigned to the lights functions and there are no channels assigned to the lights functions.
+    */
+
+    const uint8_t NUM_LIGHTS = 2;
+    const uint8_t FUNCTIONS_PER_LIGHT = 3;
+    static constexpr JSButton::button_function_t lights_button_functions[NUM_LIGHTS][FUNCTIONS_PER_LIGHT] = {
+        {
+            JSButton::button_function_t::k_lights1_brighter,
+            JSButton::button_function_t::k_lights1_dimmer,
+            JSButton::button_function_t::k_lights1_cycle,
+        },
+        {
+            JSButton::button_function_t::k_lights2_brighter,
+            JSButton::button_function_t::k_lights2_dimmer,
+            JSButton::button_function_t::k_lights2_cycle,
+        }
+    };
+
+    const SRV_Channel::Aux_servo_function_t lights_functions[NUM_LIGHTS] = {
+        SRV_Channel::Aux_servo_function_t::k_lights1,
+        SRV_Channel::Aux_servo_function_t::k_lights2
+    };
+
+    const SRV_Channel::Aux_servo_function_t rcin_functions[NUM_LIGHTS] = {
+        SRV_Channel::Aux_servo_function_t::k_rcin9,
+        SRV_Channel::Aux_servo_function_t::k_rcin10
+    };
+
+
+    for (uint8_t light = 0; light < NUM_LIGHTS; light++)
+    {
+        uint8_t existing_channel;
+        if (SRV_Channels::find_channel(lights_functions[light], existing_channel) 
+            || !SRV_Channels::find_channel(rcin_functions[light], existing_channel)) {
+            continue;
+        }
+        // We have a potential lights RCIN channel. Do we have lights buttons?
+        for (uint8_t func_idx = 0; func_idx < FUNCTIONS_PER_LIGHT; func_idx++) {
+            if (sub.jsbutton_function_is_assigned(lights_button_functions[light][func_idx])) {
+                // We have buttons assined to lights. set the channel to the new, dedicated lights function.
+                set_servo_function(existing_channel + 1, lights_functions[light]);
+                break;
+            }
+        }
+    }
+}
+
+#if LEAKDETECTOR_MAX_INSTANCES > 0
+
+void Sub::update_leak_pins() {
+    for (uint8_t instance = 0; instance < LEAKDETECTOR_MAX_INSTANCES; instance++) {
+        if (leak_detector.get_pin(instance) > 0) {
+            uint8_t servo_channel;
+            if (hal.gpio->pin_to_servo_channel(leak_detector.get_pin(instance), servo_channel)) {
+                if (!SRV_Channels::is_GPIO(servo_channel)) {
+                    if (SRV_Channels::channel_function(servo_channel) == SRV_Channel::Aux_servo_function_t::k_none) {
+                        gcs().send_text(MAV_SEVERITY_INFO, "Leak detector %u pin (servo %u) auto-set to GPIO", instance + 1, servo_channel + 1);
+                        set_servo_function(servo_channel + 1, SRV_Channel::Aux_servo_function_t::k_GPIO);
+                    }
+                    else {
+                        gcs().send_text(MAV_SEVERITY_WARNING, "Leak detector %u error. Please set SERVO%u_FUNCTION to GPIO", instance + 1, servo_channel + 1);
+                    }
+                }
+            }
+        }
+    }
+}
+#endif
+
+#if AP_RELAY_ENABLED
+void Sub::update_relay_pins() {
+    for (uint8_t instance = 0; instance < AP_RELAY_NUM_RELAYS; instance++) {
+        if (relay.get_gpio_pin(instance) > 0) {
+            uint8_t servo_channel;
+            if (hal.gpio->pin_to_servo_channel(relay.get_gpio_pin(instance), servo_channel)) {
+                if (relay.enabled(instance) && !SRV_Channels::is_GPIO(servo_channel)) {
+                    if (SRV_Channels::channel_function(servo_channel) == SRV_Channel::Aux_servo_function_t::k_none) {
+                        gcs().send_text(MAV_SEVERITY_INFO, "Relay %u pin (servo %u) auto-set to GPIO", instance + 1, servo_channel + 1);
+                        set_servo_function(servo_channel + 1, SRV_Channel::Aux_servo_function_t::k_GPIO);
+                    }
+                    else {
+                        gcs().send_text(MAV_SEVERITY_WARNING, "Relay %u error. Please set SERVO%u_FUNCTION to GPIO", instance + 1, servo_channel + 1);
+                    }
+                }
+            }
+        }
+    }
+}
+#endif

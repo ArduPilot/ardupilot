@@ -175,8 +175,17 @@ void Sub::init_ardupilot()
     mainloop_failsafe_enable();
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
+    update_actuators_from_jsbuttons();
+
     g2.actuators.initialize_actuators();
 
+    update_lights_from_rcin();
+#if LEAKDETECTOR_MAX_INSTANCES > 0
+    update_leak_pins();
+#endif
+#if AP_RELAY_ENABLED
+    update_relay_pins();
+#endif
     // flag that initialisation has completed
     ap.initialised = true;
 }

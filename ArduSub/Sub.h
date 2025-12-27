@@ -479,6 +479,7 @@ private:
     JSButton* get_button(uint8_t index);
     void default_js_buttons(void);
     void clear_input_hold();
+    bool jsbutton_function_is_assigned(JSButton::button_function_t function);
     void read_barometer(void);
     void init_rangefinder(void);
     void read_rangefinder(void);
@@ -544,6 +545,14 @@ private:
     uint16_t get_pilot_speed_dn() const;
 
     void convert_old_parameters(void);
+    void update_actuators_from_jsbuttons();
+    void update_lights_from_rcin();
+#if LEAKDETECTOR_MAX_INSTANCES > 0
+    void update_leak_pins();
+#endif
+#if AP_RELAY_ENABLED
+    void update_relay_pins();
+#endif
     bool handle_do_motor_test(mavlink_command_int_t command);
     bool init_motor_test();
     bool verify_motor_test();
