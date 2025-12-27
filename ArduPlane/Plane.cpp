@@ -217,28 +217,35 @@ void Plane::ahrs_update()
 }
 
 /*
-  update 50Hz speed/height controller
+  return true if we should be running the TECS speed height controller
  */
-void Plane::update_speed_height(void)
+bool Plane::should_run_tecs(void) const
 {
-    bool should_run_tecs = control_mode->does_auto_throttle();
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.should_disable_TECS()) {
-        should_run_tecs = false;
+        return false;
     }
 #endif
 
     if (auto_state.idle_mode) {
-        should_run_tecs = false;
+        return false;
     }
 
 #if AP_PLANE_GLIDER_PULLUP_ENABLED
     if (mode_auto.in_pullup()) {
-        should_run_tecs = false;
+        return false;
     }
 #endif
 
-    if (should_run_tecs) {
+    return control_mode->does_auto_throttle();
+}
+
+/*
+  update 50Hz speed/height controller
+ */
+void Plane::update_speed_height(void)
+{
+    if (should_run_tecs()) {
 	    // Call TECS 50Hz update. Note that we call this regardless of
 	    // throttle suppressed, as this needs to be running for
 	    // takeoff detection
