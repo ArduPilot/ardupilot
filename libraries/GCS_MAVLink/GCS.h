@@ -733,6 +733,7 @@ protected:
 #endif  // AP_MAVLINKCAN_ENABLED
 
     void handle_optical_flow(const mavlink_message_t &msg);
+    void handle_optical_flow_rad(const mavlink_message_t &msg);
 
     void handle_manual_control(const mavlink_message_t &msg);
     void handle_radio_rc_channels(const mavlink_message_t &msg);
