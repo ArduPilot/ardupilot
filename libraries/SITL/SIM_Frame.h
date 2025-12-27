@@ -45,8 +45,8 @@ public:
           motors(_motors) {}
 
 #if AP_SIM_ENABLED
-    // find a frame by name
-    static Frame *find_frame(const char *name);
+    // create a frame by name from its template
+    static Frame *create_frame(const char *name);
     
     // initialise frame
     void init(const char *frame_str, Battery *_battery);

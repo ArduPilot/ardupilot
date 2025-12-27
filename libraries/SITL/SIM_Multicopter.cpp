@@ -26,9 +26,9 @@ using namespace SITL;
 MultiCopter::MultiCopter(const char *frame_str) :
     Aircraft(frame_str)
 {
-    frame = Frame::find_frame(frame_str);
+    frame = Frame::create_frame(frame_str);
     if (frame == nullptr) {
-        printf("Frame '%s' not found", frame_str);
+        printf("Frame '%s' not found or insufficient memory", frame_str);
         exit(1);
     }
 
