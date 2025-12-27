@@ -1999,27 +1999,21 @@ void NavEKF3_core::FuseBodyVel()
                 bodyVelFusionActive = true;
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u fusing odometry",(unsigned)imu_index);
             }
-            // correct the covariance P = (I - K*H)*P
-            // take advantage of the empty columns in KH to reduce the
-            // number of operations
+
+            // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
+            // the zero elements of H to reduce the number of operations.
             for (unsigned i = 0; i<=stateIndexLim; i++) {
-                for (unsigned j = 0; j<=6; j++) {
-                    KH[i][j] = Kfusion[i] * H_VEL[j];
-                }
-                for (unsigned j = 7; j<=stateIndexLim; j++) {
-                    KH[i][j] = 0.0f;
-                }
-            }
-            for (unsigned j = 0; j<=stateIndexLim; j++) {
-                for (unsigned i = 0; i<=stateIndexLim; i++) {
+                // j as the inner loop allows the compiler to hoist the KH product
+                // to save computation, and do the inner indexing more efficiently.
+                for (unsigned j = 0; j<=stateIndexLim; j++) {
                     ftype res = 0;
-                    res += KH[i][0] * P[0][j];
-                    res += KH[i][1] * P[1][j];
-                    res += KH[i][2] * P[2][j];
-                    res += KH[i][3] * P[3][j];
-                    res += KH[i][4] * P[4][j];
-                    res += KH[i][5] * P[5][j];
-                    res += KH[i][6] * P[6][j];
+                    res += (Kfusion[i] * H_VEL[0]) * P[0][j];
+                    res += (Kfusion[i] * H_VEL[1]) * P[1][j];
+                    res += (Kfusion[i] * H_VEL[2]) * P[2][j];
+                    res += (Kfusion[i] * H_VEL[3]) * P[3][j];
+                    res += (Kfusion[i] * H_VEL[4]) * P[4][j];
+                    res += (Kfusion[i] * H_VEL[5]) * P[5][j];
+                    res += (Kfusion[i] * H_VEL[6]) * P[6][j];
                     KHP[i][j] = res;
                 }
             }
