@@ -87,30 +87,25 @@ public:
         k_param_log_bitmask,
         k_param_throttle_filt,
         k_param_throttle_behavior,
-        k_param_pilot_takeoff_alt, //unused
+        k_param_mission,                // mission library
 
         // AP_ADSB Library
         k_param_adsb,
         k_param_notify,
 
-        //PID Controllers
-        k_param_pid_vel_xy = 32,
-        k_param_pid_vel_z,
-        k_param_pid_vel_yaw,
-        k_param_pid_pos_xy,
-        k_param_pid_pos_z,
-        k_param_pid_pos_yaw,
-
         //Position & Velocity controller params
-        k_param_max_vel_xy = 50,
-        k_param_max_vel_z,
-        k_param_max_vel_yaw,
-        k_param_max_pos_xy,
-        k_param_max_pos_z,
-        k_param_max_pos_yaw,
-        k_param_simple_mode,
-        k_param_dis_mask,
-        k_param_pid_dz,
+        //32 to 37 was used by the previous PID objects and by the MAX position and velocity parameters before they were moved to Loiter class.
+        k_param_loiter = 40,
+        k_param_max_man_thr,
+        k_param_stream_rate,
+        k_param_wp_accel,
+        k_param_wp_vel = 46,
+        k_param_wp_rad,
+        k_param_wp_fin_dist,
+        k_param_wp_yaw_min_vel,
+        k_param_wp_yaw_spd,
+        //50 to 55, 57 to 60 were used by the max vel and max pos parameters, disable mask and pid deadzone before they were moved to Loiter class.
+        k_param_simple_mode = 56,
 
         //
         // 90: misc2
@@ -240,16 +235,15 @@ public:
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
 
-    AP_Float        max_vel_xy;
-    AP_Float        max_vel_z;
-    AP_Float        max_vel_yaw;
-    AP_Float        max_pos_xy;
-    AP_Float        max_pos_z;
-    AP_Float        max_pos_yaw;
-
+    AP_Float        wp_accel;
+    AP_Float        wp_vel;
+    AP_Float        wp_rad;
+    AP_Float        wp_fin_dist;
+    AP_Float        wp_yaw_min_vel;
+    AP_Float        wp_yaw_spd;
+    AP_Float        stream_rate;
     AP_Int8         simple_mode;
-    AP_Int16        dis_mask;
-    AP_Float        pid_dz;
+    AP_Float        max_man_thr;
 
     AP_Int8         rtl_alt_type;
 
