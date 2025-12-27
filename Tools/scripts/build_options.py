@@ -31,6 +31,16 @@ class Feature:
 # list of build options to offer NOTE: the dependencies must be
 # written as a single string with commas and no spaces,
 # eg. 'dependency1,dependency2'
+
+
+# Feature(group, name, dependency, description, default, callback)
+#
+# group        : Logical group/category used to organise related features
+# name         : Feature name within the group
+# dependency   : Compile-time or feature dependency required for this option
+# description : User-visible description shown in configuration tools
+# default     : Default state (1 = enabled, 0 = disabled)
+# callback    : Optional callback or dependency override (None if unused)
 BUILD_OPTIONS = [
     Feature('AHRS', 'EKF3', 'HAL_NAVEKF3_AVAILABLE', 'Enable EKF3', 1, None),
     Feature('AHRS', 'EKF2', 'HAL_NAVEKF2_AVAILABLE', 'Enable EKF2', 0, None),
