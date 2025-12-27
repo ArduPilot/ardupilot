@@ -1,0 +1,7 @@
+# This service requests a plane to glide.
+
+# Set true to request the TECS controller to glide
+bool glide_requested
+---
+# True if the gliding request was successful , false otherwise. 
+bool result

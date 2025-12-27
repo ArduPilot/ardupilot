@@ -148,35 +148,8 @@ $ ros2 node list
 /ardupilot_dds
 ```
 
-Depending on what's configured, you will see something similar to this:
-
-```bash
-$ ros2 topic list -v
-Published topics:
- * /ap/airspeed [ardupilot_msgs/msg/Airspeed] 1 publisher
- * /ap/battery [sensor_msgs/msg/BatteryState] 1 publisher
- * /ap/clock [rosgraph_msgs/msg/Clock] 1 publisher
- * /ap/geopose/filtered [geographic_msgs/msg/GeoPoseStamped] 1 publisher
- * /ap/gps_global_origin/filtered [geographic_msgs/msg/GeoPointStamped] 1 publisher
- * /ap/imu/experimental/data [sensor_msgs/msg/Imu] 1 publisher
- * /ap/navsat [sensor_msgs/msg/NavSatFix] 1 publisher
- * /ap/pose/filtered [geometry_msgs/msg/PoseStamped] 1 publisher
- * /ap/rc [ardupilot_msgs/msg/Rc] 1 publisher
- * /ap/status [ardupilot_msgs/msg/Status] 1 publisher
- * /ap/tf_static [tf2_msgs/msg/TFMessage] 1 publisher
- * /ap/time [builtin_interfaces/msg/Time] 1 publisher
- * /ap/twist/filtered [geometry_msgs/msg/TwistStamped] 1 publisher
- * /parameter_events [rcl_interfaces/msg/ParameterEvent] 1 publisher
- * /rosout [rcl_interfaces/msg/Log] 1 publisher
-
-Subscribed topics:
- * /ap/cmd_gps_pose [ardupilot_msgs/msg/GlobalPosition] 1 subscriber
- * /ap/cmd_vel [geometry_msgs/msg/TwistStamped] 1 subscriber
- * /ap/joy [sensor_msgs/msg/Joy] 1 subscriber
- * /ap/tf [tf2_msgs/msg/TFMessage] 1 subscriber
-```
-
-For a full list of interfaces, see [here](https://ardupilot.org/dev/docs/ros2-interfaces.html).
+Depending on what has been configured, different interfaces are available.
+For a full list of possible interfaces with usage recommendations, see [here](https://ardupilot.org/dev/docs/ros2-interfaces.html).
 
 ```bash
 $ ros2 topic hz /ap/time
@@ -195,6 +168,7 @@ $ ros2 service list
 /ap/arm_motors
 /ap/mode_switch
 /ap/prearm_check
+/ap/set_gliding
 /ap/experimental/takeoff
 ---
 ```
@@ -222,6 +196,7 @@ $ ros2 service list -t
 /ap/arm_motors [ardupilot_msgs/srv/ArmMotors]
 /ap/mode_switch [ardupilot_msgs/srv/ModeSwitch]
 /ap/prearm_check [std_srvs/srv/Trigger]
+TODO
 /ap/experimental/takeoff [ardupilot_msgs/srv/Takeoff]
 ```
 
