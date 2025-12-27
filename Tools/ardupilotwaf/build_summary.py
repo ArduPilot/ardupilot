@@ -173,9 +173,12 @@ def _build_summary(bld):
 # totals=True means relying on -t flag to give us a "(TOTALS)" output
 def _parse_size_output(s, s_all, totals=False):
 
-    # Get the size of .crash_log to remove it from .bss reporting
-    # also get external flash size if applicable
+    # Get the size of .crash_log and .heap to remove them from .bss reporting as
+    # binutils size includes in bss the size of any section that has the ALLOC
+    # flag but neither CODE nor HAS_CONTENTS (as reported by objdump -h). also
+    # get external flash size if applicable.
     crash_log_size = None
+    heap_size = 0
     ext_flash_used = 0
     if s_all is not None:
         lines = s_all.splitlines()[1:]
@@ -183,6 +186,9 @@ def _parse_size_output(s, s_all, totals=False):
             if ".crash_log" in line:
                 row = line.strip().split()
                 crash_log_size = int(row[1])
+            if ".heap" in line:
+                row = line.strip().split()
+                heap_size = int(row[1])
             if ".extflash" in line:
                 row = line.strip().split()
                 if int(row[1]) > 0:
@@ -206,6 +212,7 @@ def _parse_size_output(s, s_all, totals=False):
             # reports BSS with crash_log included
             size_bss = int(row[2]) - crash_log_size
             size_free_flash = crash_log_size
+        size_bss -= heap_size # remove also-included default heap section size from bss
 
         l.append(dict(
             size_text=int(row[0]),
