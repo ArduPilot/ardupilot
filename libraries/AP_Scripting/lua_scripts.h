@@ -74,7 +74,7 @@ private:
        script_info *next;
     } script_info;
 
-    script_info *load_script(lua_State *L, char *filename);
+    bool load_script(lua_State *L, script_info *new_script);
 
     void reset_loop_overtime(lua_State *L);
 
