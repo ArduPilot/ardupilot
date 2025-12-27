@@ -159,39 +159,32 @@ void lua_scripts::update_stats(const char *name, uint32_t run_time, int total_me
 #endif // HAL_LOGGING_ENABLED
 }
 
-lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename) {
+bool lua_scripts::load_script(lua_State *L, script_info *new_script) {
+    const char *filename = new_script->name;
+
     if (int error = luaL_loadfile(L, filename)) {
         switch (error) {
             case LUA_ERRSYNTAX:
                 set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "Error: %s", get_error_object_message(L));
                 lua_pop(L, lua_gettop(L));
-                return nullptr;
+                return false;
             case LUA_ERRMEM:
                 set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "Insufficent memory loading %s", filename);
                 lua_pop(L, lua_gettop(L));
-                return nullptr;
+                return false;
             case LUA_ERRFILE:
                 set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "Unable to load the file: %s", get_error_object_message(L));
                 lua_pop(L, lua_gettop(L));
-                return nullptr;
+                return false;
             default:
                 set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "Unknown error (%d) loading %s", error, filename);
                 lua_pop(L, lua_gettop(L));
-                return nullptr;
+                return false;
         }
     }
 
     const int loadMem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
     const uint32_t loadStart = AP_HAL::micros();
-
-    script_info *new_script = (script_info *)_heap.allocate(sizeof(script_info));
-    if (new_script == nullptr) {
-        // No memory, shouldn't happen, we even attempted to do a GC
-        set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "Insufficent memory loading %s", filename);
-        lua_pop(L, 1); // we can't use the function we just loaded, so ditch it
-        return nullptr;
-    }
-
 
     create_sandbox(L);
     lua_pushvalue(L, -1); // duplicate environment for reference below
@@ -202,7 +195,6 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
 
     update_stats(filename, loadEnd-loadStart, endMem, loadMem);
 
-    new_script->name = filename;
     new_script->env_ref = luaL_ref(L, LUA_REGISTRYINDEX); // store reference to script's environment
     new_script->run_ref = luaL_ref(L, LUA_REGISTRYINDEX); // store reference to function to run
     new_script->next_run_ms = AP_HAL::millis64() - 1; // force the script to be stale
@@ -220,7 +212,7 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
         }
     }
 
-    return new_script;
+    return true;
 }
 
 void lua_scripts::create_sandbox(lua_State *L) {
@@ -281,18 +273,36 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
         // FIXME: because chunk name fetching is not working we are allocating and storing an extra string we shouldn't need to
         size_t size = strlen(dirname) + strlen(de->d_name) + 2;
         char * filename = (char *) _heap.allocate(size);
-        if (filename == nullptr) {
+        script_info *script = (script_info *)_heap.allocate(sizeof(script_info));
+        if ((filename == nullptr) || (script == nullptr)) {
+            // unlikely to be out of memory for these, just ignore the script...
+            _heap.deallocate(filename);
+            _heap.deallocate(script);
             continue;
         }
         snprintf(filename, size, "%s/%s", dirname, de->d_name);
 
-        // we have something that looks like a lua file, attempt to load it
-        script_info * script = load_script(L, filename);
-        if (script == nullptr) {
+        // provisionally link the script_info into our list so it will be freed
+        // if there is an uncaught Lua error during loading
+        script->env_ref = LUA_NOREF;
+        script->run_ref = LUA_NOREF;
+        script->crc = 0; // ensure removing it has no effect on the CRC
+        script->name = filename;
+        script->next = scripts;
+        scripts = script;
+
+        // attempt to load the script, may raise Lua error
+        bool success = load_script(L, script);
+        // no Lua error, unlink the script_info so we can handle it properly
+        scripts = script->next;
+        script->next = nullptr;
+
+        if (!success) { // discard if load failed
             _heap.deallocate(filename);
+            _heap.deallocate(script);
             continue;
         }
-        reschedule_script(script);
+        reschedule_script(script); // reschedule if load succeeded
 
 #if HAL_LOGGER_FILE_CONTENTS_ENABLED
         if (!option_is_set(AP_Scripting::DebugOption::SUPPRESS_SCRIPT_LOG)) {
@@ -370,9 +380,10 @@ void lua_scripts::run_next_script(lua_State *L) {
                     // types match the expectations, go ahead and reschedule
                     script->next_run_ms = start_time_ms + (uint64_t)luaL_checknumber(L, -1);
                     lua_pop(L, 1);
-                    int old_ref = script->run_ref;
+                    luaL_unref(L, LUA_REGISTRYINDEX, script->run_ref);
+                    // cannot cause error as we just made a free ref slot above
+                    // so there won't be any need to allocate more
                     script->run_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-                    luaL_unref(L, LUA_REGISTRYINDEX, old_ref);
                     reschedule_script(script);
                     break;
                 }
