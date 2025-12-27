@@ -714,6 +714,8 @@ protected:
     MAV_RESULT handle_command_camera(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_set_roi(const mavlink_command_int_t &packet);
     virtual MAV_RESULT handle_command_do_set_roi(const Location &roi_loc);
+    MAV_RESULT handle_command_do_set_roi_location(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_do_set_roi_none(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_gripper(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_sprayer(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_set_mode(const mavlink_command_int_t &packet);
