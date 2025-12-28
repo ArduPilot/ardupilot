@@ -601,8 +601,8 @@ void ToyMode::update()
             } else {
                 new_mode = Mode::Number::ALT_HOLD;
             }
-        } else if (copter.flightmode->requires_GPS()) {
-            // if we're in a GPS mode, then RTL
+        } else if (copter.flightmode->requires_position()) {
+            // if we're in a position mode, then RTL
             new_mode = Mode::Number::RTL;
         } else {
             // if we're in a non-GPS mode, then LAND
