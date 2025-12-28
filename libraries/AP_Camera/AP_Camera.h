@@ -148,6 +148,19 @@ public:
     // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
     bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
     bool set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+    // returns true if the object to be tracked by the camera is visible in the frame
+    bool is_tracking_object_visible(uint8_t instance);
+    // gets the tracked object position in 0.0 - 1.0 range , x and y axis both, Also the confidence of tracking accruacy
+    bool get_tracked_object_position_in_frame(uint8_t instance, Vector2f& normalized_pos, float& confidence);
+    // Returns if the tracked object is into certain vicinity of the frame decided by a margin (0.0-0.5)
+    // if margin is 0.5 this means full frame
+    bool is_tracking_object_visible_near_center(uint8_t instance, float _object_follow_margin);
+#endif
+
+    // The Horizontal and Vertical FOV can be accessed by these functions outside the camera library
+    bool get_hfov(uint8_t instance, float& hfov);
+    bool get_vfov(uint8_t instance, float& vfov);
 
 #if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
     // set camera lens as a value from 0 to 5, instance starts from 0
@@ -266,6 +279,8 @@ private:
     // send camera thermal range message to GCS
     void send_camera_thermal_range(mavlink_channel_t chan);
 #endif
+    // send camera tracking image status message
+    void send_camera_tracking_image_status(mavlink_channel_t chan);
 
     HAL_Semaphore _rsem;                // semaphore for multi-thread access
     AP_Camera_Backend *primary;         // primary camera backed
