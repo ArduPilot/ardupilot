@@ -99,8 +99,9 @@ void AP_OpticalFlow_MAV::update(void)
 // handle OPTICAL_FLOW mavlink messages
 void AP_OpticalFlow_MAV::handle_msg(const mavlink_message_t &msg)
 {
-    mavlink_optical_flow_t packet;
-    mavlink_msg_optical_flow_decode(&msg, &packet);
+mavlink_optical_flow_t packet;
+mavlink_msg_optical_flow_decode(&msg, &packet);
+
 
     // record time message was received
     // ToDo: add jitter correction
