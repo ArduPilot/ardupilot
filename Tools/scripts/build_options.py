@@ -28,9 +28,18 @@ class Feature:
         return "enable-" + self.label.replace(" ", "-")
 
 
-# list of build options to offer NOTE: the dependencies must be
-# written as a single string with commas and no spaces,
-# eg. 'dependency1,dependency2'
+# list of build options to offer
+
+# Feature(category, label, macro, description, default, dependencies)
+#
+# category      : The category/group this feature belongs to
+# label         : Globally unique identifier for the feature (max 30 chars)
+# macro         : The macro which enables/disables the feature at compile-time.
+#                 e.g., "AP_AIRSPEED_ENABLED".
+# description   : User visible description shown on Custom build server.
+# default       : Default state (1 = enabled, 0 = disabled)
+# dependencies  : Comma-separated list of feature labels that this feature depends on
+#                 (a single string with commas and no spaces). e.g., 'dependency1,dependency2'.
 BUILD_OPTIONS = [
     Feature('AHRS', 'EKF3', 'HAL_NAVEKF3_AVAILABLE', 'Enable EKF3', 1, None),
     Feature('AHRS', 'EKF2', 'HAL_NAVEKF2_AVAILABLE', 'Enable EKF2', 0, None),
