@@ -328,19 +328,30 @@ void NavEKF3_core::setAidingMode()
             // check if drag data is being used
             bool dragUsed = (imuSampleTime_ms - lastDragPassTime_ms <= minTestTime_ms);
 
-#if EK3_FEATURE_BEACON_FUSION
-            // Check if range beacon data is being used
-            const bool rngBcnUsed = (imuSampleTime_ms - rngBcn.lastPassTime_ms <= minTestTime_ms);
-#else
-            const bool rngBcnUsed = false;
-#endif
-
             // Check if GPS or external nav is being used
             bool posUsed = (imuSampleTime_ms - lastGpsPosPassTime_ms <= minTestTime_ms);
             bool gpsVelUsed = (imuSampleTime_ms - lastVelPassTime_ms <= minTestTime_ms);
 
+#if EK3_FEATURE_BEACON_FUSION
+            // It is possible for the attitude and bias states to be degraded by badly conditioned range to location measurements.
+            // If we have another observation source making those states observable, do not update the quaternion and bias states
+            // using range to location measurements.
+#if EK3_FEATURE_WRITE_RANGE_TO_LOCATION
+            const bool usingFlyForwardAirData = assume_zero_sideslip() && airSpdUsed;
+            bool nonRngAttAidAvailable = posUsed || gpsVelUsed || optFlowUsed || usingFlyForwardAirData || dragUsed || bodyOdmUsed;
+            rngBcn.notUsedForAttitude = rngBcn.usingRangeToLoc && ((frontend->_options & (int32_t)NavEKF3::Options::LimitRngToLocUpdate) || nonRngAttAidAvailable);
+#else
+            rngBcn.notUsedForAttitude = false;
+#endif
+            // Check if range beacon data is being used and there are enough beacons to constrain drift
+            const bool rngBcnUsed = (rngBcn.N > 1) && (imuSampleTime_ms - rngBcn.lastPassTime_ms <= minTestTime_ms);
+            const bool rngBcnUsedForAtt = rngBcnUsed && !rngBcn.notUsedForAttitude;
+#else
+            const bool rngBcnUsed = false;
+#endif
+
             // Check if attitude drift has been constrained by a measurement source
-            bool attAiding = posUsed || gpsVelUsed || optFlowUsed || airSpdUsed || dragUsed || rngBcnUsed || bodyOdmUsed;
+            bool attAiding = posUsed || gpsVelUsed || optFlowUsed || airSpdUsed || dragUsed || rngBcnUsedForAtt || bodyOdmUsed;
 
             // Check if velocity drift has been constrained by a measurement source
             // Currently these are all the same source as will stabilise attitude because we do not currently have
@@ -354,16 +365,14 @@ void NavEKF3_core::setAidingMode()
                 lastAspdEstIsValid = true;
             }
 
-            // check if position drift has been constrained by a measurement source
-            bool posAiding = posUsed || rngBcnUsed;
-
             // Check if the loss of attitude aiding has become critical
             bool attAidLossCritical = false;
             if (!attAiding) {
             	attAidLossCritical = (imuSampleTime_ms - prevFlowFuseTime_ms > frontend->tiltDriftTimeMax_ms) &&
                 		(imuSampleTime_ms - lastTasPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
 #if EK3_FEATURE_BEACON_FUSION
-                        (imuSampleTime_ms - rngBcn.lastPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
+                        // range to location measurements on their own may not sufficient for stable state estimates
+                        ((imuSampleTime_ms - rngBcn.lastPassTime_ms > frontend->tiltDriftTimeMax_ms) || rngBcn.notUsedForAttitude) &&
 #endif
                         (imuSampleTime_ms - lastGpsPosPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
                         (imuSampleTime_ms - lastVelPassTime_ms > frontend->tiltDriftTimeMax_ms);
@@ -371,7 +380,7 @@ void NavEKF3_core::setAidingMode()
 
             // Check if the loss of position accuracy has become critical
             bool posAidLossCritical = false;
-            if (!posAiding) {
+            if (!posUsed || !rngBcnUsed) {
                 uint16_t maxLossTime_ms;
                 if (!velAiding) {
                     maxLossTime_ms = frontend->posRetryTimeNoVel_ms;
