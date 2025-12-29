@@ -15,6 +15,7 @@
 #define AC_ATC_HELI_RATE_RP_IMAX                    0.4f
 #define AC_ATC_HELI_RATE_RP_FF                      0.15f
 #define AC_ATC_HELI_RATE_RP_FILT_HZ                 20.0f
+#define AC_ATC_HELI_RATE_RP_ILMI                    0.05f  // Default I-term Leak Minimum
 #define AC_ATC_HELI_RATE_YAW_P                      0.18f
 #define AC_ATC_HELI_RATE_YAW_I                      0.12f
 #define AC_ATC_HELI_RATE_YAW_D                      0.003f

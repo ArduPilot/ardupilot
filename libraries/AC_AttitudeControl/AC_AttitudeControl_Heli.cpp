@@ -311,6 +311,10 @@ AC_AttitudeControl_Heli::AC_AttitudeControl_Heli(AP_AHRS_View &ahrs, const AP_Mu
 {
     AP_Param::setup_object_defaults(this, var_info);
 
+    // set default for roll and pitch rate ILMI parameters
+    _pid_rate_roll.set_ilmi(AC_ATC_HELI_RATE_RP_ILMI);
+    _pid_rate_pitch.set_ilmi(AC_ATC_HELI_RATE_RP_ILMI);
+
     // initialise flags
     _flags_heli.leaky_i = true;
     _flags_heli.flybar_passthrough = false;
