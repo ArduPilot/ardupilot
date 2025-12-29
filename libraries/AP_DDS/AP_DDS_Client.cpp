@@ -105,6 +105,9 @@ geometry_msgs_msg_TwistStamped AP_DDS_Client::rx_velocity_control_topic {};
 #if AP_DDS_GLOBAL_POS_CTRL_ENABLED
 ardupilot_msgs_msg_GlobalPosition AP_DDS_Client::rx_global_position_control_topic {};
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
+#if AP_DDS_LOCAL_POSE_CTRL_ENABLED
+ardupilot_msgs_msg_LocalPosition AP_DDS_Client::rx_local_position_control_topic {};
+#endif // AP_DDS_LOCAL_POSE_CTRL_ENABLED
 
 // Define the parameter server data members, which are static class scope.
 // If these are created on the stack, then the AP_DDS_Client::on_request
@@ -880,6 +883,21 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         break;
     }
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
+#if AP_DDS_LOCAL_POSE_CTRL_ENABLED
+    case topics[to_underlying(TopicIndex::LOCAL_POSE_CONTROL_SUB)].dr_id.id: {
+        const bool success = ardupilot_msgs_msg_LocalPosition_deserialize_topic(ub, &rx_local_position_control_topic);
+        if (success == false) {
+            break;
+        }
+
+#if AP_EXTERNAL_CONTROL_ENABLED
+        if (!AP_DDS_External_Control::handle_local_position_control(rx_local_position_control_topic)) {
+            // TODO #23430 handle local position control failure through rosout, throttled.
+        }
+#endif // AP_EXTERNAL_CONTROL_ENABLED
+        break;
+    }
+#endif // AP_DDS_LOCAL_POSE_CTRL_ENABLED
     }
 
 }
