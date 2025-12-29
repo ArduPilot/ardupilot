@@ -7,15 +7,8 @@ AP_FLAKE8_CLEAN
 """
 import argparse
 import re
-import sys
 import build_options
 from build_script_base import BuildScriptBase
-
-
-if sys.version_info[0] < 3:
-    running_python3 = False
-else:
-    running_python3 = True
 
 
 class ExtractFeatures(BuildScriptBase):
