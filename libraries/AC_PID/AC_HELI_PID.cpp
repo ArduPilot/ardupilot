@@ -39,7 +39,7 @@ const AP_Param::GroupInfo AC_HELI_PID::var_info[] = {
     // @Description: Point below which I-term will not leak down
     // @Range: 0 1
     // @User: Advanced
-    AP_GROUPINFO("ILMI", 7, AC_HELI_PID, _leak_min, AC_PID_LEAK_MIN),
+    AP_GROUPINFO("ILMI", 7, AC_HELI_PID, _leak_min, 0),
 
     // 8 was for float AFF
 
