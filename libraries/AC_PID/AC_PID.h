@@ -203,7 +203,6 @@ protected:
 
     AP_PIDInfo _pid_info;
 
-private:
     const float default_kp;
     const float default_ki;
     const float default_kd;
