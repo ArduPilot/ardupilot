@@ -21,6 +21,14 @@ public:
       Sets the target global position for a loiter point.
     */
     bool set_global_position(const Location& loc) override WARN_IF_UNUSED;
+
+    /*
+      Set trajectory targets.
+      All values are in earth-fixed NED frame. Pass NaN for any field to ignore it.
+    */
+    bool set_local_position(const Vector3f &position_ned_m, const Vector3f &velocity_ned_ms,
+                            const Vector3f &acceleration_ned_mss, float yaw_ned_rad, float yaw_rate_ned_rads, bool yaw_relative) override WARN_IF_UNUSED;
+
 private:
     /*
       Return true if Copter is ready to handle external control data.
