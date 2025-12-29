@@ -37,10 +37,6 @@ protected:
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_pause_continue(const mavlink_command_int_t &packet);
 
-#if HAL_MOUNT_ENABLED
-    void handle_mount_message(const mavlink_message_t &msg) override;
-#endif
-
     void handle_message_set_attitude_target(const mavlink_message_t &msg);
     void handle_message_set_position_target_global_int(const mavlink_message_t &msg);
     void handle_message_set_position_target_local_ned(const mavlink_message_t &msg);
