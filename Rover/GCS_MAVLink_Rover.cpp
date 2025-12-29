@@ -228,9 +228,9 @@ void GCS_MAVLINK_Rover::send_water_depth()
             continue;
         }
 
-        // get temperature
+        // get temperature (with external sensor override support)
         float temp_C;
-        if (!s->get_temp(temp_C)) {
+        if (!rangefinder->get_temp_with_override(ROTATION_PITCH_270, temp_C)) {
             temp_C = 0.0f;
         }
 

@@ -310,6 +310,9 @@ public:
 
     // get temperature reading in C.  returns true on success and populates temp argument
     bool get_temp(enum Rotation orientation, float &temp) const;
+    
+    // get temperature reading with override support from external temperature sensor
+    bool get_temp_with_override(enum Rotation orientation, float &temp) const;
 
     /*
       set an externally estimated terrain height. Used to enable power

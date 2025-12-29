@@ -71,6 +71,8 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_HAL/I2CDevice.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_TemperatureSensor/AP_TemperatureSensor.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -856,6 +858,28 @@ bool RangeFinder::get_temp(enum Rotation orientation, float &temp) const
         return false;
     }
     return backend->get_temp(temp);
+}
+// get temperature reading with override support from external temperature sensor
+bool RangeFinder::get_temp_with_override(enum Rotation orientation, float &temp) const
+{
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    // check if there's a temperature sensor configured to override rangefinder
+    AP_TemperatureSensor &temperature_sensor = AP::temperature_sensor();
+    // loop through all temperature sensors
+    for (uint8_t i = 0; i < temperature_sensor.num_instances(); i++) {
+        // check if this sensor is configured as a rangefinder source
+        if (temperature_sensor.get_source(i) == AP_TemperatureSensor_Params::Source::Rangefinder) {
+            // try to get temperature from this sensor
+            if (temperature_sensor.get_temperature(temp, i)) {
+                // successfully got override temperature
+                return true;
+            }
+        }
+    }
+#endif
+    
+    // No override found or available, use rangefinder's own temperature
+    return get_temp(orientation, temp);
 }
 
 #if HAL_LOGGING_ENABLED
