@@ -55,6 +55,12 @@
 # define MODE_FOLLOW_ENABLED AP_FOLLOW_ENABLED
 #endif
 
+//////////////////////////////////////////////////////////////////////////////
+// Temperature sensor - enable for rangefinder temperature override support
+#ifndef AP_TEMPERATURE_SENSOR_ENABLED
+# define AP_TEMPERATURE_SENSOR_ENABLED 1
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items

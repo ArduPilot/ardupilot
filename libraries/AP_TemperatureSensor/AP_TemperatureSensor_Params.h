@@ -39,7 +39,6 @@ public:
         MAX31865_3_wire             = 9,
     };
 
-    // option to map to another system component
     enum class Source : uint8_t {
         None                        = 0,
         ESC                         = 1,
@@ -50,6 +49,7 @@ public:
         DroneCAN                    = 6,
         Servo_Motor                 = 7,
         Servo_PCB                   = 8,
+        Rangefinder                 = 9,
     };
 
     AP_Enum<Type> type;             // 0=disabled, others see frontend enum TYPE
