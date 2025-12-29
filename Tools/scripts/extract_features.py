@@ -393,7 +393,7 @@ class ExtractFeatures(BuildScriptBase):
             '--demangle',
             '--print-size',
             filename
-        ], show_output=False)
+        ], show_output=False, show_command=False)
         ret = ExtractFeatures.Symbols()
         for line in text_output.split("\n"):
             m = re.match("^([^ ]+) ([^ ]+) ([^ ]) (.*)", line.rstrip())
