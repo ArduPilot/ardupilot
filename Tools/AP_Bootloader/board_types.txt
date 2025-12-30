@@ -431,6 +431,7 @@ AP_HW_AeroCogito-H7Digital           4300
 
 # IDs 4500-4509 reserved for Lumenier
 AP_HW_LUMENIER_LUX_F765_NDAA         4500
+AP_HW_LUMENIER_LUX_H743_NDAA         4501
 
 # IDs 5000-5099 reserved for Carbonix
 # IDs 5100-5199 reserved for SYPAQ Systems
