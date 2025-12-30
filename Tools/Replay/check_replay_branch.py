@@ -20,8 +20,10 @@ from pymavlink import DFReader
 import check_replay
 
 class CheckReplayBranch(object):
-    def __init__(self, master='remotes/origin/master'):
+    def __init__(self, master='remotes/origin/master', no_clean=False, no_debug=False):
         self.master = master
+        self.no_clean = no_clean
+        self.no_debug = no_debug
 
     def find_topdir(self):
         here = os.getcwd()
@@ -111,7 +113,19 @@ class CheckReplayBranch(object):
         self.repo.head.reset(index=True, working_tree=True)
 
         # generate logs:
-        subprocess.check_call(["Tools/autotest/autotest.py", "--debug", "build.Copter", "test.Copter.Replay"])
+        args = ["Tools/autotest/autotest.py"]
+
+        if self.no_debug:
+            args.append("--no-debug")
+        else:
+            args.append("--debug")
+
+        if self.no_clean:
+            args.append("--no-clean")
+
+        args.extend(["build.Copter", "test.Copter.Replay"])
+
+        subprocess.check_call(args) # actually run the test
 
         # check out the original branch:
         self.repo.head.reference = old_branch
@@ -183,10 +197,12 @@ if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser(description=__doc__)
     parser.add_argument("--master", default='remotes/origin/master', help="branch to consider master branch")
+    parser.add_argument("--no-clean", action="store_true", help="do not clean SITL before building")
+    parser.add_argument("--no-debug", action="store_true", help="do not make built SITL binaries debug binaries")
 
     args = parser.parse_args()
 
-    s = CheckReplayBranch(master=args.master)
+    s = CheckReplayBranch(master=args.master, no_clean=args.no_clean, no_debug=args.no_debug)
     if not s.run():
         sys.exit(1)
 
