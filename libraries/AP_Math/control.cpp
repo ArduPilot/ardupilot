@@ -494,7 +494,10 @@ float sqrt_controller(float error, float p, float second_ord_lim, float dt)
             correction_rate = error * p;
         }
     }
-    if (is_positive(dt)) {
+    // Minimum time step threshold for numerical stability
+    // Prevents division by near-zero dt values that could cause overflow
+    const float MIN_DT = 1.0e-4f;  // 0.1 ms minimum
+    if (dt > MIN_DT) {
         // Clamp to ensure we do not overshoot the error in the last time step
         return constrain_float(correction_rate, -fabsf(error) / dt, fabsf(error) / dt);
     } else {
