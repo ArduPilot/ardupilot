@@ -30,6 +30,8 @@ extern const AP_HAL::HAL& hal;
  */
 #define ENABLE_EKF_TIMING 0
 
+NavEKF2_core::Matrix24 NavEKF2_core::KH;
+
 // constructor
 NavEKF2_core::NavEKF2_core(NavEKF2 *_frontend) :
     dal(AP::dal()),
@@ -543,6 +545,9 @@ void NavEKF2_core::UpdateFilter(bool predict)
 #endif
 
     fill_scratch_variables();
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    fill_nanf(&KH[0][0], sizeof(KH)/sizeof(ftype)); // see fill_scratch_variables()
+#endif
 
     // TODO - in-flight restart method
 
