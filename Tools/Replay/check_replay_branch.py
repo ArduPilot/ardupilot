@@ -20,7 +20,7 @@ from pymavlink import DFReader
 import check_replay
 
 class CheckReplayBranch(object):
-    def __init__(self, master='remotes/origin/master', no_clean=False, no_debug=False):
+    def __init__(self, master='master', no_clean=False, no_debug=False):
         self.master = master
         self.no_clean = no_clean
         self.no_debug = no_debug
@@ -196,7 +196,7 @@ if __name__ == '__main__':
     import sys
     from argparse import ArgumentParser
     parser = ArgumentParser(description=__doc__)
-    parser.add_argument("--master", default='remotes/origin/master', help="branch to consider master branch")
+    parser.add_argument("--master", default='master', help="branch to consider master branch")
     parser.add_argument("--no-clean", action="store_true", help="do not clean SITL before building")
     parser.add_argument("--no-debug", action="store_true", help="do not make built SITL binaries debug binaries")
 
