@@ -2,6 +2,10 @@
 
 #include <hwdef.h>
 
+#ifndef HAL_OS_POSIX_IO
+#define HAL_OS_POSIX_IO 0
+#endif
+
 #ifndef __RAMFUNC__
 #define __RAMFUNC__ __attribute__((noinline, section(".time_critical")))
 #endif
@@ -36,6 +40,10 @@
 #ifndef HAL_PROGRAM_SIZE_LIMIT_KB
 #define HAL_PROGRAM_SIZE_LIMIT_KB 4096
 #endif
+
+#define HAL_BOARD_STORAGE_DIRECTORY "APM"
+#define HAL_BOARD_LOG_DIRECTORY HAL_BOARD_STORAGE_DIRECTORY "/logs"
+#define HAL_BOARD_TERRAIN_DIRECTORY HAL_BOARD_STORAGE_DIRECTORY "/terrain"
 
 #ifdef __cplusplus
 // allow for static semaphores

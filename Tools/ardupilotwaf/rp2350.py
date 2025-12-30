@@ -201,15 +201,10 @@ def configure(cfg):
     cfg.env.HAVE_ENDIAN_H = True
     cfg.env.HAVE_BYTESWAP_H = True
     cfg.env.HAVE_MEMRCHR = True
-    cfg.define('HAL_BOARD_NAME', 'HAL_BOARD_RP2350')
-    # Remove the following lines when filesystem is implemented
-    cfg.env.HAL_HAVE_FILESYSTEM = False 
-    cfg.env.AP_FILESYSTEM_ENABLED = False
-    cfg.define('HAL_HAVE_FILESYSTEM', 0)
-    cfg.define('AP_FILESYSTEM_ENABLED', 0)
+
     cfg.env.HAL_OS_POSIX_IO = False
     cfg.define('HAL_OS_POSIX_IO', 0)
-    # stop removing here
+
     cfg.env.prepend_value('CPPPATH', [
         cfg.srcnode.find_dir('libraries/AP_Common').abspath(),
         cfg.srcnode.find_dir('libraries/AP_HAL').abspath(),
