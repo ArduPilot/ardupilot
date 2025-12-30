@@ -62,7 +62,7 @@ end
 
 -- Slew rate parameter definition
 --[[ @Param: DOOR_SLEW_RATE, @DisplayName: Door Servo Slew Rate, @Description: Speed of servo movement in PWM units per second. 0 disables slew and makes movement instant., @Units: PWM/s, @Range: 0 1000, @User: Standard --]]
-assert(param:add_param(PARAM_TABLE_KEY, PARAM_IDX.SLEW_RATE, "SLEW_RATE", 400))
+assert(param:add_param(PARAM_TABLE_KEY, PARAM_IDX.SLEW_RATE, "SLEW_RATE", 1800))
 
 
 -- ###############################################################################
