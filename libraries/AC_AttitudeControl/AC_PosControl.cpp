@@ -122,7 +122,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Description: Jerk limit of the horizontal kinematic path generation used to determine how quickly the aircraft varies the acceleration target
     // @Units: m/s/s/s
     // @Range: 1 50
-    // @Increment: 1
+    // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("_JERK_NE", 10, AC_PosControl, _shaping_jerk_ne_msss, POSCONTROL_JERK_NE_MSSS),
 
@@ -131,7 +131,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Description: Jerk limit of the vertical kinematic path generation used to determine how quickly the aircraft varies the acceleration target
     // @Units: m/s/s/s
     // @Range: 1 50
-    // @Increment: 1
+    // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("_JERK_D", 11, AC_PosControl, _shaping_jerk_d_msss, POSCONTROL_JERK_D_MSSS),
 
