@@ -306,7 +306,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @DisplayName: Velocity (horizontal) integrator maximum
     // @Description: Velocity (horizontal) integrator maximum. Constrains the target acceleration that the I gain will output. If upgrading from 4.6 this is _VELXY_IMAX * 0.01.
     // @Range: 0 10
-    // @Increment: 1
+    // @Increment: 0.1
     // @Units: m/s/s
     // @User: Advanced
 
