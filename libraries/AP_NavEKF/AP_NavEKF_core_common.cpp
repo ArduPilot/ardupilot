@@ -16,7 +16,6 @@
  */
 #include "AP_NavEKF_core_common.h"
 
-NavEKF_core_common::Matrix24 NavEKF_core_common::KH;
 NavEKF_core_common::Matrix24 NavEKF_core_common::KHP;
 NavEKF_core_common::Matrix24 NavEKF_core_common::nextP;
 NavEKF_core_common::Vector28 NavEKF_core_common::Kfusion;
@@ -31,7 +30,6 @@ void NavEKF_core_common::fill_scratch_variables(void)
     // SITL where they are used without initialisation. These are all
     // supposed to be scratch variables that are not used between
     // iterations
-    fill_nanf(&KH[0][0], sizeof(KH)/sizeof(ftype));
     fill_nanf(&KHP[0][0], sizeof(KHP)/sizeof(ftype));
     fill_nanf(&nextP[0][0], sizeof(nextP)/sizeof(ftype));
     fill_nanf(&Kfusion[0], sizeof(Kfusion)/sizeof(ftype));
