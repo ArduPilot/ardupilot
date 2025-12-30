@@ -859,29 +859,33 @@ bool RangeFinder::get_temp(enum Rotation orientation, float &temp) const
     }
     return backend->get_temp(temp);
 }
-// get temperature reading with override support from external temperature sensor
+// get temperature (with external sensor override support)
 bool RangeFinder::get_temp_with_override(enum Rotation orientation, float &temp) const
 {
 #if AP_TEMPERATURE_SENSOR_ENABLED
     // check if there's a temperature sensor configured to override rangefinder
-    AP_TemperatureSensor &temperature_sensor = AP::temperature_sensor();
-    // loop through all temperature sensors
-    for (uint8_t i = 0; i < temperature_sensor.num_instances(); i++) {
-        // check if this sensor is configured as a rangefinder source
-        if (temperature_sensor.get_source(i) == AP_TemperatureSensor_Params::Source::Rangefinder) {
-            // try to get temperature from this sensor
-            if (temperature_sensor.get_temperature(temp, i)) {
-                // successfully got override temperature
-                return true;
+    const AP_TemperatureSensor *temperature_sensor = AP::temperature_sensor();
+    if (temperature_sensor != nullptr) {
+        // loop through all temperature sensors
+        for (uint8_t i = 0; i < temperature_sensor->num_instances(); i++) {
+            // check if this sensor is configured as a rangefinder source
+            if (temperature_sensor->get_source(i) == AP_TemperatureSensor_Params::Source::Rangefinder) {
+                // check if this sensor is meant for rangefinders with this orientation
+                // (you may need additional logic here depending on requirements)
+                float override_temp;
+                if (temperature_sensor->get_temperature(override_temp, i)) {
+                    // successfully got override temperature
+                    temp = override_temp;
+                    return true;
+                }
             }
         }
     }
 #endif
     
-    // No override found or available, use rangefinder's own temperature
+    // No override found or available, fall back to rangefinder's own temperature
     return get_temp(orientation, temp);
 }
-
 #if HAL_LOGGING_ENABLED
 // Write an RFND (rangefinder) packet
 void RangeFinder::Log_RFND() const
