@@ -1349,7 +1349,7 @@ void Copter::convert_pid_parameters(void)
         // { "PSC_VELXY_I", 0.5f },
         // { "PSC_VELXY_P", 1.0f },
         { "RC8_OPTION", 32 },
-        { "RC_OPTIONS", 0 },
+        //{ "RC_OPTIONS", 0 },
 //        { "ATC_RAT_RLL_ILMI", 0.05},
 //        { "ATC_RAT_PIT_ILMI", 0.05},
     };
