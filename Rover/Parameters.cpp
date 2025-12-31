@@ -819,14 +819,6 @@ void Rover::load_parameters(void)
                                                       AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED);
 #endif
 
-#if AP_AIRSPEED_ENABLED | AP_AIS_ENABLED | AP_FENCE_ENABLED
-    // Find G2's Top Level Key
-    AP_Param::ConversionInfo info;
-    if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
-        return;
-    }
-#endif
-
     static const AP_Param::G2ObjectConversion g2_conversions[] {
 #if AP_AIRSPEED_ENABLED
 // PARAMETER_CONVERSION - Added: JAN-2022
