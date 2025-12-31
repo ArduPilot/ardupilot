@@ -942,8 +942,12 @@ bool AP_AHRS::_airspeed_estimate(float &airspeed_ret, AirspeedEstimateType &airs
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        have_wind = EKF3.getWind(wind_vel);
-        break;
+        // have_wind = EKF3.getWind(wind_vel);
+        // break;
+#if AP_AHRS_DCM_ENABLED
+        airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
+        return dcm.airspeed_estimate(idx, airspeed_ret);
+#endif
 #endif
 
 #if AP_AHRS_EXTERNAL_ENABLED

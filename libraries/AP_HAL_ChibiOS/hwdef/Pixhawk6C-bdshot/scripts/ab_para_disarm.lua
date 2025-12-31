@@ -85,5 +85,5 @@ function update()
     return update, LOOP_INTERVAL_MS
 end
 
-gcs:send_text(GCS_SEVERITY_INFO, "Parachute script loaded.")
+gcs:send_text(GCS_SEVERITY_INFO, "Airbound Lua: Parachute script loaded.")
 return update()
