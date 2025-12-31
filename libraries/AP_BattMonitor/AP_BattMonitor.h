@@ -233,9 +233,9 @@ public:
     bool set_temperature_by_serial_number(const float temperature, const int32_t serial_number);
 #endif
 
-    // MPPT Control (Solar panels)
-    void MPPT_set_powered_state_to_all(const bool power_on);
-    void MPPT_set_powered_state(const uint8_t instance, const bool power_on);
+    // Set powered state (Solar Panels, BMS)
+    void set_powered_state_to_all(const bool power_on);
+    void set_powered_state(const uint8_t instance, const bool power_on);
 
     bool option_is_set(uint8_t instance, AP_BattMonitor_Params::Options option) const;
 
