@@ -327,6 +327,7 @@ class ExtractFeatures(BuildScriptBase):
 
             ('AP_SCRIPTING_BINDING_VEHICLE_ENABLED', 'AP_Vehicle_index'),
             ('AP_SCRIPTING_BINDING_MOTORS_ENABLED', 'AP__motors___index'),
+            ('AP_BLHELI_ENABLED', 'AP_BLHeli::init'),
         ]
 
     def progress_prefix(self):
