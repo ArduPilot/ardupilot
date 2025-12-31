@@ -89,8 +89,8 @@ public:
     void Log_Write_BAT(const uint8_t instance, const uint64_t time_us) const;
     void Log_Write_BCL(const uint8_t instance, const uint64_t time_us) const;
 
-    // set desired MPPT powered state (enabled/disabled)
-    virtual void mppt_set_powered_state(bool power_on) {};
+    // set desired powered state (enabled/disabled)
+    virtual void set_powered_state(bool power_on) {};
 
     // Update an ESC telemetry channel's power information
     void update_esc_telem_outbound();
