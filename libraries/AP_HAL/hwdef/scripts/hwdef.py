@@ -441,6 +441,10 @@ class HWDef:
             if len(a) > 1 and a[1].startswith('probe'):
                 probe = a[1]
 
+            # these two are aliases:
+            if probe == 'probe_ICM20948_SPI':
+                probe = 'probe_ICM20948'
+
             expected_device_count = 1
             if driver == 'AK09916' and probe == 'probe_ICM20948':
                 expected_device_count = 1
@@ -510,30 +514,58 @@ class HWDef:
             n = len(devlist)+1
             devlist.append('HAL_MAG_PROBE%u' % n)
 
-            args = []
-            for dev in compass.devlist:
-                if isinstance(dev, I2CDev):
-                    if dev.buses_to_probe == 'SINGLE':
-                        busnum = str(dev.busnum)
-                    elif dev.buses_to_probe in {'ALL', 'ALL_EXTERNAL', 'ALL_INTERNAL'}:
-                        busnum = 'b'
-                    else:
-                        raise ValueError("Unexpected {buses_to_probe=}")
-                    args.extend(["GET_I2C_DEVICE(%s,0x%02x)" % (busnum, dev.busaddr)])
-                elif isinstance(dev, SPIDev):
-                    args.extend([f'hal.spi->get_device("{dev.name}")'])
-                elif dev.isdigit():
-                    args.extend([str(dev)])
+            def i2c_dev_as_arguments_string(dev):
+                if dev.buses_to_probe == 'SINGLE':
+                    busnum = str(dev.busnum)
+                elif dev.buses_to_probe in {'ALL', 'ALL_EXTERNAL', 'ALL_INTERNAL'}:
+                    busnum = 'b'
                 else:
-                    raise ValueError("unexpected devbit {dev=}")
+                    raise ValueError("Unexpected {buses_to_probe=}")
+                return "%s, 0x%02x" % (busnum, dev.busaddr)
 
-            if compass.force_external is not None:
-                args.append(str(compass.force_external))
-            args.append(str(compass.rotation))
+            args = []
+            if probe == "probe":
+                for dev in compass.devlist:
+                    if isinstance(dev, I2CDev):
+                        compass_probe_method = 'probe_i2c_dev'
+                        args.append(f"DRIVER_{compass.driver}")
+                        args.append(f'AP_Compass_{compass.driver}::probe')
+                        args.append(i2c_dev_as_arguments_string(dev))
+                    elif isinstance(dev, SPIDev):
+                        compass_probe_method = 'probe_spi_dev'
+                        args.append(f"DRIVER_{compass.driver}")
+                        args.append(f'AP_Compass_{compass.driver}::probe')
+                        args.append(f'"{dev.name}"')
+                    elif dev.isdigit():
+                        args.append(str(dev))
+                    else:
+                        raise ValueError("unexpected devbit {dev=}")
 
-            f.write(
-                '#define HAL_MAG_PROBE%u %s {add_backend(DRIVER_%s, AP_Compass_%s::%s(%s));RETURN_IF_NO_SPACE;}\n'
-                % (n, wrapper, driver, driver, probe, ','.join(args)))
+                if compass.force_external is not None:
+                    args.append(str(compass.force_external))
+                args.append(str(compass.rotation))
+            elif probe in {'probe_ICM20948', 'probe_mpu9250'}:
+                if probe == 'probe_ICM20948':
+                    compass_probe_method = 'probe_ak09916_via_icm20948'
+                elif probe == 'probe_mpu9250':
+                    compass_probe_method = 'probe_ak8963_via_mpu9250'
+                else:
+                    raise ValueError(f"Invalid {probe=}")
+                if len(compass.devlist) != 1:
+                    raise ValueError(f"Expected 0 arguments for {probe} ({compass.devlist=}")
+                if isinstance(compass.devlist[0], I2CDev):
+                    devstring = i2c_dev_as_arguments_string(compass.devlist[0])
+                else:
+                    devstring = compass.devlist[0]
+                args.append(devstring)
+                if compass.force_external is not None:
+                    args.append(str(compass.force_external))
+                args.append(str(compass.rotation))
+            else:
+                raise ValueError(f"Unknown probe method {probe=}")
+
+            f.write(f'#define HAL_MAG_PROBE{n} {wrapper} {{{compass_probe_method}({", ".join(args)});RETURN_IF_NO_SPACE;}}\n')
+
             f.write(f"#undef AP_COMPASS_{driver}_ENABLED\n#define AP_COMPASS_{driver}_ENABLED 1\n")
         if len(devlist) > 0:
             f.write('#define HAL_MAG_PROBE_LIST %s\n\n' % ';'.join(devlist))
