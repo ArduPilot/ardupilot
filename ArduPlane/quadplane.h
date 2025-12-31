@@ -749,6 +749,11 @@ public:
 private:
     void motor_test_stop();
 
+    // check for loss of thrust and trigger thrust boost in motors library
+    void thrust_loss_check();
+    // number of iterations vehicle may have lost thrust
+    uint16_t thrust_loss_counter;
+
     static QuadPlane *_singleton;
 };
 

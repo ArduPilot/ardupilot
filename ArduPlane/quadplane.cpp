@@ -2023,6 +2023,9 @@ void QuadPlane::motors_output(bool run_rate_controller)
         last_motors_active_ms = now;
     }
 
+    // Run thrust loss check
+    thrust_loss_check();
+
 }
 
 /*
@@ -4877,6 +4880,66 @@ void QuadPlane::Log_Write_AttRate()
     attitude_control->Write_ANG();
     attitude_control->Write_Rate(*pos_control);
 
+}
+
+// check for loss of thrust and trigger thrust boost in motors library
+void QuadPlane::thrust_loss_check()
+{
+    // return if already engaged, disarmed, not flying, or motors not active
+    if (motors->get_thrust_boost() || !motors->armed() || !plane.is_flying() || (motors->get_desired_spool_state() != AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED)) {
+        thrust_loss_counter = 0;
+        return;
+    }
+
+    // check for desired angle under 15 degrees
+    const Vector3f& angle_target_rad = attitude_control->get_att_target_euler_rad();
+    if (angle_target_rad.xy().length_squared() > sq(radians(15.0))) {
+        thrust_loss_counter = 0;
+        return;
+    }
+
+    // check for throttle over 90% or throttle saturation
+    if ((attitude_control->get_throttle_in() < 0.9) && (!motors->limit.throttle_upper)) {
+        thrust_loss_counter = 0;
+        return;
+    }
+
+    // check throttle is over 25% to prevent checks triggering from thrust limitations caused by low commanded throttle
+    if ((attitude_control->get_throttle_in() < 0.25f)) {
+        thrust_loss_counter = 0;
+        return;
+    }
+
+    // check for descent
+    Vector3f vel_NED;
+    if (!ahrs.get_velocity_NED(vel_NED) || !is_positive(vel_NED.z)) {
+        // we have no vertical velocity estimate and/or we are not descending
+        thrust_loss_counter = 0;
+        return;
+    }
+
+    // check for angle error over 30 degrees to ensure the aircraft has attitude control
+    const float angle_error = attitude_control->get_att_error_angle_deg();
+    if (angle_error >= 30.0) {
+        thrust_loss_counter = 0;
+        return;
+    }
+
+    // the aircraft is descending with low requested roll and pitch, at full available throttle, with attitude control
+    // we may have lost thrust
+    thrust_loss_counter++;
+
+    // check if thrust loss for 1 second
+    if (thrust_loss_counter >= plane.scheduler.get_loop_rate_hz()) {
+        // reset counter
+        thrust_loss_counter = 0;
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::THRUST_LOSS_CHECK, LogErrorCode::FAILSAFE_OCCURRED);
+        // send message to gcs
+        gcs().send_text(MAV_SEVERITY_EMERGENCY, "Potential VTOL Thrust Loss (%u)", motors->get_lost_motor() + 1);
+        // enable thrust loss handling
+        motors->set_thrust_boost(true);
+        // the motors library disables this when it is no longer needed to achieve the commanded output
+    }
 }
 
 #endif  // HAL_QUADPLANE_ENABLED
