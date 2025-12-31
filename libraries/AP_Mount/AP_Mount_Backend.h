@@ -302,11 +302,26 @@ protected:
 
     // called when mount mode is RC-targetting, updates the mnt_target object from RC inputs:
     void update_mnt_target_from_rc_target();
+    
+    //called to remove lean angle in roll/pitch mount angle to convert to bodyframe
+    void adjust_mnt_target_if_RP_locked();
+    
+    // if this function returns true, then when roll and pitch have
+    // been locked to body frame (e.g. the user is using a switch or mount option to
+    // lock them to body frame) we add in the vehicle's roll and
+    // pitch to the target angles to position the gimbal in body
+    // frame.  This is used on mounts which do not have the option to
+    // move in body frame themselves (e.g. SToRM32 in its normal
+    // configuration) and can be overriden in their heading files
+    virtual bool apply_bf_roll_pitch_adjustments_in_rc_targeting() const {
+        return false;
+    }
 
     // method for the mount backends to call to update mnt_target based on
     // the mount mode.  Methods in here may be overridden by the derived
     // class to customise behaviour
     void update_mnt_target();
+    void _update_mnt_target();
 
     // returns true if user has configured a valid roll angle range
     // allows user to disable roll even on 3-axis gimbal

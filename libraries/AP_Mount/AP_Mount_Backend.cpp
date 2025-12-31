@@ -153,6 +153,29 @@ void AP_Mount_Backend::update_mnt_target_from_rc_target()
     }
 }
 
+// called for stabilized mounts which use roll and pitch angle targets that are earth frame
+// to remove vehicle lean angle if pitch or roll is not locked, ie convert to actual body frame
+void AP_Mount_Backend::adjust_mnt_target_if_RP_locked()
+{
+     // retrieve lean angles from ahrs
+    const AP_AHRS &ahrs = AP::ahrs(); 
+    Vector2f ahrs_angle_rad = {ahrs.get_roll_rad(), ahrs.get_pitch_rad()};
+
+    // rotate ahrs roll and pitch angles to gimbal yaw
+    if (has_pan_control()) {
+        const float yaw_bf_rad = constrain_float(mnt_target.angle_rad.get_bf_yaw(), radians(_params.yaw_angle_min), radians(_params.yaw_angle_max));
+        ahrs_angle_rad.rotate(yaw_bf_rad);
+    }
+    
+    // remove roll and pitch lean angle to correct to body frame
+    if (!mnt_target.angle_rad.roll_is_ef){
+        mnt_target.angle_rad.roll += ahrs_angle_rad.x;
+    }
+    if (!mnt_target.angle_rad.pitch_is_ef){
+        mnt_target.angle_rad.pitch += ahrs_angle_rad.y;
+    } 
+}
+
 // set angle target in degrees
 // roll and pitch are in earth-frame
 // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
@@ -913,11 +936,22 @@ bool AP_Mount_Backend::get_angle_target_to_sysid(MountAngleTarget& angle_rad) co
     return get_angle_target_to_location(_target_sysid_location, angle_rad);
 }
 
-
-// method for the mount backends to call to update mnt_target based on
-// the mount mode.  Methods in here may be overridden by the derived
-// class to customise behaviour
+// updates the mount target by calling the _update_mount_target and then adjusting to remove lean angles if roll and/or pitch angles locked:
+// this effectively translates earth frame targets in those axes to body frame to allow using the RP lock Aux Func and FPV_LOCK mount option
+// on stabilized gimbals that dont have that capability in their backends via mount commands
 void AP_Mount_Backend::update_mnt_target()
+{
+    _update_mnt_target(); //does most of the work below
+    // now adjust mnt target if the gimbal requires removing vehicle lean angles from target to obtain body frame roll and pitch locks
+    if (apply_bf_roll_pitch_adjustments_in_rc_targeting()) {
+        adjust_mnt_target_if_RP_locked();
+    }
+}
+
+// method for the mount backends to update mnt_target based on
+// the mount mode.  Methods in here may be overridden by the derived
+// class to customise behaviour    
+void AP_Mount_Backend::_update_mnt_target()
 {
     // change to RC_TARGETING mode if RC input has changed
     set_rctargeting_on_rcinput_change();

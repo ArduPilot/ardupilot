@@ -112,9 +112,10 @@ void AP_Mount_Servo::update_angle_outputs(const MountAngleTarget& angle_rad)
         break;
     }
 
-    // this is sufficient for self-stabilising brushless gimbals
+    // only have to adjust roll/pitch for body frame in self-stabilising brushless gimbals
     if (!requires_stabilization) {
-    //todo: subtract ahrs leans for body frame roll/pitch if roll/pich lock not true to get locks in stablized servo input gimbals like Storm32
+        //since this is a shared backend, must call this directly
+        AP_Mount_Backend::adjust_mnt_target_if_RP_locked();
         return;
     }
 
