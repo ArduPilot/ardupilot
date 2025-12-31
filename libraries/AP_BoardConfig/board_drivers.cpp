@@ -87,7 +87,6 @@ void AP_BoardConfig::board_setup_drivers(void)
     case PX4_BOARD_PX4V1:
     case PX4_BOARD_PIXHAWK:
     case PX4_BOARD_PIXHAWK2:
-    case PX4_BOARD_FMUV5:
     case PX4_BOARD_FMUV6:
     case PX4_BOARD_PHMINI:
     case PX4_BOARD_AUAV21:
@@ -339,9 +338,6 @@ void AP_BoardConfig::board_autodetect(void)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_MINDPXV2);
     DEV_PRINTF("Detected MindPX-V2\n");
-#elif defined(HAL_CHIBIOS_ARCH_FMUV5)
-    state.board_type.set_and_notify(PX4_BOARD_FMUV5);
-    DEV_PRINTF("Detected FMUv5\n");
 #elif defined(HAL_CHIBIOS_ARCH_FMUV6)
     detect_fmuv6_variant();
 #endif

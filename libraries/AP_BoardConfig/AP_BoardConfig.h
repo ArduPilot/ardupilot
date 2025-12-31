@@ -57,7 +57,7 @@ public:
         // PX4_BOARD_PCNC1    = 21,
         PX4_BOARD_MINDPXV2 = 22,
         // PX4_BOARD_SP01     = 23,
-        PX4_BOARD_FMUV5    = 24,
+        // PX4_BOARD_FMUV5    = 24,
         // VRX_BOARD_BRAIN51  = 30,
         // VRX_BOARD_BRAIN52  = 32,
         // VRX_BOARD_BRAIN52E = 33,
