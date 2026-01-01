@@ -338,7 +338,8 @@ void AP_ICEngine::update(void)
             allow_single_start_while_disarmed = false;
         } else {
             // check if we are blocking disarmed starts
-            if (!allow_single_start_while_disarmed) {
+            if ((hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) ||
+                !allow_single_start_while_disarmed) {
                 should_run = false;
             }
         }
