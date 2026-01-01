@@ -30,8 +30,6 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 
-#include <utility>
-
 extern const AP_HAL::HAL& hal;
 
 // Bit Map
@@ -356,7 +354,7 @@ bool Display::init(void)
             break;
         }
         case DISPLAY_SH1106: {
-            _driver = Display_SH1106_I2C::probe(std::move(hal.i2c_mgr->get_device(i, NOTIFY_DISPLAY_I2C_ADDR)));
+            _driver = probe_i2c_display(i, Display_SH1106_I2C::probe);
             break;
         }
         case DISPLAY_SITL: {
