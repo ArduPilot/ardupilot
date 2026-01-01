@@ -71,7 +71,6 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_HAL/I2CDevice.h>
 #include <AP_InternalError/AP_InternalError.h>
-#include <AP_TemperatureSensor/AP_TemperatureSensor.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 
 extern const AP_HAL::HAL &hal;
@@ -851,41 +850,37 @@ MAV_DISTANCE_SENSOR RangeFinder::get_mav_distance_sensor_type_orient(enum Rotati
 }
 
 // get temperature reading in C.  returns true on success and populates temp argument
-bool RangeFinder::get_temp(enum Rotation orientation, float &temp) const
+bool RangeFinder::get_temp(uint8_t instance, float &temp) const
 {
-    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    AP_RangeFinder_Backend *backend = get_backend(instance);
     if (backend == nullptr) {
         return false;
     }
-    return backend->get_temp(temp);
-}
-// get temperature (with external sensor override support)
-bool RangeFinder::get_temp_with_override(enum Rotation orientation, float &temp) const
-{
+
 #if AP_TEMPERATURE_SENSOR_ENABLED
-    // check if there's a temperature sensor configured to override rangefinder
-    const AP_TemperatureSensor *temperature_sensor = AP::temperature_sensor();
-    if (temperature_sensor != nullptr) {
-        // loop through all temperature sensors
-        for (uint8_t i = 0; i < temperature_sensor->num_instances(); i++) {
-            // check if this sensor is configured as a rangefinder source
-            if (temperature_sensor->get_source(i) == AP_TemperatureSensor_Params::Source::Rangefinder) {
-                // check if this sensor is meant for rangefinders with this orientation
-                // (you may need additional logic here depending on requirements)
-                float override_temp;
-                if (temperature_sensor->get_temperature(override_temp, i)) {
-                    // successfully got override temperature
-                    temp = override_temp;
-                    return true;
-                }
-            }
-        }
+    if (state[instance].temperature_external_use) {
+        temp = state[instance].temperature_external;
+        return true;
     }
 #endif
-    
-    // No override found or available, fall back to rangefinder's own temperature
-    return get_temp(orientation, temp);
+
+    return backend->get_temp(temp);
 }
+
+#if AP_TEMPERATURE_SENSOR_ENABLED
+// set temperature from an external source
+bool RangeFinder::set_temperature(uint8_t instance, float temperature)
+{
+    AP_RangeFinder_Backend *backend = get_backend(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+
+    state[instance].temperature_external = temperature;
+    state[instance].temperature_external_use = true;
+    return true;
+}
+#endif
 #if HAL_LOGGING_ENABLED
 // Write an RFND (rangefinder) packet
 void RangeFinder::Log_RFND() const

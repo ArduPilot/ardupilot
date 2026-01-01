@@ -205,10 +205,7 @@ void GCS_MAVLINK_Rover::send_water_depth()
         return;
     }
 
-    // depth can only be measured by a downward-facing rangefinder:
-    if (!rangefinder->has_orientation(ROTATION_PITCH_270)) {
-        return;
-    }
+
 
     // get position
     const AP_AHRS &ahrs = AP::ahrs();
@@ -228,9 +225,8 @@ void GCS_MAVLINK_Rover::send_water_depth()
             continue;
         }
 
-        // get temperature (with external sensor override support)
         float temp_C;
-        if (!rangefinder->get_temp_with_override(ROTATION_PITCH_270, temp_C)) {
+        if (!rangefinder->get_temp(ROTATION_PITCH_270, temp_C)) {
             temp_C = 0.0f;
         }
 
