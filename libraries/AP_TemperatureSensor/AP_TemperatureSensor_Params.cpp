@@ -64,7 +64,7 @@ const AP_Param::GroupInfo AP_TemperatureSensor_Params::var_info[] = {
 
     // @Param: SRC_ID
     // @DisplayName: Sensor Source Identification
-    // @Description: Sensor Source Identification is used to replace a specific instance of a system component's temperature report with the temp sensor's. Examples: TEMP_SRC = 1 (ESC), TEMP_SRC_ID = 1 will set the temp of ESC1. TEMP_SRC = 3 (BatteryIndex),TEMP_SRC_ID = 2 will set the temp of BATT2. TEMP_SRC = 4 (BatteryId/SerialNum),TEMP_SRC_ID=42 will set the temp of all batteries that have param BATTn_SERIAL = 42.
+    // @Description: Sensor Source Identification is used to replace a specific instance of a system component's temperature report with the temp sensor's. Examples: TEMP_SRC = 1 (ESC), TEMP_SRC_ID = 1 will set the temp of ESC1. TEMP_SRC = 3 (BatteryIndex),TEMP_SRC_ID = 2 will set the temp of BATT2. TEMP_SRC = 4 (BatteryId/SerialNum),TEMP_SRC_ID=42 will set the temp of all batteries that have param BATTn_SERIAL = 42. TEMP_SRC = 9 (Rangefinder),TEMP_SRC_ID = 0 will set the temp of the first rangefinder instance.
     AP_GROUPINFO("SRC_ID", 5, AP_TemperatureSensor_Params, source_id, AP_TEMPERATURE_SENSOR_SOURCE_ID_DEFAULT),
 
     AP_GROUPEND
