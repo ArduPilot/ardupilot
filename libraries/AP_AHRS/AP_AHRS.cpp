@@ -1215,7 +1215,8 @@ bool AP_AHRS::_get_quaternion_for_ekf_type(Quaternion &quat, EKFType type) const
     switch (type) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        if (!dcm.get_quaternion(quat)) {
+        quat = dcm_estimates.quaternion;
+        if (!dcm_estimates.attitude_valid) {
             return false;
         }
         break;
@@ -1238,15 +1239,14 @@ bool AP_AHRS::_get_quaternion_for_ekf_type(Quaternion &quat, EKFType type) const
 #endif
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        if (!sim.get_quaternion(quat)) {
-            return false;
-        }
-        return true;
+        quat = sim_estimates.quaternion;
+        return sim_estimates.attitude_valid;
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
         // we assume the external AHRS isn't trimmed with the autopilot!
-        return external.get_quaternion(quat);
+        quat = external_estimates.quaternion;
+        return external_estimates.attitude_valid;
 #endif
     }
 

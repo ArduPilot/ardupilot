@@ -57,18 +57,6 @@ bool AP_AHRS_SIM::airspeed_EAS(uint8_t index, float &airspeed_ret) const
     return airspeed_EAS(airspeed_ret);
 }
 
-bool AP_AHRS_SIM::get_quaternion(Quaternion &quat) const
-{
-    if (_sitl == nullptr) {
-        return false;
-    }
-
-    const struct SITL::sitl_fdm &fdm = _sitl->state;
-    quat = fdm.quaternion;
-
-    return true;
-}
-
 Vector2f AP_AHRS_SIM::groundspeed_vector(void)
 {
     if (_sitl == nullptr) {
@@ -236,12 +224,16 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     }
 
     const struct SITL::sitl_fdm &fdm = _sitl->state;
-    const AP_InertialSensor &_ins = AP::ins();
+
+    // note that the quaternion here has not been adjusted for autopilot trim:
+    results.quaternion = fdm.quaternion;
 
     fdm.quaternion.rotation_matrix(results.dcm_matrix);
 
     results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
     results.attitude_valid = true;
+
+    const AP_InertialSensor &_ins = AP::ins();
 
     results.gyro_estimate = _ins.get_gyro();
     results.gyro_drift.zero();

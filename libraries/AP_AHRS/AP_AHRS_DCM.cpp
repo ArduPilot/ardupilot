@@ -148,6 +148,10 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     results.yaw_rad = yaw;
 
     results.dcm_matrix = _body_dcm_matrix;
+
+    // note that the quaternion here has not been adjusted for autopilot trim:
+    results.quaternion.from_rotation_matrix(_dcm_matrix);
+
     results.attitude_valid = true;
 
     results.gyro_estimate = _omega;
@@ -492,13 +496,6 @@ bool AP_AHRS_DCM::use_compass(void)
     }
 
     // use the compass
-    return true;
-}
-
-// return the quaternion defining the rotation from NED to XYZ (body) axes
-bool AP_AHRS_DCM::get_quaternion(Quaternion &quat) const
-{
-    quat.from_rotation_matrix(_dcm_matrix);
     return true;
 }
 
