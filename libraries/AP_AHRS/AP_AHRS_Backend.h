@@ -77,6 +77,28 @@ public:
             return true;
         };
 
+        // a derivative of the vertical position in m/s which is
+        // kinematically consistent with the vertical position is
+        // required by some control loops.
+        // This is different to the vertical velocity from the EKF
+        // which is not always consistent with the vertical position
+        // due to the various errors that are being corrected for.
+        float vert_pos_rate_D;
+        bool vert_pos_rate_D_valid;
+        // Get a derivative of the vertical position in m/s which is
+        // kinematically consistent with the vertical position is
+        // required by some control loops.
+        // This is different to the vertical velocity from the EKF
+        // which is not always consistent with the vertical position
+        // due to the various errors that are being corrected for.
+        bool get_vert_pos_rate_D(float &velocity) const {
+            if (!vert_pos_rate_D_valid) {
+                return false;
+            }
+            velocity = vert_pos_rate_D;
+            return true;
+        }
+
         Location location;
         bool location_valid;
 
@@ -179,11 +201,6 @@ public:
     // return a ground vector estimate in meters/second, in North/East order
     virtual Vector2f groundspeed_vector(void) = 0;
 
-    // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
-    // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
-    virtual bool get_vert_pos_rate_D(float &velocity) const = 0;
-
-    //
     virtual bool set_origin(const Location &loc) {
         return false;
     }
