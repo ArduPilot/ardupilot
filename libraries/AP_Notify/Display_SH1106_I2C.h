@@ -12,7 +12,7 @@ class Display_SH1106_I2C: public Display_Backend {
 
 public:
 
-    static Display_SH1106_I2C *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    static Display_Backend *probe(AP_HAL::Device &_dev);
 
     void hw_update() override;
     void set_pixel(uint16_t x, uint16_t y) override;
@@ -21,8 +21,10 @@ public:
 
 protected:
 
-    Display_SH1106_I2C(AP_HAL::OwnPtr<AP_HAL::Device> dev);
-    ~Display_SH1106_I2C() override;
+    Display_SH1106_I2C(AP_HAL::Device &_dev) :
+        dev{_dev}
+        { }
+    ~Display_SH1106_I2C() override {};
 
 private:
 
@@ -30,7 +32,7 @@ private:
 
     void _timer();
 
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device &dev;
     uint8_t _displaybuffer[SH1106_COLUMNS * SH1106_ROWS_PER_PAGE];
     bool _need_hw_update;
 
