@@ -149,8 +149,8 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.dcm_matrix = _body_dcm_matrix;
 
-    // note that the quaternion here has not been adjusted for autopilot trim:
-    results.quaternion.from_rotation_matrix(_dcm_matrix);
+    // quaternion is derived from autopilot-body transformation matrix:
+    results.quaternion.from_rotation_matrix(results.dcm_matrix);
 
     results.attitude_valid = true;
 

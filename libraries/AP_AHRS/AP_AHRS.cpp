@@ -1210,16 +1210,11 @@ bool AP_AHRS::_get_quaternion(Quaternion &quat) const
 // return the quaternion defining the rotation from NED to XYZ (body) axes
 bool AP_AHRS::_get_quaternion_for_ekf_type(Quaternion &quat, EKFType type) const
 {
-    // backends always return in autopilot XYZ frame; rotate result
-    // according to trim
     switch (type) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         quat = dcm_estimates.quaternion;
-        if (!dcm_estimates.attitude_valid) {
-            return false;
-        }
-        break;
+        return dcm_estimates.attitude_valid;
 #endif
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -1227,7 +1222,9 @@ bool AP_AHRS::_get_quaternion_for_ekf_type(Quaternion &quat, EKFType type) const
             return false;
         }
         EKF2.getQuaternion(quat);
-        break;
+        // rotate from vehicle-body frame into autopilot-body frame:
+        quat.rotate(-_trim.get());
+        return true;
 #endif
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
@@ -1235,7 +1232,9 @@ bool AP_AHRS::_get_quaternion_for_ekf_type(Quaternion &quat, EKFType type) const
             return false;
         }
         EKF3.getQuaternion(quat);
-        break;
+        // rotate from vehicle-body frame into autopilot-body frame:
+        quat.rotate(-_trim.get());
+        return true;
 #endif
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
@@ -1244,15 +1243,13 @@ bool AP_AHRS::_get_quaternion_for_ekf_type(Quaternion &quat, EKFType type) const
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
-        // we assume the external AHRS isn't trimmed with the autopilot!
         quat = external_estimates.quaternion;
         return external_estimates.attitude_valid;
 #endif
     }
 
-    quat.rotate(-_trim.get());
-
-    return true;
+    // should not get to here
+    return false;
 }
 
 // return secondary attitude solution if available, as eulers in radians

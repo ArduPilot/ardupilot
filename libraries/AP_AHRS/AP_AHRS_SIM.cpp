@@ -225,12 +225,11 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
 
     const struct SITL::sitl_fdm &fdm = _sitl->state;
 
-    // note that the quaternion here has not been adjusted for autopilot trim:
     results.quaternion = fdm.quaternion;
-
-    fdm.quaternion.rotation_matrix(results.dcm_matrix);
-
-    results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
+    // the rotation matrix and euler angles are derived from the
+    // quaternion:
+    results.quaternion.rotation_matrix(results.dcm_matrix);
+    results.quaternion.to_euler(results.roll_rad, results.pitch_rad, results.yaw_rad);
     results.attitude_valid = true;
 
     const AP_InertialSensor &_ins = AP::ins();
