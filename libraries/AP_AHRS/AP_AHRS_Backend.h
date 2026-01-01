@@ -206,11 +206,6 @@ public:
         return false;
     }
 
-    // return ground speed estimate in meters/second. Used by ground vehicles.
-    float groundspeed(void) {
-        return groundspeed_vector().length();
-    }
-
     // return true if we will use compass for yaw
     virtual bool use_compass(void) = 0;
 
