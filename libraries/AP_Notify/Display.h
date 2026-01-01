@@ -23,6 +23,10 @@ public:
     void send_text_blocking(const char *text, uint8_t line) override;
     void release_text(uint8_t line) override;
 private:
+
+    using probe_i2c_display_probefn_t = Display_Backend* (*)(AP_HAL::Device&);
+    Display_Backend *probe_i2c_display(uint8_t bus, probe_i2c_display_probefn_t probe);
+
     void draw_char(uint16_t x, uint16_t y, const char c);
     void draw_text(uint16_t x, uint16_t y, const char *c);
     void update_all();
