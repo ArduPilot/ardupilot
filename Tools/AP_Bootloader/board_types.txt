@@ -552,6 +552,9 @@ AP_HW_SVehicle-E2                    6110
 
 # IDs 6600-6699 reserved for Eagle Eye Drones
 
+#TIDs 1411-1420 reserved for Scientech
+AP_HW_Scientech_String_H7            1411
+
 # IDs 6900-6909 reserved for Easy Aerial
 
 # IDs 6960-6969 reserved for ViaDrone
