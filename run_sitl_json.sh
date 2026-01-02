@@ -1,0 +1,1 @@
+python3 Tools/autotest/sim_vehicle.py -v ArduSub --model JSON:$AP_JSON_IP --out udp:127.0.0.1:14550 -L SGMarinaBarrage --add-param-file=params/sitl_json.parm

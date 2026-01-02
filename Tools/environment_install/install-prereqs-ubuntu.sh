@@ -414,27 +414,27 @@ grep -Fxq "$exportline" ~/$SHELL_LOGIN 2>/dev/null || {
 }
 fi
 
-exportline2="export PATH=$ARDUPILOT_ROOT/$ARDUPILOT_TOOLS:\$PATH";
-grep -Fxq "$exportline2" ~/$SHELL_LOGIN 2>/dev/null || {
-    if maybe_prompt_user "Add $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to your PATH [N/y]?" ; then
-        echo $exportline2 >> ~/$SHELL_LOGIN
-        eval $exportline2
-    else
-        echo "Skipping adding $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to PATH."
-    fi
-}
+# exportline2="export PATH=$ARDUPILOT_ROOT/$ARDUPILOT_TOOLS:\$PATH";
+# grep -Fxq "$exportline2" ~/$SHELL_LOGIN 2>/dev/null || {
+#     if maybe_prompt_user "Add $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to your PATH [N/y]?" ; then
+#         echo $exportline2 >> ~/$SHELL_LOGIN
+#         eval $exportline2
+#     else
+#         echo "Skipping adding $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to PATH."
+#     fi
+# }
 
-if [[ $SKIP_AP_COMPLETION_ENV -ne 1 ]]; then
-exportline3="source $ARDUPILOT_ROOT/Tools/completion/completion.bash";
-grep -Fxq "$exportline3" ~/$SHELL_LOGIN 2>/dev/null || {
-    if maybe_prompt_user "Add ArduPilot Bash Completion to your bash shell [N/y]?" ; then
-        echo $exportline3 >> ~/.bashrc
-        eval $exportline3
-    else
-        echo "Skipping adding ArduPilot Bash Completion."
-    fi
-}
-fi
+# if [[ $SKIP_AP_COMPLETION_ENV -ne 1 ]]; then
+# exportline3="source $ARDUPILOT_ROOT/Tools/completion/completion.bash";
+# grep -Fxq "$exportline3" ~/$SHELL_LOGIN 2>/dev/null || {
+#     if maybe_prompt_user "Add ArduPilot Bash Completion to your bash shell [N/y]?" ; then
+#         echo $exportline3 >> ~/.bashrc
+#         eval $exportline3
+#     else
+#         echo "Skipping adding ArduPilot Bash Completion."
+#     fi
+# }
+# fi
 
 exportline4="export PATH=/usr/lib/ccache:\$PATH";
 grep -Fxq "$exportline4" ~/$SHELL_LOGIN 2>/dev/null || {
