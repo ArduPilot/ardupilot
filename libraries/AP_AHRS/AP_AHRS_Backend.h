@@ -60,10 +60,10 @@ public:
         Vector3f accel_ef;
         Vector3f accel_bias;
 
-        Location location;
+        AbsAltLocation location;
         bool location_valid;
 
-        bool get_location(Location &loc) const {
+        bool get_location(AbsAltLocation &loc) const {
             loc = location;
             return location_valid;
         };
@@ -177,10 +177,10 @@ public:
     virtual bool get_vert_pos_rate_D(float &velocity) const = 0;
 
     //
-    virtual bool set_origin(const Location &loc) {
+    virtual bool set_origin(const AbsAltLocation &loc) {
         return false;
     }
-    virtual bool get_origin(Location &ret) const = 0;
+    virtual bool get_origin(AbsAltLocation &ret) const = 0;
 
     // return a position relative to origin in meters, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is

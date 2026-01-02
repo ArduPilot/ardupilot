@@ -761,16 +761,29 @@ private:
 
     // 3D Location vectors
     // Location structure defined in AP_Common
-    const Location &home = ahrs.get_home();
+    const AbsAltLocation &home = ahrs.get_home();
 
     // The location of the previous waypoint.  Used for track following and altitude ramp calculations
     Location prev_WP_loc {};
 
-    // The plane's current location
-    Location current_loc {};
+    // The plane's current location - ABSOLUTE or TERRAIN frames only!
+    AbsAltLocation current_loc;
 
     // The location of the current/active waypoint.  Used for altitude ramp, track following and loiter calculations.
     Location next_WP_loc {};
+    // convenience function which returns next_WP_loc is in the
+    // absolute frame and returns its altitude.  If it is not it
+    // raises and internal error and returns the raw altitude from the
+    // location object.
+    float next_WP_loc_abs_alt_m() const;
+    // convenience function which returns prev_WP_loc is in the
+    // absolute frame and returns its altitude.  If it is not it
+    // raises and internal error and returns the raw altitude from the
+    // location object.
+    float prev_WP_loc_abs_alt_m() const;
+
+    // function underlying prev_WP_loc_abs_alt_m and next_WP_loc_abs_alt_m
+    float WP_loc_abs_alt_m(const Location &loc) const;
 
     // Altitude control
     struct {
@@ -1038,9 +1051,9 @@ private:
     void update_current_loc(void);
 
     // set home location and store it persistently:
-    bool set_home_persistently(const Location &loc) WARN_IF_UNUSED;
+    bool set_home_persistently(const AbsAltLocation &loc) WARN_IF_UNUSED;
     bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
-    bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
+    bool set_home(const AbsAltLocation& loc, bool lock) override WARN_IF_UNUSED;
 
     // control_modes.cpp
     void autotune_start(void);

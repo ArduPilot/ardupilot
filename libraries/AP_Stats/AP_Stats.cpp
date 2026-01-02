@@ -194,7 +194,7 @@ void AP_Stats::update_distance_flown()
         return;
     }
 
-    Location current_loc;
+    AbsAltLocation current_loc;
     if (!ahrs.get_location(current_loc)) {
         _last_position_valid = false;
         return;

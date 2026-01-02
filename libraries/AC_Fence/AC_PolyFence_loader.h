@@ -328,7 +328,7 @@ private:
     // example.
     Vector2f *_loaded_offsets_from_origin;
     Vector2l *_loaded_points_lla;
-    Location loaded_origin; // origin at the time the boundary was loaded
+    AbsAltLocation loaded_origin; // origin at the time the boundary was loaded
 
     class ExclusionCircle {
     public:

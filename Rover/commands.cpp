@@ -3,7 +3,7 @@
 // set ahrs home to current location from inertial-nav location
 bool Rover::set_home_to_current_location(bool lock)
 {
-    Location temp_loc;
+    AbsAltLocation temp_loc;
     if (ahrs.have_inertial_nav() && ahrs.get_location(temp_loc)) {
         if (!set_home(temp_loc, lock)) {
             return false;
@@ -17,7 +17,7 @@ bool Rover::set_home_to_current_location(bool lock)
 
 // sets ahrs home to specified location
 // returns true if home location set successfully
-bool Rover::set_home(const Location& loc, bool lock)
+bool Rover::set_home(const AbsAltLocation& loc, bool lock)
 {
     // set ahrs home
     if (!ahrs.set_home(loc)) {
@@ -30,10 +30,12 @@ bool Rover::set_home(const Location& loc, bool lock)
     }
 
     // send text of home position to ground stations
+    float abs_alt_m = 0;
+    UNUSED_RESULT(loc.get_alt_m(Location::AltFrame::ABSOLUTE, abs_alt_m));
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %.2fm",
             static_cast<double>(loc.lat * 1.0e-7f),
             static_cast<double>(loc.lng * 1.0e-7f),
-            static_cast<double>(loc.alt * 0.01f));
+            static_cast<double>(abs_alt_m));
 
     // return success
     return true;
@@ -48,7 +50,7 @@ void Rover::update_home()
         return;
     }
 
-    Location loc{};
+    AbsAltLocation loc{};
     if (!ahrs.get_location(loc)) {
         return;
     }

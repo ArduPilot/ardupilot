@@ -66,23 +66,21 @@ void AP_Beacon_SITL::update(void)
     next_beacon = (next_beacon+1) % NUM_BEACONS;
 
     // truth location of the flight vehicle
-    const Location current_loc {
+    const AbsAltLocation current_loc {
         int32_t(sitl->state.latitude * 1.0e7f),
         int32_t(sitl->state.longitude * 1.0e7f),
-        int32_t(sitl->state.altitude * 1.0e2f),
-        Location::AltFrame::ABSOLUTE
+        int32_t(sitl->state.altitude * 1.0e2f)
     };
 
     // where the beacon system origin is located
-    const Location beacon_origin {
+    const AbsAltLocation beacon_origin {
         int32_t(get_beacon_origin_lat() * 1.0e7f),
         int32_t(get_beacon_origin_lon() * 1.0e7f),
-        int32_t(get_beacon_origin_alt() * 1.0e2f),
-        Location::AltFrame::ABSOLUTE
+        int32_t(get_beacon_origin_alt() * 1.0e2f)
     };
 
     // position of each beacon
-    Location beacon_loc = beacon_origin;
+    auto beacon_loc = beacon_origin;
     switch (beacon_id) {
     case 0:
         // NE corner
@@ -105,8 +103,8 @@ void AP_Beacon_SITL::update(void)
     const Vector2f beac_diff = beacon_origin.get_distance_NE(beacon_loc);
     const Vector2f veh_diff = beacon_origin.get_distance_NE(current_loc);
 
-    Vector3f veh_pos3d(veh_diff.x, veh_diff.y, (beacon_origin.alt - current_loc.alt)*1.0e-2f);
-    Vector3f beac_pos3d(beac_diff.x, beac_diff.y, (beacon_loc.alt - beacon_origin.alt)*1.0e-2f);
+    Vector3f veh_pos3d(veh_diff.x, veh_diff.y, (beacon_origin.get_alt_m() - current_loc.get_alt_m()));
+    Vector3f beac_pos3d(beac_diff.x, beac_diff.y, (beacon_loc.get_alt_m() - beacon_origin.get_alt_m()));
     Vector3f beac_veh_offset = veh_pos3d - beac_pos3d;
 
     set_beacon_position(beacon_id, beac_pos3d);

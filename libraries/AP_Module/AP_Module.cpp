@@ -171,19 +171,19 @@ void AP_Module::call_hook_AHRS_update(const AP_AHRS &ahrs)
     state.eulers[1] = ahrs.get_pitch_rad();
     state.eulers[2] = ahrs.get_yaw_rad();
 
-    Location loc;
+    AbsAltLocation loc;
     if (ahrs.get_origin(loc)) {
         state.origin.initialised = true;
         state.origin.latitude = loc.lat;
         state.origin.longitude = loc.lng;
-        state.origin.altitude = loc.alt*0.01f;
+        state.origin.altitude = loc.get_alt_m();
     }
 
     if (ahrs.get_location(loc)) {
         state.position.available = true;
         state.position.latitude = loc.lat;
         state.position.longitude = loc.lng;
-        state.position.altitude = loc.alt*0.01f;
+        state.position.altitude = loc.get_alt_m();
     }
     
     Vector3f pos;

@@ -598,7 +598,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             // printf("Creating model %f,%f,%f,%f at speed %.1f\n", opos.lat, opos.lng, opos.alt, opos.hdg, speedup);
             sitl_model = model_constructors[i].constructor(model_str);
             if (home_str != nullptr) {
-                Location home;
+                AbsAltLocation home;
                 float home_yaw;
                 if (strchr(home_str,',') == nullptr) {
                     if (!lookup_location(home_str, home, home_yaw)) {
@@ -665,7 +665,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 /*
   parse a home string into a location and yaw
  */
-bool SITL_State::parse_home(const char *home_str, Location &loc, float &yaw_degrees)
+bool SITL_State::parse_home(const char *home_str, AbsAltLocation &loc, float &yaw_degrees)
 {
     char *saveptr = nullptr;
     char *s = strdup(home_str);
@@ -699,17 +699,20 @@ bool SITL_State::parse_home(const char *home_str, Location &loc, float &yaw_degr
         return false;
     }
 
-    loc = {};
-    loc.lat = static_cast<int32_t>(strtod(lat_s, nullptr) * 1.0e7);
-    loc.lng = static_cast<int32_t>(strtod(lon_s, nullptr) * 1.0e7);
-    loc.alt = static_cast<int32_t>(strtod(alt_s, nullptr) * 1.0e2);
+    loc = {
+        static_cast<int32_t>(strtod(lat_s, nullptr) * 1.0e7),
+        static_cast<int32_t>(strtod(lon_s, nullptr) * 1.0e7),
+        static_cast<int32_t>(strtod(alt_s, nullptr) * 1.0e2)
+    };
 
     if (loc.lat == 0 && loc.lng == 0) {
         // default to CMAC instead of middle of the ocean. This makes
         // SITL in MissionPlanner a bit more useful
-        loc.lat = -35.363261*1e7;
-        loc.lng = 149.165230*1e7;
-        loc.alt = 584*100;
+        loc = {
+            int32_t(-35.363261*1e7),
+            int32_t(149.165230*1e7),
+            int32_t(584*100)
+        };
     }
 
     yaw_degrees = strtof(yaw_s, nullptr);
@@ -721,7 +724,7 @@ bool SITL_State::parse_home(const char *home_str, Location &loc, float &yaw_degr
 /*
   lookup a location in locations.txt in ROMFS
  */
-bool SITL_State::lookup_location(const char *home_str, Location &loc, float &yaw_degrees)
+bool SITL_State::lookup_location(const char *home_str, AbsAltLocation &loc, float &yaw_degrees)
 {
     const char *locations = "@ROMFS/locations.txt";
     FileData *fd = AP::FS().load_file(locations);

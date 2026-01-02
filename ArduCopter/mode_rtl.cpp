@@ -303,14 +303,16 @@ void ModeRTL::descent_run()
 
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle
-    pos_control->D_set_alt_target_with_slew_m(rtl_path.descent_target.alt * 0.01);
+    float above_home_alt_m;
+    UNUSED_RESULT(rtl_path.descent_target.get_alt_m(Location::AltFrame::ABOVE_HOME, above_home_alt_m));
+    pos_control->D_set_alt_target_with_slew_m(above_home_alt_m);
     pos_control->D_update_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if we've reached within 20cm of final altitude
-    _state_complete = labs(rtl_path.descent_target.alt * 0.01 - pos_control->get_pos_estimate_U_m()) < 0.2;
+    _state_complete = labs(rtl_path.descent_target.get_alt_m() - pos_control->get_pos_estimate_U_m()) < 0.2;
 }
 
 // land_start - initialise controllers to loiter over home
@@ -382,13 +384,24 @@ void ModeRTL::build_path()
     compute_return_target();
 
     // climb target is above our origin point at the return altitude
-    rtl_path.climb_target = Location(rtl_path.origin_point.lat, rtl_path.origin_point.lng, rtl_path.return_target.alt, rtl_path.return_target.get_alt_frame());
+    rtl_path.climb_target.lat = rtl_path.origin_point.lat;
+    rtl_path.climb_target.lng = rtl_path.origin_point.lng;
+    rtl_path.climb_target.copy_alt_from(rtl_path.return_target);
 
-    // descent target is below return target at rtl_alt_final_cm
-    rtl_path.descent_target = Location(rtl_path.return_target.lat, rtl_path.return_target.lng, g.rtl_alt_final_cm, Location::AltFrame::ABOVE_HOME);
+    // descent target is below return target at rtl_alt_final
+    Location tmp{
+        rtl_path.return_target.lat,
+        rtl_path.return_target.lng,
+        g.rtl_alt_final_cm,
+        Location::AltFrame::ABOVE_HOME
+    };
 
     // Target altitude is passed directly to the position controller so must be relative to origin
-    rtl_path.descent_target.change_alt_frame(Location::AltFrame::ABOVE_ORIGIN);
+    float tmp_alt_abs_m;
+    UNUSED_RESULT(tmp.get_alt_m(Location::AltFrame::ABOVE_ORIGIN, tmp_alt_abs_m));
+    rtl_path.descent_target.lat = tmp.lat;
+    rtl_path.descent_target.lng = tmp.lng;
+    rtl_path.descent_target.set_alt_m(tmp_alt_abs_m);
 
     // set land flag
     rtl_path.land = g.rtl_alt_final_cm <= 0;
@@ -400,7 +413,7 @@ void ModeRTL::compute_return_target()
 {
     // set return target to nearest rally point or home position
 #if HAL_RALLY_ENABLED
-    rtl_path.return_target = copter.rally.calc_best_rally_or_home_location(copter.current_loc, ahrs.get_home().alt);
+    rtl_path.return_target = copter.rally.calc_best_rally_or_home_location(copter.current_loc, ahrs.get_home().get_alt_cm());
     rtl_path.return_target.change_alt_frame(Location::AltFrame::ABSOLUTE);
 #else
     rtl_path.return_target = ahrs.get_home();
@@ -410,7 +423,7 @@ void ModeRTL::compute_return_target()
     float pos_offset_u_m = pos_control->get_pos_offset_U_m();
 
     // curr_alt_m is current altitude, with any offset removed, above home or above terrain depending upon use_terrain
-    float curr_alt_m = copter.current_loc.alt * 0.01 - pos_offset_u_m;
+    float curr_alt_m = copter.current_alt_above_home_m() - pos_offset_u_m;
 
     // determine altitude type of return journey (alt-above-home, alt-above-terrain using range finder or alt-above-terrain using terrain database)
     ReturnTargetAltType alt_type = ReturnTargetAltType::RELATIVE;
@@ -476,7 +489,11 @@ void ModeRTL::compute_return_target()
     // set new target altitude to return target altitude
     // Note: this is alt-above-home or terrain-alt depending upon rtl_alt_type
     // Note: ignore negative altitudes which could happen if user enters negative altitude for rally point or terrain is higher at rally point compared to home
-    float target_alt_m = MAX(rtl_path.return_target.alt, 0) * 0.01;
+    float target_alt_m = 0;
+    UNUSED_RESULT(rtl_path.return_target.get_alt_m(rtl_path.return_target.get_alt_frame(), target_alt_m));
+    if (target_alt_m < 0) {
+        target_alt_m = 0;
+    }
 
     // increase target to maximum of current altitude + climb_min and rtl altitude
     const float min_rtl_alt_m = MAX(RTL_ALT_MIN_M, curr_alt_m + MAX(0.0, g.rtl_climb_min_cm * 0.01));
@@ -504,14 +521,16 @@ void ModeRTL::compute_return_target()
             float fence_alt_m = copter.fence.get_safe_alt_max_m();
             if (target_alt_m > fence_alt_m) {
                 // reduce target alt to the fence alt
-                rtl_path.return_target.alt -= (target_alt_m - fence_alt_m) * 100.0;
+                rtl_path.return_target.offset_up_m(-(target_alt_m - fence_alt_m));
             }
         }
     }
 #endif
 
     // ensure we do not descend
-    rtl_path.return_target.alt = MAX(rtl_path.return_target.alt, curr_alt_m * 100.0);
+    float return_target_alt_m;
+    UNUSED_RESULT(rtl_path.return_target.get_alt_m(rtl_path.return_target.get_alt_frame(), return_target_alt_m));
+    rtl_path.return_target.set_alt_m(MAX(return_target_alt_m, curr_alt_m), rtl_path.return_target.get_alt_frame());
 }
 
 bool ModeRTL::get_wp(Location& destination) const

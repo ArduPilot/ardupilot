@@ -667,7 +667,7 @@ AP_IBus_Telem::SensorValue AP_IBus_Telem::get_sensor_value(const uint8_t sensor_
         break;
 
     case IBUS_SENSOR_TYPE_GPS_ALT:
-        value.int32 = AP::gps().location().alt;
+        value.int32 = AP::gps().location().get_alt_cm();
         break;
 #endif // AP_GPS_ENABLED
 
