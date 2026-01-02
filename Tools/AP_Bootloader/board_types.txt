@@ -552,8 +552,6 @@ AP_HW_SVehicle-E2                    6110
 
 # IDs 6600-6699 reserved for Eagle Eye Drones
 
-#TIDs 1411-1420 reserved for Scientech
-AP_HW_Scientech_String_H7            1411
 
 # IDs 6900-6909 reserved for Easy Aerial
 
@@ -572,6 +570,9 @@ AP_HW_AEROFOX_H7                     7110
 
 # IDs 7120-7129 reserved for Accton Godwit
 AP_HW_Accton_Godwit_GA1        7120
+
+#TIDs 7275 reserved for Scientech
+AP_HW_Scientech_String_H7            7275
 
 # please fill gaps in the above ranges rather than adding past ID #7199
 
