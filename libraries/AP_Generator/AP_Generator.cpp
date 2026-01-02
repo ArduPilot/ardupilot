@@ -46,9 +46,9 @@ const AP_Param::GroupInfo AP_Generator::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 2, AP_Generator, _options, 0),
 
-    // @Group:
+    // @Group: LH
     // @Path: AP_Generator_Loweheiser.cpp
-    AP_SUBGROUPVARPTR(_driver_ptr, "", 3, AP_Generator, backend_var_info),
+    AP_SUBGROUPVARPTR(_driver_ptr, "LH", 3, AP_Generator, backend_var_info),
 
     AP_GROUPEND
 };
