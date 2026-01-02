@@ -108,7 +108,7 @@ AP_VideoTX_CLI::AP_VideoTX_CLI(/* args */)
 
 void AP_VideoTX_CLI::handle_commands()
 {
-    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "VTX_CLI begin");
+    // GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "VTX_CLI begin");
     
     AP_VideoTX* vtx = AP_VideoTX::get_singleton();
     RC_Channels* rc = RC_Channels::get_singleton();
@@ -144,7 +144,7 @@ void AP_VideoTX_CLI::handle_commands()
 
 
                 if(update) {
-                    // vtx->update();
+                    vtx->update();
                     vtx->update_frequency();
                     vtx->announce_vtx_settings();
 
@@ -154,5 +154,5 @@ void AP_VideoTX_CLI::handle_commands()
         }
     }
 
-    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "VTX_CLI end");
+    // GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "VTX_CLI end");
 }

@@ -1,4 +1,5 @@
 #include "Plane.h"
+#include <AP_Param/AP_Param.h>
 
 /*
  *  ArduPlane parameter definitions
@@ -961,6 +962,10 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
     GOBJECTN(ahrs.EKF2, NavEKF2, "EK2_", NavEKF2),
 #endif
+
+    // @Group: VTX_C
+    // @Path: ../libraries/AP_VideoTX/AP_VideoTX_CLI.cpp
+    GOBJECT(video_tx_cli, "VTXC_", AP_VideoTX_CLI),
 
 #if HAL_NAVEKF3_AVAILABLE
     // @Group: EK3_
