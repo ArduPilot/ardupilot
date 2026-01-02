@@ -14646,8 +14646,8 @@ RTL_ALT 111
             "WPNAV_SPEED": 3000,
             "WPNAV_SPEED_DN": 1000,
             "WPNAV_SPEED_UP": 1000,
-            "PSC_JERK_Z": 40,
-            "PSC_JERK_XY": 40,
+            "PSC_JERK_D": 40,
+            "PSC_JERK_NE": 40,
             "ATC_THR_MIX_MAX": 4,
         })
 
