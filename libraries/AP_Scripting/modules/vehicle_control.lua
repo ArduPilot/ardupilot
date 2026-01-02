@@ -166,9 +166,9 @@ vehicle_control.maneuver.stage = {
   @param climb_g (optional) The desired G-force for the initial climb (default 1.0). For example, 2.0 would be a 2g climb.
   @return A state table for the flip_update function, or nil and an error message if preconditions are not met.
 ]]
-function vehicle_control.maneuver.flip_start(axis, rate_degs, throttle_level, flip_duration_s, num_flips, slew_gain, true_hover_throttle, safety_params, climb_g)
+function vehicle_control.maneuver.flip_start(axis, rate_degs, throttle_level, flip_duration_s, num_flips, true_hover_throttle, safety_params, climb_g)
   -- 1. Pre-flight Checks
-  if not (vehicle:get_mode() == vehicle_control.mode.GUIDED) then
+  if vehicle:get_mode() ~= vehicle_control.mode.GUIDED then
     gcs:send_text(vehicle_control.MAV_SEVERITY.WARNING, "Flip requires Guided mode")
     return nil, "Flip requires Guided mode"
   end
@@ -203,8 +203,6 @@ function vehicle_control.maneuver.flip_start(axis, rate_degs, throttle_level, fl
       total_angle_deg = 360 * num_flips
       if user_has_duration then
           rate_degs = total_angle_deg / flip_duration_s
-      elseif user_has_rate then
-          -- flip_duration_s will be calculated later based on acceleration
       else
           -- Default duration if only num_flips is provided
           flip_duration_s = num_flips * 1.0 
@@ -221,8 +219,6 @@ function vehicle_control.maneuver.flip_start(axis, rate_degs, throttle_level, fl
       total_angle_deg = 360
       if user_has_duration then
           rate_degs = total_angle_deg / flip_duration_s
-      elseif user_has_rate then
-          -- flip_duration_s will be calculated later
       end
   end
 
