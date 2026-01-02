@@ -1333,28 +1333,15 @@ void Copter::convert_pid_parameters(void)
     for (const auto &info : angle_and_filt_conversion_info) {
         AP_Param::convert_old_parameter(&info, 1.0f);
     }
-
+/*
     // TradHeli default parameters
 #if FRAME_CONFIG == HELI_FRAME
     static const struct AP_Param::defaults_table_struct heli_defaults_table[] = {
-        // { "LOIT_ACC_MAX", 500.0f },
-        // { "LOIT_BRK_ACCEL", 125.0f },
-        // { "LOIT_BRK_DELAY", 1.0f },
-        // { "LOIT_BRK_JERK", 250.0f },
-        // { "LOIT_SPEED", 3000.0f },
-        { "PHLD_BRAKE_ANGLE", 800.0f },
-        { "PHLD_BRAKE_RATE", 4.0f },
-        // { "PSC_ACCZ_P", 0.28f },
-        // { "PSC_VELXY_D", 0.0f },
-        // { "PSC_VELXY_I", 0.5f },
-        // { "PSC_VELXY_P", 1.0f },
-        { "RC8_OPTION", 32 },
-        //{ "RC_OPTIONS", 0 },
 //        { "ATC_RAT_RLL_ILMI", 0.05},
 //        { "ATC_RAT_PIT_ILMI", 0.05},
     };
     AP_Param::set_defaults_from_table(heli_defaults_table, ARRAY_SIZE(heli_defaults_table));
-#endif  // FRAME_CONFIG == HELI_FRAME
+#endif  // FRAME_CONFIG == HELI_FRAME */
 
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 #if HAL_INS_NUM_HARMONIC_NOTCH_FILTERS > 1
