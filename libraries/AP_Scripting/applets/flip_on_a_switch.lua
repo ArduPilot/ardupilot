@@ -211,7 +211,7 @@ function start_maneuver()
     flip_active = true
     flip_state = vehicle_control.maneuver.flip_start(
         FLIP_AXIS:get(), FLIP_RATE:get(), FLIP_THROTTLE:get(),
-        duration_s_arg, num_flips_arg, nil, FLIP_HOVER:get(),
+        duration_s_arg, num_flips_arg, FLIP_HOVER:get(),
         nil, FLIP_CLIMB_G:get()
     )
     if flip_state == nil then
