@@ -47,4 +47,4 @@ Enables the modem transmission
 
 If RCK_FORCEHL=2, this is the number of seconds of no-messages from the GCS until High Latency mode is auto-enabled
 
-When GCS messages are recieved again, High Latency mode is auto-disabled.
+When GCS messages are received again, High Latency mode is auto-disabled.
