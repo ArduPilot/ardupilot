@@ -59,6 +59,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_Torqeedo/AP_Torqeedo.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_VideoTX/AP_VideoTX_CLI.h>
 #define SWITCH_DEBOUNCE_TIME_MS  200
 
 const AP_Param::GroupInfo RC_Channel::var_info[] = {
@@ -654,6 +655,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     case AUX_FUNC::SCRIPTING_8:
 #if AP_VIDEOTX_ENABLED
     case AUX_FUNC::VTX_POWER:
+    case AUX_FUNC::VTX_SETTINGS:
 #endif
     case AUX_FUNC::OPTFLOW_CAL:
     case AUX_FUNC::TURBINE_START:
@@ -774,6 +776,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::CAMERA_IMAGE_TRACKING, "Camera Image Tracking"},
     { AUX_FUNC::CAMERA_LENS, "Camera Lens"},
     { AUX_FUNC::MOUNT_LRF_ENABLE, "Mount LRF Enable"},
+    { AUX_FUNC::VTX_SETTINGS, "VTX Settings" },
 };
 
 /* lookup the announcement for switch change */
@@ -818,6 +821,14 @@ bool RC_Channel::read_aux()
         int8_t position;
         if (read_6pos_switch(position)) {
             AP::vtx().change_power(position);
+            return true;
+        }
+        return false;
+    } else if (_option == AUX_FUNC::VTX_SETTINGS) {
+        int8_t position;
+        if (read_6pos_switch(position)) {
+            AP_VideoTX_CLI* vtx_cli = AP_VideoTX_CLI::get_singleton();
+            vtx_cli->handle_commands();
             return true;
         }
         return false;
@@ -1319,6 +1330,12 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
     case AUX_FUNC::FFT_NOTCH_TUNE:
         do_aux_function_fft_notch_tune(ch_flag);
         break;
+
+    // case AUX_FUNC::VTX_SETTINGS:
+    //     // handled in read_aux()
+    //     AP_VideoTX_CLI* vtx_cli = AP_VideoTX_CLI::get_singleton();
+    //     vtx_cli->handle_commands();
+    //     break;
 
 #if HAL_GENERATOR_ENABLED
     case AUX_FUNC::GENERATOR:

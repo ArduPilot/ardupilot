@@ -317,6 +317,12 @@ AP_HW_AIRVOLUTE_DCS2                 5200
 AP_HW_AOCODA-RC-H743DUAL             5210
 AP_HW_AOCODA-RC-F405V3               5211
 
+AP_HW_TBS_LUCID_H7                   5250
+AP_HW_TBS_LUCID_PRO                  5251
+AP_HW_TBS_L431_PERIPH                5252
+AP_HW_TBS_LUCID_H7_WING              5253
+
+
 #IDs 5301-5399 reserved for Sierra Aerospace
 AP_HW_Sierra-TrueNavPro-G4           5301
 AP_HW_Sierra-TrueNavIC               5302

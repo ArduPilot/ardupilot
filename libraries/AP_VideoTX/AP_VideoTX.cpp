@@ -21,6 +21,7 @@
 #include <GCS_MAVLink/GCS.h>
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_VideoTX/AP_VideoTX_CLI.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -87,7 +88,7 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
 
 extern const AP_HAL::HAL& hal;
 
-const char * AP_VideoTX::band_names[] = {"A","B","E","F","R","L","1G3_A","1G3_B","X"};
+const char * AP_VideoTX::band_names[] = {"A","B","E","F","R","L","1G3_A","1G3_B","X","3G3_A","3G3_B"};
 
 const uint16_t AP_VideoTX::VIDEO_CHANNELS[AP_VideoTX::MAX_BANDS][VTX_MAX_CHANNELS] =
 {
@@ -99,8 +100,11 @@ const uint16_t AP_VideoTX::VIDEO_CHANNELS[AP_VideoTX::MAX_BANDS][VTX_MAX_CHANNEL
     { 5621, 5584, 5547, 5510, 5473, 5436, 5399, 5362}, /* LO Race */
     { 1080, 1120, 1160, 1200, 1240, 1280, 1320, 1360}, /* Band 1G3_A */
     { 1080, 1120, 1160, 1200, 1258, 1280, 1320, 1360}, /* Band 1G3_B */
-    { 4990, 5020, 5050, 5080, 5110, 5140, 5170, 5200}  /* Band X */
+    { 4990, 5020, 5050, 5080, 5110, 5140, 5170, 5200}, /* Band X */
+    { 3330, 3350, 3370, 3390, 3410, 3430, 3450, 3470}, /* Band 3G3_A */
+    { 3170, 3190, 3210, 3230, 3250, 3270, 3290, 3310}  /* Band 3G3_B */
 };
+
 
 // mapping of power level to milliwatt to dbm
 // valid power levels from SmartAudio spec, the adjacent levels might be the actual values
