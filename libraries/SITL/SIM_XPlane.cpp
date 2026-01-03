@@ -649,7 +649,7 @@ void XPlane::send_dref(const char *name, float value)
         char name[500];
     } d {};
     d.value = value;
-    strcpy(d.name, name);
+    strlcpy(d.name, name, sizeof(d.name));
     socket_out.send(&d, sizeof(d));
     if (dref_debug > 0) {
         ::printf("-> %s : %.3f\n", name, value);
@@ -669,7 +669,7 @@ void XPlane::request_dref(const char *name, uint8_t code, uint32_t rate)
     } d {};
     d.rate_hz = rate;
     d.code = code; // given back in responses
-    strcpy(d.name, name);
+    strlcpy(d.name, name, sizeof(d.name));
     socket_in.sendto(&d, sizeof(d), xplane_ip, xplane_port);
 }
 
