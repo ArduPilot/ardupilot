@@ -42,7 +42,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
  - SERIAL5 -> UART5 (RCin) RX DMA capable
  - SERIAL6 -> UART6 (User) DMA capable
  - SERIAL7 -> UART7 (User) DMA Capable
- - SERIAL8 -> UART8 (Dji SBUS)
+ - SERIAL8 -> UART8 (RX8 is SBUS in HD VTX connector)
 
 ## RC Input
 
@@ -100,6 +100,22 @@ The DAKEFPV H743 SLIM does not have a builtin compass, but you can attach an ext
 ## Camera control
 
 GPIO 81 controls the camera output to the connectors marked "CAM1" and "CAM2". Setting this GPIO low switches the video output from CAM1 to CAM2. By default RELAY1 is configured to control this pin and sets the GPIO high.
+
+## User DIY (PIO2) 
+
+GPIO 82. PIO2 provides user-customizable control.
+
+## Bluetooth
+
+GPIO 83. The Bluetooth module is optional for users, and the flight controller has reserved solder pads for the DAKEFPV Bluetooth. The flight controller communicates with the Bluetooth module via UART2 and controls the Bluetooth module enable through PIO2.
+
+## PIO4
+
+GPIO_CAN1_SILENT on Betaflight is PINIO4.
+
+## DJI HD VTX connector
+
+When using DJI HD video transmission, the flight controller needs to connect to DJI TX and RX via Serial 4. In the settings, set `SERIAL4_PROTOCOL `to `42` (default). If you are also using a DJI remote controller, you can connect Rx8 to the DJI SBUS interface, set `SERIAL8_PROTOCOL `to 15, and set `SERIAL5_PROTOCOL `to something else.
 
 ## OSD Support
 The DAKEFPVH743_SLIM has an onboard OSD using a MAX7456 chip and is enabled by default. The CAM1/2 and VTX pins provide connections for using the internal OSD. Simultaneous DisplayPort OSD is also possible and is configured by default.
