@@ -28,13 +28,13 @@
 #define MAX_NAME_LEN 255
 #endif
 
-#if (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS) || (CONFIG_HAL_BOARD == HAL_BOARD_ESP32)
+#if (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS) || (CONFIG_HAL_BOARD == HAL_BOARD_ESP32) || (CONFIG_HAL_BOARD == HAL_BOARD_RP2350)
 #define DT_REG 0
 #define DT_DIR 1
 #define DT_LNK 10
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS) || (CONFIG_HAL_BOARD == HAL_BOARD_RP2350) 
 #if AP_FILESYSTEM_FATFS_ENABLED
 #include "AP_Filesystem_FATFS.h"
 #endif
@@ -66,6 +66,10 @@ struct dirent {
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
 #include "AP_Filesystem_ESP32.h"
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_RP2350
+#include "AP_Filesystem_RP2350.h"
 #endif
 
 #include "AP_Filesystem_backend.h"
