@@ -16,7 +16,7 @@
 
 #include "AP_Filesystem_backend.h"
 
-#if AP_FILESYSTEM_LITTLEFS_ENABLED
+#if AP_FILESYSTEM_LITTLEFS_ENABLED || AP_FILESYSTEM_RP2350_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Semaphores.h>
@@ -55,12 +55,12 @@ public:
     bool format(void) override;
     AP_Filesystem_Backend::FormatStatus get_format_status() const override;
 
-    int _flashmem_read(lfs_block_t block, lfs_off_t off, void* buffer, lfs_size_t size);
-    int _flashmem_prog(lfs_block_t block, lfs_off_t off, const void* buffer, lfs_size_t size);
-    int _flashmem_erase(lfs_block_t block);
-    int _flashmem_sync();
+    virtual int _flashmem_read(lfs_block_t block, lfs_off_t off, void* buffer, lfs_size_t size);
+    virtual int _flashmem_prog(lfs_block_t block, lfs_off_t off, const void* buffer, lfs_size_t size);
+    virtual int _flashmem_erase(lfs_block_t block);
+    virtual int _flashmem_sync();
 
-private:
+protected:
     // Semaphore to protect against concurrent accesses to fs
     HAL_Semaphore fs_sem;
 
@@ -105,11 +105,11 @@ private:
     void free_all_fds();
     FileDescriptor* lfs_file_from_fd(int fd) const;
 
-    uint32_t find_block_size_and_count();
-    bool init_flash() WARN_IF_UNUSED;
-    bool write_enable() WARN_IF_UNUSED;
-    bool is_busy();
-    bool mount_filesystem();
+    virtual uint32_t find_block_size_and_count();
+    virtual bool init_flash() WARN_IF_UNUSED;
+    virtual bool write_enable() WARN_IF_UNUSED;
+    virtual bool is_busy();
+    virtual bool mount_filesystem();
     void send_command_addr(uint8_t command, uint32_t addr);
     void send_command_page(uint8_t command, uint32_t page);
     bool wait_until_device_is_ready() WARN_IF_UNUSED;

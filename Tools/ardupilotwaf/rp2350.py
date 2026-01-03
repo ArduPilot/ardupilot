@@ -241,6 +241,20 @@ def configure(cfg):
         env.PICO_SDK = cfg.srcnode.abspath()+"/modules/pico/pico-sdk"
     print("USING PICO C/C++ SDK:"+str(env.PICO_SDK))
 
+    # build pioasm
+    pico_sdk_path = env.PICO_SDK
+    pioasm_path = os.path.join(pico_sdk_path, 'tools/pioasm')
+    build_path = os.path.join(pioasm_path, 'build')
+
+    if not os.path.exists(os.path.join(build_path, 'pioasm')):
+        try:
+            os.makedirs(build_path, exist_ok=True)
+            subprocess.run(['cmake', '-DPIOASM_VERSION_STRING=1.0', '..'], cwd=build_path)
+            subprocess.run(['make', '-j4'], cwd=build_path)
+            print("pioasm built")
+        except:
+            cfg.fatal("Failed to build pioasm")
+
     try:
         hwdef_obj = generate_hwdef_h(env)
     except Exception:

@@ -24,4 +24,5 @@ namespace RP {
     class Flash;
     class Semaphore;
     class BinarySemaphore;
+    class NAND_PIO_Driver;
 }

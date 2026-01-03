@@ -21,7 +21,7 @@
 */
 #include "AP_Filesystem_config.h"
 
-#if AP_FILESYSTEM_LITTLEFS_ENABLED
+#if AP_FILESYSTEM_LITTLEFS_ENABLED || AP_FILESYSTEM_RP2350_ENABLED
 
 #include "AP_Filesystem.h"
 #include "AP_Filesystem_FlashMemory_LittleFS.h"
@@ -800,7 +800,7 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     default:
         block_count = 0;
         hal.scheduler->delay(2000);
-        printf("Unknown SPI Flash 0x%08x\n", id);
+        printf("Unknown SPI Flash 0x%08x\n", (unsigned int)id);
         return 0;
     }
 
