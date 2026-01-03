@@ -30,7 +30,7 @@ The DAKEFPV H743 SLIM is a flight controller produced by [DAKEFPV](https://www.d
 
 ## UART Mapping
 
-The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
+The UARTs are marked Rxn and Txn in the above pinouts. The Rxn pin is the
 receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
  - SERIAL0 -> USB
@@ -45,7 +45,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 ## RC Input
 
-RC input is configured by default via the USART5 RX input. It supports all unidirectional serial RC protocols except PPM . The SBUS pin is inverted and tied to R5 for SBUS support.
+RC input is configured by default via the USART5 RX input. It supports all serial RC protocols except PPM . The SBUS pin is inverted and tied to R5 for SBUS support.
 
 * FPort requires an external bi-directional inverter attached to T5 and :ref:`SERIAL5_OPTIONS<SERIAL5_OPTIONS>` set to 4 (half-duplex).  See :ref:`common-FPort-receivers`.
 * CRSF/ELRS uses RX5/TX5.
@@ -61,23 +61,15 @@ You need to set the following parameters to enable support for FrSky S.PORT:
 
 ## PWM Output
 
-The DAKEFPV H743 SLIM supports up to 14 outputs. Motor outputs M1 to M8 are available on separate pads, along with independent pads for S1-4 and LED for LED strips and other PWM outputs. M1-8, S1, and S4 support bidirectional DShot, and the LED outputs support serial LEDs or DShot.
+The DAKEFPV H743 SLIM supports up to 14 outputs. Motor outputs M1 to M8 are available on separate pads, along with independent pads for S1-4 and LED for LED strips and other PWM outputs. M1-8, S1, and S4 support bidirectional DShot, and the LED outputs support serial LEDs or DShot. M1-8 support Bi-Directional DShot.
 
 The PWM is in 5 groups:
 
  - PWM 1-4     in group1
  - PWM 5-8     in group2
- - PWM 9-12    in group3
- - PWM 13      in group4 (CAMERA_CONTROL)
+ - PWM 9-12    in group3 (marked as S1-4)
+ - PWM 13      in group4 (Marked OSD)
  - PWM 14(LED) in group5 (set as Serial LED output function by default) 
-
-The outputs are in 5 groups:
-
- - M 1-4     in group1
- - M 5,8     in group2
- - S 9,12    in group3
- - OSD       in group4
- - LED       in group5
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
