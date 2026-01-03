@@ -502,7 +502,7 @@ bool AP_Baro::_add_backend(AP_Baro_Backend *backend)
 /*
   wrapper around hal.i2c_mgr->get_device() that prevents duplicate devices being opened
  */
-bool AP_Baro::_have_i2c_driver(uint8_t bus, uint8_t address) const
+bool AP_Baro::_i2c_sensor_is_registered(uint8_t bus, uint8_t address) const
 {
     for (int i=0; i<_num_drivers; ++i) {
         if (AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_I2C, bus, address, 0) ==
@@ -523,7 +523,7 @@ bool AP_Baro::_have_i2c_driver(uint8_t bus, uint8_t address) const
     } while (0)
 
 // macro for use by HAL_INS_PROBE_LIST and various helper functions
-#define GET_I2C_DEVICE_PTR(bus, address) _have_i2c_driver(bus, address)?nullptr:hal.i2c_mgr->get_device_ptr(bus, address)
+#define GET_I2C_DEVICE_PTR(bus, address) _i2c_sensor_is_registered(bus, address)?nullptr:hal.i2c_mgr->get_device_ptr(bus, address)
 
 // probe for an I2C barometer.
 void AP_Baro::probe_i2c_dev(AP_Baro_Backend* (*probefn)(AP_Baro&, AP_HAL::Device&), uint8_t bus, uint8_t addr)
