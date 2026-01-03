@@ -404,8 +404,8 @@ private:
 #endif
 #endif  // COMPASS_CAL_ENABLED
 
-    // see if we already have probed a i2c driver by bus number and address
-    bool _have_i2c_driver(uint8_t bus_num, uint8_t address) const;
+    // see if we already have probed a i2c sensor by bus number and address
+    bool _i2c_sensor_is_registered(uint8_t bus_num, uint8_t address) const;
 
 #if AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
     /*
