@@ -945,6 +945,12 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     AP_EZKontrolCAN *ezk = AP::ezkontrol_can();
     if (ezk != nullptr && ezk->enabled()) {
         ezk->set_targets(motor_left, motor_right, armed);
+        const SRV_Channel::Limit limit = (!armed && _disarm_disable_pwm) ?
+                                         SRV_Channel::Limit::ZERO_PWM :
+                                         SRV_Channel::Limit::TRIM;
+        SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, limit);
+        SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, limit);
+        return;
     }
 #endif
 

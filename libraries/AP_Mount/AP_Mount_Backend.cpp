@@ -124,9 +124,10 @@ void AP_Mount_Backend::update_mnt_target_from_rc_target()
         mnt_target.target_type = MountTargetType::ANGLE;
 
         // frame locks
-        mnt_target.angle_rad.yaw_is_ef = _yaw_lock;
-        mnt_target.angle_rad.roll_is_ef = _roll_lock;
-        mnt_target.angle_rad.pitch_is_ef = _pitch_lock;
+        bool FPV_option = option_set(Options::FPV_LOCK); //FPV_LOCK forces bodyframe on all axes in RC targeting mode
+        mnt_target.angle_rad.yaw_is_ef = FPV_option ? false : _yaw_lock;
+        mnt_target.angle_rad.roll_is_ef = FPV_option ? false : _roll_lock;
+        mnt_target.angle_rad.pitch_is_ef = FPV_option ? false : _pitch_lock;
 
         // roll angle
         mnt_target.angle_rad.roll = radians(((roll_in + 1.0f) * 0.5f * (_params.roll_angle_max - _params.roll_angle_min) + _params.roll_angle_min));
@@ -135,12 +136,12 @@ void AP_Mount_Backend::update_mnt_target_from_rc_target()
         mnt_target.angle_rad.pitch = radians(((pitch_in + 1.0f) * 0.5f * (_params.pitch_angle_max - _params.pitch_angle_min) + _params.pitch_angle_min));
 
         // yaw angle
+        mnt_target.angle_rad.yaw = radians(((yaw_in + 1.0f) * 0.5f * (_params.yaw_angle_max - _params.yaw_angle_min) + _params.yaw_angle_min));
+        
+        // if in yaw ef lock, we use the captured and adjusted yaw_lock_heading rad to
+        // adjust the yaw so that any RC yaw changes are reflected in locked heading
         if (mnt_target.angle_rad.yaw_is_ef) {
-            // if yaw is earth-frame pilot yaw input control angle from -180 to +180 deg
-            mnt_target.angle_rad.yaw = yaw_in * M_PI;
-        } else {
-            // yaw target in body frame so apply body frame limits
-            mnt_target.angle_rad.yaw = radians(((yaw_in + 1.0f) * 0.5f * (_params.yaw_angle_max - _params.yaw_angle_min) + _params.yaw_angle_min));
+            mnt_target.angle_rad.yaw = wrap_PI(mnt_target.angle_rad.yaw + _yaw_lock_heading_rad);
         }
     } else {
         // calculate rate targets
@@ -149,12 +150,6 @@ void AP_Mount_Backend::update_mnt_target_from_rc_target()
         mnt_target.rate_rads.roll = roll_in * rc_rate_max_rads;
         mnt_target.rate_rads.pitch = pitch_in * rc_rate_max_rads;
         mnt_target.rate_rads.yaw = yaw_in * rc_rate_max_rads;
-    }
-
-    if (option_set(Options::FPV_LOCK)) {
-        _yaw_lock = false;
-        _roll_lock = false;
-        _pitch_lock = false;
     }
 }
 
@@ -226,6 +221,25 @@ void AP_Mount_Backend::set_roi_target(const Location &target_loc)
         set_yaw_lock(true);
     }
 }
+
+// set yaw lock - sets the _yaw_lock variable and captures current earth frame heading of mount for targeting in RC Targeting mode
+void AP_Mount_Backend::set_yaw_lock(bool yaw_lock)
+{
+    // if yaw not locked already, capture mount's earth frame heading for later possible use
+    if (!_yaw_lock) {
+        float roll_in, pitch_in, yaw_in;
+        get_rc_input(roll_in, pitch_in, yaw_in);
+         //adjust current ef mount heading by current RC yaw angle input and store for later use
+        Quaternion att_quat_bf_rad;
+        if (get_attitude_quaternion(att_quat_bf_rad)) {
+            const float euler_yaw_bf_rad = att_quat_bf_rad.get_euler_yaw();
+            const float euler_yaw_ef_rad = wrap_PI(euler_yaw_bf_rad + AP::ahrs().get_yaw_rad());
+            _yaw_lock_heading_rad = wrap_PI(euler_yaw_ef_rad - radians(wrap_180((yaw_in + 1.0f) * 0.5f * (_params.yaw_angle_max - _params.yaw_angle_min) + _params.yaw_angle_min)));
+        }
+    }
+    _yaw_lock = yaw_lock;
+ }
+
 
 // clear_roi_target - clears target location that mount should attempt to point towards
 void AP_Mount_Backend::clear_roi_target()
@@ -908,10 +922,6 @@ void AP_Mount_Backend::update_mnt_target()
     // change to RC_TARGETING mode if RC input has changed
     set_rctargeting_on_rcinput_change();
 
-    // note that not all backends currently use "fresh".  We should
-    // change this to have all backends use this or none use it.
-    mnt_target.fresh = false;
-
     switch (get_mode()) {
     case MAV_MOUNT_MODE_RETRACT: {
         // move mount to a "retracted" position.  To-Do: remove support and replace with a relaxed mode?
@@ -932,20 +942,17 @@ void AP_Mount_Backend::update_mnt_target()
     case MAV_MOUNT_MODE_MAVLINK_TARGETING:
         // point to the angles given by a mavlink message
         // mavlink targets are stored while handling the incoming message
-        mnt_target.fresh = true;
         return;
 
     case MAV_MOUNT_MODE_RC_TARGETING:
         // RC radio manual angle control, but with stabilization from the AHRS
         update_mnt_target_from_rc_target();
-        mnt_target.fresh = true;
         return;
 
     case MAV_MOUNT_MODE_GPS_POINT:
         // point mount to a GPS point given by the mission planner
         if (get_angle_target_to_roi(mnt_target.angle_rad)) {
             mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.fresh = true;
         }
         return;
 
@@ -953,7 +960,6 @@ void AP_Mount_Backend::update_mnt_target()
         // point mount to Home location
         if (get_angle_target_to_home(mnt_target.angle_rad)) {
             mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.fresh = true;
         }
         return;
 
@@ -961,7 +967,6 @@ void AP_Mount_Backend::update_mnt_target()
         // point mount to another vehicle
         if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
             mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.fresh = true;
         }
         return;
     case MAV_MOUNT_MODE_ENUM_END:

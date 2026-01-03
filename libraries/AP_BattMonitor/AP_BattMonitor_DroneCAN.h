@@ -53,7 +53,7 @@ public:
     static void handle_battery_info_aux_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_equipment_power_BatteryInfoAux &msg);
     static void handle_mppt_stream_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const mppt_Stream &msg);
 
-    void mppt_set_powered_state(bool power_on) override;
+    void set_powered_state(bool power_on) override;
 
     // reset remaining percentage to given value
     bool reset_remaining(float percentage) override;

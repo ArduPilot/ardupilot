@@ -19,13 +19,26 @@
 
 namespace AP_EZKontrolCAN_Protocol {
 
-// TODO Stage 2: Populate protocol constants from EZKontrol CAN PDFs.
-// Placeholder values should not be used for real control.
 static constexpr uint8_t HANDSHAKE_START = 0x55;
 static constexpr uint8_t HANDSHAKE_ACK = 0xAA;
 
 static constexpr uint8_t HEARTBEAT_PERIOD_MS = 50;
 
-// TODO Stage 2: Define extended CAN IDs, life counter, and payload layouts.
+static constexpr uint8_t VCU_ADDRESS = 0xD0;
+static constexpr uint8_t PRIORITY_VCU_TO_MCU = 0x0C;
+static constexpr uint8_t PRIORITY_MCU_TO_VCU = 0x18;
+
+static constexpr uint8_t MSG_HANDSHAKE = 0x01;
+static constexpr uint8_t MSG_COMMAND = 0x02;
+static constexpr uint8_t MSG_TELEM_1 = 0x03;
+static constexpr uint8_t MSG_TELEM_2 = 0x04;
+
+static constexpr uint8_t COMMAND_FLAG_RUN = 0x01;
+static constexpr uint8_t COMMAND_FLAG_TORQUE_MODE = 0x02;
+
+static inline uint32_t make_extended_id(uint8_t priority, uint8_t message, uint8_t dest, uint8_t src)
+{
+    return (uint32_t(priority) << 24) | (uint32_t(message) << 16) | (uint32_t(dest) << 8) | uint32_t(src);
+}
 
 } // namespace AP_EZKontrolCAN_Protocol

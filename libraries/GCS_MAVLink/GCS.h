@@ -610,7 +610,7 @@ protected:
     void handle_rally_fetch_point(const mavlink_message_t &msg);
     void handle_rally_point(const mavlink_message_t &msg) const;
 #if HAL_MOUNT_ENABLED
-    virtual void handle_mount_message(const mavlink_message_t &msg);
+    void handle_mount_message(const mavlink_message_t &msg);
 #endif
     void handle_fence_message(const mavlink_message_t &msg);
     void handle_param_value(const mavlink_message_t &msg);

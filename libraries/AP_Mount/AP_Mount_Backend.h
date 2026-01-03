@@ -83,7 +83,7 @@ public:
 
     // set yaw_lock used in RC_TARGETING mode.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
     // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
-    void set_yaw_lock(bool yaw_lock) { _yaw_lock = yaw_lock; }
+    void set_yaw_lock(bool yaw_lock);
 
     // set pitch_lock used in RC_TARGETING mode.  If true, the gimbal's tilt target is maintained in earth-frame meaning it will lock onto an earth-frame
     // If false (aka "follow") the gimbal's tilt is maintained in body-frame meaning it will tilt with the vehicle
@@ -362,11 +362,6 @@ protected:
         MountAngleTarget angle_rad; // angle target in radians
         MountRateTarget rate_rads;  // rate target in rad/s
         uint32_t last_rate_request_ms;
-
-        // 'fresh' indicates that the MountTarget data in this
-        // structure has been updated in this loop; some backends use
-        // this to gate whether to send data to the device or not.
-        bool fresh;
     } mnt_target;
     
     // RP earth frame locks accessible by backend
@@ -389,6 +384,8 @@ private:
 #endif
 
     bool _yaw_lock;                 // yaw_lock used in RC_TARGETING mode. True if the gimbal's yaw target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
+    
+    float _yaw_lock_heading_rad;            // mount earth frame direction captured upon calling set_yaw_lock
 
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
     struct {

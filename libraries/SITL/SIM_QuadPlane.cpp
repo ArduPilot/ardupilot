@@ -83,9 +83,9 @@ QuadPlane::QuadPlane(const char *frame_str) :
         ground_behavior = GROUND_BEHAVIOR_TAILSITTER;
         thrust_scale *= 1.5;
     }
-    frame = Frame::find_frame(frame_type);
+    frame = Frame::create_frame(frame_type);
     if (frame == nullptr) {
-        printf("Failed to find frame '%s'\n", frame_type);
+        printf("Failed to find frame '%s' or insufficient memory\n", frame_type);
         exit(1);
     }
 

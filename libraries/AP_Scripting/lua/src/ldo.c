@@ -10,7 +10,7 @@
 #include "lprefix.h"
 
 
-#include <setjmp.h>
+#include <AP_HAL/ap_setjmp.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -71,9 +71,9 @@
 #else							/* }{ */
 
 /* ISO C handling with long jumps */
-#define LUAI_THROW(L,c)		longjmp((c)->b, 1)
-#define LUAI_TRY(L,c,a)		if (setjmp((c)->b) == 0) { a }
-#define luai_jmpbuf		jmp_buf
+#define LUAI_THROW(L,c)		ap_longjmp((c)->b, 1)
+#define LUAI_TRY(L,c,a)		if (ap_setjmp((c)->b) == 0) { a }
+#define luai_jmpbuf		ap_jmp_buf
 
 #endif							/* } */
 
@@ -133,29 +133,21 @@ l_noret luaD_throw (lua_State *L, int errcode) {
   }
 }
 
-// remove optimization
-#pragma GCC push_options
-#pragma GCC optimize ("O0")
+
 int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
   unsigned short oldnCcalls = L->nCcalls;
   struct lua_longjmp lj;
   lj.status = LUA_OK;
   lj.previous = L->errorJmp;  /* chain new error handler */
   L->errorJmp = &lj;
-#ifdef ARM_MATH_CM7
-    __asm__("vpush {s16-s31}");
-#endif
   LUAI_TRY(L, &lj,
     (*f)(L, ud);
   );
-#ifdef ARM_MATH_CM7
-  __asm__("vpop {s16-s31}");
-#endif
   L->errorJmp = lj.previous;  /* restore old error handler */
   L->nCcalls = oldnCcalls;
   return lj.status;
 }
-#pragma GCC pop_options
+
 /* }====================================================== */
 
 

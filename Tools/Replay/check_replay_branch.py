@@ -8,7 +8,7 @@ Check out a specified branch, compile and run Replay against replay log
 Run check_replay.py over the produced log
 '''
 
-import git
+import git # https://pypi.org/project/GitPython/
 import glob
 import os
 import subprocess

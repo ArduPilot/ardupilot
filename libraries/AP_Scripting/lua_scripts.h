@@ -20,7 +20,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <setjmp.h>
+#include <AP_HAL/ap_setjmp.h>
 
 #include <AP_Filesystem/posix_compat.h>
 #include <AP_Scripting/AP_Scripting.h>
@@ -82,7 +82,7 @@ private:
 
     // lua panic handler, will jump back to the start of run
     static int atpanic(lua_State *L);
-    static jmp_buf panic_jmp;
+    static ap_jmp_buf panic_jmp;
 
     lua_State *lua_state;
 

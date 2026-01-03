@@ -42,7 +42,7 @@ const AP_Param::GroupInfo AP_EZKontrolCAN::var_info[] = {
 
     // @Param: BITRATE
     // @DisplayName: EZKontrol CAN bitrate
-    // @Description: CAN bitrate in kbit/s
+    // @Description: CAN bitrate in kbit/s (controller expects protocol 2 for 250k, protocol 102 for 500k)
     // @Values: 250:250k,500:500k
     // @User: Advanced
     AP_GROUPINFO("BITRATE", 3, AP_EZKontrolCAN, _bitrate, 500),
@@ -88,6 +88,14 @@ const AP_Param::GroupInfo AP_EZKontrolCAN::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DEBUG", 9, AP_EZKontrolCAN, _debug, 0),
 
+    // @Param: TIMEOUT_MS
+    // @DisplayName: EZKontrol telemetry timeout
+    // @Description: Telemetry timeout in milliseconds for EZKontrol controllers
+    // @Units: ms
+    // @Range: 100 5000
+    // @User: Advanced
+    AP_GROUPINFO("TIMEOUT_MS", 10, AP_EZKontrolCAN, _timeout_ms, 500),
+
     AP_GROUPEND
 };
 
@@ -100,7 +108,8 @@ AP_EZKontrolCAN::AP_EZKontrolCAN() :
     _armed(false),
     _last_target_ms(0),
     _last_update_ms(0),
-    _last_debug_ms(0)
+    _last_debug_ms(0),
+    _last_send_ms(0)
 {
     _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
@@ -116,6 +125,8 @@ void AP_EZKontrolCAN::init()
     _can_iface = nullptr;
     _can_inited = false;
     _healthy = false;
+    reset_controller_state(_left_state);
+    reset_controller_state(_right_state);
 
     if (!enabled()) {
         return;
@@ -137,6 +148,12 @@ void AP_EZKontrolCAN::init()
     // TODO Stage 2: configure filters and protocol-specific options.
     _can_inited = _can_iface->init(bitrate_bps);
     _healthy = _can_inited;
+
+    _left_state.address = uint8_t(_addr_left.get());
+    _right_state.address = uint8_t(_addr_right.get());
+    const uint32_t now_ms = AP_HAL::millis();
+    _left_state.last_handshake_ms = now_ms;
+    _right_state.last_handshake_ms = now_ms;
 }
 
 void AP_EZKontrolCAN::set_targets(float left_norm, float right_norm, bool armed)
@@ -167,7 +184,37 @@ void AP_EZKontrolCAN::update()
         }
     }
 
-    // TODO Stage 2: implement handshake, heartbeat, and command frames.
+    if (!_can_inited || _can_iface == nullptr) {
+        _healthy = false;
+        return;
+    }
+
+    for (uint16_t i = 0; i < 50; i++) {
+        AP_HAL::CANFrame frame {};
+        uint64_t timestamp_us = 0;
+        AP_HAL::CANIface::CanIOFlags flags {};
+        const int16_t read = _can_iface->receive(frame, timestamp_us, flags);
+        if (read != 1) {
+            break;
+        }
+        handle_rx_frame(frame);
+    }
+
+    const uint32_t now_ms = _last_update_ms;
+    if (_last_send_ms == 0) {
+        _last_send_ms = now_ms;
+    }
+    while (now_ms - _last_send_ms >= AP_EZKontrolCAN_Protocol::HEARTBEAT_PERIOD_MS) {
+        _last_send_ms += AP_EZKontrolCAN_Protocol::HEARTBEAT_PERIOD_MS;
+        if (_left_state.handshake_complete) {
+            send_command(_left_state, _left_target, _armed);
+        }
+        if (_right_state.handshake_complete) {
+            send_command(_right_state, _right_target, _armed);
+        }
+    }
+
+    update_health();
 }
 
 bool AP_EZKontrolCAN::enabled() const
@@ -183,4 +230,227 @@ bool AP_EZKontrolCAN::healthy() const
 AP_EZKontrolCAN *AP::ezkontrol_can()
 {
     return AP_EZKontrolCAN::get_singleton();
+}
+
+void AP_EZKontrolCAN::reset_controller_state(ControllerState &state)
+{
+    state.handshake_complete = false;
+    state.life_counter = 0;
+    state.last_handshake_ms = 0;
+    state.last_telem_ms = 0;
+    state.last_handshake_warn_ms = 0;
+    state.last_telem_warn_ms = 0;
+    state.last_fault_warn_ms = 0;
+    state.last_error_bits = 0;
+    state.telem = {};
+}
+
+AP_EZKontrolCAN::ControllerState *AP_EZKontrolCAN::find_state_by_address(uint8_t address)
+{
+    if (address == _left_state.address) {
+        return &_left_state;
+    }
+    if (address == _right_state.address) {
+        return &_right_state;
+    }
+    return nullptr;
+}
+
+void AP_EZKontrolCAN::handle_rx_frame(const AP_HAL::CANFrame &frame)
+{
+    if ((frame.id & AP_HAL::CANFrame::FlagEFF) == 0) {
+        return;
+    }
+
+    const uint32_t id = frame.id & AP_HAL::CANFrame::MaskExtID;
+    const uint8_t priority = (id >> 24) & 0xFF;
+    const uint8_t message = (id >> 16) & 0xFF;
+    const uint8_t dest = (id >> 8) & 0xFF;
+    const uint8_t src = id & 0xFF;
+
+    if (dest != AP_EZKontrolCAN_Protocol::VCU_ADDRESS) {
+        return;
+    }
+
+    ControllerState *state = find_state_by_address(src);
+    if (state == nullptr) {
+        return;
+    }
+
+    if (message == AP_EZKontrolCAN_Protocol::MSG_HANDSHAKE &&
+        priority == AP_EZKontrolCAN_Protocol::PRIORITY_MCU_TO_VCU &&
+        frame.dlc == AP_HAL::CANFrame::NonFDCANMaxDataLen) {
+        bool valid = true;
+        for (uint8_t i = 0; i < frame.dlc; i++) {
+            if (frame.data[i] != AP_EZKontrolCAN_Protocol::HANDSHAKE_START) {
+                valid = false;
+                break;
+            }
+        }
+        if (valid) {
+            send_handshake_ack(src);
+            state->handshake_complete = true;
+            state->last_handshake_ms = _last_update_ms;
+        }
+        return;
+    }
+
+    if (message == AP_EZKontrolCAN_Protocol::MSG_TELEM_1 &&
+        priority == AP_EZKontrolCAN_Protocol::PRIORITY_MCU_TO_VCU) {
+        handle_telemetry_1(*state, frame);
+        return;
+    }
+
+    if (message == AP_EZKontrolCAN_Protocol::MSG_TELEM_2 &&
+        priority == AP_EZKontrolCAN_Protocol::PRIORITY_MCU_TO_VCU) {
+        handle_telemetry_2(*state, frame);
+        return;
+    }
+}
+
+void AP_EZKontrolCAN::handle_telemetry_1(ControllerState &state, const AP_HAL::CANFrame &frame)
+{
+    if (frame.dlc < 8) {
+        return;
+    }
+    const uint16_t bus_mv = uint16_t(frame.data[0]) | (uint16_t(frame.data[1]) << 8);
+    const int16_t bus_ma = int16_t(uint16_t(frame.data[2]) | (uint16_t(frame.data[3]) << 8));
+    const int16_t phase_ma = int16_t(uint16_t(frame.data[4]) | (uint16_t(frame.data[5]) << 8));
+    const int16_t speed_rpm = int16_t(uint16_t(frame.data[6]) | (uint16_t(frame.data[7]) << 8));
+
+    state.telem.bus_voltage = bus_mv * 0.1f;
+    state.telem.bus_current = bus_ma * 0.1f;
+    state.telem.phase_current = phase_ma * 0.1f;
+    state.telem.speed_rpm = speed_rpm;
+    state.telem.valid = true;
+    state.last_telem_ms = _last_update_ms;
+}
+
+void AP_EZKontrolCAN::handle_telemetry_2(ControllerState &state, const AP_HAL::CANFrame &frame)
+{
+    if (frame.dlc < 8) {
+        return;
+    }
+    const int16_t temp_mos = int16_t(uint16_t(frame.data[0]) | (uint16_t(frame.data[1]) << 8));
+    const int16_t temp_motor = int16_t(uint16_t(frame.data[2]) | (uint16_t(frame.data[3]) << 8));
+    const uint16_t status_bits = uint16_t(frame.data[4]) | (uint16_t(frame.data[5]) << 8);
+    const uint16_t error_bits = uint16_t(frame.data[6]) | (uint16_t(frame.data[7]) << 8);
+
+    state.telem.temp_mos_c = temp_mos * 0.1f;
+    state.telem.temp_motor_c = temp_motor * 0.1f;
+    state.telem.status_bits = status_bits;
+    state.telem.error_bits = error_bits;
+    state.telem.valid = true;
+
+    if (error_bits != 0 && error_bits != state.last_error_bits) {
+        state.last_error_bits = error_bits;
+        if (_last_update_ms - state.last_fault_warn_ms >= 1000U) {
+            state.last_fault_warn_ms = _last_update_ms;
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EZK fault 0x%04x on addr 0x%02x",
+                          static_cast<unsigned int>(error_bits),
+                          static_cast<unsigned int>(state.address));
+        }
+    }
+}
+
+void AP_EZKontrolCAN::send_handshake_ack(uint8_t dest_addr)
+{
+    AP_HAL::CANFrame frame {};
+    frame.id = AP_HAL::CANFrame::FlagEFF |
+               AP_EZKontrolCAN_Protocol::make_extended_id(
+                   AP_EZKontrolCAN_Protocol::PRIORITY_VCU_TO_MCU,
+                   AP_EZKontrolCAN_Protocol::MSG_HANDSHAKE,
+                   dest_addr,
+                   AP_EZKontrolCAN_Protocol::VCU_ADDRESS);
+    frame.dlc = AP_HAL::CANFrame::NonFDCANMaxDataLen;
+    for (uint8_t i = 0; i < frame.dlc; i++) {
+        frame.data[i] = AP_EZKontrolCAN_Protocol::HANDSHAKE_ACK;
+    }
+
+    _can_iface->send(frame, AP_HAL::micros64() + 1000U, AP_HAL::CANIface::AbortOnError);
+}
+
+void AP_EZKontrolCAN::send_command(ControllerState &state, float target_norm, bool armed)
+{
+    AP_HAL::CANFrame frame {};
+    frame.id = AP_HAL::CANFrame::FlagEFF |
+               AP_EZKontrolCAN_Protocol::make_extended_id(
+                   AP_EZKontrolCAN_Protocol::PRIORITY_VCU_TO_MCU,
+                   AP_EZKontrolCAN_Protocol::MSG_COMMAND,
+                   state.address,
+                   AP_EZKontrolCAN_Protocol::VCU_ADDRESS);
+    frame.dlc = AP_HAL::CANFrame::NonFDCANMaxDataLen;
+
+    float target_current_a = 0.0f;
+    float target_speed_rpm = 0.0f;
+    if (armed) {
+        if (_mode.get() == 0) {
+            target_speed_rpm = target_norm * float(_max_rpm.get());
+        } else {
+            target_current_a = target_norm * _max_curr_a.get();
+        }
+    }
+
+    const int32_t raw_current = constrain_int32(lroundf((target_current_a + 3200.0f) * 10.0f), 0, 65535);
+    const int32_t raw_speed = constrain_int32(lroundf(target_speed_rpm + 32000.0f), 0, 65535);
+
+    frame.data[0] = uint8_t(raw_current & 0xFF);
+    frame.data[1] = uint8_t(raw_current >> 8);
+    frame.data[2] = uint8_t(raw_speed & 0xFF);
+    frame.data[3] = uint8_t(raw_speed >> 8);
+
+    uint8_t flags = 0;
+    if (armed) {
+        flags |= AP_EZKontrolCAN_Protocol::COMMAND_FLAG_RUN;
+    }
+    if (_mode.get() != 0) {
+        flags |= AP_EZKontrolCAN_Protocol::COMMAND_FLAG_TORQUE_MODE;
+    }
+    frame.data[4] = flags;
+    frame.data[5] = 0;
+    frame.data[6] = 0;
+    frame.data[7] = state.life_counter;
+
+    state.life_counter++;
+
+    _can_iface->send(frame, AP_HAL::micros64() + 1000U, AP_HAL::CANIface::AbortOnError);
+}
+
+void AP_EZKontrolCAN::update_health()
+{
+    const uint32_t now_ms = _last_update_ms;
+    const uint32_t timeout_ms = MAX<uint32_t>(100U, uint32_t(_timeout_ms.get()));
+    const uint32_t handshake_warn_ms = 2000U;
+
+    auto update_state = [&](ControllerState &state) {
+        if (!state.handshake_complete) {
+            if (now_ms - state.last_handshake_warn_ms >= 1000U &&
+                state.last_handshake_ms != 0 &&
+                now_ms - state.last_handshake_ms >= handshake_warn_ms) {
+                state.last_handshake_warn_ms = now_ms;
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EZK handshake pending addr 0x%02x",
+                              static_cast<unsigned int>(state.address));
+            }
+        } else {
+            if (state.last_telem_ms != 0 && now_ms - state.last_telem_ms > timeout_ms) {
+                if (now_ms - state.last_telem_warn_ms >= 1000U) {
+                    state.last_telem_warn_ms = now_ms;
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EZK telemetry timeout addr 0x%02x",
+                                  static_cast<unsigned int>(state.address));
+                }
+            }
+        }
+    };
+
+    update_state(_left_state);
+    update_state(_right_state);
+
+    const bool left_ok = _left_state.handshake_complete &&
+                         _left_state.last_telem_ms != 0 &&
+                         (now_ms - _left_state.last_telem_ms) <= timeout_ms;
+    const bool right_ok = _right_state.handshake_complete &&
+                          _right_state.last_telem_ms != 0 &&
+                          (now_ms - _right_state.last_telem_ms) <= timeout_ms;
+
+    _healthy = _can_inited && left_ok && right_ok;
 }
