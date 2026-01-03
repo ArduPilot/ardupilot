@@ -1070,7 +1070,7 @@ bool Compass::_driver_enabled(enum DriverType driver_type)
 /*
   wrapper around hal.i2c_mgr->get_device() that prevents duplicate devices being opened
  */
-bool Compass::_have_i2c_driver(uint8_t bus, uint8_t address) const
+bool Compass::_i2c_sensor_is_registered(uint8_t bus, uint8_t address) const
 {
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (!_state[i].registered) {
@@ -1112,7 +1112,7 @@ void Compass::add_backend(Compass::DriverType driver_type, AP_Compass_Backend *b
     _backends[_backend_count++] = backend;
 }
 
-#define GET_I2C_DEVICE(bus, address) _have_i2c_driver(bus, address)?nullptr:hal.i2c_mgr->get_device(bus, address)
+#define GET_I2C_DEVICE(bus, address) _i2c_sensor_is_registered(bus, address)?nullptr:hal.i2c_mgr->get_device(bus, address)
 
 /*
   look for compasses on external i2c buses
