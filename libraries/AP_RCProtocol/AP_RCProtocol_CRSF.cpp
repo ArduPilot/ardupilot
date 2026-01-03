@@ -459,6 +459,9 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
         case AP_CRSF_Protocol::CRSF_FRAMETYPE_LINK_STATISTICS_TX:
             process_link_stats_tx_frame((uint8_t*)&_frame.payload);
             break;
+        case FrameType::CRSF_FRAMETYPE_HEARTBEAT:
+            // heartbeat frame is just a keepalive, ignore
+            break;
 
         default:
             break;
