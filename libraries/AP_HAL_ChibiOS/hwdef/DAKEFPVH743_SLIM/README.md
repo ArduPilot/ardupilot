@@ -21,12 +21,13 @@ The DAKEFPV H743 SLIM is a flight controller produced by [DAKEFPV](https://www.d
 ![DAKEFPV H743 SLIM Board Top](DAKEFPVH743_SLIM_Top.png "DAKEFPV H743 SLIM Top")
 ![DAKEFPV H743 SLIM Board Bottom](DAKEFPVH743_SLIM_Bottom.png "DAKEFPV H743 SLIM Bottom")
 
-## DAKEFPV H743 Pro Wiring Diagram
-### DAKEFPV H743 Pro Wiring Diagram Top
-![DAKEFPV H743 Pro Wiring Diagram Top](DAKEFPVH743_SLIM_WiringDiagramTop.png "DAKEFPV H743 Pro Wiring Diagram Top")
+## DAKEFPV H743 SLIM Wiring Diagram
+### DAKEFPV H743 SLIM Wiring Diagram Top
+![DAKEFPV H743 SLIM Wiring Diagram Top](DAKEFPVH743_SLIM_WiringDiagramTop.png "DAKEFPV H743 SLIM Wiring Diagram Top")
+![DAKEFPV H743 SLIM Wiring Diagram Top](DAKEFPVH743_SLIM_WiringDiagramTop2.png "DAKEFPV H743 SLIM Wiring Diagram Top1")
 
-### DAKEFPV H743 Pro Wiring Diagram Bottom
-![DAKEFPV H743 Pro Wiring Diagram Bottom](DAKEFPVH743_SLIM_WiringDiagramBottom.png "DAKEFPV H743 Pro Wiring Diagram Bottom")
+### DAKEFPV H743 SLIM Wiring Diagram Bottom
+![DAKEFPV H743 SLIM Wiring Diagram Bottom](DAKEFPVH743_SLIM_WiringDiagramBottom.png "DAKEFPV H743 SLIM Wiring Diagram Bottom")
 
 ## UART Mapping
 
@@ -41,11 +42,11 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
  - SERIAL5 -> UART5 (RCin) RX DMA capable
  - SERIAL6 -> UART6 (User) DMA capable
  - SERIAL7 -> UART7 (User) DMA Capable
- - SERIAL8 -> UART8 (User)
+ - SERIAL8 -> UART8 (Dji SBUS)
 
 ## RC Input
 
-RC input is configured by default via the USART5 RX input. It supports all serial RC protocols except PPM . The SBUS pin is inverted and tied to R5 for SBUS support.
+RC input is configured by default via the USART5 RX input. It supports all serial RC protocols except PPM .
 
 * FPort requires an external bi-directional inverter attached to T5 and :ref:`SERIAL5_OPTIONS<SERIAL5_OPTIONS>` set to 4 (half-duplex).  See :ref:`common-FPort-receivers`.
 * CRSF/ELRS uses RX5/TX5.

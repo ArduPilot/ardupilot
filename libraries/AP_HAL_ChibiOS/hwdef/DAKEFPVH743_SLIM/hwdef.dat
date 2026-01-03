@@ -161,6 +161,9 @@ define RELAY2_PIN_DEFAULT 82
 
 # Bluetooth RF switch  
 PE4 PINIO3 OUTPUT GPIO(83) LOW
+define RELAY3_PIN_DEFAULT 83
+
+# GPIO_CAN1_SILENT on Betaflight is PINIO4
 
 # LEDs
 
