@@ -30,13 +30,34 @@ endif()
 # Get a list of all .pio files in the pioasm directory
 file(GLOB PIO_FILES "${CMAKE_CURRENT_LIST_DIR}/pioasm/*.pio")
 
+if (NOT PIO_FILES)
+    message(FATAL_ERROR "PIO_FILES NOT FOUND! Check path: ${CMAKE_CURRENT_SOURCE_DIR}/pioasm/*.pio")
+else()
+    message(STATUS "Found PIO files: ${PIO_FILES}")
+endif()
+
+find_program(PIOASM_PATH pioasm)
+
+if(NOT PIOASM_PATH)
+    set(PIOASM_PATH "${PICO_SDK_PATH}/tools/pioasm/build/pioasm")
+endif()
+
 # Iterate over the found files in a loop
 foreach(PIO_FILE ${PIO_FILES})
-    # Call the generation function for each file
-    # PIO_FILE contains the full path to the file
-    pico_generate_pio_header(${CMAKE_PROJECT_NAME} ${PIO_FILE})
-    # Output a message for verification in the console
-    message(STATUS "Generated PIO header for: ${PIO_FILE}")
+    get_filename_component(PIO_NAME ${PIO_FILE} NAME_WE)
+    set(OUTPUT_H "${CMAKE_CURRENT_BINARY_DIR}/${PIO_NAME}.pio.h")
+    message(STATUS "Manually generating PIO header: ${OUTPUT_H}")
+
+    execute_process(
+        COMMAND ${PIOASM_PATH} ${PIO_FILE} ${OUTPUT_H}
+        RESULT_VARIABLE PIO_RES
+        ERROR_VARIABLE PIO_ERR
+    )
+    if (NOT PIO_RES EQUAL 0)
+        message(FATAL_ERROR "pioasm failed for ${PIO_NAME}: ${PIO_ERR}")
+    else()
+        message(STATUS "Generated PIO header for: ${PIO_FILE}")
+    endif()
 endforeach()
 
 message("WAF_BUILD_TARGET=${WAF_BUILD_TARGET}")

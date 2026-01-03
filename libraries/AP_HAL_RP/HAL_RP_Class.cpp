@@ -30,6 +30,7 @@ static Scheduler schedulerInstance;
 static Util utilInstance;
 static OpticalFlow opticalFlowDriver;
 static Flash flashDriver;
+static NAND_PIO_Driver nandPioDriver;
 
 HAL_RP::HAL_RP() :
     AP_HAL::HAL(
@@ -65,6 +66,7 @@ void HAL_RP::run(int argc, char* const argv[], Callbacks* callbacks) const
     scheduler->init();
     serial(0)->begin(115200);
     _member->init();
+    this->get_nand_pio()->init(NAND_FLASH_IO_BASE, NAND_FLASH_SCLK, NAND_FLASH_CS);
 
     callbacks->setup();
     scheduler->set_system_initialized();
@@ -72,6 +74,10 @@ void HAL_RP::run(int argc, char* const argv[], Callbacks* callbacks) const
     for (;;) {
         callbacks->loop();
     }
+}
+
+NAND_PIO_Driver* HAL_RP::get_nand_pio() {
+    return &nandPioDriver;
 }
 
 static HAL_RP hal_rp;
@@ -83,11 +89,3 @@ const AP_HAL::HAL& AP_HAL::get_HAL() {
 AP_HAL::HAL& AP_HAL::get_HAL_mutable() {
     return hal_rp;
 }
-
-#if 0
-AP_HAL::OwnPtr<AP_HAL::SPIDevice> AP_Filesystem_FlashMemory_LittleFS::get_device(void)
-{
-    // "flash_ext" має збігатися з назвою у вашому hwdef.dat
-    return hal.spi->get_device("flash_ext");
-}
-#endif

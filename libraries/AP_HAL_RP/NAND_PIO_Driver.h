@@ -8,11 +8,11 @@ namespace RP {
 #define CACHED_SECTORS 3
 
 struct SectorCache {
-    u8 buf[512];
-    u32 block;
-    u32 page;
-    u32 sector;
-    u8 prio;
+    uint8_t buf[512];
+    uint32_t block;
+    uint32_t page;
+    uint32_t sector;
+    uint8_t prio;
     SectorCache():
     buf{0}, block{0xFFFFFFFF}, page{0xFFFFFFFF}, sector{0xFFFFFFFF}, prio{0xFF}
     {}
@@ -27,7 +27,6 @@ private:
     uint32_t m_spareSize;
     uint32_t m_pageCount;
     uint32_t m_blockCount;
-    uint32_t m_maxBbBlock;
     uint32_t m_maxProgTime;
     uint32_t m_maxEraseTime;
     uint32_t m_maxReadTime;
@@ -35,7 +34,7 @@ private:
 public:
     NAND_Chip(): m_manufacturer{0}, m_model{0}, m_manufacturerId{0},
         m_pageSize{0}, m_spareSize{0}, m_pageCount{0}, m_blockCount{0}, 
-        m_maxBbBlock{0}, m_maxProgTime{0}, m_maxEraseTime{0}, m_maxReadTime{0}, m_totalSize{0} 
+        m_maxProgTime{0}, m_maxEraseTime{0}, m_maxReadTime{0}, m_totalSize{0}
     {}
 
     const char *manufacturer() const
@@ -44,35 +43,32 @@ public:
     const char *model() const
     { return static_cast<const char *>(m_manufacturer); }
 
-    const uint8_t manufacturerId() const
-    { return static_cast<const uint8_t>(m_manufacturerId); }
+    uint8_t manufacturerId() const
+    { return m_manufacturerId; }
 
-    const uint32_t pageSize() const
-    { return static_cast<const uint32_t>(m_pageSize); }
+    uint32_t pageSize() const
+    { return m_pageSize; }
 
-    const uint32_t spareSize() const
-    { return static_cast<const uint32_t>(m_spareSize); }
+    uint32_t spareSize() const
+    { return m_spareSize; }
 
-    const uint32_t pageCount() const
-    { return static_cast<const uint32_t>(m_pageCount); }
+    uint32_t pageCount() const
+    { return m_pageCount; }
 
-    const uint32_t blockCount() const
-    { return static_cast<const uint32_t>(m_blockCount); }
+    uint32_t blockCount() const
+    { return m_blockCount; }
 
-    const uint32_t maxBbBlock() const
-    { return static_cast<const uint32_t>(m_maxBbBlock); }
+    uint32_t maxProgTime() const
+    { return m_maxProgTime; }
 
-    const uint32_t maxProgTime() const
-    { return static_cast<const uint32_t>(m_maxProgTime); }
+    uint32_t maxEraseTime() const
+    { return m_maxEraseTime; }
 
-    const uint32_t maxEraseTime() const
-    { return static_cast<const uint32_t>(m_maxEraseTime); }
+    uint32_t maxReadTime() const
+    { return m_maxReadTime; }
 
-    const uint32_t maxReadTime() const
-    { return static_cast<const uint32_t>(m_maxReadTime); }
-
-    const uint32_t totalSize() const
-    { return static_cast<const uint32_t>(m_totalSize); }
+    uint32_t totalSize() const
+    { return m_totalSize; }
 
     void manufacturer(const char *v)
     { strncpy(m_manufacturer, v, 12); }
@@ -95,9 +91,6 @@ public:
     void blockCount(uint32_t v)
     { m_blockCount = v; }
 
-    void maxBbBlock(uint32_t v)
-    { m_maxBbBlock = v; }
-
     void maxProgTime(uint32_t v)
     { m_maxProgTime = v; }
 
@@ -117,6 +110,7 @@ private:
     uint8_t m_smId;
     uint8_t m_offset;
     bool m_ready;
+    HAL_Semaphore m_sem;
 
     uint8_t m_dmaTxChannel, m_dmaRxChannel;
 
@@ -127,26 +121,20 @@ private:
 
     uint8_t spi_write(uint8_t data = 0);
     bool burst_spi_write(uint16_t len, const uint8_t *src);
-    bool burst_spi_read(u16 len, u8 *dst);
-
-    //void spi_read(uint8_t* buffer, size_t len);
-    //void select_chip();
-    //void deselect_chip();
+    bool burst_spi_read(uint16_t len, uint8_t *dst);
 
     bool check_read_id();
     void set_feature(uint8_t featureRegister, uint8_t data);
-    u8 get_feature(u8 featureRegister);
-    bool check_feature(u8 mask, u8 value, u8 featureRegister);
+    uint8_t get_feature(uint8_t featureRegister);
+    bool check_feature(uint8_t mask, uint8_t value, uint8_t featureRegister);
+
+    uint8_t get_status();
 
     void read_page(uint32_t block, uint32_t page, bool getFeatureWait = true);
-    u32 read_from_cache(u32 block, u32 start, u16 length, u8 *buf);
-    void erase_block(u32 block, bool getFeatureWait = true);
+    uint32_t read_from_cache(uint32_t block, uint32_t start, uint16_t length, uint8_t *buf);
 
-    void write_enable();
-    void write_disable();
-
-    u16 program_load(u32 block, u32 start, u16 length, const u8 *buf);
-    void program_execute(u32 block, u32 page, bool getFeatureWait = true);
+    uint16_t program_load(uint32_t block, uint32_t start, uint16_t length, const uint8_t *buf);
+    void program_execute(uint32_t block, uint32_t page, bool getFeatureWait = true);
 
     void wait_feature(bool getFeatureWait);
 
@@ -154,36 +142,57 @@ private:
 
 public:
     NAND_PIO_Driver();
-    bool init(pin_size_t ioBase, pin_size_t sckPin, pin_size_t csPin);
+    bool init(uint8_t ioBase, uint8_t sckPin, uint8_t csPin);
     bool read_page(uint32_t block, uint32_t page, uint8_t *data);
     bool write_page(uint32_t block, uint32_t page, const uint8_t *data);
-    bool erase_block(uint32_t block);
+    void erase_block(uint32_t block, bool getFeatureWait = true);
+
+    void write_enable();
+    void write_disable();
+
+    bool is_busy();
+
+    AP_HAL::Semaphore* get_semaphore() {
+        return &m_sem;
+    }
+    uint32_t get_manufacturer_id() {
+        return static_cast<uint32_t>(m_chip.manufacturerId());
+    }
+    uint32_t get_page_size() {
+        return static_cast<uint32_t>(m_chip.pageSize());
+    }
+    uint32_t get_block_size() {
+        return static_cast<uint32_t>(m_chip.pageSize() * m_chip.pageCount());
+    }
+    uint32_t get_block_count() {
+        return static_cast<uint32_t>(m_chip.blockCount());
+    }
 };
 
 } // namespace RP
 
-inline u32 DECODE_U4(const u8 *buf) {
-    u32 result;
+inline uint32_t DECODE_U4(const uint8_t *buf) {
+    uint32_t result;
     memcpy(&result, buf, 4); // memcpy needed because of 4-byte-alignment
     return result;
 }
-inline i32 DECODE_I4(const u8 *buf) {
-    i32 result;
+inline int32_t DECODE_I4(const uint8_t *buf) {
+    int32_t result;
     memcpy(&result, buf, 4);
     return result;
 }
-inline f32 DECODE_R4(const u8 *buf) {
-    f32 result;
+inline float DECODE_R4(const uint8_t *buf) {
+    float result;
     memcpy(&result, buf, 4);
     return result;
 }
-inline i64 DECODE_I8(const u8 *buf) {
-    i64 result;
+inline int64_t DECODE_I8(const uint8_t *buf) {
+    int64_t result;
     memcpy(&result, buf, 8);
     return result;
 }
-inline f64 DECODE_R8(const u8 *buf) {
-    f64 result;
+inline double DECODE_R8(const uint8_t *buf) {
+    double result;
     memcpy(&result, buf, 8);
     return result;
 }
