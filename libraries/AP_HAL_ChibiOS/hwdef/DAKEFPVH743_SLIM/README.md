@@ -20,6 +20,14 @@ The DAKEFPV H743 SLIM is a flight controller produced by [DAKEFPV](https://www.d
 
 ![DAKEFPV H743 SLIM Board Top](DAKEFPVH743_SLIM_Top.png "DAKEFPV H743 SLIM Top")
 ![DAKEFPV H743 SLIM Board Bottom](DAKEFPVH743_SLIM_Bottom.png "DAKEFPV H743 SLIM Bottom")
+
+## DAKEFPV H743 Pro Wiring Diagram
+### DAKEFPV H743 Pro Wiring Diagram Top
+![DAKEFPV H743 Pro Wiring Diagram Top](DAKEFPVH743_SLIM_WiringDiagramTop.png "DAKEFPV H743 Pro Wiring Diagram Top")
+
+### DAKEFPV H743 Pro Wiring Diagram Bottom
+![DAKEFPV H743 Pro Wiring Diagram Bottom](DAKEFPVH743_SLIM_WiringDiagramBottom.png "DAKEFPV H743 Pro Wiring Diagram Bottom")
+
 ## UART Mapping
 
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
