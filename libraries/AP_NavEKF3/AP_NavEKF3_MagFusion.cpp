@@ -582,6 +582,8 @@ void NavEKF3_core::FuseMagnetometer()
     }
 
     Vector24 H_MAG;
+    // index of H_MAG which is exactly 1, for more efficient computation below
+    int H_MAG_unit_index;
     for (uint8_t obsIndex = 0; obsIndex <= 2; obsIndex++) {
 
         if (obsIndex == 0) {
@@ -597,6 +599,7 @@ void NavEKF3_core::FuseMagnetometer()
             H_MAG[19] = 1.0f;
             H_MAG[20] = 0.0f;
             H_MAG[21] = 0.0f;
+            H_MAG_unit_index = 19;
 
             // calculate Kalman gain
             const Vector5 SK_MX {
@@ -679,6 +682,7 @@ void NavEKF3_core::FuseMagnetometer()
             H_MAG[19] = 0.0f;
             H_MAG[20] = 1.0f;
             H_MAG[21] = 0.0f;
+            H_MAG_unit_index = 20;
 
             // calculate Kalman gain
             const Vector5 SK_MY {
@@ -763,6 +767,7 @@ void NavEKF3_core::FuseMagnetometer()
             H_MAG[19] = 0.0f;
             H_MAG[20] = 0.0f;
             H_MAG[21] = 1.0f;
+            H_MAG_unit_index = 21;
 
             // calculate Kalman gain
             const Vector5 SK_MZ {
@@ -833,36 +838,23 @@ void NavEKF3_core::FuseMagnetometer()
             // this can be used by other fusion processes to avoid fusing on the same frame as this expensive step
             magFusePerformed = true;
         }
-        // correct the covariance P = (I - K*H)*P
-        // take advantage of the empty columns in KH to reduce the
-        // number of operations
+        // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
+        // the zero elements of H to reduce the number of operations.
         for (unsigned i = 0; i<=stateIndexLim; i++) {
-            for (unsigned j = 0; j<=3; j++) {
-                KH[i][j] = Kfusion[i] * H_MAG[j];
-            }
-            for (unsigned j = 4; j<=15; j++) {
-                KH[i][j] = 0.0f;
-            }
-            for (unsigned j = 16; j<=21; j++) {
-                KH[i][j] = Kfusion[i] * H_MAG[j];
-            }
-            for (unsigned j = 22; j<=23; j++) {
-                KH[i][j] = 0.0f;
-            }
-        }
-        for (unsigned j = 0; j<=stateIndexLim; j++) {
-            for (unsigned i = 0; i<=stateIndexLim; i++) {
+            // j as the inner loop allows the compiler to hoist the KH product
+            // to save computation, and do the inner indexing more efficiently.
+            for (unsigned j = 0; j<=stateIndexLim; j++) {
                 ftype res = 0;
-                res += KH[i][0] * P[0][j];
-                res += KH[i][1] * P[1][j];
-                res += KH[i][2] * P[2][j];
-                res += KH[i][3] * P[3][j];
-                res += KH[i][16] * P[16][j];
-                res += KH[i][17] * P[17][j];
-                res += KH[i][18] * P[18][j];
-                res += KH[i][19] * P[19][j];
-                res += KH[i][20] * P[20][j];
-                res += KH[i][21] * P[21][j];
+                res += (Kfusion[i] * H_MAG[0]) * P[0][j];
+                res += (Kfusion[i] * H_MAG[1]) * P[1][j];
+                res += (Kfusion[i] * H_MAG[2]) * P[2][j];
+                res += (Kfusion[i] * H_MAG[3]) * P[3][j];
+                res += (Kfusion[i] * H_MAG[16]) * P[16][j];
+                res += (Kfusion[i] * H_MAG[17]) * P[17][j];
+                res += (Kfusion[i] * H_MAG[18]) * P[18][j];
+                // one value in H is always 1, and the others not mentioned here
+                // are zero, so we can skip that H product to save an operation.
+                res += Kfusion[i] * P[H_MAG_unit_index][j];
                 KHP[i][j] = res;
             }
         }

@@ -287,7 +287,7 @@ protected:
     public:
         void start_m(float alt_m);
         void stop();
-        void do_pilot_takeoff_ms(float& pilot_climb_rate_ms);
+        void do_pilot_takeoff_ms(float pilot_climb_rate_ms);
         bool triggered_ms(float target_climb_rate_ms) const;
 
         bool running() const { return _running; }

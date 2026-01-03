@@ -129,6 +129,11 @@ private:
     // process successfully decoded packets held in the _msg_buff structure
     void process_packet();
 
+    // XFRobot can only send angles
+    uint8_t natively_supported_mount_target_types() const override {
+        return NATIVE_ANGLES_ONLY;
+    };
+
     // send_target_angles
     void send_target_angles(const MountAngleTarget& angle_target_rad) override;
 

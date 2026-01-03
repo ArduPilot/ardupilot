@@ -114,6 +114,7 @@ void AP_Mount_Servo::update_angle_outputs(const MountAngleTarget& angle_rad)
 
     // this is sufficient for self-stabilising brushless gimbals
     if (!requires_stabilization) {
+    //todo: subtract ahrs leans for body frame roll/pitch if roll/pich lock not true to get locks in stablized servo input gimbals like Storm32
         return;
     }
 
@@ -125,9 +126,14 @@ void AP_Mount_Servo::update_angle_outputs(const MountAngleTarget& angle_rad)
         ahrs_angle_rad.rotate(-yaw_bf_rad);
     }
 
-    // add roll and pitch lean angle correction
-    _angle_bf_output_rad.x -= ahrs_angle_rad.x;
-    _angle_bf_output_rad.y -= ahrs_angle_rad.y;
+    // add roll and pitch lean angle correction for earth frame
+    if (angle_rad.roll_is_ef){
+        _angle_bf_output_rad.x -= ahrs_angle_rad.x;
+    }
+    
+    if (angle_rad.pitch_is_ef){
+        _angle_bf_output_rad.y -= ahrs_angle_rad.y;
+    } 
 
     // lead filter
     const Vector3f &gyro = ahrs.get_gyro();

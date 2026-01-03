@@ -131,15 +131,8 @@ void AP_Mount_XFRobot::update()
 
     AP_Mount_Backend::update_mnt_target();
 
-    // update angle targets from angle rates
-    if (mnt_target.target_type == MountTargetType::RATE) {
-        update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
-    }
-
-    // resend target angles at least once per second
-    if (mnt_target.fresh || ((AP_HAL::millis() - last_send_ms) > SEND_ATTITUDE_TARGET_MS)) {
-        send_target_angles(mnt_target.angle_rad);
-    }
+    // send target angles (which may be derived from other target types)
+    send_target_to_gimbal();
 }
 
 // return true if healthy

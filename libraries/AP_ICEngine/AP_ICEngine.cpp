@@ -639,10 +639,10 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
     }
     const int8_t min_throttle_base = min_throttle;
 
-    // Initialize idle point to min_throttle on the first run
+    // Initialize idle point to start_percent on the first run
     static bool idle_point_initialized = false;
     if (!idle_point_initialized) {
-        idle_governor_integrator = min_throttle;
+        idle_governor_integrator = start_percent.get();
         idle_point_initialized = true;
     }
     AP_RPM *ap_rpm = AP::rpm();
@@ -652,6 +652,7 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
 
     // Check to make sure we have an enabled IC Engine, EFI Instance and that the idle governor is enabled
     if (get_state() != AP_ICEngine::ICE_RUNNING || idle_rpm < 0) {
+        idle_point_initialized = false;
         return;
     }
 
@@ -661,7 +662,7 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
     // Double Check to make sure engine is really running
     if (!ap_rpm->get_rpm(rpm_instance-1, rpmv) || rpmv < 1) {
         // Reset idle point to the default value when the engine is stopped
-        idle_governor_integrator = min_throttle;
+        idle_point_initialized = false;
         return;
     }
 

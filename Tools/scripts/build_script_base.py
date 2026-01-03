@@ -10,6 +10,7 @@ import os
 import pathlib
 import string
 import subprocess
+import sys
 import time
 
 
@@ -134,4 +135,4 @@ class BuildScriptBase:
 
     def progress(self, string):
         '''pretty-print progress'''
-        print(f"{self.progress_prefix()}: {string}")
+        print(f"{self.progress_prefix()}: {string}", file=sys.stderr)
