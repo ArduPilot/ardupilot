@@ -129,8 +129,11 @@
 #define AP_VAROFFSET(type, element) ((ptrdiff_t)__builtin_offsetof(type, element))
 #pragma diagnostic pop
 
+#define PM_PASTEY(t) ([]{t p; return p.vtype;}())
+#define PM_PASTEX(t) PM_PASTEY(t)
+
 // find the type of a variable given the class and element
-#define AP_CLASSTYPE(clazz, element) ((uint8_t)(((const clazz *) 1)->element.vtype))
+#define AP_CLASSTYPE(clazz, element) ((uint8_t)PM_PASTEX(__typeof__(clazz::element)))
 
 // declare a group var_info line
 #define AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, flags) { name, AP_VAROFFSET(clazz, element), {def_value : def}, flags, idx, AP_CLASSTYPE(clazz, element)}
