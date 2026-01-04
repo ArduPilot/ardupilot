@@ -26,7 +26,8 @@
 #pragma GCC optimize("O2")
 
 #include "AP_CRSF_Protocol.h"
-#include <AP_RCProtocol/AP_RCProtocol_CRSF.h>
+#include <AP_RCProtocol/AP_RCProtocol.h>
+#include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <string.h>
@@ -36,6 +37,7 @@
 #define CRSF_SUBSET_RC_RES_CONF_11B                 1
 #define CRSF_SUBSET_RC_RES_BITS_11B                 11
 #define CRSF_SUBSET_RC_RES_MASK_11B                 0x07FF
+static const uint8_t MAX_CHANNELS = MIN((uint8_t)CRSF_MAX_CHANNELS, (uint8_t)MAX_RCIN_CHANNELS);
 
 extern const AP_HAL::HAL& hal;
 
@@ -138,14 +140,14 @@ void AP_CRSF_Protocol::decode_11bit_channels(const uint8_t* payload, uint8_t nch
 // unpack channels from a CRSFv3 variable bit length frame payload
 void AP_CRSF_Protocol::decode_variable_bit_channels(const uint8_t* payload, uint8_t frame_length, uint8_t nchannels, uint16_t *values)
 {
-    const AP_RCProtocol_CRSF::SubsetChannelsFrame* channel_data = (const AP_RCProtocol_CRSF::SubsetChannelsFrame*)payload;
+    const SubsetChannelsFrame* channel_data = (const SubsetChannelsFrame*)payload;
     // We currently only support 11-bit resolution
     const uint8_t channelBits = CRSF_SUBSET_RC_RES_BITS_11B;
     const uint16_t channelMask = CRSF_SUBSET_RC_RES_MASK_11B;
     const float channelScale = 0.5f;
 
     // calculate the number of channels packed
-    const uint8_t numOfChannels = MIN(uint8_t(((frame_length - 2) * 8 - CRSF_SUBSET_RC_STARTING_CHANNEL_BITS) / channelBits), (uint8_t)CRSF_MAX_CHANNELS);
+    const uint8_t numOfChannels = MIN(uint8_t(((frame_length - 2) * 8 - CRSF_SUBSET_RC_STARTING_CHANNEL_BITS) / channelBits), MAX_CHANNELS);
 
     // unpack the channel data
     uint8_t bitsMerged = 0;
@@ -177,7 +179,7 @@ uint8_t AP_CRSF_Protocol::encode_variable_bit_channels(uint8_t *payload, const u
     // We will use 11-bit resolution which is standard for CRSFv3
     const uint8_t channelBits = CRSF_SUBSET_RC_RES_BITS_11B;
 
-    AP_RCProtocol_CRSF::SubsetChannelsFrame* channel_data = (AP_RCProtocol_CRSF::SubsetChannelsFrame*)payload;
+    SubsetChannelsFrame* channel_data = (SubsetChannelsFrame*)payload;
     memset(payload, 0, 23); // 1 byte header + 22 bytes for 16 channels
 
     channel_data->starting_channel = start_chan;
@@ -186,9 +188,9 @@ uint8_t AP_CRSF_Protocol::encode_variable_bit_channels(uint8_t *payload, const u
     uint32_t writeValue = 0;
     uint8_t bitsMerged = 0;
     uint8_t writeByteIndex = 1;
-    const uint8_t num_to_send = MIN(nchannels, (uint8_t)16);
+    const uint8_t num_to_send = MIN(nchannels, MAX_CHANNELS);
 
-    for (uint8_t n = 0; n < num_to_send; n++) {
+    for (uint8_t n = start_chan; n < num_to_send; n++) {
         uint16_t channel_value = constrain_int16(lroundf((values[n] - 988) / 0.5f), 0, 2047);
         writeValue |= ((uint32_t)channel_value) << bitsMerged;
         bitsMerged += channelBits;
@@ -342,8 +344,8 @@ bool AP_CRSF_Protocol::process_device_info_frame(ParameterDeviceInfoFrame* info,
 #if 0
 bool AP_CRSF_Protocol::process_ping_frame(ParameterPingFrame* info, bool fakerx)
 {
-    const uint8_t destination = fakerx ? AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER : AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;
-    const uint8_t origin = fakerx ? AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER : AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER;
+    const uint8_t destination = fakerx ? CRSF_ADDRESS_CRSF_RECEIVER : CRSF_ADDRESS_FLIGHT_CONTROLLER;
+    const uint8_t origin = fakerx ? CRSF_ADDRESS_FLIGHT_CONTROLLER : CRSF_ADDRESS_CRSF_RECEIVER;
 
     if (info->destination != 0 && info->destination != destination) {
         return false; // request was not for us
