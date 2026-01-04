@@ -10,7 +10,7 @@ import os
 
 # these are only used for binding generation, not compilation of the library
 BINDING_CFLAGS="-std=c99 -Wno-error=missing-field-initializers -Wall -Werror -Wextra"
-BINDING_CC="clang"
+BINDING_CC="gcc"
 
 def configure(cfg):
     cfg.env.AP_LIB_EXTRA_SOURCES['AP_Scripting'] = ['lua_generated_bindings.cpp']
