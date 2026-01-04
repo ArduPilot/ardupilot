@@ -71,6 +71,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_HAL/I2CDevice.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -855,9 +856,44 @@ bool RangeFinder::get_temp(enum Rotation orientation, float &temp) const
     if (backend == nullptr) {
         return false;
     }
+
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    // find the instance index for this orientation
+    for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
+        if (drivers[i] == backend) {
+            if (state[i].temperature_external_use) {
+                temp = state[i].temperature_external;
+                return true;
+            }
+            break;
+        }
+    }
+#endif
+
     return backend->get_temp(temp);
 }
 
+#if AP_TEMPERATURE_SENSOR_ENABLED
+// set temperature from an external source
+bool RangeFinder::set_temperature(enum Rotation orientation, float temperature)
+{
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return false;
+    }
+
+    // find the instance index for this orientation
+    for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
+        if (drivers[i] == backend) {
+            state[i].temperature_external = temperature;
+            state[i].temperature_external_use = true;
+            return true;
+        }
+    }
+
+    return false;
+}
+#endif
 #if HAL_LOGGING_ENABLED
 // Write an RFND (rangefinder) packet
 void RangeFinder::Log_RFND() const
