@@ -691,7 +691,7 @@ void Copter::ten_hz_logging_loop()
     if (should_log(MASK_LOG_RCOUT)) {
         logger.Write_RCOUT();
     }
-    if (should_log(MASK_LOG_NTUN) && (flightmode->requires_GPS() || landing_with_GPS() || !flightmode->has_manual_throttle())) {
+    if (should_log(MASK_LOG_NTUN) && (flightmode->requires_position() || landing_with_GPS() || !flightmode->has_manual_throttle())) {
         pos_control->write_log();
     }
     if (should_log(MASK_LOG_IMU) || should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
