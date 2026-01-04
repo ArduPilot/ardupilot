@@ -107,17 +107,25 @@ float AC_InputManager_Heli::get_pilot_desired_collective(int16_t control_in)
     }
     acro_col_out = constrain_float(acro_col_out, 0.0f, 1.0f);
 
-    // ramp to and from stab col over 1/2 second
-    if (_im_flags_heli.use_stab_col && (_stab_col_ramp < 1.0f)){
-        _stab_col_ramp += 2.0f/(float)_loop_rate;
-    } else if(!_im_flags_heli.use_stab_col && (_stab_col_ramp > 0.0f)){
-        _stab_col_ramp -= 2.0f/(float)_loop_rate;
+    // ramp function
+    if (is_positive(_ramp)) {
+        float dt = 1/(float)_loop_rate;
+        // factor 2 to transition over a time span of 0.5s
+        _ramp -= 2*dt;
+        _ramp = constrain_float(_ramp, 0.0f, 1.0f);
     }
-    _stab_col_ramp = constrain_float(_stab_col_ramp, 0.0f, 1.0f);
 
-    // scale collective output smoothly between acro and stab col
+    //set Stabilize or Acro collective output
+    float new_flightmode_col_output;
+    if (_im_flags_heli.use_stab_col) {
+        new_flightmode_col_output = stab_col_out;
+    } else {
+        new_flightmode_col_output = acro_col_out;
+    }
+
+    // scale collective output smoothly between previous and current mode output
     float collective_out;
-    collective_out = (float)((1.0f-_stab_col_ramp)*acro_col_out + _stab_col_ramp*stab_col_out);
+    collective_out = new_flightmode_col_output * (1.0 - _ramp) + _ramp * _old_flightmode_col_output;
     collective_out = constrain_float(collective_out, 0.0f, 1.0f);
 
     return collective_out;
