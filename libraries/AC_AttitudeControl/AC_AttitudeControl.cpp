@@ -1031,6 +1031,10 @@ void AC_AttitudeControl::thrust_vector_rotation_angles(const Quaternion& attitud
 // deceleration limits including basic jerk limiting using _input_tc
 void AC_AttitudeControl::input_shaping_angle(float error_angle, float desired_ang_vel, float& target_ang_vel, float& target_ang_accel, float max_ang_vel, float accel_max, float input_tc, float dt) const
 {
+    // protect against divide by zero
+    if (is_zero(input_tc)) {
+        input_tc = 0.05;
+    }
     shape_angle_vel_accel( error_angle, desired_ang_vel, 0.0,
                          0.0, target_ang_vel, target_ang_accel,
                          max_ang_vel, accel_max,
