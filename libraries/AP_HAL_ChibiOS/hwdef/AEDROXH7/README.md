@@ -46,13 +46,13 @@ Onboard OSD using OSD_TYPE 1 (MAX7456 driver) is supported by default. Simultane
 ## VTX Support
 
 The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. 
-A second VTX port is available for analog VTX
+A second VTX port is available for analog VTX.
 Digital and analog OSD are sharing the SERIAL8, so this port should be set to the approriate function.
 Be carefull with these connectors power pins (10v/VBATT), do not connect this to a peripheral requiring 5v. 
 
 ## VTX power control
 
-GPIO 83 controls the VTX BEC output to pins marked "10V" and is included on the HD VTX connector. Setting this GPIO low removes voltage supply to this pin/pad. By default RELAY2 is configured to control this pin and sets the GPIO high.
+GPIO 83 controls the VTX BEC output to pins marked "10V" and is included on the HD VTX and Analog VTX ports. Setting this GPIO low removes voltage supply to this pin/pad. By default RELAY2 is configured to control this pin and sets the GPIO high.
 
 ## CAMERA Switch
 
