@@ -5,6 +5,7 @@
 #if AP_RC_CHANNEL_ENABLED
 
 #include "RC_Channel.h"
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 
 /*
