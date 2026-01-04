@@ -1226,7 +1226,7 @@ int lua_gps_inject_data(lua_State *L)
 
 #endif  // AP_GPS_ENABLED
 
-#if AP_VEHICLE_ENABLED
+#if AP_SCRIPTING_BINDING_VEHICLE_ENABLED
 int lua_AP_Vehicle_set_target_velocity_NED(lua_State *L)
 {
     const int args = lua_gettop(L);
@@ -1258,6 +1258,6 @@ int lua_AP_Vehicle_set_target_velocity_NED(lua_State *L)
     lua_pushboolean(L, data);
     return 1;
 }
-#endif // AP_VEHICLE_ENABLED
+#endif // AP_SCRIPTING_BINDING_VEHICLE_ENABLED
 
 #endif  // AP_SCRIPTING_ENABLED
