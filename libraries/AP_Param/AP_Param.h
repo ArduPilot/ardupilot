@@ -127,7 +127,7 @@
 // is constant and known at compile time
 #pragma diagnostic push
 #pragma GCC diagnostic ignored "-Winvalid-offsetof"
-#define AP_VAROFFSET(type, element) ((ptrdiff_t)__builtin_offsetof(type, element))
+#define AP_VAROFFSET(clazz, element) ((void)sizeof(std::declval<clazz>().element), (ptrdiff_t)__builtin_offsetof(clazz, element))
 #pragma diagnostic pop
 
 // find the type of a variable given the class and element
