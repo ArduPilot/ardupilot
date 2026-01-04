@@ -32,7 +32,6 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_OSD/AP_OSD_config.h>
 
-#define CRSF_MAX_CHANNELS   24U      // Maximum number of channels from crsf datastream
 #define CRSF_FRAME_LENGTH_MIN 2 // min value for _frame.length
 #define CRSF_BAUDRATE      416666U
 #define ELRS_BAUDRATE      420000U
@@ -172,19 +171,6 @@ public:
         uint8_t link_quality;   // Package success rate / Link quality ( % )
         int8_t snr;             // SNR(dB)
         uint8_t rf_power_db;    // rf power in dBm
-    } PACKED;
-
-    struct SubsetChannelsFrame {
-#if __BYTE_ORDER != __LITTLE_ENDIAN
-#error "Only supported on little-endian architectures"
-#endif
-        uint8_t starting_channel:5;     // which channel number is the first one in the frame
-        uint8_t res_configuration:2;    // configuration for the RC data resolution (10 - 13 bits)
-        uint8_t digital_switch_flag:1;  // configuration bit for digital channel
-        uint8_t channels[CRSF_FRAME_PAYLOAD_MAX - 2]; // payload less byte above
-        // uint16_t channel[]:res;      // variable amount of channels (with variable resolution based
-                                        // on the res_configuration) based on the frame size
-        // uint16_t digital_switch_channel[]:10; // digital switch channel
     } PACKED;
 
     // Source for ELRS RF modes: https://www.expresslrs.org/info/signal-health/#rf-mode-indexes-rfmd
