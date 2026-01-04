@@ -1038,7 +1038,7 @@ void AC_AttitudeControl::input_shaping_angle(float error_angle, float desired_an
     shape_angle_vel_accel( error_angle, desired_ang_vel, 0.0,
                          0.0, target_ang_vel, target_ang_accel,
                          max_ang_vel, accel_max,
-                         accel_max / input_tc, dt, false);
+                         2.0 * accel_max / input_tc, dt, false);
     target_ang_vel += target_ang_accel * dt;
 }
 
