@@ -1202,12 +1202,17 @@ bool AP_AHRS::use_compass(void)
     return false;
 }
 
-// return the quaternion defining the rotation from NED to XYZ (body) axes
 bool AP_AHRS::_get_quaternion(Quaternion &quat) const
+{
+    return _get_quaternion_for_ekf_type(quat, active_EKF_type());
+}
+
+// return the quaternion defining the rotation from NED to XYZ (body) axes
+bool AP_AHRS::_get_quaternion_for_ekf_type(Quaternion &quat, EKFType type) const
 {
     // backends always return in autopilot XYZ frame; rotate result
     // according to trim
-    switch (active_EKF_type()) {
+    switch (type) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         if (!dcm.get_quaternion(quat)) {
@@ -1312,54 +1317,7 @@ bool AP_AHRS::_get_secondary_quaternion(Quaternion &quat) const
     if (!_get_secondary_EKF_type(secondary_ekf_type)) {
         return false;
     }
-
-    switch (secondary_ekf_type) {
-
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        // DCM is secondary
-        if (!dcm.get_quaternion(quat)) {
-            return false;
-        }
-        break;
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        // EKF2 is secondary
-        if (!_ekf2_started) {
-            return false;
-        }
-        EKF2.getQuaternion(quat);
-        break;
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        // EKF3 is secondary
-        if (!_ekf3_started) {
-            return false;
-        }
-        EKF3.getQuaternion(quat);
-        break;
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        // SITL is secondary (should never happen)
-        return false;
-#endif
-
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        // External is secondary
-        return external.get_quaternion(quat);
-#endif
-    }
-
-    quat.rotate(-_trim.get());
-
-    return true;
+    return _get_quaternion_for_ekf_type(quat, secondary_ekf_type);
 }
 
 // return secondary position solution if available
