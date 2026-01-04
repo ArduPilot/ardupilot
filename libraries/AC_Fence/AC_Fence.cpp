@@ -3,13 +3,6 @@
 #if AP_FENCE_ENABLED
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-
-#ifndef AC_FENCE_DUMMY_METHODS_ENABLED
-#define AC_FENCE_DUMMY_METHODS_ENABLED  (!(APM_BUILD_TYPE(APM_BUILD_Rover) | APM_BUILD_COPTER_OR_HELI | APM_BUILD_TYPE(APM_BUILD_ArduPlane) | APM_BUILD_TYPE(APM_BUILD_ArduSub) | (AP_FENCE_ENABLED == 1)))
-#endif
-
-#if !AC_FENCE_DUMMY_METHODS_ENABLED
-
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
@@ -59,7 +52,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @DisplayName: Fence Type
     // @Description: Configured fence types held as bitmask. Max altitide, Circle and Polygon fences will be immediately enabled if configured. Min altitude fence will only be enabled once the minimum altitude is reached.
     // @Bitmask{Rover}: 1:Circle Centered on Home,2:Inclusion/Exclusion Circles+Polygons
-    // @Bitmask{Copter, Plane, Sub}: 0:Max altitude,1:Circle Centered on Home,2:Inclusion/Exclusion Circles+Polygons,3:Min altitude
+    // @Bitmask: 0:Max altitude,1:Circle Centered on Home,2:Inclusion/Exclusion Circles+Polygons,3:Min altitude
     // @User: Standard
     AP_GROUPINFO("TYPE", 1, AC_Fence, _configured_fences, AC_FENCE_TYPE_DEFAULT),
 
@@ -1109,52 +1102,6 @@ const AC_PolyFence_loader &AC_Fence::polyfence() const
 {
     return _poly_loader;
 }
-
-
-#else  // build type is not appropriate; provide a dummy implementation:
-const AP_Param::GroupInfo AC_Fence::var_info[] = { AP_GROUPEND };
-
-AC_Fence::AC_Fence() {};
-
-uint8_t AC_Fence::enable(bool value, uint8_t fence_types, bool update_auto_enable) { return 0; }
-
-void AC_Fence::enable_floor() {}
-void AC_Fence::disable_floor() {}
-void AC_Fence::update() {}
-
-void AC_Fence::auto_enable_fence_after_takeoff() {}
-void AC_Fence::auto_enable_fence_on_arming() {}
-void AC_Fence::auto_disable_fence_on_disarming() {}
-
-uint8_t AC_Fence::present() const { return 0; }
-
-uint8_t AC_Fence::get_enabled_fences() const { return 0; }
-
-bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const  { return true; }
-
-uint8_t AC_Fence::check(bool disable_auto_fences) { return 0; }
-bool AC_Fence::check_destination_within_fence(const Location& loc) { return true; }
-float AC_Fence::get_breach_distance(uint8_t fence_type) const { return 0.0; }
-bool AC_Fence::get_breach_direction_NED(uint8_t fence_type, Vector3f& direction, Location& fence_check_pos) const { return false; }
-void AC_Fence::get_fence_names(uint8_t fences, ExpandingString& msg) { }
-void AC_Fence::print_fence_message(const char* msg, uint8_t fences) const {}
-
-void AC_Fence::manual_recovery_start() {}
-
-bool AC_Fence::sys_status_present() const { return false; }
-bool AC_Fence::sys_status_enabled() const { return false; }
-bool AC_Fence::sys_status_failed() const { return false; }
-
-AC_PolyFence_loader &AC_Fence::polyfence()
-{
-    return _poly_loader;
-}
-const AC_PolyFence_loader &AC_Fence::polyfence() const
-{
-    return _poly_loader;
-}
-
-#endif // #if AC_FENCE_DUMMY_METHODS_ENABLED
 
 // singleton instance
 AC_Fence *AC_Fence::_singleton;
