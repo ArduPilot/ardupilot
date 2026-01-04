@@ -3,19 +3,22 @@
 ## Features
 
 - STM32H743 microcontroller
-- ICM42688-P IMU with external clock
+- ICM42688-P IMU 
 - DPS368 barometer
-- 10V 2.3A BEC, GPIO controlled; 5V 2.3A BEC
-- Flash Memory
+- 10V 2.3A BEC GPIO controlled; 5V 2.3A BEC
+- Flash Memory (1Gbits)
+- Dual camera inputs with built in switch
+- OSD : Analog + HD
 - 6x UART
-- 9sx PWM
+- 9x PWM
 - 1x I2C
 - 1x CAN
 - 2x GPIOs
+- 1x Buzzer
 
 ## Pinout
 
-![AEDROX H743](AEDROX_FC_H7_PINOUT.png "AEDROX H743")
+![AEDROX H743](AEDROX_H7_PINOUT.png "AEDROX H743")
 
 ## UART Mapping
 
@@ -25,7 +28,7 @@
  - SERIAL3 -> UART3 (RCIN, DMA-enabled) 
  - SERIAL4 -> UART4 (MAVLink2, DMA-enabled)
  - SERIAL7 -> UART7 (ESC Telemetry, DMA-enabled)
- - SERIAL8 -> UART8 (DisplayPort, DMA-enabled)
+ - SERIAL8 -> UART8 (DisplayPort/OSD, DMA-enabled)
 
 ## RC Input
 
@@ -38,19 +41,27 @@ The default RC input is configured on the UART3 (RX3/SBUS). Non SBUS,  single wi
 
 ## OSD Support
 
-Onboard OSD using OSD_TYPE 1 (MAX7456 driver) is supported by default. Simultaneously, DisplayPort OSD is available on the HD VTX connector.
+Onboard OSD using OSD_TYPE 1 (MAX7456 driver) is supported by default. Simultaneously, DisplayPort OSD is available on the HD VTX connector (SERIAL8).
 
 ## VTX Support
 
-The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 10v so be careful not to connect this to a peripheral requiring 5v. DisplayPort OSD is enabled by default on SERIAL8.
+The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. 
+A second VTX port is available for analog VTX
+Digital and analog OSD are sharing the SERIAL8, so this port should be set to the approriate function.
+Be carefull with these connectors power pins (10v/VBATT), do not connect this to a peripheral requiring 5v. 
 
 ## VTX power control
 
-GPIO 83 controls the VTX BEC output to pins marked "12V" and is included on the HD VTX connector. Setting this GPIO low removes voltage supply to this pin/pad. By default RELAY3 is configured to control this pin and sets the GPIO high.
+GPIO 83 controls the VTX BEC output to pins marked "10V" and is included on the HD VTX connector. Setting this GPIO low removes voltage supply to this pin/pad. By default RELAY2 is configured to control this pin and sets the GPIO high.
+
+## CAMERA Switch
+
+GPIO 84 controls the camera switch. Setting this GPIO high will output the CAM1 stream, setting this low will output the CAM2 stream. By default RELAY3 is configured to control this pin and sets the GPIO low.
+
 
 ## PWM Output
 
-The SPEDIX F405 supports up to 9 PWM (8 + LED) outputs. The pads for motor output
+The AEDROXH7 supports up to 9 PWM (8 + LED) outputs. The pads for motor output
 M1 to M8 are provided on both the motor connectors and on separate pads, plus
 M9 on a separate pad for LED strip (default configuration) or another PWM output.
 
