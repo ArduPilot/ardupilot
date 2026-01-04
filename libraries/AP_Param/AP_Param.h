@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <cmath>
+#include <type_traits>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/RingBuffer.h>
@@ -121,13 +122,19 @@
 #define AP_PARAM_FRAME_HELI         (1<<5)
 #define AP_PARAM_FRAME_BLIMP        (1<<6)
 
-// a variant of offsetof() to work around C++ restrictions.
-// this can only be used when the offset of a variable in a object
-// is constant and known at compile time
-#define AP_VAROFFSET(type, element) (((ptrdiff_t)(&((const type *)1)->element))-1)
+// use __builtin_offsetof which is more or less defined by Clang and GCC to work
+// on non-standard-layout C++ classes, and works in constexpr. as that isn't
+// standard-compliant, it raises "-Winvalid-offsetof" which we globally disable.
+// https://github.com/llvm/llvm-project/blob/5fa5ffeb6cb5bc9aa414c02513e44b8405f0e7cc/libcxx/include/__type_traits/datasizeof.h#L51
+// the first comma operator operand makes the compiler see element as used by
+// conjuring a class instance and passing element to an unevaluating function.
+#define AP_VAROFFSET(clazz, element) ((void)sizeof(std::declval<clazz>().element), (ptrdiff_t)__builtin_offsetof(clazz, element))
 
-// find the type of a variable given the class and element
-#define AP_CLASSTYPE(clazz, element) ((uint8_t)(((const clazz *) 1)->element.vtype))
+// get the internal type of an AP_Param variable given an arbitrary class and an
+// element on it. convert the element, which must be of type AP_Param or a
+// subclass, into a non-reference type. then get AP_Param's vtype member, which
+// is static const but varies depending on the subclass. works in constexpr!
+#define AP_CLASSTYPE(clazz, element) ((uint8_t)(std::remove_reference<decltype(clazz::element)>::type::vtype))
 
 // declare a group var_info line
 #define AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, flags) { name, AP_VAROFFSET(clazz, element), {def_value : def}, flags, idx, AP_CLASSTYPE(clazz, element)}
