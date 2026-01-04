@@ -125,11 +125,16 @@ uint8_t crc8_dvb(uint8_t crc, uint8_t a, uint8_t seed)
 // crc8 from betaflight
 uint8_t crc8_dvb_s2_update(uint8_t crc, const void *data, uint32_t length)
 {
+    return crc8_dvb_update_generic(crc, data, length, 0xD5);
+}
+
+uint8_t crc8_dvb_update_generic(uint8_t crc, const void *data, uint32_t length, uint8_t seed)
+{
     const uint8_t *p = (const uint8_t *)data;
     const uint8_t *pend = p + length;
 
     for (; p != pend; p++) {
-        crc = crc8_dvb_s2(crc, *p);
+        crc = crc8_dvb(crc, *p, seed);
     }
     return crc;
 }

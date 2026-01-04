@@ -292,6 +292,7 @@ private:
     // optional additional uart
     struct {
         AP_HAL::UARTDriver *uart;
+        uint32_t bytes_received;
         bool opened;
         uint32_t last_config_change_ms;
         uint8_t config_num;
