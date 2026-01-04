@@ -795,6 +795,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../ArduSub/actuators.cpp
     AP_SUBGROUPINFO(actuators, "ACTUATOR", 23, ParametersG2, Actuators),
 
+    // @Group: SF_
+    // @Path: ../libraries/AC_AttitudeControl/AC_StateFeedback_Params.cpp
+    AP_SUBGROUPINFO(sf_params, "SF_", 24, ParametersG2, AC_StateFeedback_Params),
+
     AP_GROUPEND
 };
 

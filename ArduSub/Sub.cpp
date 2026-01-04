@@ -183,7 +183,19 @@ void Sub::run_rate_controller()
     //don't run rate controller in manual or motordetection modes
     if (control_mode != Mode::Number::MANUAL && control_mode != Mode::Number::MOTOR_DETECT) {
         // run low level rate controllers that only require IMU data and set loop time
-        attitude_control.rate_controller_run();
+        // Use state feedback controller if enabled, otherwise use PID
+        if (g2.sf_params.enable >= 2) {
+            // State feedback attitude + rate control (SF_ENABLE >= 2)
+            // This replaces both angle P controller and rate PID
+            attitude_control.attitude_controller_run_state_feedback(g2.sf_params);
+        } else if (g2.sf_params.enable == 1) {
+            // State feedback rate control only (SF_ENABLE == 1)
+            // Angle P controller still runs in modes, this replaces rate PID only
+            attitude_control.rate_controller_run_state_feedback(g2.sf_params);
+        } else {
+            // Standard PID control (SF_ENABLE == 0)
+            attitude_control.rate_controller_run();
+        }
     }
 }
 

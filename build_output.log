@@ -1,0 +1,69 @@
+Waf: Entering directory `/home/yonetoshi27/ardupilot/build/sitl'
+Embedding file locations.txt:Tools/autotest/locations.txt
+Embedding file models/Callisto.json:Tools/autotest/models/Callisto.json
+Embedding file models/freestyle.json:Tools/autotest/models/freestyle.json
+Embedding file models/plane-3d.parm:Tools/autotest/models/plane-3d.parm
+Embedding file models/plane.parm:Tools/autotest/models/plane.parm
+Embedding file models/skywalker_2013.json:Tools/autotest/models/skywalker_2013.json
+Embedding file models/xplane_heli.json:Tools/autotest/models/xplane_heli.json
+Embedding file models/xplane_plane.json:Tools/autotest/models/xplane_plane.json
+Generating compile_commands.json
+Build commands will be stored in build/sitl/compile_commands.json
+Generating compile_commands.json
+Build commands will be stored in build/sitl/compile_commands.json
+[  17/1338] Compiling libraries/AC_AttitudeControl/AC_StateFeedback_Rate.cpp
+[  18/1338] Compiling libraries/AC_AttitudeControl/AC_AttitudeControl_Sub.cpp
+[1117/1338] Compiling libraries/AP_Scripting/lua_boxed_numerics.cpp
+[1118/1338] Compiling libraries/AP_Scripting/AP_Scripting_helpers.cpp
+[1119/1338] Compiling libraries/AP_Scripting/AP_Scripting_CRSFMenu.cpp
+[1120/1338] Compiling libraries/AP_Scripting/lua_bindings.cpp
+[1121/1338] Compiling libraries/AP_Scripting/lua_scripts.cpp
+[1122/1338] Compiling build/sitl/libraries/AP_Scripting/lua_generated_bindings.cpp
+[1299/1338] Compiling ArduSub/mode_acro.cpp
+[1301/1338] Compiling ArduSub/mode_stabilize.cpp
+[1302/1338] Compiling ArduSub/mode_guided.cpp
+[1303/1338] Compiling ArduSub/Parameters.cpp
+[1304/1338] Compiling ArduSub/motors.cpp
+[1305/1338] Compiling ArduSub/commands_logic.cpp
+[1306/1338] Compiling ArduSub/terrain.cpp
+[1307/1338] Compiling ArduSub/RC_Channel_Sub.cpp
+[1308/1338] Compiling ArduSub/mode_auto.cpp
+[1309/1338] Compiling ArduSub/system.cpp
+[1310/1338] Compiling ArduSub/mode_surftrak.cpp
+[1311/1338] Compiling ArduSub/mode_manual.cpp
+[1312/1338] Compiling ArduSub/actuators.cpp
+[1313/1338] Compiling ArduSub/AP_Arming_Sub.cpp
+[1314/1338] Compiling ArduSub/UserCode.cpp
+[1315/1338] Compiling ArduSub/inertia.cpp
+[1316/1338] Compiling ArduSub/fence.cpp
+[1317/1338] Compiling ArduSub/GCS_Sub.cpp
+[1318/1338] Compiling ArduSub/AP_State.cpp
+[1319/1338] Compiling ArduSub/GCS_MAVLink_Sub.cpp
+[1320/1338] Linking build/sitl/lib/libArduSub_libs.a
+[1321/1338] Compiling ArduSub/radio.cpp
+[1322/1338] Compiling ArduSub/Log.cpp
+[1323/1338] Compiling ArduSub/mode_circle.cpp
+[1324/1338] Compiling ArduSub/surface_bottom_detector.cpp
+[1325/1338] Compiling ArduSub/mode_althold.cpp
+[1326/1338] Compiling ArduSub/joystick.cpp
+[1327/1338] Compiling ArduSub/mode_motordetect.cpp
+[1328/1338] Compiling ArduSub/Sub.cpp
+[1329/1338] Compiling ArduSub/mode.cpp
+[1330/1338] Compiling ArduSub/mode_poshold.cpp
+[1331/1338] Compiling ArduSub/mode_surface.cpp
+[1332/1338] Compiling ArduSub/sensors.cpp
+[1333/1338] Compiling ArduSub/Attitude.cpp
+[1334/1338] Compiling ArduSub/commands.cpp
+[1335/1338] Compiling ArduSub/turn_counter.cpp
+[1336/1338] Compiling ArduSub/failsafe.cpp
+[1337/1338] Linking build/sitl/bin/ardusub
+[1338/1338] checking symbols build/sitl/bin/ardusub
+Waf: Leaving directory `/home/yonetoshi27/ardupilot/build/sitl'
+
+BUILD SUMMARY
+Build directory: /home/yonetoshi27/ardupilot/build/sitl
+Target       Text (B)  Data (B)  BSS (B)  Total Flash Used (B)  Free Flash (B)  External Flash Used (B)
+-------------------------------------------------------------------------------------------------------
+bin/ardusub   3900059    181909   224704               4081968  Not Applicable  Not Applicable         
+
+'sub' finished successfully (12.130s)

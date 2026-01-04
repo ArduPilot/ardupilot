@@ -183,3 +183,65 @@ void Sub::translate_pos_control_rp(float &lateral_out, float &forward_out)
     lateral_out = (float)lateral/(float)aparm.angle_max;
     forward_out = (float)forward/(float)aparm.angle_max;
 }
+
+// State feedback position controller helper
+// Returns true if state feedback was used, false otherwise
+bool Sub::run_state_feedback_position_controller(const Vector3f& pos_target_ned,
+                                                  const Vector3f& vel_target_ned)
+{
+    // Only use state feedback if enabled
+    if (g2.sf_params.enable < 3) {
+        return false;
+    }
+
+    // Check if we have valid position estimate
+    if (!position_ok()) {
+        return false;
+    }
+
+    // Get current position and velocity in NED frame
+    Vector3p pos_actual_ned_d;
+    if (!ahrs.get_relative_position_NED_origin(pos_actual_ned_d)) {
+        return false;
+    }
+    Vector3f pos_actual_ned = pos_actual_ned_d.tofloat();  // Convert to float
+
+    // Get current velocity in NED frame
+    Vector3f vel_actual_ned;
+    if (!ahrs.get_velocity_NED(vel_actual_ned)) {
+        vel_actual_ned.zero();  // Use zero velocity if estimate not available
+    }
+
+    // Run state feedback position controller
+    // Returns [vertical_thrust, roll_torque, pitch_torque, yaw_torque]
+    Vector4f control = attitude_control.position_controller_run_state_feedback(
+        g2.sf_params,
+        pos_target_ned,
+        pos_actual_ned,
+        vel_target_ned,
+        vel_actual_ned
+    );
+
+    // The position controller outputs:
+    // control.x = vertical thrust (normalized -1 to 1, positive up)
+    // control.y = roll torque (normalized)
+    // control.z = pitch torque (normalized)
+    // control.w = yaw torque (normalized)
+
+    // Set vertical thrust (convert from -1..1 to 0..1 for motors)
+    float throttle_out = constrain_float(control.x * 0.5f + 0.5f, 0.0f, 1.0f);
+    attitude_control.set_throttle_out(throttle_out, true, g.throttle_filt);
+
+    // Convert torques to motor outputs
+    motors.set_roll(control.y);
+    motors.set_pitch(control.z);
+    motors.set_yaw(control.w);
+
+    // For 6DOF control, we need to convert desired attitude to forward/lateral
+    // This is a simplified approach - full 6DOF would directly control thrusters
+    // For now, use zero forward/lateral (hovering in place)
+    motors.set_forward(0.0f);
+    motors.set_lateral(0.0f);
+
+    return true;
+}

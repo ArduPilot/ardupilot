@@ -336,7 +336,10 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
 
 AC_AttitudeControl_Sub::AC_AttitudeControl_Sub(AP_AHRS_View &ahrs, const AP_MultiCopter &aparm, AP_MotorsMulticopter& motors) :
     AC_AttitudeControl(ahrs, aparm, motors),
-    _motors_multi(motors)
+    _motors_multi(motors),
+    _sf_rate(nullptr),
+    _sf_attitude(nullptr),
+    _sf_position(nullptr)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -429,6 +432,126 @@ void AC_AttitudeControl_Sub::rate_controller_run()
     _motors.set_roll(get_rate_roll_pid().update_all(_ang_vel_body_rads.x, _rate_gyro_rads.x, _dt_s, _motors.limit.roll));
     _motors.set_pitch(get_rate_pitch_pid().update_all(_ang_vel_body_rads.y, _rate_gyro_rads.y, _dt_s, _motors.limit.pitch));
     _motors.set_yaw(get_rate_yaw_pid().update_all(_ang_vel_body_rads.z, _rate_gyro_rads.z, _dt_s, _motors.limit.yaw));
+}
+
+// run state feedback rate controller
+void AC_AttitudeControl_Sub::rate_controller_run_state_feedback(const AC_StateFeedback_Params& sf_params)
+{
+    // move throttle vs attitude mixing towards desired
+    update_throttle_rpy_mix();
+
+    // Get latest gyro reading
+    _rate_gyro_rads = _ahrs.get_gyro_latest();
+    _rate_gyro_time_us = AP_HAL::micros64();
+
+    // Lazy initialization of state feedback controller
+    if (_sf_rate == nullptr) {
+        _sf_rate = new AC_StateFeedback_Rate(sf_params);
+        if (_sf_rate == nullptr) {
+            // Memory allocation failed - fall back to zero output (safe mode)
+            _motors.set_roll(0.0f);
+            _motors.set_pitch(0.0f);
+            _motors.set_yaw(0.0f);
+            return;
+        }
+    }
+
+    // Compute state feedback control law
+    // u = -K * (x_desired - x_actual)
+    Vector3f control = _sf_rate->update(_ang_vel_body_rads, _rate_gyro_rads, _dt_s);
+
+    // Set motor outputs (already saturated by controller)
+    _motors.set_roll(control.x);
+    _motors.set_pitch(control.y);
+    _motors.set_yaw(control.z);
+}
+
+// State feedback attitude controller - alternative to PID angle controller
+void AC_AttitudeControl_Sub::attitude_controller_run_state_feedback(const AC_StateFeedback_Params& sf_params)
+{
+    // move throttle vs attitude mixing towards desired
+    update_throttle_rpy_mix();
+
+    // Get latest gyro reading
+    _rate_gyro_rads = _ahrs.get_gyro_latest();
+    _rate_gyro_time_us = AP_HAL::micros64();
+
+    // Lazy initialization of state feedback attitude controller
+    if (_sf_attitude == nullptr) {
+        _sf_attitude = new AC_StateFeedback_Attitude(sf_params);
+        if (_sf_attitude == nullptr) {
+            // Memory allocation failed - fall back to zero output (safe mode)
+            _motors.set_roll(0.0f);
+            _motors.set_pitch(0.0f);
+            _motors.set_yaw(0.0f);
+            return;
+        }
+    }
+
+    // Get desired attitude from _euler_angle_target_rad (set by higher-level controllers)
+    Vector3f att_desired_rad;
+    att_desired_rad.x = _euler_angle_target_rad.x;  // Roll (radians)
+    att_desired_rad.y = _euler_angle_target_rad.y;  // Pitch (radians)
+    att_desired_rad.z = _euler_angle_target_rad.z;  // Yaw (radians)
+
+    // Get actual attitude from AHRS (Euler angles in radians)
+    Vector3f att_actual_rad;
+    att_actual_rad.x = _ahrs.roll;   // Roll (radians)
+    att_actual_rad.y = _ahrs.pitch;  // Pitch (radians)
+    att_actual_rad.z = _ahrs.yaw;    // Yaw (radians)
+
+    // Compute state feedback control law
+    // u = -K * [angle_error; rate_error]
+    Vector3f control = _sf_attitude->update(att_desired_rad, att_actual_rad, _rate_gyro_rads, _dt_s);
+
+    // Set motor outputs (already saturated by controller)
+    _motors.set_roll(control.x);
+    _motors.set_pitch(control.y);
+    _motors.set_yaw(control.z);
+}
+
+// State feedback position controller - full 12-state control
+Vector4f AC_AttitudeControl_Sub::position_controller_run_state_feedback(const AC_StateFeedback_Params& sf_params,
+                                                                         const Vector3f& pos_desired_ned,
+                                                                         const Vector3f& pos_actual_ned,
+                                                                         const Vector3f& vel_desired_ned,
+                                                                         const Vector3f& vel_actual_ned)
+{
+    // move throttle vs attitude mixing towards desired
+    update_throttle_rpy_mix();
+
+    // Get latest gyro reading
+    _rate_gyro_rads = _ahrs.get_gyro_latest();
+    _rate_gyro_time_us = AP_HAL::micros64();
+
+    // Lazy initialization of state feedback position controller
+    if (_sf_position == nullptr) {
+        _sf_position = new AC_StateFeedback_Position(sf_params);
+        if (_sf_position == nullptr) {
+            // Memory allocation failed - fall back to zero output (safe mode)
+            return Vector4f(0.0f, 0.0f, 0.0f, 0.0f);
+        }
+    }
+
+    // Get actual attitude from AHRS (Euler angles in radians)
+    Vector3f att_actual_rad;
+    att_actual_rad.x = _ahrs.roll;   // Roll (radians)
+    att_actual_rad.y = _ahrs.pitch;  // Pitch (radians)
+    att_actual_rad.z = _ahrs.yaw;    // Yaw (radians)
+
+    // Compute state feedback control law
+    // u = -K * [pos_error; vel_error; att_error; rate_error]
+    // Returns [vertical_thrust, roll_torque, pitch_torque, yaw_torque]
+    Vector4f control = _sf_position->update(pos_desired_ned, pos_actual_ned,
+                                           vel_desired_ned, vel_actual_ned,
+                                           Vector3f(0.0f, 0.0f, att_actual_rad.z),  // Desired attitude: level with current yaw
+                                           att_actual_rad,
+                                           _rate_gyro_rads,
+                                           _dt_s);
+
+    // Return control outputs (already saturated by controller)
+    // Caller is responsible for setting motor outputs
+    return control;
 }
 
 // sanity check parameters.  should be called once before takeoff
