@@ -18,7 +18,7 @@ public:
     void read(void) override;
 
 private:
-    uint8_t _compass_instance;
+
     SITL::SIM *_sitl;
 
     // delay buffer variables
