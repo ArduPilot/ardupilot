@@ -26,7 +26,7 @@
 #if AP_CRSF_ENABLED
 
 #include <stdint.h>
-#include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_HAL/utility/sparse-endian.h>
 
 #define CRSF_MAX_CHANNELS   24U      // Maximum number of channels from crsf datastream
 #define CRSF_FRAMELEN_MAX   64U      // maximum possible framelength
@@ -145,7 +145,7 @@ public:
     } PACKED;
 
     struct SubsetChannelsFrame {
-#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+#if __BYTE_ORDER != __LITTLE_ENDIAN
 #error "Only supported on little-endian architectures"
 #endif
         uint8_t starting_channel:5;     // which channel number is the first one in the frame
