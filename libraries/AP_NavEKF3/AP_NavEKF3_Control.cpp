@@ -336,7 +336,7 @@ void NavEKF3_core::setAidingMode()
 #endif
 
             // Check if GPS or external nav is being used
-            bool posUsed = (imuSampleTime_ms - lastGpsPosPassTime_ms <= minTestTime_ms);
+            bool posUsed = (imuSampleTime_ms - lastGpsPosPassTime_ms <= minTestTime_ms) || (imuSampleTime_ms - lastSetlatLngPassTime_ms <= minTestTime_ms);
             bool gpsVelUsed = (imuSampleTime_ms - lastVelPassTime_ms <= minTestTime_ms);
 
             // Check if attitude drift has been constrained by a measurement source
