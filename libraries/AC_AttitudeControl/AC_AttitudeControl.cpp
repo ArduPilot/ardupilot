@@ -1032,14 +1032,21 @@ void AC_AttitudeControl::thrust_vector_rotation_angles(const Quaternion& attitud
 void AC_AttitudeControl::input_shaping_angle(float error_angle, float desired_ang_vel, float& target_ang_vel, float& target_ang_accel, float max_ang_vel, float accel_max, float input_tc, float dt) const
 {
     // protect against divide by zero
-    if (is_zero(input_tc)) {
-        input_tc = 0.05;
+    if (!is_positive(input_tc) || !is_positive(accel_max)) {
+        // Calculate the velocity as error approaches zero with acceleration limited by accel_max_radss
+        desired_ang_vel += sqrt_controller(error_angle, 1.0f / MAX(input_tc, 0.01f), accel_max, dt);
+        if (is_positive(max_ang_vel)) {
+            desired_ang_vel = constrain_float(desired_ang_vel, -max_ang_vel, max_ang_vel);
+        }
+        // Acceleration is limited directly to smooth the beginning of the curve.
+        desired_ang_vel = input_shaping_ang_vel(target_ang_vel, desired_ang_vel, accel_max, dt, 0.0f);
+    } else {
+        shape_angle_vel_accel( error_angle, desired_ang_vel, 0.0,
+                            0.0, target_ang_vel, target_ang_accel,
+                            max_ang_vel, accel_max,
+                            2.0 * accel_max / input_tc, dt, false);
+        target_ang_vel += target_ang_accel * dt;
     }
-    shape_angle_vel_accel( error_angle, desired_ang_vel, 0.0,
-                         0.0, target_ang_vel, target_ang_accel,
-                         max_ang_vel, accel_max,
-                         2.0 * accel_max / input_tc, dt, false);
-    target_ang_vel += target_ang_accel * dt;
 }
 
 // Shapes the velocity request based on a rate time constant. The angular acceleration and deceleration is limited.
