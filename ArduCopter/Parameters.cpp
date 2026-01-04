@@ -1333,15 +1333,6 @@ void Copter::convert_pid_parameters(void)
     for (const auto &info : angle_and_filt_conversion_info) {
         AP_Param::convert_old_parameter(&info, 1.0f);
     }
-/*
-    // TradHeli default parameters
-#if FRAME_CONFIG == HELI_FRAME
-    static const struct AP_Param::defaults_table_struct heli_defaults_table[] = {
-//        { "ATC_RAT_RLL_ILMI", 0.05},
-//        { "ATC_RAT_PIT_ILMI", 0.05},
-    };
-    AP_Param::set_defaults_from_table(heli_defaults_table, ARRAY_SIZE(heli_defaults_table));
-#endif  // FRAME_CONFIG == HELI_FRAME */
 
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 #if HAL_INS_NUM_HARMONIC_NOTCH_FILTERS > 1
