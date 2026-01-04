@@ -5,8 +5,6 @@
 #if AP_RC_CHANNEL_ENABLED
 
 #include "RC_Channel.h"
-#include <AP_Vehicle/AP_Vehicle_Type.h>
-
 
 /*
   this header file is expected to be #included by Vehicle subclasses
@@ -16,12 +14,6 @@
 
   This scheme reduces code duplicate between the Vehicles, and avoids the chance of things getting out of sync.
 */
-
-#if APM_BUILD_TYPE(APM_BUILD_Heli)
- #define RC_OPTIONS_DEFAULT           0
-#else
- #define RC_OPTIONS_DEFAULT           32
-#endif
 
 const AP_Param::GroupInfo RC_Channels::var_info[] = {
     // @Group: 1_
@@ -101,7 +93,7 @@ const AP_Param::GroupInfo RC_Channels::var_info[] = {
     // @Description: RC input options
     // @User: Advanced
     // @Bitmask: 0:Ignore RC Receiver, 1:Ignore MAVLink Overrides, 2:Ignore Receiver Failsafe bit but allow other RC failsafes if setup, 3:FPort Pad, 4:Log RC input bytes, 5:Arming check throttle for 0 input, 6:Skip the arming check for neutral Roll/Pitch/Yaw sticks, 7:Allow Switch reverse, 8:Use passthrough for CRSF telemetry, 9:Suppress CRSF mode/rate message for ELRS systems,10:Enable multiple receiver support, 11:Use Link Quality for RSSI with CRSF, 12:Annotate CRSF flight mode with * on disarm, 13: Use 420kbaud for ELRS protocol
-    AP_GROUPINFO("_OPTIONS", 33, RC_CHANNELS_SUBCLASS, _options, RC_OPTIONS_DEFAULT), // (uint32_t)RC_Channels::Option::ARMING_CHECK_THROTTLE),
+    AP_GROUPINFO("_OPTIONS", 33, RC_CHANNELS_SUBCLASS, _options, (uint32_t)RC_Channels::Option::ARMING_CHECK_THROTTLE),
 
     // _PROTOCOLS copied to AP_Periph/Parameters.cpp
     // @Param: _PROTOCOLS
