@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <cmath>
 #include <type_traits>
+#include <utility>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/RingBuffer.h>
