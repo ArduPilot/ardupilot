@@ -124,7 +124,10 @@
 // a variant of offsetof() to work around C++ restrictions.
 // this can only be used when the offset of a variable in a object
 // is constant and known at compile time
-#define AP_VAROFFSET(type, element) (((ptrdiff_t)(&((const type *)1)->element))-1)
+#pragma diagnostic push
+#pragma GCC diagnostic ignored "-Winvalid-offsetof"
+#define AP_VAROFFSET(type, element) ((ptrdiff_t)__builtin_offsetof(type, element))
+#pragma diagnostic pop
 
 // find the type of a variable given the class and element
 #define AP_CLASSTYPE(clazz, element) ((uint8_t)(((const clazz *) 1)->element.vtype))
