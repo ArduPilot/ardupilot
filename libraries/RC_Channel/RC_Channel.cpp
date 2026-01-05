@@ -1798,9 +1798,21 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         if (mount == nullptr) {
             break;
         }
-        //low is FPV:no ef locks,high is HORIZON lock:roll/pitch ef lock,mid is only pitch ef lock
-        mount->set_pitch_lock(ch_flag != AuxSwitchPos::LOW);
-        mount->set_roll_lock(ch_flag == AuxSwitchPos::HIGH);
+        //low is FPV:no ef locks,high is HORIZON lock:roll/pitch ef lock,middle is only pitch ef lock
+        switch (ch_flag) {
+        case AuxSwitchPos::HIGH:
+            mount->set_roll_lock(true);
+            mount->set_pitch_lock(true);
+            break;
+        case AuxSwitchPos::MIDDLE:
+            mount->set_roll_lock(false);
+            mount->set_pitch_lock(true);
+            break;
+        case AuxSwitchPos::LOW:
+            mount->set_roll_lock(false);
+            mount->set_pitch_lock(false);
+            break;
+        }
         break;
     }
 
