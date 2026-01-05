@@ -35,6 +35,12 @@ bool AP_RangeFinder_SinoSonar_Serial::get_reading(float &reading_m)
         return false;
     }
 
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_request_ms > 50) {
+        uart->write(0x55);
+        last_request_ms = now_ms;
+    }
+
     // format is: [ 0xFF | DATA_H | DATA_L | SUM ]
 
     // read any available lines from the lidar

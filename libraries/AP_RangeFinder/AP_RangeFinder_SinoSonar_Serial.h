@@ -31,8 +31,10 @@ private:
     // get a reading
     bool get_reading(float &reading_m) override;
 
+    uint32_t last_request_ms;
+
     uint8_t buf[4];
-    uint8_t buf_len = 0;
+    uint8_t buf_len;
 };
 
 #endif  // AP_RANGEFINDER_SINOSONAR_SERIAL_ENABLED
