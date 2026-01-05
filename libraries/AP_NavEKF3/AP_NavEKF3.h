@@ -183,6 +183,12 @@ public:
     // returns true on success and results are placed in innovations and variances arguments
     bool getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::SourceXY source, Vector3f &innovations, Vector3f &variances) const WARN_IF_UNUSED;
 
+    // return pose covariance matrix (6x6) for position and orientation in NED frame
+    bool getPoseCovariance(float covariance[36]) const;
+
+    // return velocity covariance matrix (6x6) for linear and angular velocity in NED/body frame
+    bool getVelocityCovariance(float covariance[36]) const;
+
     // should we use the compass? This is public so it can be used for
     // reporting via ahrs.use_compass()
     bool use_compass(void) const;

@@ -2280,3 +2280,48 @@ void NavEKF3_core::moveEKFOrigin(void)
         storedOutput[index].position.xy() += diffNE;
     }
 }
+
+// pose covariance matrix (only variances are returned)
+bool NavEKF3_core::getPoseCovariance(float covariance[36]) const
+{
+    if (!healthy()) {
+        return false;
+    }
+
+    for (uint8_t i = 0; i < 36; i++) {
+        covariance[i] = NAN;
+    }
+
+    // Position variances
+    covariance[0] = P[7][7];
+    covariance[7] = P[8][8];
+    covariance[14] = P[9][9];
+
+    return true;
+}
+
+// velocity covariance matrix (only variances are returned)
+bool NavEKF3_core::getVelocityCovariance(float covariance[36]) const
+{
+    if (!healthy()) {
+        return false;
+    }
+
+    for (uint8_t i = 0; i < 36; i++) {
+        covariance[i] = NAN;
+    }
+
+    // Linear velocity variances
+    covariance[0] = P[4][4];
+    covariance[7] = P[5][5];
+    covariance[14] = P[6][6];
+
+    // Angular velocity variances (gyro noise parameter)
+    const float gyro_noise = constrain_float(frontend->_gyrNoise.get(), 0.0f, 1.0f);
+    const float angular_vel_var = sq(gyro_noise);
+    covariance[21] = angular_vel_var;
+    covariance[28] = angular_vel_var;
+    covariance[35] = angular_vel_var;
+
+    return true;
+}
