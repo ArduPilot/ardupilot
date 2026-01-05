@@ -28,7 +28,7 @@
 #include "AP_BattMonitor_Synthetic_Current.h"
 #include "AP_BattMonitor_AD7091R5.h"
 #include "AP_BattMonitor_Scripting.h"
-
+#include "AP_BattMonitor_JBDCAN.h"
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_ENABLE_DRONECAN_DRIVERS
@@ -707,6 +707,11 @@ AP_BattMonitor::init()
                 drivers[instance] = NEW_NOTHROW AP_BattMonitor_INA3221(*this, state[instance], _params[instance]);
                 break;
 #endif  // AP_BATTERY_INA3221_ENABLED
+#if AP_BATTERY_JBDCAN_ENABLED
+            case Type::JBDCAN:
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_JBDCAN(*this, state[instance], _params[instance]);
+                break;
+#endif  // AP_BATTERY_JBDCAN_ENABLED
             case Type::NONE:
             default:
                 break;
