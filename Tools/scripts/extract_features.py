@@ -420,7 +420,7 @@ class ExtractFeatures(BuildScriptBase):
         text_output = self.run_program('EF', [
             self.strings,
             filename
-        ], show_output=False)
+        ], show_output=False, show_command=False)
         return text_output.split("\n")
 
     def extract(self):
