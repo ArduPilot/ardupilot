@@ -71,7 +71,7 @@ void setup()
 
             char cmd[20] {};
             strncpy(cmd, arg, eq-arg);
-            const float value = atof(eq+1);
+            const float value = strtof(eq+1, nullptr);
             if (strcmp(cmd,"yaw_headroom") == 0) {
                 if (motors_matrix != nullptr) {
                     motors_matrix->set_yaw_headroom(value);
