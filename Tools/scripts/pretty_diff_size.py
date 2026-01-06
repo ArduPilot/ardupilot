@@ -1,18 +1,33 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-'''
+"""
 This script intend to provide a pretty size diff between two binaries.
 
 AP_FLAKE8_CLEAN
-'''
+"""
 
 import os
 from argparse import ArgumentParser
+
 from tabulate import tabulate
 
 parser = ArgumentParser(description="Print binary size difference with master.")
-parser.add_argument("-m", "--master", dest='master', type=str, help="Master Binaries Path", required=True)
-parser.add_argument("-s", "--second", dest='second', type=str, help="Second Binaries Path", required=True)
+parser.add_argument(
+    "-m",
+    "--master",
+    dest="master",
+    type=str,
+    help="Master Binaries Path",
+    required=True,
+)
+parser.add_argument(
+    "-s",
+    "--second",
+    dest="second",
+    type=str,
+    help="Second Binaries Path",
+    required=True,
+)
 
 args = parser.parse_args()
 
@@ -26,12 +41,14 @@ def sizes_for_file(filepath):
     size_list = []
     for line in lines:
         row = line.strip().split()
-        size_list.append(dict(
-            text=int(row[0]),
-            data=int(row[1]),
-            bss=int(row[2]),
-            total=int(row[3]),
-        ))
+        size_list.append(
+            dict(
+                text=int(row[0]),
+                data=int(row[1]),
+                bss=int(row[2]),
+                total=int(row[3]),
+            )
+        )
 
     # Get the size of .crash_log to remove it from .bss reporting
     cmd = "size -A %s" % (filepath,)
@@ -68,17 +85,21 @@ def print_table(summary_data_list_second, summary_data_list_master):
                     # BSS: remove the portion occupied by crash_log as the command `size binary.elf`
                     # reports BSS with crash_log included
                     if key == "bss":
-                        mvalue = (summary_data_list_master[0][name].get("bss") -
-                                  summary_data_list_master[0][name].get("crash_log"))
-                        bvalue = (summary_data_list_second[0][name].get("bss") -
-                                  summary_data_list_second[0][name].get("crash_log"))
+                        mvalue = summary_data_list_master[0][name].get(
+                            "bss"
+                        ) - summary_data_list_master[0][name].get("crash_log")
+                        bvalue = summary_data_list_second[0][name].get(
+                            "bss"
+                        ) - summary_data_list_second[0][name].get("crash_log")
 
                     # Total Flash Cost = Data + Text
                     if key == "total":
-                        mvalue = (summary_data_list_master[0][name].get("text") +
-                                  summary_data_list_master[0][name].get("data"))
-                        bvalue = (summary_data_list_second[0][name].get("text") +
-                                  summary_data_list_second[0][name].get("data"))
+                        mvalue = summary_data_list_master[0][name].get(
+                            "text"
+                        ) + summary_data_list_master[0][name].get("data")
+                        bvalue = summary_data_list_second[0][name].get(
+                            "text"
+                        ) + summary_data_list_second[0][name].get("data")
                     diff = (bvalue - mvalue) * 100.0 / mvalue
                     signum = "+" if diff > 0.0 else ""
                     print_diff = str(bvalue - mvalue)
@@ -88,8 +109,40 @@ def print_table(summary_data_list_second, summary_data_list_master):
                 # Append free flash space which is equivalent to crash_log's size
                 col_data.append(str(summary_data_list_second[0][name].get("crash_log")))
                 print_data.append(col_data)
-    print(tabulate(print_data, headers=["Binary Name", "Text [B]", "Data [B]", "BSS (B)",
-                                        "Total Flash Change [B] (%)", "Flash Free After PR (B)"]))
+    print(
+        tabulate(
+            print_data,
+            headers=[
+                "Binary Name",
+                "Text [B]",
+                "Data [B]",
+                "BSS (B)",
+                "Total Flash Change [B] (%)",
+                "Flash Free After PR (B)",
+            ],
+        )
+    )
+    # Get the GitHub Actions summary file path
+    summary_file = os.getenv("GITHUB_STEP_SUMMARY")
+    if summary_file:
+        # Append the output to the summary file
+        with open(summary_file, "a") as f:
+            f.write("### Diff summary\n")
+            f.write(
+                tabulate(
+                    print_data,
+                    headers=[
+                        "Binary Name",
+                        "Text [B]",
+                        "Data [B]",
+                        "BSS (B)",
+                        "Total Flash Change [B] (%)",
+                        "Flash Free After PR (B)",
+                    ],
+                    tablefmt="github",
+                )
+            )
+            f.write("\n")
 
 
 def extract_binaries_size(path):

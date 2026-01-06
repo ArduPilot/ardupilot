@@ -56,9 +56,11 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
     bool has_data = false;
     int16_t nbytes = uart->available();
 
-    /* Adding the parameters to log the data */
-    uint16_t reading_24Gz_cm, reading_60Gz_cm, reading_Int_cm, reading_lpf_cm;
-    uint8_t snr_24, snr_60, snr_Int;
+    #if HAL_LOGGING_ENABLED
+        /* Adding the parameters to log the data */
+        uint16_t reading_24Gz_cm, reading_60Gz_cm, reading_Int_cm, reading_lpf_cm;
+        uint8_t snr_24, snr_60, snr_Int;
+    #endif
 
     while (nbytes-- > PACKET_SIZE)
     {
@@ -149,14 +151,16 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
             reading_m = UINT16_VALUE(buffer[3], buffer[4]) * 0.01;
             snr = buffer[5];
         }
-
-        /* Setting Logging Params */
-        reading_24Gz_cm = UINT16_VALUE(buffer[3], buffer[4]);
-        reading_60Gz_cm = UINT16_VALUE(buffer[8], buffer[9]);
-        reading_Int_cm = UINT16_VALUE(buffer[13], buffer[14]);
-        snr_24 = buffer[5];
-        snr_60 = buffer[10];
-        snr_Int = buffer[15];
+        
+        #if HAL_LOGGING_ENABLED
+            /* Setting Logging Params */
+            reading_24Gz_cm = UINT16_VALUE(buffer[3], buffer[4]);
+            reading_60Gz_cm = UINT16_VALUE(buffer[8], buffer[9]);
+            reading_Int_cm = UINT16_VALUE(buffer[13], buffer[14]);
+            snr_24 = buffer[5];
+            snr_60 = buffer[10];
+            snr_Int = buffer[15];
+        #endif
 
         /* Validate the Data */
 
@@ -207,7 +211,10 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
         {
             reading_m = get_avg_reading(reading_m);
             state.status = RangeFinder::Status::Good;
-            reading_lpf_cm = reading_m*100;
+
+            #if HAL_LOGGING_ENABLED
+              reading_lpf_cm = reading_m*100;
+            #endif
         }
 
         /* Logging Point Start */

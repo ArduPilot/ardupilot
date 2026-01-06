@@ -2,11 +2,11 @@
 # test ccache efficiency building two similar boards
 # AP_FLAKE8_CLEAN
 
-import subprocess
-import re
 import argparse
-import sys
 import os
+import re
+import subprocess
+import sys
 
 parser = argparse.ArgumentParser(description='test ccache performance')
 parser.add_argument('--boards', default='MatekF405,MatekF405-bdshot', help='boards to test')
@@ -49,7 +49,10 @@ build_board(boards[1])
 subprocess.run(["ccache", "-s"])
 
 post = ccache_stats()
-hit_pct = 100 * post[0] / float(post[0]+post[1])
+try:
+    hit_pct = 100 * post[0] / float(post[0]+post[1])
+except ZeroDivisionError:
+    hit_pct = 0.0
 print("ccache hit percentage: %.1f%%  %s" % (hit_pct, post))
 if hit_pct < args.min_cache_pct:
     print("ccache hits too low, need %d%%" % args.min_cache_pct)
