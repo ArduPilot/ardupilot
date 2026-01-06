@@ -529,6 +529,9 @@ AP_HW_DroneerF405                    5800
 AP_HW_BrotherHobbyH743               5810
 AP_HW_BrotherHobbyF405v3             5811
 
+#IDs 5820 ~ 5829 reserved for VimDrones
+AP_HW_VIMDRONES_BMS                  5820
+
 # IDs 6000-6099 reserved for SpektreWorks
 AP_HW_sw-spar-f407                   6000
 AP_HW_sw-boom-f407                   6001
