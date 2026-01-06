@@ -53,6 +53,17 @@ bool ModeGuided::init(bool ignore_checks)
     return true;
 }
 
+// init - initialise guided controller
+void ModeGuided::set_hold_position()
+{
+    // check we are in velocity and acceleration control mode
+    if (guided_mode != SubMode::VelAccel) {
+        velaccel_control_start();
+    }
+    guided_vel_target_ned_ms.zero();
+    guided_accel_target_ned_mss.zero();
+}
+
 // run - runs the guided controller
 // should be called at 100hz or more
 void ModeGuided::run()
