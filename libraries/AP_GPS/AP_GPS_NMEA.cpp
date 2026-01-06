@@ -704,14 +704,14 @@ void AP_GPS_NMEA::parse_agrica_field(uint16_t term_number, const char *term)
         ag.heading_status = atol(term);
         break;
     case 25 ... 26:
-        ag.vel_NED[term_number-25] = atof(term);
+        ag.vel_NED[term_number-25] = strtof(term, nullptr);
         break;
     case 27:
         // AGRIC gives velocity up
-        ag.vel_NED.z = -atof(term);
+        ag.vel_NED.z = -strtof(term, nullptr);
         break;
     case 28 ... 30:
-        ag.vel_stddev[term_number-28] = atof(term);
+        ag.vel_stddev[term_number-28] = strtof(term, nullptr);
         break;
     case 31:
         ag.lat = atof(term);
@@ -720,16 +720,16 @@ void AP_GPS_NMEA::parse_agrica_field(uint16_t term_number, const char *term)
         ag.lng = atof(term);
         break;
     case 33:
-        ag.alt = atof(term);
+        ag.alt = strtof(term, nullptr);
         break;
     case 49:
         ag.itow = atol(term);
         break;
     case 37 ... 39:
-        ag.pos_stddev[term_number-37] = atof(term);
+        ag.pos_stddev[term_number-37] = strtof(term, nullptr);
         break;
     case 52:
-        ag.undulation = atof(term);
+        ag.undulation = strtof(term, nullptr);
         break;
     }
 }
@@ -754,16 +754,16 @@ void AP_GPS_NMEA::parse_uniheadinga_field(uint16_t term_number, const char *term
     auto &uh = _uniheadinga;
     switch (term_number) {
     case 4:
-        uh.baseline_length = atof(term);
+        uh.baseline_length = strtof(term, nullptr);
         break;
     case 5:
-        uh.heading = atof(term);
+        uh.heading = strtof(term, nullptr);
         break;
     case 6:
-        uh.pitch = atof(term);
+        uh.pitch = strtof(term, nullptr);
         break;
     case 8:
-        uh.heading_sd = atof(term);
+        uh.heading_sd = strtof(term, nullptr);
         break;
     }
 }
