@@ -140,6 +140,8 @@ void AC_Loiter::init_target()
     _predicted_accel_ne_mss = _pos_control.get_accel_target_NED_mss().xy();
     _predicted_euler_angle_rad.x = _pos_control.get_roll_rad();
     _predicted_euler_angle_rad.y = _pos_control.get_pitch_rad();
+    _predicted_euler_rate.zero();
+    _predicted_euler_accel.zero();
     _brake_accel_mss = 0.0f;
 }
 
@@ -176,7 +178,7 @@ void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, f
     Vector2f angle_error_euler_rad(wrap_PI(euler_roll_angle_rad - _predicted_euler_angle_rad.x), wrap_PI(euler_pitch_angle_rad - _predicted_euler_angle_rad.y));
 
     // Predict roll/pitch rate required to achieve target attitude
-    _attitude_control.input_shaping_rate_predictor(angle_error_euler_rad, _predicted_euler_rate, dt_s);
+    _attitude_control.command_model_rate_predictor(angle_error_euler_rad, _predicted_euler_rate, _predicted_euler_accel, dt_s);
 
     // Update internal attitude estimate for next iteration
     _predicted_euler_angle_rad += _predicted_euler_rate * dt_s;

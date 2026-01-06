@@ -132,6 +132,7 @@ protected:
     Vector2f    _predicted_accel_ne_mss;    // Predicted acceleration in m/s² based on internal rate shaping of pilot input.
     Vector2f    _predicted_euler_angle_rad; // Predicted roll/pitch angles (in radians) used for rate shaping of pilot input.
     Vector2f    _predicted_euler_rate;      // Predicted roll/pitch angular rates (in rad/s) for pilot acceleration shaping.
+    Vector2f    _predicted_euler_accel;     // Predicted roll/pitch angular rates (in rad/s) for pilot acceleration shaping.
     uint32_t    _brake_timer_ms;            // Timestamp (in ms) when braking logic was last triggered (sticks released).
     float       _brake_accel_mss;           // Current braking acceleration in m/s², updated using jerk limits over time.
 };
