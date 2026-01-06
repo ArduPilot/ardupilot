@@ -124,6 +124,7 @@ void AC_AttitudeControl_TS::input_euler_rate_yaw_euler_angle_pitch_bf_roll_rad(b
 
     // Set rate feedforward requests to zero
     _euler_rate_target_rads.zero();
+    _ang_accel_target_rads.zero();
     _ang_vel_target_rads.zero();
 
     // Compute attitude error
