@@ -162,6 +162,8 @@ public:
         DISABLE_PREARM_DISPLAY             = (1U << 0),
         DISABLE_STATUSTEXT_ON_STATE_CHANGE = (1U << 1),
         SKIP_IMU_CONSISTENCY_ICE_RUNNING   = (1U << 2),
+        SET_ORIGIN_FROM_AHRS_PARAMS_ON_ARMING  = (1U << 3),
+        SET_ORIGIN_FROM_AHRS_PARAMS_AT_STARTUP = (1U << 4),
     };
     bool option_enabled(Option option) const {
         return (_arming_options & uint32_t(option)) != 0;
