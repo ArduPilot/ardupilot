@@ -448,7 +448,7 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
 
         // actually open the file
         fd = AP::FS().open((char *)request.data,
-                           (request.opcode == FTP_OP::CreateFile) ? O_WRONLY|O_CREAT|O_TRUNC : O_WRONLY);
+                           (request.opcode == FTP_OP::CreateFile) ? O_WRONLY|O_CREAT|O_TRUNC : O_WRONLY|O_CREAT);
         if (fd == -1) {
             GCS_FTP::error(reply, FTP_ERROR::FailErrno);
             break;
