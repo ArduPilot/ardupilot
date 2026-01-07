@@ -68,27 +68,16 @@ void AP_AHRS_View::update()
         gyro = rot_view * gyro;
     }
 
-    // compute full-range pitch and fall back for singularity
-    const float ax = rot_body_to_ned.a.x;
-    const float bx = rot_body_to_ned.b.x;
-    const float cx = rot_body_to_ned.c.x;
+    rot_body_to_ned.to_euler(&roll, &pitch, &yaw);
 
-    // safe denominator (cos(pitch) approx)
-    const float denom = sqrtf(ax*ax + bx*bx);
-
-    if (denom > 1e-6f) {
-        // full-range pitch using atan2(sin,cos) -> returns (-PI, PI)
-        pitch = atan2F(-cx, denom);
-        // roll and yaw as before
-        roll  = atan2F(rot_body_to_ned.c.y, rot_body_to_ned.c.z);
-        yaw   = atan2F(rot_body_to_ned.b.x, rot_body_to_ned.a.x);
-    } else {
-        // near gimbal lock: denom ~ 0 => cos(pitch) ~ 0 (pitch ~ +/-90°)
-        // choose a stable convention: set roll to 0 and recover yaw from another pair
-        pitch = (cx > 0) ? -M_PI_2 : M_PI_2; // match existing sign convention
-        roll  = 0.0f;
-        // use an alternate element to estimate yaw in singular case
-        yaw   = atan2F(-rot_body_to_ned.a.y, rot_body_to_ned.b.y);
+    // compensate for going beyond +/- 90 degree in pitch
+    if(ahrs.pitch_sensor<=0){
+        if(pitch > 0.0f) {
+            pitch = 3.14f - pitch;
+        }
+        else {
+            pitch = -(pitch)- 3.14f;
+        }
     }
 
     roll_sensor  = degrees(roll) * 100;
