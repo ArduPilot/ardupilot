@@ -165,6 +165,15 @@ const AP_Param::Info Copter::var_info[] = {
     // @Values: 0:Relative to Home, 1:Terrain
     // @User: Standard
     GSCALAR(rtl_alt_type, "RTL_ALT_TYPE", 0),
+
+    // @Param: RTL_ACCEL
+    // @DisplayName: RTL acceleration
+    // @Description: Acceleration target in cm/s/s that RTL will attempt to slow the aircraft during the initial brake. Set to 0 to use WPNAV_ACCEL
+    // @Units: cm/s/s
+    // @Range: 0 10000
+    // @Increment: 100
+    // @User: Advanced
+    GSCALAR(rtl_accel_cmss,      "RTL_ACCEL",    RTL_ACCEL),
 #endif
 
     // @Param: FS_GCS_ENABLE

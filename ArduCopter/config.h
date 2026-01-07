@@ -517,6 +517,10 @@
  # define RTL_LOITER_TIME           5000    // Time (in milliseconds) to loiter above home before beginning final descent
 #endif
 
+#ifndef RTL_ACCEL
+ # define RTL_ACCEL                 0       // Acceleration in cm/s/s used during initial braking for RTL. Value of 0 uses WPNAV_ACCEL
+#endif
+
 // AUTO Mode
 #ifndef WP_YAW_BEHAVIOR_DEFAULT
  # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL
