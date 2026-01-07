@@ -179,8 +179,6 @@ class SizeCompareBranches(BuildScriptBase):
             'skyviper-journey',
             'Pixhawk1-1M-bdshot',
             'Pixhawk1-bdshot',
-            'SITL_arm_linux_gnueabihf',
-            'SITL_x86_64_linux_gnu',
             'RADIX2HD',
             'canzero',
             't3-gem-o1',
@@ -213,7 +211,7 @@ class SizeCompareBranches(BuildScriptBase):
 
         for board_name in self.board:
             board = self.boards_by_name[board_name]
-            if board.hal in ["Linux", "ESP32"]:
+            if board.hal in ["Linux", "ESP32", "SITL"]:
                 self.bootloader_blacklist.add(board.name)
 
     def find_bin_dir(self, toolchain_prefix="arm-none-eabi-"):

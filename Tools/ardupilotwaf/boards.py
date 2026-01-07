@@ -665,6 +665,10 @@ def add_dynamic_boards_linux():
     '''add boards based on existence of hwdef.dat in subdirectories for '''
     add_dynamic_boards_from_hwdef_dir(LinuxBoard, 'libraries/AP_HAL_Linux/hwdef')
 
+def add_dynamic_boards_sitl():
+    '''add boards based on existence of hwdef.dat in subdirectories for '''
+    add_dynamic_boards_from_hwdef_dir(SITLBoard, 'libraries/AP_HAL_SITL/hwdef')
+
 def add_dynamic_boards_from_hwdef_dir(base_type, hwdef_dir):
     '''add boards based on existence of hwdef.dat in subdirectory'''
     dirname, dirlist, filenames = next(os.walk(hwdef_dir))
@@ -694,6 +698,7 @@ def get_boards_names():
     add_dynamic_boards_chibios()
     add_dynamic_boards_esp32()
     add_dynamic_boards_linux()
+    add_dynamic_boards_sitl()
 
     return sorted(list(_board_classes.keys()), key=str.lower)
 
@@ -752,7 +757,8 @@ Please use a replacement build as follows:
 # identify opportunities to simplify common flags. In the future might
 # be worthy to keep board definitions in files of their own.
 
-class sitl(Board):
+class SITLBoard(Board):
+    abstract = True
 
     def __init__(self):
         super().__init__()
@@ -760,8 +766,22 @@ class sitl(Board):
         self.with_can = True
         self.with_littlefs = True
 
+    def configure(self, cfg):
+        if hasattr(self, 'hwdef'):
+            cfg.env.HWDEF = self.hwdef
+
+        # load hwdef, extract toolchain from cfg.env:
+        cfg.load('sitl')
+        if cfg.env.TOOLCHAIN:
+            self.toolchain = cfg.env.TOOLCHAIN
+        else:
+            # default tool-chain for SITL-based boards:
+            self.toolchain = 'native'
+
+        super().configure(cfg)
+
     def configure_env(self, cfg, env):
-        super(sitl, self).configure_env(cfg, env)
+        super().configure_env(cfg, env)
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_SITL',
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
@@ -786,11 +806,12 @@ class sitl(Board):
             '-DAC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT=HAL_GCS_ENABLED&&AP_FENCE_ENABLED'
         ])
 
-        try:
-            env.CXXFLAGS.remove('-DHAL_NAVEKF2_AVAILABLE=0')
-        except ValueError:
-            pass
-        env.CXXFLAGS += ['-DHAL_NAVEKF2_AVAILABLE=1']
+        if not cfg.env.AP_PERIPH:
+            try:
+                env.CXXFLAGS.remove('-DHAL_NAVEKF2_AVAILABLE=0')
+            except ValueError:
+                pass
+            env.CXXFLAGS += ['-DHAL_NAVEKF2_AVAILABLE=1']
 
         if self.with_can:
             cfg.define('HAL_NUM_CAN_IFACES', 2)
@@ -961,180 +982,14 @@ class sitl(Board):
     def get_name(self):
         return self.__class__.__name__
 
-
-class sitl_periph(sitl):
-    def configure_env(self, cfg, env):
-        cfg.env.AP_PERIPH = 1
-        super(sitl_periph, self).configure_env(cfg, env)
-        env.DEFINES.update(
-            HAL_BUILD_AP_PERIPH = 1,
-            PERIPH_FW = 1,
-            HAL_RAM_RESERVE_START = 0,
-
-            CANARD_ENABLE_CANFD = 1,
-            CANARD_ENABLE_TAO_OPTION = 1,
-            CANARD_MULTI_IFACE = 1,
-
-            # FIXME: SITL library should not be using AP_AHRS:
-            AP_AHRS_ENABLED = 1,
-            AP_AHRS_BACKEND_DEFAULT_ENABLED = 0,
-            AP_AHRS_DCM_ENABLED = 1,  # need a default backend
-            AP_EXTERNAL_AHRS_ENABLED = 0,
-
-            HAL_MAVLINK_BINDINGS_ENABLED = 1,
-
-            AP_AIRSPEED_AUTOCAL_ENABLE = 0,
-            AP_CAN_SLCAN_ENABLED = 0,
-            AP_ICENGINE_ENABLED = 0,
-            AP_MISSION_ENABLED = 0,
-            AP_RCPROTOCOL_ENABLED = 0,
-            AP_RTC_ENABLED = 0,
-            AP_SCHEDULER_ENABLED = 0,
-            AP_SCRIPTING_ENABLED = 0,
-            AP_STATS_ENABLED = 0,
-            AP_UART_MONITOR_ENABLED = 1,
-            COMPASS_CAL_ENABLED = 0,
-            COMPASS_LEARN_ENABLED = 0,
-            COMPASS_MOT_ENABLED = 0,
-            HAL_CAN_DEFAULT_NODE_ID = 0,
-            HAL_CANMANAGER_ENABLED = 0,
-            HAL_GCS_ENABLED = 0,
-            HAL_GENERATOR_ENABLED = 0,
-            HAL_LOGGING_ENABLED = 0,
-            HAL_LOGGING_MAVLINK_ENABLED = 0,
-            HAL_PROXIMITY_ENABLED = 0,
-            HAL_RALLY_ENABLED = 0,
-            HAL_SUPPORT_RCOUT_SERIAL = 0,
-            AP_TERRAIN_AVAILABLE = 0,
-            AP_CUSTOMROTATIONS_ENABLED = 0,
-            AP_PERIPH_BATTERY_ENABLED = 0,
-            AP_PERIPH_DEVICE_TEMPERATURE_ENABLED = 0,
-            AP_PERIPH_SERIAL_OPTIONS_ENABLED = 0,
-            AP_PERIPH_ADSB_ENABLED = 0,
-            AP_PERIPH_PROXIMITY_ENABLED = 0,
-            AP_PERIPH_GPS_ENABLED = 0,
-            AP_PERIPH_RELAY_ENABLED = 0,
-            AP_PERIPH_IMU_ENABLED = 0,
-            AP_PERIPH_MAG_ENABLED = 0,
-            AP_PERIPH_BATTERY_BALANCE_ENABLED = 0,
-            AP_PERIPH_BATTERY_TAG_ENABLED = 0,
-            AP_PERIPH_BATTERY_BMS_ENABLED = 0,
-            AP_PERIPH_MSP_ENABLED = 0,
-            AP_PERIPH_BARO_ENABLED = 0,
-            AP_PERIPH_EFI_ENABLED = 0,
-            AP_PERIPH_RANGEFINDER_ENABLED = 0,
-            AP_PERIPH_RC_OUT_ENABLED = 0,
-            AP_PERIPH_RTC_ENABLED = 0,
-            AP_PERIPH_RCIN_ENABLED = 0,
-            AP_PERIPH_RPM_ENABLED = 0,
-            AP_PERIPH_RPM_STREAM_ENABLED = 0,
-            AP_PERIPH_AIRSPEED_ENABLED = 0,
-            AP_PERIPH_HOBBYWING_ESC_ENABLED = 0,
-            AP_PERIPH_NETWORKING_ENABLED = 0,
-            AP_PERIPH_NOTIFY_ENABLED = 0,
-            AP_PERIPH_PWM_HARDPOINT_ENABLED = 0,
-            AP_PERIPH_ESC_APD_ENABLED = 0,
-            AP_PERIPH_NCP5623_LED_WITHOUT_NOTIFY_ENABLED = 0,
-            AP_PERIPH_NCP5623_BGR_LED_WITHOUT_NOTIFY_ENABLED = 0,
-            AP_PERIPH_TOSHIBA_LED_WITHOUT_NOTIFY_ENABLED = 0,
-            AP_PERIPH_BUZZER_ENABLED = 0,
-            AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED = 0,
-            AP_PERIPH_RTC_GLOBALTIME_ENABLED = 0,
-            AP_PERIPH_ACTUATOR_TELEM_ENABLED = 0,
-        )
-
-        try:
-            env.CXXFLAGS.remove('-DHAL_NAVEKF2_AVAILABLE=1')
-        except ValueError:
-            pass
-        env.CXXFLAGS += ['-DHAL_NAVEKF2_AVAILABLE=0']
-
-class sitl_periph_universal(sitl_periph):
-    def configure_env(self, cfg, env):
-        super(sitl_periph_universal, self).configure_env(cfg, env)
-        env.DEFINES.update(
-            CAN_APP_NODE_NAME = '"org.ardupilot.ap_periph_universal"',
-            APJ_BOARD_ID = 100,
-
-            AP_PERIPH_GPS_ENABLED = 1,
-            AP_PERIPH_AIRSPEED_ENABLED = 1,
-            AP_PERIPH_MAG_ENABLED = 1,
-            AP_PERIPH_BARO_ENABLED = 1,
-            AP_PERIPH_IMU_ENABLED = 1,
-            AP_PERIPH_RANGEFINDER_ENABLED = 1,
-            AP_PERIPH_BATTERY_ENABLED = 1,
-            AP_PERIPH_EFI_ENABLED = 1,
-            AP_PERIPH_RPM_ENABLED = 1,
-            AP_PERIPH_RPM_STREAM_ENABLED = 1,
-            AP_RPM_STREAM_ENABLED = 1,
-            AP_PERIPH_RC_OUT_ENABLED = 1,
-            AP_PERIPH_ADSB_ENABLED = 1,
-            AP_PERIPH_SERIAL_OPTIONS_ENABLED = 1,
-            AP_AIRSPEED_ENABLED = 1,
-            AP_BATTERY_ESC_ENABLED = 1,
-            HAL_PWM_COUNT = 32,
-            HAL_WITH_ESC_TELEM = 1,
-            AP_EXTENDED_ESC_TELEM_ENABLED = 1,
-            AP_TERRAIN_AVAILABLE = 1,
-            HAL_GYROFFT_ENABLED = 0,
-        )
-
-class sitl_periph_gps(sitl_periph):
-    def configure_env(self, cfg, env):
-        cfg.env.AP_PERIPH = 1
-        super(sitl_periph_gps, self).configure_env(cfg, env)
-        env.DEFINES.update(
-            HAL_BUILD_AP_PERIPH = 1,
-            PERIPH_FW = 1,
-            CAN_APP_NODE_NAME = '"org.ardupilot.ap_periph_gps"',
-            APJ_BOARD_ID = 101,
-
-            AP_PERIPH_GPS_ENABLED = 1,
-        )
-
-class sitl_periph_battmon(sitl_periph):
-    def configure_env(self, cfg, env):
-        cfg.env.AP_PERIPH = 1
-        super(sitl_periph_battmon, self).configure_env(cfg, env)
-        env.DEFINES.update(
-            HAL_BUILD_AP_PERIPH = 1,
-            PERIPH_FW = 1,
-            CAN_APP_NODE_NAME = '"org.ardupilot.ap_periph_battmon"',
-            APJ_BOARD_ID = 101,
-
-            AP_PERIPH_BATTERY_ENABLED = 1,
-        )
-
-class sitl_periph_battery_tag(sitl_periph):
-    def configure_env(self, cfg, env):
-        cfg.env.AP_PERIPH = 1
-        super(sitl_periph_battery_tag, self).configure_env(cfg, env)
-        env.DEFINES.update(
-            HAL_BUILD_AP_PERIPH = 1,
-            PERIPH_FW = 1,
-            CAN_APP_NODE_NAME = '"org.ardupilot.battery_tag"',
-            APJ_BOARD_ID = 101,
-
-            AP_SIM_PARAM_ENABLED = 0,
-            AP_KDECAN_ENABLED = 0,
-            AP_TEMPERATURE_SENSOR_ENABLED = 0,
-            AP_PERIPH_BATTERY_TAG_ENABLED = 1,
-            AP_RTC_ENABLED = 1,
-            AP_PERIPH_RTC_ENABLED = 1,
-            AP_PERIPH_RTC_GLOBALTIME_ENABLED = 1,
-        )
-
-class sitl_periph_can_to_serial(sitl_periph):
-    def configure_env(self, cfg, env):
-        cfg.env.AP_PERIPH = 1
-        super().configure_env(cfg, env)
-        env.DEFINES.update(
-            HAL_BUILD_AP_PERIPH = 1,
-            PERIPH_FW = 1,
-            CAN_APP_NODE_NAME = '"org.ardupilot.serial_passthrough"',
-            APJ_BOARD_ID = 101,
-
-        )
+    def pre_build(self, bld):
+        '''pre-build hook that gets called before dynamic sources'''
+        from waflib.Context import load_tool
+        module = load_tool('sitl', [], with_sys_path=True)
+        fun = getattr(module, 'pre_build', None)
+        if fun:
+            fun(bld)
+        super().pre_build(bld)
 
 class esp32(Board):
     abstract = True
@@ -1623,17 +1478,6 @@ class LinuxBoard(Board):
     def get_name(self):
         # get name of class
         return self.__class__.__name__
-
-class SITL_static(sitl):
-    def configure_env(self, cfg, env):
-        super(SITL_static, self).configure_env(cfg, env)
-        cfg.env.STATIC_LINKING = True
-
-class SITL_x86_64_linux_gnu(SITL_static):
-    toolchain = 'x86_64-linux-gnu'
-
-class SITL_arm_linux_gnueabihf(SITL_static):
-    toolchain = 'arm-linux-gnueabihf'
 
 class QURT(Board):
     '''support for QURT based boards'''
