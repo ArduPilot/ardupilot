@@ -236,30 +236,7 @@ void shape_vel_accel_xy(const Vector2f& vel_desired, const Vector2f& accel_desir
     // acceleration to correct velocity
     Vector2f accel_target = sqrt_controller(vel_error, KPa, jerk_max, dt);
 
-    // limit correction acceleration to accel_max
-    if (vel_desired.is_zero()) {
-        accel_target.limit_length(accel_max);
-    } else {
-        // calculate acceleration in the direction of and perpendicular to the velocity input
-        const Vector2f vel_desired_unit = vel_desired.normalized();
-        float accel_dir = vel_desired_unit * accel_target;
-        Vector2f accel_cross =  accel_target - (vel_desired_unit * accel_dir);
-
-        // Ensure sufficient acceleration is reserved for cross-track correction.
-        // If forward component dominates, limit lateral component to stay within total magnitude.
-        if (sq(accel_dir) <= accel_cross.length_squared()) {
-            // accel_target can be simply limited in magnitude
-            accel_target.limit_length(accel_max);
-        } else {
-            // limiting the length of the vector will reduce the lateral acceleration below 1/sqrt(2)
-            // limit the lateral acceleration to 1/sqrt(2) and retain as much of the remaining
-            // acceleration as possible.
-            accel_cross.limit_length(CORNER_ACCELERATION_RATIO * accel_max);
-            float accel_max_dir = safe_sqrt(sq(accel_max) - accel_cross.length_squared());
-            accel_dir = constrain_float(accel_dir, -accel_max_dir, accel_max_dir);
-            accel_target = accel_cross + vel_desired_unit * accel_dir;
-        }
-    }
+    limit_accel_corner_xy(vel_desired, accel_target, accel_max);
 
     accel_target += accel_desired;
 
@@ -458,6 +435,46 @@ bool limit_accel_xy(const Vector2f& vel, Vector2f& accel, float accel_max)
         return true;
     }
     return false;
+}
+
+// Limits acceleration magnitude while preserving cross-track authority during turns.
+// - Splits acceleration into components parallel and perpendicular to velocity.
+// - Ensures sufficient lateral acceleration is reserved for path curvature.
+// - If forward acceleration dominates, lateral acceleration is limited to
+//   CORNER_ACCELERATION_RATIO * accel_max.
+// Returns true if limiting was applied. (including simple magnitude limiting when vel is zero).
+bool limit_accel_corner_xy(const Vector2f& vel, Vector2f& accel, float accel_max)
+{
+    // check accel_max is defined
+    if (!is_positive(accel_max)) {
+        return false;
+    }
+    if (vel.is_zero()) {
+        // No along/cross decomposition possible; apply a simple magnitude limit.
+        return accel.limit_length(accel_max);
+    }
+
+    // Unit velocity direction defines the along-track axis.
+    const Vector2f vel_unit = vel.normalized();
+
+    // Decompose accel into along-track and cross-track components.
+    float accel_dir = vel_unit * accel;
+    Vector2f accel_cross =  accel - (vel_unit * accel_dir);
+
+    // If cross-track magnitude is at least as large as along-track, a simple vector limit
+    // preserves at least 1/sqrt(2) of accel_max for cross-track correction.
+    if (sq(accel_dir) <= accel_cross.length_squared()) {
+        // accel can be simply limited in magnitude
+        return accel.limit_length(accel_max);
+    }
+
+    // Along-track dominates: preserve cross-track authority by limiting cross-track first,
+    // then allocate remaining magnitude to along-track.
+    accel_cross.limit_length(CORNER_ACCELERATION_RATIO * accel_max);
+    float accel_max_dir = safe_sqrt(sq(accel_max) - accel_cross.length_squared());
+    accel_dir = constrain_float(accel_dir, -accel_max_dir, accel_max_dir);
+    accel = accel_cross + vel_unit * accel_dir;
+    return true;
 }
 
 // Piecewise square-root + linear controller that limits second-order response (acceleration).
