@@ -1,0 +1,4 @@
+include ../sitl/hwdef.dat
+
+env TOOLCHAIN arm-linux-gnueabihf
+env STATIC_LINKING 1
