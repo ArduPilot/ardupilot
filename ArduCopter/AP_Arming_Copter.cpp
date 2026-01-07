@@ -660,9 +660,19 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
     }
 
     // Last ditch to get an origin if the GPS has not already provided one
-    if (copter.flightmode->requires_position() && !ahrs.set_origin_from_params_maybe()) {
-        check_failed(true, "No origin set");
-        return false;
+    if (copter.flightmode->requires_position()) {
+        if (option_enabled(AP_Arming::Option::SET_ORIGIN_FROM_AHRS_PARAMS)) {
+            if (!ahrs.set_origin_from_params_maybe()) {
+                check_failed(true, "No origin set");
+                return false;
+            }
+        } else {
+            Location origin;
+            if (!ahrs.get_origin(origin)) {
+                check_failed(true, "No origin set");
+                return false;
+            }
+        }
     }
 
     // superclass method should always be the last thing called; it
