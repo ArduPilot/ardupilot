@@ -1,55 +1,55 @@
 name: test size
 
 on:
-  # pull_request:
-  #   paths-ignore: # ignore autotest stuffs
-  #     - 'Tools/autotest/**'
-  #     # Remove markdown files as irrelevant
-  #     - '**.md'
-  #     # Remove dotfile at root directory
-  #     - './.dir-locals.el'
-  #     - './.dockerignore'
-  #     - './.editorconfig'
-  #     - './.flake8'
-  #     - './.gitattributes'
-  #     - './.github'
-  #     - './.gitignore'
-  #     - './.pre-commit-config.yaml'
-  #     - './.pydevproject'
-  #     - './.valgrind-suppressions'
-  #     - './.valgrindrc'
-  #     - 'Dockerfile'
-  #     - 'Vagrantfile'
-  #     - 'Makefile'
-  #     # Remove some directories check
-  #     - '.vscode/**'
-  #     - '.github/ISSUE_TEMPLATE/**'
-  #     # Remove generic tools
-  #     - 'Tools/CHDK-Script/**'
-  #     - 'Tools/CodeStyle/**'
-  #     - 'Tools/completion/**'
-  #     - 'Tools/CPUInfo/**'
-  #     - 'Tools/debug/**'
-  #     - 'Tools/environment_install/**'
-  #     - 'Tools/FilterTestTool/**'
-  #     - 'Tools/geotag/**'
-  #     - 'Tools/GIT_Test/**'
-  #     - 'Tools/gittools/**'
-  #     - 'Tools/Hello/**'
-  #     - 'Tools/Linux_HAL_Essentials/**'
-  #     - 'Tools/mavproxy_modules/**'
-  #     - 'Tools/Pozyx/**'
-  #     - 'Tools/PrintVersion.py'
-  #     - 'Tools/simulink/**'
-  #     - 'Tools/UDP_Proxy/**'
-  #     - 'Tools/vagrant/**'
-  #     - 'Tools/Vicon/**'
-  #     # remove non CHIBIOS HAL
-  #     - 'libraries/AP_HAL_SITL/**'
-  #     - 'libraries/AP_HAL_ESP32/**'
-  #     - 'libraries/AP_HAL_Linux/**'
-  #     # Remove change on other workflows
-  #     - '.github/workflows/test_environment.yml'
+  pull_request:
+    paths-ignore: # ignore autotest stuffs
+      - 'Tools/autotest/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - './.dir-locals.el'
+      - './.dockerignore'
+      - './.editorconfig'
+      - './.flake8'
+      - './.gitattributes'
+      - './.github'
+      - './.gitignore'
+      - './.pre-commit-config.yaml'
+      - './.pydevproject'
+      - './.valgrind-suppressions'
+      - './.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      - 'Makefile'
+      # Remove some directories check
+      - '.vscode/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      # Remove generic tools
+      - 'Tools/CHDK-Script/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/mavproxy_modules/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/simulink/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # remove non CHIBIOS HAL
+      - 'libraries/AP_HAL_SITL/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_Linux/**'
+      # Remove change on other workflows
+      - '.github/workflows/test_environment.yml'
   workflow_dispatch:
 
 concurrency:
@@ -65,12 +65,6 @@ jobs:
       matrix:
         toolchain: [chibios]
         config: [MatekH743, mRoControlZeroOEMH7, CubeOrange]
-        include:
-          - config: disco
-            toolchain: armhf
-        exclude:
-          - config: disco
-            toolchain: chibios
     steps:
       - uses: actions/checkout@v6
         with:
@@ -101,18 +95,7 @@ jobs:
           # set up some variables based on what sort of build we're doing:
           BOOTLOADER=0
           AP_PERIPH=0
-          if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
-             [ "${{matrix.config}}" = "f103-GPS" ]; then
-            AP_PERIPH=1
-          elif [ "${{matrix.config}}" = "MatekF405-CAN" ] ||
-               [ "${{matrix.config}}" = "DrotekP3Pro" ]; then
-            BOOTLOADER=1
-          fi
-          if [ $BOOTLOADER -eq 1 ]; then
-             BIN_SRC="build/${{matrix.config}}/bootloader"
-          else
-             BIN_SRC="build/${{matrix.config}}/bin"
-          fi
+          BIN_SRC="build/${{matrix.config}}/bin"
 
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/github/home/.local/bin:$PATH"
@@ -120,19 +103,11 @@ jobs:
           # build the base branch
           cd base_branch
           # configure:
-          if [ $BOOTLOADER -eq 1 ]; then
-            ./waf configure --board ${{matrix.config}} --bootloader
-          else
-            ./waf configure --board ${{matrix.config}}
-          fi
+          ./waf configure --board ${{matrix.config}}
+
           # build:
-          if [ $AP_PERIPH -eq 1 ]; then
-            ./waf AP_Periph
-          elif [ $BOOTLOADER -eq 1 ]; then
-            ./waf bootloader
-          else
-            ./waf copter
-          fi
+          ./waf copter
+
           mkdir -p $GITHUB_WORKSPACE/base_branch_bin
 
           cp -r $BIN_SRC/* $GITHUB_WORKSPACE/base_branch_bin/
@@ -151,13 +126,8 @@ jobs:
           export GIT_VERSION="abcdef"
           export GIT_VERSION_INT="15"
 
-          if [ $AP_PERIPH -eq 1 ]; then
-            ./waf AP_Periph
-          elif [ $BOOTLOADER -eq 1 ]; then
-            ./waf bootloader
-          else
-            ./waf copter
-          fi
+          ./waf copter
+
           cp -r $BIN_SRC/* "$NO_VERSIONS_DIR"
 
           echo [`date`] Built ${{ github.event.pull_request.base.ref }} with no versions
@@ -176,18 +146,8 @@ jobs:
           # set up some variables based on what sort of build we're doing:
           BOOTLOADER=0
           AP_PERIPH=0
-          if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
-             [ "${{matrix.config}}" = "f103-GPS" ]; then
-            AP_PERIPH=1
-          elif [ "${{matrix.config}}" = "MatekF405-CAN" ] ||
-               [ "${{matrix.config}}" = "DrotekP3Pro" ]; then
-            BOOTLOADER=1
-          fi
-          if [ $BOOTLOADER -eq 1 ]; then
-             BIN_SRC="build/${{matrix.config}}/bootloader"
-          else
-             BIN_SRC="build/${{matrix.config}}/bin"
-          fi
+          BIN_SRC="build/${{matrix.config}}/bin"
+
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/github/home/.local/bin:$PATH"
           cd pr/
@@ -198,19 +158,11 @@ jobs:
           git rebase target_repo/${{ github.event.pull_request.base.ref }}
           git submodule update --init --recursive --depth=1
           # configure
-          if [ $BOOTLOADER -eq 1 ]; then
-            ./waf configure --board ${{matrix.config}} --bootloader
-          else
-            ./waf configure --board ${{matrix.config}}
-          fi
+          ./waf configure --board ${{matrix.config}}
+
           # build
-          if [ $AP_PERIPH -eq 1 ]; then
-            ./waf AP_Periph
-          elif [ $BOOTLOADER -eq 1 ]; then
-            ./waf bootloader
-          else
-            ./waf copter
-          fi
+          ./waf copter
+  
           mkdir $GITHUB_WORKSPACE/pr_bin
           cp -r $BIN_SRC/* $GITHUB_WORKSPACE/pr_bin/
 
@@ -228,30 +180,11 @@ jobs:
           export GIT_VERSION="abcdef"
           export GIT_VERSION_INT="15"
 
-          if [ $AP_PERIPH -eq 1 ]; then
-            ./waf AP_Periph
-          elif [ $BOOTLOADER -eq 1 ]; then
-            ./waf bootloader
-          else
-            ./waf copter
-          fi
+          ./waf copter
+
           cp -r $BIN_SRC/* "$NO_VERSIONS_DIR"
 
           echo [`date`] Built PR with no versions
-
-          # build MatekF405 Plane without quadplane
-          if [ "${{matrix.config}}" = "MatekF405" ]; then
-            PLANE_BINARY="build/MatekF405/bin/arduplane.bin"
-            echo "normal size"
-            ls -l "$PLANE_BINARY"
-            EXTRA_HWDEF="/tmp/extra-options.def"
-            echo "define HAL_QUADPLANE_ENABLED 0" >"$EXTRA_HWDEF"
-            ./waf configure --board ${{matrix.config}} --extra-hwdef="$EXTRA_HWDEF"
-            ./waf plane
-            rm "$EXTRA_HWDEF"
-            echo "non-quadplane size:"
-            ls -l "$PLANE_BINARY"
-          fi
 
       - name: Full size compare with base branch
         shell: bash
@@ -264,26 +197,11 @@ jobs:
         run: |
           set -ex
           cd pr/
+
           BIN_PREFIX="arm-none-eabi-"
-          if [ "${{matrix.toolchain}}" = "armhf" ]; then
-             BIN_PREFIX="arm-linux-gnueabihf-"
-          fi
           BOOTLOADER=0
           AP_PERIPH=0
-          if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
-             [ "${{matrix.config}}" = "f103-GPS" ]; then
-            AP_PERIPH=1
-          elif [ "${{matrix.config}}" = "MatekF405-CAN" ] ||
-               [ "${{matrix.config}}" = "DrotekP3Pro" ]; then
-            BOOTLOADER=1
-          fi
-          if [ $AP_PERIPH -eq 1 ]; then
-              EF_BINARY_NAME="AP_Periph"
-          elif [ $BOOTLOADER -eq 1 ]; then
-              EF_BINARY_NAME="AP_Bootloader"
-          else
-              EF_BINARY_NAME="arduplane"
-          fi
+          EF_BINARY_NAME="arducopter"
           EF_BASE_BRANCH_BINARY="$GITHUB_WORKSPACE/base_branch_bin/$EF_BINARY_NAME"
           EF_PR_BRANCH_BINARY="$GITHUB_WORKSPACE/pr_bin/$EF_BINARY_NAME"
 
