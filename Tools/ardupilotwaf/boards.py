@@ -394,6 +394,7 @@ class Board:
             '-Wno-redundant-decls',
             '-Wno-unknown-pragmas',
             '-Wno-expansion-to-defined',
+            '-Wno-invalid-offsetof',
             '-Werror=reorder',
             '-Werror=cast-align',
             '-Werror=attributes',
