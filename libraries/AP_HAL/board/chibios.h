@@ -109,8 +109,8 @@
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_NONE
 
 // we support RC serial for BLHeli pass-thru
-#ifndef HAL_SUPPORT_RCOUT_SERIAL
-#define HAL_SUPPORT_RCOUT_SERIAL 1
+#ifndef AP_BLHELI_ENABLED
+#define AP_BLHELI_ENABLED HAL_SERIAL_ESC_COMM_ENABLED
 #endif
 
 // by default assume first I2C bus is internal

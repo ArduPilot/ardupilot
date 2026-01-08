@@ -23,7 +23,7 @@
 
 #include "AP_BLHeli.h"
 
-#if HAVE_AP_BLHELI_SUPPORT
+#if AP_BLHELI_ENABLED
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <hal.h>
@@ -1693,4 +1693,4 @@ void AP_BLHeli::update_telemetry(void)
     }
 }
 
-#endif // HAVE_AP_BLHELI_SUPPORT
+#endif // AP_BLHELI_ENABLED

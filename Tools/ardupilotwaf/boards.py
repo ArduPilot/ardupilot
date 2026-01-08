@@ -1003,7 +1003,7 @@ class sitl_periph(sitl):
             HAL_LOGGING_MAVLINK_ENABLED = 0,
             HAL_PROXIMITY_ENABLED = 0,
             HAL_RALLY_ENABLED = 0,
-            HAL_SUPPORT_RCOUT_SERIAL = 0,
+            AP_BLHELI_ENABLED = 0,
             AP_TERRAIN_AVAILABLE = 0,
             AP_CUSTOMROTATIONS_ENABLED = 0,
             AP_PERIPH_BATTERY_ENABLED = 0,
