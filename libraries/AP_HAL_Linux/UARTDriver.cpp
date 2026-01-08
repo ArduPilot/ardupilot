@@ -250,12 +250,47 @@ bool UARTDriver::tx_pending()
 }
 
 /*
+  try to fill the read buffer from device
+  return true if data was read
+ */
+bool UARTDriver::_fill_read_buffer(void)
+{
+    int ret;
+    ByteBuffer::IoVec vec[2];
+    bool got_data = false;
+
+    const auto n_vec = _readbuf.reserve(vec, _readbuf.space());
+    for (int i = 0; i < n_vec; i++) {
+        ret = _read_fd(vec[i].data, vec[i].len);
+        if (ret <= 0) {
+            break;
+        }
+        _readbuf.commit((unsigned)ret);
+        got_data = true;
+
+        // update receive timestamp
+        _receive_timestamp[_receive_timestamp_idx^1] = AP_HAL::micros64();
+        _receive_timestamp_idx ^= 1;
+
+        /* stop reading as we read less than we asked for */
+        if ((unsigned)ret < vec[i].len) {
+            break;
+        }
+    }
+    return got_data;
+}
+
+/*
   return the number of bytes available to be read
  */
 uint32_t UARTDriver::_available()
 {
     if (!_initialised) {
         return 0;
+    }
+    // pull any pending data from device for low-latency reads
+    if (!_in_timer) {
+        _fill_read_buffer();
     }
     return _readbuf.available();
 }
@@ -402,26 +437,7 @@ void UARTDriver::_timer_tick(void)
     }
 
     // try to fill the read buffer
-    int ret;
-    ByteBuffer::IoVec vec[2];
-
-    const auto n_vec = _readbuf.reserve(vec, _readbuf.space());
-    for (int i = 0; i < n_vec; i++) {
-        ret = _read_fd(vec[i].data, vec[i].len);
-        if (ret < 0) {
-            break;
-        }
-        _readbuf.commit((unsigned)ret);
-
-        // update receive timestamp
-        _receive_timestamp[_receive_timestamp_idx^1] = AP_HAL::micros64();
-        _receive_timestamp_idx ^= 1;
-        
-        /* stop reading as we read less than we asked for */
-        if ((unsigned)ret < vec[i].len) {
-            break;
-        }
-    }
+    _fill_read_buffer();
 
     _in_timer = false;
 }

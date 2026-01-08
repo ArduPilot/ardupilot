@@ -91,6 +91,8 @@ protected:
     virtual int _write_fd(const uint8_t *buf, uint16_t n);
     virtual int _read_fd(uint8_t *buf, uint16_t n);
 
+    bool _fill_read_buffer(void);
+
     Linux::Semaphore _write_mutex;
 
     bool _discard_input() override;
