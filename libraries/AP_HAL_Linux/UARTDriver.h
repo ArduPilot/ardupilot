@@ -62,6 +62,7 @@ private:
     AP_HAL::OwnPtr<SerialDevice> _device;
     bool _console;
     volatile bool _in_timer;
+    volatile bool _in_flush;
     uint16_t _base_port;
     uint32_t _baudrate;
     char *_ip;

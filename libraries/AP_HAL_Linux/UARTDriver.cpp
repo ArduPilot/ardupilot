@@ -219,7 +219,16 @@ void UARTDriver::_end()
 
 void UARTDriver::_flush()
 {
-    // we are not doing any buffering, so flush is a no-op
+    if (!_initialised || _in_timer) {
+        return;  // UART thread is active, let it handle the drain
+    }
+    _in_flush = true;
+    // write any pending bytes immediately, bypassing the 100Hz UART thread
+    // this is critical for low-latency protocols like CRSF
+    while (_write_pending_bytes()) {
+        // keep writing until buffer is empty or device can't accept more
+    }
+    _in_flush = false;
 }
 
 
@@ -384,9 +393,12 @@ void UARTDriver::_timer_tick(void)
 
     _in_timer = true;
 
-    uint8_t num_send = 10;
-    while (num_send != 0 && _write_pending_bytes()) {
-        num_send--;
+    // skip write if _flush() is draining the buffer
+    if (!_in_flush) {
+        uint8_t num_send = 10;
+        while (num_send != 0 && _write_pending_bytes()) {
+            num_send--;
+        }
     }
 
     // try to fill the read buffer
