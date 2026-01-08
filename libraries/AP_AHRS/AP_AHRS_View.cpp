@@ -81,11 +81,11 @@ void AP_AHRS_View::update()
         // Nose down below horizon
         if(x_ned.z > 0.0f) {
             // Belly down
-            pitch = M_PI - pitch;
+            pitch = -M_PI - pitch;
         }
         else {
             // Belly up
-            pitch = -M_PI - pitch;
+            pitch = M_PI - pitch;
         }
     }
 
