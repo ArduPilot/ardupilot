@@ -857,17 +857,20 @@ bool AP_GPS_UBLOX_CFGv2::_init_common_cfg_list(bool check_only, uint32_t key_to_
     // Fill with expected configuration based on module type
     if (module < Module::SINGLE_UART_LAST) {
         UBX_CFG_COMMON_UART(INIT_CFG_PUSH_INDEXED)
+#if GPS_MOVING_BASELINE
         // check if rover or base
         if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE) {
             UBX_CFG_MB_BASE_UART1(INIT_CFG_PUSH_INDEXED)
         } else {
             UBX_CFG_MB_ROVER_UART1(INIT_CFG_PUSH_INDEXED)
         }
+#endif
     } else {
         // Dual-UART modules configuration depends on detected port
         switch (ubx_backend._ublox_port) {
         case 2: // UART1
             UBX_CFG_COMMON_UART1(INIT_CFG_PUSH_INDEXED)
+#if GPS_MOVING_BASELINE
             if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE && !ubx_backend.mb_use_uart2()) {
                 UBX_CFG_MB_BASE_UART1(INIT_CFG_PUSH_INDEXED)
             } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE && ubx_backend.mb_use_uart2()) {
@@ -876,14 +879,17 @@ bool AP_GPS_UBLOX_CFGv2::_init_common_cfg_list(bool check_only, uint32_t key_to_
             } else {
                 UBX_CFG_MB_ROVER_UART1(INIT_CFG_PUSH_INDEXED)
             }
+#endif
             break;
         case 3: // UART2
             UBX_CFG_COMMON_UART2(INIT_CFG_PUSH_INDEXED)
+#if GPS_MOVING_BASELINE
             if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE) {
                 UBX_CFG_MB_BASE_UART2(INIT_CFG_PUSH_INDEXED)
             } else {
                 UBX_CFG_MB_ROVER_UART2(INIT_CFG_PUSH_INDEXED)
             }
+#endif
             break;
         default:
             break;
