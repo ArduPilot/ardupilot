@@ -170,6 +170,31 @@ void AP_AHRS_View::Write_Att_Tar_Axis_Ang(Vector3f att_tar_axis_ang) const
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
+// Write attitude body axis angle
+void AP_AHRS_View::Write_Att_Body_Axis_Ang(Vector3f att_body_axis_ang) const
+{
+    const struct log_AttitudeBodyAxisAng pkt{
+        LOG_PACKET_HEADER_INIT(LOG_ATT_BOD_AA_MSG),
+        time_us                 : AP_HAL::micros64(),
+        body_x                  : att_body_axis_ang.x,
+        body_y                  : att_body_axis_ang.y,
+        body_z                  : att_body_axis_ang.z,
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
+
+// Write attitude error axis angle
+void AP_AHRS_View::Write_Att_Err_Axis_Ang(Vector3f att_err_axis_ang) const
+{
+    const struct log_AttitudeErrAxisAng pkt{
+        LOG_PACKET_HEADER_INIT(LOG_ATT_ERR_AA_MSG),
+        time_us                : AP_HAL::micros64(),
+        err_x                  : att_err_axis_ang.x,
+        err_y                  : att_err_axis_ang.y,
+        err_z                  : att_err_axis_ang.z,
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
 // Write a rate packet
 void AP_AHRS_View::Write_Rate(const AP_Motors &motors, const AC_AttitudeControl &attitude_control,
                                 const AC_PosControl &pos_control) const

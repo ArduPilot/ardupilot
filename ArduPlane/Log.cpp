@@ -28,8 +28,8 @@ void Plane::Log_Write_Attitude(void)
         quadplane.attitude_control->get_attitude_error_quat().to_axis_angle(att_err_axis_ang);
 
         quadplane.ahrs_view->Write_Att_Tar_Axis_Ang(att_tar_axis_ang);
-        // quadplane.ahrs_view->Write_Att_Body_Axis_Ang(att_body_axis_ang);
-        // quadplane.ahrs_view->Write_Att_Err_Axis_Ang(att_err_axis_ang);
+        quadplane.ahrs_view->Write_Att_Body_Axis_Ang(att_body_axis_ang);
+        quadplane.ahrs_view->Write_Att_Err_Axis_Ang(att_err_axis_ang);
 
         quadplane.ahrs_view->Write_AttitudePitchCompensation();
     } else

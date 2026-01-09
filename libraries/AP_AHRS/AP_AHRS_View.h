@@ -178,6 +178,8 @@ public:
     void Write_AttitudePitchCompensation(void) const;    
 
     void Write_Att_Tar_Axis_Ang(Vector3f att_tar_axis_ang) const;
+    void Write_Att_Body_Axis_Ang(Vector3f att_body_axis_ang) const;
+    void Write_Att_Err_Axis_Ang(Vector3f att_err_axis_ang) const;
 
     void Write_Rate( const AP_Motors &motors, const AC_AttitudeControl &attitude_control,
                         const AC_PosControl &pos_control) const;
