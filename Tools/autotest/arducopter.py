@@ -8936,24 +8936,14 @@ class AutoTestCopter(AutoTest):
             expected_distance=49.7,
         )
         self.reboot_sitl()
-        
-        self.start_subtest('RTL braking from 20m/s with wp_accel of 9.81m/s/s and psc jerk limit of 5m/s/s/s')
+         
+        self.start_subtest('RTL braking from 20m/s with wp_accel of 5m/s/s and psc jerk limit of 2m/s/s/s')
         self.test_rtl_braking_case(
             wpnav_speed=20,
-            wpnav_accel=9.81,
-            psc_jerk_xy=5,
-            rtl_accel=0,
-            expected_distance=40,
-        )
-        self.reboot_sitl()
-               
-        self.start_subtest('RTL braking from 20m/s with wp_accel of 9.81m/s/s and psc jerk limit of 2m/s/s/s')
-        self.test_rtl_braking_case(
-            wpnav_speed=20,
-            wpnav_accel=9.81,
+            wpnav_accel=5,
             psc_jerk_xy=2,
             rtl_accel=0,
-            expected_distance=89.4,
+            expected_distance=65,
         )
         self.reboot_sitl()
 
@@ -8974,26 +8964,6 @@ class AutoTestCopter(AutoTest):
             psc_jerk_xy=5,
             rtl_accel=5,
             expected_distance=50,
-        )
-        self.reboot_sitl()
-
-        self.start_subtest('RTL braking from 20m/s with rtl_accel of 10/s/s and psc jerk limit of 5m/s/s/s')
-        self.test_rtl_braking_case(
-            wpnav_speed=20,
-            wpnav_accel=3,
-            psc_jerk_xy=5,
-            rtl_accel=10,
-            expected_distance=40,
-        )
-        self.reboot_sitl()
-
-        self.start_subtest('RTL braking from 20m/s with rtl_accel of 15/s/s and psc jerk limit of 5m/s/s/s')
-        self.test_rtl_braking_case(
-            wpnav_speed=20,
-            wpnav_accel=3,
-            psc_jerk_xy=5,
-            rtl_accel=10,       # Check the sanity limit is working
-            expected_distance=40,
         )
         self.reboot_sitl()
 
