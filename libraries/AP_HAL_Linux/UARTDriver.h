@@ -62,7 +62,6 @@ private:
     AP_HAL::OwnPtr<SerialDevice> _device;
     bool _console;
     volatile bool _in_timer;
-    volatile bool _in_flush;
     uint16_t _base_port;
     uint32_t _baudrate;
     char *_ip;
@@ -91,9 +90,10 @@ protected:
     virtual int _write_fd(const uint8_t *buf, uint16_t n);
     virtual int _read_fd(uint8_t *buf, uint16_t n);
 
-    bool _fill_read_buffer(void);
+    void _fill_read_buffer(void);
 
     Linux::Semaphore _write_mutex;
+    Linux::Semaphore _device_sem;
 
     bool _discard_input() override;
     void _begin(uint32_t b, uint16_t rxS, uint16_t txS) override;

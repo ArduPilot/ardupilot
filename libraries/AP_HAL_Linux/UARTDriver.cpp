@@ -219,16 +219,19 @@ void UARTDriver::_end()
 
 void UARTDriver::_flush()
 {
-    if (!_initialised || _in_timer) {
-        return;  // UART thread is active, let it handle the drain
+    if (!_initialised) {
+        return;
     }
-    _in_flush = true;
+    if (!_device_sem.take_nonblocking()) {
+        return;  // timer thread is writing, let it handle the drain
+    }
     // write any pending bytes immediately, bypassing the 100Hz UART thread
     // this is critical for low-latency protocols like CRSF
-    while (_write_pending_bytes()) {
-        // keep writing until buffer is empty or device can't accept more
+    uint8_t num_send = 10;
+    while (num_send != 0 && _write_pending_bytes()) {
+        num_send--;
     }
-    _in_flush = false;
+    _device_sem.give();
 }
 
 
@@ -251,22 +254,18 @@ bool UARTDriver::tx_pending()
 
 /*
   try to fill the read buffer from device
-  return true if data was read
  */
-bool UARTDriver::_fill_read_buffer(void)
+void UARTDriver::_fill_read_buffer(void)
 {
-    int ret;
     ByteBuffer::IoVec vec[2];
-    bool got_data = false;
 
     const auto n_vec = _readbuf.reserve(vec, _readbuf.space());
     for (int i = 0; i < n_vec; i++) {
-        ret = _read_fd(vec[i].data, vec[i].len);
+        const int ret = _read_fd(vec[i].data, vec[i].len);
         if (ret <= 0) {
             break;
         }
         _readbuf.commit((unsigned)ret);
-        got_data = true;
 
         // update receive timestamp
         _receive_timestamp[_receive_timestamp_idx^1] = AP_HAL::micros64();
@@ -277,7 +276,6 @@ bool UARTDriver::_fill_read_buffer(void)
             break;
         }
     }
-    return got_data;
 }
 
 /*
@@ -428,12 +426,13 @@ void UARTDriver::_timer_tick(void)
 
     _in_timer = true;
 
-    // skip write if _flush() is draining the buffer
-    if (!_in_flush) {
+    // write pending bytes if flush isn't active
+    if (_device_sem.take_nonblocking()) {
         uint8_t num_send = 10;
         while (num_send != 0 && _write_pending_bytes()) {
             num_send--;
         }
+        _device_sem.give();
     }
 
     // try to fill the read buffer
