@@ -8907,52 +8907,101 @@ class AutoTestCopter(AutoTest):
         # Expected braking distance is calculated based on jerk-limited s-curve braking profile
         # Use the calculate_rtl_braking_distance.py script to calculate expected distances.
         
-        self.start_subtest('RTL braking from 20m/s with accel of 2.5m/s/s and jerk of 5m/s/s/s')
+        self.start_subtest('RTL braking from 20m/s with wp_accel of 2.5m/s/s and jerk of 5m/s/s/s')
         self.test_rtl_braking_case(
             wpnav_speed=20,
             wpnav_accel=2.5,
             psc_jerk_xy=5,
+            rtl_accel=0,
             expected_distance=85,
         )
         self.reboot_sitl()
         
-        self.start_subtest('RTL braking from 20m/s with accel of 5m/s/s and psc jerk limit of 5m/s/s/s')
+        self.start_subtest('RTL braking from 20m/s with wp_accel of 5m/s/s and psc jerk limit of 5m/s/s/s')
         self.test_rtl_braking_case(
             wpnav_speed=20,
             wpnav_accel=5,
             psc_jerk_xy=5,
+            rtl_accel=0,
             expected_distance=50,
         )
         self.reboot_sitl()
         
-        self.start_subtest('RTL braking from 20m/s with accel of 5m/s/s and psc jerk limit of 20m/s/s/s')
+        self.start_subtest('RTL braking from 20m/s with wp_accel of 5m/s/s and psc jerk limit of 20m/s/s/s')
         self.test_rtl_braking_case(
             wpnav_speed=20,
             wpnav_accel=5,
             psc_jerk_xy=20,
+            rtl_accel=0,
             expected_distance=49.7,
         )
         self.reboot_sitl()
         
-        self.start_subtest('RTL braking from 20m/s with accel of 9.81m/s/s and psc jerk limit of 5m/s/s/s')
+        self.start_subtest('RTL braking from 20m/s with wp_accel of 9.81m/s/s and psc jerk limit of 5m/s/s/s')
         self.test_rtl_braking_case(
             wpnav_speed=20,
             wpnav_accel=9.81,
             psc_jerk_xy=5,
+            rtl_accel=0,
             expected_distance=40,
         )
         self.reboot_sitl()
                
-        # For some reason the actual distance comes out to be 137.8m, which doesn't make sense to me...
-        # self.start_subtest('RTL braking from 20m/s with accel of 9.81m/s/s and psc jerk limit of 2m/s/s/s')
-        # self.test_rtl_braking_case(
-        #     wpnav_speed=20,
-        #     wpnav_accel=9.81,
-        #     psc_jerk_xy=1,
-        #     expected_distance=89.4,
-        # )
+        self.start_subtest('RTL braking from 20m/s with wp_accel of 9.81m/s/s and psc jerk limit of 2m/s/s/s')
+        self.test_rtl_braking_case(
+            wpnav_speed=20,
+            wpnav_accel=9.81,
+            psc_jerk_xy=2,
+            rtl_accel=0,
+            expected_distance=89.4,
+        )
         
-    def test_rtl_braking_case(self, wpnav_speed, wpnav_accel, psc_jerk_xy, expected_distance):
+        self.start_subtest('RTL braking from 20m/s with rtl_accel of 1/s/s and psc jerk limit of 5m/s/s/s')
+        self.test_rtl_braking_case(
+            wpnav_speed=20,
+            wpnav_accel=3,
+            psc_jerk_xy=5,
+            rtl_accel=1,
+            expected_distance=202,
+        )
+
+        self.start_subtest('RTL braking from 20m/s with rtl_accel of 5/s/s and psc jerk limit of 5m/s/s/s')
+        self.test_rtl_braking_case(
+            wpnav_speed=20,
+            wpnav_accel=3,
+            psc_jerk_xy=5,
+            rtl_accel=5,
+            expected_distance=50,
+        )
+
+        self.start_subtest('RTL braking from 20m/s with rtl_accel of 10/s/s and psc jerk limit of 5m/s/s/s')
+        self.test_rtl_braking_case(
+            wpnav_speed=20,
+            wpnav_accel=3,
+            psc_jerk_xy=5,
+            rtl_accel=10,
+            expected_distance=40,
+        )
+
+        self.start_subtest('RTL braking from 20m/s with rtl_accel of 15/s/s and psc jerk limit of 5m/s/s/s')
+        self.test_rtl_braking_case(
+            wpnav_speed=20,
+            wpnav_accel=3,
+            psc_jerk_xy=5,
+            rtl_accel=10,       # Check the sanity limit is working
+            expected_distance=40,
+        )
+
+        self.start_subtest('RTL braking from 20m/s with rtl_accel of -1/s/s and psc jerk limit of 5m/s/s/s')
+        self.test_rtl_braking_case(
+            wpnav_speed=20,
+            wpnav_accel=3,
+            psc_jerk_xy=5,
+            rtl_accel=-1,
+            expected_distance=72.7,
+        )
+
+    def test_rtl_braking_case(self, wpnav_speed, wpnav_accel, psc_jerk_xy, rtl_accel, expected_distance):
         '''Helper method to test RTL braking distance for a specific configuration'''
         self.context_push()
         
@@ -8967,6 +9016,7 @@ class AutoTestCopter(AutoTest):
             'RTL_ALT': alt * 100,
             'RTL_SPEED': 300,
             'PSC_JERK_XY': psc_jerk_xy,
+            'RTL_ACCEL': rtl_accel * 100,
         })
 
         self.takeoff(alt_min=alt, mode='GUIDED')
