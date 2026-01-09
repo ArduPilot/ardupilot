@@ -1,0 +1,22 @@
+.program pwm_multi
+.origin 0
+
+; The ISR has a "period" value (e.g. 2000 for 50 Hz at 100 kHz PIO frequency)
+; Each loop iteration reads 8 comparison values from the FIFO/DMA
+
+public entry:
+    pull noblock    ; Get configuration (if necessary)
+    
+loop_period:
+    mov y, isr      ; Load the period into the counter Y
+    
+count_loop:
+    ; Here the logic is more complicated: for efficiency 32 channels 
+    ; The ArduPilot usually prepares a "bit mask" in RAM via DMA.
+    ; But for simple PWM we do this:
+    
+    pull noblock    ; Get an 8-bit pin state mask for the current clock Y
+    out pins, 8     ; Output state to 8 pins simultaneously
+    jmp y-- count_loop
+    
+    jmp loop_period ; The beginning of a new period
