@@ -373,6 +373,9 @@ private:
 
     void convert_per_instance();
 
+    // Select primary sensor based on user parameters and health
+    uint8_t select_primary() const;
+
 };
 
 namespace AP {
