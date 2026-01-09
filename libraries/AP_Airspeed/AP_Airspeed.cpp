@@ -709,6 +709,52 @@ void AP_Airspeed::read(uint8_t i)
 #endif // HAL_BUILD_AP_PERIPH
 }
 
+// Select primary sensor based on user parameters and health
+uint8_t AP_Airspeed::select_primary() const
+{
+    // user selected primary from parameter
+    const uint8_t user_primary = primary_sensor.get();
+
+    // If user selected instance is both healthy and set to use then it is a valid primary
+    if (healthy(user_primary) && use(user_primary)) {
+        return user_primary;
+    }
+
+    // If the currently selected primary is still valid there is no need to change
+    if (healthy(primary) && use(primary)) {
+        return primary;
+    }
+
+    // Select the first sensor which is both healthy and set to use
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if (healthy(i) && use(i)) {
+            return i;
+        }
+    }
+
+    // No sensor is both healthy and set to use
+
+    // Continue with current primary if healthy
+    if (healthy(primary)) {
+        return primary;
+    }
+
+    // Use user selected instance if healthy
+    if (healthy(user_primary)) {
+        return user_primary;
+    }
+
+    // Select the first sensor which is healthy
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if (healthy(i)) {
+            return i;
+        }
+    }
+
+    // No healthy sensor, don't change primary
+    return primary;
+}
+
 // read all airspeed sensors
 void AP_Airspeed::update()
 {
@@ -727,23 +773,16 @@ void AP_Airspeed::update()
     }
 #endif
 
+    // Check for failures possibly marking sensors and unhealthy
+    check_sensor_failures();
+
 #if HAL_LOGGING_ENABLED
+    // Record old primary sensor for logging
     const uint8_t old_primary = primary;
 #endif
 
-    // setup primary
-    if (healthy(primary_sensor.get())) {
-        primary = primary_sensor.get();
-    } else {
-        for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-            if (healthy(i)) {
-                primary = i;
-                break;
-            }
-        }
-    }
-
-    check_sensor_failures();
+    // Select primary sensor based on user parameters and health
+    primary = select_primary();
 
 #if HAL_LOGGING_ENABLED
     if (primary != old_primary) {
