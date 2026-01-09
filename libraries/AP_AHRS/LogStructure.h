@@ -10,7 +10,9 @@
     LOG_POS_MSG, \
     LOG_RATE_MSG, \
     LOG_ATSC_MSG,  \
-    LOG_ATT_PIT_COMP_MSG
+    LOG_ATT_PIT_COMP_MSG, \
+    LOG_ATT_TAR_AA_MSG
+
 
 // @LoggerMessage: AHR2
 // @Description: Backup AHRS data
@@ -89,6 +91,20 @@ struct PACKED log_AttitudeViewCompensation {
     int16_t    pitch_raw;
     float      z_ned_z;
     float      x_ned_z;
+};
+
+// @LoggerMessage: ATAT
+// @Description: Canonical vehicle attitude target axis angle representation of body to NED quat
+// @Field: TimeUS: Time since system startup
+// @Field: TargetX:  X component of axis angle vector
+// @Field: TargetY:  Y component of axis angle vector
+// @Field: TargetZ:  Z component of axis angle vector
+struct PACKED log_AttitudeTarAxisAng {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float    target_x;
+    float    target_y;
+    float    target_z;
 };
 
 // @LoggerMessage: ORGN
@@ -228,5 +244,7 @@ struct PACKED log_ATSC {
     { LOG_VIDEO_STABILISATION_MSG, sizeof(log_Video_Stabilisation), \
         "VSTB", "Qffffffffff",  "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,Q1,Q2,Q3,Q4", "sEEEooo----", "F0000000000" }, \
     { LOG_ATT_PIT_COMP_MSG, sizeof(log_AttitudeViewCompensation), \
-        "ATPC", "Qccff",  "TimeUS,AttPNew,AttPOld,ZNedZ,XNedZ", "sdd--", "FBB00" },
+        "ATPC", "Qccff",  "TimeUS,AttPNew,AttPOld,ZNedZ,XNedZ", "sdd--", "FBB00" }, \
+    { LOG_ATT_TAR_AA_MSG, sizeof(log_AttitudeTarAxisAng), \
+        "ATAT", "Qfff",  "TimeUS,TarX,TarY,TarZ", "s---", "F000" }, \
 

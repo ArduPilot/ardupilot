@@ -176,6 +176,9 @@ public:
     // Logging Functions
     void Write_AttitudeView(const Vector3f &targets) const;
     void Write_AttitudePitchCompensation(void) const;    
+
+    void Write_Att_Tar_Axis_Ang(Vector3f att_tar_axis_ang) const;
+
     void Write_Rate( const AP_Motors &motors, const AC_AttitudeControl &attitude_control,
                         const AC_PosControl &pos_control) const;
 

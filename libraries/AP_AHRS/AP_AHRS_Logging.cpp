@@ -157,6 +157,18 @@ void AP_AHRS_View::Write_AttitudePitchCompensation() const
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
+// Write attitude target axis angle
+void AP_AHRS_View::Write_Att_Tar_Axis_Ang(Vector3f att_tar_axis_ang) const
+{
+    const struct log_AttitudeTarAxisAng pkt{
+        LOG_PACKET_HEADER_INIT(LOG_ATT_TAR_AA_MSG),
+        time_us                   : AP_HAL::micros64(),
+        target_x                  : att_tar_axis_ang.x,
+        target_y                  : att_tar_axis_ang.y,
+        target_z                  : att_tar_axis_ang.z,
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
 
 // Write a rate packet
 void AP_AHRS_View::Write_Rate(const AP_Motors &motors, const AC_AttitudeControl &attitude_control,
