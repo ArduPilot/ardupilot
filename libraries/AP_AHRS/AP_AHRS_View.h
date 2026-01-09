@@ -192,6 +192,7 @@ public:
     int32_t yaw_sensor;
 
     Vector3f z_ned, x_ned;
+    bool is_nose_down = false, is_belly_up = false;
 
     // get current rotation
     // note that this may not be the rotation were actually using, see _pitch_trim_deg

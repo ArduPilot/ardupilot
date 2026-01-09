@@ -86,6 +86,8 @@ struct PACKED log_Attitude {
 // @Field: PitchComp:  vehicle pitch post compensation for horizon crossing
 // @Field: ZNedZ:  Body Z vector's Z component in NED frame
 // @Field: XNedZ:  Body X vector's Z component in NED frame
+// @Field: isNoseDn:  Boolean to track if craft is nose down below horizon
+// @Field: isBellyUp:  Boolean to track if craft is belly up or down
 struct PACKED log_AttitudeViewCompensation {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -93,6 +95,8 @@ struct PACKED log_AttitudeViewCompensation {
     int16_t    pitch_raw;
     float      z_ned_z;
     float      x_ned_z;
+    float       is_nose_down;
+    float       is_belly_up;
 };
 
 // @LoggerMessage: ATAT
@@ -274,7 +278,7 @@ struct PACKED log_ATSC {
     { LOG_VIDEO_STABILISATION_MSG, sizeof(log_Video_Stabilisation), \
         "VSTB", "Qffffffffff",  "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,Q1,Q2,Q3,Q4", "sEEEooo----", "F0000000000" }, \
     { LOG_ATT_PIT_COMP_MSG, sizeof(log_AttitudeViewCompensation), \
-        "ATPC", "Qccff",  "TimeUS,AttPNew,AttPOld,ZNedZ,XNedZ", "sdd--", "FBB00" }, \
+        "ATPC", "Qccffff",  "TimeUS,AttPNew,AttPOld,ZNedZ,XNedZ,isNoseDn,isBellyUp", "sdd----", "FBB0000" }, \
     { LOG_ATT_TAR_AA_MSG, sizeof(log_AttitudeTarAxisAng), \
         "ATAT", "Qfff",  "TimeUS,TarX,TarY,TarZ", "s---", "F000" }, \
     { LOG_ATT_BOD_AA_MSG, sizeof(log_AttitudeBodyAxisAng), \

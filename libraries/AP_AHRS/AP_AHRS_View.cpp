@@ -81,14 +81,20 @@ void AP_AHRS_View::update()
     // compensate for going beyond +/- 90 degree in pitch
     if(z_ned.z <= 0 ){
         // Nose down below horizon
+        is_nose_down = true;
         if(x_ned.z > 0.0f) {
             // Belly down
             pitch = -M_PI - pitch;
+            is_belly_up = false;
         }
         else {
             // Belly up
             pitch = M_PI - pitch;
+            is_belly_up = true;
         }
+    } else {
+        is_nose_down = false;
+        is_belly_up = false;
     }
 
     roll_sensor  = degrees(roll) * 100;

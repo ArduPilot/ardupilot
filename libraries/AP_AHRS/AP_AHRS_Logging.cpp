@@ -153,6 +153,8 @@ void AP_AHRS_View::Write_AttitudePitchCompensation() const
         pitch_raw            : (int16_t)(degrees(pitch_raw) * 100),
         z_ned_z              : z_ned.z,
         x_ned_z              : x_ned.z,
+        is_nose_down         : (float)is_nose_down,
+        is_belly_up          : (float)is_belly_up,
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
