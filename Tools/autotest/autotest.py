@@ -326,6 +326,8 @@ __bin_names = {
 
     "CopterTests2a": "arducopter",
     "CopterTests2b": "arducopter",
+    
+    "CopterTestsMA": "arducopter",
 
     "Plane": "arduplane",
     "Rover": "ardurover",
@@ -399,6 +401,7 @@ tester_class_map = {
     "test.CopterTests1e": arducopter.AutoTestCopterTests1e, # 8m32s
     "test.CopterTests2a": arducopter.AutoTestCopterTests2a, # 8m23s
     "test.CopterTests2b": arducopter.AutoTestCopterTests2b, # 8m18s
+    "test.CopterTestsMA": arducopter.AutoTestCopterTestsMA,
     "test.Plane": arduplane.AutoTestPlane,
     "test.QuadPlane": quadplane.AutoTestQuadPlane,
     "test.Rover": rover.AutoTestRover,
@@ -1138,6 +1141,8 @@ if __name__ == "__main__":
         'test.CopterTests2a',
         'test.CopterTests2b',
 
+        'test.CopterTestsMA',
+
         'clang-scan-build',
     ]
 
@@ -1173,7 +1178,8 @@ if __name__ == "__main__":
 
         "fly.ArduCopterTests2a": "test.CopterTests2a",
         "fly.ArduCopterTests2b": "test.CopterTests2b",
-
+        
+        "fly.ArduCopterTestsMA": "test.CopterTestsMA",
     }
 
     # form up a list of bits NOT to run, mapping from old step names

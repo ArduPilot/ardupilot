@@ -183,6 +183,12 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/copter.parm",
                                             "models/Callisto.param"],
             },
+            "T150_sim": {
+                "model": "octa-quad:@ROMFS/models/T150_sim.json",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "models/T150_sim.param"],
+            },
         },
     },
     "Helicopter": {

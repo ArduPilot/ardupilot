@@ -224,6 +224,7 @@ jobs:
             sitltest-copter-tests1e,
             sitltest-copter-tests2a,
             sitltest-copter-tests2b,
+            sitltest-copter-testsMA,
           ]
 
     steps:
