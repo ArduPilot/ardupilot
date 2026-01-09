@@ -149,8 +149,8 @@ void AP_AHRS_View::Write_AttitudePitchCompensation() const
     const struct log_AttitudeViewCompensation pkt{
         LOG_PACKET_HEADER_INIT(LOG_ATT_PIT_COMP_MSG),
         time_us              : AP_HAL::micros64(),
-        pitch_old            : pitch,
-        pitch_compensated    : pitch_compensated,
+        pitch                : (int16_t)(degrees(pitch) * 100),
+        pitch_raw            : (int16_t)(degrees(pitch_raw) * 100),
         z_ned_z              : z_ned.z,
         x_ned_z              : x_ned.z,
     };

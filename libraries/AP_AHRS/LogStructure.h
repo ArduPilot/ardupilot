@@ -85,10 +85,10 @@ struct PACKED log_Attitude {
 struct PACKED log_AttitudeViewCompensation {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    float    pitch_old;
-    float    pitch_compensated;
-    float    z_ned_z;
-    float    x_ned_z;
+    int16_t    pitch;
+    int16_t    pitch_raw;
+    float      z_ned_z;
+    float      x_ned_z;
 };
 
 // @LoggerMessage: ORGN
@@ -228,5 +228,5 @@ struct PACKED log_ATSC {
     { LOG_VIDEO_STABILISATION_MSG, sizeof(log_Video_Stabilisation), \
         "VSTB", "Qffffffffff",  "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,Q1,Q2,Q3,Q4", "sEEEooo----", "F0000000000" }, \
     { LOG_ATT_PIT_COMP_MSG, sizeof(log_AttitudeViewCompensation), \
-        "ATPC", "Qffff",  "TimeUS,AttPOld,AttPNew,ZNedZ,XNedZ", "sdd--", "F0000" },
+        "ATPC", "Qccff",  "TimeUS,AttPNew,AttPOld,ZNedZ,XNedZ", "sdd--", "FBB00" },
 

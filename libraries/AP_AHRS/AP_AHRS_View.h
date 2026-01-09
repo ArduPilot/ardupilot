@@ -180,7 +180,7 @@ public:
                         const AC_PosControl &pos_control) const;
 
     float roll;
-    float pitch, pitch_compensated;
+    float pitch, pitch_raw;
     float yaw;
     int32_t roll_sensor;
     int32_t pitch_sensor;

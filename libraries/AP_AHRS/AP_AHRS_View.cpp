@@ -70,6 +70,8 @@ void AP_AHRS_View::update()
 
     rot_body_to_ned.to_euler(&roll, &pitch, &yaw);
 
+    pitch_raw = pitch;
+
     Vector3f z_body{0, 0, 1};
     Vector3f x_body{1, 0, 0};
 
@@ -81,16 +83,16 @@ void AP_AHRS_View::update()
         // Nose down below horizon
         if(x_ned.z > 0.0f) {
             // Belly down
-            pitch_compensated = -M_PI - pitch;
+            pitch = -M_PI - pitch;
         }
         else {
             // Belly up
-            pitch_compensated = M_PI - pitch;
+            pitch = M_PI - pitch;
         }
     }
 
     roll_sensor  = degrees(roll) * 100;
-    pitch_sensor = degrees(pitch_compensated) * 100;
+    pitch_sensor = degrees(pitch) * 100;
     yaw_sensor   = degrees(yaw) * 100;
     if (yaw_sensor < 0) {
         yaw_sensor += 36000;
