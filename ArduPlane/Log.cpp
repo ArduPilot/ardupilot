@@ -20,6 +20,18 @@ void Plane::Log_Write_Attitude(void)
         quadplane.attitude_control->get_attitude_target_quat().to_euler(targets.x, targets.y, targets.z);
         targets *= degrees(100.0f);
         quadplane.ahrs_view->Write_AttitudeView(targets);
+
+        // Logging for att target quat to axis angle, error quat to axis angle
+        Vector3f att_body_axis_ang, att_tar_axis_ang, att_err_axis_ang; 
+        quadplane.attitude_control->get_attitude_target_quat().to_axis_angle(att_tar_axis_ang);
+        quadplane.attitude_control->get_attitude_body_quat().to_axis_angle(att_body_axis_ang);
+        quadplane.attitude_control->get_attitude_error_quat().to_axis_angle(att_err_axis_ang);
+
+        // quadplane.ahrs_view->Write_Att_Tar_Axis_Ang(att_tar_axis_ang);
+        // quadplane.ahrs_view->Write_Att_Body_Axis_Ang(att_body_axis_ang);
+        // quadplane.ahrs_view->Write_Att_Err_Axis_Ang(att_err_axis_ang);
+
+        quadplane.ahrs_view->Write_AttitudePitchCompensation();
     } else
 #endif
             {

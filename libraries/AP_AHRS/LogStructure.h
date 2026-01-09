@@ -9,7 +9,8 @@
     LOG_ORGN_MSG, \
     LOG_POS_MSG, \
     LOG_RATE_MSG, \
-    LOG_ATSC_MSG
+    LOG_ATSC_MSG,  \
+    LOG_ATT_PIT_COMP_MSG
 
 // @LoggerMessage: AHR2
 // @Description: Backup AHRS data
@@ -72,6 +73,22 @@ struct PACKED log_Attitude {
     uint16_t error_rp;
     uint16_t error_yaw;
     uint8_t  active;
+};
+
+// @LoggerMessage: ATPC
+// @Description: Canonical vehicle attitude pitch compensation
+// @Field: TimeUS: Time since system startup
+// @Field: Pitch:  vehicle pitch
+// @Field: PitchComp:  vehicle pitch post compensation for horizon crossing
+// @Field: ZNedZ:  Body Z vector's Z component in NED frame
+// @Field: XNedZ:  Body X vector's Z component in NED frame
+struct PACKED log_AttitudeViewCompensation {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float    pitch_old;
+    float    pitch_compensated;
+    float    z_ned_z;
+    float    x_ned_z;
 };
 
 // @LoggerMessage: ORGN
@@ -209,5 +226,7 @@ struct PACKED log_ATSC {
     { LOG_ATSC_MSG, sizeof(log_ATSC), \
         "ATSC", "Qffffff",  "TimeUS,AngPScX,AngPScY,AngPScZ,PDScX,PDScY,PDScZ", "s------", "F000000" , true }, \
     { LOG_VIDEO_STABILISATION_MSG, sizeof(log_Video_Stabilisation), \
-        "VSTB", "Qffffffffff",  "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,Q1,Q2,Q3,Q4", "sEEEooo----", "F0000000000" },
+        "VSTB", "Qffffffffff",  "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,Q1,Q2,Q3,Q4", "sEEEooo----", "F0000000000" }, \
+    { LOG_ATT_PIT_COMP_MSG, sizeof(log_AttitudeViewCompensation), \
+        "ATPC", "Qffff",  "TimeUS,AttPOld,AttPNew,ZNedZ,XNedZ", "sdd--", "F0000" },
 

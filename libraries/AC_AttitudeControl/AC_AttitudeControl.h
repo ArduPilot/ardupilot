@@ -226,6 +226,12 @@ public:
     // Return the angle between the target thrust vector and the current thrust vector.
     float get_att_error_angle_deg() const { return degrees(_thrust_error_angle); }
 
+    // Return the body-to-NED error attitude used by the quadplane-specific attitude control input methods
+    Quaternion get_attitude_error_quat() const { return _attitude_ang_error; }
+
+    // Return the body-to-NED attitude used by the quadplane-specific attitude control input methods
+    Quaternion get_attitude_body_quat() const { return _attitude_body; }
+
     // Set x-axis angular velocity in centidegrees/s
     void rate_bf_roll_target(float rate_cds) { _ang_vel_body.x = radians(rate_cds * 0.01f); }
 
@@ -497,6 +503,9 @@ protected:
 
     // This represents a quaternion attitude error in the body frame, used for inertial frame reset handling.
     Quaternion          _attitude_ang_error;
+
+    // This represents a quaternion attitude in the body frame
+    Quaternion          _attitude_body;
 
     // The angle between the target thrust vector and the current thrust vector.
     float               _thrust_angle;

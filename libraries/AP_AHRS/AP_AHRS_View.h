@@ -174,17 +174,19 @@ public:
     }
 
     // Logging Functions
-    void Write_AttitudeView(const Vector3f &targets) const;    
+    void Write_AttitudeView(const Vector3f &targets) const;
+    void Write_AttitudePitchCompensation(void) const;    
     void Write_Rate( const AP_Motors &motors, const AC_AttitudeControl &attitude_control,
                         const AC_PosControl &pos_control) const;
 
     float roll;
-    float pitch;
+    float pitch, pitch_compensated;
     float yaw;
     int32_t roll_sensor;
     int32_t pitch_sensor;
     int32_t yaw_sensor;
 
+    Vector3f z_ned, x_ned;
 
     // get current rotation
     // note that this may not be the rotation were actually using, see _pitch_trim_deg

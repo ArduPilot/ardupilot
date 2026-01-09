@@ -143,6 +143,21 @@ void AP_AHRS_View::Write_AttitudeView(const Vector3f &targets) const
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
+// Write an Attitude pitch compensation packet
+void AP_AHRS_View::Write_AttitudePitchCompensation() const
+{
+    const struct log_AttitudeViewCompensation pkt{
+        LOG_PACKET_HEADER_INIT(LOG_ATT_PIT_COMP_MSG),
+        time_us              : AP_HAL::micros64(),
+        pitch_old            : pitch,
+        pitch_compensated    : pitch_compensated,
+        z_ned_z              : z_ned.z,
+        x_ned_z              : x_ned.z,
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
+
+
 // Write a rate packet
 void AP_AHRS_View::Write_Rate(const AP_Motors &motors, const AC_AttitudeControl &attitude_control,
                                 const AC_PosControl &pos_control) const

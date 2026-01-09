@@ -72,25 +72,25 @@ void AP_AHRS_View::update()
 
     Vector3f z_body{0, 0, 1};
     Vector3f x_body{1, 0, 0};
-    Vector3f z_ned = rot_body_to_ned * z_body;
-    Vector3f x_ned = rot_body_to_ned * x_body;
 
+    z_ned = rot_body_to_ned * z_body;
+    x_ned = rot_body_to_ned * x_body;
 
     // compensate for going beyond +/- 90 degree in pitch
     if(z_ned.z <= 0 ){
         // Nose down below horizon
         if(x_ned.z > 0.0f) {
             // Belly down
-            pitch = -M_PI - pitch;
+            pitch_compensated = -M_PI - pitch;
         }
         else {
             // Belly up
-            pitch = M_PI - pitch;
+            pitch_compensated = M_PI - pitch;
         }
     }
 
     roll_sensor  = degrees(roll) * 100;
-    pitch_sensor = degrees(pitch) * 100;
+    pitch_sensor = degrees(pitch_compensated) * 100;
     yaw_sensor   = degrees(yaw) * 100;
     if (yaw_sensor < 0) {
         yaw_sensor += 36000;
