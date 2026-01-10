@@ -213,9 +213,6 @@ Cameron Cho
 Zhou Su
 Nithin P
 Shaik Imran 
-<<<<<<< HEAD
 Yoonwhoi Kim
 Takemichi Matsushita
-=======
 Kosei Noda
->>>>>>> e5eb052af2 (Tools: add name to GIT_Success.txt)
