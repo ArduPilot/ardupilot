@@ -1050,6 +1050,20 @@ bool AP_Airspeed::arming_checks(size_t buflen, char *buffer) const
         }
     }
 
+
+    // If the primary sensor is marked to not use then user should either:
+    // - change primary to a sensor which is marked to to use
+    // - allow using the primary
+    // If no sensors are marked for use then the check passes
+    if (!use(primary_sensor.get())) {
+        for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+            if (use(i)) {
+                hal.util->snprintf(buffer, buflen, "not using Primary (%i)", primary_sensor.get() + 1);
+                return false;
+            }
+        }
+    }
+
     return true;
 }
 #endif
