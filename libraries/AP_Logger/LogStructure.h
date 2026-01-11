@@ -690,7 +690,7 @@ struct PACKED log_VER {
 // @Field: H: True if sensor is healthy
 // @Field: Hp: Probability sensor is healthy
 // @Field: TR: innovation test ratio
-// @Field: Pri: True if sensor is the primary sensor
+// @Field: Pri: Primary instance number. If equal to I then this sensor is primary sensor
 
 // @LoggerMessage: DMS
 // @Description: DataFlash-Over-MAVLink statistics
