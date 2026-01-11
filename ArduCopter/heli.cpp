@@ -16,7 +16,7 @@ void Copter::heli_init()
 {
     // pre-load stab col values as mode is initialized as Stabilize, but stabilize_init() function is not run on start-up.
     input_manager.set_use_stab_col(true);
-    input_manager.set_stab_col_ramp(1.0);
+    input_manager.set_collective_ramp(0);
 }
 
 // heli_check_dynamic_flight - updates the dynamic_flight flag based on our horizontal velocity

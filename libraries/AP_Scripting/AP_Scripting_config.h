@@ -2,6 +2,7 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_SerialManager/AP_SerialManager_config.h>
+#include <AP_Vehicle/AP_Vehicle_config.h>
 
 #ifndef AP_SCRIPTING_ENABLED
 #define AP_SCRIPTING_ENABLED (HAL_PROGRAM_SIZE_LIMIT_KB > 1024)
@@ -21,7 +22,7 @@
 
 // bindings configuration
 #ifndef AP_SCRIPTING_BINDING_MOTORS_ENABLED
-#define AP_SCRIPTING_BINDING_MOTORS_ENABLED 1
+#define AP_SCRIPTING_BINDING_MOTORS_ENABLED (AP_SCRIPTING_ENABLED && AP_VEHICLE_ENABLED)
 #endif
 
 #ifndef AP_SCRIPTING_BINDING_VEHICLE_ENABLED

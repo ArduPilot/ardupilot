@@ -312,6 +312,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_PERIPH_RELAY_ENABLED', r'AP_Periph_FW::handle_hardpoint_command'),
             ('AP_PERIPH_BATTERY_BALANCE_ENABLED', r'AP_Periph_FW::batt_balance_update'),
             ('AP_PERIPH_BATTERY_TAG_ENABLED', r'BatteryTag::update'),
+            ('AP_PERIPH_BATTERY_BMS_ENABLED', r'BatteryBMS::update'),
             ('AP_PERIPH_PROXIMITY_ENABLED', r'AP_Periph_FW::can_proximity_update'),
             ('AP_PERIPH_GPS_ENABLED', r'AP_Periph_FW::can_gps_update'),
             ('AP_PERIPH_ADSB_ENABLED', r'AP_Periph_FW::adsb_update'),
@@ -420,7 +421,7 @@ class ExtractFeatures(BuildScriptBase):
         text_output = self.run_program('EF', [
             self.strings,
             filename
-        ], show_output=False)
+        ], show_output=False, show_command=False)
         return text_output.split("\n")
 
     def extract(self):

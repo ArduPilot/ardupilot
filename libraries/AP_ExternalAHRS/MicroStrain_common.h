@@ -20,7 +20,7 @@
 
 #if AP_MICROSTRAIN_ENABLED
 
-#include <AP_GPS/AP_GPS.h>
+#include <AP_GPS/AP_GPS_FixType.h>
 #include <AP_Math/vector3.h>
 #include <AP_Math/quaternion.h>
 
@@ -53,7 +53,7 @@ protected:
     struct {
         uint16_t week;
         uint32_t tow_ms;
-        GPS_FIX_TYPE fix_type;
+        AP_GPS_FixType fix_type;
         uint8_t satellites;
         float horizontal_position_accuracy;
         float vertical_position_accuracy;
