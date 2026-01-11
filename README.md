@@ -13,6 +13,7 @@
 - [Running SITL](#running-sitl)
   - [Native SITL (No JSON backend)](#native-sitl-no-json-backend)
   - [JSON SITL (With JSON backend)](#json-sitl-with-json-backend-such-as-unitymds)
+  - [JSON SITL multiple vehicles](#json-sitl-multiple-vehicles)
 - [Setting parameters](#setting-parameters)
   - [Setting simple parameters](#setting-simple-parameters)
   - [Uploading entire parameter files](#uploading-entire-parameter-files)
@@ -133,6 +134,30 @@ Then run the JSON backend and the SITL instance: (order doesn't matter)
 ```
 
 > Note: Remember to enable all firewall rules with Unity if using Windows.
+
+### JSON SITL multiple vehicles
+
+Ardupilot supports running multiple SITL instances, each with different SITL and GCS ports depending on instance id. When you execute `./run_sitl_json.sh`, the default instance id is `0`, corresponding to SITL port `9002` and GCS port `14550`. Port number auto-increments by `10` for each instance id increment. For example, instance id `1` corresponds to SITL port `9012` and GCS port `14560`.
+
+To run the first vehicle, change the ports in UnityMDS to `9002` and:
+```bash
+cd ~/ardupilot/<your-vehicle-type>
+./run_sitl_json.sh -I 0
+```
+
+To run the second vehicle, change the ports in UnityMDS to `9012` and:
+```bash
+cd ~/ardupilot/<your-vehicle-type>
+./run_sitl_json.sh -I 1
+```
+
+You can monitor multiple vehicles with QGroundControl by adding multiple UDP links with ports `14550`, `14560`, etc. The steps are as follows:
+
+1. Open QGroundControl. Click on the `logo` on the top left -> `Application Settings` -> `Comm Links`.
+2. Under `Links`, add a new link with the following settings:
+   - Link Type: UDP
+   - Listening Port: `14550` (for the first vehicle), `14560` (for the second vehicle), etc.
+3. Choose `autoconnect` and click save.
 
 ## Setting parameters
 
