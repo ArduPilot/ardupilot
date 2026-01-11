@@ -340,6 +340,9 @@ void AP_Airspeed::init()
 
     convert_per_instance();
 
+    // Set primary from parameter to avoid primary changed message at boot
+    primary = primary_sensor.get();
+
 #if ENABLE_PARAMETER
     // if either type is set then enable if not manually set
     if (!_enable.configured() && ((param[0].type.get() != TYPE_NONE) || (param[1].type.get() != TYPE_NONE))) {
@@ -776,13 +779,15 @@ void AP_Airspeed::update()
     // Check for failures possibly marking sensors and unhealthy
     check_sensor_failures();
 
-#if HAL_LOGGING_ENABLED
-    // Record old primary sensor for logging
+    // Record old primary sensor for reporting
     const uint8_t old_primary = primary;
-#endif
 
     // Select primary sensor based on user parameters and health
     primary = select_primary();
+
+    if (primary != old_primary) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Airspeed primary changed: %i", primary+1);
+    }
 
 #if HAL_LOGGING_ENABLED
     if (primary != old_primary) {
