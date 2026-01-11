@@ -461,7 +461,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "ACRO"; }
+    const char *name() const override { return "Acro"; }
     const char *name4() const override { return "ACRO"; }
 
     // get_pilot_desired_rates_rads - transform pilot's normalised roll pitch and yaw input into a desired lean angle rates
@@ -518,7 +518,7 @@ public:
 #endif
 protected:
 
-    const char *name() const override { return "ALT_HOLD"; }
+    const char *name() const override { return "Altitude Hold"; }
     const char *name4() const override { return "ALTH"; }
 
 private:
@@ -638,7 +638,7 @@ public:
 
 protected:
 
-    const char *name() const override { return auto_RTL? "AUTO RTL" : "AUTO"; }
+    const char *name() const override { return auto_RTL? "Auto RTL" : "Auto"; }
     const char *name4() const override { return auto_RTL? "ARTL" : "AUTO"; }
 
     float wp_distance_m() const override;
@@ -857,7 +857,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "AUTOTUNE"; }
+    const char *name() const override { return "Autotune"; }
     const char *name4() const override { return "ATUN"; }
 };
 #endif
@@ -882,7 +882,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "BRAKE"; }
+    const char *name() const override { return "Brake"; }
     const char *name4() const override { return "BRAK"; }
 
 private:
@@ -910,7 +910,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "CIRCLE"; }
+    const char *name() const override { return "Circle"; }
     const char *name4() const override { return "CIRC"; }
 
     float wp_distance_m() const override;
@@ -941,7 +941,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "DRIFT"; }
+    const char *name() const override { return "Drift"; }
     const char *name4() const override { return "DRIF"; }
 
 private:
@@ -969,7 +969,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "FLIP"; }
+    const char *name() const override { return "Flip"; }
     const char *name4() const override { return "FLIP"; }
 
 private:
@@ -1020,7 +1020,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
-    const char *name() const override { return "FLOWHOLD"; }
+    const char *name() const override { return "Flow Hold"; }
     const char *name4() const override { return "FHLD"; }
 
 private:
@@ -1189,7 +1189,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "GUIDED"; }
+    const char *name() const override { return "Guided"; }
     const char *name4() const override { return "GUID"; }
 
     float wp_distance_m() const override;
@@ -1279,7 +1279,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "GUIDED_NOGPS"; }
+    const char *name() const override { return "Guided No GPS"; }
     const char *name4() const override { return "GNGP"; }
 
 private:
@@ -1317,7 +1317,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "LAND"; }
+    const char *name() const override { return "Land"; }
     const char *name4() const override { return "LAND"; }
 
 private:
@@ -1360,7 +1360,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "LOITER"; }
+    const char *name() const override { return "Loiter"; }
     const char *name4() const override { return "LOIT"; }
 
     float wp_distance_m() const override;
@@ -1402,7 +1402,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "POSHOLD"; }
+    const char *name() const override { return "Position Hold"; }
     const char *name4() const override { return "PHLD"; }
 
 private:
@@ -1618,7 +1618,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "SMARTRTL"; }
+    const char *name() const override { return "Smart RTL"; }
     const char *name4() const override { return "SRTL"; }
 
     // for reporting to GCS
@@ -1666,7 +1666,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "SPORT"; }
+    const char *name() const override { return "Sport"; }
     const char *name4() const override { return "SPRT"; }
 
 private:
@@ -1695,7 +1695,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "STABILIZE"; }
+    const char *name() const override { return "Stabilize"; }
     const char *name4() const override { return "STAB"; }
 
 private:
@@ -1745,7 +1745,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "SYSTEMID"; }
+    const char *name() const override { return "SystemID"; }
     const char *name4() const override { return "SYSI"; }
 
 private:
@@ -1828,7 +1828,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "THROW"; }
+    const char *name() const override { return "Throw"; }
     const char *name4() const override { return "THRW"; }
 
 private:
@@ -1877,7 +1877,7 @@ public:
     bool allows_entry_in_rc_failsafe() const override { return false; }
 
 protected:
-    const char *name() const override { return "TURTLE"; }
+    const char *name() const override { return "Turtle"; }
     const char *name4() const override { return "TRTL"; }
 
 private:
@@ -1916,7 +1916,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "AVOID_ADSB"; }
+    const char *name() const override { return "Avoid ADSB"; }
     const char *name4() const override { return "AVOI"; }
 
 private:
@@ -1944,7 +1944,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "FOLLOW"; }
+    const char *name() const override { return "Follow"; }
     const char *name4() const override { return "FOLL"; }
 
     // for reporting to GCS
@@ -2002,7 +2002,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "ZIGZAG"; }
+    const char *name() const override { return "ZigZag"; }
     const char *name4() const override { return "ZIGZ"; }
     float wp_distance_m() const override;
     float wp_bearing_deg() const override;
@@ -2074,7 +2074,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "AUTOROTATE"; }
+    const char *name() const override { return "Autorotate"; }
     const char *name4() const override { return "AROT"; }
 
 private:
