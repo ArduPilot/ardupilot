@@ -506,6 +506,7 @@ def find_offsets(instances, file_path):
             offsets[instance] = [90.0, 20.0 * instance, 0.0, None]
     return offsets
 
+
 def find_geocoder_location(locname):
     '''find a location using geocoder and SRTM'''
     try:
