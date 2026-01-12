@@ -15,8 +15,8 @@ local PARAM_TABLE_KEY = 72
 assert(param:add_table(PARAM_TABLE_KEY, "PARA_", 4), "Failed to create param table")
 assert(param:add_param(PARAM_TABLE_KEY, 1, "DELAY_MS", 100), "Failed to create Param1")
 assert(param:add_param(PARAM_TABLE_KEY, 2, "TRIG_CH", 11), "Failed to create Param2")
-assert(param:add_param(PARAM_TABLE_KEY, 3, "PWM_HOLD", 2000), "Failed to create Param3")
-assert(param:add_param(PARAM_TABLE_KEY, 4, "PWM_RELEASE", 1000), "Failed to create Param4")
+assert(param:add_param(PARAM_TABLE_KEY, 3, "PWM_HOLD", 1900), "Failed to create Param3")
+assert(param:add_param(PARAM_TABLE_KEY, 4, "PWM_RELEASE", 1100), "Failed to create Param4")
 
 local PARA_DELAY_MS = Parameter()
 PARA_DELAY_MS:init("PARA_DELAY_MS")
