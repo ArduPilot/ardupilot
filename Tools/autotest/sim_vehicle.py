@@ -550,6 +550,7 @@ def find_geocoder_location(locname):
 
     return [lat, lon, alt, 0.0]
 
+
 def find_location_by_name(locname):
     """Search locations.txt for locname, return GPS coords"""
     locations_userpath = os.environ.get('ARDUPILOT_LOCATIONS',
