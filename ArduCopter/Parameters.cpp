@@ -170,8 +170,8 @@ const AP_Param::Info Copter::var_info[] = {
     // @DisplayName: RTL acceleration
     // @Description: Acceleration target in cm/s/s that RTL will attempt to slow the aircraft during the initial brake. Set to 0 to use WPNAV_ACCEL
     // @Units: cm/s/s
-    // @Range: 0 10000
-    // @Increment: 100
+    // @Range: 0 1000
+    // @Increment: 10
     // @User: Advanced
     GSCALAR(rtl_accel_cmss,      "RTL_ACCEL",    RTL_ACCEL),
 #endif
