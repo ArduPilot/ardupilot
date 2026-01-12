@@ -677,15 +677,20 @@ float inv_sqrt_controller(float output, float p, float D_max)
 // - rate_cmd must be the output of sqrt_controller() for the same error.
 float sqrt_controller_accel(float error, float rate_cmd, float rate_state, float p, float second_ord_lim)
 {
+    // If we are moving away from the target return zero.
+    if (!is_positive(rate_cmd * rate_state)) {
+        return 0.0;
+    }
+
     // If no second-order limit, controller is linear everywhere (rate_cmd ~ p*error).
-    if (is_negative(second_ord_lim) || is_zero(second_ord_lim)) {
+    if (!is_positive(second_ord_lim)) {
         return -p * rate_state;
     }
 
     // If no P gain but second-order limit exists, controller is pure sqrt everywhere.
-    if (is_zero(p)) {
+    if (!is_positive(p)) {
         if (is_zero(rate_cmd)) {
-            return 0.0f;
+            return 0.0;
         }
         return -(second_ord_lim / fabsf(rate_cmd)) * rate_state;
     }
