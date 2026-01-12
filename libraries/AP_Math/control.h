@@ -92,11 +92,10 @@ void shape_vel_accel_xy(const Vector2f& vel_desired, const Vector2f& accel_desir
 
 // Shapes position, velocity, and acceleration using a jerk-limited square-root command model.
 // - Computes a velocity correction from position error using a square-root controller.
-// - Computes an implied acceleration correction from the velocity envelope derivative
-//   (sqrt_controller_accel) using the actual closing rate.
-// - Combines proportional velocity correction, envelope-based acceleration feedforward,
-//   and external acceleration feedforward.
-// - Applies velocity-dependent acceleration limits to prevent exceeding vel_min / vel_max.
+// - Uses sqrt_controller_accel() to bias the velocity correction based on the actual closing rate.
+// - Forms a velocity target by adding the correction to the feedforward velocity.
+// - Computes an acceleration demand from velocity error using k_v and adds external acceleration feedforward.
+// - Optionally constrains total velocity and total acceleration when limit_total is true.
 // - Applies jerk limiting via shape_accel() to ensure smooth acceleration transitions.
 // This is the single-axis (1D) form of shape_pos_vel_accel_xy().
 void shape_pos_vel_accel(const postype_t pos_desired, float vel_desired, float accel_desired,
@@ -107,14 +106,12 @@ void shape_pos_vel_accel(const postype_t pos_desired, float vel_desired, float a
 
 // Shapes lateral position, velocity, and acceleration using a jerk-limited square-root command model.
 // - Computes a velocity correction from position error using a square-root controller.
-// - Computes an implied acceleration correction from the velocity envelope derivative
-//   (sqrt_controller_accel) using the actual closing rate.
-// - Combines proportional velocity correction, envelope-based acceleration feedforward,
-//   and external acceleration feedforward.
-// - Applies corner-aware acceleration limiting to preserve cross-track authority.
-// - Applies velocity-dependent acceleration limits to prevent exceeding vel_max.
+// - Uses the sqrt_controller_accel() term to adjust the velocity correction based on the current closing rate.
+// - Forms a velocity target by adding the correction to the feedforward velocity.
+// - Computes an acceleration demand from velocity error using k_v and adds external acceleration feedforward.
+// - Limits acceleration magnitude with a braking-priority limiter based on the current velocity direction.
+// - Optionally limits the total velocity and total acceleration when limit_total is true.
 // - Applies jerk limiting via shape_accel_xy() to ensure smooth acceleration transitions.
-// This is the two-dimensional (XY) form of shape_pos_vel_accel().
 void shape_pos_vel_accel_xy(const Vector2p& pos_desired, const Vector2f& vel_desired, const Vector2f& accel_desired,
                             const Vector2p& pos, const Vector2f& vel, Vector2f& accel,
                             float vel_max, float accel_max,
