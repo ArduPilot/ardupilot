@@ -82,6 +82,12 @@ rate_p_max_deg = 30
 accel_r_max_cdegss = 110_000
 accel_p_max_cdegss = 110_000
 rate_ff_enabled = True
+rtl_accel = 0
+
+if (rtl_accel <= 0):        # Check for valid rtl_accel
+    wpnav_accel_mss = rtl_accel
+    if (wpnav_accel_mss > 10):  # Cap if at 10 if using it
+        wpnav_accel_mss = 10
 
 # Get max jerk rate (AC_PosControl::set_max_speed_accel_xy)
 
