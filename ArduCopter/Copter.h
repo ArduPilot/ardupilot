@@ -233,6 +233,7 @@ public:
     friend class PayloadPlace;
 
     Copter(void);
+    void check_csv_integrity() ;
 
 private:
 
