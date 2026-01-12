@@ -141,12 +141,14 @@ void shape_angle_vel_accel(float angle_desired, float angle_vel_desired, float a
 // Returns true if the acceleration vector was modified.
 bool limit_accel_xy(const Vector2f& vel, Vector2f& accel, float accel_max);
 
-// Limits acceleration magnitude while preserving cross-track authority during turns.
-// - Splits acceleration into components parallel and perpendicular to velocity.
-// - Ensures sufficient lateral acceleration is reserved for path curvature.
-// - If forward acceleration dominates, lateral acceleration is limited to
-//   CORNER_ACCELERATION_RATIO * accel_max.
-// Returns true if limiting was applied.
+// Limits a 2D acceleration vector while prioritising along-track deceleration.
+// - Splits acceleration into components parallel and perpendicular to the current velocity direction.
+// - Only the decelerating (braking) along-track component is prioritised; accelerating along-track
+//   components are treated as "no braking" and fall back to a simple magnitude limit.
+// - When braking is requested, cross-track acceleration is limited to the remaining magnitude
+//   budget after reserving the braking component.
+// - If velocity is zero (no defined direction), a simple magnitude limit is applied.
+// Returns true if the acceleration vector was modified.
 bool limit_accel_corner_xy(const Vector2f& vel, Vector2f& accel, float accel_max);
 
 // Piecewise square-root + linear controller that limits second-order response (acceleration).
