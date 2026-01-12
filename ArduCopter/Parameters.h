@@ -230,6 +230,7 @@ public:
         k_param_rtl_speed_cms = 135,
         k_param_fs_batt_curr_rtl,
         k_param_rtl_cone_slope, // 137
+        k_param_rtl_accel_cmss,
 
         //
         // 140: Sensor parameters
@@ -402,6 +403,7 @@ public:
     AP_Int16        rtl_climb_min;              // rtl minimum climb in cm
     AP_Int32        rtl_loiter_time;
     AP_Int8         rtl_alt_type;
+    AP_Int32        rtl_accel_cmss;
 #endif
 
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior

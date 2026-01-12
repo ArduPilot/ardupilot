@@ -175,12 +175,13 @@ void ModeRTL::brake_run()
     pos_control->set_pos_target_z_from_climb_rate_cm(0.0f);
     pos_control->update_z_controller();
 
-    if (inertial_nav.get_velocity_neu_cms().length() < g.rtl_speed_cms && g.rtl_speed_cms != 0) {
+    // Modified to check that we're braking down slow enough rather than to RTL speed
+    if (inertial_nav.get_velocity_neu_cms().length() < 100 && g.rtl_speed_cms != 0) {
         _state_complete = true;
         _state = SubMode::STARTING;
         //undo the changes we made to the vel targets. 
         wp_nav->set_speed_xy(g.rtl_speed_cms); 
-    } else if (inertial_nav.get_velocity_neu_cms().length() < wp_nav->get_default_speed_xy() && g.rtl_speed_cms == 0) {
+    } else if (inertial_nav.get_velocity_neu_cms().length() < 100 && g.rtl_speed_cms == 0) {
         _state_complete = true;
         _state = SubMode::STARTING;
         wp_nav->set_speed_xy(wp_nav->get_default_speed_xy()); // reset the velocity to wpnav_speed
@@ -468,6 +469,13 @@ void ModeRTL::brake_init()
 {
     _state = SubMode::BRAKING;
     float accel_max = wp_nav->get_wp_acceleration(); // [NHW] Get WPNAV_ACCEL parameter for braking acceleration
+    if (g.rtl_accel_cmss > 0){         // Use RTL_ACCEL if not set to 0
+        accel_max = g.rtl_accel_cmss;
+        if (accel_max > 1000){         // Sanity check limit to 10m/s/s - note for rediculous power to weight FPV types, this may be conservative.
+            accel_max = 1000;
+        }
+    }
+    
     float z_speed = wp_nav->get_default_speed_down(); // [NHW} get default vertical speed. Use descent only for safety.
     // initialise pos controller speed and acceleration
     pos_control->set_max_speed_accel_xy(inertial_nav.get_velocity_neu_cms().length(), accel_max);
