@@ -514,12 +514,26 @@ def find_geocoder_location(locname):
     except ImportError:
         print("geocoder not installed")
         return None
-    j = geocoder.osm(locname)
+
+    # --- 403-only bypass added ---
+    from urllib.error import HTTPError
+    try:
+        j = geocoder.osm(locname)
+    except HTTPError as e:
+        if e.code == 403:
+            print("HTTP 403 detected: using local fallback")
+            return None  # fallback path; SITL will use local data
+        else:
+            raise
+    # --- end 403-only bypass ---
+
     if j is None or not hasattr(j, 'lat') or j.lat is None:
         print("geocoder failed to find '%s'" % locname)
         return None
+
     lat = j.lat
     lon = j.lng
+
     from MAVProxy.modules.mavproxy_map import srtm
     downloader = srtm.SRTMDownloader()
     downloader.loadFileList()
@@ -533,7 +547,9 @@ def find_geocoder_location(locname):
     if alt is None:
         print("timed out getting altitude for '%s'" % locname)
         return None
+
     return [lat, lon, alt, 0.0]
+
 
 
 def find_location_by_name(locname):
