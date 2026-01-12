@@ -526,11 +526,9 @@ def find_geocoder_location(locname):
         else:
             raise
     # --- end 403-only bypass ---
-
     if j is None or not hasattr(j, 'lat') or j.lat is None:
         print("geocoder failed to find '%s'" % locname)
         return None
-
     lat = j.lat
     lon = j.lng
 
@@ -549,7 +547,6 @@ def find_geocoder_location(locname):
         return None
 
     return [lat, lon, alt, 0.0]
-
 
 
 def find_location_by_name(locname):
