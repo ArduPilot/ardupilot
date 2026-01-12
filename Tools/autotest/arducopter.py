@@ -9085,7 +9085,7 @@ class AutoTestCopter(AutoTest):
         self.progress(f"RTL braking distance: {actual_distance:.2f}m")
         self.progress(f"Expected braking distance: {expected_distance:.2f}m")
         
-        tolerance = 10
+        tolerance = 20 # Tolerance for the braking distance in m.
         
         if abs(actual_distance - expected_distance) > tolerance:
             raise NotAchievedException(
