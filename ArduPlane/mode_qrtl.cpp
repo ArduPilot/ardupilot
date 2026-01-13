@@ -3,11 +3,46 @@
 
 #if HAL_QUADPLANE_ENABLED
 
+bool ModeQRTL::enter_should_just_qland() const
+{
+    if (plane.quadplane.guided_wait_takeoff_on_mode_enter) {
+        return true;
+    }
+
+    if (plane.previous_mode->is_vtol_mode()) {
+        switch (quadplane.motors->get_desired_spool_state()) {
+        case AP_Motors::DesiredSpoolState::SHUT_DOWN:
+        case AP_Motors::DesiredSpoolState::GROUND_IDLE:
+            switch (quadplane.motors->get_spool_state()) {
+            case AP_Motors::SpoolState::SHUT_DOWN:
+            case AP_Motors::SpoolState::GROUND_IDLE:
+            case AP_Motors::SpoolState::SPOOLING_UP:
+            case AP_Motors::SpoolState::SPOOLING_DOWN:
+                // we don't want to be running the motors and we're
+                // pretty close to not running the motors, so assume
+                // we're on the ground.  Since the main enter code
+                // does not cope with the fact we may be on the ground
+                // and *need* to climb before transitioning, just
+                // qland where we are (i.e. assuming we are where we
+                // want to be)
+                return true;
+            case AP_Motors::SpoolState::THROTTLE_UNLIMITED:
+                break;
+            }
+            break;
+        case AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED:
+            break;
+        }
+    }
+
+    return false;
+}
+
 bool ModeQRTL::_enter()
 {
     // treat QRTL as QLAND if we are in guided wait takeoff state, to cope
     // with failsafes during GUIDED->AUTO takeoff sequence
-    if (plane.quadplane.guided_wait_takeoff_on_mode_enter) {
+    if (enter_should_just_qland()) {
        plane.set_mode(plane.mode_qland, ModeReason::QLAND_INSTEAD_OF_RTL);
        return true;
     }
