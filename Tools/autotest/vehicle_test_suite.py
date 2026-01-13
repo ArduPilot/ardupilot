@@ -13090,12 +13090,29 @@ switch value'''
             self.customise_SITL_commandline([
                 "--home", "%s,%s,%s,%s" % (HOME.lat, HOME.lng, HOME.alt, heading)
             ])
-            for ahrs_type in [0, 2, 3]:
+            for ahrs_type in [0, 2, 3, 10, 11]:
                 self.start_subsubtest("Testing AHRS_TYPE=%u" % ahrs_type)
                 self.context_push()
-                self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
-                self.reboot_sitl()
-                self.wait_prearm_sys_status_healthy()
+
+                # Special setup for ExternalAHRS (type 11)
+                if ahrs_type == 11:
+                    # Use MicroStrain7 as the external AHRS device
+                    self.customise_SITL_commandline([
+                        "--serial4=sim:MicroStrain7",
+                    ])
+                    self.set_parameters({
+                        "EAHRS_TYPE": 7,  # MicroStrain7
+                        "SERIAL4_PROTOCOL": 36,  # ExternalAHRS protocol
+                        "SERIAL4_BAUD": 230400,
+                        "GPS1_TYPE": 21,  # External AHRS
+                        "AHRS_EKF_TYPE": ahrs_type,
+                        "INS_GYR_CAL": 1,
+                    })
+                    self.reboot_sitl()
+                else:
+                    self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
+                    self.reboot_sitl()
+                self.wait_prearm_sys_status_healthy(timeout=120)
                 for (r, p) in [(0, 0), (9, 0), (2, -6), (10, 10)]:
                     self.set_parameters({
                         'AHRS_TRIM_X': math.radians(r),
