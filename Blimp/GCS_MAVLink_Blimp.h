@@ -76,6 +76,8 @@ private:
         POSY =        6,
         POSZ =        7,
         POSYAW =      8,
+        LVLRLL =      9,
+        LVLPIT =      10,
     };
 
 #if HAL_HIGH_LATENCY2_ENABLED

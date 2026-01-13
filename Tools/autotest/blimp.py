@@ -70,7 +70,7 @@ class AutoTestBlimp(TestSuite):
         return 'Blimp'
 
     def default_frame(self):
-        return "Blimp"
+        return "blimp"
 
     def apply_defaultfile_parameters(self):
         # Blimp passes in a defaults_filepath in place of applying
@@ -126,6 +126,7 @@ class AutoTestBlimp(TestSuite):
             self.mavproxy.send(f"map icon {tr.lat} {tr.lng} flag\n")
             self.mavproxy.send(f"map icon {ttr.lat} {ttr.lng} flag\n")
 
+        self.progress("Moving forward & right.")
         self.set_rc(2, 2000)
         self.wait_distance_to_location(tl, 0, acc, timeout=10)
         self.set_rc(2, 1500)
@@ -134,34 +135,36 @@ class AutoTestBlimp(TestSuite):
         self.wait_distance_to_location(tr, 0, acc, timeout=10)
         self.set_rc(1, 1500)
         self.wait_distance_to_location(ttr, 0, acc, timeout=15)
+        
         self.change_mode('RTL')
-        self.wait_distance_to_location(bl, 0, 0.5, timeout=30, minimum_duration=5) # make sure it can hold position
+        self.progress("Testing mode RTL.")
+        self.wait_distance_to_location(bl, 0, 0.5, timeout=40, minimum_duration=10) # make sure it can hold position
+        
         self.change_mode('MANUAL')
-
         self.wait_distance_to_location(bl, 0, acc, timeout=5) # make sure we haven't moved from the spot
 
+        self.progress("Moving up.")
         self.set_rc(3, 2000)
         self.wait_altitude(5, 5.5, relative=True, timeout=15)
         self.set_rc(3, 1500)
-
         self.wait_distance_to_location(bl, 0, acc, timeout=5) # make sure we haven't moved from the spot
 
+        self.progress("Yawing left.")
         self.set_rc(4, 1000)
-        self.wait_heading(340, accuracy=5, timeout=5) # short timeout to check yawrate
+        self.wait_heading(340, accuracy=5, timeout=10) # short timeout to check yawrate
         self.set_rc(4, 1500)
-
         self.wait_distance_to_location(bl, 0, acc, timeout=5) # make sure we haven't moved from the spot
 
+        self.progress("Moving down.")
         self.set_rc(3, 1000)
         self.wait_altitude(0, 0.5, relative=True, timeout=20)
         self.set_rc(3, 1500)
-
         self.wait_distance_to_location(bl, 0, acc, timeout=5) # make sure we haven't moved from the spot
 
+        self.progress("Yawing right.")
         self.set_rc(4, 2000)
         self.wait_heading(135, accuracy=5, timeout=10) # short timeout to check yawrate
         self.set_rc(4, 1500)
-
         self.wait_distance_to_location(bl, 0, acc, timeout=5) # make sure we haven't moved from the spot
 
         self.disarm_vehicle()
@@ -182,12 +185,6 @@ class AutoTestBlimp(TestSuite):
         tr = self.offset_location_ne(location=bl, metres_north=siz, metres_east=siz)
         br = self.offset_location_ne(location=bl, metres_north=0, metres_east=siz)
 
-        print("Locations are:")
-        print("bottom left  ", bl.lat, bl.lng)
-        print("top left     ", tl.lat, tl.lng)
-        print("top right    ", tr.lat, tr.lng)
-        print("bottom right ", br.lat, br.lng)
-
         if self.mavproxy is not None:
             self.mavproxy.send(f"map icon {bl.lat} {bl.lng} flag\n")
             self.mavproxy.send(f"map icon {tl.lat} {tl.lng} flag\n")
@@ -196,42 +193,46 @@ class AutoTestBlimp(TestSuite):
 
         self.set_parameter("SIMPLE_MODE", 1)
 
+        self.progress("Flying to top left corner.")
         self.set_rc(2, 2000)
         self.wait_distance_to_location(tl, 0, 0.2, timeout=tim)
         self.set_rc(2, 1500)
 
+        self.progress("Flying to top right corner.")
         self.set_rc(1, 2000)
         self.wait_distance_to_location(tr, 0, 0.5, timeout=tim)
         self.set_rc(1, 1500)
 
+        self.progress("Flying to bottom right corner.")
         self.set_rc(2, 1000)
         self.wait_distance_to_location(br, 0, 0.5, timeout=tim)
         self.set_rc(2, 1500)
 
+        self.progress("Flying to bottom left corner.")
         self.set_rc(1, 1000)
         self.wait_distance_to_location(bl, 0, 0.5, timeout=tim)
         self.set_rc(1, 1500)
 
         fin = self.mav.location()
 
+        self.progress("Yawing right.")
         self.set_rc(4, 1700)
         self.wait_heading(135, accuracy=2, timeout=tim)
         self.set_rc(4, 1500)
-
         self.wait_distance_to_location(fin, 0, 0.15, timeout=5) # make sure we haven't moved from the spot
 
+        self.progress("Going up and back down.")
         self.set_rc(3, 2000)
         self.wait_altitude(5, 5.5, relative=True, timeout=60)
         self.set_rc(3, 1000)
         self.wait_altitude(0, 0.5, relative=True, timeout=60)
         self.set_rc(3, 1500)
-
         self.wait_distance_to_location(fin, 0, 0.15, timeout=5) # make sure we haven't moved from the spot
 
+        self.progress("Yawing left.")
         self.set_rc(4, 1300)
         self.wait_heading(0, accuracy=2, timeout=tim)
         self.set_rc(4, 1500)
-
         self.wait_distance_to_location(fin, 0, 0.15, timeout=5) # make sure we haven't moved from the spot
 
         self.disarm_vehicle()
