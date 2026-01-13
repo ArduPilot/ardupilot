@@ -406,20 +406,20 @@
 #endif
 
 // RTL Mode
-#ifndef RTL_ALT_FINAL
- # define RTL_ALT_FINAL             0       // the altitude, in cm, the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
+#ifndef RTL_ALT_FINAL_M_DEFAULT
+ # define RTL_ALT_FINAL_M_DEFAULT   0       // the altitude, in meters, the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
 #endif
 
-#ifndef RTL_ALT
- # define RTL_ALT                   1500    // default alt to return to home in cm, 0 = Maintain current altitude
+#ifndef RTL_ALT_M_DEFAULT
+ # define RTL_ALT_M_DEFAULT         15      // default alt to return to home in meters, 0 = Maintain current altitude
 #endif
 
 #ifndef RTL_ALT_MIN_M
- # define RTL_ALT_MIN_M             0.30     // min height above ground for RTL (i.e 0.3 m)
+ # define RTL_ALT_MIN_M             0.30    // min height above ground for RTL (i.e 0.3 m)
 #endif
 
-#ifndef RTL_CLIMB_MIN_DEFAULT
- # define RTL_CLIMB_MIN_DEFAULT     0       // vehicle will always climb this many cm as first stage of RTL
+#ifndef RTL_CLIMB_MIN_M_DEFAULT
+ # define RTL_CLIMB_MIN_M_DEFAULT   0       // vehicle will always climb this many meters during the first stage of RTL
 #endif
 
 #ifndef RTL_CONE_SLOPE_DEFAULT
@@ -432,6 +432,17 @@
 
 #ifndef RTL_LOITER_TIME
  # define RTL_LOITER_TIME           5000    // Time (in milliseconds) to loiter above home before beginning final descent
+#endif
+
+// error if old RTL parameter default definitions are used
+#ifdef RTL_ALT_FINAL
+  #error "RTL_ALT_FINAL definition replaced with RTL_ALT_FINAL_M_DEFAULT"
+#endif
+#ifdef RTL_ALT
+  #error "RTL_ALT definition replaced with RTL_ALT_M_DEFAULT"
+#endif
+#ifdef RTL_CLIMB_MIN_DEFAULT
+  #error "RTL_CLIMB_MIN_DEFAULT definition replaced with RTL_CLIMB_MIN_M_DEFAULT"
 #endif
 
 // AUTO Mode

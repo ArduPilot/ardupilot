@@ -6,6 +6,8 @@
 #include "RC_Channel_Copter.h"
 #include <AP_Proximity/AP_Proximity.h>
 
+class ModeRTL;
+
 #if MODE_FOLLOW_ENABLED
  # include <AP_Follow/AP_Follow.h>
 #endif
@@ -229,7 +231,7 @@ public:
         //
         // 135 : reserved for Solo until features merged with master
         //
-        k_param_rtl_speed_cms = 135,
+        k_param_rtl_speed_cms = 135,    // remove
         k_param_fs_batt_curr_rtl,
         k_param_rtl_cone_slope, // 137
 
@@ -259,10 +261,10 @@ public:
         //
         // 160: Navigation parameters
         //
-        k_param_rtl_altitude_cm = 160,
+        k_param_rtl_altitude_cm = 160,  // remove
         k_param_crosstrack_gain,    // deprecated - remove with next eeprom number change
         k_param_rtl_loiter_time,
-        k_param_rtl_alt_final_cm,
+        k_param_rtl_alt_final_cm,   // remove
         k_param_tilt_comp, // 164 deprecated - remove with next eeprom number change
 
 
@@ -370,7 +372,7 @@ public:
         k_param_autotune_aggressiveness, // remove
         k_param_pi_vel_xy,              // remove
         k_param_fs_ekf_action,
-        k_param_rtl_climb_min_cm,
+        k_param_rtl_climb_min_cm,   // remove
         k_param_rpm_sensor_old, // remove
         k_param_autotune_min_d, // remove
         k_param_arming, // 252  - AP_Arming
@@ -396,11 +398,7 @@ public:
     AP_Float        pilot_takeoff_alt_cm;
 
 #if MODE_RTL_ENABLED
-    AP_Int32        rtl_altitude_cm;
-    AP_Int16        rtl_speed_cms;
     AP_Float        rtl_cone_slope;
-    AP_Int16        rtl_alt_final_cm;
-    AP_Int16        rtl_climb_min_cm;              // rtl minimum climb in cm
     AP_Int32        rtl_loiter_time;
     AP_Enum<ModeRTL::RTLAltType> rtl_alt_type;
 #endif
@@ -701,6 +699,10 @@ public:
     AP_Float rc_tuning2_min;
     AP_Float rc_tuning2_max;
 #endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
+
+#if MODE_RTL_ENABLED
+    void *mode_rtl_ptr;
+#endif
 };
 
 extern const AP_Param::Info        var_info[];
