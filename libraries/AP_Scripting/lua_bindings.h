@@ -32,6 +32,7 @@ int lua_mavlink_receive_chan(lua_State *L);
 int lua_mavlink_register_rx_msgid(lua_State *L);
 int lua_mavlink_send_chan(lua_State *L);
 int lua_mavlink_block_command(lua_State *L);
+int lua_mavlink_hook_message_request(lua_State *L);
 int lua_print(lua_State *L);
 int lua_range_finder_handle_script_msg(lua_State *L);
 int lua_GCS_command_int(lua_State *L);
