@@ -522,13 +522,14 @@ def find_geocoder_location(locname):
     except HTTPError as e:
         if e.code == 403:
             print("HTTP 403 detected: using local fallback")
-            return None  # fallback path; SITL will use local data
-        else:
-            raise
+            return None
+        raise
     # --- end 403-only bypass ---
+
     if j is None or not hasattr(j, 'lat') or j.lat is None:
         print("geocoder failed to find '%s'" % locname)
         return None
+
     lat = j.lat
     lon = j.lng
 
