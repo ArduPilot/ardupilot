@@ -313,6 +313,20 @@ void AP_ExternalAHRS_GSOF::get_filter_status(nav_filter_status &status) const
     status.flags.initalized = initialised();
 }
 
+bool AP_ExternalAHRS_GSOF::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
+{
+    velVar = Vector3<float>(
+        ins_rms.vel_rms_n,
+        ins_rms.vel_rms_e,
+        ins_rms.vel_rms_d).length() * vel_gate_scale;
+    posVar = Vector2<float>(
+        ins_rms.pos_rms_n,
+        ins_rms.pos_rms_e).length() * pos_gate_scale;
+    hgtVar = ins_rms.pos_rms_d * hgt_gate_scale;
+    tasVar = 0;
+    return true;
+}
+
 bool AP_ExternalAHRS_GSOF::times_healthy() const
 {
     auto const now = AP_HAL::millis();
