@@ -27,6 +27,15 @@ const app_descriptor_t app_descriptor = {
     .signature_length = 0,
     .signature = {},
 #endif
+#if AP_TRUSTED_FLIGHT_ENABLED
+    .auth_params = {
+        .key_type = 0,
+        .key_len = 0,
+        .key = {},
+        .issuer_len = 0,
+        .issuer = {},
+    },
+#endif
     .version_major = APP_FW_MAJOR,
     .version_minor = APP_FW_MINOR,
     .board_id = APJ_BOARD_ID,
