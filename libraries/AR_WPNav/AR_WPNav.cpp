@@ -258,6 +258,21 @@ bool AR_WPNav::set_desired_location(const Location& destination, Location next_d
                                          _pos_control.get_accel_max(),  // corner acceleration
                                          AR_WPNAV_SNAP_MAX,             // snap
                                          _pos_control.get_jerk_max());
+                
+        // set the origin speed...
+        // project the current target velocity onto the direction of the scurve
+        Vector3f direction = Vector3f{destination_NE.x, destination_NE.y, 0.0f} - Vector3f{origin_NE.x, origin_NE.y, 0.0f};
+        if (!is_zero(direction.length())) {
+            direction.normalize();
+            // get the current target velocity from the position controller
+            Vector2f target_vel_2d = _pos_control.get_desired_velocity();
+            Vector3f target_vel_3d{target_vel_2d.x, target_vel_2d.y, 0.0f};
+            float origin_speed = target_vel_3d.dot(direction);
+            if (origin_speed > 0.0f) {
+                // vehicle target velocity vector is towards the new waypoint, so set the origin speed
+                _scurve_this_leg.set_origin_speed_max(origin_speed);
+            }
+        }
     }
 
     // handle next destination
