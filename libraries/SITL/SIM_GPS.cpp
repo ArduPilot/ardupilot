@@ -146,6 +146,14 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     // @Description: GPS heading offset in degrees. how off the simulated GPS heading is from the actual heading
     // @User: Advanced
     AP_GROUPINFO("HDG_OFS",  17, GPSParms,  heading_offset, 0),
+
+    // @Param: OPTIONS
+    // @DisplayName: GPS Options
+    // @Description: GPS Options bitmask
+    // @Bitmask: 0:UBlox GPS is F9P
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS",  18, GPSParms, options, 0),
+
     AP_GROUPEND
 };
 }
