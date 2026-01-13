@@ -126,5 +126,44 @@ bool AP_DDS_External_Control::convert_alt_frame(const uint8_t frame_in,  Locatio
     return true;
 }
 
+bool AP_DDS_External_Control::stop_image_capture(uint8_t camera_id)
+{
+    auto *external_control = AP::externalcontrol();
+    if (external_control == nullptr) {
+        return false;
+    }
+
+    return external_control->stop_image_capture(camera_id);
+}
+
+bool AP_DDS_External_Control::start_image_capture(uint8_t camera_id, uint32_t interval_msec, uint16_t total_images)
+{
+    auto *external_control = AP::externalcontrol();
+    if (external_control == nullptr) {
+        return false;
+    }
+
+    return external_control->start_image_capture(camera_id, interval_msec, total_images);
+}
+
+uint16_t AP_DDS_External_Control::total_image_cap(uint8_t camera_id)
+{
+    auto *external_control = AP::externalcontrol();
+    if (external_control == nullptr) {
+        return 0;
+    }
+
+    return external_control->total_image_cap(camera_id);
+}
+
+uint16_t AP_DDS_External_Control::image_current_seq(uint8_t camera_id)
+{
+    auto *external_control = AP::externalcontrol();
+    if (external_control == nullptr) {
+        return 0;
+    }
+
+    return external_control->image_current_seq(camera_id);
+}
 
 #endif // AP_DDS_ENABLED
