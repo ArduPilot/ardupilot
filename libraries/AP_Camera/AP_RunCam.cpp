@@ -758,7 +758,11 @@ void AP_RunCam::receive()
              return;
         }
 
-        const uint8_t c = uart->read();
+        uint8_t c;
+        if (!uart->read(c)) {
+            break;
+        }
+
         if (_pending_request._recv_response_length == 0) {
             // Only start receiving packet when we found a header
             if (c != RUNCAM_HEADER) {
