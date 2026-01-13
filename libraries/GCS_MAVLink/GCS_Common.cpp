@@ -1310,7 +1310,11 @@ void GCS_MAVLINK::find_next_bucket_to_send(uint16_t now16_ms)
         }
     }
     if (sending_bucket_id != no_bucket_to_send) {
-        bucket_message_ids_to_send = deferred_message_bucket[sending_bucket_id].ap_message_ids;
+        auto &next_bucket = deferred_message_bucket[sending_bucket_id];
+        bucket_message_ids_to_send = next_bucket.ap_message_ids;
+        highest_message_id_first = next_bucket.highest_message_id_first;
+        // next time send the messages in this bucket in the opposite order:
+        next_bucket.highest_message_id_first = !next_bucket.highest_message_id_first;
     } else {
         bucket_message_ids_to_send.clearall();
     }
@@ -1331,13 +1335,19 @@ ap_message GCS_MAVLINK::next_deferred_bucket_message_to_send(uint16_t now16_ms)
         return no_message_to_send;
     }
 
-    const uint16_t ms_since_last_sent = now16_ms - deferred_message_bucket[sending_bucket_id].last_sent_ms;
-    if (ms_since_last_sent < get_reschedule_interval_ms(deferred_message_bucket[sending_bucket_id])) {
+    const auto &bucket = deferred_message_bucket[sending_bucket_id];
+    const uint16_t ms_since_last_sent = now16_ms - bucket.last_sent_ms;
+    if (ms_since_last_sent < get_reschedule_interval_ms(bucket)) {
         // not time to send this bucket
         return no_message_to_send;
     }
 
-    const int16_t next = bucket_message_ids_to_send.first_set();
+    int16_t next;
+    if (bucket.highest_message_id_first) {
+        next = bucket_message_ids_to_send.last_set();
+    } else {
+        next = bucket_message_ids_to_send.first_set();
+    }
     if (next == -1) {
         // should not happen
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
