@@ -157,8 +157,10 @@ bool GCS_MAVLINK_Sub::send_info()
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
     send_named_float("RollPitch", sub.roll_pitch_flag);
 
-    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
-    send_named_float("RFTarget", sub.mode_surftrak.get_rangefinder_target_cm() * 0.01f);
+    if (sub.control_mode == Mode::Number::SURFTRAK) {
+        CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
+        send_named_float("RFTarget", sub.mode_surftrak.get_rangefinder_target_cm() * 0.01f);
+    }
 
     return true;
 }
@@ -670,6 +672,17 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
                 int32_t(packet.alt*100),
                 frame,
             };
+
+            // posvel case supports ABOVE_TERRAIN frame
+            if (!vel_ignore && acc_ignore && frame == Location::AltFrame::ABOVE_TERRAIN) {
+                if (!loc.get_vector_xy_from_origin_NE_cm(pos_neu_cm.xy())) {
+                    break;
+                }
+                pos_neu_cm.z = loc.alt;
+                sub.mode_guided.guided_set_destination_posvel(pos_neu_cm, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f), frame);
+                break;
+            }
+
             if (!loc.get_vector_from_origin_NEU_cm(pos_neu_cm)) {
                 break;
             }
