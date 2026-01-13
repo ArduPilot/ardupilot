@@ -78,6 +78,9 @@ void AR_WPNav_OA::update(float dt)
             break;
 
         case AP_OAPathPlanner::OA_PROCESSING:
+            _oa_active = false;
+            break;
+            
         case AP_OAPathPlanner::OA_ERROR:
             // during processing or in case of error, slow vehicle to a stop
             stop_vehicle = true;
