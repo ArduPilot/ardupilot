@@ -4,8 +4,10 @@
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
+// AC_FENCE_DUMMY_METHODS_ENABLED helps compiling the binaries with dummy methods for blimp and tracker
+// It might be defined at multiple places; ensure consistency while changing definition
 #ifndef AC_FENCE_DUMMY_METHODS_ENABLED
-#define AC_FENCE_DUMMY_METHODS_ENABLED  (!(APM_BUILD_TYPE(APM_BUILD_Rover) | APM_BUILD_COPTER_OR_HELI | APM_BUILD_TYPE(APM_BUILD_ArduPlane) | APM_BUILD_TYPE(APM_BUILD_ArduSub) | (AP_FENCE_ENABLED == 1)))
+#define AC_FENCE_DUMMY_METHODS_ENABLED  (APM_BUILD_TYPE(APM_BUILD_Blimp) | APM_BUILD_TYPE(APM_BUILD_AntennaTracker))
 #endif
 
 #if !AC_FENCE_DUMMY_METHODS_ENABLED
@@ -1138,6 +1140,7 @@ float AC_Fence::get_breach_distance(uint8_t fence_type) const { return 0.0; }
 bool AC_Fence::get_breach_direction_NED(uint8_t fence_type, Vector3f& direction, Location& fence_check_pos) const { return false; }
 void AC_Fence::get_fence_names(uint8_t fences, ExpandingString& msg) { }
 void AC_Fence::print_fence_message(const char* msg, uint8_t fences) const {}
+float AC_Fence::get_margin_ne_m() const { return 0.0; }
 
 void AC_Fence::manual_recovery_start() {}
 
