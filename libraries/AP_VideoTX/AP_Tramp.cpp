@@ -181,8 +181,10 @@ char AP_Tramp::receive_response()
         return 0;
     }
 
+    bool ignore_leading_zero = AP::vtx().has_option(AP_VideoTX::VideoOptions::VTX_TRAMP_IGNORE_FIRST_BYTE);
+
     // wait for complete packet
-    const uint16_t bytesNeeded = TRAMP_BUF_SIZE - receive_pos;
+    const uint16_t bytesNeeded = (TRAMP_BUF_SIZE - receive_pos) + ignore_leading_zero;
     if (port->available() < bytesNeeded) {
         return 0;
     }
@@ -200,6 +202,11 @@ char AP_Tramp::receive_response()
             return 0;
         }
         const uint8_t c = uint8_t(b);
+        // some VTX's send a spurious extra 0 byte
+        if (c == 0 && ignore_leading_zero && receive_pos == 0) {
+            continue;
+        }
+
         response_buffer[receive_pos++] = c;
 
         switch (receive_state) {
