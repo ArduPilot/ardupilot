@@ -1,0 +1,128 @@
+# ArduPilot LoiterSlow Mode Implementation Guide
+
+## Overview
+This guide documents the step-by-step process to add a new flight mode called 'LoiterSlow' to ArduPilot Copter. LoiterSlow behaves like the standard Loiter mode but limits horizontal velocity to a configurable maximum speed (default 1.0 m/s, range 0.1-2.0 m/s).
+
+## Prerequisites
+- ArduPilot source code
+- Build environment set up
+- Basic understanding of C++ and ArduPilot architecture
+
+## Step 1: Plan the Mode Implementation
+- **Mode Number**: Choose 29 (after TURTLE=28)
+- **Inheritance**: Inherit from Mode base class (like ModeLoiter)
+- **Functionality**: Copy ModeLoiter logic but override speed limits
+- **Parameter**: Add LOIT_SLOW_SPD parameter for configurable speed
+
+## Step 2: Create Mode Source File
+**File**: ArduCopter/mode_loiterslow.cpp
+
+Key components added:
+- Class declaration inheriting from Mode
+- init() method: Initialize loiter navigation and set speed limit
+- run() method: Handle different altitude states and enforce speed limits
+- Helper methods for precision loiter and waypoint calculations
+
+## Step 3: Update Mode Declarations
+**File**: ArduCopter/mode.h
+
+Changes:
+- Added LOITERSLOW = 29 to Mode::Number enum
+- Declared ModeLoiterSlow class with precision loiter support
+- Added friend class declaration in Copter class
+- Added mode_loiterslow instance
+
+## Step 4: Register Mode in Factory
+**File**: ArduCopter/mode.cpp
+
+Added case in mode factory switch:
+```cpp
+case Mode::Number::LOITERSLOW:
+    return &mode_loiterslow;
+```
+
+## Step 5: Add to GCS Mode List
+**File**: ArduCopter/GCS_MAVLink_Copter.cpp
+
+Added to send_available_mode() modes array:
+```cpp
+#if MODE_LOITERSLOW_ENABLED
+    &copter.mode_loiterslow,
+#endif
+```
+
+## Step 6: Enable Mode in Configuration
+**File**: ArduCopter/APM_Config.h
+
+Added:
+```cpp
+#define MODE_LOITER_ENABLED 1
+#define MODE_LOITERSLOW_ENABLED 1
+```
+
+## Step 7: Add Configurable Speed Parameter
+**File**: libraries/AC_WPNav/AC_Loiter.h
+- Added AP_Float _loit_slow_spd_ne_cms member
+- Added get_loit_slow_spd_NE_ms() getter method
+
+**File**: libraries/AC_WPNav/AC_Loiter.cpp
+- Added parameter definition in var_info[]
+- Added clamping in sanity_check_params() (0.1-2.0 m/s range)
+
+## Step 8: Update Mode to Use Parameter
+**File**: ArduCopter/mode_loiterslow.cpp
+
+Replaced hardcoded 1.0f with:
+```cpp
+loiter_nav->set_speed_max_NE_ms(loiter_nav->get_loit_slow_spd_NE_ms());
+```
+
+## Step 9: Build the Firmware
+```bash
+./waf copter
+```
+
+## Step 10: Update pymavlink for Mode Name Recognition
+**File**: /usr/local/lib/python3.10/dist-packages/pymavlink/mavutil.py
+
+Added to mode_mapping_acm:
+```python
+28 : 'TURTLE',
+29 : 'LOITERSLOW',
+```
+
+## Step 11: Testing
+1. Start SITL: `python3 Tools/autotest/sim_vehicle.py --vehicle=Copter --console --wipe`
+2. Switch mode: `mode loiterslow`
+3. Check parameter: `param show LOIT_SLOW_SPD`
+4. Change speed: `param set LOIT_SLOW_SPD 0.5`
+5. Takeoff: `mode guided`, `arm throttle`, `takeoff 5`
+6. Switch to LoiterSlow: `mode loiterslow`
+7. Test speed limiting: `rc 1 1700` (should limit to set speed)
+
+## Files Modified
+- ArduCopter/mode_loiterslow.cpp (new)
+- ArduCopter/mode.h
+- ArduCopter/mode.cpp
+- ArduCopter/GCS_MAVLink_Copter.cpp
+- ArduCopter/APM_Config.h
+- libraries/AC_WPNav/AC_Loiter.h
+- libraries/AC_WPNav/AC_Loiter.cpp
+- pymavlink/mavutil.py (external)
+
+## Key Technical Details
+- Mode inherits from base Mode class
+- Uses existing AC_Loiter navigation library
+- Speed limiting via set_speed_max_NE_ms()
+- Parameter stored in cm/s internally, displayed in m/s
+- MAVLink mode number 29
+- Compatible with all Loiter features (precision loiter, etc.)
+
+## Troubleshooting
+- If mode doesn't appear: Check MODE_LOITERSLOW_ENABLED define
+- If parameter missing: Verify var_info addition
+- If pymavlink error: Update mode_mapping_acm
+- If disarming on throttle: Takeoff before switching modes
+
+## Conclusion
+The LoiterSlow mode is now fully implemented with configurable speed limits, providing a slower alternative to standard Loiter mode for precision operations.

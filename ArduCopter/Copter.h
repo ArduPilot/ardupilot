@@ -216,6 +216,7 @@ public:
     friend class ModeGuided;
     friend class ModeLand;
     friend class ModeLoiter;
+    friend class ModeLoiterSlow;
     friend class ModePosHold;
     friend class ModeRTL;
     friend class ModeSmartRTL;
@@ -1061,6 +1062,7 @@ private:
     ModeLand mode_land;
 #if MODE_LOITER_ENABLED
     ModeLoiter mode_loiter;
+    ModeLoiterSlow mode_loiterslow;
 #endif
 #if MODE_POSHOLD_ENABLED
     ModePosHold mode_poshold;

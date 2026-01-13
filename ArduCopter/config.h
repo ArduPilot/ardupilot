@@ -190,6 +190,9 @@
 # define MODE_LOITER_ENABLED 1
 #endif
 
+#ifndef MODE_LOITERSLOW_ENABLED
+#define MODE_LOITERSLOW_ENABLED 1
+#endif
 //////////////////////////////////////////////////////////////////////////////
 // Position Hold - enable holding of global position
 #ifndef MODE_POSHOLD_ENABLED
