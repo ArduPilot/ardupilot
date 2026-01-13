@@ -99,7 +99,7 @@ bool GliderPullup::pullup_start(void)
     if (!plane.ahrs.airspeed_EAS(aspeed)) {
         aspeed = -1;
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "Start pullup airspeed %.1fm/s at %.1fm AMSL", aspeed, plane.current_loc.alt*0.01);
+    gcs().send_text(MAV_SEVERITY_INFO, "Start pullup airspeed %.1fm/s at %.1fm AMSL", aspeed, plane.current_loc.get_alt_m());
     return true;
 }
 
@@ -115,8 +115,8 @@ bool GliderPullup::verify_pullup(void)
     switch (stage) {
     case Stage::WAIT_AIRSPEED: {
         float aspeed;
-        if (ahrs.airspeed_EAS(aspeed) && (aspeed > airspeed_start || ahrs.get_pitch_deg() > pitch_start)) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Pullup airspeed %.1fm/s alt %.1fm AMSL", aspeed, current_loc.alt*0.01);
+        if (ahrs.airspeed_EAHRS(aspeed) && (aspeed > airspeed_start || ahrs.get_pitch_deg() > pitch_start)) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Pullup airspeed %.1fm/s alt %.1fm AMSL", aspeed, current_loc.get_alt_m());
             stage = Stage::WAIT_PITCH;
         }
         return false;
@@ -127,7 +127,7 @@ bool GliderPullup::verify_pullup(void)
             gcs().send_text(MAV_SEVERITY_INFO, "Pullup pitch p=%.1f r=%.1f alt %.1fm AMSL",
                             ahrs.get_pitch_deg(),
                             ahrs.get_roll_deg(),
-                            current_loc.alt*0.01);
+                            current_loc.get_alt_m());
             stage = Stage::WAIT_LEVEL;
         }
         return false;
@@ -151,7 +151,7 @@ bool GliderPullup::verify_pullup(void)
         bool roll_control_lost = fabsf(ahrs.get_roll_deg()) > aparm.roll_limit;
         if (pitchup_complete && airspeed_low && !roll_control_lost) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Pullup level r=%.1f p=%.1f alt %.1fm AMSL",
-                                ahrs.get_roll_deg(), ahrs.get_pitch_deg(), current_loc.alt*0.01);
+                                ahrs.get_roll_deg(), ahrs.get_pitch_deg(), current_loc.get_alt_m());
                 break;
         } else if (pitchup_complete && roll_control_lost) {
                 // push nose down and wait to get roll control back

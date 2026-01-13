@@ -4,17 +4,18 @@
 
 #include "AP_AHRS.h"
 
-bool AP_AHRS_SIM::get_location(Location &loc) const
+bool AP_AHRS_SIM::get_location(AbsAltLocation &loc) const
 {
     if (_sitl == nullptr) {
         return false;
     }
 
     const struct SITL::sitl_fdm &fdm = _sitl->state;
-    loc = {};
-    loc.lat = fdm.latitude * 1e7;
-    loc.lng = fdm.longitude * 1e7;
-    loc.alt = fdm.altitude*100;
+    loc = {
+        int32_t(fdm.latitude * 1e7),
+        int32_t(fdm.longitude * 1e7),
+        int32_t(fdm.altitude*100)
+    };
 
     return true;
 }
@@ -97,7 +98,7 @@ bool AP_AHRS_SIM::get_hagl(float &height) const
         return false;
     }
 
-    height = _sitl->state.altitude - AP::ahrs().get_home().alt*0.01f;
+    height = _sitl->state.altitude - AP::ahrs().get_home().get_alt_m();
 
     return true;
 }
@@ -108,7 +109,7 @@ bool AP_AHRS_SIM::get_relative_position_NED_origin(Vector3p &vec) const
         return false;
     }
 
-    Location loc, orgn;
+    AbsAltLocation loc, orgn;
     if (!get_location(loc) ||
         !get_origin(orgn)) {
         return false;
@@ -117,14 +118,14 @@ bool AP_AHRS_SIM::get_relative_position_NED_origin(Vector3p &vec) const
     const Vector2p diff2d = orgn.get_distance_NE_postype(loc);
     const struct SITL::sitl_fdm &fdm = _sitl->state;
     vec = Vector3p(diff2d.x, diff2d.y,
-                   -(fdm.altitude - orgn.alt*0.01f));
+                   -(fdm.altitude - orgn.get_alt_m()));
 
     return true;
 }
 
 bool AP_AHRS_SIM::get_relative_position_NE_origin(Vector2p &posNE) const
 {
-    Location loc, orgn;
+    AbsAltLocation loc, orgn;
     if (!get_location(loc) ||
         !get_origin(orgn)) {
         return false;
@@ -140,11 +141,11 @@ bool AP_AHRS_SIM::get_relative_position_D_origin(postype_t &posD) const
         return false;
     }
     const struct SITL::sitl_fdm &fdm = _sitl->state;
-    Location orgn;
+    AbsAltLocation orgn;
     if (!get_origin(orgn)) {
         return false;
     }
-    posD = -(fdm.altitude - orgn.alt*0.01f);
+    posD = -(fdm.altitude - orgn.get_alt_m());
 
     return true;
 }
@@ -191,7 +192,7 @@ void AP_AHRS_SIM::send_ekf_status_report(GCS_MAVLINK &link) const
 #endif // HAL_GCS_ENABLED
 }
 
-bool AP_AHRS_SIM::get_origin(Location &ret) const
+bool AP_AHRS_SIM::get_origin(AbsAltLocation &ret) const
 {
     if (_sitl == nullptr) {
         return false;

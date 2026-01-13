@@ -48,11 +48,10 @@ void AP_GPS_ExternalAHRS::handle_external(const AP_ExternalAHRS::gps_data_messag
     }
     state.num_sats = pkt.satellites_in_view;
 
-    const Location loc {
+    const AbsAltLocation loc {
         pkt.latitude,
         pkt.longitude,
-        pkt.msl_altitude,
-        Location::AltFrame::ABSOLUTE
+        pkt.msl_altitude
     };
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (!loc.initialised() && state.status >= AP_GPS::GPS_Status::GPS_OK_FIX_2D) {

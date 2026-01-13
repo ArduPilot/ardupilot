@@ -53,7 +53,7 @@ void ModeAuto::update()
     // start or update mission
     if (waiting_to_start) {
         // don't start the mission until we have an origin
-        Location loc;
+        AbsAltLocation loc;
         if (ahrs.get_origin(loc)) {
             // start/resume the mission (based on MIS_RESTART parameter)
             mission.start_or_resume();
@@ -1002,7 +1002,11 @@ void ModeAuto::do_set_home(const AP_Mission::Mission_Command& cmd)
             // ignored...
         }
     } else {
-        if (!rover.set_home(cmd.content.location, false)) {
+        AbsAltLocation loc;
+        if (!loc.from(cmd.content.location)) {
+            return;
+        }
+        if (!rover.set_home(loc, false)) {
             // ignored...
         }
     }

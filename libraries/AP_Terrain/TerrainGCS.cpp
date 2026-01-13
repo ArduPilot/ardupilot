@@ -113,7 +113,7 @@ void AP_Terrain::send_request(mavlink_channel_t chan)
     // see if we need to schedule some disk IO
     schedule_disk_io();
 
-    Location loc;
+    AbsAltLocation loc;
     if (!AP::ahrs().get_location(loc)) {
         // we don't know where we are. Request any cached blocks.
         // this allows for download of mission items when we have no GPS lock
@@ -207,7 +207,7 @@ void AP_Terrain::handle_data(mavlink_channel_t chan, const mavlink_message_t &ms
  */
 void AP_Terrain::send_report(mavlink_channel_t chan)
 {
-    Location loc;
+    AbsAltLocation loc;
     if (!AP::ahrs().get_location(loc)) {
         loc = {};
     }
@@ -218,7 +218,7 @@ void AP_Terrain::send_report(mavlink_channel_t chan)
 /* 
    send a TERRAIN_REPORT for a location
  */
-void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc, bool extrapolate)
+void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const AbsAltLocation &loc, bool extrapolate)
 {
 #if HAL_GCS_ENABLED
     float terrain_height = 0;
@@ -252,7 +252,7 @@ void AP_Terrain::handle_terrain_check(mavlink_channel_t chan, const mavlink_mess
 {
     mavlink_terrain_check_t packet;
     mavlink_msg_terrain_check_decode(&msg, &packet);
-    Location loc;
+    AbsAltLocation loc;
     loc.lat = packet.lat;
     loc.lng = packet.lon;
     send_terrain_report(chan, loc, false);

@@ -289,7 +289,7 @@ void Copter::parachute_check()
     }
 
     // ensure the first control_loss event is from above the min altitude
-    if (control_loss_count == 0 && parachute.alt_min() != 0 && (current_loc.alt < (int32_t)parachute.alt_min() * 100)) {
+    if (control_loss_count == 0 && parachute.alt_min() != 0 && (current_alt_above_home_m() < parachute.alt_min())) {
         return;
     }
 
@@ -362,7 +362,7 @@ void Copter::parachute_manual_release()
     }
 
     // do not release if we are landed or below the minimum altitude above home
-    if ((parachute.alt_min() != 0 && (current_loc.alt < (int32_t)parachute.alt_min() * 100))) {
+    if ((parachute.alt_min() != 0 && (current_alt_above_home_m() < parachute.alt_min()))) {
         // warn user of reason for failure
         gcs().send_text(MAV_SEVERITY_ALERT,"Parachute: Too low");
         LOGGER_WRITE_ERROR(LogErrorSubsystem::PARACHUTES, LogErrorCode::PARACHUTE_TOO_LOW);

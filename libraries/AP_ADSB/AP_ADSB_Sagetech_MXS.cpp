@@ -133,7 +133,7 @@ void AP_ADSB_Sagetech_MXS::update()
             now_ms - last.packet_Operating_ms >= SAGETECH_OPERATING_MSG_RATE ||             // Send Operating Message every second
             last.operating_squawk != _frontend.out_state.ctrl.squawkCode ||                 // Or anytime Operating data changes
             last.operating_squawk != _frontend.out_state.cfg.squawk_octal ||
-            abs(last.operating_alt - _frontend._my_loc.alt) > 1555 ||                       // 1493cm == 49ft. The output resolution is 100ft per bit
+               abs(last.operating_alt - _frontend._my_loc.get_alt_cm()) > 1555 ||                       // 1493cm == 49ft. The output resolution is 100ft per bit
             last.operating_rf_select != _frontend.out_state.cfg.rfSelect ||                 // The following booleans control the MXS OpMode
             last.modeAEnabled != _frontend.out_state.ctrl.modeAEnabled ||
             last.modeCEnabled != _frontend.out_state.ctrl.modeCEnabled ||
@@ -152,7 +152,7 @@ void AP_ADSB_Sagetech_MXS::update()
         last.modeCEnabled = _frontend.out_state.ctrl.modeCEnabled;
         last.modeSEnabled = (_frontend._options & uint32_t(AP_ADSB::AdsbOption::Mode3_Only)) ? 0 : _frontend.out_state.ctrl.modeSEnabled;
 
-        last.operating_alt = _frontend._my_loc.alt;
+        last.operating_alt = _frontend._my_loc.get_alt_cm();
         last.packet_Operating_ms = now_ms;
         send_operating_msg();
     
@@ -643,9 +643,8 @@ void AP_ADSB_Sagetech_MXS::send_gps_msg()
         strncpy(gps.timeOfFix, "      .   ", 11);
     }
 
-    int32_t height;
-    if (_frontend._my_loc.initialised() && _frontend._my_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, height)) {
-        gps.height = height * 0.01;
+    if (_frontend._my_loc.initialised()) {
+        gps.height = _frontend._my_loc.get_alt_m();
     } else {
         gps.height = 0.0;
     }
@@ -739,9 +738,8 @@ sg_airspeed_t AP_ADSB_Sagetech_MXS::convert_airspeed_knots_to_sg(const float max
 
 void AP_ADSB_Sagetech_MXS::populate_op_altitude(const AP_ADSB::Loc &loc)
 {
-    int32_t height;
-    if (loc.initialised() && loc.get_alt_cm(Location::AltFrame::ABSOLUTE, height)) {
-        mxs_state.op.altitude = height * SAGETECH_SCALE_CM_TO_FEET;         // Height above sealevel in feet
+    if (loc.initialised()) {
+        mxs_state.op.altitude = loc.get_alt_cm() * SAGETECH_SCALE_CM_TO_FEET;         // Height above sealevel in feet
     } else {
         mxs_state.op.altitude = 0;
     }

@@ -223,7 +223,9 @@ bool ModeGuided::guided_set_destination(const Location& dest_loc)
 
 #if HAL_LOGGING_ENABLED
     // log target
-    sub.Log_Write_GuidedTarget(sub.guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt),Vector3f());
+    int32_t dest_loc_alt_cm;
+    UNUSED_RESULT(dest_loc.get_alt_cm(dest_loc.get_alt_frame(), dest_loc_alt_cm));
+    sub.Log_Write_GuidedTarget(sub.guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc_alt_cm),Vector3f());
 #endif
 
     return true;

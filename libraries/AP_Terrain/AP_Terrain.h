@@ -112,7 +112,7 @@ public:
     // send a terrain report for the current location, extrapolating height as we do for navigation:
     void send_report(mavlink_channel_t chan);
     // send a terrain report or Location loc
-    void send_terrain_report(mavlink_channel_t chan, const Location &loc, bool extrapolate);
+    void send_terrain_report(mavlink_channel_t chan, const AbsAltLocation &loc, bool extrapolate);
     void handle_data(mavlink_channel_t chan, const mavlink_message_t &msg);
     void handle_terrain_check(mavlink_channel_t chan, const mavlink_message_t &msg);
     void handle_terrain_data(const mavlink_message_t &msg);
@@ -427,12 +427,12 @@ private:
 
     // cache the home altitude, as it is needed so often
     float home_height;
-    Location home_loc;
+    AbsAltLocation home_loc;
     bool have_home_height;
 
     // reference position for terrain adjustment, set at arming
     bool have_reference_loc;
-    Location reference_loc;
+    AbsAltLocation reference_loc;
 
     // calculated reference offset
     bool have_reference_offset;

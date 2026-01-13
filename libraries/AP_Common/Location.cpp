@@ -41,7 +41,7 @@ Location::Location(const Vector3f &ekf_offset_neu_cm, AltFrame frame)
     set_alt_cm(ekf_offset_neu_cm.z, frame);
 
     // calculate lat, lon
-    Location ekf_origin;
+    AbsAltLocation ekf_origin;
     if (AP::ahrs().get_origin(ekf_origin)) {
         lat = ekf_origin.lat;
         lng = ekf_origin.lng;
@@ -57,7 +57,7 @@ Location::Location(const Vector3d &ekf_offset_neu_cm, AltFrame frame)
     set_alt_cm(ekf_offset_neu_cm.z, frame);
 
     // calculate lat, lon
-    Location ekf_origin;
+    AbsAltLocation ekf_origin;
     if (AP::ahrs().get_origin(ekf_origin)) {
         lat = ekf_origin.lat;
         lng = ekf_origin.lng;
@@ -192,7 +192,7 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
             if (!AP::ahrs().home_is_set()) {
                 return false;
             }
-            alt_abs = alt + AP::ahrs().get_home().alt;
+            alt_abs = alt + AP::ahrs().get_home().get_alt_cm();
 #else
             return false;
 #endif  // AP_AHRS_ENABLED
@@ -201,11 +201,11 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
 #if AP_AHRS_ENABLED
             {
                 // fail if we cannot get ekf origin
-                Location ekf_origin;
+                AbsAltLocation ekf_origin;
                 if (!AP::ahrs().get_origin(ekf_origin)) {
                     return false;
                 }
-                alt_abs = alt + ekf_origin.alt;
+                alt_abs = alt + ekf_origin.get_alt_cm();
             }
             break;
 #else
@@ -235,7 +235,7 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
 #if AP_AHRS_ENABLED
             {
                 // fail if we cannot get ekf origin
-                Location ekf_origin;
+                AbsAltLocation ekf_origin;
                 if (!AP::ahrs().get_origin(ekf_origin)) {
                     return false;
                 }
@@ -268,7 +268,7 @@ bool Location::get_alt_m(AltFrame desired_frame, float &ret_alt) const
 template<typename T>
 bool Location::get_vector_xy_from_origin_NE_cm(T &vec_ne) const
 {
-    Location ekf_origin;
+    AbsAltLocation ekf_origin;
     if (!AP::ahrs().get_origin(ekf_origin)) {
         return false;
     }
@@ -684,5 +684,34 @@ void Location::linearly_interpolate_alt(const Location &point1, const Location &
     // new target's distance along the original track and then linear interpolate between the original origin and destination altitudes
     set_alt_cm(point1.alt + (point2.alt - point1.alt) * constrain_float(line_path_proportion(point1, point2), 0.0f, 1.0f), point2.get_alt_frame());
 }
+
+bool AbsAltLocation::from(const Location &loc) {
+    Location tmp = loc;
+    if (!tmp.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
+        return false;
+    }
+    lat = tmp.lat;
+    lng = tmp.lng;
+    alt = tmp.alt;
+    return true;
+}
+
+#if AP_AHRS_ENABLED
+AbsAltLocation::AbsAltLocation(const Vector3f &ekf_offset_neu)
+{
+    zero();
+
+    // store alt and alt frame
+    set_alt_cm(ekf_offset_neu.z);
+
+    // calculate lat, lon
+    AbsAltLocation ekf_origin;
+    if (AP::ahrs().get_origin(ekf_origin)) {
+        lat = ekf_origin.lat;
+        lng = ekf_origin.lng;
+        offset(ekf_offset_neu.x * 0.01, ekf_offset_neu.y * 0.01);
+    }
+}
+#endif  // AP_AHRS_ENABLED
 
 #endif // HAL_BOOTLOADER_BUILD

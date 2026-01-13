@@ -775,7 +775,7 @@ void AC_PrecLand::run_output_prediction()
   get target location lat/lon. Note that altitude in returned
   location is not reliable
  */
-bool AC_PrecLand::get_target_location(Location &loc)
+bool AC_PrecLand::get_target_location(AbsAltLocation &loc)
 {
     if (!target_acquired()) {
         return false;

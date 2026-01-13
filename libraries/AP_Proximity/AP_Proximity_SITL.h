@@ -30,7 +30,7 @@ public:
 private:
     SITL::SIM *sitl;
     AP_Float *fence_alt_max;
-    Location current_loc;
+    AbsAltLocation current_loc;
 
     // get distance_m in meters to fence in a particular direction in degrees (0 is forward, angles increase in the clockwise direction)
     bool get_distance_to_fence(float angle_deg, float &distance_m) const;
