@@ -201,7 +201,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: DEBUG
     // @DisplayName: Debug
     // @Description: Debug
-    // @Bitmask: 0:Show free stack space, 1:Auto Reboot after 15sec, 2:Enable sending stats
+    // @Bitmask: 0:Show free stack space, 1:Auto Reboot after 15sec, 2:Enable sending stats, 3: Locate Node by LED flash pattern
     // @User: Advanced
     GSCALAR(debug, "DEBUG", 0),
 
