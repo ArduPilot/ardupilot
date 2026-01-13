@@ -19,10 +19,10 @@
 #include "Plane.h"
 #include <utility>
 
-/*****************************************
-* Throttle slew limit
-*****************************************/
-void Plane::throttle_slew_limit()
+// Get slew rate for throttle as a percentage per second.
+// 100% would allow the throttle to move from 0 to 100 in 1 second.
+// 0 is disabled
+float Plane::get_throttle_slewrate() const
 {
 #if HAL_QUADPLANE_ENABLED
     const bool do_throttle_slew = (control_mode->does_auto_throttle() || quadplane.in_assisted_flight() || quadplane.in_vtol_mode());
@@ -32,10 +32,7 @@ void Plane::throttle_slew_limit()
 
     if (!do_throttle_slew) {
         // only do throttle slew limiting in modes where throttle control is automatic
-        SRV_Channels::set_slew_rate(SRV_Channel::k_throttle,      0.0, 100, G_Dt);
-        SRV_Channels::set_slew_rate(SRV_Channel::k_throttleLeft,  0.0, 100, G_Dt);
-        SRV_Channels::set_slew_rate(SRV_Channel::k_throttleRight, 0.0, 100, G_Dt);
-        return;
+        return 0.0;
     }
 
     uint8_t slewrate = aparm.throttle_slewrate;
@@ -57,6 +54,13 @@ void Plane::throttle_slew_limit()
         slewrate = g.takeoff_throttle_slewrate;
     }
 #endif
+    return slewrate;
+}
+
+// Apply throttle slew limit
+void Plane::throttle_slew_limit()
+{
+    const float slewrate = get_throttle_slewrate();
     SRV_Channels::set_slew_rate(SRV_Channel::k_throttle,      slewrate, 100, G_Dt);
     SRV_Channels::set_slew_rate(SRV_Channel::k_throttleLeft,  slewrate, 100, G_Dt);
     SRV_Channels::set_slew_rate(SRV_Channel::k_throttleRight, slewrate, 100, G_Dt);
