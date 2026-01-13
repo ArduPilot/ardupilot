@@ -1,0 +1,13 @@
+diff --git a/libraries/AP_Scripting/wscript b/libraries/AP_Scripting/wscript
+index 479fcfe387..f3eb39dcbd 100644
+--- a/libraries/AP_Scripting/wscript
++++ b/libraries/AP_Scripting/wscript
+@@ -8,7 +8,7 @@ from waflib.TaskGen import after_method, before_method, feature
+ import os
+
+ # these are only used for binding generation, not compilation of the library
+-BINDING_CFLAGS="-std=c99 -Wno-error=missing-field-initializers -Wall -Werror -Wextra"
++BINDING_CFLAGS="-std=c99 -Wno-error=missing-field-initializers -Wall -Wextra"
+ BINDING_CC="gcc"
+
+ def configure(cfg):
