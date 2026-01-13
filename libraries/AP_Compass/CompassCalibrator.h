@@ -168,9 +168,6 @@ private:
     // true if enough samples have been collected and fitting has begun (aka runniong())
     bool _fitting() const;
 
-    // thins out samples between step one and step two
-    void thin_samples();
-
     // calc the fitness of a single sample vs a set of parameters (offsets, diagonals, off diagonals)
     float calc_residual(const Vector3f& sample, const param_t& params) const;
 
@@ -225,7 +222,6 @@ private:
     completion_mask_t _completion_mask;     // bitmask of directions in which we have samples
     CompassSample *_sample_buffer;          // buffer of sensor values
     uint16_t _samples_collected;            // number of samples in buffer
-    uint16_t _samples_thinned;              // number of samples removed by the thin_samples() call (called before step 2 begins)
 
     // fit state
     class param_t _params;                  // latest calibration outputs
