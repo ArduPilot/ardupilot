@@ -15,3 +15,16 @@ jobs:
     - run: python3 -m pip install --upgrade pip
     - run: python3 -m pip install pytest
     - run: PYTHONPATH="." pytest tests/test_pre_commit_copyright.py
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        submodules: recursive
+    - uses: actions/setup-python@v6
+      with:
+        python-version: 3.x
+    - run: python3 -m pip install --upgrade pip
+    - run: python3 -m pip install MAVProxy mock numpy pexpect pytest requests
+    - run: python3 -m pip install --editable modules/mavlink/pymavlink
+    - run: pytest --config-file=tests/pytest-whole-repo.toml  # 59 passed in 2.83s
