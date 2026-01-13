@@ -115,13 +115,18 @@ local function update()
                 local result = parse_wind_data(buffer)
                 log_wind_data(result)
                 buffer = ""
+                -- Running other scripts such as LTE modem can cause the this script to get behind.
+                -- The script can't parse multiple data buffers without running out of time.
+                -- Thus, the call to update here resets the "clock" of VM instruction limits but with 
+                -- one line less of data in the read FIFO.
+                return update, 1
             end
         end
         n_bytes = n_bytes - 1
     end
-    return update, 100
+    return update, 10
 end
 
 gcs:send_text(MAV_SEVERITY.INFO, "trisonica-mini.lua running...")
 
-return update, 100
+return update, 10
