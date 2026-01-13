@@ -486,7 +486,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.send_cmd_do_set_mode("RTL")
         self.wait_mode('AUTO')
         self.wait_current_waypoint(4)
-        self.wait_statustext('Land descend started')
+        self.wait_statustext('Land descend started', timeout=60)
         self.wait_statustext('Land final started', timeout=60)
         self.wait_disarmed(timeout=timeout)
         self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
@@ -1142,6 +1142,40 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             if value_before != value_after:
                 raise NotAchievedException("Changed throttle output on mode change to QHOVER")
         self.disarm_vehicle()
+
+    def TailsitterTransition(self):
+        '''simple transition for tailsitter'''
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath('plane-tailsitter'),
+            model="plane-tailsitter",
+            wipe=True,
+        )
+        self.reboot_sitl()
+
+        self.takeoff(30, mode='GUIDED')
+        self.set_rc(3, 2000)
+        self.change_mode('FBWA')
+        self.wait_groundspeed(5, 300)
+        self.change_mode('QRTL')
+        self.wait_disarmed(timeout=600)
+
+    def CopterTailsitterTransition(self):
+        '''simple transition for copter tailsitter'''
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath('quadplane-copter_tailsitter'),
+            model="quadplane-copter_tailsitter",
+            wipe=True,
+        )
+        self.reboot_sitl()
+
+        self.takeoff(30, mode='GUIDED')
+        self.set_rc(3, 2000)
+        self.change_mode('FBWA')
+        self.wait_groundspeed(5, 300)
+        self.change_mode('QRTL')
+        self.wait_disarmed(timeout=600)
 
     def CopterTailsitter(self):
         '''copter tailsitter test'''
@@ -3086,6 +3120,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.QAssist,
             self.GyroFFT,
             self.Tailsitter,
+            self.TailsitterTransition,
+            self.CopterTailsitterTransition,
             self.CopterTailsitter,
             self.ICEngine,
             self.ICEngineMission,
