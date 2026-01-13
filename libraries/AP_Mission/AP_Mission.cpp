@@ -431,6 +431,14 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u %s %u", cmd.index, cmd.type(), (unsigned)cmd.p1);
         break;
 
+    case MAV_CMD_DO_AUX_FUNCTION:
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u %s fn=%u pos=%u",
+                      cmd.index,
+                      cmd.type(),
+                      (unsigned)cmd.content.auxfunction.function,
+                      (unsigned)cmd.content.auxfunction.switchpos);
+        break;
+
     default:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u %s", cmd.index, cmd.type());
         break;
