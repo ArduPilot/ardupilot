@@ -1470,8 +1470,8 @@ private:
 class ModeRTL : public Mode {
 
 public:
-    // inherit constructor
-    using Mode::Mode;
+    // need a constructor for parameters
+    ModeRTL(void);
     Number mode_number() const override { return Number::RTL; }
 
     bool init(bool ignore_checks) override;
@@ -1526,6 +1526,18 @@ public:
     };
     ModeRTL::RTLAltType get_alt_type() const;
 
+    // parameter accessors
+    float get_altitude_m() const { return altitude_m.get(); }
+    float get_speed_ms() const { return speed_ms.get(); }
+    float get_alt_final_m() const { return alt_final_m.get(); }
+    float get_climb_min_m() const { return climb_min_m.get(); }
+
+    // convert parameters
+    void convert_params();
+
+    // mode specific parameter variable table
+    static const struct AP_Param::GroupInfo var_info[];
+
 protected:
 
     const char *name() const override { return "RTL"; }
@@ -1552,6 +1564,12 @@ private:
     void loiterathome_run();
     void build_path();
     void compute_return_target();
+
+    // RTL parameters
+    AP_Float altitude_m;
+    AP_Float speed_ms;
+    AP_Float alt_final_m;
+    AP_Float climb_min_m;
 
     SubMode _state = SubMode::INITIAL_CLIMB;  // records state of rtl (initial climb, returning home, etc)
     bool _state_complete = false; // set to true if the current state is completed

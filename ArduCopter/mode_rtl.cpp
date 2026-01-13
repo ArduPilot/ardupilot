@@ -2,6 +2,74 @@
 
 #if MODE_RTL_ENABLED
 
+// table of user settable parameters
+const AP_Param::GroupInfo ModeRTL::var_info[] = {
+
+    // @Param: ALT_M
+    // @DisplayName: RTL Altitude
+    // @Description: The minimum alt above home the vehicle will climb to before returning. If the vehicle is flying higher than this value it will return at its current altitude.
+    // @Units: m
+    // @Range: 0.30 3000
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("ALT_M", 1, ModeRTL, altitude_m, RTL_ALT_M_DEFAULT),
+
+    // @Param: ALT_FINAL_M
+    // @DisplayName: RTL Final Altitude
+    // @Description: Altitude the vehicle will move to as the final stage of Returning to Launch or after completing a mission. Set to zero to land.
+    // @Units: m
+    // @Range: 0 10
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("ALT_FINAL_M", 2, ModeRTL, alt_final_m, RTL_ALT_FINAL_M_DEFAULT),
+
+    // @Param: CLIMB_MIN_M
+    // @DisplayName: RTL minimum climb
+    // @Description: The vehicle will climb this many meters during the initial climb portion of the RTL
+    // @Units: m
+    // @Range: 0 30
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("CLIMB_MIN_M", 3, ModeRTL, climb_min_m, RTL_CLIMB_MIN_M_DEFAULT),
+
+    // @Param: SPEED_MS
+    // @DisplayName: RTL speed
+    // @Description: The speed in m/s which the aircraft will attempt to maintain horizontally while flying home. If this is set to zero, WPNAV_SPEED will be used instead.
+    // @Units: m/s
+    // @Range: 0 20
+    // @Increment: 0.5
+    // @User: Standard
+    AP_GROUPINFO("SPEED_MS", 4, ModeRTL, speed_ms, 0),
+
+    AP_GROUPEND
+};
+
+// constructor
+ModeRTL::ModeRTL() : Mode()
+{
+    // load parameter defaults
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
+// convert parameters
+void ModeRTL::convert_params()
+{
+    // PARAMETER_CONVERSION - Added: Jan 2026
+
+    // return immediately if parameter conversion has already been performed
+    if (altitude_m.configured() || speed_ms.configured() || alt_final_m.configured() || climb_min_m.configured()) {
+        return;
+    }
+
+    static const AP_Param::ConversionInfo conversion_info[] = {
+        { Parameters::k_param_rtl_altitude_cm, 0, AP_PARAM_INT32, "RTL_ALT_M" },        // RTL_ALT moved to RTL_ALT_M
+        { Parameters::k_param_rtl_speed_cms, 0, AP_PARAM_INT16, "RTL_SPEED_MS" },       // RTL_SPEED moved to RTL_SPEED_MS
+        { Parameters::k_param_rtl_alt_final_cm, 0, AP_PARAM_INT16, "RTL_ALT_FINAL_M" }, // RTL_ALT_FINAL moved to RTL_ALT_FINAL_M
+        { Parameters::k_param_rtl_climb_min_cm, 0, AP_PARAM_INT16, "RTL_CLIMB_MIN_M" }, // RTL_CLIMB_MIN moved to RTL_CLIMB_MIN_M
+    };
+    AP_Param::convert_old_parameters_scaled(conversion_info, ARRAY_SIZE(conversion_info), 0.01, 0);
+}
+
 /*
  * Init and run calls for RTL flight mode
  *
@@ -18,7 +86,7 @@ bool ModeRTL::init(bool ignore_checks)
         }
     }
     // initialise waypoint and spline controller
-    wp_nav->wp_and_spline_init_m(g.rtl_speed_cms * 0.01);
+    wp_nav->wp_and_spline_init_m(speed_ms.get());
     _state = SubMode::STARTING;
     _state_complete = true; // see run() method below
     terrain_following_allowed = !copter.failsafe.terrain;
@@ -255,7 +323,7 @@ void ModeRTL::descent_start()
 #endif
 }
 
-// rtl_descent_run - implements the final descent to the RTL_ALT
+// rtl_descent_run - implements the final descent to the RTL_ALT_M
 //      called by rtl_run at 100hz or more
 void ModeRTL::descent_run()
 {
@@ -384,14 +452,14 @@ void ModeRTL::build_path()
     // climb target is above our origin point at the return altitude
     rtl_path.climb_target = Location(rtl_path.origin_point.lat, rtl_path.origin_point.lng, rtl_path.return_target.alt, rtl_path.return_target.get_alt_frame());
 
-    // descent target is below return target at rtl_alt_final_cm
-    rtl_path.descent_target = Location(rtl_path.return_target.lat, rtl_path.return_target.lng, g.rtl_alt_final_cm, Location::AltFrame::ABOVE_HOME);
+    // descent target is below return target at rtl_alt_final_m
+    rtl_path.descent_target = Location(rtl_path.return_target.lat, rtl_path.return_target.lng, alt_final_m.get() * 100, Location::AltFrame::ABOVE_HOME);
 
     // Target altitude is passed directly to the position controller so must be relative to origin
     rtl_path.descent_target.change_alt_frame(Location::AltFrame::ABOVE_ORIGIN);
 
     // set land flag
-    rtl_path.land = g.rtl_alt_final_cm <= 0;
+    rtl_path.land = alt_final_m.get() <= 0;
 }
 
 // compute the return target - home or rally point
@@ -437,7 +505,7 @@ void ModeRTL::compute_return_target()
             // subtract vertical offset from altitude.
             curr_alt_m -= pos_offset_u_m;
             // set return_target.alt
-            rtl_path.return_target.set_alt_m(MAX(curr_alt_m + MAX(0.0, g.rtl_climb_min_cm * 0.01), MAX(g.rtl_altitude_cm * 0.01, RTL_ALT_MIN_M)), Location::AltFrame::ABOVE_TERRAIN);
+            rtl_path.return_target.set_alt_m(MAX(curr_alt_m + MAX(0.0f, climb_min_m.get()), MAX(altitude_m.get(), RTL_ALT_MIN_M)), Location::AltFrame::ABOVE_TERRAIN);
         } else {
             // fallback to relative alt and warn user
             alt_type = ReturnTargetAltType::RELATIVE;
@@ -479,8 +547,8 @@ void ModeRTL::compute_return_target()
     float target_alt_m = MAX(rtl_path.return_target.alt, 0) * 0.01;
 
     // increase target to maximum of current altitude + climb_min and rtl altitude
-    const float min_rtl_alt_m = MAX(RTL_ALT_MIN_M, curr_alt_m + MAX(0.0, g.rtl_climb_min_cm * 0.01));
-    target_alt_m = MAX(target_alt_m, MAX(g.rtl_altitude_cm * 0.01, min_rtl_alt_m));
+    const float min_rtl_alt_m = MAX(RTL_ALT_MIN_M, curr_alt_m + MAX(0.0f, climb_min_m.get()));
+    target_alt_m = MAX(target_alt_m, MAX(altitude_m.get(), min_rtl_alt_m));
 
     // reduce climb if close to return target
     float rtl_return_dist_m = rtl_path.return_target.get_distance(rtl_path.origin_point);

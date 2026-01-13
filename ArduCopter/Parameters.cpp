@@ -76,15 +76,6 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
 #if MODE_RTL_ENABLED
-    // @Param: RTL_ALT
-    // @DisplayName: RTL Altitude
-    // @Description: The minimum alt above home the vehicle will climb to before returning.  If the vehicle is flying higher than this value it will return at its current altitude.
-    // @Units: cm
-    // @Range: 30 300000
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(rtl_altitude_cm,   "RTL_ALT",     RTL_ALT),
-
     // @Param: RTL_CONE_SLOPE
     // @DisplayName: RTL cone slope
     // @Description: Defines a cone above home which determines maximum climb
@@ -93,33 +84,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Values: 0:Disabled,1:Shallow,3:Steep
     // @User: Standard
     GSCALAR(rtl_cone_slope,   "RTL_CONE_SLOPE",     RTL_CONE_SLOPE_DEFAULT),
-
-    // @Param: RTL_SPEED
-    // @DisplayName: RTL speed
-    // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain horizontally while flying home. If this is set to zero, WPNAV_SPEED will be used instead.
-    // @Units: cm/s
-    // @Range: 0 2000
-    // @Increment: 50
-    // @User: Standard
-    GSCALAR(rtl_speed_cms,   "RTL_SPEED",     0),
-
-    // @Param: RTL_ALT_FINAL
-    // @DisplayName: RTL Final Altitude
-    // @Description: This is the altitude the vehicle will move to as the final stage of Returning to Launch or after completing a mission.  Set to zero to land.
-    // @Units: cm
-    // @Range: 0 1000
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(rtl_alt_final_cm,  "RTL_ALT_FINAL", RTL_ALT_FINAL),
-
-    // @Param: RTL_CLIMB_MIN
-    // @DisplayName: RTL minimum climb
-    // @Description: The vehicle will climb this many cm during the initial climb portion of the RTL
-    // @Units: cm
-    // @Range: 0 3000
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(rtl_climb_min_cm,  "RTL_CLIMB_MIN",    RTL_CLIMB_MIN_DEFAULT),
 
     // @Param: RTL_LOIT_TIME
     // @DisplayName: RTL loiter time
@@ -1228,6 +1192,12 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("TUNE2", 13, ParametersG2, rc_tuning2_param, 0),
 #endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
+#if MODE_RTL_ENABLED
+    // @Group: RTL_
+    // @Path: mode_rtl.cpp
+    AP_SUBGROUPPTR(mode_rtl_ptr, "RTL_", 14, ParametersG2, ModeRTL),
+#endif
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
@@ -1290,6 +1260,9 @@ ParametersG2::ParametersG2(void) :
 #if WEATHERVANE_ENABLED
     ,weathervane()
 #endif
+#if MODE_RTL_ENABLED
+    ,mode_rtl_ptr(&copter.mode_rtl)
+#endif
 {
     AP_Param::setup_object_defaults(this, var_info);
     AP_Param::setup_object_defaults(this, var_info2);
@@ -1298,11 +1271,6 @@ ParametersG2::ParametersG2(void) :
 void Copter::load_parameters(void)
 {
     AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
-
-#if MODE_RTL_ENABLED
-    // PARAMETER_CONVERSION - Added: Sep-2021
-    g.rtl_altitude_cm.convert_parameter_width(AP_PARAM_INT16);
-#endif
 
     // PARAMETER_CONVERSION - Added: Mar-2022
 #if AP_FENCE_ENABLED
@@ -1358,6 +1326,11 @@ void Copter::load_parameters(void)
         AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
     }
 #endif  // HAL_GCS_ENABLED
+
+#if MODE_RTL_ENABLED
+    // convert RTL parameters
+    copter.mode_rtl.convert_params();
+#endif
 
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);
