@@ -6555,12 +6555,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 #endif  // AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
 
-#if AP_RANGEFINDER_ENABLED
-    case MSG_WATER_DEPTH:
-        CHECK_PAYLOAD_SIZE(WATER_DEPTH);
-        send_water_depth();
-        break;
-#endif  // AP_RANGEFINDER_ENABLED
 
     case MSG_DISTANCE_SENSOR:
         send_distance_sensor();
