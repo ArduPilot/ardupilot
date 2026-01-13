@@ -568,7 +568,7 @@ void GCS_MAVLINK::send_water_depth()
         return;
     }
 
-    // depth can only be measured by a downward-facing rangefinder:
+    // depth can only be measured by a downward facing rangefinder:
     if (!rangefinder->has_orientation(ROTATION_PITCH_270)) {
         return;
     }
@@ -599,9 +599,10 @@ void GCS_MAVLINK::send_water_depth()
 
         const bool sensor_healthy = (s->status() == RangeFinder::Status::Good);
 
+        // send WATER_DEPTH message
         mavlink_msg_water_depth_send(
             chan,
-            AP_HAL::millis(),   // time since system boot TODO: take time of measurement
+            s->last_reading_ms(),   // time of sensor measurement (ms since last successful read)
             last_WATER_DEPTH_index, // rangefinder instance
             sensor_healthy,     // sensor healthy
             loc.lat,            // latitude of vehicle
