@@ -70,6 +70,11 @@ void Plane::Log_Write_FullRate(void)
         AP::ins().write_notch_log_messages();
     }
 #endif
+#if HAL_WITH_ESC_TELEM
+    if (should_log(MASK_LOG_NOTCH_FULLRATE)) {
+        AP::esc_telem().write_log();
+    }
+#endif
 }
 
 
