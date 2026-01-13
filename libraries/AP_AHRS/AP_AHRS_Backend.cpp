@@ -14,6 +14,11 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#include "AP_AHRS_config.h"
+
+#if AP_AHRS_ENABLED
+
 #include "AP_AHRS.h"
 #include "AP_AHRS_View.h"
 
@@ -277,7 +282,11 @@ void AP_AHRS::Log_Write_Home_And_Origin()
 
 // get apparent to true airspeed ratio
 float AP_AHRS_Backend::get_EAS2TAS(void) {
+#if AP_BARO_ENABLED
     return AP::baro()._get_EAS2TAS();
+#else
+    return 1.0;
+#endif
 }
 
 // return current vibration vector for primary IMU
@@ -311,3 +320,5 @@ void AP_AHRS::update_flags(void)
         touchdown_expected = false;
     }
 }
+
+#endif  // AP_AHRS_ENABLED

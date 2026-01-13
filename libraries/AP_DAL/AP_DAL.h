@@ -150,7 +150,9 @@ public:
     void free_type(void *ptr, size_t size, MemoryType memtype) const;
 
     AP_DAL_InertialSensor &ins() { return _ins; }
+#if AP_BARO_ENABLED
     AP_DAL_Baro &baro() { return _baro; }
+#endif
     AP_DAL_GPS &gps() { return _gps; }
 
 #if AP_RANGEFINDER_ENABLED
@@ -285,10 +287,14 @@ public:
     }
 
     void handle_message(const log_RBRH &msg) {
+#if AP_BARO_ENABLED
         _baro.handle_message(msg);
+#endif
     }
     void handle_message(const log_RBRI &msg) {
+#if AP_BARO_ENABLED
         _baro.handle_message(msg);
+#endif
     }
 
     void handle_message(const log_RRNH &msg) {
@@ -393,7 +399,9 @@ private:
     uint32_t _last_imu_time_us;
 
     AP_DAL_InertialSensor _ins;
+#if AP_BARO_ENABLED
     AP_DAL_Baro _baro;
+#endif
     AP_DAL_GPS _gps;
 #if AP_RANGEFINDER_ENABLED
     AP_DAL_RangeFinder *_rangefinder;
