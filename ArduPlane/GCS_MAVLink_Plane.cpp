@@ -572,11 +572,8 @@ bool Plane::set_home_to_current_location(bool _lock)
 }
 bool Plane::set_home(const Location& loc, bool _lock)
 {
-    if (!AP::ahrs().set_home(loc)) {
+    if (!AP_Vehicle::set_home(loc, _lock)) {
         return false;
-    }
-    if (_lock) {
-        AP::ahrs().lock_home();
     }
     if ((control_mode == &mode_rtl)
 #if HAL_QUADPLANE_ENABLED
