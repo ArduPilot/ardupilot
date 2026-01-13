@@ -1,0 +1,21 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from ardupilot_msgs/srv/SetGliding.srv
+// generated code does not contain a copyright notice
+
+
+module ardupilot_msgs {
+  module srv {
+    @verbatim (language="comment", text=
+      "This service requests a plane to glide.")
+    struct SetGliding_Request {
+      @verbatim (language="comment", text=
+        "Set true to request the TECS controller to glide")
+      boolean glide_requested;
+    };
+    @verbatim (language="comment", text=
+      "True if the gliding request was successful , false otherwise. ")
+    struct SetGliding_Response {
+      boolean result;
+    };
+  };
+};
