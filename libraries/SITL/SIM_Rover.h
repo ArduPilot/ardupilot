@@ -62,7 +62,6 @@ private:
 
     float turn_circle(float steering) const;
     float calc_yaw_rate(float steering, float speed);
-    float calc_lat_accel(float steering_angle, float speed);
 };
 
 } // namespace SITL
