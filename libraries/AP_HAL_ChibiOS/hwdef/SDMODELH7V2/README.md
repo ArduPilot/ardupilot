@@ -1,4 +1,6 @@
 # SDMODEL SDH7 V2 Flight Controller
+<img width="1024" height="1013" alt="SDH7V2_TOP" src="https://github.com/user-attachments/assets/00f26f66-c66f-4858-8a43-14b2bfb2a346" />
+<img width="1024" height="992" alt="SDH7V2_Bottom" src="https://github.com/user-attachments/assets/dee94388-38a4-44af-a2c4-4e834d07ed99" />
 
 ## Features
 
