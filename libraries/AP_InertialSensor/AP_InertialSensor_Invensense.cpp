@@ -172,8 +172,10 @@ void AP_InertialSensor_Invensense::_fifo_reset(bool log_error)
         now - last_reset_ms < 10000) {
         reset_count++;
         if (reset_count == 10) {
-            // 10 resets, each happening within 10s, triggers an internal error
-            INTERNAL_ERROR(AP_InternalError::error_t::imu_reset);
+            // 10 resets, each happening within 10s - log that fact:
+#if HAL_LOGGING_ENABLED
+            AP::logger().Write_Error(LogErrorSubsystem::IMU_RESET, LogErrorCode::FAILSAFE_OCCURRED);
+#endif
             reset_count = 0;
         }
     } else if (log_error &&
