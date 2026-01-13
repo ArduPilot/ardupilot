@@ -278,6 +278,8 @@ void AP_GSOF::log_pos_time() const
     AP::logger().WriteStreaming(
         "GSPT",                                         // Message name
         "TimeUS,TOWms,Week,Sats,Flags1,Flags2,InitNum", // Field names
+        "s,s,-,S,-,-,-",                                // Units
+        "F,C,0,0,0,0,0",                                // Multipliers
         "Q"    "I"   "H"  "B"  "B"    "B"     "B",      // Field types: Q=uint64_t, I=uint32_t, H=uint16_t, B=uint8_t
         AP_HAL::micros64(),                             // TimeUS
         pos_time.time_week_ms,                          // TOWms
@@ -306,8 +308,10 @@ void AP_GSOF::log_ins_full_nav() const
     // @Field: VD: Velocity Down [m/s]
     // @Field: Spd: 3D Speed [m/s]
     AP::logger().WriteStreaming(
-        "GSN1",
-        "TimeUS," "GpsWk," "GpsTs," "ImuStat," "GStat,"
+        "GSN1",                                          // Message
+        "TimeUS," "GpsWk," "GpsTs," "ImuStat," "GStat,", // Field names
+        "s,-,s,-,-,D,U,m,n,n,n,n",                       // Units
+        "F,0,C,0,0,0,0,0,0,0,0,0",                       // Multipliers
         "Lat,"     "Lng,"    "Alt,"
         "VN,"      "VE,"     "VD,"        "Spd",
         "Q"        "H"       "I"          "B"             "B"
@@ -340,7 +344,9 @@ void AP_GSOF::log_ins_full_nav() const
     // @Field: AccY: Acceleration Y [m/s^2]
     // @Field: AccZ: Acceleration Z [m/s^2]
     AP::logger().WriteStreaming(
-        "GSN2",
+        "GSN2",                                       // Message
+        "d,d,h,d,k,k,E,o,o,o",                        // Units
+        "0,0,0,0,0,0,0,0,0,0",                        // Multipliers
         "Roll,"    "Pitch,"  "Heading,"   "Track,"
         "RateX,"   "RateY,"  "RateZ,"
         "AccX,"    "AccY,"   "AccZ",
@@ -377,7 +383,9 @@ void AP_GSOF::log_ins_rms() const
     // @Field: PitchU: Pitch RMS uncertainty[deg]
     // @Field: YawU: Yaw RMS uncertainty[deg]
     AP::logger().WriteStreaming(
-        "GSR1",
+        "GSR1",                                                          // Message
+        "s,s,m,m,m,n,n,n,d,d,d",                                         // Units
+        "F,C,0,0,0,0,0,0,0,0,0",                                         // Multipliers
         "TUS,GpsTMs,PUN,PUE,PUD,VUN,VUE,VUD,RollU,PitchU,YawU",
         "Q" "I"    "f"   "f"   "f"   "f"   "f"   "f"   "f"   "f"    "f",
         AP_HAL::micros64(),
@@ -406,7 +414,9 @@ void AP_GSOF::log_llh_msl() const
     // @Field: AltMSL:    Altitude above mean sea level [m]
     // @Field: Model:     Geoid model used (null-terminated string)
     AP::logger().WriteStreaming(
-        "GSLH",
+        "GSLH",                        // Message
+        "s,D,U,m,-",                   // Units
+        "F,0,0,0,-",                   // Multipliers
         "TimeUS,Lat,Lng,AltMSL,Model",
         "Q"     "d"  "d"  "d"    "Z",
         AP_HAL::micros64(),
