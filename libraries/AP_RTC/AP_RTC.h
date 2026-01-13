@@ -65,6 +65,9 @@ public:
     bool clock_s_to_date_fields(const uint32_t utc_sec32, uint16_t& year, uint8_t& month, uint8_t& day, uint8_t &hour, uint8_t &min, uint8_t &sec, uint8_t &wday) const;
     uint32_t date_fields_to_clock_s(uint16_t year, uint8_t month, uint8_t day, uint8_t hour, uint8_t min, uint8_t sec) const;
 
+    // emit an RTC message to the onboard logs
+    void Log_RTC();
+
 private:
 
     static AP_RTC *_singleton;
