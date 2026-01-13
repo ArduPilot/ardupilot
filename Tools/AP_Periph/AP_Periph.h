@@ -77,6 +77,8 @@
 
 #include "esc_apd_telem.h"
 
+#include "rc_networking.h"
+
 #define AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) || AP_PERIPH_NCP5623_LED_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_NCP5623_BGR_LED_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_TOSHIBA_LED_WITHOUT_NOTIFY_ENABLED)
 
 #if AP_PERIPH_NOTIFY_ENABLED
@@ -458,6 +460,9 @@ public:
 #if AP_PERIPH_RELAY_ENABLED
     AP_Relay relay;
 #endif
+
+    AirSide_RC_Networking rc_networking;
+    void can_send_RCInput(uint8_t quality, uint16_t *values, uint8_t nvalues, bool in_failsafe, bool quality_valid, uint8_t id=0);
 
     // setup the var_info table
     AP_Param param_loader{var_info};
