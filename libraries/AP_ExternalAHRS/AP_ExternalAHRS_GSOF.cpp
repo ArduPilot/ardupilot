@@ -167,8 +167,10 @@ void AP_ExternalAHRS_GSOF::update_thread(void)
             gps_data.ned_vel_down = ins_full_nav.vel_d;
             switch(ins_full_nav.gnss_status) {
                 case AP_GSOF::GnssStatus::FIX_NOT_AVAILABLE:
-                case AP_GSOF::GnssStatus::GNSS_SPS_MODE: // TODO Is this right?
                     gps_data.fix_type = AP_GPS_FixType::NONE;
+                    break;
+                case AP_GSOF::GnssStatus::GNSS_SPS_MODE:
+                    gps_data.fix_type = AP_GPS_FixType::FIX_3D;
                     break;
                 case AP_GSOF::GnssStatus::DGPS_SPS_MODE:
                     gps_data.fix_type = AP_GPS_FixType::DGPS;
