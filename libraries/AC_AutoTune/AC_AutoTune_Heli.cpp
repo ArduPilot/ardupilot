@@ -70,42 +70,42 @@
 
 const AP_Param::GroupInfo AC_AutoTune_Heli::var_info[] = {
 
-    // @Param: AXES
+    // @Param{Heli}: AXES
     // @DisplayName: Autotune axis bitmask
     // @Description: 1-byte bitmap of axes to autotune
     // @Bitmask: 0:Roll,1:Pitch,2:Yaw
     // @User: Standard
     AP_GROUPINFO("AXES", 1, AC_AutoTune_Heli, axis_bitmask,  1),
 
-    // @Param: SEQ
+    // @Param{Heli}: SEQ
     // @DisplayName: AutoTune Sequence Bitmask
     // @Description: 2-byte bitmask to select what tuning should be performed.  Max gain automatically performed if Rate D is selected. Values: 7:All,1:VFF Only,2:Rate D/Rate P Only(incl max gain),4:Angle P Only,8:Max Gain Only,16:Tune Check,3:VFF and Rate D/Rate P(incl max gain),5:VFF and Angle P,6:Rate D/Rate P(incl max gain) and angle P
     // @Bitmask: 0:VFF,1:Rate D/Rate P(incl max gain),2:Angle P,3:Max Gain Only,4:Tune Check
     // @User: Standard
     AP_GROUPINFO("SEQ", 2, AC_AutoTune_Heli, seq_bitmask,  3),
 
-    // @Param: FRQ_MIN
+    // @Param{Heli}: FRQ_MIN
     // @DisplayName: AutoTune minimum sweep frequency
     // @Description: Defines the start frequency for sweeps and dwells
     // @Range: 10 30
     // @User: Standard
     AP_GROUPINFO("FRQ_MIN", 3, AC_AutoTune_Heli, min_sweep_freq,  10.0f),
 
-    // @Param: FRQ_MAX
+    // @Param{Heli}: FRQ_MAX
     // @DisplayName: AutoTune maximum sweep frequency
     // @Description: Defines the end frequency for sweeps and dwells
     // @Range: 50 120
     // @User: Standard
     AP_GROUPINFO("FRQ_MAX", 4, AC_AutoTune_Heli, max_sweep_freq,  70.0f),
 
-    // @Param: GN_MAX
+    // @Param{Heli}: GN_MAX
     // @DisplayName: AutoTune maximum response gain
     // @Description: Defines the response gain (output/input) to tune
     // @Range: 1 2.5
     // @User: Standard
     AP_GROUPINFO("GN_MAX", 5, AC_AutoTune_Heli, max_resp_gain,  1.0f),
 
-    // @Param: VELXY_P
+    // @Param{Heli}: VELXY_P
     // @DisplayName: AutoTune velocity xy P gain
     // @Description: Velocity xy P gain used to hold position during Max Gain, Rate P, and Rate D frequency sweeps
     // @Range: 0 1
