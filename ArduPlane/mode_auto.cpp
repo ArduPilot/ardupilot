@@ -167,7 +167,7 @@ bool ModeAuto::_pre_arm_checks(size_t buflen, char *buffer) const
 
 bool ModeAuto::is_landing() const
 {
-    return (plane.flight_stage == AP_FixedWing::FlightStage::LAND);
+    return (plane.flight_stage == AP_FixedWing::FlightStage::LAND) || (plane.mission.get_in_landing_sequence_flag());
 }
 
 void ModeAuto::run()
