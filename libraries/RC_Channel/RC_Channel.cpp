@@ -589,7 +589,7 @@ bool RC_Channel::read_6pos_switch(int8_t& position)
 {
     // calculate position of 6 pos switch
     const uint16_t pulsewidth = get_radio_in();
-    if (pulsewidth <= RC_MIN_LIMIT_PWM || pulsewidth >= RC_MAX_LIMIT_PWM) {
+    if (pulsewidth < RC_MIN_LIMIT_PWM || pulsewidth > RC_MAX_LIMIT_PWM) {
         return false;  // This is an error condition
     }
 
@@ -2000,7 +2000,7 @@ void RC_Channel::init_aux()
 bool RC_Channel::read_3pos_switch(RC_Channel::AuxSwitchPos &ret) const
 {
     const uint16_t in = get_radio_in();
-    if (in <= RC_MIN_LIMIT_PWM || in >= RC_MAX_LIMIT_PWM) {
+    if (in < RC_MIN_LIMIT_PWM || in > RC_MAX_LIMIT_PWM) {
         return false;
     }
 
