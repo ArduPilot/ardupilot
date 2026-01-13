@@ -663,6 +663,7 @@ protected:
     void handle_device_op_read(const mavlink_message_t &msg);
     void handle_device_op_write(const mavlink_message_t &msg);
 
+    bool should_send_timesync_request(uint32_t tnow_ms) const;
     void send_timesync();
     // returns the time a timesync message was most likely received:
     uint64_t timesync_receive_timestamp_ns() const;
@@ -672,7 +673,7 @@ protected:
     struct {
         int64_t sent_ts1;
         uint32_t last_sent_ms;
-        const uint16_t interval_ms = 10000;
+        uint16_t interval_ms = 10000;
     }  _timesync_request;
 
     void handle_statustext(const mavlink_message_t &msg);
@@ -1168,9 +1169,16 @@ public:
      */
     bool sysid_is_gcs(uint8_t sysid) const;
 
+    void received_timesync_response_from_sysid_gcs() {
+        _sysid_gcs_last_timesync_response_ms = AP_HAL::millis();
+    }
+
     // last time traffic was seen from my designated GCS.  traffic
     // includes heartbeats and some manual control messages.
     uint32_t sysid_mygcs_last_seen_time_ms() const {
+        if (option_is_enabled(Option::TIMESYNC_BASED_FAILSAFE)) {
+            return _sysid_gcs_last_timesync_response_ms;
+        }
         return _sysid_gcs_last_seen_time_ms;
     }
     // called when valid traffic has been seen from our GCS.  This is
@@ -1225,6 +1233,7 @@ public:
 
     enum class Option {
       GCS_SYSID_ENFORCE = (1U << 0),
+      TIMESYNC_BASED_FAILSAFE   = (1U << 1),  // base failsafe on last seen timesync response from MAV_GCS_SYSID
     };
     bool option_is_enabled(Option option) const {
         return (mav_options & (uint16_t)option) != 0;
@@ -1346,6 +1355,9 @@ private:
     // identically named field in GCS_MAVLINK:: which is the most
     // recent time that backend saw traffic from MAV_GCS_SYSID
     uint32_t _sysid_gcs_last_seen_time_ms;
+    // last time we received a timesync response from our GCS; used if
+    // Option::TIMESYNC_BASED_FAILSAFE is set
+    uint32_t _sysid_gcs_last_timesync_response_ms;
 
     void service_statustext(void);
 #if HAL_MEM_CLASS <= HAL_MEM_CLASS_192 || CONFIG_HAL_BOARD == HAL_BOARD_SITL

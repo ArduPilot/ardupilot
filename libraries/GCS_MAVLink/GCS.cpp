@@ -61,7 +61,7 @@ const AP_Param::GroupInfo GCS::var_info[] {
     // @Param: _OPTIONS
     // @DisplayName: MAVLink Options
     // @Description: Alters various behaviour of the MAVLink interface
-    // @Bitmask: 0:Accept MAVLink only from system IDs given by MAV_SYSID_GCS and MAV_SYSID_GCS_HI
+    // @Bitmask: 0:Accept MAVLink only from system IDs given by MAV_SYSID_GCS and MAV_SYSID_GCS_HI,1:Base GCS failsafe on timesync responses
     // @User: Advanced
     AP_GROUPINFO("_OPTIONS",    3,      GCS, mav_options, 0),
 
