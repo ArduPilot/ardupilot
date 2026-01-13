@@ -323,6 +323,8 @@ void AP_Periph_FW::init()
     actuator_telem.init();
 #endif
 
+    rc_networking.init();
+
     start_ms = AP_HAL::millis();
 }
 
@@ -571,6 +573,15 @@ void AP_Periph_FW::update()
 #if AP_PERIPH_BATTERY_BMS_ENABLED
     battery_bms.update();
 #endif
+
+    rc_networking.update();
+
+    uint16_t decoded_rc_values[SBUS_INPUT_CHANNELS];
+    uint16_t num_values = 0;
+    bool sbus_failsafe = false;
+    if (rc_networking.get_latest_can_frame(decoded_rc_values, num_values, sbus_failsafe)) {
+        can_send_RCInput(0, decoded_rc_values, num_values, sbus_failsafe, false, 0);
+    }
 }
 
 #ifdef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
