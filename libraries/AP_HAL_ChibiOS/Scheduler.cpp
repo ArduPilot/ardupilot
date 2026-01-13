@@ -526,8 +526,16 @@ void Scheduler::_rcin_thread(void *arg)
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(20000);
     }
+    uint32_t last_tick_us = 0;
     while (true) {
-        sched->delay_microseconds(1000);
+        uint32_t now_us = AP_HAL::micros();
+        uint32_t delta_us = now_us -last_tick_us;
+        uint32_t delay_us = 250U;
+        if (delta_us < 750U) {
+            delay_us = 1000 - delta_us;
+        }
+        last_tick_us = now_us;
+        sched->delay_microseconds(delay_us);
         ((RCInput *)hal.rcin)->_timer_tick();
     }
 }
