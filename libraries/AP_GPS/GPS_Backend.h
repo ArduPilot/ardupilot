@@ -34,6 +34,10 @@
 #define AP_GPS_DEBUG_LOGGING_ENABLED 0
 #endif
 
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+#include <AP_Filesystem/AP_Filesystem.h>
+#endif
+
 #ifndef AP_GPS_MB_MIN_LAG
 #define AP_GPS_MB_MIN_LAG 0.05f
 #endif
@@ -188,8 +192,8 @@ private:
 #if AP_GPS_DEBUG_LOGGING_ENABLED
     // support raw GPS logging
     static struct loginfo {
-        int fd = -1;
-        ByteBuffer buf{16000};
+        APFS_FILE *f;
+        ByteBuffer buf{4096};
     } logging[2];
     static bool log_thread_created;
     static void logging_loop(void);
