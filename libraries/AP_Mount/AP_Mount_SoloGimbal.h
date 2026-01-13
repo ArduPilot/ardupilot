@@ -53,6 +53,18 @@ private:
 
     bool _params_saved;
     SoloGimbal _gimbal;
+
+    // get angle targets (in radians) to ROI location
+    // returns true on success, false on failure
+    bool get_angle_target_to_roi(MountAngleTarget& angle_rad) const WARN_IF_UNUSED;
+
+    // get angle targets (in radians) to home location
+    // returns true on success, false on failure
+    bool get_angle_target_to_home(MountAngleTarget& angle_rad) const WARN_IF_UNUSED;
+
+    // get angle targets (in radians) to a vehicle with sysid of _target_sysid
+    // returns true on success, false on failure
+    bool get_angle_target_to_sysid(MountAngleTarget& angle_rad) const WARN_IF_UNUSED;
 };
 
 #endif // HAL_SOLO_GIMBAL_ENABLED

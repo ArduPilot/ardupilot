@@ -8,6 +8,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 AP_Mount_SoloGimbal::AP_Mount_SoloGimbal(AP_Mount &frontend, AP_Mount_Params &params, uint8_t instance) :
     AP_Mount_Backend(frontend, params, instance),
@@ -24,6 +25,41 @@ void AP_Mount_SoloGimbal::init()
 void AP_Mount_SoloGimbal::update_fast()
 {
     _gimbal.update_fast();
+}
+
+// get angle targets (in radians) to ROI location
+// returns true on success, false on failure
+bool AP_Mount_SoloGimbal::get_angle_target_to_roi(MountAngleTarget& angle_rad) const
+{
+    if (!_roi_target.initialised()) {
+        return false;
+    }
+    return get_angle_target_to_location(_roi_target, angle_rad);
+}
+
+// get angle targets (in radians) to home location
+// returns true on success, false on failure
+bool AP_Mount_SoloGimbal::get_angle_target_to_home(MountAngleTarget& angle_rad) const
+{
+    // exit immediately if home is not set
+    if (!AP::ahrs().home_is_set()) {
+        return false;
+    }
+    return get_angle_target_to_location(AP::ahrs().get_home(), angle_rad);
+}
+
+// get angle targets (in radians) to a vehicle with sysid of  _target_sysid
+// returns true on success, false on failure
+bool AP_Mount_SoloGimbal::get_angle_target_to_sysid(MountAngleTarget& angle_rad) const
+{
+    // exit immediately if sysid is not set or no location available
+    if (!_target_sysid_location.initialised()) {
+        return false;
+    }
+    if (!_target_sysid) {
+        return false;
+    }
+    return get_angle_target_to_location(_target_sysid_location, angle_rad);
 }
 
 // update mount position - should be called periodically

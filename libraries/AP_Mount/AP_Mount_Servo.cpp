@@ -108,6 +108,7 @@ void AP_Mount_Servo::update_angle_outputs(const MountAngleTarget& angle_rad)
     case MountTargetType::NEUTRAL:
     case MountTargetType::RETRACTED:
         return;
+    case MountTargetType::LOCATION:
     case MountTargetType::ANGLE:
     case MountTargetType::RATE:
         break;
