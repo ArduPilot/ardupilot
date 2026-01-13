@@ -160,6 +160,7 @@ Published topics:
  * /ap/gps_global_origin/filtered [geographic_msgs/msg/GeoPointStamped] 1 publisher
  * /ap/imu/experimental/data [sensor_msgs/msg/Imu] 1 publisher
  * /ap/navsat [sensor_msgs/msg/NavSatFix] 1 publisher
+ * /ap/odometry/filtered [nav_msgs/msg/Odometry] 1 publisher
  * /ap/pose/filtered [geometry_msgs/msg/PoseStamped] 1 publisher
  * /ap/rc [ardupilot_msgs/msg/Rc] 1 publisher
  * /ap/status [ardupilot_msgs/msg/Status] 1 publisher
