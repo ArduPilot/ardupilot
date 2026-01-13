@@ -1241,7 +1241,7 @@ bool AP_AHRS::_get_quaternion_for_ekf_type(Quaternion &quat, EKFType type) const
         if (!sim.get_quaternion(quat)) {
             return false;
         }
-        break;
+        return true;
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
