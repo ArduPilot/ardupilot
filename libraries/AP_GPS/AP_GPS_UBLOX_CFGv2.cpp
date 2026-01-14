@@ -861,7 +861,7 @@ bool AP_GPS_UBLOX_CFGv2::_init_common_cfg_list(bool check_only, uint32_t key_to_
         // check if rover or base
         if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE) {
             UBX_CFG_MB_BASE_UART1(INIT_CFG_PUSH_INDEXED)
-        } else {
+        } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_ROVER) {
             UBX_CFG_MB_ROVER_UART1(INIT_CFG_PUSH_INDEXED)
         }
 #endif
@@ -876,7 +876,7 @@ bool AP_GPS_UBLOX_CFGv2::_init_common_cfg_list(bool check_only, uint32_t key_to_
             } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE && ubx_backend.mb_use_uart2()) {
                 // this allows rover to connect to UART2 to directly
                 UBX_CFG_MB_BASE_UART2(INIT_CFG_PUSH_INDEXED)
-            } else {
+            } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_ROVER) {
                 UBX_CFG_MB_ROVER_UART1(INIT_CFG_PUSH_INDEXED)
             }
 #endif
@@ -886,7 +886,7 @@ bool AP_GPS_UBLOX_CFGv2::_init_common_cfg_list(bool check_only, uint32_t key_to_
 #if GPS_MOVING_BASELINE
             if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE) {
                 UBX_CFG_MB_BASE_UART2(INIT_CFG_PUSH_INDEXED)
-            } else {
+            } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_ROVER) {
                 UBX_CFG_MB_ROVER_UART2(INIT_CFG_PUSH_INDEXED)
             }
 #endif
