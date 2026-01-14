@@ -65,6 +65,12 @@ AP_GPS_UBLOX_CFGv2::AP_GPS_UBLOX_CFGv2(AP_GPS_UBLOX &_ubx_backend)
 
 void AP_GPS_UBLOX_CFGv2::update()
 {
+    // If legacy config is supported and ForceUBXConfigV2 is not set, don't use CFGv2
+    if (!ubx_backend._legacy_cfg_unsupported && !ubx_backend.gps.option_set(AP_GPS::DriverOptions::ForceUBXConfigV2) && curr_state > States::IDENTIFY_MODULE) {
+        // Legacy config should be used instead, exit CFGv2
+        return;
+    }
+
     // Check if reset was requested via AUTO_CONFIG parameter (bit 3)
     if ((ubx_backend.gps._auto_config == AP_GPS::GPS_AUTO_CLEAR_CONFIG_UBLOX_SERIAL_ONLY) &&
         (curr_state != States::RESET_MODULE) &&
