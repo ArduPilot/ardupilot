@@ -80,6 +80,15 @@ const AP_Param::GroupInfo AC_Loiter::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 7, AC_Loiter, _options, LOITER_DEFAULT_OPTIONS),
 
+    // @Param: SLOW_SPD
+    // @DisplayName: LoiterSlow Horizontal Maximum Speed
+    // @Description: Defines the maximum speed in m/s which the aircraft will travel horizontally while in LoiterSlow mode
+    // @Units: m/s
+    // @Range: 0.1 2.0
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("SLOW_SPD", 8, AC_Loiter, _loit_slow_spd_ne_cms, 100.0f),
+
     AP_GROUPEND
 };
 
@@ -244,12 +253,20 @@ void AC_Loiter::set_speed_max_NE_ms(float speed_max_ne_ms)
     _speed_max_ne_cms.set(MAX(speed_max_ne_ms * 100.0, LOITER_SPEED_MIN_CMS));
 }
 
+float AC_Loiter::get_speed_max_NE_ms() const
+{
+    return _speed_max_ne_cms.get() * 0.01f; // cm/s -> m/s
+}
+
 // Ensures internal parameters are within valid safety limits.
 // Applies min/max constraints on speed and acceleration settings.
 void AC_Loiter::sanity_check_params()
 {
     // Enforce minimum loiter speed
     _speed_max_ne_cms.set(MAX(_speed_max_ne_cms, LOITER_SPEED_MIN_CMS));
+
+    // Clamp LoiterSlow speed to 0.1-2.0 m/s (10-200 cm/s)
+    _loit_slow_spd_ne_cms.set(constrain_float(_loit_slow_spd_ne_cms, 10.0f, 200.0f));
 
     // Clamp horizontal accel to lean-angle-limited max (converted to cm/s²)
     _accel_max_ne_cmss.set(MIN(_accel_max_ne_cmss, GRAVITY_MSS * 100.0f * tanf(_attitude_control.lean_angle_max_rad())));

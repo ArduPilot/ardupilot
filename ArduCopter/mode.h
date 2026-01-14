@@ -83,6 +83,7 @@ public:
         LOITER =        5,  // automatic horizontal acceleration with automatic throttle
         RTL =           6,  // automatic return to launching point
         CIRCLE =        7,  // automatic circular flight with automatic throttle
+        LOITERSLOW =    29, // loiter but limited to a slow horizontal speed
         LAND =          9,  // automatic landing with horizontal position control
         DRIFT =        11,  // semi-autonomous position, yaw and throttle control
         SPORT =        13,  // manual earth-frame angular rate control with manual throttle
@@ -1379,6 +1380,56 @@ private:
     bool _precision_loiter_active; // true if user has switched on prec loiter
 #endif
 
+};
+
+
+class ModeLoiterSlow : public Mode {
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+    Number mode_number() const override { return Number::LOITERSLOW; }
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
+    bool is_autopilot() const override { return false; }
+    bool has_user_takeoff(bool must_navigate) const override { return true; }
+    bool allows_autotune() const override { return true; }
+    bool allows_auto_trim() const override { return true; }
+
+#if FRAME_CONFIG == HELI_FRAME
+    bool allows_inverted() const override { return true; };
+#endif
+
+#if AC_PRECLAND_ENABLED
+    void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
+#endif
+
+protected:
+
+    const char *name() const override { return "LOITERSLOW"; }
+    const char *name4() const override { return "LOSL"; }
+
+    float wp_distance_m() const override;
+    float wp_bearing_deg() const override;
+
+#if AC_PRECLAND_ENABLED
+    bool do_precision_loiter();
+    void precision_loiter_xy();
+#endif
+
+private:
+
+#if AC_PRECLAND_ENABLED
+    bool _precision_loiter_enabled;
+    bool _precision_loiter_active; // true if user has switched on prec loiter
+#endif
+
+    // no extra members required here; behavior implemented in mode_loiterslow.cpp
 };
 
 

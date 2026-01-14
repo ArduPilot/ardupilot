@@ -74,6 +74,11 @@ public:
     // Sets the maximum allowed horizontal loiter speed in m/s.
     // Internally converts to cm/s and clamps to a minimum of LOITER_SPEED_MIN_CMS.
     void set_speed_max_NE_ms(float speed_max_NE_ms);
+    float get_speed_max_NE_ms() const;
+
+    // Returns the LoiterSlow speed in m/s
+    float get_loit_slow_spd_NE_ms() const { return _loit_slow_spd_ne_cms * 0.01f; }
+
 
     // Returns the desired roll angle in centidegrees from the loiter controller.
     float get_roll_cd() const { return rad_to_cd(get_roll_rad()); }
@@ -118,6 +123,7 @@ protected:
     AP_Float    _brake_jerk_max_cmsss;  // Maximum braking jerk (in cm/s³) applied during braking transitions after pilot release.
     AP_Float    _brake_delay_s;         // Delay in seconds before braking begins after sticks are centered. Prevents premature deceleration during brief pauses.
     AP_Int8     _options;               // Loiter options bit mask
+    AP_Float    _loit_slow_spd_ne_cms;  // Maximum horizontal speed for LoiterSlow mode in cm/s
 
     // Bitfields of LOITER_OPTIONS
     enum class LoiterOption {

@@ -57,6 +57,8 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
 #if MODE_LOITER_ENABLED
         case Mode::Number::LOITER:
             return &mode_loiter;
+        case Mode::Number::LOITERSLOW:
+            return &mode_loiterslow;
 #endif
 
 #if MODE_GUIDED_ENABLED
