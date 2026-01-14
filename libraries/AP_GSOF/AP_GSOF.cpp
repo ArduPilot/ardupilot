@@ -276,10 +276,10 @@ void AP_GSOF::log_pos_time() const
     // @Field: Flags2: Positioning flags byte 2
     // @Field: InitNum: Initialization count
     AP::logger().WriteStreaming(
-        "GSPT",                                         // Message name
-        "TimeUS,TOWms,Week,Sats,Flags1,Flags2,InitNum", // Field names
-        "s,s,-,S,-,-,-",                                // Units
-        "F,C,0,0,0,0,0",                                // Multipliers
+        "GSPT",                                         // Message
+        "TimeUS,TOWms,Week,Sats,Flags1,Flags2,InitNum", // Labels
+        "ss-S---",                                      // Units
+        "FC00000",                                      // Multipliers
         "Q"    "I"   "H"  "B"  "B"    "B"     "B",      // Field types: Q=uint64_t, I=uint32_t, H=uint16_t, B=uint8_t
         AP_HAL::micros64(),                             // TimeUS
         pos_time.time_week_ms,                          // TOWms
@@ -308,12 +308,12 @@ void AP_GSOF::log_ins_full_nav() const
     // @Field: VD: Velocity Down [m/s]
     // @Field: Spd: 3D Speed [m/s]
     AP::logger().WriteStreaming(
-        "GSN1",                                          // Message
-        "TimeUS," "GpsWk," "GpsTs," "ImuStat," "GStat,", // Field names
-        "s,-,s,-,-,D,U,m,n,n,n,n",                       // Units
-        "F,0,C,0,0,0,0,0,0,0,0,0",                       // Multipliers
+        "GSN1",                                         // Message
+        "TimeUS," "GpsWk," "GpsTs," "ImuStat," "GStat," // Labels
         "Lat,"     "Lng,"    "Alt,"
         "VN,"      "VE,"     "VD,"        "Spd",
+        "s-s--DUmnnnn",                                  // Units
+        "F0C000000000",                                  // Multipliers
         "Q"        "H"       "I"          "B"             "B"
         "d"        "d"       "d"
         "f"        "f"       "f"          "f",
@@ -344,12 +344,14 @@ void AP_GSOF::log_ins_full_nav() const
     // @Field: AccY: Acceleration Y [m/s^2]
     // @Field: AccZ: Acceleration Z [m/s^2]
     AP::logger().WriteStreaming(
-        "GSN2",                                       // Message
-        "d,d,h,d,k,k,E,o,o,o",                        // Units
-        "0,0,0,0,0,0,0,0,0,0",                        // Multipliers
-        "Roll,"    "Pitch,"  "Heading,"   "Track,"
+        "GSN2",                                     // Message
+        "TimeUS,"
+        "Roll,"    "Pitch,"  "Heading,"   "Track,"  // Labels
         "RateX,"   "RateY,"  "RateZ,"
         "AccX,"    "AccY,"   "AccZ",
+        "sddhdkkEooo",                              // Units
+        "F0000000000",                              // Multipliers
+        "Q"
         "d"        "d"       "d"          "d"
         "f"        "f"       "f"
         "f"        "f"       "f",
@@ -383,10 +385,10 @@ void AP_GSOF::log_ins_rms() const
     // @Field: PitchU: Pitch RMS uncertainty[deg]
     // @Field: YawU: Yaw RMS uncertainty[deg]
     AP::logger().WriteStreaming(
-        "GSR1",                                                          // Message
-        "s,s,m,m,m,n,n,n,d,d,d",                                         // Units
-        "F,C,0,0,0,0,0,0,0,0,0",                                         // Multipliers
-        "TUS,GpsTMs,PUN,PUE,PUD,VUN,VUE,VUD,RollU,PitchU,YawU",
+        "GSR1",                                                  // Message
+        "TUS,GpsTMs,PUN,PUE,PUD,VUN,VUE,VUD,RollU,PitchU,YawU",  // Labels
+        "ssmmmnnnddd",                                           // Units
+        "FC000000000",                                           // Multipliers
         "Q" "I"    "f"   "f"   "f"   "f"   "f"   "f"   "f"   "f"    "f",
         AP_HAL::micros64(),
         ins_rms.gps_time_ms,
@@ -415,9 +417,9 @@ void AP_GSOF::log_llh_msl() const
     // @Field: Model:     Geoid model used (null-terminated string)
     AP::logger().WriteStreaming(
         "GSLH",                        // Message
-        "s,D,U,m,-",                   // Units
-        "F,0,0,0,-",                   // Multipliers
-        "TimeUS,Lat,Lng,AltMSL,Model",
+        "TimeUS,Lat,Lng,AltMSL,Model", // Labels
+        "sDUm-",                       // Units
+        "F000-",                       // Multipliers
         "Q"     "d"  "d"  "d"    "Z",
         AP_HAL::micros64(),
         llh_msl.latitude,
