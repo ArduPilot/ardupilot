@@ -69,7 +69,7 @@ if $option_edit; then
     ($EDITOR "$MSG_FILE")
 elif ! $option_copy; then
     if head -n 1 "$MSG_FILE" | grep "^[^: ]\+\s*:" -q; then
-        sed '1 s,^[^: ]\+\s*,$subsystem,' -i "$MSG_FILE"
+        sed -i '' '1 s,^[^: ]\+\s*,$subsystem,' "$MSG_FILE"
     else
         buff_file="$(mktemp)"
         awk '
