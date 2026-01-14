@@ -18,6 +18,7 @@
   - [Setting simple parameters](#setting-simple-parameters)
   - [Uploading entire parameter files](#uploading-entire-parameter-files)
 - [Available frames](#available-frames)
+- [Common issues](#common-issues)
 
 ## Installation
 
@@ -215,3 +216,21 @@ case SUB_FRAME_SIMPLEROV_5:
   add_motor_raw_6dof(AP_MOTORS_MOT_5,     0,              1.0f,            0,              -1.0f,              0,                  0,              5);
   break; 
 ```
+
+## Common issues
+
+### Arming checks
+
+There are many arming checks in the ArduPilot ecosystem designed to keep you safe; you can read more about them at [Pre-Arm Safety Checks](https://ardupilot.org/copter/docs/common-prearm-safety-checks.html). These issues happen more frequently in simulation because we cannot calibrate the vehicles. However, this should only happen upon initialization when the FC (flight controller) expects data differently from what is sent by the simulator.
+
+#### Recommended solution: Wait
+
+That's right! Wait for a bit for everything to return back to normal. You should wait for up to 2 minutes.
+
+#### Disable arming checks
+
+You should go to `QGroundControl` and manually disable one by one, and only the issues that keep popping up. It is perhaps not recommended to disable everything because the vehicle may exhibit unexpected behaviors.
+
+### Other issues
+
+We continually update this documentation. Please let us know asap, cheers!
