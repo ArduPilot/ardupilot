@@ -25,6 +25,7 @@
 #include "AP_ExternalAHRS_backend.h"
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_HAL/SPIDevice.h>
 
 class AP_ExternalAHRS_Xsens : public AP_ExternalAHRS_backend
 {
@@ -254,12 +255,30 @@ private:
         GnssPvtData gnssPvtData;
     };
 
+    // SPI-specific constants
+    static constexpr uint8_t XBUS_CONTROL_PIPE = 0x03;
+    static constexpr uint8_t XBUS_PIPE_STATUS = 0x04;
+    static constexpr uint8_t XBUS_NOTIFICATION_PIPE = 0x05;
+    static constexpr uint8_t XBUS_MEASUREMENT_PIPE = 0x06;
+    
+    // Communication interface type
+    enum class InterfaceType {
+        UART,
+        SPI
+    };
+    
+    InterfaceType interface_type;
+
     // Member variables
     AP_HAL::UARTDriver *uart;
     HAL_Semaphore sem;
     int8_t port_num;
     uint32_t baudrate;
     bool port_open = false;
+
+    // SPI members
+    AP_HAL::OwnPtr<AP_HAL::SPIDevice> spi_dev;
+    uint8_t drdy_pin;    
 
     DeviceState device_state = DeviceState::ENTERING_CONFIG_MODE;
     uint32_t last_ins_pkt = 0;
@@ -290,6 +309,22 @@ private:
     float last_hdop = 99.9f;
     float last_vdop = 99.9f;
     bool gps_status_initialized = false;
+
+    // SPI-specific methods
+    bool init_spi();
+    void spi_transfer(uint8_t opcode, uint8_t *data, uint16_t len, bool is_read);
+    void read_pipe_status(uint16_t &notif_size, uint16_t &meas_size);
+    void read_pipe(uint8_t *buffer, uint16_t size, uint8_t pipe);
+    uint16_t create_raw_spi_message(uint8_t *dest, const uint8_t *msg);
+    void send_spi_message(const uint8_t *message, size_t length);
+    bool check_drdy();
+
+    // SPI control pins (use int16_t for GPIO pin numbers, -1 = invalid)
+    int16_t drdy_gpio_pin;
+    int16_t reset_gpio_pin;
+    
+    // Hardware reset method
+    void hardware_reset();
 
     // Communication methods
     void update_thread();

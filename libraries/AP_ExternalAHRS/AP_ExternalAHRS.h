@@ -183,6 +183,7 @@ protected:
     enum class OPTIONS {
         VN_UNCOMP_IMU = 1U << 0,
         XSENS_SENSOR_DOWNWARD = 1U << 1,
+        XSENS_USE_SPI = 1U << 2,  // Use SPI instead of UART
     };
     bool option_is_set(OPTIONS option) const { return (options.get() & int32_t(option)) != 0; }
 

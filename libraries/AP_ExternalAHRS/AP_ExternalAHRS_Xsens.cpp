@@ -21,6 +21,7 @@
 
 #if AP_EXTERNAL_AHRS_XSENS_ENABLED
 
+#include <AP_HAL/SPIDevice.h>
 #include "AP_ExternalAHRS_Xsens.h"
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
@@ -36,17 +37,35 @@
 extern const AP_HAL::HAL &hal;
 
 AP_ExternalAHRS_Xsens::AP_ExternalAHRS_Xsens(AP_ExternalAHRS *_frontend,
-        AP_ExternalAHRS::state_t &_state): AP_ExternalAHRS_backend(_frontend, _state)
+        AP_ExternalAHRS::state_t &_state): AP_ExternalAHRS_backend(_frontend, _state),
+        drdy_gpio_pin(-1),
+        reset_gpio_pin(-1)
 {
-    auto &sm = AP::serialmanager();
-    uart = sm.find_serial(AP_SerialManager::SerialProtocol_AHRS, 0);
-    
-    baudrate = sm.find_baudrate(AP_SerialManager::SerialProtocol_AHRS, 0);
-    port_num = sm.find_portnum(AP_SerialManager::SerialProtocol_AHRS, 0);
+    // Check if SPI mode is requested
+    if (option_is_set(AP_ExternalAHRS::OPTIONS::XSENS_USE_SPI)) {
+        interface_type = InterfaceType::SPI;
+        
+        if (!init_spi()) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ExternalAHRS: Xsens SPI init failed");
+            return;
+        }
+        
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ExternalAHRS: Xsens using SPI6");
+    } else {
+        interface_type = InterfaceType::UART;
+        
+        auto &sm = AP::serialmanager();
+        uart = sm.find_serial(AP_SerialManager::SerialProtocol_AHRS, 0);
+        
+        baudrate = sm.find_baudrate(AP_SerialManager::SerialProtocol_AHRS, 0);
+        port_num = sm.find_portnum(AP_SerialManager::SerialProtocol_AHRS, 0);
 
-    if (!uart) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ExternalAHRS no UART");
-        return;
+        if (!uart) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ExternalAHRS no UART");
+            return;
+        }
+        
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ExternalAHRS: Xsens using UART");
     }
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_ExternalAHRS_Xsens::update_thread, void), 
@@ -58,9 +77,10 @@ AP_ExternalAHRS_Xsens::AP_ExternalAHRS_Xsens(AP_ExternalAHRS *_frontend,
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens ExternalAHRS initialised");
 }
 
+// update_thread to handle UART port opening
 void AP_ExternalAHRS_Xsens::update_thread(void)
 {
-    if (!port_open) {
+    if (interface_type == InterfaceType::UART && !port_open) {
         port_open = true;
         uart->begin(baudrate);
     }
@@ -72,106 +92,172 @@ void AP_ExternalAHRS_Xsens::update_thread(void)
     }
 }
 
+// write_message to support both interfaces
 bool AP_ExternalAHRS_Xsens::write_message(const uint8_t *message, size_t length)
 {
-    if (uart == nullptr) {
-        return false;
+    if (interface_type == InterfaceType::SPI) {
+        send_spi_message(message, length);
+        return true;
+    } else {
+        // Original UART code
+        if (uart == nullptr) {
+            return false;
+        }
+        ssize_t bytes_written = uart->write(message, length);
+        return bytes_written == (ssize_t)length;
     }
-
-    ssize_t bytes_written = uart->write(message, length);
-    return bytes_written == (ssize_t)length;
 }
 
+// read_data to support both interfaces
 size_t AP_ExternalAHRS_Xsens::read_data(uint8_t *buffer, size_t max_length)
 {
-    if (uart == nullptr) {
-        return 0;
+    if (interface_type == InterfaceType::SPI) {
+        return 0; // SPI uses different read mechanism
+    } else {
+        // Original UART code
+        if (uart == nullptr) {
+            return 0;
+        }
+        ssize_t bytes_read = uart->read(buffer, max_length);
+        if (bytes_read < 0) {
+            return 0;
+        }
+        return static_cast<size_t>(bytes_read);
     }
-
-    ssize_t bytes_read = uart->read(buffer, max_length);
-    if (bytes_read < 0) {
-        return 0;
-    }
-
-    return static_cast<size_t>(bytes_read);
 }
+
 
 void AP_ExternalAHRS_Xsens::process_received_data()
 {
     WITH_SEMAPHORE(sem);
     
-    size_t bytes_available = read_data(rx_buffer + rx_buffer_pos, BUFFER_SIZE - rx_buffer_pos);
-    
-    if (bytes_available == 0) {
-        return;
-    }
-
-    rx_buffer_pos += bytes_available;
-
-    // Look for complete messages in the buffer
-    size_t search_start = 0;
-
-    while (search_start < rx_buffer_pos) {
-        // Look for preamble (0xFA)
-        size_t preamble_pos = search_start;
-        while (preamble_pos < rx_buffer_pos && rx_buffer[preamble_pos] != XBUS_PREAMBLE) {
-            preamble_pos++;
+    if (interface_type == InterfaceType::SPI) {
+        // Check if data is ready
+        if (!check_drdy()) {
+            return;
         }
-
-        if (preamble_pos >= rx_buffer_pos) {
-            // No preamble found, discard processed data
-            rx_buffer_pos = 0;
-            break;
+        
+        uint16_t notif_size = 0;
+        uint16_t meas_size = 0;
+        read_pipe_status(notif_size, meas_size);
+        
+        // Validate sizes to prevent buffer overflows
+        if (notif_size > BUFFER_SIZE - 2) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Xsens: Notification size too large: %u", notif_size);
+            notif_size = 0;
         }
-
-        // Check if we have enough data for a complete message header
-        if (preamble_pos + 4 > rx_buffer_pos) {
-            // Not enough data for header, move preamble to start and wait for more
-            if (preamble_pos > 0) {
-                memmove(rx_buffer, rx_buffer + preamble_pos, rx_buffer_pos - preamble_pos);
-                rx_buffer_pos -= preamble_pos;
+        
+        if (meas_size > BUFFER_SIZE - 2) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Xsens: Measurement size too large: %u", meas_size);
+            meas_size = 0;
+        }
+        
+        // Read notification pipe
+        if (notif_size > 0) {
+            uint8_t temp_buffer[BUFFER_SIZE];
+            temp_buffer[0] = XBUS_PREAMBLE;
+            temp_buffer[1] = XBUS_MASTERDEVICE;
+            
+            read_pipe(&temp_buffer[2], notif_size, XBUS_NOTIFICATION_PIPE);
+            
+            if (verify_checksum(temp_buffer)) {
+                handle_message(temp_buffer);
+            } else {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Xsens: Notification checksum failed");
             }
-            break;
         }
-
-        // Validate message structure
-        if (rx_buffer[preamble_pos + 1] != XBUS_MASTERDEVICE) {
-            // Invalid BID, skip this byte
-            search_start = preamble_pos + 1;
-            continue;
-        }
-
-        uint8_t length = rx_buffer[preamble_pos + 3];
-        size_t total_msg_length = 4 + length + 1; // Header + payload + checksum
-
-        if (preamble_pos + total_msg_length > rx_buffer_pos) {
-            // Not enough data for complete message, move to start and wait
-            if (preamble_pos > 0) {
-                memmove(rx_buffer, rx_buffer + preamble_pos, rx_buffer_pos - preamble_pos);
-                rx_buffer_pos -= preamble_pos;
+        
+        // Read measurement pipe
+        if (meas_size > 0) {
+            uint8_t temp_buffer[BUFFER_SIZE];
+            temp_buffer[0] = XBUS_PREAMBLE;
+            temp_buffer[1] = XBUS_MASTERDEVICE;
+            
+            read_pipe(&temp_buffer[2], meas_size, XBUS_MEASUREMENT_PIPE);
+            
+            if (verify_checksum(temp_buffer)) {
+                handle_message(temp_buffer);
+            } else {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Xsens: Measurement checksum failed");
             }
-            break;
+        }
+    } else {
+        // Original UART code
+        size_t bytes_available = read_data(rx_buffer + rx_buffer_pos, BUFFER_SIZE - rx_buffer_pos);
+        
+        if (bytes_available == 0) {
+            return;
         }
 
-        // We have a complete message, verify checksum
-        if (verify_checksum(rx_buffer + preamble_pos)) {
-            handle_message(rx_buffer + preamble_pos);
+        rx_buffer_pos += bytes_available;
+
+        // Look for complete messages in the buffer
+        size_t search_start = 0;
+
+        while (search_start < rx_buffer_pos) {
+            // Look for preamble (0xFA)
+            size_t preamble_pos = search_start;
+            while (preamble_pos < rx_buffer_pos && rx_buffer[preamble_pos] != XBUS_PREAMBLE) {
+                preamble_pos++;
+            }
+
+            if (preamble_pos >= rx_buffer_pos) {
+                // No preamble found, discard processed data
+                rx_buffer_pos = 0;
+                break;
+            }
+
+            // Check if we have enough data for a complete message header
+            if (preamble_pos + 4 > rx_buffer_pos) {
+                // Not enough data for header, move preamble to start and wait for more
+                if (preamble_pos > 0) {
+                    memmove(rx_buffer, rx_buffer + preamble_pos, rx_buffer_pos - preamble_pos);
+                    rx_buffer_pos -= preamble_pos;
+                }
+                break;
+            }
+
+            // Validate message structure
+            if (rx_buffer[preamble_pos + 1] != XBUS_MASTERDEVICE) {
+                // Invalid BID, skip this byte
+                search_start = preamble_pos + 1;
+                continue;
+            }
+
+            uint8_t length = rx_buffer[preamble_pos + 3];
+            size_t total_msg_length = 4 + length + 1; // Header + payload + checksum
+
+            if (preamble_pos + total_msg_length > rx_buffer_pos) {
+                // Not enough data for complete message, move to start and wait
+                if (preamble_pos > 0) {
+                    memmove(rx_buffer, rx_buffer + preamble_pos, rx_buffer_pos - preamble_pos);
+                    rx_buffer_pos -= preamble_pos;
+                }
+                break;
+            }
+
+            // We have a complete message, verify checksum
+            if (verify_checksum(rx_buffer + preamble_pos)) {
+                handle_message(rx_buffer + preamble_pos);
+            }
+
+            // Move to next potential message
+            search_start = preamble_pos + total_msg_length;
         }
 
-        // Move to next potential message
-        search_start = preamble_pos + total_msg_length;
-    }
-
-    // Remove processed data from buffer
-    if (search_start > 0) {
-        if (search_start < rx_buffer_pos) {
-            memmove(rx_buffer, rx_buffer + search_start, rx_buffer_pos - search_start);
-            rx_buffer_pos -= search_start;
-        } else {
-            rx_buffer_pos = 0;
+        // Remove processed data from buffer
+        if (search_start > 0) {
+            if (search_start < rx_buffer_pos) {
+                memmove(rx_buffer, rx_buffer + search_start, rx_buffer_pos - search_start);
+                rx_buffer_pos -= search_start;
+            } else {
+                rx_buffer_pos = 0;
+            }
         }
+        
     }
 }
+
 
 void AP_ExternalAHRS_Xsens::handle_message(const uint8_t *message)
 {
@@ -1164,8 +1250,13 @@ uint64_t AP_ExternalAHRS_Xsens::convert_utc_time_to_unix_microseconds(const UtcT
     return 0;
 }
 
+// get_port to indicate SPI usage
 int8_t AP_ExternalAHRS_Xsens::get_port(void) const
 {
+    if (interface_type == InterfaceType::SPI) {
+        return -2; // Special value to indicate SPI
+    }
+    
     if (!uart) {
         return -1;
     }
@@ -1255,14 +1346,21 @@ void AP_ExternalAHRS_Xsens::update()
     if (now - last_status_ms > 30000) { // Every 30 seconds
         last_status_ms = now;
         if (device_state == DeviceState::RUNNING) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens: Running, last data %ums ago", 
-                        (unsigned int)(now - last_ins_pkt));
+            if (interface_type == InterfaceType::SPI) {
+                bool drdy_state = (drdy_gpio_pin >= 0) ? hal.gpio->read(drdy_gpio_pin) : 0;
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens SPI: Running, DRDY=%d, last_pkt=%ums", 
+                            drdy_state, (unsigned int)(now - last_ins_pkt));
+            } else {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens UART: Running, last_pkt=%ums", 
+                            (unsigned int)(now - last_ins_pkt));
+            }
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens: State %s", 
                          get_state_string(device_state));
         }
     }
 }
+
 
 bool AP_ExternalAHRS_Xsens::is_gnss_status_valid() const
 {
@@ -1274,5 +1372,175 @@ bool AP_ExternalAHRS_Xsens::is_gnss_status_valid() const
     // Consider GNSS status valid for reasonable time after last update
     return (now - last_gnss_pvt_update) < 15000; // 15 seconds
 }
+
+// SPI initialization
+bool AP_ExternalAHRS_Xsens::init_spi()
+{
+    spi_dev = hal.spi->get_device("xsens");
+    
+    if (!spi_dev) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Xsens: SPI device not found");
+        return false;
+    }
+    
+    // Configure SPI: 1MHz, Mode 3 (CPOL=1, CPHA=1)
+    spi_dev->set_speed(AP_HAL::Device::SPEED_LOW);
+    
+    // Setup DRDY pin (GPIO 94 = PF3 on CUAV V6X)
+#ifdef HAL_GPIO_XSENS_DRDY
+    drdy_gpio_pin = HAL_GPIO_XSENS_DRDY;
+    hal.gpio->pinMode(drdy_gpio_pin, HAL_GPIO_INPUT);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens: DRDY pin %d configured", drdy_gpio_pin);
+#else
+    drdy_gpio_pin = -1;
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Xsens: DRDY pin not defined");
+#endif
+    
+    // Setup RESET pin (GPIO 95 = PH15 on CUAV V6X)
+#ifdef HAL_GPIO_XSENS_RESET
+    reset_gpio_pin = HAL_GPIO_XSENS_RESET;
+    hal.gpio->pinMode(reset_gpio_pin, HAL_GPIO_OUTPUT);
+    hal.gpio->write(reset_gpio_pin, 1); // Keep high initially
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens: RESET pin %d configured", reset_gpio_pin);
+#else
+    reset_gpio_pin = -1;
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Xsens: RESET pin not defined");
+#endif
+    
+    // Perform hardware reset
+    // hardware_reset();
+    
+    return true;
+}
+
+// SPI transfer implementation
+void AP_ExternalAHRS_Xsens::spi_transfer(uint8_t opcode, uint8_t *data, uint16_t len, bool is_read)
+{
+    if (!spi_dev) {
+        return;
+    }
+    
+    uint8_t header[4] = {opcode, 0, 0, 0};
+    
+    spi_dev->get_semaphore()->take_blocking();
+    
+    // Small delay before transaction (per Xsens spec: min 4us)
+    hal.scheduler->delay_microseconds(4);
+    
+    // Send header
+    spi_dev->transfer(header, 4, nullptr, 0);
+    
+    // Transfer data
+    if (is_read) {
+        spi_dev->transfer(nullptr, 0, data, len);
+    } else {
+        spi_dev->transfer(data, len, nullptr, 0);
+    }
+    
+    // Small delay after transaction (per Xsens spec: min 4us)
+    hal.scheduler->delay_microseconds(4);
+    
+    spi_dev->get_semaphore()->give();
+}
+
+// Read pipe status
+void AP_ExternalAHRS_Xsens::read_pipe_status(uint16_t &notif_size, uint16_t &meas_size)
+{
+    uint8_t status[4];
+    spi_transfer(XBUS_PIPE_STATUS, status, 4, true);
+    
+    notif_size = status[0] | (status[1] << 8);
+    meas_size = status[2] | (status[3] << 8);
+}
+
+// Read pipe
+void AP_ExternalAHRS_Xsens::read_pipe(uint8_t *buffer, uint16_t size, uint8_t pipe)
+{
+    spi_transfer(pipe, buffer, size, true);
+}
+
+// Create raw SPI message
+uint16_t AP_ExternalAHRS_Xsens::create_raw_spi_message(uint8_t *dest, const uint8_t *msg)
+{
+    uint16_t len = get_payload_length(msg);
+    // uint16_t total_len = (msg[3] == LENGTH_EXTENDER_BYTE) ? len + 7 : len + 5;
+    
+    dest[0] = XBUS_CONTROL_PIPE;
+    dest[1] = 0;
+    dest[2] = 0;
+    dest[3] = 0;
+    
+    uint8_t checksum = 0;
+    checksum -= XBUS_MASTERDEVICE;
+    
+    dest[4] = msg[2]; // MID
+    checksum -= dest[4];
+    
+    uint16_t idx = 5;
+    if (len < LENGTH_EXTENDER_BYTE) {
+        dest[idx++] = len;
+        checksum -= len;
+    } else {
+        dest[idx++] = LENGTH_EXTENDER_BYTE;
+        checksum -= LENGTH_EXTENDER_BYTE;
+        dest[idx++] = len >> 8;
+        checksum -= (len >> 8);
+        dest[idx++] = len & 0xFF;
+        checksum -= (len & 0xFF);
+    }
+    
+    const uint8_t* payload = get_const_pointer_to_payload(msg);
+    for (uint16_t i = 0; i < len; i++) {
+        dest[idx++] = payload[i];
+        checksum -= payload[i];
+    }
+    
+    dest[idx++] = checksum;
+    return idx;
+}
+
+// Send SPI message
+void AP_ExternalAHRS_Xsens::send_spi_message(const uint8_t *message, size_t length)
+{
+    uint8_t spi_buffer[256];
+    uint16_t spi_len = create_raw_spi_message(spi_buffer, message);
+    
+    spi_transfer(XBUS_CONTROL_PIPE, spi_buffer, spi_len, false);
+}
+
+// Check DRDY
+bool AP_ExternalAHRS_Xsens::check_drdy()
+{
+    if (drdy_gpio_pin < 0) {
+        // If DRDY pin not configured, always return true to poll
+        return true;
+    }
+    
+    // DRDY is active HIGH
+    return hal.gpio->read(drdy_gpio_pin) == 1;
+}
+
+void AP_ExternalAHRS_Xsens::hardware_reset()
+{
+    if (reset_gpio_pin < 0) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Xsens: Hardware reset skipped, pin not configured");
+        return;
+    }
+    
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens: Performing hardware reset on pin %d", reset_gpio_pin);
+    
+    // Pull reset low for at least 1ms
+    hal.gpio->write(reset_gpio_pin, 0);
+    hal.scheduler->delay(10); // 10ms to be safe
+    
+    // Release reset (pull high)
+    hal.gpio->write(reset_gpio_pin, 1);
+    
+    // Wait for device to boot (typically ~100ms)
+    hal.scheduler->delay(150);
+    
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens: Hardware reset complete");
+}
+
 
 #endif // AP_EXTERNAL_AHRS_XSENS_ENABLED
