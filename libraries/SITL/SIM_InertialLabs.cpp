@@ -60,7 +60,16 @@ void InertialLabs::send_packet(void)
 
     // 0x07 Orientation angles
     float roll_rad, pitch_rad, yaw_rad, heading_deg;
-    fdm.quaternion.to_euler(roll_rad, pitch_rad, yaw_rad);
+
+    // Rotate quaternion from autopilot-body frame into vehicle-body frame using simulated trim
+    Quaternion quat = fdm.quaternion;
+    const Vector3f &accel_trim = _sitl->accel_trim.get();
+    if (!accel_trim.is_zero()) {
+        // Rotate from autopilot-body to vehicle-body (inverse of trim rotation)
+        quat.rotate(-accel_trim);
+    }
+
+    quat.to_euler(roll_rad, pitch_rad, yaw_rad);
     heading_deg = fmodf(degrees(yaw_rad), 360.0f);
     if (heading_deg < 0.0f) {
         heading_deg += 360.0f;

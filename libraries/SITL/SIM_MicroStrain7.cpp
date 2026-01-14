@@ -152,10 +152,19 @@ void MicroStrain7::send_filter_packet(void)
     // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/filter_data/data/mip_field_filter_attitude_quaternion.htm
     packet.payload[packet.payload_size++] = 0x14; // Attitude Quaternion Field Size
     packet.payload[packet.payload_size++] = 0x03; // Descriptor
-    put_float(packet, fdm.quaternion.q1);
-    put_float(packet, fdm.quaternion.q2);
-    put_float(packet, fdm.quaternion.q3);
-    put_float(packet, fdm.quaternion.q4);
+
+    // Rotate quaternion from autopilot-body frame into vehicle-body frame using simulated trim
+    Quaternion quat = fdm.quaternion;
+    const Vector3f &accel_trim = _sitl->accel_trim.get();
+    if (!accel_trim.is_zero()) {
+        // Rotate from autopilot-body to vehicle-body (inverse of trim rotation)
+        quat.rotate(-accel_trim);
+    }
+
+    put_float(packet, quat.q1);
+    put_float(packet, quat.q2);
+    put_float(packet, quat.q3);
+    put_float(packet, quat.q4);
     put_int(packet, 0x0001); // Valid flags
 
     packet.header[3] = packet.payload_size;

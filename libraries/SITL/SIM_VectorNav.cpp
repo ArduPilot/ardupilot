@@ -163,10 +163,18 @@ void VectorNav::send_ins_ekf_packet(void)
     pkt.ypr[1] = fdm.pitchDeg;
     pkt.ypr[2] = fdm.rollDeg;
 
-    pkt.quaternion[0] = fdm.quaternion.q2;
-    pkt.quaternion[1] = fdm.quaternion.q3;
-    pkt.quaternion[2] = fdm.quaternion.q4;
-    pkt.quaternion[3] = fdm.quaternion.q1;
+    // Rotate quaternion from autopilot-body frame into vehicle-body frame using simulated trim
+    Quaternion quat = fdm.quaternion;
+    const Vector3f &accel_trim = _sitl->accel_trim.get();
+    if (!accel_trim.is_zero()) {
+        // Rotate from autopilot-body to vehicle-body (inverse of trim rotation)
+        quat.rotate(-accel_trim);
+    }
+
+    pkt.quaternion[0] = quat.q2;
+    pkt.quaternion[1] = quat.q3;
+    pkt.quaternion[2] = quat.q4;
+    pkt.quaternion[3] = quat.q1;
 
     pkt.yprU[0] = 0.03;
     pkt.yprU[1] = 0.03;
@@ -255,10 +263,18 @@ void VectorNav::send_ahrs_packet(void)
     pkt.ypr[1] = fdm.pitchDeg;
     pkt.ypr[2] = fdm.rollDeg;
 
-    pkt.quaternion[0] = fdm.quaternion.q2;
-    pkt.quaternion[1] = fdm.quaternion.q3;
-    pkt.quaternion[2] = fdm.quaternion.q4;
-    pkt.quaternion[3] = fdm.quaternion.q1;
+    // Rotate quaternion from autopilot-body frame into vehicle-body frame using simulated trim
+    Quaternion quat = fdm.quaternion;
+    const Vector3f &accel_trim = _sitl->accel_trim.get();
+    if (!accel_trim.is_zero()) {
+        // Rotate from autopilot-body to vehicle-body (inverse of trim rotation)
+        quat.rotate(-accel_trim);
+    }
+
+    pkt.quaternion[0] = quat.q2;
+    pkt.quaternion[1] = quat.q3;
+    pkt.quaternion[2] = quat.q4;
+    pkt.quaternion[3] = quat.q1;
 
     pkt.yprU[0] = 0.03;
     pkt.yprU[1] = 0.03;
