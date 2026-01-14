@@ -461,14 +461,15 @@ bool limit_accel_xy(const Vector2f& vel, Vector2f& accel, float accel_max)
     return false;
 }
 
-// Limits a 2D acceleration vector while prioritising along-track deceleration.
-// - Splits acceleration into components parallel and perpendicular to the current velocity direction.
-// - Only the decelerating (braking) along-track component is prioritised; accelerating along-track
-//   components are treated as "no braking" and fall back to a simple magnitude limit.
-// - When braking is requested, cross-track acceleration is limited to the remaining magnitude
-//   budget after reserving the braking component.
+// Limits a 2D acceleration vector with direction-dependent prioritisation.
+// - Acceleration is decomposed into along-track (parallel to velocity) and cross-track components.
+// - If braking is requested (negative along-track component), braking is prioritised and the
+//   remaining acceleration budget is allocated to cross-track.
+// - If no braking is requested (along-track acceleration or zero), cross-track acceleration
+//   is prioritised and the remaining budget is allocated to along-track.
+// - Ensures the final acceleration magnitude does not exceed accel_max.
 // - If velocity is zero (no defined direction), a simple magnitude limit is applied.
-// Returns true if the acceleration vector was modified.
+// Returns true if the limiting logic was applied.
 bool limit_accel_corner_xy(const Vector2f& vel, Vector2f& accel, float accel_max)
 {
     // Check accel_max is defined.
@@ -489,24 +490,42 @@ bool limit_accel_corner_xy(const Vector2f& vel, Vector2f& accel, float accel_max
     // Unit velocity direction defines the along-track axis.
     const Vector2f vel_unit = vel.normalized();
 
-    // Extract the along-track braking component (negative projection only),
-    // limited to the maximum allowed along-track deceleration magnitude.
-    const float accel_brake = constrain_float(accel.dot(vel_unit), -accel_max, 0.0);
+    // Signed scalar projection of acceleration onto the velocity direction.
+    // Negative values correspond to braking.
+    float accel_dir_scalar = accel.dot(vel_unit);
 
-    // If no braking is requested, fall back to a simple magnitude limit.
-    if (!is_negative(accel_brake)) {
-        return accel.limit_length(accel_max);
-    }
-
-    // Allocate remaining acceleration budget to cross-track after reserving braking.
-    // Ensures the final accel magnitude does not exceed accel_max.
-    const float accel_max_cross = safe_sqrt(sq(accel_max) - sq(accel_brake));
-    const Vector2f accel_dir = vel_unit * accel_brake;
+    // Along-track and cross-track acceleration components.
+    Vector2f accel_dir   = vel_unit * accel_dir_scalar;
     Vector2f accel_cross = accel - accel_dir;
-    accel_cross.limit_length(accel_max_cross);
 
-    accel = accel_cross + accel_dir;
-    return true;
+    if (is_positive(accel_dir_scalar)) {
+        // Non-braking regime
+        // Prioritise cross-track acceleration and allocate the remaining budget to along-track.
+
+        // Limit cross-track magnitude first.
+        const float accel_cross_mag = MIN(accel_cross.length(), accel_max);
+        const float accel_along_max = safe_sqrt(sq(accel_max) - sq(accel_cross_mag));
+
+        accel_cross.limit_length(accel_max);
+        accel_dir.limit_length(accel_along_max);
+
+        accel = accel_cross + accel_dir;
+        return true;
+    } else {
+        // Braking regime
+        // Prioritise along-track deceleration and allocate the remaining budget to cross-track.
+
+        // Limit braking magnitude.
+        accel_dir_scalar = MAX(accel_dir_scalar, -accel_max);
+        accel_dir = vel_unit * accel_dir_scalar;
+
+        // Allocate remaining acceleration budget to cross-track.
+        const float accel_cross_max = safe_sqrt(sq(accel_max) - sq(accel_dir_scalar));
+        accel_cross.limit_length(accel_cross_max);
+
+        accel = accel_cross + accel_dir;
+        return true;
+    }
 }
 
 // Piecewise square-root + linear controller that limits second-order response (acceleration).
