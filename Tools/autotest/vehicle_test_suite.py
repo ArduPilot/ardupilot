@@ -6004,6 +6004,57 @@ class TestSuite(abc.ABC):
             self.progress("wait_att_quat: achieved")
             return
 
+    def wait_attitude_sim_state(self,
+                                desroll=None,
+                                despitch=None,
+                                timeout=2,
+                                tolerance=10):
+        '''wait for and validate SIM_STATE attitude, ensuring quaternion and eulers match'''
+        if desroll is None and despitch is None:
+            raise ValueError("despitch or desroll must be supplied")
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise AutoTestTimeoutException("Failed to achieve SIM_STATE attitude")
+            m = self.poll_message('SIM_STATE')
+            if m is None:
+                continue
+
+            # Get euler angles from SIM_STATE
+            roll_deg_euler = math.degrees(m.roll)
+            pitch_deg_euler = math.degrees(m.pitch)
+
+            # Get euler angles from quaternion in SIM_STATE
+            q = quaternion.Quaternion([m.q1, m.q2, m.q3, m.q4])
+            euler = q.euler
+            roll_rad_quat = euler[0]
+            pitch_rad_quat = euler[1]
+            roll_deg_quat = math.degrees(roll_rad_quat)
+            pitch_deg_quat = math.degrees(pitch_rad_quat)
+
+            # Verify quaternion and euler match in SIM_STATE
+            quat_euler_tolerance = 0.1  # degrees
+            roll_diff = abs(roll_deg_euler - roll_deg_quat)
+            pitch_diff = abs(pitch_deg_euler - pitch_deg_quat)
+
+            if roll_diff > quat_euler_tolerance or pitch_diff > quat_euler_tolerance:
+                raise ValueError(
+                    "SIM_STATE quaternion and euler mismatch: "
+                    "euler=(%.2f, %.2f) quat=(%.2f, %.2f) diff=(%.2f, %.2f)" %
+                    (roll_deg_euler, pitch_deg_euler, roll_deg_quat, pitch_deg_quat,
+                     roll_diff, pitch_diff))
+
+            self.progress("wait_att_sim_state: roll=%.2f desroll=%s pitch=%.2f despitch=%s (quat matches euler)" %
+                          (roll_deg_euler, desroll, pitch_deg_euler, despitch))
+
+            # Check if we've achieved desired attitude
+            if desroll is not None and abs(roll_deg_euler - desroll) > tolerance:
+                continue
+            if despitch is not None and abs(pitch_deg_euler - despitch) > tolerance:
+                continue
+            self.progress("wait_att_sim_state: achieved")
+            return
+
     def CPUFailsafe(self):
         '''Ensure we do something appropriate when the main loop stops'''
         # Most vehicles just disarm on failsafe
@@ -13096,19 +13147,75 @@ switch value'''
 
                 # Special setup for ExternalAHRS (type 11)
                 if ahrs_type == 11:
-                    # Use MicroStrain7 as the external AHRS device
-                    self.customise_SITL_commandline([
-                        "--serial4=sim:MicroStrain7",
-                    ])
-                    self.set_parameters({
-                        "EAHRS_TYPE": 7,  # MicroStrain7
-                        "SERIAL4_PROTOCOL": 36,  # ExternalAHRS protocol
-                        "SERIAL4_BAUD": 230400,
-                        "GPS1_TYPE": 21,  # External AHRS
-                        "AHRS_EKF_TYPE": ahrs_type,
-                        "INS_GYR_CAL": 1,
-                    })
-                    self.reboot_sitl()
+                    # Test all simulated ExternalAHRS backends
+                    external_ahrs_configs = [
+                        {
+                            "name": "VectorNav",
+                            "device": "VectorNav",
+                            "eahrs_type": 1,
+                        },
+                        {
+                            "name": "MicroStrain5",
+                            "device": "MicroStrain5",
+                            "eahrs_type": 2,
+                        },
+                        {
+                            "name": "InertialLabs",
+                            "device": "ILabs",
+                            "eahrs_type": 5,
+                        },
+                        {
+                            "name": "MicroStrain7",
+                            "device": "MicroStrain7",
+                            "eahrs_type": 7,
+                        },
+                    ]
+
+                    for config in external_ahrs_configs:
+                        self.start_subsubtest("Testing ExternalAHRS backend: %s" % config["name"])
+                        self.context_push()
+
+                        self.customise_SITL_commandline([
+                            "--serial4=sim:%s" % config["device"],
+                        ])
+                        self.set_parameters({
+                            "EAHRS_TYPE": config["eahrs_type"],
+                            "SERIAL4_PROTOCOL": 36,  # ExternalAHRS protocol
+                            "SERIAL4_BAUD": 230400,
+                            "GPS1_TYPE": 21,  # External AHRS
+                            "AHRS_EKF_TYPE": ahrs_type,
+                            "INS_GYR_CAL": 1,
+                            "EAHRS_SENSORS": 0xD,  # GPS|BARO|COMPASS (exclude IMU)
+                        })
+                        self.reboot_sitl()
+                        self.delay_sim_time(5)
+                        self.progress("Running accelcal")
+                        self.run_cmd(
+                            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+                            p5=4,
+                            timeout=5,
+                        )
+                        self.wait_prearm_sys_status_healthy(timeout=120)
+
+                        for (r, p) in [(0, 0), (9, 0), (2, -6), (10, 10)]:
+                            self.set_parameters({
+                                'AHRS_TRIM_X': math.radians(r),
+                                'AHRS_TRIM_Y': math.radians(p),
+                                "SIM_ACC_TRIM_X": math.radians(r),
+                                "SIM_ACC_TRIM_Y": math.radians(p),
+                            })
+                            self.wait_attitude(desroll=0, despitch=0, timeout=120, tolerance=1.5)
+                            if ahrs_type != 0:
+                                self.wait_attitude(desroll=0, despitch=0, message_type='AHRS2', tolerance=1, timeout=120)
+                            self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120)
+                            self.wait_attitude_sim_state(desroll=0, despitch=0, tolerance=1, timeout=120)
+
+                        self.context_pop()
+                        self.reboot_sitl()
+
+                    # Skip the normal test loop for ahrs_type 11 since we already tested it above
+                    self.context_pop()
+                    continue
                 else:
                     self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
                     self.reboot_sitl()
@@ -13124,6 +13231,7 @@ switch value'''
                     if ahrs_type != 0:  # we don't get secondary msgs while DCM is primary
                         self.wait_attitude(desroll=0, despitch=0, message_type='AHRS2', tolerance=1, timeout=120)
                     self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120)
+                    self.wait_attitude_sim_state(desroll=0, despitch=0, tolerance=1, timeout=120)
 
                 self.context_pop()
                 self.reboot_sitl()
