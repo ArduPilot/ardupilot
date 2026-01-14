@@ -27,12 +27,6 @@ class Board(object):
             'Rover',
             'Sub',
         ]
-        SITL_toolchain = {
-            "SITL_x86_64_linux_gnu": "x86_64-linux-gnu",
-            "SITL_arm_linux_gnueabihf": "arm-linux-gnueabihf",
-        }
-        if name in SITL_toolchain:
-            self.toolchain = SITL_toolchain[name]
 
 
 def in_boardlist(boards : Collection[str], board : str) -> bool:
@@ -72,19 +66,13 @@ class BoardList(object):
         )
 
         self.hwdef_dir = []
-        for haldir in 'AP_HAL_ChibiOS', 'AP_HAL_Linux', 'AP_HAL_ESP32':
+        for haldir in 'AP_HAL_ChibiOS', 'AP_HAL_Linux', 'AP_HAL_ESP32', 'AP_HAL_SITL':
             self.hwdef_dir.append(os.path.join(realpath, haldir, "hwdef"))
 
     def __init__(self):
         self.set_hwdef_dir()
 
-        # no hwdefs for Linux boards - yet?
-        self.boards = [
-            Board("SITL_x86_64_linux_gnu"),
-            Board("SITL_arm_linux_gnueabihf"),
-        ]
-        for b in self.boards:
-            b.hal = "AP_HAL_SITL"
+        self.boards = []
 
         for hwdef_dir in self.hwdef_dir:
             self.add_hwdefs_from_hwdef_dir(hwdef_dir)
@@ -142,6 +130,8 @@ class BoardList(object):
                     board.toolchain = 'arm-none-eabi'
                 elif "ESP32" in hwdef_dir:
                     board.toolchain = 'xtensa-esp32-elf'
+                elif "SITL" in hwdef_dir:
+                    board.toolchain = 'native'
                 else:
                     raise ValueError(f"Unable to determine toolchain for {hwdef_dir}")
 
@@ -151,6 +141,8 @@ class BoardList(object):
                 board.hal = "ChibiOS"
             elif "ESP32" in hwdef_dir:
                 board.hal = "ESP32"
+            elif "SITL" in hwdef_dir:
+                board.hal = "SITL"
             else:
                 raise ValueError(f"Unable to determine HAL for {hwdef_dir}")
 
