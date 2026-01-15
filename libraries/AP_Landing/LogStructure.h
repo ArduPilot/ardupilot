@@ -9,6 +9,7 @@
 #if HAL_LANDING_DEEPSTALL_ENABLED
 
 // @LoggerMessage: DSTL
+// @Vehicles: Plane
 // @Description: Deepstall Landing data
 // @Field: TimeUS: Time since system startup
 // @Field: Stg: Deepstall landing stage
