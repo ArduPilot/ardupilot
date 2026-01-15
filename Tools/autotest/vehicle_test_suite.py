@@ -13155,7 +13155,20 @@ switch value'''
                             })
                             self.reboot_sitl()
                             self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SIM_STATE, 10)
-                            self.wait_attitude(desroll=0, despitch=0, timeout=120, tolerance=1.5)
+                            att_desroll = 0
+                            att_despitch = 0
+                            if ahrs_type == 11:
+                                # this is very nasty compatibility
+                                # code for the fact our rotations are
+                                # incorrect for ExternalAHRS eulers
+                                # and rotation matrix!  It is here to
+                                # ensure behaviour is preserved until
+                                # we can fix the bug!  Search for
+                                # "note that this is suspect" to find
+                                # the problem code.
+                                att_desroll = -r
+                                att_despitch = -p
+                            self.wait_attitude(desroll=att_desroll, despitch=att_despitch, timeout=120, tolerance=1.5)
                             if ahrs_type != 0:
                                 self.wait_attitude(desroll=0, despitch=0, message_type='AHRS2', tolerance=1, timeout=120)
                             self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120)
