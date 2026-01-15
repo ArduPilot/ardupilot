@@ -109,14 +109,19 @@ void AP_EFI_Serial_Hirth::check_response()
         computed_checksum += res_data.quantity = port->read();
         computed_checksum += res_data.code = port->read();
 
-        if (res_data.code == requested_code) {
+        bool checksum_is_good = false;
+        if (res_data.code == requested_code &&
+            res_data.quantity > QUANTITY_REQUEST_STATUS) {
             for (int i = 0; i < (res_data.quantity - QUANTITY_REQUEST_STATUS); i++) {
                 computed_checksum += raw_data[i] = port->read();
             }
+            res_data.checksum = port->read();
+            if (res_data.checksum == (256 - computed_checksum)) {
+                checksum_is_good = true;
+            }
         }
 
-        res_data.checksum = port->read();
-        if (res_data.checksum != (256 - computed_checksum)) {
+        if (!checksum_is_good) {
             crc_fail_cnt++;
             port->discard_input();
         } else {
