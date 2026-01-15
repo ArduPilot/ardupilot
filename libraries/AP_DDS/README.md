@@ -166,6 +166,7 @@ Published topics:
  * /ap/tf_static [tf2_msgs/msg/TFMessage] 1 publisher
  * /ap/time [builtin_interfaces/msg/Time] 1 publisher
  * /ap/twist/filtered [geometry_msgs/msg/TwistStamped] 1 publisher
+ * /ap/odometry [nav_msgs/msg/Odometry] 1 publisher
  * /parameter_events [rcl_interfaces/msg/ParameterEvent] 1 publisher
  * /rosout [rcl_interfaces/msg/Log] 1 publisher
 

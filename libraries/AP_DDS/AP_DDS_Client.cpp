@@ -89,6 +89,9 @@ static constexpr uint16_t DELAY_PING_MS = 500;
 #if AP_DDS_STATUS_PUB_ENABLED
 static constexpr uint16_t DELAY_STATUS_TOPIC_MS = AP_DDS_DELAY_STATUS_TOPIC_MS;
 #endif // AP_DDS_STATUS_PUB_ENABLED
+#if AP_DDS_ODOM_PUB_ENABLED
+static constexpr uint16_t DELAY_ODOM_TOPIC_MS = AP_DDS_DELAY_ODOM_TOPIC_MS;
+#endif // AP_DDS_ODOM_PUB_ENABLED
 
 // Define the subscriber data members, which are static class scope.
 // If these are created on the stack in the subscriber,
@@ -762,6 +765,59 @@ bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Status& msg)
     }
 }
 #endif // AP_DDS_STATUS_PUB_ENABLED
+
+#if AP_DDS_ODOM_PUB_ENABLED
+bool AP_DDS_Client::update_topic(nav_msgs_msg_Odometry& msg)
+{
+    update_topic(msg.header.stamp);
+    STRCPY(msg.header.frame_id, BASE_LINK_FRAME_ID);
+    STRCPY(msg.child_frame_id, ODOM_FRAME);
+
+    // Pose message. Note the NED-ENU conversion
+    auto &ahrs = AP::ahrs();
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+
+    // check if the AHRS is active
+    if (!ahrs.initialised()) {
+        return false;
+    }
+
+    Vector3f position;
+    if (ahrs.get_relative_position_NED_origin_float(position)) {
+        // Position
+        msg.pose.pose.position.x = position[1];
+        msg.pose.pose.position.y = position[0];
+        msg.pose.pose.position.z = -position[2];
+    }
+    Quaternion orientation;
+    if (ahrs.get_quaternion(orientation)) {
+        // Orientation
+        msg.pose.pose.orientation.x = orientation[1];
+        msg.pose.pose.orientation.y = orientation[0];
+        msg.pose.pose.orientation.z = -orientation[2];
+        msg.pose.pose.orientation.w = orientation[3];
+    } else {
+        initialize(msg.pose.pose.orientation);
+    }
+    // Twist message. The linear and angular velocity in the body frame
+    // Note the NED-ENU conversion
+    Vector3f velocity;
+    if (ahrs.get_velocity_NED(velocity)) {
+        // Linear velocity
+        msg.twist.twist.linear.x = velocity[1];
+        msg.twist.twist.linear.y = velocity[0];
+        msg.twist.twist.linear.z = -velocity[2];
+    }
+    Vector3f angular_velocity = ahrs.get_gyro();
+    // Angular velocity
+    msg.twist.twist.angular.x = angular_velocity[0];
+    msg.twist.twist.angular.y = -angular_velocity[1];
+    msg.twist.twist.angular.z = -angular_velocity[2];
+
+    return true;
+}
+#endif // AP_DDS_ODOM_PUB_ENABLED
+
 /*
   start the DDS thread
  */
@@ -1740,6 +1796,23 @@ void AP_DDS_Client::write_status_topic()
 }
 #endif // AP_DDS_STATUS_PUB_ENABLED
 
+#if AP_DDS_ODOM_PUB_ENABLED
+void AP_DDS_Client::write_odom_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = nav_msgs_msg_Odometry_size_of_topic(&odom_topic, 0);
+        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::ODOM_PUB)].dw_id, &ub, topic_size);
+        const bool success = nav_msgs_msg_Odometry_serialize_topic(&ub, &odom_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
+        }
+    }
+}
+#endif // AP_DDS_ODOM_PUB_ENABLED
+
 void AP_DDS_Client::update()
 {
     WITH_SEMAPHORE(csem);
@@ -1844,6 +1917,14 @@ void AP_DDS_Client::update()
         last_status_check_time_ms = cur_time_ms;
     }
 #endif // AP_DDS_STATUS_PUB_ENABLED
+#if AP_DDS_ODOM_PUB_ENABLED
+    if (cur_time_ms - last_odom_time_ms > DELAY_ODOM_TOPIC_MS) {
+        if (update_topic(odom_topic)) {
+            write_odom_topic();
+        }
+        last_odom_time_ms = cur_time_ms;
+    }
+#endif // AP_DDS_ODOM_PUB_ENABLED
 
     status_ok = uxr_run_session_time(&session, 1);
 }
