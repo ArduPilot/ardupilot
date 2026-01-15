@@ -241,13 +241,23 @@ function get_tailsitter_flight_state()
 end
 
 function is_in_landing_phase(current_mode, flight_state)
-    local MODES = { qland = 20, land = 21, rtl = 11, auto = 10 }
+    local QMODES = {
+        [11] = true,  -- RTL
+        [17] = true,  -- QSTABILIZE
+        [18] = true,  -- QHOVER
+        [19] = true,  -- QLOITER
+        [20] = true,  -- QLAND
+        [21] = true,  -- QRTL
+        [22] = true,  -- QAUTOTUNE
+        [23] = true,  -- QACRO
+    }
+    
+    local MODES = { auto = 10 } -- other valid modes which need additional checks
     if not current_mode or not flight_state then return false end
 
-    if (current_mode == MODES.qland or current_mode == MODES.land or current_mode == MODES.rtl) then
-        if flight_state == "VTOL" then
-            return true
-        end
+    -- Return true for all q modes directly, regardless of pitch
+    if QMODES[current_mode] then
+        return true
     end
 
     if current_mode == MODES.auto then
