@@ -5967,8 +5967,8 @@ class TestSuite(abc.ABC):
             m = self.assert_receive_message(message_type, timeout=60)
             roll_deg = math.degrees(m.roll)
             pitch_deg = math.degrees(m.pitch)
-            self.progress("wait_att: roll=%f desroll=%s pitch=%f despitch=%s" %
-                          (roll_deg, desroll, pitch_deg, despitch))
+            self.progress("wait_att[%s]: roll=%f desroll=%s pitch=%f despitch=%s" %
+                          (message_type, roll_deg, desroll, pitch_deg, despitch))
             if desroll is not None and abs(roll_deg - desroll) > tolerance:
                 continue
             if despitch is not None and abs(pitch_deg - despitch) > tolerance:
@@ -5987,16 +5987,16 @@ class TestSuite(abc.ABC):
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
-                raise AutoTestTimeoutException("Failed to achieve attitude")
-            m = self.poll_message(message_type)
+                raise AutoTestTimeoutException("Failed to achieve (quaternion) attitude")
+            m = self.poll_message(message_type, quiet=True)
             q = quaternion.Quaternion([m.q1, m.q2, m.q3, m.q4])
             euler = q.euler
             roll = euler[0]
             pitch = euler[1]
             roll_deg = math.degrees(roll)
             pitch_deg = math.degrees(pitch)
-            self.progress("wait_att_quat: roll=%f desroll=%s pitch=%f despitch=%s" %
-                          (roll_deg, desroll, pitch_deg, despitch))
+            self.progress("wait_att_quat[%s]: roll=%f desroll=%s pitch=%f despitch=%s" %
+                          (message_type, roll_deg, desroll, pitch_deg, despitch))
             if desroll is not None and abs(roll_deg - desroll) > tolerance:
                 continue
             if despitch is not None and abs(pitch_deg - despitch) > tolerance:
@@ -13103,10 +13103,14 @@ switch value'''
                         "SIM_ACC_TRIM_X": math.radians(r),
                         "SIM_ACC_TRIM_Y": math.radians(p),
                     })
+                    self.reboot_sitl()
+                    self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SIM_STATE, 10)
                     self.wait_attitude(desroll=0, despitch=0, timeout=120, tolerance=1.5)
+                    self.wait_attitude(desroll=0, despitch=0, timeout=120, tolerance=1.5, message_type='SIM_STATE')
                     if ahrs_type != 0:  # we don't get secondary msgs while DCM is primary
                         self.wait_attitude(desroll=0, despitch=0, message_type='AHRS2', tolerance=1, timeout=120)
                     self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120)
+                    self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120, message_type='SIM_STATE')
 
                 self.context_pop()
                 self.reboot_sitl()
