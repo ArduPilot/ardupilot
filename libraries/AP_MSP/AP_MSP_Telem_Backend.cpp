@@ -27,6 +27,7 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_RTC/AP_RTC.h>
+#include <AP_VideoTX/AP_VideoTX.h>
 #include <GCS_MAVLink/GCS.h>
 
 #include "AP_MSP.h"
@@ -72,6 +73,9 @@ void AP_MSP_Telem_Backend::setup_wfq_scheduler(void)
     set_scheduler_entry(ESC_SENSOR_DATA, 500, 500);   // 2Hz  ESC telemetry
 #endif
     set_scheduler_entry(RTC_DATETIME, 1000, 1000);    // 1Hz  RTC
+#if AP_VIDEOTX_ENABLED
+    set_scheduler_entry(VTX_PARAMETERS, 1000, 1000);  // 1Hz  VTX
+#endif
 }
 
 /*
@@ -123,6 +127,10 @@ bool AP_MSP_Telem_Backend::is_packet_ready(uint8_t idx, bool queue_empty)
 #endif
     case RTC_DATETIME:      // RTC
         return true;
+#if AP_VIDEOTX_ENABLED
+    case VTX_PARAMETERS:    // VTX control
+        return AP::vtx().have_params_changed();
+#endif
     default:
         return false;
     }
@@ -137,6 +145,8 @@ void AP_MSP_Telem_Backend::process_packet(uint8_t idx)
         return;
     }
 
+    hal.console->printf("process_packet(%u)\n", idx);
+
     uint8_t out_buf[MSP_PORT_OUTBUF_SIZE] {};
 
     msp_packet_t reply = {
@@ -147,7 +157,7 @@ void AP_MSP_Telem_Backend::process_packet(uint8_t idx)
     };
     uint8_t *out_buf_head = reply.buf.ptr;
 
-    msp_process_out_command(msp_packet_type_map[idx], &reply.buf);
+    msp_process_out_command(msp_packet_type_map[idx], nullptr, &reply.buf);
     uint32_t len = reply.buf.ptr - &out_buf[0];
     sbuf_switch_to_reader(&reply.buf, out_buf_head); // change streambuf direction
     if (len > 0) {
@@ -422,6 +432,7 @@ void AP_MSP_Telem_Backend::msp_process_received_command()
 
 /*
   ported from inav/src/main/fc/fc_msp.c
+  pull-mode telemetry
  */
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_command(msp_packet_t *cmd, msp_packet_t *reply)
 {
@@ -435,7 +446,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_command(msp_packet_t *cmd, ms
     if (MSP2_IS_SENSOR_MESSAGE(cmd_msp)) {
         ret = msp_process_sensor_command(cmd_msp, src);
     } else {
-        ret = msp_process_out_command(cmd_msp, dst);
+        ret = msp_process_out_command(cmd_msp, src, dst);
     }
 
     // Process DONT_REPLY flag
@@ -447,7 +458,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_command(msp_packet_t *cmd, ms
     return ret;
 }
 
-MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_command(uint16_t cmd_msp, sbuf_t *dst)
+MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_command(uint16_t cmd_msp, sbuf_t *src, sbuf_t *dst)
 {
     switch (cmd_msp) {
     case MSP_API_VERSION:
@@ -491,6 +502,16 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_command(uint16_t cmd_msp,
         return msp_process_out_rtc(dst);
     case MSP_RC:
         return msp_process_out_rc(dst);
+#if AP_VIDEOTX_ENABLED
+    case MSP_VTX_CONFIG:
+        if (!src) {
+            return msp_process_out_vtx_config(src, dst);
+        } else {
+            return MSP_RESULT_ACK;
+        }
+    case MSP_SET_VTX_CONFIG:
+        return msp_process_in_vtx_config(src, dst);
+#endif
     default:
         // MSP always requires an ACK even for unsupported messages
         return MSP_RESULT_ACK;
@@ -1089,6 +1110,107 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
     return MSP_RESULT_ACK;
 }
 #endif  // AP_RC_CHANNEL_ENABLED
+
+#if AP_VIDEOTX_ENABLED
+MSPCommandResult AP_MSP_Telem_Backend::msp_process_in_vtx_config(sbuf_t *src, sbuf_t *dst)
+{
+    struct PACKED vtx_config {
+        uint16_t old_freq;
+        uint8_t power;
+        uint8_t pitmode;
+        uint8_t lowPowerDisarm;
+        uint16_t pitModeFreq;
+        // API version 1.42 - extensions for non-encoded versions of the band, channel or frequency
+        uint8_t band;
+        uint8_t channel;
+        uint16_t freq;
+        uint8_t table[4];
+    };
+
+    vtx_config* cfg = (vtx_config*)src->ptr;
+
+    hal.console->printf("msp_process_in_vtx_config(): P:%u, B:%u, C:%u, F:%u\n", cfg->power, cfg->band, cfg->channel, cfg->freq);
+
+    AP_VideoTX& vtx = AP::vtx();
+    // the user may have a VTX connected but not want AP to control it
+    // (for instance because they are using myVTX on the transmitter)
+    if (!vtx.get_enabled()) {
+        return MSP_RESULT_ERROR;
+    }
+
+    vtx.set_provider_enabled(AP_VideoTX::VTXType::MSP);
+    vtx.set_band(cfg->band);
+    vtx.set_channel(cfg->channel);
+    vtx.set_frequency_mhz(cfg->freq);
+#if 0
+    vtx.set_frequency_mhz(AP_VideoTX::get_frequency_mhz(cfg->band, cfg->channel));
+#endif
+    // 14dBm (25mW), 20dBm (100mW), 26dBm (400mW), 29dBm (800mW)
+    switch (cfg->power) {
+        case 0:
+            vtx.set_power_mw(25);
+            break;
+        case 1:
+            vtx.set_power_mw(100);
+            break;
+        case 2:
+            vtx.set_power_mw(400);
+            break;
+        case 3:
+            vtx.set_power_mw(800);
+            break;
+    }
+    if (cfg->pitmode) {
+        vtx.set_options(vtx.get_options() | uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
+    } else {
+        vtx.set_options(vtx.get_options() & ~uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
+    }
+    // make sure the configured values now reflect reality
+    if (!vtx.set_defaults()) {
+        vtx.announce_vtx_settings();
+    }
+
+    return MSP_RESULT_ACK;
+}
+
+MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_vtx_config(sbuf_t *src, sbuf_t *dst)
+{
+    hal.console->printf("msp_process_out_vtx_config(%p, %p)\n", src, dst);
+    AP_VideoTX& vtx = AP::vtx();
+
+    if (!vtx.get_enabled()) {
+        return MSP_RESULT_ERROR;
+    }
+
+    struct PACKED {
+        uint8_t type;
+        uint8_t band;
+        uint8_t channel;
+        uint8_t power;
+        uint8_t pitmode;
+        uint16_t freq;
+        uint8_t deviceIsReady;
+        uint8_t lowPowerDisarm;
+        // API version 1.42
+        uint16_t pitModeFreq;
+        uint8_t table;
+        uint8_t table_bands;
+        uint8_t table_channels;
+        uint8_t table_powerLevels;
+    } vtx_config {
+        .type = 1,
+        .band = vtx.get_configured_band(),
+        .channel = vtx.get_configured_channel(),
+        .power = vtx.get_configured_power_level(),
+        .pitmode = vtx.get_pitmode(),
+        .freq = vtx.get_configured_frequency_mhz()
+    };
+
+    sbuf_write_data(dst, &vtx_config, sizeof(vtx_config));
+    return MSP_RESULT_ACK;
+}
+
+#endif // AP_VIDEOTX_ENABLED
 
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_board_info(sbuf_t *dst)
 {
