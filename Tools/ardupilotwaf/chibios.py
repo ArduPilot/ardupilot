@@ -9,6 +9,7 @@ Waf tool for ChibiOS build
 from waflib import Errors, Logs, Task, Utils, Context
 from waflib.TaskGen import after_method, before_method, feature
 
+import io
 import os
 import shutil
 import sys
@@ -418,10 +419,62 @@ class build_intel_hex(Task.Task):
     def __str__(self):
         return self.outputs[0].path_from(self.generator.bld.bldnode)
 
+FLASH_OVERFLOW_MESSAGE = '''
+========================================================================
+ERROR: Firmware too large for flash memory!
+========================================================================
+
+The compiled firmware exceeds the available flash space on this board.
+
+The original linker error was:
+  "cannot move location counter backwards"
+
+This means the code and data sections are larger than the flash region.
+
+To fix this, try one or more of these solutions:
+  - Disable features you don't need (e.g., via hwdef.dat or --extra-hwdef)
+  - Build a smaller vehicle type if applicable
+  - Choose a board with more flash memory
+  - Check for recently added features that increased code size
+'''
+
+def make_link_exec_command_wrapper(original_exec_command, link_task):
+    '''Create wrapper for link task exec_command that captures stderr'''
+    def wrapped_exec_command(cmd, **kw):
+        # Capture stderr
+        old_stderr =  sys.stderr
+        stderr = io.StringIO()
+        sys.stderr = stderr
+
+        ex = None
+        try:
+            ret = original_exec_command(cmd, **kw)
+        except Exception as e:
+            ex = e
+
+        # restore stdout/stderr
+        sys.stderr = old_stderr
+
+        print(stderr.getvalue(), file=sys.stderr)
+
+        if 'cannot move location counter backwards' in stderr.getvalue():
+            Logs.pprint('RED', FLASH_OVERFLOW_MESSAGE)
+
+        if ex is not None:
+            raise ex
+
+        return ret
+
+    return wrapped_exec_command
+
 @feature('ch_ap_program')
 @after_method('process_source')
 def chibios_firmware(self):
-    self.link_task.always_run = True
+    # Wrap the link task's exec_command to detect flash overflow errors
+    self.link_task.exec_command = make_link_exec_command_wrapper(
+        self.link_task.exec_command,
+        self.link_task
+    )
 
     link_output = self.link_task.outputs[0]
     hex_task = None
