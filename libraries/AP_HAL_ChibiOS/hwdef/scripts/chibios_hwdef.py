@@ -2184,7 +2184,24 @@ INCLUDE common.ld
         '''write ADC config defines'''
         f.write('// ADC config\n')
         adc_chans = [[], [], []]
-        analogset = {252, 253, 254} # reserved values for VSENSE, VREF and VBAT in H7
+        analogset = set()
+
+        # If MCU monitoring is enabled add pins (from H7 reference manual)
+        defines = self.get_mcu_config('DEFINES', False)
+        mcu_monitoring = defines and defines.get('HAL_WITH_MCU_MONITORING') == '1'
+        if mcu_monitoring:
+            # VBAT4
+            adc_chans[2].append((17, 252, "1", "H7 Internal VBAR4", ""))
+            analogset.add(252)
+
+            # VSENSE
+            adc_chans[2].append((18, 253, "1", "H7 Internal VSENSE", ""))
+            analogset.add(253)
+
+            # VREFINT
+            adc_chans[2].append((19, 254, "1", "H7 Internal VREFINT", ""))
+            analogset.add(254)
+
         for label in self.bylabel:
             p = self.bylabel[label]
             if not p.type.startswith('ADC'):
@@ -2242,13 +2259,17 @@ INCLUDE common.ld
         if vdd[-1] == 'U':
             vdd = vdd[:-1]
         vdd = float(vdd) * 0.01
-        f.write('#define HAL_ANALOG_PINS \\\n')
-        for (chan, analog, scale, label, portpin) in adc_chans[0]:
-            scale_str = '%.2f/4096' % vdd
-            if scale is not None and scale != '1':
-                scale_str = scale + '*' + scale_str
-            f.write('{ %2u, %2u, %12s }, /* %s %s */ \\\n' %
-                    (chan, analog, scale_str,  portpin, label))
+        if len(adc_chans[0]) > 0:
+            f.write('#define HAL_ANALOG_PINS \\\n')
+            for (chan, analog, scale, label, portpin) in adc_chans[0]:
+                scale_str = '%.2f/4096' % vdd
+                if scale is not None and scale != '1':
+                    scale_str = scale + '*' + scale_str
+                f.write('{ %2u, %2u, %12s }, /* %s %s */ \\\n' %
+                        (chan, analog, scale_str,  portpin, label))
+        else:
+            f.write('#define STM32_ADC_USE_ADC12 FALSE\n')
+
         f.write('\n\n')
         if len(adc_chans[1]) > 0:
             f.write('#define STM32_ADC_SAMPLES_SIZE 32\n')
