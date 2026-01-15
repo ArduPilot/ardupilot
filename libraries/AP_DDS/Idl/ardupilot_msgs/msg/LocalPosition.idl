@@ -1,0 +1,64 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from ardupilot_msgs/msg/LocalPosition.msg
+// generated code does not contain a copyright notice
+
+#include "geometry_msgs/msg/Twist.idl"
+#include "std_msgs/msg/Header.idl"
+
+module ardupilot_msgs {
+  module msg {
+    module LocalPosition_Constants {
+      @verbatim (language="comment", text=
+        "Position ignore flags")
+      const uint16 IGNORE_X = 1;
+      const uint16 IGNORE_Y = 2;
+      const uint16 IGNORE_Z = 4;
+      @verbatim (language="comment", text=
+        "Velocity vector ignore flags")
+      const uint16 IGNORE_VX = 8;
+      const uint16 IGNORE_VY = 16;
+      const uint16 IGNORE_VZ = 32;
+      @verbatim (language="comment", text=
+        "Acceleration/Force vector ignore flags")
+      const uint16 IGNORE_AFX = 64;
+      const uint16 IGNORE_AFY = 128;
+      const uint16 IGNORE_AFZ = 256;
+      @verbatim (language="comment", text=
+        "Force in af vector flag")
+      const uint16 FORCE = 512;
+      const uint16 IGNORE_YAW = 1024;
+      const uint16 IGNORE_YAW_RATE = 2048;
+    };
+    @verbatim (language="comment", text=
+      "Experimental REP-147 Goal Interface - Modifiend for trajectory setpoints" "\n"
+      "https://ros.org/reps/rep-0147.html#goal-interface" "\n"
+      "Coordinate frame is determined by header.frame_id:" "\n"
+      "- \"map\" or \"odom\": Earth-fixed frame (ENU convention: x=East, y=North, z=Up)" "\n"
+      "- \"base_link\": Body-fixed frame (FLU convention: x=Forward, y=Left, z=Up)")
+    struct LocalPosition {
+      std_msgs::msg::Header header;
+
+      uint16 type_mask;
+
+      float x;
+
+      float y;
+
+      @verbatim (language="comment", text=
+        "in meters, in ROS ENU convention (positive up) for map/odom frames")
+      float z;
+
+      geometry_msgs::msg::Twist velocity;
+
+      geometry_msgs::msg::Twist acceleration_or_force;
+
+      @verbatim (language="comment", text=
+        "in radians")
+      float yaw;
+
+      @verbatim (language="comment", text=
+        "in radians/s")
+      float yaw_rate;
+    };
+  };
+};
