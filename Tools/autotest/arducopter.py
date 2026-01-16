@@ -15586,6 +15586,22 @@ return update, 1000
             if pname in all_params:
                 raise ValueError(f"{pname} in fetched-all-parameters when it should have gone away")
 
+    def MAV_CMD_NAV_RETURN_TO_LAUNCH_ParameterNaNs(self):
+        '''test passing NaNs into MAV_CMD_NAV_RETURN_TO_LAUNCH'''
+        self.fly_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 10),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH,
+                p1=float("nan"),
+                p2=float("nan"),
+                p3=float("nan"),
+                p4=float("nan"),
+                x=0,
+                y=0,
+                z=float("nan"),
+            ),
+        ])
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -15713,6 +15729,7 @@ return update, 1000
             self.MAV_CMD_MISSION_START_p1_p2,
             self.ScriptingAHRSSource,
             self.CommonOrigin,
+            self.MAV_CMD_NAV_RETURN_TO_LAUNCH_ParameterNaNs,
             self.TestTetherStuck,
             self.ScriptingFlipMode,
             self.ScriptingFlyVelocity,
