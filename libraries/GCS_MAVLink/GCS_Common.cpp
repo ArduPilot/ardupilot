@@ -2968,6 +2968,37 @@ void GCS_MAVLINK::send_opticalflow()
         flowRate.x,
         flowRate.y);
 }
+void GCS_MAVLINK::send_optical_flow_rad()
+{
+    const AP_OpticalFlow *flow = AP::opticalflow();
+
+    // 1. Safety Check: If sensor is missing or broken, STOP.
+    // This prevents the "Segmentation Fault" / "No Link" crash.
+    if (flow == nullptr || !flow->healthy()) {
+        return;
+    }
+
+    // 2. Get the data
+    const Vector2f &flowRate = flow->flowRate();
+    const Vector2f &bodyRate = flow->bodyRate();
+
+    // 3. Send the message
+    mavlink_msg_optical_flow_rad_send(
+        chan,
+        AP_HAL::micros64(),        // time_usec
+        0,                         // sensor_id
+        10000,                     // integration_time_us (dummy value for now)
+        flowRate.x,                // integrated_x
+        flowRate.y,                // integrated_y
+        bodyRate.x,                // integrated_xgyro
+        bodyRate.y,                // integrated_ygyro
+        0,                         // temperature
+        flow->quality(),           // quality
+        0,                         // time_delta_distance_us
+        0,                         // distance_x
+        0                          // distance_y
+    );
+}
 #endif  // AP_OPTICALFLOW_ENABLED
 
 /*
@@ -4569,6 +4600,7 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 
 #if AP_OPTICALFLOW_ENABLED
     case MAVLINK_MSG_ID_OPTICAL_FLOW:
+    case MAVLINK_MSG_ID_OPTICAL_FLOW_RAD:
         handle_optical_flow(msg);
         break;
 #endif
@@ -6573,10 +6605,10 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
         send_opticalflow();
         break;
-    case MSG_OPTICAL_FLOW_RAD:
-        CHECK_PAYLOAD_SIZE(OPTICAL_FLOW_RAD);
-        handle_optical_flow_rad(msg);
-        break;
+    case MSG_OPTICAL_FLOW_RAD:             
+        CHECK_PAYLOAD_SIZE(OPTICAL_FLOW_RAD); 
+        send_optical_flow_rad();           
+        break;    
 #endif
 
     case MSG_ATTITUDE_TARGET:

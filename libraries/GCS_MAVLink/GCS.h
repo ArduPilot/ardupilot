@@ -367,6 +367,7 @@ public:
     void send_sim_state() const;
     void send_ahrs();
     void send_opticalflow();
+    void send_optical_flow_rad();
     virtual void send_attitude() const;
     virtual void send_attitude_quaternion() const;
     void send_autopilot_version() const;
@@ -733,6 +734,7 @@ protected:
 #endif  // AP_MAVLINKCAN_ENABLED
 
     void handle_optical_flow(const mavlink_message_t &msg);
+    void handle_optical_flow_rad(const mavlink_message_t &msg);
 
     void handle_manual_control(const mavlink_message_t &msg);
     void handle_radio_rc_channels(const mavlink_message_t &msg);
