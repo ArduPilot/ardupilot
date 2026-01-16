@@ -1358,7 +1358,14 @@ void Copter::load_parameters(void)
         AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
     }
 #endif  // HAL_GCS_ENABLED
-
+// PARAMETER_CONVERSION - Added: Nov-2025 for EK3_FLOW_DELAY
+    {
+        const AP_Param::ConversionInfo ekf3_flow_delay_conversion[] = {
+            { Parameters::k_param_NavEKF3, 23, AP_PARAM_INT8, "EK3_FLOW_DELAY" },
+        };
+        AP_Param::convert_old_parameter(&ekf3_flow_delay_conversion[0], 1.0f);
+    }
+    
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);
 }
