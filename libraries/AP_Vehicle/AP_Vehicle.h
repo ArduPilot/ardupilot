@@ -281,6 +281,11 @@ public:
      */
     virtual bool get_wp_distance_m(float &distance) const { return false; }
 
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    // return the lat/lon/alt etc of waypoint location:
+    virtual bool get_wp_location(Location &loc) const { return false; }
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+
     /*
       get the current wp bearing in degrees
       return false if failed or n/a
