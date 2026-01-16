@@ -39,7 +39,7 @@ testdir = os.path.dirname(os.path.realpath(__file__))
 SITL_START_LOCATION = mavutil.location(
     -35.362938,
     149.165085,
-    584.0805053710938,
+    586.3,
     270
 )
 
