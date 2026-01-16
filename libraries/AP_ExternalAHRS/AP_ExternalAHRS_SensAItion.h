@@ -74,9 +74,7 @@ private:
     uint32_t last_imu_pkt_ms = 0;
     uint32_t last_ins_pkt_ms = 0; // Only used in INS mode
     uint32_t last_quat_pkt_ms = 0; // Only used in INS mode
-#if AP_BARO_EXTERNALAHRS_ENABLED
     uint32_t last_baro_update_ms = 0;
-#endif
 
     // Last known values from INS packet (Packet 2)
     uint8_t  last_alignment_status = 0;
