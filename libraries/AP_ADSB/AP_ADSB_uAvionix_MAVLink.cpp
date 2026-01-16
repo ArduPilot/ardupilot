@@ -35,6 +35,11 @@ bool AP_ADSB_uAvionix_MAVLink::detect()
 
 void AP_ADSB_uAvionix_MAVLink::update()
 {
+    // if we are an in only instance then we are done here, the work below is all related to sending outputs
+    if (_frontend.get_type(_instance) != AP_ADSB::Type::uAvionix_MAVLink_InOut) {
+        return;
+    }
+
     const uint32_t now = AP_HAL::millis();
 
     // send static configuration data to transceiver, every 5s
