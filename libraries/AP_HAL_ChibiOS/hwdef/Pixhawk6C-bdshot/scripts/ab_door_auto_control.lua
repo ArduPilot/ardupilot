@@ -11,8 +11,25 @@ local CONFIG_UPDATE_INTERVAL_MS = 5000
 local RC_SWITCH_THRESHOLD = 1500
 local PWM_SAFE_MIN = 800
 local PWM_SAFE_MAX = 2200
-local MAV_CMD_NAV_VTOL_LAND = 85
-local MAV_CMD_NAV_LAND = 21
+
+-- Modes for landing
+local QMODES = {
+    [17] = true,  -- QSTABILIZE
+    [18] = true,  -- QHOVER
+    [19] = true,  -- QLOITER
+    [20] = true,  -- QLAND
+    [21] = true,  -- QRTL
+    [22] = true,  -- QAUTOTUNE
+    [23] = true,  -- QACRO
+}
+
+-- Mission commands for landing phase
+local NAV_CMDS = {
+    [17] = true, -- MAV_CMD_NAV_LOITER_UNLIM
+    [19] = true, -- MAV_CMD_NAV_LOITER_TIME
+    [31] = true, -- MAV_CMD_NAV_LOITER_TO_ALT
+    [85] = true, -- MAV_CMD_NAV_VTOL_LAND
+}
 
 -- ###############################################################################
 -- # PARAMETER DEFINITIONS
@@ -240,20 +257,9 @@ function get_tailsitter_flight_state()
     else return "TRANSITIONING" end
 end
 
-function is_in_landing_phase(current_mode, flight_state)
-    local QMODES = {
-        [11] = true,  -- RTL
-        [17] = true,  -- QSTABILIZE
-        [18] = true,  -- QHOVER
-        [19] = true,  -- QLOITER
-        [20] = true,  -- QLAND
-        [21] = true,  -- QRTL
-        [22] = true,  -- QAUTOTUNE
-        [23] = true,  -- QACRO
-    }
-    
+function is_in_landing_phase(current_mode)
     local MODES = { auto = 10 } -- other valid modes which need additional checks
-    if not current_mode or not flight_state then return false end
+    if not current_mode then return false end
 
     -- Return true for all q modes directly, regardless of pitch
     if QMODES[current_mode] then
@@ -262,7 +268,8 @@ function is_in_landing_phase(current_mode, flight_state)
 
     if current_mode == MODES.auto then
         local nav_cmd = mission:get_current_nav_id()
-        if nav_cmd == MAV_CMD_NAV_VTOL_LAND and flight_state == "VTOL" then
+        if NAV_CMDS[nav_cmd] then
+            -- valid command for landing phase
             return true
         end
     end
@@ -282,7 +289,7 @@ function run_auto_mode()
     local is_currently_in_vtol = (flight_state == "VTOL")
     local is_currently_in_fw = (flight_state == "FIXED_WING")
 
-    if is_in_landing_phase(current_mode, flight_state) then
+    if is_in_landing_phase(current_mode) then
         if state.doors_are_commanded_closed then
             log_message(MAV_SEVERITY.WARNING, "Landing confirmed - opening doors")
             open_all_doors()
