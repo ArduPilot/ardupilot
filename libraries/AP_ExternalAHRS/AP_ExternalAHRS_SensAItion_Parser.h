@@ -48,7 +48,7 @@ public:
 
     // Container for decoded data passed to Backend
     struct Measurement {
-        MeasurementType type;
+        MeasurementType type = MeasurementType::UNINITIALIZED;
         uint64_t timestamp_us;
 
         // Packet 0 (IMU) Data
@@ -91,19 +91,10 @@ public:
     // Constructor
     AP_ExternalAHRS_SensAItion_Parser(ConfigMode mode);
 
-    // Parse 'data_size' bytes from 'data'. Call 'handler' for EVERY valid packet found.
-    template <typename Functor>
-    void parse_stream(const uint8_t* data, size_t data_size, Functor& handler)
-    {
-        Measurement m;
-        for (size_t i = 0; i < data_size; i++) {
-            if (parse_single_byte(data[i])) {
-                decode_packet(m);
-                handler(m);       // <--- Fire the event!
-                reset_parser();   // Reset for next packet in same buffer
-            }
-        }
-    }
+    // Parse at most 'data_size' bytes from 'data', return # of bytes parsed.
+    // If we parsed less than 'data_size' bytes, 'meas' contains a measurement,
+    // otherwise it contains a valid measurement OR is uninitialized.
+    size_t parse_stream(const uint8_t* data, size_t data_size, Measurement& meas);
 
     // Number of parsed full length buffers that did not contain a valid packet
     uint32_t get_parse_errors() const
@@ -140,7 +131,7 @@ private:
 
     // Core Logic
     void reset_parser(); // Does not reset packet and parse error counters
-    bool parse_single_byte(uint8_t byte);
+    bool parse_single_byte(uint8_t byte); // Return true if it was the last byte of a valid packet
     void handle_invalid_packet(); // Robust error recovery (memmove)
     bool buffer_contains_valid_packet() const;
     bool validate_checksum() const;
@@ -153,6 +144,9 @@ private:
     void decode_ins(const uint8_t* payload, Measurement& measurement);
 
     //Helpers
+    int32_t big_endian_to_int32(const uint8_t* bytes) const;
+    uint32_t big_endian_to_uint32(const uint8_t* bytes) const;
+    int16_t big_endian_to_int16(const uint8_t* bytes) const;
     uint16_t calculate_gps_week(uint16_t year, uint8_t month, uint8_t day);
 
     // Members

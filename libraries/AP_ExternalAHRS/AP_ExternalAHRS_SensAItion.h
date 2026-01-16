@@ -54,44 +54,47 @@ public:
 private:
     mutable HAL_Semaphore sem_handle;
 
-    // All member variables below are accessed from inside the thread
-    // and should be protected by the semaphore above!
+    // The member variables below are accessed both from our own
+    // thread and the main thread and should be protected
+    // by the semaphore above!
     // =======================================================
-    AP_ExternalAHRS::ins_data_message_t _ins;
-    AP_ExternalAHRS::mag_data_message_t _mag;
-    AP_ExternalAHRS::baro_data_message_t _baro;
-    AP_ExternalAHRS::gps_data_message_t _gps;
-
+    AP_ExternalAHRS::ins_data_message_t ins;
+    AP_ExternalAHRS::mag_data_message_t mag;
+    AP_ExternalAHRS::baro_data_message_t baro;
+    AP_ExternalAHRS::gps_data_message_t gps;
     AP_ExternalAHRS_SensAItion_Parser parser;
 
     // UART
     AP_HAL::UARTDriver *uart = nullptr;
-    uint32_t baudrate = 460800;
-    int8_t port_num = -1;
     uint8_t buffer[AP_ExternalAHRS_SensAItion_Parser::MAX_PACKET_SIZE];
 
     bool setup_complete = false;
 
     // Persistent State
-    uint32_t _last_imu_pkt_ms = 0;
-    uint32_t _last_ins_pkt_ms = 0; // Only used in INS mode
-    uint32_t _last_quat_pkt_ms = 0; // Only used in INS mode
+    uint32_t last_imu_pkt_ms = 0;
+    uint32_t last_ins_pkt_ms = 0; // Only used in INS mode
+    uint32_t last_quat_pkt_ms = 0; // Only used in INS mode
+#if AP_BARO_EXTERNALAHRS_ENABLED
+    uint32_t last_baro_update_ms = 0;
+#endif
 
     // Last known values from INS packet (Packet 2)
-    uint8_t  _last_alignment_status = 0;
-    uint8_t  _last_gnss1_fix = 0;
-    uint8_t  _last_gnss2_fix = 0;
-    uint8_t  _last_sensor_valid = 0;
-    float    _last_h_pos_quality = 999.9f;
-    float    _last_v_pos_quality = 999.9f;
-    float    _last_vel_quality = 999.9f;
-    uint32_t _last_error_flags = 0;
+    uint8_t  last_alignment_status = 0;
+    uint8_t  last_gnss1_fix = 0;
+    uint8_t  last_gnss2_fix = 0;
+    uint8_t  last_sensor_valid = 0;
+    float    last_h_pos_quality = 999.9f;
+    float    last_v_pos_quality = 999.9f;
+    float    last_vel_quality = 999.9f;
+    uint32_t last_error_flags = 0;
 
     // End of member variables that should be protected by semaphore
     // ==========================================================
 
-    // Only read from inside the thread, does not need semaphore
-    bool _ins_mode_enabled = false;
+    // Read-only after construction, do not need semaphore
+    bool ins_mode_enabled = false;
+    uint32_t baudrate = 460800;
+    int8_t port_num = -1;
 
     void update_thread();
     bool check_uart();

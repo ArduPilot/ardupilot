@@ -299,21 +299,6 @@ static bool cmp_packages(Measurement& in, Parser::Measurement& out)
     return true;
 }
 
-class Measurement_Buffer
-{
-public:
-    // Handler that receives new measurements
-    void operator()(const AP_ExternalAHRS_SensAItion_Parser::Measurement& meas)
-    {
-        assert (no_of_messages < MAX_NO_OF_MESSAGES);
-        measurements[no_of_messages++] = meas;
-    }
-
-    const static int MAX_NO_OF_MESSAGES = 10;
-    AP_ExternalAHRS_SensAItion_Parser::Measurement measurements[MAX_NO_OF_MESSAGES];
-    int no_of_messages = 0;
-};
-
 // ---------------------------------------------------------------------------
 // LEGACY MODE TESTS
 // ---------------------------------------------------------------------------
@@ -327,12 +312,12 @@ TEST(SensAItionParser, Legacy_IMU_HappyPath)
     fill_simulated_packet(buffer, len, in, Parser::ConfigMode::IMU);
     EXPECT_EQ(len, 38u);
 
-    Measurement_Buffer mbuf;
-    parser.parse_stream(buffer, len, mbuf);
+    Parser::Measurement meas;
+    const auto parsed_bytes = parser.parse_stream(buffer, len, meas);
 
-    EXPECT_EQ(mbuf.no_of_messages, 1);
-    EXPECT_EQ(mbuf.measurements[0].type, Parser::MeasurementType::IMU);
-    EXPECT_TRUE(cmp_packages(in, mbuf.measurements[0]));
+    EXPECT_EQ(parsed_bytes, 38u);
+    EXPECT_EQ(meas.type, Parser::MeasurementType::IMU);
+    EXPECT_TRUE(cmp_packages(in, meas));
 }
 
 TEST(SensAItionParser, Legacy_RejectsInvalidChecksum)
@@ -345,8 +330,8 @@ TEST(SensAItionParser, Legacy_RejectsInvalidChecksum)
     buffer[len - 1] += 1;
     uint32_t err_start = parser.get_parse_errors();
 
-    Measurement_Buffer mbuf;
-    parser.parse_stream(buffer, len, mbuf);
+    Parser::Measurement meas;
+    parser.parse_stream(buffer, len, meas);
 
     EXPECT_GT(parser.get_parse_errors(), err_start);
 }
@@ -360,8 +345,8 @@ TEST(SensAItionParser, Legacy_RejectsTooSmallBuffer)
     fill_simulated_packet(buffer, len, in, Parser::ConfigMode::IMU);
     uint32_t valid_start = parser.get_valid_packets();
 
-    Measurement_Buffer mbuf;
-    parser.parse_stream(buffer, len - 5, mbuf);
+    Parser::Measurement meas;
+    parser.parse_stream(buffer, len - 5, meas);
 
     EXPECT_EQ(parser.get_valid_packets(), valid_start);
 }
@@ -375,9 +360,9 @@ TEST(SensAItionParser, Legacy_ValidPacketsCount)
     fill_simulated_packet(buffer, len, in, Parser::ConfigMode::IMU);
     uint32_t valid_start = parser.get_valid_packets();
 
-    Measurement_Buffer mbuf;
+    Parser::Measurement meas;
     for (int i = 0; i < 5; i++) {
-        parser.parse_stream(buffer, len, mbuf);
+        parser.parse_stream(buffer, len, meas);
     }
 
     EXPECT_EQ(parser.get_valid_packets(), valid_start + 5);
@@ -398,9 +383,9 @@ TEST(SensAItionParser, Legacy_FalseHeaderInPayload)
     packet[len - 1] = checksum;
     uint32_t start_valid = parser.get_valid_packets();
 
-    Measurement_Buffer mbuf;
+    Parser::Measurement meas;
     for (size_t i = 0; i < len; i++) {
-        parser.parse_stream(&packet[i], 1, mbuf);
+        parser.parse_stream(&packet[i], 1, meas);
     }
 
     EXPECT_EQ(parser.get_valid_packets(), start_valid + 1);
@@ -422,9 +407,9 @@ TEST(SensAItionParser, Legacy_FragmentedHeaderRecovery)
     slen += 38;
     uint32_t start_valid = parser.get_valid_packets();
 
-    Measurement_Buffer mbuf;
+    Parser::Measurement meas;
     for (size_t i = 0; i < slen; i++) {
-        parser.parse_stream(&stream[i], 1, mbuf);
+        parser.parse_stream(&stream[i], 1, meas);
     }
 
     EXPECT_GE(parser.get_valid_packets() - start_valid, 1u);
@@ -444,12 +429,13 @@ TEST(SensAItionParser, Interleaved_IMU_HappyPath)
     fill_simulated_packet(buffer, len, in, Parser::ConfigMode::INTERLEAVED_INS);
     EXPECT_EQ(len, 39u);
 
-    Measurement_Buffer mbuf;
-    parser.parse_stream(buffer, len, mbuf);
+    Parser::Measurement meas;
+    const auto parsed_bytes = parser.parse_stream(buffer, len, meas);
 
-    EXPECT_EQ(mbuf.measurements[0].type, Parser::MeasurementType::IMU);
-    EXPECT_NEAR(mbuf.measurements[0].acceleration_mss.x, 2.5f, 0.01f);
-    EXPECT_TRUE(cmp_packages(in, mbuf.measurements[0]));
+    EXPECT_EQ(parsed_bytes, 39u);
+    EXPECT_EQ(meas.type, Parser::MeasurementType::IMU);
+    EXPECT_NEAR(meas.acceleration_mss.x, 2.5f, 0.01f);
+    EXPECT_TRUE(cmp_packages(in, meas));
 }
 
 TEST(SensAItionParser, Interleaved_INS_HappyPath)
@@ -461,11 +447,11 @@ TEST(SensAItionParser, Interleaved_INS_HappyPath)
     fill_simulated_packet(buffer, len, in, Parser::ConfigMode::INTERLEAVED_INS);
     EXPECT_EQ(len, 72u); // Verified
 
-    Measurement_Buffer mbuf;
-    parser.parse_stream(buffer, len, mbuf);
+    Parser::Measurement meas;
+    parser.parse_stream(buffer, len, meas);
 
-    EXPECT_EQ(mbuf.measurements[0].type, Parser::MeasurementType::INS);
-    EXPECT_TRUE(cmp_packages(in, mbuf.measurements[0]));
+    EXPECT_EQ(meas.type, Parser::MeasurementType::INS);
+    EXPECT_TRUE(cmp_packages(in, meas));
 }
 
 TEST(SensAItionParser, Interleaved_InvalidID)
@@ -474,8 +460,8 @@ TEST(SensAItionParser, Interleaved_InvalidID)
     uint8_t bad[] = { 0xFA, 0x99, 0x00, 0x00 };
     uint32_t start_err = parser.get_parse_errors();
 
-    Measurement_Buffer mbuf;
-    parser.parse_stream(bad, 4, mbuf);
+    Parser::Measurement meas;
+    parser.parse_stream(bad, 4, meas);
 
     EXPECT_GT(parser.get_parse_errors(), start_err);
 }
@@ -502,16 +488,19 @@ TEST(SensAItionParser, Handle_Interleaved_Packets)
     fill_simulated_packet(&stream[len], imu_len, m_imu, Parser::ConfigMode::INTERLEAVED_INS);
     len += imu_len;
 
-    // Feed the combined buffer to parse_bytes
-    Measurement_Buffer mbuf;
-    parser.parse_stream(stream, len, mbuf);
+    // Parse first packet
+    Parser::Measurement meas;
+    auto parsed_bytes = parser.parse_stream(stream, len, meas);
 
-    // VERIFY: Did we call the handler once for each packet?
-    EXPECT_EQ(mbuf.no_of_messages, 2);
-    EXPECT_EQ(mbuf.measurements[0].type, Parser::MeasurementType::INS);
-    EXPECT_TRUE(cmp_packages(m_ins, mbuf.measurements[0]));
-    EXPECT_EQ(mbuf.measurements[1].type, Parser::MeasurementType::IMU);
-    EXPECT_TRUE(cmp_packages(m_imu, mbuf.measurements[1]));
+    EXPECT_EQ(parsed_bytes, ins_len);
+    EXPECT_EQ(meas.type, Parser::MeasurementType::INS);
+    EXPECT_TRUE(cmp_packages(m_ins, meas));
+
+    // Parse second packet
+    parsed_bytes = parser.parse_stream(&stream[parsed_bytes], len - parsed_bytes, meas);
+    EXPECT_EQ(parsed_bytes, imu_len);
+    EXPECT_EQ(meas.type, Parser::MeasurementType::IMU);
+    EXPECT_TRUE(cmp_packages(m_imu, meas));
 }
 
 TEST(SensAItionParser, Interleaved_MixedStream_Transitions)
@@ -534,13 +523,16 @@ TEST(SensAItionParser, Interleaved_MixedStream_Transitions)
     fill_simulated_packet(&stream[len], part_len, m_ins, Parser::ConfigMode::INTERLEAVED_INS);
     len += part_len;
 
-    Measurement_Buffer mbuf;
-    parser.parse_stream(stream, len, mbuf);
+    Parser::Measurement meas;
+    auto parsed_bytes = parser.parse_stream(stream, len, meas);
+    EXPECT_TRUE(cmp_packages(m_imu, meas));
 
-    EXPECT_EQ(mbuf.no_of_messages, 3);
-    EXPECT_TRUE(cmp_packages(m_imu, mbuf.measurements[0]));
-    EXPECT_TRUE(cmp_packages(m_ahrs, mbuf.measurements[1]));
-    EXPECT_TRUE(cmp_packages(m_ins, mbuf.measurements[2]));
+    parsed_bytes += parser.parse_stream(&stream[parsed_bytes], len - parsed_bytes, meas);
+    EXPECT_TRUE(cmp_packages(m_ahrs, meas));
+
+    parsed_bytes += parser.parse_stream(&stream[parsed_bytes], len - parsed_bytes, meas);
+    EXPECT_EQ(parsed_bytes, len);
+    EXPECT_TRUE(cmp_packages(m_ins, meas));
 }
 
 TEST(SensAItionParser, Interleaved_INS_Fragmentation)
@@ -551,15 +543,14 @@ TEST(SensAItionParser, Interleaved_INS_Fragmentation)
     size_t len = 100;
     fill_simulated_packet(packet, len, in, Parser::ConfigMode::INTERLEAVED_INS);
 
-    Measurement_Buffer mbuf;
+    Parser::Measurement meas;
     // Parse all but one byte
-    parser.parse_stream(packet, len - 1, mbuf);
-    EXPECT_EQ(mbuf.no_of_messages, 0);
+    auto parsed_bytes = parser.parse_stream(packet, len - 1, meas);
+    EXPECT_EQ(meas.type, Parser::MeasurementType::UNINITIALIZED);
 
     // Then parse the finishing byte of the message
-    parser.parse_stream(&packet[len - 1], 1, mbuf);
-    EXPECT_EQ(mbuf.no_of_messages, 1);
-    EXPECT_EQ(mbuf.measurements[0].type, Parser::MeasurementType::INS);
+    parsed_bytes += parser.parse_stream(&packet[parsed_bytes], len - parsed_bytes, meas);
+    EXPECT_EQ(meas.type, Parser::MeasurementType::INS);
 }
 
 TEST(SensAItionParser, Interleaved_Data_StressTest)
@@ -572,10 +563,10 @@ TEST(SensAItionParser, Interleaved_Data_StressTest)
     size_t len = 100;
     fill_simulated_packet(buffer, len, in, Parser::ConfigMode::INTERLEAVED_INS);
 
-    Measurement_Buffer mbuf;
-    parser.parse_stream(buffer, len, mbuf);
-    EXPECT_EQ(mbuf.measurements[0].location.lat, -593293230);
-    EXPECT_NEAR(mbuf.measurements[0].velocity_ned.x, -15.5f, 0.01f);
+    Parser::Measurement meas;
+    parser.parse_stream(buffer, len, meas);
+    EXPECT_EQ(meas.location.lat, -593293230);
+    EXPECT_NEAR(meas.velocity_ned.x, -15.5f, 0.01f);
 }
 
 TEST(SensAItionParser, Interleaved_NoiseRecovery)
@@ -589,11 +580,10 @@ TEST(SensAItionParser, Interleaved_NoiseRecovery)
     memset(stream, 0xEE, 20);
     memcpy(&stream[20], valid, len);
 
-    Measurement_Buffer mbuf;
-    parser.parse_stream(stream, len + 20, mbuf);
+    Parser::Measurement meas;
+    parser.parse_stream(stream, len + 20, meas);
 
-    EXPECT_EQ(mbuf.no_of_messages, 1);
-    EXPECT_EQ(mbuf.measurements[0].type, Parser::MeasurementType::INS);
+    EXPECT_EQ(meas.type, Parser::MeasurementType::INS);
 }
 
 TEST(SensAItionParser, Legacy_IMU_PartialStream)
@@ -606,13 +596,12 @@ TEST(SensAItionParser, Legacy_IMU_PartialStream)
     size_t len = 20 * chunk_size;
     fill_simulated_packet(packet, len, in, Parser::ConfigMode::IMU);
 
-    Measurement_Buffer mbuf;
+    Parser::Measurement meas;
     for (size_t i = 0; i < len; i += chunk_size) {
-        parser.parse_stream(&packet[i], chunk_size, mbuf);
+        parser.parse_stream(&packet[i], chunk_size, meas);
     }
 
-    EXPECT_EQ(mbuf.no_of_messages, 1);
-    EXPECT_EQ(mbuf.measurements[0].type, Parser::MeasurementType::IMU);
+    EXPECT_EQ(meas.type, Parser::MeasurementType::IMU);
 }
 
 TEST(SensAItionParser, Interleaved_INS_FullFieldVerification)
@@ -650,11 +639,11 @@ TEST(SensAItionParser, Interleaved_INS_FullFieldVerification)
     size_t len = 100;
     fill_simulated_packet(buffer, len, in, Parser::ConfigMode::INTERLEAVED_INS);
 
-    Measurement_Buffer mbuf;
-    parser.parse_stream(buffer, len, mbuf);
+    Parser::Measurement meas;
+    parser.parse_stream(buffer, len, meas);
 
     // VERIFICATION
-    auto& out = mbuf.measurements[0];
+    auto& out = meas;
     EXPECT_EQ(out.type, Parser::MeasurementType::INS);
     EXPECT_EQ(out.num_sats_gnss1, in.num_sats_gnss1);
     EXPECT_EQ(out.num_sats_gnss2, in.num_sats_gnss2);
@@ -690,28 +679,28 @@ TEST(SensAItionParser, GPS_Week_Calculation_EdgeCases)
     auto in = default_measurement(Parser::MeasurementType::INS);
     uint8_t buffer[100];
     size_t len = 100;
-    Measurement_Buffer mbuf;
+    Parser::Measurement meas;
 
     // CASE 1: Leap Year (Feb 29 2024)
     // 2024-02-29 -> Week 2303
     in.year = 2024; in.month = 2; in.day = 29;
     fill_simulated_packet(buffer, len, in, Parser::ConfigMode::INTERLEAVED_INS);
-    parser.parse_stream(buffer, len, mbuf);
-    EXPECT_EQ(mbuf.measurements[0].gps_week, 2303) << "Failed Leap Year Calc";
+    parser.parse_stream(buffer, len, meas);
+    EXPECT_EQ(meas.gps_week, 2303) << "Failed Leap Year Calc";
 
     // CASE 2: No Fix -> Week Should be 0
     in.gnss1_fix = 0; // Lost fix
     in.year = 2025; in.month = 1; in.day = 1;
     fill_simulated_packet(buffer, len, in, Parser::ConfigMode::INTERLEAVED_INS);
-    parser.parse_stream(buffer, len, mbuf);
-    EXPECT_EQ(mbuf.measurements[1].gps_week, 0) << "Week should be 0 when fix is lost";
+    parser.parse_stream(buffer, len, meas);
+    EXPECT_EQ(meas.gps_week, 0) << "Week should be 0 when fix is lost";
 
-    // CASE 3: Pre-Epoch Date (e.g. 1970 - Error case)
-    in.gnss1_fix = 3;
-    in.year = 1970; in.month = 1; in.day = 1;
+    // CASE 3: Year 2000 (translates to 00 in BCD format) should be correctly handled
+    in = default_measurement(Parser::MeasurementType::INS);
+    in.year = 2000; in.month = 1; in.day = 31;
     fill_simulated_packet(buffer, len, in, Parser::ConfigMode::INTERLEAVED_INS);
-    parser.parse_stream(buffer, len, mbuf);
-    EXPECT_EQ(mbuf.measurements[2].gps_week, 0) << "Week should be 0 for pre-1980 dates";
+    parser.parse_stream(buffer, len, meas);
+    EXPECT_EQ(meas.gps_week, 1047) << "Failed converting the year 2000 to GPS week";
 }
 
 AP_GTEST_MAIN()

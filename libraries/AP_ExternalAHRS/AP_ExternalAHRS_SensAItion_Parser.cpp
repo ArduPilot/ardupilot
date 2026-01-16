@@ -15,6 +15,7 @@
 
 #include <string.h> // Required for memchr, memmove
 #include "AP_ExternalAHRS_SensAItion_Parser.h"
+#include <AP_GPS/GPS_Backend.h>
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -23,6 +24,20 @@ AP_ExternalAHRS_SensAItion_Parser::AP_ExternalAHRS_SensAItion_Parser(ConfigMode 
     config_mode(mode)
 {
     reset_parser();
+}
+
+size_t AP_ExternalAHRS_SensAItion_Parser::parse_stream(const uint8_t* data, size_t data_size, Measurement& meas)
+{
+    for (size_t i = 0; i < data_size; i++) {
+        if (parse_single_byte(data[i])) {
+            decode_packet(meas);
+            reset_parser(); // Ready for more packets in same buffer
+            return i + 1; // No of bytes parsed
+        }
+    }
+
+    meas = Measurement(); // Uninitialized
+    return data_size;
 }
 
 void AP_ExternalAHRS_SensAItion_Parser::reset_parser()
@@ -36,53 +51,59 @@ void AP_ExternalAHRS_SensAItion_Parser::reset_parser()
 // Error Handler
 void AP_ExternalAHRS_SensAItion_Parser::handle_invalid_packet()
 {
+    // Fallback if called with empty buffer, which should never happen
+    if (packet_buffer_len == 0) {
+        return;
+    }
+
     // Look for a new header byte starting from index 1 to resync
     uint8_t *p = (uint8_t *)memchr(&packet_buffer[1], HEADER_BYTE, packet_buffer_len - 1);
 
-    if (p) {
-        size_t bytes_to_discard = p - packet_buffer;
-        size_t bytes_to_keep = packet_buffer_len - bytes_to_discard;
-
-        memmove(&packet_buffer[0], p, bytes_to_keep);
-        packet_buffer_len = bytes_to_keep;
-
-        // Determine State based on Mode and remaining data
-        if (config_mode == ConfigMode::INTERLEAVED_INS) {
-            if (packet_buffer_len >= 2) {
-                // We have Header + Potential ID. Process it immediately.
-                uint8_t id = packet_buffer[1];
-                switch (static_cast<PacketID>(id)) {
-                case PacketID::IMU:
-                    target_payload_len = PAYLOAD_SIZE_IMU;
-                    parse_state = ParseState::COLLECTING_PAYLOAD;
-                    current_packet_id = PacketID::IMU;
-                    break;
-                case PacketID::AHRS:
-                    target_payload_len = PAYLOAD_SIZE_QUAT;
-                    parse_state = ParseState::COLLECTING_PAYLOAD;
-                    current_packet_id = PacketID::AHRS;
-                    break;
-                case PacketID::INS:
-                    target_payload_len = PAYLOAD_SIZE_INS;
-                    parse_state = ParseState::COLLECTING_PAYLOAD;
-                    current_packet_id = PacketID::INS;
-                    break;
-                default:
-                    // The "New" ID is also bad. Drop header and retry.
-                    reset_parser();
-                    return;
-                }
-            } else {
-                parse_state = ParseState::WAITING_ID;
-            }
-        } else {
-            // Legacy Mode
-            target_payload_len = PAYLOAD_SIZE_IMU;
-            parse_state = ParseState::COLLECTING_PAYLOAD;
-        }
-    } else {
+    if (p == nullptr) {
         // No header found, reset completely
         reset_parser();
+        return;
+    }
+
+    size_t bytes_to_discard = p - packet_buffer;
+    size_t bytes_to_keep = packet_buffer_len - bytes_to_discard;
+
+    memmove(&packet_buffer[0], p, bytes_to_keep);
+    packet_buffer_len = bytes_to_keep;
+
+    // Determine State based on Mode and remaining data
+    if (config_mode == ConfigMode::INTERLEAVED_INS) {
+        if (packet_buffer_len >= 2) {
+            // We have Header + Potential ID. Process it immediately.
+            uint8_t id = packet_buffer[1];
+            switch (static_cast<PacketID>(id)) {
+            case PacketID::IMU:
+                target_payload_len = PAYLOAD_SIZE_IMU;
+                parse_state = ParseState::COLLECTING_PAYLOAD;
+                current_packet_id = PacketID::IMU;
+                break;
+            case PacketID::AHRS:
+                target_payload_len = PAYLOAD_SIZE_QUAT;
+                parse_state = ParseState::COLLECTING_PAYLOAD;
+                current_packet_id = PacketID::AHRS;
+                break;
+            case PacketID::INS:
+                target_payload_len = PAYLOAD_SIZE_INS;
+                parse_state = ParseState::COLLECTING_PAYLOAD;
+                current_packet_id = PacketID::INS;
+                break;
+            default:
+                // The "New" ID is also bad. Drop header and retry.
+                reset_parser();
+                return;
+            }
+        } else {
+            parse_state = ParseState::WAITING_ID;
+        }
+    } else {
+        // Legacy Mode
+        target_payload_len = PAYLOAD_SIZE_IMU;
+        parse_state = ParseState::COLLECTING_PAYLOAD;
     }
 }
 
@@ -222,25 +243,25 @@ void AP_ExternalAHRS_SensAItion_Parser::decode_imu(const uint8_t* payload, Measu
 {
     // ... [Code omitted: No changes to decoders, use your existing implementation] ...
     // Accel (Bytes 0-11): 3 x Int32 (ug)
-    int32_t accel_x_ug = (int32_t)((payload[0]<<24)|(payload[1]<<16)|(payload[2]<<8)|payload[3]);
-    int32_t accel_y_ug = (int32_t)((payload[4]<<24)|(payload[5]<<16)|(payload[6]<<8)|payload[7]);
-    int32_t accel_z_ug = (int32_t)((payload[8]<<24)|(payload[9]<<16)|(payload[10]<<8)|payload[11]);
+    int32_t accel_x_ug = big_endian_to_int32(&payload[0]);
+    int32_t accel_y_ug = big_endian_to_int32(&payload[4]);
+    int32_t accel_z_ug = big_endian_to_int32(&payload[8]);
 
     // Gyro (Bytes 12-23): 3 x Int32 (udeg/s)
-    int32_t gyro_x_udegs = (int32_t)((payload[12]<<24)|(payload[13]<<16)|(payload[14]<<8)|payload[15]);
-    int32_t gyro_y_udegs = (int32_t)((payload[16]<<24)|(payload[17]<<16)|(payload[18]<<8)|payload[19]);
-    int32_t gyro_z_udegs = (int32_t)((payload[20]<<24)|(payload[21]<<16)|(payload[22]<<8)|payload[23]);
+    int32_t gyro_x_udegs = big_endian_to_int32(&payload[12]);
+    int32_t gyro_y_udegs = big_endian_to_int32(&payload[16]);
+    int32_t gyro_z_udegs = big_endian_to_int32(&payload[20]);
 
     // Temp (Bytes 24-25): 1 x Int16 (Scaled)
-    int16_t temp_raw = (int16_t)((payload[24]<<8)|payload[25]);
+    int16_t temp_raw = big_endian_to_int16(&payload[24]);
 
     // Mag (Bytes 26-31): 3 x Int16 (mGauss)
-    int16_t mag_x_mgauss = (int16_t)((payload[26]<<8)|payload[27]);
-    int16_t mag_y_mgauss = (int16_t)((payload[28]<<8)|payload[29]);
-    int16_t mag_z_mgauss = (int16_t)((payload[30]<<8)|payload[31]);
+    int16_t mag_x_mgauss = big_endian_to_int16(&payload[26]);
+    int16_t mag_y_mgauss = big_endian_to_int16(&payload[28]);
+    int16_t mag_z_mgauss = big_endian_to_int16(&payload[30]);
 
     // Baro (Bytes 32-35): 1 x Int32 (0.1 Pa)
-    int32_t baro_raw = (int32_t)((payload[32]<<24)|(payload[33]<<16)|(payload[34]<<8)|payload[35]);
+    int32_t baro_raw = big_endian_to_int32(&payload[32]);
 
     // Accel: ug -> m/s^2 (Note: 1,000,000 ug = 9.81 m/s^2 roughly)
     const float ug_to_mss = 1.0e-6f * GRAVITY_MSS;
@@ -267,10 +288,10 @@ void AP_ExternalAHRS_SensAItion_Parser::decode_imu(const uint8_t* payload, Measu
 void AP_ExternalAHRS_SensAItion_Parser::decode_ahrs(const uint8_t* payload, Measurement& measurement)
 {
     // Payload layout: W (0-3), X (4-7), Y (8-11), Z (12-15)
-    int32_t quat_w_raw = (int32_t)((payload[0]<<24)|(payload[1]<<16)|(payload[2]<<8)|payload[3]);
-    int32_t quat_x_raw = (int32_t)((payload[4]<<24)|(payload[5]<<16)|(payload[6]<<8)|payload[7]);
-    int32_t quat_y_raw = (int32_t)((payload[8]<<24)|(payload[9]<<16)|(payload[10]<<8)|payload[11]);
-    int32_t quat_z_raw = (int32_t)((payload[12]<<24)|(payload[13]<<16)|(payload[14]<<8)|payload[15]);
+    int32_t quat_w_raw = big_endian_to_int32(&payload[0]);
+    int32_t quat_x_raw = big_endian_to_int32(&payload[4]);
+    int32_t quat_y_raw = big_endian_to_int32(&payload[8]);
+    int32_t quat_z_raw = big_endian_to_int32(&payload[12]);
 
     const float scale_factor = 1.0e-6f;
 
@@ -294,28 +315,28 @@ void AP_ExternalAHRS_SensAItion_Parser::decode_ins(const uint8_t* payload, Measu
     measurement.num_sats_gnss1 = payload[3];
 
     // 4-7: Error Flags
-    measurement.error_flags = (uint32_t)((payload[4]<<24)|(payload[5]<<16)|(payload[6]<<8)|payload[7]);
+    measurement.error_flags = big_endian_to_uint32(&payload[4]);
 
     // 8: Sensor Valid
     measurement.sensor_valid = payload[8];
 
     // 9-16: Lat/Lon (1e-7 deg)
-    int32_t lat_raw = (int32_t)((payload[9]<<24)|(payload[10]<<16)|(payload[11]<<8)|payload[12]);
-    int32_t lon_raw = (int32_t)((payload[13]<<24)|(payload[14]<<16)|(payload[15]<<8)|payload[16]);
+    int32_t lat_raw = big_endian_to_int32(&payload[9]);
+    int32_t lon_raw = big_endian_to_int32(&payload[13]);
 
     // 17-28: Velocity N, E, D (mm/s)
-    int32_t vel_n_mm = (int32_t)((payload[17]<<24)|(payload[18]<<16)|(payload[19]<<8)|payload[20]);
-    int32_t vel_e_mm = (int32_t)((payload[21]<<24)|(payload[22]<<16)|(payload[23]<<8)|payload[24]);
-    int32_t vel_d_mm = (int32_t)((payload[25]<<24)|(payload[26]<<16)|(payload[27]<<8)|payload[28]);
+    int32_t vel_n_mm = big_endian_to_int32(&payload[17]);
+    int32_t vel_e_mm = big_endian_to_int32(&payload[21]);
+    int32_t vel_d_mm = big_endian_to_int32(&payload[25]);
 
     // 29-32: Altitude relative to WGS 84 ellipsoid (mm)
-    int32_t alt_raw_mm = (int32_t)((payload[29]<<24)|(payload[30]<<16)|(payload[31]<<8)|payload[32]);
+    int32_t alt_raw_mm = big_endian_to_int32(&payload[29]);
 
     // 33: Alignment Status
     measurement.alignment_status = payload[33];
 
     // 34-37: Time of week (ms)
-    measurement.time_itow_ms = (uint32_t)((payload[34]<<24)|(payload[35]<<16)|(payload[36]<<8)|payload[37]);
+    measurement.time_itow_ms = big_endian_to_uint32(&payload[34]);
 
     // 38-39: GNSS Fix
     measurement.gnss2_fix = payload[38];
@@ -327,12 +348,12 @@ void AP_ExternalAHRS_SensAItion_Parser::decode_ins(const uint8_t* payload, Measu
     uint8_t day = payload[44];
 
     // 45-68: Accuracy Metrics (mm or mm/s)
-    int32_t acc_lat_mm = (int32_t)((payload[45]<<24)|(payload[46]<<16)|(payload[47]<<8)|payload[48]);
-    int32_t acc_lon_mm = (int32_t)((payload[49]<<24)|(payload[50]<<16)|(payload[51]<<8)|payload[52]);
-    int32_t acc_vn_mm  = (int32_t)((payload[53]<<24)|(payload[54]<<16)|(payload[55]<<8)|payload[56]);
-    int32_t acc_ve_mm  = (int32_t)((payload[57]<<24)|(payload[58]<<16)|(payload[59]<<8)|payload[60]);
-    int32_t acc_vd_mm  = (int32_t)((payload[61]<<24)|(payload[62]<<16)|(payload[63]<<8)|payload[64]);
-    int32_t acc_vd_pos_mm = (int32_t)((payload[65]<<24)|(payload[66]<<16)|(payload[67]<<8)|payload[68]);
+    int32_t acc_lat_mm = big_endian_to_int32(&payload[45]);
+    int32_t acc_lon_mm = big_endian_to_int32(&payload[49]);
+    int32_t acc_vn_mm  = big_endian_to_int32(&payload[53]);
+    int32_t acc_ve_mm  = big_endian_to_int32(&payload[57]);
+    int32_t acc_vd_mm  = big_endian_to_int32(&payload[61]);
+    int32_t acc_vd_pos_mm = big_endian_to_int32(&payload[65]);
 
     // --- 2. POPULATE & CONVERT ---
     const float mm_to_cm = 0.1f;
@@ -366,50 +387,30 @@ void AP_ExternalAHRS_SensAItion_Parser::decode_ins(const uint8_t* payload, Measu
 
 }
 
-// ---------------------------------------------------------------------------
-// Helper: Calculate GPS Week from UTC Date
-// -------------------------------------------------incomplete typ--------------------------
+int32_t AP_ExternalAHRS_SensAItion_Parser::big_endian_to_int32(const uint8_t* bytes) const
+{
+    return (int32_t)((bytes[0]<<24)|(bytes[1]<<16)|(bytes[2]<<8)|bytes[3]);
+}
+
+uint32_t AP_ExternalAHRS_SensAItion_Parser::big_endian_to_uint32(const uint8_t* bytes) const
+{
+    return (uint32_t)((bytes[0]<<24)|(bytes[1]<<16)|(bytes[2]<<8)|bytes[3]);
+}
+
+int16_t AP_ExternalAHRS_SensAItion_Parser::big_endian_to_int16(const uint8_t* bytes) const
+{
+    return (int16_t)((bytes[0]<<8)|bytes[1]);
+}
+
 uint16_t AP_ExternalAHRS_SensAItion_Parser::calculate_gps_week(uint16_t year, uint8_t month, uint8_t day)
 {
-    // Sanity Check
-    if (year < 1980 || month < 1 || month > 12 || day < 1 || day > 31) {
-        return 0;
-    }
+    // Convert to BCD form (DDMMYY) - the GPS_Backend function assumes year is 20YY
+    const uint32_t bcd_date = year % 100U + month * 100U + day * 10000U;
 
-    // 1. Calculate Total Days since 1980-01-06 (GPS Epoch)
-    // We use a simple loop because we only care about ~50 years, extremely fast on MCU.
-    uint32_t total_days = 0;
+    const uint32_t bcd_time_ms = 0U;
+    uint16_t gps_week;
+    uint32_t gps_time_ms;
+    AP_GPS_Backend::BCD_to_gps_time(bcd_date, bcd_time_ms, gps_week, gps_time_ms);
 
-    // A. Add days for full years
-    for (uint16_t y = 1980; y < year; y++) {
-        bool is_leap = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0));
-        total_days += is_leap ? 366 : 365;
-    }
-
-    // B. Add days for full months in current year
-    const uint8_t days_in_month[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-    bool curr_leap = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0));
-
-    for (uint8_t m = 0; m < month - 1; m++) {
-        if (m == 1 && curr_leap) {
-            total_days += 29;
-        } else {
-            total_days += days_in_month[m];
-        }
-    }
-
-    // C. Add days in current month
-    total_days += (day - 1);
-
-    // D. Offset to Jan 6
-    // 1980-01-01 to 1980-01-06 is 5 days.
-    // If our calc started at Jan 1, we subtract 5 days to align with GPS Epoch (Jan 6).
-    // However, ensure we don't underflow if date is Jan 1-5 1980 (not possible with >2020 check).
-    if (total_days < 6) {
-        return 0;    // Should not happen for modern dates
-    }
-    total_days -= 5; // GPS Epoch starts Jan 6
-
-    // 2. Return Weeks
-    return (uint16_t)(total_days / 7);
+    return gps_week;
 }
