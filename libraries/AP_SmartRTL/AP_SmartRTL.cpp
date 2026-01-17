@@ -398,8 +398,8 @@ void AP_SmartRTL::run_background_cleanup()
 
 // routine cleanup is called regularly from run_background_cleanup
 //   simplifies the path after SMARTRTL_CLEANUP_POINT_TRIGGER points (50 points) have been added OR
-//   SMARTRTL_CLEANUP_POINT_MIN (10 points) have been added and the path has less than SMARTRTL_CLEANUP_START_MARGIN spaces (10 spaces) remaining
-//   prunes the path if the path has less than SMARTRTL_CLEANUP_START_MARGIN spaces (10 spaces) remaining
+//   SMARTRTL_CLEANUP_POINT_MIN (10 points) have been added and the path has less than SMARTRTL_CLEANUP_START_MARGIN spaces (50 spaces) remaining
+//   prunes the path if the path has less than SMARTRTL_CLEANUP_START_MARGIN spaces (50 spaces) remaining
 void AP_SmartRTL::routine_cleanup(uint16_t path_points_count, uint16_t path_points_completed_limit)
 {
     // if simplify is running, let it run to completion
@@ -730,6 +730,8 @@ bool AP_SmartRTL::remove_points_by_loops(uint16_t num_points_to_remove)
 
         if (_path_points_count > loop_num_points_to_remove) {
             _path_points_count -= loop_num_points_to_remove;
+            _simplify.path_points_count -= loop_num_points_to_remove;
+            _simplify.path_points_completed -= loop_num_points_to_remove;
             removed_points += loop_num_points_to_remove;
         } else {
             // this is an error that should never happen so deactivate
