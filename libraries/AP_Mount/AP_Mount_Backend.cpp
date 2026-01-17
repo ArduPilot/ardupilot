@@ -45,6 +45,10 @@ void AP_Mount_Backend::update()
     const bool mount_open = (_mode == MAV_MOUNT_MODE_RETRACT);
     SRV_Channels::move_servo(_open_idx, mount_open, 0, 1);
 
+#if AP_MOUNT_POI_LOCK_ENABLED
+    update_poi_lock_target();
+ #endif // AP_MOUNT_POI_LOCK_ENABLED
+
     // location exists for mode
     Location current_loc;
     switch (_mode) {
@@ -129,7 +133,7 @@ void AP_Mount_Backend::update_mnt_target_from_rc_target()
 
         // yaw angle
         mnt_target.angle_rad.yaw = radians(((yaw_in + 1.0f) * 0.5f * (_params.yaw_angle_max - _params.yaw_angle_min) + _params.yaw_angle_min));
-        
+
         // if in yaw ef lock, we use the captured and adjusted yaw_lock_heading rad to
         // adjust the yaw so that any RC yaw changes are reflected in locked heading
         if (mnt_target.angle_rad.yaw_is_ef) {
@@ -236,6 +240,62 @@ void AP_Mount_Backend::set_roi_target(const Location &target_loc)
         set_yaw_lock(true);
     }
 }
+
+#if AP_MOUNT_POI_LOCK_ENABLED
+// set poi_lock - switch to GPS Targeting mode using current gimbal view's GPS point or save poi location as target
+void AP_Mount_Backend::set_poi_lock()
+{
+    saved_mount_mode = get_mode(); //save current mount mode for the suspend_poi_lock
+    if (!roi_is_set()) {
+        mnt_target.poi_start_ms = AP_HAL::millis();
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "POI: tracking r=%.1f p=%.1f y=%.1f", degrees(mnt_target.angle_rad.roll), degrees(mnt_target.angle_rad.pitch), degrees(mnt_target.angle_rad.yaw));
+    } else {  // there is a poi target, just turn POI tracking back on
+        set_mode(MAV_MOUNT_MODE_GPS_POINT);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "POI: tracking");
+        mnt_target.poi_start_ms = 0;
+    }
+}
+
+// clear poi_lock - clear POI location and revert to default mode
+void AP_Mount_Backend::clear_poi_lock()
+{
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "POI: Cleared");
+        clear_roi_target();
+}
+
+// suspend_poi_lock - revert to saved targeting mode, if it exists and POI target exists, otherwise do nothing
+void AP_Mount_Backend::suspend_poi_lock()
+{
+    if (roi_is_set() && saved_mount_mode != MAV_MOUNT_MODE_ENUM_END) {
+        set_mode(saved_mount_mode);    // set back to mode before GPS_POINT if its been set by switch going HIGH
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "POI: Revert mode,target saved");;
+    }
+}
+
+// update_poi_lock_target - tries to obtain POI location and start tracking,caller only needs to set poi_start_ms to current time to execute this
+void AP_Mount_Backend::update_poi_lock_target()
+{
+    if (mnt_target.poi_start_ms == 0) {
+        return;
+    }
+    // POI calculation is running and but will silently give up after 3 seconds normally if it does not succeed
+    // try to resolve a AuxFunc POI command to a lat/lng/alt using get_poi
+    // set up variables for get_poi call
+    Quaternion quat;
+    Location vehicle_location;
+    Location target_location;
+    // if poi available, use it and start tracking, otherwise give warning, stop poi retrieval attempts
+    if (get_poi(_instance, quat, vehicle_location, target_location)) {
+        set_roi_target(target_location);
+        mnt_target.poi_start_ms = 0;
+    } else if (AP_HAL::millis() - mnt_target.poi_start_ms > 5000) {
+        // timeout
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "POI: Failed to find poi");
+        mnt_target.poi_start_ms = 0;
+    }
+}
+
+#endif // AP_MOUNT_POI_LOCK_ENABLED
 
 // set yaw lock - sets the _yaw_lock variable and captures current earth frame heading of mount for targeting in RC Targeting mode
 void AP_Mount_Backend::set_yaw_lock(bool yaw_lock)
@@ -540,6 +600,7 @@ void AP_Mount_Backend::write_log(uint64_t timestamp_us)
         LOG_PACKET_HEADER_INIT(static_cast<uint8_t>(LOG_MOUNT_MSG)),
         time_us       : (timestamp_us > 0) ? timestamp_us : AP_HAL::micros64(),
         instance      : _instance,
+        mode          : static_cast<uint8_t>(get_mode()),
         desired_roll  : target_roll,
         actual_roll   : roll,
         desired_pitch : target_pitch,
