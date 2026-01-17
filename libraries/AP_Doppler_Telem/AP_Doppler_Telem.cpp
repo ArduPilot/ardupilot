@@ -20,6 +20,8 @@ AP_Doppler_Telem *AP_Doppler_Telem::singleton;
 AP_Doppler_Telem::AP_Doppler_Telem()
 {
     singleton = this;
+    _backend = nullptr;
+    port = nullptr;
     _doppler_parameters = &AP::vehicle()->doppler_parameters;
 }
 
@@ -64,11 +66,7 @@ bool AP_Doppler_Telem::init(const AP_SerialManager &serial_manager)
 
 void AP_Doppler_Telem::update()
 {
-    
-    if (_backend != nullptr) {
-        _backend->loop();
-    }
-    else {
+    if (_backend == nullptr) {
         return;
     }
 }
@@ -93,5 +91,4 @@ AP_Doppler_Telem *Doppler_telem()
     return AP_Doppler_Telem::get_singleton();
 }
 };
-
 
