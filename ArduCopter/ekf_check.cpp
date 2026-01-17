@@ -187,7 +187,7 @@ void Copter::failsafe_ekf_event()
     }
 
     // does this mode require position?
-    const bool no_action_in_current_mode = !copter.flightmode->requires_GPS() && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_STABILIZE);
+    const bool no_action_in_current_mode = !copter.flightmode->requires_position() && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_STABILIZE);
 
     if (report_only || landing_with_position || no_action_in_current_mode) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF Failsafe");
