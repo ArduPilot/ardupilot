@@ -274,7 +274,7 @@ void AP_AIS::send(mavlink_channel_t chan)
 }
 
 #if AP_OADATABASE_ENABLED
-// Send a AIS vessel to the object avoidance database if its postion is valid
+// Send a AIS vessel to the object avoidance database if its position is valid
 void AP_AIS::send_to_object_avoidance_database(const struct ais_vehicle_t &vessel)
 {
     // No point if database is not enabled
