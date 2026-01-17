@@ -17,6 +17,7 @@
 #include "AP_Doppler_Telem.h"
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 
 class AP_Doppler_Telem;
@@ -30,8 +31,18 @@ public:
     // parameters
     static const struct AP_Param::GroupInfo var_info[];
 
+    bool enabled() const { return _enable.get() != 0; }
+    float q_min() const { return _q_min.get(); }
+    float vel_err() const { return _vel_err.get(); }
+    float vel_err_wtr() const { return _vel_err_wtr.get(); }
+    const Vector3f &pos_offset_body() const { return _pos_offset; }
+
 private:
     // settable parameters
+    AP_Int8 _enable;
+    AP_Float _q_min;
+    AP_Float _vel_err;
+    AP_Float _vel_err_wtr;
+    AP_Vector3f _pos_offset;
     AP_Int8 _options;
 };
-

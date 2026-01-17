@@ -81,6 +81,14 @@ void AP_Doppler_Telem::send()
     }
 }
 
+bool AP_Doppler_Telem::get_velocity_body(Vector3f &vel_body_mps, uint32_t &t_ms, float &quality, DVL_LockState &lock) const
+{
+    if (_backend == nullptr) {
+        return false;
+    }
+    return _backend->get_velocity_body(vel_body_mps, t_ms, quality, lock);
+}
+
 
 
 
@@ -91,4 +99,3 @@ AP_Doppler_Telem *Doppler_telem()
     return AP_Doppler_Telem::get_singleton();
 }
 };
-

@@ -34,6 +34,8 @@ public:
     bool init(const AP_SerialManager &serial_manager);
     void update();
     void send();
+    bool get_velocity_body(Vector3f &vel_body_mps, uint32_t &t_ms, float &quality, DVL_LockState &lock) const;
+    const AP_Doppler_Parameters &parameters() const { return *_doppler_parameters; }
 
     static AP_Doppler_Telem *get_singleton(void) {
         return singleton;

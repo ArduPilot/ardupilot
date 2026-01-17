@@ -1,5 +1,6 @@
 #include "AP_Doppler_Backend.h"
 
+#include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -240,6 +241,7 @@ void AP_Doppler_Backend::parse_BS(const char *payload)
     BottomTrackShipVel.y_velocity_mm_s = parse_float(p);
     BottomTrackShipVel.z_velocity_mm_s = parse_float(p);
     BottomTrackShipVel.status          = static_cast<Message_Status>(parse_char(p));
+    last_bs_update_ms = AP_HAL::millis();
 /*
     gcs().send_text(MAV_SEVERITY_INFO,
                 "Doppler: BS[%+.2f,%+.2f,%+.2f] mm/s",
@@ -313,6 +315,7 @@ void AP_Doppler_Backend::parse_WS(const char *payload)
     WaterTrackShipVel.y_velocity_mm_s = parse_float(p);
     WaterTrackShipVel.z_velocity_mm_s = parse_float(p);
     WaterTrackShipVel.status          = static_cast<Message_Status>(parse_char(p));
+    last_ws_update_ms = AP_HAL::millis();
     gcs().send_text(MAV_SEVERITY_INFO,"WS_success");
 }
 
@@ -335,4 +338,33 @@ void AP_Doppler_Backend::parse_WD(const char *payload)
     WaterTrackEarthDist.center_distance_m   = parse_float(p);
     WaterTrackEarthDist.time_since_valid_s  = parse_float(p);
     gcs().send_text(MAV_SEVERITY_INFO,"WD_success");
+}
+
+bool AP_Doppler_Backend::get_velocity_body(Vector3f &vel_body_mps, uint32_t &t_ms, float &quality, DVL_LockState &lock) const
+{
+    lock = DVL_LockState::NO_LOCK;
+    quality = 0.0f;
+    t_ms = 0;
+
+    if (BottomTrackShipVel.status == STATUS_ACQUIRING && last_bs_update_ms != 0) {
+        vel_body_mps.x = BottomTrackShipVel.x_velocity_mm_s * 0.001f;
+        vel_body_mps.y = BottomTrackShipVel.y_velocity_mm_s * 0.001f;
+        vel_body_mps.z = BottomTrackShipVel.z_velocity_mm_s * 0.001f;
+        t_ms = last_bs_update_ms;
+        quality = 255.0f;
+        lock = DVL_LockState::BOTTOM_LOCK;
+        return true;
+    }
+
+    if (WaterTrackShipVel.status == STATUS_ACQUIRING && last_ws_update_ms != 0) {
+        vel_body_mps.x = WaterTrackShipVel.x_velocity_mm_s * 0.001f;
+        vel_body_mps.y = WaterTrackShipVel.y_velocity_mm_s * 0.001f;
+        vel_body_mps.z = WaterTrackShipVel.z_velocity_mm_s * 0.001f;
+        t_ms = last_ws_update_ms;
+        quality = 255.0f;
+        lock = DVL_LockState::WATER_TRACK;
+        return true;
+    }
+
+    return false;
 }
