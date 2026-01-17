@@ -21,6 +21,11 @@ struct {
     bool use_thrust;
 } static guided_angle_state;
 
+struct {
+    uint32_t update_time_ms;
+    float actuator[AP_MOTORS_MAX_NUM_MOTORS];
+} static guided_motor_state;
+
 struct Guided_Limit {
     uint32_t timeout_ms;        // timeout (in seconds) from the time that guided is invoked
     float alt_min_m;            // lower altitude limit in m above home (0 = no limit)
@@ -100,6 +105,10 @@ void ModeGuided::run()
     case SubMode::Angle:
         angle_control_run();
         break;
+    case SubMode::Actuator:
+        motor_control_run();
+        break;
+
     }
  }
 
@@ -136,6 +145,7 @@ bool ModeGuided::move_vehicle_on_ekf_reset() const
     case SubMode::Accel:
     case SubMode::VelAccel:
     case SubMode::Angle:
+    case SubMode::Actuator:
         // these submodes have no absolute position target so we reset the position target
         return false;
     case SubMode::WP:
@@ -304,6 +314,11 @@ void ModeGuided::posvelaccel_control_start()
     pva_control_start();
 }
 
+void ModeGuided::motor_control_start()
+{
+    guided_mode = SubMode::Actuator;
+}
+
 bool ModeGuided::is_taking_off() const
 {
     return guided_mode == SubMode::TakeOff && !takeoff_complete;
@@ -448,6 +463,7 @@ bool ModeGuided::get_wp(Location& destination) const
     case SubMode::Accel:
     case SubMode::VelAccel:
     case SubMode::PosVelAccel:
+    case SubMode::Actuator:
         break;
     }
 
@@ -600,6 +616,53 @@ void ModeGuided::set_vel_accel_NED_m(const Vector3f& vel_ned_ms, const Vector3f&
         copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_ned_m, guided_is_terrain_alt, guided_vel_target_ned_ms, guided_accel_target_ned_mss);
     }
 #endif
+}
+
+// set_actuator_mode - sets guided mode's individual motor mode
+void ModeGuided::set_actuator_mode(const float actuator[], uint8_t num_motors) {
+#if FRAME_CONFIG == MULTICOPTER_FRAME
+    if (actuator == nullptr) {
+        return;
+    }
+
+    if (num_motors > AP_MOTORS_MAX_NUM_MOTORS) {
+        return;
+    }
+
+    if (guided_mode != SubMode::Actuator) {
+        motor_control_start();
+    }
+
+    guided_motor_state.update_time_ms = millis();
+    const uint8_t copy_count = MIN(num_motors, AP_MOTORS_MAX_NUM_MOTORS);
+    memcpy(guided_motor_state.actuator, actuator, copy_count * sizeof(float));
+    if (copy_count < AP_MOTORS_MAX_NUM_MOTORS) {
+        memset(&guided_motor_state.actuator[copy_count], 0, (AP_MOTORS_MAX_NUM_MOTORS - copy_count) * sizeof(float));
+    }
+#else
+    guided_motor_state.update_time_ms = millis();
+    return;
+#endif
+}
+
+// output_to_motor - send output to the motors
+void ModeGuided::output_to_motors()
+{
+#if FRAME_CONFIG == MULTICOPTER_FRAME
+    if (guided_mode == SubMode::Actuator){
+        for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
+            if (!motors->is_motor_enabled(i)) {
+                continue;
+            }
+            guided_motor_state.actuator[i] = constrain_float(guided_motor_state.actuator[i], 0, 1);
+            motors->rc_write(i, motors->output_to_pwm(guided_motor_state.actuator[i]));
+        }
+        return;
+    }
+#endif
+
+    motors->output();
+
 }
 
 // set guided mode position and velocity target
@@ -869,6 +932,28 @@ void ModeGuided::velaccel_control_run()
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+}
+
+// checks for incoming actuator commands
+void ModeGuided::motor_control_run()
+{
+#if FRAME_CONFIG == MULTICOPTER_FRAME
+    // set actuator values to zero if no updates received for 3 seconds
+    uint32_t tnow = millis();
+    if (tnow - guided_motor_state.update_time_ms > get_timeout_ms()) {
+        for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
+            if (!motors->is_motor_enabled(i)) {
+                continue;
+            }
+
+            guided_motor_state.actuator[i] = 0;
+        }
+        // TODO: Add fallback to POS HOLD or other control in case no updates received if the vehicle is flying
+    }
+#else
+    guided_motor_state.update_time_ms = millis();
+    return;
+#endif
 }
 
 // pause_control_run - runs the guided mode pause controller
@@ -1159,6 +1244,7 @@ float ModeGuided::wp_bearing_deg() const
     case SubMode::Accel:
     case SubMode::VelAccel:
     case SubMode::Angle:
+    case SubMode::Actuator:
         // these do not have bearings
         return 0;
     }
@@ -1178,6 +1264,7 @@ float ModeGuided::crosstrack_error_m() const
     case SubMode::PosVelAccel:
         return pos_control->crosstrack_error_m();
     case SubMode::Angle:
+    case SubMode::Actuator:
         // no track to have a crosstrack to
         return 0;
     }
