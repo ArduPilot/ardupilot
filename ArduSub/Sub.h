@@ -572,6 +572,12 @@ private:
     void translate_circle_nav_rp(float &lateral_out, float &forward_out);
     void translate_pos_control_rp(float &lateral_out, float &forward_out);
 
+    // State feedback position control helper (for SF_ENABLE >= 3)
+    // Sets motor outputs directly (vertical thrust, forward, lateral, roll, pitch, yaw)
+    // Returns true if state feedback control was used, false if fallback to PID
+    bool run_state_feedback_position_controller(const Vector3f& pos_target_ned,
+                                                 const Vector3f& vel_target_ned);
+
     void stats_update();
 
     uint16_t get_pilot_speed_dn() const;
