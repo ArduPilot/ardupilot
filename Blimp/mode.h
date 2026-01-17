@@ -156,7 +156,7 @@ protected:
 
     const char *name() const override
     {
-        return "MANUAL";
+        return "Manual";
     }
     const char *name4() const override
     {
@@ -200,7 +200,7 @@ protected:
 
     const char *name() const override
     {
-        return "VELOCITY";
+        return "Velocity";
     }
     const char *name4() const override
     {
@@ -245,7 +245,7 @@ protected:
 
     const char *name() const override
     {
-        return "LOITER";
+        return "Loiter";
     }
     const char *name4() const override
     {
@@ -289,7 +289,7 @@ protected:
 
     const char *name() const override
     {
-        return "LAND";
+        return "Land";
     }
     const char *name4() const override
     {

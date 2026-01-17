@@ -1515,11 +1515,11 @@ uint8_t GCS_MAVLINK_Copter::send_available_mode(uint8_t index) const
     // Have to deal with is separately because its number and name can change depending on if were in it or not
     if (index_zero == 0) {
         mode_number = (uint8_t)Mode::Number::AUTO_RTL;
-        name = "AUTO RTL";
+        name = "Auto RTL";
 
     } else if (index_zero == 1) {
         mode_number = (uint8_t)Mode::Number::AUTO;
-        name = "AUTO";
+        name = "Auto";
 
     }
 #endif
