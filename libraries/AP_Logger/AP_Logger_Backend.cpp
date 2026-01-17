@@ -99,6 +99,7 @@ void AP_Logger_Backend::periodic_tasks()
 void AP_Logger_Backend::start_new_log_reset_variables()
 {
     _dropped = 0;
+    _last_dropped = 0;
     _startup_messagewriter->reset();
     _front.backend_starting_new_log(this);
     _formats_written.clearall();
