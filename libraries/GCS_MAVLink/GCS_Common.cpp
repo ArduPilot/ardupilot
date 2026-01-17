@@ -5533,8 +5533,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_external_wind_estimate(const mavlink_
     if (packet.param3 < 0 || packet.param3 > 360) {
         return MAV_RESULT_DENIED;
     }
-
-    AP::ahrs().set_external_wind_estimate(packet.param1, packet.param3);
+    AP::ahrs().handle_external_wind_estimate(packet.param1, packet.param2, packet.param3, 0);
     return MAV_RESULT_ACCEPTED;
 }
 #endif // AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
