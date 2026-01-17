@@ -6,6 +6,9 @@
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_IOMCU/AP_IOMCU.h>
+#include <GCS_MAVLink/GCS.h>
+#include <AP_RCMapper/AP_RCMapper.h>
+#include <RC_Channel/RC_Channel.h>
 
 extern AP_IOMCU iomcu;
 
@@ -26,6 +29,16 @@ void AP_RCProtocol_IOMCU::update()
     if (!iomcu.check_rcinput(last_iomcu_us, num_channels, rcin_values, ARRAY_SIZE(rcin_values))) {
         return;
     }
+
+    if (rc().option_is_enabled(RC_Channels::Option::PWM_CHECK_VALUE)) {
+        // Do not update if the channel PWM is outside the calibration range.
+        uint8_t pwm_ch_nums = num_channels > 15 ? num_channels - 2 : num_channels;
+        uint8_t thr_ch = AP::rcmap()->throttle() - 1;
+        if (!AP_RCProtocol::validate_rc_input_range(rcin_values, num_channels, thr_ch, pwm_ch_nums)) {
+            return;
+        }
+    }
+
     ever_seen_input = true;
     const int16_t _rssi = iomcu.get_RSSI();
 
