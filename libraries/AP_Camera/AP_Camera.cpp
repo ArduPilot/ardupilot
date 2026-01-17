@@ -500,7 +500,10 @@ bool AP_Camera::send_mavlink_message(GCS_MAVLINK &link, const enum ap_message ms
         send_video_stream_information(chan);
         break;
 #endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
-
+    case MSG_CAMERA_TRACKING_IMAGE_STATUS:
+        CHECK_PAYLOAD_SIZE2(CAMERA_TRACKING_IMAGE_STATUS);
+        send_camera_tracking_image_status(chan);
+        break;
     default:
         // should not reach this; should only be called for specific IDs
         break;
@@ -684,6 +687,19 @@ void AP_Camera::send_camera_thermal_range(mavlink_channel_t chan)
 }
 #endif
 
+// send camera tracking image status message to GCS
+void AP_Camera::send_camera_tracking_image_status(mavlink_channel_t chan)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    // call each instance
+    for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            _backends[instance]->send_camera_tracking_image_status(chan);
+        }
+    }
+}
+
 /*
   update; triggers by distance moved and camera trigger
 */
@@ -794,6 +810,77 @@ bool AP_Camera::set_tracking(uint8_t instance, TrackingType tracking_type, const
 
     // call each instance
     return backend->set_tracking(tracking_type, p1, p2);
+}
+
+#if AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+// returns true if the object to be tracked is visible in the frame
+bool AP_Camera::is_tracking_object_visible(uint8_t instance)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+
+    // call each instance
+    return backend->is_tracking_object_visible();
+}
+
+// gets the tracked object position in 0.0 - 1.0 range , x and y axis both
+bool AP_Camera::get_tracked_object_position_in_frame(uint8_t instance, Vector2f& normalized_pos, float& confidence)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+
+    // call each instance
+    return backend->get_tracked_object_position_in_frame(normalized_pos, confidence);
+}
+
+// Returns if the tracked object is into certain vicinity of the frame decided by a margin (0.0-0.5)
+// if margin is 0.5 this means full frame
+bool AP_Camera::is_tracking_object_visible_near_center(uint8_t instance, float object_follow_margin)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+
+    // call each instance
+    return backend->is_tracking_object_visible_near_center(object_follow_margin);
+}
+#endif // AP_CAMERA_OFFBOARD_TRACKING_ENABLED
+
+bool AP_Camera::get_hfov(uint8_t instance, float &hfov)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+
+    // call each instance
+    return backend->get_hfov(hfov);
+}
+
+bool AP_Camera::get_vfov(uint8_t instance, float &vfov)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+
+    // call each instance
+    return backend->get_vfov(vfov);
 }
 
 #if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
