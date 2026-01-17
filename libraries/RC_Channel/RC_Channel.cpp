@@ -943,7 +943,7 @@ const char *RC_Channel::string_for_aux_function(AUX_FUNC function) const
     return nullptr;
 }
 
-/* find string for postion */
+/* find string for position */
 const char *RC_Channel::string_for_aux_pos(AuxSwitchPos pos) const
 {
     switch (pos) {
