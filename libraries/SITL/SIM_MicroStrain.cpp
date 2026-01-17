@@ -131,10 +131,19 @@ void MicroStrain::send_imu_packet(void)
     // Add CF Quaternion field
     packet.payload[packet.payload_size++] = 0x12; // CF Quaternion Field Size
     packet.payload[packet.payload_size++] = 0x0A; // Descriptor
-    put_float(packet, fdm.quaternion.q1);
-    put_float(packet, fdm.quaternion.q2);
-    put_float(packet, fdm.quaternion.q3);
-    put_float(packet, fdm.quaternion.q4);
+
+    // Rotate quaternion from autopilot-body frame into vehicle-body frame using simulated trim
+    Quaternion quat = fdm.quaternion;
+    const Vector3f &accel_trim = _sitl->accel_trim.get();
+    if (!accel_trim.is_zero()) {
+        // Rotate from autopilot-body to vehicle-body (inverse of trim rotation)
+        quat.rotate(-accel_trim);
+    }
+
+    put_float(packet, quat.q1);
+    put_float(packet, quat.q2);
+    put_float(packet, quat.q3);
+    put_float(packet, quat.q4);
 
     packet.header[3] = packet.payload_size;
 

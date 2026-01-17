@@ -50,7 +50,12 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
 
 bool AP_AHRS_External::get_quaternion(Quaternion &quat) const
 {
-    return AP::externalAHRS().get_quaternion(quat);
+    if (!AP::externalAHRS().get_quaternion(quat)) {
+        return false;
+    }
+    // rotate from vehicle-body frame into autopilot-body frame
+    quat.rotate(AP::ahrs().get_trim());
+    return true;
 }
 
 Vector2f AP_AHRS_External::groundspeed_vector()
