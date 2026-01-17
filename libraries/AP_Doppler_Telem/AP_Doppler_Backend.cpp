@@ -18,17 +18,18 @@ bool AP_Doppler_Backend::init()
 
 bool AP_Doppler_Backend::init_serial_port()
 {
-//    if (!hal.scheduler->thread_create(
-//            FUNCTOR_BIND_MEMBER(&AP_Doppler_Backend::loop, void),
-//            "Doppler",
-//            1024,
-//            AP_HAL::Scheduler::PRIORITY_UART,
-//            1)) {
-//        return false;
-//    }
+    if (!hal.scheduler->thread_create(
+            FUNCTOR_BIND_MEMBER(&AP_Doppler_Backend::loop, void),
+            "Doppler",
+            1024,
+            AP_HAL::Scheduler::PRIORITY_UART,
+            1)) {
+        return false;
+    }
     // we don't want flow control for either protocol
     _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-    _port->begin(AP_DOPPLER_BAUD);
+    _port->begin(AP_DOPPLER_BAUD, AP_DOPPLER_BUFSIZE_RX, AP_DOPPLER_BUFSIZE_TX);
+    gcs().send_text(MAV_SEVERITY_INFO,"Doppler Telemetry Initialized");
     return true;
 }
 
@@ -42,49 +43,51 @@ void AP_Doppler_Backend::loop(void)
         return;
     }
     
+    _port->write((const uint8_t*)AP_DOPPLER_LAUNCH, 16);
 
-    if (_port->available() == 0) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Doppler: No Data");
-        return;
-    }
-
-    // 等待帧头 ':'
-    int ch;
-    while (_port->available() != 0) {
-        ch = _port->read();
-        if (ch == ':') 
-        {
-            
-            gcs().send_text(MAV_SEVERITY_WARNING, "Doppler: Find_message_head");
-            break;
-        }
-        
-    }
-
-    // 读取数据
-    char buffer[128];
-    uint8_t idx = 0;
-    while (idx < sizeof(buffer) - 1) {
+    while(true) {
         if (_port->available() == 0) {
-            break;
+            _port->write((const uint8_t*)AP_DOPPLER_LAUNCH, 16);
+            
         }
-        char c = _port->read();
-        if (c == '\n' || c == '\r') break;
-        buffer[idx++] = c;
-    }
-    buffer[idx] = '\0';
 
-    // 分发解析
-    if (strncmp(buffer, "SA", 2) == 0) parse_SA(buffer);
-    else if (strncmp(buffer, "TS", 2) == 0) parse_TS(buffer);
-    else if (strncmp(buffer, "BI", 2) == 0) parse_BI(buffer);
-    else if (strncmp(buffer, "BS", 2) == 0) parse_BS(buffer);
-    else if (strncmp(buffer, "BE", 2) == 0) parse_BE(buffer);
-    else if (strncmp(buffer, "BD", 2) == 0) parse_BD(buffer);
-    else if (strncmp(buffer, "WI", 2) == 0) parse_WI(buffer);
-    else if (strncmp(buffer, "WS", 2) == 0) parse_WS(buffer);
-    else if (strncmp(buffer, "WE", 2) == 0) parse_WE(buffer);
-    else if (strncmp(buffer, "WD", 2) == 0) parse_WD(buffer);
+        int ch;
+        while (_port->available() != 0) {
+            ch = _port->read();
+            if (ch == AP_DOPPLER_START_BYTE) 
+            {
+                
+                break;
+            }
+            
+        }
+
+        // 读取数据
+        char buffer[128];
+        uint8_t idx = 0;
+        while (idx < sizeof(buffer) - 1) {
+            if (_port->available() == 0) {
+                break;
+            }
+            char c = _port->read();
+            if (c == '\n' || c == '\r') break;
+            buffer[idx++] = c;
+        }
+        buffer[idx] = '\0';
+
+        // 分发解析
+        if (strncmp(buffer, "SA", 2) == 0) parse_SA(buffer);
+        else if (strncmp(buffer, "TS", 2) == 0) parse_TS(buffer);
+        else if (strncmp(buffer, "BI", 2) == 0) parse_BI(buffer);
+        else if (strncmp(buffer, "BS", 2) == 0) parse_BS(buffer);
+        else if (strncmp(buffer, "BE", 2) == 0) parse_BE(buffer);
+        else if (strncmp(buffer, "BD", 2) == 0) parse_BD(buffer);
+        else if (strncmp(buffer, "WI", 2) == 0) parse_WI(buffer);
+        else if (strncmp(buffer, "WS", 2) == 0) parse_WS(buffer);
+        else if (strncmp(buffer, "WE", 2) == 0) parse_WE(buffer);
+        else if (strncmp(buffer, "WD", 2) == 0) parse_WD(buffer);
+        hal.scheduler->delay(1);
+    }
 }
 
 
@@ -176,7 +179,11 @@ void AP_Doppler_Backend::parse_SA(const char *payload)
     Posture_data.roll_deg  = parse_float(p);
     Posture_data.yaw_deg   = parse_float(p);
 
-    gcs().send_text(MAV_SEVERITY_INFO,"SA_success");
+        gcs().send_text(MAV_SEVERITY_INFO,
+                "Doppler: SA[%+.2f,%+.2f,%+.2f] ",
+                Posture_data.roll_deg,
+                Posture_data.pitch_deg,
+                Posture_data.yaw_deg);
 }
 
 void AP_Doppler_Backend::parse_TS(const char *payload)
@@ -211,7 +218,11 @@ void AP_Doppler_Backend::parse_BI(const char *payload)
     velocity_data.Z_velocity_m_s     = parse_float(p);
     velocity_data.velocity_error_mm_s = parse_float(p);
     velocity_data.status              = static_cast<Message_Status>(parse_char(p));
-    gcs().send_text(MAV_SEVERITY_INFO,"BI_success");
+    gcs().send_text(MAV_SEVERITY_INFO,
+                "Doppler: BI[%+.2f,%+.2f,%+.2f] mm/s",
+                velocity_data.X_velocity_m_s  ,
+                velocity_data.Y_velocity_m_s ,
+                velocity_data.Z_velocity_m_s    );
 }
 
 void AP_Doppler_Backend::parse_BS(const char *payload)
@@ -221,7 +232,11 @@ void AP_Doppler_Backend::parse_BS(const char *payload)
     BottomTrackShipVel.y_velocity_mm_s = parse_float(p);
     BottomTrackShipVel.z_velocity_mm_s = parse_float(p);
     BottomTrackShipVel.status          = static_cast<Message_Status>(parse_char(p));
-    gcs().send_text(MAV_SEVERITY_INFO,"BS_success");
+    gcs().send_text(MAV_SEVERITY_INFO,
+                "Doppler: BS[%+.2f,%+.2f,%+.2f] mm/s",
+                BottomTrackShipVel.x_velocity_mm_s  ,
+                BottomTrackShipVel.y_velocity_mm_s ,
+                BottomTrackShipVel.z_velocity_mm_s    );
 }
 
 void AP_Doppler_Backend::parse_BE(const char *payload)
@@ -231,7 +246,11 @@ void AP_Doppler_Backend::parse_BE(const char *payload)
     BottomTrackEarthVel.north_velocity_mm_s = parse_float(p);
     BottomTrackEarthVel.up_velocity_mm_s    = parse_float(p);
     BottomTrackEarthVel.status              = static_cast<Message_Status>(parse_char(p));
-    gcs().send_text(MAV_SEVERITY_INFO,"BE_success");
+    gcs().send_text(MAV_SEVERITY_INFO,
+                "Doppler: BE[%+.2f,%+.2f,%+.2f] mm/s",
+                BottomTrackEarthVel.east_velocity_mm_s  ,
+                BottomTrackEarthVel.north_velocity_mm_s ,
+                BottomTrackEarthVel.up_velocity_mm_s    );
 }
 
 void AP_Doppler_Backend::parse_BD(const char *payload)
@@ -242,7 +261,11 @@ void AP_Doppler_Backend::parse_BD(const char *payload)
     BottomTrackDistance.up_distance_m          = parse_float(p);
     BottomTrackDistance.bottom_distance_m      = parse_float(p);
     BottomTrackDistance.time_since_valid_s     = parse_float(p);
-    gcs().send_text(MAV_SEVERITY_INFO,"BD_success");
+    gcs().send_text(MAV_SEVERITY_INFO,
+                "Doppler: BD[%+.2f,%+.2f,%+.2f] m",
+                BottomTrackDistance.east_distance_m  ,
+                BottomTrackDistance.north_distance_m ,
+                BottomTrackDistance.up_distance_m    );
 }
 
 void AP_Doppler_Backend::parse_WI(const char *payload)
@@ -253,7 +276,11 @@ void AP_Doppler_Backend::parse_WI(const char *payload)
     WaterTrackInstrumentVel.z_velocity_mm_s     = parse_float(p);
     WaterTrackInstrumentVel.velocity_error_mm_s = parse_float(p);
     WaterTrackInstrumentVel.status              = static_cast<Message_Status>(parse_char(p));
-    gcs().send_text(MAV_SEVERITY_INFO,"WI_success");
+    gcs().send_text(MAV_SEVERITY_INFO,
+                "Doppler: WI[%+.2f,%+.2f,%+.2f] mm/s",
+                WaterTrackInstrumentVel.x_velocity_mm_s  ,
+                WaterTrackInstrumentVel.y_velocity_mm_s ,
+                WaterTrackInstrumentVel.z_velocity_mm_s    );
 }
 
 void AP_Doppler_Backend::parse_WS(const char *payload)

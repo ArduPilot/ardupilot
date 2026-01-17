@@ -7,6 +7,8 @@
 #define AP_DOPPLER_BAUD 115200
 #define AP_DOPPLER_BUFSIZE_RX 512
 #define AP_DOPPLER_BUFSIZE_TX 512
+#define AP_DOPPLER_START_BYTE ':'
+#define AP_DOPPLER_LAUNCH      "CS \r000000000000"  
 
 class AP_Doppler_Backend
 {
