@@ -14,7 +14,7 @@
 class AP_Airspeed_MSP : public AP_Airspeed_Backend
 {
 public:
-    AP_Airspeed_MSP(AP_Airspeed &airspeed, uint8_t instance, uint8_t msp_instance);
+    AP_Airspeed_MSP(AP_Airspeed &airspeed, class AP_Airspeed::airspeed_state &state, class AP_Airspeed_Params &params, uint8_t msp_instance);
 
     bool init(void) override {
         return true;
