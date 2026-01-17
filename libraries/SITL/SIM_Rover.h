@@ -45,6 +45,7 @@ private:
     float turning_circle = 1.8f;        // ackermann steering vehicle's minimum turn diameter in meters
     float skid_turn_rate = 140.0f;      // skid-steering vehicle's maximum turn rate in deg/sec
     bool skid_steering;                 // true if this vehicle is a skid-steering vehicle
+    bool mixed_steering;                // true if this vehicle combines ackermann and skid-steering
 
     // vectored thrust related members
     bool vectored_thrust;                   // true if vehicle uses vectored thrust (i.e. steering controls direction of thrust)
@@ -61,8 +62,7 @@ private:
     void update_omni3(const struct sitl_input &input, float delta_time);
 
     float turn_circle(float steering) const;
-    float calc_yaw_rate(float steering, float speed);
-    float calc_lat_accel(float steering_angle, float speed);
+    float calc_yaw_rate(float grnd_steering, float diff_steering, float speed);
 };
 
 } // namespace SITL
