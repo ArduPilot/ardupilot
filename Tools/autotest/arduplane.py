@@ -7214,22 +7214,24 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         if airspeed_active != [True, False]:
             raise NotAchievedException("Not using expected airspeed sensors %s" % str(airspeed_active))
 
-        # Allowing the second sensor to be used should result in a switch since its the primary
+        # Allowing the second sensor to be used should not result in a switch when armed despite the primary parameter
         self.set_parameter("ARSPD2_USE", 1)
-        self.delay_sim_time(10)
-        if airspeed_active != [False, True]:
-            raise NotAchievedException("Not using expected airspeed sensors %s" % str(airspeed_active))
-
-        # Changing the primary back to the first sensor
-        self.set_parameter("ARSPD_PRIMARY", 0)
         self.delay_sim_time(10)
         if airspeed_active != [True, False]:
             raise NotAchievedException("Not using expected airspeed sensors %s" % str(airspeed_active))
 
-        # Now stop using the first
-        self.set_parameter("ARSPD_USE", 0)
+        # Changing the primary back to the first sensor, and then again to the second
+        # Now the second can be used it should switch
+        self.set_parameter("ARSPD_PRIMARY", 0)
+        self.set_parameter("ARSPD_PRIMARY", 1)
         self.delay_sim_time(10)
         if airspeed_active != [False, True]:
+            raise NotAchievedException("Not using expected airspeed sensors %s" % str(airspeed_active))
+
+        # Now stop using the second
+        self.set_parameter("ARSPD2_USE", 0)
+        self.delay_sim_time(10)
+        if airspeed_active != [True, False]:
             raise NotAchievedException("Not using expected airspeed sensors %s" % str(airspeed_active))
 
         self.fly_home_land_and_disarm()
@@ -7239,7 +7241,15 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.start_subtest("Now testing primary arming check")
 
         # Should not be able to arm with primary sensor not set to use
-        self.assert_prearm_failure("Airspeed: not using Primary (1)")
+        self.assert_prearm_failure("Airspeed: not using Primary (2)")
+
+        self.start_subtest("Testing primary changes when disarmed")
+
+        # Now the vehicle is disarmed, enabling use for the primary sensor should result in it being used
+        self.set_parameter("ARSPD2_USE", 1)
+        self.delay_sim_time(10)
+        if airspeed_active != [False, True]:
+            raise NotAchievedException("Not using expected airspeed sensors %s" % str(airspeed_active))
 
     def RudderArmingWithArmingChecksSkipped(self):
         '''check we can't arm with rudder even if all checks are skipped'''

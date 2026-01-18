@@ -713,23 +713,48 @@ void AP_Airspeed::read(uint8_t i)
 }
 
 // Select primary sensor based on user parameters and health
-uint8_t AP_Airspeed::select_primary() const
+uint8_t AP_Airspeed::select_primary()
 {
-    // user selected primary from parameter
+    // user selected primary from parameter, track changes
     const uint8_t user_primary = primary_sensor.get();
+    const bool user_primary_changed = user_primary != last_user_primary;
+    last_user_primary = user_primary;
 
     // If user selected instance is both healthy and set to use then it is a valid primary
-    if (healthy(user_primary) && use(user_primary)) {
+    const bool user_healthy = healthy(user_primary);
+    const bool user_healthy_and_use = user_healthy && use(user_primary);
+
+    if ((user_primary_changed || !hal.util->get_soft_armed()) && user_healthy_and_use) {
+        /*
+            If user selected primary is healthy and set to use then:
+                Always change when the user changes the parameter.
+                Always change if disarmed, if armed its better to stick with the current sensor to avoid needless switching.
+
+            The EKF3 innovation check only applies to the active sensor so a bad sensor will appear good after some time because
+            the EKF is no longer using the sensor so cannot provide feedback.
+
+            We can't just stick with the current primary when disarmed due to variation in detection time.
+        */
         return user_primary;
     }
 
-    // If the currently selected primary is still valid there is no need to change
-    if (healthy(primary) && use(primary)) {
+    // If the currently selected primary is valid there is no need to change
+    const bool primary_healthy = healthy(primary);
+    if (primary_healthy && use(primary)) {
         return primary;
+    }
+
+    if (user_healthy_and_use) {
+        // The current primary is not valid, try the user set primary first
+        return user_primary;
     }
 
     // Select the first sensor which is both healthy and set to use
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if ((i == primary) || (i == user_primary)) {
+            // No need to re-check current/user primary
+            continue;
+        }
         if (healthy(i) && use(i)) {
             return i;
         }
@@ -738,17 +763,21 @@ uint8_t AP_Airspeed::select_primary() const
     // No sensor is both healthy and set to use
 
     // Continue with current primary if healthy
-    if (healthy(primary)) {
+    if (primary_healthy) {
         return primary;
     }
 
     // Use user selected instance if healthy
-    if (healthy(user_primary)) {
+    if (user_healthy) {
         return user_primary;
     }
 
     // Select the first sensor which is healthy
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if ((i == primary) || (i == user_primary)) {
+            // No need to re-check current/user primary
+            continue;
+        }
         if (healthy(i)) {
             return i;
         }
