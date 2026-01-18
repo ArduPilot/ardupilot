@@ -6628,6 +6628,39 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl() # to handle MNT_TYPE changing
         self.mount_test_body()
 
+    def MountPOIFromAuxFunction(self):
+        '''test we can lock onto a lat/lng/alt with the flick of a switch'''
+        self.install_terrain_handlers_context()
+        self.setup_servo_mount()
+        self.set_parameters({
+            "RC10_OPTION": 186,
+            "MNT1_RC_RATE": 0,
+            "TERRAIN_ENABLE": 1,
+            "SIM_TERRAIN": 1,
+        })
+        self.reboot_sitl()  # to handle MNT1_TYPE changing # to handle MNT1_TYPE changing
+        self.wait_ready_to_arm()
+
+        self.takeoff(10, mode='GUIDED')
+        self.set_rc(6, 1000)
+        self.set_rc(10, 1900)  # engage poi lock
+
+        self.progress("checking mount angles")
+        mount_roll, mount_pitch, mount_yaw, mount_yaw_is_absolute = self.get_mount_roll_pitch_yaw_deg()
+        assert -46 <= mount_pitch <= -44, f"Pitch is out of range: {mount_pitch}"
+        self.fly_guided_move_local(100, 100, 70)   # move and check that pitch and yaw track
+        mount_roll, mount_pitch, mount_yaw, mount_yaw_is_absolute = self.get_mount_roll_pitch_yaw_deg()
+        assert -17 <= mount_pitch <= -15, f"Pitch2 is out of range: {mount_pitch}"
+        assert -179 <= mount_yaw <= -176, f"Yaw2 is out of range: {mount_yaw}"
+        self.set_rc(10, 1500)  # switch to middle to return to RC target mode and check that mount reverts to initial angles
+        mount_roll, mount_pitch, mount_yaw, mount_yaw_is_absolute = self.get_mount_roll_pitch_yaw_deg()
+        assert -46 <= mount_pitch <= -44, f"Pitch3 is out of range: {mount_pitch}"
+        assert -1 <= mount_yaw <= 1, f"Yaw3 is out of range: {mount_yaw}"
+
+        self.change_mode('RTL')
+        self.wait_disarmed()
+        self.assert_at_home()
+
     def MountSolo(self):
         '''test type=2, a "Solo" mount'''
         self.set_parameters({
@@ -12893,6 +12926,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.MAV_CMD_DO_MOUNT_CONTROL,
              self.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE,
              self.AutoYawDO_MOUNT_CONTROL,
+             self.MountPOIFromAuxFunction,
              self.Button,
              self.ShipTakeoff,
              self.RangeFinder,

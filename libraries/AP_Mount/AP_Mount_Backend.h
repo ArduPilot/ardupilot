@@ -93,6 +93,17 @@ public:
     // If false (aka "follow") the gimbal's tilt is maintained in body-frame meaning it will roll with the vehicle
     void set_roll_lock(bool roll_lock) { _roll_lock = roll_lock; }
 
+#if AP_MOUNT_POI_LOCK_ENABLED
+    // set poi_lock to switch to GPS Targeting mode using current GPS point in gimbal's view or current saved poi and save entry mode for suspend function
+    void set_poi_lock();
+    // clears poi_lock and reverts to default targeting mode
+    void clear_poi_lock();
+    // reverts to saved poi entry mode but maintains poi location if set_poi_lock is called again without clearing it
+    void suspend_poi_lock();
+    // check that poi_target has been set
+    bool roi_is_set() { return !_roi_target.is_zero(); }
+#endif // AP_MOUNT_POI_LOCK_ENABLED
+
     // set angle target in degrees
     // roll and pitch are in earth-frame
     // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
@@ -381,6 +392,7 @@ protected:
         MountAngleTarget angle_rad; // angle target in radians
         MountRateTarget rate_rads;  // rate target in rad/s
         uint32_t last_rate_request_ms;
+        uint32_t poi_start_ms;  // time we started trying to find the gimbal POI for an AuxFunc::MOUNT_POI_LOCK
     } mnt_target;
     
     // RP earth frame locks accessible by backend
@@ -403,7 +415,7 @@ private:
 #endif
 
     bool _yaw_lock;                 // yaw_lock used in RC_TARGETING mode. True if the gimbal's yaw target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
-    
+
     float _yaw_lock_heading_rad;            // mount earth frame direction captured upon calling set_yaw_lock
 
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
@@ -418,6 +430,14 @@ private:
 #endif
 
     Location _roi_target;           // roi target location
+
+#if AP_MOUNT_POI_LOCK_ENABLED
+    void update_poi_lock_target();
+
+    // mount mode saved here entering poi lock for 
+    // switching poi lock back to previous mode with aux function middle position
+    MAV_MOUNT_MODE saved_mount_mode = MAV_MOUNT_MODE_ENUM_END;
+#endif // AP_MOUNT_POI_LOCK_ENABLED
 
     uint8_t _target_sysid;          // sysid to track
     Location _target_sysid_location;// sysid target location
