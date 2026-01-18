@@ -6686,7 +6686,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.reboot_sitl()
         self.wait_ready_to_arm()
 
-        self.progress("Ensure we can't arm when we are in breacnh of a polyfence")
+        self.progress("Ensure we can't arm when we are in breach of a polyfence")
         self.clear_fence()
 
         self.progress("Now create a fence we are in breach of")
@@ -7203,6 +7203,13 @@ return update()
             self.PolyFenceObjectAvoidanceAuto,
             self.PolyFenceObjectAvoidanceGuided,
             self.PolyFenceObjectAvoidanceBendyRuler,
+            # TODO test auto mission with wp outside fence is rejected or auto can't be entered
+            # TODO test mission with fence cleared on the way?
+            # TODO test auto missoin where fence added midway.
+            # TODO test how moving home affects existing home centered fence (preserve existing behavior)
+            #      should move home be rejected if it would cause a breach?
+            # TODO test with home inclusion set multiple times, consider which, if any, should be rejected.
+            # TODO test deleting home fence.
             self.SendToComponents,
             self.PolyFenceObjectAvoidanceBendyRulerEasierGuided,
             self.PolyFenceObjectAvoidanceBendyRulerEasierAuto,
