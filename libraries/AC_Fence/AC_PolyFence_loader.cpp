@@ -110,6 +110,7 @@ bool AC_PolyFence_loader::find_storage_offset_for_seq(const uint16_t seq, uint16
 #endif  // AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
     case AC_PolyFenceType::CIRCLE_INCLUSION:
     case AC_PolyFenceType::CIRCLE_EXCLUSION:
+    case AC_PolyFenceType::HOME_CIRCLE_INCLUSION:
         if (delta != 0) {
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             return false;
@@ -157,6 +158,10 @@ bool AC_PolyFence_loader::get_item(const uint16_t seq, AC_PolyFenceItem &item)
         }
         item.radius = fence_storage.read_float(offset);
         break;
+    case AC_PolyFenceType::HOME_CIRCLE_INCLUSION: {
+        item.radius = fence_storage.read_float(offset);
+        break;
+    }
 #if AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
     case AC_PolyFenceType::CIRCLE_INCLUSION_INT:
     case AC_PolyFenceType::CIRCLE_EXCLUSION_INT:
@@ -296,8 +301,13 @@ bool AC_PolyFence_loader::breached(const Location& loc, float& distance_outside_
     for (uint8_t i=0; i<_num_loaded_circle_inclusion_boundaries; i++) {
         const InclusionCircle &circle = _loaded_circle_inclusion_boundary[i];
         Location circle_center;
-        circle_center.lat = circle.point.x;
-        circle_center.lng = circle.point.y;
+        if (circle.is_home_centered()) {
+            circle_center = AP::ahrs().get_home();
+        } else {
+            circle_center.lat = circle.point.x;
+            circle_center.lng = circle.point.y;
+        }
+
         const float diff_cm = loc.get_distance(circle_center)*100.0f;
         distance_outside_fence = MAX(distance_outside_fence, diff_cm*0.01f - circle.radius);
         if (diff_cm > circle.radius * 100.0f) {
@@ -405,6 +415,7 @@ bool AC_PolyFence_loader::scan_eeprom(scan_fn_t scan_fn)
         case AC_PolyFenceType::POLYGON_EXCLUSION:
         case AC_PolyFenceType::CIRCLE_INCLUSION:
         case AC_PolyFenceType::CIRCLE_EXCLUSION:
+        case AC_PolyFenceType::HOME_CIRCLE_INCLUSION:
 #if AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
         case AC_PolyFenceType::CIRCLE_INCLUSION_INT:
         case AC_PolyFenceType::CIRCLE_EXCLUSION_INT:
@@ -443,6 +454,10 @@ bool AC_PolyFence_loader::scan_eeprom(scan_fn_t scan_fn)
             read_offset += 4; // for radius
             break;
         }
+        case AC_PolyFenceType::HOME_CIRCLE_INCLUSION:
+            // Home circle only has a radius
+            read_offset += 4; // for radius
+            break;
         case AC_PolyFenceType::RETURN_POINT:
             read_offset += 8; // for latlon
             break;
@@ -470,6 +485,7 @@ void AC_PolyFence_loader::scan_eeprom_count_fences(const AC_PolyFenceType type, 
     }
     case AC_PolyFenceType::CIRCLE_INCLUSION:
     case AC_PolyFenceType::CIRCLE_EXCLUSION:
+    case AC_PolyFenceType::HOME_CIRCLE_INCLUSION:
 #if AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
     case AC_PolyFenceType::CIRCLE_INCLUSION_INT:
     case AC_PolyFenceType::CIRCLE_EXCLUSION_INT:
@@ -516,8 +532,7 @@ void AC_PolyFence_loader::scan_eeprom_index_fences(const AC_PolyFenceType type, 
 #endif  // AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
     case AC_PolyFenceType::CIRCLE_INCLUSION:
     case AC_PolyFenceType::CIRCLE_EXCLUSION:
-        index.count = 1;
-        break;
+    case AC_PolyFenceType::HOME_CIRCLE_INCLUSION:
     case AC_PolyFenceType::RETURN_POINT:
         index.count = 1;
         break;
@@ -631,6 +646,7 @@ uint16_t AC_PolyFence_loader::sum_of_polygon_point_counts_and_returnpoint()
 #endif  // AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
         case AC_PolyFenceType::CIRCLE_INCLUSION:
         case AC_PolyFenceType::CIRCLE_EXCLUSION:
+        case AC_PolyFenceType::HOME_CIRCLE_INCLUSION:
             break;
         case AC_PolyFenceType::RETURN_POINT:
             ret += 1;
@@ -719,7 +735,7 @@ bool AC_PolyFence_loader::load_from_storage()
     { // allocate storage for circular inclusion fences:
         uint32_t count = index_fence_count(AC_PolyFenceType::CIRCLE_INCLUSION);
 #if AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
-        count += index_fence_count(AC_PolyFenceType::CIRCLE_INCLUSION_INT)
+        count += index_fence_count(AC_PolyFenceType::CIRCLE_INCLUSION_INT);
 #endif  // AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
         Debug("Fence: Allocating %u bytes for circ. inc. fences",
               (unsigned)(count * sizeof(InclusionCircle)));
@@ -734,7 +750,7 @@ bool AC_PolyFence_loader::load_from_storage()
     { // allocate storage for circular exclusion fences:
         uint32_t count = index_fence_count(AC_PolyFenceType::CIRCLE_EXCLUSION);
 #if AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
-        count += index_fence_count(AC_PolyFenceType::CIRCLE_EXCLUSION_INT)
+        count += index_fence_count(AC_PolyFenceType::CIRCLE_EXCLUSION_INT);
 #endif  // AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
         Debug("Fence: Allocating %u bytes for circ. exc. fences",
               (unsigned)(count * sizeof(ExclusionCircle)));
@@ -860,6 +876,19 @@ bool AC_PolyFence_loader::load_from_storage()
             {
                 circle.radius = fence_storage.read_float(storage_offset);
             }
+            if (!is_positive(circle.radius)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AC_Fence: non-positive circle radius");
+                storage_valid = false;
+                break;
+            }
+            _num_loaded_circle_inclusion_boundaries++;
+            break;
+        }
+        case AC_PolyFenceType::HOME_CIRCLE_INCLUSION: {
+            InclusionCircle &circle = _loaded_circle_inclusion_boundary[_num_loaded_circle_inclusion_boundaries];
+            circle.set_home_centered();
+            // now read the radius
+            circle.radius = fence_storage.read_float(storage_offset);
             if (!is_positive(circle.radius)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AC_Fence: non-positive circle radius");
                 storage_valid = false;
@@ -1035,6 +1064,17 @@ bool AC_PolyFence_loader::validate_fence(const AC_PolyFenceItem *new_items, uint
             }
             validate_latlon = true;
             break;
+        case AC_PolyFenceType::HOME_CIRCLE_INCLUSION:
+            if (expected_type_count) {
+               GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Received incorrect type (want=%u got=%u)", (unsigned)expecting_type, (unsigned)new_items[i].type);
+               return false;
+            }
+            if (!is_positive(new_items[i].radius)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Non-positive circle radius");
+                return false;
+            }
+            // Rely on the AHRS home checking.
+            break;
 
         case AC_PolyFenceType::RETURN_POINT:
             if (expected_type_count) {
@@ -1095,6 +1135,9 @@ uint16_t AC_PolyFence_loader::fence_storage_space_required(const AC_PolyFenceIte
         case AC_PolyFenceType::CIRCLE_INCLUSION:
         case AC_PolyFenceType::CIRCLE_EXCLUSION:
             ret += 12; // 4 radius, 4 lat, 4 lon
+            break;
+        case AC_PolyFenceType::HOME_CIRCLE_INCLUSION:
+            ret += 4; // radius
             break;
         case AC_PolyFenceType::RETURN_POINT:
             ret += 8; // 4 lat, 4 lon
@@ -1166,7 +1209,16 @@ bool AC_PolyFence_loader::write_fence(const AC_PolyFenceItem *new_items, uint16_
                 return false;
             }
             fence_storage.write_float(offset, new_item.radius);
-            offset += 4;
+            offset += 4; // radius is 4 bytes.
+            break;
+        }
+        case AC_PolyFenceType::HOME_CIRCLE_INCLUSION: {
+            total_vertex_count++; // useful to make number of lines in QGC file match FENCE_TOTAL
+            if (!write_type_to_storage(offset, new_item.type)) {
+                return false;
+            }
+            fence_storage.write_float(offset, new_item.radius);
+            offset += 4; // radius is 4 bytes.
             break;
         }
         case AC_PolyFenceType::RETURN_POINT:
@@ -1629,6 +1681,7 @@ bool AC_PolyFence_loader::contains_compatible_fence() const
         case AC_PolyFenceType::POLYGON_EXCLUSION:
         case AC_PolyFenceType::CIRCLE_INCLUSION:
         case AC_PolyFenceType::CIRCLE_EXCLUSION:
+        case AC_PolyFenceType::HOME_CIRCLE_INCLUSION:
             return false;
         case AC_PolyFenceType::RETURN_POINT:
             if (seen_return_point) {

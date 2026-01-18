@@ -31,6 +31,7 @@ enum class AC_PolyFenceType : uint8_t {
 #endif // #if AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
     CIRCLE_EXCLUSION      = 93,
     CIRCLE_INCLUSION      = 92,
+    HOME_CIRCLE_INCLUSION = 91,
 };
 
 // a FenceItem is just a means of passing data about an item into
@@ -69,6 +70,7 @@ public:
     // methods primarily for MissionItemProtocol_Fence to use:
     // return the total number of points stored
     uint16_t num_stored_items() const { return _eeprom_item_count; }
+    // Read from the persistent storage into an item object
     bool get_item(const uint16_t seq, AC_PolyFenceItem &item) WARN_IF_UNUSED;
 
     ///
@@ -343,8 +345,15 @@ private:
     class InclusionCircle {
     public:
         Vector2f pos_cm;    // vector offset from home in cm
-        Vector2l point;       // lat/lng of zone
+        Vector2l point;     // scaled lat/lng of zone; INT32_MAX signifies home-centered
         float radius;
+        bool is_home_centered() const WARN_IF_UNUSED {
+            return point.x == INT32_MAX && point.y == INT32_MAX;
+        }
+        void set_home_centered() {
+            point.x = INT32_MAX;
+            point.y = INT32_MAX;
+        }
     };
     InclusionCircle *_loaded_circle_inclusion_boundary;
 
