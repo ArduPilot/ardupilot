@@ -30,8 +30,10 @@ bool ModeServoTest::set_servo(uint8_t servo_num, uint16_t pwm)
         SRV_Channels::constrain_pwm(SRV_Channel::k_tracker_pitch);
     }
 
+    auto &srv = AP::srv();
     SRV_Channels::calc_pwm();
     SRV_Channels::output_ch_all();
+    srv.push();
     
     // return success
     return true;
