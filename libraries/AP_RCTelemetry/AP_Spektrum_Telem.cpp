@@ -595,7 +595,7 @@ void AP_Spektrum_Telem::calc_esc()
 	_telem.esc.tempBEC = 0xFFFF;						// Temperature, 0.1C (0-6553.4C)  0xFFFF --> "No data"
 	_telem.esc.currentBEC = 0xFF;						// BEC Current, 100mA (0-25.4A)   0xFF ----> "No data"
 	_telem.esc.voltsBEC = 0xFF;							// BEC Volts, 0.05V (0-12.70V)    0xFF ----> "No data"
-	_telem.esc.throttle = 0xFF;							// 0.5% (0-100%)                  0xFF ----> "No data"
+    _telem.esc.throttle = 0xFF;							// 0.5% (0-100%)                  0xFF ----> "No data"
 	_telem.esc.powerOut = 0xFF;							// Power Output, 0.5% (0-127%)    0xFF ----> "No data"
     _telem_pending = true;
 #endif
