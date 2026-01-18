@@ -1179,8 +1179,6 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         }
     }
 
-#pragma GCC diagnostic ignored "-Wshadow"
-
     // nextP is a temporary only used in this function, and KHP is a temporary
     // the same size only used outside of it. save memory by using KHP as nextP.
     auto& nextP = KHP;
