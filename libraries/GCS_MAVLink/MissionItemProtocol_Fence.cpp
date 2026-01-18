@@ -109,9 +109,10 @@ MAV_MISSION_RESULT MissionItemProtocol_Fence::convert_MISSION_ITEM_INT_to_AC_Pol
     }
 
     // Validate param1 is a valid finite number before processing
-    if (!isfinite(mission_item_int.param1)) {
+    if (!std::isfinite(mission_item_int.param1)) {
         return MAV_MISSION_INVALID_PARAM1;
     }
+
 
     switch (mission_item_int.command) {
     case MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION:
