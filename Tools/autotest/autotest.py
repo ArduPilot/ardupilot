@@ -855,6 +855,7 @@ if __name__ == "__main__":
                       action='store_true',
                       default=False,
                       help='Run in autotest-server mode; dangerous!')
+    parser.add_option("--discord-webhook", dest="discord_webhook", default=None, help="Discord Webhook URL for notifications")
     parser.add_option("--move-logs-on-test-failure",
                       action='store_true',
                       default=None,
@@ -1049,6 +1050,22 @@ if __name__ == "__main__":
     parser.add_option_group(group_completion)
 
     opts, args = parser.parse_args()
+
+    # --- Discord Notification (Generic) ---
+    if opts.discord_webhook:
+
+        import requests
+
+        def notify_discord():
+            try:
+                print("\n🚀 Sending Notification to Discord...")
+                requests.post(opts.discord_webhook, json={"content": "✅ ArduPilot Autotest Run Finished!"})
+                print("✅ Notification Sent!")
+            except Exception as e:
+                print(f"❌ Notification Failed: {e}")
+
+        atexit.register(notify_discord)
+    # ----------------------------------------------------
 
     # canonicalise on opts.debug:
     if opts.debug is None and opts.no_debug is None:
