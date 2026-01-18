@@ -532,10 +532,10 @@ def quaternion_error_propagation():
 
     # remove second order terms
     # we don't want the error deltas to appear in the final result
-    J.subs(dq0,0)
-    J.subs(dq1,0)
-    J.subs(dq2,0)
-    J.subs(dq3,0)
+    J = J.subs(dq0,0)
+    J = J.subs(dq1,0)
+    J = J.subs(dq2,0)
+    J = J.subs(dq3,0)
 
     # define covaraince matrix for quaternion states
     P = create_symmetric_cov_matrix(4)
@@ -545,6 +545,11 @@ def quaternion_error_propagation():
 
     # rotate quaternion covariances into rotation vector state space
     P_rot_vec = J * P_diag * J.transpose()
+    # zero off diagonals
+    for i in range(P_rot_vec.shape[0]):
+        for j in range(P_rot_vec.shape[1]):
+            if i != j:
+                P_rot_vec[i, j] = 0
     P_rot_vec_simple = cse(P_rot_vec, symbols("PS0:400"), optimizations='basic')
 
     quat_code_generator = CodeGenerator("./generated/tilt_error_cov_mat_generated.cpp")
