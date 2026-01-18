@@ -43,7 +43,6 @@ public:
 
 protected:
     static Matrix24 KHP;                  // intermediate result used for covariance updates
-    static Matrix24 nextP;                // Predicted covariance matrix before addition of process noise to diagonals
     static Vector28 Kfusion;              // intermediate fusion vector
 
     // fill all the common scratch variables with NaN on SITL
