@@ -245,7 +245,6 @@ void NavEKF3_core::InitialiseVariables()
     prevTnb.zero();
     memset(&P[0][0], 0, sizeof(P));
     memset(&KHP[0][0], 0, sizeof(KHP));
-    memset(&nextP[0][0], 0, sizeof(nextP));
     flowDataValid = false;
     rangeDataToFuse  = false;
 #if EK3_FEATURE_OPTFLOW_FUSION
@@ -1179,6 +1178,12 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
             }
         }
     }
+
+#pragma GCC diagnostic ignored "-Wshadow"
+
+    // nextP is a temporary only used in this function, and KHP is a temporary
+    // the same size only used outside of it. save memory by using KHP as nextP.
+    auto& nextP = KHP;
 
     // calculate the predicted covariance due to inertial sensor error propagation
     // we calculate the lower diagonal and copy to take advantage of symmetry
