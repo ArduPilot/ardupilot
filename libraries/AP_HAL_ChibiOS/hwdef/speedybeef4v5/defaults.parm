@@ -1,13 +1,5 @@
-# Default VTX power to on
-RELAY3_DEFAULT 0
-
-# Default Switch off
-RELAY4_DEFAULT 0
-
 # WS2812 LED
 SERVO7_FUNCTION 120
-
-NTF_LED_TYPES 257
 
 #Enable DisplayPort OSD
 OSD_TYPE2 5

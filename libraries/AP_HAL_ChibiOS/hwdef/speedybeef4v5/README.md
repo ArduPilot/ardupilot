@@ -1,6 +1,6 @@
 # SpeedyBee F405 v5 Flight Controller
 
-The SpeedyBee F405 54 is a flight controller produced by [SpeedyBee](http://www.speedybee.com/).
+The SpeedyBee F405 V5 is a flight controller produced by [SpeedyBee](http://www.speedybee.com/).
 
 ## Features
 
@@ -97,17 +97,18 @@ The CC pin is a GPIO (pin 70) and is assigned by default to RELAY2 functionality
 ## VTX power control
 
 GPIO 71 controls the VTX BEC output to pins marked "9V". Setting this GPIO high removes voltage supply to pins.
-By default RELAY3 is configured to control this pin and sets the GPIO low.
+
+By default RELAY3 is configured to control this pin and sets the GPIO low. This pin can be controlled via GCS or by RC transmitter using the :ref:`Auxiliary Function<common-auxiliary-functions>` feature.
 
 ## Programmable Power Switch
 
-GPIO 72 controls the programmable switch labeled “P+ / P−”, which outputs 5V. Setting this GPIO low disables the voltage supply to the pins.
+GPIO 72 controls the programmable switch labeled “P+ / P−”, P- in connected to GND. P+ outputs 5V. Setting this GPIO low disables the voltage supply to the P+ pin.
 
-By default, RELAY4 is configured to control this GPIO and keeps it low.
+By default, RELAY4 is configured to control this GPIO and keeps it low.This pin can be controlled via GCS or by RC transmitter using the :ref:`Auxiliary Function<common-auxiliary-functions>` feature.
 
 ## Firmware
 
-Firmware for this board can be found: here <https://firmware.ardupilot.org>\_\_ in sub-folders labeled “speedybeef4v5”.
+Firmware for this board can be found: `here <https://firmware.ardupilot.org>`__ in sub-folders labeled “speedybeef4v5”.
 
 ## Loading Firmware (you will need to compile your own firmware)
 
