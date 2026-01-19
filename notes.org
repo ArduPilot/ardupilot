@@ -1,0 +1,506 @@
+#+TITLE: Notes about Ardupilot & development
+#+AUTHOR: HGM
+#+DATE: Started 2026-01-13
+
+(I had a previous file that I accidentally lost. It had scratch about waf, the build system, etc.)
+
+* Autotest: why does it flake for me?
+test.Copter.BatteryMissing
+Hints: MAV[0].rxp, tcpdump, strace.
+** Tools/autotest/autotest.py test.Copter.BatteryMissing (from ~/ardupilot/)
+run_step(step) is the key call
+If it builds, do that.
+If it has supplimental binaries, get them.
+Finally, either autotest a whole suite of tests, or a specific one. Both call...
+** tester.autotest()!! Which is tester.run_tests()...
+init()
+wait_heartbeat()
+wait_for_initial_mode()
+set_rc_default()
+wait_for_mode_switch_poll()
+drain_mav_unparsed()
+run_one_test() = run_one_attempt() = (continued below...)
+check_rc_defaults()
+change_mode(default_mode)
+set_current_waypoint()
+drain_mav()
+drain_all_pexpects()
+set_parameter("SIM_SPEEDUP", ...)
+run test.function (which is a function). test is a Test.
+
+
+
+
+
+* SITL
+eeprom.bin is SITL's saved version of previous params, which is reused by default.
+--add-param-file=<path/to/file> for custom parameters.
+--wipe-eeprom to reset to defaults. (And this will auto-save over eeprom.bin.)
+param load <paramfile> to load a whole file of parameters at once. param save <paramfile> to save a copy.
+
+* Issue 6114:
+"Because %u expects an unsigned int, and uint8_t promotes to int in variadic calls like printf. The cast makes the argument type explicit and avoids format/diagnostic warnings about mismatched types."
+"Because we want a hard bound on the destination size. strncpy with sizeof(entry.name) guarantees no overflow, and we explicitly null‑terminate afterward. Using strlen(name) would require a separate length check anyway (to avoid overflow), plus it adds another full pass over the string."
+
+* Issue 10050: SITL battery
+Params that can change: SIM_BATT_VOLTAGE, SIM_BATT_CAP_AH. (become _sitl->... member vars. Unlike sitl->throttle.)
+Q: What's the desired behavior when a param changes mid-sim? (Nothing, reset battery, other...)
+Distribution of responsibilities & ownership: Battery, Aircraft, Frame.
+Q: Does every simulated Aircraft have a battery? Can any have an infinite battery? (Any desire to rename Aircraft?)
+(Chemistry? weight?)
+Some platforms (aircraft) overwrite?
+Aircraft -> FDM -> sitl_state...
+
+* [[https://github.com/ArduPilot/ardupilot/issues/29566][Issue 29566: DO_SET_ROI_LOCATION (195) and DO_SET_ROI_NONE (197) "gimbal device id" fields should be supported]]
+Working on it. Starting with the work by ahmedmsalah99. PR 30678.
+Ok, I don't like that solution. Going my own way.
+
+** Questions for reviewers:
+In AP_Mount::handle_command_do_mount_configure, should we base the returned value on the true/false of the sub-call?
+
+** I found a bug.
+device_id == 0 is "all mounts" per MAVLINK, but _primary instance per AP_Mount.
+I posted on the forum about them 2026-01-15.
+Answer confirmed, so I created issue 31940 (for myself) to fix in the future.
+Because RMackay said "consume gimbal id like manage pitchyaw (1000 or 287) handler", I'll lean into that to move forward.
+(Worst case, they'll all be wrong the same way, and we can refactor to the right one.)
+*** Gimbal device ID in mavlink: Different interpretations?
+**** Gimbal info (280), Gimbal manager status (281)
+Gimbal device ID that this gimbal manager is responsible for.
+Component ID of gimbal device (or 1-6 for non-MAVLink gimbal).
+Messages with same value are from the same source (instance).
+**** 282, 287, 288, 195, 196, 197, 198, 1000, 1001
+Component ID of gimbal device to address (or 1-6 for non-MAVLink gimbal), 0 for all gimbal device components.
+Send command multiple times for more than one gimbal (but not all gimbals).
+***** Looks like a copy-paste mistake:
+Some have this additional stipulation (282, 287, 288):
+"Messages with same value are from the same source (instance)."
+Fairly harmless. I'm looking into how to flag/change it.
+I reported it to the MAVLINK google group 2026-01-16.
+**** Gimbal device info (283), Gimbal device attitude status (285)
+This field is to be used if the gimbal manager and the gimbal device are the same component and hence have the same component ID.
+This field is then set to a number between 1-6.
+If the component ID is separate, this field is not required and must be set to 0.
+**** 284, 286: interestingly, does NOT have device id in it
+**** Camera info (259):
+Gimbal id of a gimbal associated with this camera.
+This is the component id of the gimbal device, or 1-6 for non mavlink gimbals.
+Use 0 if no gimbal is associated with the camera.
+** How does manage pitchyaw handler (287 or 1001?) do it?
+packet.z = "instance". (Only comment suggests otherwise...)
+instance=0 => primary. otherwise select (instance-1). (But when _primary==0, this is odd to me.)
+Tracing back EXACTLY what packet.z actually is...
++ Comes in via AP_Mount::handle_command, packet.command==MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW
++ Called by GCS_MAVLINK::handle_command_mount, receives packet and msg
++ (Aside: I think copter calls into this chain somewhere?)
++ Called by GCS_MAVLINK::handle_command_int_packet (same args)
++ Lots of callers to this... but I think I'm getting where I want at this point. Let's break open packet and msg
+*** mavlink_command_int_t &packet
+7 params (p1-4, x-z)
+uint16_t command
+uint8_t target_system (system ID)
+uint8_t target_component (component ID)
+uint8_t frame (coordinate sys)
+uint8_t current (UNUSED)
+uint8_t autocontinue (UNUSED)
+*** mavlink_message_t &msg
+checksum
+magic marker
+len of payload
+incompat_flags
+compat_flags
+seq (sequence)
+sysid (id of message sender system...)
+compid (id of the message sender component...)
+msgid (id of message in payload)
+payload ((the actual data))
+ck (checksum)
+signature
+**** Q: Why would you want this msg available?
+A: Evidently at least one backend wants to know who is sending the command and who is the (intended) receiver.
+** Commands I'm concerned with
+MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW=1000 comes through AP_Mount::handle_command... which is same, right?
+#define MAVLINK_MSG_ID_GIMBAL_MANAGER_SET_PITCHYAW 287 comes in via GCS_MAVLINK::handle_message
+*** 1 Do Set ROI Location (195) (= "set roi target")
+*** 2 Do Set ROI None (197) (= "clear")
+*** 3 Manage Pitchyaw (287. I don't think 1000 supported for copter) (already done, told to follow this pattern)
+*** 4 Manager Configure (1001) (already done, has same pattern as manage pitchyaw)
+*** 5 Mount configure? (204) (in AP_Mount::handle_command)
+*** 6 Mount control? (205) (in AP_Mount::handle_command)
+*** 7 Set ROI sysid? (198) (in AP_Mount::handle_command)
+** Should new commands to set the target (195) and clear it (197): Should they come via handle_command?
+*** Where does copter call into handle_command chain, and how is this different than where it calls into ROI target (195) & clear (197)?
+Has GCS_MAVLink_Copter to override & call into general GCS_MAVLink handle_command_mount.
+handle_command_mount called for 3--7 via a switch with aligned cases: handle_command_int_packet (handle command int).
+Q: Do 1 & 2 have int packets?
+why not for 1 & 2?
+** Ideas for improvement
+move handle_command_do_gimbal_manager_pitchyaw() logic into backend, have mount merely dispatch to backend(s).
+fix bug regarding device_id==0
+clarify naming: 'backends' vs 'gimbals' vs 'mounts' vs 'instances', and index'vs 'object'
+why do both handle_message and handle_command exist?
+** Fix in Copter
+Overrides GCS_MAVLINK with specific, routes via auto_yaw.set_roi
+** Fix in Plane
+** Fix in Sub
+Overrides with sub.mode_auto.set_auto_yaw_roi
+** Don't fix in Blimp
+(Blimp overrides with a no-op. Why is this commented? Shouldn't I update it?)
+** Fix in Rover
+** Fix in Lua scripting?
+* Issue 26892: AP_Mount: mount_open servo output should work for all backends
+Because AP_Param only supports 64 params per object, we need to represent "all params of all SRV channels" via more than one object.
+Thus SRV_Channels contains an array of SRV_Channel objects.
+It is named "obj_channels". Or maybe "channels"? (a pointer to it?) (Looks like both work, point to same thing.)
+It has 32 members.
+
+A "Function" is fundamentally an enum. Conceptually its a thing that an RC channel can do.
+
+Oh, I think this was already done! Have posted in the github issue.
+* Issue 31102: AP_Mount_Gremsy: Trying to retract the gimbal results in rapid on/off toggling of the retract flag
+This mount was renamed to AP_Mount_MAVLINK.
+The code has changed a bit... I wonder if the issue persists?
+This is as good as any chance to fire up SITL and see if I can repro the issue!
+** Repro in SITL
+SITL works (for plane) on master
+Trigger: retract the gimbal
+Observed: GIMBAL_DEVICE_SET_ATTITUDE {target_system : 1, target_component : 154, flags : 1, ...} toggles fast beween flags == 1, flags == 0.
+This is a mavlink message. How do I print these to the SITL screen?
+--mavlink-gimbal specifies both to mavlink and start_vehicle that a gimbal exists.
+
+Did it work? Does my SITL plane have a gimbal? IDK. Let's source dive.
+
+GIMBAL_DEVICE_SET_ATTITUDE (284): gimbal manager -> gimbal device
+GIMBAL_DEVICE_ATTITUDE_STATUS (285): gimbal broadcast
+
+After digging into SITL, it may require modification to test this. But I'm up for the task!
+*** Condition: natively_supports(MountTargetType::REATRACTED) must be true for my gimbal.
+** The original issue
+GIMBAL_DEVICE_SET_ATTITUDE flip-flops.
+This means AP_Mount_MAVLink is alternating between send_target_retracted and something else (probably send_target_angles).
+(aside: only other use of that flag is in get_gimbal_device_flags() which seems to be reporting GIMBAL_DEV_ATT_STATUS, not commanding)
+That is called one per call to AP_Mount_Backend::send_target_to_gimbal, where
++ natively_supports(MountTargetType::RETRACTED) is TRUE
++ mnt_target.target_type == MountTargetType::RETRACTED
+Good news: send_target_to_gimbal is called at the end of AP_Mount_Backend::update() for many (all?) backends.
+target_type gets set in update_mnt_target() (via its private internal func). If _mode == MAV_MOUNT_MODE_RETRACT.
+Good news: That is called just before send_target_to_gimbal()!!
+So how did _mode get to be MAV_MODE_RETRACT? (set_mode(), but where's that called?)
++ set_mode_to_default() where default mode is RETRACT.
++ AP_Mount::set_mode(mode) where mode is RETRACT.
++ [maybe deprecated] AP_Mount::handle_command_do_mount_configure() where packet says use mode RETRACT.
++ AP_Mount::handle_command_do_gimbal_manager_pitchyaw() where packet flags says use mode RETRACT.
++ AP_Mount::handle_gimbal_manager_set_attitude() where packet flags says use mode RETRACT.
++ AP_Mount::handle_gimbal_manager_set_pitchyaw() where packet flags says use mode RETRACT.
++ [minor] If poi was used, and we're done with that, return to previous mode.
++ [minor] If roi target was cleared, return to default mode which might be RETRACT.
++ AP_Mount_Backend::handle_command_do_mount_control() where packet says new mode is RETRACT.
+So there are multiple ways to set the _mode as RETRACT, and then the regular update does the rest.
+** Unlikely: The flags structure may be at play here. (ref: enum GIMBAL_DEVICE_FLAGS)
+lsb = RETRACT, "takes precedence over all"
+next least significant = NEUTRAL, "precedence over all except RETRACT"
+...
+** AP_Mount_Backend::update() appears to handle retraction?
+every update(), SRV_Channels::move_servo(_open_ids, /*value/*=(_mode == MAV_MOUNT_MODE_RETRACT), /*angle_min*/=0, /*angle_max*/=1)
+And this *is* called by AP_Mount_MAVLink::update(), fwiw.
+** Tracing the update function for AP_Mount_MAVLink
+SRV_Channels::move_servo() to (_mode == MODE_RETRACT). (This might move it, but not what we care about.)
+** To confirm this is not done, I should 'operate the gimbal in a normal way' and then verify no flip-flopping.
+*** Takeoff (presume retracted)
+arm throttle
+mode ... (to takeoff)
+*** Extend the gimbal (maybe with a pointing command to spot 0)
+gimbal mode gps
+*** Point gimbal at spot 1.
+<click spot> gimbal roi [lat lon alt]
+*** Point gimbal at spot 2.
+<click spot> gimbal roi [lat lon alt]
+*** Retract the gimbal. Verify no multiple-messages.
+gimbal mode retract
+*** Extend the gimbal to neutral
+gimbal mode neutral
+*** Try pointing, see if it changes mode.
+all done...
+** Preliminary step: Do the same with a solo gimbal.
+I don't think I can... but learning how to SITL the solo gimbal is good.
+** The start of my reply
+I think this issue should be closed as successful.
+In the time since this issue was created, AP_Mount_Gremsy became AP_Mount_MAVLink (https://github.com/ArduPilot/ardupilot/pull/30643).
+* MAVProxy
+see ~/MAVProxy/notes.org.
+** What messages are available to WATCH?
+*** These 28 come in periodic fashion
+**** AHRS
+omegaIx : -0.00356
+omegaIy : -0.00364
+omegaIz : -0.00386
+accel_weight : 0.0
+renorm_val : 0.0
+error_rp : 0.00231
+error_yaw : 0.00085
+**** AHRS2
+roll : -0.00147
+pitch : -0.00170
+yaw : -0.11768
+altitude : 624.04998
+lat : -353632623
+lng : 1491652377
+**** ATTITUDE (30)
+time_boot_ms : 366420
+roll : 3.28124e-05
+pitch : -0.00023
+yaw : -0.12884
+rollspeed : 0.00168
+pitchspeed : 0.00107
+yawspeed : -0.00035
+**** GLOBAL_POSITION_INT (33)
+time_boot_ms : 366420
+lat : -353632622
+lon : 1491652376
+alt : 624070
+relative_alt : 40000
+vx : 1
+vy : -1
+vz : 0
+hdg : 35262
+**** VFR_HUD (74)
+airspeed : 0.02051
+groundspeed : 0.02051
+heading : 352
+throttle : 36
+alt : 624.07000
+climb : -5.69889e-05
+**** SYS_STATUS (1)
+onboard_control_sensors_present : 1399979055
+onboard_control_sensors_enabled : 1398930479
+onboard_control_sensors_health : 1467087919
+load : 0
+voltage_battery : 12600
+current_battery : 2813
+battery_remaining : 47
+drop_rate_comm : 0
+errors_comm : 0
+errors_count1 : 0
+errors_count2 : 0
+errors_count3 : 0
+errors_count4 : 0
+**** POWER_STATUS (125)
+Vcc : 5000
+Vservo : 0
+flags : 0
+**** MEMINFO
+brkval : 0
+freemem : 65535
+freemem32 : 524288
+**** NAV_CONTROLLER_OUTPUT
+nav_roll : -0.00536
+nav_pitch : -0.01270
+nav_bearing : -7
+target_bearing : 0
+wp_dist : 0
+alt_error : 2.92524e-05
+aspd_error : 0.0
+xtrack_error : 0.01967
+**** MISSION_CURRENT
+seq : 0
+total : 0
+mission_state : 1
+mission_mode : 0
+**** SERVO_OUTPUT_RAW
+time_usec : 366420040
+port : 0
+servo1_raw : 1592
+servo2_raw : 1591
+servo3_raw : 1591
+servo4_raw : 1592
+servo5_raw : 0
+servo6_raw : 0
+servo7_raw : 0
+servo8_raw : 0
+servo9_raw : 0
+servo10_raw : 0
+servo11_raw : 0
+servo12_raw : 0
+servo13_raw : 0
+servo14_raw : 0
+servo15_raw : 0
+servo16_raw : 0
+**** RC_CHANNELS
+time_boot_ms : 366420
+chancount : 8
+chan1_raw : 1500
+chan2_raw : 1500
+chan3_raw : 1000
+chan4_raw : 1500
+chan5_raw : 1800
+chan6_raw : 1000
+chan7_raw : 1000
+chan8_raw : 1800
+chan9_raw : 0
+chan10_raw : 0
+chan11_raw : 0
+chan12_raw : 0
+chan13_raw : 0
+chan14_raw : 0
+chan15_raw : 0
+chan16_raw : 0
+chan17_raw : 0
+chan18_raw : 0
+rssi : 255
+**** RAW_IMU
+time_usec : 366420040
+xacc : 0
+yacc : 0
+zacc : -1001
+xgyro : 5
+ygyro : 4
+zgyro : 3
+xmag : 224
+ymag : 80
+zmag : -528
+id : 0
+temperature : 3906
+**** SCALED_IMU2
+time_boot_ms : 366420
+xacc : 0
+yacc : 0
+zacc : -1001
+xgyro : 5
+ygyro : 4
+zgyro : 3
+xmag : 224
+ymag : 80
+zmag : -528
+temperature : 3906
+**** SCALED_IMU3
+time_boot_ms : 366420
+xacc : 0
+yacc : 0
+zacc : 0
+xgyro : 0
+ygyro : 0
+zgyro : 0
+xmag : 224
+ymag : 80
+zmag : -528
+temperature : 0
+**** SCALED_PRESSURE
+time_boot_ms : 366420
+press_abs : 940.49737
+press_diff : 0.0
+temperature : 3094
+temperature_press_diff : 0
+**** SCALED_PRESSURE2
+time_boot_ms : 366420
+press_abs : 940.50476
+press_diff : 0.0
+temperature : 3094
+temperature_press_diff : 0
+**** GPS_RAW_INT
+time_usec : 366363000
+fix_type : 6
+lat : -353632623
+lon : 1491652377
+alt : 624080
+eph : 121
+epv : 200
+vel : 0
+cog : 25966
+satellites_visible : 10
+alt_ellipsoid : 624080
+h_acc : 300
+v_acc : 300
+vel_acc : 0
+hdg_acc : 0
+yaw : 0
+**** SYSTEM_TIME
+time_unix_usec : 1769624701256965
+time_boot_ms : 366420
+**** SIMSTATE
+roll : 4.59902e-05
+pitch : 5.51784e-05
+yaw : -0.12127
+xacc : 4.27009e-05
+yacc : 0.00042
+zacc : -9.80523
+xgyro : 0.00094
+ygyro : -0.00230
+zgyro : 0.00017
+lat : -353632623
+lng : 1491652377
+**** WIND
+direction : -179.99998
+speed : 0.0
+speed_z : 0.0
+**** TERRAIN_REPORT
+lat : -353632622
+lon : 1491652376
+spacing : 100
+terrain_height : 584.07000
+current_height : 39.99997
+pending : 0
+loaded : 504
+**** GIMBAL_DEVICE_ATTITUDE_STATUS
+target_system : 0
+target_component : 0
+time_boot_ms : 366420
+flags : 60
+q : [1.0, 0.0, 0.0, 0.0]
+angular_velocity_x : nan
+angular_velocity_y : nan
+angular_velocity_z : nan
+failure_flags : 0
+delta_yaw : nan
+delta_yaw_velocity : nan
+gimbal_device_id : 1
+**** EKF_STATUS_REPORT
+flags : 831
+velocity_variance : 0.00726
+pos_horiz_variance : 0.00420
+pos_vert_variance : 6.96457e-05
+compass_variance : 0.01217
+terrain_alt_variance : 0.0
+airspeed_variance : 0.0
+**** LOCAL_POSITION_NED
+time_boot_ms : 366420
+x : -0.01236
+y : 0.01519
+z : -39.98003
+vx : 0.01294
+vy : -0.01590
+vz : 5.69889e-05
+**** VIBRATION
+time_usec : 366420040
+vibration_x : 0.00251
+vibration_y : 0.00305
+vibration_z : 0.00516
+clipping_0 : 0
+clipping_1 : 0
+clipping_2 : 0
+**** BATTERY_STATUS
+id : 0
+battery_function : 0
+type : 0
+temperature : 32767
+voltages : [12600, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535]
+current_battery : 2813
+current_consumed : 1722
+energy_consumed : 781
+battery_remaining : 47
+time_remaining : 0
+charge_state : 1
+voltages_ext : [0, 0, 0, 0]
+mode : 0
+fault_bitmask : 0
+**** ESC_TELEMETRY_1_TO_4
+temperature : [32, 32, 32, 32]
+voltage : [1679, 1679, 1679, 1679]
+current : [80, 80, 80, 80]
+totalcurrent : [1, 1, 1, 1]
+rpm : [0, 0, 0, 0]
+count : [13085, 13085, 13085, 13085]
+*** HEARTBEAT (alternating < and > = direction of send?) follows every *other* group of 28
+*** FLIGHT_INFORMATION follows the heartbeat
+*** TIMESYNC appeared once
+idk why
+*** PARAM_VALUE appeared twice
