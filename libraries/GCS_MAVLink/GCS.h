@@ -343,6 +343,10 @@ public:
 #if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
     virtual void send_rangefinder() const;
 #endif
+#if AP_RANGEFINDER_ENABLED
+    // send WATER_DEPTH message for boats and subs
+    void send_water_depth();
+#endif
     void send_proximity();
     virtual void send_nav_controller_output() const = 0;
     virtual void send_pid_tuning() = 0;
@@ -362,6 +366,12 @@ public:
     // last index is used to rotate through sensors
     void send_airspeed();
     uint8_t last_airspeed_idx;
+#endif
+#if AP_RANGEFINDER_ENABLED
+    // state variable for the last rangefinder we sent a WATER_DEPTH
+    // message for.  We cycle through the rangefinder backends to
+    // limit the amount of telemetry bandwidth we consume.
+    uint8_t last_WATER_DEPTH_index;
 #endif
     void send_simstate() const;
     void send_sim_state() const;

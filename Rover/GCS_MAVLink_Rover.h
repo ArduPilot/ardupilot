@@ -65,15 +65,6 @@ private:
     void send_rangefinder() const override;
 #endif  // AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
 
-#if AP_RANGEFINDER_ENABLED
-    // send WATER_DEPTH - metres and temperature
-    void send_water_depth();
-    // state variable for the last rangefinder we sent a WATER_DEPTH
-    // message for.  We cycle through the rangefinder backends to
-    // limit the amount of telemetry bandwidth we consume.
-    uint8_t last_WATER_DEPTH_index;
-#endif
-
 #if HAL_HIGH_LATENCY2_ENABLED
     uint8_t high_latency_tgt_heading() const override;
     uint16_t high_latency_tgt_dist() const override;

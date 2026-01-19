@@ -259,6 +259,13 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         break;
 #endif
 
+#if AP_RANGEFINDER_ENABLED
+    case MSG_WATER_DEPTH:
+        CHECK_PAYLOAD_SIZE(WATER_DEPTH);
+        send_water_depth();
+        break;
+#endif  // AP_RANGEFINDER_ENABLED
+
     case MSG_WIND: // other vehicles do something custom with wind:
         return true;
 
