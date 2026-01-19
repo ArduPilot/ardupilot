@@ -296,14 +296,13 @@ uint16_t AP_ExternalAHRS_SBG::make_gps_week(const SbgEComLogUtc *utc_data)
     tm.tm_sec = utc_data->second;
 
     // convert from time structure to unix time
-    time_t unix_time = ap_mktime(&tm);
+    const time_t unix_time = ap_mktime(&tm);
 
     // convert to time since GPS epoch
-    uint32_t gps_time = unix_time - ((utc_data->gpsTimeOfWeek + UNIX_OFFSET_MSEC) / 1000);
-
+    const uint32_t gps_time = unix_time - ((utc_data->gpsTimeOfWeek + UNIX_OFFSET_MSEC) / 1000);
 
     // get GPS week
-    uint16_t gps_week = gps_time / AP_SEC_PER_WEEK;
+    const uint16_t gps_week = gps_time / AP_SEC_PER_WEEK;
 
     return gps_week;
 }
