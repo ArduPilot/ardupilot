@@ -767,6 +767,7 @@ bool AP_ExternalAHRS_SBG::get_variances(float &velVar, float &posVar, float &hgt
     velVar = cached.sensors.gps_data.horizontal_vel_accuracy * vel_gate_scale;
     posVar = cached.sensors.gps_data.horizontal_pos_accuracy * pos_gate_scale;
     hgtVar = cached.sensors.gps_data.vertical_pos_accuracy * hgt_gate_scale;
+    magVar = 0; // Not provided, set to 0.
     tasVar = 0;
     return true;
 }
