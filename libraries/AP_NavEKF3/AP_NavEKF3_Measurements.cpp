@@ -686,6 +686,7 @@ void NavEKF3_core::readGpsData()
     // Post-alignment checks
     calcGpsGoodForFlight();
 
+#if EK3_FEATURE_EXTERNAL_POSITION_FUSION
     // A degraded GPS and use of an alternative navigation source blocks GPS use
     if (frontend->option_is_enabled(NavEKF3::Option::SetLatLngFusion) && useSetLatLngAsMeasurement) {
         const uint32_t timeoutThreshold = (uint32_t)MAX(((int32_t)frontend->posRetryTimeNoVel_ms-(int32_t)1000),1000);
@@ -701,6 +702,7 @@ void NavEKF3_core::readGpsData()
             return;
         }
     }
+#endif // EK3_FEATURE_EXTERNAL_POSITION_FUSION
 
     // Read the GPS location in WGS-84 lat,long,height coordinates
     const Location &gpsloc = gps.location(selected_gps);
