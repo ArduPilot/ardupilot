@@ -1063,6 +1063,7 @@ private:
         DISABLE_DCM_FALLBACK_FW=(1U<<0),
         DISABLE_DCM_FALLBACK_VTOL=(1U<<1),
         DISABLE_AIRSPEED_EKF_CHECK=(1U<<2),
+        AUTO_RECORD_ORIGIN=(1U<<3),
     };
     AP_Int16 _options;
     
@@ -1072,6 +1073,9 @@ private:
 
     // true when we have completed the common origin setup
     bool done_common_origin;
+
+    // true if origin params were non-zero at init (user set them)
+    bool _origin_was_set_by_user;
 };
 
 namespace AP {
