@@ -275,12 +275,12 @@ protected:
     const char *name4() const override { return "ALTH"; }
 };
 
-class ModeDephold : public Mode
+class ModeDephold : public ModeAlthold
 {
 
 public:
     // inherit constructor
-    using Mode::Mode;
+    using ModeAlthold::ModeAlthold;
 
     virtual void run() override;
 

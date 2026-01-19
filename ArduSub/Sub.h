@@ -125,6 +125,7 @@ public:
     friend class ModeCircle;
     friend class ModeSurface;
     friend class ModeMotordetect;
+    friend class ModeDephold;
 
     Sub(void);
 
