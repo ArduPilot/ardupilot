@@ -226,7 +226,7 @@ jobs:
           ls bootloader* partition* Ardu*.elf Ardu*.bin >> $GITHUB_STEP_SUMMARY
 
       - name: Archive artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
            name: esp32-binaries -${{matrix.config}}
            path: |
