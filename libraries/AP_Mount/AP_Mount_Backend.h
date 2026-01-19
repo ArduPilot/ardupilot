@@ -33,6 +33,8 @@
 
 class AP_Mount_Backend
 {
+    friend class AP_Mount_SoloGimbal;  // temporary access to e.g. _roi_target
+
 public:
     // Constructor
     AP_Mount_Backend(class AP_Mount &frontend, class AP_Mount_Params &params, uint8_t instance) :
@@ -232,6 +234,7 @@ protected:
         RATE      = 1,
         RETRACTED = 2,
         NEUTRAL   = 3,
+        LOCATION  = 4,
     };
 
     // class for a single angle or rate target
@@ -259,6 +262,10 @@ protected:
         float pitch;     // roll rate in radians/second
         float yaw;       // roll rate in radians/second
         bool yaw_is_ef;  // if set then `yaw` is a rate in earth frame
+    };
+    class MountLocationTarget {
+    public:
+        Location loc;
     };
 
     // returns a bitmask of MountTargetTypes which this backend supports
@@ -295,6 +302,7 @@ protected:
     virtual void send_target_rates(const MountRateTarget &rate_rads) { }
     virtual void send_target_retracted() { }
     virtual void send_target_neutral() { }
+    virtual void send_target_location(const MountLocationTarget &location) { }
 
     // options parameter bitmask handling
     enum class Options : uint8_t {
@@ -348,15 +356,15 @@ protected:
 
     // get angle targets (in radians) to ROI location
     // returns true on success, false on failure
-    bool get_angle_target_to_roi(MountAngleTarget& angle_rad) const WARN_IF_UNUSED;
+    bool get_location_target_for_roi(MountLocationTarget& location) const WARN_IF_UNUSED;
 
     // get angle targets (in radians) to home location
     // returns true on success, false on failure
-    bool get_angle_target_to_home(MountAngleTarget& angle_rad) const WARN_IF_UNUSED;
+    bool get_location_target_for_home(MountLocationTarget& location) const WARN_IF_UNUSED;
 
     // get angle targets (in radians) to a vehicle with sysid of _target_sysid
     // returns true on success, false on failure
-    bool get_angle_target_to_sysid(MountAngleTarget& angle_rad) const WARN_IF_UNUSED;
+    bool get_location_target_for_sysid(MountLocationTarget& location) const WARN_IF_UNUSED;
 
     // update angle targets using a given rate target
     // the resulting angle_rad yaw frame will match the rate_rad yaw frame
@@ -381,6 +389,7 @@ protected:
         MountAngleTarget angle_rad; // angle target in radians
         MountRateTarget rate_rads;  // rate target in rad/s
         uint32_t last_rate_request_ms;
+        MountLocationTarget location;  // location in lat/lng/absalt
     } mnt_target;
     
     // RP earth frame locks accessible by backend

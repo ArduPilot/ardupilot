@@ -787,12 +787,13 @@ bool AP_Mount_Backend::get_angle_target_to_location(const Location &loc, MountAn
 
 // get angle targets (in radians) to ROI location
 // returns true on success, false on failure
-bool AP_Mount_Backend::get_angle_target_to_roi(MountAngleTarget& angle_rad) const
+bool AP_Mount_Backend::get_location_target_for_roi(MountLocationTarget& location) const
 {
     if (!_roi_target.initialised()) {
         return false;
     }
-    return get_angle_target_to_location(_roi_target, angle_rad);
+    location.loc = _roi_target;
+    return true;
 }
 
 // return body-frame yaw angle from a mount target
@@ -877,6 +878,9 @@ uint16_t AP_Mount_Backend::get_gimbal_device_flags() const
         case MountTargetType::ANGLE:
             yaw_lock_state = mnt_target.angle_rad.yaw_is_ef;
             break;
+        case MountTargetType::LOCATION:
+            yaw_lock_state = true;   // locked onto the scenery
+            break;
         case MountTargetType::RETRACTED:
         case MountTargetType::NEUTRAL:
             yaw_lock_state = false;  // not locked onto the scenery
@@ -909,18 +913,19 @@ uint16_t AP_Mount_Backend::get_gimbal_device_flags() const
 
 // get angle targets (in radians) to home location
 // returns true on success, false on failure
-bool AP_Mount_Backend::get_angle_target_to_home(MountAngleTarget& angle_rad) const
+bool AP_Mount_Backend::get_location_target_for_home(MountLocationTarget& location) const
 {
     // exit immediately if home is not set
     if (!AP::ahrs().home_is_set()) {
         return false;
     }
-    return get_angle_target_to_location(AP::ahrs().get_home(), angle_rad);
+    location.loc = AP::ahrs().get_home();
+    return true;
 }
 
 // get angle targets (in radians) to a vehicle with sysid of  _target_sysid
 // returns true on success, false on failure
-bool AP_Mount_Backend::get_angle_target_to_sysid(MountAngleTarget& angle_rad) const
+bool AP_Mount_Backend::get_location_target_for_sysid(MountLocationTarget& location) const
 {
     // exit immediately if sysid is not set or no location available
     if (!_target_sysid_location.initialised()) {
@@ -929,7 +934,8 @@ bool AP_Mount_Backend::get_angle_target_to_sysid(MountAngleTarget& angle_rad) co
     if (!_target_sysid) {
         return false;
     }
-    return get_angle_target_to_location(_target_sysid_location, angle_rad);
+    location.loc = _target_sysid_location;
+    return true;
 }
 
 // updates the mount target by calling the _update_mount_target and then adjusting to remove lean angles if roll and/or pitch angles locked:
@@ -984,22 +990,22 @@ void AP_Mount_Backend::_update_mnt_target()
 
     case MAV_MOUNT_MODE_GPS_POINT:
         // point mount to a GPS point given by the mission planner
-        if (get_angle_target_to_roi(mnt_target.angle_rad)) {
-            mnt_target.target_type = MountTargetType::ANGLE;
+        if (get_location_target_for_roi(mnt_target.location)) {
+            mnt_target.target_type = MountTargetType::LOCATION;
         }
         return;
 
     case MAV_MOUNT_MODE_HOME_LOCATION:
         // point mount to Home location
-        if (get_angle_target_to_home(mnt_target.angle_rad)) {
-            mnt_target.target_type = MountTargetType::ANGLE;
+        if (get_location_target_for_home(mnt_target.location)) {
+            mnt_target.target_type = MountTargetType::LOCATION;
         }
         return;
 
     case MAV_MOUNT_MODE_SYSID_TARGET:
         // point mount to another vehicle
-        if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
-            mnt_target.target_type = MountTargetType::ANGLE;
+        if (get_location_target_for_sysid(mnt_target.location)) {
+            mnt_target.target_type = MountTargetType::LOCATION;
         }
         return;
     case MAV_MOUNT_MODE_ENUM_END:
@@ -1025,6 +1031,9 @@ void AP_Mount_Backend::send_target_to_gimbal()
             return;
         case MountTargetType::NEUTRAL:
             send_target_neutral();
+            return;
+        case MountTargetType::LOCATION:
+            send_target_location(mnt_target.location);
             return;
         }
         return;  // should not reach this as all cases return
@@ -1062,6 +1071,16 @@ void AP_Mount_Backend::send_target_to_gimbal()
             // we update mnt_target for reporting purposes
             const Vector3f &angle_bf_target = _params.neutral_angles.get();
             mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
+            send_target_angles(mnt_target.angle_rad);
+            return;
+        }
+        break;
+    case MountTargetType::LOCATION:
+        if (natively_supports(MountTargetType::ANGLE)) {
+            // we update mnt_target for reporting purposes
+            if (!get_angle_target_to_location(mnt_target.location.loc, mnt_target.angle_rad)) {
+                return;
+            }
             send_target_angles(mnt_target.angle_rad);
             return;
         }
