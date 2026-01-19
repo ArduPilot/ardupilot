@@ -1285,7 +1285,6 @@ void PayloadPlace::run()
     const uint32_t placed_check_duration_ms = 500; // how long we have to be below a throttle threshold before considering placed
 
     auto &g2 = copter.g2;
-    const auto &g = copter.g;
     auto *attitude_control = copter.attitude_control;
     const auto &pos_control = copter.pos_control;
     const auto &wp_nav = copter.wp_nav;
@@ -1356,7 +1355,7 @@ void PayloadPlace::run()
         descent_established_time_ms = now_ms;
         descent_start_altitude_m = pos_control->get_pos_desired_U_m();
         // limiting the decent rate to the limit set in wp_nav is not necessary but done for safety
-        descent_speed_ms = MIN((is_positive(g2.pldp_descent_speed_ms)) ? g2.pldp_descent_speed_ms : abs(g.land_speed_cms) * 0.01, wp_nav->get_default_speed_down_ms());
+        descent_speed_ms = MIN((is_positive(g2.pldp_descent_speed_ms)) ? g2.pldp_descent_speed_ms : copter.mode_land.get_land_speed_ms(), wp_nav->get_default_speed_down_ms());
         descent_thrust_level = 1.0;
         state = State::Descent;
         FALLTHROUGH;

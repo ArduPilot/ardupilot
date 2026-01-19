@@ -336,10 +336,10 @@ public:
         k_param_waypoint_radius,     // remove
         k_param_circle_radius,       // remove
         k_param_waypoint_speed_max,  // remove
-        k_param_land_speed_cms,
+        k_param_land_speed_cms,      // remove
         k_param_auto_velocity_z_min, // remove
         k_param_auto_velocity_z_max, // remove - 219
-        k_param_land_speed_high_cms,
+        k_param_land_speed_high_cms, // remove
 
         //
         // 220: PI/D Controllers
@@ -417,8 +417,6 @@ public:
 
     // Waypoints
     //
-    AP_Int16        land_speed_cms;
-    AP_Int16        land_speed_high_cms;
     AP_Int16        pilot_speed_up_cms;         // maximum vertical ascending velocity the pilot may request
     AP_Int16        pilot_accel_d_cmss;         // vertical acceleration the pilot may request
 
@@ -567,9 +565,6 @@ public:
     // Additional pilot velocity items
     AP_Int16    pilot_speed_dn_cms;
 
-    // Land alt final stage
-    AP_Int16 land_alt_low_cm;
-
 #if TOY_MODE_ENABLED
     ToyMode toy_mode;
 #endif
@@ -703,6 +698,8 @@ public:
 #if MODE_RTL_ENABLED
     void *mode_rtl_ptr;
 #endif
+
+    void *mode_land_ptr;
 };
 
 extern const AP_Param::Info        var_info[];

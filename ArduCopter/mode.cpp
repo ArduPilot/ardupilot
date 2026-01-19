@@ -621,23 +621,26 @@ void Mode::land_run_vertical_control(bool pause_descent)
     if (!pause_descent) {
 
         // do not ignore limits until we have slowed down for landing
-        ignore_descent_limit = (MAX(g2.land_alt_low_cm, 100) * 0.01 > get_alt_above_ground_m()) || copter.ap.land_complete_maybe;
+        const float land_alt_low_m = copter.mode_land.get_land_alt_low_m();
+        ignore_descent_limit = (MAX(land_alt_low_m, 1) > get_alt_above_ground_m()) || copter.ap.land_complete_maybe;
 
         float max_land_descent_speed_ms;
-        if (g.land_speed_high_cms > 0) {
-            max_land_descent_speed_ms = g.land_speed_high_cms * 0.01;
+        const float land_speed_high_ms = copter.mode_land.get_land_speed_high_ms();
+        if (land_speed_high_ms > 0) {
+            max_land_descent_speed_ms = land_speed_high_ms;
         } else {
             max_land_descent_speed_ms = pos_control->get_max_speed_down_ms();
         }
 
         // Don't speed up for landing.
-        max_land_descent_speed_ms = MAX(max_land_descent_speed_ms, abs(g.land_speed_cms) * 0.01);
+        const float land_speed_ms = copter.mode_land.get_land_speed_ms();
+        max_land_descent_speed_ms = MAX(max_land_descent_speed_ms, fabsf(land_speed_ms));
 
-        // Compute a vertical velocity demand such that the vehicle approaches g2.land_alt_low_cm. Without the below constraint, this would cause the vehicle to hover at g2.land_alt_low_cm.
-        climb_rate_ms = sqrt_controller(MAX(g2.land_alt_low_cm, 100) * 0.01 - get_alt_above_ground_m(), pos_control->D_get_pos_p().kP(), pos_control->D_get_max_accel_mss(), G_Dt);
+        // Compute a vertical velocity demand such that the vehicle approaches land_alt_low. Without the below constraint, this would cause the vehicle to hover at land_alt_low.
+        climb_rate_ms = sqrt_controller(MAX(land_alt_low_m, 1) - get_alt_above_ground_m(), pos_control->D_get_pos_p().kP(), pos_control->D_get_max_accel_mss(), G_Dt);
 
         // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
-        climb_rate_ms = constrain_float(climb_rate_ms, -max_land_descent_speed_ms, -abs(g.land_speed_cms) * 0.01);
+        climb_rate_ms = constrain_float(climb_rate_ms, -max_land_descent_speed_ms, -fabsf(land_speed_ms));
 
 #if AC_PRECLAND_ENABLED
         const bool navigating = pos_control->NE_is_active();
@@ -665,7 +668,7 @@ void Mode::land_run_vertical_control(bool pause_descent)
                 // compute desired descent velocity
                 const float precland_acceptable_error_m = 0.15;
                 const float precland_min_descent_speed_ms = 0.1;
-                const float max_descent_speed_ms = abs(g.land_speed_cms) * 0.005;
+                const float max_descent_speed_ms = fabsf(land_speed_ms) * 0.5;
                 const float land_slowdown_ms = MAX(0.0f, target_error_m * (max_descent_speed_ms / precland_acceptable_error_m));
                 climb_rate_ms = MIN(-precland_min_descent_speed_ms, -max_descent_speed_ms + land_slowdown_ms);
             }

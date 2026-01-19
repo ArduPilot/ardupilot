@@ -129,24 +129,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Values: 0:Never change yaw, 1:Face next waypoint, 2:Face next waypoint except RTL, 3:Face along GPS course
     // @User: Standard
     GSCALAR(wp_yaw_behavior,  "WP_YAW_BEHAVIOR",    WP_YAW_BEHAVIOR_DEFAULT),
-
-    // @Param: LAND_SPEED
-    // @DisplayName: Land speed
-    // @Description: The descent speed for the final stage of landing in cm/s
-    // @Units: cm/s
-    // @Range: 30 200
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(land_speed_cms,             "LAND_SPEED",   LAND_SPEED),
-
-    // @Param: LAND_SPEED_HIGH
-    // @DisplayName: Land speed high
-    // @Description: The descent speed for the first stage of landing in cm/s. If this is zero then WPNAV_SPEED_DN is used
-    // @Units: cm/s
-    // @Range: 0 500
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(land_speed_high_cms,        "LAND_SPEED_HIGH",   0),
     
     // @Param: PILOT_SPEED_UP
     // @DisplayName: Pilot maximum vertical speed ascending
@@ -793,14 +775,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("PILOT_SPEED_DN", 24, ParametersG2, pilot_speed_dn_cms, 0),
 
-    // @Param: LAND_ALT_LOW
-    // @DisplayName: Land alt low
-    // @Description: Altitude during Landing at which vehicle slows to LAND_SPEED
-    // @Units: cm
-    // @Range: 100 10000
-    // @Increment: 10
-    // @User: Advanced
-    AP_GROUPINFO("LAND_ALT_LOW", 25, ParametersG2, land_alt_low_cm, 1000),
+    // 25 was LAND_ALT_LOW
 
 #if MODE_FLOWHOLD_ENABLED
     // @Group: FHLD
@@ -1118,7 +1093,7 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
 
     // @Param: PLDP_SPEED_DN
     // @DisplayName: Payload Place decent speed
-    // @Description: The maximum vertical decent velocity in m/s. If 0 LAND_SPEED value is used.
+    // @Description: The maximum vertical decent velocity in m/s. If 0 LAND_SPD_MS value is used.
     // @Units: m/s
     // @Range: 0 5
     // @User: Standard
@@ -1198,6 +1173,10 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_SUBGROUPPTR(mode_rtl_ptr, "RTL_", 14, ParametersG2, ModeRTL),
 #endif
 
+    // @Group: LAND_
+    // @Path: mode_land.cpp
+    AP_SUBGROUPPTR(mode_land_ptr, "LAND_", 15, ParametersG2, ModeLand),
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
@@ -1263,6 +1242,7 @@ ParametersG2::ParametersG2(void) :
 #if MODE_RTL_ENABLED
     ,mode_rtl_ptr(&copter.mode_rtl)
 #endif
+    ,mode_land_ptr(&copter.mode_land)
 {
     AP_Param::setup_object_defaults(this, var_info);
     AP_Param::setup_object_defaults(this, var_info2);
@@ -1331,6 +1311,9 @@ void Copter::load_parameters(void)
     // convert RTL parameters
     copter.mode_rtl.convert_params();
 #endif
+
+    // convert LAND parameters
+    copter.mode_land.convert_params();
 
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);
