@@ -180,7 +180,7 @@ jobs:
           source ~/ccache.conf &&
           ccache -s
       - name: ccache cache files
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: D:/a/ardupilot/ardupilot/ccache
           key: ${{ steps.ccache_cache_timestamp.outputs.cache-key }}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
@@ -220,7 +220,7 @@ jobs:
           fail: true
 
       - name: Archive build
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: binaries
           path: artifacts
