@@ -695,7 +695,8 @@ void NavEKF3_core::readGpsData()
             if (frontend->option_is_enabled(NavEKF3::Option::JammingExpected)) {
                 useSetLatLngAsMeasurement = !gpsGoodToAlign;
             } else {
-                useSetLatLngAsMeasurement = gpsPosAccuracy > safe_sqrt(P[7][7]+P[9][8]);
+                // GPS is reporting worse accuracy than the current horizontal position estimate
+                useSetLatLngAsMeasurement = gpsPosAccuracy > safe_sqrt(P[7][7]+P[8][8]);
             }
         }
         if (useSetLatLngAsMeasurement) {
