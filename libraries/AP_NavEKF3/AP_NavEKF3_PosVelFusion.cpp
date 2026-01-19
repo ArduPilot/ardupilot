@@ -252,9 +252,6 @@ bool NavEKF3_core::setLatLng(const Location &loc, float posAccuracy, uint32_t ti
 
                 ResetPositionNE(velPosObs[3], velPosObs[4]);
 
-                zeroRows(P,22,23);
-                zeroCols(P,22,23);
-
                 lastSetlatLngPassTime_ms = imuSampleTime_ms;
                 lastResetlatLngTime_ms = imuSampleTime_ms;
             }
