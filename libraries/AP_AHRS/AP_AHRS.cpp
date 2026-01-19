@@ -1215,9 +1215,10 @@ bool AP_AHRS::_get_quaternion_for_ekf_type(Quaternion &quat, EKFType type) const
     switch (type) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        if (!dcm.get_quaternion(quat)) {
+        if (!dcm_estimates.attitude_valid) {
             return false;
         }
+        quat = dcm_estimates.quaternion;
         break;
 #endif
 #if HAL_NAVEKF2_AVAILABLE
@@ -1238,15 +1239,20 @@ bool AP_AHRS::_get_quaternion_for_ekf_type(Quaternion &quat, EKFType type) const
 #endif
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        if (!sim.get_quaternion(quat)) {
+        if (!sim_estimates.attitude_valid) {
             return false;
         }
+        quat = sim_estimates.quaternion;
         break;
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
         // we assume the external AHRS isn't trimmed with the autopilot!
-        return external.get_quaternion(quat);
+        if (!external_estimates.attitude_valid) {
+            return false;
+        }
+        quat = external_estimates.quaternion;
+        return true;
 #endif
     }
 
@@ -1271,7 +1277,7 @@ bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
         eulers[0] = dcm_estimates.roll_rad;
         eulers[1] = dcm_estimates.pitch_rad;
         eulers[2] = dcm_estimates.yaw_rad;
-        return true;
+        return dcm_estimates.attitude_valid;
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1291,7 +1297,10 @@ bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
         // SITL is secondary (should never happen)
-        return false;
+        eulers[0] = sim_estimates.roll_rad;
+        eulers[1] = sim_estimates.pitch_rad;
+        eulers[2] = sim_estimates.yaw_rad;
+        return sim_estimates.attitude_valid;
 #endif
 
 #if AP_AHRS_EXTERNAL_ENABLED
@@ -1300,7 +1309,7 @@ bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
         eulers[0] = external_estimates.roll_rad;
         eulers[1] = external_estimates.pitch_rad;
         eulers[2] = external_estimates.yaw_rad;
-        return true;
+        return external_estimates.attitude_valid;
     }
 #endif
     }
