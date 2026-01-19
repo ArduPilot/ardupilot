@@ -650,7 +650,7 @@ struct log_RTER {
     { LOG_REPH_MSG, RLOG_SIZE(REPH),                                   \
       "REPH", "fffffffffIIH", "PX,PY,PZ,Q1,Q2,Q3,Q4,PEr,AEr,TS,RT,D", "------------", "------------" }, \
     { LOG_RSLL_MSG, RLOG_SIZE(RSLL),                         \
-      "RSLL", "IIfII", "Lat,Lng,PosAccSD,MTS,RTS", "DU---", "GG---" }, \
+      "RSLL", "IIfII", "Lat,Lng,PosAccSD,MTS,RTS", "DU-ss", "GG-CC" }, \
     { LOG_REVH_MSG, RLOG_SIZE(REVH),                                   \
       "REVH", "ffffIH", "VX,VY,VZ,Er,TS,D", "------", "------" }, \
     { LOG_RWOH_MSG, RLOG_SIZE(RWOH),                                   \
