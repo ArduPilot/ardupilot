@@ -74,6 +74,9 @@ public:
 #if AP_GPS_GPS_RTK_SENDING_ENABLED || AP_GPS_GPS2_RTK_SENDING_ENABLED
     virtual void send_mavlink_gps_rtk(mavlink_channel_t chan);
 #endif
+
+    void send_mavlink_gnss(class GCS_MAVLINK &link);
+
     virtual void handle_msg(const mavlink_message_t &msg) { return ; }
 #endif
 
@@ -115,6 +118,10 @@ public:
     // check if an option is set
     bool option_set(const AP_GPS::DriverOptions option) const {
         return gps.option_set(option);
+    }
+
+    virtual const Vector3f &get_antenna_offset() const {
+        return params.antenna_offset.get();
     }
 
 protected:
