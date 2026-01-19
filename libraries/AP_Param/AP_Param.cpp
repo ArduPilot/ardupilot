@@ -1093,7 +1093,7 @@ bool AP_Param::find_top_level_key_by_pointer(const void *ptr, uint16_t &key)
   is used to find the old value of a parameter that has been
   removed from an object.
 */
-bool AP_Param::get_param_by_index(void *obj_ptr, uint8_t idx, ap_var_type old_ptype, void *pvalue)
+bool AP_Param::get_param_by_index(void *obj_ptr, uint32_t idx, ap_var_type old_ptype, void *pvalue)
 {
     uint16_t key;
     if (!find_top_level_key_by_pointer(obj_ptr, key)) {

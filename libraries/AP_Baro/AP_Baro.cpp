@@ -502,9 +502,9 @@ bool AP_Baro::_add_backend(AP_Baro_Backend *backend)
 /*
   wrapper around hal.i2c_mgr->get_device() that prevents duplicate devices being opened
  */
-bool AP_Baro::_have_i2c_driver(uint8_t bus, uint8_t address) const
+bool AP_Baro::_i2c_sensor_is_registered(uint8_t bus, uint8_t address) const
 {
-    for (int i=0; i<_num_drivers; ++i) {
+    for (int i=0; i<_num_sensors; ++i) {
         if (AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_I2C, bus, address, 0) ==
             AP_HAL::Device::change_bus_id(uint32_t(sensors[i].bus_id.get()), 0)) {
             // device already has been defined.
@@ -523,7 +523,7 @@ bool AP_Baro::_have_i2c_driver(uint8_t bus, uint8_t address) const
     } while (0)
 
 // macro for use by HAL_INS_PROBE_LIST and various helper functions
-#define GET_I2C_DEVICE_PTR(bus, address) _have_i2c_driver(bus, address)?nullptr:hal.i2c_mgr->get_device_ptr(bus, address)
+#define GET_I2C_DEVICE_PTR(bus, address) _i2c_sensor_is_registered(bus, address)?nullptr:hal.i2c_mgr->get_device_ptr(bus, address)
 
 // probe for an I2C barometer.
 void AP_Baro::probe_i2c_dev(AP_Baro_Backend* (*probefn)(AP_Baro&, AP_HAL::Device&), uint8_t bus, uint8_t addr)
@@ -677,7 +677,6 @@ void AP_Baro::init(void)
     case AP_BoardConfig::PX4_BOARD_PHMINI:
     case AP_BoardConfig::PX4_BOARD_AUAV21:
     case AP_BoardConfig::PX4_BOARD_PH2SLIM:
-    case AP_BoardConfig::PX4_BOARD_FMUV5:
     case AP_BoardConfig::PX4_BOARD_FMUV6:
 #if AP_BARO_MS5611_ENABLED
         probe_spi_dev(AP_Baro_MS5611::probe, HAL_BARO_MS5611_NAME);
@@ -1008,6 +1007,9 @@ void AP_Baro::update_field_elevation(void)
             Location origin;
             if (!armed && AP::ahrs().get_origin(origin)) {
                 _field_elevation_active = origin.alt * 0.01;
+                if (is_zero(_field_elevation_active)) {
+                    _field_elevation_active = 0.001f; // prevent zero value so that we don't keep trying to auto-set
+                }
                 new_field_elev = true;
             }
         } else if (fabsf(_field_elevation_active-_field_elevation) > 1.0 &&

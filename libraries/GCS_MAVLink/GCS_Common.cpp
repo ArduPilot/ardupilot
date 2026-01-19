@@ -3818,7 +3818,7 @@ void GCS_MAVLINK::send_timesync()
         );
 }
 
-void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg) const
+void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg)
 {
 #if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
@@ -3828,23 +3828,38 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg) const
 
     mavlink_statustext_t packet;
     mavlink_msg_statustext_decode(&msg, &packet);
-    const uint8_t max_prefix_len = 20;
-    const uint8_t text_len = MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1+max_prefix_len;
-    char text[text_len] = { 'G','C','S',':'};
-    uint8_t offset = strlen(text);
 
-    if (!gcs().sysid_is_gcs(msg.sysid)) {
-        offset = hal.util->snprintf(text,
-                                    max_prefix_len,
-                                    "SRC=%u/%u:",
-                                    msg.sysid,
-                                    msg.compid);
-        offset = MIN(offset, max_prefix_len);
+    const uint8_t max_prefix_len = 14;
+    const uint8_t text_len = MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1+max_prefix_len;
+    if (msg.sysid != statustext_chunking.last_src_system ||
+        msg.compid != statustext_chunking.last_src_system ||
+        packet.id != statustext_chunking.last_id) {
+        statustext_chunking.last_src_system = msg.sysid;
+        statustext_chunking.last_src_component = msg.compid;
+        statustext_chunking.last_id = packet.id;
+        statustext_chunking.msg_id = AP::logger().get_MSG_id();
+    }
+
+    uint8_t offset = 0;
+    char text[text_len] = {};
+    if (packet.chunk_seq == 0) {
+        // prefix with origin information
+        if (gcs().sysid_is_gcs(msg.sysid)) {
+            strncpy(text, "GCS:", ARRAY_SIZE(text));
+            offset = strlen(text);
+        } else {
+            offset = hal.util->snprintf(text,
+                                        max_prefix_len,
+                                        "SRC=%u/%u:",
+                                        msg.sysid,
+                                        msg.compid);
+            offset = MIN(offset, max_prefix_len);
+        }
     }
 
     memcpy(&text[offset], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
 
-    logger->Write_Message(text);
+    logger->Write_MessageChunk(statustext_chunking.msg_id, text, packet.chunk_seq);
 #endif
 }
 

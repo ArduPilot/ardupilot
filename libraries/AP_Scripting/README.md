@@ -2,7 +2,7 @@
 
 ## Enabling Scripting Support in Builds
 
-Scripting is automatically enabled on all boards with at least 1MB of flash space.
+Scripting is automatically enabled on all boards with more than 1MB of flash space.
 The following example enables scripting, builds the ArduPlane firmware for the Cube, and uploads it.
 
 ```

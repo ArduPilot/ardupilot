@@ -122,9 +122,6 @@ void AP_Mount_Topotek::update()
         break;
     }
 
-    // change to RC_TARGETING mode if RC input has changed
-    set_rctargeting_on_rcinput_change();
-
     // handle tracking state
     if (_is_tracking) {
         // cancel tracking if mode has changed
@@ -137,69 +134,10 @@ void AP_Mount_Topotek::update()
     _last_mode = _mode;
 
     // update based on mount mode
-    switch (get_mode()) {
-        // move mount to a "retracted" position.  To-Do: remove support and replace with a relaxed mode?
-        case MAV_MOUNT_MODE_RETRACT: {
-            const Vector3f &angle_bf_target = _params.retract_angles.get();
-            mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
-            break;
-        }
-
-        // move mount to a neutral position, typically pointing forward
-        case MAV_MOUNT_MODE_NEUTRAL: {
-            const Vector3f &angle_bf_target = _params.neutral_angles.get();
-            mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
-            break;
-        }
-
-        // point to the angles given by a mavlink message
-        case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            // mavlink targets are stored while handling the incoming message
-            break;
-
-        // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING:
-            update_mnt_target_from_rc_target();
-            break;
-
-        // point mount to a GPS point given by the mission planner
-        case MAV_MOUNT_MODE_GPS_POINT:
-            if (get_angle_target_to_roi(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        // point mount to Home location
-        case MAV_MOUNT_MODE_HOME_LOCATION:
-            if (get_angle_target_to_home(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        // point mount to another vehicle
-        case MAV_MOUNT_MODE_SYSID_TARGET:
-            if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        default:
-            // we do not know this mode so raise internal error
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            break;
-    }
+    update_mnt_target();
 
     // send target angles or rates depending on the target type
-    switch (mnt_target.target_type) {
-        case MountTargetType::ANGLE:
-            send_angle_target(mnt_target.angle_rad);
-            break;
-        case MountTargetType::RATE:
-            send_rate_target(mnt_target.rate_rads);
-            break;
-    }
+    send_target_to_gimbal();
 }
 
 // return true if healthy
@@ -794,7 +732,7 @@ void AP_Mount_Topotek::request_gimbal_model_name()
 }
 
 // send angle target in radians to gimbal
-void AP_Mount_Topotek::send_angle_target(const MountTarget& angle_rad)
+void AP_Mount_Topotek::send_target_angles(const MountAngleTarget& angle_rad)
 {
     // gimbal's earth-frame angle control drifts so always use body frame
     // set gimbal's lock state if it has changed
@@ -838,7 +776,7 @@ void AP_Mount_Topotek::send_angle_target(const MountTarget& angle_rad)
 }
 
 // send rate target in rad/s to gimbal
-void AP_Mount_Topotek::send_rate_target(const MountTarget& rate_rads)
+void AP_Mount_Topotek::send_target_rates(const MountRateTarget& rate_rads)
 {
     // set gimbal's lock state if it has changed
     if (!set_gimbal_lock(rate_rads.yaw_is_ef)) {
@@ -1021,6 +959,9 @@ void AP_Mount_Topotek::gimbal_track_analyse()
     case TrackingStatus::TRACKING_IN_PROGRESS:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s started", send_message_prefix, tracking_str);
         _is_tracking = true;
+        break;
+    case TrackingStatus::LENS_UNSUPPORT_TRACK:
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s unsupported lens", send_message_prefix, tracking_str);
         break;
     }
 }

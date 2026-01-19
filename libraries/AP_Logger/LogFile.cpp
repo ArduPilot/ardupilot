@@ -339,13 +339,37 @@ bool AP_Logger_Backend::Write_EntireMission()
 // Write a text message to the log
 bool AP_Logger_Backend::Write_Message(const char *message)
 {
-    struct log_Message pkt{
-        LOG_PACKET_HEADER_INIT(LOG_MESSAGE_MSG),
+    // i==0 here means we log an empty string if it is passed in:
+    const uint8_t id = AP::logger().get_MSG_id();  // there is a race condition on this ID; if a thread logs a message at the same time as the main thread then we can re-use this
+
+    uint8_t chunk_seq = 0;
+    for (uint8_t i=0; i == 0 || i<strlen(message); i += 64, chunk_seq++) {
+        const bool success = Write_MessageChunk(id, &message[i], chunk_seq);
+        if (i == 0 && !success) {
+            return false;
+        }
+    }
+    return true;
+}
+bool AP_Logger_Backend::Write_MessageChunk(uint8_t id, const char *messagechunk, uint8_t chunk_seq)
+{
+    struct log_MSG pkt{
+        LOG_PACKET_HEADER_INIT(LOG_MSG_MSG),
         time_us : AP_HAL::micros64(),
+        id           : id,
+        chunk_seq : chunk_seq,
         msg  : {}
     };
-    strncpy_noterm(pkt.msg, message, sizeof(pkt.msg));
-    return WriteCriticalBlock(&pkt, sizeof(pkt));
+    const uint16_t remaining = strlen(messagechunk);
+    strncpy_noterm(pkt.msg, messagechunk, MIN(sizeof(pkt.msg), remaining));
+    // result comes from success writing the first chunk; this
+    // prevents trying to write out the front of a message
+    // repeatedly.
+    const bool success = WriteCriticalBlock(&pkt, sizeof(pkt));
+    if (chunk_seq == 0) {
+        return success;
+    }
+    return true;
 }
 
 void AP_Logger::Write_Power(void)

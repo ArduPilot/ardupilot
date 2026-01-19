@@ -20,7 +20,7 @@
 #if AP_COMPASS_IIS2MDC_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/I2CDevice.h>
+#include <AP_HAL/Device.h>
 
 #include "AP_Compass.h"
 #include "AP_Compass_Backend.h"
@@ -40,7 +40,7 @@
 class AP_Compass_IIS2MDC : public AP_Compass_Backend
 {
 public:
-    static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+    static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                      bool force_external,
                                      enum Rotation rotation);
 

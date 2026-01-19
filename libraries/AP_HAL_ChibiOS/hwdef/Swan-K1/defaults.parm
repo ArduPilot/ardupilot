@@ -97,9 +97,9 @@ Q_A_RAT_YAW_SMAX      15
 Q_A_ACCEL_P_MAX    40000
 Q_A_ACCEL_R_MAX    20000
 Q_A_ACCEL_Y_MAX    27000
-Q_P_ACCZ_P            0.8
-Q_P_POSZ_P            1.5
-Q_P_VELZ_P            8.0
+Q_P_D_ACC_P            0.08
+Q_P_D_POS_P            1.5
+Q_P_D_VEL_P            8.0
 Q_M_THST_HOVER        0.45
 Q_M_BAT_VOLT_MAX   16.8
 Q_M_BAT_VOLT_MIN   13.2

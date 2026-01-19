@@ -15055,7 +15055,7 @@ class tt__PTZPresetTourPresetDetailOptions
 /// Pointer to array tt__ReferenceToken of size 0..unbounded.
     tt__ReferenceToken                  *PresetToken                    0;	///< Multiple elements.
 /// <PRE><BLOCKQUOTE>
-///   An option to indicate Home postion for tour spots.
+///   An option to indicate Home position for tour spots.
 /// </BLOCKQUOTE></PRE>
 ///
 /// Element "Home" of type xs:boolean.

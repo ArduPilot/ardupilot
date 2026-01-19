@@ -1,5 +1,0 @@
-#NOTE: SToRM32 3-axis gimbal using MAVlink on Telem2, RC6 controls tilt
-MNT1_TYPE,4
-RC6_OPTION,213
-SERIAL2_BAUD,115
-SERIAL2_PROTOCOL,1

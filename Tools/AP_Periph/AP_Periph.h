@@ -41,6 +41,8 @@
 #include "rc_in.h"
 #include "batt_balance.h"
 #include "battery_tag.h"
+#include "battery_bms.h"
+#include "actuator_telem.h"
 #include "networking.h"
 #include "serial_options.h"
 #if AP_SIM_ENABLED
@@ -394,6 +396,14 @@ public:
 
 #if AP_PERIPH_BATTERY_TAG_ENABLED
     BatteryTag battery_tag;
+#endif
+
+#if AP_PERIPH_BATTERY_BMS_ENABLED
+    BatteryBMS battery_bms;
+#endif
+
+#if AP_PERIPH_ACTUATOR_TELEM_ENABLED
+    ActuatorTelem actuator_telem;
 #endif
     
 #if AP_PERIPH_SERIAL_OPTIONS_ENABLED

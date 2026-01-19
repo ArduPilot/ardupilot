@@ -91,10 +91,10 @@ void Copter::Log_Write_PIDS()
         logger.Write_PID(LOG_PIDR_MSG, attitude_control->get_rate_roll_pid().get_pid_info());
         logger.Write_PID(LOG_PIDP_MSG, attitude_control->get_rate_pitch_pid().get_pid_info());
         logger.Write_PID(LOG_PIDY_MSG, attitude_control->get_rate_yaw_pid().get_pid_info());
-        logger.Write_PID(LOG_PIDA_MSG, pos_control->get_accel_U_pid().get_pid_info() );
+        logger.Write_PID(LOG_PIDA_MSG, pos_control->D_get_accel_pid().get_pid_info() );
         if (should_log(MASK_LOG_NTUN) && (flightmode->requires_GPS() || landing_with_GPS())) {
-            logger.Write_PID(LOG_PIDN_MSG, pos_control->get_vel_NE_pid().get_pid_info_x());
-            logger.Write_PID(LOG_PIDE_MSG, pos_control->get_vel_NE_pid().get_pid_info_y());
+            logger.Write_PID(LOG_PIDN_MSG, pos_control->NE_get_vel_pid().get_pid_info_x());
+            logger.Write_PID(LOG_PIDE_MSG, pos_control->NE_get_vel_pid().get_pid_info_y());
         }
     }
 }
@@ -357,18 +357,18 @@ struct PACKED log_Rate_Thread_Dt {
 };
 
 // Write a Guided mode position target
-// pos_target_m is lat, lon, alt OR offset from ekf origin in m
-// terrain should be 0 if pos_target_m.z is alt-above-ekf-origin, 1 if alt-above-terrain
+// pos_target_ned_m is lat, lon, alt OR offset from ekf origin in m
+// terrain should be 0 if pos_target_ned_m.z is alt-above-ekf-origin, 1 if alt-above-terrain
 // vel_target_ms is m/s
-void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode submode, const Vector3p& pos_target_m, bool is_terrain_alt, const Vector3f& vel_target_ms, const Vector3f& accel_target_mss)
+void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode submode, const Vector3p& pos_target_ned_m, bool is_terrain_alt, const Vector3f& vel_target_ms, const Vector3f& accel_target_mss)
 {
     const log_Guided_Position_Target pkt {
         LOG_PACKET_HEADER_INIT(LOG_GUIDED_POSITION_TARGET_MSG),
         time_us         : AP_HAL::micros64(),
         type            : (uint8_t)submode,
-        pos_target_x    : (float)pos_target_m.x,
-        pos_target_y    : (float)pos_target_m.y,
-        pos_target_z    : (float)pos_target_m.z,
+        pos_target_x    : (float)pos_target_ned_m.x,
+        pos_target_y    : (float)pos_target_ned_m.y,
+        pos_target_z    : (float)pos_target_ned_m.z,
         terrain         : is_terrain_alt,
         vel_target_x    : vel_target_ms.x,
         vel_target_y    : vel_target_ms.y,

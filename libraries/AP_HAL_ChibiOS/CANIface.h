@@ -120,7 +120,7 @@ class ChibiOS::CANIface : public AP_HAL::CANIface
 
     void discardTimedOutTxMailboxes(uint64_t current_time);
 
-    bool canAcceptNewTxFrame(const AP_HAL::CANFrame& frame) const;
+    bool canAcceptNewTxFrame() const;
 
     bool isRxBufferEmpty() const;
 

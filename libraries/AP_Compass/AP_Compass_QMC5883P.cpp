@@ -73,7 +73,7 @@
 #define DEBUG 0
 #endif
 
-AP_Compass_Backend *AP_Compass_QMC5883P::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_QMC5883P::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
         bool force_external,
         enum Rotation rotation)
 {

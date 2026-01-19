@@ -294,22 +294,6 @@ int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
     }
     PERF_STATS(stats.tx_requests);
 
-    /*
-     * Normally we should perform the same check as in @ref canAcceptNewTxFrame(), because
-     * it is possible that the highest-priority frame between select() and send() could have been
-     * replaced with a lower priority one due to TX timeout. But we don't do this check because:
-     *
-     *  - It is a highly unlikely scenario.
-     *
-     *  - Frames do not timeout on a properly functioning bus. Since frames do not timeout, the new
-     *    frame can only have higher priority, which doesn't break the logic.
-     *
-     *  - If high-priority frames are timing out in the TX queue, there's probably a lot of other
-     *    issues to take care of before this one becomes relevant.
-     *
-     *  - It takes CPU time. Not just CPU time, but critical section time, which is expensive.
-     */
-
     {
         CriticalSectionLocker lock;
 
@@ -579,35 +563,20 @@ void CANIface::pollErrorFlags()
     pollErrorFlagsFromISR();
 }
 
-bool CANIface::canAcceptNewTxFrame(const AP_HAL::CANFrame& frame) const
+bool CANIface::canAcceptNewTxFrame() const
 {
     /*
-     * We can accept more frames only if the following conditions are satisfied:
-     *  - There is at least one TX mailbox free (obvious enough);
-     *  - The priority of the new frame is higher than priority of all TX mailboxes.
+     * We accept more frames only if there is a mailbox free. In an ideal world,
+     * we would take into account the frame's priority but:
+     *  - That's overhead and it reduces message throughput by using fewer mailboxes
+     *  - That never worked properly on AP_Periph (as it's never called this function)
+     *  - That was never implemented in the FDCAN driver so we must be okay without it
      */
-    {
-        static const uint32_t TME = bxcan::TSR_TME0 | bxcan::TSR_TME1 | bxcan::TSR_TME2;
-        const uint32_t tme = can_->TSR & TME;
+    static const uint32_t TME = bxcan::TSR_TME0 | bxcan::TSR_TME1 | bxcan::TSR_TME2;
+    const uint32_t tme = can_->TSR & TME;
 
-        if (tme == TME) {   // All TX mailboxes are free (as in freedom).
-            return true;
-        }
-
-        if (tme == 0) {     // All TX mailboxes are busy transmitting.
-            return false;
-        }
-    }
-
-    /*
-     * The second condition requires a critical section.
-     */
-    CriticalSectionLocker lock;
-
-    for (int mbx = 0; mbx < NumTxMailboxes; mbx++) {
-        if (!(pending_tx_[mbx].pushed || pending_tx_[mbx].aborted) && !frame.priorityHigherThan(pending_tx_[mbx].frame)) {
-            return false;       // There's a mailbox whose priority is higher or equal the priority of the new frame.
-        }
+    if (tme == 0) {     // All TX mailboxes are busy transmitting.
+        return false;
     }
 
     return true;                // This new frame will be added to a free TX mailbox in the next @ref send().
@@ -646,7 +615,7 @@ void CANIface::checkAvailable(bool& read, bool& write, const AP_HAL::CANFrame* p
     read = !isRxBufferEmpty();
 
     if (pending_tx != nullptr) {
-        write = canAcceptNewTxFrame(*pending_tx);
+        write = canAcceptNewTxFrame();
     }
 }
 
@@ -840,7 +809,7 @@ bool CANIface::init(const uint32_t bitrate)
     /*
      * Hardware initialization (the hardware has already confirmed initialization mode, see above)
      */
-    can_->MCR = bxcan::MCR_ABOM | bxcan::MCR_AWUM | bxcan::MCR_INRQ;  // RM page 648
+    can_->MCR = bxcan::MCR_ABOM | bxcan::MCR_AWUM | bxcan::MCR_INRQ | bxcan::MCR_TXFP;  // RM page 648
 
     can_->BTR = ((timings.sjw & 3U)  << 24) |
                 ((timings.bs1 & 15U) << 16) |

@@ -5613,7 +5613,7 @@ class TestSuite(abc.ABC):
 
         tstart = self.get_sim_time()
         while True:
-            if tstart - self.get_sim_time_cached() > timeout:
+            if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Failed to set RC values")
             m = self.mav.recv_match(type='RC_CHANNELS', blocking=True, timeout=1)
             if m is None:
@@ -9944,7 +9944,7 @@ Also, ignores heartbeats not from our target system'''
                 self.set_parameter("COMPASS_ORIENT%d" % count, 0)
 
             # Only care about compass prearm
-            self.set_parameter("ARMING_CHECK", 4)
+            self.set_parameter("ARMING_SKIPCHK", ~(1 << 2))
 
         #################################################
         def do_test_mag_cal(mavproxy, params, compass_tnumber):
@@ -10770,8 +10770,8 @@ Also, ignores heartbeats not from our target system'''
         '''Arm features'''
         # TEST ARMING/DISARM
         self.delay_sim_time(12)  # wait for gyros/accels to be happy
-        if self.get_parameter("ARMING_CHECK") != 1.0 and not self.is_sub():
-            raise ValueError("Arming check should be 1")
+        if self.get_parameter("ARMING_SKIPCHK") != 0 and not self.is_sub():
+            raise ValueError("Arming skipped checks should be 0")
         if not self.is_sub() and not self.is_tracker():
             self.set_parameter("ARMING_RUDDER", 2)  # allow arm and disarm with rudder on first tests
         if self.is_copter():
@@ -12753,7 +12753,7 @@ switch value'''
     def test_parameter_checks_poscontrol(self, param_prefix):
         self.wait_ready_to_arm()
         self.context_push()
-        self.set_parameter("%s_POSXY_P" % param_prefix, -1)
+        self.set_parameter("%s_NE_POS_P" % param_prefix, -1)
         self.run_cmd(
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
             p1=1,  # ARM

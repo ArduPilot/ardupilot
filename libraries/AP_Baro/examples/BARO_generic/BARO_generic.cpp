@@ -31,8 +31,14 @@ const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 static AP_Baro barometer;
 
 // creating other objects
-static AP_Int32 log_bitmask;
+#if HAL_LOGGING_ENABLED
 static AP_Logger logger;
+AP_Int32 logger_bitmask;
+static const struct LogStructure log_structure[] = {
+    LOG_COMMON_STRUCTURES
+};
+#endif  // HAL_LOGGING_ENABLED
+
 static AP_AHRS ahrs;
 
 #if AP_EXTERNAL_AHRS_ENABLED
@@ -56,6 +62,12 @@ void setup()
     hal.console->printf("Barometer library test\n");
 
     board_config.init();
+#if AP_SIM_ENABLED
+    sitl.init();
+#endif  // AP_SIM_ENABLED
+#if HAL_LOGGING_ENABLED
+    logger.init(logger_bitmask, log_structure, ARRAY_SIZE(log_structure));
+#endif  // HAL_LOGGING_ENABLED
 
     hal.scheduler->delay(1000);
 

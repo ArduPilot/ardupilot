@@ -27,6 +27,7 @@
 extern AP_IOMCU iomcu;
 #endif
 #include <AP_Scripting/AP_Scripting.h>
+#include <SITL/SITL.h>
 
 #define SCHED_TASK(func, rate_hz, max_time_micros, prio) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros, prio)
 
@@ -529,6 +530,10 @@ void AP_Vehicle::setup()
 
 #if AP_RPM_ENABLED
     rpm_sensor.init();
+#endif
+
+#if AP_ARMING_ENABLED
+    AP::arming().init();
 #endif
 
     // invalidate count in case an enable parameter changed during

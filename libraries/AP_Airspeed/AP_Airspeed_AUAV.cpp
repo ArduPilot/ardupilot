@@ -31,7 +31,7 @@
 
 extern const AP_HAL::HAL &hal;
 
-AUAV_Pressure_sensor::AUAV_Pressure_sensor(AP_HAL::I2CDevice *&_dev, Type _type) :
+AUAV_Pressure_sensor::AUAV_Pressure_sensor(AP_HAL::Device *&_dev, Type _type) :
     dev(_dev),
     type(_type)
 {

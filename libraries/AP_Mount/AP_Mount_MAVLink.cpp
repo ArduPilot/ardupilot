@@ -23,73 +23,10 @@ void AP_Mount_MAVLink::update()
         return;
     }
 
-    // change to RC_TARGETING mode if RC input has changed
-    set_rctargeting_on_rcinput_change();
+    update_mnt_target();
 
-    // update based on mount mode
-    switch (get_mode()) {
-
-        // move mount to a "retracted" position.  We disable motors
-        case MAV_MOUNT_MODE_RETRACT:
-            // handled below
-            mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.angle_rad.set(Vector3f{0,0,0}, false);
-            send_gimbal_device_retract();
-            return;
-
-        // move mount to a neutral position, typically pointing forward
-        case MAV_MOUNT_MODE_NEUTRAL: {
-            const Vector3f &angle_bf_target = _params.neutral_angles.get();
-            mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
-            break;
-        }
-
-        case MAV_MOUNT_MODE_MAVLINK_TARGETING: {
-            // mavlink targets are stored while handling the incoming message set_angle_target() or set_rate_target()
-            break;
-        }
-
-        // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING:
-            update_mnt_target_from_rc_target();
-            break;
-
-        // point mount to a GPS point given by the mission planner
-        case MAV_MOUNT_MODE_GPS_POINT:
-            if (get_angle_target_to_roi(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        // point mount to Home location
-        case MAV_MOUNT_MODE_HOME_LOCATION:
-            if (get_angle_target_to_home(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        // point mount to another vehicle
-        case MAV_MOUNT_MODE_SYSID_TARGET:
-            if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        default:
-            // unknown mode so do nothing
-            break;
-    }
-
-    // send target angles or rates depending on the target type
-    switch (mnt_target.target_type) {
-        case MountTargetType::ANGLE:
-            send_gimbal_device_set_attitude(mnt_target.angle_rad.roll, mnt_target.angle_rad.pitch, mnt_target.angle_rad.yaw, mnt_target.angle_rad.yaw_is_ef);
-            break;
-        case MountTargetType::RATE:
-            send_gimbal_device_set_rate(mnt_target.rate_rads.roll, mnt_target.rate_rads.pitch, mnt_target.rate_rads.yaw, mnt_target.rate_rads.yaw_is_ef);
-            break;
-    }
+    // send target angles/rates/retract depending on the target type
+    send_target_to_gimbal();
 }
 
 // return true if healthy
@@ -263,8 +200,13 @@ bool AP_Mount_MAVLink::start_sending_attitude_to_gimbal()
 }
 
 // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to command gimbal to retract (aka relax)
-void AP_Mount_MAVLink::send_gimbal_device_retract() const
+void AP_Mount_MAVLink::send_target_retracted()
 {
+    // update the target angles.  These may be absolutely bogus, of
+    // course, but may be useful in logs to see what the gimbal was
+    // doing.  This is also preserving existing behaviour in a change...
+    mnt_target.angle_rad.set(Vector3f{0,0,0}, false);
+
     const mavlink_gimbal_device_set_attitude_t pkt {
         {NAN, NAN, NAN, NAN},  // attitude
         0,   // angular velocity x
@@ -279,9 +221,13 @@ void AP_Mount_MAVLink::send_gimbal_device_retract() const
 }
 
 // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to control rate
-// earth_frame should be true if yaw_rads target is an earth frame rate, false if body_frame
-void AP_Mount_MAVLink::send_gimbal_device_set_rate(float roll_rads, float pitch_rads, float yaw_rads, bool earth_frame) const
+void AP_Mount_MAVLink::send_target_rates(const MountRateTarget &rate_rads)
 {
+    const float roll_rads = rate_rads.roll;
+    const float pitch_rads = rate_rads.pitch;
+    const float yaw_rads = rate_rads.yaw;
+    const bool earth_frame = rate_rads.yaw_is_ef;
+
     // prepare flags
     const uint16_t flags = earth_frame ? (GIMBAL_DEVICE_FLAGS_ROLL_LOCK | GIMBAL_DEVICE_FLAGS_PITCH_LOCK | GIMBAL_DEVICE_FLAGS_YAW_LOCK) : 0;
 
@@ -299,9 +245,13 @@ void AP_Mount_MAVLink::send_gimbal_device_set_rate(float roll_rads, float pitch_
 }
 
 // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to control attitude
-// earth_frame should be true if yaw_rad target is in earth frame angle, false if body_frame
-void AP_Mount_MAVLink::send_gimbal_device_set_attitude(float roll_rad, float pitch_rad, float yaw_rad, bool earth_frame) const
+void AP_Mount_MAVLink::send_target_angles(const MountAngleTarget &angle_rad)
 {
+    const float roll_rad = angle_rad.roll;
+    const float pitch_rad = angle_rad.pitch;
+    const float yaw_rad = angle_rad.yaw;
+    const bool earth_frame = angle_rad.yaw_is_ef;
+
     // exit immediately if not initialised
     if (!_initialised) {
         return;

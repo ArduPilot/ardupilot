@@ -52,6 +52,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Values: 29:Scripting
     // @Values: 30:INA3221
     // @Values: 31:Analog Current Only
+    // @Values: 32:TIBQ76952-I2C (Periph only)
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("MONITOR", 1, AP_BattMonitor_Params, _type, int8_t(AP_BattMonitor::Type::NONE), AP_PARAM_FLAG_ENABLE),
@@ -75,13 +76,13 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     AP_GROUPINFO("CAPACITY", 7, AP_BattMonitor_Params, _pack_capacity, AP_BATT_MONITOR_BATTERY_CAPACITY),
 
 #if AP_BATTERY_WATT_MAX_ENABLED
-    // @Param{Plane}: WATT_MAX
+    // @Param{Plane,Rover}: WATT_MAX
     // @DisplayName: Maximum allowed power (Watts)
     // @Description: If battery wattage (voltage * current) exceeds this value then the system will reduce max throttle (THR_MAX, TKOFF_THR_MAX and THR_MIN for reverse thrust) to satisfy this limit. This helps limit high current to low C rated batteries regardless of battery voltage. The max throttle will slowly grow back to THR_MAX (or TKOFF_THR_MAX ) and THR_MIN if demanding the current max and under the watt max. Use 0 to disable.
     // @Units: W
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO_FRAME("WATT_MAX", 8, AP_BattMonitor_Params, _watt_max, 0, AP_PARAM_FRAME_PLANE),
+    AP_GROUPINFO_FRAME("WATT_MAX", 8, AP_BattMonitor_Params, _watt_max, 0, AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_ROVER),
 #endif
 
     // @Param: SERIAL_NUM

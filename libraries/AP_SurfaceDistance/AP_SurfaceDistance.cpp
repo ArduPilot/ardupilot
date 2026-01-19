@@ -163,6 +163,7 @@ void AP_SurfaceDistance::Log_Write(void) const
     // @Description: Surface distance measurement
     // @Field: TimeUS: Time since system startup
     // @Field: I: Instance
+    // @Field: St: Surface distance status
     // @FieldBitmaskEnum: St: Surface_Distance_Status
     // @Field: D: Raw Distance
     // @Field: FD: Filtered Distance

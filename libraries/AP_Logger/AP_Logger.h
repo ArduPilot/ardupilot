@@ -262,6 +262,16 @@ public:
     void Write_Power(void);
     void Write_Radio(const mavlink_radio_t &packet);
     void Write_Message(const char *message);
+    // support for multi-chunk messages:
+    uint8_t get_MSG_id() {
+        uint8_t ret = ++MSG_id;
+        if (ret > 0) {
+            return ret;
+        }
+        return ++MSG_id;
+    }
+    void Write_MessageChunk(uint8_t id, const char *messagechunk, uint8_t chunk_seq);
+
     void Write_MessageF(const char *fmt, ...);
     void Write_Compass();
     void Write_Mode(uint8_t mode, const ModeReason reason);
@@ -387,7 +397,7 @@ public:
     bool msg_type_in_use(uint8_t msg_type) const;
 
     // calculate the length of a message using fields specified in
-    // fmt; includes the message header
+    // fmt; includes the message header. returns -1 on on error.
     int16_t Write_calc_msg_len(const char *fmt) const;
 
     // this structure looks much like struct LogStructure in
@@ -616,6 +626,9 @@ private:
     void log_file_content(FileContent &file_content, const char *filename);
     void file_content_update(FileContent &file_content);
 #endif
+
+    // support for multi-chunk messages:
+    uint8_t MSG_id;
 };
 
 namespace AP {

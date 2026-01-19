@@ -43,7 +43,7 @@ extern const AP_HAL::HAL &hal;
 // datasheet says 50ms min for refill
 #define MIN_DELAY_SET_RESET 50
 
-AP_Compass_Backend *AP_Compass_MMC3416::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_MMC3416::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                               bool force_external,
                                               enum Rotation rotation)
 {

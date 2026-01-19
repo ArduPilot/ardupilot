@@ -17,17 +17,19 @@ except ImportError:
     sys.exit(1)
 
 if monocypher.__version__ != "3.1.3.2":
-    Logs.error("must use monocypher 3.1.3.2, please run: python3 -m pip install pymonocypher==3.1.3.2")
-    return None
-    
+    print("must use monocypher 3.1.3.2, please run: python3 -m pip install pymonocypher==3.1.3.2")
+    sys.exit(1)
+
+from argparse import ArgumentParser
+parser = ArgumentParser(description='This program is used to sign the firmware file.')
+parser.add_argument('apj_file', metavar='apj-file', type=str, help='Firmware (APJ) to sign')
+parser.add_argument('key_file', metavar='key-file', type=str, help='Private key used to sign the firmware')
+args = parser.parse_args()
+
 key_len = 32
 sig_len = 64
 sig_version = 30437
 descriptor = b'\x41\xa3\xe5\xf2\x65\x69\x92\x07'
-
-if len(sys.argv) < 3:
-    print("Usage: make_secure_fw.py APJ_FILE PRIVATE_KEYFILE")
-    sys.exit(1)
 
 def to_unsigned(i):
     '''convert a possibly signed integer to unsigned'''
@@ -35,11 +37,8 @@ def to_unsigned(i):
         i += 2**32
     return i
 
-apj_file = sys.argv[1]
-key_file = sys.argv[2]
-
 # open apj file
-apj = open(apj_file, 'r').read()
+apj = open(args.apj_file, 'r').read()
 
 # decode json in apj
 d = json.loads(apj)
@@ -55,7 +54,7 @@ def decode_key(ktype, key):
         sys.exit(1)
     return base64.b64decode(key[len(ktype):])
 
-key = decode_key("PRIVATE", open(key_file, 'r').read())
+key = decode_key("PRIVATE", open(args.key_file, 'r').read())
 if len(key) != key_len:
     print("Bad key length %u" % len(key))
     sys.exit(1)
@@ -92,7 +91,7 @@ print("Applying signature")
 d["image"] = base64.b64encode(zlib.compress(img,9)).decode('utf-8')
 d["signed_firmware"] = True
 
-f = open(sys.argv[1], "w")
+f = open(args.apj_file, "w")
 f.write(json.dumps(d, indent=4))
 f.close()
-print("Wrote %s" % apj_file)
+print("Wrote %s" % args.apj_file)

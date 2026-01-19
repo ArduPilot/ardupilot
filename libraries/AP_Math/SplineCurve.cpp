@@ -42,8 +42,8 @@ void SplineCurve::set_speed_accel(float speed_xy, float speed_up, float speed_do
 }
 
 // set origin and destination using position vectors (offset from EKF origin)
-// origin_vel is vehicle velocity at origin (in NEU frame)
-// destination_vel is vehicle velocity at destination (in NEU frame)
+// origin_vel is vehicle velocity at origin (in NED frame)
+// destination_vel is vehicle velocity at destination (in NED frame)
 // time is reset to zero
 void SplineCurve::set_origin_and_destination(const Vector3p &origin, const Vector3p &destination, const Vector3f &origin_vel, const Vector3f &destination_vel)
 {
@@ -97,8 +97,8 @@ void SplineCurve::set_origin_and_destination(const Vector3p &origin, const Vecto
 }
 
 // move target location along track from origin to destination
-// target_pos is updated with the target position from EKF origin in NEU frame
-// target_vel is updated with the target velocity in NEU frame
+// target_pos is updated with the target position from EKF origin in NED frame
+// target_vel is updated with the target velocity in NED frame
 void SplineCurve::advance_target_along_track(float dt, Vector3p &target_pos, Vector3f &target_vel)
 {
     // handle zero length track
@@ -227,7 +227,7 @@ void SplineCurve::update_solution(const Vector3p &origin, const Vector3p &dest, 
 
 // calculate target position and velocity from given spline time
 // time is a value from 0 to 1
-// position is updated with target position as an offset from EKF origin in NEU frame
+// position is updated with target position as an offset from EKF origin in NED frame
 // velocity is updated with the unscaled velocity
 // relies on set_origin_and_destination having been called to update_solution
 void SplineCurve::calc_target_pos_vel(float time, Vector3p &position, Vector3f &velocity, Vector3f &acceleration, Vector3f &jerk)

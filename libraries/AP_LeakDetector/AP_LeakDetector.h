@@ -36,6 +36,8 @@ public:
     // Update all drivers
     bool update(void);
 
+    int8_t get_pin(uint8_t instance) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:

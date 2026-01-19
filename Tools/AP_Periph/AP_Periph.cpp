@@ -84,7 +84,10 @@ const struct LogStructure AP_Periph_FW::log_structure[] = {
 
 void AP_Periph_FW::init()
 {
-    
+#if AP_SIM_ENABLED
+    sitl.init();
+#endif
+
     // always run with watchdog enabled. This should have already been
     // setup by the bootloader, but if not then enable now
 #ifndef DISABLE_WATCHDOG
@@ -315,6 +318,11 @@ void AP_Periph_FW::init()
 #if AP_SCRIPTING_ENABLED
     scripting.init();
 #endif
+
+#if AP_PERIPH_ACTUATOR_TELEM_ENABLED
+    actuator_telem.init();
+#endif
+
     start_ms = AP_HAL::millis();
 }
 
@@ -505,6 +513,10 @@ void AP_Periph_FW::update()
     rcin_update();
 #endif
 
+#if AP_PERIPH_ACTUATOR_TELEM_ENABLED
+    actuator_telem.update();
+#endif
+
 #if AP_PERIPH_BATTERY_BALANCE_ENABLED
     batt_balance_update();
 #endif
@@ -555,6 +567,9 @@ void AP_Periph_FW::update()
 #endif
 #if AP_PERIPH_BATTERY_TAG_ENABLED
     battery_tag.update();
+#endif
+#if AP_PERIPH_BATTERY_BMS_ENABLED
+    battery_bms.update();
 #endif
 }
 

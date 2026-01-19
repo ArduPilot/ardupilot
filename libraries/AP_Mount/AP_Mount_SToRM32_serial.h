@@ -13,7 +13,9 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 
-#define AP_MOUNT_STORM32_SERIAL_RESEND_MS   1000    // resend angle targets to gimbal once per second
+// timeout for no-response-received (gimbal only sends data when we
+// send it data first)
+#define AP_MOUNT_STORM32_SERIAL_TIMEOUT_MS   2000
 
 class AP_Mount_SToRM32_serial : public AP_Mount_Backend_Serial
 {
@@ -35,8 +37,18 @@ protected:
 
 private:
 
+    // SToRM32-serial can only send angles
+    uint8_t natively_supported_mount_target_types() const override {
+        return NATIVE_ANGLES_ONLY;
+    };
+    
+    // allow removing lean angles for pitch and roll locks
+    bool apply_bf_roll_pitch_adjustments_in_rc_targeting() const override {
+        return true;
+    }
+
     // send_target_angles
-    void send_target_angles(const MountTarget& angle_target_rad);
+    void send_target_angles(const MountAngleTarget& angle_target_rad) override;
 
     // send read data request
     void get_angles();
@@ -53,7 +65,7 @@ private:
 
     //void add_next_reply(ReplyType reply_type);
     uint8_t get_reply_size(ReplyType reply_type);
-    bool can_send(bool with_control);
+    bool can_send();
 
     struct PACKED SToRM32_reply_data_struct {
         uint16_t state;

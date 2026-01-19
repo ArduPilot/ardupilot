@@ -735,7 +735,6 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_g2,                34,      AP_PARAM_FLOAT,  "SAIL_ANGLE_IDEAL" },
     { Parameters::k_param_g2,                35,      AP_PARAM_FLOAT,  "SAIL_HEEL_MAX" },
     { Parameters::k_param_g2,                36,      AP_PARAM_FLOAT,  "SAIL_NO_GO_ANGLE" },
-    { Parameters::k_param_arming,             2,     AP_PARAM_INT16,  "ARMING_CHECK" },
     { Parameters::k_param_turn_max_g_old,     0,     AP_PARAM_FLOAT,  "ATC_TURN_MAX_G" },
     { Parameters::k_param_g2,                82,     AP_PARAM_INT8 , "PRX1_TYPE" },
     { Parameters::k_param_g2,               146,     AP_PARAM_INT8 , "PRX1_ORIENT" },
@@ -818,14 +817,6 @@ void Rover::load_parameters(void)
     AP_Param::set_default_by_name("BRD_SAFETYOPTION", AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF|
                                                       AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON|
                                                       AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED);
-#endif
-
-#if AP_AIRSPEED_ENABLED | AP_AIS_ENABLED | AP_FENCE_ENABLED
-    // Find G2's Top Level Key
-    AP_Param::ConversionInfo info;
-    if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
-        return;
-    }
 #endif
 
     static const AP_Param::G2ObjectConversion g2_conversions[] {

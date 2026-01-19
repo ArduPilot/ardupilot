@@ -1,0 +1,11 @@
+# hw definition file for Matek H7A3-Wing
+
+include ../MatekH7A3/hwdef.inc
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MatekH7A3_Wing
+
+# --------------------- SD ----------------------
+SPIDEV sdcard    SPI2 DEVID3 SD_CS      MODE0 400*KHZ 25*MHZ
+
+define HAL_OS_FATFS_IO 1

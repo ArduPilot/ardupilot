@@ -27,9 +27,10 @@ define AP_TEMPERATURE_SENSOR_BACKEND_DEFAULT_ENABLED 1
 pbarker@fx:~$ ./waf configure --board=CubeOrange --extra-hwdef=/tmp/extra.hwdef
 pbarker@fx:~/rc/ardupilot(pr/SHT3x)$ ./waf rover --upload
 
-# when plugging into I2C1 on a CubeOrange:
+# when plugging into I2C2 on a CubeOrange:
 param set TEMP1_TYPE 8
 param set TEMP1_BUS 0
+param set TEMP1_ADDR 0x44
 
 this is bad:
 AP: SHT3x reset failed

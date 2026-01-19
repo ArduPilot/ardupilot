@@ -514,12 +514,29 @@ def find_geocoder_location(locname):
     except ImportError:
         print("geocoder not installed")
         return None
-    j = geocoder.osm(locname)
-    if j is None or not hasattr(j, 'lat') or j.lat is None:
-        print("geocoder failed to find '%s'" % locname)
+    # Step 1: Attempt the lookup
+    try:
+        j = geocoder.osm(locname)
+    except Exception as e:
+        # Handle network/blocked errors (like 403)
+        err_msg = str(e)
+        if '403' in err_msg:
+            print(f"geocoder access denied (HTTP 403) for '{locname}'")
+        else:
+            print(f"geocoder error: {err_msg}")
         return None
-    lat = j.lat
-    lon = j.lng
+    # Step 2: Validate the response object (Handles status_code 403 if no exception was raised)
+    status_code = getattr(j, 'status_code', None)
+    if status_code == 403:
+        print(f"geocoder access denied (HTTP 403) for '{locname}'")
+        return None
+
+    if j is None or not hasattr(j, 'lat') or j.lat is None:
+        print(f"geocoder failed to find '{locname}'")
+        return None
+    # Step 3: Success logic
+    lat, lon = j.lat, j.lng
+
     from MAVProxy.modules.mavproxy_map import srtm
     downloader = srtm.SRTMDownloader()
     downloader.loadFileList()
@@ -531,7 +548,7 @@ def find_geocoder_location(locname):
             alt = tile.getAltitudeFromLatLon(lat, lon)
             break
     if alt is None:
-        print("timed out getting altitude for '%s'" % locname)
+        print(f"timed out getting altitude for '{locname}'")
         return None
     return [lat, lon, alt, 0.0]
 
@@ -784,10 +801,10 @@ def start_vehicle(binary, opts, stuff, spawns=None):
             if not os.path.isfile(x):
                 print("The parameter file (%s) does not exist" % (x,))
                 sys.exit(1)
-        path = ",".join(paths)
         if cmd_opts.count > 1 or opts.auto_sysid:
             # we are in a subdirectory when using -n
-            path = os.path.join("..", path)
+            paths = [os.path.join("..", x) for x in paths]
+        path = ",".join(paths)
         progress("Using defaults from (%s)" % (path,))
     if opts.flash_storage:
         cmd.append("--set-storage-flash-enabled 1")

@@ -654,35 +654,35 @@ simIn.param.PSCD.JERK_MAX_Z_DFLT = single(500); % Default vertical jerk, defined
 simIn.param.PSCD.VEL_MAX_DN = getParamVal(sid, 'PILOT_SPEED_DN'); % Maximum vertical descending velocity in cm/s, defined in parameters.cpp, line 906
 simIn.param.PSCD.VEL_MAX_UP = getParamVal(sid, 'PILOT_SPEED_UP'); % Maximum vertical ascending velocity in cm/s, defined in parameters.cpp, line 223
 simIn.param.PSCD.ACC_MAX_Z = getParamVal(sid, 'PILOT_ACCEL_Z'); % Maximum vertical acceleration used when pilot is controlling the altitude, parameters.cpp, line 232
-simIn.param.PSCD.JERK_MAX_Z = getParamVal(sid, 'PSC_JERK_Z'); % Jerk limit of vertical kinematic path generation in m/s^3. Determines how quickly aircraft changes acceleration target
+simIn.param.PSCD.JERK_MAX_Z = getParamVal(sid, 'PSC_JERK_D'); % Jerk limit of vertical kinematic path generation in m/s^3. Determines how quickly aircraft changes acceleration target
 simIn.param.PSCD.OVERSPEED_GAIN_Z = single(2); % gain controlling rate at which z-axis speed is brought back within SPEED_UP and SPEED_DOWN range, defined in AC_PosControl.h 
 %% Position Controller z
 
 % Parameters z position controller
-simIn.param.PSCD.P_POS = getParamVal(sid, 'PSC_POSZ_P'); % P gain of the vertical position controller
+simIn.param.PSCD.P_POS = getParamVal(sid, 'PSC_D_POS_P'); % P gain of the vertical position controller
 
 % Parameters z velocity controller
-simIn.param.PSCD.P_VEL = getParamVal(sid, 'PSC_VELZ_P'); % P gain of the vertical velocity controller
-simIn.param.PSCD.I_VEL = getParamVal(sid, 'PSC_VELZ_I'); % I gain of the vertical velocity controller
-simIn.param.PSCD.D_VEL = getParamVal(sid, 'PSC_VELZ_D'); % D gain of the vertical velocity controller
-simIn.param.PSCD.IMAX_VEL = getParamVal(sid, 'PSC_VELZ_IMAX'); % I gain maximu vertical velocity controller
-simIn.param.PSCD.FF_VEL = getParamVal(sid, 'PSC_VELZ_FF'); % Feed Forward gain of the vertical velocity controller
-simIn.param.PSCD.FLTE_VEL = getParamVal(sid, 'PSC_VELZ_FLTE'); % Cutoff frequency of the error filter (in Hz)
-simIn.param.PSCD.FLTD_VEL = getParamVal(sid, 'PSC_VELZ_FLTD'); % Cutoff frequency of the D term filter (in Hz)
+simIn.param.PSCD.P_VEL = getParamVal(sid, 'PSC_D_VEL_P'); % P gain of the vertical velocity controller
+simIn.param.PSCD.I_VEL = getParamVal(sid, 'PSC_D_VEL_I'); % I gain of the vertical velocity controller
+simIn.param.PSCD.D_VEL = getParamVal(sid, 'PSC_D_VEL_D'); % D gain of the vertical velocity controller
+simIn.param.PSCD.IMAX_VEL = getParamVal(sid, 'PSC_D_VEL_IMAX'); % I gain maximu vertical velocity controller
+simIn.param.PSCD.FF_VEL = getParamVal(sid, 'PSC_D_VEL_FF'); % Feed Forward gain of the vertical velocity controller
+simIn.param.PSCD.FLTE_VEL = getParamVal(sid, 'PSC_D_VEL_FLTE'); % Cutoff frequency of the error filter (in Hz)
+simIn.param.PSCD.FLTD_VEL = getParamVal(sid, 'PSC_D_VEL_FLTD'); % Cutoff frequency of the D term filter (in Hz)
 simIn.param.PSCD.CTRL_RATIO_INIT = single(2.0); % Initial value of _vel_z_control_ratio, defined in PosControl.h, line 456
 
 % Parameters z acceleration controller
-simIn.param.PIDA.P = getParamVal(sid, 'PSC_ACCZ_P'); % P gain of the vertical acceleration controller
-simIn.param.PIDA.I = getParamVal(sid, 'PSC_ACCZ_I'); % I gain of the vertical acceleration controller
-simIn.param.PIDA.D = getParamVal(sid, 'PSC_ACCZ_D'); % D gain of the vertical acceleration controller
-simIn.param.PIDA.IMAX = getParamVal(sid, 'PSC_ACCZ_IMAX'); % I gain maximu vertical acceleration controller
-simIn.param.PIDA.PDMX = getParamVal(sid, 'PSC_ACCZ_PDMX');
-simIn.param.PIDA.FF = getParamVal(sid, 'PSC_ACCZ_FF'); % Feed Forward gain of the vertical acceleration controller
-simIn.param.PIDA.DFF = getParamVal(sid, 'PSC_ACCZ_D_FF'); % Derivative Feed Forward gain of the vertical acceleration controller
-simIn.param.PIDA.FLTE_f = getParamVal(sid, 'PSC_ACCZ_FLTE'); % Cutoff frequency of the error filter (in Hz)
-simIn.param.PIDA.FLTD_f = getParamVal(sid, 'PSC_ACCZ_FLTD'); % Cutoff frequency of the D term filter (in Hz)
-simIn.param.PIDA.FLTT_f = getParamVal(sid, 'PSC_ACCZ_FLTT'); % Cutoff frequency of the target filter (in Hz)
-simIn.param.PIDA.SR_MAX = getParamVal(sid, 'PSC_ACCZ_SMAX'); % Upper limit of the slew rate produced by combined P and D gains
+simIn.param.PIDA.P = getParamVal(sid, 'PSC_D_ACC_P'); % P gain of the vertical acceleration controller
+simIn.param.PIDA.I = getParamVal(sid, 'PSC_D_ACC_I'); % I gain of the vertical acceleration controller
+simIn.param.PIDA.D = getParamVal(sid, 'PSC_D_ACC_D'); % D gain of the vertical acceleration controller
+simIn.param.PIDA.IMAX = getParamVal(sid, 'PSC_D_ACC_IMAX'); % I gain maximu vertical acceleration controller
+simIn.param.PIDA.PDMX = getParamVal(sid, 'PSC_D_ACC_PDMX');
+simIn.param.PIDA.FF = getParamVal(sid, 'PSC_D_ACC_FF'); % Feed Forward gain of the vertical acceleration controller
+simIn.param.PIDA.DFF = getParamVal(sid, 'PSC_D_ACC_D_FF'); % Derivative Feed Forward gain of the vertical acceleration controller
+simIn.param.PIDA.FLTE_f = getParamVal(sid, 'PSC_D_ACC_FLTE'); % Cutoff frequency of the error filter (in Hz)
+simIn.param.PIDA.FLTD_f = getParamVal(sid, 'PSC_D_ACC_FLTD'); % Cutoff frequency of the D term filter (in Hz)
+simIn.param.PIDA.FLTT_f = getParamVal(sid, 'PSC_D_ACC_FLTT'); % Cutoff frequency of the target filter (in Hz)
+simIn.param.PIDA.SR_MAX = getParamVal(sid, 'PSC_D_ACC_SMAX'); % Upper limit of the slew rate produced by combined P and D gains
 simIn.param.PIDA.SR_TAU = single(1.0); % Slew Rate Tau - not yet available as a parameter of the copter. Set to 1.0 by default (AC_PID.h, line 24).
 simIn.param.PIDA.SR_FLT_f = single(25.0);  % Slew Rate lowpass filter cutoff frequency. Defined in SlewLimiter.h, line 14.
 

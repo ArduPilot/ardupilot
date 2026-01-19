@@ -86,6 +86,11 @@ protected:
     // get attitude as a quaternion.  returns true on success
     bool get_attitude_quaternion(Quaternion& att_quat) override;
 
+    // Xacti can send either rates or angles
+    uint8_t natively_supported_mount_target_types() const override {
+        return NATIVE_ANGLES_AND_RATES_ONLY;
+    };
+
 private:
 
     // send text prefix string to reduce flash cost
@@ -103,12 +108,10 @@ private:
     static const char* sensor_mode_str[];
 
     // send target pitch and yaw rates to gimbal
-    // yaw_is_ef should be true if yaw_rads target is an earth frame rate, false if body_frame
-    void send_target_rates(float pitch_rads, float yaw_rads, bool yaw_is_ef);
+    void send_target_rates(const MountRateTarget &rate_rads) override;
 
     // send target pitch and yaw angles to gimbal
-    // yaw_is_ef should be true if yaw_rad target is an earth frame angle, false if body_frame
-    void send_target_angles(float pitch_rad, float yaw_rad, bool yaw_is_ef);
+    void send_target_angles(const MountAngleTarget &angle_rad) override;
 
     // register backend in detected modules array used to map DroneCAN port and node id to backend
     void register_backend();

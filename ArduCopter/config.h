@@ -211,7 +211,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Sport - fly vehicle in rate-controlled (earth-frame) mode
 #ifndef MODE_SPORT_ENABLED
-# define MODE_SPORT_ENABLED 0
+# define MODE_SPORT_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -488,8 +488,8 @@
 #endif
 
 // default maximum vertical velocity and acceleration the pilot may request
-#ifndef PILOT_VELZ_MAX
- # define PILOT_VELZ_MAX    250     // maximum vertical velocity in cm/s
+#ifndef PILOT_SPEED_UP_DEFAULT
+ # define PILOT_SPEED_UP_DEFAULT    250     // maximum vertical velocity in cm/s
 #endif
 #ifndef PILOT_ACCEL_Z_DEFAULT
  # define PILOT_ACCEL_Z_DEFAULT 250 // vertical acceleration in cm/s/s while altitude is under pilot control

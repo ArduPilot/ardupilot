@@ -610,7 +610,7 @@ protected:
     void handle_rally_fetch_point(const mavlink_message_t &msg);
     void handle_rally_point(const mavlink_message_t &msg) const;
 #if HAL_MOUNT_ENABLED
-    virtual void handle_mount_message(const mavlink_message_t &msg);
+    void handle_mount_message(const mavlink_message_t &msg);
 #endif
     void handle_fence_message(const mavlink_message_t &msg);
     void handle_param_value(const mavlink_message_t &msg);
@@ -675,7 +675,13 @@ protected:
         const uint16_t interval_ms = 10000;
     }  _timesync_request;
 
-    void handle_statustext(const mavlink_message_t &msg) const;
+    void handle_statustext(const mavlink_message_t &msg);
+    struct {
+        uint8_t last_src_system;
+        uint8_t last_src_component;
+        uint8_t last_id; // ID from the mavlink packet
+        uint8_t msg_id;  // ID used in our logs
+    } statustext_chunking;
     void handle_named_value(const mavlink_message_t &msg) const;
 
     bool telemetry_delayed() const;

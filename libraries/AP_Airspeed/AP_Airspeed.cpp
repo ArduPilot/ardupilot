@@ -340,6 +340,9 @@ void AP_Airspeed::init()
 
     convert_per_instance();
 
+    // Set primary from parameter to avoid primary changed message at boot
+    primary = primary_sensor.get();
+
 #if ENABLE_PARAMETER
     // if either type is set then enable if not manually set
     if (!_enable.configured() && ((param[0].type.get() != TYPE_NONE) || (param[1].type.get() != TYPE_NONE))) {
@@ -709,6 +712,52 @@ void AP_Airspeed::read(uint8_t i)
 #endif // HAL_BUILD_AP_PERIPH
 }
 
+// Select primary sensor based on user parameters and health
+uint8_t AP_Airspeed::select_primary() const
+{
+    // user selected primary from parameter
+    const uint8_t user_primary = primary_sensor.get();
+
+    // If user selected instance is both healthy and set to use then it is a valid primary
+    if (healthy(user_primary) && use(user_primary)) {
+        return user_primary;
+    }
+
+    // If the currently selected primary is still valid there is no need to change
+    if (healthy(primary) && use(primary)) {
+        return primary;
+    }
+
+    // Select the first sensor which is both healthy and set to use
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if (healthy(i) && use(i)) {
+            return i;
+        }
+    }
+
+    // No sensor is both healthy and set to use
+
+    // Continue with current primary if healthy
+    if (healthy(primary)) {
+        return primary;
+    }
+
+    // Use user selected instance if healthy
+    if (healthy(user_primary)) {
+        return user_primary;
+    }
+
+    // Select the first sensor which is healthy
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if (healthy(i)) {
+            return i;
+        }
+    }
+
+    // No healthy sensor, don't change primary
+    return primary;
+}
+
 // read all airspeed sensors
 void AP_Airspeed::update()
 {
@@ -727,23 +776,18 @@ void AP_Airspeed::update()
     }
 #endif
 
-#if HAL_LOGGING_ENABLED
-    const uint8_t old_primary = primary;
-#endif
-
-    // setup primary
-    if (healthy(primary_sensor.get())) {
-        primary = primary_sensor.get();
-    } else {
-        for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-            if (healthy(i)) {
-                primary = i;
-                break;
-            }
-        }
-    }
-
+    // Check for failures possibly marking sensors and unhealthy
     check_sensor_failures();
+
+    // Record old primary sensor for reporting
+    const uint8_t old_primary = primary;
+
+    // Select primary sensor based on user parameters and health
+    primary = select_primary();
+
+    if (primary != old_primary) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Airspeed primary changed: %i", primary+1);
+    }
 
 #if HAL_LOGGING_ENABLED
     if (primary != old_primary) {
@@ -1008,6 +1052,20 @@ bool AP_Airspeed::arming_checks(size_t buflen, char *buffer) const
         if (!healthy(i)) {
             hal.util->snprintf(buffer, buflen, "%d not healthy", i + 1);
             return false;
+        }
+    }
+
+
+    // If the primary sensor is marked to not use then user should either:
+    // - change primary to a sensor which is marked to to use
+    // - allow using the primary
+    // If no sensors are marked for use then the check passes
+    if (!use(primary_sensor.get())) {
+        for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+            if (use(i)) {
+                hal.util->snprintf(buffer, buflen, "not using Primary (%i)", primary_sensor.get() + 1);
+                return false;
+            }
         }
     }
 

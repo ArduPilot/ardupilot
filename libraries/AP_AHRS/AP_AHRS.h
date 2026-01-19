@@ -193,9 +193,9 @@ public:
     // returns false if estimate is unavailable
     bool airspeed_vector_TAS(Vector3f &vec) const;
 
-    // return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed
+    // return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed for a given sensor instance
     // returns false if the data is unavailable
-    bool airspeed_health_data(float &innovation, float &innovationVariance, uint32_t &age_ms) const;
+    bool airspeed_health_data(uint8_t instance, float &innovation, float &innovationVariance, uint32_t &age_ms) const;
 
     // return true if a airspeed sensor is enabled
     bool airspeed_sensor_enabled(void) const {
@@ -257,7 +257,7 @@ public:
 #if AP_AHRS_POSITION_RESET_ENABLED
     // Set the EKF's NE horizontal position states and their corresponding variances from the supplied WGS-84 location
     // and 1-sigma horizontal position uncertainty. This can be used when the EKF is dead reckoning to periodically
-    // correct the position. If the EKF is is still using data from a postion sensor such as GPS, the position set
+    // correct the position. If the EKF is is still using data from a position sensor such as GPS, the position set
     // will not be performed.
     // pos_accuracy is the standard deviation of the horizontal position uncertainty in metres.
     // The altitude element of the location is not used.
@@ -930,6 +930,10 @@ private:
 
     // return the quaternion defining the rotation from NED to XYZ (body) axes
     bool _get_quaternion(Quaternion &quat) const WARN_IF_UNUSED;
+
+    // return the quaternion defining the rotation from NED to XYZ
+    // (body) axes for the passed-in type
+    bool _get_quaternion_for_ekf_type(Quaternion &quat, EKFType type) const;
 
     // return secondary position solution if available
     bool _get_secondary_position(Location &loc) const;

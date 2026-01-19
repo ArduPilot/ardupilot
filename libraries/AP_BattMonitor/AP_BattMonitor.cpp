@@ -28,6 +28,7 @@
 #include "AP_BattMonitor_Synthetic_Current.h"
 #include "AP_BattMonitor_AD7091R5.h"
 #include "AP_BattMonitor_Scripting.h"
+#include "AP_BattMonitor_TIBQ76952.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -707,6 +708,11 @@ AP_BattMonitor::init()
                 drivers[instance] = NEW_NOTHROW AP_BattMonitor_INA3221(*this, state[instance], _params[instance]);
                 break;
 #endif  // AP_BATTERY_INA3221_ENABLED
+#if AP_BATTERY_TIBQ76952_ENABLED
+            case Type::TIBQ76952_I2C:
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_TIBQ76952(*this, state[instance], _params[instance]);
+                break;
+#endif // AP_BATTERY_TIBQ76952_ENABLED
             case Type::NONE:
             default:
                 break;
@@ -1198,21 +1204,21 @@ bool AP_BattMonitor::get_state_of_health_pct(uint8_t instance, uint8_t &soh_pct)
     return drivers[instance]->get_state_of_health_pct(soh_pct);
 }
 
-// Enable/Disable (Turn on/off) MPPT power to all backends who are MPPTs
-void AP_BattMonitor::MPPT_set_powered_state_to_all(const bool power_on)
+// Enable/Disable (Turn on/off) power to all backends who are MPPTs or BMSs
+void AP_BattMonitor::set_powered_state_to_all(const bool power_on)
 {
     for (uint8_t i=0; i < _num_instances; i++) {
-        MPPT_set_powered_state(i, power_on);
+        set_powered_state(i, power_on);
     }
 }
 
-// Enable/Disable (Turn on/off) MPPT power. When disabled, the MPPT does not
+// Enable/Disable (Turn on/off) power. When disabled, the MPPT or BMS does not
 // supply energy to the system regardless if it's capable to or not. When enabled
 // it will supply energy if available.
-void AP_BattMonitor::MPPT_set_powered_state(const uint8_t instance, const bool power_on)
+void AP_BattMonitor::set_powered_state(const uint8_t instance, const bool power_on)
 {
     if (instance < _num_instances && drivers[instance] != nullptr) {
-        drivers[instance]->mppt_set_powered_state(power_on);
+        drivers[instance]->set_powered_state(power_on);
     }
 }
 
