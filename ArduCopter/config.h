@@ -318,8 +318,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // Landing
 //
-#ifndef LAND_SPEED
- # define LAND_SPEED    50          // the descent speed for the final stage of landing in cm/s
+#ifndef LAND_SPD_MS_DEFAULT
+ # define LAND_SPD_MS_DEFAULT    0.5f   // the descent speed for the final stage of landing in m/s
 #endif
 #ifndef LAND_REPOSITION_DEFAULT
  # define LAND_REPOSITION_DEFAULT   1   // by default the pilot can override roll/pitch during landing
@@ -332,6 +332,11 @@
 #endif
 #ifndef LAND_RANGEFINDER_MIN_ALT_M
 #define LAND_RANGEFINDER_MIN_ALT_M  2.0
+#endif
+
+// error if old LAND parameter default definitions are used
+#ifdef LAND_SPEED
+ #error "LAND_SPEED definition replaced with LAND_SPD_MS_DEFAULT"
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
