@@ -38,7 +38,7 @@ public:
     CLASS_NO_COPY(Mode);
 
     // enter this mode, returns false if we failed to enter
-    bool enter();
+    virtual bool enter();
 
     // perform any cleanups required:
     void exit();
@@ -654,6 +654,12 @@ public:
 
     // return distance (in meters) to destination
     float get_distance_to_destination() const override { return _distance_to_destination; }
+
+    // overriding the base class enter() method so that we can enter loiter without a destination being provided
+    bool enter() override;
+
+    // Enter mode and set destination location
+    bool enter(const Location &destintation);
 
 protected:
 
