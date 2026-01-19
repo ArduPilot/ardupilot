@@ -4468,10 +4468,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # center controls and RTL
         self.set_rc(2, 1500)
-        self.progress("# Enter RTL")
-        self.change_mode('RTL')
-        tstart = self.get_sim_time()
-        self.wait_disarmed(timeout=200)
+        self.do_RTL(timeout=200)
 
     def BodyFrameOdom(self):
         """Disable GPS navigation, enable input of VISION_POSITION_DELTA."""
