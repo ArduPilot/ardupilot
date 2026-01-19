@@ -187,7 +187,7 @@ bool parse_controls(const char *json)
         switch (key->type) 
         {
           case DATA_FLOAT:
-              *((float *)key->ptr) = atof(p);
+              *((float *)key->ptr) = strtof(p, NULL);
               #ifdef DEBUG_INPUT_DATA
               printf("GOT  %s/%s\n", key->section, key->key);
               #endif
@@ -347,7 +347,7 @@ bool initialize (int argc, char *argv[])
       { // specify drag functor used to simulate air resistance.
         if (argc > i+1 )
         {
-          dragFactor = atof (argv[i+1]);
+          dragFactor = strtof (argv[i+1], NULL);
           printf("drag Factor %f\n",dragFactor);
         }
         else
