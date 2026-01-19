@@ -177,6 +177,10 @@ void AP_InertialSensor_SITL::generate_accel()
 
         if (fabsf(sitl->accel_fail[accel_instance]) > 1.0e-6f) {
             accel.x = accel.y = accel.z = sitl->accel_fail[accel_instance];
+            if (sitl->accel_health_mask & (1 << accel_instance)) {
+                // also increase error count for triggering health flag
+                _inc_accel_error_count(accel_instance);
+            }
         }
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
