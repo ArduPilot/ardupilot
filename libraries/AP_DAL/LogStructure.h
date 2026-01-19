@@ -518,7 +518,7 @@ struct log_RSLL {
     int32_t lng; // WGS-84 longitude in 1E7 degrees
     float posAccSD; // horizontal position 1 STD uncertainty (m)
     uint32_t timestamp_ms; // time the measurement was taken (msec)
-    uint32_t received_ms; // tine the measurement was received by the EKF (msec)
+    uint32_t received_ms; // time the measurement was received by the EKF (msec)
     uint8_t _end;
 };
 
