@@ -340,6 +340,8 @@ void AP_Doppler_Backend::parse_WD(const char *payload)
     gcs().send_text(MAV_SEVERITY_INFO,"WD_success");
 }
 
+
+
 bool AP_Doppler_Backend::get_velocity_body(Vector3f &vel_body_mps, uint32_t &t_ms, float &quality, DVL_LockState &lock) const
 {
     lock = DVL_LockState::NO_LOCK;

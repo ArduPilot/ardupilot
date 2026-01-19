@@ -105,7 +105,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #if AP_GRIPPER_ENABLED
     SCHED_TASK_CLASS(AP_Gripper,          &sub.g2.gripper,   update,              10,  75,  75),
 #endif
-    SCHED_TASK(doppler_update,        0.1,   100,  74),
+    SCHED_TASK(doppler_update,         1,    100,  74),
 #if STATS_ENABLED == ENABLED
     SCHED_TASK(stats_update,           1,    200,  76),
 #endif
@@ -183,12 +183,10 @@ void Sub::update_batt_compass()
 
 void Sub::doppler_update()
 {
+   
     inertial_doppler.update();
 
-    const AP_Doppler_Parameters &params = inertial_doppler.parameters();
-    if (!params.enabled()) {
-        return;
-    }
+//    const AP_Doppler_Parameters &params = inertial_doppler.parameters();
 
     Vector3f vel_body_mps;
     uint32_t t_ms = 0;
@@ -198,31 +196,13 @@ void Sub::doppler_update()
         return;
     }
 
-    if (quality < params.q_min()) {
-        return;
-    }
-
-    float vel_err = params.vel_err();
-    if (lock == DVL_LockState::WATER_TRACK) {
-        if (params.vel_err_wtr() <= 0.0f) {
-            return;
-        }
-        vel_err = params.vel_err_wtr();
-    } else if (lock != DVL_LockState::BOTTOM_LOCK) {
-        return;
-    }
-
     Vector3f vel_body_corr = vel_body_mps;
-    const Vector3f &pos_offset = params.pos_offset_body();
-    if (!pos_offset.is_zero()) {
-        vel_body_corr -= ahrs.get_gyro().cross(pos_offset);
-    }
 
     const Matrix3f &rot_bn = ahrs.get_rotation_body_to_ned();
     const Vector3f vel_ned = rot_bn * vel_body_corr;
-    ahrs.writeExtNavVelData(vel_ned, vel_err, t_ms, 0);
+    ahrs.writeExtNavVelData(vel_ned, 0, t_ms, 0);
 
-    inertial_doppler.send();
+    inertial_doppler.send(); 
 }
 
 

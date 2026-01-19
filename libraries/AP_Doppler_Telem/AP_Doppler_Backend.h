@@ -10,11 +10,13 @@
 #define AP_DOPPLER_START_BYTE ':'
 #define AP_DOPPLER_LAUNCH      "CS \r000000000000"  
 
+
 enum class DVL_LockState : uint8_t {
     NO_LOCK = 0,
     BOTTOM_LOCK = 1,
     WATER_TRACK = 2,
 };
+
 
 class AP_Doppler_Backend
 {
