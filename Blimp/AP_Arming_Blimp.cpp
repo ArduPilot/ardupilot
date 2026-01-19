@@ -201,16 +201,16 @@ bool AP_Arming_Blimp::pre_arm_ekf_attitude_check()
 // performs mandatory gps checks.  returns true if passed
 bool AP_Arming_Blimp::mandatory_gps_checks(bool display_failure)
 {
+    // check if flight mode requires GPS
+    bool mode_requires_gps = blimp.flightmode->requires_GPS();
+
     // always check if inertial nav has started and is ready
     const auto &ahrs = AP::ahrs();
     char failure_msg[50] = {};
-    if (!ahrs.pre_arm_check(false, failure_msg, sizeof(failure_msg))) {
+    if (!ahrs.pre_arm_check(mode_requires_gps, failure_msg, sizeof(failure_msg))) {
         check_failed(display_failure, "AHRS: %s", failure_msg);
         return false;
     }
-
-    // check if flight mode requires GPS
-    bool mode_requires_gps = blimp.flightmode->requires_GPS();
 
     if (mode_requires_gps) {
         if (!blimp.position_ok()) {
