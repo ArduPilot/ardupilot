@@ -175,8 +175,8 @@ private:
             .srtau     = 1.0
         }
     };
-    AC_HELI_PID     _pid_rate_roll { rp_defaults };
-    AC_HELI_PID     _pid_rate_pitch { rp_defaults };
+    AC_HELI_PID     _pid_rate_roll { rp_defaults, AC_ATC_HELI_RATE_RP_ILMI };
+    AC_HELI_PID     _pid_rate_pitch { rp_defaults, AC_ATC_HELI_RATE_RP_ILMI };
 
     AC_HELI_PID     _pid_rate_yaw {
         AC_PID::Defaults{
@@ -191,6 +191,7 @@ private:
             .srmax     = 0,
             .srtau     = 1.0
         }
+        , 0.0f  // default_ilmi
     };
     
 };
