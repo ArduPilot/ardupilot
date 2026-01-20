@@ -164,9 +164,6 @@ FS_GCS_ENABLE          0
 # baro
 TCAL_ENABLED           2
 
-# landing
-LAND_SPEED_HIGH      350
-
 # logging
 LOG_BACKEND_TYPE       2
 LOG_FILE_BUFSIZE       1
