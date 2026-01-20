@@ -95,9 +95,6 @@ public:
     // requires_position should be true if horizontal position configuration should be checked
     virtual bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const = 0;
 
-    // check all cores providing consistent attitudes for prearm checks
-    virtual bool attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const { return true; }
-
     // see if EKF lane switching is possible to avoid EKF failsafe
     virtual void check_lane_switch(void) {}
 
