@@ -369,7 +369,9 @@ public:
         AUTOLAND =           183,  //Fixed Wing AUTOLAND Mode
         SYSTEMID =           184,  // system ID as an aux switch
         MOUNT_RP_LOCK =      185,  // mount lock modes for roll and pitch axes, for all mounts that support it
-
+#if AP_MOUNT_POI_LOCK_ENABLED
+        MOUNT_POI_LOCK =     186,  // Lock mount target to current ROI seen and switch mount to GPS Targeting mode
+#endif  // AP_MOUNT_POI_LOCK_ENABLED
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
         PITCH =              202, // pitch input

@@ -13,7 +13,6 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Logger/LogStructure.h>
 #include <AP_Vehicle/ModeReason.h>
-#include <AP_RCProtocol/AP_RCProtocol.h>
 
 #include <stdint.h>
 

@@ -172,6 +172,10 @@ public:
         GPS_HEADING_BASE = 4,  // act as an RTK base
     };
 
+    enum class GPSOptions : uint32_t {
+        UBX_IS_F9P = 1U << 0,
+    };
+
     struct sitl_fdm state;
 
     // throttle when motors are active
@@ -334,6 +338,7 @@ public:
         AP_Vector3f vel_err; // Velocity error offsets in NED (x = N, y = E, z = D)
         AP_Int8 jam; // jamming simulation enable
         AP_Float heading_offset; // heading offset in degrees
+        AP_Int32 options; // GPS options bitmask
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
 
