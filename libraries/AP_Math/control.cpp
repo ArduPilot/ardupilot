@@ -297,16 +297,24 @@ void shape_pos_vel_accel(postype_t pos_desired, float vel_desired, float accel_d
     vel_corr_cmd += accel_corr_cmd / k_v;
 
     // Limit correction velocity magnitude if velocity limiting is enabled (non-zero limits).
-    if (is_negative(vel_min) || is_positive(vel_max)) {
-        vel_corr_cmd = constrain_float(vel_corr_cmd, vel_min, vel_max);
+    if (is_negative(vel_min)) {
+        vel_corr_cmd = MAX(vel_corr_cmd, vel_min);
+    }  
+    if (is_positive(vel_max)) {
+        vel_corr_cmd = MIN(vel_corr_cmd, vel_max);
     }
 
     // Total velocity target = feedforward + correction.
     float vel_target = vel_desired + vel_corr_cmd;
 
     // Constrain total velocity if limiting is enabled and velocity limits are enabled (non-zero).
-    if (limit_total && (is_negative(vel_min) || is_positive(vel_max))) {
-        vel_target = constrain_float(vel_target, vel_min, vel_max);
+    if (limit_total) {
+        if (is_negative(vel_min)) {
+            vel_target = MAX(vel_target, vel_min);
+        }
+        if (is_positive(vel_max)) {
+            vel_target = MIN(vel_target, vel_max);
+        }
     }
 
     // Acceleration demand from velocity error.
