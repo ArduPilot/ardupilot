@@ -21,7 +21,7 @@
 #include <AP_HAL/HAL.h>
 #include <AP_HAL/I2CDevice.h>
 
-namespace Empty {
+namespace RP {
 
 class I2CDevice : public AP_HAL::I2CDevice {
 public:

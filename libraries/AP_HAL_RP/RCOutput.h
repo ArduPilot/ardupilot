@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AP_HAL_RP.h"
+#include "pwm_multi.pio.h"
 
 class RP::RCOutput : public AP_HAL::RCOutput {
 public:

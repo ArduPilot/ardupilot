@@ -6,14 +6,14 @@
 #include "HAL_RP_Class.h"
 #include "AP_HAL_RP_Private.h"
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
-#include <AP_Filesystem/AP_Filesystem_FlashMemory_LittleFS.h>
+//#include <AP_Filesystem/AP_Filesystem_RP2350.h>
 
 using namespace RP;
 
-static UARTDriver serial0Driver;
-static UARTDriver serial1Driver;
-static UARTDriver serial2Driver;
-static UARTDriver serial3Driver;
+static UARTDriver serial0Driver(uart0, UART0_TX, UART0_RX, 0);
+static UARTDriver serial1Driver(uart1, UART1_TX, UART1_RX, 1);
+//static UARTDriver serial2Driver;
+//static UARTDriver serial3Driver;
 static SPIDeviceManager spiDeviceManager;
 static AnalogIn analogIn;
 
@@ -28,26 +28,38 @@ static RCInput rcinDriver;
 static RCOutput rcoutDriver;
 static Scheduler schedulerInstance;
 static Util utilInstance;
-static OpticalFlow opticalFlowDriver;
+static Empty::OpticalFlow opticalFlowDriver;
 static Flash flashDriver;
 static NAND_PIO_Driver nandPioDriver;
+
+#if HAL_USE_WSPI == TRUE && defined(HAL_WSPI_DEVICE_LIST)
+static WSPIDeviceManager wspiDeviceManager;
+#endif
 
 HAL_RP::HAL_RP() :
     AP_HAL::HAL(
         &serial0Driver,
         &serial1Driver,
-        &serial2Driver,
-        &serial3Driver,
+        nullptr,
+        nullptr,
+        //&serial2Driver,
+        //&serial3Driver,
         nullptr,            /* no SERIAL4 */
         nullptr,            /* no SERIAL5 */
         nullptr,            /* no SERIAL6 */
         nullptr,            /* no SERIAL7 */
         nullptr,            /* no SERIAL8 */
         nullptr,            /* no SERIAL9 */
+        &i2cDeviceManager,
         &spiDeviceManager,
+#if HAL_USE_WSPI == TRUE && defined(HAL_WSPI_DEVICE_LIST)
+        &wspiDeviceManager,
+#else
+        nullptr,
+#endif
         &analogIn,
         &storageDriver,
-        &serial0Driver,
+        &serial1Driver,
         &gpioDriver,
         &rcinDriver,
         &rcoutDriver,
@@ -55,7 +67,13 @@ HAL_RP::HAL_RP() :
         &utilInstance,
         &opticalFlowDriver,
         &flashDriver,
-        nullptr)            /* no DSP */
+#if AP_SIM_ENABLED
+        &xsimstate,
+#endif
+#if HAL_WITH_DSP
+        &dspDriver,
+#endif
+        nullptr)
 {}
 
 void HAL_RP::run(int argc, char* const argv[], Callbacks* callbacks) const
@@ -64,7 +82,7 @@ void HAL_RP::run(int argc, char* const argv[], Callbacks* callbacks) const
      * up to the programmer to do this in the correct order.
      * Scheduler should likely come first. */
     scheduler->init();
-    serial(0)->begin(115200);
+    serial(1)->begin(115200);
     _member->init();
     this->get_nand_pio()->init(NAND_FLASH_IO_BASE, NAND_FLASH_SCLK, NAND_FLASH_CS);
 

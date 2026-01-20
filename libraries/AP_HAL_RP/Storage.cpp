@@ -2,7 +2,7 @@
 #include <string.h>
 #include "Storage.h"
 
-using namespace Empty;
+using namespace RP;
 
 Storage::Storage()
 {}

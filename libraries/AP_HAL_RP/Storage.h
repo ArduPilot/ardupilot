@@ -1,8 +1,8 @@
 #pragma once
 
-#include "AP_HAL_Empty.h"
+#include "AP_HAL_RP.h"
 
-class Empty::Storage : public AP_HAL::Storage {
+class RP::Storage : public AP_HAL::Storage {
 public:
     Storage();
     void init() override;

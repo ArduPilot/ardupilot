@@ -9,7 +9,7 @@ class AP_Param;
 #include "RCInput.h"
 #include "RCOutput.h"
 #include "SPIDevice.h"
-#include "WSPIDevice.h"
+#include "I2CDevice.h"
 #include "Storage.h"
 #include "UARTDriver.h"
 #include "system.h"

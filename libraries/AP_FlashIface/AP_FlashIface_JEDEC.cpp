@@ -25,6 +25,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_FlashIface_JEDEC.h"
 #include <AP_Math/AP_Math.h>
+#if HAL_USE_WSPI == TRUE
+  #include <AP_HAL/WSPIDevice.h>
+#endif
 #ifdef HAL_BOOTLOADER_BUILD
 #include <AP_HAL_ChibiOS/WSPIDevice.h>
 #include "../../Tools/AP_Bootloader/support.h"

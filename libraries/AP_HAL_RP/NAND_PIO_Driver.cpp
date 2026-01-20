@@ -1,8 +1,12 @@
 #include "NAND_PIO_Driver.h"
 #include "extended_spi.pio.h"
+#include "hardware/dma.h"
+#include "pico/stdlib.h"
 #include <string.h>
 
 using namespace RP;
+
+extern const AP_HAL::HAL& hal;
 
 enum FlashCmd {
     FLASH_CMD_RESET = 0xFF,
@@ -99,7 +103,7 @@ bool NAND_PIO_Driver::init(uint8_t ioBase, uint8_t sckPin, uint8_t csPin)
     m_chip.maxReadTime(DECODE_U2(&buf[137]));
 
     if (m_chip.pageSize() != 2048) {
-        DEV_PRINTF("Page size refused %d\n", m_chip.pageSize());
+        DEV_PRINTF("Page size refused %lu\n", m_chip.pageSize());
         free(buf);
         return false;
     }
@@ -111,7 +115,7 @@ bool NAND_PIO_Driver::init(uint8_t ioBase, uint8_t sckPin, uint8_t csPin)
 
     // Accept Micron devices up to 4 Gb nominal size (512 MiB)
     if (m_chip.manufacturerId() != 0x2C || !m_chip.totalSize() || m_chip.totalSize() > 512 * 1024 * 1024) {
-        DEV_PRINTF("Manufacturer ID %d, totalSize %d\n", m_chip.manufacturerId(), m_chip.totalSize());
+        DEV_PRINTF("Manufacturer ID %d, totalSize %lu\n", m_chip.manufacturerId(), m_chip.totalSize());
         free(buf);
         return false;
     }
@@ -131,53 +135,53 @@ uint8_t NAND_PIO_Driver::spi_write(uint8_t data)
 
 bool NAND_PIO_Driver::check_read_id()
 {
-    gpio_put(PIN_FLASH_CS, false);
+    gpio_put(NAND_FLASH_CS, false);
     spi_write(FLASH_CMD_READ_ID);
     spi_write(); // dummy byte
     uint8_t read0 = spi_write();
     uint8_t read1 = spi_write();
-    gpio_put(PIN_FLASH_CS, true);
+    gpio_put(NAND_FLASH_CS, true);
     return read0 == 0x2c && read1 == 0x24;
 }
 
 void NAND_PIO_Driver::set_feature(uint8_t featureRegister, uint8_t data)
 {
-    gpio_put(PIN_FLASH_CS, false);
-    singleSpiTransfer(FLASH_CMD_SET_FEATURE);
-    singleSpiTransfer(featureRegister);
-    singleSpiTransfer(data);
-    gpio_put(PIN_FLASH_CS, true);
+    gpio_put(NAND_FLASH_CS, false);
+    spi_write(FLASH_CMD_SET_FEATURE);
+    spi_write(featureRegister);
+    spi_write(data);
+    gpio_put(NAND_FLASH_CS, true);
 }
 
 uint8_t NAND_PIO_Driver::get_feature(uint8_t featureRegister)
 {
-    gpio_put(PIN_FLASH_CS, false);
+    gpio_put(NAND_FLASH_CS, false);
     spi_write(FLASH_CMD_GET_FEATURE);
     spi_write(featureRegister);
     uint8_t ret = spi_write();
-    gpio_put(PIN_FLASH_CS, true);
+    gpio_put(NAND_FLASH_CS, true);
     return ret;
 }
 
 bool NAND_PIO_Driver::check_feature(uint8_t mask, uint8_t value, uint8_t featureRegister)
 {
-    uint8_t read = get_feature();
+    uint8_t read = get_feature(featureRegister);
     return (read & mask) == value;
 }
 
 uint8_t NAND_PIO_Driver::get_status()
 {
-    gpio_put(PIN_FLASH_CS, false);
+    gpio_put(NAND_FLASH_CS, false);
     spi_write(FLASH_CMD_GET_STATUS);
     uint8_t status = spi_write();
-    gpio_put(PIN_FLASH_CS, true);
+    gpio_put(NAND_FLASH_CS, true);
     return status;
 }
 
 bool NAND_PIO_Driver::is_busy()
 {
     uint8_t status = get_status();
-    return (status >> 5) ^ 0b11 != 0;
+    return ((status >> 5) ^ 0b11) != 0;
 }
 
 bool NAND_PIO_Driver::burst_spi_write(uint16_t len, const uint8_t *src)
@@ -209,25 +213,25 @@ bool NAND_PIO_Driver::burst_spi_write(uint16_t len, const uint8_t *src)
 void NAND_PIO_Driver::read_page(uint32_t block, uint32_t page, bool getFeatureWait)
 {
     if (m_cachedBlock == block && m_cachedPage == page) return;
-    gpio_put(PIN_FLASH_CS, false);
+    gpio_put(NAND_FLASH_CS, false);
     uint32_t addr = (page & 0x3F) | (block << 6);
     uint8_t buf[4] = {FLASH_CMD_PAGE_READ, (uint8_t)(addr >> 16), (uint8_t)(addr >> 8), (uint8_t)addr};
     burst_spi_write(4, buf);
-    gpio_put(PIN_FLASH_CS, true);
+    gpio_put(NAND_FLASH_CS, true);
     m_cachedBlock = block;
     wait_feature(getFeatureWait);
 }
 
-uint32_t NAND_PIO_Driver::read_from_cache(uint32_t block, uint32_t start, u16 length, uint8_t *buf)
+uint32_t NAND_PIO_Driver::read_from_cache(uint32_t block, uint32_t start, uint16_t length, uint8_t *buf)
 {
     if (start + (uint32_t)length > 2176) return 0;
     start |= (block & 0b1) << 12;
     const uint32_t lenBackup = length;
-    gpio_put(PIN_FLASH_CS, false);
+    gpio_put(NAND_FLASH_CS, false);
     uint8_t req[4] = {FLASH_CMD_READ_FROM_CACHE_X1, (uint8_t)(start >> 8), (uint8_t)start, 0};
     burst_spi_write(4, req);
     burst_spi_read(length, buf);
-    gpio_put(PIN_FLASH_CS, true);
+    gpio_put(NAND_FLASH_CS, true);
     return lenBackup;
 }
 
@@ -260,26 +264,26 @@ bool NAND_PIO_Driver::burst_spi_read(uint16_t len, uint8_t *dst)
 void NAND_PIO_Driver::erase_block(uint32_t block, bool getFeatureWait)
 {
     write_enable();
-    gpio_put(PIN_FLASH_CS, false);
+    gpio_put(NAND_FLASH_CS, false);
     uint32_t addr = block << 6;
     uint8_t buf[4] = {FLASH_CMD_BLOCK_ERASE, (uint8_t)(addr >> 16), (uint8_t)(addr >> 8), (uint8_t)(addr)};
     burst_spi_write(4, buf);
-    gpio_put(PIN_FLASH_CS, true);
+    gpio_put(NAND_FLASH_CS, true);
     wait_feature(getFeatureWait);
 }
 
 void NAND_PIO_Driver::write_enable()
 {
-    gpio_put(PIN_FLASH_CS, false);
+    gpio_put(NAND_FLASH_CS, false);
     spi_write(FLASH_CMD_WRITE_ENABLE);
-    gpio_put(PIN_FLASH_CS, true);
+    gpio_put(NAND_FLASH_CS, true);
 }
 
 void NAND_PIO_Driver::write_disable()
 {
-    gpio_put(PIN_FLASH_CS, false);
+    gpio_put(NAND_FLASH_CS, false);
     spi_write(FLASH_CMD_WRITE_DISABLE);
-    gpio_put(PIN_FLASH_CS, true);
+    gpio_put(NAND_FLASH_CS, true);
 }
 
 uint16_t NAND_PIO_Driver::program_load(uint32_t block, uint32_t start, uint16_t length, const uint8_t *buf)
@@ -288,11 +292,11 @@ uint16_t NAND_PIO_Driver::program_load(uint32_t block, uint32_t start, uint16_t 
     write_enable();
     start |= (block & 0b1) << 12;
     const uint16_t lenBackup = length;
-    gpio_put(PIN_FLASH_CS, false);
+    gpio_put(NAND_FLASH_CS, false);
     uint8_t req[3] = {FLASH_CMD_PROGRAM_LOAD_X1, (uint8_t)(start >> 8), (uint8_t)start};
     burst_spi_write(3, req);
     burst_spi_write(length, buf);
-    gpio_put(PIN_FLASH_CS, true);
+    gpio_put(NAND_FLASH_CS, true);
     m_cachedBlock = 0xFFFFFFFF;
     m_cachedPage = 0xFFFFFFFF;
     return lenBackup;
@@ -301,11 +305,11 @@ uint16_t NAND_PIO_Driver::program_load(uint32_t block, uint32_t start, uint16_t 
 void NAND_PIO_Driver::program_execute(uint32_t block, uint32_t page, bool getFeatureWait)
 {
     write_enable();
-    gpio_put(PIN_FLASH_CS, false);
+    gpio_put(NAND_FLASH_CS, false);
     uint32_t addr = (page & 0x3F) | ((uint32_t)block << 6);
     uint8_t buf[4] = {FLASH_CMD_PROGRAM_EXECUTE, (uint8_t)(addr >> 16), (uint8_t)(addr >> 8), (uint8_t)addr};
     burst_spi_write(4, buf);
-    gpio_put(PIN_FLASH_CS, true);
+    gpio_put(NAND_FLASH_CS, true);
     invalidate_caches();
     wait_feature(getFeatureWait);
 }
@@ -323,7 +327,7 @@ void NAND_PIO_Driver::invalidate_caches()
 {
     m_cachedBlock = 0xFFFFFFFF;
     m_cachedPage = 0xFFFFFFFF;
-    for (auto &sc : m_secCaches)
+    for (auto &sc : m_secCashed)
     {
         sc.block = 0xFFFFFFF;
         sc.page = 0xFFFFFFFF;

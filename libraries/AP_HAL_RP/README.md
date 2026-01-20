@@ -30,7 +30,7 @@ Tools/environment_install/install-prereqs-ubuntu.sh -y
 ```
 Tools/scripts/get_pico_sdk.sh -d <path_to_install>
 ```
-You can install Pico SDK and FreeRTOS kernel into ${HOME}/pico, just run the installation script without any parameters: 
+You can install Pico SDK and FreeRTOS kernel into modules/pico, just run the installation script without any parameters:
 ```
 Tools/scripts/get_pico_sdk.sh
 ```
@@ -42,6 +42,21 @@ Tools/scripts/get_pico_sdk.sh
 *Note*: The first configure command should be called only once or when you want to change a
 configuration option. One configuration often used is the `--board` option to
 switch from one board to another one.
+
+## Building the Examples
+
+This is the easiest way to create firmware that focuses only on testing a specific HAL module or library on a real flight controller.
+
+1. Configure the required board:
+```
+./waf configure --board Kolibri
+```
+2. Build the example:
+```
+./waf build --target examples/RCOutput
+```
+
+HAL examples are located in the libraries/AP_HAL/examples folder.
 
 ## Uploading the Firmware
 

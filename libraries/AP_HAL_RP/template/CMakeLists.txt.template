@@ -9,6 +9,8 @@ include(FreeRTOS_Kernel_import.cmake)
 
 project({project_name} C CXX ASM)
 
+add_compile_options(-Wno-error=type-limits)
+
 # Set the target board variant (this might be deprecated/ignored by newer SDKs in favor of env var)
 # We assume the user has set PICO_BOARD environment variable correctly for 2350 variants.
 # set(PICO_BOARD {board_variant}) 
@@ -45,7 +47,7 @@ endif()
 # Iterate over the found files in a loop
 foreach(PIO_FILE ${PIO_FILES})
     get_filename_component(PIO_NAME ${PIO_FILE} NAME_WE)
-    set(OUTPUT_H "${CMAKE_CURRENT_BINARY_DIR}/${PIO_NAME}.pio.h")
+    set(OUTPUT_H "${CMAKE_CURRENT_BINARY_DIR}/generated/pico_base/${PIO_NAME}.pio.h")
     message(STATUS "Manually generating PIO header: ${OUTPUT_H}")
 
     execute_process(
@@ -105,7 +107,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${FREERTOS_KERNEL_PATH}/portable/ThirdParty/Community-Supported-Ports/GCC/RP2350_ARM_NTZ/non_secure
 )
 
-# Link the FreeRTOS kernel library
+# Link the FreeRTOS kernel library and Pico C/C++ SDK
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
     pico_stdlib
     pico_multicore
@@ -117,6 +119,8 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
     hardware_timer
     hardware_watchdog
     hardware_clocks
+    hardware_flash
+    hardware_powman
     FreeRTOS-Kernel
     FreeRTOS-Kernel-Heap4
 )

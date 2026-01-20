@@ -125,8 +125,8 @@ private:
 
     bool check_read_id();
     void set_feature(uint8_t featureRegister, uint8_t data);
-    uint8_t get_feature(uint8_t featureRegister);
-    bool check_feature(uint8_t mask, uint8_t value, uint8_t featureRegister);
+    uint8_t get_feature(uint8_t featureRegister = 0xC0);
+    bool check_feature(uint8_t mask, uint8_t value, uint8_t featureRegister = 0xC0);
 
     uint8_t get_status();
 
@@ -196,3 +196,6 @@ inline double DECODE_R8(const uint8_t *buf) {
     memcpy(&result, buf, 8);
     return result;
 }
+
+#define DECODE_U2(buf) ((*(buf) & 0xFF) + ((uint16_t)(*((uint8_t *)(buf) + 1)) << 8)) // Decode 2 bytes from a buffer into a 16-bit unsigned integer
+#define DECODE_I2(buf) ((*(buf) & 0xFF) + ((int16_t)(*((uint8_t *)(buf) + 1)) << 8)) // Decode 2 bytes from a buffer into a 16-bit signed integer

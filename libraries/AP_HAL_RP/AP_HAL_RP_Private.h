@@ -7,7 +7,6 @@
 #include "AnalogIn.h"
 #include "GPIO.h"
 #include "I2CDevice.h"
-#include "OpticalFlow.h"
 #include "RCInput.h"
 #include "RCOutput.h"
 #include "Scheduler.h"
@@ -19,3 +18,4 @@
 #include "Util.h"
 #include "Flash.h"
 #include "DSP.h"
+#include "NAND_PIO_Driver.h"
