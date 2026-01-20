@@ -519,21 +519,21 @@ bool limit_accel_corner_xy(const Vector2f& vel, Vector2f& accel, float accel_max
 
         accel = accel_cross + accel_dir;
         return true;
-    } else {
-        // Braking regime
-        // Prioritise along-track deceleration and allocate the remaining budget to cross-track.
-
-        // Limit braking magnitude.
-        accel_dir_scalar = MAX(accel_dir_scalar, -accel_max);
-        accel_dir = vel_unit * accel_dir_scalar;
-
-        // Allocate remaining acceleration budget to cross-track.
-        const float accel_cross_max = safe_sqrt(sq(accel_max) - sq(accel_dir_scalar));
-        accel_cross.limit_length(accel_cross_max);
-
-        accel = accel_cross + accel_dir;
-        return true;
     }
+
+    // Braking regime
+    // Prioritise along-track deceleration and allocate the remaining budget to cross-track.
+
+    // Limit braking magnitude.
+    accel_dir_scalar = MAX(accel_dir_scalar, -accel_max);
+    accel_dir = vel_unit * accel_dir_scalar;
+
+    // Allocate remaining acceleration budget to cross-track.
+    const float accel_cross_max = safe_sqrt(sq(accel_max) - sq(accel_dir_scalar));
+    accel_cross.limit_length(accel_cross_max);
+
+    accel = accel_cross + accel_dir;
+    return true;
 }
 
 // Piecewise square-root + linear controller that limits second-order response (acceleration).
