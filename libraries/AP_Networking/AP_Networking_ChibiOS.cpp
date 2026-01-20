@@ -1,7 +1,12 @@
 
 #include "AP_Networking_Config.h"
 
-#if AP_NETWORKING_BACKEND_CHIBIOS
+#if AP_NETWORKING_BACKEND_CHIBIOS && !AP_NETWORKING_BACKEND_HUB
+
+/*
+  Traditional ChibiOS networking backend - owns MAC and lwIP directly.
+  Used when hub is NOT enabled.
+*/
 
 #include "AP_Networking_ChibiOS.h"
 #include <GCS_MAVLink/GCS.h>
@@ -471,5 +476,4 @@ void AP_Networking_ChibiOS::update()
     }
 }
 
-#endif // AP_NETWORKING_BACKEND_CHIBIOS
-
+#endif // AP_NETWORKING_BACKEND_CHIBIOS && !AP_NETWORKING_BACKEND_HUB

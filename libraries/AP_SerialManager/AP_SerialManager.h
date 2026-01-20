@@ -87,6 +87,8 @@ public:
         SerialProtocol_PPP = 48,
         SerialProtocol_IBUS_Telem = 49,                // i-BUS telemetry data, ie via sensor port of FS-iA6B
         SerialProtocol_IOMCU = 50,                     // IOMCU 
+        // COBS-over-serial Ethernet bridge - multiple ports auto-ganged via discovery
+        SerialProtocol_COBS_ETH = 51,                  // COBS Ethernet bridge
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
