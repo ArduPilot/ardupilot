@@ -156,7 +156,7 @@ def generate_pico_project(env):
         """)
     for i in range(gpio_count):
          gpio_header_content += f"#define GPIO_{i:<4} {i}\n"
-    gpio_header_content += f"#define PICO_DEFAULT_LED_PIN GPIO_25\n\n#{'endif':<7} // {mcu_name.upper()}_GPIO_DEFINES_H\n"
+    gpio_header_content += f"\n\n#{'endif':<7} // {mcu_name.upper()}_GPIO_DEFINES_H\n"
     
     with open(gpio_header_filename, "w") as f:
         f.write(gpio_header_content)
@@ -291,6 +291,7 @@ def pre_build(self):
     lib_vars['WAF_BUILD_TARGET'] = self.targets
     lib_vars['ARDUPILOT_LIB'] = self.bldnode.find_or_declare('lib/').abspath()
     lib_vars['ARDUPILOT_BIN'] = self.bldnode.find_or_declare('lib/bin').abspath()
+    lib_vars['PICO_SDK_PATH'] = self.env.PICO_SDK
     target = self.env.RP_TARGET
 
     relative_path = 'targets/%s/pico-sdk' % target

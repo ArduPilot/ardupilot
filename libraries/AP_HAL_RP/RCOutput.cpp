@@ -1,11 +1,14 @@
 #include "RCOutput.h"
 #include <AP_Math/AP_Math.h>
 #include "pwm_multi.pio.h"
+//#include <pico-sdk_build/pwm_multi.pio.h>
 #include "hardware/clocks.h"
 #include "hardware/dma.h"
 #include "hardware/pio.h"
 
 using namespace RP;
+
+extern const AP_HAL::HAL& hal;
 
 void RCOutput::init() {
     // Initializing internal arrays

@@ -2,6 +2,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_RP_Namespace.h"
+#include "WSPIDevice.h"
 
 class HAL_RP : public AP_HAL::HAL {
 public:

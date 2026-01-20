@@ -23,7 +23,7 @@
 
 #include "Semaphores.h"
 
-namespace Empty {
+namespace RP {
 
 class SPIDevice : public AP_HAL::SPIDevice {
 public:

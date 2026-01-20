@@ -1630,6 +1630,23 @@ class rp2350(Board):
         env.CFLAGS.remove('-Werror=undef')
         env.CXXFLAGS.remove('-Werror=undef')
         env.CXXFLAGS.remove('-Werror=shadow')
+        #env.CFLAGS.remove('-Werror=type-limits')
+        #env.CXXFLAGS.remove('-Werror=type-limits')
+
+        env.CFLAGS += [
+            "-Wno-error=type-limits",
+            "-mcpu=cortex-m33",
+            "-mthumb",
+            "-mfpu=fpv5-sp-d16",
+            "-mfloat-abi=hard"
+        ]
+        env.CXXFLAGS += [
+            "-Wno-error=type-limits",
+            "-mcpu=cortex-m33",
+            "-mthumb",
+            "-mfpu=fpv5-sp-d16",
+            "-mfloat-abi=hard"
+        ]
 
         # wrap malloc to ensure memory is zeroed
         # note that this also needs to be done in the CMakeLists.txt files
