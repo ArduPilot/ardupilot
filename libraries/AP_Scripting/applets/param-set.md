@@ -40,7 +40,7 @@ Only the following parameters are allowed to be set when the script is enabled:
 - Battery parameters (e.g., `BATT_ARM_MAH`, `BATT_FS_CRT_ACT`, etc.)
 - `BRD_OPTIONS`
 - `COMPASS_USE3`
-- Geofence and RTL parameters (e.g., `FENCE_TYPE`, `RTL_ALT`)
+- Geofence and RTL parameters (e.g., `FENCE_TYPE`, `RTL_ALT_M`)
 - `LOG_*`, `LIGHTS_ON`
 
 (See the full script for the complete whitelist.)

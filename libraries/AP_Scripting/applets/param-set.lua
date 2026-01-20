@@ -140,9 +140,9 @@ parameters_which_can_be_set["LIGHTS_ON"] = true
 parameters_which_can_be_set["LOG_BITMASK"] = true
 parameters_which_can_be_set["LOG_DISARMED"] = true
 parameters_which_can_be_set["LOG_FILE_DSRMROT"] = true
-parameters_which_can_be_set["RTL_ALT"] = true
+parameters_which_can_be_set["RTL_ALT_M"] = true
 parameters_which_can_be_set["RTL_LOIT_TIME"] = true
-parameters_which_can_be_set["RTL_SPEED"] = true
+parameters_which_can_be_set["RTL_SPEED_MS"] = true
 
 local function should_set_parameter_id(param_id)
     if parameters_which_can_be_set[param_id] == nil then
