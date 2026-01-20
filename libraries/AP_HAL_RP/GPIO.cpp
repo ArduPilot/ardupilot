@@ -1,7 +1,7 @@
 
 #include "GPIO.h"
 
-using namespace Empty;
+using namespace RP;
 
 GPIO::GPIO()
 {}
