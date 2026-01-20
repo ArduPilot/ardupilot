@@ -74,7 +74,7 @@ end
 local efi_backend = nil
 
 -- Setup EFI Parameters
-assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 15), 'could not add EFI_SP param table')
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 20), 'could not add EFI_SP param table')
 
 --[[
   // @Param: EFI_SP_ENABLE
@@ -207,6 +207,61 @@ local EFI_SP_GEN_CTRL  = bind_add_param('GEN_CRTL', 13, 1)
 --]]
 local EFI_SP_RST_TIME  = bind_add_param('RST_TIME', 14, 2)
 
+--[[
+  // @Param: EFI_SP_GEN_AUTO
+  // @DisplayName: Enable automatic EFI Generator on/off logic
+  // @Description: Enable automatic EFI Generator on/off logic.
+  // @Values: 0:Disabled,1:Enabled
+  // @User: Standard
+--]]
+local EFI_SP_GEN_AUTO = bind_add_param('GEN_AUTO', 15, 0)
+
+--[[
+  // @Param: EFI_SP_GEN_MIN
+  // @DisplayName: EFI Generator Min Load
+  // @Description: EFI Generator will switch ON if engine load is less than this parameter for EFI_SP_GEN_TIMER seconds. Applies when EFI_SP_GEN_AUTO=1.
+  // @Range: 20 50
+  // @User: Standard
+--]]
+local EFI_SP_GEN_MIN = bind_add_param('GEN_MIN', 16, 35)
+
+--[[
+  // @Param: EFI_SP_GEN_MAX
+  // @DisplayName: EFI Generator Max Load
+  // @Description: EFI Generator will switch OFF if engine load is more than this parameter for EFI_SP_GEN_TIMER seconds. Applies when EFI_SP_GEN_AUTO=1.
+  // @Range: 40 80
+  // @User: Standard
+--]]
+local EFI_SP_GEN_MAX = bind_add_param('GEN_MAX', 17, 65)
+
+--[[
+  // @Param: EFI_SP_GEN_TIMER
+  // @DisplayName: EFI Generator Switch Timer
+  // @Description: EFI Generator load has to be greater than EFI_SP_GEN_MAX or less than EFI_SP_GEN_MAX for this many seconds for a switch to happen. Applies when EFI_SP_GEN_AUTO=1.
+  // @Range: 0 10
+  // @User: Standard
+--]]
+local EFI_SP_GEN_TIMER = bind_add_param('GEN_TIMER', 18, 2)
+
+--[[
+  // @Param: EFI_SP_GEN_TOUT
+  // @DisplayName: EFI Generator Switch Timeout
+  // @Description: EFI Generator will not be switched on/off if it was previously switched within this many seconds. Applies when EFI_SP_GEN_AUTO=1.
+  // @Range: 0 10
+  // @User: Standard
+--]]
+local EFI_SP_GEN_TOUT = bind_add_param('GEN_TOUT', 19, 5)
+
+--[[
+  // @Param: EFI_SP_THR_MAX
+  // @DisplayName: SkyPower EFI max throttle
+  // @Description: SkyPower EFI maximum throttle command. Use this parameter to limit the maximum demanded throttle, in case your engine power curve drops off past a throttle value. It is recommended that you limit your autopilot throttle limit instead.
+  // @Range: 0 1
+  // @User: Standard
+--]]
+local EFI_SP_THR_MAX = bind_add_param('THR_MAX', 20, 1)
+
+
 if EFI_SP_ENABLE:get() == 0 then
    gcs:send_text(0, string.format("EFISP: disabled"))
    return
@@ -269,7 +324,11 @@ local function engine_control(driver)
     local last_telem_update = get_time_sec()
     local last_log_t = get_time_sec()
     local last_stop_message_t = get_time_sec()
+    local lastSwitchTime_ms = uint32_t(0) -- Time (in ms) when the generator was last switched on or off.
+    local aboveThresholdTime_ms = 0 -- Time (in ms) engine load has remained above the threshold
+    local belowThresholdTime_ms = 0 -- Time (in ms) engine load has remained below the threshold
     local engine_started = false
+    local generator_must_run = false
     local generator_started = false
     local engine_start_t = 0.0
     local last_throttle = 0.0
@@ -437,6 +496,11 @@ local function engine_control(driver)
 
     --- send throttle command, thr is 0 to 1
     function self.send_throttle(thr)
+       -- Constrain to set max throttle
+       local max_throttle = EFI_SP_THR_MAX:get()
+       if max_throttle then
+         thr = math.min(thr, max_throttle)
+       end
        last_throttle = thr
        local msg = CANFrame()
        msg:id(FRM_500)
@@ -540,23 +604,83 @@ local function engine_control(driver)
        end
     end
 
+    -- Function to check the EFI engine load
+    function self.checkEngineLoad()
+      local update_rate_ms = 1000 / EFI_SP_UPDATE_HZ:get()
+      local loadPercent = efi_state:engine_load_percent()
+
+      if loadPercent >= EFI_SP_GEN_MAX:get() then
+        aboveThresholdTime_ms = aboveThresholdTime_ms + update_rate_ms
+        belowThresholdTime_ms = 0
+      elseif loadPercent <= EFI_SP_GEN_MIN:get() then
+        belowThresholdTime_ms = belowThresholdTime_ms + update_rate_ms
+        aboveThresholdTime_ms = 0
+      else
+        aboveThresholdTime_ms = 0
+        belowThresholdTime_ms = 0
+      end
+
+      if self.enoughSwitchTimePassed() then
+        if aboveThresholdTime_ms >= EFI_SP_GEN_TIMER:get()*1000 then
+          generator_must_run = false -- Switch off the generator
+        elseif belowThresholdTime_ms >= EFI_SP_GEN_TIMER:get()*1000 then
+          generator_must_run = true -- Switch on the generator
+        end
+      end
+    end
+
+    -- Function to check if enough time has passed since the last switch
+    function self.enoughSwitchTimePassed()
+      local elapsedTime = millis() - lastSwitchTime_ms
+      return elapsedTime >= EFI_SP_GEN_TOUT:get()*1000
+    end
+
+    -- Apply autoswitch logic to the target generator state.
+    function self.generator_autoswitch()
+
+      if not efi_state:engine_load_percent() then
+          return
+      end
+      if efi_state:engine_load_percent() == 0 or millis() - efi_state:last_updated_ms() > 200 then
+          -- Probably no data
+          return
+      end
+
+      self.checkEngineLoad()
+    end
+
     -- update generator control
     function self.update_generator()
-       if EFI_SP_GEN_CTRL:get() == 0 then
-          return
-       end
-       local gen_state = rc:get_aux_cached(EFI_SP_GEN_FN:get())
-       if gen_state == 0 and generator_started then
+      if EFI_SP_GEN_CTRL:get() == 0 then
+        return
+      end
+
+      local gen_state = rc:get_aux_cached(EFI_SP_GEN_FN:get())
+      if gen_state == 0 then
+        generator_must_run = false
+      elseif gen_state == 2 then
+        generator_must_run = true
+      end
+
+      -- Apply automatic generator switching logic.
+      if EFI_SP_GEN_AUTO:get() == 1 then
+          self.generator_autoswitch()
+      end
+
+      if not generator_must_run and generator_started then
           generator_started = false
           gcs:send_text(0, string.format("EFISP: stopping generator"))
           self.send_generator_stop()
-       end
-       if gen_state == 2 and not generator_started then
+          lastSwitchTime_ms = millis()
+      end
+      if generator_must_run and not generator_started then
           generator_started = true
           gcs:send_text(0, string.format("EFISP: starting generator"))
           self.send_generator_start()
-       end
+          lastSwitchTime_ms = millis()
+      end
     end
+
     
     -- update throttle output
     function self.update_throttle()
@@ -611,9 +735,9 @@ local function engine_control(driver)
           return
        end
        last_log_t = now
-       logger.write('EFSP','Thr,CLoad,TLoad,OilT,RPM,gRPM,gAmp,gCur,SErr,TLim,STRPM', 'ffffffffHHH',
+       logger.write('EFSP','Thr,CLoad,TLoad,OilT,RPM,gRPM,gAmp,gCur,gRun,SErr,TLim,STRPM', 'ffffffffBHHH',
                     last_throttle, current_load, target_load, temps.oilt, rpm,
-                    gen.rpm, gen.amps, gen.batt_current,
+                    gen.rpm, gen.amps, gen.batt_current, generator_must_run,
                     sensor_error_flags, thermal_limit_flags,
                     starter_rpm)
     end
