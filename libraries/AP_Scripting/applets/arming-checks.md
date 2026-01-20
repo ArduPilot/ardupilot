@@ -54,9 +54,9 @@ If there is a rally point more than RALLY_LIMIT_KM kilometers from the home loca
 
 The following checks only apply if the firmware is ArduCopter
 
-# ARM_C_RTL_ALT
+# ARM_C_RTL_ALT_M
 
-This check is to by default warn if the vehicle RTL_ALT has been set to a value > ARM_V_ALT_LEGAL. 
+This check is to by default warn if the vehicle RTL_ALT_M has been set to a value > ARM_V_ALT_LEGAL.
 
 # Plane specific checks
 
