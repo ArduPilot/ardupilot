@@ -17,6 +17,14 @@
 
 #if AP_PERIPH_NETWORKING_ENABLED
 
+#if AP_NETWORKING_BACKEND_CHIBIOS
+#include <AP_Networking/AP_Networking_ChibiOS.h>
+#include <AP_Networking/AP_Networking_Port_Ethernet_ChibiOS.h>
+#include <AP_Networking/AP_Networking_Port_lwIP.h>
+#include <AP_Networking/AP_Networking_Port_COBS.h>
+#include <AP_Networking/AP_Networking_Hub.h>
+#endif
+
 const AP_Param::GroupInfo Networking_Periph::var_info[] {
     // @Group:
     // @Path: ../../libraries/AP_Networking/AP_Networking.cpp
@@ -151,6 +159,22 @@ const AP_Param::GroupInfo Networking_Periph::var_info[] {
     AP_GROUPINFO("PPP_BAUD", 21, Networking_Periph, ppp_baud, AP_PERIPH_NET_PPP_BAUD_DEFAULT),
 #endif
 
+#if AP_NETWORKING_BACKEND_HUB_PORT_COBS
+    // @Param: COBS_PORT
+    // @DisplayName: COBS serial port
+    // @Description: Serial port index to use for COBS Ethernet bridge (-1 disables)
+    // @Range: -1 10
+    // @User: Advanced
+    AP_GROUPINFO("COBS_PORT", 22, Networking_Periph, cobs_port, AP_PERIPH_NET_COBS_PORT_DEFAULT),
+
+    // @Param: COBS_BAUD
+    // @DisplayName: COBS serial baudrate
+    // @Description: Baudrate for COBS Ethernet bridge
+    // @CopyFieldsFrom: SERIAL1_BAUD
+    // @User: Advanced
+    AP_GROUPINFO("COBS_BAUD", 23, Networking_Periph, cobs_baud, AP_PERIPH_NET_COBS_BAUD_DEFAULT),
+#endif // AP_NETWORKING_BACKEND_HUB_PORT_COBS
+
     AP_GROUPEND
 };
 
@@ -162,6 +186,16 @@ void Networking_Periph::init(void)
         AP::serialmanager().set_protocol_and_baud(ppp_port, AP_SerialManager::SerialProtocol_PPP, ppp_baud.get());
     }
 #endif
+
+    // Configure COBS serial if requested BEFORE networking_lib.init()
+    // so AP_Networking can discover and instantiate COBS ports
+    // Uses COBS_ETH1 (protocol 51) by default - for ganged ports, configure
+    // additional serial ports with SERIALn_PROTOCOL=51 directly
+    if (cobs_port >= 0) {
+        AP::serialmanager().set_protocol_and_baud((uint8_t)cobs_port.get(),
+                                                  AP_SerialManager::SerialProtocol_COBS_ETH,
+                                                  (uint32_t)cobs_baud.get());
+    }
 
     networking_lib.init();
 
@@ -195,6 +229,70 @@ void Networking_Periph::update(void)
         comms->gateway = networking_lib.get_gateway_active();
     }
 #endif // HAL_RAM_RESERVE_START
+
+#if AP_NETWORKING_BACKEND_HUB
+    // Periodic stats over CAN (10s period)
+    static uint32_t last_stats_ms;
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_stats_ms >= 10000U && periph.debug_option_is_set(AP_Periph_FW::DebugOptions::NETWORK_STATS)) {
+        last_stats_ms = now_ms;
+        auto *hub = networking_lib.get_hub();
+        if (hub != nullptr) {
+            can_printf("NET: HUB routed=%lu dropped=%lu",
+                       (unsigned long)hub->get_frames_routed(),
+                       (unsigned long)hub->get_frames_dropped());
+        }
+#if AP_NETWORKING_BACKEND_HUB_PORT_ETHERNET
+        auto *eth = networking_lib.get_port_eth();
+        if (eth != nullptr) {
+            can_printf("NET: ETH rx=%lu tx=%lu rxerr=%lu txerr=%lu link=%u",
+                       (unsigned long)eth->get_rx_count(),
+                       (unsigned long)eth->get_tx_count(),
+                       (unsigned long)eth->get_rx_errors(),
+                       (unsigned long)eth->get_tx_errors(),
+                       eth->is_link_up() ? 1U : 0U);
+        }
+#endif // AP_NETWORKING_BACKEND_HUB_PORT_ETHERNET
+
+#if AP_NETWORKING_BACKEND_HUB_PORT_LWIP
+        auto *lwip = networking_lib.get_port_lwip();
+        if (lwip != nullptr) {
+            can_printf("NET: LWIP rx=%lu tx=%lu rxerr=%lu txerr=%lu",
+                       (unsigned long)lwip->get_rx_count(),
+                       (unsigned long)lwip->get_tx_count(),
+                       (unsigned long)lwip->get_rx_errors(),
+                       (unsigned long)lwip->get_tx_errors());
+        }
+#endif // AP_NETWORKING_BACKEND_HUB_PORT_LWIP
+
+#if AP_NETWORKING_BACKEND_HUB_PORT_COBS
+        // COBS ports (may be single or ganged)
+        const uint8_t n_cobs = networking_lib.get_num_cobs_ports();
+        for (uint8_t i = 0; i < n_cobs && i < 8; i++) {
+            auto *p = networking_lib.get_cobs_port(i);
+            if (p == nullptr) {
+                continue;
+            }
+            if (p->is_ganged()) {
+                can_printf("NET: COBS%u up=%u rx=%lu tx=%lu uarts=%u reord=%lu",
+                           (unsigned)i,
+                           (unsigned)(p->is_link_up() ? 1 : 0),
+                           (unsigned long)p->get_rx_count(),
+                           (unsigned long)p->get_tx_count(),
+                           (unsigned)p->get_num_uarts(),
+                           (unsigned long)p->get_reorder_count());
+            } else {
+                can_printf("NET: COBS%u up=%u rx=%lu tx=%lu crc=%lu",
+                           (unsigned)i,
+                           (unsigned)(p->is_link_up() ? 1 : 0),
+                           (unsigned long)p->get_rx_count(),
+                           (unsigned long)p->get_tx_count(),
+                           (unsigned long)p->get_crc_errors());
+            }
+        }
+#endif // AP_NETWORKING_BACKEND_HUB_PORT_COBS
+    }
+#endif // AP_NETWORKING_BACKEND_HUB
 }
 
 #endif  // AP_PERIPH_NETWORKING_ENABLED
