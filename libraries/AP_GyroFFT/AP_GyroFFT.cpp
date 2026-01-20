@@ -257,7 +257,7 @@ __INITFUNC__ void AP_GyroFFT::init(uint16_t loop_rate_hz)
             }
         }
     }
-    _current_sample_mode = _sample_mode;
+    _current_sample_mode = _sample_mode & 0x07; // mask matches previous 3 bit storage and param range
 
     _ref_energy = NEW_NOTHROW Vector3f[_window_size];
     if (_ref_energy == nullptr) {

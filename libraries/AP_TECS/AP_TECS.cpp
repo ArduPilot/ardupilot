@@ -397,13 +397,13 @@ void AP_TECS::_update_speed(float DT)
         _vel_dot_lpf = _vel_dot_lpf * (1.0f - alpha) + _vel_dot * alpha;
     }
 
-    bool use_airspeed = _use_synthetic_airspeed_once || _use_synthetic_airspeed.get() || _ahrs.using_airspeed_sensor();
+    const bool should_use_airspeed = use_airspeed();
 
     // Convert equivalent airspeeds to true airspeeds and harmonise limits
 
     float EAS2TAS = _ahrs.get_EAS2TAS();
     _TAS_dem = _EAS_dem * EAS2TAS;
-    if (_flags.reset || !use_airspeed) {
+    if (_flags.reset || !should_use_airspeed) {
         _TASmax = aparm.airspeed_max * EAS2TAS;
     } else if (_thr_clip_status == clipStatus::MAX) {
         // wind down airspeed upper limit  to prevent a situation where the aircraft can't climb
@@ -442,8 +442,8 @@ void AP_TECS::_update_speed(float DT)
 
     // Equivalent airspeed
     float _EAS;
-    if (!use_airspeed || !_ahrs.airspeed_estimate(_EAS)) {
-        // If no airspeed available use average of min and max
+    if (!should_use_airspeed || !_ahrs.airspeed_EAS(_EAS)) {
+        // If no airspeed available, assume we are at cruise speed.
         _EAS = constrain_float(aparm.airspeed_cruise.get(), (float)aparm.airspeed_min.get(), (float)aparm.airspeed_max.get());
     }
 
@@ -620,7 +620,7 @@ void AP_TECS::_update_height_demand(void)
             _flare_hgt_dem_adj = _hgt_dem;
             _flare_hgt_dem_ideal = _height;
             _hgt_at_start_of_flare = _hgt_afe;
-            _hgt_rate_at_flare_entry = _climb_rate;
+            _hgt_rate_dem_at_flare_entry = _hgt_rate_dem;
             _flare_initialised = true;
         }
 
@@ -634,7 +634,7 @@ void AP_TECS::_update_height_demand(void)
         } else {
             p = 1.0f;
         }
-        _hgt_rate_dem = _hgt_rate_at_flare_entry * (1.0f - p) - land_sink_rate_adj * p;
+        _hgt_rate_dem = _hgt_rate_dem_at_flare_entry * (1.0f - p) - land_sink_rate_adj * p;
 
         _flare_hgt_dem_ideal += _DT * _hgt_rate_dem; // the ideal height profile to follow
         _flare_hgt_dem_adj   += _DT * _hgt_rate_dem; // the demanded height profile that includes the pre-flare height tracking offset
@@ -992,7 +992,7 @@ void AP_TECS::_update_pitch(void)
     // A SKE_weighting of 2 provides 100% priority to speed control. This is used when an underspeed condition is detected. In this instance, if airspeed
     // rises above the demanded value, the pitch angle will be increased by the TECS controller.
     _SKE_weighting = constrain_float(_spdWeight, 0.0f, 2.0f);
-    if (!(_ahrs.using_airspeed_sensor() || _use_synthetic_airspeed)) {
+    if (!use_airspeed()) {
         _SKE_weighting = 0.0f;
     } else if (_flight_stage == AP_FixedWing::FlightStage::VTOL) {
         // if we are in VTOL mode then control pitch without regard to
@@ -1189,7 +1189,7 @@ void AP_TECS::_initialise_states(float hgt_afe)
 
         // misc variables used for alternative precision landing pitch control
         _hgt_at_start_of_flare    = 0.0f;
-        _hgt_rate_at_flare_entry  = 0.0f;
+        _hgt_rate_dem_at_flare_entry  = 0.0f;
         _hgt_afe                  = 0.0f;
         _pitch_min_at_flare_entry = 0.0f;
 
@@ -1337,12 +1337,8 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Calculate pitch demand
     _update_pitch();
 
-    // Calculate throttle demand - use simple pitch to throttle if no
-    // airspeed sensor.
-    // Note that caller can demand the use of
-    // synthetic airspeed for one loop if needed. This is required
-    // during QuadPlane transition when pitch is constrained
-    if (_ahrs.using_airspeed_sensor() || _use_synthetic_airspeed || _use_synthetic_airspeed_once) {
+    // Calculate throttle demand - use simple pitch to throttle if no airspeed estimate.
+    if (use_airspeed()) {
         _update_throttle_with_airspeed();
         _use_synthetic_airspeed_once = false;
         _using_airspeed_for_throttle = true;
@@ -1585,4 +1581,13 @@ void AP_TECS::offset_altitude(const float alt_offset)
     // _hgt_dem_in_raw
     // _hgt_dem_in
     // Energies
+}
+
+// Return true if airspeed should be used (either from a sensor or synthetic)
+bool AP_TECS::use_airspeed() const
+{
+    // Note that caller can demand the use of
+    // synthetic airspeed for one loop if needed. This is required
+    // during QuadPlane transition when pitch is constrained
+    return _ahrs.using_airspeed_sensor() || _use_synthetic_airspeed || _use_synthetic_airspeed_once;
 }

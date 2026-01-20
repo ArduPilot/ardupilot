@@ -178,6 +178,7 @@ public:
 #if AP_MAVLINK_FTP_ENABLED
     friend class GCS_FTP;
 #endif
+    friend class MAVLink_routing;
 
     GCS_MAVLINK(AP_HAL::UARTDriver &uart);
     virtual ~GCS_MAVLINK() {}
@@ -228,9 +229,17 @@ public:
                                      mission_type);
     }
 
-    // packetReceived is called on any successful decode of a mavlink message
+    // packetReceived is called on any successful decode of a mavlink
+    // message where the framing is correct (so CRC matches, for
+    // example).
     virtual void packetReceived(const mavlink_status_t &status,
                                 const mavlink_message_t &msg);
+
+    // raw_packetReceived is called on any successful decode of a mavlink
+    // message.
+    void raw_packetReceived(uint8_t framing_status,
+                            const mavlink_status_t &status,
+                            const mavlink_message_t &msg);
 
     // send a mavlink_message_t out this GCS_MAVLINK connection.
     void send_message(uint32_t msgid, const char *pkt) {
@@ -416,13 +425,13 @@ public:
 
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
-    static uint8_t active_channel_mask(void) { return mavlink_active; }
+    static mavlink_channel_mask_t active_channel_mask(void) { return mavlink_active; }
 
     // return a bitmap of streaming channels
-    static uint8_t streaming_channel_mask(void) { return chan_is_streaming; }
+    static mavlink_channel_mask_t streaming_channel_mask(void) { return chan_is_streaming; }
 
     // return a bitmap of private channels
-    static uint8_t private_channel_mask(void) { return mavlink_private; }
+    static mavlink_channel_mask_t private_channel_mask(void) { return mavlink_private; }
 
     // set a channel as private. Private channels get sent heartbeats, but
     // don't get broadcast packets or forwarded packets
@@ -529,6 +538,7 @@ protected:
         MAVLINK2_SIGNING_DISABLED = (1U << 0),
         NO_FORWARD                = (1U << 1),  // don't forward MAVLink data to or from this device
         NOSTREAMOVERRIDE          = (1U << 2),  // ignore REQUEST_DATA_STREAM messages (eg. from GCSs)
+        FORWARD_BAD_CRC           = (1U << 3),  // forward mavlink packets that don't pass CRC
     };
     bool option_enabled(Option option) const {
         return options & static_cast<uint16_t>(option);
@@ -600,7 +610,7 @@ protected:
     void handle_rally_fetch_point(const mavlink_message_t &msg);
     void handle_rally_point(const mavlink_message_t &msg) const;
 #if HAL_MOUNT_ENABLED
-    virtual void handle_mount_message(const mavlink_message_t &msg);
+    void handle_mount_message(const mavlink_message_t &msg);
 #endif
     void handle_fence_message(const mavlink_message_t &msg);
     void handle_param_value(const mavlink_message_t &msg);
@@ -665,7 +675,13 @@ protected:
         const uint16_t interval_ms = 10000;
     }  _timesync_request;
 
-    void handle_statustext(const mavlink_message_t &msg) const;
+    void handle_statustext(const mavlink_message_t &msg);
+    struct {
+        uint8_t last_src_system;
+        uint8_t last_src_component;
+        uint8_t last_id; // ID from the mavlink packet
+        uint8_t msg_id;  // ID used in our logs
+    } statustext_chunking;
     void handle_named_value(const mavlink_message_t &msg) const;
 
     bool telemetry_delayed() const;
@@ -729,7 +745,9 @@ protected:
 
     // message sending functions:
     bool try_send_mission_message(enum ap_message id);
+#if AP_MAVLINK_MSG_HWSTATUS_ENABLED
     void send_hwstatus();
+#endif  // AP_MAVLINK_MSG_HWSTATUS_ENABLED
     void handle_data_packet(const mavlink_message_t &msg);
 
     // these two methods are called after current_loc is updated:
@@ -940,13 +958,13 @@ private:
     static uint32_t reserve_param_space_start_ms;
     
     // bitmask of what mavlink channels are active
-    static uint8_t mavlink_active;
+    static mavlink_channel_mask_t mavlink_active;
 
     // bitmask of what mavlink channels are private
-    static uint8_t mavlink_private;
+    static mavlink_channel_mask_t mavlink_private;
 
     // bitmask of what mavlink channels are streaming
-    static uint8_t chan_is_streaming;
+    static mavlink_channel_mask_t chan_is_streaming;
 
     // mavlink routing object
     static MAVLink_routing routing;
@@ -955,6 +973,8 @@ private:
         mavlink_channel_t chan;
         int16_t param_index;
         char param_name[AP_MAX_NAME_SIZE+1];
+        uint8_t src_system_id;
+        uint8_t src_component_id;
     };
 
     struct pending_param_reply {
@@ -964,6 +984,9 @@ private:
         int16_t param_index;
         uint16_t count;
         char param_name[AP_MAX_NAME_SIZE+1];
+        uint8_t src_system_id;
+        uint8_t src_component_id;
+        MAV_PARAM_ERROR param_error;
     };
 
     // queue of pending parameter requests and replies
@@ -976,6 +999,9 @@ private:
     // IO timer callback for parameters
     void param_io_timer(void);
 
+    // support for returning explicit error for parameter protocol
+    void send_param_error(const mavlink_message_t &msg, const mavlink_param_set_t &param_set, MAV_PARAM_ERROR error);
+    void send_param_error(const pending_param_reply &msg, MAV_PARAM_ERROR error);
     uint8_t send_parameter_async_replies();
 
     void send_distance_sensor(const class AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
@@ -1118,7 +1144,7 @@ public:
     struct statustext_t {
         mavlink_statustext_t    msg;
         uint16_t                entry_created_ms;
-        uint8_t                 bitmask;
+        mavlink_channel_mask_t  bitmask;
     };
     class StatusTextQueue : public ObjectArray<statustext_t> {
     public:
@@ -1157,8 +1183,8 @@ public:
 
     void send_text(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(3, 4);
     void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list);
-    virtual void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t mask);
-    uint8_t statustext_send_channel_mask() const;
+    virtual void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, mavlink_channel_mask_t mask);
+    mavlink_channel_mask_t statustext_send_channel_mask() const;
 
     virtual GCS_MAVLINK *chan(const uint8_t ofs) = 0;
     virtual const GCS_MAVLINK *chan(const uint8_t ofs) const = 0;

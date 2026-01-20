@@ -55,6 +55,7 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @Description: This sets a digital output pin which is cycled at 10Hz when termination is not activated. Note that if a FS_TERM_PIN is set then the heartbeat pin will continue to cycle at 10Hz when termination is activated, to allow the termination board to distinguish between autopilot crash and termination. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @User: Advanced
     // @Values: -1:Disabled,49:BB Blue GP0 pin 4,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6,57:BB Blue GP0 pin 3,113:BB Blue GP0 pin 6,116:BB Blue GP0 pin 5
+    // @Range: -1 127
     AP_GROUPINFO("HB_PIN",      1, AP_AdvancedFailsafe, _heartbeat_pin, -1),
 
     // @Param: WP_COMMS
@@ -86,6 +87,7 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @Description: This sets a digital output pin to set high on flight termination. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @User: Advanced
     // @Values: -1:Disabled,49:BB Blue GP0 pin 4,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6,57:BB Blue GP0 pin 3,113:BB Blue GP0 pin 6,116:BB Blue GP0 pin 5
+    // @Range: -1 127
     AP_GROUPINFO("TERM_PIN",    7, AP_AdvancedFailsafe, _terminate_pin,    -1),
 
     // @Param: AMSL_LIMIT
@@ -168,6 +170,7 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @Description: See description for each bitmask bit description
     // @Bitmask: 0: Continue the mission even after comms are recovered (does not go to the mission item at the time comms were lost)
     // @Bitmask: 1: Enable AFS for all autonomous modes (not just AUTO) 
+    // @Bitmask: 2: Option to not jump to AFS_WP_COMMS if already in the return path 
     AP_GROUPINFO("OPTIONS", 21, AP_AdvancedFailsafe, options, 0),
 
     // @Param: GCS_TIMEOUT
@@ -251,13 +254,16 @@ AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
         if (!gcs_link_ok) {
             GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "AFS State: DATA_LINK_LOSS");
             _state = STATE_DATA_LINK_LOSS;
-            if (_wp_comms_hold) {
+            
+            if (should_use_comms_hold()) {
                 _saved_wp = mission.get_current_nav_cmd().index;
                 mission.set_current_cmd(_wp_comms_hold);
+
                 if (mode == AFS_AUTO && option_is_set(Option::GCS_FS_ALL_AUTONOMOUS_MODES)) {
                     set_mode_auto();
                 }
             }
+          
             // if two events happen within 30s we consider it to be part of the same event
             if (now - _last_comms_loss_ms > 30*1000UL) {
                 _comms_loss_count++;
@@ -414,6 +420,27 @@ AP_AdvancedFailsafe::check_altlimit(void)
     return false;
 }
 
+/*
+  return true if we should jump to _wp_comms_hold
+ */
+bool AP_AdvancedFailsafe::should_use_comms_hold(void){
+    
+    AP_Mission *_mission = AP::mission();
+
+    if (_mission == nullptr) {
+        return false;
+    }
+
+    if (_wp_comms_hold <= 0) {
+        return false;
+    }
+
+    if ((_mission->state() == AP_Mission::MISSION_RUNNING) && _mission->get_in_return_path_flag() && option_is_set(Option::CONTINUE_IF_ALREADY_IN_RETURN_PATH)) {
+        return false;
+    }
+
+    return true;
+}
 /*
   return true if we should crash the vehicle
  */

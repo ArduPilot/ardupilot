@@ -14,16 +14,6 @@ import subprocess
 import shutil
 import sys
 
-if sys.version_info[0] < 3:
-    running_python3 = False
-    running_python310 = False
-elif sys.version_info[1] < 10:
-    running_python3 = True
-    running_python310 = False
-else:
-    running_python3 = True
-    running_python310 = True
-
 FIRMWARE_TYPES = ["AntennaTracker", "Copter", "Plane", "Rover", "Sub", "AP_Periph", "Blimp"]
 RELEASE_TYPES = ["beta", "latest", "stable", "stable-*", "dirty"]
 
@@ -110,6 +100,7 @@ brand_map = {
     "MicoAir743" : ("MicoAir H743 v1.3", "MicoAir"),
     "MicoAir743-AIO" : ("MicoAir H743 AIO", "MicoAir"),
     "MicoAir743v2" : ("MicoAir H743 v2.0", "MicoAir"),
+    "MicoAir743-Lite" : ("MicoAir H743 Lite v1.1", "MicoAir"),
     "GEPRCF745BTHD": ("TAKER F745 BT", "GEPRC"),
     "GEPRC_TAKER_H743": ("TAKER H743 BT", "GEPRC"),
 }
@@ -338,8 +329,7 @@ class ManifestGenerator():
             return "".join(filename.split(".")[-1:])
         # no extension; ensure this is an elf:
         text = subprocess.check_output(["file", "-b", filepath])
-        if running_python3:
-            text = text.decode('ascii')
+        text = text.decode('ascii')
 
         if re.match("^ELF", text):
             return "ELF"
@@ -637,8 +627,7 @@ class ManifestGenerator():
         # "gzip -9"s to 300k in 1 second, "xz -e"s to 80k in 26 seconds
         new_json_filepath_gz = path + ".gz.new"
         with gzip.open(new_json_filepath_gz, 'wb') as gf:
-            if running_python3:
-                content = bytes(content, 'ascii')
+            content = bytes(content, 'ascii')
             gf.write(content)
             gf.close()
         shutil.move(new_json_filepath, path)

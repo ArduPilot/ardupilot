@@ -59,8 +59,8 @@ public:
     void update(void) override;
 
     // get maximum and minimum distances (in meters) of sensor
-    float distance_max() const override;
-    float distance_min() const override;
+    float distance_max_m() const override;
+    float distance_min_m() const override;
 
 private:
 
@@ -151,6 +151,7 @@ private:
         UNKNOWN,
         A1,
         A2,
+        A2M12,
         C1,
         S1,
     } model = Model::UNKNOWN;

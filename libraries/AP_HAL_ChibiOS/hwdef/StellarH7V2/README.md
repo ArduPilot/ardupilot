@@ -80,17 +80,20 @@ All the channels support DShot. Channels 1-6 support bi-directional DShot. Chann
 
 ## Battery Monitoring
 
-The board has 1 built-in voltage dividers and 2x current ADC. support external 3.3V based current sensor
+The board has 1 built-in voltage divider and 2x current ADC. Support external 3.3V based current sensor and external voltage divider.
 
 The voltage input is compatible with 2~8S LiPo batteries.
 The default battery parameters are:
 * :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
 * :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 10
 * :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 11 (CURR pin)
-* :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 11
-* :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 10
-* :ref:`BATT2_CURR_PIN<BATT2_CURR_PIN__AP_BattMonitor_Analog>` = 7 (ADC2 pin)
+* :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 11.0
+* :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 66.7
 
+Pads for a second analog battery monitor are provided (Voltage only). To use:
+* :ref:`BATT2_MONITOR<BATT2_MONITOR>` = 4
+* :ref:`BATT2_VOLT_PIN<BATT2_VOLT_PIN__AP_BattMonitor_Analog>` = 18 (ADC1 pin, PA4)
+* :ref:`BATT2_VOLT_MULT<BATT2_VOLT_MULT__AP_BattMonitor_Analog>` = 21.0
 
 ## Compass
 
@@ -107,4 +110,5 @@ Subsequently, you can update firmware with Mission Planner.
 
 
 ## Camera Switch
-GPIO 81 controls which camera input (CAM1 or CAM2) is applied to the internal OSD. A RELAY function can be enabled to control the switching.
+GPIO 81 (CAM_SW) controls which camera input (CAM1 or CAM2) is applied to the internal OSD. A RELAY function can be enabled to control the switching.
+

@@ -22,6 +22,7 @@
 #include <SITL/SIM_Submarine.h>
 #include <SITL/SIM_Blimp.h>
 #include <SITL/SIM_NoVehicle.h>
+#include <SITL/SIM_JSON.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include <AP_Baro/AP_Baro.h>
@@ -80,6 +81,7 @@ void SIMState::update()
 {
     static bool init_done;
     if (!init_done) {
+        AP::sitl()->init();
         init_done = true;
         sitl_model = SITL::AP_SIM_FRAME_CLASS::create(AP_SIM_FRAME_STRING);
     }

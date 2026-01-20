@@ -32,7 +32,7 @@ protected:
 #endif
     bool arm_checks(AP_Arming::Method method) override;
 
-    // mandatory checks that cannot be bypassed.  This function will only be called if ARMING_CHECK is zero or arming forced
+    // mandatory checks that cannot be bypassed.  This function will only be called if ARMING_SKIPCHK skips all or arming forced
     bool mandatory_checks(bool display_failure) override;
 
     // NOTE! the following check functions *DO* call into AP_Arming:

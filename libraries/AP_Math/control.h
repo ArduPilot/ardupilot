@@ -56,26 +56,26 @@ void update_pos_vel_accel_xy(Vector2p& pos, Vector2f& vel, const Vector2f& accel
 // - Constrains the rate of change of acceleration to be within ±`jerk_max` over time `dt`.
 // - The current acceleration value is modified in-place.
 // Useful for ensuring smooth transitions in thrust or lean angle command profiles.
-void shape_accel(float accel_input, float& accel,
+void shape_accel(float accel_desired, float& accel,
                  float jerk_max, float dt);
 
 // Applies jerk-limited shaping to a 2D acceleration vector.
 // - Constrains the rate of change of acceleration to a maximum of `jerk_max` over time `dt`.
-// - The current acceleration vector is modified in-place to approach `accel_input`.
+// - The current acceleration vector is modified in-place to approach `accel_desired`.
 /// Ensures smooth acceleration transitions in both axes simultaneously.
-void shape_accel_xy(const Vector2f& accel_input, Vector2f& accel,
+void shape_accel_xy(const Vector2f& accel_desired, Vector2f& accel,
                     float jerk_max, float dt);
 
-void shape_accel_xy(const Vector3f& accel_input, Vector3f& accel,
+void shape_accel_xy(const Vector3f& accel_desired, Vector3f& accel,
                     float jerk_max, float dt);
 
 // Shapes velocity and acceleration using jerk-limited control.
-// - Computes correction acceleration needed to reach `vel_input` from current `vel`.
+// - Computes correction acceleration needed to reach `vel_desired` from current `vel`.
 // - Uses a square-root controller with max acceleration and jerk constraints.
-// - Correction is combined with feedforward `accel_input`.
+// - Correction is combined with feedforward `accel_desired`.
 // - If `limit_total_accel` is true, total acceleration is constrained to `accel_min` / `accel_max`.
 // The result is applied via `shape_accel`.
-void shape_vel_accel(float vel_input, float accel_input,
+void shape_vel_accel(float vel_desired, float accel_desired,
                      float vel, float& accel,
                      float accel_min, float accel_max,
                      float jerk_max, float dt, bool limit_total_accel);
@@ -83,10 +83,10 @@ void shape_vel_accel(float vel_input, float accel_input,
 // Computes a jerk-limited acceleration command in 2D to track a desired velocity input.
 // - Uses a square-root controller to calculate correction acceleration based on velocity error.
 // - Correction is constrained to stay within `accel_max` (total acceleration magnitude).
-// - Correction is added to `accel_input` (feedforward).
+// - Correction is added to `accel_desired` (feedforward).
 // - If `limit_total_accel` is true, total acceleration is constrained after summing.
 // Ensures velocity tracking with smooth, physically constrained motion.
-void shape_vel_accel_xy(const Vector2f& vel_input1, const Vector2f& accel_input,
+void shape_vel_accel_xy(const Vector2f& vel_desired, const Vector2f& accel_desired,
                         const Vector2f& vel, Vector2f& accel,
                         float accel_max, float jerk_max, float dt, bool limit_total_accel);
 
@@ -95,7 +95,7 @@ void shape_vel_accel_xy(const Vector2f& vel_input1, const Vector2f& accel_input,
 // - That velocity is then shaped via `shape_vel_accel` to enforce acceleration and jerk limits.
 // - Limits can be applied separately to correction and total values.
 // Used for smooth point-to-point motion with constrained dynamics.
-void shape_pos_vel_accel(const postype_t pos_input, float vel_input, float accel_input,
+void shape_pos_vel_accel(const postype_t pos_desired, float vel_desired, float accel_desired,
                          const postype_t pos, float vel, float& accel,
                          float vel_min, float vel_max,
                          float accel_min, float accel_max,
@@ -107,7 +107,7 @@ void shape_pos_vel_accel(const postype_t pos_input, float vel_input, float accel
 // - Limits include: maximum velocity (`vel_max`), maximum acceleration (`accel_max`), and maximum jerk (`jerk_max`).
 // - If `limit_total` is true, constraints are applied to the total command (not just the correction).
 // Provides smooth trajectory shaping for lateral motion with bounded dynamics.
-void shape_pos_vel_accel_xy(const Vector2p& pos_input, const Vector2f& vel_input, const Vector2f& accel_input,
+void shape_pos_vel_accel_xy(const Vector2p& pos_desired, const Vector2f& vel_desired, const Vector2f& accel_desired,
                             const Vector2p& pos, const Vector2f& vel, Vector2f& accel,
                             float vel_max, float accel_max,
                             float jerk_max, float dt, bool limit_total);
@@ -120,7 +120,7 @@ void shape_pos_vel_accel_xy(const Vector2p& pos_input, const Vector2f& vel_input
 //   - Setting `angle_vel_max` or `angle_accel_max` to zero disables that respective limit.
 // - The acceleration output is shaped toward the target using `shape_vel_accel`.
 // Used for attitude control with limited angular velocity and angular acceleration (e.g., roll/pitch shaping).
-void shape_angle_vel_accel(float angle_input, float angle_vel_input, float angle_accel_input,
+void shape_angle_vel_accel(float angle_desired, float angle_vel_desired, float angle_accel_desired,
                          float angle, float angle_vel, float& angle_accel,
                          float angle_vel_max, float angle_accel_max,
                          float angle_jerk_max, float dt, bool limit_total);
@@ -132,6 +132,14 @@ void shape_angle_vel_accel(float angle_input, float angle_vel_input, float angle
 // - If `vel` is zero, a simple magnitude limit is applied.
 // Returns true if the acceleration vector was modified.
 bool limit_accel_xy(const Vector2f& vel, Vector2f& accel, float accel_max);
+
+// Limits acceleration magnitude while preserving cross-track authority during turns.
+// - Splits acceleration into components parallel and perpendicular to velocity.
+// - Ensures sufficient lateral acceleration is reserved for path curvature.
+// - If forward acceleration dominates, lateral acceleration is limited to
+//   CORNER_ACCELERATION_RATIO * accel_max.
+// Returns true if limiting was applied.
+bool limit_accel_corner_xy(const Vector2f& vel, Vector2f& accel, float accel_max);
 
 // Piecewise square-root + linear controller that limits second-order response (acceleration).
 // - Behaves like a P controller near the setpoint.
@@ -162,7 +170,12 @@ float stopping_distance(float velocity, float p, float accel_max);
 // - `direction` should be a non-zero vector indicating desired direction of travel.
 // - Limits: max_xy, max_z_pos (upward), max_z_neg (downward)
 // Returns the maximum achievable magnitude in that direction without violating any axis constraint.
-float kinematic_limit(Vector3f direction, float max_xy, float max_z_pos, float max_z_neg);
+float kinematic_limit(Vector3f direction, float max_xy, float max_z_neg, float max_z_pos);
+
+// compute the maximum allowed magnitude along a direction defined by segment_length_xy and segment_length_z components
+// constrained by independent horizontal (max_xy) and vertical (max_z_pos/max_z_neg) limits
+// returns the maximum achievable magnitude without exceeding any axis limit
+float kinematic_limit(float segment_length_xy, float segment_length_z, float max_xy, float max_z_pos, float max_z_neg);
 
 // Applies an exponential curve to a normalized input in the range [-1, 1].
 // - `expo` shapes the curve (0 = linear, closer to 1 = more curvature).

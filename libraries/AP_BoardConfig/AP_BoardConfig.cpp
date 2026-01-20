@@ -27,6 +27,7 @@
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
 
 #include <stdio.h>
 
@@ -256,7 +257,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Board type
     // @Description: This allows selection of a PX4 or VRBRAIN board type. If set to zero then the board type is auto-detected (PX4)
-    // @Values: 0:AUTO,1:PX4V1,2:Pixhawk,3:Cube/Pixhawk2,5:PixhawkMini,6:Pixhawk2Slim,13:Intel Aero FC,14:Pixhawk Pro,20:AUAV2.1,22:MINDPXV2,24:CUAVv5/FMUV5,39:PX4 FMUV6,100:PX4 OLDDRIVERS
+    // @Values: 0:AUTO,1:PX4V1,2:Pixhawk,3:Cube/Pixhawk2,5:PixhawkMini,6:Pixhawk2Slim,13:Intel Aero FC,14:Pixhawk Pro,20:AUAV2.1,39:PX4 FMUV6,100:PX4 OLDDRIVERS
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TYPE", 9, AP_BoardConfig, state.board_type, BOARD_TYPE_DEFAULT),
@@ -429,6 +430,17 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // index 30 used by SER6_RTSCTS
     // index 31 used by SER7_RTSCTS
     // index 32 used by SER8_RTSCTS
+
+#if AP_CPU_IDLE_STATS_ENABLED
+    // @Param: IDLE_STATS
+    // @DisplayName: Capture and calculate true CPU load using idle threads
+    // @Description: Capture and calculate true CPU load using idle threads
+    // @Values: 0:Disable,1:Enable
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("IDLE_STATS", 33, AP_BoardConfig, state.idle_stats, 0),
+#endif
+
     AP_GROUPEND
 };
 

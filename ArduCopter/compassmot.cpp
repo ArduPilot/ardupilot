@@ -20,8 +20,8 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     float    throttle_pct_max = 0.0f;   // maximum throttle reached (as a percentage 0~1.0)
     float    current_amps_max = 0.0f;   // maximum current reached
     float    interference_pct[COMPASS_MAX_INSTANCES]{};       // interference as a percentage of total mag field (for reporting purposes only)
-    uint32_t last_run_time;
-    uint32_t last_send_time;
+    uint32_t last_run_time_ms;
+    uint32_t last_send_time_ms;
     bool     updated = false;           // have we updated the compensation vector at least once
     uint8_t  command_ack_start = command_ack_counter;
 
@@ -128,19 +128,19 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     hal.util->set_soft_armed(true);
 
     // initialise run time
-    last_run_time = millis();
-    last_send_time = millis();
+    last_run_time_ms = millis();
+    last_send_time_ms = millis();
 
     // main run while there is no user input and the compass is healthy
     while (command_ack_start == command_ack_counter && compass.healthy() && motors->armed()) {
         EXPECT_DELAY_MS(5000);
 
         // 50hz loop
-        if (millis() - last_run_time < 20) {
+        if (millis() - last_run_time_ms < 20) {
             hal.scheduler->delay(5);
             continue;
         }
-        last_run_time = millis();
+        last_run_time_ms = millis();
 
         // read radio input
         read_radio();
@@ -217,8 +217,8 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
             }
         }
 
-        if (AP_HAL::millis() - last_send_time > 500) {
-            last_send_time = AP_HAL::millis();
+        if (AP_HAL::millis() - last_send_time_ms > 500) {
+            last_send_time_ms = AP_HAL::millis();
             mavlink_msg_compassmot_status_send(gcs_chan.get_chan(),
                                                channel_throttle->get_control_in(),
                                                current,

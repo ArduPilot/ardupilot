@@ -51,6 +51,10 @@
 #define HAL_LOGGER_FILE_CONTENTS_ENABLED HAL_LOGGING_FILESYSTEM_ENABLED && !AP_FILESYSTEM_LITTLEFS_ENABLED
 #endif
 
+#if AP_FILESYSTEM_LITTLEFS_ENABLED && HAL_LOGGING_BLOCK_ENABLED
+#error LittleFS requires block logging to be disabled
+#endif
+
 // range of IDs to allow for new messages during replay. It is very
 // useful to be able to add new messages during a replay, but we need
 // to avoid colliding with existing messages

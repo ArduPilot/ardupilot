@@ -11,12 +11,55 @@
 
 extern const AP_HAL::HAL& hal;
 
+// default pins and dividers
+#if defined(HAL_BATT_CURR_PIN)
+ // e.g. pins defined in hwdef.dat
+ #ifndef HAL_BATT_CURR_SCALE
+ #error "You must specify HAL_BATT_CURR_SCALE when you specify HAL_BATT_CURR_PIN"
+ #endif
+ # define AP_BATT_CURR_PIN                  HAL_BATT_CURR_PIN
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  HAL_BATT_CURR_SCALE
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+ # define AP_BATT_CURR_PIN                  3
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
+#else
+ # define AP_BATT_CURR_PIN                  -1
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
+#endif
+
+#if defined(HAL_BATT_VOLT_PIN)
+ // e.g. pins defined in hwdef.dat
+ #ifndef HAL_BATT_VOLT_SCALE
+ #error "You must specify HAL_BATT_VOLT_SCALE when you specify HAL_BATT_VOLT_PIN"
+ #endif
+ # define AP_BATT_VOLT_PIN                  HAL_BATT_VOLT_PIN
+ # define AP_BATT_VOLTDIVIDER_DEFAULT       HAL_BATT_VOLT_SCALE
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+ # define AP_BATT_VOLT_PIN                  4
+ # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
+#else
+ # define AP_BATT_VOLT_PIN                  -1
+ # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
+#endif
+
+// This is 0 for the majority of the power modules.
+#ifndef AP_BATT_CURR_AMP_OFFSET_DEFAULT
+ #define AP_BATT_CURR_AMP_OFFSET_DEFAULT 0.0f
+#endif
+
+// Other values normally set directly by mission planner
+// # define AP_BATT_VOLTDIVIDER_DEFAULT 15.70   // Volt divider for AttoPilot 50V/90A sensor
+// # define AP_BATT_VOLTDIVIDER_DEFAULT 4.127   // Volt divider for AttoPilot 13.6V/45A sensor
+// # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT 27.32  // Amp/Volt for AttoPilot 50V/90A sensor
+// # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT 13.66  // Amp/Volt for AttoPilot 13.6V/45A sensor
+
 const AP_Param::GroupInfo AP_BattMonitor_Analog::var_info[] = {
 
     // @Param: VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin
     // @Description: Sets the analog input pin that should be used for voltage monitoring.
     // @Values: -1:Disabled, 2:Pixhawk/Pixracer/Navio2/Pixhawk2_PM1, 5:Navigator, 13:Pixhawk2_PM2/CubeOrange_PM2, 14:CubeOrange, 16:Durandal, 100:PX4-v1
+    // @Range: -1 127
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("VOLT_PIN", 1, AP_BattMonitor_Analog, _volt_pin, AP_BATT_VOLT_PIN),
@@ -25,6 +68,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Analog::var_info[] = {
     // @DisplayName: Battery Current sensing pin
     // @Description: Sets the analog input pin that should be used for current monitoring.
     // @Values: -1:Disabled, 3:Pixhawk/Pixracer/Navio2/Pixhawk2_PM1, 4:CubeOrange_PM2/Navigator, 14:Pixhawk2_PM2, 15:CubeOrange, 17:Durandal, 101:PX4-v1
+    // @Range: -1 127
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("CURR_PIN", 2, AP_BattMonitor_Analog, _curr_pin, AP_BATT_CURR_PIN),

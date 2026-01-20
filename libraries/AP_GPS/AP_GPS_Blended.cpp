@@ -189,6 +189,19 @@ bool AP_GPS_Blended::calc_weights()
     } else if (_blend_health_counter > 0) {
         _blend_health_counter--;
     }
+
+    // we are never healthy if we do not have any weights:
+    bool non_zero_weight_found = false;
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        if (_blend_weights[i] > 0) {
+            non_zero_weight_found = true;
+            break;
+        }
+    }
+    if (!non_zero_weight_found) {
+        return false;
+    }
+
     // stop blending if unhealthy
     return _blend_health_counter < 50;
 }

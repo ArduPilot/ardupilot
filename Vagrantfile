@@ -195,4 +195,25 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
     plucky.vm.boot_timeout = 1200
   end
+
+  # 25.10 end of standard support ??
+  # note the use of "alvistack" here; Ubuntu stopped providing Vagrant
+  # images due to Hashicorp adopting the "Business Source License".
+  config.vm.define "questing", autostart: false do |questing|
+    questing.vm.box = "alvistack/ubuntu-25.10"
+    questing.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    questing.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (questing)"
+    end
+    questing.vm.boot_timeout = 1200
+  end
+  config.vm.define "questing-desktop", autostart: false do |questing|
+    questing.vm.box = "alvistack/ubuntu-25.10"
+    questing.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
+    questing.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (questing-desktop)"
+      vb.gui = true
+    end
+    questing.vm.boot_timeout = 1200
+  end
 end

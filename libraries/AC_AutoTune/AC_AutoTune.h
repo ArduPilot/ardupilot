@@ -91,7 +91,7 @@ protected:
     virtual bool init(void) = 0;
 
     // get pilot input for desired climb rate
-    virtual float get_pilot_desired_climb_rate_cms(void) const = 0;
+    virtual float get_desired_climb_rate_ms(void) const = 0;
 
     // get pilot input for designed roll and pitch, and yaw rate
     virtual void get_pilot_desired_rp_yrate_rad(float &roll_rad, float &pitch_rad, float &yaw_rate_rads) = 0;
@@ -336,13 +336,13 @@ private:
     // returns true if vehicle is close to level
     bool currently_level();
 
-    bool     pilot_override;             // true = pilot is overriding controls so we suspend tuning temporarily
-    bool     use_poshold;                // true = enable position hold
-    bool     have_position;              // true = start_position is value
-    Vector3f start_position_neu_m;             // target when holding position as an offset from EKF origin in cm in NEU frame
+    bool     pilot_override;        // true = pilot is overriding controls so we suspend tuning temporarily
+    bool     use_poshold;           // true = enable position hold
+    bool     have_position;         // true = start_position is value
+    Vector3p start_position_ned_m;  // target when holding position as an offset from EKF origin in meters in NED frame
 
     // variables
-    uint32_t override_time;                         // the last time the pilot overrode the controls
+    uint32_t override_time;         // the last time the pilot overrode the controls
 
     // time in ms of last pilot override warning
     uint32_t last_pilot_override_warning;

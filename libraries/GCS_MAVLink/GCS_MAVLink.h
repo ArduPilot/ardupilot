@@ -15,13 +15,19 @@
 #define MAVLINK_START_UART_SEND(chan, size) comm_send_lock(chan, size)
 #define MAVLINK_END_UART_SEND(chan, size) comm_send_unlock(chan)
 
-#if HAL_PROGRAM_SIZE_LIMIT_KB > 1024
+#ifndef MAVLINK_COMM_NUM_BUFFERS
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#define MAVLINK_COMM_NUM_BUFFERS 16
+#elif HAL_PROGRAM_SIZE_LIMIT_KB > 1024
 // allow 8 telemetry ports, allowing for extra networking or CAN ports
 #define MAVLINK_COMM_NUM_BUFFERS 8
 #else
 // allow five telemetry ports
 #define MAVLINK_COMM_NUM_BUFFERS 5
 #endif
+#endif  // MAVLINK_COMM_NUM_BUFFERS
+
+typedef uint32_t mavlink_channel_mask_t;
 
 #define MAVLINK_GET_CHANNEL_BUFFER 1
 #define MAVLINK_GET_CHANNEL_STATUS 1

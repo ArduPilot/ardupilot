@@ -59,7 +59,9 @@ public:
 #if AP_EXTERNAL_AHRS_MICROSTRAIN7_ENABLED
         MicroStrain7 = 7,
 #endif
-        // 8 reserved for SBG
+#if AP_EXTERNAL_AHRS_SBG_ENABLED
+        SBG = 8,
+#endif
         // 9 reserved for EulerNav
         // 10 reserved for Aeron
     };

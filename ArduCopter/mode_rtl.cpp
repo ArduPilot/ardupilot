@@ -175,7 +175,7 @@ void ModeRTL::climb_return_run()
 
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle
-    pos_control->update_U_controller();
+    pos_control->D_update_controller();
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
@@ -217,7 +217,7 @@ void ModeRTL::loiterathome_run()
 
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle
-    pos_control->update_U_controller();
+    pos_control->D_update_controller();
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
@@ -244,7 +244,7 @@ void ModeRTL::descent_start()
     _state_complete = false;
 
     // initialise altitude target to stopping point
-    pos_control->init_U_controller_stopping_point();
+    pos_control->D_init_controller_stopping_point();
 
     // initialise yaw
     auto_yaw.set_mode(AutoYaw::Mode::HOLD);
@@ -299,18 +299,18 @@ void ModeRTL::descent_run()
 
     Vector2f accel;
     pos_control->input_vel_accel_NE_m(vel_correction_ms, accel);
-    pos_control->update_NE_controller();
+    pos_control->NE_update_controller();
 
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle
-    pos_control->set_alt_target_with_slew_m(rtl_path.descent_target.alt * 0.01);
-    pos_control->update_U_controller();
+    pos_control->D_set_alt_target_with_slew_m(rtl_path.descent_target.alt * 0.01);
+    pos_control->D_update_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if we've reached within 20cm of final altitude
-    _state_complete = labs(rtl_path.descent_target.alt * 0.01 - pos_control->get_pos_estimate_NEU_m().z) < 0.2;
+    _state_complete = labs(rtl_path.descent_target.alt * 0.01 - pos_control->get_pos_estimate_U_m()) < 0.2;
 }
 
 // land_start - initialise controllers to loiter over home
@@ -320,17 +320,17 @@ void ModeRTL::land_start()
     _state_complete = false;
 
     // set horizontal speed and acceleration limits
-    pos_control->set_max_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
-    pos_control->set_correction_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+    pos_control->NE_set_max_speed_accel_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+    pos_control->NE_set_correction_speed_accel_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
 
     // initialise loiter target destination
-    if (!pos_control->is_active_NE()) {
-        pos_control->init_NE_controller();
+    if (!pos_control->NE_is_active()) {
+        pos_control->NE_init_controller();
     }
 
     // initialise the vertical position controller
-    if (!pos_control->is_active_U()) {
-        pos_control->init_U_controller();
+    if (!pos_control->D_is_active()) {
+        pos_control->D_init_controller();
     }
 
     // initialise yaw
@@ -409,7 +409,7 @@ void ModeRTL::compute_return_target()
     // get position controller Z-axis offset in cm above EKF origin
     float pos_offset_u_m = pos_control->get_pos_offset_U_m();
 
-    // curr_alt_m is current altitude above home or above terrain depending upon use_terrain
+    // curr_alt_m is current altitude, with any offset removed, above home or above terrain depending upon use_terrain
     float curr_alt_m = copter.current_loc.alt * 0.01 - pos_offset_u_m;
 
     // determine altitude type of return journey (alt-above-home, alt-above-terrain using range finder or alt-above-terrain using terrain database)
@@ -434,7 +434,7 @@ void ModeRTL::compute_return_target()
     // set curr_alt_m and return_target.alt from range finder
     if (alt_type == ReturnTargetAltType::RANGEFINDER) {
         if (copter.get_rangefinder_height_interpolated_m(curr_alt_m)) {
-            // subtract position controller offset
+            // subtract vertical offset from altitude.
             curr_alt_m -= pos_offset_u_m;
             // set return_target.alt
             rtl_path.return_target.set_alt_m(MAX(curr_alt_m + MAX(0.0, g.rtl_climb_min_cm * 0.01), MAX(g.rtl_altitude_cm * 0.01, RTL_ALT_MIN_M)), Location::AltFrame::ABOVE_TERRAIN);
@@ -454,6 +454,7 @@ void ModeRTL::compute_return_target()
         float curr_terr_alt_m;
         if (copter.current_loc.get_alt_m(Location::AltFrame::ABOVE_TERRAIN, curr_terr_alt_m) &&
             rtl_path.return_target.change_alt_frame(Location::AltFrame::ABOVE_TERRAIN)) {
+            // subtract vertical offset from altitude.
             curr_alt_m = curr_terr_alt_m - pos_offset_u_m;
         } else {
             // fallback to relative alt and warn user
@@ -500,7 +501,7 @@ void ModeRTL::compute_return_target()
     if ((copter.fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
         // get return target as alt-above-home so it can be compared to fence's alt
         if (rtl_path.return_target.get_alt_m(Location::AltFrame::ABOVE_HOME, target_alt_m)) {
-            float fence_alt_m = copter.fence.get_safe_alt_max();
+            float fence_alt_m = copter.fence.get_safe_alt_max_m();
             if (target_alt_m > fence_alt_m) {
                 // reduce target alt to the fence alt
                 rtl_path.return_target.alt -= (target_alt_m - fence_alt_m) * 100.0;
@@ -544,7 +545,7 @@ float ModeRTL::wp_bearing_deg() const
 // returns true if pilot's yaw input should be used to adjust vehicle's heading
 bool ModeRTL::use_pilot_yaw(void) const
 {
-    const bool allow_yaw_option = (copter.g2.rtl_options.get() & uint32_t(Options::IgnorePilotYaw)) == 0;
+    const bool allow_yaw_option = !option_is_enabled(Option::IgnorePilotYaw);
     const bool land_repositioning = g.land_repositioning && (_state == SubMode::FINAL_DESCENT);
     const bool final_landing = _state == SubMode::LAND;
     return allow_yaw_option || land_repositioning || final_landing;
@@ -566,6 +567,11 @@ bool ModeRTL::set_speed_down_ms(float speed_down_ms)
 {
     copter.wp_nav->set_speed_down_ms(speed_down_ms);
     return true;
+}
+
+bool ModeRTL::option_is_enabled(Option option) const
+{
+    return ((copter.g2.rtl_options & (uint32_t)option) != 0);
 }
 
 #endif

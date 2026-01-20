@@ -36,6 +36,8 @@ class JSONEmit(Emit):
 
         # Check all params available
         for param in g.params:
+            if not self.should_emit_param(param):
+                continue
             param_json = {}
 
             # Get display name

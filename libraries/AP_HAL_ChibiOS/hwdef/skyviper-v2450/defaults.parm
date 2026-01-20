@@ -100,7 +100,6 @@ FENCE_ALT_MAX  50
 FENCE_MARGIN    3
 
 # arming
-ARMING_CHECK 32767
 DISARM_DELAY   8
 
 # IMU
@@ -207,10 +206,10 @@ RC3_DZ              15
 RC4_DZ              15
 
 # pos control
-PSC_POSXY_P           0.7
-PSC_VELXY_I           0.3
-PSC_VELXY_P           0.6
-PSC_VELXY_FLTE        1.0
+PSC_NE_POS_P           0.7
+PSC_NE_VEL_I           0.3
+PSC_NE_VEL_P           0.6
+PSC_NE_VEL_FLTE        1.0
 LOIT_ACC_MAX         800
 LOIT_SPEED           800
 WPNAV_SPEED          750

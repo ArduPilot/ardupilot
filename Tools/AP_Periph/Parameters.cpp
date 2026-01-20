@@ -305,7 +305,8 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: RNGFND_BAUDRATE
     // @DisplayName: Rangefinder serial baudrate
     // @Description: Rangefinder serial baudrate.
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000
+    // @Values: 1200:1200,2400:2400,4800:4800,9600:9600,19200:19200,38400:38400,57600:57600,111100:111100,115200:115200,230400:230400,256000:256000,460800:460800,500000:500000,921600:921600,1500000:1500000
+    // @Range: 1200 20000000
     // @Increment: 1
     // @User: Standard
     // @RebootRequired: True
@@ -322,12 +323,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
 #if RANGEFINDER_MAX_INSTANCES > 1
     // @Param: RNGFND2_BAUDRATE
-    // @DisplayName: Rangefinder serial baudrate
-    // @Description: Rangefinder serial baudrate.
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000
-    // @Increment: 1
-    // @User: Standard
-    // @RebootRequired: True
+    // @CopyFieldsFrom: RNGFND_BAUDRATE
     GARRAY(rangefinder_baud, 1, "RNGFND2_BAUDRATE", HAL_PERIPH_RANGEFINDER_BAUDRATE_DEFAULT),
 
     // @Param: RNGFND2_PORT
@@ -357,12 +353,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
 #if AP_PERIPH_ADSB_ENABLED
     // @Param: ADSB_BAUDRATE
+    // @CopyFieldsFrom: RNGFND_BAUDRATE
     // @DisplayName: ADSB serial baudrate
     // @Description: ADSB serial baudrate.
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000
-    // @Increment: 1
-    // @User: Standard
-    // @RebootRequired: True
     GSCALAR(adsb_baudrate, "ADSB_BAUDRATE", HAL_PERIPH_ADSB_BAUD_DEFAULT),
 
     // @Param: ADSB_PORT
@@ -513,12 +506,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
 #if AP_PERIPH_EFI_ENABLED
     // @Param: EFI_BAUDRATE
+    // @CopyFieldsFrom: RNGFND_BAUDRATE
     // @DisplayName: EFI serial baudrate
     // @Description: EFI  serial baudrate.
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000
-    // @Increment: 1
-    // @User: Standard
-    // @RebootRequired: True
     GSCALAR(efi_baudrate, "EFI_BAUDRATE", HAL_PERIPH_EFI_BAUDRATE_DEFAULT),
 
     // @Param: EFI_PORT
@@ -538,12 +528,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
 #if AP_PERIPH_PROXIMITY_ENABLED
     // @Param: PRX_BAUDRATE
+    // @CopyFieldsFrom: RNGFND_BAUDRATE
     // @DisplayName: Proximity Sensor serial baudrate
     // @Description: Proximity Sensor serial baudrate.
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000
-    // @Increment: 1
-    // @User: Standard
-    // @RebootRequired: True
     GSCALAR(proximity_baud, "PRX_BAUDRATE", HAL_PERIPH_RANGEFINDER_BAUDRATE_DEFAULT),
 
     // @Param: PRX_PORT
@@ -628,6 +615,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: RC
     // @Path: rc_in.cpp
     GOBJECT(g_rcin, "RC",  Parameters_RCIN),
+#endif
+
+#if AP_PERIPH_ACTUATOR_TELEM_ENABLED
+    // @Group: ACT
+    // @Path: actuator_telem.cpp
+    GOBJECT(actuator_telem, "ACT", ActuatorTelem),
 #endif
 
 #if AP_PERIPH_BATTERY_BALANCE_ENABLED

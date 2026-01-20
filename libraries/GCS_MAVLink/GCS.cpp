@@ -124,6 +124,116 @@ const AP_Param::GroupInfo GCS::var_info[] {
     // @Path: GCS_MAVLink_Parameters.cpp
     AP_SUBGROUPVARPTR(_chan[9], "10", 20, GCS, _chan_var_info[9]),
 #endif
+#if MAVLINK_COMM_NUM_BUFFERS > 10
+    // @Group: 11
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[10], "11", 21, GCS, _chan_var_info[10]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 11
+    // @Group: 12
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[11], "12", 22, GCS, _chan_var_info[11]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 12
+    // @Group: 13
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[12], "13", 23, GCS, _chan_var_info[12]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 13
+    // @Group: 14
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[13], "14", 24, GCS, _chan_var_info[13]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 14
+    // @Group: 15
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[14], "15", 25, GCS, _chan_var_info[14]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 15
+    // @Group: 16
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[15], "16", 26, GCS, _chan_var_info[15]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 16
+    // @Group: 17
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[16], "17", 27, GCS, _chan_var_info[16]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 17
+    // @Group: 18
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[17], "18", 28, GCS, _chan_var_info[17]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 18
+    // @Group: 19
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[18], "19", 29, GCS, _chan_var_info[18]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 19
+    // @Group: 20
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[19], "20", 30, GCS, _chan_var_info[19]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 20
+    // @Group: 21
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[20], "21", 31, GCS, _chan_var_info[20]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 21
+    // @Group: 22
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[21], "22", 32, GCS, _chan_var_info[21]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 22
+    // @Group: 23
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[22], "23", 33, GCS, _chan_var_info[22]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 23
+    // @Group: 24
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[23], "24", 34, GCS, _chan_var_info[23]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 24
+    // @Group: 25
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[24], "25", 35, GCS, _chan_var_info[24]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 25
+    // @Group: 26
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[25], "26", 36, GCS, _chan_var_info[25]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 26
+    // @Group: 27
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[26], "27", 37, GCS, _chan_var_info[26]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 27
+    // @Group: 28
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[27], "28", 38, GCS, _chan_var_info[27]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 28
+    // @Group: 29
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[28], "29", 39, GCS, _chan_var_info[28]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 29
+    // @Group: 30
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[29], "30", 40, GCS, _chan_var_info[29]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 30
+    // @Group: 31
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[30], "31", 41, GCS, _chan_var_info[30]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 31
+    // @Group: 32
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[31], "32", 42, GCS, _chan_var_info[31]),
+#endif
 
     AP_GROUPEND
 };
@@ -135,7 +245,7 @@ void GCS::get_sensor_status_flags(uint32_t &present,
 // if this assert fails then fix it and the comment in GCS.h where
 // _statustext_queue is declared
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-ASSERT_STORAGE_SIZE(GCS::statustext_t, 58);
+ASSERT_STORAGE_SIZE(GCS::statustext_t, 60);
 #endif
 
     WITH_SEMAPHORE(control_sensors_sem);
@@ -157,9 +267,9 @@ void GCS::init()
 /*
  * returns a mask of channels that statustexts should be sent to
  */
-uint8_t GCS::statustext_send_channel_mask() const
+mavlink_channel_mask_t GCS::statustext_send_channel_mask() const
 {
-    uint8_t ret = 0;
+    mavlink_channel_mask_t ret = 0;
     ret |= GCS_MAVLINK::active_channel_mask();
     ret |= GCS_MAVLINK::streaming_channel_mask();
     ret &= ~GCS_MAVLINK::private_channel_mask();
@@ -171,7 +281,7 @@ uint8_t GCS::statustext_send_channel_mask() const
  */
 void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list)
 {
-    uint8_t mask = statustext_send_channel_mask();
+    mavlink_channel_mask_t mask = statustext_send_channel_mask();
     if (!update_send_has_been_called) {
         // we have not yet initialised the streaming-channel-mask,
         // which is done as part of the update() call.  So just send
@@ -425,7 +535,7 @@ void GCS::update_sensor_status_flags()
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL && AP_AHRS_ENABLED
-    if (ahrs.get_ekf_type() == 10) {
+    if (ahrs.configured_ekf_type() == AP_AHRS::EKFType::SIM) {
         // always show EKF type 10 as healthy. This prevents spurious error
         // messages in xplane and other simulators that use EKF type 10
         control_sensors_health |= MAV_SYS_STATUS_AHRS | MAV_SYS_STATUS_SENSOR_GPS | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_3D_GYRO;

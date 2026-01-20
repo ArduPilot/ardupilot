@@ -56,7 +56,7 @@ public:
     uint32_t last_backend_los_meas_ms() const { return _last_backend_los_meas_ms; }
 
     // vehicle has to be closer than this many m's to the target before descending towards target
-    float get_max_xy_error_before_descending_m() const { return _xy_max_dist_desc; }
+    float get_max_xy_error_before_descending_m() const { return _xy_max_dist_desc_m; }
 
     // returns orientation of sensor
     Rotation get_orient() const { return _orient; }
@@ -68,16 +68,16 @@ public:
     void update(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
     // returns target position relative to the EKF origin
-    bool get_target_position_m(Vector2f& ret);
+    bool get_target_position_m(Vector2p& ret);
 
     // returns target relative position as 3D vector
-    void get_target_position_measurement_m(Vector3f& ret);
+    void get_target_position_measurement_NED_m(Vector3f& ret);
 
     // returns target position relative to vehicle
-    bool get_target_position_relative_m(Vector2f& ret);
+    bool get_target_position_relative_NE_m(Vector2f& ret);
 
     // returns target velocity relative to vehicle
-    bool get_target_velocity_relative_ms(Vector2f& ret);
+    bool get_target_velocity_relative_NE_ms(Vector2f& ret);
 
     // get the absolute velocity of the vehicle
     void get_target_velocity_ms(const Vector2f& vehicle_velocity_ms, Vector2f& target_vel_ms);
@@ -103,15 +103,15 @@ public:
     TargetState get_target_state() const { return _current_target_state; }
 
     // return the last known landing position in Earth Frame NED meters.
-    void get_last_detected_landing_pos(Vector3f &pos) const { pos = _last_target_pos_rel_origin_NED; }
+    void get_last_detected_landing_pos_NED_m(Vector3p &pos) const { pos = _last_target_pos_rel_origin_ned_m; }
 
-    // return the last known postion of the vehicle when the target was detected in Earth Frame NED meters.
-    void get_last_vehicle_pos_when_target_detected(Vector3f &pos) const { pos = _last_vehicle_pos_NED; }
+    // return the last known position of the vehicle when the target was detected in Earth Frame NED meters.
+    void get_last_vehicle_pos_when_target_detected_NED_m(Vector3p &pos) const { pos = _last_vehicle_pos_ned_m; }
 
     // Parameter getters
     AC_PrecLand_StateMachine::RetryStrictness get_retry_strictness() const { return static_cast<AC_PrecLand_StateMachine::RetryStrictness>(_strict.get()); }
     uint8_t get_max_retry_allowed() const { return _retry_max; }
-    float get_min_retry_time_sec() const { return _retry_timeout_sec; }
+    float get_min_retry_time_sec() const { return _retry_timeout_s; }
     AC_PrecLand_StateMachine::RetryAction get_retry_behaviour() const { return static_cast<AC_PrecLand_StateMachine::RetryAction>(_retry_behave.get()); }
 
     bool allow_precland_after_reposition() const { return _options & PLND_OPTION_PRECLAND_AFTER_REPOSITION; }
@@ -183,60 +183,60 @@ private:
     // run target position estimator
     void run_estimator(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
-    // If a new measurement was retrieved, sets _target_pos_rel_meas_NED and returns true
+    // If a new measurement was retrieved, sets _target_pos_rel_meas_ned_m and returns true
     bool construct_pos_meas_using_rangefinder(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
     // get 3D vector from vehicle to target and frame.  returns true on success, false on failure
     bool retrieve_los_meas(Vector3f& target_vec_unit, VectorFrame& frame);
 
     // calculate target's position and velocity relative to the vehicle (used as input to position controller)
-    // results are stored in_target_pos_rel_out_NE, _target_vel_rel_out_NE
+    // results are stored in_target_pos_rel_out_NE, _target_vel_rel_out_ne_ms
     void run_output_prediction();
 
     // parameters
-    AP_Int8                     _enabled;           // enabled/disabled
-    AP_Enum<Type>               _type;              // precision landing sensor type
-    AP_Int8                     _bus;               // which sensor bus
-    AP_Enum<EstimatorType>      _estimator_type;    // precision landing estimator type
-    AP_Float                    _lag;               // sensor lag in seconds
-    AP_Float                    _yaw_align;         // Yaw angle from body x-axis to sensor x-axis.
-    AP_Float                    _land_ofs_cm_x;     // Desired landing position of the camera forward of the target in vehicle body frame
-    AP_Float                    _land_ofs_cm_y;     // Desired landing position of the camera right of the target in vehicle body frame
-    AP_Float                    _accel_noise;       // accelerometer process noise
-    AP_Vector3f                 _cam_offset;        // Position of the camera relative to the CG
-    AP_Float                    _xy_max_dist_desc;  // Vehicle doing prec land will only descent vertically when horizontal error (in m) is below this limit
-    AP_Int8                     _strict;            // PrecLand strictness
-    AP_Int8                     _retry_max;         // PrecLand Maximum number of retires to a failed landing
-    AP_Float                    _retry_timeout_sec; // Time for which vehicle continues descend even if target is lost. After this time period, vehicle will attempt a landing retry depending on PLND_STRICT param.
-    AP_Int8                     _retry_behave;      // Action to do when trying a landing retry
-    AP_Float                    _sensor_min_alt;    // PrecLand minimum height required for detecting target
-    AP_Float                    _sensor_max_alt;    // PrecLand maximum height the sensor can detect target
-    AP_Int16                    _options;           // Bitmask for extra options
-    AP_Enum<Rotation>           _orient;            // Orientation of camera/sensor
+    AP_Int8                     _enabled;               // enabled/disabled
+    AP_Enum<Type>               _type;                  // precision landing sensor type
+    AP_Int8                     _bus;                   // which sensor bus
+    AP_Enum<EstimatorType>      _estimator_type;        // precision landing estimator type
+    AP_Float                    _lag_s;                 // sensor lag in seconds
+    AP_Float                    _yaw_align_cd;          // Yaw angle from body x-axis to sensor x-axis.
+    AP_Float                    _land_ofs_cm_x;         // Desired landing position of the camera forward of the target in vehicle body frame
+    AP_Float                    _land_ofs_cm_y;         // Desired landing position of the camera right of the target in vehicle body frame
+    AP_Float                    _accel_noise;           // accelerometer process noise
+    AP_Vector3f                 _cam_offset_m;          // Position of the camera relative to the CG
+    AP_Float                    _xy_max_dist_desc_m;    // Vehicle doing prec land will only descent vertically when horizontal error (in m) is below this limit
+    AP_Int8                     _strict;                // PrecLand strictness
+    AP_Int8                     _retry_max;             // PrecLand Maximum number of retires to a failed landing
+    AP_Float                    _retry_timeout_s;       // Time for which vehicle continues descend even if target is lost. After this time period, vehicle will attempt a landing retry depending on PLND_STRICT param.
+    AP_Int8                     _retry_behave;          // Action to do when trying a landing retry
+    AP_Float                    _sensor_min_alt_m;      // PrecLand minimum height required for detecting target
+    AP_Float                    _sensor_max_alt_m;      // PrecLand maximum height the sensor can detect target
+    AP_Int16                    _options;               // Bitmask for extra options
+    AP_Enum<Rotation>           _orient;                // Orientation of camera/sensor
 
-    uint32_t                    _last_update_ms;    // system time in millisecond when update was last called
-    bool                        _target_acquired;   // true if target has been seen recently after estimator is initialized
-    bool                        _estimator_initialized; // true if estimator has been initialized after few seconds of the target being detected by sensor
-    uint32_t                    _estimator_init_ms; // system time in millisecond when EKF was init
+    uint32_t                    _last_update_ms;            // system time in millisecond when update was last called
+    bool                        _target_acquired;           // true if target has been seen recently after estimator is initialized
+    bool                        _estimator_initialized;     // true if estimator has been initialized after few seconds of the target being detected by sensor
+    uint32_t                    _estimator_init_ms;         // system time in millisecond when EKF was init
     uint32_t                    _last_backend_los_meas_ms;  // system time target was last seen
     uint32_t                    _last_valid_target_ms;      // last time PrecLand library had a output of the landing target position
 
-    PosVelEKF                   _ekf_x, _ekf_y;     // Kalman Filter for x and y axis
-    uint32_t                    _outlier_reject_count;  // mini-EKF's outlier counter (3 consecutive outliers lead to EKF accepting updates)
+    PosVelEKF                   _ekf_x, _ekf_y;             // Kalman Filter for x and y axis
+    uint32_t                    _outlier_reject_count;      // mini-EKF's outlier counter (3 consecutive outliers lead to EKF accepting updates)
 
-    Vector3f                    _target_pos_rel_meas_NED; // target's relative position as 3D vector
-    Vector3f                    _approach_vector_body;   // unit vector in landing approach direction (in body frame)
+    Vector3f                    _target_pos_rel_meas_ned_m; // target's relative position as 3D vector
+    Vector3f                    _approach_vector_body;      // unit vector in landing approach direction (in body frame)
 
-    Vector3f                    _last_target_pos_rel_origin_NED;  // stores the last known location of the target horizontally, and the height of the vehicle where it detected this target in meters NED
-    Vector3f                    _last_vehicle_pos_NED;            // stores the position of the vehicle when landing target was last detected in m and NED
-    Vector2f                    _target_pos_rel_est_NE; // target's position relative to the IMU, not compensated for lag
-    Vector2f                    _target_vel_rel_est_NE; // target's velocity relative to the IMU, not compensated for lag
+    Vector3p                    _last_target_pos_rel_origin_ned_m;  // stores the last known location of the target horizontally, and the height of the vehicle where it detected this target in meters NED
+    Vector3p                    _last_vehicle_pos_ned_m;            // stores the position of the vehicle when landing target was last detected in m and NED
+    Vector2f                    _target_pos_rel_est_ne_m;           // target's position relative to the IMU, not compensated for lag
+    Vector2f                    _target_vel_rel_est_ne_ms;          // target's velocity relative to the IMU, not compensated for lag
 
-    Vector2f                    _target_pos_rel_out_NE; // target's position relative to the camera, fed into position controller
-    Vector2f                    _target_vel_rel_out_NE; // target's velocity relative to the CG, fed into position controller
-    Vector3f                    _last_veh_velocity_NED_ms; // AHRS velocity at last estimate
+    Vector2f                    _target_pos_rel_out_ne_m;   // target's position relative to the camera, fed into position controller
+    Vector2f                    _target_vel_rel_out_ne_ms;  // target's velocity relative to the CG, fed into position controller
+    Vector3f                    _last_veh_velocity_NED_ms;  // AHRS velocity at last estimate
 
-    TargetState                 _current_target_state;  // Current status of the landing target
+    TargetState                 _current_target_state;      // Current status of the landing target
 
     // structure and buffer to hold a history of vehicle velocity
     struct inertial_data_frame_s {

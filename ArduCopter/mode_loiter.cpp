@@ -22,13 +22,13 @@ bool ModeLoiter::init(bool ignore_checks)
     loiter_nav->init_target();
 
     // initialise the vertical position controller
-    if (!pos_control->is_active_U()) {
-        pos_control->init_U_controller();
+    if (!pos_control->D_is_active()) {
+        pos_control->D_init_controller();
     }
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_m(-get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
-    pos_control->set_correction_speed_accel_U_m(-get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
+    pos_control->D_set_max_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
+    pos_control->D_set_correction_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
 
 #if AC_PRECLAND_ENABLED
     _precision_loiter_active = false;
@@ -59,19 +59,19 @@ bool ModeLoiter::do_precision_loiter()
 void ModeLoiter::precision_loiter_xy()
 {
     loiter_nav->clear_pilot_desired_acceleration();
-    Vector2f target_pos_ne_m, target_vel_ne_ms;
+    Vector2p target_pos_ne_m;
+    Vector2f target_vel_ne_ms;
     if (!copter.precland.get_target_position_m(target_pos_ne_m)) {
-        target_pos_ne_m = pos_control->get_pos_estimate_NEU_m().xy().tofloat();
+        target_pos_ne_m = pos_control->get_pos_estimate_NED_m().xy();
     }
     // get the velocity of the target
-    copter.precland.get_target_velocity_ms(pos_control->get_vel_estimate_NEU_ms().xy(), target_vel_ne_ms);
+    copter.precland.get_target_velocity_ms(pos_control->get_vel_estimate_NED_ms().xy(), target_vel_ne_ms);
 
     Vector2f zero;
-    Vector2p landing_pos_ne_m = target_pos_ne_m.topostype();
     // target vel will remain zero if landing target is stationary
-    pos_control->input_pos_vel_accel_NE_m(landing_pos_ne_m, target_vel_ne_ms, zero);
+    pos_control->input_pos_vel_accel_NE_m(target_pos_ne_m, target_vel_ne_ms, zero);
     // run pos controller
-    pos_control->update_NE_controller();
+    pos_control->NE_update_controller();
 }
 #endif
 
@@ -84,7 +84,7 @@ void ModeLoiter::run()
     float target_climb_rate_ms = 0.0f;
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_m(-get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
+    pos_control->D_set_max_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
 
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
@@ -108,7 +108,7 @@ void ModeLoiter::run()
     }
 
     // Loiter State Machine Determination
-    AltHoldModeState loiter_state = get_alt_hold_state_U_ms(target_climb_rate_ms);
+    AltHoldModeState loiter_state = get_alt_hold_state_D_ms(target_climb_rate_ms);
 
     // Loiter State Machine
     switch (loiter_state) {
@@ -116,7 +116,7 @@ void ModeLoiter::run()
     case AltHoldModeState::MotorStopped:
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->reset_yaw_target_and_rate();
-        pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
+        pos_control->D_relax_controller(0.0f);   // forces throttle output to decay to zero
         loiter_nav->init_target();
         break;
 
@@ -127,7 +127,7 @@ void ModeLoiter::run()
     case AltHoldModeState::Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms_smoothly();
         loiter_nav->init_target();
-        pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
+        pos_control->D_relax_controller(0.0f);   // forces throttle output to decay to zero
         break;
 
     case AltHoldModeState::Takeoff:
@@ -180,19 +180,19 @@ void ModeLoiter::run()
 #endif
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_ms);
+        pos_control->D_set_pos_target_from_climb_rate_ms(target_climb_rate_ms);
         break;
     }
 
     // call attitude controller
     attitude_control->input_thrust_vector_rate_heading_rads(loiter_nav->get_thrust_vector(), target_yaw_rate_rads, false);
     // run the vertical position controller and set output throttle
-    pos_control->update_U_controller();
+    pos_control->D_update_controller();
 }
 
 float ModeLoiter::wp_distance_m() const
 {
-    return loiter_nav->get_distance_to_target_cm() * 0.01f;
+    return loiter_nav->get_distance_to_target_m();
 }
 
 float ModeLoiter::wp_bearing_deg() const

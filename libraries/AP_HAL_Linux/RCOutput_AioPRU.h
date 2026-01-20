@@ -15,6 +15,10 @@
 #define RCOUT_PRUSS_RAM_BASE 0x4a300000
 #define RCOUT_PRUSS_CTRL_BASE 0x4a322000
 #define RCOUT_PRUSS_IRAM_BASE 0x4a334000
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET2
+#define RCOUT_PRUSS_RAM_BASE  0x30040000
+#define RCOUT_PRUSS_CTRL_BASE 0x30062000
+#define RCOUT_PRUSS_IRAM_BASE 0x30074000
 #else
 #define RCOUT_PRUSS_RAM_BASE 0x4a302000
 #define RCOUT_PRUSS_CTRL_BASE 0x4a324000
@@ -37,9 +41,14 @@ class RCOutput_AioPRU : public AP_HAL::RCOutput {
     void     push(void) override;
 
 private:
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET2
+   static const uint32_t TICK_PER_US = 250;
+   static const uint32_t TICK_PER_S = 250000000;
+#else
    static const uint32_t TICK_PER_US = 200;
    static const uint32_t TICK_PER_S = 200000000;
-
+#endif
+   
    struct pwm {
       volatile uint32_t channelenable;
       struct {

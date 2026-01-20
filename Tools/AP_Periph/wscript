@@ -55,6 +55,7 @@ def build(bld):
                      'Filter',
                      'AP_InternalError',
                      'AP_Airspeed',
+                     'AP_LightWareSerial',
                      'AP_RangeFinder',
                      'AP_ROMFS',
                      'AP_TemperatureSensor',

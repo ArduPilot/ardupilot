@@ -42,7 +42,7 @@ void Copter::update_throttle_hover()
     }
 
     // do not update while climbing or descending
-    if (!is_zero(pos_control->get_vel_desired_NEU_ms().z)) {
+    if (!is_zero(pos_control->get_vel_desired_U_ms())) {
         return;
     }
 
@@ -123,16 +123,7 @@ void Copter::set_accel_throttle_I_from_pilot_throttle()
     // get last throttle input sent to attitude controller
     float pilot_throttle = constrain_float(attitude_control->get_throttle_in(), 0.0, 1.0);
     // shift difference between pilot's throttle and hover throttle into accelerometer I
-    pos_control->get_accel_U_pid().set_integrator((pilot_throttle-motors->get_throttle_hover()) * 1000.0);
-}
-
-// rotate vector from vehicle's perspective to North-East frame
-void Copter::rotate_body_frame_to_NE(float &x, float &y)
-{
-    float ne_x = x * ahrs.cos_yaw() - y * ahrs.sin_yaw();
-    float ne_y = x * ahrs.sin_yaw() + y * ahrs.cos_yaw();
-    x = ne_x;
-    y = ne_y;
+    pos_control->D_get_accel_pid().set_integrator(-(pilot_throttle - motors->get_throttle_hover()));
 }
 
 // It will return the PILOT_SPEED_DN value if non zero, otherwise if zero it returns the PILOT_SPEED_UP value.

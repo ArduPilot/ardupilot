@@ -36,6 +36,9 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    // return pwm required for current angle
+    float angle_pwm() const;
+
 private:
     float apply_filter(float v, float dt);
     float apply_simple_filter(float v, float dt);

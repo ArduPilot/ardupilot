@@ -17,12 +17,15 @@
 
 #pragma once
 
+#include "AP_PiccoloCAN_config.h"
+
+#if AP_PICCOLOCAN_ENABLED
+
 #include <AP_CANManager/AP_CANManager.h>
 
+#include "AP_PiccoloCAN_config.h"
 #include "AP_PiccoloCAN_Device.h"
 #include "piccolo_protocol/ServoPackets.h"
-
-#if HAL_PICCOLO_CAN_ENABLE
 
 #define PICCOLO_CAN_MAX_NUM_SERVO 16
 #define PICCOLO_CAN_MAX_GROUP_SERVO (PICCOLO_CAN_MAX_NUM_SERVO / 4)
@@ -66,4 +69,4 @@ public:
     } settings;
 };
 
-#endif // HAL_PICCOLO_CAN_ENABLE
+#endif // AP_PICCOLOCAN_ENABLED

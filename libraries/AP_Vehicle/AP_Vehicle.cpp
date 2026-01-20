@@ -27,6 +27,7 @@
 extern AP_IOMCU iomcu;
 #endif
 #include <AP_Scripting/AP_Scripting.h>
+#include <SITL/SITL.h>
 
 #define SCHED_TASK(func, rate_hz, max_time_micros, prio) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros, prio)
 
@@ -529,6 +530,10 @@ void AP_Vehicle::setup()
 
 #if AP_RPM_ENABLED
     rpm_sensor.init();
+#endif
+
+#if AP_ARMING_ENABLED
+    AP::arming().init();
 #endif
 
     // invalidate count in case an enable parameter changed during
@@ -1133,6 +1138,50 @@ void AP_Vehicle::check_motor_noise()
     }
 #endif
 }
+
+#if HAL_WITH_ESC_TELEM && (APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane))
+bool AP_Vehicle::motors_takeoff_check(float rpm_min, float rpm_max)
+{
+    auto motors = AP::motors();
+
+    // Allow takeoff if check is disabled or if no motor class is present
+    if (rpm_min <= 0 || motors == nullptr) {
+        return true;
+    }
+
+    // clear warning timer when disarmed
+    if (!motors->armed()) {
+        takeoff_check_state.warning_ms = 0;
+        return false;
+    }
+
+    // check ESCs are sending RPM at expected level
+    uint32_t motor_mask = motors->get_motor_mask();
+    const bool telem_active = AP::esc_telem().is_telemetry_active(motor_mask);
+    const bool rpm_adequate = AP::esc_telem().are_motors_running(motor_mask, rpm_min, rpm_max);
+
+    // if RPM is at the expected level clear block
+    if (telem_active && rpm_adequate) {
+        return true;
+    }
+
+    // warn user telem inactive or rpm is inadequate every 5 seconds
+    uint32_t now_ms = AP_HAL::millis();
+    if (takeoff_check_state.warning_ms == 0) {
+        takeoff_check_state.warning_ms = now_ms;
+    }
+    if (now_ms - takeoff_check_state.warning_ms > 5000) {
+        takeoff_check_state.warning_ms = now_ms;
+        const char* prefix_str = "Takeoff blocked:";
+        if (!telem_active) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "%s waiting for ESC RPM", prefix_str);
+        } else if (!rpm_adequate) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "%s ESC RPM out of range", prefix_str);
+        }
+    }
+    return false;
+}
+#endif  // HAL_WITH_ESC_TELEM && (APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane))
 
 #if AP_DDS_ENABLED
 bool AP_Vehicle::init_dds_client()

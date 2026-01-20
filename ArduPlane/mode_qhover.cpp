@@ -6,8 +6,9 @@
 bool ModeQHover::_enter()
 {
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_m(-quadplane.get_pilot_velocity_z_max_dn_m(), quadplane.pilot_speed_z_max_up_ms, quadplane.pilot_accel_z_mss);
-    pos_control->set_correction_speed_accel_U_m(-quadplane.get_pilot_velocity_z_max_dn_m(), quadplane.pilot_speed_z_max_up_ms, quadplane.pilot_accel_z_mss);
+    // All limits must be positive
+    pos_control->D_set_max_speed_accel_m(quadplane.get_pilot_velocity_z_max_dn_m(), quadplane.pilot_speed_z_max_up_ms, quadplane.pilot_accel_z_mss);
+    pos_control->D_set_correction_speed_accel_m(quadplane.get_pilot_velocity_z_max_dn_m(), quadplane.pilot_speed_z_max_up_ms, quadplane.pilot_accel_z_mss);
     quadplane.set_climb_rate_ms(0);
 
     quadplane.init_throttle_wait();
@@ -37,7 +38,7 @@ void ModeQHover::run()
         quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0, true, 0);
         quadplane.relax_attitude_control();
-        pos_control->relax_U_controller(0);
+        pos_control->D_relax_controller(0);
     } else {
         plane.quadplane.assign_tilt_to_fwd_thr();
         quadplane.hold_hover(quadplane.get_pilot_desired_climb_rate_cms());

@@ -52,7 +52,11 @@ bool AP_RangeFinder_JRE_Serial::get_reading(float &reading_m)
 
     uint16_t valid_count = 0;   // number of valid readings
     uint16_t invalid_count = 0; // number of invalid readings
-    float sum = 0;
+    float sum = 0.0f;
+
+    float fft_value = 0.0f;
+    float sum_fft_value = 0.0f;
+    uint16_t sq_pct;
 
     // read a maximum of 8192 bytes per call to this function:
     uint16_t bytes_available = MIN(uart->available(), 8192U);
@@ -82,7 +86,7 @@ bool AP_RangeFinder_JRE_Serial::get_reading(float &reading_m)
         // determine packet length for incoming packet:
         uint8_t packet_length;
         switch (data_buff[1]) {
-        case FRAME_HEADER_2_A:                   
+        case FRAME_HEADER_2_A:
             packet_length = 16;
             break;
         case FRAME_HEADER_2_B:
@@ -120,6 +124,8 @@ bool AP_RangeFinder_JRE_Serial::get_reading(float &reading_m)
         // good message, extract rangefinder reading:
         reading_m = (data_buff[4] * 256 + data_buff[5]) * 0.01f;
         sum += reading_m;
+        fft_value = (data_buff[10] * 256 + data_buff[11]);
+        sum_fft_value += fft_value;
         valid_count++;
         move_preamble_in_buffer(packet_length);
     }
@@ -128,6 +134,12 @@ bool AP_RangeFinder_JRE_Serial::get_reading(float &reading_m)
     if (valid_count > 0) {
         no_signal = false;
         reading_m = sum / valid_count;
+        sq_pct = (uint16_t)((sum_fft_value / valid_count) * (100.0f / 512.0f) + 0.5f);
+        if (sq_pct >= 100) {
+            signal_quality_pct = 100;
+        } else {
+            signal_quality_pct = (int8_t)sq_pct;
+        }
         return true;
     }
 

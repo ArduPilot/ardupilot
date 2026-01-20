@@ -65,4 +65,3 @@ DMA_NOSHARE *UP SPI1*
 # Motor order implies Betaflight/X for standard ESCs
 define HAL_FRAME_TYPE_DEFAULT 12
 DATAFLASH littlefs:w25nxx
-define DEFAULT_NTF_LED_TYPES 455

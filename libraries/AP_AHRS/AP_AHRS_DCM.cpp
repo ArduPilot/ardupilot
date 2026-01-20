@@ -119,12 +119,13 @@ AP_AHRS_DCM::update()
 // @Field: VWN: wind velocity, to-the-North component
 // @Field: VWE: wind velocity, to-the-East component
 // @Field: VWD: wind velocity, Up-to-Down component
+// @Field: SAs: synthetic (equivalent) airspeed
         AP::logger().WriteStreaming(
             "DCM",
-            "TimeUS," "Roll," "Pitch," "Yaw," "ErrRP," "ErrYaw," "VWN," "VWE," "VWD",
-            "s"       "d"     "d"      "d"    "d"      "h"       "n"    "n"    "n",
-            "F"       "0"     "0"      "0"    "0"      "0"       "0"    "0"    "0",
-            "Q"       "f"     "f"      "f"    "f"      "f"       "f"    "f"    "f",
+            "TimeUS," "Roll," "Pitch," "Yaw," "ErrRP," "ErrYaw," "VWN," "VWE," "VWD," "SAs",
+            "s"       "d"     "d"      "d"    "d"      "h"       "n"    "n"    "n"    "n",
+            "F"       "0"     "0"      "0"    "0"      "0"       "0"    "0"    "0"    "0",
+            "Q"       "f"     "f"      "f"    "f"      "f"       "f"    "f"    "f"    "f",
             AP_HAL::micros64(),
             degrees(roll),
             degrees(pitch),
@@ -133,7 +134,8 @@ AP_AHRS_DCM::update()
             get_error_yaw(),
             _wind.x,
             _wind.y,
-            _wind.z
+            _wind.z,
+            _last_airspeed_TAS / get_EAS2TAS()
        );
     }
 #endif // HAL_LOGGING_ENABLED
@@ -146,6 +148,12 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     results.yaw_rad = yaw;
 
     results.dcm_matrix = _body_dcm_matrix;
+
+    // quaternion is derived from transformation matrix:
+    results.quaternion.from_rotation_matrix(_dcm_matrix);
+
+    results.attitude_valid = true;
+
     results.gyro_estimate = _omega;
     results.gyro_drift = _omega_I;
     results.accel_ef = _accel_ef;
@@ -488,13 +496,6 @@ bool AP_AHRS_DCM::use_compass(void)
     }
 
     // use the compass
-    return true;
-}
-
-// return the quaternion defining the rotation from NED to XYZ (body) axes
-bool AP_AHRS_DCM::get_quaternion(Quaternion &quat) const
-{
-    quat.from_rotation_matrix(_dcm_matrix);
     return true;
 }
 

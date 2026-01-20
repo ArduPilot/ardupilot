@@ -31,8 +31,8 @@ public:
     // get an individual ESC's slewed rpm if available, returns true on success
     bool get_rpm(uint8_t esc_index, float& rpm) const;
 
-    // get an individual ESC's raw rpm if available
-    bool get_raw_rpm(uint8_t esc_index, float& rpm) const;
+    // get an individual ESC's raw rpm and error rate if available
+    bool get_raw_rpm_and_error_rate(uint8_t esc_index, float& rpm, float& error_rate) const;
 
     // get raw telemetry data, used by IOMCU
     const volatile AP_ESC_Telem_Backend::TelemetryData& get_telem_data(uint8_t esc_index) const {

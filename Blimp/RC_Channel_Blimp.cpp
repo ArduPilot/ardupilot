@@ -49,7 +49,7 @@ bool RC_Channels_Blimp::has_valid_input() const
     if (blimp.failsafe.radio_counter != 0) {
         return false;
     }
-    return true;
+    return RC_Channels::has_valid_input();
 }
 
 RC_Channel * RC_Channels_Blimp::get_arming_channel(void) const

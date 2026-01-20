@@ -12,6 +12,8 @@
 #define AP_PERIPH_PROBE_CONTINUOUS 0
 #endif
 
+extern const AP_HAL::HAL &hal;
+
 /*
   update CAN airspeed
  */

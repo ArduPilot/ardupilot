@@ -146,9 +146,39 @@ void JSON::output_servos(const struct sitl_input &input)
     This parser does not do any syntax checking, and is not at all
     general purpose
 */
-uint32_t JSON::parse_sensors(const char *json)
+
+template <typename T>
+bool parse_array(const char *str, T &arr, int count) {
+    const char *p = str;
+
+    for (int i = 0; i < count; i++) {
+        // Skip to start of number
+        while (*p && *p != '-' && (*p < '0' || *p > '9'))
+            p++;
+
+        if (!*p) {
+            // End of string before we got all numbers
+            return false;
+        }
+
+        arr[i] = atof(p);
+
+        // Move past the number
+        while (*p && *p != ',' && *p != ']')
+            p++;
+
+        if (i < count - 1) { // expect comma between numbers
+            if (*p != ',') return false;
+            p++; // skip comma
+        }
+    }
+
+    return true;
+}
+
+uint64_t JSON::parse_sensors(const char *json)
 {
-    uint32_t received_bitmask = 0;
+    uint64_t received_bitmask = 0;
 
 #if SITL_JSON_DEBUG && AP_FILESYSTEM_FILE_WRITING_ENABLED
     // it is useful in some environments to be able to get a copy of the raw
@@ -193,7 +223,7 @@ uint32_t JSON::parse_sensors(const char *json)
         }
 
         // record the keys that are found
-        received_bitmask |= 1U << i;
+        received_bitmask |= 1ULL << i;
 
         p += strlen(key.key)+2;
         switch (key.type) {
@@ -213,31 +243,40 @@ uint32_t JSON::parse_sensors(const char *json)
                 break;
 
             case DATA_VECTOR3F: {
-                Vector3f *v = (Vector3f *)key.ptr;
-                if (sscanf(p, "[%f, %f, %f]", &v->x, &v->y, &v->z) != 3) {
+                Vector3<float> v;
+                if (!parse_array(p, v, ARRAY_SIZE(v))) {
                     printf("Failed to parse Vector3f for %s/%s\n", key.section, key.key);
                     return received_bitmask;
                 }
+                Vector3f *tv = (Vector3<float> *)key.ptr;
+                *tv = v;
                 //printf("%s/%s = %f, %f, %f\n", key.section, key.key, v->x, v->y, v->z);
                 break;
             }
 
             case DATA_VECTOR3D: {
-                Vector3d *v = (Vector3d *)key.ptr;
-                if (sscanf(p, "[%lf, %lf, %lf]", &v->x, &v->y, &v->z) != 3) {
-                    printf("Failed to parse Vector3f for %s/%s\n", key.section, key.key);
+                Vector3<double> v;
+                if (!parse_array(p, v, ARRAY_SIZE(v))) {
+                    printf("Failed to parse Vector3d for %s/%s\n", key.section, key.key);
                     return received_bitmask;
                 }
+                Vector3d *tv = (Vector3d *)key.ptr;
+                *tv = v;
                 //printf("%s/%s = %f, %f, %f\n", key.section, key.key, v->x, v->y, v->z);
                 break;
             }
 
             case QUATERNION: {
-                Quaternion *v = static_cast<Quaternion*>(key.ptr);
-                if (sscanf(p, "[%f, %f, %f, %f]", &(v->q1), &(v->q2), &(v->q3), &(v->q4)) != 4) {
+                VectorN<float, 4> v;
+                if (!parse_array(p, v, ARRAY_SIZE(v))) {
                     printf("Failed to parse Vector4f for %s/%s\n", key.section, key.key);
                     return received_bitmask;
                 }
+                Quaternion *tv = static_cast<Quaternion*>(key.ptr);
+                tv->q1 = v[0];
+                tv->q2 = v[1];
+                tv->q3 = v[2];
+                tv->q4 = v[3];
                 break;
             }
 
@@ -268,6 +307,19 @@ void JSON::recv_fdm(const struct sitl_input &input)
     // Receive sensor packet
     ssize_t ret = sock.recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, UDP_TIMEOUT_MS);
     uint32_t wait_ms = UDP_TIMEOUT_MS;
+
+    if (state.no_lockstep && ret <= 0) {
+        // in no_lockstep mode do not block waiting for data; advance time using SITL loop rate
+        if (sitl != nullptr && sitl->loop_rate_hz > 0) {
+            frame_time_us = (uint32_t)(1000000.0f / sitl->loop_rate_hz);
+        } else {
+            frame_time_us = 10000; // fallback to 10ms
+        }
+        time_now_us += frame_time_us;
+        time_advance();
+        return;
+    }
+
     while (ret <= 0) {
         //printf("No JSON sensor message received - %s\n", strerror(errno));
         ret = sock.recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, UDP_TIMEOUT_MS);
@@ -296,7 +348,7 @@ void JSON::recv_fdm(const struct sitl_input &input)
         return;
     }
 
-    const uint32_t received_bitmask = parse_sensors((const char *)(p1+1));
+    const uint64_t received_bitmask = parse_sensors((const char *)(p1+1));
     if (received_bitmask == 0) {
         // did not receive one of the mandatory fields
         printf("Did not contain all mandatory fields\n");
@@ -314,7 +366,7 @@ void JSON::recv_fdm(const struct sitl_input &input)
         printf("\nJSON received:\n");
         for (uint16_t i=0; i<ARRAY_SIZE(keytable); i++) {
             struct keytable &key = keytable[i];
-            if ((received_bitmask &  1U << i) == 0) {
+            if ((received_bitmask &  1ULL << i) == 0) {
                 continue;
             }
             if (strcmp(key.section, "") == 0) {
@@ -333,8 +385,25 @@ void JSON::recv_fdm(const struct sitl_input &input)
     accel_body = state.imu.accel_body;
     gyro = state.imu.gyro;
     velocity_ef = state.velocity;
-    position = state.position;
-    position.xy() += origin.get_distance_NE_double(home);
+
+    if ((received_bitmask & (LATITUDE | LONGITUDE | ALTITUDE)) == (LATITUDE | LONGITUDE | ALTITUDE)) {
+        Location new_loc;
+        new_loc.lat = state.latitude * 1.0e7;
+        new_loc.lng = state.longitude * 1.0e7;
+        new_loc.alt = state.altitude * 100.0;
+        new_loc.relative_alt = false;
+        new_loc.origin_alt = false;
+        new_loc.terrain_alt = false;
+
+        if (!home_is_set) {
+            set_start_location(new_loc, 0.0f);
+        }
+
+        position = origin.get_distance_NED_double(new_loc);
+    } else {
+        position = state.position;
+        position.xy() += origin.get_distance_NE_double(home);
+    }
 
     if (received_bitmask & TIME_SYNC) {
         if (use_time_sync != !state.no_time_sync) {
@@ -345,6 +414,17 @@ void JSON::recv_fdm(const struct sitl_input &input)
                 // otherwise EKF is likely to diverge
                 AP_Param::set_default_by_name("AHRS_EKF_TYPE", 10);
             }
+        }
+    }
+
+    // Handle lockstep setting from JSON
+    if (received_bitmask & LOCKSTEP) {
+        // state.no_lockstep is true when we DON'T want lockstep
+        // So we need to check if it changed and act accordingly
+        if (state.no_lockstep != last_no_lockstep) {
+            last_no_lockstep = state.no_lockstep;
+            printf("Lockstep mode changed: no_lockstep=%d (lockstep %s)\n", 
+                   int(state.no_lockstep), state.no_lockstep ? "DISABLED" : "ENABLED");
         }
     }
 
@@ -385,7 +465,7 @@ void JSON::recv_fdm(const struct sitl_input &input)
 
     // update range finder distances
     for (uint8_t i=7; i<13; i++) {
-        if ((received_bitmask &  1U << i) == 0) {
+        if ((received_bitmask &  1ULL << i) == 0) {
             continue;
         }
         rangefinder_m[i-7] = state.rng[i-7];
@@ -430,8 +510,10 @@ void JSON::recv_fdm(const struct sitl_input &input)
     time_now_us += deltat * 1.0e6;
 
     if (is_positive(deltat) && deltat < 0.1) {
-        // time in us to hz
-        if (use_time_sync) {
+        // Only adjust frame time if we want lockstep
+        // When no_lockstep is true, skip adjust_frame_time to let SITL run free
+        if (use_time_sync && !state.no_lockstep) {
+            // time in us to hz
             adjust_frame_time(1.0 / deltat);
         }
         // match actual frame rate with desired speedup
@@ -522,7 +604,8 @@ void JSON::update(const struct sitl_input &input)
     update_mag_field_bf();
 
     // allow for changes in physics step
-    if (use_time_sync) {
+    // Only adjust frame time if lockstep is enabled (no_lockstep is false)
+    if (use_time_sync && !state.no_lockstep) {
         adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
     }
 

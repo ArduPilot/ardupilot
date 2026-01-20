@@ -72,7 +72,7 @@ AP_Compass_AK09916::~AP_Compass_AK09916()
     delete _bus;
 }
 
-AP_Compass_Backend *AP_Compass_AK09916::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_AK09916::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                              bool force_external,
                                              enum Rotation rotation)
 {
@@ -94,8 +94,8 @@ AP_Compass_Backend *AP_Compass_AK09916::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> 
 }
 
 #if AP_COMPASS_ICM20948_ENABLED
-AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
-                                                     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_icm,
+AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev_icm,
                                                      bool force_external,
                                                      enum Rotation rotation)
 {
@@ -252,16 +252,15 @@ bool AP_Compass_AK09916::init()
 
     /* register the compass instance in the frontend */
     _bus->set_device_type(_devtype);
-    if (!register_compass(_bus->get_bus_id(), _compass_instance)) {
+    if (!register_compass(_bus->get_bus_id())) {
         goto fail;
     }
-    set_dev_id(_compass_instance, _bus->get_bus_id());
 
     if (_force_external) {
-        set_external(_compass_instance, true);
+        set_external(true);
     }
 
-    set_rotation(_compass_instance, _rotation);
+    set_rotation(_rotation);
     
     bus_sem->give();
 
@@ -280,7 +279,7 @@ void AP_Compass_AK09916::read()
         return;
     }
 
-    drain_accumulated_samples(_compass_instance);
+    drain_accumulated_samples();
 }
 
 void AP_Compass_AK09916::_make_adc_sensitivity_adjustment(Vector3f& field) const
@@ -324,7 +323,7 @@ void AP_Compass_AK09916::_update()
     _make_adc_sensitivity_adjustment(raw_field);
     raw_field *= AK09916_MILLIGAUSS_SCALE;
 
-    accumulate_sample(raw_field, _compass_instance, 10);
+    accumulate_sample(raw_field, 10);
 
 check_registers:
     _bus->check_next_register();
@@ -363,8 +362,8 @@ bool AP_Compass_AK09916::_reset()
     return _bus->register_write(REG_CNTL3, 0x01); //Soft Reset
 }
 
-/* AP_HAL::I2CDevice implementation of the AK09916 */
-AP_AK09916_BusDriver_HALDevice::AP_AK09916_BusDriver_HALDevice(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+/* AP_HAL::Device implementation of the AK09916 */
+AP_AK09916_BusDriver_HALDevice::AP_AK09916_BusDriver_HALDevice(AP_HAL::OwnPtr<AP_HAL::Device> dev)
     : _dev(std::move(dev))
 {
 }

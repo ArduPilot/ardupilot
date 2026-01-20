@@ -122,6 +122,9 @@
 #define SAVE_CFG_ANT    (1<<10)
 #define SAVE_CFG_ALL    (SAVE_CFG_IO|SAVE_CFG_MSG|SAVE_CFG_INF|SAVE_CFG_NAV|SAVE_CFG_RXM|SAVE_CFG_RINV|SAVE_CFG_ANT)
 
+#define START_OF_WEEK_THRESHOLD_MS  (60UL * AP_MSEC_PER_SEC)
+#define END_OF_WEEK_THRESHOLD_MS  AP_MSEC_PER_WEEK - START_OF_WEEK_THRESHOLD_MS
+
 class RTCM3_Parser;
 
 class AP_GPS_UBLOX : public AP_GPS_Backend
@@ -695,7 +698,8 @@ private:
         GNSS_BEIDOU  = 0x03,
         GNSS_IMES    = 0x04,
         GNSS_QZSS    = 0x05,
-        GNSS_GLONASS = 0x06
+        GNSS_GLONASS = 0x06,
+        GNSS_NAVIC   = 0x07,
     };
     enum ubs_nav_fix_type {
         FIX_NONE = 0,

@@ -108,7 +108,6 @@ a {
 <ul>
 <li>Jump to <a href='#latest'>latest</a></li>
 <li>Jump to <a href='#beta'>beta</a></li>
-<li>Jump to <a href='#beta-4.3'>beta-4.3</a></li>
 <li>Jump to <a href='#stable'>stable</a></li>
 </ul>
 ''' % datetime.now().strftime("%F %k:%M"))

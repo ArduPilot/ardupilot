@@ -13,10 +13,10 @@ bool ModeCircle::init(bool ignore_checks)
     speed_changing = false;
 
     // set speed and acceleration limits
-    pos_control->set_max_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
-    pos_control->set_correction_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
-    pos_control->set_max_speed_accel_U_m(-get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
-    pos_control->set_correction_speed_accel_U_m(-get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
+    pos_control->NE_set_max_speed_accel_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+    pos_control->NE_set_correction_speed_accel_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+    pos_control->D_set_max_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
+    pos_control->D_set_correction_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
 
     // initialise circle controller including setting the circle center based on vehicle speed
     copter.circle_nav->init();
@@ -24,9 +24,9 @@ bool ModeCircle::init(bool ignore_checks)
 #if HAL_MOUNT_ENABLED
     // Check if the CIRCLE_OPTIONS parameter have roi_at_center
     if (copter.circle_nav->roi_at_center()) {
-        const Vector3p &pos_neu_m { copter.circle_nav->get_center_NEU_m() };
+        const Vector3p &pos_ned_m { copter.circle_nav->get_center_NED_m() };
         Location circle_center;
-        if (!AP::ahrs().get_location_from_origin_offset_NED(circle_center, pos_neu_m)) {
+        if (!AP::ahrs().get_location_from_origin_offset_NED(circle_center, pos_ned_m)) {
             return false;
         }
         // point at the ground:
@@ -47,8 +47,8 @@ bool ModeCircle::init(bool ignore_checks)
 void ModeCircle::run()
 {
     // set speed and acceleration limits
-    pos_control->set_max_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
-    pos_control->set_max_speed_accel_U_m(-get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
+    pos_control->NE_set_max_speed_accel_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+    pos_control->D_set_max_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
 
     // Check for any change in params and update in real time
     copter.circle_nav->check_param_change();
@@ -124,7 +124,7 @@ void ModeCircle::run()
 #endif
 
     copter.failsafe_terrain_set_status(copter.circle_nav->update_ms(target_climb_rate_ms));
-    pos_control->update_U_controller();
+    pos_control->D_update_controller();
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());

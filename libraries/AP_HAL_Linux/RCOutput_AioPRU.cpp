@@ -24,6 +24,8 @@
 #include "../../Tools/Linux_HAL_Essentials/pru/aiopru/RcAioPRU_BBBLUE_bin.h"
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET
 #include "../../Tools/Linux_HAL_Essentials/pru/aiopru/RcAioPRU_POCKET_bin.h"
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET2
+#include "../../Tools/Linux_HAL_Essentials/pru/aiopru/RcAioPRU_POCKET2_bin.h"
 #else
 #include "../../Tools/Linux_HAL_Essentials/pru/aiopru/RcAioPRU_BBBMINI_bin.h"
 #endif
@@ -34,6 +36,12 @@ static void catch_sigbus(int sig)
 {
     AP_HAL::panic("RCOutputAioPRU.cpp:SIGBUS error generated");
 }
+
+#ifdef AP_HAL_LINUX_AIOPRU_OPTIMIZATION_LEVEL
+#pragma GCC push_options
+#pragma GCC optimize("O1")
+#endif
+
 void RCOutput_AioPRU::init()
 {
    uint32_t mem_fd;
@@ -53,8 +61,18 @@ void RCOutput_AioPRU::init()
    // Reset PRU
    *ctrl = 0;
 
-   // Load firmware
+   // Loading firmware
+   // Due for unknow condition in ARM64 + AM62X to load pru code should be used the wordwise method instead the memcpy
+   // used in AM335X board to load the PRU code. The memcpy used with ARM64 causes the random length of the PRU code
+   // loaded in the PRU causing segment fault.
+#ifdef AP_HAL_LINUX_AIOPRU_LOAD_WORDWISE
+   const size_t pru_firmware_words = sizeof(PRUcode) / sizeof(uint32_t);
+   for (size_t i = 0; i < pru_firmware_words; ++i) {
+      iram[i] = PRUcode[i];
+   }
+#else
    memcpy(iram, PRUcode, sizeof(PRUcode));
+#endif
 
    // Start PRU
    *ctrl |= 2;

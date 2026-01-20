@@ -788,6 +788,9 @@ private:
     static const uint32_t FLOW_BUFFER_LENGTH = 15;
     static const uint32_t EXTNAV_BUFFER_LENGTH = 15;
 
+    static Matrix24 KH;             // intermediate result used for covariance updates
+    static Matrix24 nextP;          // Predicted covariance matrix before addition of process noise to diagonals
+
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
     bool magHealth;                 // boolean true if magnetometer has passed innovation consistency check

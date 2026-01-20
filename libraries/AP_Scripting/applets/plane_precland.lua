@@ -198,15 +198,14 @@ local function update()
    --[[
       log the target and distance
    --]]
-   logger.write("PPLD", 'Lat,Lon,Alt,HDist,TDist,RFND,VN,VE',
-                'LLffffff',
-                'DUmmmmmm',
-                'GG------',
+   logger.write("PPLD", 'Lat,Lon,Alt,HDist,RFND,VN,VE',
+                'LLfffff',
+                'DUmmmmm',
+                'GG-----',
                 new_WP:lat(),
                 new_WP:lng(),
                 new_WP:alt(),
                 xy_dist,
-                next_WP:get_distance(next_WP),
                 rngfnd_distance_m,
                 target_vel:x(),
                 target_vel:y())
@@ -218,7 +217,7 @@ local function update()
       return
    end
 
-   if xy_dist > PLND_XY_DIST_MAX:get() then
+   if PLND_XY_DIST_MAX:get() > 0 and xy_dist > PLND_XY_DIST_MAX:get() then
       -- pause descent till we are within the given radius
       vehicle:set_land_descent_rate(0)
    end

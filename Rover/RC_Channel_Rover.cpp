@@ -73,7 +73,7 @@ bool RC_Channels_Rover::has_valid_input() const
     if (in_rc_failsafe()) {
         return false;
     }
-    return true;
+    return RC_Channels::has_valid_input();
 }
 
 RC_Channel * RC_Channels_Rover::get_arming_channel(void) const

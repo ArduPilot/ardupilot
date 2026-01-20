@@ -80,13 +80,9 @@ static const struct LogStructure log_structure[] = {
       "s---------",
       "F---------"
     },
-    { LOG_MESSAGE_MSG,
-      sizeof(log_Message),
-      "MSG",
-      "QZ",
-      "TimeUS,Message",
-      "s-",
-      "F-"}
+    // copied from LogStructure.h; this is important
+    { LOG_MSG_MSG, sizeof(log_MSG),
+      "MSG",  "QBBZ",     "TimeUS,ID,Seq,Message", "s---", "F---"},
 };
 
 // these are identical to the entries in the above log-structure.  Not
@@ -141,7 +137,7 @@ void AP_LoggerTest_AllTypes::Log_Write_TypeMessages()
     struct log_TYP1 typ1{
         LOG_PACKET_HEADER_INIT(LOG_TYP1_MSG),
         time_us : AP_HAL::micros64(),
-        a : { -32768, 32767, 1, -1, 0, 19 }, // int16[32]
+        a : { INT16_MIN, INT16_MAX, 1, -1, 0, 19 }, // int16[32]
         b : -17, // int8_t
         B : 42,  // uint8_t
         h : -12372,  // int16_t
@@ -199,7 +195,7 @@ void AP_LoggerTest_AllTypes::Log_Write_TypeMessages_Log_Write()
                  AP_HAL::micros64(),
                  "ABCD");
 
-    const int16_t a[32] = { -32768, 32767, 1, -1, 0, 17 };
+    const int16_t a[32] = { INT16_MIN, INT16_MAX, 1, -1, 0, 17 };
 
     logger.Write("TYPa",
                  "TimeUS,Arr",
@@ -243,7 +239,7 @@ void AP_LoggerTest_AllTypes::Log_Write_TypeMessages_Log_Write()
         );
 
     // emit a message which contains NaNs:
-    logger.Write("NANS", "f,d,bf,bd", "fdfd",  logger.quiet_nanf(), logger.quiet_nan(), NAN, NAN);
+    logger.Write("NANS", "f,d,bf,bd", "fdfd",  AP_Logger::quiet_nanf(), AP_Logger::quiet_nan(), NAN, NAN);
 
     flush_logger(logger);
 

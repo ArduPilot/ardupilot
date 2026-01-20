@@ -14,7 +14,7 @@
 /*
   send_text implementation for dummy GCS
  */
-void GCS_Dummy::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t dest_bitmask)
+void GCS_Dummy::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, mavlink_channel_mask_t dest_bitmask)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_Replay)
     DEV_PRINTF("TOGCS: ");

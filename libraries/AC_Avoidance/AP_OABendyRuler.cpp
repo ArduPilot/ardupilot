@@ -477,7 +477,7 @@ bool AP_OABendyRuler::calc_margin_from_circular_fence(const Location &start, con
     const float end_dist_sq = ahrs_home.get_distance_NE(end).length_squared();
 
     // get circular fence radius + margin
-    const float fence_radius_plus_margin = fence->get_radius() - fence->get_margin();
+    const float fence_radius_plus_margin = fence->get_radius_m() - fence->get_margin_ne_m();
 
     // margin is fence radius minus the longer of start or end distance
     margin = fence_radius_plus_margin - sqrtf(MAX(start_dist_sq, end_dist_sq));
@@ -510,7 +510,7 @@ bool AP_OABendyRuler::calc_margin_from_alt_fence(const Location &start, const Lo
     }
 
     // safe max alt = fence alt - fence margin
-    const float max_fence_alt = fence->get_safe_alt_max();
+    const float max_fence_alt = fence->get_safe_alt_max_m();
     const float margin_start =  max_fence_alt - alt_above_home_cm_start * 0.01f;
     const float margin_end =  max_fence_alt - alt_above_home_cm_end * 0.01f;
 
@@ -553,7 +553,7 @@ bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_polygons(const Lo
     }
 
     // get fence margin
-    const float fence_margin = fence->get_margin();
+    const float fence_margin = fence->get_margin_ne_m();
 
     // iterate through inclusion polygons and calculate minimum margin
     bool margin_updated = false;
@@ -625,7 +625,7 @@ bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_circles(const Loc
     }
 
     // get fence margin
-    const float fence_margin = fence->get_margin();
+    const float fence_margin = fence->get_margin_ne_m();
 
     // iterate through inclusion circles and calculate minimum margin
     bool margin_updated = false;

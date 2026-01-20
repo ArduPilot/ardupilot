@@ -733,7 +733,7 @@ private:
         bool reached_target_alt;
 
         // check for scenarios where updrafts can keep you from loitering down indefinitely.
-        bool unable_to_acheive_target_alt;
+        bool unable_to_achieve_target_alt;
 
         // start time of the loiter.  Milliseconds.
         uint32_t start_time_ms;

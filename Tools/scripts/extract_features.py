@@ -6,29 +6,19 @@ script to determine what features have been built into an ArduPilot binary
 AP_FLAKE8_CLEAN
 """
 import argparse
-import os
 import re
-import string
-import subprocess
-import sys
-import time
 import build_options
-import select
+from build_script_base import BuildScriptBase
 
 
-if sys.version_info[0] < 3:
-    running_python3 = False
-else:
-    running_python3 = True
-
-
-class ExtractFeatures(object):
+class ExtractFeatures(BuildScriptBase):
 
     class FindString(object):
         def __init__(self, string):
             self.string = string
 
     def __init__(self, filename, nm="arm-none-eabi-nm", strings="strings"):
+        super().__init__()
         self.filename = filename
         self.nm = nm
         self.strings = strings
@@ -117,6 +107,7 @@ class ExtractFeatures(object):
             ('HAL_SOLO_GIMBAL_ENABLED', 'AP_Mount_SoloGimbal::init',),
             ('HAL_MOUNT_STORM32SERIAL_ENABLED', 'AP_Mount_SToRM32_serial::update',),
             ('HAL_MOUNT_STORM32MAVLINK_ENABLED', 'AP_Mount_SToRM32::update',),
+            ('AP_MOUNT_POI_LOCK_ENABLED', 'AP_Mount::set_poi_lock'),
 
             ('HAL_SPEKTRUM_TELEM_ENABLED', r'AP::spektrum_telem',),
             ('HAL_{type}_TELEM_ENABLED', r'AP_(?P<type>.*)_Telem::init',),
@@ -225,7 +216,7 @@ class ExtractFeatures(object):
             ('AP_BARO_THST_COMP_ENABLED', r'AP_Baro::thrust_pressure_correction\b',),
             ('AP_TEMPCALIBRATION_ENABLED', r'AP_TempCalibration::apply_calibration',),
 
-            ('HAL_PICCOLO_CAN_ENABLE', r'AP_PiccoloCAN::update',),
+            ('AP_PICCOLOCAN_ENABLED', r'AP_PiccoloCAN::update',),
             ('EK3_FEATURE_EXTERNAL_NAV', r'NavEKF3_core::CorrectExtNavVelForSensorOffset'),
             ('EK3_FEATURE_DRAG_FUSION', r'NavEKF3_core::FuseDragForces'),
             ('EK3_FEATURE_OPTFLOW_FUSION', r'NavEKF3_core::FuseOptFlow'),
@@ -262,7 +253,7 @@ class ExtractFeatures(object):
             ('AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED', 'GCS_MAVLINK::handle_serial_control'),
             ('AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED', r'GCS_MAVLINK::handle_mission_request\b'),
             ('AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED', r'GCS_MAVLINK::send_rc_channels_raw\b'),
-            ('AP_MAVLINK_FTP_ENABLED', 'GCS_MAVLINK::init'),
+            ('AP_MAVLINK_FTP_ENABLED', 'GCS_FTP::init'),
             ('AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED', 'Plane::handle_external_hagl'),
             ('AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED', 'AP_Camera::send_video_stream_information'),
             ('AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED', 'GCS_MAVLINK::send_flight_information'),
@@ -305,6 +296,7 @@ class ExtractFeatures(object):
             ('AP_PLANE_SYSTEMID_ENABLED', r'AP_SystemID::start'),
             ('AP_DDS_ENABLED', r'AP_DDS_Client::start'),
             ('AP_RC_TRANSMITTER_TUNING_ENABLED',  r'Copter::tuning'),
+            ('AP_CPU_IDLE_STATS_ENABLED', r'AP_BoardConfig::use_idle_stats'),
 
             ('AP_PERIPH_DEVICE_TEMPERATURE_ENABLED', r'AP_Periph_FW::temperature_sensor_update'),
             ('AP_PERIPH_MSP_ENABLED', r'AP_Periph_FW::msp_init'),
@@ -314,6 +306,7 @@ class ExtractFeatures(object):
             ('AP_PERIPH_RELAY_ENABLED', r'AP_Periph_FW::handle_hardpoint_command'),
             ('AP_PERIPH_BATTERY_BALANCE_ENABLED', r'AP_Periph_FW::batt_balance_update'),
             ('AP_PERIPH_BATTERY_TAG_ENABLED', r'BatteryTag::update'),
+            ('AP_PERIPH_BATTERY_BMS_ENABLED', r'BatteryBMS::update'),
             ('AP_PERIPH_PROXIMITY_ENABLED', r'AP_Periph_FW::can_proximity_update'),
             ('AP_PERIPH_GPS_ENABLED', r'AP_Periph_FW::can_gps_update'),
             ('AP_PERIPH_ADSB_ENABLED', r'AP_Periph_FW::adsb_update'),
@@ -326,11 +319,14 @@ class ExtractFeatures(object):
             ('AP_PERIPH_RCIN_ENABLED', r'AP_Periph_FW::rcin_update'),
             ('AP_PERIPH_RPM_ENABLED', r'AP_Periph_FW::rpm_sensor_send'),
             ('AP_PERIPH_AIRSPEED_ENABLED', r'AP_Periph_FW::can_airspeed_update'),
+
+            ('AP_SCRIPTING_BINDING_VEHICLE_ENABLED', 'AP_Vehicle_index'),
+            ('AP_SCRIPTING_BINDING_MOTORS_ENABLED', 'AP__motors___index'),
         ]
 
-    def progress(self, msg):
-        """Pretty-print progress."""
-        print("EF: %s" % msg)
+    def progress_prefix(self):
+        """Return prefix for progress messages."""
+        return 'EF'
 
     def validate_features_list(self):
         '''ensures that every define present in build_options.py could be
@@ -355,59 +351,6 @@ class ExtractFeatures(object):
             if not matched:
                 raise ValueError("feature (%s) is not matched in extract_features" %
                                  (option.define))
-
-    def run_program(self, prefix, cmd_list, show_output=True, env=None):
-        """Swiped from build_binaries.py."""
-        if show_output:
-            self.progress("Running (%s)" % " ".join(cmd_list))
-        p = subprocess.Popen(
-            cmd_list,
-            stdin=None,
-            stdout=subprocess.PIPE,
-            close_fds=True,
-            stderr=subprocess.PIPE,
-            env=env)
-        stderr = bytearray()
-        output = ""
-        while True:
-            # read all of stderr:
-            while True:
-                (rin, _, _) = select.select([p.stderr.fileno()], [], [], 0)
-                if p.stderr.fileno() not in rin:
-                    break
-                new = p.stderr.read()
-                if len(new) == 0:
-                    break
-                stderr += new
-
-            x = p.stdout.readline()
-            if len(x) == 0:
-                (rin, _, _) = select.select([p.stderr.fileno()], [], [], 0)
-                if p.stderr.fileno() in rin:
-                    stderr += p.stderr.read()
-
-                returncode = os.waitpid(p.pid, 0)
-                if returncode:
-                    break
-                    # select not available on Windows... probably...
-                time.sleep(0.1)
-                continue
-            if running_python3:
-                x = bytearray(x)
-                x = filter(lambda x: chr(x) in string.printable, x)
-                x = "".join([chr(c) for c in x])
-            output += x
-            x = x.rstrip()
-            if show_output:
-                print("%s: %s" % (prefix, x))
-        (_, status) = returncode
-        if status != 0:
-            stderr = stderr.decode('utf-8')
-            self.progress("Process failed (%s) (%s)" %
-                          (str(returncode), stderr))
-            raise subprocess.CalledProcessError(
-                status, cmd_list, output=str(output), stderr=str(stderr))
-        return output
 
     class Symbols(object):
         def __init__(self):
@@ -445,7 +388,7 @@ class ExtractFeatures(object):
             '--demangle',
             '--print-size',
             filename
-        ], show_output=False)
+        ], show_output=False, show_command=False)
         ret = ExtractFeatures.Symbols()
         for line in text_output.split("\n"):
             m = re.match("^([^ ]+) ([^ ]+) ([^ ]) (.*)", line.rstrip())
@@ -472,7 +415,7 @@ class ExtractFeatures(object):
         text_output = self.run_program('EF', [
             self.strings,
             filename
-        ], show_output=False)
+        ], show_output=False, show_command=False)
         return text_output.split("\n")
 
     def extract(self):

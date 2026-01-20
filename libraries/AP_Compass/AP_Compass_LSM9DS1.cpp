@@ -98,12 +98,11 @@ bool AP_Compass_LSM9DS1::init()
 
     //register compass instance
     _dev->set_device_type(DEVTYPE_LSM9DS1);
-    if (!register_compass(_dev->get_bus_id(), _compass_instance)) {
+    if (!register_compass(_dev->get_bus_id())) {
         goto errout;
     }
-    set_dev_id(_compass_instance, _dev->get_bus_id());
 
-    set_rotation(_compass_instance, _rotation);
+    set_rotation(_rotation);
 
 
     _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_LSM9DS1::_update, void));
@@ -150,12 +149,12 @@ void AP_Compass_LSM9DS1::_update(void)
 
     raw_field *= _scaling;
 
-    accumulate_sample(raw_field, _compass_instance);
+    accumulate_sample(raw_field);
 }
 
 void AP_Compass_LSM9DS1::read()
 {
-    drain_accumulated_samples(_compass_instance);
+    drain_accumulated_samples();
 }
 
 bool AP_Compass_LSM9DS1::_check_id(void)

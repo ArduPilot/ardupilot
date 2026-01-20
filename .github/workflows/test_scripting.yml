@@ -29,7 +29,7 @@ jobs:
     container: ardupilot/ardupilot-dev-base:v0.1.3
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: 'recursive'
 
@@ -85,7 +85,7 @@ jobs:
           python ./libraries/AP_Scripting/tests/docs_check.py "./libraries/AP_Scripting/docs/docs.lua" "./libraries/AP_Scripting/docs/current_docs.lua"
 
       - name: Upload docs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Docs
           path: ScriptingDocs.md

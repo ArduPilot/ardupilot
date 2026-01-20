@@ -19,16 +19,16 @@ public:
     AC_Circle(const AP_AHRS_View& ahrs, AC_PosControl& pos_control);
 
     // Initializes circle flight using a center position in centimeters relative to the EKF origin.
-    // See init_NEU_m() for full details.
+    // See init_NED_m() for full details.
     void init_NEU_cm(const Vector3p& center_neu_cm, bool is_terrain_alt, float rate_degs);
 
     // Initializes circle flight mode using a specified center position in meters.
     // Parameters:
-    //  - center_neu_m: Center of the circle in NEU frame (meters, relative to EKF origin)
-    //  - is_terrain_alt: If true, center.z is interpreted as height above terrain; otherwise, above EKF origin
+    //  - center_ned_m: Center of the circle in NED frame (meters, relative to EKF origin)
+    // - is_terrain_alt: If true, center_ned_m.z is interpreted as relative to terrain; otherwise, above EKF origin
     //  - rate_degs: Desired turn rate in degrees per second (positive = clockwise, negative = counter-clockwise)
     // Caller must preconfigure the position controller's speed and acceleration settings before calling.
-    void init_NEU_m(const Vector3p& center_neu_m, bool is_terrain_alt, float rate_degs);
+    void init_NED_m(const Vector3p& center_ned_m, bool is_terrain_alt, float rate_degs);
 
     // Initializes the circle flight mode using the current stopping point as a reference.
     // If the INIT_AT_CENTER option is not set, the circle center is projected one radius ahead along the vehicle's heading.
@@ -40,21 +40,17 @@ public:
     // If conversion fails, defaults to current position and logs a navigation error.
     void set_center(const Location& center);
 
-    // Sets the circle center using a NEU position vector in centimeters from the EKF origin.
-    // See set_center_NEU_m() for full details.
-    void set_center_NEU_cm(const Vector3f& center_neu_cm, bool is_terrain_alt) { _center_neu_m = center_neu_cm.topostype() * 0.01; _is_terrain_alt = is_terrain_alt; }
-
-    // Sets the circle center using a NEU position vector in meters from the EKF origin.
-    // If `is_terrain_alt` is true, the Z component is treated as altitude above terrain; otherwise, above EKF origin.
-    void set_center_NEU_m(const Vector3f& center_neu_m, bool is_terrain_alt) { _center_neu_m = center_neu_m.topostype(); _is_terrain_alt = is_terrain_alt; }
+    // Sets the circle center using a NED position vector in meters from the EKF origin.
+    // - is_terrain_alt: If true, center_ned_m.z is interpreted as relative to terrain; otherwise, above EKF origin
+    void set_center_NED_m(const Vector3p& center_ned_m, bool is_terrain_alt) { _center_ned_m = center_ned_m; _is_terrain_alt = is_terrain_alt; }
 
     // Returns the circle center in centimeters from the EKF origin.
-    // See get_center_NEU_m() for full details.
-    const Vector3p get_center_NEU_cm() const { return get_center_NEU_m()  * 100.0; }
+    // See get_center_NED_m() for full details.
+    const Vector3p get_center_NEU_cm() const { return Vector3p(_center_ned_m.x, _center_ned_m.y, -_center_ned_m.z) * 100.0; }
 
     // Returns the circle center in meters from the EKF origin.
     // Altitude frame is determined by `center_is_terrain_alt()`.
-    const Vector3p& get_center_NEU_m() const { return _center_neu_m; }
+    const Vector3p& get_center_NED_m() const { return _center_ned_m; }
 
     // Returns true if the circle center altitude is relative to terrain height.
     bool center_is_terrain_alt() const { return _is_terrain_alt; }
@@ -100,11 +96,11 @@ public:
 
     // Returns the desired roll angle in centidegrees from the position controller.
     // Should be passed to the attitude controller as a stabilization input.
-    float get_roll_cd() const { return _pos_control.get_roll_cd(); }
+    float get_roll_cd() const { return rad_to_cd(_pos_control.get_roll_rad()); }
 
     // Returns the desired pitch angle in centidegrees from the position controller.
     // Should be passed to the attitude controller as a stabilization input.
-    float get_pitch_cd() const { return _pos_control.get_pitch_cd(); }
+    float get_pitch_cd() const { return rad_to_cd(_pos_control.get_pitch_rad()); }
 
     // Returns the desired yaw angle in centidegrees computed by the circle controller.
     // May be oriented toward the circle center or along the path depending on configuration.
@@ -123,19 +119,15 @@ public:
     bool is_active() const;
 
     // Returns the closest point on the circle to the vehicle's current position in centimeters.
-    // See get_closest_point_on_circle_NEU_m() for full details.
-    void get_closest_point_on_circle_NEU_cm(Vector3f& result_NEU_cm, float& dist_cm) const;
+    // See get_closest_point_on_circle_NED_m() for full details.
+    void get_closest_point_on_circle_NEU_cm(Vector3f& result_neu_cm, float& dist_cm) const;
 
-    // Returns the closest point on the circle to the vehicle's current position in meters.
-    // The result vector is updated with the NEU position of the closest point on the circle.
+    // Returns the closest point on the circle to the vehicle's stopping point in meters.
+    // The result vector is updated with the NED position of the closest point on the circle.
     // The altitude (z) is set to match the circle center's altitude.
-    // dist_m is updated with the horizontal distance to the circle center.
+    // dist_m is updated with the 3D distance to the circle edge from the stopping point.
     // If the vehicle is at the center, the point directly behind the vehicle (based on yaw) is returned.
-    void get_closest_point_on_circle_NEU_m(Vector3f& result_NEU_m, float& dist_m) const;
-
-    // Returns the horizontal distance to the circle target in centimeters.
-    // See get_distance_to_target_m() for full details.
-    float get_distance_to_target_cm() const { return get_distance_to_target_m() * 100.0; }
+    void get_closest_point_on_circle_NED_m(Vector3p& result_ned_m, float& dist_m) const;
 
     // Returns the horizontal distance to the circle target in meters.
     // Calculated using the position controller’s NE position error norm.
@@ -154,12 +146,12 @@ public:
     bool roi_at_center() const { return (_options.get() & CircleOptions::ROI_AT_CENTER) != 0; }
 
     // Sets rangefinder terrain offset (in centimeters) above EKF origin.
-    // See set_rangefinder_terrain_offset_m() for full details.
-    void set_rangefinder_terrain_offset_cm(bool use, bool healthy, float terrain_offset_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_terrain_offset_m = terrain_offset_cm * 0.01;}
+    // See set_rangefinder_terrain_U_m() for full details.
+    void set_rangefinder_terrain_U_cm(bool use, bool healthy, float terrain_u_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_terrain_u_m = terrain_u_cm * 0.01;}
 
     // Sets rangefinder terrain offset (in meters) above EKF origin.
     // Used for terrain-relative altitude tracking during circular flight.
-    void set_rangefinder_terrain_offset_m(bool use, bool healthy, float terrain_offset_m) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_terrain_offset_m = terrain_offset_m;}
+    void set_rangefinder_terrain_U_m(bool use, bool healthy, float terrain_u_m) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_terrain_u_m = terrain_u_m;}
 
     // Checks if the circle radius parameter has changed.
     // If so, updates internal `_radius_m` and stores the new parameter value.
@@ -188,19 +180,10 @@ private:
     };
     AC_Circle::TerrainSource get_terrain_source() const;
 
-    // Returns terrain offset in centimeters above the EKF origin at the current position.
-    // See get_terrain_offset_m() for full details.
-    bool get_terrain_offset_cm(float& offset_cm);
-
     // Returns terrain offset in meters above the EKF origin at the current position.
     // Positive values indicate terrain is above the EKF origin altitude.
     // Terrain source may be rangefinder or terrain database.
-    bool get_terrain_offset_m(float& offset_m);
-
-    // flags structure
-    struct circle_flags {
-        uint8_t panorama    : 1;    // true if we are doing a panorama
-    } _flags;
+    bool get_terrain_U_m(float& terrain_u_m);
 
     // references to inertial nav and ahrs libraries
     const AP_AHRS_View&         _ahrs;
@@ -219,7 +202,7 @@ private:
     AP_Int16 _options;            // Bitmask of CircleOptions (e.g. manual control, ROI at center, etc.).
 
     // internal variables
-    Vector3p _center_neu_m;             // Center of the circle in meters from EKF origin (NEU frame).
+    Vector3p _center_ned_m;             // Center of the circle in meters from EKF origin (NED frame).
     float    _radius_m;                 // Current circle radius in meters.
     float    _rotation_rate_max_rads;   // Requested circle turn rate in rad/s (+ve = CW, -ve = CCW).
     float    _yaw_rad;                  // Desired yaw heading in radians (typically toward circle center or tangent).
@@ -232,8 +215,8 @@ private:
     float    _last_radius_param_cm;     // Cached copy of radius parameter (cm) to detect parameter changes.
 
     // terrain following variables
-    bool  _is_terrain_alt;               // True if _center_neu_m.z is relative to terrain height; false if relative to EKF origin.
+    bool  _is_terrain_alt;               // True if _center_ned_m.z is relative to terrain height; false if relative to EKF origin.
     bool  _rangefinder_available;        // True if rangefinder is available and enabled.
     bool  _rangefinder_healthy;          // True if rangefinder reading is within valid operating range.
-    float _rangefinder_terrain_offset_m; // Terrain height above EKF origin (meters), from rangefinder or terrain database.
+    float _rangefinder_terrain_u_m; // Terrain height above EKF origin (meters), from rangefinder or terrain database.
 };

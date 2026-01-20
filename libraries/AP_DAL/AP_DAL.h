@@ -1,5 +1,19 @@
 #pragma once
 
+/*
+  The DAL (Data Abstraction Layer) acts as an intermediary between ArduPilot's AHRS state estimators and its data sources.  Currently the only in-tree estimators using the DAL are the EKF2 and EKF3 estimators.
+
+  When LOG_REPLAY is set to 1 all data entering the DAL is logged into ArduPilot's onboard ("dataflash") log.  LOG_DISARMED should be set when LOG_REPLAY is set.  Data is recorded in "frames" corresponding to a run of the EKF update functions.
+
+  The logs produced in this manner can be "replayed" via a "replay" tool.  Data frames are read from the log and the estimator's update methods called to run an update cycle based on that data.
+
+  In this way estimator problems can be reproduced from logs from real vehicles.
+
+  Replay also allows for adjustment of the EKF's tunables to produce better estimates for given logs (and hopefully the vehicle the logs were produced from.
+
+  See also https://ardupilot.org/dev/docs/testing-with-replay.html
+*/
+
 #include "AP_DAL_InertialSensor.h"
 #include "AP_DAL_Baro.h"
 #include "AP_DAL_GPS.h"
@@ -121,7 +135,7 @@ public:
     uint32_t available_memory() const { return _RFRN.available_memory; }
 #endif
 
-    int8_t get_ekf_type(void) const {
+    int8_t configured_ekf_type(void) const {
         return _RFRN.ekf_type;
     }
 

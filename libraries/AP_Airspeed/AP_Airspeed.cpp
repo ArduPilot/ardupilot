@@ -119,7 +119,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: _PRIMARY
     // @DisplayName: Primary airspeed sensor
     // @Description: This selects which airspeed sensor will be the primary if multiple sensors are found
-    // @Values: 0:FirstSensor,1:2ndSensor
+    // @Values: 0:FirstSensor, 1:2nd Sensor, 2:3rd Sensor, 3:4th Sensor, 4:5th Sensor, 5:6th Sensor
     // @User: Advanced
     AP_GROUPINFO("_PRIMARY", 10, AP_Airspeed, primary_sensor, 0),
 #endif
@@ -159,7 +159,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_WIND_GATE", 26, AP_Airspeed, _wind_gate, 5.0f),
     
-    // @Param: _OFF_PCNT
+    // @Param{Plane}: _OFF_PCNT
     // @DisplayName: Maximum offset cal speed error 
     // @Description: The maximum percentage speed change in airspeed reports that is allowed due to offset changes between calibrations before a warning is issued. This potential speed error is in percent of AIRSPEED_MIN. 0 disables. Helps warn of calibrations without pitot being covered.
     // @Range: 0.0 10.0
@@ -180,6 +180,30 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 #endif
 
     // index 30 is used by enable at the top of the table
+
+#if AIRSPEED_MAX_SENSORS > 2
+    // @Group: 3_
+    // @Path: AP_Airspeed_Params.cpp
+    AP_SUBGROUPINFO(param[2], "3_", 31, AP_Airspeed, AP_Airspeed_Params),
+#endif
+
+#if AIRSPEED_MAX_SENSORS > 3
+    // @Group: 4_
+    // @Path: AP_Airspeed_Params.cpp
+    AP_SUBGROUPINFO(param[3], "4_", 32, AP_Airspeed, AP_Airspeed_Params),
+#endif
+
+#if AIRSPEED_MAX_SENSORS > 4
+    // @Group: 5_
+    // @Path: AP_Airspeed_Params.cpp
+    AP_SUBGROUPINFO(param[4], "5_", 33, AP_Airspeed, AP_Airspeed_Params),
+#endif
+
+#if AIRSPEED_MAX_SENSORS > 5
+    // @Group: 6_
+    // @Path: AP_Airspeed_Params.cpp
+    AP_SUBGROUPINFO(param[5], "6_", 34, AP_Airspeed, AP_Airspeed_Params),
+#endif
 
     AP_GROUPEND
 };
@@ -315,6 +339,9 @@ void AP_Airspeed::init()
 {
 
     convert_per_instance();
+
+    // Set primary from parameter to avoid primary changed message at boot
+    primary = primary_sensor.get();
 
 #if ENABLE_PARAMETER
     // if either type is set then enable if not manually set
@@ -485,7 +512,7 @@ void AP_Airspeed::allocate()
 }
 
 // get a temperature reading if possible
-bool AP_Airspeed::get_temperature(uint8_t i, float &temperature)
+bool AP_Airspeed::get_temperature(uint8_t i, float &temperature) const
 {
     if (!enabled(i)) {
         return false;
@@ -685,6 +712,81 @@ void AP_Airspeed::read(uint8_t i)
 #endif // HAL_BUILD_AP_PERIPH
 }
 
+// Select primary sensor based on user parameters and health
+uint8_t AP_Airspeed::select_primary()
+{
+    // user selected primary from parameter, track changes
+    const uint8_t user_primary = primary_sensor.get();
+    const bool user_primary_changed = user_primary != last_user_primary;
+    last_user_primary = user_primary;
+
+    // If user selected instance is both healthy and set to use then it is a valid primary
+    const bool user_healthy = healthy(user_primary);
+    const bool user_healthy_and_use = user_healthy && use(user_primary);
+
+    if ((user_primary_changed || !hal.util->get_soft_armed()) && user_healthy_and_use) {
+        /*
+            If user selected primary is healthy and set to use then:
+                Always change when the user changes the parameter.
+                Always change if disarmed, if armed its better to stick with the current sensor to avoid needless switching.
+
+            The EKF3 innovation check only applies to the active sensor so a bad sensor will appear good after some time because
+            the EKF is no longer using the sensor so cannot provide feedback.
+
+            We can't just stick with the current primary when disarmed due to variation in detection time.
+        */
+        return user_primary;
+    }
+
+    // If the currently selected primary is valid there is no need to change
+    const bool primary_healthy = healthy(primary);
+    if (primary_healthy && use(primary)) {
+        return primary;
+    }
+
+    if (user_healthy_and_use) {
+        // The current primary is not valid, try the user set primary first
+        return user_primary;
+    }
+
+    // Select the first sensor which is both healthy and set to use
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if ((i == primary) || (i == user_primary)) {
+            // No need to re-check current/user primary
+            continue;
+        }
+        if (healthy(i) && use(i)) {
+            return i;
+        }
+    }
+
+    // No sensor is both healthy and set to use
+
+    // Continue with current primary if healthy
+    if (primary_healthy) {
+        return primary;
+    }
+
+    // Use user selected instance if healthy
+    if (user_healthy) {
+        return user_primary;
+    }
+
+    // Select the first sensor which is healthy
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if ((i == primary) || (i == user_primary)) {
+            // No need to re-check current/user primary
+            continue;
+        }
+        if (healthy(i)) {
+            return i;
+        }
+    }
+
+    // No healthy sensor, don't change primary
+    return primary;
+}
+
 // read all airspeed sensors
 void AP_Airspeed::update()
 {
@@ -703,23 +805,18 @@ void AP_Airspeed::update()
     }
 #endif
 
-#if HAL_LOGGING_ENABLED
-    const uint8_t old_primary = primary;
-#endif
-
-    // setup primary
-    if (healthy(primary_sensor.get())) {
-        primary = primary_sensor.get();
-    } else {
-        for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-            if (healthy(i)) {
-                primary = i;
-                break;
-            }
-        }
-    }
-
+    // Check for failures possibly marking sensors and unhealthy
     check_sensor_failures();
+
+    // Record old primary sensor for reporting
+    const uint8_t old_primary = primary;
+
+    // Select primary sensor based on user parameters and health
+    primary = select_primary();
+
+    if (primary != old_primary) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Airspeed primary changed: %i", primary+1);
+    }
 
 #if HAL_LOGGING_ENABLED
     if (primary != old_primary) {
@@ -987,6 +1084,20 @@ bool AP_Airspeed::arming_checks(size_t buflen, char *buffer) const
         }
     }
 
+
+    // If the primary sensor is marked to not use then user should either:
+    // - change primary to a sensor which is marked to to use
+    // - allow using the primary
+    // If no sensors are marked for use then the check passes
+    if (!use(primary_sensor.get())) {
+        for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+            if (use(i)) {
+                hal.util->snprintf(buffer, buflen, "not using Primary (%i)", primary_sensor.get() + 1);
+                return false;
+            }
+        }
+    }
+
     return true;
 }
 #endif
@@ -995,7 +1106,7 @@ bool AP_Airspeed::arming_checks(size_t buflen, char *buffer) const
 const AP_Param::GroupInfo AP_Airspeed::var_info[] = { AP_GROUPEND };
 
 void AP_Airspeed::update() {};
-bool AP_Airspeed::get_temperature(uint8_t i, float &temperature) { return false; }
+bool AP_Airspeed::get_temperature(uint8_t i, float &temperature) const { return false; }
 void AP_Airspeed::calibrate(bool in_startup) {}
 AP_Airspeed::CalibrationState AP_Airspeed::get_calibration_state() const { return CalibrationState::NOT_STARTED; }
 bool AP_Airspeed::use(uint8_t i) const { return false; }

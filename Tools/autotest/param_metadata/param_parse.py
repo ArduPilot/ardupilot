@@ -30,6 +30,16 @@ parser.add_argument("--no-emit",
                     action='store_false',
                     default=True,
                     help="don't emit parameter documentation, just validate")
+parser.add_argument("--legacy-params",
+                    dest='emit_legacy_params',
+                    action='store_true',
+                    default=None,
+                    help="include legacy parameters in output (default depends on format)")
+parser.add_argument("--no-legacy-params",
+                    dest='emit_legacy_params',
+                    action='store_false',
+                    default=None,
+                    help="don't include legacy parameters in output (default depends on format)")
 parser.add_argument("--format",
                     dest='output_format',
                     action='store',
@@ -49,7 +59,7 @@ prog_param_fields = re.compile(r"[ \t]*// @(\w+): ?([^\r\n]*)")
 # match e.g @Value{Copter}: 0=Volcano, 1=Peppermint
 prog_param_tagged_fields = re.compile(r"[ \t]*// @(\w+){([^}]+)}: ([^\r\n]*)")
 
-prog_groups = re.compile(r"@Group: *(\w+).*((?:\n[ \t]*// @(Path): (\S+))+)", re.MULTILINE)
+prog_groups = re.compile(r"@Group: *(\w*).*((?:\n[ \t]*// @(Path): (\S+))+)", re.MULTILINE)
 
 apm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
 
@@ -418,7 +428,7 @@ def process_library(vehicle, library, pathprefix=None):
                     setattr(p, field_name, field_value)
                 else:
                     error(f"unknown parameter metadata field '{field_name}'")
-            if not any(lib.name == parsed_l.name for parsed_l in libraries):
+            if not any(lib.Path == parsed_l.Path for parsed_l in libraries):
                 if do_append:
                     lib.set_name(library.name + lib.name)
                 debug("Group name: %s" % lib.name)
@@ -439,8 +449,16 @@ for library in libraries:
 
     debug("Processed %u documented parameters" % len(library.params))
 
+
+def natural_sort_key(libname):
+    """Natural sort key used for sorting alphanumeric strings"""
+    # splitting string into parts (numeric , non-numeric)
+    parts = re.split(r'(\d+)', libname)
+    return tuple((int(p) if p.isdigit() else p) for p in parts)
+
+
 # sort libraries by name
-alllibs = sorted(alllibs, key=lambda x: x.name)
+alllibs = sorted(alllibs, key=lambda x: natural_sort_key(x.name))
 
 libraries = alllibs
 
@@ -469,7 +487,7 @@ def clean_param(param):
         param.Values = ",".join(new_valueList)
 
     if hasattr(param, "Vector3Parameter"):
-        delattr(param, "Vector3Parameter")
+        del param.Vector3Parameter
 
 
 def do_copy_values(vehicle_params, libraries, param):
@@ -579,8 +597,15 @@ def validate(param, is_library=False):
         for i in valueList:
             i = i.replace(" ", "")
             values.append(i.partition(":")[0])
+
+        # Make sure all values are numbers
+        for value in values:
+            if not is_number(value):
+                error("Value not number: \"%s\"" % value)
+
         if (len(values) != len(set(values))):
             error("Duplicate values found" + str({x for x in values if values.count(x) > 1}))
+
     # Validate units
     if (hasattr(param, "Units")):
         if (param.__dict__["Units"] != "") and (param.__dict__["Units"] not in known_units):
@@ -590,9 +615,34 @@ def validate(param, is_library=False):
         if param.User.strip() not in ["Standard", "Advanced"]:
             error("unknown user (%s)" % param.User.strip())
 
+    # Validate description
     if (hasattr(param, "Description")):
         if not param.Description or not param.Description.strip():
             error("Empty Description (%s)" % param)
+
+    # Check range and values don't contradict one another
+    if (hasattr(param, "Range") and hasattr(param, "Values")):
+        # Get the min and max of values
+        valueList = param.__dict__["Values"].split(",")
+        values = [float(v.replace(" ", "").partition(":")[0]) for v in valueList]
+        minValue = min(values)
+        maxValue = max(values)
+
+        # Get min and max range
+        rangeValues = param.__dict__["Range"].split(" ")
+        minRange = float(rangeValues[0])
+        maxRange = float(rangeValues[1])
+
+        # Check values are within range
+        if minValue < minRange:
+            error("Range of %f to %f and value of: %f" % (minRange, maxRange, minValue))
+        if maxValue > maxRange:
+            error("Range of %f to %f and value of: %f" % (minRange, maxRange, maxValue))
+
+    # Validate increment
+    if (hasattr(param, "Increment")):
+        if not is_number(param.Increment):
+            error("Increment not number: \"%s\"" % param.Increment)
 
     required_fields = required_param_fields
     if is_library:
@@ -630,7 +680,7 @@ for library in libraries:
             param.path = param.path.rsplit('/')[-1].rsplit('.')[0]
         else:
             # not a duplicate, so delete attribute.
-            delattr(param, "path")
+            del param.path
 
 for library in libraries:
     for param in library.params:
@@ -672,6 +722,14 @@ for emitter_name in all_emitters.keys():
 # actually invoke each emitter:
 for emitter_name in emitters_to_use:
     emit = all_emitters[emitter_name]()
+
+    emit.emit_legacy_params = args.emit_legacy_params
+    if emit.emit_legacy_params is None:
+        if emitter_name in ('rst', 'rstlatexpdf'):
+            # do not emit legacy parameters to the Wiki
+            emit.emit_legacy_params = False
+        else:
+            emit.emit_legacy_params = True
 
     emit.emit(vehicle)
 

@@ -224,6 +224,7 @@ protected:
     float battery_current;
     float local_ground_level;            // ground level at local position
     bool lock_step_scheduled;
+    bool flightaxis_sync_imus_to_frames; // causes the frame counter to be incremented on each timestep, IMUs will then update at the same rate
     uint32_t last_one_hz_ms;
 
     // battery model

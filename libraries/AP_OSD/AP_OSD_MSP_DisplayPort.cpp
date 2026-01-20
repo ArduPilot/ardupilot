@@ -307,7 +307,7 @@ const uint8_t AP_OSD_MSP_DisplayPort::ap_to_inav_symbols_map[256][2] {
         {0x48,1},
         {0x49,1},
         {0x4A,1},
-        {0x4B,0},
+        {0x4B,1},
         {0x70,0},
         {0x71,0},
         {0x72,0},

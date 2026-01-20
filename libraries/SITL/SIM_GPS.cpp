@@ -146,6 +146,14 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     // @Description: GPS heading offset in degrees. how off the simulated GPS heading is from the actual heading
     // @User: Advanced
     AP_GROUPINFO("HDG_OFS",  17, GPSParms,  heading_offset, 0),
+
+    // @Param: OPTIONS
+    // @DisplayName: GPS Options
+    // @Description: GPS Options bitmask
+    // @Bitmask: 0:UBlox GPS is F9P
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS",  18, GPSParms, options, 0),
+
     AP_GROUPEND
 };
 }
@@ -467,11 +475,6 @@ void GPS::update()
 
     const auto &params = _sitl->gps[instance];
 
-    struct GPS_Data d {};
-
-    // simulate delayed lock times
-    bool have_lock = (params.enabled && now_ms >= params.lock_time*1000UL);
-
     // Only let physics run and GPS write at configured GPS rate (default 5Hz).
     if ((now_ms - last_write_update_ms) < (uint32_t)(1000/params.hertz)) {
         // Reading runs every iteration.
@@ -482,6 +485,8 @@ void GPS::update()
     }
 
     last_write_update_ms = now_ms;
+
+    struct GPS_Data d {};
 
     d.num_sats = params.numsats;
     d.latitude = latitude;
@@ -499,7 +504,8 @@ void GPS::update()
     d.speedE = speedE + (velErrorNED.y * rand_float());
     d.speedD = speedD + (velErrorNED.z * rand_float());
 
-    d.have_lock = have_lock;
+    // simulate delayed lock times
+    d.have_lock = (params.enabled && now_ms >= params.lock_time*1000UL);
 
     // fill in accuracies
     d.horizontal_acc = params.accuracy;

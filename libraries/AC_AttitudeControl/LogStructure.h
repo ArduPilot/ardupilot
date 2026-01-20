@@ -128,9 +128,9 @@ struct PACKED log_PSOx {
 // @Field: PDes: vehicle desired pitch rate
 // @Field: P: vehicle pitch rate
 // @Field: POut: normalized output for Pitch
+// @Field: YDes: vehicle desired yaw rate
 // @Field: Y: achieved vehicle yaw rate
 // @Field: YOut: normalized output for Yaw
-// @Field: YDes: vehicle desired yaw rate
 // @Field: ADes: desired vehicle vertical acceleration
 // @Field: A: achieved vehicle vertical acceleration
 // @Field: AOut: percentage of vertical thrust output current being used

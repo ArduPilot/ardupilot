@@ -33,21 +33,51 @@ Location::Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, AltFr
 }
 
 #if AP_AHRS_ENABLED
-Location::Location(const Vector3f &ekf_offset_neu, AltFrame frame)
+Location::Location(const Vector3f &ekf_offset_neu_cm, AltFrame frame)
 {
     zero();
 
     // store alt and alt frame
-    set_alt_cm(ekf_offset_neu.z, frame);
+    set_alt_cm(ekf_offset_neu_cm.z, frame);
 
     // calculate lat, lon
     Location ekf_origin;
     if (AP::ahrs().get_origin(ekf_origin)) {
         lat = ekf_origin.lat;
         lng = ekf_origin.lng;
-        offset(ekf_offset_neu.x * 0.01, ekf_offset_neu.y * 0.01);
+        offset(ekf_offset_neu_cm.x * 0.01, ekf_offset_neu_cm.y * 0.01);
     }
 }
+
+Location::Location(const Vector3d &ekf_offset_neu_cm, AltFrame frame)
+{
+    zero();
+
+    // store alt and alt frame
+    set_alt_cm(ekf_offset_neu_cm.z, frame);
+
+    // calculate lat, lon
+    Location ekf_origin;
+    if (AP::ahrs().get_origin(ekf_origin)) {
+        lat = ekf_origin.lat;
+        lng = ekf_origin.lng;
+        offset(ekf_offset_neu_cm.x * 0.01, ekf_offset_neu_cm.y * 0.01);
+    }
+}
+
+// named constructors
+Location Location::from_ekf_offset_NED_m(const Vector3f& ekf_offset_ned_m, AltFrame frame)
+{
+    const Vector3f ekf_offset_neu_cm(ekf_offset_ned_m.x * 100.0, ekf_offset_ned_m.y * 100.0, -ekf_offset_ned_m.z * 100.0);
+    return Location(ekf_offset_neu_cm, frame);
+}
+
+Location Location::from_ekf_offset_NED_m(const Vector3d& ekf_offset_ned_m, AltFrame frame)
+{
+    const Vector3d ekf_offset_neu_cm(ekf_offset_ned_m.x * 100.0, ekf_offset_ned_m.y * 100.0, -ekf_offset_ned_m.z * 100.0);
+    return Location(ekf_offset_neu_cm, frame);
+}
+
 #endif  // AP_AHRS_ENABLED
 
 void Location::set_alt_cm(int32_t alt_cm, AltFrame frame)
@@ -302,6 +332,22 @@ template bool Location::get_vector_xy_from_origin_NE_m<Vector2p>(Vector2p &vec_n
 #endif
 
 template<typename T>
+bool Location::get_vector_from_origin_NED_m(T &vec_ned) const
+{
+    if (!get_vector_from_origin_NEU_cm(vec_ned)) {
+        return false;
+    }
+    vec_ned *= 0.01;
+    vec_ned.z *= -1.0;
+    return true;
+}
+// define for float and position vectors
+template bool Location::get_vector_from_origin_NED_m<Vector3f>(Vector3f &vec_ned) const;
+#if HAL_WITH_POSTYPE_DOUBLE
+template bool Location::get_vector_from_origin_NED_m<Vector3p>(Vector3p &vec_ned) const;
+#endif
+
+template<typename T>
 bool Location::get_vector_from_origin_NEU_m(T &vec_neu) const
 {
     if (!get_vector_from_origin_NEU_cm(vec_neu)) {
@@ -327,10 +373,19 @@ ftype Location::get_distance(const Location &loc2) const
     return norm(dlat, dlng) * LOCATION_SCALING_FACTOR;
 }
 
-// return the altitude difference in meters taking into account alt
-// frame.  if loc2 is below this location then "distance" will be
-// positive.  ie. this method returns how far above loc2 this location
-// is.
+/**
+ * return the altitude difference in meters taking into account alt
+ * frame.  if loc2 is below this location then "distance" will be
+ * positive.  ie. this method returns how far above loc2 this location
+ * is.
+ *
+ * @param loc2 [in] location to compare against
+ * @param distance [out] the distance in meters between this location and loc2
+ * 
+ * @return true if the distance was calculated successfully, 
+ *         false if the altitude could not be resolved
+ * 
+ */
 bool Location::get_height_above(const Location &loc2, ftype &distance) const
 {
     if (get_alt_frame() == loc2.get_alt_frame()) {

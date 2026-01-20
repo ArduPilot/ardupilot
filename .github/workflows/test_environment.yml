@@ -37,6 +37,8 @@ jobs:
           - os: archlinux
             name: latest
           - os: debian
+            name: trixie
+          - os: debian
             name: bookworm
           - os: debian
             name: bullseye
@@ -53,7 +55,6 @@ jobs:
           apt-get update && apt-get install --no-install-recommends -qy \
           lsb-release \
           sudo \
-          git \
           software-properties-common
           add-apt-repository ppa:git-core/ppa -y
           apt-get update && apt-get install --no-install-recommends -qy git
@@ -63,7 +64,7 @@ jobs:
           lsb-release \
           sudo \
           git \
-          software-properties-common
+          ca-certificates
           ;;
           *"archlinux"*)
           pacman -Syu --noconfirm --needed git sudo
@@ -71,7 +72,7 @@ jobs:
           esac
 
       # git checkout the PR
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
             submodules: 'recursive'
       - name: test install environment ${{matrix.os}}.${{matrix.name}}
@@ -104,7 +105,7 @@ jobs:
             ;;
           esac
 
-      - name: test build STIL ${{matrix.os}}.${{matrix.name}}
+      - name: test build SITL ${{matrix.os}}.${{matrix.name}}
         env:
           DISABLE_MAVNATIVE: True
           DEBIAN_FRONTEND: noninteractive
@@ -152,7 +153,7 @@ jobs:
           TZ: Europe/Paris
         run: |
           apk update && apk add --no-cache git
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: 'recursive'
       - name: test install environment alpine
@@ -164,7 +165,7 @@ jobs:
         run: |
           PATH="/github/home/.local/bin:$PATH"
           Tools/environment_install/install-prereqs-alpine.sh
-      - name: test build STIL alpine
+      - name: test build SITL alpine
         env:
           DISABLE_MAVNATIVE: True
           TZ: Europe/Paris

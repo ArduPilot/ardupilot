@@ -188,25 +188,25 @@ void AIS::update_simulated_vessel(ais_vessel &vessel, const float dt, const Loca
     }
 
     // Report, update rate depends on speed
-    uint32_t postion_interval;
+    uint32_t position_interval;
 
     // Convert speed over ground from 0.1 knots to cm/s
     if (vessel.info.velocity > 23.0 * 0.1 * KNOTS_TO_M_PER_SEC * 100.0) {
-        postion_interval = 2000; // every 2 seconds if faster than 23 knots
+        position_interval = 2000; // every 2 seconds if faster than 23 knots
 
     } else if (vessel.info.velocity > 14.0 * 0.1 * KNOTS_TO_M_PER_SEC * 100.0) {
-        postion_interval = 6000; // every 6 seconds if faster than 14 knots
+        position_interval = 6000; // every 6 seconds if faster than 14 knots
 
     } else if (vessel.info.velocity > 0.0) {
-        postion_interval = 10000; // every 10 seconds if moving
+        position_interval = 10000; // every 10 seconds if moving
 
     } else {
-        postion_interval = 3 * 60 * 1000; // every 3 mins if anchored or moored and moving at less than 3 knots
+        position_interval = 3 * 60 * 1000; // every 3 mins if anchored or moored and moving at less than 3 knots
 
     }
 
     // Send position report at internal
-    if ((vessel.last_position_report_ms == 0) || (now_ms - vessel.last_position_report_ms > postion_interval)) {
+    if ((vessel.last_position_report_ms == 0) || (now_ms - vessel.last_position_report_ms > position_interval)) {
         send_position_report(vessel.info);
         vessel.last_position_report_ms = now_ms;
     }
@@ -233,7 +233,7 @@ void AIS::init_vessel(ais_vessel &vessel, const Location &vehicle_loc, const flo
     vessel.info.MMSI = rand() & 0x3FFFFFFF;
 
     // Set nav status and type
-    vessel.info.navigational_status = UNDER_WAY;
+    vessel.info.navigational_status = AIS_NAV_STATUS_UNDER_WAY;
     vessel.info.type = AIS_TYPE_CARGO;
 
     // 90% chance of having valid dimensions

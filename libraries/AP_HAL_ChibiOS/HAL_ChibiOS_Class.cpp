@@ -25,6 +25,7 @@
 #include <AP_HAL_ChibiOS/AP_HAL_ChibiOS_Private.h>
 #include "shared_dma.h"
 #include "sdcard.h"
+#include <sysperf.h>
 #include "hwdef/common/usbcfg.h"
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/watchdog.h"
@@ -231,6 +232,13 @@ static void main_loop()
 {
     daemon_task = chThdGetSelfX();
 
+#if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
+    if (AP_BoardConfig::use_idle_stats()) {
+        sysInitLoadMeasure();
+        sysStartLoadMeasure();
+    }
+#endif
+
     /*
       switch to high priority for main loop
      */
@@ -354,6 +362,10 @@ void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
      * - Kernel initialization, the main() function becomes a thread and the
      *   RTOS is active.
      */
+
+#if AP_SIM_ENABLED
+    AP::sitl()->init();
+#endif  // AP_SIM_ENABLED
 
 #if HAL_USE_SERIAL_USB == TRUE
     usb_initialise();

@@ -16,12 +16,14 @@
  */
 
 
+#include "AP_PiccoloCAN_config.h"
+
+#if AP_PICCOLOCAN_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 
 #include "AP_PiccoloCAN.h"
-
-#if HAL_PICCOLO_CAN_ENABLE
 
 #include <AP_Param/AP_Param.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -34,6 +36,7 @@
 #include <AP_CANManager/AP_CANManager.h>
 
 #include <AP_EFI/AP_EFI_Currawong_ECU.h>
+#include <AP_Generator/AP_Generator_Cortex.h>
 #include <AP_Servo_Telem/AP_Servo_Telem.h>
 
 #include <stdio.h>
@@ -148,7 +151,7 @@ bool AP_PiccoloCAN::add_interface(AP_HAL::CANIface* can_iface) {
 }
 
 // initialize PiccoloCAN bus
-void AP_PiccoloCAN::init(uint8_t driver_index, bool enable_filters)
+void AP_PiccoloCAN::init(uint8_t driver_index)
 {
     _driver_index = driver_index;
 
@@ -249,11 +252,11 @@ void AP_PiccoloCAN::loop()
             // ESC messages exist in the ACTUATOR group
             case PiccoloCAN_MessageGroup::ACTUATOR:
 
-                switch (PiccoloCAN_ActuatorType(frame_id_device)) {
-                case PiccoloCAN_ActuatorType::SERVO:
+                switch (PiccoloCAN_DeviceType(frame_id_device)) {
+                case PiccoloCAN_DeviceType::SERVO:
                     handle_servo_message(rxFrame);
                     break;
-                case PiccoloCAN_ActuatorType::ESC:
+                case PiccoloCAN_DeviceType::ESC:
                     handle_esc_message(rxFrame);
                     break;
                 default:
@@ -266,6 +269,9 @@ void AP_PiccoloCAN::loop()
             #if AP_EFI_CURRAWONG_ECU_ENABLED
                 handle_ecu_message(rxFrame);
             #endif
+                break;
+            case PiccoloCAN_MessageGroup::BATTERY:
+                handle_cortex_message(rxFrame);
                 break;
             default:
                 break;
@@ -627,6 +633,22 @@ bool AP_PiccoloCAN::handle_ecu_message(AP_HAL::CANFrame &frame)
 }
 #endif // AP_EFI_CURRAWONG_ECU_ENABLED
 
+
+bool AP_PiccoloCAN::handle_cortex_message(AP_HAL::CANFrame &frame)
+{
+#if AP_GENERATOR_CORTEX_ENABLED
+    // Get the generator instance
+    AP_Generator_Cortex* gen = AP_Generator_Cortex::get_instance();
+
+    if (gen != nullptr) {
+        return gen->handle_message(frame, *this);
+    }
+#endif // AP_GENERATOR_CORTEX_ENABLED
+
+    return false;
+}
+
+
 /**
  * Check if a given servo channel is "active" (has been configured for Piccolo control output)
  */
@@ -772,4 +794,4 @@ bool AP_PiccoloCAN::pre_arm_check(char* reason, uint8_t reason_len)
 }
 
 
-#endif // HAL_PICCOLO_CAN_ENABLE
+#endif // AP_PICCOLOCAN_ENABLED

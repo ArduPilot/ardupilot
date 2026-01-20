@@ -89,7 +89,7 @@ const AP_Param::GroupInfo AP_OpticalFlow::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_ADDR", 5,  AP_OpticalFlow, _address,   0),
 
-    // @Param: _HGT_OVR
+    // @Param{Rover}: _HGT_OVR
     // @DisplayName: Height override of sensor above ground
     // @Description: This is used in rover vehicles, where the sensor is a fixed height above the ground
     // @Units: m

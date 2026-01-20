@@ -30,16 +30,16 @@ bool ModeFollow::init(const bool ignore_checks)
 #endif
 
     // initialise horizontal speed, acceleration
-    pos_control->set_max_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
-    pos_control->set_correction_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+    pos_control->NE_set_max_speed_accel_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+    pos_control->NE_set_correction_speed_accel_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
 
     // initialize vertical speeds and acceleration
-    pos_control->set_max_speed_accel_U_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_U_mss());
-    pos_control->set_correction_speed_accel_U_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_U_mss());
+    pos_control->D_set_max_speed_accel_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_D_mss());
+    pos_control->D_set_correction_speed_accel_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_D_mss());
 
     // initialise velocity controller
-    pos_control->init_U_controller();
-    pos_control->init_NE_controller();
+    pos_control->D_init_controller();
+    pos_control->NE_init_controller();
 
     // initialise yaw
     auto_yaw.set_mode_to_default(false);
@@ -75,21 +75,16 @@ void ModeFollow::run()
     Vector3f vel_ofs_ned_ms;  // velocity of lead vehicle + offset
     Vector3f accel_ofs_ned_mss;  // accel of lead vehicle + offset
     if (g2.follow.get_ofs_pos_vel_accel_NED_m(pos_ofs_ned_m, vel_ofs_ned_ms, accel_ofs_ned_mss)) {
-        Vector2p pos_ofs_ne_m = pos_ofs_ned_m.xy();
-        Vector2f vel_ofs_ne_ms = vel_ofs_ned_ms.xy();
-        Vector2f accel_ofs_ne_mss = accel_ofs_ned_mss.xy();
 
         float target_heading_deg = 0.0f;
         float target_heading_rate_degs = 0.0f;
         g2.follow.get_target_heading_deg(target_heading_deg);
         g2.follow.get_target_heading_rate_degs(target_heading_rate_degs);
 
-        pos_control->input_pos_vel_accel_NE_m(pos_ofs_ne_m, vel_ofs_ne_ms, accel_ofs_ne_mss, false);
+        pos_control->input_pos_vel_accel_NE_m(pos_ofs_ned_m.xy(), vel_ofs_ned_ms.xy(), accel_ofs_ned_mss.xy(), false);
 
-        float pos_ofs_u_m = -pos_ofs_ned_m.z;
-        float vel_ofs_u_ms = -vel_ofs_ned_ms.z;
-        float accel_ofs_u_mss = -accel_ofs_ned_mss.z;
-        pos_control->input_pos_vel_accel_U_m(pos_ofs_u_m, vel_ofs_u_ms, accel_ofs_u_mss, false);
+        float pos_ofs_d_m = pos_ofs_ned_m.z;
+        pos_control->input_pos_vel_accel_D_m(pos_ofs_d_m, vel_ofs_ned_ms.z, accel_ofs_ned_mss.z, false);
 
         // Determine desired yaw behavior based on configured follow mode
         switch (g2.follow.get_yaw_behave()) {
@@ -100,7 +95,7 @@ void ModeFollow::run()
                 Vector3f accel_ned_mss;  // accel of lead vehicle
                 if (g2.follow.get_target_pos_vel_accel_NED_m(pos_ned_m, vel_ned_ms, accel_ned_mss))
                 if (pos_ned_m.xy().length_squared() > 1.0) {
-                    yaw_rad = (pos_ned_m.xy() - pos_control->get_pos_target_NEU_m().xy()).tofloat().angle();
+                    yaw_rad = (pos_ned_m.xy() - pos_control->get_pos_target_NED_m().xy()).tofloat().angle();
                 }
                 break;
             }
@@ -114,8 +109,8 @@ void ModeFollow::run()
 
             case AP_Follow::YAW_BEHAVE_DIR_OF_FLIGHT: {
                 // Face the direction of travel
-                if (vel_ofs_ne_ms.length_squared() > 1.0) {
-                    yaw_rad = vel_ofs_ne_ms.angle();
+                if (vel_ofs_ned_ms.xy().length_squared() > 1.0) {
+                    yaw_rad = vel_ofs_ned_ms.xy().angle();
                 }
                 break;
             }
@@ -128,17 +123,17 @@ void ModeFollow::run()
         }
     } else {
         // Target data is invalid; hold position using zero velocity and acceleration inputs
-        Vector2f vel_zero;
-        Vector2f accel_zero;
-        pos_control->input_vel_accel_NE_m(vel_zero, accel_zero, false);
-        float velz = 0.0;
-        pos_control->input_vel_accel_U_m(velz, 0.0, false);
+        Vector2f vel_ne_zero;
+        Vector2f accel_ne_zero;
+        pos_control->input_vel_accel_NE_m(vel_ne_zero, accel_ne_zero, false);
+        float vel_d_zero = 0.0;
+        pos_control->input_vel_accel_D_m(vel_d_zero, 0.0, false);
         yaw_rate_rads = 0.0f;
     }
 
     // update the position controller
-    pos_control->update_NE_controller();
-    pos_control->update_U_controller();
+    pos_control->NE_update_controller();
+    pos_control->D_update_controller();
 
     // call attitude controller
     attitude_control->input_thrust_vector_heading_rad(pos_control->get_thrust_vector(), yaw_rad, yaw_rate_rads);

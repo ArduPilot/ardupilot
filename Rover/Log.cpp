@@ -144,7 +144,7 @@ void Rover::Log_Write_Sail()
         return;
     }
 
-    float wind_dir_tack = logger.quiet_nanf();
+    float wind_dir_tack = AP_Logger::quiet_nanf();
     uint8_t current_tack = 0;
     if (g2.windvane.enabled()) {
         wind_dir_tack = degrees(g2.windvane.get_tack_threshold_wind_dir_rad());
@@ -186,7 +186,7 @@ struct PACKED log_Steering {
 // Write a steering packet
 void Rover::Log_Write_Steering()
 {
-    float lat_accel = logger.quiet_nanf();
+    float lat_accel = AP_Logger::quiet_nanf();
     g2.attitude_control.get_lat_accel(lat_accel);
     struct log_Steering pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STEERING_MSG),
@@ -215,7 +215,7 @@ struct PACKED log_Throttle {
 void Rover::Log_Write_Throttle()
 {
     const Vector3f accel = ins.get_accel();
-    float speed = logger.quiet_nanf();
+    float speed = AP_Logger::quiet_nanf();
     g2.attitude_control.get_forward_speed(speed);
     struct log_Throttle pkt = {
         LOG_PACKET_HEADER_INIT(LOG_THR_MSG),

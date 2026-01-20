@@ -22,13 +22,16 @@ bool AP_AHRS_External::healthy() const {
 
 void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
 {
-    Quaternion quat;
     auto &extahrs = AP::externalAHRS();
     const AP_InertialSensor &_ins = AP::ins();
-    if (!extahrs.get_quaternion(quat)) {
+    if (!extahrs.get_quaternion(results.quaternion)) {
+        results.attitude_valid = false;
         return;
     }
-    quat.rotation_matrix(results.dcm_matrix);
+    results.attitude_valid = true;
+    results.quaternion.rotation_matrix(results.dcm_matrix);
+    // note that this is suspect; we are rotating the matrix and
+    // eulers away from alignment with the quaternion:
     results.dcm_matrix = results.dcm_matrix * AP::ahrs().get_rotation_vehicle_body_to_autopilot_body();
     results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
 
@@ -46,11 +49,6 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     results.accel_ef = accel_ef;
 
     results.location_valid = AP::externalAHRS().get_location(results.location);
-}
-
-bool AP_AHRS_External::get_quaternion(Quaternion &quat) const
-{
-    return AP::externalAHRS().get_quaternion(quat);
 }
 
 Vector2f AP_AHRS_External::groundspeed_vector()

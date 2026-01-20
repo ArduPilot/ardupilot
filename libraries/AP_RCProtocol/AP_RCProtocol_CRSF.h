@@ -48,6 +48,7 @@ public:
     void update(void) override;
 #if HAL_CRSF_TELEM_ENABLED
     void start_bind(void) override;
+    bool bind_in_progress(void);
 #endif
     // support for CRSF v3
     bool change_baud_rate(uint32_t baudrate);
@@ -115,6 +116,7 @@ public:
         CRSF_COMMAND_LED = 0x09,
         CRSF_COMMAND_GENERAL = 0x0A,
         CRSF_COMMAND_RX = 0x10,
+        CRSF_COMMAND_ACK = 0xFF,
     };
 
     // Commands for CRSF_COMMAND_FC

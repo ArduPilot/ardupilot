@@ -2,12 +2,12 @@
 
 Mode::AutoYaw Mode::auto_yaw;
 
-// roi_yaw_rad - returns heading towards location held in roi_ne_m
+// roi_yaw_rad - returns heading towards location held in roi_ned_m
 float Mode::AutoYaw::roi_yaw_rad() const
 {
     Vector2f pos_ne_m;
     if (AP::ahrs().get_relative_position_NE_origin_float(pos_ne_m)){
-        return get_bearing_rad(pos_ne_m, roi_ne_m.xy());
+        return get_bearing_rad(pos_ne_m, roi_ned_m.xy());
     }
     return copter.attitude_control->get_att_target_euler_rad().z;
 }
@@ -168,7 +168,7 @@ void Mode::AutoYaw::set_yaw_angle_offset_deg(const float yaw_angle_offset_deg)
     set_mode(Mode::ANGLE_RATE);
 }
 
-// set_roi - sets the yaw to look at roi_ne_m for auto mode
+// set_roi - sets the yaw to look at roi_ned_m for auto mode
 void Mode::AutoYaw::set_roi(const Location &roi_location)
 {
     // if location is zero lat, lon and altitude turn off ROI
@@ -183,7 +183,7 @@ void Mode::AutoYaw::set_roi(const Location &roi_location)
 #if HAL_MOUNT_ENABLED
         // check if mount type requires us to rotate the quad
         if (!copter.camera_mount.has_pan_control()) {
-            if (roi_location.get_vector_from_origin_NEU_m(roi_ne_m)) {
+            if (roi_location.get_vector_from_origin_NED_m(roi_ned_m)) {
                 auto_yaw.set_mode(Mode::ROI);
             }
         }
@@ -198,7 +198,7 @@ void Mode::AutoYaw::set_roi(const Location &roi_location)
         //      4: point at a target given a target id (can't be implemented)
 #else
         // if we have no camera mount aim the quad at the location
-        if (roi_location.get_vector_from_origin_NEU_m(roi_ne_m)) {
+        if (roi_location.get_vector_from_origin_NED_m(roi_ned_m)) {
             auto_yaw.set_mode(Mode::ROI);
         }
 #endif  // HAL_MOUNT_ENABLED
@@ -235,7 +235,7 @@ float Mode::AutoYaw::yaw_rad()
     switch (_mode) {
 
     case Mode::ROI:
-        // point towards a location held in roi_ne_m
+        // point towards a location held in roi_ned_m
         _yaw_angle_rad = roi_yaw_rad();
         break;
 

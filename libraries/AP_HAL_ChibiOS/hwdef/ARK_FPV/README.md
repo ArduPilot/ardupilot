@@ -193,7 +193,7 @@ The default battery parameters are:
 - BATT_VOLT_PIN 9
 - BATT_CURR_PIN 12
 - BATT_VOLT_SCALE 21
-- BATT_CURR_SCALE 120
+- BATT_AMP_PERVLT 120
 
 ## Compass
 This autopilot has a built-in compass. The compass is the IIS2MDC

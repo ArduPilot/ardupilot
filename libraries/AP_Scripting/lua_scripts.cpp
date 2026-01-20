@@ -30,7 +30,7 @@ extern const AP_HAL::HAL& hal;
 #define ENABLE_DEBUG_MODULE 0
 
 bool lua_scripts::overtime;
-jmp_buf lua_scripts::panic_jmp;
+ap_jmp_buf lua_scripts::panic_jmp;
 char *lua_scripts::error_msg_buf;
 HAL_Semaphore lua_scripts::error_msg_buf_sem;
 uint8_t lua_scripts::print_error_count;
@@ -132,7 +132,7 @@ void lua_scripts::set_and_print_new_error_message(MAV_SEVERITY severity, const c
 
 int lua_scripts::atpanic(lua_State *L) {
     set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "Panic: %s", get_error_object_message(L));
-    longjmp(panic_jmp, 1);
+    ap_longjmp(panic_jmp, 1);
     return 0;
 }
 
@@ -480,7 +480,7 @@ void lua_scripts::run(void) {
     }
 
     // panic should be hooked first
-    if (setjmp(panic_jmp)) {
+    if (ap_setjmp(panic_jmp)) {
         if (!succeeded_initial_load) {
             return;
         }
@@ -502,12 +502,7 @@ void lua_scripts::run(void) {
         return;
     }
 
-#ifndef HAL_CONSOLE_DISABLED
-    const int inital_mem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
-#endif
-
     lua_atpanic(L, atpanic);
-    load_generated_bindings(L);
 
     // set up string metatable. we set up one for all scripts that no script has
     // access to, as it's impossible to set up one per-script and we don't want
@@ -519,10 +514,10 @@ void lua_scripts::run(void) {
     lua_setmetatable(L, -2);  /* set table as metatable for strings */
     lua_pop(L, 1);  /* pop dummy string */
 
-#ifndef HAL_CONSOLE_DISABLED
-    const int loaded_mem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
-    DEV_PRINTF("Lua: State memory usage: %i + %i\n", inital_mem, loaded_mem - inital_mem);
-#endif
+    if (option_is_set(AP_Scripting::DebugOption::RUNTIME_MSG)) {
+        const int loaded_mem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Lua: State memory usage: %i\n", loaded_mem);
+    }
 
     // Scan the filesystem in an appropriate manner and autostart scripts
     // Skip those directores disabled with SCR_DIR_DISABLE param

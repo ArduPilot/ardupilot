@@ -136,7 +136,8 @@ extern const AP_HAL::HAL& hal;
 #define INV3_ID_ICM40605      0x33
 #define INV3_ID_ICM40609      0x3b
 #define INV3_ID_ICM42605      0x42
-#define INV3_ID_ICM42688      0x47
+#define INV3_ID_ICM42688_P    0x47
+#define INV3_ID_ICM42688_V    0xDB
 #define INV3_ID_IIM42652      0x6f
 #define INV3_ID_IIM42653      0x56
 #define INV3_ID_ICM42670      0x67
@@ -1007,7 +1008,8 @@ bool AP_InertialSensor_Invensensev3::check_whoami(void)
     case INV3_ID_ICM40609:
         inv3_type = Invensensev3_Type::ICM40609;
         return true;
-    case INV3_ID_ICM42688:
+    case INV3_ID_ICM42688_P:
+    case INV3_ID_ICM42688_V:
         inv3_type = Invensensev3_Type::ICM42688;
         return true;
     case INV3_ID_ICM42605:

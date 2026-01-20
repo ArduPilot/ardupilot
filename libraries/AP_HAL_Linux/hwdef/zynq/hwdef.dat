@@ -2,7 +2,7 @@
 define HAL_INS_DEFAULT HAL_INS_NONE
 
 # only external compasses
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 
 # MPU9250 is restricted to 1MHz for non-data and interrupt registers
 #            NAME      BUS SUBDEV MODE       BPW CS_PIN         LOWSPD HIGHSPD
@@ -11,6 +11,5 @@ LINUX_SPIDEV "ms5611"  1   1      SPI_MODE_3 8   SPI_CS_KERNEL  1*MHZ  10*MHZ
 
 env TOOLCHAIN 'arm-xilinx-linux-gnueabi'
 
-
-// FIXME: use of this define should go away:
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_ZYNQ
+define AP_RCPROTOCOL_ZYNQ_ENABLED 1
+define AP_RCOUTPUT_ZYNQ_ENABLED 1

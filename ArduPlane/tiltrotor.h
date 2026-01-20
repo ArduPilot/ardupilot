@@ -89,7 +89,7 @@ public:
 
     float current_tilt;
     float current_throttle;
-    bool _motors_active:1;
+    bool _motors_active;
     float transition_yaw_cd;
     uint32_t transition_yaw_set_ms;
     bool _is_vectored;

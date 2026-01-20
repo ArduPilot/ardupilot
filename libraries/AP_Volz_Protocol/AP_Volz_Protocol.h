@@ -36,7 +36,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef AP_VOLZ_ENABLED
-#define AP_VOLZ_ENABLED HAL_PROGRAM_SIZE_LIMIT_KB > 1024
+#define AP_VOLZ_ENABLED HAL_PROGRAM_SIZE_LIMIT_KB > 2048
 #endif
 
 #if AP_VOLZ_ENABLED
@@ -100,7 +100,7 @@ private:
     // Incoming PWM commands from the servo lib
     uint16_t servo_pwm[NUM_SERVO_CHANNELS];
 
-    // Send postion commands from PWM, cycle through each servo
+    // Send position commands from PWM, cycle through each servo
     void send_position_cmd();
     uint8_t last_sent_index;
 

@@ -17,6 +17,11 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 AP_Logger logger;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+SITL::SIM sitl;
+#endif
+
 class SchedTest {
 public:
     void setup();
@@ -38,7 +43,7 @@ private:
     void one_hz_print(void);
     void five_second_call(void);
 };
-
+static AP_InertialSensor ins;
 static AP_BoardConfig board_config;
 static SchedTest schedtest;
 
@@ -77,8 +82,11 @@ const AP_Scheduler::Task SchedTest::scheduler_tasks[] = {
 
 void SchedTest::setup(void)
 {
-
     board_config.init();
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    sitl.init();
+#endif
+    ins.init(100);
 
     // initialise the scheduler
     scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks), (uint32_t)-1);
@@ -113,6 +121,7 @@ void SchedTest::loop(void)
  */
 void SchedTest::ins_update(void)
 {
+    ins.update();
     ins_counter++;
 }
 

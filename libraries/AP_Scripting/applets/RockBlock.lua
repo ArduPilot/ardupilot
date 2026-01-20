@@ -448,7 +448,7 @@ local function RockblockModem()
     
     local _modem_history = {}
     local _modem_to_send = {}
-    local _str_recieved = ""
+    local _str_received = ""
     
     -- Get any incoming data
     function self.rxdata(inchar)
@@ -457,30 +457,30 @@ local function RockblockModem()
         if _modem_history[#_modem_history] == 'AT+SBDRB' and self.in_read_cycle == false and self.rx_len > 0 then
             -- read buffer may include /r and /n, so need a special cycle to capture all up to the self.rx_len
             self.in_read_cycle = true
-            _str_recieved = _str_recieved .. read
-        elseif self.in_read_cycle and #_str_recieved == self.rx_len + 3 then
+            _str_received = _str_received .. read
+        elseif self.in_read_cycle and #_str_received == self.rx_len + 3 then
             -- get last byte in read cycle
-            _str_recieved = _str_recieved .. read
+            _str_received = _str_received .. read
             self.in_read_cycle = false
             self.rx_len = 0
-            table.insert(_modem_history, _str_recieved)
-            _str_recieved = ""
+            table.insert(_modem_history, _str_received)
+            _str_received = ""
             if RCK_DEBUG:get() == 1 then
                 gcs:send_text(3, "Rockblock: Modem rx msg: " ..
                                   self.nicestring(_modem_history[#_modem_history]))
             end
         elseif (read == '\r' or read == '\n') and not self.in_read_cycle then
-            if #_str_recieved > 0 then
-                table.insert(_modem_history, _str_recieved)
+            if #_str_received > 0 then
+                table.insert(_modem_history, _str_received)
                 if RCK_DEBUG:get() == 1 then
                     gcs:send_text(3, "Rockblock: Modem response: " ..
                                       self.nicestring(_modem_history[#_modem_history]))
                 end
                 maybepkt = self.check_cmd_return()
             end
-            _str_recieved = ""
+            _str_received = ""
         else
-            _str_recieved = _str_recieved .. read
+            _str_received = _str_received .. read
         end
         return maybepkt
     end
@@ -827,8 +827,8 @@ function HLSatcom()
 
         hl2.heading = math.floor(wrap_360(math.deg(ahrs:get_yaw_rad())) / 2)
         hl2.throttle = math.floor(gcs:get_hud_throttle())
-        if ahrs:airspeed_estimate() ~= nil then
-            hl2.airspeed = math.abs(math.floor(ahrs:airspeed_estimate() * 5))
+        if ahrs:airspeed_EAS() ~= nil then
+            hl2.airspeed = math.abs(math.floor(ahrs:airspeed_EAS() * 5))
         end
         -- hl2.airspeed_sp = 0
         hl2.groundspeed = math.abs(math.floor(

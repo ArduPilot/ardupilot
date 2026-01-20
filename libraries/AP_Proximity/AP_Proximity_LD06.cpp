@@ -174,7 +174,7 @@ void AP_Proximity_LD06::parse_response_data()
         const float confidence = _response[i + 2];
 
         // ignore distance that are out-of-range or have low confidence
-        if (distance_m < distance_min() || distance_m > distance_max() || confidence < CONFIDENCE_THRESHOLD) {
+        if (distance_m < distance_min_m() || distance_m > distance_max_m() || confidence < CONFIDENCE_THRESHOLD) {
             continue;
         }
 

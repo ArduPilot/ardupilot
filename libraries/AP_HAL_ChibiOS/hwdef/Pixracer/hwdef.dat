@@ -171,7 +171,7 @@ SPIDEV ramtron     SPI2 DEVID10 FRAM_CS    MODE3   8*MHZ   8*MHZ
 
 define HAL_STORAGE_SIZE        16384
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_WITH_RAMTRON 1
 
 # enable FAT filesystem
@@ -210,7 +210,7 @@ COMPASS LIS3MDL SPI:lis3mdl false ROTATION_NONE
 COMPASS AK8963:probe_mpu9250 0 ROTATION_ROLL_180_YAW_90
 
 # also probe all types of external I2C compasses
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES 1
+define AP_COMPASS_PROBING_ENABLED 1
 
 # one barometer
 BARO MS5611 SPI:ms5611_int

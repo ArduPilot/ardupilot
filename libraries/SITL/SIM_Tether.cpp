@@ -282,8 +282,6 @@ void TetherSim::update_tether_force(const Location& veh_pos, float dt)
         // Direction of force is along the tether, pulling toward the anchor
         veh_forces_teth = tether_vector.normalized() * penalty_force_magnitude;
 
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Tether: Exceeded maximum length.");
-
         prev_stretch = stretch;
 
     } else if (tether_stuck) {
@@ -299,8 +297,6 @@ void TetherSim::update_tether_force(const Location& veh_pos, float dt)
 
         // Direction of force is directly along the tether, towards the tether anchor point
         veh_forces_teth = tether_vector.normalized() * penalty_force_magnitude;
-
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Tether: Stuck.");
 
         prev_stretch = stretch;
 

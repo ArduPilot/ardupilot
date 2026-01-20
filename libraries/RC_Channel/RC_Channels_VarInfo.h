@@ -108,9 +108,9 @@ const AP_Param::GroupInfo RC_Channels::var_info[] = {
     // @DisplayName: RC Failsafe timeout
     // @Description: RC failsafe will trigger this many seconds after loss of RC
     // @User: Standard
-    // @Range: 0.5 10.0
+    // @Range: 0.1 10.0
     // @Units: s
-    AP_GROUPINFO_FRAME("_FS_TIMEOUT", 35, RC_CHANNELS_SUBCLASS, _fs_timeout, 1.0, AP_PARAM_FRAME_COPTER),
+    AP_GROUPINFO("_FS_TIMEOUT", 35, RC_CHANNELS_SUBCLASS, _fs_timeout, 1.0),
 
     AP_GROUPEND
 };

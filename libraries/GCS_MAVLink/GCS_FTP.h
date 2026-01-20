@@ -95,7 +95,7 @@ private:
         void push_reply(Transaction &reply);
         bool handle_request(Transaction &request, Transaction &reply);
 
-        void close(void);
+        int close(void);
     };
     Session sessions[AP_MAVLINK_FTP_MAX_SESSIONS];
 

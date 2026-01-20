@@ -56,14 +56,14 @@ void AutoTune::run()
 /*
   get stick input climb rate
  */
-float AutoTune::get_pilot_desired_climb_rate_cms(void) const
+float AutoTune::get_desired_climb_rate_ms(void) const
 {
     float target_climb_rate_ms = copter.get_pilot_desired_climb_rate_ms();
 
     // get avoidance adjusted climb rate
     target_climb_rate_ms = copter.mode_autotune.get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
 
-    return target_climb_rate_ms * 100.0;
+    return target_climb_rate_ms;
 }
 
 /*
@@ -82,8 +82,8 @@ void AutoTune::get_pilot_desired_rp_yrate_rad(float &des_roll_rad, float &des_pi
 void AutoTune::init_z_limits()
 {
     // set vertical speed and acceleration limits
-    copter.pos_control->set_max_speed_accel_U_m(-copter.flightmode->get_pilot_speed_dn_ms(), copter.flightmode->get_pilot_speed_up_ms(), copter.flightmode->get_pilot_accel_U_mss());
-    copter.pos_control->set_correction_speed_accel_U_m(-copter.flightmode->get_pilot_speed_dn_ms(), copter.flightmode->get_pilot_speed_up_ms(), copter.flightmode->get_pilot_accel_U_mss());
+    copter.pos_control->D_set_max_speed_accel_m(copter.flightmode->get_pilot_speed_dn_ms(), copter.flightmode->get_pilot_speed_up_ms(), copter.flightmode->get_pilot_accel_D_mss());
+    copter.pos_control->D_set_correction_speed_accel_m(copter.flightmode->get_pilot_speed_dn_ms(), copter.flightmode->get_pilot_speed_up_ms(), copter.flightmode->get_pilot_accel_D_mss());
 }
 
 #if HAL_LOGGING_ENABLED

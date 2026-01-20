@@ -14,10 +14,11 @@ bool ModeCircle::init(bool ignore_checks)
     sub.circle_pilot_yaw_override = false;
 
     // initialize speeds and accelerations
-    position_control->set_max_speed_accel_NE_cm(sub.wp_nav.get_default_speed_NE_cms(), sub.wp_nav.get_wp_acceleration_cmss());
-    position_control->set_correction_speed_accel_NE_cm(sub.wp_nav.get_default_speed_NE_cms(), sub.wp_nav.get_wp_acceleration_cmss());
-    position_control->set_max_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    position_control->set_correction_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    // All limits must be positive
+    position_control->NE_set_max_speed_accel_cm(sub.wp_nav.get_default_speed_NE_cms(), sub.wp_nav.get_wp_acceleration_cmss());
+    position_control->NE_set_correction_speed_accel_cm(sub.wp_nav.get_default_speed_NE_cms(), sub.wp_nav.get_wp_acceleration_cmss());
+    position_control->D_set_max_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->D_set_correction_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // initialise circle controller including setting the circle center based on vehicle speed
     sub.circle_nav.init();
@@ -33,8 +34,9 @@ void ModeCircle::run()
     float target_climb_rate = 0;
 
     // update parameters, to allow changing at runtime
-    position_control->set_max_speed_accel_NE_cm(sub.wp_nav.get_default_speed_NE_cms(), sub.wp_nav.get_wp_acceleration_cmss());
-    position_control->set_max_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    // All limits must be positive
+    position_control->NE_set_max_speed_accel_cm(sub.wp_nav.get_default_speed_NE_cms(), sub.wp_nav.get_wp_acceleration_cmss());
+    position_control->D_set_max_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
@@ -81,6 +83,6 @@ void ModeCircle::run()
     }
 
     // update altitude target and call position controller
-    position_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate);
-    position_control->update_U_controller();
+    position_control->D_set_pos_target_from_climb_rate_cms(target_climb_rate);
+    position_control->D_update_controller();
 }

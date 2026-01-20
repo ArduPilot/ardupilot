@@ -195,6 +195,9 @@ public:
     virtual void* last_crash_dump_ptr() const { return nullptr; }
 #endif
 
+    // get the system load
+    virtual bool get_system_load(float& avg_load, float& peak_load) const { return false; }
+
 #if HAL_ENABLE_DFU_BOOT
     virtual void boot_to_dfu(void) {}
 #endif

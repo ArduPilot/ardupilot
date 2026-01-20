@@ -55,9 +55,9 @@ public:
         // PX4_BOARD_PIXHAWK_PRO = 14,
         PX4_BOARD_AUAV21   = 20,
         // PX4_BOARD_PCNC1    = 21,
-        PX4_BOARD_MINDPXV2 = 22,
+        // PX4_BOARD_MINDPXV2 = 22,
         // PX4_BOARD_SP01     = 23,
-        PX4_BOARD_FMUV5    = 24,
+        // PX4_BOARD_FMUV5    = 24,
         // VRX_BOARD_BRAIN51  = 30,
         // VRX_BOARD_BRAIN52  = 32,
         // VRX_BOARD_BRAIN52E = 33,
@@ -146,6 +146,12 @@ public:
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     static uint8_t get_sdcard_slowdown(void) {
         return _singleton?_singleton->_sdcard_slowdown.get():0;
+    }
+#endif
+
+#if AP_CPU_IDLE_STATS_ENABLED
+    static bool use_idle_stats(void) {
+        return _singleton?_singleton->state.idle_stats.get():0;
     }
 #endif
 
@@ -248,6 +254,9 @@ private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         AP_Int8 ser_rtscts[9];
         AP_Int8 sbus_out_rate;
+#endif
+#if AP_CPU_IDLE_STATS_ENABLED
+        AP_Int8 idle_stats;
 #endif
         AP_Int8 board_type;
         AP_Int8 io_enable;

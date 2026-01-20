@@ -400,11 +400,12 @@ TEST(Location, OffsetError)
 #define TEST_POLYGON_DISTANCE_POINTS(POLYGON, TEST_POINTS)                       \
     do {                                                                \
         for (uint32_t i = 0; i < ARRAY_SIZE(TEST_POINTS); i++) {        \
-            float distance; \
+            Vector2f direction; \
             Polygon_closest_distance_point(POLYGON,     \
                                             ARRAY_SIZE(POLYGON),\
-                                            TEST_POINTS[i].point, distance);\
-            EXPECT_TRUE(fabs(TEST_POINTS[i].distance - distance) <= 1.0f); \
+                                            TEST_POINTS[i].point, direction);\
+            EXPECT_TRUE(fabs(TEST_POINTS[i].distance - direction.length()) <= 1.0f); \
+            EXPECT_TRUE(fabs(degrees(TEST_POINTS[i].direction.angle()) - degrees(direction.angle())) <= 5.0f); \
         }                                                               \
     } while(0)
 
@@ -452,12 +453,13 @@ static const Vector2f London_boundary[] {
 static const struct {
     Vector2f point;
     float distance;
+    Vector2f direction;
 } London_test_points[] = {
-    { CARTESIAN(CENTER_LAT, CENTER_LON), 75.0f, },
-    { CARTESIAN(CENTER_NORTH_LAT, CENTER_LON), 37.5f, },
-    { CARTESIAN(CENTER_LAT, CENTER_EAST_LON), 37.5f, },
-    { CARTESIAN(CENTER_SOUTH_LAT, CENTER_LON), 37.5f, },
-    { CARTESIAN(CENTER_LAT, CENTER_WEST_LON), 37.5f, },
+    { CARTESIAN(CENTER_LAT, CENTER_LON), 75.0f, { 0.0f, 75.0f }},
+    { CARTESIAN(CENTER_NORTH_LAT, CENTER_LON), 37.5f, { 37.5f, 0.0f }},
+    { CARTESIAN(CENTER_LAT, CENTER_EAST_LON), 37.5f, { 0.0f, 37.5f }},
+    { CARTESIAN(CENTER_SOUTH_LAT, CENTER_LON), 37.5f, { -37.5f, 0.0f }},
+    { CARTESIAN(CENTER_LAT, CENTER_WEST_LON), 37.5f, { 0.0f, -37.5f }},
 };
 
 TEST(Location, London_distance)

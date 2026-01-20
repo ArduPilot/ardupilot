@@ -18,7 +18,7 @@
 
 #if AP_SIM_JSON_ENABLED
 
-#include <AP_HAL/utility/Socket_native.h>
+#include <AP_HAL/utility/Socket.h>
 #include "SIM_Aircraft.h"
 
 namespace SITL {
@@ -35,7 +35,7 @@ public:
         return NEW_NOTHROW JSON(frame_str);
     }
 
-    /*  Create and set in/out socket for JSON generic simulator */
+    /* Create and set in/out socket for JSON generic simulator */
     void set_interface_ports(const char* address, const int port_in, const int port_out) override;
 
 private:
@@ -60,7 +60,12 @@ private:
     // default connection_info_.sitl_ip_port
     uint16_t control_port = 9002;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SocketAPM_native sock;
+#else
+    // sim-on-hardware
+    SocketAPM sock;
+#endif
 
     uint32_t frame_counter;
     double last_timestamp_s;
@@ -68,7 +73,7 @@ private:
     void output_servos(const struct sitl_input &input);
     void recv_fdm(const struct sitl_input &input);
 
-    uint32_t parse_sensors(const char *json);
+    uint64_t parse_sensors(const char *json);
 
     // buffer for parsing pose data in JSON format
     uint8_t sensor_buffer[65000];
@@ -86,6 +91,9 @@ private:
 
     struct {
         double timestamp_s;
+        double latitude;
+        double longitude;
+        double altitude;
         struct {
             Vector3f gyro;
             Vector3f accel_body;
@@ -105,6 +113,7 @@ private:
         } wind_vane_apparent;
         float airspeed;
         bool no_time_sync;
+        bool no_lockstep;
     } state;
 
     // table to aid parsing of JSON sensor data
@@ -114,11 +123,14 @@ private:
         void *ptr;
         enum data_type type;
         bool required;
-    } keytable[32] {
+    } keytable[36] {
         { "", "timestamp", &state.timestamp_s, DATA_DOUBLE, true },
+        { "", "latitude", &state.latitude, DATA_DOUBLE, false },
+        { "", "longitude", &state.longitude, DATA_DOUBLE, false },
+        { "", "altitude", &state.altitude, DATA_DOUBLE, false },
         { "imu", "gyro",    &state.imu.gyro, DATA_VECTOR3F, true },
         { "imu", "accel_body", &state.imu.accel_body, DATA_VECTOR3F, true },
-        { "", "position", &state.position, DATA_VECTOR3D, true },
+        { "", "position", &state.position, DATA_VECTOR3D, false },
         { "", "attitude", &state.attitude, DATA_VECTOR3F, false },
         { "", "quaternion", &state.quaternion, QUATERNION, false },
         { "", "velocity", &state.velocity, DATA_VECTOR3F, true },
@@ -133,6 +145,7 @@ private:
         {"windvane","speed", &state.wind_vane_apparent.speed, DATA_FLOAT, false},
         {"", "airspeed", &state.airspeed, DATA_FLOAT, false},
         {"", "no_time_sync", &state.no_time_sync, BOOLEAN, false},
+        {"", "no_lockstep", &state.no_lockstep, BOOLEAN, false},
         { "rc", "rc_1", &state.rc[0], DATA_FLOAT, false },
         { "rc", "rc_2", &state.rc[1], DATA_FLOAT, false },
         { "rc", "rc_3", &state.rc[2], DATA_FLOAT, false },
@@ -150,43 +163,49 @@ private:
     };
 
     // Enum coresponding to the ordering of keys in the keytable.
-    enum DataKey {
-        TIMESTAMP   = 1U << 0,
-        GYRO        = 1U << 1,
-        ACCEL_BODY  = 1U << 2,
-        POSITION    = 1U << 3,
-        EULER_ATT   = 1U << 4,
-        QUAT_ATT    = 1U << 5,
-        VELOCITY    = 1U << 6,
-        RNG_1       = 1U << 7,
-        RNG_2       = 1U << 8,
-        RNG_3       = 1U << 9,
-        RNG_4       = 1U << 10,
-        RNG_5       = 1U << 11,
-        RNG_6       = 1U << 12,
-        WIND_VEL    = 1U << 13,
-        WIND_DIR    = 1U << 14,
-        WIND_SPD    = 1U << 15,
-        AIRSPEED    = 1U << 16,
-        TIME_SYNC   = 1U << 17,
-        RC_1        = 1U << 18,
-        RC_2        = 1U << 19,
-        RC_3        = 1U << 20,
-        RC_4        = 1U << 21,
-        RC_5        = 1U << 22,
-        RC_6        = 1U << 23,
-        RC_7        = 1U << 24,
-        RC_8        = 1U << 25,
-        RC_9        = 1U << 26,
-        RC_10       = 1U << 27,
-        RC_11       = 1U << 28,
-        RC_12       = 1U << 29,
-        BAT_VOLT    = 1U << 30,
-        BAT_AMP     = 1U << 31,
+    enum DataKey : uint64_t {
+        TIMESTAMP   = 0x0000000000000001ULL, // 1ULL << 0
+        LATITUDE    = 0x0000000000000002ULL, // 1ULL << 1
+        LONGITUDE   = 0x0000000000000004ULL, // 1ULL << 2
+        ALTITUDE    = 0x0000000000000008ULL, // 1ULL << 3
+        GYRO        = 0x0000000000000010ULL, // 1ULL << 4
+        ACCEL_BODY  = 0x0000000000000020ULL, // 1ULL << 5
+        POSITION    = 0x0000000000000040ULL, // 1ULL << 6
+        EULER_ATT   = 0x0000000000000080ULL, // 1ULL << 7
+        QUAT_ATT    = 0x0000000000000100ULL, // 1ULL << 8
+        VELOCITY    = 0x0000000000000200ULL, // 1ULL << 9
+        RNG_1       = 0x0000000000000400ULL, // 1ULL << 10
+        RNG_2       = 0x0000000000000800ULL, // 1ULL << 11
+        RNG_3       = 0x0000000000001000ULL, // 1ULL << 12
+        RNG_4       = 0x0000000000002000ULL, // 1ULL << 13
+        RNG_5       = 0x0000000000004000ULL, // 1ULL << 14
+        RNG_6       = 0x0000000000008000ULL, // 1ULL << 15
+        WIND_VEL    = 0x0000000000010000ULL, // 1ULL << 16
+        WIND_DIR    = 0x0000000000020000ULL, // 1ULL << 17
+        WIND_SPD    = 0x0000000000040000ULL, // 1ULL << 18
+        AIRSPEED    = 0x0000000000080000ULL, // 1ULL << 19
+        TIME_SYNC   = 0x0000000000100000ULL, // 1ULL << 20
+        LOCKSTEP    = 0x0000000000200000ULL, // 1ULL << 21
+        RC_1        = 0x0000000000400000ULL, // 1ULL << 22
+        RC_2        = 0x0000000000800000ULL, // 1ULL << 23
+        RC_3        = 0x0000000001000000ULL, // 1ULL << 24
+        RC_4        = 0x0000000002000000ULL, // 1ULL << 25
+        RC_5        = 0x0000000004000000ULL, // 1ULL << 26
+        RC_6        = 0x0000000008000000ULL, // 1ULL << 27
+        RC_7        = 0x0000000010000000ULL, // 1ULL << 28
+        RC_8        = 0x0000000020000000ULL, // 1ULL << 29
+        RC_9        = 0x0000000040000000ULL, // 1ULL << 30
+        RC_10       = 0x0000000080000000ULL, // 1ULL << 31
+        RC_11       = 0x0000000100000000ULL, // 1ULL << 32
+        RC_12       = 0x0000000200000000ULL, // 1ULL << 33
+        BAT_VOLT    = 0x0000000400000000ULL, // 1ULL << 34
+        BAT_AMP     = 0x0000000800000000ULL, // 1ULL << 35
     };
-    uint32_t last_received_bitmask;
+    uint64_t last_received_bitmask;
 
     uint32_t last_debug_ms;
+
+    bool last_no_lockstep;
 };
 
 }

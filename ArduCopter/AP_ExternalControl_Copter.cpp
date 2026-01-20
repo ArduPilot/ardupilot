@@ -12,7 +12,7 @@
   set linear velocity and yaw rate. Pass NaN for yaw_rate_rads to not control yaw
   velocity is in earth frame, NED, m/s
 */
-bool AP_ExternalControl_Copter::set_linear_velocity_and_yaw_rate(const Vector3f &linear_velocity, float yaw_rate_rads)
+bool AP_ExternalControl_Copter::set_linear_velocity_and_yaw_rate(const Vector3f &linear_velocity_ned_ms, float yaw_rate_rads)
 {
     if (!ready_for_external_control()) {
         return false;
@@ -20,11 +20,7 @@ bool AP_ExternalControl_Copter::set_linear_velocity_and_yaw_rate(const Vector3f 
     const float checked_yaw_rate_rad = isnan(yaw_rate_rads)? 0: yaw_rate_rads;
 
     // Copter velocity is positive if aircraft is moving up which is opposite the incoming NED frame.
-    const Vector3f velocity_neu_ms {
-        linear_velocity.x,
-        linear_velocity.y,
-        -linear_velocity.z };
-    copter.mode_guided.set_vel_NEU_ms(velocity_neu_ms, false, 0, !isnan(yaw_rate_rads), checked_yaw_rate_rad);
+    copter.mode_guided.set_vel_NED_ms(linear_velocity_ned_ms, false, 0, !isnan(yaw_rate_rads), checked_yaw_rate_rad);
     return true;
 }
 

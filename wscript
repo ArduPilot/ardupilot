@@ -194,11 +194,6 @@ def options(opt):
         default=None,
         help='Override default toolchain used for the board. Use "native" for using the host toolchain.')
 
-    g.add_option('--disable-gccdeps',
-        action='store_true',
-        default=False,
-        help='Disable the use of GCC dependencies output method and use waf default method.')
-
     g.add_option('--enable-asserts',
         action='store_true',
         default=False,
@@ -423,7 +418,7 @@ configuration in order to save typing.
     g.add_option('--consistent-builds',
         action='store_true',
         default=False,
-        help='force consistent build outputs for things like __LINE__')
+        help='force consistent build outputs for things like __LINE__ and build hashes')
 
     g.add_option('--extra-hwdef',
 	    action='store',
@@ -516,6 +511,7 @@ def configure(cfg):
     cfg.env.ENABLE_MALLOC_GUARD = cfg.options.enable_malloc_guard
     cfg.env.ENABLE_STATS = cfg.options.enable_stats
     cfg.env.SAVE_TEMPS = cfg.options.save_temps
+    cfg.env.CONSISTENT_BUILDS = cfg.options.consistent_builds
 
     extra_hwdef = cfg.options.extra_hwdef
     if extra_hwdef is not None and not os.path.exists(extra_hwdef):
@@ -638,6 +634,12 @@ def configure(cfg):
     else:
         cfg.end_msg('disabled', color='YELLOW')
 
+    cfg.start_msg('Consistent build')
+    if cfg.env.CONSISTENT_BUILDS:
+        cfg.end_msg('enabled')
+    else:
+        cfg.end_msg('disabled', color='YELLOW')
+
     cfg.start_msg('Force 32-bit build')
     if cfg.env.FORCE32BIT:
         cfg.end_msg('enabled')
@@ -726,9 +728,9 @@ def generate_tasklist(ctx, do_print=True):
             elif 'iofirmware' in board:
                 task['targets'] = ['iofirmware', 'bootloader']
             else:
-                if boards.is_board_based(board, boards.sitl):
+                if boards.is_board_based(board, boards.SITLBoard):
                     task['targets'] = vehicles + ['replay']
-                elif boards.is_board_based(board, boards.linux):
+                elif boards.is_board_based(board, boards.LinuxBoard):
                     task['targets'] = vehicles
                 else:
                     task['targets'] = vehicles + ['bootloader']

@@ -32,14 +32,14 @@ void Plane::Log_Write_Attitude(void)
         logger.Write_PID(LOG_PIQR_MSG, quadplane.attitude_control->get_rate_roll_pid().get_pid_info());
         logger.Write_PID(LOG_PIQP_MSG, quadplane.attitude_control->get_rate_pitch_pid().get_pid_info());
         logger.Write_PID(LOG_PIQY_MSG, quadplane.attitude_control->get_rate_yaw_pid().get_pid_info());
-        logger.Write_PID(LOG_PIQA_MSG, quadplane.pos_control->get_accel_U_pid().get_pid_info() );
+        logger.Write_PID(LOG_PIQA_MSG, quadplane.pos_control->D_get_accel_pid().get_pid_info() );
 
         // Write tailsitter specific log at same rate as PIDs
         quadplane.tailsitter.write_log();
     }
-    if (quadplane.in_vtol_mode() && quadplane.pos_control->is_active_NE()) {
-        logger.Write_PID(LOG_PIDN_MSG, quadplane.pos_control->get_vel_NE_pid().get_pid_info_x());
-        logger.Write_PID(LOG_PIDE_MSG, quadplane.pos_control->get_vel_NE_pid().get_pid_info_y());
+    if (quadplane.in_vtol_mode() && quadplane.pos_control->NE_is_active()) {
+        logger.Write_PID(LOG_PIDN_MSG, quadplane.pos_control->NE_get_vel_pid().get_pid_info_x());
+        logger.Write_PID(LOG_PIDE_MSG, quadplane.pos_control->NE_get_vel_pid().get_pid_info_y());
     }
 #endif
 
@@ -85,7 +85,6 @@ struct PACKED log_Control_Tuning {
     float throttle_dem;
     float airspeed_estimate;
     uint8_t airspeed_estimate_status;
-    float synthetic_airspeed;
     float EAS2TAS;
     int32_t groundspeed_undershoot;
 };
@@ -95,12 +94,7 @@ void Plane::Log_Write_Control_Tuning()
 {
     float est_airspeed = 0;
     AP_AHRS::AirspeedEstimateType airspeed_estimate_type = AP_AHRS::AirspeedEstimateType::NO_NEW_ESTIMATE;
-    ahrs.airspeed_estimate(est_airspeed, airspeed_estimate_type);
-
-    float synthetic_airspeed;
-    if (!ahrs.synthetic_airspeed(synthetic_airspeed)) {
-        synthetic_airspeed = logger.quiet_nan();
-    }
+    ahrs.airspeed_EAS(est_airspeed, airspeed_estimate_type);
 
     int16_t pitch = ahrs.pitch_sensor - g.pitch_trim * 100;
 #if HAL_QUADPLANE_ENABLED
@@ -120,7 +114,6 @@ void Plane::Log_Write_Control_Tuning()
         throttle_dem    : TECS_controller.get_throttle_demand(),
         airspeed_estimate : est_airspeed,
         airspeed_estimate_status : (uint8_t)airspeed_estimate_type,
-        synthetic_airspeed : synthetic_airspeed,
         EAS2TAS            : ahrs.get_EAS2TAS(),
         groundspeed_undershoot  : groundspeed_undershoot,
     };
@@ -328,12 +321,11 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: As: airspeed estimate (or measurement if airspeed sensor healthy and ARSPD_USE>0)
 // @Field: AsT: airspeed type ( old estimate or source of new estimate)
 // @FieldValueEnum: AsT: AP_AHRS::AirspeedEstimateType
-// @Field: SAs: DCM's airspeed estimate, NaN if not available
 // @Field: E2T: equivalent to true airspeed ratio
 // @Field: GU: groundspeed undershoot when flying with minimum groundspeed
 
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
-      "CTUN", "QccccffffBffi",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThO,RdO,ThD,As,AsT,SAs,E2T,GU", "sdddd---n-n-n", "FBBBB---000-B" , true },
+      "CTUN", "QccccffffBfi",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThO,RdO,ThD,As,AsT,E2T,GU", "sdddd---n--n", "FBBBB---00-B" , true },
 
 // @LoggerMessage: NTUN
 // @Description: Navigation Tuning information - e.g. vehicle destination
@@ -442,10 +434,10 @@ const struct LogStructure Plane::log_structure[] = {
 #endif
 
 // @LoggerMessage: TSIT
-// @Description: tailsitter speed scailing values
+// @Description: tailsitter speed scaling values
 // @Field: TimeUS: Time since system startup
 // @Field: Ts: throttle scaling used for tilt motors
-// @Field: Ss: speed scailing used for control surfaces method from Q_TAILSIT_GSCMSK
+// @Field: Ss: speed scaling used for control surfaces method from Q_TAILSIT_GSCMSK
 // @Field: Tmin: minimum output throttle calculated from disk thoery gain scale with Q_TAILSIT_MIN_VO
 #if HAL_QUADPLANE_ENABLED
     { LOG_TSIT_MSG, sizeof(Tailsitter::log_tailsitter),

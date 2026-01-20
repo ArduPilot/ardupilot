@@ -125,8 +125,8 @@ public:
     float get_airspeed_ratio(void) const { return get_airspeed_ratio(primary); }
 
     // get temperature if available
-    bool get_temperature(uint8_t i, float &temperature);
-    bool get_temperature(float &temperature) { return get_temperature(primary, temperature); }
+    bool get_temperature(uint8_t i, float &temperature) const;
+    bool get_temperature(float &temperature) const { return get_temperature(primary, temperature); }
 
     // set the airspeed ratio (dimensionless)
 #ifndef HAL_BUILD_AP_PERIPH
@@ -333,6 +333,9 @@ private:
     uint8_t primary;
     uint8_t num_sensors;
 
+    // Track primary parameter, this allows changes to be honored in flight
+    uint8_t last_user_primary;
+
     uint32_t _log_bit = -1;     // stores which bit in LOG_BITMASK is used to indicate we should log airspeed readings
 
     void read(uint8_t i);
@@ -372,6 +375,9 @@ private:
     const AP_FixedWing *fixed_wing_parameters;
 
     void convert_per_instance();
+
+    // Select primary sensor based on user parameters and health
+    uint8_t select_primary();
 
 };
 

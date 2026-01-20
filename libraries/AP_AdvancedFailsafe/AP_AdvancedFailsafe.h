@@ -82,6 +82,9 @@ public:
     // during sensor calibration
     void heartbeat(void);
 
+    //return true if we should jump to _wp_comms_hold
+    bool should_use_comms_hold(void);
+
     // return true if we are terminating (deliberately crashing the vehicle)
     bool should_crash_vehicle(void);
 
@@ -138,7 +141,7 @@ protected:
     bool _heartbeat_pin_value;
 
     // saved waypoint for resuming mission
-    uint8_t _saved_wp;
+    uint16_t _saved_wp;
     
     // number of times we've lost GPS
     uint8_t _gps_loss_count;
@@ -153,7 +156,7 @@ protected:
     uint32_t _last_gps_loss_ms;
 
     // have the failsafe values been setup?
-    bool _failsafe_setup:1;
+    bool _failsafe_setup;
 
     Location _first_location;
     bool _have_first_location;
@@ -171,6 +174,7 @@ private:
     enum class Option {
         CONTINUE_AFTER_RECOVERED = (1U<<0),
         GCS_FS_ALL_AUTONOMOUS_MODES = (1U<<1),
+        CONTINUE_IF_ALREADY_IN_RETURN_PATH = (1U<<2),
     };
     bool option_is_set(Option option) const {
         return (options.get() & int16_t(option)) != 0;

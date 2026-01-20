@@ -38,11 +38,12 @@ class AP_Baro_MS56XX : public AP_Baro_Backend
 public:
     void update() override;
 
-    AP_Baro_MS56XX(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    AP_Baro_MS56XX(AP_Baro &baro, AP_HAL::Device &dev);
 
 protected:
 
-    // convenience methods for derivative classes to call:
+    // convenience methods for derivative classes to call.  Will free
+    // sensor if it can't init it.
     static AP_Baro_Backend *_probe(AP_Baro &baro, AP_Baro_MS56XX *sensor);
 
     virtual bool _init();
@@ -65,6 +66,8 @@ protected:
 
 private:
 
+    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::Device &dev);
+
     /*
      * Update @accum and @count with the new sample in @val, taking into
      * account a maximum number of samples given by @max_count; in case
@@ -78,7 +81,7 @@ private:
 
     void _timer();
 
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device *_dev;
 
     /* Shared values between thread sampling the HW and main thread */
     struct {
@@ -101,7 +104,7 @@ class AP_Baro_MS5607 : public AP_Baro_MS56XX
 {
 public:
     using AP_Baro_MS56XX::AP_Baro_MS56XX;
-    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::Device &dev);
 protected:
     const char *name() const override { return "MS5607"; }
     bool _read_prom(uint16_t *prom) override { return _read_prom_5611(prom); }
@@ -115,7 +118,7 @@ class AP_Baro_MS5611 : public AP_Baro_MS56XX
 {
 public:
     using AP_Baro_MS56XX::AP_Baro_MS56XX;
-    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::Device &dev);
 protected:
     const char *name() const override { return "MS5611"; }
     bool _read_prom(uint16_t *prom) override { return _read_prom_5611(prom); }
@@ -129,7 +132,7 @@ class AP_Baro_MS5637 : public AP_Baro_MS56XX
 {
 public:
     using AP_Baro_MS56XX::AP_Baro_MS56XX;
-    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::Device &dev);
 protected:
     const char *name() const override { return "MS5637"; }
     bool _read_prom(uint16_t *prom) override { return _read_prom_5637(prom); }
@@ -143,7 +146,7 @@ class AP_Baro_MS5837 : public AP_Baro_MS56XX
 {
 public:
     using AP_Baro_MS56XX::AP_Baro_MS56XX;
-    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::Device &dev);
 protected:
     const char *name() const override { return "MS5837"; }
     bool _read_prom(uint16_t *prom) override { return _read_prom_5637(prom); }

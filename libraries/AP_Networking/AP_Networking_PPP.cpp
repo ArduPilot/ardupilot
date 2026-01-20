@@ -202,7 +202,11 @@ bool AP_Networking_PPP::init()
             break;
         }
 
+#if AP_NETWORKING_PPP_GATEWAY_ENABLED
         const bool ethernet_gateway = frontend.option_is_set(AP_Networking::OPTION::PPP_ETHERNET_GATEWAY);
+#else
+        const bool ethernet_gateway = false;
+#endif
         if (!ethernet_gateway && !need_thread) {
             // initialise TCP/IP thread
             LWIP_TCPIP_LOCK();

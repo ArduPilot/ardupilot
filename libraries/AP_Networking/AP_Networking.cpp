@@ -144,7 +144,7 @@ void AP_Networking::init()
     }
 #endif
 
-#if AP_NETWORKING_PPP_GATEWAY_ENABLED
+#if AP_NETWORKING_BACKEND_CHIBIOS && AP_NETWORKING_PPP_GATEWAY_ENABLED
     if (option_is_set(OPTION::PPP_ETHERNET_GATEWAY)) {
         /*
           when we are a PPP/Ethernet gateway we bring up the ethernet first
@@ -200,13 +200,14 @@ void AP_Networking::init()
 #endif
 
 #if AP_NETWORKING_CAN_MCAST_BRIDGING_ENABLED
-    if (option_is_set(OPTION::CAN1_MCAST_ENDPOINT) || option_is_set(OPTION::CAN1_MCAST_ENDPOINT)) {
+    if (option_is_set(OPTION::CAN1_MCAST_ENDPOINT) ||
+        option_is_set(OPTION::CAN2_MCAST_ENDPOINT)) {
         // get mask of enabled buses
         uint8_t bus_mask = 0;
         if (option_is_set(OPTION::CAN1_MCAST_ENDPOINT)) {
             bus_mask |= (1U<<0);
         }
-        if (option_is_set(OPTION::CAN1_MCAST_ENDPOINT)) {
+        if (option_is_set(OPTION::CAN2_MCAST_ENDPOINT)) {
             bus_mask |= (1U<<1);
         }
         mcast_server.start(bus_mask);
@@ -469,10 +470,17 @@ const char *AP_Networking::address_to_str(uint32_t addr)
 }
 
 #ifdef LWIP_PLATFORM_ASSERT
-void ap_networking_platform_assert(const char *msg, int line, const char *file)
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || defined(HAL_DEBUG_BUILD)
+void ap_networking_platform_assert(const char *msg, int line)
 {
-    AP_HAL::panic("LWIP: %s: %s:%u", msg, file, line);
+    AP_HAL::panic("LWIP:%u %s", line, msg);
 }
+#else
+void ap_networking_platform_assert(int line)
+{
+    AP_HAL::panic("LWIP:%u", line);
+}
+#endif
 #endif
 
 #ifdef LWIP_HOOK_IP4_ROUTE

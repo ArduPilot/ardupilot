@@ -20,14 +20,15 @@ public:
     bool get_oa_wp_destination(Location& destination) const override;
 
     // Sets the waypoint destination using NEU coordinates in centimeters.
-    // See set_wp_destination_NEU_m() for full details.
+    // See set_wp_destination_NED_m() for full details.
     bool set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt = false) override;
 
-    // Sets the waypoint destination using NEU coordinates in meters.
-    // - destination_neu_m: NEU offset from EKF origin in meters.
-    // - is_terrain_alt: true if the Z component represents altitude above terrain.
+    // Sets the waypoint destination using NED coordinates in meters.
+    // - destination_ned_m: NED offset from EKF origin in meters.
+    // - is_terrain_alt: true if the destination_ned_m is relative to the terrain surface.
+    // arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
     // - Resets OA state on success.
-    bool set_wp_destination_NEU_m(const Vector3f& destination_neu_m, bool is_terrain_alt = false) override;
+    bool set_wp_destination_NED_m(const Vector3p& destination_ned_m, bool is_terrain_alt = false, float arc_rad = 0.0) override;
 
     // Returns the horizontal distance to the final destination in centimeters.
     // See get_wp_distance_to_destination_m() for full details.
@@ -57,9 +58,9 @@ protected:
 
     // oa path planning variables
     AP_OAPathPlanner::OA_RetState _oa_state;    // state of object avoidance, if OA_SUCCESS we use _oa_destination to avoid obstacles
-    Vector3f    _origin_oabak_neu_m;            // backup of _origin_neu_m so it can be restored when oa completes
-    Vector3f    _destination_oabak_neu_m;       // backup of _destination_neu_m so it can be restored when oa completes
-    Vector3f    _next_destination_oabak_neu_m;  // backup of _next_destination_neu_m so it can be restored when oa completes
+    Vector3p    _origin_oabak_ned_m;            // backup of _origin_ned_m so it can be restored when oa completes
+    Vector3p    _destination_oabak_ned_m;       // backup of _destination_ned_m so it can be restored when oa completes
+    Vector3p    _next_destination_oabak_ned_m;  // backup of _next_destination_ned_m so it can be restored when oa completes
     bool        _is_terrain_alt_oabak;  // true if backup origin and destination z-axis are terrain altitudes
     Location    _oa_destination;        // intermediate destination during avoidance
     Location    _oa_next_destination;   // intermediate next destination during avoidance

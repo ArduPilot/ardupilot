@@ -294,6 +294,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: EKF failsafe variance threshold
     // @Description: Allows setting the maximum acceptable compass and velocity variance
     // @Values: 0.6:Strict, 0.8:Default, 1.0:Relaxed
+    // @Range: 0.6 1.0
     // @User: Advanced
     GSCALAR(fs_ekf_thresh, "FS_EKF_THRESH",    FS_EKF_THRESHOLD_DEFAULT),
 
@@ -533,6 +534,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: Acro Expo
     // @Description: Acro roll/pitch Expo to allow faster rotation when stick at edges
     // @Values: 0:Disabled,0.1:Very Low,0.2:Low,0.3:Medium,0.4:High,0.5:Very High
+    // @Range: -0.5 0.95
     // @User: Advanced
     GSCALAR(acro_expo,  "ACRO_EXPO",    ACRO_EXPO_DEFAULT),
 
@@ -809,7 +811,6 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_fs_batt_mah,       0,      AP_PARAM_FLOAT,  "BATT_LOW_MAH" },
     { Parameters::k_param_failsafe_battery_enabled,       0,      AP_PARAM_INT8,  "BATT_FS_LOW_ACT" },
     { Parameters::k_param_compass_enabled_deprecated,       0,      AP_PARAM_INT8, "COMPASS_ENABLE" },
-    { Parameters::k_param_arming,            2,     AP_PARAM_INT16,  "ARMING_CHECK" },
 };
 
 void Sub::load_parameters()
@@ -896,3 +897,66 @@ void Sub::convert_old_parameters()
 
     SRV_Channels::upgrade_parameters();
 }
+
+#if LEAKDETECTOR_MAX_INSTANCES > 0
+// PARAMETER_CONVERSION - Added: Dec-2025
+// Deals with leak detector getting misconfigured when updating from Sub 4.1
+void Sub::update_leak_pins()
+{
+    for (uint8_t instance = 0; instance < LEAKDETECTOR_MAX_INSTANCES; instance++) {
+        if (leak_detector.get_pin(instance) <= 0) {
+            // leak detector does not use pin
+            continue;
+        }
+        uint8_t servo_channel;
+        if (!hal.gpio->pin_to_servo_channel(leak_detector.get_pin(instance), servo_channel)) {
+            // leak detector pin does not map to a servo channel
+            continue;
+        }
+        if (SRV_Channels::is_GPIO(servo_channel)) {
+            // servo channel is already set to GPIO
+            continue;
+        }
+        if (SRV_Channels::channel_function(servo_channel) != SRV_Channel::Function::k_none) {
+            // servo channel is already set to a function
+            gcs().send_text(MAV_SEVERITY_WARNING, "Leak detector %u error. Please set SERVO%u_FUNCTION to GPIO", instance + 1, servo_channel + 1);
+            continue;
+        }
+        // servo channel is disabled, let's set it to GPIO for the user
+        gcs().send_text(MAV_SEVERITY_INFO, "Leak detector %u pin (servo %u) auto-set to GPIO", instance + 1, servo_channel + 1);
+        char param_name[20];
+        snprintf(param_name, sizeof(param_name), "SERVO%u_FUNCTION", servo_channel + 1);
+        AP_Param::set_and_save_by_name(param_name, static_cast<int>(SRV_Channel::Function::k_GPIO));
+    }
+}
+#endif
+
+#if AP_RELAY_ENABLED
+// PARAMETER_CONVERSION - Added: Dec-2025
+// Deals with relay getting misconfigured when updating from Sub 4.1
+void Sub::update_relay_pins()
+{
+    for (uint8_t instance = 0; instance < AP_RELAY_NUM_RELAYS; instance++) {
+        uint8_t servo_channel;
+        uint8_t pin;
+        if (!relay.get_pin_by_instance(instance, pin) || !hal.gpio->pin_to_servo_channel(pin, servo_channel)) {
+            // instance does not use pin or pin does not map to a servo channel
+            continue;
+        }
+        if (!relay.enabled(instance) || SRV_Channels::is_GPIO(servo_channel)) {
+            // instance is not enabled or servo channel is already set to GPIO
+            continue;
+        }
+        if (SRV_Channels::channel_function(servo_channel) != SRV_Channel::Function::k_none) {
+            // servo channel is already set to a function
+            gcs().send_text(MAV_SEVERITY_WARNING, "Relay %u error. Please set SERVO%u_FUNCTION to GPIO", instance + 1, servo_channel + 1);
+            continue;
+        }
+        // servo channel is disabled, let's set it to GPIO for the user
+        gcs().send_text(MAV_SEVERITY_INFO, "Relay %u pin (servo %u) auto-set to GPIO", instance + 1, servo_channel + 1);
+        char param_name[20];
+        snprintf(param_name, sizeof(param_name), "SERVO%u_FUNCTION", servo_channel + 1);
+        AP_Param::set_and_save_by_name(param_name, static_cast<int>(SRV_Channel::Function::k_GPIO));
+    }
+}
+#endif

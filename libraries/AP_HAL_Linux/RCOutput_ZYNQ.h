@@ -2,6 +2,16 @@
 
 #include <AP_HAL/AP_HAL.h>
 
+#ifndef AP_RCOUTPUT_ZYNQ_ENABLED
+#define AP_RCOUTPUT_ZYNQ_ENABLED 0
+#endif  // AP_RCOUTPUT_ZYNQ_ENABLED
+
+#if AP_RCOUTPUT_ZYNQ_ENABLED
+
+#ifndef RCOUT_ZYNQ_TICK_PER_US
+#define RCOUT_ZYNQ_TICK_PER_US 100
+#endif  // RCOUT_ZYNQ_TICK_PER_US
+
 namespace Linux {
 
 #define MAX_ZYNQ_PWMS            8	/* number of pwm channels */
@@ -20,13 +30,8 @@ public:
     void     push(void) override;
 
 private:
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OCPOC_ZYNQ
-    static const int TICK_PER_US=50;
-    static const int TICK_PER_S=50000000;
-#else
-    static const int TICK_PER_US=100;
-    static const int TICK_PER_S=100000000;
-#endif
+    static const int TICK_PER_US = RCOUT_ZYNQ_TICK_PER_US;
+    static const int TICK_PER_S = RCOUT_ZYNQ_TICK_PER_US * 1e6;
 
     // Period|Hi 32 bits each
     struct s_period_hi {
@@ -44,3 +49,5 @@ private:
 };
 
 }
+
+#endif  // AP_RCOUTPUT_ZYNQ_ENABLED

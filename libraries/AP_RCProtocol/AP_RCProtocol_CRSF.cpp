@@ -369,10 +369,18 @@ void AP_RCProtocol_CRSF::update(void)
 
     // never received RC frames, but have received CRSF frames so make sure we give the telemetry opportunity to run
     uint32_t now = AP_HAL::micros();
-    if (_last_frame_time_us > 0 && (!get_rc_input_count() || !is_tx_active())
+    if ((_last_frame_time_us > 0
+#if HAL_CRSF_TELEM_ENABLED
+         || bind_in_progress()
+#endif
+        ) && (!get_rc_input_count() || !is_tx_active())
         && now - _last_frame_time_us > CRSF_INTER_FRAME_TIME_US_250HZ) {
-        process_telemetry(false);
-        _last_frame_time_us = now;
+        // don't send telemetry unless the UART we are dealing with is configured to send it
+        AP_HAL::UARTDriver *uart = get_available_UART();
+        if (_uart || (uart && (uart->get_baud_rate() == CRSF_BAUDRATE || uart->get_baud_rate() == ELRS_BAUDRATE))) {
+            process_telemetry(false);
+            _last_frame_time_us = now;
+        }
     }
 
 #if AP_RC_CHANNEL_ENABLED
@@ -757,6 +765,17 @@ void AP_RCProtocol_CRSF::start_bind(void)
     if (telem != nullptr) {
         telem->start_bind();
     }
+}
+
+bool AP_RCProtocol_CRSF::bind_in_progress(void)
+{
+#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+    AP_CRSF_Telem* telem = AP::crsf_telem();
+    if (telem != nullptr) {
+        return telem->bind_in_progress();
+    }
+#endif
+    return false;
 }
 #endif
 

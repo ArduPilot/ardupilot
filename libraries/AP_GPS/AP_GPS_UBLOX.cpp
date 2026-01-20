@@ -1672,6 +1672,19 @@ AP_GPS_UBLOX::_parse_gps(void)
 
         // position
         _check_new_itow(_buffer.pvt.itow);
+        // Only adjust if:
+        // we already have a valid week,
+        // PVT iTOW wrapped,
+        // and our time_week_ms still looks like end-of-week
+        // (meaning we haven't already accepted the rollover via TIMEGPS/SOL)
+        if (state.time_week != 0 &&
+            _last_pvt_itow != 0 &&
+            _buffer.pvt.itow < _last_pvt_itow &&
+            state.time_week_ms > END_OF_WEEK_THRESHOLD_MS &&
+            _buffer.pvt.itow < START_OF_WEEK_THRESHOLD_MS) {
+            state.time_week++;
+        }
+
         _last_pvt_itow = _buffer.pvt.itow;
         _last_pos_time        = _buffer.pvt.itow;
         state.location.lng    = _buffer.pvt.lon;
@@ -1762,7 +1775,9 @@ AP_GPS_UBLOX::_parse_gps(void)
         Debug("MSG_TIMEGPS");
         _check_new_itow(_buffer.timegps.itow);
         if (_buffer.timegps.valid & UBX_TIMEGPS_VALID_WEEK_MASK) {
+            state.time_week_ms = _buffer.timegps.itow;
             state.time_week = _buffer.timegps.week;
+            state.last_gps_time_ms = AP_HAL::millis();
         }
         break;
     case MSG_VELNED:
@@ -2383,6 +2398,10 @@ uint8_t AP_GPS_UBLOX::populate_F9_gnss(void)
                 if (_hardware_variant == UBLOX_F9_ZED) {
                     config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_GLO_L2_ENA, ena };
                 }
+                break;
+            case GNSS_NAVIC:
+                config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_NAVIC_ENA, ena };
+                config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_NAVIC_L5_ENA, ena };
                 break;
             // not supported or leave alone
             case GNSS_IMES:

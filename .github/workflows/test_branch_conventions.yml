@@ -7,30 +7,42 @@ on:
 jobs:
   check-merge-commits:
     runs-on: ubuntu-latest
+    container: ardupilot/ardupilot-dev-chibios:v0.1.3
 
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.ref }}
+          submodules: 'recursive'
           fetch-depth: 0
 
       - name: Fetch base branch
         run: |
           git remote -v
           git remote add upstream ${{ github.event.pull_request.base.repo.clone_url }}
-          git fetch upstream ${{ github.base_ref }}
-          git show upstream/${{ github.base_ref }}
+          git fetch upstream ${{ github.event.pull_request.base.ref }}
+          git show upstream/${{ github.event.pull_request.base.ref }}
+
+      - name: Update submodules
+        run: |
+          git submodule update --init --recursive
+
+      - name: Test new boards compile
+        shell: bash
+        run: |
+          Tools/scripts/test_new_boards.py --master "upstream/${{ github.event.pull_request.base.ref }}"
 
       - name: Check for merge commits in PR branch
+        shell: bash
         run: |
           # Find merge-base between base branch and (rebased) PR branch
-          echo "Merge target is origin/${{ github.base_ref }}"
+          echo "Merge target is origin/${{ github.event.pull_request.base.ref }}"
           echo "github.event.pull_request.base.ref=${{ github.event.pull_request.base.ref }} "
 
           # Look for merge commits in PR branch only
-          MERGE_COMMITS=$(git log upstream/${{ github.base_ref }}..HEAD --merges --oneline)
+          MERGE_COMMITS=$(git log upstream/${{ github.event.pull_request.base.ref }}..HEAD --merges --oneline)
           echo "Merge commits:"
           echo "$MERGE_COMMITS"
 
@@ -43,7 +55,7 @@ jobs:
           fi
 
           # Look for fixup! commits in PR branch only
-          COMMITS=$(git log upstream/${{ github.base_ref }}..HEAD --oneline)
+          COMMITS=$(git log upstream/${{ github.event.pull_request.base.ref }}..HEAD --oneline)
           echo "Commits:"
           echo "$COMMITS"
 

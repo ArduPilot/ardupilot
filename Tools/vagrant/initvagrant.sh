@@ -41,6 +41,7 @@ DASHDASHLOGIN=""
 if false ||
      [ ${DISTRIBUTION_CODENAME} == 'oracular' ] ||
      [ ${DISTRIBUTION_CODENAME} == 'plucky' ] ||
+     [ ${DISTRIBUTION_CODENAME} == 'questing' ] ||
      false; then
     # we run out of space in tmpfs /tmp while compiling wxpython, so
     # do it elsewhere:

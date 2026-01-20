@@ -82,6 +82,14 @@ public:
         Critical
     };
 
+    // power states
+    enum class ChargingState : uint8_t {
+        UNKNOWN = 0,
+        IDLE,
+        CHARGING,
+        DISCHARGING
+    };
+
     // Battery monitor driver types
     using Type = AP_BattMonitor_Params::Type;
 
@@ -128,6 +136,7 @@ public:
         bool        has_time_remaining;        // time_remaining is only valid if this is true
         uint8_t     state_of_health_pct;       // state of health (SOH) in percent
         bool        has_state_of_health_pct;   // state_of_health_pct is only valid if this is true
+        ChargingState charging_state;          // Charging state (unknown, idle, charging, discharging)
         uint8_t     instance;                  // instance number of this backend
         Type        type;                      // allocated instance type
         const struct AP_Param::GroupInfo *var_info;
@@ -208,6 +217,14 @@ public:
     bool overpower_detected() const;
     bool overpower_detected(uint8_t instance) const;
 
+#if AP_BATTERY_WATT_MAX_ENABLED
+    /// get_watt_max - returns maximum power in watts
+    float get_watt_max() const { return get_watt_max(AP_BATT_PRIMARY_INSTANCE); }
+    float get_watt_max(uint8_t instance) const {
+        return _params[instance]._watt_max;
+    }
+#endif // AP_BATTERY_WATT_MAX_ENABLED
+
     // cell voltages in millivolts
     bool has_cell_voltages() const { return has_cell_voltages(AP_BATT_PRIMARY_INSTANCE); }
     bool has_cell_voltages(const uint8_t instance) const;
@@ -225,9 +242,9 @@ public:
     bool set_temperature_by_serial_number(const float temperature, const int32_t serial_number);
 #endif
 
-    // MPPT Control (Solar panels)
-    void MPPT_set_powered_state_to_all(const bool power_on);
-    void MPPT_set_powered_state(const uint8_t instance, const bool power_on);
+    // Set powered state (Solar Panels, BMS)
+    void set_powered_state_to_all(const bool power_on);
+    void set_powered_state(const uint8_t instance, const bool power_on);
 
     bool option_is_set(uint8_t instance, AP_BattMonitor_Params::Options option) const;
 
@@ -256,6 +273,10 @@ public:
 
     // return true if state of health (as a percentage) can be provided and fills in soh_pct argument
     bool get_state_of_health_pct(uint8_t instance, uint8_t &soh_pct) const;
+
+    // get charging state (idle, charging, discharging)
+    ChargingState get_charging_state() const { return get_charging_state(AP_BATT_PRIMARY_INSTANCE); }
+    ChargingState get_charging_state(uint8_t instance) const { return state[instance].charging_state; }
 
     static const struct AP_Param::GroupInfo var_info[];
 

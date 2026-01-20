@@ -18,7 +18,7 @@ void Copter::SurfaceTracking::update_surface_offset()
         AP_SurfaceDistance &rf_state = (surface == Surface::GROUND) ? copter.rangefinder_state : copter.rangefinder_up_state;
 
         // update position controller target offset to the surface's alt above the EKF origin
-        copter.pos_control->set_pos_terrain_target_U_m(rf_state.terrain_offset_m);
+        copter.pos_control->set_pos_terrain_target_D_m(-rf_state.terrain_u_m);
         last_update_ms = now_ms;
         valid_for_logging = true;
 
@@ -28,7 +28,7 @@ void Copter::SurfaceTracking::update_surface_offset()
         if (timeout ||
             reset_target ||
             (last_glitch_cleared_ms != rf_state.glitch_cleared_ms)) {
-            copter.pos_control->init_pos_terrain_U_m(rf_state.terrain_offset_m);
+            copter.pos_control->init_pos_terrain_D_m(-rf_state.terrain_u_m);
             reset_target = false;
             last_glitch_cleared_ms = rf_state.glitch_cleared_ms;
         }
@@ -37,7 +37,7 @@ void Copter::SurfaceTracking::update_surface_offset()
         // reset position controller offsets if surface tracking is inactive
         // flag target should be reset when/if it next becomes active
         if (timeout && !reset_target) {
-            copter.pos_control->init_pos_terrain_U_m(0);
+            copter.pos_control->init_pos_terrain_D_m(0);
             valid_for_logging = false;
             reset_target = true;
         }

@@ -16,7 +16,6 @@
 
 #if AP_BARO_BMP388_ENABLED
 
-#include <utility>
 #include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL &hal;
@@ -53,20 +52,15 @@ extern const AP_HAL::HAL &hal;
 #define BMP388_REG_CAL_P     0x36
 #define BMP388_REG_CAL_T     0x31
 
-AP_Baro_BMP388::AP_Baro_BMP388(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> _dev)
+AP_Baro_BMP388::AP_Baro_BMP388(AP_Baro &baro, AP_HAL::Device &_dev)
     : AP_Baro_Backend(baro)
-    , dev(std::move(_dev))
+    , dev(&_dev)
 {
 }
 
-AP_Baro_Backend *AP_Baro_BMP388::probe(AP_Baro &baro,
-                                       AP_HAL::OwnPtr<AP_HAL::Device> _dev)
+AP_Baro_Backend *AP_Baro_BMP388::probe(AP_Baro &baro, AP_HAL::Device &_dev)
 {
-    if (!_dev) {
-        return nullptr;
-    }
-
-    AP_Baro_BMP388 *sensor = NEW_NOTHROW AP_Baro_BMP388(baro, std::move(_dev));
+    AP_Baro_BMP388 *sensor = NEW_NOTHROW AP_Baro_BMP388(baro, _dev);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;

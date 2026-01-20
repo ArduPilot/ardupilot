@@ -72,6 +72,7 @@ class CompassLearn;
 class Compass
 {
 friend class AP_Compass_Backend;
+friend class AP_Compass_DroneCAN;
 public:
     Compass();
 
@@ -376,10 +377,9 @@ private:
     /// @param  dev_id                   Dev ID of compass to register against
     ///
     /// @return instance number saved against the dev id or first available empty instance number
-    bool register_compass(int32_t dev_id, uint8_t& instance);
+    bool register_compass(int32_t dev_id, uint8_t& instance) WARN_IF_UNUSED;
 
     // load backend drivers
-    bool _add_backend(AP_Compass_Backend *backend);
     __INITFUNC__ void _probe_external_i2c_compasses(void);
     __INITFUNC__ void _detect_backends(void);
     __INITFUNC__ void probe_i2c_spi_compasses(void);
@@ -404,8 +404,8 @@ private:
 #endif
 #endif  // COMPASS_CAL_ENABLED
 
-    // see if we already have probed a i2c driver by bus number and address
-    bool _have_i2c_driver(uint8_t bus_num, uint8_t address) const;
+    // see if we already have probed a i2c sensor by bus number and address
+    bool _i2c_sensor_is_registered(uint8_t bus_num, uint8_t address) const;
 
 #if AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
     /*
@@ -494,10 +494,30 @@ private:
 #if AP_COMPASS_IIS2MDC_ENABLED
         DRIVER_IIS2MDC  =22,
 #endif
+#if AP_COMPASS_LIS2MDL_ENABLED
+        DRIVER_LIS2MDL  =23,
+#endif
+
 };
 
     bool _driver_enabled(enum DriverType driver_type);
-    
+    void add_backend(DriverType driver_type, AP_Compass_Backend *backend);
+
+    // helper probe functions
+    void probe_ak09916_via_icm20948(uint8_t i2c_bus, uint8_t ak09916_addr, uint8_t icm20948_addr, bool external, Rotation rotation);
+    void probe_ak09916_via_icm20948(uint8_t ins_instance, Rotation rotation);
+    void probe_ak8963_via_mpu9250(uint8_t imu_instance, Rotation rotation);
+
+    using probe_i2c_dev_probefn_t = AP_Compass_Backend* (*)(AP_HAL::OwnPtr<AP_HAL::Device>, bool, Rotation);
+    void probe_i2c_dev(DriverType driver_type, probe_i2c_dev_probefn_t probefn, uint8_t i2c_bus, uint8_t i2c_addr, bool external, Rotation rotation);
+
+    using probe_spi_dev_probefn_t = AP_Compass_Backend* (*)(AP_HAL::OwnPtr<AP_HAL::Device>, bool, Rotation);
+    void probe_spi_dev(DriverType driver_type, probe_spi_dev_probefn_t probefn, const char *name, bool external, Rotation rotation);
+    // short-lived method which expects a probe function that doesn't
+    // offer the ability to specify an external rotation
+    using probe_spi_dev_noexternal_probefn_t = AP_Compass_Backend* (*)(AP_HAL::OwnPtr<AP_HAL::Device>, Rotation);
+    void probe_spi_dev(DriverType driver_type, probe_spi_dev_noexternal_probefn_t probefn, const char *name, Rotation rotation);
+
     // backend objects
     AP_Compass_Backend *_backends[COMPASS_MAX_BACKEND];
     uint8_t     _backend_count;

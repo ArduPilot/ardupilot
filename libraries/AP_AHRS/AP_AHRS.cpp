@@ -57,6 +57,15 @@
 #define HAL_AHRS_EKF_TYPE_DEFAULT 3
 #endif
 
+#ifndef HAL_AHRS_OPTIONS_DEFAULT
+  #if APM_BUILD_TYPE(APM_BUILD_Rover)
+    // DISABLE_DCM_FALLBACK_FW | DISABLE_DCM_FALLBACK_VTOL
+    #define HAL_AHRS_OPTIONS_DEFAULT 3
+  #else
+    #define HAL_AHRS_OPTIONS_DEFAULT 0
+  #endif
+#endif
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // index 0 and 1 are for old parameters that are no longer not used
@@ -198,7 +207,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Description: This controls optional AHRS behaviour. Setting DisableDCMFallbackFW will change the AHRS behaviour for fixed wing aircraft in fly-forward flight to not fall back to DCM when the EKF stops navigating. Setting DisableDCMFallbackVTOL will change the AHRS behaviour for fixed wing aircraft in non fly-forward (VTOL) flight to not fall back to DCM when the EKF stops navigating. Setting DontDisableAirspeedUsingEKF disables the EKF based innovation check for airspeed consistency
     // @Bitmask: 0:DisableDCMFallbackFW, 1:DisableDCMFallbackVTOL, 2:DontDisableAirspeedUsingEKF
     // @User: Advanced
-    AP_GROUPINFO("OPTIONS",  18, AP_AHRS, _options, 0),
+    AP_GROUPINFO("OPTIONS",  18, AP_AHRS, _options, HAL_AHRS_OPTIONS_DEFAULT),
     
     AP_GROUPEND
 };
@@ -373,9 +382,9 @@ void AP_AHRS::update_state(void)
     state.primary_core = _get_primary_core_index();
     state.wind_estimate_ok = _wind_estimate(state.wind_estimate);
     state.EAS2TAS = AP_AHRS_Backend::get_EAS2TAS();
-    state.airspeed_ok = _airspeed_EAS(state.airspeed, state.airspeed_estimate_type);
-    state.airspeed_true_ok = _airspeed_TAS(state.airspeed_true);
-    state.airspeed_vec_ok = _airspeed_TAS(state.airspeed_vec);
+    state.airspeed_EAS_ok = _airspeed_EAS(state.airspeed_EAS, state.airspeed_estimate_type);
+    state.airspeed_TAS_ok = _airspeed_TAS(state.airspeed_TAS);
+    state.airspeed_TAS_vec_ok = _airspeed_TAS(state.airspeed_TAS_vec);
     state.quat_ok = _get_quaternion(state.quat);
     state.secondary_attitude_ok = _get_secondary_attitude(state.secondary_attitude);
     state.secondary_quat_ok = _get_secondary_quaternion(state.secondary_quat);
@@ -1088,7 +1097,7 @@ bool AP_AHRS::_airspeed_TAS(float &airspeed_ret) const
         break;
     }
 
-    if (!airspeed_estimate(airspeed_ret)) {
+    if (!airspeed_EAS(airspeed_ret)) {
         return false;
     }
     airspeed_ret *= get_EAS2TAS();
@@ -1127,9 +1136,9 @@ bool AP_AHRS::_airspeed_TAS(Vector3f &vec) const
     return false;
 }
 
-// return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed
+// return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed for a given sensor instance
 // returns false if the data is unavailable
-bool AP_AHRS::airspeed_health_data(float &innovation, float &innovationVariance, uint32_t &age_ms) const
+bool AP_AHRS::airspeed_health_data(uint8_t instance, float &innovation, float &innovationVariance, uint32_t &age_ms) const
 {
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
@@ -1143,7 +1152,7 @@ bool AP_AHRS::airspeed_health_data(float &innovation, float &innovationVariance,
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        return EKF3.getAirSpdHealthData(innovation, innovationVariance, age_ms);
+        return EKF3.getAirSpdHealthData(instance, innovation, innovationVariance, age_ms);
 #endif
 
 #if AP_AHRS_SIM_ENABLED
@@ -1156,18 +1165,6 @@ bool AP_AHRS::airspeed_health_data(float &innovation, float &innovationVariance,
         break;
 #endif
     }
-    return false;
-}
-
-// return a synthetic EAS estimate (one derived from sensors
-// other than an actual airspeed sensor), if available. return
-// true if we have a synthetic airspeed.  ret will not be modified
-// on failure.
-bool AP_AHRS::synthetic_airspeed(float &ret) const
-{
-#if AP_AHRS_DCM_ENABLED
-    return dcm.synthetic_airspeed_EAS(ret);
-#endif
     return false;
 }
 
@@ -1205,17 +1202,23 @@ bool AP_AHRS::use_compass(void)
     return false;
 }
 
-// return the quaternion defining the rotation from NED to XYZ (body) axes
 bool AP_AHRS::_get_quaternion(Quaternion &quat) const
+{
+    return _get_quaternion_for_ekf_type(quat, active_EKF_type());
+}
+
+// return the quaternion defining the rotation from NED to XYZ (body) axes
+bool AP_AHRS::_get_quaternion_for_ekf_type(Quaternion &quat, EKFType type) const
 {
     // backends always return in autopilot XYZ frame; rotate result
     // according to trim
-    switch (active_EKF_type()) {
+    switch (type) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        if (!dcm.get_quaternion(quat)) {
+        if (!dcm_estimates.attitude_valid) {
             return false;
         }
+        quat = dcm_estimates.quaternion;
         break;
 #endif
 #if HAL_NAVEKF2_AVAILABLE
@@ -1236,15 +1239,20 @@ bool AP_AHRS::_get_quaternion(Quaternion &quat) const
 #endif
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        if (!sim.get_quaternion(quat)) {
+        if (!sim_estimates.attitude_valid) {
             return false;
         }
+        quat = sim_estimates.quaternion;
         break;
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
         // we assume the external AHRS isn't trimmed with the autopilot!
-        return external.get_quaternion(quat);
+        if (!external_estimates.attitude_valid) {
+            return false;
+        }
+        quat = external_estimates.quaternion;
+        return true;
 #endif
     }
 
@@ -1269,7 +1277,7 @@ bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
         eulers[0] = dcm_estimates.roll_rad;
         eulers[1] = dcm_estimates.pitch_rad;
         eulers[2] = dcm_estimates.yaw_rad;
-        return true;
+        return dcm_estimates.attitude_valid;
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1289,7 +1297,10 @@ bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
         // SITL is secondary (should never happen)
-        return false;
+        eulers[0] = sim_estimates.roll_rad;
+        eulers[1] = sim_estimates.pitch_rad;
+        eulers[2] = sim_estimates.yaw_rad;
+        return sim_estimates.attitude_valid;
 #endif
 
 #if AP_AHRS_EXTERNAL_ENABLED
@@ -1298,7 +1309,7 @@ bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
         eulers[0] = external_estimates.roll_rad;
         eulers[1] = external_estimates.pitch_rad;
         eulers[2] = external_estimates.yaw_rad;
-        return true;
+        return external_estimates.attitude_valid;
     }
 #endif
     }
@@ -1315,54 +1326,7 @@ bool AP_AHRS::_get_secondary_quaternion(Quaternion &quat) const
     if (!_get_secondary_EKF_type(secondary_ekf_type)) {
         return false;
     }
-
-    switch (secondary_ekf_type) {
-
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        // DCM is secondary
-        if (!dcm.get_quaternion(quat)) {
-            return false;
-        }
-        break;
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        // EKF2 is secondary
-        if (!_ekf2_started) {
-            return false;
-        }
-        EKF2.getQuaternion(quat);
-        break;
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        // EKF3 is secondary
-        if (!_ekf3_started) {
-            return false;
-        }
-        EKF3.getQuaternion(quat);
-        break;
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        // SITL is secondary (should never happen)
-        return false;
-#endif
-
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        // External is secondary
-        return external.get_quaternion(quat);
-#endif
-    }
-
-    quat.rotate(-_trim.get());
-
-    return true;
+    return _get_quaternion_for_ekf_type(quat, secondary_ekf_type);
 }
 
 // return secondary position solution if available
@@ -1964,7 +1928,7 @@ void AP_AHRS::get_relative_position_D_home(float &posD) const
   canonicalise _ekf_type, forcing it to be 0, 2 or 3
   type 1 has been deprecated
  */
-AP_AHRS::EKFType AP_AHRS::ekf_type(void) const
+AP_AHRS::EKFType AP_AHRS::configured_ekf_type(void) const
 {
     EKFType type = (EKFType)_ekf_type.get();
     switch (type) {
@@ -2014,7 +1978,7 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
 {
     EKFType ret = fallback_active_EKF_type();
 
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         return EKFType::DCM;
@@ -2266,7 +2230,7 @@ bool AP_AHRS::healthy(void) const
     // If EKF is started we switch away if it reports unhealthy. This could be due to bad
     // sensor data. If EKF reversion is inhibited, we only switch across if the EKF encounters
     // an internal processing error, but not for bad sensor data.
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
@@ -2335,7 +2299,7 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
 #if AP_AHRS_EXTERNAL_ENABLED
     // Always check external AHRS if enabled
     // it is a source for IMU data even if not being used as direct AHRS replacement
-    if (AP::externalAHRS().enabled() || (ekf_type() == EKFType::EXTERNAL)) {
+    if (AP::externalAHRS().enabled() || (configured_ekf_type() == EKFType::EXTERNAL)) {
         if (!AP::externalAHRS().pre_arm_check(failure_msg, failure_msg_len)) {
             return false;
         }
@@ -2347,12 +2311,13 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
     }
 
     // ensure we're using the configured backend, but bypass in compass-less cases:
-    if (ekf_type() != active_EKF_type() && AP::compass().use_for_yaw()) {
+    if (_ekf_type != int8_t(configured_ekf_type()) ||
+        (configured_ekf_type() != active_EKF_type() && AP::compass().use_for_yaw())) {
         hal.util->snprintf(failure_msg, failure_msg_len, "not using configured AHRS type");
         return false;
     }
 
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
         return ret;
@@ -2395,7 +2360,7 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
 // true if the AHRS has completed initialisation
 bool AP_AHRS::initialised(void) const
 {
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         return true;
@@ -2428,7 +2393,7 @@ bool AP_AHRS::initialised(void) const
 // get_filter_status : returns filter status as a series of flags
 bool AP_AHRS::get_filter_status(nav_filter_status &status) const
 {
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         return dcm.get_filter_status(status);
@@ -2592,7 +2557,7 @@ float AP_AHRS::getControlScaleZ(void) const
 // true if offsets are valid
 bool AP_AHRS::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 {
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         return false;
@@ -2680,7 +2645,7 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
 
 #if HAL_NAVEKF2_AVAILABLE
     // check primary vs ekf2
-    if (ekf_type() == EKFType::TWO || active_EKF_type() == EKFType::TWO) {
+    if (configured_ekf_type() == EKFType::TWO || active_EKF_type() == EKFType::TWO) {
         for (uint8_t i = 0; i < EKF2.activeCores(); i++) {
             Quaternion ekf2_quat;
             EKF2.getQuaternionBodyToNED(i, ekf2_quat);
@@ -2707,7 +2672,7 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
 
 #if HAL_NAVEKF3_AVAILABLE
     // check primary vs ekf3
-    if (ekf_type() == EKFType::THREE || active_EKF_type() == EKFType::THREE) {
+    if (configured_ekf_type() == EKFType::THREE || active_EKF_type() == EKFType::THREE) {
         for (uint8_t i = 0; i < EKF3.activeCores(); i++) {
             Quaternion ekf3_quat;
             EKF3.getQuaternionBodyToNED(i, ekf3_quat);
@@ -2749,7 +2714,7 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
         // and if not using an external yaw source (DCM does not support external yaw sources)
         bool using_noncompass_for_yaw = false;
 #if HAL_NAVEKF3_AVAILABLE
-        using_noncompass_for_yaw = (ekf_type() == EKFType::THREE) && EKF3.using_noncompass_for_yaw();
+        using_noncompass_for_yaw = (configured_ekf_type() == EKFType::THREE) && EKF3.using_noncompass_for_yaw();
 #endif
         if (!always_use_EKF() && !using_noncompass_for_yaw) {
             Vector3f angle_diff;
@@ -2907,8 +2872,8 @@ bool AP_AHRS::resetHeightDatum(void)
 {
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
-    
-    switch (ekf_type()) {
+
+    switch (configured_ekf_type()) {
 
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
@@ -2952,7 +2917,7 @@ bool AP_AHRS::resetHeightDatum(void)
 // send a EKF_STATUS_REPORT for configured EKF
 void AP_AHRS::send_ekf_status_report(GCS_MAVLINK &link) const
 {
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         // send zero status report
@@ -3026,7 +2991,7 @@ bool AP_AHRS::_get_origin(EKFType type, Location &ret) const
  */
 bool AP_AHRS::_get_origin(Location &ret) const
 {
-    if (_get_origin(ekf_type(), ret)) {
+    if (_get_origin(configured_ekf_type(), ret)) {
         return true;
     }
     if (hal.util->get_soft_armed() && _get_origin(active_EKF_type(), ret)) {
@@ -3170,7 +3135,7 @@ void AP_AHRS::set_terrain_hgt_stable(bool stable)
 // boolean false is returned if innovations are not available
 bool AP_AHRS::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
 {
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         // We are not using an EKF so no data
@@ -3206,7 +3171,7 @@ bool AP_AHRS::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &
 // returns true when the state estimates are significantly degraded by vibration
 bool AP_AHRS::is_vibration_affected() const
 {
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         return EKF3.isVibrationAffected();
@@ -3234,7 +3199,7 @@ bool AP_AHRS::is_vibration_affected() const
 // boolean false is returned if variances are not available
 bool AP_AHRS::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
 {
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         // We are not using an EKF so no data
@@ -3275,7 +3240,7 @@ bool AP_AHRS::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3
 // returns true on success and results are placed in innovations and variances arguments
 bool AP_AHRS::get_vel_innovations_and_variances_for_source(uint8_t source, Vector3f &innovations, Vector3f &variances) const
 {
-    switch (ekf_type()) {
+    switch (configured_ekf_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         // We are not using an EKF so no data
@@ -3633,35 +3598,35 @@ bool AP_AHRS::wind_estimate(Vector3f &wind) const
 
 // return an airspeed estimate if available. return true
 // if we have an estimate
-bool AP_AHRS::airspeed_estimate(float &airspeed_ret) const
+bool AP_AHRS::airspeed_EAS(float &airspeed_ret) const
 {
-    airspeed_ret = state.airspeed;
-    return state.airspeed_ok;
+    airspeed_ret = state.airspeed_EAS;
+    return state.airspeed_EAS_ok;
 }
 
 // return an airspeed estimate if available. return true
 // if we have an estimate
-bool AP_AHRS::airspeed_estimate(float &airspeed_ret, AP_AHRS::AirspeedEstimateType &type) const
+bool AP_AHRS::airspeed_EAS(float &airspeed_ret, AP_AHRS::AirspeedEstimateType &type) const
 {
-    airspeed_ret = state.airspeed;
+    airspeed_ret = state.airspeed_EAS;
     type = state.airspeed_estimate_type;
-    return state.airspeed_ok;
+    return state.airspeed_EAS_ok;
 }
 
 // return a true airspeed estimate (navigation airspeed) if
 // available. return true if we have an estimate
-bool AP_AHRS::airspeed_estimate_true(float &airspeed_ret) const
+bool AP_AHRS::airspeed_TAS(float &airspeed_ret) const
 {
-    airspeed_ret = state.airspeed_true;
-    return state.airspeed_true_ok;
+    airspeed_ret = state.airspeed_TAS;
+    return state.airspeed_TAS_ok;
 }
 
 // return estimate of true airspeed vector in body frame in m/s
 // returns false if estimate is unavailable
-bool AP_AHRS::airspeed_vector_true(Vector3f &vec) const
+bool AP_AHRS::airspeed_vector_TAS(Vector3f &vec) const
 {
-    vec = state.airspeed_vec;
-    return state.airspeed_vec_ok;
+    vec = state.airspeed_TAS_vec;
+    return state.airspeed_TAS_vec_ok;
 }
 
 // return the quaternion defining the rotation from NED to XYZ (body) axes

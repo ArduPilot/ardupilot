@@ -17,8 +17,12 @@ import pickle
 import struct
 import base64
 import subprocess
+import traceback
 
 import hal_common
+
+# sys.path already set up at the top of boards.py
+import chibios_hwdef
 
 _dynamic_env_data = {}
 def _load_dynamic_env_data(bld):
@@ -54,7 +58,6 @@ def ch_dynamic_env(self):
 
     if not _dynamic_env_data:
         _load_dynamic_env_data(self.bld)
-    self.use += ' ch'
     self.env.append_value('INCLUDES', _dynamic_env_data['include_dirs'])
 
 
@@ -169,7 +172,10 @@ class generate_bin(Task.Task):
                 return ret
             return ret
         else:
-            cmd = [self.env.get_flat('OBJCOPY'), '-O', 'binary', self.inputs[0].relpath(),  self.outputs[0].relpath()]
+            # use --gap-fill 0xFF so gaps match erased flash, avoiding CRC
+            # mismatch when loading via GDB vs bootloader/DroneCAN
+            cmd = [self.env.get_flat('OBJCOPY'), '-O', 'binary', '--gap-fill', '0xFF',
+                   self.inputs[0].relpath(), self.outputs[0].relpath()]
             self.exec_command(cmd)
 
     '''list sections and split into two binaries based on section's location in internal, external or in ram'''
@@ -215,8 +221,10 @@ class generate_bin(Task.Task):
         else:
             Logs.error("Couldn't find .text section")
         # create intf binary
+        # use --gap-fill 0xFF so gaps match erased flash, avoiding CRC
+        # mismatch when loading via GDB vs bootloader/DroneCAN
         if len(intf_sections):
-            cmd = "'{}' {} -O binary {} {}".format(self.env.get_flat('OBJCOPY'),
+            cmd = "'{}' {} --gap-fill 0xFF -O binary {} {}".format(self.env.get_flat('OBJCOPY'),
                                                 ' '.join(intf_sections), self.inputs[0].relpath(), self.outputs[0].relpath())
         else:
             cmd = "cp /dev/null {}".format(self.outputs[0].relpath())
@@ -224,7 +232,7 @@ class generate_bin(Task.Task):
         if (ret < 0):
             return ret
         # create extf binary
-        cmd = "'{}' {} -O binary {} {}".format(self.env.get_flat('OBJCOPY'),
+        cmd = "'{}' {} --gap-fill 0xFF -O binary {} {}".format(self.env.get_flat('OBJCOPY'),
                                                 ' '.join(extf_sections), self.inputs[0].relpath(), self.outputs[1].relpath())
         return self.exec_command(cmd)
 
@@ -370,6 +378,9 @@ class generate_apj(Task.Task):
             # we omit build_time when we don't have build_dates so that apj
             # file is identical for same git hash and compiler
             d["build_time"] = int(time.time())
+        if self.env.AP_SIGNED_FIRMWARE and self.env.PRIVATE_KEY:
+            # The firmware file was signed during the build process, so set the flag
+            d['signed_firmware'] = True
         apj_file = self.outputs[0].abspath()
         f = open(apj_file, "w")
         f.write(json.dumps(d, indent=4))
@@ -510,32 +521,6 @@ def setup_canperiph_build(cfg):
 
     cfg.get_board().with_can = True
 
-def load_env_vars_handle_kv_pair(env, kv_pair):
-    '''handle a key/value pair out of the pickled environment dictionary'''
-    (k, v) = kv_pair
-    if k == 'ROMFS_FILES':
-        env.ROMFS_FILES += v
-        return
-    hal_common.load_env_vars_handle_kv_pair(env, kv_pair)
-
-def load_env_vars(env):
-    '''optionally load extra environment variables from env.py in the build directory'''
-    hal_common.load_env_vars(env, kv_handler=load_env_vars_handle_kv_pair)
-
-    if env.DEBUG or env.DEBUG_SYMBOLS:
-        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_DEBUG_SYMBOLS=yes'
-    if env.ENABLE_ASSERTS:
-        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_ASSERTS=yes'
-    if env.ENABLE_MALLOC_GUARD:
-        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_MALLOC_GUARD=yes'
-    if env.ENABLE_STATS:
-        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_STATS=yes'
-    if env.ENABLE_DFU_BOOT and env.BOOTLOADER:
-        env.CHIBIOS_BUILD_FLAGS += ' USE_ASXOPT=-DCRT0_ENTRY_HOOK=TRUE'
-    if env.AP_BOARD_START_TIME:
-        env.CHIBIOS_BUILD_FLAGS += ' AP_BOARD_START_TIME=0x%x' % env.AP_BOARD_START_TIME
-
-
 def setup_optimization(env):
     '''setup optimization flags for build'''
     if env.DEBUG:
@@ -597,12 +582,25 @@ def configure(cfg):
         env.DEFAULT_PARAMETERS = cfg.options.default_parameters
 
     try:
-        ret = generate_hwdef_h(env)
+        hwdef_obj = generate_hwdef_h(env)
     except Exception:
+        traceback.print_exc()
         cfg.fatal("Failed to process hwdef.dat")
-    if ret != 0:
-        cfg.fatal("Failed to process hwdef.dat ret=%d" % ret)
-    load_env_vars(cfg.env)
+    hal_common.process_hwdef_results(cfg, hwdef_obj)
+
+    if env.DEBUG or env.DEBUG_SYMBOLS:
+        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_DEBUG_SYMBOLS=yes'
+    if env.ENABLE_ASSERTS:
+        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_ASSERTS=yes'
+    if env.ENABLE_MALLOC_GUARD:
+        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_MALLOC_GUARD=yes'
+    if env.ENABLE_STATS:
+        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_STATS=yes'
+    if env.ENABLE_DFU_BOOT and env.BOOTLOADER:
+        env.CHIBIOS_BUILD_FLAGS += ' USE_ASXOPT=-DCRT0_ENTRY_HOOK=TRUE'
+    if env.AP_BOARD_START_TIME:
+        env.CHIBIOS_BUILD_FLAGS += ' AP_BOARD_START_TIME=0x%x' % env.AP_BOARD_START_TIME
+
     if env.HAL_NUM_CAN_IFACES and not env.AP_PERIPH:
         setup_canmgr_build(cfg)
     if env.HAL_NUM_CAN_IFACES and env.AP_PERIPH and not env.BOOTLOADER:
@@ -613,77 +611,53 @@ def configure(cfg):
 
 def generate_hwdef_h(env):
     '''run chibios_hwdef.py'''
-    import subprocess
     if env.BOOTLOADER:
         if len(env.HWDEF) == 0:
             env.HWDEF = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef-bl.dat' % env.BOARD)
         else:
             # update to using hwdef-bl.dat
             env.HWDEF = env.HWDEF.replace('hwdef.dat', 'hwdef-bl.dat')
-        env.BOOTLOADER_OPTION="--bootloader"
+        bootloader_flag = True
     else:
         if len(env.HWDEF) == 0:
             env.HWDEF = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % env.BOARD)
-        env.BOOTLOADER_OPTION=""
+        bootloader_flag = False
 
-    if env.AP_SIGNED_FIRMWARE:
-        print(env.BOOTLOADER_OPTION)
-        env.BOOTLOADER_OPTION += " --signed-fw"
-        print(env.BOOTLOADER_OPTION)
     hwdef_script = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/scripts/chibios_hwdef.py')
     hwdef_out = env.BUILDROOT
     if not os.path.exists(hwdef_out):
         os.mkdir(hwdef_out)
-    python = sys.executable
-    cmd = "{0} '{1}' -D '{2}' --params '{3}' '{4}'".format(python, hwdef_script, hwdef_out, env.DEFAULT_PARAMETERS, env.HWDEF)
+
+    hwdef = [env.HWDEF]
     if env.HWDEF_EXTRA:
-        cmd += " '{0}'".format(env.HWDEF_EXTRA)
-    if env.BOOTLOADER_OPTION:
-        cmd += " " + env.BOOTLOADER_OPTION
-    return subprocess.call(cmd, shell=True)
+        hwdef.append(env.HWDEF_EXTRA)
+
+    hwdef_obj = chibios_hwdef.ChibiOSHWDef(
+        outdir=hwdef_out,
+        bootloader=bootloader_flag,
+        signed_fw=bool(env.AP_SIGNED_FIRMWARE),
+        hwdef=hwdef,
+        # stringify like old subprocess based invocation. note that no error is
+        # generated if this path is missing!
+        default_params_filepath=str(env.DEFAULT_PARAMETERS),
+        quiet=False,
+    )
+    hwdef_obj.run()
+
+    return hwdef_obj
 
 def pre_build(bld):
     '''pre-build hook to change dynamic sources'''
-    load_env_vars(bld.env)
     if bld.env.HAL_NUM_CAN_IFACES:
         bld.get_board().with_can = True
     if bld.env.WITH_LITTLEFS:
         bld.get_board().with_littlefs = True
-    hwdef_h = os.path.join(bld.env.BUILDROOT, 'hwdef.h')
-    if not os.path.exists(hwdef_h):
-        print("Generating hwdef.h")
-        try:
-            ret = generate_hwdef_h(bld.env)
-        except Exception:
-            bld.fatal("Failed to process hwdef.dat")
-        if ret != 0:
-            bld.fatal("Failed to process hwdef.dat ret=%d" % ret)
     setup_optimization(bld.env)
 
 def build(bld):
 
     # make ccache effective on ChibiOS builds
     os.environ['CCACHE_IGNOREOPTIONS'] = '--specs=nano.specs --specs=nosys.specs'
-
-    hwdef_rule="%s '%s/hwdef/scripts/chibios_hwdef.py' -D '%s' --params '%s' '%s'" % (
-            bld.env.get_flat('PYTHON'),
-            bld.env.AP_HAL_ROOT,
-            bld.env.BUILDROOT,
-            bld.env.default_parameters,
-            bld.env.HWDEF)
-    if bld.env.HWDEF_EXTRA:
-        hwdef_rule += " " + bld.env.HWDEF_EXTRA
-    if bld.env.BOOTLOADER_OPTION:
-        hwdef_rule += " " + bld.env.BOOTLOADER_OPTION
-    bld(
-        # build hwdef.h from hwdef.dat. This is needed after a waf clean
-        source=bld.path.ant_glob(bld.env.HWDEF),
-        rule=hwdef_rule,
-        group='dynamic_sources',
-        target=[bld.bldnode.find_or_declare('hwdef.h'),
-                bld.bldnode.find_or_declare('ldscript.ld'),
-                bld.bldnode.find_or_declare('hw.dat')]
-    )
     
     bld(
         # create the file modules/ChibiOS/include_dirs
@@ -752,7 +726,8 @@ def build(bld):
                  'fopen', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
                  'clearerr', 'fseek', 'ferror', 'fclose', 'tmpfile', 'getc', 'ungetc', 'feof',
                 'ftell', 'freopen', 'remove', 'vfprintf', 'vfprintf_r', 'fscanf',
-                '_gettimeofday', '_times', '_times_r', '_gettimeofday_r', 'time', 'clock']
+                '_gettimeofday', '_times', '_times_r', '_gettimeofday_r', 'time', 'clock',
+                'setjmp']
 
     # these functions use global state that is not thread safe
     blacklist += ['gmtime']

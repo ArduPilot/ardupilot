@@ -156,7 +156,7 @@ bool Mode::enter()
 #if HAL_QUADPLANE_ENABLED
         if (quadplane.enabled()) {
             float aspeed;
-            bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
+            bool have_airspeed = quadplane.ahrs.airspeed_EAS(aspeed);
             quadplane.assisted_flight = quadplane.assist.should_assist(aspeed, have_airspeed);
         }
 
@@ -381,3 +381,34 @@ bool Mode::use_battery_compensation() const
 
     return true;
 }
+
+#if AP_PLANE_SYSTEMID_ENABLED
+// Return true if fixed wing system ID should be allowed
+bool Mode::allow_fw_systemid() const {
+
+    if (!supports_fw_systemid()) {
+        // Mode does not support fw system ID
+        return false;
+    }
+
+    if (is_taking_off() || is_landing()) {
+        // Taking off or landing
+        return false;
+    }
+
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.available()) {
+        if (quadplane.in_assisted_flight()) {
+            // VTOL motors assisting
+            return false;
+        }
+        if (!quadplane.transition->complete()) {
+            // Still in transition
+            return false;
+        }
+    }
+#endif // HAL_QUADPLANE_ENABLED
+
+    return true;
+}
+#endif // AP_PLANE_SYSTEMID_ENABLED

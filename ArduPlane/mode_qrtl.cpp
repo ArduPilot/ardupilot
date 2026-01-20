@@ -107,7 +107,7 @@ void ModeQRTL::run()
             plane.quadplane.assign_tilt_to_fwd_thr();
 
             if (quadplane.transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {
-                pos_control->set_externally_limited_NE();
+                pos_control->NE_set_externally_limited();
             }
             // weathervane with no pilot input
             quadplane.disable_yaw_rate_time_constant();
@@ -120,9 +120,9 @@ void ModeQRTL::run()
             quadplane.run_z_controller();
 
             // Climb done when stopping point reaches target altitude
-            Vector3p stopping_point;
-            pos_control->get_stopping_point_U_m(stopping_point.z);
-            Location stopping_loc = Location(stopping_point.tofloat() * 100.0, Location::AltFrame::ABOVE_ORIGIN);
+            Vector3p stopping_point_ned_m;
+            pos_control->get_stopping_point_D_m(stopping_point_ned_m.z);
+            Location stopping_loc = Location::from_ekf_offset_NED_m(stopping_point_ned_m, Location::AltFrame::ABOVE_ORIGIN);
 
             ftype alt_diff;
             if (!stopping_loc.get_height_above(plane.next_WP_loc, alt_diff) || is_positive(alt_diff)) {

@@ -40,7 +40,7 @@ public:
 
     void update(float range) override;
 
-    uint32_t packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen) override;
+    uint32_t packet_for_alt(float alt_m, uint8_t *buffer, uint8_t buflen) override;
 
     // 20Hz; if Wasp driver doesn't get a reading each time its update
     // is called it goes NoData

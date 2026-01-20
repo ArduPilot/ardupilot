@@ -187,7 +187,7 @@ float AP_PitchController::get_measured_rate() const
 float AP_PitchController::get_airspeed() const
 {
     float aspeed;
-    if (!AP::ahrs().airspeed_estimate(aspeed)) {
+    if (!AP::ahrs().airspeed_EAS(aspeed)) {
         // If no airspeed available use average of min and max
         aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
     }

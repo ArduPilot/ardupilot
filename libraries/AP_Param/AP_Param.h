@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <cmath>
+#include <type_traits>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/RingBuffer.h>
@@ -121,13 +122,19 @@
 #define AP_PARAM_FRAME_HELI         (1<<5)
 #define AP_PARAM_FRAME_BLIMP        (1<<6)
 
-// a variant of offsetof() to work around C++ restrictions.
-// this can only be used when the offset of a variable in a object
-// is constant and known at compile time
-#define AP_VAROFFSET(type, element) (((ptrdiff_t)(&((const type *)1)->element))-1)
+// use __builtin_offsetof which is more or less defined by Clang and GCC to work
+// on non-standard-layout C++ classes, and works in constexpr. as that isn't
+// standard-compliant, it raises "-Winvalid-offsetof" which we globally disable.
+// https://github.com/llvm/llvm-project/blob/5fa5ffeb6cb5bc9aa414c02513e44b8405f0e7cc/libcxx/include/__type_traits/datasizeof.h#L51
+// the first comma operator operand makes the compiler see element as used by
+// conjuring a class instance and passing element to an unevaluating function.
+#define AP_VAROFFSET(clazz, element) ((void)sizeof(std::declval<clazz>().element), (ptrdiff_t)__builtin_offsetof(clazz, element))
 
-// find the type of a variable given the class and element
-#define AP_CLASSTYPE(clazz, element) ((uint8_t)(((const clazz *) 1)->element.vtype))
+// get the internal type of an AP_Param variable given an arbitrary class and an
+// element on it. convert the element, which must be of type AP_Param or a
+// subclass, into a non-reference type. then get AP_Param's vtype member, which
+// is static const but varies depending on the subclass. works in constexpr!
+#define AP_CLASSTYPE(clazz, element) ((uint8_t)(std::remove_reference<decltype(clazz::element)>::type::vtype))
 
 // declare a group var_info line
 #define AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, flags) { name, AP_VAROFFSET(clazz, element), {def_value : def}, flags, idx, AP_CLASSTYPE(clazz, element)}
@@ -384,14 +391,6 @@ public:
     static bool find_top_level_key_by_pointer(const void *ptr, uint16_t &key);
 
 
-    /// Find a object in the top level var_info table
-    ///
-    /// If the variable has no name, it cannot be found by this interface.
-    ///
-    /// @param  name            The full name of the variable to be found.
-    ///
-    static AP_Param * find_object(const char *name);
-
     /// Notify GCS of current parameter value
     ///
     void notify() const;
@@ -436,7 +435,7 @@ public:
     }
 
     // returns storage space used:
-    static uint16_t storage_used() { return sentinal_offset; }
+    static uint16_t storage_used() { return sentinel_offset; }
 
     // returns storage space :
     static uint16_t storage_size() { return _storage.size(); }
@@ -529,7 +528,7 @@ public:
       is used to find the old value of a parameter that has been
       removed from an object.
     */
-    static bool get_param_by_index(void *obj_ptr, uint8_t idx, ap_var_type old_ptype, void *pvalue);
+    static bool get_param_by_index(void *obj_ptr, uint32_t idx, ap_var_type old_ptype, void *pvalue);
     
     /// Erase all variables in EEPROM.
     ///
@@ -638,7 +637,7 @@ private:
     };
     static_assert(sizeof(struct EEPROM_header) == 4, "Bad EEPROM_header size!");
 
-    static uint16_t sentinal_offset;
+    static uint16_t sentinel_offset;
 
 /* This header is prepended to a variable stored in EEPROM.
  *  The meaning is as follows:
@@ -665,9 +664,9 @@ private:
     static const uint8_t        _group_level_shift = 6;
     static const uint8_t        _group_bits  = 18;
 
-    static const uint16_t       _sentinal_key   = 0x1FF;
-    static const uint8_t        _sentinal_type  = 0x1F;
-    static const uint8_t        _sentinal_group = 0xFF;
+    static const uint16_t       _sentinel_key   = 0x1FF;
+    static const uint8_t        _sentinel_type  = 0x1F;
+    static const uint8_t        _sentinel_group = 0xFF;
 
     static uint16_t             _frame_type_flags;
 
@@ -744,10 +743,10 @@ private:
                                     ptrdiff_t group_offset,
                                     const struct GroupInfo *group_info,
                                     enum ap_var_type *ptype);
-    static void                 write_sentinal(uint16_t ofs);
+    static void                 write_sentinel(uint16_t ofs);
     static uint16_t             get_key(const Param_header &phdr);
     static void                 set_key(Param_header &phdr, uint16_t key);
-    static bool                 is_sentinal(const Param_header &phrd);
+    static bool                 is_sentinel(const Param_header &phrd);
     static bool                 scan(
                                     const struct Param_header *phdr,
                                     uint16_t *pofs);

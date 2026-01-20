@@ -372,11 +372,6 @@ public:
         return ground_speed(primary_instance);
     }
 
-    // ground speed in cm/s
-    uint32_t ground_speed_cm(void) const {
-        return ground_speed() * 100;
-    }
-
     // ground course in degrees
     float ground_course(uint8_t instance) const {
         return state[instance].ground_course;

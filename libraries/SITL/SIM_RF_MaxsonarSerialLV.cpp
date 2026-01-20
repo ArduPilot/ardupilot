@@ -23,8 +23,8 @@
 
 using namespace SITL;
 
-uint32_t RF_MaxsonarSerialLV::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
+uint32_t RF_MaxsonarSerialLV::packet_for_alt(float alt_m, uint8_t *buffer, uint8_t buflen)
 {
-    const float inches = alt_cm / 2.54f;
+    const float inches = alt_m * 100 / 2.54f;
     return snprintf((char*)buffer, buflen, "%u\r", (unsigned)inches);
 }

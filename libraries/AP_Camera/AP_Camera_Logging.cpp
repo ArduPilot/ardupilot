@@ -62,9 +62,9 @@ void AP_Camera_Backend::Write_CameraInfo(enum LogMessages msg, uint64_t timestam
         altitude    : altitude_cm,
         altitude_rel: altitude_rel_cm,
         altitude_gps: altitude_gps_cm,
-        roll        : (int16_t)ahrs.roll_sensor,
-        pitch       : (int16_t)ahrs.pitch_sensor,
-        yaw         : (uint16_t)ahrs.yaw_sensor
+        roll        : ahrs.get_roll_deg(),
+        pitch       : ahrs.get_pitch_deg(),
+        yaw         : ahrs.get_yaw_deg()
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
 

@@ -42,7 +42,7 @@ private:
         uint8_t sensor_id;
         AP_Compass_DroneCAN *driver;
         uint32_t devid;
-    } _detected_modules[COMPASS_MAX_BACKEND];
+    } _detected_modules[MAX_CONNECTED_MAGS];
 
     static HAL_Semaphore _sem_registry;
 };

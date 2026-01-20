@@ -30,7 +30,7 @@ bool RC_Channels_Plane::has_valid_input() const
     if (plane.failsafe.throttle_counter != 0) {
         return false;
     }
-    return true;
+    return RC_Channels::has_valid_input();
 }
 
 RC_Channel * RC_Channels_Plane::get_arming_channel(void) const

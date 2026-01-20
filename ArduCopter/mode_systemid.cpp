@@ -112,23 +112,23 @@ bool ModeSystemId::init(bool ignore_checks)
         }
 
         // set horizontal speed and acceleration limits
-        pos_control->set_max_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
-        pos_control->set_correction_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+        pos_control->NE_set_max_speed_accel_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+        pos_control->NE_set_correction_speed_accel_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
 
         // initialise the horizontal position controller
-        if (!pos_control->is_active_NE()) {
-            pos_control->init_NE_controller();
+        if (!pos_control->NE_is_active()) {
+            pos_control->NE_init_controller();
         }
 
         // set vertical speed and acceleration limits
-        pos_control->set_max_speed_accel_U_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_U_mss());
-        pos_control->set_correction_speed_accel_U_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_U_mss());
+        pos_control->D_set_max_speed_accel_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_D_mss());
+        pos_control->D_set_correction_speed_accel_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_D_mss());
 
         // initialise the vertical position controller
-        if (!pos_control->is_active_U()) {
-            pos_control->init_U_controller();
+        if (!pos_control->D_is_active()) {
+            pos_control->D_init_controller();
         }
-        target_pos_ne_m = pos_control->get_pos_estimate_NEU_m().tofloat().xy();
+        target_pos_ne_m = pos_control->get_pos_estimate_NED_m().xy();
     }
 
     att_bf_feedforward = attitude_control->get_bf_feedforward();
@@ -357,28 +357,28 @@ void ModeSystemId::run()
 
         // relax loiter target if we might be landed
         if (copter.ap.land_complete_maybe) {
-            pos_control->soften_for_landing_NE();
+            pos_control->NE_soften_for_landing();
         }
 
         Vector2f accel_ne_mss;
-        target_pos_ne_m += input_vel_ne_ms * G_Dt;
+        target_pos_ne_m += input_vel_ne_ms.topostype() * G_Dt;
         if (is_positive(G_Dt)) {
             accel_ne_mss = (input_vel_ne_ms - input_vel_last_ne_ms) / G_Dt;
             input_vel_last_ne_ms = input_vel_ne_ms;
         }
-        pos_control->set_pos_vel_accel_NE_m(target_pos_ne_m.topostype(), input_vel_ne_ms, accel_ne_mss);
+        pos_control->set_pos_vel_accel_NE_m(target_pos_ne_m, input_vel_ne_ms, accel_ne_mss);
 
         // run pos controller
-        pos_control->update_NE_controller();
+        pos_control->NE_update_controller();
 
         // call attitude controller
         attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), target_yaw_rate_rads, false);
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_U_from_climb_rate_m(target_climb_rate_ms);
+        pos_control->D_set_pos_target_from_climb_rate_ms(target_climb_rate_ms);
 
         // run the vertical position controller and set output throttle
-        pos_control->update_U_controller();
+        pos_control->D_update_controller();
     }
 
     if (log_subsample <= 0) {
@@ -418,8 +418,8 @@ void ModeSystemId::log_data() const
 
     if (is_poscontrol_axis_type()) {
         pos_control->write_log();
-        copter.logger.Write_PID(LOG_PIDN_MSG, pos_control->get_vel_NE_pid().get_pid_info_x());
-        copter.logger.Write_PID(LOG_PIDE_MSG, pos_control->get_vel_NE_pid().get_pid_info_y());
+        copter.logger.Write_PID(LOG_PIDN_MSG, pos_control->NE_get_vel_pid().get_pid_info_x());
+        copter.logger.Write_PID(LOG_PIDE_MSG, pos_control->NE_get_vel_pid().get_pid_info_y());
 
     }
 }

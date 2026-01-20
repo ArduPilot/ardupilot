@@ -3,7 +3,7 @@ FRAME_CLASS 1
 MOT_PWM_TYPE 3 # brushed motor PWM
 RC_SPEED 32000 # as fast as ardupilot supports (more would be nice)
 LOG_BACKEND_TYPE 2 # mavlink logging
-ARMING_CHECK 1047038 # all except logging (if log rx not up)
+ARMING_SKIPCHK 1024 # disable logging check (in the event log rx is not up)
 LOG_DISARMED 1
 SCHED_LOOP_RATE 150 # flash won't go faster :(
 

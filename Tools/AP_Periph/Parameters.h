@@ -79,6 +79,7 @@ public:
         k_param_networking_periph,
         k_param_rpm_sensor,
         k_param_g_rcin,
+        k_param_actuator_telem,
         k_param_sitl,
         k_param_ahrs,
         k_param_battery_balance,

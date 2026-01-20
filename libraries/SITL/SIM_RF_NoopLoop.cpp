@@ -20,11 +20,12 @@
 
 using namespace SITL;
 
-uint32_t RF_Nooploop::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
+uint32_t RF_Nooploop::packet_for_alt(float alt_m, uint8_t *buffer, uint8_t buflen)
 {
     // the NoopLoop driver considers a value of zero invalid and won't
     // consider it a reading, so you end up with no readings at all
     // from the driver.  Fudge it here:
+    uint16_t alt_cm = alt_m * 100;
     if (alt_cm == 0) {
         alt_cm = 1;
     }

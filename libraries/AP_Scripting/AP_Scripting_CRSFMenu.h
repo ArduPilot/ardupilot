@@ -7,6 +7,7 @@
 
 int lua_CRSF_new_menu(lua_State *L);
 int lua_CRSF_get_menu_event(lua_State *L);
+int lua_CRSF_peek_menu_event(lua_State *L);
 int lua_CRSF_send_response(lua_State *L);
 int lua_CRSF_add_parameter(lua_State *L);
 int lua_CRSF_add_menu(lua_State *L);
@@ -37,9 +38,12 @@ public:
     uint8_t id() const { return menu->id; }
     const char* name() const { return menu->name; }
     uint8_t num_params() const { return menu->num_params; }
+    AP_CRSF_Telem::ScriptedMenu* get_menu() const { return menu; }
     AP_CRSF_Telem::ScriptedParameter* add_parameter(uint8_t length, const char* data);
     AP_CRSF_Telem::ScriptedMenu* add_menu(const char* menu_name);
 
+
+private:
     AP_CRSF_Telem::ScriptedMenu* menu;
 };
 

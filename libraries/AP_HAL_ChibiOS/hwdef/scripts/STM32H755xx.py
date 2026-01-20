@@ -30,27 +30,28 @@ mcu = {
     # flags of 1 means DMA-capable (DMA and BDMA)
     # flags of 2 means faster memory for CPU intensive work
     # flags of 4 means memory can be used for SDMMC DMA
+    # flags of 8 means memory can be used for ethernet DMA
     'RAM_MAP' : [
-        (0x30000000, 256, 0), # SRAM1, SRAM2
+        (0x30000000, 256, 8), # SRAM1, SRAM2
         (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA, fast
         (0x24000000, 512, 4), # AXI SRAM. Use this for SDMMC IDMA ops
         (0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
-        (0x30040000,  32, 0), # SRAM3.
+        (0x30040000,  32, 8), # SRAM3.
         (0x38000000,  64, 1), # SRAM4.
     ],
     'INSTRUCTION_RAM' : (0x00000400,  63), # ITCM (first 1k removed, to keep address 0 unused)
-    'FLASH_RAM' : 		(0x24020000, 384), # AXI SRAM used for process stack and ram functions
+    'FLASH_RAM' :       (0x24020000, 384), # AXI SRAM used for process stack and ram functions
     'DATA_RAM' :        (0x20010000,  64), # DTCM, tightly coupled, no DMA, fast
 
-	# avoid a problem in the bootloader by making DTCM first. The DCache init
+    # avoid a problem in the bootloader by making DTCM first. The DCache init
     # when using SRAM1 as primary memory gets a hard fault in bootloader
     # we can't use DTCM first for main firmware as some builds overflow the first segment
     'RAM_MAP_BOOTLOADER' : [
         (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA, fast
-        (0x30000000, 256, 0), # SRAM1, SRAM2
+        (0x30000000, 256, 8), # SRAM1, SRAM2
         (0x24000000, 512, 4), # AXI SRAM. Use this for SDMMC IDMA ops
         (0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
-        (0x30040000,  32, 0), # SRAM3.
+        (0x30040000,  32, 8), # SRAM3.
         (0x38000000,  64, 1), # SRAM4.
     ],
 

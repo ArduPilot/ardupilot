@@ -389,7 +389,6 @@ private:
     // Parameters.cpp
     void load_parameters(void) override;
     void convert_pid_parameters(void);
-    void convert_lgr_parameters(void);
     void convert_fs_options_params(void);
 
     // radio.cpp

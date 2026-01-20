@@ -71,9 +71,6 @@
 #define AUTOTUNE_Y_ACCEL_MIN             1000.0    // Minimum acceleration for Yaw
 #define AUTOTUNE_Y_FILT_FREQ              10.0     // Autotune filter frequency when testing Yaw
 #define AUTOTUNE_D_UP_DOWN_MARGIN          0.2     // The margin below the target that we tune D in
-#define AUTOTUNE_RD_BACKOFF                1.0     // Rate D gains are reduced to 50% of their maximum value discovered during tuning
-#define AUTOTUNE_RP_BACKOFF                1.0     // Rate P gains are reduced to 97.5% of their maximum value discovered during tuning
-#define AUTOTUNE_SP_BACKOFF                0.9     // Stab P gains are reduced to 90% of their maximum value discovered during tuning
 #define AUTOTUNE_ACCEL_RP_BACKOFF          1.0     // back off from maximum acceleration
 #define AUTOTUNE_ACCEL_Y_BACKOFF           1.0     // back off from maximum acceleration
 
@@ -117,6 +114,13 @@ const AP_Param::GroupInfo AC_AutoTune_Multi::var_info[] = {
     // @Range: 0.0001 0.005
     // @User: Standard
     AP_GROUPINFO("MIN_D", 3, AC_AutoTune_Multi, min_d,  0.0005f),
+
+    // @Param: GMBK
+    // @DisplayName: AutoTune Gain Margin Backoff
+    // @Description: Fraction by which tuned P and D gains are reduced after rate and angle AutoTune steps complete. This provides extra stability margin by reducing gains slightly from the optimal values found during tuning. A value of 0.0 applies no reduction. A value of 0.25 reduces tuned gains by 25%.
+    // @Range: 0.0 0.5
+    // @User: Standard
+    AP_GROUPINFO("GMBK", 4, AC_AutoTune_Multi, gain_backoff,  0.25),
 
     AP_GROUPEND
 };
@@ -904,40 +908,30 @@ void AC_AutoTune_Multi::updating_angle_p_down_all(AxisType test_axis)
 // set gains post tune for the tune type
 void AC_AutoTune_Multi::set_tuning_gains_with_backoff(AxisType test_axis)
 {
+    // ensure gain_backoff has not been set outside limits
+    gain_backoff.set_and_save_ifchanged(constrain_float(gain_backoff, 0.0f, 0.5f));
+
     switch (tune_type) {
     case TuneType::RATE_D_UP:
         break;
     case TuneType::RATE_D_DOWN:
-        switch (test_axis) {
-        case AxisType::ROLL:
-            tune_roll_rd = MAX(min_d, tune_roll_rd * AUTOTUNE_RD_BACKOFF);
-            tune_roll_rp = MAX(AUTOTUNE_RP_MIN, tune_roll_rp * AUTOTUNE_RD_BACKOFF);
-            break;
-        case AxisType::PITCH:
-            tune_pitch_rd = MAX(min_d, tune_pitch_rd * AUTOTUNE_RD_BACKOFF);
-            tune_pitch_rp = MAX(AUTOTUNE_RP_MIN, tune_pitch_rp * AUTOTUNE_RD_BACKOFF);
-            break;
-        case AxisType::YAW:
-            tune_yaw_rLPF = MAX(AUTOTUNE_RLPF_MIN, tune_yaw_rLPF * AUTOTUNE_RD_BACKOFF);
-            tune_yaw_rp = MAX(AUTOTUNE_RP_MIN, tune_yaw_rp * AUTOTUNE_RD_BACKOFF);
-            break;
-        case AxisType::YAW_D:
-            tune_yaw_rd = MAX(min_d, tune_yaw_rd * AUTOTUNE_RD_BACKOFF);
-            tune_yaw_rp = MAX(AUTOTUNE_RP_MIN, tune_yaw_rp * AUTOTUNE_RD_BACKOFF);
-            break;
-        }
         break;
     case TuneType::RATE_P_UP:
         switch (test_axis) {
         case AxisType::ROLL:
-            tune_roll_rp = MAX(AUTOTUNE_RP_MIN, tune_roll_rp * AUTOTUNE_RP_BACKOFF);
+            tune_roll_rd = tune_roll_rd * (1.0f - gain_backoff);
+            tune_roll_rp = tune_roll_rp * (1.0f - gain_backoff);
             break;
         case AxisType::PITCH:
-            tune_pitch_rp = MAX(AUTOTUNE_RP_MIN, tune_pitch_rp * AUTOTUNE_RP_BACKOFF);
+            tune_pitch_rd = tune_pitch_rd * (1.0f - gain_backoff);
+            tune_pitch_rp = tune_pitch_rp * (1.0f - gain_backoff);
             break;
         case AxisType::YAW:
+            tune_yaw_rp = tune_yaw_rp * (1.0f - gain_backoff);
+            break;
         case AxisType::YAW_D:
-            tune_yaw_rp = MAX(AUTOTUNE_RP_MIN, tune_yaw_rp * AUTOTUNE_RP_BACKOFF);
+            tune_yaw_rd = tune_yaw_rd * (1.0f - gain_backoff);
+            tune_yaw_rp = tune_yaw_rp * (1.0f - gain_backoff);
             break;
         }
         break;
@@ -946,16 +940,16 @@ void AC_AutoTune_Multi::set_tuning_gains_with_backoff(AxisType test_axis)
     case TuneType::ANGLE_P_UP:
         switch (test_axis) {
         case AxisType::ROLL:
-            tune_roll_sp = MAX(AUTOTUNE_SP_MIN, tune_roll_sp * AUTOTUNE_SP_BACKOFF);
+            tune_roll_sp = tune_roll_sp * (1.0f - gain_backoff) * (1.0f - aggressiveness);
             tune_roll_accel_radss = cd_to_rad(MAX(AUTOTUNE_RP_ACCEL_MIN, test_accel_max_cdss * AUTOTUNE_ACCEL_RP_BACKOFF));
             break;
         case AxisType::PITCH:
-            tune_pitch_sp = MAX(AUTOTUNE_SP_MIN, tune_pitch_sp * AUTOTUNE_SP_BACKOFF);
+            tune_pitch_sp = tune_pitch_sp * (1.0f - gain_backoff) * (1.0f - aggressiveness);
             tune_pitch_accel_radss = cd_to_rad(MAX(AUTOTUNE_RP_ACCEL_MIN, test_accel_max_cdss * AUTOTUNE_ACCEL_RP_BACKOFF));
             break;
         case AxisType::YAW:
         case AxisType::YAW_D:
-            tune_yaw_sp = MAX(AUTOTUNE_SP_MIN, tune_yaw_sp * AUTOTUNE_SP_BACKOFF);
+            tune_yaw_sp = tune_yaw_sp * (1.0f - gain_backoff) * (1.0f - aggressiveness);
             tune_yaw_accel_radss = cd_to_rad(MAX(AUTOTUNE_Y_ACCEL_MIN, test_accel_max_cdss * AUTOTUNE_ACCEL_Y_BACKOFF));
             break;
         }

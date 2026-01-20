@@ -23,10 +23,10 @@ AC_P_1D::AC_P_1D(float initial_p) :
 // Computes the P controller output given a target and measurement.
 // Applies position error clamping based on configured limits.
 // Optionally constrains output slope using the sqrt_controller.
-float AC_P_1D::update_all(float &target, float measurement)
+float AC_P_1D::update_all(postype_t &target, postype_t measurement)
 {
     // Compute position error between target and measurement
-    _error = target - measurement;
+    _error = (float)(target - measurement);
 
     // Clamp error to configured min/max bounds
     if (is_negative(_error_min) && (_error < _error_min)) {

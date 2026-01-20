@@ -527,12 +527,17 @@ bool AP_ICEngine::throttle_override(float &percentage, const float base_throttle
         return false;
     }
 
+    min_throttle_pct = idle_percent.get();
+    #if AP_RPM_ENABLED
+        update_idle_governor(min_throttle_pct);
+    #endif // AP_RPM_ENABLED
+
     if (state == ICE_RUNNING &&
-        idle_percent > 0 &&
-        idle_percent < 100 &&
-        idle_percent > percentage)
+        min_throttle_pct > 0 &&
+        min_throttle_pct < 100 &&
+        min_throttle_pct > percentage)
     {
-        percentage = idle_percent;
+        percentage = min_throttle_pct;
         if (allow_throttle_while_disarmed() && !hal.util->get_soft_armed()) {
             percentage = MAX(percentage, base_throttle);
         }
@@ -622,6 +627,7 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
     return true;
 }
 
+#if AP_RPM_ENABLED
 /*
   Update low throttle limit to ensure steady idle for IC Engines
   return a new min_throttle value
@@ -631,13 +637,12 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
     if (!enable) {
         return;
     }
-#if AP_RPM_ENABLED
     const int8_t min_throttle_base = min_throttle;
 
-    // Initialize idle point to min_throttle on the first run
+    // Initialize idle point to start_percent on the first run
     static bool idle_point_initialized = false;
     if (!idle_point_initialized) {
-        idle_governor_integrator = min_throttle;
+        idle_governor_integrator = start_percent.get();
         idle_point_initialized = true;
     }
     AP_RPM *ap_rpm = AP::rpm();
@@ -647,6 +652,7 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
 
     // Check to make sure we have an enabled IC Engine, EFI Instance and that the idle governor is enabled
     if (get_state() != AP_ICEngine::ICE_RUNNING || idle_rpm < 0) {
+        idle_point_initialized = false;
         return;
     }
 
@@ -656,7 +662,7 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
     // Double Check to make sure engine is really running
     if (!ap_rpm->get_rpm(rpm_instance-1, rpmv) || rpmv < 1) {
         // Reset idle point to the default value when the engine is stopped
-        idle_governor_integrator = min_throttle;
+        idle_point_initialized = false;
         return;
     }
 
@@ -693,8 +699,8 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
     idle_governor_integrator = constrain_float(idle_governor_integrator, min_throttle_base, 40.0f);
 
     min_throttle = roundf(idle_governor_integrator);
-#endif // AP_RPM_ENABLED
 }
+#endif // AP_RPM_ENABLED
 
 /*
   set ignition state

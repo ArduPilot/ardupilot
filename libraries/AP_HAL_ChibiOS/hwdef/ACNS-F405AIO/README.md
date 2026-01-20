@@ -61,7 +61,7 @@ The correct battery setting parameters are set by default and are:
  - BATT_VOLT_PIN 11
  - BATT_CURR_PIN 12
  - BATT_VOLT_SCALE 9.2
- - BATT_CURR_SCALE 50.0
+ - BATT_AMP_PERVLT 50.0
 
 ## Compass
 

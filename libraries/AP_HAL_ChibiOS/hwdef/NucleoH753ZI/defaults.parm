@@ -1,0 +1,53 @@
+# Default parameters for NUCLEO-H753ZI board
+
+# Setup for integrated STLink Virtual COM port
+SERIAL3_PROTOCOL 2
+SERIAL3_BAUD 57600
+
+# Setup for external GPS (UART4 now enabled)
+SERIAL4_PROTOCOL 5
+SERIAL4_BAUD 38400
+
+# Setup for telemetry
+SERIAL1_PROTOCOL 2
+SERIAL1_BAUD 57600
+
+# Setup for MSP/OSD
+SERIAL2_PROTOCOL 16
+SERIAL2_BAUD 115200
+
+# Setup for debug
+SERIAL0_PROTOCOL 2
+SERIAL0_BAUD 57600
+
+# UART5 (available)
+SERIAL5_PROTOCOL 2
+SERIAL5_BAUD 57600
+
+# UART6 (available)
+SERIAL6_PROTOCOL 2
+SERIAL6_BAUD 57600
+
+# UART7 (available)
+SERIAL7_PROTOCOL 2
+SERIAL7_BAUD 57600
+
+# UART8 (available)
+SERIAL8_PROTOCOL 2
+SERIAL8_BAUD 57600
+
+# No built-in compass
+COMPASS_ENABLE 0
+
+# Set NeoPixel LED type
+NTF_LED_TYPES 231
+
+# Battery monitoring - DISABLED (ADC pins not available)
+BATT_MONITOR 0
+# BATT_VOLT_PIN 13
+# BATT_CURR_PIN 14
+# BATT_VOLT_MULT 10.1
+# BATT_AMP_PERVLT 17.0
+
+# Ethernet disabled - UART4 enabled instead
+# BRD_NET_ENABLE 1 

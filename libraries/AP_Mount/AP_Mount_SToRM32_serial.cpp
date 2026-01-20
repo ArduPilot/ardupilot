@@ -20,93 +20,13 @@ void AP_Mount_SToRM32_serial::update()
 
     read_incoming(); // read the incoming messages from the gimbal
 
-    // change to RC_TARGETING mode if RC input has changed
-    set_rctargeting_on_rcinput_change();
+    AP_Mount_Backend::update_mnt_target();
 
-    // flag to trigger sending target angles to gimbal
-    bool resend_now = false;
+    // send target angles (which may be derived from other target types)
+    AP_Mount_Backend::send_target_to_gimbal();
 
-    // update based on mount mode
-    switch(get_mode()) {
-        // move mount to a "retracted" position.  To-Do: remove support and replace with a relaxed mode?
-        case MAV_MOUNT_MODE_RETRACT: {
-            const Vector3f &target = _params.retract_angles.get();
-            mnt_target.angle_rad.set(target*DEG_TO_RAD, false);
-            mnt_target.target_type = MountTargetType::ANGLE;
-            break;
-        }
-
-        // move mount to a neutral position, typically pointing forward
-        case MAV_MOUNT_MODE_NEUTRAL: {
-            const Vector3f &target = _params.neutral_angles.get();
-            mnt_target.angle_rad.set(target*DEG_TO_RAD, false);
-            mnt_target.target_type = MountTargetType::ANGLE;
-            break;
-        }
-
-        // point to the angles given by a mavlink message
-        case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            // mnt_target should have already been filled in by set_angle_target() or set_rate_target()
-            if (mnt_target.target_type == MountTargetType::RATE) {
-                update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
-            }
-            resend_now = true;
-            break;
-
-        // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING:
-            update_mnt_target_from_rc_target();
-            resend_now = true;
-            break;
-
-        // point mount to a GPS point given by the mission planner
-        case MAV_MOUNT_MODE_GPS_POINT:
-            if (get_angle_target_to_roi(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-                resend_now = true;
-            }
-            break;
-
-        // point mount to Home location
-        case MAV_MOUNT_MODE_HOME_LOCATION:
-            if (get_angle_target_to_home(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-                resend_now = true;
-            }
-            break;
-
-        // point mount to another vehicle
-        case MAV_MOUNT_MODE_SYSID_TARGET:
-            if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-                resend_now = true;
-            }
-            break;
-
-        default:
-            // we do not know this mode so do nothing
-            break;
-    }
-
-    // resend target angles at least once per second
-    resend_now = resend_now || ((AP_HAL::millis() - _last_send) > AP_MOUNT_STORM32_SERIAL_RESEND_MS);
-
-    if ((AP_HAL::millis() - _last_send) > AP_MOUNT_STORM32_SERIAL_RESEND_MS*2) {
+    if ((AP_HAL::millis() - _last_send) > AP_MOUNT_STORM32_SERIAL_TIMEOUT_MS) {
         _reply_type = ReplyType_UNKNOWN;
-    }
-    if (can_send(resend_now)) {
-        if (resend_now) {
-            send_target_angles(mnt_target.angle_rad);
-            get_angles();
-            _reply_type = ReplyType_ACK;
-            _reply_counter = 0;
-            _reply_length = get_reply_size(_reply_type);
-        } else {
-            get_angles();
-            _reply_type = ReplyType_DATA;
-            _reply_counter = 0;
-            _reply_length = get_reply_size(_reply_type);
-        }
     }
 }
 
@@ -117,18 +37,19 @@ bool AP_Mount_SToRM32_serial::get_attitude_quaternion(Quaternion& att_quat)
     return true;
 }
 
-bool AP_Mount_SToRM32_serial::can_send(bool with_control) {
+bool AP_Mount_SToRM32_serial::can_send() {
     uint16_t required_tx = 1;
-    if (with_control) {
-        required_tx += sizeof(AP_Mount_SToRM32_serial::cmd_set_angles_struct);
-    }
+    required_tx += sizeof(AP_Mount_SToRM32_serial::cmd_set_angles_struct);
     return (_reply_type == ReplyType_UNKNOWN) && (_uart->txspace() >= required_tx);
 }
 
 
 // send_target_angles
-void AP_Mount_SToRM32_serial::send_target_angles(const MountTarget& angle_target_rad)
+void AP_Mount_SToRM32_serial::send_target_angles(const MountAngleTarget& angle_target_rad)
 {
+    if (!can_send()) {
+        return;
+    }
 
     static cmd_set_angles_struct cmd_set_angles_data = {
         0xFA,
@@ -166,6 +87,17 @@ void AP_Mount_SToRM32_serial::send_target_angles(const MountTarget& angle_target
 
     // store time of send
     _last_send = AP_HAL::millis();
+
+    // we pipeline commands.  We have sent in a command to set angles,
+    // now fetch data from the device:
+    get_angles();
+    // we expect an ACK back for the set-angles command.  A state
+    // machine in read_incoming will move us to ReplyType_DATA once
+    // the ACK has been received.
+    _reply_type = ReplyType_ACK;
+    _reply_counter = 0;
+    _reply_length = get_reply_size(_reply_type);
+
 }
 
 void AP_Mount_SToRM32_serial::get_angles() {

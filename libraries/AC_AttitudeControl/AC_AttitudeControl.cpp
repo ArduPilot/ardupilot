@@ -86,6 +86,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Description: Roll axis angle controller P gain.  Converts the error between the desired roll angle and actual angle to a desired roll rate
     // @Range: 3.000 12.000
     // @Range{Sub}: 0.0 12.000
+    // @Increment: 0.01
     // @User: Standard
     AP_SUBGROUPINFO(_p_angle_roll, "ANG_RLL_", 13, AC_AttitudeControl, AC_P),
 
@@ -94,6 +95,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Description: Pitch axis angle controller P gain.  Converts the error between the desired pitch angle and actual angle to a desired pitch rate
     // @Range: 3.000 12.000
     // @Range{Sub}: 0.0 12.000
+    // @Increment: 0.01
     // @User: Standard
     AP_SUBGROUPINFO(_p_angle_pitch, "ANG_PIT_", 14, AC_AttitudeControl, AC_P),
 
@@ -102,6 +104,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Description: Yaw axis angle controller P gain.  Converts the error between the desired yaw angle and actual angle to a desired yaw rate
     // @Range: 3.000 12.000
     // @Range{Sub}: 0.0 6.000
+    // @Increment: 0.01
     // @User: Standard
     AP_SUBGROUPINFO(_p_angle_yaw, "ANG_YAW_", 15, AC_AttitudeControl, AC_P),
 
@@ -475,18 +478,6 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_rad(float euler_roll_a
     attitude_controller_run_quat();
 }
 
-// Sets desired roll, pitch, and yaw angular rates (in centidegrees/s).
-// See input_euler_rate_roll_pitch_yaw_rads() for full details.
-void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw_cds(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds)
-{
-    // Convert from centidegrees on public interface to radians
-    const float euler_roll_rate_rads = cd_to_rad(euler_roll_rate_cds);
-    const float euler_pitch_rate_rads = cd_to_rad(euler_pitch_rate_cds);
-    const float euler_yaw_rate_rads = cd_to_rad(euler_yaw_rate_cds);
-
-    input_euler_rate_roll_pitch_yaw_rads(euler_roll_rate_rads, euler_pitch_rate_rads, euler_yaw_rate_rads);
-}
-
 // Sets desired roll, pitch, and yaw angular rates (in radians/s).
 // This command is used to apply angular rate targets in the earth frame.
 // The inputs are shaped using acceleration limits and time constants.
@@ -757,16 +748,6 @@ void AC_AttitudeControl::input_rate_step_bf_roll_pitch_yaw_rads(float roll_rate_
     _ang_vel_body_rads = Vector3f{roll_rate_step_bf_rads, pitch_rate_step_bf_rads, yaw_rate_step_bf_rads};
 }
 
-// Sets desired thrust vector and heading rate (in centidegrees/s).
-// See input_thrust_vector_rate_heading_rads() for full details.
-void AC_AttitudeControl::input_thrust_vector_rate_heading_cds(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw)
-{
-    // Convert from centidegrees on public interface to radians
-    const float heading_rate_rads = cd_to_rad(heading_rate_cds);
-
-    input_thrust_vector_rate_heading_rads(thrust_vector, heading_rate_rads, slew_yaw);
-}
-
 // Sets desired thrust vector and heading rate (in radians/s).
 // Used for tilt-based navigation with independent yaw control.
 // The thrust vector defines the desired orientation (e.g., pointing direction for vertical thrust),
@@ -822,17 +803,6 @@ void AC_AttitudeControl::input_thrust_vector_rate_heading_rads(const Vector3f& t
 
     // Call quaternion attitude controller
     attitude_controller_run_quat();
-}
-
-// Sets desired thrust vector and heading (in centidegrees) with heading rate (in centidegrees/s).
-// See input_thrust_vector_heading_rad() for full details.
-void AC_AttitudeControl::input_thrust_vector_heading_cd(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds)
-{
-    // Convert from centidegrees on public interface to radians
-    const float heading_rate_rads = cd_to_rad(heading_rate_cds);
-    const float heading_angle_rad = cd_to_rad(heading_angle_cd);
-
-    input_thrust_vector_heading_rad(thrust_vector, heading_angle_rad, heading_rate_rads);
 }
 
 // Sets desired thrust vector and heading (in radians) with heading rate (in radians/s).
@@ -1114,6 +1084,17 @@ void AC_AttitudeControl::input_shaping_rate_predictor(const Vector2f &error_angl
     target_ang_vel_rads.y = ang_vel_rads.y;
 }
 
+// scale I to represent the current angle P
+void AC_AttitudeControl::scale_I_to_angle_P()
+{
+    Vector3f i_scale{
+        _p_angle_roll.kP() * _angle_P_scale.x,
+        _p_angle_pitch.kP() * _angle_P_scale.y,
+        _p_angle_yaw.kP() * _angle_P_scale.z
+    };
+    set_I_scale_mult(i_scale);
+}
+
 // limits angular velocity
 void AC_AttitudeControl::ang_vel_limit(Vector3f& euler_rad, float ang_vel_roll_max_rads, float ang_vel_pitch_max_rads, float ang_vel_yaw_max_rads) const
 {
@@ -1273,10 +1254,6 @@ Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(const Vector3f
     } else {
         rate_target_ang_vel.z = angleP_yaw * attitude_error_rot_vec_rad.z;
     }
-
-    // reset angle P scaling, saving used value
-    _angle_P_scale_used = _angle_P_scale;
-    _angle_P_scale = VECTORF_111;
 
     return rate_target_ang_vel;
 }

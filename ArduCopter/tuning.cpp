@@ -92,36 +92,36 @@ void Copter::tuning(const RC_Channel *tuning_ch, int8_t tuning_param, float tuni
 
     // Altitude and throttle tuning
     case TUNING_ALTITUDE_HOLD_KP:
-        pos_control->get_pos_U_p().set_kP(tuning_value);
+        pos_control->D_get_pos_p().set_kP(tuning_value);
         break;
 
     case TUNING_THROTTLE_RATE_KP:
-        pos_control->get_vel_U_pid().set_kP(tuning_value);
+        pos_control->D_get_vel_pid().set_kP(tuning_value);
         break;
 
     case TUNING_ACCEL_Z_KP:
-        pos_control->get_accel_U_pid().set_kP(tuning_value);
+        pos_control->D_get_accel_pid().set_kP(tuning_value);
         break;
 
     case TUNING_ACCEL_Z_KI:
-        pos_control->get_accel_U_pid().set_kI(tuning_value);
+        pos_control->D_get_accel_pid().set_kI(tuning_value);
         break;
 
     case TUNING_ACCEL_Z_KD:
-        pos_control->get_accel_U_pid().set_kD(tuning_value);
+        pos_control->D_get_accel_pid().set_kD(tuning_value);
         break;
 
     // Loiter and navigation tuning
     case TUNING_LOITER_POSITION_KP:
-        pos_control->get_pos_NE_p().set_kP(tuning_value);
+        pos_control->NE_get_pos_p().set_kP(tuning_value);
         break;
 
     case TUNING_VEL_XY_KP:
-        pos_control->get_vel_NE_pid().set_kP(tuning_value);
+        pos_control->NE_get_vel_pid().set_kP(tuning_value);
         break;
 
     case TUNING_VEL_XY_KI:
-        pos_control->get_vel_NE_pid().set_kI(tuning_value);
+        pos_control->NE_get_vel_pid().set_kI(tuning_value);
         break;
 
     case TUNING_WP_SPEED:
@@ -219,7 +219,7 @@ void Copter::tuning(const RC_Channel *tuning_ch, int8_t tuning_param, float tuni
         break;
 
     case TUNING_LOITER_MAX_XY_SPEED:
-        loiter_nav->set_speed_max_NE_cms(tuning_value);
+        loiter_nav->set_speed_max_NE_ms(tuning_value * 0.01);
         break;
     }
 }

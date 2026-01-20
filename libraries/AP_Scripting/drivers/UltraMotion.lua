@@ -132,10 +132,9 @@ end
    send outputs to all servos
 --]]
 local function send_outputs()
-   local noutputs = #actuators
-   for i = 1, noutputs do
-      local pwm = SRV_Channels:get_output_pwm_chan(actuators[i].unitID-1)
-      local msg = actuators[i].msg
+   for _, actuator in pairs(actuators) do
+      local pwm = SRV_Channels:get_output_pwm_chan(actuator.unitID-1)
+      local msg = actuator.msg
 
       put_uint16(msg, 0, pwm)
 
@@ -197,6 +196,11 @@ function update()
    return update, 1000/UM_RATE_HZ:get()
 end
 
-gcs:send_text(MAV_SEVERITY.INFO, string.format("Loaded UltraMotion with %u actuators", #actuators))
+-- Build an array of IDs to print out
+local ids = {}
+for _, actuator in pairs(actuators) do
+   table.insert(ids, actuator.unitID)
+end
+gcs:send_text(MAV_SEVERITY.INFO, string.format("Loaded UltraMotion with %u actuators: %s", #ids, table.concat(ids, ",")))
 
 return update, 100

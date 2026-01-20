@@ -130,7 +130,7 @@ void Sub::init_ardupilot()
 
     leak_detector.init();
 
-    last_pilot_heading = ahrs.yaw_sensor;
+    last_pilot_heading_rad = ahrs.get_yaw_rad();
 
     // initialise rangefinder
 #if AP_RANGEFINDER_ENABLED
@@ -156,6 +156,12 @@ void Sub::init_ardupilot()
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
     g2.actuators.initialize_actuators();
 
+#if LEAKDETECTOR_MAX_INSTANCES > 0
+    update_leak_pins();
+#endif
+#if AP_RELAY_ENABLED
+    update_relay_pins();
+#endif
     // flag that initialisation has completed
     ap.initialised = true;
 }

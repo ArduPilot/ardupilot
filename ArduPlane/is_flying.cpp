@@ -6,9 +6,10 @@
   is_flying and crash detection logic
  */
 
-#define CRASH_DETECTION_DELAY_MS            500
-#define IS_FLYING_IMPACT_TIMER_MS           3000
-#define GPS_IS_FLYING_SPEED_CMS             150
+#define CRASH_DETECTION_DELAY_MS            500  // milliseconds
+#define IS_FLYING_IMPACT_TIMER_MS           3000  // milliseconds
+
+#define GPS_IS_FLYING_SPEED_MS              1.5  // metres/second
 
 /*
   Do we think we are flying?
@@ -20,13 +21,13 @@ void Plane::update_is_flying_5Hz(void)
     bool is_flying_bool = false;
     uint32_t now_ms = AP_HAL::millis();
 
-    uint32_t ground_speed_thresh_cm = (aparm.min_groundspeed > 0) ? ((uint32_t)(aparm.min_groundspeed*(100*0.9))) : GPS_IS_FLYING_SPEED_CMS;
+    const float ground_speed_thresh_ms = (aparm.min_groundspeed > 0) ? (aparm.min_groundspeed*0.9) : GPS_IS_FLYING_SPEED_MS;
     bool gps_confirmed_movement = (gps.status() >= AP_GPS::GPS_OK_FIX_3D) &&
-                                    (gps.ground_speed_cm() >= ground_speed_thresh_cm);
+                                    (gps.ground_speed() >= ground_speed_thresh_ms);
 
     // airspeed at least 75% of stall speed?
     const float airspeed_threshold = MAX(aparm.airspeed_min,2)*0.75f;
-    bool airspeed_movement = ahrs.airspeed_estimate(aspeed) && (aspeed >= airspeed_threshold);
+    bool airspeed_movement = ahrs.airspeed_EAS(aspeed) && (aspeed >= airspeed_threshold);
 
     if (gps.status() < AP_GPS::GPS_OK_FIX_2D && arming.is_armed() && !airspeed_movement && isFlyingProbability > 0.3) {
         // when flying with no GPS, use the last airspeed estimate to

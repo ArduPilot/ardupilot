@@ -110,11 +110,11 @@ void ModeSurftrak::reset()
  * Main controller, call at 100hz+
  */
 void ModeSurftrak::control_range() {
-    float target_climb_rate_cm_s = sub.get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-    target_climb_rate_cm_s = constrain_float(target_climb_rate_cm_s, -sub.get_pilot_speed_dn(), g.pilot_speed_up);
+    float target_climb_rate_cms = sub.get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+    target_climb_rate_cms = constrain_float(target_climb_rate_cms, -sub.get_pilot_speed_dn(), g.pilot_speed_up);
 
     // Desired_climb_rate returns 0 when within the deadzone
-    if (fabsf(target_climb_rate_cm_s) < 0.05f)  {
+    if (fabsf(target_climb_rate_cms) < 0.05f)  {
         if (pilot_in_control) {
             // Pilot has released control; apply the delta to the rangefinder target
             set_rangefinder_target_cm(rangefinder_target_cm + inertial_nav.get_position_z_up_cm() - pilot_control_start_z_cm);
@@ -139,10 +139,10 @@ void ModeSurftrak::control_range() {
     }
 
     // Set the target altitude from the climb rate and the terrain offset
-    position_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cm_s);
+    position_control->D_set_pos_target_from_climb_rate_cms(target_climb_rate_cms);
 
     // Run the PID controllers
-    position_control->update_U_controller();
+    position_control->D_update_controller();
 }
 
 /*

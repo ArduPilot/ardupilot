@@ -15,7 +15,7 @@ IMU Invensensev3 SPI:icm42688 ROTATION_PITCH_180
 
 # Compass: IST8310
 COMPASS IST8310 I2C:1:0x0f false ROTATION_YAW_180
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES 1
+define AP_COMPASS_PROBING_ENABLED 1
 # We don't want any probing on the internal buses
 define HAL_LINUX_I2C_INTERNAL_BUS_MASK 0
 
@@ -58,3 +58,4 @@ LINUX_SPIDEV   "icm42688"   0     0        SPI_MODE_0   8     SPI_CS_KERNEL    1
 # support combined RCOutput system
 define HAL_LINUX_RCOUTPUT_MULTI_ENABLED 1
 
+define APM_LINUX_RCIN_RATE 500

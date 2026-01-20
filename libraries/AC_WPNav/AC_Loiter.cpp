@@ -14,6 +14,7 @@ extern const AP_HAL::HAL& hal;
 #define LOITER_VEL_CORRECTION_MAX_MS        2.0     // Maximum speed (in m/s) used for correcting position errors in loiter.
 #define LOITER_POS_CORRECTION_MAX_M         2.0     // Maximum horizontal position error allowed before correction (m).
 #define LOITER_ACTIVE_TIMEOUT_MS            200     // Loiter is considered active if updated within the past 200 ms.
+#define LOITER_DEFAULT_OPTIONS              1       // Enable Coordinated Turn by default.
 
 const AP_Param::GroupInfo AC_Loiter::var_info[] = {
 
@@ -72,6 +73,13 @@ const AP_Param::GroupInfo AC_Loiter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BRK_DELAY",  6, AC_Loiter, _brake_delay_s, LOITER_BRAKE_START_DELAY_DEFAULT_S),
 
+    // @Param: OPTIONS
+    // @DisplayName: Loiter mode options
+    // @Description: Enables optional Loiter mode behaviors
+    // @Bitmask: 0: Enable Coordinated turns
+    // @User: Standard
+    AP_GROUPINFO("OPTIONS", 7, AC_Loiter, _options, LOITER_DEFAULT_OPTIONS),
+
     AP_GROUPEND
 };
 
@@ -86,26 +94,19 @@ AC_Loiter::AC_Loiter(const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-// Sets the initial loiter target position in centimeters from the EKF origin.
-// See init_target_m() for full details.
-void AC_Loiter::init_target_cm(const Vector2f& position_ne_cm)
-{
-    init_target_m(position_ne_cm * 0.01);
-}
-
 // Sets the initial loiter target position in meters from the EKF origin.
-// - position_neu_m: horizontal position in the NE frame, in meters.
+// - position_ne_m: horizontal position in the NE frame, in meters.
 // - Initializes internal control state including acceleration targets and feed-forward planning.
-void AC_Loiter::init_target_m(const Vector2f& position_ne_m)
+void AC_Loiter::init_target_m(const Vector2p& position_ne_m)
 {
     sanity_check_params();
 
     // Configure speed/accel limits in meters using internal parameter (_accel_max_ne_cmss)
-    _pos_control.set_correction_speed_accel_NE_m(LOITER_VEL_CORRECTION_MAX_MS, _accel_max_ne_cmss * 0.01);
-    _pos_control.set_pos_error_max_NE_m(LOITER_POS_CORRECTION_MAX_M);
+    _pos_control.NE_set_correction_speed_accel_m(LOITER_VEL_CORRECTION_MAX_MS, _accel_max_ne_cmss * 0.01);
+    _pos_control.NE_set_pos_error_max_m(LOITER_POS_CORRECTION_MAX_M);
 
     // Reset controller state for stationary loiter
-    _pos_control.init_NE_controller_stopping_point();
+    _pos_control.NE_init_controller_stopping_point();
 
     // Zero out desired and predicted accelerations and angles
     _predicted_accel_ne_mss.zero();
@@ -124,14 +125,14 @@ void AC_Loiter::init_target()
     sanity_check_params();
 
     // Configure correction speed and acceleration limits (in m/s and m/s²)
-    _pos_control.set_correction_speed_accel_NE_m(LOITER_VEL_CORRECTION_MAX_MS, _accel_max_ne_cmss * 0.01);
-    _pos_control.set_pos_error_max_NE_m(LOITER_POS_CORRECTION_MAX_M);
+    _pos_control.NE_set_correction_speed_accel_m(LOITER_VEL_CORRECTION_MAX_MS, _accel_max_ne_cmss * 0.01);
+    _pos_control.NE_set_pos_error_max_m(LOITER_POS_CORRECTION_MAX_M);
 
     // Apply velocity smoothing: softly transitions target acceleration to zero
-    _pos_control.relax_velocity_controller_NE();
+    _pos_control.NE_relax_velocity_controller();
 
     // Initialize prediction state using current acceleration and lean angles
-    _predicted_accel_ne_mss = _pos_control.get_accel_target_NEU_mss().xy();
+    _predicted_accel_ne_mss = _pos_control.get_accel_target_NED_mss().xy();
     _predicted_euler_angle_rad.x = _pos_control.get_roll_rad();
     _predicted_euler_angle_rad.y = _pos_control.get_pitch_rad();
     _brake_accel_mss = 0.0f;
@@ -141,7 +142,7 @@ void AC_Loiter::init_target()
 // Internally softens horizontal control gains.
 void AC_Loiter::soften_for_landing()
 {
-    _pos_control.soften_for_landing_NE();
+    _pos_control.NE_soften_for_landing();
 }
 
 // Sets pilot desired acceleration using Euler angles in centidegrees.
@@ -161,10 +162,10 @@ void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, f
 
     // convert our desired attitude to an acceleration vector assuming we are not accelerating vertically
     const Vector3f desired_euler_rad {euler_roll_angle_rad, euler_pitch_angle_rad, _ahrs.yaw};
-    const Vector3f desired_accel_neu_mss = _pos_control.lean_angles_rad_to_accel_NEU_mss(desired_euler_rad);
+    const Vector3f desired_accel_ned_mss = _pos_control.lean_angles_rad_to_accel_NED_mss(desired_euler_rad);
 
-    _desired_accel_ne_mss.x = desired_accel_neu_mss.x;
-    _desired_accel_ne_mss.y = desired_accel_neu_mss.y;
+    _desired_accel_ne_mss.x = desired_accel_ned_mss.x;
+    _desired_accel_ne_mss.y = desired_accel_ned_mss.y;
 
     // Compute attitude error between desired and predicted lean angles
     Vector2f angle_error_euler_rad(wrap_PI(euler_roll_angle_rad - _predicted_euler_angle_rad.x), wrap_PI(euler_pitch_angle_rad - _predicted_euler_angle_rad.y));
@@ -177,22 +178,17 @@ void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, f
 
     // Convert predicted angles into an acceleration vector for braking/shaping
     const Vector3f predicted_euler_rad {_predicted_euler_angle_rad.x, _predicted_euler_angle_rad.y, _ahrs.yaw};
-    const Vector3f predicted_accel_neu_m = _pos_control.lean_angles_rad_to_accel_NEU_mss(predicted_euler_rad);
+    const Vector3f predicted_accel_ned_mss = _pos_control.lean_angles_rad_to_accel_NED_mss(predicted_euler_rad);
 
-    _predicted_accel_ne_mss.x = predicted_accel_neu_m.x;
-    _predicted_accel_ne_mss.y = predicted_accel_neu_m.y;
-}
+    _predicted_accel_ne_mss = predicted_accel_ned_mss.xy();
 
-// Calculates the expected stopping point based on current velocity and position in the NE frame.
-// Result is returned in centimeters.
-// See get_stopping_point_NE_m() for full details.
-void AC_Loiter::get_stopping_point_NE_cm(Vector2f& stopping_point_ne_cm) const
-{
-    Vector2f stop_ne_m;
-    // Retrieve stopping point in meters
-    get_stopping_point_NE_m(stop_ne_m);
-    // Convert to centimeters
-    stopping_point_ne_cm = stop_ne_m * 100.0;
+    if (loiter_option_is_set(LoiterOption::COORDINATED_TURN_ENABLED)) {
+        Vector3f target_ang_vel_rads = _attitude_control.get_attitude_target_ang_vel();
+        Vector3f desired_velocity_ms = _pos_control.get_vel_desired_NED_ms();
+        Vector2f turn_accel_ne_mss = Vector2f(-desired_velocity_ms.y * target_ang_vel_rads.z, desired_velocity_ms.x * target_ang_vel_rads.z);
+        _desired_accel_ne_mss += turn_accel_ne_mss;
+        _predicted_accel_ne_mss += turn_accel_ne_mss;
+    }
 }
 
 // Calculates the expected stopping point based on current velocity and position in the NE frame.
@@ -237,14 +233,7 @@ void AC_Loiter::update(bool avoidance_on)
     calc_desired_velocity(avoidance_on);
 
     // Run position controller to compute desired attitude and thrust
-    _pos_control.update_NE_controller();
-}
-
-// Sets the maximum allowed horizontal loiter speed in cm/s.
-// See set_speed_max_NE_ms() for full details.
-void AC_Loiter::set_speed_max_NE_cms(float speed_max_ne_cms)
-{
-    set_speed_max_NE_ms(speed_max_ne_cms * 0.01);
+    _pos_control.NE_update_controller();
 }
 
 // Sets the maximum allowed horizontal loiter speed in m/s.
@@ -264,6 +253,10 @@ void AC_Loiter::sanity_check_params()
 
     // Clamp horizontal accel to lean-angle-limited max (converted to cm/s²)
     _accel_max_ne_cmss.set(MIN(_accel_max_ne_cmss, GRAVITY_MSS * 100.0f * tanf(_attitude_control.lean_angle_max_rad())));
+}
+
+bool AC_Loiter::loiter_option_is_set(LoiterOption option) const {
+    return (_options & int8_t(option)) != 0;
 }
 
 // Updates feed-forward velocity using pilot-requested acceleration and braking logic.
@@ -291,7 +284,7 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
     }
 
     // Integrate predicted acceleration
-    Vector2f desired_vel_ne_ms = _pos_control.get_vel_desired_NEU_ms().xy();
+    Vector2f desired_vel_ne_ms = _pos_control.get_vel_desired_NED_ms().xy();
 
     // update the desired velocity using our predicted acceleration
     desired_vel_ne_ms += _predicted_accel_ne_mss * dt_s;
@@ -308,7 +301,7 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
         float loiter_brake_accel_mss = 0.0f;
         if (_desired_accel_ne_mss.is_zero()) {
             if ((AP_HAL::millis() - _brake_timer_ms) > _brake_delay_s * 1000.0) {
-                float brake_gain = _pos_control.get_vel_NE_pid().kP() * 0.5f;
+                float brake_gain = _pos_control.NE_get_vel_pid().kP() * 0.5f;
                 loiter_brake_accel_mss = constrain_float(sqrt_controller(desired_speed_ms, brake_gain, _brake_jerk_max_cmsss * 0.01, dt_s), 0.0f, _brake_accel_max_cmss * 0.01);
             }
         } else {
@@ -340,19 +333,19 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
         // TODO: We need to also limit the _desired_accel_ne_mss
         AC_Avoid *_avoid = AP::ac_avoid();
         if (_avoid != nullptr) {
-            Vector3f avoidance_vel_neu_cms{desired_vel_ne_ms.x * 100.0, desired_vel_ne_ms.y * 100.0, 0.0f};
-            _avoid->adjust_velocity(avoidance_vel_neu_cms, _pos_control.get_pos_NE_p().kP(), _accel_max_ne_cmss, _pos_control.get_pos_U_p().kP(), _pos_control.get_max_accel_U_mss() * 100.0, dt_s);
-            desired_vel_ne_ms = avoidance_vel_neu_cms.xy() * 0.01;
+            Vector3f avoidance_vel_ned_cms{desired_vel_ne_ms.x * 100.0, desired_vel_ne_ms.y * 100.0, 0.0f};
+            _avoid->adjust_velocity(avoidance_vel_ned_cms, _pos_control.NE_get_pos_p().kP(), _accel_max_ne_cmss, _pos_control.D_get_pos_p().kP(), _pos_control.D_get_max_accel_mss() * 100.0, dt_s);
+            desired_vel_ne_ms = avoidance_vel_ned_cms.xy() * 0.01;
         }
     }
 #endif // !APM_BUILD_ArduPlane
 
     // Retrieve current desired position
-    Vector2p desired_pos_neu_m = _pos_control.get_pos_desired_NEU_m().xy();
+    Vector2p desired_pos_ned_m = _pos_control.get_pos_desired_NED_m().xy();
 
     // Integrate velocity to update desired position
-    desired_pos_neu_m += (desired_vel_ne_ms * dt_s).topostype();
+    desired_pos_ned_m += (desired_vel_ne_ms * dt_s).topostype();
 
     // Send updated position, velocity, and acceleration to the position controller
-    _pos_control.set_pos_vel_accel_NE_m(desired_pos_neu_m, desired_vel_ne_ms, _desired_accel_ne_mss);
+    _pos_control.set_pos_vel_accel_NE_m(desired_pos_ned_m, desired_vel_ne_ms, _desired_accel_ne_mss);
 }

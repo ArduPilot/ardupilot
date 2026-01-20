@@ -15,7 +15,7 @@
 #
 # Grove Black (SERIAL3)
 # 1 (toward rear) : GPIO_NUM_1, RX
-# 2               : GPIO_NUM_3, TX
+# 2               : GPIO_NUM_2, TX
 # 3               : +V (+5V if plugged into USB, else +Vbat)
 # 4 (toward front): GND
 
@@ -33,9 +33,9 @@ ESP32_SPIDEV bmi270              0     0       GPIO_NUM_46  3    10*MHZ  10*MHZ
 ESP32_SPIDEV pixartflow_disabled 0     1       GPIO_NUM_12  3     2*MHZ   2*MHZ
 
 # i2c Buses
-#             Port       SDA         SCL         SPEED    INTERNAL
-ESP32_I2CBUS  I2C_NUM_0  GPIO_NUM_3  GPIO_NUM_4  400*KHZ  true
-ESP32_I2CBUS  I2C_NUM_1  GPIO_NUM_13 GPIO_NUM_15 400*KHZ  false
+#             Port       SDA         SCL         SPEED    INTERNAL SOFT
+ESP32_I2CBUS  I2C_NUM_0  GPIO_NUM_3  GPIO_NUM_4  400*KHZ  true     false
+ESP32_I2CBUS  I2C_NUM_1  GPIO_NUM_13 GPIO_NUM_15 400*KHZ  false    false
 
 # one IMU:
 IMU BMI270 SPI:bmi270 ROTATION_ROLL_180_YAW_90
@@ -65,8 +65,6 @@ define AP_COMPASS_ENABLE_DEFAULT 0
 define ALLOW_ARM_NO_COMPASS
 
 # no ADC
-define HAL_DISABLE_ADC_DRIVER 1
-define HAL_USE_ADC 0
 
 define AP_BATTERY_INA3221_ENABLED 1
 define HAL_BATTMON_INA3221_SHUNT_OHMS 0.01

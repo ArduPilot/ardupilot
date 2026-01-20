@@ -220,6 +220,9 @@ public:
         return lock_write_key != 0;
     }
 
+    // check that the current thread owns the uart making certain operations possible
+    virtual bool is_owned_by_current_thread() const { return true; }
+
 protected:
     // key for a locked port
     uint32_t lock_write_key;

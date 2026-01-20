@@ -153,6 +153,9 @@ private:
     void* last_crash_dump_ptr() const override;
 #endif
 
+    // get the system load
+    bool get_system_load(float& avg_load, float& peak_load) const override;
+
 #if HAL_ENABLE_DFU_BOOT
     void boot_to_dfu() override;
 #endif

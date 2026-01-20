@@ -129,7 +129,7 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Param: OPTION
     // @DisplayName: DroneCAN options
     // @Description: Option flags
-    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS,6:UseHimarkServo,7:HobbyWingESC,8:EnableStats,9:EnableFlexDebug
+    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS,6:UseHimarkServo,7:HobbyWingESC,8:EnableStats,9:EnableFlexDebug,10:SecondaryAllowExtendedFrames
     // @User: Advanced
     AP_GROUPINFO("OPTION", 5, AP_DroneCAN, _options, 0),
     
@@ -196,7 +196,7 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Param: S1_IDX
     // @DisplayName: DroneCAN Serial1 index
     // @Description: Serial port number on remote CAN node
-    // @Range: 0 100
+    // @Range: -1 100
     // @Values: -1:Disabled,0:Serial0,1:Serial1,2:Serial2,3:Serial3,4:Serial4,5:Serial5,6:Serial6
     // @RebootRequired: True
     // @User: Advanced
@@ -317,7 +317,7 @@ bool AP_DroneCAN::add_interface(AP_HAL::CANIface* can_iface)
     return true;
 }
 
-void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
+void AP_DroneCAN::init(uint8_t driver_index)
 {
     if (driver_index != _driver_index) {
         debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: init called with wrong driver_index");
@@ -586,7 +586,7 @@ void AP_DroneCAN::loop(void)
 void AP_DroneCAN::hobbywing_ESC_update(void)
 {
     if (hal.util->get_soft_armed()) {
-        // don't update ID database while disarmed, as it can cause
+        // don't update ID database while armed, as it can cause
         // some hobbywing ESCs to stutter
         return;
     }
@@ -2012,8 +2012,9 @@ bool AP_DroneCAN::add_11bit_driver(CANSensor *sensor)
 // handler for outgoing frames for auxillary drivers
 bool AP_DroneCAN::write_aux_frame(AP_HAL::CANFrame &out_frame, const uint32_t timeout_us)
 {
-    if (out_frame.isExtended()) {
-        // don't allow extended frames to be sent by auxillary driver
+    if (out_frame.isExtended() && !option_is_set(Options::ALLOW_EXTENDED_AUX)) {
+        // don't allow extended frames to be sent by auxillary driver unless
+        // the user has specifically allowed it
         return false;
     }
     return canard_iface.write_aux_frame(out_frame, timeout_us);

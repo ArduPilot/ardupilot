@@ -191,7 +191,7 @@ def under_macos():
 
 
 def under_vagrant():
-    return os.path.isfile("/ardupilot.vagrant")
+    return os.path.isdir("/vagrant")
 
 
 def under_wsl2():
@@ -256,11 +256,6 @@ def kill_tasks_pkill(victims):
     for victim in victims:  # pkill takes a single pattern, so iterate
         cmd = ["pkill", victim[:15]]  # pkill matches only first 15 characters
         run_cmd_blocking("pkill", cmd, quiet=True)
-
-
-class BobException(Exception):
-    """Handle Bob's Exceptions"""
-    pass
 
 
 def kill_tasks():
@@ -519,12 +514,29 @@ def find_geocoder_location(locname):
     except ImportError:
         print("geocoder not installed")
         return None
-    j = geocoder.osm(locname)
-    if j is None or not hasattr(j, 'lat') or j.lat is None:
-        print("geocoder failed to find '%s'" % locname)
+    # Step 1: Attempt the lookup
+    try:
+        j = geocoder.osm(locname)
+    except Exception as e:
+        # Handle network/blocked errors (like 403)
+        err_msg = str(e)
+        if '403' in err_msg:
+            print(f"geocoder access denied (HTTP 403) for '{locname}'")
+        else:
+            print(f"geocoder error: {err_msg}")
         return None
-    lat = j.lat
-    lon = j.lng
+    # Step 2: Validate the response object (Handles status_code 403 if no exception was raised)
+    status_code = getattr(j, 'status_code', None)
+    if status_code == 403:
+        print(f"geocoder access denied (HTTP 403) for '{locname}'")
+        return None
+
+    if j is None or not hasattr(j, 'lat') or j.lat is None:
+        print(f"geocoder failed to find '{locname}'")
+        return None
+    # Step 3: Success logic
+    lat, lon = j.lat, j.lng
+
     from MAVProxy.modules.mavproxy_map import srtm
     downloader = srtm.SRTMDownloader()
     downloader.loadFileList()
@@ -536,7 +548,7 @@ def find_geocoder_location(locname):
             alt = tile.getAltitudeFromLatLon(lat, lon)
             break
     if alt is None:
-        print("timed out getting altitude for '%s'" % locname)
+        print(f"timed out getting altitude for '{locname}'")
         return None
     return [lat, lon, alt, 0.0]
 
@@ -789,10 +801,10 @@ def start_vehicle(binary, opts, stuff, spawns=None):
             if not os.path.isfile(x):
                 print("The parameter file (%s) does not exist" % (x,))
                 sys.exit(1)
-        path = ",".join(paths)
         if cmd_opts.count > 1 or opts.auto_sysid:
             # we are in a subdirectory when using -n
-            path = os.path.join("..", path)
+            paths = [os.path.join("..", x) for x in paths]
+        path = ",".join(paths)
         progress("Using defaults from (%s)" % (path,))
     if opts.flash_storage:
         cmd.append("--set-storage-flash-enabled 1")
@@ -813,6 +825,22 @@ def start_vehicle(binary, opts, stuff, spawns=None):
                 path = str(file)
 
             progress("Adding parameters from (%s)" % (str(file),))
+    if opts.param:
+        param_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
+        atexit.register(os.unlink, param_file.name)
+        param_dir = os.path.join(param_file.name)
+        single_params = []
+        for p in opts.param:
+            single_params.extend(p.split(','))
+        for sp in single_params:
+            sp.replace("=", " ")
+            sp = sp.strip()
+            param_file.write(f"{sp}\n")
+        if path is not None:
+            path += "," + str(param_dir)
+        else:
+            path = str(param_dir)
+
     if opts.OSDMSP:
         path += "," + os.path.join(root_dir, "libraries/AP_MSP/Tools/osdtest.parm")
         path += "," + os.path.join(autotest_dir, "default_params/msposd.parm")
@@ -1061,6 +1089,11 @@ parser.add_option("-C", "--sim_vehicle_sh_compatible",
                   default=False,
                   help="be compatible with the way sim_vehicle.sh works; "
                   "make this the first option")
+
+parser.add_option("-P", "--param",
+                  default=None,
+                  action='append',
+                  help="set some param with the format PARAM=VALUE")
 
 group_build = optparse.OptionGroup(parser, "Build options")
 group_build.add_option("-N", "--no-rebuild",

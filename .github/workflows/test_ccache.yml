@@ -135,7 +135,7 @@ jobs:
         gcc: [10]
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: 'recursive'
       - name: ccache test
@@ -143,5 +143,4 @@ jobs:
         run: |
           PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-${{matrix.gcc}}/bin:$PATH"
           Tools/scripts/build_tests/test_ccache.py --boards MatekF405-bdshot,MatekF405-TE-bdshot --min-cache-pct=75
-          Tools/scripts/build_tests/test_ccache.py --boards Durandal-bdshot,Pixhawk6X --min-cache-pct=70
-
+          Tools/scripts/build_tests/test_ccache.py --boards Durandal-bdshot,Pixhawk6X --min-cache-pct=60

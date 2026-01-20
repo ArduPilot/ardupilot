@@ -173,11 +173,11 @@ public:
     static uint8_t next_interface;
 
     // Initialise CAN Peripheral
-    bool init(const uint32_t bitrate, const OperatingMode mode) override {
-        return init(bitrate, 0, mode);
+    bool init(const uint32_t bitrate) override {
+        return init(bitrate, 0);
     }
 
-    bool init(const uint32_t bitrate, const uint32_t fdbitrate, const OperatingMode mode) override;
+    bool init(const uint32_t bitrate, const uint32_t fdbitrate) override;
 
     // Put frame into Tx FIFO returns negative on error, 0 on buffer full, 
     // 1 on successfully pushing a frame into FIFO
@@ -189,10 +189,6 @@ public:
     int16_t receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_us,
                     CanIOFlags& out_flags) override;
 
-    // Set Filters to ignore frames not to be handled by us
-    bool configureFilters(const CanFilterConfig* filter_configs,
-                          uint16_t num_configs) override;
-
     // returns true if busoff state was detected and not handled yet
     bool is_busoff() const override
     {
@@ -201,9 +197,6 @@ public:
 
     // Clear the Rx buffer
     void clear_rx() override;
-
-    // Get number of Filter configurations
-    uint16_t getNumFilters() const override;
 
     // Get total number of Errors discovered
     uint32_t getErrorCount() const override;

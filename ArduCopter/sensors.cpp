@@ -53,16 +53,16 @@ bool Copter::rangefinder_up_ok() const
 // terrain offset is the terrain's height above the EKF origin
 void Copter::update_rangefinder_terrain_offset()
 {
-    float terrain_offset_m = rangefinder_state.inertial_alt_m - rangefinder_state.alt_glitch_protected_m;
-    rangefinder_state.terrain_offset_m += (terrain_offset_m - rangefinder_state.terrain_offset_m) * (copter.G_Dt / MAX(copter.g2.surftrak_tc, copter.G_Dt));
+    float terrain_u_m = rangefinder_state.ref_pos_u_m - rangefinder_state.alt_glitch_protected_m;
+    rangefinder_state.terrain_u_m += (terrain_u_m - rangefinder_state.terrain_u_m) * (copter.G_Dt / MAX(copter.g2.surftrak_tc, copter.G_Dt));
 
-    terrain_offset_m = rangefinder_up_state.inertial_alt_m + rangefinder_up_state.alt_glitch_protected_m;
-    rangefinder_up_state.terrain_offset_m += (terrain_offset_m - rangefinder_up_state.terrain_offset_m) * (copter.G_Dt / MAX(copter.g2.surftrak_tc, copter.G_Dt));
+    terrain_u_m = rangefinder_up_state.ref_pos_u_m + rangefinder_up_state.alt_glitch_protected_m;
+    rangefinder_up_state.terrain_u_m += (terrain_u_m - rangefinder_up_state.terrain_u_m) * (copter.G_Dt / MAX(copter.g2.surftrak_tc, copter.G_Dt));
 
     if (rangefinder_state.alt_healthy || rangefinder_state.data_stale()) {
-        wp_nav->set_rangefinder_terrain_offset_m(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.terrain_offset_m);
+        wp_nav->set_rangefinder_terrain_U_m(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.terrain_u_m);
 #if MODE_CIRCLE_ENABLED
-        circle_nav->set_rangefinder_terrain_offset_m(rangefinder_state.enabled && wp_nav->rangefinder_used(), rangefinder_state.alt_healthy, rangefinder_state.terrain_offset_m);
+        circle_nav->set_rangefinder_terrain_U_m(rangefinder_state.enabled && wp_nav->rangefinder_used(), rangefinder_state.alt_healthy, rangefinder_state.terrain_u_m);
 #endif
     }
 }

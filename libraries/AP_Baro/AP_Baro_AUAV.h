@@ -6,7 +6,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
-#include <AP_HAL/utility/OwnPtr.h>
 
 // Baro uses the airspeed AUAV Pressure sensor class from airspeed, airspeed must be enabled
 #include <AP_Airspeed/AP_Airspeed_config.h>
@@ -23,21 +22,20 @@
 
 class AP_Baro_AUAV : public AP_Baro_Backend {
 public:
-    AP_Baro_AUAV(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    AP_Baro_AUAV(AP_Baro &baro, AP_HAL::Device *dev);
 
     void update() override;
 
-    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::Device &dev);
 
 protected:
     bool init();
 
     void timer();
 
-    AP_HAL::OwnPtr<AP_HAL::Device> dev;
-    AP_HAL::I2CDevice *i2c_dev;
+    AP_HAL::Device *dev;
 
-    AUAV_Pressure_sensor sensor { i2c_dev, AUAV_Pressure_sensor::Type::Absolute };
+    AUAV_Pressure_sensor sensor { dev, AUAV_Pressure_sensor::Type::Absolute };
 
     uint8_t instance;
 

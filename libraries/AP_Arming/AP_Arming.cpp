@@ -116,8 +116,8 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 
     // @Param{Plane, Rover}: REQUIRE
     // @DisplayName: Require Arming Motors 
-    // @Description{Plane}: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, sends the minimum throttle PWM value to the throttle channel when disarmed. If 2, send 0 PWM (no signal) to throttle channel when disarmed. On planes with ICE enabled and the throttle while disarmed option set in ICE_OPTIONS, the motor will always get THR_MIN when disarmed. Arming will be blocked until all mandatory and ARMING_CHECK items are satisfied; arming can then be accomplished via (eg.) rudder gesture or GCS command.
-    // @Description{Rover}: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, all checks specified by ARMING_CHECKS must pass before the vehicle can be armed (for example, via rudder stick or GCS command).  If 3, Arm immediately once pre-arm/arm checks are satisfied, but only one time per boot up.  Note that a reboot is NOT required when setting to 0 but IS require when setting to 3.
+    // @Description{Plane}: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, sends the minimum throttle PWM value to the throttle channel when disarmed. If 2, send 0 PWM (no signal) to throttle channel when disarmed. On planes with ICE enabled and the throttle while disarmed option set in ICE_OPTIONS, the motor will always get THR_MIN when disarmed. Arming will be blocked until all mandatory and non-ARMING_SKIPCHK items are satisfied; arming can then be accomplished via (eg.) rudder gesture or GCS command.
+    // @Description{Rover}: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, all checks not skipped by ARMING_SKIPCHK must pass before the vehicle can be armed (for example, via rudder stick or GCS command).  If 3, Arm immediately once pre-arm/arm checks are satisfied, but only one time per boot up.  Note that a reboot is NOT required when setting to 0 but IS require when setting to 3.
     // @Values{Plane}: 0:Disabled,1:Yes(minimum PWM when disarmed),2:Yes(0 PWM when disarmed)
     // @Values{Rover}: 0:No,1:Yes(minimum PWM when disarmed),3:No(AutoArmOnce after checks are passed)
     // @User: Advanced
@@ -157,13 +157,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MIS_ITEMS",    7,     AP_Arming, _required_mission_items, 0),
 
-    // @Param: CHECK
-    // @DisplayName: Arm Checks to Perform (bitmask)
-    // @Description: Checks prior to arming motor. This is a bitmask of checks that will be performed before allowing arming. For most users it is recommended to leave this at the default of 1 (all checks enabled). You can select whatever checks you prefer by adding together the values of each check type to set this parameter. For example, to only allow arming when you have GPS lock and no RC failsafe you would set ARMING_CHECK to 72.
-    // @Bitmask: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,18:VisualOdometry,19:FFT
-    // @Bitmask{Plane}: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,19:FFT
-    // @User: Standard
-    AP_GROUPINFO("CHECK",        8,     AP_Arming,  checks_to_perform,       float(Check::ALL)),
+    // index 8 was CHECK stored as AP_Int32, became SKIPCHK
 
     // @Param: OPTIONS
     // @DisplayName: Arming options
@@ -198,6 +192,14 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     AP_GROUPINFO("NEED_LOC", 12, AP_Arming, require_location, float(AP_ARMING_NEED_LOC_DEFAULT)),
 #endif  // AP_ARMING_NEED_LOC_PARAMETER_ENABLED
 
+    // @Param: SKIPCHK
+    // @DisplayName: Arm Checks to Skip (bitmask)
+    // @Description: Checks to skip prior to arming motor. This is a bitmask of checks before allowing arming that will be skipped. For most users it is recommended to leave this at the default of 0 (no checks skipped). In extreme circumstances, a value of -1 can be used to skip all non-mandatory current and future checks.
+    // @Bitmask: 1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,18:VisualOdometry,19:FFT
+    // @Bitmask{Plane}: 1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,19:FFT
+    // @User: Standard
+    AP_GROUPINFO("SKIPCHK", 13, AP_Arming, checks_to_skip, 0),
+
     AP_GROUPEND
 };
 
@@ -219,6 +221,39 @@ AP_Arming::AP_Arming()
     _singleton = this;
 
     AP_Param::setup_object_defaults(this, var_info);
+}
+
+__INITFUNC__ void AP_Arming::init(void)
+{
+    // PARAM_CONVERSION - 4.7 CHECK -> SKIPCHK
+
+    if (!checks_to_skip.configured()) {
+        // new parameter is not configured (though it may be set non-zero in a
+        // defaults table e.g. on Sub)
+        int32_t skipchk_new = checks_to_skip.get(); // get param default
+
+        uint32_t idx = 8;
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+        idx <<= 6; // the old index is shifted due to AP_NESTEDGROUPINFO in AP_Arming_Plane.cpp
+#endif
+
+        int32_t checks_old;
+        if (AP_Param::get_param_by_index(this, idx, AP_PARAM_INT32, &checks_old)) {
+            // the old parameter was customized
+            if (checks_old == 0) { // all checks disabled?
+                skipchk_new = -1; // skip all current and future checks
+            } else if (!(checks_old & 1)) { // ALL flag not set?
+                // mask of known checks at the time the conversion was written
+                uint32_t check_mask = ((1U << 21) - 1) & (~1); // remove ALL bit
+                // invert bits to get checks to skip
+                skipchk_new = (~checks_old) & check_mask;
+            } else {
+                skipchk_new = 0; // specifically enable all checks, ignoring param default
+            }
+        }
+
+        checks_to_skip.set_and_save(skipchk_new); // set and save to finish migration
+    }
 }
 
 // performs pre-arm checks. expects to be called at 1hz.
@@ -281,15 +316,21 @@ bool AP_Arming::is_armed_and_safety_off() const
 
 uint32_t AP_Arming::get_enabled_checks() const
 {
-    return checks_to_perform;
+    // ignore unknown checks
+    uint32_t check_mask = (uint32_t(Check::CHECK_LAST)-1) & (~1); // remove former ALL bit
+    return (~checks_to_skip) & check_mask;
 }
 
 bool AP_Arming::check_enabled(const AP_Arming::Check check) const
 {
-    if (checks_to_perform & uint32_t(Check::ALL)) {
-        return true;
-    }
-    return (checks_to_perform & uint32_t(check));
+    return (checks_to_skip & uint32_t(check)) == 0;
+}
+
+bool AP_Arming::all_checks_enabled() const
+{
+    // ignore unknown checks
+    uint32_t check_mask = (uint32_t(Check::CHECK_LAST)-1) & (~1); // remove former ALL bit
+    return (checks_to_skip & check_mask) == 0;
 }
 
 void AP_Arming::check_failed(const AP_Arming::Check check, bool report, const char *fmt, ...) const
@@ -587,7 +628,7 @@ bool AP_Arming::compass_checks(bool report)
         }
 
         if (!_compass.healthy()) {
-            check_failed(Check::COMPASS, report, "Compass not healthy");
+            check_failed(Check::COMPASS, report, "Compass %d not healthy",  _compass.get_first_usable() + 1);
             return false;
         }
         // check compass learning is on or offsets have been set
@@ -1066,7 +1107,7 @@ bool AP_Arming::board_voltage_checks(bool report)
 #if HAL_HAVE_IMU_HEATER
 bool AP_Arming::heater_min_temperature_checks(bool report)
 {
-    if (checks_to_perform & uint32_t(Check::ALL)) {
+    if (all_checks_enabled()) {
         AP_BoardConfig *board = AP::boardConfig();
         if (board) {
             float temperature;
@@ -1212,8 +1253,7 @@ bool AP_Arming::terrain_checks(bool report) const
 
     const AP_Terrain *terrain = AP_Terrain::get_singleton();
     if (terrain == nullptr) {
-        // this is also a system error, and it is already complaining
-        // about it.
+        check_failed(Check::PARAMETERS, report, "terrain disabled");
         return false;
     }
 
@@ -1266,7 +1306,7 @@ bool AP_Arming::can_checks(bool report)
         for (uint8_t i = 0; i < num_drivers; i++) {
             switch (AP::can().get_driver_type(i)) {
                 case AP_CAN::Protocol::PiccoloCAN: {
-#if HAL_PICCOLO_CAN_ENABLE
+#if AP_PICCOLOCAN_ENABLED
                     AP_PiccoloCAN *ap_pcan = AP_PiccoloCAN::get_pcan(i);
 
                     if (ap_pcan != nullptr && !ap_pcan->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
@@ -1415,7 +1455,7 @@ bool AP_Arming::fettec_checks(bool display_failure) const
     // check ESCs are ready
     char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
     if (!f->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
-        check_failed(Check::ALL, display_failure, "FETtec: %s", fail_msg);
+        check_failed(display_failure, "FETtec: %s", fail_msg);
         return false;
     }
     return true;
@@ -1796,7 +1836,7 @@ bool AP_Arming::crashdump_checks(bool report)
         return true;
     }
 
-    check_failed(Check::PARAMETERS, true, "CrashDump data detected");
+    check_failed(Check::PARAMETERS, report, "CrashDump data detected");
 
     return false;
 }
@@ -1852,7 +1892,7 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 
     running_arming_checks = false;
 
-    if (armed && do_arming_checks && checks_to_perform == 0) {
+    if (armed && do_arming_checks && should_skip_all_checks()) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Warning: Arming Checks Disabled");
     }
     

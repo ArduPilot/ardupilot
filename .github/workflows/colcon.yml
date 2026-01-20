@@ -145,7 +145,7 @@ jobs:
       fail-fast: false  # don't cancel if a job from the matrix fails
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: 'recursive'
           path: src/ardupilot
@@ -156,7 +156,7 @@ jobs:
           NOW=$(date -u +"%F-%T")
           echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
       - name: ccache cache files
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
@@ -203,6 +203,9 @@ jobs:
       - name: Test with colcon
         shell: 'bash'
         run: |
+          # force on debugging so we can see ros2 launch internal errors
+          sed -i'' "s|debug: bool = False|debug: bool = True|g" /opt/ros/humble/lib/python3.10/site-packages/launch/launch_service.py
+
           source install/setup.bash
           colcon test --python-testing "pytest" --pytest-args " --verbose" " --stepwise" --executor sequential --parallel-workers 0 --base-paths src/ardupilot --event-handlers=console_cohesion+
       - name: Report colcon test results

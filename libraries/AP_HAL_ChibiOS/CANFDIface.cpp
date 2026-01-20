@@ -462,148 +462,10 @@ int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_u
     return AP_HAL::CANIface::receive(out_frame, out_timestamp_us, out_flags);
 }
 
-bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
-                                uint16_t num_configs)
-{
-    // only enable filters in AP_Periph. It makes no sense on the flight controller
-#if !defined(HAL_BUILD_AP_PERIPH) || defined(STM32G4)
-    // no filtering
-    can_->CCCR &= ~FDCAN_CCCR_INIT; // Leave init mode
-    uint32_t while_start_ms = AP_HAL::millis();
-    while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
-        if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
-            return false;
-        }
-    }
-    initialised_ = true;
-    return true;
-#else
-    uint32_t num_extid = 0, num_stdid = 0;
-    uint32_t total_available_list_size = MAX_FILTER_LIST_SIZE;
-    uint32_t* filter_ptr;
-    if (initialised_ || mode_ != FilteredMode) {
-        // we are already initialised can't do anything here
-        return false;
-    }
-    //count number of frames of each type
-    for (uint8_t i = 0; i < num_configs; i++) {
-        const CanFilterConfig* const cfg = filter_configs + i;
-        if ((cfg->id & AP_HAL::CANFrame::FlagEFF) || !(cfg->mask & AP_HAL::CANFrame::FlagEFF)) {
-            num_extid++;
-        } else {
-            num_stdid++;
-        }
-    }
-    CriticalSectionLocker lock;
-    //Allocate Message RAM for Standard ID Filter List
-    if (num_stdid == 0) { //No Frame with Standard ID is to be accepted
-#if defined(STM32G4)
-        can_->RXGFC |= 0x2; //Reject All Standard ID Frames
-#else
-        can_->GFC |= 0x2; //Reject All Standard ID Frames
-#endif
-    } else if ((num_stdid < total_available_list_size) && (num_stdid <= 128)) {
-        can_->SIDFC = (FDCANMessageRAMOffset_ << 2) | (num_stdid << 16);
-        MessageRam_.StandardFilterSA = SRAMCAN_BASE + (FDCANMessageRAMOffset_ * 4U);
-        FDCANMessageRAMOffset_ += num_stdid;
-        total_available_list_size -= num_stdid;
-        can_->GFC |= (0x3U << 4); //Reject non matching Standard frames
-    } else {    //The List is too big, return fail
-        can_->CCCR &= ~FDCAN_CCCR_INIT; // Leave init mode
-        uint32_t while_start_ms = AP_HAL::millis();
-        while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
-            if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
-                return false;
-            }
-        }
-        return false;
-    }
-
-    if (num_stdid) {
-        num_stdid = 0;  //reset list count
-        filter_ptr = (uint32_t*)MessageRam_.StandardFilterSA;
-        //Run through the filter list and setup standard id filter list
-        for (uint8_t i = 0; i < num_configs; i++) {
-            uint32_t id = 0;
-            uint32_t mask = 0;
-            const CanFilterConfig* const cfg = filter_configs + i;
-            if (!((cfg->id & AP_HAL::CANFrame::FlagEFF) || !(cfg->mask & AP_HAL::CANFrame::FlagEFF))) {
-                id   = (cfg->id   & AP_HAL::CANFrame::MaskStdID);  // Regular std frames, nothing fancy.
-                mask = (cfg->mask & 0x7F);
-                filter_ptr[num_stdid] = 0x2U << 30  | //Classic CAN Filter
-                                        0x1U << 27 |  //Store in Rx FIFO0 if filter matches
-                                        id << 16 |
-                                        mask;
-                num_stdid++;
-            }
-        }
-    }
-
-    //Allocate Message RAM for Extended ID Filter List
-    if (num_extid == 0) { //No Frame with Extended ID is to be accepted
-        can_->GFC |= 0x1; //Reject All Extended ID Frames
-    } else if ((num_extid < (total_available_list_size/2)) && (num_extid <= 64)) {
-        can_->XIDFC = (FDCANMessageRAMOffset_ << 2) | (num_extid << 16);
-        MessageRam_.ExtendedFilterSA = SRAMCAN_BASE + (FDCANMessageRAMOffset_ * 4U);
-        FDCANMessageRAMOffset_ += num_extid*2;
-        can_->GFC |= (0x3U << 2); // Reject non matching Extended frames
-    } else {    //The List is too big, return fail
-        can_->CCCR &= ~FDCAN_CCCR_INIT; // Leave init mode
-        uint32_t while_start_ms = AP_HAL::millis();
-        while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
-            if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
-                return false;
-            }
-        }
-        return false;
-    }
-
-    if (num_extid) {
-        num_extid = 0;
-        filter_ptr = (uint32_t*)MessageRam_.ExtendedFilterSA;
-        //Run through the filter list and setup extended id filter list
-        for (uint8_t i = 0; i < num_configs; i++) {
-            uint32_t id = 0;
-            uint32_t mask = 0;
-            const CanFilterConfig* const cfg = filter_configs + i;
-            if ((cfg->id & AP_HAL::CANFrame::FlagEFF) || !(cfg->mask & AP_HAL::CANFrame::FlagEFF)) {
-                id   = (cfg->id   & AP_HAL::CANFrame::MaskExtID);
-                mask = (cfg->mask & AP_HAL::CANFrame::MaskExtID);
-                filter_ptr[num_extid*2]       = 0x1U << 29 | id; //Store in Rx FIFO0 if filter matches
-                filter_ptr[num_extid*2 + 1]   = 0x2U << 30 | mask; // Classic CAN Filter
-                num_extid++;
-            }
-        }
-    }
-
-    MessageRam_.EndAddress = SRAMCAN_BASE + (FDCANMessageRAMOffset_ * 4U);
-    if (MessageRam_.EndAddress > MESSAGE_RAM_END_ADDR) {
-        //We are overflowing the limit of Allocated Message RAM
-        AP_HAL::panic("CANFDIface: Message RAM Overflow!");
-    }
-
-    // Finally get out of Config Mode
-    can_->CCCR &= ~FDCAN_CCCR_INIT; // Leave init mode
-    uint32_t while_start_ms = AP_HAL::millis();
-    while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
-        if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
-            return false;
-        }
-    }
-    initialised_ = true;
-    return true;
-#endif // AP_Periph, STM32G4
-}
-
-uint16_t CANIface::getNumFilters() const
-{
-    return MAX_FILTER_LIST_SIZE;
-}
-
 bool CANIface::clock_init_ = false;
-bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate, const OperatingMode mode)
+bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate)
 {
-    Debug("Bitrate %lu mode %d", static_cast<unsigned long>(bitrate), static_cast<int>(mode));
+    Debug("Bitrate %lu", static_cast<unsigned long>(bitrate));
     if (self_index_ > HAL_NUM_CAN_IFACES) {
         Debug("CAN drv init failed");
         return false;
@@ -616,7 +478,6 @@ bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate, const Oper
     }
 
     bitrate_ = bitrate;
-    mode_ = mode;
     //Only do it once
     //Doing it second time will reset the previously initialised bus
     if (!clock_init_) {
@@ -773,20 +634,18 @@ bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate, const Oper
     can_->CCCR |= FDCAN_CCCR_FDOE | FDCAN_CCCR_BRSE; // enable sending CAN FD frames, and Bitrate switching
 #endif
 
-    // If mode is Filtered then we finish the initialisation in configureFilter method
-    // otherwise we finish here
-    if (mode != FilteredMode) {
-        can_->CCCR &= ~FDCAN_CCCR_INIT; // Leave init mode
-        uint32_t while_start_ms = AP_HAL::millis();
-        while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
-            if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
-                return false;
-            }
+    // finish initialisation here without filters
+    can_->CCCR &= ~FDCAN_CCCR_INIT; // Leave init mode
+    uint32_t while_start_ms = AP_HAL::millis();
+    while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
+        if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
+            return false;
         }
-
-        //initialised
-        initialised_ = true;
     }
+
+    // initialised
+    initialised_ = true;
+
     return true;
 }
 

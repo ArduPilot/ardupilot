@@ -44,10 +44,25 @@ const AP_Param::GroupInfo FlightAxis::var_info[] = {
     // @Bitmask: 1: Swap first 4 and last 4 servos (for quadplane testing)
     // @Bitmask: 2: Demix heli servos and send roll/pitch/collective/yaw
     // @Bitmask: 3: Don't print frame rate stats
+    // @Bitmask: 4: Don't log Dt stats
     // @User: Advanced
     AP_GROUPINFO("OPTS", 1, FlightAxis, _options, uint32_t(Option::ResetPosition)),
+
+    // @Param: SAMPLEHZ
+    // @DisplayName: FlightAxis IMU synthetic sample rate
+    // @Description: FlightAxis IMU synthetic sample rate
+    // @User: Advanced
+    AP_GROUPINFO("SAMPLEHZ", 2, FlightAxis, _samplehz, 2000),
     AP_GROUPEND
 };
+
+/*
+  we use a thread for socket creation to reduce the impact of socket
+  creation latency. These condition variables are used to synchronise
+  the thread
+ */
+static HAL_BinarySemaphore sockcond1;
+static HAL_BinarySemaphore sockcond2;
 
 // the asprintf() calls are not worth checking for SITL
 #pragma GCC diagnostic ignored "-Wunused-result"
@@ -109,6 +124,33 @@ static double timestamp_sec()
     return tval.tv_sec + (tval.tv_usec*1.0e-6);
 }
 
+#if defined(CYGWIN_BUILD)
+#include <windows.h>
+
+/*
+  usleep on cygwin is broken for small times: https://stackoverflow.com/questions/6254703/thread-sleep-for-less-than-1-millisecond
+  the solution is to define our own busy wait sleep
+ */
+static void us_wait(int64_t microseconds) {
+    LARGE_INTEGER frequency;
+    LARGE_INTEGER start_time, current_time;
+
+    QueryPerformanceFrequency(&frequency); // Get the frequency of the performance counter
+    QueryPerformanceCounter(&start_time);  // Get the current time
+
+    // Calculate the number of ticks required for the specified microseconds
+    int64_t ticks_to_wait = (int64_t)microseconds * frequency.QuadPart / 1000000;
+    int64_t end_ticks = start_time.QuadPart + ticks_to_wait;
+
+    // Busy-wait until the desired time has elapsed
+    do {
+        QueryPerformanceCounter(&current_time);
+    } while (current_time.QuadPart < end_ticks);
+}
+#else
+#define us_wait(x) usleep(x)
+#endif
+
 FlightAxis::FlightAxis(const char *frame_str) :
     Aircraft(frame_str)
 {
@@ -116,6 +158,7 @@ FlightAxis::FlightAxis(const char *frame_str) :
     AP_Param::setup_object_defaults(this, var_info);
 
     use_time_sync = false;
+    flightaxis_sync_imus_to_frames = true;  // tell the IMUs to advance on each frame that is processed
     rate_hz = 250 / target_speedup;
     if(strstr(frame_str, "helidemix") != nullptr) {
         _options.set(_options | uint32_t(Option::HeliDemix));
@@ -144,7 +187,7 @@ FlightAxis::FlightAxis(const char *frame_str) :
         printf("Failed to create socket_creator thread\n");
     }
 }
-    
+
 /*
   extremely primitive SOAP parser that assumes the format used by FlightAxis
 */
@@ -188,7 +231,6 @@ bool FlightAxis::soap_request_start(const char *action, const char *fmt, ...)
     va_list ap;
     char *req1;
 
-    // we keep sock around to let the data flow.  But not for too long:
     if (sock) {
         delete sock;
         sock = nullptr;
@@ -198,8 +240,12 @@ bool FlightAxis::soap_request_start(const char *action, const char *fmt, ...)
     vasprintf(&req1, fmt, ap);
     va_end(ap);
 
-    while (!socks.pop(sock)) {
-        usleep(50);
+    // consumer/producer pattern
+    while (sock == nullptr) {
+        sock_outsem.wait_blocking();
+        sock = socknext;
+        socknext = nullptr;
+        sock_insem.signal();
     }
 
     char *req;
@@ -277,41 +323,62 @@ char *FlightAxis::soap_request_end(uint32_t timeout_ms)
     return strdup(replybuf);
 }
 
-void FlightAxis::exchange_data(const struct sitl_input &input)
+bool FlightAxis::exchange_data(const struct sitl_input &input)
 {
     if (!sock &&
         (!controller_started ||
-         is_zero(state.m_flightAxisControllerIsActive) ||
-         !is_zero(state.m_resetButtonHasBeenPressed))) {
-        printf("Starting controller at %s\n", controller_ip);
-        // call a restore first. This allows us to connect after the aircraft is changed in RealFlight
-        soap_request_start("RestoreOriginalControllerDevice", R"(<?xml version='1.0' encoding='UTF-8'?>
+         is_zero(next_state.m_flightAxisControllerIsActive) ||
+         !is_zero(next_state.m_resetButtonHasBeenPressed))) {
+        start_controller();
+    }
+
+    if (!sock) {
+        send_request_message(input);
+    }
+    if (sock) {
+        bool ret = process_reply_message();
+        if (ret) {
+            us_wait(250);
+            send_request_message(input);
+        }
+        return ret;
+    }
+    return false;
+}
+
+void FlightAxis::start_controller()
+{
+    printf("Starting controller at %s\n", controller_ip);
+    // call a restore first. This allows us to connect after the aircraft is changed in RealFlight
+    soap_request_start("RestoreOriginalControllerDevice", R"(<?xml version='1.0' encoding='UTF-8'?>
 <soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
 <soap:Body>
 <RestoreOriginalControllerDevice><a>1</a><b>2</b></RestoreOriginalControllerDevice>
 </soap:Body>
 </soap:Envelope>)");
-        soap_request_end(1000);
-        if(option_is_set(Option::ResetPosition)) {
-            soap_request_start("ResetAircraft", R"(<?xml version='1.0' encoding='UTF-8'?>
+    soap_request_end(1000UL);
+    if(option_is_set(Option::ResetPosition)) {
+        soap_request_start("ResetAircraft", R"(<?xml version='1.0' encoding='UTF-8'?>
 <soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
 <soap:Body>
 <ResetAircraft><a>1</a><b>2</b></ResetAircraft>
 </soap:Body>
 </soap:Envelope>)");
-            soap_request_end(1000);
-        }
-        soap_request_start("InjectUAVControllerInterface", R"(<?xml version='1.0' encoding='UTF-8'?>
+        soap_request_end(1000UL);
+    }
+    soap_request_start("InjectUAVControllerInterface", R"(<?xml version='1.0' encoding='UTF-8'?>
 <soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
 <soap:Body>
 <InjectUAVControllerInterface><a>1</a><b>2</b></InjectUAVControllerInterface>
 </soap:Body>
 </soap:Envelope>)");
-        soap_request_end(1000);
-        activation_frame_counter = frame_counter;
-        controller_started = true;
-    }
+    soap_request_end(1000UL);
+    activation_frame_counter = frame_counter;
+    controller_started = true;
+}
 
+void FlightAxis::send_request_message(const struct sitl_input &input)
+{ 
     // maximum number of servos to send is 12 with new FlightAxis
     float scaled_servos[12] {};
     uint16_t valid_channels = 0;
@@ -352,8 +419,8 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
         scaled_servos[2] = constrain_float(col, 0, 1);
     }
 
-    if (!sock) {
-        soap_request_start("ExchangeData", R"(<?xml version='1.0' encoding='UTF-8'?><soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
+    const uint16_t channels = hal.scheduler->is_system_initialized()?4095:0;
+    soap_request_start("ExchangeData", R"(<?xml version='1.0' encoding='UTF-8'?><soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
 <soap:Body>
 <ExchangeData>
 <pControlInputs>
@@ -376,61 +443,129 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
 </ExchangeData>
 </soap:Body>
 </soap:Envelope>)",
-                           valid_channels,
-                           scaled_servos[0],
-                           scaled_servos[1],
-                           scaled_servos[2],
-                           scaled_servos[3],
-                           scaled_servos[4],
-                           scaled_servos[5],
-                           scaled_servos[6],
-                           scaled_servos[7],
-                           scaled_servos[8],
-                           scaled_servos[9],
-                           scaled_servos[10],
-                           scaled_servos[11]);
-    }
+                        channels,
+                        scaled_servos[0],
+                        scaled_servos[1],
+                        scaled_servos[2],
+                        scaled_servos[3],
+                        scaled_servos[4],
+                        scaled_servos[5],
+                        scaled_servos[6],
+                        scaled_servos[7],
+                        scaled_servos[8],
+                        scaled_servos[9],
+                        scaled_servos[10],
+                        scaled_servos[11]);
+}
 
+bool FlightAxis::process_reply_message()
+{
     char *reply = nullptr;
-    if (sock) {
-        reply = soap_request_end(0);
-        if (reply == nullptr) {
-            sock_error_count++;
-            if (sock_error_count >= 10000 && timestamp_sec() - last_recv_sec > 1) {
-                printf("socket timeout\n");
-                delete sock;
-                sock = nullptr;
-                sock_error_count = 0;
-                last_recv_sec = timestamp_sec();
-            }
+    reply = soap_request_end(1);
+    if (reply == nullptr) {
+        sock_error_count++;
+        if (sock_error_count >= 10000 && timestamp_sec() - last_recv_sec > 1) {
+            printf("socket timeout\n");
+            delete sock;
+            sock = nullptr;
+            sock_error_count = 0;
+            last_recv_sec = timestamp_sec();
         }
     }
 
     if (reply) {
         sock_error_count = 0;
         last_recv_sec = timestamp_sec();
-        double lastt_s = state.m_currentPhysicsTime_SEC;
         parse_reply(reply);
-        double dt = state.m_currentPhysicsTime_SEC - lastt_s;
-        if (dt > 0 && dt < 0.1) {
-            if (average_frame_time_s < 1.0e-6) {
-                average_frame_time_s = dt;
-            }
-            average_frame_time_s = average_frame_time_s * 0.98 + dt * 0.02;
-        }
-        socket_frame_counter++;
         free(reply);
+        return true;
     }
+    return false;
 }
 
+bool FlightAxis::wait_for_sample(const struct sitl_input &input)
+{
+    double dt_seconds = 0;
+    const float SAMPLE_INTERVAL_S = 1.0f / _samplehz.get();
+    const float SAMPLE_INTERVAL_MIN_S = (SAMPLE_INTERVAL_S/2);   // smallest interval before moving on to the next
+
+    double lastt_s = state.m_currentPhysicsTime_SEC;
+
+    if (is_zero(prev_state.m_currentPhysicsTime_SEC)) {
+        if (exchange_data(input)) {
+            state = prev_state = next_state;
+            sample_interval_s = SAMPLE_INTERVAL_S;
+        }
+        return false;
+    }
+
+    // get a new frame if we have processed all the whole samples in the previous one
+    if (state.m_currentPhysicsTime_SEC + SAMPLE_INTERVAL_MIN_S >= next_state.m_currentPhysicsTime_SEC) {
+        prev_state = next_state;
+        do {
+            if (exchange_data(input)) {  // updates next_state
+                state = prev_state; // ensure state is at the beginning of the data range
+
+                if (is_zero(last_time_s)) {
+                    last_time_s = state.m_currentPhysicsTime_SEC - SAMPLE_INTERVAL_S;
+                }
+                dt_seconds = next_state.m_currentPhysicsTime_SEC - last_dt_sample_s;
+                last_delta_time_s = next_state.m_currentPhysicsTime_SEC - last_time_s;
+                last_dt_sample_s = next_state.m_currentPhysicsTime_SEC;
+            }
+        } while (is_zero(dt_seconds));
+        // adjust the sample interval so that the number of samples in a frame is an integer
+        // this prevents very small dt's which can cause havoc with flight control
+        sample_interval_s = dt_seconds / roundf(dt_seconds / SAMPLE_INTERVAL_S);
+    }
+
+    double new_time = MIN(next_state.m_currentPhysicsTime_SEC, state.m_currentPhysicsTime_SEC + sample_interval_s);
+    state = interpolate_frame(next_state, prev_state, new_time);
+
+    socket_frame_counter++;
+
+    double dt = state.m_currentPhysicsTime_SEC - lastt_s;
+    if (dt > 0 && dt < 0.1) {
+        if (average_frame_time_s < 1.0e-6) {
+            average_frame_time_s = dt;
+        }
+        average_frame_time_s = average_frame_time_s * 0.98 + dt * 0.02;
+    }
+#if HAL_LOGGING_ENABLED
+    if (!(option_is_set(Option::NoDtLog))) {
+        uint64_t time_now = uint64_t(state.m_currentPhysicsTime_SEC * 1.0e6);
+// @LoggerMessage: RF
+// @Description: RealFlight mode messages
+// @Field: TimeUS: Time since system startup
+// @Field: Dt: delta time between this frame and the previous frame
+// @Field: Fps: frames-per-second implied by the current delta time
+        AP::logger().WriteStreaming("RF", "TimeUS,Dt,Fps", "QdI", time_now, dt, uint32_t(roundf(1/dt)));
+    }
+#endif
+    if (last_time_s > 0) {
+        if (dt_seconds > 0 && dt_seconds < 0.1) {
+            if (is_zero(average_delta_time_s)) {
+                average_delta_time_s = dt_seconds;
+            }
+            average_delta_time_s = average_delta_time_s * 0.98 + dt_seconds * 0.02;
+        }
+    }
+
+    if (is_equal(last_time_s, state.m_currentPhysicsTime_SEC)) {
+        AP_HAL::panic("Time did not move");
+    }
+
+    return true;
+}
 
 /*
   update the FlightAxis simulation by one time step
  */
 void FlightAxis::update(const struct sitl_input &input)
 {
-    last_input = input;
-    exchange_data(input);
+    if (!wait_for_sample(input)) {
+        return;
+    }
 
     double dt_seconds = state.m_currentPhysicsTime_SEC - last_time_s;
     if (dt_seconds < 0) {
@@ -440,27 +575,10 @@ void FlightAxis::update(const struct sitl_input &input)
         position_offset.zero();
         return;
     }
-    if (dt_seconds < 0.00001f) {
-        float delta_time = 0.001;
-        // don't go past the next expected frame
-        if (delta_time + extrapolated_s > average_frame_time_s) {
-            delta_time = average_frame_time_s - extrapolated_s;
-        }
-        if (delta_time <= 0) {
-            return;
-        }
-        time_now_us += delta_time * 1.0e6;
-        extrapolate_sensors(delta_time);
-        update_position();
-        update_mag_field_bf();
-        extrapolated_s += delta_time;
-        report_FPS();
-        return;
-    }
-
-    extrapolated_s = 0;
     
+    // initialize timer
     if (initial_time_s <= 0) {
+        time_now_us = 1;    // prevent time going backwards
         dt_seconds = 0.001f;
         initial_time_s = state.m_currentPhysicsTime_SEC - dt_seconds;
     }
@@ -554,6 +672,7 @@ void FlightAxis::update(const struct sitl_input &input)
     time_advance();
     uint64_t new_time_us = (state.m_currentPhysicsTime_SEC - initial_time_s)*1.0e6;
     if (new_time_us < time_now_us) {
+        //printf("Time going backwards by %u\n", uint32_t(time_now_us - new_time_us));
         uint64_t dt_us = time_now_us - new_time_us;
         if (dt_us > 500000) {
             // time going backwards
@@ -571,11 +690,13 @@ void FlightAxis::update(const struct sitl_input &input)
             dt_us = glitch_threshold_us;
             glitch_count++;
         }
+        if (dt_us) {    // adjust the frame time to match the dt which will vary over time
+            adjust_frame_time(1.0e6/dt_us);
+        }
         time_now_us += dt_us;
     }
 
     last_time_s = state.m_currentPhysicsTime_SEC;
-
     last_velocity_ef = velocity_ef;
 
     // update magnetic field
@@ -591,19 +712,55 @@ void FlightAxis::update(const struct sitl_input &input)
     report_FPS();
 }
 
+struct FlightAxis::state FlightAxis::interpolate_frame(struct state& new_state, struct state& old_state, double new_time)
+{
+    struct state intermediate_state = old_state;
+    double dt = new_state.m_currentPhysicsTime_SEC - old_state.m_currentPhysicsTime_SEC;
+    double interval = new_time - old_state.m_currentPhysicsTime_SEC;
+
+#define INTERPOLATE(name) (intermediate_state.name = (old_state.name + interval * (new_state.name - old_state.name) / dt))
+    INTERPOLATE(m_airspeed_MPS);
+    INTERPOLATE(m_altitudeAGL_MTR);
+    INTERPOLATE(m_pitchRate_DEGpSEC);
+    INTERPOLATE(m_rollRate_DEGpSEC);
+    INTERPOLATE(m_yawRate_DEGpSEC);
+    INTERPOLATE(m_aircraftPositionX_MTR);
+    INTERPOLATE(m_aircraftPositionY_MTR);
+    INTERPOLATE(m_velocityWorldU_MPS);
+    INTERPOLATE(m_velocityWorldV_MPS);
+    INTERPOLATE(m_velocityWorldW_MPS);
+    INTERPOLATE(m_accelerationBodyAX_MPS2);
+    INTERPOLATE(m_accelerationBodyAY_MPS2);
+    INTERPOLATE(m_accelerationBodyAZ_MPS2);
+    INTERPOLATE(m_windX_MPS);
+    INTERPOLATE(m_windY_MPS);
+    INTERPOLATE(m_windZ_MPS);
+    INTERPOLATE(m_propRPM);
+    INTERPOLATE(m_heliMainRotorRPM);
+    INTERPOLATE(m_batteryVoltage_VOLTS);
+    INTERPOLATE(m_batteryCurrentDraw_AMPS);
+    INTERPOLATE(m_orientationQuaternion_X);
+    INTERPOLATE(m_orientationQuaternion_Y);
+    INTERPOLATE(m_orientationQuaternion_Z);
+    INTERPOLATE(m_orientationQuaternion_W);
+    intermediate_state.m_currentPhysicsTime_SEC = new_time;
+
+    return intermediate_state;
+}
+
 /*
   report frame rates
  */
 void FlightAxis::report_FPS(void)
 {
-    if (frame_counter++ % 1000 == 0) {
+    if (frame_counter++ % _samplehz == 0) {
         if (!is_zero(last_frame_count_s)) {
             uint64_t frames = socket_frame_counter - last_socket_frame_counter;
             last_socket_frame_counter = socket_frame_counter;
             double dt = state.m_currentPhysicsTime_SEC - last_frame_count_s;
             if(!option_is_set(Option::SilenceFPS)) {
-                printf("%.2f/%.2f FPS avg=%.2f glitches=%u\n",
-                    frames / dt, 1000 / dt, 1.0/average_frame_time_s, unsigned(glitch_count));
+                printf("%.2f/%.2f FPS avg=%.2f FPS net=%.2f glitches=%u\n",
+                    frames / dt, _samplehz / dt, 1.0/average_frame_time_s, 1.0/average_delta_time_s, unsigned(glitch_count));
             }
         } else {
             printf("Initial position %f %f %f\n", position.x, position.y, position.z);
@@ -612,36 +769,33 @@ void FlightAxis::report_FPS(void)
     }
 }
 
+#include <errno.h>
+
 void FlightAxis::socket_creator(void)
 {
     socket_pid = getpid();
     while (true) {
-        if (!socks.space()) {
-            usleep(500);
-            continue;
+        while (socknext != nullptr) {
+            sock_insem.wait_blocking();
         }
         auto *sck = NEW_NOTHROW SocketAPM_native(false);
         if (sck == nullptr) {
-            usleep(500);
+            us_wait(500);
             continue;
         }
         /*
-          don't let the connection take more than 100ms (10Hz). Longer
+          don't let the connection take more than 10ms (100Hz). Longer
           than this and we are better off trying for a new socket
          */
-        if (!sck->connect_timeout(controller_ip, controller_port, 100)) {
+        if (!sck->connect_timeout(controller_ip, controller_port, 10)) {
             ::printf("connect failed\n");
             delete sck;
-            usleep(5000);
+            us_wait(500);
             continue;
         }
         sck->set_blocking(false);
-        if (!socks.push(sck)) {
-            // bad?!
-            delete sck;
-            usleep(500);
-            continue;
-        }
+        socknext = sck;
+        sock_outsem.signal();
     }
 }
 

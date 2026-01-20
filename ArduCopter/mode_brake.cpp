@@ -10,19 +10,19 @@
 bool ModeBrake::init(bool ignore_checks)
 {
     // initialise pos controller speed and acceleration
-    pos_control->set_max_speed_accel_NE_m(pos_control->get_vel_estimate_NEU_ms().length(), BRAKE_MODE_DECEL_RATE_MSS);
-    pos_control->set_correction_speed_accel_NE_m(pos_control->get_vel_estimate_NEU_ms().length(), BRAKE_MODE_DECEL_RATE_MSS);
+    pos_control->NE_set_max_speed_accel_m(pos_control->get_vel_estimate_NED_ms().xy().length(), BRAKE_MODE_DECEL_RATE_MSS);
+    pos_control->NE_set_correction_speed_accel_m(pos_control->get_vel_estimate_NED_ms().xy().length(), BRAKE_MODE_DECEL_RATE_MSS);
 
     // initialise position controller
-    pos_control->init_NE_controller();
+    pos_control->NE_init_controller();
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_m(BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_DECEL_RATE_MSS);
-    pos_control->set_correction_speed_accel_U_m(BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_DECEL_RATE_MSS);
+    pos_control->D_set_max_speed_accel_m(BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_DECEL_RATE_MSS);
+    pos_control->D_set_correction_speed_accel_m(BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_DECEL_RATE_MSS);
 
     // initialise the vertical position controller
-    if (!pos_control->is_active_U()) {
-        pos_control->init_U_controller();
+    if (!pos_control->D_is_active()) {
+        pos_control->D_init_controller();
     }
 
     _timeout_ms = 0;
@@ -37,7 +37,7 @@ void ModeBrake::run()
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_ground_handling();
-        pos_control->relax_U_controller(0.0f);
+        pos_control->D_relax_controller(0.0f);
         return;
     }
 
@@ -46,20 +46,20 @@ void ModeBrake::run()
 
     // relax stop target if we might be landed
     if (copter.ap.land_complete_maybe) {
-        pos_control->soften_for_landing_NE();
+        pos_control->NE_soften_for_landing();
     }
 
     // use position controller to stop
     Vector2f vel;
     Vector2f accel;
     pos_control->input_vel_accel_NE_m(vel, accel);
-    pos_control->update_NE_controller();
+    pos_control->NE_update_controller();
 
     // call attitude controller
     attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), 0.0f);
 
-    pos_control->set_pos_target_U_from_climb_rate_m(0.0f);
-    pos_control->update_U_controller();
+    pos_control->D_set_pos_target_from_climb_rate_ms(0.0f);
+    pos_control->D_update_controller();
 
     // MAV_CMD_SOLO_BTN_PAUSE_CLICK (Solo only) is used to set the timeout.
     if (_timeout_ms != 0 && millis()-_timeout_start >= _timeout_ms) {

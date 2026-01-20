@@ -21,7 +21,38 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Param: MONITOR
     // @DisplayName: Battery monitoring
     // @Description: Controls enabling monitoring of the battery's voltage and current
-    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:Solo,6:Bebop,7:SMBus-Generic,8:DroneCAN-BatteryInfo,9:ESC,10:Sum Of Selected Monitors,11:FuelFlow,12:FuelLevelPWM,13:SMBUS-SUI3,14:SMBUS-SUI6,15:NeoDesign,16:SMBus-Maxell,17:Generator-Elec,18:Generator-Fuel,19:Rotoye,20:MPPT,21:INA2XX,22:LTC2946,23:Torqeedo,24:FuelLevelAnalog,25:Synthetic Current and Analog Voltage,26:INA239_SPI,27:EFI,28:AD7091R5,29:Scripting,30:INA3221
+    // @SortValues: AlphabeticalZeroAtTop
+    // @Values: 0:Disabled
+    // @Values: 3:Analog Voltage Only
+    // @Values: 4:Analog Voltage and Current
+    // @Values: 5:Solo
+    // @Values: 6:Bebop
+    // @Values: 7:SMBus-Generic
+    // @Values: 8:DroneCAN-BatteryInfo
+    // @Values: 9:ESC
+    // @Values: 10:Sum Of Selected Monitors
+    // @Values: 11:FuelFlow
+    // @Values: 12:FuelLevelPWM
+    // @Values: 13:SMBUS-SUI3
+    // @Values: 14:SMBUS-SUI6
+    // @Values: 15:NeoDesign
+    // @Values: 16:SMBus-Maxell
+    // @Values: 17:Generator-Elec
+    // @Values: 18:Generator-Fuel
+    // @Values: 19:Rotoye
+    // @Values: 20:MPPT
+    // @Values: 21:INA2XX (INA226 INA228 INA238 INA231 INA260)
+    // @Values: 22:LTC2946
+    // @Values: 23:Torqeedo
+    // @Values: 24:FuelLevelAnalog
+    // @Values: 25:Synthetic Current and Analog Voltage
+    // @Values: 26:INA239_SPI
+    // @Values: 27:EFI
+    // @Values: 28:AD7091R5
+    // @Values: 29:Scripting
+    // @Values: 30:INA3221
+    // @Values: 31:Analog Current Only
+    // @Values: 32:TIBQ76952-I2C (Periph only)
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("MONITOR", 1, AP_BattMonitor_Params, _type, int8_t(AP_BattMonitor::Type::NONE), AP_PARAM_FLAG_ENABLE),
@@ -45,13 +76,13 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     AP_GROUPINFO("CAPACITY", 7, AP_BattMonitor_Params, _pack_capacity, AP_BATT_MONITOR_BATTERY_CAPACITY),
 
 #if AP_BATTERY_WATT_MAX_ENABLED
-    // @Param{Plane}: WATT_MAX
+    // @Param{Plane,Rover}: WATT_MAX
     // @DisplayName: Maximum allowed power (Watts)
     // @Description: If battery wattage (voltage * current) exceeds this value then the system will reduce max throttle (THR_MAX, TKOFF_THR_MAX and THR_MIN for reverse thrust) to satisfy this limit. This helps limit high current to low C rated batteries regardless of battery voltage. The max throttle will slowly grow back to THR_MAX (or TKOFF_THR_MAX ) and THR_MIN if demanding the current max and under the watt max. Use 0 to disable.
     // @Units: W
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO_FRAME("WATT_MAX", 8, AP_BattMonitor_Params, _watt_max, 0, AP_PARAM_FRAME_PLANE),
+    AP_GROUPINFO_FRAME("WATT_MAX", 8, AP_BattMonitor_Params, _watt_max, 0, AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_ROVER),
 #endif
 
     // @Param: SERIAL_NUM

@@ -69,7 +69,7 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
     }
 
     // if pre arm checks are disabled run only the mandatory checks
-    if (checks_to_perform == 0) {
+    if (should_skip_all_checks()) {
         return mandatory_checks(display_failure);
     }
 
@@ -226,7 +226,9 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
 
         // acro balance parameter check
 #if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
-        if ((copter.g.acro_balance_roll > copter.attitude_control->get_angle_roll_p().kP()) || (copter.g.acro_balance_pitch > copter.attitude_control->get_angle_pitch_p().kP())) {
+        if (is_negative(copter.g.acro_balance_roll) || is_negative(copter.g.acro_balance_pitch) ||
+            (copter.g.acro_balance_roll > copter.attitude_control->get_angle_roll_p().kP()) || 
+            (copter.g.acro_balance_pitch > copter.attitude_control->get_angle_pitch_p().kP())) {
             check_failed(Check::PARAMETERS, display_failure, "Check ACRO_BAL_ROLL/PITCH");
             return false;
         }
@@ -580,7 +582,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
         const Compass &_compass = AP::compass();
         // check compass health
         if (!_compass.healthy()) {
-            check_failed(true, "Compass not healthy");
+            check_failed(true, "Compass %d not healthy", _compass.get_first_usable() + 1);
             return false;
         }
     }
@@ -593,7 +595,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
     }
 
     // succeed if arming checks are disabled
-    if (checks_to_perform == 0) {
+    if (should_skip_all_checks()) {
         return true;
     }
 
@@ -651,7 +653,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
     return AP_Arming::arm_checks(method);
 }
 
-// mandatory checks that will be run if ARMING_CHECK is zero or arming forced
+// mandatory checks that will be run if ARMING_SKIPCHK skips all or arming forced
 bool AP_Arming_Copter::mandatory_checks(bool display_failure)
 {
     // call mandatory gps checks and update notify status because regular gps checks will not run

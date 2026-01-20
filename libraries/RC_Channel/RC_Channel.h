@@ -333,7 +333,7 @@ public:
         TURBINE_START =      161, // initialize turbine start sequence
         FFT_NOTCH_TUNE =     162, // FFT notch tuning function
 #if HAL_MOUNT_ENABLED
-        MOUNT_LOCK =         163, // Mount yaw lock vs follow
+        MOUNT_YAW_LOCK =     163, // Mount earth frame yaw lock forced on all axes, for all mounts
 #endif  // HAL_MOUNT_ENABLED
 #if HAL_LOGGING_ENABLED
         LOG_PAUSE =          164, // Pauses logging if under logging rate control
@@ -368,7 +368,10 @@ public:
         AHRS_AUTO_TRIM =     182,  // in-flight AHRS autotrim
         AUTOLAND =           183,  //Fixed Wing AUTOLAND Mode
         SYSTEMID =           184,  // system ID as an aux switch
-
+        MOUNT_RP_LOCK =      185,  // mount lock modes for roll and pitch axes, for all mounts that support it
+#if AP_MOUNT_POI_LOCK_ENABLED
+        MOUNT_POI_LOCK =     186,  // Lock mount target to current ROI seen and switch mount to GPS Targeting mode
+#endif  // AP_MOUNT_POI_LOCK_ENABLED
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
         PITCH =              202, // pitch input
@@ -647,8 +650,7 @@ public:
     virtual void read_mode_switch();
 
     virtual bool in_rc_failsafe() const { return true; };
-    virtual bool has_valid_input() const { return false; };
-
+    virtual bool has_valid_input() const;
     virtual RC_Channel *get_arming_channel(void) const { return nullptr; };
 
     bool gcs_overrides_enabled() const { return _gcs_overrides_enabled; }

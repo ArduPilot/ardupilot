@@ -45,7 +45,6 @@ private:
     int32_t _mag_y;
     int32_t _mag_z;
 
-    uint8_t _compass_instance;
     bool _initialised;
 };
 

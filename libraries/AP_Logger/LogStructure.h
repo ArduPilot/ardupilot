@@ -117,6 +117,8 @@ const struct MultiplierStructure log_Multipliers[] = {
 #define LOG_PACKET_HEADER	       uint8_t head1, head2, msgid;
 #define LOG_PACKET_HEADER_INIT(id) head1 : HEAD_BYTE1, head2 : HEAD_BYTE2, msgid : id
 #define LOG_PACKET_HEADER_LEN 3 // bytes required for LOG_PACKET_HEADER
+// bytes required for a max-length packet, including header; stored in uint8_t
+#define LOG_PACKET_MAX_LEN (UINT8_MAX)
 
 // once the logging code is all converted we will remove these from
 // this header
@@ -244,9 +246,11 @@ struct PACKED log_Error {
 };
 
 
-struct PACKED log_Message {
+struct PACKED log_MSG {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t id;
+    uint8_t chunk_seq;
     char msg[64];
 };
 
@@ -686,7 +690,7 @@ struct PACKED log_VER {
 // @Field: H: True if sensor is healthy
 // @Field: Hp: Probability sensor is healthy
 // @Field: TR: innovation test ratio
-// @Field: Pri: True if sensor is the primary sensor
+// @Field: Pri: Primary instance number. If equal to I then this sensor is primary sensor
 
 // @LoggerMessage: DMS
 // @Description: DataFlash-Over-MAVLink statistics
@@ -811,6 +815,8 @@ struct PACKED log_VER {
 // @LoggerMessage: MSG
 // @Description: Textual messages
 // @Field: TimeUS: Time since system startup
+// @Field: ID: identifier for chunks making up a message
+// @Field: Seq: chunk sequence number within message identified by ID
 // @Field: Message: message text
 
 // @LoggerMessage: MULT
@@ -872,9 +878,9 @@ struct PACKED log_VER {
 // @Field: MaxT: Maximum loop time
 // @Field: Mem: Free memory available
 // @Field: Load: System processor load
+// @Field: ErrL: Internal error line number; last line number on which a internal error was detected
 // @Field: InE: Internal error mask; which internal errors have been detected
 // @FieldBitmaskEnum: InE: AP_InternalError::error_t
-// @Field: ErrL: Internal error line number; last line number on which a internal error was detected
 // @Field: ErC: Internal error count; how many internal errors have been detected
 // @Field: SPIC: Number of SPI transactions processed
 // @Field: I2CC: Number of i2c transactions processed
@@ -1152,8 +1158,8 @@ struct PACKED log_VER {
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
      "PARM", "QNff",        "TimeUS,Name,Value,Default", "s---", "F---"  },       \
 LOG_STRUCTURE_FROM_GPS \
-    { LOG_MESSAGE_MSG, sizeof(log_Message), \
-      "MSG",  "QZ",     "TimeUS,Message", "s-", "F-"}, \
+    { LOG_MSG_MSG, sizeof(log_MSG), \
+      "MSG",  "QBBZ",     "TimeUS,ID,Seq,Message", "s---", "F---"}, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
       "RCIN",  "QHHHHHHHHHHHHHH",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14", "sYYYYYYYYYYYYYY", "F--------------", true }, \
     { LOG_RCI2_MSG, sizeof(log_RCI2), \
@@ -1269,7 +1275,7 @@ enum LogMessages : uint8_t {
     LOG_PARAMETER_MSG = 32,
     LOG_IDS_FROM_NAVEKF2,
     LOG_IDS_FROM_NAVEKF3,
-    LOG_MESSAGE_MSG,
+    LOG_MSG_MSG,
     LOG_RCIN_MSG,
     LOG_RCI2_MSG,
     LOG_RCOUT_MSG,

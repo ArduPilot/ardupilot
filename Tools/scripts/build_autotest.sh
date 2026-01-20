@@ -36,7 +36,7 @@ lock_file() {
 	    }
             return 1
         fi
-        /bin/rm -f "$lck"
+        rm -f "$lck"
         echo "$$" > "$lck"
         return 0
 }

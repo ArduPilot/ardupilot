@@ -145,7 +145,7 @@ void GCS_MAVLINK_Rover::send_servo_out()
 #if AP_RSSI_ENABLED
         receiver_rssi()
 #else
-        255
+        UINT8_MAX
 #endif
         );
 }
@@ -1056,7 +1056,7 @@ uint8_t GCS_MAVLINK_Rover::send_available_mode(uint8_t index) const
     }
 
     // Ask the mode for its name and number
-    const char* name = modes[index_zero]->name4();
+    const char* name = modes[index_zero]->name();
     const uint8_t mode_number = (uint8_t)modes[index_zero]->mode_number();
 
     mavlink_msg_available_modes_send(

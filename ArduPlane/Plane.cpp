@@ -383,13 +383,6 @@ void Plane::one_second_loop()
             landing.alt_offset = 0;
     }
 
-    // this ensures G_Dt is correct, catching startup issues with constructors
-    // calling the scheduler methods
-    if (!is_equal(1.0f/scheduler.get_loop_rate_hz(), scheduler.get_loop_period_s()) ||
-        !is_equal(G_Dt, scheduler.get_loop_period_s())) {
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-    }
-
     const float loop_rate = AP::scheduler().get_filtered_loop_rate_hz();
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.available()) {

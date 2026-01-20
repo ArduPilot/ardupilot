@@ -145,7 +145,7 @@ local LTE_IBAUD       = bind_add_param('IBAUD', 13, 115200)
     // @Param: LTE_MCCMNC
     // @DisplayName: LTE operator selection
     // @Description: This allows selection of network operator
-    // @Values: -1:NoChange,0:Default,AU-Telstra:50501,AU-Optus:50502,AU-Vodaphone:50503
+    // @Values: -1:NoChange,0:Default,50501:AU-Telstra,50502:AU-Optus,50503:AU-Vodafone
     // @User: Standard
 --]]
 local LTE_MCCMNC      = bind_add_param('MCCMNC', 14, -1)

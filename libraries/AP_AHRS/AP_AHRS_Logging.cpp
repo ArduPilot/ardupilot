@@ -20,7 +20,7 @@ void AP_AHRS::Write_AHRS2() const
     }
     float alt;
     if (!loc.initialised() || !loc.get_alt_m(Location::AltFrame::ABSOLUTE, alt)) {
-        alt = AP::logger().quiet_nanf();
+        alt = AP_Logger::quiet_nanf();
     }
     const struct log_AHRS pkt{
         LOG_PACKET_HEADER_INIT(LOG_AHR2_MSG),
@@ -96,7 +96,7 @@ void AP_AHRS::Write_POS() const
     float home;
     AP::ahrs().get_relative_position_D_home(home);
 
-    const auto nanf = AP::logger().quiet_nanf();
+    const auto nanf = AP_Logger::quiet_nanf();
     float origin_pos_up;
     if (get_relative_position_D_origin_float(origin_pos_up)) {
         origin_pos_up *= -1;  // down -> up

@@ -41,6 +41,8 @@
 #include "rc_in.h"
 #include "batt_balance.h"
 #include "battery_tag.h"
+#include "battery_bms.h"
+#include "actuator_telem.h"
 #include "networking.h"
 #include "serial_options.h"
 #if AP_SIM_ENABLED
@@ -395,6 +397,14 @@ public:
 #if AP_PERIPH_BATTERY_TAG_ENABLED
     BatteryTag battery_tag;
 #endif
+
+#if AP_PERIPH_BATTERY_BMS_ENABLED
+    BatteryBMS battery_bms;
+#endif
+
+#if AP_PERIPH_ACTUATOR_TELEM_ENABLED
+    ActuatorTelem actuator_telem;
+#endif
     
 #if AP_PERIPH_SERIAL_OPTIONS_ENABLED
     SerialOptions serial_options;
@@ -417,15 +427,11 @@ public:
     AP_Notify notify;
     uint64_t vehicle_state = 1; // default to initialisation
     float yaw_earth;
-    uint32_t last_vehicle_state;
+    uint32_t last_vehicle_state_ms;
 
     // Handled under LUA script to control LEDs
     float get_yaw_earth() { return yaw_earth; }
-    uint32_t get_vehicle_state() { return vehicle_state; }
-#elif defined(AP_SCRIPTING_ENABLED)
-    // create dummy methods for the case when the user doesn't want to use the notify object
-    float get_yaw_earth() { return 0.0; }
-    uint32_t get_vehicle_state() { return 0.0; }
+    uint64_t get_vehicle_state() { return vehicle_state; }
 #endif
 
 #if AP_SCRIPTING_ENABLED

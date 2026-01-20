@@ -94,93 +94,99 @@ public:
         double m_orientationQuaternion_W;
         double m_flightAxisControllerIsActive;
         double m_resetButtonHasBeenPressed;
-    } state;
+    } state, prev_state, next_state;
 
-    static const uint16_t num_keys = sizeof(state)/sizeof(double);
+    static const uint16_t num_keys = sizeof(next_state)/sizeof(double);
 
     struct keytable {
         const char *key;
         double &ref;
     } keytable[num_keys] = {
-        { "item", state.rcin[0] },
-        { "item", state.rcin[1] },
-        { "item", state.rcin[2] },
-        { "item", state.rcin[3] },
-        { "item", state.rcin[4] },
-        { "item", state.rcin[5] },
-        { "item", state.rcin[6] },
-        { "item", state.rcin[7] },
-        { "item", state.rcin[8] },
-        { "item", state.rcin[9] },
-        { "item", state.rcin[10] },
-        { "item", state.rcin[11] },
-        { "m-airspeed-MPS", state.m_airspeed_MPS },
-        { "m-altitudeASL-MTR", state.m_altitudeASL_MTR },
-        { "m-altitudeAGL-MTR", state.m_altitudeAGL_MTR },
-        { "m-groundspeed-MPS", state.m_groundspeed_MPS },
-        { "m-pitchRate-DEGpSEC", state.m_pitchRate_DEGpSEC },
-        { "m-rollRate-DEGpSEC", state.m_rollRate_DEGpSEC },
-        { "m-yawRate-DEGpSEC", state.m_yawRate_DEGpSEC },
-        { "m-azimuth-DEG", state.m_azimuth_DEG },
-        { "m-inclination-DEG", state.m_inclination_DEG },
-        { "m-roll-DEG", state.m_roll_DEG },
-        { "m-aircraftPositionX-MTR", state.m_aircraftPositionX_MTR },
-        { "m-aircraftPositionY-MTR", state.m_aircraftPositionY_MTR },
-        { "m-velocityWorldU-MPS", state.m_velocityWorldU_MPS },
-        { "m-velocityWorldV-MPS", state.m_velocityWorldV_MPS },
-        { "m-velocityWorldW-MPS", state.m_velocityWorldW_MPS },
-        { "m-velocityBodyU-MPS", state.m_velocityBodyU_MPS },
-        { "m-velocityBodyV-MPS", state.m_velocityBodyV_MPS },
-        { "m-velocityBodyW-MPS", state.m_velocityBodyW_MPS },
-        { "m-accelerationWorldAX-MPS2", state.m_accelerationWorldAX_MPS2 },
-        { "m-accelerationWorldAY-MPS2", state.m_accelerationWorldAY_MPS2 },
-        { "m-accelerationWorldAZ-MPS2", state.m_accelerationWorldAZ_MPS2 },
-        { "m-accelerationBodyAX-MPS2", state.m_accelerationBodyAX_MPS2 },
-        { "m-accelerationBodyAY-MPS2", state.m_accelerationBodyAY_MPS2 },
-        { "m-accelerationBodyAZ-MPS2", state.m_accelerationBodyAZ_MPS2 },
-        { "m-windX-MPS", state.m_windX_MPS },
-        { "m-windY-MPS", state.m_windY_MPS },
-        { "m-windZ-MPS", state.m_windZ_MPS },
-        { "m-propRPM", state.m_propRPM },
-        { "m-heliMainRotorRPM", state.m_heliMainRotorRPM },
-        { "m-batteryVoltage-VOLTS", state.m_batteryVoltage_VOLTS },
-        { "m-batteryCurrentDraw-AMPS", state.m_batteryCurrentDraw_AMPS },
-        { "m-batteryRemainingCapacity-MAH", state.m_batteryRemainingCapacity_MAH },
-        { "m-fuelRemaining-OZ", state.m_fuelRemaining_OZ },
-        { "m-isLocked", state.m_isLocked },
-        { "m-hasLostComponents", state.m_hasLostComponents },
-        { "m-anEngineIsRunning", state.m_anEngineIsRunning },
-        { "m-isTouchingGround", state.m_isTouchingGround },
-        { "m-currentAircraftStatus", state.m_currentAircraftStatus },
-        { "m-currentPhysicsTime-SEC", state.m_currentPhysicsTime_SEC },
-        { "m-currentPhysicsSpeedMultiplier", state.m_currentPhysicsSpeedMultiplier },
-        { "m-orientationQuaternion-X", state.m_orientationQuaternion_X },
-        { "m-orientationQuaternion-Y", state.m_orientationQuaternion_Y },
-        { "m-orientationQuaternion-Z", state.m_orientationQuaternion_Z },
-        { "m-orientationQuaternion-W", state.m_orientationQuaternion_W },
-        { "m-flightAxisControllerIsActive", state.m_flightAxisControllerIsActive },
-        { "m-resetButtonHasBeenPressed", state.m_resetButtonHasBeenPressed },
+        { "item", next_state.rcin[0] },
+        { "item", next_state.rcin[1] },
+        { "item", next_state.rcin[2] },
+        { "item", next_state.rcin[3] },
+        { "item", next_state.rcin[4] },
+        { "item", next_state.rcin[5] },
+        { "item", next_state.rcin[6] },
+        { "item", next_state.rcin[7] },
+        { "item", next_state.rcin[8] },
+        { "item", next_state.rcin[9] },
+        { "item", next_state.rcin[10] },
+        { "item", next_state.rcin[11] },
+        { "m-airspeed-MPS", next_state.m_airspeed_MPS },
+        { "m-altitudeASL-MTR", next_state.m_altitudeASL_MTR },
+        { "m-altitudeAGL-MTR", next_state.m_altitudeAGL_MTR },
+        { "m-groundspeed-MPS", next_state.m_groundspeed_MPS },
+        { "m-pitchRate-DEGpSEC", next_state.m_pitchRate_DEGpSEC },
+        { "m-rollRate-DEGpSEC", next_state.m_rollRate_DEGpSEC },
+        { "m-yawRate-DEGpSEC", next_state.m_yawRate_DEGpSEC },
+        { "m-azimuth-DEG", next_state.m_azimuth_DEG },
+        { "m-inclination-DEG", next_state.m_inclination_DEG },
+        { "m-roll-DEG", next_state.m_roll_DEG },
+        { "m-aircraftPositionX-MTR", next_state.m_aircraftPositionX_MTR },
+        { "m-aircraftPositionY-MTR", next_state.m_aircraftPositionY_MTR },
+        { "m-velocityWorldU-MPS", next_state.m_velocityWorldU_MPS },
+        { "m-velocityWorldV-MPS", next_state.m_velocityWorldV_MPS },
+        { "m-velocityWorldW-MPS", next_state.m_velocityWorldW_MPS },
+        { "m-velocityBodyU-MPS", next_state.m_velocityBodyU_MPS },
+        { "m-velocityBodyV-MPS", next_state.m_velocityBodyV_MPS },
+        { "m-velocityBodyW-MPS", next_state.m_velocityBodyW_MPS },
+        { "m-accelerationWorldAX-MPS2", next_state.m_accelerationWorldAX_MPS2 },
+        { "m-accelerationWorldAY-MPS2", next_state.m_accelerationWorldAY_MPS2 },
+        { "m-accelerationWorldAZ-MPS2", next_state.m_accelerationWorldAZ_MPS2 },
+        { "m-accelerationBodyAX-MPS2", next_state.m_accelerationBodyAX_MPS2 },
+        { "m-accelerationBodyAY-MPS2", next_state.m_accelerationBodyAY_MPS2 },
+        { "m-accelerationBodyAZ-MPS2", next_state.m_accelerationBodyAZ_MPS2 },
+        { "m-windX-MPS", next_state.m_windX_MPS },
+        { "m-windY-MPS", next_state.m_windY_MPS },
+        { "m-windZ-MPS", next_state.m_windZ_MPS },
+        { "m-propRPM", next_state.m_propRPM },
+        { "m-heliMainRotorRPM", next_state.m_heliMainRotorRPM },
+        { "m-batteryVoltage-VOLTS", next_state.m_batteryVoltage_VOLTS },
+        { "m-batteryCurrentDraw-AMPS", next_state.m_batteryCurrentDraw_AMPS },
+        { "m-batteryRemainingCapacity-MAH", next_state.m_batteryRemainingCapacity_MAH },
+        { "m-fuelRemaining-OZ", next_state.m_fuelRemaining_OZ },
+        { "m-isLocked", next_state.m_isLocked },
+        { "m-hasLostComponents", next_state.m_hasLostComponents },
+        { "m-anEngineIsRunning", next_state.m_anEngineIsRunning },
+        { "m-isTouchingGround", next_state.m_isTouchingGround },
+        { "m-currentAircraftStatus", next_state.m_currentAircraftStatus },
+        { "m-currentPhysicsTime-SEC", next_state.m_currentPhysicsTime_SEC },
+        { "m-currentPhysicsSpeedMultiplier", next_state.m_currentPhysicsSpeedMultiplier },
+        { "m-orientationQuaternion-X", next_state.m_orientationQuaternion_X },
+        { "m-orientationQuaternion-Y", next_state.m_orientationQuaternion_Y },
+        { "m-orientationQuaternion-Z", next_state.m_orientationQuaternion_Z },
+        { "m-orientationQuaternion-W", next_state.m_orientationQuaternion_W },
+        { "m-flightAxisControllerIsActive", next_state.m_flightAxisControllerIsActive },
+        { "m-resetButtonHasBeenPressed", next_state.m_resetButtonHasBeenPressed },
     };
 
 private:
     bool soap_request_start(const char *action, const char *fmt, ...);
     char *soap_request_end(uint32_t timeout_ms);
-    void exchange_data(const struct sitl_input &input);
+    bool exchange_data(const struct sitl_input &input);
+    void start_controller();
+    void send_request_message(const struct sitl_input &input);
+    bool process_reply_message();
     void parse_reply(const char *reply);
 
+    bool wait_for_sample(const struct sitl_input &input);
     void update_loop(void);
     void report_FPS(void);
     void socket_creator(void);
 
-    struct sitl_input last_input;
+    struct state interpolate_frame(struct state& new_state, struct state& old_state, double new_time);
 
     AP_Int32 _options;
+    AP_Int16 _samplehz;
 
     enum class Option : uint32_t{
         ResetPosition = (1U<<0),
         Rev4Servos    = (1U<<1),
         HeliDemix     = (1U<<2),
         SilenceFPS    = (1U<<3),
+        NoDtLog       = (1U<<4),
     };
 
     // return true if an option is set
@@ -189,9 +195,11 @@ private:
     }
 
     double average_frame_time_s;
-    double extrapolated_s;
     double initial_time_s;
     double last_time_s;
+    double last_dt_sample_s;
+    double last_delta_time_s;
+    double sample_interval_s;
     bool controller_started;
     uint32_t glitch_count;
     uint64_t frame_counter;
@@ -202,12 +210,16 @@ private:
     Vector3d position_offset;
     Vector3f last_velocity_ef;
 
+    double next_sample_s;
+    double average_delta_time_s;
+
     const char *controller_ip = "127.0.0.1";
     uint16_t controller_port = 18083;
-
-    // a list of sockets used to reduce inter-packet latency
-    ObjectBuffer_TS<SocketAPM_native*> socks{2};
+    SocketAPM_native *socknext;
     SocketAPM_native *sock;
+
+    HAL_BinarySemaphore sock_outsem;
+    HAL_BinarySemaphore sock_insem;
 
     char replybuf[10000];
     pid_t socket_pid;

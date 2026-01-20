@@ -58,7 +58,7 @@ const AP_Param::GroupInfo AP_Terrain::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Terrain options
     // @Description: Options to change behaviour of terrain system
-    // @Bitmask: 0:Disable Download
+    // @Bitmask: 0:Disable Download,1:Disable Disk
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",   2, AP_Terrain, options, 0),
 

@@ -42,7 +42,7 @@ class AP_Mount_SoloGimbal;
 class AP_Mount_Alexmos;
 class AP_Mount_SToRM32;
 class AP_Mount_SToRM32_serial;
-class AP_Mount_Gremsy;
+class AP_Mount_MAVLink;
 class AP_Mount_Siyi;
 class AP_Mount_Scripting;
 class AP_Mount_Xacti;
@@ -65,7 +65,7 @@ class AP_Mount
     friend class AP_Mount_Alexmos;
     friend class AP_Mount_SToRM32;
     friend class AP_Mount_SToRM32_serial;
-    friend class AP_Mount_Gremsy;
+    friend class AP_Mount_MAVLink;
     friend class AP_Mount_Siyi;
     friend class AP_Mount_Scripting;
     friend class AP_Mount_Xacti;
@@ -102,8 +102,8 @@ public:
 #if HAL_MOUNT_STORM32SERIAL_ENABLED
         SToRM32_serial = 5,  /// SToRM32 mount using custom serial protocol
 #endif
-#if HAL_MOUNT_GREMSY_ENABLED
-        Gremsy = 6,          /// Gremsy gimbal using MAVLink v2 Gimbal protocol
+#if HAL_MOUNT_MAVLINK_ENABLED
+        MAVLink = 6,         /// MAVLink v2 Gimbal protocol
 #endif
 #if HAL_MOUNT_SERVO_ENABLED
         BrushlessPWM = 7,    /// Brushless (stabilized) gimbal using PWM protocol
@@ -165,10 +165,28 @@ public:
     void set_mode_to_default() { set_mode_to_default(_primary); }
     void set_mode_to_default(uint8_t instance);
 
+    // set pitch_lock used in RC_TARGETING mode.  If true, the gimbal's pitch target is maintained in earth-frame (horizon does not move up and down) rather than body frame
+    void set_pitch_lock(bool pitch_lock) { set_pitch_lock(_primary, pitch_lock); }
+    void set_pitch_lock(uint8_t instance, bool pitch_lock);
+
+    // set roll_lock used in RC_TARGETING mode.  If true, the gimbal's roll target is maintained in earth-frame (horizon does not rotate) rather than body frame
+    void set_roll_lock(bool roll_lock) { set_roll_lock(_primary, roll_lock); }
+    void set_roll_lock(uint8_t instance, bool roll_lock);
+
     // set yaw_lock used in RC_TARGETING mode.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
     // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
     void set_yaw_lock(bool yaw_lock) { set_yaw_lock(_primary, yaw_lock); }
     void set_yaw_lock(uint8_t instance, bool yaw_lock);
+    
+#if AP_MOUNT_POI_LOCK_ENABLED
+    // controls POI lock which locks gimbal to GPS point currently in view and switches to GPS Targeting mode, suspends tracking poi or clears it
+    void set_poi_lock() { set_poi_lock(_primary); }
+    void set_poi_lock(uint8_t instance);
+    void clear_poi_lock() { clear_poi_lock(_primary); }
+    void clear_poi_lock(uint8_t instance);
+    void suspend_poi_lock() { suspend_poi_lock(_primary); }
+    void suspend_poi_lock(uint8_t instance);
+#endif
 
     // set angle target in degrees
     // roll and pitch are in earth-frame
@@ -234,8 +252,12 @@ public:
     // get target angle in deg. returns true on success
     bool get_angle_target(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame);
 
-    // accessors for scripting backends and logging
+#if AP_SCRIPTING_ENABLED
+    // get mount target location. returns true on success
     bool get_location_target(uint8_t instance, Location& target_loc);
+#endif
+
+    // accessors for scripting backends and logging
     void set_attitude_euler(uint8_t instance, float roll_deg, float pitch_deg, float yaw_bf_deg);
 
     // write mount log packet for all backends

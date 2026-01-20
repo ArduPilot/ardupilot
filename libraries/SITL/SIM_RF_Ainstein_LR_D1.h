@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  Simulator for the Ainstein LR-D1 serial rangefinder
+  Simulator for the Ainstein LR-D1 serial rangefinder (pr-v19.0.0 firmware)
 
 ./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --serial5=sim:ainsteinlrd1 --speedup=1
 
@@ -46,7 +46,7 @@ public:
 
     static SerialRangeFinder *create() { return NEW_NOTHROW RF_Ainstein_LR_D1(); }
 
-    uint32_t packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen) override;
+    uint32_t packet_for_alt(float alt_m, uint8_t *buffer, uint8_t buflen) override;
 
     uint16_t reading_interval_ms() const override { return 100; }
 

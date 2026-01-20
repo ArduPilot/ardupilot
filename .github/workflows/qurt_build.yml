@@ -145,7 +145,7 @@ jobs:
     if: github.repository == 'ArduPilot/ardupilot'
     runs-on: 'ardupilot-qurt'
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: 'recursive'
 
@@ -164,7 +164,7 @@ jobs:
           libraries/AP_HAL_QURT/packaging/make_package.sh Rover ardurover
 
       - name: Archive build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: qurt-binaries
           path: |

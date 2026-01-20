@@ -422,7 +422,7 @@ private:
             uint8_t prev_telem_chan;
             Shared_DMA *curr_ic_dma_handle; // a shortcut to avoid logic errors involving the wrong lock
             uint16_t telempsc;
-            dmar_uint_t dma_buffer_copy[GCR_TELEMETRY_BUFFER_LEN];
+            dmar_uint_t dma_buffer_copy[GCR_TELEMETRY_BIT_LEN];
 #if RCOU_DSHOT_TIMING_DEBUG
             uint16_t telem_rate[4];
             uint16_t telem_err_rate[4];
