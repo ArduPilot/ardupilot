@@ -285,15 +285,15 @@ bool AP_ExternalAHRS_SBG::parse_byte(const uint8_t data, sbgMessage &msg, SBG_PA
 
 uint16_t AP_ExternalAHRS_SBG::make_gps_week(const SbgEComLogUtc *utc_data)
 {
-    struct tm tm {};
+    const struct tm tm {
+        .tm_sec = utc_data->second,
+        .tm_min = utc_data->minute,
+        .tm_hour = utc_data->hour,
+        .tm_mday = utc_data->day,
+        .tm_mon  = utc_data->month - 1,
+        .tm_year = utc_data->year - 1900,
+    };
 
-    tm.tm_year = utc_data->year - 1900;
-    tm.tm_mon  = utc_data->month - 1;
-    tm.tm_mday = utc_data->day;
-
-    tm.tm_hour = utc_data->hour;
-    tm.tm_min = utc_data->minute;
-    tm.tm_sec = utc_data->second;
 
     // convert from time structure to unix time
     const time_t unix_time = ap_mktime(&tm);
