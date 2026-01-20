@@ -195,6 +195,7 @@ protected:
     // time to spool motors to min throttle
     AP_Float            _spool_up_time;
     AP_Float            _spool_down_time;
+    AP_Float            _idle_time_delay_s;
 
     // scaling for booster motor throttle
     AP_Float            _boost_scale;
@@ -204,6 +205,7 @@ protected:
 
     // spool variables
     float               _spin_up_ratio;         // normalized spin scalar [0..1] between 0 and spin_min (used for ground-idle ramp)
+    float               _idle_time;             // idle delay timer (seconds since entering GROUND_IDLE)
 
     // battery voltage, current and air pressure compensation variables
     float               _throttle_limit;        // ratio of throttle limit between hover and maximum
