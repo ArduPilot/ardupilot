@@ -6034,6 +6034,97 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.progress("Received AIS vessel MMSI=%u" % m.MMSI)
 
+    def AISMultipleVessels(self):
+        '''Test tracking multiple AIS vessels'''
+        self.customise_SITL_commandline([
+            "--serial5=sim:AIS",
+        ])
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 40,
+            "SERIAL5_BAUD": 38,
+            "AIS_TYPE": 1,
+        })
+        self.reboot_sitl()
+
+        # Test with 1 vessel
+        self.set_parameter("SIM_AIS_COUNT", 1)
+        m = self.assert_receive_message('AIS_VESSEL', timeout=30)
+        if m.MMSI == 0:
+            raise NotAchievedException("No vessel with count=1")
+        self.progress("Received vessel with count=1")
+
+        # Test with 3 vessels
+        self.set_parameter("SIM_AIS_COUNT", 3)
+        vessels_seen = set()
+        start_time = self.get_sim_time()
+        while len(vessels_seen) < 3:
+            if self.get_sim_time() - start_time > 60:
+                raise NotAchievedException(
+                    "Only saw %d vessels, expected 3" % len(vessels_seen)
+                )
+            m = self.assert_receive_message('AIS_VESSEL', timeout=10)
+            vessels_seen.add(m.MMSI)
+        self.progress("Tracked 3 unique vessels")
+
+        # Test with 5 vessels
+        self.set_parameter("SIM_AIS_COUNT", 5)
+        vessels_seen = set()
+        start_time = self.get_sim_time()
+        while len(vessels_seen) < 5:
+            if self.get_sim_time() - start_time > 90:
+                raise NotAchievedException(
+                    "Only saw %d vessels, expected 5" % len(vessels_seen)
+                )
+            m = self.assert_receive_message('AIS_VESSEL', timeout=10)
+            vessels_seen.add(m.MMSI)
+
+        self.progress("Successfully tracked vessels with counts 1, 3, and 5")
+
+    def AISDataValidation(self):
+        '''Test AIS vessel data validity'''
+        self.customise_SITL_commandline([
+            "--serial5=sim:AIS",
+        ])
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 40,
+            "SERIAL5_BAUD": 38,
+            "AIS_TYPE": 1,
+        })
+        self.reboot_sitl()
+
+        self.set_parameter("SIM_AIS_COUNT", 3)
+
+        m = self.assert_receive_message('AIS_VESSEL', timeout=60)
+
+        # Validate MMSI
+        if m.MMSI == 0:
+            raise NotAchievedException("Invalid MMSI: must be non-zero")
+
+        # Validate latitude (-90 to +90 degrees)
+        lat_deg = m.lat / 1e7
+        if abs(lat_deg) > 90:
+            raise NotAchievedException("Invalid latitude: %f" % lat_deg)
+
+        # Validate longitude (-180 to +180 degrees)
+        lon_deg = m.lon / 1e7
+        if abs(lon_deg) > 180:
+            raise NotAchievedException("Invalid longitude: %f" % lon_deg)
+
+        # Validate heading is reasonable (allow up to 65535 for unavailable)
+        if m.heading > 65535:
+            raise NotAchievedException("Invalid heading: %u" % m.heading)
+
+        # Validate COG is reasonable (allow up to 65535 for unavailable)
+        if m.COG > 65535:
+            raise NotAchievedException("Invalid COG: %u" % m.COG)
+
+        # Validate velocity (max ~100 knots = 10000 in 0.01 knot units)
+        if m.velocity > 10000 and m.velocity != 65535:
+            raise NotAchievedException("Invalid velocity: %u" % m.velocity)
+
+        self.progress("AIS data validation passed: MMSI=%u lat=%.6f lon=%.6f" %
+                      (m.MMSI, lat_deg, lon_deg))
+
     def DepthFinder(self):
         '''Test multiple depthfinders for boats'''
         # Setup rangefinders
@@ -7239,6 +7330,8 @@ return update()
             self.AccelCal,
             self.RangeFinder,
             self.AIS,
+            self.AISMultipleVessels,
+            self.AISDataValidation,
             self.AP_Proximity_MAV,
             self.EndMissionBehavior,
             self.FlashStorage,
