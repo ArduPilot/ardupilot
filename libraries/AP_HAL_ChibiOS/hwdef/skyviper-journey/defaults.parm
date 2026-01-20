@@ -168,7 +168,7 @@ FS_GCS_ENABLE          0
 TCAL_ENABLED           2
 
 # landing
-LAND_SPEED_HIGH      150
+LAND_SPD_HIGH_MS     1.5
 
 # logging
 LOG_BACKEND_TYPE       2
