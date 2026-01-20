@@ -512,7 +512,8 @@ struct log_REPH {
 // @Field: Lat: latitude
 // @Field: Lng: longitude
 // @Field: PosAccSD: position accuracy, 1-StD
-// @Field: TS: timestamp of latitude/longitude
+// @Field: MTS: timestamp when measured
+// @Field: RTS: timestamp when received
 struct log_RSLL {
     int32_t lat; // WGS-84 latitude in 1E-7 degrees
     int32_t lng; // WGS-84 longitude in 1E7 degrees
