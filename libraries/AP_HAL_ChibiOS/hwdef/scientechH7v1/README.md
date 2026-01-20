@@ -1,77 +1,217 @@
-# ScientechH7v1-String Flight Controller
+# Scientech H743-STRING (scientechH7v1)
 
-The ScientechH7v1-String is a flight controller produced by [Scientech Technology](https://scientechworld.com/). 
+Scientech H743-STRING flight controller board definition for ArduPilot (ChibiOS).
+
+This README documents the hardware mapping as defined in:
+`libraries/AP_HAL_ChibiOS/hwdef/scientechH7v1/hwdef.dat`
+
+---
+
+## Overview
+
+- Board name: Scientech H743-STRING (`scientechH7v1`)
+- MCU: STM32H743xx (STM32H7xx)
+- Clock: 8 MHz external oscillator
+- Flash: 2048 KB
+- Bootloader reserve: 128 KB (`FLASH_RESERVE_START_KB 128`)
+- USB: OTG1 (USB VCP enabled)
+
+USB strings:
+- Manufacturer: Scientech
+- Product: scientechH7v1_String
+
+---
 
 ## Features
 
-- MCU：STM32H743VIH6
-- Gyro：ICM42688P x2
-- Baro：DPS310
-- Blackbox：SD CARD
-- PWM output：12CH
-- UART：7CH
-- Power Supply：3-6SLipo
-- BEC Output：5V/2.5A, 12V/3A
-- USB Connector: Type-C
-- Weight：24.4g
-- Size：60mm x 40mm
-- Mounting Hole：30.5mm x 30.5mm
+- Dual IMU (SPI):
+  - IMU1: Invensensev3 on SPI1 (CS = PC15)
+  - IMU2: Invensensev3 on SPI4 (CS = PE11)
+- Barometer:
+  - DPS310 on I2C bus 0 (I2C2), address `0x76`
+- OSD:
+  - AT7456E/MAX7456 compatible OSD on SPI2 (CS = PB12)
+- microSD:
+  - SDMMC1 with FATFS enabled (`FATFS_HAL_DEVICE SDCD1`, `HAL_OS_FATFS_IO 1`)
+- CAN:
+  - CAN1 on PD0/PD1, Silent GPIO on PD3
+- Analog inputs:
+  - Battery voltage on PC0
+  - Battery current on PC1
+  - Analog airspeed on PC4
+  - Analog RSSI on PC5
+- Indicators:
+  - LED0 (blue) on PE9
+  - LED1 (green) on PA7
+- Buzzer:
+  - Alarm output on PA15 (TIM2_CH1)
 
-## Pinout
+---
 
+## Board Images / Pinout
 
-![ScientechH7v1 Top](01.jpg "ScientechH7v1 Top")
-![ScientechH7v1 Bottom](02.jpg "ScientechH7v1 Bottom")
+![ScientechH7v1 Top](01.jpg)
+![ScientechH7v1 Bottom](02.JPG)
 
+---
 
-## UART Mapping
+## Serial Port Mapping (SERIALx)
 
-The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
+`SERIAL_ORDER OTG1 UART7 USART1 USART2 USART3 UART8 UART4 USART6 OTG2`
 
- - SERIAL0 -> USB (primary mavlink, usually USB)
- - SERIAL1 -> UART7 (GPS)
- - SERIAL2 -> UART1 (ESC telemetry ) 
- - SERIAL3 -> UART2 (SBUS )
- - SERIAL4 -> UART3 (None)
- - SERIAL5 -> UART8 (ELRS/CRSF receiver)
- - SERIAL6 -> UART4 (VTX)
- - SERIAL7 -> UART6 (None)
+> Note: OTG2 is listed in SERIAL_ORDER but OTG2 pins are not defined in hwdef. OTG1 (USB) is the USB VCP interface.
+
+| ArduPilot Port | Peripheral | Pins | Intended Use / Notes | Default Protocol |
+|---|---|---|---|---|
+| SERIAL0 | OTG1 (USB VCP) | PA11/PA12 | MAVLink / Setup | MAVLink (via USB) |
+| SERIAL1 | UART7 | RX=PE7, TX=PE8 | GPS | GPS |
+| SERIAL2 | USART1 | RX=PA10, TX=PA9 | ESC Telemetry (NODMA) | ESCTelemetry |
+| SERIAL3 | USART2 | RX=PD6, TX=PD5 | SBUS on RX (optional) | None |
+| SERIAL4 | USART3 | RX=PD9, TX=PD8 | Telemetry2 / MAVLink (optional) | None |
+| SERIAL5 | UART8 | RX=PE0, TX=PE1 | ELRS/CRSF receiver (recommended) | RCIN |
+| SERIAL6 | UART4 | RX=PB8, TX=PB9 | VTX (optional) | None |
+| SERIAL7 | USART6 | RX=PC7, TX=PC6 | Air Unit / UART device (optional) | None |
+
+---
 
 ## RC Input
 
-RC input is configured on SERIAL5 (UART8), which is available on the Rx1, Tx1. PPM receivers are *not* supported as this input does not have a timer resource available. 
+### Recommended: CRSF / ELRS on SERIAL5 (UART8)
+Connect your CRSF receiver to:
+- RX: PE0 (UART8_RX)
+- TX: PE1 (UART8_TX)
 
-*Note* It is recommend to use CRSF/ELRS. 
+Typical parameters:
+- `SERIAL5_PROTOCOL = 23`  (RCIN)
+- `SERIAL5_BAUD = 420`     (common CRSF rate)
 
-With recommended option:
+If CRSF is not detected, enable it in `RC_PROTOCOLS` (depending on ArduPilot version).
 
-- Set SERIAL1_PROTOCOL<SERIAL1_PROTOCOL must be set to "23"
-- Set SERIAL1_OPTIONS<SERIAL1_OPTIONS to "0".
-  
-## OSD Support
+### Optional: SBUS on SERIAL3 (USART2 RX)
+Connect SBUS signal to:
+- RX: PD6 (USART2_RX)
 
-The ScientechH7v1 supports OSD using OSD_TYPE 1 (MAX7456 driver).
+Typical parameters:
+- `SERIAL3_PROTOCOL = 23` (RCIN)
 
-## PWM Output
+If your SBUS line requires inversion and your hardware does not invert it, set the appropriate `SERIAL3_OPTIONS` inversion bit (depends on your wiring/inverter).
 
-The ScientechH7v1 supports up to 12 PWM outputs. 
+> Do not run two receivers at once unless you intentionally configure redundancy.
 
+---
 
-## Battery Monitoring
+## PWM Outputs
 
-The board has a built-in voltage and current sensor. The current sensor can read up to 130 Amps. The voltage sensor can handle from 3S to 6S LiPo batteries.
+The board provides 12 motor/servo outputs plus one LED-strip output:
 
-The correct battery setting parameters are:
+### Outputs 1–12
+| Output # | MCU Pin | Timer Channel |
+|---:|---|---|
+| 1 | PB0 | TIM8_CH2N |
+| 2 | PB1 | TIM8_CH3N |
+| 3 | PA0 | TIM5_CH1 |
+| 4 | PA1 | TIM5_CH2 |
+| 5 | PA2 | TIM5_CH3 |
+| 6 | PA3 | TIM5_CH4 |
+| 7 | PD12 | TIM4_CH1 |
+| 8 | PD13 | TIM4_CH2 |
+| 9 | PD14 | TIM4_CH3 |
+| 10 | PD15 | TIM4_CH4 |
+| 11 | PE5 | TIM15_CH1 |
+| 12 | PE6 | TIM15_CH2 |
 
- - BATT_MONITOR_DEFAULT 4
- - BATT_VOLT_PIN 10
- - BATT_CURR_PIN 11
- - BATT_VOLT_SCALE 11.0
- - BATT_CURR_SCALE 40.0
+### LED Strip Output (WS2812)
+| Output # | MCU Pin | Timer Channel | Notes |
+|---:|---|---|---|
+| 13 | PA8 | TIM1_CH1 | WS2812 LED strip |
 
-## Compass
+---
 
-The ScientechH7v1 does not have a built-in compass, but you can attach an external compass using I2C on the SDA and SCL pads.
+## OSD
+
+OSD is enabled in hwdef:
+- `OSD_ENABLED = 1`
+- `HAL_OSD_TYPE_DEFAULT = 1` (MAX7456/AT7456E)
+
+SPI wiring:
+- SPI2 SCK/MISO/MOSI: PB13/PB14/PB15
+- CS: PB12 (`MAX7456_CS`)
+
+---
+
+## microSD / Logging
+
+microSD is enabled via SDMMC1:
+- D0..D3: PC8..PC11
+- CK: PC12
+- CMD: PD2
+- `FATFS_HAL_DEVICE SDCD1`
+- `HAL_OS_FATFS_IO 1`
+
+Use a FAT32-formatted card for best compatibility.
+
+---
+
+## Battery Monitor / Power
+
+Battery sensing is configured:
+- Voltage sense: PC0 (ADC1)
+- Current sense: PC1 (ADC1)
+
+Defaults from hwdef:
+- `BATT_MONITOR = 4`
+- `BATT_VOLT_PIN = 10`
+- `BATT_CURR_PIN = 11`
+- `BATT_VOLT_MULT = 11.0`
+- `BATT_AMP_PERVLT = 40.0`
+
+Calibration:
+1. Measure battery voltage with a multimeter and tune `BATT_VOLT_MULT`.
+2. Verify current with a known load and tune `BATT_AMP_PERVLT`.
+
+---
+
+## Airspeed (Analog)
+
+Analog airspeed input:
+- PC4 (ADC1)
+- Default pin: `HAL_DEFAULT_AIRSPEED_PIN = 4`
+
+---
+
+## RSSI (Analog)
+
+Analog RSSI input:
+- PC5 (ADC1)
+- `BOARD_RSSI_ANA_PIN = 8`
+
+---
+
+## CAN
+
+CAN1:
+- RX: PD0
+- TX: PD1
+- Silent pin: PD3 (`GPIO_CAN1_SILENT`)
+
+---
+
+## LEDs / Buzzer
+
+- LED0 (blue): PE9
+- LED1 (green): PA7
+- Buzzer/Alarm: PA15 (TIM2_CH1)
+
+---
+
+## Building Firmware (Developer)
+
+From ArduPilot repo root:
+
+```bash
+./waf distclean
+./waf configure --board scientechH7v1
+./waf copter
 
 ## Loading Firmware
 
