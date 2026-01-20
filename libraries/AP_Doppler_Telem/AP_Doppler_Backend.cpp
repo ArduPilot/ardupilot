@@ -181,6 +181,7 @@ void AP_Doppler_Backend::parse_SA(const char *payload)
     Posture_data.pitch_deg = parse_float(p);
     Posture_data.roll_deg  = parse_float(p);
     Posture_data.yaw_deg   = parse_float(p);
+    gcs().send_text(MAV_SEVERITY_INFO,"SA_success");
 /*
       gcs().send_text(MAV_SEVERITY_INFO,
                 "Doppler: SA[%+.2f,%+.2f,%+.2f] ",
@@ -223,7 +224,7 @@ void AP_Doppler_Backend::parse_BI(const char *payload)
     velocity_data.Z_velocity_m_s     = parse_float(p);
     velocity_data.velocity_error_mm_s = parse_float(p);
     velocity_data.status              = static_cast<Message_Status>(parse_char(p));
-
+    gcs().send_text(MAV_SEVERITY_INFO,"BI_success");
 /*
     gcs().send_text(MAV_SEVERITY_INFO,
                 "Doppler: BI[%+.2f,%+.2f,%+.2f] mm/s",
@@ -242,6 +243,8 @@ void AP_Doppler_Backend::parse_BS(const char *payload)
     BottomTrackShipVel.z_velocity_mm_s = parse_float(p);
     BottomTrackShipVel.status          = static_cast<Message_Status>(parse_char(p));
     last_bs_update_ms = AP_HAL::millis();
+
+    gcs().send_text(MAV_SEVERITY_INFO,"BS_success");
 /*
     gcs().send_text(MAV_SEVERITY_INFO,
                 "Doppler: BS[%+.2f,%+.2f,%+.2f] mm/s",
@@ -260,6 +263,7 @@ void AP_Doppler_Backend::parse_BE(const char *payload)
     BottomTrackEarthVel.up_velocity_mm_s    = parse_float(p);
     BottomTrackEarthVel.status              = static_cast<Message_Status>(parse_char(p));
 
+    gcs().send_text(MAV_SEVERITY_INFO,"BE_success");
 /*
     gcs().send_text(MAV_SEVERITY_INFO,
                 "Doppler: BE[%+.2f,%+.2f,%+.2f] mm/s",
@@ -279,6 +283,7 @@ void AP_Doppler_Backend::parse_BD(const char *payload)
     BottomTrackDistance.bottom_distance_m      = parse_float(p);
     BottomTrackDistance.time_since_valid_s     = parse_float(p);
 
+    gcs().send_text(MAV_SEVERITY_INFO,"BD_success");
 /*
     gcs().send_text(MAV_SEVERITY_INFO,
                 "Doppler: BD[%+.2f,%+.2f,%+.2f] m",
@@ -298,6 +303,8 @@ void AP_Doppler_Backend::parse_WI(const char *payload)
     WaterTrackInstrumentVel.velocity_error_mm_s = parse_float(p);
     WaterTrackInstrumentVel.status              = static_cast<Message_Status>(parse_char(p));
 
+
+    gcs().send_text(MAV_SEVERITY_INFO,"WI_success");
 /*
     gcs().send_text(MAV_SEVERITY_INFO,
                 "Doppler: WI[%+.2f,%+.2f,%+.2f] mm/s",

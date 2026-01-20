@@ -2,9 +2,9 @@
 
 
 bool ModeAlthold::init(bool ignore_checks) {
-//    if(!sub.control_check_barometer()) {
-//        return false;
-//    }
+    if(!sub.control_check_barometer()) {
+        return false;
+    }
 
     // initialize vertical maximum speeds and acceleration
     // sets the maximum speed up and down returned by position controller
