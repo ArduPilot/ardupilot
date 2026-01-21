@@ -382,21 +382,20 @@ MAV_RESULT AP_Mount::handle_command_do_mount_control(const mavlink_command_int_t
 
 MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_command_int_t &packet)
 {
-    auto *backend = mount_device_from_gimbal_id(packet.z);
-
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(packet.z);
+    if (device == nullptr) {
         return MAV_RESULT_FAILED;
     }
 
     // check flags for change to RETRACT
     const uint32_t flags = packet.x;
     if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_RETRACT);
+        device->set_mode(MAV_MOUNT_MODE_RETRACT);
         return MAV_RESULT_ACCEPTED;
     }
     // check flags for change to NEUTRAL
     if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_NEUTRAL);
+        device->set_mode(MAV_MOUNT_MODE_NEUTRAL);
         return MAV_RESULT_ACCEPTED;
     }
 
@@ -405,7 +404,7 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
     const float pitch_angle_deg = packet.param1;
     const float yaw_angle_deg = packet.param2;
     if (!isnan(pitch_angle_deg) && !isnan(yaw_angle_deg)) {
-        backend->set_angle_target(0, pitch_angle_deg, yaw_angle_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        device->set_angle_target(0, pitch_angle_deg, yaw_angle_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return MAV_RESULT_ACCEPTED;
     }
 
@@ -414,13 +413,13 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
     const float pitch_rate_degs = packet.param3;
     const float yaw_rate_degs = packet.param4;
     if (!isnan(pitch_rate_degs) && !isnan(yaw_rate_degs)) {
-        backend->set_rate_target(0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        device->set_rate_target(0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return MAV_RESULT_ACCEPTED;
     }
 
     // if neither angles nor rates were provided set the RC_TARGETING yaw lock state
     if (isnan(pitch_angle_deg) && isnan(yaw_angle_deg) && isnan(pitch_rate_degs) && isnan(yaw_rate_degs)) {
-        backend->set_yaw_lock(flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        device->set_yaw_lock(flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return MAV_RESULT_ACCEPTED;
     }
 
@@ -430,13 +429,12 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
 // handle mav_cmd_do_gimbal_manager_configure for deconflicting different mavlink message senders
 MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_configure(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
-    auto *backend = mount_device_from_gimbal_id(packet.z);
-
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(packet.z);
+    if (device == nullptr) {
         return MAV_RESULT_FAILED;
     }
 
-    return backend->handle_command_do_gimbal_manager_configure(packet, msg);
+    return device->handle_command_do_gimbal_manager_configure(packet, msg);
 }
 
 void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg)
@@ -444,22 +442,21 @@ void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg)
     mavlink_gimbal_manager_set_attitude_t packet;
     mavlink_msg_gimbal_manager_set_attitude_decode(&msg,&packet);
 
-    auto *backend = mount_device_from_gimbal_id(packet.gimbal_device_id);
-
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(packet.gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
 
     // check flags for change to RETRACT
     const uint32_t flags = packet.flags;
     if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_RETRACT);
+        device->set_mode(MAV_MOUNT_MODE_RETRACT);
         return;
     }
 
     // check flags for change to NEUTRAL
     if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_NEUTRAL);
+        device->set_mode(MAV_MOUNT_MODE_NEUTRAL);
         return;
     }
 
@@ -483,7 +480,7 @@ void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg)
         att_quat.to_euler(attitude);  // attitude is in radians here
         attitude *= RAD_TO_DEG;  // convert to degrees
 
-        backend->set_angle_target(attitude.x, attitude.y, attitude.z, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        device->set_angle_target(attitude.x, attitude.y, attitude.z, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return;
     }
 
@@ -491,7 +488,7 @@ void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg)
         const float roll_rate_degs = degrees(packet.angular_velocity_x);
         const float pitch_rate_degs = degrees(packet.angular_velocity_y);
         const float yaw_rate_degs = degrees(packet.angular_velocity_z);
-        backend->set_rate_target(roll_rate_degs, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        device->set_rate_target(roll_rate_degs, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return;
     }
 }
@@ -501,21 +498,20 @@ void AP_Mount::handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
     mavlink_gimbal_manager_set_pitchyaw_t packet;
     mavlink_msg_gimbal_manager_set_pitchyaw_decode(&msg,&packet);
 
-    auto *backend = mount_device_from_gimbal_id(packet.gimbal_device_id);
-
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(packet.gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
 
     // check flags for change to RETRACT
     uint32_t flags = (uint32_t)packet.flags;
     if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_RETRACT);
+        device->set_mode(MAV_MOUNT_MODE_RETRACT);
         return;
     }
     // check flags for change to NEUTRAL
     if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_NEUTRAL);
+        device->set_mode(MAV_MOUNT_MODE_NEUTRAL);
         return;
     }
 
@@ -528,7 +524,7 @@ void AP_Mount::handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
     if (!isnan(packet.pitch) && !isnan(packet.yaw)) {
         const float pitch_angle_deg = degrees(packet.pitch);
         const float yaw_angle_deg = degrees(packet.yaw);
-        backend->set_angle_target(0, pitch_angle_deg, yaw_angle_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        device->set_angle_target(0, pitch_angle_deg, yaw_angle_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return;
     }
 
@@ -536,13 +532,13 @@ void AP_Mount::handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
     if (!isnan(packet.pitch_rate) && !isnan(packet.yaw_rate)) {
         const float pitch_rate_degs = degrees(packet.pitch_rate);
         const float yaw_rate_degs = degrees(packet.yaw_rate);
-        backend->set_rate_target(0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        device->set_rate_target(0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return;
     }
 
     // if neither angles nor rates were provided set the RC_TARGETING yaw lock state
     if (isnan(packet.pitch) && isnan(packet.yaw) && isnan(packet.pitch_rate) && isnan(packet.yaw_rate)) {
-        backend->set_yaw_lock(flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        device->set_yaw_lock(flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return;
     }
 }
