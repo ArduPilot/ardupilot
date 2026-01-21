@@ -581,7 +581,8 @@ void AP_Mount_Backend::write_log(uint64_t timestamp_us)
     float pitch = nanf;
     float yaw_bf = nanf;
     float yaw_ef = nanf;
-    if (_frontend.get_attitude_euler(_instance, roll, pitch, yaw_bf)) {
+    const uint8_t gimbal_device_id = _instance + 1;
+    if (_frontend.get_attitude_euler(gimbal_device_id, roll, pitch, yaw_bf)) {
         yaw_ef = wrap_180(yaw_bf + degrees(ahrs_yaw));
     }
 
