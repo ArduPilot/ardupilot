@@ -197,7 +197,6 @@ public:
 
     // sets rate target in deg/s
     // yaw_lock should be true if the yaw rate is earth-frame, false if body-frame (e.g. rotates with body of vehicle)
-    void set_rate_target(float roll_degs, float pitch_degs, float yaw_degs, bool yaw_lock) { set_rate_target(get_gimbal_device_id_of_primary(), roll_degs, pitch_degs, yaw_degs, yaw_lock); }
     void set_rate_target(uint8_t gimbal_device_id, float roll_degs, float pitch_degs, float yaw_degs, bool yaw_lock);
 
     // set_roi_target - sets target location that mount should attempt to point towards
