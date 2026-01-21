@@ -805,9 +805,8 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
     // and possibly rotating the copter to point at the ROI if our mount type does not support a yaw feature
     // TO-DO: add support for other features ("modes") of MAV_CMD_DO_SET_ROI including pointing at a given waypoint
     case MAV_CMD_DO_SET_ROI:                // 201
-        // point the copter and camera at a region of interest (ROI)
-        // ROI_NONE can be handled by the regular ROI handler because lat, lon, alt are always zero
-        do_roi(cmd);
+        // Because MAVLink does not specify which sensor(s) is contolled by this command, the decision is made here.
+        auto_yaw.set_roi(0, cmd.content.location);
         break;
 
 #if HAL_MOUNT_ENABLED
@@ -2021,15 +2020,6 @@ void ModeAuto::do_set_home(const AP_Mission::Mission_Command& cmd)
             // ignore failure
         }
     }
-}
-
-// do_roi - starts actions required by MAV_CMD_DO_SET_ROI
-//          this involves either moving the camera to point at the ROI (region of interest)
-//          and possibly rotating the copter to point at the ROI if our mount type does not support a yaw feature
-// TO-DO: add support for other features of MAV_CMD_DO_SET_ROI including pointing at a given waypoint
-void ModeAuto::do_roi(const AP_Mission::Mission_Command& cmd)
-{
-    auto_yaw.set_roi(cmd.content.location);
 }
 
 #if HAL_MOUNT_ENABLED
