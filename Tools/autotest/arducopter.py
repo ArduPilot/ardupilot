@@ -30,6 +30,7 @@ from vehicle_test_suite import NotAchievedException, AutoTestTimeoutException, P
 from vehicle_test_suite import Test
 from vehicle_test_suite import MAV_POS_TARGET_TYPE_MASK
 from vehicle_test_suite import WaitAndMaintainArmed
+from vehicle_test_suite import WaitAndMaintainAttitude
 from vehicle_test_suite import WaitModeTimeout
 
 from pymavlink.rotmat import Vector3, Matrix3
@@ -15122,6 +15123,36 @@ RTL_ALT_M 111
         self.arm_vehicle()
         self.wait_disarmed()
 
+    def WaitAndMaintainAttitude_RCFlight(self):
+        '''just test WaitAndMaintainAttitude works'''
+        WaitAndMaintainAttitude(self, 0, 0, epsilon=1).run()
+        self.takeoff(20, mode='LOITER')
+
+        WaitAndMaintainAttitude(self, 0, 0, epsilon=1).run()
+
+        self.start_subtest("Full forward stick")
+        self.set_rc(2, 1000)
+        WaitAndMaintainAttitude(self, 0, -30, epsilon=1, minimum_duration=10, timeout=60).run()
+
+        self.start_subtest("Full left stick")
+        self.set_rc(2, 1500)
+        self.set_rc(1, 1000)
+        WaitAndMaintainAttitude(self, -30, 0, epsilon=1).run()
+
+        self.start_subtest("Circular angle")
+        self.set_rc(2, 1000)
+        self.set_rc(1, 1000)
+        # this is some sort of circular-angle shenanigans / frame
+        # translation weirdness:
+        WaitAndMaintainAttitude(self, -20, -23, epsilon=1, timeout=120).run()
+
+        self.start_subtest("Center the sticks")
+        self.set_rc(2, 1500)
+        self.set_rc(1, 1500)
+        WaitAndMaintainAttitude(self, 0, 0, epsilon=1).run()
+
+        self.do_RTL()
+
     def LuaParamSet(self):
         '''test param-set.lua applet'''
         self.set_parameters({
@@ -15705,6 +15736,7 @@ return update, 1000
             self.IMUConsistency,
             self.AHRSTrimLand,
             self.IBus,
+            self.WaitAndMaintainAttitude_RCFlight,
             self.GuidedYawRate,
             self.RudderDisarmMidair,
             self.NoArmWithoutMissionItems,
