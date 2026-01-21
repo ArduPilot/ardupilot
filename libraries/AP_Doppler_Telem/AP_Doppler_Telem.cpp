@@ -69,6 +69,7 @@ void AP_Doppler_Telem::update()
     if (_backend == nullptr) {
         return;
     }
+    _backend->loop();
 }
 
 void AP_Doppler_Telem::send()

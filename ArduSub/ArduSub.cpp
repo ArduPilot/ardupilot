@@ -102,7 +102,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_RPM,              &sub.rpm_sensor,   update,              10, 200,  66),
 #endif
     SCHED_TASK(terrain_update,        10,    100,  72),
-    SCHED_TASK(doppler_update,         1,    100,  74),
+    SCHED_TASK(doppler_update,       0.1,    100,  74),
 #if AP_GRIPPER_ENABLED
     SCHED_TASK_CLASS(AP_Gripper,          &sub.g2.gripper,   update,              10,  75,  75),
 #endif
@@ -194,6 +194,7 @@ void Sub::doppler_update()
     float quality = 0.0f;
     DVL_LockState lock = DVL_LockState::NO_LOCK;
     if (!inertial_doppler.get_velocity_body(vel_body_mps, t_ms, quality, lock)) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Doppler no data");
         return;
     }
 
