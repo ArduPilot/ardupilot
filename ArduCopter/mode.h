@@ -333,7 +333,7 @@ public:
         void set_rate_rad(float turn_rate_rads);
 
         // set_roi(...): set a "look at" location:
-        void set_roi(const Location &roi_location);
+        void set_roi(const uint8_t gimbal_device_id, const Location &roi_location);
 
         void set_fixed_yaw_rad(float angle_rad,
                                float turn_rate_rads,

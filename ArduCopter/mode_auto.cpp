@@ -794,8 +794,16 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_set_home(cmd);
         break;
 
-    case MAV_CMD_DO_SET_ROI_LOCATION:       // 195
+    // point camera (and maybe the copter?) at a region of interest (ROI)
     case MAV_CMD_DO_SET_ROI_NONE:           // 197
+        // This case handled correctly by the "location" ROI handler because lat, lon, alt are always zero
+    case MAV_CMD_DO_SET_ROI_LOCATION:       // 195
+        auto_yaw.set_roi(cmd.p1, cmd.content.location);
+        break;
+
+    // this involves either moving the camera to point at the ROI (region of interest)
+    // and possibly rotating the copter to point at the ROI if our mount type does not support a yaw feature
+    // TO-DO: add support for other features ("modes") of MAV_CMD_DO_SET_ROI including pointing at a given waypoint
     case MAV_CMD_DO_SET_ROI:                // 201
         // point the copter and camera at a region of interest (ROI)
         // ROI_NONE can be handled by the regular ROI handler because lat, lon, alt are always zero

@@ -169,7 +169,7 @@ void Mode::AutoYaw::set_yaw_angle_offset_deg(const float yaw_angle_offset_deg)
 }
 
 // set_roi - sets the yaw to look at roi_ned_m for auto mode
-void Mode::AutoYaw::set_roi(const Location &roi_location)
+void Mode::AutoYaw::set_roi(const uint8_t gimbal_device_id, const Location &roi_location)
 {
     // if location is zero lat, lon and altitude turn off ROI
     if (!roi_location.initialised()) {
@@ -177,18 +177,18 @@ void Mode::AutoYaw::set_roi(const Location &roi_location)
         auto_yaw.set_mode_to_default(false);
 #if HAL_MOUNT_ENABLED
         // switch off the camera tracking if enabled
-        copter.camera_mount.clear_roi_target();
+        copter.camera_mount.clear_roi_target(gimbal_device_id);
 #endif  // HAL_MOUNT_ENABLED
     } else {
 #if HAL_MOUNT_ENABLED
         // check if mount type requires us to rotate the quad
-        if (!copter.camera_mount.has_pan_control()) {
+        if (!copter.camera_mount.has_pan_control(gimbal_device_id)) {
             if (roi_location.get_vector_from_origin_NED_m(roi_ned_m)) {
                 auto_yaw.set_mode(Mode::ROI);
             }
         }
         // send the command to the camera mount
-        copter.camera_mount.set_roi_target(roi_location);
+        copter.camera_mount.set_roi_target(gimbal_device_id, roi_location);
 
         // TO-DO: expand handling of the do_nav_roi to support all modes of the MAVLink.  Currently we only handle mode 4 (see below)
         //      0: do nothing
