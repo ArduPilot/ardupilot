@@ -1513,33 +1513,7 @@ bool AP_AHRS::get_velocity_D(float &velD, bool high_vibes) const
 // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
 bool AP_AHRS::get_vert_pos_rate_D(float &velocity) const
 {
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return dcm_estimates.get_vert_pos_rate_D(velocity);
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return ekf2_estimates.get_vert_pos_rate_D(velocity);
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return ekf3_estimates.get_vert_pos_rate_D(velocity);
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return sim_estimates.get_vert_pos_rate_D(velocity);
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return external_estimates.get_vert_pos_rate_D(velocity);
-#endif
-    }
-    // since there is no default case above, this is unreachable
-    return false;
+    return active_estimates->get_vert_pos_rate_D(velocity);
 }
 
 // get latest height above ground level estimate in metres and a validity flag
