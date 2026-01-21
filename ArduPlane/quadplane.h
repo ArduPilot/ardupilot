@@ -198,9 +198,6 @@ public:
 private:
     AP_AHRS &ahrs;
 
-    // key aircraft parameters passed to multiple libraries
-    AP_MultiCopter aparm;
-
     AP_InertialNav inertial_nav{ahrs};
 
     AP_Enum<AP_Motors::motor_frame_class> frame_class;
