@@ -30,50 +30,16 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_RangeFinder_MaxsonarI2CXL::AP_RangeFinder_MaxsonarI2CXL(RangeFinder::RangeFinder_State &_state,
-                                                           AP_RangeFinder_Params &_params,
-                                                           AP_HAL::I2CDevice *dev)
-    : AP_RangeFinder_Backend(_state, _params)
-    , _dev(dev)
-{
-}
-
 /*
    detect if a Maxbotix rangefinder is connected. We'll detect by
    trying to take a reading on I2C. If we get a result the sensor is
    there.
 */
-AP_RangeFinder_Backend *AP_RangeFinder_MaxsonarI2CXL::detect(RangeFinder::RangeFinder_State &_state,
-																AP_RangeFinder_Params &_params,
-                                                             AP_HAL::I2CDevice *dev)
+bool AP_RangeFinder_MaxsonarI2CXL::init(void)
 {
-    if (!dev) {
-        return nullptr;
-    }
-
-    AP_RangeFinder_MaxsonarI2CXL *sensor
-        = NEW_NOTHROW AP_RangeFinder_MaxsonarI2CXL(_state, _params, dev);
-    if (!sensor) {
-        return nullptr;
-    }
-
-    if (!sensor->_init()) {
-        delete sensor;
-        return nullptr;
-    }
-
-    return sensor;
-}
-
-/*
-  initialise sensor
- */
-bool AP_RangeFinder_MaxsonarI2CXL::_init(void)
-{
-    _dev->get_semaphore()->take_blocking();
+    WITH_SEMAPHORE(dev.get_semaphore());
 
     if (!start_reading()) {
-        _dev->get_semaphore()->give();
         return false;
     }
 
@@ -82,34 +48,31 @@ bool AP_RangeFinder_MaxsonarI2CXL::_init(void)
 
     uint16_t reading_cm;
     if (!get_reading(reading_cm)) {
-        _dev->get_semaphore()->give();
         return false;
     }
 
-    _dev->get_semaphore()->give();
-
-    _dev->register_periodic_callback(100000,
+    dev.register_periodic_callback(100000,
                                      FUNCTOR_BIND_MEMBER(&AP_RangeFinder_MaxsonarI2CXL::_timer, void));
 
     return true;
 }
 
-// start_reading() - ask sensor to make a range reading
+// start_reading() - ask sensor to make a range reading - must be
+// called with semaphore held
 bool AP_RangeFinder_MaxsonarI2CXL::start_reading()
 {
     uint8_t cmd = AP_RANGE_FINDER_MAXSONARI2CXL_COMMAND_TAKE_RANGE_READING;
 
     // send command to take reading
-    return _dev->transfer(&cmd, sizeof(cmd), nullptr, 0);
+    return dev.transfer(&cmd, sizeof(cmd), nullptr, 0);
 }
 
 // read - return last value measured by sensor
 bool AP_RangeFinder_MaxsonarI2CXL::get_reading(uint16_t &reading_cm)
 {
-    be16_t val;
-
     // take range reading and read back results
-    bool ret = _dev->transfer(nullptr, 0, (uint8_t *) &val, sizeof(val));
+    be16_t val;
+    bool ret = dev.transfer(nullptr, 0, (uint8_t *) &val, sizeof(val));
 
     if (ret) {
         // combine results into distance
