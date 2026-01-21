@@ -70,31 +70,20 @@ using namespace ChibiOS;
   scaling table between ADC count and actual input voltage, to account
   for voltage dividers on the board.
  */
-const AnalogIn::pin_info AnalogIn::pin_config[] = { HAL_ANALOG_PINS };
+#ifdef HAL_ANALOG_PINS
+    const AnalogIn::pin_info AnalogIn::pin_config[] = { HAL_ANALOG_PINS };
+    #define ADC_GRP1_NUM_CHANNELS ARRAY_SIZE(AnalogIn::pin_config)
+#endif
 
 #ifdef HAL_ANALOG2_PINS
     const AnalogIn::pin_info AnalogIn::pin_config_2[] = { HAL_ANALOG2_PINS };
     #define ADC2_GRP1_NUM_CHANNELS ARRAY_SIZE(AnalogIn::pin_config_2)
 #endif
 
-#if defined(HAL_ANALOG3_PINS) || HAL_WITH_MCU_MONITORING
-#if HAL_WITH_MCU_MONITORING
-    // internal ADC channels (from H7 reference manual)
-    #define ADC3_VSENSE_CHAN 18
-    #define ADC3_VREFINT_CHAN 19
-    #define ADC3_VBAT4_CHAN 17
-    #define HAL_MCU_MONITORING_PINS {ADC3_VBAT4_CHAN, 252, 3.30/4096}, {ADC3_VSENSE_CHAN, 253, 3.30/4096}, {ADC3_VREFINT_CHAN, 254, 3.30/4096}
-#else
-    #define HAL_MCU_MONITORING_PINS
-#endif
-#ifndef HAL_ANALOG3_PINS
-    #define HAL_ANALOG3_PINS
-#endif
-    const AnalogIn::pin_info AnalogIn::pin_config_3[] = { HAL_ANALOG3_PINS HAL_MCU_MONITORING_PINS};
+#ifdef HAL_ANALOG3_PINS
+    const AnalogIn::pin_info AnalogIn::pin_config_3[] = { HAL_ANALOG3_PINS };
     #define ADC3_GRP1_NUM_CHANNELS ARRAY_SIZE(AnalogIn::pin_config_3)
 #endif
-
-#define ADC_GRP1_NUM_CHANNELS   ARRAY_SIZE(AnalogIn::pin_config)
 
 #if defined(ADC_CFGR_RES_16BITS)
 // on H7 we use 16 bit ADC transfers, giving us more resolution. We
@@ -141,11 +130,13 @@ bool AnalogIn::valid_analog_pin(uint16_t pin) const
     if (pin == ANALOG_INPUT_NONE) {
         return false;
     }
+#ifdef HAL_ANALOG_PINS
     for (uint8_t i=0; i<ADC_GRP1_NUM_CHANNELS; i++) {
         if (AnalogIn::pin_config[i].analog_pin == pin) {
             return true;
         }
     }
+#endif
 #ifdef HAL_ANALOG2_PINS
     for (uint8_t i=0; i<ADC2_GRP1_NUM_CHANNELS; i++) {
         if (AnalogIn::pin_config_2[i].analog_pin == pin) {
@@ -169,12 +160,14 @@ bool AnalogIn::valid_analog_pin(uint16_t pin) const
 float AnalogSource::_pin_scaler(void)
 {
     float scaling = VOLTAGE_SCALING;
+#ifdef HAL_ANALOG_PINS
     for (uint8_t i=0; i<ADC_GRP1_NUM_CHANNELS; i++) {
         if (AnalogIn::pin_config[i].analog_pin == _pin && (_pin != ANALOG_INPUT_NONE)) {
             scaling = AnalogIn::pin_config[i].scaling;
             break;
         }
     }
+#endif
 #ifdef HAL_ANALOG2_PINS
     for (uint8_t i=0; i<ADC2_GRP1_NUM_CHANNELS; i++) {
         if (AnalogIn::pin_config_2[i].analog_pin == _pin && (_pin != ANALOG_INPUT_NONE)) {
@@ -232,12 +225,14 @@ bool AnalogSource::set_pin(uint8_t pin)
     if (pin == ANALOG_SERVO_VRSSI_PIN) {
         found_pin = true;
     } else {
+#ifdef HAL_ANALOG_PINS
         for (uint8_t i=0; i<ADC_GRP1_NUM_CHANNELS; i++) {
             if (AnalogIn::pin_config[i].analog_pin == pin) {
                 found_pin = true;
                 break;
             }
         }
+#endif
 #ifdef HAL_ANALOG2_PINS
         for (uint8_t i=0; i<ADC2_GRP1_NUM_CHANNELS; i++) {
             if (AnalogIn::pin_config_2[i].analog_pin == pin) {
@@ -301,9 +296,11 @@ void AnalogSource::_add_value(float v, float vcc5V)
 uint8_t AnalogIn::get_pin_channel(uint8_t adc_index, uint8_t pin_index)
 {
     switch(adc_index) {
+#if defined(HAL_ANALOG_PINS)
     case 0:
         osalDbgAssert(pin_index < ADC_GRP1_NUM_CHANNELS, "invalid pin_index");
         return pin_config[pin_index].channel;
+#endif
 #if defined(HAL_ANALOG2_PINS)
     case 1:
         osalDbgAssert(pin_index < ADC2_GRP1_NUM_CHANNELS, "invalid pin_index");
@@ -322,8 +319,10 @@ uint8_t AnalogIn::get_pin_channel(uint8_t adc_index, uint8_t pin_index)
 uint8_t AnalogIn::get_analog_pin(uint8_t adc_index, uint8_t pin_index)
 {
     switch(adc_index) {
+#if defined(HAL_ANALOG_PINS)
     case 0:
         return pin_config[pin_index].analog_pin;
+#endif
 #if defined(HAL_ANALOG2_PINS)
     case 1:
         return pin_config_2[pin_index].analog_pin;
@@ -342,8 +341,10 @@ uint8_t AnalogIn::get_analog_pin(uint8_t adc_index, uint8_t pin_index)
 float AnalogIn::get_pin_scaling(uint8_t adc_index, uint8_t pin_index)
 {
     switch(adc_index) {
+#if defined(HAL_ANALOG_PINS)
     case 0:
         return pin_config[pin_index].scaling;
+#endif
 #if defined(HAL_ANALOG2_PINS)
     case 1:
         return pin_config_2[pin_index].scaling;
@@ -417,9 +418,11 @@ void AnalogIn::adccallback(ADCDriver *adcp)
 
 uint8_t AnalogIn::get_adc_index(ADCDriver* adcp)
 {
+#if defined(HAL_ANALOG_PINS)
     if (adcp == &ADCD1) {
         return 0;
     }
+#endif
 #if defined(HAL_ANALOG2_PINS) && !STM32_ADC_DUAL_MODE
     if (adcp == &ADCD2) {
         return 1;
@@ -437,8 +440,10 @@ uint8_t AnalogIn::get_adc_index(ADCDriver* adcp)
 uint8_t AnalogIn::get_num_grp_channels(uint8_t index)
 {
     switch (index) {
+#if defined(HAL_ANALOG_PINS)
     case 0:
         return ADC_GRP1_NUM_CHANNELS;
+#endif
 #if defined(HAL_ANALOG2_PINS)
     case 1:
         return ADC2_GRP1_NUM_CHANNELS;
@@ -462,7 +467,9 @@ void AnalogIn::init()
 #else
     static_assert(sizeof(uint16_t) == sizeof(adcsample_t), "adcsample_t must be uint16_t");
 #endif
+#if defined(HAL_ANALOG_PINS)
     setup_adc(0);
+#endif
 #if defined(HAL_ANALOG2_PINS)
     setup_adc(1);
 #endif
@@ -480,9 +487,11 @@ void AnalogIn::setup_adc(uint8_t index)
 
     ADCDriver *adcp;
     switch (index) {
+#if defined(HAL_ANALOG_PINS)
     case 0:
         adcp = &ADCD1;
         break;
+#endif
 // if we are in dual mode then ADC2 is setup along with ADC1
 // so we don't need to setup ADC2 separately
 #if defined(HAL_ANALOG2_PINS) && !STM32_ADC_DUAL_MODE
