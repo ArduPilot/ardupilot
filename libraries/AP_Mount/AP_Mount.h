@@ -200,11 +200,9 @@ public:
     void set_rate_target(uint8_t gimbal_device_id, float roll_degs, float pitch_degs, float yaw_degs, bool yaw_lock);
 
     // set_roi_target - sets target location that mount should attempt to point towards
-    void set_roi_target(const Location &target_loc) { set_roi_target(get_gimbal_device_id_of_primary(), target_loc); }
     void set_roi_target(uint8_t gimbal_device_id, const Location &target_loc);
 
     // clear_roi_target - clears target location that mount should attempt to point towards
-    void clear_roi_target() { clear_roi_target(get_gimbal_device_id_of_primary()); }
     void clear_roi_target(uint8_t gimbal_device_id);
 
     // point at system ID sysid
