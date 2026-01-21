@@ -728,6 +728,66 @@ class WaitAndMaintainServoChannelValue(WaitAndMaintain):
         return m_value
 
 
+class WaitAndMaintainAttitude(WaitAndMaintain):
+    def __init__(self, test_suite, desroll=None, despitch=None, **kwargs):
+        super().__init__(test_suite, **kwargs)
+        self.desroll = desroll
+        self.despitch = despitch
+
+        if self.desroll is None and self.despitch is None:
+            raise ValueError("despitch or desroll must be supplied")
+
+    def announce_start_text(self):
+        conditions = []
+        if self.desroll is not None:
+            conditions.append(f"roll={self.desroll}")
+        if self.despitch is not None:
+            conditions.append(f"pitch={self.despitch}")
+
+        return f"Waiting for {' and '.join(conditions)}"
+
+    def get_target_value(self):
+        return (self.desroll, self.despitch)
+
+    def get_current_value(self):
+        m = self.test_suite.assert_receive_message('ATTITUDE', timeout=10)
+        self.last_ATTITUDE = m
+        return (math.degrees(m.roll), math.degrees(m.pitch))
+
+    def validate_value(self, value):
+        (candidate_roll, candidate_pitch) = value
+
+        if self.desroll is not None:
+            roll_error = abs(self.desroll - candidate_roll)
+            if roll_error > self.epsilon:
+                return False
+
+        if self.despitch is not None:
+            pitch_error = abs(self.despitch - candidate_pitch)
+            if pitch_error > self.epsilon:
+                return False
+
+        return True
+
+    def success_text(self):
+        return "Attained attitude"
+
+    def timeoutexception(self):
+        return AutoTestTimeoutException("Failed to attain attitude")
+
+    def progress_text(self, current_value):
+        (achieved_roll, achieved_pitch) = current_value
+        axis_progress = []
+
+        if self.desroll is not None:
+            axis_progress.append(f"r={achieved_roll: >8.3f} des-r={self.desroll}")
+
+        if self.despitch is not None:
+            axis_progress.append(f"p={achieved_pitch: >8.3f} des-p={self.despitch}")
+
+        return " ".join(axis_progress)
+
+
 class MSP_Generic(Telem):
     def __init__(self, destination_address):
         super(MSP_Generic, self).__init__(destination_address)
