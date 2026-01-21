@@ -668,7 +668,7 @@ protected:
 
     bool _enter() override;
 
-    Location _destination;      // target location to hold position around
+    AbsAltLocation _destination;      // target location to hold position around
     float _desired_speed;       // desired speed (ramped down from initial speed to zero)
 };
 

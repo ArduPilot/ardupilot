@@ -208,8 +208,8 @@ Vector3f Glider::getForce(float inputAileron, float inputElevator, float inputRu
             // @Field: q: air pressure
             AP::logger().Write("SLD", "TimeUS,AltFt,AltM,EAS,TAS,AD,Fl,Fd,LD,Elev,AoA,Fx,Fy,Fz,q", "Qffffffffffffff",
                                AP_HAL::micros64(),
-                               (location.alt*0.01)/FEET_TO_METERS,
-                               location.alt*0.01,
+                               location.get_alt_m()/FEET_TO_METERS,
+                               location.get_alt_m(),
                                velocity_air_bf.length()/eas2tas,
                                velocity_air_bf.length(),
                                air_density,
@@ -237,7 +237,7 @@ Vector3f Glider::getForce(float inputAileron, float inputElevator, float inputRu
             // @Field: Az: z-axis body-frame acceleration
             AP::logger().Write("SL2", "TimeUS,AltFt,KEAS,KTAS,AD,Fl,Fd,LD,Elev,Ail,Rud,AoA,SSA,q,Az", "Qffffffffffffff",
                                AP_HAL::micros64(),
-                               (location.alt*0.01)/FEET_TO_METERS,
+                               location.get_alt_m()/FEET_TO_METERS,
                                M_PER_SEC_TO_KNOTS*velocity_air_bf.length()/eas2tas,
                                M_PER_SEC_TO_KNOTS*velocity_air_bf.length(),
                                air_density,
@@ -288,7 +288,7 @@ void Glider::calculate_forces(const struct sitl_input &input, Vector3f &rot_acce
     if (carriage_state == carriageState::WAITING_FOR_RELEASE) {
         balloon_velocity = Vector3f(-wind_ef.x, -wind_ef.y, -wind_ef.z -balloon_rate * balloon);
         balloon_position += balloon_velocity * (1.0e-6 * (float)frame_time_us);
-        const float height_AMSL = 0.01f * (float)home.alt - position.z;
+        const float height_AMSL = home.get_alt_m() - position.z;
         // release at burst height or when balloon cut output goes high
         if (hal.scheduler->is_system_initialized() &&
             (height_AMSL > balloon_burst_amsl || balloon_cut > 0.8)) {
@@ -302,7 +302,7 @@ void Glider::calculate_forces(const struct sitl_input &input, Vector3f &rot_acce
         if (balloon_velocity.length() < 0.5) {
             carriage_state = carriageState::RELEASED;
             use_smoothing = false;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "released at %.0f m AMSL", (0.01f * home.alt) - position.z);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "released at %.0f m AMSL", home.get_alt_m() - position.z);
         }
     } else if (carriage_state == carriageState::WAITING_FOR_PICKUP) {
         // Don't allow the balloon to drag sideways until the pickup

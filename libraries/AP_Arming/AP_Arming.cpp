@@ -667,7 +667,7 @@ bool AP_Arming::compass_checks(bool report)
 
 #if AP_AHRS_ENABLED
         // if ahrs is using compass and we have location, check mag field versus expected earth magnetic model
-        Location ahrs_loc;
+        AbsAltLocation ahrs_loc;
         AP_AHRS &ahrs = AP::ahrs();
         if ((magfield_error_threshold > 0) && ahrs.use_compass() && ahrs.get_location(ahrs_loc)) {
             const Vector3f veh_mag_field_ef = ahrs.get_rotation_body_to_ned() * _compass.get_field();
@@ -748,7 +748,7 @@ bool AP_Arming::gps_checks(bool report)
         // check AHRS and GPS are within 10m of each other
         if (gps.num_sensors() > 0) {
             const Location gps_loc = gps.location();
-            Location ahrs_loc;
+            AbsAltLocation ahrs_loc;
             if (AP::ahrs().get_location(ahrs_loc)) {
                 const float distance = gps_loc.get_distance(ahrs_loc);
                 if (distance > AP_ARMING_AHRS_GPS_ERROR_MAX) {
@@ -963,7 +963,7 @@ bool AP_Arming::mission_checks(bool report)
                 check_failed(Check::MISSION, report, "No rally library present");
                 return false;
             }
-            Location ahrs_loc;
+            AbsAltLocation ahrs_loc;
             if (!AP::ahrs().get_location(ahrs_loc)) {
                 check_failed(Check::MISSION, report, "Can't check rally without position");
                 return false;

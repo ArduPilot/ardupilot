@@ -672,13 +672,13 @@ bool NavEKF3_core::assume_zero_sideslip(void) const
 
 // sets the local NED origin using a LLH location (latitude, longitude, height)
 // returns false if the origin is already set
-bool NavEKF3_core::setOriginLLH(const Location &loc)
+bool NavEKF3_core::setOriginLLH(const AbsAltLocation &loc)
 {
     return setOrigin(loc);
 }
 
 // populates the Earth magnetic field table using the given location
-void NavEKF3_core::setEarthFieldFromLocation(const Location &loc)
+void NavEKF3_core::setEarthFieldFromLocation(const AbsAltLocation &loc)
 {
     const auto &compass = dal.compass();
     if (compass.have_scale_factor(magSelectIndex) &&
@@ -693,7 +693,7 @@ void NavEKF3_core::setEarthFieldFromLocation(const Location &loc)
 
 // sets the local NED origin using a LLH location (latitude, longitude, height)
 // returns false is the origin has already been set
-bool NavEKF3_core::setOrigin(const Location &loc)
+bool NavEKF3_core::setOrigin(const AbsAltLocation &loc)
 {
     // if the origin is valid reject setting a new origin
     if (validOrigin) {
@@ -701,7 +701,7 @@ bool NavEKF3_core::setOrigin(const Location &loc)
     }
 
     EKF_origin = loc;
-    ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
+    ekfGpsRefHgt = EKF_origin.get_alt_m();
     // define Earth rotation vector in the NED navigation frame at the origin
     calcEarthRateNED(earthRateNED, EKF_origin.lat);
     validOrigin = true;

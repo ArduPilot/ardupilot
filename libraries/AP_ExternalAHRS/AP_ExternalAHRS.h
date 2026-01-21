@@ -94,9 +94,9 @@ public:
         Vector3f accel;
         Vector3f gyro;
         Quaternion quat; // NED
-        Location location;
+        AbsAltLocation location;
         Vector3f velocity;
-        Location origin;
+        AbsAltLocation origin;
 
         bool have_quaternion;
         bool have_origin;
@@ -111,9 +111,9 @@ public:
     bool healthy(void) const;
     bool initialised(void) const;
     bool get_quaternion(Quaternion &quat);
-    bool get_origin(Location &loc);
-    bool set_origin(const Location &loc);
-    bool get_location(Location &loc);
+    bool get_origin(AbsAltLocation &loc);
+    bool set_origin(const AbsAltLocation &loc);
+    bool get_location(AbsAltLocation &loc);
     Vector2f get_groundspeed_vector();
     bool get_velocity_NED(Vector3f &vel);
     bool get_speed_down(float &speedD);

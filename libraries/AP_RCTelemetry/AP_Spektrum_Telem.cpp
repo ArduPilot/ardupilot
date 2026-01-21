@@ -495,12 +495,12 @@ void AP_Spektrum_Telem::calc_attandmag(void)
 // prepare gps location - L/E
 void AP_Spektrum_Telem::calc_gps_location()
 {
-    const Location &loc = AP::gps().location(0); // use the first gps instance (same as in send_mavlink_gps_raw)
+    const AbsAltLocation &loc = AP::gps().location(0); // use the first gps instance (same as in send_mavlink_gps_raw)
     const uint32_t u1e8 = 100000000, u1e7 = 10000000, u1e6 = 1000000, u1e5 = 100000, u1e4 = 10000;
 
     _telem.gpsloc.identifier = TELE_DEVICE_GPS_LOC;                 // Source device = 0x16
     _telem.gpsloc.sID = 0;                                          // Secondary ID
-    uint32_t alt = (abs(loc.alt) / 10) % u1e6;
+    uint32_t alt = (abs(loc.get_alt_cm()) / 10) % u1e6;
     _telem.gpsloc.altitudeLow = ((alt % u1e4 / 1000) << 12) | ((alt % 1000 / 100) << 8)
         | ((alt % 100 / 10) << 4) | (alt % 100); // BCD, meters, format 3.1 (Low order of altitude)
 
@@ -524,7 +524,7 @@ void AP_Spektrum_Telem::calc_gps_location()
     if (AP::gps().status(0) >= AP_GPS::GPS_OK_FIX_3D) {
         _telem.gpsloc.GPSflags |= GPS_INFO_FLAGS_3D_FIX;
     }
-    if (loc.alt < 0) {
+    if (loc.get_alt_cm() < 0) {
         _telem.gpsloc.GPSflags |= GPS_INFO_FLAGS_NEGATIVE_ALT;
     }
     if ((loc.lng / 1e7) > 99) {
@@ -548,7 +548,7 @@ void AP_Spektrum_Telem::calc_gps_location()
 // prepare gps status - L/E
 void AP_Spektrum_Telem::calc_gps_status()
 {
-    const Location &loc = AP::gps().location(0);
+    const AbsAltLocation &loc = AP::gps().location(0);
 
     _telem.gpsstat.identifier = TELE_DEVICE_GPS_STATS;              // Source device = 0x17
     _telem.gpsstat.sID = 0;                                         // Secondary ID
@@ -569,7 +569,7 @@ void AP_Spektrum_Telem::calc_gps_status()
     _telem.gpsstat.UTC = ((((h / 10) << 4) | (h % 10)) << 20) | ((((m / 10) << 4) | (m % 10)) << 12) | ((((s / 10) << 4) | (s % 10)) << 4) | (ms / 100) ;
     uint8_t nsats =  AP::gps().num_sats();
     _telem.gpsstat.numSats = ((nsats / 10) << 4) | (nsats % 10);    // BCD, 0-99
-    uint32_t alt = (abs(loc.alt) / 100000);
+    uint32_t alt = (abs(loc.get_alt_cm()) / 100000);
     _telem.gpsstat.altitudeHigh = ((alt / 10) << 4) | (alt % 10); // BCD, meters, format 2.0 (High order of altitude)
     _telem_pending = true;
 }

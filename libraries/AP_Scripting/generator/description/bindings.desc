@@ -4,7 +4,6 @@ include AP_Common/Location.h
 
 userdata Location field lat int32_t read write -900000000 900000000
 userdata Location field lng int32_t read write -1800000000 1800000000
-userdata Location field alt int32_t read write (-LOCATION_ALT_MAX_M*100+1) (LOCATION_ALT_MAX_M*100-1)
 userdata Location field relative_alt boolean read write
 userdata Location field terrain_alt boolean read write
 userdata Location field origin_alt boolean read write
@@ -29,6 +28,34 @@ userdata Location method change_alt_frame boolean Location::AltFrame'enum Locati
 userdata Location method copy Location
 userdata Location method set_alt_m void float'skip_check Location::AltFrame'enum Location::AltFrame::ABSOLUTE Location::AltFrame::ABOVE_TERRAIN
 
+userdata AbsAltLocation field lat int32_t read write -900000000 900000000
+userdata AbsAltLocation field lng int32_t read write -1800000000 1800000000
+userdata AbsAltLocation field relative_alt boolean read write
+userdata AbsAltLocation field terrain_alt boolean read write
+userdata AbsAltLocation field origin_alt boolean read write
+userdata AbsAltLocation field loiter_xtrack boolean read write
+
+userdata AbsAltLocation method get_distance float AbsAltLocation
+userdata AbsAltLocation method offset void float'skip_check float'skip_check
+userdata AbsAltLocation method offset_bearing void float'skip_check float'skip_check
+userdata AbsAltLocation method offset_bearing_and_pitch void float'skip_check float'skip_check float'skip_check
+userdata AbsAltLocation method get_vector_from_origin_NEU_m boolean Vector3f'Null
+userdata AbsAltLocation method get_vector_from_origin_NEU_m depends AP_AHRS_ENABLED
+userdata AbsAltLocation method get_vector_from_origin_NEU_cm boolean Vector3f'Null
+userdata AbsAltLocation method get_vector_from_origin_NEU_cm depends AP_AHRS_ENABLED
+userdata AbsAltLocation method get_vector_from_origin_NEU boolean Vector3f'Null
+userdata AbsAltLocation method get_vector_from_origin_NEU depends AP_AHRS_ENABLED
+userdata AbsAltLocation method get_vector_from_origin_NEU deprecate Use get_vector_from_origin_NEU_cm or get_vector_from_origin_NEU_m
+-- location in absolute frame, never nil:
+userdata AbsAltLocation method get_alt_m float
+-- location in specific frame, may return nil:
+userdata AbsAltLocation method get_alt_m_in_frame boolean Location::AltFrame'enum Location::AltFrame::ABSOLUTE Location::AltFrame::ABOVE_TERRAIN float'Null
+userdata AbsAltLocation method get_bearing float AbsAltLocation
+userdata AbsAltLocation method get_distance_NED Vector3f AbsAltLocation
+userdata AbsAltLocation method get_distance_NE Vector2f AbsAltLocation
+userdata AbsAltLocation method get_alt_frame uint8_t
+userdata AbsAltLocation method copy AbsAltLocation
+
 include AP_AHRS/AP_AHRS.h
 
 singleton AP_AHRS rename ahrs
@@ -43,7 +70,7 @@ singleton AP_AHRS method get_pitch deprecate Use get_pitch_rad
 singleton AP_AHRS method get_yaw_rad float
 singleton AP_AHRS method get_yaw float
 singleton AP_AHRS method get_yaw deprecate Use get_yaw_rad
-singleton AP_AHRS method get_location boolean Location'Null
+singleton AP_AHRS method get_location boolean AbsAltLocation'Null
 singleton AP_AHRS method get_location alias get_position
 singleton AP_AHRS method get_home Location
 singleton AP_AHRS method get_gyro Vector3f
@@ -71,12 +98,12 @@ singleton AP_AHRS method get_variances boolean float'Null float'Null float'Null 
 singleton AP_AHRS method set_posvelyaw_source_set void AP_NavEKF_Source::SourceSetSelection'enum AP_NavEKF_Source::SourceSetSelection::PRIMARY AP_NavEKF_Source::SourceSetSelection::TERTIARY
 singleton AP_AHRS method get_vel_innovations_and_variances_for_source boolean uint8_t 3 6 Vector3f'Null Vector3f'Null
 singleton AP_AHRS method set_home boolean Location
-singleton AP_AHRS method get_origin boolean Location'Null
-singleton AP_AHRS method set_origin boolean Location
+singleton AP_AHRS method get_origin boolean AbsAltLocation'Null
+singleton AP_AHRS method set_origin boolean AbsAltLocation
 singleton AP_AHRS method initialised boolean
 singleton AP_AHRS method get_posvelyaw_source_set uint8_t
 singleton AP_AHRS method get_quaternion boolean Quaternion'Null
-singleton AP_AHRS method handle_external_position_estimate boolean Location float'skip_check uint32_t'skip_check
+singleton AP_AHRS method handle_external_position_estimate boolean AbsAltLocation float'skip_check uint32_t'skip_check
 singleton AP_AHRS method handle_external_position_estimate depends AP_AHRS_EXTERNAL_ENABLED
 
 include AP_Arming/AP_Arming.h
@@ -832,7 +859,7 @@ singleton AC_PrecLand method healthy boolean
 singleton AC_PrecLand method target_acquired boolean
 singleton AC_PrecLand method get_last_valid_target_ms uint32_t
 singleton AC_PrecLand method get_target_velocity boolean Vector2f'Null
-singleton AC_PrecLand method get_target_location boolean Location'Null
+singleton AC_PrecLand method get_target_location boolean AbsAltLocation'Null
 
 include AC_AttitudeControl/AC_AttitudeControl.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AC_AttitudeControl depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
@@ -1150,7 +1177,7 @@ userdata AP_Servo_Telem::TelemetryData field last_update_ms uint32_t'skip_check 
 include SITL/SITL.h depends AP_SIM_ENABLED
 singleton SITL::SIM depends AP_SIM_ENABLED
 singleton SITL::SIM rename sim
-singleton SITL::SIM method set_pose boolean uint8_t'skip_check Location Quaternion Vector3f Vector3f
+singleton SITL::SIM method set_pose boolean uint8_t'skip_check AbsAltLocation Quaternion Vector3f Vector3f
 
 userdata DroneCAN_Handle depends HAL_ENABLE_DRONECAN_DRIVERS
 userdata DroneCAN_Handle creation DroneCAN_Handle::new_handle 4

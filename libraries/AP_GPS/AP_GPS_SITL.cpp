@@ -86,11 +86,10 @@ bool AP_GPS_SITL::read(void)
     state.status = AP_GPS::GPS_OK_FIX_3D;
     state.num_sats = 15;
 
-    state.location = Location{
+    state.location = {
         int32_t(latitude*1e7),
         int32_t(longitude*1e7),
-        int32_t(altitude*100),
-        Location::AltFrame::ABSOLUTE
+        int32_t(altitude*100)
     };
 
     state.hdop = 100;

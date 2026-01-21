@@ -291,7 +291,7 @@ bool NavEKF2_core::resetHeightDatum(void)
             // if we don't have GPS lock then we shouldn't be doing a
             // resetHeightDatum, but if we do then the best option is
             // to maintain the old error
-            EKF_origin.alt += (int32_t)(100.0f * oldHgt);
+            EKF_origin.set_alt_cm(EKF_origin.get_alt_cm() + (int32_t)(100.0f * oldHgt));
         } else {
             // if we have a good GPS lock then reset to the GPS
             // altitude. This ensures the reported AMSL alt from
@@ -299,7 +299,7 @@ bool NavEKF2_core::resetHeightDatum(void)
             // that the relative alt is zero
             EKF_origin.copy_alt_from(dal.gps().location());
         }
-        ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
+        ekfGpsRefHgt = EKF_origin.get_alt_m();
     }
 
     // set the terrain state to zero (on ground). The adjustment for

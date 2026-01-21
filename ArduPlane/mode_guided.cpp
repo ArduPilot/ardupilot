@@ -187,7 +187,9 @@ void ModeGuided::update_target_altitude()
         if (plane.current_loc.initialised() && plane.guided_state.target_location.initialised() && 
             plane.current_loc.get_alt_cm(target_frame, target_alt_previous_cm)) {
             // create a new interim target location that that takes current_location and moves delta_amt_i in the right direction
-            int32_t temp_alt_cm = constrain_int32(plane.guided_state.target_location.alt, target_alt_previous_cm - delta_amt_i,  target_alt_previous_cm + delta_amt_i);
+            int32_t target_location_alt_cm;
+            UNUSED_RESULT(plane.guided_state.target_location.get_alt_cm(plane.guided_state.target_location.get_alt_frame(), target_location_alt_cm));
+            int32_t temp_alt_cm = constrain_int32(target_location_alt_cm, target_alt_previous_cm - delta_amt_i,  target_alt_previous_cm + delta_amt_i);
             Location temp_location = plane.guided_state.target_location;
             temp_location.set_alt_cm(temp_alt_cm, target_frame);
 

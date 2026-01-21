@@ -46,16 +46,19 @@ void ModeRTL::update()
     plane.calc_nav_pitch();
     plane.calc_throttle();
 
+    // next_WP_loc should already be normalised:
+    float next_WP_loc_abs_alt_m = plane.next_WP_loc_abs_alt_m();
+
     bool alt_threshold_reached = false;
     if (plane.flight_option_enabled(FlightOptions::CLIMB_BEFORE_TURN)) {
         // Climb to RTL_ALTITUDE before turning. This overrides RTL_CLIMB_MIN.
-        alt_threshold_reached = plane.current_loc.alt > plane.next_WP_loc.alt;
+        alt_threshold_reached = plane.current_loc.get_alt_m() > next_WP_loc_abs_alt_m;
     } else if (plane.g2.rtl_climb_min > 0) {
         /*
            when RTL first starts limit bank angle to LEVEL_ROLL_LIMIT
            until we have climbed by RTL_CLIMB_MIN meters
            */
-        alt_threshold_reached = (plane.current_loc.alt - plane.prev_WP_loc.alt)*0.01 > plane.g2.rtl_climb_min;
+        alt_threshold_reached = (plane.current_loc.get_alt_m() - plane.prev_WP_loc_abs_alt_m()) > plane.g2.rtl_climb_min;
     } else {
         return;
     }

@@ -41,11 +41,11 @@ void AP_DAL_GPS::start_frame()
         RGPI.status = (GPS_Status)gps.status(i);
         RGPI.antenna_offset = gps.get_antenna_offset(i);
 
-        const Location &loc = gps.location(i);
+        const AbsAltLocation &loc = gps.location(i);
         RGPJ.last_message_time_ms = gps.last_message_time_ms(i);
         RGPJ.lat = loc.lat;
         RGPJ.lng = loc.lng;
-        RGPJ.alt = loc.alt;
+        RGPJ.alt = loc.get_alt_cm();
         RGPI.have_vertical_velocity = gps.have_vertical_velocity(i);
 
         RGPI.horizontal_accuracy_returncode = gps.horizontal_accuracy(i, RGPJ.hacc);
@@ -64,8 +64,7 @@ void AP_DAL_GPS::start_frame()
         tmp_location[i] = {
             RGPJ.lat,
             RGPJ.lng,
-            RGPJ.alt,
-            Location::AltFrame::ABSOLUTE
+            RGPJ.alt
         };
     }
 }

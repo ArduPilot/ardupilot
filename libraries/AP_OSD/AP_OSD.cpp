@@ -441,8 +441,8 @@ void AP_OSD::update_stats()
     _stats.last_update_ms = now;
 
     Vector2f v;
-    Location loc {};
-    Location home_loc;
+    AbsAltLocation loc {};
+    AbsAltLocation home_loc;
     bool home_is_set;
     bool have_airspeed_estimate;
     float alt;

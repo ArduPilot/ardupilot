@@ -187,9 +187,9 @@ bool AP_Avoidance_Copter::handle_avoidance_vertical(const AP_Avoidance::Obstacle
 
     // decide on whether we should climb or descend
     bool should_climb = false;
-    Location my_loc;
+    AbsAltLocation my_loc;
     if (AP::ahrs().get_location(my_loc)) {
-        should_climb = my_loc.alt > obstacle->_location.alt;
+        should_climb = my_loc.get_alt_cm() > obstacle->_location.get_alt_cm();
     }
 
     // get best vector away from obstacle
@@ -199,7 +199,7 @@ bool AP_Avoidance_Copter::handle_avoidance_vertical(const AP_Avoidance::Obstacle
     } else {
         velocity_neu_ms.z = -copter.wp_nav->get_default_speed_down_ms();
         // do not descend if below minimum altitude
-        if (copter.current_loc.alt * 0.01 < get_altitude_minimum_m()) {
+        if (copter.current_alt_above_home_m() < get_altitude_minimum_m()) {
             velocity_neu_ms.z = 0.0f;
         }
     }
@@ -258,7 +258,7 @@ bool AP_Avoidance_Copter::handle_avoidance_perpendicular(const AP_Avoidance::Obs
         } else {
             velocity_neu_ms.z *= copter.wp_nav->get_default_speed_down_ms();
             // do not descend if below minimum altitude
-            if (copter.current_loc.alt * 0.01 < get_altitude_minimum_m()) {
+            if (copter.current_alt_above_home_m() < get_altitude_minimum_m()) {
                 velocity_neu_ms.z = 0.0f;
             }
         }

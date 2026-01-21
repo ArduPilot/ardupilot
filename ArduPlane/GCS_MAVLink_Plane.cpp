@@ -570,7 +570,7 @@ bool Plane::set_home_to_current_location(bool _lock)
     }
     return true;
 }
-bool Plane::set_home(const Location& loc, bool _lock)
+bool Plane::set_home(const AbsAltLocation& loc, bool _lock)
 {
     if (!AP::ahrs().set_home(loc)) {
         return false;
@@ -1137,9 +1137,11 @@ void GCS_MAVLINK_Plane::handle_set_position_target_local_ned(const mavlink_messa
         }
 
         // just do altitude for now
-        plane.next_WP_loc.alt += -packet.z*100.0;
+        plane.next_WP_loc.offset_up_m(-packet.z);
+        float next_WP_loc_relalt_m = NaNf;
+        UNUSED_RESULT(plane.next_WP_loc.get_alt_m(Location::AltFrame::ABOVE_HOME, next_WP_loc_relalt_m));
         gcs().send_text(MAV_SEVERITY_INFO, "Change alt to %.1f",
-                        (double)((plane.next_WP_loc.alt - plane.home.alt)*0.01));
+                        double(next_WP_loc_relalt_m));
     }
 
 void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_message_t &msg)
@@ -1225,17 +1227,17 @@ uint64_t GCS_MAVLINK_Plane::capabilities() const
 int16_t GCS_MAVLINK_Plane::high_latency_target_altitude() const
 {
     AP_AHRS &ahrs = AP::ahrs();
-    Location global_position_current;
+    AbsAltLocation global_position_current;
     UNUSED_RESULT(ahrs.get_location(global_position_current));
 
 #if HAL_QUADPLANE_ENABLED
     const QuadPlane &quadplane = plane.quadplane;
     //return units are m
     if (quadplane.show_vtol_view()) {
-        return (plane.control_mode != &plane.mode_qstabilize) ? (global_position_current.alt * 0.01 - quadplane.pos_control->get_pos_error_D_m()) : 0;
+        return (plane.control_mode != &plane.mode_qstabilize) ? (global_position_current.get_alt_m() - quadplane.pos_control->get_pos_error_D_m()) : 0;
     }
 #endif
-    return 0.01 * (global_position_current.alt + plane.calc_altitude_error_cm());
+    return 0.01 * (global_position_current.get_alt_cm() + plane.calc_altitude_error_cm());
 }
 
 uint8_t GCS_MAVLINK_Plane::high_latency_tgt_heading() const

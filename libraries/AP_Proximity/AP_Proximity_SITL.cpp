@@ -48,9 +48,11 @@ AP_Proximity_SITL::AP_Proximity_SITL(AP_Proximity &_frontend,
 // update the state of the sensor
 void AP_Proximity_SITL::update(void)
 {
-    current_loc.lat = sitl->state.latitude * 1.0e7;
-    current_loc.lng = sitl->state.longitude * 1.0e7;
-    current_loc.alt = sitl->state.altitude * 1.0e2;
+    current_loc = {
+        int32_t(sitl->state.latitude * 1.0e7),
+        int32_t(sitl->state.longitude * 1.0e7),
+        int32_t(sitl->state.altitude * 1.0e2)
+    };
 
 #if AP_FENCE_ENABLED
     if (!AP::fence()->polyfence().breached()) {

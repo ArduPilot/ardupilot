@@ -1075,7 +1075,7 @@ bool CompassCalibrator::calculate_orientation(void)
  */
 bool CompassCalibrator::fix_radius(void)
 {
-    Location loc;
+    AbsAltLocation loc;
     if (!AP::ahrs().get_location(loc) && !AP::ahrs().get_origin(loc)) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "MagCal: No location, fix_radius skipped");
         // we don't have a position, leave scale factor as 0. This

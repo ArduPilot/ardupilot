@@ -28,7 +28,7 @@ public:
     };
 
     // update precland state
-    void update(const Location &loc);
+    void update(const AbsAltLocation &loc);
 
     // true if precland sensor is online and healthy
     bool healthy() const { return _healthy; }

@@ -742,7 +742,9 @@ void MissionTest::print_mission()
         if (cmd.id == MAV_CMD_DO_JUMP) {
             hal.console->printf("jump-to:%d num_times:%d\n", (int)cmd.content.jump.target, (int)cmd.content.jump.num_times);
         }else{
-            hal.console->printf("p1:%d lat:%ld lng:%ld alt:%ld\n",(int)cmd.p1, (long)cmd.content.location.lat, (long)cmd.content.location.lng, (long)cmd.content.location.alt);
+            float alt_m;
+            UNUSED_RESULT(cmd.content.location.get_alt_m(Location::AltFrame::ABSOLUTE, alt_m));
+            hal.console->printf("p1:%d lat:%ld lng:%ld alt:%fm\n",(int)cmd.p1, (long)cmd.content.location.lat, (long)cmd.content.location.lng, alt_m);
         }
     }
     hal.console->printf("--------\n");
@@ -1300,11 +1302,13 @@ void MissionTest::run_max_cmd_test()
             failed_to_read = true;
             break;
         }else{
-            if (cmd.content.location.alt == i) {
+            int32_t alt_cm;
+            UNUSED_RESULT(cmd.content.location.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_cm));
+                if (is_equal(alt_cm, i)) {
                 hal.console->printf("successfully read command #%u\n",(unsigned int)i);
             }else{
                 hal.console->printf("cmd %u's alt does not match, expected %u but read %u\n",
-                                      (unsigned int)i,(unsigned int)i,(unsigned int)cmd.content.location.alt);
+                                      (unsigned int)i,(unsigned int)i,(unsigned int)alt_cm);
             }
         }
     }

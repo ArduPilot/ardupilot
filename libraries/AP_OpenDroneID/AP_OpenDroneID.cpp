@@ -343,7 +343,7 @@ void AP_OpenDroneID::send_location_message()
     const bool got_bad_gps_fix = (gps_status < AP_GPS::GPS_Status::GPS_OK_FIX_3D);
     const bool armed = hal.util->get_soft_armed();
 
-    Location current_location;
+    AbsAltLocation current_location;
     if (!ahrs.get_location(current_location)) {
         return;
     }

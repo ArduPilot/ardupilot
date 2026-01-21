@@ -79,7 +79,7 @@ Aircraft::Aircraft(const char *frame_str) :
     }
 }
 
-void Aircraft::set_start_location(const Location &start_loc, const float start_yaw)
+void Aircraft::set_start_location(const AbsAltLocation &start_loc, const float start_yaw)
 {
     home = start_loc;
     origin = home;
@@ -90,11 +90,11 @@ void Aircraft::set_start_location(const Location &start_loc, const float start_y
     ::printf("Home: %f %f alt=%fm hdg=%f\n",
              home.lat*1e-7,
              home.lng*1e-7,
-             home.alt*0.01,
+             home.get_alt_m(),
              home_yaw);
 
     location = home;
-    ground_level = home.alt * 0.01f;
+    ground_level = home.get_alt_m();
 
 #if 0
     // useful test for home position being very different from origin
@@ -144,7 +144,7 @@ void Aircraft::set_precland(SIM_Precland *_precland) {
 */
 float Aircraft::hagl() const
 {
-    return (-position.z) + home.alt * 0.01f - ground_level - frame_height - ground_height_difference();
+    return (-position.z) + home.get_alt_m() - ground_level - frame_height - ground_height_difference();
 }
 
 /*
@@ -162,8 +162,7 @@ void Aircraft::update_position(void)
 {
     location = origin;
     location.offset(position.x, position.y);
-
-    location.alt  = static_cast<int32_t>(home.alt - position.z * 100.0f);
+    location.set_alt_m(home.get_alt_m() - position.z);
 
 #if 0
     Vector3d pos_home = position;
@@ -223,7 +222,7 @@ void Aircraft::update_mag_field_bf()
     mag_ef = R * mag_ef;
 
     // calculate frame height above ground
-    const float frame_height_agl = fmaxf((-position.z) + home.alt * 0.01f - ground_level, 0.0f);
+    const float frame_height_agl = fmaxf((-position.z) + home.get_alt_m() - ground_level, 0.0f);
 
     if (!sitl) {
         // running example program
@@ -390,7 +389,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.is_lock_step_scheduled = lock_step_scheduled;
     fdm.latitude  = location.lat * 1.0e-7;
     fdm.longitude = location.lng * 1.0e-7;
-    fdm.altitude  = location.alt * 1.0e-2;
+    fdm.altitude  = location.get_alt_m();
     fdm.heading   = degrees(atan2f(velocity_ef.y, velocity_ef.x));
     fdm.speedN    = velocity_ef.x;
     fdm.speedE    = velocity_ef.y;
@@ -444,7 +443,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
         fdm.speedD    = smoothing.velocity_ef.z;
         fdm.latitude  = smoothing.location.lat * 1.0e-7;
         fdm.longitude = smoothing.location.lng * 1.0e-7;
-        fdm.altitude  = smoothing.location.alt * 1.0e-2;
+        fdm.altitude  = smoothing.location.get_alt_m();
     }
 
 
@@ -683,11 +682,10 @@ void Aircraft::update_home()
         if (sitl == nullptr) {
             return;
         }
-        const Location loc{
+        const AbsAltLocation loc{
             int32_t(sitl->opos.lat.get() * 1.0e7),
             int32_t(sitl->opos.lng.get() * 1.0e7),
-            int32_t(sitl->opos.alt.get() * 1.0e2),
-            Location::AltFrame::ABSOLUTE
+            int32_t(sitl->opos.alt.get() * 1.0e2)
         };
         set_start_location(loc, sitl->opos.hdg.get());
     }
@@ -719,8 +717,8 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     const float delta_time = frame_time_us * 1.0e-6f;
 
     // update eas2tas and air density
-    eas2tas = AP_Baro::get_EAS2TAS_for_alt_amsl(location.alt*0.01);
-    air_density = AP_Baro::get_air_density_for_alt_amsl(location.alt*0.01);
+    eas2tas = AP_Baro::get_EAS2TAS_for_alt_amsl(location.get_alt_m());
+    air_density = AP_Baro::get_air_density_for_alt_amsl(location.get_alt_m());
 
     // update rotational rates in body frame
     gyro += rot_accel * delta_time;
@@ -774,7 +772,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SIM Hit ground at %f m/s", velocity_ef.z);
             last_ground_contact_ms = AP_HAL::millis();
         }
-        position.z = -(ground_level + frame_height - home.alt * 0.01f + ground_height_difference());
+        position.z = -(ground_level + frame_height - home.get_alt_m() + ground_height_difference());
 
         // get speed of ground movement (for ship takeoff/landing)
         float yaw_rate = 0;
@@ -1005,7 +1003,7 @@ void Aircraft::smooth_sensors(void)
 
     smoothing.location = origin;
     smoothing.location.offset(smoothing.position.x, smoothing.position.y);
-    smoothing.location.alt  = static_cast<int32_t>(home.alt - smoothing.position.z * 100.0f);
+    smoothing.location.set_alt_m(home.get_alt_m() - smoothing.position.z);
 
     smoothing.last_update_us = now;
 }
@@ -1394,7 +1392,7 @@ void Aircraft::update_eas_airspeed()
 /*
   set pose on the aircraft, called from scripting
  */
-bool Aircraft::set_pose(uint8_t instance, const Location &loc, const Quaternion &quat, const Vector3f &velocity_ef, const Vector3f &gyro_rads)
+bool Aircraft::set_pose(uint8_t instance, const AbsAltLocation &loc, const Quaternion &quat, const Vector3f &velocity_ef, const Vector3f &gyro_rads)
 {
     if (instance >= MAX_SIM_INSTANCES || instances[instance] == nullptr) {
         return false;
@@ -1418,7 +1416,7 @@ bool Aircraft::set_pose(uint8_t instance, const Location &loc, const Quaternion 
 /*
   wrapper for scripting access
  */
-bool SITL::SIM::set_pose(uint8_t instance, const Location &loc, const Quaternion &quat, const Vector3f &velocity_ef, const Vector3f &gyro_rads)
+bool SITL::SIM::set_pose(uint8_t instance, const AbsAltLocation &loc, const Quaternion &quat, const Vector3f &velocity_ef, const Vector3f &gyro_rads)
 {
     return Aircraft::set_pose(instance, loc, quat, velocity_ef, gyro_rads);
 }

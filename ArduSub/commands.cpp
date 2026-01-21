@@ -23,8 +23,8 @@ void Sub::update_home_from_EKF()
 void Sub::set_home_to_current_location_inflight()
 {
     // get current location from EKF
-    Location temp_loc;
-    Location ekf_origin;
+    AbsAltLocation temp_loc;
+    AbsAltLocation ekf_origin;
     if (ahrs.get_location(temp_loc) && ahrs.get_origin(ekf_origin)) {
         temp_loc.copy_alt_from(ekf_origin);
         if (!set_home(temp_loc, false)) {
@@ -37,7 +37,7 @@ void Sub::set_home_to_current_location_inflight()
 bool Sub::set_home_to_current_location(bool lock)
 {
     // get current location from EKF
-    Location temp_loc;
+    AbsAltLocation temp_loc;
     if (ahrs.get_location(temp_loc)) {
 
         // Make home always at the water's surface.
@@ -52,10 +52,10 @@ bool Sub::set_home_to_current_location(bool lock)
 
 // set_home - sets ahrs home (used for RTL) to specified location
 //  returns true if home location set successfully
-bool Sub::set_home(const Location& loc, bool lock)
+bool Sub::set_home(const AbsAltLocation& loc, bool lock)
 {
     // check if EKF origin has been set
-    Location ekf_origin;
+    AbsAltLocation ekf_origin;
     if (!ahrs.get_origin(ekf_origin)) {
         return false;
     }

@@ -508,7 +508,7 @@ protected:
     // overridable method to check for packet acceptance. Allows for
     // enforcement of GCS sysid
     bool accept_packet(const mavlink_status_t &status, const mavlink_message_t &msg) const;
-    MAV_RESULT set_ekf_origin(const Location& loc);
+    MAV_RESULT set_ekf_origin(const AbsAltLocation& loc);
 
     virtual uint8_t base_mode() const = 0;
     MAV_STATE system_status() const;
@@ -563,7 +563,7 @@ protected:
 #if AP_HOME_ENABLED
     MAV_RESULT handle_command_do_set_home(const mavlink_command_int_t &packet);
     bool set_home_to_current_location(bool lock);
-    bool set_home(const Location& loc, bool lock);
+    virtual bool set_home(const AbsAltLocation& loc, bool lock);
 #endif
 
 #if AP_ARMING_ENABLED
@@ -1064,7 +1064,7 @@ private:
     
     // we cache the current location and send it even if the AHRS has
     // no idea where we are:
-    Location global_position_current_loc;
+    AbsAltLocation global_position_current_loc;
 
     uint8_t last_tx_seq;
     uint16_t send_packet_count;

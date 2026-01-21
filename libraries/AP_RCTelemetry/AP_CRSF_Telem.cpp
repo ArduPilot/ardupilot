@@ -1108,12 +1108,12 @@ void AP_CRSF_Telem::calc_vario()
 // prepare gps data
 void AP_CRSF_Telem::calc_gps()
 {
-    const Location &loc = AP::gps().location(0); // use the first gps instance (same as in send_mavlink_gps_raw)
+    const AbsAltLocation &loc = AP::gps().location(0); // use the first gps instance (same as in send_mavlink_gps_raw)
 
     _telem.bcast.gps.latitude = htobe32(loc.lat);
     _telem.bcast.gps.longitude = htobe32(loc.lng);
     _telem.bcast.gps.groundspeed = htobe16(roundf(AP::gps().ground_speed() * 36.0f));
-    _telem.bcast.gps.altitude = htobe16(constrain_int16(loc.alt / 100, 0, 5000) + 1000);
+    _telem.bcast.gps.altitude = htobe16(constrain_int16(loc.get_alt_m(), 0, 5000) + 1000);
     _telem.bcast.gps.gps_heading = htobe16(roundf(AP::gps().ground_course() * 100.0f));
     _telem.bcast.gps.satellites = AP::gps().num_sats();
 

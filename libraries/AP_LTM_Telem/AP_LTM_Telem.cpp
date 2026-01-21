@@ -77,7 +77,7 @@ void AP_LTM_Telem::send_Gframe(void)
         float alt_ahrs;
         ahrs.get_relative_position_D_home(alt_ahrs);
         alt = (int32_t) roundf(-alt_ahrs * 100.0); // altitude (cm)
-        Location loc;
+        AbsAltLocation loc;
         if (ahrs.get_location(loc)) {
             lat = loc.lat;
             lon = loc.lng;

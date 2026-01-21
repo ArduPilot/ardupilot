@@ -264,7 +264,7 @@ void AP_AHRS::Log_Write_Home_And_Origin()
     if (logger == nullptr) {
         return;
     }
-    Location ekf_orig;
+    AbsAltLocation ekf_orig;
     if (get_origin(ekf_orig)) {
         Write_Origin(LogOriginType::ekf_origin, ekf_orig);
     }

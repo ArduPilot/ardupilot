@@ -94,12 +94,12 @@ void AP_ADSB_Sagetech::update()
             last_packet_Operating_ms == 0 || // send once at boot
             // send as data changes
             last_operating_squawk != _frontend.out_state.cfg.squawk_octal ||
-            abs(last_operating_alt - _frontend._my_loc.alt) > 1555 ||      // 1493cm == 49ft. The output resolution is 100ft per bit
+            abs(last_operating_alt - _frontend._my_loc.get_alt_cm()) > 1555 ||      // 1493cm == 49ft. The output resolution is 100ft per bit
             last_operating_rf_select != _frontend.out_state.cfg.rfSelect))
     {
         last_packet_Operating_ms = now_ms;
         last_operating_squawk = _frontend.out_state.cfg.squawk_octal;
-        last_operating_alt = _frontend._my_loc.alt;
+        last_operating_alt = _frontend._my_loc.get_alt_cm();
         last_operating_rf_select = _frontend.out_state.cfg.rfSelect;
         send_packet(MsgType_XP::Operating_Set);
 

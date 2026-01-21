@@ -177,7 +177,7 @@ bool AP_ExternalAHRS::get_quaternion(Quaternion &quat)
     return false;
 }
 
-bool AP_ExternalAHRS::get_origin(Location &loc)
+bool AP_ExternalAHRS::get_origin(AbsAltLocation &loc)
 {
     if (state.have_origin) {
         WITH_SEMAPHORE(state.sem);
@@ -192,7 +192,7 @@ bool AP_ExternalAHRS::get_origin(Location &loc)
     return false;
 }
 
-bool AP_ExternalAHRS::set_origin(const Location &loc)
+bool AP_ExternalAHRS::set_origin(const AbsAltLocation &loc)
 {
     WITH_SEMAPHORE(state.sem);
     if (state.have_origin) {
@@ -203,7 +203,7 @@ bool AP_ExternalAHRS::set_origin(const Location &loc)
     return true;
 }
 
-bool AP_ExternalAHRS::get_location(Location &loc)
+bool AP_ExternalAHRS::get_location(AbsAltLocation &loc)
 {
     if (!state.have_location) {
         return false;
@@ -433,7 +433,7 @@ void AP_ExternalAHRS::update(void)
                                     AP_HAL::micros64(),
                                     degrees(roll), degrees(pitch), degrees(yaw),
                                     state.velocity.x, state.velocity.y, state.velocity.z,
-                                    state.location.lat, state.location.lng, state.location.alt*0.01,
+                                    state.location.lat, state.location.lng, state.location.get_alt_m(),
                                     filterStatus.value);
 
         // @LoggerMessage: EAHV
