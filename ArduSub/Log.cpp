@@ -176,6 +176,7 @@ struct PACKED log_GuidedTarget {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint8_t type;
+    uint8_t alt_frame;
     float pos_target_x;
     float pos_target_y;
     float pos_target_z;
@@ -185,12 +186,14 @@ struct PACKED log_GuidedTarget {
 };
 
 // Write a Guided mode target
-void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target)
+void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target,
+                                 Location::AltFrame alt_frame)
 {
     struct log_GuidedTarget pkt = {
         LOG_PACKET_HEADER_INIT(LOG_GUIDEDTARGET_MSG),
         time_us         : AP_HAL::micros64(),
         type            : target_type,
+        alt_frame       : static_cast<uint8_t>(alt_frame),
         pos_target_x    : pos_target.x,
         pos_target_y    : pos_target.y,
         pos_target_z    : pos_target.z,
@@ -251,6 +254,7 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
 // @Description: Guided mode target information
 // @Field: TimeUS: Time since system startup
 // @Field: Type: Type of guided mode
+// @Field: Frame: Location.AltFrame
 // @Field: pX: Target position, X-Axis
 // @Field: pY: Target position, Y-Axis
 // @Field: pZ: Target position, Z-Axis
@@ -276,7 +280,7 @@ const struct LogStructure Sub::log_structure[] = {
     { LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),         
       "DFLT",  "QBf",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
-      "GUIP",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
+      "GUIP",  "QBBffffff",    "TimeUS,Type,Frame,pX,pY,pZ,vX,vY,vZ", "s--mmmnnn", "F--000000" },
 };
 
 uint8_t Sub::get_num_log_structures() const

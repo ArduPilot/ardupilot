@@ -267,7 +267,9 @@ public:
     void guided_set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
     void guided_set_angle(const Quaternion&, float);
     void guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
-    bool guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity);
+    void set_posvel_frame_above_home();
+    void set_posvel_frame_above_terrain(float destination_z);
+    bool guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, Location::AltFrame alt_frame=Location::AltFrame::ABOVE_ORIGIN);
     bool guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
     bool guided_set_destination(const Vector3f& destination);
     bool guided_set_destination(const Location&);
@@ -295,7 +297,7 @@ private:
     void guided_takeoff_run();
     void guided_pos_control_start();
     void guided_vel_control_start();
-    void guided_posvel_control_start();
+    void guided_posvel_control_start(Location::AltFrame alt_frame);
     void guided_angle_control_start();
 };
 
