@@ -65,7 +65,7 @@ Q_ACRO_RLL_RATE  300
 Q_ACRO_YAW_RATE  15
 
 # small angle max
-Q_ANGLE_MAX      1000
+Q_A_ANGLE_MAX    10
 
 # setup assistance
 Q_ASSIST_ANGLE   35

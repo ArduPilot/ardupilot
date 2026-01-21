@@ -52,7 +52,7 @@ RLL_RATE_SMAX    100
 
 # quadplane parameters
 Q_ENABLE         1
-Q_ANGLE_MAX      2000
+Q_A_ANGLE_MAX    20
 Q_ASSIST_SPEED   13
 Q_A_ACCEL_P_MAX  70000
 Q_A_ACCEL_R_MAX  70000
