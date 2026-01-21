@@ -165,9 +165,12 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         do_set_roi(cmd);
         break;
 
-    case MAV_CMD_DO_MOUNT_CONTROL:          // 205
+    case MAV_CMD_DO_MOUNT_CONTROL: {        // 205
         // point the camera to a specified angle
-        camera_mount.set_angle_target(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
+        // Because MAVLink does not specify which sensor(s) is contolled by this command, the decision is made here.
+        const uint8_t gimbal_device_id = 0;
+        camera_mount.set_angle_target(gimbal_device_id, cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
+        }
         break;
 #endif
 
