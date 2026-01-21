@@ -631,8 +631,7 @@ bool AP_Mount::get_poi(uint8_t gimbal_device_id, Quaternion &quat, Location &loc
     if (device == nullptr) {
         return false;
     }
-    const uint8_t UNUSED = 0; // This will be removed in a commit in this same PR.
-    return device->get_poi(UNUSED, quat, loc, poi_loc);
+    return device->get_poi(quat, loc, poi_loc);
 }
 #endif
 

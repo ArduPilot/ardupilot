@@ -285,7 +285,7 @@ void AP_Mount_Backend::update_poi_lock_target()
     Location vehicle_location;
     Location target_location;
     // if poi available, use it and start tracking, otherwise give warning, stop poi retrieval attempts
-    if (get_poi(_instance, quat, vehicle_location, target_location)) {
+    if (get_poi(quat, vehicle_location, target_location)) {
         set_roi_target(target_location);
         mnt_target.poi_start_ms = 0;
     } else if (AP_HAL::millis() - mnt_target.poi_start_ms > 5000) {
@@ -618,7 +618,7 @@ void AP_Mount_Backend::write_log(uint64_t timestamp_us)
 
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
 // get poi information.  Returns true on success and fills in gimbal attitude, location and poi location
-bool AP_Mount_Backend::get_poi(uint8_t instance, Quaternion &quat, Location &loc, Location &poi_loc)
+bool AP_Mount_Backend::get_poi(Quaternion &quat, Location &loc, Location &poi_loc)
 {
     WITH_SEMAPHORE(poi_calculation.sem);
 
