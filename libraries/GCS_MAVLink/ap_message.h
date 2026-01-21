@@ -115,5 +115,8 @@ enum ap_message : uint8_t {
 #if AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
     MSG_FLIGHT_INFORMATION             = 100,
 #endif
+#if AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+    MSG_OPTICAL_FLOW_RAD               = 101,
+#endif
     MSG_LAST // MSG_LAST must be the last entry in this enum
 };
