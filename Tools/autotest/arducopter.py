@@ -12331,7 +12331,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.set_parameters({
             "AUTO_OPTIONS": 3,
-            "ANGLE_MAX": 4500,
+            "ATC_ANGLE_MAX": 45,
         })
 
         self.change_mode('AUTO')
@@ -12359,7 +12359,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             timeout=60,
         )
 
-        self.set_parameter("ANGLE_MAX", 6000)
+        self.set_parameter("ATC_ANGLE_MAX", 60)
         self.wait_current_waypoint(7)
         self.wait_groundspeed(
             15.5, 16.5,
@@ -14740,7 +14740,7 @@ RTL_ALT_M 111
             self.change_mode('ALT_HOLD')
             self.change_mode('FLIP')
 
-        self.set_parameter('ANGLE_MAX', 7000)
+        self.set_parameter('ATC_ANGLE_MAX', 70)
         self.change_mode('ALT_HOLD')
         for j in 1000, 2000:
             for i in 1, 2, 4:
