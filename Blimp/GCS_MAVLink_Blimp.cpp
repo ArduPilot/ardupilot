@@ -227,12 +227,12 @@ MAV_RESULT GCS_MAVLINK_Blimp::_handle_command_preflight_calibration(const mavlin
 }
 
 
-MAV_RESULT GCS_MAVLINK_Blimp::handle_command_do_set_roi(const Location &roi_loc)
+MAV_RESULT GCS_MAVLINK_Blimp::handle_command_do_set_roi_location(const uint8_t gimbal_device_id, const Location &roi_loc)
 {
     if (!roi_loc.check_latlng()) {
         return MAV_RESULT_FAILED;
     }
-    // blimp.flightmode->auto_yaw.set_roi(roi_loc);
+    // blimp.flightmode->auto_yaw.set_roi(gimbal_device_id, roi_loc);
     return MAV_RESULT_ACCEPTED;
 }
 
