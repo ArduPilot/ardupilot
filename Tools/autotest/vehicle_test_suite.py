@@ -3050,12 +3050,27 @@ class TestSuite(abc.ABC):
         if len(missing) > 0:
             raise NotAchievedException("Documented messages (%s) not in code" % missing)
 
+    def delay_until_boot_age_past(self, boot_time_seconds : float) -> None:
+        '''do not return until the autopilot uptime shows a certain vintage'''
+        while self.get_sim_time() < boot_time_seconds:
+            pass
+
     def initialise_after_reboot_sitl(self):
 
         # after reboot stream-rates may be zero.  Request streams.
         self.drain_mav()
         self.wait_heartbeat()
         self.set_streamrate(self.sitl_streamrate())
+        # it takes some time for the autopilot to debounce the RC mode
+        # channel.  If we return straight away then the caller can
+        # change mode using a mavlink command and then the autopilot
+        # processes the debounced RC flight-mode channel, meaning the
+        # mode is changed from underneath the caller.  Wait for some
+        # RC messages to come in - that means we are running the main
+        # loop, at least.  Note that the "set_streamrate" call above
+        # can be handled in a delay callback.
+        for i in range(0, 3):
+            self.assert_receive_message('RC_CHANNELS')
         self.progress("Reboot complete")
 
     def customise_SITL_commandline(self,
@@ -3092,7 +3107,11 @@ class TestSuite(abc.ABC):
         else:
             self.set_streamrate(self.sitl_streamrate())
 
-        self.assert_receive_message('RC_CHANNELS', timeout=15)
+        # mode switch needs to be debounced; waiting for more
+        # RC_CHANNELS doesn't necessarily mean we have done that, but
+        # it won't hurt
+        for i in range(0, 3):
+            self.assert_receive_message('RC_CHANNELS')
 
         # stash our arguments in case we need to preserve them in
         # reboot_sitl with Valgrind active:
@@ -3708,13 +3727,13 @@ class TestSuite(abc.ABC):
         if ex is not None:
             raise ex
 
-    def download_full_log_list(self, print_logs=True):
+    def download_full_log_list(self, print_logs=True, LOG_ENTRY_sanity_check=True):
         tstart = self.get_sim_time()
         self.mav.mav.log_request_list_send(self.sysid_thismav(),
                                            1, # target component
                                            0,
                                            0xffff)
-        logs = {}
+        logs : dict[int : mavutil.MAVLink.MAVLink_log_entry_message] = {}
         last_id = None
         num_logs = None
         while True:
@@ -3750,12 +3769,8 @@ class TestSuite(abc.ABC):
                 break
 
         # ensure we don't get any extras:
-        m = self.mav.recv_match(type='LOG_ENTRY',
-                                blocking=True,
-                                timeout=2)
-        if m is not None:
-            raise NotAchievedException("Received extra LOG_ENTRY?!")
-        # should be: m = self.assert_not_receive_message('LOG_ENTRY', timeout=2)
+        if LOG_ENTRY_sanity_check:
+            self.assert_not_receiving_message('LOG_ENTRY', timeout=2)
 
         return logs
 
@@ -4094,6 +4109,14 @@ class TestSuite(abc.ABC):
     #################################################
     # SIM UTILITIES
     #################################################
+    SIM_TIME_MESSAGES = [
+        'SYSTEM_TIME',
+        'ATTITUDE',
+        'RC_CHANNELS',
+        'SET_POSITION_TARGET_GLOBAL_INT',
+        'SCALED_IMU2',
+    ]
+
     def get_sim_time(self, timeout=60, drain_mav=True):
         """Get SITL time in seconds."""
         if drain_mav:
@@ -4102,20 +4125,28 @@ class TestSuite(abc.ABC):
         while True:
             self.drain_all_pexpects()
             if time.time() - tstart > timeout:
-                raise AutoTestTimeoutException("Did not get SYSTEM_TIME message after %f seconds" % timeout)
+                raise AutoTestTimeoutException("Did not get boot-time-containing message after %f seconds" % timeout)
 
-            m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True, timeout=0.1)
+            m = self.mav.recv_match(type=self.SIM_TIME_MESSAGES, blocking=True, timeout=0.1)
             if m is None:
+                continue
+            if m.get_srcSystem() != self.sysid_thismav():
                 continue
 
             return m.time_boot_ms * 1.0e-3
 
     def get_sim_time_cached(self):
         """Get SITL time in seconds."""
-        x = self.mav.messages.get("SYSTEM_TIME", None)
-        if x is None:
+        time_boot_ms = 0
+        for t in self.SIM_TIME_MESSAGES:
+            m = self.mav.messages.get(t, None)
+            if m is None:
+                continue
+            if m.time_boot_ms > time_boot_ms:
+                time_boot_ms = m.time_boot_ms
+        if time_boot_ms == 0:
             raise NotAchievedException("No cached time available (%s)" % (self.mav.sysid,))
-        ret = x.time_boot_ms * 1.0e-3
+        ret = time_boot_ms * 1.0e-3
         if ret != self.last_sim_time_cached:
             self.last_sim_time_cached = ret
             self.last_sim_time_cached_wallclock = time.time()
@@ -7005,10 +7036,9 @@ class TestSuite(abc.ABC):
 
     def change_mode(self, mode, timeout=60):
         '''change vehicle flightmode'''
-        self.wait_heartbeat()
         self.progress("Changing mode to %s" % mode)
-        self.send_cmd_do_set_mode(mode)
         tstart = self.get_sim_time()
+        self.send_cmd_do_set_mode(mode)
         while not self.mode_is(mode):
             custom_num = self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s custom=%u" % (
@@ -7100,7 +7130,7 @@ class TestSuite(abc.ABC):
         self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT)
         self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION)
 
-    def get_mode_from_mode_mapping(self, mode):
+    def get_mode_from_mode_mapping(self, mode) -> int:
         """Validate and return the mode number from a string or int."""
         if isinstance(mode, int):
             return mode
@@ -8353,12 +8383,7 @@ class TestSuite(abc.ABC):
     def mode_is(self, mode, cached=False, drain_mav=True, drain_mav_quietly=True):
         if not cached:
             self.wait_heartbeat(drain_mav=drain_mav, quiet=drain_mav_quietly)
-        try:
-            return self.get_mode_from_mode_mapping(self.mav.flightmode) == self.get_mode_from_mode_mapping(mode)
-        except Exception:
-            pass
-        # assume this is a number....
-        return self.mav.messages['HEARTBEAT'].custom_mode == mode
+        return self.mav.messages['HEARTBEAT'].custom_mode == self.get_mode_from_mode_mapping(mode)
 
     def wait_mode(self, mode, timeout=60):
         """Wait for mode to change."""
@@ -10684,6 +10709,19 @@ Also, ignores heartbeats not from our target system'''
         if herrors > header_errors:
             raise NotAchievedException("Error parsing log file %s, %d header errors" % (logname, herrors))
 
+    def assert_current_log_filesizes(self, sizes):
+        file_list = self.download_full_log_list(LOG_ENTRY_sanity_check=False)
+        self.progress(f"List: {file_list}")
+        for file_id, minmax in sizes.items():
+            (minsize, maxsize) = minmax
+            if file_id not in file_list:
+                raise NotAchievedException(f"{file_id} not in downloaded log info")
+            m = file_list[file_id]
+            if m.size < minsize:
+                raise NotAchievedException(f"{file_id} too small; got={m.size} want>{minsize}")
+            if m.size > maxsize:
+                raise NotAchievedException(f"{file_id} too large; got={m.size} want<{minsize}")
+
     def DataFlashErase(self):
         """Test that erasing the dataflash chip and creating a new log is error free"""
         mavproxy = self.start_mavproxy()
@@ -10691,39 +10729,65 @@ Also, ignores heartbeats not from our target system'''
         ex = None
         self.context_push()
         try:
-            self.set_parameter("LOG_BACKEND_TYPE", 4)
+            self.set_parameters({
+                "LOG_DISARMED": 0,
+                "LOG_BACKEND_TYPE": 4,
+                "SIM_SPEEDUP": 10,
+            })
             self.reboot_sitl()
             mavproxy.send("module load log\n")
             mavproxy.send("log erase\n")
             mavproxy.expect("Chip erase complete")
-            self.set_parameter("LOG_DISARMED", 1)
+
+            self.set_autodisarm_delay(0)
+
+            self.progress("Creating a very short log")
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
             self.delay_sim_time(3)
-            self.set_parameter("LOG_DISARMED", 0)
+            self.disarm_vehicle()
             mavproxy.send("log download 1 logs/dataflash-log-erase.BIN\n")
             mavproxy.expect("Finished downloading", timeout=120)
             # read the downloaded log - it must parse without error
             self.validate_log_file("logs/dataflash-log-erase.BIN")
+            self.assert_current_log_filesizes({
+                1: (500*1024, 600*1024),
+            })
 
             self.start_subtest("Test file wrapping results in a valid file")
-            # roughly 4mb
             self.set_parameter("LOG_FILE_DSRMROT", 1)
             self.set_parameter("LOG_BITMASK", 131071)
             self.wait_ready_to_arm()
-            if self.is_copter() or self.is_plane():
-                self.set_autodisarm_delay(0)
+
+            self.progress("Appending to create larger log")
             self.arm_vehicle()
-            self.delay_sim_time(30)
+            self.delay_sim_time(10)
             self.disarm_vehicle()
-            # roughly 4mb
+            self.assert_current_log_filesizes({
+                1: (1900*1024, 2200*1024),
+            })
+            self.progress("Creating a second 200kB log")
             self.arm_vehicle()
-            self.delay_sim_time(30)
+            self.delay_sim_time(10)
             self.disarm_vehicle()
-            # roughly 9mb, should wrap around
+            self.assert_current_log_filesizes({
+                1: (1900*1024, 2200*1024),
+                2: (1000*1024, 1700*1024),
+            })
+
+            self.progress("Creating a very large log which wipes the other ones out")
+            self.context_collect('STATUSTEXT')
             self.arm_vehicle()
-            self.delay_sim_time(50)
+            self.wait_statustext('Chip full, logging stopped', check_context=True, timeout=60)
             self.disarm_vehicle()
+
             # make sure we have finished logging
             self.delay_sim_time(15)
+
+            self.assert_current_log_filesizes({
+                1: (3809996, 4109996),
+            })
+
             mavproxy.send("log list\n")
             try:
                 mavproxy.expect("Log ([0-9]+)  numLogs ([0-9]+) lastLog ([0-9]+) size ([0-9]+)", timeout=120)
@@ -10733,16 +10797,12 @@ Also, ignores heartbeats not from our target system'''
                 else:
                     self.progress("SITL is NOT running")
                 raise NotAchievedException("Received %s" % str(e))
-            if int(mavproxy.match.group(2)) != 3:
-                raise NotAchievedException("Expected 3 logs got %s" % (mavproxy.match.group(2)))
+            if int(mavproxy.match.group(2)) != 1:
+                raise NotAchievedException("Expected 1 log got %s" % (mavproxy.match.group(2)))
 
             mavproxy.send("log download 1 logs/dataflash-log-erase2.BIN\n")
             mavproxy.expect("Finished downloading", timeout=120)
-            self.validate_log_file("logs/dataflash-log-erase2.BIN", 1)
-
-            mavproxy.send("log download latest logs/dataflash-log-erase3.BIN\n")
-            mavproxy.expect("Finished downloading", timeout=120)
-            self.validate_log_file("logs/dataflash-log-erase3.BIN", 1)
+            self.validate_log_file("logs/dataflash-log-erase2.BIN", header_errors=1)
 
             # clean up
             mavproxy.send("log erase\n")
@@ -12797,6 +12857,7 @@ switch value'''
             self.set_parameters({
                 "AFS_ENABLE": 1,
                 "MAV_GCS_SYSID": self.mav.source_system,
+                "RTL_AUTOLAND": 2,
             })
             self.drain_mav()
             self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION)
@@ -12835,6 +12896,7 @@ switch value'''
                 self.do_fence_disable()
 
             self.start_subtest("GPS Failure")
+            self.wait_ready_to_arm()
             self.context_push()
             self.context_collect("STATUSTEXT")
             self.set_parameters({
