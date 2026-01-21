@@ -1444,15 +1444,16 @@ AP_GPS_UBLOX::_parse_gps(void)
             _have_version = true;
             strncpy(_version.hwVersion, _buffer.mon_ver.hwVersion, sizeof(_version.hwVersion));
             strncpy(_version.swVersion, _buffer.mon_ver.swVersion, sizeof(_version.swVersion));
-            void* mod = memmem(_buffer.mon_ver.extension, sizeof(_buffer.mon_ver.extension), "MOD=", 4);
-            if (mod != nullptr) {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "u-blox MOD string %.20s", (char*)mod+4);
-                strncpy(_module, (char*)mod+4, UBLOX_MODULE_LEN-1);
+            char* mod = (char*)memmem(_buffer.mon_ver.extension, sizeof(_buffer.mon_ver.extension), "MOD=", 4);
+            char* protver_end = _buffer.mon_ver.extension + sizeof(_buffer.mon_ver.extension);
+            if (mod != nullptr && (mod+4+UBLOX_MODULE_LEN-1) < protver_end) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "u-blox MOD string %.20s", mod+4);
+                strncpy(_module, mod+4, UBLOX_MODULE_LEN-1);
             }
-            void* prot = memmem(_buffer.mon_ver.extension, sizeof(_buffer.mon_ver.extension), "PROTVER=", 8);
-            if (prot != nullptr) {
-                Debug("Found PROTVER string %.20s", (char*)prot+8);
-                strncpy(_protver, (char*)prot+8, UBLOX_PROTVER_LEN-1);
+            char* prot = (char*)memmem(_buffer.mon_ver.extension, sizeof(_buffer.mon_ver.extension), "PROTVER=", 8);
+            if (prot != nullptr && (prot+8+UBLOX_PROTVER_LEN-1) < protver_end) {
+                Debug("Found PROTVER string %.20s", prot+8);
+                strncpy(_protver, prot+8, UBLOX_PROTVER_LEN-1);
             }
 
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, 
