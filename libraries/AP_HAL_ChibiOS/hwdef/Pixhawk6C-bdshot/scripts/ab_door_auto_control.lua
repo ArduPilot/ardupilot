@@ -96,6 +96,7 @@ local state = {
     was_in_fw_state = false,
     last_config_update = 0,
     was_armed = false,
+    landing_latch = false,
     -- State table for each servo's position
     servos = {}
 }
@@ -295,13 +296,8 @@ function run_auto_mode()
     local is_currently_in_vtol = (flight_state == "VTOL")
     local is_currently_in_fw = (flight_state == "FIXED_WING")
 
-    if is_in_landing_phase(current_mode) then
-        if state.doors_are_commanded_closed then
-            log_message(MAV_SEVERITY.WARNING, "Landing confirmed - opening doors")
-            open_all_doors()
-            state.takeoff_climbout_complete = false
-        end
-    elseif not state.takeoff_climbout_complete then
+    -- Phase 1 - Check for takeoff
+    if not state.takeoff_climbout_complete then
         if is_currently_in_vtol then
             local alt = get_current_altitude_agl()
             if alt and alt >= config.cache.alt_trig_m then
@@ -313,19 +309,40 @@ function run_auto_mode()
                 -- Force doors open under alt_trig_m
                 open_all_doors()
             end
-            return
         end
-    else 
-        if state.was_in_fw_state and is_currently_in_vtol then
-            log_message(MAV_SEVERITY.INFO, "FW->VTOL transition detected. Opening doors.")
-            open_all_doors()
-        end
-
-        if state.was_in_vtol_state and is_currently_in_fw then
-            log_message(MAV_SEVERITY.INFO, "VTOL->FW transition detected. Closing doors.")
-            close_all_doors()
-        end
+        return
     end
+
+    -- Phase 2 - Checks during flight and landing
+    -- DETECT TRANSITION (FW -> VTOL) to set the Landing Latch
+    if state.was_in_fw_state and is_currently_in_vtol then
+         state.landing_latch = true
+         log_message(MAV_SEVERITY.INFO, "Transition to VTOL detected. Doors OPEN.")
+    end
+
+    -- SAFETY: We DO NOT clear latch on (VTOL -> FW) transition anymore,
+    -- because instability can look like a FW transition
+    -- APPLY STATE BASED ON MODES
+    if is_in_landing_phase(current_mode) then
+        if state.landing_latch then
+            -- We are latched OPEN.
+            -- Stays TRUE even if pitch goes to 0 (Fix for instability safety).
+            open_all_doors()
+        else
+            -- Latch is NOT set.
+            -- Check if we are now vertical (Pitch > 75).
+            if is_currently_in_vtol then
+                state.landing_latch = true
+                open_all_doors()
+            end
+        end -- latch checking
+    else
+        -- Non-VTOL Modes (FW, FBWA, MANUAL, etc.)
+        -- Auto mode with mission commands other than Loiter/nav_vtol_land or other landing command ids
+        -- Force Latch Reset here and close doors
+        state.landing_latch = false
+        close_all_doors()
+    end -- landing phase checking
 
     if flight_state ~= "TRANSITIONING" then
         state.was_in_vtol_state = is_currently_in_vtol
@@ -395,6 +412,7 @@ function update()
         state.takeoff_climbout_complete = false
         state.was_in_vtol_state = false
         state.was_in_fw_state = false
+        state.landing_latch = false
     elseif not is_armed_now and state.was_armed then
         log_message(MAV_SEVERITY.INFO, "Disarmed. Resetting state and opening doors.")
         open_all_doors()
@@ -402,6 +420,7 @@ function update()
         state.takeoff_climbout_complete = false
         state.was_in_vtol_state = false
         state.was_in_fw_state = false
+        state.landing_latch = false
     end
     state.was_armed = is_armed_now
 
