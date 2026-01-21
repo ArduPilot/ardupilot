@@ -85,7 +85,7 @@ const AP_Param::GroupInfo Tailsitter::var_info[] = {
 
     // @Param: RLL_MX
     // @DisplayName: Maximum Roll angle
-    // @Description: Maximum Allowed roll angle for tailsitters. If this is zero then Q_ANGLE_MAX is used.
+    // @Description: Maximum Allowed roll angle for tailsitters. If this is zero then Q_A_ANGLE_MAX is used.
     // @Units: deg
     // @Range: 0 80
     // @User: Standard
