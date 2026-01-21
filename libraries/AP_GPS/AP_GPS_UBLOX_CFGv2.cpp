@@ -66,7 +66,7 @@ AP_GPS_UBLOX_CFGv2::AP_GPS_UBLOX_CFGv2(AP_GPS_UBLOX &_ubx_backend)
 void AP_GPS_UBLOX_CFGv2::update()
 {
     // If legacy config is supported and ForceUBXConfigV2 is not set, don't use CFGv2
-    if (!ubx_backend._legacy_cfg_unsupported && !ubx_backend.gps.option_set(AP_GPS::DriverOptions::ForceUBXConfigV2) && curr_state > States::IDENTIFY_MODULE) {
+    if (ubx_backend._legacy_cfg_supported && !ubx_backend.gps.option_set(AP_GPS::DriverOptions::ForceUBXConfigV2) && curr_state > States::IDENTIFY_MODULE) {
         // Legacy config should be used instead, exit CFGv2
         return;
     }
@@ -250,7 +250,6 @@ bool AP_GPS_UBLOX_CFGv2::_identify_module()
             GCS_SEND_TEXT(MAV_SEVERITY_INFO,
                         "GPS %u: Legacy config unsupported",
                         unsigned(ubx_backend.state.instance) + 1);
-            ubx_backend._legacy_cfg_unsupported = true;
         }
         // move to next state
         return true;

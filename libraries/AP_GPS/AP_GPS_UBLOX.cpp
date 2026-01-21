@@ -593,7 +593,7 @@ AP_GPS_UBLOX::read(void)
     _cfg_v2.update();
 #endif
     // walk through the gps configuration at 1 message per second
-    if (millis_now - _last_config_time >= _delay_time && !_legacy_cfg_unsupported && !option_set(AP_GPS::DriverOptions::ForceUBXConfigV2)) {
+    if (millis_now - _last_config_time >= _delay_time && _legacy_cfg_supported && !option_set(AP_GPS::DriverOptions::ForceUBXConfigV2)) {
         _request_next_config();
         _last_config_time = millis_now;
         if (_unconfigured_messages) {
@@ -1413,7 +1413,7 @@ AP_GPS_UBLOX::_legacy_config_update(void)
 bool
 AP_GPS_UBLOX::_parse_gps(void)
 {
-    if (!_legacy_cfg_unsupported && !gps.option_set(AP_GPS::ForceUBXConfigV2)) {
+    if (_legacy_cfg_supported && !gps.option_set(AP_GPS::ForceUBXConfigV2)) {
         if (!_legacy_config_update()) {
             return false;
         }

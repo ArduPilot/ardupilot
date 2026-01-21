@@ -166,11 +166,10 @@ public:
     }
 
     bool get_error_codes(uint32_t &error_codes) const override {
-        if (_legacy_cfg_unsupported) {
+        if (!_legacy_cfg_supported) {
             return false;
-        } else {
-            error_codes = _unconfigured_messages;
         }
+        error_codes = _unconfigured_messages;
         return true;
     };
 
@@ -837,7 +836,7 @@ private:
     // Buffer parse & GPS state update
     bool        _parse_gps();
     bool        _legacy_config_update(void);
-    bool        _legacy_cfg_unsupported;
+    bool        _legacy_cfg_supported;
 
     // used to update fix between status and position packets
     AP_GPS::GPS_Status next_fix { AP_GPS::NO_FIX };
