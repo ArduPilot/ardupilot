@@ -1793,7 +1793,8 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         if (mount == nullptr) {
             break;
         }
-        mount->set_yaw_lock(ch_flag == AuxSwitchPos::HIGH);
+        const uint8_t gimbal_device_id = 0; // command all mounts
+        mount->set_yaw_lock(gimbal_device_id, ch_flag == AuxSwitchPos::HIGH);
         break;
     }
 
@@ -1802,19 +1803,20 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         if (mount == nullptr) {
             break;
         }
+        const uint8_t gimbal_device_id = 0; // command all mounts
         //low is FPV:no ef locks,high is HORIZON lock:roll/pitch ef lock,middle is only pitch ef lock
         switch (ch_flag) {
         case AuxSwitchPos::HIGH:
-            mount->set_roll_lock(true);
-            mount->set_pitch_lock(true);
+            mount->set_roll_lock(gimbal_device_id, true);
+            mount->set_pitch_lock(gimbal_device_id, true);
             break;
         case AuxSwitchPos::MIDDLE:
-            mount->set_roll_lock(false);
-            mount->set_pitch_lock(true);
+            mount->set_roll_lock(gimbal_device_id, false);
+            mount->set_pitch_lock(gimbal_device_id, true);
             break;
         case AuxSwitchPos::LOW:
-            mount->set_roll_lock(false);
-            mount->set_pitch_lock(false);
+            mount->set_roll_lock(gimbal_device_id, false);
+            mount->set_pitch_lock(gimbal_device_id, false);
             break;
         }
         break;
