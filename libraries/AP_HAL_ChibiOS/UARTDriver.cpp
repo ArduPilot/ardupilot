@@ -1753,6 +1753,9 @@ void UARTDriver::uart_info(ExpandingString &str, StatsTracker &stats, const uint
                _rx_stats_noise_errors,
 #endif
                _flow_control);
+#if CH_CFG_USE_EVENTS == TRUE
+    _rx_stats_framing_errors = _rx_stats_overrun_errors = _rx_stats_noise_errors = 0;
+#endif
 }
 #endif
 
