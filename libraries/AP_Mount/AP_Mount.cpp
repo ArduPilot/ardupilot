@@ -233,13 +233,22 @@ void AP_Mount::update_fast()
 }
 
 // get_mount_type - returns the type of mount
-AP_Mount::Type AP_Mount::get_mount_type(uint8_t instance) const
+AP_Mount::Type AP_Mount::get_mount_type(uint8_t gimbal_device_id) const
 {
-    if (instance >= AP_MOUNT_MAX_INSTANCES) {
+    const auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return Type::None;
     }
 
-    return (Type)_params[instance].type.get();
+    // Because a device (aka "instance", "backend") does not own its params, utilize the index-alignment
+    // of the device & params arrays to retrieve them.
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (device == _backends[instance]) {
+            return static_cast<Type>(_params[instance].type.get());
+        }
+    }
+    // This return should never be encountered, it exists merely as defensive programming.
+    return Type::None;
 }
 
 // has_pan_control - returns true if the mount has yaw control (required for copters)

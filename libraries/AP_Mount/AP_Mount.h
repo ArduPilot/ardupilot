@@ -146,8 +146,8 @@ public:
     uint8_t get_gimbal_device_id_of_primary() const { return _primary + 1; }
 
     // get_mount_type - returns the type of mount
-    Type get_mount_type() const { return get_mount_type(_primary); }
-    Type get_mount_type(uint8_t instance) const;
+    Type get_mount_type() const { return get_mount_type(get_gimbal_device_id_of_primary()); }
+    Type get_mount_type(uint8_t gimbal_device_id) const;
 
     // has_pan_control - returns true if the mount has yaw control (required for copters)
     bool has_pan_control() const { return has_pan_control(_primary); }
