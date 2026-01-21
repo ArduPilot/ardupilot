@@ -468,7 +468,7 @@ void AP_AHRS::update_state(void)
     }
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
     state.secondary_pos_ok = _get_secondary_position(state.secondary_pos);
-    state.ground_speed_vec = active_backend->groundspeed_vector();
+    state.ground_speed_vec = active_estimates->velocity_NE;
     state.ground_speed = state.ground_speed_vec.length();
     _getCorrectedDeltaVelocityNED(state.corrected_dv, state.corrected_dv_dt);
 
