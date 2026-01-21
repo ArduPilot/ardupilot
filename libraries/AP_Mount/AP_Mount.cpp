@@ -676,11 +676,11 @@ bool AP_Mount::get_attitude_quaternion(uint8_t gimbal_device_id, Quaternion& att
 
 // get mount's current attitude in euler angles in degrees.  yaw angle is in body-frame
 // returns true on success
-bool AP_Mount::get_attitude_euler(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_bf_deg)
+bool AP_Mount::get_attitude_euler(uint8_t gimbal_device_id, float& roll_deg, float& pitch_deg, float& yaw_bf_deg)
 {
     // re-use get_attitude_quaternion and convert to Euler angles
     Quaternion att_quat;
-    if (!get_attitude_quaternion(instance, att_quat)) {
+    if (!get_attitude_quaternion(gimbal_device_id, att_quat)) {
         return false;
     }
 
