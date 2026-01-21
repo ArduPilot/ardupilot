@@ -1265,7 +1265,8 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_DO_SET_ROI:                            // MAV ID: 201
-        cmd.p1 = packet.param1;                         // 0 = no roi, 1 = next waypoint, 2 = waypoint number, 3 = fixed location, 4 = given target (not supported)
+        // Reminder: some of these roi modes may not be supported.
+        cmd.p1 = packet.param1;                         // 0 = no roi, 1 = next waypoint, 2 = waypoint number, 3 = fixed location, 4 = given target
         break;
 
     case MAV_CMD_DO_DIGICAM_CONFIGURE:                  // MAV ID: 202
