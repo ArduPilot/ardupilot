@@ -562,11 +562,6 @@ void NavEKF3_core::readGpsData()
     // check for new GPS data
     const auto &gps = dal.gps();
 
-    // limit update rate to avoid overflowing the FIFO buffer
-    if (gps.last_message_time_ms(selected_gps) - lastTimeGpsReceived_ms <= frontend->sensorIntervalMin_ms) {
-        return;
-    }
-
     if (gps.status(selected_gps) < AP_DAL_GPS::GPS_OK_FIX_3D) {
         // report GPS fix status
         gpsCheckStatus.bad_fix = true;
@@ -574,21 +569,28 @@ void NavEKF3_core::readGpsData()
         return;
     }
 
-    // report GPS fix status
-    gpsCheckStatus.bad_fix = false;
-
     // store fix time from previous read
-    const uint32_t secondLastGpsTime_ms = lastTimeGpsReceived_ms;
+    const uint32_t secondLastGpsTime_ms = lastTimeGpsReceived_ms[selected_gps];
 
     // get current fix time
-    lastTimeGpsReceived_ms = gps.last_message_time_ms(selected_gps);
+    for (uint8_t i=0; i<ARRAY_SIZE(lastTimeGpsReceived_ms); i++) {
+        lastTimeGpsReceived_ms[i] = gps.last_message_time_ms(i);
+    }
+
+    // limit update rate to avoid overflowing the FIFO buffer
+    if (gps.last_message_time_ms(selected_gps) - lastTimeGpsReceived_ms[selected_gps] <= frontend->sensorIntervalMin_ms) {
+        return;
+    }
+
+    // report GPS fix status
+    gpsCheckStatus.bad_fix = false;
 
     // estimate when the GPS fix was valid, allowing for GPS processing and other delays
     // ideally we should be using a timing signal from the GPS receiver to set this time
     // Use the driver specified delay
     float gps_delay_sec = 0;
     gps.get_lag(selected_gps, gps_delay_sec);
-    gpsDataNew.time_ms = lastTimeGpsReceived_ms - (uint32_t)(gps_delay_sec * 1000.0f);
+    gpsDataNew.time_ms = lastTimeGpsReceived_ms[selected_gps] - (uint32_t)(gps_delay_sec * 1000.0f);
 
     // Correct for the average intersampling delay due to the filter updaterate
     gpsDataNew.time_ms -= localFilterTimeStep_ms/2;
@@ -608,7 +610,7 @@ void NavEKF3_core::readGpsData()
 
     // Use the speed and position accuracy from the GPS if available, otherwise set it to zero.
     // Apply a decaying envelope filter with a 5 second time constant to the raw accuracy data
-    ftype alpha = constrain_ftype(0.0002f * (lastTimeGpsReceived_ms - secondLastGpsTime_ms),0.0f,1.0f);
+    ftype alpha = constrain_ftype(0.0002f * (lastTimeGpsReceived_ms[selected_gps] - secondLastGpsTime_ms),0.0f,1.0f);
     gpsSpdAccuracy *= (1.0f - alpha);
     float gpsSpdAccRaw;
     if (!gps.speed_accuracy(selected_gps, gpsSpdAccRaw)) {
@@ -654,7 +656,7 @@ void NavEKF3_core::readGpsData()
     }
 
     if (frontend->option_is_enabled(NavEKF3::Option::JammingExpected) &&
-        (lastTimeGpsReceived_ms - secondLastGpsTime_ms) > frontend->gpsNoFixTimeout_ms) {
+        (lastTimeGpsReceived_ms[selected_gps] - secondLastGpsTime_ms) > frontend->gpsNoFixTimeout_ms) {
         const bool doingBodyVelNav = (imuSampleTime_ms - prevBodyVelFuseTime_ms < 1000);
         const bool doingFlowNav = (imuSampleTime_ms - prevFlowFuseTime_ms < 1000);;
         const bool canDoWindRelNav = assume_zero_sideslip();
