@@ -203,7 +203,8 @@ void AP_Mount::init()
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
             _backends[instance]->init();
-            set_mode_to_default(instance);
+            uint8_t gimbal_device_id = instance + 1;
+            set_mode_to_default(gimbal_device_id);
         }
     }
 
@@ -277,13 +278,20 @@ MAV_MOUNT_MODE AP_Mount::get_mode(uint8_t instance) const
 
 // set_mode_to_default - restores the mode to it's default mode held in the MNTx__DEFLT_MODE parameter
 //      this operation requires 60us on a Pixhawk/PX4
-void AP_Mount::set_mode_to_default(uint8_t instance)
+void AP_Mount::set_mode_to_default(uint8_t gimbal_device_id)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
-    backend->set_mode((enum MAV_MOUNT_MODE)_params[instance].default_mode.get());
+    // Because a device (aka "instance", "backend") does not own its params, utilize the index-alignment
+    // of the device & params arrays to retrieve them.
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (device == _backends[instance]) {
+            device->set_mode(static_cast<MAV_MOUNT_MODE>(_params[instance].default_mode.get()));
+            return;
+        }
+    }
 }
 
 // set_mode - sets mount's mode
