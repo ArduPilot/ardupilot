@@ -15,6 +15,7 @@ static UARTDriver serial1Driver(uart1, UART1_TX, UART1_RX, 1);
 //static UARTDriver serial2Driver;
 //static UARTDriver serial3Driver;
 static SPIDeviceManager spiDeviceManager;
+static I2CDeviceManager i2cDeviceManager;
 static AnalogIn analogIn;
 
 #ifdef HAL_USE_EMPTY_STORAGE

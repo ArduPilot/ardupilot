@@ -106,17 +106,17 @@ class RP2350HWDef(hwdef.HWDef):
 
     def SPI_config_define_line_for_dev(self, define_name, dev, n):
         '''return a #define line for a RP2350_SPIBUS config line'''
-        (host, dma_ch, mosi, miso, sclk) = dev
-        return "{{ .host={host}, .dma_ch={dma_ch}, .mosi={mosi}, .miso={miso}, .sclk={sclk} }},"
+        (host, dma_ch_tx, dma_ch_rx, mosi, miso, sclk) = dev
+        return "{{ .host={host}, .dma_ch_tx={dma_ch_tx}, .dma_ch_rx={dma_ch_rx}, .mosi={mosi}, .miso={miso}, .sclk={sclk} }},"
 
     def write_SPI_bus_table(self, f):
         '''write SPI bus table'''
         buslist = []
         for bus in self.rp2350_spibus:
-            if len(bus) != 5:
-                self.error(f"Badly formed RP2350_SPIBUS line {bus} {len(bus)=}")
-            (host, dma_ch, mosi, miso, sclk) = bus
-            buslist.append(f"{{ .host={host}, .dma_ch={dma_ch}, .mosi={mosi}, .miso={miso}, .sclk={sclk} }},")
+            if len(bus) != 6:
+                self.error(f"Badly formed RP2350_SPIBUS line {bus} {len(bus)=} want=6 (host, dma_ch_tx, dma_ch_rx, mosi, miso, sclk)")
+            (host, dma_ch_tx, dma_ch_rx, mosi, miso, sclk) = bus
+            buslist.append(f"{{ .host={host}, .dma_ch_tx={dma_ch_tx}, .dma_ch_rx={dma_ch_rx}, .mosi={mosi}, .miso={miso}, .sclk={sclk} }},")
 
         self.write_device_table(f, "SPI buses", "HAL_RP2350_SPI_BUSES", buslist)
 
