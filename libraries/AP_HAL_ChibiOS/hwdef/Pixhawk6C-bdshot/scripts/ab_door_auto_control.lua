@@ -266,12 +266,18 @@ function is_in_landing_phase(current_mode)
         return true
     end
 
+    -- Check for vertical mission commands for auto mode
     if current_mode == MODES.auto then
         local nav_cmd = mission:get_current_nav_id()
         if NAV_CMDS[nav_cmd] then
             -- valid command for landing phase
             return true
         end
+    end
+
+    -- Check VTOL descent flag
+    if quadplane and quadplane:in_vtol_land_descent() then
+        return true
     end
 
     return false
