@@ -331,13 +331,6 @@ function run_auto_mode()
             -- We are latched OPEN.
             -- Stays TRUE even if pitch goes to 0 (Fix for instability safety).
             open_all_doors()
-        else
-            -- Latch is NOT set.
-            -- Check if we are now vertical (Pitch > 75).
-            if is_currently_in_vtol then
-                state.landing_latch = true
-                open_all_doors()
-            end
         end -- latch checking
     else
         -- Non-VTOL Modes (FW, FBWA, MANUAL, etc.)
