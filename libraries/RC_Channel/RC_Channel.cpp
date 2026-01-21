@@ -1411,11 +1411,11 @@ void RC_Channel::do_aux_function_fft_notch_tune(const AuxSwitchPos ch_flag)
  * Perform the RETRACT_MOUNT 1/2 process.
  * 
  * @param [in] ch_flag  Position of the switch. HIGH, MIDDLE and LOW.
- * @param [in] instance 0: RETRACT MOUNT 1 <br>
- *                      1: RETRACT MOUNT 2
+ * @param [in] gimbal_device_id 1: RETRACT MOUNT 1 <br>
+ *                              2: RETRACT MOUNT 2
 */
 #if HAL_MOUNT_ENABLED
-void RC_Channel::do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const uint8_t instance)
+void RC_Channel::do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const uint8_t gimbal_device_id)
 {
     AP_Mount *mount = AP::mount();
     if (mount == nullptr) {
@@ -1423,13 +1423,13 @@ void RC_Channel::do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const
     }
     switch (ch_flag) {
     case AuxSwitchPos::HIGH:
-        mount->set_mode(instance,MAV_MOUNT_MODE_RETRACT);
+        mount->set_mode(gimbal_device_id, MAV_MOUNT_MODE_RETRACT);
         break;
     case AuxSwitchPos::MIDDLE:
         // nothing
         break;
     case AuxSwitchPos::LOW:
-        mount->set_mode_to_default(instance);
+        mount->set_mode_to_default(gimbal_device_id);
         break;
     }
 }
@@ -1781,11 +1781,11 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
 
 #if HAL_MOUNT_ENABLED
     case AUX_FUNC::RETRACT_MOUNT1:
-        do_aux_function_retract_mount(ch_flag, 0);
+        do_aux_function_retract_mount(ch_flag, 1);
         break;
 
     case AUX_FUNC::RETRACT_MOUNT2:
-        do_aux_function_retract_mount(ch_flag, 1);
+        do_aux_function_retract_mount(ch_flag, 2);
         break;
 
     case AUX_FUNC::MOUNT_YAW_LOCK: {
@@ -1845,7 +1845,8 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         if (mount == nullptr) {
             break;
         }
-        mount->set_rangefinder_enable(0, ch_flag == AuxSwitchPos::HIGH);
+        const uint8_t gimbal_device_id = 1;
+        mount->set_rangefinder_enable(gimbal_device_id, ch_flag == AuxSwitchPos::HIGH);
         break;
     }
 #endif
