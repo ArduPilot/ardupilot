@@ -218,12 +218,6 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
             check_failed(Check::PARAMETERS, display_failure, "FS_GCS_ENABLE=2 removed, see FS_OPTIONS");
         }
 
-        // lean angle parameter check
-        if (copter.aparm.angle_max < 1000 || copter.aparm.angle_max > 8000) {
-            check_failed(Check::PARAMETERS, display_failure, "Check ANGLE_MAX");
-            return false;
-        }
-
         // acro balance parameter check
 #if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
         if (is_negative(copter.g.acro_balance_roll) || is_negative(copter.g.acro_balance_pitch) ||
@@ -601,7 +595,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 
     // check lean angle
     if (check_enabled(Check::INS)) {
-        if (degrees(acosf(ahrs.cos_roll()*ahrs.cos_pitch()))*100.0f > copter.aparm.angle_max) {
+        if (acosf(ahrs.cos_roll()*ahrs.cos_pitch()) > copter.attitude_control->lean_angle_max_rad()) {
             check_failed(Check::INS, true, "Leaning");
             return false;
         }
