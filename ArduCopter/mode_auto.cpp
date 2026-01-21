@@ -74,7 +74,8 @@ void ModeAuto::exit()
         copter.mode_auto.mission.stop();
     }
 #if HAL_MOUNT_ENABLED
-    copter.camera_mount.set_mode_to_default();
+    const uint8_t gimbal_device_id = 0; // all gimbal devices
+    copter.camera_mount.set_mode_to_default(gimbal_device_id);
 #endif  // HAL_MOUNT_ENABLED
 
     auto_RTL = false;
@@ -2027,14 +2028,16 @@ void ModeAuto::do_set_home(const AP_Mission::Mission_Command& cmd)
 void ModeAuto::do_mount_control(const AP_Mission::Mission_Command& cmd)
 {
     // if vehicle has a camera mount but it doesn't do pan control then yaw the entire vehicle instead
-    if ((copter.camera_mount.get_mount_type() != AP_Mount::Type::None) &&
-        !copter.camera_mount.has_pan_control()) {
+    // Because MAVLink does not specify which sensor(s) is contolled by this command, the decision is made here.
+    const uint8_t gimbal_device_id = 0;
+    if ((copter.camera_mount.get_mount_type(gimbal_device_id) != AP_Mount::Type::None) &&
+        !copter.camera_mount.has_pan_control(gimbal_device_id)) {
         // Per the handler in AP_Mount, DO_MOUNT_CONTROL yaw angle is in body frame, which is
         // equivalent to an offset to the current yaw demand.
         auto_yaw.set_yaw_angle_offset_deg(cmd.content.mount_control.yaw);
     }
     // pass the target angles to the camera mount
-    copter.camera_mount.set_angle_target(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
+    copter.camera_mount.set_angle_target(gimbal_device_id, cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
 }
 #endif  // HAL_MOUNT_ENABLED
 

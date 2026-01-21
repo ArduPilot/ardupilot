@@ -25,7 +25,11 @@ bool ModeFollow::init(const bool ignore_checks)
     AP_Mount *mount = AP_Mount::get_singleton();
     // follow the lead vehicle using sysid
     if (g2.follow.option_is_enabled(AP_Follow::Option::MOUNT_FOLLOW_ON_ENTER) && mount != nullptr) {
-        mount->set_target_sysid(g2.follow.get_target_sysid());
+        // While the docs do not specify which mounts should point towards the lead vehicle,
+        // it makes sense to point only one of them.
+        // That (arbitrary?) decision is made clear here.
+        const uint8_t gimbal_device_id = 1;  // mount1
+        mount->set_target_sysid(gimbal_device_id, g2.follow.get_target_sysid());
     }
 #endif
 

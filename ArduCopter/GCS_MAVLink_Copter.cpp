@@ -602,14 +602,16 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
-    case MAV_CMD_DO_MOUNT_CONTROL:
-        // if vehicle has a camera mount but it doesn't do pan control then yaw the entire vehicle instead
+    case MAV_CMD_DO_MOUNT_CONTROL: {
+        // if vehicle has a camera mount (as mount1) but it doesn't do pan control then yaw the entire vehicle instead
+        const uint8_t mount1_dev_id = 1;
         if (((MAV_MOUNT_MODE)packet.z == MAV_MOUNT_MODE_MAVLINK_TARGETING) &&
-            (copter.camera_mount.get_mount_type() != AP_Mount::Type::None) &&
-            !copter.camera_mount.has_pan_control()) {
+            (copter.camera_mount.get_mount_type(mount1_dev_id) != AP_Mount::Type::None) &&
+            !copter.camera_mount.has_pan_control(mount1_dev_id)) {
             // Per the handler in AP_Mount, DO_MOUNT_CONTROL yaw angle is in body frame, which is
             // equivalent to an offset to the current yaw demand.
             copter.flightmode->auto_yaw.set_yaw_angle_offset_deg(packet.param3);
+        }
         }
         break;
     default:
