@@ -309,7 +309,11 @@ function run_auto_mode()
                 if close_all_doors() then
                     state.takeoff_climbout_complete = true
                 end
+            else
+                -- Force doors open under alt_trig_m
+                open_all_doors()
             end
+            return
         end
     else 
         if state.was_in_fw_state and is_currently_in_vtol then
