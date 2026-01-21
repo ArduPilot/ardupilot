@@ -5415,31 +5415,6 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
 }
 #endif  // AP_MAVLINK_COMMAND_LONG_ENABLED
 
-MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const Location &roi_loc)
-{
-#if HAL_MOUNT_ENABLED
-    AP_Mount *mount = AP::mount();
-    if (mount == nullptr) {
-        return MAV_RESULT_UNSUPPORTED;
-    }
-
-    // sanity check location
-    if (!roi_loc.check_latlng()) {
-        return MAV_RESULT_FAILED;
-    }
-
-    if (!roi_loc.initialised()) {
-        mount->clear_roi_target();
-    } else {
-        mount->set_roi_target(roi_loc);
-    }
-    return MAV_RESULT_ACCEPTED;
-#else
-    return MAV_RESULT_UNSUPPORTED;
-#endif
-}
-
-
 void GCS_MAVLINK::handle_landing_target(const mavlink_message_t &msg)
 {
     mavlink_landing_target_t m;
@@ -5539,26 +5514,68 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_external_wind_estimate(const mavlink_
 }
 #endif // AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
 
+// For MAV_CMD_DO_SET_ROI (201)
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &packet)
 {
-    // be aware that this method is called for both MAV_CMD_DO_SET_ROI
-    // and MAV_CMD_DO_SET_ROI_LOCATION.  If you intend to support any
-    // of the extra fields in the former then you will need to split
-    // off support for MAV_CMD_DO_SET_ROI_LOCATION (which doesn't
-    // support the extra fields).
+    // For parameter definitions, see https://mavlink.io/en/messages/common.html#MAV_CMD_DO_SET_ROI
+    // Param1 _should_ always be an integer value, the choice to round is merely defensive programming.
+    const uint8_t roi_mode = static_cast<uint8_t>(std::round(packet.param1));
+    if (roi_mode != MAV_ROI::MAV_ROI_TARGET) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
 
-    // param1 : /* Region of interest mode (not used)*/
-    // param2 : /* MISSION index/ target ID (not used)*/
-    // param3 : /* ROI index (not used)*/
-    // param4 : /* empty */
-    // x : lat
-    // y : lon
-    // z : alt
+    // Because MAVLink does not specify which sensor(s) is contolled by this command, the decision is made here.
+    const uint8_t gimbal_device_id_to_command = 0;
+
+    mavlink_command_int_t corresponding_packet{};
+    corresponding_packet.param1 = gimbal_device_id_to_command;
+    corresponding_packet.x = packet.x;
+    corresponding_packet.y = packet.y;
+    corresponding_packet.z = packet.z;
+    return handle_command_do_set_roi_location(corresponding_packet);
+}
+
+// For MAV_CMD_DO_SET_ROI_LOCATION (195)
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_location(const mavlink_command_int_t &packet)
+{
+    // For parameter definitions, see https://mavlink.io/en/messages/common.html#MAV_CMD_DO_SET_ROI_LOCATION
     Location roi_loc;
     if (!location_from_command_t(packet, roi_loc)) {
         return MAV_RESULT_DENIED;
     }
-    return handle_command_do_set_roi(roi_loc);
+    return handle_command_do_set_roi_location(packet.param1, roi_loc);
+}
+
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_location(const uint8_t gimbal_device_id, const Location &roi_loc)
+{
+#if HAL_MOUNT_ENABLED
+    AP_Mount *mount = AP::mount();
+    if (mount == nullptr) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+
+    // sanity check location
+    if (!roi_loc.check_latlng()) {
+        return MAV_RESULT_FAILED;
+    }
+
+    if (!roi_loc.initialised()) {
+        mount->clear_roi_target(gimbal_device_id);
+    } else {
+        mount->set_roi_target(gimbal_device_id, roi_loc);
+    }
+    return MAV_RESULT_ACCEPTED;
+#else
+    return MAV_RESULT_UNSUPPORTED;
+#endif
+}
+
+// For MAV_CMD_DO_SET_ROI_NONE (197)
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_none(const mavlink_command_int_t &packet)
+{
+    // For parameter definitions, see https://mavlink.io/en/messages/common.html#MAV_CMD_DO_SET_ROI_NONE
+    const Location uninitialized_loc;
+    return handle_command_do_set_roi_location(packet.param1, uninitialized_loc);
 }
 
 #if AP_FILESYSTEM_FORMAT_ENABLED
@@ -5711,13 +5728,13 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_camera(packet);
 #endif
 
-    case MAV_CMD_DO_SET_ROI_NONE: {
-        const Location zero_loc;
-        return handle_command_do_set_roi(zero_loc);
-    }
+    case MAV_CMD_DO_SET_ROI_LOCATION:
+        return handle_command_do_set_roi_location(packet);
+
+    case MAV_CMD_DO_SET_ROI_NONE:
+        return handle_command_do_set_roi_none(packet);
 
     case MAV_CMD_DO_SET_ROI:
-    case MAV_CMD_DO_SET_ROI_LOCATION:
         return handle_command_do_set_roi(packet);
 
 #if HAL_MOUNT_ENABLED
