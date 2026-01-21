@@ -33,7 +33,6 @@
 class AC_AttitudeControl_Heli : public AC_AttitudeControl {
 public:
     AC_AttitudeControl_Heli( AP_AHRS_View &ahrs,
-                        const AP_MultiCopter &aparm,
                         AP_MotorsHeli& motors);
 
     // pid accessors

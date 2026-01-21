@@ -306,8 +306,8 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     AP_GROUPEND
 };
 
-AC_AttitudeControl_Heli::AC_AttitudeControl_Heli(AP_AHRS_View &ahrs, const AP_MultiCopter &aparm, AP_MotorsHeli& motors) :
-    AC_AttitudeControl(ahrs, aparm, motors)
+AC_AttitudeControl_Heli::AC_AttitudeControl_Heli(AP_AHRS_View &ahrs, AP_MotorsHeli& motors) :
+    AC_AttitudeControl(ahrs, motors)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
