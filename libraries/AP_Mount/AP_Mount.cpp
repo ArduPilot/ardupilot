@@ -982,12 +982,12 @@ AP_Mount_Backend *AP_Mount::get_primary() const
     return get_instance(_primary);
 }
 
-AP_Mount_Backend *AP_Mount::get_instance(uint8_t instance) const
+AP_Mount_Backend *AP_Mount::get_instance(uint8_t instance_index) const
 {
-    if (instance >= ARRAY_SIZE(_backends)) {
+    if (instance_index >= ARRAY_SIZE(_backends)) {
         return nullptr;
     }
-    return _backends[instance];
+    return _backends[instance_index];
 }
 
 // This is the mapping between gimbal_device_id (defined by MAVLink) and actual devices (aka 'instances', 'backends')
