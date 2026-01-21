@@ -71,10 +71,13 @@ assert(param:add_param(PARAM_TABLE_KEY, PARAM_IDX.VTOL_PITCH, "VTOL_PITCH", 75))
 assert(param:add_param(PARAM_TABLE_KEY, PARAM_IDX.FW_PITCH, "FW_PITCH", 25))
 
 -- Servo function and PWM parameters
+local open_pwms = {1000, 1900, 1000, 1900}
+local closed_pwms = {1900, 1000, 1900, 1000}
+
 for i=1,4 do
     assert(param:add_param(PARAM_TABLE_KEY, PARAM_IDX['S'..i..'_FUNC'], "S"..i.."_FUNC", 105+i))
-    assert(param:add_param(PARAM_TABLE_KEY, PARAM_IDX['S'..i..'_OPEN'], "S"..i.."_OPEN", 1100))
-    assert(param:add_param(PARAM_TABLE_KEY, PARAM_IDX['S'..i..'_CLOSE'], "S"..i.."_CLOSE", 1900))
+    assert(param:add_param(PARAM_TABLE_KEY, PARAM_IDX['S'..i..'_OPEN'], "S"..i.."_OPEN", open_pwms[i]))
+    assert(param:add_param(PARAM_TABLE_KEY, PARAM_IDX['S'..i..'_CLOSE'], "S"..i.."_CLOSE", closed_pwms[i]))
 end
 
 -- Slew rate parameter definition
