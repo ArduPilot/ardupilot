@@ -36,7 +36,7 @@ local NAV_CMDS = {
 -- ###############################################################################
 local PARAM_TABLE_KEY = 88
 local PARAM_PREFIX = "DOOR_"
-local NUM_PARAMS = 18
+local NUM_PARAMS = 19
 assert(param:add_table(PARAM_TABLE_KEY, PARAM_PREFIX, NUM_PARAMS), "Failed to create param table")
 
 local PARAM_IDX = {
