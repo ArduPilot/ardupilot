@@ -150,17 +150,16 @@ public:
     Type get_mount_type(uint8_t gimbal_device_id) const;
 
     // has_pan_control - returns true if the mount has yaw control (required for copters)
-    bool has_pan_control() const { return has_pan_control(_primary); }
-    bool has_pan_control(uint8_t instance) const;
+    bool has_pan_control() const { return has_pan_control(get_gimbal_device_id_of_primary()); }
+    bool has_pan_control(uint8_t gimbal_device_id) const;
 
     // get_mode - returns current mode of mount (i.e. Retracted, Neutral, RC_Targeting, GPS Point)
-    enum MAV_MOUNT_MODE get_mode() const { return get_mode(_primary); }
-    enum MAV_MOUNT_MODE get_mode(uint8_t instance) const;
+    MAV_MOUNT_MODE get_mode() const { return get_mode(get_gimbal_device_id_of_primary()); }
+    MAV_MOUNT_MODE get_mode(uint8_t gimbal_device_id) const;
 
     // set_mode - sets mount's mode
-    //  returns true if mode is successfully set
-    void set_mode(enum MAV_MOUNT_MODE mode) { return set_mode(_primary, mode); }
-    void set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode);
+    void set_mode(MAV_MOUNT_MODE mode) { return set_mode(get_gimbal_device_id_of_primary(), mode); }
+    void set_mode(uint8_t gimbal_device_id, MAV_MOUNT_MODE mode);
 
     // set_mode_to_default - restores the mode to it's default mode held in the MNTx_DEFLT_MODE parameter
     //      this operation requires 60us on a Pixhawk/PX4
@@ -168,50 +167,50 @@ public:
     void set_mode_to_default(uint8_t gimbal_device_id);
 
     // set pitch_lock used in RC_TARGETING mode.  If true, the gimbal's pitch target is maintained in earth-frame (horizon does not move up and down) rather than body frame
-    void set_pitch_lock(bool pitch_lock) { set_pitch_lock(_primary, pitch_lock); }
-    void set_pitch_lock(uint8_t instance, bool pitch_lock);
+    void set_pitch_lock(bool pitch_lock) { set_pitch_lock(get_gimbal_device_id_of_primary(), pitch_lock); }
+    void set_pitch_lock(uint8_t gimbal_device_id, bool pitch_lock);
 
     // set roll_lock used in RC_TARGETING mode.  If true, the gimbal's roll target is maintained in earth-frame (horizon does not rotate) rather than body frame
-    void set_roll_lock(bool roll_lock) { set_roll_lock(_primary, roll_lock); }
-    void set_roll_lock(uint8_t instance, bool roll_lock);
+    void set_roll_lock(bool roll_lock) { set_roll_lock(get_gimbal_device_id_of_primary(), roll_lock); }
+    void set_roll_lock(uint8_t gimbal_device_id, bool roll_lock);
 
     // set yaw_lock used in RC_TARGETING mode.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
     // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
-    void set_yaw_lock(bool yaw_lock) { set_yaw_lock(_primary, yaw_lock); }
-    void set_yaw_lock(uint8_t instance, bool yaw_lock);
-    
+    void set_yaw_lock(bool yaw_lock) { set_yaw_lock(get_gimbal_device_id_of_primary(), yaw_lock); }
+    void set_yaw_lock(uint8_t gimbal_device_id, bool yaw_lock);
+
 #if AP_MOUNT_POI_LOCK_ENABLED
     // controls POI lock which locks gimbal to GPS point currently in view and switches to GPS Targeting mode, suspends tracking poi or clears it
-    void set_poi_lock() { set_poi_lock(_primary); }
-    void set_poi_lock(uint8_t instance);
-    void clear_poi_lock() { clear_poi_lock(_primary); }
-    void clear_poi_lock(uint8_t instance);
-    void suspend_poi_lock() { suspend_poi_lock(_primary); }
-    void suspend_poi_lock(uint8_t instance);
+    void set_poi_lock() { set_poi_lock(get_gimbal_device_id_of_primary()); }
+    void set_poi_lock(uint8_t gimbal_device_id);
+    void clear_poi_lock() { clear_poi_lock(get_gimbal_device_id_of_primary()); }
+    void clear_poi_lock(uint8_t gimbal_device_id);
+    void suspend_poi_lock() { suspend_poi_lock(get_gimbal_device_id_of_primary()); }
+    void suspend_poi_lock(uint8_t gimbal_device_id);
 #endif
 
     // set angle target in degrees
     // roll and pitch are in earth-frame
     // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
-    void set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame) { set_angle_target(_primary, roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame); }
-    void set_angle_target(uint8_t instance, float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame);
+    void set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame) { set_angle_target(get_gimbal_device_id_of_primary(), roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame); }
+    void set_angle_target(uint8_t gimbal_device_id, float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame);
 
     // sets rate target in deg/s
     // yaw_lock should be true if the yaw rate is earth-frame, false if body-frame (e.g. rotates with body of vehicle)
-    void set_rate_target(float roll_degs, float pitch_degs, float yaw_degs, bool yaw_lock) { set_rate_target(_primary, roll_degs, pitch_degs, yaw_degs, yaw_lock); }
-    void set_rate_target(uint8_t instance, float roll_degs, float pitch_degs, float yaw_degs, bool yaw_lock);
+    void set_rate_target(float roll_degs, float pitch_degs, float yaw_degs, bool yaw_lock) { set_rate_target(get_gimbal_device_id_of_primary(), roll_degs, pitch_degs, yaw_degs, yaw_lock); }
+    void set_rate_target(uint8_t gimbal_device_id, float roll_degs, float pitch_degs, float yaw_degs, bool yaw_lock);
 
     // set_roi_target - sets target location that mount should attempt to point towards
-    void set_roi_target(const Location &target_loc) { set_roi_target(_primary,target_loc); }
-    void set_roi_target(uint8_t instance, const Location &target_loc);
+    void set_roi_target(const Location &target_loc) { set_roi_target(get_gimbal_device_id_of_primary(), target_loc); }
+    void set_roi_target(uint8_t gimbal_device_id, const Location &target_loc);
 
     // clear_roi_target - clears target location that mount should attempt to point towards
-    void clear_roi_target() { clear_roi_target(_primary); }
-    void clear_roi_target(uint8_t instance);
+    void clear_roi_target() { clear_roi_target(get_gimbal_device_id_of_primary()); }
+    void clear_roi_target(uint8_t gimbal_device_id);
 
     // point at system ID sysid
-    void set_target_sysid(uint8_t sysid) { set_target_sysid(_primary, sysid); }
-    void set_target_sysid(uint8_t instance, uint8_t sysid);
+    void set_target_sysid(uint8_t sysid) { set_target_sysid(get_gimbal_device_id_of_primary(), sysid); }
+    void set_target_sysid(uint8_t gimbal_device_id, uint8_t sysid);
 
     // handling of set_roi_sysid message
     MAV_RESULT handle_command_do_set_roi_sysid(const mavlink_command_int_t &packet);
@@ -232,13 +231,13 @@ public:
 
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
     // get poi information.  Returns true on success and fills in gimbal attitude, location and poi location
-    bool get_poi(uint8_t instance, Quaternion &quat, Location &loc, Location &poi_loc) const;
+    bool get_poi(uint8_t gimbal_device_id, Quaternion &quat, Location &loc, Location &poi_loc) const;
 #endif
 
     // get attitude as a quaternion.  returns true on success.
     // att_quat will be an earth-frame quaternion rotated such that
     // yaw is in body-frame.
-    bool get_attitude_quaternion(uint8_t instance, Quaternion& att_quat);
+    bool get_attitude_quaternion(uint8_t gimbal_device_id, Quaternion& att_quat);
 
     // get mount's current attitude in euler angles in degrees.  yaw angle is in body-frame
     // returns true on success
@@ -249,84 +248,84 @@ public:
     bool pre_arm_checks(char *failure_msg, uint8_t failure_msg_len);
 
     // get target rate in deg/sec. returns true on success
-    bool get_rate_target(uint8_t instance, float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame);
+    bool get_rate_target(uint8_t gimbal_device_id, float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame);
 
     // get target angle in deg. returns true on success
-    bool get_angle_target(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame);
+    bool get_angle_target(uint8_t gimbal_device_id, float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame);
 
 #if AP_SCRIPTING_ENABLED
     // get mount target location. returns true on success
-    bool get_location_target(uint8_t instance, Location& target_loc);
+    bool get_location_target(uint8_t gimbal_device_id, Location& target_loc);
 #endif
 
     // accessors for scripting backends and logging
-    void set_attitude_euler(uint8_t instance, float roll_deg, float pitch_deg, float yaw_bf_deg);
+    void set_attitude_euler(uint8_t gimbal_device_id, float roll_deg, float pitch_deg, float yaw_bf_deg);
 
     // write mount log packet for all backends
     void write_log();
 
     // write mount log packet for a single backend (called by camera library)
-    void write_log(uint8_t instance, uint64_t timestamp_us);
+    void write_log(uint8_t gimbal_device_id, uint64_t timestamp_us);
 
     //
     // camera controls for gimbals that include a camera
     //
 
     // take a picture
-    bool take_picture(uint8_t instance);
+    bool take_picture(uint8_t gimbal_device_id);
 
     // start or stop video recording
     // set start_recording = true to start record, false to stop recording
-    bool record_video(uint8_t instance, bool start_recording);
+    bool record_video(uint8_t gimbal_device_id, bool start_recording);
 
     // set zoom specified as a rate or percentage
-    bool set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value);
+    bool set_zoom(uint8_t gimbal_device_id, ZoomType zoom_type, float zoom_value);
 
     // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    SetFocusResult set_focus(uint8_t instance, FocusType focus_type, float focus_value);
+    SetFocusResult set_focus(uint8_t gimbal_device_id, FocusType focus_type, float focus_value);
 
     // set tracking to none, point or rectangle (see TrackingType enum)
     // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
     // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
-    bool set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
+    bool set_tracking(uint8_t gimbal_device_id, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
 
     // set camera lens as a value from 0 to 5
-    bool set_lens(uint8_t instance, uint8_t lens);
+    bool set_lens(uint8_t gimbal_device_id, uint8_t lens);
 
 #if HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED
     // set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
     // primary and secondary sources use the AP_Camera::CameraSource enum cast to uint8_t
-    bool set_camera_source(uint8_t instance, uint8_t primary_source, uint8_t secondary_source);
+    bool set_camera_source(uint8_t gimbal_device_id, uint8_t primary_source, uint8_t secondary_source);
 #endif
 
     // send camera information message to GCS
-    void send_camera_information(uint8_t instance, mavlink_channel_t chan) const;
+    void send_camera_information(uint8_t gimbal_device_id, mavlink_channel_t chan) const;
 
     // send camera settings message to GCS
-    void send_camera_settings(uint8_t instance, mavlink_channel_t chan) const;
+    void send_camera_settings(uint8_t gimbal_device_id, mavlink_channel_t chan) const;
 
     // send camera capture status message to GCS
-    void send_camera_capture_status(uint8_t instance, mavlink_channel_t chan) const;
+    void send_camera_capture_status(uint8_t gimbal_device_id, mavlink_channel_t chan) const;
 
 #if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
     // send camera thermal range message to GCS
-    void send_camera_thermal_range(uint8_t instance, mavlink_channel_t chan) const;
+    void send_camera_thermal_range(uint8_t gimbal_device_id, mavlink_channel_t chan) const;
 #endif
 
     // change camera settings not normally used by autopilot
     // setting values from AP_Camera::Setting enum
-    bool change_setting(uint8_t instance, CameraSetting setting, float value);
+    bool change_setting(uint8_t gimbal_device_id, CameraSetting setting, float value);
 
     //
     // rangefinder
     //
 
     // get rangefinder distance.  Returns true on success
-    bool get_rangefinder_distance(uint8_t instance, float& distance_m) const;
+    bool get_rangefinder_distance(uint8_t gimbal_device_id, float& distance_m) const;
 
     // enable/disable rangefinder.  Returns true on success
-    bool set_rangefinder_enable(uint8_t instance, bool enable);
+    bool set_rangefinder_enable(uint8_t gimbal_device_id, bool enable);
 
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
