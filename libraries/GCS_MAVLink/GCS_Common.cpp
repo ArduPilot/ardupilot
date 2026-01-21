@@ -5321,27 +5321,15 @@ MAV_RESULT GCS_MAVLINK::try_command_long_as_command_int(const mavlink_command_lo
 
     // convert and run the command
     mavlink_command_int_t command_int;
-    convert_COMMAND_LONG_to_COMMAND_INT(packet, command_int, frame);
+    MAV_RESULT conversion_result = convert_COMMAND_LONG_to_COMMAND_INT(packet, command_int, frame);
+    if (conversion_result != MAV_RESULT_ACCEPTED) {
+        return conversion_result;
+    }
 
     return handle_command_int_packet(command_int, msg);
 }
 
-// returns a value suitable for COMMAND_INT.x or y based on a value
-// coming in from COMMAND_LONG.p5 or p6:
-static int32_t convert_COMMAND_LONG_loc_param(float param, bool stores_location)
-{
-    if (isnan(param)) {
-        return 0;
-    }
-
-    if (stores_location) {
-        return param *1e7;
-    }
-
-    return param;
-}
-
-void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame)
+MAV_RESULT GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame)
 {
     out = {};
     out.target_system = in.target_system;
@@ -5354,10 +5342,41 @@ void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long
     out.param2 = in.param2;
     out.param3 = in.param3;
     out.param4 = in.param4;
-    const bool stores_location = command_long_stores_location((MAV_CMD)in.command);
-    out.x = convert_COMMAND_LONG_loc_param(in.param5, stores_location);
-    out.y = convert_COMMAND_LONG_loc_param(in.param6, stores_location);
+
+    // Spec calls for NaN in COMMAND_LONG for invalid, INT32_T-max in
+    // COMMAND_INT:
+
+    if (command_long_stores_location((MAV_CMD)in.command)) {
+        // check parameters are valid latitude/longitude:
+        if (!isfinite(in.param5) || !isfinite(in.param6)) {
+            return MAV_RESULT_DENIED;
+        }
+        if (!check_lat(in.param5) || !check_lng(in.param6)) {
+            return MAV_RESULT_DENIED;
+        }
+
+        out.x = in.param5 * 1e7;
+        out.y = in.param6 * 1e7;
+    } else {
+        if (isnan(in.param5)) {
+            out.x = INT32_MAX;
+        } else if (isfinite(in.param5)) {
+            out.x = in.param5;
+        } else {
+            return MAV_RESULT_DENIED;
+        }
+        if (isnan(in.param6)) {
+            out.y = INT32_MAX;
+        } else if (isfinite(in.param5)) {
+            out.y = in.param6;
+            out.x = in.param5;
+        } else {
+            return MAV_RESULT_DENIED;
+        }
+    }
+
     out.z = in.param7;
+    return MAV_RESULT_ACCEPTED;
 }
 
 void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
