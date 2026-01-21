@@ -40,7 +40,7 @@ void ModeAlthold::run_pre()
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
-        attitude_control->set_throttle_out(0.5,true,g.throttle_filt);
+        attitude_control->set_throttle_out(NEUTRAL_THROTTLE,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
         position_control->D_relax_controller(motors.get_throttle_hover());
         sub.last_pilot_heading_rad = ahrs.get_yaw_rad();
