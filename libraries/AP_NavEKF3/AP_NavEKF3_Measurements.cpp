@@ -682,16 +682,20 @@ void NavEKF3_core::readGpsData()
     calcGpsGoodForFlight();
 
 #if EK3_FEATURE_EXTERNAL_POSITION_FUSION
-    // A degraded GPS and use of an alternative navigation source blocks GPS use
+    // A degraded GPS and use of an alternative navigation source blocks all GPS use
     if (frontend->option_is_enabled(NavEKF3::Option::SetLatLngFusion) && useSetLatLngAsMeasurement) {
         const uint32_t timeoutThreshold = (uint32_t)MAX(((int32_t)frontend->posRetryTimeNoVel_ms-(int32_t)1000),1000);
         useSetLatLngAsMeasurement = imuSampleTime_ms - lastSetlatLngPassTime_ms < timeoutThreshold;
         if (useSetLatLngAsMeasurement) {
             if (frontend->option_is_enabled(NavEKF3::Option::JammingExpected)) {
+                // don't go back to GPS use until all GPS alignment checks pass
                 useSetLatLngAsMeasurement = !gpsGoodToAlign;
             } else {
-                // GPS is reporting worse accuracy than the current horizontal position estimate
-                useSetLatLngAsMeasurement = gpsPosAccuracy > safe_sqrt(P[7][7]+P[8][8]);
+                // apply a less stringent check
+                // don't go back to GPS use until GPS is reporting better accuracy than the current horizontal position estimate
+                if (is_positive(gpsPosAccuracy)) {
+                    useSetLatLngAsMeasurement = gpsPosAccuracy > safe_sqrt(P[7][7]+P[8][8]);
+                }
             }
         }
         if (useSetLatLngAsMeasurement) {
