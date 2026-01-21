@@ -78,6 +78,8 @@ public:
             vel = velocity_NED;
             return true;
         };
+        // ground velocity estimate in meters/second, in North/East order
+        Vector2f velocity_NE;
 
         // a derivative of the vertical position in m/s which is
         // kinematically consistent with the vertical position is
@@ -193,9 +195,6 @@ public:
         return false;
     #endif
     }
-
-    // return a ground vector estimate in meters/second, in North/East order
-    virtual Vector2f groundspeed_vector(void) = 0;
 
     virtual bool set_origin(const Location &loc) {
         return false;
