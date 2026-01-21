@@ -140,8 +140,10 @@ public:
     // used for gimbals that need to read INS data at full rate
     void update_fast();
 
-    // return primary instance ID
-    uint8_t get_primary_instance() const { return _primary; }
+    // This is useful for the transition to properly supporting gimbal device id.
+    // (ref: https://github.com/ArduPilot/ardupilot/issues/31940)
+    // Likely after that is complete, this can be removed.
+    uint8_t get_gimbal_device_id_of_primary() const { return _primary + 1; }
 
     // get_mount_type - returns the type of mount
     Type get_mount_type() const { return get_mount_type(_primary); }
