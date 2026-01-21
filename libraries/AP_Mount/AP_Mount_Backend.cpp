@@ -115,15 +115,15 @@ void AP_Mount_Backend::update_mnt_target_from_rc_target()
     float roll_in, pitch_in, yaw_in;
     get_rc_input(roll_in, pitch_in, yaw_in);
 
+    // frame locks
+    bool FPV_option = option_set(Options::FPV_LOCK); //FPV_LOCK forces bodyframe on all axes in RC targeting mode
+    mnt_target.angle_rad.yaw_is_ef = FPV_option ? false : _yaw_lock;
+    mnt_target.angle_rad.roll_is_ef = FPV_option ? false : _roll_lock;
+    mnt_target.angle_rad.pitch_is_ef = FPV_option ? false : _pitch_lock;
+
     // if RC_RATE is zero, targets are angle
     if (_params.rc_rate_max <= 0) {
         mnt_target.target_type = MountTargetType::ANGLE;
-
-        // frame locks
-        bool FPV_option = option_set(Options::FPV_LOCK); //FPV_LOCK forces bodyframe on all axes in RC targeting mode
-        mnt_target.angle_rad.yaw_is_ef = FPV_option ? false : _yaw_lock;
-        mnt_target.angle_rad.roll_is_ef = FPV_option ? false : _roll_lock;
-        mnt_target.angle_rad.pitch_is_ef = FPV_option ? false : _pitch_lock;
 
         // roll angle
         mnt_target.angle_rad.roll = radians(((roll_in + 1.0f) * 0.5f * (_params.roll_angle_max - _params.roll_angle_min) + _params.roll_angle_min));
