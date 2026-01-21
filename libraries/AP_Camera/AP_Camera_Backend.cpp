@@ -118,19 +118,23 @@ uint8_t AP_Camera_Backend::get_mount_instance() const
     return _params.mount_instance.get() - 1;
 }
 
-// get mavlink gimbal device id which is normally mount_instance+1
+// get mavlink gimbal device id, or 0 if no gimbal is associated with this camera.
 uint8_t AP_Camera_Backend::get_gimbal_device_id() const
 {
 #if HAL_MOUNT_ENABLED
-    const uint8_t mount_instance = get_mount_instance();
+    const uint8_t expected_gimbal_device_id = get_mount_instance() + 1;
+
     AP_Mount* mount = AP::mount();
-    if (mount != nullptr) {
-        if (mount->get_mount_type(mount_instance) != AP_Mount::Type::None) {
-            return (mount_instance + 1);
-        }
+    if (mount == nullptr) {
+        return CAMERA_HAS_NO_GIMBAL;
     }
+    if (mount->get_mount_type(expected_gimbal_device_id) == AP_Mount::Type::None) {
+        return CAMERA_HAS_NO_GIMBAL;
+    }
+    return expected_gimbal_device_id;
+#else
+    return CAMERA_HAS_NO_GIMBAL;
 #endif
-    return 0;
 }
 
 
@@ -304,14 +308,15 @@ void AP_Camera_Backend::send_camera_fov_status(mavlink_channel_t chan) const
     Quaternion quat;
     Location camera_loc;
     Location poi_loc;
-    const bool have_poi_loc = mount->get_poi(get_mount_instance(), quat, camera_loc, poi_loc);
+    const uint8_t gimbal_device_id = get_mount_instance() + 1;
+    const bool have_poi_loc = mount->get_poi(gimbal_device_id, quat, camera_loc, poi_loc);
 
     // if failed to get POI, get camera location directly from AHRS
     // and attitude directly from mount
     bool have_camera_loc = have_poi_loc;
     if (!have_camera_loc) {
         have_camera_loc = AP::ahrs().get_location(camera_loc);
-        mount->get_attitude_quaternion(get_mount_instance(), quat);
+        mount->get_attitude_quaternion(gimbal_device_id, quat);
     }
 
     // calculate attitude quaternion in earth frame using AHRS yaw
