@@ -1377,7 +1377,13 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
         return;
     }
 
-    const Location &loc = location(0);
+    GCS_MAVLINK *link = gcs().chan(chan);
+    Location loc;
+    if (link->is_ekf_location_override_enabled()) { // position has been externally set, use EKF location
+        AP::ahrs().get_location(loc);  // EKF Location
+    } else {
+        loc = location(0);
+    }
     float hacc = 0.0f;
     float vacc = 0.0f;
     float sacc = 0.0f;
