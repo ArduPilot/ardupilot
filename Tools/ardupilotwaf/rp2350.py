@@ -152,6 +152,7 @@ def generate_pico_project(env):
          */
         #ifndef {mcu_name.upper()}_GPIO_DEFINES_H
         #define {mcu_name.upper()}_GPIO_DEFINES_H
+        #define RP_GPIO_COUNT {gpio_count}
         // --- Universal GPIO Numbers ---
         """)
     for i in range(gpio_count):

@@ -5,11 +5,15 @@
 class RP::GPIO : public AP_HAL::GPIO {
 public:
     GPIO();
+
     void    init() override;
     void    pinMode(uint8_t pin, uint8_t output) override;
     uint8_t read(uint8_t pin) override;
     void    write(uint8_t pin, uint8_t value) override;
     void    toggle(uint8_t pin) override;
+
+    // optional helpers
+    bool    valid_pin(uint8_t pin) const override;
 
     /* Alternative interface: */
     AP_HAL::DigitalSource* channel(uint16_t n) override;
@@ -20,11 +24,13 @@ public:
 
 class RP::DigitalSource : public AP_HAL::DigitalSource {
 public:
-    DigitalSource(uint8_t v);
+    explicit DigitalSource(uint8_t pin);
+
     void    mode(uint8_t output) override;
     uint8_t read() override;
     void    write(uint8_t value) override;
     void    toggle() override;
+
 private:
-    uint8_t _v;
+    uint8_t _pin;
 };

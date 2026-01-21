@@ -36,8 +36,8 @@ define PIO_EXT_SPI pio0
 define PIO_PWM_MULTI pio1
 
 # SPI Buses
-#             Host      DMA Channel     MOSI   MISO   SCLK
-RP2350_SPIBUS SPI0_HOST SPI_DMA_CH_AUTO GPIO_3 GPIO_4 GPIO_2
+#             Host      DMA TX Channel  DMA RX Channel  MOSI   MISO   SCLK
+RP2350_SPIBUS spi0      0               1               GPIO_3 GPIO_4 GPIO_2
 
 # i2c Buses
 #             Port SDA     SCL     SPEED    INTERNAL SOFT
