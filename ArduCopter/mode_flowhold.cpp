@@ -118,7 +118,7 @@ bool ModeFlowHold::init(bool ignore_checks)
 void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles_rad, bool stick_input)
 {
     uint32_t now = AP_HAL::millis();
-    const float angle_max_rad = cd_to_rad(copter.aparm.angle_max);
+    const float angle_max_rad = copter.attitude_control->lean_angle_max_rad();
 
     // get corrected raw flow rate
     Vector2f raw_flow_rads = copter.optflow.flowRate() - copter.optflow.bodyRate();
@@ -319,7 +319,7 @@ void ModeFlowHold::run()
     // calculate alt-hold angles
     int16_t roll_in = copter.channel_roll->get_control_in();
     int16_t pitch_in = copter.channel_pitch->get_control_in();
-    const float angle_max_rad = cd_to_rad(copter.aparm.angle_max);
+    const float angle_max_rad = copter.attitude_control->lean_angle_max_rad();
 
     float target_roll_rad, target_pitch_rad;
     get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
