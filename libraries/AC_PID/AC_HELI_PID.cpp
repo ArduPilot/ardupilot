@@ -39,7 +39,7 @@ const AP_Param::GroupInfo AC_HELI_PID::var_info[] = {
     // @Description: Point below which I-term will not leak down
     // @Range: 0 1
     // @User: Advanced
-    AP_GROUPINFO("ILMI", 7, AC_HELI_PID, _leak_min, 0),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("ILMI", 7, AC_HELI_PID, _leak_min, default_ilmi),
 
     // 8 was for float AFF
 
@@ -101,6 +101,14 @@ const AP_Param::GroupInfo AC_HELI_PID::var_info[] = {
 
     AP_GROUPEND
 };
+
+// Constructor
+AC_HELI_PID::AC_HELI_PID(const AC_PID::Defaults &defaults,  float initial_ilmi) :
+    AC_PID{defaults},
+    default_ilmi(initial_ilmi)
+{
+    _last_requested_rate = 0;
+}
 
 // This is an integrator which tends to decay to zero naturally
 // if the error is zero.
