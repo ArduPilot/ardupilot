@@ -198,10 +198,13 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
         break;
 #endif
 #if HAL_MOUNT_ENABLED
-    case JSButton::button_function_t::k_mount_center:
-        camera_mount.set_angle_target(0, 0, 0, false);
+    case JSButton::button_function_t::k_mount_center: {
+        // While ArduSub seems to only support 1 mount, send to all gimbal devices just to be sure.
+        const uint8_t all_gimbal_devices = 0;
+        camera_mount.set_angle_target(all_gimbal_devices, 0, 0, 0, false);
         // for some reason the call to set_angle_targets changes the mode to mavlink targeting!
-        camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
+        camera_mount.set_mode(all_gimbal_devices, MAV_MOUNT_MODE_RC_TARGETING);
+        }
         break;
     case JSButton::button_function_t::k_mount_tilt_up:
         cam_tilt = 1900;
