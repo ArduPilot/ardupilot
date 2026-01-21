@@ -56,7 +56,10 @@ local PARAM_IDX = {
     S4_FUNC = 15, S4_OPEN = 16, S4_CLOSE = 17,
     
     -- Slew rate parameter (18)
-    SLEW_RATE = 18
+    SLEW_RATE = 18,
+
+    -- OVERRIDE (19)
+    OVERRIDE = 19
 }
 
 --[[ @Param: DOOR_MAN_CMD_CH, @DisplayName: Door Manual Command Chan, @Range: 1 16 --]]
@@ -84,6 +87,11 @@ end
 --[[ @Param: DOOR_SLEW_RATE, @DisplayName: Door Servo Slew Rate, @Description: Speed of servo movement in PWM units per second. 0 disables slew and makes movement instant., @Units: PWM/s, @Range: 0 1000, @User: Standard --]]
 assert(param:add_param(PARAM_TABLE_KEY, PARAM_IDX.SLEW_RATE, "SLEW_RATE", 1800))
 
+-- Override parameter definition
+--[[ @Param: DOOR_OVERRIDE, @DisplayName: Door Servo override, @Description: Enable/Disable for doors script auto logic, @Range: 0 1 --]]
+assert(param:add_param(PARAM_TABLE_KEY, PARAM_IDX.OVERRIDE, "OVERRIDE", 0))
+
+
 
 -- ###############################################################################
 -- # SCRIPT INITIALIZATION & LOGIC
@@ -110,7 +118,8 @@ local config = {
     alt_trig_m = Parameter(PARAM_PREFIX .. "ALT_TRIG_M"),
     vtol_pitch = Parameter(PARAM_PREFIX .. "VTOL_PITCH"),
     fw_pitch = Parameter(PARAM_PREFIX .. "FW_PITCH"),
-    slew_rate = Parameter(PARAM_PREFIX .. "SLEW_RATE")
+    slew_rate = Parameter(PARAM_PREFIX .. "SLEW_RATE"),
+    man_override = Parameter(PARAM_PREFIX .. "OVERRIDE")
 }
 
 local servos_config = {}
@@ -141,7 +150,8 @@ function update_config_cache()
         alt_trig_m = config.alt_trig_m:get(),
         vtol_pitch = config.vtol_pitch:get(),
         fw_pitch = config.fw_pitch:get(),
-        slew_rate = config.slew_rate:get()
+        slew_rate = config.slew_rate:get(),
+        man_override = config.man_override:get()
     }
 
     if config.cache.man_cmd_ch < 1 or config.cache.man_cmd_ch > 16 then
@@ -347,6 +357,7 @@ function run_auto_mode()
 end
 
 function check_manual_override()
+
     local rc_pwm = rc:get_pwm(config.cache.man_cmd_ch)
     if not rc_pwm then return false end
 
@@ -358,7 +369,7 @@ function check_manual_override()
     state.last_rc_pwm = rc_pwm
 
     if state.is_in_manual_override then
-        if config.cache.man_timeout > 0 and (millis() - state.manual_override_timer) > (config.cache.man_timeout * 1000) then
+        if config.cache.man_override == 0 and config.cache.man_timeout > 0 and (millis() - state.manual_override_timer) > (config.cache.man_timeout * 1000) then
             log_message(MAV_SEVERITY.WARNING, "Manual override timeout")
             state.is_in_manual_override = false
             return false
