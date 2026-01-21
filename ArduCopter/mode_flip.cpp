@@ -40,18 +40,25 @@ bool ModeFlip::init(bool ignore_checks)
         return false;
     }
 
-    // if in acro or stabilize ensure throttle is above zero
-    if (copter.ap.throttle_zero && (copter.flightmode->mode_number() == Mode::Number::ACRO || copter.flightmode->mode_number() == Mode::Number::STABILIZE)) {
-        return false;
-    }
-
-    // ensure roll input is less than 40deg
-    if (abs(channel_roll->get_control_in()) >= 4000) {
-        return false;
-    }
-
     // only allow flip when flying
     if (!motors->armed() || copter.ap.land_complete) {
+        return false;
+    }
+
+    // if in acro or stabilize ensure throttle is above zero
+    if (copter.ap.throttle_zero) {
+        switch (copter.flightmode->mode_number()) {
+        case Mode::Number::ACRO:
+        case Mode::Number::STABILIZE:
+            return false;
+
+        default:
+            break;
+        }
+    }
+
+    // ensure roll and pitch input is less than 40deg
+    if ((abs(channel_roll->get_control_in()) >= 4000) || (abs(channel_pitch->get_control_in()) >= 4000)) {
         return false;
     }
 
