@@ -570,11 +570,6 @@ void NavEKF3_core::readGpsData()
     if (gps.status(selected_gps) < AP_DAL_GPS::GPS_OK_FIX_3D) {
         // report GPS fix status
         gpsCheckStatus.bad_fix = true;
-        if (frontend->option_is_enabled(NavEKF3::Option::SetLatLngFusion)) {
-            // becasue we have another source of position observations available
-            // prevent the immediate GPS use if lock is regained before GPS has passed checks
-            gpsGoodToAlign = false;
-        }
         gpsAccuracyGood = false;
         dal.snprintf(prearm_fail_string, sizeof(prearm_fail_string), "Waiting for 3D fix");
         return;
@@ -664,7 +659,7 @@ void NavEKF3_core::readGpsData()
         const bool doingBodyVelNav = (imuSampleTime_ms - prevBodyVelFuseTime_ms < 1000);
         const bool doingFlowNav = (imuSampleTime_ms - prevFlowFuseTime_ms < 1000);;
         const bool canDoWindRelNav = assume_zero_sideslip();
-        const bool canDeadReckon = ((doingFlowNav && gndOffsetValid) || canDoWindRelNav || doingBodyVelNav);
+        const bool canDeadReckon = ((doingFlowNav && gndOffsetValid) || canDoWindRelNav || doingBodyVelNav || useSetLatLngAsMeasurement);
         if (canDeadReckon) {
             // If we can do dead reckoning with a data source other than GPS there is time to wait
             // for GPS alignment checks to pass before using GPS inside the EKF.
