@@ -146,11 +146,9 @@ public:
     uint8_t get_gimbal_device_id_of_primary() const { return _primary + 1; }
 
     // get_mount_type - returns the type of mount
-    Type get_mount_type() const { return get_mount_type(get_gimbal_device_id_of_primary()); }
     Type get_mount_type(uint8_t gimbal_device_id) const;
 
     // has_pan_control - returns true if the mount has yaw control (required for copters)
-    bool has_pan_control() const { return has_pan_control(get_gimbal_device_id_of_primary()); }
     bool has_pan_control(uint8_t gimbal_device_id) const;
 
     // get_mode - returns current mode of mount (i.e. Retracted, Neutral, RC_Targeting, GPS Point)
@@ -163,20 +161,16 @@ public:
 
     // set_mode_to_default - restores the mode to it's default mode held in the MNTx_DEFLT_MODE parameter
     //      this operation requires 60us on a Pixhawk/PX4
-    void set_mode_to_default() { set_mode_to_default(get_gimbal_device_id_of_primary()); }
     void set_mode_to_default(uint8_t gimbal_device_id);
 
     // set pitch_lock used in RC_TARGETING mode.  If true, the gimbal's pitch target is maintained in earth-frame (horizon does not move up and down) rather than body frame
-    void set_pitch_lock(bool pitch_lock) { set_pitch_lock(get_gimbal_device_id_of_primary(), pitch_lock); }
     void set_pitch_lock(uint8_t gimbal_device_id, bool pitch_lock);
 
     // set roll_lock used in RC_TARGETING mode.  If true, the gimbal's roll target is maintained in earth-frame (horizon does not rotate) rather than body frame
-    void set_roll_lock(bool roll_lock) { set_roll_lock(get_gimbal_device_id_of_primary(), roll_lock); }
     void set_roll_lock(uint8_t gimbal_device_id, bool roll_lock);
 
     // set yaw_lock used in RC_TARGETING mode.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
     // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
-    void set_yaw_lock(bool yaw_lock) { set_yaw_lock(get_gimbal_device_id_of_primary(), yaw_lock); }
     void set_yaw_lock(uint8_t gimbal_device_id, bool yaw_lock);
 
 #if AP_MOUNT_POI_LOCK_ENABLED
@@ -192,7 +186,6 @@ public:
     // set angle target in degrees
     // roll and pitch are in earth-frame
     // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
-    void set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame) { set_angle_target(get_gimbal_device_id_of_primary(), roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame); }
     void set_angle_target(uint8_t gimbal_device_id, float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame);
 
     // sets rate target in deg/s
@@ -206,7 +199,6 @@ public:
     void clear_roi_target(uint8_t gimbal_device_id);
 
     // point at system ID sysid
-    void set_target_sysid(uint8_t sysid) { set_target_sysid(get_gimbal_device_id_of_primary(), sysid); }
     void set_target_sysid(uint8_t gimbal_device_id, uint8_t sysid);
 
     // handling of set_roi_sysid message
