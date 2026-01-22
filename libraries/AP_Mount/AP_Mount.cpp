@@ -549,7 +549,9 @@ void AP_Mount::handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
 
 MAV_RESULT AP_Mount::handle_command_do_set_roi_sysid(const mavlink_command_int_t &packet)
 {
-    set_target_sysid((uint8_t)packet.param1);
+    uint8_t system_id = packet.param1;
+    uint8_t gimbal_device_id = packet.param2;
+    set_target_sysid(gimbal_device_id, system_id);
     return MAV_RESULT_ACCEPTED;
 }
 
