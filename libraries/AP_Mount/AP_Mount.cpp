@@ -72,7 +72,7 @@ void AP_Mount::init()
 
     // create each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        switch (get_mount_type(instance)) {
+        switch (static_cast<Type>(_params[instance].type.get())) {
         case Type::None:
             break;
 #if HAL_MOUNT_SERVO_ENABLED
@@ -708,9 +708,9 @@ bool AP_Mount::get_attitude_euler(uint8_t instance, float& roll_deg, float& pitc
 // any failure_msg returned will not include a prefix
 bool AP_Mount::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
 {
-    // check type parameters
+    // Check that every mount with a non-none type was instantiated.
     for (uint8_t i=0; i<AP_MOUNT_MAX_INSTANCES; i++) {
-        if ((get_mount_type(i) != Type::None) && (_backends[i] == nullptr)) {
+        if ((static_cast<Type>(_params[i].type.get()) != Type::None) && (_backends[i] == nullptr)) {
             strncpy(failure_msg, "check TYPE", failure_msg_len);
             return false;
         }
