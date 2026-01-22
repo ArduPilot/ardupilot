@@ -381,7 +381,7 @@ MAV_RESULT AP_Mount::handle_command_do_mount_control(const mavlink_command_int_t
 
 MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_command_int_t &packet)
 {
-    auto *backend = mount_device_from_gimbal_id(packet.z);
+    auto *backend = mount_device_from_mavlink_gimbal_id(packet.z);
 
     if (backend == nullptr) {
         return MAV_RESULT_FAILED;
@@ -429,7 +429,7 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
 // handle mav_cmd_do_gimbal_manager_configure for deconflicting different mavlink message senders
 MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_configure(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
-    auto *backend = mount_device_from_gimbal_id(packet.z);
+    auto *backend = mount_device_from_mavlink_gimbal_id(packet.z);
 
     if (backend == nullptr) {
         return MAV_RESULT_FAILED;
@@ -443,7 +443,7 @@ void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg)
     mavlink_gimbal_manager_set_attitude_t packet;
     mavlink_msg_gimbal_manager_set_attitude_decode(&msg,&packet);
 
-    auto *backend = mount_device_from_gimbal_id(packet.gimbal_device_id);
+    auto *backend = mount_device_from_mavlink_gimbal_id(packet.gimbal_device_id);
 
     if (backend == nullptr) {
         return;
@@ -500,7 +500,7 @@ void AP_Mount::handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
     mavlink_gimbal_manager_set_pitchyaw_t packet;
     mavlink_msg_gimbal_manager_set_pitchyaw_decode(&msg,&packet);
 
-    auto *backend = mount_device_from_gimbal_id(packet.gimbal_device_id);
+    auto *backend = mount_device_from_mavlink_gimbal_id(packet.gimbal_device_id);
 
     if (backend == nullptr) {
         return;
@@ -991,7 +991,7 @@ AP_Mount_Backend *AP_Mount::get_instance(uint8_t instance_index) const
 }
 
 // This is the mapping between gimbal_device_id (defined by MAVLink) and actual devices (aka 'instances', 'backends')
-AP_Mount_Backend *AP_Mount::mount_device_from_gimbal_id(uint8_t gimbal_device_id) const
+AP_Mount_Backend *AP_Mount::mount_device_from_mavlink_gimbal_id(uint8_t gimbal_device_id) const
 {
     // FIXME: This function's behavior when gimbal_device_id == 0 is a bug. (That should indicate 'all mounts', not 'primary'.)
     // Affects: Users working with multiple mounts.
