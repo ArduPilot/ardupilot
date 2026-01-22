@@ -1,0 +1,182 @@
+#define AP_GPS_ENABLED 0# no gps
+# --- Disable Airspeed system completely ---
+#define AP_AIRSPEED_ENABLED 0
+#define AP_AIRSPEED_LIBRARY 0
+#define AP_AIRSPEED_USE 0
+#define AP_AIRSPEED_BACKEND_MS4525_ENABLED 0
+#define AP_AIRSPEED_BACKEND_MS5525_ENABLED 0
+#define AP_AIRSPEED_BACKEND_SDP3X_ENABLED 0
+#define AP_AIRSPEED_BACKEND_ASP5033_ENABLED 0
+#define AP_AIRSPEED_BACKEND_ANALOG_ENABLED 0
+#define AP_COMPASS_AK09916_ENABLED 0
+#define AP_COMPASS_ENABLED 0
+#define COMPASS_CAL_ENABLED 0
+#define AP_COMPASS_RM3100_ENABLED 0
+#define HAL_GPS_ENABLED 0
+define AP_GPS_ENABLED 1
+
+define HAL_LOGGING_ENABLED 0
+#MCU-------------------------
+# Prozessor & Speicher
+MCU STM32F4xx STM32F405xx
+
+APJ_BOARD_ID CustomF405 #check
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 1024
+
+# bootloader takes first sector
+FLASH_RESERVE_START_KB 48
+
+define HAL_STORAGE_SIZE 16384
+define STORAGE_FLASH_PAGE 1
+define STM32_ST_USE_TIMER 5 #define other timer than Default Tim2 with 32 bit 
+
+
+#SPI (MPU)------------------
+PC10 SPI3_SCK SPI3
+PC11 SPI3_MISO SPI3
+PC12 SPI3_MOSI SPI3
+PA15 GYRO1_CS CS #PA15 nicht verwendbar
+#SPIDEV imu1 SPI3 DEVID1 GYRO1_CS MODE3 1*MHZ 8*MHZ 
+
+
+
+#Uarts-----------------------
+SERIAL_ORDER OTG1 UART4 UART5
+
+#USB----------------------
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# USART1 (DJI)
+#PB7 USART1_RX USART1
+#PB6 USART1_TX USART1
+#define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_DJI_FPV
+
+#UART dummy
+# Add a minimal USART2 assignment so ChibiOS UART driver has a peripheral:
+#PA2 USART2_TX USART2
+#PA3 USART2_RX USART2
+#define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_None
+
+# UART4
+PD2 UART4_RX UART4
+PC12 UART4_TX UART4
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_CRSF
+
+
+
+# UART5 (add TX so SD5 exists for bootloader)
+#PC12 UART5_TX UART5
+#PD2 UART5_RX UART5 NODMA
+#define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_ESCTelemetry #https://ardupilot.org/copter/docs/common-serial-options.html
+
+
+
+
+#PWM_OUT1 PA8
+#PWM_OUT2 PA9
+#PWM_OUT3 PA10
+#PWM_OUT4 PA5
+#PWM_OUT5 PB1
+
+# PWM out pins. Note that channel order follows the ArduPilot motor
+#ESC PWM (Motorausgänge)-----
+
+# order conventions
+# MOTORS order is important for direction of turn https://ardupilot.org/copter/docs/connect-escs-and-motors.html
+PA8 TIM1_CH1 TIM1 PWM(1) GPIO(50)       # M1 https://www.st.com/resource/en/datasheet/stm32f405zg.pdf p 46
+PA9 TIM1_CH2 TIM1 PWM(2) GPIO(51) BIDIR # M2
+PA10 TIM1_CH3 TIM1 PWM(3) GPIO(52) BIDIR # M3
+PA5 TIM2_CH1 TIM2 PWM(4) GPIO(53)       # M4 unterschiedlicher Timer?
+
+
+#Oszi--------------------
+#PH0 Oszi_IN
+#PH1 Oszi_OUT
+#Button
+
+
+
+
+
+# analog pins
+
+#PB0 ESC_CURRENT_SENS ADC1 SCALE(1)
+PB0 BATT_CURRENT_SENS ADC1 SCALE(1)
+define HAL_BATT_CURR_PIN 11
+define HAL_BATT_CURR_SCALE 40.0
+define HAL_BATT_MONITOR_DEFAULT 4
+
+# Dataflash setup
+#SPIDEV dataflash SPI3 DEVID1 FLASH1_CS     MODE3 104*MHZ 104*MHZ
+
+define HAL_LOGGING_DATAFLASH_ENABLED 1
+
+
+# OSD setup
+#SPIDEV osd SPI2 DEVID1 OSD1_CS   MODE0  10*MHZ  10*MHZ
+
+#define OSD_ENABLED 1
+#define HAL_OSD_TYPE_DEFAULT 1
+#ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# Barometer setup
+#BARO DPS310 I2C:0:0x76
+        
+# IMU setup
+
+# IMU setup
+SPIDEV imu1   SPI3 DEVID1 GYRO1_CS   MODE3   1*MHZ   8*MHZ
+
+IMU Invensensev3 SPI:imu1 ROTATION_PITCH_180_YAW_90
+#DMA_NOSHARE TIM4_UP TIM3_UP SPI1*
+DMA_PRIORITY TIM4* TIM3* SPI1*
+
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
+define ALLOW_ARM_NO_COMPASS
+
+define AP_COMPASS_PROBING_ENABLED 0
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 0
+define HAL_DEFAULT_INS_FAST_SAMPLE 0
+#define HAL_INS_DEFAULT 0 # I have no IMU at all => integrated navitation system
+define AP_BARO_ENABLED 0 # no barometer
+define AP_COMPAS_ENABLED 0 # no compass
+# Motor order implies Betaflight/X for standard ESCs
+define HAL_FRAME_TYPE_DEFAULT 12
+#define AP_GPS_ENABLED 0 
+# Disable GPS
+#define AP_GPS_USE 0
+#define GPS_TYPE_NONE
+#define AP_GPS_TYPE 0
+#define AP_AHRS_ENABLED 0
+# Prevent failsafe from trying to use GPS
+#define AP_ADVANCEDFAILSAFE_USE_GPS 0
+#define USE_ADVANCED_FAILSAFE 0
+#define ADVANCED_FAILSAFE   0 #Failsafe needs GPS therefore deactivated 
+#define CAMERA_USE_GPS 0 #no gps
+#define USE_COMPASS 0 # no compass
+#define AP_COMPASS_BACKEND 0
+#define USE_EXTERNAL_AHRS 0#nocompass
+#define USE_BMM150 0#no compass
+define USE_GPS 1
+#define USE_GPS_DATALOGGING 0
+#define USE_CAMERA 0 
+#define AP_Compass_MSP 0
+#define USE_FATFS 0
+#define AP_COPTER_ADVANCED_FAILSAFE_ENABLED 0 
+#define AP_AIRSPEED_ENABLED 0
+#define USE_LOGGING 0
+
+# USART6 (GPS)
+PC6 USART6_TX USART6
+PC7 USART6_RX USART6
+define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_GPS
+#DEFAULT_SERIAL0_PROTOCOL SerialProtocol_Mavlink
+#include ../include/minimize_fpv_osd.inc
+
