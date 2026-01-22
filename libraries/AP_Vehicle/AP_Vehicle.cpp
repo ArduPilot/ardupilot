@@ -794,6 +794,32 @@ bool AP_Vehicle::is_crashed() const
 #endif
 }
 
+#if AP_AHRS_ENABLED
+// set_home - sets ahrs home (used for RTL) to specified location
+//  returns true if home location set successfully
+bool AP_Vehicle::set_home(const Location& loc, bool lock)
+{
+    // check EKF origin has been set
+    Location ekf_origin;
+    if (!ahrs.get_origin(ekf_origin)) {
+        return false;
+    }
+
+    // set ahrs home (used for RTL)
+    if (!ahrs.set_home(loc)) {
+        return false;
+    }
+
+    // lock home position
+    if (lock) {
+        ahrs.lock_home();
+    }
+
+    // return success
+    return true;
+}
+#endif  // AP_AHRS_ENABLED
+
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 // update the harmonic notch filter for throttle based notch
 void AP_Vehicle::update_throttle_notch(AP_InertialSensor::HarmonicNotch &notch)
