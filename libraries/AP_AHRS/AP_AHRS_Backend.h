@@ -266,11 +266,7 @@ public:
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
-    // Returns true if the height datum reset has been performed
-    // If using a range finder for height no reset is performed and it returns false
-    virtual bool resetHeightDatum(void) WARN_IF_UNUSED {
-        return false;
-    }
+    virtual void resetHeightDatum(void) { }
 
     // return the innovations for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance

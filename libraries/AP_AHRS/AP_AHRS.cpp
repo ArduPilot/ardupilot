@@ -2844,52 +2844,20 @@ uint32_t AP_AHRS::getLastPosDownReset(float &posDelta)
 // Resets the baro so that it reads zero at the current height
 // Resets the EKF height to zero
 // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
-// Returns true if the height datum reset has been performed
-// If using a range finder for height no reset is performed and it returns false
-bool AP_AHRS::resetHeightDatum(void)
+void AP_AHRS::resetHeightDatum(void)
 {
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
 
-    switch (configured_ekf_type()) {
-
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
 #if HAL_NAVEKF3_AVAILABLE
-        EKF3.resetHeightDatum();
+    EKF3.resetHeightDatum();
 #endif
 #if HAL_NAVEKF2_AVAILABLE
-        EKF2.resetHeightDatum();
+    EKF2.resetHeightDatum();
 #endif
-        return false;
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-#if HAL_NAVEKF3_AVAILABLE
-        EKF3.resetHeightDatum();
-#endif
-        return EKF2.resetHeightDatum();
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-#if HAL_NAVEKF2_AVAILABLE
-        EKF2.resetHeightDatum();
-#endif
-        return EKF3.resetHeightDatum();
-#endif
-
 #if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return sim.resetHeightDatum();
+    sim.resetHeightDatum();
 #endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return false;
-#endif
-    }
-    return false;
 }
 
 // send a EKF_STATUS_REPORT for configured EKF

@@ -373,9 +373,7 @@ public:
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
-    // Returns true if the height datum reset has been performed
-    // If using a range finder for height no reset is performed and it returns false
-    bool resetHeightDatum();
+    void resetHeightDatum();
 
     // send a EKF_STATUS_REPORT for current EKF
     void send_ekf_status_report(class GCS_MAVLINK &link) const;
