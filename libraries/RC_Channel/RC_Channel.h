@@ -257,7 +257,7 @@ public:
         LANDING_FLARE =       89, // force flare, throttle forced idle, pitch to LAND_PITCH_DEG, tilts up
         EKF_SOURCE_SET =      90, // change EKF data source set between primary, secondary and tertiary
 #if AP_AIRSPEED_AUTOCAL_ENABLE
-        ARSPD_CALIBRATE=      91, // calibrate airspeed ratio 
+        ARSPD_CALIBRATE=      91, // calibrate airspeed ratio
 #endif  // AP_AIRSPEED_AUTOCAL_ENABLE
         FBWA =                92, // Fly-By-Wire-A
 #if AP_MISSION_ENABLED
@@ -510,7 +510,7 @@ protected:
     void do_aux_function_sprayer(const AuxSwitchPos ch_flag);
     void do_aux_function_generator(const AuxSwitchPos ch_flag);
     void do_aux_function_fft_notch_tune(const AuxSwitchPos ch_flag);
-    void do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const uint8_t instance);
+    void do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const uint8_t mount_index);
 
     typedef int8_t modeswitch_pos_t;
     virtual void mode_switch_changed(modeswitch_pos_t new_pos) {
