@@ -313,19 +313,20 @@ bool AP_Mission::start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Miss
     }
 
     // check gimbal device id.  0 is primary, 1 is 1st gimbal, 2 is 2nd gimbal, etc
-    uint8_t gimbal_instance = mount->get_primary_instance();
+    uint8_t gimbal_index = mount->get_primary_instance_index();
     if (cmd.content.gimbal_manager_pitchyaw.gimbal_id > 0) {
-        gimbal_instance = cmd.content.gimbal_manager_pitchyaw.gimbal_id - 1;
+        gimbal_index = cmd.content.gimbal_manager_pitchyaw.gimbal_id - 1;
     }
 
     // check flags for change to RETRACT
     if ((cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
-        mount->set_mode(gimbal_instance, MAV_MOUNT_MODE_RETRACT);
+        mount->set_mode(gimbal_index, MAV_MOUNT_MODE_RETRACT);
         return true;
     }
+
     // check flags for change to NEUTRAL
     if ((cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
-        mount->set_mode(gimbal_instance, MAV_MOUNT_MODE_NEUTRAL);
+        mount->set_mode(gimbal_index, MAV_MOUNT_MODE_NEUTRAL);
         return true;
     }
 
@@ -333,13 +334,25 @@ bool AP_Mission::start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Miss
     const bool pitch_angle_valid = abs(cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg) <= 90;
     const bool yaw_angle_valid = abs(cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg) <= 360;
     if (pitch_angle_valid && yaw_angle_valid) {
-        mount->set_angle_target(gimbal_instance, 0, cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg, cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg, cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        constexpr float zero_roll_angle_deg = 0.0f;
+        mount->set_angle_target(gimbal_index,
+                                zero_roll_angle_deg,
+                                cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg,
+                                cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg,
+                                cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return true;
     }
 
     // handle rate target
-    if (!isnan(cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs) && !isnan(cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs)) {
-        mount->set_rate_target(gimbal_instance, 0, cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs, cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs, cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+    const bool pitch_rate_valid = !isnan(cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs);
+    const bool yaw_rate_valid = !isnan(cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs);
+    if (pitch_rate_valid && yaw_rate_valid) {
+        constexpr float zero_roll_rate_degs = 0.0f;
+        mount->set_rate_target(gimbal_index,
+                               zero_roll_rate_degs,
+                               cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs,
+                               cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs,
+                               cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return true;
     }
 
