@@ -526,6 +526,10 @@ void Copter::allocate_motors(void)
     // upgrade position controller parameters
     copter.pos_control->convert_parameters();
 
+#if MODE_CIRCLE_ENABLED
+    circle_nav->convert_parameters();
+#endif
+
     // param count could have changed
     AP_Param::invalidate_count();
 }
