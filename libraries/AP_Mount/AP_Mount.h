@@ -342,8 +342,6 @@ protected:
     AP_Mount_Backend    *_backends[AP_MOUNT_MAX_INSTANCES];         // pointers to instantiated mounts
 
 private:
-    // Check if instance backend is ok
-    AP_Mount_Backend *get_primary() const;
     AP_Mount_Backend *get_instance(uint8_t instance_index) const;
     AP_Mount_Backend *mount_device_from_mavlink_gimbal_id(uint8_t gimbal_device_id) const;
 

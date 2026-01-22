@@ -981,11 +981,6 @@ bool AP_Mount::set_rangefinder_enable(uint8_t instance, bool enable)
     return backend->set_rangefinder_enable(enable);
 }
 
-AP_Mount_Backend *AP_Mount::get_primary() const
-{
-    return get_instance(_primary);
-}
-
 AP_Mount_Backend *AP_Mount::get_instance(uint8_t instance_index) const
 {
     if (instance_index >= ARRAY_SIZE(_backends)) {
@@ -1002,7 +997,7 @@ AP_Mount_Backend *AP_Mount::mount_device_from_mavlink_gimbal_id(uint8_t gimbal_d
     // Workaround: Leave this as-is until it can be fixed in synchrony with upstream to prevent unexpected behavior-change.
     // See: https://github.com/ArduPilot/ardupilot/issues/31940
     if (gimbal_device_id == 0) {
-        return get_primary();
+        return get_instance(_primary);
     }
     return get_instance(gimbal_device_id - 1);
 }
