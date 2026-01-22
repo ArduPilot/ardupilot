@@ -999,9 +999,8 @@ AP_Mount_Backend *AP_Mount::mount_device_from_mavlink_gimbal_id(uint8_t gimbal_d
     // See: https://github.com/ArduPilot/ardupilot/issues/31940
     if (gimbal_device_id == 0) {
         return get_primary();
-    } else {
-        return get_instance(gimbal_device_id - 1);
     }
+    return get_instance(gimbal_device_id - 1);
 }
 
 // pass a GIMBAL_REPORT message to the backend
