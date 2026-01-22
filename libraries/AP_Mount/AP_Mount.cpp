@@ -358,12 +358,14 @@ void AP_Mount::set_rate_target(uint8_t instance, float roll_degs, float pitch_de
 
 MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_int_t &packet)
 {
-    auto *backend = get_primary();
-    if (backend == nullptr) {
+    // MAVLink does not support gimbal_device_id in this message.
+    // Since it is unclear whether the spec implies commanding "the primary gimbal device" or "ALL gimbal devices",
+    // the (arbitrary?) choice is made clear here.
+    auto *device = get_instance(_primary);
+    if (device == nullptr) {
         return MAV_RESULT_FAILED;
     }
-
-    backend->set_mode((MAV_MOUNT_MODE)packet.param1);
+    device->set_mode((MAV_MOUNT_MODE)packet.param1);
 
     return MAV_RESULT_ACCEPTED;
 }
@@ -371,12 +373,14 @@ MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_int
 
 MAV_RESULT AP_Mount::handle_command_do_mount_control(const mavlink_command_int_t &packet)
 {
-    auto *backend = get_primary();
-    if (backend == nullptr) {
+    // MAVLink does not support gimbal_device_id in this message.
+    // Since it is unclear whether the spec implies commanding "the primary gimbal device" or "ALL gimbal devices",
+    // the (arbitrary?) choice is made clear here.
+    auto *device = get_instance(_primary);
+    if (device == nullptr) {
         return MAV_RESULT_FAILED;
     }
-
-    return backend->handle_command_do_mount_control(packet);
+    return device->handle_command_do_mount_control(packet);
 }
 
 MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_command_int_t &packet)
