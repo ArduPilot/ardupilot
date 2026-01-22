@@ -118,19 +118,22 @@ uint8_t AP_Camera_Backend::get_mount_instance() const
     return _params.mount_instance.get() - 1;
 }
 
-// get mavlink gimbal device id which is normally mount_instance+1
+// get mavlink gimbal device id, or 0 if no gimbal is associated with this camera.
 uint8_t AP_Camera_Backend::get_gimbal_device_id() const
 {
 #if HAL_MOUNT_ENABLED
     const uint8_t mount_instance = get_mount_instance();
     AP_Mount* mount = AP::mount();
-    if (mount != nullptr) {
-        if (mount->get_mount_type(mount_instance) != AP_Mount::Type::None) {
-            return (mount_instance + 1);
-        }
+    if (mount == nullptr) {
+        return CAMERA_HAS_NO_GIMBAL;
     }
+    if (mount->get_mount_type(mount_instance) == AP_Mount::Type::None) {
+        return CAMERA_HAS_NO_GIMBAL;
+    }
+    return mount_instance + 1;
+#else
+    return CAMERA_HAS_NO_GIMBAL;
 #endif
-    return 0;
 }
 
 
