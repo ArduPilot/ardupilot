@@ -145,7 +145,7 @@ public:
 
     // get_mount_type - returns the type of mount
     Type get_mount_type() const { return get_mount_type(_primary); }
-    Type get_mount_type(uint8_t instance) const;
+    Type get_mount_type(uint8_t instance_index) const;
 
     // has_pan_control - returns true if the mount has yaw control (required for copters)
     bool has_pan_control() const { return has_pan_control(_primary); }
@@ -163,7 +163,7 @@ public:
     // set_mode_to_default - restores the mode to it's default mode held in the MNTx_DEFLT_MODE parameter
     //      this operation requires 60us on a Pixhawk/PX4
     void set_mode_to_default() { set_mode_to_default(_primary); }
-    void set_mode_to_default(uint8_t instance);
+    void set_mode_to_default(uint8_t instance_index);
 
     // set pitch_lock used in RC_TARGETING mode.  If true, the gimbal's pitch target is maintained in earth-frame (horizon does not move up and down) rather than body frame
     void set_pitch_lock(bool pitch_lock) { set_pitch_lock(_primary, pitch_lock); }

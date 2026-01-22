@@ -233,13 +233,13 @@ void AP_Mount::update_fast()
 }
 
 // get_mount_type - returns the type of mount
-AP_Mount::Type AP_Mount::get_mount_type(uint8_t instance) const
+AP_Mount::Type AP_Mount::get_mount_type(uint8_t instance_index) const
 {
-    if (instance >= AP_MOUNT_MAX_INSTANCES) {
+    if (instance_index >= AP_MOUNT_MAX_INSTANCES) {
         return Type::None;
     }
 
-    return (Type)_params[instance].type.get();
+    return (Type)_params[instance_index].type.get();
 }
 
 // has_pan_control - returns true if the mount has yaw control (required for copters)
@@ -268,13 +268,13 @@ MAV_MOUNT_MODE AP_Mount::get_mode(uint8_t instance) const
 
 // set_mode_to_default - restores the mode to it's default mode held in the MNTx__DEFLT_MODE parameter
 //      this operation requires 60us on a Pixhawk/PX4
-void AP_Mount::set_mode_to_default(uint8_t instance)
+void AP_Mount::set_mode_to_default(uint8_t instance_index)
 {
-    auto *backend = get_instance(instance);
+    auto *backend = get_instance(instance_index);
     if (backend == nullptr) {
         return;
     }
-    backend->set_mode((enum MAV_MOUNT_MODE)_params[instance].default_mode.get());
+    backend->set_mode((enum MAV_MOUNT_MODE)_params[instance_index].default_mode.get());
 }
 
 // set_mode - sets mount's mode
