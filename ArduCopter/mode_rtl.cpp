@@ -295,7 +295,7 @@ void ModeRTL::loiterathome_run()
         if (auto_yaw.mode() == AutoYaw::Mode::RESET_TO_ARMED_YAW) {
             // check if heading is within 2 degrees of heading when vehicle was armed
             // todo: Use the target heading instead of the actual heading to allow landing even if yaw control is lost.
-            if (fabsf(wrap_PI(ahrs.get_yaw_rad() - copter.initial_armed_bearing_rad)) <= radians(2.0)) {
+            if (fabsF(wrap_PI(ahrs.get_yaw_rad() - copter.initial_armed_bearing_rad)) <= radians(2.0)) {
                 _state_complete = true;
             }
         } else {
