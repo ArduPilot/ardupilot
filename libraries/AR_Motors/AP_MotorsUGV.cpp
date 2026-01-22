@@ -139,6 +139,14 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     AP_GROUPINFO("BAT_WATT_TC", 16, AP_MotorsUGV, _batt_power_time_constant, 5.0f),
 #endif
 
+    // @Param: SKD_SCA_BASE
+    // @DisplayName: Motor skid-steering speed scaling base speed
+    // @Description: Speed above which steering is scaled down when using skid steering. Zero to disable speed scaling
+    // @Units: m/s
+    // @Range: 0 10
+    // @User: Advanced
+    AP_GROUPINFO("SKD_SCA_BASE", 17, AP_MotorsUGV, _skid_steering_speed_scale_base, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -358,7 +366,7 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
     output_regular(armed, ground_speed, _steering, _throttle);
 
     // output for skid steering style frames
-    output_skid_steering(armed, _steering, _throttle, dt);
+    output_skid_steering(armed, ground_speed, _steering, _throttle, dt);
 
     // output for omni frames
     output_omni(armed, _steering, _throttle, _lateral);
@@ -818,7 +826,7 @@ void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering
 }
 
 // output to skid steering channels
-void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float throttle, float dt)
+void AP_MotorsUGV::output_skid_steering(bool armed, float ground_speed, float steering, float throttle, float dt)
 {
     if (!have_skid_steering()) {
         return;
@@ -826,6 +834,13 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
 
     // clear and set limits based on input
     set_limits_from_input(armed, steering, throttle);
+
+    // speed scaling for skid-steer
+    if (_scale_steering) {
+        if (is_positive(_skid_steering_speed_scale_base) && (fabsf(ground_speed) > _skid_steering_speed_scale_base)) {
+            steering *= (_skid_steering_speed_scale_base / fabsf(ground_speed));
+        }
+    }
 
     // constrain steering
     steering = constrain_float(steering, -4500.0f, 4500.0f);

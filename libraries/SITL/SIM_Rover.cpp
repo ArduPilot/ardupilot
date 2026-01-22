@@ -28,14 +28,21 @@ namespace SITL {
 SimRover::SimRover(const char *frame_str) :
     Aircraft(frame_str)
 {
-    skid_steering = strstr(frame_str, "skid") != nullptr;
+    lock_step_scheduled = true;
 
+    skid_steering = strstr(frame_str, "skid") != nullptr;
     if (skid_steering) {
         printf("SKID Steering Rover Simulation Started\n");
         // these are taken from a 6V wild thumper with skid steering,
         // with a sabertooth controller
         max_accel = 14;
         max_speed = 4;
+        return;
+    }
+
+    mixed_steering = strstr(frame_str, "mixed") != nullptr;
+    if (mixed_steering) {
+        printf("MIXED Steering Rover Simulation Started\n");
         return;
     }
 
@@ -48,12 +55,10 @@ SimRover::SimRover(const char *frame_str) :
     if (omni3) {
         printf("Omni3 Mecanum Rover Simulation Started\n");
     }
-
-    lock_step_scheduled = true;
 }
 
 /*
-  return turning circle (diameter) in meters for steering angle proportion in degrees
+  return turning circle (diameter) in meters given the proportion of the maximum steering angle
 */
 float SimRover::turn_circle(float steering) const
 {
@@ -64,34 +69,33 @@ float SimRover::turn_circle(float steering) const
 }
 
 /*
-   return yaw rate in degrees/second given steering_angle and speed
+   return yaw rate in degrees/second given ground and/or differential steering and speed
 */
-float SimRover::calc_yaw_rate(float steering, float speed)
+float SimRover::calc_yaw_rate(float grnd_steering, float diff_steering, float speed)
 {
     if (skid_steering) {
-        return constrain_float(steering * skid_turn_rate, -MAX_YAW_RATE, MAX_YAW_RATE);
+        return constrain_float(diff_steering * skid_turn_rate, -MAX_YAW_RATE, MAX_YAW_RATE);
     }
     if (vectored_thrust) {
-        return constrain_float(steering * vectored_turn_rate_max, -MAX_YAW_RATE, MAX_YAW_RATE);
+        return constrain_float(grnd_steering * vectored_turn_rate_max, -MAX_YAW_RATE, MAX_YAW_RATE);
     }
-    if (fabsf(steering) < 1.0e-6 or fabsf(speed) < 1.0e-6) {
-        return 0;
-    }
-    float d = turn_circle(steering);
-    float c = M_PI * d;
-    float t = c / speed;
-    float rate = constrain_float(360.0f / t, -MAX_YAW_RATE, MAX_YAW_RATE);
-    return rate;
-}
 
-/*
-  return lateral acceleration in m/s/s
-*/
-float SimRover::calc_lat_accel(float steering_angle, float speed)
-{
-    float yaw_rate = calc_yaw_rate(steering_angle, speed);
-    float accel = radians(yaw_rate) * speed;
-    return accel;
+    // ackermann steering
+    float rate = 0.0f;
+    if (!(fabsf(grnd_steering) < 1.0e-6 or fabsf(speed) < 1.0e-6)) {
+        float d = turn_circle(grnd_steering);
+        float c = M_PI * d;
+        float t = c / speed;
+        rate = 360.0f / t;
+    }
+
+    // add skid steering contribution if using mixed steering
+    if (mixed_steering) {
+        rate += diff_steering * skid_turn_rate;
+    }
+
+    rate = constrain_float(rate, -MAX_YAW_RATE, MAX_YAW_RATE);
+    return rate;
 }
 
 /*
@@ -143,24 +147,35 @@ void SimRover::update(const struct sitl_input &input)
  */
 void SimRover::update_ackermann_or_skid(const struct sitl_input &input, float delta_time)
 {
-    float steering, throttle;
+    float grnd_steering{0.0f};
+    float diff_steering{0.0f};
+    float throttle;
 
     // if in skid steering mode the steering and throttle values are used for motor1 and motor2
     if (skid_steering) {
         const float motor1 = input.servos[0] ? normalise_servo_input(input.servos[0]) : 0;
         const float motor2 = input.servos[2] ? normalise_servo_input(input.servos[2]) : 0;
-        steering = motor1 - motor2;
+        diff_steering = motor1 - motor2;
+        throttle = 0.5*(motor1 + motor2);
+    } else if (mixed_steering) {
+        // in mixed ackermann and skid steering mode the throttle input on servo[1] is ignored.
+        // servo[1] is assigned to satisfy arming checks that require
+        // both ground steering and throttle to be set if either one is set.
+        grnd_steering = input.servos[0] ? normalise_servo_input(input.servos[0]) : 0;
+        const float motor1 = input.servos[2] ? normalise_servo_input(input.servos[2]) : 0;
+        const float motor2 = input.servos[3] ? normalise_servo_input(input.servos[3]) : 0;
+        diff_steering = motor1 - motor2;
         throttle = 0.5*(motor1 + motor2);
     } else {
         // steering here should really be "old steering" as no-pulses
         // should yield no servo movement
-        steering = input.servos[0] ? normalise_servo_input(input.servos[0]) : 0;
+        grnd_steering = input.servos[0] ? normalise_servo_input(input.servos[0]) : 0;
         throttle = input.servos[2] ? normalise_servo_input(input.servos[2]) : 0;
 
         // vectored thrust conversion
         if (vectored_thrust) {
-            const float steering_angle_rad = radians(steering * vectored_angle_max);
-            steering = sinf(steering_angle_rad) * throttle;
+            const float steering_angle_rad = radians(grnd_steering * vectored_angle_max);
+            grnd_steering = sinf(steering_angle_rad) * throttle;
             throttle *= cosf(steering_angle_rad);
         }
     }
@@ -172,7 +187,7 @@ void SimRover::update_ackermann_or_skid(const struct sitl_input &input, float de
     float speed = velocity_body.x;
 
     // yaw rate in degrees/s
-    float yaw_rate = calc_yaw_rate(steering, speed);
+    float yaw_rate = calc_yaw_rate(grnd_steering, diff_steering, speed);
 
     // target speed with current throttle
     float target_speed = throttle * max_speed;

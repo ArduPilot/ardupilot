@@ -166,7 +166,7 @@ private:
     void output_regular(bool armed, float ground_speed, float steering, float throttle);
 
     // output to skid steering channels
-    void output_skid_steering(bool armed, float steering, float throttle, float dt);
+    void output_skid_steering(bool armed, float ground_speed, float steering, float throttle, float dt);
 
     // output for omni motors
     void output_omni(bool armed, float steering, float throttle, float lateral);
@@ -220,6 +220,7 @@ private:
     AP_Float _steering_throttle_mix; // Steering vs Throttle priorisation.  Higher numbers prioritise steering, lower numbers prioritise throttle.  Only valid for Skid Steering vehicles
     AP_Float _reverse_delay; // delay in seconds when reversing motor
     AP_Float _batt_power_time_constant;    // Time constant used to limit the battery power
+    AP_Float _skid_steering_speed_scale_base; // Speed above which steering is scaled down when using skid-steering vehicles. Zero to disable speed scaling
 
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500

@@ -1,0 +1,40 @@
+# PID settings calculated using rover-quicktune.lua
+ATC_STR_RAT_P    0.272132
+ATC_STR_RAT_I    0.272132
+ATC_STR_RAT_FF   0.544265
+ATC_STR_RAT_FLTT 2.000000
+ATC_STR_RAT_FLTD 2.000000
+ATC_SPEED_P      0.050214
+ATC_SPEED_I      0.050214
+
+# Cruise settings calculated using rover-quicktune.lua
+CRUISE_SPEED     5
+CRUISE_THROTTLE  25
+
+CIRC_RADIUS      10
+
+# Allow speed scaling in manual modes
+MANUAL_OPTIONS   1
+
+# Settings for mixed steering
+MOT_SKD_SCA_BASE 0.5
+
+# SERVO2 must be assigned for arming checks, but is not used in SITL
+SERVO1_FUNCTION 26
+SERVO1_MAX 2000
+SERVO1_MIN 1000
+SERVO2_FUNCTION 70
+SERVO2_MAX 2000
+SERVO2_MIN 1000
+SERVO3_FUNCTION 73
+SERVO3_MAX 2000
+SERVO3_MIN 1000
+SERVO4_FUNCTION 74
+SERVO4_MAX 2000
+SERVO4_MIN 1000
+
+# Enable to run rover-quicktune.lua
+#SCR_ENABLE       1 # Lua Scripts
+#RC10_MIN         1000
+#RC10_MAX         2000
+#RC10_OPTION      300 # Scripting1
