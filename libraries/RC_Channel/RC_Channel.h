@@ -510,7 +510,7 @@ protected:
     void do_aux_function_sprayer(const AuxSwitchPos ch_flag);
     void do_aux_function_generator(const AuxSwitchPos ch_flag);
     void do_aux_function_fft_notch_tune(const AuxSwitchPos ch_flag);
-    void do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const uint8_t instance);
+    void do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const uint8_t instance_index);
 
     typedef int8_t modeswitch_pos_t;
     virtual void mode_switch_changed(modeswitch_pos_t new_pos) {

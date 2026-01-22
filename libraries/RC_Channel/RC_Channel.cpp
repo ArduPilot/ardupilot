@@ -1032,7 +1032,7 @@ bool RC_Channel::init_position_on_first_radio_read(AUX_FUNC func) const
     case AUX_FUNC::PARACHUTE_RELEASE:
 #endif
 
-        // we do not want to process 
+        // we do not want to process
         return true;
     default:
         return false;
@@ -1409,13 +1409,13 @@ void RC_Channel::do_aux_function_fft_notch_tune(const AuxSwitchPos ch_flag)
 
 /**
  * Perform the RETRACT_MOUNT 1/2 process.
- * 
+ *
  * @param [in] ch_flag  Position of the switch. HIGH, MIDDLE and LOW.
- * @param [in] instance 0: RETRACT MOUNT 1 <br>
- *                      1: RETRACT MOUNT 2
+ * @param [in] mount_index 0: RETRACT MOUNT 1 <br>
+ *                         1: RETRACT MOUNT 2
 */
 #if HAL_MOUNT_ENABLED
-void RC_Channel::do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const uint8_t instance)
+void RC_Channel::do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const uint8_t mount_index)
 {
     AP_Mount *mount = AP::mount();
     if (mount == nullptr) {
@@ -1423,13 +1423,13 @@ void RC_Channel::do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const
     }
     switch (ch_flag) {
     case AuxSwitchPos::HIGH:
-        mount->set_mode(instance,MAV_MOUNT_MODE_RETRACT);
+        mount->set_mode(mount_index, MAV_MOUNT_MODE_RETRACT);
         break;
     case AuxSwitchPos::MIDDLE:
         // nothing
         break;
     case AuxSwitchPos::LOW:
-        mount->set_mode_to_default(instance);
+        mount->set_mode_to_default(mount_index);
         break;
     }
 }
@@ -1819,7 +1819,7 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         }
         break;
     }
-#if AP_MOUNT_POI_LOCK_ENABLED    
+#if AP_MOUNT_POI_LOCK_ENABLED
    case AUX_FUNC::MOUNT_POI_LOCK: {
         AP_Mount *mount = AP::mount();
         if (mount == nullptr) {
@@ -1845,7 +1845,8 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         if (mount == nullptr) {
             break;
         }
-        mount->set_rangefinder_enable(0, ch_flag == AuxSwitchPos::HIGH);
+        const uint8_t mount_index = 0;
+        mount->set_rangefinder_enable(mount_index, ch_flag == AuxSwitchPos::HIGH);
         break;
     }
 #endif
