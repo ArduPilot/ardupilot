@@ -133,9 +133,11 @@ void AP_Baro_BMP388::timer(void)
         return;
     }
     const uint8_t status = buf[0];
+
     if ((status & 0x20) != 0) {
         // we have pressure data
-        update_pressure((buf[3] << 16) | (buf[2] << 8) | buf[1]);
+        uint32_t pressure = (buf[3] << 16) | (buf[2] << 8) | buf[1];
+        update_pressure(pressure);
     }
     if ((status & 0x40) != 0) {
         // we have temperature data
