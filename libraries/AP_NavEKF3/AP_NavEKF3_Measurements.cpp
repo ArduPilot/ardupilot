@@ -1107,7 +1107,12 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
 
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
-    if (((timeStamp_ms - extNavMeasTime_ms) < frontend->extNavIntervalMin_ms) || !statesInitialised) {
+    // don't attempt to use this data if data from the setLatLng interface
+    // is being used as an absolute position measurement to prevent fighting of
+    // data sources.
+    if (((timeStamp_ms - extNavMeasTime_ms) < frontend->extNavIntervalMin_ms) ||
+        !statesInitialised ||
+        lastSetlatLngPassTime_ms - imuSampleTime_ms < 5000) {
         return;
     } else {
         extNavMeasTime_ms = timeStamp_ms;
