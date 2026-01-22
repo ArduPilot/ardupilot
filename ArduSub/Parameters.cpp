@@ -882,6 +882,10 @@ void Sub::load_parameters()
         AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
     }
 #endif  // HAL_GCS_ENABLED
+
+#if CIRCLE_NAV_ENABLED
+    circle_nav.convert_parameters();
+#endif
 }
 
 void Sub::convert_old_parameters()
