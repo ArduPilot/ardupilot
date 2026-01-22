@@ -9,7 +9,12 @@
     LOG_ORGN_MSG, \
     LOG_POS_MSG, \
     LOG_RATE_MSG, \
-    LOG_ATSC_MSG
+    LOG_ATSC_MSG,  \
+    LOG_ATT_PIT_COMP_MSG, \
+    LOG_ATT_TAR_AA_MSG, \
+    LOG_ATT_BOD_AA_MSG, \
+    LOG_ATT_ERR_AA_MSG
+
 
 // @LoggerMessage: AHR2
 // @Description: Backup AHRS data
@@ -72,6 +77,68 @@ struct PACKED log_Attitude {
     uint16_t error_rp;
     uint16_t error_yaw;
     uint8_t  active;
+};
+
+// @LoggerMessage: ATPC
+// @Description: Canonical vehicle attitude pitch compensation
+// @Field: TimeUS: Time since system startup
+// @Field: AttPNew:  vehicle pitch post compensation for horizon crossing
+// @Field: AttPOld:  vehicle pitch
+// @Field: ZNedZ:  Body Z vector's Z component in NED frame
+// @Field: XNedZ:  Body X vector's Z component in NED frame
+// @Field: isNoseDn:  Boolean to track if craft is nose down below horizon
+// @Field: isBellyUp:  Boolean to track if craft is belly up or down
+struct PACKED log_AttitudeViewCompensation {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    int16_t    pitch;
+    int16_t    pitch_raw;
+    float      z_ned_z;
+    float      x_ned_z;
+    float      is_nose_down;
+    float      is_belly_up;
+};
+
+// @LoggerMessage: ATAT
+// @Description: Canonical vehicle attitude target axis angle representation of body to NED quat
+// @Field: TimeUS: Time since system startup
+// @Field: TarX:  X component of axis angle vector
+// @Field: TarY:  Y component of axis angle vector
+// @Field: TarZ:  Z component of axis angle vector
+struct PACKED log_AttitudeTarAxisAng {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float    target_x;
+    float    target_y;
+    float    target_z;
+};
+
+// @LoggerMessage: ATAB
+// @Description: Canonical vehicle attitude body axis angle representation of body to NED quat
+// @Field: TimeUS: Time since system startup
+// @Field: BodyX:  X component of axis angle vector
+// @Field: BodyY:  Y component of axis angle vector
+// @Field: BodyZ:  Z component of axis angle vector
+struct PACKED log_AttitudeBodyAxisAng {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float    body_x;
+    float    body_y;
+    float    body_z;
+};
+
+// @LoggerMessage: ATAE
+// @Description: Canonical vehicle attitude error axis angle representation of body to NED quat
+// @Field: TimeUS: Time since system startup
+// @Field: ErrX:  X component of axis angle vector
+// @Field: ErrY:  Y component of axis angle vector
+// @Field: ErrZ:  Z component of axis angle vector
+struct PACKED log_AttitudeErrAxisAng {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float    err_x;
+    float    err_y;
+    float    err_z;
 };
 
 // @LoggerMessage: ORGN
@@ -209,5 +276,13 @@ struct PACKED log_ATSC {
     { LOG_ATSC_MSG, sizeof(log_ATSC), \
         "ATSC", "Qffffff",  "TimeUS,AngPScX,AngPScY,AngPScZ,PDScX,PDScY,PDScZ", "s------", "F000000" , true }, \
     { LOG_VIDEO_STABILISATION_MSG, sizeof(log_Video_Stabilisation), \
-        "VSTB", "Qffffffffff",  "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,Q1,Q2,Q3,Q4", "sEEEooo----", "F0000000000" },
+        "VSTB", "Qffffffffff",  "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,Q1,Q2,Q3,Q4", "sEEEooo----", "F0000000000" }, \
+    { LOG_ATT_PIT_COMP_MSG, sizeof(log_AttitudeViewCompensation), \
+        "ATPC", "Qccffff",  "TimeUS,AttPNew,AttPOld,ZNedZ,XNedZ,isNoseDn,isBellyUp", "sdd----", "FBB0000" }, \
+    { LOG_ATT_TAR_AA_MSG, sizeof(log_AttitudeTarAxisAng), \
+        "ATAT", "Qfff",  "TimeUS,TarX,TarY,TarZ", "s---", "F000" }, \
+    { LOG_ATT_BOD_AA_MSG, sizeof(log_AttitudeBodyAxisAng), \
+        "ATAB", "Qfff",  "TimeUS,BodyX,BodyY,BodyZ", "s---", "F000" }, \
+    { LOG_ATT_ERR_AA_MSG, sizeof(log_AttitudeErrAxisAng), \
+        "ATAE", "Qfff",  "TimeUS,ErrX,ErrY,ErrZ", "s---", "F000" }, 
 
