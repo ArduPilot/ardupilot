@@ -238,7 +238,6 @@ AP_Mount::Type AP_Mount::get_mount_type(uint8_t instance) const
     if (instance >= AP_MOUNT_MAX_INSTANCES) {
         return Type::None;
     }
-
     return (Type)_params[instance].type.get();
 }
 
@@ -249,8 +248,6 @@ bool AP_Mount::has_pan_control(uint8_t instance) const
     if (backend == nullptr) {
         return false;
     }
-
-    // ask backend if it support pan
     return backend->has_pan_control();
 }
 
@@ -261,8 +258,6 @@ MAV_MOUNT_MODE AP_Mount::get_mode(uint8_t instance) const
     if (backend == nullptr) {
         return MAV_MOUNT_MODE_RETRACT;
     }
-
-    // ask backend its mode
     return backend->get_mode();
 }
 
@@ -284,8 +279,6 @@ void AP_Mount::set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode)
     if (backend == nullptr) {
         return;
     }
-
-    // call backend's set_mode
     backend->set_mode(mode);
 }
 
@@ -297,8 +290,6 @@ void AP_Mount::set_yaw_lock(uint8_t instance, bool yaw_lock)
     if (backend == nullptr) {
         return;
     }
-
-    // call backend's set_yaw_lock
     backend->set_yaw_lock(yaw_lock);
 }
 
@@ -310,8 +301,6 @@ void AP_Mount::set_roll_lock(uint8_t instance, bool roll_lock)
     if (backend == nullptr) {
         return;
     }
-
-    // call backend's set_roll_lock
     backend->set_roll_lock(roll_lock);
 }
 
@@ -323,8 +312,6 @@ void AP_Mount::set_pitch_lock(uint8_t instance, bool pitch_lock)
     if (backend == nullptr) {
         return;
     }
-
-    // call backend's set_pitch_lock
     backend->set_pitch_lock(pitch_lock);
 }
 
@@ -338,8 +325,6 @@ void AP_Mount::set_angle_target(uint8_t instance, float roll_deg, float pitch_de
     if (backend == nullptr) {
         return;
     }
-
-    // send command to backend
     backend->set_angle_target(roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame);
 }
 
@@ -351,8 +336,6 @@ void AP_Mount::set_rate_target(uint8_t instance, float roll_degs, float pitch_de
     if (backend == nullptr) {
         return;
     }
-
-    // send command to backend
     backend->set_rate_target(roll_degs, pitch_degs, yaw_degs, yaw_lock);
 }
 
@@ -361,11 +344,11 @@ MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_int
     // MAVLink does not support gimbal_device_id in this message.
     // Since it is unclear whether the spec implies commanding "the primary gimbal device" or "ALL gimbal devices",
     // the (arbitrary?) choice is made clear here.
-    auto *device = get_instance(_primary);
-    if (device == nullptr) {
+    auto *backend = get_instance(_primary);
+    if (backend == nullptr) {
         return MAV_RESULT_FAILED;
     }
-    device->set_mode((MAV_MOUNT_MODE)packet.param1);
+    backend->set_mode((MAV_MOUNT_MODE)packet.param1);
 
     return MAV_RESULT_ACCEPTED;
 }
@@ -376,11 +359,11 @@ MAV_RESULT AP_Mount::handle_command_do_mount_control(const mavlink_command_int_t
     // MAVLink does not support gimbal_device_id in this message.
     // Since it is unclear whether the spec implies commanding "the primary gimbal device" or "ALL gimbal devices",
     // the (arbitrary?) choice is made clear here.
-    auto *device = get_instance(_primary);
-    if (device == nullptr) {
+    auto *backend = get_instance(_primary);
+    if (backend == nullptr) {
         return MAV_RESULT_FAILED;
     }
-    return device->handle_command_do_mount_control(packet);
+    return backend->handle_command_do_mount_control(packet);
 }
 
 MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_command_int_t &packet)
@@ -438,7 +421,6 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_configure(const mavlink_co
     if (backend == nullptr) {
         return MAV_RESULT_FAILED;
     }
-
     return backend->handle_command_do_gimbal_manager_configure(packet, msg);
 }
 
@@ -646,8 +628,6 @@ void AP_Mount::set_poi_lock(uint8_t instance)
     if (backend == nullptr) {
         return;
     }
-
-    // call backend's set_poi_lock
     backend->set_poi_lock();
 }
 
@@ -657,8 +637,6 @@ void AP_Mount::clear_poi_lock(uint8_t instance)
     if (backend == nullptr) {
         return;
     }
-
-    // call backend's clear_poi_lock
     backend->clear_poi_lock();
 }
 
@@ -668,8 +646,6 @@ void AP_Mount::suspend_poi_lock(uint8_t instance)
     if (backend == nullptr) {
         return;
     }
-
-    // call backend's suspend_poi_lock
     backend->suspend_poi_lock();
 }
 #endif // AP_MOUNT_POI_LOCK_ENABLED
@@ -803,7 +779,6 @@ void AP_Mount::set_target_sysid(uint8_t instance, uint8_t sysid)
     if (backend == nullptr) {
         return;
     }
-    // call instance's set target SYSID cmd
     backend->set_target_sysid(sysid);
 }
 
