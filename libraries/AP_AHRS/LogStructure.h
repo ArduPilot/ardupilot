@@ -82,8 +82,8 @@ struct PACKED log_Attitude {
 // @LoggerMessage: ATPC
 // @Description: Canonical vehicle attitude pitch compensation
 // @Field: TimeUS: Time since system startup
-// @Field: Pitch:  vehicle pitch
-// @Field: PitchComp:  vehicle pitch post compensation for horizon crossing
+// @Field: AttPNew:  vehicle pitch post compensation for horizon crossing
+// @Field: AttPOld:  vehicle pitch
 // @Field: ZNedZ:  Body Z vector's Z component in NED frame
 // @Field: XNedZ:  Body X vector's Z component in NED frame
 // @Field: isNoseDn:  Boolean to track if craft is nose down below horizon
@@ -95,8 +95,8 @@ struct PACKED log_AttitudeViewCompensation {
     int16_t    pitch_raw;
     float      z_ned_z;
     float      x_ned_z;
-    float       is_nose_down;
-    float       is_belly_up;
+    float      is_nose_down;
+    float      is_belly_up;
 };
 
 // @LoggerMessage: ATAT
