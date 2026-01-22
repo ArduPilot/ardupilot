@@ -634,7 +634,7 @@ bool AP_Mount::get_poi(uint8_t instance, Quaternion &quat, Location &loc, Locati
     if (backend == nullptr) {
         return false;
     }
-    return backend->get_poi(instance, quat, loc, poi_loc);
+    return backend->get_poi(quat, loc, poi_loc);
 }
 #endif
 

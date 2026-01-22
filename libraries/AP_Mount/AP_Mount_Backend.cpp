@@ -154,7 +154,7 @@ void AP_Mount_Backend::update_mnt_target_from_rc_target()
 void AP_Mount_Backend::adjust_mnt_target_if_RP_locked()
 {
      // retrieve lean angles from ahrs
-    const AP_AHRS &ahrs = AP::ahrs(); 
+    const AP_AHRS &ahrs = AP::ahrs();
     Vector2f ahrs_angle_rad = {ahrs.get_roll_rad(), ahrs.get_pitch_rad()};
 
     // rotate ahrs roll and pitch angles to gimbal yaw
@@ -162,14 +162,14 @@ void AP_Mount_Backend::adjust_mnt_target_if_RP_locked()
         const float yaw_bf_rad = constrain_float(mnt_target.angle_rad.get_bf_yaw(), radians(_params.yaw_angle_min), radians(_params.yaw_angle_max));
         ahrs_angle_rad.rotate(yaw_bf_rad);
     }
-    
+
     // remove roll and pitch lean angle to correct to body frame
     if (!mnt_target.angle_rad.roll_is_ef){
         mnt_target.angle_rad.roll += ahrs_angle_rad.x;
     }
     if (!mnt_target.angle_rad.pitch_is_ef){
         mnt_target.angle_rad.pitch += ahrs_angle_rad.y;
-    } 
+    }
 }
 
 // set angle target in degrees
@@ -310,7 +310,7 @@ void AP_Mount_Backend::update_poi_lock_target()
     // otherwise,if terrain intersecting poi available, use it and start tracking
     // otherwise stop calcuation in thread, and attempt to get POI at home alt
     // if that fails, give warning
-    if (get_poi(_instance, quat, vehicle_location, target_location)) {
+    if (get_poi(quat, vehicle_location, target_location)) {
         set_roi_target(target_location);
         mnt_target.poi_start_ms = 0;
     } else if (AP_HAL::millis() - mnt_target.poi_start_ms > 5000) {
@@ -641,7 +641,7 @@ void AP_Mount_Backend::write_log(uint64_t timestamp_us)
 
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
 // get poi information.  Returns true on success and fills in gimbal attitude, location and poi location
-bool AP_Mount_Backend::get_poi(uint8_t instance, Quaternion &quat, Location &loc, Location &poi_loc)
+bool AP_Mount_Backend::get_poi(Quaternion &quat, Location &loc, Location &poi_loc)
 {
     WITH_SEMAPHORE(poi_calculation.sem);
 
@@ -832,7 +832,7 @@ bool AP_Mount_Backend::calculate_poi_at_home_alt(Location &target_location)
     // for the purpose of selecting a forward point in the home-alt plane.
     const bool used_mirror = (target_down_m < 0.0f);
     const float effective_down_m = used_mirror ? -target_down_m : target_down_m;
-    
+
     // guaranteed positive with min_los_z check
     const float t_m = effective_down_m / los_ned.z;
 
@@ -1128,7 +1128,7 @@ void AP_Mount_Backend::update_mnt_target()
 
 // method for the mount backends to update mnt_target based on
 // the mount mode.  Methods in here may be overridden by the derived
-// class to customise behaviour    
+// class to customise behaviour
 void AP_Mount_Backend::_update_mnt_target()
 {
     // change to RC_TARGETING mode if RC input has changed

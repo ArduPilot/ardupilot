@@ -223,7 +223,7 @@ public:
 
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
     // get poi information.  Returns true on success and fills in gimbal attitude, location and poi location
-    bool get_poi(uint8_t instance, Quaternion &quat, Location &loc, Location &poi_loc);
+    bool get_poi(Quaternion &quat, Location &loc, Location &poi_loc);
 #endif
 
     //
