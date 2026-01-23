@@ -251,8 +251,8 @@ protected:
         float roll;
         float pitch;
         float yaw;
-        bool pitch_is_ef; //only changed and used by CADDX currently
-        bool roll_is_ef; //only changed and used  by CADDX currently
+        bool pitch_is_ef = true; //can be changed on select gimbals
+        bool roll_is_ef = true; //can be changed on select gimbals
         bool yaw_is_ef;
 
         // return body-frame yaw angle from a mount target (in radians)
