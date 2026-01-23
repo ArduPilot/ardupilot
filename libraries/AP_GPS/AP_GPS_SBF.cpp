@@ -440,7 +440,7 @@ AP_GPS_SBF::parse(uint8_t temp)
 
 static bool is_DNU(double value)
 {
-    constexpr double DNU = -2e-10f;
+    constexpr double DNU = -2e10f;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-equal" // suppress -Wfloat-equal as it's false positive when testing for DNU values
     return value == DNU;
