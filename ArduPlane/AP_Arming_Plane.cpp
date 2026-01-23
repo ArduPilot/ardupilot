@@ -194,7 +194,7 @@ bool AP_Arming_Plane::quadplane_checks(bool display_failure)
     }
 
     // ensure controllers are OK with us arming:
-    if (!plane.quadplane.pos_control->pre_arm_checks("PSC", failure_msg, ARRAY_SIZE(failure_msg))) {
+    if (!plane.quadplane.pos_control->pre_arm_checks("Q_P", failure_msg, ARRAY_SIZE(failure_msg))) {
         check_failed(Check::PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);
         ret = false;
     }
