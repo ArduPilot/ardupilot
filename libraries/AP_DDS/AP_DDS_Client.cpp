@@ -198,9 +198,14 @@ AP_DDS_Client::~AP_DDS_Client()
 void AP_DDS_Client::update_topic(builtin_interfaces_msg_Time& msg)
 {
     uint64_t utc_usec;
+    //SITL needs to use time-since-boot in order to stay in timesync with Gazebo
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    utc_usec = AP_HAL::micros64();
+#else
     if (!AP::rtc().get_utc_usec(utc_usec)) {
         utc_usec = AP_HAL::micros64();
     }
+#endif
     msg.sec = utc_usec / 1000000ULL;
     msg.nanosec = (utc_usec % 1000000ULL) * 1000UL;
 
