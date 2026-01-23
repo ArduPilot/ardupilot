@@ -1068,6 +1068,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
  */
 const AP_Param::GroupInfo ParametersG2::var_info2[] = {
 
+#if AC_PAYLOAD_PLACE_ENABLED
     // @Param: PLDP_THRESH
     // @DisplayName: Payload Place thrust ratio threshold
     // @Description: Ratio of vertical thrust during decent below which payload touchdown will trigger.
@@ -1098,6 +1099,7 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @Range: 0 5
     // @User: Standard
     AP_GROUPINFO("PLDP_SPEED_DN", 4, ParametersG2, pldp_descent_speed_ms, 0.0),
+#endif  // AC_PAYLOAD_PLACE_ENABLED
 
     // @Param: SURFTRAK_TC
     // @DisplayName: Surface Tracking Filter Time Constant
