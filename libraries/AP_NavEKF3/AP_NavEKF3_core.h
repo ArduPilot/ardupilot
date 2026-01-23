@@ -260,6 +260,12 @@ public:
    // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
     bool getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
+    // return pose covariance matrix (6x6) for position and orientation in NED frame
+    bool getPoseCovariance(float covariance[36]) const;
+
+    // return velocity covariance matrix (6x6) for linear and angular velocity in NED/body frame
+    bool getVelocityCovariance(float covariance[36]) const;
+
     // get a particular source's velocity innovations
     // returns true on success and results are placed in innovations and variances arguments
     bool getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::SourceXY source, Vector3f &innovations, Vector3f &variances) const WARN_IF_UNUSED;

@@ -752,6 +752,9 @@ NavEKF3::NavEKF3() :
 {
     AP_Param::setup_object_defaults(this, var_info);
     AP_Param::setup_object_defaults(this, var_info2);
+    // Ensure EK3_ENABLE is set to 1 (default) even if setup_object_defaults
+    // didn't work correctly due to initialization order issues on macOS
+    _enable.set_and_default(1);
 }
 
 
@@ -1547,6 +1550,24 @@ bool NavEKF3::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::SourceXY 
         return core[primary].getVelInnovationsAndVariancesForSource(source, innovations, variances);
     }
     return false;
+}
+
+// return pose covariance matrix (6x6) for position and orientation in NED frame
+bool NavEKF3::getPoseCovariance(float covariance[36]) const
+{
+    if (core == nullptr) {
+        return false;
+    }
+    return core[primary].getPoseCovariance(covariance);
+}
+
+// return velocity covariance matrix (6x6) for linear and angular velocity in NED/body frame
+bool NavEKF3::getVelocityCovariance(float covariance[36]) const
+{
+    if (core == nullptr) {
+        return false;
+    }
+    return core[primary].getVelocityCovariance(covariance);
 }
 
 // should we use the compass? This is public so it can be used for
