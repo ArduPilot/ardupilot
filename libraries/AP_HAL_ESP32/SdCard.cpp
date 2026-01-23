@@ -88,6 +88,11 @@ done:
 
 #ifdef HAL_ESP32_SDMMC
 
+// define your board sdmmc config or use default
+#ifndef HAL_ESP32_SDMMC_SLOT_CONFIG
+#define HAL_ESP32_SDMMC_SLOT_CONFIG SDMMC_SLOT_CONFIG_DEFAULT
+#endif
+
 void mount_sdcard_mmc()
 {
     printf("Mounting sd \n");
@@ -125,10 +130,12 @@ void mount_sdcard_mmc()
 
     // This initializes the slot without card detect (CD) and write protect (WP) signals.
     // Modify slot_config.gpio_cd and slot_config.gpio_wp if your board has these signals.
-    sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
+    sdmmc_slot_config_t slot_config = HAL_ESP32_SDMMC_SLOT_CONFIG();
 
     // To use 1-line SD mode (this driver does), uncomment the following line:
     slot_config.width = 1;
+
+#if SOC_SDMMC_USE_IOMUX && !SOC_SDMMC_USE_GPIO_MATRIX
 
     // GPIOs 15, 2, 4, 12, 13 should have external 10k pull-ups.
     // Internal pull-ups are not sufficient. However, enabling internal pull-ups
@@ -145,6 +152,15 @@ void mount_sdcard_mmc()
     //   then uncomment this line and connect it electrically to the CS pin on the SDcard.
     //gpio_set_pull_mode(GPIO_NUM_13, GPIO_PULLUP_ONLY);   // D3, needed in 4- and 1-line modes
 
+#else
+
+    gpio_set_pull_mode(slot_config.cmd, GPIO_PULLUP_ONLY);   // CMD, needed in 4- and 1- line modes
+    gpio_set_pull_mode(slot_config.d0, GPIO_PULLUP_ONLY);    // D0, needed in 4- and 1-line modes
+    //gpio_set_pull_mode(slot_config.d1, GPIO_PULLUP_ONLY);    // D1, needed in 4-line mode only
+    //gpio_set_pull_mode(slot_config.d2, GPIO_PULLUP_ONLY);   // D2, needed in 4-line mode only
+    //gpio_set_pull_mode(slot_config.d3, GPIO_PULLUP_ONLY);   // D3, needed in 4- and 1-line modes
+
+#endif
 
     // Options for mounting the filesystem.
     // If format_if_mount_failed is set to true, SD card will be partitioned and
