@@ -141,6 +141,14 @@ const AP_Param::GroupInfo SIM::ViconParms::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("RATE",  10, ViconParms,  rate_hz, 50),
 
+    // @Param: QUAL
+    // @DisplayName: SITL vicon odometry quality
+    // @Description: SITL vicon odometry quality field sent in MAVLink ODOMETRY message (-1=failure, 0=unknown, 1-100=quality)
+    // @Units: %
+    // @Range: -1 100
+    // @User: Advanced
+    AP_GROUPINFO("QUAL", 11, ViconParms, quality, 50),
+
     AP_GROUPEND
 };
 
@@ -410,7 +418,7 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
         child_frame_id: MAV_FRAME_BODY_FRD,
         reset_counter: 0,
         estimator_type: MAV_ESTIMATOR_TYPE_VIO,
-        quality: 50, // quality hardcoded to 50%
+        quality: (int8_t)constrain_int16(_sitl->vicon.quality.get(), -1, 100),
         };
         memcpy(odometry.pose_covariance, pose_cov, sizeof(pose_cov));
         memcpy(odometry.velocity_covariance, vel_cov, sizeof(vel_cov));
