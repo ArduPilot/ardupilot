@@ -143,6 +143,7 @@ AP_RunCam::AP_RunCam(AP_Camera &frontend, AP_Camera_Params &params, uint8_t inst
 // init the runcam device by finding a serial device configured for the RunCam protocol
 void AP_RunCam::init()
 {
+    AP_Camera_Backend::init();
     AP_SerialManager *serial_manager = AP_SerialManager::get_singleton();
     if (serial_manager) {
         uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_RunCam, _runcam_instance);
