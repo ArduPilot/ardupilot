@@ -2918,6 +2918,11 @@ void QuadPlane::vtol_position_controller(void)
  */
 QuadPlane::ActiveFwdThr QuadPlane::get_vfwd_method(void) const
 {
+    // May not be enabled by type spesfic transition logic
+    if (!transition->allow_vfwd()) {
+        return ActiveFwdThr::NONE;
+    }
+
     const bool have_fwd_thr_gain = is_positive(q_fwd_thr_gain);
     const bool have_vfwd_gain = is_positive(vel_forward.gain);
 
