@@ -1269,6 +1269,7 @@ void NavEKF3_core::FuseDeclination(ftype declErr)
     if (HK0 < 1e-4f) {
         return;
     }
+    const ftype HK1 = 1.0f/HK0;
     ftype t5 = P[16][16]*t2;
     ftype t6 = P[17][17]*t3;
     ftype t7 = t2*t2;
@@ -1286,18 +1287,12 @@ void NavEKF3_core::FuseDeclination(ftype declErr)
         return;
     }
     const ftype HK4 = HK0*t13;
-    ftype HK1;
-    if (fabsF(HK0) > 1e-6f) {
-        HK1 = 1.0f/HK0;
-    } else {
-        return;
-    }
 
     // Calculate the observation Jacobian
     // Note only 2 terms are non-zero which can be used in matrix operations for calculation of Kalman gains and covariance update to significantly reduce cost
     ftype Hfusion[24] = {};
-    Hfusion[16] = -magE*HK1;
-    Hfusion[17] = magN*HK1;
+    Hfusion[16] = -HK1*magE;
+    Hfusion[17] = HK1*magN;
 
     Kfusion[0] = -HK4*(P[0][16]*magE-P[0][17]*magN);
     Kfusion[1] = -HK4*(P[1][16]*magE-P[1][17]*magN);
