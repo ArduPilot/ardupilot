@@ -86,12 +86,52 @@ void AP_RCProtocol_DroneCAN::update()
         }
         last_receive_ms = rcin.last_sample_time_ms;
 
+        if (rcin.bits.QUALITY_VALID) {
+            switch (rcin.bits.QUALITY_TYPE) {
+                case QualityType::RSSI:
+                    rssi = rcin.quality;
+                    break;
+                case QualityType::LQ_ACTIVE_ANTENNA:
+                    // highest bit carries active antenna data
+                    frontend._rc_link_status.link_quality = (rcin.quality & 0x7F);
+                    frontend._rc_link_status.active_antenna = (rcin.quality & 0x80) ? 1 : 0;
+                    break;
+                case QualityType::RSSI_DBM:
+                    frontend._rc_link_status.rssi_dbm = rcin.quality;
+                    // also set the rssi field, this avoids having to waste a slot for sending both
+                    // AP rssi: -1 for unknown, 0 for no link, 255 for maximum link
+                    if (rcin.quality < 50) {
+                        rssi = 255;
+                    } else if (rcin.quality > 120) {
+                        rssi = 0;
+                    } else {
+                        rssi = int16_t(roundf((120.0f - rcin.quality) * (255.0f / 70.0f)));
+                    }
+                    break;
+                case QualityType::SNR:
+                    // SNR is shifted by 128 to support negative values
+                    frontend._rc_link_status.snr = (int8_t)rcin.quality - 128;
+                    break;
+                case QualityType::TX_POWER:
+                    // carries tx power in units of 5 mW, thus can't support higher than 255*5 = 1275 mW
+                    frontend._rc_link_status.tx_power = (int16_t)rcin.quality * 5;
+                    break;
+            }
+        } else {
+            rssi = -1;
+            frontend._rc_link_status.link_quality = -1;
+            frontend._rc_link_status.rssi_dbm = -1;
+            frontend._rc_link_status.snr = INT8_MIN;
+            frontend._rc_link_status.tx_power = -1;
+            frontend._rc_link_status.active_antenna = -1;
+        }
+
         add_input(
             rcin.num_channels,
             rcin.channels,
             rcin.bits.FAILSAFE,
-            rcin.bits.QUALITY_VALID ? rcin.quality : 0,  // CHECK ME
-            0  // link quality
+            rssi,
+            frontend._rc_link_status.link_quality
             );
     }
 }
