@@ -1240,11 +1240,8 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
 }
 
 /*
- * Fuse declination angle using explicit algebraic equations generated with Matlab symbolic toolbox.
- * The script file used to generate these and other equations in this filter can be found here:
- * https://github.com/PX4/ecl/blob/master/matlab/scripts/Inertial%20Nav%20EKF/GenerateNavFilterEquations.m
- * This is used to prevent the declination of the EKF earth field states from drifting during operation without GPS
- * or some other absolute position or velocity reference
+ * Fuse declination angle using explicit algebraic equations generated in
+ * derivation/generate_2.py with output recorded in derivation/generated/yaw_generated.cpp
 */
 void NavEKF3_core::FuseDeclination(ftype declErr)
 {
@@ -1262,31 +1259,21 @@ void NavEKF3_core::FuseDeclination(ftype declErr)
 
     // Calculate observation Jacobian and Kalman gains
     // Calculate intermediate variables
-    ftype t2 = magE*magE;
-    ftype t3 = magN*magN;
-    ftype HK0 = t2+t3;
+    const ftype HK0 = sq(magE) + sq(magN);
     // if the horizontal magnetic field is too small, this calculation will be badly conditioned
     if (HK0 < 1e-4f) {
         return;
     }
-    const ftype HK1 = 1.0f/HK0;
-    ftype t5 = P[16][16]*t2;
-    ftype t6 = P[17][17]*t3;
-    ftype t7 = t2*t2;
-    ftype t8 = R_DECL*t7;
-    ftype t9 = t3*t3;
-    ftype t10 = R_DECL*t9;
-    ftype t11 = R_DECL*t2*t3*2.0f;
-    ftype t14 = P[16][17]*magE*magN;
-    ftype t15 = P[17][16]*magE*magN;
-    ftype t12 = t5+t6+t8+t10+t11-t14-t15;
-    ftype t13;
-    if (fabsF(t12) > 1e-6f) {
-        t13 = 1.0f / t12;
+    const ftype HK1 = 1.0F/(HK0);
+    const ftype HK2 = P[16][16]*magE - P[16][17]*magN;
+    const ftype HK3 = P[16][17]*magE - P[17][17]*magN;
+    const ftype HK4_denom = (sq(HK0)*R_DECL + HK2*magE - HK3*magN);
+    ftype HK4;
+    if (fabsF(HK4_denom) > 1e-6f) {
+        HK4 = HK0/HK4_denom;
     } else {
         return;
     }
-    const ftype HK4 = HK0*t13;
 
     // Calculate the observation Jacobian
     // Note only 2 terms are non-zero which can be used in matrix operations for calculation of Kalman gains and covariance update to significantly reduce cost
