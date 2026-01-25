@@ -271,7 +271,7 @@ private:
 
     private:
         bool init_buffers(const uint32_t size_rx, const uint32_t size_tx);
-        void thread_create(AP_HAL::MemberProc);
+        void thread_create(AP_HAL::MemberProc, const uint32_t stack_size = AP_NETWORKING_PORT_STACK_SIZE);
 
         uint32_t txspace() override;
         void _begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
@@ -281,6 +281,40 @@ private:
         void _end() override {}
         void _flush() override {}
         bool _discard_input() override;
+
+	    class UDP_Server_Multi_Client {
+	    public:
+            /* Do not allow copies */
+            CLASS_NO_COPY(UDP_Server_Multi_Client);
+
+            UDP_Server_Multi_Client(SocketAPM* port_sock, const uint16_t index) :
+	        state_idx(index),
+	        sock(port_sock) {}
+		
+	        ssize_t send_to_all_clients(const uint8_t* buf, const uint32_t len);
+	        void on_recv();
+	        bool update();
+
+	    private:
+	        struct {
+	            uint32_t last_rx_ms;
+	            uint16_t port;
+	            uint32_t ip;
+	            void connect(const uint32_t new_ip, const uint16_t new_port) {
+	                ip = new_ip;
+	                port = new_port;
+	                last_rx_ms = AP_HAL::millis();
+	            }
+	            bool connected() const { return last_rx_ms != 0; }
+	            void disconnect() { last_rx_ms = 0; }
+	        } clients[AP_NETWORKING_UDP_SERVER_MULTI_CLIENT_MAX];
+		
+	        uint8_t state_idx;
+	        SocketAPM *sock;
+	        uint32_t last_update_ms;
+	        uint16_t client_count; // saves cpu cycles to cache this
+	    };
+	    UDP_Server_Multi_Client* udp_server_multi_client;
 
         enum flow_control get_flow_control(void) override;
 
