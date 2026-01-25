@@ -412,6 +412,9 @@ private:
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
     // calculate the Location that the gimbal is pointing at
     void calculate_poi();
+    bool calculate_poi_at_home_alt(Location &target_location);
+    // flag to check if terrain is available for POI
+    bool _terrain_available;
 #endif
 
     bool _yaw_lock;                 // yaw_lock used in RC_TARGETING mode. True if the gimbal's yaw target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
