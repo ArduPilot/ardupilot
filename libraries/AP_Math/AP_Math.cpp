@@ -328,6 +328,8 @@ template unsigned short constrain_value<unsigned short>(const unsigned short amt
 template float constrain_value<float>(const float amt, const float low, const float high);
 template double constrain_value<double>(const double amt, const double low, const double high);
 
+template int8_t constrain_value<int8_t>(const int8_t amt, const int8_t low, const int8_t high);
+template uint8_t constrain_value<uint8_t>(const uint8_t amt, const uint8_t low, const uint8_t high);
 
 /*
   simple 16 bit random number generator

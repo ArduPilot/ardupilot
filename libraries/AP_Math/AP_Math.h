@@ -176,6 +176,16 @@ T constrain_value_line(const T amt, const T low, const T high, uint32_t line);
 #define constrain_float(amt, low, high) constrain_value_line(float(amt), float(low), float(high), uint32_t(__AP_LINE__))
 #define constrain_ftype(amt, low, high) constrain_value_line(ftype(amt), ftype(low), ftype(high), uint32_t(__AP_LINE__))
 
+inline int8_t constrain_int8(const int8_t amt, const int8_t low, const int8_t high)
+{
+    return constrain_value(amt, low, high);
+}
+
+inline uint8_t constrain_uint8(const uint8_t amt, const uint8_t low, const uint8_t high)
+{
+    return constrain_value(amt, low, high);
+}
+
 inline int16_t constrain_int16(const int16_t amt, const int16_t low, const int16_t high)
 {
     return constrain_value(amt, low, high);
