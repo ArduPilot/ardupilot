@@ -65,8 +65,8 @@ void AP_Mount_Backend::update()
              send_warning_to_GCS("not targeting, no location");
          }
     }
- 
 }
+
 
 // return true if this mount accepts roll targets
 bool AP_Mount_Backend::has_roll_control() const
@@ -248,6 +248,7 @@ void AP_Mount_Backend::set_poi_lock()
     saved_mount_mode = get_mode(); //save current mount mode for the suspend_poi_lock
     if (!roi_is_set()) {
         mnt_target.poi_start_ms = AP_HAL::millis();
+        mnt_target.pointing_at_poi_at_home_alt = false;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "POI: tracking r=%.1f p=%.1f y=%.1f", degrees(mnt_target.angle_rad.roll), degrees(mnt_target.angle_rad.pitch), degrees(mnt_target.angle_rad.yaw));
     } else {  // there is a poi target, just turn POI tracking back on
         set_mode(MAV_MOUNT_MODE_GPS_POINT);
@@ -278,19 +279,42 @@ void AP_Mount_Backend::update_poi_lock_target()
     if (mnt_target.poi_start_ms == 0) {
         return;
     }
+
+    Location target_location;
+
+    if (!mnt_target.pointing_at_poi_at_home_alt) {
+        calculate_poi_at_home_alt(target_location);
+        set_roi_target(target_location);
+        mnt_target.pointing_at_poi_at_home_alt = true;
+    }
+
     // POI calculation is running and but will silently give up after 3 seconds normally if it does not succeed
     // try to resolve a AuxFunc POI command to a lat/lng/alt using get_poi
     // set up variables for get_poi call
     Quaternion quat;
     Location vehicle_location;
-    Location target_location;
-    // if poi available, use it and start tracking, otherwise give warning, stop poi retrieval attempts
+    // clear the terrain_available flag
+    bool terrain_available = false;
+#if AP_TERRAIN_AVAILABLE
+    AP_Terrain *terrain = AP::terrain();
+    if (terrain->enabled()) {
+        terrain_available = true;
+   }
+#endif // AP_TERRAIN_AVAILABLE
+    // if terrain is not compiled in or not enabled then use home alt intersecting POI
+
+    if (!terrain_available) {
+        mnt_target.poi_start_ms = 0;
+        return;
+    }
+    // otherwise,if terrain intersecting poi available, use it and start tracking
+    // otherwise stop calcuation in thread, and attempt to get POI at home alt
+    // if that fails, give warning
     if (get_poi(_instance, quat, vehicle_location, target_location)) {
         set_roi_target(target_location);
         mnt_target.poi_start_ms = 0;
     } else if (AP_HAL::millis() - mnt_target.poi_start_ms > 5000) {
-        // timeout
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "POI: Failed to find poi");
+    //stop terrain-based POI calculation
         mnt_target.poi_start_ms = 0;
     }
 }
@@ -733,6 +757,103 @@ void AP_Mount_Backend::calculate_poi()
             poi_calculation.poi_update_ms = AP_HAL::millis();
         }
     }
+}
+
+
+// calculate location gimbal is pointing, at HOME altitude. Used if Terrain is not avaialble
+bool AP_Mount_Backend::calculate_poi_at_home_alt(Location &target_location)
+{
+    AP_AHRS &ahrs = AP::ahrs();
+
+    // current location
+    Location cur_loc;
+    if (!ahrs.get_location(cur_loc)) {
+        return false;
+    }
+
+    // home location/alt
+    const Location &home = ahrs.get_home();
+    const float cur_alt_m  = cur_loc.alt * 0.01f;   // cm -> m
+    const float home_alt_m = home.alt    * 0.01f;   // cm -> m
+
+    // Plane at HOME altitude in local NED (origin at vehicle):
+    // down_of_home_plane = cur_alt - home_alt  (NED down positive)
+    // Above home => target_down_m > 0 (home plane is below us)
+    // Below home => target_down_m < 0 (home plane is above us)
+    const float target_down_m = (cur_alt_m - home_alt_m);
+
+    // mount attitude quaternion
+    Quaternion quat;
+    if (!get_attitude_quaternion(quat)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "POI: Failure to mount angles");
+        return false;
+    }
+
+    // Extract mount euler from quat (AP convention: quat yaw is body-frame; add vehicle yaw for earth-frame yaw)
+    float m_roll_rad;
+    float m_pitch_rad;
+    float m_yaw_body_rad;
+    quat.to_euler(m_roll_rad, m_pitch_rad, m_yaw_body_rad);
+
+    const float body_yaw_earth_rad = ahrs.get_yaw_rad();
+    const float m_yaw_earth_rad = wrap_PI(m_yaw_body_rad + body_yaw_earth_rad);
+
+    // LOS in earth NED directly from yaw_earth + pitch (avoids quaternion frame ambiguity)
+    // NED: x=north, y=east, z=down
+    Vector3f los_ned;
+    const float cp = cosf(m_pitch_rad);
+    const float sp = sinf(m_pitch_rad);
+
+    los_ned.x = cp * cosf(m_yaw_earth_rad);
+    los_ned.y = cp * sinf(m_yaw_earth_rad);
+    los_ned.z = -sp;   // negative pitch (down) => positive z (down)
+
+     //just a safety check, should NEVER occur
+     if (los_ned.length() < 1.0e-6f) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "POI: return on bad los");
+        return false;
+    }
+    los_ned.normalize();
+
+    // Policy : if below home alt, you can be looking up, but not if above home alt
+    // Require LOS to be at least MIN_DOWN_DEG below the horizon if above home alt.
+    // This eliminates looking-up and near-parallel cases without needing a separate los.z ~= 0 check.
+    const float MIN_DOWN_DEG = 1.0f; // tune
+    const float min_los_z = sinf(radians(MIN_DOWN_DEG)); // ~= 0.01745
+    if (los_ned.z < min_los_z && target_down_m > 0.0f) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                      "POI: Mount pitch too elevated (los.z=%.4f need >= %.4f; pitch=%.2f deg)",
+                      los_ned.z, min_los_z, degrees(m_pitch_rad));
+        return false;
+    }
+
+    // Use real intersection if above home; mirror if below home:
+    // Mirror rule: if we are below home by |target_down|, pretend we are above home by the same amount
+    // for the purpose of selecting a forward point in the home-alt plane.
+    const bool used_mirror = (target_down_m < 0.0f);
+    const float effective_down_m = used_mirror ? -target_down_m : target_down_m;
+    
+    // guaranteed positive with min_los_z check
+    const float t_m = effective_down_m / los_ned.z;
+
+    const float north_m = los_ned.x * t_m;
+    const float east_m  = los_ned.y * t_m;
+
+    // Horizontal distance from current location (meters)
+    const float horiz_dist_m = sqrtf(north_m * north_m + east_m * east_m);
+
+    // Reject targets beyond 5 km (also naturally rejects near-horizon geometry that slips through)
+    if (horiz_dist_m > 5000.0f) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                      "POI: distance > 5km: %.1f m", horiz_dist_m);
+        return false;
+    }
+
+    // Build target location at intersection point of home alt plane
+    target_location = cur_loc;
+    target_location.offset(north_m, east_m);
+    target_location.alt = home.alt;
+    return true;
 }
 #endif
 
