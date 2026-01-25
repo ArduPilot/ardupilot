@@ -35,7 +35,7 @@ from vehicle_test_suite import WaitModeTimeout
 from pymavlink.rotmat import Vector3, Matrix3
 
 # get location of scripts
-testdir = os.path.dirname(os.path.realpath(__file__))
+testdir = os.path.dirname(os.path.  realpath(__file__))
 SITL_START_LOCATION = mavutil.location(
     -35.362938,
     149.165085,
@@ -13614,6 +13614,42 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.wait_ready_to_arm()
 
+    def HomeCircleInclusionFence(self, target_system=1, target_component=1):
+        """
+        Tests Home Circle fence using MAV_CMD_NAV_FENCE_HOME_CIRCLE_INCLUSION.
+
+        Create a home circled fence, attempt to drive outside it, detect return to home.
+        Then, clear the fence and achieve the target location.
+
+        ./Tools/autotest/autotest.py test.CopterTests2b.HomeCircleInclusionFence  --map --speedup 1
+        """
+        self.load_fence_using_mavwp("single_home_circle.txt")
+        self.load_mission("simple_mission.txt")
+        # self.customise_SITL_commandline(["--home", "CMAC"])
+
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            # "WP_RADIUS": 5,
+            "FENCE_ACTION": 1, # RTL or Hold
+            "AUTO_OPTIONS": 3, # Allow arming in auto and takeoff without throttle
+        })
+
+        self.reboot_sitl()
+        # self.change_mode('AUTO')
+        # self.wait_ready_to_arm()
+        # self.takeoff(mode='GUIDED')
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        # self.arm_vehicle()
+        # First waypoint, far enough from home.
+        target_loc = mavutil.location(-35.363172, 149.164955, 1584, 0)
+        # target_loc is copied from the mission file
+        self.wait_location(target_loc, timeout=300)
+        # With fence enabled, expect RTL to trigger and the vehicle to go home
+        self.wait_distance_to_home(3, 7, timeout=300)
+        self.disarm_vehicle()
+
     def MAV_CMD_SET_EKF_SOURCE_SET(self):
         '''test setting of source sets using mavlink command'''
         self._MAV_CMD_SET_EKF_SOURCE_SET(self.run_cmd)
@@ -15686,6 +15722,7 @@ return update, 1000
             self.MAV_CMD_DO_LAND_START,
             self.MAV_CMD_DO_SET_GLOBAL_ORIGIN,
             self.MAV_CMD_SET_EKF_SOURCE_SET,
+            self.HomeCircleInclusionFence,
             self.MAV_CMD_NAV_TAKEOFF,
             self.MAV_CMD_NAV_TAKEOFF_command_int,
             self.Ch6TuningWPSpeed,
