@@ -418,7 +418,7 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
         child_frame_id: MAV_FRAME_BODY_FRD,
         reset_counter: 0,
         estimator_type: MAV_ESTIMATOR_TYPE_VIO,
-        quality: (int8_t)constrain_int16(_sitl->vicon.quality.get(), -1, 100),
+        quality: constrain_int8(_sitl->vicon.quality.get(), -1, 100),
         };
         memcpy(odometry.pose_covariance, pose_cov, sizeof(pose_cov));
         memcpy(odometry.velocity_covariance, vel_cov, sizeof(vel_cov));
