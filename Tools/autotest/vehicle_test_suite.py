@@ -7255,12 +7255,19 @@ class TestSuite(abc.ABC):
             if m.heading == int(heading):
                 return
 
-    def assert_heading(self, heading, accuracy=1):
+    def assert_heading(self, expected_heading, accuracy=1, heading_source='GLOBAL_POSITION_INT'):
         '''assert vehicle yaw is to heading (0-360)'''
-        m = self.assert_receive_message('VFR_HUD')
-        if self.heading_delta(heading, m.heading) > accuracy:
+        if heading_source == 'GLOBAL_POSITION_INT':
+            m = self.assert_receive_message('GLOBAL_POSITION_INT')
+            heading = m.hdg * 0.01  # in degrees
+        elif heading_source == 'VFR_HUD':
+            m = self.assert_receive_message('VFR_HUD')
+            heading = m.heading  # in integer degrees
+        else:
+            raise ValueError(f"Unknown heading source {heading_source}")
+        if self.heading_delta(expected_heading, heading) > accuracy:
             raise NotAchievedException("Unexpected heading=%f want=%f" %
-                                       (m.heading, heading))
+                                       (heading, expected_heading))
 
     def do_set_relay(self, relay_num, on_off, timeout=10):
         """Set relay with a command long message."""
