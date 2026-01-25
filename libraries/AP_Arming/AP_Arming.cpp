@@ -110,6 +110,10 @@
 # define PREARM_DISPLAY_PERIOD 30
 #endif
 
+#ifndef AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS
+  #define AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS 10000
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_Arming::var_info[] = {
@@ -470,8 +474,8 @@ bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
     }
 
     // if accels can in theory be inconsistent,
-    // must pass for at least 10 seconds before we're considered consistent:
-    if (ins.get_accel_count() > 1 && now - last_accel_pass_ms < 10000) {
+    // must pass for at least AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS ms before we're considered consistent:
+    if (ins.get_accel_count() > 1 && now - last_accel_pass_ms < AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS) {
         return false;
     }
 
@@ -495,8 +499,8 @@ bool AP_Arming::ins_gyros_consistent(const AP_InertialSensor &ins)
     }
 
     // if gyros can in theory be inconsistent,
-    // must pass for at least 10 seconds before we're considered consistent:
-    if (ins.get_gyro_count() > 1 && now - last_gyro_pass_ms < 10000) {
+    // must pass for at least AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS ms before we're considered consistent:
+    if (ins.get_gyro_count() > 1 && now - last_gyro_pass_ms <  AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS) {
         return false;
     }
 
@@ -546,15 +550,19 @@ bool AP_Arming::ins_checks(bool report)
         }
 #endif
 
-        if (run_imu_consistency_check) {
+        if (run_imu_consistency_check && AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS > 0) {
             // check all accelerometers point in roughly same direction
-            if (!ins_accels_consistent(ins)) {
+            const bool accels_consistent = ins_accels_consistent(ins);
+
+            // check all gyros are giving consistent readings
+            const bool gyros_consistent = ins_gyros_consistent(ins);
+
+            if (!accels_consistent) {
                 check_failed(Check::INS, report, "Accels inconsistent");
                 return false;
             }
 
-            // check all gyros are giving consistent readings
-            if (!ins_gyros_consistent(ins)) {
+            if (!gyros_consistent) {
                 check_failed(Check::INS, report, "Gyros inconsistent");
                 return false;
             }
