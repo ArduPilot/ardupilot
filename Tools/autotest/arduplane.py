@@ -3161,7 +3161,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "SERIAL4_PROTOCOL": 36,
             "SERIAL4_BAUD": 230400,
             "GPS1_TYPE": 1, # Auto
-            "GPS2_TYPE": 21, # EARHS
+            "GPS2_TYPE": 21, # EAHRS
             "AHRS_EKF_TYPE": 11,
             "INS_GYR_CAL": 1,
             "EAHRS_SENSORS": 13, # GPS is enabled
