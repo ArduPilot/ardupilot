@@ -875,7 +875,7 @@ void AP_Torqeedo_TQBus::send_motor_speed_cmd()
     } else {
         // convert throttle output to motor output in range -1000 to +1000
         // ToDo: convert PWM output to motor output so that SERVOx_MIN, MAX and TRIM take effect
-        _motor_speed_desired = constrain_int16(SRV_Channels::get_output_norm((SRV_Channel::Function)_params.servo_fn.get()) * 1000.0, -1000, 1000);
+        _motor_speed_desired = int16_t(constrain_float(SRV_Channels::get_output_norm((SRV_Channel::Function)_params.servo_fn.get()) * 1000.0, -1000, 1000));
     }
 
     // updated limited motor speed
