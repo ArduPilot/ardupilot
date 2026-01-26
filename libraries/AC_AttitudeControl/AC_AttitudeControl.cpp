@@ -17,6 +17,9 @@ extern const AP_HAL::HAL& hal;
  #define AC_ATTITUDE_CONTROL_AFTER_RATE_CONTROL 1
 #endif
 
+// lean angle max (in degrees) for all vehicles
+#define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MAX 80.0        // lean angle max in degrees
+
 // default angle max for all vehicles
 #ifndef AC_ATTITUDE_CONTROL_ANGLE_MAX_DEFAULT
  # define AC_ATTITUDE_CONTROL_ANGLE_MAX_DEFAULT 30.0f   // default max lean angle in degrees
@@ -1332,6 +1335,18 @@ float AC_AttitudeControl::get_althold_lean_angle_max_cd() const
 float AC_AttitudeControl::get_althold_lean_angle_max_rad() const
 {
     return MAX(_althold_lean_angle_max_rad, radians(AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN));
+}
+
+// Return configured tilt angle limit in centidegrees
+float AC_AttitudeControl::lean_angle_max_cd() const
+{
+    return constrain_float(_angle_max_deg.get(), AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN, AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MAX) * 100;
+}
+
+// Return configured tilt angle limit in radians
+float AC_AttitudeControl::lean_angle_max_rad() const
+{
+    return radians(constrain_float(_angle_max_deg.get(), AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN, AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MAX));
 }
 
 // Return roll rate step size in centidegrees/s that results in maximum output after 4 time steps
