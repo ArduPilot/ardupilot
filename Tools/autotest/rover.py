@@ -5060,6 +5060,33 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.do_RTL(timeout=300)
         self.disarm_vehicle()
 
+    def HomeCircleInclusionFence(self, target_system=1, target_component=1):
+        """
+        Tests Home Circle fence using MAV_CMD_NAV_FENCE_HOME_CIRCLE_INCLUSION.
+
+        Create a home circled fence, attempt to drive outside it, detect return to home.
+        Then, clear the fence and achieve the target location.
+        """
+        self.load_fence_using_mavwp("single_home_circle.txt")
+        self.load_mission("simple_mission.txt")
+
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "WP_RADIUS": 5,
+            "FENCE_ACTION": 1, # RTL or Hold
+        })
+        self.reboot_sitl()
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        # First waypoint, far enough from home.
+        target_loc = mavutil.location(-35.363172, 149.164955, 1584, 0)
+        # target_loc is copied from the mission file
+        self.wait_location(target_loc, timeout=300)
+        # With fence enabled, expect RTL to trigger and the vehicle to go home
+        self.wait_distance_to_home(3, 7, timeout=300)
+        self.disarm_vehicle()
+
     def PolyFenceObjectAvoidanceBendyRulerEasierGuided(self, target_system=1, target_component=1):
         '''finish-line issue means we can't complete the harder one.  This
         test can go away once we've nailed that one.  The only
@@ -6801,7 +6828,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.reboot_sitl()
         self.wait_ready_to_arm()
 
-        self.progress("Ensure we can't arm when we are in breacnh of a polyfence")
+        self.progress("Ensure we can't arm when we are in breach of a polyfence")
         self.clear_fence()
 
         self.progress("Now create a fence we are in breach of")
@@ -7318,6 +7345,14 @@ return update()
             self.PolyFenceObjectAvoidanceAuto,
             self.PolyFenceObjectAvoidanceGuided,
             self.PolyFenceObjectAvoidanceBendyRuler,
+            self.HomeCircleInclusionFence,
+            # TODO test auto mission with wp outside fence is rejected or auto can't be entered
+            # TODO test mission with fence cleared on the way?
+            # TODO test auto missoin where fence added midway.
+            # TODO test how moving home affects existing home centered fence (preserve existing behavior)
+            #      should move home be rejected if it would cause a breach?
+            # TODO test with home inclusion set multiple times, consider which, if any, should be rejected.
+            # TODO test deleting home fence.
             self.SendToComponents,
             self.PolyFenceObjectAvoidanceBendyRulerEasierGuided,
             self.PolyFenceObjectAvoidanceBendyRulerEasierAuto,
