@@ -72,7 +72,7 @@ void Sailboat::calc_lift_and_drag(float wind_speed, float angle_of_attack_deg, f
         lift = lift_curve[index_max];
         drag = drag_curve[index_max];
     } else {
-        uint8_t index = constrain_int16(aoa / index_width_deg, 0, index_max);
+        uint8_t index = uint8_t(constrain_float(aoa / index_width_deg, 0, index_max));
         float remainder = aoa - (index * index_width_deg);
         lift = linear_interpolate(lift_curve[index], lift_curve[index+1], remainder, 0.0f, index_width_deg);
         drag = linear_interpolate(drag_curve[index], drag_curve[index+1], remainder, 0.0f, index_width_deg);
