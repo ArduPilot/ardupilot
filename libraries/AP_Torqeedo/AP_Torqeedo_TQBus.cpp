@@ -875,7 +875,7 @@ void AP_Torqeedo_TQBus::send_motor_speed_cmd()
     } else {
         // convert throttle output to motor output in range -1000 to +1000
         // ToDo: convert PWM output to motor output so that SERVOx_MIN, MAX and TRIM take effect
-        _motor_speed_desired = constrain_int16(SRV_Channels::get_output_norm((SRV_Channel::Function)_params.servo_fn.get()) * 1000.0, -1000, 1000);
+        _motor_speed_desired = int16_t(constrain_float(SRV_Channels::get_output_norm((SRV_Channel::Function)_params.servo_fn.get()) * 1000.0, -1000, 1000));
     }
 
     // updated limited motor speed
@@ -886,7 +886,7 @@ void AP_Torqeedo_TQBus::send_motor_speed_cmd()
 
     // update message if using motor connection
     if (get_type() == AP_Torqeedo::ConnectionType::TYPE_MOTOR) {
-        const uint8_t motor_power = (uint8_t)constrain_int16(_params.motor_power, 0, 100);
+        const uint8_t motor_power = (uint8_t)constrain_uint16(_params.motor_power, 0, 100);
         mot_speed_cmd_buff[0] = (uint8_t)MsgAddress::MOTOR;
         mot_speed_cmd_buff[1] = (uint8_t)MotorMsgId::DRIVE;
         mot_speed_cmd_buff[2] = (mot_speed_limited == 0 ? 0 : 0x01) | (_motor_clear_error ? 0x04 : 0);  // 1:enable motor, 2:fast off, 4:clear error

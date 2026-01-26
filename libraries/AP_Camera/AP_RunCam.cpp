@@ -136,7 +136,7 @@ AP_RunCam::AP_RunCam(AP_Camera &frontend, AP_Camera_Params &params, uint8_t inst
     if (_singleton == nullptr) {
         _singleton = this;
     }
-    _cam_type.set(constrain_int16(_cam_type, 0, RUNCAM_MAX_DEVICE_TYPES));
+    _cam_type.set(constrain_int16(int16_t(_cam_type), int16_t(0), int16_t(RUNCAM_MAX_DEVICE_TYPES)));
     _video_recording = VideoOption(_cam_control_option & uint8_t(ControlOption::VIDEO_RECORDING_AT_BOOT));
 }
 

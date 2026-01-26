@@ -517,7 +517,7 @@ Vector3<T> Vector3<T>::point_on_line_closest_to_other_point(const Vector3<T> &w1
     const Vector3<T> scaled_p_vec = p_vec * scale;
 
     T dot_product = unit_vec * scaled_p_vec;
-    dot_product = constrain_ftype(dot_product,0.0f,1.0f);
+    dot_product = constrain_value(dot_product, T(0.0), T(1.0));
  
     const Vector3<T> closest_point = line_vec * dot_product;
     return (closest_point + w1);

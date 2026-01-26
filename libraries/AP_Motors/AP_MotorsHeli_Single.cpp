@@ -644,7 +644,7 @@ void AP_MotorsHeli_Single::heli_motors_param_conversions(void)
             uint16_t pwm_max = c->get_output_max();
             uint16_t pwm_trim = c->get_trim();
 
-            float trim = (float)(pwm_trim - pwm_min) / constrain_uint16(pwm_max - pwm_min, 1, 2000);
+            float trim = (float)(pwm_trim - pwm_min) / constrain_uint16(uint16_t(pwm_max - pwm_min), 1, 2000);
             _yaw_trim.set(trim);
         }
         // Motor 4 may not have been assigned to an output yet in which case this is unlikely to be a conversion from old setup.

@@ -83,9 +83,9 @@ void Motor::calculate_forces(const struct sitl_input &input,
     if (roll_servo >= 0) {
         uint16_t servoval = update_servo(input.servos[roll_servo+motor_offset], now, last_roll_value);
         if (roll_min < roll_max) {
-            roll = constrain_float(roll_min + (servoval-1000)*0.001*(roll_max-roll_min), roll_min, roll_max);
+            roll = constrain_float(roll_min + (servoval-1000)*0.001f*(roll_max-roll_min), roll_min, roll_max);
         } else {
-            roll = constrain_float(roll_max + (2000-servoval)*0.001*(roll_min-roll_max), roll_max, roll_min);
+            roll = constrain_float(roll_max + (2000-servoval)*0.001d*(roll_min-roll_max), roll_max, roll_min);
         }
     }
     if (pitch_servo >= 0) {

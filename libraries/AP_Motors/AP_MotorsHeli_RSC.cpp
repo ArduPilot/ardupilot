@@ -499,7 +499,7 @@ uint32_t AP_MotorsHeli_RSC::get_output_mask() const
 float AP_MotorsHeli_RSC::calculate_throttlecurve(float collective_in)
 {
     const float inpt = collective_in * 4.0f + 1.0f;
-    uint8_t idx = constrain_int16(int8_t(collective_in * 4), 0, 3);
+    uint8_t idx = constrain_int16(int16_t(collective_in * 4), 0, 3);
     const float a = inpt - (idx + 1.0f);
     const float b = (idx + 1.0f) - inpt + 1.0f;
     float throttle = _thrcrv_poly[idx][0] * a + _thrcrv_poly[idx][1] * b + _thrcrv_poly[idx][2] * (powf(a,3.0f) - a) / 6.0f + _thrcrv_poly[idx][3] * (powf(b,3.0f) - b) / 6.0f;

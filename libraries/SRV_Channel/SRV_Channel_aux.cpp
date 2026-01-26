@@ -903,7 +903,7 @@ void SRV_Channels::constrain_pwm(SRV_Channel::Function function)
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         SRV_Channel &c = channels[i];
         if (c.function == function) {
-            c.set_output_pwm(constrain_int16(c.output_pwm, c.servo_min, c.servo_max));
+            c.set_output_pwm(constrain_uint16(c.output_pwm, c.servo_min, c.servo_max));
         }
     }
 }

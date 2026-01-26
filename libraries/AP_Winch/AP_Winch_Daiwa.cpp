@@ -101,7 +101,7 @@ void AP_Winch_Daiwa::write_log()
             config.rate_desired,
             latest.tension_corrected,
             latest.voltage,
-            constrain_int16(latest.motor_temp, INT8_MIN, INT8_MAX));
+            constrain_float(latest.motor_temp, INT8_MIN, INT8_MAX));
 }
 #endif
 
@@ -130,7 +130,7 @@ void AP_Winch_Daiwa::read_data_from_winch()
             // comma or carriage return signals end of current value
             // parse number received and empty buffer
             buff[buff_len] = '\0';
-            long int value = (int32_t)strtol(buff, nullptr, 16);
+            const int32_t value = (int32_t)strtol(buff, nullptr, 16);
             buff_len = 0;
             switch (parse_state) {
             case ParseState::WAITING_FOR_TIME:

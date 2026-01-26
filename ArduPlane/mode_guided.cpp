@@ -67,7 +67,7 @@ void ModeGuided::update()
         // Check for output saturation
         plane.guided_state.target_heading_limit = fabsf(desired) >= bank_limit;
 
-        plane.nav_roll_cd = constrain_int32(desired, -bank_limit, bank_limit);
+        plane.nav_roll_cd = constrain_float(desired, -bank_limit, bank_limit);
         plane.update_load_factor();
 
 #endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
@@ -153,8 +153,8 @@ bool ModeGuided::handle_change_airspeed(const float airspeed, const float accele
 
 void ModeGuided::set_radius_and_direction(const float radius, const bool direction_is_ccw)
 {
-    // constrain to (uint16_t) range for update_loiter()
-    active_radius_m = constrain_int32(fabsf(radius), 0, UINT16_MAX);
+    // constrain to range for update_loiter()
+    active_radius_m = constrain_float(fabsf(radius), 0, 65535);
     plane.loiter.direction = direction_is_ccw ? -1 : 1;
 }
 

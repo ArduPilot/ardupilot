@@ -219,7 +219,7 @@ uint16_t DSP::calc_frequency(FFTWindowState* fft, uint16_t start_bin, uint16_t p
         return start_bin * fft->_bin_resolution;
     }
 
-    peak_bin = constrain_int16(peak_bin, start_bin, end_bin);
+    peak_bin = constrain_uint16(peak_bin, start_bin, end_bin);
 
     // It turns out that Jain is pretty good and works with only magnitudes, but Candan is significantly better
     // if you have access to the complex values and Quinn is a little better still. Quinn is computationally
@@ -402,7 +402,7 @@ uint16_t DSP::find_peaks(const float* input, uint16_t length, float* d, uint16_t
             if ((d[j] - d[j + 1]) > slopeThreshold) {
                 for (uint16_t k = 0; k < peakgroup; k++) {
                     uint16_t groupIndex = j + k - n + 2;
-                    groupIndex = constrain_int16(groupIndex, 0, length - 1);
+                    groupIndex = constrain_uint16(groupIndex, 0, length - 1);
                     xx[k] = groupIndex;
                     yy[k] = input[groupIndex];
                 }

@@ -764,7 +764,7 @@ bool AP_Mount_Siyi::send_zoom_mult(float zoom_mult)
 {
     // separate zoom_mult into integral and fractional parts
     float intpart;
-    uint8_t fracpart = (uint8_t)constrain_int16(modf(zoom_mult, &intpart) * 10, 0, UINT8_MAX);
+    uint8_t fracpart = (uint8_t)constrain_float(modf(zoom_mult, &intpart) * 10, 0, UINT8_MAX);
 
     // create and send 2 byte array
     const uint8_t zoom_mult_data[] {(uint8_t)(intpart), fracpart};

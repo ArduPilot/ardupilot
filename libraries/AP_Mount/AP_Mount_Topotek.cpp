@@ -744,7 +744,7 @@ void AP_Mount_Topotek::send_target_angles(const MountAngleTarget& angle_rad)
     // sample command #tpUG6wGIY
     const char* format_str = "%04X%02X";
     const uint8_t speed = 99;
-    const uint16_t yaw_angle_cd = (uint16_t)constrain_int16(degrees(angle_rad.get_bf_yaw()) * 100, MAX(-18000, _params.yaw_angle_min * 100), MIN(18000, _params.yaw_angle_max * 100));
+    const uint16_t yaw_angle_cd = (uint16_t)constrain_float(degrees(angle_rad.get_bf_yaw()) * 100, MAX(-18000, _params.yaw_angle_min * 100), MIN(18000, _params.yaw_angle_max * 100));
 
     uint8_t databuff[7];
     hal.util->snprintf((char *)databuff, ARRAY_SIZE(databuff), format_str, yaw_angle_cd, speed);
@@ -756,7 +756,7 @@ void AP_Mount_Topotek::send_target_angles(const MountAngleTarget& angle_rad)
 
     // send pitch target
     // sample command: #tpUG6wGIP
-    const uint16_t pitch_angle_cd = (uint16_t)constrain_int16(-degrees(angle_rad.pitch) * 100, -9000, 9000);
+    const uint16_t pitch_angle_cd = (uint16_t)constrain_float(-degrees(angle_rad.pitch) * 100, -9000, 9000);
     hal.util->snprintf((char *)databuff, ARRAY_SIZE(databuff), format_str, pitch_angle_cd, speed);
     send_variablelen_packet(HeaderType::VARIABLE_LEN,
                             AddressByte::GIMBAL,
@@ -766,7 +766,7 @@ void AP_Mount_Topotek::send_target_angles(const MountAngleTarget& angle_rad)
 
     // send roll target
     // sample command: #tpUG6wGIR
-    const uint16_t roll_angle_cd = (uint16_t)constrain_int16(degrees(angle_rad.roll) * 100, -18000, 18000);
+    const uint16_t roll_angle_cd = (uint16_t)constrain_float(degrees(angle_rad.roll) * 100, -18000, 18000);
     hal.util->snprintf((char *)databuff, ARRAY_SIZE(databuff), format_str, roll_angle_cd, speed);
     send_variablelen_packet(HeaderType::VARIABLE_LEN,
                             AddressByte::GIMBAL,
@@ -784,9 +784,9 @@ void AP_Mount_Topotek::send_target_rates(const MountRateTarget& rate_rads)
     }
 
     // convert and constrain rates
-    const uint8_t roll_angle_speed = constrain_int16(degrees(rate_rads.roll) * ANGULAR_VELOCITY_CONVERSION, -99, 99);
-    const uint8_t pitch_angle_speed = constrain_int16(-degrees(rate_rads.pitch) * ANGULAR_VELOCITY_CONVERSION, -99, 99);
-    const uint8_t yaw_angle_speed = constrain_int16(degrees(rate_rads.yaw) * ANGULAR_VELOCITY_CONVERSION, -99, 99);
+    const uint8_t roll_angle_speed = uint8_t(constrain_float(degrees(rate_rads.roll) * ANGULAR_VELOCITY_CONVERSION, -99, 99));
+    const uint8_t pitch_angle_speed = uint8_t(constrain_float(-degrees(rate_rads.pitch) * ANGULAR_VELOCITY_CONVERSION, -99, 99));
+    const uint8_t yaw_angle_speed = uint8_t(constrain_float(degrees(rate_rads.yaw) * ANGULAR_VELOCITY_CONVERSION, -99, 99));
 
     // send stop rotation command three times if target roll, pitch and yaw are zero
     if (roll_angle_speed == 0 && pitch_angle_speed == 0 && yaw_angle_speed == 0) {

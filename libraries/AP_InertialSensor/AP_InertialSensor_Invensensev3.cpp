@@ -429,7 +429,7 @@ void AP_InertialSensor_Invensensev3::set_primary(bool _is_primary)
         } else {
             // scale down non-primary to 2x loop rate, but no greater than the default sampling rate
             dev->adjust_periodic_callback(periodic_handle,
-                                          1000000UL / constrain_int16(get_loop_rate_hz() * 2, 400, 1000));
+                                          1000000UL / constrain_uint16(get_loop_rate_hz() * 2, 400, 1000));
         }
     }
 #endif
