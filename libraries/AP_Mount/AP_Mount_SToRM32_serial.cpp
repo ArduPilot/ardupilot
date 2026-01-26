@@ -12,6 +12,7 @@
 void AP_Mount_SToRM32_serial::update()
 {
     AP_Mount_Backend::update();
+    update_mount_open_servo();
 
     // exit immediately if not initialised
     if (!_initialised) {

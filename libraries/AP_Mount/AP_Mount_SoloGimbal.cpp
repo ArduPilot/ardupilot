@@ -30,6 +30,7 @@ void AP_Mount_SoloGimbal::update_fast()
 void AP_Mount_SoloGimbal::update()
 {
     AP_Mount_Backend::update();
+    update_mount_open_servo();
 
     // exit immediately if not initialised
     if (!_initialised) {

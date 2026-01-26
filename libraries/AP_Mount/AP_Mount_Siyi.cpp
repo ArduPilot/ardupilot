@@ -40,6 +40,7 @@ const AP_Mount_Siyi::HWInfo AP_Mount_Siyi::hardware_lookup_table[] {
 void AP_Mount_Siyi::update()
 {
     AP_Mount_Backend::update();
+    update_mount_open_servo();
 
     // exit immediately if not initialised
     if (!_initialised) {

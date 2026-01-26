@@ -15,6 +15,7 @@
 void AP_Mount_CADDX::update()
 {
     AP_Mount_Backend::update();
+    update_mount_open_servo();
 
     // exit immediately if not initialised
     if (!_initialised) {

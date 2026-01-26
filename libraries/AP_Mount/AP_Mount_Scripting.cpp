@@ -19,6 +19,7 @@ extern const AP_HAL::HAL& hal;
 void AP_Mount_Scripting::update()
 {
     AP_Mount_Backend::update();
+    update_mount_open_servo();
 
     update_mnt_target();
 }

@@ -16,6 +16,7 @@ extern const AP_HAL::HAL& hal;
 void AP_Mount_MAVLink::update()
 {
     AP_Mount_Backend::update();
+    update_mount_open_servo();
 
     // exit immediately if not initialised
     if (!_initialised) {

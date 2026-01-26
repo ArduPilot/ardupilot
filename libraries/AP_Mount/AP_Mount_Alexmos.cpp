@@ -74,6 +74,7 @@ void AP_Mount_Alexmos::init()
 void AP_Mount_Alexmos::update()
 {
     AP_Mount_Backend::update();
+    update_mount_open_servo();
 
     if (!_initialised) {
         return;

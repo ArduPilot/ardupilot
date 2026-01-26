@@ -118,6 +118,8 @@ const char* AP_Mount_XFRobot::send_text_prefix = "XFRobot:";
 // update mount position - should be called periodically
 void AP_Mount_XFRobot::update()
 {
+    update_mount_open_servo();
+
     // exit immediately if not initialised
     if (!_initialised) {
         return;

@@ -29,6 +29,7 @@ void AP_Mount_Servo::init()
 void AP_Mount_Servo::update()
 {
     AP_Mount_Backend::update();
+    update_mount_open_servo();
 
     update_mnt_target();
 

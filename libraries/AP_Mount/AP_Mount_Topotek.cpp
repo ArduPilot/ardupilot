@@ -58,6 +58,7 @@ const char* AP_Mount_Topotek::send_message_prefix = "Mount: Topotek";
 void AP_Mount_Topotek::update()
 {
     AP_Mount_Backend::update();
+    update_mount_open_servo();
 
     // exit immediately if not initialised
     if (!_initialised) {

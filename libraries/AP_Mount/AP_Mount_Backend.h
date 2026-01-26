@@ -238,6 +238,9 @@ public:
 
 protected:
 
+    // update mount open/close servo based on mount mode
+    void update_mount_open_servo();
+
     enum class MountTargetType {
         ANGLE     = 0,
         RATE      = 1,

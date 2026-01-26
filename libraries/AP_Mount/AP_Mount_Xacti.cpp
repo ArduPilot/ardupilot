@@ -62,6 +62,8 @@ void AP_Mount_Xacti::init()
 // update mount position - should be called periodically
 void AP_Mount_Xacti::update()
 {
+    update_mount_open_servo();
+
     // exit immediately if not initialised
     if (!_initialised) {
         return;
