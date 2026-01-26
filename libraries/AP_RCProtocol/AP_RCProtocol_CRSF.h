@@ -55,7 +55,7 @@ public:
     AP_RCProtocol_CRSF(AP_RCProtocol &_frontend);
     // Constructor for "direct-attach" modes (called by manager)
     AP_RCProtocol_CRSF(AP_RCProtocol &_frontend, PortMode mode, AP_HAL::UARTDriver* uart);
-    ~AP_RCProtocol_CRSF() override {}
+
     // entry point for bytes from high-level RCIN protocol discriminator
     void process_byte(uint8_t byte, uint32_t baudrate) override;
     void process_handshake(uint32_t baudrate) override;
