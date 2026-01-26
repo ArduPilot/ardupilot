@@ -19,8 +19,10 @@
 #include <AP_HAL/AP_HAL.h>                                      //This is a common Hardware Abstraction Layer.
 #include <AP_GPS/AP_GPS.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Notify/AP_BoardLED.h>
+#include <AP_RTC/AP_RTC.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <SITL/SITL.h>
@@ -45,6 +47,14 @@ GCS_Dummy _gcs;                                                 //gcs stands for
 SITL::SIM sitl;
 AP_Baro baro;
 AP_Scheduler scheduler;
+#endif
+
+#if AP_RTC_ENABLED
+AP_RTC rtc;
+#endif
+
+#if HAL_LOGGING_ENABLED
+AP_Logger logger;
 #endif
 
 // This example uses GPS system. Create it.
