@@ -461,13 +461,16 @@ struct PACKED log_Mode {
 // @Description: RTC (Unix time) information
 // @Field: TimeUS: Time since system startup
 // @Field: Epoch: current unix epoch time*1000000 (ie. microseconds since Jan 1 1970)
+// @Field: SourceType: source of RTC data
+// @FieldValueEnum: SourceType: AP_RTC::source_type
 struct PACKED log_RTC {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint64_t epoch_us;
+    uint8_t  source_type;
 };
 #define LOG_RTC_MESSAGE \
-    { LOG_RTC_MSG, sizeof(log_RTC), "RTC", "QQ", "TimeUS,Epoch", "ss", "FF" },
+    { LOG_RTC_MSG, sizeof(log_RTC), "RTC", "QQB", "TimeUS,Epoch,SourceType", "ss-", "FF-" },
 #else
 #define LOG_RTC_MESSAGE
 #endif  // AP_RTC_LOGGING_ENABLED

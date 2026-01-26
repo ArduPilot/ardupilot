@@ -494,6 +494,7 @@ bool AP_Logger_Backend::Write_RTC()
         LOG_PACKET_HEADER_INIT(LOG_RTC_MSG),
         time_us  : AP_HAL::micros64(),
         epoch_us : time_unix,
+        source_type: uint8_t(AP::rtc().get_source_type()),
     };
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
