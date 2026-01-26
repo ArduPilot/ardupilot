@@ -84,7 +84,6 @@ void HAL_RP::run(int argc, char* const argv[], Callbacks* callbacks) const
      * Scheduler should likely come first. */
     scheduler->init();
     serial(1)->begin(115200);
-    _member->init();
     this->get_nand_pio()->init(NAND_FLASH_IO_BASE, NAND_FLASH_SCLK, NAND_FLASH_CS);
 
     callbacks->setup();
@@ -95,7 +94,7 @@ void HAL_RP::run(int argc, char* const argv[], Callbacks* callbacks) const
     }
 }
 
-NAND_PIO_Driver* HAL_RP::get_nand_pio() {
+NAND_PIO_Driver* HAL_RP::get_nand_pio() const {
     return &nandPioDriver;
 }
 
@@ -107,4 +106,8 @@ const AP_HAL::HAL& AP_HAL::get_HAL() {
 
 AP_HAL::HAL& AP_HAL::get_HAL_mutable() {
     return hal_rp;
+}
+
+void AP_HAL::init()
+{
 }
