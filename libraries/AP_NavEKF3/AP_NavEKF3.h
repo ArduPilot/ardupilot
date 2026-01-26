@@ -418,7 +418,7 @@ private:
     AP_Int8 _gpsGlitchRadiusMax;    // Maximum allowed discrepancy between inertial and GPS Horizontal position before GPS glitch is declared : m
     AP_Float _flowNoise;            // optical flow rate measurement noise
     AP_Int16  _flowInnovGate;       // Percentage number of standard deviations applied to optical flow innovation consistency check
-    AP_Int8  _flowDelay_ms;         // effective average delay of optical flow measurements rel to IMU (msec)
+    AP_Int16  _flowDelay_ms;         // effective average delay of optical flow measurements rel to IMU (msec)
     AP_Int16  _rngInnovGate;        // Percentage number of standard deviations applied to range finder innovation consistency check
     AP_Float _maxFlowRate;          // Maximum flow rate magnitude that will be accepted by the filter
     AP_Float _rngNoise;             // Range finder noise : m
