@@ -1131,19 +1131,20 @@ include AP_Servo_Telem/AP_Servo_Telem_config.h
 singleton AP_Servo_Telem depends AP_SERVO_TELEM_ENABLED
 singleton AP_Servo_Telem rename servo_telem
 singleton AP_Servo_Telem method get_telem boolean uint8_t'skip_check AP_Servo_Telem::TelemetryData'Null
+singleton AP_Servo_Telem method update_telem_data void uint8_t'skip_check AP_Servo_Telem::TelemetryData
 
 userdata AP_Servo_Telem::TelemetryData depends AP_SERVO_TELEM_ENABLED
-userdata AP_Servo_Telem::TelemetryData rename AP_Servo_Telem_Data
-userdata AP_Servo_Telem::TelemetryData field command_position float'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::COMMANDED_POSITION
-userdata AP_Servo_Telem::TelemetryData field measured_position float'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION
-userdata AP_Servo_Telem::TelemetryData field force float'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::FORCE
-userdata AP_Servo_Telem::TelemetryData field speed float'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::SPEED
-userdata AP_Servo_Telem::TelemetryData field voltage float'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::VOLTAGE
-userdata AP_Servo_Telem::TelemetryData field current float'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::CURRENT
-userdata AP_Servo_Telem::TelemetryData field duty_cycle uint8_t'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::DUTY_CYCLE
-userdata AP_Servo_Telem::TelemetryData field motor_temperature_cdeg int16_t'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP
-userdata AP_Servo_Telem::TelemetryData field pcb_temperature_cdeg int16_t'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::PCB_TEMP
-userdata AP_Servo_Telem::TelemetryData field status_flags uint8_t'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::STATUS
+userdata AP_Servo_Telem::TelemetryData rename ServoTelemetryData
+userdata AP_Servo_Telem::TelemetryData field command_position float'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::COMMANDED_POSITION
+userdata AP_Servo_Telem::TelemetryData field measured_position float'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION
+userdata AP_Servo_Telem::TelemetryData field force float'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::FORCE
+userdata AP_Servo_Telem::TelemetryData field speed float'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::SPEED
+userdata AP_Servo_Telem::TelemetryData field voltage float'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::VOLTAGE
+userdata AP_Servo_Telem::TelemetryData field current float'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::CURRENT
+userdata AP_Servo_Telem::TelemetryData field duty_cycle uint8_t'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::DUTY_CYCLE
+userdata AP_Servo_Telem::TelemetryData field motor_temperature_cdeg int16_t'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP
+userdata AP_Servo_Telem::TelemetryData field pcb_temperature_cdeg int16_t'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::PCB_TEMP
+userdata AP_Servo_Telem::TelemetryData field status_flags uint8_t'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::STATUS
 userdata AP_Servo_Telem::TelemetryData field last_update_ms uint32_t'skip_check read
 
 -- simulator only bindings
