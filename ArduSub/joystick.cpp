@@ -119,18 +119,18 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
     channel_pitch->set_override(constrain_int16(s + pitchTrim + rpyCenter,1100,1900), tnow);
     channel_roll->set_override(constrain_int16(t + rollTrim  + rpyCenter,1100,1900), tnow);
 
-    channel_throttle->set_override(constrain_int16((zTot)*throttleScale+throttleBase,1100,1900), tnow);
-    channel_yaw->set_override(constrain_int16(r*rpyScale+rpyCenter,1100,1900), tnow);
+    channel_throttle->set_override(uint16_t(constrain_float((zTot)*throttleScale+throttleBase,1100,1900)), tnow);
+    channel_yaw->set_override(uint16_t(constrain_float(r*rpyScale+rpyCenter,1100,1900)), tnow);
 
     // maneuver mode:
     if (roll_pitch_flag == 0) {
         // adjust forward and lateral with joystick input instead of roll and pitch
-        channel_forward->set_override(constrain_int16((xTot)*rpyScale+rpyCenter,1100,1900), tnow);
-        channel_lateral->set_override(constrain_int16((yTot)*rpyScale+rpyCenter,1100,1900), tnow);
+        channel_forward->set_override(uint16_t(constrain_float((xTot)*rpyScale+rpyCenter,1100,1900)), tnow);
+        channel_lateral->set_override(uint16_t(constrain_float((yTot)*rpyScale+rpyCenter,1100,1900)), tnow);
     } else {
         // neutralize forward and lateral input while we are adjusting roll and pitch
-        channel_forward->set_override(constrain_int16(xTrim*rpyScale+rpyCenter,1100,1900), tnow);
-        channel_lateral->set_override(constrain_int16(yTrim*rpyScale+rpyCenter,1100,1900), tnow);
+        channel_forward->set_override(uint16_t(constrain_float(xTrim*rpyScale+rpyCenter,1100,1900)), tnow);
+        channel_lateral->set_override(uint16_t(constrain_float(yTrim*rpyScale+rpyCenter,1100,1900)), tnow);
     }
 
 #if HAL_MOUNT_ENABLED
