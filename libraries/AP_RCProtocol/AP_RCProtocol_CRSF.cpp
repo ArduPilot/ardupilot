@@ -387,7 +387,7 @@ void AP_RCProtocol_CRSF::write_frame(AP_CRSF_Protocol::Frame* frame) const
         case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_WRITE:
         case AP_CRSF_Protocol::CRSF_FRAMETYPE_COMMAND:
 #endif
-        hal.console->printf("CRSF: writing %s @%ukbaud:", AP_CRSF_Protocol::get_frame_type(frame->type, frame->payload[0]), unsigned(_uart->get_baud_rate()/1000));
+        hal.console->printf("CRSF: writing %s @%ukbaud:", AP_CRSF_Protocol::get_frame_type_name(frame->type, frame->payload[0]), unsigned(_uart->get_baud_rate()/1000));
         for (uint8_t i = 0; i < frame->length + 2; i++) {
             uint8_t val = ((uint8_t*)frame)[i];
 #ifdef CRSF_DEBUG_CHARS
@@ -410,7 +410,7 @@ void AP_RCProtocol_CRSF::write_frame(AP_CRSF_Protocol::Frame* frame) const
 bool AP_RCProtocol_CRSF::decode_crsf_packet()
 {
 #ifdef CRSF_DEBUG
-    hal.console->printf("CRSF: received %s:", AP_CRSF_Protocol::get_frame_type(_frame.type));
+    hal.console->printf("CRSF: received %s:", AP_CRSF_Protocol::get_frame_type_name(_frame.type));
     uint8_t* fptr = (uint8_t*)&_frame;
     for (uint8_t i = 0; i < _frame.length + 2; i++) {
 #ifdef CRSF_DEBUG_CHARS
@@ -485,7 +485,7 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
 #else
             default:
 #endif
-                hal.console->printf("CRSF: received %s:", AP_CRSF_Protocol::get_frame_type(_frame.type));
+                hal.console->printf("CRSF: received %s:", AP_CRSF_Protocol::get_frame_type_name(_frame.type));
                 uint8_t* fptr = (uint8_t*)&_frame;
                 for (uint8_t i = 0; i < _frame.length + 2; i++) {
                     hal.console->printf(" 0x%x", fptr[i]);
