@@ -101,7 +101,7 @@ void AP_Winch_Daiwa::write_log()
             config.rate_desired,
             latest.tension_corrected,
             latest.voltage,
-            constrain_int16(latest.motor_temp, INT8_MIN, INT8_MAX));
+            constrain_float(latest.motor_temp, INT8_MIN, INT8_MAX));
 }
 #endif
 
