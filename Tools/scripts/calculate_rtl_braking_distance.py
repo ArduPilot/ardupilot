@@ -74,18 +74,18 @@ def compute_braking_profile(starting_vel, max_accel, max_jerk):
 
     return total_time, total_distance
 
-wpnav_speed_ms = 20
-wpnav_accel_mss = 9.81
-psc_jerk_xy_msss = 1
+wpnav_speed_ms = 27
+wpnav_accel_mss = 1.35
+psc_jerk_xy_msss = 5
 rate_r_max_deg = 45
 rate_p_max_deg = 30
 accel_r_max_cdegss = 110_000
 accel_p_max_cdegss = 110_000
 rate_ff_enabled = True
-rtl_accel = 0
+rtl_accel_mss = 2.5
 
-if (rtl_accel <= 0):        # Check for valid rtl_accel
-    wpnav_accel_mss = rtl_accel
+if (rtl_accel_mss >= 0):        # Check for valid rtl_accel
+    wpnav_accel_mss = rtl_accel_mss
     if (wpnav_accel_mss > 10):  # Cap if at 10 if using it
         wpnav_accel_mss = 10
 
