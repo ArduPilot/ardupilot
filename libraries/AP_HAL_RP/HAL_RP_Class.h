@@ -9,5 +9,5 @@ public:
     HAL_RP();
     void run(int argc, char* const* argv, Callbacks* callbacks) const override;
 
-    RP::NAND_PIO_Driver* get_nand_pio();
+    RP::NAND_PIO_Driver* get_nand_pio() const;
 };

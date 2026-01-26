@@ -71,12 +71,12 @@ void Scheduler::_main_task(void *pvParameters) {
     //Scheduler *sched = (Scheduler *)pvParameters;
     
     // Call the setup() method of your firmware/test
-    extern void setup();
-    setup();
+    //extern void setup();
+    //setup();
 
     for (;;) {
-        extern void loop();
-        loop();
+        //extern void loop();
+        //loop();
         // Yield the processor if the loop completed too quickly
         taskYIELD();
     }

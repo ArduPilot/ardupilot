@@ -26,8 +26,9 @@
 
 #include <inttypes.h>
 
-#include <AP_HAL/HAL.h>
+#include "AP_HAL_RP.h"
 #include <AP_HAL/SPIDevice.h>
+#include "AP_HAL_RP_Namespace.h"
 
 #include "Semaphores.h"
 

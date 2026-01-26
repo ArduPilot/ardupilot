@@ -11,15 +11,15 @@
 
 using namespace RP;
 
+extern char __StackLimit; 
+
 Util::Util() :
     _soft_armed(false)
 {}
 
 // Returns the amount of free RAM (Heap).
 uint32_t Util::available_memory(void) {
-    // These symbols are defined by the linker in the .ld file
-    extern char __StackLimit; 
-    
+
     // sbrk(0) returns the current pointer to the end of the allocated heap
     char *heap_end = (char*)sbrk(0);
     

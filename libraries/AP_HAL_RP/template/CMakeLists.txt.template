@@ -1,26 +1,123 @@
 # CMake project file generated for {mcu_name.upper()} with FreeRTOS support
 cmake_minimum_required(VERSION 3.13)
 
-set(PICO_PLATFORM rp2350-arm-s)
+set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
+set(CMAKE_C_COMPILER arm-none-eabi-gcc)
+set(CMAKE_CXX_COMPILER arm-none-eabi-g++)
+set(CMAKE_ASM_COMPILER arm-none-eabi-gcc)
 
-# Initialize the Raspberry Pi Pico SDK (sets PICO_SDK_PATH automatically if defined externally)
-include(pico_sdk_import.cmake)
-include(FreeRTOS_Kernel_import.cmake)
+set(CMAKE_SYSTEM_PROCESSOR arm)
+set(CMAKE_SYSTEM_NAME Generic)
+
+set(PICO_PLATFORM rp2350-arm-s)
+set(PICO_FLOAT_SUPPORT_ROM vfp CACHE STRING "" FORCE)
+set(PICO_DOUBLE_SUPPORT_ROM vfp CACHE STRING "" FORCE)
+
+set(ARCH_FLAGS "-mcpu=cortex-m33 -mthumb -mfloat-abi=hard -mfpu=fpv5-sp-d16")
+set(CMAKE_C_FLAGS "${ARCH_FLAGS}" CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS "${ARCH_FLAGS}" CACHE STRING "" FORCE)
 
 project({project_name} C CXX ASM)
-
-add_compile_options(-Wno-error=type-limits)
 
 # Set the target board variant (this might be deprecated/ignored by newer SDKs in favor of env var)
 # We assume the user has set PICO_BOARD environment variable correctly for 2350 variants.
 # set(PICO_BOARD {board_variant}) 
 
+# Initialize the Raspberry Pi Pico SDK (sets PICO_SDK_PATH automatically if defined externally)
+include(pico_sdk_import.cmake)
+include(FreeRTOS_Kernel_import.cmake)
+
 # Initialize the SDK
 pico_sdk_init()
+
+add_compile_definitions(
+    CONFIG_HAL_BOARD=HAL_BOARD_RP2350
+    CONFIG_HAL_BOARD_SUBTYPE=HAL_BOARD_SUBTYPE_NONE
+    __AP_LINE__=__LINE__
+    ARDUPILOT_BUILD
+)
+
+add_compile_options(-Wno-error=type-limits -ffunction-sections -fdata-sections)
+
+set(ARDUPILOT_ROOT "${CMAKE_SOURCE_DIR}/../../../../../")
+set(ARDUPILOT_LIBRARIES_DIR "${ARDUPILOT_ROOT}/libraries")
+set(HAL_SRC "${ARDUPILOT_LIBRARIES_DIR}/AP_HAL_RP")
+set(HAL_BUILD "${ARDUPILOT_LIB}/..")
+set(FILESYSTEM_DIR "${ARDUPILOT_LIBRARIES_DIR}/AP_Filesystem")
+set(LITTLE_FS_DIR "${ARDUPILOT_ROOT}/modules/littlefs")
+
+add_library(littlefs STATIC
+    ${LITTLE_FS_DIR}/lfs.c
+    ${LITTLE_FS_DIR}/lfs_util.c
+)
+
+target_include_directories(littlefs PUBLIC
+    ${FILESYSTEM_DIR}
+    ${LITTLE_FS_DIR}
+    ${ARDUPILOT_LIBRARIES_DIR}/AP_HAL
+)
+
+add_library(AP_HAL_RP STATIC
+    ${HAL_SRC}/AnalogIn.cpp
+    ${HAL_SRC}/GPIO.cpp
+    ${HAL_SRC}/Flash.cpp
+    ${HAL_SRC}/Scheduler.cpp
+    ${HAL_SRC}/Semaphores.cpp
+    ${HAL_SRC}/UARTDriver.cpp
+    ${HAL_SRC}/SPIDevice.cpp
+    ${HAL_SRC}/I2CDevice.cpp
+    ${HAL_SRC}/WSPIDevice.cpp
+    ${HAL_SRC}/NAND_PIO_Driver.cpp
+    ${HAL_SRC}/RCInput.cpp
+    ${HAL_SRC}/RCOutput.cpp
+    ${HAL_SRC}/Storage.cpp
+    ${HAL_SRC}/system.cpp
+    ${HAL_SRC}/Util.cpp
+    ${HAL_SRC}/HAL_RP_Class.cpp
+)
+
+target_include_directories(AP_HAL_RP PUBLIC
+    ${HAL_SRC}
+    ${HAL_SRC}/hwdef
+    ${HAL_BUILD}
+    ${HAL_BUILD}/${PATH_TO_TARGET}
+    ${HAL_BUILD}/libraries/GCS_MAVLink/
+    ${ARDUPILOT_LIBRARIES_DIR}
+    ${ARDUPILOT_LIBRARIES_DIR}/AP_Common/missing
+    ${ARDUPILOT_LIBRARIES_DIR}/AP_HAL
+    ${ARDUPILOT_ROOT}
+)
+
+target_link_libraries(AP_HAL_RP PUBLIC
+    pico_stdlib
+    pico_multicore
+    hardware_spi
+    hardware_i2c
+    hardware_dma
+    hardware_pio
+    hardware_interp
+    hardware_timer
+    hardware_watchdog
+    hardware_clocks
+    hardware_flash
+    hardware_powman
+    FreeRTOS-Kernel
+    FreeRTOS-Kernel-Heap4
+    littlefs
+)
 
 # Add executable with source files
 add_executable(${CMAKE_PROJECT_NAME}
     {source_list_str}
+)
+
+set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES SUFFIX ".elf")
+
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE AP_HAL_RP)
+
+target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
+    "LINKER:--allow-multiple-definition"
+    "LINKER:--gc-sections"
 )
 
 if(NOT DEFINED ARDUPILOT_CMD)
@@ -62,7 +159,10 @@ foreach(PIO_FILE ${PIO_FILES})
     endif()
 endforeach()
 
+message("PATH_TO_TARGET=${PATH_TO_TARGET}")
 message("WAF_BUILD_TARGET=${WAF_BUILD_TARGET}")
+message("ARDUPILOT_LIB=${ARDUPILOT_LIB}")
+message("ARDUPILOT_BIN=${ARDUPILOT_BIN}")
 
 string(REGEX MATCH "^(examples|tool)/" IS_EXAMPLE "${WAF_BUILD_TARGET}")
 
@@ -107,23 +207,6 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${FREERTOS_KERNEL_PATH}/portable/ThirdParty/Community-Supported-Ports/GCC/RP2350_ARM_NTZ/non_secure
 )
 
-# Link the FreeRTOS kernel library and Pico C/C++ SDK
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
-    pico_stdlib
-    pico_multicore
-    hardware_spi
-    hardware_i2c
-    hardware_dma
-    hardware_pio
-    hardware_interp
-    hardware_timer
-    hardware_watchdog
-    hardware_clocks
-    hardware_flash
-    hardware_powman
-    FreeRTOS-Kernel
-    FreeRTOS-Kernel-Heap4
-)
 # Add USB support if needed (adjust as necessary for your board setup)
 pico_enable_stdio_usb(${CMAKE_PROJECT_NAME} 0)
 pico_enable_stdio_uart(${CMAKE_PROJECT_NAME} 1)

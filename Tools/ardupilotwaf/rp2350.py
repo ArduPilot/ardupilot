@@ -222,6 +222,7 @@ def configure(cfg):
     env = cfg.env
     target_dir = 'targets/%s/pico-sdk' % target
     env.AP_HAL_RP2350 = bldpath(target_dir)
+    env.AP_PROGRAM_FEATURES += ['rp2350_ap_program']
     env.FREERTOS_CONFIG_H_TEMPLATE = srcpath('libraries/AP_HAL_RP/template/FreeRTOSConfig.h.template')
     env.CMAKE_LISTS_TXT_TEMPLATE = srcpath('libraries/AP_HAL_RP/template/CMakeLists.txt.template')
     env.PICO_SDK_PREFIX_REL = 'pico-sdk'
@@ -296,6 +297,7 @@ def pre_build(self):
     target = self.env.RP_TARGET
 
     relative_path = 'targets/%s/pico-sdk' % target
+    lib_vars['PATH_TO_TARGET'] = relative_path
     cmake_node = self.bldnode.make_node(relative_path)
     cmake_node.mkdir()
 
@@ -322,3 +324,18 @@ def pre_build(self):
     tsk = load_generated_includes(env=self.env)
     tsk.set_inputs(self.path.find_resource('pico-sdk_build/includes.list'))
     self.add_to_group(tsk)
+
+@feature('rp2350_ap_program')
+@after_method('process_source')
+def rp2350_firmware(self):
+    self.link_task.always_run = True
+    pico_sdk = self.bld.cmake('pico-sdk')
+
+    build = pico_sdk.build('all', target='pico-sdk_build/ardupilot.bin')
+    build.post()
+
+    build.cmake_build_task.set_run_after(self.link_task)
+
+    if self.bld.options.upload:
+        flasher = pico_sdk.build('flash')
+        flasher.post()
