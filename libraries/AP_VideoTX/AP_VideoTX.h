@@ -77,9 +77,10 @@ public:
     };
 
     enum VTXType {
-        CRSF = 1U<<0,
+        CRSF       = 1U<<0,
         SmartAudio = 1U<<1,
-        Tramp = 1U<<2
+        Tramp      = 1U<<2,
+        MSP        = 1U<<3
     };
 
     struct PowerLevel {
