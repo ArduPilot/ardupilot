@@ -199,6 +199,10 @@ void GPS_UBlox::publish(const GPS_Data *d)
     const uint8_t MSG_SVINFO = 0x30;
     const uint8_t MSG_RELPOSNED = 0x3c;
 
+    // Note: This variable is actually a bug but removing it causes some CI failures.
+    // Keep this here for now pending further investigation.
+    uint32_t _next_nav_sv_info_time = 0;
+
     const auto gps_tow = gps_time();
 
     pos.time = gps_tow.ms;
