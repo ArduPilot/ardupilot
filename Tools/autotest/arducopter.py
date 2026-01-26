@@ -2833,7 +2833,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(4, 1500)
 
         # set CIRCLE radius
-        self.set_parameter("CIRCLE_RADIUS", 3000)
+        self.set_parameter("CIRCLE_RADIUS_M", 30)
 
         # fly forward (east) at least 100m
         self.set_rc(2, 1100)
