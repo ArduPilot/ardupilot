@@ -1,0 +1,72 @@
+###########################################################################################################################################################
+# HC Robotics - HCR-565 Fidelis Flight Controller
+# Hardware Specifications:
+#   MCU: STM32H753VIH6
+#   PWM Outputs: 8
+#   IMUs: ICM42688 6DOF (x2)
+#   Magnetometers: 2 x BMM350 
+#   Barometers: 2 x ICP20100 (Ported to each side) 
+#   Serial Ports with Flow Control: 2
+#   Serial Ports: 3
+#   RCInput and sBUS output
+#   CAN: 2 FDCAN 8Mbit
+#   Network: 100Mb RMII Ethernet Port
+#   ADC/GPIO: 3
+#   External I2C: 1 
+#   External SPI: 1
+#   Power: 2 Power Inputs with CAN Current and Voltage Sensor inputs
+#   Storage: 2Gb FLASH Storage
+#   Debug: TC2030 JTAG
+#   Indicators: Onboard Tricolor LED and buzzer
+#   Physical (Bare Board):
+#     Weight (with headers): 9.41g (.33oz)
+#     Dimensions: 35mm x 35mm (1.38in x 1.38in)
+#     Mounting: 30.5mm x 30.5mm mounting holes for 2mm fasteners
+###########################################################################################################################################################
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_HCR-565
+
+# USB setup
+USB_STRING_MANUFACTURER "HCR"
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# Resonator and Frequency
+define STM32_HSE_BYPASS
+OSCILLATOR_HZ 25000000
+
+# MCU Flash Size
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# Status LEDs
+PA3  LED_ACTIVITY OUTPUT # Red
+PA15 LED_BOOTLOADER OUTPUT # Blue
+
+define HAL_LED_ON 0
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1
+
+PA9 VBUS INPUT
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# Add CS pins to ensure they are high in bootloader
+PA10 IMU1_CS CS
+PE10 IMU2_CS CS
+PE3  FLASH_CS CS SPEED_VERYLOW
+PE12 EXT_SPI4_CS_1 CS
+
+
