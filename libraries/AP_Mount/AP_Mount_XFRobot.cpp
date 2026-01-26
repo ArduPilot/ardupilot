@@ -371,9 +371,9 @@ void AP_Mount_XFRobot::send_target_angles(const MountAngleTarget& angle_target_r
     // byte 5~6: roll control value (int16, -18000 ~ +18000)
     // byte 7~8: pitch control value (int16, -18000 ~ +18000)
     // byte 9~10: yaw control value (int16, -18000 ~ +18000)
-    set_attitude_packet.content.main.roll_control = htole16(constrain_int16(degrees(angle_target_rad.roll) * 100, -18000, 18000));
-    set_attitude_packet.content.main.pitch_control = htole16(constrain_int16(degrees(angle_target_rad.pitch) * 100, -9000, 9000));
-    set_attitude_packet.content.main.yaw_control = htole16(constrain_int16(degrees(angle_target_rad.get_bf_yaw()) * 100, -18000, 18000));
+    set_attitude_packet.content.main.roll_control = htole16(int16_t(constrain_float(degrees(angle_target_rad.roll) * 100, -18000, 18000)));
+    set_attitude_packet.content.main.pitch_control = htole16(int16_t(constrain_float(degrees(angle_target_rad.pitch) * 100, -9000, 9000)));
+    set_attitude_packet.content.main.yaw_control = htole16(int16_t(constrain_float(degrees(angle_target_rad.get_bf_yaw()) * 100, -18000, 18000)));
 
     // byte 11: status, Bit0:INS valid, Bit2:control values valid
     const uint8_t status_ins_bit = AP::ahrs().have_inertial_nav() ? (1 << 0) : 0;
@@ -382,17 +382,17 @@ void AP_Mount_XFRobot::send_target_angles(const MountAngleTarget& angle_target_r
     // byte 12~13: absolute roll angle of vehicle (int16, -18000 ~ +18000)
     // byte 14~15: absolute pitch angle of vehicle (int16, -9000 ~ +9000)
     // byte 16~17: absolute yaw angle of vehicle (uint16, 0 ~ 36000)
-    set_attitude_packet.content.main.roll_abs = htole16(constrain_int16(AP::ahrs().get_roll_deg() * 100, -18000, 18000));
-    set_attitude_packet.content.main.pitch_abs = htole16(constrain_int16(AP::ahrs().get_pitch_deg() * 100, -9000, 9000));
-    set_attitude_packet.content.main.yaw_abs = htole16(constrain_int16(degrees(wrap_PI(AP::ahrs().get_yaw_rad())) * 100, -18000, 18000));
+    set_attitude_packet.content.main.roll_abs = htole16(int16_t(constrain_float(AP::ahrs().get_roll_deg() * 100, -18000, 18000)));
+    set_attitude_packet.content.main.pitch_abs = htole16(int16_t(constrain_float(AP::ahrs().get_pitch_deg() * 100, -9000, 9000)));
+    set_attitude_packet.content.main.yaw_abs = htole16(int16_t(constrain_float(degrees(wrap_PI(AP::ahrs().get_yaw_rad())) * 100, -18000, 18000)));
 
     // byte 18~19: North acceleration of vehicle (int16, cm/s/s)
     // byte 20~21: East acceleration of vehicle (int16, cm/s/s)
     // byte 22~23: Upward acceleration of vehicle (int16, cm/s/s)
     const Vector3f &accel_ef = AP::ahrs().get_accel_ef();
-    set_attitude_packet.content.main.accel_north = htole16(constrain_int16(accel_ef.x * 100, -INT16_MAX, INT16_MAX));
-    set_attitude_packet.content.main.accel_east = htole16(constrain_int16(accel_ef.y * 100, -INT16_MAX, INT16_MAX));
-    set_attitude_packet.content.main.accel_up = htole16(constrain_int16(-(accel_ef.z + GRAVITY_MSS) * 100, -INT16_MAX, INT16_MAX));
+    set_attitude_packet.content.main.accel_north = htole16(int16_t(constrain_float(accel_ef.x * 100, -INT16_MAX, INT16_MAX)));
+    set_attitude_packet.content.main.accel_east = htole16(int16_t(constrain_float(accel_ef.y * 100, -INT16_MAX, INT16_MAX)));
+    set_attitude_packet.content.main.accel_up = htole16(int16_t(constrain_float(-(accel_ef.z + GRAVITY_MSS) * 100, -INT16_MAX, INT16_MAX)));
 
     // byte 24~25: North speed of vehicle (int16, decimeter/s)
     // byte 26~27: East speed of vehicle (int16, decimeter/s)
@@ -400,9 +400,9 @@ void AP_Mount_XFRobot::send_target_angles(const MountAngleTarget& angle_target_r
     // ToDo: check scale (cm/s or decimeter/s)
     Vector3f velocity_ef;
     if (AP::ahrs().have_inertial_nav() && AP::ahrs().get_velocity_NED(velocity_ef)) {
-        set_attitude_packet.content.main.vel_north = htole16(constrain_int16(velocity_ef.x * 10, -INT16_MAX, INT16_MAX));
-        set_attitude_packet.content.main.vel_east = htole16(constrain_int16(velocity_ef.y * 10, -INT16_MAX, INT16_MAX));
-        set_attitude_packet.content.main.vel_up = htole16(constrain_int16(-velocity_ef.z * 10, -INT16_MAX, INT16_MAX));
+        set_attitude_packet.content.main.vel_north = htole16(int16_t(constrain_float(velocity_ef.x * 10, -INT16_MAX, INT16_MAX)));
+        set_attitude_packet.content.main.vel_east = htole16(int16_t(constrain_float(velocity_ef.y * 10, -INT16_MAX, INT16_MAX)));
+        set_attitude_packet.content.main.vel_up = htole16(int16_t(constrain_float(-velocity_ef.z * 10, -INT16_MAX, INT16_MAX)));
     }
 
     // byte 30: request code of sub frame, header of requested sub data frame from GCU (aka camera)
