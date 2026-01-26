@@ -1822,6 +1822,8 @@ void NavEKF3::convert_parameters()
     if (dal.opticalflow_enabled() && (!found_gps_type || (gps_type_old.get() <= 2))) {
         AP_Param::set_and_save_by_name("EK3_SRC2_VELXY", (int8_t)AP_NavEKF_Source::SourceXY::OPTFLOW);
     }
+    // convert FLOW_DELAY from Int8 to Int16
+    _flowDelay_ms.convert_parameter_width(AP_PARAM_INT8);
 }
 
 // Set to true if the terrain underneath is stable enough to be used as a height reference
