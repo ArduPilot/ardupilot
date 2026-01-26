@@ -14629,6 +14629,43 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # restart GPS driver
         self.reboot_sitl()
 
+    def AHRSOriginRecorded(self):
+        """Test AHRS option to record and re-use origin"""
+        self.context_push()
+
+        # Set AHRS_OPTIONS = 8 (UseRecordedOrigin)
+        self.set_parameter('AHRS_OPTIONS', 8)
+        self.set_parameter('LOG_DISARMED', 1)
+
+        # wait for vehicle to be ready to arm which means origin should have been written
+        self.wait_ready_to_arm()
+
+        # confirm the AHRS_ORIG_LAT, LNG, ALT parameters are non-zero
+        self.assert_parameter_value('AHRS_OPTIONS', 8)
+        self.assert_parameter_value('AHRS_ORIGIN_LAT', -35, epsilon=1)
+        self.assert_parameter_value('AHRS_ORIGIN_LON', 149, epsilon=1)
+        self.assert_parameter_value('AHRS_ORIGIN_ALT', 584, epsilon=10)
+
+        # enable optical flow and rangefinder
+        self.set_parameter("SIM_FLOW_ENABLE", 1)
+        self.set_parameter("FLOW_TYPE", 10)
+        self.set_analog_rangefinder_parameters()
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.reboot_sitl()
+
+        # wait for origin to be set
+        self.wait_statustext("EKF3 IMU0 origin set")
+
+        # switch to Loiter, arm, takeoff and RTL
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm(timeout=120, require_absolute=False, check_prearm_bit=True)
+        self.arm_vehicle()
+        self.takeoff(10, mode="LOITER")
+        self.do_RTL()
+
+        # restore params to original values
+        self.context_pop()
+
     def ReadOnlyDefaults(self):
         '''test that defaults marked "readonly" can't be set'''
         defaults_filepath = tempfile.NamedTemporaryFile(mode='w', delete=False)
@@ -15832,6 +15869,7 @@ return update, 1000
             self.MAV_CMD_MISSION_START_p1_p2,
             self.ScriptingAHRSSource,
             self.CommonOrigin,
+            self.AHRSOriginRecorded,
             self.TestTetherStuck,
             self.ScriptingFlipMode,
             self.ScriptingFlyVelocity,
