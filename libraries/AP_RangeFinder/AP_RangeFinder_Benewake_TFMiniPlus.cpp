@@ -171,7 +171,7 @@ void AP_RangeFinder_Benewake_TFMiniPlus::process_raw_measure(le16_t distance_raw
          */
         output_distance_cm = MAX(MAX_DIST_CM, max_distance()*100 + BENEWAKE_OUT_OF_RANGE_ADD_CM);
     } else {
-        output_distance_cm = constrain_int16(output_distance_cm, MIN_DIST_CM, MAX_DIST_CM);
+        output_distance_cm = constrain_uint16(output_distance_cm, MIN_DIST_CM, MAX_DIST_CM);
     }
 }
 

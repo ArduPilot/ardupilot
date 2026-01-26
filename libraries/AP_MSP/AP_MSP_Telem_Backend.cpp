@@ -700,7 +700,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_comp_gps(sbuf_t *dst)
         uint16_t home_angle_deg;
         uint8_t toggle_gps;
     } gps {
-        dist_home_m : uint16_t(constrain_int32(home_state.home_distance_m, 0, 0xFFFF)),
+        dist_home_m : uint16_t(constrain_int32(int32_t(home_state.home_distance_m), 0, 0xFFFF)),
         home_angle_deg : angle_deg,
         toggle_gps : 1
     };
@@ -763,7 +763,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_name(sbuf_t *dst)
                     //move to the right
                     start_position = total_cycles - current_cycle;
                 }
-                start_position = constrain_int16(start_position, 0, chars_to_scroll);
+                start_position = constrain_int16(int16_t(start_position), 0, chars_to_scroll);
                 uint8_t end_position = start_position + MSP_TXT_VISIBLE_CHARS;
 
                 //ensure array boundaries
@@ -989,7 +989,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_battery_state(sbuf_t *dst
         uint8_t state;
         uint16_t voltage_cv;
     } battery {
-        cellcount : (uint8_t)constrain_int16((msp->_cellcount > 0 ? msp->_cellcount : battery_state.batt_cellcount), 0, 255),   // cell count 0 indicates battery not detected.
+        cellcount : (uint8_t)constrain_int16(int16_t(msp->_cellcount > 0 ? msp->_cellcount : battery_state.batt_cellcount), 0, 255),   // cell count 0 indicates battery not detected.
         capacity_mah : (uint16_t)battery_state.batt_capacity_mah,                                                               // in mAh
         voltage_dv : (uint8_t)constrain_float(battery_state.batt_voltage_v * 10, 0, 255),                                       // battery voltage V to dV
         mah : (uint16_t)MIN(battery_state.batt_consumed_mah, 0xFFFF),                                                           // milliamp hours drawn from battery

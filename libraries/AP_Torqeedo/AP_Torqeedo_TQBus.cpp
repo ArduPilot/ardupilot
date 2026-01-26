@@ -886,7 +886,7 @@ void AP_Torqeedo_TQBus::send_motor_speed_cmd()
 
     // update message if using motor connection
     if (get_type() == AP_Torqeedo::ConnectionType::TYPE_MOTOR) {
-        const uint8_t motor_power = (uint8_t)constrain_int16(_params.motor_power, 0, 100);
+        const uint8_t motor_power = (uint8_t)constrain_uint16(_params.motor_power, 0, 100);
         mot_speed_cmd_buff[0] = (uint8_t)MsgAddress::MOTOR;
         mot_speed_cmd_buff[1] = (uint8_t)MotorMsgId::DRIVE;
         mot_speed_cmd_buff[2] = (mot_speed_limited == 0 ? 0 : 0x01) | (_motor_clear_error ? 0x04 : 0);  // 1:enable motor, 2:fast off, 4:clear error

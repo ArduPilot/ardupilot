@@ -161,7 +161,7 @@ void AP_OpticalFlow_CXOF::update(void)
     struct AP_OpticalFlow::OpticalFlow_state state {};
 
     // average surface quality scaled to be between 0 and 255
-    state.surface_quality = (constrain_int16(qual_sum / count, 64, 78) - 64) * 255 / 14;
+    state.surface_quality = (constrain_int16(int16_t(qual_sum / count), 64, 78) - 64) * 255 / 14;
 
     // calculate dt
     uint64_t this_frame_us = uart->receive_time_constraint_us(CXOF_FRAME_LENGTH);

@@ -456,7 +456,7 @@ void SRV_Channels::set_output_pwm_chan_timeout(uint8_t chan, uint16_t value, uin
         const uint32_t loop_period_us = AP::scheduler().get_loop_period_us();
         // round up so any non-zero requested value will result in at least one loop
         const uint32_t loop_count = ((timeout_ms * 1000U) + (loop_period_us - 1U)) / loop_period_us;
-        override_counter[chan] = constrain_int32(loop_count, 0, UINT16_MAX);
+        override_counter[chan] = constrain_uint32(loop_count, 0, UINT16_MAX);
         channels[chan].set_override(true);
         const bool had_pwm = SRV_Channel::have_pwm_mask & (1U<<chan);
         channels[chan].set_output_pwm(value,true);

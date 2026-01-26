@@ -826,7 +826,7 @@ void AP_FETtecOneWire::update()
             motor_pwm[i] = 1000;  // stop motor
             continue;
         }
-        motor_pwm[i] = constrain_int16(c->get_output_pwm(), 1000, 2000);
+        motor_pwm[i] = constrain_uint16(c->get_output_pwm(), 1000, 2000);
         fet_debug("esc=%u in: %u", esc.id, motor_pwm[i]);
         if (_reverse_mask & (1U << i)) {
             motor_pwm[i] = 2000-motor_pwm[i];

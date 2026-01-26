@@ -622,7 +622,7 @@ bool AP_DroneCAN::hobbywing_find_esc_index(uint8_t node_id, uint8_t &esc_index) 
 {
     for (uint8_t i=0; i<HOBBYWING_MAX_ESC; i++) {
         if (hobbywing.thr_chan[i] == node_id) {
-            const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
+            const uint8_t esc_offset = constrain_int16(int16_t(_esc_offset.get()), 0, DRONECAN_SRV_NUMBER);
             esc_index = i + esc_offset;
             return true;
         }
@@ -817,7 +817,7 @@ void AP_DroneCAN::SRV_send_himark(void)
 
     for (uint8_t i = 0; i <= highest_to_send; i++) {
         if ((1U<<i) & _SRV_armed_mask) {
-            const uint16_t pulse = constrain_int16(_SRV_conf[i].pulse - 1000, 0, 1000);
+            const uint16_t pulse = constrain_int16(int16_t(_SRV_conf[i].pulse - 1000), 0, 1000);
             msg.cmd.data[i] = pulse;
         }
     }
@@ -835,7 +835,7 @@ void AP_DroneCAN::SRV_send_esc(void)
     uint8_t k = 0;
 
     // esc offset allows for efficient packing of higher ESC numbers in RawCommand
-    const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
+    const uint8_t esc_offset = constrain_int16(int16_t(_esc_offset.get()), 0, DRONECAN_SRV_NUMBER);
 
     // find out how many esc we have enabled and if they are active at all
     for (uint8_t i = esc_offset; i < DRONECAN_SRV_NUMBER; i++) {
@@ -888,7 +888,7 @@ void AP_DroneCAN::SRV_send_esc_hobbywing(void)
     uint8_t k = 0;
 
     // esc offset allows for efficient packing of higher ESC numbers in RawCommand
-    const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
+    const uint8_t esc_offset = constrain_int16(int16_t(_esc_offset.get()), 0, DRONECAN_SRV_NUMBER);
 
     // find out how many esc we have enabled and if they are active at all
     for (uint8_t i = esc_offset; i < DRONECAN_SRV_NUMBER; i++) {
@@ -1475,7 +1475,7 @@ void AP_DroneCAN::handle_actuator_status_Volz(const CanardRxTransfer& transfer, 
 void AP_DroneCAN::handle_ESC_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_Status& msg)
 {
 #if HAL_WITH_ESC_TELEM
-    const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
+    const uint8_t esc_offset = constrain_int16(int16_t(_esc_offset.get()), 0, DRONECAN_SRV_NUMBER);
     const uint8_t esc_index = msg.esc_index + esc_offset;
 
     if (!is_esc_data_index_valid(esc_index)) {
@@ -1509,7 +1509,7 @@ void AP_DroneCAN::handle_ESC_status(const CanardRxTransfer& transfer, const uavc
  */
 void AP_DroneCAN::handle_esc_ext_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_StatusExtended& msg)
 {
-    const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
+    const uint8_t esc_offset = constrain_int16(int16_t(_esc_offset.get()), 0, DRONECAN_SRV_NUMBER);
     const uint8_t esc_index = msg.esc_index + esc_offset;
 
     if (!is_esc_data_index_valid(esc_index)) {

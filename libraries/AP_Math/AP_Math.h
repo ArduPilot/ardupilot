@@ -173,89 +173,86 @@ T constrain_value(const T amt, const T low, const T high);
 template <typename T>
 T constrain_value_line(const T amt, const T low, const T high, uint32_t line);
 
-#define constrain_float(amt, low, high) constrain_value_line(float(amt), float(low), float(high), uint32_t(__AP_LINE__))
-#define constrain_ftype(amt, low, high) constrain_value_line(ftype(amt), ftype(low), ftype(high), uint32_t(__AP_LINE__))
+// Helper trait to check if T is either the exact type or its AP_Param wrapper
+template <typename T, typename Exact, typename APParam>
+struct is_valid_constrain_type {
+    static constexpr bool value =
+        std::is_same<typename std::decay<T>::type, Exact>::value ||
+        std::is_same<typename std::decay<T>::type, APParam>::value;
+};
 
-inline int16_t constrain_int16(const int16_t amt, const int16_t low, const int16_t high)
-{
-    return constrain_value(amt, low, high);
+// Specialization for types without AP_Param equivalents
+template <typename T, typename Exact>
+struct is_exact_type {
+    static constexpr bool value = std::is_same<typename std::decay<T>::type, Exact>::value;
+};
+
+// Trait for ftype: allows float, double, or AP_Float since ftype can be either float or double
+template <typename T>
+struct is_valid_ftype {
+    static constexpr bool value =
+        std::is_same<typename std::decay<T>::type, float>::value ||
+        std::is_same<typename std::decay<T>::type, double>::value ||
+        std::is_same<typename std::decay<T>::type, AP_Float>::value;
+};
+
+// Type-safe constrain functions - only the first argument (value) must match the type
+template <typename T, typename U, typename V>
+inline float constrain_float_impl(T amt, U low, V high, uint32_t line) {
+    static_assert(is_valid_constrain_type<T, float, AP_Float>::value, "constrain_float: first argument must be float or AP_Float");
+    return constrain_value_line(float(amt), float(low), float(high), line);
 }
 
-// Deleted template to catch floating point arguments at compile time
-template <typename T, typename U, typename V>
-inline typename std::enable_if<
-    std::is_floating_point<T>::value ||
-    std::is_floating_point<U>::value ||
-    std::is_floating_point<V>::value,
-    int16_t>::type
-constrain_int16(T, U, V) = delete;
+#define constrain_float(amt, low, high) constrain_float_impl(amt, low, high, uint32_t(__AP_LINE__))
 
-inline uint16_t constrain_uint16(const uint16_t amt, const uint16_t low, const uint16_t high)
-{
-    return constrain_value(amt, low, high);
+template <typename T, typename U, typename V>
+inline ftype constrain_ftype_impl(T amt, U low, V high, uint32_t line) {
+    static_assert(is_valid_ftype<T>::value, "constrain_ftype: first argument must be float, double, or AP_Float");
+    return constrain_value_line(ftype(amt), ftype(low), ftype(high), line);
 }
 
-template <typename T, typename U, typename V>
-inline typename std::enable_if<
-    std::is_floating_point<T>::value ||
-    std::is_floating_point<U>::value ||
-    std::is_floating_point<V>::value,
-    uint16_t>::type
-constrain_uint16(T, U, V) = delete;
-
-inline int32_t constrain_int32(const int32_t amt, const int32_t low, const int32_t high)
-{
-    return constrain_value(amt, low, high);
-}
+#define constrain_ftype(amt, low, high) constrain_ftype_impl(amt, low, high, uint32_t(__AP_LINE__))
 
 template <typename T, typename U, typename V>
-inline typename std::enable_if<
-    std::is_floating_point<T>::value,
-    int32_t>::type
-constrain_int32(T, U, V) = delete;
-
-inline uint32_t constrain_uint32(const uint32_t amt, const uint32_t low, const uint32_t high)
-{
-    return constrain_value(amt, low, high);
-}
-
-template <typename T, typename U, typename V>
-inline typename std::enable_if<
-    std::is_floating_point<T>::value ||
-    std::is_floating_point<U>::value ||
-    std::is_floating_point<V>::value,
-    uint32_t>::type
-constrain_uint32(T, U, V) = delete;
-
-inline int64_t constrain_int64(const int64_t amt, const int64_t low, const int64_t high)
-{
-    return constrain_value(amt, low, high);
+inline int16_t constrain_int16(T amt, U low, V high) {
+    static_assert(is_valid_constrain_type<T, int16_t, AP_Int16>::value, "constrain_int16: first argument must be int16_t or AP_Int16");
+    return constrain_value(int16_t(amt), int16_t(low), int16_t(high));
 }
 
 template <typename T, typename U, typename V>
-inline typename std::enable_if<
-    std::is_floating_point<T>::value ||
-    std::is_floating_point<U>::value ||
-    std::is_floating_point<V>::value,
-    int64_t>::type
-constrain_int64(T, U, V) = delete;
-
-inline uint64_t constrain_uint64(const uint64_t amt, const uint64_t low, const uint64_t high)
-{
-    return constrain_value(amt, low, high);
+inline uint16_t constrain_uint16(T amt, U low, V high) {
+    static_assert(is_exact_type<T, uint16_t>::value, "constrain_uint16: first argument must be uint16_t");
+    return constrain_value(uint16_t(amt), uint16_t(low), uint16_t(high));
 }
 
 template <typename T, typename U, typename V>
-inline typename std::enable_if<
-    std::is_floating_point<T>::value ||
-    std::is_floating_point<U>::value ||
-    std::is_floating_point<V>::value,
-    uint64_t>::type
-constrain_uint64(T, U, V) = delete;
+inline int32_t constrain_int32(T amt, U low, V high) {
+    static_assert(is_valid_constrain_type<T, int32_t, AP_Int32>::value, "constrain_int32: first argument must be int32_t or AP_Int32");
+    return constrain_value(int32_t(amt), int32_t(low), int32_t(high));
+}
 
-inline double constrain_double(const double amt, const double low, const double high)
-{
-    return constrain_value(amt, low, high);
+template <typename T, typename U, typename V>
+inline uint32_t constrain_uint32(T amt, U low, V high) {
+    static_assert(is_exact_type<T, uint32_t>::value, "constrain_uint32: first argument must be uint32_t");
+    return constrain_value(uint32_t(amt), uint32_t(low), uint32_t(high));
+}
+
+template <typename T, typename U, typename V>
+inline int64_t constrain_int64(T amt, U low, V high) {
+    static_assert(is_exact_type<T, int64_t>::value, "constrain_int64: first argument must be int64_t");
+    return constrain_value(int64_t(amt), int64_t(low), int64_t(high));
+}
+
+template <typename T, typename U, typename V>
+inline uint64_t constrain_uint64(T amt, U low, V high) {
+    static_assert(is_exact_type<T, uint64_t>::value, "constrain_uint64: first argument must be uint64_t");
+    return constrain_value(uint64_t(amt), uint64_t(low), uint64_t(high));
+}
+
+template <typename T, typename U, typename V>
+inline double constrain_double(T amt, U low, V high) {
+    static_assert(is_exact_type<T, double>::value, "constrain_double: first argument must be double");
+    return constrain_value(double(amt), double(low), double(high));
 }
 
 // degrees -> radians

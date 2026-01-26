@@ -460,7 +460,7 @@ void Morse::update(const struct sitl_input &input)
 
     if (sensors_receive()) {
         // update average frame time used for extrapolation
-        double dt = constrain_float(state.timestamp - last_state.timestamp, 0.001, 1.0/50);
+        double dt = constrain_double(state.timestamp - last_state.timestamp, 0.001, 1.0/50);
         if (average_frame_time_s < 1.0e-6) {
             average_frame_time_s = dt;
         }

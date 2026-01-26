@@ -394,7 +394,7 @@ uint16_t AP_Frsky_SPort::prep_number(int32_t number, uint8_t digits, uint8_t pow
 
     if ((digits == 2) && (power == 0)) { // number encoded on 7 bits, client side needs to know if expected range is 0,127 or -63,63
         uint8_t max_value = number < 0 ? (0x1<<6)-1 : (0x1<<7)-1;
-        res = constrain_int16(abs_number,0,max_value);
+        res = constrain_int16(int16_t(abs_number), 0, max_value);
         if (number < 0) {   // if number is negative, add sign bit in front
             res |= 1U<<6;
         }
