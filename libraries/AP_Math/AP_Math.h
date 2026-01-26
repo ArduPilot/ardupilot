@@ -181,30 +181,77 @@ inline int16_t constrain_int16(const int16_t amt, const int16_t low, const int16
     return constrain_value(amt, low, high);
 }
 
+// Deleted template to catch floating point arguments at compile time
+template <typename T, typename U, typename V>
+inline typename std::enable_if<
+    std::is_floating_point<T>::value ||
+    std::is_floating_point<U>::value ||
+    std::is_floating_point<V>::value,
+    int16_t>::type
+constrain_int16(T, U, V) = delete;
+
 inline uint16_t constrain_uint16(const uint16_t amt, const uint16_t low, const uint16_t high)
 {
     return constrain_value(amt, low, high);
 }
+
+template <typename T, typename U, typename V>
+inline typename std::enable_if<
+    std::is_floating_point<T>::value ||
+    std::is_floating_point<U>::value ||
+    std::is_floating_point<V>::value,
+    uint16_t>::type
+constrain_uint16(T, U, V) = delete;
 
 inline int32_t constrain_int32(const int32_t amt, const int32_t low, const int32_t high)
 {
     return constrain_value(amt, low, high);
 }
 
+template <typename T, typename U, typename V>
+inline typename std::enable_if<
+    std::is_floating_point<T>::value,
+    int32_t>::type
+constrain_int32(T, U, V) = delete;
+
 inline uint32_t constrain_uint32(const uint32_t amt, const uint32_t low, const uint32_t high)
 {
     return constrain_value(amt, low, high);
 }
+
+template <typename T, typename U, typename V>
+inline typename std::enable_if<
+    std::is_floating_point<T>::value ||
+    std::is_floating_point<U>::value ||
+    std::is_floating_point<V>::value,
+    uint32_t>::type
+constrain_uint32(T, U, V) = delete;
 
 inline int64_t constrain_int64(const int64_t amt, const int64_t low, const int64_t high)
 {
     return constrain_value(amt, low, high);
 }
 
+template <typename T, typename U, typename V>
+inline typename std::enable_if<
+    std::is_floating_point<T>::value ||
+    std::is_floating_point<U>::value ||
+    std::is_floating_point<V>::value,
+    int64_t>::type
+constrain_int64(T, U, V) = delete;
+
 inline uint64_t constrain_uint64(const uint64_t amt, const uint64_t low, const uint64_t high)
 {
     return constrain_value(amt, low, high);
 }
+
+template <typename T, typename U, typename V>
+inline typename std::enable_if<
+    std::is_floating_point<T>::value ||
+    std::is_floating_point<U>::value ||
+    std::is_floating_point<V>::value,
+    uint64_t>::type
+constrain_uint64(T, U, V) = delete;
 
 inline double constrain_double(const double amt, const double low, const double high)
 {
