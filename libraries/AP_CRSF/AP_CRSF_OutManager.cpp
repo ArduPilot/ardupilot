@@ -35,7 +35,7 @@ const AP_Param::GroupInfo AP_CRSF_OutManager::var_info[] = {
     // @Range: 25 1000
     // @User: Advanced
     // @Units: Hz
-    AP_GROUPINFO("RATE",  1, AP_CRSF_OutManager, _rate_hz, DEFAULT_CRSF_OUTPUT_RATE),
+    AP_GROUPINFO("RATE",  1, AP_CRSF_OutManager, rate_hz, DEFAULT_CRSF_OUTPUT_RATE),
 
     // @Param: RPT_HZ
     // @DisplayName: CRSF output reporting rate
@@ -43,7 +43,7 @@ const AP_Param::GroupInfo AP_CRSF_OutManager::var_info[] = {
     // @Range: 0 5
     // @User: Advanced
     // @Units: Hz
-    AP_GROUPINFO("RPT_HZ",  2, AP_CRSF_OutManager, _reporting_rate_hz, 0),
+    AP_GROUPINFO("RPT_HZ",  2, AP_CRSF_OutManager, reporting_rate_hz, 0),
     AP_GROUPEND
 };
 
@@ -55,7 +55,7 @@ AP_CRSF_OutManager::AP_CRSF_OutManager(void)
 AP_CRSF_Out* AP_CRSF_OutManager::create_instance(AP_HAL::UARTDriver& uart)
 {
 #if AP_CRSF_OUT_ENABLED
-    AP_CRSF_Out* crsf_out = NEW_NOTHROW AP_CRSF_Out(uart, _num_instances, *this);
+    AP_CRSF_Out* crsf_out = NEW_NOTHROW AP_CRSF_Out(uart, num_instances, *this);
     if (crsf_out == nullptr) {
         return nullptr;
     }
@@ -69,18 +69,10 @@ AP_CRSF_Out* AP_CRSF_OutManager::create_instance(AP_HAL::UARTDriver& uart)
 void AP_CRSF_OutManager::update()
 {
     // give all the other instances a chance to run
-    for (uint8_t i = 0; i < _num_instances; i++) {
-        if (_instances[i] != nullptr) {
-            _instances[i]->update();
+    for (uint8_t i = 0; i < num_instances; i++) {
+        if (instances[i] != nullptr) {
+            instances[i]->update();
         }
-    }
-}
-
-AP_CRSF_OutManager::~AP_CRSF_OutManager()
-{
-    for (uint8_t i = 0; i < _num_instances; i++) {
-        delete _instances[i];
-        _instances[i] = nullptr;
     }
 }
 
@@ -89,8 +81,8 @@ void AP_CRSF_OutManager::init()
 {
     AP_SerialManager &serial_manager = AP::serialmanager();
 
-    for (uint8_t i = _num_instances; i < SERIALMANAGER_MAX_PORTS; i++) {
-        if (_instances[i] != nullptr) {
+    for (uint8_t i = num_instances; i < SERIALMANAGER_MAX_PORTS; i++) {
+        if (instances[i] != nullptr) {
             continue;
         }
 
@@ -108,12 +100,12 @@ void AP_CRSF_OutManager::init()
         }
 
         if (protocol == AP_SerialManager::SerialProtocol_CRSF) {
-            _instances[i] = NEW_NOTHROW AP_RCProtocol_CRSF(AP::RC(), AP_RCProtocol_CRSF::PortMode::DIRECT_VTX, uart);
-            _num_instances++;
+            instances[i] = NEW_NOTHROW AP_RCProtocol_CRSF(AP::RC(), AP_RCProtocol_CRSF::PortMode::DIRECT_VTX, uart);
+            num_instances++;
 #if AP_CRSF_OUT_ENABLED
         } else if (protocol == AP_SerialManager::SerialProtocol_CRSF_Output) {
-            _instances[i] = create_instance(*uart);
-            _num_instances++;
+            instances[i] = create_instance(*uart);
+            num_instances++;
         }
 #endif
     }
