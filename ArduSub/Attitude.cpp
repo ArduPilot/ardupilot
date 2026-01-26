@@ -5,7 +5,7 @@
 void Sub::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max)
 {
     // sanity check angle max parameter
-    const float angle_max_cd = constrain_float(attitude_control.lean_angle_max_cd(), 1000, 8000);
+    const float angle_max_cd = attitude_control.lean_angle_max_cd();
 
     // limit max lean angle
     angle_max = constrain_float(angle_max, 1000, angle_max_cd);
