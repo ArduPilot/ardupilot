@@ -884,10 +884,38 @@ void GCS_MAVLINK_Copter::handle_manual_control_axes(const mavlink_manual_control
         return;
     }
 
-    manual_override(copter.channel_roll, packet.y, 1000, 2000, tnow);
-    manual_override(copter.channel_pitch, packet.x, 1000, 2000, tnow, true);
+    constexpr uint8_t EXT_PITCH = 1U << 0;
+    constexpr uint8_t EXT_ROLL  = 1U << 1;
+    constexpr uint8_t EXT_AUX1  = 1U << 2;
+    constexpr uint8_t EXT_AUX2  = 1U << 3;
+    constexpr uint8_t EXT_AUX3  = 1U << 4;
+    constexpr uint8_t EXT_AUX4  = 1U << 5;
+    constexpr uint8_t EXT_AUX5  = 1U << 6;
+    constexpr uint8_t EXT_AUX6  = 1U << 7;
+
+    const uint8_t enabled = packet.enabled_extensions;
+    const int16_t pitch_in = (enabled & EXT_PITCH) ? packet.s : packet.x;
+    const int16_t roll_in  = (enabled & EXT_ROLL)  ? packet.t : packet.y;
+
+    manual_override(copter.channel_roll, roll_in, 1000, 2000, tnow);
+    manual_override(copter.channel_pitch, pitch_in, 1000, 2000, tnow, true);
     manual_override(copter.channel_throttle, packet.z, 0, 1000, tnow);
     manual_override(copter.channel_yaw, packet.r, 1000, 2000, tnow);
+
+    // Map AUX1-6 onto RC channels 7-12.
+    const int16_t aux_values[6] = { packet.aux1, packet.aux2, packet.aux3, packet.aux4, packet.aux5, packet.aux6 };
+    const uint8_t aux_bits[6] = { EXT_AUX1, EXT_AUX2, EXT_AUX3, EXT_AUX4, EXT_AUX5, EXT_AUX6 };
+    for (uint8_t i = 0; i < 6; i++) {
+        const int16_t value = (enabled & aux_bits[i]) ? aux_values[i] : INT16_MAX;
+        manual_override(rc().channel(6 + i), value, 1000, 2000, tnow);
+    }
+
+    // Map buttons 1-6 onto RC channels 13-18.
+    for (uint8_t i = 0; i < 4; i++) {
+        const bool pressed = (packet.buttons & (1U << i)) != 0;
+        const int16_t value = pressed ? 1000 : -1000;
+        manual_override(rc().channel(12 + i), value, 1000, 2000, tnow);
+    }
 }
 
 // sanity check velocity or acceleration vector components are numbers
