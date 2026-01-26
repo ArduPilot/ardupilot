@@ -23,7 +23,7 @@
 
 #include "AP_CRSF_config.h"
 
-#if AP_CRSF_ENABLED
+#if AP_CRSF_PROTOCOL_ENABLED
 
 #include <stdint.h>
 #include <AP_HAL/utility/sparse-endian.h>
@@ -201,10 +201,9 @@ public:
     };
 
     // protocol pure virtual base class
-    virtual ~AP_CRSF_Protocol() = 0;
     virtual void update(void) = 0;
 
-    static const char* get_frame_type(uint8_t byte, uint8_t subtype = 0);
+    static const char* get_frame_type_name(uint8_t byte, uint8_t subtype = 0);
 
     // decode channels from the standard 11bit format (CRSFv2)
     static void decode_11bit_channels(const uint8_t* payload, uint8_t nchannels, uint16_t *values);
@@ -233,6 +232,4 @@ public:
     static void encode_heartbeat_frame(Frame& frame, DeviceAddress origin);
 };
 
-inline AP_CRSF_Protocol::~AP_CRSF_Protocol() {};
-
-#endif // AP_CRSF_ENABLED
+#endif // AP_CRSF_PROTOCOL_ENABLED

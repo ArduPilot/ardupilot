@@ -36,8 +36,6 @@ class AP_CRSF_OutManager {
 public:
     // constructor for configuration
     AP_CRSF_OutManager();
-    
-    ~AP_CRSF_OutManager();
 
     // constructor for serial interaction
     AP_CRSF_Out* create_instance(AP_HAL::UARTDriver& uart);
@@ -53,11 +51,11 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    uint8_t _num_instances;
-    AP_CRSF_Protocol* _instances[SERIALMANAGER_NUM_PORTS];
+    uint8_t num_instances;
+    AP_CRSF_Protocol* instances[SERIALMANAGER_NUM_PORTS];
 
-    AP_Int16 _rate_hz;
-    AP_Float _reporting_rate_hz;
+    AP_Int16 rate_hz;
+    AP_Float reporting_rate_hz;
 };
 
 #endif // AP_CRSF_OUT_ENABLED

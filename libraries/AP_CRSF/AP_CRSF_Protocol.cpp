@@ -21,7 +21,7 @@
 
 #include "AP_CRSF_config.h"
 
-#if AP_CRSF_ENABLED
+#if AP_CRSF_PROTOCOL_ENABLED
 
 #pragma GCC optimize("O2")
 
@@ -49,7 +49,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 // get printable name for frame type (for debug)
-const char* AP_CRSF_Protocol::get_frame_type(uint8_t byte, uint8_t subtype)
+const char* AP_CRSF_Protocol::get_frame_type_name(uint8_t byte, uint8_t subtype)
 {
     switch(byte) {
     case CRSF_FRAMETYPE_GPS:
@@ -215,22 +215,13 @@ void AP_CRSF_Protocol::encode_ping_frame(Frame& frame, DeviceAddress destination
     frame.device_address = DeviceAddress::CRSF_ADDRESS_SYNC_BYTE;
     frame.type = CRSF_FRAMETYPE_PARAM_DEVICE_PING;
 
-    // Command payload buffer: dest(1), origin(1)
-    uint8_t command_data[2];
-
     // Construct the inner command frame header
-    ParameterPingFrame* cmd_header = (ParameterPingFrame*)command_data;
-    cmd_header->destination = destination;
-    cmd_header->origin = origin;
+    ParameterPingFrame* ping_frame = (ParameterPingFrame*)frame.payload;
+    ping_frame->destination = destination;
+    ping_frame->origin = origin;
 
     // Calculate the inner CRC (poly 0xBA) over the 2-byte command data
-
-    const uint8_t inner_payload_len = 2;
-    uint8_t inner_crc = crc8_dvb_update_generic(0, command_data, inner_payload_len, 0xBA);
-
-    // Copy the command data and the inner CRC into the final frame payload
-    memcpy(frame.payload, command_data, inner_payload_len);
-    frame.payload[inner_payload_len] = inner_crc;
+    frame.payload[2] = crc8_dvb_update_generic(0, ping_frame, 2, 0xBA);
 
     // Set the outer frame length.
     // It is the length of the payload (type + inner command frame + outer CRC)
@@ -246,24 +237,20 @@ void AP_CRSF_Protocol::encode_speed_proposal(uint32_t baudrate, Frame& frame, De
     frame.type = CRSF_FRAMETYPE_COMMAND;
 
     // Command payload buffer: dest(1), origin(1), cmd_id(1), sub_cmd(1), port_id(1), baud(4)
-    uint8_t command_data[9];
-
     // Construct the inner command frame header
-    CommandFrame* cmd_header = (CommandFrame*)command_data;
-    cmd_header->destination = destination;
-    cmd_header->origin = origin;
-    cmd_header->command_id = CRSF_COMMAND_GENERAL;
+    CommandFrame* cmd_frame = (CommandFrame*)frame.payload;
+    cmd_frame->destination = destination;
+    cmd_frame->origin = origin;
+    cmd_frame->command_id = CRSF_COMMAND_GENERAL;
 
     // Construct the sub-command payload
-    uint8_t* sub_payload = cmd_header->payload;
+    uint8_t* sub_payload = cmd_frame->payload;
     sub_payload[0] = CRSF_COMMAND_GENERAL_CRSF_SPEED_PROPOSAL;
     sub_payload[1] = 1; // port ID, 0 for UART
-    uint32_t baud_be = htobe32(baudrate);
-    memcpy(&sub_payload[2], &baud_be, sizeof(baud_be));
+    put_be32_ptr(&sub_payload[2], baudrate);
 
     // Copy the command data into the final frame payload
     const uint8_t inner_payload_len = 9;
-    memcpy(frame.payload, command_data, inner_payload_len);
 
     // Calculate the inner CRC (poly 0xBA) over the 9-byte command data + command id
     frame.payload[inner_payload_len] = crc8_dvb_update_generic(0, (uint8_t*)(&frame.type), inner_payload_len + 1, 0xBA);
@@ -364,18 +351,16 @@ void AP_CRSF_Protocol::encode_device_info_frame(Frame& frame, DeviceAddress dest
     frame.device_address = DeviceAddress::CRSF_ADDRESS_SYNC_BYTE;
     frame.type = CRSF_FRAMETYPE_PARAM_DEVICE_INFO;
 
-    ParameterDeviceInfoFrame info;
+    ParameterDeviceInfoFrame* info = (ParameterDeviceInfoFrame*)frame.payload;
 
     // Construct the inner command frame header
-    info.destination = destination;
-    info.origin = origin;
+    info->destination = destination;
+    info->origin = origin;
 
-    const uint8_t inner_payload_len = encode_device_info(info, 0);
+    const uint8_t inner_payload_len = encode_device_info(*info, 0);
     // Calculate the inner CRC (poly 0xBA) over the 2-byte command data
-    uint8_t inner_crc = crc8_dvb_update_generic(0, (uint8_t*)&info, inner_payload_len, 0xBA);
+    uint8_t inner_crc = crc8_dvb_update_generic(0, info, inner_payload_len, 0xBA);
 
-    // Copy the command data and the inner CRC into the final frame payload
-    memcpy(frame.payload, (uint8_t*)&info, inner_payload_len);
     frame.payload[inner_payload_len] = inner_crc;
 
     // Set the outer frame length.
@@ -390,7 +375,7 @@ void AP_CRSF_Protocol::encode_link_stats_tx_frame(uint32_t fps, Frame& frame, De
     frame.device_address = DeviceAddress::CRSF_ADDRESS_SYNC_BYTE;
     frame.type = CRSF_FRAMETYPE_LINK_STATISTICS_TX;
 
-    LinkStatisticsTXFrame* stats = (LinkStatisticsTXFrame*)&frame.payload;
+    LinkStatisticsTXFrame* stats = (LinkStatisticsTXFrame*)frame.payload;
     stats->fps = fps/10;
     stats->rssi_db = 0;
     stats->rssi_percent = 100;
@@ -422,7 +407,7 @@ uint32_t AP_CRSF_Protocol::encode_device_info(ParameterDeviceInfoFrame& info, ui
     n += 4;
 
     put_be32_ptr(&info.payload[n], // hardware id
-        uint32_t(fwver.vehicle_type) << 24 | uint32_t(fwver.board_type) << 16 | uint32_t(fwver.board_subtype));
+        uint32_t(fwver.vehicle_type) << 24 | uint32_t(fwver.board_type) << 16);
     n += 4;
 
     put_be32_ptr(&info.payload[n], // firmware id, major/minor should be 3rd and 4th byte
@@ -441,11 +426,11 @@ void AP_CRSF_Protocol::encode_heartbeat_frame(Frame& frame, DeviceAddress origin
     frame.device_address = DeviceAddress::CRSF_ADDRESS_SYNC_BYTE;
     frame.type = CRSF_FRAMETYPE_HEARTBEAT;
 
-    HeartbeatFrame* hb = (HeartbeatFrame*)&frame.payload;
+    HeartbeatFrame* hb = (HeartbeatFrame*)frame.payload;
     hb->origin = origin;
 
     // It is the length of the payload + type + crc
     frame.length = sizeof(HeartbeatFrame) + 2;
 }
 
-#endif // AP_CRSF_ENABLED
+#endif // AP_CRSF_PROTOCOL_ENABLED

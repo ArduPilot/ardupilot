@@ -48,52 +48,52 @@ static uint32_t num_frames = 0;
 
 #define DEFAULT_CRSF_OUTPUT_RATE      250U // equivalent to tracer
 
-AP_CRSF_Out* AP_CRSF_Out::_singleton;
+AP_CRSF_Out* AP_CRSF_Out::singleton;
 
 extern const AP_HAL::HAL& hal;
 
-AP_CRSF_Out::AP_CRSF_Out(AP_HAL::UARTDriver& uart, uint8_t instance, AP_CRSF_OutManager& frontend) :
-    _instance_idx(instance), _uart(uart), _frontend(frontend)
+AP_CRSF_Out::AP_CRSF_Out(AP_HAL::UARTDriver& _uart, uint8_t instance, AP_CRSF_OutManager& _frontend) :
+    instance_idx(instance), uart(_uart), frontend(_frontend)
 {
     // in the future we could consider supporting multiple output handlers
-    if (_singleton != nullptr) {
+    if (singleton != nullptr) {
         AP_HAL::panic("Duplicate CRSF_Out handler");
     }
 
-    _singleton = this;
+    singleton = this;
 
     init(uart);
 }
 
 // Initialise the CRSF output driver
-bool AP_CRSF_Out::init(AP_HAL::UARTDriver& uart)
+bool AP_CRSF_Out::init(AP_HAL::UARTDriver& _uart)
 {
-    if (_state != State::WAITING_FOR_PORT) {
+    if (state != State::WAITING_FOR_PORT) {
         return false;
     }
 
-    _crsf_port = NEW_NOTHROW AP_RCProtocol_CRSF(AP::RC(), AP_RCProtocol_CRSF::PortMode::DIRECT_RCOUT, &uart);
+    crsf_port = NEW_NOTHROW AP_RCProtocol_CRSF(AP::RC(), AP_RCProtocol_CRSF::PortMode::DIRECT_RCOUT, &_uart);
 
-    if (_crsf_port == nullptr) {
+    if (crsf_port == nullptr) {
         debug_rcout("Init failed: could not create CRSF output port");
         return false;
     }
 
-    const uint16_t rate = _frontend._rate_hz.get();
+    const uint16_t rate = frontend.rate_hz.get();
     if (rate > 0) {
-        _frame_interval_us = 1000000UL / rate;
+        frame_interval_us = 1000000UL / rate;
     } else {
-        _frame_interval_us = 1000000UL / DEFAULT_CRSF_OUTPUT_RATE;
+        frame_interval_us = 1000000UL / DEFAULT_CRSF_OUTPUT_RATE;
     }
 
-    _scheduler.init(_tasks, rate);
-    _state = State::WAITING_FOR_RC_LOCK;
-    _scheduler.set_task_rate(REPORTING, _frontend._reporting_rate_hz);
+    scheduler.init(tasks, rate);
+    state = State::WAITING_FOR_RC_LOCK;
+    scheduler.set_task_rate(REPORTING, frontend.reporting_rate_hz);
 
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_CRSF_Out::crsf_out_thread, void), "crsf", 2048, AP_HAL::Scheduler::PRIORITY_RCOUT, 1)) {
-        delete _crsf_port;
-        _crsf_port = nullptr;
+        delete crsf_port;
+        crsf_port = nullptr;
         debug_rcout("Failed to create CRSF_Out thread");
         return false;
     }
@@ -101,76 +101,65 @@ bool AP_CRSF_Out::init(AP_HAL::UARTDriver& uart)
     return true;
 }
 
-bool AP_CRSF_Out::should_do_status_update()
-{
-    const uint32_t now_ms = AP_HAL::millis();
-    if (AP_HAL::timeout_expired(_last_status_update_ms, now_ms, 1000UL)) {
-        _last_status_update_ms = now_ms;
-        return true;
-    }
-
-    return false;
-}
-
 void AP_CRSF_Out::update_rates_status()
 {
-    const float report_rate = _frontend._reporting_rate_hz.get();
+    const float report_rate = frontend.reporting_rate_hz.get();
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CRSFOut: RC: %uHz, Lat: %.1fms",
-                    int16_t(_rate_rc_counter*report_rate), _latency_us / 1000.0f);
-    _rate_rc_counter = 0;
+                    int16_t(rate_rc_counter*report_rate), latency_us / 1000.0f);
+    rate_rc_counter = 0;
 }
 
 void AP_CRSF_Out::crsf_out_thread()
 {
     // make sure the current thread is the uart owner
-    _crsf_port->start_uart();
+    crsf_port->start_uart();
 
     while (true) {
 
 #ifdef CRSF_RCOUT_DEBUG
         const uint32_t now_ms = AP_HAL::millis();
         if (now_ms - last_update_debug_ms > 1000) {
-            debug_rcout("Frame rate: %uHz, wanted: %uHz.", unsigned(num_frames), unsigned(_frontend._rate_hz.get()));
+            debug_rcout("Frame rate: %uHz, wanted: %uHz.", unsigned(num_frames), unsigned(frontend.rate_hz.get()));
             last_update_debug_ms = now_ms;
             num_frames = 0;
         }
 #endif
 
         const uint32_t now_us = AP_HAL::micros();
-        uint32_t interval_us = _frame_interval_us;
+        uint32_t interval_us = frame_interval_us;
 
         // if we have not negotiated a faster baudrate do not go above the default output rate
-        if (uint16_t(_frontend._rate_hz.get()) > DEFAULT_CRSF_OUTPUT_RATE && _uart.get_baud_rate() == CRSF_BAUDRATE) {
+        if (uint16_t(frontend.rate_hz.get()) > DEFAULT_CRSF_OUTPUT_RATE && uart.get_baud_rate() == CRSF_BAUDRATE) {
             interval_us = 1000000UL / DEFAULT_CRSF_OUTPUT_RATE;
         }
 
-        const uint32_t timeout_remaining_us = AP_HAL::timeout_remaining(_last_frame_us, now_us, interval_us);
+        const uint32_t timeout_remaining_us = AP_HAL::timeout_remaining(last_frame_us, now_us, interval_us);
         if (timeout_remaining_us > 0) {
             hal.scheduler->delay_microseconds(timeout_remaining_us);
         }
 
         // Check for overrun - if we are late by more than 50% of an interval,
         // give up on the old timeline and reset.
-        if (AP_HAL::timeout_remaining(_last_frame_us, now_us, interval_us + interval_us/2) == 0) {
-            _last_frame_us = now_us;
+        if (AP_HAL::timeout_remaining(last_frame_us, now_us, interval_us + interval_us/2) == 0) {
+            last_frame_us = now_us;
         } else {
             // Use scheduled frame time to maintain precise rate
-            _last_frame_us = _last_frame_us + interval_us;  // this may wrap, but that is still correct
+            last_frame_us = last_frame_us + interval_us;  // this may wrap, but that is still correct
         }
 
 #ifdef CRSF_RCOUT_DEBUG
         num_frames++;
 #endif
-        if (_state == State::RUNNING && _crsf_port->is_rx_active()) {
-            const bool send_rc_frame = _pwm_is_fresh;
-            _pwm_is_fresh = false;
+        if (state == State::RUNNING && crsf_port->is_rx_active()) {
+            const bool send_rc_frame = pwm_is_fresh;
+            pwm_is_fresh = false;
 
             if (send_rc_frame) {
-                _scheduler.run_task_immediately(AETR_RC_FRAME);
+                scheduler.run_task_immediately(AETR_RC_FRAME);
             }
 
-            if (!_scheduler.update() && !send_rc_frame) {
+            if (!scheduler.update() && !send_rc_frame) {
                 send_heartbeat();
             }
         } else {
@@ -178,7 +167,7 @@ void AP_CRSF_Out::crsf_out_thread()
         }
 
         // process bytes from the UART
-        _crsf_port->update_uart();
+        crsf_port->update_uart();
     }
 }
 
@@ -191,19 +180,20 @@ void AP_CRSF_Out::update()
 // PWM push called from SRV_Channels::push
 void AP_CRSF_Out::push()
 {
-    _pwm_is_fresh = true;
+    pwm_is_fresh = true;
 }
 
 // run the state machine to get us to the running state
 void AP_CRSF_Out::run_state_machine()
 {
     const uint32_t now = AP_HAL::micros();
+    const uint32_t now_ms = AP_HAL::millis();
 
     const uint32_t BAUD_NEG_TIMEOUT_US = 1500000; // 1.5 second timeout for a response
     const uint32_t BAUD_NEG_INTERVAL_US = 500000; // send proposal every 500ms
     const uint32_t LIVENESS_CHECK_TIMEOUT_US = 500000; // timeout for health check 500ms
 
-    switch (_state) {
+    switch (state) {
     case State::WAITING_FOR_PORT:
         // should have been handled above
         break;
@@ -214,12 +204,13 @@ void AP_CRSF_Out::run_state_machine()
         // because we received something back
         send_aetr_rc_frame();
 
-        if (should_do_status_update()) {
+        if (AP_HAL::timeout_expired(last_status_update_ms, now_ms, 1000UL)) {
+            last_status_update_ms = now_ms;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CRSFOut: waiting for RC lock");
         }
 
-        if (_crsf_port->is_rx_active()) {
-            _state = State::WAITING_FOR_DEVICE_INFO;
+        if (crsf_port->is_rx_active()) {
+            state = State::WAITING_FOR_DEVICE_INFO;
             debug_rcout("Telemetry active, requesting device information");
         }
         break;
@@ -227,11 +218,11 @@ void AP_CRSF_Out::run_state_machine()
     case State::WAITING_FOR_DEVICE_INFO:
         send_ping_frame();
 
-        if (version.major > 0 && _crsf_port->is_rx_active()) {
-            _state = State::NEGOTIATING_2M;
-            _target_baudrate = 2000000;
-            _crsf_port->reset_bootstrap_baudrate();
-            _baud_negotiation_result = BaudNegotiationResult::PENDING;
+        if (version.major > 0 && crsf_port->is_rx_active()) {
+            state = State::NEGOTIATING_2M;
+            target_baudrate = 2000000;
+            crsf_port->reset_bootstrap_baudrate();
+            baud_negotiation_result = BaudNegotiationResult::PENDING;
             debug_rcout("Initialised, negotiating baudrate");
         }
         break;
@@ -242,77 +233,77 @@ void AP_CRSF_Out::run_state_machine()
         send_ping_frame();
 
         // Check for response
-        if (_baud_negotiation_result == BaudNegotiationResult::SUCCESS) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CRSFOut: negotiated %uMBd", unsigned(_target_baudrate/1000000));
-            _state = State::RUNNING;
+        if (baud_negotiation_result == BaudNegotiationResult::SUCCESS) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CRSFOut: negotiated %uMBd", unsigned(target_baudrate/1000000));
+            state = State::RUNNING;
             break;
         }
 
-        if (_baud_neg_start_us == 0) {
-            _baud_neg_start_us = now;
+        if (baud_neg_start_us == 0) {
+            baud_neg_start_us = now;
         }
 
         // Check for explicit failure (rejection)
-        if (_baud_negotiation_result == BaudNegotiationResult::FAILED) {
-            if (_state == State::NEGOTIATING_2M) {
+        if (baud_negotiation_result == BaudNegotiationResult::FAILED) {
+            if (state == State::NEGOTIATING_2M) {
                 debug_rcout("2M baud negotiation rejected, trying 1M");
-                _state = State::NEGOTIATING_1M;
-                _target_baudrate = 1000000;
-                _crsf_port->reset_bootstrap_baudrate();
-                _baud_negotiation_result = BaudNegotiationResult::PENDING;
-                _last_baud_neg_us = 0; // force immediate send
-                _baud_neg_start_us = 0;
+                state = State::NEGOTIATING_1M;
+                target_baudrate = 1000000;
+                crsf_port->reset_bootstrap_baudrate();
+                baud_negotiation_result = BaudNegotiationResult::PENDING;
+                last_baud_neg_us = 0; // force immediate send
+                baud_neg_start_us = 0;
             } else { // NEGOTIATING_1M
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "CRSFOut: baud negotiation failed, using 416kBd");
-                _scheduler.set_loop_rate(DEFAULT_CRSF_OUTPUT_RATE);
-                _state = State::RUNNING;
+                scheduler.set_loop_rate(DEFAULT_CRSF_OUTPUT_RATE);
+                state = State::RUNNING;
             }
             break;
         }
 
         // Check for timeout
-        if (now - _baud_neg_start_us > BAUD_NEG_TIMEOUT_US) {
-            if (_state == State::NEGOTIATING_2M) {
+        if (now - baud_neg_start_us > BAUD_NEG_TIMEOUT_US) {
+            if (state == State::NEGOTIATING_2M) {
                 debug_rcout("2M baud negotiation timed out, trying 1M");
-                _state = State::NEGOTIATING_1M;
-                _target_baudrate = 1000000;
-                _crsf_port->reset_bootstrap_baudrate();
-                _baud_negotiation_result = BaudNegotiationResult::PENDING;
-                _last_baud_neg_us = 0; // force immediate send
-                _baud_neg_start_us = 0;
+                state = State::NEGOTIATING_1M;
+                target_baudrate = 1000000;
+                crsf_port->reset_bootstrap_baudrate();
+                baud_negotiation_result = BaudNegotiationResult::PENDING;
+                last_baud_neg_us = 0; // force immediate send
+                baud_neg_start_us = 0;
             } else { // NEGOTIATING_1M
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "CRSFOut: baud negotiation timed out, using 416kBd");
-                _state = State::RUNNING;
+                state = State::RUNNING;
             }
             break;
         }
 
         // If pending, send proposal periodically
-        if (now - _last_baud_neg_us > BAUD_NEG_INTERVAL_US) {
-            _last_baud_neg_us = now;
-            send_speed_proposal(_target_baudrate);
-            debug_rcout("Sent speed proposal for %u", (unsigned)_target_baudrate);
+        if (now - last_baud_neg_us > BAUD_NEG_INTERVAL_US) {
+            last_baud_neg_us = now;
+            send_speed_proposal(target_baudrate);
+            debug_rcout("Sent speed proposal for %u", (unsigned)target_baudrate);
         }
         break;
     }
 
     case State::RUNNING:
-        if (!_crsf_port->is_rx_active()) {
+        if (!crsf_port->is_rx_active()) {
             debug_rcout("Connection lost, checking liveness");
-            _last_liveness_check_us = now;
-            _state = State::HEALTH_CHECK_PING;
+            last_liveness_check_us = now;
+            state = State::HEALTH_CHECK_PING;
             send_ping_frame(true);
         }
         break;
 
     case State::HEALTH_CHECK_PING:
-        if (_crsf_port->is_rx_active()) {
-            _state = State::RUNNING;
-        } else if (now - _last_liveness_check_us > LIVENESS_CHECK_TIMEOUT_US) {
+        if (crsf_port->is_rx_active()) {
+            state = State::RUNNING;
+        } else if (now - last_liveness_check_us > LIVENESS_CHECK_TIMEOUT_US) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "CRSFOut: connection lost");
-            _crsf_port->reset_bootstrap_baudrate();
-            _baud_negotiation_result = BaudNegotiationResult::PENDING;
-            _state = State::WAITING_FOR_RC_LOCK;
+            crsf_port->reset_bootstrap_baudrate();
+            baud_negotiation_result = BaudNegotiationResult::PENDING;
+            state = State::WAITING_FOR_RC_LOCK;
         }
         break;
     }
@@ -338,20 +329,20 @@ bool AP_CRSF_Out::decode_crsf_packet(const AP_CRSF_Protocol::Frame& _frame)
                 const bool success = cmd->payload[2];
                 if (success) {
                     debug_rcout("CRSF Speed Response Received: SUCCESS");
-                    _baud_negotiation_result = BaudNegotiationResult::SUCCESS;
+                    baud_negotiation_result = BaudNegotiationResult::SUCCESS;
                     // change baud on our end now
-                    _crsf_port->change_baud_rate(_target_baudrate);
+                    crsf_port->change_baud_rate(target_baudrate);
                 } else {
                     debug_rcout("CRSF Speed Response Received: FAILED");
-                    _baud_negotiation_result = BaudNegotiationResult::FAILED;
+                    baud_negotiation_result = BaudNegotiationResult::FAILED;
                 }
             }
         }
             break;
         case AP_CRSF_Protocol::FrameType::CRSF_FRAMETYPE_PARAM_DEVICE_INFO:
-            if (_last_latency_ping_us > 0) {
-                _latency_us = AP_HAL::micros() - _last_latency_ping_us;
-                _last_latency_ping_us = 0;
+            if (last_latency_ping_us > 0) {
+                latency_us = AP_HAL::micros() - last_latency_ping_us;
+                last_latency_ping_us = 0;
             }
             AP_CRSF_Protocol::process_device_info_frame((AP_CRSF_Protocol::ParameterDeviceInfoFrame*)_frame.payload,
                                                          &version, true);
@@ -373,7 +364,7 @@ bool AP_CRSF_Out::decode_crsf_packet(const AP_CRSF_Protocol::Frame& _frame)
 void AP_CRSF_Out::send_aetr_rc_frame()
 {
     send_rc_frame(0, 4);
-    _rate_rc_counter++;
+    rate_rc_counter++;
 }
 
 // send aux frame, this can go out at a low rate - 50Hz
@@ -402,30 +393,30 @@ void AP_CRSF_Out::send_rc_frame(uint8_t start_chan, uint8_t nchan)
     uint8_t payload_len = AP_CRSF_Protocol::encode_variable_bit_channels(frame.payload, channels, nchan, start_chan);
     frame.length = payload_len + 2; // +1 for type, +1 for CRC
 
-    _crsf_port->write_frame(&frame);
+    crsf_port->write_frame(&frame);
 }
 
 void AP_CRSF_Out::send_latency_ping_frame()
 {
-    _last_latency_ping_us = AP_HAL::micros();
+    last_latency_ping_us = AP_HAL::micros();
     send_ping_frame(true);
 }
 
 void AP_CRSF_Out::send_ping_frame(bool force)
 {
     // only send pings at 50Hz max
-    uint32_t now_ms = AP_HAL::millis();
-    if (now_ms - _last_ping_frame_ms < 20 && !force) {
+    const uint32_t now_ms = AP_HAL::millis();
+    if (!AP_HAL::timeout_expired(last_ping_frame_ms, now_ms, 20UL) && !force) {
         return;
     }
-    _last_ping_frame_ms = now_ms;
+    last_ping_frame_ms = now_ms;
 
     debug_rcout("send_ping_frame()");
 
     AP_CRSF_Protocol::Frame frame;
     AP_CRSF_Protocol::encode_ping_frame(frame, DeviceAddress::CRSF_ADDRESS_FLIGHT_CONTROLLER, DeviceAddress::CRSF_ADDRESS_CRSF_RECEIVER);
 
-    _crsf_port->write_frame(&frame);
+    crsf_port->write_frame(&frame);
 }
 
 // send a baudrate proposal
@@ -433,12 +424,12 @@ void AP_CRSF_Out::send_speed_proposal(uint32_t baudrate)
 {
     debug_rcout("send_speed_proposal(%u)", (unsigned)baudrate);
 
-    _crsf_port->change_baud_rate(baudrate);
+    crsf_port->change_baud_rate(baudrate);
 
     AP_CRSF_Protocol::Frame frame;
     AP_CRSF_Protocol::encode_speed_proposal(baudrate, frame, DeviceAddress::CRSF_ADDRESS_FLIGHT_CONTROLLER, DeviceAddress::CRSF_ADDRESS_CRSF_RECEIVER);
 
-    _crsf_port->write_frame(&frame);
+    crsf_port->write_frame(&frame);
 }
 
 void AP_CRSF_Out::send_device_info()
@@ -448,7 +439,7 @@ void AP_CRSF_Out::send_device_info()
     AP_CRSF_Protocol::Frame frame;
     AP_CRSF_Protocol::encode_device_info_frame(frame, DeviceAddress::CRSF_ADDRESS_FLIGHT_CONTROLLER, DeviceAddress::CRSF_ADDRESS_CRSF_RECEIVER);
 
-    _crsf_port->write_frame(&frame);
+    crsf_port->write_frame(&frame);
 }
 
 void AP_CRSF_Out::send_link_stats_tx()
@@ -456,9 +447,9 @@ void AP_CRSF_Out::send_link_stats_tx()
     debug_rcout("send_link_stats_tx()");
 
     AP_CRSF_Protocol::Frame frame;
-    AP_CRSF_Protocol::encode_link_stats_tx_frame(_frontend._rate_hz, frame, DeviceAddress::CRSF_ADDRESS_FLIGHT_CONTROLLER, DeviceAddress::CRSF_ADDRESS_CRSF_RECEIVER);
+    AP_CRSF_Protocol::encode_link_stats_tx_frame(frontend.rate_hz, frame, DeviceAddress::CRSF_ADDRESS_FLIGHT_CONTROLLER, DeviceAddress::CRSF_ADDRESS_CRSF_RECEIVER);
 
-    _crsf_port->write_frame(&frame);
+    crsf_port->write_frame(&frame);
 }
 
 void AP_CRSF_Out::send_heartbeat()
@@ -466,7 +457,7 @@ void AP_CRSF_Out::send_heartbeat()
     AP_CRSF_Protocol::Frame frame;
     AP_CRSF_Protocol::encode_heartbeat_frame(frame, DeviceAddress::CRSF_ADDRESS_CRSF_RECEIVER);
 
-    _crsf_port->write_frame(&frame);
+    crsf_port->write_frame(&frame);
 }
 
 namespace AP {
