@@ -3485,6 +3485,36 @@ bool AP_AHRS::using_extnav_for_yaw(void) const
     return false;
 }
 
+// check if GPS is being used to estimate position or velocity
+// always returns true for External and SIM EKF types
+bool AP_AHRS::using_gps(void) const
+{
+    switch (active_EKF_type()) {
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        return EKF2.using_gps();
+#endif
+#if AP_AHRS_DCM_ENABLED
+    case EKFType::DCM:
+        return _gps_use != GPSUse::Disable;
+#endif
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        return EKF3.using_gps();
+#endif
+#if AP_AHRS_SIM_ENABLED
+    case EKFType::SIM:
+#endif
+#if AP_AHRS_EXTERNAL_ENABLED
+    case EKFType::EXTERNAL:
+#endif
+        // assume a GPS is being used
+        return true;
+    }
+    // since there is no default case above, this is unreachable
+    return true;
+}
+
 // set and save the alt noise parameter value
 void AP_AHRS::set_alt_measurement_noise(float noise)
 {
