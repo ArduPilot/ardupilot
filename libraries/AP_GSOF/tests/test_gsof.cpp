@@ -1,7 +1,8 @@
 // Tests for the GSOF parser.
 // * ./waf tests
 // * ./build/sitl/tests/test_gsof
-
+// Or, with GDB
+// * gdb ./build/sitl/tests/test_gsof
 
 #include <AP_gtest.h>
 
