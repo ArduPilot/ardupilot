@@ -101,6 +101,7 @@ target_link_libraries(AP_HAL_RP PUBLIC
     hardware_clocks
     hardware_flash
     hardware_powman
+    hardware_adc
     FreeRTOS-Kernel
     FreeRTOS-Kernel-Heap4
     littlefs
