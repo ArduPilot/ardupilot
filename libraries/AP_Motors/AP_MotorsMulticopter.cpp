@@ -235,14 +235,14 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SPOOL_TIM_DN", 44, AP_MotorsMulticopter, _spool_down_time, 0),
 
-    // @Param: IDLE_TIME
+    // @Param: IDLE_SEC
     // @DisplayName: Idle time
     // @Description: Delay after reaching ground idle when armed to allow ESC startup to complete.
     // @Range: 0 5
     // @Units: s
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("IDLE_TIME", 45, AP_MotorsMulticopter, _idle_time_delay_s, 0),
+    AP_GROUPINFO("IDLE_SEC", 45, AP_MotorsMulticopter, _idle_time_delay_s, 0),
 
     AP_GROUPEND
 };
