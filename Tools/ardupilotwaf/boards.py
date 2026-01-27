@@ -559,7 +559,28 @@ class Board:
                     CANARD_ALLOCATE_SEM=1
                 )
 
+        def log_error_msg(msg):
+            from waflib import Logs
+            Logs.pprint('RED', msg)
 
+        if cfg.options.trusted_flight_issuer and cfg.options.trusted_flight_key:
+            if not os.path.isfile(cfg.options.trusted_flight_key):
+                log_error_msg('Trusted Flight Key does not exist. Please provide valid path for trusted flight key.')
+                exit (1)
+            env.TRUSTED_FLIGHT_KEY_TYPE = 1   # aligns with EdDSA in AP_TrustedFlight.h
+            env.TRUSTED_FLIGHT_KEY = cfg.options.trusted_flight_key
+            issuer = cfg.options.trusted_flight_issuer.encode()
+            env.TRUSTED_FLIGHT_ISSUER = issuer
+
+            env.DEFINES.update(
+                AP_JWT_ENABLED=1,
+                AP_TRUSTED_FLIGHT_ENABLED=1,
+                AP_TRUSTED_FLIGHT_ISSUER_LENGTH=len(issuer)
+            )
+
+        elif cfg.options.trusted_flight_issuer or cfg.options.trusted_flight_key:
+            log_error_msg('Trusted Flight Issuer or Trusted Flight Key not provided. Please provide both to enable Trusted Flights feature or none to disable the feature.')
+            exit (1)
 
         if cfg.options.build_dates:
             env.build_dates = True
@@ -905,6 +926,12 @@ class SITLBoard(Board):
             for f in os.listdir('libraries/AP_OSD/fonts'):
                 if fnmatch.fnmatch(f, "font*bin"):
                     env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
+
+        if cfg.options.enable_sitl_trusted_flight:
+            env.DEFINES.update(
+                AP_JWT_ENABLED=1,
+                AP_TRUSTED_FLIGHT_ENABLED=1
+            )
 
         for f in os.listdir('Tools/autotest/models'):
             if fnmatch.fnmatch(f, "*.json") or fnmatch.fnmatch(f, "*.parm"):
