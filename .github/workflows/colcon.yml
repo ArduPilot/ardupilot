@@ -139,6 +139,7 @@ concurrency:
 jobs:
   build-test:
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     container:
       image: ardupilot/ardupilot-dev-ros:latest
     strategy:
