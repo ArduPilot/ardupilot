@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-merge-commits:
     runs-on: ubuntu-latest
