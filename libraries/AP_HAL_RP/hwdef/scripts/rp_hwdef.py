@@ -11,11 +11,11 @@ import shlex
 import re
 import sys
 import os
+import hwdef
 
 from dataclasses import dataclass
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../../libraries/AP_HAL/hwdef/scripts'))
-import hwdef
 
 
 class RP2350HWDef(hwdef.HWDef):
@@ -114,9 +114,11 @@ class RP2350HWDef(hwdef.HWDef):
         buslist = []
         for bus in self.rp2350_spibus:
             if len(bus) != 6:
-                self.error(f"Badly formed RP2350_SPIBUS line {bus} {len(bus)=} want=6 (host, dma_ch_tx, dma_ch_rx, mosi, miso, sclk)")
+                self.error(f"Badly formed RP2350_SPIBUS line {bus} {len(bus)=} "
+                           f"want=6 (host, dma_ch_tx, dma_ch_rx, mosi, miso, sclk)")
             (host, dma_ch_tx, dma_ch_rx, mosi, miso, sclk) = bus
-            buslist.append(f"{{ .host={host}, .dma_ch_tx={dma_ch_tx}, .dma_ch_rx={dma_ch_rx}, .mosi={mosi}, .miso={miso}, .sclk={sclk} }},")
+            buslist.append(f"{{ .host={host}, .dma_ch_tx={dma_ch_tx}, .dma_ch_rx={dma_ch_rx}, "
+                           f".mosi={mosi}, .miso={miso}, .sclk={sclk} }},")
 
         self.write_device_table(f, "SPI buses", "HAL_RP2350_SPI_BUSES", buslist)
 
