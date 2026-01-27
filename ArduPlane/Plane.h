@@ -1198,6 +1198,7 @@ private:
     // soaring.cpp
 #if HAL_SOARING_ENABLED
     void update_soaring();
+    bool set_soaring_altitude();
 #endif
 
     // RC_Channel.cpp
