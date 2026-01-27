@@ -15,6 +15,7 @@ const AP_Param::GroupInfo AC_PID_2D::var_info[] = {
     // @Param: I
     // @DisplayName: PID Integral Gain
     // @Description: I Gain which produces an output that is proportional to both the magnitude and the duration of the error
+    // @Units: 1/s
     AP_GROUPINFO_FLAGS_DEFAULT_POINTER("I",    1, AC_PID_2D, _ki, default_ki),
 
     // @Param: IMAX
@@ -31,12 +32,13 @@ const AP_Param::GroupInfo AC_PID_2D::var_info[] = {
     // @Param: D
     // @DisplayName: PID Derivative Gain
     // @Description: D Gain which produces an output that is proportional to the rate of change of the error
+    // @Units: s
     AP_GROUPINFO_FLAGS_DEFAULT_POINTER("D",    4, AC_PID_2D, _kd, default_kd),
 
     // @Param: FLTD
     // @DisplayName: D term filter frequency in Hz
     // @Description: Low-pass filter frequency applied to the derivative (Hz)
-    // @Units: Hzs
+    // @Units: Hz
     AP_GROUPINFO_FLAGS_DEFAULT_POINTER("FLTD", 5, AC_PID_2D, _filt_D_hz, default_filt_D_hz),
 
     // @Param: FF

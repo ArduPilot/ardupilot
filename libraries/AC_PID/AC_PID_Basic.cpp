@@ -17,6 +17,7 @@ const AP_Param::GroupInfo AC_PID_Basic::var_info[] = {
     // @Param: I
     // @DisplayName: PID Integral Gain
     // @Description: I Gain which produces an output that is proportional to both the magnitude and the duration of the error
+    // @Units: 1/s
     AP_GROUPINFO_FLAGS_DEFAULT_POINTER("I",    1, AC_PID_Basic, _ki, default_ki),
 
     // @Param: IMAX
@@ -33,6 +34,7 @@ const AP_Param::GroupInfo AC_PID_Basic::var_info[] = {
     // @Param: D
     // @DisplayName: PID Derivative Gain
     // @Description: D Gain which produces an output that is proportional to the rate of change of the error
+    // @Units: s
     AP_GROUPINFO_FLAGS_DEFAULT_POINTER("D",    4, AC_PID_Basic, _kd, default_kd),
 
     // @Param: FLTD
