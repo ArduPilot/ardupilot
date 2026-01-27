@@ -562,7 +562,8 @@ void AP_MotorsMulticopter::update_throttle_hover(float dt)
 // zero thrust while !armed() or !get_interlock()
 // ramps are limited by the configured spool times (see minimum_spool_time)
 // disarm or interlock drop immediately forces SHUT_DOWN for safety
-// pre-takeoff checks may hold in GROUND_IDLE until cleared (get_spoolup_block())
+// pre-takeoff checks and idle-time delay may hold in GROUND_IDLE until cleared
+// (get_spoolup_block(), IDLE_TIME after reaching ground-idle spin)
 void AP_MotorsMulticopter::output_logic()
 {
     // Minimum allowable spool time [s].
@@ -648,8 +649,16 @@ void AP_MotorsMulticopter::output_logic()
         // set limits flags
         // keep all limits set while in a low-energy or gated state
         limit.set_all(true);
+        
+        float spin_up_ground_idle_ratio = 0.0f;
+        if ( is_positive(thr_lin.get_spin_min()) ) {
+            spin_up_ground_idle_ratio = _spin_arm / thr_lin.get_spin_min();
+        }
 
-        _idle_time = MIN(_idle_time_delay_s, _idle_time + _dt_s);
+        if (_spin_up_ratio >= spin_up_ground_idle_ratio) {
+            // Advance the idle-time delay only once the motors have reached ground-idle spin.
+            _idle_time = MIN(_idle_time_delay_s, _idle_time + _dt_s);
+        }
 
         // set and increment ramp variables
         switch (_spool_desired) {
@@ -670,16 +679,20 @@ void AP_MotorsMulticopter::output_logic()
         }
 
         case DesiredSpoolState::THROTTLE_UNLIMITED: {
-            // Hold in ground idle until the configured idle-time delay has elapsed.
-            // This ensures ESCs have completed their startup sequence before allowing spool-up.
-            if (_idle_time < _idle_time_delay_s) {
-                break;
-            }
+            // Up path: ramp spin toward 1.0.
+            // While the idle-time delay is running, hold spin at ground idle to allow ESC startup.
+            // After the delay, continue ramping to 1.0 and proceed when spool-up checks are clear.
 
-            // Up path: raise spin ratio to 1.0, then proceed when spool-up
-            // checks are clear.
             const float spool_step = _dt_s / _spool_up_time;
             _spin_up_ratio += spool_step;
+
+            // Hold at ground-idle spin until the configured idle-time delay has elapsed.
+            // This allows ESCs to complete their startup sequence with PWM active at idle
+            // before allowing further spool-up.
+            if (_idle_time < _idle_time_delay_s) {
+                _spin_up_ratio = MIN(_spin_up_ratio, spin_up_ground_idle_ratio);
+                break;
+            }
 
             // constrain ramp value and update mode
             if (_spin_up_ratio >= 1.0f) {
@@ -704,14 +717,10 @@ void AP_MotorsMulticopter::output_logic()
             // target spin ratio while armed:
             // raise spin toward the armed idle (_spin_arm) as a fraction of spin_min
             // (keeps ratio normalized; if no spin_min, stay at 0)
-            float spin_up_armed_ratio = 0.0f;
-            if (thr_lin.get_spin_min() > 0.0f) {
-                spin_up_armed_ratio = _spin_arm / thr_lin.get_spin_min();
-            }
 
             // asymmetrical slew toward target: limit decrease with spool_down_step and increase with spool_up_step
             // prevents step changes while allowing a different down vs up time constant
-            _spin_up_ratio += constrain_float(spin_up_armed_ratio - _spin_up_ratio, -spool_down_step, spool_up_step);
+            _spin_up_ratio += constrain_float(spin_up_ground_idle_ratio - _spin_up_ratio, -spool_down_step, spool_up_step);
             break;
         }
         }

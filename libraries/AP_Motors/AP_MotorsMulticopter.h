@@ -205,7 +205,7 @@ protected:
 
     // spool variables
     float               _spin_up_ratio;         // normalized spin scalar [0..1] between 0 and spin_min (used for ground-idle ramp)
-    float               _idle_time;             // idle delay timer (seconds since entering GROUND_IDLE)
+    float               _idle_time;             // idle delay elapsed time at/above ground-idle spin [s]
 
     // battery voltage, current and air pressure compensation variables
     float               _throttle_limit;        // ratio of throttle limit between hover and maximum
