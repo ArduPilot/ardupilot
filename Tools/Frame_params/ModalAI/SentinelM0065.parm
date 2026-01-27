@@ -42,8 +42,8 @@ INS_GYRO_RATE    1
 
 # a bit more agressive loiter
 PILOT_SPEED_UP   500
-LOIT_BRK_ACCEL   500
-LOIT_BRK_JERK    1000
+LOIT_BRK_ACC_M   5.0
+LOIT_BRK_JRK_M   10.00
 LOIT_BRK_DELAY   0.200000
 
 # Tune parameters
