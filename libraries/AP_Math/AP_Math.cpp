@@ -257,7 +257,6 @@ float wrap_2PI(const float radian)
     return res;
 }
 
-#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 double wrap_2PI(const double radian)
 {
     double res = fmod(radian, M_2PI);
@@ -266,7 +265,6 @@ double wrap_2PI(const double radian)
     }
     return res;
 }
-#endif
 
 template <typename T>
 T wrap_PI(const T radian)
@@ -279,9 +277,7 @@ T wrap_PI(const T radian)
 }
 
 template float wrap_PI<float>(const float radian);
-#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 template double wrap_PI<double>(const double radian);
-#endif
 
 template <typename T>
 T constrain_value_line(const T amt, const T low, const T high, uint32_t line)
