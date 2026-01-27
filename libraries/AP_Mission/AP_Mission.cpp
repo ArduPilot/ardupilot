@@ -551,21 +551,31 @@ bool AP_Mission::is_nav_cmd(const Mission_Command& cmd)
 ///     accounts for do_jump commands but never increments the jump's num_times_run (advance_current_nav_cmd is responsible for this)
 bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
 {
-    // search until the end of the mission command list
-    for (uint16_t cmd_index = start_index; cmd_index < (unsigned)_cmd_total; cmd_index++) {
-        // get next command
-        if (!get_next_cmd(cmd_index, cmd, false)) {
-            // no more commands so return failure
-            return false;
-        }
-        // if found a "navigation" command then return it
-        if (is_nav_cmd(cmd)) {
-            return true;
-        }
-    }
-
-    // if we got this far we did not find a navigation command
-    return false;
+  uint16_t cmd_index = start_index;
+  uint16_t jump_index = AP_MISSION_CMD_INDEX_NONE;
+  
+    while (cmd_index < (unsigned)_cmd_total) {
+        // get next command
+        if (!get_next_cmd(cmd_index, cmd, false)) {
+            // no more commands so return failure
+            return false;
+        }
+        // if found a "navigation" command then return it
+        if (is_nav_cmd(cmd)) {
+            return true;
+        } else {
+            // Index has wrapped, this must have been a jump, take note and dont do it again
+            if (cmd_index > cmd.index && cmd_index != jump_index) {
+                jump_index = cmd_index;
+                cmd_index = cmd.index;
+            } else {
+                // Otherwise increment the index to the next cmd
+                cmd_index++;
+            }
+        }
+    }
+    // if we got this far we did not find a navigation command
+    return false;
 }
 
 /// get the ground course of the next navigation leg in centidegrees
