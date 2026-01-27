@@ -1,0 +1,7 @@
+{
+  // Configuration for markdownlint-cli2
+  "config": {
+    // Disable line length check
+    "MD013": false
+  }
+}
