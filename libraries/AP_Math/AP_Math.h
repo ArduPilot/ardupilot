@@ -158,9 +158,7 @@ double wrap_360_cd(const double angle);
   wrap an angle in radians to 0..2PI
  */
 float wrap_2PI(const float radian);
-#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 double wrap_2PI(const double radian);
-#endif
 
 /*
   wrap an angle in radians to -PI ~ PI (equivalent to +- 180 degrees)
