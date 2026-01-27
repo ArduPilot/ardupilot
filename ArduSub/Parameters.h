@@ -5,6 +5,7 @@
 #include <AP_Common/AP_Common.h>
 
 #include <AP_Arming/AP_Arming.h>
+#include <AC_AttitudeControl/AC_StateFeedback_Params.h>
 #include "actuators.h"
 // Global parameter class.
 //
@@ -410,6 +411,9 @@ public:
     AP_Float backup_origin_alt;
     AP_Float surface_nobaro_thrust;
     Actuators actuators;
+
+    // State feedback control parameters
+    AC_StateFeedback_Params sf_params;
 
 };
 

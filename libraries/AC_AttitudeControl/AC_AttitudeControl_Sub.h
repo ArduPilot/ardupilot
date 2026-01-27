@@ -5,6 +5,9 @@
 
 #include "AC_AttitudeControl.h"
 #include <AP_Motors/AP_MotorsMulticopter.h>
+#include "AC_StateFeedback_Rate.h"
+#include "AC_StateFeedback_Attitude.h"
+#include "AC_StateFeedback_Position.h"
 
 // default angle controller PID gains
 // (Sub-specific defaults for parent class)
@@ -61,6 +64,20 @@ public:
 
     // run lowest level body-frame rate controller and send outputs to the motors
     void rate_controller_run() override;
+
+    // run state feedback rate controller (alternative to PID)
+    void rate_controller_run_state_feedback(const AC_StateFeedback_Params& sf_params);
+
+    // run state feedback attitude controller (alternative to PID angle controller)
+    void attitude_controller_run_state_feedback(const AC_StateFeedback_Params& sf_params);
+
+    // run state feedback position controller (full 12-state control)
+    // Returns Vector4f: [vertical_thrust, roll_torque, pitch_torque, yaw_torque] normalized to [-1, 1]
+    Vector4f position_controller_run_state_feedback(const AC_StateFeedback_Params& sf_params,
+                                                     const Vector3f& pos_desired_ned,
+                                                     const Vector3f& pos_actual_ned,
+                                                     const Vector3f& vel_desired_ned,
+                                                     const Vector3f& vel_actual_ned);
 
     // sanity check parameters.  should be called once before take-off
     void parameter_sanity_check() override;
@@ -126,4 +143,9 @@ protected:
     AP_Float              _thr_mix_man;     // throttle vs attitude control prioritisation used when using manual throttle (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_min;     // throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_max;     // throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
+
+    // State feedback controllers (lazy initialization)
+    AC_StateFeedback_Rate* _sf_rate;
+    AC_StateFeedback_Attitude* _sf_attitude;
+    AC_StateFeedback_Position* _sf_position;
 };
