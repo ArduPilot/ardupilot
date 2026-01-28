@@ -90,61 +90,7 @@ extern const AP_HAL::HAL& hal;
 //#define CRSF_DEBUG_PARAMS
 #if defined(CRSF_DEBUG) || defined(CRSF_DEBUG_TELEM) || defined(CRSF_DEBUG_PARAMS)
 # define debug(fmt, args...)	hal.console->printf("CRSF: " fmt "\n", ##args)
-static const char* get_frame_type(uint8_t byte, uint8_t subtype = 0)
-{
-    switch(byte) {
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_GPS:
-        return "GPS";
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_BATTERY_SENSOR:
-        return "BATTERY";
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_HEARTBEAT:
-        return "HEARTBEAT";
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_VTX:
-        return "VTX";
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_VTX_TELEM:
-        return "VTX_TELEM";
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAM_DEVICE_PING:
-        return "PING";
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_COMMAND:
-        return "COMMAND";
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_ATTITUDE:
-        return "ATTITUDE";
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_FLIGHT_MODE:
-        return "FLIGHT_MODE";
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAM_DEVICE_INFO:
-        return "DEVICE_INFO";
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_READ:
-        return "PARAM_READ";
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
-        return "SETTINGS_ENTRY";
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_LINK_STATISTICS:
-        return "LINK_STATS";
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
-        return "RC";
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
-        return "RCv3";
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_RC_CHANNELS_PACKED_11BIT:
-        return "RCv3_11BIT";
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_LINK_STATISTICS_RX:
-        return "LINK_STATSv3_RX";
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_LINK_STATISTICS_TX:
-        return "LINK_STATSv3_TX";
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_WRITE:
-        return "PARAM_WRITE";
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_AP_CUSTOM_TELEM_LEGACY:
-    case AP_RCProtocol_CRSF::AP_CRSF_Protocol::CRSF_FRAMETYPE_AP_CUSTOM_TELEM:
-        switch (subtype) {
-        case AP_RCProtocol_CRSF::CRSF_AP_CUSTOM_TELEM_SINGLE_PACKET_PASSTHROUGH:
-            return "AP_CUSTOM_SINGLE";
-        case AP_RCProtocol_CRSF::CRSF_AP_CUSTOM_TELEM_STATUS_TEXT:
-            return "AP_CUSTOM_TEXT";
-        case AP_RCProtocol_CRSF::CRSF_AP_CUSTOM_TELEM_MULTI_PACKET_PASSTHROUGH:
-            return "AP_CUSTOM_MULTI";
-        }
-        return "AP_CUSTOM";
-    }
-    return "UNKNOWN";
-}
+# define get_frame_type(byte, subtype) AP_CRSF_Protocol::get_frame_type(byte, subtype)
 #else
 # define debug(fmt, args...)	do {} while(0)
 #endif
