@@ -2130,6 +2130,11 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
                 _do_cmd = cmd;
                 _flags.do_cmd_loaded = true;
                 start_command(_do_cmd);
+                // run verify to check if it completes instantly
+                if (verify_command(_do_cmd)) {
+                    // mark _do_cmd as complete
+                    _flags.do_cmd_loaded = false;
+                }
             }
         }
         // move onto next command
