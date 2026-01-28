@@ -64,7 +64,7 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Values: 0:Disable,1:Enable
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("IP_ENABLE",  13, AP_Networking, param.ip_enabled, 1),
+    AP_GROUPINFO("IP_ENABLE",  13, AP_Networking, param.ip_enabled, AP_NETWORKING_DEFAULT_IP_ENABLE),
 #endif
 
 #if AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
@@ -200,14 +200,25 @@ void AP_Networking::init()
     }
 #endif
 #if AP_NETWORKING_BACKEND_SITL
+    // On SITL, use native sockets backend when ip_enabled is false
+    // When ip_enabled is true, use hub with lwIP instead
+#if AP_NETWORKING_BACKEND_HUB_PORT_LWIP
+    if (backend == nullptr && !param.ip_enabled) {
+#else
     if (backend == nullptr) {
+#endif
         backend = NEW_NOTHROW AP_Networking_SITL(*this);
     }
 #endif
 
     // Create hub and ports (when hub is enabled, Port_lwIP handles lwIP instead of backend)
 #if AP_NETWORKING_BACKEND_HUB
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // On SITL, only create hub when ip_enabled (user wants lwIP stack)
+    if (param.ip_enabled && hub == nullptr) {
+#else
     if (hub == nullptr) {
+#endif
         hub = NEW_NOTHROW AP_Networking_Hub();
     }
     if (hub != nullptr) {

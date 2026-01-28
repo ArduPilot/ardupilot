@@ -152,6 +152,17 @@
 // Below are default params
 // ---------------------------
 
+// Default IP stack enable (lwIP)
+// On SITL, default to disabled so native host sockets are used for compatibility
+// Set NET_IP_ENABLE=1 at runtime to use hub/lwIP stack instead
+#ifndef AP_NETWORKING_DEFAULT_IP_ENABLE
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#define AP_NETWORKING_DEFAULT_IP_ENABLE 0
+#else
+#define AP_NETWORKING_DEFAULT_IP_ENABLE 1
+#endif
+#endif
+
 // Default DHCP
 #ifndef AP_NETWORKING_DEFAULT_DHCP_ENABLE
 #define AP_NETWORKING_DEFAULT_DHCP_ENABLE AP_NETWORKING_DHCP_AVAILABLE
