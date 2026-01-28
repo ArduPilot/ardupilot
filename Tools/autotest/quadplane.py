@@ -3067,6 +3067,77 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.test_takeoff_check_mode("AUTO", force_disarm=True)
         self.context_pop()
 
+    def SixPosModeReset(self):
+        '''Test RC_OPTIONS SIX_POS_RESET suppresses mode change after extended RC loss'''
+        self.context_collect("STATUSTEXT")
+
+        self.set_parameters({
+            "FLTMODE1": 0,        # MANUAL for switch position 0
+            "FLTMODE6": 5,        # FBWA for switch position 6
+            "THR_FAILSAFE": 0,    # disable R/C failsafe
+        })
+        self.set_parameter_bit("RC_OPTIONS", 14)
+
+        self.wait_ready_to_arm()
+
+        mode_chan = 5
+
+        self.start_subtest("Initial mode switch pos FBWA")
+
+        # start in FBWA (switch position 6, PWM 1900)
+        self.set_rc(mode_chan, 1900)
+        self.wait_mode("FBWA")
+
+        self.start_subtest("Normal mode switching with SIX_POS_RESET enabled")
+        self.set_rc(mode_chan, 1000)
+        self.wait_mode("MANUAL")
+        self.set_rc(mode_chan, 1900)
+        self.wait_mode("FBWA")
+
+        self.start_subtest("Mode change suppressed after extended RC loss")
+        # simulate RC loss
+        self.set_parameter("SIM_RC_FAIL", 1)
+        # change switch while RC lost
+        try:
+            self.set_rc(mode_chan, 1000)
+        except NotAchievedException:
+            # we expect NotAchievedException as we are in R/C failsafe so no R/C feedback
+            pass
+
+        # wait > 60 seconds for SIX_POS_RESET threshold
+        self.delay_sim_time(65)
+        # restore RC
+        self.set_parameter("SIM_RC_FAIL", 0)
+        # verify warning message
+        self.wait_statustext("Mode change suppressed", timeout=10, check_context=True)
+        # verify mode did not change to MANUAL
+        self.delay_sim_time(3)
+        self.wait_mode("FBWA")
+
+        self.start_subtest("Mode switching works after suppression")
+        # switch is at MANUAL position, move away then back to trigger change
+        self.set_rc(mode_chan, 1900)
+        self.delay_sim_time(1)
+        self.set_rc(mode_chan, 1000)
+        self.wait_mode("MANUAL")
+
+        self.start_subtest("Short RC loss does not suppress mode change")
+        self.set_rc(mode_chan, 1900)
+        self.wait_mode("FBWA")
+        # short RC loss (< 60 seconds)
+        self.set_parameter("SIM_RC_FAIL", 1)
+
+        try:
+            self.set_rc(mode_chan, 1000)
+        except NotAchievedException:
+            # we expect NotAchievedException as we are in R/C failsafe so no R/C feedback
+            pass
+
+        self.delay_sim_time(10)
+        self.set_parameter("SIM_RC_FAIL", 0)
+        # mode should change normally
+        self.wait_mode("MANUAL")
+
     def tests(self):
         '''return list of all tests'''
 
@@ -3130,5 +3201,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.ScriptedArmingChecksApplet,
             self.TerrainAvoidApplet,
             self.TakeoffCheck,
+            self.SixPosModeReset,
         ])
         return ret
