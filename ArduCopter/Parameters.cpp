@@ -1124,6 +1124,15 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("TKOFF_GNDEFF_ALT", 11, ParametersG2, tkoff_gndeff_alt, 0.5),
 
+#if HAL_NAVEKF3_AVAILABLE
+    // @Param: ACC_ZBIAS_LEARN
+    // @DisplayName: Accel Z-axis Bias Learning
+    // @Description: Controls learning of accelerometer Z-axis bias during hover to compensate for vibration rectification. Learned bias is saved to INS parameters on disarm. 0=Disabled, 1=Learn during hover (RAM only), 2=Learn and save to EEPROM on disarm.
+    // @Values: 0:Disabled,1:Learn Only,2:Learn and Save
+    // @User: Advanced
+    AP_GROUPINFO("ACC_ZBIAS_LEARN", 12, ParametersG2, accel_zbias_learn, 2),
+#endif
+
     // @Param: FS_EKF_FILT
     // @DisplayName: EKF Failsafe filter cutoff
     // @Description: EKF Failsafe filter cutoff frequency. EKF variances are filtered using this value to avoid spurious failsafes from transient high variances. A higher value means the failsafe is more likely to trigger.

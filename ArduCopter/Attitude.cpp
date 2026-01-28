@@ -63,6 +63,8 @@ void Copter::update_throttle_hover()
 #if HAL_GYROFFT_ENABLED
         gyro_fft.update_freq_hover(0.01f, motors->get_throttle_out());
 #endif
+        // update learned hover accel bias (checks ground effect flags internally)
+        update_hover_bias_learning(0.01f);
     }
 }
 
@@ -133,5 +135,105 @@ uint16_t Copter::get_pilot_speed_dn() const
         return abs(g.pilot_speed_up_cms);
     } else {
         return abs(g2.pilot_speed_dn_cms);
+    }
+}
+
+// Time constant for hover bias learning filter (seconds)
+#define HOVER_BIAS_TC 2.0f
+
+// init_hover_bias_correction - loads saved hover Z-bias from INS parameters
+// into _hover_bias_learning array. The frozen correction in EKF is set later
+// from one_hz_loop once EKF3 is active.
+// called once from startup_INS_ground() after ahrs.reset()
+void Copter::init_hover_bias_correction(void)
+{
+    if (g2.accel_zbias_learn <= 0) {
+        return;
+    }
+
+    // Initialize learning state from INS parameters
+    // The actual EKF correction will be set later once EKF3 is active
+    for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
+        const float raw_bias = AP::ins().get_accel_vrf_bias_z(imu);
+        _hover_bias_learning[imu] = raw_bias;
+    }
+}
+
+// set_hover_z_bias_correction - sets the frozen hover Z-bias correction in EKF
+// called from one_hz_loop while disarmed until values match
+void Copter::set_hover_z_bias_correction(void)
+{
+    if (g2.accel_zbias_learn <= 0) {
+        return;
+    }
+
+    for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
+        const float saved_bias = _hover_bias_learning[imu];
+        const float current_correction = ahrs.get_hover_z_bias_correction(imu);
+
+        // Skip if already set correctly or nothing to set
+        if (is_equal(saved_bias, current_correction)) {
+            continue;
+        }
+
+        // Try to set the correction
+        if (ahrs.set_hover_z_bias_correction(imu, saved_bias)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Hover Z-bias IMU%u: %.3f m/s^2", imu, saved_bias);
+        }
+    }
+}
+
+// update_hover_bias_learning - learns Z-axis accelerometer bias during hover
+// to compensate for vibration rectification effects
+// called at 100Hz from update_throttle_hover() when already in a stable hover
+// (hover conditions checked by caller: armed, level, low velocity, throttle > 0)
+void Copter::update_hover_bias_learning(float dt)
+{
+    if (g2.accel_zbias_learn <= 0) {
+        return;
+    }
+
+    // Don't learn during ground effect (motor thrust offset corrupts bias)
+    if (ahrs.get_takeoff_expected() || ahrs.get_touchdown_expected()) {
+        return;
+    }
+
+    const float alpha = dt / (dt + HOVER_BIAS_TC);
+
+    for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
+        // Get current EKF bias for this IMU (returns false if no core uses it)
+        float currentBiasZ;
+        if (!ahrs.get_accel_bias_z_for_imu(imu, currentBiasZ)) {
+            continue;
+        }
+
+        // Get frozen correction (already applied at IMU level)
+        const float frozenCorrection = ahrs.get_hover_z_bias_correction(imu);
+
+        // Total bias = EKF residual + frozen correction
+        const float totalBias = currentBiasZ + frozenCorrection;
+
+        // Apply low-pass filter
+        _hover_bias_learning[imu] += alpha * (totalBias - _hover_bias_learning[imu]);
+
+        // Update INS parameter (RAM only, not saved yet)
+        AP::ins().set_accel_vrf_bias_z(imu, _hover_bias_learning[imu]);
+    }
+}
+
+// save_hover_bias_learning - saves learned hover bias to EEPROM
+// called on disarm
+void Copter::save_hover_bias_learning(void)
+{
+    if (g2.accel_zbias_learn != 2) {
+        return;
+    }
+
+    for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
+        // Only save if an EKF core is using this IMU
+        float bias_z;
+        if (ahrs.get_accel_bias_z_for_imu(imu, bias_z)) {
+            AP::ins().save_accel_vrf_bias_z(imu);
+        }
     }
 }

@@ -305,6 +305,10 @@ private:
     // Inertial Navigation EKF - different viewpoint
     AP_AHRS_View *ahrs_view;
 
+    // Hover accel bias learning state (per-IMU)
+    // Tracks total Z-axis bias during hover for vibration rectification compensation
+    float _hover_bias_learning[INS_MAX_INSTANCES];
+
     // Arming/Disarming management class
     AP_Arming_Copter arming;
 
@@ -726,6 +730,10 @@ private:
 
     // Attitude.cpp
     void update_throttle_hover();
+    void init_hover_bias_correction(void);
+    void set_hover_z_bias_correction(void);
+    void update_hover_bias_learning(float dt);
+    void save_hover_bias_learning(void);
     float get_pilot_desired_climb_rate_ms();
     float get_non_takeoff_throttle();
     void set_accel_throttle_I_from_pilot_throttle();

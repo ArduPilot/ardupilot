@@ -58,6 +58,10 @@ void ModeAcro::run()
         break;
     }
 
+    // inhibit accel bias learning during acro when flying, since high-G
+    // maneuvers can cause unwanted bias learning
+    ahrs.set_inhibit_accel_bias_learning(motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED);
+
     // run attitude controller
     if (g2.acro_options.get() & uint8_t(AcroOptions::RATE_LOOP_ONLY)) {
         // scale I by the value of angle P to mimic betaflight tunes
@@ -90,6 +94,9 @@ void ModeAcro::exit()
         copter.air_mode = AirMode::AIRMODE_DISABLED;
     }
     disable_air_mode_reset = false;
+
+    // re-enable accel bias learning when exiting acro
+    ahrs.set_inhibit_accel_bias_learning(false);
 }
 
 void ModeAcro::air_mode_aux_changed()
