@@ -6,7 +6,6 @@
 
 #include "RC_Channel.h"
 
-
 /*
   this header file is expected to be #included by Vehicle subclasses
   of RC_Channels after defining RC_CHANNELS_SUBCLASS and
