@@ -4477,6 +4477,12 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         break;
 #endif
 
+#if AP_MAVLINK_MSG_TUNNEL_ENABLED
+    case MAVLINK_MSG_ID_TUNNEL:
+        handle_tunnel(msg);
+        break;
+#endif
+
 #if AP_GPS_ENABLED
     case MAVLINK_MSG_ID_GPS_RTCM_DATA:
     case MAVLINK_MSG_ID_GPS_INPUT:
