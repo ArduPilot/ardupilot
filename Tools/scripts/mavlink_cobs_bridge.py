@@ -110,7 +110,7 @@ _CRC32_ARR = array.array('I', _CRC32_TAB)
 
 if HAS_NUMPY:
     _CRC32_NP = np.array(_CRC32_TAB, dtype=np.uint32)
-    
+
     def crc32(data):
         """Calculate CRC32 using numpy for speed"""
         crc = np.uint32(0)
@@ -158,19 +158,19 @@ def cobs_encode(data):
 
 class COBSDecoder:
     """Streaming COBS decoder matching ArduPilot's AP_Networking_COBS::Decoder"""
-    
+
     __slots__ = ('state', 'code_byte', 'code_remaining', 'frame')
-    
+
     def __init__(self):
         self.reset()
-    
+
     def reset(self):
         """Reset decoder state for new frame"""
         self.state = 0  # 0=IDLE, 1=IN_PACKET, 2=RESYNC (use ints for speed)
         self.code_byte = 0
         self.code_remaining = 0
         self.frame = bytearray()
-    
+
     def process_bytes(self, data):
         """
         Process multiple bytes at once.
@@ -182,20 +182,20 @@ class COBSDecoder:
                 frames.append(bytes(self.frame))
                 self.frame = bytearray()
         return frames
-    
+
     def process_byte(self, byte):
         """
         Process one byte.
         Returns True when frame is complete, then call get_frame().
         """
         state = self.state
-        
+
         if state == 2:  # RESYNC
             if byte == 0:
                 self.state = 0  # IDLE
                 self.frame = bytearray()
             return False
-        
+
         if state == 0:  # IDLE
             if byte == 0:
                 return False
@@ -204,7 +204,7 @@ class COBSDecoder:
             self.state = 1  # IN_PACKET
             self.frame = bytearray()
             return False
-        
+
         # IN_PACKET state (state == 1)
         if byte == 0:
             if self.code_remaining == 0:
@@ -214,7 +214,7 @@ class COBSDecoder:
                 self.state = 0  # IDLE
                 self.frame = bytearray()
                 return False
-        
+
         if self.code_remaining > 0:
             self.frame.append(byte)
             self.code_remaining -= 1
@@ -223,9 +223,9 @@ class COBSDecoder:
                 self.frame.append(0)
             self.code_byte = byte
             self.code_remaining = byte - 1
-        
+
         return False
-    
+
     def get_frame(self):
         """Get the decoded frame"""
         return bytes(self.frame)
@@ -251,30 +251,30 @@ def identify_frame(data):
     """
     if len(data) < 4:
         return None, None
-    
+
     data_len = len(data) - 4
     rx_crc = struct.unpack('<I', data[data_len:])[0]
     payload = data[:data_len]
-    
+
     # Check for keepalive
     if data_len == KA_DATA_LEN and payload[:2] == KA_MARKER:
         calc_crc = crc32(payload)
         if rx_crc == calc_crc:
             return 'keepalive', payload
         return None, None
-    
+
     # Check for data frame
     if data_len >= MIN_ETH_FRAME:
         calc_crc = crc32(payload)
         if rx_crc == calc_crc:
             return 'data', payload
-        
+
         # Check for ganged frame (with "GANG" suffix in CRC)
         gang_crc = crc32(payload + b'GANG')
         if rx_crc == gang_crc and data_len >= 2 + MIN_ETH_FRAME:
             # Ganged: skip seq[2]
             return 'data', payload[2:]
-    
+
     return None, None
 
 
@@ -301,23 +301,23 @@ class MAVLinkCOBSBridge:
         self.running = False
         self.tap_fd = None
         self.mav = None
-        
+
         # Local device ID (derived from TAP MAC or random)
         self.local_device_id = os.urandom(6)
-        
+
         # Remote device ID (learned from keepalives)
         self.remote_device_id = None
-        
+
         # RX COBS decoder
         self.decoder = COBSDecoder()
-        
+
         # RX counter for keepalive stats
         self.rx_good = 0
-        
+
         # Keepalive timing
         self.last_keepalive_tx = 0
         self.last_tx_time = 0
-        
+
         # Stats
         self.rx_frames = 0
         self.tx_frames = 0
@@ -330,10 +330,10 @@ class MAVLinkCOBSBridge:
     def open_tap(self):
         """Create and open TAP interface"""
         tap_fd = os.open('/dev/net/tun', os.O_RDWR)
-        
+
         ifr = struct.pack('16sH', self.tap_name.encode(), IFF_TAP | IFF_NO_PI)
         fcntl.ioctl(tap_fd, TUNSETIFF, ifr)
-        
+
         self.tap_fd = tap_fd
         print(f"Opened TAP interface: {self.tap_name}")
         return tap_fd
@@ -344,7 +344,7 @@ class MAVLinkCOBSBridge:
             print(f"Configure interface: sudo ip addr add <IP>/<MASK> dev {self.tap_name} "
                   f"&& sudo ip link set {self.tap_name} up")
             return
-        
+
         try:
             subprocess.run(['ip', 'addr', 'add', self.ip_addr, 'dev', self.tap_name], check=True)
             subprocess.run(['ip', 'link', 'set', self.tap_name, 'up'], check=True)
@@ -360,25 +360,25 @@ class MAVLinkCOBSBridge:
             source_component=self.source_component
         )
         print(f"Opened MAVLink connection: {self.connection_string}")
-        
+
         print("Waiting for heartbeat...")
         self.mav.wait_heartbeat()
         print(f"Got heartbeat from system {self.mav.target_system} component {self.mav.target_component}")
-        
+
         if self.target_system == 0:
             self.target_system = self.mav.target_system
         if self.target_component == 0:
             self.target_component = self.mav.target_component
-        
+
         self.last_keepalive_tx = time.time()
         self.last_tx_time = time.time()
-        
+
         return self.mav
 
     def send_tunnel(self, payload_type, data):
         """Send a TUNNEL message"""
         payload = bytes(data) + bytes(128 - len(data))
-        
+
         self.mav.mav.tunnel_send(
             self.target_system,
             self.target_component,
@@ -392,17 +392,17 @@ class MAVLinkCOBSBridge:
     def send_cobs_frame(self, data):
         """COBS encode and send as fragmented TUNNEL messages"""
         encoded = cobs_encode(data) + b'\x00'
-        
+
         offset = 0
         first = True
-        
+
         while offset < len(encoded):
             chunk_len = min(len(encoded) - offset, TUNNEL_PAYLOAD_MAX)
             chunk = encoded[offset:offset + chunk_len]
-            
+
             payload_type = MAV_TUNNEL_PAYLOAD_TYPE_COBS_START if first else MAV_TUNNEL_PAYLOAD_TYPE_COBS_CONT
             self.send_tunnel(payload_type, chunk)
-            
+
             offset += chunk_len
             first = False
 
@@ -411,7 +411,7 @@ class MAVLinkCOBSBridge:
         ka_frame = build_keepalive(self.local_device_id, self.rx_good)
         self.send_cobs_frame(ka_frame)
         self.ka_tx += 1
-        
+
         if self.verbose:
             print(f"TX KA: rx_good={self.rx_good}")
 
@@ -420,7 +420,7 @@ class MAVLinkCOBSBridge:
         data_frame = build_data_frame(frame)
         self.send_cobs_frame(data_frame)
         self.tx_frames += 1
-        
+
         if self.verbose:
             print(f"TX: {len(frame)} bytes")
 
@@ -429,19 +429,19 @@ class MAVLinkCOBSBridge:
         payload_type = msg.payload_type
         if payload_type not in (MAV_TUNNEL_PAYLOAD_TYPE_COBS_START, MAV_TUNNEL_PAYLOAD_TYPE_COBS_CONT):
             return
-        
+
         self.tunnel_rx += 1
-        
+
         if payload_type == MAV_TUNNEL_PAYLOAD_TYPE_COBS_START:
             self.decoder.reset()
-        
+
         # Process all bytes and get any completed frames
         payload = bytes(msg.payload[:msg.payload_length])
         completed_frames = self.decoder.process_bytes(payload)
-        
+
         for decoded in completed_frames:
             frame_type, frame_data = identify_frame(decoded)
-            
+
             if frame_type == 'keepalive':
                 device_id, rx_good = parse_keepalive(frame_data)
                 if self.remote_device_id is None:
@@ -450,7 +450,7 @@ class MAVLinkCOBSBridge:
                 self.ka_rx += 1
                 if self.verbose:
                     print(f"RX KA: device={device_id.hex()} rx_good={rx_good}")
-            
+
             elif frame_type == 'data':
                 self.rx_good += 1
                 if len(frame_data) >= 14:
@@ -465,11 +465,11 @@ class MAVLinkCOBSBridge:
                             print(f"RX: TAP write error: {e}")
                 else:
                     self.rx_errors += 1
-            
+
             else:
                 self.rx_errors += 1
                 if self.verbose:
-                    print(f"RX: Invalid frame (CRC error)")
+                    print("RX: Invalid frame (CRC error)")
 
     def reconnect_mavlink(self):
         """Close and reopen MAVLink connection"""
@@ -479,7 +479,7 @@ class MAVLinkCOBSBridge:
             except Exception:
                 pass
             self.mav = None
-        
+
         while self.running:
             try:
                 self.open_mavlink()
@@ -497,29 +497,29 @@ class MAVLinkCOBSBridge:
         self.configure_tap()
         self.open_mavlink()
         self.running = True
-        
+
         last_stats = time.time()
-        
+
         print(f"Bridge running. Local device ID: {self.local_device_id.hex()}")
         print("Press Ctrl+C to stop.")
-        
+
         try:
             while self.running:
                 if self.mav is None:
                     if not self.reconnect_mavlink():
                         break
                     continue
-                
+
                 try:
                     # Check for data on TAP (short timeout to stay responsive)
                     readable, _, _ = select.select([self.tap_fd], [], [], 0.0001)
-                    
+
                     for fd in readable:
                         if fd == self.tap_fd:
                             frame = os.read(self.tap_fd, 1600)
                             if frame:
                                 self.send_frame_to_mavlink(frame)
-                    
+
                     # Drain ALL available MAVLink messages (not just one!)
                     while True:
                         msg = self.mav.recv_match(blocking=False)
@@ -527,24 +527,24 @@ class MAVLinkCOBSBridge:
                             break
                         if msg.get_type() == 'TUNNEL':
                             self.process_tunnel_message(msg)
-                    
+
                     # Send keepalive periodically
                     now = time.time()
                     if now - self.last_keepalive_tx >= KEEPALIVE_INTERVAL_S:
                         self.send_keepalive()
                         self.last_keepalive_tx = now
-                    
+
                     # Print stats every 10 seconds
                     if now - last_stats >= 10.0:
                         print(f"Stats: TX={self.tx_frames} RX={self.rx_frames} "
                               f"ERR={self.rx_errors} KA_tx={self.ka_tx} KA_rx={self.ka_rx}")
                         last_stats = now
-                
+
                 except Exception as e:
                     print(f"Error: {e}")
                     print("Attempting to reconnect...")
                     self.reconnect_mavlink()
-        
+
         except KeyboardInterrupt:
             print("\nStopping...")
         finally:
@@ -567,13 +567,13 @@ def main():
     parser.add_argument('--target-system', type=int, default=0, help='MAVLink target system ID (0=auto)')
     parser.add_argument('--target-component', type=int, default=0, help='MAVLink target component ID (0=auto)')
     parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
-    
+
     args = parser.parse_args()
-    
+
     if os.geteuid() != 0:
         print("Error: Must run as root (sudo) to create TAP interface")
         sys.exit(1)
-    
+
     bridge = MAVLinkCOBSBridge(
         args.connection,
         tap_name=args.tap,
