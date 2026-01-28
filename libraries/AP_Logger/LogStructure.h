@@ -1339,7 +1339,9 @@ enum LogMessages : uint8_t {
     LOG_UNIT_MSG,
     LOG_MULT_MSG,
     LOG_RALLY_MSG,
+#if AP_RTC_LOGGING_ENABLED
     LOG_RTC_MSG,
+#endif  // AP_RTC_LOGGING_ENABLED
 
     // LOG_MODE_MSG is used as a check for duplicates. Do not add between this and LOG_FORMAT_MSG
     LOG_MODE_MSG,
