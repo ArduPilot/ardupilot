@@ -502,10 +502,10 @@ bool AP_OABendyRuler::calc_margin_from_alt_fence(const Location &start, const Lo
     }
 
     int32_t alt_above_home_cm_start, alt_above_home_cm_end;    
-    if (!start.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_above_home_cm_start)) {
+    if (!start.get_alt_cm(fence->get_alt_max_frame(), alt_above_home_cm_start)) {
         return false;
     }
-    if (!end.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_above_home_cm_end )) {
+    if (!end.get_alt_cm(fence->get_alt_max_frame(), alt_above_home_cm_end )) {
         return false;
     }
 

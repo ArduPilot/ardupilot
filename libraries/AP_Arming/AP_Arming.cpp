@@ -1227,11 +1227,13 @@ bool AP_Arming::terrain_database_required() const
 {
 #if AP_MISSION_ENABLED
     AP_Mission *mission = AP::mission();
-    if (mission == nullptr) {
-        // no mission support?
-        return false;
+    if (mission != nullptr && mission->contains_terrain_alt_items()) {
+        return true;
     }
-    if (mission->contains_terrain_alt_items()) {
+#endif
+#if AP_FENCE_ENABLED
+    const AC_Fence* fence = AP::fence();
+    if (fence != nullptr && fence->terrain_database_required()) {
         return true;
     }
 #endif
