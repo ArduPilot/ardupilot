@@ -697,6 +697,38 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
 
     // indexes 57 and 58 used by INS_HNTC3 and INS_HNTC4
 
+    // @Param: _ACC_VRFB_Z
+    // @DisplayName: Accelerometer vibration rectification Z bias
+    // @Description: Z-axis accelerometer bias learned during hover to compensate for vibration rectification. This is a DC offset in AccZ caused by motor vibration that only exists when motors are running.
+    // @Units: m/s/s
+    // @Range: -0.5 0.5
+    // @User: Advanced
+    // @Calibration: 1
+    AP_GROUPINFO("_ACC_VRFB_Z", 59, AP_InertialSensor, _accel_vrf_bias_z_old_param[0], 0),
+
+#if INS_MAX_INSTANCES > 1
+    // @Param: _ACC2_VRFB_Z
+    // @DisplayName: Accelerometer2 vibration rectification Z bias
+    // @Description: Z-axis accelerometer bias learned during hover to compensate for vibration rectification. This is a DC offset in AccZ caused by motor vibration that only exists when motors are running.
+    // @Units: m/s/s
+    // @Range: -0.5 0.5
+    // @User: Advanced
+    // @Calibration: 1
+    AP_GROUPINFO("_ACC2_VRFB_Z", 60, AP_InertialSensor, _accel_vrf_bias_z_old_param[1], 0),
+#endif
+
+#if INS_MAX_INSTANCES > 2
+    // @Param: _ACC3_VRFB_Z
+    // @DisplayName: Accelerometer3 vibration rectification Z bias
+    // @Description: Z-axis accelerometer bias learned during hover to compensate for vibration rectification. This is a DC offset in AccZ caused by motor vibration that only exists when motors are running.
+    // @Units: m/s/s
+    // @Range: -0.5 0.5
+    // @User: Advanced
+    // @Calibration: 1
+    AP_GROUPINFO("_ACC3_VRFB_Z", 61, AP_InertialSensor, _accel_vrf_bias_z_old_param[2], 0),
+#endif
+    // Note: IMU 4+ parameters come from AP_InertialSensor_Params subgroups (INS4_ACC_VRFB_Z, etc.)
+
     /*
       NOTE: parameter indexes have gaps above. When adding new
       parameters check for conflicts carefully
