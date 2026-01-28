@@ -362,7 +362,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
 #endif
 
     // check if flight mode requires GPS
-    bool mode_requires_gps = copter.flightmode->requires_GPS() || fence_requires_gps || (copter.simple_mode == Copter::SimpleMode::SUPERSIMPLE);
+    bool mode_requires_gps = copter.flightmode->requires_position() || fence_requires_gps || (copter.simple_mode == Copter::SimpleMode::SUPERSIMPLE);
 
     // call parent gps checks
     if (mode_requires_gps) {
@@ -443,7 +443,7 @@ bool AP_Arming_Copter::proximity_checks(bool display_failure) const
 bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
 {
     // check if flight mode requires GPS
-    bool mode_requires_gps = copter.flightmode->requires_GPS();
+    bool mode_requires_gps = copter.flightmode->requires_position();
 
     // always check if inertial nav has started and is ready
     const auto &ahrs = AP::ahrs();
