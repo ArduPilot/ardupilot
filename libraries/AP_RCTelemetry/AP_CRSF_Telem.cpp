@@ -772,7 +772,7 @@ void AP_CRSF_Telem::process_command_frame(AP_CRSF_Protocol::CommandFrame* comman
             uint32_t baud_rate = command->payload[2] << 24 | command->payload[3] << 16
                 | command->payload[4] << 8 | command->payload[5];
             _baud_rate_request.port_id = command->payload[1];
-            _baud_rate_request.valid = crsf->change_baud_rate(baud_rate);
+            _baud_rate_request.valid = AP::crsf()->change_baud_rate(baud_rate);
             _baud_rate_request.pending = true;
             debug("requested baud rate change %lu", baud_rate);
             break;
