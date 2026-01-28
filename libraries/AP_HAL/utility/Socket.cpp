@@ -28,10 +28,13 @@
 #include "Socket.hpp"
 #endif
 
-#if AP_NETWORKING_BACKEND_CHIBIOS || AP_NETWORKING_BACKEND_PPP
+// Use lwIP sockets when lwIP is enabled, EXCEPT for SocketAPM_native
+// which always uses native sockets (for SITL's host communication)
+#if AP_NETWORKING_NEED_LWIP && !defined(IN_SOCKET_NATIVE_CPP)
 #include <lwip/sockets.h>
+#define CALL_PREFIX(x) ::lwip_##x
 #else
-// SITL or Linux
+// Native sockets (SITL host communication, Linux)
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
@@ -41,15 +44,10 @@
 #include <arpa/inet.h>
 #include <sys/select.h>
 #include <sys/time.h>
+#define CALL_PREFIX(x) ::x
 #endif
 
 #include <errno.h>
-
-#if AP_NETWORKING_BACKEND_CHIBIOS || AP_NETWORKING_BACKEND_PPP
-#define CALL_PREFIX(x) ::lwip_##x
-#else
-#define CALL_PREFIX(x) ::x
-#endif
 
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
