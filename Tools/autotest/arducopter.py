@@ -11913,6 +11913,99 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Was expecting takeoff for longer than expected; got=%f want<=%f" %
                                        (duration, want_lt))
 
+    def TakeoffGroundEffectAlt(self):
+        '''Test TKOFF_GNDEFF_ALT controls ground effect altitude threshold'''
+        self.context_push()
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+
+        # Subtest A: large threshold — takeoff_expected persists at 5m
+        self.start_subtest("Large TKOFF_GNDEFF_ALT keeps ground effect at 5m")
+        self.set_parameter("TKOFF_GNDEFF_ALT", 10)
+        self.takeoff(5, mode='ALT_HOLD')
+        self.delay_sim_time(5)
+        self.change_mode('LAND')
+        self.wait_disarmed()
+        durations_large = self.get_takeoffexpected_durations_from_current_onboard_log(ignore_multi=True)
+        total_large = sum(durations_large)
+        self.progress("takeoff_expected total with GNDEFF_ALT=10: %fs" % total_large)
+        if total_large < 3:
+            raise NotAchievedException(
+                "takeoff_expected should persist with large threshold (got %fs, want>3)" % total_large)
+
+        # Subtest B: small threshold — takeoff_expected clears quickly
+        self.start_subtest("Small TKOFF_GNDEFF_ALT clears ground effect at 5m")
+        self.set_parameter("TKOFF_GNDEFF_ALT", 0.5)
+        self.takeoff(5, mode='ALT_HOLD')
+        self.delay_sim_time(5)
+        self.change_mode('LAND')
+        self.wait_disarmed()
+        durations_small = self.get_takeoffexpected_durations_from_current_onboard_log(ignore_multi=True)
+        total_small = sum(durations_small)
+        self.progress("takeoff_expected total with GNDEFF_ALT=0.5: %fs" % total_small)
+
+        # Comparative assertion: large threshold should have longer duration
+        if total_small >= total_large:
+            raise NotAchievedException(
+                "Smaller threshold should have shorter ground effect (small=%fs >= large=%fs)"
+                % (total_small, total_large))
+
+        self.context_pop()
+        self.reboot_sitl()
+
+    def VibrationRectificationBiasLearning(self):
+        '''Test hover Z-bias learning for vibration rectification'''
+        self.context_push()
+        self.set_parameters({
+            "ACC_ZBIAS_LEARN": 2,
+            "SIM_ACC1_BIAS_Z": 0.15,
+            "LOG_FILE_DSRMROT": 1,
+        })
+        self.reboot_sitl()
+
+        # A: Verify learning during hover and save on disarm
+        self.start_subtest("Bias learned during hover and saved on disarm")
+        vrfb_z = self.get_parameter("INS_ACC_VRFB_Z")
+        if abs(vrfb_z) > 0.001:
+            raise NotAchievedException("INS_ACC_VRFB_Z should start at 0, got %f" % vrfb_z)
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(30)
+        self.land_and_disarm()
+        vrfb_z = self.get_parameter("INS_ACC_VRFB_Z")
+        self.progress("INS_ACC_VRFB_Z after learning: %f" % vrfb_z)
+        if abs(vrfb_z) < 0.01:
+            raise NotAchievedException("INS_ACC_VRFB_Z should be non-zero, got %f" % vrfb_z)
+
+        # B: Verify bias loads on reboot
+        self.start_subtest("Saved bias loaded on reboot with GCS message")
+        saved_vrfb_z = vrfb_z
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_statustext("Hover Z-bias", timeout=30, check_context=True)
+        vrfb_z = self.get_parameter("INS_ACC_VRFB_Z")
+        if abs(vrfb_z - saved_vrfb_z) > 0.001:
+            raise NotAchievedException(
+                "INS_ACC_VRFB_Z changed after reboot: was %f now %f" % (saved_vrfb_z, vrfb_z))
+
+        # C: Verify disabled learning doesn't save
+        self.start_subtest("Learning disabled - no bias saved")
+        self.set_parameters({
+            "INS_ACC_VRFB_Z": 0,
+            "ACC_ZBIAS_LEARN": 0,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(30)
+        self.land_and_disarm()
+        vrfb_z = self.get_parameter("INS_ACC_VRFB_Z")
+        self.progress("INS_ACC_VRFB_Z with learning disabled: %f" % vrfb_z)
+        if abs(vrfb_z) > 0.001:
+            raise NotAchievedException("INS_ACC_VRFB_Z should remain 0, got %f" % vrfb_z)
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def _MAV_CMD_CONDITION_YAW(self, command):
         self.start_subtest("absolute")
         self.takeoff(20, mode='GUIDED')
@@ -12855,6 +12948,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.BatteryMissing,
              self.VibrationFailsafe,
              self.EK3AccelBias,
+             self.TakeoffGroundEffectAlt,
+             self.VibrationRectificationBiasLearning,
              self.StabilityPatch,
              self.OBSTACLE_DISTANCE_3D,
              self.AC_Avoidance_Proximity,
