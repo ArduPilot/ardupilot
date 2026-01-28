@@ -3560,6 +3560,56 @@ const EKFGSF_yaw *AP_AHRS::get_yaw_estimator(void) const
     return nullptr;
 }
 
+// get the frozen hover Z-bias correction for a specific IMU
+// returns 0.0f if not using EKF3
+float AP_AHRS::get_hover_z_bias_correction(uint8_t imu_index) const
+{
+#if HAL_NAVEKF3_AVAILABLE
+    if (active_EKF_type() == EKFType::THREE) {
+        return EKF3.getHoverZBiasCorrection(imu_index);
+    }
+#endif
+    return 0.0f;
+}
+
+// set the frozen hover Z-bias correction for a specific IMU
+// returns true if set successfully, false if not using EKF3 or EKF not initialized
+bool AP_AHRS::set_hover_z_bias_correction(uint8_t imu_index, float correction)
+{
+#if HAL_NAVEKF3_AVAILABLE
+    if (active_EKF_type() == EKFType::THREE) {
+        return EKF3.setHoverZBiasCorrection(imu_index, correction);
+    }
+#endif
+    return false;
+}
+
+// get accel bias Z component for a specific IMU
+// returns false if not using EKF3 or no core uses this IMU
+bool AP_AHRS::get_accel_bias_z_for_imu(uint8_t imu_index, float &bias_z) const
+{
+#if HAL_NAVEKF3_AVAILABLE
+    if (active_EKF_type() == EKFType::THREE) {
+        Vector3f accel_bias;
+        if (EKF3.getAccelBiasForIMU(imu_index, accel_bias)) {
+            bias_z = accel_bias.z;
+            return true;
+        }
+    }
+#endif
+    return false;
+}
+
+// inhibit all accel bias learning (for high-G maneuvers like acro)
+void AP_AHRS::set_inhibit_accel_bias_learning(bool inhibit)
+{
+#if HAL_NAVEKF3_AVAILABLE
+    if (active_EKF_type() == EKFType::THREE) {
+        EKF3.setInhibitAccelBiasLearning(inhibit);
+    }
+#endif
+}
+
 // get current location estimate
 bool AP_AHRS::get_location(Location &loc) const
 {
