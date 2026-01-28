@@ -204,11 +204,33 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Optional AHRS behaviour
-    // @Description: This controls optional AHRS behaviour. Setting DisableDCMFallbackFW will change the AHRS behaviour for fixed wing aircraft in fly-forward flight to not fall back to DCM when the EKF stops navigating. Setting DisableDCMFallbackVTOL will change the AHRS behaviour for fixed wing aircraft in non fly-forward (VTOL) flight to not fall back to DCM when the EKF stops navigating. Setting DontDisableAirspeedUsingEKF disables the EKF based innovation check for airspeed consistency
-    // @Bitmask: 0:DisableDCMFallbackFW, 1:DisableDCMFallbackVTOL, 2:DontDisableAirspeedUsingEKF
+    // @Description: This controls optional AHRS behaviour. Setting DisableDCMFallbackFW will change the AHRS behaviour for fixed wing aircraft in fly-forward flight to not fall back to DCM when the EKF stops navigating. Setting DisableDCMFallbackVTOL will change the AHRS behaviour for fixed wing aircraft in non fly-forward (VTOL) flight to not fall back to DCM when the EKF stops navigating. Setting DontDisableAirspeedUsingEKF disables the EKF based innovation check for airspeed consistency. Setting AutoRecordOrigin will auto-save the EKF origin to parameters when it becomes valid.
+    // @Bitmask: 0:DisableDCMFallbackFW, 1:DisableDCMFallbackVTOL, 2:DontDisableAirspeedUsingEKF, 3:AutoRecordOrigin
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  18, AP_AHRS, _options, HAL_AHRS_OPTIONS_DEFAULT),
+
+    // @Param: ORIGIN_LAT
+    // @DisplayName: AHRS last origin latitude
+    // @Description: AHRS last origin latitude in degrees
+    // @Range: -180 180
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("ORIGIN_LAT", 19, AP_AHRS, _origin_lat, 0),
+
+    // @Param: ORIGIN_LNG
+    // @DisplayName: AHRS last origin longitude
+    // @Description: AHRS last origin longitude in degrees
+    // @Range: -180 180
+    // @User: Advanced
+    AP_GROUPINFO("ORIGIN_LNG", 20, AP_AHRS, _origin_lng, 0),
     
+    // @Param: ORIGIN_ALT
+    // @DisplayName: AHRS last origin altitude
+    // @Description: AHRS last origin altitude in meters
+    // @Range: -200 5000
+    // @User: Advanced
+    AP_GROUPINFO("ORIGIN_ALT", 21, AP_AHRS, _origin_alt, 0),
+
     AP_GROUPEND
 };
 
@@ -239,6 +261,11 @@ AP_AHRS::AP_AHRS(uint8_t flags) :
 void AP_AHRS::init()
 {
     update_orientation();
+
+    // Check if user has set origin params (non-zero values at startup)
+    _origin_was_set_by_user = !is_zero(_origin_lat.get()) ||
+                              !is_zero(_origin_lng.get()) ||
+                              !is_zero(_origin_alt.get());
 
     // EKF1 is no longer supported - handle case where it is selected
     if (_ekf_type.get() == 1) {
@@ -398,7 +425,11 @@ void AP_AHRS::update_state(void)
     state.ground_speed_vec = _groundspeed_vector();
     state.ground_speed = _groundspeed();
     _getCorrectedDeltaVelocityNED(state.corrected_dv, state.corrected_dv_dt);
-    state.origin_ok = _get_origin(state.origin);
+    bool origin_ok = _get_origin(state.origin);
+    if (!state.origin_ok && origin_ok) {
+        record_origin();
+    }
+    state.origin_ok = origin_ok;
     state.velocity_NED_ok = _get_velocity_NED(state.velocity_NED);
 }
 
@@ -1479,6 +1510,46 @@ bool AP_AHRS::set_origin(const Location &loc)
 #endif
     }
     return success;
+}
+
+// Record the current valid origin to parameters
+// This may save the user from having to set the origin manually when using position controlled modes without GPS
+void AP_AHRS::record_origin()
+{
+    // Only record origin if user set params or enabled the option
+    if (!_origin_was_set_by_user && !option_set(Options::AUTO_RECORD_ORIGIN)) {
+        return;
+    }
+    _origin_lat.set_and_save_ifchanged(state.origin.lat * 1.0e-7);
+    _origin_lng.set_and_save_ifchanged(state.origin.lng * 1.0e-7);
+    _origin_alt.set_and_save_ifchanged(state.origin.alt * 1.0e-2);
+}
+
+bool AP_AHRS::set_origin_from_params_maybe()
+{
+    if (state.origin_ok) {  // we already have an origin
+        return true;
+    }
+
+    // don't allow setting all zeros
+    if (is_zero(_origin_lat.get()) && is_zero(_origin_lng.get()) && is_zero(_origin_alt.get())) {
+        return false;
+    }
+
+    const Location loc {
+        int32_t(_origin_lat.get() * 1e7),
+        int32_t(_origin_lng.get() * 1e7),
+        int32_t(_origin_alt.get() * 100),
+        Location::AltFrame::ABSOLUTE
+    };
+
+    if (set_origin(loc)) {
+        // make sure the baro height is reset to the new origin
+        AP::baro().update_field_elevation(true);
+        return true;
+    }
+
+    return false;
 }
 
 #if AP_AHRS_POSITION_RESET_ENABLED
@@ -3504,6 +3575,34 @@ bool AP_AHRS::using_extnav_for_yaw(void) const
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         return EKF3.using_extnav_for_yaw();
+#endif
+#if AP_AHRS_SIM_ENABLED
+    case EKFType::SIM:
+#endif
+#if AP_AHRS_EXTERNAL_ENABLED
+    case EKFType::EXTERNAL:
+#endif
+        return false;
+    }
+    // since there is no default case above, this is unreachable
+    return false;
+}
+
+// check if using gps
+bool AP_AHRS::using_gps(void) const
+{
+    switch (active_EKF_type()) {
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        return EKF2.using_gps();
+#endif
+#if AP_AHRS_DCM_ENABLED
+    case EKFType::DCM:
+        return _gps_use != GPSUse::Disable;
+#endif
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        return EKF3.using_gps();
 #endif
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:

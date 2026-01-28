@@ -659,6 +659,12 @@ bool NavEKF3_core::using_extnav_for_yaw() const
     return false;
 }
 
+// are we using a gps
+bool NavEKF3_core::using_gps() const
+{
+    return frontend->sources.usingGPS(core_index);
+}
+
 /*
   should we assume zero sideslip?
  */

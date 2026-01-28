@@ -34,6 +34,15 @@ bool AP_Arming_Rover::rc_calibration_checks(const bool display_failure)
 // performs pre_arm gps related checks and returns true if passed
 bool AP_Arming_Rover::gps_checks(bool display_failure)
 {
+    const AP_AHRS &ahrs = AP::ahrs();
+
+    // always check if inertial nav has started and is ready
+    char failure_msg[50] = {};
+    if (!ahrs.pre_arm_check(rover.control_mode->requires_position(), failure_msg, sizeof(failure_msg))) {
+        check_failed(display_failure, "AHRS: %s", failure_msg);
+        return false;
+    }
+
     if (!require_location &&
         !rover.control_mode->requires_position() &&
         !rover.control_mode->requires_velocity()) {
@@ -43,15 +52,6 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
 
     // call parent gps checks
     if (!AP_Arming::gps_checks(display_failure)) {
-        return false;
-    }
-
-    const AP_AHRS &ahrs = AP::ahrs();
-
-    // always check if inertial nav has started and is ready
-    char failure_msg[50] = {};
-    if (!ahrs.pre_arm_check(true, failure_msg, sizeof(failure_msg))) {
-        check_failed(display_failure, "AHRS: %s", failure_msg);
         return false;
     }
 

@@ -163,8 +163,9 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @DisplayName: Arming options
     // @Description: Options that can be applied to change arming behaviour
     // @Bitmask: 0:Disable prearm display,1:Do not send status text on state change,2:Skip IMU consistency checks when ICE motor running
+    // @Bitmask{Copter}: 0:Disable prearm display,1:Do not send status text on state change,2:Skip IMU consistency checks when ICE motor running,3:Set origin from AHRS params on arming,4:Set origin from AHRS params at startup
     // @User: Advanced
-    AP_GROUPINFO("OPTIONS", 9,   AP_Arming, _arming_options, 0),
+    AP_GROUPINFO("OPTIONS", 9,   AP_Arming, _arming_options, 8),
 
     // @Param: MAGTHRESH
     // @DisplayName: Compass magnetic field strength error threshold vs earth magnetic model
