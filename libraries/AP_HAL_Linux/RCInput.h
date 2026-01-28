@@ -20,6 +20,9 @@ public:
         return static_cast<RCInput*>(rcinput);
     }
 
+    // early_init() is called before CPU affinity is set, allowing
+    // drivers that create threads (like pigpio) to run on any core
+    virtual void early_init() {}
     virtual void init() override;
     bool new_input() override;
     uint8_t num_channels() override;

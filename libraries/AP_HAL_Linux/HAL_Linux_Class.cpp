@@ -29,6 +29,7 @@
 #include "RCInput_Multi.h"
 #include "RCInput_ZYNQ.h"
 #include "RCInput_RCProtocol.h"
+#include "RCInput_Pigpio.h"
 #include "RCOutput_AioPRU.h"
 #include "RCOutput_Bebop.h"
 #include "RCOutput_Disco.h"
@@ -162,6 +163,10 @@ static RCInput_Multi rcinDriver{2, NEW_NOTHROW RCInput_AioPRU, NEW_NOTHROW RCInp
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1 || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_CANZERO
 static RCInput_RPI rcinDriver;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RPI
+// Use vendored pigpio for DMA-based bit-bang serial (reliable 100kbaud SBUS)
+// GPIO4 (pin 7) is the default RC input pin on Raspberry Pi
+static RCInput_Pigpio rcinDriver{4, 100000, true};
 #elif AP_RCPROTOCOL_ZYNQ_ENABLED
 static RCInput_ZYNQ rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
@@ -463,6 +468,11 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
     // can still stop the process proprely, although without proper
     // teardown.
     // This isn't perfect, but still prevents an unkillable process.
+
+    // Initialize RCInput early, before CPU affinity is set.
+    // This allows drivers like pigpio to create threads that aren't
+    // constrained to isolated CPU cores.
+    RCInput::from(rcin)->early_init();
 
     scheduler->init();
     gpio->init();
