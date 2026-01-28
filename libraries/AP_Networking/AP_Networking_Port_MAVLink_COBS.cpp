@@ -97,7 +97,7 @@ void AP_Networking_Port_MAVLink_COBS::send_cobs_frame(const uint8_t *data, size_
     bool first = true;
     
     while (offset < enc_len) {
-        size_t chunk_len = MIN(enc_len - offset, TUNNEL_PAYLOAD_MAX);
+        size_t chunk_len = MIN(enc_len - offset, (size_t)TUNNEL_PAYLOAD_MAX);
         uint16_t type = first ? MAV_TUNNEL_PAYLOAD_TYPE_COBS_START 
                               : MAV_TUNNEL_PAYLOAD_TYPE_COBS_CONT;
         
