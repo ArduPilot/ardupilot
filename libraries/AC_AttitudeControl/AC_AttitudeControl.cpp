@@ -478,7 +478,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_rad(float euler_roll_a
         _euler_angle_target_rad.y = euler_pitch_angle_rad;
         if (slew_yaw) {
             // Compute constrained angle error
-            float angle_error = constrain_float(wrap_PI(euler_yaw_angle_rad - _euler_angle_target_rad.z), -slew_yaw_max_rads * _dt_s, slew_yaw_max_rads * _dt_s);
+            float angle_error = constrain_float(float(wrap_PI(euler_yaw_angle_rad - _euler_angle_target_rad.z)), -slew_yaw_max_rads * _dt_s, slew_yaw_max_rads * _dt_s);
             // Update attitude target from constrained angle error
             _euler_angle_target_rad.z = wrap_PI(angle_error + _euler_angle_target_rad.z);
         } else {
@@ -989,7 +989,7 @@ void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& attitude_tar
     if (!is_zero(get_rate_yaw_pid().kP())) {
         float heading_error_max = MIN(inv_sqrt_controller(1.0 / get_rate_yaw_pid().kP(), _p_angle_yaw.kP(), heading_accel_max), AC_ATTITUDE_YAW_MAX_ERROR_ANGLE_RAD);
         if (!is_zero(_p_angle_yaw.kP()) && fabsf(attitude_error_rad.z) > heading_error_max) {
-            attitude_error_rad.z = constrain_float(wrap_PI(attitude_error_rad.z), -heading_error_max, heading_error_max);
+            attitude_error_rad.z = constrain_float(float(wrap_PI(attitude_error_rad.z)), -heading_error_max, heading_error_max);
             heading_vec_correction_quat.from_axis_angle(Vector3f{0.0f, 0.0f, attitude_error_rad.z});
             attitude_target = attitude_body * thrust_vector_correction * heading_vec_correction_quat;
         }

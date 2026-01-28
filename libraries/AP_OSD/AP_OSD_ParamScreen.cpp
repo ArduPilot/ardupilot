@@ -312,12 +312,12 @@ void AP_OSD_ParamScreen::modify_parameter(uint8_t number, Event ev)
         // integer types going below -1;
         case AP_PARAM_INT8: {
             AP_Int8* param = (AP_Int8*)p;
-            param->set(constrain_int16(param->get() + incr_int, min_int, max_int));
+            param->set(constrain_int8(int8_t(param->get() + incr_int), min_int, max_int));
             break;
         }
         case AP_PARAM_INT16: {
             AP_Int16* param = (AP_Int16*)p;
-            param->set(constrain_int16(param->get() + incr_int, min_int, max_int));
+            param->set(constrain_int16(int16_t(param->get() + incr_int), min_int, max_int));
             break;
         }
         case AP_PARAM_INT32: {

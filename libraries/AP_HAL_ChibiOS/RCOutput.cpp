@@ -320,7 +320,7 @@ sysinterval_t RCOutput::calc_ticks_remaining(pwm_group &group, rcout_timer_t cyc
     // to prevent bugs in handling timer wrap
     const rcout_timer_t max_delay_us = output_period_us;
     const rcout_timer_t min_delay_us = 10; // matches our CH_CFG_ST_TIMEDELTA
-    wait_us = constrain_uint32(wait_us, min_delay_us, max_delay_us);
+    wait_us = constrain_uint64(wait_us, min_delay_us, max_delay_us);
 
     return MIN(TIME_MAX_INTERVAL, chTimeUS2I(wait_us));
 }
@@ -1696,7 +1696,7 @@ void RCOutput::dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_
                 continue;
             }
 
-            pwm = constrain_int16(pwm, 1000, 2000);
+            pwm = constrain_uint16(pwm, 1000, 2000);
             uint16_t value = MIN(2 * (pwm - 1000), 1999);
 
             if ((servo_chan_mask & _reversible_mask) != 0) {

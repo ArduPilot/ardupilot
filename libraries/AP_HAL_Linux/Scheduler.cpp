@@ -388,7 +388,8 @@ uint8_t Scheduler::calculate_thread_priority(priority_base base, int8_t priority
     };
     for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
         if (priority_map[i].base == base) {
-            thread_priority = constrain_int16(priority_map[i].p + priority, 1, APM_LINUX_MAX_PRIORITY);
+            const int16_t priority_sum = priority_map[i].p + priority;
+            thread_priority = constrain_int16(priority_sum, 1, APM_LINUX_MAX_PRIORITY);
             break;
         }
     }

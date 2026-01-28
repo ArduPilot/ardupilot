@@ -557,14 +557,14 @@ void AP_AutoTune::restore_gains(void)
  */
 void AP_AutoTune::update_rmax(void)
 {
-    uint8_t level = constrain_int32(aparm.autotune_level, 0, ARRAY_SIZE(tuning_table));
+    const uint8_t level = constrain_int8(aparm.autotune_level, 0, ARRAY_SIZE(tuning_table));
 
     int16_t target_rmax;
     float target_tau;
 
     if (level == 0) {
         // this level means to keep current values of RMAX and TCONST
-        target_rmax = constrain_float(current.rmax_pos, 20, 720);
+        target_rmax = constrain_int16(current.rmax_pos, 20, 720);
         target_tau = constrain_float(current.tau, 0.1, 2);
     } else {
         target_rmax = tuning_table[level-1].rmax;
@@ -587,7 +587,7 @@ void AP_AutoTune::update_rmax(void)
         current.rmax_pos.set(75);
     }
     // move RMAX by 20 deg/s per step
-    current.rmax_pos.set(constrain_int32(target_rmax,
+    current.rmax_pos.set(constrain_int16(target_rmax,
                                          current.rmax_pos.get()-20,
                                          current.rmax_pos.get()+20));
 

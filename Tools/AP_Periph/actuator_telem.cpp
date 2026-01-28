@@ -143,7 +143,7 @@ void ActuatorTelem::send_telemetry(uint8_t channel_index, uint8_t actuator_id)
     // Calculate power rating percentage from current
     const float max_current = curr_max.get();
     if (max_current > 0 && current_amp >= 0) {
-        pkt.power_rating_pct = constrain_int16(current_amp / max_current * 100.0f, 0, 100);
+        pkt.power_rating_pct = constrain_float(current_amp / max_current * 100.0f, 0, 100);
     } else {
         pkt.power_rating_pct = UAVCAN_EQUIPMENT_ACTUATOR_STATUS_POWER_RATING_PCT_UNKNOWN;
     }

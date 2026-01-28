@@ -898,7 +898,7 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
                 loop_limit = 4;
             }
             // constrain the gyro rate to be a 2^N multiple
-            uint8_t fast_sampling_rate = constrain_int16(get_fast_sampling_rate(), loop_limit, 8);
+            uint8_t fast_sampling_rate = constrain_int16(int16_t(get_fast_sampling_rate()), loop_limit, 8);
 
             // calculate rate we will be giving gyro samples to the backend
             _gyro_fifo_downsample_rate = 8 / fast_sampling_rate;

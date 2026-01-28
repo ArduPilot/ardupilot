@@ -229,7 +229,7 @@ __INITFUNC__ void AP_GyroFFT::init(uint16_t loop_rate_hz)
     // 16 gives a maximum output rate of 2Khz / 16 = 125Hz per axis or 375Hz in aggregate
     _samples_per_frame = MAX(FFT_MIN_SAMPLES_PER_FRAME, 1 << lrintf(log2f(_samples_per_frame)));
     if (_num_frames > 0) {
-        _num_frames.set(constrain_int16(_num_frames, 2, AP_HAL::DSP::MAX_SLIDING_WINDOW_SIZE));
+        _num_frames.set(constrain_int8(_num_frames, 2, AP_HAL::DSP::MAX_SLIDING_WINDOW_SIZE));
     }
 
     // check that we have enough memory for the window size requested
@@ -287,8 +287,8 @@ __INITFUNC__ void AP_GyroFFT::init(uint16_t loop_rate_hz)
         harmonics = 3;
     }
     // count the number of active harmonics or dynamic notchs
-    _tracked_peaks = constrain_int16(MAX(__builtin_popcount(harmonics),
-                                         num_notches), 1, FrequencyPeak::MAX_TRACKED_PEAKS);
+    _tracked_peaks = constrain_int16(int16_t(MAX(__builtin_popcount(harmonics),
+                                         num_notches)), 1, FrequencyPeak::MAX_TRACKED_PEAKS);
 
     // calculate harmonic multiplier. this assumes the harmonics configured on the 
     // harmonic notch reflect the multiples of the fundamental harmonic that should be tracked
@@ -576,7 +576,7 @@ void AP_GyroFFT::update_thread(void)
         // this is to stop us burning CPU while waiting for samples, the reduction by _samples_per_frame is a heuristic to prevent waiting too long
         // and missing frames (easy to see in SITL because the noise will keep calibrating)
         // we always delay by at least 1us to give logging a chance to run at the same priority
-        uint32_t delay = constrain_int32((int16_t)_state->_window_size - (int16_t)remaining_samples, 0, _samples_per_frame)
+        uint32_t delay = constrain_int32(int32_t((int16_t)_state->_window_size - (int16_t)remaining_samples), 0, _samples_per_frame)
             * 1e6 / _fft_sampling_rate_hz;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         // in SITL the gyros do not run in a different thread
@@ -824,7 +824,7 @@ AP_GyroFFT::FrequencyPeak AP_GyroFFT::get_tracked_noise_peak() const
     }
     // if the user has specified a specific peak to track then use that
     if (_harmonic_peak > 0) {
-        return FrequencyPeak(constrain_int16(_harmonic_peak - 1, FrequencyPeak::CENTER, FrequencyPeak::UPPER_SHOULDER));
+        return FrequencyPeak(constrain_int8(int8_t(_harmonic_peak - 1), FrequencyPeak::CENTER, FrequencyPeak::UPPER_SHOULDER));
     }
 
     // required fit of 10% is fairly conservative when testing in SITL, testing shows that it's safer to
@@ -1229,7 +1229,7 @@ uint8_t AP_GyroFFT::calculate_tracking_peaks(float& weighted_center_freq_hz, con
         num_peaks++;
     }
     // record the number of cycles where something was tracked
-    _distorted_cycles[_update_axis] = constrain_int16(_distorted_cycles[_update_axis] + 1, 0, FFT_MAX_MISSED_UPDATES);
+    _distorted_cycles[_update_axis] = constrain_uint8(uint8_t(_distorted_cycles[_update_axis] + 1), 0, FFT_MAX_MISSED_UPDATES);
     weighted_center_freq_hz = freqs.get_weighted_frequency(FrequencyPeak::CENTER);
     _thread_state._center_peak[_update_axis] = FrequencyPeak::CENTER;
 

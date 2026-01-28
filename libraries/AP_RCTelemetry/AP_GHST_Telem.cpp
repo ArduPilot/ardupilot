@@ -268,7 +268,7 @@ void AP_GHST_Telem::calc_gps()
 
     _telem.gps.latitude = htole32(loc.lat);
     _telem.gps.longitude = htole32(loc.lng);
-    _telem.gps.altitude = htole16(constrain_int16(loc.alt / 100, 0, 5000) + 1000);
+    _telem.gps.altitude = htole16(constrain_int16(int16_t(loc.alt / 100), 0, 5000) + 1000);
 
     _telem_size = sizeof(AP_GHST_Telem::GPSFrame);
     _telem_type = AP_RCProtocol_GHST::GHST_DL_GPS_PRIMARY;

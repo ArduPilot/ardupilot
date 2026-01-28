@@ -400,7 +400,7 @@ void SlungPayloadSim::update_payload(const Vector3p& veh_pos, const Vector3f& ve
         // calculate tension ratio as value between 0 and 1
         // tension ratio is 0 when payload-to-vehicle distance is 10cm less than line length
         // tension ratio is 1 when payload-to-vehicle distance is equal to line length
-        tension_ratio = constrain_float(1.0 - (line_length - payload_to_veh_length) * 10, 0, 1);
+        tension_ratio = constrain_float(1.0f - (line_length - payload_to_veh_length) * 10, 0, 1);
 
         // calculate tension forces when line is taut
         if (is_positive(tension_ratio)) {

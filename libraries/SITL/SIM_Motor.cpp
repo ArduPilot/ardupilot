@@ -83,17 +83,17 @@ void Motor::calculate_forces(const struct sitl_input &input,
     if (roll_servo >= 0) {
         uint16_t servoval = update_servo(input.servos[roll_servo+motor_offset], now, last_roll_value);
         if (roll_min < roll_max) {
-            roll = constrain_float(roll_min + (servoval-1000)*0.001*(roll_max-roll_min), roll_min, roll_max);
+            roll = constrain_float(roll_min + (servoval-1000)*0.001f*(roll_max-roll_min), roll_min, roll_max);
         } else {
-            roll = constrain_float(roll_max + (2000-servoval)*0.001*(roll_min-roll_max), roll_max, roll_min);
+            roll = constrain_float(float(roll_max + (2000-servoval)*0.001*(roll_min-roll_max)), roll_max, roll_min);
         }
     }
     if (pitch_servo >= 0) {
         uint16_t servoval = update_servo(input.servos[pitch_servo+motor_offset], now, last_pitch_value);
         if (pitch_min < pitch_max) {
-            pitch = constrain_float(pitch_min + (servoval-1000)*0.001*(pitch_max-pitch_min), pitch_min, pitch_max);
+            pitch = constrain_float(float(pitch_min + (servoval-1000)*0.001*(pitch_max-pitch_min)), pitch_min, pitch_max);
         } else {
-            pitch = constrain_float(pitch_max + (2000-servoval)*0.001*(pitch_min-pitch_max), pitch_max, pitch_min);
+            pitch = constrain_float(float(pitch_max + (2000-servoval)*0.001*(pitch_min-pitch_max)), pitch_max, pitch_min);
         }
     }
     last_change_usec = now;
@@ -147,11 +147,11 @@ uint16_t Motor::update_servo(uint16_t demand, uint64_t time_usec, float &last_va
             demand = last_value;
         }
     }
-    demand = constrain_int16(demand, 1000, 2000);
+    demand = constrain_uint16(demand, 1000, 2000);
     float dt = (time_usec - last_change_usec) * 1.0e-6f;
     // assume servo moves through 90 degrees over 1000 to 2000
     float max_change = 1000 * (dt / servo_rate) * 60.0f / 90.0f;
-    last_value = constrain_float(demand, last_value-max_change, last_value+max_change);
+    last_value = constrain_float(float(demand), last_value-max_change, last_value+max_change);
     return uint16_t(last_value+0.5);
 }
 

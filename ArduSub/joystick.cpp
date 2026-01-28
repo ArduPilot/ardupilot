@@ -116,8 +116,8 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
         xTot = x + xTrim;
     }
 
-    channel_pitch->set_override(constrain_int16(s + pitchTrim + rpyCenter,1100,1900), tnow);
-    channel_roll->set_override(constrain_int16(t + rollTrim  + rpyCenter,1100,1900), tnow);
+    channel_pitch->set_override(constrain_int32(int32_t(s + pitchTrim + rpyCenter),1100,1900), tnow);
+    channel_roll->set_override(constrain_int32(int32_t(t + rollTrim  + rpyCenter),1100,1900), tnow);
 
     channel_throttle->set_override(constrain_float((zTot)*throttleScale+throttleBase,1100,1900), tnow);
     channel_yaw->set_override(constrain_float(r*rpyScale+rpyCenter,1100,1900), tnow);
@@ -308,7 +308,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
             // check that our gain parameters are in correct range, update in eeprom and notify gcs if needed
             g.minGain.set_and_save(constrain_float(g.minGain, 0.10, 0.80));
             g.maxGain.set_and_save(constrain_float(g.maxGain, g.minGain, 1.0));
-            g.numGainSettings.set_and_save(constrain_int16(g.numGainSettings, 1, 10));
+            g.numGainSettings.set_and_save(constrain_int8(g.numGainSettings, 1, 10));
 
             if (g.numGainSettings == 1) {
                 gain = constrain_float(g.gain_default, g.minGain, g.maxGain);
@@ -324,7 +324,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
             // check that our gain parameters are in correct range, update in eeprom and notify gcs if needed
             g.minGain.set_and_save(constrain_float(g.minGain, 0.10, 0.80));
             g.maxGain.set_and_save(constrain_float(g.maxGain, g.minGain, 1.0));
-            g.numGainSettings.set_and_save(constrain_int16(g.numGainSettings, 1, 10));
+            g.numGainSettings.set_and_save(constrain_int8(g.numGainSettings, 1, 10));
 
             if (g.numGainSettings == 1) {
                 gain = constrain_float(g.gain_default, g.minGain, g.maxGain);
@@ -336,16 +336,16 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
         }
         break;
     case JSButton::button_function_t::k_trim_roll_inc:
-        rollTrim = constrain_float(rollTrim+10,-200,200);
+        rollTrim = constrain_int32(int32_t(rollTrim+10),-200,200);
         break;
     case JSButton::button_function_t::k_trim_roll_dec:
-        rollTrim = constrain_float(rollTrim-10,-200,200);
+        rollTrim = constrain_int32(int32_t(rollTrim-10),-200,200);
         break;
     case JSButton::button_function_t::k_trim_pitch_inc:
-        pitchTrim = constrain_float(pitchTrim+10,-200,200);
+        pitchTrim = constrain_int32(int32_t(pitchTrim+10),-200,200);
         break;
     case JSButton::button_function_t::k_trim_pitch_dec:
-        pitchTrim = constrain_float(pitchTrim-10,-200,200);
+        pitchTrim = constrain_int32(int32_t(pitchTrim-10),-200,200);
         break;
     case JSButton::button_function_t::k_input_hold_set:
         if(!motors.armed()) {

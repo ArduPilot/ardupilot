@@ -145,8 +145,8 @@ void Sub::translate_wpnav_rp(float &lateral_out, float &forward_out)
     // constrain target forward/lateral values
     // The outputs of wp_nav.get_roll and get_pitch should already be constrained to these values
     const float angle_max_cd = attitude_control.lean_angle_max_cd();
-    lateral = constrain_int16(lateral, -angle_max_cd, angle_max_cd);
-    forward = constrain_int16(forward, -angle_max_cd, angle_max_cd);
+    lateral = constrain_int32(lateral, -angle_max_cd, angle_max_cd);
+    forward = constrain_int32(forward, -angle_max_cd, angle_max_cd);
 
     // Normalize
     lateral_out = (float)lateral/(float)angle_max_cd;
@@ -162,8 +162,8 @@ void Sub::translate_circle_nav_rp(float &lateral_out, float &forward_out)
 
     // constrain target forward/lateral values
     const float angle_max_cd = attitude_control.lean_angle_max_cd();
-    lateral = constrain_int16(lateral, -angle_max_cd, angle_max_cd);
-    forward = constrain_int16(forward, -angle_max_cd, angle_max_cd);
+    lateral = constrain_int32(lateral, -angle_max_cd, angle_max_cd);
+    forward = constrain_int32(forward, -angle_max_cd, angle_max_cd);
 
     // Normalize
     lateral_out = (float)lateral/(float)angle_max_cd;
@@ -179,8 +179,8 @@ void Sub::translate_pos_control_rp(float &lateral_out, float &forward_out)
 
     // constrain target forward/lateral values
     const float angle_max_cd = attitude_control.lean_angle_max_cd();
-    lateral = constrain_int16(lateral, -angle_max_cd, angle_max_cd);
-    forward = constrain_int16(forward, -angle_max_cd, angle_max_cd);
+    lateral = constrain_int32(lateral, -angle_max_cd, angle_max_cd);
+    forward = constrain_int32(forward, -angle_max_cd, angle_max_cd);
 
     // Normalize
     lateral_out = (float)lateral/(float)angle_max_cd;

@@ -429,7 +429,7 @@ void AP_InertialSensor_Invensensev3::set_primary(bool _is_primary)
         } else {
             // scale down non-primary to 2x loop rate, but no greater than the default sampling rate
             dev->adjust_periodic_callback(periodic_handle,
-                                          1000000UL / constrain_int16(get_loop_rate_hz() * 2, 400, 1000));
+                                          1000000UL / constrain_uint16(uint16_t(get_loop_rate_hz() * 2), 400, 1000));
         }
     }
 #endif
@@ -712,10 +712,10 @@ uint16_t AP_InertialSensor_Invensensev3::calculate_fast_sampling_backend_rate(ui
         min_base_rate_multiplier = 4;
     }
     // constrain the gyro rate to be a 2^N multiple
-    uint8_t fast_sampling_rate_multiplier = constrain_int16(get_fast_sampling_rate(), min_base_rate_multiplier, 8);
+    uint8_t fast_sampling_rate_multiplier = constrain_int16(int16_t(get_fast_sampling_rate()), min_base_rate_multiplier, 8);
 
     // calculate rate we will be giving samples to the backend
-    return constrain_int16(base_backend_rate * fast_sampling_rate_multiplier, base_backend_rate, max_backend_rate);
+    return constrain_int16(int16_t(base_backend_rate * fast_sampling_rate_multiplier), base_backend_rate, max_backend_rate);
 }
 
 /*

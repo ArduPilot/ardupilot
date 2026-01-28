@@ -517,7 +517,7 @@ void RCOutput_Tap::push()
         } else if (_period[i] >= _esc_pwm_max) {
             *val = RPMMAX;
         } else {
-            float period_us = constrain_int16(_period[i], _esc_pwm_min, _esc_pwm_max);
+            const float period_us = constrain_uint16(_period[i], _esc_pwm_min, _esc_pwm_max);
 
             /*
              * Map to [ RPMSTOPPED, RPMMAX ] range rather than

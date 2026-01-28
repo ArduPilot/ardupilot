@@ -94,9 +94,9 @@ void AP_InertialSensor_SCHA63T::start()
         bool fast_sampling = dev_uno->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
         if (fast_sampling) {
             // constrain the gyro rate to be a 2^N multiple
-            uint8_t fast_sampling_rate = constrain_int16(get_fast_sampling_rate(), 1, 4);
+            uint8_t fast_sampling_rate = constrain_int16(int16_t(get_fast_sampling_rate()), 1, 4);
             // calculate rate we will be giving samples to the backend
-            backend_rate_hz = constrain_int16(backend_rate_hz * fast_sampling_rate, backend_rate_hz, BACKEND_SAMPLE_RATE_MAX);
+            backend_rate_hz = constrain_int16(int16_t(backend_rate_hz * fast_sampling_rate), backend_rate_hz, BACKEND_SAMPLE_RATE_MAX);
         }
     }
     uint32_t backend_period_us = 1000000UL / backend_rate_hz;

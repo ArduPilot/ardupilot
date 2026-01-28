@@ -130,7 +130,7 @@ void AP_IOMCU::thread_main(void)
 #if HAVE_AP_BLHELI_SUPPORT
     AP_BLHeli* blh = AP_BLHeli::get_singleton();
     if (blh && blh->get_telemetry_rate() > 0) {
-        erpm_period_ms = constrain_int16(1000 / blh->get_telemetry_rate(), 1, 1000);
+        erpm_period_ms = constrain_int32(int32_t(1000 / blh->get_telemetry_rate()), 1, 1000);
     }
 #endif
 #endif

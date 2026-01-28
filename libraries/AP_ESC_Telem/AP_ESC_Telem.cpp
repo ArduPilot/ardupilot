@@ -405,7 +405,7 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
     }
 
     // loop through groups of 4 ESCs
-    const uint8_t esc_offset = constrain_int16(mavlink_offset, 0, ESC_TELEM_MAX_ESCS-1);
+    const uint8_t esc_offset = constrain_int16(int16_t(mavlink_offset), 0, ESC_TELEM_MAX_ESCS-1);
 
     // ensure we send out partially-full groups:
     const uint8_t num_idx = (ESC_TELEM_MAX_ESCS + 3) / 4;
@@ -601,7 +601,7 @@ void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const float new_rpm, cons
 
     rpmdata.prev_rpm = rpmdata.rpm;
     rpmdata.rpm = new_rpm;
-    rpmdata.update_rate_hz = 1.0e6f / constrain_uint32((now - last_update_us), 100, 1000000U*10U); // limit the update rate 0.1Hz to 10KHz 
+    rpmdata.update_rate_hz = 1.0e6f / constrain_uint32(now - last_update_us, 100, 1000000U*10U); // limit the update rate 0.1Hz to 10KHz
     rpmdata.last_update_us = now;
     rpmdata.error_rate = error_rate;
     rpmdata.data_valid = true;

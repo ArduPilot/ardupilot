@@ -237,7 +237,7 @@ bool BatteryBMS::get_percentage(uint8_t &percentage)
         } else if (avg_cell_voltage_mv >= 4200) {
             percentage = 100;
         } else {
-            percentage = constrain_uint16((avg_cell_voltage_mv - 3000) * 100 / 1200, 0, 100);
+            percentage = constrain_int32(int32_t((avg_cell_voltage_mv - 3000) * 100 / 1200), 0, 100);
         }
         return true;
     }

@@ -606,7 +606,7 @@ void JSON::update(const struct sitl_input &input)
     // allow for changes in physics step
     // Only adjust frame time if lockstep is enabled (no_lockstep is false)
     if (use_time_sync && !state.no_lockstep) {
-        adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
+        adjust_frame_time(constrain_int16(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
     }
 
 #if 0

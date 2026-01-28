@@ -703,7 +703,8 @@ uint8_t Scheduler::calculate_thread_priority(priority_base base, int8_t priority
     };
     for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
         if (priority_map[i].base == base) {
-            thread_priority = constrain_int16(priority_map[i].p + priority, LOWPRIO, HIGHPRIO);
+            const int16_t total_priority = priority_map[i].p + priority;
+            thread_priority = constrain_int16(total_priority, LOWPRIO, HIGHPRIO);
             break;
         }
     }

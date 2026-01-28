@@ -829,7 +829,7 @@ T QuaternionT<T>::roll_pitch_difference(const QuaternionT<T> &v) const
     const Vector3<T> z_unit_m = m.mul_transpose(z_unit_vec);
     const Vector3<T> z_unit_vm = vm.mul_transpose(z_unit_vec);
     const Vector3<T> vec_diff = z_unit_vm - z_unit_m;
-    const T vec_len_div2 = constrain_float(vec_diff.length() * 0.5, 0.0, 1.0);
+    const T vec_len_div2 = constrain_value(vec_diff.length() * T(0.5), T(0.0), T(1.0));
 
     // calculate and return angular difference
     return (2.0 * asinF(vec_len_div2));

@@ -1364,7 +1364,7 @@ char AP_OSD_AbstractScreen::u_icon(enum unit_type unit)
         icons_SI,
         icons_aviation,
     };
-    return (char)SYMBOL(icons[constrain_int16(osd->units, 0, AP_OSD::UNITS_LAST-1)][unit]);
+    return (char)SYMBOL(icons[constrain_int8(osd->units, 0, AP_OSD::UNITS_LAST-1)][unit]);
 }
 
 /*
@@ -1424,7 +1424,7 @@ float AP_OSD_AbstractScreen::u_scale(enum unit_type unit, float value)
         nullptr,
         nullptr
     };
-    uint8_t units = constrain_int16(osd->units, 0, AP_OSD::UNITS_LAST-1);
+    uint8_t units = constrain_int8(osd->units, 0, AP_OSD::UNITS_LAST-1);
     return value * scale[units][unit] + (offsets[units]?offsets[units][unit]:0);
 }
 

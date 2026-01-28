@@ -23,7 +23,7 @@ bool ModeQRTL::_enter()
 
         // Climb at least to a cone around home of height of QRTL alt and radius of radius
         // Always climb up to at least Q_RTL_ALT_MIN, constrain Q_RTL_ALT_MIN between Q_LAND_FINAL_ALT and Q_RTL_ALT
-        const float min_climb = constrain_float(quadplane.qrtl_alt_min_m, quadplane.land_final_alt_m, quadplane.qrtl_alt_m);
+        const float min_climb = constrain_int16(quadplane.qrtl_alt_min_m, quadplane.land_final_alt_m.get(), quadplane.qrtl_alt_m.get());
         const float target_alt = MAX(quadplane.qrtl_alt_m * (dist / MAX(radius, dist)), min_climb);
 
 

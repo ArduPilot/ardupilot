@@ -53,7 +53,7 @@ void AP_BattMonitor_FuelLevel_PWM::read()
         _state.healthy = (now_us - _state.last_time_micros) < 250000U;
         return;
     }
-    pulse_width = constrain_int16(pulse_width, pwm_empty, pwm_full);
+    pulse_width = constrain_uint16(pulse_width, pwm_empty, pwm_full);
     float proportion_full = (pulse_width - pwm_empty) / float(pwm_full - pwm_empty);
     float proportion_used = 1.0 - proportion_full;
 

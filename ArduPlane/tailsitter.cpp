@@ -463,7 +463,7 @@ void Tailsitter::output(void)
          */
         float des_pitch_cd = quadplane.attitude_control->get_att_target_euler_cd().y;
         int32_t pitch_error_cd = (des_pitch_cd - quadplane.ahrs_view->pitch_sensor) * 0.5;
-        float extra_pitch = constrain_float(pitch_error_cd, -SERVO_MAX, SERVO_MAX) / SERVO_MAX;
+        float extra_pitch = constrain_int32(pitch_error_cd, -SERVO_MAX, SERVO_MAX) / SERVO_MAX;
         float extra_sign = extra_pitch > 0?1:-1;
         float extra_elevator = 0;
         if (!is_zero(extra_pitch) && quadplane.in_vtol_mode()) {
@@ -849,7 +849,7 @@ void Tailsitter_Transition::update()
             transition_state = State::DONE;
             if (plane.arming.is_armed_and_safety_off()) {
                 fw_limit_start_ms = now;
-                fw_limit_initial_pitch = constrain_float(quadplane.ahrs.pitch_sensor,-8500,8500);
+                fw_limit_initial_pitch = constrain_int32(quadplane.ahrs.pitch_sensor,-8500,8500);
                 plane.nav_pitch_cd = fw_limit_initial_pitch;
                 plane.nav_roll_cd = 0;
             }
@@ -951,7 +951,7 @@ void Tailsitter_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& na
     } else if (transition_state == State::DONE) {
         // still in FW, reset transition starting point
         vtol_transition_start_ms = now;
-        vtol_transition_initial_pitch = constrain_float(plane.nav_pitch_cd,-8500,8500);
+        vtol_transition_initial_pitch = constrain_int32(plane.nav_pitch_cd,-8500,8500);
 
         // rate limit initial pitch down
         if (fw_limit_start_ms != 0) {
@@ -1025,7 +1025,7 @@ void Tailsitter_Transition::force_transition_complete()
 {
     transition_state = State::DONE;
     vtol_transition_start_ms = AP_HAL::millis();
-    vtol_transition_initial_pitch = constrain_float(plane.nav_pitch_cd,-8500,8500);
+    vtol_transition_initial_pitch = constrain_int32(plane.nav_pitch_cd,-8500,8500);
     fw_limit_start_ms = 0;
 
     quadplane.assist.reset();

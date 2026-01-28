@@ -103,7 +103,7 @@ void Helicopter::update(const struct sitl_input &input)
             _servos_delayed[i] = input.servos[i];
         }
     } else if (servos_stored_buffer == nullptr) {
-        uint16_t buffer_size = constrain_int16(_time_delay, 1, 100) * 0.001f / dt;
+        uint16_t buffer_size = constrain_uint8(_time_delay, 1, 100) * 0.001f / dt;
         servos_stored_buffer = NEW_NOTHROW ObjectBuffer<servos_stored>(buffer_size);
         while (servos_stored_buffer->space() != 0) {
             push_to_buffer(input.servos);

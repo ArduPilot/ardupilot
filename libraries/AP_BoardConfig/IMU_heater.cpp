@@ -51,8 +51,8 @@ void AP_BoardConfig::set_imu_temp(float current)
 
 
     // limit to 65 degrees to prevent damage
-    target = constrain_int16(target, -1, 65);
-    
+    target = constrain_int8(target, -1, 65);
+
     // average over temperatures to remove noise
     heater.count++;
     heater.sum += current;

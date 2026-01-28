@@ -162,7 +162,7 @@ void NavEKF3_core::realignYawGPS(bool emergency_reset)
 
         // get yaw variance from GPS speed uncertainty
         const ftype gpsVelAcc = fmaxF(gpsSpdAccuracy, ftype(frontend->_gpsHorizVelNoise));
-        const ftype gps_yaw_variance = sq(asinF(constrain_float(gpsVelAcc/gpsDataDelayed.vel.xy().length(), -1.0F, 1.0F)));
+        const ftype gps_yaw_variance = sq(asinF(constrain_ftype(gpsVelAcc/gpsDataDelayed.vel.xy().length(), -1.0F, 1.0F)));
         if (gps_yaw_variance < sq(radians(GPS_VEL_YAW_ALIGN_MAX_ANG_ERR))) {
             yawAlignGpsValidCount++;
         } else {

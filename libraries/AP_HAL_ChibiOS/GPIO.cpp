@@ -522,7 +522,15 @@ bool GPIO::wait_pin(uint8_t pin, INTERRUPT_TRIGGER_TYPE mode, uint32_t timeout_u
     }
 
     // don't allow for very long timeouts, or below the delta
-    timeout_us = constrain_uint32(TIME_US2I(timeout_us), CH_CFG_ST_TIMEDELTA, TIME_US2I(30000U));
+    timeout_us = TIME_US2I(timeout_us);
+#if CH_CFG_ST_TIMEDELTA > 0
+    if (timeout_us < CH_CFG_ST_TIMEDELTA) {
+        timeout_us = CH_CFG_ST_TIMEDELTA;
+    } else
+#endif
+    if (timeout_us > TIME_US2I(30000U)) {
+        timeout_us = TIME_US2I(30000U);
+    }
 
     msg_t msg = osalThreadSuspendTimeoutS(&g->thd_wait, timeout_us);
     _attach_interruptI(g->pal_line,

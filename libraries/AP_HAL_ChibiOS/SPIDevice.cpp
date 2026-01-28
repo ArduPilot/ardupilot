@@ -163,7 +163,7 @@ bool SPIDevice::set_speed(AP_HAL::Device::Speed speed)
  */
 void SPIDevice::set_slowdown(uint8_t slowdown)
 {
-    slowdown = constrain_int16(slowdown+1, 1, 32);
+    slowdown = constrain_uint16(uint16_t(slowdown+1), 1, 32);
     freq_flag_high = derive_freq_flag(device_desc.highspeed / slowdown);
 }
 

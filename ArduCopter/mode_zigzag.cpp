@@ -114,7 +114,7 @@ void ModeZigZag::run()
     pos_control->D_set_max_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
 
     // set the direction and the total number of lines
-    zigzag_direction = (Direction)constrain_int16(_direction, 0, 3);
+    zigzag_direction = (Direction)constrain_int8(_direction, 0, 3);
     line_num = constrain_int16(_line_num, ZIGZAG_LINE_INFINITY, INT16_MAX);
 
     // auto control
@@ -399,7 +399,7 @@ bool ModeZigZag::reached_destination()
     if (reach_wp_time_ms == 0) {
         reach_wp_time_ms = now;
     }
-    return ((now - reach_wp_time_ms) >= (uint16_t)constrain_int16(_wp_delay_s, 0, 127) * 1000);
+    return ((now - reach_wp_time_ms) >= (uint16_t)constrain_int8(_wp_delay_s, 0, 127) * 1000);
 }
 
 // calculate next destination according to vector A-B and current position

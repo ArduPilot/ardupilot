@@ -180,8 +180,8 @@ bool AP_Mount_Xacti::set_zoom(ZoomType zoom_type, float zoom_value)
             // optical zoom covers 1x to 2.5x, param values are in 100 to 250
             // digital zoom covers 2.5x to 25x, param values are 100 to 1000
             const float zoom_times = linear_interpolate(1, 25, zoom_value, 0, 100);
-            const uint16_t optical_zoom_param = constrain_uint16(uint16_t(zoom_times * 10) * 10, 100, 250);
-            const uint16_t digital_zoom_param = constrain_uint16(uint16_t(zoom_times * 0.4) * 100, 100, 1000);
+            const uint16_t optical_zoom_param = constrain_uint16(uint16_t(uint16_t(zoom_times * 10) * 10), 100, 250);
+            const uint16_t digital_zoom_param = constrain_uint16(uint16_t(uint16_t(zoom_times * 0.4) * 100), 100, 1000);
             bool ret = true;
             if (optical_zoom_param != _last_optical_zoom_param_value) {
                 ret = set_param_int32(Param::OpticalZoomMagnification, optical_zoom_param);

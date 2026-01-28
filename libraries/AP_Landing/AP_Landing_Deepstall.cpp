@@ -630,7 +630,7 @@ float AP_Landing_Deepstall::update_steering()
 
     if (!hold_level) {
         uint32_t time = AP_HAL::millis();
-        float dt = constrain_float(time - last_time, (uint32_t)10UL, (uint32_t)200UL) * 1e-3;
+        float dt = constrain_float(float(time - last_time), 10, 200) * 1e-3;
         last_time = time;
 
         Vector2f ab = arc_exit.get_distance_NE(extended_approach);

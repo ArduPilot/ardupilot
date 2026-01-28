@@ -645,9 +645,9 @@ void AP_Periph_FW::handle_lightscommand(CanardInstance* canard_instance, CanardR
 #endif
         if (brightness != 100 && brightness >= 0) {
             const float scale = brightness * 0.01;
-            red = constrain_int16(red * scale, 0, 255);
-            green = constrain_int16(green * scale, 0, 255);
-            blue = constrain_int16(blue * scale, 0, 255);
+            red = constrain_float(red * scale, 0, 255);
+            green = constrain_float(green * scale, 0, 255);
+            blue = constrain_float(blue * scale, 0, 255);
         }
         set_rgb_led(red, green, blue);
     }
@@ -1821,7 +1821,8 @@ void AP_Periph_FW::esc_telem_extended_update(const uint32_t &now_ms)
 
     // ESCs are sent in turn to minimise used bandwidth, to make the rate param match the status message we multiply
     // the period such that the param gives the per-esc rate
-    const uint32_t update_period_ms = 1000 / constrain_int32(g.esc_extended_telem_rate.get() * __builtin_popcount(mask), 1, 1000);
+    const int32_t per_esc_rate = g.esc_extended_telem_rate.get() * __builtin_popcount(mask);
+    const uint32_t update_period_ms = 1000 / constrain_int32(per_esc_rate, 1, 1000);
     if (now_ms - last_esc_telem_extended_update < update_period_ms) {
         // Too soon!
         return;

@@ -184,7 +184,7 @@ Vector3f Glider::getForce(float inputAileron, float inputElevator, float inputRu
 
     if (carriage_state == carriageState::RELEASED) {
         uint32_t now = AP_HAL::millis();
-        sim_LD = 0.1 * constrain_float(Flift/MAX(1.0e-6,Fdrag),0,20) + 0.9 * sim_LD;
+        sim_LD = 0.1 * constrain_float(Flift/MAX(1.0e-6f,Fdrag),0,20) + 0.9 * sim_LD;
         if (now - last_drag_ms > 10 &&
             airspeed > 1) {
             last_drag_ms = now;
@@ -357,7 +357,7 @@ void Glider::update(const struct sitl_input &input)
         gyro.zero();
         dcm.from_euler(0.0f, radians(-80.0f), radians(home_yaw));
         use_smoothing = true;
-        adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
+        adjust_frame_time(constrain_float(float(sitl->loop_rate_hz), rate_hz-1, rate_hz+1));
     } else {
         update_dynamics(rot_accel);
     }

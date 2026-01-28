@@ -329,8 +329,8 @@ void GPS::simulate_jamming(struct GPS_Data &d)
         }
     }
 
-    d.latitude = constrain_float(jam.latitude, -90, 90);
-    d.longitude = constrain_float(jam.longitude, -180, 180);
+    d.latitude = constrain_double(jam.latitude, -90, 90);
+    d.longitude = constrain_double(jam.longitude, -180, 180);
 }
 
 /*

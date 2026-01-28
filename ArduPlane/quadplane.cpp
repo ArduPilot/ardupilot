@@ -1620,7 +1620,7 @@ void SLT_Transition::update()
         // after airspeed is reached we degrade throttle over the transition time, but continue
         // to stabilize and wait for any required forward tilt to complete and the timer to expire
         const uint32_t transition_timer_ms = now - transition_low_airspeed_ms;
-        const float trans_time_ms = constrain_float(quadplane.transition_time_ms, 500, 30000);
+        const float trans_time_ms = constrain_int16(quadplane.transition_time_ms, 500, 30000);
         const bool tilt_fwd_complete = !quadplane.tiltrotor.enabled() || quadplane.tiltrotor.tilt_angle_achieved();
         if (transition_timer_ms > unsigned(trans_time_ms) && tilt_fwd_complete) {
             transition_state = State::DONE;

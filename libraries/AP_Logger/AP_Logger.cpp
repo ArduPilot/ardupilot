@@ -857,7 +857,7 @@ uint16_t AP_Logger::get_num_logs(void) {
 }
 
 uint16_t AP_Logger::get_max_num_logs() {
-    const auto max_logs = constrain_uint16(_params.max_log_files.get(), MIN_LOG_FILES, MAX_LOG_FILES);
+    const auto max_logs = constrain_uint16(uint16_t(_params.max_log_files.get()), MIN_LOG_FILES, MAX_LOG_FILES);
     if (_params.max_log_files.get() != max_logs) {
         _params.max_log_files.set_and_save_ifchanged(static_cast<int16_t>(max_logs));
     }

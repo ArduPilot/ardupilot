@@ -414,8 +414,8 @@ void FlightAxis::send_request_message(const struct sitl_input &input)
         float pitch_rate = ((swash1+swash2) / 2.0f - swash3);
         float col = (swash1 + swash2 + swash3) / 3.0;
 
-        scaled_servos[0] = constrain_float(roll_rate + 0.5, 0, 1);
-        scaled_servos[1] = constrain_float(pitch_rate + 0.5, 0, 1);
+        scaled_servos[0] = constrain_float(roll_rate + 0.5f, 0, 1);
+        scaled_servos[1] = constrain_float(pitch_rate + 0.5f, 0, 1);
         scaled_servos[2] = constrain_float(col, 0, 1);
     }
 
@@ -592,9 +592,9 @@ void FlightAxis::update(const struct sitl_input &input)
                     -state.m_orientationQuaternion_Z);
     quat.rotation_matrix(dcm);
 
-    gyro = Vector3f(radians(constrain_float(state.m_rollRate_DEGpSEC, -2000, 2000)),
-                    radians(constrain_float(state.m_pitchRate_DEGpSEC, -2000, 2000)),
-                    -radians(constrain_float(state.m_yawRate_DEGpSEC, -2000, 2000))) * target_speedup;
+    gyro = Vector3f(radians(constrain_double(state.m_rollRate_DEGpSEC, -2000, 2000)),
+                    radians(constrain_double(state.m_pitchRate_DEGpSEC, -2000, 2000)),
+                    -radians(constrain_double(state.m_yawRate_DEGpSEC, -2000, 2000))) * target_speedup;
 
     velocity_ef = Vector3f(state.m_velocityWorldU_MPS,
                              state.m_velocityWorldV_MPS,

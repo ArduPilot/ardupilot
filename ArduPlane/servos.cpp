@@ -520,10 +520,10 @@ void Plane::throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle)
             throttle_watt_limit_min--;
         }
     }
-    
-    max_throttle = constrain_int16(max_throttle, 0, max_throttle - throttle_watt_limit_max);
+
+    max_throttle = constrain_int8(max_throttle, 0, max_throttle - throttle_watt_limit_max);
     if (min_throttle < 0) {
-        min_throttle = constrain_int16(min_throttle, min_throttle + throttle_watt_limit_min, 0);
+        min_throttle = constrain_int8(min_throttle, min_throttle + throttle_watt_limit_min, 0);
     }
 }
 #endif // #if AP_BATTERY_WATT_MAX_ENABLED

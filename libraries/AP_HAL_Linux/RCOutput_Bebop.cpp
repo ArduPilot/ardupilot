@@ -301,7 +301,7 @@ void RCOutput_Bebop::play_note(uint8_t pwm,
 
 uint16_t RCOutput_Bebop::_period_us_to_rpm(uint16_t period_us)
 {
-    period_us = constrain_int16(period_us, _min_pwm, _max_pwm);
+    period_us = constrain_uint16(period_us, _min_pwm, _max_pwm);
     float period_us_fl = period_us;
     float rpm_fl = (period_us_fl - _min_pwm)/(_max_pwm - _min_pwm) *
                     (_max_rpm - BEBOP_BLDC_MIN_RPM) + BEBOP_BLDC_MIN_RPM;

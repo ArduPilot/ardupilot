@@ -886,7 +886,7 @@ void AP_Torqeedo_TQBus::send_motor_speed_cmd()
 
     // update message if using motor connection
     if (get_type() == AP_Torqeedo::ConnectionType::TYPE_MOTOR) {
-        const uint8_t motor_power = (uint8_t)constrain_int16(_params.motor_power, 0, 100);
+        const uint8_t motor_power = (uint8_t)constrain_int8(_params.motor_power, 0, 100);
         mot_speed_cmd_buff[0] = (uint8_t)MsgAddress::MOTOR;
         mot_speed_cmd_buff[1] = (uint8_t)MotorMsgId::DRIVE;
         mot_speed_cmd_buff[2] = (mot_speed_limited == 0 ? 0 : 0x01) | (_motor_clear_error ? 0x04 : 0);  // 1:enable motor, 2:fast off, 4:clear error
@@ -970,7 +970,7 @@ int16_t AP_Torqeedo_TQBus::calc_motor_speed_limited(int16_t desired_motor_speed)
     // apply slew limit
     if (_params.slew_time > 0) {
        const float chg_max = 1000.0 * dt / _params.slew_time;
-       _motor_speed_limited = constrain_float(desired_motor_speed, _motor_speed_limited - chg_max, _motor_speed_limited + chg_max);
+       _motor_speed_limited = constrain_int16(desired_motor_speed, _motor_speed_limited - chg_max, _motor_speed_limited + chg_max);
     } else {
         // no slew limit
         _motor_speed_limited = desired_motor_speed;

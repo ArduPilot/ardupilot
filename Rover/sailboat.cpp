@@ -180,9 +180,9 @@ void Sailboat::set_pilot_desired_mainsail()
     if ((rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) || (channel_mainsail == nullptr)) {
        relax_sails();
     } else {
-       rover.g2.motors.set_mainsail(constrain_float(channel_mainsail->get_control_in(), 0.0f, 100.0f));
-       rover.g2.motors.set_wingsail(constrain_float(channel_mainsail->get_control_in(), -100.0f, 100.0f));
-       rover.g2.motors.set_mast_rotation(constrain_float(channel_mainsail->get_control_in(), -100.0f, 100.0f));
+       rover.g2.motors.set_mainsail(constrain_int16(channel_mainsail->get_control_in(), 0.0f, 100.0f));
+       rover.g2.motors.set_wingsail(constrain_int16(channel_mainsail->get_control_in(), -100.0f, 100.0f));
+       rover.g2.motors.set_mast_rotation(constrain_int16(channel_mainsail->get_control_in(), -100.0f, 100.0f));
     }
 }
 
