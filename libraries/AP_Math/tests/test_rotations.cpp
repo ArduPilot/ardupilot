@@ -138,6 +138,42 @@ TEST(RotationsTest, TestRotateMatrix)
     }
 }
 
+/* 
+Yaw-Only Rotation test for rotate_xy and full matrix multiplication.
+As used in AC_PrecLand BODY_FRD and LOCAL_FRD -> LOCAL_NED rotations
+Both of these rotation methods should match when roll and pitch = 0
+*/
+TEST(RotationsTest, TestLocalFRD)
+{
+    for (enum Rotation r = ROTATION_NONE;
+         r < ROTATION_MAX;
+         r = (enum Rotation)((uint8_t)r+1)) {
+
+        // Arbituary Unit vec
+        Vector3f vec(1.0f, 2.0f, 3.0f);
+        Vector3f vec2 = vec;
+
+        Matrix3f Tbn, Tbn_yaw;
+        // Create rot matrix from enum
+        Tbn.from_rotation(r);
+
+        // Extract euler components from rotmatrix
+        float roll_rad, pitch_rad, yaw_rad;
+        Tbn.to_euler(&roll_rad, &pitch_rad, &yaw_rad);
+
+        // Create yaw-only rot matrix
+        Tbn_yaw.from_euler(0.0f, 0.0f, yaw_rad);
+        
+        // rotate_xy method, as used by LOCAL_FRD in AC_PrecLand
+        vec.rotate_xy(yaw_rad);
+
+        // full matrix multiplication, as used by BODY_FRD in AC_PrecLand
+        vec2 = Tbn_yaw * vec2;
+
+        EXPECT_LE((vec - vec2).length(), 1e-5);  
+    }
+}
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 TEST(RotationsTest, TestFailedGetLinux)
 {
