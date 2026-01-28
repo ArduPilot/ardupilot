@@ -1116,6 +1116,14 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("TKOFF_RPM_MAX", 7, ParametersG2, takeoff_rpm_max, 0),
 #endif
 
+    // @Param: TKOFF_GNDEFF_ALT
+    // @DisplayName: Takeoff ground effect altitude
+    // @Description: Altitude above which ground effect compensation is disabled. Ground effect compensation is re-enabled when the vehicle descends below this altitude. Set to zero to disable ground effect altitude re-activation.
+    // @Range: 0 5
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("TKOFF_GNDEFF_ALT", 11, ParametersG2, tkoff_gndeff_alt, 0.5),
+
     // @Param: FS_EKF_FILT
     // @DisplayName: EKF Failsafe filter cutoff
     // @Description: EKF Failsafe filter cutoff frequency. EKF variances are filtered using this value to avoid spurious failsafes from transient high variances. A higher value means the failsafe is more likely to trigger.
