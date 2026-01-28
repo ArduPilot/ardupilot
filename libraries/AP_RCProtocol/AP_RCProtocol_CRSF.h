@@ -232,7 +232,7 @@ public:
 private:
     static AP_RCProtocol_CRSF* _rcin_singleton;
 
-    struct Frame _frame;
+    Frame _frame;
     uint8_t *_frame_bytes = (uint8_t*)&_frame;
     Frame _telemetry_frame;
     uint8_t _frame_ofs;
