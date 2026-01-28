@@ -127,7 +127,7 @@ void shape_pos_vel_accel_xy(const Vector2p& pos_desired, const Vector2f& vel_des
 // Used for attitude control with limited angular velocity and angular acceleration (e.g., roll/pitch shaping).
 void shape_angle_vel_accel(float angle_desired, float angle_vel_desired, float angle_accel_desired,
                          float angle, float angle_vel, float& angle_accel,
-                         float angle_vel_max, float angle_accel_max,
+                         float angle_vel_min, float angle_vel_max, float angle_accel_max,
                          float angle_jerk_max, float dt, bool limit_total);
 
 // Limits a 2D acceleration vector to prioritize lateral (cross-track) acceleration over longitudinal (in-track) acceleration.
