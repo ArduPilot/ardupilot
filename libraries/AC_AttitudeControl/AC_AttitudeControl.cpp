@@ -1051,7 +1051,7 @@ void AC_AttitudeControl::attitude_command_model(float error_angle, float desired
 
     shape_angle_vel_accel( error_angle, desired_ang_vel, 0.0,
                         0.0, target_ang_vel, target_ang_accel,
-                        max_ang_vel, accel_max,
+                        -max_ang_vel, max_ang_vel, accel_max,
                         accel_max / input_tc, dt, false);
     target_ang_vel += target_ang_accel * dt;
 }
