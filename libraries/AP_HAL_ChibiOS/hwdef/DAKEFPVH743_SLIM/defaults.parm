@@ -1,0 +1,5 @@
+# setup for LEDs on chan14
+SERVO14_FUNCTION 120
+
+# enable displayport
+OSD_TYPE2 5
