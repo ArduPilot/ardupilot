@@ -50,6 +50,10 @@ define HAL_MSP_ENABLED 1
 #Display Port
 define HAL_WITH_MSP_DISPLAYPORT 1
 
+#LUA scripting
+define AP_SCRIPTING_ENABLED 1
+define SCRIPTING_DIRECTORY "/var/lib/ardupilot/scripts"
+
 # AnalogIn_IIO configuration:
 define AP_HAL_LINUX_ANALOGIN_IIO_VOLTAGE_SCALING 3.0*1.8/4095.0
 
