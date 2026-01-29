@@ -738,6 +738,80 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
                 self.wait_groundspeed(speed-0.2, speed+0.2, minimum_duration=2, timeout=60)
         self.disarm_vehicle()
 
+    def MAV_CMD_DO_SET_ACTUATOR(self):
+        '''Test MAV_CMD_DO_SET_ACTUATOR command'''
+        # Configure SERVO9 as actuator1 (function 184)
+        # k_actuator1 = 184, k_actuator2 = 185, etc.
+        actuator_servo_function = 184  # k_actuator1
+        servo_channel = 9
+        servo_min = 1100
+        servo_max = 1900
+        servo_trim = 1500
+
+        self.set_parameters({
+            f"SERVO{servo_channel}_FUNCTION": actuator_servo_function,
+            f"SERVO{servo_channel}_MIN": servo_min,
+            f"SERVO{servo_channel}_MAX": servo_max,
+            f"SERVO{servo_channel}_TRIM": servo_trim,
+        })
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Actuator value mapping:
+        # internal_value = (input_value + 1) * 0.5  (maps -1..1 to 0..1)
+        # pwm = servo_min + servo_range * internal_value
+
+        def set_actuator(actuator_num, value):
+            '''Send MAV_CMD_DO_SET_ACTUATOR for specified actuator (1-6) with given value'''
+            actuator_values = [float('nan')] * 6
+            actuator_values[actuator_num - 1] = value
+            self.run_cmd(
+                187,  # MAV_CMD_DO_SET_ACTUATOR
+                p1=actuator_values[0],
+                p2=actuator_values[1],
+                p3=actuator_values[2],
+                p4=actuator_values[3],
+                p5=actuator_values[4],
+                p6=actuator_values[5],
+                p7=0,  # actuator index 0 (actuators 1-6)
+            )
+
+        def expected_pwm(servo_chan, value):
+            '''Calculate expected PWM for a given actuator value on specified servo channel'''
+            smin = self.get_parameter(f"SERVO{servo_chan}_MIN")
+            smax = self.get_parameter(f"SERVO{servo_chan}_MAX")
+            internal = (value + 1) * 0.5
+            return int(smin + (smax - smin) * internal)
+
+        # Test setting actuator to minimum (-1 maps to servo_min)
+        self.progress("Testing actuator set to -1 (minimum)")
+        set_actuator(1, -1)
+        self.wait_servo_channel_value(servo_channel, expected_pwm(servo_channel, -1), timeout=5)
+
+        # Test setting actuator to center (0 maps to midpoint)
+        self.progress("Testing actuator set to 0 (center)")
+        set_actuator(1, 0)
+        self.wait_servo_channel_value(servo_channel, expected_pwm(servo_channel, 0), timeout=5)
+
+        # Test setting actuator to maximum (1 maps to servo_max)
+        self.progress("Testing actuator set to 1 (maximum)")
+        set_actuator(1, 1)
+        self.wait_servo_channel_value(servo_channel, expected_pwm(servo_channel, 1), timeout=5)
+
+        # Test setting actuator to 0.5 (75% position)
+        self.progress("Testing actuator set to 0.5 (75% position)")
+        set_actuator(1, 0.5)
+        self.wait_servo_channel_value(servo_channel, expected_pwm(servo_channel, 0.5), timeout=5)
+
+        # Test setting actuator to -0.5 (25% position)
+        self.progress("Testing actuator set to -0.5 (25% position)")
+        set_actuator(1, -0.5)
+        self.wait_servo_channel_value(servo_channel, expected_pwm(servo_channel, -0.5), timeout=5)
+
+        self.disarm_vehicle()
+
     def GPSForYaw(self):
         '''Consume heading of NMEA GPS and propagate to ATTITUDE'''
 
@@ -1273,6 +1347,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.MAV_CMD_DO_CHANGE_SPEED,
             self.MAV_CMD_CONDITION_YAW,
             self.MAV_CMD_DO_REPOSITION,
+            self.MAV_CMD_DO_SET_ACTUATOR,
             self.TerrainMission,
             self.SetGlobalOrigin,
             self.BackupOrigin,
