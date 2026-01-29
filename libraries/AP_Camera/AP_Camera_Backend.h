@@ -26,6 +26,9 @@
 #include <AP_Common/Location.h>
 #include <AP_Logger/LogStructure.h>
 
+// Per MAVLink CAMERA_INFORMATION (259) specification
+constexpr uint8_t CAMERA_HAS_NO_GIMBAL = 0;
+
 class AP_Camera_Backend
 {
 public:
@@ -188,7 +191,7 @@ protected:
     // get corresponding mount instance for the camera
     uint8_t get_mount_instance() const;
 
-    // get mavlink gimbal device id which is normally mount_instance+1
+    // get mavlink gimbal device id, or 0 if no gimbal is associated with this camera.
     uint8_t get_gimbal_device_id() const;
 
 #if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
