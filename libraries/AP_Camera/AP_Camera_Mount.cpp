@@ -10,7 +10,8 @@ bool AP_Camera_Mount::trigger_pic()
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->take_picture(get_mount_instance());
+        const uint8_t gimbal_device_id = get_mount_instance() + 1;
+        return mount->take_picture(gimbal_device_id);
     }
     return false;
 }
@@ -21,7 +22,8 @@ bool AP_Camera_Mount::record_video(bool start_recording)
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->record_video(get_mount_instance(), start_recording);
+        const uint8_t gimbal_device_id = get_mount_instance() + 1;
+        return mount->record_video(gimbal_device_id, start_recording);
     }
     return false;
 }
@@ -31,7 +33,8 @@ bool AP_Camera_Mount::set_zoom(ZoomType zoom_type, float zoom_value)
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->set_zoom(get_mount_instance(), zoom_type, zoom_value);
+        const uint8_t gimbal_device_id = get_mount_instance() + 1;
+        return mount->set_zoom(gimbal_device_id, zoom_type, zoom_value);
     }
     return false;
 }
@@ -42,7 +45,8 @@ SetFocusResult AP_Camera_Mount::set_focus(FocusType focus_type, float focus_valu
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->set_focus(get_mount_instance(), focus_type, focus_value);
+        const uint8_t gimbal_device_id = get_mount_instance() + 1;
+        return mount->set_focus(gimbal_device_id, focus_type, focus_value);
     }
     return SetFocusResult::FAILED;
 }
@@ -54,7 +58,8 @@ bool AP_Camera_Mount::set_tracking(TrackingType tracking_type, const Vector2f& p
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->set_tracking(get_mount_instance(), tracking_type, p1, p2);
+        const uint8_t gimbal_device_id = get_mount_instance() + 1;
+        return mount->set_tracking(gimbal_device_id, tracking_type, p1, p2);
     }
     return false;
 }
@@ -65,7 +70,8 @@ bool AP_Camera_Mount::set_lens(uint8_t lens)
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->set_lens(get_mount_instance(), lens);
+        const uint8_t gimbal_device_id = get_mount_instance() + 1;
+        return mount->set_lens(gimbal_device_id, lens);
     }
     return false;
 }
@@ -76,7 +82,8 @@ bool AP_Camera_Mount::set_camera_source(AP_Camera::CameraSource primary_source, 
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->set_camera_source(get_mount_instance(), (uint8_t)primary_source, (uint8_t)secondary_source);
+        const uint8_t gimbal_device_id = get_mount_instance() + 1;
+        return mount->set_camera_source(gimbal_device_id, (uint8_t)primary_source, (uint8_t)secondary_source);
     }
     return false;
 }
@@ -87,7 +94,8 @@ void AP_Camera_Mount::send_camera_information(mavlink_channel_t chan) const
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->send_camera_information(get_mount_instance(), chan);
+        const uint8_t gimbal_device_id = get_mount_instance() + 1;
+        return mount->send_camera_information(gimbal_device_id, chan);
     }
 }
 
@@ -96,7 +104,8 @@ void AP_Camera_Mount::send_camera_settings(mavlink_channel_t chan) const
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->send_camera_settings(get_mount_instance(), chan);
+        const uint8_t gimbal_device_id = get_mount_instance() + 1;
+        return mount->send_camera_settings(gimbal_device_id, chan);
     }
 }
 
@@ -105,7 +114,8 @@ void AP_Camera_Mount::send_camera_capture_status(mavlink_channel_t chan) const
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->send_camera_capture_status(get_mount_instance(), chan);
+        const uint8_t gimbal_device_id = get_mount_instance() + 1;
+        return mount->send_camera_capture_status(gimbal_device_id, chan);
     }
 }
 
@@ -116,7 +126,8 @@ void AP_Camera_Mount::send_camera_thermal_range(mavlink_channel_t chan) const
 #if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        mount->send_camera_thermal_range(get_mount_instance(), chan);
+        const uint8_t gimbal_device_id = get_mount_instance() + 1;
+        mount->send_camera_thermal_range(gimbal_device_id, chan);
     }
 #endif
 }
@@ -128,7 +139,8 @@ bool AP_Camera_Mount::change_setting(CameraSetting setting, float value)
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->change_setting(get_mount_instance(), setting, value);
+        const uint8_t gimbal_device_id = get_mount_instance() + 1;
+        return mount->change_setting(gimbal_device_id, setting, value);
     }
     return false;
 }

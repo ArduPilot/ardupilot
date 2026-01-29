@@ -72,7 +72,7 @@ void AP_Mount::init()
 
     // create each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        switch (get_mount_type(instance)) {
+        switch (static_cast<Type>(_params[instance].type.get())) {
         case Type::None:
             break;
 #if HAL_MOUNT_SERVO_ENABLED
@@ -203,7 +203,8 @@ void AP_Mount::init()
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
             _backends[instance]->init();
-            set_mode_to_default(instance);
+            uint8_t gimbal_device_id = instance + 1;
+            set_mode_to_default(gimbal_device_id);
         }
     }
 
@@ -233,137 +234,139 @@ void AP_Mount::update_fast()
 }
 
 // get_mount_type - returns the type of mount
-AP_Mount::Type AP_Mount::get_mount_type(uint8_t instance) const
+AP_Mount::Type AP_Mount::get_mount_type(uint8_t gimbal_device_id) const
 {
-    if (instance >= AP_MOUNT_MAX_INSTANCES) {
+    const auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return Type::None;
     }
 
-    return (Type)_params[instance].type.get();
+    // Because a device (aka "instance", "backend") does not own its params, utilize the index-alignment
+    // of the device & params arrays to retrieve them.
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (device == _backends[instance]) {
+            return static_cast<Type>(_params[instance].type.get());
+        }
+    }
+    // This return should never be encountered, it exists merely as defensive programming.
+    return Type::None;
 }
 
 // has_pan_control - returns true if the mount has yaw control (required for copters)
-bool AP_Mount::has_pan_control(uint8_t instance) const
+bool AP_Mount::has_pan_control(uint8_t gimbal_device_id) const
 {
-    const auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    const auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return false;
     }
-
-    // ask backend if it support pan
-    return backend->has_pan_control();
+    return device->has_pan_control();
 }
 
 // get_mode - returns current mode of mount (i.e. Retracted, Neutral, RC_Targeting, GPS Point)
-MAV_MOUNT_MODE AP_Mount::get_mode(uint8_t instance) const
+MAV_MOUNT_MODE AP_Mount::get_mode(uint8_t gimbal_device_id) const
 {
-    const auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    const auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return MAV_MOUNT_MODE_RETRACT;
     }
-
-    // ask backend its mode
-    return backend->get_mode();
+    return device->get_mode();
 }
 
 // set_mode_to_default - restores the mode to it's default mode held in the MNTx__DEFLT_MODE parameter
 //      this operation requires 60us on a Pixhawk/PX4
-void AP_Mount::set_mode_to_default(uint8_t instance)
+void AP_Mount::set_mode_to_default(uint8_t gimbal_device_id)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
-    backend->set_mode((enum MAV_MOUNT_MODE)_params[instance].default_mode.get());
+    // Because a device (aka "instance", "backend") does not own its params, utilize the index-alignment
+    // of the device & params arrays to retrieve them.
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (device == _backends[instance]) {
+            device->set_mode(static_cast<MAV_MOUNT_MODE>(_params[instance].default_mode.get()));
+            return;
+        }
+    }
 }
 
 // set_mode - sets mount's mode
-void AP_Mount::set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode)
+void AP_Mount::set_mode(uint8_t gimbal_device_id, MAV_MOUNT_MODE mode)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
-
-    // call backend's set_mode
-    backend->set_mode(mode);
+    device->set_mode(mode);
 }
 
 // set yaw_lock used in RC_TARGETING mode.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
 // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
-void AP_Mount::set_yaw_lock(uint8_t instance, bool yaw_lock)
+void AP_Mount::set_yaw_lock(uint8_t gimbal_device_id, bool yaw_lock)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
-
-    // call backend's set_yaw_lock
-    backend->set_yaw_lock(yaw_lock);
+    device->set_yaw_lock(yaw_lock);
 }
 
 // set roll_lock used in RC_TARGETING mode.  If true, the gimbal's roll target is maintained in earth-frame
 // If false (aka "follow") the gimbal's roll is maintained in body-frame meaning it will rotate with the vehicle
-void AP_Mount::set_roll_lock(uint8_t instance, bool roll_lock)
+void AP_Mount::set_roll_lock(uint8_t gimbal_device_id, bool roll_lock)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
-
-    // call backend's set_roll_lock
-    backend->set_roll_lock(roll_lock);
+    device->set_roll_lock(roll_lock);
 }
 
 // set pitch_lock used in RC_TARGETING mode.  If true, the gimbal's tilt target is maintained in earth-frame
 // If false (aka "follow") the gimbal's tilt is maintained in body-frame meaning it will tilt with the vehicle
-void AP_Mount::set_pitch_lock(uint8_t instance, bool pitch_lock)
+void AP_Mount::set_pitch_lock(uint8_t gimbal_device_id, bool pitch_lock)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
-
-    // call backend's set_pitch_lock
-    backend->set_pitch_lock(pitch_lock);
+    device->set_pitch_lock(pitch_lock);
 }
 
 
 // set angle target in degrees
 // roll and pitch are in earth-frame
 // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
-void AP_Mount::set_angle_target(uint8_t instance, float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame)
+void AP_Mount::set_angle_target(uint8_t gimbal_device_id, float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
-
-    // send command to backend
-    backend->set_angle_target(roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame);
+    device->set_angle_target(roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame);
 }
 
 // sets rate target in deg/s
 // yaw_lock should be true if the yaw rate is earth-frame, false if body-frame (e.g. rotates with body of vehicle)
-void AP_Mount::set_rate_target(uint8_t instance, float roll_degs, float pitch_degs, float yaw_degs, bool yaw_lock)
+void AP_Mount::set_rate_target(uint8_t gimbal_device_id, float roll_degs, float pitch_degs, float yaw_degs, bool yaw_lock)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
-
-    // send command to backend
-    backend->set_rate_target(roll_degs, pitch_degs, yaw_degs, yaw_lock);
+    device->set_rate_target(roll_degs, pitch_degs, yaw_degs, yaw_lock);
 }
 
 MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_int_t &packet)
 {
-    auto *backend = get_primary();
-    if (backend == nullptr) {
+    // MAVLink does not support gimbal_device_id in this message.
+    // Since it is unclear whether the spec implies commanding "the primary gimbal device" or "ALL gimbal devices",
+    // the (arbitrary?) choice is made clear here.
+    auto *device = mount_device_from_gimbal_id(get_gimbal_device_id_of_primary());
+    if (device == nullptr) {
         return MAV_RESULT_FAILED;
     }
-
-    backend->set_mode((MAV_MOUNT_MODE)packet.param1);
+    device->set_mode((MAV_MOUNT_MODE)packet.param1);
 
     return MAV_RESULT_ACCEPTED;
 }
@@ -371,40 +374,32 @@ MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_int
 
 MAV_RESULT AP_Mount::handle_command_do_mount_control(const mavlink_command_int_t &packet)
 {
-    auto *backend = get_primary();
-    if (backend == nullptr) {
+    // MAVLink does not support gimbal_device_id in this message.
+    // Since it is unclear whether the spec implies commanding "the primary gimbal device" or "ALL gimbal devices",
+    // the (arbitrary?) choice is made clear here.
+    auto *device = mount_device_from_gimbal_id(get_gimbal_device_id_of_primary());
+    if (device == nullptr) {
         return MAV_RESULT_FAILED;
     }
-
-    return backend->handle_command_do_mount_control(packet);
+    return device->handle_command_do_mount_control(packet);
 }
 
 MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_command_int_t &packet)
 {
-    AP_Mount_Backend *backend;
-
-    // check gimbal device id.  0 is primary, 1 is 1st gimbal, 2 is
-    // 2nd gimbal, etc
-    const uint8_t instance = packet.z;
-    if (instance == 0) {
-        backend = get_primary();
-    } else {
-        backend = get_instance(instance - 1);
-    }
-
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(packet.z);
+    if (device == nullptr) {
         return MAV_RESULT_FAILED;
     }
 
     // check flags for change to RETRACT
     const uint32_t flags = packet.x;
     if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_RETRACT);
+        device->set_mode(MAV_MOUNT_MODE_RETRACT);
         return MAV_RESULT_ACCEPTED;
     }
     // check flags for change to NEUTRAL
     if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_NEUTRAL);
+        device->set_mode(MAV_MOUNT_MODE_NEUTRAL);
         return MAV_RESULT_ACCEPTED;
     }
 
@@ -413,7 +408,7 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
     const float pitch_angle_deg = packet.param1;
     const float yaw_angle_deg = packet.param2;
     if (!isnan(pitch_angle_deg) && !isnan(yaw_angle_deg)) {
-        backend->set_angle_target(0, pitch_angle_deg, yaw_angle_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        device->set_angle_target(0, pitch_angle_deg, yaw_angle_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return MAV_RESULT_ACCEPTED;
     }
 
@@ -422,13 +417,13 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
     const float pitch_rate_degs = packet.param3;
     const float yaw_rate_degs = packet.param4;
     if (!isnan(pitch_rate_degs) && !isnan(yaw_rate_degs)) {
-        backend->set_rate_target(0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        device->set_rate_target(0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return MAV_RESULT_ACCEPTED;
     }
 
     // if neither angles nor rates were provided set the RC_TARGETING yaw lock state
     if (isnan(pitch_angle_deg) && isnan(yaw_angle_deg) && isnan(pitch_rate_degs) && isnan(yaw_rate_degs)) {
-        backend->set_yaw_lock(flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        device->set_yaw_lock(flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return MAV_RESULT_ACCEPTED;
     }
 
@@ -438,52 +433,34 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
 // handle mav_cmd_do_gimbal_manager_configure for deconflicting different mavlink message senders
 MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_configure(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
-    AP_Mount_Backend *backend;
-
-    // check gimbal device id.  0 is primary, 1 is 1st gimbal, 2 is 2nd gimbal, etc
-    const uint8_t instance = packet.z;
-    if (instance == 0) {
-        backend = get_primary();
-    } else {
-        backend = get_instance(instance - 1);
-    }
-
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(packet.z);
+    if (device == nullptr) {
         return MAV_RESULT_FAILED;
     }
 
-    return backend->handle_command_do_gimbal_manager_configure(packet, msg);
+    return device->handle_command_do_gimbal_manager_configure(packet, msg);
 }
 
-void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg) {
+void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg)
+{
     mavlink_gimbal_manager_set_attitude_t packet;
     mavlink_msg_gimbal_manager_set_attitude_decode(&msg,&packet);
 
-    AP_Mount_Backend *backend;
-
-    // check gimbal device id.  0 is primary, 1 is 1st gimbal, 2 is
-    // 2nd gimbal, etc
-    const uint8_t instance = packet.gimbal_device_id;
-    if (instance == 0) {
-        backend = get_primary();
-    } else {
-        backend = get_instance(instance - 1);
-    }
-
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(packet.gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
 
     // check flags for change to RETRACT
     const uint32_t flags = packet.flags;
     if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_RETRACT);
+        device->set_mode(MAV_MOUNT_MODE_RETRACT);
         return;
     }
 
     // check flags for change to NEUTRAL
     if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_NEUTRAL);
+        device->set_mode(MAV_MOUNT_MODE_NEUTRAL);
         return;
     }
 
@@ -507,7 +484,7 @@ void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg) 
         att_quat.to_euler(attitude);  // attitude is in radians here
         attitude *= RAD_TO_DEG;  // convert to degrees
 
-        backend->set_angle_target(attitude.x, attitude.y, attitude.z, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        device->set_angle_target(attitude.x, attitude.y, attitude.z, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return;
     }
 
@@ -515,7 +492,7 @@ void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg) 
         const float roll_rate_degs = degrees(packet.angular_velocity_x);
         const float pitch_rate_degs = degrees(packet.angular_velocity_y);
         const float yaw_rate_degs = degrees(packet.angular_velocity_z);
-        backend->set_rate_target(roll_rate_degs, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        device->set_rate_target(roll_rate_degs, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return;
     }
 }
@@ -525,30 +502,20 @@ void AP_Mount::handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
     mavlink_gimbal_manager_set_pitchyaw_t packet;
     mavlink_msg_gimbal_manager_set_pitchyaw_decode(&msg,&packet);
 
-    AP_Mount_Backend *backend;
-
-    // check gimbal device id.  0 is primary, 1 is 1st gimbal, 2 is
-    // 2nd gimbal, etc
-    const uint8_t instance = packet.gimbal_device_id;
-    if (instance == 0) {
-        backend = get_primary();
-    } else {
-        backend = get_instance(instance - 1);
-    }
-
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(packet.gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
 
     // check flags for change to RETRACT
     uint32_t flags = (uint32_t)packet.flags;
     if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_RETRACT);
+        device->set_mode(MAV_MOUNT_MODE_RETRACT);
         return;
     }
     // check flags for change to NEUTRAL
     if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_NEUTRAL);
+        device->set_mode(MAV_MOUNT_MODE_NEUTRAL);
         return;
     }
 
@@ -561,7 +528,7 @@ void AP_Mount::handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
     if (!isnan(packet.pitch) && !isnan(packet.yaw)) {
         const float pitch_angle_deg = degrees(packet.pitch);
         const float yaw_angle_deg = degrees(packet.yaw);
-        backend->set_angle_target(0, pitch_angle_deg, yaw_angle_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        device->set_angle_target(0, pitch_angle_deg, yaw_angle_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return;
     }
 
@@ -569,20 +536,22 @@ void AP_Mount::handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
     if (!isnan(packet.pitch_rate) && !isnan(packet.yaw_rate)) {
         const float pitch_rate_degs = degrees(packet.pitch_rate);
         const float yaw_rate_degs = degrees(packet.yaw_rate);
-        backend->set_rate_target(0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        device->set_rate_target(0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return;
     }
 
     // if neither angles nor rates were provided set the RC_TARGETING yaw lock state
     if (isnan(packet.pitch) && isnan(packet.yaw) && isnan(packet.pitch_rate) && isnan(packet.yaw_rate)) {
-        backend->set_yaw_lock(flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        device->set_yaw_lock(flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return;
     }
 }
 
 MAV_RESULT AP_Mount::handle_command_do_set_roi_sysid(const mavlink_command_int_t &packet)
 {
-    set_target_sysid((uint8_t)packet.param1);
+    uint8_t system_id = packet.param1;
+    uint8_t gimbal_device_id = packet.param2;
+    set_target_sysid(gimbal_device_id, system_id);
     return MAV_RESULT_ACCEPTED;
 }
 
@@ -658,71 +627,65 @@ void AP_Mount::send_gimbal_manager_status(mavlink_channel_t chan)
 
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
 // get poi information.  Returns true on success and fills in gimbal attitude, location and poi location
-bool AP_Mount::get_poi(uint8_t instance, Quaternion &quat, Location &loc, Location &poi_loc) const
+bool AP_Mount::get_poi(uint8_t gimbal_device_id, Quaternion &quat, Location &loc, Location &poi_loc) const
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return false;
     }
-    return backend->get_poi(instance, quat, loc, poi_loc);
+    return device->get_poi(quat, loc, poi_loc);
 }
 #endif
 
 #if AP_MOUNT_POI_LOCK_ENABLED
 // lock currently viewed GPS point and switch to GPS Targeting mode
-void AP_Mount::set_poi_lock(uint8_t instance)
+void AP_Mount::set_poi_lock(uint8_t gimbal_device_id)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
-
-    // call backend's set_poi_lock
-    backend->set_poi_lock();
+    device->set_poi_lock();
 }
 
-void AP_Mount::clear_poi_lock(uint8_t instance)
+void AP_Mount::clear_poi_lock(uint8_t gimbal_device_id)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
-
-    // call backend's clear_poi_lock
-    backend->clear_poi_lock();
+    device->clear_poi_lock();
 }
 
-void AP_Mount::suspend_poi_lock(uint8_t instance)
+void AP_Mount::suspend_poi_lock(uint8_t gimbal_device_id)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
-
-    // call backend's suspend_poi_lock
-    backend->suspend_poi_lock();
+    device->suspend_poi_lock();
 }
 #endif // AP_MOUNT_POI_LOCK_ENABLED
 
 // get attitude as a quaternion.  returns true on success.
 // att_quat will be an earth-frame quaternion rotated such that
 // yaw is in body-frame.
-bool AP_Mount::get_attitude_quaternion(uint8_t instance, Quaternion& att_quat)
+bool AP_Mount::get_attitude_quaternion(uint8_t gimbal_device_id, Quaternion& att_quat)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return false;
     }
-    return backend->get_attitude_quaternion(att_quat);
+    return device->get_attitude_quaternion(att_quat);
 }
 
 // get mount's current attitude in euler angles in degrees.  yaw angle is in body-frame
 // returns true on success
-bool AP_Mount::get_attitude_euler(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_bf_deg)
+bool AP_Mount::get_attitude_euler(uint8_t gimbal_device_id, float& roll_deg, float& pitch_deg, float& yaw_bf_deg)
 {
     // re-use get_attitude_quaternion and convert to Euler angles
     Quaternion att_quat;
-    if (!get_attitude_quaternion(instance, att_quat)) {
+    if (!get_attitude_quaternion(gimbal_device_id, att_quat)) {
         return false;
     }
 
@@ -738,9 +701,9 @@ bool AP_Mount::get_attitude_euler(uint8_t instance, float& roll_deg, float& pitc
 // any failure_msg returned will not include a prefix
 bool AP_Mount::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
 {
-    // check type parameters
+    // Check that every mount with a non-none type was instantiated.
     for (uint8_t i=0; i<AP_MOUNT_MAX_INSTANCES; i++) {
-        if ((get_mount_type(i) != Type::None) && (_backends[i] == nullptr)) {
+        if ((static_cast<Type>(_params[i].type.get()) != Type::None) && (_backends[i] == nullptr)) {
             strncpy(failure_msg, "check TYPE", failure_msg_len);
             return false;
         }
@@ -763,45 +726,45 @@ bool AP_Mount::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
 }
 
 // get target rate in deg/sec. returns true on success
-bool AP_Mount::get_rate_target(uint8_t instance, float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame)
+bool AP_Mount::get_rate_target(uint8_t gimbal_device_id, float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return false;
     }
-    return backend->get_rate_target(roll_degs, pitch_degs, yaw_degs, yaw_is_earth_frame);
+    return device->get_rate_target(roll_degs, pitch_degs, yaw_degs, yaw_is_earth_frame);
 }
 
 // get target angle in deg. returns true on success
-bool AP_Mount::get_angle_target(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame)
+bool AP_Mount::get_angle_target(uint8_t gimbal_device_id, float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return false;
     }
-    return backend->get_angle_target(roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame);
+    return device->get_angle_target(roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame);
 }
 
 #if AP_SCRIPTING_ENABLED
 // get mount target location. returns true on success
-bool AP_Mount::get_location_target(uint8_t instance, Location& target_loc)
+bool AP_Mount::get_location_target(uint8_t gimbal_device_id, Location& target_loc)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return false;
     }
-    return backend->get_location_target(target_loc);
+    return device->get_location_target(target_loc);
 }
 #endif
 
 // accessory for scripting backends and logging
-void AP_Mount::set_attitude_euler(uint8_t instance, float roll_deg, float pitch_deg, float yaw_bf_deg)
+void AP_Mount::set_attitude_euler(uint8_t gimbal_device_id, float roll_deg, float pitch_deg, float yaw_bf_deg)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
-    backend->set_attitude_euler(roll_deg, pitch_deg, yaw_bf_deg);
+    device->set_attitude_euler(roll_deg, pitch_deg, yaw_bf_deg);
 }
 
 #if HAL_LOGGING_ENABLED
@@ -816,45 +779,44 @@ void AP_Mount::write_log()
     }
 }
 
-void AP_Mount::write_log(uint8_t instance, uint64_t timestamp_us)
+void AP_Mount::write_log(uint8_t gimbal_device_id, uint64_t timestamp_us)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
-    backend->write_log(timestamp_us);
+    device->write_log(timestamp_us);
 }
 #endif
 
 // point at system ID sysid
-void AP_Mount::set_target_sysid(uint8_t instance, uint8_t sysid)
+void AP_Mount::set_target_sysid(uint8_t gimbal_device_id, uint8_t sysid)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
-    // call instance's set target SYSID cmd
-    backend->set_target_sysid(sysid);
+    device->set_target_sysid(sysid);
 }
 
 // set_roi_target - sets target location that mount should attempt to point towards
-void AP_Mount::set_roi_target(uint8_t instance, const Location &target_loc)
+void AP_Mount::set_roi_target(uint8_t gimbal_device_id, const Location &target_loc)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
-    backend->set_roi_target(target_loc);
+    device->set_roi_target(target_loc);
 }
 
 // clear_roi_target - clears target location that mount should attempt to point towards
-void AP_Mount::clear_roi_target(uint8_t instance)
+void AP_Mount::clear_roi_target(uint8_t gimbal_device_id)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
-    backend->clear_roi_target();
+    device->clear_roi_target();
 }
 
 //
@@ -862,166 +824,175 @@ void AP_Mount::clear_roi_target(uint8_t instance)
 //
 
 // take a picture.  returns true on success
-bool AP_Mount::take_picture(uint8_t instance)
+bool AP_Mount::take_picture(uint8_t gimbal_device_id)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return false;
     }
-    return backend->take_picture();
+    return device->take_picture();
 }
 
 // start or stop video recording.  returns true on success
 // set start_recording = true to start record, false to stop recording
-bool AP_Mount::record_video(uint8_t instance, bool start_recording)
+bool AP_Mount::record_video(uint8_t gimbal_device_id, bool start_recording)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return false;
     }
-    return backend->record_video(start_recording);
+    return device->record_video(start_recording);
 }
 
 // set zoom specified as a rate or percentage
-bool AP_Mount::set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value)
+bool AP_Mount::set_zoom(uint8_t gimbal_device_id, ZoomType zoom_type, float zoom_value)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return false;
     }
-    return backend->set_zoom(zoom_type, zoom_value);
+    return device->set_zoom(zoom_type, zoom_value);
 }
 
 // set focus specified as rate, percentage or auto
 // focus in = -1, focus hold = 0, focus out = 1
-SetFocusResult AP_Mount::set_focus(uint8_t instance, FocusType focus_type, float focus_value)
+SetFocusResult AP_Mount::set_focus(uint8_t gimbal_device_id, FocusType focus_type, float focus_value)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return SetFocusResult::FAILED;
     }
-    return backend->set_focus(focus_type, focus_value);
+    return device->set_focus(focus_type, focus_value);
 }
 
 // set tracking to none, point or rectangle (see TrackingType enum)
 // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
 // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
-bool AP_Mount::set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2)
+bool AP_Mount::set_tracking(uint8_t gimbal_device_id, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return false;
     }
-    return backend->set_tracking(tracking_type, p1, p2);
+    return device->set_tracking(tracking_type, p1, p2);
 }
 
 // set camera lens as a value from 0 to 5
-bool AP_Mount::set_lens(uint8_t instance, uint8_t lens)
+bool AP_Mount::set_lens(uint8_t gimbal_device_id, uint8_t lens)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return false;
     }
-    return backend->set_lens(lens);
+    return device->set_lens(lens);
 }
 
 #if HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED
 // set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
 // primary and secondary sources use the AP_Camera::CameraSource enum cast to uint8_t
-bool AP_Mount::set_camera_source(uint8_t instance, uint8_t primary_source, uint8_t secondary_source)
+bool AP_Mount::set_camera_source(uint8_t gimbal_device_id, uint8_t primary_source, uint8_t secondary_source)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return false;
     }
-    return backend->set_camera_source(primary_source, secondary_source);
+    return device->set_camera_source(primary_source, secondary_source);
 }
 #endif
 
 // send camera information message to GCS
-void AP_Mount::send_camera_information(uint8_t instance, mavlink_channel_t chan) const
+void AP_Mount::send_camera_information(uint8_t gimbal_device_id, mavlink_channel_t chan) const
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    const auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
-    backend->send_camera_information(chan);
+    device->send_camera_information(chan);
 }
 
 // send camera settings message to GCS
-void AP_Mount::send_camera_settings(uint8_t instance, mavlink_channel_t chan) const
+void AP_Mount::send_camera_settings(uint8_t gimbal_device_id, mavlink_channel_t chan) const
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    const auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
-    backend->send_camera_settings(chan);
+    device->send_camera_settings(chan);
 }
 
 // send camera capture status message to GCS
-void AP_Mount::send_camera_capture_status(uint8_t instance, mavlink_channel_t chan) const
+void AP_Mount::send_camera_capture_status(uint8_t gimbal_device_id, mavlink_channel_t chan) const
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    const auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
-    backend->send_camera_capture_status(chan);
+    device->send_camera_capture_status(chan);
 }
 
 #if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
 // send camera thermal range message to GCS
-void AP_Mount::send_camera_thermal_range(uint8_t instance, mavlink_channel_t chan) const
+void AP_Mount::send_camera_thermal_range(uint8_t gimbal_device_id, mavlink_channel_t chan) const
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    const auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return;
     }
-    backend->send_camera_thermal_range(chan);
+    device->send_camera_thermal_range(chan);
 }
 #endif
 
 // change camera settings not normally used by autopilot
 // setting values from AP_Camera::Setting enum
-bool AP_Mount::change_setting(uint8_t instance, CameraSetting setting, float value)
+bool AP_Mount::change_setting(uint8_t gimbal_device_id, CameraSetting setting, float value)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return false;
     }
-    return backend->change_setting(setting, value);
+    return device->change_setting(setting, value);
 }
 
 // get rangefinder distance.  Returns true on success
-bool AP_Mount::get_rangefinder_distance(uint8_t instance, float& distance_m) const
+bool AP_Mount::get_rangefinder_distance(uint8_t gimbal_device_id, float& distance_m) const
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    const auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return false;
     }
-    return backend->get_rangefinder_distance(distance_m);
+    return device->get_rangefinder_distance(distance_m);
 }
 
 // enable/disable rangefinder.  Returns true on success
-bool AP_Mount::set_rangefinder_enable(uint8_t instance, bool enable)
+bool AP_Mount::set_rangefinder_enable(uint8_t gimbal_device_id, bool enable)
 {
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    auto *device = mount_device_from_gimbal_id(gimbal_device_id);
+    if (device == nullptr) {
         return false;
     }
-    return backend->set_rangefinder_enable(enable);
+    return device->set_rangefinder_enable(enable);
 }
 
-AP_Mount_Backend *AP_Mount::get_primary() const
+AP_Mount_Backend *AP_Mount::get_instance(uint8_t instance_index) const
 {
-    return get_instance(_primary);
-}
-
-AP_Mount_Backend *AP_Mount::get_instance(uint8_t instance) const
-{
-    if (instance >= ARRAY_SIZE(_backends)) {
+    if (instance_index >= ARRAY_SIZE(_backends)) {
         return nullptr;
     }
-    return _backends[instance];
+    return _backends[instance_index];
+}
+
+// This is the mapping between gimbal_device_id (defined by MAVLink) and actual devices (aka 'instances', 'backends')
+AP_Mount_Backend *AP_Mount::mount_device_from_gimbal_id(uint8_t gimbal_device_id) const
+{
+    // FIXME: This function's behavior when gimbal_device_id == 0 is a bug. (That should indicate 'all mounts', not 'primary'.)
+    // Affects: Users working with multiple mounts.
+    // Workaround: Leave this as-is until it can be fixed in synchrony with upstream to prevent unexpected behavior-change.
+    // See: https://github.com/ArduPilot/ardupilot/issues/31940
+    if (gimbal_device_id == 0) {
+        return get_instance(_primary);
+    } else {
+        return get_instance(gimbal_device_id - 1);
+    }
 }
 
 // pass a GIMBAL_REPORT message to the backend

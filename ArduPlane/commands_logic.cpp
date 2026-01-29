@@ -155,24 +155,22 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     // system to control the vehicle attitude and the attitude of various
     // devices such as cameras.
     //    |Region of interest mode. (see MAV_ROI enum)| Waypoint index/ target ID. (see MAV_ROI enum)| ROI index (allows a vehicle to manage multiple cameras etc.)| Empty| x the location of the fixed ROI (see MAV_FRAME)| y| z|
-    // ROI_NONE can be handled by the regular ROI handler because lat, lon, alt are always zero
     case MAV_CMD_DO_SET_ROI_LOCATION:
+        // ROI_NONE can be handled by the regular ROI handler because lat, lon, alt are always zero
     case MAV_CMD_DO_SET_ROI_NONE:
-    case MAV_CMD_DO_SET_ROI:
-        if (!cmd.content.location.initialised()) {
-            // switch off the camera tracking if enabled
-            if (camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
-                camera_mount.set_mode_to_default();
-            }
-        } else {
-            // set mount's target location
-            camera_mount.set_roi_target(cmd.content.location);
-        }
+        do_set_roi_location(cmd);
         break;
 
-    case MAV_CMD_DO_MOUNT_CONTROL:          // 205
+    case MAV_CMD_DO_SET_ROI:
+        do_set_roi(cmd);
+        break;
+
+    case MAV_CMD_DO_MOUNT_CONTROL: {        // 205
         // point the camera to a specified angle
-        camera_mount.set_angle_target(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
+        // Because MAVLink does not specify which sensor(s) is contolled by this command, the decision is made here.
+        const uint8_t gimbal_device_id = 0;
+        camera_mount.set_angle_target(gimbal_device_id, cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
+        }
         break;
 #endif
 
@@ -1012,6 +1010,32 @@ void Plane::do_set_home(const AP_Mission::Mission_Command& cmd)
         if (!AP::ahrs().set_home(cmd.content.location)) {
             // silently ignore failure
         }
+    }
+}
+
+// MAV_CMD_DO_SET_ROI (201)
+void Plane::do_set_roi(const AP_Mission::Mission_Command& cmd)
+{
+    // Because MAVLink does not specify which sensor(s) is contolled by this command, the decision is made here.
+    constexpr uint8_t gimbal_device_id = 0;
+    do_set_roi(gimbal_device_id, cmd.content.location);
+}
+
+// MAV_CMD_DO_SET_ROI_LOCATION (195)
+void Plane::do_set_roi_location(const AP_Mission::Mission_Command& cmd)
+{
+    const uint8_t gimbal_device_id = cmd.p1;
+    do_set_roi(gimbal_device_id, cmd.content.location);
+}
+
+void Plane::do_set_roi(const uint8_t gimbal_device_id, const Location &loc) {
+    if (loc.initialised()) {
+        camera_mount.set_roi_target(gimbal_device_id, loc);
+        return;
+    }
+
+    if (camera_mount.get_mode(gimbal_device_id) == MAV_MOUNT_MODE_GPS_POINT) {
+        camera_mount.set_mode_to_default(gimbal_device_id);
     }
 }
 

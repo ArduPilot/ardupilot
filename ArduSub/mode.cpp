@@ -140,7 +140,8 @@ void Sub::exit_mode(Mode::Number old_control_mode, Mode::Number new_control_mode
             mission.stop();
         }
 #if HAL_MOUNT_ENABLED
-        camera_mount.set_mode_to_default();
+        const uint8_t all_gimbal_devices = 0;
+        camera_mount.set_mode_to_default(all_gimbal_devices);
 #endif  // HAL_MOUNT_ENABLED
     }
     motors.set_max_throttle(1.0f);
@@ -162,7 +163,8 @@ void Sub::update_flight_mode()
 // exit_mode - high level call to organise cleanup as a flight mode is exited
 void Sub::exit_mode(Mode *&old_flightmode, Mode *&new_flightmode){
 #if HAL_MOUNT_ENABLED
-        camera_mount.set_mode_to_default();
+    const uint8_t all_gimbal_devices = 0;
+    camera_mount.set_mode_to_default(all_gimbal_devices);
 #endif  // HAL_MOUNT_ENABLED
     motors.set_max_throttle(1.0f);
 }

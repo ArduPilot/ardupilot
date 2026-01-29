@@ -29,10 +29,14 @@ bool ModeCircle::init(bool ignore_checks)
         if (!AP::ahrs().get_location_from_origin_offset_NED(circle_center, pos_ned_m)) {
             return false;
         }
-        // point at the ground:
+        // Per docs, copter points "mount" at circle center, ground-level.
         circle_center.set_alt_m(0, Location::AltFrame::ABOVE_TERRAIN);
+        // It does not specify 'primary' gimbal vs 'all' gimbals.
+        // Because the docs do not specify which gimbal(s) do this, the decision is implemented here.
+        uint8_t gimbal_device_id = 0;
+
         AP_Mount *s = AP_Mount::get_singleton();
-        s->set_roi_target(circle_center);
+        s->set_roi_target(gimbal_device_id, circle_center);
     }
 #endif
 

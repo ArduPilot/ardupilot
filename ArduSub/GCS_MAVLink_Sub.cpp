@@ -290,12 +290,12 @@ MAV_RESULT GCS_MAVLINK_Sub::_handle_command_preflight_calibration(const mavlink_
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet, msg);
 }
 
-MAV_RESULT GCS_MAVLINK_Sub::handle_command_do_set_roi(const Location &roi_loc)
+MAV_RESULT GCS_MAVLINK_Sub::handle_command_do_set_roi_location(const uint8_t gimbal_device_id, const Location &roi_loc)
 {
     if (!roi_loc.check_latlng()) {
         return MAV_RESULT_FAILED;
     }
-    sub.mode_auto.set_auto_yaw_roi(roi_loc);
+    sub.mode_auto.set_auto_yaw_roi(gimbal_device_id, roi_loc);
     return MAV_RESULT_ACCEPTED;
 }
 

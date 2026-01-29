@@ -90,12 +90,14 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         do_set_home(cmd);
         break;
 
-    case MAV_CMD_DO_SET_ROI_LOCATION:       // 195
-    case MAV_CMD_DO_SET_ROI_NONE:           // 197
-    case MAV_CMD_DO_SET_ROI:                // 201
-        // point the vehicle and camera at a region of interest (ROI)
+    case MAV_CMD_DO_SET_ROI_LOCATION:  // 195
         // ROI_NONE can be handled by the regular ROI handler because lat, lon, alt are always zero
-        do_roi(cmd);
+    case MAV_CMD_DO_SET_ROI_NONE:      // 197
+        do_set_roi_location(cmd);
+        break;
+
+    case MAV_CMD_DO_SET_ROI:           // 201
+        do_set_roi(cmd);
         break;
 
     case MAV_CMD_DO_MOUNT_CONTROL:          // 205
@@ -635,19 +637,28 @@ void Sub::do_set_home(const AP_Mission::Mission_Command& cmd)
     }
 }
 
-// do_roi - starts actions required by MAV_CMD_NAV_ROI
-//          this involves either moving the camera to point at the ROI (region of interest)
-//          and possibly rotating the vehicle to point at the ROI if our mount type does not support a yaw feature
-//  TO-DO: add support for other features of MAV_CMD_DO_SET_ROI including pointing at a given waypoint
-void Sub::do_roi(const AP_Mission::Mission_Command& cmd)
+// MAV_CMD_DO_SET_ROI (201)
+void Sub::do_set_roi(const AP_Mission::Mission_Command& cmd)
 {
-    sub.mode_auto.set_auto_yaw_roi(cmd.content.location);
+    // Because MAVLink does not specify which sensor(s) is contolled by this command, the decision is made here.
+    constexpr uint8_t gimbal_device_id = 0;
+
+    sub.mode_auto.set_auto_yaw_roi(gimbal_device_id, cmd.content.location);
+}
+
+// MAV_CMD_DO_SET_ROI_LOCATION (195)
+void Sub::do_set_roi_location(const AP_Mission::Mission_Command& cmd)
+{
+    sub.mode_auto.set_auto_yaw_roi(cmd.p1, cmd.content.location);
 }
 
 // point the camera to a specified angle
 void Sub::do_mount_control(const AP_Mission::Mission_Command& cmd)
 {
 #if HAL_MOUNT_ENABLED
-    camera_mount.set_angle_target(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
+    // Because MAVLink does not specify which sensor(s) is contolled by this command, the decision is made here.
+    constexpr uint8_t gimbal_device_id = 0;
+
+    camera_mount.set_angle_target(gimbal_device_id, cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
 #endif
 }

@@ -74,7 +74,8 @@ void ModeAuto::exit()
         copter.mode_auto.mission.stop();
     }
 #if HAL_MOUNT_ENABLED
-    copter.camera_mount.set_mode_to_default();
+    const uint8_t gimbal_device_id = 0; // all gimbal devices
+    copter.camera_mount.set_mode_to_default(gimbal_device_id);
 #endif  // HAL_MOUNT_ENABLED
 
     auto_RTL = false;
@@ -794,12 +795,19 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_set_home(cmd);
         break;
 
-    case MAV_CMD_DO_SET_ROI_LOCATION:       // 195
+    // point camera (and maybe the copter?) at a region of interest (ROI)
     case MAV_CMD_DO_SET_ROI_NONE:           // 197
+        // This case handled correctly by the "location" ROI handler because lat, lon, alt are always zero
+    case MAV_CMD_DO_SET_ROI_LOCATION:       // 195
+        auto_yaw.set_roi(cmd.p1, cmd.content.location);
+        break;
+
+    // this involves either moving the camera to point at the ROI (region of interest)
+    // and possibly rotating the copter to point at the ROI if our mount type does not support a yaw feature
+    // TO-DO: add support for other features ("modes") of MAV_CMD_DO_SET_ROI including pointing at a given waypoint
     case MAV_CMD_DO_SET_ROI:                // 201
-        // point the copter and camera at a region of interest (ROI)
-        // ROI_NONE can be handled by the regular ROI handler because lat, lon, alt are always zero
-        do_roi(cmd);
+        // Because MAVLink does not specify which sensor(s) is contolled by this command, the decision is made here.
+        auto_yaw.set_roi(0, cmd.content.location);
         break;
 
 #if HAL_MOUNT_ENABLED
@@ -2014,28 +2022,21 @@ void ModeAuto::do_set_home(const AP_Mission::Mission_Command& cmd)
     }
 }
 
-// do_roi - starts actions required by MAV_CMD_DO_SET_ROI
-//          this involves either moving the camera to point at the ROI (region of interest)
-//          and possibly rotating the copter to point at the ROI if our mount type does not support a yaw feature
-// TO-DO: add support for other features of MAV_CMD_DO_SET_ROI including pointing at a given waypoint
-void ModeAuto::do_roi(const AP_Mission::Mission_Command& cmd)
-{
-    auto_yaw.set_roi(cmd.content.location);
-}
-
 #if HAL_MOUNT_ENABLED
 // point the camera to a specified angle
 void ModeAuto::do_mount_control(const AP_Mission::Mission_Command& cmd)
 {
     // if vehicle has a camera mount but it doesn't do pan control then yaw the entire vehicle instead
-    if ((copter.camera_mount.get_mount_type() != AP_Mount::Type::None) &&
-        !copter.camera_mount.has_pan_control()) {
+    // Because MAVLink does not specify which sensor(s) is contolled by this command, the decision is made here.
+    const uint8_t gimbal_device_id = 0;
+    if ((copter.camera_mount.get_mount_type(gimbal_device_id) != AP_Mount::Type::None) &&
+        !copter.camera_mount.has_pan_control(gimbal_device_id)) {
         // Per the handler in AP_Mount, DO_MOUNT_CONTROL yaw angle is in body frame, which is
         // equivalent to an offset to the current yaw demand.
         auto_yaw.set_yaw_angle_offset_deg(cmd.content.mount_control.yaw);
     }
     // pass the target angles to the camera mount
-    copter.camera_mount.set_angle_target(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
+    copter.camera_mount.set_angle_target(gimbal_device_id, cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
 }
 #endif  // HAL_MOUNT_ENABLED
 
