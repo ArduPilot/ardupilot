@@ -16,6 +16,20 @@ import time
 
 import board_list
 
+# map from vehicle names to binary names
+VEHICLE_MAP = {
+    "rover"          : "ardurover",
+    "copter"         : "arducopter",
+    "plane"          : "arduplane",
+    "sub"            : "ardusub",
+    "heli"           : "arducopter-heli",
+    "blimp"          : "blimp",
+    "antennatracker" : "antennatracker",
+    "AP_Periph"      : "AP_Periph",
+    "bootloader"     : "AP_Bootloader",
+    "iofirmware"     : "iofirmware_highpolh",  # FIXME: lowpolh?
+}
+
 
 class BuildScriptBase:
     """Base class for build scripts with common utilities for running programs"""
@@ -221,3 +235,63 @@ class BuildScriptBase:
     def progress(self, string):
         '''pretty-print progress'''
         print(f"{self.progress_prefix()}: {string}", file=sys.stderr)
+
+    def size_for_elf(self, elf_path, toolchain="arm-none-eabi"):
+        '''run size on an ELF file and return parsed results dict.
+
+        Returns dict with keys: size_text, size_data, size_bss,
+        size_total, size_free_flash, ext_flash_used.
+        Uses parsing logic compatible with build_summary._parse_size_output.
+        '''
+        size_tool = f"{toolchain}-size"
+
+        # run `size <elf>`
+        size_output = self.run_program(
+            "SIZE", [size_tool, elf_path], show_output=False)
+
+        # run `size -A <elf>` for section details
+        size_a_output = self.run_program(
+            "SIZE", [size_tool, "-A", elf_path], show_output=False)
+
+        # parse size -A output for .crash_log, .heap, .extflash
+        crash_log_size = None
+        heap_size = 0
+        ext_flash_used = 0
+        for line in size_a_output.splitlines()[1:]:
+            if ".crash_log" in line:
+                row = line.strip().split()
+                crash_log_size = int(row[1])
+            if ".heap" in line:
+                row = line.strip().split()
+                heap_size = int(row[1])
+            if ".extflash" in line:
+                row = line.strip().split()
+                if int(row[1]) > 0:
+                    ext_flash_used = int(row[1])
+
+        # parse standard size output
+        lines = size_output.splitlines()[1:]
+        # use first data line (non-TOTALS)
+        for line in lines:
+            row = line.strip().split()
+            if len(row) < 3:
+                continue
+
+            if crash_log_size is None:
+                size_bss = int(row[2])
+                size_free_flash = None
+            else:
+                size_bss = int(row[2]) - crash_log_size
+                size_free_flash = crash_log_size
+            size_bss -= heap_size
+
+            return dict(
+                size_text=int(row[0]),
+                size_data=int(row[1]),
+                size_bss=size_bss,
+                size_total=int(row[0]) + int(row[1]) - ext_flash_used,
+                size_free_flash=size_free_flash,
+                ext_flash_used=ext_flash_used if ext_flash_used else None,
+            )
+
+        raise ValueError(f"Could not parse size output for {elf_path}")
