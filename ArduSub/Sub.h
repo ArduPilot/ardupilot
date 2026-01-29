@@ -588,6 +588,7 @@ private:
     uint32_t last_do_motor_test_ms = 0;
 
     bool control_check_barometer();
+    bool ekf_alt_ok() const;
 
     // vehicle specific waypoint info helpers
     bool get_wp_distance_m(float &distance) const override;
