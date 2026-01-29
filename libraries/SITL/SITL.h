@@ -339,6 +339,8 @@ public:
         AP_Int8 jam; // jamming simulation enable
         AP_Float heading_offset; // heading offset in degrees
         AP_Int32 options; // GPS options bitmask
+        AP_Float noise_radius; // noise radius in meters
+
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
 
