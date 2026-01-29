@@ -248,6 +248,12 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Units: m
     // @Vector3Parameter: 1
     AP_GROUPINFO("FLOW_POS",      56, SIM,  optflow_pos_offset, 0),
+    // @Param: BARO_POS
+    // @DisplayName: Baro Pos
+    // @Description: XYZ position of the barometer relative to the body frame origin
+    // @Units: m
+    // @Vector3Parameter: 1
+    AP_GROUPINFO("BARO_POS",      57, SIM,  baro_pos_offset, 0),
     // @Param: ENGINE_FAIL
     // @DisplayName: Engine Fail Mask
     // @Description: mask of motors which SIM_ENGINE_MUL will be applied to

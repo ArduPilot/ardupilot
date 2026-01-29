@@ -197,6 +197,10 @@ public:
     // get baro drift amount
     float get_baro_drift_offset(void) const { return _alt_offset_active; }
 
+#if AP_BARO_POSITION_COMPENSATION_ENABLED
+    // get baro position offset
+    Vector3f get_baro_pos_offset(void) const { return pos_offset; }
+#endif  // AP_BARO_POSITION_COMPENSATION_ENABLED
     // simple underwater atmospheric model
     static void SimpleUnderWaterAtmosphere(float alt, float &rho, float &delta, float &theta);
 
@@ -250,7 +254,10 @@ private:
     bool init_done;
 
     uint8_t msp_instance_mask;
-
+    
+#if AP_BARO_POSITION_COMPENSATION_ENABLED
+    AP_Vector3f pos_offset;
+#endif  // AP_BARO_POSITION_COMPENSATION_ENABLED
     // bitmask values for GND_PROBE_EXT
     enum {
         PROBE_BMP085=(1<<0),

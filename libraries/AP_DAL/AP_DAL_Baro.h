@@ -29,6 +29,14 @@ public:
         return get_altitude(get_primary());
     }
 
+#if AP_BARO_POSITION_COMPENSATION_ENABLED
+    const Vector3f &get_baro_pos_offset(uint8_t sensor_id) const{
+        return _RBRJ[sensor_id].pos_offset;
+    }
+    const Vector3f &get_baro_pos_offset() const{
+        return get_baro_pos_offset(get_primary());
+    }
+#endif // AP_BARO_POSITION_COMPENSATION_ENABLED
     // update_calibration is a no-op in Replay as it simply modifies the data
     // which we'll be logging for input to the EKF.
     void update_calibration();
@@ -44,10 +52,14 @@ public:
     void handle_message(const log_RBRI &msg) {
         _RBRI[msg.instance] = msg;
     }
-
+    
+    void handle_message(const log_RBRJ &msg) {
+        _RBRJ[msg.instance] = msg;
+    }
 private:
 
     struct log_RBRH _RBRH;
     struct log_RBRI _RBRI[BARO_MAX_INSTANCES];
+    struct log_RBRJ _RBRJ[BARO_MAX_INSTANCES];
 };
 
