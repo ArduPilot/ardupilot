@@ -189,6 +189,7 @@ protected:
     AP_Int32                _arming_options;
     AP_Int16                magfield_error_threshold;
     AP_Enum<RequireLocation> require_location;
+    AP_Float                 _imu_consistency_time_s;
 
     // internal members
     bool                    armed;
