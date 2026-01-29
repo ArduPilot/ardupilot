@@ -717,6 +717,23 @@ public:
     // get access to an EKFGSF_yaw estimator
     const EKFGSF_yaw *get_yaw_estimator(void) const;
 
+    // Accessor methods for hover Z-bias learning
+    // These provide access to EKF internal data for use by vehicle code
+    // Returns safe defaults (0.0f, false) if not using EKF3
+
+    // get the frozen hover Z-bias correction for a specific IMU
+    float get_hover_z_bias_correction(uint8_t imu_index) const;
+
+    // set the frozen hover Z-bias correction for a specific IMU
+    // returns true if set successfully
+    bool set_hover_z_bias_correction(uint8_t imu_index, float correction);
+
+    // get accel bias Z component for a specific IMU
+    bool get_accel_bias_z_for_imu(uint8_t imu_index, float &bias_z) const;
+
+    // inhibit all accel bias learning (for high-G maneuvers like acro)
+    void set_inhibit_accel_bias_learning(bool inhibit);
+
 private:
 
     // roll/pitch/yaw euler angles, all in radians

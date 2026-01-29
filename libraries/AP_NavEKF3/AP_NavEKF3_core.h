@@ -183,6 +183,13 @@ public:
     // return accelerometer bias in m/s/s
     void getAccelBias(Vector3f &accelBias) const;
 
+    // set Z-axis accelerometer bias in m/s/s (for hover bias learning)
+    void setAccelBiasZ(float bias);
+
+    // check if accel bias learning should be inhibited
+    // combines internal state inhibition with vehicle-requested inhibition
+    bool accelBiasLearningInhibited() const;
+
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
 
@@ -468,6 +475,12 @@ public:
 
     // returns true when the state estimates are significantly degraded by vibration
     bool isVibrationAffected() const { return badIMUdata; }
+
+    // return true if we are using vertical velocity measurements (GPS or external nav)
+    // This indicates the VD estimate is reliable enough for bias learning
+    bool usingVertVel(void) const {
+        return useGpsVertVel || useExtNavVel;
+    }
 
     // get a yaw estimator instance
     const EKFGSF_yaw *get_yawEstimator(void) const { return yawEstimator; }
@@ -1105,6 +1118,7 @@ private:
     bool inFlight;                  // true when the vehicle is definitely flying
     bool prevInFlight;              // value inFlight from previous frame - used to detect transition
     bool manoeuvring;               // boolean true when the flight vehicle is performing horizontal changes in velocity
+    bool fusingStationaryZeroVel;   // true when fusing synthetic zero velocity while stationary on ground
     Vector6 innovVelPos;            // innovation output for a group of measurements
     Vector6 varInnovVelPos;         // innovation variance output for a group of measurements
     Vector6 velPosObs;              // observations for combined velocity and positon group of measurements (3x1 m , 3x1 m/s)

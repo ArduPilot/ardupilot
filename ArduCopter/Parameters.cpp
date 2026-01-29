@@ -1116,6 +1116,31 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("TKOFF_RPM_MAX", 7, ParametersG2, takeoff_rpm_max, 0),
 #endif
 
+    // @Param: TKOFF_GNDEFF_ALT
+    // @DisplayName: Takeoff ground effect altitude
+    // @Description: Altitude above which ground effect compensation is disabled. Ground effect compensation is re-enabled when the vehicle descends below this altitude. Set to zero to disable ground effect altitude re-activation.
+    // @Range: 0 5
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("TKOFF_GNDEFF_ALT", 16, ParametersG2, tkoff_gndeff_alt, 0.5),
+
+#if HAL_NAVEKF3_AVAILABLE
+    // @Param: ACC_ZBIAS_LEARN
+    // @DisplayName: Accel Z-axis Bias Learning
+    // @Description: Controls learning of accelerometer Z-axis bias during hover to compensate for vibration rectification. Learned bias is saved to INS parameters on disarm. 0=Disabled, 1=Learn during hover (RAM only), 2=Learn and save to EEPROM on disarm.
+    // @Values: 0:Disabled,1:Learn Only,2:Learn and Save
+    // @User: Advanced
+    AP_GROUPINFO("ACC_ZBIAS_LEARN", 17, ParametersG2, accel_zbias_learn, 2),
+#endif
+
+    // @Param: TKOFF_GNDEFF_TMO
+    // @DisplayName: Ground Effect Timeout
+    // @Description: Time after throttle up before ground effect compensation can be disabled. When set, ground effect will only be disabled after BOTH this timeout has elapsed AND altitude exceeds TKOFF_GNDEFF_ALT. This prevents premature ground effect disabling when baro noise causes false altitude readings. Set to zero to disable (uses altitude threshold only). Maximum timeout is always 5 seconds regardless of this setting.
+    // @Range: 0 5
+    // @Units: s
+    // @User: Advanced
+    AP_GROUPINFO("TKOFF_GNDEFF_TMO", 18, ParametersG2, tkoff_gndeff_tmo, 0),
+
     // @Param: FS_EKF_FILT
     // @DisplayName: EKF Failsafe filter cutoff
     // @Description: EKF Failsafe filter cutoff frequency. EKF variances are filtered using this value to avoid spurious failsafes from transient high variances. A higher value means the failsafe is more likely to trigger.
