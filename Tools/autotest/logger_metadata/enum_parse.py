@@ -254,6 +254,12 @@ class EnumDocco(object):
                 # Failed to match (    IOEVENT_PWM = EVENT_MASK(1),)
                 if filepath.endswith("libraries/AP_IOMCU/iofirmware/iofirmware.cpp"):
                     continue
+                if filepath.endswith("libraries/AP_GPS/AP_GPS_UBLOX_CFG_Keys.h"):
+                    continue
+                if filepath.endswith("libraries/AP_GPS/AP_GPS_UBLOX_CFGv2.cpp"):
+                    continue
+                if filepath.endswith("libraries/AP_GPS/AP_GPS_UBLOX_CFGv2.h"):
+                    continue
                 self.files.append(filepath)
         if len(_next):
             self.search_for_files(_next)
