@@ -1,0 +1,91 @@
+from enum import IntEnum
+from pymavlink.dialects.v20 import ardupilotmega as mavlink
+
+
+class CopterMode(IntEnum):
+    """ArduCopter flight modes."""
+    STABILIZE = mavlink.COPTER_MODE_STABILIZE
+    ACRO = mavlink.COPTER_MODE_ACRO
+    ALT_HOLD = mavlink.COPTER_MODE_ALT_HOLD
+    AUTO = mavlink.COPTER_MODE_AUTO
+    GUIDED = mavlink.COPTER_MODE_GUIDED
+    LOITER = mavlink.COPTER_MODE_LOITER
+    RTL = mavlink.COPTER_MODE_RTL
+    CIRCLE = mavlink.COPTER_MODE_CIRCLE
+    LAND = mavlink.COPTER_MODE_LAND
+    DRIFT = mavlink.COPTER_MODE_DRIFT
+    SPORT = mavlink.COPTER_MODE_SPORT
+    FLIP = mavlink.COPTER_MODE_FLIP
+    AUTOTUNE = mavlink.COPTER_MODE_AUTOTUNE
+    POSHOLD = mavlink.COPTER_MODE_POSHOLD
+    BRAKE = mavlink.COPTER_MODE_BRAKE
+    THROW = mavlink.COPTER_MODE_THROW
+    AVOID_ADSB = mavlink.COPTER_MODE_AVOID_ADSB
+    GUIDED_NOGPS = mavlink.COPTER_MODE_GUIDED_NOGPS
+    SMART_RTL = mavlink.COPTER_MODE_SMART_RTL
+    FLOWHOLD = mavlink.COPTER_MODE_FLOWHOLD
+    FOLLOW = mavlink.COPTER_MODE_FOLLOW
+    ZIGZAG = mavlink.COPTER_MODE_ZIGZAG
+    SYSTEMID = mavlink.COPTER_MODE_SYSTEMID
+    AUTOROTATE = mavlink.COPTER_MODE_AUTOROTATE
+    AUTO_RTL = mavlink.COPTER_MODE_AUTO_RTL
+
+
+class PlaneMode(IntEnum):
+    """ArduPlane flight modes."""
+    MANUAL = mavlink.PLANE_MODE_MANUAL
+    CIRCLE = mavlink.PLANE_MODE_CIRCLE
+    STABILIZE = mavlink.PLANE_MODE_STABILIZE
+    TRAINING = mavlink.PLANE_MODE_TRAINING
+    ACRO = mavlink.PLANE_MODE_ACRO
+    FLY_BY_WIRE_A = mavlink.PLANE_MODE_FLY_BY_WIRE_A
+    FLY_BY_WIRE_B = mavlink.PLANE_MODE_FLY_BY_WIRE_B
+    CRUISE = mavlink.PLANE_MODE_CRUISE
+    AUTOTUNE = mavlink.PLANE_MODE_AUTOTUNE
+    AUTO = mavlink.PLANE_MODE_AUTO
+    RTL = mavlink.PLANE_MODE_RTL
+    LOITER = mavlink.PLANE_MODE_LOITER
+    TAKEOFF = mavlink.PLANE_MODE_TAKEOFF
+    AVOID_ADSB = mavlink.PLANE_MODE_AVOID_ADSB
+    GUIDED = mavlink.PLANE_MODE_GUIDED
+    INITIALIZING = mavlink.PLANE_MODE_INITIALIZING
+    QSTABILIZE = mavlink.PLANE_MODE_QSTABILIZE
+    QHOVER = mavlink.PLANE_MODE_QHOVER
+    QLOITER = mavlink.PLANE_MODE_QLOITER
+    QLAND = mavlink.PLANE_MODE_QLAND
+    QRTL = mavlink.PLANE_MODE_QRTL
+    QAUTOTUNE = mavlink.PLANE_MODE_QAUTOTUNE
+    QACRO = mavlink.PLANE_MODE_QACRO
+    THERMAL = mavlink.PLANE_MODE_THERMAL
+    LOITER_ALT_QLAND = mavlink.PLANE_MODE_LOITER_ALT_QLAND
+
+
+class RoverMode(IntEnum):
+    """ArduRover flight modes."""
+    MANUAL = mavlink.ROVER_MODE_MANUAL
+    ACRO = mavlink.ROVER_MODE_ACRO
+    STEERING = mavlink.ROVER_MODE_STEERING
+    HOLD = mavlink.ROVER_MODE_HOLD
+    LOITER = mavlink.ROVER_MODE_LOITER
+    FOLLOW = mavlink.ROVER_MODE_FOLLOW
+    SIMPLE = mavlink.ROVER_MODE_SIMPLE
+    DOCK = mavlink.ROVER_MODE_DOCK
+    CIRCLE = mavlink.ROVER_MODE_CIRCLE
+    AUTO = mavlink.ROVER_MODE_AUTO
+    RTL = mavlink.ROVER_MODE_RTL
+    SMART_RTL = mavlink.ROVER_MODE_SMART_RTL
+    GUIDED = mavlink.ROVER_MODE_GUIDED
+    INITIALIZING = mavlink.ROVER_MODE_INITIALIZING
+
+
+class SubMode(IntEnum):
+    """ArduSub flight modes."""
+    STABILIZE = mavlink.SUB_MODE_STABILIZE
+    ACRO = mavlink.SUB_MODE_ACRO
+    ALT_HOLD = mavlink.SUB_MODE_ALT_HOLD
+    AUTO = mavlink.SUB_MODE_AUTO
+    GUIDED = mavlink.SUB_MODE_GUIDED
+    CIRCLE = mavlink.SUB_MODE_CIRCLE
+    SURFACE = mavlink.SUB_MODE_SURFACE
+    POSHOLD = mavlink.SUB_MODE_POSHOLD
+    MANUAL = mavlink.SUB_MODE_MANUAL
