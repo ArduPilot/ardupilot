@@ -431,6 +431,10 @@ void AP_AHRS::update_state(void)
         // log origin
         Log_Write_Home_And_Origin();
 #endif
+
+        // report origin via MAVLink
+        GCS_SEND_MESSAGE(MSG_ORIGIN);
+
         // save origin to parameters
         record_origin();
     }
