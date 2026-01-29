@@ -570,6 +570,7 @@ void NavEKF3_core::readGpsData()
     if (gps.status(selected_gps) < AP_DAL_GPS::GPS_OK_FIX_3D) {
         // report GPS fix status
         gpsCheckStatus.bad_fix = true;
+        gpsAccuracyGood = false;
         dal.snprintf(prearm_fail_string, sizeof(prearm_fail_string), "Waiting for 3D fix");
         return;
     }
@@ -658,7 +659,11 @@ void NavEKF3_core::readGpsData()
         const bool doingBodyVelNav = (imuSampleTime_ms - prevBodyVelFuseTime_ms < 1000);
         const bool doingFlowNav = (imuSampleTime_ms - prevFlowFuseTime_ms < 1000);;
         const bool canDoWindRelNav = assume_zero_sideslip();
+#if EK3_FEATURE_EXTERNAL_POSITION_FUSION
+        const bool canDeadReckon = ((doingFlowNav && gndOffsetValid) || canDoWindRelNav || doingBodyVelNav || useSetLatLngAsMeasurement);
+#else
         const bool canDeadReckon = ((doingFlowNav && gndOffsetValid) || canDoWindRelNav || doingBodyVelNav);
+#endif
         if (canDeadReckon) {
             // If we can do dead reckoning with a data source other than GPS there is time to wait
             // for GPS alignment checks to pass before using GPS inside the EKF.
@@ -679,6 +684,29 @@ void NavEKF3_core::readGpsData()
 
     // Post-alignment checks
     calcGpsGoodForFlight();
+
+#if EK3_FEATURE_EXTERNAL_POSITION_FUSION
+    // A degraded GPS and use of an alternative navigation source blocks all GPS use
+    if (frontend->option_is_enabled(NavEKF3::Option::SetLatLngFusion) && useSetLatLngAsMeasurement) {
+        const uint32_t timeoutThreshold = (uint32_t)MAX(((int32_t)frontend->posRetryTimeNoVel_ms-(int32_t)1000),1000);
+        useSetLatLngAsMeasurement = imuSampleTime_ms - lastSetlatLngPassTime_ms < timeoutThreshold;
+        if (useSetLatLngAsMeasurement) {
+            if (frontend->option_is_enabled(NavEKF3::Option::JammingExpected)) {
+                // don't go back to GPS use until all GPS alignment checks pass
+                useSetLatLngAsMeasurement = !gpsGoodToAlign;
+            } else {
+                // apply a less stringent check
+                // don't go back to GPS use until GPS is reporting better accuracy than the current horizontal position estimate
+                if (is_positive(gpsPosAccuracy)) {
+                    useSetLatLngAsMeasurement = gpsPosAccuracy > safe_sqrt(P[7][7]+P[8][8]);
+                }
+            }
+        }
+        if (useSetLatLngAsMeasurement) {
+            return;
+        }
+    }
+#endif // EK3_FEATURE_EXTERNAL_POSITION_FUSION
 
     // Read the GPS location in WGS-84 lat,long,height coordinates
     const Location &gpsloc = gps.location(selected_gps);
@@ -1079,7 +1107,12 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
 
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
-    if (((timeStamp_ms - extNavMeasTime_ms) < frontend->extNavIntervalMin_ms) || !statesInitialised) {
+    // don't attempt to use this data if data from the setLatLng interface
+    // is being used as an absolute position measurement to prevent fighting of
+    // data sources.
+    if (((timeStamp_ms - extNavMeasTime_ms) < frontend->extNavIntervalMin_ms) ||
+        !statesInitialised ||
+        lastSetlatLngPassTime_ms - imuSampleTime_ms < 5000) {
         return;
     } else {
         extNavMeasTime_ms = timeStamp_ms;

@@ -512,12 +512,14 @@ struct log_REPH {
 // @Field: Lat: latitude
 // @Field: Lng: longitude
 // @Field: PosAccSD: position accuracy, 1-StD
-// @Field: TS: timestamp of latitude/longitude
+// @Field: MTS: timestamp when measured
+// @Field: RTS: timestamp when received
 struct log_RSLL {
     int32_t lat; // WGS-84 latitude in 1E-7 degrees
     int32_t lng; // WGS-84 longitude in 1E7 degrees
     float posAccSD; // horizontal position 1 STD uncertainty (m)
-    uint32_t timestamp_ms;
+    uint32_t timestamp_ms; // time the measurement was taken (msec)
+    uint32_t received_ms; // time the measurement was received by the EKF (msec)
     uint8_t _end;
 };
 
@@ -649,7 +651,7 @@ struct log_RTER {
     { LOG_REPH_MSG, RLOG_SIZE(REPH),                                   \
       "REPH", "fffffffffIIH", "PX,PY,PZ,Q1,Q2,Q3,Q4,PEr,AEr,TS,RT,D", "------------", "------------" }, \
     { LOG_RSLL_MSG, RLOG_SIZE(RSLL),                         \
-      "RSLL", "IIfI", "Lat,Lng,PosAccSD,TS", "DU--", "GG--" }, \
+      "RSLL", "IIfII", "Lat,Lng,PosAccSD,MTS,RTS", "DU-ss", "GG-CC" }, \
     { LOG_REVH_MSG, RLOG_SIZE(REVH),                                   \
       "REVH", "ffffIH", "VX,VY,VZ,Er,TS,D", "------", "------" }, \
     { LOG_RWOH_MSG, RLOG_SIZE(RWOH),                                   \
