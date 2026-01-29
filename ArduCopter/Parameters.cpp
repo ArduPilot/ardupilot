@@ -1133,6 +1133,14 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("ACC_ZBIAS_LEARN", 17, ParametersG2, accel_zbias_learn, 2),
 #endif
 
+    // @Param: TKOFF_GNDEFF_TMO
+    // @DisplayName: Ground Effect Timeout
+    // @Description: Time after throttle up before ground effect compensation can be disabled. When set, ground effect will only be disabled after BOTH this timeout has elapsed AND altitude exceeds TKOFF_GNDEFF_ALT. This prevents premature ground effect disabling when baro noise causes false altitude readings. Set to zero to disable (uses altitude threshold only). Maximum timeout is always 5 seconds regardless of this setting.
+    // @Range: 0 5
+    // @Units: s
+    // @User: Advanced
+    AP_GROUPINFO("TKOFF_GNDEFF_TMO", 18, ParametersG2, tkoff_gndeff_tmo, 0),
+
     // @Param: FS_EKF_FILT
     // @DisplayName: EKF Failsafe filter cutoff
     // @Description: EKF Failsafe filter cutoff frequency. EKF variances are filtered using this value to avoid spurious failsafes from transient high variances. A higher value means the failsafe is more likely to trigger.

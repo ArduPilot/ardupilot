@@ -45,7 +45,23 @@ void Copter::update_ground_effect_detector(void)
     // end the takeoff_expected state
     const float gndeff_alt_m = g2.tkoff_gndeff_alt;
     const float height_above_takeoff_m = -pos_d_m - gndeffect_state.takeoff_alt_m;
-    if (gndeffect_state.takeoff_expected && (tnow_ms - gndeffect_state.takeoff_time_ms > 5000 || height_above_takeoff_m > gndeff_alt_m)) {
+    const uint32_t time_since_takeoff_ms = tnow_ms - gndeffect_state.takeoff_time_ms;
+    const bool above_gndeff_alt = height_above_takeoff_m > gndeff_alt_m;
+    const bool max_timeout = time_since_takeoff_ms > 5000;
+
+    // Determine if ground effect should be disabled
+    bool should_clear_gndeff;
+    if (is_positive(g2.tkoff_gndeff_tmo)) {
+        // With timeout parameter: require BOTH timeout AND altitude, but always clear after 5s max
+        const uint32_t tmo_ms = uint32_t(g2.tkoff_gndeff_tmo * 1000.0f);
+        const bool tmo_elapsed = time_since_takeoff_ms > tmo_ms;
+        should_clear_gndeff = max_timeout || (tmo_elapsed && above_gndeff_alt);
+    } else {
+        // Without timeout parameter: original behavior (altitude OR 5s timeout)
+        should_clear_gndeff = max_timeout || above_gndeff_alt;
+    }
+
+    if (gndeffect_state.takeoff_expected && should_clear_gndeff) {
         gndeffect_state.takeoff_expected = false;
     }
 
