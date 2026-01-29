@@ -1103,6 +1103,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #endif  // AP_AHRS_ENABLED
         { MAVLINK_MSG_ID_VFR_HUD,               MSG_VFR_HUD},
 #endif
+#if AP_MAVLINK_MSG_GLOBAL_POSITION_ENABLED
+        { MAVLINK_MSG_ID_GLOBAL_POSITION_INT,   MSG_GLOBAL_POSITION},
+#endif  // AP_MAVLINK_MSG_GLOBAL_POSITION_ENABLED
 #if AP_MAVLINK_MSG_HWSTATUS_ENABLED
         { MAVLINK_MSG_ID_HWSTATUS,              MSG_HWSTATUS},
 #endif  // AP_MAVLINK_MSG_HWSTATUS_ENABLED
@@ -6131,6 +6134,70 @@ void GCS_MAVLINK::send_global_position_int()
 #endif  // AP_AHRS_ENABLED
 }
 
+#if AP_MAVLINK_MSG_GLOBAL_POSITION_ENABLED
+void GCS_MAVLINK::send_global_position()
+{
+    if (send_global_position_next_to_send > 1) {
+        send_global_position_next_to_send = 0;
+    }
+    if (send_global_position_next_to_send == 0) {
+        GCS_MAVLINK::send_global_position_primary();
+    } else {
+        GCS_MAVLINK::send_global_position_secondary();
+    }
+    send_global_position_next_to_send++;
+}
+
+void GCS_MAVLINK::send_global_position_primary()
+{
+    const AP_AHRS &ahrs = AP::ahrs();
+
+    uint8_t flags = 0;
+    flags |= GLOBAL_POSITION_PRIMARY;
+
+    Location loc;
+    if (!ahrs.get_location(loc)) {
+        flags |= GLOBAL_POSITION_UNHEALTHY;
+    }
+
+    return send_global_position_msg(0, flags, loc);
+}
+
+void GCS_MAVLINK::send_global_position_secondary()
+{
+    const AP_AHRS &ahrs = AP::ahrs();
+
+    uint8_t flags = 0;
+
+    Location loc;
+    if (!ahrs.get_secondary_position(loc)) {
+        flags |= GLOBAL_POSITION_UNHEALTHY;
+    }
+
+    return send_global_position_msg(0, flags, loc);
+}
+
+void GCS_MAVLINK::send_global_position_msg(uint8_t instance, uint8_t flags, const Location &loc)
+{
+    mavlink_msg_global_position_send(
+        chan,
+        0,  // instance
+        AP_HAL::micros(),  // time_usec
+        GLOBAL_POSITION_ESTIMATOR, // source
+        flags,
+        loc.lat,  // in deg*1e7
+        loc.lng,  // in deg*1e7
+        loc.alt * 0.01,  // AMSL alt in metres
+        NaNf,  // alt_ellipsoid in m
+        NaNf,  // standard deviation of horizontal position error
+        NaNf  // standard deviation of vertical position error
+        );
+}
+
+
+
+#endif  // AP_MAVLINK_MSG_GLOBAL_POSITION_ENABLED
+
 #if HAL_MOUNT_ENABLED
 void GCS_MAVLINK::send_gimbal_device_attitude_status() const
 {
@@ -6438,6 +6505,13 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_gps_global_origin();
         break;
 #endif  // AP_AHRS_ENABLED
+
+#if AP_MAVLINK_MSG_GLOBAL_POSITION_ENABLED
+    case MSG_GLOBAL_POSITION:
+        CHECK_PAYLOAD_SIZE(GLOBAL_POSITION);
+        send_global_position();
+        break;
+#endif  // AP_MAVLINK_MSG_GLOBAL_POSITION_ENABLED
 
 #if AP_RPM_ENABLED
     case MSG_RPM:

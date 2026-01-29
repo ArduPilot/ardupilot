@@ -743,6 +743,14 @@ protected:
     virtual bool try_send_message(enum ap_message id);
     virtual void send_global_position_int();
 
+#if AP_MAVLINK_MSG_GLOBAL_POSITION_ENABLED
+    void send_global_position();
+    void send_global_position_primary();
+    void send_global_position_secondary();
+    void send_global_position_msg(uint8_t instance, uint8_t flags, const Location &loc);
+    uint8_t send_global_position_next_to_send;
+#endif  // AP_MAVLINK_MSG_GLOBAL_POSITION_ENABLED
+
     // message sending functions:
     bool try_send_mission_message(enum ap_message id);
 #if AP_MAVLINK_MSG_HWSTATUS_ENABLED
