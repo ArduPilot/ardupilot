@@ -3,6 +3,10 @@
 
 bool ModeLoiter::_enter()
 {
+#if HAL_SOARING_ENABLED
+    plane.g2.soaring_controller.init_cruising();
+#endif // HAL_SOARING_ENABLED
+
     plane.do_loiter_at_location();
     plane.setup_terrain_target_alt(plane.next_WP_loc);
 
@@ -25,6 +29,19 @@ void ModeLoiter::update()
         plane.update_fbwb_speed_height();
     } else {
         plane.calc_nav_pitch();
+#if HAL_SOARING_ENABLED
+        static bool soaring_was_active = false;
+        if (plane.set_soaring_altitude()) {
+            soaring_was_active = true;
+        } else if (soaring_was_active) {
+            soaring_was_active = false;
+            // Just stopped soaring in this mode
+
+            // Return to loitering at target point with current altitude
+            plane.set_target_altitude_current();
+            plane.next_WP_loc.set_alt_cm(plane.target_altitude.amsl_cm, Location::AltFrame::ABSOLUTE);
+        }
+#endif // HAL_SOARING_ENABLED
         plane.calc_throttle();
     }
 
