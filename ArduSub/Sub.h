@@ -448,7 +448,6 @@ private:
     float get_alt_msl() const WARN_IF_UNUSED;
     void exit_mission();
     void set_origin(const Location& loc);
-    bool ensure_ekf_origin();
     bool verify_loiter_unlimited();
     bool verify_loiter_time();
     bool verify_wait_delay();

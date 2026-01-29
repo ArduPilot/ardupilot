@@ -405,9 +405,6 @@ public:
     // control over servo output ranges
     SRV_Channels servo_channels;
 
-    AP_Float backup_origin_lat;
-    AP_Float backup_origin_lon;
-    AP_Float backup_origin_alt;
     AP_Float surface_nobaro_thrust;
     Actuators actuators;
 
