@@ -27,6 +27,8 @@ function update()
     test_named_value = test_named_value + 1.0
     -- send named value float
     mavlink.send_chan(0, mavlink_msgs.encode("NAMED_VALUE_FLOAT", {time_boot_ms = millis():toint(), name = "test", value = test_named_value}))
+    -- send named value int through unknown message mechanism
+    mavlink.send_chan_unknown(0, mavlink_msgs.encode_full("NAMED_VALUE_INT", {time_boot_ms = millis():toint(), name = "test_2", value = 10}))
     return update, 1000
 end
 
