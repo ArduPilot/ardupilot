@@ -619,6 +619,7 @@ protected:
 #endif
     void handle_radio_status(const mavlink_message_t &msg);
     void handle_serial_control(const mavlink_message_t &msg);
+    void handle_tunnel(const mavlink_message_t &msg);
     void handle_vision_position_delta(const mavlink_message_t &msg);
 
     virtual void handle_message(const mavlink_message_t &msg);

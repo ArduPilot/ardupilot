@@ -2,7 +2,13 @@
 
 #include "AP_Networking_Config.h"
 
-#if AP_NETWORKING_BACKEND_CHIBIOS
+#if AP_NETWORKING_BACKEND_CHIBIOS && !AP_NETWORKING_BACKEND_HUB
+
+/*
+  Traditional ChibiOS networking backend - owns MAC and lwIP directly.
+  Used when hub is NOT enabled.
+*/
+
 #include "AP_Networking_Backend.h"
 
 class AP_Networking_ChibiOS : public AP_Networking_Backend
@@ -41,5 +47,4 @@ private:
     struct netif *thisif;
 };
 
-#endif // AP_NETWORKING_BACKEND_CHIBIOS
-
+#endif // AP_NETWORKING_BACKEND_CHIBIOS && !AP_NETWORKING_BACKEND_HUB

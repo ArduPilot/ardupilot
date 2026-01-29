@@ -7,7 +7,11 @@
 #include <AP_Networking/AP_Networking.h>
 
 #ifndef HAL_PERIPH_NETWORK_NUM_PASSTHRU
-#define HAL_PERIPH_NETWORK_NUM_PASSTHRU 2
+    #if AP_NETWORKING_BACKEND_IS_MAC_GATEWAY
+    #define HAL_PERIPH_NETWORK_NUM_PASSTHRU 0
+    #else
+    #define HAL_PERIPH_NETWORK_NUM_PASSTHRU 2
+    #endif
 #endif
 
 #ifndef AP_PERIPH_NET_PPP_PORT_DEFAULT
@@ -18,6 +22,13 @@
 #define AP_PERIPH_NET_PPP_BAUD_DEFAULT 12500000
 #endif
 
+#ifndef AP_PERIPH_NET_COBS_PORT_DEFAULT
+#define AP_PERIPH_NET_COBS_PORT_DEFAULT -1
+#endif
+
+#ifndef AP_PERIPH_NET_COBS_BAUD_DEFAULT
+#define AP_PERIPH_NET_COBS_BAUD_DEFAULT 12500000
+#endif
 class Networking_Periph {
 public:
     Networking_Periph() {
@@ -68,6 +79,10 @@ private:
     AP_Int8 ppp_port;
     AP_Int32 ppp_baud;
 #endif
+
+    // Optional COBS-over-serial config for devices without SERIALn_* params visible
+    AP_Int8 cobs_port;
+    AP_Int32 cobs_baud;
 };
 
 #endif // AP_PERIPH_NETWORKING_ENABLED

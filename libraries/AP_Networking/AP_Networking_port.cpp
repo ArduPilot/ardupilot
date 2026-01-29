@@ -180,21 +180,39 @@ void AP_Networking::Port::udp_client_loop(void)
 {
     AP::network().startup_wait();
 
-    const char *dest = ip.get_str();
-    if (!sock->connect(dest, port.get())) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UDP[%u]: Failed to connect to %s", (unsigned)state.idx, dest);
-        delete sock;
-        sock = nullptr;
-        return;
-    }
-
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UDP[%u]: connected to %s:%u", (unsigned)state.idx, dest, unsigned(port.get()));
-
-    connected = true;
-
     bool active = false;
     while (true) {
         if (!active) {
+            if (ip_prev != ip.get_uint32() || port_prev != port.get()) {
+                // Destination IP/Port has changed, reconnect
+                connected = false;
+
+                bool snooze_gcs_msg = true;
+                while (ip.get_uint32() == 0 || port.get() <= 0 || port.get() > 65535) {
+                    // linger here forever while values are invalid
+                    if (snooze_gcs_msg) {
+                        snooze_gcs_msg = false;
+                        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UDP[%u]: Invalid IP/Port %s:%u", (unsigned)state.idx, ip.get_str(), unsigned(port.get()));
+                    }
+                    // thread is asleep until valid IP/port configured
+                    hal.scheduler->delay(100);
+                }
+
+                const char *dest = ip.get_str();
+                if (!sock->connect(dest, port.get())) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UDP[%u]: Failed to connect to %s", (unsigned)state.idx, dest);
+                    delete sock;
+                    sock = nullptr;
+                    return;
+                }
+
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UDP[%u]: connected to %s:%u", (unsigned)state.idx, dest, unsigned(port.get()));
+
+                ip_prev = ip.get_uint32();
+                port_prev = port.get();
+
+                connected = true;
+            }
             hal.scheduler->delay_microseconds(100);
         }
         active = send_receive();

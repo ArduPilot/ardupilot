@@ -491,6 +491,7 @@ public:
         SHOW_STACK = 0,
         AUTOREBOOT = 1,
         ENABLE_STATS = 2,
+        NETWORK_STATS = 3,
     };
 
     // check if an option is set

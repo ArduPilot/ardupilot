@@ -16,13 +16,29 @@ extern const AP_HAL::HAL& hal;
 #if AP_NETWORKING_BACKEND_CHIBIOS
 #include "AP_Networking_ChibiOS.h"
 #include <hal_mii.h>
+#include "AP_Networking_Port_Ethernet_ChibiOS.h"
+#include "AP_Networking_Port_COBS.h"
+#endif
+
+#if AP_NETWORKING_BACKEND_HUB_PORT_LWIP
+#include "AP_Networking_Port_lwIP.h"
+#endif
+
+#if AP_NETWORKING_BACKEND_HUB
+#include "AP_Networking_Hub.h"
+#endif
+
+#if AP_NETWORKING_BACKEND_HUB_PORT_MAVLINK_COBS
+#include "AP_Networking_Port_MAVLink_COBS.h"
 #endif
 
 #include <lwipopts.h>
+#include <lwip/netif.h>
 #include <errno.h>
 
 
 #include <AP_HAL/utility/Socket.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #if AP_NETWORKING_BACKEND_PPP
 #include "AP_Networking_PPP.h"
@@ -40,6 +56,16 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO_FLAGS("ENABLE",  1, AP_Networking, param.enabled, 0, AP_PARAM_FLAG_ENABLE),
+
+#if AP_NETWORKING_BACKEND_HUB_PORT_LWIP
+    // @Param: IP_ENABLE
+    // @DisplayName: Enable IP stack
+    // @Description: Enable/Disable the TCP/IP (lwIP) stack. When disabled, the system still bridges Ethernet and UART at Layer 2.
+    // @Values: 0:Disable,1:Enable
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("IP_ENABLE",  13, AP_Networking, param.ip_enabled, AP_NETWORKING_DEFAULT_IP_ENABLE),
+#endif
 
 #if AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
     // @Group: IPADDR
@@ -67,11 +93,13 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Group: GWADDR
     // @Path: AP_Networking_address.cpp
     AP_SUBGROUPINFO(param.gwaddr, "GWADDR", 5,  AP_Networking, AP_Networking_IPV4),
+#endif // AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
 
+#if AP_NETWORKING_CONTROLS_HOST_MAC_SETTINGS_ENABLED
     // @Group: MACADDR
     // @Path: AP_Networking_macaddr.cpp
     AP_SUBGROUPINFO(param.macaddr, "MACADDR", 6,  AP_Networking, AP_Networking_MAC),
-#endif // AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
+#endif // AP_NETWORKING_CONTROLS_HOST_MAC_SETTINGS_ENABLED
 
 #if AP_NETWORKING_TESTS_ENABLED
     // @Param: TESTS
@@ -101,6 +129,7 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     AP_SUBGROUPINFO(param.remote_ppp_ip, "REMPPP_IP", 10,  AP_Networking, AP_Networking_IPV4),
 #endif
     
+
     AP_GROUPEND
 };
 
@@ -127,7 +156,7 @@ void AP_Networking::init()
         return;
     }
 
-#if AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
+#if AP_NETWORKING_CONTROLS_HOST_MAC_SETTINGS_ENABLED
     // set default MAC Address as lower 3 bytes of the CRC of the UID
     uint8_t uid[50];
     uint8_t uid_len = sizeof(uid);
@@ -144,16 +173,19 @@ void AP_Networking::init()
     }
 #endif
 
-#if AP_NETWORKING_BACKEND_CHIBIOS && AP_NETWORKING_PPP_GATEWAY_ENABLED
+#if AP_NETWORKING_PPP_GATEWAY_ENABLED
     if (option_is_set(OPTION::PPP_ETHERNET_GATEWAY)) {
         /*
           when we are a PPP/Ethernet gateway we bring up the ethernet first
          */
+#if AP_NETWORKING_BACKEND_CHIBIOS && !AP_NETWORKING_BACKEND_HUB
+        // Traditional mode: ChibiOS backend owns both MAC and lwIP
         backend = NEW_NOTHROW AP_Networking_ChibiOS(*this);
+#endif
+        // PPP integrates with lwIP at L3, works with both traditional and hub modes
         backend_PPP = NEW_NOTHROW AP_Networking_PPP(*this);
     }
 #endif
-
 
 #if AP_NETWORKING_BACKEND_PPP
     if (backend == nullptr && AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_PPP, 0)) {
@@ -161,28 +193,159 @@ void AP_Networking::init()
     }
 #endif
 
-#if AP_NETWORKING_BACKEND_CHIBIOS
+#if AP_NETWORKING_BACKEND_CHIBIOS && !AP_NETWORKING_BACKEND_HUB
+    // Traditional ChibiOS backend (when hub is not enabled)
     if (backend == nullptr) {
         backend = NEW_NOTHROW AP_Networking_ChibiOS(*this);
     }
 #endif
 #if AP_NETWORKING_BACKEND_SITL
+    // On SITL, use native sockets backend when ip_enabled is false
+    // When ip_enabled is true, use hub with lwIP instead
+#if AP_NETWORKING_BACKEND_HUB_PORT_LWIP
+    if (backend == nullptr && !param.ip_enabled) {
+#else
     if (backend == nullptr) {
+#endif
         backend = NEW_NOTHROW AP_Networking_SITL(*this);
     }
 #endif
 
-    if (backend == nullptr) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: backend failed");
-        return;
+    // Create hub and ports (when hub is enabled, Port_lwIP handles lwIP instead of backend)
+#if AP_NETWORKING_BACKEND_HUB
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // On SITL, only create hub when ip_enabled (user wants lwIP stack)
+    if (param.ip_enabled && hub == nullptr) {
+#else
+    if (hub == nullptr) {
+#endif
+        hub = NEW_NOTHROW AP_Networking_Hub();
     }
+    if (hub != nullptr) {
+        // Ethernet port - owns the MAC with dedicated RX/TX threads
+#if AP_NETWORKING_BACKEND_HUB_PORT_ETHERNET
+        if (port_eth == nullptr) {
+            uint8_t macaddr_tmp[6] {};
+#if AP_NETWORKING_CONTROLS_HOST_MAC_SETTINGS_ENABLED
+            param.macaddr.get_address(macaddr_tmp);
+#endif
+            port_eth = NEW_NOTHROW AP_Networking_Port_Ethernet_ChibiOS(hub, macaddr_tmp);
+            if (port_eth != nullptr) {
+                if (port_eth->init()) {
+                    UNUSED_RESULT(hub->register_port(port_eth));
+                } else {
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "NET: Ethernet port init failed");
+                    delete port_eth;
+                    port_eth = nullptr;
+                }
+            }
+        }
+#endif // AP_NETWORKING_BACKEND_HUB_PORT_ETHERNET
 
-    if (!backend->init()) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: backend init failed");
-        // the backend init function creates a thread which references the backend pointer; that thread may be running so don't remove the backend allocation.
-        backend = nullptr;
+#if AP_NETWORKING_BACKEND_HUB_PORT_LWIP
+        // lwIP port - owns lwIP when hub is enabled
+        if (param.ip_enabled && port_lwip == nullptr) {
+            port_lwip = NEW_NOTHROW AP_Networking_Port_lwIP(hub, *this);
+            if (port_lwip != nullptr) {
+                if (port_lwip->init()) {
+                    UNUSED_RESULT(hub->register_port(port_lwip));
+                } else {
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "NET: lwIP port init failed");
+                    delete port_lwip;
+                    port_lwip = nullptr;
+                }
+            }
+        }
+#endif // AP_NETWORKING_BACKEND_HUB_PORT_LWIP
+
+        // Create COBS ports for any SERIALn configured with protocol 51
+        // Ports automatically merge when they discover same remote device
+        num_cobs_ports = 0;
+#if AP_NETWORKING_BACKEND_HUB_PORT_COBS
+        uint8_t local_device_id[6];
+        get_macaddr(local_device_id);
+        
+        for (uint8_t inst = 0; inst < SERIALMANAGER_NUM_PORTS; inst++) {
+            if (!AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_COBS_ETH, inst)) {
+                continue;
+            }
+            if (num_cobs_ports >= MAX_COBS_ETH_PORTS) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "NET: Too many COBS UARTs");
+                break;
+            }
+            auto *uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_COBS_ETH, inst);
+            const uint32_t baud = AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_COBS_ETH, inst);
+            if (uart == nullptr || baud == 0) {
+                continue;
+            }
+            
+            // Create COBS port (will auto-gang if connected to same remote as another port)
+            auto *p = NEW_NOTHROW AP_Networking_Port_COBS(hub, uart, baud, local_device_id);
+            if (p == nullptr) {
+                continue;
+            }
+            if (!p->init()) {
+                delete p;
+                continue;
+            }
+            if (hub->register_port(p) < 0) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "NET: hub full, COBS skipped");
+                delete p;
+                continue;
+            }
+            
+            // Register with hub for gang tracking
+            hub->register_cobs_port(p);
+            cobs_ports[num_cobs_ports++] = p;
+        }
+        
+        if (num_cobs_ports > 0) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: %u COBS ports created", num_cobs_ports);
+        }
+#endif // AP_NETWORKING_BACKEND_HUB_PORT_COBS
+
+#if AP_NETWORKING_BACKEND_HUB_PORT_MAVLINK_COBS
+        // Create MAVLink COBS tunnel port for remote COBS over MAVLink
+        // Target sysid/compid 0,0 means learn from first message
+        if (port_mavlink_cobs == nullptr) {
+            uint8_t local_device_id[6];
+            get_macaddr(local_device_id);
+            port_mavlink_cobs = NEW_NOTHROW AP_Networking_Port_MAVLink_COBS(hub, local_device_id, 0, 0);
+            if (port_mavlink_cobs != nullptr) {
+                if (port_mavlink_cobs->init()) {
+                    if (hub->register_port(port_mavlink_cobs) >= 0) {
+                        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: MAVLink COBS port created");
+                    } else {
+                        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "NET: hub full, MAVLink COBS skipped");
+                        delete port_mavlink_cobs;
+                        port_mavlink_cobs = nullptr;
+                    }
+                } else {
+                    delete port_mavlink_cobs;
+                    port_mavlink_cobs = nullptr;
+                }
+            }
+        }
+#endif // AP_NETWORKING_BACKEND_HUB_PORT_MAVLINK_COBS
+    }
+#endif // AP_NETWORKING_BACKEND_HUB
+
+    // Initialize backend (if we have one - hub mode uses Port_lwIP instead)
+    if (backend != nullptr) {
+        if (!backend->init()) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: backend init failed");
+            // the backend init function creates a thread which references the backend pointer; that thread may be running so don't remove the backend allocation.
+            backend = nullptr;
+            return;
+        }
+    }
+#if AP_NETWORKING_BACKEND_HUB
+    else if (hub == nullptr) {
+        // No backend and no hub - nothing to do
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: no backend");
         return;
     }
+#endif
 
 #if AP_NETWORKING_PPP_GATEWAY_ENABLED
     if (backend_PPP != nullptr && !backend_PPP->init()) {
@@ -225,10 +388,22 @@ void AP_Networking::init()
  */
 void AP_Networking::announce_address_changes()
 {
-    const auto &as = backend->activeSettings;
+    uint32_t last_change_ms = 0;
+#if AP_NETWORKING_BACKEND_HUB_PORT_LWIP
+    // When using hub with lwIP, check lwIP for IP changes (it's the real IP source)
+    if (port_lwip != nullptr) {
+        uint32_t ip = get_ip_active();
+        if (ip != 0 && ip != announce_ip) {
+            last_change_ms = AP_HAL::millis();
+            announce_ip = ip;
+        }
+    } else
+#endif
+    if (backend != nullptr) {
+        last_change_ms = backend->activeSettings.last_change_ms;
+    }
 
-    if (as.last_change_ms == 0 || as.last_change_ms == announce_ms) {
-        // nothing changed and we've already printed it at least once. Nothing to do.
+    if (last_change_ms == 0 || last_change_ms == announce_ms) {
         return;
     }
 
@@ -239,7 +414,7 @@ void AP_Networking::announce_address_changes()
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: Gateway %s", SocketAPM::inet_addr_to_str(get_gateway_active(), ipstr, sizeof(ipstr)));
 #endif
 
-    announce_ms = as.last_change_ms;
+    announce_ms = last_change_ms;
 }
 
 /*
@@ -250,8 +425,94 @@ void AP_Networking::update()
     if (!is_healthy()) {
         return;
     }
-    backend->update();
+
+#if AP_NETWORKING_BACKEND_HUB
+    // update hub/ports
+    if (hub != nullptr) {
+        hub->update();
+    }
+#if AP_NETWORKING_BACKEND_HUB_PORT_LWIP
+    if (port_lwip != nullptr) {
+        port_lwip->update();
+    }
+#endif
+#endif // AP_NETWORKING_BACKEND_HUB
+
+    if (backend != nullptr) {
+        backend->update();
+    }
     announce_address_changes();
+
+    // Periodic stats output (every 10 seconds when debug enabled)
+    if (option_is_set(OPTION::DEBUG_MSGS)) {
+        static uint32_t last_stats_ms;
+        const uint32_t now = AP_HAL::millis();
+        if (now - last_stats_ms >= 10000) {
+            last_stats_ms = now;
+            send_network_stats();
+        }
+    }
+}
+
+/*
+  send network stats to GCS for debugging
+ */
+void AP_Networking::send_network_stats()
+{
+#if AP_NETWORKING_BACKEND_HUB
+    if (hub != nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "NET: HUB routed=%lu dropped=%lu",
+                     (unsigned long)hub->get_frames_routed(),
+                     (unsigned long)hub->get_frames_dropped());
+    }
+#if AP_NETWORKING_BACKEND_HUB_PORT_LWIP
+    if (port_lwip != nullptr) {
+        struct netif *nif = port_lwip->get_netif();
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "NET: LWIP link=%u rx=%lu tx=%lu rxerr=%lu txerr=%lu",
+                     (unsigned)(nif != nullptr && netif_is_link_up(nif) ? 1 : 0),
+                     (unsigned long)port_lwip->get_rx_count(),
+                     (unsigned long)port_lwip->get_tx_count(),
+                     (unsigned long)port_lwip->get_rx_errors(),
+                     (unsigned long)port_lwip->get_tx_errors());
+    }
+#endif // AP_NETWORKING_BACKEND_HUB_PORT_LWIP
+#if AP_NETWORKING_BACKEND_HUB_PORT_MAVLINK_COBS
+    if (port_mavlink_cobs != nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "NET: MAV_COBS up=%u rx=%lu tx=%lu ka_rx=%lu ka_tx=%lu err=%lu",
+                     (unsigned)(port_mavlink_cobs->is_link_up() ? 1 : 0),
+                     (unsigned long)port_mavlink_cobs->get_rx_count(),
+                     (unsigned long)port_mavlink_cobs->get_tx_count(),
+                     (unsigned long)port_mavlink_cobs->get_ka_rx_count(),
+                     (unsigned long)port_mavlink_cobs->get_ka_tx_count(),
+                     (unsigned long)port_mavlink_cobs->get_rx_errors());
+    }
+#endif // AP_NETWORKING_BACKEND_HUB_PORT_MAVLINK_COBS
+#if AP_NETWORKING_BACKEND_HUB_PORT_COBS
+    // COBS ports (may be single or ganged)
+    for (uint8_t i = 0; i < num_cobs_ports && i < 8; i++) {
+        auto *p = cobs_ports[i];
+        if (p == nullptr) {
+            continue;
+        }
+        if (p->is_ganged()) {
+            GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "NET: COBS%u up=%u rx=%lu tx=%lu uarts=%u reord=%lu",
+                         (unsigned)i,
+                         (unsigned)(p->is_link_up() ? 1 : 0),
+                         (unsigned long)p->get_rx_count(),
+                         (unsigned long)p->get_tx_count(),
+                         (unsigned)p->get_num_uarts(),
+                         (unsigned long)p->get_reorder_count());
+        } else {
+            GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "NET: COBS%u up=%u rx=%lu tx=%lu crc=%lu",
+                         (unsigned)i,
+                         (unsigned)(p->is_link_up() ? 1 : 0),
+                         (unsigned long)p->get_rx_count(),
+                         (unsigned long)p->get_tx_count(),
+                         (unsigned long)p->get_crc_errors());
+        }
+    }
+#endif // AP_NETWORKING_BACKEND_HUB_PORT_COBS
+#endif // AP_NETWORKING_BACKEND_HUB
 }
 
 uint32_t AP_Networking::convert_netmask_bitcount_to_ip(const uint32_t netmask_bitcount)
@@ -305,18 +566,52 @@ bool AP_Networking::convert_str_to_macaddr(const char *mac_str, uint8_t addr[6])
 // returns the 32bit value of the active IP address that is currently in use
 uint32_t AP_Networking::get_ip_active() const
 {
-    return backend?backend->activeSettings.ip:0;
+#if AP_NETWORKING_BACKEND_HUB_PORT_LWIP
+    // When using hub with lwIP, the real IP is in lwIP, not the backend
+    if (port_lwip != nullptr) {
+        struct netif *nif = port_lwip->get_netif();
+        if (nif != nullptr) {
+            return ntohl(nif->ip_addr.addr);
+        }
+    }
+#endif
+    if (backend != nullptr) {
+        return backend->activeSettings.ip;
+    }
+    return 0;
 }
 
 // returns the 32bit value of the active Netmask that is currently in use
 uint32_t AP_Networking::get_netmask_active() const
 {
-    return backend?backend->activeSettings.nm:0;
+#if AP_NETWORKING_BACKEND_HUB_PORT_LWIP
+    if (port_lwip != nullptr) {
+        struct netif *nif = port_lwip->get_netif();
+        if (nif != nullptr) {
+            return ntohl(nif->netmask.addr);
+        }
+    }
+#endif
+    if (backend != nullptr) {
+        return backend->activeSettings.nm;
+    }
+    return 0;
 }
 
 uint32_t AP_Networking::get_gateway_active() const
 {
-    return backend?backend->activeSettings.gw:0;
+#if AP_NETWORKING_BACKEND_HUB_PORT_LWIP
+    if (port_lwip != nullptr) {
+        struct netif *nif = port_lwip->get_netif();
+        if (nif != nullptr) {
+            return ntohl(nif->gw.addr);
+        }
+    }
+#endif
+    if (backend != nullptr) {
+        return backend->activeSettings.gw;
+    }
+    return 0;
 }
 
 /*
@@ -453,6 +748,17 @@ int ap_networking_printf(const char *fmt, ...)
     va_start(ap, fmt);
     vdprintf(fd, fmt, ap);
     va_end(ap);
+#elif defined(HAL_PERIPH_ENABLE_NETWORKING)
+    // Use can_printf for AP_Periph to send logs over CAN
+    extern void can_printf(const char *fmt, ...);
+    va_list ap;
+    va_start(ap, fmt);
+    char buf[256];
+    int n = hal.util->vsnprintf(buf, sizeof(buf), fmt, ap);
+    va_end(ap);
+    if (n > 0 && n < (int)sizeof(buf)) {
+        can_printf("%s", buf);
+    }
 #else
     va_list ap;
     va_start(ap, fmt);
