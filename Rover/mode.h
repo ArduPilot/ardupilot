@@ -354,6 +354,9 @@ private:
     bool verify_within_distance();
     void do_change_speed(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);
+    void do_set_roi(const AP_Mission::Mission_Command& cmd); // MAV_CMD_DO_SET_ROI (201)
+    void do_set_roi_location(const AP_Mission::Mission_Command& cmd); // MAV_CMD_DO_SET_ROI_LOCATION (195)
+    void do_set_roi(const uint8_t gimbal_device_id, const Location &loc); // (shared implementation details)
     void do_set_reverse(const AP_Mission::Mission_Command& cmd);
     void do_guided_limits(const AP_Mission::Mission_Command& cmd);
 #if AP_SCRIPTING_ENABLED

@@ -712,8 +712,10 @@ protected:
     MAV_RESULT handle_command_fixed_mag_cal_yaw(const mavlink_command_int_t &packet);
 
     MAV_RESULT handle_command_camera(const mavlink_command_int_t &packet);
-    MAV_RESULT handle_command_do_set_roi(const mavlink_command_int_t &packet);
-    virtual MAV_RESULT handle_command_do_set_roi(const Location &roi_loc);
+    MAV_RESULT handle_command_do_set_roi(const mavlink_command_int_t &packet); // For MAV_CMD_DO_SET_ROI (201)
+    MAV_RESULT handle_command_do_set_roi_location(const mavlink_command_int_t &packet); // For MAV_CMD_DO_SET_ROI_LOCATION (195)
+    virtual MAV_RESULT handle_command_do_set_roi_location(const uint8_t gimbal_device_id, const Location &roi_loc);
+    MAV_RESULT handle_command_do_set_roi_none(const mavlink_command_int_t &packet); // MAV_CMD_DO_SET_ROI_NONE (197)
     MAV_RESULT handle_command_do_gripper(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_sprayer(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_set_mode(const mavlink_command_int_t &packet);

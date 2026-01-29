@@ -333,7 +333,7 @@ public:
         void set_rate_rad(float turn_rate_rads);
 
         // set_roi(...): set a "look at" location:
-        void set_roi(const Location &roi_location);
+        void set_roi(const uint8_t gimbal_device_id, const Location &roi_location);
 
         void set_fixed_yaw_rad(float angle_rad,
                                float turn_rate_rads,
@@ -706,7 +706,6 @@ private:
     void do_yaw(const AP_Mission::Mission_Command& cmd);
     void do_change_speed(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);
-    void do_roi(const AP_Mission::Mission_Command& cmd);
     void do_mount_control(const AP_Mission::Mission_Command& cmd);
 #if HAL_PARACHUTE_ENABLED
     void do_parachute(const AP_Mission::Mission_Command& cmd);
