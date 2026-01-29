@@ -4,6 +4,7 @@ from pymavlink.dialects.v20 import ardupilotmega as mavlink
 
 class CopterMode(IntEnum):
     """ArduCopter flight modes."""
+
     STABILIZE = mavlink.COPTER_MODE_STABILIZE
     ACRO = mavlink.COPTER_MODE_ACRO
     ALT_HOLD = mavlink.COPTER_MODE_ALT_HOLD
@@ -33,6 +34,7 @@ class CopterMode(IntEnum):
 
 class PlaneMode(IntEnum):
     """ArduPlane flight modes."""
+
     MANUAL = mavlink.PLANE_MODE_MANUAL
     CIRCLE = mavlink.PLANE_MODE_CIRCLE
     STABILIZE = mavlink.PLANE_MODE_STABILIZE
@@ -62,6 +64,7 @@ class PlaneMode(IntEnum):
 
 class RoverMode(IntEnum):
     """ArduRover flight modes."""
+
     MANUAL = mavlink.ROVER_MODE_MANUAL
     ACRO = mavlink.ROVER_MODE_ACRO
     STEERING = mavlink.ROVER_MODE_STEERING
@@ -80,6 +83,7 @@ class RoverMode(IntEnum):
 
 class SubMode(IntEnum):
     """ArduSub flight modes."""
+
     STABILIZE = mavlink.SUB_MODE_STABILIZE
     ACRO = mavlink.SUB_MODE_ACRO
     ALT_HOLD = mavlink.SUB_MODE_ALT_HOLD

@@ -15,7 +15,10 @@ import logging
 
 from controls_lab import ControlsLab
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 
 def main():
@@ -30,10 +33,16 @@ def main():
         sample_rate=10.0
     )
 
-    print(f"\nResults:")
-    print(f"  Rise Time:     {results.metrics.rise_time:.2f}s" if results.metrics.rise_time else "  Rise Time:     N/A")
+    print("\nResults:")
+    if results.metrics.rise_time:
+        print(f"  Rise Time:     {results.metrics.rise_time:.2f}s")
+    else:
+        print("  Rise Time:     N/A")
     print(f"  Overshoot:     {results.metrics.overshoot:.1f}%")
-    print(f"  Settling Time: {results.metrics.settling_time:.2f}s" if results.metrics.settling_time else "  Settling Time: N/A")
+    if results.metrics.settling_time:
+        print(f"  Settling Time: {results.metrics.settling_time:.2f}s")
+    else:
+        print("  Settling Time: N/A")
     print(f"  SS Error:      {results.metrics.steady_state_error:.3f}m")
 
     lab.plot(results)

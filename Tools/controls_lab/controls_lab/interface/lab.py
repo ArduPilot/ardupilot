@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class StepResponseResult:
     """Results from a step response test."""
+
     time: list[float] = field(default_factory=list)
     altitude: list[float] = field(default_factory=list)
     target: float = 0.0
@@ -46,7 +47,9 @@ class ControlsLab:
             raise RuntimeError("Not connected. Call connect() first.")
         return self._vehicle
 
-    def connect(self, host: str = "127.0.0.1", port: str = "14550", timeout: int = 30):
+    def connect(
+        self, host: str = "127.0.0.1", port: str = "14550", timeout: int = 30
+    ):
         """
         Connect to SITL instance.
 
@@ -140,15 +143,23 @@ class ControlsLab:
         fig, ax = plt.subplots(figsize=(10, 6))
 
         ax.plot(result.time, result.altitude, 'b-', linewidth=2, label='Altitude')
-        ax.axhline(y=result.target, color='r', linestyle='--', label=f'Target ({result.target}m)')
+        ax.axhline(
+            y=result.target, color='r', linestyle='--',
+            label=f'Target ({result.target}m)'
+        )
 
         if result.metrics:
             if result.metrics.rise_time is not None:
-                ax.axvline(x=result.metrics.rise_time, color='g', linestyle=':',
-                          alpha=0.7, label=f'Rise Time ({result.metrics.rise_time:.2f}s)')
+                ax.axvline(
+                    x=result.metrics.rise_time, color='g', linestyle=':',
+                    alpha=0.7, label=f'Rise Time ({result.metrics.rise_time:.2f}s)'
+                )
             if result.metrics.settling_time is not None:
-                ax.axvline(x=result.metrics.settling_time, color='orange', linestyle=':',
-                          alpha=0.7, label=f'Settling Time ({result.metrics.settling_time:.2f}s)')
+                ax.axvline(
+                    x=result.metrics.settling_time, color='orange', linestyle=':',
+                    alpha=0.7,
+                    label=f'Settling Time ({result.metrics.settling_time:.2f}s)'
+                )
 
         ax.set_xlabel('Time (s)')
         ax.set_ylabel('Altitude (m)')
@@ -157,15 +168,25 @@ class ControlsLab:
         ax.grid(True, alpha=0.3)
 
         if result.metrics:
+            rise_str = (
+                f'Rise Time: {result.metrics.rise_time:.2f}s'
+                if result.metrics.rise_time else 'Rise Time: N/A'
+            )
+            settle_str = (
+                f'Settling: {result.metrics.settling_time:.2f}s'
+                if result.metrics.settling_time else 'Settling: N/A'
+            )
             textstr = '\n'.join([
-                f'Rise Time: {result.metrics.rise_time:.2f}s' if result.metrics.rise_time else 'Rise Time: N/A',
+                rise_str,
                 f'Overshoot: {result.metrics.overshoot:.1f}%',
-                f'Settling: {result.metrics.settling_time:.2f}s' if result.metrics.settling_time else 'Settling: N/A',
+                settle_str,
                 f'SS Error: {result.metrics.steady_state_error:.3f}m'
             ])
             props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-            ax.text(0.02, 0.98, textstr, transform=ax.transAxes, fontsize=9,
-                   verticalalignment='top', bbox=props)
+            ax.text(
+                0.02, 0.98, textstr, transform=ax.transAxes, fontsize=9,
+                verticalalignment='top', bbox=props
+            )
 
         plt.tight_layout()
 
@@ -174,7 +195,9 @@ class ControlsLab:
 
         return fig
 
-    def _wait_for_altitude(self, target: float, tolerance: float = 0.5, timeout: float = 30):
+    def _wait_for_altitude(
+        self, target: float, tolerance: float = 0.5, timeout: float = 30
+    ):
         """Wait until vehicle reaches target altitude."""
         start = time.time()
         while time.time() - start < timeout:

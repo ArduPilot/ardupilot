@@ -7,6 +7,7 @@ from numpy.typing import ArrayLike
 @dataclass
 class StepResponseMetrics:
     """Results from analyzing a step response."""
+
     rise_time: float | None
     overshoot: float
     settling_time: float | None
@@ -108,7 +109,9 @@ def settling_time(
     return time[last_outside + 1] - time[0]
 
 
-def steady_state_error(response: ArrayLike, target: float, tail_fraction: float = 0.1) -> float:
+def steady_state_error(
+    response: ArrayLike, target: float, tail_fraction: float = 0.1
+) -> float:
     """
     Calculate steady-state error (average error in final portion).
 

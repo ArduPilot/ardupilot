@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Position:
     """Vehicle position in global coordinates."""
+
     lat: float
     lon: float
     alt: float
@@ -23,6 +24,7 @@ class Position:
 @dataclass
 class Attitude:
     """Vehicle attitude in radians."""
+
     roll: float
     pitch: float
     yaw: float
@@ -31,6 +33,7 @@ class Attitude:
 @dataclass
 class Velocity:
     """Vehicle velocity in m/s (NED frame)."""
+
     vn: float
     ve: float
     vd: float
@@ -63,7 +66,7 @@ class Vehicle:
             timeout: Maximum seconds to wait for mode confirmation.
 
         Raises:
-            ConnectionError: If the mode change is not confirmed within timeout.
+            MAVLinkConnectionError: If mode change is not confirmed in timeout.
         """
         logger.info(f"Switching to mode: {mode.name}")
 
@@ -79,12 +82,16 @@ class Vehicle:
 
         start_time = time.time()
         while time.time() - start_time < timeout:
-            msg = self.sitl.connection.recv_match(type='HEARTBEAT', blocking=True, timeout=1)
+            msg = self.sitl.connection.recv_match(
+                type='HEARTBEAT', blocking=True, timeout=1
+            )
             if msg and msg.custom_mode == mode.value:
                 logger.info(f"Mode switched to {mode.name}")
                 return
 
-        raise MAVLinkConnectionError(f"Failed to switch to mode {mode.name} within {timeout}s")
+        raise MAVLinkConnectionError(
+            f"Failed to switch to mode {mode.name} within {timeout}s"
+        )
 
     def arm(self, wait: bool = True):
         """
@@ -124,7 +131,7 @@ class Vehicle:
             timeout: Maximum seconds to wait for acknowledgment.
 
         Raises:
-            ConnectionError: If acknowledgment is not received or command is rejected.
+            MAVLinkConnectionError: If ACK not received or command rejected.
         """
         logger.info(f"Taking off to {altitude}m...")
         self._mav.command_long_send(
@@ -135,11 +142,17 @@ class Vehicle:
         )
 
         if wait:
-            ack = self.sitl.connection.recv_match(type='COMMAND_ACK', blocking=True, timeout=timeout)
+            ack = self.sitl.connection.recv_match(
+                type='COMMAND_ACK', blocking=True, timeout=timeout
+            )
             if not ack:
-                raise MAVLinkConnectionError("No ACK received for takeoff command.")
+                raise MAVLinkConnectionError(
+                    "No ACK received for takeoff command."
+                )
             if ack.result != mavutil.mavlink.MAV_RESULT_ACCEPTED:
-                raise MAVLinkConnectionError(f"Takeoff rejected with result: {ack.result}")
+                raise MAVLinkConnectionError(
+                    f"Takeoff rejected with result: {ack.result}"
+                )
             logger.info("Takeoff command accepted.")
 
     def land(self, wait: bool = True, timeout: int = 10):
@@ -151,7 +164,7 @@ class Vehicle:
             timeout: Maximum seconds to wait for acknowledgment.
 
         Raises:
-            ConnectionError: If acknowledgment is not received or command is rejected.
+            MAVLinkConnectionError: If ACK not received or command rejected.
         """
         logger.info("Landing...")
         self._mav.command_long_send(
@@ -162,11 +175,15 @@ class Vehicle:
         )
 
         if wait:
-            ack = self.sitl.connection.recv_match(type='COMMAND_ACK', blocking=True, timeout=timeout)
+            ack = self.sitl.connection.recv_match(
+                type='COMMAND_ACK', blocking=True, timeout=timeout
+            )
             if not ack:
                 raise MAVLinkConnectionError("No ACK received for land command.")
             if ack.result != mavutil.mavlink.MAV_RESULT_ACCEPTED:
-                raise MAVLinkConnectionError(f"Land rejected with result: {ack.result}")
+                raise MAVLinkConnectionError(
+                    f"Land rejected with result: {ack.result}"
+                )
             logger.info("Land command accepted.")
 
     def goto(self, lat: float, lon: float, alt: float):
@@ -320,7 +337,9 @@ class Vehicle:
             vd=msg.vz / 100.0
         )
 
-    def arm_and_takeoff(self, altitude: float = 10.0, mode: CopterMode = CopterMode.GUIDED):
+    def arm_and_takeoff(
+        self, altitude: float = 10.0, mode: CopterMode = CopterMode.GUIDED
+    ):
         """
         Switch mode, arm, and take off in sequence.
 
