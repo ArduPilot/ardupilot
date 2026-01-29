@@ -210,8 +210,8 @@ PSC_NE_POS_P           0.7
 PSC_NE_VEL_I           0.3
 PSC_NE_VEL_P           0.6
 PSC_NE_VEL_FLTE        1.0
-LOIT_ACC_MAX         800
-LOIT_SPEED           800
+LOIT_ACC_MAX_M       8.0
+LOIT_SPEED_MS        8.0
 RTL_SPEED_MS         6
 
 # GPS

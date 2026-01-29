@@ -183,8 +183,8 @@ def test_dds_udp_parameter_services(launch_context, launch_sitl_copter_dds_udp):
     try:
         node = ParameterClient()
         node.start_client()
-        parameter_name = "LOIT_SPEED"
-        param_change_value = 1250
+        parameter_name = "LOIT_SPEED_MS"
+        param_change_value = 12.50
         param_type = PARAMETER_DOUBLE
         node.send_get_param_req(parameter_name)
         get_param_received_flag = node.get_param_event_object.wait(timeout=10.0)
