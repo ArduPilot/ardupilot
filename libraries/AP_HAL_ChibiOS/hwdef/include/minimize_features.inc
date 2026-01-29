@@ -42,3 +42,6 @@ define AP_RTC_LOGGING_ENABLED 0
 
 define HAL_EFI_ENABLED 0
 define AP_ICENGINE_ENABLED 0
+
+# remove feature allowing optical flow without rangefinder:
+define EK3_FEATURE_OPTFLOW_SRTM 0
