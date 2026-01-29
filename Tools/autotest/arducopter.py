@@ -4621,6 +4621,74 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(2, 1500)
         self.do_RTL()
 
+    def ViconOdometry(self):
+        """Disable GPS navigation, enable input of ODOMETRY"""
+
+        # EKF3 only
+        if self.get_parameter("AHRS_EKF_TYPE") != 3:
+            return
+
+        self.customise_SITL_commandline(["--serial5=sim:vicon:"])
+        self.progress("Waiting for location")
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+
+        old_pos = self.assert_receive_message(type="GLOBAL_POSITION_INT")
+        print("old_pos=%s" % str(old_pos))
+
+        # Configure EKF to use External Nav (Vicon ODOMETRY)
+        self.set_parameters({
+            "GPS1_TYPE": 0,
+            "VISO_TYPE": 1,
+            "SERIAL5_PROTOCOL": 2,
+            "EK3_SRC1_POSXY": 6,
+            "EK3_SRC1_VELXY": 6,
+            "EK3_SRC1_POSZ": 6,
+            "EK3_SRC1_VELZ": 6,
+            "EK3_SRC1_YAW": 6,
+            "SIM_VICON_TMASK": 16,  # send ODOMETRY
+            "FS_EKF_ACTION": 1,     # LAND
+            "SIM_VICON_QUAL": 50,
+            "VISO_QUAL_MIN": 20,
+        })
+        self.reboot_sitl()
+        # without a GPS or some sort of external prompting, AP
+        # doesn't send system_time messages.  So prompt it:
+        self.mav.mav.system_time_send(int(time.time() * 1000000), 0)
+
+        self.progress("Waiting for global origin")
+        tstart = self.get_sim_time()
+        while True:
+            self.mav.mav.set_gps_global_origin_send(
+                1, old_pos.lat, old_pos.lon, old_pos.alt
+            )
+            gpi = self.assert_receive_message(type="GLOBAL_POSITION_INT")
+            self.progress(f"gpi.lat={gpi.lat}")
+            if gpi.lat != 0:
+                break
+            if self.get_sim_time_cached() - tstart > 60:
+                raise AutoTestTimeoutException("Failed to set global origin")
+
+        self.takeoff(mode="LOITER")
+        self.set_rc(1, 1600)
+        tstart = self.get_sim_time()
+        while True:
+            msg = self.assert_receive_message(type="ODOMETRY")
+            if msg.x > 40:
+                break
+            if self.get_sim_time_cached() - tstart > 100:
+                raise AutoTestTimeoutException("Vehicle did not move using ODOMETRY input")
+
+        self.set_rc(1, 1500)
+
+        self.progress("Triggering EKF failsafe via low odometry quality")
+        self.set_parameters({
+            "SIM_VICON_QUAL": 10,
+            "VISO_QUAL_MIN": 20,
+        })
+        self.wait_mode("LAND", timeout=30)
+        self.wait_disarmed(timeout=120)
+
     def RTLSpeed(self):
         """Test RTL Speed parameters"""
         rtl_speed_ms = 7
@@ -12915,6 +12983,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.BaseLoggingRates,
              self.BodyFrameOdom,
              self.GPSViconSwitching,
+             self.ViconOdometry,
         ])
         return ret
 
