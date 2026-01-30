@@ -14633,7 +14633,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
     def AHRSOriginRecorded(self):
-        """Test AHRS option to record and re-use origin"""
+        """Test AHRS option to record and reuse origin"""
         self.context_push()
 
         # Set AHRS_OPTIONS = 8 (UseRecordedOrigin)
