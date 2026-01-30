@@ -156,8 +156,8 @@ local fly_timeoout = Parameter("DR_FLY_TIMEOUT")       -- deadreckoning timeout 
   // @User: Standard
 --]]
 local next_mode = Parameter("DR_NEXT_MODE")            -- mode to switch to after GPS recovers or timeout elapses
-local wpnav_speedup = Parameter("WPNAV_SPEED_UP")      -- maximum climb rate from WPNAV_SPEED_UP
-local wpnav_accel_z = Parameter("WPNAV_ACCEL_Z")       -- maximum vertical acceleration from WPNAV_ACCEL_Z
+local wp_speed_up = Parameter("WP_SPD_UP")           -- maximum climb rate in m/s from WP_SPD_UP
+local wp_accel_z = Parameter("WP_ACC_Z")             -- maximum vertical acceleration in m/s from WP_ACC_Z
 
 -- modes deadreckoning may be activated from
 -- comment out lines below to remove protection from these modes
@@ -375,9 +375,9 @@ function update()
       if curr_alt_below_home then
         local target_alt_above_vehicle = fly_alt_min:get() + curr_alt_below_home
         if target_alt_above_vehicle > 0 then
-          -- climb at up to 1m/s towards target above vehicle.  climb rate change is limited by WPNAV_ACCEL_Z
-          local climb_rate_chg_max = interval_ms * 0.001 * (wpnav_accel_z:get() * 0.01)
-          climb_rate = math.min(target_alt_above_vehicle * 0.1, wpnav_speedup:get() * 0.01, climb_rate + climb_rate_chg_max)
+          -- climb at up to 1m/s towards target above vehicle.  climb rate change is limited by WP_ACC_Z
+          local climb_rate_chg_max = interval_ms * 0.001 * wp_accel_z:get()
+          climb_rate = math.min(target_alt_above_vehicle * 0.1, wp_speed_up:get(), climb_rate + climb_rate_chg_max)
         end
       end
     end
