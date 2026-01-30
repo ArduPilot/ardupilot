@@ -583,10 +583,10 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
         if (is_equal(packet.thrust, 0.5f)) {
             climb_rate_cms = 0.0f;
         } else if (packet.thrust > 0.5f) {
-            // climb at up to WPNAV_SPEED_UP
+            // climb at up to WP_SPD_UP
             climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * sub.wp_nav.get_default_speed_up_cms();
         } else {
-            // descend at up to WPNAV_SPEED_DN
+            // descend at up to WP_SPD_DN
             climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * sub.wp_nav.get_default_speed_down_cms();
         }
         sub.mode_guided.guided_set_angle(Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]), climb_rate_cms);

@@ -551,9 +551,9 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
     GOBJECT(ins,            "INS", AP_InertialSensor),
 
-    // @Group: WPNAV_
+    // @Group: WP_
     // @Path: ../libraries/AC_WPNav/AC_WPNav.cpp
-    GOBJECT(wp_nav, "WPNAV_",       AC_WPNav),
+    GOBJECT(wp_nav, "WP_", AC_WPNav),
 
     // @Group: LOIT_
     // @Path: ../libraries/AC_WPNav/AC_Loiter.cpp
@@ -858,6 +858,9 @@ void Sub::load_parameters()
 
     // upgrade attitude controller parameters
     sub.attitude_control.convert_parameters();
+
+    // upgrade waypoint navigation parameters
+    wp_nav.convert_parameters();
 
     // upgrade loiter navigation parameters
     loiter_nav.convert_parameters();

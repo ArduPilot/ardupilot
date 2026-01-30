@@ -439,7 +439,7 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "MOT_PWM_MIN",         1100},
     { "MOT_PWM_MAX",         1900},
     { "PSC_JERK_D",          50.0f},
-    { "WPNAV_SPEED",         100.0f},
+    { "WP_SPD",              1.0f},
     { "PILOT_SPEED_UP",      100.0f},
     { "PSC_NE_VEL_P",         6.0f},
     { "EK3_SRC1_VELZ",       0},
