@@ -724,7 +724,7 @@ private:
     void assign_tilt_to_fwd_thr(void);
 
     /*
-      get a scaled Q_WP_SPEED based on direction of movement
+      get a scaled Q_WP_SPD based on direction of movement
      */
     float get_scaled_wp_speed(float target_bearing_deg) const;
 
