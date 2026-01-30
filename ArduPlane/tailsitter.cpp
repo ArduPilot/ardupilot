@@ -905,6 +905,14 @@ void Tailsitter_Transition::update()
     case TRANSITION_ANGLE_WAIT_FW: {
         
         const uint32_t now_ = AP_HAL::millis();
+        
+        // --- NEW: DISABLE WEATHERVANE ---
+        // This prevents the weathervane library from fighting your custom 
+        // yaw alignment logic or drifting the nose into the wind.
+
+        if (quadplane.weathervane != nullptr) {
+        quadplane.weathervane->allow_weathervaning(false);
+    }
 
         // -----------------------------------------------------------
         // 1. INITIALIZATION
@@ -982,6 +990,8 @@ void Tailsitter_Transition::update()
                         }
                         last_log_ms = now_;
                     }
+                    //Force zero climb rate (Altitude Hold)
+                    quadplane.pos_control->set_pos_target_z_from_climb_rate_cm(0.0f);
 
                     // Control
                     quadplane.pos_control->update_z_controller();
