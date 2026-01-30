@@ -89,19 +89,19 @@ jobs:
         run: |
           apt-get update && apt-get install -y rsync
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          BOARDS="Durandal,"
+          BOARDS+="MatekF405,"
+          BOARDS+="KakuteF7,"
+          BOARDS+="MatekH743-bdshot,"
+          BOARDS+="MambaH743v4,"
+          BOARDS+="Pixhawk1-1M,"
+          BOARDS+="MatekF405-CAN,"
+          BOARDS+="DrotekP3Pro,"
+          BOARDS+="Hitec-Airspeed,"
+          BOARDS+="f103-GPS"
           python3 Tools/scripts/size_compare_branches.py \
             --master-branch "${{ github.event.pull_request.base.ref }}" \
-            --board \
-              Durandal,\
-              MatekF405,\
-              KakuteF7,\
-              MatekH743-bdshot,\
-              MambaH743v4,\
-              Pixhawk1-1M,\
-              MatekF405-CAN,\
-              DrotekP3Pro,\
-              Hitec-Airspeed,\
-              f103-GPS \
+            --board "$BOARDS" \
             --all-vehicles \
             --features \
             --no-merge-base \
