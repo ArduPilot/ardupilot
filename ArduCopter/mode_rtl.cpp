@@ -34,7 +34,7 @@ const AP_Param::GroupInfo ModeRTL::var_info[] = {
 
     // @Param: SPEED_MS
     // @DisplayName: RTL speed
-    // @Description: The speed in m/s which the aircraft will attempt to maintain horizontally while flying home. If this is set to zero, WPNAV_SPEED will be used instead.
+    // @Description: The speed in m/s which the aircraft will attempt to maintain horizontally while flying home. If this is set to zero, WP_SPEED will be used instead.
     // @Units: m/s
     // @Range: 0 20
     // @Increment: 0.5
@@ -483,7 +483,7 @@ void ModeRTL::compute_return_target()
     // determine altitude type of return journey (alt-above-home, alt-above-terrain using range finder or alt-above-terrain using terrain database)
     ReturnTargetAltType alt_type = ReturnTargetAltType::RELATIVE;
     if (terrain_following_allowed && (get_alt_type() == RTLAltType::TERRAIN)) {
-        // convert RTL_ALT_TYPE and WPNAV_RFNG_USE parameters to ReturnTargetAltType
+        // convert RTL_ALT_TYPE and WP_RFNG_USE parameters to ReturnTargetAltType
         switch (wp_nav->get_terrain_source()) {
         case AC_WPNav::TerrainSource::TERRAIN_UNAVAILABLE:
             alt_type = ReturnTargetAltType::RELATIVE;
