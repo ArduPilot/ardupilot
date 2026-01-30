@@ -1691,7 +1691,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "SCR_ENABLE": 1,
             "SIM_SHIP_ENABLE": 1,
             "SIM_SHIP_SPEED": 5,
-            "Q_WP_SPEED": 700,
+            "Q_WP_SPD": 7.0,
             "Q_P_NE_POS_P": 0.25,
             "Q_P_NE_VEL_D": 0.25,
             "Q_P_NE_VEL_I": 0.25,
