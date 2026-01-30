@@ -456,7 +456,7 @@ int8_t Plane::throttle_percentage(void)
 #endif
     float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
     if (!have_reverse_thrust()) {
-        return constrain_int16(throttle, 0, 100);
+        return constrain_float(throttle, 0, 100);
     }
-    return constrain_int16(throttle, -100, 100);
+    return constrain_float(throttle, -100, 100);
 }
