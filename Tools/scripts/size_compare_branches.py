@@ -52,6 +52,16 @@ class FeatureCompareBranchesResult(object):
         self.delta_features_out = delta_features_out
 
 
+class SymbolCompareBranchesResult(object):
+    '''object to return results from a symbol comparison'''
+
+    def __init__(self, board, vehicle, added_symbols, removed_symbols):
+        self.board = board
+        self.vehicle = vehicle
+        self.added_symbols = added_symbols
+        self.removed_symbols = removed_symbols
+
+
 class SizeCompareBranches(BuildScriptBase):
     '''script to build and compare branches using elf_diff'''
 
@@ -75,6 +85,7 @@ class SizeCompareBranches(BuildScriptBase):
                  parallel_copies=None,
                  jobs=None,
                  features=False,
+                 symbols=False,
                  ):
         super().__init__()
 
@@ -112,6 +123,7 @@ class SizeCompareBranches(BuildScriptBase):
         self.parallel_copies = parallel_copies
         self.jobs = jobs
         self.features = features
+        self.symbols = symbols
 
         self.boards_by_name = {}
         for board in board_list.BoardList().boards:
@@ -546,6 +558,9 @@ class SizeCompareBranches(BuildScriptBase):
         if self.features:
             self.compare_task_results_features(pairs)
 
+        if self.symbols:
+            self.compare_task_results_symbols(pairs)
+
     def compare_task_results_sizes(self, pairs):
         results = {}
         for pair in pairs.values():
@@ -591,6 +606,10 @@ class SizeCompareBranches(BuildScriptBase):
                     result = board_results[vehicle]
                     if isinstance(result, FeatureCompareBranchesResult):
                         cell_value = '"' + "\n".join(result.delta_features_in + result.delta_features_out) + '"'
+                    elif isinstance(result, SymbolCompareBranchesResult):
+                        added = ["+" + s for s in result.added_symbols]
+                        removed = ["-" + s for s in result.removed_symbols]
+                        cell_value = '"' + "\n".join(added + removed) + '"'
                     else:
                         if result.identical:
                             bytes_delta = "*"
@@ -767,6 +786,46 @@ class SizeCompareBranches(BuildScriptBase):
             results[pair["master"].board] = self.compare_results_features(pair["master"], pair["branch"])
         print(self.csv_for_results(results))
 
+    def get_symbols(self, path):
+        from extract_features import ExtractFeatures
+        x = ExtractFeatures(path)
+        return set(x.extract_symbols_from_elf(path).symbols.keys())
+
+    def compare_results_symbols(self, result_master: Result, result_branch: Result):
+        ret = {}
+        for vehicle in result_master.vehicle.keys():
+            master_elf_dir = result_master.vehicle[vehicle]["elf_dir"]
+            new_elf_dir = result_branch.vehicle[vehicle]["elf_dir"]
+
+            elf_filename = result_master.vehicle[vehicle]["elf_filename"]
+            master_path = os.path.join(master_elf_dir, elf_filename)
+            new_path = os.path.join(new_elf_dir, elf_filename)
+
+            if not os.path.exists(master_path):
+                continue
+            if not os.path.exists(new_path):
+                continue
+
+            master_symbols = self.get_symbols(master_path)
+            new_symbols = self.get_symbols(new_path)
+
+            added = sorted(new_symbols - master_symbols)
+            removed = sorted(master_symbols - new_symbols)
+
+            board = result_master.board
+            ret[vehicle] = SymbolCompareBranchesResult(board, vehicle, added, removed)
+
+        return ret
+
+    def compare_task_results_symbols(self, pairs):
+        results = {}
+        for pair in pairs.values():
+            if "master" not in pair or "branch" not in pair:
+                # probably incomplete:
+                continue
+            results[pair["master"].board] = self.compare_results_symbols(pair["master"], pair["branch"])
+        print(self.csv_for_results(results))
+
     def compare_results_sizes(self, result_master, result_branch):
         ret = {}
         for vehicle in result_master.vehicle.keys():
@@ -888,6 +947,13 @@ def main():
         action="store_true",
         help="compare features",
     )
+    parser.add_option(
+        "",
+        "--symbols",
+        default=False,
+        action="store_true",
+        help="compare symbols present in each firmware",
+    )
     parser.add_option("",
                       "--all-vehicles",
                       action='store_true',
@@ -936,6 +1002,7 @@ def main():
         parallel_copies=cmd_opts.parallel_copies,
         jobs=cmd_opts.jobs,
         features=cmd_opts.features,
+        symbols=cmd_opts.symbols,
     )
     x.run()
 
