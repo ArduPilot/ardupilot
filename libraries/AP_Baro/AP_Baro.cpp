@@ -265,6 +265,14 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Range: -300 300
     // @User: Advanced
     AP_GROUPINFO("1_THST_SCALE", 25, AP_Baro, sensors[0].mot_scale, 0),
+
+    // @Param: _THST_FILT
+    // @DisplayName: Thrust compensation filter cutoff
+    // @Description: Low-pass filter cutoff frequency for thrust compensation. This smooths the throttle input to prevent rapid baro altitude changes during throttle transients. Set to 0 to disable filtering.
+    // @Range: 0 10
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("_THST_FILT", 26, AP_Baro, _thst_filt_cutoff, 1.0f),
 #endif  // AP_BARO_THST_COMP_ENABLED
     AP_GROUPEND
 };
@@ -762,6 +770,15 @@ void AP_Baro::init(void)
         sensors[i].alt_ok = true;
     }
 #endif
+
+#if AP_BARO_THST_COMP_ENABLED
+    const float cutoff_freq = _thst_filt_cutoff.get();
+    if (cutoff_freq > 0) {
+        _thrust_filter.set_cutoff_frequency(cutoff_freq);
+        _thrust_filter.reset(0.0f);
+    }
+    _thrust_filter_last_update_us = AP_HAL::micros();
+#endif
 }
 
 #if AP_BARO_PROBE_EXTERNAL_I2C_BUSES
@@ -896,6 +913,10 @@ void AP_Baro::update(void)
     for (uint8_t i=0; i<_num_drivers; i++) {
         drivers[i]->backend_update(i);
     }
+
+#if AP_BARO_THST_COMP_ENABLED
+    update_thrust_filter();
+#endif
 
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (sensors[i].healthy) {
@@ -1035,19 +1056,35 @@ void AP_Baro::update_field_elevation(void)
 }
 
 #if AP_BARO_THST_COMP_ENABLED
-// scale the baro linearly with thrust
-float AP_Baro::thrust_pressure_correction(uint8_t instance)
+// update filtered throttle value once per update cycle
+void AP_Baro::update_thrust_filter(void)
 {
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_COPTER_OR_HELI
     const AP_Motors* motors = AP::motors();
     if (motors == nullptr) {
-         return 0.0f;
+        _filtered_throttle = 0.0f;
+        return;
     }
-    const float motors_throttle = MAX(0,motors->get_throttle_out());
-    return sensors[instance].mot_scale * motors_throttle;
+    const float motors_throttle = MAX(0, motors->get_throttle_out());
+
+    if (_thst_filt_cutoff.get() <= 0) {
+        _filtered_throttle = motors_throttle;
+        return;
+    }
+
+    const uint32_t now_us = AP_HAL::micros();
+    const float dt = (now_us - _thrust_filter_last_update_us) * 1.0e-6f;
+    _thrust_filter_last_update_us = now_us;
+    _filtered_throttle = _thrust_filter.apply(motors_throttle, dt);
 #else
-    return 0.0f;
+    _filtered_throttle = 0.0f;
 #endif
+}
+
+// scale the baro linearly with thrust using pre-filtered throttle
+float AP_Baro::thrust_pressure_correction(uint8_t instance)
+{
+    return sensors[instance].mot_scale * _filtered_throttle;
 }
 #endif
 
