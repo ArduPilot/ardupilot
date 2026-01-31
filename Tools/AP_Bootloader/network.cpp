@@ -7,8 +7,8 @@
 #if AP_BOOTLOADER_NETWORK_ENABLED
 
 #include <AP_Networking/AP_Networking.h>
-#include <AP_Networking/AP_Networking_ChibiOS.h>
 #include <AP_Networking/AP_Networking_CAN.h>
+#include <AP_Networking/AP_Networking_MAC_Buffers_ChibiOS.h>
 
 #include <lwip/ip_addr.h>
 #include <lwip/tcpip.h>
@@ -612,7 +612,9 @@ void BL_Network::web_server(void)
  */
 void BL_Network::init()
 {
-    AP_Networking_ChibiOS::allocate_buffers();
+    if (!AP_Networking_MAC_Buffers::allocate_buffers()) {
+        AP_HAL::panic("Failed to allocate MAC buffers");
+    }
 
     macInit();
 
