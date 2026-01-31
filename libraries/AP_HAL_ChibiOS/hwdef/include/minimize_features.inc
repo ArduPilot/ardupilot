@@ -22,6 +22,12 @@ define HAL_RUNCAM_ENABLED 0
 # minimized boards don't get configuration via SmartAudio by default:
 define AP_SMARTAUDIO_ENABLED 0
 
+# no VTX support
+define AP_VIDEO_TX 0
+
+# no Ghost telemetry:
+define AP_GHST_TELEM_ENABLED 0 
+
 # no Spektrum telemetry:
 define HAL_SPEKTRUM_TELEM_ENABLED 0
 
