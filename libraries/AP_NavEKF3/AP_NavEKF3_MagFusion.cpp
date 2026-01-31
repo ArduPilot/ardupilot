@@ -1213,58 +1213,35 @@ void NavEKF3_core::FuseDeclination(ftype declErr)
     Hfusion[16] = -HK1*magE;
     Hfusion[17] = HK1*magN;
 
-    Kfusion[0] = -HK4*(P[0][16]*magE-P[0][17]*magN);
-    Kfusion[1] = -HK4*(P[1][16]*magE-P[1][17]*magN);
-    Kfusion[2] = -HK4*(P[2][16]*magE-P[2][17]*magN);
-    Kfusion[3] = -HK4*(P[3][16]*magE-P[3][17]*magN);
-    Kfusion[4] = -HK4*(P[4][16]*magE-P[4][17]*magN);
-    Kfusion[5] = -HK4*(P[5][16]*magE-P[5][17]*magN);
-    Kfusion[6] = -HK4*(P[6][16]*magE-P[6][17]*magN);
-    Kfusion[7] = -HK4*(P[7][16]*magE-P[7][17]*magN);
-    Kfusion[8] = -HK4*(P[8][16]*magE-P[8][17]*magN);
-    Kfusion[9] = -HK4*(P[9][16]*magE-P[9][17]*magN);
+    uint32_t kalman_mask = (1<<10)-1; // values to calculate in Kfusion (others are set to zero)
 
     if (!inhibitDelAngBiasStates) {
-        Kfusion[10] = -HK4*(P[10][16]*magE-P[10][17]*magN);
-        Kfusion[11] = -HK4*(P[11][16]*magE-P[11][17]*magN);
-        Kfusion[12] = -HK4*(P[12][16]*magE-P[12][17]*magN);
-    } else {
-        // zero indexes 10 to 12
-        zero_range(&Kfusion[0], 10, 12);
+        kalman_mask |= (1<<10) | (1<<11) | (1<<12);
     }
 
     if (!inhibitDelVelBiasStates) {
         for (uint8_t index = 0; index < 3; index++) {
             const uint8_t stateIndex = index + 13;
             if (!dvelBiasAxisInhibit[index]) {
-                Kfusion[stateIndex] = -HK4*(P[stateIndex][16]*magE-P[stateIndex][17]*magN);
-            } else {
-                Kfusion[stateIndex] = 0.0f;
+                kalman_mask |= (1<<stateIndex);
             }
         }
-    } else {
-        // zero indexes 13 to 15
-        zero_range(&Kfusion[0], 13, 15);
     }
 
     if (!inhibitMagStates) {
-        Kfusion[16] = -HK4*(P[16][16]*magE-P[16][17]*magN);
-        Kfusion[17] = -HK4*(P[17][16]*magE-P[17][17]*magN);
-        Kfusion[18] = -HK4*(P[18][16]*magE-P[18][17]*magN);
-        Kfusion[19] = -HK4*(P[19][16]*magE-P[19][17]*magN);
-        Kfusion[20] = -HK4*(P[20][16]*magE-P[20][17]*magN);
-        Kfusion[21] = -HK4*(P[21][16]*magE-P[21][17]*magN);
-    } else {
-        // zero indexes 16 to 21
-        zero_range(&Kfusion[0], 16, 21);
+        kalman_mask |= (1<<16) | (1<<17) | (1<<18) | (1<<19) | (1<<20) | (1<<21);
     }
 
     if (!inhibitWindStates && !treatWindStatesAsTruth) {
-        Kfusion[22] = -HK4*(P[22][16]*magE-P[22][17]*magN);
-        Kfusion[23] = -HK4*(P[23][16]*magE-P[23][17]*magN);
-    } else {
-        // zero indexes 22 to 23
-        zero_range(&Kfusion[0], 22, 23);
+        kalman_mask |= (1<<22) | (1<<23);
+    }
+
+    for (auto i=0; i<24; i++) {
+        ftype res = 0;
+        if (kalman_mask & (1<<i)) {
+            res = -HK4*(P[i][16]*magE-P[i][17]*magN);
+        }
+        Kfusion[i] = res;
     }
 
     // get the magnetic declination
