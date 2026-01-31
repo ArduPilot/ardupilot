@@ -11162,7 +11162,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "LOG_REPLAY": 1,
             "LOG_DISARMED": 1,
         })
-        self.zero_throttle()
         self.reboot_sitl()
 
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_LOGGING, True, True, True)
@@ -11587,6 +11586,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             (current_log_filepath, os.path.getsize(current_log_filepath))
         ))
 
+        self.zero_throttle()
         self.run_replay(current_log_filepath)
 
         replay_log_filepath = self.current_onboard_log_filepath()
