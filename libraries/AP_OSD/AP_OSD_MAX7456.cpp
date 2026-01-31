@@ -342,8 +342,8 @@ void AP_OSD_MAX7456::reinit()
     _dev->write_register(MAX7456ADD_DMM, DMM_CLEAR_DISPLAY);
 
     //write osd position
-    int8_t hos = constrain_int16(_osd.h_offset, 0, 63);
-    int8_t vos = constrain_int16(_osd.v_offset, 0, 31);
+    int8_t hos = constrain_int8(_osd.h_offset, 0, 63);
+    int8_t vos = constrain_int8(_osd.v_offset, 0, 31);
     _dev->write_register(MAX7456ADD_HOS, hos);
     _dev->write_register(MAX7456ADD_VOS, vos);
     last_v_offset = _osd.v_offset;
@@ -363,14 +363,14 @@ void AP_OSD_MAX7456::flush()
 
     // check for offset changes
     if (last_v_offset != _osd.v_offset) {
-        int8_t vos = constrain_int16(_osd.v_offset, 0, 31);
+        int8_t vos = constrain_int8(_osd.v_offset, 0, 31);
         _dev->get_semaphore()->take_blocking();
         _dev->write_register(MAX7456ADD_VOS, vos);
         _dev->get_semaphore()->give();
         last_v_offset = _osd.v_offset;
     }
     if (last_h_offset != _osd.h_offset) {
-        int8_t hos = constrain_int16(_osd.h_offset, 0, 63);
+        int8_t hos = constrain_int8(_osd.h_offset, 0, 63);
         _dev->get_semaphore()->take_blocking();
         _dev->write_register(MAX7456ADD_HOS, hos);
         _dev->get_semaphore()->give();
