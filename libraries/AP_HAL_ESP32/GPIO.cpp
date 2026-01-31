@@ -23,6 +23,11 @@
 
 using namespace ESP32;
 
+// Cache to store configured pin modes to avoid redundant gpio_config calls
+// -1 = unconfigured, 0 = input, 1 = output
+static int8_t _gpio_pin_modes[GPIO_NUM_MAX];
+static bool _gpio_cache_initialized = false;
+
 static gpio_num_t gpio_by_pin_num(uint8_t pin)
 {
     if (pin < GPIO_NUM_MAX) {
@@ -41,13 +46,30 @@ void GPIO::pinMode(uint8_t pin, uint8_t output)
 {
     gpio_num_t g = gpio_by_pin_num(pin);
     if (g != GPIO_NUM_NC) {
+        // Initialize cache on first use
+        if (!_gpio_cache_initialized) {
+            for (int i = 0; i < GPIO_NUM_MAX; i++) {
+                _gpio_pin_modes[i] = -1;
+            }
+            _gpio_cache_initialized = true;
+        }
+        
+        // Check if pin is already configured to desired mode
+        if (_gpio_pin_modes[g] == (output ? 1 : 0)) {
+            return; // Already configured, skip redundant gpio_config call
+        }
+        
         gpio_config_t io_conf = {};
         io_conf.intr_type = GPIO_INTR_DISABLE;
-        io_conf.mode = output ? GPIO_MODE_OUTPUT : GPIO_MODE_INPUT;
+        // Use GPIO_MODE_INPUT_OUTPUT for outputs to allow gpio_get_level to work
+        io_conf.mode = output ? GPIO_MODE_INPUT_OUTPUT : GPIO_MODE_INPUT;
         io_conf.pin_bit_mask = 1ULL<<g;
         io_conf.pull_down_en = output ? GPIO_PULLDOWN_DISABLE : GPIO_PULLDOWN_ENABLE;
         io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
         gpio_config(&io_conf);
+        
+        // Update cache after successful configuration
+        _gpio_pin_modes[g] = output ? 1 : 0;
     }
 }
 
@@ -103,13 +125,30 @@ void DigitalSource::mode(uint8_t output)
 {
     gpio_num_t g = gpio_by_pin_num(_pin);
     if (g != GPIO_NUM_NC) {
+        // Initialize cache on first use
+        if (!_gpio_cache_initialized) {
+            for (int i = 0; i < GPIO_NUM_MAX; i++) {
+                _gpio_pin_modes[i] = -1;
+            }
+            _gpio_cache_initialized = true;
+        }
+        
+        // Check if pin is already configured to desired mode
+        if (_gpio_pin_modes[g] == (output ? 1 : 0)) {
+            return; // Already configured, skip redundant gpio_config call
+        }
+        
         gpio_config_t io_conf = {};
         io_conf.intr_type = GPIO_INTR_DISABLE;
-        io_conf.mode = output ? GPIO_MODE_OUTPUT : GPIO_MODE_INPUT;
+        // Use GPIO_MODE_INPUT_OUTPUT for outputs to allow gpio_get_level to work
+        io_conf.mode = output ? GPIO_MODE_INPUT_OUTPUT : GPIO_MODE_INPUT;
         io_conf.pin_bit_mask = 1ULL<<g;
         io_conf.pull_down_en = output ? GPIO_PULLDOWN_DISABLE : GPIO_PULLDOWN_ENABLE;
         io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
         gpio_config(&io_conf);
+        
+        // Update cache after successful configuration
+        _gpio_pin_modes[g] = output ? 1 : 0;
     }
 }
 
