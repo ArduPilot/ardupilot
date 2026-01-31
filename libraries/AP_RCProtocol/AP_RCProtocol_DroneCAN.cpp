@@ -89,7 +89,8 @@ void AP_RCProtocol_DroneCAN::update()
         if (rcin.bits.QUALITY_VALID) {
             switch (rcin.bits.QUALITY_TYPE) {
                 case QualityType::RSSI:
-                    rssi = rcin.quality;
+                    // as this is 0, it also provides backwards compatibility for systems not setting these bits
+                    _rssi = rcin.quality;
                     break;
                 case QualityType::LQ_ACTIVE_ANTENNA:
                     // highest bit carries active antenna data
@@ -101,11 +102,11 @@ void AP_RCProtocol_DroneCAN::update()
                     // also set the rssi field, this avoids having to waste a slot for sending both
                     // AP rssi: -1 for unknown, 0 for no link, 255 for maximum link
                     if (rcin.quality < 50) {
-                        rssi = 255;
+                        _rssi = 255;
                     } else if (rcin.quality > 120) {
-                        rssi = 0;
+                        _rssi = 0;
                     } else {
-                        rssi = int16_t(roundf((120.0f - rcin.quality) * (255.0f / 70.0f)));
+                        _rssi = int16_t(roundf((120.0f - rcin.quality) * (255.0f / 70.0f)));
                     }
                     break;
                 case QualityType::SNR:
@@ -118,7 +119,7 @@ void AP_RCProtocol_DroneCAN::update()
                     break;
             }
         } else {
-            rssi = -1;
+            _rssi = -1;
             frontend._rc_link_status.link_quality = -1;
             frontend._rc_link_status.rssi_dbm = -1;
             frontend._rc_link_status.snr = INT8_MIN;
@@ -130,7 +131,7 @@ void AP_RCProtocol_DroneCAN::update()
             rcin.num_channels,
             rcin.channels,
             rcin.bits.FAILSAFE,
-            rssi,
+            _rssi,
             frontend._rc_link_status.link_quality
             );
     }

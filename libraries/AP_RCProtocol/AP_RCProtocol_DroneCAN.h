@@ -55,7 +55,7 @@ private:
         HAL_Semaphore sem;
     } rcin;
 
-    int16_t rssi = -1;
+    int16_t _rssi = -1;
 
     // Module Detection Registry
     static struct Registry {
