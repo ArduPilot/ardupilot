@@ -349,12 +349,6 @@ void NavEKF3_core::FuseSideslip()
         // calculate predicted sideslip angle and innovation using small angle approximation
         innovBeta = constrain_ftype(vel_rel_wind.y / vel_rel_wind.x, -0.5f, 0.5f);
 
-        // correct the state vector
-        for (uint8_t j= 0; j<=stateIndexLim; j++) {
-            statesArray[j] = statesArray[j] - Kfusion[j] * innovBeta;
-        }
-        stateStruct.quat.normalize();
-
         // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
         // the zero elements of H to reduce the number of operations.
         for (unsigned i = 0; i<=stateIndexLim; i++) {
@@ -374,15 +368,9 @@ void NavEKF3_core::FuseSideslip()
                 KHP[i][j] = res;
             }
         }
-        for (unsigned i = 0; i<=stateIndexLim; i++) {
-            for (unsigned j = 0; j<=stateIndexLim; j++) {
-                P[i][j] = P[i][j] - KHP[i][j];
-            }
-        }
 
-        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-        ForceSymmetry();
-        ConstrainVariances();
+        // finish fusion from KHP and Kfusion
+        FinishFusion(innovBeta, true); // forcing fusion is probably a bug
     }
 }
 
