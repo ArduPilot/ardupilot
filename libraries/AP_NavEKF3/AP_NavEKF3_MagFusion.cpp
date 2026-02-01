@@ -790,31 +790,9 @@ void NavEKF3_core::FuseMagnetometer()
                 KHP[i][j] = res;
             }
         }
-        // Check that we are not going to drive any variances negative and skip the update if so
-        bool healthyFusion = true;
-        for (uint8_t i= 0; i<=stateIndexLim; i++) {
-            if (KHP[i][i] > P[i][i]) {
-                healthyFusion = false;
-            }
-        }
-        if (healthyFusion) {
-            // update the covariance matrix
-            for (uint8_t i= 0; i<=stateIndexLim; i++) {
-                for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                    P[i][j] = P[i][j] - KHP[i][j];
-                }
-            }
 
-            // correct the state vector
-            for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                statesArray[j] = statesArray[j] - Kfusion[j] * innovMag[obsIndex];
-            }
-            stateStruct.quat.normalize();
-
-            // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-            ForceSymmetry();
-            ConstrainVariances();
-
+        // finish fusion from KHP and Kfusion
+        if (!FinishFusion(innovMag[obsIndex])) { // no fault?
             // add table constraint here for faster convergence
             if (have_table_earth_field && frontend->_mag_ef_limit > 0) {
                 MagTableConstrain();
