@@ -13,7 +13,7 @@ void ModeAcro::update()
 {
     // handle locked/unlocked control
     if (acro_state.locked_roll) {
-        plane.nav_roll_cd = acro_state.locked_roll_err;
+        plane.nav_roll_cd = acro_state.locked_roll_cd;
     } else {
         plane.nav_roll_cd = ahrs.roll_sensor;
     }
@@ -63,17 +63,14 @@ void ModeAcro::stabilize()
          */
         if (!acro_state.locked_roll) {
             acro_state.locked_roll = true;
-            acro_state.locked_roll_err = 0;
-        } else {
-            acro_state.locked_roll_err += ahrs.get_gyro().x * plane.G_Dt;
+            acro_state.locked_roll_cd = ahrs.roll_sensor;
         }
-        int32_t roll_error_cd = -degrees(acro_state.locked_roll_err)*100;
-        plane.nav_roll_cd = ahrs.roll_sensor + roll_error_cd;
         // try to reduce the integrated angular error to zero. We set
         // 'stabilize' to true, which disables the roll integrator
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.rollController.get_servo_out(roll_error_cd,
-                                                                                             speed_scaler,
-                                                                                             true, false));
+        plane.nav_roll_cd = acro_state.locked_roll_cd;
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.rollController.get_servo_out(plane.nav_roll_cd - ahrs.roll_sensor,
+                                                                                         speed_scaler,
+                                                                                         true, false));
     } else {
         /*
           aileron stick is non-zero, use pure rate control until the

@@ -241,7 +241,7 @@ protected:
     struct {
         bool locked_roll;
         bool locked_pitch;
-        float locked_roll_err;
+        float locked_roll_cd;
         int32_t locked_pitch_cd;
         Quaternion q;
         bool roll_active_last;
