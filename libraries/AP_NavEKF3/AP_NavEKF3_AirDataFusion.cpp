@@ -602,12 +602,6 @@ void NavEKF3_core::FuseDragForces()
             return;
         }
 
-        // correct the state vector
-        for (uint8_t j= 0; j<=stateIndexLim; j++) {
-            statesArray[j] = statesArray[j] - Kfusion[j] * innovDrag[axis_index];
-        }
-        stateStruct.quat.normalize();
-
         // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
         // the zero elements of H to reduce the number of operations.
         for (unsigned i = 0; i<=stateIndexLim; i++) {
@@ -627,15 +621,9 @@ void NavEKF3_core::FuseDragForces()
                 KHP[i][j] = res;
             }
         }
-        for (unsigned i = 0; i<=stateIndexLim; i++) {
-            for (unsigned j = 0; j<=stateIndexLim; j++) {
-                P[i][j] = P[i][j] - KHP[i][j];
-            }
-        }
 
-        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-        ForceSymmetry();
-        ConstrainVariances();
+        // finish fusion from KHP and Kfusion
+        FinishFusion(innovDrag[axis_index], true); // forcing fusion is probably a bug
     }
 
     // record time of successful fusion
