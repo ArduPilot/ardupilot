@@ -1218,38 +1218,8 @@ void NavEKF3_core::FuseDeclination(ftype declErr)
         }
     }
 
-    // Check that we are not going to drive any variances negative and skip the update if so
-    bool healthyFusion = true;
-    for (uint8_t i= 0; i<=stateIndexLim; i++) {
-        if (KHP[i][i] > P[i][i]) {
-            healthyFusion = false;
-        }
-    }
-
-    if (healthyFusion) {
-        // update the covariance matrix
-        for (uint8_t i= 0; i<=stateIndexLim; i++) {
-            for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                P[i][j] = P[i][j] - KHP[i][j];
-            }
-        }
-
-        // correct the state vector
-        for (uint8_t j= 0; j<=stateIndexLim; j++) {
-            statesArray[j] = statesArray[j] - Kfusion[j] * innovation;
-        }
-        stateStruct.quat.normalize();
-
-        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-        ForceSymmetry();
-        ConstrainVariances();
-
-        // record fusion health status
-        faultStatus.bad_decl = false;
-    } else {
-        // record fusion health status
-        faultStatus.bad_decl = true;
-    }
+    // finish fusion from KHP and Kfusion then record health status
+    faultStatus.bad_decl = FinishFusion(innovation);
 }
 
 /********************************************************
