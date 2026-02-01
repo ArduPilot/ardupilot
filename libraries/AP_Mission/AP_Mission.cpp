@@ -551,8 +551,8 @@ bool AP_Mission::is_nav_cmd(const Mission_Command& cmd)
 ///     accounts for do_jump commands but never increments the jump's num_times_run (advance_current_nav_cmd is responsible for this)
 bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
 {
-  uint16_t cmd_index = start_index;
-  uint16_t jump_index = AP_MISSION_CMD_INDEX_NONE;
+    uint16_t cmd_index = start_index;
+    uint16_t jump_index = AP_MISSION_CMD_INDEX_NONE;
   
     while (cmd_index < (unsigned)_cmd_total) {
         // get next command
