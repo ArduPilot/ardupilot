@@ -1517,7 +1517,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         nextP[7][10] = P[4][10]*dt + P[7][10];
         nextP[8][10] = P[5][10]*dt + P[8][10];
         nextP[9][10] = P[6][10]*dt + P[9][10];
-        nextP[10][10] = P[10][10];
+
         nextP[0][11] = PS17;
         nextP[1][11] = PS97;
         nextP[2][11] = PS132;
@@ -1528,8 +1528,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         nextP[7][11] = P[4][11]*dt + P[7][11];
         nextP[8][11] = P[5][11]*dt + P[8][11];
         nextP[9][11] = P[6][11]*dt + P[9][11];
-        nextP[10][11] = P[10][11];
-        nextP[11][11] = P[11][11];
+
         nextP[0][12] = PS20;
         nextP[1][12] = PS107;
         nextP[2][12] = PS127;
@@ -1540,9 +1539,6 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         nextP[7][12] = P[4][12]*dt + P[7][12];
         nextP[8][12] = P[5][12]*dt + P[8][12];
         nextP[9][12] = P[6][12]*dt + P[9][12];
-        nextP[10][12] = P[10][12];
-        nextP[11][12] = P[11][12];
-        nextP[12][12] = P[12][12];
 
         if (stateIndexLim > 12) {
             nextP[0][13] = PS44;
@@ -1555,10 +1551,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
             nextP[7][13] = P[4][13]*dt + P[7][13];
             nextP[8][13] = P[5][13]*dt + P[8][13];
             nextP[9][13] = P[6][13]*dt + P[9][13];
-            nextP[10][13] = P[10][13];
-            nextP[11][13] = P[11][13];
-            nextP[12][13] = P[12][13];
-            nextP[13][13] = P[13][13];
+
             nextP[0][14] = PS57;
             nextP[1][14] = PS117;
             nextP[2][14] = PS142;
@@ -1569,11 +1562,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
             nextP[7][14] = P[4][14]*dt + P[7][14];
             nextP[8][14] = P[5][14]*dt + P[8][14];
             nextP[9][14] = P[6][14]*dt + P[9][14];
-            nextP[10][14] = P[10][14];
-            nextP[11][14] = P[11][14];
-            nextP[12][14] = P[12][14];
-            nextP[13][14] = P[13][14];
-            nextP[14][14] = P[14][14];
+
             nextP[0][15] = PS46;
             nextP[1][15] = PS114;
             nextP[2][15] = PS139;
@@ -1584,12 +1573,6 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
             nextP[7][15] = P[4][15]*dt + P[7][15];
             nextP[8][15] = P[5][15]*dt + P[8][15];
             nextP[9][15] = P[6][15]*dt + P[9][15];
-            nextP[10][15] = P[10][15];
-            nextP[11][15] = P[11][15];
-            nextP[12][15] = P[12][15];
-            nextP[13][15] = P[13][15];
-            nextP[14][15] = P[14][15];
-            nextP[15][15] = P[15][15];
 
             if (stateIndexLim > 15) {
                 nextP[0][16] = -PS11*P[1][16] - PS12*P[2][16] - PS13*P[3][16] + PS6*P[10][16] + PS7*P[11][16] + PS9*P[12][16] + P[0][16];
@@ -1602,13 +1585,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
                 nextP[7][16] = P[4][16]*dt + P[7][16];
                 nextP[8][16] = P[5][16]*dt + P[8][16];
                 nextP[9][16] = P[6][16]*dt + P[9][16];
-                nextP[10][16] = P[10][16];
-                nextP[11][16] = P[11][16];
-                nextP[12][16] = P[12][16];
-                nextP[13][16] = P[13][16];
-                nextP[14][16] = P[14][16];
-                nextP[15][16] = P[15][16];
-                nextP[16][16] = P[16][16];
+
                 nextP[0][17] = -PS11*P[1][17] - PS12*P[2][17] - PS13*P[3][17] + PS6*P[10][17] + PS7*P[11][17] + PS9*P[12][17] + P[0][17];
                 nextP[1][17] = PS11*P[0][17] - PS12*P[3][17] + PS13*P[2][17] - PS34*P[10][17] - PS7*P[12][17] + PS9*P[11][17] + P[1][17];
                 nextP[2][17] = PS11*P[3][17] + PS12*P[0][17] - PS13*P[1][17] - PS34*P[11][17] + PS6*P[12][17] - PS9*P[10][17] + P[2][17];
@@ -1619,14 +1596,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
                 nextP[7][17] = P[4][17]*dt + P[7][17];
                 nextP[8][17] = P[5][17]*dt + P[8][17];
                 nextP[9][17] = P[6][17]*dt + P[9][17];
-                nextP[10][17] = P[10][17];
-                nextP[11][17] = P[11][17];
-                nextP[12][17] = P[12][17];
-                nextP[13][17] = P[13][17];
-                nextP[14][17] = P[14][17];
-                nextP[15][17] = P[15][17];
-                nextP[16][17] = P[16][17];
-                nextP[17][17] = P[17][17];
+
                 nextP[0][18] = -PS11*P[1][18] - PS12*P[2][18] - PS13*P[3][18] + PS6*P[10][18] + PS7*P[11][18] + PS9*P[12][18] + P[0][18];
                 nextP[1][18] = PS11*P[0][18] - PS12*P[3][18] + PS13*P[2][18] - PS34*P[10][18] - PS7*P[12][18] + PS9*P[11][18] + P[1][18];
                 nextP[2][18] = PS11*P[3][18] + PS12*P[0][18] - PS13*P[1][18] - PS34*P[11][18] + PS6*P[12][18] - PS9*P[10][18] + P[2][18];
@@ -1637,15 +1607,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
                 nextP[7][18] = P[4][18]*dt + P[7][18];
                 nextP[8][18] = P[5][18]*dt + P[8][18];
                 nextP[9][18] = P[6][18]*dt + P[9][18];
-                nextP[10][18] = P[10][18];
-                nextP[11][18] = P[11][18];
-                nextP[12][18] = P[12][18];
-                nextP[13][18] = P[13][18];
-                nextP[14][18] = P[14][18];
-                nextP[15][18] = P[15][18];
-                nextP[16][18] = P[16][18];
-                nextP[17][18] = P[17][18];
-                nextP[18][18] = P[18][18];
+
                 nextP[0][19] = -PS11*P[1][19] - PS12*P[2][19] - PS13*P[3][19] + PS6*P[10][19] + PS7*P[11][19] + PS9*P[12][19] + P[0][19];
                 nextP[1][19] = PS11*P[0][19] - PS12*P[3][19] + PS13*P[2][19] - PS34*P[10][19] - PS7*P[12][19] + PS9*P[11][19] + P[1][19];
                 nextP[2][19] = PS11*P[3][19] + PS12*P[0][19] - PS13*P[1][19] - PS34*P[11][19] + PS6*P[12][19] - PS9*P[10][19] + P[2][19];
@@ -1656,16 +1618,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
                 nextP[7][19] = P[4][19]*dt + P[7][19];
                 nextP[8][19] = P[5][19]*dt + P[8][19];
                 nextP[9][19] = P[6][19]*dt + P[9][19];
-                nextP[10][19] = P[10][19];
-                nextP[11][19] = P[11][19];
-                nextP[12][19] = P[12][19];
-                nextP[13][19] = P[13][19];
-                nextP[14][19] = P[14][19];
-                nextP[15][19] = P[15][19];
-                nextP[16][19] = P[16][19];
-                nextP[17][19] = P[17][19];
-                nextP[18][19] = P[18][19];
-                nextP[19][19] = P[19][19];
+
                 nextP[0][20] = -PS11*P[1][20] - PS12*P[2][20] - PS13*P[3][20] + PS6*P[10][20] + PS7*P[11][20] + PS9*P[12][20] + P[0][20];
                 nextP[1][20] = PS11*P[0][20] - PS12*P[3][20] + PS13*P[2][20] - PS34*P[10][20] - PS7*P[12][20] + PS9*P[11][20] + P[1][20];
                 nextP[2][20] = PS11*P[3][20] + PS12*P[0][20] - PS13*P[1][20] - PS34*P[11][20] + PS6*P[12][20] - PS9*P[10][20] + P[2][20];
@@ -1676,17 +1629,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
                 nextP[7][20] = P[4][20]*dt + P[7][20];
                 nextP[8][20] = P[5][20]*dt + P[8][20];
                 nextP[9][20] = P[6][20]*dt + P[9][20];
-                nextP[10][20] = P[10][20];
-                nextP[11][20] = P[11][20];
-                nextP[12][20] = P[12][20];
-                nextP[13][20] = P[13][20];
-                nextP[14][20] = P[14][20];
-                nextP[15][20] = P[15][20];
-                nextP[16][20] = P[16][20];
-                nextP[17][20] = P[17][20];
-                nextP[18][20] = P[18][20];
-                nextP[19][20] = P[19][20];
-                nextP[20][20] = P[20][20];
+
                 nextP[0][21] = -PS11*P[1][21] - PS12*P[2][21] - PS13*P[3][21] + PS6*P[10][21] + PS7*P[11][21] + PS9*P[12][21] + P[0][21];
                 nextP[1][21] = PS11*P[0][21] - PS12*P[3][21] + PS13*P[2][21] - PS34*P[10][21] - PS7*P[12][21] + PS9*P[11][21] + P[1][21];
                 nextP[2][21] = PS11*P[3][21] + PS12*P[0][21] - PS13*P[1][21] - PS34*P[11][21] + PS6*P[12][21] - PS9*P[10][21] + P[2][21];
@@ -1697,18 +1640,6 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
                 nextP[7][21] = P[4][21]*dt + P[7][21];
                 nextP[8][21] = P[5][21]*dt + P[8][21];
                 nextP[9][21] = P[6][21]*dt + P[9][21];
-                nextP[10][21] = P[10][21];
-                nextP[11][21] = P[11][21];
-                nextP[12][21] = P[12][21];
-                nextP[13][21] = P[13][21];
-                nextP[14][21] = P[14][21];
-                nextP[15][21] = P[15][21];
-                nextP[16][21] = P[16][21];
-                nextP[17][21] = P[17][21];
-                nextP[18][21] = P[18][21];
-                nextP[19][21] = P[19][21];
-                nextP[20][21] = P[20][21];
-                nextP[21][21] = P[21][21];
 
                 if (stateIndexLim > 21) {
                     nextP[0][22] = -PS11*P[1][22] - PS12*P[2][22] - PS13*P[3][22] + PS6*P[10][22] + PS7*P[11][22] + PS9*P[12][22] + P[0][22];
@@ -1721,19 +1652,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
                     nextP[7][22] = P[4][22]*dt + P[7][22];
                     nextP[8][22] = P[5][22]*dt + P[8][22];
                     nextP[9][22] = P[6][22]*dt + P[9][22];
-                    nextP[10][22] = P[10][22];
-                    nextP[11][22] = P[11][22];
-                    nextP[12][22] = P[12][22];
-                    nextP[13][22] = P[13][22];
-                    nextP[14][22] = P[14][22];
-                    nextP[15][22] = P[15][22];
-                    nextP[16][22] = P[16][22];
-                    nextP[17][22] = P[17][22];
-                    nextP[18][22] = P[18][22];
-                    nextP[19][22] = P[19][22];
-                    nextP[20][22] = P[20][22];
-                    nextP[21][22] = P[21][22];
-                    nextP[22][22] = P[22][22];
+
                     nextP[0][23] = -PS11*P[1][23] - PS12*P[2][23] - PS13*P[3][23] + PS6*P[10][23] + PS7*P[11][23] + PS9*P[12][23] + P[0][23];
                     nextP[1][23] = PS11*P[0][23] - PS12*P[3][23] + PS13*P[2][23] - PS34*P[10][23] - PS7*P[12][23] + PS9*P[11][23] + P[1][23];
                     nextP[2][23] = PS11*P[3][23] + PS12*P[0][23] - PS13*P[1][23] - PS34*P[11][23] + PS6*P[12][23] - PS9*P[10][23] + P[2][23];
@@ -1744,29 +1663,8 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
                     nextP[7][23] = P[4][23]*dt + P[7][23];
                     nextP[8][23] = P[5][23]*dt + P[8][23];
                     nextP[9][23] = P[6][23]*dt + P[9][23];
-                    nextP[10][23] = P[10][23];
-                    nextP[11][23] = P[11][23];
-                    nextP[12][23] = P[12][23];
-                    nextP[13][23] = P[13][23];
-                    nextP[14][23] = P[14][23];
-                    nextP[15][23] = P[15][23];
-                    nextP[16][23] = P[16][23];
-                    nextP[17][23] = P[17][23];
-                    nextP[18][23] = P[18][23];
-                    nextP[19][23] = P[19][23];
-                    nextP[20][23] = P[20][23];
-                    nextP[21][23] = P[21][23];
-                    nextP[22][23] = P[22][23];
-                    nextP[23][23] = P[23][23];
                 }
             }
-        }
-    }
-
-    // add the general state process noise variances
-    if (stateIndexLim > 9) {
-        for (uint8_t i=10; i<=stateIndexLim; i++) {
-            nextP[i][i] = nextP[i][i] + processNoiseVariance[i-10];
         }
     }
 
@@ -1786,13 +1684,20 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
     }
 
     // covariance matrix is symmetrical, so copy diagonals and copy upper half in nextP
-    // to upper and lower half in P
-    for (uint8_t col = 0; col <= stateIndexLim; col++) {
-        // copy diagonals
-        Pmut[col][col] = nextP[col][col];
-        // copy off diagonals
-        for (uint8_t row = 0 ; row < col; row++) {
+    // to upper and lower half in P, skipping unchanged elems on row indices greater than 9
+    for (uint8_t diag = 0; diag <= 9; diag++) { // copy diagonals
+        Pmut[diag][diag] = nextP[diag][diag];
+    }
+    for (uint8_t col = 0; col <= stateIndexLim; col++) { // copy off diagonals
+        for (uint8_t row = 0; row < MIN(col, 10); row++) {
             Pmut[col][row] = Pmut[row][col] = nextP[row][col];
+        }
+    }
+
+    // add the general state process noise variances
+    if (stateIndexLim > 9) {
+        for (uint8_t i=10; i<=stateIndexLim; i++) {
+            Pmut[i][i] = P[i][i] + processNoiseVariance[i-10];
         }
     }
 
