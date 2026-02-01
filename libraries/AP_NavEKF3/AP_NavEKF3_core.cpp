@@ -1446,14 +1446,14 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
     nextP[3][3] = PS0*PS3 + PS1*PS2 - PS11*PS156 + PS12*PS152 + PS13*PS153 + PS151*PS7 - PS154*PS34 - PS155*PS6 + PS157 + PS5*PS95;
 
     if (quatCovResetOnly) {
-        // covariance matrix is symmetrical, so copy diagonals and copy lower half in nextP
-        // to lower and upper half in P
-        for (uint8_t row = 0; row <= 3; row++) {
+        // covariance matrix is symmetrical, so copy diagonals and copy upper half in nextP
+        // to upper and lower half in P
+        for (uint8_t col = 0; col <= 3; col++) {
             // copy diagonals
-            Pmut[row][row] = constrain_ftype(nextP[row][row], 0.0f, 1.0f);
+            Pmut[col][col] = constrain_ftype(nextP[col][col], 0.0f, 1.0f);
             // copy off diagonals
-            for (uint8_t column = 0 ; column < row; column++) {
-                Pmut[row][column] = Pmut[column][row] = nextP[column][row];
+            for (uint8_t row = 0 ; row < col; row++) {
+                Pmut[col][row] = Pmut[row][col] = nextP[row][col];
             }
         }
         calcTiltErrorVariance();
@@ -1785,14 +1785,14 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         }
     }
 
-    // covariance matrix is symmetrical, so copy diagonals and copy lower half in nextP
-    // to lower and upper half in P
-    for (uint8_t row = 0; row <= stateIndexLim; row++) {
+    // covariance matrix is symmetrical, so copy diagonals and copy upper half in nextP
+    // to upper and lower half in P
+    for (uint8_t col = 0; col <= stateIndexLim; col++) {
         // copy diagonals
-        Pmut[row][row] = nextP[row][row];
+        Pmut[col][col] = nextP[col][col];
         // copy off diagonals
-        for (uint8_t column = 0 ; column < row; column++) {
-            Pmut[row][column] = Pmut[column][row] = nextP[column][row];
+        for (uint8_t row = 0 ; row < col; row++) {
+            Pmut[col][row] = Pmut[row][col] = nextP[row][col];
         }
     }
 
