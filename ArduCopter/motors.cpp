@@ -21,7 +21,8 @@ void Copter::auto_disarm_check()
 
     // If takeoff/spool-up is being requested (desired spool state beyond ground idle),
     // inhibit auto-disarm (current spool state may lag during delays/checks).
-    if (motors->get_desired_spool_state() > AP_Motors::DesiredSpoolState::GROUND_IDLE) {
+    if (motors->get_desired_spool_state() > AP_Motors::DesiredSpoolState::GROUND_IDLE
+        || motors->get_spool_state() > AP_Motors::SpoolState::GROUND_IDLE) {
         auto_disarm_begin = tnow_ms;
         return;
     }
