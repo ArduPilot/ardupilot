@@ -2018,33 +2018,9 @@ void NavEKF3_core::FuseBodyVel()
                 }
             }
 
-            // Check that we are not going to drive any variances negative and skip the update if so
-            bool healthyFusion = true;
-            for (uint8_t i= 0; i<=stateIndexLim; i++) {
-                if (KHP[i][i] > P[i][i]) {
-                    healthyFusion = false;
-                }
-            }
-
-            if (healthyFusion) {
-                // update the covariance matrix
-                for (uint8_t i= 0; i<=stateIndexLim; i++) {
-                    for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                        P[i][j] = P[i][j] - KHP[i][j];
-                    }
-                }
-
-                // correct the state vector
-                for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                    statesArray[j] = statesArray[j] - Kfusion[j] * innovBodyVel[obsIndex];
-                }
-                stateStruct.quat.normalize();
-
-                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-                ForceSymmetry();
-                ConstrainVariances();
-            } else {
-                // record bad axis
+            // finish fusion from KHP and Kfusion
+            if (FinishFusion(innovBodyVel[obsIndex])) {
+                // fault, record bad axis
                 if (obsIndex == 0) {
                     faultStatus.bad_xvel = true;
                 } else if (obsIndex == 1) {
@@ -2052,7 +2028,6 @@ void NavEKF3_core::FuseBodyVel()
                 } else if (obsIndex == 2) {
                     faultStatus.bad_zvel = true;
                 }
-
             }
         }
     }
