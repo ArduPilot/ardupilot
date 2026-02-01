@@ -1134,38 +1134,10 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
         }
     }
 
-    // Check that we are not going to drive any variances negative and skip the update if so
-    bool healthyFusion = true;
-    for (uint8_t i= 0; i<=stateIndexLim; i++) {
-        if (KHP[i][i] > P[i][i]) {
-            healthyFusion = false;
-        }
-    }
-    if (healthyFusion) {
-        // update the covariance matrix
-        for (uint8_t i= 0; i<=stateIndexLim; i++) {
-            for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                P[i][j] = P[i][j] - KHP[i][j];
-            }
-        }
+    const ftype innovFusion = constrain_ftype(innovYaw, -0.5f, 0.5f);
+    // finish fusion from KHP and Kfusion then record health status
+    faultStatus.bad_yaw = FinishFusion(innovFusion);
 
-        // correct the state vector
-        for (uint8_t i=0; i<=stateIndexLim; i++) {
-            statesArray[i] -= Kfusion[i] * constrain_ftype(innovYaw, -0.5f, 0.5f);
-        }
-        stateStruct.quat.normalize();
-
-        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-        ForceSymmetry();
-        ConstrainVariances();
-
-        // record fusion numerical health status
-        faultStatus.bad_yaw = false;
-
-    } else {
-        // record fusion numerical health status
-        faultStatus.bad_yaw = true;
-    }
     return true;
 }
 
