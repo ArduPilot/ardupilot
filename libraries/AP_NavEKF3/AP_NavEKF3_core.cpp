@@ -2003,6 +2003,40 @@ void NavEKF3_core::ConstrainVariances()
     }
 }
 
+// actually do fusion to update statesArray from Kfusion and P from KHP.
+// returns true and skips fusion if variances would be driven negative.
+// force skips this negative check; passing true is probably a bug!
+bool NavEKF3_core::FinishFusion(ftype innov, bool force /*= false*/)
+{
+    if (!force) {
+        // Check that we are not going to drive any variances negative and skip the update if so
+        for (auto s=0; s<=stateIndexLim; s++) {
+            if (KHP[s][s] > P[s][s]) {
+                return true;
+            }
+        }
+    }
+
+    // correct the state vector using kalman gains filled in by caller
+    for (auto s=0; s<=stateIndexLim; s++) {
+        statesArray[s] -= Kfusion[s] * innov;
+    }
+    stateStruct.quat.normalize();
+
+    // update the covariance matrix as P = P - KHP (KHP was filled by caller)
+    for (auto r=0; r<=stateIndexLim; r++) {
+        for (auto c=0; c<=stateIndexLim; c++) {
+            P[r][c] -= KHP[r][c];
+        }
+    }
+
+    // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning
+    ForceSymmetry();
+    ConstrainVariances(); // can change statesArray!!
+
+    return false;
+}
+
 // constrain states using WMM tables and specified limit
 void NavEKF3_core::MagTableConstrain(void)
 {

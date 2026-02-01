@@ -736,6 +736,11 @@ private:
     // constrain variances (diagonal terms) in the state covariance matrix
     void ConstrainVariances();
 
+    // actually do fusion to update statesArray from Kfusion and P from KHP.
+    // returns true and skips fusion if variances would be driven negative.
+    // force skips this negative check; passing true is probably a bug!
+    bool FinishFusion(ftype innov, bool force = false);
+
     // constrain states
     void ConstrainStates();
 
