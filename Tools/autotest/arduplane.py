@@ -1660,7 +1660,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         return_radius = 100
         return_alt = 80
         self.set_parameters({
-            "RTL_RADIUS": return_radius,
+            "WP_LOITER_RAD": return_radius,
             "FENCE_ACTION": 6, # Set Fence Action to Guided
             "FENCE_TYPE": 8,   # Only use fence floor
             "FENCE_RET_ALT": return_alt,
@@ -4210,7 +4210,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "FENCE_ACTION": 6,
             "FENCE_TYPE": 4,
-            "RTL_RADIUS": want_radius,
+            "WP_LOITER_RAD": want_radius,
             "NAVL1_ROLL_MAX": 60,
         })
         home_loc = self.mav.location()
@@ -4285,7 +4285,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "FENCE_ACTION": 6,
             "FENCE_TYPE": 2,
             "FENCE_RADIUS": 300,
-            "RTL_RADIUS": want_radius,
+            "WP_LOITER_RAD": want_radius,
             "NAVL1_ROLL_MAX": 60,
         })
 
