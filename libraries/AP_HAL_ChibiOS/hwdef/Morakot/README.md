@@ -2,16 +2,16 @@
 
 The Morakot is a flight controller designed and produced by [Taiphoon](https://taiphoon.com.tw/)
 
-![top](Morakot_top.png)
-![bottom](Morakot_bottom.png)
+![top](Morakot_top.jpg)
+![bottom](Morakot_bottom.jpg)
 
 Morakot Flight Controller — **NDAA-Compliant. Made in Taiwan.** Built for Performance.
 Engineered, tested, and manufactured in Taiwan, the Morakot Flight Controller meets full NDAA compliance, ensuring trusted quality and security for professional applications. With an integrated Ethernet interface, it delivers high-speed, reliable connectivity for next-generation FPV and unmanned aerial systems.
 
 ## Pinout
 
-![top_wired](Morakot_top_Wired.png)
-![bottom_wired](Morakot_bottom_Wired.png)
+![top_wired](Morakot_top_Wired.jpg)
+![bottom_wired](Morakot_bottom_Wired.jpg)
 
 ## Features
 
@@ -30,7 +30,6 @@ Engineered, tested, and manufactured in Taiwan, the Morakot Flight Controller me
 
 - 3S–8S DC Input power
 - 5V 2A BEC peripherals power
-- 9V 2A BEC servos power
 - 12V 2A BEC video power
 
 #### Other
@@ -48,16 +47,18 @@ Engineered, tested, and manufactured in Taiwan, the Morakot Flight Controller me
 
 UART Mapping
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
-Port      UART      Protocol        TX DMA  RX DMA
---------- --------- ---------------- ------- -------
-0         USB       MAVLink2        ✘       ✘
-1         USART1    MSP_DisplayPort ✔       ✔
-2         USART2    MAVLink2        ✔       ✔
-3         USART3    None            ✔       ✔
-4         UART5     GPS             ✔       ✔
-5         USART6    ESCTelemetry    ✔       ✔
-6         UART7     MAVLink2        ✔       ✔
-7         UART8     RCIN            ✔       ✔
+
+| Port | UART   | Protocol          | TX DMA | RX DMA |
+|------|--------|-------------------|:------:|:------:|
+| 0    | USB    | MAVLink2          |   ✘    |   ✘    |
+| 1    | USART1 | MSP_DisplayPort   |   ✔    |   ✔    |
+| 2    | USART2 | MAVLink2          |   ✔    |   ✔    |
+| 3    | USART3 | None              |   ✔    |   ✔    |
+| 4    | UART5  | GPS               |   ✔    |   ✔    |
+| 5    | USART6 | ESCTelemetry      |   ✔    |   ✔    |
+| 6    | UART7  | MAVLink2          |   ✔    |   ✔    |
+| 7    | UART8  | RCIN              |   ✔    |   ✔    |
+
 
 RTS/CTS flow control is available on UART7.
 
@@ -97,13 +98,14 @@ The JST-GH 7p connector supports a DJI Air Unit / HD VTX connection. Protocol de
 | Pin | Signal Name     | Voltage      |
 |-----|-----------------|--------------|
 | 1   | VBAT IN         | 12V-33.6V    |
-| 2   | GND             | 3.3V         |
-| 3   | CURRENT         | 3.3V         |
-| 4   | MOTOR/SERVO 5   | 3.3V         |
-| 5   | MOTOR/SERVO 6   | 3.3V         |
-| 6   | MOTOR/SERVO 7   | 3.3V         |
-| 7   | MOTOR/SERVO 8   | 3.3V         |
-| 8   | MOTOR/SERVO 9   | 3.3V         |
+| 2   | MOTOR/SERVO 9   | 3.3V         |
+| 3   | GND             | 3.3V         |
+| 4   | CURRENT         | 3.3V         |
+| 5   | MOTOR/SERVO 5   | 3.3V         |
+| 6   | MOTOR/SERVO 6   | 3.3V         |
+| 7   | MOTOR/SERVO 7   | 3.3V         |
+| 8   | MOTOR/SERVO 8   | 3.3V         |
+
 
 #### CAN - 4 Pin JST-GH
 
