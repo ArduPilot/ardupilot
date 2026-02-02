@@ -106,3 +106,14 @@ jobs:
             echo "❌ Markdown linting errors found."
             exit 1
           fi
+
+          # check that no commit subject line exceeds 160 characters:
+          while IFS= read -r line; do
+            if [[ ${#line} -gt 160 ]]; then
+              echo "❌ Commit subject line exceeds 160 characters:"
+              echo "$line"
+              echo "Please keep the commit subject line to 160 characters or fewer."
+              exit 1
+            fi
+          done <<< "$COMMITS"
+          echo "✅ All commit subject lines are within 160 characters."
