@@ -343,6 +343,7 @@ protected:
     virtual void init_ardupilot() = 0;
     virtual void load_parameters() = 0;
     void load_parameters(AP_Int16 &format_version, const uint16_t expected_format_version);
+    void check_firmware_version();
 
     virtual void set_control_channels() {}
 
@@ -644,6 +645,8 @@ private:
     uint32_t _poweroff_start_ms;
 #endif // AP_POWEROFF_DELAY_MS
 #endif // AP_POWEROFF_ENABLED
+
+    AP_Int32 _last_firmware_version;
 };
 
 namespace AP {
