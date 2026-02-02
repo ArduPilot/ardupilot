@@ -320,6 +320,7 @@ protected:
     virtual void init_ardupilot() = 0;
     virtual void load_parameters() = 0;
     void load_parameters(AP_Int16 &format_version, const uint16_t expected_format_version);
+    void check_firmware_version();
 
     virtual void set_control_channels() {}
 
@@ -603,6 +604,8 @@ private:
 
     // Bitmask of modes to disable from gcs
     AP_Int32 flight_mode_GCS_block;
+
+    AP_Int32 _last_firmware_version;
 };
 
 namespace AP {
