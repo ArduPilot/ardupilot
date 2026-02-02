@@ -498,12 +498,6 @@ void AP_DroneCAN::init(uint8_t driver_index)
     node_status_msg.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL;
     node_status_msg.sub_mode = 0;
 
-    // Spin node for device discovery
-    for (uint8_t i = 0; i < 5; i++) {
-        send_node_status();
-        canard_iface.process(1000);
-    }
-
     hal.util->snprintf(_thread_name, sizeof(_thread_name), "dronecan_%u", driver_index);
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_DroneCAN::loop, void), _thread_name, DRONECAN_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_CAN, 0)) {
@@ -521,6 +515,12 @@ void AP_DroneCAN::init(uint8_t driver_index)
 
 void AP_DroneCAN::loop(void)
 {
+    // Spin node for device discovery
+    for (uint8_t i = 0; i < 5; i++) {
+        send_node_status();
+        canard_iface.process(1000);
+    }
+
     while (true) {
         if (!_initialized) {
             hal.scheduler->delay_microseconds(1000);
