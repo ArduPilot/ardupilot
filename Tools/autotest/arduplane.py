@@ -1657,6 +1657,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "FENCE_ACTION": 6, # Set Fence Action to Guided
             "FENCE_TYPE": 8,   # Only use fence floor
             "FENCE_RET_ALT": return_alt,
+            "NAVL1_LIM_BANK": 60,
         })
         self.do_fence_enable()
         self.assert_fence_enabled()
@@ -2273,6 +2274,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "AVD_ENABLE": 1,
             "AVD_F_ACTION": mavutil.mavlink.MAV_COLLISION_ACTION_MOVE_HORIZONTALLY,
             "AVD_F_RCVRY": 3,  # resume auto or loiter
+            "NAVL1_LIM_BANK": 60,
         })
         self.reboot_sitl()
         self.takeoff(50)
