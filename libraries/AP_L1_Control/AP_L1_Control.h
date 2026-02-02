@@ -81,7 +81,7 @@ private:
     // pointer to the SpdHgtControl object
     const AP_TECS *_tecs;
 
-    // lateral acceration in m/s required to fly to the
+    // lateral acceleration in m/s required to fly to the
     // L1 reference point (+ve to right)
     float _latAccDem;
 
