@@ -4061,8 +4061,8 @@ void GCS_MAVLINK::handle_odometry(const mavlink_message_t &msg)
     float posErr = 0;
     float angErr = 0;
     if (!isnan(m.pose_covariance[0])) {
-        posErr = cbrtf(sq(m.pose_covariance[0])+sq(m.pose_covariance[6])+sq(m.pose_covariance[11]));
-        angErr = cbrtf(sq(m.pose_covariance[15])+sq(m.pose_covariance[18])+sq(m.pose_covariance[20]));
+        posErr = sqrtf(m.pose_covariance[0]+m.pose_covariance[6]+m.pose_covariance[11]);
+        angErr = sqrtf(m.pose_covariance[15]+m.pose_covariance[18]+m.pose_covariance[20]);
     }
 
     const uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(m.time_usec, PAYLOAD_SIZE(chan, ODOMETRY));
@@ -4099,8 +4099,8 @@ void GCS_MAVLINK::handle_common_vision_position_estimate_data(const uint64_t use
     }
 
     if (!isnan(covariance[0])) {
-        posErr = cbrtf(sq(covariance[0])+sq(covariance[6])+sq(covariance[11]));
-        angErr = cbrtf(sq(covariance[15])+sq(covariance[18])+sq(covariance[20]));
+        posErr = sqrtf(covariance[0]+covariance[6]+covariance[11]);
+        angErr = sqrtf(covariance[15]+covariance[18]+covariance[20]);
     }
 
     visual_odom->handle_pose_estimate(usec, timestamp_ms, x, y, z, roll, pitch, yaw, posErr, angErr, reset_counter, 0);
