@@ -73,7 +73,6 @@ struct sitl_fdm {
     Vector3f velocity_air_bf; // velocity relative to airmass, body frame, TAS
     double battery_voltage; // Volts
     double battery_current; // Amps
-    double battery_remaining; // Ah, if non-zero capacity
     uint8_t num_motors;
     uint32_t motor_mask;
     float rpm[32];         // RPM of all motors
