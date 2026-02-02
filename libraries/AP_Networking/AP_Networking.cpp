@@ -14,13 +14,32 @@
 extern const AP_HAL::HAL& hal;
 
 #if AP_NETWORKING_BACKEND_CHIBIOS
-#include "AP_Networking_ChibiOS.h"
 #include <hal_mii.h>
 #endif
 
-#include <lwipopts.h>
-#include <errno.h>
+#if AP_NETWORKING_BACKEND_SWITCHPORT_ETHERNET
+#include "AP_Networking_SwitchPort_Ethernet_ChibiOS.h"
+#endif
 
+#if AP_NETWORKING_BACKEND_SWITCHPORT_COBS || AP_NETWORKING_BACKEND_SWITCH
+#include "AP_Networking_SwitchPort_COBS.h"
+#endif
+
+#if AP_NETWORKING_BACKEND_SWITCHPORT_LWIP
+#include "AP_Networking_SwitchPort_lwIP.h"
+#endif
+
+#if AP_NETWORKING_BACKEND_SWITCH
+#include "AP_Networking_Switch.h"
+#endif
+
+#if AP_NETWORKING_BACKEND_SWITCHPORT_MAVLINK_COBS
+#include "AP_Networking_SwitchPort_MAVLink_COBS.h"
+#endif
+
+#if AP_NETWORKING_NEED_LWIP
+#include <lwipopts.h>
+#endif
 
 #include <AP_HAL/utility/Socket.h>
 
@@ -40,6 +59,16 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO_FLAGS("ENABLE",  1, AP_Networking, param.enabled, 0, AP_PARAM_FLAG_ENABLE),
+
+#if AP_NETWORKING_BACKEND_SWITCHPORT_LWIP
+    // @Param: IP_ENABLE
+    // @DisplayName: Enable IP stack
+    // @Description: Enable/Disable the TCP/IP (lwIP) stack. When disabled, the system still bridges Ethernet and UART at Layer 2.
+    // @Values: 0:Disable,1:Enable
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("IP_ENABLE",  13, AP_Networking, param.ip_enabled, AP_NETWORKING_DEFAULT_IP_ENABLE),
+#endif
 
 #if AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
     // @Group: IPADDR
@@ -90,7 +119,7 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Networking options
     // @Description: Networking options
-    // @Bitmask: 0:EnablePPP Ethernet gateway, 1:Enable CAN1 multicast endpoint, 2:Enable CAN2 multicast endpoint, 3:Enable CAN1 multicast bridged, 4:Enable CAN2 multicast bridged, 5:DisablePPPTimeout, 6:DisablePPPEchoLimit, 7:Capture to file
+    // @Bitmask: 0:EnablePPP Ethernet gateway, 1:Enable CAN1 multicast endpoint, 2:Enable CAN2 multicast endpoint, 3:Enable CAN1 multicast bridged, 4:Enable CAN2 multicast bridged, 5:DisablePPPTimeout, 6:DisablePPPEchoLimit, 7:Capture to file, 8:Debug messages, 9:Debug switch packets (ARP/ICMP)
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 9,  AP_Networking,    param.options, 0),
@@ -144,16 +173,154 @@ void AP_Networking::init()
     }
 #endif
 
-#if AP_NETWORKING_BACKEND_CHIBIOS && AP_NETWORKING_PPP_GATEWAY_ENABLED
+    // Create hub and ports when switch backend is enabled
+#if AP_NETWORKING_BACKEND_SWITCH
+    if (hub == nullptr) {
+        hub = NEW_NOTHROW AP_Networking_Switch();
+    }
+    if (hub != nullptr) {
+        // Ethernet port - owns the MAC with dedicated RX/TX threads
+#if AP_NETWORKING_BACKEND_SWITCHPORT_ETHERNET
+        if (port_eth == nullptr) {
+            uint8_t macaddr_tmp[6] {};
+            get_macaddr(macaddr_tmp);
+            port_eth = NEW_NOTHROW AP_Networking_SwitchPort_Ethernet_ChibiOS(hub, macaddr_tmp);
+            if (port_eth != nullptr) {
+                if (port_eth->init()) {
+                    UNUSED_RESULT(hub->register_port(port_eth));
+                } else {
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "NET: Ethernet port init failed");
+                    delete port_eth;
+                    port_eth = nullptr;
+                }
+            }
+        }
+#endif // AP_NETWORKING_BACKEND_SWITCHPORT_ETHERNET
+
+#if AP_NETWORKING_BACKEND_SWITCHPORT_LWIP
+        // lwIP port - owns lwIP when hub is enabled
+        if (get_ip_enabled() && port_lwip == nullptr) {
+            port_lwip = NEW_NOTHROW AP_Networking_SwitchPort_lwIP(hub, *this);
+            if (port_lwip != nullptr) {
+                if (port_lwip->init()) {
+                    UNUSED_RESULT(hub->register_port(port_lwip));
+                } else {
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "NET: lwIP port init failed");
+                    delete port_lwip;
+                    port_lwip = nullptr;
+                }
+            }
+        }
+#endif // AP_NETWORKING_BACKEND_SWITCHPORT_LWIP
+
+        // Create COBS bonds for protocols 51/52/53
+#if AP_NETWORKING_BACKEND_SWITCHPORT_COBS
+        uint8_t local_device_id[6];
+        get_macaddr(local_device_id);
+        
+        static const AP_SerialManager::SerialProtocol bond_protocols[3] = {
+            AP_SerialManager::SerialProtocol_COBS_ETH,   // Bond 1 (protocol 51)
+            AP_SerialManager::SerialProtocol_COBS_ETH2,  // Bond 2 (protocol 52)
+            AP_SerialManager::SerialProtocol_COBS_ETH3,  // Bond 3 (protocol 53)
+        };
+
+        uint8_t total_ports = 0;
+        num_cobs_bonds = 0;
+
+        for (uint8_t bond_idx = 0; bond_idx < 3; bond_idx++) {
+            AP_SerialManager::SerialProtocol proto = bond_protocols[bond_idx];
+            AP_Networking_SwitchPort_COBS *bond = nullptr;
+
+            // Find all UARTs with this protocol
+            for (uint8_t inst = 0; inst < SERIALMANAGER_NUM_PORTS; inst++) {
+                if (!AP::serialmanager().have_serial(proto, inst)) {
+                    continue;
+                }
+                auto *uart = AP::serialmanager().find_serial(proto, inst);
+                const uint32_t baud = AP::serialmanager().find_baudrate(proto, inst);
+                if (uart == nullptr || baud == 0) {
+                    continue;
+                }
+
+                // Create bond on first port
+                if (bond == nullptr) {
+                    bond = NEW_NOTHROW AP_Networking_SwitchPort_COBS(hub, bond_idx + 1);
+                    if (bond == nullptr) {
+                        break;
+                    }
+                }
+
+                // Create and add COBS port to bond
+                auto *p = NEW_NOTHROW AP_Networking_COBS_Link(hub, uart, baud, local_device_id);
+                if (p == nullptr) {
+                    continue;
+                }
+                if (!p->init()) {
+                    delete p;
+                    continue;
+                }
+                if (!bond->add_member(p)) {
+                    delete p;
+                    continue;
+                }
+                total_ports++;
+            }
+
+            // Register bond with hub if it has members
+            if (bond != nullptr) {
+                if (hub->register_port(bond) < 0) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "NET: hub full, COBS bond %u skipped", bond_idx + 1);
+                    delete bond;
+                } else {
+                    hub->register_cobs_bond(bond);
+                    cobs_bonds[num_cobs_bonds++] = bond;
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: COBS bond %u: %u port(s)",
+                                  bond_idx + 1, bond->get_num_members());
+                }
+            }
+        }
+
+        if (total_ports > 0) {
+            // Start the shared COBS thread
+            hub->init_cobs();
+        }
+#endif // AP_NETWORKING_BACKEND_SWITCHPORT_COBS
+
+#if AP_NETWORKING_BACKEND_SWITCHPORT_MAVLINK_COBS
+        // Create MAVLink COBS tunnel port for remote COBS over MAVLink
+        uint8_t mav_cobs_device_id[6];
+        get_macaddr(mav_cobs_device_id);
+        if (port_mavlink_cobs == nullptr) {
+            port_mavlink_cobs = NEW_NOTHROW AP_Networking_SwitchPort_MAVLink_COBS(hub, mav_cobs_device_id, 0, 0);
+            if (port_mavlink_cobs != nullptr) {
+                if (port_mavlink_cobs->init()) {
+                    if (hub->register_port(port_mavlink_cobs) >= 0) {
+                        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: MAVLink COBS port created");
+                    } else {
+                        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "NET: hub full, MAVLink COBS skipped");
+                        delete port_mavlink_cobs;
+                        port_mavlink_cobs = nullptr;
+                    }
+                } else {
+                    delete port_mavlink_cobs;
+                    port_mavlink_cobs = nullptr;
+                }
+            }
+        }
+#endif // AP_NETWORKING_BACKEND_SWITCHPORT_MAVLINK_COBS
+    }
+#endif // AP_NETWORKING_BACKEND_SWITCH
+
+#if AP_NETWORKING_PPP_GATEWAY_ENABLED
     if (option_is_set(OPTION::PPP_ETHERNET_GATEWAY)) {
         /*
-          when we are a PPP/Ethernet gateway we bring up the ethernet first
+          PPP/Ethernet gateway mode - PPP provides pppif, hub provides netif via lwIP port.
+          lwIP IP_FORWARD routes between them.
          */
-        backend = NEW_NOTHROW AP_Networking_ChibiOS(*this);
+        // Hub mode: hub provides netif via lwIP port, just create PPP backend for pppif
         backend_PPP = NEW_NOTHROW AP_Networking_PPP(*this);
     }
 #endif
-
 
 #if AP_NETWORKING_BACKEND_PPP
     if (backend == nullptr && AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_PPP, 0)) {
@@ -161,27 +328,31 @@ void AP_Networking::init()
     }
 #endif
 
-#if AP_NETWORKING_BACKEND_CHIBIOS
-    if (backend == nullptr) {
-        backend = NEW_NOTHROW AP_Networking_ChibiOS(*this);
-    }
-#endif
 #if AP_NETWORKING_BACKEND_SITL
     if (backend == nullptr) {
         backend = NEW_NOTHROW AP_Networking_SITL(*this);
     }
 #endif
 
+    // With switch enabled, we may not have a backend but still have a hub
+#if AP_NETWORKING_BACKEND_SWITCH
+    if (backend == nullptr && hub == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: no backend or hub");
+        return;
+    }
+#else
     if (backend == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: backend failed");
         return;
     }
+#endif
 
-    if (!backend->init()) {
+    if (backend != nullptr && !backend->init()) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: backend init failed");
-        // the backend init function creates a thread which references the backend pointer; that thread may be running so don't remove the backend allocation.
         backend = nullptr;
+#if !AP_NETWORKING_BACKEND_SWITCH
         return;
+#endif
     }
 
 #if AP_NETWORKING_PPP_GATEWAY_ENABLED
@@ -467,6 +638,50 @@ const char *AP_Networking::address_to_str(uint32_t addr)
 {
     static char buf[16]; // 16 for aaa.bbb.ccc.ddd
     return SocketAPM::inet_addr_to_str(addr, buf, sizeof(buf));
+}
+
+/*
+  send network stats to GCS for debugging
+ */
+void AP_Networking::send_network_stats()
+{
+#if AP_NETWORKING_BACKEND_SWITCH
+    if (hub != nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: SW routed=%lu dropped=%lu",
+                      (unsigned long)hub->get_frames_routed(),
+                      (unsigned long)hub->get_frames_dropped());
+    }
+#if AP_NETWORKING_BACKEND_SWITCHPORT_ETHERNET
+    if (port_eth != nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: ETH rx=%lu tx=%lu rxerr=%lu txerr=%lu link=%u",
+                      (unsigned long)port_eth->get_rx_count(),
+                      (unsigned long)port_eth->get_tx_count(),
+                      (unsigned long)port_eth->get_rx_errors(),
+                      (unsigned long)port_eth->get_tx_errors(),
+                      (unsigned)port_eth->is_link_up());
+    }
+#endif
+#if AP_NETWORKING_BACKEND_SWITCHPORT_LWIP
+    if (port_lwip != nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: LWIP rx=%lu tx=%lu rxerr=%lu txerr=%lu",
+                      (unsigned long)port_lwip->get_rx_count(),
+                      (unsigned long)port_lwip->get_tx_count(),
+                      (unsigned long)port_lwip->get_rx_errors(),
+                      (unsigned long)port_lwip->get_tx_errors());
+    }
+#endif
+#if AP_NETWORKING_BACKEND_SWITCHPORT_COBS
+    for (uint8_t i = 0; i < num_cobs_bonds; i++) {
+        auto *bond = cobs_bonds[i];
+        if (bond != nullptr) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: COBS_G%u(%u) rx=%lu tx=%lu",
+                          i + 1, bond->get_num_members(),
+                          (unsigned long)bond->get_rx_count(),
+                          (unsigned long)bond->get_tx_count());
+        }
+    }
+#endif // AP_NETWORKING_BACKEND_SWITCHPORT_COBS
+#endif // AP_NETWORKING_BACKEND_SWITCH
 }
 
 #ifdef LWIP_PLATFORM_ASSERT
