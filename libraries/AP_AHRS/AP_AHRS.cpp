@@ -3036,7 +3036,7 @@ bool AP_AHRS::get_hgt_ctrl_limit(float& limit) const
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        return sim.get_hgt_ctrl_limit(limit);
+        return false;
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:

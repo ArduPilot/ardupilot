@@ -280,18 +280,7 @@ public:
         return false;
     }
 
-    // get a source's velocity innovations.  source should be from 0 to 7 (see AP_NavEKF_Source::SourceXY)
-    // returns true on success and results are placed in innovations and variances arguments
-    virtual bool get_vel_innovations_and_variances_for_source(uint8_t source, Vector3f &innovations, Vector3f &variances) const WARN_IF_UNUSED {
-        return false;
-    }
-
     virtual void send_ekf_status_report(class GCS_MAVLINK &link) const = 0;
-
-    // get_hgt_ctrl_limit - get maximum height to be observed by the
-    // control loops in meters and a validity flag.  It will return
-    // false when no limiting is required
-    virtual bool get_hgt_ctrl_limit(float &limit) const WARN_IF_UNUSED { return false; };
 
     // Set to true if the terrain underneath is stable enough to be used as a height reference
     // this is not related to terrain following
